@@ -68,7 +68,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
   (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ)
+variable (mLow κ : ℕ) (bound bDig : ℕ)
 variable {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -178,7 +178,7 @@ so the marker set stays a record of *computability* debt only. Until the `sorry`
 generated code panics when run. -/
 def handoffExtractor
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (reinterpretCom : K.TCom → Commitment Φ' outerRows') :
     Extractor.TreeBased (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
@@ -205,13 +205,13 @@ reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is an obligation of
 
 ## The `Short` obligation this seam does not discharge — do not paper over it
 
-Since `LiftCom` is indexed by `liftShort Φ bound ρBound`, every relation on this side of the
+Since `LiftCom` is indexed by `liftShort Φ bound bDig`, every relation on this side of the
 chain carries that predicate, and the pull-back above must **produce** it for the witness it
 returns. **At this theorem's free parameters, that is not merely unproven but false**:
 `base' βSq' γ' κ'` are unconstrained, so nothing ties the next iteration's norm regime to this
 one's. Two things are missing, and neither is a proof-engineering detail:
 
-1. a hypothesis linking `γ'` to `γ`/`ρBound` through the `ψ`-packing, so the two regimes are
+1. a hypothesis linking `γ'` to `γ`/`bDig` through the `ψ`-packing, so the two regimes are
    comparable at all;
 2. an **inverse**-`ψ` norm lemma. `cInfNorm_psi_le` bounds `‖ψ(a)‖∞` from `‖a‖∞` — the wrong
    direction for pulling an opening back — and `psi_bijective` gives no norm bound whatsoever.
@@ -223,7 +223,7 @@ stands for a gap in the *design*, not just in the formalization. -/
 theorem handoff_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -231,10 +231,10 @@ theorem handoff_coordinateWiseSpecialSoundWith
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
-      (relHatEval Φ mLow κ bound ρBound zpow K φF)
+      (relHatEval Φ mLow κ bound bDig zpow K φF)
       (relIn Φ' pp' base' βSq' γ' κ')
       (handoffVerifier (oSpec := oSpec) Φ' mLow φF reinterpretCom)
-      (handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom) := by
+      (handoffExtractor Φ Φ' mLow κ bound bDig zpow K φF reinterpretCom) := by
   sorry
 
 /-- **The trace handoff as a guarded `GCWSSPackage`** (Hachi §4.5, Eqs. (27)–(28)): the
@@ -247,7 +247,7 @@ The handoff *re-reads* the existing commitment through `ψ` rather than introduc
 carries no escape event. -/
 def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -261,11 +261,11 @@ def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
       (pSpecHandoff Φ') where
   verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF reinterpretCom
   struct := CWSSStructure.ofIsEmpty
-  relIn := relHatEval Φ mLow κ bound ρBound zpow K φF
+  relIn := relHatEval Φ mLow κ bound bDig zpow K φF
   relOut := relIn Φ' pp' base' βSq' γ' κ'
   isGuarded := handoffVerifierGuardedForm Φ' mLow φF reinterpretCom
-  extractor := handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom
-  isCWSS := handoff_coordinateWiseSpecialSoundWith Φ Φ' mLow κ bound ρBound init impl zpow K
+  extractor := handoffExtractor Φ Φ' mLow κ bound bDig zpow K φF reinterpretCom
+  isCWSS := handoff_coordinateWiseSpecialSoundWith Φ Φ' mLow κ bound bDig init impl zpow K
     φF pp' reinterpretCom base' βSq' γ' κ'
 
 end Protocol

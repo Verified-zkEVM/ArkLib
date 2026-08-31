@@ -75,7 +75,7 @@ section Terminal
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ : ℕ) (bound ρBound b : ℕ)
+variable (m₀ : ℕ) (bound bDig b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The terminal wire format: a single `P_to_V` message revealing the final `LiftedWitness`
@@ -88,7 +88,7 @@ scheme plumbing. Non-succinct by design — this is the nonrecursive base case. 
 instance : ∀ i, VCVCompatible ((pSpecTerminal Φ μ n).Challenge i) :=
   fun i => isEmptyElim i
 
-variable (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
+variable (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
 
 /-- The terminal honest prover: sends its `LiftedWitness` in the clear, and outputs the very
 verdict the verifier will reach on it (so prover and verifier agree on the output statement). -/
@@ -103,7 +103,7 @@ def terminalProver [BEq K.TCom] :
     | ⟨0, _⟩ => fun st => pure (st.2, st)
   receiveChallenge
     | ⟨0, h⟩ => nomatch h
-  output := fun st => pure (endPieceCheck Φ m₀ bound ρBound b K φF st.1 st.2, ())
+  output := fun st => pure (endPieceCheck Φ m₀ bound bDig b K φF st.1 st.2, ())
 
 /-- The terminal verifier: decides the full `relWEvalClaim` predicate on the revealed witness
 and returns the verdict — `endPieceCheck`, the very check the guarded soundness verifier
@@ -111,7 +111,7 @@ and returns the verdict — `endPieceCheck`, the very check the guarded soundnes
 verifier — `false` on any failed conjunct. -/
 def terminalVerifier [BEq K.TCom] :
     Verifier oSpec (WEvalStatement K.TCom F m₀) Bool (pSpecTerminal Φ μ n) where
-  verify := fun stmt tr => pure (endPieceCheck Φ m₀ bound ρBound b K φF stmt (tr 0))
+  verify := fun stmt tr => pure (endPieceCheck Φ m₀ bound bDig b K φF stmt (tr 0))
 
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- **One decision procedure for the closing link**: the terminal verifier's Boolean verdict is
@@ -120,9 +120,9 @@ omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 (`EndPiece/Reduction.lean`) therefore cannot drift onto different checks. Holds by `rfl`. -/
 @[simp] theorem terminalVerifier_verify_eq_endPieceCheck [BEq K.TCom]
     (stmt : WEvalStatement K.TCom F m₀) (tr : (pSpecTerminal Φ μ n).FullTranscript) :
-    (terminalVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF).verify stmt tr
+    (terminalVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF).verify stmt tr
       = pure ((endPieceVerifierGuardedForm (oSpec := oSpec)
-          Φ m₀ bound ρBound b K φF).check stmt tr) :=
+          Φ m₀ bound bDig b K φF).check stmt tr) :=
   rfl
 
 /-- **The nonrecursive terminal reduction** (reveal-and-check): the prover reveals the final
@@ -131,20 +131,20 @@ recursion. -/
 def nonrecursiveTerminalReduction [BEq K.TCom] :
     Reduction oSpec (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n) Bool Unit
       (pSpecTerminal Φ μ n) where
-  prover := terminalProver Φ m₀ bound ρBound b K φF
-  verifier := terminalVerifier Φ m₀ bound ρBound b K φF
+  prover := terminalProver Φ m₀ bound bDig b K φF
+  verifier := terminalVerifier Φ m₀ bound bDig b K φF
 
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The terminal reduction's honest run, in closed form: one pure message round and a pure
 verifier collapse to a single successful outcome carrying the verdict on both sides. -/
 theorem nonrecursiveTerminalReduction_run [BEq K.TCom]
     (stmt : WEvalStatement K.TCom F m₀) (wit : LiftedWitness Φ μ n) :
-    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).run stmt wit =
+    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).run stmt wit =
       pure ((show (pSpecTerminal Φ μ n).FullTranscript from
           ProtocolSpec.Transcript.concat (m := 0) wit
             (default : (pSpecTerminal Φ μ n).Transcript 0),
-        endPieceCheck Φ m₀ bound ρBound b K φF stmt wit, ()),
-        endPieceCheck Φ m₀ bound ρBound b K φF stmt wit) := rfl
+        endPieceCheck Φ m₀ bound bDig b K φF stmt wit, ()),
+        endPieceCheck Φ m₀ bound bDig b K φF stmt wit) := rfl
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Perfect completeness of the terminal reveal-and-check**, from `relWEvalClaim` to
@@ -152,9 +152,9 @@ omit [NeZero q] [IsCyclotomic Φ] in
 reflection lemma, and prover and verifier output the same verdict by construction. -/
 theorem nonrecursiveTerminalReduction_perfectCompleteness [BEq K.TCom] [LawfulBEq K.TCom]
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound ρBound b
+    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound bDig b
         K φF).perfectCompleteness init impl
-      (relWEvalClaim Φ m₀ bound ρBound b K φF) acceptRejectRel := by
+      (relWEvalClaim Φ m₀ bound bDig b K φF) acceptRejectRel := by
   apply Reduction.perfectCompleteness_of_run_support
   intro stmt wit hIn x hx
   rw [nonrecursiveTerminalReduction_run, OptionT.run_pure, support_pure,
@@ -162,7 +162,7 @@ theorem nonrecursiveTerminalReduction_perfectCompleteness [BEq K.TCom] [LawfulBE
   subst hx
   refine ⟨_, rfl, ?_, rfl⟩
   simp only [acceptRejectRel, Set.mem_singleton_iff, Prod.mk.injEq, and_true]
-  exact (endPieceCheck_eq_true_iff Φ m₀ bound ρBound b K φF stmt wit).mpr hIn
+  exact (endPieceCheck_eq_true_iff Φ m₀ bound bDig b K φF stmt wit).mpr hIn
 
 end Terminal
 
@@ -239,7 +239,7 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
-    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2))) [DecidableEq K.TCom]
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero)) [DecidableEq K.TCom]
     (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
     Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -251,7 +251,7 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
         (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω) Φ K.TCom P.bZero) :=
   (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
       Φ P pp hqm hqz K hd hbZero φF).append
-    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ (q / 2) P.bZero K φF)
+    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ P.bZero P.bZero K φF)
 
 set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
@@ -273,9 +273,9 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
-    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2))) [DecidableEq K.TCom]
-    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
-    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero)) [DecidableEq K.TCom]
+    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
+    (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (nonrecursiveOpeningReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
       Φ P pp hqm hqz K hd hbZero φF).perfectCompleteness init impl
@@ -284,8 +284,8 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
   Reduction.append_perfectCompleteness _ _
     (completeThroughSumcheckReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hqz hmd hτ hd hbZero K φF hμn hZeroγ hZeroρ)
-    (nonrecursiveTerminalReduction_perfectCompleteness Φ (M + 1) P.γ (q / 2) P.bZero K φF
+      Φ P init impl pp hqm hqz hmd hτ hd hbZero K φF hμn hZeroγ)
+    (nonrecursiveTerminalReduction_perfectCompleteness Φ (M + 1) P.γ P.bZero P.bZero K φF
       init impl)
 
 end NonrecursiveOpening
@@ -499,7 +499,7 @@ reveal-and-check, from the commitment API's claim to a Boolean verdict, over the
 protocol specification. -/
 def hachiNonrecursiveOpening (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (δ P) outerRows (2 ^ r) (δ P) dRows)
-    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
     Reduction unifSpec
@@ -531,10 +531,11 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (δ P) outerRows (2 ^ r) (δ P) dRows)
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree)
     (hbZero : 0 < P.bZero)
-    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
-    (φF : ZMod q →+* F) (hμn : ((μ₀ P) + n₀) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
-    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2)
+    (φF : ZMod q →+* F)
+    (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
+    (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} (hκ : 1 ≤ κ)
     (hβSq : (2 ^ m) * Nat.clog P.b q * (𝓜(q, α).φ.natDegree * (P.b / 2) ^ 2) ≤ βSq) :
     (hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁)
@@ -546,7 +547,7 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
     (nonrecursiveOpeningReduction_perfectCompleteness (zDigits := δ P) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
       𝓜(q, α) P init impl pp (Nat.le_pow_clog P.hb q) (Nat.le_pow_clog P.hb q)
-      hclog hclog hd hbZero K φF hμn hZeroγ hZeroρ)
+      hclog hclog hd hbZero K φF hμn hZeroγ)
 
 /-- **Hachi, nonrecursive, as a functional commitment** (`Commitment.Scheme`), with a *complete*
 opening protocol: the multilinear evaluation oracle, honest key generation, the **balanced**
@@ -565,7 +566,7 @@ def hachiNonrecursive (P : HonestRangeParams q)
     [SampleableType
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
     Commitment.Scheme unifSpec
@@ -591,8 +592,10 @@ multilinear polynomial and every evaluation query, the honest run — key genera
 commitment, and the complete composed opening — is accepted with probability `1`.
 
 Hypotheses, by role: the chain's own parameter conditions
-(`completeThroughSumcheckReduction_perfectCompleteness`'s, including the two reverse range
-orientations of the nested zero-check seam, which pin `P.γ = q/2 = P.bZero − 1`); and the two
+(`completeThroughSumcheckReduction_perfectCompleteness`'s, including the reverse range
+orientation `hZeroγ` of the nested zero-check seam, which together with the bundled digit-base
+facts pins `P.γ = P.bZero − 1 < q/2` — `pinned_of_soundness_orientations`, realized at every
+digit base by `ofPinnedDigitBase`); and the two
 genuinely necessary environment conditions `hInit`/`hKeygen` — the ambient state and the
 simulated key-generation sampling must never fail (an adversarial `impl` could fail, and then no
 scheme is correct).
@@ -615,10 +618,11 @@ theorem hachiNonrecursive_perfectCorrectness
       (keygen (q := q) (α := α) (innerRows := innerRows) (outerRows := outerRows)
         (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
-    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
-    (φF : ZMod q →+* F) (hμn : ((μ₀ P) + n₀) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
-    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2) :
+    (φF : ZMod q →+* F)
+    (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
+    (hZeroγ : P.bZero - 1 ≤ P.γ) :
     Commitment.perfectCorrectness init impl
       (hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P K hd hbZero φF) := by
   refine Commitment.perfectCorrectness_of_opening_perfectCompleteness init impl _
@@ -634,7 +638,7 @@ theorem hachiNonrecursive_perfectCorrectness
     intro ck vk _hkg s
     exact hachiNonrecursiveOpening_perfectCompleteness (F := F) (ω := ω) (M := M) (m₁ := m₁)
       (βSq := (2 ^ m) * Nat.clog P.b q * (𝓜(q, α).φ.natDegree * (P.b / 2) ^ 2)) (κ := 1)
-      P (pure s) impl ck hclog hd hbZero K φF hμn hZeroγ hZeroρ le_rfl le_rfl
+      P (pure s) impl ck hclog hd hbZero K φF hμn hZeroγ le_rfl le_rfl
 
 end Scheme
 

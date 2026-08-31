@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.RhoDigits
 import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
 import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 import CompPoly.Univariate.ToPoly.Impl
@@ -61,9 +62,9 @@ import CompPoly.Univariate.ToPoly.Impl
   shortness index; `hachiLiftCom` below is the concrete Ajtai instantiation the nonrecursive
   chain runs at (see `Hachi/Concrete.lean`).
   Weak binding is **norm-conditioned**, hence that index: this chain instantiates
-  `Short := liftShort bound ρBound` at the *global* norm parameters, and the short-collision set
+  `Short := liftShort bound bDig` at the *global* norm parameters, and the short-collision set
   `LiftCom.Collision` — the target of the escape event — reads it. `relLift`
-  therefore carries (i) `liftShort bound ρBound w̃` — feeding
+  therefore carries (i) `liftShort bound bDig w̃` — feeding
   both the collision argument and, (ii) via the public sanity conjunct `bound ≤ s.bound`, the
   statement-level `R^lin` bound of the extraction target (assembled statements have
   `s.bound = γ = bound`, so completeness is unaffected). `hachiLiftCom` supplies the commitment
@@ -72,12 +73,14 @@ import CompPoly.Univariate.ToPoly.Impl
   commitment reinterpretation at the next ring dimension used by the recursion handoff
   (`Recursion/TraceHandoff.lean`).
 
-  ## Paper-model boundary
+  ## Paper-model boundary — closed
 
-  Figure 4's simplified presentation commits to `(z, r)`.  The full protocol decomposes the
-  quotient into short base-`b` digits before commitment.  `RhoShort` records the resulting
-  admissibility requirement abstractly; the concrete digit encoding and its completeness bound
-  remain the responsibility of the downstream Hachi constraint layer.
+  Figure 4's *simplified* presentation commits to `(z, r)`; the full protocol decomposes the
+  quotient into short base-`b` digits before commitment. That decomposition lives **here**:
+  `rhoDigits` (`RingSwitch/RhoDigits.lean`) is the encoding, `liftMessage` commits it, and
+  `RhoDigitsShort` is the admissibility it satisfies — unconditionally, at radius `⌊b/2⌋`
+  (`rhoDigitsShort_of_digitBaseOk`). `RhoShort` is the vocabulary of the *raw* quotient growth
+  bounds in `QuotientNorms.lean`, which the encoding makes irrelevant to the commitment.
 
   ## References
 
@@ -135,18 +138,78 @@ tighter `d − 2`) — the generic lifted witness at the cyclotomic degree. -/
 abbrev LiftedWitness (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) :=
   Lift.LiftedWitness (ZMod q) (Rq Φ) Φ.φ.natDegree μ n
 
-/-- Coefficient-range predicate on the quotient polynomials.
+/-- Coefficient-range predicate on the **raw** quotient polynomials.
 
-Not consumed by any proof in this file: `liftPackage` discharges the generic `short_zOk` obligation
-through `vecLInftyNorm_le_of_liftShort`, which needs only the `z`-side conjunct of `liftShort`.
-`RhoShort` is a forward-compatibility hook modelling Figure 4's `‖r‖∞ ≤ b − 1` check, carried
-through `relOut` for the digit layer (Lemma 10) that re-derives it. -/
+Not part of `liftShort`: the committed vector carries the quotient's base-`b` digits, not the
+quotient itself, so admissibility there is `RhoDigitsShort`. This predicate is the vocabulary of the
+raw coefficient-growth bounds in `RingSwitch/QuotientNorms.lean` — statements about how large an
+*undecomposed* quotient can get. It is what `rhoShort_half` bounds, and that bound's `q/2` is
+exactly the parameter degeneracy the digit encoding avoids. -/
 def RhoShort (ρBound : ℕ) (ρ : Fin n → CPolynomial (ZMod q)) : Prop :=
   ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound
 
-/-- Hachi's norm-conditioned admissibility predicate for a lifted opening. -/
-def liftShort (bound ρBound : ℕ) (w : LiftedWitness Φ μ n) : Prop :=
-  vecLInftyNorm Φ w.z ≤ bound ∧ RhoShort ρBound w.ρ
+/-- Coefficient-range predicate on the quotient **digits** ([NOZ26] §4.3): every coefficient of
+every base-`b` digit of every quotient row is `bound`-bounded.
+
+This is what the committed vector's quotient block actually contains, so this — not `RhoShort` — is
+the half of `liftShort` that the Eq. (20) range check certifies and that bounds the Module-SIS
+escape target. Unlike `RhoShort ρBound`, it is satisfiable at `bound = O(b)`: by
+`rhoDigits_valMinAbs_natAbs_le` the balanced digits of an *arbitrary* quotient are `⌊b/2⌋`-bounded,
+with no shortness hypothesis on the quotient at all. -/
+def RhoDigitsShort (bound bDig : ℕ) (ρ : Fin n → CPolynomial (ZMod q)) : Prop :=
+  ∀ (i : Fin n) (u : Fin (rhoDigitCount q bDig)) (k : ℕ),
+    ((rhoDigits Φ bDig (ρ i) (u : ℕ)).coeff k).valMinAbs.natAbs ≤ bound
+
+/-- **Admissibility of a digit base** at a given norm bound. Three conditions, bundled because
+every link that consumes the digit encoding needs exactly this triple:
+
+* `one_lt` — a base of `0` or `1` is not a decomposition (`rhoDigits_reconstruct`);
+* `le_half` — anti-wraparound, so a balanced digit *is* the centered representative
+  (`balancedZmodDigit_valMinAbs_mem`);
+* `radius_le` — the digit radius `⌊bDig/2⌋` fits inside the declared bound.
+
+Under them the quotient half of `liftShort` costs nothing at all
+(`rhoDigitsShort_of_digitBaseOk`), for an arbitrary quotient. That is the parameter repair stated
+as a hypothesis class: with the raw quotient the corresponding condition was
+`q/2 ≤ bound` (`rhoShort_half`), which is what pinned `γ = q/2 = bZero − 1`. -/
+structure DigitBaseOk (q bound bDig : ℕ) : Prop where
+  /-- The digit base is nontrivial. -/
+  one_lt : 1 < bDig
+  /-- Anti-wraparound: balanced digits are centered representatives. -/
+  le_half : bDig ≤ q / 2
+  /-- The digit radius fits the declared norm bound. -/
+  radius_le : bDig / 2 ≤ bound
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **The digit encoding is short by construction.** For *any* quotient family whatever — no
+shortness hypothesis, no assumption that the commitment key is short — the balanced base-`b`
+digits are `⌊b/2⌋`-bounded, so `RhoDigitsShort` holds at every `bound ≥ ⌊b/2⌋`.
+
+This is the exact counterpart of `rhoShort_half` (`QuotientNorms.lean`), and the contrast is the
+parameter repair in one line: the raw quotient could only be bounded by `q/2`, its digits are
+bounded by `⌊b/2⌋ = O(b)`. -/
+theorem rhoDigitsShort_of_half_le {bound bDig : ℕ} (hb : 1 < bDig) (hbq : bDig ≤ q / 2)
+    (hbound : bDig / 2 ≤ bound) (ρ : Fin n → CPolynomial (ZMod q)) :
+    RhoDigitsShort Φ bound bDig ρ :=
+  fun i u k => le_trans (rhoDigits_valMinAbs_natAbs_le Φ hb hbq (ρ i) u.isLt k) hbound
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `rhoDigitsShort_of_half_le` at a bundled admissible base — the form the links consume. -/
+theorem rhoDigitsShort_of_digitBaseOk {bound bDig : ℕ} (h : DigitBaseOk q bound bDig)
+    (ρ : Fin n → CPolynomial (ZMod q)) :
+    RhoDigitsShort Φ bound bDig ρ :=
+  rhoDigitsShort_of_half_le Φ h.one_lt h.le_half h.radius_le ρ
+
+/-- Hachi's norm-conditioned admissibility predicate for a lifted opening: a **single** bound on
+every entry of the committed vector `z ‖ digits(ρ)` — the paper's weak-opening condition
+`S_b` (Fig. 3 / Lemma 7).
+
+A single bound suffices because the quotient block is committed as digits (see `RhoDigitsShort`).
+Committing it raw would need a second, separate bound, and that bound could only be `q/2`
+(`rhoShort_half`), forcing `γ = bZero − 1 = q/2` and emptying both the range check and the escape
+target of content. -/
+def liftShort (bound bDig : ℕ) (w : LiftedWitness Φ μ n) : Prop :=
+  vecLInftyNorm Φ w.z ≤ bound ∧ RhoDigitsShort Φ bound bDig w.ρ
 
 /-- Hachi's name for the reusable norm-conditioned binding interface. Weak binding is not a field:
 it enters the certificate as the escape event `CommittedScalar.escEvent`, whose hardness target is
@@ -156,8 +219,8 @@ abbrev LiftCom (W : Type) (Short : W → Prop) :=
 
 /-- The injective commitment witnesses that the abstraction is non-vacuous (its collision set is
 empty, so the escape event never fires there). -/
-example (bound ρBound : ℕ) :
-    LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound) :=
+example (bound bDig : ℕ) :
+    LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig) :=
   { TCom := LiftedWitness Φ μ n
     com := id }
 
@@ -172,9 +235,10 @@ arrays all the way down.
 **Why the lift needs its own key.** The obvious candidate for the matrix is `pp.dMatrix`, the
 Eq. (16) short-commitment matrix that `keygen` already samples and that the `R^lin` statement's
 c1 row consumes (`rlin_linear_iff`). Its width is wrong: `PublicParamsD.dMatrix` has
-`blocks * messageDigits = rlinCW` columns — the *carrier slice* `ŵ` alone — whereas a lifted
-witness is `μ + n` ring elements (`μ = rlinCW + (rlinCT + rlinCZ)` for the `R^lin` witness `z`,
-plus one quotient row each). Committing under `pp.dMatrix` would therefore have to drop `ρ` and
+`blocks * messageDigits = rlinCW` columns — the *carrier slice* `ŵ` alone — whereas the committed
+vector of a lifted witness is `μ + n·δ` ring elements (`μ = rlinCW + (rlinCT + rlinCZ)` for the
+`R^lin` witness `z`, plus `δ = clog_b q` digit rows per quotient row). Committing under
+`pp.dMatrix` would therefore have to drop `ρ` and
 two thirds of `z`, leaving a commitment whose `LiftCom.Collision` set is enormous and which the
 deferred Module-SIS argument could never discharge. The c1 commitment and the lift's commitment
 are different objects: c1 constrains the carrier decomposition inside the statement, the lift
@@ -188,44 +252,203 @@ coefficient array, and `Rq.ofFinCoeff` builds the representative directly. -/
 def rhoAsRq (p : CPolynomial (ZMod q)) : Rq Φ :=
   Rq.ofFinCoeff Φ Φ.φ.natDegree p.coeff
 
-/-- The message an Ajtai lift commitment binds: the whole lifted witness as one `Rq`-vector,
-the `R^lin` witness followed by the quotient rows. This is Figure 4's `(z, r)`; the full
-protocol's base-`b` digit decomposition of the quotient block sits between this and the paper's
-Lemma 10, and is the downstream constraint layer's business (see the paper-model boundary note
-in the module docstring). -/
-def liftMessage (w : LiftedWitness Φ μ n) : ArkLib.Lattices.PolyVec (Rq Φ) (μ + n) :=
-  Fin.append w.z (fun i => rhoAsRq Φ (w.ρ i))
+/-- Entry `j` of the quotient block of the committed vector: `j` is the flattened `(row, digit)`
+index, split by `finProdFinEquiv` into row `j / δ` and digit `j % δ` — the same flattening the
+gadget matrix uses (`gadgetEntry_finProdFinEquiv`), so the block is laid out digit-major within
+each row, exactly as `wTable`'s widened quotient rows read it. -/
+def rhoDigitAsRq (b : ℕ) (ρ : Fin n → CPolynomial (ZMod q)) (j : Fin (n * rhoDigitCount q b)) :
+    Rq Φ :=
+  rhoAsRq Φ (rhoDigits Φ b (ρ (finProdFinEquiv.symm j).1) ((finProdFinEquiv.symm j).2 : ℕ))
+
+/-- The message an Ajtai lift commitment binds: the `R^lin` witness `z`, followed by the `n·δ`
+**digits** of the quotient rows. This is [NOZ26] §4.3's `(z, r₁, …, r_δ)`, the encoding the paper
+commits to and then drops the digit subscript from ("there is a hidden gadget decomposition
+of `r`").
+
+Committing the digits rather than Figure 4's raw `(z, r)` is the whole point of the wire format:
+every entry of the quotient block is `⌊b/2⌋`-bounded by construction
+(`rhoDigits_valMinAbs_natAbs_le`), so `LiftCom.Collision` is a *short* kernel problem for `D`. With
+the raw quotient the block was only `q/2`-bounded, and the Module-SIS target was trivially
+solvable. -/
+def liftMessage (b : ℕ) (w : LiftedWitness Φ μ n) :
+    ArkLib.Lattices.PolyVec (Rq Φ) (μ + n * rhoDigitCount q b) :=
+  Fin.append w.z (rhoDigitAsRq Φ b w.ρ)
 
 /-- **The concrete lift commitment**: the Ajtai product `D · (z ‖ ρ)` at a key of the matching
 width. Computable, so the whole nonrecursive chain can be run once its other links are; and a
 genuine Module-SIS shape, so the deferred escape-event argument has a real target — a member of
 `LiftCom.Collision` here is a short nonzero kernel vector of `D`. -/
-def hachiLiftCom {dRows : ℕ} (bound ρBound : ℕ)
-    (D : Simple.PublicParams Φ dRows (μ + n)) :
-    LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound) where
+def hachiLiftCom {dRows : ℕ} (bound bDig : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig)) :
+    LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig) where
   TCom := Simple.Commitment Φ dRows
-  com := fun w => Simple.commit Φ D (liftMessage Φ w)
+  com := fun w => Simple.commit Φ D (liftMessage Φ bDig w)
 
 omit [NeZero q] in
 /-- The concrete commitment's space is the same `PolyVec (Rq Φ) dRows` the chain already carries
 as `CarrierCom`, so `DecidableEq` is derivable and the terminal check's instance argument is
 discharged without `Classical.dec`. Holds by `rfl`. -/
-@[simp] theorem hachiLiftCom_TCom {dRows : ℕ} (bound ρBound : ℕ)
-    (D : Simple.PublicParams Φ dRows (μ + n)) :
-    (hachiLiftCom Φ (n := n) (μ := μ) bound ρBound D).TCom = CarrierCom Φ dRows := rfl
+@[simp] theorem hachiLiftCom_TCom {dRows : ℕ} (bound bDig : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig)) :
+    (hachiLiftCom Φ (n := n) (μ := μ) bound bDig D).TCom = CarrierCom Φ dRows := rfl
 
 omit [NeZero q] in
 /-- The concrete commitment map, unfolded. Holds by `rfl`. -/
-@[simp] theorem hachiLiftCom_com {dRows : ℕ} (bound ρBound : ℕ)
-    (D : Simple.PublicParams Φ dRows (μ + n)) (w : LiftedWitness Φ μ n) :
-    (hachiLiftCom Φ (n := n) (μ := μ) bound ρBound D).com w
-      = Simple.commit Φ D (liftMessage Φ w) := rfl
+@[simp] theorem hachiLiftCom_com {dRows : ℕ} (bound bDig : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig)) (w : LiftedWitness Φ μ n) :
+    (hachiLiftCom Φ (n := n) (μ := μ) bound bDig D).com w
+      = Simple.commit Φ D (liftMessage Φ bDig w) := rfl
+
+/-! ### What the digit encoding buys the escape target
+
+The point of committing digits rather than the raw quotient, stated rather than left implicit:
+*every* coordinate of the committed vector of a short opening is bounded by the single norm
+parameter `bound`, so a short collision satisfies `ModuleSIS.relation` for the key `D` at radius
+`2·bound` — nonzero, short, and in the kernel
+(`moduleSIS_relation_of_mem_Collision`, via `liftMessage_injective`).
+
+Under Figure 4's simplified wire format this fails where it matters. A quotient block of raw rows
+has only the unconditional bound `q/2` (`rhoShort_half`, and sharp — the `R^lin` matrix carries the
+Ajtai key blocks), so the collision set would contain pairs differing by a vector of `ℓ∞` norm up to
+`q`: no restriction at all over `ZMod q`, leaving `LiftCom.Collision` trivially inhabited by
+short-in-name-only openings and undischargeable by any Module-SIS assumption. -/
+
+omit [NeZero q] in
+/-- A quotient-shaped `CPolynomial`, read into `Rq Φ`, inherits any coefficient bound it has. -/
+theorem lInftyNorm_rhoAsRq_le {bound : ℕ} (p : CPolynomial (ZMod q))
+    (h : ∀ k, (p.coeff k).valMinAbs.natAbs ≤ bound) :
+    Rq.lInftyNorm Φ (rhoAsRq Φ p) ≤ bound := by
+  refine Finset.sup_le fun k hk => ?_
+  rw [show (rhoAsRq Φ p).1.coeff k = _ from
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos (Finset.mem_range.mp hk)]
+  exact h k
+
+omit [NeZero q] in
+/-- **Every coordinate of a short opening's committed vector is `bound`-bounded** — the `z` block by
+the `ℓ∞` conjunct of `liftShort`, the `n·δ` quotient-digit block by its `RhoDigitsShort` conjunct.
+
+This is the whole content of the gadget decomposition at the commitment layer: it is what makes the
+Ajtai product `D · (z ‖ digits)` a *short* product, hence its collisions Module-SIS solutions. -/
+theorem vecLInftyNorm_liftMessage_le (bound bDig : ℕ) (w : LiftedWitness Φ μ n)
+    (h : liftShort Φ bound bDig w) :
+    vecLInftyNorm Φ (liftMessage Φ bDig w) ≤ bound := by
+  refine Finset.sup_le fun j _ => ?_
+  refine Fin.addCases (fun j => ?_) (fun j => ?_) j
+  · rw [show liftMessage Φ bDig w (Fin.castAdd (n * rhoDigitCount q bDig) j) = w.z j from
+      Fin.append_left _ _ j]
+    exact le_trans (Finset.le_sup (f := fun i => Rq.lInftyNorm Φ (w.z i)) (Finset.mem_univ j))
+      h.1
+  · rw [show liftMessage Φ bDig w (Fin.natAdd μ j) = rhoDigitAsRq Φ bDig w.ρ j from
+      Fin.append_right _ _ j]
+    exact lInftyNorm_rhoAsRq_le Φ _ (fun k => h.2 _ _ k)
+
+omit [NeZero q] in
+/-- **The kernel and norm halves of the Module-SIS solution hidden in a short collision.** The two
+committed vectors have the same Ajtai image, so their difference lies in the kernel of `D`, and each
+is `bound`-bounded coordinatewise (`vecLInftyNorm_liftMessage_le`), so the difference is
+`2·bound`-bounded (`sub_lInftyNorm_le`).
+
+This is two of the three conjuncts of `ModuleSIS.relation`; the third — that the difference is
+**nonzero** — needs injectivity of `liftMessage` and is supplied by
+`moduleSIS_relation_of_mem_Collision`, which is the statement to cite. -/
+theorem mulVec_sub_eq_zero_of_mem_Collision {dRows : ℕ} (bound bDig : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig))
+    {p : LiftedWitness Φ μ n × LiftedWitness Φ μ n}
+    (hp : p ∈ (hachiLiftCom Φ (n := n) (μ := μ) bound bDig D).Collision) :
+    D *ᵥ (liftMessage Φ bDig p.1 - liftMessage Φ bDig p.2) = 0 ∧
+      vecLInftyNorm Φ (liftMessage Φ bDig p.1 - liftMessage Φ bDig p.2)
+        ≤ subLInftyNormBound bound := by
+  obtain ⟨-, hcom, hs1, hs2⟩ := hp
+  refine ⟨?_, sub_lInftyNorm_le Φ _ _ (vecLInftyNorm_liftMessage_le Φ bound bDig _ hs1)
+    (vecLInftyNorm_liftMessage_le Φ bound bDig _ hs2)⟩
+  rw [matVecMul_sub, sub_eq_zero]
+  exact hcom
+
+omit [NeZero q] in
+/-- **The committed vector determines the opening**, at any base that is genuinely a base.
+
+The `z` block is read back verbatim; the quotient block is read back by *reconstruction*
+(`balancedDigit_reconstruct`): the `δ` digits of each coefficient recombine to it under the weights
+`b^u`, so agreeing digit blocks force agreeing quotient coefficients below `deg φ`, and above
+`deg φ` both quotients vanish by `LiftedWitness.hρ`. `1 < bDig` is exactly what makes the digit
+expansion a decomposition rather than a truncation; nothing else is needed.
+
+This is the third conjunct of Module-SIS: without it a collision would only give a *short kernel
+vector*, which the zero vector also is. -/
+theorem liftMessage_injective {bDig : ℕ} (hb : 1 < bDig) (hd : 0 < Φ.φ.natDegree) :
+    Function.Injective (liftMessage Φ (μ := μ) (n := n) bDig) := by
+  rintro ⟨z₁, ρ₁, hd₁⟩ ⟨z₂, ρ₂, hd₂⟩ h
+  -- Past `deg φ` a quotient row vanishes, so only the coefficients the digits carry matter.
+  have hzero : ∀ ρ : Fin n → CPolynomial (ZMod q),
+      (∀ i, (ρ i).toPoly.natDegree ≤ Φ.φ.natDegree - 1) →
+      ∀ i k, ¬ k < Φ.φ.natDegree → (ρ i).coeff k = 0 := by
+    intro ρ hdeg i k hk
+    rw [CPolynomial.coeff_toPoly]
+    exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt (hdeg i) (by omega))
+  have hz : z₁ = z₂ := by
+    funext j
+    have hj := congrFun h (Fin.castAdd (n * rhoDigitCount q bDig) j)
+    simpa only [liftMessage, Fin.append_left] using hj
+  have hρ : ρ₁ = ρ₂ := by
+    funext i
+    rw [CPolynomial.eq_iff_coeff]
+    intro k
+    by_cases hk : k < Φ.φ.natDegree
+    · -- Below `deg φ`: every digit of the two coefficients agrees, so they reconstruct equal.
+      have hdig : ∀ u : Fin (rhoDigitCount q bDig),
+          balancedDigit bDig (rhoDigitCount q bDig) ((ρ₁ i).coeff k) (u : ℕ)
+            = balancedDigit bDig (rhoDigitCount q bDig) ((ρ₂ i).coeff k) (u : ℕ) := by
+        intro u
+        have hj := congrFun h (Fin.natAdd μ (finProdFinEquiv (i, u)))
+        simp only [liftMessage, Fin.append_right, rhoDigitAsRq, Equiv.symm_apply_apply] at hj
+        have hc := congrArg (fun a : Rq Φ => a.1.coeff k) hj
+        simpa only [rhoAsRq, Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k,
+          if_pos hk, rhoDigits_coeff] using hc
+      have hrec := balancedDigit_reconstruct (q := q) hb (Nat.le_pow_clog hb q)
+      rw [← hrec ((ρ₁ i).coeff k), ← hrec ((ρ₂ i).coeff k)]
+      exact Finset.sum_congr rfl fun u _ => by rw [hdig u]
+    · rw [hzero ρ₁ hd₁ i k hk, hzero ρ₂ hd₂ i k hk]
+  subst hz; subst hρ; rfl
+
+omit [NeZero q] in
+/-- **A short collision of `hachiLiftCom` *is* a Module-SIS solution for the key `D`**, at radius
+`2·bound`: the difference of the two committed vectors is nonzero (`liftMessage_injective`, using
+`hp`'s `p.1 ≠ p.2`), `2·bound`-short, and in the kernel of `D`.
+
+This is the statement the whole gadget decomposition exists to make true, and the one the deferred
+escape-event argument ([NOZ26] §4.5) consumes.
+
+⚠ **Scope.** The reduction is complete *for the key `D` it is stated at*, and `D` is a parameter of
+`hachiLiftCom` — `keygen` does not sample it alongside the inner-outer commitment's own key (see
+"Why the lift needs its own key" above). So this closes the collision-to-Module-SIS step locally;
+tying `D` into key generation, and thence discharging the escape event through
+`outputToModuleSIS_valid_of_verified` (`InnerOuter/Security.lean`), is still open.
+
+At the honest parameters `bound = γ` with
+`γ = ⌊b/2⌋` available (`HonestRangeParams.ofDigitBase`, or `γ = b − 1` at
+`ofPinnedDigitBase` if the two-sided regime is wanted), so the radius is `O(b)`. Committing the
+raw quotient instead leaves the norm conjunct vacuous — see the section note above — and the
+solution worthless even though the other two conjuncts still hold. -/
+theorem moduleSIS_relation_of_mem_Collision {dRows : ℕ} (bound bDig : ℕ)
+    (hdig : DigitBaseOk q bound bDig) (hd : 0 < Φ.φ.natDegree)
+    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig))
+    {p : LiftedWitness Φ μ n × LiftedWitness Φ μ n}
+    (hp : p ∈ (hachiLiftCom Φ (n := n) (μ := μ) bound bDig D).Collision) :
+    ModuleSIS.relation Φ (fun v => decide (vecLInftyNorm Φ v ≤ subLInftyNormBound bound)) D
+      (liftMessage Φ bDig p.1 - liftMessage Φ bDig p.2) = true := by
+  have hker := mulVec_sub_eq_zero_of_mem_Collision Φ bound bDig D hp
+  obtain ⟨hne, -, -, -⟩ := hp
+  refine (Bool.and_eq_true _ _).mpr ⟨(Bool.and_eq_true _ _).mpr ⟨?_, ?_⟩, ?_⟩
+  · rw [decide_eq_true_iff, sub_ne_zero]
+    exact fun hEq => hne (liftMessage_injective Φ hdig.one_lt hd hEq)
+  · rw [decide_eq_true_iff]; exact hker.2
+  · rw [decide_eq_true_iff]; exact hker.1
 
 /-- Output statement: the input `R^lin` claim, the opening commitment, and evaluation point. -/
 abbrev LiftStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) : Type :=
   CommittedScalar.Statement (RlinStatement Φ n μ) TCom F
 
-variable {F : Type} [Field F] (bound ρBound : ℕ)
+variable {F : Type} [Field F] (bound bDig : ℕ)
 
 /-- Challenge-local Hachi predicate: every quotient identity holds at `α`, and the global
 norm parameter is compatible with the public `R^lin` bound — the generic `checkAt` at the
@@ -275,7 +498,7 @@ theorem cEvalAt_eq_evalAt_toPoly (φF : ZMod q →+* F) (a : F)
   exact CPolynomial.eval₂_toPoly φF a p
 
 /-- The Hachi output relation, instantiated from the generic anchored committed-scalar relation. -/
-def relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   CommittedScalar.rel K (liftCheckAt Φ bound φF)
@@ -283,7 +506,7 @@ def relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
 section Protocol
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+variable (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
   (φF : ZMod q →+* F)
 
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -293,7 +516,7 @@ dominates (`bound ≤ s.bound`) has `‖z‖∞ ≤ s.bound`. This is exactly ge
 `short_zOk` hypothesis; the interpolation/descent recovery and the escape/collision extractor
 are supplied by the generic layer. -/
 theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWitness Φ μ n)
-    (hshort : liftShort Φ bound ρBound w) (hside : bound ≤ s.bound) :
+    (hshort : liftShort Φ bound bDig w) (hside : bound ≤ s.bound) :
     vecLInftyNorm Φ w.z ≤ s.bound :=
   le_trans hshort.1 hside
 
@@ -323,7 +546,7 @@ def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp
   Lift.package (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
     (fun s z => vecLInftyNorm Φ z ≤ s.bound) (fun s => bound ≤ s.bound) K
     φF.injective (cyclotomicPresentation_modulus_natDegree Φ)
-    (fun s w hshort hside => vecLInftyNorm_le_of_liftShort Φ bound ρBound s w hshort hside)
+    (fun s w hshort hside => vecLInftyNorm_le_of_liftShort Φ bound bDig s w hshort hside)
     init impl
 
 end Protocol

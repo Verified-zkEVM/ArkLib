@@ -5,12 +5,6 @@ Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.Concrete
 
--- v4.33 respects transparency when synthesizing instances: `DecidableEq K.TCom` / `BEq K.TCom`
--- no longer resolve, because the concrete `K.TCom` projection only reduces past
--- `nonrecursiveLiftCom` at default transparency. File-scoped, as in
--- `Data/CodingTheory/ProximityGap/Errors.lean`.
-set_option backward.isDefEq.respectTransparency false
-
 /-!
 # Compiled nonrecursive-Hachi runtime checks
 
@@ -42,22 +36,33 @@ check together finish in milliseconds, while the composed run — the same chain
 sumcheck — takes minutes. The reason is the shape of the summand: `sumcheckPolyZero` is a
 product of `bZero` copies of an `m₀`-variate multilinear extension, so it carries up to
 `(bZero + 1)^m₀` monomials, and `computableRoundPoly` evaluates all of them at `2^(m₀ - i)`
-points in round `i`. Both exponents are at their floor here (`m₀ = 4`, `bZero = 4`: `m₀` is
-bounded below by `(μ₀ + n₀)·deg φ ≤ 2^m₀`, and `bZero = ⌊q/2⌋ + 1` is pinned by the
-correctness theorem), and it still takes minutes — so this is the first thing to profile if
-the honest prover is ever wanted at a realistic size. Raising `α` from `0` to `1` alone (which
-raises `m₀` to `5`) pushes the run past ten minutes.
+points in round `i`. Here `m₀ = 5` is the floor the digit-committed table forces — the table
+is `(μ₀ + n₀·δ)·d = 18` rows once the quotient block is committed as digits, and a `16`-point
+cube cannot hold it (`cubeCoversTable` certifies `18 ≤ 32` at compile time) — and `bZero = 3`,
+and the run still takes minutes — so this is the first thing to profile if the honest prover is
+ever wanted at a realistic size. Raising `α` from `0` to `1` alone doubles `d`, pushing the
+table width to `36 > 2^5` and hence `m₀` to `6` — several times the composed run's cost.
 
 **The parameters.** `q = 7`, `α = 0` (so `Rq = Z₇[X]/(X+1) ≅ Z₇`, ring dimension `d = 1`),
-digit base `b = 3` (hence `δ = ⌈log₃ 7⌉ = 2`), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 8`,
-`n₀ = 5`. The range parameters are the pinned ones the correctness theorem forces
-(`γ = ⌊q/2⌋ = 3`, `bZero = γ + 1 = 4`), and `M + 1 = 4` is the smallest sumcheck width
-satisfying `(μ₀ + n₀)·deg φ ≤ 2^(M+1)` (`13 ≤ 16`). Not `q = 5`, the smallest prime admitting
-honest range parameters at all: that `q` forces `b = 2`, whose `δ = ⌈log₂ 5⌉ = 3` inflates
-`μ₀ + n₀` to `20` and hence `m₀` to `5` — one sumcheck variable more, several times the composed
-run's cost. Deliberately tiny beyond that: this is a code-generation check, and the security
-theorems are parametric, so nothing is learned by running it larger.
+digit base `b = 3` (hence `δ = ⌈log₃ 7⌉ = 2`, for the message digits and — since `bZero = b` —
+also for the quotient digits), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 8`, `n₀ = 5`. The
+range parameters sit at the healthy point the gadget decomposition buys — `bZero = b = 3` and
+`γ = bZero − 1 = 2 < ⌊q/2⌋ = 3`, so Eq. (20)'s ball check is a real constraint (see `P` below) —
+and the committed table is `μ₀ + n₀·δ = 18` rows wide, making `M + 1 = 5` the smallest sumcheck
+width satisfying `(μ₀ + n₀·δ)·deg φ ≤ 2^(M+1)` (`18 ≤ 32`, `cubeCoversTable`). Not `q = 5`, the
+smallest prime admitting honest range parameters at all: that `q` forces `b = bZero = 2`, whose
+`δ = ⌈log₂ 5⌉ = 3` inflates the table to `15 + 5·3 = 30` — it fits the same `32`-point cube but
+nearly saturates it (one more row would force `m₀ = 6`), and the toy data below (keys,
+witnesses, the separating pair of `liftComDistinguishes`) is built over `Z₇`. Deliberately tiny
+beyond that: this is a code-generation check, and the security theorems are parametric, so
+nothing is learned by running it larger.
 -/
+
+-- v4.33 respects transparency when synthesizing instances: `DecidableEq K.TCom` / `BEq K.TCom`
+-- no longer resolve, because the concrete `K.TCom` projection only reduces past
+-- `nonrecursiveLiftCom` at default transparency. File-scoped, as in
+-- `Data/CodingTheory/ProximityGap/Errors.lean`.
+set_option backward.isDefEq.respectTransparency false
 
 namespace HachiRuntime
 
@@ -69,7 +74,8 @@ open ArkLib.Lattices.CyclotomicModulus
 
 /-- The toy modulus `q = 7`: not the smallest prime for which the honest range parameters are
 satisfiable (they need `1 < b ≤ ⌊q/2⌋`, so `q = 5` is), but the smallest admitting `b = 3`,
-which minimizes the sumcheck width — see the parameter note in the module docstring. -/
+which keeps the digit count at `δ = 2` and the committed table well inside the sumcheck
+cube — see the parameter note in the module docstring. -/
 abbrev Q : ℕ := 7
 instance : Fact (Nat.Prime Q) := ⟨by decide⟩
 /-- `α = 0`, so the ring is `Z₇[X]/(X + 1) ≅ Z₇` and the ring dimension is `d = 1`. -/
@@ -88,7 +94,7 @@ abbrev OR : ℕ := 1  -- outerRows
 abbrev DR : ℕ := 1  -- dRows
 abbrev Mm : ℕ := 0  -- m
 abbrev Rr : ℕ := 0  -- r
-abbrev MM : ℕ := 3  -- sumcheck width is M + 1 = 4
+abbrev MM : ℕ := 4  -- sumcheck width is M + 1 = 5; pinned by `cubeCoversTable` below
 abbrev M1 : ℕ := 1  -- the nested zero-check's second block
 abbrev W : ℕ := 3   -- ℓ₁ bound on short challenges
 
@@ -97,15 +103,19 @@ abbrev Mu : ℕ := rlinCols IR Dg Dg Dg Mm Rr
 /-- `n₀ = 5`: the `R^lin` row count at these parameters. -/
 abbrev Nn : ℕ := rlinRows IR OR DR
 
-/-- The pinned honest range parameters: `γ = ⌊q/2⌋` and `bZero = γ + 1`, which is what the two
-reverse orientations of `hachiNonrecursive_perfectCorrectness` force. -/
+/-- The pinned honest range parameters, at the **healthy** point the gadget decomposition buys:
+`bZero = b = 3` and `γ = bZero − 1 = 2`, so `γ < ⌊q/2⌋ = 3` and Eq. (20)'s ball check is a real
+constraint. Before the refactor the quotient's raw `q/2` bound forced `bZero = ⌊q/2⌋ + 1 = 4` and
+`γ = 3 = ⌊q/2⌋`, at which that check was vacuous. -/
 def P : HonestRangeParams Q where
-  b := B; γ := 3; bZero := 4
+  b := B; γ := 2; bZero := 3
   hb := by decide
   hbq := by decide
   hbγ := by decide
   hγZero := by decide
-  hρZero := by decide
+  hbZero := by decide
+  hbZeroq := by decide
+  hbZeroγ := by decide
 
 /-- A ring element from two coefficients. -/
 def rr (a b : ℕ) : Rng := Rq.mk _ (CPolynomial.ofArray #[(a : ZMod Q), (b : ZMod Q)])
@@ -117,10 +127,29 @@ def pp : Hachi.PublicParamsD 𝓜(Q, A) IR (2 ^ Mm) Dg OR (2 ^ Rr) Dg DR where
   outerMatrix := fun _ j => rr (j.val + 2) 1
   dMatrix := fun _ j => rr 1 (j.val + 1)
 
-/-- The lift commitment's own key: `dRows × (μ₀ + n₀)`, the width a whole lifted witness needs
-(see the note above `hachiLiftCom`). -/
-def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn) :=
+/-- The lift commitment's own key: `dRows × (μ₀ + n₀·δ)`, the width a whole lifted witness needs
+once the quotient block is committed as its base-`bZero` digits (see the note above
+`hachiLiftCom`). `δ = clog_{bZero} Q`. -/
+def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn * rhoDigitCount Q P.bZero) :=
   fun _ j => rr (j.val + 1) (j.val * 2 + 1)
+
+/-- **The sumcheck cube covers the committed table** — the coverage hypothesis (`hμn`/`hcov`) of
+the chain's theorems, certified at the toy parameters so that this executable stays a model of
+them. This is what pins `MM`: the digit-committed table is `μ₀ + n₀·δ = 8 + 5·2 = 18` rows, so
+the cube needs `18·d ≤ 2^(M+1)` — a `16`-point cube holds an undigited table's `13` rows but
+not these `18`. Without it the checks can silently run on a truncated table: `wTable`
+returns `0` off-cube, so every off-cube row would escape the range check and the `M̃_α`
+contraction. -/
+theorem cubeCoversTable :
+    (Mu + Nn * rhoDigitCount Q P.bZero) * 𝓜(Q, A).φ.natDegree ≤ 2 ^ (MM + 1) := by
+  have hb : (1 : ℕ) < 3 := by norm_num
+  have hδ : Nat.clog 3 7 = 2 := by
+    have h1 : Nat.clog 3 7 ≤ 2 := (Nat.clog_le_iff_le_pow hb).mpr (by norm_num)
+    have h2 : ¬ Nat.clog 3 7 ≤ 1 := fun h =>
+      absurd ((Nat.clog_le_iff_le_pow hb).mp h) (by norm_num)
+    omega
+  have hd : 𝓜(Q, A).φ.natDegree = 1 := by simp
+  simp [Mu, Nn, rlinCols, rlinRows, rhoDigitCount, Dg, P, IR, OR, DR, hδ, hd, MM]
 
 /-- The committed multilinear polynomial. -/
 def toyPoly : CMlPolynomial Rng (Rr + Mm) :=
@@ -130,7 +159,7 @@ def toyPoly : CMlPolynomial Rng (Rr + Mm) :=
 def cd := commitBalanced (α := A) B (by decide) pp toyPoly
 
 /-- The concrete lift commitment of the chain. -/
-abbrev K : LiftCom (LiftedWitness 𝓜(Q, A) Mu Nn) (liftShort 𝓜(Q, A) P.γ (Q / 2)) :=
+abbrev K : LiftCom (LiftedWitness 𝓜(Q, A) Mu Nn) (liftShort 𝓜(Q, A) P.γ P.bZero) :=
   nonrecursiveLiftCom (α := A) (innerRows := IR) (outerRows := OR) (dRows := DR)
     (m := Mm) (r := Rr) P dMat
 
@@ -335,24 +364,48 @@ def quotientIdentityHolds : Unit → Bool := fun _ =>
 def quotientNonzero : Unit → Bool := fun _ =>
   List.any (List.finRange 1) fun i => !(cQuotient 𝓜(Q, A2) s2 z2 i == 0)
 
-/-- The concrete lift commitment runs, and is deterministic on equal witnesses. -/
-def liftComRuns : Unit → Bool := fun _ => K.com wToy == K.com wToy
+/-- A second `R^lin` opening, differing from `zToy` in exactly coordinate `1`, giving a second
+honest lifted witness for the commitment checks below. The differing coordinate is chosen with
+some care: the commitments differ exactly when the key hits the witness difference, and at these
+parameters `dMat`'s column `0` is `rr 1 1 = 0`, while a *constant* difference across the `z`
+block is also annihilated (those key entries are `−j mod 7` for `j < 8`, summing to `−28 ≡ 0`).
+Column `1`'s key entry is nonzero, so this pair genuinely separates. -/
+def zToy' : PolyVec Rng Mu := fun j =>
+  if j.val = 1 then rr (j.val + 2) (j.val + 2) else rr (j.val + 1) (j.val + 2)
+
+def wToy' : LiftedWitness 𝓜(Q, A) Mu Nn := honestLiftWitnessC 𝓜(Q, A) hdToy sToy zToy'
+
+/-- **The concrete lift commitment distinguishes witnesses.** `K.com` maps the two honest
+witnesses to different commitments. Strictly stronger than merely running `K.com`: a `com` that
+crashed, diverged, or collapsed to a constant all fail here. (Not implied by any theorem — Ajtai
+commitments do have collisions, this check just certifies the code doesn't produce one at this
+particular pair.) -/
+def liftComDistinguishes : Unit → Bool := fun _ => K.com wToy != K.com wToy'
 
 /-- **The terminal check decides.** It accepts the honest `(statement, witness)` pair it is
 handed — the commitment matches, both halves of `liftShort` hold, and the claimed evaluation is
-the one `wTableMleEval` computes — and rejects when the claimed value is perturbed. Both
-directions are checked, so an unconditionally-`true` check would fail here. -/
+the one `wTableMleEval` computes — and rejects when the claimed value or the commitment is
+perturbed. Both directions are checked, so an unconditionally-`true` check would fail here. -/
 def terminalHonest : WEvalStatement K.TCom Fld (MM + 1) :=
   { t := K.com wToy
     point := fun _ => 0
     value := wTableMleEval 𝓜(Q, A) (MM + 1) (RingHom.id (ZMod Q)) P.bZero wToy (fun _ => 0) }
 
 def terminalAcceptsHonest : Unit → Bool := fun _ =>
-  endPieceCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q)) terminalHonest wToy
+  endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q)) terminalHonest wToy
 
 def terminalRejectsPerturbed : Unit → Bool := fun _ =>
-  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q))
+  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q))
     { terminalHonest with value := terminalHonest.value + 1 } wToy
+
+/-- The terminal check also rejects when the statement's commitment is not the witness's own —
+the reject direction of `endPieceCheck`'s commitment clause. `terminalAcceptsHonest` cannot
+exercise it, because `terminalHonest.t` is *defined as* `K.com wToy`, so its commitment
+comparison holds by construction. The wrong commitment is the other witness's, which
+`liftComDistinguishes` has certified is genuinely different. -/
+def terminalRejectsWrongCommitment : Unit → Bool := fun _ =>
+  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q))
+    { terminalHonest with t := K.com wToy' } wToy
 
 /-- **The composed honest run is accepted.** -/
 def openingAccepts : Unit → Bool := fun _ => honestVerdict () == some true
@@ -379,9 +432,10 @@ def runFast : IO Unit := do
   check "balanced committer runs and reconstructs" (commitRuns ())
   check "computable honest quotient satisfies the row identity" (quotientIdentityHolds ())
   check "computable honest quotient is nonzero (non-vacuity)" (quotientNonzero ())
-  check "concrete lift commitment runs" (liftComRuns ())
+  check "concrete lift commitment distinguishes witnesses" (liftComDistinguishes ())
   check "terminal check accepts the honest claim" (terminalAcceptsHonest ())
   check "terminal check rejects a perturbed claim" (terminalRejectsPerturbed ())
+  check "terminal check rejects a wrong commitment" (terminalRejectsWrongCommitment ())
   IO.println "Hachi nonrecursive runtime checks passed"
 
 /-- The composed run, behind `--full`. Separated from `runFast` because the sumcheck's honest
@@ -395,9 +449,10 @@ def runTiming : IO Unit := do
   timedCheck "commitBalanced" commitRuns
   timedCheck "computable quotient identity" quotientIdentityHolds
   timedCheck "computable quotient non-vacuity" quotientNonzero
-  timedCheck "concrete lift commitment" liftComRuns
+  timedCheck "concrete lift commitment (distinguishes)" liftComDistinguishes
   timedCheck "terminal check (accept)" terminalAcceptsHonest
-  timedCheck "terminal check (reject)" terminalRejectsPerturbed
+  timedCheck "terminal check (reject value)" terminalRejectsPerturbed
+  timedCheck "terminal check (reject commitment)" terminalRejectsWrongCommitment
   timedCheck "composed opening (prefix + sumcheck + terminal)" openingAccepts
 
 end HachiRuntime

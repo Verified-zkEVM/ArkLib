@@ -11,9 +11,13 @@ import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 
 The honest prover of the HMZ25 lift (Hachi Figure 4) commits to the lifted witness `(z, ρ)`, where
 `ρᵢ = (rowSumᵢ − rep yᵢ) /ₘ φ` (`Presentation.quotient`). The commitment's shortness regime
-`liftShort` asks for `RhoShort ρBound ρ`, i.e. a centered coefficient bound on those quotients. This
-file proves it, without developing any general theory of coefficient growth under polynomial
-division.
+`RhoShort ρBound ρ` is a centered coefficient bound on those quotients, and this file proves it
+without developing any general theory of coefficient growth under polynomial division.
+
+`liftShort` does not ask for it: the committed quotient block is the base-`b` digit decomposition
+(`rhoDigits`), whose coefficients are `⌊b/2⌋`-bounded outright. What the results below establish is
+how large an *undecomposed* quotient can get — and `rhoShort_half`'s sharp `q/2` is exactly why the
+decomposition is needed.
 
 **The mechanism.** For the power-of-two cyclotomic modulus `φ = X ^ d + 1`, dividing a polynomial of
 degree `< 2d` by `φ` *selects* coefficients rather than combining them:
@@ -189,9 +193,12 @@ construction rather than laziness: `rlinStmt` assembles its matrix from the Ajta
 `B`, `A` and the gadget powers `bᵉ`, all of which are (or may be) uniform mod `q`, so the honest
 `βM` of `rhoShort_honestLiftWitness` is `q/2` and the growth bound `μ · 2d · (q/2) · βz` exceeds
 `q/2` — i.e. the honest quotient of a Hachi `R^lin` instance is *not* short, and no sharper claim is
-available without assuming a short commitment key. Downstream consequence, documented at the
-batching bridge: a zero-check range base `b` with `ρBound ≤ b − 1` must then satisfy `b − 1 ≥ q/2`,
-so the single-`b` range table of `ZeroCheck/Constraints` cannot check the quotient half tightly. -/
+available without assuming a short commitment key.
+
+**Why the digit encoding is necessary rather than decorative.** A range table checking these raw
+rows against a single base `b` would need `b − 1 ≥ q/2`, degenerating the parameters.
+`ZeroCheck/Constraints` therefore range-checks the quotient's base-`b` **digits**, which are
+`⌊b/2⌋`-bounded outright (`rhoDigits_valMinAbs_natAbs_le`). -/
 theorem rhoShort_half {n : ℕ} (ρ : Fin n → CPolynomial (ZMod q)) : RhoShort (q / 2) ρ :=
   fun _ _ => ZMod.natAbs_valMinAbs_le _
 

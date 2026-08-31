@@ -51,19 +51,21 @@ local notation "μ₀" P =>
 local notation "n₀" => rlinRows innerRows outerRows dRows
 
 /-- The concrete lift commitment of the nonrecursive chain: `hachiLiftCom` at the chain's own
-shortness parameters (`bound = P.γ`, `ρBound = q/2` — the pair
-`liftReduction_perfectCompleteness_image` forces). Named so the scheme and its correctness
+shortness parameters (`bound = P.γ`, digit base `bDig = P.bZero`). The Ajtai key is now
+`μ₀ + n₀·δ` columns wide, `δ = clog_{bZero} q`, because the quotient block committed is its base-
+`bZero` **digits** ([NOZ26] §4.3) rather than the raw rows — which is what makes a member of
+`LiftCom.Collision` a short kernel vector of `D`. Named so the scheme and its correctness
 corollary below cannot drift apart. -/
 def nonrecursiveLiftCom (P : HonestRangeParams q)
-    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀)) :
-    LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ (q / 2)) :=
-  hachiLiftCom 𝓜(q, α) P.γ (q / 2) D
+    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero)) :
+    LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero) :=
+  hachiLiftCom 𝓜(q, α) P.γ P.bZero D
 
 /-- `DecidableEq` on the concrete commitment space, derived from `DecidableEq (Rq Φ)` — no
 `Classical.dec`. Stated as an instance so the `[DecidableEq K.TCom]` arguments of the chain are
 discharged by synthesis at this instantiation. -/
 instance instDecidableEqNonrecursiveLiftComTCom (P : HonestRangeParams q)
-    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀)) :
+    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero)) :
     DecidableEq (nonrecursiveLiftCom (α := α) P D).TCom :=
   inferInstanceAs (DecidableEq (CarrierCom 𝓜(q, α) dRows))
 
@@ -79,7 +81,7 @@ def hachiNonrecursiveConcrete (P : HonestRangeParams q)
     [SampleableType
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
-    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀))
+    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :=
   hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P
     (nonrecursiveLiftCom (α := α) P D) hd hbZero φF
@@ -108,14 +110,15 @@ theorem hachiNonrecursiveConcrete_perfectCorrectness
       (keygen (q := q) (α := α) (innerRows := innerRows) (outerRows := outerRows)
         (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
-    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀))
-    (φF : ZMod q →+* F) (hμn : ((μ₀ P) + n₀) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
-    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2) :
+    (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
+    (φF : ZMod q →+* F)
+    (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
+    (hZeroγ : P.bZero - 1 ≤ P.γ) :
     Commitment.perfectCorrectness init impl
       (hachiNonrecursiveConcrete (F := F) (ω := ω) (M := M) (m₁ := m₁) P D hd hbZero φF) :=
   hachiNonrecursive_perfectCorrectness (F := F) (ω := ω) (M := M) (m₁ := m₁)
     P init impl hInit hKeygen hclog hd hbZero (nonrecursiveLiftCom (α := α) P D) φF hμn
-    hZeroγ hZeroρ
+    hZeroγ
 
 end Concrete
 
