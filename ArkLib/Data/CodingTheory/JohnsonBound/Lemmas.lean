@@ -413,8 +413,9 @@ lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
           simp only [c1]
           ring
         _ = 1 + 1 / c1 := by rw [add_div, div_self n₂]
-    grind only [= e.eq_1]
-  grind only
+    rw [this]
+    ring_nf
+  ring_nf
 
 /-- Johnson bound in squared-deviation form, at the zero vector. -/
 lemma johnson_bound₀ [Zero F]
