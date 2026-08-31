@@ -303,7 +303,7 @@ private theorem bchks_parameter_facts_of_target_hypotheses
         ring
   have hden : 0 < 1 - (k : ℝ) / n - 2 * (δ : ℝ) := by
     have htwo : (0 : ℝ) < 2 / n := div_pos (by norm_num) hnR_pos
-    nlinarith [hud']
+    linarith only [hud', htwo]
   have hgapSum : gap + k + 2 * e = n + 1 := by
     dsimp [gap]
     omega
@@ -315,13 +315,17 @@ private theorem bchks_parameter_facts_of_target_hypotheses
           n - k - 2 * (δ : ℝ) * n := by
       field_simp [hnR_ne]
     rw [hleft]
-    nlinarith [heR, hgapSumR]
+    linarith only [heR, hgapSumR]
   have hfrac :
       (e : ℝ) / gap ≤ (δ : ℝ) / (1 - (k : ℝ) / n - 2 * (δ : ℝ)) := by
     rw [div_le_div_iff₀ hgapR_pos hden]
     have h1 := mul_le_mul_of_nonneg_right heR (le_of_lt hden)
     have h2 := mul_le_mul_of_nonneg_left hcastgap δ.coe_nonneg
-    nlinarith
+    calc
+      (e : ℝ) * (1 - (k : ℝ) / n - 2 * (δ : ℝ)) ≤
+          ((δ : ℝ) * n) * (1 - (k : ℝ) / n - 2 * (δ : ℝ)) := h1
+      _ = (δ : ℝ) * (n * (1 - (k : ℝ) / n - 2 * (δ : ℝ))) := by ring
+      _ ≤ (δ : ℝ) * gap := h2
   have hdz_eq : dz = e / gap + 1 := by
     change CeilDiv.ceilDiv (e + 1) gap = e / gap + 1
     rw [Nat.ceilDiv_eq_add_pred_div]
@@ -332,7 +336,7 @@ private theorem bchks_parameter_facts_of_target_hypotheses
     rw [hdz_eq]
     push_cast
     have hdiv : (((e / gap : ℕ) : ℝ)) ≤ (e : ℝ) / (gap : ℝ) := Nat.cast_div_le
-    nlinarith
+    simpa only [add_comm] using add_le_add_left hdiv 1
   have hident :
       1 + (δ : ℝ) / (1 - (k : ℝ) / n - 2 * (δ : ℝ)) =
         (1 - (k : ℝ) / n - (δ : ℝ)) /
