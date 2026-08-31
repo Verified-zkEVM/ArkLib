@@ -143,6 +143,13 @@ expect_status 1 native-trust-floor \
     --check --baseline "$COVERING_BASELINE"
 grep -q "never-allowlistable" "$FIXTURE_TMP/native-trust-floor.log"
 
+# A stale allowlist must not freeze cleanup: removals stay green and prompt the
+# contributor to shrink the baseline in the same change.
+expect_status 0 stale-baseline-removal \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
+    --check --baseline "$COVERING_BASELINE"
+grep -q "good news" "$FIXTURE_TMP/stale-baseline-removal.log"
+
 # --- infrastructure failures must never read as a taint verdict ------------------------
 
 expect_status 2 missing-baseline \
