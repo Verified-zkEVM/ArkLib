@@ -636,13 +636,12 @@ private lemma indicated_polynomial_eq_foldAux'
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
   · simpa using h_card
-  · aesop
-      (add safe [(by rw [←eval_comm]),
-        (by rw
-          [indicated_polynomial_eq_combination_of_correlated,
-            ←foldValue_def,
-            foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
-      (add simp [eval_finsetSum])
+  · intro α _
+    rw [←eval_comm,
+      indicated_polynomial_eq_combination_of_correlated h_s' hu hu_deg,
+      eval_finsetSum, ←foldValue_def,
+      foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
+    simp only [eval_mul, eval_C, hx]
 
 private lemma foldWordAux_poly_sum {a : F} :
   ((foldWordAux domain f k a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) =
