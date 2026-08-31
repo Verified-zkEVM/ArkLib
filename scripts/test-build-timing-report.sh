@@ -4,12 +4,29 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-# The workflow exports the production artifact path globally. Fixtures must resolve metadata next
-# to their synthetic results instead of accidentally reading that workflow-owned file.
-unset BUILD_TIMING_METADATA_PATH
+# The workflow exports production report inputs globally. Fixtures must own every report input
+# instead of accidentally reading workflow state that is absent in a developer shell.
+while IFS='=' read -r variable _; do
+  case "$variable" in
+    BUILD_TIMING_*) unset "$variable" ;;
+  esac
+done < <(env)
 
 fixture_tmp="$(mktemp -d)"
 trap 'rm -rf "$fixture_tmp"' EXIT
+
+on_error() {
+  status=$?
+  echo "Build timing report fixture failed at line ${BASH_LINENO[0]}." >&2
+  for report_file in "$fixture_tmp"/*.md; do
+    if [ -f "$report_file" ]; then
+      echo "--- $report_file" >&2
+      sed -n '1,220p' "$report_file" >&2
+    fi
+  done
+  exit "$status"
+}
+trap on_error ERR
 
 current_dir="$fixture_tmp/current"
 base_dir="$fixture_tmp/base"
