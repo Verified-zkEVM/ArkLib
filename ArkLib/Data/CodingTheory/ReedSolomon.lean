@@ -787,7 +787,6 @@ noncomputable def toPolynomialLT :
     toPolynomial
     toPolynomial_mem_lt_deg
 
-open LinearMvExtension
 
 variable {F : Type*} [Semiring F] [DecidableEq F]
          {ι : Type*} [Fintype ι]
@@ -801,61 +800,6 @@ class Smooth
     h_coset     : Finset.image domain Finset.univ
                   = (fun h : Units F => (a : F) * (h : F)) '' (H : Set (Units F))
     h_card_pow2 : ∃ k : ℕ, Fintype.card ι = 2 ^ k
-
-variable {F : Type*} [Field F] [DecidableEq F]
-        {ι : Type*} [Fintype ι] [DecidableEq ι]
-        {domain : ι ↪ F} [Smooth domain]
-        {m : ℕ}
-
-/-- Definition 4.2, WHIR[ACFY24]
-Smooth Reed-Solomon codes are Reed-Solomon codes defined over smooth domains, such that their
-decoded univariate polynomials are of degree less than `2ᵐ` for some `m ∈ ℕ`. -/
-noncomputable def smoothCode
-    (domain : ι ↪ F) [Smooth domain]
-  (m : ℕ) : Submodule F (ι → F) := ReedSolomon.code domain (2^m)
-
-/-- The linear map that maps smooth Reed-Solomon Code words to their corresponding degreewise linear
-`m`-variate polynomial. -/
-noncomputable def mVdecode :
-  (smoothCode domain m) →ₗ[F] MvPolynomial (Fin m) F :=
-    linearMvExtensionLMap.comp toPolynomialLT
-
-/-- Auxiliary function to assign values to the weight polynomial variables: index `0` ↦ `p.eval b`,
-index `j+1` ↦ `b j`. -/
-private noncomputable def toWeightAssignment
-  (p : MvPolynomial (Fin m) F)
-  (b : Fin m → Fin 2) : Fin (m+1) → F :=
-    let b' : Fin m → F := fun i => ↑(b i : ℕ)
-    Fin.cases (MvPolynomial.eval b' p)
-              (fun i => ↑(b i : ℕ))
-
-/-- Constraint is true, if `∑ {b ∈ {0,1}^m} w(f(b),b) = σ` for given `m`-variate polynomial `f` and
-`(m+1)`-variate polynomial `w`. -/
-def weightConstraint
-    (f : MvPolynomial (Fin m) F)
-  (w : MvPolynomial (Fin (m + 1)) F) (σ : F) : Prop :=
-    ∑ b : Fin m → Fin 2 , w.eval (toWeightAssignment f b) = σ
-
-/-- Definition 4.5, WHIR[ACFY24]
-Constrained Reed-Solomon codes are smooth codes whose decoded `m`-variate polynomial satisfies the
-weight constraint for given `w` and `σ`.
--/
-def constrainedCode
-    (domain : ι ↪ F) [Smooth domain] (m : ℕ)
-  (w : MvPolynomial (Fin (m + 1)) F) (σ : F) : Set (ι → F) :=
-    { f | ∃ (h : f ∈ smoothCode domain m),
-      weightConstraint (mVdecode (⟨f, h⟩ : smoothCode domain m)) w σ }
-
-/-- Definition 4.6, WHIR[ACFY24]
-Multi-constrained Reed-Solomon codes are smooth codes whose decoded `m`-variate polynomial satisfies
-the `t` weight constraints for given `w₀,..., wₜ₋₁` and `σ₀,..., σₜ₋₁`. -/
-def multiConstrainedCode
-    (domain : ι ↪ F) [Smooth domain] (m t : ℕ)
-  (w : Fin t → MvPolynomial (Fin (m + 1)) F)
-  (σ : Fin t → F) : Set (ι → F) :=
-    { f |
-      ∃ (h : f ∈ smoothCode domain m),
-        ∀ i : Fin t, weightConstraint (mVdecode (⟨f, h⟩ : smoothCode domain m)) (w i) (σ i)}
 
 end
 end ReedSolomon
