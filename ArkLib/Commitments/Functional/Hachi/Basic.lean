@@ -94,7 +94,8 @@ development:
   `mem_relInBox_of_commitBalanced` — paper-exact `QuadEval`'s input relation, established for the
   balanced committer's actual output.
 * `Correctness.lean` — the **complete nonrecursive opening and its perfect correctness**: the
-  terminal reveal-and-check (`terminalCheck` and its reflection lemma) closing the chain in place
+  terminal reveal-and-check (returning `endPieceCheck` — the guarded `EndPiece/` verifier's own
+  decision procedure — as its verdict) closing the chain in place
   of the §4.5 recursion, the zero-round commitment-input adapter, their composition
   `hachiNonrecursiveOpening`, the scheme `hachiNonrecursive`, and
   `hachiNonrecursive_perfectCorrectness` through the generic bridge

@@ -60,7 +60,7 @@ section Rounds
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ M : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
+variable {n μ M : ℕ} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
 variable (m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -420,7 +420,6 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
       (roundReduction Φ m₁ b hb φF count (by omega))
       (roundsReductionAux_perfectCompleteness init impl K hb φF count (by omega))
       (roundReduction_perfectCompleteness Φ m₁ bound ρBound b init impl K hb φF count (by omega))
--- DIAGNOSTIC MARKER
 
 set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in

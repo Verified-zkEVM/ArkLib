@@ -117,13 +117,25 @@ home_page/            site assets and assembled website root
     **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
     `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
-    `bridge_coordinateWiseSpecialSoundWith`. `QuadEval/Completeness` is the **honest direction**:
-    the honest computations of Figure 3 instantiated from the gadget algebra and bundled with the
-    verifier as the computable protocol `quadEvalReduction` (in `QuadEval/Reduction`), then
-    `quadEvalReduction_perfectCompleteness` — error `0`, since the relation step
-    `mem_relOut_of_relIn` holds at every challenge vector — with
-    `…_zmodDigits` at the concrete base-`b` gadget and the paper's `γ := b`. The certificate is
-    tied to the same verifier by `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`.
+    `bridge_coordinateWiseSpecialSoundWith`. That link is proved in **both** directions too: the
+    computable protocol object `bridgeReduction` (verifier `= bridgeVerifier` by
+    `bridgeReduction_verifier`), the converse relation step `mem_relIn_of_relPolyEval` — which makes
+    `relPolyEval` exactly the pull-back of `relIn` — and `bridgeReduction_perfectCompleteness`
+    (error `0`, straight from the generic `ReduceClaim.reduction_completeness`: a zero-round
+    `ReduceClaim` head draws no challenge and performs no check, so all of its content is that
+    relation equivalence). `QuadEval/Completeness` is the **honest direction**, in
+    two readings that must not be conflated. *Ball-relaxed*
+    (`quadEvalReduction_perfectCompleteness`, `…_zmodDigits` at the unsigned base-`b` digits)
+    reaches ArkLib's `relOut`, whose c6 is the symmetric ball, **not** Eq. (20)'s box `S_b` — the
+    containment
+    `paperRelOut ⊆ relOut` transports *soundness* to the paper's verifier and is useless in the
+    honest direction. *Paper-exact* (`…_paperRelOut`, `…_balancedDigits`) reaches `paperRelOut`
+    itself, using the balanced digits `balancedZmodDigitDecomposition` whose range *is* `S_b`
+    (`balancedZmodDigit_valMinAbs_mem`), from the box-carrying input relation `relInBox`;
+    `…_relOut_of_balancedDigits` then derives the relaxed conclusion, making the containment's
+    direction explicit. Shared linear content: `honestRows_of_relIn` (rows c1–c5 at every challenge
+    vector — hence error `0`). The certificate is tied to the same verifier by
+    `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`.
     `QuadEval/Basic.lean` re-exports the reduction, its soundness, its completeness,
     and the bridge.
   - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is split into one flat folder per paper
@@ -143,8 +155,25 @@ home_page/            site assets and assembled website root
     generic `checkAt`, and the generic interpolation/descent engine, assembled through the
     committed-scalar shell (`k = 2d`, abstract `w̃`-commitment `LiftCom` with its short-collision
     set `LiftCom.Collision`; the weak-binding escape event is `CommittedScalar.escEvent`, so this
-    link is an `EscapeCWSSPackage`; **proven** Lemma 9 CWSS). `RingSwitch/Basic.lean` re-exports
-    the folder. (The §3 packing reduction is a distinct algebraic construction —
+    link is an `EscapeCWSSPackage`; **proven** Lemma 9 CWSS). `RingSwitch/Completeness` is the
+    honest direction of **both** links, proven and axiom-clean and now **unconditional**:
+    `rlinReduction_perfectCompleteness_image` lands in the *image* seam `relRlinImage` (the pairs
+    that came from the adapter: `p = (rlinStmt X, stack w)` with `(X, w) ∈ relOut`), and
+    `liftReduction_perfectCompleteness_image` consumes exactly that, discharging **both** halves of
+    `liftShort`: the `z`-bound from seam membership, the quotient bound from
+    `RingSwitch/QuotientNorms`. Nothing is assumed. Why the honest side uses a different relation
+    than soundness: `relRlin` forgets the matrix provenance, the value of `s.bound`, and hence the
+    protocol-level `z`-bound — and `∀ s, bound ≤ s.bound` is *false* for positive `bound`
+    (`s.bound = 0` is a legal statement), so the condition must be carried by the seam. The seam
+    refines `relRlin` (`mem_relRlin_of_mem_relRlinImage`), so no relation is weakened.
+    `RingSwitch/QuotientNorms` is the quotient bound: for `φ = X^d + 1` division *selects*
+    coefficients (`Polynomial.coeff_divByMonic_X_pow_add_one`, in
+    `ToMathlib/Polynomial/DivByXPowAddOne`), so the honest quotient inherits any coefficient bound
+    on the row sum — `μ · 2d · βM · βz`, with **no wraparound hypothesis**. For the Hachi chain the
+    only honest `βM` is `q/2` (the `R^lin` matrix carries the Ajtai key and gadget powers), so the
+    chain runs at `ρBound = q/2` (`rhoShort_half`) — see `HonestChain.lean` for what that costs.
+    `RingSwitch/Basic.lean` re-exports the folder. (The §3 packing reduction is a distinct
+    algebraic construction —
     `ProofSystem/RingSwitching/Packing/` — which does not use the committed-scalar seam; the two
     constructions share the ring-switching folder's top-level verifier skeletons and transport
     algebra.)
@@ -152,7 +181,8 @@ home_page/            site assets and assembled website root
     `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
     encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
     per-round seam `nestedRoundRel`), consumed by both this zero-check and `Sumcheck/`;
-    `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching bridge (proven, and the place
+    `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching bridge (proven **both ways** —
+    `mem_relLift_of_relBatched` and `mem_relBatched_of_relLift` — and the place
     `liftShort` is *derived* from `H₀ ≡ 0` rather than assumed); `ZeroCheck/Reduction` is the
     corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted through the
     nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
@@ -165,7 +195,8 @@ home_page/            site assets and assembled website root
     `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Completeness` is the honest direction
     (`nestedZeroCheckReduction_perfectCompleteness`, proven and axiom-clean, with error exactly
     zero — `relBatched` asserts the identities, so nothing about the challenge distribution is
-    used); this is the one link of the chain certified in both directions so far.
+    used). It also carries `batchReduction_perfectCompleteness`, the batching bridge's honest
+    direction, so both links of this folder are certified in both directions.
     `ZeroCheck/Basic.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening, **proven and axiom-clean throughout** (rows 7–9). `Sumcheck/Bridge` reshapes the
@@ -191,7 +222,11 @@ home_page/            site assets and assembled website root
     reduce. Escape-free — it re-reads data just sent, so no hardness assumption is consulted — and
     **`sorry`-free and axiom-clean**: extraction is the identity on the transcript message
     (`endPieceWitness`), and CWSS closes through the challenge-free bridge plus guarded
-    acceptance. `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
+    acceptance. Certified in both directions about the same verifier: `endPieceReduction` /
+    `endPieceReduction_perfectCompleteness` is the honest side, and the full reflection lemma
+    `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
+    (`Correctness.lean`), so the closing link has one decision procedure.
+    `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
   - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
     `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
@@ -213,8 +248,8 @@ home_page/            site assets and assembled website root
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
-    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the §4.5 recursion
-    tail and the honest-prover/completeness layer). It also carries the **honest-committer facts**
+    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece, the §4.5
+    recursion tail, and the recursive honest-prover layer). It also carries the **honest-committer facts**
     the honest chain needs: `verifiedOpening_honestOpening` (the committer's own output is a
     `WeakBinding.VerifiedOpening` — it lives here, not in `InnerOuter/Correctness`, because
     `InnerOuter/Security` imports that file), `vecInSb_honestInnerDecomp_balanced`, and
@@ -242,8 +277,11 @@ home_page/            site assets and assembled website root
     `bound, ρBound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
     `γ` stays free. The collapse `γ = q/2 = bZero − 1` applies only to a *single* parameterization
     that also serves the bridge's pull-back
-    (`HonestRangeParams.pinned_of_soundness_orientations`); removing it needs a two-range table in
-    `ZeroCheck/Constraints`.
+    (`HonestRangeParams.pinned_of_soundness_orientations`). The collapse is an artifact of the
+    simplified table: NOZ26 §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits
+    before committing (a decomposition the paper then hides from its notation), so the tracked fix
+    is the digit-decomposed `w̃` in `ZeroCheck/Constraints`, at which every row is honestly
+    `≤ b − 1` and nothing degenerates.
   - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
     chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
     reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole
@@ -362,6 +400,24 @@ home_page/            site assets and assembled website root
   The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
   message-round case: there the run-support half is a closed-form computation of `Prover.run`
   (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.
+- **For a zero-round `ReduceClaim` link, do not use `perfectCompleteness_of_run_support` at all.**
+  `ReduceClaim.reduction_completeness` (`ProofSystem/Component/ReduceClaim.lean`, proven) discharges
+  the whole execution layer; its `hRel` is an **iff**
+  (`(stmtIn, witIn) ∈ relIn ↔ (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut`), so the only real
+  obligation is the converse of the pull-back the soundness side already needed. Three links are
+  done this way — `bridgeReduction_perfectCompleteness` (`QuadEval/Bridge.lean`),
+  `rlinReduction_perfectCompleteness` (`RingSwitch/Completeness.lean`) and
+  `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`) — each in a few lines once
+  the relation converse exists. Budget zero-round heads in hours, not days.
+- **The two-round commit-then-challenge execution is owned generically** by
+  `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`
+  (`Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`): supply `computeW` plus the two
+  facts `rel K checkAt` asks for that are not definitional — the challenge-local check at *every*
+  challenge, and admissibility of the computed opening — and the run/probability layer is free.
+  Commitment consistency is definitional, because the prover shell derives its round-0 message from
+  `computeW`. Consumers: the generic ring-switching lift and, through it, Hachi's Figure 4. Any new
+  link of that shape (`pSpecScalar`) should go through it rather than repeating `QuadEval`'s
+  hand-unfolding.
 - **Unfolding a fixed-length `Prover.runToRound` by hand: ascribe the round indices, do not rewrite
   them.** `Prover.runToRound_succ` is stated at `i.succ` with the recursive call at `i.castSucc`,
   but a concrete run starts from `Fin.last n`, and `Fin.last 2`, `Fin.succ 1`, `Fin.castSucc 1` and

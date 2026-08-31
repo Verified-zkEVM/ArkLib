@@ -481,12 +481,12 @@ discharged over the family by the binary-evaluation-tree zero test
   complete transcript tree has `2 ^ (m₀ + m₁)` leaves.
 - **Sumcheck seam.** `nestedRoundRel` carries `liftShort` on the same shortness-index grounds as
   `relNestedZeroCheck` (see above), and the sumcheck
-  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved** — but
-  `#print axioms` shows it inherits `sorryAx` from the two `sorry` sum identities above, so the
-  bridge inherits those two gaps. Further down the chain (out of Lemma-10 scope), the
+  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved and axiom-clean**,
+  the two sum identities it rests on (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`) having
+  been discharged. Further down the chain (out of Lemma-10 scope), the
   per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11) and the
   final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`)
-  remain `sorry`.
+  are proved and axiom-clean as well.
 
 ## Design choices
 

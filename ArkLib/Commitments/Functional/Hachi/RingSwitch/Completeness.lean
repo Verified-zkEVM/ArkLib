@@ -224,7 +224,12 @@ theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X 
     (z : ArkLib.Lattices.PolyVec (Rq Φ) μ)
     (hM : ∀ i j, Rq.lInftyNorm Φ (s.M i j) ≤ βM) (hz : ∀ j, Rq.lInftyNorm Φ (z j) ≤ βz) :
     RhoShort (μ * (2 * d * (βM * βz))) (honestLiftWitness Φ hd s z).ρ :=
-  fun i k => valMinAbs_natAbs_coeff_quotient_le Φ hφ hdpos s.M z s.yvec hM hz i k
+  fun i k => by
+    rw [CPolynomial.coeff_toPoly,
+      show ((honestLiftWitness Φ hd s z).ρ i).toPoly
+          = (cyclotomicPresentation Φ).quotient s.M z s.yvec i
+        from CPolynomial.toPoly_mk_toImpl _]
+    exact valMinAbs_natAbs_coeff_quotient_le Φ hφ hdpos s.M z s.yvec hM hz i k
 
 omit [NeZero q] in
 /-- **The `ρ`-half of `liftShort`, unconditionally**, at `ρBound := q/2`: centered representatives

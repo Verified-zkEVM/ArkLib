@@ -47,6 +47,18 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   (`endPieceVerifierGuardedForm : Verifier.GuardedForm`), so composition can run the verdict map
   at the seam without `Classical.choice` — every field of `endPiece` is executable.
 
+  ## The honest direction
+
+  The link is certified in **both** directions about the same verifier: `endPieceReduction` pairs
+  the honest reveal (`endPieceProver`) with `endPieceVerifier` — the package's verifier on the
+  nose (`endPieceReduction_verifier`) — and `endPieceReduction_perfectCompleteness` (error `0`,
+  axiom-clean) shows a witness in `relWEvalClaim` passes the guard, by the full reflection lemma
+  `endPieceCheck_eq_true_iff`. That reflection lemma also serves the *nonrecursive scheme*
+  (`Correctness.lean`): the `Commitment.Scheme` interface fixes the `Proof` shape to a `Bool`
+  verdict, so the scheme's terminal verifier cannot be the guarded one — instead it **returns**
+  `endPieceCheck` as its verdict, the very check guarded here
+  (`terminalVerifier_verify_eq_endPieceCheck`), so the two shapes share one decision procedure.
+
   ## The shortness conjunct
 
   `relWEvalClaim` carries three conjuncts: the commitment opens, the opening is **short**
@@ -364,6 +376,18 @@ def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   isGuarded := endPieceVerifierGuardedForm Φ m₀ bound ρBound b K φF
   extractor := endPieceExtractor Φ m₀ bound ρBound K
   isCWSS := endPiece_coordinateWiseSpecialSoundWith Φ m₀ bound ρBound b init impl K φF
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The end-piece's protocol object and its soundness package share a verifier. Holds by
+`rfl`. -/
+@[simp] theorem endPieceReduction_verifier (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
+    (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).verifier
+      = (endPiece Φ m₀ bound ρBound b init impl K φF).verifier :=
+  rfl
+
 
 end Protocol
 

@@ -156,8 +156,8 @@ This is the honest prover's `computeW`, and it is total: the degree field is dis
 needed to build the witness — validity is what makes it satisfy `checkAt`
 (`checkAt_honestWitness`). `noncomputable` as stated: the quotients are Mathlib polynomials
 obtained by division (`Presentation.quotient`), repackaged as canonical coefficient arrays by
-`Polynomial.toImpl`; an executable prover restates the division over `CPolynomial` and transfers
-by an agreement lemma. -/
+`Polynomial.toImpl`; an executable prover restates the division over `CPolynomial` (e.g. Hachi's
+`honestLiftWitnessC`) and transfers by an agreement lemma. -/
 noncomputable def honestWitness [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d)
     (s : Stmt) (z : PolyVec S μ) : LiftedWitness R S d μ n where
   z := z
@@ -287,7 +287,7 @@ Everything else — commitment consistency, the check at every challenge, the im
 failure — is discharged by `CommittedScalar.reduction_perfectCompleteness` and
 `checkAt_honestWitness`. Error `0` because `checkAt_honestWitness` holds at every challenge. -/
 theorem reduction_perfectCompleteness_of_relIn [IsPresentation P] [SampleableType F]
-    (hd : P.modulus.natDegree = d) (relIn : Set (Stmt × PolyVec S μ))
+    (hd : P.modulus.toPoly.natDegree = d) (relIn : Set (Stmt × PolyVec S μ))
     (hrow : ∀ s z, (s, z) ∈ relIn → getM s *ᵥ z = getY s)
     (hside : ∀ s z, (s, z) ∈ relIn → sideCond s)
     (hshort : ∀ s z, (s, z) ∈ relIn → wShort (honestWitness P getM getY hd s z))

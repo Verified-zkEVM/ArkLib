@@ -41,7 +41,7 @@ section Concrete
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
 variable {innerRows outerRows dRows m r M m₁ : Nat} {ω : ℕ}
-variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 variable {σ : Type}
 
 local notation "δ" P => Nat.clog (HonestRangeParams.b P) q

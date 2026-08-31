@@ -192,8 +192,9 @@ this link's completeness error is `0`. The three `evalAt`/`cEvalAt` bridges are 
 theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n)
     (hrows : ∀ i, evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z i)
-      = evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i))
-        + evalAt φF α (cyclotomicPresentation Φ).modulus * evalAt φF α (w.ρ i)) :
+      = evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i)).toPoly
+        + evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
+          * evalAt φF α ((w.ρ i)).toPoly) :
     hAlpha Φ m₁ φF b s α w = 0 := by
   rw [hAlpha_eq_zero_iff]
   intro x
@@ -204,9 +205,9 @@ theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (s : RlinStateme
         = cEvalAt φF α (cRowSum Φ s w.z ⟨_, hlt⟩) := by
       rw [cEvalAt_cRowSum_eq_evalAt, rowSum_eq_sum_toPoly]
       simp only [Presentation.rowSum, cyclotomicPresentation]
-    have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩))
+    have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩)).toPoly
         = cEvalAt φF α (s.yvec ⟨_, hlt⟩).1 := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
-    have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus
+    have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
         = cEvalAt φF α Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
     rw [hrow, hy, hmod] at hi
     linear_combination hi

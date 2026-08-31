@@ -166,8 +166,8 @@ example (bound ρBound : ℕ) :
 `hachiLiftCom` replaces the abstract commitment by the Eq. (16)-shaped Ajtai product, so the
 nonrecursive chain has a `TCom` and a `com` an implementation can actually compute. Everything
 here is a plain `def`: `Rq Φ` has a computable `CommRing` instance, `Simple.commit` is
-`matVecMul`, and the quotient rows enter through `Polynomial.coeff` (reading a Mathlib
-polynomial is computable, unlike building one).
+`matVecMul`, and the quotient rows enter through `CPolynomial.coeff` — computable coefficient
+arrays all the way down.
 
 **Why the lift needs its own key.** The obvious candidate for the matrix is `pp.dMatrix`, the
 Eq. (16) short-commitment matrix that `keygen` already samples and that the `R^lin` statement's
@@ -183,9 +183,9 @@ treatment would sample it in `keygen` alongside `D`, which needs a new `PublicPa
 
 /-- A quotient row of a lifted witness, read back as a ring element. The rows have degree
 `≤ d − 1` (`LiftedWitness.hρ`), so the reduced representative of degree `< d` loses nothing —
-this is a change of presentation, not a reduction. Computable: `Polynomial.coeff` is a
-projection out of the `Finsupp`, and `Rq.ofFinCoeff` builds the representative directly. -/
-def rhoAsRq (p : Polynomial (ZMod q)) : Rq Φ :=
+this is a change of presentation, not a reduction. Computable: `CPolynomial.coeff` reads the
+coefficient array, and `Rq.ofFinCoeff` builds the representative directly. -/
+def rhoAsRq (p : CPolynomial (ZMod q)) : Rq Φ :=
   Rq.ofFinCoeff Φ Φ.φ.natDegree p.coeff
 
 /-- The message an Ajtai lift commitment binds: the whole lifted witness as one `Rq`-vector,

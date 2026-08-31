@@ -50,8 +50,8 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
 
 * `RingSwitch/ComputableWitness.lean` — the computable twin `honestLiftWitnessC` of the honest
   lifted witness, at the same signature and equal to it (`honestLiftWitnessC_eq_honestWitness`).
-  It replaces Mathlib's `/ₘ` by CompPoly's synthetic division and the noncomputable
-  `CPolynomial.toPoly` by `cToPoly`, which is what makes the whole honest path executable
+  It replaces Mathlib's `/ₘ` by CompPoly's synthetic division `CPolynomial.divByMonic` on the
+  canonical coefficient arrays, which is what makes the whole honest path executable
   (`Hachi/Concrete.lean`, `scripts/HachiRuntime.lean`); `Completeness.lean` re-points
   `liftReduction` at it and transfers completeness through the agreement lemma.
 * `RingSwitch/QuotientNorms.lean` — centered coefficient bounds for the honest lift quotient. For

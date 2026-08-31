@@ -222,7 +222,7 @@ bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
 bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c 'lake build'
 bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime'
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
 bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
@@ -231,8 +231,10 @@ bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
 Read the rows in that order, because they share one tree and each leaves it warmer:
 
 - `clean_build` and `warm_rebuild` bracket the incremental-build signal.
-- `native_build` carries the `.c.o` chain that `lake exe toyproblem-runtime` links. It is the row
-  that swings on `.lake` cache state, so a dependency bump shows its cost here.
+- `native_build` carries the `.c.o` chain that the compiled executables link — currently
+  `toyproblem-runtime` and `hachi-runtime`. It is the row that swings on `.lake` cache state, so a
+  dependency bump shows its cost here. **Adding a compiled executable to `validate.sh` means
+  adding it to this command too**, or its link cost lands in `test_path` instead.
 - `test_path` is therefore the cost of the validation gate itself on an already-built project,
   not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
   `--axioms` never appear in it.

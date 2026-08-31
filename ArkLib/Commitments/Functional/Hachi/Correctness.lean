@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.HonestChain
+import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
 
 /-!
 # Nonrecursive Hachi: the terminal reveal-and-check and perfect correctness
@@ -19,23 +20,26 @@ The recursion adapters (`Recursion/PartialEval`, `ZBatchBridge`, `TraceHandoff`)
 **not** part of this run. Instead of recursing on `relWEvalClaim`, the chain is closed by a
 non-succinct `SendWitness`-style **terminal base case**: the prover sends the final
 `LiftedWitness` in the clear, and the verifier decides the *entire* `relWEvalClaim` predicate on
-it (`terminalCheck`, with the reflection lemma `terminalCheck_eq_true_iff`). This is a genuine
-terminal verifier — it can reject — so the composition is a complete executable commitment
-opening, at the cost of a witness-sized final message.
+it — running `endPieceCheck`, the **same** decision procedure the soundness-side `endPiece`
+(`EndPiece/Reduction.lean`) guards on, with the reflection lemma `endPieceCheck_eq_true_iff`.
+This is a genuine terminal verifier — it can reject — so the composition is a complete executable
+commitment opening, at the cost of a witness-sized final message.
 
 ## Main definitions
 
-* `pSpecTerminal`: the terminal wire format — one `P_to_V` message carrying the `LiftedWitness`.
-* `terminalCheck` / `terminalCheck_eq_true_iff`: the Boolean decision procedure for
-  `relWEvalClaim` and its reflection lemma. The quotient range check `RhoShort` quantifies over
-  all coefficient indices; the Boolean check inspects only indices `≤ deg φ`, which suffices by
-  the witness's own degree bound (`rhoShort_iff_le_degree`).
+* `pSpecTerminal`: the terminal wire format — `pSpecEndPiece` at the `LiftedWitness`, named for
+  the scheme plumbing.
 * `nonrecursiveTerminalReduction` / `…_perfectCompleteness`: the reveal-and-check reduction from
-  `relWEvalClaim` to `acceptRejectRel`, perfectly complete, axiom-clean.
+  `relWEvalClaim` to `acceptRejectRel`, perfectly complete, axiom-clean. Its verifier returns
+  `endPieceCheck` as its Boolean verdict — the `Commitment.Scheme` interface fixes the `Proof`
+  shape to a `Bool` output — where `EndPiece/`'s guarded `endPieceVerifier` *guards* on that same
+  check; `terminalVerifier_verify_eq_endPieceCheck` and the shared constant keep the two
+  directions of the closing link on one decision procedure.
 * `nonrecursiveOpeningReduction` / `…_perfectCompleteness`: the honest chain through the sumcheck
   (`completeThroughSumcheckReduction`) closed by the terminal base case: `relPolyEval` to
   `acceptRejectRel`. ⚠ Inherits `sorryAx` from the generic `Reduction.append_completeness`
-  (an admitted framework dependency); every link is axiom-clean on its own.
+  (an admitted framework dependency), which is also the sole provenance of the sumcheck link's own
+  internal taint; the remaining links are axiom-clean on their own.
 * `relCommitInput` / `commitInputReduction` / `…_perfectCompleteness`: the zero-round head that
   converts the commitment API's claim (an honest **balanced** commitment plus a truthful
   evaluation claim) into `relPolyEval`, with the relation step
@@ -75,69 +79,20 @@ variable (m₀ : ℕ) (bound ρBound b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The terminal wire format: a single `P_to_V` message revealing the final `LiftedWitness`
-in the clear. Non-succinct by design — this is the nonrecursive base case. -/
+in the clear — the end-piece wire format (`pSpecEndPiece`), named at the `LiftedWitness` for the
+scheme plumbing. Non-succinct by design — this is the nonrecursive base case. -/
 @[reducible] def pSpecTerminal (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) : ProtocolSpec 1 :=
-  ⟨!v[.P_to_V], !v[LiftedWitness Φ μ n]⟩
-
-/-- The terminal step has no challenge round: its `ChallengeIdx` is empty. -/
-instance : IsEmpty (pSpecTerminal Φ μ n).ChallengeIdx :=
-  ⟨fun ⟨0, h⟩ => nomatch h⟩
-
-/-- Challenges of the terminal step are (vacuously) sampleable — there are none. -/
-instance : ∀ i, SampleableType ((pSpecTerminal Φ μ n).Challenge i) :=
-  fun i => isEmptyElim i
+  pSpecEndPiece (LiftedWitness Φ μ n)
 
 /-- Challenges of the terminal step are (vacuously) `VCVCompatible` — there are none. -/
 instance : ∀ i, VCVCompatible ((pSpecTerminal Φ μ n).Challenge i) :=
   fun i => isEmptyElim i
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The quotient range predicate `RhoShort` needs to be checked only up to the presentation
-degree: coefficients beyond the witness's own degree bound vanish, and `0 ≤ ρBound` always. -/
-theorem rhoShort_iff_le_degree (w : LiftedWitness Φ μ n) :
-    RhoShort (n := n) ρBound w.ρ ↔
-      ∀ i, ∀ k : Fin (Φ.φ.natDegree + 1),
-        ((w.ρ i).coeff k.val).valMinAbs.natAbs ≤ ρBound := by
-  constructor
-  · exact fun h i k => h i k.val
-  · intro h i k
-    by_cases hk : k ≤ Φ.φ.natDegree
-    · exact h i ⟨k, by omega⟩
-    · have hdeg : (w.ρ i).natDegree < k := by
-        have := w.hρ i
-        omega
-      rw [Polynomial.coeff_eq_zero_of_natDegree_lt hdeg]
-      simp
-
 variable (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
-
-/-- **The terminal Boolean check**: the full `relWEvalClaim` predicate, decided on the revealed
-witness. Conjunct by conjunct: the commitment equation `K.com w = t`, both halves of `liftShort`
-(the `z` norm bound, and the quotient range check restricted to the meaningful coefficient window
-per `rhoShort_iff_le_degree`), and the claimed multilinear evaluation. Nothing is weakened: the
-reflection lemma `terminalCheck_eq_true_iff` recovers the relation exactly. -/
-def terminalCheck [DecidableEq K.TCom]
-    (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) : Bool :=
-  decide (K.com w = stmt.t) &&
-  decide (vecLInftyNorm Φ w.z ≤ bound) &&
-  decide (∀ i, ∀ k : Fin (Φ.φ.natDegree + 1),
-    ((w.ρ i).coeff k.val).valMinAbs.natAbs ≤ ρBound) &&
-  (wTableMleEval Φ m₀ φF b w stmt.point == stmt.value)
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- **Reflection lemma**: the terminal Boolean check decides exactly `relWEvalClaim`. -/
-theorem terminalCheck_eq_true_iff [DecidableEq K.TCom]
-    (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) :
-    terminalCheck Φ m₀ bound ρBound b K φF stmt w = true ↔
-      (stmt, w) ∈ relWEvalClaim Φ m₀ bound ρBound b K φF := by
-  simp only [terminalCheck, Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq,
-    relWEvalClaim, Set.mem_setOf_eq, liftShort]
-  rw [rhoShort_iff_le_degree]
-  tauto
 
 /-- The terminal honest prover: sends its `LiftedWitness` in the clear, and outputs the very
 verdict the verifier will reach on it (so prover and verifier agree on the output statement). -/
-def terminalProver [DecidableEq K.TCom] :
+def terminalProver [BEq K.TCom] :
     Prover oSpec (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n) Bool Unit
       (pSpecTerminal Φ μ n) where
   PrvState
@@ -148,18 +103,32 @@ def terminalProver [DecidableEq K.TCom] :
     | ⟨0, _⟩ => fun st => pure (st.2, st)
   receiveChallenge
     | ⟨0, h⟩ => nomatch h
-  output := fun st => pure (terminalCheck Φ m₀ bound ρBound b K φF st.1 st.2, ())
+  output := fun st => pure (endPieceCheck Φ m₀ bound ρBound b K φF st.1 st.2, ())
 
 /-- The terminal verifier: decides the full `relWEvalClaim` predicate on the revealed witness
-and returns the verdict. A genuine terminal verifier — `false` on any failed conjunct. -/
-def terminalVerifier [DecidableEq K.TCom] :
+and returns the verdict — `endPieceCheck`, the very check the guarded soundness verifier
+`endPieceVerifier` guards on (`terminalVerifier_verify_eq_endPieceCheck`). A genuine terminal
+verifier — `false` on any failed conjunct. -/
+def terminalVerifier [BEq K.TCom] :
     Verifier oSpec (WEvalStatement K.TCom F m₀) Bool (pSpecTerminal Φ μ n) where
-  verify := fun stmt tr => pure (terminalCheck Φ m₀ bound ρBound b K φF stmt (tr 0))
+  verify := fun stmt tr => pure (endPieceCheck Φ m₀ bound ρBound b K φF stmt (tr 0))
+
+omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
+/-- **One decision procedure for the closing link**: the terminal verifier's Boolean verdict is
+`endPieceCheck` — literally the guard of the soundness-side `endPieceVerifier`
+(`endPieceVerifierGuardedForm`). The completeness direction (this file) and the CWSS certificate
+(`EndPiece/Reduction.lean`) therefore cannot drift onto different checks. Holds by `rfl`. -/
+@[simp] theorem terminalVerifier_verify_eq_endPieceCheck [BEq K.TCom]
+    (stmt : WEvalStatement K.TCom F m₀) (tr : (pSpecTerminal Φ μ n).FullTranscript) :
+    (terminalVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF).verify stmt tr
+      = pure ((endPieceVerifierGuardedForm (oSpec := oSpec)
+          Φ m₀ bound ρBound b K φF).check stmt tr) :=
+  rfl
 
 /-- **The nonrecursive terminal reduction** (reveal-and-check): the prover reveals the final
 `LiftedWitness`, the verifier decides `relWEvalClaim` on it. This closes the Hachi chain without
 recursion. -/
-def nonrecursiveTerminalReduction [DecidableEq K.TCom] :
+def nonrecursiveTerminalReduction [BEq K.TCom] :
     Reduction oSpec (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n) Bool Unit
       (pSpecTerminal Φ μ n) where
   prover := terminalProver Φ m₀ bound ρBound b K φF
@@ -168,20 +137,20 @@ def nonrecursiveTerminalReduction [DecidableEq K.TCom] :
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The terminal reduction's honest run, in closed form: one pure message round and a pure
 verifier collapse to a single successful outcome carrying the verdict on both sides. -/
-theorem nonrecursiveTerminalReduction_run [DecidableEq K.TCom]
+theorem nonrecursiveTerminalReduction_run [BEq K.TCom]
     (stmt : WEvalStatement K.TCom F m₀) (wit : LiftedWitness Φ μ n) :
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).run stmt wit =
       pure ((show (pSpecTerminal Φ μ n).FullTranscript from
           ProtocolSpec.Transcript.concat (m := 0) wit
             (default : (pSpecTerminal Φ μ n).Transcript 0),
-        terminalCheck Φ m₀ bound ρBound b K φF stmt wit, ()),
-        terminalCheck Φ m₀ bound ρBound b K φF stmt wit) := rfl
+        endPieceCheck Φ m₀ bound ρBound b K φF stmt wit, ()),
+        endPieceCheck Φ m₀ bound ρBound b K φF stmt wit) := rfl
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Perfect completeness of the terminal reveal-and-check**, from `relWEvalClaim` to
 `acceptRejectRel`, error `0`: on a witness satisfying the relation the check passes by the
 reflection lemma, and prover and verifier output the same verdict by construction. -/
-theorem nonrecursiveTerminalReduction_perfectCompleteness [DecidableEq K.TCom]
+theorem nonrecursiveTerminalReduction_perfectCompleteness [BEq K.TCom] [LawfulBEq K.TCom]
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound ρBound b
         K φF).perfectCompleteness init impl
@@ -193,7 +162,7 @@ theorem nonrecursiveTerminalReduction_perfectCompleteness [DecidableEq K.TCom]
   subst hx
   refine ⟨_, rfl, ?_, rfl⟩
   simp only [acceptRejectRel, Set.mem_singleton_iff, Prod.mk.injEq, and_true]
-  exact (terminalCheck_eq_true_iff Φ m₀ bound ρBound b K φF stmt wit).mpr hIn
+  exact (endPieceCheck_eq_true_iff Φ m₀ bound ρBound b K φF stmt wit).mpr hIn
 
 end Terminal
 
@@ -210,7 +179,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r M m₁ : Nat} {ω : ℕ}
-variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
 local notation "n₀" => rlinRows innerRows outerRows dRows
@@ -516,7 +485,7 @@ section Scheme
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
 variable {innerRows outerRows dRows m r M m₁ : Nat} {ω : ℕ}
-variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 variable {σ : Type}
 
 local notation "δ" P => Nat.clog (HonestRangeParams.b P) q

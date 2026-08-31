@@ -639,7 +639,7 @@ factor, while the weak-binding case needs the `esc` field.
 The verifier is taken from `nestedZeroCheckReduction` rather than restated, so this certificate is
 by construction a statement about the same protocol whose completeness is proved in
 `ZeroCheck/Completeness.lean`. -/
-noncomputable def nestedZeroCheckPackage (init : ProbComp σ)
+def nestedZeroCheckPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
