@@ -5,33 +5,47 @@ based on the January 30, 2026 ePrint version of Nguyen–O'Rourke–Zhang, *Hach
 Lattice-Based Multilinear Polynomial Commitments over Extension Fields* (`NOZ26`, §4.3,
 Figure 5 and Lemma 10).
 
-Last revalidated against the formalization: **7 August 2026** (declaration names and the shortness
+Last revalidated against the formalization: **18 August 2026** (declaration names and the shortness
 section re-checked against the tree; every `#print axioms` claim below re-run).
 
-> **Status (integrated; link-5 completeness direction still open).** The corrected Lemma 10 is
+> **Status (integrated; links 5, 6 and 7 all certified in both directions).**
+> The corrected Lemma 10 is
 > formalized *inside* the escape-threaded opening chain: `nestedZeroCheckPackage` reduces
 > `relBatched → relNestedZeroCheck` and is composed as
 > `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` in `Composition.lean`
-> (`openCore`). The CWSS theorem `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is
+> (inside `iteration`). The CWSS theorem `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is
 > **`sorry`-free and axiom-clean** (the `H_α`/`H₀` values used by the theorem are concrete), and
 > the link-5 batching bridge's
 > un-batching pull-back `mem_relLift_of_relBatched` is likewise **proven and axiom-clean relative
 > to those definitions**. **Paper Eq. (22) is now formalized**: `mAlphaTilde` (`M̃_α`),
 > `alphaTilde` (`α̃`) and `alphaContract` build the paper's public contraction against the committed
 > table, and `alphaDefect_wTable` / `hAlpha_eq_zero_iff_alphaDefect` prove it equal to the per-row
-> defect that `hAlphaEvals` writes down directly (axiom-clean). The residual link-5 obligation is
-> the forward/honest-completeness theorem `relLift → relBatched`, which is still absent.
+> defect that `hAlphaEvals` writes down directly (axiom-clean).
+>
+> **Link 6's honest direction is now closed too.** `nestedZeroCheckReduction_perfectCompleteness`
+> (`ZeroCheck/Completeness.lean`) proves perfect completeness of Figure 5 relative to `relBatched`,
+> `sorry`-free and axiom-clean. The completeness error is exactly zero, because `relBatched`
+> asserts the polynomial identities and so both polynomials vanish wherever the challenges happen
+> to land; nothing about the challenge distribution is used. So link 6 is now certified in both
+> directions — and so is link 5: its forward theorem `relLift → relBatched` is
+> `mem_relBatched_of_relLift` (`ZeroCheck/Batch.lean`), packaged as
+> `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`, through
+> `ReduceClaim.reduction_completeness_of_imp`). What a completeness statement for the *chain*
+> still waits on is not a Hachi theorem but the generic `Reduction.append_completeness`, which is
+> still `sorry`; the appended honest chain and the `sorryAx` it inherits are in `HonestChain.lean`.
 > Downstream, the link-7 sumcheck-bridge pull-back `mem_relNestedZeroCheck_of_nestedRoundRel`
-> is now **proved**, but `#print axioms` shows it inherits `sorryAx` from the two still-`sorry`
-> sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`.
+> and the two sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` it rests on are now
+> proved and axiom-clean, and the bridge is settled in the honest direction too
+> (`mem_nestedRoundRel_of_relNestedZeroCheck`,
+> `nestedSumcheckBridgeReduction_perfectCompleteness`).
 > **The range half is now load-bearing:** shortness (`liftShort`) is *derived* from the range
 > identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`, resolution *option 1*),
 > not carried as a free conjunct of `relBatched`.
 >
 > **The point seams carry `liftShort`, as the commitment's shortness index.**
 > `relNestedZeroCheck` and `nestedRoundRel` each state it alongside `t = Com(w̃)` and the two point
-> evaluations. `LiftCom` is upstream's `CoordinateWise.BindingCommitment W Short` — fields `TCom`
-> and `com` only — instantiated at `Short := liftShort Φ bound ρBound`, and its `Collision` set
+> evaluations. `LiftCom` is the generic `CoordinateWise.BindingCommitment W Short` — fields `TCom`
+> and `com` only — instantiated at `Short := liftShort Φ bound bDig`, and its `Collision` set
 > requires **both** colliding openings to be short, which is what makes a collision a Module-SIS
 > break rather than a triviality. Weak binding is not a field but the escape event
 > `nestedZeroCheckEsc`. `relBatched` itself stays norm-free, so nothing derives `liftShort` from an
@@ -54,21 +68,21 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 
 | Paper object or claim | Lean declaration | Status | Concern |
 | --- | --- | --- | --- |
-| Batched range identity, Eq. (23) | `ZeroCheck.hZero : CMlPolynomialEval F m₀` | represented, **concrete, computable, load-bearing** | The stored vector is exactly the Boolean table of range factors; multilinearity is structural. Entry content `wTable` reads the committed `z`/`r` coefficients directly, and `H₀ ≡ 0 ⇒ liftShort` is proven by `hZero_eq_zero_imp_liftShort`. |
+| Batched range identity, Eq. (23) | `ZeroCheck.hZero : CMlPolynomialEval F m₀` | represented, **concrete, computable, load-bearing** | The stored vector is exactly the Boolean table of range factors; multilinearity is structural. Entry content `wTable` reads the coefficients of the committed vector — the `z` block directly, the quotient block as its base-`b` digits — and `H₀ ≡ 0 ⇒ liftShort` is proven by `hZero_eq_zero_imp_liftShort`. Its soundness content is the `z` block: the digit rows are in range by construction, and the bound they would have carried is supplied by `rhoDigits_valMinAbs_natAbs_le` at radius `⌊b/2⌋` rather than `q/2`. See the constraint-encoding bullet in the conclusions for why that is a strengthening, not a loss. |
 | Batched row identity, Eq. (22) | `ZeroCheck.hAlpha : CMlPolynomialEval F m₁` | represented, **concrete, computable, paper-faithful** | The stored vector is the per-row defect table `hAlphaEvals`, so multilinearity and the pull-back are structural. The paper's route through the `M̃_α`/`w̃`/`α̃` contraction is built separately (`mAlphaTilde`, `alphaTilde`, `alphaContract`, `alphaDefect`) and proved equal to that table by `alphaDefect_wTable`, with the relation-level form `hAlpha_eq_zero_iff_alphaDefect`. |
-| Eq. (22) contraction ↔ row defect | `ZeroCheck.alphaDefect_wTable`, `hAlphaEvals_eq_alphaDefect`, `hAlpha_eq_zero_iff_alphaDefect` | proven, **axiom-clean** | §4.3's "represent the constraints by polynomials" step: the only place the table encoding of the witness (commitment/sumcheck side) meets the ring encoding (`relLift` side). Arity pins `hd : 0 < deg φ` and `(μ+n)·deg φ ≤ 2^{m₀}`; the `Rq` column bound is `CyclotomicModulus.natDegree_lt_of_reduced`. |
+| Eq. (22) contraction ↔ row defect | `ZeroCheck.alphaDefect_wTable`, `hAlphaEvals_eq_alphaDefect`, `hAlpha_eq_zero_iff_alphaDefect` | proven, **axiom-clean** | §4.3's "represent the constraints by polynomials" step: the only place the table encoding of the witness (commitment/sumcheck side) meets the ring encoding (`relLift` side). Arity pins `hd : 0 < deg φ` and `(μ+n·δ)·deg φ ≤ 2^{m₀}`; the `Rq` column bound is `CyclotomicModulus.natDegree_lt_of_reduced`. |
 | Figure-5 point checks | `ZeroCheck.relNestedZeroCheck` | deliberately repaired | Points are assembled directly from `m₀ + m₁` scalar challenge rounds; evaluation uses `CMlPolynomialEval.eval` directly. Also carries `liftShort` as the commitment's shortness index (see "Shortness" below); the weak-binding case is the separate escape event `nestedZeroCheckEsc`, not a conjunct of the relation. |
 | Axis-cross counterexample | `MvPolynomial.exists_nonzero_vanishing_on_axis_cross` | proven | Refutes the identity-testing step for the *prose* reading of Lemma 10 (a star of scalar coordinates). |
 | Nested zero-test kernel | `NestedEvaluationTree.eq_zero_of_vanishes_comp` (computable view `CMlPolynomialEval.eq_zero_of_polynomialVanishes_comp`/`_castAdd`/`_natAdd`; Hachi wrappers `hZero_eq_zero_of_evaluationTree`, `hAlpha_eq_zero_of_evaluationTree`) | proven, **axiom-clean** | A sibling-distinct complete `k`-ary tree with vanishing leaves forces a polynomial of individual degree `< k` to be zero, *read through a window of consecutive levels*. Mathlib-level statement in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`, computable view in `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`. Stated for general `k` (not just the multilinear `k = 2`), but with **one arity for every level**: a uniformly wider tree can certify a multilinear polynomial, whereas mixing a `k = 2` round with Lemma 9's `2d` or Lemma 11's `deg H + 1` would need per-level arity. |
 | Transcript-tree size | `NestedEvaluationTree.numLeaves_eq_pow`, `nestedZeroCheck_numLeaves`, `nestedZeroCheck_numLeaves_lt` | proven, **axiom-clean**; two unformalized steps | `k ^ n` leaves, and `< 4·A·B` at minimal arities. Stated because `CWSSStructure` carries no size bound: an exponential-family repair (e.g. the superseded Kronecker one at `D = 2 ^ m₀`) satisfies `coordinateWiseSpecialSound` just as well. But (i) these count the *adapter's* `NestedEvaluationTree`, not the `ChallengeTree.LeafPath`s the extractor consumes, and (ii) minimality of `m₀`, `m₁` is a hypothesis of `_lt`, not enforced — `hμn`/`hn` bound the arities from below only. |
 | Lemma-10 extraction (escape-threaded) | `ZeroCheck.nestedZeroCheckExtractor`, `nestedAssembly_escape_or_mem_relBatched` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
-| Lemma-10 binding alternative | `ZeroCheck.nestedZeroCheckEsc` via `LiftCom.Collision` | integrated | Two **distinct short** openings of the shared `t` are a member of `K.Collision`, hence a Module-SIS break of the fixed key ([NOZ26] Lemma 7 / Remark 2). Stated as a `ChallengeTree.EscapeEvent` on `(statement, tree)` rather than an extractor output, so it cannot be satisfied trivially; the shortness both openings need is supplied by `relNestedZeroCheck`'s own `liftShort` conjunct. **No concrete `LiftCom` is instantiated yet** — see the note at the end of "Shortness" below. |
+| Lemma-10 binding alternative | `ZeroCheck.nestedZeroCheckEsc` via `LiftCom.Collision` | integrated | Two **distinct short** openings of the shared `t` are a member of `K.Collision`, hence a Module-SIS break of the fixed key ([NOZ26] Lemma 7 / Remark 2). Stated as a `ChallengeTree.EscapeEvent` on `(statement, tree)` rather than an extractor output, so it cannot be satisfied trivially; the shortness both openings need is supplied by `relNestedZeroCheck`'s own `liftShort` conjunct. The concrete instantiation is `hachiLiftCom` (`RingSwitch/Reduction.lean`), the Ajtai product `D · (z ‖ digits(ρ))`, and `moduleSIS_relation_of_mem_Collision` proves its collision set satisfies `ModuleSIS.relation` at radius `2·bound`; what is still open is tying `D` to the inner-outer commitment's own key — see the note at the end of "Shortness" below. |
 | Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to **one** evaluation tree of depth `m₀ + m₁`, with `H₀` read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`); `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
 | Knowledge error (`∑ᵢ ℓᵢkᵢ/|Sᵢ|^{ℓᵢ}`, [FMN24] Lemma 4) | no declaration | **missing (repo-wide)** | ArkLib has no CWSS-to-knowledge-soundness theorem, so the *quantitative* content of both the paper's claim and this repair — `2(m₀+m₁)/|F_{q^k}|`, negligible — exists only in prose. This is the layer in which the repair's cost over the Schwartz–Zippel bound for unmodified Figure 5 would become visible. |
-| Honest completeness of this link | no declaration | **missing** | The forward direction is `eval 0 = 0` (a few lines) and is the only statement tying `nestedZeroCheckProver`'s `castAdd`/`natAdd` split to the verifier's. `nestedZeroCheckProver` is currently referenced nowhere. |
-| Link-5 un-batching pull-back | `ZeroCheck.mem_relLift_of_relBatched` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatched → relLift`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`; what remains missing for link 5 is only the forward/honest-completeness direction. |
-| Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLift` witness satisfies `relBatched`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
-| Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (`openCore`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This does not close link 5's paper-encoding or honest-completeness obligations. |
+| Honest completeness of this link | `ZeroCheck.nestedZeroCheckReduction_perfectCompleteness` | proven, **axiom-clean** | Full `Reduction.perfectCompleteness`, for arbitrary `oSpec`/`init`/`impl`. Two halves: `mem_relNestedZeroCheck_of_relBatched` is the algebra (`eval 0 = 0` at *arbitrary* points, hence zero error), and `nestedZeroCheckReduction_run_support` is the execution — an honest run cannot fail, and prover and verifier emit the same statement because both apply the same `castAdd`/`natAdd` split to the same transcript. An earlier revision of this row estimated the whole obligation at "a few lines"; that was true only of the algebra. The execution half needed a new framework lemma, `Reduction.perfectCompleteness_of_run_support` (`OracleReduction/Security/Basic.lean`), since ArkLib had no way to reach `perfectCompleteness` for a challenge-only protocol of arbitrary length. That lemma is generic and every later link can reuse it. |
+| Link-5 un-batching pull-back | `ZeroCheck.mem_relLift_of_relBatched` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatched → relLift`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n·δ)·deg φ ≤ 2^{m₀}`, `hd`, range-base fit `b−1 ≤ γ`, and digit-base admissibility `DigitBaseOk q γ bDig` — the quotient half is free, the committed digits being `⌊bDig/2⌋`-bounded for every quotient). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`. The forward/honest-completeness direction is the row below. |
+| Link-5 forward/completeness direction | `ZeroCheck.mem_relBatched_of_relLift`; `ZeroCheck.batchReduction_perfectCompleteness` | proven, **axiom-clean** | An honest `relLift` witness satisfies `relBatched`: `hZero_eq_zero_of_liftShort` puts every table entry among `P_b`'s roots, and `hAlpha_eq_zero_of_rows` covers the whole Boolean table (zero-padded beyond row `n`). It needs neither arity hypothesis and nothing about `α`, but the range-base fit in the **opposite** orientation (`bound ≤ b − 1`) together with `DigitBaseOk q (b−1) b` — so a single two-sided parameterization is pinned to the paper's `bound = b − 1`, at which `γ = bZero − 1 = O(b)` rather than `q/2`. `batchReduction` is the link as a protocol object (verifier shared with `batchPackage` by `rfl`); its completeness uses this direction alone, via `ReduceClaim.reduction_completeness_of_imp`. |
+| Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (inside `iteration`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This is the *soundness* composition; it does not close link 5's paper-encoding obligation. The honest counterpart — appending the three links' completeness — is in `HonestChain.lean` and is `sorryAx`-tainted through the generic `Reduction.append_completeness`. |
 
 ## Polynomial representation: multilinear value vectors and proof views
 
@@ -95,7 +109,7 @@ evaluations.
 | `H_α`, Eq. (22) | `hAlpha : CMlPolynomialEval F m₁` | `hAlphaML` | `hAlpha_eq_zero_iff`, `hAlphaML_eq_zero_iff` |
 | Public matrix `M̃_α`, power vector `α̃` | `mAlphaTilde`, `alphaTilde` | — | `alphaDefect_wTable` (contraction = row defect), `hAlpha_eq_zero_iff_alphaDefect` |
 | `mle[w̃]` and its opening | `cWTableMle`, `wTableMleEval` | — | `wTableMleEval_eq` |
-| Sumcheck summands `F_{0,τ₀}`, `F_{α,τ₁}` | `sumcheckPolyZero`, `sumcheckPolyAlpha` (via `cEqualityPolynomial`, `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`) | `hZeroML`/`hAlphaML` in the sum identities | `sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` (**both still `sorry`**) |
+| Sumcheck summands `F_{0,τ₀}`, `F_{α,τ₁}` | `sumcheckPolyZero`, `sumcheckPolyAlpha` (via `cEqualityPolynomial`, `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`) | `hZeroML`/`hAlphaML` in the sum identities | `sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` (**both proven, axiom-clean**) |
 | Round message `(g⁽⁰⁾, g⁽ᵅ⁾)` | `CPolynomial.degreeLE` subtypes | `Polynomial.degreeLE` | `CPolynomial.degreeLE_toPoly` |
 
 Consequences worth recording:
@@ -108,17 +122,17 @@ Consequences worth recording:
   evaluates the primary vectors directly; `hZero_eval_eq`/`hAlpha_eval_eq` cross to the Mathlib
   views where needed, while their zero identities remain equivalent to the primary vector
   identities.
-- **The sumcheck summands are now concrete; only their sum identities remain `sorry`.** The
+- **The sumcheck summands are concrete and their sum identities are proved.** The
   definitions `sumcheckPolyZero` (`F_{0,τ₀} = eq̃(τ₀, ·) · P_b(mle[w̃])`, per-variable degree
   `2b = roundDegZero b`), `sumcheckPolyAlpha` (the paper's
   `F_{α,τ₁} = mle[w̃] · mle[α̃(·) · ∑ᵢ eq̃(τ₁, i)·M̃_α(i, ·)]`, per-variable degree
   `2 = roundDegAlpha`), the public target `zcTargetAlpha = ∑ᵢ eq̃(τ₁, i)·yᵢ(α)` and the prover
   fold `hypercubeSum` all have concrete computable bodies (via `cEqualityPolynomial`,
-  `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`). What remains `sorry` are the
-  two full-cube sum identities `sum_sumcheckPolyZero`
-  (`∑ F_{0,τ₀} = H₀(τ₀)`) and `sum_sumcheckPolyAlpha` (`∑ F_{α,τ₁} = H_α(τ₁) + zcTargetAlpha`).
-  The sumcheck bridge's proved pull-back invokes exactly these two, which is where its `sorryAx`
-  comes from.
+  `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`). The two full-cube sum identities
+  `sum_sumcheckPolyZero` (`∑ F_{0,τ₀} = H₀(τ₀)`) and `sum_sumcheckPolyAlpha`
+  (`∑ F_{α,τ₁} = H_α(τ₁) + zcTargetAlpha`) are **proven and axiom-clean**; the latter runs the
+  `M̃_α` contraction over the `n·δ` digit columns and closes it with `rhoDigits_evalAt`. The
+  sumcheck bridge's pull-back invokes exactly these two and is therefore axiom-clean as well.
 - **The `m₀`-cube signature of `sumcheckPolyAlpha` is correct — there is no arity mismatch here.**
   Worth stating positively, because the pairing of the return type `CMvPolynomial m₀ F` with the
   batching point `τ₁ : Fin m₁ → F` invites the worry that the `m₀`-cube sum over-counts the
@@ -129,9 +143,9 @@ Consequences worth recording:
   over-count, and the two "fixes" the worry suggests would each break something correct: inserting a
   `∏_{j ≥ m₁} (1 − Xⱼ)` masking factor moves the sum away from `H_α(τ₁) + a` and so falsifies
   `sum_sumcheckPolyAlpha`, whose statement is faithful to p. 22; re-typing to `CMvPolynomial m₁ F`
-  makes the `w̃(x,y)` factor untypable, since `w̃` lives on the `m₀`-cube. So the per-round CWSS
-  needs no extra `m₀`/`m₁` pin — the pins `n ≤ 2^{m₁}` and `(μ+n)·deg φ ≤ 2^{m₀}` already carried
-  by link 5 are about the row-indexing and range-table embeddings, not about this sum.
+  makes the `w̃(x,y)` factor untypable, since `w̃` lives on the `m₀`-cube. The sumcheck development therefore needs no
+  extra `m₀`/`m₁` pin — the pins `n ≤ 2^{m₁}` and `(μ+n·δ)·deg φ ≤ 2^{m₀}` already carried by link 5
+  are about the row-indexing and range-table embeddings, not about this sum.
 
 ## Uniform-vector challenge gap (why the repair is needed)
 
@@ -194,8 +208,8 @@ mathematical necessity, is why the pSpec has `m₀ + m₁` rounds.
 
 The branching arity per round is only `2`, but there are `m₀ + m₁` challenge rounds instead of
 one, so the transcript tree has `2 ^ (m₀ + m₁)` leaves — `NestedEvaluationTree.numLeaves_eq_pow` /
-`nestedZeroCheck_numLeaves`. Since `hμn` pins `2^{m₀} ≥ (μ + n)·deg φ` and `hn` pins
-`2^{m₁} ≥ n`, with `m₀`, `m₁` chosen minimally that is `< 4·(μ + n)·d·n` transcripts
+`nestedZeroCheck_numLeaves`. Since `hμn` pins `2^{m₀} ≥ (μ + n·δ)·deg φ` and `hn` pins
+`2^{m₁} ≥ n`, with `m₀`, `m₁` chosen minimally that is `< 4·(μ + n·δ)·d·n` transcripts
 (`nestedZeroCheck_numLeaves_lt`) — polynomial in the witness dimensions, so extraction stays
 polynomial. These bounds are now *theorems* rather than prose, because `CWSSStructure` carries no
 size condition and therefore cannot itself tell a usable repair from an exponential one.
@@ -203,8 +217,13 @@ size condition and therefore cannot itself tell a usable repair from an exponent
 Three caveats worth keeping in view:
 
 * **Concretely large.** At [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has
-  `(μ + n)·deg φ ≈ 2^26` entries so `m₀ = 26`, and `rlinRows = dRows + outerRows + 1 + 1 +
-  innerRows = 5` gives `m₁ = 3`: about `2^29` transcripts, against the `2D − 1 = 4095` of the printed
+  `A = (μ + n·δ)·deg φ` entries, `δ = clog_b q`. The digit widening touches only the quotient
+  block: at `q ≈ 2^32` and `deg φ = 2^10` it grows that block from `n·d = 5·2^10 ≈ 2^12.3` to
+  `n·δ·d ≤ 5·32·2^10 ≈ 2^17.3` (`δ ≤ 32`, maximal at `b = 2` and falling as `b` grows — `δ = 4` at
+  `b = 2^8`), i.e. it adds at most `≈ 0.25%` to the `≈ 2^26` that `μ·d` already contributes. So
+  `A ≈ 2^26` and `m₀ = 26` as before, unless the un-widened table sat within that margin of the
+  cap, in which case `m₀ = 27`. With `rlinRows = dRows + outerRows + 1 + 1 +
+  innerRows = 5` giving `m₁ = 3`: about `2^29` transcripts, against the `2D − 1 = 4095` of the printed
   lemma's `SS(F, 2, D)` family at `D = max(2d, 2b − 1) = 2048` — a factor `≈ 2^17`. Polynomial ≠
   small, and ROM/Fiat–Shamir knowledge-error translations degrade with tree size and RO-query count.
 * **Not accounted for in the composition.** CWSS leaf counts multiply across rounds
@@ -256,7 +275,8 @@ code.
 soundness error*. For a nonzero `H₀` the univariate pullback `powAlgHom H₀` has degree
 `≤ 2^{m₀} − 1`, so a seed lands on a root with probability up to `2^{m₀}/|F_{q^k}|`. At the paper's
 Figure 9 parameters (`q ≈ 2^32`, `k = 4` so `|F_{q^k}| ≈ 2^128`; `deg φ = 2^10` and `w̃` length
-`≤ 2^26`, hence `m₀ ≈ 26`, which is also what `hμn` pins) that is `≈ 2^-102`, against `≈ 2^-123`
+`(μ + n·δ)·deg φ ≲ 2^26` — see the digit-widening note above — hence `m₀ ≈ 26`, which is also what
+`hμn` pins) that is `≈ 2^-102`, against `≈ 2^-123`
 for Figure 5's uniform `τ₀` by Schwartz–Zippel — a **~21-bit regression** on a `λ = 128` target.
 Buying those bits back was not cheap: `k` must divide `d/2 = 512` ([NOZ26] Lemma 1 / Theorem 1), so
 `k` is a power of two — `k = 5` would suffice numerically but is illegal, and the next legal value
@@ -281,7 +301,7 @@ No bound better than `2^{m₀}/|F_{q^k}|` was ever proved for that reparametrisa
 multilinears, but a protocol adversary must exhibit an `H₀` of the form `∑ᵢ eq̃(t,i)·P_b(w̃(i))`,
 which that lemma did not construct.
 
-### How the adopted route was chosen (correspondence with the authors)
+### Scalar-round route (correspondence with the authors)
 
 The axis-cross gap was raised with the [NOZ26] authors directly, and this subsection records that
 correspondence, which is the provenance of the design now formalized.
@@ -290,24 +310,16 @@ In a reply of 2026-07-31, George O'Rourke confirmed the diagnosis — that Schwa
 invoked under CWSS, because the CWSS tree constrains only the coordinate-wise structure of the
 challenges and says nothing about their distribution — and also noted that the printed analysis
 takes `(τ₀, τ₁)` as a two-coordinate vector even though the two coordinates are drawn from
-`F_{q^k}^{log μ + log d}` and `F_{q^k}^{log n}`, neither of which is `F_{q^k}`. Two alternatives
-were proposed there, both of which leave Figure 5's protocol unchanged:
-
-1. drop CWSS for this step and argue knowledge soundness directly by Schwartz–Zippel, at the cost
-   of no longer being able to compose the chain through a single generic CWSS-to-knowledge-soundness
-   step;
-2. treat each coordinate of `(τ₀, τ₁)` as a separate challenge round and prove plain
-   `(k, …, k)`-special soundness by root counting with induction on the number of variables.
-
-**Route 2 is what this formalization now implements.** Both caveats attached to it at the time have
-been discharged: the required multivariate root-counting lemma *is* now in the tree —
-`NestedEvaluationTree.eq_zero_of_vanishes_comp`, an induction on a path-dependent `k`-ary tree rather
-than on a Cartesian grid — and the relevant per-coordinate degree is indeed `1`, so the
-per-coordinate parameter is `k = 2` (both `H₀` and `H_α` are multilinear *in the challenge*; the
-`2b − 1` and `2` appearing in the paper are witness-side sumcheck degrees). The error stays at
-Figure 5's order, `2(m₀ + m₁)/|F_{q^k}|` by [FMN24] Lemma 4 at `ℓᵢ = 1`, `kᵢ = 2` — that lemma
-itself is still not formalized in ArkLib, so the arithmetic remains prose. Route 1 was not taken:
-it would forfeit the generic CWSS-to-knowledge-soundness composition the rest of the chain uses.
+`F_{q^k}^{log μ + log d}` and `F_{q^k}^{log n}`, neither of which is `F_{q^k}`.
+The formalization treats each coordinate of `(τ₀, τ₁)` as a separate challenge round and proves
+plain `(k, …, k)`-special soundness by induction on the number of variables. The required
+multivariate root-counting lemma is `NestedEvaluationTree.eq_zero_of_vanishes_comp`, an induction
+on a path-dependent `k`-ary tree rather than on a Cartesian grid; the per-coordinate degree is
+`1`, so `k = 2` (both `H₀` and `H_α` are multilinear *in the challenge*; the `2b − 1` and `2`
+appearing in the paper are witness-side sumcheck degrees). The error stays at Figure 5's order,
+`2(m₀ + m₁)/|F_{q^k}|` by [FMN24] Lemma 4 at `ℓᵢ = 1`, `kᵢ = 2`; that lemma itself is still not
+formalized in ArkLib, so the arithmetic remains prose. This form supports the generic
+CWSS-to-knowledge-soundness composition used by the rest of the chain.
 
 ## Other divergences from the printed Figure 5 / Lemma 10
 
@@ -320,9 +332,10 @@ formalization against the printed paper will otherwise read them as bugs.
   "for each `u ∈ [μ + n]` and `ℓ ∈ [d]`" — i.e. on the `r` rows too, consistent with the earlier
   `‖z‖∞, ‖r‖∞ ≤ b − 1`. The two readings differ exactly by the indicator, so the paper's own
   `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) = H₀(τ₀)` is **false as printed**. ArkLib follows the Eq. (23) reading: no
-  indicator, range constraint on both row blocks. Visible in `wTable_zRow`/`wTable_rRow` and in
-  `hZero_eq_zero_imp_liftShort` discharging a `z`-side *and* an `r`-side bound. Recorded in the
-  `sum_sumcheckPolyZero` docstring.
+  indicator, range constraint on every row of `w̃`, the `n·δ` quotient-digit rows included. Visible
+  in `wTable_zRow`/`wTable_rRow` and in `hZero_eq_zero_imp_liftShort` reading both blocks — though
+  only the `z` block is substantive there, the digit rows being in range by construction
+  (`rhoDigits_valMinAbs_natAbs_le`). Recorded in the `sum_sumcheckPolyZero` docstring.
 - **`D` vs `2D − 1` transcripts.** Lemma 10 asks for "`D` valid transcripts … `∈ SS(F_{q^k}, 2, D)`",
   but `SS(S, ℓ, k)` is defined with `ℓ(k−1)+1` elements, so at `(ℓ, k) = (2, D)` the family has
   `2D − 1` transcripts. This is now a paper-side reading note only: the active
@@ -342,7 +355,7 @@ formalization against the printed paper will otherwise read them as bugs.
   `m₀ + m₁` scalar coordinates is its own challenge round — close in spirit to the prose reading,
   but with the per-round transcript tree the extraction actually needs.
 - **`τ₀` arity on p. 20.** `τ₀` is drawn from `F^{log μ + log d}` although `w̃`'s domain is
-  `[μ + n] × [d]`, so the paper's arity there should read `log(μ + n) + log d`. ArkLib's `m₀` is
+  `[μ + n·δ] × [d]` (the quotient block being its base-`b` digits), so the paper's arity there should read `log(μ + n·δ) + log d`. ArkLib's `m₀` is
   pinned to the latter by `hμn`.
 
 The last three are paper-reading notes recorded here; the protocol-level deviation itself is
@@ -365,19 +378,19 @@ abbreviation for the generic `CoordinateWise.BindingCommitment W Short`
 (`RingSwitch/Reduction.lean`), a two-field structure — the commitment space `TCom` and the
 deterministic map `com` — indexed by the shortness regime its binding guarantee is restricted to.
 Hachi instantiates that index with the range predicate itself,
-`LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)`, and the two notions are therefore
+`LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)`, and the two notions are therefore
 **identified** rather than separated. Consequently:
 
-**At the batching bridge — derived (option 1).** `relBatched` carries the *full* identity
+**At the batching bridge — derived shortness.** `relBatched` carries the *full* identity
 `H₀ ≡ 0`. Since every committed coefficient is a table entry of `wTable`, `H₀ ≡ 0` forces each
 into the symmetric range `[−(b−1), b−1]`, so `liftShort` is a *consequence*. `relBatched`
 therefore **carries no `liftShort` conjunct**; the pull-back
 `mem_relLift_of_relBatched` derives it via `hZero_eq_zero_imp_liftShort` (see Link 5). This is
-the range machinery is load-bearing, and knowledge soundness
-*proves* the committed witness short rather than assuming it.
+the range machinery is load-bearing, and knowledge soundness *proves* the committed witness short
+rather than assuming it.
 
-**At the point-check seams — `liftShort` is present, as the commitment's shortness index
-(option 3).** `relNestedZeroCheck` and `nestedRoundRel` each carry `liftShort … p.2` alongside
+**At the point-check seams — `liftShort` is present as the commitment's shortness index.**
+`relNestedZeroCheck` and `nestedRoundRel` each carry `liftShort … p.2` alongside
 `t = Com(w̃)`, `H₀(τ₀) = 0` and `H_α(τ_α) = 0`. This is not a range assumption smuggled in ahead
 of its proof, and it is not optional: `LiftCom.Collision` is defined as
 `{p | p.1 ≠ p.2 ∧ com p.1 = com p.2 ∧ Short p.1 ∧ Short p.2}`, so a colliding pair only counts as a
@@ -401,25 +414,32 @@ polynomial vanishing at any single prescribed point always exists, and recoverin
 one opening needs the *complete* sibling-distinct depth-`m₀` tree — all `2^{m₀}` leaves — to
 share that opening (`eq_zero_of_vanishes_comp`). The collision branch of
 `nestedAssembly_escape_or_mem_relBatched` is by definition the case where the leaves do *not*
-share one opening, so it can never run the zero test for a *single* colliding opening. (The superseded Kronecker-seed
-variant hit the same wall in sharp form — `2^m − 1` seeds never suffice — as recorded in the
-historical section above.)
+share one opening, so it can never run the zero test for a *single* colliding opening. (The
+superseded Kronecker-seed variant hit the same wall in sharp form — `2^m − 1` seeds never suffice —
+as recorded in "Superseded: the one-round Kronecker-seed repair" above.)
 
 Note this is **not** a weakening of the binding assumption to unconditional binding, which would
 be false for Ajtai commitments: `Collision`'s `Short` conjuncts are precisely what keeps the
-regime conditional. The remaining obligation is to exhibit a concrete `LiftCom` whose collision
-set really is a Module-SIS target — the inner-outer commitment, with the escape discharged by
-`outputToModuleSIS_valid_of_verified` (`InnerOuter/Security.lean`). That instantiation is **not
-done**; `Composition.lean`'s closing note lists it as open work, and the only `LiftCom` value in
-the tree is the injective `com := id` example that witnesses non-vacuity by having an empty
-collision set. Until it exists, "`liftShort` is the right binding regime for Hachi" is an
-assumption of this chain, not a theorem of it. The range identity of `relBatched` is
+regime conditional. A concrete `LiftCom` whose collision set really is a Module-SIS target now exists:
+`hachiLiftCom` (`RingSwitch/Reduction.lean`) is the Ajtai product `D · (z ‖ digits(ρ))` at a key of
+the matching width `μ + n·δ`, `nonrecursiveLiftCom` pins it for the chain (`Concrete.lean`), and
+`moduleSIS_relation_of_mem_Collision` proves that a member of its collision set satisfies
+`ModuleSIS.relation Φ _ D` at radius `2·bound` — nonzero (`liftMessage_injective`), short, in the
+kernel. That the norm conjunct is non-vacuous is exactly what committing the quotient's **digits**
+buys: with the raw quotient the block was only `q/2`-bounded (`rhoShort_half`).
+
+What is still open is the *other* half of the tie: `D` is taken as a parameter rather than sampled
+by `keygen` alongside the inner-outer commitment's own key, so the escape is not yet discharged by
+`outputToModuleSIS_valid_of_verified` (`InnerOuter/Security.lean`). `Composition.lean`'s closing
+`TODO` block lists that as open work. Until it lands, "`liftShort` is the right binding regime for
+Hachi" is an assumption of this chain about *which* key the hardness is asserted for, not about
+whether the collision set is a genuine SIS instance. The range identity of `relBatched` is
 discharged over the family by the binary-evaluation-tree zero test
 (`hZero_eq_zero_of_evaluationTree`), so the zero-check retains its intended content.
 
 ## Residual gaps (out of Lemma-10 scope)
 
-- **Encoding — the two identities are complete; only the sumcheck summands remain.** `hZero`
+- **Constraint encoding — complete: the two identities and both sum identities are proved.** `hZero`
   and `hAlpha` are genuine multilinear extensions, both coefficient functions are concrete (no
   longer `sorry`), and both now correspond to the paper's own construction:
   - `hAlphaEvals` = the `α`-evaluated per-row lift defect, row-encoded into the `m₁`-cube via
@@ -427,21 +447,38 @@ discharged over the family by the binary-evaluation-tree zero test
     specification in the *ring* representation, but it is **no longer only that**: the paper's
     Eq. (22) contraction is built (`mAlphaTilde`, `alphaTilde`, `wTablePoint`, `alphaContract`,
     `alphaDefect`) and proved equal to it (`alphaDefect_wTable`, axiom-clean), with the
-    relation-level consequence `hAlpha_eq_zero_iff_alphaDefect`. So this is no longer a gap.
-  - `wTable` reads the committed `z`/`r` coefficients **directly** (decoding the `m₀`-cube to
-    `row := idx / d`, `col := idx % d`), so `H₀ ≡ 0` is a genuine (non-vacuous) shortness statement
-    on the committed data. (Re-decomposing to base-`b` digits would be vacuous — digits are always
-    in range by construction; the paper's gadget decomposition is the honest prover's pre-commit
-    step, not part of the range test.)
+    relation-level consequence `hAlpha_eq_zero_iff_alphaDefect`. This encoding gap is closed.
+  - `wTable` reads the coefficients of the **committed vector** (decoding the `m₀`-cube to
+    `row := idx / d`, `col := idx % d`): the `z` block directly, the quotient block as its base-`b`
+    digits (`rhoDigits`, `n·δ` rows).
+
+    **Superseded reasoning, recorded because it was the argument for the raw layout.** An earlier
+    version of this audit held that `H₀` must range-check *raw* `z`/`r` coefficients, since digits
+    "are always in range by construction" and a digit table would make the check vacuous. The first
+    half is right and the conclusion is wrong. The digit rows of `H₀` *are* automatically satisfied
+    here — `wTable` computes them from `w` by `rhoDigits`, so within this model nothing can put an
+    out-of-range value there — and `H₀`'s soundness content is therefore the `z` block alone
+    (`hZero_eq_zero_imp_liftShort`'s first conjunct). But the raw layout's apparent non-vacuity was
+    illusory: the only unconditional bound on a raw Hachi quotient is `q/2` (`rhoShort_half`,
+    sharp), so the quotient half of `H₀ ≡ 0` could only be *satisfiable* at `bZero − 1 ≥ q/2` — a
+    range box that is all of `ZMod q`, hence a check with no content, at a range polynomial of
+    degree linear in `q`.
+
+    The trade is therefore between a check that is trivially satisfied at a **small** base and one
+    that is trivially satisfied at a base so large it is vacuous anyway. The digit layout wins
+    twice over: the bound the quotient half would have supplied is supplied by *construction*, at
+    radius `⌊b/2⌋` instead of `q/2` (`rhoDigits_valMinAbs_natAbs_le`), and that is what makes
+    `LiftCom.Collision` a real Module-SIS instance (`moduleSIS_relation_of_mem_Collision`).
+    `H₀` stays load-bearing for the `z` block, and it is still what pins `bZero`.
 
   Consequently `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is **axiom-clean**:
-  `#print axioms` reports no `sorryAx` (only ambient `propext`/`Classical.choice`/`Quot.sound`; the
-  `Classical.choice` is the constructivity caveat below, from `nestedPathResponse`'s witness
-  selection). The standalone kernel `NestedEvaluationTree.eq_zero_of_vanishes_comp` is likewise
-  axiom-clean.
-  **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is proven** (`hZero_eq_zero_imp_liftShort`,
-  see Link 5). **Still open, out of Lemma-10 scope:** the two sum identities
-  `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (the summand *definitions* are concrete).
+  `#print axioms` reports no `sorryAx` (only ambient `propext`/`Classical.choice`/`Quot.sound`;
+  `Classical.choice` is proof-local, assembling a response family from valid
+  `ChallengeTree.LeafWitnesses` for the evaluation-tree argument). The standalone kernel
+  `NestedEvaluationTree.eq_zero_of_vanishes_comp` is likewise axiom-clean.
+  **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is now proven** (`hZero_eq_zero_imp_liftShort`,
+  see Link 5). The two full-cube sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`
+  are proved and axiom-clean too, so this file carries no remaining obligation.
 - **Link 5 (batching bridge).** The un-batching pull-back `mem_relLift_of_relBatched`
   (`relBatched → relLift`, `ZeroCheck/Batch.lean`) is **proof-`sorry`-free and axiom-clean**
   (`#print axioms` = `propext`/`Classical.choice`/`Quot.sound`, no `sorryAx`). It establishes both
@@ -451,60 +488,55 @@ discharged over the family by the binary-evaluation-tree zero test
   - **shortness `liftShort` from `H₀ ≡ 0`** (`hZero_eq_zero_imp_liftShort`): every committed
     coefficient is a table entry (`wTable_zRow`/`wTable_rRow`), hence a root of the range factor
     `P_b`, hence a centered residue of absolute value `≤ b − 1`
-    (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`, using injectivity of `φF` on `ZMod q`). This is
-    resolution *option 1*: shortness is **derived**, not assumed. The reconciliation with
-    `liftShort`'s two bounds is the pair of hypotheses `b − 1 ≤ γ` (z-side) and `b − 1 ≤ ρBound`
-    (r-side), together with the column-encoding arity
-    `(μ+n)·deg φ ≤ 2^{m₀}`; these are threaded through `batchPackage` and `openCore`.
+    (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`, using injectivity of `φF` on `ZMod q`). This
+    derives shortness rather than assuming it. Since the gadget refactor `liftShort` has a
+    **single** bound: the reconciliation is `b − 1 ≤ γ` on the `z` side, while the quotient side
+    needs no reconciliation at all — the committed quotient block holds base-`b` *digits*
+    (`rhoDigits`, `wTable_rRow`), which are `⌊b/2⌋`-bounded for every quotient
+    (`rhoDigits_valMinAbs_natAbs_le`), so `DigitBaseOk q γ bDig` discharges it outright. Together
+    with the column-encoding arity `(μ + n·δ)·deg φ ≤ 2^{m₀}`, these are threaded through
+    `batchPackage` and `iteration`.
+
+    Range-checking the raw quotient rows instead would need a second bound of its own, and
+    `rhoShort_half` forces that one to `q/2`, pinning `γ = q/2 = bZero − 1` and emptying both the
+    Eq. (20) ball check and `LiftCom.Collision` of content. See
+    `HonestRangeParams.pinned_of_soundness_orientations`, which lands at `γ = bZero − 1 < q/2`.
   `K.com` and the bound conjunct are carried verbatim. That `hAlpha` is the polynomial constructed
   in paper Eq. (22) is proved separately by `alphaDefect_wTable` /
-  `hAlpha_eq_zero_iff_alphaDefect`. **Still missing:** the forward/honest-completeness theorem
-  `relLift → relBatched`.
-- **Constructivity — this is where the repair falls short of Lemma 10.** Lemma 10 claims an
-  *efficient deterministic algorithm*; `nestedZeroCheckExtractor` is neither. `nestedPathResponse`
-  does not read a witness off the transcript (there is none to read: `w̃` is the output relation's
-  witness, not a protocol message) — it selects, by classical choice, *some* witness satisfying
-  `relNestedZeroCheck` at each leaf, as does `nestedZeroCheckExtractor`'s branch selection and the
-  generic `treeExtractor`. Hence "all leaves carry one opening" constrains selected witnesses rather
-  than a prover's replies, and the collision branch fires when choice happens to select different
-  openings, so the binding horn is discharged by the *existence* statement `nestedZeroCheckEsc`
-  (some pair of leaf responses lies in `K.Collision`) rather than by a reduction producing the
-  Module-SIS solution from an adversary. A constructive extractor
-  would need witness-bearing trees or a decidable enumeration interface; without one, [FMN24]
-  Lemma 4's poly-time hypothesis cannot be met even in principle.
+  `hAlpha_eq_zero_iff_alphaDefect`. The forward/honest-completeness theorem `relLift → relBatched`
+  is now proved as well (`mem_relBatched_of_relLift`, packaged as
+  `batchReduction_perfectCompleteness`), so this link — like link 6 — is certified in both
+  directions; what an end-to-end completeness statement still hits is the generic
+  `Reduction.append_completeness`, not a Hachi obligation.
+- **Executable witness-fed extraction.** `nestedZeroCheckExtractor` is an ordinary executable
+  function: `ChallengeTree.LeafWitnesses` supplies an `Option` candidate output witness at each
+  leaf, and the extractor returns the all-left entry unchanged, including `none`. Under the CWSS
+  validity premise, its certificate proves that this lookup yields the required `relBatched`
+  witness unless `nestedZeroCheckEsc` fires. It neither searches `relNestedZeroCheck` nor branches
+  on acceptance at runtime. Classical choice appears only inside the proof, where valid leaf
+  witnesses are assembled into the total response family required by the evaluation-tree argument.
+  The remaining caveat is the repaired scalar-round setting, not missing witnesses: it is not a
+  proof of the paper's printed star extraction, it requires sequential Fiat–Shamir hashing, and its
+  complete transcript tree has `2 ^ (m₀ + m₁)` leaves.
 - **Sumcheck seam.** `nestedRoundRel` carries `liftShort` on the same shortness-index grounds as
   `relNestedZeroCheck` (see above), and the sumcheck
-  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved** — but
-  `#print axioms` shows it inherits `sorryAx` from the two `sorry` sum identities above, so the
-  bridge is only as discharged as those. Further down the chain (out of Lemma-10 scope), the
-  per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` ([NOZ26] Lemma 11) and the
-  final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`) remain
-  `sorry`.
+  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved and axiom-clean**,
+  the two sum identities it rests on (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`) having
+  been discharged. Further down the chain (out of Lemma-10 scope), the
+  per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11) and the
+  final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`)
+  are proved and axiom-clean as well.
 
-## Resolution options (for the record)
+## Design choices
 
-1. **[adopted at the batching bridge]** derive shortness from the range identity `H₀ ≡ 0`
+1. At the batching bridge, derive shortness from the range identity `H₀ ≡ 0`
    (`hZero_eq_zero_imp_liftShort`), so `relBatched` does not carry a shortness conjunct;
-2. ~~separate the two shortness notions: give `LiftCom` its own `Opening` type carrying [NOZ26]
-   Lemma 7's weak-opening admissibility, plus a `table` view onto the Eq. (21) table, and state
-   binding unconditionally on openings with the premise `table o ≠ table o'`, so that no relation
-   above the commitment mentions a norm~~ — **tried and reverted** (6 August 2026, during the
-   merge with upstream `main`), in favour of upstream's `CoordinateWise.BindingCommitment`
-   convention. One thing to weigh before reviving it: the concrete scheme's binding theorem
-   `outer_relation_of_verified` consumes an ℓ∞ bound on *each* opening
-   (`VerifiedOpening.outer_short`), but that bound is on the flattened inner decomposition
-   `flattenBlocks opening.innerDecomp`, which is not the Eq. (21) table `liftShort` constrains — so
-   an unconditional-on-openings `collision` statement would still owe a bridge between the two
-   norms;
-3. **[adopted at the point/sumcheck seams]** keep `liftShort` as a relation conjunct there, as the
-   index of `CoordinateWise.BindingCommitment`. This is upstream's convention, and it is what
+2. At the point/sumcheck seams, keep `liftShort` as a relation conjunct there, as the
+   index of `CoordinateWise.BindingCommitment`. This is what
    makes a colliding pair a member of `LiftCom.Collision`. The cost is that the point seams
    *assume* a predicate the chain elsewhere proves; the reason that is not circular is that the
    relation which proves it — `relBatched`, via `H₀ ≡ 0` — carries no shortness conjunct of its
-   own, so nothing derives `liftShort` from an assumption of `liftShort`. Net effect versus 2: one
-   binding assumption removed, none added, and the audit surface becomes a single instantiation
-   line;
-4. weakening binding to *unconditional* on raw tables would also erase the conjunct, but is
+   own, so nothing derives `liftShort` from an assumption of `liftShort`.
+3. Do not weaken binding to *unconditional* on raw tables: it would erase the conjunct but is
    **unsound** — two long openings of one Ajtai commitment are easy to find and yield no
-   Module-SIS solution. Option 3 differs precisely in keeping the regime conditional, through
-   `Collision`'s `Short` conjuncts.
+   Module-SIS solution. Keeping `Collision`'s `Short` conjuncts preserves the conditional regime.

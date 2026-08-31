@@ -426,26 +426,28 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
         have : u 0 i = 0 := by
           have hi' : i ∈ S0 := hi
           simpa [S0] using (Finset.mem_filter.mp hi').2.1
-        simp [Code.finMapTwoWords, this]
+        exact Finset.mem_filter.mpr
+          ⟨Finset.mem_univ i, by simpa [Code.finMapTwoWords] using this.symm⟩
     · constructor
       · exact (ReedSolomon.code domain 0).zero_mem
       · intro i hi
         have : u 1 i = 0 := by
           have hi' : i ∈ S0 := hi
           simpa [S0] using (Finset.mem_filter.mp hi').2.2
-        simp [Code.finMapTwoWords, this]
+        exact Finset.mem_filter.mpr
+          ⟨Finset.mem_univ i, by simpa [Code.finMapTwoWords] using this.symm⟩
   · by_cases hdeg_le : deg ≤ n
-    · letI : NeZero deg := ⟨hdeg_zero⟩
+    · let : NeZero deg := ⟨hdeg_zero⟩
       have hBW : 2 * e < n - deg + 1 := by
         simpa [n, e] using
           (RS_BW_bound_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hdeg_le hδ)
       have hgood_pos : 0 < good.card := lt_trans hn_pos hgood_card
       let P_x : Finset F := Finset.univ.map domain
       let P_y : Finset F := good
-      haveI : Nonempty P_x := by
+      have : Nonempty P_x := by
         apply Finset.Nonempty.to_subtype
         simp [P_x]
-      haveI : Nonempty P_y := by
+      have : Nonempty P_y := by
         apply Finset.Nonempty.to_subtype
         exact Finset.card_pos.mp hgood_pos
       have evalY_natDegree_le_degreeX (z : F) (f : F[X][Y]) :
@@ -712,16 +714,18 @@ theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : ℕ} {domain : ι ↪ F} 
           have hiQ : domain i ∈ Q_x := Finset.mem_preimage.mp hi
           have hEval : Polynomial.Bivariate.evalX (domain i) P = quot_y (domain i) := hQx_eval _ hiQ
           have hcoeff := congrArg (fun p : F[X] => p.coeff 0) hEval
-          simpa [v0, quot_y, Polynomial.Bivariate.evalX, Polynomial.coeff,
-            Function.leftInverse_invFun domain.injective i] using hcoeff
+          exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, by
+            simpa [quot_y, Polynomial.Bivariate.evalX, Polynomial.coeff,
+              Function.leftInverse_invFun domain.injective i, Code.finMapTwoWords, v0] using hcoeff⟩
       · constructor
         · simpa [v1] using hv_mem 1
         · intro i hi
           have hiQ : domain i ∈ Q_x := Finset.mem_preimage.mp hi
           have hEval : Polynomial.Bivariate.evalX (domain i) P = quot_y (domain i) := hQx_eval _ hiQ
           have hcoeff := congrArg (fun p : F[X] => p.coeff 1) hEval
-          simpa [v1, quot_y, Polynomial.Bivariate.evalX, Polynomial.coeff,
-            Function.leftInverse_invFun domain.injective i] using hcoeff
+          exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, by
+            simpa [quot_y, Polynomial.Bivariate.evalX, Polynomial.coeff,
+              Function.leftInverse_invFun domain.injective i, Code.finMapTwoWords, v1] using hcoeff⟩
     · have hdeg_gt : n < deg := Nat.lt_of_not_ge hdeg_le
       let p0 : F[X] := Lagrange.interpolate Finset.univ domain (u 0)
       let p1 : F[X] := Lagrange.interpolate Finset.univ domain (u 1)

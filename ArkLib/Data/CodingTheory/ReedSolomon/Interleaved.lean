@@ -85,7 +85,7 @@ theorem minDist_irsCode_eq_minDist_rsCode {ι : Type*} [Fintype ι] {F : Type*} 
     [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] :
     Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F))
       = Code.minDist ((ReedSolomon.code domain (k / s) : Submodule F (ι → F)) : Set (ι → F)) := by
-  haveI : Nonempty (Fin s) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero (NeZero.ne s))
+  have : Nonempty (Fin s) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero (NeZero.ne s))
   rw [irsCode, Code.interleavedCode_eq_interleavedCodeSet_of_moduleCode]
   exact Code.minDist_interleavedCodeSet (κ := Fin s) _
 
@@ -121,8 +121,8 @@ theorem minDist_irsCode {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Fie
     [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] (hks : 0 < k / s) :
     Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F))
       = Fintype.card ι - k / s + 1 := by
-  letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
-  haveI : NeZero (k / s) := ⟨by omega⟩
+  let : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
+  have : NeZero (k / s) := ⟨by omega⟩
   rw [minDist_irsCode_eq_minDist_rsCode, ReedSolomon.minDist_eq_card_sub_min_add_1]
   omega
 

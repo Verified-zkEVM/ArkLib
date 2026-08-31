@@ -241,7 +241,7 @@ theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
   foldWord domain f 1 α i =
     ((f j + f j') / 2) + α * ((f j - f j') / (2 * domain j)) := by
   have hn : n ≠ 0 := by aesop (add safe [cases Fin, (by omega)])
-  letI : NeZero n := ⟨hn⟩
+  let : NeZero n := ⟨hn⟩
   rw [foldWord_k_1]
   extract_lets x a b
   have ha : domain a = x := by simp [a]
@@ -373,7 +373,7 @@ theorem foldWord_codeword {d : ℕ}
         (FoldingPolynomial.polyFold (ReedSolomon.toPolynomial p) (2 ^ k) α) := by
   ext x
   simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
-    Embedding.coeFn_mk, toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
+    toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
   aesop
@@ -425,7 +425,7 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
     · intro i
       have := foldWord_codeword (α := α) hk (p := ⟨f, hf⟩)
       simp only at this
-      simp only [this, evalOnPoints, Embedding.coeFn_mk,
+      simp only [this, evalOnPoints,
         LinearMap.coe_mk, AddHom.coe_mk]
       obtain ⟨hp_deg, hf'⟩ := hf'
       subst hf'
@@ -441,10 +441,11 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ}
           · aesop (add unsafe (by rw [WithBot.le_def]))
           · simp [min, hd]
       · intro i _
-        conv_lhs =>
-          rw [show domain i = (domain : (Fin (2 ^ n)) ↪ F) i by rfl]
-        rw [ReedSolomon.toPolynomial_eval_at_domain]
-        simp [evalOnPoints]
+        have h := ReedSolomon.toPolynomial_eval_at_domain
+          (domain := (domain : Fin (2 ^ n) ↪ F)) (deg := d)
+          (c := ⟨ReedSolomon.evalOnPoints (domain : Fin (2 ^ n) ↪ F) p, hf⟩) (i := i)
+        simpa only [ReedSolomon.evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk,
+          CosetFftDomainClass.coe_embedding_apply] using h
 
 private lemma div_two_pow_div_two (d k : ℕ) :
     d / 2 ^ k / 2 ^ 1 = d / 2 ^ (k + 1) := by
@@ -484,11 +485,14 @@ theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ}
     rw [hunfold, ReedSolomon.mem_code_iff_exists_polynomial]
     refine ⟨p, hpdeg, ?_⟩
     funext i
-    have hb := subdomain_comp (ω := domain) hk (i := i) rfl
-    simp only [hpeval, ReedSolomon.evalOnPoints, Function.Embedding.coeFn_mk, LinearMap.coe_mk,
+    have hb := subdomain_comp (ω := domain) hk
+      (a := ⟨i.val, by rw [Nat.sub_sub]; exact i.isLt⟩) (i := i) rfl
+    simp only [hpeval, ReedSolomon.evalOnPoints, LinearMap.coe_mk,
       AddHom.coe_mk]
-    rw [←hb]
-    congr
+    change Polynomial.eval ((domain.subdomain k).subdomain 1 ⟨i.val, by
+      rw [Nat.sub_sub]
+      exact i.isLt⟩) p = Polynomial.eval (domain.subdomain (k + 1) i) p
+    exact congrArg (fun x => Polynomial.eval x p) hb
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin (2 ^ k)) (x : F) : F :=
@@ -622,15 +626,7 @@ private lemma indicated_polynomial_eq_foldAux'
     (Polynomial.evalRingHom x)
     (indicatedPolynomial domain f k s')) =
     foldWordAux domain f k x := by
-  apply Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := (2 ^ k))
-    <;> try tauto
-  · aesop
-     (add safe [(by rw [←eval_comm]),
-      (by rw
-        [indicated_polynomial_eq_combination_of_correlated,
-          ←foldValue_def,
-          foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
-     (add simp [eval_finsetSum])
+  refine Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := 2 ^ k) ?_ ?_ ?_ ?_
   · simp only
       [indicatedPolynomial, Polynomial.map_sum,
         Polynomial.map_mul, map_C, coe_evalRingHom]
@@ -640,6 +636,14 @@ private lemma indicated_polynomial_eq_foldAux'
           (add simp [Polynomial.map_map])
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
+  · simpa using h_card
+  · aesop
+      (add safe [(by rw [←eval_comm]),
+        (by rw
+          [indicated_polynomial_eq_combination_of_correlated,
+            ←foldValue_def,
+            foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
+      (add simp [eval_finsetSum])
 
 private lemma foldWordAux_poly_sum {a : F} :
   ((foldWordAux domain f k a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) =
@@ -982,10 +986,14 @@ theorem folding_preserves_distance
       (fun i j hj ↦ by
         clear *- hj h'
         let i' := cast' i
-        obtain ⟨j', hj, _⟩ := by simpa using hj
+        simp only [Finset.mem_image] at hj
+        obtain ⟨j', hj, rfl⟩ := hj
         specialize h' i' hj
         have h_spec := congrFun (a := j') <| Classical.choose_spec (h_rs i') |>.2
-        aesop (add norm evalOnPoints)
+        have h_agree' := (Finset.mem_filter.mp h').2
+        have h_agree : v i' j' = foldWordAuxCoeff domain f k i (domain.subdomain k j') := by
+          simpa [i', cast, cast'] using h_agree'
+        exact h_spec.symm.trans h_agree
       )
       (d := d)
       h_k_d
@@ -1012,7 +1020,7 @@ theorem folding_preserves_distance
           apply le_trans (b := 2 ^ k * ↑↑(#S))
           · rw [mul_assoc,
                 ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
-            have h_card := ENNReal.coe_le_coe_of_le h_card
+            have h_card := ENNReal.coe_le_coe.mpr h_card
             exact (swap le_trans h_card) (by norm_cast)
           · norm_cast
         · rw [mul_comm,

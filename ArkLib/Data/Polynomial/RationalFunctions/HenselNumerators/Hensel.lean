@@ -664,13 +664,11 @@ theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
         Polynomial.eval₂ (liftToFunctionField (H := H))
           (functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff) H := by
   unfold liftToFunctionField functionFieldT coeffAsRatFunc
-  unfold monicizeRatFunc
-  simp only [Polynomial.coeff_natDegree, ToRatFunc.bivPolyHom, Polynomial.coe_mapRingHom,
+  simp only [ToRatFunc.bivPolyHom, Polynomial.coe_mapRingHom,
     Polynomial.map_C, RingHom.comp_apply]
   let Wp : Polynomial (RatFunc F) := Polynomial.C (univPolyHom (F := F) H.leadingCoeff)
   let I : Ideal (Polynomial (RatFunc F)) := Ideal.span
-      ({Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
-          (Polynomial.X / Wp) H} : Set (Polynomial (RatFunc F)))
+      ({monicizeRatFunc H} : Set (Polynomial (RatFunc F)))
   let q : Polynomial (RatFunc F) →+* 𝕃 H := Ideal.Quotient.mk I
   have hW_ne : univPolyHom (F := F) H.leadingCoeff ≠ 0 := by
     intro h
@@ -690,11 +688,10 @@ theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
       rw [mul_inv_cancel₀ hW_ne]
       exact map_one q
     exact (inv_eq_of_mul_eq_one_right hmul).symm
-  change q
-      (Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
-          (Polynomial.X / Wp) H) = q Wp ^ (H.natDegree - 1) * Polynomial.eval₂
+  change q (monicizeRatFunc H) = q Wp ^ (H.natDegree - 1) * Polynomial.eval₂
           (q.comp ((Polynomial.mapRingHom (univPolyHom (F := F))).comp Polynomial.C))
           (q Polynomial.X / q Wp) H
+  rw [congrArg q (monicizeRatFunc_eq H)]
   rw [map_mul, map_pow]
   rw [← hdiv]
   rw [Polynomial.hom_eval₂]

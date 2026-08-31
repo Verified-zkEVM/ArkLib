@@ -219,7 +219,7 @@ theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F]
   -- the arena: the field `K = F[X]/(E)` for the irreducible `E = X ^ (q − 1) − ω`
   set E : F[X] := X ^ (Fintype.card F - 1) - C ω with hE
   have hEirr : Irreducible E := by rw [hE]; exact X_pow_card_sub_one_sub_C_irreducible hω
-  haveI : Fact (Irreducible E) := ⟨hEirr⟩
+  have : Fact (Irreducible E) := ⟨hEirr⟩
   -- the root of `E` satisfies `x ^ (q − 1) = ω`
   have h0 : aeval (AdjoinRoot.root E) ((X : F[X]) ^ (Fintype.card F - 1) - C ω) = 0 := by
     rw [← hE, AdjoinRoot.aeval_eq]; exact AdjoinRoot.mk_self

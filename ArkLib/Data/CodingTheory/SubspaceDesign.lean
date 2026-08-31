@@ -334,6 +334,17 @@ theorem subspaceDesign_tau_lower
     exact le_trans hb (hτ_nonneg r)
   · exact subspaceDesign_tau_lower_of_ne_bot s τ C h_design hs hCne r hr1
 
+private lemma mul_sub_add_one_le_of_le
+    {S s σ r bound : ℝ} (hS : 0 ≤ S) (hσr : σ ≤ r)
+    (hbound : (s - σ + 1) * S ≤ bound) :
+    S * (s - r + 1) ≤ bound := by
+  have hfactor : s - r + 1 ≤ s - σ + 1 :=
+    by simpa only [add_comm] using add_le_add_right (sub_le_sub_left hσr s) 1
+  calc S * (s - r + 1) ≤ S * (s - σ + 1) :=
+      mul_le_mul_of_nonneg_left hfactor hS
+    _ = (s - σ + 1) * S := mul_comm _ _
+    _ ≤ bound := hbound
+
 /-- Base change for the folded Wronskian: replacing the polynomials by the `F`-linear
 combinations with coefficient matrix `U` multiplies the folded Wronskian by `det U`. -/
 private lemma foldedWronskian_of_linearComb {F : Type*} [Field F] {σ : ℕ} {ω : F}
@@ -368,7 +379,7 @@ private lemma pow_dvd_foldedWronskian {F : Type*} [Field F] {σ : ℕ} {ω : F}
     (Polynomial.X - Polynomial.C p) ^ (Module.finrank F N)
       ∣ Polynomial.foldedWronskian σ ω (fun j => (bas j : Polynomial F)) := by
   classical
-  haveI : Module.Finite F B := Module.Finite.of_basis bas
+  have : Module.Finite F B := Module.Finite.of_basis bas
   have hrkB : Module.finrank F B = σ := by
     rw [Module.finrank_eq_card_basis bas, Fintype.card_fin]
   set N' : Submodule F B := N.comap B.subtype with hN'
@@ -432,7 +443,7 @@ private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
         ((s - σ + 1) * Module.finrank F N) ∣
       Polynomial.classicalWronskian σ (fun j => (bas j : Polynomial F)) := by
   classical
-  haveI : Module.Finite F B := Module.Finite.of_basis bas
+  have : Module.Finite F B := Module.Finite.of_basis bas
   have hrkB : Module.finrank F B = σ := by
     rw [Module.finrank_eq_card_basis bas, Fintype.card_fin]
   set N' : Submodule F B := N.comap B.subtype with hN'
@@ -679,7 +690,7 @@ theorem isSubspaceDesign_frsCode_sub_one
       simp
     rw [hσdef, hAbot]
     exact finrank_bot F _
-  haveI : NeZero k := ⟨by omega⟩
+  have : NeZero k := ⟨by omega⟩
   -- `k ≤ q − 1`: the `n·s` folded points are distinct and nonzero (for `s ≥ 2`);
   -- for `s = 1` this is `hFn` directly.
   have hns_q : Fintype.card ι * s ≤ Fintype.card F - 1 := by
@@ -738,10 +749,10 @@ theorem isSubspaceDesign_frsCode_sub_one
     rw [hσdef]
     exact LinearMap.finrank_eq_of_map_eq enc B A
       (fun p hp h0 => hker p ((hBmem p).mp hp).1 h0) hBmap
-  haveI : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
+  have : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
     FiniteDimensional.of_injective (Polynomial.degreeLTEquiv F k).toLinearMap
       (Polynomial.degreeLTEquiv F k).injective
-  haveI : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
+  have : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
       (S₂ := Polynomial.degreeLT F k) (by rw [hBdef]; exact inf_le_left)
   -- A basis of `B`, viewed as a family of low-degree polynomials.
   set bas : Module.Basis (Fin σ) F ↥B := (Module.finBasis F ↥B).reindex (finCongr hrkB) with hbas
@@ -861,10 +872,8 @@ theorem isSubspaceDesign_frsCode_sub_one
     exact h2
   have hS_nonneg : (0 : ℝ) ≤ S := Finset.sum_nonneg fun i _ => by positivity
   have hσr : (σ : ℝ) ≤ r := by exact_mod_cast hAr
-  have hSb : S * ((s : ℝ) - r + 1) ≤ σ * ((k : ℝ) - 1) := by
-    have h1 : S * ((s : ℝ) - r + 1) ≤ S * ((s : ℝ) - σ + 1) := by nlinarith
-    have h2 : (0 : ℝ) ≤ σ := by positivity
-    nlinarith
+  have hSb : S * ((s : ℝ) - r + 1) ≤ σ * ((k : ℝ) - 1) :=
+    mul_sub_add_one_le_of_le hS_nonneg hσr hS_real
   rw [hτval, div_le_iff₀ hn_pos]
   have hrw : (σ : ℝ) * (((k : ℝ) - 1) / Fintype.card ι / ((s : ℝ) - r + 1)) * Fintype.card ι
       = σ * ((k : ℝ) - 1) / ((s : ℝ) - r + 1) := by
@@ -1072,7 +1081,7 @@ theorem isSubspaceDesign_umCode_sub_one
       rw [Submodule.mem_bot, ← hpa, hp, map_zero]
     rw [hσdef, hAbot]
     exact finrank_bot F _
-  haveI : NeZero k := ⟨by omega⟩
+  have : NeZero k := ⟨by omega⟩
   set enc := ReedSolomon.Multiplicity.umEvalOnPoints domain s with henc
   have hencinj := ReedSolomon.Multiplicity.umEvalOnPoints_domRestrict_injective
     (k := k) (s := s) domain hchar hk_le
@@ -1104,10 +1113,10 @@ theorem isSubspaceDesign_umCode_sub_one
     rw [hσdef]
     exact LinearMap.finrank_eq_of_map_eq enc B A
       (fun p hp h0 => hker p ((hBmem p).mp hp).1 h0) hBmap
-  haveI : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
+  have : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
     FiniteDimensional.of_injective (Polynomial.degreeLTEquiv F k).toLinearMap
       (Polynomial.degreeLTEquiv F k).injective
-  haveI : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
+  have : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
       (S₂ := Polynomial.degreeLT F k) (by rw [hBdef]; exact inf_le_left)
   set bas : Module.Basis (Fin σ) F ↥B :=
     (Module.finBasis F ↥B).reindex (finCongr hrkB) with hbas
@@ -1204,10 +1213,8 @@ theorem isSubspaceDesign_umCode_sub_one
     exact h2
   have hS_nonneg : (0 : ℝ) ≤ S := Finset.sum_nonneg fun i _ => by positivity
   have hσr : (σ : ℝ) ≤ r := by exact_mod_cast hAr
-  have hSb : S * ((s : ℝ) - r + 1) ≤ σ * ((k : ℝ) - 1) := by
-    have h1 : S * ((s : ℝ) - r + 1) ≤ S * ((s : ℝ) - σ + 1) := by nlinarith
-    have h2 : (0 : ℝ) ≤ σ := by positivity
-    nlinarith
+  have hSb : S * ((s : ℝ) - r + 1) ≤ σ * ((k : ℝ) - 1) :=
+    mul_sub_add_one_le_of_le hS_nonneg hσr hS_real
   rw [hτval, div_le_iff₀ hn_pos]
   have hrw : (σ : ℝ) * (((k : ℝ) - 1) / Fintype.card ι / ((s : ℝ) - r + 1)) *
       Fintype.card ι = σ * ((k : ℝ) - 1) / ((s : ℝ) - r + 1) := by

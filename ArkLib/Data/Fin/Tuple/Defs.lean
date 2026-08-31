@@ -104,7 +104,7 @@ section Vec
 This is meant to replace `Fin.cons` for dependent tuples with a unified motive.
 
 Notation: `a ::ᵈ b` or `a ::ᵈ⟨motive⟩ b` for explicit motive specification. -/
-@[elab_as_elim]
+@[elab_as_elim, implicit_reducible]
 def dcons {n : ℕ} {motive : Fin (n + 1) → Sort u} (a : motive 0)
     (b : (i : Fin n) → motive i.succ) (i : Fin (n + 1)) : motive i :=
   match n with
@@ -120,7 +120,7 @@ definitional equality.
 This is meant to replace `Fin.snoc` for dependent tuples with a unified motive.
 
 Notation: `u :+ᵈ a` or `u :+ᵈ⟨motive⟩ a` for explicit motive specification. -/
-@[elab_as_elim]
+@[elab_as_elim, implicit_reducible]
 def dconcat {n : ℕ} {motive : Fin (n + 1) → Sort u}
     (u : (i : Fin n) → motive i.castSucc) (a : motive (last n)) (i : Fin (n + 1)) : motive i :=
   match n with
@@ -133,7 +133,7 @@ using pattern matching for better definitional equality.
 This is meant to replace `Fin.addCases` for dependent tuples with a unified motive.
 
 Notation: `u ++ᵈ v` or `u ++ᵈ⟨motive⟩ v` for explicit motive specification. -/
-@[elab_as_elim]
+@[elab_as_elim, implicit_reducible]
 def dappend {m n : ℕ} {motive : Fin (m + n) → Sort u}
     (u : (i : Fin m) → motive (Fin.castAdd n i))
     (v : (i : Fin n) → motive (Fin.natAdd m i))
@@ -153,6 +153,7 @@ abbrev vempty {α : Sort*} : Fin 0 → α := Fin.elim0
 constant-type motive `fun _ => α`.
 
 Notation: `a ::ᵛ v` (using standard `::` for vectors). -/
+@[implicit_reducible]
 def vcons {n : ℕ} (a : α) (v : Fin n → α) : Fin (n + 1) → α :=
   dcons a v
   -- match n with
@@ -165,6 +166,7 @@ def vcons {n : ℕ} (a : α) (v : Fin n → α) : Fin (n + 1) → α :=
 constant-type motive `fun _ => α`.
 
 Notation: `v :+ᵛ a`. -/
+@[implicit_reducible]
 def vconcat {n : ℕ} (v : Fin n → α) (a : α) : Fin (n + 1) → α :=
   dconcat v a
   -- match n with
@@ -175,6 +177,7 @@ def vconcat {n : ℕ} (v : Fin n → α) (a : α) : Fin (n + 1) → α :=
 constant-type motive `fun _ => α`.
 
 Notation: `u ++ᵛ v` or standard `u ++ v`. -/
+@[implicit_reducible]
 def vappend {m n : ℕ} {α : Sort*} (u : Fin m → α) (v : Fin n → α) : Fin (m + n) → α :=
   dappend u v
   -- match n with
@@ -197,6 +200,7 @@ construct the motive from the input types and applies functor `F` uniformly. Whe
 identity functor, this reduces to `hcons`.
 
 Notation: `a ::ʰ⦃F⦄⟨α; β⟩ b` with explicit functor and type ascriptions. -/
+@[implicit_reducible]
 def fcons {A : Sort u} {F : A → Sort v} {n : ℕ} {α : A} {β : Fin n → A}
     (a : F α) (b : (i : Fin n) → F (β i)) : (i : Fin (n + 1)) → F (Fin.vcons α β i) :=
   match n with
@@ -211,6 +215,7 @@ def fcons {A : Sort u} {F : A → Sort v} {n : ℕ} {α : A} {β : Fin n → A}
 built by `vcons` at the type level.
 
 Notation: `a ::ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ b` with explicit binary functor and type ascriptions. -/
+@[implicit_reducible]
 def fcons₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : ℕ}
     {α₁ : A} {β₁ : Fin n → A} {α₂ : B} {β₂ : Fin n → B}
     (a₁ : F α₁ α₂) (b : (i : Fin n) → F (β₁ i) (β₂ i)) :
@@ -241,6 +246,7 @@ automatically construct the motive from the input types and applies functor `F` 
 is the identity functor, this reduces to `hconcat`.
 
 Notation: `u :+ʰ⦃F⦄⟨α; β⟩ a` with explicit functor and type ascriptions. -/
+@[implicit_reducible]
 def fconcat {A : Sort u} {F : A → Sort v} {n : ℕ} {α : Fin n → A} {β : A}
     (u : (i : Fin n) → F (α i)) (a : F β) : (i : Fin (n + 1)) → F (Fin.vconcat α β i) :=
   match n with
@@ -253,6 +259,7 @@ def fconcat {A : Sort u} {F : A → Sort v} {n : ℕ} {α : Fin n → A} {β : A
 to the two motives built by `vconcat` at the type level.
 
 Notation: `u :+ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ a` with explicit binary functor and type ascriptions. -/
+@[implicit_reducible]
 def fconcat₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {n : ℕ}
     {α₁ : Fin n → A} {β₁ : A} {α₂ : Fin n → B} {β₂ : B}
     (u : (i : Fin n) → F (α₁ i) (α₂ i)) (a : F β₁ β₂) :
@@ -281,6 +288,7 @@ automatically construct the motive from the input types and applies functor `F` 
 is the identity functor, this reduces to `happend`.
 
 Notation: `u ++ʰ⦃F⦄⟨α; β⟩ v` with explicit functor and type ascriptions. -/
+@[implicit_reducible]
 def fappend {A : Sort u} {F : A → Sort v} {m n : ℕ} {α : Fin m → A} {β : Fin n → A}
     (u : (i : Fin m) → F (α i)) (v : (i : Fin n) → F (β i)) :
     (i : Fin (m + n)) → F (Fin.vappend α β i) :=
@@ -294,6 +302,7 @@ def fappend {A : Sort u} {F : A → Sort v} {m n : ℕ} {α : Fin m → A} {β :
 built by `vappend` at the type level.
 
 Notation: `u ++ʰ⦃F⦄⟨α₁; β₁⟩⟨α₂; β₂⟩ v` with explicit binary functor and type ascriptions. -/
+@[implicit_reducible]
 def fappend₂ {A : Sort u} {B : Sort v} {F : A → B → Sort w} {m n : ℕ}
     {α₁ : Fin m → A} {β₁ : Fin n → A} {α₂ : Fin m → B} {β₂ : Fin n → B}
     (u : (i : Fin m) → F (α₁ i) (α₂ i)) (v : (i : Fin n) → F (β₁ i) (β₂ i)) :

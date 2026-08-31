@@ -301,7 +301,7 @@ lemma listBlock_subset_listHamming (hkn : k ≤ n) (δ : ℝ≥0) (C : Set (Fin 
   refine ⟨hu.1, ?_⟩
   have h1 := relHammingDist_le_blockRelDistance
               (φ := φ) (k := k) (f := f) (g := u) hkn
-  simp only [Code.relHammingBall, Set.mem_setOf_eq, ge_iff_le]
+  simp only [Code.relHammingBall, Set.mem_ofPred_eq, ge_iff_le]
   apply le_trans (b := NNRat.cast δ𞁒(k, φ, f, u))
   · rewrite [NNRat.cast_le]
     convert h1

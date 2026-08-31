@@ -293,7 +293,7 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
     letI a := (1 - 1 / Fintype.card F : ℝ≥0)
     letI ε_mca' := a⁻¹ • ε_mca
     IsMCAGenerator (AffineSpaceGenerator F ℓ) ε_mca' MC := by
-  letI := Module.addCommMonoidToAddCommGroup F (M := A)
+  let := Module.addCommMonoidToAddCommGroup F (M := A)
   classical
   intro γ
   refine iSup_le fun U => ?_

@@ -183,7 +183,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
   obtain ⟨rfl, rfl⟩ := hkeygen
   rw [mem_support_pure_iff] at hcommit
   obtain ⟨rfl, rfl⟩ := Prod.mk.inj hcommit
-  haveI : ProverOnly ({ dir := !v[Direction.P_to_V], «Type» := !v[G₁] } : ProtocolSpec 1) := {
+  have : ProverOnly ({ dir := !v[Direction.P_to_V], «Type» := !v[G₁] } : ProtocolSpec 1) := {
     prover_first' := by simp
   }
   rw [Reduction.run_of_prover_first] at hx

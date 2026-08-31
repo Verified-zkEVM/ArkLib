@@ -400,7 +400,7 @@ private theorem large_family_low_card_le_of_domains
       (Fintype.card π : ℝ) * δ * (Fintype.card ι : ℝ) := by
   classical
   have hnNat : 0 < Fintype.card ι := by exact_mod_cast hn
-  letI : Nonempty ι := Fintype.card_pos_iff.mp hnNat
+  let : Nonempty ι := Fintype.card_pos_iff.mp hnNat
   rcases isEmpty_or_nonempty π with hπ | hπ
   · have hlow : large_family_low A D = ∅ := by
       apply Finset.eq_empty_iff_forall_notMem.mpr
@@ -409,7 +409,7 @@ private theorem large_family_low_card_le_of_domains
       obtain ⟨p, -⟩ := (Finset.mem_filter.mp hx).2
       exact isEmptyElim p
     simp [hlow]
-  · letI : Nonempty π := hπ
+  · let : Nonempty π := hπ
     let L := large_family_low A D
     let cand (x : L) : Finset π := Finset.univ.filter fun p => D p ⊆ A x.1
     have hcand (x : L) : (cand x).Nonempty := by

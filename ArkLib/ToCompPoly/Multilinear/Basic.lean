@@ -32,6 +32,21 @@ namespace CompPoly.CMlPolynomialEval
 
 variable {R : Type*} [CommRing R] {n : ℕ}
 
+/-- The identically-zero evaluation table vanishes at every point.
+
+This is what makes an identity `H ≡ 0` usable at an *arbitrary* challenge point, hence the
+honest-direction step in protocols that reduce a polynomial identity to evaluation claims (the
+Hachi zero-check, `ZeroCheck/Completeness.lean`). -/
+@[simp]
+theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomialEval R n) x = 0 := by
+  change Vector.dotProduct (0 : CMlPolynomialEval R n) (lagrangeBasis x) = 0
+  rw [Vector.dotProduct_eq_root_dotProduct]
+  have hget : (0 : CMlPolynomialEval R n).get = 0 := by
+    funext i
+    change (Vector.replicate (2 ^ n) (0 : R)).get i = 0
+    simp
+  rw [hget, zero_dotProduct]
+
 /-- Direct evaluation of a Boolean-value vector agrees with evaluating Mathlib's multilinear
 extension of the same table. This is the boundary used when a computational relation is stated
 with `CMlPolynomialEval.eval` but an algebraic proof consumes `MvPolynomial.MLE`. -/

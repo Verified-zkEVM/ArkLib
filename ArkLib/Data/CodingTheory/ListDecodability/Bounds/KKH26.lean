@@ -172,7 +172,7 @@ lemma card_filter_eval_eq_zero_le_natDegree (domain : ι ↪ F) {Q : F[X]} (hQ :
   refine le_trans ?_ (le_trans (Multiset.toFinset_card_le Q.roots) (Polynomial.card_roots' Q))
   refine Finset.card_le_card_of_injOn domain (fun i hi => ?_)
     (fun i _ j _ hij => domain.injective hij)
-  simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq] at hi
+  simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq] at hi
   simp only [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_roots hQ]
   exact hi
 
@@ -345,7 +345,7 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) {d h khat c k : ℕ}
       simp [Polynomial.degree_X_sub_C, hTcard]
     have hPdeg : P.natDegree < khat := by
       rw [Polynomial.natDegree_lt_iff_degree_lt hPne]
-      refine lt_of_lt_of_eq (Polynomial.degree_sub_lt (hdegS.trans hdegT.symm) ?_ ?_) hdegS
+      refine lt_of_lt_of_eq (Polynomial.degree_sub_lt_left (hdegS.trans hdegT.symm) ?_ ?_) hdegS
       · exact (Polynomial.monic_prod_of_monic _ _
           fun α _ => Polynomial.monic_X_sub_C α).ne_zero
       · rw [(Polynomial.monic_prod_of_monic _ _ fun α _ =>
@@ -537,7 +537,7 @@ theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
     have hlt : (khat - 1) * d < khat * d := (Nat.mul_lt_mul_right hd0).mpr (by omega)
     omega
   rw [if_neg hnj]
-  haveI : DecidablePred (fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0)) :=
+  have : DecidablePred (fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0)) :=
     Classical.decPred _
   -- Step 6: every `γ ∈ Λ_𝒮` makes the fold `u 0 + γ • u 1` `δ`-close to `C`.
   have hsubset : sumSet 𝒮 ⊆
@@ -661,7 +661,7 @@ lemma minRelDist_sub_eq (domain : ι ↪ F) {d h khat k : ℕ}
     rcases Nat.eq_zero_or_pos h with hh | hh
     · rw [hh, Nat.mul_zero] at hn; omega
     · exact hh
-  haveI : NeZero k := ⟨hk0.ne'⟩
+  have : NeZero k := ⟨hk0.ne'⟩
   have hkn : k ≤ Fintype.card ι := by
     calc k ≤ khat * d := hk2
       _ ≤ h * d := Nat.mul_le_mul_right d hkh

@@ -194,7 +194,7 @@ theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
       refine ⟨constrainedEncoder enc v m, ⟨m, rfl⟩, ?_⟩
       funext x
       rcases x with ⟨x, hx⟩
-      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      simp only [LinearCode.projectedWord, Set.domRestrict_apply]
       cases x with
       | inl j =>
           have hj : j ∈ S := by

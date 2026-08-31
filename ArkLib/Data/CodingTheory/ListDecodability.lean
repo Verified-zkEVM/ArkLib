@@ -112,7 +112,7 @@ lemma closeCodewords_eq_closeCodewordsRel (C : Set (ι → F)) (y : ι → F) (r
     closeCodewords C y r = closeCodewordsRel C y ((r : ℝ) / Fintype.card ι) := by
   classical
   ext c
-  simp only [closeCodewords, closeCodewordsRel, Set.mem_setOf_eq, Code.mem_hammingBall_iff,
+  simp only [closeCodewords, closeCodewordsRel, Set.mem_ofPred_eq, Code.mem_hammingBall_iff,
     Code.mem_relHammingBall_iff, Code.relHammingDist, NNRat.cast_div, NNRat.cast_natCast,
     and_congr_right_iff]
   intro _
@@ -167,7 +167,7 @@ theorem exists_encard_eq_Lambda [Nonempty (ι → F)] {C : Set (ι → F)} {δ :
     fun f hf => hcontra ⟨f, hf⟩
   obtain ⟨m⟩ := ‹Nonempty (ι → F)›
   set n : ℕ := (Lambda C δ).toNat with hn_def
-  have hLn : Lambda C δ = (n : ℕ∞) := (ENat.coe_toNat h).symm
+  have hLn : Lambda C δ = (n : ℕ∞) := (ENat.natCast_toNat h).symm
   -- no point list reaches `n`, so all of them are at most `n - 1`, so `Lambda ≤ n - 1`
   have hstep : ∀ f : ι → F, (closeCodewordsRel C f δ).encard ≤ ((n - 1 : ℕ) : ℕ∞) := by
     intro f

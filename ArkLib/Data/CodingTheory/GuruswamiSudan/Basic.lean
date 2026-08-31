@@ -1013,6 +1013,76 @@ lemma sufficient_multiplicity_bound {dist : ℕ}
     · unfold proximity_gap_johnson; ring_nf; norm_num
       norm_num [mul_assoc, mul_comm, mul_left_comm, ne_of_gt (zero_lt_one.trans_le hm)]
 
+private theorem dvd_property_of_sufficient_multiplicity_bound [DecidableEq F]
+    (hk : k + 1 ≤ n) (p : code ωs k) {D : ℕ} {radius : ℝ} {Q : F[X][Y]}
+    (hQ_deg : weightedDegree Q 1 (k - 1) ≤ D)
+    (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
+    (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n < radius)
+    (hsufficient : ∀ {dist : ℕ}, (dist : ℝ) / n < radius → (D : ℝ) < m * (n - dist)) :
+    X - C (toPolynomial p) ∣ Q := by
+  contrapose! h_dist with h_distots
+  have hR_nonzero : (Q.eval (toPolynomial p)) ≠ 0 := by
+    contrapose! h_distots
+    exact dvd_iff_isRoot.mpr h_distots
+  have hR_roots : (Q.eval (toPolynomial p)).natDegree ≥
+      m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i))) := by
+    have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (toPolynomial p).eval (ωs i)), m ≤
+        (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
+      intro i hi
+      have h_root : m ≤ (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
+        have hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m := by
+          intro i s t hst
+          contrapose! hQ_mult
+          use i
+          refine fun h ↦ hst.not_ge <| le_of_not_gt fun h_lt ↦ ?_
+          exact (by
+            convert rootMultiplicity_le_of_coeff_ne_zero hQ_mult using 1
+            cases h' : rootMultiplicity Q (ωs i) (f i)
+            · aesop
+            · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_natCast, false_iff]
+              exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
+        have := hQ_mult i
+        have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop)
+        aesop
+      exact h_root
+    have hR_roots_card : (Finset.univ.filter (fun i ↦
+        f i = (toPolynomial p).eval (ωs i))).card * m ≤
+          (Q.eval (toPolynomial p)).natDegree := by
+      have hR_roots_card : (∏ i ∈ Finset.univ.filter (fun i ↦
+          f i = (toPolynomial p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
+            (Q.eval (toPolynomial p)) := by
+        refine Finset.prod_dvd_of_coprime ?_ ?_
+        · intros i hi j hj hij
+          exact IsCoprime.pow (irreducible_X_sub_C (ωs i) |> fun hi ↦
+            hi.coprime_iff_not_dvd.mpr fun h => hij <| by
+              have := dvd_iff_isRoot.mp h
+              simp_all [sub_eq_iff_eq_add])
+        · exact fun i hi ↦
+            dvd_trans (pow_dvd_pow _ (hR_roots i hi)) (pow_rootMultiplicity_dvd _ _)
+      have := natDegree_le_of_dvd hR_roots_card
+      convert this hR_nonzero using 1
+      rw [natDegree_prod _ _ fun i hi ↦ pow_ne_zero _ <| Polynomial.X_sub_C_ne_zero _]
+      simp [natDegree_sub_eq_left_of_natDegree_lt]
+    convert hR_roots_card.ge using 1
+    simp only [hammingDist, ne_eq, mul_comm, mul_eq_mul_left_iff]
+    rw [Finset.filter_not, Finset.card_sdiff]
+    norm_num
+    exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
+  have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ D := by
+    have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
+      apply degree_eval_le_weightedDegree
+      exact toPolynomial_degree_le hk p
+    refine le_trans hR_deg ?_
+    convert hQ_deg using 1
+    rw [weightedDegree_eq_natWeightedDegree]
+    aesop
+  contrapose! hR_roots
+  refine lt_of_le_of_lt hR_deg ?_
+  convert hsufficient hR_roots using 1
+  rw [← @Nat.cast_lt ℝ]
+  norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
+    from le_trans (Finset.card_le_univ _) (by norm_num))]
+
 /-- If $Q$ satisfies the weighted degree bound and vanishes to order $m$ at each point
     $(\omega_i, f_i)$, and if $P$ is a codeword close enough to $f$, then $Y - P(X)$
     divides $Q(X,Y)$. -/
@@ -1023,66 +1093,8 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
   (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
     proximity_gap_johnson k n m) :
   X - C (toPolynomial p) ∣ Q := by
-    contrapose! h_dist with h_distots
-    have hR_nonzero : (Q.eval (toPolynomial p)) ≠ 0 := by
-      contrapose! h_distots
-      exact dvd_iff_isRoot.mpr h_distots
-    have hR_roots : (Q.eval (toPolynomial p)).natDegree ≥
-        m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i))) := by
-      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (toPolynomial p).eval (ωs i)), m ≤
-          (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
-        intro i hi
-        have h_root : m ≤ (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
-          have hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m := by
-            intro i s t hst
-            contrapose! hQ_mult
-            use i
-            refine fun h ↦ hst.not_ge <| le_of_not_gt fun h_lt ↦ ?_
-            exact (by
-              convert rootMultiplicity_le_of_coeff_ne_zero hQ_mult using 1
-              cases h' : rootMultiplicity Q (ωs i) (f i)
-              · aesop
-              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
-                exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
-          have := hQ_mult i;
-          have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop); aesop;
-        exact h_root;
-      have hR_roots_card : (Finset.univ.filter (fun i ↦
-          f i = (toPolynomial p).eval (ωs i))).card * m ≤
-            (Q.eval (toPolynomial p)).natDegree := by
-        have hR_roots_card : (∏ i ∈ Finset.univ.filter (fun i ↦
-            f i = (toPolynomial p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
-              (Q.eval (toPolynomial p)) := by
-          refine Finset.prod_dvd_of_coprime ?_ ?_
-          · intros i hi j hj hij
-            exact IsCoprime.pow (irreducible_X_sub_C (ωs i) |> fun hi ↦
-              hi.coprime_iff_not_dvd.mpr fun h => hij <| by
-                have := dvd_iff_isRoot.mp h; simp_all [sub_eq_iff_eq_add])
-          · exact fun i hi ↦
-              dvd_trans (pow_dvd_pow _ (hR_roots i hi)) (pow_rootMultiplicity_dvd _ _)
-        have := natDegree_le_of_dvd hR_roots_card
-        convert this hR_nonzero using 1
-        rw [natDegree_prod _ _ fun i hi ↦ pow_ne_zero _ <| Polynomial.X_sub_C_ne_zero _]
-        simp [natDegree_sub_eq_left_of_natDegree_lt]
-      convert hR_roots_card.ge using 1
-      simp only [hammingDist, ne_eq, mul_comm, mul_eq_mul_left_iff]
-      rw [Finset.filter_not, Finset.card_sdiff]
-      norm_num
-      exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
-    have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ proximity_gap_degree_bound k n m := by
-      have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
-        apply degree_eval_le_weightedDegree
-        exact toPolynomial_degree_le hk p
-      refine le_trans hR_deg ?_
-      convert hQ_deg using 1
-      rw [weightedDegree_eq_natWeightedDegree]
-      aesop
-    contrapose! hR_roots
-    refine lt_of_le_of_lt hR_deg ?_
-    convert sufficient_multiplicity_bound hk hm hR_roots using 1
-    rw [← @Nat.cast_lt ℝ]
-    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
-      from le_trans (Finset.card_le_univ _) (by norm_num))]
+  exact dvd_property_of_sufficient_multiplicity_bound hk p hQ_deg hQ_mult h_dist
+    (sufficient_multiplicity_bound hk hm)
 
 end divisibility
 
@@ -1145,66 +1157,8 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
   (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
     gs_johnson k n m) :
   X - C (toPolynomial p) ∣ Q := by
-    contrapose! h_dist with h_distots
-    have hR_nonzero : (Q.eval (toPolynomial p)) ≠ 0 := by
-      contrapose! h_distots
-      exact dvd_iff_isRoot.mpr h_distots
-    have hR_roots : (Q.eval (toPolynomial p)).natDegree ≥
-        m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i))) := by
-      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (toPolynomial p).eval (ωs i)), m ≤
-          (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
-        intro i hi
-        have h_root : m ≤ (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
-          have hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m := by
-            intro i s t hst
-            contrapose! hQ_mult
-            use i
-            refine fun h ↦ hst.not_ge <| le_of_not_gt fun h_lt ↦ ?_
-            exact (by
-              convert rootMultiplicity_le_of_coeff_ne_zero hQ_mult using 1
-              cases h' : rootMultiplicity Q (ωs i) (f i)
-              · aesop
-              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
-                exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
-          have := hQ_mult i;
-          have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop); aesop;
-        exact h_root;
-      have hR_roots_card : (Finset.univ.filter (fun i ↦
-          f i = (toPolynomial p).eval (ωs i))).card * m ≤
-            (Q.eval (toPolynomial p)).natDegree := by
-        have hR_roots_card : (∏ i ∈ Finset.univ.filter (fun i ↦
-            f i = (toPolynomial p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
-              (Q.eval (toPolynomial p)) := by
-          refine Finset.prod_dvd_of_coprime ?_ ?_
-          · intros i hi j hj hij
-            exact IsCoprime.pow (irreducible_X_sub_C (ωs i) |> fun hi ↦
-              hi.coprime_iff_not_dvd.mpr fun h => hij <| by
-                have := dvd_iff_isRoot.mp h; simp_all [sub_eq_iff_eq_add])
-          · exact fun i hi ↦
-              dvd_trans (pow_dvd_pow _ (hR_roots i hi)) (pow_rootMultiplicity_dvd _ _)
-        have := natDegree_le_of_dvd hR_roots_card
-        convert this hR_nonzero using 1
-        rw [natDegree_prod _ _ fun i hi ↦ pow_ne_zero _ <| Polynomial.X_sub_C_ne_zero _]
-        simp [natDegree_sub_eq_left_of_natDegree_lt]
-      convert hR_roots_card.ge using 1
-      simp only [hammingDist, ne_eq, mul_comm, mul_eq_mul_left_iff]
-      rw [Finset.filter_not, Finset.card_sdiff]
-      norm_num
-      exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
-    have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ gs_degree_bound k n m := by
-      have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
-        apply degree_eval_le_weightedDegree
-        exact toPolynomial_degree_le hk p
-      refine le_trans hR_deg ?_
-      convert hQ_deg using 1
-      rw [weightedDegree_eq_natWeightedDegree]
-      aesop
-    contrapose! hR_roots
-    refine lt_of_le_of_lt hR_deg ?_
-    convert gs_sufficient_multiplicity_bound hk hm hR_roots using 1
-    rw [← @Nat.cast_lt ℝ]
-    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
-      from le_trans (Finset.card_le_univ _) (by norm_num))]
+  exact dvd_property_of_sufficient_multiplicity_bound hk p hQ_deg hQ_mult h_dist
+    (gs_sufficient_multiplicity_bound hk hm)
 
 
 end gs_rate

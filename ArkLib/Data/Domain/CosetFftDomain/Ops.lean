@@ -51,39 +51,34 @@ variable {ω : CosetFftDomain ι F} {i j : ι}
 
 /-- The value of a concrete coset FFT domain at `0` is its coset generator. -/
 lemma apply_zero : ω 0 = ω.cosetGenerator := by
-  have : (0 : ι) = (1 : Multiplicative ι) := by rfl
-  aesop (add simp
-     [eval_coset_fft_domain_eq_eval_generator_mul_domain])
+  exact CosetFftDomain.map_0_eq_coset_generator
 
 /-- Evaluation at a sum of indices in a coset FFT domain multiplies
   the two values and removes one copy of the coset generator. -/
 lemma apply_add_eq_inv_mul_mul :
-  ω (i + j) = ω.cosetGenerator⁻¹ * ω i * ω j := by cases ω with
-  | mk x ω =>
-    have : i + j = Multiplicative.ofAdd i * Multiplicative.ofAdd j := by rfl
-    aesop
-      (add simp
-        [eval_coset_fft_domain_eq_eval_generator_mul_domain, ]) (add safe (by ring_nf))
+  ω (i + j) = ω.cosetGenerator⁻¹ * ω i * ω j := by
+  simp only [eval_coset_fft_domain_eq_eval_generator_mul_domain, subgroupUnit_add,
+    Units.val_mul]
+  field_simp
+  rw [Units.val_inv_eq_inv_val]
+  exact (mul_inv_cancel₀ (Units.ne_zero ω.cosetGenerator)).symm
 
 /-- Evaluation at the negated index gives the inverse value,
   scaled by the square of the coset generator. -/
 lemma apply_neg_eq_sq_mul_inv :
-  ω (-i) = ω.cosetGenerator ^ 2 * (ω i)⁻¹ := by cases ω with
-  | mk x ω =>
-  have : -i = (Multiplicative.ofAdd i)⁻¹ := by rfl
-  aesop
-    (add simp [eval_coset_fft_domain_eq_eval_generator_mul_domain])
-    (add safe (by field_simp))
+  ω (-i) = ω.cosetGenerator ^ 2 * (ω i)⁻¹ := by
+  simp only [eval_coset_fft_domain_eq_eval_generator_mul_domain, subgroupUnit_neg,
+    Units.val_inv_eq_inv_val]
+  field_simp
 
 /-- Evaluation at a difference of indices gives
   the quotient of the corresponding values, scaled by the coset generator. -/
 lemma apply_sub_eq_mul_div :
-  ω (i - j) = ω.cosetGenerator * ω i / ω j := by cases ω with
-  | mk x ω =>
-  have : (i - j) = Multiplicative.ofAdd i / Multiplicative.ofAdd j := by rfl
-  aesop
-    (add simp [eval_coset_fft_domain_eq_eval_generator_mul_domain, Multiplicative.ofAdd])
-    (add safe (by field_simp))
+  ω (i - j) = ω.cosetGenerator * ω i / ω j := by
+  rw [sub_eq_add_neg, apply_add_eq_inv_mul_mul, apply_neg_eq_sq_mul_inv]
+  field_simp
+  rw [Units.val_inv_eq_inv_val]
+  exact inv_mul_cancel₀ (Units.ne_zero ω.cosetGenerator)
 
 end CosetFftDomain
 

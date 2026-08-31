@@ -33,7 +33,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
   commitment's message-packing convention is chosen (`LiftCom` instantiation) to make
   `Com_{d}(w̃) = Com'_{d′}(ψ(ŵ))` a definitional re-indexing. This is what ties the next
   iteration's extracted openings back to `t` (`reinterpretCom` below abstracts the re-reading);
-  norm growth under `ψ` is Lemma 6 (`‖ψ(a)‖∞ ≤ 2β`, the `cInfNorm_psi_le` sorry).
+  norm growth under `ψ` is Lemma 6 (`‖ψ(a)‖∞ ≤ 2β`, `cInfNorm_psi_le`).
 
   ## Soundness shape
 
@@ -68,7 +68,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
   (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ)
+variable (mLow κ : ℕ) (bound bDig : ℕ)
 variable {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -115,6 +115,24 @@ def handoffVerifier {TCom : Type} (φF : ZMod q →+* F)
     else failure
 
 omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] [BEq F] [LawfulBEq F] in
+/-- **The trace-handoff verifier's guardedness as data** (`Verifier.GuardedForm`): the guard is
+`traceCheck` and the verdict is `toNextQuadEvalStatement`, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsGuarded` instance, because a composed chain must
+*run* the left verdict at the seam to know which statement to extract the right factor at (and the
+composed escape event must name it too); reading either off the `IsGuarded` existential would cost
+`Classical.choice`. This is the chain's closing seam, so its verdict is the next iteration's
+`QuadEvalStatement` over `Φ'`. -/
+def handoffVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F)
+    (reinterpretCom : TCom → Commitment Φ' outerRows') :
+    (handoffVerifier (oSpec := oSpec) Φ' mLow
+      (innerRows' := innerRows') (messageDigits' := messageDigits') (innerDigits' := innerDigits')
+      (dRows' := dRows') (m' := m') (r' := r') φF reinterpretCom).GuardedForm where
+  check := fun stmt tr => traceCheck Φ' mLow φF stmt (tr 0)
+  out := fun stmt tr => toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (tr 0)
+  verify_eq := fun _ _ => rfl
+
+omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] [BEq F] [LawfulBEq F] in
 /-- The trace-handoff verifier is guarded — definitionally, by `traceCheck`. -/
 theorem handoffVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F)
     (reinterpretCom : TCom → Commitment Φ' outerRows') :
@@ -153,13 +171,18 @@ variable [SampleableType F]
 /-- **The trace-handoff extraction algorithm.**
 
 **Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
-proof plan on `handoff_coordinateWiseSpecialSoundWith`). -/
-noncomputable def handoffExtractor
+proof plan on `handoff_coordinateWiseSpecialSoundWith`).
+
+No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
+so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
+generated code panics when run. -/
+def handoffExtractor
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (reinterpretCom : K.TCom → Commitment Φ' outerRows') :
     Extractor.TreeBased (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
+      (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits')
       (pSpecHandoff Φ')
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecHandoff Φ'))).arity :=
@@ -182,13 +205,13 @@ reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is an obligation of
 
 ## The `Short` obligation this seam does not discharge — do not paper over it
 
-Since `LiftCom` is indexed by `liftShort Φ bound ρBound`, every relation on this side of the
+Since `LiftCom` is indexed by `liftShort Φ bound bDig`, every relation on this side of the
 chain carries that predicate, and the pull-back above must **produce** it for the witness it
-returns. **As `openingChain` is currently parameterized, that is not merely unproven but false**:
+returns. **At this theorem's free parameters, that is not merely unproven but false**:
 `base' βSq' γ' κ'` are unconstrained, so nothing ties the next iteration's norm regime to this
 one's. Two things are missing, and neither is a proof-engineering detail:
 
-1. a hypothesis linking `γ'` to `γ`/`ρBound` through the `ψ`-packing, so the two regimes are
+1. a hypothesis linking `γ'` to `γ`/`bDig` through the `ψ`-packing, so the two regimes are
    comparable at all;
 2. an **inverse**-`ψ` norm lemma. `cInfNorm_psi_le` bounds `‖ψ(a)‖∞` from `‖a‖∞` — the wrong
    direction for pulling an opening back — and `psi_bijective` gives no norm bound whatsoever.
@@ -200,7 +223,7 @@ stands for a gap in the *design*, not just in the formalization. -/
 theorem handoff_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -208,23 +231,23 @@ theorem handoff_coordinateWiseSpecialSoundWith
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
-      (relHatEval Φ mLow κ bound ρBound zpow K φF)
+      (relHatEval Φ mLow κ bound bDig zpow K φF)
       (relIn Φ' pp' base' βSq' γ' κ')
       (handoffVerifier (oSpec := oSpec) Φ' mLow φF reinterpretCom)
-      (handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom) := by
+      (handoffExtractor Φ Φ' mLow κ bound bDig zpow K φF reinterpretCom) := by
   sorry
 
-/-- **The trace handoff as a guarded `GCWSSPackage`** (Hachi §4.5, Eqs. (27)–(28)): the guarded
-one-message verifier with the empty challenge structure, reducing the `Z`-packed claim `relHatEval`
-to the **next iteration's** `QuadEval` input relation `relIn` over `Φ'` — the recursion loop's
-closing seam (the next iteration re-enters at `quadEvalPackage Φ'`, bypassing the polynomial-level
-bridge: the bases are `eq`-tensor packings, not monomial bases of a point).
+/-- **The trace handoff as a guarded `GCWSSPackage`** (Hachi §4.5, Eqs. (27)–(28)): the
+guarded one-message verifier with the empty challenge structure, reducing the `Z`-packed claim
+`relHatEval` to the **next iteration's** `QuadEval` input relation `relIn` over `Φ'` — the recursion
+loop's closing seam (the next iteration re-enters at `quadEvalPackage Φ'`, bypassing the
+polynomial-level bridge: the bases are `eq`-tensor packings, not monomial bases of a point).
 
 The handoff *re-reads* the existing commitment through `ψ` rather than introducing a new one, hence
 carries no escape event. -/
-noncomputable def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -238,11 +261,11 @@ noncomputable def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (S
       (pSpecHandoff Φ') where
   verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF reinterpretCom
   struct := CWSSStructure.ofIsEmpty
-  relIn := relHatEval Φ mLow κ bound ρBound zpow K φF
+  relIn := relHatEval Φ mLow κ bound bDig zpow K φF
   relOut := relIn Φ' pp' base' βSq' γ' κ'
-  isGuarded := handoffVerifier_isGuarded Φ' mLow φF reinterpretCom
-  extractor := handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom
-  isCWSS := handoff_coordinateWiseSpecialSoundWith Φ Φ' mLow κ bound ρBound init impl zpow K
+  isGuarded := handoffVerifierGuardedForm Φ' mLow φF reinterpretCom
+  extractor := handoffExtractor Φ Φ' mLow κ bound bDig zpow K φF reinterpretCom
+  isCWSS := handoff_coordinateWiseSpecialSoundWith Φ Φ' mLow κ bound bDig init impl zpow K
     φF pp' reinterpretCom base' βSq' γ' κ'
 
 end Protocol

@@ -342,7 +342,9 @@ lemma almost_johnson_lhs_div_B_card [Zero F] (h_n : 0 < n) (h_B : 2 ≤ B.card) 
     (1 - e B 0 / n) ^ 2 * B.card + B.card * (e B 0) ^ 2 / ((card F - 1) * n ^ 2) - 1 := by
   set E := (n - e B 0) / n
   generalize eqrhs : (_ + _ - 1 : ℚ) = rhs
-  have eqE : E = k B / B.card := by grind only [= k_and_e']
+  have eqE : E = k B / B.card := by
+    simpa only [E] using
+      (k_and_e' (B := B) h_n.ne' (by omega)).symm
   suffices (B.card * E - 1) * E +
       ((B.card - B.card * E) / (card F - 1) - 1) * (1 - E) = rhs by
     rw [eqE, mul_div_cancel₀ _ (by simp only [ne_eq, Rat.natCast_eq_zero_iff]; omega)] at this
@@ -403,7 +405,14 @@ lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
   have n₂ : c1 ≠ 0 := by simp [c1, c, sub_eq_zero]; grind only
   suffices c / c1 * (d B / n - 2 * e B 0 / n + c / c1 * e B 0 ^ 2 / n ^ 2) =
       (1 - c / c1 * (e B 0 / n)) ^ 2 - (1 - c / c1 * (d B / n)) by
-    rw [← this]; have : c / c1 = 1 + 1 / c1 := by grind only
+    rw [← this]
+    have : c / c1 = 1 + 1 / c1 := by
+      calc
+        c / c1 = (c1 + 1) / c1 := by
+          congr 1
+          simp only [c1]
+          ring
+        _ = 1 + 1 / c1 := by rw [add_div, div_self n₂]
     grind only [= e.eq_1]
   grind only
 
@@ -427,7 +436,7 @@ protected lemma johnson_bound_lemma {v : Fin n → F}
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  haveI : NeZero (card F) := ⟨by omega⟩
+  have : NeZero (card F) := ⟨by omega⟩
   set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
   set σ : Fin n → (F ≃ Fin (card F)) :=
     fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ

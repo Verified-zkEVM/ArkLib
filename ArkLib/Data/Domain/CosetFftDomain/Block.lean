@@ -139,16 +139,26 @@ lemma blockIdx_eq_preimage_block :
   blockIdx ω k x =
     preimage
       (block ω k x) ω
-      (fun _ _ _ _ h ↦ CosetFftDomainClass.injective _ h) := by
-  aesop (add simp [mem_blockIdx_iff_mem_block])
+      (CosetFftDomainClass.injective ω).injOn := by
+  ext i
+  rw [mem_blockIdx_iff_mem_block]
+  exact Finset.mem_preimage.symm
 
 /-- The cardinality of `blockIdx` is that of `block`. -/
 @[simp]
 lemma card_blockIdx :
   (blockIdx ω k x).card = (block ω k x).card := by
-  aesop
-    (add simp [blockIdx_eq_preimage_block, card_preimage])
-    (add unsafe congrArg)
+  rw [blockIdx_eq_preimage_block, Finset.card_preimage]
+  congr 1
+  ext y
+  simp only [Finset.mem_filter]
+  constructor
+  · exact And.left
+  · intro hy
+    refine ⟨hy, ?_⟩
+    rw [mem_block] at hy
+    rw [CosetFftDomainClass.mem_def] at hy
+    exact hy.1
 
 /-- The sets of indices of blocks corresponding to different points are disjoint. -/
 theorem disjoint_blockIdx {x y : F} (hxy : x ≠ y) :

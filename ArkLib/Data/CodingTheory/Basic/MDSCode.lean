@@ -46,8 +46,8 @@ lemma minWt_ge_of_MDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
         obtain ⟨s, hs⟩ : ∃ s : Finset (Fin n), s.card = k ∧ ∀ j ∈ s, c j = 0 := by
           exact Exists.elim (Finset.exists_subset_card_eq h) fun s hs => ⟨s, hs.2, fun j hj =>
           Finset.mem_filter.mp ( hs.1 hj ) |>.2⟩
-        exact ⟨⟨fun j => s.orderEmbOfFin (by aesop) j, fun j j' h => by aesop⟩,
-          fun j => hs.2 _ (by aesop)⟩
+        exact ⟨(s.orderEmbOfFin hs.1).toEmbedding,
+          fun j => hs.2 _ (Finset.orderEmbOfFin_mem s hs.1 j)⟩
       obtain ⟨σ, hσ⟩ := h_contra
       have h_det : Matrix.det (Matrix.submatrix G id σ) = 0 := by
         have h_contra : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (Matrix.submatrix G id σ) = 0 := by

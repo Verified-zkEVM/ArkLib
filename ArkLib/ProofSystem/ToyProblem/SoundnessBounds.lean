@@ -50,6 +50,9 @@ message pair accounts for at most one affine challenge.
   Correlated Agreement*][ABF26], Section 6.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 namespace ToyProblem
 
 open Code InterleavedCode ProximityGap CoreDefinitions
@@ -260,7 +263,7 @@ theorem gamma_bad_pair {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ
     have hm : enc m ∈ (C : Set (ι → A)) := hC ▸ Set.mem_range_self m
     refine ⟨enc m, hm, ?_⟩
     funext x
-    simp only [LinearCode.projectedWord, Set.restrict_apply]
+    simp only [LinearCode.projectedWord, Set.domRestrict_apply]
     simpa [AffineLineGenerator, Fin.sum_univ_two] using hagree x x.property
   have hall : ∀ i : Fin 2,
       LinearCode.projectedWord (![f₁, f₂] i) S ∈
@@ -392,7 +395,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
       exact Set.ncard_le_ncard hsub (Set.toFinite _)
     have hcast : (Smsg.card : ENat) ≤ Code.Lambda Cint (δ : ℝ) :=
       le_trans (by exact_mod_cast hncard) hencard
-    rwa [← ENat.coe_toNat hfinite, Nat.cast_le] at hcast
+    rwa [← ENat.natCast_toNat hfinite, Nat.cast_le] at hcast
   have hcards : (Finset.univ.filter (fun γ : F ↦
       GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ ∧
         ¬ IsMCA (AffineLineGenerator F) C γ ![f₁, f₂] (δ : ℝ))).card ≤
@@ -650,7 +653,7 @@ theorem mem_winningSetFor_of_agree {k : ℕ} {δ : ℝ≥0}
     (S : Finset ι) (hScard : (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card)
     (hagree : ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j) :
     γ ∈ winningSetFor enc δ v μ₁ μ₂ f₁ f₂ := by
-  rw [winningSetFor, Set.mem_setOf_eq]
+  rw [winningSetFor, Set.mem_ofPred_eq]
   exact ⟨fun _ ↦ enc m,
     ⟨fun _ ↦ m, fun _ ↦ rfl, fun _ ↦ hconstr⟩,
     S, hScard, fun _ j hj ↦ hagree j hj⟩
@@ -995,7 +998,7 @@ theorem mem_winningSetFor_zero_of_relClose {k : ℕ} [Nonempty ι]
     (f₁ f₂ : ι → A) {γ : F} (hγ : δᵣ(f₁ + γ • f₂, C) ≤ δ) :
     γ ∈ winningSetFor enc δ (0 : Fin k → F) 0 0 f₁ f₂ := by
   classical
-  rw [winningSetFor, Set.mem_setOf_eq]
+  rw [winningSetFor, Set.mem_ofPred_eq]
   rw [relCloseToCode_iff_relCloseToCodeword_of_minDist] at hγ
   obtain ⟨w, hwC, hwd⟩ := hγ
   obtain ⟨m, hm⟩ : ∃ m, enc m = w := by
@@ -1085,7 +1088,7 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι]
             (Fintype.card F : ENNReal) =
           ({γ : F | δᵣ(u 0 + γ • u 1, C) ≤ δ}.ncard : ENNReal) := by
       rw [prob_uniform_eq_card_filter_div_card,
-        Set.ncard_eq_toFinset_card', Set.toFinset_setOf]
+        Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
       push_cast
       rw [ENNReal.div_mul_cancel (by exact_mod_cast hF0)
         (ENNReal.natCast_ne_top _)]
@@ -1152,7 +1155,7 @@ omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 theorem winningSetRatio_le_one {k : ℕ}
     {enc : (Fin k → F) →ₗ[F] (ι → A)} {δ : ℝ≥0}
     (x : ViolatingInstance enc δ) : winningSetRatio x ≤ 1 := by
-  haveI : Nonempty F := ⟨0⟩
+  have : Nonempty F := ⟨0⟩
   have hpos : (0 : ℝ≥0) < (Fintype.card F : ℝ≥0) := by
     exact_mod_cast Fintype.card_pos
   rw [winningSetRatio, div_le_one hpos]
@@ -1333,7 +1336,7 @@ theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     (gamma_transition_prob_le C δ enc henc_inj henc_range hδpos hδlt
       v μ₁ μ₂ f₁ f₂ hNoWit)
   rw [winningSetRatio, prob_uniform_eq_card_filter_div_card, hWEvent,
-    Set.ncard_eq_toFinset_card', Set.toFinset_setOf,
+    Set.ncard_eq_toFinset_card', Set.toFinset_ofPred,
     ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
     ENNReal.coe_natCast, ENNReal.coe_natCast]
 

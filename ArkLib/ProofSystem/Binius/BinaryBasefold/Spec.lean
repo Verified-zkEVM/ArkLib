@@ -222,6 +222,7 @@ def pSpecFoldRelay (d : ℕ := 2) : ProtocolSpec (2) :=
   pSpecFold (L:=L) (d := d) ++ₚ pSpecRelay
 
 -- Round-segment-level reductions
+@[implicit_reducible]
 def pSpecFoldRelaySequence (n : ℕ) (d : ℕ := 2) :=
   ProtocolSpec.seqCompose fun (_: Fin n) ↦ pSpecFoldRelay (L:=L) (d := d)
 -- Block-level reductions
@@ -235,6 +236,7 @@ def pSpecFullNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) (d : ℕ := 2) :=
             (i:=⟨ϑ - 1, by exact ϑ_sub_one_le_self⟩)⟩ (d := d))
 
 /-- The last block consists of `ϑ` fold-relay rounds -/
+@[implicit_reducible]
 def pSpecLastBlock (d : ℕ := 2) := pSpecFoldRelaySequence (L:=L) (n:=ϑ) (d := d)
 
 /-- A sequence of `(ℓ / ϑ - 1)` non-last blocks -/

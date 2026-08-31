@@ -283,7 +283,6 @@ def roundOracleVerifier (i : Fin ℓ) :
     hEq := fun _ => rfl
     outputInterface_heq := by
       intro j
-      simp only [Function.Embedding.coeFn_mk]
       rfl }
 
 /-- The oracle reduction bundling the per-round prover and verifier. -/

@@ -54,7 +54,7 @@ theorem card_filter_hammingDist_le_eq_hammingBallVolume {A : Type} [Fintype A] [
   ext f
   -- Both sides are `hammingDist c f ≤ ⌊δ·n⌋`; the two `DecidableEq F` instances differ
   -- (`Code.hammingBall` carries a classical one), which `congr!` discharges.
-  simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq,
+  simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq,
     Code.mem_hammingBall_iff]
   congr!
 
@@ -68,7 +68,7 @@ theorem closeCodewordsRel_eq_setOf {A : Type} [DecidableEq A]
       {c : ι → A | c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊} := by
   have h_n_pos : 0 < Fintype.card ι := Fintype.card_pos
   ext c
-  simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq,
+  simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_ofPred_eq,
     Code.relHammingDist, NNRat.cast_div, NNRat.cast_natCast]
   refine and_congr_right (fun _ => ?_)
   rw [div_le_iff₀ (by exact_mod_cast h_n_pos), ← Nat.le_floor_iff (by positivity)]

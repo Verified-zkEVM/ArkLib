@@ -90,7 +90,7 @@ lemma folding_block_rel_ball {d : ℕ}
        k - 1, ω.subdomain 1,
        foldWord ω f 1 α, δ) := by
   have hn : 1 ≤ n := by omega
-  simp_all only [Word, blockRelDistanceBall, SetLike.mem_coe, Set.mem_setOf_eq]
+  simp_all only [Word, blockRelDistanceBall, SetLike.mem_coe, Set.mem_ofPred_eq]
   constructor
   · have : 2 ^ (d - 1) = 2 ^ d / 2 := by rw [Nat.pow_sub_one] <;> omega
     rw [this]

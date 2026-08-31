@@ -194,7 +194,25 @@ private lemma shiftDown_shiftUp_eq (q : MvPolynomial (Fin n) R) :
     (fun i : Fin (n - 1) ↦ (X (⟨i.val + 1, by omega⟩ : Fin n) : MvPolynomial (Fin n) R)) =
     q.aeval (fun i ↦ if h : i = (0 : Fin n) then 0 else X i) := by
   unfold MvPolynomial.shiftDown
-  grind +suggestions
+  rw [MvPolynomial.comp_aeval_apply]
+  congr 1
+  apply MvPolynomial.algHom_ext
+  intro i
+  simp only [aeval_X]
+  by_cases hi : i = 0
+  · subst i
+    simp
+  · simp only [hi, ↓reduceDIte, aeval_X]
+    apply congrArg X
+    apply Fin.ext
+    have hiPos : 0 < i.val := by
+      apply Nat.pos_of_ne_zero
+      intro h
+      apply hi
+      apply Fin.ext
+      exact h
+    change i.val - 1 + 1 = i.val
+    omega
 
 private lemma substNoX0_eq_self_of_even
   (p : restrictDegree (Fin n) R 1) :

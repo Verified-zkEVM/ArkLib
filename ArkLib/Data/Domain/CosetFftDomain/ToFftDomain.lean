@@ -66,6 +66,12 @@ lemma eval_toFftDomain {ω : D} {i : ι} :
       CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain,
       toCosetFftDomain, mkSubgroupUnit])
 
+/-- Normalization evaluates to the normalized subgroup unit of the original coset domain. -/
+lemma eval_toFftDomain_eq_mkSubgroupUnit {ω : D} {i : ι} :
+    toFftDomain ω i = (mkSubgroupUnit ω i : F) := by
+  rw [eval_toFftDomain]
+  rfl
+
 /-- An element lies in the normalized FFT domain iff multiplying it by
   the original coset representative gives an element of the original coset domain. -/
 lemma mem_toFftDomain_iff_mul_mem {ω : D} {x : F} :
@@ -91,7 +97,7 @@ lemma mul_mem_of_mem_toFftDomain_of_mem {ω : D} {x y : F}
     [FftDomain.mem_iff_exists, Multiplicative.exists, toFftDomain, Multiplicative.ofAdd]
   obtain ⟨a, rfl⟩ := hy
   obtain ⟨b, rfl⟩ := hx
-  simp only [Equiv.coe_fn_mk, toCosetFftDomain, mkSubgroupUnit,
+  simp only [toCosetFftDomain, mkSubgroupUnit,
               MonoidHom.coe_mk, OneHom.coe_mk]
   exists (a + b)
   have : a + b = Multiplicative.ofAdd a * Multiplicative.ofAdd b := by rfl
@@ -145,10 +151,8 @@ abbrev toFftDomain (ω : CosetFftDomain ι F) : FftDomain ι F :=
 
 lemma mem_toFftDomain_iff_mul_mem :
   x ∈ ω.toFftDomain ↔ ω.cosetGenerator * x ∈ ω := by
-  have : ω 0 = ω.cosetGenerator := by
-    have : (0 : ι) = (1 : Multiplicative ι) := by rfl
-    aesop (add simp [eval_coset_fft_domain_eq_eval_generator_mul_domain])
-  aesop (add simp [CosetFftDomainClass.mem_toFftDomain_iff_mul_mem])
+  rw [← CosetFftDomain.map_0_eq_coset_generator]
+  exact CosetFftDomainClass.mem_toFftDomain_iff_mul_mem
 
 lemma mul_mem_of_mem_toFftDomain_of_mem {y : F}
   (hx : x ∈ ω.toFftDomain)
@@ -162,12 +166,11 @@ namespace FftDomain
 lemma toFftDomain_eq_self {ω : FftDomain ι F} :
   ω.toFftDomain = ω := by
   ext i
-  simp only [CosetFftDomainClass.toFftDomain,
-    CosetFftDomainClass.toCosetFftDomain_of_CosetFftDomain,
-    eval_fft_domain_eq_eval_coset_fft_domain,
-    CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain, Units.val_one, one_mul,
-    ne_eq, Units.ne_zero, not_false_eq_true, right_eq_mul₀, Units.val_eq_one]
-  exact ω.cosetGenerator_one
+  rw [CosetFftDomainClass.eval_toFftDomain,
+    ← FftDomain.eval_fft_domain_eq_eval_coset_fft_domain,
+    ← FftDomain.eval_fft_domain_eq_eval_coset_fft_domain,
+    FftDomainClass.generator_eq_one]
+  simp
 
 end FftDomain
 

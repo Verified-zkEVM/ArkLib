@@ -114,11 +114,11 @@ lemma pow_dvd_of_eval_iterate_derivative_eq_zero
   by_cases hdk : d < k
   · have hfac : IsUnit (d.factorial : F) := by
       rcases hchar with hchar0 | hcharpos
-      · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hchar0
+      · let : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hchar0
         exact IsUnit.natCast_factorial_of_algebra F d
-      · letI : NeZero (ringChar F) :=
+      · let : NeZero (ringChar F) :=
           ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hdk.trans_le hcharpos))⟩
-        letI : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
+        let : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
         exact (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hdk.trans_le hcharpos)
     have hder := hzero ⟨d, hd⟩
     change (Polynomial.derivative^[d] p).eval a = 0 at hder
@@ -155,7 +155,7 @@ lemma umEvalOnPoints_domRestrict_injective
     · have hdeg := Polynomial.mem_degreeLT.mp p.2
       rw [Nat.cast_zero, Nat.WithBot.lt_zero_iff, Polynomial.degree_eq_bot] at hdeg
       exact hdeg
-    · haveI : NeZero k := ⟨by omega⟩
+    · have : NeZero k := ⟨by omega⟩
       by_contra hp0
       have hpow : ∀ i : ι,
           (Polynomial.X - Polynomial.C (domain i)) ^ s ∣ p.val := by

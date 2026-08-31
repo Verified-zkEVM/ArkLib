@@ -431,7 +431,7 @@ theorem transitionExtractor_pointList_and_affine [Nonempty ι]
         (encoder_range k s hdvd domain) ▸ Set.mem_range_self g
       exact hg
     · funext x
-      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      simp only [LinearCode.projectedWord, Set.domRestrict_apply]
       have hx := mem_gammaAgreementSet k s hdvd domain
         (f₁ := stmtIn.2 0) (f₂ := stmtIn.2 1) (γ := γ) (g := g)
         (j := x) |>.mp x.property
@@ -582,7 +582,7 @@ theorem exactGammaFailure_prob_le [Nonempty ι]
       exact Set.ncard_le_ncard hsub (Set.toFinite _)
     have hcast : (Smsg.card : ENat) ≤ Code.Lambda Cint (δ : ℝ) :=
       le_trans (by exact_mod_cast hncard) hencard
-    rwa [← ENat.coe_toNat hfinite, Nat.cast_le] at hcast
+    rwa [← ENat.natCast_toNat hfinite, Nat.cast_le] at hcast
   have hδ1 : δ < 1 := lt_of_lt_of_le hδ (by
     exact_mod_cast (Code.minRelHammingDistCode_le_one
       (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))

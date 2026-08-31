@@ -374,7 +374,7 @@ theorem poly_gen_is_zero_evading
     error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
   classical
   unfold IsZeroEvadingGenerator
-  simp only [ne_eq, bind_pure_comp, sSup_le_iff, Set.mem_setOf_eq, forall_exists_index,
+  simp only [ne_eq, bind_pure_comp, sSup_le_iff, Set.mem_ofPred_eq, forall_exists_index,
     and_imp]
   intros b x hx hb
   rw [hb]
