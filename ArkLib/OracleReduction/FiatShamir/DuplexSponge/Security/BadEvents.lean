@@ -796,11 +796,13 @@ max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
   ≤ (7·T² − 3·T) / (2·|Σ|^c)
 ```
 
-where `T = tₕ + 1 + tₚ + L + tₚᵢ`. Both sides match CO25 Lemma 5.8 verbatim:
-the left-hand side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment
-(eager sampling, CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the
-right-hand side runs `g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to
-`KeyLemma.hybridGame` instantiated as `Hyb_1`. -/
+where `T = tₕ + 1 + tₚ + L + tₚᵢ`. The experiment distributions match CO25 Lemma 5.8, but
+`E` uses the documented bidirectional strengthening of the paper's one-sided `E_func`; this
+statement intentionally retains the same closed-form bound for that stronger event. The left-hand
+side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment (eager sampling,
+CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the right-hand side runs
+`g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to `KeyLemma.hybridGame`
+instantiated as `Hyb_1`. -/
 theorem lemma_5_8
     [Fintype U]
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
