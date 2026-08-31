@@ -5,7 +5,6 @@ Authors: Quang Dao, Tobias Rothmann
 -/
 
 import ArkLib.Commitments.Ordinary.Basic
-import VCVio
 
 /-!
   # Simple Random-Oracle Commitment Scheme

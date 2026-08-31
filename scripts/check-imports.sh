@@ -7,6 +7,25 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
+echo "Checking for blanket package-root imports..."
+
+# `ArkLib.lean` is the generated package umbrella and is checked separately below. Source modules
+# under `ArkLib/` must name stable owner modules instead of importing a dependency's package root.
+# Keep this check separate from the generated-file check so directory-layer rules can be added here.
+blanket_import_pattern='^[[:space:]]*((public|private)[[:space:]]+)?import[[:space:]]+(ArkLib|Mathlib|VCVio|CompPoly|PolyFun|Batteries)([[:space:]]*(--.*)?)?$'
+blanket_imports="$(git grep -nE "$blanket_import_pattern" -- 'ArkLib/**/*.lean' || true)"
+
+if [[ -n "$blanket_imports" ]]; then
+  echo "❌ Blanket package-root imports found in ArkLib source modules:"
+  echo "$blanket_imports"
+  echo ""
+  echo "Import the stable owner module instead. Any umbrella exception must be file-scoped and"
+  echo "documented in scripts/check-imports.sh."
+  exit 1
+fi
+
+echo "✓ No blanket package-root imports found!"
+
 echo "Checking if all imports are up to date..."
 
 backup_file="$(mktemp "${TMPDIR:-/tmp}/ArkLib.lean.backup.XXXXXX")"

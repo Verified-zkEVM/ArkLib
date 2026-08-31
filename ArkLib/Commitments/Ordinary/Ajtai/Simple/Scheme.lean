@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Data.Lattices.ModuleSIS
-import VCVio
+import VCVio.CryptoFoundations.CommitmentScheme
 
 /-!
 # Simple Ajtai Commitment Scheme
