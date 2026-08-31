@@ -240,10 +240,10 @@ private theorem bchks_parameter_facts_of_target_hypotheses
   have hscaled := mul_le_mul_of_nonneg_right hud' (le_of_lt hnR_pos)
   have hscaled' : 2 * (δ : ℝ) * n + k + 2 ≤ n := by
     field_simp [hnR_ne] at hscaled ⊢
-    nlinarith [hscaled]
+    linarith only [hscaled]
   have hmargin : k + 2 * e + 2 ≤ n := by
     exact_mod_cast
-      (by nlinarith [heR, hscaled'] : (k : ℝ) + 2 * (e : ℝ) + 2 ≤ n)
+      (by linarith only [heR, hscaled'] : (k : ℝ) + 2 * (e : ℝ) + 2 ≤ n)
   have hgap_pos : 0 < gap := by
     dsimp [gap]
     omega
@@ -1305,7 +1305,7 @@ private theorem affine_many_close_implies_joint_proximity {ι K : Type} [Fintype
   have hgapn :
       (good.card : ℝ) * ((δ_fld : ℝ) * Fintype.card ι) <
         ((good.card : ℝ) - 1) * ((δ_int : ℝ) * Fintype.card ι) := by
-    nlinarith [mul_lt_mul_of_pos_right hgap hnR_pos]
+    simpa only [mul_assoc] using mul_lt_mul_of_pos_right hgap hnR_pos
   have hprod :
       ((good.card : ℝ) - 1) * (D.card : ℝ) <
         ((good.card : ℝ) - 1) * ((δ_int : ℝ) * Fintype.card ι) :=
