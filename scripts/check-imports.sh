@@ -12,10 +12,22 @@ echo "Checking for blanket package-root imports..."
 # `ArkLib.lean` is the generated package umbrella and is checked separately below. Source modules
 # under `ArkLib/` must name stable owner modules instead of importing a dependency's package root.
 # Keep this check separate from the generated-file check so directory-layer rules can be added here.
-blanket_import_pattern='^[[:space:]]*((public|private)[[:space:]]+)?import[[:space:]]+(ArkLib|Mathlib|VCVio|CompPoly|PolyFun|Batteries)([[:space:]]*(--.*)?)?$'
-blanket_imports="$(git grep -nE "$blanket_import_pattern" -- 'ArkLib/**/*.lean' || true)"
+tracked_lean_files=()
+while IFS= read -r file; do
+  tracked_lean_files+=("$file")
+done < <(git ls-files -- 'ArkLib/**/*.lean')
 
-if [[ -n "$blanket_imports" ]]; then
+blanket_status=0
+blanket_imports="$(
+  awk -f scripts/check-blanket-imports.awk "${tracked_lean_files[@]}"
+)" || blanket_status=$?
+
+if (( blanket_status > 1 )); then
+  echo "ERROR: blanket-import scanner failed with exit code $blanket_status" >&2
+  exit "$blanket_status"
+fi
+
+if (( blanket_status == 1 )); then
   echo "❌ Blanket package-root imports found in ArkLib source modules:"
   echo "$blanket_imports"
   echo ""

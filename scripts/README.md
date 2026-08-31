@@ -9,7 +9,10 @@ This directory contains various utility scripts for the ArkLib project.
 - **`build-project.sh`** - Compile-only helper (`lake build`)
 - **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
-- **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
+- **`check-imports.sh`** - Reject blanket package-root imports and check whether `ArkLib.lean` is
+  up to date with all tracked source modules
+- **`test-check-blanket-imports.sh`** - Focused fixtures for legacy and module-system import-header
+  spellings accepted by the blanket-import scanner
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
@@ -91,6 +94,9 @@ bash scripts/build_timing_report.sh --help
 
 # Check if imports are up to date
 ./scripts/check-imports.sh
+
+# Exercise the blanket-import scanner fixtures directly
+./scripts/test-check-blanket-imports.sh
 ```
 
 ### Check Docs Integrity
