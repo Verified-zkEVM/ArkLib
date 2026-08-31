@@ -1226,6 +1226,15 @@ theorem rounded_barrier_quotient_bounds
       (Nat.mul_le_mul_left (ℓ + 1) hmLower)
   exact ⟨hused, hrUsed, hmLower, hmUpper, hfloorM, haM, hnM⟩
 
+private theorem one_sub_mul_le_nat_sub
+    (p : ℝ) (n radius : ℕ) (hRadiusLe : radius ≤ n)
+    (hRadiusFloor : (radius : ℝ) ≤ p * n) :
+    (1 - p) * (n : ℝ) ≤ (n - radius : ℕ) := by
+  rw [Nat.cast_sub hRadiusLe]
+  calc
+    (1 - p) * (n : ℝ) = (n : ℝ) - p * n := by ring
+    _ ≤ (n : ℝ) - radius := sub_le_sub_left hRadiusFloor _
+
 theorem rounded_barrier_upper_family_density
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
     (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
@@ -1285,11 +1294,8 @@ theorem rounded_barrier_upper_family_density
   have hRadiusFloor : (d.radius : ℝ) ≤ p * n := by
     dsimp only [d, roundedBarrierData, p]
     exact Nat.floor_le (by positivity)
-  have hSubCast : ((n - d.radius : ℕ) : ℝ) =
-      (n : ℝ) - d.radius := Nat.cast_sub hRadiusLe
-  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) := by
-    rw [hSubCast]
-    nlinarith
+  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) :=
+    one_sub_mul_le_nat_sub p n d.radius hRadiusLe hRadiusFloor
   have hmLowerR : ((n - d.radius : ℕ) : ℝ) ≤ d.unused := by
     exact_mod_cast hmLower
   have hGapN : R * (n : ℝ) < β * ((1 - p) * n) := by
@@ -1368,10 +1374,16 @@ theorem rounded_barrier_upper_union_density
     norm_num
   have hUnionBase : (d.aUnion : ℝ) ≤ (1 - p') * n + 1 := by
     rw [hAUnionCast]
-    nlinarith
+    calc
+      (n : ℝ) + 1 - d.boosted ≤ (n : ℝ) + 1 - p' * n :=
+        sub_le_sub_left hBoostLower _
+      _ = (1 - p') * n + 1 := by ring
   have hUnionBudget : (1 - p') * n + 1 ≤
       (1 - p' + 3 * ξ) * n := by
-    nlinarith
+    calc
+      (1 - p') * n + 1 ≤ (1 - p') * n + 3 * ξ * n :=
+        add_le_add_right hXiBudget _
+      _ = (1 - p' + 3 * ξ) * n := by ring
   have hGapN : (1 - p' + 3 * ξ) * n ≤
       β * ((1 - p) * n) := by
     calc
@@ -1381,11 +1393,8 @@ theorem rounded_barrier_upper_union_density
   have hRadiusFloor : (d.radius : ℝ) ≤ p * n := by
     dsimp only [d, roundedBarrierData, p]
     exact Nat.floor_le (by positivity)
-  have hSubCast : ((n - d.radius : ℕ) : ℝ) =
-      (n : ℝ) - d.radius := Nat.cast_sub hRadiusLe
-  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) := by
-    rw [hSubCast]
-    nlinarith
+  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) :=
+    one_sub_mul_le_nat_sub p n d.radius hRadiusLe hRadiusFloor
   have hmLowerR : ((n - d.radius : ℕ) : ℝ) ≤ d.unused := by
     exact_mod_cast hmLower
   have hBetaSub : β * ((1 - p) * n) ≤ β * d.unused := by
