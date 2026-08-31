@@ -407,11 +407,10 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
       (Good.card : ℝ) * ((T.card : ℝ) * A.card + k * (T.card : ℝ) ^ 2) := by
     calc
       (T.card : ℝ) ^ 2 * A.card ≤ ((Good.card : ℝ) * (coll a : ℝ)) * A.card := by
-        gcongr
+        exact mul_le_mul_of_nonneg_right hCS (Nat.cast_nonneg _)
       _ = (Good.card : ℝ) * ((coll a : ℝ) * A.card) := by ring
       _ ≤ (Good.card : ℝ) * ((T.card : ℝ) * A.card + k * (T.card : ℝ) ^ 2) := by
-        gcongr
-        exact_mod_cast haavg
+        exact mul_le_mul_of_nonneg_left (by exact_mod_cast haavg) (Nat.cast_nonneg _)
   have hAcardR : (A.card : ℝ) = (q : ℝ) - n := by
     rw [hAcard, Nat.cast_sub hnq]
   by_cases hT0 : T.card = 0
