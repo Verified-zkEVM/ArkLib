@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 215,
+    "files_with_citations": 227,
     "keys_cited": 65,
-    "total_citation_edges": 355
+    "total_citation_edges": 370
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -12,7 +12,7 @@
     "ArkLib/Commitments/Functional/Basic.lean": [
       "CGKY25"
     ],
-    "ArkLib/Commitments/Functional/Hachi.lean": [
+    "ArkLib/Commitments/Functional/Hachi/Basic.lean": [
       "NOZ26",
       "NS24"
     ],
@@ -21,10 +21,23 @@
       "NS24"
     ],
     "ArkLib/Commitments/Functional/Hachi/Composition.lean": [
+      "FMN24",
       "HMZ25",
       "LS18",
       "NOZ26",
       "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Concrete.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Correctness.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/EndPiece/Basic.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/EndPiece/Reduction.lean": [
+      "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/EvalSplit.lean": [
       "NOZ26",
@@ -41,6 +54,9 @@
     "ArkLib/Commitments/Functional/Hachi/Gadget/Norms.lean": [
       "NOZ26",
       "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/HonestChain.lean": [
+      "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean": [
       "LS18",
@@ -73,6 +89,9 @@
       "NOZ26",
       "NS24"
     ],
+    "ArkLib/Commitments/Functional/Hachi/QuadEval/Completeness.lean": [
+      "NOZ26"
+    ],
     "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean": [
       "NOZ26",
       "NS24"
@@ -100,8 +119,22 @@
       "HMZ25",
       "NOZ26"
     ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/Completeness.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/ComputableWitness.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/QuotientNorms.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
     "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean": [
       "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/RhoDigits.lean": [
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean": [
@@ -111,6 +144,9 @@
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/Bridge.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Sumcheck/Completeness.lean": [
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/FinalEval.lean": [
@@ -517,6 +553,9 @@
     ],
     "ArkLib/Data/Lattices/CyclotomicRing/Galois/Trace.lean": [
       "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Inverse.lean": [
+      "LS18"
     ],
     "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean": [
       "LS18",
@@ -1023,6 +1062,7 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "FMN24": [
+      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"
@@ -1079,6 +1119,8 @@
     "HMZ25": [
       "ArkLib/Commitments/Functional/Hachi/Composition.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Completeness.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/QuotientNorms.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/QuotientLift.lean",
@@ -1136,6 +1178,7 @@
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Galois/Group.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Galois/Order.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Inverse.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LsCore.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
@@ -1150,12 +1193,18 @@
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
     ],
     "NOZ26": [
+      "ArkLib/Commitments/Functional/Hachi/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/Commitment.lean",
       "ArkLib/Commitments/Functional/Hachi/Composition.lean",
+      "ArkLib/Commitments/Functional/Hachi/Concrete.lean",
+      "ArkLib/Commitments/Functional/Hachi/Correctness.lean",
+      "ArkLib/Commitments/Functional/Hachi/EndPiece/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/EndPiece/Reduction.lean",
       "ArkLib/Commitments/Functional/Hachi/EvalSplit.lean",
       "ArkLib/Commitments/Functional/Hachi/Gadget/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean",
       "ArkLib/Commitments/Functional/Hachi/Gadget/Norms.lean",
+      "ArkLib/Commitments/Functional/Hachi/HonestChain.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Correctness.lean",
@@ -1163,6 +1212,7 @@
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Bridge.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Completeness.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
@@ -1170,10 +1220,15 @@
       "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean",
       "ArkLib/Commitments/Functional/Hachi/Recursion/ZBatchBridge.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Completeness.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/ComputableWitness.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/QuotientNorms.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/RhoDigits.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/Bridge.lean",
+      "ArkLib/Commitments/Functional/Hachi/Sumcheck/Completeness.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/FinalEval.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/RoundPoly.lean",
       "ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean",
@@ -1181,7 +1236,6 @@
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Batch.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean",
-      "ArkLib/Commitments/Functional/Hachi.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Core.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean",
@@ -1230,6 +1284,7 @@
       "ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean"
     ],
     "NS24": [
+      "ArkLib/Commitments/Functional/Hachi/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/Commitment.lean",
       "ArkLib/Commitments/Functional/Hachi/Composition.lean",
       "ArkLib/Commitments/Functional/Hachi/EvalSplit.lean",
@@ -1246,7 +1301,6 @@
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean",
       "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
-      "ArkLib/Commitments/Functional/Hachi.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
