@@ -464,6 +464,71 @@ theorem um_lambda_le_capacity
     rw [hstep]
     exact div_le_div_of_nonneg_left hρs_nonneg hdenom_pos (by linarith)
 
+/-! ## Threshold forms
+
+Target-shaped faces of the subspace-design list bounds: the list-size target `L` is an argument
+and the numeric budget check is a hypothesis, so the contentful-range condition is discharged at
+the use site. Conclusions are stated on the bare `ℕ∞`-valued `Lambda`. -/
+
+/-- Threshold form of `subspaceDesign_lambda_le_of_profile_le`. -/
+theorem subspaceDesign_lambda_le_of_profile_le_of_budget
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
+    (hR : (LinearCode.alphabetRate C : ℝ) = R)
+    (h : IsSubspaceDesign s
+      (fun r => if r ∈ Finset.Icc 1 s then
+        (s * R - 1 / Fintype.card ι) / (s - r + 1) else 1) C)
+    (η t : ℝ) (hη_pos : 0 < η) (ht_nonneg : 0 ≤ t)
+    (hτ_le : ∀ L : ℕ, 1 ≤ L → (L : ℝ) ≤ 1 / η → s * R / (s - L + 1) ≤ t)
+    (hs : 1 / η ≤ (s : ℝ))
+    (L : ℕ) (hbudget : ENNReal.ofReal ((1 - t) / η) ≤ (L : ENNReal)) :
+    Lambda ((C : Set (ι → Fin s → F))) (1 - t - η) ≤ (L : ℕ∞) := by
+  have hle := (subspaceDesign_lambda_le_of_profile_le s R C hR h η t hη_pos ht_nonneg
+    hτ_le hs).trans hbudget
+  exact ENat.toENNReal_le.mp (by simpa using hle)
+
+/-- Threshold form of `subspaceDesign_lambda_le_of_eta`. -/
+theorem subspaceDesign_lambda_le_of_eta_of_budget
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
+    (hR : (LinearCode.alphabetRate C : ℝ) = R)
+    (h : IsSubspaceDesign s
+      (fun r => if r ∈ Finset.Icc 1 s then
+        (s * R - 1 / Fintype.card ι) / (s - r + 1) else 1) C)
+    (η : ℝ) (hη_pos : 0 < η) (hηs : 1 / η ≤ (s : ℝ))
+    (L : ℕ)
+    (hbudget : ENNReal.ofReal ((1 - s * R / ((s : ℝ) - 1 / η + 1)) / η) ≤ (L : ENNReal)) :
+    Lambda ((C : Set (ι → Fin s → F)))
+        (1 - s * R / ((s : ℝ) - 1 / η + 1) - η) ≤ (L : ℕ∞) := by
+  have hle := (subspaceDesign_lambda_le_of_eta s R C hR h η hη_pos hηs).trans hbudget
+  exact ENat.toENNReal_le.mp (by simpa using hle)
+
+/-- Threshold form of `um_lambda_le_capacity`. -/
+theorem um_lambda_le_capacity_of_budget
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (domain : ι ↪ F) (k s : ℕ)
+    (hs_pos : 0 < s)
+    (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
+    (hk_le : k ≤ s * Fintype.card ι)
+    (η : ℝ) (hη_pos : 0 < η) (hη_lt_s : 1 / η < s)
+    (L : ℕ)
+    (hbudget : ENNReal.ofReal
+        ((s * (1 - (k : ℝ) / (s * (Fintype.card ι : ℝ))) + 1 - 1 / η)
+          / (η * (s + 1 - 1 / η))) ≤ (L : ENNReal)) :
+    Lambda ((ReedSolomon.Multiplicity.umCode domain k s : Set (ι → Fin s → F)))
+        (1 - ((k : ℝ) / (s * (Fintype.card ι : ℝ))) * s / (s - 1 / η + 1) - η)
+      ≤ (L : ℕ∞) := by
+  have h : (Lambda ((ReedSolomon.Multiplicity.umCode domain k s : Set (ι → Fin s → F)))
+        (1 - ((k : ℝ) / (s * (Fintype.card ι : ℝ))) * s / (s - 1 / η + 1) - η) : ENNReal) ≤
+      ENNReal.ofReal
+        ((s * (1 - (k : ℝ) / (s * (Fintype.card ι : ℝ))) + 1 - 1 / η)
+          / (η * (s + 1 - 1 / η))) :=
+    um_lambda_le_capacity domain k s hs_pos hchar hk_le η hη_pos hη_lt_s
+  exact ENat.toENNReal_le.mp (by simpa using h.trans hbudget)
+
 end SubspaceDesignUpperBounds
 
 end CodingTheory

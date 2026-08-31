@@ -880,6 +880,25 @@ theorem linear_card_le_generalized_singleton
     _ ≤ (q : ℝ) ^ ((n : ℝ) - (a : ℝ)) :=
       Real.rpow_le_rpow_of_exponent_le hq1R hexp
 
+/-- Threshold form of `linear_card_le_generalized_singleton`: any cardinality target `M` that
+the `q^(n - ⌊(ℓ+1)/ℓ·δn⌋)` budget clears at the instantiated parameters bounds the code size.
+Together with the list-size hypothesis `hΛ`, both numeric side conditions of the generalized
+Singleton bound are discharged at the use site. -/
+theorem linear_card_le_generalized_singleton_of_budget
+    (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
+    (hℓ_pos : 0 < ℓ) (hℓ_lt : ℓ < Fintype.card F)
+    (hδ_pos : 0 < δ) (hδ_lt : δ < 1)
+    (hδn_int : ∃ e : ℕ, (e : ℝ) = δ * Fintype.card ι)
+    (hexp_nonneg : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) ≤ Fintype.card ι)
+    (hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞))
+    (M : ℝ)
+    (hbudget : (Fintype.card F : ℝ) ^
+        ((Fintype.card ι : ℝ)
+          - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) : ℝ)) ≤ M) :
+    (Set.ncard ((C : Set (ι → F))) : ℝ) ≤ M :=
+  le_trans (linear_card_le_generalized_singleton C ℓ δ hℓ_pos hℓ_lt hδ_pos hδ_lt
+    hδn_int hexp_nonneg hΛ) hbudget
+
 end LowerBounds_General
 
 section RandomLinear

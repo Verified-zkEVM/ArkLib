@@ -20,6 +20,9 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   `ArkLib/Data/CodingTheory/`.
 - [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
+- [`bound-statement-hygiene.md`](bound-statement-hygiene.md) - authoring rules for numeric
+  bound statements: source-native audit layer vs threshold-form consumption layer, ceiling
+  checks for lower-bound admits, and guard-satisfiability checks for existence statements.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
 - [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction

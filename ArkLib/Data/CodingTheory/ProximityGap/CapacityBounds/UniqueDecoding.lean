@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 import Mathlib.Algebra.Order.Floor.Div
 
+set_option linter.style.longFile 1800
+
 /-!
 # Reed--Solomon CA in the unique-decoding range
 
@@ -1615,8 +1617,32 @@ theorem rs_epsCa_le_in_unique_decoding_range
     exact rs_fold_probability_le_bound_of_not_joint_proximity
       domain k δ_fld δ_int _h_ud _h_dmin _h_lt u hj
 
+/-- Threshold form of `rs_epsCa_le_in_unique_decoding_range`: any target `ε_star` that the
+two-branch unique-decoding budget clears at the instantiated parameters is a genuine CA bound.
+The numeric budget check is a hypothesis, so the contentful-range condition is discharged at
+the use site. -/
+theorem rs_epsCa_le_in_unique_decoding_range_of_budget
+    (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
+    (h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
+    (h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
+                / Fintype.card ι / 3 ≤ δ_fld)
+    (h_lt : δ_fld < δ_int)
+    (ε_star : ℝ≥0)
+    (hbudget : ENNReal.ofReal
+        (max ((1 - (k : ℝ) / Fintype.card ι - δ_fld)
+                / (δ_fld * (1 - (k : ℝ) / Fintype.card ι - 2 * δ_fld) * Fintype.card F))
+             ((δ_int : ℝ) / ((δ_int - δ_fld) * Fintype.card F))) ≤ (ε_star : ENNReal)) :
+    epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ_fld δ_int ≤
+      (ε_star : ENNReal) := by
+  have h : epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ_fld δ_int ≤
+      ENNReal.ofReal
+        (max ((1 - (k : ℝ) / Fintype.card ι - δ_fld)
+                / (δ_fld * (1 - (k : ℝ) / Fintype.card ι - 2 * δ_fld) * Fintype.card F))
+             ((δ_int : ℝ) / ((δ_int - δ_fld) * Fintype.card F))) :=
+    rs_epsCa_le_in_unique_decoding_range domain k δ_fld δ_int h_ud h_dmin h_lt
+  exact le_trans h hbudget
+
 end ReedSolomon
 
 end CodingTheory
 
-set_option linter.style.longFile 1800

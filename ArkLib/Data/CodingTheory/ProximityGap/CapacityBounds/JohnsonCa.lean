@@ -1308,6 +1308,23 @@ theorem linear_epsCa_le_one_point_five_johnson
     C δ_min η δ_fld δ_src _h_δ_min _hη _hη_lt_third _hη_lt_δ_min
       _hδ_fld_pos _hδ_fld_lt _hδ_src
 
+/-- Threshold form of `linear_epsCa_le_one_point_five_johnson`: any target `ε_star` that the
+`2/(η²|F|)` budget clears at the instantiated parameters is a genuine CA bound. The numeric
+budget check is a hypothesis, so the contentful-range condition is discharged at the use
+site. -/
+theorem linear_epsCa_le_one_point_five_johnson_of_budget
+    (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
+    (h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
+    (hη : 0 < η) (hη_lt_third : (η : ℝ) < 1 / 3) (hη_lt_δ_min : η < δ_min)
+    (hδ_fld_pos : 0 < δ_fld) (hδ_fld_lt : δ_fld < δ_src)
+    (hδ_src : (δ_src : ℝ) <
+      1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)))
+    (ε_star : ℝ≥0)
+    (hbudget : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) ≤ (ε_star : ENNReal)) :
+    epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤ (ε_star : ENNReal) :=
+  le_trans (linear_epsCa_le_one_point_five_johnson C δ_min η δ_fld δ_src h_δ_min hη
+    hη_lt_third hη_lt_δ_min hδ_fld_pos hδ_fld_lt hδ_src) hbudget
+
 end General
 
 end CodingTheory

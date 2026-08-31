@@ -1042,5 +1042,109 @@ theorem frs_lambda_le_johnson_mds
   exact mds_johnson_lambda_le_of_rate_distance _ ρ η hρ_pos hρ_le1 hη_pos
     (ReedSolomon.Folded.frs_rate_distance_of_dvd hs hdvd dom ω hadm hω hk)
 
+/-! ## Threshold forms
+
+Target-shaped faces of the Johnson list bounds: the list-size target `L` is an argument and the
+numeric budget check `1/(2ηρ) ≤ L` is a hypothesis, so the contentful-range condition is
+discharged at the use site. The conclusions are stated on the bare `ℕ∞`-valued `Lambda`, the
+shape list-size consumers take. -/
+
+/-- Threshold form of `mds_johnson_lambda_le_of_rate_distance`. -/
+theorem mds_johnson_lambda_le_of_rate_distance_of_budget
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {α : Type*} [Finite α] [DecidableEq α]
+    (C : Set (ι → α)) (ρ η : ℝ)
+    (hρ_pos : 0 < ρ) (hρ_le_one : ρ ≤ 1) (hη_pos : 0 < η)
+    (h_rate_distance : (Code.minDist C : ℝ) / Fintype.card ι =
+      1 - ρ + 1 / Fintype.card ι)
+    (L : ℕ) (hbudget : ENNReal.ofReal (1 / (2 * η * ρ)) ≤ (L : ENNReal)) :
+    Lambda C (1 - Real.sqrt ρ - η) ≤ (L : ℕ∞) := by
+  have h := (mds_johnson_lambda_le_of_rate_distance C ρ η hρ_pos hρ_le_one hη_pos
+    h_rate_distance).trans hbudget
+  exact ENat.toENNReal_le.mp (by simpa using h)
+
+/-- Threshold form of `mds_johnson_lambda_le`. -/
+theorem mds_johnson_lambda_le_of_budget
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [Finite F] [DecidableEq F]
+    (C : LinearCode ι F) (η : ℝ) (hη_pos : 0 < η)
+    (h_mds : LinearCode.IsMDS C)
+    (L : ℕ)
+    (hbudget : ENNReal.ofReal
+        (1 / (2 * η * ((Module.finrank F C : ℝ) / Fintype.card ι))) ≤ (L : ENNReal)) :
+    Lambda ((C : Set (ι → F)))
+        (1 - Real.sqrt ((Module.finrank F C : ℝ) / Fintype.card ι) - η) ≤ (L : ℕ∞) := by
+  have h : (Lambda ((C : Set (ι → F)))
+        (1 - Real.sqrt ((Module.finrank F C : ℝ) / Fintype.card ι) - η) : ENNReal) ≤
+      ENNReal.ofReal (1 / (2 * η * ((Module.finrank F C : ℝ) / Fintype.card ι))) :=
+    mds_johnson_lambda_le C η hη_pos h_mds
+  exact ENat.toENNReal_le.mp (by simpa using h.trans hbudget)
+
+/-- Threshold form of `rs_lambda_le_johnson_mds`. -/
+theorem rs_lambda_le_johnson_mds_of_budget
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [Finite F]
+    {n : ℕ} [NeZero n] (dom : ι ↪ F) (η : ℝ) (hη_pos : 0 < η)
+    (L : ℕ)
+    (hbudget : ENNReal.ofReal
+        (1 / (2 * η * ((Module.finrank F (ReedSolomon.code dom n) : ℝ) / Fintype.card ι)))
+      ≤ (L : ENNReal)) :
+    Lambda ((ReedSolomon.code dom n : Set (ι → F)))
+        (1 - Real.sqrt ((Module.finrank F (ReedSolomon.code dom n) : ℝ) / Fintype.card ι) - η)
+      ≤ (L : ℕ∞) := by
+  have h : (Lambda ((ReedSolomon.code dom n : Set (ι → F)))
+        (1 - Real.sqrt ((Module.finrank F (ReedSolomon.code dom n) : ℝ) / Fintype.card ι) - η) :
+          ENNReal) ≤
+      ENNReal.ofReal
+        (1 / (2 * η * ((Module.finrank F (ReedSolomon.code dom n) : ℝ) / Fintype.card ι))) :=
+    rs_lambda_le_johnson_mds dom η hη_pos
+  exact ENat.toENNReal_le.mp (by simpa using h.trans hbudget)
+
+/-- Threshold form of `irs_lambda_le_johnson_mds`. -/
+theorem irs_lambda_le_johnson_mds_of_budget
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [Finite F]
+    (dom : ι ↪ F) (k s : ℕ) [NeZero s] (hks : 0 < k / s)
+    (η : ℝ) (hη_pos : 0 < η)
+    (L : ℕ)
+    (hbudget : ENNReal.ofReal
+        (1 / (2 * η * LinearCode.alphabetRate (ReedSolomon.Interleaved.irsCode dom k s)))
+      ≤ (L : ENNReal)) :
+    Lambda ((ReedSolomon.Interleaved.irsCode dom k s : Submodule F (ι → Fin s → F)) :
+        Set (ι → Fin s → F))
+        (1 - Real.sqrt (LinearCode.alphabetRate (ReedSolomon.Interleaved.irsCode dom k s)) - η)
+      ≤ (L : ℕ∞) := by
+  have h : (Lambda ((ReedSolomon.Interleaved.irsCode dom k s : Submodule F (ι → Fin s → F)) :
+        Set (ι → Fin s → F))
+        (1 - Real.sqrt (LinearCode.alphabetRate (ReedSolomon.Interleaved.irsCode dom k s)) - η) :
+          ENNReal) ≤
+      ENNReal.ofReal
+        (1 / (2 * η * LinearCode.alphabetRate (ReedSolomon.Interleaved.irsCode dom k s))) :=
+    irs_lambda_le_johnson_mds dom k s hks η hη_pos
+  exact ENat.toENNReal_le.mp (by simpa using h.trans hbudget)
+
+/-- Threshold form of `frs_lambda_le_johnson_mds`. -/
+theorem frs_lambda_le_johnson_mds_of_budget
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [Finite F]
+    (dom : ι ↪ F) (k s : ℕ) [NeZero k] (ω : F) (hs : 0 < s) (hdvd : s ∣ k)
+    (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map dom) s ω) (hω : ω ≠ 0)
+    (hk : k ≤ s * Fintype.card ι) (η : ℝ) (hη_pos : 0 < η)
+    (L : ℕ)
+    (hbudget : ENNReal.ofReal
+        (1 / (2 * η * LinearCode.alphabetRate (ReedSolomon.Folded.frsCode dom k s ω)))
+      ≤ (L : ENNReal)) :
+    Lambda ((ReedSolomon.Folded.frsCode dom k s ω : Submodule F (ι → Fin s → F)) :
+        Set (ι → Fin s → F))
+        (1 - Real.sqrt (LinearCode.alphabetRate (ReedSolomon.Folded.frsCode dom k s ω)) - η)
+      ≤ (L : ℕ∞) := by
+  have h : (Lambda ((ReedSolomon.Folded.frsCode dom k s ω : Submodule F (ι → Fin s → F)) :
+        Set (ι → Fin s → F))
+        (1 - Real.sqrt (LinearCode.alphabetRate (ReedSolomon.Folded.frsCode dom k s ω)) - η) :
+          ENNReal) ≤
+      ENNReal.ofReal
+        (1 / (2 * η * LinearCode.alphabetRate (ReedSolomon.Folded.frsCode dom k s ω))) :=
+    frs_lambda_le_johnson_mds dom k s ω hs hdvd hadm hω hk η hη_pos
+  exact ENat.toENNReal_le.mp (by simpa using h.trans hbudget)
 
 end CodingTheory

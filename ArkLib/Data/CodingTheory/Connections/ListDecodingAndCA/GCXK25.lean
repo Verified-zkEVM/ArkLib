@@ -857,6 +857,24 @@ theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η :
   exact linear_mca_error_le_of_lambda_le_aux C L δ η _hδ_pos _hδ_lt
     _hδ_lt_dist _hη_pos _hη_lt _hΛ
 
+/-- Threshold form of `linear_mcaError_le_of_Lambda_le`: any target `ε_star` that the
+`(L²δn + 1/η)/|F|` budget clears at the instantiated parameters is a genuine affine-line MCA
+bound. Together with the list-size hypothesis `hΛ`, both numeric side conditions of the
+list-to-MCA conversion are discharged at the use site. -/
+theorem linear_mcaError_le_of_Lambda_le_of_budget (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
+    (hδ_pos : 0 < δ) (hδ_lt : δ < 1)
+    (hδ_lt_dist :
+        δ < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
+    (hη_pos : 0 < η) (hη_lt : η < 1)
+    (hΛ : Lambda ((C : Set (ι → F))) δ ≤ (L : ℕ∞))
+    (ε_star : ℝ≥0)
+    (hbudget : ENNReal.ofReal
+        (((L : ℝ) ^ 2 * δ * Fintype.card ι + 1 / η) / Fintype.card F) ≤ (ε_star : ENNReal)) :
+    mcaError (AffineLineGenerator F) C
+        (1 - (1 - δ + η) ^ ((1 : ℝ) / 2)) ≤ (ε_star : ENNReal) :=
+  le_trans (linear_mcaError_le_of_Lambda_le C L δ η hδ_pos hδ_lt hδ_lt_dist
+    hη_pos hη_lt hΛ) hbudget
+
 end ListImpliesMCA
 
 end CodingTheory

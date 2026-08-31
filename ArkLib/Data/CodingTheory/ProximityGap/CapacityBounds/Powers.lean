@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import Mathlib.Combinatorics.Enumerative.DoubleCounting
 import Mathlib.LinearAlgebra.Matrix.Module
 
+set_option linter.style.longFile 2100
+
 /-!
 # MCA bounds for univariate powers
 
@@ -1921,6 +1923,35 @@ theorem linear_mcaError_powers_le
   · ring
   · apply congrArg₂ max <;> rw [div_div]
 
+/-- Threshold form of `linear_mcaError_powers_le`: any target `ε_star` that the explicit
+univariate-powers budget clears at the instantiated parameters is a genuine MCA bound for the
+powers generator. The numeric budget check is a hypothesis, so the contentful-range condition
+is discharged at the use site. -/
+theorem linear_mcaError_powers_le_of_budget
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    (C : ModuleCode ι F A) (k : ℕ) (δ_min η δ : ℝ≥0)
+    (hk : 1 ≤ k)
+    (hcard : k + 1 ≤ Fintype.card F)
+    (h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
+    (hη : 0 < η) (hη_lt_δ_min : η < δ_min)
+    (hδ : (δ : ℝ) ≤ 1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2)))
+    (ε_star : ℝ≥0)
+    (hbudget : ENNReal.ofReal
+        (((Fintype.card ι : ℝ)
+              * (1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1))) / η)
+            * ((k : ℝ) / Fintype.card F)
+          + max
+              (2 * (k : ℝ) /
+                ((η : ℝ)
+                  * ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2))
+                      - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))
+                  * Fintype.card F))
+              (((k : ℝ) + 1) * ((k : ℝ) + 2) / ((η : ℝ) * Fintype.card F)))
+      ≤ (ε_star : ENNReal)) :
+    mcaError (univariatePowersGenerator F k) C (δ : ℝ) ≤ (ε_star : ENNReal) :=
+  le_trans (linear_mcaError_powers_le C k δ_min η δ hk hcard h_δ_min hη hη_lt_δ_min hδ) hbudget
+
 end CodingTheory
 
-set_option linter.style.longFile 2100

@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
 import Mathlib.Algebra.Algebra.ZMod
 import Mathlib.FieldTheory.Finite.Basic
 
+set_option linter.style.longFile 1800
+
 /-!
 # Reed--Solomon lower bound at the Johnson radius
 
@@ -1647,4 +1649,3 @@ end ReedSolomon
 
 end CodingTheory
 
-set_option linter.style.longFile 1800
