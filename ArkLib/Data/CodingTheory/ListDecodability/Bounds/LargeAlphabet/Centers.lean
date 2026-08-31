@@ -529,23 +529,24 @@ theorem incidence_power_gap :
   have hsize : 4 * (ℓ : ℝ) ^ 2 / p ≤ (M : ℝ) :=
     (Nat.ceil_le).mp hM
   have hpm : 4 * (ℓ : ℝ) ^ 2 ≤ p * M := by
-    have h := (div_le_iff₀ hp).mp hsize
-    nlinarith
+    simpa only [mul_comm] using (div_le_iff₀ hp).mp hsize
   have hden : (0 : ℝ) < 4 * ℓ := by positivity
   have hratio : (ℓ : ℝ) - 1 ≤ p * M / (4 * ℓ) := by
     rw [le_div_iff₀ hden]
     have haux : 4 * (ℓ : ℝ) * ((ℓ : ℝ) - 1) ≤ 4 * (ℓ : ℝ) ^ 2 := by
-      nlinarith
+      calc
+        4 * (ℓ : ℝ) * ((ℓ : ℝ) - 1) ≤ 4 * (ℓ : ℝ) * ℓ :=
+          mul_le_mul_of_nonneg_left (sub_le_self _ zero_le_one)
+            (mul_nonneg (by norm_num) hℓR.le)
+        _ = 4 * (ℓ : ℝ) ^ 2 := by ring
     exact (by
       simpa only [mul_comm, mul_left_comm, mul_assoc] using haux.trans hpm)
   let q : ℝ := 1 - 1 / (4 * ℓ)
   have hone : 1 / (4 * (ℓ : ℝ)) ≤ 1 :=
-    (div_le_one hden).2 (by nlinarith)
-  have hq : 0 ≤ q := by
-    dsimp [q]
-    linarith
+    (div_le_one hden).2 (by nlinarith only [hℓtwo])
+  have hq : 0 ≤ q := by simpa only [q] using sub_nonneg.mpr hone
   have hneg : (-2 : ℝ) ≤ -(1 / (4 * (ℓ : ℝ))) := by
-    linarith
+    exact neg_le_neg (hone.trans (by norm_num))
   have hbern : (3 : ℝ) / 4 ≤ q ^ ℓ := by
     calc
       (3 : ℝ) / 4 =
@@ -1021,8 +1022,11 @@ theorem rounded_barrier_other_codeword_bound_core
   have hbalanceN :
       R * n + p * n + (p / (ℓ : ℝ)) * n =
         (n : ℝ) - η * n := by
-    have h := congrArg (fun x : ℝ => x * (n : ℝ)) hbalance
-    nlinarith
+    calc
+      R * n + p * n + (p / (ℓ : ℝ)) * n =
+          (R + p + p / (ℓ : ℝ)) * n := by ring
+      _ = (1 - η) * n := by rw [hbalance]
+      _ = (n : ℝ) - η * n := by ring
   have hslack := barrier_k_slack ℓ B hℓ
   change (B : ℝ) + 4 + 1 / (ℓ : ℝ) ≤
     K * (1 - 1 / (ℓ : ℝ)) - 1 at hslack
@@ -1034,7 +1038,11 @@ theorem rounded_barrier_other_codeword_bound_core
   have hfactorGrow :
       K * (1 - 1 / (ℓ : ℝ)) - 1 ≤
         (K * (1 - 1 / (ℓ : ℝ)) - 1) * (η * n) := by
-    nlinarith [mul_nonneg hfactorNonneg (sub_nonneg.mpr hone)]
+    calc
+      K * (1 - 1 / (ℓ : ℝ)) - 1 =
+          (K * (1 - 1 / (ℓ : ℝ)) - 1) * 1 := by ring
+      _ ≤ (K * (1 - 1 / (ℓ : ℝ)) - 1) * (η * n) :=
+        mul_le_mul_of_nonneg_left hone hfactorNonneg
   have hbudget :
       (B : ℝ) + 4 + 1 / (ℓ : ℝ) ≤
         (K * (1 - 1 / (ℓ : ℝ)) - 1) * (η * n) :=
@@ -1139,11 +1147,13 @@ theorem incidence_moment_lower :
   have hsize : 4 * (ℓ : ℝ) ^ 2 / p ≤ (M : ℝ) :=
     (Nat.ceil_le).mp hM
   have hpm : 4 * (ℓ : ℝ) ^ 2 ≤ p * M := by
-    have h := (div_le_iff₀ hp).mp hsize
-    nlinarith
+    simpa only [mul_comm] using (div_le_iff₀ hp).mp hsize
   have hgap_nonneg : 0 ≤ p * M - ((ℓ : ℝ) - 1) := by
     have hℓtwo : (2 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
-    nlinarith
+    have hsmall : (ℓ : ℝ) - 1 ≤ 4 * (ℓ : ℝ) ^ 2 := by
+      nlinarith only [hℓtwo, sq_nonneg (ℓ : ℝ)]
+    apply sub_nonneg.mpr
+    exact hsmall.trans hpm
   have hmeanpow :
       (p * M - ((ℓ : ℝ) - 1)) ^ ℓ ≤ ((∑ i, b i) / n) ^ ℓ :=
     pow_le_pow_left₀ hgap_nonneg hmean ℓ
