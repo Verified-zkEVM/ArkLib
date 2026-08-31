@@ -407,16 +407,15 @@ lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : Interleaved
   -- The goal is now `Disjoint (R_ss.filter P) (R_ss.filter (¬P))`
   apply disjoint_filter_filter_not
 
-set_option maxHeartbeats 400000 in
--- Destructured `let` avoids repeated elaboration of
--- `constructInterleavedCodewordsAndRowWiseCA`
+-- Keep the code coercion explicit: asking elaboration to infer it here unfolds the large
+-- `e_ε_correlatedAgreementAffineLinesNat` proposition during definitional equality checking.
 omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
 lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
     (U₀ U₁ : InterleavedWord A (Fin m) ι)
-  (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := MC) e ε)
+  (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := (MC : Set (ι → A))) e ε)
   (hR_star_card : (R_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁).card > ε) :
     let ⟨V₀, V₁, _⟩ := constructInterleavedCodewordsAndRowWiseCA (F := F)
-      (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
+      (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := hC_gap)
       (hR_star_card := hR_star_card)
     (disagreementSet U₀ U₁ V₀ V₁).card ≤ e
     → jointProximityNat₂ (C := MC ^⋈ (Fin m)) U₀ U₁ e := by
@@ -424,22 +423,18 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
   set C_m := MC ^⋈ (Fin m)
   set U_rowwise := finMapTwoWords U₀ U₁
   set U_colwise := ⋈| U_rowwise
-  set C_m_2 := C_m ^⋈ (Fin 2)
   -- Unfold the goal
   unfold jointProximityNat₂
-  -- Goal: (let ⟨V₀, V₁, _⟩ := ... in (disagreementSet ...).card ≤ e) → (Δ₀(U_comb, C_m_2) ≤ e)
+  -- Goal: (let ⟨V₀, V₁, _⟩ := ... in (disagreementSet ...).card ≤ e) →
+  --   (Δ₀(U_comb, C_m ^⋈ (Fin 2)) ≤ e)
   simp only
   -- 2. Introduce the bindings and the hypothesis
   intro hDisagreeementCard_Le_e -- The assumption: (disagreementSet U₀ U₁ V₀ V₁).card ≤ e
-  set V₀ := (constructInterleavedCodewordsAndRowWiseCA (F := F)
-    (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
-    (hR_star_card := hR_star_card)).1
-  set V₁ := (constructInterleavedCodewordsAndRowWiseCA (F := F)
-    (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
-    (hR_star_card := hR_star_card)).2.1
-  set hRowPairCA_U_V := (constructInterleavedCodewordsAndRowWiseCA
-    (F := F) (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
-    (hR_star_card := hR_star_card)).2.2
+  set V := constructInterleavedCodewordsAndRowWiseCA (F := F)
+    (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := hC_gap)
+    (hR_star_card := hR_star_card)
+  set V₀ := V.1
+  set V₁ := V.2.1
   have hD_card_le_e : #(disagreementSet U₀ U₁ V₀ V₁) ≤ e :=
     hDisagreeementCard_Le_e
   -- 3. Show LHS assumption is equal to Δ₀(U_comb, V_constructed) ≤ e
@@ -478,7 +473,7 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
         exact h_fun_ne_i
   -- Our assumption `h_LHS` is now: Δ₀(U_comb, V_constructed) ≤ e
   simp_rw [h_LHS_eq_dist] at hD_card_le_e
-  -- 4. Prove the RHS: Δ₀(U_comb, C_m_2) ≤ e
+  -- 4. Prove the RHS: Δ₀(U_comb, C_m ^⋈ (Fin 2)) ≤ e
   rw [jointProximityNat]
   rw [Code.closeToCode_iff_closeToCodeword_of_minDist]
   -- ⊢ ∃ v ∈ ↑(C ^⋈ (Fin 2) ^⋈ (Fin m)),

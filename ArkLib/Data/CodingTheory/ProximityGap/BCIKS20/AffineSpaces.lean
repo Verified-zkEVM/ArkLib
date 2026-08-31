@@ -1557,11 +1557,16 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         have hμ6 : μ ^ 6 < (1/20 : ℝ) ^ 6 :=
           pow_lt_pow_left₀ hμ_lt_one20 hμ_pos.le (by omega)
         have h4 : (4 : ℝ) ≤ (deg : ℝ) ^ 2 := by
-          nlinarith [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
-        nlinarith
+          exact_mod_cast Nat.pow_le_pow_left (show 2 ≤ deg by omega) 2
+        calc
+          160 * μ ^ 6 < 160 * (1 / 20 : ℝ) ^ 6 :=
+            mul_lt_mul_of_pos_left hμ6 (by norm_num)
+          _ < 4 := by norm_num
+          _ ≤ (deg : ℝ) ^ 2 := h4
       have h_54_lt_deg2 : 5 / (4 * μ) < (deg : ℝ) ^ 2 / (128 * μ ^ 7) := by
         rw [div_lt_div_iff₀ (by positivity) (by positivity)]
-        nlinarith [h_160]
+        convert mul_lt_mul_of_pos_right h_160 (show (0 : ℝ) < 4 * μ by positivity) using 1
+        all_goals ring
       -- Extract |F| bound from hε
       have h_field : (deg : ℝ) ^ 2 / (128 * μ ^ 7) < Fintype.card F := by
         classical

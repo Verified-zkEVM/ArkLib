@@ -626,15 +626,7 @@ private lemma indicated_polynomial_eq_foldAux'
     (Polynomial.evalRingHom x)
     (indicatedPolynomial domain f k s')) =
     foldWordAux domain f k x := by
-  apply Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := (2 ^ k))
-    <;> try tauto
-  · aesop
-     (add safe [(by rw [←eval_comm]),
-      (by rw
-        [indicated_polynomial_eq_combination_of_correlated,
-          ←foldValue_def,
-          foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
-     (add simp [eval_finsetSum])
+  refine Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := 2 ^ k) ?_ ?_ ?_ ?_
   · simp only
       [indicatedPolynomial, Polynomial.map_sum,
         Polynomial.map_mul, map_C, coe_evalRingHom]
@@ -644,6 +636,14 @@ private lemma indicated_polynomial_eq_foldAux'
           (add simp [Polynomial.map_map])
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
+  · simpa using h_card
+  · aesop
+      (add safe [(by rw [←eval_comm]),
+        (by rw
+          [indicated_polynomial_eq_combination_of_correlated,
+            ←foldValue_def,
+            foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
+      (add simp [eval_finsetSum])
 
 private lemma foldWordAux_poly_sum {a : F} :
   ((foldWordAux domain f k a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) =
