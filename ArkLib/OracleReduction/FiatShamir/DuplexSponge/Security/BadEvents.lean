@@ -433,11 +433,11 @@ or `p⁻¹`:
 E_p(tr) := ∃ j > 0, s_C ∈ Σ^c :  tr̄_j = (p, ·, (·, s_C))  and
   ∃ j' < j : tr̄_{j'} = (h, ·, s_C)  ∨  ∃ j' < j : tr̄_{j'} = (p, ·, (·, s_C))
   ∨  ∃ j' < j : tr̄_{j'} = (p⁻¹, ·, (·, s_C))
-  ∨  ∃ j' ≤ j : tr̄_{j'} = (p, (·, s_C), ·)  ∨  ∃ j' < j : tr̄_{j'} = (p⁻¹, (·, s_C), ·)
+  ∨  ∃ j' ≤ j : tr̄_{j'} = (p, (·, s_C), ·)  ∨  ∃ j' ≤ j : tr̄_{j'} = (p⁻¹, (·, s_C), ·)
 ```
 
-Branches realized by `isDuplicatedPriorCapacity`'s uniform `≤ j`; extensionally equal to the
-paper's asymmetric `< j`/`≤ j` (the extra `j' = j` cases are vacuous). -/
+The shared predicate uses `< j` for output arms 1–3 and `≤ j` for input arms 4–5; the extra
+`j' = j` case in arm 5 is vacuous for a `p` entry. -/
 def capacitySegmentDupPerm : Prop :=
   let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
@@ -459,8 +459,8 @@ E_{p⁻¹}(tr) := ∃ j > 0, s_C ∈ Σ^c :  tr̄_j = (p⁻¹, ·, (·, s_C))  a
   ∨  ∃ j' ≤ j : tr̄_{j'} = (p, (·, s_C), ·)  ∨  ∃ j' ≤ j : tr̄_{j'} = (p⁻¹, (·, s_C), ·)
 ```
 
-Same uniform-`≤ j` caveat as `E_p` (via `isDuplicatedPriorCapacity`); extensionally equal to
-Eq. 25's asymmetric quantifiers. -/
+As above, the shared predicate uses `< j` for output arms 1–3 and `≤ j` for input arms 4–5; the
+extra `j' = j` case in arm 4 is vacuous for a `p⁻¹` entry. -/
 def capacitySegmentDupPermInv : Prop :=
   let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ capSeg : Vector U SpongeSize.C,
