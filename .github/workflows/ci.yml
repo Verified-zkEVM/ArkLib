@@ -44,8 +44,7 @@ jobs:
           )
         run: |
           changed="$(git diff --name-only \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}" \
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
             -- docs/kb/_generated)"
           if [ -n "$changed" ]; then
             echo "Do not commit docs/kb/_generated files in feature PRs."
