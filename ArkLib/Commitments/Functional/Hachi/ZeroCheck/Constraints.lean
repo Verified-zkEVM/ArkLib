@@ -21,10 +21,13 @@ import CompPoly.Multivariate.Operations
 
   ## The table `w̃` (Eq. (21))
 
-  `wTable` re-reads the committed pair `(z, r)` as an `F`-valued function on the `m₀`-cube: the
-  rows are the `Zq`-coefficient vectors of the witness entries `zⱼ ∈ Rq` followed by those of the
-  quotients `rᵢ`, and the columns are the `d` coefficient positions (`d = deg Φ.φ`). The arity
-  `m₀` satisfies `2 ^ m₀ ≥ (μ + n)·d`; `m₁` is the row-batching arity, with `2 ^ m₁ ≥ n`.
+  `wTable` re-reads the committed vector as an `F`-valued function on the `m₀`-cube: the rows are
+  the `Zq`-coefficient vectors of the witness entries `zⱼ ∈ Rq` followed by those of the quotients'
+  base-`b` **digits** ([NOZ26] §4.3's hidden gadget decomposition — `n·δ` rows, `δ = clog_b q`,
+  laid out digit-major within each quotient row), and the columns are the `d` coefficient positions
+  (`d = deg Φ.φ`). The arity `m₀` satisfies `2 ^ m₀ ≥ (μ + n·δ)·d`; `m₁` is the row-batching arity,
+  with `2 ^ m₁ ≥ n` — the `m₁` cube stays indexed by quotient *rows*, the digits being summed inside
+  each row entry with the public weights `b^u`.
 
   ## The batched constraint polynomials (Eqs. (22)–(23))
 
@@ -112,26 +115,39 @@ theorem rangeProduct_eq_zero_iff {b : ℕ} {v : F} :
       rw [mul_eq_zero, sub_eq_zero, add_eq_zero_iff_eq_neg]
       exact hv
 
-/-- The Eq. (21) table `w̃`: the committed pair `(z, r)` read as an `F`-valued function on the
+/-- The Eq. (21) table `w̃`: the committed vector read as an `F`-valued function on the
 `m₀`-cube. A cube point is decoded (via `finFunctionFinEquiv`) to a flat index `idx`, split into
 `row := idx / d` and `column := idx % d` (`d = deg Φ.φ`). Rows `< μ` return the `Zq`-coefficients
-of the witness entries `zⱼ ∈ Rq`; rows `μ ≤ · < μ + n` return the coefficients of the quotients
-`rᵢ`; both are mapped through the base-field embedding `φF`, and all remaining cube points return
-zero.
+of the witness entries `zⱼ ∈ Rq`; rows `μ ≤ · < μ + n·δ` return the coefficients of the quotient
+**digits**; both are mapped through the base-field embedding `φF`, and all remaining cube points
+return zero.
 
-The coefficients are read directly rather than gadget-decomposed, so the range polynomial `H₀`
-constrains the committed data itself: `H₀ ≡ 0` says every committed coefficient lies in
-`[−(b−1), b−1]`. The `b` argument is unused here and kept for signature compatibility with
-`hZero`. -/
-def wTable (φF : ZMod q →+* F) (_b : ℕ) (w : LiftedWitness Φ μ n) :
+Every entry is a coefficient of the *committed* vector, so the range polynomial `H₀` constrains
+the committed data itself: `H₀ ≡ 0` says every committed coefficient lies in `[−(b−1), b−1]`.
+
+The quotient block carries the **digits** `rhoDigits Φ b (w.ρ i) u`, not the raw quotient rows —
+[NOZ26] §4.3's hidden gadget decomposition, matching `liftMessage`. Its `n·δ` rows are laid out
+digit-major inside each quotient row (`row = (idx/d − μ)/δ`, `digit = (idx/d − μ)%δ`), the same
+flattening `liftMessage` uses, so `w̃` is the committed vector read coefficient-wise. The `b`
+argument is the digit base, and it is the **same** `b` the range factor `P_b` of `hZero` uses:
+balanced base-`b` digits land in `[−⌊b/2⌋, ⌈b/2⌉−1] ⊆ [−(b−1), b−1]`, so one base serves both
+roles and no cross-base orientation hypothesis is needed.
+
+The paper's *simplified* presentation (Eq. (21)) tabulates the raw `r` rows instead; those carry
+coefficients up to `q/2` (`rhoShort_half`), which would force the range base up to `q/2 + 1` for
+honest completeness, collapsing `γ = q/2 = bZero − 1` and emptying both the Eq. (20) ball check and
+the Module-SIS escape target. -/
+def wTable (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
     (Fin m₀ → Fin 2) → F :=
   fun pt =>
     let idx : ℕ := (finFunctionFinEquiv pt : Fin (2 ^ m₀))
     let d : ℕ := Φ.φ.natDegree
     if hz : idx / d < μ then
       φF ((w.z ⟨idx / d, hz⟩).1.coeff (idx % d))
-    else if hr : idx / d - μ < n then
-      φF ((w.ρ ⟨idx / d - μ, hr⟩).coeff (idx % d))
+    else if hr : idx / d - μ < n * rhoDigitCount q b then
+      φF ((rhoDigits Φ b (w.ρ ⟨(idx / d - μ) / rhoDigitCount q b,
+              Nat.div_lt_of_lt_mul (by rwa [Nat.mul_comm])⟩)
+            ((idx / d - μ) % rhoDigitCount q b)).coeff (idx % d))
     else 0
 
 /-- The `m₁`-cube point that encodes row `i : Fin n` (requires `n ≤ 2 ^ m₁`): the preimage of `i`
@@ -151,15 +167,21 @@ encoded into the `m₁`-cube via `rowPoint` and zero-padded on rows `≥ n`. The
 That this coincides with Eq. (22)'s contraction of the public `M̃_α` against the committed table
 `w̃` and the public `α̃` — [NOZ26] §4.3's "represent the constraints by polynomials" step — is
 **proved**, not assumed: see `alphaDefect_wTable` and `hAlphaEvals_eq_alphaDefect` below, and
-`hAlpha_eq_zero_iff_alphaDefect` for the relation-level form. The `b` argument is unused here and
-kept for signature compatibility with `hAlpha`. -/
-noncomputable def hAlphaEvals (φF : ZMod q →+* F) (_b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+`hAlpha_eq_zero_iff_alphaDefect` for the relation-level form.
+
+The quotient term is the **digit recombination** `∑_u b^u · rᵢ,ᵤ(α)` rather than `rᵢ(α)`, since
+that is what the committed table holds; `rhoDigits_evalAt` says the two agree, which is why the
+`m₁` cube is still indexed by rows `Fin n` — the digits are summed *inside* the row entry with the
+public weights `b^u`, exactly the paper's `M̃_α(i, u) = −(α^d + 1)·b^u` on digit columns. -/
+noncomputable def hAlphaEvals (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) : (Fin m₁ → Fin 2) → F :=
   fun pt =>
     if h : ((finFunctionFinEquiv pt : Fin (2 ^ m₁)) : ℕ) < n then
       cEvalAt φF α (cRowSum Φ s w.z ⟨_, h⟩)
         - cEvalAt φF α (s.yvec ⟨_, h⟩).1
-        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ ⟨_, h⟩).toPoly
+        - cEvalAt φF α Φ.φ * ∑ u : Fin (rhoDigitCount q b),
+            φF ((b : ZMod q) ^ (u : ℕ))
+              * evalAt φF α (rhoDigits Φ b (w.ρ ⟨_, h⟩) (u : ℕ)).toPoly
     else 0
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
@@ -170,7 +192,9 @@ theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement
     (w : LiftedWitness Φ μ n) (hn : n ≤ 2 ^ m₁) (i : Fin n) :
     hAlphaEvals Φ m₁ φF b s α w (rowPoint m₁ hn i) =
       cEvalAt φF α (cRowSum Φ s w.z i) - cEvalAt φF α (s.yvec i).1
-        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly := by
+        - cEvalAt φF α Φ.φ * ∑ u : Fin (rhoDigitCount q b),
+            φF ((b : ZMod q) ^ (u : ℕ))
+              * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly := by
   simp only [hAlphaEvals, rowPoint, Equiv.apply_symm_apply, Fin.eta, i.isLt, dif_pos]
 
 /-! ## The batched constraint polynomials -/
@@ -377,39 +401,59 @@ theorem wTable_zRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
   simp only [wTable, Equiv.apply_symm_apply, Fin.val_mk, hdiv, hmod, i.isLt, dif_pos, Fin.eta]
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- The table value at the cube point encoding the `r`-block coordinate `(i, k)` (row `μ + i`,
-column `k < deg φ`) is the embedded coefficient `φF((rᵢ).coeff k)`. -/
+/-- The table value at the cube point encoding the quotient-block coordinate `(i, u, k)` — row
+`μ + i·δ + u` (quotient row `i`, digit `u`), column `k < deg φ` — is the embedded digit
+coefficient `φF((rhoDigits b rᵢ u).coeff k)`. The digit-block analogue of `wTable_zRow`. -/
 theorem wTable_rRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
-    (hd : 0 < Φ.φ.natDegree) (i : Fin n) {k : ℕ} (hk : k < Φ.φ.natDegree)
-    (hlt : Φ.φ.natDegree * (μ + (i : ℕ)) + k < 2 ^ m₀) :
-    wTable Φ m₀ φF b w (finFunctionFinEquiv.symm ⟨Φ.φ.natDegree * (μ + (i : ℕ)) + k, hlt⟩) =
-      φF ((w.ρ i).coeff k) := by
-  have hdiv : (Φ.φ.natDegree * (μ + (i : ℕ)) + k) / Φ.φ.natDegree = μ + (i : ℕ) := by
+    (hd : 0 < Φ.φ.natDegree) (i : Fin n) {u : ℕ} (hu : u < rhoDigitCount q b) {k : ℕ}
+    (hk : k < Φ.φ.natDegree)
+    (hlt : Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + u)) + k < 2 ^ m₀) :
+    wTable Φ m₀ φF b w
+        (finFunctionFinEquiv.symm
+          ⟨Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + u)) + k, hlt⟩) =
+      φF ((rhoDigits Φ b (w.ρ i) u).coeff k) := by
+  set δ := rhoDigitCount q b with hδ
+  have hrow : (Φ.φ.natDegree * (μ + ((i : ℕ) * δ + u)) + k) / Φ.φ.natDegree
+      = μ + ((i : ℕ) * δ + u) := by
     rw [Nat.mul_add_div hd, Nat.div_eq_of_lt hk, Nat.add_zero]
-  have hmod : (Φ.φ.natDegree * (μ + (i : ℕ)) + k) % Φ.φ.natDegree = k := by
-    have h := Nat.div_add_mod (Φ.φ.natDegree * (μ + (i : ℕ)) + k) Φ.φ.natDegree
-    rw [hdiv] at h; omega
-  simp only [wTable, Equiv.apply_symm_apply, Fin.val_mk, hdiv, hmod]
-  rw [dif_neg (by omega : ¬ μ + (i : ℕ) < μ), dif_pos (by omega : μ + (i : ℕ) - μ < n)]
-  simp only [Nat.add_sub_cancel_left, Fin.eta]
+  have hcol : (Φ.φ.natDegree * (μ + ((i : ℕ) * δ + u)) + k) % Φ.φ.natDegree = k := by
+    have h := Nat.div_add_mod (Φ.φ.natDegree * (μ + ((i : ℕ) * δ + u)) + k) Φ.φ.natDegree
+    rw [hrow] at h; omega
+  have hδpos : 0 < δ := by omega
+  have hdivδ : ((i : ℕ) * δ + u) / δ = (i : ℕ) := by
+    rw [Nat.mul_comm, Nat.mul_add_div hδpos, Nat.div_eq_of_lt hu, Nat.add_zero]
+  have hmodδ : ((i : ℕ) * δ + u) % δ = u := by
+    rw [Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hu]
+  have hin : (i : ℕ) * δ + u < n * δ := by
+    have := i.isLt
+    calc (i : ℕ) * δ + u < (i : ℕ) * δ + δ := by omega
+      _ = ((i : ℕ) + 1) * δ := by ring
+      _ ≤ n * δ := Nat.mul_le_mul_right _ (by omega)
+  simp only [wTable, Equiv.apply_symm_apply, Fin.val_mk, hrow, hcol, ← hδ]
+  rw [dif_neg (by omega : ¬ μ + ((i : ℕ) * δ + u) < μ),
+    dif_pos (by omega : μ + ((i : ℕ) * δ + u) - μ < n * δ)]
+  simp only [Nat.add_sub_cancel_left, hdivδ, hmodδ, Fin.eta]
 
 omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Range-side soundness.** If the batched range polynomial `H₀^{w̃}` vanishes
 identically then `w̃` is short. Each committed coefficient is a table entry (`wTable`), hence a
 root of `P_b` (`hZero_eq_zero_iff`), hence a centered residue of absolute value `≤ b − 1`
 (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`); the norm bounds follow because the declared
-bounds dominate the range base (`b − 1 ≤ bound`, `b − 1 ≤ ρBound`). The arity
-`(μ + n)·deg φ ≤ 2^{m₀}` guarantees every coefficient position is a genuine cube point. This is
-the derivation that makes the range machinery load-bearing: `liftShort` is *proved* from
-`H₀ ≡ 0`, not assumed. -/
-theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound ρBound : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound)
+bound dominates the range base (`b − 1 ≤ bound`). The arity `(μ + n·δ)·deg φ ≤ 2^{m₀}` guarantees
+every coefficient position is a genuine cube point. This is the derivation that makes the range
+machinery load-bearing: `liftShort` is *proved* from `H₀ ≡ 0`, not assumed.
+
+Both halves land at the **same** bound: the quotient block of `w̃` holds digits, so the range check
+certifies `RhoDigitsShort` directly. A raw quotient block would need a second bound of its own, and
+`rhoShort_half` forces that one up to `q/2`. -/
+theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound : ℕ)
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound)
     (w : LiftedWitness Φ μ n) (h : hZero Φ m₀ φF b w = 0) :
-    liftShort Φ bound ρBound w := by
+    liftShort Φ bound b w := by
   rw [hZero_eq_zero_iff] at h
   refine ⟨?_, ?_⟩
-  · -- z-side: `vecLInftyNorm w.z ≤ bound`
+  · -- z-side: `vecLInftyNorm w.z ≤ bound`, unchanged apart from the widened arity pin
     apply Finset.sup_le
     intro i _
     apply Finset.sup_le
@@ -419,31 +463,38 @@ theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound ρBound : �
     have hlt : Φ.φ.natDegree * (i : ℕ) + k < 2 ^ m₀ := by
       have s1 : Φ.φ.natDegree * (i : ℕ) + k < Φ.φ.natDegree * ((i : ℕ) + 1) := by
         rw [Nat.mul_succ]; omega
-      have s2 : Φ.φ.natDegree * ((i : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+      have s2 : Φ.φ.natDegree * ((i : ℕ) + 1)
+          ≤ (μ + n * rhoDigitCount q b) * Φ.φ.natDegree := by
         rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
       omega
     have hval := h (finFunctionFinEquiv.symm ⟨Φ.φ.natDegree * (i : ℕ) + k, hlt⟩)
     rw [wTable_zRow Φ m₀ φF b w hd i hk hlt] at hval
     exact le_trans (valMinAbs_natAbs_le_of_rangeProduct_eq_zero φF hval) hbound
-  · -- r-side: `RhoShort ρBound w.ρ`
-    intro i k
+  · -- digit side: `RhoDigitsShort bound b w.ρ`, read off the widened quotient block
+    intro i u k
     by_cases hkd : k < Φ.φ.natDegree
     · have hi := i.isLt
-      have hlt : Φ.φ.natDegree * (μ + (i : ℕ)) + k < 2 ^ m₀ := by
-        have s1 : Φ.φ.natDegree * (μ + (i : ℕ)) + k < Φ.φ.natDegree * (μ + (i : ℕ) + 1) := by
+      have hu := u.isLt
+      have hrow : (i : ℕ) * rhoDigitCount q b + (u : ℕ) < n * rhoDigitCount q b := by
+        calc (i : ℕ) * rhoDigitCount q b + (u : ℕ)
+            < (i : ℕ) * rhoDigitCount q b + rhoDigitCount q b := by omega
+          _ = ((i : ℕ) + 1) * rhoDigitCount q b := by ring
+          _ ≤ n * rhoDigitCount q b := Nat.mul_le_mul (by omega) (le_refl _)
+      have hlt : Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + (u : ℕ))) + k < 2 ^ m₀ := by
+        have s1 : Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + (u : ℕ))) + k
+            < Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + (u : ℕ)) + 1) := by
           rw [Nat.mul_succ]; omega
-        have s2 : Φ.φ.natDegree * (μ + (i : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+        have s2 : Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + (u : ℕ)) + 1)
+            ≤ (μ + n * rhoDigitCount q b) * Φ.φ.natDegree := by
           rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
         omega
-      have hval := h (finFunctionFinEquiv.symm ⟨Φ.φ.natDegree * (μ + (i : ℕ)) + k, hlt⟩)
-      rw [wTable_rRow Φ m₀ φF b w hd i hkd hlt] at hval
-      exact le_trans (valMinAbs_natAbs_le_of_rangeProduct_eq_zero φF hval) hρBound
-    · -- `k ≥ deg φ`: the coefficient is zero, so trivially short
-      have hz : (w.ρ i).coeff k = 0 := by
-        rw [CPolynomial.coeff_toPoly]
-        apply Polynomial.coeff_eq_zero_of_natDegree_lt
-        exact lt_of_le_of_lt (w.hρ i) (by omega)
-      rw [hz]; simp [ZMod.valMinAbs_zero]
+      have hval := h (finFunctionFinEquiv.symm
+        ⟨Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + (u : ℕ))) + k, hlt⟩)
+      rw [wTable_rRow Φ m₀ φF b w hd i u.isLt hkd hlt] at hval
+      exact le_trans (valMinAbs_natAbs_le_of_rangeProduct_eq_zero φF hval) hbound
+    · -- `k ≥ deg φ`: `rhoDigits` truncates there, so the coefficient is zero
+      rw [rhoDigits_coeff, if_neg hkd]
+      simp
 
 /-! ## Eq. (22) in the paper's table form: the `M̃_α`/`w̃`/`α̃` contraction
 
@@ -464,30 +515,34 @@ row's `d` coefficient entries against `α̃` evaluates the corresponding `Zq[X]`
 def alphaTilde (α : F) (ℓ : ℕ) : F := α ^ ℓ
 
 /-- `M̃_α(i, u)` ([NOZ26] Eq. (22)): the public constraint matrix at `α`, indexed by the row
-`i ∈ [n]` of `relLift` and the table row `u ∈ [μ + n]` of `w̃`. The paper's three cases:
+`i ∈ [n]` of `relLift` and the table row `u ∈ [μ + n·δ]` of `w̃`. The paper's three cases:
 
 * `u < μ` — the `R^lin` matrix entry evaluated at `α`, namely `Mᵢᵤ(α)`;
-* `u = μ + i` — `−φ(α)`, placing the lift's `−(α^d + 1)·rᵢ(α)` term on the `r` block's diagonal;
+* `μ ≤ u < μ + n·δ` with `(u − μ)/δ = i` — `−φ(α)·b^{(u−μ)%δ}`, placing the lift's
+  `−(α^d + 1)·rᵢ(α)` term across row `i`'s `δ` **digit** columns, weighted by `b^u`. This is the
+  digit-decomposed form of the paper's `−(α^d + 1)·b^u` entry;
 * otherwise — `0`.
 
-Only public data enters (`s.M`, `Φ.φ`, `α`), which is what makes the Figure 7 final check
+Only public data enters (`s.M`, `Φ.φ`, `α`, `b`), which is what makes the Figure 7 final check
 verifier-computable: the prover supplies `w̃`, the verifier supplies `M̃_α`. -/
-def mAlphaTilde (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F) (i : Fin n) (u : ℕ) : F :=
+def mAlphaTilde (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F) (i : Fin n)
+    (u : ℕ) : F :=
   if hu : u < μ then cEvalAt φF α (s.M i ⟨u, hu⟩).1
-  else if u = μ + (i : ℕ) then -cEvalAt φF α Φ.φ
+  else if u < μ + n * rhoDigitCount q b ∧ (u - μ) / rhoDigitCount q b = (i : ℕ) then
+    -cEvalAt φF α Φ.φ * φF ((b : ZMod q) ^ ((u - μ) % rhoDigitCount q b))
   else 0
 
-/-- The `m₀`-cube point carrying table entry `(u, ℓ)` of `w̃` — row `u ∈ [μ + n]`, column
+/-- The `m₀`-cube point carrying table entry `(u, ℓ)` of `w̃` — row `u ∈ [μ + n·δ]`, column
 `ℓ < d = deg φ` — at the flat index `d·u + ℓ` that `wTable` decodes. The arity pin
-`(μ + n)·d ≤ 2^{m₀}` is exactly what makes every such position a genuine cube point. -/
-def wTablePoint (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (u : Fin (μ + n)) (ℓ : Fin Φ.φ.natDegree) : Fin m₀ → Fin 2 :=
+`(μ + n·δ)·d ≤ 2^{m₀}` is exactly what makes every such position a genuine cube point. -/
+def wTablePoint (b : ℕ) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (u : Fin (μ + n * rhoDigitCount q b)) (ℓ : Fin Φ.φ.natDegree) : Fin m₀ → Fin 2 :=
   finFunctionFinEquiv.symm ⟨Φ.φ.natDegree * (u : ℕ) + (ℓ : ℕ), by
     have hu := u.isLt
     have hl := ℓ.isLt
     have s1 : Φ.φ.natDegree * (u : ℕ) + (ℓ : ℕ) < Φ.φ.natDegree * ((u : ℕ) + 1) := by
       rw [Nat.mul_succ]; omega
-    have s2 : Φ.φ.natDegree * ((u : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+    have s2 : Φ.φ.natDegree * ((u : ℕ) + 1) ≤ (μ + n * rhoDigitCount q b) * Φ.φ.natDegree := by
       rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
     omega⟩
 
@@ -495,17 +550,19 @@ def wTablePoint (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
 `m₀`-cube table `T` so that the paper object is defined independently of any particular witness.
 For the witness instance `T = wTable …`, the corresponding defect is related to the ring-level
 row equation by `alphaDefect_wTable`. -/
-def alphaContract (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (T : (Fin m₀ → Fin 2) → F) (i : Fin n) : F :=
-  ∑ u : Fin (μ + n), ∑ ℓ : Fin Φ.φ.natDegree,
-    mAlphaTilde Φ φF s α i (u : ℕ) * T (wTablePoint Φ m₀ hμn u ℓ) * alphaTilde α (ℓ : ℕ)
+def alphaContract (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) (T : (Fin m₀ → Fin 2) → F)
+    (i : Fin n) : F :=
+  ∑ u : Fin (μ + n * rhoDigitCount q b), ∑ ℓ : Fin Φ.φ.natDegree,
+    mAlphaTilde Φ φF b s α i (u : ℕ) * T (wTablePoint Φ m₀ b hμn u ℓ) * alphaTilde α (ℓ : ℕ)
 
 /-- Eq. (22)'s per-row defect in the paper's table form: the public contraction against `T` minus
 the public right-hand side `yᵢ(α)`. `H_α`'s Boolean table is exactly this at `T = w̃`
 (`alphaDefect_wTable`, `hAlphaEvals_eq_alphaDefect`). -/
-def alphaDefect (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (T : (Fin m₀ → Fin 2) → F) (i : Fin n) : F :=
-  alphaContract Φ m₀ φF s α hμn T i - cEvalAt φF α (s.yvec i).1
+def alphaDefect (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) (T : (Fin m₀ → Fin 2) → F)
+    (i : Fin n) : F :=
+  alphaContract Φ m₀ φF b s α hμn T i - cEvalAt φF α (s.yvec i).1
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- A `CPolynomial` of degree `< d` evaluates as the contraction of its first `d` coefficients
@@ -522,18 +579,19 @@ omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The `z`-block table entries: at a cube point whose table row is `j < μ`, `w̃` returns the
 embedded `j`-th witness coefficient. Wrapper of `wTable_zRow` in `wTablePoint` coordinates. -/
 theorem wTable_wTablePoint_z (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    {u : Fin (μ + n)} {j : Fin μ} (hj : (u : ℕ) = (j : ℕ)) (ℓ : Fin Φ.φ.natDegree) :
-    wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn u ℓ) = φF ((w.z j).1.coeff (ℓ : ℕ)) := by
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    {u : Fin (μ + n * rhoDigitCount q b)} {j : Fin μ} (hj : (u : ℕ) = (j : ℕ))
+    (ℓ : Fin Φ.φ.natDegree) :
+    wTable Φ m₀ φF b w (wTablePoint Φ m₀ b hμn u ℓ) = φF ((w.z j).1.coeff (ℓ : ℕ)) := by
   have hlt : Φ.φ.natDegree * (j : ℕ) + (ℓ : ℕ) < 2 ^ m₀ := by
     have hj' := j.isLt
     have hl := ℓ.isLt
     have s1 : Φ.φ.natDegree * (j : ℕ) + (ℓ : ℕ) < Φ.φ.natDegree * ((j : ℕ) + 1) := by
       rw [Nat.mul_succ]; omega
-    have s2 : Φ.φ.natDegree * ((j : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+    have s2 : Φ.φ.natDegree * ((j : ℕ) + 1) ≤ (μ + n * rhoDigitCount q b) * Φ.φ.natDegree := by
       rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
     omega
-  have hpt : wTablePoint Φ m₀ hμn u ℓ
+  have hpt : wTablePoint Φ m₀ b hμn u ℓ
       = finFunctionFinEquiv.symm ⟨Φ.φ.natDegree * (j : ℕ) + (ℓ : ℕ), hlt⟩ := by
     unfold wTablePoint
     congr 1
@@ -541,26 +599,30 @@ theorem wTable_wTablePoint_z (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness
   rw [hpt, wTable_zRow Φ m₀ φF b w hd j ℓ.isLt hlt]
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- The `r`-block table entries: at a cube point whose table row is `μ + k`, `w̃` returns the
-embedded `k`-th quotient coefficient. Wrapper of `wTable_rRow` in `wTablePoint` coordinates. -/
+/-- The quotient-block table entries: at a cube point whose table row is `μ + i·δ + u`, `w̃`
+returns the embedded coefficient of digit `u` of quotient row `i`. Wrapper of `wTable_rRow` in
+`wTablePoint` coordinates. -/
 theorem wTable_wTablePoint_r (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    {u : Fin (μ + n)} {k : Fin n} (hk : (u : ℕ) = μ + (k : ℕ)) (ℓ : Fin Φ.φ.natDegree) :
-    wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn u ℓ) = φF ((w.ρ k).coeff (ℓ : ℕ)) := by
-  have hlt : Φ.φ.natDegree * (μ + (k : ℕ)) + (ℓ : ℕ) < 2 ^ m₀ := by
-    have hk' := k.isLt
-    have hl := ℓ.isLt
-    have s1 : Φ.φ.natDegree * (μ + (k : ℕ)) + (ℓ : ℕ) < Φ.φ.natDegree * (μ + (k : ℕ) + 1) := by
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    {U : Fin (μ + n * rhoDigitCount q b)} {i : Fin n} {u : ℕ} (hu : u < rhoDigitCount q b)
+    (hU : (U : ℕ) = μ + ((i : ℕ) * rhoDigitCount q b + u)) (ℓ : Fin Φ.φ.natDegree) :
+    wTable Φ m₀ φF b w (wTablePoint Φ m₀ b hμn U ℓ)
+      = φF ((rhoDigits Φ b (w.ρ i) u).coeff (ℓ : ℕ)) := by
+  have hU' := U.isLt
+  have hl := ℓ.isLt
+  have hlt : Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + u)) + (ℓ : ℕ) < 2 ^ m₀ := by
+    have s1 : Φ.φ.natDegree * (U : ℕ) + (ℓ : ℕ) < Φ.φ.natDegree * ((U : ℕ) + 1) := by
       rw [Nat.mul_succ]; omega
-    have s2 : Φ.φ.natDegree * (μ + (k : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+    have s2 : Φ.φ.natDegree * ((U : ℕ) + 1) ≤ (μ + n * rhoDigitCount q b) * Φ.φ.natDegree := by
       rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
-    omega
-  have hpt : wTablePoint Φ m₀ hμn u ℓ
-      = finFunctionFinEquiv.symm ⟨Φ.φ.natDegree * (μ + (k : ℕ)) + (ℓ : ℕ), hlt⟩ := by
+    rw [← hU]; omega
+  have hpt : wTablePoint Φ m₀ b hμn U ℓ
+      = finFunctionFinEquiv.symm
+        ⟨Φ.φ.natDegree * (μ + ((i : ℕ) * rhoDigitCount q b + u)) + (ℓ : ℕ), hlt⟩ := by
     unfold wTablePoint
     congr 1
-    exact Fin.ext (by simp [hk])
-  rw [hpt, wTable_rRow Φ m₀ φF b w hd k ℓ.isLt hlt]
+    exact Fin.ext (by simp [hU])
+  rw [hpt, wTable_rRow Φ m₀ φF b w hd i hu ℓ.isLt hlt]
 
 omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- **Eq. (22) is the row defect (change of representation).** The paper's public contraction of
@@ -568,10 +630,10 @@ omit [NeZero q] [BEq F] [LawfulBEq F] in
 `hAlphaEvals` writes down directly. This is the step [NOZ26] §4.3 asserts as "representing the
 constraints by polynomials", and it is the only place the table encoding of the witness (which the
 commitment and the sumcheck use) and the ring encoding (which `relLift` uses) meet. -/
-theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (i : Fin n) :
-    alphaDefect Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i =
+theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : RlinStatement Φ n μ)
+    (α : F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) (i : Fin n) :
+    alphaDefect Φ m₀ φF b s α hμn (wTable Φ m₀ φF b w) i =
       cEvalAt φF α (cRowSum Φ s w.z i) - cEvalAt φF α (s.yvec i).1
         - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly := by
   -- Column contraction (`α̃`): a reduced representative is its `d` coefficients against `α^ℓ`.
@@ -579,13 +641,15 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
       = ∑ ℓ : Fin Φ.φ.natDegree, φF ((w.z j).1.coeff (ℓ : ℕ)) * α ^ (ℓ : ℕ) := fun j => by
     rw [cEvalAt_eq_sum_range φF α (Φ.natDegree_lt_of_reduced hd (w.z j).2)]
     exact (Fin.sum_univ_eq_sum_range _ _).symm
-  have hrcol : evalAt φF α (w.ρ i).toPoly
-      = ∑ ℓ : Fin Φ.φ.natDegree, φF ((w.ρ i).coeff (ℓ : ℕ)) * α ^ (ℓ : ℕ) := by
-    have hdeg : (w.ρ i).toPoly.natDegree < Φ.φ.natDegree := by
-      exact lt_of_le_of_lt (w.hρ i) (by omega)
-    rw [evalAt, Polynomial.coe_eval₂RingHom,
-      Polynomial.eval₂_eq_sum_range' φF hdeg α]
-    rw [← Fin.sum_univ_eq_sum_range]
+  -- The same column contraction for a quotient *digit*: `rhoDigits` truncates at `d`.
+  have hrcol : ∀ (i' : Fin n) (u : ℕ), evalAt φF α (rhoDigits Φ b (w.ρ i') u).toPoly
+      = ∑ ℓ : Fin Φ.φ.natDegree,
+          φF ((rhoDigits Φ b (w.ρ i') u).coeff (ℓ : ℕ)) * α ^ (ℓ : ℕ) := by
+    intro i' u
+    have hdeg : (rhoDigits Φ b (w.ρ i') u).toPoly.natDegree < Φ.φ.natDegree :=
+      lt_of_le_of_lt (rhoDigits_natDegree_le Φ b (w.ρ i') u) (by omega)
+    rw [evalAt, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_eq_sum_range' φF hdeg α,
+      ← Fin.sum_univ_eq_sum_range]
     exact Finset.sum_congr rfl fun ℓ _ => by rw [CPolynomial.coeff_toPoly]
   -- Row contraction (`M̃_α`'s `z` block): the public matrix against the witness entries.
   have hrow : cEvalAt φF α (cRowSum Φ s w.z i)
@@ -595,52 +659,121 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
       rw [_root_.map_mul, ← cEvalAt_eq_evalAt_toPoly, ← cEvalAt_eq_evalAt_toPoly]
   -- The `z` block of the contraction reproduces one term of `cRowSum`.
   have hz : ∀ j : Fin μ, (∑ ℓ : Fin Φ.φ.natDegree,
-      mAlphaTilde Φ φF s α i ((Fin.castAdd n j : Fin (μ + n)) : ℕ) *
-        wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn (Fin.castAdd n j) ℓ) * alphaTilde α (ℓ : ℕ))
+      mAlphaTilde Φ φF b s α i
+          ((Fin.castAdd (n * rhoDigitCount q b) j :
+            Fin (μ + n * rhoDigitCount q b)) : ℕ) *
+        wTable Φ m₀ φF b w
+          (wTablePoint Φ m₀ b hμn (Fin.castAdd (n * rhoDigitCount q b) j) ℓ) *
+        alphaTilde α (ℓ : ℕ))
       = cEvalAt φF α (s.M i j).1 * cEvalAt φF α (w.z j).1 := by
     intro j
-    have hjv : ((Fin.castAdd n j : Fin (μ + n)) : ℕ) = (j : ℕ) := rfl
-    have hM : mAlphaTilde Φ φF s α i ((Fin.castAdd n j : Fin (μ + n)) : ℕ)
+    have hjv : ((Fin.castAdd (n * rhoDigitCount q b) j :
+        Fin (μ + n * rhoDigitCount q b)) : ℕ) = (j : ℕ) := rfl
+    have hM : mAlphaTilde Φ φF b s α i
+        ((Fin.castAdd (n * rhoDigitCount q b) j : Fin (μ + n * rhoDigitCount q b)) : ℕ)
         = cEvalAt φF α (s.M i j).1 := by
       unfold mAlphaTilde
       exact dif_pos j.isLt
     rw [hzcol j, Finset.mul_sum]
     exact Finset.sum_congr rfl fun ℓ _ => by
       simp only [hM, wTable_wTablePoint_z Φ m₀ φF b w hd hμn hjv ℓ, alphaTilde, mul_assoc]
-  -- The `r` block: only the diagonal entry `u = μ + i` survives.
-  have hr : ∀ k : Fin n, (∑ ℓ : Fin Φ.φ.natDegree,
-      mAlphaTilde Φ φF s α i ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) *
-        wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn (Fin.natAdd μ k) ℓ) * alphaTilde α (ℓ : ℕ))
-      = if k = i then -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly) else 0 := by
-    intro k
-    have hkv : ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) = μ + (k : ℕ) := rfl
-    have hlow : ¬ ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) < μ := by rw [hkv]; omega
-    by_cases hki : k = i
-    · have hdiag : ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) = μ + (i : ℕ) := by rw [hkv, hki]
-      have hM : mAlphaTilde Φ φF s α i ((Fin.natAdd μ k : Fin (μ + n)) : ℕ)
-          = -cEvalAt φF α Φ.φ := by
+  -- The flattened `(row, digit)` index, in the layout `liftMessage` and `wTable` share.
+  have hprod : ∀ p : Fin n × Fin (rhoDigitCount q b),
+      ((finProdFinEquiv p : Fin (n * rhoDigitCount q b)) : ℕ)
+        = (p.1 : ℕ) * rhoDigitCount q b + (p.2 : ℕ) := by
+    intro p
+    have hv : ((finProdFinEquiv p : Fin (n * rhoDigitCount q b)) : ℕ)
+        = (p.2 : ℕ) + rhoDigitCount q b * (p.1 : ℕ) := rfl
+    rw [hv]; ring
+  -- The digit block: only the `δ` columns of row `i` survive, weighted by `b^u`.
+  have hr : ∀ p : Fin n × Fin (rhoDigitCount q b), (∑ ℓ : Fin Φ.φ.natDegree,
+      mAlphaTilde Φ φF b s α i
+          ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ) *
+        wTable Φ m₀ φF b w
+          (wTablePoint Φ m₀ b hμn (Fin.natAdd μ (finProdFinEquiv p)) ℓ) *
+        alphaTilde α (ℓ : ℕ))
+      = if p.1 = i then
+          -(cEvalAt φF α Φ.φ * (φF ((b : ZMod q) ^ (p.2 : ℕ))
+            * evalAt φF α (rhoDigits Φ b (w.ρ i) (p.2 : ℕ)).toPoly))
+        else 0 := by
+    intro p
+    have hu := p.2.isLt
+    have hδ : 0 < rhoDigitCount q b := by omega
+    have hUv : ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ)
+        = μ + ((p.1 : ℕ) * rhoDigitCount q b + (p.2 : ℕ)) := by
+      have hv : ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ)
+          = μ + ((finProdFinEquiv p : Fin (n * rhoDigitCount q b)) : ℕ) := rfl
+      rw [hv, hprod p]
+    have hlow : ¬ ((Fin.natAdd μ (finProdFinEquiv p) :
+        Fin (μ + n * rhoDigitCount q b)) : ℕ) < μ := by rw [hUv]; omega
+    have hdiv : (μ + ((p.1 : ℕ) * rhoDigitCount q b + (p.2 : ℕ)) - μ) / rhoDigitCount q b
+        = (p.1 : ℕ) := by
+      rw [Nat.add_sub_cancel_left, Nat.mul_comm, Nat.mul_add_div hδ,
+        Nat.div_eq_of_lt hu, Nat.add_zero]
+    have hmod : (μ + ((p.1 : ℕ) * rhoDigitCount q b + (p.2 : ℕ)) - μ) % rhoDigitCount q b
+        = (p.2 : ℕ) := by
+      rw [Nat.add_sub_cancel_left, Nat.mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hu]
+    by_cases hpi : p.1 = i
+    · have hM : mAlphaTilde Φ φF b s α i
+          ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ)
+          = -cEvalAt φF α Φ.φ * φF ((b : ZMod q) ^ (p.2 : ℕ)) := by
         unfold mAlphaTilde
-        rw [dif_neg hlow, if_pos hdiag]
-      rw [if_pos hki, hrcol, Finset.mul_sum, ← Finset.sum_neg_distrib]
+        rw [dif_neg hlow, if_pos ⟨by rw [hUv]; omega, by rw [hUv, hdiv, hpi]⟩, hUv, hmod]
+      rw [if_pos hpi, hrcol i (p.2 : ℕ), Finset.mul_sum, Finset.mul_sum,
+        ← Finset.sum_neg_distrib]
       refine Finset.sum_congr rfl fun ℓ _ => ?_
-      rw [hM, wTable_wTablePoint_r Φ m₀ φF b w hd hμn hdiag ℓ]
+      rw [hM, wTable_wTablePoint_r Φ m₀ φF b w hd hμn hu (by rw [hUv, hpi]) ℓ]
       simp only [alphaTilde]
       ring
-    · have hM : mAlphaTilde Φ φF s α i ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) = 0 := by
+    · have hM : mAlphaTilde Φ φF b s α i
+          ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ) = 0 := by
         unfold mAlphaTilde
-        rw [dif_neg hlow, if_neg (by rw [hkv]; simp only [add_right_inj, Fin.val_inj]; exact hki)]
-      rw [if_neg hki]
+        rw [dif_neg hlow, if_neg ?_]
+        rintro ⟨-, hc⟩
+        rw [hUv, hdiv] at hc
+        exact hpi (Fin.ext hc)
+      rw [if_neg hpi]
       exact Finset.sum_eq_zero fun ℓ _ => by rw [hM, zero_mul, zero_mul]
   have hzsum : (∑ j : Fin μ, ∑ ℓ : Fin Φ.φ.natDegree,
-      mAlphaTilde Φ φF s α i ((Fin.castAdd n j : Fin (μ + n)) : ℕ) *
-        wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn (Fin.castAdd n j) ℓ) * alphaTilde α (ℓ : ℕ))
+      mAlphaTilde Φ φF b s α i
+          ((Fin.castAdd (n * rhoDigitCount q b) j :
+            Fin (μ + n * rhoDigitCount q b)) : ℕ) *
+        wTable Φ m₀ φF b w
+          (wTablePoint Φ m₀ b hμn (Fin.castAdd (n * rhoDigitCount q b) j) ℓ) *
+        alphaTilde α (ℓ : ℕ))
       = cEvalAt φF α (cRowSum Φ s w.z i) := by
     rw [hrow]; exact Finset.sum_congr rfl fun j _ => hz j
-  have hrsum : (∑ k : Fin n, ∑ ℓ : Fin Φ.φ.natDegree,
-      mAlphaTilde Φ φF s α i ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) *
-        wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn (Fin.natAdd μ k) ℓ) * alphaTilde α (ℓ : ℕ))
-      = -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly) :=
-    (Finset.sum_congr rfl fun k _ => hr k).trans (by simp)
+  have hrsum : (∑ k : Fin (n * rhoDigitCount q b), ∑ ℓ : Fin Φ.φ.natDegree,
+      mAlphaTilde Φ φF b s α i
+          ((Fin.natAdd μ k : Fin (μ + n * rhoDigitCount q b)) : ℕ) *
+        wTable Φ m₀ φF b w (wTablePoint Φ m₀ b hμn (Fin.natAdd μ k) ℓ) *
+        alphaTilde α (ℓ : ℕ))
+      = -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly) := by
+    rw [← Equiv.sum_comp (finProdFinEquiv (m := n) (n := rhoDigitCount q b)),
+      Fintype.sum_prod_type]
+    have hinner : ∀ i' : Fin n, (∑ u : Fin (rhoDigitCount q b),
+        (if i' = i then
+          -(cEvalAt φF α Φ.φ * (φF ((b : ZMod q) ^ (u : ℕ))
+            * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly))
+        else 0))
+        = if i' = i then
+            -(cEvalAt φF α Φ.φ * ∑ u : Fin (rhoDigitCount q b),
+              φF ((b : ZMod q) ^ (u : ℕ))
+                * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly)
+          else 0 := by
+      intro i'
+      by_cases hc : i' = i
+      · rw [if_pos hc, Finset.mul_sum, ← Finset.sum_neg_distrib]
+        exact Finset.sum_congr rfl fun u _ => by rw [if_pos hc]
+      · simp [hc]
+    rw [show (∑ i' : Fin n, ∑ u : Fin (rhoDigitCount q b), _) = _ from
+      Finset.sum_congr rfl fun i' _ => (Finset.sum_congr rfl fun u _ => hr (i', u)).trans
+        (hinner i')]
+    rw [Finset.sum_ite_eq' Finset.univ i (fun _ =>
+      -(cEvalAt φF α Φ.φ * ∑ u : Fin (rhoDigitCount q b),
+        φF ((b : ZMod q) ^ (u : ℕ))
+          * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly)), if_pos (Finset.mem_univ i),
+      ← rhoDigits_evalAt Φ φF α hb hd (w.ρ i) (w.hρ i)]
   simp only [alphaDefect, alphaContract, Fin.sum_univ_add]
   rw [hzsum, hrsum]
   ring
@@ -648,15 +781,16 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
 omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- `H_α`'s Boolean table *is* Eq. (22)'s per-row defect at every Boolean point: the row-encoded
 points carry the contraction, and the padding rows `≥ n` carry `0`. -/
-theorem hAlphaEvals_eq_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (x : Fin m₁ → Fin 2) :
+theorem hAlphaEvals_eq_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
+    (s : RlinStatement Φ n μ) (α : F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) (x : Fin m₁ → Fin 2) :
     hAlphaEvals Φ m₁ φF b s α w x =
       if h : ((finFunctionFinEquiv x : Fin (2 ^ m₁)) : ℕ) < n then
-        alphaDefect Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) ⟨_, h⟩
+        alphaDefect Φ m₀ φF b s α hμn (wTable Φ m₀ φF b w) ⟨_, h⟩
       else 0 := by
   by_cases h : ((finFunctionFinEquiv x : Fin (2 ^ m₁)) : ℕ) < n
-  · rw [dif_pos h, alphaDefect_wTable Φ m₀ φF b s α w hd hμn ⟨_, h⟩]
+  · rw [dif_pos h, alphaDefect_wTable Φ m₀ φF b hb s α w hd hμn ⟨_, h⟩,
+      rhoDigits_evalAt Φ φF α hb hd (w.ρ ⟨_, h⟩) (w.hρ _)]
     simp only [hAlphaEvals, dif_pos h]
   · rw [dif_neg h]
     simp only [hAlphaEvals, dif_neg h]
@@ -667,11 +801,12 @@ carried by `relBatched` (`ZeroCheck/Batch.lean`) and extracted by the zero-check
 row's paper-form defect `∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ) − yᵢ(α)` vanishes. This is what licenses
 reading `relBatched` as a formalization of Eq. (22) rather than of an abstract direct-defect
 variant of it. -/
-theorem hAlpha_eq_zero_iff_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ)
-    (α : F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree) (hn : n ≤ 2 ^ m₁)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+theorem hAlpha_eq_zero_iff_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
+    (s : RlinStatement Φ n μ) (α : F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hn : n ≤ 2 ^ m₁)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     hAlpha Φ m₁ φF b s α w = 0 ↔
-      ∀ i : Fin n, alphaDefect Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i = 0 := by
+      ∀ i : Fin n, alphaDefect Φ m₀ φF b s α hμn (wTable Φ m₀ φF b w) i = 0 := by
   rw [hAlpha_eq_zero_iff]
   constructor
   · intro h i
@@ -679,12 +814,12 @@ theorem hAlpha_eq_zero_iff_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (s : Rli
       simp only [rowPoint, Equiv.apply_symm_apply]
       exact i.isLt
     have hx := h (rowPoint m₁ hn i)
-    rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b s α w hd hμn, dif_pos hlt] at hx
+    rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b hb s α w hd hμn, dif_pos hlt] at hx
     have hidx : (⟨((finFunctionFinEquiv (rowPoint m₁ hn i) : Fin (2 ^ m₁)) : ℕ), hlt⟩ : Fin n)
         = i := Fin.ext (by simp [rowPoint])
     rwa [hidx] at hx
   · intro h x
-    rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b s α w hd hμn]
+    rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b hb s α w hd hμn]
     by_cases hx : ((finFunctionFinEquiv x : Fin (2 ^ m₁)) : ℕ) < n
     · rw [dif_pos hx]; exact h _
     · rw [dif_neg hx]
@@ -715,7 +850,7 @@ def cRangeProduct (b : ℕ) (p : CMvPolynomial m₀ F) : CMvPolynomial m₀ F :=
 
 At the flat cube index for `(u, ℓ)`, it is
 `α^ℓ · ∑ᵢ eq̃(τ₁, i) M̃_α(i,u)`. Indices outside the encoded table are harmless padding. -/
-def alphaPublicEvals (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
+def alphaPublicEvals (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) (x : Fin m₀ → Fin 2) : F :=
   let idx : ℕ := (finFunctionFinEquiv x : Fin (2 ^ m₀))
   let d := Φ.φ.natDegree
@@ -723,7 +858,7 @@ def alphaPublicEvals (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
     (if hi : (i : ℕ) < 2 ^ m₁ then
       (∏ j : Fin m₁,
         if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
-          mAlphaTilde Φ φF s α i (idx / d)
+          mAlphaTilde Φ φF b s α i (idx / d)
     else 0)
 
 /-- Assemble a point from a fixed prefix and a Boolean suffix. -/
@@ -746,7 +881,7 @@ def sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
 def sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) : CMvPolynomial m₀ F :=
   cMultilinearExtension m₀ (wTable Φ m₀ φF b w) *
-    cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF s α τ₁)
+    cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF b s α τ₁)
 
 /-- The public initial target of the linear sumcheck, `∑ᵢ eq̃(τ₁, i)·yᵢ(α)`, which the verifier
 computes from the statement alone. -/
@@ -968,7 +1103,7 @@ theorem degreeOf_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinSta
     fromCMvPolynomial_cMultilinearExtension, roundDegAlpha]
   refine le_trans (MvPolynomial.degreeOf_mul_le _ _ _) ?_
   have h₁ := MLE_degreeOf (wTable Φ m₀ φF b w) j
-  have h₂ := MLE_degreeOf (alphaPublicEvals Φ m₀ m₁ φF s α τ₁) j
+  have h₂ := MLE_degreeOf (alphaPublicEvals Φ m₀ m₁ φF b s α τ₁) j
   omega
 
 omit [NeZero q] [BEq F] [LawfulBEq F] in
@@ -990,11 +1125,25 @@ i.e. on the `r` rows as well, consistent with the earlier requirement `‖z‖�
 readings are not equivalent, so the paper's own `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) = H₀(τ₀)` is **false as
 printed**: the two sides differ exactly by the indicator.
 
-This file follows the Eq. (23) reading — no indicator, and the range constraint applied to both the
-`z` and the `r` rows. That is the self-consistent choice, and it is visible downstream:
-`wTable` fills both row blocks (`wTable_zRow`, `wTable_rRow`), and
-`hZero_eq_zero_imp_liftShort` discharges a `z`-side *and* an `r`-side bound. Anyone comparing this
-statement against Figure 5 should read the absent indicator as intentional rather than as a bug. -/
+This file follows the Eq. (23) reading — no indicator, and the range constraint applied to **every**
+row of `w̃`, the `n·δ` quotient-digit rows included. That is not just the self-consistent choice but
+the paper's *intended* protocol: §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits
+before committing ("there is a hidden gadget decomposition of r"), and committing `w̃` without
+re-decomposition (§4.5) requires every committed row short — so the indicator-free `H₀` is the
+correct object and the `1_{≤μ}` in `F_{0,τ₀}` is the leftover of the paper's simplified
+presentation.
+
+Where the two blocks *differ* is in what the constraint buys, and it is worth being exact.
+`wTable` fills both (`wTable_zRow`, `wTable_rRow`), and `hZero_eq_zero_imp_liftShort` reads both.
+But the digit rows are in range **by construction** — `wTable` computes them with `rhoDigits`, and
+`rhoDigits_valMinAbs_natAbs_le` bounds every digit by `⌊b/2⌋` for an arbitrary quotient — so `H₀`'s
+substantive soundness content is the `z` block. The digit half is a consistency condition on the
+encoding, not a constraint that can fail. That is the point of committing digits: the bound on the
+quotient block is supplied at radius `⌊b/2⌋` by the encoding rather than extracted from `H₀` at
+radius `q/2` (`rhoShort_half`), which is what keeps `LiftCom.Collision` a real Module-SIS instance.
+
+Anyone comparing this statement against Figure 5 should read the absent indicator as intentional
+rather than as a bug. -/
 theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
@@ -1022,57 +1171,60 @@ block entry `(u, ℓ)` is `d·u + ℓ`, that assignment is injective, and off it
 matrix vanishes — so the cube sum and the block sum have the same terms. -/
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- Outside the encoded block the public matrix vanishes: row `u ≥ μ + n` is neither an `R^lin`
-column (`u < μ`) nor the `r`-block diagonal entry (`u = μ + i`, which has `u < μ + n`). This is
-what makes the cube sum collapse onto the block. -/
-theorem mAlphaTilde_eq_zero_of_ge (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
-    (i : Fin n) {u : ℕ} (hu : μ + n ≤ u) :
-    mAlphaTilde Φ φF s α i u = 0 := by
+/-- Outside the encoded block the public matrix vanishes: row `u ≥ μ + n·δ` is neither an `R^lin`
+column (`u < μ`) nor one of row `i`'s `δ` digit columns (those have `u < μ + n·δ`). This is what
+makes the cube sum collapse onto the block. -/
+theorem mAlphaTilde_eq_zero_of_ge (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (i : Fin n) {u : ℕ} (hu : μ + n * rhoDigitCount q b ≤ u) :
+    mAlphaTilde Φ φF b s α i u = 0 := by
   have hi := i.isLt
   rw [mAlphaTilde, dif_neg (by omega), if_neg (by omega)]
 
 /-- The flat `m₀`-cube index of table entry `(u, ℓ)`, namely `d·u + ℓ` — the index `wTablePoint`
 decodes and the index `alphaPublicEvals` reads back through `/ d` and `% d`. -/
-def wTableIndex (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (p : Fin (μ + n) × Fin Φ.φ.natDegree) : Fin (2 ^ m₀) :=
+def wTableIndex (b : ℕ) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (p : Fin (μ + n * rhoDigitCount q b) × Fin Φ.φ.natDegree) : Fin (2 ^ m₀) :=
   ⟨Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ), by
     have hu := p.1.isLt
     have hl := p.2.isLt
     have s1 : Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ) < Φ.φ.natDegree * ((p.1 : ℕ) + 1) := by
       rw [Nat.mul_succ]; omega
-    have s2 : Φ.φ.natDegree * ((p.1 : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+    have s2 : Φ.φ.natDegree * ((p.1 : ℕ) + 1)
+        ≤ (μ + n * rhoDigitCount q b) * Φ.φ.natDegree := by
       rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
     omega⟩
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- `wTablePoint` is `wTableIndex` decoded — the two spellings of the same cube point. -/
-theorem wTablePoint_eq_symm_wTableIndex (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (u : Fin (μ + n)) (ℓ : Fin Φ.φ.natDegree) :
-    wTablePoint Φ m₀ hμn u ℓ = finFunctionFinEquiv.symm (wTableIndex Φ m₀ hμn (u, ℓ)) := rfl
+theorem wTablePoint_eq_symm_wTableIndex (b : ℕ)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (u : Fin (μ + n * rhoDigitCount q b)) (ℓ : Fin Φ.φ.natDegree) :
+    wTablePoint Φ m₀ b hμn u ℓ = finFunctionFinEquiv.symm (wTableIndex Φ m₀ b hμn (u, ℓ)) := rfl
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- Recovering the block coordinates from the flat index: `(d·u + ℓ) / d = u` and
 `(d·u + ℓ) % d = ℓ`. -/
-theorem wTableIndex_div_mod (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (p : Fin (μ + n) × Fin Φ.φ.natDegree) :
-    ((wTableIndex Φ m₀ hμn p : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree = (p.1 : ℕ) ∧
-      ((wTableIndex Φ m₀ hμn p : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree = (p.2 : ℕ) := by
+theorem wTableIndex_div_mod (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (p : Fin (μ + n * rhoDigitCount q b) × Fin Φ.φ.natDegree) :
+    ((wTableIndex Φ m₀ b hμn p : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree = (p.1 : ℕ) ∧
+      ((wTableIndex Φ m₀ b hμn p : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree = (p.2 : ℕ) := by
   have hdiv : (Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ)) / Φ.φ.natDegree = (p.1 : ℕ) := by
     rw [Nat.mul_add_div hd, Nat.div_eq_of_lt p.2.isLt, Nat.add_zero]
   refine ⟨hdiv, ?_⟩
   have h := Nat.div_add_mod (Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ)) Φ.φ.natDegree
-  rw [show ((wTableIndex Φ m₀ hμn p : Fin (2 ^ m₀)) : ℕ)
+  rw [show ((wTableIndex Φ m₀ b hμn p : Fin (2 ^ m₀)) : ℕ)
     = Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ) from rfl, hdiv] at *
   omega
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- Distinct block entries have distinct flat indices. -/
-theorem wTableIndex_injective (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
-    Function.Injective (wTableIndex Φ m₀ hμn) := by
+theorem wTableIndex_injective (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    Function.Injective (wTableIndex Φ m₀ b hμn) := by
   rintro ⟨u, l⟩ ⟨u', l'⟩ h
-  obtain ⟨hu, hl⟩ := wTableIndex_div_mod Φ m₀ hd hμn (u, l)
-  obtain ⟨hu', hl'⟩ := wTableIndex_div_mod Φ m₀ hd hμn (u', l')
+  obtain ⟨hu, hl⟩ := wTableIndex_div_mod Φ m₀ b hd hμn (u, l)
+  obtain ⟨hu', hl'⟩ := wTableIndex_div_mod Φ m₀ b hd hμn (u', l')
   rw [h] at hu hl
   exact Prod.ext (Fin.ext (hu.symm.trans hu')) (Fin.ext (hl.symm.trans hl'))
 
@@ -1084,45 +1236,45 @@ vanish because `M̃_α` does (`mAlphaTilde_eq_zero_of_ge`), and inside it the fl
 the block coordinate. -/
 theorem sum_cube_alphaPublic (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (i : Fin n) :
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) (i : Fin n) :
     ∑ y : Fin m₀ → Fin 2,
         wTable Φ m₀ φF b w y *
           (alphaTilde α (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree) *
-            mAlphaTilde Φ φF s α i
+            mAlphaTilde Φ φF b s α i
               (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree))
-      = alphaContract Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i := by
+      = alphaContract Φ m₀ φF b s α hμn (wTable Φ m₀ φF b w) i := by
   classical
   set g : Fin (2 ^ m₀) → F := fun k =>
     wTable Φ m₀ φF b w (finFunctionFinEquiv.symm k) *
       (alphaTilde α ((k : ℕ) % Φ.φ.natDegree) *
-        mAlphaTilde Φ φF s α i ((k : ℕ) / Φ.φ.natDegree)) with hgdef
+        mAlphaTilde Φ φF b s α i ((k : ℕ) / Φ.φ.natDegree)) with hgdef
   -- Reindex the cube by the flat index.
   have hre : ∑ y : Fin m₀ → Fin 2,
       wTable Φ m₀ φF b w y *
         (alphaTilde α (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree) *
-          mAlphaTilde Φ φF s α i
+          mAlphaTilde Φ φF b s α i
             (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree))
       = ∑ k : Fin (2 ^ m₀), g k := by
     refine (Equiv.sum_comp finFunctionFinEquiv.symm _).symm.trans ?_
     exact Finset.sum_congr rfl fun k _ => by simp [hgdef]
   rw [hre]
-  -- Off the block the public matrix vanishes, so the cube sum is the block sum.
+  -- Off the widened block the public matrix vanishes, so the cube sum is the block sum.
   have hzero : ∀ k ∈ (Finset.univ : Finset (Fin (2 ^ m₀))),
-      k ∉ Finset.univ.image (wTableIndex Φ m₀ hμn) → g k = 0 := by
+      k ∉ Finset.univ.image (wTableIndex Φ m₀ b hμn) → g k = 0 := by
     intro k _ hk
-    have hrow : μ + n ≤ (k : ℕ) / Φ.φ.natDegree := by
+    have hrow : μ + n * rhoDigitCount q b ≤ (k : ℕ) / Φ.φ.natDegree := by
       by_contra hlt
       rw [Nat.not_le] at hlt
       refine hk (Finset.mem_image.mpr ⟨(⟨(k : ℕ) / Φ.φ.natDegree, hlt⟩,
         ⟨(k : ℕ) % Φ.φ.natDegree, Nat.mod_lt _ hd⟩), Finset.mem_univ _, ?_⟩)
       exact Fin.ext (Nat.div_add_mod _ _)
     rw [hgdef]
-    simp only [mAlphaTilde_eq_zero_of_ge Φ φF s α i hrow, mul_zero]
+    simp only [mAlphaTilde_eq_zero_of_ge Φ φF b s α i hrow, mul_zero]
   rw [(Finset.sum_subset (Finset.subset_univ _) hzero).symm,
-    Finset.sum_image fun p _ p' _ h => wTableIndex_injective Φ m₀ hd hμn h,
+    Finset.sum_image fun p _ p' _ h => wTableIndex_injective Φ m₀ b hd hμn h,
     alphaContract, ← Finset.univ_product_univ, Finset.sum_product]
   refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun ℓ _ => ?_
-  obtain ⟨hu, hl⟩ := wTableIndex_div_mod Φ m₀ hd hμn (u, ℓ)
+  obtain ⟨hu, hl⟩ := wTableIndex_div_mod Φ m₀ b hd hμn (u, ℓ)
   rw [hgdef]
   simp only [hu, hl, ← wTablePoint_eq_symm_wTableIndex]
   ring
@@ -1178,9 +1330,9 @@ flat cube index be split as `(row, column)`, and `hμn` is what makes every coef
 genuine cube point. Without them the cube contraction of `M̃_α`, `w̃` and `α̃` does **not**
 reproduce the ring-level row defect that `H_α` stores — the block would overflow the cube — so
 the identity is false as stated without them, not merely unprovable. -/
-theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : RlinStatement Φ n μ)
+    (α : F) (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
       MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
         zcTargetAlpha Φ m₁ φF s α τ₁ := by
@@ -1191,7 +1343,7 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
       = ∑ i : Fin n, (if hi : (i : ℕ) < 2 ^ m₁ then
           (∏ j : Fin m₁,
             if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
-              alphaContract Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i
+              alphaContract Φ m₀ φF b s α hμn (wTable Φ m₀ φF b w) i
         else 0) := by
     rw [hypercubeSum_zero]
     have hpt : ∀ y : Fin m₀ → Fin 2,
@@ -1201,7 +1353,7 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
                 (if hi : (i : ℕ) < 2 ^ m₁ then
                   (∏ j : Fin m₁,
                     if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
-                      mAlphaTilde Φ φF s α i
+                      mAlphaTilde Φ φF b s α i
                         (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree)
                 else 0)) := by
       intro y
@@ -1215,30 +1367,34 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
     · rw [dif_neg hi]
       exact Finset.sum_eq_zero fun y _ => by rw [dif_neg hi]; ring
   -- The right side: the `H_α` cube sum and `zcTargetAlpha` are two row-indexed sums, and the
-  -- row-level defect plus `yᵢ(α)` is exactly Eq. (22)'s contraction.
+  -- row-level defect plus `yᵢ(α)` is exactly Eq. (22)'s contraction — now with the quotient term
+  -- in its digit-recombined form.
   rw [hL]
   simp only [hAlphaML, eval_MLE_eq_sum, hAlphaEvals, zcTargetAlpha]
   rw [sum_cube_rowIndexed m₁ τ₁ (fun i => cEvalAt φF α (cRowSum Φ s w.z i)
-      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly),
+      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ *
+        ∑ u : Fin (rhoDigitCount q b), φF ((b : ZMod q) ^ (u : ℕ))
+          * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly),
     ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   by_cases hi : (i : ℕ) < 2 ^ m₁
   · rw [dif_pos hi, dif_pos hi, dif_pos hi, ← mul_add]
     congr 1
-    have := alphaDefect_wTable Φ m₀ φF b s α w hd hμn i
-    rw [alphaDefect] at this
-    linear_combination this
+    have hdef := alphaDefect_wTable Φ m₀ φF b hb s α w hd hμn i
+    rw [alphaDefect, rhoDigits_evalAt Φ φF α hb hd (w.ρ i) (w.hρ i)] at hdef
+    linear_combination hdef
   · rw [dif_neg hi, dif_neg hi, dif_neg hi, add_zero]
 
 omit [NeZero q] in
 /-- Alias of `sum_sumcheckPolyAlpha` retained for the sumcheck bridge. -/
-theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
+    (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
       MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
         zcTargetAlpha Φ m₁ φF s α τ₁ :=
-  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w hd hμn
+  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b hb s α τ₁ w hd hμn
 
 /-! ### Evaluation at a point: the final-evaluation factorizations
 
@@ -1271,7 +1427,7 @@ theorem eval_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStateme
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
     (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w).eval a =
       wTableMleEval Φ m₀ φF b w a *
-        (cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF s α τ₁)).eval a := by
+        (cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF b s α τ₁)).eval a := by
   rw [sumcheckPolyAlpha, CPoly.eval_mul, wTableMleEval_eq, cMultilinearExtension_eval]
 
 /-! ## Statement types of the zero-check and sumcheck stages -/
@@ -1305,7 +1461,7 @@ structure NestedRoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
   /-- The current target of the linear sumcheck. -/
   targetα : F
 
-variable (bound ρBound : ℕ)
+variable (bound bDig : ℕ)
 
 /-- Paired-sumcheck relation over direct zero-check points: an opening of `t` whose partial
 hypercube sums match the current targets.
@@ -1316,12 +1472,12 @@ what makes a pair of colliding branch openings a member of `LiftCom.Collision`, 
 Module-SIS break, at the escape event of the sumcheck rounds. Its `RhoShort` half — the range
 claim Lemma 10 exists to prove — is still *derived* from `H₀ ≡ 0`
 (`hZero_eq_zero_imp_liftShort`), never assumed. -/
-def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.zc.t ∧
-    liftShort Φ bound ρBound p.2 ∧
+    liftShort Φ bound bDig p.2 ∧
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b p.1.zc.τ₀ p.2) i
         p.1.challenges = p.1.target₀ ∧
     hypercubeSum m₀

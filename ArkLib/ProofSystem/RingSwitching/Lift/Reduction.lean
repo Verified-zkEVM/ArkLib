@@ -146,6 +146,45 @@ def prover (WitIn : Type) (computeW : Stmt → WitIn → LiftedWitness R S d μ 
       (LiftedWitness R S d μ n) (pSpecScalar K.TCom F) :=
   CommittedScalar.prover K computeW
 
+/-! ### The honest prover and completeness -/
+
+/-- **The honest lifted witness** of a quotient-evaluation switch: the `R^lin` witness `z` together
+with the per-row honest quotients `ρᵢ := (rowSumᵢ − rep yᵢ) /ₘ φ` (`Presentation.quotient`).
+
+This is the honest prover's `computeW`, and it is total: the degree field is discharged by the
+*unconditional* `Presentation.natDegree_quotient_le`, so no validity of the input statement is
+needed to build the witness — validity is what makes it satisfy `checkAt`
+(`checkAt_honestWitness`). `noncomputable` as stated: the quotients are Mathlib polynomials
+obtained by division (`Presentation.quotient`), repackaged as canonical coefficient arrays by
+`Polynomial.toImpl`; an executable prover restates the division over `CPolynomial` (e.g. Hachi's
+`honestLiftWitnessC`) and transfers by an agreement lemma. -/
+noncomputable def honestWitness [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d)
+    (s : Stmt) (z : PolyVec S μ) : LiftedWitness R S d μ n where
+  z := z
+  ρ := fun i => ⟨(P.quotient (getM s) z (getY s) i).toImpl,
+    CPolynomial.Raw.isCanonical_toImpl _⟩
+  hρ := fun i => by
+    rw [CPolynomial.toPoly_mk_toImpl]
+    have h := P.natDegree_quotient_le (getM s) z (getY s) i
+    omega
+
+/-- **The honest opening passes the local check at every challenge.** At a valid statement
+(`getM s *ᵥ z = getY s`) the honest quotients turn each row into an exact `R[X]` identity
+(`Presentation.rowSum_eq_of_mulVec_eq`), and `evalAt φF a` is a ring homomorphism, so the identity
+survives evaluation at *any* point `a`.
+
+Quantifying over all `a` is what makes the completeness error of a quotient-evaluation switch
+exactly `0`: the honest prover has nothing to fear from the challenge. The `sideCond` conjunct is
+statement-level and is passed straight through. -/
+theorem checkAt_honestWitness [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d)
+    (s : Stmt) (z : PolyVec S μ) (hz : getM s *ᵥ z = getY s) (hside : sideCond s) (a : F) :
+    checkAt P φF getM getY sideCond s a (honestWitness P getM getY hd s z) := by
+  refine ⟨fun i => ?_, hside⟩
+  rw [show (honestWitness P getM getY hd s z).z = z from rfl,
+    show ((honestWitness P getM getY hd s z).ρ i).toPoly
+      = P.quotient (getM s) z (getY s) i from CPolynomial.toPoly_mk_toImpl _,
+    P.rowSum_eq_of_mulVec_eq (congrFun hz i), map_add, map_mul]
+
 /-- **The generic recovery theorem** (the [NOZ26] Lemma 9 obligation, discharged once): a
 short opening passing the local check at `2d` pairwise-distinct challenges recovers the
 input relation. The linear part is the presentation's interpolation engine per row; the
@@ -207,6 +246,75 @@ theorem coordinateWiseSpecialSoundWithEscape [IsPresentation P] (hφF : Function
     (fun s w fam hinj hcheck hshort =>
       recover P φF getM getY zOk sideCond hφF hd short_zOk s w fam hinj hcheck hshort)
     init impl
+
+/-- **The switch as a protocol object**: the honest prover at `honestWitness` paired with the
+statement-extending verifier, i.e. the committed-scalar protocol of this phase. Its verifier is
+`verifier K` on the nose (`reduction_verifier`), the verifier `package` certifies, so the two
+security directions of the switch cannot drift onto different verifiers. -/
+noncomputable def reduction [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
+    Reduction oSpec Stmt (PolyVec S μ) (CommittedScalar.Statement Stmt K.TCom F)
+      (LiftedWitness R S d μ n) (pSpecScalar K.TCom F) :=
+  CommittedScalar.reduction K (honestWitness P getM getY hd)
+
+omit [Field F] in
+/-- The protocol object's verifier is the certified one. Holds by `rfl`. -/
+@[simp] theorem reduction_verifier [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
+    (reduction (oSpec := oSpec) P getM getY K hd).verifier = verifier (oSpec := oSpec) (F := F) K :=
+  rfl
+
+/-- **Perfect completeness of a quotient-evaluation switch**, at error exactly `0`, over an
+arbitrary input relation.
+
+The input relation is a parameter rather than `relLin` because an honest prover needs *more* than
+the plain linear relation: it needs the statement-level `sideCond` too, and for concrete instances
+that condition is a property of the statement family (Hachi: the protocol's norm parameter is
+dominated by the statement's public bound) which no relation on `(statement, z)` pairs implies. An
+instance therefore threads it through its own input relation — the seam relation the preceding link
+lands in — and discharges `hside` from membership. On the soundness side the same condition arrives
+for free from the accepting transcript (`recover` reads it off `checkAt`), which is why only the
+honest direction has to carry it.
+
+The three obligations:
+
+* `hrow` — the linear system holds (the substance of `relLin`);
+* `hside` — the statement-level side condition;
+* `hshort` — the honest lifted witness is **admissible** for the commitment's shortness regime.
+  This is the honest-side range check of the paper's figure (Hachi Figure 4's `‖z‖∞ ≤ b − 1`,
+  `‖r‖∞ ≤ b − 1`): a statement about the honest quotients' coefficient growth at the concrete
+  parameters, invisible to the abstract `wShort`.
+
+Everything else — commitment consistency, the check at every challenge, the impossibility of
+failure — is discharged by `CommittedScalar.reduction_perfectCompleteness` and
+`checkAt_honestWitness`. Error `0` because `checkAt_honestWitness` holds at every challenge. -/
+theorem reduction_perfectCompleteness_of_relIn [IsPresentation P] [SampleableType F]
+    (hd : P.modulus.toPoly.natDegree = d) (relIn : Set (Stmt × PolyVec S μ))
+    (hrow : ∀ s z, (s, z) ∈ relIn → getM s *ᵥ z = getY s)
+    (hside : ∀ s z, (s, z) ∈ relIn → sideCond s)
+    (hshort : ∀ s z, (s, z) ∈ relIn → wShort (honestWitness P getM getY hd s z))
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) P getM getY K hd).perfectCompleteness init impl
+      relIn (relOut P φF getM getY sideCond K) :=
+  CommittedScalar.reduction_perfectCompleteness K (honestWitness P getM getY hd)
+    (checkAt P φF getM getY sideCond) relIn
+    (fun s z hIn a =>
+      checkAt_honestWitness P φF getM getY sideCond hd s z (hrow s z hIn) (hside s z hIn) a)
+    (fun s z hIn => hshort s z hIn) init impl
+
+/-- **Perfect completeness at the plain linear relation `relLin`.** The specialization of
+`reduction_perfectCompleteness_of_relIn` that keeps `relLin` as the input relation; `hside` then has
+to be supplied for every `relLin` member, which for a statement-carried side condition is usually
+too strong to be satisfiable — prefer the general form at a seam relation that carries the
+condition. -/
+theorem reduction_perfectCompleteness [IsPresentation P] [SampleableType F]
+    (hd : P.modulus.toPoly.natDegree = d)
+    (hside : ∀ s z, (s, z) ∈ relLin getM getY zOk → sideCond s)
+    (hshort : ∀ s z, (s, z) ∈ relLin getM getY zOk →
+      wShort (honestWitness P getM getY hd s z))
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) P getM getY K hd).perfectCompleteness init impl
+      (relLin getM getY zOk) (relOut P φF getM getY sideCond K) :=
+  reduction_perfectCompleteness_of_relIn P φF getM getY sideCond K hd
+    (relLin getM getY zOk) (fun _ _ h => h.1) hside hshort init impl
 
 /-- `Lift` as a composable escape-aware CWSS package.
 

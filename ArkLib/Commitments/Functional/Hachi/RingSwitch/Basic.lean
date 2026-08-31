@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 
 /-!
 # Hachi's `Lift` instance (Figure 4 / Lemma 9)
@@ -48,9 +48,38 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   statement's bound convention, the commitment interface, and the norm implication
   `vecLInftyNorm_le_of_liftShort`.
 
-This umbrella re-exports the folder (`Reduction` transitively imports `Rlin`). The plain
-`relLift` is the input of the batching bridge in `ZeroCheck/`; the chain is composed in
-`Composition.lean`.
+* `RingSwitch/ComputableWitness.lean` — the computable twin `honestLiftWitnessC` of the honest
+  lifted witness, at the same signature and equal to it (`honestLiftWitnessC_eq_honestWitness`).
+  It replaces Mathlib's `/ₘ` by CompPoly's synthetic division `CPolynomial.divByMonic` on the
+  canonical coefficient arrays, which is what makes the whole honest path executable
+  (`Hachi/Concrete.lean`, `scripts/HachiRuntime.lean`); `Completeness.lean` re-points
+  `liftReduction` at it and transfers completeness through the agreement lemma.
+* `RingSwitch/QuotientNorms.lean` — centered coefficient bounds for the honest lift quotient. For
+  `φ = X^d + 1` division by the modulus *selects* coefficients
+  (`Polynomial.coeff_divByMonic_X_pow_add_one`), so the quotient bound is a row-sum coefficient
+  bound: `μ · 2d · βM · βz` from explicit matrix/witness bounds, with **no wraparound hypothesis**
+  (centered representatives are minimal among integer representatives). Also the unconditional
+  fallback `rhoShort_half` (`RhoShort (q/2)` always), which is what the Hachi chain uses — see its
+  docstring for why nothing sharper is available when the `R^lin` matrix carries the Ajtai key.
+* `RingSwitch/Completeness.lean` — the **honest direction of both links**, proven and axiom-clean:
+  `rlinReduction_perfectCompleteness_image` (into the honest seam `relRlinImage`, unconditional)
+  with `rlinReduction_perfectCompleteness` as its coarsening to `relRlin`, and
+  `liftReduction_perfectCompleteness_image` — **unconditional** perfect completeness of the lift at
+  `bound = γ` and an admissible digit base, error `0`: both halves of
+  `liftShort` are discharged (the `z` half from seam membership, the quotient half from the digit
+  encoding, `rhoDigitsShort_of_digitBaseOk`), so no `hshort` and no `hbound` remain.
+  `…_of_zShort` is the parameterized form over an arbitrary input relation.
+  Both protocol objects share their package's verifier by `rfl`. The lift consumes
+  `relRlinImage`, not `relRlin`: the honest side needs the Eq. (20) provenance that the soundness
+  relation deliberately discards (see `relRlinImage`). The execution and algebra are generic
+  (`RingSwitching.Lift.honestWitness` / `checkAt_honestWitness` /
+  `reduction_perfectCompleteness_of_relIn`, over
+  `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`).
+
+This umbrella re-exports the folder (`Completeness` imports `ComputableWitness` and
+`QuotientNorms`, both of which import `Reduction`, which imports `Rlin`). The plain `relLift` is
+the input of the batching bridge in `ZeroCheck/`; the chain is composed in `Composition.lean`, and
+the honest side's parameter bookkeeping in `HonestChain.lean`.
 
 ## References
 

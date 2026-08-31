@@ -363,7 +363,10 @@ private theorem bchks_parameter_facts_of_target_hypotheses
   have hbxSumR : (bx : ℝ) + e + 1 = n := by exact_mod_cast hbxSum
   have hbxratio : (bx : ℝ) / n < 1 - (δ : ℝ) := by
     rw [div_lt_iff₀ hnR_pos]
-    nlinarith [hfloorR, hbxSumR]
+    calc
+      (bx : ℝ) = n - ((e : ℝ) + 1) := by linarith only [hbxSumR]
+      _ < n - (δ : ℝ) * n := sub_lt_sub_left hfloorR n
+      _ = (1 - (δ : ℝ)) * n := by ring
   have hnum_eq :
       1 - (k : ℝ) / n - (δ : ℝ) =
         (1 - (k : ℝ) / n - 2 * (δ : ℝ)) + (δ : ℝ) := by ring

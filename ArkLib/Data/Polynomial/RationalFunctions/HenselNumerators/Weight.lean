@@ -452,11 +452,10 @@ lemma betaSucc_eq_neg_clearedResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     ring
   rw [hres, hDfull_eq]; ring
 
-set_option maxHeartbeats 2000000 in
 -- The `Finset.finsuppAntidiag` case split below expands one `PowerSeries.coeff` of a
 -- `d`-fold product into a sum over compositions, and each summand carries a `RegularWeightLe`
--- certificate assembled from seven `.mul`/`.pow`/`.sum` steps; the default heartbeat budget is
--- exhausted by the resulting `ring`/`omega` normalisations.
+-- certificate assembled from seven `.mul`/`.pow`/`.sum` steps. The arithmetic is split into
+-- named monotonicity facts and closed ring identities to keep normalization bounded.
 /-- Weight-tracking per-degree clearing lemma: the `Λ`-graded analogue of
 `henselClearedTerm_regular`.  Each degree-`j` summand of the cleared `(t+1)`-st residual is
 regular with sharp `Λ`-weight at most `numeratorShapeSharp R H D (t+1)`.
@@ -823,16 +822,20 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           omega
         rw [e1, hE1val, hΛξval]
         -- D + wb*ΛW + 2t*((d-1)(ΛW+1)) ≤ 1 + (t+2)ΛW + (2t+1)((d-1)(ΛW+1))
-        obtain ⟨gap, hgap⟩ : ∃ g, t + R.natDegree = wb + g := ⟨t + R.natDegree - wb, by omega⟩
         obtain ⟨dm, hdmeq⟩ : ∃ dm, R.natDegree = dm + 1 := ⟨R.natDegree - 1, by
           rcases Nat.lt_or_ge R.natDegree 2 with h | h
           · -- d < 2 ⇒ d ≤ 1; need d ≥ 1: R.natDegree ≥ natDegreeY H ≥ 1
             have : 1 ≤ R.natDegree := by rw [← hdY]; rw [← hdH] at *; omega
             omega
           · omega⟩
-        rw [hdmeq] at hkey ⊢
-        rw [show dm + 1 - 1 = dm by omega]
-        nlinarith [hkey, hwb_le, hgap, Nat.mul_le_mul_right ΛW hwb_le]
+        calc D + wb * ΛW + 2 * t * ((R.natDegree - 1) * (ΛW + 1))
+            ≤ (R.natDegree + ΛW) + (t + R.natDegree) * ΛW +
+                2 * t * ((R.natDegree - 1) * (ΛW + 1)) :=
+              Nat.add_le_add (Nat.add_le_add hkey (Nat.mul_le_mul_right ΛW hwb_le)) le_rfl
+          _ = 1 + (t + 2) * ΛW +
+                (2 * t + 1) * ((R.natDegree - 1) * (ΛW + 1)) := by
+              rw [hdmeq, show dm + 1 - 1 = dm by omega]
+              ring
       -- the correction the parts consume is at most the `t·G` the target provides
       calc (D - j) + (j + Pw * ΛW + Pe * Λξ + Pc * G) +
             ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)

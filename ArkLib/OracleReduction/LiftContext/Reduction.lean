@@ -290,7 +290,8 @@ theorem liftContext_runWithLog
           P.runWithLog.uncurry (lens.proj (outerStmtIn, outerWitIn))
         return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩, queryLog⟩ := by
   rw [runWithLog, liftContext_run]
-  simp [Function.uncurry]
+  simp only [ChallengeIdx, Challenge, Function.uncurry, bind_pure_comp, simulateQ_map,
+    WriterT.run_map]
   congr
 
 end Prover

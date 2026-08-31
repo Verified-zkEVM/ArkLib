@@ -88,9 +88,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   solution. So the conjunct is what makes the escape event sound, not a range assumption smuggled
   in ahead of its proof.
 
-  The range claim proper — `RhoShort`, the `‖ρ‖∞ ≤ b − 1` half — is still **derived**, at the
+  The range claim proper — the `‖z‖∞ ≤ bound` half of `liftShort` — is still **derived**, at the
   batching bridge, from `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), and `relBatched` remains
-  norm-free. That separation is what this seam has to preserve, because it genuinely cannot
+  norm-free. (Its quotient half needs no derivation: the committed block holds base-`b` digits,
+  which are `⌊b/2⌋`-bounded by construction.) That separation is what this seam has to preserve,
+  because it genuinely cannot
   recover the range identity: a single evaluation `H₀(τ₀) = 0` never implies `H₀ ≡ 0`.
 
   ## References
@@ -147,8 +149,12 @@ formalized**.
   from below only, so an instantiation with oversized `m₀` satisfies every theorem here while
   blowing up the tree.
 
-Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n) * deg φ ≈ 2 ^ 26`
-entries, so `m₀ = 26`, and `rlinRows = 5` rows gives `m₁ = 3`: about `2 ^ 29` transcripts, against
+Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n·δ) * deg φ`
+entries, `δ = clog_b q`. The digit widening touches only the quotient block: at `q ≈ 2 ^ 32` and
+`deg φ = 2 ^ 10` it grows from `n·d ≈ 2 ^ 12.3` to `n·δ·d ≤ 2 ^ 17.3` (`δ ≤ 32`, maximal at
+`b = 2`), adding `≲ 0.25%` to the `≈ 2 ^ 26` that `μ·d` contributes — so the table is still
+`≈ 2 ^ 26` and `m₀ = 26`, and `rlinRows = 5` rows gives `m₁ = 3`: about `2 ^ 29` transcripts,
+against
 the `2 * D - 1 = 4095` of the printed Lemma 10's `SS(F, 2, D)` family at
 `D = max (2 * d) (2 * b - 1) = 2048`. Polynomial in the witness dimensions, but roughly `2 ^ 17`
 times the paper's family — and since CWSS leaf counts multiply across rounds, that factor is what
@@ -167,7 +173,7 @@ theorem nestedZeroCheck_numLeaves {F : Type} {m₀ m₁ : ℕ}
   tree.numLeaves_eq_pow
 
 /-- With the two arities chosen *minimally* for their pins — `2 ^ m₀ < 2 * A` for
-`A := (μ + n) * deg φ` (the `H₀` table size, cf. `hμn`) and `2 ^ m₁ < 2 * B` for `B := n` (the row
+`A := (μ + n·δ) * deg φ` (the `H₀` table size, cf. `hμn`) and `2 ^ m₁ < 2 * B` for `B := n` (the row
 count, cf. `hn`) — the leaf count is below `4 * A * B`, hence polynomial in the witness dimensions.
 Both hypotheses are assumptions on the instantiation; see the caveats above. -/
 theorem nestedZeroCheck_numLeaves_lt {m₀ m₁ A B : ℕ}
@@ -361,7 +367,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
+variable (m₀ m₁ : ℕ) (bound bDig : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-! ### Scalar-round protocol -/
@@ -395,11 +401,9 @@ def nestedZeroCheckVerifierPureForm {TCom : Type} :
 input statement/witness together with the scalar prefix received so far. The stage is generic in
 the witness type — it only transports whatever the commitment's openings are.
 
-Nothing in this development references it: `CWSSPackage` bundles only the verifier, so the honest
-provers of every link (`liftProver`, `roundProver`, …) are likewise unconsumed. It is kept for the
-completeness direction, which for this link is `eval 0 = 0` plus the agreement of this prover's
-`castAdd`/`natAdd` split with `nestedZeroCheckVerifier`'s, and is still missing (see the audit
-page). -/
+It is consumed by `nestedZeroCheckReduction`, the protocol object this link's completeness is
+stated about; the `castAdd`/`natAdd` split below is deliberately the same one
+`nestedZeroCheckVerifier` performs on the transcript, which is what makes the two agree. -/
 def nestedZeroCheckProver {TCom Wit : Type} :
     Prover oSpec (LiftStatement Φ TCom F n μ) Wit
       (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
@@ -413,6 +417,20 @@ def nestedZeroCheckProver {TCom Wit : Type} :
       (fun i => challenges (Fin.castAdd m₁ i))
       (fun i => challenges (Fin.natAdd m₀ i)), wit)
 
+/-- The Figure-5 zero-check **protocol**: the honest prover paired with the verifier.
+
+This is the primary object of the link, and it is deliberately computable — it is what an honest
+execution runs, what completeness is stated about (`ZeroCheck/Completeness.lean`), and what the
+extraction rail consumes. The soundness certificate `nestedZeroCheckPackage` is a statement
+*about* it: that package's `verifier` field is defined as this reduction's verifier, so the two
+security directions cannot drift apart onto different verifiers. The certificate stays
+`noncomputable` because it carries an extractor; nothing of that leaks into the protocol. -/
+def nestedZeroCheckReduction {TCom Wit : Type} :
+    Reduction oSpec (LiftStatement Φ TCom F n μ) Wit
+      (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
+      (pSpecNestedZeroCheck F m₀ m₁) where
+  prover := nestedZeroCheckProver Φ m₀ m₁
+  verifier := nestedZeroCheckVerifier Φ m₀ m₁
 
 /-- Figure-5 point relation: an opening of `t` at which the two computable batching polynomials
 vanish at the direct points carried by the statement.
@@ -425,12 +443,12 @@ exists to establish — is still *derived*, at the batching bridge, from `H₀ �
 recover, and does not pretend to, is the range identity itself: a single evaluation
 `H₀(τ₀) = 0` never implies `H₀ ≡ 0`
 (`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`). -/
-def relNestedZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def relNestedZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.t ∧
-    liftShort Φ bound ρBound p.2 ∧
+    liftShort Φ bound bDig p.2 ∧
     CMlPolynomialEval.eval (hZero Φ m₀ φF b p.2) (Vector.ofFn p.1.τ₀) = 0 ∧
     CMlPolynomialEval.eval
         (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) (Vector.ofFn p.1.τα) = 0 ∧
@@ -469,7 +487,7 @@ sampling; and the responses are pinned to the **output** relation, which is what
 tight — it cannot fire on trees where all leaves share one opening, which is exactly where
 extraction succeeds. Both openings automatically open `t`: `relNestedZeroCheck`'s first conjunct
 pins `K.com w = t` and every leaf's output statement carries the same `t`. -/
-def nestedZeroCheckEsc (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def nestedZeroCheckEsc (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
     ChallengeTree.EscapeEvent (LiftStatement Φ K.TCom F n μ)
       (pSpecNestedZeroCheck F m₀ m₁) (nestedZeroCheckStructure F m₀ m₁).arity :=
@@ -478,7 +496,7 @@ def nestedZeroCheckEsc (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound 
       (∀ path, (nestedZcMapStmt Φ m₀ m₁ stmt
           (nestedZeroCheckTauZero path.fullTranscript)
           (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
-        relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) ∧
+        relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) ∧
       ∃ p p', (resp p, resp p') ∈ K.Collision
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
@@ -493,7 +511,7 @@ computable batching polynomials vanish identically and `w̃ ∈ relBatched`.
 Every conjunct the collision side needs is supplied by `relNestedZeroCheck` itself: commitment
 agreement and `liftShort` for each leaf. -/
 theorem nestedAssembly_escape_or_mem_relBatched
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
     {arity : (pSpecNestedZeroCheck F m₀ m₁).ChallengeIdx → ℕ}
     (tree : ChallengeTree (pSpecNestedZeroCheck F m₀ m₁) arity 0)
@@ -502,7 +520,7 @@ theorem nestedAssembly_escape_or_mem_relBatched
     (hrel : ∀ path, (nestedZcMapStmt Φ m₀ m₁ stmt
         (nestedZeroCheckTauZero path.fullTranscript)
         (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
-      relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
+      relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b)
     (evTree : NestedEvaluationTree F 2 (m₀ + m₁)) (hDistinct : evTree.IsDistinct)
     (hVanishes₀ : (∀ path, resp path = resp base) →
       CMlPolynomialEval.PolynomialVanishes evTree (hZero Φ m₀ φF b (resp base)) (Fin.castAdd m₁))
@@ -513,9 +531,9 @@ theorem nestedAssembly_escape_or_mem_relBatched
         (∀ path, (nestedZcMapStmt Φ m₀ m₁ stmt
             (nestedZeroCheckTauZero path.fullTranscript)
             (nestedZeroCheckTauAlpha path.fullTranscript), resp' path) ∈
-          relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) ∧
+          relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) ∧
         ∃ p p', (resp' p, resp' p') ∈ K.Collision) ∨
-      (stmt, resp base) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b := by
+      (stmt, resp base) ∈ relBatched Φ m₀ m₁ bound bDig K φF b := by
   classical
   let : Decidable (∃ p, resp p ≠ resp base) := Classical.propDecidable _
   by_cases hcol : ∃ p, resp p ≠ resp base
@@ -540,20 +558,20 @@ the evaluation-tree zero test through the two windows of one depth-`m₀ + m₁`
 machine-checked by `nestedZeroCheck_numLeaves`/`_lt`. -/
 theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (nestedZeroCheckStructure F m₀ m₁)
-      (nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b)
-      (relBatched Φ m₀ m₁ bound ρBound K φF b)
-      (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
+      (nestedZeroCheckEsc Φ m₀ m₁ bound bDig K φF b)
+      (relBatched Φ m₀ m₁ bound bDig K φF b)
+      (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b)
       (nestedZeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
         (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom))
       (nestedZeroCheckExtractor (Φ := Φ) (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁)
         (TCom := K.TCom)) := by
   classical
   intro stmt tree hStruct hAcc
-  by_cases hEsc : nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b stmt tree
+  by_cases hEsc : nestedZeroCheckEsc Φ m₀ m₁ bound bDig K φF b stmt tree
   · exact Or.inl hEsc
   · refine Or.inr ?_
     intro leafWits hValid
@@ -564,16 +582,16 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
     have hValidPure : ∀ path : ChallengeTree.LeafPath tree, ∃ w,
         leafWits path = some w ∧
           (pureForm.verify stmt path.fullTranscript, w) ∈
-            relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b :=
+            relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b :=
       (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl pureForm.verify pureForm.verify_eq
-        hne (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) stmt leafWits).mp hValid
+        hne (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) stmt leafWits).mp hValid
     let resp : ChallengeTree.LeafPath tree → LiftedWitness Φ μ n :=
       fun path => (hValidPure path).choose
     have hrel : ∀ path : ChallengeTree.LeafPath tree,
         (nestedZcMapStmt Φ m₀ m₁ stmt
           (nestedZeroCheckTauZero path.fullTranscript)
           (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
-            relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+            relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b := by
       intro path
       simpa [pureForm, nestedZeroCheckVerifierPureForm, resp] using
         (hValidPure path).choose_spec.2
@@ -614,7 +632,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
         nestedTranscriptSuffix_zero]
       funext i
       rfl
-    rcases nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound ρBound K φF b stmt tree resp
+    rcases nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound bDig K φF b stmt tree resp
       (nestedLeftPath tree) hrel evTree hDistinct hVanishes₀ hVanishesα with hEsc' | hBatched
     · exact (hEsc hEsc').elim
     · refine ⟨resp (nestedLeftPath tree), ?_, hBatched⟩
@@ -622,26 +640,30 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
 
 /-- The nested scalar-round zero-check bundled for sequential composition, in the **escape-aware**
 corner of the package lattice: the verifier is `pure (…)` and never fails, so it is a valid left
-factor, while the weak-binding case needs the `esc` field. -/
+factor, while the weak-binding case needs the `esc` field.
+
+The verifier is taken from `nestedZeroCheckReduction` rather than restated, so this certificate is
+by construction a statement about the same protocol whose completeness is proved in
+`ZeroCheck/Completeness.lean`. -/
 def nestedZeroCheckPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ) :
     EscapeCWSSPackage init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (pSpecNestedZeroCheck F m₀ m₁) where
-  verifier := nestedZeroCheckVerifier (oSpec := oSpec) (n := n) (μ := μ) (F := F)
-    (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) Φ
+  verifier := (nestedZeroCheckReduction (oSpec := oSpec) (n := n) (μ := μ) (F := F)
+    (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) (Wit := LiftedWitness Φ μ n) Φ).verifier
   struct := nestedZeroCheckStructure F m₀ m₁
-  relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
-  relOut := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b
+  relIn := relBatched Φ m₀ m₁ bound bDig K φF b
+  relOut := relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b
   isPure := nestedZeroCheckVerifierPureForm (oSpec := oSpec) Φ
     (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom)
-  esc := nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b
+  esc := nestedZeroCheckEsc Φ m₀ m₁ bound bDig K φF b
   extractor := nestedZeroCheckExtractor (Φ := Φ) (n := n) (μ := μ) (F := F)
     (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom)
-  isCWSS := nestedZeroCheck_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound
+  isCWSS := nestedZeroCheck_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound bDig
     init impl K φF b
 
 end Protocol

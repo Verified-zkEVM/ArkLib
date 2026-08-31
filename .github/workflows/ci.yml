@@ -65,7 +65,7 @@ jobs:
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
@@ -138,14 +138,16 @@ jobs:
             git -C .lake/packages/VCVio submodule update --init --recursive
           fi
 
-      # `validate.sh` runs `lake exe toyproblem-runtime`, which links the native `.c.o` chain for
-      # the whole dependency graph. That work is billed here rather than to the validation wrapper:
-      # the `.lake` cache key is `hashFiles('lake-manifest.json')`, so a dependency bump misses the
-      # cache and the compile costs ~5 minutes, which used to read as a wrapper regression.
+      # `validate.sh` runs `lake exe toyproblem-runtime` and `lake exe hachi-runtime`, which link
+      # the native `.c.o` chain for the whole dependency graph. That work is billed here rather
+      # than to the validation wrapper: the `.lake` cache key is `hashFiles('lake-manifest.json')`,
+      # so a dependency bump misses the cache and the compile costs ~5 minutes, which used to read
+      # as a wrapper regression. Every compiled executable `validate.sh` runs belongs in this
+      # command; otherwise its link cost silently lands in the `test_path` row instead.
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'lake build toyproblem-runtime'
+            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
