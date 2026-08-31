@@ -9,6 +9,11 @@ cd "$REPO_ROOT"
 
 echo "Checking for blanket package-root imports..."
 
+# Keep the lexical gate itself honest before trusting its verdict on production sources.
+# These fixtures exercise comments, multiline/module headers, escaped roots, and fail-closed
+# behavior that the current ArkLib tree does not necessarily cover.
+./scripts/test-check-blanket-imports.sh
+
 # `ArkLib.lean` is the generated package umbrella and is checked separately below. Source modules
 # under `ArkLib/` must name stable owner modules instead of importing a dependency's package root.
 # Keep this check separate from the generated-file check so directory-layer rules can be added here.
