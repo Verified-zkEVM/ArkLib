@@ -418,7 +418,9 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   · simp [hT0]
   have hLpos : (0 : ℝ) < T.card := by exact_mod_cast Nat.pos_of_ne_zero hT0
   have hbracket0 : (0 : ℝ) ≤ (T.card : ℝ) * A.card + k * (T.card : ℝ) ^ 2 := by
-    positivity
+    exact add_nonneg
+      (mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _))
+      (mul_nonneg (Nat.cast_nonneg _) (sq_nonneg _))
   have hmaster' : (T.card : ℝ) ^ 2 * ((q : ℝ) - n) ≤
       ε * q * ((T.card : ℝ) * ((q : ℝ) - n) + k * (T.card : ℝ) ^ 2) := by
     calc
@@ -430,7 +432,14 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
         rw [hAcardR]
   have hLD : (T.card : ℝ) * ((q : ℝ) - n - k * ε * q) ≤
       ε * q * ((q : ℝ) - n) := by
-    nlinarith
+    apply (mul_le_mul_iff_of_pos_left hLpos).mp
+    calc
+      (T.card : ℝ) * (T.card * ((q : ℝ) - n - k * ε * q)) =
+          (T.card : ℝ) ^ 2 * ((q : ℝ) - n) -
+            ε * q * (k * (T.card : ℝ) ^ 2) := by ring
+      _ ≤ ε * q * ((T.card : ℝ) * ((q : ℝ) - n) + k * (T.card : ℝ) ^ 2) -
+            ε * q * (k * (T.card : ℝ) ^ 2) := sub_le_sub_right hmaster' _
+      _ = (T.card : ℝ) * (ε * q * ((q : ℝ) - n)) := by ring
   have hLB : (T.card : ℝ) ≤ B := by
     rw [hB]
     exact (le_div_iff₀ hDpos).2 hLD

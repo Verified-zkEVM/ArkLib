@@ -1140,19 +1140,32 @@ private theorem subspaceDesign_lineCloseSpan_finrank_lt
   have hksum : (∑ i : ι, (d i : ℝ)) ≤
       (Fintype.card ι : ℝ) * (r : ℝ) * τ r := by
     rw [div_le_iff₀ hn] at hdes'
-    nlinarith
+    simpa only [mul_assoc, mul_comm, mul_left_comm] using hdes'
   have htotal : (r : ℝ) * Fintype.card ι * (1 - δ) ≤
       (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
         2 * Fintype.card ι := by
-    exact le_trans hlower (hupper.trans (by nlinarith))
+    exact hlower.trans (hupper.trans (add_le_add hksum le_rfl))
   have hrR : (0 : ℝ) < r := by exact_mod_cast hr
   have hreps : (2 : ℝ) < (r : ℝ) * ε := by
     rw [div_lt_iff₀ hrR] at hε
-    nlinarith
+    simpa only [mul_comm] using hε
   have hδ' : τ r + ε ≤ 1 - δ := by linarith
   have hn0 : (0 : ℝ) < Fintype.card ι := hn
-  nlinarith [mul_le_mul_of_nonneg_left hδ'
-    (mul_nonneg hrR.le hn0.le)]
+  have hscaled := mul_le_mul_of_nonneg_left hδ' (mul_nonneg hrR.le hn0.le)
+  have heps_scaled : 2 * Fintype.card ι <
+      (Fintype.card ι : ℝ) * ((r : ℝ) * ε) := by
+    simpa only [mul_comm] using mul_lt_mul_of_pos_left hreps hn0
+  have hcontra : (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
+      2 * Fintype.card ι < (r : ℝ) * Fintype.card ι * (1 - δ) := by
+    calc
+      (Fintype.card ι : ℝ) * (r : ℝ) * τ r + 2 * Fintype.card ι <
+          (Fintype.card ι : ℝ) * (r : ℝ) * τ r +
+            Fintype.card ι * ((r : ℝ) * ε) := by
+              simpa only [add_comm] using
+                add_lt_add_left heps_scaled ((Fintype.card ι : ℝ) * r * τ r)
+      _ = ((r : ℝ) * Fintype.card ι) * (τ r + ε) := by ring
+      _ ≤ ((r : ℝ) * Fintype.card ι) * (1 - δ) := hscaled
+  exact (not_lt_of_ge htotal) hcontra
 
 private noncomputable def vanishOnCoordinates
     {ι : Type} {F : Type} [Field F] {s : ℕ} (S : Finset ι) :
