@@ -141,7 +141,6 @@ private lemma block_idx_eq_max
     (block_end_le_block_start ha)
 
 omit [DecidableEq F] in
-set_option maxRecDepth 4000 in
 private lemma combine_eq_flat
   (φ : ι ↪ F) (dstar : ℕ) (r : F)
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) :
