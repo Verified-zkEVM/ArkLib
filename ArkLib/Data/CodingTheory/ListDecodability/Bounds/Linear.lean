@@ -163,8 +163,6 @@ theorem stirlingSeq_pos_of_pos (n : ℕ) (hn : 0 < n) :
   unfold Stirling.stirlingSeq
   positivity
 
-set_option maxHeartbeats 1000000 in
--- `field_simp`/`ring_nf` on the four-factorial identity below exceeds the default budget.
 /-- **The central binomial mass, exactly, in terms of Stirling's sequence.** For `d, m > 0`,
 
 `C(d+m, d) · (d/(d+m))^d · (m/(d+m))^m
