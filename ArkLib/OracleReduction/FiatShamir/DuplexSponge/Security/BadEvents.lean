@@ -7,7 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 
-set_option linter.style.longFile 1800
+set_option linter.style.longFile 2000
 
 /-!
 # Definition and analysis of bad events
@@ -287,6 +287,59 @@ private lemma permInv_mem_getBaseTrace
   · exact hnrB h
   · exact hnrA h
 
+/-- Every normalized permutation pair represented in a raw trace has a representative in its
+base trace. The proof selects the first occurrence in either direction; Definition 5.5 then keeps
+that occurrence. -/
+lemma normalizedPermPair_mem_getBaseTrace_of_mem
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (sIn sOut : CanonicalSpongeState U)
+    (hmem : (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+      ⟨.inr (.inr sOut), sIn⟩ ∈ trace) :
+    (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨
+      ⟨.inr (.inr sOut), sIn⟩ ∈ getBaseTrace trace := by
+  classical
+  let P : ℕ → Prop := fun k =>
+    ((trace)[k]? = some ⟨.inr (.inl sIn), sOut⟩) ∨
+      (trace)[k]? = some ⟨.inr (.inr sOut), sIn⟩
+  have hExists : ∃ k, P k := by
+    rcases hmem with hFwd | hInv
+    · obtain ⟨k, hget⟩ := List.mem_iff_getElem?.mp hFwd
+      exact ⟨k, Or.inl hget⟩
+    · obtain ⟨k, hget⟩ := List.mem_iff_getElem?.mp hInv
+      exact ⟨k, Or.inr hget⟩
+  let k := Nat.find hExists
+  have hk : P k := Nat.find_spec hExists
+  have hFirst : ∀ m < k, ¬ P m := by
+    intro m hmk hm
+    have hle : k ≤ m := Nat.find_min' hExists hm
+    omega
+  have hnotEarlierFwd :
+      (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∉ trace.take k := by
+    rw [List.mem_take_iff_getElem]
+    rintro ⟨m, hm, hget⟩
+    have hmk : m < k := lt_of_lt_of_le hm (Nat.min_le_left _ _)
+    have hmLen : m < trace.length := lt_of_lt_of_le hm (Nat.min_le_right _ _)
+    apply hFirst m hmk
+    left
+    rw [List.getElem?_eq_getElem hmLen]
+    exact congrArg some hget
+  have hnotEarlierInv :
+      (⟨.inr (.inr sOut), sIn⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∉ trace.take k := by
+    rw [List.mem_take_iff_getElem]
+    rintro ⟨m, hm, hget⟩
+    have hmk : m < k := lt_of_lt_of_le hm (Nat.min_le_left _ _)
+    have hmLen : m < trace.length := lt_of_lt_of_le hm (Nat.min_le_right _ _)
+    apply hFirst m hmk
+    right
+    rw [List.getElem?_eq_getElem hmLen]
+    exact congrArg some hget
+  rcases hk with hFwd | hInv
+  · exact Or.inl (permFwd_mem_getBaseTrace trace hFwd hnotEarlierFwd hnotEarlierInv)
+  · exact Or.inr (permInv_mem_getBaseTrace trace hInv hnotEarlierInv hnotEarlierFwd)
+
 /-- The accumulator is a prefix of `getBaseTraceAux` (entries are only ever appended). -/
 private lemma getBaseTraceAux_prefix
     (remaining acc : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
@@ -367,6 +420,39 @@ private lemma hash_mem_getBaseTrace
   intro hred
   simp only [isRedundantEntryOfPrefix] at hred
   exact hnr hred
+
+/-- Every hash pair represented in a raw trace has a representative in its base trace. -/
+lemma hash_pair_mem_getBaseTrace_of_mem
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    {stmt : StmtIn} {cap : Vector U SpongeSize.C}
+    (hmem : (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace) :
+    (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
+      getBaseTrace trace := by
+  classical
+  let P : ℕ → Prop := fun k =>
+    (trace)[k]? = some (⟨.inl stmt, cap⟩ :
+      Sigma (duplexSpongeChallengeOracle StmtIn U))
+  have hExists : ∃ k, P k := by
+    rw [List.mem_iff_getElem?] at hmem
+    exact hmem
+  let k := Nat.find hExists
+  have hk : P k := Nat.find_spec hExists
+  have hFirst : ∀ m < k, ¬ P m := by
+    intro m hmk hm
+    have hle : k ≤ m := Nat.find_min' hExists hm
+    omega
+  have hnotEarlier :
+      (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∉ trace.take k := by
+    rw [List.mem_take_iff_getElem]
+    rintro ⟨m, hm, hget⟩
+    have hmk : m < k := lt_of_lt_of_le hm (Nat.min_le_left _ _)
+    have hmLen : m < trace.length := lt_of_lt_of_le hm (Nat.min_le_right _ _)
+    exact hFirst m hmk (by
+      unfold P
+      rw [List.getElem?_eq_getElem hmLen]
+      exact congrArg some hget)
+  exact hash_mem_getBaseTrace trace hk hnotEarlier
 
 end Def_5_5_6_RedundantEntryDSHelpers
 
@@ -1005,6 +1091,45 @@ For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. -
 theorem lemma_5_10 (h : ¬ E trace) : ¬ E_prp trace :=
   not_collisionPerm_of_not_combined (trace := trace) h
 
+/-- Outside `E`, two normalized permutation pairs represented in the base trace cannot assign
+different outputs to the same input. This is the trace-level functionality fact needed by the
+corrected LookAhead interface. -/
+lemma normalizedPermPair_output_unique_of_not_E
+    (hNoBad : ¬ E trace)
+    {sIn sOut sOut' : CanonicalSpongeState U}
+    (hLeft : (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨ ⟨.inr (.inr sOut), sIn⟩ ∈ getBaseTrace trace)
+    (hRight : (⟨.inr (.inl sIn), sOut'⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨ ⟨.inr (.inr sOut'), sIn⟩ ∈ getBaseTrace trace) :
+    sOut' = sOut := by
+  by_contra hne
+  rcases hLeft with hFwd | hInv <;> rcases hRight with hFwd' | hInv'
+  · rw [List.mem_iff_get] at hFwd hFwd'
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hFwd
+    obtain ⟨⟨i', hi'⟩, hgi'⟩ := hFwd'
+    simp only [List.get_eq_getElem] at hgi hgi'
+    have hidx : i ≠ i' := by
+      intro heq
+      subst heq
+      rw [hgi] at hgi'
+      exact hne (congrArg
+        (fun e => match e with | ⟨.inr (.inl _), s⟩ => s | _ => sOut') hgi').symm
+    rcases Nat.lt_or_gt_of_ne hidx with hlt | hlt
+    · apply hNoBad
+      right
+      refine ⟨⟨i', hi'⟩, sIn, sOut', Or.inl ⟨hgi', ⟨⟨i, hi⟩, hlt, ?_⟩⟩⟩
+      exact Or.inl ⟨sOut, hgi, Ne.symm hne⟩
+    · apply hNoBad
+      right
+      refine ⟨⟨i, hi⟩, sIn, sOut, Or.inl ⟨hgi, ⟨⟨i', hi'⟩, hlt, ?_⟩⟩⟩
+      exact Or.inl ⟨sOut', hgi', hne⟩
+  · exact (not_collisionBwdFwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sOut', sIn, sOut, hInv', hFwd, hne⟩
+  · exact (not_collisionBwdFwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sOut, sIn, sOut', hInv, hFwd', Ne.symm hne⟩
+  · exact (not_collisionBwdBwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sOut, sOut', sIn, hInv, hInv', Ne.symm hne⟩
+
 end Lemma5_10
 
 /-! ## Toolbox for Lemmas 5.12 / 5.14 / 5.16
@@ -1169,6 +1294,115 @@ lemma answerCap_ne_queryCap_le (hdup : ¬ capacitySegmentDup trace)
   refine capacitySegmentDup_of_isDup_at trace (j := j) rfl ?_
   rw [hAcap]
   exact isDup_of_le_queryCap (i := i) (j := j) hij rfl hq
+
+/-- A forward-first normalized pair has its forward representative in the base trace. -/
+lemma forwardFirst_mem_getBaseTrace
+    [DecidableEq StmtIn] [DecidableEq U]
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (sIn sOut : CanonicalSpongeState U)
+    (hFirst : Backtrack.ForwardFirst trace sIn sOut) :
+    (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
+      getBaseTrace trace := by
+  let fwd : Sigma (duplexSpongeChallengeOracle StmtIn U) :=
+    ⟨.inr (.inl sIn), sOut⟩
+  let inv : Sigma (duplexSpongeChallengeOracle StmtIn U) :=
+    ⟨.inr (.inr sOut), sIn⟩
+  change trace.idxOf fwd < trace.idxOf inv at hFirst
+  have hFwdLt : trace.idxOf fwd < trace.length :=
+    lt_of_lt_of_le hFirst (List.idxOf_le_length (a := inv) (l := trace))
+  have hFwdMem : fwd ∈ trace := List.idxOf_lt_length_iff.mp hFwdLt
+  have hget : (trace)[trace.idxOf fwd]? = some fwd := List.getElem?_idxOf hFwdMem
+  apply permFwd_mem_getBaseTrace trace (by simpa [fwd] using hget)
+  · intro hmem
+    have hmem' : fwd ∈ trace.take (trace.idxOf fwd) := by simpa [fwd] using hmem
+    exact (Nat.lt_irrefl (trace.idxOf fwd))
+      ((List.mem_take_iff_idxOf_lt hFwdMem).mp hmem')
+  · intro hmem
+    have hmem' : inv ∈ trace.take (trace.idxOf fwd) := by simpa [inv] using hmem
+    have hInvMem : inv ∈ trace := List.mem_of_mem_take hmem'
+    have hInvLt : trace.idxOf inv < trace.idxOf fwd :=
+      (List.mem_take_iff_idxOf_lt hInvMem).mp hmem'
+    exact (Nat.not_lt_of_ge hFirst.le) hInvLt
+
+/-- Outside the combined bad event, a duplicate-free sound trace subindex makes every BackTrack
+predecessor and hash-anchor lookup unambiguous. Completeness is intentionally unnecessary. -/
+theorem backtrack_searchUnambiguous_of_normalizedSubindex_of_not_E
+    {T_H T_P : Type} [DecidableEq StmtIn] [DecidableEq U]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (hIndex : trΔ.IsNormalizedSubindex trace) (hNoBad : ¬ E trace) :
+    Backtrack.SearchUnambiguous trace trΔ := by
+  refine ⟨hIndex.permutation_nodup, hIndex.hash_nodup, ?_, ?_⟩
+  · rintro ⟨sIn₁, sOut₁⟩ _ ⟨sIn₂, sOut₂⟩ _ hFirst₁ hFirst₂ hCap
+    have hBase₁ := forwardFirst_mem_getBaseTrace trace sIn₁ sOut₁ hFirst₁
+    have hBase₂ := forwardFirst_mem_getBaseTrace trace sIn₂ sOut₂ hFirst₂
+    have hEq :
+        (⟨.inr (.inl sIn₁), sOut₁⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) =
+          ⟨.inr (.inl sIn₂), sOut₂⟩ := by
+      apply eq_of_answerCap_eq trace (not_E_dup_of_not_E trace hNoBad) hBase₁ hBase₂
+      simpa [answerCap] using hCap
+    exact Prod.ext (fwdEntry_inj hEq).1 (fwdEntry_inj hEq).2
+  · rintro ⟨stmt₁, cap₁⟩ hPair₁ ⟨stmt₂, cap₂⟩ hPair₂ hCap
+    have hRaw₁ :
+        (⟨.inl stmt₁, cap₁⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace :=
+      hIndex.isSubset.1 stmt₁ cap₁ hPair₁
+    have hRaw₂ :
+        (⟨.inl stmt₂, cap₂⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace :=
+      hIndex.isSubset.1 stmt₂ cap₂ hPair₂
+    have hBase₁ := hash_pair_mem_getBaseTrace_of_mem trace hRaw₁
+    have hBase₂ := hash_pair_mem_getBaseTrace_of_mem trace hRaw₂
+    have hEq :
+        (⟨.inl stmt₁, cap₁⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) =
+          ⟨.inl stmt₂, cap₂⟩ := by
+      apply eq_of_answerCap_eq trace (not_E_dup_of_not_E trace hNoBad) hBase₁ hBase₂
+      simpa [answerCap] using hCap
+    cases hEq
+    rfl
+
+/-- Compatibility corollary for callers that maintain an exact normalized index. -/
+theorem backtrack_searchUnambiguous_of_normalizedIndex_of_not_E
+    {T_H T_P : Type} [DecidableEq StmtIn] [DecidableEq U]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (hIndex : trΔ.IsNormalizedIndex trace) (hNoBad : ¬ E trace) :
+    Backtrack.SearchUnambiguous trace trΔ :=
+  backtrack_searchUnambiguous_of_normalizedSubindex_of_not_E (trace := trace)
+    hIndex.isNormalizedSubindex hNoBad
+
+/-- Outside the combined bad event, the same normalized sound subindex gives each represented
+full permutation input at most one successor, excluding LookAhead's genuine lookup fork. -/
+theorem lookahead_searchUnambiguous_of_normalizedSubindex_of_not_E
+    {T_H T_P : Type} [DecidableEq StmtIn] [DecidableEq U]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (hIndex : trΔ.IsNormalizedSubindex trace) (hNoBad : ¬ E trace) :
+    Lookahead.SearchUnambiguous trΔ.p := by
+  refine ⟨hIndex.permutation_nodup, ?_⟩
+  rintro ⟨sIn₁, sOut₁⟩ hPair₁ ⟨sIn₂, sOut₂⟩ hPair₂ hInput
+  change sIn₁ = sIn₂ at hInput
+  subst sIn₂
+  have hRaw₁ :
+      (⟨.inr (.inl sIn₁), sOut₁⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        ⟨.inr (.inr sOut₁), sIn₁⟩ ∈ trace :=
+    hIndex.isSubset.2 sIn₁ sOut₁ hPair₁
+  have hRaw₂ :
+      (⟨.inr (.inl sIn₁), sOut₂⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        ⟨.inr (.inr sOut₂), sIn₁⟩ ∈ trace :=
+    hIndex.isSubset.2 sIn₁ sOut₂ hPair₂
+  have hOut := normalizedPermPair_output_unique_of_not_E (trace := trace) hNoBad
+    (normalizedPermPair_mem_getBaseTrace_of_mem trace sIn₁ sOut₁ hRaw₁)
+    (normalizedPermPair_mem_getBaseTrace_of_mem trace sIn₁ sOut₂ hRaw₂)
+  exact Prod.ext rfl hOut.symm
+
+/-- Compatibility corollary for callers that maintain an exact normalized index. -/
+theorem lookahead_searchUnambiguous_of_normalizedIndex_of_not_E
+    {T_H T_P : Type} [DecidableEq StmtIn] [DecidableEq U]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (hIndex : trΔ.IsNormalizedIndex trace) (hNoBad : ¬ E trace) :
+    Lookahead.SearchUnambiguous trΔ.p :=
+  lookahead_searchUnambiguous_of_normalizedSubindex_of_not_E (trace := trace)
+    hIndex.isNormalizedSubindex hNoBad
 
 end BadEventToolbox
 

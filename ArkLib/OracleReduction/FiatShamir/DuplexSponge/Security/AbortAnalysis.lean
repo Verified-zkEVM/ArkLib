@@ -14,9 +14,10 @@ Fiat-Shamir, following Section 5.7 in the paper.
 
 ## Declaration order (bottom-up by dependency)
 
-1. **Claim 5.19** (`claim_5_19_backTrack_noAbort`) — `BackTrack(tr, s) ≠ err` under
-2. **Claim 5.20** (`claim_5_20_lookAhead_noAbort`) — `LookAhead(tr.p, s, i) ≠ err` under
-   `¬ E(tr)`.  Used by Lemma 5.17.
+1. **Claim 5.19** (`claim_5_19_backTrack_noAbort`) — `BackTrack(tr, s) ≠ err` for a
+   duplicate-free sound subindex under `¬ E(tr)`.
+2. **Claim 5.20** (`claim_5_20_lookAhead_noAbort`) — `LookAhead(tr.p, s, i) ≠ err` for the same
+   normalized index under `¬ E(tr)`. Used by Lemma 5.17.
 3. **Lemma 5.17** (`lemma_5_17_d2sTrace_noAbort`) — `D2STrace(tr)` does not abort under
 4. **Lemma 5.18** (`lemma_5_18_d2sQuery_noAbort`) — `A^D2SQuery` does not abort under
    The no-abort predicate replays the trace through `d2sQueryStep` from the default
@@ -132,38 +133,41 @@ def D2SQueryAbort
 
 end D2SQueryNoAbort
 
-
 /-! ## Claim 5.19 and Claim 5.20 — subroutine no-abort -/
 
-/-- CO25 Claim 5.19 — If `¬ E_inv(tr, s)`, `¬ E_prp(tr)`, and `¬ E_fork(tr, s)`, then
-`BackTrack(tr, tr_∇, s) ≠ err`.
+/-- Corrected CO25 Claim 5.19 — outside the combined bad event, BackTrack cannot return `err`
+when `trΔ` is a duplicate-free sound normalized subindex of `trace`.
 
-Paper-faithful (CO25 §5.7 Claim 5.19). `S_BT` is the backtrack-sequence family for
-`(trace, state)`; callers derive `hInv` and `hFork` via `lemma_5_12` / `lemma_5_14`. Invalid
-self-loop and repeated-capacity candidates produce `noResult`, not an unexplained abort. The
-remaining proof obligation connects the complete canonical `S_BT` family to the lookup-conflict
-errors computed by `BackTrackNoAbort`. -/
+This is the interface actually needed by Claim 5.21. It avoids the false refinement step from an
+arbitrary `S_BT` family to the executable linear scan. The fully proved theorem
+`BadEventDS.backtrack_searchUnambiguous_of_normalizedSubindex_of_not_E` establishes that the two
+concrete lookup sites are unambiguous; self-loops and repeated capacities are invalid chains and
+return `noResult`. -/
 lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
     {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
+    (hIndex : trΔ.IsNormalizedSubindex trace)
     (state : CanonicalSpongeState U)
-    (S_BT : S_BT trace state)
-    (hInv : ¬ BadEventDS.E_inv trace state S_BT)
-    (hPrp : ¬ BadEventDS.E_prp trace)
-    (hFork : ¬ BadEventDS.E_fork trace state S_BT) :
+    (hNoBad : ¬ BadEventDS.E trace) :
     BackTrackNoAbort (δ := δ)
       (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-      (depthBound := trace.length + 1) (trace := trace) (trΔ := trΔ) (h_trΔ := h_trΔ)
+      (depthBound := trace.length + 1) (trace := trace) (trΔ := trΔ)
+      (h_trΔ := hIndex.isSubset)
       (state := state) := by
-  sorry
+  unfold BackTrackNoAbort
+  apply backTrack_ne_err_of_searchUnambiguous
+  exact BadEventDS.backtrack_searchUnambiguous_of_normalizedSubindex_of_not_E
+    (trace := trace) hIndex hNoBad
 
-/-- CO25 Claim 5.20 — If `¬ E_prp(tr)`, then `LookAhead(tr.p, s, i) ≠ err` for all `(s, i)`.
+/-- Corrected CO25 Claim 5.20 — outside the combined bad event, LookAhead cannot return `err`
+when its permutation table is a duplicate-free sound normalized subindex of `trace`.
 
-Paper-faithful (CO25 §5.7 Claim 5.20). Callers derive `hPrp` via `lemma_5_10`. -/
+The `hIndex` hypothesis is the missing trace binding identified in review. The fully proved theorem
+`BadEventDS.lookahead_searchUnambiguous_of_normalizedIndex_of_not_E` gives one successor per full
+input state; a capacity self-loop returns `noResult`, not `err`. -/
 lemma claim_5_20_lookAhead_noAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
     {T_P : Type}
@@ -172,7 +176,8 @@ lemma claim_5_20_lookAhead_noAbort [DecidableEq StmtIn] [DecidableEq U]
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (state : CanonicalSpongeState U)
     (i : pSpec.ChallengeIdx)
-    (hPrp : ¬ BadEventDS.E_prp trace) :
+    (hIndex : trΔ.IsNormalizedSubindex trace)
+    (hNoBad : ¬ BadEventDS.E trace) :
     LookAheadNoAbort
       (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -186,10 +191,9 @@ then `D2STrace(tr)` does not abort.
 
 Paper statement (CO25 §5.7 Lemma 5.17): if `E(tr) = 0` then `D2STrace(tr)` does not abort.
 
-Proof sketch: D2STrace aborts in two sub-calls:
-- The `BackTrack` sub-call: derive `¬ E_inv` (via `lemma_5_12`), `¬ E_prp` (via `lemma_5_10`),
-  `¬ E_fork` (via `lemma_5_14`), then apply Claim 5.19.
-- The `LookAhead` sub-call: derive `¬ E_prp` (via `lemma_5_10`), then apply Claim 5.20. -/
+Proof sketch: maintain that the live two-table view is an `IsNormalizedSubindex` of the relevant raw
+trace. The common hypothesis `¬ E(trace)` then feeds Claim 5.19 for `BackTrack` and Claim 5.20 for
+`LookAhead`; their fully proved bad-event bridges discharge the concrete lookup ambiguity facts. -/
 lemma lemma_5_17_d2sTrace_noAbort [DecidableEq StmtIn] [DecidableEq U]
     [∀ i, Fintype (pSpec.Message i)]
     {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
@@ -234,8 +238,8 @@ Paper statement (CO25 §5.7 Lemma 5.18): if `E(tr_A) = 0` then `A^D2SQuery` does
 The property holds for all oracle implementations `gImpl`, since the abort
 depends only on `BackTrack`'s structural analysis of the trace, not on oracle responses.
 
-Proof sketch: D2SQuery aborts in its `BackTrack` sub-call; derive `¬ E_inv` (via `lemma_5_12`),
-`¬ E_prp` (via `lemma_5_10`), `¬ E_fork` (via `lemma_5_14`), then apply Claim 5.19. -/
+Proof sketch: the replay invariant supplies an `IsNormalizedSubindex` for the trace at each
+`BackTrack` call. Apply corrected Claim 5.19 with that index and `¬ E(tr_A)`. -/
 lemma lemma_5_18_d2sQuery_noAbort
     [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
     [∀ i, Fintype (pSpec.Message i)]

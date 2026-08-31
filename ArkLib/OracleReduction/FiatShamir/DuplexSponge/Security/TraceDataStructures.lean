@@ -15,8 +15,11 @@ together with a list-backed default instantiation and refinement-model laws via 
 ## Design: polymorphism via refinement model
 
 We define a **single** operations class `TraceTableOps T K V` covering both the hash-query table
-(`tr_∇.h`) and the bidirectional permutation table (`tr_∇.p`). Both have the same four-operation
-shape: `empty`, `add`, `inlu` (forward lookup), `outlu` (backward lookup).
+(`tr_∇.h`) and the bidirectional permutation table (`tr_∇.p`). Its generic operations include
+insertion, exact-pair membership, forward/backward unique lookup, and proof-facing enumeration.
+`LawfulTraceNablaImpl` additionally exposes the two DSFS-specific capacity secondary indices used
+by BackTrack; generic tables cannot name those indices because their key/value types have no
+generic notion of a sponge-capacity projection.
 
 The lawful class `LawfulTraceTable` uses a `Multiset (K × V)` model:
 
@@ -93,16 +96,34 @@ section TraceDataStructures
 
 /-! ### Generic operations typeclass -/
 
+/-- Result of a table lookup that must distinguish no match, a unique match, and ambiguity.
+
+This is the executable form of the paper's “zero, one, or multiple matches” convention. -/
+inductive TraceLookupResult (α : Type _) where
+  | noMatch
+  | unique (value : α)
+  | conflict
+deriving DecidableEq
+
+/-- Classify a materialized lookup bucket without inspecting entries beyond the second match. -/
+@[inline] def TraceLookupResult.ofList {α : Type _} (xs : List α) : TraceLookupResult α :=
+  match xs with
+  | [] => .noMatch
+  | [x] => .unique x
+  | _ :: _ :: _ => .conflict
+
 /-- Operations for a trace table used in CO25 Definition 5.2.
-Covers both the one-way hash table (`tr_∇.h`) and the bidirectional permutation table (`tr_∇.p`);
-both have the same four-operation shape, plus a bulk-enumeration op `entries` used by paper §5.2
-partial-key matching for backtracking. -/
+Covers both the one-way hash table (`tr_∇.h`) and the bidirectional permutation table (`tr_∇.p`).
+`entries` is a refinement/proof view; executable partial-key BackTrack lookup goes through the
+capacity secondary-index operations in `LawfulTraceNablaImpl`, never through enumeration. -/
 class TraceTableOps (T : Type) (K V : outParam Type) where
   empty : T                    -- `∅` — return an empty table
   add   : T → K → V → T       -- `t ∪ {(k,v)}` — insert a `(k, v)` pair
+  /-- Exact-pair membership. An indexed implementation provides this in `O(log |t|)`. -/
+  contains : T → K → V → Bool
   inlu  : T → K → Option V    -- `inlu(t, k)` — unique forward lookup (CO25 Def. 5.2)
   outlu : T → V → Option K    -- `outlu(t, v)` — unique backward lookup (CO25 Def. 5.2)
-  /-- `entries(t)` — enumerate all `(k, v)` pairs (CO25 §5.2 partial-key matching). -/
+  /-- `entries(t)` — proof/refinement view enumerating all `(k, v)` pairs. -/
   entries : T → List (K × V)
 
 /-! ### Refinement-model lawful class -/
@@ -117,6 +138,7 @@ extends TraceTableOps T K V where
   toMultiSet : T → Multiset (K × V)
   toMultiSet_empty : toMultiSet TraceTableOps.empty = (0 : Multiset (K × V)) := by simp [empty]
   toMultiSet_add : ∀ t k v, toMultiSet (add t k v) = (k, v) ::ₘ toMultiSet t
+  contains_eq_true : ∀ t k v, contains t k v = true ↔ (k, v) ∈ toMultiSet t
   -- **inlu's query result MUST BE UNIQUE**, i.e. two copies
     -- of `(k, v)` in the multiset trigger the "multiple" case
   inlu_eq_some : ∀ t k v,
@@ -132,7 +154,7 @@ extends TraceTableOps T K V where
       (∀ k', (k', v) ∈ toMultiSet t → k' = k) -- Uniqueness of query key `k` according
         -- to the query value `v`
   /-- `entries` reflects the abstract multiset content. Order is unspecified; only the multiset
-  reading is stable. Used by paper §5.2 partial-key enumeration in `BackTrack`. -/
+  reading is stable. Runtime BackTrack does not enumerate this view. -/
   toMultiSet_ofEntries : ∀ t, (TraceTableOps.entries t : Multiset (K × V)) = toMultiSet t
 
 class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
@@ -141,6 +163,23 @@ class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
   lawfulHash : LawfulTraceTable T_H StmtIn (Vector U SpongeSize.C)
   /-- lawful trace data structure implementation for the permutation queries (`p` and `p⁻¹`) -/
   lawfulPermutation : LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)
+  /-- Capacity-keyed reverse lookup for hash anchors. A production implementation maintains a
+  secondary index ordered by answer capacity, as required by CO25 §5.1. -/
+  hashCapOutlu : T_H → Vector U SpongeSize.C → TraceLookupResult StmtIn
+  /-- Capacity-keyed reverse lookup for permutation predecessors. It is applied to the
+  forward-first table constructed once per BackTrack invocation. -/
+  permCapOutlu : T_P → Vector U SpongeSize.C →
+    TraceLookupResult (CanonicalSpongeState U × CanonicalSpongeState U)
+  /-- Extensional law for the hash-capacity secondary index. -/
+  hashCapOutlu_eq : ∀ t cap,
+    hashCapOutlu t cap = TraceLookupResult.ofList
+      ((lawfulHash.toTraceTableOps.entries t).filterMap fun pair =>
+        if pair.2 = cap then some pair.1 else none)
+  /-- Extensional law for the permutation output-capacity secondary index. -/
+  permCapOutlu_eq : ∀ t cap,
+    permCapOutlu t cap = TraceLookupResult.ofList
+      ((lawfulPermutation.toTraceTableOps.entries t).filterMap fun pair =>
+        if pair.2.capacitySegment = cap then some pair else none)
 
 attribute [instance] LawfulTraceNablaImpl.lawfulHash LawfulTraceNablaImpl.lawfulPermutation
 
@@ -210,6 +249,494 @@ def TraceNabla.IsSubsetOfQueryLog
   (∀ stmt cap, (stmt, cap) ∈ TraceTableOps.entries trΔ.h → ⟨.inl stmt, cap⟩ ∈ trace) ∧
   (∀ s_in s_out, (s_in, s_out) ∈ TraceTableOps.entries trΔ.p →
     ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace)
+
+/-- Exact set-level correspondence between a raw query log and its normalized two-table index.
+
+Repeated raw occurrences are intentionally collapsed: `trΔ.p` stores a normalized pair
+`(sIn, sOut)` regardless of whether it first appeared as a `p` or `p⁻¹` query. -/
+def TraceNabla.MirrorsQueryLog
+    (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop :=
+  (∀ stmt cap, ⟨.inl stmt, cap⟩ ∈ trace ↔
+    (stmt, cap) ∈ TraceTableOps.entries trΔ.h) ∧
+  (∀ sIn sOut,
+    (⟨.inr (.inl sIn), sOut⟩ ∈ trace ∨ ⟨.inr (.inr sOut), sIn⟩ ∈ trace) ↔
+      (sIn, sOut) ∈ TraceTableOps.entries trΔ.p)
+
+/-- The corrected trace-index interface used by Claims 5.19 and 5.20.
+
+The index mirrors the source trace exactly at set level and contains each normalized table pair
+at most once.  Thus an arbitrary unrelated `trΔ`, or a duplicate-filled reconstruction of the
+raw log, cannot satisfy this predicate. -/
+structure TraceNabla.IsNormalizedIndex
+    (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop where
+  mirrors : trΔ.MirrorsQueryLog trace
+  hash_nodup : (TraceTableOps.entries trΔ.h).Nodup
+  permutation_nodup : (TraceTableOps.entries trΔ.p).Nodup
+
+/-- The operational trace-index invariant needed by BackTrack and LookAhead.
+
+Unlike `IsNormalizedIndex`, this predicate deliberately does not require every raw trace entry to
+be represented in `trΔ`. D2SQuery's live table omits cache-pop realizations, while StdTrace's
+table omits inverse-only entries. What the executable searches need is exactly:
+
+* provenance: every stored pair really occurs in the source trace; and
+* normalization: an identical stored pair occurs at most once, so multiplicity alone cannot turn
+  a lookup into a spurious conflict.
+
+The absence of the paper bad event then rules out conflicts between *distinct* stored pairs. -/
+structure TraceNabla.IsNormalizedSubindex
+    (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop where
+  isSubset : trΔ.IsSubsetOfQueryLog trace
+  hash_nodup : (TraceTableOps.entries trΔ.h).Nodup
+  permutation_nodup : (TraceTableOps.entries trΔ.p).Nodup
+
+/-- An exact normalized index is, in particular, provenance-correct for every stored pair. -/
+lemma TraceNabla.IsNormalizedIndex.isSubset
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (h : trΔ.IsNormalizedIndex trace) : trΔ.IsSubsetOfQueryLog trace := by
+  constructor
+  · intro stmt cap hMem
+    exact (h.mirrors.1 stmt cap).mpr hMem
+  · intro sIn sOut hMem
+    exact (h.mirrors.2 sIn sOut).mpr hMem
+
+/-- An exact normalized index is, in particular, a normalized sound subindex. -/
+lemma TraceNabla.IsNormalizedIndex.isNormalizedSubindex
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (h : trΔ.IsNormalizedIndex trace) : trΔ.IsNormalizedSubindex trace :=
+  ⟨h.isSubset, h.hash_nodup, h.permutation_nodup⟩
+
+/-! ### Forward-first permutation index for BackTrack
+
+The normalized permutation table intentionally forgets whether a mapping first entered the raw
+trace through `p` or `p⁻¹`. BackTrack needs only mappings whose first raw occurrence is forward.
+Computing that fact again with `idxOf` at every path step is prohibitively expensive, so this
+small auxiliary table is constructed once before the walk. -/
+
+/-- Normalize the permutation occurrences of a raw trace while retaining occurrence order. -/
+private def normalizedPermutationPairs
+    (trace : DuplexSpongeTrace StmtIn U) :
+    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
+  trace.filterMap fun entry =>
+    match entry with
+    | ⟨.inl _, _⟩ => none
+    | ⟨.inr (.inl sIn), sOut⟩ => some (sIn, sOut)
+    | ⟨.inr (.inr sOut), sIn⟩ => some (sIn, sOut)
+
+/-- A pair has a forward first normalized occurrence in the raw trace.
+
+The prefix excludes the normalized pair in *both* query directions. This decomposition form is
+the induction-friendly equivalent of comparing the `idxOf` of the forward and inverse entries. -/
+def PermutationForwardFirst
+    (trace : DuplexSpongeTrace StmtIn U)
+    (sIn sOut : CanonicalSpongeState U) : Prop :=
+  ∃ pre suffix,
+    trace = pre ++
+      (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) :: suffix ∧
+    (sIn, sOut) ∉ normalizedPermutationPairs pre
+
+/-- Accumulator for the one-pass forward-first index construction.
+
+`seen` contains every normalized permutation pair encountered in either direction. `forward`
+contains exactly those allowed pairs whose first encounter was a forward query. -/
+private structure ForwardPermutationIndexState (T_P : Type) where
+  seen : T_P
+  forward : T_P
+
+/-- Every normalized permutation occurrence in `processed` has reached `seen`. -/
+private def ForwardPermutationIndexState.SeenComplete
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (st : ForwardPermutationIndexState T_P)
+    (processed : DuplexSpongeTrace StmtIn U) : Prop :=
+  ∀ sIn sOut, (sIn, sOut) ∈ normalizedPermutationPairs processed →
+    (sIn, sOut) ∈ LawfulTraceTable.toMultiSet st.seen
+
+/-- Every pair already emitted into `forward` has a forward first occurrence in `processed`. -/
+private def ForwardPermutationIndexState.ForwardSound
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (st : ForwardPermutationIndexState T_P)
+    (processed : DuplexSpongeTrace StmtIn U) : Prop :=
+  ∀ sIn sOut, (sIn, sOut) ∈ LawfulTraceTable.toMultiSet st.forward →
+    PermutationForwardFirst processed sIn sOut
+
+/-- A forward-first witness is stable when more raw queries are appended. -/
+private lemma PermutationForwardFirst.append
+    {trace : DuplexSpongeTrace StmtIn U}
+    {sIn sOut : CanonicalSpongeState U}
+    (h : PermutationForwardFirst trace sIn sOut)
+    (tail : DuplexSpongeTrace StmtIn U) :
+    PermutationForwardFirst (trace ++ tail) sIn sOut := by
+  rcases h with ⟨pre, suffix, hTrace, hFresh⟩
+  refine ⟨pre, suffix ++ tail, ?_, hFresh⟩
+  rw [hTrace]
+  simp only [List.append_assoc, List.cons_append]
+
+/-- Decomposition-form forward-first implies the paper's `idxOf` comparison. -/
+lemma PermutationForwardFirst.idxOf_lt
+    {trace : DuplexSpongeTrace StmtIn U}
+    {sIn sOut : CanonicalSpongeState U}
+    (h : PermutationForwardFirst trace sIn sOut) :
+    trace.idxOf
+        (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) <
+      trace.idxOf
+        (⟨.inr (.inr sOut), sIn⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) := by
+  let fwd : Sigma (duplexSpongeChallengeOracle StmtIn U) := ⟨.inr (.inl sIn), sOut⟩
+  let inv : Sigma (duplexSpongeChallengeOracle StmtIn U) := ⟨.inr (.inr sOut), sIn⟩
+  rcases h with ⟨pre, suffix, hTrace, hFresh⟩
+  change trace = pre ++ fwd :: suffix at hTrace
+  have hFwdNot : fwd ∉ pre := by
+    intro hMem
+    apply hFresh
+    unfold normalizedPermutationPairs
+    exact List.mem_filterMap.mpr ⟨fwd, hMem, by simp [fwd]⟩
+  have hInvNot : inv ∉ pre := by
+    intro hMem
+    apply hFresh
+    unfold normalizedPermutationPairs
+    exact List.mem_filterMap.mpr ⟨inv, hMem, by simp [inv]⟩
+  have hNe : fwd ≠ inv := by simp [fwd, inv]
+  change trace.idxOf fwd < trace.idxOf inv
+  rw [hTrace, List.idxOf_append_of_notMem hFwdNot,
+    List.idxOf_append_of_notMem hInvNot]
+  simp [hNe]
+
+/-- One trace-occurrence update for the forward-first index. Exact-pair membership and insertion
+are abstract table operations; a balanced implementation performs both in logarithmic time. -/
+private def forwardPermutationIndexStep
+    [TraceTableOps T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (allowed : T_P)
+    (st : ForwardPermutationIndexState T_P)
+    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
+    ForwardPermutationIndexState T_P :=
+  match entry with
+  | ⟨.inl _, _⟩ => st
+  | ⟨.inr (.inl sIn), sOut⟩ =>
+      if TraceTableOps.contains st.seen sIn sOut then
+        st
+      else
+        { seen := TraceTableOps.add st.seen sIn sOut
+          forward :=
+            if TraceTableOps.contains allowed sIn sOut then
+              TraceTableOps.add st.forward sIn sOut
+            else
+              st.forward }
+  | ⟨.inr (.inr sOut), sIn⟩ =>
+      if TraceTableOps.contains st.seen sIn sOut then
+        st
+      else
+        { st with seen := TraceTableOps.add st.seen sIn sOut }
+
+/-- Build the forward-first subtable used by BackTrack in one left-to-right pass over `trace`.
+
+The `allowed` table is normally `tr_∇.p`; intersecting with it preserves the public BackTrack
+semantics even when the caller supplies a provenance-correct sub-index rather than the complete
+raw trace index. With `O(log P)` table membership/insertion this preprocessing costs
+`O(|trace| log P)` and is performed once, never once per BackTrack hop. -/
+def buildForwardPermutationIndex
+    [TraceTableOps T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trace : DuplexSpongeTrace StmtIn U) (allowed : T_P) : T_P :=
+  (trace.foldl (forwardPermutationIndexStep allowed)
+    { seen := TraceTableOps.empty, forward := TraceTableOps.empty }).forward
+
+omit [DecidableEq StmtIn] in
+/-- Every entry placed in the one-pass forward-first index belongs to the caller's allowed
+permutation table. This is the provenance bridge used by the executable BackTrack walk. -/
+lemma buildForwardPermutationIndex_subset_allowed
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trace : DuplexSpongeTrace StmtIn U) (allowed : T_P)
+    (sIn sOut : CanonicalSpongeState U)
+    (hMem : (sIn, sOut) ∈ TraceTableOps.entries
+      (buildForwardPermutationIndex trace allowed)) :
+    (sIn, sOut) ∈ TraceTableOps.entries allowed := by
+  have fold_subset : ∀ (remaining : DuplexSpongeTrace StmtIn U)
+      (st : ForwardPermutationIndexState T_P),
+      (∀ a b, (a, b) ∈ LawfulTraceTable.toMultiSet st.forward →
+        (a, b) ∈ LawfulTraceTable.toMultiSet allowed) →
+      ∀ a b,
+        (a, b) ∈ LawfulTraceTable.toMultiSet
+          (remaining.foldl (forwardPermutationIndexStep allowed) st).forward →
+        (a, b) ∈ LawfulTraceTable.toMultiSet allowed := by
+    intro remaining
+    induction remaining with
+    | nil =>
+        intro st hSub a b h
+        exact hSub a b h
+    | cons entry rest ih =>
+        intro st hSub a b h
+        apply ih (forwardPermutationIndexStep allowed st entry) ?_ a b h
+        intro a' b' h'
+        rcases entry with ⟨q, answer⟩
+        rcases q with stmt | input | output
+        · exact hSub a' b' h'
+        · change CanonicalSpongeState U at answer
+          simp only [forwardPermutationIndexStep] at h'
+          split at h'
+          · exact hSub a' b' h'
+          · split at h'
+            · next hAllowed =>
+                change (a', b') ∈ LawfulTraceTable.toMultiSet
+                  (TraceTableOps.add st.forward input answer) at h'
+                rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at h'
+                rcases h' with hEq | hOld
+                · injection hEq with hA hB
+                  subst hA
+                  subst hB
+                  exact (LawfulTraceTable.contains_eq_true allowed a' b').mp hAllowed
+                · exact hSub a' b' hOld
+            · exact hSub a' b' h'
+        · change CanonicalSpongeState U at answer
+          simp only [forwardPermutationIndexStep] at h'
+          split at h' <;> exact hSub a' b' h'
+  have hMemMs : (sIn, sOut) ∈ LawfulTraceTable.toMultiSet
+      (buildForwardPermutationIndex trace allowed) := by
+    rw [← LawfulTraceTable.toMultiSet_ofEntries]
+    exact hMem
+  have hAllowedMs : (sIn, sOut) ∈ LawfulTraceTable.toMultiSet allowed := by
+    unfold buildForwardPermutationIndex at hMemMs
+    apply fold_subset trace
+      { seen := TraceTableOps.empty, forward := TraceTableOps.empty }
+    · intro a b h
+      rw [LawfulTraceTable.toMultiSet_empty] at h
+      simp at h
+    · exact hMemMs
+  rw [← LawfulTraceTable.toMultiSet_ofEntries] at hAllowedMs
+  exact hAllowedMs
+
+omit [DecidableEq StmtIn] in
+/-- The one-pass forward-first builder never inserts the same normalized permutation pair twice.
+
+This fact is independent of the caller's `allowed` table: the `seen` table is updated on the first
+occurrence in either direction, and every later occurrence of that pair is ignored. -/
+lemma buildForwardPermutationIndex_nodup
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trace : DuplexSpongeTrace StmtIn U) (allowed : T_P) :
+    (TraceTableOps.entries (buildForwardPermutationIndex trace allowed)).Nodup := by
+  have fold_nodup : ∀ (remaining : DuplexSpongeTrace StmtIn U)
+      (st : ForwardPermutationIndexState T_P),
+      (LawfulTraceTable.toMultiSet st.forward).Nodup →
+      (∀ a b, (a, b) ∈ LawfulTraceTable.toMultiSet st.forward →
+        (a, b) ∈ LawfulTraceTable.toMultiSet st.seen) →
+      (LawfulTraceTable.toMultiSet
+        (remaining.foldl (forwardPermutationIndexStep allowed) st).forward).Nodup := by
+    intro remaining
+    induction remaining with
+    | nil =>
+        intro st hNodup _
+        exact hNodup
+    | cons entry rest ih =>
+        intro st hNodup hSubset
+        apply ih (forwardPermutationIndexStep allowed st entry)
+        · rcases entry with ⟨q, answer⟩
+          rcases q with stmt | input | output
+          · exact hNodup
+          · change CanonicalSpongeState U at answer
+            simp only [forwardPermutationIndexStep]
+            split
+            · exact hNodup
+            · next hNotSeen =>
+              split
+              · change (LawfulTraceTable.toMultiSet
+                    (TraceTableOps.add st.forward input answer)).Nodup
+                rw [LawfulTraceTable.toMultiSet_add, Multiset.nodup_cons]
+                refine ⟨?_, hNodup⟩
+                intro hMemForward
+                have hMemSeen := hSubset input answer hMemForward
+                exact hNotSeen ((LawfulTraceTable.contains_eq_true st.seen input answer).mpr
+                  hMemSeen)
+              · exact hNodup
+          · change CanonicalSpongeState U at answer
+            simp only [forwardPermutationIndexStep]
+            split <;> exact hNodup
+        · intro a b hMem
+          rcases entry with ⟨q, answer⟩
+          rcases q with stmt | input | output
+          · exact hSubset a b hMem
+          · change CanonicalSpongeState U at answer
+            simp only [forwardPermutationIndexStep] at hMem
+            split at hMem
+            · next hSeen =>
+              simp only [forwardPermutationIndexStep]
+              rw [if_pos hSeen]
+              exact hSubset a b hMem
+            · next hNotSeen =>
+              split at hMem
+              · next hAllowed =>
+                simp only [forwardPermutationIndexStep]
+                rw [if_neg hNotSeen, if_pos hAllowed]
+                change (a, b) ∈ LawfulTraceTable.toMultiSet
+                  (TraceTableOps.add st.seen input answer)
+                rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons]
+                change (a, b) ∈ LawfulTraceTable.toMultiSet
+                  (TraceTableOps.add st.forward input answer) at hMem
+                rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at hMem
+                rcases hMem with hEq | hOld
+                · exact Or.inl hEq
+                · exact Or.inr (hSubset a b hOld)
+              · next hNotAllowed =>
+                simp only [forwardPermutationIndexStep]
+                rw [if_neg hNotSeen, if_neg hNotAllowed]
+                change (a, b) ∈ LawfulTraceTable.toMultiSet
+                  (TraceTableOps.add st.seen input answer)
+                rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons]
+                exact Or.inr (hSubset a b hMem)
+          · change CanonicalSpongeState U at answer
+            simp only [forwardPermutationIndexStep] at hMem
+            split at hMem
+            · next hSeen =>
+              simp only [forwardPermutationIndexStep]
+              rw [if_pos hSeen]
+              exact hSubset a b hMem
+            · next hNotSeen =>
+              simp only [forwardPermutationIndexStep]
+              rw [if_neg hNotSeen]
+              change (a, b) ∈ LawfulTraceTable.toMultiSet
+                (TraceTableOps.add st.seen answer output)
+              rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons]
+              exact Or.inr (hSubset a b hMem)
+  have hNodupMs : (LawfulTraceTable.toMultiSet
+      (buildForwardPermutationIndex trace allowed)).Nodup := by
+    unfold buildForwardPermutationIndex
+    apply fold_nodup trace
+      { seen := TraceTableOps.empty, forward := TraceTableOps.empty }
+    · rw [LawfulTraceTable.toMultiSet_empty]
+      simp
+    · intro a b hMem
+      rw [LawfulTraceTable.toMultiSet_empty] at hMem
+      simp at hMem
+  rw [← LawfulTraceTable.toMultiSet_ofEntries] at hNodupMs
+  exact Multiset.coe_nodup.mp hNodupMs
+
+/-- Every pair emitted by the one-pass builder really has a forward first normalized occurrence.
+
+The proof follows the executable fold. `seen` is complete for the processed prefix, so the branch
+that inserts a forward pair supplies exactly the absence fact required by
+`PermutationForwardFirst`. -/
+lemma buildForwardPermutationIndex_forwardFirst
+    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
+    (trace : DuplexSpongeTrace StmtIn U) (allowed : T_P)
+    (sIn sOut : CanonicalSpongeState U)
+    (hMem : (sIn, sOut) ∈ TraceTableOps.entries
+      (buildForwardPermutationIndex trace allowed)) :
+    PermutationForwardFirst trace sIn sOut := by
+  have fold_sound : ∀ (remaining processed : DuplexSpongeTrace StmtIn U)
+      (st : ForwardPermutationIndexState T_P),
+      st.SeenComplete processed → st.ForwardSound processed →
+      (remaining.foldl (forwardPermutationIndexStep allowed) st).ForwardSound
+        (processed ++ remaining) := by
+    intro remaining
+    induction remaining with
+    | nil =>
+        intro processed st _ hSound
+        simpa using hSound
+    | cons entry rest ih =>
+        intro processed st hSeenComplete hForwardSound
+        have hSeenStep :
+            (forwardPermutationIndexStep allowed st entry).SeenComplete
+              (processed ++ [entry]) := by
+          intro a b hPair
+          rcases entry with ⟨q, answer⟩
+          rcases q with stmt | input | output
+          · have hOld : (a, b) ∈ normalizedPermutationPairs processed := by
+              simpa [normalizedPermutationPairs] using hPair
+            exact hSeenComplete a b hOld
+          · change CanonicalSpongeState U at answer
+            have hOldOrCurrent :
+                (a, b) ∈ normalizedPermutationPairs processed ∨
+                  (a, b) = (input, answer) := by
+              simpa [normalizedPermutationPairs] using hPair
+            simp only [forwardPermutationIndexStep]
+            split
+            · next hSeen =>
+              rcases hOldOrCurrent with hOld | hCurrent
+              · exact hSeenComplete a b hOld
+              · cases hCurrent
+                exact (LawfulTraceTable.contains_eq_true st.seen a b).mp hSeen
+            · next hNotSeen =>
+              change (a, b) ∈ LawfulTraceTable.toMultiSet
+                (TraceTableOps.add st.seen input answer)
+              rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons]
+              rcases hOldOrCurrent with hOld | hCurrent
+              · exact Or.inr (hSeenComplete a b hOld)
+              · exact Or.inl hCurrent
+          · change CanonicalSpongeState U at answer
+            have hOldOrCurrent :
+                (a, b) ∈ normalizedPermutationPairs processed ∨
+                  (a, b) = (answer, output) := by
+              simpa [normalizedPermutationPairs] using hPair
+            simp only [forwardPermutationIndexStep]
+            split
+            · next hSeen =>
+              rcases hOldOrCurrent with hOld | hCurrent
+              · exact hSeenComplete a b hOld
+              · cases hCurrent
+                exact (LawfulTraceTable.contains_eq_true st.seen a b).mp hSeen
+            · next hNotSeen =>
+              change (a, b) ∈ LawfulTraceTable.toMultiSet
+                (TraceTableOps.add st.seen answer output)
+              rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons]
+              rcases hOldOrCurrent with hOld | hCurrent
+              · exact Or.inr (hSeenComplete a b hOld)
+              · exact Or.inl hCurrent
+        have hForwardStep :
+            (forwardPermutationIndexStep allowed st entry).ForwardSound
+              (processed ++ [entry]) := by
+          intro a b hForward
+          rcases entry with ⟨q, answer⟩
+          rcases q with stmt | input | output
+          · exact (hForwardSound a b hForward).append [⟨.inl stmt, answer⟩]
+          · change CanonicalSpongeState U at answer
+            simp only [forwardPermutationIndexStep] at hForward
+            split at hForward
+            · exact (hForwardSound a b hForward).append
+                [⟨.inr (.inl input), answer⟩]
+            · next hNotSeen =>
+              split at hForward
+              · change (a, b) ∈ LawfulTraceTable.toMultiSet
+                    (TraceTableOps.add st.forward input answer) at hForward
+                rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at hForward
+                rcases hForward with hCurrent | hOld
+                · injection hCurrent with hA hB
+                  subst hA
+                  subst hB
+                  refine ⟨processed, [], ?_, ?_⟩
+                  · simp
+                  · intro hNormalized
+                    have hSeenMem := hSeenComplete a b hNormalized
+                    exact hNotSeen
+                      ((LawfulTraceTable.contains_eq_true st.seen a b).mpr hSeenMem)
+                · exact (hForwardSound a b hOld).append
+                    [⟨.inr (.inl input), answer⟩]
+              · exact (hForwardSound a b hForward).append
+                  [⟨.inr (.inl input), answer⟩]
+          · change CanonicalSpongeState U at answer
+            simp only [forwardPermutationIndexStep] at hForward
+            split at hForward <;>
+              exact (hForwardSound a b hForward).append
+                [⟨.inr (.inr output), answer⟩]
+        have hTail := ih (processed ++ [entry])
+          (forwardPermutationIndexStep allowed st entry) hSeenStep hForwardStep
+        simpa [List.append_assoc] using hTail
+  have hInitialSeen :
+      (ForwardPermutationIndexState.mk
+        (TraceTableOps.empty : T_P) TraceTableOps.empty).SeenComplete
+          ([] : DuplexSpongeTrace StmtIn U) := by
+    intro a b hPair
+    simp [normalizedPermutationPairs] at hPair
+  have hInitialForward :
+      (ForwardPermutationIndexState.mk
+        (TraceTableOps.empty : T_P) TraceTableOps.empty).ForwardSound
+          ([] : DuplexSpongeTrace StmtIn U) := by
+    intro a b hPair
+    rw [LawfulTraceTable.toMultiSet_empty] at hPair
+    simp at hPair
+  have hFinal := fold_sound trace []
+    { seen := TraceTableOps.empty, forward := TraceTableOps.empty }
+    hInitialSeen hInitialForward
+  have hMemMs : (sIn, sOut) ∈ LawfulTraceTable.toMultiSet
+      (buildForwardPermutationIndex trace allowed) := by
+    rw [← LawfulTraceTable.toMultiSet_ofEntries]
+    exact hMem
+  exact hFinal sIn sOut hMemMs
 
 /-- The fold step from `TraceNabla.ofQueryLog`, factored out for reuse in proofs. -/
 private def ofQueryLogStep
@@ -522,6 +1049,11 @@ variable {K V : Type} [DecidableEq K] [DecidableEq V]
 @[inline] def add (t : ListTraceTable K V) (k : K) (v : V) : ListTraceTable K V :=
   ⟨(k, v) :: t.entries⟩
 
+/-- Reference exact-pair membership. The production indexed backend may implement this with its
+primary ordered map; the list backend remains the executable refinement model. -/
+@[inline] def contains (t : ListTraceTable K V) (k : K) (v : V) : Bool :=
+  decide ((k, v) ∈ t.entries)
+
 @[inline] def toMultiSet (t : ListTraceTable K V) : Multiset (K × V) := t.entries
 
 /-- `inlu` succeeds iff `(k, v)` appears exactly once **and** is the unique value for key `k`.
@@ -747,6 +1279,7 @@ instance instListBasedTraceTableOps {K V : Type} [DecidableEq K] [DecidableEq V]
   TraceTableOps (ListTraceTable K V) K V where
   empty := empty
   add   := add
+  contains := contains
   inlu  := inlu
   outlu := outlu
   entries t := t.entries
@@ -757,6 +1290,10 @@ instance instLawfulListBasedTraceTable {K V : Type} [DecidableEq K] [DecidableEq
   toMultiSet          := toMultiSet
   toMultiSet_empty    := rfl
   toMultiSet_add      := fun _ _ _ => rfl
+  contains_eq_true    := by
+    intro t k v
+    change decide ((k, v) ∈ t.entries) = true ↔ (k, v) ∈ t.entries
+    simp
   inlu_eq_some        := fun t k v => inlu_eq_some_iff t k v
   outlu_eq_some       := fun t k v => outlu_eq_some_iff t k v
   toMultiSet_ofEntries  := fun _ => rfl
@@ -768,8 +1305,16 @@ instance instLawfulTraceNablaImplListBased [SpongeUnit U] [SpongeSize]
     LawfulTraceNablaImpl
       (ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
       (ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
-      StmtIn U :=
-  ⟨instLawfulListBasedTraceTable, instLawfulListBasedTraceTable⟩
+      StmtIn U where
+  lawfulHash := instLawfulListBasedTraceTable
+  lawfulPermutation := instLawfulListBasedTraceTable
+  hashCapOutlu t cap := TraceLookupResult.ofList <|
+    t.entries.filterMap fun pair => if pair.2 = cap then some pair.1 else none
+  permCapOutlu t cap := TraceLookupResult.ofList <|
+    t.entries.filterMap fun pair =>
+      if pair.2.capacitySegment = cap then some pair else none
+  hashCapOutlu_eq _ _ := rfl
+  permCapOutlu_eq _ _ := rfl
 
 /-- The default (list-backed) `tr_∇`. In fact we want to use a more optimized data structure
 for efficient storage and query complexity. -/

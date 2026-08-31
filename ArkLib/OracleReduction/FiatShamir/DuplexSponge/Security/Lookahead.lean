@@ -353,6 +353,16 @@ The paper's Algorithm 2 enumerates the maximal family then post-filters. CO25 li
 "the search stops if it encounters two conflicting chains" — i.e. scan-time fork → return `err`
 directly. This is paper-faithful: scan-time fork detection coincides with `E_fork,p`. -/
 
+/-- The operational non-ambiguity condition for the linear LookAhead scan.
+
+The normalized permutation table contains no duplicate pair and is input-functional, so filtering
+it by a complete input state returns at most one successor. Capacity self-loops are invalid chains
+and return `noResult`; they are deliberately not classified as lookup ambiguity. -/
+def SearchUnambiguous (trΔp : T_P) : Prop :=
+  (TraceTableOps.entries trΔp).Nodup ∧
+  ∀ pair₁ ∈ TraceTableOps.entries trΔp, ∀ pair₂ ∈ TraceTableOps.entries trΔp,
+    pair₁.1 = pair₂.1 → pair₁ = pair₂
+
 
 /-- Output of linear forwards scan: either a fork was detected,
 or scan terminated with an optional sequence. -/
@@ -377,7 +387,7 @@ private def linearScanForwards
     | [next] =>
         -- Found unique successor (CO25 §5.3 maximal sequence)
         if hNoLoop : current.capacitySegment = next.capacitySegment then
-          .forkErr -- Self-loop → `E_inv`
+          .done none -- invalid chain, not an ambiguity between two chains
         else
           have hNoLoop' : current.capacitySegment ≠ next.capacitySegment := hNoLoop
           have hEntry : (current, next) ∈ TraceTableOps.entries trΔp :=
