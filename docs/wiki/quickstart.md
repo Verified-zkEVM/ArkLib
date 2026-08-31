@@ -211,6 +211,12 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   opens generated-files PRs for KB indexes and missing cited-paper stubs after pushes to `main`.
 
+Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
+queue creates a temporary integration ref containing the queued changes on current `main`; the CI,
+import, docs-integrity, and whitespace workflows run again on that `merge_group` ref before GitHub
+may merge it. PR-only timing comparisons and comments remain attached to the ordinary PR run and
+are intentionally skipped for merge groups, which do not carry a pull-request payload.
+
 ## Manual Timing Helper
 
 If you need to reproduce the timing workflow locally, the same helper script can
