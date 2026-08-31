@@ -589,7 +589,7 @@ lemma subdomain_comp
       (add unsafe (by ring_nf))
       (add safe [(by omega), (by grind)])
 
-@[simp]
+@[simp, grind =]
 theorem mem_subdomain_comp_iff_mem
   {k j : ℕ} (hk : k + j ≤ n) {x : F} :
   x ∈ subdomain (subdomain ω k) j ↔ x ∈ subdomain ω (k + j) := by
@@ -618,6 +618,13 @@ lemma subdomain_zero_eq_self {n : ℕ} {ω : SmoothCosetFftDomain n F} :
   apply DFunLike.coe_injective
   funext i
   exact CosetFftDomainClass.subdomain_0_apply i
+
+omit [DecidableEq F] in
+lemma subdomain_subdomain_one {n k : ℕ} (hkn : k < n)
+  {ω : SmoothCosetFftDomain n F} :
+    (ω.subdomain k).subdomain 1 = ω.subdomain (k + 1) := by
+  ext ⟨i, hi⟩
+  rw [CosetFftDomainClass.subdomain_comp (i := ⟨i, by omega⟩)] <;> grind
 
 /-- Search through a smooth coset FFT domain for an element whose `2 ^ i`th power is `x`,
   using `fuel` as the remaining search bound. -/
