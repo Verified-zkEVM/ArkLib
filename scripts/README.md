@@ -8,6 +8,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
 - **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
+- **`build_timing_metadata.py`** - Versioned attribution metadata writer/validator for timing artifacts
+- **`test-build-timing-report.sh`** - Deterministic report, metadata, and workflow-policy fixtures
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Reject blanket package-root imports and check whether `ArkLib.lean` is
   up to date with all tracked source modules
@@ -199,8 +201,11 @@ python3 scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-
 
 Helper used by CI to measure and render build timings for clean builds, warm
 rebuilds, the native build, and the `./scripts/validate.sh` path. The CI workflow uploads
-timing-data artifacts so PR runs can compare against a previously recorded
-baseline without rerunning that baseline in the same job. This supports
+timing-data artifacts so PR runs can compare against the successful push run for the PR's exact
+base SHA without rerunning that base in the same job. It never silently substitutes a previous PR
+update or a different `main` commit when the exact artifact is unavailable. Each artifact also
+records the measured checkout, PR head/base, dependency-manifest hash, cache provenance, and runner
+image; the report shows wall time beside `user + sys` CPU work. This supports
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 The four measurements share one tree and run in order, so each leaves it warmer than the last.
@@ -209,6 +214,9 @@ The four measurements share one tree and run in order, so each leaves it warmer 
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
+
+`./scripts/test-build-timing-report.sh` exercises metadata validation, exact-base/missing-base
+rendering, CPU deltas, native-command ownership, and the stale-run guard in the trusted reporter.
 
 ## Requirements
 

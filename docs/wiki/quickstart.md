@@ -256,3 +256,15 @@ Read the rows in that order, because they share one tree and each leaves it warm
 A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.
 Per-target times are printed with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits
 whole seconds above 10s, so those figures are not accurate to two decimals.
+
+For PRs, the trusted reporter compares only with a successful timing artifact whose push SHA is
+the PR's exact measured base. If that artifact is unavailable or expired, the report says so and
+shows current measurements without inventing a substitute baseline. A previous PR update answers a
+different question and is therefore not used as the regression baseline.
+
+Timing artifacts include the PR head, actual measured checkout (normally GitHub's synthetic PR
+merge commit), exact base, dependency-manifest hash, exact/fallback cache state, and runner
+image/version. Reports show both wall time and CPU work (`user + sys`). Movement in both suggests
+changed compilation work or runner speed; wall-only movement more often indicates scheduling or I/O
+contention. These diagnostics improve attribution, but one hosted-runner sample is still not a
+performance verdict. Per-file rows are leads to remeasure, not blocking regression claims.
