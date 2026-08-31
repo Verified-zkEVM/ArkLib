@@ -43,11 +43,22 @@ python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/Singl
 1. Update `blueprint/src/references.bib`
 2. Update an existing paper page when the PR changes ArkLib's interpretation or use of that paper
 3. Do not commit `docs/kb/_generated/**` changes in feature PRs
-4. Let the main-branch KB workflow open a follow-up PR for regenerated indexes and missing
-   cited paper/source stubs
+4. Let the main-branch KB workflow update one rolling follow-up PR for regenerated indexes and
+   missing cited paper/source stubs
 
 Run `python3 ./scripts/kb/regenerate.py` locally when you need to inspect the generated state.
 Commit the generated results only from the main-branch automation, not from ordinary feature PRs.
+
+The workflow runs nightly and can be dispatched manually. Changes to bibliography or KB source
+inputs also trigger an immediate refresh. Ordinary Lean merges are coalesced into the next nightly
+run instead of creating one generated PR per merge. The rolling PR uses the stable
+`automation/kb-generated` branch and explicitly dispatches its four fixed validation workflows so
+bot-authored checks do not wait for contributor approval. The normal human-review requirement
+still applies before auto-merge can complete.
+
+Do not use GitHub's **Update branch** action on the rolling PR. Merging a newer base into the bot
+branch does not rerun generation and can make its indexes stale. Dispatch the KB workflow manually
+or wait for the next scheduled run; it rebuilds the rolling branch from the latest `main`.
 
 ## Review Workflow Notes
 
