@@ -198,9 +198,8 @@ lemma foldValue_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
     let i := domain.log x
     let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
-  aesop
-    (add simp [foldValue, foldWordAux_of_k_2])
-    (add safe (by grind))
+  simp [foldValue, foldWordAux_of_k_2]
+  ring
 
 /-- Fold a word. Takes a word `f` over `Fin (2 ^ n)` and randomness
   `a`, and returns a word over `Fin (2 ^ (n - k))`. -/
@@ -614,13 +613,12 @@ private lemma indicated_polynomial_eq_foldAux'
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
   · simpa using h_card
-  · aesop
-      (add safe [(by rw [←eval_comm]),
-        (by rw
-          [indicated_polynomial_eq_combination_of_correlated,
-            ←foldValue_def,
-            foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
-      (add simp [eval_finsetSum])
+  · intro α _
+    rw [←eval_comm,
+      indicated_polynomial_eq_combination_of_correlated h_s' hu hu_deg,
+      eval_finsetSum, ←foldValue_def,
+      foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
+    simp only [eval_mul, eval_C, hx]
 
 private lemma foldWordAux_poly_sum {a : F} :
   ((foldWordAux domain f k a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) =

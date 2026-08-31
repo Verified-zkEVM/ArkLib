@@ -13269,9 +13269,18 @@
           "signature": "theorem minDist_interleavedCodeSet"
         },
         {
+          "doc": "Interleaving over a nonempty row index preserves the *relative* minimum distance: `\u03b4\u1d63 (MC ^\u22c8 \u03ba) = \u03b4\u1d63 MC`. The relative form of `minDist_interleavedCodeSet`, via the bridge `minDist_div_card_eq_minRelHammingDistCode`: both codes have block length `\u03b9`, so equal absolute distances give equal relative ones.",
+          "kind": "lemma",
+          "line": 538,
+          "name": "Code.minRelHammingDistCode_moduleInterleavedCode",
+          "namespace": "Code",
+          "short_name": "minRelHammingDistCode_moduleInterleavedCode",
+          "signature": "lemma minRelHammingDistCode_moduleInterleavedCode"
+        },
+        {
           "doc": "A `\u03ba`-tuple of codewords of a module code `MC` is the same data as a codeword of the interleave `MC ^\u22c8 \u03ba`: the tuple `g` corresponds to the interleaved word whose `k`-th row is `g k`. No finiteness of `\u03ba` or `\u03b9` is required.",
           "kind": "def",
-          "line": 541,
+          "line": 563,
           "name": "Code.moduleInterleavedCodeEquiv",
           "namespace": "Code",
           "short_name": "moduleInterleavedCodeEquiv",
@@ -13280,7 +13289,7 @@
         {
           "doc": "Interleaving multiplies the dimension by the interleaving factor: `finrank F (MC ^\u22c8 \u03ba) = Fintype.card \u03ba * finrank F MC`. Immediate from `moduleInterleavedCodeEquiv` and `Module.finrank_pi_fintype`, whose `Free` and `Finite` hypotheses are inherited; both hold automatically when `F` is a field and the ambient `\u03b9 \u2192 A` is finite-dimensional.",
           "kind": "lemma",
-          "line": 557,
+          "line": 579,
           "name": "Code.finrank_moduleInterleavedCode",
           "namespace": "Code",
           "short_name": "finrank_moduleInterleavedCode",
@@ -13289,25 +13298,25 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 567,
-          "name": "Code._anon_instance_567",
+          "line": 589,
+          "name": "Code._anon_instance_589",
           "namespace": "Code",
-          "short_name": "_anon_instance_567",
+          "short_name": "_anon_instance_589",
           "signature": "instance instance {\u03ba\u2081 \u03ba\u2082 : Type*} :"
         },
         {
           "doc": "",
           "kind": "instance",
-          "line": 575,
-          "name": "Code._anon_instance_575",
+          "line": 597,
+          "name": "Code._anon_instance_597",
           "namespace": "Code",
-          "short_name": "_anon_instance_575",
+          "short_name": "_anon_instance_597",
           "signature": "instance instance {\u03ba\u2081 \u03ba\u2082 : Type*} :"
         },
         {
           "doc": "1. GetRow",
           "kind": "class",
-          "line": 594,
+          "line": 616,
           "name": "Code.InterleavedCode.GetRow",
           "namespace": "Code.InterleavedCode",
           "short_name": "GetRow",
@@ -13316,7 +13325,7 @@
         {
           "doc": "2. GetSymbol",
           "kind": "class",
-          "line": 598,
+          "line": 620,
           "name": "Code.InterleavedCode.GetSymbol",
           "namespace": "Code.InterleavedCode",
           "short_name": "GetSymbol",
@@ -13325,7 +13334,7 @@
         {
           "doc": "3. GetCell",
           "kind": "class",
-          "line": 602,
+          "line": 624,
           "name": "Code.InterleavedCode.GetCell",
           "namespace": "Code.InterleavedCode",
           "short_name": "GetCell",
@@ -13334,7 +13343,7 @@
         {
           "doc": "6. InterleavedStructure: Extends accessors and defines equality via rows/symbols/cells. Applied to the InterleavedElementType.",
           "kind": "class",
-          "line": 611,
+          "line": 633,
           "name": "Code.InterleavedCode.InterleavedStructure",
           "namespace": "Code.InterleavedCode",
           "short_name": "InterleavedStructure",
@@ -13343,16 +13352,16 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 623,
-          "name": "Code.InterleavedCode._anon_instance_623",
+          "line": 645,
+          "name": "Code.InterleavedCode._anon_instance_645",
           "namespace": "Code.InterleavedCode",
-          "short_name": "_anon_instance_623",
+          "short_name": "_anon_instance_645",
           "signature": "instance @[simp] instance (priority := 500) instInterleavedStructureWordStack :"
         },
         {
           "doc": "",
           "kind": "instance",
-          "line": 643,
+          "line": 665,
           "name": "Code.InterleavedCode.instInterleavedStructureCodewordStack",
           "namespace": "Code.InterleavedCode",
           "short_name": "instInterleavedStructureCodewordStack",
@@ -13361,7 +13370,7 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 670,
+          "line": 692,
           "name": "Code.InterleavedCode.instInterleavedStructureInterleavedWord",
           "namespace": "Code.InterleavedCode",
           "short_name": "instInterleavedStructureInterleavedWord",
@@ -13370,7 +13379,7 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 690,
+          "line": 712,
           "name": "Code.InterleavedCode.instInterleavedStructureInterleavedCodeword",
           "namespace": "Code.InterleavedCode",
           "short_name": "instInterleavedStructureInterleavedCodeword",
@@ -13379,7 +13388,7 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 716,
+          "line": 738,
           "name": "Code.InterleavedCode.Stackifiable",
           "namespace": "Code.InterleavedCode",
           "short_name": "Stackifiable",
@@ -13388,25 +13397,25 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 722,
-          "name": "Code.InterleavedCode._anon_instance_722",
+          "line": 744,
+          "name": "Code.InterleavedCode._anon_instance_744",
           "namespace": "Code.InterleavedCode",
-          "short_name": "_anon_instance_722",
+          "short_name": "_anon_instance_744",
           "signature": "instance instance : Stackifiable (\u03b1 := InterleavedWord A \u03ba \u03b9) (\u03b2 := WordStack A \u03ba \u03b9) where"
         },
         {
           "doc": "",
           "kind": "instance",
-          "line": 726,
-          "name": "Code.InterleavedCode._anon_instance_726",
+          "line": 748,
+          "name": "Code.InterleavedCode._anon_instance_748",
           "namespace": "Code.InterleavedCode",
-          "short_name": "_anon_instance_726",
+          "short_name": "_anon_instance_748",
           "signature": "instance instance : Stackifiable (\u03b1 := InterleavedCodeword A \u03ba \u03b9 C) (\u03b2 := CodewordStack A \u03ba \u03b9 C) where"
         },
         {
           "doc": "Used to getRow at u.val instead of getRow u",
           "kind": "lemma",
-          "line": 738,
+          "line": 760,
           "name": "Code.InterleavedCode.getRowOfInterleavedCodeword_mem_code",
           "namespace": "Code.InterleavedCode",
           "short_name": "getRowOfInterleavedCodeword_mem_code",
@@ -13415,7 +13424,7 @@
         {
           "doc": "Used to getRow at u.val instead of getRow u",
           "kind": "lemma",
-          "line": 747,
+          "line": 769,
           "name": "Code.InterleavedCode.getRowOfCodewordStack_mem_code",
           "namespace": "Code.InterleavedCode",
           "short_name": "getRowOfCodewordStack_mem_code",
@@ -13424,7 +13433,7 @@
         {
           "doc": "",
           "kind": "instance",
-          "line": 758,
+          "line": 780,
           "name": "Code.InterleavedCode.instNonemptyInterleavedCode",
           "namespace": "Code.InterleavedCode",
           "short_name": "instNonemptyInterleavedCode",
@@ -13433,7 +13442,7 @@
         {
           "doc": "`jointProximity u \u03b4` means the interleaved word stack `u` is within relative distance `\u03b4` of the interleaved code `MC^\u22c8 \u03ba`.",
           "kind": "def",
-          "line": 802,
+          "line": 824,
           "name": "Code.jointProximity",
           "namespace": "Code",
           "short_name": "jointProximity",
@@ -13442,7 +13451,7 @@
         {
           "doc": "`jointProximity\u2082 u\u2080 u\u2081 e` means the interleaved pair `(u\u2080, u\u2081)` is within distance `e` of the interleaved code `MC^\u22c8 (Fin 2)`.",
           "kind": "def",
-          "line": 808,
+          "line": 830,
           "name": "Code.jointProximity\u2082",
           "namespace": "Code",
           "short_name": "jointProximity\u2082",
@@ -13451,7 +13460,7 @@
         {
           "doc": "`jointProximityNat u e` means the interleaved word stack `u` is within distance `e` of the interleaved code `MC^\u22c8 \u03ba`. Can use `distFromCode_le_iff_relDistFromCode_le` and `relDistFromCode_le_iff_distFromCode_le` to prove equivalence with `jointProximity`.",
           "kind": "def",
-          "line": 815,
+          "line": 837,
           "name": "Code.jointProximityNat",
           "namespace": "Code",
           "short_name": "jointProximityNat",
@@ -13460,7 +13469,7 @@
         {
           "doc": "`jointProximityNat\u2082 u\u2080 u\u2081 e` means the interleaved pair `(u\u2080, u\u2081)` is within distance `e` of the interleaved code `MC^\u22c8 (Fin 2)`.",
           "kind": "def",
-          "line": 821,
+          "line": 843,
           "name": "Code.jointProximityNat\u2082",
           "namespace": "Code",
           "short_name": "jointProximityNat\u2082",
@@ -13469,7 +13478,7 @@
         {
           "doc": "`pairJointProximity u v e` means the two interleaved word stacks `u` and `v` are within distance `e` of each other.",
           "kind": "def",
-          "line": 827,
+          "line": 849,
           "name": "Code.pairJointProximity",
           "namespace": "Code",
           "short_name": "pairJointProximity",
@@ -13478,7 +13487,7 @@
         {
           "doc": "`pairJointProximity\u2082 u\u2080 u\u2081 v\u2080 v\u2081 e` means the interleaved pairs `(u\u2080, u\u2081)` and `(v\u2080, v\u2081)` are within distance `e` of each other.",
           "kind": "def",
-          "line": 834,
+          "line": 856,
           "name": "Code.pairJointProximity\u2082",
           "namespace": "Code",
           "short_name": "pairJointProximity\u2082",
@@ -13487,7 +13496,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 839,
+          "line": 861,
           "name": "Code.jointProximityNat_iff_closeToInterleavedCodeword",
           "namespace": "Code",
           "short_name": "jointProximityNat_iff_closeToInterleavedCodeword",
@@ -13496,7 +13505,7 @@
         {
           "doc": "The consequent of correlated agreement: Words collectively agree on the same set of coordinates `S` with the base code `C`. Variants of this definition should follow the naming conventions of `jointProximity` if possible, for consistency. TOOD: this can generalize further to support the consequent of mutual correlated agreement.",
           "kind": "def",
-          "line": 869,
+          "line": 891,
           "name": "Code.jointAgreement",
           "namespace": "Code",
           "short_name": "jointAgreement",
@@ -13505,7 +13514,7 @@
         {
           "doc": "Equivalence between the agreement-based definition `jointAgreement` and the distance/proximity-based definition `jointProximity` (the latter is represented in upperbound of interleaved-code distance).",
           "kind": "theorem",
-          "line": 879,
+          "line": 901,
           "name": "Code.jointAgreement_iff_jointProximity",
           "namespace": "Code",
           "short_name": "jointAgreement_iff_jointProximity",
@@ -13514,7 +13523,7 @@
         {
           "doc": "The list of `\u03ba`-fold codeword stacks whose interleaved codeword forms are (less-than)-`\u03b4`-close to `\u22c8|u`.",
           "kind": "def",
-          "line": 992,
+          "line": 1014,
           "name": "Code.relHammingBallInterleavedCode",
           "namespace": "Code",
           "short_name": "relHammingBallInterleavedCode",
@@ -18133,91 +18142,6 @@
           "namespace": "ProximityToRS",
           "short_name": "number_of_close_pts_eq_nat_card",
           "signature": "lemma number_of_close_pts_eq_nat_card (u v : \u03b9 \u2192 F) (deg : \u2115) (\u03b1 : \u03b9 \u21aa F) (e : \u2115) :"
-        }
-      ]
-    },
-    "ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean": {
-      "declarations": [
-        {
-          "doc": "The affine line combination `\u2211 j, (1, t) j \u2022 W j = W 0 + t \u2022 W 1`.",
-          "kind": "lemma",
-          "line": 53,
-          "name": "AffineMCALemmas.affineLineGenerator_sum_smul",
-          "namespace": "AffineMCALemmas",
-          "short_name": "affineLineGenerator_sum_smul",
-          "signature": "lemma affineLineGenerator_sum_smul (W : Fin 2 \u2192 (\u03b9 \u2192 A)) (t : F) :"
-        },
-        {
-          "doc": "The affine space combination `\u2211 j, (1, x) j \u2022 U j` is `affineComb U x`.",
-          "kind": "lemma",
-          "line": 59,
-          "name": "AffineMCALemmas.affineSpaceGenerator_sum_smul",
-          "namespace": "AffineMCALemmas",
-          "short_name": "affineSpaceGenerator_sum_smul",
-          "signature": "lemma affineSpaceGenerator_sum_smul {s : \u2115} (U : Fin (s + 1) \u2192 (\u03b9 \u2192 A)) (x : Fin s \u2192 F) :"
-        },
-        {
-          "doc": "If the affine combination restricted to `T` is in a linear code, but some `U j` restricted to `T` does not lie in the code, then there is a codeword `U (i + 1)` which is not a codeword in the `T`-projected code.",
-          "kind": "lemma",
-          "line": 67,
-          "name": "AffineMCALemmas.exists_succ_not_mem",
-          "namespace": "AffineMCALemmas",
-          "short_name": "exists_succ_not_mem",
-          "signature": "lemma exists_succ_not_mem {s : \u2115} (MC : ModuleCode \u03b9 F A) (T : Finset \u03b9)"
-        },
-        {
-          "doc": "The quotient of the projected word space `T \u2192 A` by the projected code on `T`, used in the kernel/rank-nullity argument of Step 2.",
-          "kind": "abbrev",
-          "line": 91,
-          "name": "AffineMCALemmas.projectedQuotient",
-          "namespace": "AffineMCALemmas",
-          "short_name": "projectedQuotient",
-          "signature": "abbrev projectedQuotient (MC : ModuleCode \u03b9 F A) (T : Finset \u03b9) : Type :="
-        },
-        {
-          "doc": "If some direction codeword `w i` does not project into the code on `T`, then the set of coefficient vectors `l` whose combination `\u2211 i, l i \u2022 w i` projects into the code has cardinality at most `|F| ^ (s-1)`.",
-          "kind": "lemma",
-          "line": 98,
-          "name": "AffineMCALemmas.proj_lincomb_ker_card_le",
-          "namespace": "AffineMCALemmas",
-          "short_name": "proj_lincomb_ker_card_le",
-          "signature": "lemma proj_lincomb_ker_card_le [Fintype F] {s : \u2115}"
-        },
-        {
-          "doc": "If a sum of nonnegative integer counts over all `|F|^s` coefficient vectors is bounded by `|F|^(s-1) * m`, then some coefficient vector achieves a count whose `|F|`-fold is at most `m`.",
-          "kind": "lemma",
-          "line": 136,
-          "name": "AffineMCALemmas.exists_avg_le",
-          "namespace": "AffineMCALemmas",
-          "short_name": "exists_avg_le",
-          "signature": "lemma exists_avg_le [Fintype F] {s : \u2115} (hs : 1 \u2264 s) (f : (Fin s \u2192 F) \u2192 \u2115) (m : \u2115)"
-        },
-        {
-          "doc": "For a fixed direction `d`, some base point `v` makes the line `t \u21a6 v + t \u2022 d` hit the set `B'` with (normalized) frequency at least the density of `B'`.",
-          "kind": "lemma",
-          "line": 151,
-          "name": "AffineMCALemmas.exists_dir_line_ge",
-          "namespace": "AffineMCALemmas",
-          "short_name": "exists_dir_line_ge",
-          "signature": "lemma exists_dir_line_ge [Fintype F] [Nonempty F] {s : \u2115}"
-        },
-        {
-          "doc": "There is a choice of two line-codewords `W` so that `(1 - 1/|F|)` times the density of affine-space bad seeds is at most the density of affine-line bad seeds for `W`.",
-          "kind": "lemma",
-          "line": 190,
-          "name": "AffineMCALemmas.exists_line_bound",
-          "namespace": "AffineMCALemmas",
-          "short_name": "exists_line_bound",
-          "signature": "lemma exists_line_bound [Fintype F] [Fintype \u03b9] {s : \u2115} (hs : 1 \u2264 s)"
-        },
-        {
-          "doc": "The affine line generator `F \u2192 F\u00b2`, `x \u21a6 (1, x)`, having MCA error `\u03b5_mca` for `MC` implies that the affine space generator `F\u02e1 \u2192 F\u02e1\u207a\u00b9`, `x \u21a6 (1, x)`, has MCA for `MC` with error `(1 - 1/|F|)\u207b\u00b9 \u2022 \u03b5_mca`. Only `\u2113 \u2265 1` is required: at `\u2113 = 1` the affine space generator *is* the affine line generator, so the conclusion is immediate, and the proof below covers that case uniformly. The error is valued in `\u211d\u22650` rather than `I`, since `(1 - 1/|F|)\u207b\u00b9 \u2022 \u03b5_mca` may exceed `1`.",
-          "kind": "theorem",
-          "line": 290,
-          "name": "AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator",
-          "namespace": "AffineMCAMain",
-          "short_name": "isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator",
-          "signature": "theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {\u2113 : \u2115} (h\u2113 : \u2113 \u2265 1)"
         }
       ]
     },
@@ -26724,10 +26648,445 @@
         }
       ]
     },
-    "ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean": {
+    "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean": {
       "declarations": [
         {
-          "doc": "**Value-level MCA transport.** If the MCA bad event for `G'` on a word family `U` implies the bad event for `G` on some reindexed family `\u03a6 U`, at the same radius and over the same seed space, then `G'`'s MCA error value is bounded by `G`'s. This is the transport skeleton behind every [BCGM25] generator-preservation lemma (4.1, 4.2, and the tensor and reindexing arguments to come): the mathematical content of each is exactly the event implication, and everything else is this lemma. Stating it once at the *value* keeps `\u03b5_mca` out of the statement of each transport lemma; the `IsMCAGenerator` f",
+          "doc": "The repetition code `{(a, a)} \u2286 (ZMod 2)\u00b2`, as a module code over its own alphabet.",
+          "kind": "def",
+          "line": 60,
+          "name": "MCASeparation.repetitionCode",
+          "namespace": "MCASeparation",
+          "short_name": "repetitionCode",
+          "signature": "def repetitionCode : ModuleCode (Fin 2) (ZMod 2) (ZMod 2) :="
+        },
+        {
+          "doc": "The family separating the two notions: `(0, 0)` is a codeword of `repetitionCode` and `(1, 0)` is not.",
+          "kind": "def",
+          "line": 65,
+          "name": "MCASeparation.separatingFamily",
+          "namespace": "MCASeparation",
+          "short_name": "separatingFamily",
+          "signature": "def separatingFamily : Fin 2 \u2192 (Fin 2 \u2192 ZMod 2) := ![(fun _ => 0), ![1, 0]]"
+        },
+        {
+          "doc": "Every family jointly agrees with `repetitionCode` at radius `1/2`, witnessed by the agreement set `{0}` and, for each row, the constant codeword matching that row's first coordinate. So a threshold implication about `Code.jointAgreement` holds here by its consequent \u2014 not by a false antecedent \u2014 at every threshold, including `0`.",
+          "kind": "theorem",
+          "line": 72,
+          "name": "MCASeparation.jointAgreement_repetitionCode",
+          "namespace": "MCASeparation",
+          "short_name": "jointAgreement_repetitionCode",
+          "signature": "theorem jointAgreement_repetitionCode (W : Fin 2 \u2192 Fin 2 \u2192 ZMod 2) :"
+        },
+        {
+          "doc": "The mutual bad event fires at seed `0`, where the affine-line combination is `separatingFamily 0 = 0`, a codeword on all of `Fin 2`, while `separatingFamily 1 = (1, 0)` is not. The agreement set forced by the second clause is `Finset.univ`, not the `{0}` that `jointAgreement_repetitionCode` uses \u2014 which is how the two notions come apart.",
+          "kind": "theorem",
+          "line": 90,
+          "name": "MCASeparation.isMCA_repetitionCode",
+          "namespace": "MCASeparation",
+          "short_name": "isMCA_repetitionCode",
+          "signature": "theorem isMCA_repetitionCode :"
+        },
+        {
+          "doc": "The error value is positive: the event fires on one seed out of two, and `mcaError` is a supremum over families, so `separatingFamily` alone bounds it below.",
+          "kind": "theorem",
+          "line": 110,
+          "name": "MCASeparation.mcaError_repetitionCode_pos",
+          "namespace": "MCASeparation",
+          "short_name": "mcaError_repetitionCode_pos",
+          "signature": "theorem mcaError_repetitionCode_pos :"
+        },
+        {
+          "doc": "No threshold implication characterizes `mcaError`. At any threshold `t` strictly below the error value \u2014 in particular at `t = 0`, by `mcaError_repetitionCode_pos` \u2014 the equivalence fails for every threshold-side predicate `P`: the right-hand side holds because joint agreement is unconditional over this code, while the left-hand side fails by hypothesis. The `\u2200 P` is carried by the right-hand side being true here, not by an argument about `P`. What makes the statement land on the intended target is that the correlated-agreement error, whose bad event is `close \u2227 \u00ac jointAgreement`, *does* satis",
+          "kind": "theorem",
+          "line": 135,
+          "name": "MCASeparation.not_mcaError_le_iff_forall_jointAgreement",
+          "namespace": "MCASeparation",
+          "short_name": "not_mcaError_le_iff_forall_jointAgreement",
+          "signature": "theorem not_mcaError_le_iff_forall_jointAgreement {t : ENNReal}"
+        }
+      ]
+    },
+    "ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean": {
+      "declarations": [
+        {
+          "doc": "The affine line combination `\u2211 j, (1, t) j \u2022 W j = W 0 + t \u2022 W 1`.",
+          "kind": "lemma",
+          "line": 53,
+          "name": "AffineMCALemmas.affineLineGenerator_sum_smul",
+          "namespace": "AffineMCALemmas",
+          "short_name": "affineLineGenerator_sum_smul",
+          "signature": "lemma affineLineGenerator_sum_smul (W : Fin 2 \u2192 (\u03b9 \u2192 A)) (t : F) :"
+        },
+        {
+          "doc": "The affine space combination `\u2211 j, (1, x) j \u2022 U j` is `affineComb U x`.",
+          "kind": "lemma",
+          "line": 59,
+          "name": "AffineMCALemmas.affineSpaceGenerator_sum_smul",
+          "namespace": "AffineMCALemmas",
+          "short_name": "affineSpaceGenerator_sum_smul",
+          "signature": "lemma affineSpaceGenerator_sum_smul {s : \u2115} (U : Fin (s + 1) \u2192 (\u03b9 \u2192 A)) (x : Fin s \u2192 F) :"
+        },
+        {
+          "doc": "If the affine combination restricted to `T` is in a linear code, but some `U j` restricted to `T` does not lie in the code, then there is a codeword `U (i + 1)` which is not a codeword in the `T`-projected code.",
+          "kind": "lemma",
+          "line": 67,
+          "name": "AffineMCALemmas.exists_succ_not_mem",
+          "namespace": "AffineMCALemmas",
+          "short_name": "exists_succ_not_mem",
+          "signature": "lemma exists_succ_not_mem {s : \u2115} (MC : ModuleCode \u03b9 F A) (T : Finset \u03b9)"
+        },
+        {
+          "doc": "The quotient of the projected word space `T \u2192 A` by the projected code on `T`, used in the kernel/rank-nullity argument of Step 2.",
+          "kind": "abbrev",
+          "line": 91,
+          "name": "AffineMCALemmas.projectedQuotient",
+          "namespace": "AffineMCALemmas",
+          "short_name": "projectedQuotient",
+          "signature": "abbrev projectedQuotient (MC : ModuleCode \u03b9 F A) (T : Finset \u03b9) : Type :="
+        },
+        {
+          "doc": "If some direction codeword `w i` does not project into the code on `T`, then the set of coefficient vectors `l` whose combination `\u2211 i, l i \u2022 w i` projects into the code has cardinality at most `|F| ^ (s-1)`.",
+          "kind": "lemma",
+          "line": 98,
+          "name": "AffineMCALemmas.proj_lincomb_ker_card_le",
+          "namespace": "AffineMCALemmas",
+          "short_name": "proj_lincomb_ker_card_le",
+          "signature": "lemma proj_lincomb_ker_card_le [Fintype F] {s : \u2115}"
+        },
+        {
+          "doc": "If a sum of nonnegative integer counts over all `|F|^s` coefficient vectors is bounded by `|F|^(s-1) * m`, then some coefficient vector achieves a count whose `|F|`-fold is at most `m`.",
+          "kind": "lemma",
+          "line": 136,
+          "name": "AffineMCALemmas.exists_avg_le",
+          "namespace": "AffineMCALemmas",
+          "short_name": "exists_avg_le",
+          "signature": "lemma exists_avg_le [Fintype F] {s : \u2115} (hs : 1 \u2264 s) (f : (Fin s \u2192 F) \u2192 \u2115) (m : \u2115)"
+        },
+        {
+          "doc": "For a fixed direction `d`, some base point `v` makes the line `t \u21a6 v + t \u2022 d` hit the set `B'` with (normalized) frequency at least the density of `B'`.",
+          "kind": "lemma",
+          "line": 151,
+          "name": "AffineMCALemmas.exists_dir_line_ge",
+          "namespace": "AffineMCALemmas",
+          "short_name": "exists_dir_line_ge",
+          "signature": "lemma exists_dir_line_ge [Fintype F] [Nonempty F] {s : \u2115}"
+        },
+        {
+          "doc": "There is a choice of two line-codewords `W` so that `(1 - 1/|F|)` times the density of affine-space bad seeds is at most the density of affine-line bad seeds for `W`.",
+          "kind": "lemma",
+          "line": 190,
+          "name": "AffineMCALemmas.exists_line_bound",
+          "namespace": "AffineMCALemmas",
+          "short_name": "exists_line_bound",
+          "signature": "lemma exists_line_bound [Fintype F] [Fintype \u03b9] {s : \u2115} (hs : 1 \u2264 s)"
+        },
+        {
+          "doc": "The affine line generator `F \u2192 F\u00b2`, `x \u21a6 (1, x)`, having MCA error `\u03b5_mca` for `MC` implies that the affine space generator `F\u02e1 \u2192 F\u02e1\u207a\u00b9`, `x \u21a6 (1, x)`, has MCA for `MC` with error `(1 - 1/|F|)\u207b\u00b9 \u2022 \u03b5_mca`. Only `\u2113 \u2265 1` is required: at `\u2113 = 1` the affine space generator *is* the affine line generator, so the conclusion is immediate, and the proof below covers that case uniformly. The error is valued in `\u211d\u22650` rather than `I`, since `(1 - 1/|F|)\u207b\u00b9 \u2022 \u03b5_mca` may exceed `1`.",
+          "kind": "theorem",
+          "line": 290,
+          "name": "AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator",
+          "namespace": "AffineMCAMain",
+          "short_name": "isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator",
+          "signature": "theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {\u2113 : \u2115} (h\u2113 : \u2113 \u2265 1)"
+        }
+      ]
+    },
+    "ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean": {
+      "declarations": [
+        {
+          "doc": "The type of generators, where a generator `G` over a field `F` with output size `\u2113` is a function that maps a seed `x` in a set `S` to a coefficient vector in `F^\u2113`.",
+          "kind": "abbrev",
+          "line": 61,
+          "name": "CoreDefinitions.Generator",
+          "namespace": "CoreDefinitions",
+          "short_name": "Generator",
+          "signature": "abbrev Generator (S \u2113 F : Type) : Type := S \u2192 (\u2113 \u2192 F)"
+        },
+        {
+          "doc": "A generator `G` is zero-evading with a zero-evading error `\u03b5_ze` if the probability of obtaining a zero output from a non-zero vector is bounded above by `\u03b5_ze`.",
+          "kind": "def",
+          "line": 65,
+          "name": "CoreDefinitions.IsZeroEvadingGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsZeroEvadingGenerator",
+          "signature": "def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S \u2113 F) (\u03b5_ze : I) :"
+        },
+        {
+          "doc": "Let the set `S` be a product of `s` subsets of `F`. A polynomial generator is a generator if there exist `\u2113` linearly independent multivariate polynomials, such that the output is an evaluation of the seed at each of these polynomials.",
+          "kind": "def",
+          "line": 73,
+          "name": "CoreDefinitions.IsPolynomialGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsPolynomialGenerator",
+          "signature": "def IsPolynomialGenerator {s : \u2115} (S : Fin s \u2192 Set F) (G : Generator (\u2200 i, S i) \u2113 F) : Prop :="
+        },
+        {
+          "doc": "The generator `G` evaluates the given linearly independent family of polynomials `P`: the witness-carrying form of `IsPolynomialGenerator`.",
+          "kind": "def",
+          "line": 79,
+          "name": "CoreDefinitions.IsPolynomialGeneratorOf",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsPolynomialGeneratorOf",
+          "signature": "def IsPolynomialGeneratorOf {s : \u2115} (S : Fin s \u2192 Set F) (G : Generator (\u2200 i, S i) \u2113 F)"
+        },
+        {
+          "doc": "A polynomial generator where each `S i` is the whole field `F`.",
+          "kind": "def",
+          "line": 84,
+          "name": "CoreDefinitions.IsPolynomialGeneratorOfFull",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsPolynomialGeneratorOfFull",
+          "signature": "def IsPolynomialGeneratorOfFull {s : \u2115} (G : Generator (Fin s \u2192 F) \u2113 F)"
+        },
+        {
+          "doc": "The matrix whose rows are the outputs of the generator function.",
+          "kind": "def",
+          "line": 89,
+          "name": "CoreDefinitions.M_G",
+          "namespace": "CoreDefinitions",
+          "short_name": "M_G",
+          "signature": "def M_G {S : Type} [Nonempty S] [Fintype S] (G : Generator S \u2113 F) : Matrix S \u2113 F :="
+        },
+        {
+          "doc": "A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator function is a generator matrix for an MDS code.",
+          "kind": "def",
+          "line": 97,
+          "name": "CoreDefinitions.IsMDSGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsMDSGenerator",
+          "signature": "def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S \u2113 F) :"
+        },
+        {
+          "doc": "The condition for MCA generator. Stated over a module code `MC : ModuleCode \u03b9 F A`, so the alphabet may be any `F`-module: the combination `\u2211 j, G x j \u2022 U j` replaces `Matrix.vecMul (G x) U`, which requires a ring structure on the alphabet. At `A := F` the two agree \u2014 see `vecMul_eq_smul_sum`. The radius is `\u03b4 : \u211d`, not `I`, for the same reason `Code.Lambda`'s is: it is an *argument to a value*, and narrowing it only relocates a membership obligation to every call site. The size clause is total and honest at every real \u2014 no `T` can meet `|T| \u2265 n\u00b7(1 - \u03b4)` when `\u03b4 < 0`, and the clause is vacuous",
+          "kind": "def",
+          "line": 114,
+          "name": "CoreDefinitions.IsMCA",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsMCA",
+          "signature": "def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]"
+        },
+        {
+          "doc": "Over the alphabet `A := F`, the linear combination in `IsMCA` is the matrix-vector product used by the original `F`-alphabet definition.",
+          "kind": "lemma",
+          "line": 125,
+          "name": "CoreDefinitions.vecMul_eq_smul_sum",
+          "namespace": "CoreDefinitions",
+          "short_name": "vecMul_eq_smul_sum",
+          "signature": "lemma vecMul_eq_smul_sum {S : Type} (G : Generator S \u2113 F) (x : S) (U : \u2113 \u2192 (\u03b9 \u2192 F)) :"
+        },
+        {
+          "doc": "At the field alphabet `A := F`, where `ModuleCode \u03b9 F F` and `LinearCode \u03b9 F` are the same type, `IsMCA` is the `Matrix.vecMul`-shaped predicate: the linear combination `\u2211 j, G x j \u2022 U j` is the matrix-vector product `G x \u1d65* U`. The proof is `Iff.rfl`, so the two agree definitionally and not merely propositionally. Any edit that weakens that breaks this declaration rather than silently changing what every field-alphabet consumer means.",
+          "kind": "theorem",
+          "line": 137,
+          "name": "CoreDefinitions.isMCA_iff_vecMul",
+          "namespace": "CoreDefinitions",
+          "short_name": "isMCA_iff_vecMul",
+          "signature": "theorem isMCA_iff_vecMul {S : Type} [Nonempty S] [Fintype S]"
+        },
+        {
+          "doc": "The mutual correlated agreement error of a generator for a module code: the worst-case, over families `U`, probability of the MCA event. This is the primitive of the layer: `IsMCAGenerator` is defined as a bound on it, and the generator transport lemmas are stated on it directly, so they mention no error function at all. A value can be *assigned* to a code family rather than merely bounded, which is what a claim about a specific code needs. The supremum is over `\u2113 \u2192 (\u03b9 \u2192 A)`, which is inhabited whenever `A` is \u2014 and `A` carries `Zero` \u2014 so this is never a degenerate `\u2a06` over an empty family. T",
+          "kind": "def",
+          "line": 157,
+          "name": "CoreDefinitions.mcaError",
+          "namespace": "CoreDefinitions",
+          "short_name": "mcaError",
+          "signature": "def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
+        },
+        {
+          "doc": "A generator has mutual correlated agreement (MCA) with error `\u03b5_mca` if the probability that the generator satisfies the MCA condition is bounded above by `\u03b5_mca`. The body is the `mcaError` bound, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`, `refine` and `apply` see through to the value inequality, and only `rw`/`simp` need the bridge. The pointwise reading \u2014 the bound at one individual family `U` \u2014 is `IsMCAGenerator.prob_le`. The radius is quantified over `I`, the closed unit interval: this is the bound, and the bound is where `[0,1]` belongs, while the value underneath is tot",
+          "kind": "def",
+          "line": 171,
+          "name": "CoreDefinitions.IsMCAGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsMCAGenerator",
+          "signature": "def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]"
+        },
+        {
+          "doc": "**Unfolding lemma for `IsMCAGenerator`.** It *is* the `mcaError` bound, by definition; this is the entry point for `rw` and `simp only`, which do not see through a semireducible `def`.",
+          "kind": "lemma",
+          "line": 177,
+          "name": "CoreDefinitions.isMCAGenerator_iff_mcaError_le",
+          "namespace": "CoreDefinitions",
+          "short_name": "isMCAGenerator_iff_mcaError_le",
+          "signature": "lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Type}"
+        },
+        {
+          "doc": "The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason quantifying over `U` inside the definition costs nothing after it is stated at the value.",
+          "kind": "lemma",
+          "line": 185,
+          "name": "CoreDefinitions.IsMCAGenerator.prob_le",
+          "namespace": "CoreDefinitions",
+          "short_name": "IsMCAGenerator.prob_le",
+          "signature": "lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] {A : Type}"
+        },
+        {
+          "doc": "The MCA error is a probability: it never exceeds `1`, and in particular is never `\u22a4`. Needed wherever the value has to cross back into `\u211d\u22650` \u2014 e.g. to compare a `mcaError` against an `I \u2192 \u211d\u22650` bound in the other direction, or to do `ENNReal` arithmetic that is only valid away from `\u22a4`.",
+          "kind": "lemma",
+          "line": 196,
+          "name": "CoreDefinitions.mcaError_le_one",
+          "namespace": "CoreDefinitions",
+          "short_name": "mcaError_le_one",
+          "signature": "lemma mcaError_le_one {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 201,
+          "name": "CoreDefinitions.mcaError_ne_top",
+          "namespace": "CoreDefinitions",
+          "short_name": "mcaError_ne_top",
+          "signature": "lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
+        },
+        {
+          "doc": "The MCA error is monotone in the distance: enlarging `\u03b4` weakens the size clause `|T| \u2265 n\u00b7(1 - \u03b4)`, so more witness sets qualify and the bad event can only grow. Monotonicity is specific to this notion: it holds because the event carries no distance-*anti*monotone conjunct. Errors whose event carries a guard do, and are not monotone \u2014 see `docs/wiki/proximity-error-conventions.md`.",
+          "kind": "lemma",
+          "line": 212,
+          "name": "CoreDefinitions.mcaError_mono",
+          "namespace": "CoreDefinitions",
+          "short_name": "mcaError_mono",
+          "signature": "lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
+        },
+        {
+          "doc": "The size clause `|T| \u2265 n\u00b7(1 - \u03b4)` is an *integer* condition on the complement: it says the `n - |T|` positions outside `T` number at most `\u230a\u03b4\u00b7n\u230b`. Hence `\u03b4` enters only through that floor.",
+          "kind": "lemma",
+          "line": 223,
+          "name": "CoreDefinitions.mul_one_sub_le_card_iff_sub_card_le_floor",
+          "namespace": "CoreDefinitions",
+          "short_name": "mul_one_sub_le_card_iff_sub_card_le_floor",
+          "signature": "lemma mul_one_sub_le_card_iff_sub_card_le_floor (T : Finset \u03b9) {\u03b4 : \u211d} (h\u03b4 : 0 \u2264 \u03b4) :"
+        },
+        {
+          "doc": "**`mcaError` is a step function on the `1/n` grid.** Two radii with the same `\u230a\u03b4\u00b7n\u230b` give the same error, because the size clause only ever compares `n - |T|` against that floor. So a challenge radius is really an integer grid index: a claim stated at an arbitrary real `\u03b4` is either unattained or ambiguous, whereas one stated at `k/n` is neither.",
+          "kind": "lemma",
+          "line": 236,
+          "name": "CoreDefinitions.mcaError_eq_of_floor_eq",
+          "namespace": "CoreDefinitions",
+          "short_name": "mcaError_eq_of_floor_eq",
+          "signature": "lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
+        },
+        {
+          "doc": "Let `G : S \u2192 F^\u2113` and `G\u2032: S\u2032 \u2192 F^\u2113` be two generators. Their tensor product is the generator `G \u2297 G\u2032: S \u00d7 S\u2032\u2192 F^\u2113 \u2297 F^\u2113\u2032` defined by `(x , x\u2032) \u21a6 G(x) \u2297 G\u2032(x\u2032)`.",
+          "kind": "def",
+          "line": 248,
+          "name": "CoreDefinitions.TensorGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "TensorGenerator",
+          "signature": "def TensorGenerator {\u2113' : Type} [Fintype \u2113'] {S S' : Type}"
+        },
+        {
+          "doc": "Explicit construction of the tensor generator. The output type here is a generator `G \u2297 G\u2032: S \u00d7 S\u2032\u2192 F^(\u2113 * \u2113')`.",
+          "kind": "def",
+          "line": 255,
+          "name": "CoreDefinitions.TensorGenerator_Explicit",
+          "namespace": "CoreDefinitions",
+          "short_name": "TensorGenerator_Explicit",
+          "signature": "def TensorGenerator_Explicit {\u2113' : Type} [Fintype \u2113'] {S S' : Type}"
+        },
+        {
+          "doc": "The tensor generator combination of a family `U : \u2113 \u00d7 \u2113' \u2192 (\u03b9 \u2192 F)` factors: it is the `G x`-combination of the rows `i \u21a6 Matrix.vecMul (G' x') (U (i, \u00b7))`, each of which is the `G' x'`-combination of the `i`-th row of `U`.",
+          "kind": "lemma",
+          "line": 264,
+          "name": "CoreDefinitions.vecMul_tensorGenerator_explicit",
+          "namespace": "CoreDefinitions",
+          "short_name": "vecMul_tensorGenerator_explicit",
+          "signature": "lemma vecMul_tensorGenerator_explicit {\u2113' : Type} [Fintype \u2113'] {S S' : Type}"
+        },
+        {
+          "doc": "The canonical linear isomorphism between the tensor product of function spaces and the function space on the product type.",
+          "kind": "def",
+          "line": 274,
+          "name": "CoreDefinitions.tensorProductPiFunEquiv",
+          "namespace": "CoreDefinitions",
+          "short_name": "tensorProductPiFunEquiv",
+          "signature": "def tensorProductPiFunEquiv (F : Type) [Field F] (\u2113 \u2113' : Type)"
+        },
+        {
+          "doc": "The tensor product generator `TensorGenerator` and the explicit componentwise generator `TensorGenerator_Explicit` agree under the canonical isomorphism between `F^\u2113 \u2297 F^\u2113\u2032` and `(\u2113 \u00d7 \u2113') \u2192 F`.",
+          "kind": "theorem",
+          "line": 282,
+          "name": "CoreDefinitions.TensorGenerator_eq_TensorGenerator_Explicit",
+          "namespace": "CoreDefinitions",
+          "short_name": "TensorGenerator_eq_TensorGenerator_Explicit",
+          "signature": "theorem TensorGenerator_eq_TensorGenerator_Explicit {\u2113' : Type} [Fintype \u2113'] [DecidableEq \u2113]"
+        },
+        {
+          "doc": "Let `F` be a field. The affine line generator is a generator of the form `G : F \u2192 F\u00b2` such that `x \u21a6 (1,x)`.",
+          "kind": "abbrev",
+          "line": 294,
+          "name": "CoreDefinitions.AffineLineGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "AffineLineGenerator",
+          "signature": "abbrev AffineLineGenerator (F : Type) [Field F] : Generator F (Fin 2) F :="
+        },
+        {
+          "doc": "Let `F` be a field. The affine space generator is a generator of the form `G : F^\u2113 \u2192 F^(\u2113 + 1) ` such that `x \u21a6 (1,x)`.",
+          "kind": "abbrev",
+          "line": 300,
+          "name": "CoreDefinitions.AffineSpaceGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "AffineSpaceGenerator",
+          "signature": "abbrev AffineSpaceGenerator (F : Type) [Field F] (\u2113 : \u2115) : Generator (Fin \u2113 \u2192 F) (Fin (\u2113 + 1)) F :="
+        },
+        {
+          "doc": "The univariate-powers generator `x \u21a6 (1, x, \u2026, x^k)`.",
+          "kind": "abbrev",
+          "line": 304,
+          "name": "CoreDefinitions.univariatePowersGenerator",
+          "namespace": "CoreDefinitions",
+          "short_name": "univariatePowersGenerator",
+          "signature": "abbrev univariatePowersGenerator (F : Type) [Field F] (k : \u2115) :"
+        },
+        {
+          "doc": "Auxiliary lemma to prove that an error is in the unit interval.",
+          "kind": "lemma",
+          "line": 316,
+          "name": "PolynomialGenerator.error_in_unit_interval",
+          "namespace": "PolynomialGenerator",
+          "short_name": "error_in_unit_interval",
+          "signature": "lemma error_in_unit_interval (d : \u2115) (m : \u2115) (hm_pos : 0 < m) (hdm : d \u2264 m) : (d / m : \u211d) \u2208 I := by"
+        },
+        {
+          "doc": "The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set. Returns `1` if the indexing set is empty.",
+          "kind": "def",
+          "line": 325,
+          "name": "PolynomialGenerator.minSeedCard",
+          "namespace": "PolynomialGenerator",
+          "short_name": "minSeedCard",
+          "signature": "def minSeedCard {F : Type} {s : \u2115} (S : Fin s \u2192 Set F) [\u2200 i, Fintype \u21a5(S i)] : \u2115 :="
+        },
+        {
+          "doc": "The minimum of the cardinality of a family of nonempty sets indexed by a posibly empty set is greater than zero.",
+          "kind": "lemma",
+          "line": 333,
+          "name": "PolynomialGenerator.minSeedCard_pos",
+          "namespace": "PolynomialGenerator",
+          "short_name": "minSeedCard_pos",
+          "signature": "lemma minSeedCard_pos {F : Type} {s : \u2115} (S : Fin s \u2192 Set F)"
+        },
+        {
+          "doc": "The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of each set in the family.",
+          "kind": "lemma",
+          "line": 347,
+          "name": "PolynomialGenerator.minSeedCard_le",
+          "namespace": "PolynomialGenerator",
+          "short_name": "minSeedCard_le",
+          "signature": "lemma minSeedCard_le {F : Type} {s : \u2115} (S : Fin s \u2192 Set F)"
+        },
+        {
+          "doc": "If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`. This is the total-degree reading. An individual-degree reading of the same fact is also available; the reasoning is the same and only the version of Schwartz\u2013Zippel used for the upper bound differs.",
+          "kind": "theorem",
+          "line": 362,
+          "name": "PolynomialGenerator.poly_gen_is_zero_evading",
+          "namespace": "PolynomialGenerator",
+          "short_name": "poly_gen_is_zero_evading",
+          "signature": "theorem poly_gen_is_zero_evading"
+        }
+      ]
+    },
+    "ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean": {
+      "declarations": [
+        {
+          "doc": "**Value-level MCA transport.** If the MCA bad event for `G'` on a word family `U` implies the bad event for `G` on some reindexed family `\u03a6 U`, at the same radius and over the same seed space, then `G'`'s MCA error value is bounded by `G`'s. This is the transport skeleton behind every generator-preservation lemma in this directory (right multiplication, projection, tensoring, reindexing): the mathematical content of each is exactly the event implication, and everything else is this lemma. Stating it once at the *value* keeps `\u03b5_mca` out of the statement of each transport lemma; the `IsMCAGener",
           "kind": "lemma",
           "line": 63,
           "name": "LinearTransformations.mcaError_le_of_forall_isMCA_imp",
@@ -26824,342 +27183,275 @@
           "namespace": "LinearTransformations",
           "short_name": "generatorSubset",
           "signature": "lemma generatorSubset [Nonempty S] (G : Generator S \u2113 F) (\u03b5_mca : I \u2192 \u211d\u22650)"
+        },
+        {
+          "doc": "Mutual correlated agreement is invariant under bijective relabellings of the seed space and of the output coordinates of a generator. This lets us transport MCA statements along the canonical equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products of generators. Not an instance of `mcaError_le_of_forall_isMCA_imp`: that skeleton keeps the seed space fixed, whereas here the seed space is relabelled along `eS`, so the probabilities are compared by `Finset.card_equiv` rather than by monotonicity of `Pr`.",
+          "kind": "lemma",
+          "line": 184,
+          "name": "LinearTransformations.isMCAGenerator_reindex",
+          "namespace": "LinearTransformations",
+          "short_name": "isMCAGenerator_reindex",
+          "signature": "lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]"
+        },
+        {
+          "doc": "The MCA error function of an MDS generator with output size `\u2113` and `s` seeds, for a module code `MC`, at slack parameter `\u03b7`. As a function of the proximity parameter `\u03b3` it is a step function with three regimes: a unique-decoding bound below `\u03b4_C / (\u2113 + 1)`, a list-decoding bound up to `1 - (\u03c1_C + \u03b7) ^ (1 / (\u2113 + 1))`, and the trivial bound `1` beyond. Valued in `\u211d\u22650` to match `IsMCAGenerator`, clamping the underlying real expression at `0` by `Real.toNNReal`. The clamp is not lossy for the intended parameter range \u2014 the expression is a bound on a probability, and is nonnegative wherever `0 <",
+          "kind": "def",
+          "line": 224,
+          "name": "LinearTransformations.mdsMCAError",
+          "namespace": "LinearTransformations",
+          "short_name": "mdsMCAError",
+          "signature": "def mdsMCAError [DecidableEq F] [DecidableEq A] [Nonempty \u03b9] (MC : ModuleCode \u03b9 F A)"
+        },
+        {
+          "doc": "`mdsMCAError` reads the code only through the block length `\u03b9` and the relative distance `\u03b4\u1d63`: two module codes over the same index set with equal `\u03b4\u1d63` get the same error function, regardless of their alphabets. In particular the error is unchanged under interleaving (`Code.minRelHammingDistCode_moduleInterleavedCode`), which is what lets `isMCAGenerator_of_isMDSGenerator` feed the interleaved-hypothesis tensor lemma.",
+          "kind": "lemma",
+          "line": 249,
+          "name": "LinearTransformations.mdsMCAError_congr",
+          "namespace": "LinearTransformations",
+          "short_name": "mdsMCAError_congr",
+          "signature": "lemma mdsMCAError_congr [DecidableEq F] [Nonempty \u03b9] {A' : Type} [DecidableEq A]"
+        },
+        {
+          "doc": "Every MDS generator whose code has full dimension `\u2113 \u2265 2` has MCA for every module code `MC`, with error `mdsMCAError MC \u2113 |S| \u03b7`, for every slack `0 < \u03b7 < 1`. The generator-matrix hypotheses constrain `G` over the base field only; the tested code's alphabet is any `F`-module. Sorried: neither decoding-regime argument is formalized yet.",
+          "kind": "theorem",
+          "line": 262,
+          "name": "LinearTransformations.isMCAGenerator_of_isMDSGenerator",
+          "namespace": "LinearTransformations",
+          "short_name": "isMCAGenerator_of_isMDSGenerator",
+          "signature": "theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]"
         }
       ]
     },
-    "ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean": {
+    "ArkLib/Data/CodingTheory/ProximityGenerator/PolynomialGenerator.lean": {
       "declarations": [
         {
-          "doc": "The type of generators, where a generator `G` over a field `F` with output size `\u2113` is a function that maps a seed `x` in a set `S` to a coefficient vector in `F^\u2113`. Definition 3.10 [BCGM25].",
-          "kind": "abbrev",
-          "line": 59,
-          "name": "CoreDefinitions.Generator",
-          "namespace": "CoreDefinitions",
-          "short_name": "Generator",
-          "signature": "abbrev Generator (S \u2113 F : Type) : Type := S \u2192 (\u2113 \u2192 F)"
-        },
-        {
-          "doc": "A generator `G` is zero-evading with a zero-evading error `\u03b5_ze` if the probability of obtaining a zero output from a non-zero vector is bounded above by `\u03b5_ze`. Definition 3.11 [BCGM25].",
+          "doc": "A function assigning the maximum degree in the `i`-th variable of the collection of polynomials `P`.",
           "kind": "def",
-          "line": 64,
-          "name": "CoreDefinitions.IsZeroEvadingGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsZeroEvadingGenerator",
-          "signature": "def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S \u2113 F) (\u03b5_ze : I) :"
+          "line": 55,
+          "name": "PolynomialGenIsMCA.maxDegreeOf",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "maxDegreeOf",
+          "signature": "def maxDegreeOf {s : \u2115} {\u2113 : Type} [Fintype \u2113] (P : \u2113 \u2192 MvPolynomial (Fin s) F) :"
         },
         {
-          "doc": "Let the set `S` be a product of `\u2113` subsets of `F`. A polynomial generator is a generator if there exist `\u2113` linearly independent multivariate polynomials, such that the output is an evaluation of the seed at each of these polynomials. Definition 3.19 [BCGM25].",
+          "doc": "The MCA error function of the univariate powers generator of degree `d` with `m` seeds, for a linear code `LC`, at slack parameter `\u03b7`. As a function of the proximity parameter `\u03b3` it is a step function with three regimes: a unique-decoding bound below `\u03b4_C / (d + 2)`, a list-decoding bound up to `1 - (\u03c1_C + \u03b7) ^ (1 / (d + 2))`, and the trivial bound `1` beyond. The slack hypothesis `0 < \u03b7 < 1` is not needed to define the function, so it is omitted here and required only by the statements that consume it. Valued in `\u211d\u22650` to match `IsMCAGenerator`, clamping the underlying real expression at `0`",
           "kind": "def",
-          "line": 73,
-          "name": "CoreDefinitions.IsPolynomialGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsPolynomialGenerator",
-          "signature": "def IsPolynomialGenerator {s : \u2115} (S : Fin s \u2192 Set F) (G : Generator (\u2200 i, S i) \u2113 F) : Prop :="
+          "line": 67,
+          "name": "PolynomialGenIsMCA.powersMCAError",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "powersMCAError",
+          "signature": "def powersMCAError [DecidableEq F] (LC : LinearCode \u03b9 F) (d m : \u2115) (\u03b7 : \u211d) :"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 77,
-          "name": "CoreDefinitions.IsPolynomialGeneratorOf",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsPolynomialGeneratorOf",
-          "signature": "def IsPolynomialGeneratorOf {s : \u2115} (S : Fin s \u2192 Set F) (G : Generator (\u2200 i, S i) \u2113 F)"
-        },
-        {
-          "doc": "A matrix whose rows are the outputs of the generator function. Defined inside Definition 3.12 [BCGM25].",
-          "kind": "def",
-          "line": 83,
-          "name": "CoreDefinitions.M_G",
-          "namespace": "CoreDefinitions",
-          "short_name": "M_G",
-          "signature": "def M_G {S : Type} [Nonempty S] [Fintype S] (G : Generator S \u2113 F) : Matrix S \u2113 F :="
-        },
-        {
-          "doc": "A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator function is a generator matrix for an MDS code. Definition 3.12 [BCGM25].",
-          "kind": "def",
-          "line": 92,
-          "name": "CoreDefinitions.IsMDSGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsMDSGenerator",
-          "signature": "def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S \u2113 F) :"
-        },
-        {
-          "doc": "The condition for MCA generator. Stated over a module code `MC : ModuleCode \u03b9 F A`, matching [BCGM25]'s alphabet generality (Definition 3.2 takes `\u03a3` to be an arbitrary `F`-vector space): the combination `\u2211 j, G x j \u2022 U j` replaces `Matrix.vecMul (G x) U`, which requires a ring structure on the alphabet. At `A := F` the two agree \u2014 see `vecMul_eq_smul_sum`. The radius is `\u03b4 : \u211d`, not `I`, for the same reason `Code.Lambda`'s is: it is an *argument to a value*, and narrowing it only relocates a membership obligation to every call site. The size clause is total and honest at every real \u2014 no `T` c",
-          "kind": "def",
-          "line": 109,
-          "name": "CoreDefinitions.IsMCA",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsMCA",
-          "signature": "def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]"
-        },
-        {
-          "doc": "Over the alphabet `A := F`, the linear combination in `IsMCA` is the matrix-vector product used by the original `F`-alphabet definition.",
+          "doc": "The MDS error bound `mdsMCAError` for output size `d + 1` (the univariate powers generator of degree `d`, whose code has dimension `d + 1`) coincides with the univariate-powers error `powersMCAError` of degree `d`.",
           "kind": "lemma",
-          "line": 120,
-          "name": "CoreDefinitions.vecMul_eq_smul_sum",
-          "namespace": "CoreDefinitions",
-          "short_name": "vecMul_eq_smul_sum",
-          "signature": "lemma vecMul_eq_smul_sum {S : Type} (G : Generator S \u2113 F) (x : S) (U : \u2113 \u2192 (\u03b9 \u2192 F)) :"
-        },
-        {
-          "doc": "At the field alphabet `A := F`, where `ModuleCode \u03b9 F F` and `LinearCode \u03b9 F` are the same type, `IsMCA` is the `Matrix.vecMul`-shaped predicate: the linear combination `\u2211 j, G x j \u2022 U j` is the matrix-vector product `G x \u1d65* U`. The proof is `Iff.rfl`, so the two agree definitionally and not merely propositionally. Any edit that weakens that breaks this declaration rather than silently changing what every field-alphabet consumer means.",
-          "kind": "theorem",
-          "line": 132,
-          "name": "CoreDefinitions.isMCA_iff_vecMul",
-          "namespace": "CoreDefinitions",
-          "short_name": "isMCA_iff_vecMul",
-          "signature": "theorem isMCA_iff_vecMul {S : Type} [Nonempty S] [Fintype S]"
-        },
-        {
-          "doc": "The mutual correlated agreement error of a generator for a module code: the worst-case, over families `U`, probability of the MCA event. This is the primitive of the layer: `IsMCAGenerator` is defined as a bound on it, and the generator transport lemmas are stated on it directly, so they mention no error function at all. A value can be *assigned* to a code family rather than merely bounded, which is what a claim about a specific code needs. The supremum is over `\u2113 \u2192 (\u03b9 \u2192 A)`, which is inhabited whenever `A` is \u2014 and `A` carries `Zero` \u2014 so this is never a degenerate `\u2a06` over an empty family. T",
-          "kind": "def",
-          "line": 152,
-          "name": "CoreDefinitions.mcaError",
-          "namespace": "CoreDefinitions",
-          "short_name": "mcaError",
-          "signature": "def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
-        },
-        {
-          "doc": "A generator has mutual correlated agreement (MCA) with error `\u03b5_mca` if the probability that the generator satisfies the MCA condition is bounded above by `\u03b5_mca`. Definition 3.14 [BCGM25]. The body is the `mcaError` bound, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`, `refine` and `apply` see through to the value inequality, and only `rw`/`simp` need the bridge. The pointwise reading \u2014 the bound at one individual family `U` \u2014 is `IsMCAGenerator.prob_le`. The radius is quantified over `I`, the closed unit interval: this is the bound, and the bound is where `[0,1]` belongs, while t",
-          "kind": "def",
-          "line": 167,
-          "name": "CoreDefinitions.IsMCAGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsMCAGenerator",
-          "signature": "def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]"
-        },
-        {
-          "doc": "**Unfolding lemma for `IsMCAGenerator`.** It *is* the `mcaError` bound, by definition; this is the entry point for `rw` and `simp only`, which do not see through a semireducible `def`.",
-          "kind": "lemma",
-          "line": 173,
-          "name": "CoreDefinitions.isMCAGenerator_iff_mcaError_le",
-          "namespace": "CoreDefinitions",
-          "short_name": "isMCAGenerator_iff_mcaError_le",
-          "signature": "lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Type}"
-        },
-        {
-          "doc": "The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason the `\u2200 U` in [BCGM25] Definition 3.14 costs nothing after the definition is stated at the value.",
-          "kind": "lemma",
-          "line": 181,
-          "name": "CoreDefinitions.IsMCAGenerator.prob_le",
-          "namespace": "CoreDefinitions",
-          "short_name": "IsMCAGenerator.prob_le",
-          "signature": "lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] {A : Type}"
-        },
-        {
-          "doc": "The MCA error is a probability: it never exceeds `1`, and in particular is never `\u22a4`. Needed wherever the value has to cross back into `\u211d\u22650` \u2014 e.g. to compare a `mcaError` against an `I \u2192 \u211d\u22650` bound in the other direction, or to do `ENNReal` arithmetic that is only valid away from `\u22a4`.",
-          "kind": "lemma",
-          "line": 192,
-          "name": "CoreDefinitions.mcaError_le_one",
-          "namespace": "CoreDefinitions",
-          "short_name": "mcaError_le_one",
-          "signature": "lemma mcaError_le_one {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
-        },
-        {
-          "doc": "",
-          "kind": "lemma",
-          "line": 197,
-          "name": "CoreDefinitions.mcaError_ne_top",
-          "namespace": "CoreDefinitions",
-          "short_name": "mcaError_ne_top",
-          "signature": "lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
-        },
-        {
-          "doc": "The MCA error is monotone in the distance: enlarging `\u03b4` weakens the size clause `|T| \u2265 n\u00b7(1 - \u03b4)`, so more witness sets qualify and the bad event can only grow. Monotonicity is specific to this notion: it holds because the event carries no distance-*anti*monotone conjunct. Errors whose event carries a guard do, and are not monotone \u2014 see `docs/wiki/proximity-error-conventions.md`.",
-          "kind": "lemma",
-          "line": 208,
-          "name": "CoreDefinitions.mcaError_mono",
-          "namespace": "CoreDefinitions",
-          "short_name": "mcaError_mono",
-          "signature": "lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
-        },
-        {
-          "doc": "The size clause `|T| \u2265 n\u00b7(1 - \u03b4)` is an *integer* condition on the complement: it says the `n - |T|` positions outside `T` number at most `\u230a\u03b4\u00b7n\u230b`. Hence `\u03b4` enters only through that floor.",
-          "kind": "lemma",
-          "line": 219,
-          "name": "CoreDefinitions.mul_one_sub_le_card_iff_sub_card_le_floor",
-          "namespace": "CoreDefinitions",
-          "short_name": "mul_one_sub_le_card_iff_sub_card_le_floor",
-          "signature": "lemma mul_one_sub_le_card_iff_sub_card_le_floor (T : Finset \u03b9) {\u03b4 : \u211d} (h\u03b4 : 0 \u2264 \u03b4) :"
-        },
-        {
-          "doc": "**`mcaError` is a step function on the `1/n` grid.** Two radii with the same `\u230a\u03b4\u00b7n\u230b` give the same error, because the size clause only ever compares `n - |T|` against that floor. So a challenge radius is really an integer grid index: a claim stated at an arbitrary real `\u03b4` is either unattained or ambiguous, whereas one stated at `k/n` is neither.",
-          "kind": "lemma",
-          "line": 232,
-          "name": "CoreDefinitions.mcaError_eq_of_floor_eq",
-          "namespace": "CoreDefinitions",
-          "short_name": "mcaError_eq_of_floor_eq",
-          "signature": "lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]"
-        },
-        {
-          "doc": "Let `G : S \u2192F^\u2113` and `G\u2032: S\u2032\u2192F^\u2113` be two generators. Their tensor product is the generator `G \u2297 G\u2032: S \u00d7 S\u2032\u2192 F^\u2113 \u2297 F^\u2113\u2032` defined by `(x,x\u2032) \u21a6 G(x) \u2297 G\u2032(x\u2032)`. Definition 4.3 [BCGM25].",
-          "kind": "def",
-          "line": 245,
-          "name": "CoreDefinitions.TensorGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "TensorGenerator",
-          "signature": "def TensorGenerator {\u2113' : Type} [Fintype \u2113'] {S S' : Type}"
-        },
-        {
-          "doc": "Explicit construction of the tensor generator. The output type here is a generator `G \u2297 G\u2032: S \u00d7 S\u2032\u2192 F^(\u2113 * \u2113')`. Definition 4.3 [BCGM25].",
-          "kind": "def",
-          "line": 253,
-          "name": "CoreDefinitions.TensorGenerator_Explicit",
-          "namespace": "CoreDefinitions",
-          "short_name": "TensorGenerator_Explicit",
-          "signature": "def TensorGenerator_Explicit {\u2113' : Type} [Fintype \u2113'] {S S' : Type}"
-        },
-        {
-          "doc": "The canonical linear isomorphism between the tensor product of function spaces and the function space on the product type.",
-          "kind": "def",
-          "line": 260,
-          "name": "CoreDefinitions.tensorProductPiFunEquiv",
-          "namespace": "CoreDefinitions",
-          "short_name": "tensorProductPiFunEquiv",
-          "signature": "def tensorProductPiFunEquiv (F : Type) [Field F] (\u2113 \u2113' : Type)"
-        },
-        {
-          "doc": "The tensor product generator `TensorGenerator` and the explicit componentwise generator `TensorGenerator_Explicit` agree under the canonical isomorphism between `F^\u2113 \u2297 F^\u2113\u2032` and `(\u2113 \u00d7 \u2113') \u2192 F`.",
-          "kind": "theorem",
-          "line": 268,
-          "name": "CoreDefinitions.TensorGenerator_eq_TensorGenerator_Explicit",
-          "namespace": "CoreDefinitions",
-          "short_name": "TensorGenerator_eq_TensorGenerator_Explicit",
-          "signature": "theorem TensorGenerator_eq_TensorGenerator_Explicit {\u2113' : Type} [Fintype \u2113'] [DecidableEq \u2113]"
-        },
-        {
-          "doc": "Let `F` be a field. The affine line generator is a generator of the form `G : F \u2192 F\u00b2` such that `x \u21a6 (1,x)`.",
-          "kind": "abbrev",
-          "line": 280,
-          "name": "CoreDefinitions.AffineLineGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "AffineLineGenerator",
-          "signature": "abbrev AffineLineGenerator (F : Type) [Field F] : Generator F (Fin 2) F :="
-        },
-        {
-          "doc": "Let `F` be a field. The affine space generator is a generator of the form `G : F^\u2113 \u2192 F^(\u2113 + 1) ` such that `x \u21a6 (1,x)`.",
-          "kind": "abbrev",
-          "line": 286,
-          "name": "CoreDefinitions.AffineSpaceGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "AffineSpaceGenerator",
-          "signature": "abbrev AffineSpaceGenerator (F : Type) [Field F] (\u2113 : \u2115) : Generator (Fin \u2113 \u2192 F) (Fin (\u2113 + 1)) F :="
-        },
-        {
-          "doc": "The univariate-powers generator `x \u21a6 (1, x, \u2026, x^k)`.",
-          "kind": "abbrev",
-          "line": 290,
-          "name": "CoreDefinitions.univariatePowersGenerator",
-          "namespace": "CoreDefinitions",
-          "short_name": "univariatePowersGenerator",
-          "signature": "abbrev univariatePowersGenerator (F : Type) [Field F] (k : \u2115) :"
-        },
-        {
-          "doc": "Auxiliary lemma to prove that an error is in the unit interval.",
-          "kind": "lemma",
-          "line": 302,
-          "name": "PolynomialGenerator.error_in_unit_interval",
-          "namespace": "PolynomialGenerator",
-          "short_name": "error_in_unit_interval",
-          "signature": "lemma error_in_unit_interval (d : \u2115) (m : \u2115) (hm_pos : 0 < m) (hdm : d \u2264 m) : (d / m : \u211d) \u2208 I := by"
-        },
-        {
-          "doc": "The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set. Returns `1` if the indexing set is empty.",
-          "kind": "def",
-          "line": 311,
-          "name": "PolynomialGenerator.minSeedCard",
-          "namespace": "PolynomialGenerator",
-          "short_name": "minSeedCard",
-          "signature": "def minSeedCard {F : Type} {s : \u2115} (S : Fin s \u2192 Set F) [\u2200 i, Fintype \u21a5(S i)] : \u2115 :="
-        },
-        {
-          "doc": "The minimum of the cardinality of a family of nonempty sets indexed by a posibly empty set is greater than zero.",
-          "kind": "lemma",
-          "line": 319,
-          "name": "PolynomialGenerator.minSeedCard_pos",
-          "namespace": "PolynomialGenerator",
-          "short_name": "minSeedCard_pos",
-          "signature": "lemma minSeedCard_pos {F : Type} {s : \u2115} (S : Fin s \u2192 Set F)"
-        },
-        {
-          "doc": "The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of each set in the family.",
-          "kind": "lemma",
-          "line": 333,
-          "name": "PolynomialGenerator.minSeedCard_le",
-          "namespace": "PolynomialGenerator",
-          "short_name": "minSeedCard_le",
-          "signature": "lemma minSeedCard_le {F : Type} {s : \u2115} (S : Fin s \u2192 Set F)"
-        },
-        {
-          "doc": "If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`. This is the total-degree reading. An individual-degree reading of the same fact is also available; the reasoning is the same and only the version of Schwartz\u2013Zippel used for the upper bound differs.",
-          "kind": "theorem",
-          "line": 348,
-          "name": "PolynomialGenerator.poly_gen_is_zero_evading",
-          "namespace": "PolynomialGenerator",
-          "short_name": "poly_gen_is_zero_evading",
-          "signature": "theorem poly_gen_is_zero_evading"
-        }
-      ]
-    },
-    "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean": {
-      "declarations": [
-        {
-          "doc": "The repetition code `{(a, a)} \u2286 (ZMod 2)\u00b2`, as a module code over its own alphabet.",
-          "kind": "def",
-          "line": 60,
-          "name": "MCASeparation.repetitionCode",
-          "namespace": "MCASeparation",
-          "short_name": "repetitionCode",
-          "signature": "def repetitionCode : ModuleCode (Fin 2) (ZMod 2) (ZMod 2) :="
-        },
-        {
-          "doc": "The family separating the two notions: `(0, 0)` is a codeword of `repetitionCode` and `(1, 0)` is not.",
-          "kind": "def",
-          "line": 65,
-          "name": "MCASeparation.separatingFamily",
-          "namespace": "MCASeparation",
-          "short_name": "separatingFamily",
-          "signature": "def separatingFamily : Fin 2 \u2192 (Fin 2 \u2192 ZMod 2) := ![(fun _ => 0), ![1, 0]]"
-        },
-        {
-          "doc": "Every family jointly agrees with `repetitionCode` at radius `1/2`, witnessed by the agreement set `{0}` and, for each row, the constant codeword matching that row's first coordinate. So a threshold implication about `Code.jointAgreement` holds here by its consequent \u2014 not by a false antecedent \u2014 at every threshold, including `0`.",
-          "kind": "theorem",
-          "line": 72,
-          "name": "MCASeparation.jointAgreement_repetitionCode",
-          "namespace": "MCASeparation",
-          "short_name": "jointAgreement_repetitionCode",
-          "signature": "theorem jointAgreement_repetitionCode (W : Fin 2 \u2192 Fin 2 \u2192 ZMod 2) :"
-        },
-        {
-          "doc": "The mutual bad event fires at seed `0`, where the affine-line combination is `separatingFamily 0 = 0`, a codeword on all of `Fin 2`, while `separatingFamily 1 = (1, 0)` is not. The agreement set forced by the second clause is `Finset.univ`, not the `{0}` that `jointAgreement_repetitionCode` uses \u2014 which is how the two notions come apart.",
-          "kind": "theorem",
           "line": 90,
-          "name": "MCASeparation.isMCA_repetitionCode",
-          "namespace": "MCASeparation",
-          "short_name": "isMCA_repetitionCode",
-          "signature": "theorem isMCA_repetitionCode :"
+          "name": "PolynomialGenIsMCA.mdsMCAError_eq_powersMCAError",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "mdsMCAError_eq_powersMCAError",
+          "signature": "lemma mdsMCAError_eq_powersMCAError [DecidableEq F] (LC : LinearCode \u03b9 F) (d m : \u2115) (\u03b7 : \u211d) :"
         },
         {
-          "doc": "The error value is positive: the event fires on one seed out of two, and `mcaError` is a supremum over families, so `separatingFamily` alone bounds it below.",
-          "kind": "theorem",
-          "line": 110,
-          "name": "MCASeparation.mcaError_repetitionCode_pos",
-          "namespace": "MCASeparation",
-          "short_name": "mcaError_repetitionCode_pos",
-          "signature": "theorem mcaError_repetitionCode_pos :"
+          "doc": "The iterated tensor product of a finite family of generators `G\u1d62 : \u03b1\u1d62 \u2192 \ud835\udd3d^{\u2113\u1d62}`, over the product seed space `\u220f\u1d62 \u03b1\u1d62`: `(x\u2081, ..., x\u209b) \u21a6 \u2297\u1d62 G\u1d62(x\u1d62)`.  Both the full-field tensor `RSCode.tensorGeneratorPiUnivariate` and the subset tensor `tensorGeneratorPiUnivariateOn` are instances of this construction.",
+          "kind": "def",
+          "line": 101,
+          "name": "PolynomialGenIsMCA.tensorGeneratorPi",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "tensorGeneratorPi",
+          "signature": "def tensorGeneratorPi {s : \u2115} {\u03b1 : Fin s \u2192 Type} {\u2113 : Fin s \u2192 Type}"
         },
         {
-          "doc": "No threshold implication characterizes `mcaError`. At any threshold `t` strictly below the error value \u2014 in particular at `t = 0`, by `mcaError_repetitionCode_pos` \u2014 the equivalence fails for every threshold-side predicate `P`: the right-hand side holds because joint agreement is unconditional over this code, while the left-hand side fails by hypothesis. The `\u2200 P` is carried by the right-hand side being true here, not by an argument about `P`. What makes the statement land on the intended target is that the correlated-agreement error, whose bad event is `close \u2227 \u00ac jointAgreement`, *does* satis",
+          "doc": "The iterated tensor product of a family of MCA generators has MCA for any module code `MC`, with error the sum `\u2211\u1d62 \u03b5\u1d62` of the factors' errors. The inductive step is the open `isMCAGenerator_tensorGenerator_tight`, which this lemma therefore inherits; see `isMCAGenerator_tensorGeneratorPi_tight` for the proved variant with a stronger factor hypothesis. The seeds and generator entries stay over `F` \u2014 it is only the code alphabet that is a general `F`-module, which is all the induction needs: both `isMCAGenerator_tensorGenerator_tight` and `isMCAGenerator_reindex` are already stated at that gener",
+          "kind": "lemma",
+          "line": 116,
+          "name": "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "isMCAGenerator_tensorGeneratorPi",
+          "signature": "lemma isMCAGenerator_tensorGeneratorPi {A : Type} [AddCommMonoid A] [Module F A]"
+        },
+        {
+          "doc": "Proved variant of `isMCAGenerator_tensorGeneratorPi`, with the factor hypothesis anchored on a relative-distance value `\u03b4\u2080` and quantified over alphabets: each factor must have MCA, with its fixed error `\u03b5 i`, for *every* module code over `\u03b9` of relative distance `\u03b4\u2080`. That hypothesis is closed under the interleavings the induction steps through (`Code.minRelHammingDistCode_moduleInterleavedCode`), so the inductive step can use the proved `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` instead of the open `isMCAGenerator_tensorGenerator_tight`. The hypothesis is supplied by",
+          "kind": "lemma",
+          "line": 184,
+          "name": "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi_tight",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "isMCAGenerator_tensorGeneratorPi_tight",
+          "signature": "lemma isMCAGenerator_tensorGeneratorPi_tight {\u03b4\u2080 : \u211a\u22650} :"
+        },
+        {
+          "doc": "The MCA error function for the Reed-Solomon code of degree `k` over the domain `D`, for the univariate powers generator of degree `d`, at sharpness parameter `m`: up to the Johnson-type radius `1 - (1 + 1/(2m))\u221a\u03c1` the error is `(d n\u00b2/|F|) \u00b7 (m + 1/2)\u2077 / (3 \u03c1^{3/2})`, and beyond it the trivial bound `1`. Valued in `\u211d\u22650`, clamping the underlying real expression at `0` via `Real.toNNReal`.",
+          "kind": "def",
+          "line": 269,
+          "name": "RSCode.reedSolomonMCAError",
+          "namespace": "RSCode",
+          "short_name": "reedSolomonMCAError",
+          "signature": "def reedSolomonMCAError [Fintype F] [NeZero k] (d m : \u2115) : I \u2192 \u211d\u22650 :="
+        },
+        {
+          "doc": "The univariate powers generator of degree `d` has MCA for the Reed-Solomon code of degree `k` over the domain `D`, with error `reedSolomonMCAError k D d m`, for every `m \u2265 3`. Sorried: the proof requires the Guruswami-Sudan list-decoding machinery, which is not yet available in this development.",
+          "kind": "lemma",
+          "line": 284,
+          "name": "RSCode.isMCAGenerator_univariatePowersGenerator",
+          "namespace": "RSCode",
+          "short_name": "isMCAGenerator_univariatePowersGenerator",
+          "signature": "lemma isMCAGenerator_univariatePowersGenerator [Fintype F] [NeZero k] (d m : \u2115) (hm : 3 \u2264 m) :"
+        },
+        {
+          "doc": "The multi-index (as a finitely supported function) associated to a bounded exponent vector.",
+          "kind": "def",
+          "line": 290,
+          "name": "RSCode.exponentFinsupp",
+          "namespace": "RSCode",
+          "short_name": "exponentFinsupp",
+          "signature": "def exponentFinsupp {s : \u2115} {d : Fin s \u2192 \u2115} (e : (i : Fin s) \u2192 Fin (d i + 1)) :"
+        },
+        {
+          "doc": "Distinct bounded exponent vectors give distinct monomials.  This lets a sum over the monomials in the box `d` be rewritten as a sum over the finite index type `(i : Fin s) \u2192 Fin (d i + 1)`, via `Finset.sum_image`.",
+          "kind": "lemma",
+          "line": 296,
+          "name": "RSCode.exponentFinsupp_injective",
+          "namespace": "RSCode",
+          "short_name": "exponentFinsupp_injective",
+          "signature": "lemma exponentFinsupp_injective {s : \u2115} {d : Fin s \u2192 \u2115} :"
+        },
+        {
+          "doc": "Conversely, every monomial lying inside the box `d` is `exponentFinsupp` of some bounded exponent vector. Together with `exponentFinsupp_injective` this identifies the box index type with the set of monomials of individual degree at most `d`.",
+          "kind": "lemma",
+          "line": 306,
+          "name": "RSCode.exists_exponentFinsupp_eq",
+          "namespace": "RSCode",
+          "short_name": "exists_exponentFinsupp_eq",
+          "signature": "lemma exists_exponentFinsupp_eq {s : \u2115} {d : Fin s \u2192 \u2115} {mo : Fin s \u2192\u2080 \u2115} (h : \u2200 i, mo i \u2264 d i) :"
+        },
+        {
+          "doc": "The `s`-fold tensor product of univariate powers generators, over the seed space `F\u02e2`: `(x\u2081, \u2026, x\u209b) \u21a6 \u2297\u1d62 (1, x\u1d62, \u2026, x\u1d62^{d\u1d62})`.",
+          "kind": "def",
+          "line": 312,
+          "name": "RSCode.tensorGeneratorPiUnivariate",
+          "namespace": "RSCode",
+          "short_name": "tensorGeneratorPiUnivariate",
+          "signature": "def tensorGeneratorPiUnivariate {s : \u2115} (d : Fin s \u2192 \u2115) :"
+        },
+        {
+          "doc": "The `s`-fold tensor product of univariate powers generators has MCA for any module code `MC`, with error the sum `\u2211 i, \u03b5 (d i)` of the factors' errors, provided each univariate powers generator has MCA for `MC` with error `\u03b5 e`. Routed through `isMCAGenerator_tensorGeneratorPi`, so it inherits the open `isMCAGenerator_tensorGenerator_tight`. Only the code alphabet is generalised: the generator `x \u21a6 (1, x, \u2026, x^e)` is still over `F`. At `A := F` this is the linear-code statement.",
+          "kind": "lemma",
+          "line": 323,
+          "name": "RSCode.isMCAGenerator_tensorGeneratorPiUnivariate",
+          "namespace": "RSCode",
+          "short_name": "isMCAGenerator_tensorGeneratorPiUnivariate",
+          "signature": "lemma isMCAGenerator_tensorGeneratorPiUnivariate [Fintype F]"
+        },
+        {
+          "doc": "The coefficient matrix expressing the polynomial generator `G` as a right multiplication of the tensor generator of powers: the entry at `(e, j)` is the coefficient of the monomial `exponentFinsupp e` in the polynomial `P j` (see `generatorByRightMul_coeffMatrix`).",
+          "kind": "def",
+          "line": 336,
+          "name": "RSCode.coeffMatrix",
+          "namespace": "RSCode",
+          "short_name": "coeffMatrix",
+          "signature": "def coeffMatrix {s : \u2115} {\u2113 : Type} [Fintype \u2113] (P : \u2113 \u2192 MvPolynomial (Fin s) F)"
+        },
+        {
+          "doc": "A generator that evaluates the polynomials `P` is the right multiplication of the tensor generator of powers by the coefficient matrix of `P`.",
+          "kind": "lemma",
+          "line": 342,
+          "name": "RSCode.generatorByRightMul_coeffMatrix",
+          "namespace": "RSCode",
+          "short_name": "generatorByRightMul_coeffMatrix",
+          "signature": "lemma generatorByRightMul_coeffMatrix {s : \u2115} {\u2113 : Type} [Fintype \u2113]"
+        },
+        {
+          "doc": "The coefficient matrix of a linearly independent family of polynomials whose individual degrees are bounded by the box `d` has a left inverse.",
+          "kind": "lemma",
+          "line": 363,
+          "name": "RSCode.hasLeftPseudoInverse_coeffMatrix",
+          "namespace": "RSCode",
+          "short_name": "hasLeftPseudoInverse_coeffMatrix",
+          "signature": "lemma hasLeftPseudoInverse_coeffMatrix {s : \u2115} {\u2113 : Type} [Fintype \u2113] [DecidableEq \u2113]"
+        },
+        {
+          "doc": "A full-field polynomial generator has MCA for the Reed-Solomon code of degree `k` over the domain `D`, with error `\u2211 i, reedSolomonMCAError k D (maxDegreeOf P i) m`, for every `m \u2265 3`. The proof factors the generator through `tensorGeneratorPiUnivariate` via `coeffMatrix` and consumes two unproved inputs: `isMCAGenerator_univariatePowersGenerator` for each factor, and \u2014 through `isMCAGenerator_tensorGeneratorPiUnivariate` \u2014 the open `isMCAGenerator_tensorGenerator_tight`.",
+          "kind": "lemma",
+          "line": 408,
+          "name": "RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull",
+          "namespace": "RSCode",
+          "short_name": "isMCAGenerator_of_isPolynomialGeneratorOfFull",
+          "signature": "lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [NeZero k] (m : \u2115) (hm : 3 \u2264 m)"
+        },
+        {
+          "doc": "The univariate powers generator of degree `d` with its seed space restricted to a subset `s \u2286 F`: `x \u21a6 (1, x, \u2026, x^d)`.",
+          "kind": "def",
+          "line": 441,
+          "name": "PolynomialGenIsMCA.univariatePowersGeneratorOn",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "univariatePowersGeneratorOn",
+          "signature": "def univariatePowersGeneratorOn (s : Set F) (d : \u2115) : Generator s (Fin (d + 1)) F :="
+        },
+        {
+          "doc": "The code `C_G` of the restricted univariate powers generator is the Reed\u2013Solomon code of degree less than `d + 1` over `s`: its `M_G` matrix is the non-square Vandermonde matrix.",
+          "kind": "lemma",
+          "line": 446,
+          "name": "PolynomialGenIsMCA.univariatePowersGeneratorOn_code_eq_reedSolomon",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "univariatePowersGeneratorOn_code_eq_reedSolomon",
+          "signature": "lemma univariatePowersGeneratorOn_code_eq_reedSolomon (s : Set F) [Fintype s] [Nonempty s] (d : \u2115) :"
+        },
+        {
+          "doc": "The restricted univariate powers generator is an MDS generator (its code is Reed\u2013Solomon, hence MDS). Note that this holds for every degree `d`, with no bound relating `d` to `#s`.",
+          "kind": "lemma",
+          "line": 457,
+          "name": "PolynomialGenIsMCA.isMDSGenerator_univariatePowersGeneratorOn",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "isMDSGenerator_univariatePowersGeneratorOn",
+          "signature": "lemma isMDSGenerator_univariatePowersGeneratorOn [DecidableEq F] (s : Set F) [Fintype s]"
+        },
+        {
+          "doc": "The restricted univariate powers generator has MCA, with error `powersMCAError LC`, for every module code over `\u03b9` whose relative distance equals that of `LC` \u2014 in particular for `LC` itself (`MC := LC`, `h\u03b4 := rfl`) and for every iterated interleaving of `LC`. For `d \u2265 1` this is `isMCAGenerator_of_isMDSGenerator` (sorried) together with the identifications `mdsMCAError_congr` (as `mdsMCAError` reads the code only through `\u03b4\u1d63`) and `mdsMCAError_eq_powersMCAError`; for `d = 0` the MCA event is vacuous at any alphabet, so the error `0 \u2264 powersMCAError` suffices.",
+          "kind": "lemma",
+          "line": 471,
+          "name": "PolynomialGenIsMCA.isMCAGenerator_univariatePowersGeneratorOn",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "isMCAGenerator_univariatePowersGeneratorOn",
+          "signature": "lemma isMCAGenerator_univariatePowersGeneratorOn {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9] [DecidableEq F]"
+        },
+        {
+          "doc": "The `s`-fold tensor product of restricted univariate powers generators, over the product seed space `\u220f\u1d62 S\u1d62`: `(x\u2081, \u2026, x\u209b) \u21a6 \u2297\u1d62 (1, x\u1d62, \u2026, x\u1d62^{d\u1d62})`.",
+          "kind": "def",
+          "line": 507,
+          "name": "PolynomialGenIsMCA.tensorGeneratorPiUnivariateOn",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "tensorGeneratorPiUnivariateOn",
+          "signature": "def tensorGeneratorPiUnivariateOn {s : \u2115} (S : Fin s \u2192 Set F) (d : Fin s \u2192 \u2115) :"
+        },
+        {
+          "doc": "The tensor product of the restricted univariate powers generators has MCA for any linear code `LC`, with error the sum `\u2211\u1d62 powersMCAError LC d\u1d62` of the factors' errors. Proved through `isMCAGenerator_tensorGeneratorPi_tight`: `isMCAGenerator_univariatePowersGeneratorOn` supplies each factor's MCA at every module code of relative distance `\u03b4\u1d63 LC`, which covers the iterated interleavings the induction routes through, so the open `isMCAGenerator_tensorGenerator_tight` is not needed.",
+          "kind": "lemma",
+          "line": 517,
+          "name": "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPiUnivariateOn",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "isMCAGenerator_tensorGeneratorPiUnivariateOn",
+          "signature": "lemma isMCAGenerator_tensorGeneratorPiUnivariateOn {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
+        },
+        {
+          "doc": "A generator that evaluates the polynomials `P` on restricted seed sets is the right multiplication of the restricted tensor generator of powers by the coefficient matrix of `P`.",
+          "kind": "lemma",
+          "line": 533,
+          "name": "PolynomialGenIsMCA.generatorByRightMul_coeffMatrix_on",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "generatorByRightMul_coeffMatrix_on",
+          "signature": "lemma generatorByRightMul_coeffMatrix_on {s : \u2115} {\u2113 : Type} [Fintype \u2113]"
+        },
+        {
+          "doc": "A polynomial generator over restricted seed sets `S\u1d62` with `|S\u1d62| \u2265 d\u1d62 + 1` has MCA for every linear code `LC`, with error `\u2211\u1d62 powersMCAError LC d\u1d62 |S\u1d62| \u03b7`, for every `0 < \u03b7 < 1`. Its only unproved input is `isMCAGenerator_of_isMDSGenerator`: the tensor stage is `isMCAGenerator_tensorGeneratorPi_tight`, which reaches the unscaled error sum through the proved interleaved-hypothesis lemma rather than the open `isMCAGenerator_tensorGenerator_tight`.",
           "kind": "theorem",
-          "line": 135,
-          "name": "MCASeparation.not_mcaError_le_iff_forall_jointAgreement",
-          "namespace": "MCASeparation",
-          "short_name": "not_mcaError_le_iff_forall_jointAgreement",
-          "signature": "theorem not_mcaError_le_iff_forall_jointAgreement {t : ENNReal}"
+          "line": 559,
+          "name": "PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf",
+          "namespace": "PolynomialGenIsMCA",
+          "short_name": "isMCAGenerator_of_isPolynomialGeneratorOf",
+          "signature": "theorem isMCAGenerator_of_isPolynomialGeneratorOf {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
         }
       ]
     },
-    "ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean": {
+    "ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean": {
       "declarations": [
         {
           "doc": "If `G` has mutual correlated agreement with error `\u03b5_mca` for `MC`, and `G'` has it with error `\u03b5'_mca` for the `\u2113`-fold interleaving of `MC`, then the tensor generator has it for `MC` with the errors added. Stated for `TensorGenerator_Explicit`, the componentwise form, which is the one that is a `Generator`; `TensorGenerator` lands in the tensor product and the two agree under `tensorProductPiFunEquiv`. Writing `W x' i := \u2211 j, G' x' j \u2022 U (i, j)`, the tensor combination is the `G`-combination of `W x'`. Case-split on whether some `W x' i` fails to project into the code on the witness set `T`:",
@@ -27187,6 +27479,15 @@
           "namespace": "TensorMCA",
           "short_name": "isMCAGenerator_tensorGenerator",
           "signature": "theorem isMCAGenerator_tensorGenerator (G : Generator S \u2113 F) (G' : Generator S' \u2113' F)"
+        },
+        {
+          "doc": "Let `G : S \u2192 \ud835\udd3d^\u2113` be an MCA generator with error `\u03b5_mca` and `G' : S' \u2192 \ud835\udd3d^\u2113'` be an MCA generator with error `\u03b5_mca'`. Then the (explicit) tensor generator `G \u2297 G' : S \u00d7 S' \u2192 \ud835\udd3d^(\u2113 \u00d7 \u2113')` is an MCA generator with error `\u03b5_mca + \u03b5_mca'`. Sorried, and its status is open rather than routine: with the hypothesis of MCA for `MC` itself, `TensorMCA.isMCAGenerator_tensorGenerator` reaches the added error only with the inner term scaled by `Fintype.card \u2113`, and `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` reaches the unscaled sum only under the strictly stronger hypothesis of MCA",
+          "kind": "lemma",
+          "line": 275,
+          "name": "LinearTransformations.isMCAGenerator_tensorGenerator_tight",
+          "namespace": "LinearTransformations",
+          "short_name": "isMCAGenerator_tensorGenerator_tight",
+          "signature": "lemma isMCAGenerator_tensorGenerator_tight (MC : ModuleCode \u03b9 F A)"
         }
       ]
     },
@@ -68068,8 +68369,8 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 7381,
-      "files": 416
+      "declarations": 7414,
+      "files": 417
     }
   }
 }

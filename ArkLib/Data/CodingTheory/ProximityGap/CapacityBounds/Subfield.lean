@@ -1676,7 +1676,7 @@ private theorem subfield_ca_pair_fiber_card_le_real
       B domainB k a ha S T f hS hT hmin hsmall
     have hnon : 0 ≤ (Nat.card B : ℝ) ^ (k + f) /
         (Nat.card B : ℝ) ^ (S \ T).card := by positivity
-    linarith
+    exact h.trans (le_add_of_nonneg_left hnon)
   · have hlarge : k < Module.finrank B F +
         (Fintype.card ι - f - (S \ T).card) :=
       Nat.lt_of_not_ge hsmall
@@ -1685,7 +1685,7 @@ private theorem subfield_ca_pair_fiber_card_le_real
     have hnon : 0 ≤ (Nat.card B : ℝ) ^ (2 * (k + f)) /
         ((Fintype.card F : ℝ) *
           (Nat.card B : ℝ) ^ Fintype.card ι) := by positivity
-    linarith
+    exact h.trans (le_add_of_nonneg_right hnon)
 
 private theorem subfield_ca_pow_ratio_le_exp_sub
     (t : ℝ) (r : ℕ) (hrpos : 0 < r) (hrle : (r : ℝ) ≤ t) :
