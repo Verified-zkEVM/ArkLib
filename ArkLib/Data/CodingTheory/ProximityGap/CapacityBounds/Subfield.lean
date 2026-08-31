@@ -26,13 +26,6 @@ a first/second-moment estimate over subfield interpolation data.
 -- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
 set_option backward.isDefEq.respectTransparency false
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -84,22 +77,25 @@ private structure SubfieldCaWitnessData
           ⌊(δ : ℝ) * Fintype.card ι⌋₊) ≤
       ((((G.card : NNReal) / (Fintype.card F : NNReal)) : NNReal) : ENNReal)
 
+omit [Fintype F] [DecidableEq F] in
 private theorem exists_not_mem_proper_subfield (B : Subfield F) (hB : B < ⊤) :
     ∃ a : F, a ∉ B := by
   obtain ⟨a, _ha_top, ha_not⟩ := SetLike.exists_of_lt hB
   exact ⟨a, ha_not⟩
 
-private theorem exists_subfield_multiplicative_generator :
+omit [Fintype F] [DecidableEq F] in
+private theorem exists_subfield_multiplicative_generator [Finite F] :
     ∃ g : Fˣ, ∀ y : Fˣ, y ∈ Submonoid.powers g := by
   exact IsCyclic.exists_monoid_generator
 
-private theorem exists_subfield_primitive_element (B : Subfield F) :
+omit [Fintype F] [DecidableEq F] in
+private theorem exists_subfield_primitive_element [Finite F] (B : Subfield F) :
     ∃ a : F, IntermediateField.adjoin B ({a} : Set F) = ⊤ := by
   exact Field.exists_primitive_element_of_finite_top B F
 
 open scoped BigOperators in
 private theorem finite_support_second_moment
-    {Ω : Type} [Fintype Ω] [DecidableEq Ω] (X : Ω → ℕ) :
+    {Ω : Type} [Fintype Ω] (X : Ω → ℕ) :
     (∑ ω : Ω, (X ω : ℝ)) ^ 2 ≤
       ((Finset.univ.filter (fun ω : Ω => 0 < X ω)).card : ℝ) *
         ∑ ω : Ω, (X ω : ℝ) ^ 2 := by
@@ -121,6 +117,7 @@ private theorem finite_support_second_moment
   rw [← hsum, ← hsq]
   exact sq_sum_le_card_mul_sum_sq
 
+omit [Nonempty ι] [DecidableEq ι] in
 private theorem fold_density_le_eps_ca_of_not_joint_proximity
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) (u : Fin 2 → ι → F)
     (hnot : ¬ Code.jointProximity (C := C) (u := u) δ_int) :
@@ -174,12 +171,14 @@ private def subfield_ca_pair_parameters
 private noncomputable def subfield_ca_error_sets (δ : NNReal) : Finset (Finset ι) :=
   (Finset.univ : Finset ι).powersetCard ⌊(δ : ℝ) * Fintype.card ι⌋₊
 
+omit [Nonempty ι] [DecidableEq ι] in
 private theorem subfield_ca_error_sets_card (δ : NNReal) :
     (subfield_ca_error_sets (ι := ι) δ).card =
       Nat.choose (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊ := by
   classical
   simp only [subfield_ca_error_sets, Finset.card_powersetCard, Finset.card_univ]
 
+omit [Nonempty ι] [DecidableEq ι] in
 private theorem subfield_ca_error_sets_mem_iff_card (δ : NNReal) (S : Finset ι) :
     S ∈ subfield_ca_error_sets (ι := ι) δ ↔
       S.card = ⌊(δ : ℝ) * Fintype.card ι⌋₊ := by
@@ -277,6 +276,7 @@ private noncomputable def subfield_ca_pair_fiber_to_witness
       p_value := hp.2.2
       q_value := hq.2.2 }
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_to_witness_injective
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
@@ -297,6 +297,7 @@ private def subfield_ca_reciprocal_stack (domain : ι ↪ F) (B : Subfield F)
     if j = 0 then (y i : F) / (domain i - a)
     else -(1 : F) / (domain i - a)
 
+omit [DecidableEq ι] in
 private theorem subfield_ca_good_scalars_subset_fold_close
     (B : Subfield F) (domain : ι ↪ F) (domainB : ι ↪ B)
     (k : ℕ) (δ : NNReal) (a : F) (y : ι → B)
@@ -419,6 +420,7 @@ private theorem subfield_ca_good_scalars_subset_fold_close
       _ = ⌊(δ : ℝ) * Fintype.card ι⌋₊ := hScard
   exact_mod_cast hpair
 
+omit [DecidableEq ι] [Fintype F] in
 private theorem subfield_ca_reciprocal_stack_not_joint
     (domain : ι ↪ F) (B : Subfield F) (k : ℕ) (δ : NNReal)
     (a : F) (y : ι → B) (ha : a ∉ B)
@@ -520,6 +522,7 @@ private noncomputable def subfield_ca_support
   exact Finset.univ.filter (fun z =>
     0 < subfield_ca_multiplicity B domainB k δ a z.1 z.2)
 
+omit [Nonempty ι] [DecidableEq ι] in
 private theorem subfield_ca_witness_data_eps_ca
     (domain : ι ↪ F) (k : ℕ) (δ : NNReal) (B : Subfield F)
     (u : Fin 2 → ι → F) (G : Finset F)
@@ -582,12 +585,14 @@ private theorem subfield_ca_bessel_partial_le_factor_small
   rw [subfieldCaFactor, if_pos hxle]
   exact subfield_ca_bessel_partial_le_exp x m hx
 
+omit [DecidableEq F] in
 private theorem subfield_ca_card_eq_pow_finrank (B : Subfield F) :
     Fintype.card F = Nat.card B ^ Module.finrank B F := by
   rw [Fintype.card_eq_nat_card]
   exact Module.natCard_eq_pow_finrank
 
 open scoped BigOperators in
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_collision_divisor_dvd_aeval_zero
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) (r : Polynomial B)
@@ -600,6 +605,7 @@ private theorem subfield_ca_collision_divisor_dvd_aeval_zero
   exact hr
 
 open scoped BigOperators in
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_collision_divisor_dvd_eval_zero
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) (r : Polynomial B)
@@ -626,7 +632,8 @@ private theorem subfield_ca_collision_divisor_dvd_eval_zero
   exact hfacr
 
 open scoped BigOperators in
-private theorem subfield_ca_collision_divisor_monic
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_collision_divisor_monic [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) :
     (subfield_ca_collision_divisor B domainB a S T).Monic := by
@@ -637,7 +644,8 @@ private theorem subfield_ca_collision_divisor_monic
       (Finset.univ \ (S ∪ T))
 
 open scoped BigOperators in
-private theorem subfield_ca_collision_divisor_nat_degree_card
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_collision_divisor_nat_degree_card [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι)
     (hmin : (minpoly B a).natDegree = Module.finrank B F) :
@@ -653,13 +661,14 @@ private theorem subfield_ca_collision_divisor_nat_degree_card
   rw [hmp.natDegree_mul hlin, hmin,
     Polynomial.natDegree_finsetProd_X_sub_C_eq_card]
 
-private theorem subfield_ca_degree_lt_card (B : Subfield F) (k : ℕ) :
+omit [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_degree_lt_card [Finite F] (B : Subfield F) (k : ℕ) :
     Nat.card (Polynomial.degreeLT B k) = Nat.card B ^ k := by
   classical
   calc
     Nat.card (Polynomial.degreeLT B k) = Nat.card (Fin k → B) :=
       Nat.card_congr (Polynomial.degreeLTEquiv B k).toEquiv
-    _ = Nat.card B ^ k := by simp
+    _ = Nat.card B ^ k := by rw [Nat.card_fun, Nat.card_fin]
 
 private theorem subfield_ca_density_error_term_eq
     (n k f b q C : ℕ) (G : ℝ)
@@ -675,6 +684,7 @@ private theorem subfield_ca_density_error_term_eq
   rw [hexp, pow_sub₀ _ hbne hkf]
   field_simp [hbne, hCne]
 
+omit [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_divisible_degree_lt_mul_mem
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ)
     (q : Polynomial.degreeLT B (k - H.natDegree)) :
@@ -691,6 +701,7 @@ private theorem subfield_ca_divisible_degree_lt_mul_mem
     rw [hH.natDegree_mul' hq0]
     omega
 
+omit [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_divisible_degree_lt_quotient_mem
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ)
     (r : Polynomial.degreeLT B k) (hr : H ∣ (r.1 : Polynomial B)) :
@@ -725,6 +736,7 @@ private noncomputable def subfield_ca_divisible_degree_lt_quotient
   fun r => ⟨Polynomial.divByMonic r.1.1 H,
     subfield_ca_divisible_degree_lt_quotient_mem B H hH k r.1 r.2⟩
 
+omit [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_divisible_degree_lt_quotient_injective
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ) :
     Function.Injective
@@ -741,7 +753,8 @@ private theorem subfield_ca_divisible_degree_lt_quotient_injective
   apply Subtype.ext
   rw [hqr, hqs, hdiv]
 
-private theorem subfield_ca_divisible_degree_lt_card_le
+omit [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_divisible_degree_lt_card_le [Finite F]
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ) :
     Nat.card (subfield_ca_divisible_degree_lt B k H) ≤
       Nat.card B ^ (k - H.natDegree) := by
@@ -828,6 +841,7 @@ private theorem subfield_ca_exponent_cast_eq
   field_simp [hnR]
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_first_moment_expand
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
@@ -847,6 +861,7 @@ private theorem subfield_ca_first_moment_expand
   intro S hS
   rw [subfield_ca_event_fiber, Finset.card_filter]
 
+omit [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_generator_adjoin_eq_top
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     IntermediateField.adjoin B ({(g : F)} : Set F) = ⊤ := by
@@ -867,12 +882,14 @@ private theorem subfield_ca_generator_adjoin_eq_top
     rw [hval] at hpow
     exact hpow
 
-private theorem subfield_ca_generator_minpoly_nat_degree
+omit [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_generator_minpoly_nat_degree [Finite F]
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     (minpoly B (g : F)).natDegree = Module.finrank B F := by
   exact (Field.primitive_element_iff_minpoly_natDegree_eq B (g : F)).mp
     (subfield_ca_generator_adjoin_eq_top B g hg)
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_interpolant_unique
     (B : Subfield F) (domainB : ι ↪ B)
     (k f : ℕ) (hkf : k + f < Fintype.card ι)
@@ -905,6 +922,7 @@ private theorem subfield_ca_interpolant_unique
     Polynomial.card_le_degree_of_subset_roots hroots
   omega
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_event_fiber_card
     (B : Subfield F) (domainB : ι ↪ B) (k f : ℕ)
     (a : F) (S : Finset ι) (hS : S.card = f)
@@ -965,6 +983,7 @@ private theorem subfield_ca_event_fiber_card
   rw [Nat.card_eq_fintype_card]
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_first_moment_eq
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F)
@@ -993,6 +1012,7 @@ private theorem subfield_ca_first_moment_eq
       rw [subfield_ca_error_sets_card]
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_first_moment_real_eq
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F)
@@ -1009,7 +1029,8 @@ private theorem subfield_ca_first_moment_real_eq
   rw [Fintype.sum_prod_type]
   exact_mod_cast subfield_ca_first_moment_eq B domainB k δ a hkf
 
-private theorem subfield_ca_minpoly_coprime_linear
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_minpoly_coprime_linear [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (i : ι) :
     IsCoprime (minpoly B a)
@@ -1030,7 +1051,9 @@ private theorem subfield_ca_minpoly_coprime_linear
   exact (domainB i).property
 
 open scoped BigOperators in
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_minpoly_coprime_linear_prod
+    [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (U : Finset ι) :
     IsCoprime (minpoly B a)
@@ -1040,7 +1063,8 @@ private theorem subfield_ca_minpoly_coprime_linear_prod
   exact subfield_ca_minpoly_coprime_linear B domainB a ha i
 
 open scoped BigOperators in
-private theorem subfield_ca_collision_divisor_dvd_sub
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_collision_divisor_dvd_sub [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (y : ι → B) (α : F)
     (p q : Polynomial B)
@@ -1067,7 +1091,8 @@ private theorem subfield_ca_collision_divisor_dvd_sub
       rw [Polynomial.dvd_iff_isRoot, Polynomial.IsRoot.def,
         Polynomial.eval_sub, hp i hiS, hq i hiT, sub_self]
 
-private noncomputable def subfield_ca_pair_witness_to_parameters
+omit [Fintype F] [DecidableEq F] in
+private noncomputable def subfield_ca_pair_witness_to_parameters [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     SubfieldCaPairWitness B domainB k a S T →
@@ -1084,7 +1109,8 @@ private noncomputable def subfield_ca_pair_witness_to_parameters
   exact subfield_ca_collision_divisor_dvd_sub B domainB a ha S T
     w.y w.α w.p.1 w.q.1 w.p_agree w.q_agree w.p_value w.q_value
 
-private noncomputable def subfield_ca_pair_fiber_to_parameters
+omit [Fintype F] [DecidableEq F] in
+private noncomputable def subfield_ca_pair_fiber_to_parameters [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     ↥(subfield_ca_pair_event_fiber B domainB k a S T) →
@@ -1092,7 +1118,8 @@ private noncomputable def subfield_ca_pair_fiber_to_parameters
   fun z => subfield_ca_pair_witness_to_parameters B domainB k a ha S T
     (subfield_ca_pair_fiber_to_witness B domainB k a S T z)
 
-private theorem subfield_ca_pair_witness_to_parameters_injective
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_pair_witness_to_parameters_injective [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     Function.Injective
@@ -1138,6 +1165,7 @@ private theorem subfield_ca_pair_witness_to_parameters_injective
   cases hq'
   rfl
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_to_parameters_injective
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
@@ -1147,6 +1175,7 @@ private theorem subfield_ca_pair_fiber_to_parameters_injective
     (subfield_ca_pair_fiber_to_witness_injective B domainB k a S T)
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_multiplicity_real_eq_indicator_sum
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (y : ι → B) (α : F) :
@@ -1177,6 +1206,7 @@ private theorem subfield_ca_overlap_argument_eq
   rw [Nat.cast_sub hf, hint]
   ring
 
+omit [Nonempty ι] in
 private theorem subfield_ca_overlap_count
     (S : Finset ι) (f s : ℕ) (hS : S.card = f) :
     ((Finset.univ.powersetCard f).filter
@@ -1306,6 +1336,7 @@ private theorem subfield_ca_overlap_sum_le_factor_small
   · exact hxle
 
 open scoped BigOperators in
+omit [Nonempty ι] in
 private theorem subfield_ca_overlap_weight_sum
     (S : Finset ι) (f b : ℕ) (hS : S.card = f) :
     (∑ T ∈ Finset.univ.powersetCard f,
@@ -1331,6 +1362,7 @@ private theorem subfield_ca_overlap_weight_sum
   ring
 
 open scoped BigOperators in
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_overlap_contribution_eq
     (B : Subfield F) (k : ℕ) (δ : NNReal) :
     let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
@@ -1398,6 +1430,7 @@ private theorem subfield_ca_overlap_contribution_eq
       rw [subfield_ca_error_sets_card]
       ring
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_event_fiber_nat_card_le_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
@@ -1419,6 +1452,7 @@ private theorem subfield_ca_pair_event_fiber_nat_card_le_parameters
     (subfield_ca_pair_fiber_to_parameters B domainB k a ha S T)
     (subfield_ca_pair_fiber_to_parameters_injective B domainB k a ha S T)
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_card_le_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
@@ -1429,6 +1463,7 @@ private theorem subfield_ca_pair_fiber_card_le_parameters
     B domainB k a ha S T
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_indicator_sum_eq_fiber_card
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
@@ -1449,7 +1484,8 @@ private theorem subfield_ca_pair_indicator_sum_eq_fiber_card
     · simp only [hS, hT, if_true, if_false, mul_zero, and_false]
   · simp only [hS, if_false, zero_mul, false_and]
 
-private theorem subfield_ca_pair_parameters_card_le
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_pair_parameters_card_le [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
     Nat.card (subfield_ca_pair_parameters B domainB k a S T) ≤
@@ -1466,6 +1502,7 @@ private theorem subfield_ca_pair_parameters_card_le
     (subfield_ca_collision_divisor B domainB a S T)
     (subfield_ca_collision_divisor_monic B domainB a S T) k
 
+omit [Nonempty ι] in
 private theorem subfield_ca_pair_set_card_facts
     (S T : Finset ι) (f : ℕ) (hS : S.card = f) (hT : T.card = f) :
     let s := (S \ T).card
@@ -1483,7 +1520,8 @@ private theorem subfield_ca_pair_set_card_facts
   · rw [Finset.card_univ_sdiff, hunioncard]
     omega
 
-private theorem subfield_ca_collision_divisor_nat_degree
+omit [Nonempty ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_collision_divisor_nat_degree [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
@@ -1494,6 +1532,7 @@ private theorem subfield_ca_collision_divisor_nat_degree
   rw [subfield_ca_collision_divisor_nat_degree_card B domainB a S T hmin]
   rw [(subfield_ca_pair_set_card_facts S T f hS hT).2]
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_card_le_overlap_branch
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
@@ -1527,6 +1566,7 @@ private theorem subfield_ca_pair_fiber_card_le_overlap_branch
       congr 1
       omega
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_card_le_overlap_real
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
@@ -1557,6 +1597,7 @@ private theorem subfield_ca_pair_fiber_card_le_overlap_real
         (Nat.card B : ℝ) ^ (S \ T).card := by
       rw [pow_sub₀ _ hbne hsle', div_eq_mul_inv]
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_card_le_uniform_nat_branch
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
@@ -1597,6 +1638,7 @@ private theorem subfield_ca_pair_fiber_card_le_uniform_nat_branch
       congr 1
       omega
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_card_le_uniform_real
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
@@ -1659,6 +1701,7 @@ private theorem subfield_ca_pair_fiber_card_le_uniform_real
           (Nat.card B : ℝ) ^ Fintype.card ι) := by
       rw [hden]
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_pair_fiber_card_le_real
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
@@ -1770,6 +1813,7 @@ private theorem subfield_ca_floor_mode_le_stirling
   simpa only [mul_comm] using hcross
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_second_moment_expand
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
@@ -1954,6 +1998,7 @@ private theorem subfield_ca_support_algebra
   nlinarith only [hcross]
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_support_card_eq_sum_good_scalars
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
@@ -1969,6 +2014,7 @@ private theorem subfield_ca_support_card_eq_sum_good_scalars
       if 0 < subfield_ca_multiplicity B domainB k δ a z.1 z.2 then 1 else 0)
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_exists_center_from_support
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
@@ -2022,6 +2068,7 @@ private theorem subfield_ca_exists_center_from_support
   refine ⟨y, ?_⟩
   simpa only [H, N, Q] using hy
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_support_card_le_ambient
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
@@ -2054,6 +2101,7 @@ private theorem subfield_ca_support_card_le_ambient
       ring
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_support_first_second
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F)
@@ -2081,6 +2129,7 @@ private theorem subfield_ca_support_first_second
   exact h
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 private theorem subfield_ca_uniform_contribution_eq
     (B : Subfield F) (k : ℕ) (δ : NNReal) :
     let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
@@ -2112,6 +2161,7 @@ private theorem subfield_ca_uniform_contribution_eq
   ring
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_second_moment_le_overlap
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
@@ -2170,6 +2220,7 @@ private theorem subfield_ca_second_moment_le_overlap
       dsimp only [A, N, f]
       ring
 
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_second_moment_le_factor
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
@@ -2210,6 +2261,7 @@ private theorem subfield_ca_second_moment_le_factor
       exact add_le_add_right (mul_le_mul_of_nonneg_left hover hA) _
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq F] in
 private theorem subfield_ca_support_density_lower_nat
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
@@ -2282,6 +2334,7 @@ private theorem subfield_ca_support_density_lower_nat
     _ ≤ H / N := halg
 
 open scoped BigOperators in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 private theorem subfield_ca_exists_good_center_nat
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
@@ -2298,6 +2351,7 @@ private theorem subfield_ca_exists_good_center_nat
             (Nat.choose (Fintype.card ι) f : ℝ) ≤
         ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) /
           (Fintype.card F : ℝ) := by
+  classical
   dsimp only
   obtain ⟨y, hy⟩ := subfield_ca_exists_center_from_support
     B domainB k δ a
@@ -2313,7 +2367,8 @@ private def subfield_domain (domain : ι ↪ F) (B : Subfield F)
       apply domain.injective
       exact congrArg Subtype.val hij }
 
-private theorem subfield_domain_card_le (domain : ι ↪ F) (B : Subfield F)
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+private theorem subfield_domain_card_le [Finite F] (domain : ι ↪ F) (B : Subfield F)
     (hdom : ∀ i, domain i ∈ B) : Fintype.card ι ≤ Nat.card B := by
   let e : ι ↪ B :=
     { toFun := fun i => ⟨domain i, hdom i⟩
@@ -2324,6 +2379,7 @@ private theorem subfield_domain_card_le (domain : ι ↪ F) (B : Subfield F)
   rw [← Nat.card_eq_fintype_card]
   exact Finite.card_le_of_embedding e
 
+omit [Fintype F] [DecidableEq F] in
 private theorem subfield_primitive_not_mem
     (B : Subfield F) (hB : B < ⊤) (a : F)
     (ha : IntermediateField.adjoin B ({a} : Set F) = ⊤) : a ∉ B := by
@@ -2346,12 +2402,14 @@ private theorem subfield_primitive_not_mem
     exact b.property
   exact (ne_of_lt hB) hB_top
 
+omit [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_generator_not_mem
     (B : Subfield F) (hB : B < ⊤) (g : Fˣ)
     (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) : (g : F) ∉ B := by
   exact subfield_primitive_not_mem B hB (g : F)
     (subfield_ca_generator_adjoin_eq_top B g hg)
 
+omit [DecidableEq F] in
 private theorem subfield_ca_generator_degree_card
     (B : Subfield F) (hB : B < ⊤) (g : Fˣ)
     (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
@@ -2362,15 +2420,17 @@ private theorem subfield_ca_generator_degree_card
     subfield_ca_card_eq_pow_finrank B,
     subfield_ca_generator_not_mem B hB g hg⟩
 
-private theorem subfield_ca_exists_primitive_center
+omit [Fintype F] [DecidableEq F] in
+private theorem subfield_ca_exists_primitive_center [Finite F]
     (B : Subfield F) (hB : B < ⊤) :
     ∃ a : F, a ∉ B ∧
       (minpoly B a).natDegree = Module.finrank B F := by
   obtain ⟨g, hg⟩ := exists_subfield_multiplicative_generator (F := F)
-  obtain ⟨hdeg, _hcard, hnot⟩ :=
-    subfield_ca_generator_degree_card B hB g hg
+  have hdeg := subfield_ca_generator_minpoly_nat_degree B g hg
+  have hnot := subfield_ca_generator_not_mem B hB g hg
   exact ⟨(g : F), hnot, hdeg⟩
 
+omit [DecidableEq ι] in
 private theorem subfield_radius_parameter_facts
     (k : ℕ) (δ : NNReal)
     (h_int : ((⌊(δ : ℝ) * Fintype.card ι⌋₊ : ℝ)) =
@@ -2421,6 +2481,7 @@ private theorem subfield_radius_parameter_facts
   exact ⟨hδ_one, hk, hf, hkf, Nat.choose_ne_zero hf_le⟩
 
 open scoped NNReal in
+omit [DecidableEq ι] in
 private theorem subfield_ca_exists_witness_data
     (domain : ι ↪ F) (k : ℕ) (δ : NNReal) (B : Subfield F)
     (hB : B < ⊤)
