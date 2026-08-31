@@ -38,6 +38,9 @@ This file bridges the gadget algebra (`Hachi.Gadget.Core`) and the centered norm
 
 ## Main results
 
+* `gadgetDecompose_vecLInftyNorm_le_of_digit_le`: an arbitrary `DigitDecomposition` whose digits
+  are centered-bounded by `γ` produces a decomposition with `‖·‖∞ ≤ γ` — the form honest-prover
+  (completeness) proofs need, and the source of the concrete bound below.
 * `gadgetDecompose_zmod_vecLInftyNorm_le` / `gadgetDecompose_zmod_vecL2NormSq_le`: the honest
   decomposition satisfies `‖·‖∞ ≤ b - 1` and `‖·‖₂² ≤ (rows·digits)·(deg φ)·(b-1)²`.
 * `gadgetMul_zmod_vecLInftyNorm_le` / `gadgetMul_zmod_vecL2NormSq_le`: if `‖v‖∞ ≤ γ` then
@@ -92,24 +95,114 @@ theorem gadgetDecompose_coeff {base : ZMod q} {rows digits : ℕ}
         dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
     Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
 
+omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- **Core balanced-digit bound.** Each digit of `balancedZmodDigitDecomposition`, as a centered
+residue, lies in the two-sided box `[−⌊b/2⌋, ⌈b/2⌉−1]` — i.e. `[-(b/2), (b+1)/2 - 1]` in `Nat`
+division. This is the paper's balanced-digit box `S_b` ([NOZ26] §2.1) on the nose, for both
+parities of `b`, and it is a genuinely two-sided statement: unlike `zmodDigit_natAbs_le` it is not
+a symmetric `ℓ∞` ball but the exact interval Eq. (20)'s range check tests.
+
+The digit is `u − ⌊b/2⌋` for an unsigned base-`b` digit `u < b`, so as an *integer* it lies in
+`[−⌊b/2⌋, b−1−⌊b/2⌋]`, and `b − 1 − b/2 = (b+1)/2 − 1` for both parities. The hypothesis
+`b ≤ q/2` (slightly stronger than `zmodDigit_natAbs_le`'s `b − 1 ≤ q/2`) is the anti-wraparound
+condition that makes that integer *be* the centered representative, via `ZMod.valMinAbs_spec`. -/
+theorem balancedZmodDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
+    (hbq : b ≤ q / 2) (c : ZMod q) (e : Fin digits) :
+    -((b / 2 : ℕ) : ℤ) ≤
+        ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs ∧
+      ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs
+        ≤ (((b + 1) / 2 : ℕ) : ℤ) - 1 := by
+  have hq0 : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+  simp only [balancedZmodDigitDecomposition, zmodDigitDecomposition]
+  set u := (Nat.digits b (c + balancedShift b digits).val).getD (e : ℕ) 0 with hu
+  -- The unsigned digit is `< b` (out-of-range positions are `0`).
+  have hub : u < b := by
+    rcases lt_or_ge (e : ℕ) (Nat.digits b (c + balancedShift b digits).val).length with hlt | hge
+    · rw [hu, List.getD_eq_getElem _ _ hlt]
+      exact Nat.digits_lt_base hb (List.getElem_mem _)
+    · rw [hu, List.getD_eq_default _ _ hge]; omega
+  -- `u − ⌊b/2⌋` is small enough not to wrap, so it *is* the centered representative.
+  have hval : ((u : ZMod q) - ((b / 2 : ℕ) : ZMod q)).valMinAbs = (u : ℤ) - ((b / 2 : ℕ) : ℤ) := by
+    refine (ZMod.valMinAbs_spec _ _).mpr ⟨?_, ?_⟩
+    · -- `push_cast` would turn `((b / 2 : ℕ) : ℤ)` into an `ℤ`-division; rewrite the casts by hand.
+      simp only [Int.cast_sub, Int.cast_natCast]
+    · rw [Set.mem_Ioc]
+      omega
+  rw [hval]
+  omega
+
+omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- **Ball form of the balanced-digit bound**: every balanced digit has centered absolute value at
+most `⌊b/2⌋` — the box `[−⌊b/2⌋, ⌈b/2⌉−1]` is contained in the symmetric ball of radius `⌊b/2⌋`
+(check both parities: `(b+1)/2 − 1 ≤ b/2` always). This is the form the `ℓ∞`/`ℓ₂²` gadget bounds
+consume, so the balanced decomposition is short in the ordinary sense too, at half the radius of the
+unsigned one. -/
+theorem balancedZmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
+    (hbq : b ≤ q / 2) (c : ZMod q) (e : Fin digits) :
+    ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs.natAbs ≤ b / 2 := by
+  obtain ⟨hlo, hhi⟩ := balancedZmodDigit_valMinAbs_mem hb hq hbq c e
+  omega
+
 /-! ## `ℓ∞` bound -/
+
+omit [NeZero q] in
+/-- **`ℓ∞` shortness of `G⁻¹` from a digit bound, for an arbitrary `DigitDecomposition`.** Every
+block of the decomposition inherits whatever centered bound `γ` the digit map satisfies, because
+`gadgetDecompose_coeff` identifies each coefficient of the output with a single digit of a single
+input coefficient. The concrete base-`b` instance is
+`gadgetDecompose_zmod_lInftyNorm_le` below (at `γ = b - 1`); the general form is what
+completeness proofs need, since they are stated for whichever decomposition the honest prover
+was instantiated with. -/
+theorem gadgetDecompose_lInftyNorm_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
+    (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) :
+    Rq.lInftyNorm Φ (gadgetDecompose Φ dd x j) ≤ γ := by
+  unfold Rq.lInftyNorm
+  refine Finset.sup_le (fun k hk => ?_)
+  rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
+  exact hdd _ _
+
+omit [NeZero q] in
+/-- **Two-sided (box) form of the same bookkeeping**: if every digit of `dd` has its centered
+representative in the interval `[lo, hi]`, so does every coefficient of the gadget decomposition.
+
+The `ℓ∞` lemmas above give a symmetric ball; Hachi's exact Eq. (20) range check is the asymmetric
+box `S_b`, so the honest side of `paperRelOut` needs this form. Same one-line mechanism
+(`gadgetDecompose_coeff`): each output coefficient *is* a digit of an input coefficient. -/
+theorem gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem {base : ZMod q} {digits rows : ℕ}
+    {lo hi : ℤ} (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits),
+      lo ≤ (dd.digit c e).valMinAbs ∧ (dd.digit c e).valMinAbs ≤ hi)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    lo ≤ ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ∧
+      ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ≤ hi := by
+  rw [gadgetDecompose_coeff Φ _ x j hk]
+  exact hdd _ _
+
+omit [NeZero q] in
+/-- Vector form of `gadgetDecompose_lInftyNorm_le_of_digit_le`: the whole gadget decomposition is
+`ℓ∞`-bounded by the decomposition's digit bound. -/
+theorem gadgetDecompose_vecLInftyNorm_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
+    (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) :
+    vecLInftyNorm Φ (gadgetDecompose Φ dd x) ≤ γ := by
+  unfold vecLInftyNorm
+  exact Finset.sup_le (fun j _ => gadgetDecompose_lInftyNorm_le_of_digit_le Φ dd hdd x j)
 
 /-- Each gadget-decomposition block is `ℓ∞`-short: its centered `ℓ∞` norm is `≤ b - 1`. -/
 theorem gadgetDecompose_zmod_lInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
     (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows)
     (j : Fin (rows * digits)) :
-    Rq.lInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j) ≤ b - 1 := by
-  unfold Rq.lInftyNorm
-  refine Finset.sup_le (fun k hk => ?_)
-  rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
-  exact zmodDigit_natAbs_le hb hq hbq _ _
+    Rq.lInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j) ≤ b - 1 :=
+  gadgetDecompose_lInftyNorm_le_of_digit_le Φ _ (zmodDigit_natAbs_le hb hq hbq) x j
 
 /-- **`ℓ∞` shortness of `G⁻¹`.** The full gadget decomposition has centered `ℓ∞` norm `≤ b - 1`. -/
 theorem gadgetDecompose_zmod_vecLInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
     (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows) :
-    vecLInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x) ≤ b - 1 := by
-  unfold vecLInftyNorm
-  exact Finset.sup_le (fun j _ => gadgetDecompose_zmod_lInftyNorm_le Φ hb hq hbq x j)
+    vecLInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x) ≤ b - 1 :=
+  gadgetDecompose_vecLInftyNorm_le_of_digit_le Φ _ (zmodDigit_natAbs_le hb hq hbq) x
 
 /-! ## `ℓ₂²` bound -/
 
@@ -143,6 +236,37 @@ theorem gadgetDecompose_zmod_vecL2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (
       ≤ ∑ _i : Fin (rows * digits), Φ.φ.natDegree * (b - 1) ^ 2 :=
         Finset.sum_le_sum (fun i _ => gadgetDecompose_zmod_l2NormSq_le Φ hb hq hbq x i)
     _ = rows * digits * (Φ.φ.natDegree * (b - 1) ^ 2) := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+
+omit [NeZero q] in
+/-- **`ℓ₂²` shortness of one `G⁻¹` block from a digit bound, for an arbitrary
+`DigitDecomposition`** — the `ℓ₂²` twin of `gadgetDecompose_lInftyNorm_le_of_digit_le`. -/
+theorem gadgetDecompose_l2NormSq_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
+    (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) :
+    ‖gadgetDecompose Φ dd x j‖₂² ≤ Φ.φ.natDegree * γ ^ 2 := by
+  unfold Rq.l2NormSq
+  calc ∑ k ∈ Finset.range Φ.φ.natDegree,
+        ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs.natAbs ^ 2
+      ≤ ∑ _k ∈ Finset.range Φ.φ.natDegree, γ ^ 2 := by
+        refine Finset.sum_le_sum (fun k hk => ?_)
+        rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
+        exact Nat.pow_le_pow_left (hdd _ _) 2
+    _ = Φ.φ.natDegree * γ ^ 2 := by rw [Finset.sum_const, Finset.card_range, smul_eq_mul]
+
+omit [NeZero q] in
+/-- Vector form of `gadgetDecompose_l2NormSq_le_of_digit_le`. -/
+theorem gadgetDecompose_vecL2NormSq_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
+    (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) :
+    ‖gadgetDecompose Φ dd x‖₂² ≤ rows * digits * (Φ.φ.natDegree * γ ^ 2) := by
+  unfold vecL2NormSq
+  calc ∑ i : Fin (rows * digits), Rq.l2NormSq Φ (gadgetDecompose Φ dd x i)
+      ≤ ∑ _i : Fin (rows * digits), Φ.φ.natDegree * γ ^ 2 :=
+        Finset.sum_le_sum (fun i _ => gadgetDecompose_l2NormSq_le_of_digit_le Φ dd hdd x i)
+    _ = rows * digits * (Φ.φ.natDegree * γ ^ 2) := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
 
 end ZModGadgetNorms

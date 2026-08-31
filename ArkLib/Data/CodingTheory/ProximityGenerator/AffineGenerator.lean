@@ -1,11 +1,11 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
 
-import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
-import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
+import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.CodingTheory.Prelims
@@ -293,7 +293,7 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
     letI a := (1 - 1 / Fintype.card F : ℝ≥0)
     letI ε_mca' := a⁻¹ • ε_mca
     IsMCAGenerator (AffineSpaceGenerator F ℓ) ε_mca' MC := by
-  letI := Module.addCommMonoidToAddCommGroup F (M := A)
+  let := Module.addCommMonoidToAddCommGroup F (M := A)
   classical
   intro γ
   refine iSup_le fun U => ?_

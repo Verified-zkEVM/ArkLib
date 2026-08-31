@@ -16,13 +16,13 @@ linter.style.header = false
 
 [[require]]
 name = "VCVio"
-git = "https://github.com/Verified-zkEVM/VCV-io"
-rev = "v4.32.2"
+git = "https://github.com/Verified-zkEVM/VCVio"
+rev = "f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24"
 
 [[require]]
 name = "«doc-gen4»"
 git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.32.2"
+rev = "v4.33.1"
 
 [[require]]
 name = "checkdecls"
@@ -32,7 +32,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.32.2"
+rev = "v4.33.1"
 
 [[lean_lib]]
 name = "ArkLib"
@@ -51,10 +51,17 @@ name = "toyproblem-runtime"
 srcDir = "scripts"
 root = "ToyProblemRuntime"
 
+# Compiled code-generation and execution checks for the nonrecursive Hachi opening chain.
+[[lean_exe]]
+name = "hachi-runtime"
+srcDir = "scripts"
+root = "HachiRuntime"
+
 # Isolated executable fixtures for the axiom-sweep mutation matrix
 # (scripts/test-axiomsweep.sh). Not a default target: it deliberately contains
 # synthetic kernel taint of every shape the sweep reasons about.
 [[lean_lib]]
 name = "AxiomSweepTestFixtures"
 srcDir = "scripts"
+roots = []
 globs = ["AxiomSweepTestFixtures.+"]

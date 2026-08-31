@@ -1414,7 +1414,7 @@ private theorem binary_matrix_johnson_raw
   obtain ⟨r, hrpow⟩ := exists_binary_matrix_exponent_parameter ε hε
   refine ⟨binary_matrix_separator_threshold (r + 2), ?_⟩
   intro FC _ _ _ _ hFC
-  letI : Algebra (ZMod 2) FC := ZMod.algebra FC 2
+  let : Algebra (ZMod 2) FC := ZMod.algebra FC 2
   obtain ⟨t, htinj, hcoeffinj⟩ :=
     exists_binary_matrix_generic_tuple (K := FC) (r + 2) (by omega) hFC
   let ιC : Type :=
@@ -1516,7 +1516,7 @@ private theorem rs_monomial_agreement_card_le_two_mul
     (hagree : ∀ i ∈ S, v i = domain i ^ (2 * d)) :
     S.card ≤ 2 * d := by
   classical
-  letI : NeZero (d + 1) := ⟨by omega⟩
+  let : NeZero (d + 1) := ⟨by omega⟩
   obtain ⟨p, hpdeg, hpeval⟩ :=
     ReedSolomon.mem_code_iff_eval_of_ne_zero.mp hv
   let Q : Polynomial F := Polynomial.X ^ (2 * d) - p
@@ -1581,7 +1581,7 @@ private theorem rs_relative_min_dist_fifteen_sixteen
     (Code.minDist ((ReedSolomon.code domain (t + 1) : Set (ι → K))) : ℝ) /
         Fintype.card ι = (15 : ℝ) / 16 := by
   have hkpos : 0 < t + 1 := by omega
-  letI : NeZero (t + 1) := ⟨hkpos.ne'⟩
+  let : NeZero (t + 1) := ⟨hkpos.ne'⟩
   have hk : t + 1 ≤ Fintype.card ι := by
     rw [hcard]
     omega
@@ -1614,9 +1614,9 @@ theorem exists_rs_epsCa_large_at_johnson_radius
   intro FC _ _ _ _ hFC
   obtain ⟨ιC, instι, neι, decι, domain, d, G,
     hd, hcard, hG, hagree⟩ := hraw hFC
-  letI : Fintype ιC := instι
-  letI : Nonempty ιC := neι
-  letI : DecidableEq ιC := decι
+  let : Fintype ιC := instι
+  let : Nonempty ιC := neι
+  let : DecidableEq ιC := decι
   refine ⟨ιC, inferInstance, inferInstance, inferInstance,
     domain, d + 1, rs_relative_min_dist_fifteen_sixteen domain d hd hcard, ?_⟩
   intro δ_int hδ

@@ -199,7 +199,7 @@ private theorem powers_bad_witness_exists_mem_not_common_domain
   funext i
   have hicommon : (i : ι) ∈ powers_common_domain k U cstar := hsub i.property
   have hrow := (Finset.mem_filter.mp hicommon).2 j
-  simpa only [LinearCode.projectedWord, Set.restrict_apply] using hrow
+  simpa only [LinearCode.projectedWord, Set.domRestrict_apply] using hrow
 
 private def powers_point_degree
     {ι S : Type} [DecidableEq ι]
@@ -317,7 +317,7 @@ private theorem powers_bad_seed_probability_le_card
   apply ENNReal.ofReal_le_ofReal
   have hset : {x : S | P x} = (Finset.filter P Finset.univ : Set S) := by
     ext x
-    simp only [Set.mem_setOf_eq, Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and]
+    simp only [Set.mem_ofPred_eq, Finset.mem_coe, Finset.mem_filter, Finset.mem_univ, true_and]
   have hcard : ((Finset.filter P Finset.univ).card : ℝ) =
       (Set.ncard {x : S | P x} : ℝ) := by
     rw [hset, Set.ncard_coe_finset]
@@ -569,7 +569,7 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
         ∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • cstar j i) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
   have hvzero : v = 0 := by
     by_contra hv
@@ -614,7 +614,7 @@ private theorem powers_coefficients_eq_on_anchor_intersection
     (i : ι) (hi : ∀ s : Fin (k + 1), i ∈ (bw s).T) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   apply powers_coefficients_eq_of_agree_on_distinct_seeds (F := F) k xs hxs U cstar i
   intro s
   calc
@@ -672,7 +672,7 @@ private theorem powers_middle_good_seeds_card_le
         ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i) :
     Bgood.card ≤ (Finset.univ \ powers_common_domain k U cstar).card * k := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : F → ι → Prop := fun x i => i ∈ Bx x
   have hleft : ∀ x ∈ Bgood, 1 ≤ (T.bipartiteAbove R x).card := by
@@ -713,7 +713,7 @@ private theorem powers_middle_good_seeds_real_card_le
     (Bgood.card : ℝ) ≤
       (Fintype.card ι : ℝ) * γ * (k : ℝ) := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   have hnat := powers_middle_good_seeds_card_le (F := F) k U cstar Bgood Bx hext heq
   have hreal : (Bgood.card : ℝ) ≤
       ((Finset.univ \ powers_common_domain k U cstar).card : ℝ) * (k : ℝ) := by
@@ -744,7 +744,7 @@ private theorem powers_middle_good_seeds_real_card_le_embedding
     (Bgood.card : ℝ) ≤
       (Fintype.card ι : ℝ) * γ * (k : ℝ) := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : S → ι → Prop := fun x i => i ∈ Bx x
   have hleft : ∀ x ∈ Bgood, 1 ≤ (T.bipartiteAbove R x).card := by
@@ -805,7 +805,7 @@ private theorem powers_middle_outside_incidence_card_le
     ∑ x ∈ Bgood, (Bx x \ powers_common_domain k U cstar).card ≤
       (Finset.univ \ powers_common_domain k U cstar).card * k := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : F → ι → Prop := fun x i => i ∈ Bx x
   have habove (x : F) : T.bipartiteAbove R x =
@@ -849,7 +849,7 @@ private theorem powers_middle_outside_incidence_card_le_embedding
     ∑ x ∈ Bgood, (Bx x \ powers_common_domain k U cstar).card ≤
       (Finset.univ \ powers_common_domain k U cstar).card * k := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : S → ι → Prop := fun x i => i ∈ Bx x
   have habove (x : S) : T.bipartiteAbove R x =
@@ -1072,8 +1072,8 @@ private theorem powers_interpolate_compatible_anchors
         (bw x).w = fun i =>
           ∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • cstar j i := by
   classical
-  letI := Fintype.ofFinite F
-  letI := Fintype.ofFinite S
+  let := Fintype.ofFinite F
+  let := Fintype.ofFinite S
   let xF : Fin (k + 1) → F := fun s => e (xs s)
   have hxF : Function.Injective xF := e.injective.comp hxs
   obtain ⟨cstar, hcstar, hinterp⟩ :=
@@ -1365,7 +1365,7 @@ private theorem powers_select_compatible_anchors
     rw [hS0, mul_zero] at hlarge
     exact (not_lt_of_ge hc) hlarge
   have hSpos : 0 < Fintype.card S := by exact_mod_cast hSposR
-  letI : Nonempty S := Fintype.card_pos_iff.mp hSpos
+  let : Nonempty S := Fintype.card_pos_iff.mp hSpos
   have hmass :
       (Fintype.card S : ℝ) ^ (k + 1) * a ≤
         ((Finset.univ.filter P).card : ℝ) := by
@@ -1470,7 +1470,7 @@ private theorem powers_common_domain_card_gt_of_many_good_seeds
     (Fintype.card ι : ℝ) * β <
       ((powers_common_domain k U cstar).card : ℝ) := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   by_contra hnot
   have hcommon : ((powers_common_domain k U cstar).card : ℝ) ≤
       (Fintype.card ι : ℝ) * β := le_of_not_gt hnot
@@ -1544,7 +1544,7 @@ private theorem powers_common_domain_card_gt_of_many_good_seeds_embedding
     (Fintype.card ι : ℝ) * β <
       ((powers_common_domain k U cstar).card : ℝ) := by
   classical
-  letI := Fintype.ofFinite F
+  let := Fintype.ofFinite F
   by_contra hnot
   have hcommon : ((powers_common_domain k U cstar).card : ℝ) ≤
       (Fintype.card ι : ℝ) * β := le_of_not_gt hnot
@@ -1629,7 +1629,7 @@ private theorem powers_bad_seed_finset_card_le
                (1 - (δmin : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))))
           (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ)) := by
   classical
-  letI := Fintype.ofFinite A
+  let := Fintype.ofFinite A
   let r : ℝ := powers_radius_base (δmin : ℝ) (η : ℝ)
   let α : ℝ := r ^ ((1 : ℝ) / (k + 2))
   let β : ℝ := r ^ ((1 : ℝ) / (k + 1))
@@ -1808,7 +1808,7 @@ private theorem linear_mca_error_powers_bad_seed_card_le
                (1 - (δmin : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))))
           (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ)) := by
   classical
-  letI := Fintype.ofFinite A
+  let := Fintype.ofFinite A
   let P : F → Prop := fun x =>
     CoreDefinitions.IsMCA (CoreDefinitions.univariatePowersGenerator F k) C x U
       (1 - (1 - (δmin : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2)))
@@ -1847,7 +1847,7 @@ private theorem univariate_powers_is_mds_generator
     CoreDefinitions.IsMDSGenerator (CoreDefinitions.univariatePowersGenerator F k) := by
   unfold CoreDefinitions.IsMDSGenerator
   rw [univariate_powers_generator_code_eq_rs]
-  letI : Inhabited F := ⟨0⟩
+  let : Inhabited F := ⟨0⟩
   exact ReedSolomon.isMDS_code
 
 /-- Bounds the MCA error of the univariate-powers generator below its generalized Johnson
@@ -1875,7 +1875,7 @@ theorem linear_mcaError_powers_le
                   * Fintype.card F))
               (((k : ℝ) + 1) * ((k : ℝ) + 2) / ((η : ℝ) * Fintype.card F))) := by
   classical
-  letI := Fintype.ofFinite A
+  let := Fintype.ofFinite A
   refine le_trans
     (CoreDefinitions.mcaError_mono (univariatePowersGenerator F k) C _hδ) ?_
   unfold mcaError

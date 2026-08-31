@@ -270,11 +270,9 @@ lemma dim_eq_deg_of_le [Fintype ι]
   {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
   LinearCode.dim (ReedSolomon.code α n) = n := by
   by_cases hcard : Fintype.card ι = 0
-  · aesop (add simp [
-      Module.finrank_eq_zero_of_subsingleton,
-      Fintype.card_eq_zero_iff,
-      ReedSolomon.code,
-      dim])
+  · have hn : n = 0 := by omega
+    subst n
+    simp [LinearCode.dim]
   · rw [LinearCode.dim]
     let f := ReedSolomon.evalOnPoints (F := F) α
     let S := Polynomial.degreeLT F n
@@ -470,7 +468,8 @@ lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
 
 @[simp]
 lemma wt_constantCode [DecidableEq F] [NeZero x] :
-  wt (constantCode x ι) = Fintype.card ι := by aesop (add simp [constantCode, wt])
+  wt (constantCode x ι) = Fintype.card ι := by
+  simp [constantCode, wt, NeZero.ne x]
 
 end
 
@@ -480,7 +479,7 @@ theorem minDist_of_le [Fintype ι] [Field F] [DecidableEq F]
   classical
   have := nz.out
   have : 0 < Fintype.card ι := by omega
-  haveI : Nonempty ι := by aesop (add safe (by rw [←Fintype.card_pos_iff]))
+  have : Nonempty ι := by aesop (add safe (by rw [←Fintype.card_pos_iff]))
   apply le_antisymm
   · have distUB := singletonBound (LC := ReedSolomon.code α n)
     have h_le_len : Code.minDist ((ReedSolomon.code α n) : Set (ι → F)) ≤ Fintype.card ι := dist_UB
@@ -545,7 +544,7 @@ theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [Dec
     have hle : minDist (ReedSolomon.code α n : Set (ι → F)) ≤ 1 := by
       simp [minDist]
       exact csInf_le (by simp) <| by
-        simp only [Set.mem_setOf_eq]
+        simp only [Set.mem_ofPred_eq]
         let u : ι → F := fun i ↦ if i = default then 1 else 0
         exists u
         constructor

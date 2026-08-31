@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
+import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 import ArkLib.Data.CodingTheory.InterleavedCode
 import Mathlib.FieldTheory.Finite.Basic
 

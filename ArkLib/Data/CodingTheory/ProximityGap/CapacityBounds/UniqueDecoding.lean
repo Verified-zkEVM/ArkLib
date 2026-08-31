@@ -23,6 +23,9 @@ distance and the finite-length half-distance boundary.
 - [BCHKS25] Theorem 1.3.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -83,6 +86,8 @@ private noncomputable def bchks_constraint_map {ι K : Type} [Fintype ι] [Field
   map_add' := by
     intro x y
     ext i s
+    change (bchks_constraint domain u ax bx dz (x + y) i s =
+      bchks_constraint domain u ax bx dz x i s + bchks_constraint domain u ax bx dz y i s)
     simp only [bchks_constraint, Prod.fst_add, Prod.snd_add, Matrix.add_apply, add_mul,
       Finset.sum_add_distrib]
     split_ifs <;> ring
@@ -211,7 +216,7 @@ private theorem bchks_parameter_facts_of_target_hypotheses
       (bchks_dz (Fintype.card ι) k (Nat.floor (δ * Fintype.card ι)))
       δ := by
   classical
-  letI : NeZero k := ⟨hk.ne'⟩
+  let : NeZero k := ⟨hk.ne'⟩
   set n : ℕ := Fintype.card ι
   set e : ℕ := Nat.floor (δ * n)
   set gap : ℕ := n - k - 2 * e + 1
@@ -358,7 +363,10 @@ private theorem bchks_parameter_facts_of_target_hypotheses
   have hbxSumR : (bx : ℝ) + e + 1 = n := by exact_mod_cast hbxSum
   have hbxratio : (bx : ℝ) / n < 1 - (δ : ℝ) := by
     rw [div_lt_iff₀ hnR_pos]
-    nlinarith [hfloorR, hbxSumR]
+    calc
+      (bx : ℝ) = n - ((e : ℝ) + 1) := by linarith only [hbxSumR]
+      _ < n - (δ : ℝ) * n := sub_lt_sub_left hfloorR n
+      _ = (1 - (δ : ℝ)) * n := by ring
   have hnum_eq :
       1 - (k : ℝ) / n - (δ : ℝ) =
         (1 - (k : ℝ) / n - 2 * (δ : ℝ)) + (δ : ℝ) := by ring
@@ -951,10 +959,10 @@ private theorem bchks_exists_global_affine_quotient_basic
   let Px : Finset F := Finset.univ.map domain
   let Py : Finset F := good
   have hnpos : 0 < n := by simp [hn]
-  haveI : Nonempty Px := by
+  have : Nonempty Px := by
     apply Finset.Nonempty.to_subtype
     simp [Px]
-  haveI : Nonempty Py := by
+  have : Nonempty Py := by
     apply Finset.Nonempty.to_subtype
     exact Finset.card_pos.mp (by simpa [Py, good] using hgood)
   have hcardx : (⟨n, hnpos⟩ : ℕ+) ≤ Px.card := by
@@ -1482,7 +1490,7 @@ private theorem rs_good_coeffs_card_le_max_threshold_of_not_joint_proximity
       (ReedSolomon.code domain 0) good u p δ_fld δ_int hp hgood
       (by simpa [good] using hclose) hgap
   · have hk : 0 < k := Nat.pos_of_ne_zero hk0
-    letI : NeZero k := ⟨hk0⟩
+    let : NeZero k := ⟨hk0⟩
     let n : ℕ := Fintype.card ι
     let e : ℕ := Nat.floor (δ_fld * n)
     let gap : ℕ := n - k - 2 * e + 1

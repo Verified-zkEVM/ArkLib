@@ -39,7 +39,7 @@ noncomputable def restrictDegreeVar (σ : Type*) (R : Type*) [CommSemiring R] (b
 theorem mem_restrictDegreeVar {b : σ → ℕ} (p : MvPolynomial σ R) :
     p ∈ restrictDegreeVar σ R b ↔ ∀ s ∈ p.support, ∀ i, (s : σ →₀ ℕ) i ≤ b i := by
   simp only [restrictDegreeVar, mem_restrictSupport_iff, Set.subset_def, Finset.mem_coe,
-    Set.mem_setOf_eq]
+    Set.mem_ofPred_eq]
 
 /-- The uniform bound `b = fun _ => m` recovers `restrictDegree σ R m` definitionally. So
 `restrictDegreeVar` is a drop-in generalisation: existing `restrictDegree`/`R⦃≤ m⦄[X σ]` users are

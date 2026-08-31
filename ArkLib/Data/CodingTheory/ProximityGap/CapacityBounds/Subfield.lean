@@ -23,6 +23,9 @@ a first/second-moment estimate over subfield interpolation data.
 - [CS25] Crites--Stewart, Theorem 3.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 -- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
 -- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
 -- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
@@ -280,7 +283,7 @@ private theorem subfield_ca_pair_fiber_to_witness_injective
     Function.Injective
       (subfield_ca_pair_fiber_to_witness B domainB k a S T) := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   intro z w hzw
   have hcoords := congrArg
     (fun u : SubfieldCaPairWitness B domainB k a S T => (u.y, u.α)) hzw
@@ -308,7 +311,7 @@ private theorem subfield_ca_good_scalars_subset_fold_close
             α • (subfield_ca_reciprocal_stack domain B a y) 1)
           (ReedSolomon.code domain k : Set (ι → F)) ≤ δ) := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   intro α hα
   have hαpos : 0 < subfield_ca_multiplicity B domainB k δ a y α := by
     simpa only [subfield_ca_good_scalars, Finset.mem_filter,
@@ -743,8 +746,8 @@ private theorem subfield_ca_divisible_degree_lt_card_le
     Nat.card (subfield_ca_divisible_degree_lt B k H) ≤
       Nat.card B ^ (k - H.natDegree) := by
   classical
-  letI := Fintype.ofFinite B
-  letI : Fintype (Polynomial.degreeLT B (k - H.natDegree)) :=
+  let := Fintype.ofFinite B
+  let : Fintype (Polynomial.degreeLT B (k - H.natDegree)) :=
     Fintype.ofEquiv (Fin (k - H.natDegree) → B)
       (Polynomial.degreeLTEquiv B (k - H.natDegree)).toEquiv.symm
   calc
@@ -832,7 +835,7 @@ private theorem subfield_ca_first_moment_expand
       ∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
         (subfield_ca_event_fiber B domainB k a S).card := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   unfold subfield_ca_first_moment
   have hprod := Fintype.sum_prod_type
     (fun z : (ι → B) × F =>
@@ -909,8 +912,8 @@ private theorem subfield_ca_event_fiber_card
     (subfield_ca_event_fiber B domainB k a S).card =
       Nat.card B ^ (k + f) := by
   classical
-  letI := Fintype.ofFinite B
-  letI : Fintype (Polynomial.degreeLT B k) :=
+  let := Fintype.ofFinite B
+  let : Fintype (Polynomial.degreeLT B k) :=
     Fintype.ofEquiv (Fin k → B) (Polynomial.degreeLTEquiv B k).toEquiv.symm
   let φ : Polynomial.degreeLT B k × (S → B) → (ι → B) × F :=
     fun z =>
@@ -1002,7 +1005,7 @@ private theorem subfield_ca_first_moment_real_eq
       (Nat.card B : ℝ) ^
         (k + ⌊(δ : ℝ) * Fintype.card ι⌋₊) := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   rw [Fintype.sum_prod_type]
   exact_mod_cast subfield_ca_first_moment_eq B domainB k δ a hkf
 
@@ -1401,15 +1404,15 @@ private theorem subfield_ca_pair_event_fiber_nat_card_le_parameters
     Nat.card ↥(subfield_ca_pair_event_fiber B domainB k a S T) ≤
       Nat.card (subfield_ca_pair_parameters B domainB k a S T) := by
   classical
-  letI := Fintype.ofFinite B
-  letI : Fintype (Polynomial.degreeLT B k) :=
+  let := Fintype.ofFinite B
+  let : Fintype (Polynomial.degreeLT B k) :=
     Fintype.ofEquiv (Fin k → B)
       (Polynomial.degreeLTEquiv B k).toEquiv.symm
-  letI : Finite
+  let : Finite
       (subfield_ca_divisible_degree_lt B k
         (subfield_ca_collision_divisor B domainB a S T)) :=
     Subtype.finite
-  letI : Finite (subfield_ca_pair_parameters B domainB k a S T) := by
+  let : Finite (subfield_ca_pair_parameters B domainB k a S T) := by
     unfold subfield_ca_pair_parameters
     infer_instance
   apply Nat.card_le_card_of_injective
@@ -1435,7 +1438,7 @@ private theorem subfield_ca_pair_indicator_sum_eq_fiber_card
         subfield_ca_event_indicator B domainB k a T z.1 z.2) =
       ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   rw [subfield_ca_pair_event_fiber, Finset.natCast_card_filter]
   apply Finset.sum_congr rfl
   intro z hz
@@ -1775,7 +1778,7 @@ private theorem subfield_ca_second_moment_expand
         ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
           ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   unfold subfield_ca_second_moment
   have hprod := Fintype.sum_prod_type
     (fun z : (ι → B) × F =>
@@ -1960,7 +1963,7 @@ private theorem subfield_ca_support_card_eq_sum_good_scalars
     (subfield_ca_support B domainB k δ a).card =
       ∑ y : ι → B, (subfield_ca_good_scalars B domainB k δ a y).card := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   unfold subfield_ca_support subfield_ca_good_scalars
   simp_rw [Finset.card_filter]
   exact Fintype.sum_prod_type
@@ -1978,7 +1981,7 @@ private theorem subfield_ca_exists_center_from_support
         ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) /
           (Fintype.card F : ℝ) := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   let H : ℝ := (subfield_ca_support B domainB k δ a).card
   let N : ℝ := (Fintype.card F : ℝ) *
     (Nat.card B : ℝ) ^ Fintype.card ι
@@ -2028,7 +2031,7 @@ private theorem subfield_ca_support_card_le_ambient
       (Fintype.card F : ℝ) *
         (Nat.card B : ℝ) ^ Fintype.card ι := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   have hnat :
       (subfield_ca_support B domainB k δ a).card ≤
         Fintype.card ((ι → B) × F) := by
@@ -2064,7 +2067,7 @@ private theorem subfield_ca_support_first_second
       ((subfield_ca_support B domainB k δ a).card : ℝ) *
         subfield_ca_second_moment B domainB k δ a := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   dsimp only
   let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
   let A : ℝ := (Nat.choose (Fintype.card ι) f : ℝ) *
@@ -2226,7 +2229,7 @@ private theorem subfield_ca_support_density_lower_nat
           (Nat.choose (Fintype.card ι) f : ℝ) ≤
       ((subfield_ca_support B domainB k δ a).card : ℝ) / N := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   dsimp only
   let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
   let C := Nat.choose (Fintype.card ι) f
@@ -2429,7 +2432,7 @@ private theorem subfield_ca_exists_witness_data
     ∃ (u : Fin 2 → ι → F) (G : Finset F),
       SubfieldCaWitnessData domain k δ B u G := by
   classical
-  letI := Fintype.ofFinite B
+  let := Fintype.ofFinite B
   let domainB : ι ↪ B := subfield_domain domain B hdom
   obtain ⟨hδone, _hk, _hfpos, hkf, hchoose⟩ :=
     subfield_radius_parameter_facts (ι := ι) k δ hint hδpos hδlt

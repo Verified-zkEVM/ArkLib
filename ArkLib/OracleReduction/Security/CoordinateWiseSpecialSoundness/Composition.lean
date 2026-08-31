@@ -23,13 +23,19 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
     the pure-verifier acceptance bridge, used to certify prefix leaves' verdicts (and reused by
     the zero-round `ProofSystem/Component` reductions).
   * `Verifier.append_treeSpecialSoundWith` is the generic structured-tree preservation statement,
-    and `Verifier.append_treeSpecialSoundWithEscape` its escape-threaded twin, whose composed escape
-    event is `ChallengeTree.EscapeEvent.append`.
+    and `Verifier.append_treeSpecialSoundWithEscape` its escape-threaded twin, whose composed
+    escape event is `ChallengeTree.EscapeEvent.append`.
   * `Verifier.append_coordinateWiseSpecialSoundWith` / `…WithEscape` are the CWSS-specific
     wrappers, with `OracleVerifier` versions for oracle reductions.
--/
 
-noncomputable section
+  ## The composed extractor
+
+  All four statements compose the *named* extractors of both factors into
+  `Extractor.TreeBased.append verify₁ E₁ E₂`, seamed by the left verifier's verdict function as
+  data. `Verifier.append_run_outputs` is the seam lemma they share: it identifies the appended
+  verifier's reachable outputs with the right verifier's, which is what transfers leaf-witnessing
+  validity. Guarded left factors are handled in `Guarded.lean` at the same skeleton.
+-/
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
@@ -240,6 +246,24 @@ theorem append_run_pure_left
         V₂.run (verify₁ stmt₁ tr₁) tr₂ := by
   simp [Verifier.append_run, Verifier.run, hV₁]
 
+/-- The appended verifier's **reachable output statements** at a glued transcript are the right
+verifier's at the left verdict: the `Verifier.Outputs`-level form of `append_run_pure_left`.
+
+This is what carries a leaf witnessing's *validity* across the seam. Validity is stated relative to
+`Outputs` (`ChallengeTree.LeafWitnesses.IsValid`), so a pure left factor lets composition rewrite
+the whole output set at once, with no need to identify which statement a witness was certified
+at. -/
+theorem append_run_outputs
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
+    (stmt : Stmt₁) (tr₁ : pSpec₁.FullTranscript) (tr₂ : pSpec₂.FullTranscript) :
+      Outputs init impl (V₁.append V₂) stmt (tr₁ ++ₜ tr₂)
+        = Outputs init impl V₂ (verify₁ stmt tr₁) tr₂ := by
+  unfold Outputs
+  rw [append_run_pure_left V₁ V₂ verify₁ hV₁ stmt tr₁ tr₂]
+
 variable [∀ i, SampleableType (pSpec₁.Challenge i)]
   [∀ i, SampleableType (pSpec₂.Challenge i)]
 
@@ -319,104 +343,117 @@ theorem mem_of_pure_accepting
   rw [OptionT.mem_support_iff, OptionT.run_mk, hrun, support_bind_const, support_pure]
   exact ⟨Set.mem_singleton _, hne⟩
 
-/-- **A rejecting verifier is never accepting.** If the verdict on `(stmt, tr)` is `failure`, the
-run cannot be accepted into any language with probability one.
+/-! ## Composition of tree-based certificates
 
-This is the third member of the acceptance bridge, alongside `pure_accepting_of_mem` and
-`mem_of_pure_accepting`, and the one that only becomes meaningful once verifiers are allowed to
-reject (`Guarded.lean`). It is what lets a *guarded* composition read "the composite tree is
-accepting" as "every surviving prefix passed its check": a `failure` leaf would drive the whole
-run's failure probability to one, contradicting acceptance.
+The composed extractor is `Extractor.TreeBased.append`, a named function of **both** factors'
+extractors: the right extractor enters the composed algorithm — it produces the leaf witnessing
+the left extractor consumes — so it cannot stay existential. Its seam argument is `verify₁`,
+the left verifier's verdict function *as data*; a package reads it off its `Verifier.PureForm`
+field.
 
-Note the argument needs no assumption on `init`: whether or not the sampling itself can fail, the
-total mass splits between failing and producing `none`, and acceptance forces *both* to vanish. -/
-theorem not_accepting_of_verify_failure
-    {n : ℕ} {pSpec : ProtocolSpec n}
-    (V : Verifier oSpec Stmt₁ Stmt₂ pSpec)
-    (stmt : Stmt₁) (tr : pSpec.FullTranscript) (lang : Set Stmt₂)
-    (hV : V.verify stmt tr = failure) :
-      Pr[ (· ∈ lang) |
-        OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] ≠ 1 := by
-  intro hAcc
-  rw [probEvent_eq_one_iff] at hAcc
-  obtain ⟨hFail, -⟩ := hAcc
-  -- The underlying probabilistic computation is `init >>= fun _ => pure none`.
-  have hrun : (do (simulateQ impl (V.run stmt tr)).run' (← init) :
-      ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
-    simp only [Verifier.run, hV]
-    congr 1
-  rw [OptionT.probFailure_eq, OptionT.run_mk, hrun] at hFail
-  obtain ⟨hbase, hnone⟩ := add_eq_zero.mp hFail
-  -- All the mass sits on `none`, which acceptance has just forced to zero.
-  have htsum : (∑' x : Option Stmt₂,
-      Pr[= x | (init >>= fun _ => pure none : ProbComp (Option Stmt₂))]) = 0 := by
-    refine (tsum_eq_single none ?_).trans hnone
-    intro y hy
-    refine probOutput_eq_zero_of_not_mem_support ?_
-    rw [support_bind_const, support_pure]
-    simp [hy]
-  have htotal := probFailure_add_tsum_probOutput
-    (init >>= fun _ => pure none : ProbComp (Option Stmt₂))
-  rw [hbase, htsum] at htotal
-  simp at htotal
+The four theorems (here and, for guarded left factors, in `Guarded.lean`) share one skeleton, whose
+key move dissolves an apparent circularity between the two certificates: prefix acceptance is
+established by running the **right** certificate at the canonical witnessing first (`key0`), and
+that is what licenses the **left** certificate. The two witnessing-validity transfers ride
+`ChallengeTree.AppendSplit.fullTranscript_gluePath` plus `append_run_outputs` — validity is
+`Outputs`-relative, so left purity rewrites the output set directly, with no statement
+identification — and the prefix witnessing's reachability comes from `pure_verdict_mem_outputs` at
+the prefix tree's own acceptance. The escape twin routes the disjunction by a case split on "does
+the right factor escape anywhere" before entering the plain skeleton. -/
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Named-extractor preservation of tree-special soundness under binary verifier append.** The
-composed extractor is a named function of the *left* factor's extractor alone: it runs `Ext₁` on
-the prefix tree. The right factor's extractor enters only through `rel₂.language` (certifying the
-left leaves' outputs), so it may stay existential. -/
+/-- **Preservation of tree special soundness under binary verifier append**, at the witness-only
+extractor and a pure left factor. Both factors' extractors are named, and the composed one is
+`Extractor.TreeBased.append verify₁ E₁ E₂`.
+
+The right factor's extractor is named rather than existential: it *is* how the composed extraction
+obtains the left factor's leaf witnessing, at the intermediate statement `verify₁` names. -/
 theorem append_treeSpecialSoundWith
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ S₁.arity)
-    (h₁ : treeSpecialSoundWith init impl S₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : V₂.treeSpecialSound init impl S₂ rel₂ rel₃) :
+    (E₁ : Extractor.TreeBased Stmt₁ Wit₁ Wit₂ pSpec₁ S₁.arity)
+    (E₂ : Extractor.TreeBased Stmt₂ Wit₂ Wit₃ pSpec₂ S₂.arity)
+    (h₁ : treeSpecialSoundWith init impl S₁ rel₁ rel₂ V₁ E₁)
+    (h₂ : treeSpecialSoundWith init impl S₂ rel₂ rel₃ V₂ E₂) :
       treeSpecialSoundWith init impl (S₁.append S₂) rel₁ rel₃ (V₁.append V₂)
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  rcases h₂ with ⟨E₂, hE₂⟩
+        (Extractor.TreeBased.append verify₁ E₁ E₂) := by
   intro stmt tree hStructured hAccept
-  apply h₁ stmt tree.appendSplit.fst
-  · exact ChallengeTree.appendSplit_fst_isStructured tree hStructured
-  · intro tr₁ htr₁
-    obtain ⟨path, rfl⟩ :=
+  -- Every suffix tree is accepting for `V₂` at the left verdict on its prefix leaf.
+  have hsuffAcc : ∀ p₁ : LeafPath tree.appendSplit.fst,
+      (tree.appendSplit.sndAt p₁).IsAccepting init impl V₂
+        (verify₁ stmt p₁.fullTranscript) rel₃.language := by
+    intro p₁ tr₂ htr₂
+    have hmem : p₁.fullTranscript ++ₜ tr₂ ∈ tree.fullTranscripts :=
+      ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree p₁ htr₂
+    have hfull := hAccept (p₁.fullTranscript ++ₜ tr₂) hmem
+    simpa [append_run_pure_left V₁ V₂ verify₁ hV₁
+      stmt p₁.fullTranscript tr₂] using hfull
+  -- The downstream certificate, instantiated at each prefix leaf's verdict.
+  have h₂' := fun p₁ : LeafPath tree.appendSplit.fst =>
+    h₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+      (ChallengeTree.appendSplit_sndAt_isStructured tree hStructured p₁) (hsuffAcc p₁)
+  -- Running it at the CANONICAL witnessing yields a `rel₂`-witness at every left verdict; this is
+  -- what breaks the apparent circularity between the two certificates.
+  have key0 : ∀ p₁ : LeafPath tree.appendSplit.fst,
+      ∃ w₂, (verify₁ stmt p₁.fullTranscript, w₂) ∈ rel₂ := by
+    intro p₁
+    obtain ⟨w₂, -, hw₂⟩ := h₂' p₁ _ (canonWitnesses_isValid (hsuffAcc p₁))
+    exact ⟨w₂, hw₂⟩
+  -- Hence the prefix tree is accepting for `V₁` into `rel₂.language`.
+  have hpreAcc : tree.appendSplit.fst.IsAccepting init impl V₁ stmt rel₂.language := by
+    intro tr₁ htr₁
+    obtain ⟨p₁, rfl⟩ :=
       ChallengeTree.LeafPath.exists_of_mem_fullTranscripts (T := tree.appendSplit.fst) htr₁
-    have hSuffixStructured :
-        (tree.appendSplit.sndAt path).IsStructured S₂ :=
-      ChallengeTree.appendSplit_sndAt_isStructured tree hStructured path
-    have hSuffixAccept :
-        (tree.appendSplit.sndAt path).IsAccepting init impl V₂
-          (verify₁ stmt path.fullTranscript) rel₃.language := by
-      intro tr₂ htr₂
-      have hmem :
-          path.fullTranscript ++ₜ tr₂ ∈ tree.fullTranscripts :=
-        ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂
-      have hfull := hAccept (path.fullTranscript ++ₜ tr₂) hmem
-      simpa [append_run_pure_left V₁ V₂ verify₁ hV₁
-          stmt path.fullTranscript tr₂] using hfull
-    have hRel₂ :
-        (verify₁ stmt path.fullTranscript,
-          E₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)) ∈ rel₂ :=
-      hE₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
-        hSuffixStructured hSuffixAccept
-    have hLang₂ : verify₁ stmt path.fullTranscript ∈ rel₂.language :=
-      (Set.mem_language_iff rel₂ (verify₁ stmt path.fullTranscript)).2
-        ⟨E₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path), hRel₂⟩
-    exact pure_accepting_of_mem init impl V₁ stmt path.fullTranscript rel₂.language
-      (verify₁ stmt path.fullTranscript) (hV₁ stmt path.fullTranscript) hLang₂
+    obtain ⟨w₂, hw₂⟩ := key0 p₁
+    exact pure_accepting_of_mem init impl V₁ stmt p₁.fullTranscript rel₂.language
+      (verify₁ stmt p₁.fullTranscript) (hV₁ stmt p₁.fullTranscript)
+      ((Set.mem_language_iff rel₂ _).2 ⟨w₂, hw₂⟩)
+  intro o hvalid
+  -- Each suffix witnessing — the top witnessing read at glued paths — is valid for `V₂` at the left
+  -- verdict: `fullTranscript_gluePath` and `append_run_outputs` transfer it wholesale.
+  have hsuffValid : ∀ p₁ : LeafPath tree.appendSplit.fst,
+      ChallengeTree.LeafWitnesses.IsValid init impl V₂ rel₃ (verify₁ stmt p₁.fullTranscript)
+        (fun p₂ => o (ChallengeTree.AppendSplit.gluePath tree p₁ p₂)) := by
+    intro p₁ p₂
+    obtain ⟨w, hw, out, hout, hrel⟩ :=
+      hvalid (ChallengeTree.AppendSplit.gluePath tree p₁ p₂)
+    refine ⟨w, hw, out, ?_, hrel⟩
+    -- The transfer is authored at the `appendArity` forms, where both rewrites are syntactic, and
+    -- applied to the notion-typed tree by `exact` (full definitional transparency).
+    have key : ∀ (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity S₁.arity S₂.arity) 0)
+        (q₁ : LeafPath T.appendSplit.fst) (q₂ : LeafPath (T.appendSplit.sndAt q₁)),
+        out ∈ Outputs init impl (V₁.append V₂) stmt
+          (ChallengeTree.AppendSplit.gluePath T q₁ q₂).fullTranscript →
+        out ∈ Outputs init impl V₂ (verify₁ stmt q₁.fullTranscript) q₂.fullTranscript := by
+      intro T q₁ q₂ h
+      rw [ChallengeTree.AppendSplit.fullTranscript_gluePath] at h
+      rwa [append_run_outputs init impl V₁ V₂ verify₁ hV₁] at h
+    exact key tree p₁ p₂ hout
+  -- The prefix witnessing — `E₂`'s output below each prefix leaf — is valid for `V₁`: the verdict
+  -- is reachable, and `E₂`'s certificate makes that output a `rel₂`-witness for it.
+  have hpreValid : ChallengeTree.LeafWitnesses.IsValid init impl V₁ rel₂ stmt
+      (fun p₁ => E₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+        (fun p₂ => o (ChallengeTree.AppendSplit.gluePath tree p₁ p₂))) := by
+    intro p₁
+    obtain ⟨w₂, hw₂, hrel₂⟩ := h₂' p₁ _ (hsuffValid p₁)
+    exact ⟨w₂, hw₂, verify₁ stmt p₁.fullTranscript,
+      pure_verdict_mem_outputs init impl verify₁ hV₁
+        (support_init_nonempty_of_accepting hpreAcc p₁) stmt p₁.fullTranscript, hrel₂⟩
+  exact h₁ stmt tree.appendSplit.fst
+    (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hpreAcc _ hpreValid
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Escape-threaded preservation of tree special soundness under binary verifier append.** As in
-the escape-free `append_treeSpecialSoundWith`, the composed extractor is the left extractor on the
-prefix tree and the right factor's extractor stays existential; the composed escape event is
-`ChallengeTree.EscapeEvent.append`.
+/-- **Escape-threaded preservation of tree special soundness under binary verifier append**, at the
+witness-only extractor and a pure left factor, with the composed event the UNCHANGED
+`ChallengeTree.EscapeEvent.append` at `verify₁`.
 
-The proof is the escape-free one with one extra case split up front: if some prefix leaf's suffix
-tree exhibits `esc₂`, the right disjunct of the composed event fires directly; otherwise every
-prefix leaf's verdict is certified into `rel₂.language` by the right factor's extraction (its escape
-branch being excluded by that case assumption), and the left certificate applies. -/
+Disjunction routing: a right-factor escape below *some* prefix leaf fires the composed event's
+right disjunct outright; otherwise every suffix certificate extracts, `key0` licenses the left
+certificate, and that certificate's own escape fires the left disjunct or its extraction closes the
+plain skeleton. The whole routing happens before any witnessing is seen. -/
 theorem append_treeSpecialSoundWithEscape
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
@@ -425,72 +462,100 @@ theorem append_treeSpecialSoundWithEscape
     (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ S₂.arity)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ S₁.arity)
-    (h₁ : treeSpecialSoundWithEscape init impl S₁ esc₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : treeSpecialSoundEscape init impl S₂ esc₂ rel₂ rel₃ V₂) :
+    (E₁ : Extractor.TreeBased Stmt₁ Wit₁ Wit₂ pSpec₁ S₁.arity)
+    (E₂ : Extractor.TreeBased Stmt₂ Wit₂ Wit₃ pSpec₂ S₂.arity)
+    (h₁ : treeSpecialSoundWithEscape init impl S₁ esc₁ rel₁ rel₂ V₁ E₁)
+    (h₂ : treeSpecialSoundWithEscape init impl S₂ esc₂ rel₂ rel₃ V₂ E₂) :
       treeSpecialSoundWithEscape init impl (S₁.append S₂) (esc₁.append esc₂ verify₁)
-        rel₁ rel₃ (V₁.append V₂) (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  rcases h₂ with ⟨E₂, hE₂⟩
+        rel₁ rel₃ (V₁.append V₂) (Extractor.TreeBased.append verify₁ E₁ E₂) := by
   intro stmt tree hStructured hAccept
-  by_cases hesc : ∃ path : LeafPath tree.appendSplit.fst,
-      esc₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
-  · exact Or.inl (Or.inr hesc)
-  · push Not at hesc
-    have hLang : ∀ path : LeafPath tree.appendSplit.fst,
-        verify₁ stmt path.fullTranscript ∈ rel₂.language := by
-      intro path
-      have hSuffixStructured : (tree.appendSplit.sndAt path).IsStructured S₂ :=
-        ChallengeTree.appendSplit_sndAt_isStructured tree hStructured path
-      have hSuffixAccept :
-          (tree.appendSplit.sndAt path).IsAccepting init impl V₂
-            (verify₁ stmt path.fullTranscript) rel₃.language := by
-        intro tr₂ htr₂
-        have hmem :=
-          ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂
-        have hfull := hAccept _ hmem
-        simpa [append_run_pure_left V₁ V₂ verify₁ hV₁ stmt path.fullTranscript tr₂]
-          using hfull
-      rcases hE₂ _ _ hSuffixStructured hSuffixAccept with hbad | hwit
-      · exact absurd hbad (hesc path)
-      · exact (Set.mem_language_iff rel₂ _).2 ⟨_, hwit⟩
-    have hPrefixAccept :
-        tree.appendSplit.fst.IsAccepting init impl V₁ stmt rel₂.language := by
+  have hsuffAcc : ∀ p₁ : LeafPath tree.appendSplit.fst,
+      (tree.appendSplit.sndAt p₁).IsAccepting init impl V₂
+        (verify₁ stmt p₁.fullTranscript) rel₃.language := by
+    intro p₁ tr₂ htr₂
+    have hmem : p₁.fullTranscript ++ₜ tr₂ ∈ tree.fullTranscripts :=
+      ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree p₁ htr₂
+    have hfull := hAccept (p₁.fullTranscript ++ₜ tr₂) hmem
+    simpa [append_run_pure_left V₁ V₂ verify₁ hV₁
+      stmt p₁.fullTranscript tr₂] using hfull
+  have h₂' := fun p₁ : LeafPath tree.appendSplit.fst =>
+    h₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+      (ChallengeTree.appendSplit_sndAt_isStructured tree hStructured p₁) (hsuffAcc p₁)
+  by_cases hesc₂ : ∃ p₁ : LeafPath tree.appendSplit.fst,
+      esc₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+  · exact Or.inl (Or.inr hesc₂)
+  · push Not at hesc₂
+    have h₂'' := fun p₁ : LeafPath tree.appendSplit.fst => (h₂' p₁).resolve_left (hesc₂ p₁)
+    have key0 : ∀ p₁ : LeafPath tree.appendSplit.fst,
+        ∃ w₂, (verify₁ stmt p₁.fullTranscript, w₂) ∈ rel₂ := by
+      intro p₁
+      obtain ⟨w₂, -, hw₂⟩ := h₂'' p₁ _ (canonWitnesses_isValid (hsuffAcc p₁))
+      exact ⟨w₂, hw₂⟩
+    have hpreAcc : tree.appendSplit.fst.IsAccepting init impl V₁ stmt rel₂.language := by
       intro tr₁ htr₁
-      obtain ⟨path, rfl⟩ := ChallengeTree.LeafPath.exists_of_mem_fullTranscripts htr₁
-      exact pure_accepting_of_mem init impl V₁ stmt path.fullTranscript rel₂.language
-        (verify₁ stmt path.fullTranscript) (hV₁ stmt path.fullTranscript) (hLang path)
+      obtain ⟨p₁, rfl⟩ :=
+        ChallengeTree.LeafPath.exists_of_mem_fullTranscripts (T := tree.appendSplit.fst) htr₁
+      obtain ⟨w₂, hw₂⟩ := key0 p₁
+      exact pure_accepting_of_mem init impl V₁ stmt p₁.fullTranscript rel₂.language
+        (verify₁ stmt p₁.fullTranscript) (hV₁ stmt p₁.fullTranscript)
+        ((Set.mem_language_iff rel₂ _).2 ⟨w₂, hw₂⟩)
     rcases h₁ stmt tree.appendSplit.fst
-        (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hPrefixAccept with
-      hbad | hwit
-    · exact Or.inl (Or.inl hbad)
-    · exact Or.inr hwit
+      (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hpreAcc with
+      hesc₁ | hext₁
+    · exact Or.inl (Or.inl hesc₁)
+    · refine Or.inr fun o hvalid => ?_
+      have hsuffValid : ∀ p₁ : LeafPath tree.appendSplit.fst,
+          ChallengeTree.LeafWitnesses.IsValid init impl V₂ rel₃ (verify₁ stmt p₁.fullTranscript)
+            (fun p₂ => o (ChallengeTree.AppendSplit.gluePath tree p₁ p₂)) := by
+        intro p₁ p₂
+        obtain ⟨w, hw, out, hout, hrel⟩ :=
+          hvalid (ChallengeTree.AppendSplit.gluePath tree p₁ p₂)
+        refine ⟨w, hw, out, ?_, hrel⟩
+        have key : ∀ (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity S₁.arity S₂.arity) 0)
+            (q₁ : LeafPath T.appendSplit.fst) (q₂ : LeafPath (T.appendSplit.sndAt q₁)),
+            out ∈ Outputs init impl (V₁.append V₂) stmt
+              (ChallengeTree.AppendSplit.gluePath T q₁ q₂).fullTranscript →
+            out ∈ Outputs init impl V₂ (verify₁ stmt q₁.fullTranscript) q₂.fullTranscript := by
+          intro T q₁ q₂ h
+          rw [ChallengeTree.AppendSplit.fullTranscript_gluePath] at h
+          rwa [append_run_outputs init impl V₁ V₂ verify₁ hV₁] at h
+        exact key tree p₁ p₂ hout
+      have hpreValid : ChallengeTree.LeafWitnesses.IsValid init impl V₁ rel₂ stmt
+          (fun p₁ => E₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+            (fun p₂ => o (ChallengeTree.AppendSplit.gluePath tree p₁ p₂))) := by
+        intro p₁
+        obtain ⟨w₂, hw₂, hrel₂⟩ := h₂'' p₁ _ (hsuffValid p₁)
+        exact ⟨w₂, hw₂, verify₁ stmt p₁.fullTranscript,
+          pure_verdict_mem_outputs init impl verify₁ hV₁
+            (support_init_nonempty_of_accepting hpreAcc p₁) stmt p₁.fullTranscript, hrel₂⟩
+      exact hext₁ _ hpreValid
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Named-extractor preservation of CWSS under binary verifier append**: the composed extractor
-is the left factor's extractor on the prefix tree, exactly as at the tree level
-(`append_treeSpecialSoundWith`); the right factor's extractor stays existential. The shape
-transport across `CWSSStructure.toShape_append` is `treeSpecialSoundWith_congr` — the arities of
-the two shapes are definitionally equal, so the extractor crosses by `HEq.rfl`. -/
+/-- **Preservation of CWSS under binary verifier append** at the witness-only extractor: the
+CWSS-shape wrapper of `append_treeSpecialSoundWith`. The shape transport across
+`CWSSStructure.toShape_append` is `treeSpecialSoundWith_congr`; the two shapes' arities are
+definitionally equal, so the extractor crosses by `HEq.rfl`. -/
 theorem append_coordinateWiseSpecialSoundWith
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
-    (h₁ : coordinateWiseSpecialSoundWith init impl D₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : V₂.coordinateWiseSpecialSound init impl D₂ rel₂ rel₃) :
+    (E₁ : Extractor.TreeBased Stmt₁ Wit₁ Wit₂ pSpec₁ (CWSSStructure.toShape D₁).arity)
+    (E₂ : Extractor.TreeBased Stmt₂ Wit₂ Wit₃ pSpec₂ (CWSSStructure.toShape D₂).arity)
+    (h₁ : coordinateWiseSpecialSoundWith init impl D₁ rel₁ rel₂ V₁ E₁)
+    (h₂ : coordinateWiseSpecialSoundWith init impl D₂ rel₂ rel₃ V₂ E₂) :
       coordinateWiseSpecialSoundWith init impl
         (CWSSStructure.append D₁ D₂) rel₁ rel₃ (V₁.append V₂)
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
+        (Extractor.TreeBased.append verify₁ E₁ E₂) :=
   treeSpecialSoundWith_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm HEq.rfl
     (append_treeSpecialSoundWith init impl V₁ V₂
-      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) verify₁ hV₁ Ext₁ h₁ h₂)
+      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) verify₁ hV₁ E₁ E₂ h₁ h₂)
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Escape-threaded preservation of CWSS under binary verifier append**: the CWSS-shape wrapper of
-`append_treeSpecialSoundWithEscape`. Both the extractor and the event cross the shape equality
-`CWSSStructure.toShape_append` by `HEq.rfl`, the two shapes' arities being definitionally equal. -/
+/-- **Escape-threaded preservation of CWSS under binary verifier append** at the witness-only
+extractor: the CWSS-shape wrapper of `append_treeSpecialSoundWithEscape`. Both the extractor and the
+event cross the shape equality `CWSSStructure.toShape_append` by `HEq.rfl`. -/
 theorem append_coordinateWiseSpecialSoundWithEscape
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
@@ -499,16 +564,17 @@ theorem append_coordinateWiseSpecialSoundWithEscape
     (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ (CWSSStructure.toShape D₂).arity)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
-    (h₁ : coordinateWiseSpecialSoundWithEscape init impl D₁ esc₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : coordinateWiseSpecialSoundEscape init impl D₂ esc₂ rel₂ rel₃ V₂) :
+    (E₁ : Extractor.TreeBased Stmt₁ Wit₁ Wit₂ pSpec₁ (CWSSStructure.toShape D₁).arity)
+    (E₂ : Extractor.TreeBased Stmt₂ Wit₂ Wit₃ pSpec₂ (CWSSStructure.toShape D₂).arity)
+    (h₁ : coordinateWiseSpecialSoundWithEscape init impl D₁ esc₁ rel₁ rel₂ V₁ E₁)
+    (h₂ : coordinateWiseSpecialSoundWithEscape init impl D₂ esc₂ rel₂ rel₃ V₂ E₂) :
       coordinateWiseSpecialSoundWithEscape init impl (CWSSStructure.append D₁ D₂)
         (esc₁.append esc₂ verify₁) rel₁ rel₃ (V₁.append V₂)
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
+        (Extractor.TreeBased.append verify₁ E₁ E₂) :=
   treeSpecialSoundWithEscape_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm
     HEq.rfl HEq.rfl
     (append_treeSpecialSoundWithEscape init impl V₁ V₂
-      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂)
+      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) esc₁ esc₂ verify₁ hV₁ E₁ E₂ h₁ h₂)
 
 end Verifier
 
@@ -529,9 +595,14 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
+/-! ## The oracle-level mirrors
+
+Each notion is the underlying verifier's on the combined (oracle + non-oracle) statements, so both
+mirrors are `append_toVerifier` followed by the non-oracle theorem. -/
+
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Oracle-verifier wrapper for the named binary CWSS append: the composed extractor is the left
-factor's extractor on the prefix tree. -/
+/-- Oracle-verifier wrapper for the binary CWSS append at the witness-only extractor: the composed
+extractor is `Extractor.TreeBased.append` at the left verifier's verdict map. -/
 theorem append_coordinateWiseSpecialSoundWith
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
@@ -539,23 +610,24 @@ theorem append_coordinateWiseSpecialSoundWith
     (verify₁ :
       (Stmt₁ × ∀ i, OStmt₁ i) → pSpec₁.FullTranscript → (Stmt₂ × ∀ i, OStmt₂ i))
     (hV₁ : ∀ stmt tr, V₁.toVerifier.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBased (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ pSpec₁
+    (E₁ : Extractor.TreeBased (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ Wit₂ pSpec₁
       (CWSSStructure.toShape D₁).arity)
-    (h₁ : V₁.coordinateWiseSpecialSoundWith init impl D₁ rel₁ rel₂ Ext₁)
-    (h₂ : V₂.coordinateWiseSpecialSound init impl D₂ rel₂ rel₃) :
+    (E₂ : Extractor.TreeBased (Stmt₂ × ∀ i, OStmt₂ i) Wit₂ Wit₃ pSpec₂
+      (CWSSStructure.toShape D₂).arity)
+    (h₁ : V₁.coordinateWiseSpecialSoundWith init impl D₁ rel₁ rel₂ E₁)
+    (h₂ : V₂.coordinateWiseSpecialSoundWith init impl D₂ rel₂ rel₃ E₂) :
       (V₁.append V₂).coordinateWiseSpecialSoundWith init impl
         (CWSSStructure.append D₁ D₂) rel₁ rel₃
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  unfold OracleVerifier.coordinateWiseSpecialSoundWith at h₁ ⊢
-  unfold OracleVerifier.coordinateWiseSpecialSound at h₂
+        (Extractor.TreeBased.append verify₁ E₁ E₂) := by
+  unfold OracleVerifier.coordinateWiseSpecialSoundWith at h₁ h₂ ⊢
   rw [append_toVerifier]
   exact Verifier.append_coordinateWiseSpecialSoundWith init impl V₁.toVerifier V₂.toVerifier
-    D₁ D₂ verify₁ hV₁ Ext₁ h₁ h₂
+    D₁ D₂ verify₁ hV₁ E₁ E₂ h₁ h₂
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Oracle-verifier wrapper for the escape-threaded binary CWSS append: the composed extractor is
-the left factor's extractor on the prefix tree and the composed event is
-`ChallengeTree.EscapeEvent.append` at the left factor's verdict map. -/
+/-- Oracle-verifier wrapper for the escape-threaded binary CWSS append at the witness-only
+extractor: the composed extractor is `Extractor.TreeBased.append` and the composed event is
+`ChallengeTree.EscapeEvent.append`, both at the left verifier's verdict map. -/
 theorem append_coordinateWiseSpecialSoundWithEscape
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
@@ -567,19 +639,18 @@ theorem append_coordinateWiseSpecialSoundWithEscape
     (verify₁ :
       (Stmt₁ × ∀ i, OStmt₁ i) → pSpec₁.FullTranscript → (Stmt₂ × ∀ i, OStmt₂ i))
     (hV₁ : ∀ stmt tr, V₁.toVerifier.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBased (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ pSpec₁
+    (E₁ : Extractor.TreeBased (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ Wit₂ pSpec₁
       (CWSSStructure.toShape D₁).arity)
-    (h₁ : V₁.coordinateWiseSpecialSoundWithEscape init impl D₁ esc₁ rel₁ rel₂ Ext₁)
-    (h₂ : V₂.coordinateWiseSpecialSoundEscape init impl D₂ esc₂ rel₂ rel₃) :
+    (E₂ : Extractor.TreeBased (Stmt₂ × ∀ i, OStmt₂ i) Wit₂ Wit₃ pSpec₂
+      (CWSSStructure.toShape D₂).arity)
+    (h₁ : V₁.coordinateWiseSpecialSoundWithEscape init impl D₁ esc₁ rel₁ rel₂ E₁)
+    (h₂ : V₂.coordinateWiseSpecialSoundWithEscape init impl D₂ esc₂ rel₂ rel₃ E₂) :
       (V₁.append V₂).coordinateWiseSpecialSoundWithEscape init impl
         (CWSSStructure.append D₁ D₂) (esc₁.append esc₂ verify₁) rel₁ rel₃
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  unfold OracleVerifier.coordinateWiseSpecialSoundWithEscape at h₁ ⊢
-  unfold OracleVerifier.coordinateWiseSpecialSoundEscape at h₂
+        (Extractor.TreeBased.append verify₁ E₁ E₂) := by
+  unfold OracleVerifier.coordinateWiseSpecialSoundWithEscape at h₁ h₂ ⊢
   rw [append_toVerifier]
   exact Verifier.append_coordinateWiseSpecialSoundWithEscape init impl V₁.toVerifier V₂.toVerifier
-    D₁ D₂ esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂
+    D₁ D₂ esc₁ esc₂ verify₁ hV₁ E₁ E₂ h₁ h₂
 
 end OracleVerifier
-
-end

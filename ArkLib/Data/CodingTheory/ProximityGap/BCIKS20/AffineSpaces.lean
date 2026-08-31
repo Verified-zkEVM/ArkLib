@@ -252,7 +252,7 @@ theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty
   classical
   let U' : Finset (ι → F) := (U'_sub : Set (ι → F)).toFinset
   let U : Finset (ι → F) := U'.image (fun x => u0 + x)
-  haveI : Nonempty U := by
+  have : Nonempty U := by
     classical
     apply Finset.Nonempty.to_subtype
     refine ⟨u0, ?_⟩
@@ -563,7 +563,7 @@ theorem relDistFromCode_smul_eq (V : Submodule F (ι → F))
   unfold Code.relDistFromCode
   congr 1
   ext d
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   constructor
   · rintro ⟨v, hv, hle⟩
     refine ⟨z⁻¹ • v, V.smul_mem z⁻¹ hv, ?_⟩
@@ -650,7 +650,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
   set V := ReedSolomon.code domain deg
   set U'_sub := Submodule.span F (Finset.univ.image (Fin.tail u) : Set (ι → F))
   -- Convert probability to finset form
-  haveI hU_ne : Nonempty (affineFinset (u 0) (Fin.tail u)) := by
+  have hU_ne : Nonempty (affineFinset (u 0) (Fin.tail u)) := by
     apply Finset.Nonempty.to_subtype
     exact ⟨u 0, Finset.mem_image.2 ⟨0, by simp [Set.mem_toFinset],
       by simp⟩⟩
@@ -685,7 +685,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
   have h_spanU_close : ∀ x ∈ spanU, δᵣ(x, (V : Set (ι → F))) ≤ δ := by
     set spanU_fin := (spanU : Set (ι → F)).toFinset
     set spanU_aff := spanU_fin.image (fun y => (0 : ι → F) + y)
-    haveI hne : Nonempty spanU_aff := by
+    have hne : Nonempty spanU_aff := by
       apply Finset.Nonempty.to_subtype
       exact ⟨0, Finset.mem_image.2 ⟨0, Set.mem_toFinset.mpr spanU.zero_mem, by simp⟩⟩
     have hPr_span : Pr_{let y ← $ᵖ spanU_aff}[
@@ -747,7 +747,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
           apply lt_of_lt_of_le hPr_fin
           simp only [prob_uniform_eq_card_filter_div_card]
           rw [← ENNReal.coe_div', ← ENNReal.coe_div', ENNReal.coe_le_coe]
-          haveI : Nonempty ↥(affineFinset (u 0) (Fin.tail u)) :=
+          have : Nonempty ↥(affineFinset (u 0) (Fin.tail u)) :=
             Finset.Nonempty.to_subtype ⟨u 0, Finset.mem_image.2
               ⟨0, Set.mem_toFinset.mpr (Submodule.zero_mem _), add_zero _⟩⟩
           rw [div_le_div_iff₀ (Nat.cast_pos.mpr Fintype.card_pos)
@@ -1059,7 +1059,11 @@ theorem bucket_exists_common_codeword
       exact (Submodule.mem_bot F).mp this
     set j₀ : Fin k := ⟨0, NeZero.pos k⟩
     refine ⟨v_pair j₀ 0, S_j j₀, (hv_pair j₀ 0).1, hS_j j₀, ?_, ?_⟩
-    · simpa [finMapTwoWords, h_dirs_zero j₀] using (hv_pair j₀ 0).2
+    · intro c hc
+      have hc' := ((hv_pair j₀ 0).2 hc)
+      apply Finset.mem_filter.mpr
+      refine ⟨Finset.mem_univ c, ?_⟩
+      simpa [finMapTwoWords, h_dirs_zero j₀] using (Finset.mem_filter.mp hc').2
     · intro j
       refine ⟨0, V.zero_mem, ?_⟩
       intro c _
@@ -1463,7 +1467,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]
         congr 1
-        haveI : NeZero deg := ⟨by omega⟩
+        have : NeZero deg := ⟨by omega⟩
         have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg)
           (by omega : deg ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]
@@ -1498,7 +1502,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       have hs_eq : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]; congr 1
-        haveI : NeZero deg := ⟨by omega⟩
+        have : NeZero deg := ⟨by omega⟩
         have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg)
           (by omega : deg ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]; simp [LinearCode.length]
@@ -1553,51 +1557,50 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         have hμ6 : μ ^ 6 < (1/20 : ℝ) ^ 6 :=
           pow_lt_pow_left₀ hμ_lt_one20 hμ_pos.le (by omega)
         have h4 : (4 : ℝ) ≤ (deg : ℝ) ^ 2 := by
-          nlinarith [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
-        nlinarith
+          exact_mod_cast Nat.pow_le_pow_left (show 2 ≤ deg by omega) 2
+        calc
+          160 * μ ^ 6 < 160 * (1 / 20 : ℝ) ^ 6 :=
+            mul_lt_mul_of_pos_left hμ6 (by norm_num)
+          _ < 4 := by norm_num
+          _ ≤ (deg : ℝ) ^ 2 := h4
       have h_54_lt_deg2 : 5 / (4 * μ) < (deg : ℝ) ^ 2 / (128 * μ ^ 7) := by
         rw [div_lt_div_iff₀ (by positivity) (by positivity)]
-        nlinarith [h_160]
+        convert mul_lt_mul_of_pos_right h_160 (show (0 : ℝ) < 4 * μ by positivity) using 1
+        all_goals ring
       -- Extract |F| bound from hε
       have h_field : (deg : ℝ) ^ 2 / (128 * μ ^ 7) < Fintype.card F := by
-        -- δ > 0 and δ < 1 - sqrtRate, so δ is in UD or Johnson regime of errorBound
-        simp only [ProximityGap.errorBound, Set.mem_Icc, Set.mem_Ioo] at hε
-        split_ifs at hε with h_ud h_j
-        · -- UD regime: contradicts Johnson hypothesis hJ
-          exact absurd hJ (not_lt.mpr h_ud.2)
-        · -- Johnson regime: deg²/((2·min(1-√ρ-δ, √ρ/20))⁷·|F|) < 1
-          set rate_nn : ℝ≥0 := ↑(LinearCode.rate (ReedSolomon.code domain deg))
-          set sqr_nn := NNReal.sqrt rate_nn
-          have hsqr_s : (↑sqr_nn : ℝ) = s := by
-            simp [sqr_nn, rate_nn, ReedSolomon.sqrtRate, hs_def]
-          have hδ_le : δ ≤ 1 - sqr_nn := le_of_lt (by
-            simpa [sqr_nn, rate_nn, ReedSolomon.sqrtRate] using hδ)
-          have hsqr_le1 : sqr_nn ≤ 1 := by
-            simp [sqr_nn, rate_nn]
-          have hmin_eq : (↑(min (1 - sqr_nn - δ) (sqr_nn / 20)) : ℝ) = μ := by
-            rw [NNReal.coe_min, NNReal.coe_sub hδ_le, NNReal.coe_sub hsqr_le1,
-              NNReal.coe_one, NNReal.coe_div, hsqr_s]
-            norm_num [hμ_def, hη_def]
-          have hε_real : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) /
-              ((2 * (↑(min (1 - sqr_nn - δ) (sqr_nn / 20)) : ℝ)) ^ 7 *
-                ↑(Fintype.card F)) < 1 := by exact_mod_cast hε
-          rw [hmin_eq] at hε_real
-          have hd : (0 : ℝ) < (2 * μ) ^ 7 * ↑(Fintype.card F) := by positivity
-          have := (div_lt_one hd).mp hε_real
-          rw [show (2 * μ) ^ 7 = 128 * μ ^ 7 from by ring] at this
-          have hcast : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) = (↑deg : ℝ) ^ 2 := by push_cast; ring
-          rw [hcast] at this
-          rw [div_lt_iff₀ (by positivity : (0:ℝ) < 128 * μ ^ 7)]
-          linarith
-        · -- Otherwise: impossible since δ > 0 and δ < 1 - sqrtRate
-          exfalso
-          have h1 : ¬(δ ≤ (1 - (↑(LinearCode.rate (ReedSolomon.code domain deg)) : ℝ≥0)) / 2) :=
-            fun hle => h_ud (Set.mem_Icc.mpr ⟨zero_le, hle⟩)
-          have h2 : (1 - (↑(LinearCode.rate (ReedSolomon.code domain deg)) : ℝ≥0)) / 2 < δ :=
-            not_le.mp h1
-          have h3 : δ < 1 - NNReal.sqrt ↑(LinearCode.rate (ReedSolomon.code domain deg)) := by
-            simpa [ReedSolomon.sqrtRate] using hδ
-          exact h_j (Set.mem_Ioo.mpr ⟨h2, h3⟩)
+        classical
+        set rate_nn : ℝ≥0 := ↑(LinearCode.rate (ReedSolomon.code domain deg))
+        set sqr_nn := NNReal.sqrt rate_nn
+        have h_johnson : δ ∈ Set.Ioo ((1 - rate_nn) / 2) (1 - sqr_nn) := by
+          constructor
+          · simpa [rate_nn] using hJ
+          · simpa [sqr_nn, rate_nn, ReedSolomon.sqrtRate] using hδ
+        rw [ProximityGap.errorBound_eq_johnson (by
+          simpa [rate_nn, sqr_nn] using h_johnson)] at hε
+        have hsqr_s : (↑sqr_nn : ℝ) = s := by
+          simp [sqr_nn, rate_nn, ReedSolomon.sqrtRate, hs_def]
+        have hδ_le : δ ≤ 1 - sqr_nn := le_of_lt h_johnson.2
+        have hsqr_le1 : sqr_nn ≤ 1 := by
+          simp [sqr_nn, rate_nn]
+        have hmin_eq : (↑(min (1 - sqr_nn - δ) (sqr_nn / 20)) : ℝ) = μ := by
+          rw [NNReal.coe_min, NNReal.coe_sub hδ_le, NNReal.coe_sub hsqr_le1,
+            NNReal.coe_one, NNReal.coe_div, hsqr_s]
+          norm_num [hμ_def, hη_def]
+        have hε_real : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) /
+            ((2 * (↑(min (1 - sqr_nn - δ) (sqr_nn / 20)) : ℝ)) ^ 7 *
+              ↑(Fintype.card F)) < 1 := by
+          change (↑deg ^ 2 : ℝ≥0) /
+            ((2 * min (1 - sqr_nn - δ) (sqr_nn / 20)) ^ 7 * ↑(Fintype.card F)) < 1 at hε
+          exact_mod_cast hε
+        rw [hmin_eq] at hε_real
+        have hd : (0 : ℝ) < (2 * μ) ^ 7 * ↑(Fintype.card F) := by positivity
+        have hlt := (div_lt_one hd).mp hε_real
+        rw [show (2 * μ) ^ 7 = 128 * μ ^ 7 from by ring] at hlt
+        have hcast : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) = (↑deg : ℝ) ^ 2 := by push_cast; ring
+        rw [hcast] at hlt
+        rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 128 * μ ^ 7)]
+        linarith
       calc (gs_degree_bound deg (Fintype.card ι) m : ℝ) / ↑(deg - 1 : ℕ)
           ≤ (↑m + 1/2) * s * ↑(Fintype.card ι) / ↑(deg - 1 : ℕ) :=
             div_le_div_of_nonneg_right hfloor_le (by positivity)
@@ -1621,7 +1624,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       have hn_pos : (0 : ℝ) < Fintype.card ι := by positivity
       have hs_eq : s = Real.sqrt ((1 : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]; rw [Real.coe_sqrt]; congr 1
-        haveI : NeZero (1 : ℕ) := ⟨by omega⟩
+        have : NeZero (1 : ℕ) := ⟨by omega⟩
         have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := 1)
           (by omega : 1 ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]; simp [LinearCode.length]
@@ -1943,7 +1946,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       have hv₂_code := (hclose v₂ hv₂).1
       have hv₁_dist := (hclose v₁ hv₁).2
       have hv₂_dist := (hclose v₂ hv₂).2
-      haveI : NeZero deg := ⟨by omega⟩
+      have : NeZero deg := ⟨by omega⟩
       have hrelUDR : Code.relativeUniqueDecodingRadius (ι := ι) (F := F)
           (C := (ReedSolomon.code domain deg : Set (ι → F))) =
           ((1 : ℝ≥0) - ↑deg / ↑(Fintype.card ι)) / 2 :=
@@ -2099,8 +2102,8 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   -- ═══════════════════════════════════════════════════════════
   -- Step 2: Pick u* ∈ U achieving divergence (max distance to V).
   -- ═══════════════════════════════════════════════════════════
-  haveI : Nonempty (V : Set (ι → F)) := ⟨0, V.zero_mem⟩
-  haveI : Nonempty U := ⟨⟨u 0, hu0_mem⟩⟩
+  have : Nonempty (V : Set (ι → F)) := ⟨0, V.zero_mem⟩
+  have : Nonempty U := ⟨⟨u 0, hu0_mem⟩⟩
   obtain ⟨u_star, hu_star_mem, hu_star_div⟩ :=
     DivergenceOfSets.divergence_attains (U := U) (V := (V : Set (ι → F)))
   -- Extract u*'s affine coefficients without destroying u_star via rfl.
@@ -2156,7 +2159,9 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
       ext z; constructor
       · exact fun _ => Finset.mem_univ _
       · intro _
-        simp only [finMapTwoWords, Finset.mem_filter, Finset.mem_univ, true_and]
+        apply Finset.mem_filter.mpr
+        refine ⟨Finset.mem_univ z, ?_⟩
+        simp only [finMapTwoWords]
         have hx_mem := h_line_in_U z
         have hx_le_div := DivergenceOfSets.relDistFromCode'_le_divergence
           (U := U) (V := (V : Set (ι → F))) _ hx_mem

@@ -69,11 +69,11 @@ def Function.extendDomain {α β : Type*} [DecidableEq α] [Zero β] {s : Finset
     (f : (x : α) → (x ∈ s) → β) : α → β :=
   fun x ↦ if hx : x ∈ s then f x hx else 0
 
-open Function in
+open _root_.MvPolynomial.Function in
 lemma schwartz_zippel' [Finite σ] {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
     #{x ∈ Finset.pi p.vars S | eval (extendDomain x) p = 0} / ∏ i ∈ p.vars, (#(S i) : ℚ≥0)
       ≤ ∑ i ∈ p.vars, (p.degreeOf i / #(S i) : ℚ≥0) := by
-  letI : Fintype σ := Fintype.ofFinite σ
+  let : Fintype σ := Fintype.ofFinite σ
   let S' : σ → Finset R := fun i ↦ if i ∈ p.vars then S i else {0}
   have hsz := schwartz_zippel_of_fintype (p := p) hp S'
   convert hsz using 1
@@ -158,7 +158,7 @@ variable {R : Type*} [CommRing R] [IsDomain R]
 
 section Finset
 
-open Function Fintype
+open _root_.MvPolynomial.Function Fintype
 
 variable {n : ℕ}
 

@@ -647,7 +647,7 @@ def commitKStateProp (i : Fin ℓ) (m : Fin (1 + 1))
   | ⟨0, _⟩ => -- same as relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (stmtIdx := i.succ) (oracleIdx := i.castSucc)
-      (h_le := by simp only [Fin.coe_castSucc, Fin.val_succ, le_add_iff_nonneg_right, zero_le])
+      (h_le := by simp only [Fin.val_castSucc, Fin.val_succ, le_add_iff_nonneg_right, zero_le])
       (stmt := stmtIn) (wit := witMid) (oStmt := oStmtIn)
       (localChecks := True)
   | ⟨1, _⟩ => -- implied by relOut
@@ -845,9 +845,9 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     relayKStateProp (mp:=mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
        i hNCR stmtIn witMid oStmtIn
   toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn => by
-    simp only [foldStepRelOut, foldStepRelOutProp, cast_eq, Set.mem_setOf_eq, relayKStateProp]
+    simp only [foldStepRelOut, foldStepRelOutProp, cast_eq, Set.mem_ofPred_eq, relayKStateProp]
     unfold masterKStateProp
-    simp only [Fin.val_succ, Fin.coe_castSucc, Fin.take_eq_init, true_and, Fin.take_eq_self]
+    simp only [Fin.val_succ, Fin.val_castSucc, Fin.take_eq_init, true_and, Fin.take_eq_self]
     have hRight := oracleWitnessConsistency_relay_preserved (mp := mp) 𝔽q β i
       hNCR stmtIn witIn oStmtIn
     rw [hRight]

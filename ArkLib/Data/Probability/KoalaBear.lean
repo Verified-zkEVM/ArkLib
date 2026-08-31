@@ -44,10 +44,10 @@ instance instSampleableType : SampleableType Ext6 := sampleableType
 /-- The canonical `Ext6` uniform sample is definitionally the six-limb sampler above. -/
 theorem uniformSample_eq_sample : ($ᵗ Ext6) = sample := rfl
 
-/-- Sampling six independent base limbs induces the uniform distribution on `Ext6`. -/
-theorem evalDist_sample :
-    𝒟[sample] = liftM (PMF.uniformOfFintype Ext6) := by
+/-- Sampling six independent base limbs induces the uniform executable distribution on `Ext6`. -/
+theorem evalSPMF_sample :
+    𝒮[sample] = liftM (PMF.uniformOfFintype Ext6) := by
   rw [← uniformSample_eq_sample]
-  exact evalDist_uniformSample Ext6
+  exact evalSPMF_uniformSample Ext6
 
 end KoalaBear.Ext6

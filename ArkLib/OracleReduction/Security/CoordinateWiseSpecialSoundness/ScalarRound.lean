@@ -29,17 +29,18 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
   `scalarStructure_arity`); the per-round instances; the **tree readers and shape recovery**
   (`readPre`, `readChallenges`, `tree2`, `tree_shape` — the `(ℓ = 1, k)` transplant of
   `SingleRound.lean`'s, index-generic in the same way); the per-branch transcript machinery
-  (`branchPath`, `branchTr`, `branch_pre`, `branch_challenge`, `branch_mem`) and the
-  pure-acceptance bridge `branch_relOut_language`; the named extractor `treeExtractorScalar`; and
-  the escape event `escEventScalar` induced by a local per-family event.
+  (`branchPath`, `branchTr`, `branch_pre`, `branch_challenge`, `branch_mem`), the per-branch paths
+  (`branchPathOf`) at which extraction reads its leaf witnessing, and the pure-acceptance bridge
+  `branch_relOut_language`; the named extractor `treeExtractorScalar`; and the escape event
+  `escEventScalar` induced by a local per-family event.
 
   Both generic assemblies are **proven**:
   `coordinateWiseSpecialSoundWith_of_mkWitness_scalar` and its escape-threaded twin
-  `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`. Any pure statement-extending verifier
-  of this shape is CWSS for `scalarStructure k` given only a witness assembler `mkWitness` that
-  turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a `relIn`-witness
-  (escape variant: or into a local escape event). At `ℓ = 1` the star machinery of `SingleRound`
-  collapses to injectivity of the challenge family (`injective_of_nodeOk`, via
+  `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`. Any pure statement-extending
+  verifier of this shape is CWSS for `scalarStructure k` given only a witness assembler `mkWitness`
+  that turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a
+  `relIn`-witness (escape variant: or into a local escape event). At `ℓ = 1` the star machinery of
+  `SingleRound` collapses to injectivity of the challenge family (`injective_of_nodeOk`, via
   `isSpecialSoundFamily_one_iff_injective` composed with the `Equiv.funUnique` decomposition of
   `scalarStructure`), so `hmk` receives plain `Function.Injective fam` instead of `StarAt`.
 
@@ -236,6 +237,7 @@ theorem branch_challenge (v : Msg)
   simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
     FullTranscript.challenges, Transcript.concat]
   simp [Fin.snoc]
+  exact eq_of_heq (cast_heq _ _)
 
 /-- Branch `j`'s transcript carries the shared message `v` at round 0. -/
 theorem branch_pre (v : Msg)
@@ -245,6 +247,7 @@ theorem branch_pre (v : Msg)
   simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
     FullTranscript.messages, Transcript.concat]
   simp [Fin.snoc]
+  exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
 
 /-- Branch `j`'s transcript is one of the star tree's leaf transcripts. -/
 theorem branch_mem (v : Msg)
@@ -252,6 +255,53 @@ theorem branch_mem (v : Msg)
     (j : Fin (arity ⟨1, rfl⟩)) :
     branchTr v challenges j ∈ (tree2 v challenges).fullTranscripts :=
   LeafPath.mem_fullTranscripts _
+
+/-! ## Per-branch paths
+
+The `(ℓ = 1, k)` transplant of `SingleRound`'s path builders: the same index-generic peeling, at
+`pSpecScalar`. `branchPathOf` is where the witness-only extractor reads its leaf witnessing, and
+`fullTranscript_branchPathOf` — `rfl` on the star tree — is the only fact about it extraction
+needs. -/
+
+/-- Index-generic: at the last round every tree is a leaf, so its only path is the empty one. -/
+def lastPathAux : {a : Fin 3} → (t : ChallengeTree (pSpecScalar Msg C) arity a) →
+    a = Fin.last 2 → LeafPath t
+  | _, .leaf, _ => .leaf
+  | _, .msgNode k _ _ _, ha => absurd (congrArg Fin.val ha) (by simpa using k.isLt.ne)
+  | _, .chalNode k _ _ _, ha => absurd (congrArg Fin.val ha) (by simpa using k.isLt.ne)
+
+/-- Index-generic round-1 branch path: descend into sibling `j` of the challenge node. -/
+def chalPathAux : {a : Fin 3} → (t : ChallengeTree (pSpecScalar Msg C) arity a) →
+    a = (1 : Fin 3) → Fin (arity ⟨1, rfl⟩) → LeafPath t
+  | _, .leaf, ha, _ => by simp [Fin.ext_iff] at ha
+  | _, .msgNode k h _ _, ha, _ => by
+      obtain rfl : k = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact absurd h Direction.noConfusion
+  | _, .chalNode k h _ children, ha, j => by
+      obtain rfl : k = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact .chal j (lastPathAux (children j) rfl)
+
+/-- The root-to-leaf path of branch `j` of an **arbitrary** full scalar-round tree — the index at
+which the extractor reads its leaf witnessing. -/
+def branchPathOf (tree : ChallengeTree (pSpecScalar Msg C) arity 0)
+    (j : Fin (arity ⟨1, rfl⟩)) : LeafPath tree := aux tree rfl j
+where
+  /-- Round-0 helper for `branchPathOf`: strip the top `msgNode`, delegate to `chalPathAux`. -/
+  aux : {a : Fin 3} → (t : ChallengeTree (pSpecScalar Msg C) arity a) → a = (0 : Fin 3) →
+      Fin (arity ⟨1, rfl⟩) → LeafPath t
+    | _, .leaf, ha, _ => by simp [Fin.ext_iff] at ha
+    | _, .msgNode k _ _ child, ha, j => by
+        obtain rfl : k = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+        exact .msg (chalPathAux child rfl j)
+    | _, .chalNode k h _ _, ha, _ => by
+        obtain rfl : k = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+        exact absurd h Direction.noConfusion
+
+/-- The branch path's transcript **is** the branch transcript — definitional on the star tree. -/
+theorem fullTranscript_branchPathOf (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (branchPathOf (tree2 v challenges) j).fullTranscript = branchTr v challenges j := rfl
 
 /-! ## The scalar structure's node predicate -/
 
@@ -308,7 +358,7 @@ theorem branch_relOut_language (init : ProbComp σ)
     (j : Fin (arity ⟨1, rfl⟩)) :
     (stmtIn, v, challenges j) ∈ relOut.language :=
   Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j) relOut.language
-    (stmtIn, v, challenges j) (by rw [hpure]; rw [branch_pre, branch_challenge]; rfl)
+    (stmtIn, v, challenges j) (by rw [hpure]; rw [branch_pre, branch_challenge])
     (hAcc _ (branch_mem v challenges j))
 
 end Bridge
@@ -317,7 +367,7 @@ end Bridge
 
 section Extractor
 
-variable {StmtIn WitIn WitOut : Type} [Nonempty WitOut]
+variable {StmtIn WitIn WitOut : Type}
 
 /-- Read the `k` sibling scalar challenges off a full tree at the `scalarStructure k` arity,
 re-indexed by `Fin k` through the arity bridge `scalarStructure_arity`. Shared by the extractor
@@ -328,23 +378,21 @@ def readFam {k : ℕ} (hk : 2 ≤ k)
     Fin k → C :=
   fun j => readChallenges tree (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j)
 
-open Classical in
 /-- **The scalar-round tree extractor**, the `(ℓ = 1, k)` analogue of `SingleRound.treeExtractor`:
-read the message and the `k` sibling scalar challenges off the tree, choose a per-branch
-`relOut`-witness classically (`Classical.ofNonempty` where none exists; on structured accepting
-trees every guard fires), and assemble via `mkWitness`. Hypothesis-free — all correctness lives in
-the assembly below. -/
-noncomputable def treeExtractorScalar {k : ℕ} (hk : 2 ≤ k)
-    (relOut : Set ((StmtIn × Msg × C) × WitOut))
+read the message and the `k` sibling scalar challenges off the tree, `collect` the `k` per-branch
+responses off the leaf witnessing at the branch paths (reusing `SingleRound.collect`), and assemble
+via `mkWitness`. Declines (`none`) exactly when the witnessing declines at some branch.
+
+A bare function — no relation argument, no `[Nonempty WitOut]`, no choice. Hypothesis-free: all
+correctness lives in the assembly below. -/
+def treeExtractorScalar {k : ℕ} (hk : 2 ≤ k)
     (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn) :
-    Extractor.TreeBased StmtIn WitIn (pSpecScalar Msg C)
+    Extractor.TreeBased StmtIn WitIn WitOut (pSpecScalar Msg C)
       (CWSSStructure.toShape (scalarStructure (Msg := Msg) (C := C) k hk)).arity :=
-  fun stmtIn tree =>
-    let v := readPre tree
-    let fam : Fin k → C := readFam hk tree
-    let resp : Fin k → WitOut := fun j =>
-      if h : ∃ w, ((stmtIn, v, fam j), w) ∈ relOut then h.choose else Classical.ofNonempty
-    mkWitness stmtIn v fam resp
+  fun stmtIn tree o =>
+    (SingleRound.collect (fun j : Fin k => o (branchPathOf tree
+        (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j)))).map
+      (mkWitness stmtIn (readPre tree) (readFam hk tree))
 
 /-- The scalar-round tree-level escape event induced by a **local** (per-family) event `escLocal`
 and a per-branch validity predicate `valid`: the tree's own message and challenge family admit
@@ -378,19 +426,54 @@ end Extractor
 
 section Assembly
 
-variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn WitOut : Type} [Nonempty WitOut]
-  {σ : Type}
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn WitOut : Type} {σ : Type}
+
+/-- **Extraction core, scalar round.** Validity at the pure verdicts yields the `k` per-branch
+responses: present (so `collect`'s guard fires) and `relOut`-valid at their branch statements.
+Choice-free, and consumed at `branchPathOf`-paths only. -/
+theorem collect_branch_data {k : ℕ}
+    {relOut : Set ((StmtIn × Msg × C) × WitOut)}
+    (harity : k = arity ⟨1, rfl⟩)
+    (stmtIn : StmtIn) (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (o : ChallengeTree.LeafWitnesses (tree2 v challenges) WitOut)
+    (hvalid : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+        ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
+          ∈ relOut) :
+    ∃ resp : Fin k → WitOut,
+      (∀ j, o (branchPathOf (tree2 v challenges) (Fin.cast harity j)) = some (resp j)) ∧
+      (∀ j, ((stmtIn, v, challenges (Fin.cast harity j)), resp j) ∈ relOut) := by
+  have hsome : ∀ j : Fin k,
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).isSome := by
+    intro j
+    obtain ⟨w, hw, -⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+    rw [hw]; rfl
+  refine ⟨fun j => (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j),
+    fun j => (Option.some_get (hsome j)).symm, fun j => ?_⟩
+  obtain ⟨w, hw, hrel⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+  rw [fullTranscript_branchPathOf, branch_pre, branch_challenge] at hrel
+  have hget : (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j) = w :=
+    Option.some.inj ((Option.some_get (hsome j)).trans hw)
+  change ((stmtIn, v, challenges (Fin.cast harity j)),
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j)) ∈ relOut
+  rw [hget]
+  exact hrel
 
 /-- **Generic scalar-round CWSS assembly, named form.** Any pure statement-extending verifier of
 the two-round scalar `pSpecScalar` is coordinate-wise special sound for `scalarStructure k` **at
-the named extractor** `treeExtractorScalar`, provided a witness assembler `mkWitness` that turns
-`k` per-branch `relOut`-witnesses at pairwise-distinct challenges into a `relIn`-witness.
+the named engine** `treeExtractorScalar hk mkWitness`, provided a witness assembler `mkWitness`
+that turns `k` per-branch `relOut`-witnesses at pairwise-distinct challenges into a
+`relIn`-witness.
+
+The notion's validity premise costs `hmk` nothing: at the pure verifier it collapses to per-verdict
+witnessing (`LeafWitnesses.isValid_iff_pure` at `hpure`), which supplies exactly the per-branch
+responses.
 
 This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation) and Lemma 11
 (`k = deg + 1`, per sumcheck round): all tree/extractor plumbing is discharged here once, and the
 protocol-specific work lives entirely in `hmk`. The `ℓ = 1` node predicate unfolds to injectivity
 of the challenge family (`injective_of_nodeOk`), and `tree_shape` puts an arbitrary structured
-accepting tree into star form so that `branch_relOut_language` can certify each branch. -/
+accepting tree into star form so that the branch paths compute definitionally. -/
 theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
@@ -404,36 +487,43 @@ theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
       (∀ j, ((s, v, fam j), resp j) ∈ relOut) → Function.Injective fam →
       (s, mkWitness s v fam resp) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWith init impl (scalarStructure k hk) relIn relOut V
-      (treeExtractorScalar hk relOut mkWitness) := by
-  classical
+      (treeExtractorScalar hk mkWitness) := by
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
-  have hmem : ∀ j : Fin k,
-      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
-    intro j
-    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
-      (Fin.cast harity j)
-    exact (Set.mem_language_iff relOut _).1 h
+  intro o hvalid
+  have hne : (support init).Nonempty :=
+    Verifier.support_init_nonempty_of_accepting hAcc
+      (branchPathOf (tree2 v challenges) (Fin.cast harity ⟨0, by omega⟩))
+  have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+      ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
+        ∈ relOut :=
+    (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
+      (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+      hpure hne relOut stmtIn o).mp hvalid
+  obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
   have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
-  have hbranch : ∀ j : Fin k,
-      ((stmtIn, v, challenges (Fin.cast harity j)),
-        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
-          then h.choose else Classical.ofNonempty) ∈ relOut := by
-    intro j
-    rw [dif_pos (hmem j)]
-    exact (hmem j).choose_spec
-  exact hmk stmtIn v _ _ hbranch hinj
+  have hcol : SingleRound.collect (fun j : Fin k =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j))) = some resp :=
+    SingleRound.collect_eq_some hro
+  refine ⟨mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp, ?_,
+    hmk stmtIn v (fun j => challenges (Fin.cast harity j)) resp hbranch hinj⟩
+  change (SingleRound.collect (fun j : Fin k =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j)))).map
+      (mkWitness stmtIn (readPre (tree2 v challenges)) (readFam hk (tree2 v challenges)))
+    = some (mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp)
+  rw [hcol]
+  rfl
 
 /-- **Generic scalar-round escape-threaded CWSS assembly, named form.** The escape twin of
 `coordinateWiseSpecialSoundWith_of_mkWitness_scalar`: `hmk` may conclude a local escape event
 `escLocal` instead of a `relIn`-witness, and the certificate carries the induced tree-level event
-`escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation,
-weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
+`escEventScalar relOut escLocal`, unchanged. This is the engine behind Hachi Lemma 9 (`k = 2d`,
+interpolation, weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
 
-Same proof as the plain assembly up to the last step, where the disjunction is threaded: the
-extractor's own chosen per-branch responses — certified `relOut`-valid by `hbranch` — witness
-`escEventScalar`'s existential. -/
+The disjunction is decided before any witnessing is seen, by a classical case split on the event;
+in the no-escape branch the collected response family refutes `hmk`'s escape conclusion, since it
+is itself a witness of `escEventScalar`'s existential. -/
 theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
@@ -449,28 +539,41 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
       escLocal s v fam resp ∨ (s, mkWitness s v fam resp) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl (scalarStructure k hk)
       (escEventScalar hk relOut escLocal) relIn relOut V
-      (treeExtractorScalar hk relOut mkWitness) := by
+      (treeExtractorScalar hk mkWitness) := by
   classical
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
-  have hmem : ∀ j : Fin k,
-      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
-    intro j
-    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
-      (Fin.cast harity j)
-    exact (Set.mem_language_iff relOut _).1 h
+  by_cases hesc : escEventScalar hk relOut escLocal stmtIn (tree2 v challenges)
+  · exact Or.inl hesc
+  refine Or.inr fun o hvalid => ?_
+  have hne : (support init).Nonempty :=
+    Verifier.support_init_nonempty_of_accepting hAcc
+      (branchPathOf (tree2 v challenges) (Fin.cast harity ⟨0, by omega⟩))
+  have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+      ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
+        ∈ relOut :=
+    (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
+      (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+      hpure hne relOut stmtIn o).mp hvalid
+  obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
   have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
-  have hbranch : ∀ j : Fin k,
-      ((stmtIn, v, challenges (Fin.cast harity j)),
-        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
-          then h.choose else Classical.ofNonempty) ∈ relOut := by
-    intro j
-    rw [dif_pos (hmem j)]
-    exact (hmem j).choose_spec
-  rcases hmk stmtIn v _ _ hbranch hinj with hbad | hgood
-  · exact Or.inl ⟨_, hbranch, hbad⟩
-  · exact Or.inr hgood
+  have hcol : SingleRound.collect (fun j : Fin k =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j))) = some resp :=
+    SingleRound.collect_eq_some hro
+  rcases hmk stmtIn v (fun j => challenges (Fin.cast harity j)) resp hbranch hinj with
+    hbad | hgood
+  · exact absurd
+      (show escEventScalar hk relOut escLocal stmtIn (tree2 v challenges) from
+        ⟨resp, hbranch, hbad⟩)
+      hesc
+  · refine ⟨mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp, ?_, hgood⟩
+    change (SingleRound.collect (fun j : Fin k =>
+        o (branchPathOf (tree2 v challenges) (Fin.cast harity j)))).map
+        (mkWitness stmtIn (readPre (tree2 v challenges)) (readFam hk (tree2 v challenges)))
+      = some (mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp)
+    rw [hcol]
+    rfl
 
 end Assembly
 
@@ -491,24 +594,19 @@ input plus data. -/
 
 section GuardedAssembly
 
-variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut WitIn WitOut : Type} [Nonempty WitOut]
-  {σ : Type}
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut WitIn WitOut : Type} {σ : Type}
 
-open Classical in
-/-- The guarded scalar-round tree extractor: as `treeExtractorScalar`, but per-branch witnesses are
-chosen at the verifier's own output statement `out stmtIn v (fam j)` rather than at the extended
-statement. -/
-noncomputable def treeExtractorScalarOfValid {k : ℕ} (hk : 2 ≤ k)
-    (out : StmtIn → Msg → C → StmtOut) (relOut : Set (StmtOut × WitOut))
+/-- The guarded scalar-round tree extractor: as `treeExtractorScalar`, but its leaf witnesses
+certify the verifier's own target-replaced outputs. The extractor reads those witnesses directly;
+it never chooses one from a relation proof. -/
+def treeExtractorScalarOfValid {k : ℕ} (hk : 2 ≤ k)
     (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn) :
-    Extractor.TreeBased StmtIn WitIn (pSpecScalar Msg C)
+    Extractor.TreeBased StmtIn WitIn WitOut (pSpecScalar Msg C)
       (CWSSStructure.toShape (scalarStructure (Msg := Msg) (C := C) k hk)).arity :=
-  fun stmtIn tree =>
-    let v := readPre tree
-    let fam : Fin k → C := readFam hk tree
-    let resp : Fin k → WitOut := fun j =>
-      if h : ∃ w, (out stmtIn v (fam j), w) ∈ relOut then h.choose else Classical.ofNonempty
-    mkWitness stmtIn v fam resp
+  fun stmtIn tree o =>
+    (SingleRound.collect (fun j : Fin k => o (branchPathOf tree
+        (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j)))).map
+      (mkWitness stmtIn (readPre tree) (readFam hk tree))
 
 variable (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
@@ -516,7 +614,7 @@ variable (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 star both *passes the guard* and lands its output statement in `relOut.language`. The first
 conjunct is the new one: a branch whose check failed would make the verifier `failure` on that
 branch's transcript, which no accepting tree admits
-(`Verifier.not_accepting_of_verify_failure`). -/
+(`Verifier.not_accepting_of_failure`). -/
 theorem branch_guarded_relOut_language
     (V : Verifier oSpec StmtIn StmtOut (pSpecScalar Msg C))
     (check : StmtIn → Msg → C → Bool) (out : StmtIn → Msg → C → StmtOut)
@@ -535,10 +633,42 @@ theorem branch_guarded_relOut_language
   simp only [branch_pre, branch_challenge] at hverify
   have hc : check stmtIn v (challenges j) = true := by
     by_contra hc
-    exact Verifier.not_accepting_of_verify_failure init impl V stmtIn
-      (branchTr v challenges j) relOut.language (by rw [hverify, if_neg hc]) hacc
+    exact Verifier.not_accepting_of_failure (V := V) (stmt := stmtIn)
+      (tr := branchTr v challenges j) (by rw [hverify, if_neg hc]) hacc
   exact ⟨hc, Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j)
     relOut.language _ (by rw [hverify, if_pos hc]) hacc⟩
+
+/-- The guarded counterpart of `collect_branch_data`: valid leaf witnessing pins every selected
+response to the target-replaced statement of its branch, without a choice operation. -/
+theorem collect_branch_data_of_valid {k : ℕ}
+    (harity : k = arity ⟨1, rfl⟩)
+    (out : StmtIn → Msg → C → StmtOut)
+    (stmtIn : StmtIn) (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (o : ChallengeTree.LeafWitnesses (tree2 v challenges) WitOut)
+    (relOut : Set (StmtOut × WitOut))
+    (hvalid : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+        (out stmtIn (p.fullTranscript.messages ⟨0, rfl⟩)
+          (p.fullTranscript.challenges ⟨1, rfl⟩), w) ∈ relOut) :
+    ∃ resp : Fin k → WitOut,
+      (∀ j, o (branchPathOf (tree2 v challenges) (Fin.cast harity j)) = some (resp j)) ∧
+      (∀ j, (out stmtIn v (challenges (Fin.cast harity j)), resp j) ∈ relOut) := by
+  have hsome : ∀ j : Fin k,
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).isSome := by
+    intro j
+    obtain ⟨w, hw, -⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+    rw [hw]
+    rfl
+  refine ⟨fun j => (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j),
+    fun j => (Option.some_get (hsome j)).symm, fun j => ?_⟩
+  obtain ⟨w, hw, hrel⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+  rw [fullTranscript_branchPathOf, branch_pre, branch_challenge] at hrel
+  have hget : (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j) = w :=
+    Option.some.inj ((Option.some_get (hsome j)).trans hw)
+  change (out stmtIn v (challenges (Fin.cast harity j)),
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j)) ∈ relOut
+  rw [hget]
+  exact hrel
 
 /-- **Generic guarded scalar-round escape-threaded CWSS assembly, named form.** The guarded,
 target-replacing twin of `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`: the verifier
@@ -564,7 +694,7 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded
       escLocal s v fam resp ∨ (s, mkWitness s v fam resp) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl (scalarStructure k hk)
       (escEventScalarOfValid hk (fun s v fam j w => (out s v (fam j), w) ∈ relOut) escLocal)
-      relIn relOut V (treeExtractorScalarOfValid hk out relOut mkWitness) := by
+      relIn relOut V (treeExtractorScalarOfValid hk mkWitness) := by
   classical
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
@@ -572,20 +702,44 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded
   have hbranch := fun j : Fin k =>
     branch_guarded_relOut_language init impl V check out hV relOut stmtIn v challenges hAcc
       (Fin.cast harity j)
-  have hmem : ∀ j : Fin k,
-      ∃ w, (out stmtIn v (challenges (Fin.cast harity j)), w) ∈ relOut :=
-    fun j => (Set.mem_language_iff relOut _).1 (hbranch j).2
+  by_cases hesc : escEventScalarOfValid hk
+      (fun s v fam j w => (out s v (fam j), w) ∈ relOut) escLocal stmtIn (tree2 v challenges)
+  · exact Or.inl hesc
+  refine Or.inr fun o hvalid => ?_
+  have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+      (out stmtIn (p.fullTranscript.messages ⟨0, rfl⟩)
+        (p.fullTranscript.challenges ⟨1, rfl⟩), w) ∈ relOut := by
+    intro p
+    obtain ⟨w, hw, out', hout, hrel⟩ := hvalid p
+    refine ⟨w, hw, ?_⟩
+    have hout' : out' = out stmtIn (p.fullTranscript.messages ⟨0, rfl⟩)
+        (p.fullTranscript.challenges ⟨1, rfl⟩) :=
+      Verifier.outputs_guarded_subsingleton init impl V
+        (fun s tr => check s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
+        (fun s tr => out s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
+        hV stmtIn p.fullTranscript hout
+    rw [← hout']
+    exact hrel
+  obtain ⟨resp, hro, hresp⟩ :=
+    collect_branch_data_of_valid harity out stmtIn v challenges o relOut hvalid'
   have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
-  have hresp : ∀ j : Fin k,
-      ((out stmtIn v (challenges (Fin.cast harity j))),
-        if h : ∃ w, (out stmtIn v (challenges (Fin.cast harity j)), w) ∈ relOut
-          then h.choose else Classical.ofNonempty) ∈ relOut := by
-    intro j
-    rw [dif_pos (hmem j)]
-    exact (hmem j).choose_spec
-  rcases hmk stmtIn v _ _ (fun j => (hbranch j).1) hresp hinj with hbad | hgood
-  · exact Or.inl ⟨_, hresp, hbad⟩
-  · exact Or.inr hgood
+  have hcol : SingleRound.collect (fun j : Fin k =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j))) = some resp :=
+    SingleRound.collect_eq_some hro
+  rcases hmk stmtIn v (fun j => challenges (Fin.cast harity j)) resp
+    (fun j => (hbranch j).1) hresp hinj with hbad | hgood
+  · exact absurd
+      (show escEventScalarOfValid hk
+          (fun s v fam j w => (out s v (fam j), w) ∈ relOut) escLocal stmtIn
+          (tree2 v challenges) from ⟨resp, hresp, hbad⟩)
+      hesc
+  · refine ⟨mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp, ?_, hgood⟩
+    change (SingleRound.collect (fun j : Fin k =>
+        o (branchPathOf (tree2 v challenges) (Fin.cast harity j)))).map
+        (mkWitness stmtIn (readPre (tree2 v challenges)) (readFam hk (tree2 v challenges)))
+      = some (mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp)
+    rw [hcol]
+    rfl
 
 end GuardedAssembly
 

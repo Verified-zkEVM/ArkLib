@@ -13,6 +13,10 @@ This module contains the main interleaved and tensor proximity-gap lemmas from t
 formalization, up to the generic tensor-gap lifting theorem.
 -/
 
+-- Keep the public `WordStack`/`InterleavedWord` Matrix aliases transparent while elaborating the
+-- legacy proximity API under Lean 4.33's stricter backwards-definitional-equality behavior.
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
@@ -96,7 +100,7 @@ lemma dist_row_le_dist_ToInterleavedCode (U : InterleavedWord A (Fin m) ι) :
   have dist_le_dist : Δ₀(Uᵢ, C) ≤ Δ₀(Uᵢ, Mᵢ) := by
     apply csInf_le' -- Using sInf property
     --  ⊢ ↑Δ₀(Uᵢ, Mᵢ) ∈ {d | ∃ v ∈ ↑MC, ↑Δ₀(Uᵢ, v) ≤ d}
-    simp only [Set.mem_setOf_eq, Nat.cast_le]
+    simp only [Set.mem_ofPred_eq, Nat.cast_le]
     -- ⊢ ∃ v ∈ C, Δ₀(Uᵢ, v) ≤ Δ₀(Uᵢ, Mᵢ)
     use Mᵢ
     simp only [Subtype.coe_prop, le_refl, and_self]
@@ -107,7 +111,7 @@ lemma dist_row_le_dist_ToInterleavedCode (U : InterleavedWord A (Fin m) ι) :
     exact dist_row_le_dist_ToInterleavedWord U M i
   calc
     (Δ₀(Uᵢ, Mᵢ): ℕ∞) ≤ (Δ₀(U, M): ℕ∞) :=
-      ENat.coe_le_coe.mpr h_dist_row_le_dist_interleaved
+      ENat.natCast_le_natCast.mpr h_dist_row_le_dist_interleaved
     _ ≤ Δ₀(U, C ^⋈ (Fin m)) := le_of_eq hM_dist
 
 /-- Extracts the constructed codewords V₀, V₁ and their agreement properties.
@@ -203,15 +207,13 @@ def constructInterleavedCodewordsAndRowWiseCA
   let V₀ : C ^⋈ (Fin m) := ⟨⋈| V₀_wordStack, by
     simp only [Word, interleavedCodeSet,
       interleavedCode_eq_interleavedCodeSet, WordStack, InterleavedWord,
-      interleave_wordStack_eq, Set.mem_setOf_eq,
-      Matrix.transpose_transpose]
+      interleave_wordStack_eq, Set.mem_ofPred_eq]
     intro rowIdx; exact Subtype.coe_prop (V₀₁ rowIdx).fst
   ⟩
   let V₁ : C ^⋈ (Fin m) := ⟨⋈| V₁_wordStack, by
     simp only [Word, interleavedCodeSet,
       interleavedCode_eq_interleavedCodeSet, WordStack, InterleavedWord,
-      interleave_wordStack_eq, Set.mem_setOf_eq,
-      Matrix.transpose_transpose]
+      interleave_wordStack_eq, Set.mem_ofPred_eq]
     intro rowIdx; exact Subtype.coe_prop (V₀₁ rowIdx).snd.fst
   ⟩
   use V₀, V₁
@@ -262,7 +264,7 @@ lemma affineWord_close_to_affineInterleavedCodeword
   simp only [R_star, Finset.mem_filter, Finset.mem_univ, true_and] at h_r_in_R_star
   -- h_r_in_R_star is: Δ₀(Uᵣ, C ^⋈ (Fin m)) ≤ e
   -- Use `exists_closest_codeword` to get this Vᵣ*
-  letI : Nonempty ↑(MC ^⋈ (Fin m)) := instNonemptyInterleavedCode A (κ := Fin m) (ι := ι) MC
+  let : Nonempty ↑(MC ^⋈ (Fin m)) := instNonemptyInterleavedCode A (κ := Fin m) (ι := ι) MC
   classical
   let Vᵣ_star : MC ^⋈ (Fin m) := Code.pickClosestCodeword_of_Nonempty_Code (C := MC ^⋈ (Fin m))
     (u := Uᵣ)
@@ -270,7 +272,7 @@ lemma affineWord_close_to_affineInterleavedCodeword
     dsimp only [Vᵣ_star]
     rw [Code.distFromPickClosestCodeword_of_Nonempty_Code]
   have h_dist_Uᵣ_Vᵣ_star_le_e : Δ₀(Uᵣ, Vᵣ_star) ≤ e := by
-    rw [←ENat.coe_le_coe, hVᵣ_star_dist]; exact h_r_in_R_star
+    rw [←ENat.natCast_le_natCast, hVᵣ_star_dist]; exact h_r_in_R_star
   -- We must show Vᵣ* = Vᵣ. We do this row-by-row.
   -- Goal is Δ₀(Uᵣ, Vᵣ) ≤ e. We will prove Vᵣ = Vᵣ_star, then rw.
   have h_Vᵣ_eq_Vᵣ_star : Vᵣ = Vᵣ_star.val := by
@@ -322,7 +324,7 @@ lemma affineWord_close_to_affineInterleavedCodeword
     -- We need 2e < d
     have h_2e_lt_d : 2 * e < d := by
       rw [Code.uniqueDecodingRadius] at he
-      letI : NeZero ‖(MC : Set (ι → A))‖₀ := NeZero.of_pos h_d_pos
+      let : NeZero ‖(MC : Set (ι → A))‖₀ := NeZero.of_pos h_d_pos
       have h_2e_lt_d := UDRClose_iff_two_mul_proximity_lt_d_UDR (C := MC) (e := e).mp (by exact he)
       exact h_2e_lt_d
     -- Apply unique decoding:
@@ -352,10 +354,10 @@ lemma affineWord_close_to_affineInterleavedCodeword
       -- Convert ℕ∞ inequalities to ℕ inequalities
       have h1_nat :
           Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_i) ≤ e :=
-        ENat.coe_le_coe.mp (ENat.coe_le_coe.mpr h_dist_Uᵣi_Vᵣi)
+        ENat.natCast_le_natCast.mp (ENat.natCast_le_natCast.mpr h_dist_Uᵣi_Vᵣi)
       have h2_nat :
           Δ₀((getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx), Vᵣ_star_i) ≤ e :=
-        ENat.coe_le_coe.mp (ENat.coe_le_coe.mpr h_dist_Uᵣi_Vᵣstari)
+        ENat.natCast_le_natCast.mp (ENat.natCast_le_natCast.mpr h_dist_Uᵣi_Vᵣstari)
       -- Apply triangle inequality for hammingDist
       calc
         Δ₀(Vᵣ_i, Vᵣ_star_i) ≤ Δ₀(Vᵣ_i, getRow (show (InterleavedWord A (Fin m) ι) from Uᵣ) rowIdx)
@@ -405,16 +407,15 @@ lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : Interleaved
   -- The goal is now `Disjoint (R_ss.filter P) (R_ss.filter (¬P))`
   apply disjoint_filter_filter_not
 
-set_option maxHeartbeats 400000 in
--- Destructured `let` avoids repeated elaboration of
--- `constructInterleavedCodewordsAndRowWiseCA`
+-- Keep the code coercion explicit: asking elaboration to infer it here unfolds the large
+-- `e_ε_correlatedAgreementAffineLinesNat` proposition during definitional equality checking.
 omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
 lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
     (U₀ U₁ : InterleavedWord A (Fin m) ι)
-  (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := MC) e ε)
+  (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := (MC : Set (ι → A))) e ε)
   (hR_star_card : (R_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁).card > ε) :
     let ⟨V₀, V₁, _⟩ := constructInterleavedCodewordsAndRowWiseCA (F := F)
-      (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
+      (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := hC_gap)
       (hR_star_card := hR_star_card)
     (disagreementSet U₀ U₁ V₀ V₁).card ≤ e
     → jointProximityNat₂ (C := MC ^⋈ (Fin m)) U₀ U₁ e := by
@@ -422,22 +423,18 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
   set C_m := MC ^⋈ (Fin m)
   set U_rowwise := finMapTwoWords U₀ U₁
   set U_colwise := ⋈| U_rowwise
-  set C_m_2 := C_m ^⋈ (Fin 2)
   -- Unfold the goal
   unfold jointProximityNat₂
-  -- Goal: (let ⟨V₀, V₁, _⟩ := ... in (disagreementSet ...).card ≤ e) → (Δ₀(U_comb, C_m_2) ≤ e)
+  -- Goal: (let ⟨V₀, V₁, _⟩ := ... in (disagreementSet ...).card ≤ e) →
+  --   (Δ₀(U_comb, C_m ^⋈ (Fin 2)) ≤ e)
   simp only
   -- 2. Introduce the bindings and the hypothesis
   intro hDisagreeementCard_Le_e -- The assumption: (disagreementSet U₀ U₁ V₀ V₁).card ≤ e
-  set V₀ := (constructInterleavedCodewordsAndRowWiseCA (F := F)
-    (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
-    (hR_star_card := hR_star_card)).1
-  set V₁ := (constructInterleavedCodewordsAndRowWiseCA (F := F)
-    (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
-    (hR_star_card := hR_star_card)).2.1
-  set hRowPairCA_U_V := (constructInterleavedCodewordsAndRowWiseCA
-    (F := F) (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := by exact hC_gap)
-    (hR_star_card := hR_star_card)).2.2
+  set V := constructInterleavedCodewordsAndRowWiseCA (F := F)
+    (A := A) (ι := ι) (C := MC) (U₀ := U₀) (U₁ := U₁) (hC_gap := hC_gap)
+    (hR_star_card := hR_star_card)
+  set V₀ := V.1
+  set V₁ := V.2.1
   have hD_card_le_e : #(disagreementSet U₀ U₁ V₀ V₁) ≤ e :=
     hDisagreeementCard_Le_e
   -- 3. Show LHS assumption is equal to Δ₀(U_comb, V_constructed) ≤ e
@@ -476,7 +473,7 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
         exact h_fun_ne_i
   -- Our assumption `h_LHS` is now: Δ₀(U_comb, V_constructed) ≤ e
   simp_rw [h_LHS_eq_dist] at hD_card_le_e
-  -- 4. Prove the RHS: Δ₀(U_comb, C_m_2) ≤ e
+  -- 4. Prove the RHS: Δ₀(U_comb, C_m ^⋈ (Fin 2)) ≤ e
   rw [jointProximityNat]
   rw [Code.closeToCode_iff_closeToCodeword_of_minDist]
   -- ⊢ ∃ v ∈ ↑(C ^⋈ (Fin 2) ^⋈ (Fin m)),
@@ -563,7 +560,7 @@ lemma card_agreeing_cells_in_D_le
       intro p hp_in_Rss
       -- This is true by the very definition of R_ss_in_D!
       unfold R_ss_in_D R_star_star_filter_columns_in_D at hp_in_Rss
-      simp only [coe_filter, Set.mem_setOf_eq] at hp_in_Rss
+      simp only [coe_filter, Set.mem_ofPred_eq] at hp_in_Rss
       -- hp_in_Rss is `p ∈ R_star_star ∧ p.2 ∈ D`
       exact hp_in_Rss.2
   -- 2. We prove that each fiber (for a fixed j) has cardinality at most 1
@@ -1424,20 +1421,23 @@ lemma jointProximity₂_affineShift_implies_jointProximity₂ (u₀ u₁ : Word 
       have h_subset := (hv_agree_u₀_u₁_on_S 0).2
       intro j hj
       specialize h_subset hj
-      simp only [mem_filter, mem_univ, true_and] at h_subset
-      simp only [mem_filter, mem_univ, true_and, finMapTwoWords]
-      exact h_subset
+      apply mem_filter.mpr
+      refine ⟨mem_univ j, ?_⟩
+      simpa only [finMapTwoWords] using (mem_filter.mp h_subset).2
     | 1 =>
       simp only [v', Fin.isValue]
       intro j hj
-      simp only [mem_filter, mem_univ, true_and, finMapTwoWords]
+      apply mem_filter.mpr
+      refine ⟨mem_univ j, ?_⟩
       -- v' 1 j = v₀ j + v₁ j
       -- We know v₀ j = u₀ j and v₁ j = (u₁ - u₀) j
       have h_agree_0 := (hv_agree_u₀_u₁_on_S 0).2 hj
       have h_agree_1 := (hv_agree_u₀_u₁_on_S 1).2 hj
-      simp only [mem_filter, mem_univ, true_and, finMapTwoWords, Fin.isValue] at h_agree_0 h_agree_1
-      rw [Pi.add_apply]
+      have h_agree_0 := (mem_filter.mp h_agree_0).2
+      have h_agree_1 := (mem_filter.mp h_agree_1).2
+      change v₀ j + v₁ j = u₁ j
       dsimp only [v₀, v₁]
+      simp only [finMapTwoWords, Fin.isValue] at h_agree_0 h_agree_1
       rw [h_agree_0, h_agree_1]
       simp only [Pi.sub_apply]
       abel

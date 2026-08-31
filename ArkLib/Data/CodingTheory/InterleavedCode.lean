@@ -130,6 +130,11 @@ abbrev InterleavedWord := Matrix ι κ A
 def InterleavedWord.getRowWord {A : Type*} {κ : Type*} {ι : Type*}
     (v : InterleavedWord A κ ι) (k : κ) : Word A ι := v.transpose k
 
+/-- Evaluating a row extracted from an interleaved word. -/
+@[simp]
+lemma InterleavedWord.getRowWord_apply {A : Type*} {κ : Type*} {ι : Type*}
+    (v : InterleavedWord A κ ι) (k : κ) (i : ι) : v.getRowWord k i = v i k := rfl
+
 @[simp]
 def InterleavedWord.getSymbol {A : Type*} {κ : Type*} {ι : Type*}
     (v : InterleavedWord A κ ι) (i : ι) : InterleavedSymbol A κ := v i
@@ -248,6 +253,11 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
     := u.transpose
 
+/-- Evaluating the interleaving of a stack of words. -/
+@[simp]
+lemma interleaveWordStack_apply {A : Type*} {κ ι : Type*} (u : WordStack A κ ι)
+    (i : ι) (k : κ) : interleaveWordStack u i k = u k i := rfl
+
 /-- Interleave a codeword stack into an interleaved codeword. -/
 @[simp]
 def interleaveCodewordStack (u : CodewordStack A κ ι C) : InterleavedCodeword A κ ι C :=
@@ -272,7 +282,7 @@ def finMapTwoCodewords (u₀ u₁ : C) :
     CodewordStack A (κ := Fin 2) (ι := ι) C :=
   ⟨finMapTwoWords u₀ u₁, by
     simp only [WordStack, CodewordStack, codewordStackSet, Word, WordStack.getRowWord,
-      Set.mem_setOf_eq, finMapTwoWords]
+      Set.mem_ofPred_eq, finMapTwoWords]
     intro k
     match k with
     | 0 => simp only [Subtype.coe_prop]
@@ -297,7 +307,7 @@ def finMapCodewordStacksAppend {κ₁ κ₂ : Type*}
     match s with
     | Sum.inl k₁ => u.val k₁
     | Sum.inr k₂ => v.val k₂, by
-    simp only [WordStack, CodewordStack, mem_codewordStack_iff]
+    simp only [WordStack, CodewordStack]
     intro s
     match s with
     | Sum.inl k₁ =>
@@ -521,6 +531,28 @@ theorem minDist_interleavedCodeSet
       rw [hempty, Nat.sInf_empty]
     rw [hbase, hinter]
 
+/-- Interleaving over a nonempty row index preserves the *relative* minimum distance:
+`δᵣ (MC ^⋈ κ) = δᵣ MC`. The relative form of `minDist_interleavedCodeSet`, via the bridge
+`minDist_div_card_eq_minRelHammingDistCode`: both codes have block length `ι`, so equal
+absolute distances give equal relative ones. -/
+lemma minRelHammingDistCode_moduleInterleavedCode
+    {ι F A κ : Type*} [Fintype ι] [Nonempty ι] [Semiring F]
+    [AddCommMonoid A] [Module F A] [DecidableEq A] [Fintype κ] [Nonempty κ]
+    (MC : ModuleCode ι F A) :
+    minRelHammingDistCode (ModuleCode.moduleInterleavedCode F A κ ι MC).carrier
+      = minRelHammingDistCode MC.carrier := by
+  have hmd : minDist ((ModuleCode.moduleInterleavedCode F A κ ι MC).carrier)
+      = minDist (MC.carrier : Set (ι → A)) :=
+    minDist_interleavedCodeSet (κ := κ) (MC.carrier : Set (ι → A))
+  have h1 := minDist_div_card_eq_minRelHammingDistCode
+    ((ModuleCode.moduleInterleavedCode F A κ ι MC).carrier)
+  have h2 := minDist_div_card_eq_minRelHammingDistCode (MC.carrier : Set (ι → A))
+  have hq : ((minRelHammingDistCode
+        (ModuleCode.moduleInterleavedCode F A κ ι MC).carrier : ℚ≥0) : ℚ)
+      = ((minRelHammingDistCode MC.carrier : ℚ≥0) : ℚ) := by
+    rw [← h1, ← h2, hmd]
+  exact_mod_cast hq
+
 section Finrank
 
 /-! ### Structure and dimension of an interleaved module code -/
@@ -692,7 +724,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     intro u v; constructor
     · intro h; rw [h]; exact fun i ↦ rfl
     · intro h; ext i k;
-      let res := h k; simp only [Subtype.mk.injEq] at res; exact congrFun res i
+      exact congrFun (congrArg Subtype.val (h k)) i
   eq_iff_all_symbols_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
@@ -907,7 +939,7 @@ theorem jointAgreement_iff_jointProximity
       exact hj_in_filter.2.symm
     -- From agreement on S, we get distance bound
     have h_dist : δᵣ(u_interleaved, v_interleaved) ≤ δ := by
-      rw [relCloseToWord_iff_exists_agreementCols]
+      apply (relCloseToWord_iff_exists_agreementCols u_interleaved v_interleaved δ).2
       use S
       rw [relDist_floor_bound_iff_complement_bound]
       constructor
@@ -942,16 +974,14 @@ theorem jointAgreement_iff_jointProximity
     have h_rel_to_nat : δᵣ(u_interleaved, interleavedCodeSet C) ≤ δ →
         ∃ v ∈ (interleavedCodeSet C), δᵣ(u_interleaved, v) ≤ δ := by
       intro h_rel
-      rw [relCloseToCode_iff_relCloseToCodeword_of_minDist] at h_rel
-      exact h_rel
+      exact (relCloseToCode_iff_relCloseToCodeword_of_minDist u_interleaved δ).1 h_rel
     have h_exists_v := h_rel_to_nat h_joint
     rcases h_exists_v with ⟨v, hv_mem, hv_dist⟩
     -- Now convert relative distance to agreement set
     -- We need: δᵣ(u_interleaved, v) ≤ δ → ∃ S, |S| ≥ (1-δ)*|ι| and agreement
     -- Convert relative distance δ to natural distance e
     have h_nat_dist : Δ₀(u_interleaved, v) ≤ e := by
-      rw [pairRelDist_le_iff_pairDist_le (δ := δ)] at hv_dist
-      exact hv_dist
+      exact (pairRelDist_le_iff_pairDist_le (u := u_interleaved) (v := v) δ).1 hv_dist
     have h_agree := Code.closeToWord_iff_exists_agreementCols
       (u := u_interleaved) (v := v) (e := e)
     have h_agree_nat := h_agree.mp h_nat_dist
@@ -969,7 +999,7 @@ theorem jointAgreement_iff_jointProximity
       intro i
       constructor
       · -- v_rows i ∈ MC
-        simp only [interleavedCodeSet, Set.mem_setOf_eq] at hv_mem
+        simp only [interleavedCodeSet, Set.mem_ofPred_eq] at hv_mem
         exact hv_mem i
       · -- S ⊆ {j | v_rows i j = u i j}
         simp only [Finset.subset_iff]

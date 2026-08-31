@@ -120,7 +120,7 @@ theorem large_agreement_set_on_line_implies_correlated_agreement {deg : ℕ}
       (ReedSolomon.toFinset domain deg) = Finset.univ := by
     apply Finset.eq_univ_of_forall
     intro z
-    simp only [coeffs_of_close_proximity_curve, Set.mem_toFinset, Set.mem_setOf_eq]
+    simp only [coeffs_of_close_proximity_curve, Set.mem_toFinset, Set.mem_ofPred_eq]
     have hcode := Code.relDistFromCode_le_relDist_to_mem
       (u := Curve.polynomialCurveEval u z)
       (C := (ReedSolomon.code domain deg : Set (Fin n → F)))

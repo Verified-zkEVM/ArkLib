@@ -267,19 +267,11 @@ private theorem simulateMessageQueryInl
   apply simulateQueryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
     _ q _ (messages.fst i) (messages (MessageIdx.inl i)) hab
   intro t
-  calc
-    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-        (((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
-          (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
-            ⟨MessageIdx.inl i, t⟩) =
-      liftM (OracleInterface.simOracle0 _ messages ⟨MessageIdx.inl i, t⟩) := by
-        exact OracleVerifier.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
-          (OracleInterface.simOracle0 OStmt₁ oStmt)
-          (OracleInterface.simOracle0 _ messages)
-          (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)
-    _ = pure ((inferInstance : OracleInterface
-        ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i))).answer
-          (messages (MessageIdx.inl i)) t) := rfl
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+    (OracleInterface.simOracle0 OStmt₁ oStmt)
+    (OracleInterface.simOracle0 _ messages)
+    (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)) ?_
+  rfl
 
 private theorem simulateMessageQueryInr
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
@@ -297,19 +289,11 @@ private theorem simulateMessageQueryInr
   apply simulateQueryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
     _ q _ (messages.snd i) (messages (MessageIdx.inr i)) hab
   intro t
-  calc
-    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-        (((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
-          (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
-            ⟨MessageIdx.inr i, t⟩) =
-      liftM (OracleInterface.simOracle0 _ messages ⟨MessageIdx.inr i, t⟩) := by
-        exact OracleVerifier.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
-          (OracleInterface.simOracle0 OStmt₁ oStmt)
-          (OracleInterface.simOracle0 _ messages)
-          (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)
-    _ = pure ((inferInstance : OracleInterface
-        ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i))).answer
-          (messages (MessageIdx.inr i)) t) := rfl
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+    (OracleInterface.simOracle0 OStmt₁ oStmt)
+    (OracleInterface.simOracle0 _ messages)
+    (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)) ?_
+  rfl
 
 private def firstQueryImpl : QueryImpl (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))
     (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)

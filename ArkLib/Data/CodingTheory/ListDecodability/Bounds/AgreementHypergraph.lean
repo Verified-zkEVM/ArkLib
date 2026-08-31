@@ -316,7 +316,7 @@ theorem exists_selectedGeometricFlagBasis
   have hAD : A = Submodule.span F (D : Set V) := by
     dsimp [A, D]
     exact vectorSpan_eq_span_vsub_finset_right_ne F ha
-  letI : FiniteDimensional F (Submodule.span F (D : Set V)) :=
+  let : FiniteDimensional F (Submodule.span F (D : Set V)) :=
     FiniteDimensional.span_of_finite F D.finite_toSet
   have hex := Submodule.exists_fun_fin_finrank_span_eq F (D : Set V)
   rw [← hAD] at hex
@@ -363,7 +363,7 @@ theorem geometricAffineRank_pos_of_two_le_card
     [DecidableEq V] (S : Finset V) (hS : 2 ≤ S.card) :
     1 ≤ geometricAffineRank (F := F) S := by
   classical
-  letI : FiniteDimensional F (vectorSpan F (S : Set V)) :=
+  let : FiniteDimensional F (vectorSpan F (S : Set V)) :=
     finiteDimensional_vectorSpan_of_finite F S.finite_toSet
   unfold geometricAffineRank
   rw [Submodule.one_le_finrank_iff]
@@ -931,7 +931,7 @@ theorem selectedGeometricFlagPart_image_card_le
     exact hpickE j
   have hspan : vectorSpan F (Set.range pick) ≤ vectorSpan F (E : Set V) :=
     vectorSpan_mono F hrange
-  letI : FiniteDimensional F (vectorSpan F (E : Set V)) :=
+  let : FiniteDimensional F (vectorSpan F (E : Set V)) :=
     finiteDimensional_vectorSpan_of_finite F E.finite_toSet
   have hfin := Submodule.finrank_mono hspan
   calc
@@ -1128,7 +1128,7 @@ theorem agreementWeight_lt_of_subspaceDesign
     apply vectorSpan_finset_le_submodule_of_subset
     intro c hc
     exact hTC c (hUT hc)
-  letI : FiniteDimensional F A :=
+  let : FiniteDimensional F A :=
     finiteDimensional_vectorSpan_of_finite F U.finite_toSet
   have hsum :
       (∑ i : ι, (geometricAffineRank (F := F) (agreementEdges U y i) : ℝ)) ≤

@@ -87,7 +87,7 @@ lemma folding_block_rel_ball {d : ℕ} [FoldingContext k d n]
     Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
        k - 1, ω.subdomain 1,
        foldWord ω f 1 α, δ) := by
-  simp_all only [Word, blockRelDistanceBall, SetLike.mem_coe, Set.mem_setOf_eq]
+  simp_all only [Word, blockRelDistanceBall, SetLike.mem_coe, Set.mem_ofPred_eq]
   constructor
   · have := FoldingContext.oneStep
     exact foldWord_mem_code_of_mem_code hu.1

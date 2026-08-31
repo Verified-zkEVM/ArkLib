@@ -75,11 +75,7 @@ lemma mem_self {i : ι} :
 @[simp]
 lemma mem_toCosetFftDomain_iff_mem :
   x ∈ toCosetFftDomain ω ↔ x ∈ ω := by
-  aesop (add simp
-          [mkSubgroupUnit,
-            mem_def,
-            toCosetFftDomain,
-            CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+  simp only [mem_def, toCosetFftDomain_apply]
 
 /-- Membership in the finset of elements is the same as membership in the coset FFT domain. -/
 @[simp]

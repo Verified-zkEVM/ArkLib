@@ -248,7 +248,7 @@ lemma frsEvalOnPoints_domRestrict_injective {ι : Type*} [Fintype ι]
       have hdeg := Polynomial.mem_degreeLT.mp p.2
       rw [Nat.cast_zero, Nat.WithBot.lt_zero_iff, Polynomial.degree_eq_bot] at hdeg
       exact hdeg
-    · haveI : NeZero k := ⟨by omega⟩
+    · have : NeZero k := ⟨by omega⟩
       refine Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero (p := p.val)
         (f := fun xi : ι × Fin s => domain xi.1 * ω ^ (xi.2 : ℕ))
         (admissible_foldedPoints_injective domain ω hadm hω) ?_ ?_
@@ -321,7 +321,7 @@ theorem minDist_frsCode {ι : Type*} [Fintype ι]
       omega
     calc k - 1 < s * Fintype.card ι := this
       _ = Fintype.card ι * s := Nat.mul_comm _ _
-  haveI : Nonempty ι := Fintype.card_pos_iff.mp (lt_of_le_of_lt (Nat.zero_le _) hdiv_lt)
+  have : Nonempty ι := Fintype.card_pos_iff.mp (lt_of_le_of_lt (Nat.zero_le _) hdiv_lt)
   rw [LinearCode.dist_eq_minWtCodewords, LinearCode.minWtCodewords]
   refine le_antisymm ?upper ?lower
   · -- UPPER BOUND: exhibit a codeword of weight exactly `D`.

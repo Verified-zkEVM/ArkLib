@@ -143,9 +143,7 @@ theorem simulateQ_queryInput
     simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
         (queryInput (F := F) m i x) = pure (oStmt i x) := by
   simp only [MessageIdx, Message, OracleInterface.simOracle2, QueryImpl.addLift,
-    queryInput, Lean.Elab.WF.paramLet, simulateQ_query, OracleQuery.input_query,
-    add_apply_inr, add_apply_inl, OracleQuery.cont_query, QueryImpl.add_apply_inr,
-    QueryImpl.liftTarget_apply]
+    queryInput, Lean.Elab.WF.paramLet]
   change id <$> (pure (oStmt i x) : OracleComp []ₒ F) = pure (oStmt i x)
   simp only [map_pure, id_eq]
 

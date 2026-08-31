@@ -1,5 +1,9 @@
 # MCA unification — reviewed execution plan (new PR on top of `main`)
 
+> **Historical record (2026-08-05).** Declaration names and file paths below predate the
+> `ProximityGenerator/` rename and the naming pass that landed with the polynomial-generator PR;
+> for the current paper-to-Lean map see `docs/kb/audits/bcgm25-mca-generators.md`.
+
 **Status: S0–S6 EXECUTED + ADVERSARIALLY REVIEWED 2026-08-05, 7 commits on
 `feat/mca-unification` (`5334b21c..5a51c7f0`), unpushed.** Full `lake build ArkLib` green;
 `#print axioms` = `[propext, Classical.choice, Quot.sound]` on `tensor_isMCAGenerator`,

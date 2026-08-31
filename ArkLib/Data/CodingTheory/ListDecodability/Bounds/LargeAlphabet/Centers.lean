@@ -251,7 +251,7 @@ theorem balanced_center_construction :
   let S : Finset ι := Finset.univ.filter fun i => ∀ j, c i ≠ v j i
   have hScoe : (S : Set ι) = {i : ι | ∀ j, c i ≠ v j i} := by
     ext i
-    simp only [S, Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq]
+    simp only [S, Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_ofPred_eq]
   have hScard : S.card = ({i : ι | ∀ j, c i ≠ v j i} : Set ι).ncard := by
     rw [← Set.ncard_coe_finset, hScoe]
   have hblocksSize : ℓ * t ≤ S.card := by

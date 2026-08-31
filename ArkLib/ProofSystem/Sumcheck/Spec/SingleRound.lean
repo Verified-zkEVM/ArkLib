@@ -439,7 +439,7 @@ def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R)
     pure (newTarget, chal default)
   outputOracle := .inl {
     embed := .inl
-    hEq := fun i => by simp [pSpec]; rfl
+    hEq := fun i => by simp [pSpec]
     outputInterface_heq := by
       intro i
       rw [show Function.Embedding.inl i = Sum.inl i from rfl] }
@@ -483,7 +483,7 @@ theorem oracleVerifier_eq_verifier :
       ((OracleInterface.simOracle0 (OStmtIn R deg) oStmt).add
         (OracleInterface.simOracle0
           (fun i => (pSpec R deg).Message i) transcript.messages)))
-  have hmapM := simulateQ_optionT_mapM_pure impl
+  have hmapM := simulateQ_optionT_vector_mapM_pure impl
     (fun (i : Fin m) => (some <$> (OracleComp.liftComp
         (OracleComp.lift <|
           OracleSpec.query (show [(pSpec R deg).Message]ₒ.Domain from ⟨default, D i⟩))
@@ -515,7 +515,7 @@ theorem oracleVerifier_eq_verifier :
       (Vector.finRange _)).sum = ∑ x ∈ Finset.map D Finset.univ,
       Polynomial.eval x ↑(transcript.messages default).1 := by
     simp only [Vector.sum]
-    rw [← Array.sum_eq_sum_toList, Vector.toList_toArray, Vector.toList_map,
+    rw [← Array.sum_toList, Vector.toList_toArray, Vector.toList_map,
         Vector.finRange, Vector.toList_ofFn, List.map_ofFn, List.sum_ofFn, Finset.sum_map]
     simp [Function.comp]
   rw [hsum]
@@ -543,6 +543,9 @@ theorem oracleReduction_eq_reduction :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
+-- Without this the `val2 = some` branch is left with unsolved goals: the `OptionT`/`StateT`
+-- layers around `simulateQ_pure` no longer reduce under v4.33's transparency-respecting defeq.
+set_option backward.isDefEq.respectTransparency false in
 /-- Perfect completeness for the (non-oracle) reduction -/
 theorem reduction_perfectCompleteness :
     (reduction R deg D oSpec).perfectCompleteness init impl
@@ -555,7 +558,7 @@ theorem reduction_perfectCompleteness :
     apply OptionT.ext
     change (monadLift mx : OptionT M α).run = some <$> mx
     rw [OptionT.run_monadLift, monadLift_self]
-  simp only [inputRelation, Set.mem_setOf_eq] at hValid
+  simp only [inputRelation, Set.mem_ofPred_eq] at hValid
   -- 1. Unfold reduction and expand pSpec to resolve directions
   simp only [reduction, Reduction.run, Prover.run, Verifier.run, prover, verifier,
     Prover.runToRound, Prover.processRound, Fin.induction_two, pSpec,
@@ -622,22 +625,11 @@ theorem reduction_perfectCompleteness :
       erw [StateT.run_bind] at hval
       rw [mem_support_bind_iff] at hval
       obtain ⟨⟨chal_res, s₂⟩, hchal, hval⟩ := hval
-      -- v4.29.0: hchal is a do-block (pure + liftComp query), need extra bind peel
-      erw [simulateQ_bind] at hchal
-      erw [StateT.run_bind] at hchal
-      rw [mem_support_bind_iff] at hchal
-      obtain ⟨⟨discr_val, s_d⟩, hchal_fst, hchal_rest⟩ := hchal
-      erw [simulateQ_map] at hchal_fst
-      erw [simulateQ_pure] at hchal_fst
-      rw [StateT.run_map, StateT.run_pure] at hchal_fst
-      simp only [support_map, support_pure, Set.mem_image, Set.mem_singleton_iff] at hchal_fst
-      obtain ⟨_, rfl, heq_d⟩ := hchal_fst
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_d
-      -- Second part: f <$> liftComp query — peel map, then liftComp, then query
-      erw [simulateQ_map] at hchal_rest
-      erw [StateT.run_map] at hchal_rest
-      simp only [support_map, Set.mem_image] at hchal_rest
-      obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal_rest
+      -- The initial pure step is fused into the map in v4.33; peel that map directly.
+      erw [simulateQ_map] at hchal
+      erw [StateT.run_map] at hchal
+      simp only [support_map, Set.mem_image] at hchal
+      obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_c
       simp only [QueryImpl.addLift_def,
         QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left] at hinner
@@ -719,22 +711,11 @@ theorem reduction_perfectCompleteness :
       erw [StateT.run_bind] at hval
       rw [mem_support_bind_iff] at hval
       obtain ⟨⟨chal_res, s₂⟩, hchal, hval⟩ := hval
-      -- v4.29.0: hchal is a do-block, need extra bind peel
-      erw [simulateQ_bind] at hchal
-      erw [StateT.run_bind] at hchal
-      rw [mem_support_bind_iff] at hchal
-      obtain ⟨⟨discr_val, s_d⟩, hchal_fst, hchal_rest⟩ := hchal
-      erw [simulateQ_map] at hchal_fst
-      erw [simulateQ_pure] at hchal_fst
-      rw [StateT.run_map, StateT.run_pure] at hchal_fst
-      simp only [support_map, support_pure, Set.mem_image, Set.mem_singleton_iff] at hchal_fst
-      obtain ⟨_, rfl, heq_d⟩ := hchal_fst
-      obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_d
-      -- Second part: f <$> liftComp query — peel map, then liftComp, then query
-      erw [simulateQ_map] at hchal_rest
-      erw [StateT.run_map] at hchal_rest
-      simp only [support_map, Set.mem_image] at hchal_rest
-      obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal_rest
+      -- The initial pure step is fused into the map in v4.33; peel that map directly.
+      erw [simulateQ_map] at hchal
+      erw [StateT.run_map] at hchal
+      simp only [support_map, Set.mem_image] at hchal
+      obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_c
       simp only [QueryImpl.addLift_def,
         QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left] at hinner
@@ -764,7 +745,7 @@ theorem reduction_perfectCompleteness :
       erw [simulateQ_pure] at hval2
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hval2
       obtain ⟨_, ⟨_, rfl⟩, _, rfl⟩ := hval2
-      simp only [Set.mem_setOf_eq, outputRelation]
+      simp only [Set.mem_ofPred_eq, outputRelation]
       constructor <;> simp
 
 
@@ -1072,7 +1053,7 @@ where
     | succ n ih =>
       intro stmt oStmt hRelIn
       simp [← hRelIn]
-      simp_rw [Polynomial.eval_finset_sum]
+      simp_rw [Polynomial.eval_finsetSum]
       simp_rw [← eval_eq_eval_mv_eval_finSuccEquivNth]
       -- Remaining: ∑ a ∈ D, ∑ y ∈ D^(n-i), eval (insertNth i a (append c y ∘ cast)) p
       --          = ∑ z ∈ D^(n+1-i), eval (append c z ∘ cast) p

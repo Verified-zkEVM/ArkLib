@@ -715,7 +715,7 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
       -- 1/(Z_{S \ {α}}(α))
     let h₂ : G₁ := ∏ i ∈ S, (proofs i) ^ (d (query i)).val
     h₂ = h₁ ^ (1 / Zₛ.eval τ).val := by
-    letI := Classical.decEq G₁
+    let := Classical.decEq G₁
     intro Zₛ c' h₁ d h₂
     unfold h₁ h₂
     -- rewrite the equation to g₁^{*equation*} (expose the field values)

@@ -585,7 +585,7 @@ theorem RS_BW_bound_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} 
       simpa [n] using
         (ReedSolomon.dist_eq_of_le (ι := ι) (F := F) (α := domain) (n := deg) hdeg)
     simp [hdist_eq]
-  haveI : NeZero (‖(ReedSolomon.code domain deg : Set (ι → F))‖₀) := ⟨hdist_ne⟩
+  have : NeZero (‖(ReedSolomon.code domain deg : Set (ι → F))‖₀) := ⟨hdist_ne⟩
   have htwo : 2 * e < ‖(ReedSolomon.code domain deg : Set (ι → F))‖₀ := by
     exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR
       (C := (ReedSolomon.code domain deg : Set (ι → F))) (e := e)).1 he_le_UDR
@@ -1143,9 +1143,11 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
         ext irow jcol
         cases irow using Fin.lastCases with
         | last =>
-            simp [B, I', Ii, b, Matrix.updateRow]
+            simp only [Matrix.updateRow_apply, if_pos, b, Matrix.submatrix_apply,
+              Ii, Fin.Embedding.snoc_last]
         | cast t =>
-            simp [B, I', Ii, b, Matrix.updateRow]
+            simp only [Matrix.updateRow_apply, Fin.castSucc_ne_last, if_false, B, I', Ii,
+              Matrix.submatrix_apply, Fin.Embedding.snoc_castSucc]
       have hdetBi : Matrix.det (K.submatrix Ii J') = 0 := by
         by_contra h
         exact hnotP_succ ⟨Ii, J', h⟩
@@ -1176,7 +1178,7 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
   let n : ℕ := e + 1
   let P : ℕ → Prop := fun r =>
     ∃ (I : Fin r ↪ ι) (J : Fin r ↪ Fin n), Matrix.det (K.submatrix I J) ≠ (0 : F[X])
-  letI : DecidablePred P := Classical.decPred _
+  let : DecidablePred P := Classical.decPred _
   have P0 : P 0 := by
     refine ⟨Function.Embedding.ofIsEmpty, Function.Embedding.ofIsEmpty, ?_⟩
     simp
