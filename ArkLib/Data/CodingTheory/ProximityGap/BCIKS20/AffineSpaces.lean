@@ -1130,7 +1130,9 @@ theorem bucket_exists_common_codeword
           (s := Finset.univ) (p := fun c => v₀ c = u₀ c)
         simp only [Finset.card_univ] at h_compl
         have : (Finset.filter (fun c => ¬v₀ c = u₀ c) Finset.univ).card = hammingDist u₀ v₀ := by
-          congr 1; ext c; simp [ne_eq, eq_comm]
+          unfold hammingDist
+          congr with c
+          exact not_congr eq_comm
         omega
       have hSx_eq_filter : S_x x hx = Finset.filter (fun c => v₀ c = u₀ c) Finset.univ :=
         Finset.eq_of_subset_of_card_le hSx_sub_filter (by
