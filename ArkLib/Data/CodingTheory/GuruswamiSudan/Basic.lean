@@ -586,7 +586,7 @@ lemma polySol_ne_zero :
       have : Function.Injective (linearCombination F
         (fun p : weightBoundIndices k (proximity_gap_degree_bound k n m) ↦
           monomial (F := F) p.1.1 p.1.2)) :=
-        linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
+        linearIndependent_monomials.comp _ (fun _ _ h ↦ Subtype.ext h)
       exact this.comp (LinearEquiv.injective _)
     exact fun h ↦ this.1 <| h_inj <| by simpa [polySol] using h
 
