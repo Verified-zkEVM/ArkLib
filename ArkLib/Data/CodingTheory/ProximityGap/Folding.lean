@@ -802,9 +802,6 @@ lemma folded_sqrtRate_eq {d : ℕ} [FoldingContext k d n] :
   simp [ReedSolomon.sqrtRate, folded_rate_eq]
 
 open FoldingContext in
-set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
-                                           -- which is a result of it missing
-                                           -- from the proximity gap theorem args.
 /--
 Folding preserves distance from Reed–Solomon codes.
 
@@ -825,7 +822,8 @@ theorem folding_preserves_distance
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   [FoldingContext k d n]
   {δ : ℝ≥0}
-  (δ_gt_0 : 0 < δ) -- this one is not used but should be.
+  -- Retained to match the mathematical statement; the imported gap bound omits it.
+  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)))
     (1 - (ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F)))) :
     Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r,
@@ -843,7 +841,7 @@ theorem folding_preserves_distance
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
         (2 ^ k - 1) ((2 ^ (d - k)))
         (domain := domain.subdomain k) (δ := δ)
-        (hδ_pos := δ_gt_0) (hδ := bound_tighter)
+        (hδ_pos := _δ_gt_0) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
     simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map,
