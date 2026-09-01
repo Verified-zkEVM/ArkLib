@@ -845,27 +845,23 @@ theorem fold_advances_evaluation_poly
       · omega
       · omega
     ⟩)
+  have h_eval_qMap (k : Fin 2) : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
+      (by simp only; omega)).eval (fiberMap k).val = y := by
+    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i + 1, by omega⟩)
+      (h_destIdx := by simp) (h_destIdx_le := by simp only; omega) (fiberMap k)
+    simp only [Subtype.ext_iff] at h
+    rw [h.symm]
+    have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) (by omega)
+      (x := fiberMap k) (y := y).mpr
+        (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
+    rw [h_res]
   have h_eval_qMap_x₀ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
       (by simp only; omega)).eval x₀.val = y := by
-    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate
-      (i := ⟨i, by omega⟩) (destIdx := ⟨i + 1, by omega⟩)
-      (h_destIdx := by simp) (h_destIdx_le := by simp only; omega) x₀
-    simp only [Subtype.ext_iff] at h
-    rw [h.symm]
-    have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) (by omega)
-      (x := x₀) (y := y).mpr (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
-    rw [h_res]
-    -- exact qMap_eval_fiber_eq_self ⟦L⟧ ⟨i + 1, by omega⟩ (by simp only; omega) h_i_succ_lt y 0
+    simpa only [x₀] using h_eval_qMap 0
   have h_eval_qMap_x₁ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
       (by simp only; omega)).eval x₁.val = y := by
-    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate
-      (i := ⟨i, by omega⟩) (destIdx := ⟨i + 1, by omega⟩)
-      (h_destIdx := by simp) (h_destIdx_le := by simp only; omega) x₁
-    simp only [Subtype.ext_iff] at h
-    rw [h.symm]
-    have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) (by omega)
-      (x := x₁) (y := y).mpr (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
-    rw [h_res]
+    simpa only [x₁] using h_eval_qMap 1
   have hx₀ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)
     (h_i_add_steps := by omega) y 0
   have hx₁ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)

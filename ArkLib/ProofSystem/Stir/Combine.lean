@@ -86,11 +86,15 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
       else ∑ i, (ri dstar degs r i) * (fs i x) *  (dstar - degs i + 1) := by
   funext x
   simp only [combine]
-  split_ifs
-  · aesop
-      (add simp [geom_sum_cases])
-      (add safe (by ring))
-  · simp_all
+  split_ifs with hq
+  · simp_rw [geom_sum_cases, if_pos hq]
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  · simp_rw [geom_sum_cases, if_neg hq]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [Nat.cast_add, Nat.cast_sub (hdegs i), Nat.cast_one]
 
 open Finset
 open BigOperators
@@ -330,7 +334,9 @@ private lemma combine_eq_flat'''
     simp only [block_start, Nat.succ_eq_add_one, block_size, sum_add_distrib, sum_const,
       smul_eq_mul, mul_comm, one_mul, add_tsub_cancel_left, mul_assoc, mul_left_comm,
       mul_eq_mul_left_iff]
-    rw [show filter _ _ = Finset.Iio i by ext j; simp]
+    rw [show filter _ _ = Finset.Iio i by
+      ext j
+      simp only [mem_filter, mem_univ, true_and, mem_Iio]]
     aesop (add safe (by ring))
 
 omit [DecidableEq F] in
