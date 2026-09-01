@@ -801,8 +801,7 @@ Prover's function for processing the next round, given the current result of the
 This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
 -/
 @[inline, specialize]
-def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)]
-     (j : Fin n)
+def Prover.processRoundDSFS (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (currentResult : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (pSpec.MessagesUpTo j.castSucc ×
@@ -829,7 +828,8 @@ def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)]
       Codec.instSerializeMessage idx
     let ⟨msg, newState⟩ ← prover.sendMessage idx state
     let serializedMessage : Vector U (messageSize idx) := inst.serialize msg
-    let newSponge ← liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
+    let newSponge ← liftM
+      (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
       (DuplexSponge.absorb sponge serializedMessage.toList)
     return ⟨messages.concat hDir msg, newSponge, newState⟩
 
@@ -839,7 +839,7 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
   to round `i`, and the prover's state after round `i`.
 -/
 @[inline, specialize]
-def Prover.runToRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
+def Prover.runToRoundDSFS (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
         OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
@@ -937,7 +937,7 @@ def ProtocolSpec.Messages.deriveTranscriptDSFSSalted {ι : Type} {oSpec : Oracle
 Run the prover up to round `i` after first absorbing an explicit salt `τ`.
 -/
 @[inline, specialize]
-def Prover.runToRoundDSFSSalted [∀ i, VCVCompatible (pSpec.Challenge i)] {δ : Nat}
+def Prover.runToRoundDSFSSalted {δ : Nat}
     (salt : Vector U δ) (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
@@ -958,7 +958,7 @@ def Prover.runToRoundDSFSSalted [∀ i, VCVCompatible (pSpec.Challenge i)] {δ :
 The salt sampler has no statement or prover-state input and uses only the ambient oracle `oSpec`;
 Lean automatically lifts it into the combined prover interface. This prevents the salt from
 depending on the statement, witness-bearing prover state, or duplex-sponge oracle answers. -/
-def Prover.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i)] (δ : Nat)
+def Prover.duplexSpongeFiatShamirSalted (δ : Nat)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec (Vector U δ)) :
     NonInteractiveProver (DSSaltedProof (pSpec := pSpec) (U := U) δ)
@@ -1018,7 +1018,7 @@ def Verifier.duplexSpongeFiatShamirSaltedForward (δ : Nat)
     v.getM
 
 /-- Salted DSFS reduction surface (Construction 4.3-facing). -/
-def Reduction.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i)] (δ : Nat)
+def Reduction.duplexSpongeFiatShamirSalted (δ : Nat)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec (Vector U δ)) :
     NonInteractiveReduction (DSSaltedProof (pSpec := pSpec) (U := U) δ)

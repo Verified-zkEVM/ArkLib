@@ -118,7 +118,7 @@ its output statement also contains the challenge `q`.
 -/
 @[inline, specialize]
 def oracleReduction :
-  OracleReduction oSpec Unit (fun _ : Fin 2 => OStatement) Unit
+    OracleReduction oSpec Unit (fun _ : Fin 2 => OStatement) Unit
     (Query OStatement) (fun _ : Fin 2 => OStatement) Unit (pSpec OStatement) where
   prover := oracleProver oSpec OStatement
   verifier := oracleVerifier oSpec OStatement

@@ -101,8 +101,6 @@ open Code InterleavedCode ProximityGap CoreDefinitions
 open scoped NNReal ENNReal ProbabilityTheory
 open Probability
 
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
 
 variable {ι F : Type} [Fintype ι] [Field F] [Fintype F] [DecidableEq F]
 
@@ -138,6 +136,7 @@ def constrainedCode {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v : Fi
     ModuleCode (ι ⊕ Unit) F F :=
   LinearMap.range (constrainedEncoder enc v)
 
+omit [DecidableEq F] in
 /-- **The toy-protocol γ-round soundness experiment is bounded by the MCA error of
 the constrained code.** For an instance `(v, μ₁, μ₂, f₁, f₂)` of the toy reduction
 admitting **no** relaxed-relation witness (`hNoWit`), the probability over a
@@ -157,7 +156,7 @@ MCA events), and it is *not* shown to be `≤` the paper's split bound `ε_mca(C
 Directly, the toy bad event implies
 `IsMCA (AffineLineGenerator F) (constrainedCode enc v) γ U δ`, witnessed by the agreement set
 `S' = S ∪ {extra coordinate}`. -/
-theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
+theorem gamma_transition_prob_le_constrained {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → F)) (δ : ℝ≥0)
     (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → F)
     (hNoWit : ¬ ∃ M : Fin 2 → (Fin k → F),
@@ -248,7 +247,6 @@ equality. The resulting `ConstrainedMCAEvent` is a bespoke event (not the librar
 restatement, not a reduction to the library MCA experiment.
 -/
 
-set_option linter.unusedFintypeInType false in
 /-- **Constraint-pinned MCA event of the constrained code** (proximity measured on
 the data coordinates `ι`; the constraint coordinate is mandatory but outside the
 size budget). The folded constrained codeword (target `μ₁ + γ·μ₂`) agrees with the
@@ -262,7 +260,7 @@ def ConstrainedMCAEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v 
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       (∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j)
 
-set_option linter.unusedFintypeInType false in
+omit [Fintype F] [DecidableEq F] in
 /-- **Per-instance equivalence (constraint-pinned).** Under `hNoWit` (the instance
 admits no relaxed-relation witness), the toy γ-event is equivalent, for every `γ`,
 to `ConstrainedMCAEvent` — the toy event augmented with the (under `hNoWit`
@@ -297,7 +295,7 @@ theorem gammaEvent_iff_constrainedMCAEvent {k : ℕ}
   · rintro ⟨S, hScard, ⟨m, hconstr, hagree⟩, _⟩
     exact ⟨m, hconstr, S, hScard, hagree⟩
 
-set_option linter.unusedFintypeInType false in
+omit [DecidableEq F] in
 /-- **Probability form of the equality**: the toy γ-round transition probability
 equals the probability of the constraint-pinned MCA event of the constrained code. -/
 theorem gammaEvent_prob_eq_constrainedMCAEvent {k : ℕ}
@@ -311,6 +309,7 @@ theorem gammaEvent_prob_eq_constrainedMCAEvent {k : ℕ}
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j]
       = Pr_{let γ ← $ᵖ F}[ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ] := by
+  classical
   refine le_antisymm ?_ ?_
   · exact Pr_le_Pr_of_implies ($ᵖ F) _ _
       (fun γ h ↦ (gammaEvent_iff_constrainedMCAEvent enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mp h)

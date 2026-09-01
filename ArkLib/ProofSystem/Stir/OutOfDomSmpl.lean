@@ -11,6 +11,12 @@ import ArkLib.Data.Probability.Notation
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Vector
 
+/-!
+# ArkLib.ProofSystem.Stir.OutOfDomSmpl
+
+Definitions and results for this component of ArkLib.
+-/
+
 open Finset Code NNReal Polynomial ProbabilityTheory ReedSolomon
 namespace OutOfDomSmpl
 
@@ -50,23 +56,21 @@ noncomputable def listDecodingCollisionProbability
 
 /-- Lemma 4.5.1 -/
 lemma out_of_dom_smpl_1
-  {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
+    {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
   (C : Set (ι → F)) (hC : C = code φ degree)
   (h_decodable : IsListDecodable C δ l)
   (h_nonempty : Nonempty (domainComplement φ)) :
   listDecodingCollisionProbability φ f δ s degree h_nonempty ≤
-    ((l * (l-1) / 2)) * ((degree - 1) / (Fintype.card F - Fintype.card ι))^s
-  := by sorry
+    ((l * (l-1) / 2)) * ((degree - 1) / (Fintype.card F - Fintype.card ι))^s := by sorry
 
 /-- Lemma 4.5.2 -/
 lemma out_of_dom_smpl_2
-  {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
+    {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
   (C : Set (ι → F)) (hC : C = code φ degree)
   (h_decodable : IsListDecodable C δ l)
   (h_nonempty : Nonempty (domainComplement φ)) :
   listDecodingCollisionProbability φ f δ s degree h_nonempty ≤
-    ((l^2 / 2)) * (degree / (Fintype.card F - Fintype.card ι))^s
-  := by
+    ((l^2 / 2)) * (degree / (Fintype.card F - Fintype.card ι))^s := by
     transitivity
     · exact out_of_dom_smpl_1 C hC h_decodable h_nonempty
     · apply mul_le_mul'

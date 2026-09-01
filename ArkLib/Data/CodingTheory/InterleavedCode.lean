@@ -250,8 +250,8 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 -- TODO: mem of Module interleaved code, Module codeword stack
 
 @[simp]
-def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
-    := u.transpose
+def interleaveWordStack {A : Type*} {κ ι : Type*}
+    (u : WordStack A κ ι) : InterleavedWord A κ ι := u.transpose
 
 /-- Evaluating the interleaving of a stack of words. -/
 @[simp]
@@ -270,9 +270,8 @@ def interleaveCodewordStack (u : CodewordStack A κ ι C) : InterleavedCodeword 
   ⟩
 
 @[simp]
-def finMapTwoWords {A : Type*} {ι : Type*} (u₀ u₁ : Word A ι)
-    : WordStack A (κ := Fin 2) (ι := ι)
-    := fun rowIdx =>
+def finMapTwoWords {A : Type*} {ι : Type*}
+    (u₀ u₁ : Word A ι) : WordStack A (κ := Fin 2) (ι := ι) := fun rowIdx =>
   match rowIdx with
   | ⟨0, _⟩ => u₀
   | ⟨1, _⟩ => u₁
@@ -400,8 +399,8 @@ lemma interleavedCode_eq_interleavedCodeSet {A : Type*} {ι : Type*} {κ : Type*
 @[simp]
 lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι : Type*} [Semiring F]
     [AddCommMonoid A] [Module F A] {MC : ModuleCode ι F A} :
-    ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
-    := by rfl
+    ((MC ^⋈ κ) : Set (ι → (κ → A))) =
+      interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A))) := by rfl
 
 /-- Interleaving over a nonempty row index preserves minimum block distance:
 `minDist (interleavedCodeSet C) = minDist C`.
@@ -784,11 +783,9 @@ instance instNonemptyInterleavedCode [Nonempty C] :
   intro k
   exact c.property
 
-example (C : Set (ι → A)) : ((C ^⋈ (Fin 2))) = interleavedCodeSet (κ := Fin 2) C
-    := by rfl
+example (C : Set (ι → A)) : ((C ^⋈ (Fin 2))) = interleavedCodeSet (κ := Fin 2) C := by rfl
 example (MC : ModuleCode ι F A) : (MC ^⋈ (Fin 2))
-    = ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := Fin 2) (ι := ι) (MC := MC)
-    := by rfl
+    = ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := Fin 2) (ι := ι) (MC := MC) := by rfl
 example (u : CodewordStack A κ ι C) :
   let iuCodewords: InterleavedCodeword A κ ι C := ⋈|u
   let iuWords: InterleavedWord A κ ι := ⋈|u.val
@@ -956,8 +953,7 @@ theorem jointAgreement_iff_jointProximity
     -- Since v_interleaved ∈ MC.interleavedCode, we have δᵣ(u_interleaved, MC.interleavedCode) ≤ δ
     unfold jointProximity
     have h_min_dist :
-        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved)
-      := by
+        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved) := by
       apply relDistFromCode_le_relDist_to_mem (u := u_interleaved) (C := interleavedCodeSet C)
         (v := v_interleaved) (hv := hv_interleaved_mem)
     exact le_trans h_min_dist h_dist

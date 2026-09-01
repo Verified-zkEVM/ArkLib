@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Authority), Aristotle (Harmonic)
+Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Authority),
+  Aristotle (Harmonic)
 -/
 
 import Mathlib.Tactic.FieldSimp
@@ -34,7 +35,7 @@ variable {m : ℕ}
 /-- Fact 4.10
   Geometric series formula in a field, for a unit `r : F`. -/
 lemma geometric_sum_units {r : Fˣ} {a : ℕ} :
-  ∑ j ∈ range (a + 1), (r ^ j : F) =
+    ∑ j ∈ range (a + 1), (r ^ j : F) =
     if r = 1 then (a + 1 : F)
     else (1 - r ^ (a + 1)) / (1 - r) := by
   have h_geo_series : ∀ r : F, r ≠ 1 → ∑ j ∈ Finset.range (a + 1), r ^ j =
@@ -48,17 +49,16 @@ def ri (dstar : ℕ) (degs : Fin m → ℕ) (r : F) (i : Fin m) : F :=
   let exp := i + ∑ j < i, (dstar - degs j)
   r ^ exp
 
-/-- Definition 4.11.1
-    Combine(d*, r, (f_0, d_0), …, (f_{m-1}, d_{m-1}))(x)
-      := sum_{i < m} r_i * f_i(x) * ( sum_{l < (d* - d_i + 1)} (r * φ(x))^l ) -/
+/-- Definition 4.11.1: `Combine(d*, r, (f_0, d_0), …, (f_{m-1}, d_{m-1}))(x)` is
+`sum_{i < m} r_i * f_i(x) * (sum_{l < (d* - d_i + 1)} (r * φ(x))^l)`. -/
 def combine
-  (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ) (x : ι) : F :=
+    (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ) (x : ι) : F :=
     ∑ i, (ri dstar degs r i) * (fs i x) * (∑ l ∈ range (dstar - degs i + 1), ((φ x) * r)^l)
 
 omit [DecidableEq F] in
 @[simp]
 lemma combine_dstar_zero
-  {φ : ι ↪ F} {r : F} {fs : Fin m → ι → F} {degs : Fin m → ℕ} :
+    {φ : ι ↪ F} {r : F} {fs : Fin m → ι → F} {degs : Fin m → ℕ} :
   combine φ 0 r fs degs =
     ∑ i, (r ^ i.val) • fs i := by aesop (add simp [combine, ri])
 
@@ -76,7 +76,7 @@ private lemma geom_sum_cases (q : F) (n : ℕ) :
       else sum_{i < m} r_i * f_i(x) * (1 - r * φ(x)^(dstar - degree + 1)) / (1 - r * φ(x))
 -/
 lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
-  (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ)
+    (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ)
     (hdegs : ∀ i, degs i ≤ dstar) :
   combine φ dstar r fs degs =
     fun x ↦
@@ -367,13 +367,13 @@ private lemma combine_eq_flat_final
 /-- Definition 4.12.1
     DegCor(d*, r, f, degree)(x) := f(x) * ( sum_{ l < d* - d + 1 } (r * φ(x))^l ) -/
 def degCor
-  (φ : ι ↪ F) (dstar degree : ℕ) (r : F) (f : ι → F) (x : ι) : F :=
+    (φ : ι ↪ F) (dstar degree : ℕ) (r : F) (f : ι → F) (x : ι) : F :=
     f x * ∑ l ∈ range (dstar - degree + 1), ((φ x) * r) ^ l
 
 /-- Definition 4.12.2
     DegCor(d*, r, f, d)(x) := f(x) * conditionalExp(x) -/
 lemma degreeCor_eq {F : Type u_1} [Field F] [DecidableEq F] {ι : Type u_2} (φ : ι ↪ F)
-  (dstar degree : ℕ) (r : F) (f : ι → F) (hd : degree ≤ dstar) (x : ι) :
+    (dstar degree : ℕ) (r : F) (f : ι → F) (hd : degree ≤ dstar) (x : ι) :
   let q := φ x * r
   degCor φ dstar degree r f x =
     if q ≠ 1
@@ -412,7 +412,7 @@ private lemma even_more_glorious_lemma
 omit [DecidableEq F] [Fintype F] in
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
-  [Nonempty ι]
+    [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
   {fs : Fin m → ι → F} {degs : Fin m → ℕ} (hdegs : ∀ i, degs i ≤ dstar)
   {δ : ℝ≥0}
@@ -509,7 +509,7 @@ open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
       Pr_{r ← F} [δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
                    > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
 theorem combine_theorem
-  {φ : ι ↪ F} {dstar m : ℕ}
+    {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
   (δ : ℝ≥0) (hδPos : δ > 0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
@@ -519,8 +519,7 @@ theorem combine_theorem
     ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : Fin m → ι → F, ∀ i,
         v i ∈ (code φ (degs i)) ∧
-          S ⊆ Finset.filter (fun j => v i j = fs i j) Finset.univ
-    := by
+          S ⊆ Finset.filter (fun j => v i j = fs i j) Finset.univ := by
   by_cases hempty : Fintype.card ι = 0
   · exists ∅
     simp only [card_empty, CharP.cast_eq_zero, hempty, mul_zero, ge_iff_le, Std.le_refl,

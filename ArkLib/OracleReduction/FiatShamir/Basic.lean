@@ -76,7 +76,7 @@ Prover's function for processing the next round, given the current result of the
   This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
 -/
 @[inline, specialize]
-def Prover.processRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (j : Fin n)
+def Prover.processRoundFS (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (currentResult : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × prover.PrvState j.castSucc)) :
@@ -98,7 +98,7 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
   to round `i`, and the prover's state after round `i`.
 -/
 @[inline, specialize]
-def Prover.runToRoundFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
+def Prover.runToRoundFS (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
         OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)

@@ -133,7 +133,7 @@ notation "‖" u "‖₀" => hammingNorm u
 /-- Post-composition with an injection preserves the Hamming distance.
   A non-dependent version of the Mathlib's hammingDist_comp. -/
 theorem hammingDist_comp' {A B : Type*} [DecidableEq A] [DecidableEq B]
-  {ι : Type*} [Fintype ι]
+    {ι : Type*} [Fintype ι]
   {e : A → B} (he : Function.Injective e) (u v : ι → A) :
   hammingDist (e ∘ u) (e ∘ v) = hammingDist u v := by
   simp only [hammingDist, Function.comp_apply]
@@ -237,7 +237,7 @@ def hammingBall (y : n → R) (r : ℕ) : Set (n → R) :=
 
 @[simp]
 theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
-  x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
+    x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
   aesop (add simp [hammingBall, hammingDist])
 
 section Agreement
@@ -281,7 +281,7 @@ private lemma sq_le_sum_agree :
 
 /-- Cauchy–Schwarz for the agreement counts. -/
 lemma sq_sum_agree_le :
-  (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
+    (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
     (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
   rw [sum_agree_eq]
   calc (∑ i : n, ((T.filter fun c => c i = u i).card : ℝ)) ^ 2
@@ -325,7 +325,7 @@ noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
 
 lemma minDist_le_dist {C : Set (n → R)} {u v : n → R}
-  (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
+    (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
   minDist C ≤ Δ₀(u, v) := Nat.sInf_le ⟨u, hu, v, hv, huv, rfl⟩
 
 /-- Two codewords are equal if the coordinates on which they disagree are contained in a set

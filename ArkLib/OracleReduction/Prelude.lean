@@ -143,11 +143,9 @@ instance : Coe (Fin 2) Direction := ⟨equivFin2.invFun⟩
 
 instance : Coe Bool Direction := ⟨equivBool.invFun⟩
 
-@[simp]
 lemma not_P_to_V_eq_V_to_P {x : Direction} (h : x ≠ .V_to_P) : x = .P_to_V := by
   cases x <;> simp_all
 
-@[simp]
 lemma not_V_to_P_eq_P_to_V {x : Direction} (h : x ≠ .P_to_V) : x = .V_to_P := by
   cases x <;> simp_all
 

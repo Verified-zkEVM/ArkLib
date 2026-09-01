@@ -321,7 +321,7 @@ instance sumcheckFoldCtxLens_complete :
 omit [NeZero ℓ] in
 -- Perfect completeness for the lifted oracle reduction
 theorem sumcheckFoldOracleReduction_perfectCompleteness :
-  OracleReduction.perfectCompleteness
+    OracleReduction.perfectCompleteness
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ')
       (RingSwitchingBaseContext κ L K ℓ (biniusProfile κ L K β)) 0)
@@ -606,7 +606,7 @@ noncomputable def finalSumcheckOracleReduction :
 
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
-  (init : ProbComp σ)
+    (init : ProbComp σ)
   (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := BinaryBasefold.pSpecFinalSumcheckStep (L:=L))

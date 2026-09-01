@@ -508,8 +508,7 @@ lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
   set frac := q / (q - 1)
   have h_frac_pos : 1 < frac := by rw [lt_div_iff₀] <;> linarith
   have h_sqrt_eq : 1 - √(1 - δ) = (1 / frac) * (1 - √(1 - frac * δ)) := by
-    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from
-      by
+    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from by
         dsimp [δ] at h_muln h_J_bound h_eq ⊢
         norm_cast at h_muln h_J_bound h_eq ⊢
         exact le_antisymm (h_J_bound.trans_eq h_eq.symm) h_muln]

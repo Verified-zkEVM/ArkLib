@@ -90,7 +90,7 @@ def relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
 -- `[IsCyclotomic Φ]` is needed to synthesize the `Rq`/`wTable` instances inside the `hZero` term
 -- carried by `relBatched` and by `hZero_eq_zero_imp_liftShort`, but the linter's usage analysis
 -- misses instance-synth-only section vars.
-set_option linter.unusedSectionVars false in
+omit [BEq F] [LawfulBEq F] in
 /-- The batched identities imply the lift's per-row **and shortness** claims.
 
 The per-row equation is recovered from `H_α ≡ 0`: by `hAlpha_eq_zero_iff` every
@@ -161,7 +161,7 @@ theorem rangeProduct_eq_zero_of_valMinAbs_natAbs_le (φF : ZMod q →+* F) {b : 
     have hc' : c = -((j : ℕ) : ZMod q) := by rw [hc]; ring
     rw [hc', _root_.map_neg, map_natCast]
 
-set_option linter.unusedSectionVars false in
+omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Range side of the honest direction**: a short witness makes the range polynomial vanish
 identically. Every entry of `w̃` is either a `z`-coefficient — bounded by `bound`, hence by
 `b − 1`, hence a root of `P_b` — or a quotient **digit**, which is `⌊b/2⌋`-bounded for *any*
@@ -200,7 +200,7 @@ theorem hZero_eq_zero_of_liftShort (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ
         (Nat.mod_lt _ hδ) _) hbase.radius_le)
   · simp only [rangeProduct, zero_mul]
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- **Linear side of the honest direction**: the per-row `α`-evaluated lift equations make the
 batched constraint polynomial vanish identically.
 
@@ -234,7 +234,7 @@ theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
     linear_combination hi
   · rfl
 
-set_option linter.unusedSectionVars false in
+omit [BEq F] [LawfulBEq F] in
 /-- **The honest direction of the batching bridge** (converse of `mem_relLift_of_relBatched`): a
 lift-valid, short witness satisfies the two batched polynomial identities.
 

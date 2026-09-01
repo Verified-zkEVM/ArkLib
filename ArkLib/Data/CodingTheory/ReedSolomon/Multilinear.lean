@@ -27,7 +27,7 @@ variable {F : Type*} [Field F] {ι : Type*} (domain : ι ↪ F)
 /-- A word `f` belongs to the RS-code iff there exists a multilinear polynomial `g`
   such that `f` is evaluation of `powAlgHom g` on points from the eval domain. -/
 lemma mem_rs_code_iff_exists_mle
-  {f : ι → F} {deg : ℕ} :
+    {f : ι → F} {deg : ℕ} :
   f ∈ code domain (2 ^ deg) ↔
     ∃ g : F⦃≤ 1⦄[X (Fin deg)], f = evalOnPoints domain (powAlgHom g.1) := by
   constructor <;> intro h
@@ -49,7 +49,7 @@ lemma mem_rs_code_iff_exists_mle
   provide a multilinear polynomial `g` whose `powAlgHom g` coincides
   with the word `f` on the evaluation domain. -/
 lemma mem_rs_code_of_mle_of_eval
-  {f : ι → F} {deg : ℕ} (g : F⦃≤ 1⦄[X (Fin deg)])
+    {f : ι → F} {deg : ℕ} (g : F⦃≤ 1⦄[X (Fin deg)])
   (heval : ∀ i, f i = (powAlgHom g.1).eval (domain i)) :
   f ∈ code domain (2 ^ deg) := by
   aesop (add simp [mem_rs_code_iff_exists_mle])

@@ -701,7 +701,7 @@ to produce the final statement `stmt₃`, witness `wit₃`, and transcript `tran
 The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcript₁ ++ₜ transcript₂`.
 -/
 theorem append_run (stmt : Stmt₁) (wit : Wit₁) :
-      (P₁.append P₂).run stmt wit = (do
+    (P₁.append P₂).run stmt wit = (do
         let ⟨transcript₁, stmt₂, wit₂⟩ ← liftM (P₁.run stmt wit)
         let ⟨transcript₂, stmt₃, wit₃⟩ ← liftM (P₂.run stmt₂ wit₂)
         return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
@@ -721,7 +721,7 @@ variable {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁} {V₂ : Verifier oSpec
   is equivalent to running the first verifier on the first part of the transcript, and the second
   verifier on the second part of the transcript, and returning the final statement. -/
 theorem append_run (tr : (pSpec₁ ++ₚ pSpec₂).FullTranscript) :
-      (V₁.append V₂).run stmt tr =
+    (V₁.append V₂).run stmt tr =
         (do
           let stmt₂ ← V₁.run stmt tr.fst
           let stmt₃ ← V₂.run stmt₂ tr.snd

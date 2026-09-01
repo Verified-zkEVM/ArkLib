@@ -272,7 +272,7 @@ lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     unfold evalY
     simp only [eval_eq_sum, sum_def, finsetSum_coeff]
     refine Finset.sum_congr rfl fun i hi ↦ ?_
-    induction i <;> simp_all [coeff_mul, coeff_C, pow_succ'] ; ring_nf
+    induction i <;> simp_all [coeff_mul, coeff_C, pow_succ']; ring_nf
     rw [sum_eq_single (degreeX B, 0)] <;> simp only [mem_antidiagonal, ne_eq,
       Nat.sum_antidiagonal_eq_sum_range_succ_mk, Nat.succ_eq_add_one, sum_ite_eq', mem_range,
       Order.lt_add_one_iff, zero_le, ↓reduceIte, tsub_zero, mul_eq_zero, Prod.forall, Prod.mk.injEq,
@@ -290,7 +290,7 @@ lemma ps_filter_nonzero_card_y {F : Type} [Field F] [DecidableEq F]
     (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > bound - natDegreeY A := by
   have := ps_card_eval_y_eq_zero_le_nat_degree_y A hA P_y;
   simp_all only [ne_eq, ge_iff_le, gt_iff_lt, Finset.filter_not, Finset.card_sdiff]
-  rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)] ; omega
+  rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)]; omega
 
 lemma ps_filter_nonzero_card_x {F : Type} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P_x : Finset F) (bound : ℕ)

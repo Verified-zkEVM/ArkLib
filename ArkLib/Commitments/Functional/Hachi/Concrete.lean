@@ -86,7 +86,6 @@ def hachiNonrecursiveConcrete (P : HonestRangeParams q)
   hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P
     (nonrecursiveLiftCom (α := α) P D) hd hbZero φF
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect correctness of nonrecursive Hachi at the concrete commitment** — the corollary of
 `hachiNonrecursive_perfectCorrectness` at `K := nonrecursiveLiftCom P D`. Same hypotheses, same
