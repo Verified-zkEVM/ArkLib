@@ -31,13 +31,6 @@ resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability/Bou
 every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -447,6 +440,7 @@ theorem rs_lambda_large_prime
     (Real.exp (-2) / 2) * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2)
   simpa only [cnt, x] using hw
 
+open Classical in
 /-- **A codimension-one Reed-Solomon code has `j + 1` nearby interpolants.** Let the block length be
 `j + 1` and the message dimension be `j`. Over any field large enough to contain an evaluation
 domain of that length, there is a received word whose radius-`1/(j+1)` list has more than `j`
@@ -465,8 +459,8 @@ access and was not available for primary-source verification, so JH01 coverage r
 open rather than being attributed to this different result. -/
 theorem rs_codimension_one_list_size
     (j : ℕ)
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (hcard_le : Fintype.card ι ≤ Fintype.card F)
     (hι : Fintype.card ι = j + 1) :
     ∃ (domain : ι ↪ F) (w : ι → F),
@@ -569,6 +563,7 @@ section RandomReedSolomon
 
 open scoped ProbabilityTheory
 
+open Classical in
 /-- **Reed-Solomon codes on a random evaluation domain are list-decodable near capacity**
 ([ABF26] Theorem 3.6, after [AGL24, Theorem 1.1]).
 
@@ -601,7 +596,7 @@ issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with
 [AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
 formalised. -/
 theorem rs_random_domain_lambda_le
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F]
     (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (k n : ℕ) (_hn_pos : 0 < n)
     (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
