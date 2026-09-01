@@ -60,93 +60,117 @@ private def canonicalQuotedOptionRoot? : List Char → Option (List Char × List
   | 't' :: 'r' :: 'a' :: 'c' :: 'e' :: '»' :: rest => some ("trace".toList, rest)
   | _ => none
 
-/-- Replace comments and string/raw-string literals with spaces, preserving line structure. -/
-private partial def sanitizeChars (chars : List Char) (mode : ScanMode) : List Char × ScanMode :=
+/-- Find the closing quote of an escaped character token and return its width and remaining input. -/
+private def escapedCharLiteralEnd? : List Char → Option (Nat × List Char)
+  | '\'' :: '\'' :: rest => some (2, rest)
+  | '\'' :: rest => some (1, rest)
+  | _ :: rest => (escapedCharLiteralEnd? rest).map fun (width, tail) => (width + 1, tail)
+  | [] => none
+
+/-- Replace comments and literals with spaces, preserving line structure.
+
+When `preserveModuleDocs` is true, a module-doc opener encountered in top-level code is retained so
+the header check can distinguish it from the same text nested inside an ordinary comment.
+-/
+private partial def sanitizeChars (chars : List Char) (mode : ScanMode)
+    (preserveModuleDocs : Bool) : List Char × ScanMode :=
   match chars, mode with
   | [], mode => ([], mode)
   | '-' :: '-' :: rest, .code => (spaces rest.length, .code)
+  | '/' :: '-' :: '!' :: rest, .code =>
+      let (tail, mode) := sanitizeChars rest (.blockComment 1) preserveModuleDocs
+      ((if preserveModuleDocs then "/-!".toList else spaces 3) ++ tail, mode)
   | '/' :: '-' :: rest, .code =>
-      let (tail, mode) := sanitizeChars rest (.blockComment 1)
+      let (tail, mode) := sanitizeChars rest (.blockComment 1) preserveModuleDocs
       (' ' :: ' ' :: tail, mode)
-  | '\'' :: '\\' :: '"' :: '\'' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .code
-      (spaces 4 ++ out, mode)
-  | '\'' :: '"' :: '\'' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .code
+  | '\'' :: '\\' :: rest, .code =>
+      match escapedCharLiteralEnd? rest with
+      | some (width, tail) =>
+          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
+          (spaces (width + 2) ++ out, mode)
+      | none =>
+          let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+          ('\'' :: '\\' :: out, mode)
+  | '\'' :: _ :: '\'' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
       (spaces 3 ++ out, mode)
   | '«' :: rest, .code =>
       match canonicalQuotedOptionRoot? rest with
       | some (root, tail) =>
-          let (out, mode) := sanitizeChars tail .code
+          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
           (root ++ out, mode)
       | none =>
-          let (out, mode) := sanitizeChars rest .quotedIdent
+          let (out, mode) := sanitizeChars rest .quotedIdent preserveModuleDocs
           ('x' :: out, mode)
   | 'r' :: rest, .code =>
       let (hashes, afterHashes) := countHashes rest
       match afterHashes with
       | '"' :: tail =>
-          let (out, mode) := sanitizeChars tail (.raw hashes)
+          let (out, mode) := sanitizeChars tail (.raw hashes) preserveModuleDocs
           (spaces (hashes + 2) ++ out, mode)
       | _ =>
-          let (out, mode) := sanitizeChars rest .code
+          let (out, mode) := sanitizeChars rest .code preserveModuleDocs
           ('r' :: out, mode)
   | '"' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest (.quoted false)
+      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
       (' ' :: out, mode)
   | c :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .code
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
       (c :: out, mode)
   | '/' :: '-' :: rest, .blockComment depth =>
-      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1))
+      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1)) preserveModuleDocs
       (' ' :: ' ' :: out, mode)
   | '-' :: '/' :: rest, .blockComment 1 =>
-      let (out, mode) := sanitizeChars rest .code
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
       (' ' :: ' ' :: out, mode)
   | '-' :: '/' :: rest, .blockComment (depth + 2) =>
-      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1))
+      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1)) preserveModuleDocs
       (' ' :: ' ' :: out, mode)
   | _ :: rest, .blockComment depth =>
-      let (out, mode) := sanitizeChars rest (.blockComment depth)
+      let (out, mode) := sanitizeChars rest (.blockComment depth) preserveModuleDocs
       (' ' :: out, mode)
   | '\\' :: rest, .quoted false =>
-      let (out, mode) := sanitizeChars rest (.quoted true)
+      let (out, mode) := sanitizeChars rest (.quoted true) preserveModuleDocs
       (' ' :: out, mode)
   | _ :: rest, .quoted true =>
-      let (out, mode) := sanitizeChars rest (.quoted false)
+      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
       (' ' :: out, mode)
   | '"' :: rest, .quoted false =>
-      let (out, mode) := sanitizeChars rest .code
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
       (' ' :: out, mode)
   | _ :: rest, .quoted false =>
-      let (out, mode) := sanitizeChars rest (.quoted false)
+      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
       (' ' :: out, mode)
   | '"' :: rest, .raw hashes =>
       match dropHashes hashes rest with
       | some tail =>
-          let (out, mode) := sanitizeChars tail .code
+          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
           (spaces (hashes + 1) ++ out, mode)
       | none =>
-          let (out, mode) := sanitizeChars rest (.raw hashes)
+          let (out, mode) := sanitizeChars rest (.raw hashes) preserveModuleDocs
           (' ' :: out, mode)
   | _ :: rest, .raw hashes =>
-      let (out, mode) := sanitizeChars rest (.raw hashes)
+      let (out, mode) := sanitizeChars rest (.raw hashes) preserveModuleDocs
       (' ' :: out, mode)
   | '»' :: rest, .quotedIdent =>
-      let (out, mode) := sanitizeChars rest .code
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
       (' ' :: out, mode)
   | _ :: rest, .quotedIdent =>
-      let (out, mode) := sanitizeChars rest .quotedIdent
+      let (out, mode) := sanitizeChars rest .quotedIdent preserveModuleDocs
       (' ' :: out, mode)
 
-private def sanitizeLines (lines : Array String) : Array String := Id.run do
+private def sanitizeLinesWith (lines : Array String) (preserveModuleDocs : Bool) :
+    Array String := Id.run do
   let mut mode := ScanMode.code
   let mut result := #[]
   for line in lines do
-    let (chars, next) := sanitizeChars line.toList mode
+    let (chars, next) := sanitizeChars line.toList mode preserveModuleDocs
     result := result.push (String.ofList chars)
     mode := next
   return result
+
+private def sanitizeLines (lines : Array String) : Array String :=
+  sanitizeLinesWith lines false
 
 private def leadingSpaces (s : String) : Nat :=
   (s.toList.takeWhile (· == ' ')).length
@@ -206,6 +230,7 @@ private def unicodeViolations (lines : Array String) : Array Violation := Id.run
 
 private def headerViolations (lines codeLines : Array String) : Array Violation := Id.run do
   if isImportsOnly codeLines then return #[]
+  let moduleDocLines := sanitizeLinesWith lines true
   let mut result := #[]
   if lines.isEmpty || lines[0]! != "/-" then
     result := result.push <| violation "ERR_COP" 1 "Malformed or missing copyright header"
@@ -232,8 +257,8 @@ private def headerViolations (lines codeLines : Array String) : Array Violation 
   for h : i in [headerEnd + 1:lines.size] do
     if !foundDoc then
       let line := codeLines[i]!.trimAscii.toString
-      let original := lines[i]!.trimAscii.toString
-      if original.startsWith "/-!" then
+      let moduleDocLine := moduleDocLines[i]!.trimAscii.toString
+      if moduleDocLine.startsWith "/-!" then
         foundDoc := true
       else if !line.isEmpty && !line.startsWith "import " && !line.startsWith "public import " &&
           !line.startsWith "private import " && !line.startsWith "meta import " &&
@@ -400,6 +425,12 @@ def runSelfTests : IO Unit := do
   assertSelfTest (hasCode "ERR_NOLINT" #["def escapedQuoteChar : Char := '\\\"'",
     "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
     "an escaped quote character literal must not mask a following suppression"
+  assertSelfTest (hasCode "ERR_OPT" #["def leftGuillemet : Char := '«'", "set_option",
+    "  pp.universes true"])
+    "a guillemet character literal must not mask a following forbidden option"
+  assertSelfTest (hasCode "ERR_NOLINT" #["def leftGuillemet : Char := '«'",
+    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
+    "a guillemet character literal must not mask a following suppression"
   assertSelfTest (hasCode "ERR_NOLINT" #["def «x\"y» : Nat := 1",
     "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
     "a quote inside a quoted identifier must not mask a following suppression"
@@ -415,6 +446,14 @@ def runSelfTests : IO Unit := do
     "unrelated local options remain available"
   assertSelfTest (!hasCode "ERR_NOLINT" #["def nolint : Nat := 0"])
     "an ordinary identifier named nolint is not a suppression"
+  let validHeader := #["/-", "Copyright (c) 2026 ArkLib Contributors.",
+    "Released under Apache 2.0 license.", "Authors: ArkLib Contributors", "-/"]
+  assertSelfTest (!hasCode "ERR_MOD" (validHeader ++ #["/-! Real module docstring. -/",
+    "def x := 1"]))
+    "a top-level module docstring must satisfy the header policy"
+  assertSelfTest (hasCode "ERR_MOD" (validHeader ++ #["/- outer comment", "/-! nested fake -/",
+    "-/", "def x := 1"]))
+    "a module-doc opener nested in an ordinary comment must not satisfy the header policy"
   let optionLocations := lintLines #["set_option maxRecDepth 1000",
     "set_option linter.test false"]
   assertSelfTest (optionLocations.any fun violation =>
