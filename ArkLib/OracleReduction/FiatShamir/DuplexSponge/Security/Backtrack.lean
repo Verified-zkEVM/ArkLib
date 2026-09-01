@@ -130,26 +130,40 @@ def BacktrackSequence.flattenStateSequence
     (seq : BacktrackSequence trace state) : List (CanonicalSpongeState U) :=
   (seq.inputState.zip seq.outputState).foldr (fun p acc => p.1 :: p.2 :: acc) [state]
 
+private noncomputable def matchesEntry
+    (entry x : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t) : Bool := by
+  classical
+  exact decide (x = entry)
+
+private noncomputable def matchesEitherEntry
+    (entryA entryB x : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t) : Bool := by
+  classical
+  exact decide (x = entryA ∨ x = entryB)
+
 /-- First-occurrence index of an entry in a trace. -/
 private def firstOccurrenceIndex
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (entry : duplexSpongeTraceEntry)
+    (entry : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t)
     (hEntry : entry ∈ trace) : Fin trace.length := by
   classical
-  exact ⟨trace.findIdx (fun x => decide (x = entry)), List.findIdx_lt_length_of_exists
-    ⟨entry, hEntry, decide_eq_true rfl⟩⟩
+  exact ⟨trace.findIdx (matchesEntry entry), List.findIdx_lt_length_of_exists
+    ⟨entry, hEntry, by simp [matchesEntry]⟩⟩
 
 /-- First-occurrence index of EITHER entryA or entryB in a trace. -/
 private def firstOccurrenceOfEither
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (entryA entryB : duplexSpongeTraceEntry)
+    (entryA entryB : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t)
     (hEntry : entryA ∈ trace ∨ entryB ∈ trace) : Fin trace.length := by
   classical
-  exact ⟨trace.findIdx (fun x => decide (x = entryA ∨ x = entryB)),
+  exact ⟨trace.findIdx (matchesEitherEntry entryA entryB),
     List.findIdx_lt_length_of_exists (by
       rcases hEntry with hA | hB
-      · exact ⟨entryA, hA, decide_eq_true (Or.inl rfl)⟩
-      · exact ⟨entryB, hB, decide_eq_true (Or.inr rfl)⟩)⟩
+      · exact ⟨entryA, hA, by simp [matchesEitherEntry]⟩
+      · exact ⟨entryB, hB, by simp [matchesEitherEntry]⟩)⟩
 
 /-- The associated indices (first occurrences in the trace) for a backtracking sequence
 This calculate `J_BT(tr,s)` from a lawful backtracking sequence `S_BT(tr,s)`. -/
@@ -202,17 +216,20 @@ variable {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
 
 /-- `firstOccurrenceIndex` indexes the given entry. -/
 private lemma firstOccurrenceIndex_get
-    (entry : duplexSpongeTraceEntry) (hEntry : entry ∈ trace) :
+    (entry : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t) (hEntry : entry ∈ trace) :
     trace.get (firstOccurrenceIndex trace entry hEntry) = entry := by
   classical
   rw [List.get_eq_getElem]
-  have h := List.findIdx_getElem (xs := trace) (p := fun x => decide (x = entry))
-    (w := (firstOccurrenceIndex trace entry hEntry).isLt)
-  simpa using h
+  have h := of_decide_eq_true (List.findIdx_getElem (xs := trace)
+    (p := matchesEntry entry)
+    (w := (firstOccurrenceIndex trace entry hEntry).isLt))
+  with_unfolding_all exact h
 
 /-- No earlier position than `firstOccurrenceIndex` carries the entry. -/
 private lemma firstOccurrenceIndex_not_mem_take
-    (entry : duplexSpongeTraceEntry) (hEntry : entry ∈ trace) :
+    (entry : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t) (hEntry : entry ∈ trace) :
     entry ∉ trace.take (firstOccurrenceIndex trace entry hEntry).val := by
   classical
   intro hmem
@@ -220,25 +237,29 @@ private lemma firstOccurrenceIndex_not_mem_take
   obtain ⟨m, hm, hget⟩ := hmem
   have hmlt : m < (firstOccurrenceIndex trace entry hEntry).val :=
     lt_of_lt_of_le hm (min_le_left _ _)
-  have hfalse := List.not_of_lt_findIdx (p := fun x => decide (x = entry)) hmlt
-  rw [decide_eq_false_iff_not] at hfalse
+  have hfalse := List.not_of_lt_findIdx (p := matchesEntry entry) hmlt
+  simp only [matchesEntry, decide_eq_false_iff_not] at hfalse
   exact hfalse hget
 
 /-- `firstOccurrenceOfEither` indexes one of the two entries. -/
 private lemma firstOccurrenceOfEither_get
-    (entryA entryB : duplexSpongeTraceEntry) (hEntry : entryA ∈ trace ∨ entryB ∈ trace) :
+    (entryA entryB : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t)
+    (hEntry : entryA ∈ trace ∨ entryB ∈ trace) :
     trace.get (firstOccurrenceOfEither trace entryA entryB hEntry) = entryA ∨
     trace.get (firstOccurrenceOfEither trace entryA entryB hEntry) = entryB := by
   classical
   rw [List.get_eq_getElem]
-  have h := List.findIdx_getElem (xs := trace)
-    (p := fun x => decide (x = entryA ∨ x = entryB))
-    (w := (firstOccurrenceOfEither trace entryA entryB hEntry).isLt)
-  simpa only [decide_eq_true_eq] using h
+  have h := of_decide_eq_true (List.findIdx_getElem (xs := trace)
+    (p := matchesEitherEntry entryA entryB)
+    (w := (firstOccurrenceOfEither trace entryA entryB hEntry).isLt))
+  with_unfolding_all exact h
 
 /-- No earlier position than `firstOccurrenceOfEither` carries either entry. -/
 private lemma firstOccurrenceOfEither_not_mem_take
-    (entryA entryB : duplexSpongeTraceEntry) (hEntry : entryA ∈ trace ∨ entryB ∈ trace) :
+    (entryA entryB : (t : (duplexSpongeChallengeOracle StmtIn U).Domain) ×
+      (duplexSpongeChallengeOracle StmtIn U).Range t)
+    (hEntry : entryA ∈ trace ∨ entryB ∈ trace) :
     entryA ∉ trace.take (firstOccurrenceOfEither trace entryA entryB hEntry).val ∧
     entryB ∉ trace.take (firstOccurrenceOfEither trace entryA entryB hEntry).val := by
   classical
@@ -249,8 +270,8 @@ private lemma firstOccurrenceOfEither_not_mem_take
     have hmlt : m < (firstOccurrenceOfEither trace entryA entryB hEntry).val :=
       lt_of_lt_of_le hm (min_le_left _ _)
     have hfalse := List.not_of_lt_findIdx
-      (p := fun x => decide (x = entryA ∨ x = entryB)) hmlt
-    rw [decide_eq_false_iff_not] at hfalse
+      (p := matchesEitherEntry entryA entryB) hmlt
+    simp only [matchesEitherEntry, decide_eq_false_iff_not] at hfalse
     simp only [not_or] at hfalse
     first
       | exact hfalse.1 hget
@@ -492,7 +513,7 @@ private def emptyPartialSequence (trace : QueryLog (duplexSpongeChallengeOracle 
     last_inputState_eq_state := rfl
     permute_or_inv_in_trace := by intro i; exact i.elim0
     capacitySegment_output_eq_input := by intro i; exact i.elim0
-    inputCapacities_nodup := by simp }
+    inputCapacities_nodup := by simp only [List.map_singleton, List.nodup_singleton] }
 
 private def prependPartialSequence
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))

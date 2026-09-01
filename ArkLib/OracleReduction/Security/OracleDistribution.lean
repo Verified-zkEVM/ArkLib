@@ -39,9 +39,9 @@ with the unchanged initial state. This simultaneously captures uniformity, indep
 initial state, state preservation, and absence of failure. -/
 def IsFreshUniformSampler {ι σ α : Type} {spec : OracleSpec ι} [SampleableType α]
     (sampler : OracleComp spec α) (impl : QueryImpl spec (StateT σ ProbComp)) : Prop :=
-  ∀ state, 𝒟[(simulateQ impl sampler).run state] = 𝒟[do
+  ∀ state, discreteEvalDist ((simulateQ impl sampler).run state) = discreteEvalDist (do
     let value ← $ᵗ α
-    return (value, state)]
+    return (value, state))
 
 end OracleComp
 
@@ -265,11 +265,10 @@ lemma probEvent_uniform_query_eq
     Pr[ fun g => g q = y | (OracleDistribution.uniform spec).sample ] =
       (Fintype.card (spec.Range q) : ℝ≥0∞)⁻¹ := by
   rw [← probOutput_uniform_marginal (spec := spec) q y, ← probEvent_eq_eq_probOutput]
-  change Pr[ (fun x => x = y) ∘ (fun g => g q) | (OracleDistribution.uniform spec).sample ] =
-    Pr[ (· = y) | (OracleDistribution.uniform spec).sample >>=
-      pure ∘ (fun g : OracleFamily spec => g q) ]
-  rw [probEvent_bind_pure_comp]
-  rfl
+  exact (probEvent_bind_pure_comp
+    (mx := (OracleDistribution.uniform spec).sample)
+    (f := fun g : OracleFamily spec => g q)
+    (q := fun x : spec.Range q => x = y)).symm
 
 end MarginalLaws
 

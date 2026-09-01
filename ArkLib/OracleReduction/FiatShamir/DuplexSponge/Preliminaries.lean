@@ -177,8 +177,10 @@ theorem lemma_3_2 (ψ : B → A) (hψ : Function.Surjective ψ) :
 `ψ⁻¹ ∘ ψ ∘ 𝒰(B) = 𝒰(B)`. -/
 theorem lemma_3_2_paperEquation (ψ : B → A) (hψ : Function.Surjective ψ) :
     ((uniformPreimageSampler ψ hψ) ∘ pushforward ψ) (𝒰 B) = 𝒰 B := by
-  simpa [uniformPreimageSampler, pushforward, 𝒰, Functor.map] using
-    (bind_sampleUniformPreimage_eq_uniform (ψ := ψ) hψ)
+  have h := bind_sampleUniformPreimage_eq_uniform (ψ := ψ) hψ
+  change ($ᵖ B : PMF B).bind (fun b => sampleUniformPreimage ψ hψ (ψ b)) = $ᵖ B at h
+  simpa [uniformPreimageSampler, pushforward, 𝒰, Functor.map, Function.comp_def] using
+    h
 
 /-- CO25 Lemma 3.2 in the paper's `Δ(...)=0` form:
 `Δ(𝒰(B), ψ⁻¹ ∘ ψ ∘ 𝒰(B)) = 0`.

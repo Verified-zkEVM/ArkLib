@@ -227,8 +227,9 @@ more than one maximal element and `lookAhead` must return `err` anyway. Proofs q
 private lemma challengeSize_le_Lvi_mul_R (i : pSpec.ChallengeIdx) :
     challengeSize i ≤ pSpec.Lᵥᵢ i * SpongeSize.R := by
   have hceil : ((challengeSize i : ℚ) / SpongeSize.R) ≤ (pSpec.Lᵥᵢ i : ℚ) := by
-    simpa [ProtocolSpec.numPermQueriesChallenge] using
-      (Nat.le_ceil ((challengeSize i : ℚ) / SpongeSize.R))
+    change ((challengeSize i : ℚ) / SpongeSize.R) ≤
+      (Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R) : ℚ)
+    exact Nat.le_ceil ((challengeSize i : ℚ) / SpongeSize.R)
   have hRnonneg : (0 : ℚ) ≤ SpongeSize.R := by
     exact_mod_cast (Nat.zero_le SpongeSize.R)
   have hmul :

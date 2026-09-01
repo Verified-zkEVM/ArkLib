@@ -1241,8 +1241,12 @@ lemma lemma_5_12 (h : ¬ E trace)
           hash_mem_getBaseTrace trace hgetH
             (Backtrack.BacktrackSequence.Index_fst_not_mem_take seq hpos)
         -- Equal answer capacities, distinct entries: contradicts (B1).
-        refine answerCap_inj trace hdup hmemH hmemB (by simp) ?_
+        refine answerCap_inj trace hdup hmemH hmemB ?_ ?_
+        · intro he
+          have htag := congrArg Sigma.fst he
+          simp at htag
         simp only [answerCap, CanonicalSpongeState.capacitySegment]
+        rfl
       · -- ι* = j+1: minimality makes step j forward; collide via the chain condition.
         intro hk hki hQ
         have hkj : j < seq.outputState.length := by omega
@@ -1487,27 +1491,21 @@ private lemma bt_seq_eq_of_le (h : ¬ E trace) (S_BT : Backtrack.S_BT trace stat
       have hidxB : B.inputState[B.outputState.length - A.outputState.length - 1 + 1].capacitySegment
           = B.inputState[B.outputState.length - A.outputState.length].capacitySegment :=
         inputCap_congr (by omega) (by omega) (by omega)
-      have hidxA : A.inputState[0].capacitySegment
-          = A.inputState[A.outputState.length - A.outputState.length].capacitySegment :=
-        inputCap_congr (by omega) (by omega) (by omega)
+      have hb0 : A.inputState[0]
+          = B.inputState[B.outputState.length - A.outputState.length] := by
+        simpa only [Nat.sub_self] using hb
       have hcapeq : answerCap (⟨.inl A.stmt, Vector.drop (A.inputState[0]'hposA) SpongeSize.R⟩ :
             Sigma (duplexSpongeChallengeOracle StmtIn U))
           = answerCap (⟨.inr (.inl B.inputState[B.outputState.length - A.outputState.length - 1]),
             B.outputState[B.outputState.length - A.outputState.length - 1]⟩ :
             Sigma (duplexSpongeChallengeOracle StmtIn U)) := by
-        change Vector.drop (A.inputState[0]'hposA) SpongeSize.R
+        change A.inputState[0].capacitySegment
           = B.outputState[B.outputState.length - A.outputState.length - 1].capacitySegment
-        calc Vector.drop (A.inputState[0]'hposA) SpongeSize.R
-            = A.inputState[0].capacitySegment := rfl
-          _ = A.inputState[A.outputState.length - A.outputState.length].capacitySegment := hidxA
-          _ = B.inputState[B.outputState.length - A.outputState.length].capacitySegment :=
-              congrArg _ hb
-          _ = B.inputState[B.outputState.length - A.outputState.length - 1 + 1].capacitySegment :=
-              hidxB.symm
-          _ = B.outputState[B.outputState.length - A.outputState.length - 1].capacitySegment :=
-              chB.symm
+        exact (congrArg (fun x => x.capacitySegment) hb0).trans
+          (hidxB.symm.trans chB.symm)
       have he := eq_of_answerCap_eq trace hdup hmemH hmemS hcapeq
-      simp at he
+      have htag := congrArg Sigma.fst he
+      simp at htag
   -- Step 3: input states coincide.
   have hin : A.inputState = B.inputState := by
     apply List.ext_getElem
@@ -1536,8 +1534,8 @@ private lemma bt_seq_eq_of_le (h : ¬ E trace) (S_BT : Backtrack.S_BT trace stat
         = Vector.drop (B.inputState[0]'hposB) SpongeSize.R
       exact congrArg (fun x => Vector.drop x SpongeSize.R) hin0
     have he := eq_of_answerCap_eq trace hdup hmemA hmemB hcapeq
-    simp only [Sigma.mk.injEq, Sum.inl.injEq] at he
-    exact hne he.1
+    have hquery := congrArg Sigma.fst he
+    exact hne (Sum.inl.inj hquery)
   -- Step 5: output states coincide.
   have hout : A.outputState = B.outputState := by
     apply List.ext_getElem
@@ -1634,7 +1632,8 @@ lemma lemma_5_16 (h : ¬ E trace)
       refine answerCap_ne_queryCap_le trace hdup hij
         (c := seq.inputState[0].capacitySegment) ?_ ?_
       · rw [hi0eq]; rfl
-      · rw [hiHeq]; simp only [answerCap, CanonicalSpongeState.capacitySegment]
+      · rw [hiHeq]
+        rfl
     · -- No steps: `j_0 = |trace|`, but `j_h < |trace|`, so `j_h > j_0` is impossible.
       exfalso
       rw [Backtrack.BacktrackSequence.Index_snd_eq_length seq (by omega) hpos] at hgt

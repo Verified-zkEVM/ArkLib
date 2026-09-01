@@ -262,23 +262,18 @@ def hybChallengeImpl
     QueryImpl (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
       (StateT D_chal.Carrier ProbComp) :=
       -- the sampled oracle function is embedded into StateT as `D_chal.Carrier` type
-  fun q => do
-    let kC : D_chal.Carrier ← get
-    match q with
+  fun
     | .inl (qShared : ι) =>
-        let resp ← StateT.lift <| oSpecImpl qShared
-        pure resp
-    | .inr (.inl (qChal : κ)) => -- `κ`
-        let resp ← StateT.lift <| D_chal.toImpl kC qChal
-        pure resp
+        StateT.lift <| oSpecImpl qShared
+    | .inr (.inl (qChal : κ)) => do -- `κ`
+        let kC : D_chal.Carrier ← get
+        StateT.lift <| D_chal.toImpl kC qChal
     | .inr (.inr (.inl (qUnit : Unit))) => -- (Unit →ₒ U) => alphabet sampling, e.g. in LookAhead
-        let resp ← StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
-        pure resp
+        StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
     | .inr (.inr (.inr (qUnif : ℕ))) => -- unifSpec => default from ProbComp, we adopt it for `ψ⁻¹`
-        let resp ← StateT.lift <|
+        StateT.lift <|
           (show ProbComp (unifSpec.Range qUnif) from
             query (spec := unifSpec) qUnif)
-        pure resp
 
 /-! ### DSFS-side handler for `Hyb_0` -/
 
