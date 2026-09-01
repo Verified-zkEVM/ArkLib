@@ -32,13 +32,6 @@ counterexample are recorded in the
 - [GG25] Goyal-Guruswami. Definition 3.1 / Theorem 3.5 (original source).
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal ProbabilityTheory
@@ -83,6 +76,8 @@ private structure AffineMCABadWitness (C : ModuleCode ι F A) (δ : ℝ≥0)
   row_not_projected : ∃ j : Fin 2,
     LinearCode.projectedWord (u j) cols ∉ LinearCode.projectedCodeSubmod C cols
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
+  [DecidableEq A] in
 open scoped NNReal in
 private theorem affine_bad_witness_exists_collision_mismatch
     (C : ModuleCode ι F A) (δ : ℝ≥0) (γ : F) (u : Fin 2 → ι → A)
@@ -123,6 +118,8 @@ private theorem affine_bad_witness_exists_collision_mismatch
     _ = (c₀ + γ • c₁).1 i := congrArg (fun c : C => c.1 i) halign
     _ = c₀.1 i + γ • c₁.1 i := rfl
 
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F]
+  [Fintype A] [DecidableEq A] in
 private theorem affine_collision_injective
     (E : Finset F) (u₀ u₁ c₀ c₁ : ι → A)
     (pick : {γ : F // γ ∈ E} → ι)
@@ -172,6 +169,8 @@ private theorem affine_collision_injective
       sub_eq_zero.mp (by simpa only [x₁] using hx₁)
     exact (hmismatch γ).elim (fun h => h hu₀) (fun h => h hu₁)
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
+    [DecidableEq A] in
 private theorem affine_collision_card_le
     (E : Finset F) (u₀ u₁ c₀ c₁ : ι → A)
     (pick : {γ : F // γ ∈ E} → ι)
@@ -184,6 +183,7 @@ private theorem affine_collision_card_le
     (affine_collision_injective E u₀ u₁ c₀ c₁ pick hroot hmismatch)
   simpa using hcard
 
+omit [Fintype F] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
 private theorem curated_outside_exists_collision_mismatch
     (C : ModuleCode ι F A) (δ : ℝ≥0) (γ : F) (u : Fin 2 → ι → A)
@@ -227,6 +227,7 @@ private theorem curated_outside_exists_collision_mismatch
   simp only [Z, Finset.mem_filter, Finset.mem_univ, true_and]
   exact ⟨hiJ, heq.1.trans hc₀, heq.2.trans hc₁⟩
 
+omit [Fintype F] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
 private theorem decoded_challenge_exists_collision_mismatch
     (C : ModuleCode ι F A) (δ : ℝ≥0) (u : Fin 2 → ι → A)
@@ -321,12 +322,16 @@ private theorem exists_outside_finite_union_submodules
   · simp only [covered, Finset.mem_insert]
     exact Or.inr (Finset.mem_biUnion.mpr ⟨i, hi, by simp [nz, hxi, hx0]⟩)
 
+omit [Nonempty ι] [Fintype ι] [DecidableEq ι] [DecidableEq F] [Fintype A]
+    [DecidableEq A] in
 private theorem exists_codeword_nonzero_on_active
-    (C : ModuleCode ι F A) [Nontrivial C] (J : Finset ι)
+    [Finite ι] [Finite A] (C : ModuleCode ι F A) [Nontrivial C] (J : Finset ι)
     (hactive : ∀ i ∈ J, ∃ c : C, c.1 i ≠ 0)
     (hJcard : J.card < Fintype.card F) :
     ∃ d : C, ∀ i ∈ J, d.1 i ≠ 0 := by
   classical
+  let _ := Fintype.ofFinite ι
+  let _ := Fintype.ofFinite A
   let p (j : {i : ι // i ∈ J}) : Submodule F C :=
     { carrier := {c | c.1 j.1 = 0}
       zero_mem' := by simp
@@ -358,6 +363,8 @@ private theorem exists_codeword_nonzero_on_active
   change d.1 j.1 = 0
   exact hdi
 
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A]
+  [DecidableEq A] in
 private theorem exists_scalar_avoiding_active_coordinates
     (J : Finset ι) (d y : ι → A)
     (hd : ∀ i ∈ J, d i ≠ 0)
@@ -380,6 +387,7 @@ private theorem exists_scalar_avoiding_active_coordinates
   rw [Fintype.card_coe] at hcard
   omega
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
 private theorem exists_curated_affine_codeword_family
     (C : ModuleCode ι F A) (δ : ℝ≥0) (u : Fin 2 → ι → A)
@@ -431,6 +439,7 @@ private theorem exists_curated_affine_codeword_family
       have hnclose := Classical.choose_spec (not_forall.mp hAll)
       exact (hnclose (hU ▸ hclose)).elim
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 private theorem exists_synthetic_affine_zero_set
     (B : Finset F) (pick : {γ : F // γ ∈ B} → ι)
     (hinj : Function.Injective pick) (Z : Finset ι)
@@ -530,6 +539,7 @@ private theorem exists_synthetic_affine_zero_set
         omega
       _ ≤ (Zero β).card := Finset.card_le_card hins
 
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] [DecidableEq A] in
 open scoped NNReal in
 private theorem is_mca_affine_line_bad_witness_nonempty
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδ : δ ≤ 1)
@@ -555,6 +565,7 @@ private theorem is_mca_affine_line_bad_witness_nonempty
   have hiProj := congrFun hproj ⟨i, hi⟩
   simpa [AffineLineGenerator, Fin.sum_univ_two, LinearCode.projectedWord] using hiProj
 
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
 private theorem line_decodable_cardinality_form
     (C : ModuleCode ι F A) (δ : ℝ≥0) (a b : ℕ)
@@ -596,6 +607,7 @@ private theorem line_decodable_cardinality_form
   intro γ hγ
   exact (Finset.mem_filter.mp hγ).2
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
 private theorem line_decodable_output_card_le_field_card
     (C : ModuleCode ι F A) (δ : ℝ≥0) (a b : ℕ)
@@ -620,6 +632,7 @@ private theorem line_decodable_output_card_le_field_card
     (by simpa using haq)
   exact hE.trans (by simpa using Finset.card_le_univ E)
 
+omit [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 private theorem quadratic_alignment_card_le_two
     (E : Finset F) (d c₀ c₁ : A) (hd : d ≠ 0)
     (hroot : ∀ γ ∈ E, γ ^ 2 • d = c₀ + γ • c₁) :
@@ -664,6 +677,7 @@ private theorem card_sub_floor_pos_of_lt_one
   exact Nat.sub_pos_of_lt he
 
 open scoped NNReal ProbabilityTheory in
+omit [DecidableEq F] in
 open Classical in
 private theorem active_outside_common_zero_card_lt
     (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (a : ℕ)
@@ -748,9 +762,10 @@ private theorem active_outside_common_zero_card_lt
   have htwo : 2 ≤ n := by omega
   omega
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
 private theorem nontrivial_bad_set_card_le_a
-    (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (hδlt : δ < 1)
+    [Finite A] (C : ModuleCode ι F A) [Nontrivial C] (δ : ℝ≥0) (hδlt : δ < 1)
     (a : ℕ)
     (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
       (Fintype.card ι + 1))
@@ -758,6 +773,7 @@ private theorem nontrivial_bad_set_card_le_a
     (w : ∀ γ : {γ : F // γ ∈ B}, AffineMCABadWitness C δ γ.1 u) :
     B.card ≤ a := by
   classical
+  let _ := Fintype.ofFinite A
   by_contra hle
   have haB : a < B.card := Nat.lt_of_not_ge hle
   let n := Fintype.card ι
@@ -805,6 +821,8 @@ private theorem nontrivial_bad_set_card_le_a
     affine_collision_card_le E (u 0) (u 1) c₀.1 c₁.1 pick hroot hmismatch
   omega
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
+    [DecidableEq A] in
 open scoped NNReal in
 private theorem subsingleton_bad_set_pick
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0)
@@ -835,6 +853,8 @@ private theorem subsingleton_bad_set_pick
   · intro γ
     simpa using hmismatch γ
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A]
+    [DecidableEq A] in
 open scoped NNReal in
 private theorem subsingleton_bad_set_card_le
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0)
@@ -847,6 +867,7 @@ private theorem subsingleton_bad_set_card_le
     B.card = Fintype.card {γ : F // γ ∈ B} := (Fintype.card_coe B).symm
     _ ≤ Fintype.card ι := Fintype.card_le_of_injective pick hinj
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
 private theorem subsingleton_original_line_exact
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
@@ -929,6 +950,7 @@ private theorem subsingleton_original_line_exact
       rw [hcodezero] at hiagree
       exact hne (by simpa using hiagree)
 
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
 private theorem subsingleton_synthetic_line_exact
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
@@ -991,6 +1013,7 @@ private theorem subsingleton_synthetic_line_exact
       have hi := (Finset.mem_filter.mp hiZero).2
       exact hne (by simpa only [Pi.add_apply, Pi.smul_apply, Pi.zero_apply] using hi)
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal in
 private theorem subsingleton_bad_set_exact_close
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
@@ -1011,6 +1034,7 @@ private theorem subsingleton_bad_set_exact_close
     exact subsingleton_synthetic_line_exact C δ hδlt u B hBne w (by
       simpa only [Z, k] using hkZ)
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
 private theorem subsingleton_bad_set_card_le_a
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
@@ -1048,14 +1072,16 @@ private theorem subsingleton_bad_set_card_le_a
   omega
 
 open scoped NNReal ProbabilityTheory in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open Classical in
 private theorem fixed_stack_bad_set_card_le_a
-    (C : ModuleCode ι F A) (δ : ℝ≥0) (hδlt : δ < 1) (a : ℕ)
+    [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (hδlt : δ < 1) (a : ℕ)
     (hld : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
       (Fintype.card ι + 1))
     (u : Fin 2 → ι → A) :
     (Finset.univ.filter fun γ : F =>
       IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)).card ≤ a := by
+  let _ := Fintype.ofFinite A
   let B := Finset.univ.filter fun γ : F =>
     IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)
   have hBmem : ∀ γ : F, γ ∈ B ↔
@@ -1076,25 +1102,23 @@ private theorem fixed_stack_bad_set_card_le_a
       exact nontrivial_bad_set_card_le_a C δ hδlt a hld u B w
 
 open scoped NNReal ProbabilityTheory in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open Classical in
 private theorem mcaError_le_proof
-    (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
+    [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
     (_hδ_lt : δ < 1)
     (_h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
       (Fintype.card ι + 1)) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       (a : ENNReal) / (Fintype.card F : ENNReal) := by
+  let _ := Fintype.ofFinite A
   unfold mcaError
   refine iSup_le fun u => ?_
   rw [Probability.prob_uniform_eq_card_filter_div_card]
   apply ENNReal.div_le_div_right
   exact_mod_cast (fixed_stack_bad_set_card_le_a C δ _hδ_lt a _h u)
 
--- The pre-existing public signature below is locked to `origin/main`'s (fills a prior `sorry`),
--- and genuinely does not need `[DecidableEq ι]`, `[DecidableEq F]`, or `[Fintype A]`; `omit`
--- would alter the signature, so the two linters are suppressed narrowly here instead.
-set_option linter.unusedDecidableInType false in
-set_option linter.unusedFintypeInType false in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 open scoped NNReal ProbabilityTheory in
 /-- If `C` is `(δ, a, n+1)`-line-decodable, then its affine-line MCA error is at most
 `a / |F|`:
@@ -1103,7 +1127,7 @@ open scoped NNReal ProbabilityTheory in
 
 where `n = |ι|`. The hypotheses retain the source radius conditions `0 < δ < 1`. -/
 theorem IsLineDecodable.mcaError_le
-    (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
+    [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
             (Fintype.card ι + 1)) :

@@ -156,8 +156,6 @@ lemma subdomain_apply (i : ℕ) (k : Fin (2 ^ (n - i))) :
   rw [CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain,
     subdomain_generator_pow_generator, subdomain_subgroupUnit]
 
-set_option warning.simp.varHead false in
-@[simp]
 lemma subdomain_0_apply (i : Fin (2 ^ n)) :
   no_index (subdomain ω 0 i) = ω i := by
   rw [subdomain_apply]
@@ -168,12 +166,13 @@ lemma subdomain_0_apply (i : Fin (2 ^ n)) :
     simp [CosetFftDomainClass.subdomain_embed, mkSubgroupUnit]
   · simp [CosetFftDomainClass.subdomain_embed, mkSubgroupUnit, hn]
 
-set_option warning.simp.varHead false in
 /-- Membership to the `0`th subdomain is
   the same as membership to the original coset FFT domain. -/
-@[simp]
 lemma mem_subdomain_0_iff_mem :
-  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by simp [mem_def]
+  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by
+  simp only [mem_def]
+  constructor <;> rintro ⟨i, hi⟩ <;>
+    exact ⟨i, by simpa only [subdomain_0_apply] using hi⟩
 
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
@@ -379,10 +378,10 @@ lemma card_block_of_mem_subdomain [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n
   have hsub : n - (i + j) = n - i - j := by omega
   exact card_fin_filter_mod_eq (by omega) m.val (hsub ▸ m.isLt)
 
-set_option linter.unusedDecidableInType false in -- false alert
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma root_exists {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
   ∃ y ∈ subdomain ω i, y ^ 2 ^ j = x := by
+  classical
   have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
     have := card_block_of_mem_subdomain hij h
     aesop
@@ -390,12 +389,12 @@ lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ sub
       (add unsafe (by rw [←Finset.card_ne_zero]))
   simpa [Finset.Nonempty] using h'
 
-set_option linter.unusedDecidableInType false in -- false alert
 /-- Any square root of an element of the `(i + 1)`th subdomain lies in the `i`th subdomain. -/
-lemma sq_root_mem_subdomain [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
+lemma sq_root_mem_subdomain {i : ℕ} (hi : i < n) {y : F}
   (hx : x ∈ subdomain ω (i + 1))
   (hy : y ^ 2 = x) :
   y ∈ subdomain ω i := by
+  classical
   have : NeZero (n - i) := ⟨by omega⟩
   obtain ⟨y', hy'_mem, hy'_pow⟩ := root_exists (by omega) hx
   rw [pow_one] at hy'_pow
@@ -426,7 +425,8 @@ lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ} (hk : k ≤ n) (hx 
   conv_rhs =>
     rw [←h]
   apply congrArg
-  aesop
+  ext y
+  simp only [mem_block, mem_subdomain_0_iff_mem]
 
 /-- The generalized modular reduction map from `Fin (2^n)` to `Fin (2^(n-i))`,
 sending `u` to `u % 2^(n-i)`. Can be used to compute indices of powers of subdomain memebers. -/
