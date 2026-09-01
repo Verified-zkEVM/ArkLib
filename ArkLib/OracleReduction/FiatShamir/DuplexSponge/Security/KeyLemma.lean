@@ -9,6 +9,7 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
+import VCVio.EvalDist.TVDist
 import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
@@ -957,7 +958,7 @@ theorem lemma_5_1_inner
     (tₕ tₚ tₚᵢ : ℕ) :
       ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
-      tvDist
+        tvDist
         (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
           (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
           oSpecImpl V maliciousProver
