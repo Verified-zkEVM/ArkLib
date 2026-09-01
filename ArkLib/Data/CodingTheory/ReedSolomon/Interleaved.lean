@@ -191,13 +191,13 @@ open NNReal in
   This appears as lemma 4.4 in [ACFY24].
 -/
 theorem interleaved_listDecodable {F : Type*} [Field F]
-  {ι : Type*} [Fintype ι] [Nonempty ι]
-  (domain : ι ↪ F) (m k : ℕ) (hm : 0 < m)
-  (η : ℝ≥0) (hη : 0 < η) :
-  Code.IsListDecodable
-    (Code.interleavedCodeSet (κ := Fin k) (ReedSolomon.code domain m : Set (ι → F)))
-    (1 - (ReedSolomon.sqrtRate m domain) - η)
-    (1 / (2 * η * (ReedSolomon.sqrtRate m domain))) := by
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    (domain : ι ↪ F) (m k : ℕ) (hm : 0 < m)
+    (η : ℝ≥0) (hη : 0 < η) :
+    Code.IsListDecodable
+      (Code.interleavedCodeSet (κ := Fin k) (ReedSolomon.code domain m : Set (ι → F)))
+      (1 - (ReedSolomon.sqrtRate m domain) - η)
+      (1 / (2 * η * (ReedSolomon.sqrtRate m domain))) := by
   classical
   have hnpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hs : 0 < (ReedSolomon.sqrtRate m domain : ℝ) := ReedSolomon.sqrtRate_pos hm
