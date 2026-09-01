@@ -141,6 +141,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy.Counting
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.LineDecoding
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.Pinning
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
