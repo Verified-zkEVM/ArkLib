@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.Basic
+import ArkLib.OracleReduction.Security.StateRestoration
 
 /-!
   # The Single-Salt Fiat-Shamir Transformation (CO25 Construction 3.17)
@@ -213,3 +214,38 @@ theorem singleSaltFiatShamir_completeness
 end
 
 end Security
+section SingleSaltSecurity
+
+/-- Lift the IP verifier `V` to accept `StmtIn × Salt` by ignoring the salt component.
+
+The SR challenge oracle for this lifted verifier is `srChallengeOracle (StmtIn × Salt) pSpec`,
+which equals `fsChallengeOracle (StmtIn × Salt) pSpec` by alias. -/
+def saltedIPVerifier {Salt : Type} (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    Verifier oSpec (StmtIn × Salt) StmtOut pSpec where
+  verify := fun ⟨stmtIn, _⟩ transcript => V.verify stmtIn transcript
+
+/-- Lift a soundness language `langIn : Set StmtIn` to `Set (StmtIn × Salt)`,
+ignoring the salt. -/
+def langInSalted {Salt : Type} (langIn : Set StmtIn) : Set (StmtIn × Salt) :=
+  {p | p.1 ∈ langIn}
+
+/-- Lift an input relation `relIn : Set (StmtIn × WitIn)` to
+`Set ((StmtIn × Salt) × WitIn)`, ignoring the salt. -/
+def relInSalted {Salt : Type} (relIn : Set (StmtIn × WitIn)) : Set ((StmtIn × Salt) × WitIn) :=
+  {p | ⟨p.1.1, p.2⟩ ∈ relIn}
+
+omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] in
+/-- `Verifier.singleSaltFiatShamir`'s `verify` on the length-1 transcript `Fin.cons π 0` is, by
+definition, the bare FS-NARG `verify` map `fsSaltedVerify V x π`.  Bridges the NIV-shaped
+`adaptiveNARG*Exp init impl (Verifier.singleSaltFiatShamir V)` experiments back to the
+`fsSaltedVerify`-shaped §6.1/§6.2 game-match proofs
+(`simp only [fsSaltedNIV_verify]` after unfolding the experiment restores the
+`fsSaltedVerify`-form goal). -/
+theorem fsSaltedNIV_verify {Salt : Type} [VCVCompatible Salt]
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (x : StmtIn) (π : FSSaltedProof pSpec Salt) :
+    (Verifier.singleSaltFiatShamir (Salt := Salt) V).verify x (Fin.cons π (fun i => i.elim0))
+      = fsSaltedVerify V x π :=
+  rfl
+
+end SingleSaltSecurity
