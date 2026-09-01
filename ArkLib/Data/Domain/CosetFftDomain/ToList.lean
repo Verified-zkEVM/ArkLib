@@ -16,6 +16,12 @@ import Mathlib.Tactic.Field
 import ArkLib.Data.Domain.CosetFftDomain.Mem
 import ArkLib.Data.Domain.FftDomain.Mem
 
+/-!
+# ArkLib.Data.Domain.CosetFftDomain.ToList
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Domain
 
 variable {ι : Type} [Fintype ι] [AddCommGroup ι]
@@ -29,7 +35,7 @@ noncomputable def toList (ω : D) : List (toFinset ω) :=
   Finset.toListWithProof <| toFinset ω
 
 lemma toList_eq_finset_toList {ω : D} :
-  (toList ω).map (fun x ↦ x.1) = (toFinset ω).toList := by
+    (toList ω).map (fun x ↦ x.1) = (toFinset ω).toList := by
   exact Finset.toListWithProof_eq_toList
 
 end CosetFftDomainClass

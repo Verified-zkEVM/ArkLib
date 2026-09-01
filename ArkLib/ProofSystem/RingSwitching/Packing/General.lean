@@ -95,7 +95,7 @@ def fullOracleReduction :
 /-- The full DP24 ring-switching protocol as a Proof -/
 @[reducible]
 def fullOracleProof :
-  OracleProof []ₒ
+    OracleProof []ₒ
     (Statement := BatchingStmtIn (L:=L) (ℓ := ℓ))
     (OStatement := mlIOPCS.OStmtIn)
     (Witness := BatchingWitIn (L:=L) (K:=K) (ℓ := ℓ) (ℓ' := ℓ'))
@@ -122,7 +122,7 @@ variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ Pro
 omit [Fintype L] [Fintype K] [DecidableEq K]
   [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
 lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
-  (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
+    (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K P ℓ')
   (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
   (relOut := mlIOPCS.toRelInput)
@@ -161,8 +161,8 @@ def batchingCoreRbrKnowledgeError
     (g:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (ChallengeIdx.sumEquiv.symm i)
 
-def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) : ℝ≥0
-  := Sum.elim (f:=batchingCoreRbrKnowledgeError κ L K P ℓ')
+def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) : ℝ≥0 :=
+  Sum.elim (f := batchingCoreRbrKnowledgeError κ L K P ℓ')
   (g:=mlIOPCS.rbrKnowledgeError)
   (ChallengeIdx.sumEquiv.symm i)
 

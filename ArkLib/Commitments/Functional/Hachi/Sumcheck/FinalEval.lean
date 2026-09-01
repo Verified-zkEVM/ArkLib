@@ -132,6 +132,7 @@ def finalEvalVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F) :
   out := fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩
   verify_eq := fun _ _ => rfl
 
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- The final-evaluation verifier is guarded — definitionally, by `finalCheck`. -/
 theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)
@@ -178,13 +179,14 @@ variable [SampleableType F]
 witness. -/
 def finalEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) :
+    (_φF : ZMod q →+* F) :
     Extractor.TreeBased (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n)
       (LiftedWitness Φ μ n) (pSpecFinalEval F)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecFinalEval F))).arity :=
   fun _ tree o => o tree.onlyPath
 
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- Coordinate-wise special soundness of the final-evaluation step, with computable extractor
 `finalEvalExtractor`.
 
@@ -235,7 +237,7 @@ theorem finalEval_coordinateWiseSpecialSoundWith
         stmt.challenges).trans ?_
       simp only [Fin.eta]
       rw [eval_sumcheckPolyZero, hval]
-      exact hg0
+      simpa only using hg0
     · change hypercubeSum m₀
         (sumcheckPolyAlpha Φ m₀ m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα w) m₀
         stmt.challenges = _
@@ -244,7 +246,7 @@ theorem finalEval_coordinateWiseSpecialSoundWith
         stmt.challenges).trans ?_
       simp only [Fin.eta]
       rw [eval_sumcheckPolyAlpha, hval]
-      exact hgα
+      simpa only using hgα
 
 /-! ## The honest direction -/
 
@@ -264,7 +266,7 @@ def finalEvalReduction {TCom : Type} (φF : ZMod q →+* F) :
   prover := finalEvalProver Φ m₀ m₁ (honestComputeY Φ m₀ m₁ b φF)
   verifier := finalEvalVerifier Φ m₀ m₁ bound b φF
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- **The honest claim passes the guard.** At `i = m₀` the two round claims are plain evaluations
 (`hypercubeSum_of_le`) which factor as `eq̃(τ₀,a)·P_b(mle[w̃](a))` and `mle[w̃](a)·Ã(a)`
 (`eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`) — so with `y′ = mle[w̃](a)` they are literally
@@ -292,7 +294,7 @@ theorem finalCheck_honestComputeY
     decide_eq_true_iff]
   exact ⟨⟨hZero, hAlpha⟩, hBound⟩
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- **Relation preservation of the final-evaluation step.** An honest witness for the round-`m₀`
 relation makes the emitted evaluation claim `⟨t, a, mle[w̃](a)⟩` satisfy `relWEvalClaim`: the
 commitment and shortness conjuncts are carried over verbatim, and the value conjunct holds by
@@ -305,9 +307,10 @@ theorem mem_relWEvalClaim_of_nestedRoundRel
         WEvalStatement K.TCom F m₀), w) ∈ relWEvalClaim Φ m₀ bound bDig b K φF :=
   ⟨h.1, h.2.1, rfl⟩
 
-set_option linter.unusedSectionVars false in
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
 -- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`.
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F]
+    [SampleableType F] in
 set_option backward.isDefEq.respectTransparency false in
 /-- **The honest prover's run, characterized.** One message round and no challenge, so the run is a
 single `pure`: the transcript's only slot holds `y′ = computeY stmt wit`, and the output is the
@@ -340,7 +343,7 @@ lemma finalEvalProver_run_support {TCom Wit : Type}
   subst hx
   exact ⟨rfl, rfl⟩
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- **Honest-run characterization.** Every outcome of an honest run is the single success carrying
 the claim `⟨t, a, y′⟩` on both sides, with `y′ = mle[w̃](a)` and the witness passed through.
 
@@ -390,7 +393,7 @@ lemma finalEvalReduction_run_support
         WEvalStatement K.TCom F m₀), w) := Prod.ext rfl hout
   rw [hx, hpr]
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Perfect completeness of the final-evaluation step**, error exactly `0`.
 
 The honest prover's claim `y′ = mle[w̃](a)` passes `finalCheck` (`finalCheck_honestComputeY`) and
@@ -431,7 +434,7 @@ def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
   extractor := finalEvalExtractor Φ m₀ m₁ bound bDig K φF
   isCWSS := finalEval_coordinateWiseSpecialSoundWith Φ m₀ m₁ bound bDig b init impl K φF
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- The final-evaluation step's protocol object and its certificate speak about the same verifier.
 Holds by `rfl`. -/
 @[simp] theorem finalEvalReduction_verifier (init : ProbComp σ)

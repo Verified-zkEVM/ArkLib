@@ -226,7 +226,6 @@ pub fn hint_bytes(&mut self) -> Result<&'a [u8], DomainSeparatorMismatch>
 def hintBytes (state : FSVerifierState U H) :
     Except DomainSeparatorMismatch (FSVerifierState U H × ByteArray) := do
   let newHashState ← state.hashState.hint
-
     -- Ensure at least 4 bytes are available for the length prefix
   if state.nargString.size < 4 then
     .error { message := "Insufficient transcript remaining for hint" }
@@ -238,7 +237,6 @@ def hintBytes (state : FSVerifierState U H) :
     let byte3 := state.nargString[3]!.toNat
     let length := byte0 + (byte1 <<< 8) + (byte2 <<< 16) + (byte3 <<< 24)
     let rest := state.nargString.extract 4 state.nargString.size
-
     -- Ensure the rest of the slice has `length` bytes
     if rest.size < length then
       .error { message := s!"Insufficient transcript remaining, got {rest.size}, need {length}" }
@@ -352,7 +350,7 @@ Rust interface:
 pub fn hint_bytes(&mut self, hint: &[u8]) -> Result<(), DomainSeparatorMismatch>
 ```
 -/
-def hintBytes (state : FSProverState U H R) (hint : ByteArray) :
+def hintBytes (state : FSProverState U H R) (_hint : ByteArray) :
     Except DomainSeparatorMismatch (FSProverState U H R) :=
   match state.hashState.hint with
   | .ok newHashState =>

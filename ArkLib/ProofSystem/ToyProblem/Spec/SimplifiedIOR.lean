@@ -73,8 +73,6 @@ open ToyProblem.Spec (Statement OracleStatement Witness)
 -- (and `[DecidableEq F]` via the `classical` proofs) in their bodies but not in the
 -- alphabet-generic lemma types; suppress the `unused…InType` linter file-wide (the same toy
 -- idiom as `SoundnessBounds.lean` / `Spec/General.lean`).
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 /-! ### Output types and the output relation
 
@@ -361,7 +359,8 @@ theorem oracleVerifier_toVerifier_run_eq_pure
       transcriptGamma (F := F) tr * stmtIn.1.2.2)]
   rfl
 
-set_option linter.unusedSectionVars false in
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F]
+    [Fintype A] [DecidableEq A] in
 /-- The bundled security view of the virtual-oracle verifier is extensionally
 the original materialized C6.9 verifier. -/
 theorem oracleVerifier_toVerifier_eq_verifier :
@@ -370,7 +369,7 @@ theorem oracleVerifier_toVerifier_eq_verifier :
   ext stmtIn tr
   exact oracleVerifier_toVerifier_run_eq_pure (k := k) stmtIn tr
 
-set_option linter.unusedSectionVars false in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Positive probability of producing an output related to `witOut` forces the
 deterministic C6.9 derived output itself to be related to `witOut`. -/
 theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
@@ -413,14 +412,14 @@ the virtual-oracle verifier. `gamma_game_bound` and
 `verifier_knowledgeSoundness` retain the older alphabet-generic
 classical-choice existence result as a compatibility fallback. -/
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- The γ-round bound (via
 `ToyProblem.gamma_transition_prob_le`): if the choice extractor fails on
 `stmtIn` then no `R̃²` witness exists, and the probability over a uniform `γ`
 that the folded instance has an `R̃¹` witness is at most
 `ε_mca + |Λ(C^{≡2}, δ)| / |F|`. Stated in the reduced form of the L6.10 game
 event so the master lemma's challenge-only hypothesis can consume it. -/
-private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
+private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
@@ -438,6 +437,7 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
       | $ᵗ F] ≤
       (certifiedGammaError C δ : ENNReal) := by
   classical
+  let _ := Fintype.ofFinite A
   rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ
@@ -474,13 +474,13 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
         (le_of_eq ?_)
       rw [coe_certifiedGammaError]
 
-set_option linter.unusedSectionVars false in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Exact-extractor C6.9 knowledge-soundness assembly.  Any deterministic
 transition algorithm whose challenge failure event has probability at most
 `gammaError` yields a straightline game theorem that keeps that algorithm in
 the proposition type. -/
 theorem knowledgeSoundnessWith_of_transition_failure_prob_le
-    [SampleableType F]
+    [SampleableType F] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (δ gammaError : ℝ≥0)
@@ -503,6 +503,7 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
       (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
       (transitionStraightlineExtractor k transition) gammaError := by
   classical
+  let _ := Fintype.ofFinite A
   unfold OracleVerifier.knowledgeSoundnessWith
   rw [oracleVerifier_toVerifier_eq_verifier (k := k)]
   unfold Verifier.knowledgeSoundnessWith
@@ -545,7 +546,7 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
     rintro γ - ⟨t, hbad, hrel⟩
     exact ⟨t.2, hbad _ rfl, hrel⟩
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- Legacy alphabet-generic straightline knowledge-soundness existence
 theorem for C6.9. It uses the noncomputable `Spec.chooseRelaxedWitness` selector and
 therefore is not the deterministic round-by-round Definition A.5 result.
@@ -556,7 +557,7 @@ and
 `Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`;
 existential knowledge soundness is a corollary there. -/
 theorem verifier_knowledgeSoundness
-    [SampleableType F] [Nonempty ι]
+    [SampleableType F] [Nonempty ι] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (C : ModuleCode ι F A) (δ : ℝ≥0)
@@ -573,6 +574,7 @@ theorem verifier_knowledgeSoundness
         (outputRelationFor (ι := ι) (F := F) k (encode : (Fin k → F) → (ι → A)) δ)
         (certifiedGammaError C δ) := by
   classical
+  let _ := Fintype.ofFinite A
   unfold Verifier.knowledgeSoundness
   -- The straightline extractor: classical choice of any `R̃²` witness, from the
   -- input statement alone (always-`some`; cf. `Spec.chooseRelaxedWitness`).

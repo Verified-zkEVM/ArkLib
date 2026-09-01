@@ -62,19 +62,19 @@ variable {ω : FftDomain ι F} {x : F}
 /-- Membership in a concrete FFT domain means
   being one of the values of its subgroup parametrization. -/
 lemma mem_iff_exists :
-  x ∈ ω ↔ ∃ i, x = ω.subgroupDomain i := by
+    x ∈ ω ↔ ∃ i, x = ω.subgroupDomain i := by
   aesop (add simp [Membership.mem])
 
 /-- Membership in an FFT domain is the same as
   membership in the same domain viewed as a coset FFT domain. -/
 lemma mem_iff_mem_toCosetFftDomain :
-  x ∈ ω ↔ x ∈ ω.toCosetFftDomain := by
+    x ∈ ω ↔ x ∈ ω.toCosetFftDomain := by
   simp [mem_iff_exists, mem_iff_exists_mul, ω.cosetGenerator_one]
 
 /-- Membership in the image finset of an FFT domain means
   being one of the values of its subgroup parametrization. -/
 lemma mem_toFinset_iff_exists [Fintype ι] [DecidableEq F] :
-  x ∈ ω.toFinset ↔ ∃ i, x = ω.subgroupDomain i := by
+    x ∈ ω.toFinset ↔ ∃ i, x = ω.subgroupDomain i := by
   aesop
     (add simp
       [CosetFftDomainClass.mem_toFinset_iff_mem,
@@ -83,7 +83,7 @@ lemma mem_toFinset_iff_exists [Fintype ι] [DecidableEq F] :
 /-- Membership in the finset of elements is the same as membership in the FFT domain. -/
 @[simp]
 lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
-  x ∈ ω.toFinset ↔ x ∈ ω := by
+    x ∈ ω.toFinset ↔ x ∈ ω := by
   rw [CosetFftDomainClass.mem_toFinset_iff_mem,
       mem_iff_mem_toCosetFftDomain]
 

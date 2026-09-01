@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao, Alexander Hicks, Devon Tuma, Pietro Monticone, Tobias Rothmann
+-/
+
 import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
 import ArkLib.ToMathlib.Control.MonadLift
@@ -586,18 +592,20 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
         let state := prover.input (stmt, wit)
         let ⟨msg, state⟩ ← liftComp (prover.sendMessage ⟨0, by simp⟩ state) _
         return (fun i => match i with | ⟨0, _⟩ => msg, state)) := by
-  simp [Prover.runToRound, Prover.processRound]
-  have : pSpec.dir 0 = .P_to_V := by simp
-  split <;> rename_i hDir
-  · have : Direction.P_to_V = .V_to_P := by rw [← this, hDir]
-    contradiction
-  · congr
-    funext a
-    congr
-    funext i
-    have hi : i = Fin.last 0 := by ext; omega
-    subst i
-    exact Transcript.concat_last a.1 (default : pSpec.Transcript 0)
+  have hDir : pSpec.dir 0 = .P_to_V := by simp
+  change prover.runToRound (Fin.succ (0 : Fin 1)) stmt wit = _
+  rw [Prover.runToRound_succ, Prover.processRound_of_dir_eq_P_to_V 0 hDir]
+  simp only [Fin.castSucc_zero, Prover.runToRound_zero_of_prover_first,
+    ChallengeIdx, Challenge, Fin.isValue, Message,
+    Fin.succ_zero_eq_one, liftComp_eq_liftM, Nat.reduceAdd,
+    Fin.coe_ofNat_eq_mod, Nat.reduceMod, take_Type, pure_bind, bind_pure_comp]
+  congr
+  funext a
+  congr
+  funext i
+  have hi : i = Fin.last 0 := by ext; omega
+  subst i
+  exact Transcript.concat_last a.1 (default : pSpec.Transcript 0)
 
 @[simp]
 theorem Prover.runToRound_one_of_verifier_first [VerifierOnly pSpec] (stmt : StmtIn) (wit : WitIn)
@@ -607,24 +615,25 @@ theorem Prover.runToRound_one_of_verifier_first [VerifierOnly pSpec] (stmt : Stm
         let challenge ← liftComp (pSpec.getChallenge ⟨0, by simp⟩) _
         letI newState := (← liftComp (prover.receiveChallenge ⟨0, by simp⟩ state) _) challenge
         return (fun i => match i with | ⟨0, _⟩ => challenge, newState)) := by
-  simp [Prover.runToRound, Prover.processRound]
-  have : pSpec.dir 0 = .V_to_P := by simp
-  split <;> rename_i hDir
-  · -- V_to_P case: this is what we want
-    congr 1
-    funext challenge
-    congr 1
-    funext f
-    simp only [default, Prod.mk.injEq]
-    constructor
-    · funext i
-      have hi : i = Fin.last 0 := by ext; omega
-      subst i
-      exact Transcript.concat_last challenge (default : pSpec.Transcript 0)
-    · trivial
-  · -- P_to_V case: contradiction
-    have : Direction.V_to_P = .P_to_V := by rw [← this, hDir]
-    contradiction
+  have hDir : pSpec.dir 0 = .V_to_P := by simp
+  change prover.runToRound (Fin.succ (0 : Fin 1)) stmt wit = _
+  rw [Prover.runToRound_succ, Prover.processRound_of_dir_eq_V_to_P 0 hDir]
+  simp only [Fin.castSucc_zero, Prover.runToRound_zero_of_prover_first,
+    ChallengeIdx, Challenge, Fin.isValue,
+    HasQuery.instOfMonadLift_query, Fin.succ_zero_eq_one,
+    liftComp_eq_liftM, Nat.reduceAdd, Fin.coe_ofNat_eq_mod,
+    Nat.reduceMod, take_Type, pure_bind, bind_pure_comp]
+  congr 1
+  funext challenge
+  congr 1
+  funext f
+  simp only [default, Prod.mk.injEq]
+  constructor
+  · funext i
+    have hi : i = Fin.last 0 := by ext; omega
+    subst i
+    exact Transcript.concat_last challenge (default : pSpec.Transcript 0)
+  · trivial
 
 @[simp]
 theorem Prover.run_of_verifier_first [VerifierOnly pSpec] (stmt : StmtIn) (wit : WitIn)

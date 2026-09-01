@@ -1,9 +1,21 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Ilia Vlasov
+-/
+
 import Mathlib.Algebra.Polynomial.BigOperators
+
+/-!
+# ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
+
+Definitions and results for this component of ArkLib.
+-/
 
 namespace Polynomial
 
 theorem natDegree_sum_lt_of_forall_lt.{u_1, w}
-  {ι : Type w} (s : Finset ι) {S : Type u_1} [Semiring S]
+    {ι : Type w} (s : Finset ι) {S : Type u_1} [Semiring S]
   {n : ℕ} [inst : NeZero n] (f : ι → Polynomial S) (h : ∀ i ∈ s, (f i).natDegree < n) :
   (∑ i ∈ s, f i).natDegree < n := by
   rw [←Nat.le_pred_iff_lt (by aesop (add safe forward [inst.out]) (add safe (by omega)))]

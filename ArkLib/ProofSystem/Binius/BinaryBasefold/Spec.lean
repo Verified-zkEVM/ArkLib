@@ -5,6 +5,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Binius.BinaryBasefold
 
 /-! ## Protocol Specs for Binary Basefold

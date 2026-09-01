@@ -1,11 +1,12 @@
-/- Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
-  Released under Apache 2.0 license as described in the file LICENSE.
-  Authors: František Silváši, Julian Sutherland, Ilia Vlasov
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 
-  [BCIKS20] refers to the paper "Proximity Gaps for Reed-Solomon Codes" by Eli Ben-Sasson,
-  Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
+[BCIKS20] refers to the paper "Proximity Gaps for Reed-Solomon Codes" by Eli Ben-Sasson,
+Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
 
-  Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
+Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
 -/
 
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
@@ -28,6 +29,12 @@ import ToMathlib.Control.OptionT
 import ArkLib.ToMathlib.List.Basic
 import ArkLib.ToMathlib.Finset.Basic
 import Mathlib.Algebra.Ring.NonZeroDivisors
+
+/-!
+# ArkLib.ProofSystem.BatchedFri.Security
+
+Definitions and results for this component of ArkLib.
+-/
 
 namespace Fri
 section Fri
@@ -56,11 +63,10 @@ abbrev evalDomainSigma {n k : ℕ} (s : Fin (k + 1) → ℕ+)
   ω.subdomain (∑ j' ∈ finRangeTo (k + 1) i, s j')
 
 def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
-      (j : Fin (2 ^ (s i).1)) : evalDomainSigma s ω ↑i :=
+    (j : Fin (2 ^ (s i).1)) : evalDomainSigma s ω ↑i :=
   let r : {x | x ∈ ω.toFftDomain.subdomain (n - ↑(s i))} :=
     ⟨ω.toFftDomain.subdomain (n - (s i).1)
-      ⟨j.1,
-        by
+      ⟨j.1, by
           have s_i_lim : (s i).1 < n + 1 := by
             apply Nat.lt_succ_of_le
             rw [Finset.sum_eq_sum_sdiff_singleton_add (i := i) (by simp)] at k_le_n
@@ -100,8 +106,7 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
   ⟩
   ↑x
 
-def cosetG (s₀ : evalDomainSigma s ω ↑i)
-  : Finset (evalDomainSigma s ω ↑i) :=
+def cosetG (s₀ : evalDomainSigma s ω ↑i) : Finset (evalDomainSigma s ω ↑i) :=
   if k_le_n : ∑ j', (s j').1 ≤ n
   then
     (Finset.univ).image (cosetEnum n s s₀ k_le_n)
@@ -111,13 +116,13 @@ def pows (z : 𝔽) (ℓ : ℕ) : Matrix Unit (Fin ℓ) 𝔽 :=
   Matrix.of <| fun _ j => z ^ j.val
 
 def VDM (s₀ : evalDomainSigma s ω ↑i) :
-  Matrix (Fin (2 ^ (s i : ℕ))) (Fin (2 ^ (s i : ℕ))) 𝔽 :=
+    Matrix (Fin (2 ^ (s i : ℕ))) (Fin (2 ^ (s i : ℕ))) 𝔽 :=
   if k_le_n : (∑ j', (s j').1) ≤ n
   then Matrix.vandermonde (fun j => (cosetEnum n s s₀ k_le_n j).1)
   else 1
 
 def cosetEnum' (s₀ : evalDomainSigma s ω ↑i)
-  (k_le_n : ∑ j', (s j').1 ≤ n)
+    (k_le_n : ∑ j', (s j').1 ≤ n)
   (j : Fin (2 ^ (s i).1)) : cosetG n s s₀ :=
   ⟨
     cosetEnum n s s₀ k_le_n j,
@@ -246,18 +251,16 @@ omit [Fintype 𝔽] in
 
   Corresponds to Claim 8.1 of [BCIKS20] -/
 lemma fri_round_consistency_completeness
-  {f : ReedSolomon.code
+    {f : ReedSolomon.code
     (⟨fun x => x, by simp⟩ : evalDomainSigma s ω i ↪ 𝔽)
     (2 ^ (n - (∑ j' ∈ finRangeTo _ i, (s j' : ℕ))))}
   {z : 𝔽}
-  (k_le_n : ∑ j', ↑(s j') ≤ n)
-  :
+  (k_le_n : ∑ j', ↑(s j') ≤ n) :
   f_succ' n s f.val z k_le_n ∈
     (ReedSolomon.code
       (⟨fun x => x, by simp⟩ : (evalDomainSigma s ω (i.1 + 1)).toFinset ↪ 𝔽)
       (2 ^ (n - (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j' : ℕ))))
-    ).carrier
-  := by sorry
+    ).carrier := by sorry
 
 end Completeness
 
@@ -616,7 +619,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/
 lemma fri_query_soundness
-  {t : ℕ}
+    {t : ℕ}
   {α : ℝ}
   (f : Fin t.succ → (ω.subdomain 0 → 𝔽))
   (h_agreement :
@@ -625,8 +628,7 @@ lemma fri_query_soundness
       (ReedSolomon.code (⟨fun x => x, by simp⟩ : ω.subdomain 0 ↪ 𝔽) (2 ^ n))
     ≤ α)
   {m : ℕ}
-  (m_ge_3 : m ≥ 3)
-  :
+  (m_ge_3 : m ≥ 3) :
     let ρ_sqrt :=
       ReedSolomon.sqrtRate
         (2 ^ n)
@@ -645,8 +647,7 @@ lemma fri_query_soundness
                     Fri.Spec.QueryRound.queryVerifier
                       (ω := ω)
                       (n := n) s
-                      (
-                        by
+                      ( by
                           apply Spec.round_bound (d := d)
                           transitivity
                           · exact domain_size_cond
@@ -656,8 +657,7 @@ lemma fri_query_soundness
                       1
                   ).verify
                     z
-                    (fun i =>
-                      by
+                    (fun i => by
                         simpa only
                           [
                             Spec.QueryRound.pSpec, Challenge,
@@ -670,8 +670,7 @@ lemma fri_query_soundness
           )]
         = 1
       ]
-    Pr_{let x ←$ᵖ (Fin t → 𝔽); let z ←$ᵖ (Fin (k + 1) → 𝔽)}[ εQ x z > α0 ] ≤ εC 𝔽 n s m ρ_sqrt
-  := by
+    Pr_{let x ←$ᵖ (Fin t → 𝔽); let z ←$ᵖ (Fin (k + 1) → 𝔽)}[ εQ x z > α0 ] ≤ εC 𝔽 n s m ρ_sqrt := by
   sorry
 
 -- set_option diagnostics true
@@ -740,10 +739,9 @@ lemma fri_query_soundness
 open ENNReal in
 /-- Corresponds to Claim 8.3 of [BCIKS20] -/
 lemma fri_soundness
-  {t l m : ℕ}
+    {t l m : ℕ}
   (f : Fin t.succ → (ω → 𝔽))
-  (m_ge_3 : m ≥ 3)
-  :
+  (m_ge_3 : m ≥ 3) :
     let ρ_sqrt :=
       ReedSolomon.sqrtRate
         (2 ^ n)

@@ -60,8 +60,7 @@ lemma irreducible_factorization_of_gs_solution
         (List.zipWith
           (fun (Rᵢ : F[Z][X][Y]) (fe : ℕ × ℕ) =>
             (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ (ringChar F ^ fe.1))) ^ fe.2)
-          R (f.zip e)).prod
-    := sorry
+          R (f.zip e)).prod := sorry
 
 omit [DecidableEq (RatFunc F)] in
 /-- Claim 5.6 of [BCIKS20]: there exists `x₀ ∈ F` such that for every irreducible component `Rᵢ`
@@ -512,8 +511,7 @@ omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
     (hsep : ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
-      (Trivariate.evalAtX x₀ R).Separable)
-    :
+      (Trivariate.evalAtX x₀ R).Separable) :
   #(pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
       (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ Trivariate.degreeInY Q := by
   classical

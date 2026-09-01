@@ -157,7 +157,7 @@ extraction-facing honest prover would have to restate the quotient over the comp
 representation. -/
 noncomputable def honestLiftWitness (hd : 0 < Φ.φ.natDegree)
     (s : RlinStatement Φ n μ) (z : ArkLib.Lattices.PolyVec (Rq Φ) μ) : LiftedWitness Φ μ n :=
-  haveI := isPresentation_cyclotomic Φ hd
+  have := isPresentation_cyclotomic Φ hd
   Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
     (cyclotomicPresentation_modulus_natDegree Φ) s z
 
@@ -198,7 +198,7 @@ theorem liftReduction_eq
     liftReduction (oSpec := oSpec) (F := F) Φ bound bDig K hd
       = Lift.reduction (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec) K
           (cyclotomicPresentation_modulus_natDegree Φ) := by
-  haveI := isPresentation_cyclotomic Φ hd
+  have := isPresentation_cyclotomic Φ hd
   exact congrArg _ (funext fun s => funext fun z =>
     honestLiftWitnessC_eq_honestWitness Φ hd s z)
 
@@ -210,7 +210,7 @@ by `rfl`. -/
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree) :
     (liftReduction (oSpec := oSpec) (F := F) Φ bound bDig K hd).verifier
       = (liftPackage (oSpec := oSpec) Φ bound bDig K φF init impl hd).verifier := by
-  haveI := isPresentation_cyclotomic Φ hd
+  have := isPresentation_cyclotomic Φ hd
   rw [liftReduction_eq]
   rfl
 
@@ -268,7 +268,7 @@ theorem liftReduction_perfectCompleteness_of_zShort [SampleableType F]
     (hzShort : ∀ s z, (s, z) ∈ relIn → vecLInftyNorm Φ z ≤ bound) :
     (liftReduction (oSpec := oSpec) (F := F) Φ bound bDig K hd).perfectCompleteness init impl
       relIn (relLift Φ bound bDig K φF) := by
-  haveI := isPresentation_cyclotomic Φ hd
+  have := isPresentation_cyclotomic Φ hd
   have h := Lift.reduction_perfectCompleteness_of_relIn (cyclotomicPresentation Φ) φF
     (fun s : RlinStatement Φ n μ => s.M) (fun s : RlinStatement Φ n μ => s.yvec)
     (fun s : RlinStatement Φ n μ => bound ≤ s.bound) K

@@ -89,7 +89,7 @@ private lemma splitNthNoncomputable_of_neZero {f : 𝔽[X]} {n : ℕ} [inst : Ne
   is the coefficient of `f` at position `e * n + i`. -/
 @[simp]
 lemma splitNth_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m : ℕ) :
-  (splitNth f n i).coeff m = f.coeff (m * n + i.1) := by
+    (splitNth f n i).coeff m = f.coeff (m * n + i.1) := by
   aesop
     (add unsafe [cases Fin])
     (add simp [splitNth, Polynomial.coeff_ofFinsupp])
@@ -152,7 +152,7 @@ lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
 
 /-- Lemma bounding degree of each `n`-split polynomial. -/
 lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
-  (splitNth f n i).natDegree ≤ f.natDegree / n := by
+    (splitNth f n i).natDegree ≤ f.natDegree / n := by
   have hn := inst.out
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
   intro j hj
@@ -167,7 +167,7 @@ lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
     when `q = X ^ n`. -/
 @[simp low]
 lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynomial 𝔽}
-  {n : ℕ} [inst : NeZero n] :
+    {n : ℕ} [inst : NeZero n] :
   FoldingPolynomial.foldingPolynomial (X ^ n) f =
     ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
@@ -188,7 +188,7 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynom
 /-- `polyFold` in terms of `splitNth`. -/
 @[simp low]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
-  {f : 𝔽[X]} {n : ℕ} {r : 𝔽} [inst : NeZero n] :
+    {f : 𝔽[X]} {n : ℕ} {r : 𝔽} [inst : NeZero n] :
   FoldingPolynomial.polyFold f n r =
     ∑ i, C (r ^ i.val) * splitNth f n i := by
   aesop
@@ -221,7 +221,7 @@ lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (
     components `u i`. -/
 @[simp high]
 theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
-  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+    {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
   FoldingPolynomial.foldingPolynomial (X ^ n)
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) =
       ∑ i, Polynomial.X ^ i.val * C (u i) := by simp_all
@@ -230,7 +230,7 @@ theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
     polynomial `∑ i, r^i * u i`. -/
 @[simp high]
 theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
-  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+    {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
   FoldingPolynomial.polyFold
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) n r =
       ∑ i, r ^ i.val • (u i) := by
