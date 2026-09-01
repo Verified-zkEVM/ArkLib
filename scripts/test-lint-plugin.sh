@@ -23,6 +23,10 @@ for root in linter pp profiler trace; do
   grep -Fq "Forbidden \`set_option ${root}.*\`" "$fixture_tmp/rejected.log"
 done
 grep -Fq "\`@[nolint]\` suppressions are forbidden" "$fixture_tmp/rejected.log"
+if [[ "$(grep -Fc '`@[nolint]` suppressions are forbidden' "$fixture_tmp/rejected.log")" -ne 2 ]]; then
+  echo "ERROR: source-policy plugin did not reject both nolint attribute forms" >&2
+  exit 1
+fi
 
 if lake env lean --plugin="$plugin_path" "$guard_rejected" >"$fixture_tmp/guard-rejected.log" 2>&1; then
   echo "ERROR: source-policy plugin errors were discarded by #guard_msgs" >&2

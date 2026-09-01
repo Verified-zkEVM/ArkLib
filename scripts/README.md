@@ -33,10 +33,17 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
-  and hazardous-Unicode checks
+  and hazardous-Unicode checks. It verifies that every tracked `ArkLib/**/*.lean` file is in the
+  `ArkLib.lean` closure, and independently rejects forbidden option and `nolint`-attribute syntax
+  even if module code captures diagnostics or mutates Lean's in-process linter registry. This
+  lexical backstop is deliberately conservative across literal bodies (and across comments for
+  forbidden options), and reserves policy-like quoted identifiers and syntax quotations;
+  suppression examples belong in the out-of-scope fixtures
 - **`ArkLibLintPlugin.lean`** - end-of-module Lean syntax-tree gate rejecting `set_option` linter,
   pretty-printer, profiler, and trace changes and `@[nolint]` attributes, including suppressions
-  nested in tactics, terms, extensible interpolated strings, and diagnostic-capturing commands
+  nested in tactics, terms, extensible interpolated strings, and diagnostic-capturing commands.
+  The plugin supplies precise syntax diagnostics; it is not presented as a sandbox against
+  arbitrary hostile Lean metaprogramming, so the independent source pass remains mandatory
 
 ### Dependency Analysis
 - **`dependency_analysis/`** - Complete dependency analysis toolkit

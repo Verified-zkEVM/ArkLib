@@ -25,3 +25,6 @@ def traceSuppression := m! -- parser gap
   "{set_option trace.profiler true in (1 : Nat)}"
 
 @[nolint unusedArguments] def attributeSuppression (x : Nat) := 1
+
+def attributeCommandSuppression (x : Nat) := 1
+attribute [nolint unusedArguments] attributeCommandSuppression

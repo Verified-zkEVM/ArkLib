@@ -84,7 +84,20 @@ private def arkLibPaths : IO (Array FilePath) := do
   let modules := imports.filter (·.getRoot == `ArkLib)
   if modules.isEmpty then
     throw <| IO.userError "lint-style: ArkLib.lean yielded no ArkLib modules"
-  return #[umbrella] ++ modules.map modulePath
+  let modulePaths := modules.map modulePath
+  let trackedOutput ← IO.Process.output { cmd := "git", args := #["ls-files", "--", "ArkLib"] }
+  if trackedOutput.exitCode != 0 then
+    throw <| IO.userError s!"git ls-files ArkLib failed: {trackedOutput.stderr}"
+  let tracked := trackedOutput.stdout.splitOn "\n" |>.filter (·.endsWith ".lean")
+  let closure := modulePaths.toList.map (·.toString)
+  let missing := tracked.filter (!closure.contains ·)
+  let untrackedByUmbrella := closure.filter (!tracked.contains ·)
+  unless missing.isEmpty && untrackedByUmbrella.isEmpty do
+    let details :=
+      (missing.map (s!"tracked but absent from ArkLib.lean closure: {·}")) ++
+      (untrackedByUmbrella.map (s!"in ArkLib.lean closure but not tracked: {·}"))
+    throw <| IO.userError <| "lint-style scope is incomplete:\n" ++ "\n".intercalate details
+  return #[umbrella] ++ modulePaths
 
 private def repositoryHygiene (github : Bool) : IO Nat := do
   let output ← IO.Process.output { cmd := "git", args := #["ls-files", "--stage"] }
