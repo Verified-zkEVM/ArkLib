@@ -28,14 +28,14 @@ open Bivariate in
 lemma exists_factors_with_large_common_root_set (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ R H, R ∈ (irreducible_factorization_of_gs_solution h_gs).choose_spec.choose ∧
-    Irreducible H ∧ 0 < H.natDegree ∧ H ∣ (Bivariate.evalX (Polynomial.C x₀) R) ∧
-    (Bivariate.evalX (Polynomial.C x₀) R).Separable ∧
+    Irreducible H ∧ 0 < H.natDegree ∧ H ∣ Trivariate.evalAtX x₀ R ∧
+    (Trivariate.evalAtX x₀ R).Separable ∧
     #(@Set.toFinset _ { z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁ |
         letI Pz := Pz z.2
-        (Trivariate.eval_on_Z R z.1).eval Pz = 0 ∧
+        (Trivariate.evalAtZ z.1 R).eval Pz = 0 ∧
         (Bivariate.evalX z.1 H).eval (Pz.eval x₀) = 0} (Fintype.ofFinite _))
-    ≥ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q)
-    ∧ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q) >
+    ≥ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / Trivariate.degreeInY Q
+    ∧ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / Trivariate.degreeInY Q >
       2 * D_Y Q ^ 2 * (D_X ((k + 1 : ℚ) / n) n m) * D_YZ Q := by sorry
 
 /-- Claim 5.7 establishes existens of a polynomial `R`. his is the extraction of this polynomial. -/
@@ -60,12 +60,12 @@ lemma natDegree_H_pos (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
 
 /-- The extracted `H` divides `R(x₀, Y, Z)`, as required for the Hensel setup in Claim A.2. -/
 lemma H_dvd_evalX_R (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    H k δ x₀ h_gs ∣ Bivariate.evalX (Polynomial.C x₀) (R k δ x₀ h_gs) :=
+    H k δ x₀ h_gs ∣ Trivariate.evalAtX x₀ (R k δ x₀ h_gs) :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.2.2.1
 
 /-- The specialization `R(x₀, Y, Z)` is separable in `Y`, as required for Claim A.2. -/
 lemma evalX_R_separable (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    (Bivariate.evalX (Polynomial.C x₀) (R k δ x₀ h_gs)).Separable :=
+    (Trivariate.evalAtX x₀ (R k δ x₀ h_gs)).Separable :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.2.2.2.1
 
 open RationalFunctions.HenselNumerators in
@@ -74,7 +74,7 @@ open RationalFunctions.HenselNumerators in
 Note for Claims 5.8/5.10: this supplies the *qualitative* half of Claim A.2 (existence and
 uniqueness of the Hensel lift, regularity of the numerators), which is all that
 `RationalFunctions.HenselNumerators.exists_hensel_numerator_sequence` and hence `alpha`/`gamma`
-need.  The **weight** bounds additionally require `2 ≤ Bivariate.natDegreeY R`, and that side
+need. The **weight** bounds additionally require `2 ≤ Trivariate.degreeInY R`, and that side
 condition cannot be obtained from Claim 5.7:
 
 * `R` is an arbitrary irreducible factor of `Q` at that point, and `deg_Y R = 1` is precisely what
@@ -192,7 +192,7 @@ lemma solution_gamma_matches_word_if_subset_large
     (hx : (matching_set_at_x k δ h_gs x).card >
       (2 * k + 1)
         * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
-        * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
+        * (Trivariate.degreeInY <| R k δ x₀ h_gs)
         * D)
     : (P k δ x₀ h_gs).eval (Polynomial.C (ωs x)) =
       (Polynomial.C <| u₀ x) + u₁ x • Polynomial.X
@@ -214,7 +214,7 @@ lemma exists_points_with_large_matching_subset
       (matching_set_at_x k δ h_gs x).card >
         (2 * k + 1)
         * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
-        * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
+        * (Trivariate.degreeInY <| R k δ x₀ h_gs)
         * D := by sorry
 
 end BCIKS20ProximityGapSection5

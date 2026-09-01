@@ -20,6 +20,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`coding-theory-conventions.md`](coding-theory-conventions.md) - notation in scope, which
   numeric type each quantity uses, and the naming and layout choices local to
   `ArkLib/Data/CodingTheory/`.
+- [`polynomial-conventions.md`](polynomial-conventions.md) - semantic axes for nested bivariate
+  and trivariate polynomial representations.
 - [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
@@ -40,6 +42,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
   - `coding-theory-conventions.md` for notation, types and local conventions in `CodingTheory/`.
+  - `polynomial-conventions.md` for nested polynomial axes and semantic evaluation/degree APIs.
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
