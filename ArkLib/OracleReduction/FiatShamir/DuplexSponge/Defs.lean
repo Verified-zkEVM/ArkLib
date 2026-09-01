@@ -283,7 +283,7 @@ theorem encode_injective [SaltCodec U δ Salt] :
 end SaltCodec
 
 /-!
-## Block-count notation (CO25 Equations 6–7)
+## Block-count notation (CO25 Equations 7–8)
 
 `L_δ`, `L_P(i)`, `L_V(i)`, `L_P`, `L_V`, `L` from the paper. -/
 section BlockCountNotation
@@ -293,41 +293,41 @@ variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     [HasMessageSize pSpec] [∀ i, Serialize (pSpec.Message i) (Vector U (messageSize i))]
     [HasChallengeSize pSpec] [∀ i, Deserialize (pSpec.Challenge i) (Vector U (challengeSize i))]
 
-/-- CO25 Eq. 6 — `L_δ = ⌈δ / r⌉`: number of rate blocks needed for a salt of size `δ`. -/
+/-- CO25 Eq. 7 — `L_δ = ⌈δ / r⌉`: number of rate blocks needed for a salt of size `δ`. -/
 def numSaltBlocks (δ : Nat) : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
 
 alias Lδ := numSaltBlocks
 
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th message of the
-  protocol specification. This is `Lₚ(i)` in the paper block-count notation (Equation 6). -/
+  protocol specification. This is `Lₚ(i)` in the paper block-count notation (Equation 7). -/
 def numPermQueriesMessage (i : pSpec.MessageIdx) : Nat :=
   Nat.ceil ((messageSize i : ℚ) / SpongeSize.R)
 
 alias Lₚᵢ := numPermQueriesMessage
 
 /-- Total number of queries to the permutation oracle needed to absorb all messages of the
-  protocol specification. This is `Lₚ` in the paper block-count notation (Equation 7). -/
+  protocol specification. This is `Lₚ` in the paper block-count notation (Equation 8). -/
 def totalNumPermQueriesMessage : Nat :=
   ∑ i, pSpec.Lₚᵢ i
 
 alias Lₚ := totalNumPermQueriesMessage
 
 /-- Number of queries to the permutation oracle needed to absorb the `i`-th challenge of the
-  protocol specification. This is `Lᵥ(i)` in the paper block-count notation (Equation 6). -/
+  protocol specification. This is `Lᵥ(i)` in the paper block-count notation (Equation 7). -/
 def numPermQueriesChallenge (i : pSpec.ChallengeIdx) : Nat :=
   Nat.ceil ((challengeSize i : ℚ) / SpongeSize.R)
 
 alias Lᵥᵢ := numPermQueriesChallenge
 
 /-- Total number of queries to the permutation oracle needed to absorb all challenges of the
-  protocol specification. This is `Lᵥ` in the paper block-count notation (Equation 7). -/
+  protocol specification. This is `Lᵥ` in the paper block-count notation (Equation 8). -/
 def totalNumPermQueriesChallenge : Nat :=
   ∑ i, pSpec.Lᵥᵢ i
 
 alias Lᵥ := totalNumPermQueriesChallenge
 
 /-- Total number of queries to the permutation oracle needed to absorb all messages and challenges
-  of the protocol specification. This is `L` in the paper block-count notation (Equation 7). -/
+  of the protocol specification. This is `L` in the paper block-count notation (Equation 8). -/
 def totalNumPermQueries : Nat :=
   pSpec.totalNumPermQueriesMessage + pSpec.totalNumPermQueriesChallenge
 
@@ -345,7 +345,7 @@ section Section58Oracles
 /-- Section 5.8 `Hyb₁` challenge-oracle surface: encoded prover-prefix queries, encoded verifier
 responses.
 
-Per CO25 Eq. 15: `dom_i = {0,1}^≤n × Σ^δ × Σ^{ℓ_P(1)} × … × Σ^{ℓ_P(i)}` — the prover prefix is
+Per CO25 Eq. 16: `dom_i = {0,1}^≤n × Σ^δ × Σ^{ℓ_P(1)} × … × Σ^{ℓ_P(i)}` — the prover prefix is
 *exactly* `i` encoded messages, not an unbounded list. We model this as
 `pSpec.EncodedMessagesBefore U i.1.castSucc`, the dependent function indexed by message rounds
 strictly before `i`. With `Fintype` instances for the components this Query is also `Fintype`,
@@ -378,7 +378,7 @@ def gSpec
 /-- Section 5.8 `Hyb₂` challenge-oracle surface: encoded prover-prefix queries, decoded verifier
 responses.
 
-Same CO25 Eq. 52 prefix shape as `gSpecInterface` (encoded messages
+Same CO25 Eq. 53 prefix shape as `gSpecInterface` (encoded messages
 indexed by rounds `< i`); only the response type differs (decoded `pSpec.Challenge i`). -/
 @[inline, reducible]
 def eSpecInterface
@@ -401,7 +401,7 @@ def eSpec
   [pSpec.Challenge]ₒ'
     (eSpecInterface (U := U) StmtIn pSpec δ)
 
-/-- CO25 Eq. 15 — eager full-table distribution `𝒟_Σ` (symbol `g`) over the encoded
+/-- CO25 Eq. 16 — eager full-table distribution `𝒟_Σ` (symbol `g`) over the encoded
 challenge-oracle family for `Hyb₁`.
 
 Samples a single full random table `g : (q : Domain) → Range q` once at game start; all subsequent
@@ -456,7 +456,7 @@ noncomputable instance instSampleableTypeEncodedChallengeOracle
     ⟨fun q => (default : Vector U (challengeSize (pSpec := pSpec) q.1))⟩
   apply SampleableType.ofFintype
 
-/-- CO25 Eq. 52 — eager full-table distribution `e` over the decoded challenge-oracle family
+/-- CO25 Eq. 53 — eager full-table distribution `e` over the decoded challenge-oracle family
 for `Hyb₂`.
 
 Same eager full-table semantics as `D_Sigma`, with the
@@ -476,7 +476,7 @@ def D_e
 
 /-! ## Setup: oracle distributions and `SampleableType` bridges -/
 
-/-- CO25 Eq. 54 — eager full-table distribution `𝒟_IP` (symbol `f`, salted) over the
+/-- CO25 Eq. 55 — eager full-table distribution `𝒟_IP` (symbol `f`, salted) over the
 salted Fiat–Shamir challenge oracle for `Hyb₃` and `Hyb₄`.
 
 Samples a single full random table `f : (q : Domain) → Range q` once at game start over the
@@ -1105,7 +1105,7 @@ and `unifSpec` for any additional uniform randomness. -/
 abbrev D2SChallengePlusUnitOracle {κ : Type} (challengeSpec : OracleSpec κ) :=
   challengeSpec + ((Unit →ₒ U) + unifSpec)
 
-/-- CO25 §5.4 Eq. 16 — Shorthand for the recurring `gᵢ`-realization shape: a `QueryImpl`
+/-- CO25 §5.4 Eq. 17 — Shorthand for the recurring `gᵢ`-realization shape: a `QueryImpl`
 from the `gSpec` source into `StateT M (OptionT (OracleComp …))` over the basic-FS-style
 outer spec `D2SChallengePlusUnitOracle challengeSpec`.
 
@@ -1125,7 +1125,7 @@ abbrev GImpl {κ : Type} (challengeSpec : OracleSpec κ) (M : Type) :=
 
 variable {Salt : Type}
 
-/-- CO25 §5.4 Eq. 16 LHS — type for the full `D2SAlgo^f(𝒫̃)` prover transform (Items 1-6).
+/-- CO25 §5.4 Eq. 17 LHS — type for the full `D2SAlgo^f(𝒫̃)` prover transform (Items 1-6).
 - Inner prover `D2FQueryProver` runs `𝒫̃^{D2SQuery}` (outputs `τ ∈ Σ^δ`)
 - Post-processing applies `τ̌ := bin(τ)` (outputs `τ̌ ∈ {0,1}^{δ⋆}`)
 -/

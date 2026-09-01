@@ -148,7 +148,7 @@ private noncomputable def decodeMessagesPrefixPhiInv?
     (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc) :
     Option (pSpec.MessagesUpTo roundIdx.1.castSucc) := by
   -- Internal algorithm reuses the list-based lookup; we flatten via `toList` here so the
-  -- structured CO25 Eq. 15 prefix surface is honored at the boundary, while the existing
+  -- structured CO25 Eq. 16 prefix surface is honored at the boundary, while the existing
   -- per-round walk stays unchanged.
   let encodedList :=
     EncodedMessagesBefore.toList (pSpec := pSpec) (U := U) encodedMessages
@@ -303,7 +303,7 @@ private noncomputable def stdTraceHandlePQuery
 /-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the encoded-message tuple returned by
 `BackTrack` to basic-FS message prefixes.
 
-CO25 Eq. 15 prefix shape: the input is `pSpec.EncodedMessagesBefore U roundIdx.1.castSucc`
+CO25 Eq. 16 prefix shape: the input is `pSpec.EncodedMessagesBefore U roundIdx.1.castSucc`
 (exactly `i` encoded messages indexed by message rounds `< i`). -/
 noncomputable def hybEncodedMessagesBefore?
     (roundIdx : pSpec.ChallengeIdx)
@@ -316,7 +316,7 @@ noncomputable def hybEncodedMessagesBefore?
 /-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
 CO25's standard FS reduction `R_FS` keeps the public *pre-encoded* salt `τ̌ ∈ {0,1}^{δ★}` threaded
-through the augmented statement of the FS-standard oracle (paper line 1187-1192, Eq. 54-55).
+through the augmented statement of the FS-standard oracle (paper line 1187-1192, Eq. 55-56).
 We model this as the abstract type `Salt`, bridged from the on-sponge `Vector U δ` salt via
 `SaltCodec.encode = bin`. The salted variants below feed into `KeyLemma`'s `Hyb₃`/`Hyb₄`. -/
 

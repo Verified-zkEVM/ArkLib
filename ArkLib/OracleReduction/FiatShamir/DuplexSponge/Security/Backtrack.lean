@@ -348,7 +348,7 @@ lemma BacktrackSequence.Index_snd_not_mem_take (seq : BacktrackSequence trace st
 end IndexSpec
 
 /-- CO25 Def 5.3 `S_BT(tr, s)` — maximal family of backtrack sequences
-(Eq. 8 & BackTrack §5.2 Step 2, Eq. 10): a finite set of `BacktrackSequence` pairs
+(Eq. 9 & BackTrack §5.2 Step 2, Eq. 11): a finite set of `BacktrackSequence` pairs
 `(s_{in,ι}, s_{out,ι})` starting at an initial `StmtIn` and ending at sponge state `s`,
 with no sequence strictly containing another. -/
 structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
@@ -725,7 +725,7 @@ private def linearScanBackwards
 
 end S_BT_BacktrackComputation
 
-/-- CO25 Eq. 6 — `L_δ = ⌈δ / r⌉`: number of rate blocks for the salt. -/
+/-- CO25 Eq. 7 — `L_δ = ⌈δ / r⌉`: number of rate blocks for the salt. -/
 private def Lδ : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
 
 private def challengeIdxList : List pSpec.ChallengeIdx :=
@@ -825,7 +825,7 @@ private lemma BacktrackSequence.rateUnits_length
   unfold BacktrackSequence.rateUnits
   exact rateUnitsOf_length _
 
-/-- CO25 Eq. 6 — `δ > R ⟹ Lδ ≥ 2`. -/
+/-- CO25 Eq. 7 — `δ > R ⟹ Lδ ≥ 2`. -/
 private lemma Lδ_ge_two_of_gt_R (h : SpongeSize.R < δ) : 2 ≤ Lδ (δ := δ) := by
   unfold Lδ
   have hR_pos : (0 : ℚ) < (SpongeSize.R : ℚ) := by
@@ -862,7 +862,7 @@ private lemma Lδ_le_inputState_length
 
 /-- BackTrack §5.2 Step 4(a).iii.A — assemble the encoded i-th prover message:
   `α̂_i^(k) := concat_rate_segs(s_{R,in,L_ptr(i)}, …, s_{R,in,L_ptr(i)+L_P(i)-1})[0 : ℓ_P(i)]
-              ∈ Σ^{ℓ_P(i)}`  (CO25 Eq. 11).
+              ∈ Σ^{ℓ_P(i)}`  (CO25 Eq. 12).
 
 Char-based view: take the rate chars from `L_P(i)` consecutive input states (each
 contributing `r` chars), then keep the first `ℓ_P(i)` chars of the concatenation. -/
@@ -960,7 +960,7 @@ private def BacktrackSequence.extractCandidate
     let L_P_before := sumMessageBlocksBefore (pSpec := pSpec) i
     let L_V_before := sumChallengeBlocksBefore (pSpec := pSpec) i
     -- Step 4(a).i — block pointer at round `i`:
-    --   `L_ptr(i) := L_δ + Σ_{j<i} L_P(j) + Σ_{j<i} L_V(j)`  (CO25 Eq. 6/7).
+    --   `L_ptr(i) := L_δ + Σ_{j<i} L_P(j) + Σ_{j<i} L_V(j)`  (CO25 Eq. 7/8).
     let L_ptr := Lδ (δ := δ) + L_P_before + L_V_before
     let msgIdx? := lastMessageBefore? (pSpec := pSpec) i
     -- `L_P(i) := ⌈ℓ_P(i) / r⌉` — permutation blocks needed for the i-th prover message.
@@ -972,7 +972,7 @@ private def BacktrackSequence.extractCandidate
     if L_ptr + L_P_i > m_k_plus_1 then
       return none -- not enough rate blocks to host the i-th message ⇒ remove from S_BT
     -- Step 4(a).iii.A — assemble `α̂_i^(k) ∈ Σ^{ℓ_P(i)}` via `assembleEncodedMessage`
-    -- (CO25 Eq. 11). Returns `none` if the rate-block window has fewer than `ℓ_P(i)` chars.
+    -- (CO25 Eq. 12). Returns `none` if the rate-block window has fewer than `ℓ_P(i)` chars.
     match msgIdx? with
     | some msgIdx =>
       match seq.assembleEncodedMessage L_ptr L_P_i msgIdx with
@@ -993,7 +993,7 @@ private def BacktrackSequence.extractCandidate
     -- (same index as the input side) — an erratum: the paper's own Step E pairing
     -- (`in[j+1] = out[j]`), its "previous output" prose, and its Step 3 salt check all use the
     -- shifted pairing, and the printed index does not exist in the exact-fit case (Def 5.3
-    -- Eq. 8: the chain ends on an input state, so `s_out,m_k` is not in the sequence).
+    -- Eq. 9: the chain ends on an input state, so `s_out,m_k` is not in the sequence).
     --
     -- The check applies only when the final block is partial (`ℓ_P(i) mod r ≠ 0`): a full
     -- final block overwrites the entire rate, leaving no inherited remainder.

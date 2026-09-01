@@ -41,7 +41,7 @@ Hyb_3  salted FS `f`      f ← 𝒟_IP_salted           ── Claim 5.24 ─�
 Hyb_4  basic FS           f ← 𝒟_IP_salted (same f, different algos)
 ```
 
-Triangle-inequality sum of the four claim bounds gives `η★` (CO25 Eq. 57), the headline
+Triangle-inequality sum of the four claim bounds gives `η★` (CO25 Eq. 58), the headline
 error bound of `lemma_5_1`.
 
 ## Section map (top-to-bottom)
@@ -252,7 +252,7 @@ queries → caller-supplied `oSpecImpl`; challenge queries → `D_chal.toImpl k_
 `𝒟_Σ` / `𝒟_e` / `𝒟_IP_salted`); auxiliary unit queries → `d2sUnitSampleImpl` (fresh per
 call); auxiliary `unifSpec` queries → ambient `ProbComp` uniform sampling.  The `D_chal`
 carrier is read from the state but never mutated — sampled once by `hybChallengeInit`
-and held fixed (CO25 Eq. 15 / Eq. 52 / Eq. 54).  The paper has no ambient distribution; we
+and held fixed (CO25 Eq. 16 / Eq. 53 / Eq. 55).  The paper has no ambient distribution; we
 take an arbitrary `QueryImpl oSpec ProbComp` instead, which the caller specializes (e.g. to
 the empty spec for paper fidelity). -/
 def hybChallengeImpl
@@ -317,7 +317,7 @@ that `gImpl` carries beneath `D2SQuery`'s own `StateT (D2SQueryState …)` layer
 
 For `M := PUnit`, the threaded state is vacuous and the body collapses to the plain
 no-memo skeleton; for `M := D2SAlgoMemo …`, threading realizes the paper's
-`𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 16 RHS), mirroring `D2FQueryProver` in
+`𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 17 RHS), mirroring `D2FQueryProver` in
 `ProverTransform.lean`. -/
 def hybridGame
     [∀ i, Fintype (pSpec.Message i)]
@@ -566,14 +566,14 @@ def claim5_21Bound (U : Type) [SpongeUnit U] [Fintype U]
   let tShift : ℝ := (tₕ + 1 + tₚ + L + tₚᵢ : ℕ)
   (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
 
-/-- CO25 Claim 5.22. Statistical-distance bound for `Hyb_1` vs `Hyb_2` (Eq. 53):
+/-- CO25 Claim 5.22. Statistical-distance bound for `Hyb_1` vs `Hyb_2` (Eq. 54):
 `θ★(t_h, t_p, t_{p⁻¹}) · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}`. -/
 def claim5_22Bound
     (tₕ tₚ tₚᵢ : ℕ) (εcodec : CodecBias (pSpec := pSpec)) : ℝ :=
   (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
     + ∑ i, (εcodec i : ℝ)
 
-/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55):
+/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 56):
 `(7·(L+1)·(2·t_h + 1 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
 def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
@@ -611,7 +611,7 @@ def hyb_0
 /-- CO25 §5.8 Hyb_1. `Hyb_1` distribution sampled via state-based evaluation
 (`simulateQ` with `StateT`): ambient `oSpec` answered by caller-supplied `oSpecImpl`,
 encoded challenge oracle
-`g := (g_i)_{i ∈ [k]} ← 𝒟_Σ(λ,n)` (CO25 Eq. 15) sampled eagerly via
+`g := (g_i)_{i ∈ [k]} ← 𝒟_Σ(λ,n)` (CO25 Eq. 16) sampled eagerly via
 `D_Sigma`, auxiliary `(Unit →ₒ U)` and `unifSpec` slots handled
 inline (fresh per call).
 
@@ -682,7 +682,7 @@ theorem claim_5_21
 /-- CO25 §5.8 Hyb_2. `Hyb_2` distribution sampled via state-based evaluation
 (`simulateQ` with `StateT`): ambient `oSpec` answered by caller-supplied `oSpecImpl`,
 decoded challenge oracle
-`e := (e_i)_{i ∈ [k]}` (CO25 Eq. 52) sampled eagerly via `section58DecodedChallengeDist`,
+`e := (e_i)_{i ∈ [k]}` (CO25 Eq. 53) sampled eagerly via `section58DecodedChallengeDist`,
 auxiliary slots inline. Line-4 trace map is `φ⁻¹(tr_𝒫̃ ‖ tr_𝒱)`
 (`hyb2Line4Trace`). -/
 def hyb_2
@@ -753,7 +753,7 @@ theorem claim_5_22
 /-- CO25 §5.8 Hyb_3. `Hyb_3` distribution sampled via state-based evaluation
 (`simulateQ` with `StateT`): ambient `oSpec` answered by caller-supplied `oSpecImpl`,
 salted Fiat–Shamir oracle
-`f := (f_i)_{i ∈ [k]} ← 𝒟_IP(λ,n)` (CO25 Eq. 54) sampled eagerly via
+`f := (f_i)_{i ∈ [k]} ← 𝒟_IP(λ,n)` (CO25 Eq. 55) sampled eagerly via
 `D_IP_salted`, auxiliary slots inline. Line-4 trace map is identity
 (`hyb3Line4Trace`). -/
 def hyb_3
@@ -768,7 +768,7 @@ def hyb_3
   let challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec
   let D_IP_salted :=
     D_IP_salted (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec)
-  -- `Hyb_3` `gᵢ`-realization (CO25 Eq. 16): `φ⁻¹` parse encoded prefix → query salted
+  -- `Hyb_3` `gᵢ`-realization (CO25 Eq. 17): `φ⁻¹` parse encoded prefix → query salted
   -- `fᵢ` oracle (keyed at `StmtIn × Salt`, with the on-sponge `Vector U δ` salt
   -- bridged via `SaltCodec.encode = bin`) → `ψᵢ⁻¹` uniform preimage.  The `OptionT`
   -- abort layer carries `φ⁻¹` parse failure (⊥ on malformed encoded-message prefixes).
@@ -828,7 +828,7 @@ the paper's `{0,1}^{δ⋆}` via `SaltCodec.encode = bin` at the FS-oracle query 
   `deriveTranscriptFS`-derived transcript, reading `π` as a **standard FS proof** with
   oracle keyed at `(𝕩, SaltCodec.encode τ)`; queries `f` directly with **no D2SQuery wrap**.
 
-The prover surface is **identical** on both sides (paper Eq. 16): `Hyb_3` uses
+The prover surface is **identical** on both sides (paper Eq. 17): `Hyb_3` uses
 `𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` = `D2FQueryProver` (`d2sQueryImpl` composed with the
 `tr_i`-memoized bridge `d2sCodecBridgeImplMemo` from CO25 §5.4 D2SAlgo Item 3); `Hyb_4`
 uses `D2SAlgo^f(𝒫̃)` = `d2sAlgo`, which is `D2FQueryProver` post-processed by

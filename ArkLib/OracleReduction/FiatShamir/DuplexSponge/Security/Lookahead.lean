@@ -15,7 +15,7 @@ This file contains the lookahead sequence family `S_LA(tr_∇.p, s, i)` and the 
 
 ## Declaration order (top-to-bottom, matching CO25 §5.3 Algorithm 2)
 
-1. **Paper structures** — `LookaheadSequence` (Eq. 13 chain), `LookaheadSequenceFamily`
+1. **Paper structures** — `LookaheadSequence` (Eq. 14 chain), `LookaheadSequenceFamily`
   (the maximal family), and the abbrev `S_LA(tr_∇.p, s, i)`; consumed as explicit structure
   hypotheses by proofs. No family-enumeration algorithm is provided (design note before
   Step 2) — the executable surface is the forward linear scan `linearScanForwards`.
@@ -48,7 +48,7 @@ section
 
 /-! ## §5.3 paper structures — `LookaheadSequence`, `S_LA(tr_∇.p, s, i)` -/
 
-/-- A look-ahead sequence (Equation 13) over a black-box permutation table `tr_∇.p` and an
+/-- A look-ahead sequence (Equation 14) over a black-box permutation table `tr_∇.p` and an
   initial state, consists of:
 - A list of `(s_in, s_out)` query-answer pairs,
 
@@ -64,7 +64,7 @@ structure LookaheadSequence
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
     (trΔp : T_P)
     (state : CanonicalSpongeState U) where
-  /-- `S_LA^(k)` chain (LookAhead §5.3 Step 1, Eq. 13): `(s_{in,ι}, s_{out,ι})` pairs. -/
+  /-- `S_LA^(k)` chain (LookAhead §5.3 Step 1, Eq. 14): `(s_{in,ι}, s_{out,ι})` pairs. -/
   pairs : List (CanonicalSpongeState U × CanonicalSpongeState U)
   /-- `ℓ ≥ 1` — non-empty chain (`.found` branch of LookAhead §5.3 Step 2.c). -/
   nonempty : pairs ≠ []
@@ -108,7 +108,7 @@ def LookaheadSequence.flattenStateSequence
   -- `state` is already included (`seq.pairs[0].1`)
   seq.pairs.foldr (fun p acc => p.1 :: p.2 :: acc) []
 
-/-- A family of look-ahead sequences (Equation 13), parametrized by a black-box permutation
+/-- A family of look-ahead sequences (Equation 14), parametrized by a black-box permutation
   table `tr_∇.p`, an initial state, and a challenge round index `i`, is defined as a finite set
   of look-ahead sequences such that:
 - no two sequences are strict subsets of each other
@@ -135,7 +135,7 @@ abbrev S_LA
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :=
   LookaheadSequenceFamily (pSpec := pSpec) trΔp state i
 
-/-! ## §5.3 Step 1 — Parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)` (Eq. 13) -/
+/-! ## §5.3 Step 1 — Parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)` (Eq. 14) -/
 
 /-- Successor candidates from the query-answer entries of `tr_∇.p`.
 
@@ -216,7 +216,7 @@ private lemma inputState_length_eq_pairs_length
   simp [LookaheadSequence.inputState]
 
 /- Design note (CO25 §5.3): we deliberately provide **no executable enumeration** of the full
-lookahead-sequence family `S_LA(tr_∇.p, s, i)` (Eq. 13, paper Algorithm 2 Step 1). The
+lookahead-sequence family `S_LA(tr_∇.p, s, i)` (Eq. 14, paper Algorithm 2 Step 1). The
 executable `lookAhead` below uses the single-chain forward linear scan with scan-time fork
 detection — CO25's own line-1107 optimization: whenever the scan would branch, the family has
 more than one maximal element and `lookAhead` must return `err` anyway. Proofs quantify over

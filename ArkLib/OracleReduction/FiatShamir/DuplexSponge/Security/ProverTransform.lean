@@ -426,7 +426,7 @@ private def d2sHandleBacktrackNoResult
   let st ← get
   match popCacheByInput (U := U) st.cacheP stateIn with
   -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`. The paper adds to
-  -- `tr_∇.p` ONLY in Item 4(c)iii (its Eq. 47 consistency list excludes 4(c)i): a
+  -- `tr_∇.p` ONLY in Item 4(c)iii (its Eq. 48 consistency list excludes 4(c)i): a
   -- Cache_p-popped answer must NOT enter `tr_∇`, so a later repeat `p`-query on the same
   -- `s_in` falls through to 4(c)iii and can answer inconsistently — exactly the `E_func`
   -- event that Lemma 5.8 bounds via the `Cache_p ∩ tr` count (CO25 Eqs. 31–33).
@@ -697,7 +697,7 @@ end D2SQuery
 
 /-! ## Codec bridge `gᵢ = ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹`
 
-CO25 §5.4 Eq. 16 — Translates `d2sQueryOracles` into `fsChallengeOracle`-based queries:
+CO25 §5.4 Eq. 17 — Translates `d2sQueryOracles` into `fsChallengeOracle`-based queries:
 - `.inl` (`gSpec`): `φ⁻¹` (decode prefix) → `f` (query FS oracle) → `ψ⁻¹` (uniform preimage)
 - `.inr` (`(Unit →ₒ U) + unifSpec`): identity passthrough
 
@@ -710,7 +710,7 @@ variable [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challen
   [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
   {Salt : Type} [SaltCodec U δ Salt]
 
-/-- CO25 §5.4 Eq. 16 — `gᵢ`-summand of the codec bridge: `ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹`.
+/-- CO25 §5.4 Eq. 17 — `gᵢ`-summand of the codec bridge: `ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹`.
 
 Given a `gSpec` query `(i, 𝕩, τ̂, α̂₁, …, α̂ᵢ)`:
 1. `φ⁻¹`: parse `α̂_{<i}` → `α_{<i}` via `hybEncodedMessagesBefore?` (⊥ on failure)
@@ -864,7 +864,7 @@ end D2SAlgoMemo
 
 /-! ## `d2fProverRaw` — shared `𝒜^{D2SQuery^{gImpl}}` inner pipeline
 
-Raw post-`simulateQ` shape of the paper Eq. 16 RHS prover loop, keeping the two state layers
+Raw post-`simulateQ` shape of the paper Eq. 17 RHS prover loop, keeping the two state layers
 (`D2SQueryState`, inner `M`) so different call sites can project differently:
 - `D2FQueryProver` projects via `Prod.fst ∘ Prod.fst` — drops both states, used by Hyb_4.
 - `KeyLemma.hybridGame` keeps the triple — uses `D2SQueryState` for the verifier-half
@@ -885,7 +885,7 @@ variable {T_H : Type} {T_P : Type}
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
 
-/-- CO25 §5.4 — Outer-spec `QueryImpl` for the paper Eq. 16 RHS simulator:
+/-- CO25 §5.4 — Outer-spec `QueryImpl` for the paper Eq. 17 RHS simulator:
 `id_oSpec ⊕ D2SQuery^{gImpl}`. Reused by `d2fProverRaw` and by `KeyLemma.hybridGame`'s
 verifier-half (which re-runs the same `QueryImpl` against the honest verifier with the
 shared `M` state threaded in — paper §5.4 D2SAlgo Item 3, `tr_i` global to a single run). -/
@@ -908,7 +908,7 @@ noncomputable def d2fOuterImpl
           (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
           (Sum.inr aux)))
 
-/-- CO25 §5.4 Eq. 16 RHS — generic raw pipeline for `comp^{D2SQuery^{gImpl}}`, keeping the
+/-- CO25 §5.4 Eq. 17 RHS — generic raw pipeline for `comp^{D2SQuery^{gImpl}}`, keeping the
 post-run `D2SQueryState` and inner `M`.
 
 Generalizes `d2fProverRaw` from prover-only to any wide-DSFS computation. Two call sites:
@@ -931,11 +931,11 @@ noncomputable def d2fRaw
 
 end D2FProverRaw
 
-/-! ## `D2FQueryProver` + `d2sAlgo` — paper Eq. 16 split
+/-! ## `D2FQueryProver` + `d2sAlgo` — paper Eq. 17 split
 
 Paper §5.4 D2SAlgo (lines 1121-1138) decomposes into two structurally distinct pieces:
 
-- **Items 1-3** = the inner prover loop running `𝒜^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 16
+- **Items 1-3** = the inner prover loop running `𝒜^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 17
   RHS). Output salt stays on the DS side (`Vector U δ`, paper `Σ^δ`). Mirrored in Lean by
   `D2FQueryProver` returning `DSSaltedProof`.
 - **Items 4-6** = parse `(τ, αᵢ)`, set `τ̌ := bin(τ) ∈ {0,1}^{δ⋆}`, repackage as
@@ -969,7 +969,7 @@ variable {T_H : Type} {T_P : Type}
   [∀ i, DecidableEq (pSpec.Challenge i)]
   {Salt : Type} [SaltCodec U δ Salt]
 
-/-- CO25 §5.4 Eq. 16 RHS — the inner prover surface `𝒜^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper
+/-- CO25 §5.4 Eq. 17 RHS — the inner prover surface `𝒜^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper
 D2SAlgo Items 1-3, lines 1121-1135). Runs `𝒜` with its duplex-sponge `(h, p, p⁻¹)` queries
 answered by `D2SQuery` under the codec-bridged oracle `ψ⁻¹∘f∘φ⁻¹`, where `f` is the salted
 FS challenge oracle keyed at `(StmtIn × Salt)`. Salt is bridged via `SaltCodec.encode = bin`
@@ -992,7 +992,7 @@ noncomputable def D2FQueryProver
         (Salt := Salt))
       𝒜 default)
 
-/-- CO25 §5.4 Eq. 16 LHS — full `D2SAlgo^f(𝒜)` (paper Items 1-6, lines 1121-1138). Thin
+/-- CO25 §5.4 Eq. 17 LHS — full `D2SAlgo^f(𝒜)` (paper Items 1-6, lines 1121-1138). Thin
 wrapper over `D2FQueryProver` (Items 1-3) that applies the paper's Items 4-6 post-processing:
 parse the inner output `(τ, αᵢ)` with `τ ∈ Σ^δ`, set `τ̌ := bin(τ) = SaltCodec.encode τ`,
 and repackage as `(τ̌, αᵢ) : FSSaltedProof`.

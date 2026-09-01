@@ -405,7 +405,7 @@ def isDuplicatedPriorCapacity (baseTrace : QueryLog (duplexSpongeChallengeOracle
   (∃ j' ≤ j, ∃ stateOut4 stateIn4, baseTrace[j'] = ⟨.inr <|.inr stateOut4, stateIn4⟩ ∧
     stateOut4.capacitySegment = capSeg)
 
-/-- CO25 Definition 5.7 — Event `E_h(tr)` (Eq. 23).
+/-- CO25 Definition 5.7 — Event `E_h(tr)` (Eq. 24).
 An output capacity segment `s_C` of an `h`-entry in the base trace `tr̄` previously appears
 as an output or input capacity segment of `h`, `p`, or `p⁻¹`:
 
@@ -424,7 +424,7 @@ def capacitySegmentDupHash : Prop :=
 
 alias E_h := capacitySegmentDupHash
 
-/-- CO25 Definition 5.7 — Event `E_p(tr)` (Eq. 24).
+/-- CO25 Definition 5.7 — Event `E_p(tr)` (Eq. 25).
 An output capacity segment `s_C` of a `p`-entry in the base trace `tr̄` previously (or
 simultaneously for some branches) appears as an output or input capacity segment of `h`, `p`,
 or `p⁻¹`:
@@ -447,7 +447,7 @@ def capacitySegmentDupPerm : Prop :=
 
 alias E_p := capacitySegmentDupPerm
 
-/-- CO25 Definition 5.7 — Event `E_{p⁻¹}(tr)` (Eq. 25).
+/-- CO25 Definition 5.7 — Event `E_{p⁻¹}(tr)` (Eq. 26).
 An output capacity segment `s_C` (i.e. the output of `p⁻¹`, which is the input side `s_in`) of a
 `p⁻¹`-entry in the base trace `tr̄` previously (or simultaneously for some branches) appears as
 an output or input capacity segment of `h`, `p`, or `p⁻¹`:
@@ -479,7 +479,7 @@ def capacitySegmentDup : Prop :=
 
 alias E_dup := capacitySegmentDup
 
-/-- CO25 Definition 5.7 — Event `E_func(tr)` (Eq. 26).
+/-- CO25 Definition 5.7 — Event `E_func(tr)` (Eq. 27).
 **The same query to `p` leads to different answers**, or there are inconsistent queries across `p`
 and `p⁻¹`:
 
@@ -495,7 +495,7 @@ E_func(tr) := ∃ j > 0 :
 Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`, but may hold
 (with small probability) for the D2SQuery simulator.
 
-**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 26; Case 2 (`j`-th entry
+**Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 27; Case 2 (`j`-th entry
 `p⁻¹`) has no paper counterpart but is *required* by `not_collisionFwdBwd_of_not_combined`
 (Lemma 5.10, Item 3). The `≠`-output conditions are forced by base-trace non-redundancy.
 See `DSFS-archive/BadEvents_deep_analysis.md` §7. -/
@@ -1179,7 +1179,7 @@ section Def511_Lemma512
 
 /-- CO25 Definition 5.11 — event `E_inv(tr, s)`.
 
-Paper-faithful (CO25 Eq. 35): `E_inv(tr, s) = 1` iff there exists an index list
+Paper-faithful (CO25 Eq. 36): `E_inv(tr, s) = 1` iff there exists an index list
 `J^(k) = (j_h^(k), j_0^(k), …, j_{m_k}^(k)) ∈ 𝒥_BT(tr, s)` and an index `ι ∈ [0, m_k - 1]` such
 that `tr_{j_ι^(k)} = ('p⁻¹', ·, ·)`, i.e., the `ι`-th step of the corresponding BackTrack
 sequence is constructed using `p⁻¹` rather than `p`.
@@ -1194,8 +1194,8 @@ def E_inv (S_BT : Backtrack.S_BT trace state) : Prop :=
     (trace)[(p.2.2 ⟨ι.val, by
       have := p.1.inputState_length_eq_outputState_length_succ
       omega⟩).val]? = some ⟨.inr (.inr s_out), s_in⟩
-    -- (Eq. 36): ι = 0
-    -- (Eq. 37): 0 < ι ≤ m_k - 1
+    -- (Eq. 37): ι = 0
+    -- (Eq. 38): 0 < ι ≤ m_k - 1
 
 /-- CO25 Lemma 5.12 — If `E(tr) = 0` then `E_inv(tr, s) = 0`.
 
@@ -1362,7 +1362,7 @@ end Def511_Lemma512
 /-! ## Lemma 5.14 -/
 section Def513_Lemma514
 
-/-- CO25 Definition 5.13 / Eq. 38 — `E_{fork,h}(tr, s)`: collision of two outputs of `h`.
+/-- CO25 Definition 5.13 / Eq. 39 — `E_{fork,h}(tr, s)`: collision of two outputs of `h`.
 Two backtrack sequences in `𝒮_BT(tr, s)` have distinct input statements `𝕩^{(1)} ≠ 𝕩^{(2)}` but
 their first input states share the same capacity segment `s_{C,in,0}^{(1)} = s_{C,in,0}^{(2)}`. -/
 def E_fork_h (S_BT : Backtrack.S_BT trace state) : Prop :=
@@ -1373,7 +1373,7 @@ def E_fork_h (S_BT : Backtrack.S_BT trace state) : Prop :=
     (S₂.inputState[0]'(by
       have := S₂.inputState_length_eq_outputState_length_succ; omega)).capacitySegment
 
-/-- CO25 Definition 5.13 / Eq. 39 — `E_{fork,p}(tr, s)`: capacity-segment collision of two
+/-- CO25 Definition 5.13 / Eq. 40 — `E_{fork,p}(tr, s)`: capacity-segment collision of two
 outputs of `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and indices
 `ι_1 ∈ [0, m_1 - 1]`, `ι_2 ∈ [0, m_2 - 1]` with `s_{in,ι_1}^{(1)} ≠ s_{in,ι_2}^{(2)}` (full input
 states differ) and `s_{C,out,ι_1}^{(1)} = s_{C,out,ι_2}^{(2)}` (output capacity segments
@@ -1385,7 +1385,7 @@ def E_fork_p (S_BT : Backtrack.S_BT trace state) : Prop :=
     S₂.inputState[ι₂.val]'(by have := S₂.inputState_length_eq_outputState_length_succ; omega) ∧
     S₁.outputState[ι₁].capacitySegment = S₂.outputState[ι₂].capacitySegment
 
-/-- CO25 Definition 5.13 / Eq. 40 — `E_{fork,h,p}(tr, s)`: collision of `h` with the output
+/-- CO25 Definition 5.13 / Eq. 41 — `E_{fork,h,p}(tr, s)`: collision of `h` with the output
 capacity segment of a query to `p`.  There exist `S^{(1)}, S^{(2)} ∈ 𝒮_BT(tr, s)` and
 `ι ∈ [m_2 - 1]` (paper notation: `{1, …, m₂ - 1}`) with
 `s_{C,in,0}^{(1)} = s_{C,out,ι}^{(2)}`.
@@ -1577,7 +1577,7 @@ end Def513_Lemma514
 /-! ## Lemma 5.16 -/
 section Def515_Lemma516
 
-/-- CO25 Definition 5.15 / Eq. 41 — `E_{time,h}(tr, s)`: the query to `h` is out of order.
+/-- CO25 Definition 5.15 / Eq. 42 — `E_{time,h}(tr, s)`: the query to `h` is out of order.
 There exists `J^{(k)} = (j_h^{(k)}, j_0^{(k)}, …, j_{m_k}^{(k)}) ∈ 𝒥_BT(tr, s)` with
 `j_h^{(k)} > j_0^{(k)}`. -/
 def E_time_h (S_BT : Backtrack.S_BT trace state) : Prop :=
@@ -1585,7 +1585,7 @@ def E_time_h (S_BT : Backtrack.S_BT trace state) : Prop :=
     p.2.1.val > (p.2.2 ⟨0, by
       have := p.1.inputState_length_eq_outputState_length_succ; omega⟩).val
 
-/-- CO25 Definition 5.15 / Eq. 42 — `E_{time,p}(tr, s)`: a query to `p` is out of order.
+/-- CO25 Definition 5.15 / Eq. 43 — `E_{time,p}(tr, s)`: a query to `p` is out of order.
 There exists `J^{(k)} ∈ 𝒥_BT(tr, s)` and `ι ∈ [m_k - 1]` (paper notation: `{1, …, m_k - 1}`)
 with `j_{ι-1}^{(k)} > j_ι^{(k)}`, i.e. some consecutive pair of permutation-step `j`-indices is
 out of order.  In 0-based indexing this checks `j_ι > j_{ι+1}` for `ι ∈ {0, …, m_k - 2}`. -/
