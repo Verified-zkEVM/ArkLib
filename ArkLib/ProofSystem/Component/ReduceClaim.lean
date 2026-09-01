@@ -362,8 +362,11 @@ theorem oracleReduction_completeness --(h : init.neverFails)
         (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn))) :
           StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default,
+        ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
+        (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn)) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     exact ⟨hRel stmtIn oStmtIn witIn hIn, rfl⟩
   -- -- TODO: clean up this proof
   -- simp only [OracleReduction.perfectCompleteness, oracleReduction, OracleReduction.toReduction,
