@@ -318,17 +318,20 @@ private lemma combine_eq_flat'''
         · exact Finset.mem_filter.mp
             (Finset.max'_mem (Finset.univ.filter
               (Combine.block_start dstar degs · ≤ l)) _) |>.2
-        · aesop (add safe Finset.le_max')
+        · intro j hj
+          exact Finset.le_max' _ j (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hj⟩)
   convert Combine.combine_eq_flat'' φ dstar r fs degs using 1
   funext x
   exact Finset.sum_congr rfl <| fun l _ ↦ by
     obtain ⟨i, hi, hi'⟩ := h_block l
     have hi_eq : (Finset.max'
-      (filter (Combine.block_start dstar degs · ≤ l) Finset.univ)
-      Combine.block_start_filter_nonempty) = i :=
-        le_antisymm
-          (by simp_all [Finset.max'])
-          (by aesop (add simp [Finset.max']))
+        (filter (Combine.block_start dstar degs · ≤ l) Finset.univ)
+        Combine.block_start_filter_nonempty) = i := by
+      apply le_antisymm
+      · apply Finset.max'_le
+        intro j hj
+        exact hi' j (Finset.mem_filter.mp hj).2
+      · exact Finset.le_max' _ i (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hi⟩)
     rw [hi_eq, ←Nat.add_sub_of_le hi]
     ring_nf
     simp only [block_start, Nat.succ_eq_add_one, block_size, sum_add_distrib, sum_const,
