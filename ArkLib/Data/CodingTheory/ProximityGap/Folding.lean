@@ -784,10 +784,21 @@ lemma folded_rate_eq {d : ℕ} [FoldingContext k d n] :
     LinearCode.rate
       (ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k))) =
     LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) := by
-  aesop
-    (add simp [rateOfLinearCode_eq_min_div, min_def])
-    (add unsafe (by rw [←pow_add, ←pow_add]))
-    (add safe [(by grind), (by field_simp)])
+  simp only [rateOfLinearCode_eq_min_div, Fintype.card_fin]
+  rw [min_def, min_def]
+  have hdk : 2 ^ (d - k) ≤ 2 ^ (n - k) :=
+    Nat.pow_le_pow_right (by omega) (Nat.sub_le_sub_right FoldingContextRight.d_le_n k)
+  have hdn : 2 ^ d ≤ 2 ^ n :=
+    Nat.pow_le_pow_right (by omega) FoldingContextRight.d_le_n
+  rw [if_pos hdk, if_pos hdn]
+  field_simp
+  norm_cast
+  rw [← pow_add]
+  have hk_d : k ≤ d := FoldingContextLeft.k_le_d
+  have hd_n : d ≤ n := FoldingContextRight.d_le_n
+  have hexp : d - k + n = n - k + d := by omega
+  rw [hexp]
+  exact pow_add 2 (n - k) d
 
 omit [DecidableEq F] in
 /-- The square root of the rate of the folded RS-code is the same. -/
