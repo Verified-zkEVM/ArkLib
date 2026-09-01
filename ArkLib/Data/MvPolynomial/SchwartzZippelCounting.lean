@@ -126,14 +126,14 @@ of each factor. This bridges `schwartz_zippel_counting` with the probability for
 
 `prob_eval_zero_univ_le_div` below specializes it to full finite carriers. -/
 lemma prob_eval_zero_le_div
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
   (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
   (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
   (hm : ∀ i, m ≤ (S i).toFinset.card) :
-  Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤ (d : ℝ≥0∞) / m :=
-  by
+  Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
+    (d : ℝ≥0∞) / m := by
   classical
   convert ENNReal.div_le_div_of_mul_le hm_pos _ _ using 1
   · convert uniform_prob_eq_card_div _

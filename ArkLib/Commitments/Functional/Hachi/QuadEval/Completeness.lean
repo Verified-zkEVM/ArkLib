@@ -5,6 +5,7 @@ Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — completeness (Hachi §4.2, Figure 3)
@@ -59,7 +60,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {ω : ℕ} {σ : Type}
 -- `[IsCyclotomic Φ]` and the `BEq`/`LawfulBEq` instances are needed only to synthesize the `Rq`
 -- structures inside the relations and the gadget decompositions, which the linter's usage
 -- analysis misses.
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- **The five linear rows of Eq. (20) at the honest values** (c1–c5), shared by the two
 range-check readings of the output relation.
 
@@ -135,7 +136,7 @@ theorem honestRows_of_relIn
     rw [matVecMul_scalarVecMul]
     exact congrArg (fun v => (c i).val •ᵥ v) (hopen.block i).inner_eq
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- **The relation-preservation step of `QuadEval`, at ArkLib's ball-relaxed `relOut`.** An honest
 weak opening that is eval-consistent (Eq. (15)) makes the honest round-0 commitment and round-1
 response satisfy `relOut` at *every* challenge vector, so no property of the challenges is used.
@@ -205,7 +206,7 @@ def relInBox
   { p | p ∈ relIn Φ pp base βSq γ κ ∧
       vecInSb Φ b (PolyVec.flattenBlocks p.2.innerDecomp) }
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- **The relation-preservation step at the paper's exact Eq. (20)** (`paperRelOut`): with
 balanced digits, the honest response's three range checks are the paper's box `S_b`, not merely the
 enclosing ball.
@@ -249,11 +250,11 @@ lemmas below stay readable. -/
 private abbrev qePSpec (Φ : CyclotomicModulus (ZMod q)) (dRows ω r : ℕ) : ProtocolSpec 2 :=
   pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r
 
-set_option linter.unusedSectionVars false in
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
 -- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`, and
 -- the closing `rfl` no longer sees `Transcript.concat`/`Fin.snoc` and `FullTranscript.mk2`'s
 -- match form as definitionally equal.
+omit [NeZero q] [IsCyclotomic Φ] in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Honest execution of both rounds.** Running the Figure-3 prover to the last round draws the
 challenge vector `c` and ends with the transcript `⟨v, c⟩` (`FullTranscript.mk2`) and the state
@@ -303,7 +304,7 @@ lemma prover_runToRound_last {WitIn : Type}
     OracleComp.liftComp_pure, monad_norm, FullTranscript.mk2_eq_snoc_snoc]
   rfl
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- **The honest prover's run in closed form.** `prover_runToRound_last` followed by `output`: the
 prover's whole execution is "draw `c`, then emit the transcript `⟨v, c⟩`, the output statement
 `(X, v, c)`, and the response `computeResp X w c`". Everything about the run is a function of the
@@ -328,7 +329,7 @@ lemma prover_run_eq {WitIn : Type}
   simp only [InnerOuter.prover, liftM, monadLift, MonadLift.monadLift]
   rfl
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- **Honest-run characterization.** Every element of the support of an honest execution of
 `quadEvalReduction` is a success, and it is determined by the drawn challenge vector alone: prover
 and verifier both output `(X, v, c)` with `v` the honest carrier commitment, and the prover hands
@@ -383,7 +384,7 @@ lemma quadEvalReduction_run_support
     Set.mem_singleton_iff] at hx
   exact hx
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- **Perfect completeness of the polynomial-evaluation reduction (Hachi §4.2, Figure 3) at
 ArkLib's ball-relaxed output relation.** An honest prover holding an eval-consistent weak opening of
 `u` is accepted with probability one and the response it hands on lies in `relOut`, with the
@@ -428,7 +429,6 @@ theorem quadEvalReduction_perfectCompleteness
   exact ⟨_, rfl,
     mem_relOut_of_relIn Φ pp ddCarrier ddZ hmd hτ hdeg hddCarrier hddZ X w hIn ch, rfl⟩
 
-set_option linter.unusedSectionVars false in
 /-- **Ball-relaxed completeness at the concrete *unsigned* base-`b` digit decomposition.**
 `quadEvalReduction_perfectCompleteness` instantiated with `zmodDigitDecomposition` at both gadget
 steps, whose digits are the unsigned digits `0, …, b − 1`, centered-bounded by `b - 1 ≤ b`
@@ -458,7 +458,7 @@ theorem quadEvalReduction_perfectCompleteness_zmodDigits
     (fun x e => le_trans (zmodDigit_natAbs_le hb hqm hbq x e) (Nat.sub_le b 1))
     (fun x e => le_trans (zmodDigit_natAbs_le hb hqz hbq x e) (Nat.sub_le b 1))
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- **Paper-exact perfect completeness of Figure 3** (Hachi Eq. (20) verbatim, box `S_b` and all):
 the honest prover of Figure 3 is accepted with probability one and its response lies in
 `paperRelOut`, the relation the paper's verifier actually checks.
@@ -492,7 +492,6 @@ theorem quadEvalReduction_perfectCompleteness_paperRelOut
   exact ⟨_, rfl,
     mem_paperRelOut_of_relIn Φ pp ddCarrier ddZ hmd hτ hdeg hddCarrier hddZ X w hIn ch, rfl⟩
 
-set_option linter.unusedSectionVars false in
 /-- **Paper-exact perfect completeness at the balanced base-`b` digit decomposition** — Figure 3's
 honest prover, accepted by the paper's own Eq. (20) verifier.
 
@@ -518,7 +517,6 @@ theorem quadEvalReduction_perfectCompleteness_balancedDigits
     (fun x e => balancedZmodDigit_valMinAbs_mem hb hqm hbq x e)
     (fun x e => balancedZmodDigit_valMinAbs_mem hb hqz hbq x e)
 
-set_option linter.unusedSectionVars false in
 /-- **Ball-relaxed completeness derived from the paper-exact one**, through the containment
 `paperRelOut ⊆ relOut` (`paperRelOut_subset_relOut`) and `Reduction.completeness_relOut_mono`.
 

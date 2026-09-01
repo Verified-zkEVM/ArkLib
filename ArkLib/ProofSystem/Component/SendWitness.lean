@@ -139,8 +139,10 @@ theorem reduction_completeness :
           (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
         (stmtIn, witIn))) : StateT _ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((ProtocolSpec.Transcript.concat (m := 0) witIn
+        (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()), (stmtIn, witIn)) := by
+      exact Set.mem_singleton_iff.mp hx
+    cases hx'
     exact ⟨hIn, rfl⟩
 
 /-- **Coordinate-wise special soundness of `SendWitness`, named form.** The verifier has no
@@ -178,9 +180,11 @@ end Reduction
   verifier and reduction below are left commented out). Finishing it *as sketched* is blocked by the
   current `OracleVerifier` interface: the prover sends the whole family as a **single** product
   message `∀ i, Witness i` (`oraclePSpec` has one round), yet the intended output oracle statements
-  `OStatement ⊕ᵥ Witness` and the commented `embed` (via `FinEnum.equiv`) expect **per-index**
+  `OStatement ⊕ᵥ Witness` and the commented `embed` (via `FinEnum.equiv`) expect
+  **per-index**
   oracles. Under `embed`/`hEq` an output oracle can only *select* an existing source oracle, not
-  decompose a product; this is exactly the `simulateOutputQuery` refactor noted in `OracleReduction/Basic`.
+  decompose a product; this is exactly the `simulateOutputQuery` refactor noted in
+  `OracleReduction/Basic`.
   Two coherent designs resolve it — (a) keep the single product message and output it as one product
   oracle (which is `SendSingleWitness` at `Witness := ∀ i, Witness i`), or (b) rewrite `oraclePSpec`
   as a `FinEnum.card ιw`-round protocol so each witness is its own message (per-index oracles then

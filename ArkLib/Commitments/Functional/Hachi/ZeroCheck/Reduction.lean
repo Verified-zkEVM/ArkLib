@@ -300,7 +300,8 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
           apply Fin.ext
           simp only [Fin.val_castSucc, jm, Fin.val_last]
         rw [hidx, hp]
-        simp [Transcript.concat, Fin.snoc, jm]
+        simp only [Transcript.concat, Fin.snoc, Fin.val_succ, Fin.val_last,
+          lt_self_iff_false, ↓reduceDIte, take_Type, jm]
         exact eq_of_heq (cast_heq _ _).symm
       · let k : Fin (r - m.succ.val) := ⟨i'.val - 1, by
           have := i'.isLt
@@ -612,7 +613,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.1 using 1
       congr 2
-      simp only [Function.comp_apply, ChallengeTree.LeafPath.fullTranscript,
+      simp only [ChallengeTree.LeafPath.fullTranscript,
         nestedTranscriptSuffix_zero]
       funext i
       rfl
@@ -628,7 +629,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.2.1 using 1
       congr 2
-      simp only [Function.comp_apply, ChallengeTree.LeafPath.fullTranscript,
+      simp only [ChallengeTree.LeafPath.fullTranscript,
         nestedTranscriptSuffix_zero]
       funext i
       rfl

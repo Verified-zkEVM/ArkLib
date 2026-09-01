@@ -540,7 +540,8 @@ structure NonAdaptive {ι : Type} (oSpec : OracleSpec ι)
   /-- From the query-response pairs, returns a computation that outputs the new output statement -/
   verify : StmtIn → (∀ i, pSpec.Challenge i) →
     List ((i : ιₛᵢ) × ((q : (Oₛᵢ i).Query) × (Oₛᵢ i).Response q)) →
-    List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) → OracleComp oSpec StmtOut
+    List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) →
+      OracleComp oSpec StmtOut
 
   embed : ιₛₒ ↪ ιₛᵢ ⊕ pSpec.MessageIdx
 
@@ -572,7 +573,8 @@ def toOracleVerifier
         let resp ← liftM <|
           query (spec := [OStmtIn]ₒ) (m := OracleComp oc) q
         return ⟨q.1, ⟨q.2, resp⟩⟩)
-    let queryResponsesOMsg : List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) ←
+    let queryResponsesOMsg :
+        List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) ←
       (queryMsg stmt challenges).mapM
       (fun q => do
         let resp ← liftM <|
@@ -585,10 +587,10 @@ def toOracleVerifier
     embed := embed
     hEq := fun i => by
       have hi := hEq i
-      rcases h : embed i with j | j <;> simp [h] at hi ⊢ <;> exact hi
+      rcases h : embed i with j | j <;> simp only [h, Message] at hi ⊢ <;> exact hi
     outputInterface_heq := fun i => by
       have hi := outputInterface_heq i
-      rcases h : embed i with j | j <;> simp [h] at hi ⊢ <;> exact hi } }
+      rcases h : embed i with j | j <;> simp only [h, Message] at hi ⊢ <;> exact hi } }
 
 /-- The number of queries made to the `i`-th oracle statement, for a given input statement and
     challenges. -/

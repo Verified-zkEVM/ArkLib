@@ -22,13 +22,6 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 quantification conventions, and the references.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -39,6 +32,7 @@ section LowerBounds_General
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
+omit [Nonempty ι] in
 /-- **Hamming-ball fiber count.** For a fixed centre `c`, the number of words `f` within
 absolute distance `⌊δ · n⌋` of `c` equals `Vol_q(δ, n)` (independent of `c`), via the
 existing `hammingBallVolume_eq_ncard_hammingBall` bridge.
@@ -58,6 +52,7 @@ theorem card_filter_hammingDist_le_eq_hammingBallVolume {A : Type} [Fintype A] [
     Code.mem_hammingBall_iff]
   congr!
 
+omit [DecidableEq ι] in
 /-- **Relative-distance close-codeword set as an explicit absolute-distance set.**
 
 Stated for an arbitrary alphabet rather than a linear code over a field: the identity is pure
@@ -75,6 +70,7 @@ theorem closeCodewordsRel_eq_setOf {A : Type} [DecidableEq A]
   rw [hammingDist_comm c f]
   constructor <;> intro h <;> · convert h using 2
 
+omit [DecidableEq F] in
 /-- **A subspace has `q ^ dim` elements.** Stated for a submodule of an arbitrary finite
 `F`-module, since the list-size bounds apply it both to a code in `F^n` and to the kernel of a
 projection out of one. -/
@@ -87,9 +83,10 @@ theorem submodule_ncard_eq_pow_finrank {V : Type*} [AddCommGroup V] [Module F V]
   rw [h1, ← Nat.card_eq_fintype_card (α := F)]
   exact Module.natCard_eq_pow_finrank (K := F) (V := W)
 
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 /-- **A linear code has `q ^ dim` codewords**, in the real-exponent form the barrier arguments
 consume. -/
-theorem submodule_ncard_eq_rpow_finrank (C : Submodule F (ι → F)) :
+theorem submodule_ncard_eq_rpow_finrank [Finite ι] (C : Submodule F (ι → F)) :
     ((C : Set (ι → F)).ncard : ℝ)
       = (Fintype.card F : ℝ) ^ (Module.finrank F C : ℝ) := by
   rw [submodule_ncard_eq_pow_finrank, Nat.cast_pow, Real.rpow_natCast]
@@ -103,7 +100,7 @@ which there are exactly `Vol_q(δ, n)`.
 Nothing here is linear: the argument only ever asks whether `c ∈ C`. Stating it over a plain
 `Set (ι → A)` is what lets the volume lower bounds hold at the generality their sources claim,
 with the field-linear `sum_ncard_closeCodewordsRel_eq` below as the specialization. -/
-theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A] [DecidableEq A]
+theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A]
     (C : Set (ι → A)) (δ : ℝ) (hδ : 0 ≤ δ) :
     ∑ f : ι → A, (closeCodewordsRel C f δ).ncard
       = C.ncard * hammingBallVolume (Fintype.card A) δ (Fintype.card ι) := by
@@ -133,6 +130,8 @@ theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A] [DecidableE
   congr 1
   ext c; simp
 
+omit [DecidableEq F] in
+open Classical in
 /-- **Averaging identity (Fubini)** for a field-linear code, the specialization of
 `sum_ncard_closeCodewordsRel_eq_of_set` at `C : Submodule F (ι → F)`. -/
 theorem sum_ncard_closeCodewordsRel_eq

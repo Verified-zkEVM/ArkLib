@@ -57,9 +57,9 @@ variable {l r : ℕ} {s : Finset F}
          ·__|                                                         |
          ·                                                            |
          ·                                                            |
-         ·
+         │
          ·                                                       subdomain ω r
-         ·
+         │
          ·                                                            |
          ·                                                            |
          ·                                                            |
@@ -75,14 +75,14 @@ lemma pullback_empty : pullback ω l r ∅ = ∅ := by simp [pullback]
 
 @[simp]
 lemma mem_pullback {i : Fin (2 ^ (n - l)) × Fin (2 ^ (n - r))} :
-  i ∈ pullback ω l r s ↔
+    i ∈ pullback ω l r s ↔
     subdomain ω l i.1 ^ 2 ^ (r - l) = subdomain ω r i.2 ∧
           subdomain ω r i.2 ∈ s := by simp [pullback]
 
 /-- `Prod.fst` is injective on the pullback set. -/
 @[simp]
 lemma proj₁_injOn :
-  Set.InjOn Prod.fst
+    Set.InjOn Prod.fst
     (pullback ω l r s : Set (Fin (2 ^ (n - l)) × Fin (2 ^ (n - r)))) := fun x hx y hy hxy ↦ by
   have := injective (subdomain ω r) (a₁ := x.2) (a₂ := y.2)
   aesop
@@ -92,10 +92,10 @@ def pullback₁ (ω : D) (l r : ℕ) (s : Finset F) : Finset (Fin (2 ^ (n - l)))
   image Prod.fst (pullback ω l r s)
 
 lemma mem_s_of_mem_pullback₁ {i : Fin (2 ^ (n - l))} (h : i ∈ pullback₁ ω l r s) :
-  subdomain ω l i ^ 2 ^ (r - l) ∈ s := by aesop (add simp pullback₁)
+    subdomain ω l i ^ 2 ^ (r - l) ∈ s := by aesop (add simp pullback₁)
 
 lemma mem_pullback₁ {i : Fin (2 ^ (n - l))} (hl : l ≤ r) (hr : r ≤ n) :
-  i ∈ pullback₁ ω l r s ↔ subdomain ω l i ^ 2 ^ (r - l) ∈ s := by
+    i ∈ pullback₁ ω l r s ↔ subdomain ω l i ^ 2 ^ (r - l) ∈ s := by
   simp only [pullback₁, mem_image, mem_pullback, Prod.exists, exists_and_right, exists_eq_right]
   constructor
   · aesop
@@ -108,14 +108,14 @@ lemma mem_pullback₁ {i : Fin (2 ^ (n - l))} (hl : l ≤ r) (hr : r ≤ n) :
 
 @[simp]
 lemma proj₁_mapsTo :
-  Set.MapsTo Prod.fst
+    Set.MapsTo Prod.fst
     (pullback ω l r s : Set ((Fin (2 ^ (n - l))) × Fin (2 ^ (n - r))))
     (pullback₁ ω l r s : Set (Fin (2 ^ (n - l)))) := by
   aesop (add simp pullback₁) (add safe Set.mapsTo_image)
 
 @[simp]
 lemma proj₁_surjOn :
-  Set.SurjOn Prod.fst
+    Set.SurjOn Prod.fst
     (pullback ω l r s : Set (Fin (2 ^ (n - l)) × Fin (2 ^ (n - r))))
     (pullback₁ ω l r s : Set (Fin (2 ^ (n - l)))) := by
   aesop (add simp pullback₁) (add safe Set.surjOn_image)
@@ -123,7 +123,7 @@ lemma proj₁_surjOn :
 /-- The cardinality of the pullback set is equal to
   the cardinality of its first projection. -/
 lemma card_pullback_eq_card_pullback₁ :
-  #(pullback ω l r s) = #(pullback₁ ω l r s) := by
+    #(pullback ω l r s) = #(pullback₁ ω l r s) := by
   apply Finset.card_nbij Prod.fst <;> simp
 
 /-- The projection of the pullback set onto the second component. -/
@@ -131,7 +131,7 @@ def pullback₂ (ω : D) (l r : ℕ) (s : Finset F) : Finset (Fin (2 ^ (n - r)))
   image Prod.snd (pullback ω l r s)
 
 lemma mem_pullback₂ {i : Fin (2 ^ (n - r))} (hl : l ≤ r) (hr : r ≤ n) :
-  i ∈ pullback₂ ω l r s ↔ subdomain ω r i ∈ s := by
+    i ∈ pullback₂ ω l r s ↔ subdomain ω r i ∈ s := by
   simp only [pullback₂, mem_image, mem_pullback, Prod.exists, exists_eq_right, exists_and_right,
     and_iff_right_iff_imp]
   intro h
@@ -143,7 +143,7 @@ lemma mem_pullback₂ {i : Fin (2 ^ (n - r))} (hl : l ≤ r) (hr : r ≤ n) :
 
 /-- The connection between components of the pullback set. -/
 lemma mem_pullback₁_iff_mem_pullback₂ {i : Fin (2 ^ n)} (hl : l ≤ r) (hr : r ≤ n) :
-  ω i ^ 2 ^ l ∈ subdomain ω l '' pullback₁ ω l r s ↔
+    ω i ^ 2 ^ l ∈ subdomain ω l '' pullback₁ ω l r s ↔
     ω i ^ 2 ^ r ∈ subdomain ω r '' pullback₂ ω l r s := by
   simp only [Set.mem_image, SetLike.mem_coe]
   constructor <;> intro ⟨x, hx₁, hx₂⟩
@@ -163,13 +163,17 @@ lemma mem_pullback₁_iff_mem_pullback₂ {i : Fin (2 ^ n)} (hl : l ≤ r) (hr :
 
 /-- The connection between components of the pullback set when `l = 0`. -/
 lemma mem_pullback₁_iff_mem_pullback₂_l_0 {i : Fin (2 ^ n)} (hr : r ≤ n) :
-  ω i ∈ ω '' pullback₁ ω 0 r s ↔ ω i ^ 2 ^ r ∈ subdomain ω r '' pullback₂ ω 0 r s := by
+    ω i ∈ ω '' pullback₁ ω 0 r s ↔ ω i ^ 2 ^ r ∈ subdomain ω r '' pullback₂ ω 0 r s := by
   rw [←mem_pullback₁_iff_mem_pullback₂ (by simp) hr]
-  simp_all
+  constructor
+  · rintro ⟨x, hx, hxi⟩
+    exact ⟨x, hx, by simpa only [subdomain_0_apply, pow_zero, pow_one] using hxi⟩
+  · rintro ⟨x, hx, hxi⟩
+    exact ⟨x, hx, by simpa only [subdomain_0_apply, pow_zero, pow_one] using hxi⟩
 
 /-- The connection between components of the pullback set when `l = 1`. -/
 lemma mem_pullback₁_iff_mem_pullback₂_l_1 {i : Fin (2 ^ n)} (h1r : 1 ≤ r) (hr : r ≤ n) :
-  ω i ^ 2 ∈ subdomain ω 1 '' pullback₁ ω 1 r s ↔
+    ω i ^ 2 ∈ subdomain ω 1 '' pullback₁ ω 1 r s ↔
     ω i ^ 2 ^ r ∈ subdomain ω r '' pullback₂ ω 1 r s := by
   simp [←mem_pullback₁_iff_mem_pullback₂ h1r hr]
 
@@ -177,7 +181,7 @@ lemma mem_pullback₁_iff_mem_pullback₂_l_1 {i : Fin (2 ^ n)} (h1r : 1 ≤ r) 
   the cardinality of `pullback₂ ω l r s` is exactly the cardinality
   of `s`. -/
 lemma card_pullback₂_eq (hl : l ≤ r) (hr : r ≤ n) (hs : s ⊆ (subdomain ω r).toFinset) :
-  #(pullback₂ ω l r s) = #s := by
+    #(pullback₂ ω l r s) = #s := by
   apply Finset.card_bij (fun i _ ↦ subdomain ω r i)
   · aesop (add simp mem_pullback₂)
   · intro x _ y _ hxy
@@ -192,7 +196,7 @@ lemma card_pullback₂_eq (hl : l ≤ r) (hr : r ≤ n) (hs : s ⊆ (subdomain �
 /-- `pullback₁ ω l r s` is a union of blocks indexed by
   `pullback₂ ω l r s`. -/
 lemma pullback₁_eq_biUnion_pullback₂ (hl : l ≤ r) (hr : r ≤ n) :
-  pullback₁ ω l r s =
+    pullback₁ ω l r s =
     Finset.biUnion (pullback₂ ω l r s)
       (blockIdx (subdomain ω l) (r - l) ∘ (subdomain ω r)) := by
   ext i
@@ -209,7 +213,7 @@ lemma pullback₁_eq_biUnion_pullback₂ (hl : l ≤ r) (hr : r ≤ n) :
 /-- The expression of the cardinality of `pullback ω l r s`
   in terms of `pullback₂ ω l r s`. -/
 lemma card_pullback_eq_mul_card_pullback₂ (hl : l ≤ r) (hr : r ≤ n) :
-  #(pullback ω l r s) = 2 ^ (r - l) * #(pullback₂ ω l r s) := by
+    #(pullback ω l r s) = 2 ^ (r - l) * #(pullback₂ ω l r s) := by
   rw [card_pullback_eq_card_pullback₁,
       pullback₁_eq_biUnion_pullback₂ hl hr,
       Finset.card_biUnion (by aesop (add safe (by rw [←Set.InjOn.pairwiseDisjoint_image])))]

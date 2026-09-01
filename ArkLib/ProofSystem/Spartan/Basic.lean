@@ -81,8 +81,8 @@ import ArkLib.ProofSystem.Component.CheckClaim
   1. The verifier makes a query to the polynomial oracle `MLE 𝕨` at `r_y [ℓ_n - ℓ_k :] : Fin ℓ_k →
      R`, and obtain an evaluation value `v_𝕨 : R`.
 
-  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at `r_y ‖ r_x
-     : Fin (ℓ_n + ℓ_m) → R`, and obtain evaluation values `v_1, v_2, v_3 : R`.
+  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at
+  `r_y ‖ r_x : Fin (ℓ_n + ℓ_m) → R`, obtaining evaluation values `v_1, v_2, v_3 : R`.
 
   Alternatively, if the verifier does not receive oracle access, then it computes the evaluation
   values directly.
@@ -155,7 +155,6 @@ abbrev relation := R1CS.relation R pp.toSizeR1CS
   multilinear extension. -/
 -- For the input oracle statement, we define its oracle interface to be the polynomial evaluation
 -- oracle of its multilinear extension.
-
 instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
   fun i => {
     Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)

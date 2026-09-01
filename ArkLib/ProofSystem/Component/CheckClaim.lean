@@ -82,9 +82,10 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
+theorem reduction_completeness [Nonempty σ] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
+  classical
   simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro stmt () valid
   simp only [relIn, Set.mem_ofPred_eq] at valid
@@ -126,8 +127,9 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
       (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, stmt, ()), stmt) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     simp [relOut]
 
 /-- The knowledge state function for the `CheckClaim` reduction, mirroring the trivial-verifier
@@ -247,7 +249,8 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
   simp only [Verifier.run, OracleVerifier.toVerifier]
   rw [oracleVerifier_materializeOutput]
   simp only [oracleVerifier]
-  simp [OptionT.run_pure, simulateQ_pure]
+  simp only [MessageIdx, Message, OptionT.run_pure, simulateQ_pure, map_pure,
+    Option.map_some]
   apply OptionT.ext
   rfl
 
@@ -319,8 +322,9 @@ theorem oracleReduction_completeness
       (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, ((stmt, oStmt), ())), (stmt, oStmt)) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
 
 /-- **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure

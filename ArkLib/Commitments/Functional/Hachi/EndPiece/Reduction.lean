@@ -112,7 +112,7 @@ def rhoDigitsShortCheck (ρ : Fin n → CPolynomial (ZMod q)) : Bool :=
   decide (∀ i, ∀ u < rhoDigitCount q bDig, ∀ k < Φ.φ.natDegree,
     ((rhoDigits Φ bDig (ρ i) u).coeff k).valMinAbs.natAbs ≤ bound)
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
 /-- The truncated check decides exactly `RhoDigitsShort`: `rhoDigits` is supported below `deg φ`
 (`rhoDigits_coeff`), and `0` satisfies any bound. -/
 theorem rhoDigitsShortCheck_eq_true_iff (ρ : Fin n → CPolynomial (ZMod q)) :
@@ -126,7 +126,7 @@ theorem rhoDigitsShortCheck_eq_true_iff (ρ : Fin n → CPolynomial (ZMod q)) :
       simp
   · exact fun h i u hu k _ => h i ⟨u, hu⟩ k
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
 /-- **The digit conjunct of `liftShortCheck` always passes** at an admissible digit base: the
 committed digits are `⌊bDig/2⌋`-bounded for every quotient (`rhoDigitsShort_of_digitBaseOk`).
 
@@ -285,8 +285,7 @@ def endPieceReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound b
   prover := endPieceProver Φ m₀
   verifier := endPieceVerifier Φ m₀ bound bDig b K φF
 
-set_option linter.unusedSectionVars false in
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
 -- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`.
 set_option backward.isDefEq.respectTransparency false in

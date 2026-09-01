@@ -78,7 +78,7 @@ theorem vecLInftyNorm_le_half {cols : ℕ} (v : PolyVec (Rq Φ) cols) :
 
 /-! ## Coefficient bounds for the structured row sum -/
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- An `ℓ∞` bound on a ring element bounds **every** coefficient of its presentation representative:
 below `deg φ` by the definition of `Rq.lInftyNorm`, at or above it because representatives are
 degree-reduced (`Rq.natDegree_val_toPoly_lt'`). -/
@@ -96,7 +96,6 @@ theorem valMinAbs_natAbs_coeff_rep_le (hd : 0 < Φ.φ.natDegree) {β : ℕ} {a :
     rw [hzero, ZMod.valMinAbs_zero, Int.natAbs_zero]
     exact Nat.zero_le _
 
-set_option linter.unusedSectionVars false in
 /-- **Coefficient bound for the lifted row sum.** At index `m`, the centered representative of
 `(∑ⱼ rep(Mᵢⱼ)·rep(zⱼ)).coeff m` is bounded by `μ · (m+1) · (βM · βz)`: the sum over `μ` columns of a
 convolution of `m+1` products, each product bounded by `βM · βz`
@@ -129,7 +128,6 @@ theorem valMinAbs_natAbs_coeff_rowSum_le (hd : 0 < Φ.φ.natDegree) {n μ βM β
 
 /-! ## The quotient bound -/
 
-set_option linter.unusedSectionVars false in
 /-- **Centered coefficient bound for the honest lift quotient**, at the concrete power-of-two
 modulus `φ = X ^ d + 1`.
 
@@ -149,7 +147,7 @@ theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polyn
       ≤ μ * (2 * d * (βM * βz)) := by
   have hdegΦ : Φ.φ.natDegree = d := by
     rw [CPolynomial.natDegree_toPoly, hφ, ← Polynomial.C_1, Polynomial.natDegree_X_pow_add_C]
-  haveI : Lift.IsPresentation (cyclotomicPresentation Φ) :=
+  have : Lift.IsPresentation (cyclotomicPresentation Φ) :=
     isPresentation_cyclotomic Φ (by omega)
   have hmod : (cyclotomicPresentation Φ).modulus.toPoly = Polynomial.X ^ d + 1 := hφ
   -- The dividend and its degree.
@@ -184,7 +182,7 @@ theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polyn
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega), ZMod.valMinAbs_zero, Int.natAbs_zero]
     exact Nat.zero_le _
 
-set_option linter.unusedSectionVars false in
+omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **The unconditional fallback: `RhoShort (q/2)` holds for every quotient family.** Centered
 representatives live in `(−q/2, q/2]`, so this needs no hypotheses whatsoever.
 

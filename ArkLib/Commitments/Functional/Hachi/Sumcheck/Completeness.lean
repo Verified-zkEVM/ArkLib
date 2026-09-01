@@ -85,8 +85,7 @@ def honestComputeG {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (
       computableRoundPoly_sumcheckPolyAlpha_mem_degreeLE Φ φF b stmt.zc.rlin stmt.zc.α m₁
         stmt.zc.τα w ⟨i, hi⟩ stmt.challenges⟩)
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- The honest range component's values are the round-`(i+1)` partial sums of `F_{0,τ₀}`. -/
 theorem honestComputeG_fst_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F)
     (i : ℕ) (hi : i < M + 1)
@@ -96,8 +95,7 @@ theorem honestComputeG_fst_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
           (Fin.snoc stmt.challenges T) :=
   computableRoundPoly_eval _ _ _ T
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- The honest linear component's values are the round-`(i+1)` partial sums of `F_{α,τα}`. -/
 theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F)
     (i : ℕ) (hi : i < M + 1)
@@ -108,8 +106,7 @@ theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
           (Fin.snoc stmt.challenges T) :=
   computableRoundPoly_eval _ _ _ T
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **The honest round message passes the round check.** For each summand the round-`i` claim of
 `nestedRoundRel` *is* the partial cube sum, which splits into its two Boolean extensions
 (`hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
@@ -136,8 +133,7 @@ theorem roundCheck_honestComputeG
     honestComputeG_snd_eval, honestComputeG_snd_eval]
   exact ⟨hZero, hAlpha⟩
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **Relation preservation of one honest round.** At *every* challenge `a`, the round-`(i+1)`
 relation holds at the honest output statement: the commitment, shortness and bound-sanity
 conjuncts are carried over from the round-`i` relation, and the two new targets are by
@@ -173,7 +169,7 @@ def roundReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (
   prover := roundProver Φ (M + 1) m₁ b i (honestComputeG Φ m₁ b hb φF i hi)
   verifier := roundVerifier Φ (M + 1) m₁ b i
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
 /-- The round's protocol object and its soundness certificate speak about the same verifier.
 Holds by `rfl`. -/
 @[simp] theorem roundReduction_verifier (init : ProbComp σ)
@@ -184,12 +180,12 @@ Holds by `rfl`. -/
       = (roundPackage Φ (M + 1) m₁ bound bDig b init impl K φF hb i hi).verifier :=
   rfl
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
 -- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`, and
 -- the closing `rfl` no longer sees `Transcript.concat`/`Fin.snoc` and `FullTranscript.mk2`'s
 -- match form as definitionally equal.
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] [DecidableEq F]
+    [SampleableType F] in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Honest execution of a round's two rounds.** Running the round prover to the end draws the
 challenge `a` and ends with the transcript `⟨g, a⟩` and the state `((stmt, wit), a)`: the message
@@ -230,8 +226,8 @@ lemma roundProver_runToRound_last {TCom Wit : Type} (i : ℕ)
     OracleComp.liftComp_pure, monad_norm, FullTranscript.mk2_eq_snoc_snoc]
   rfl
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] [DecidableEq F]
+    [SampleableType F] in
 /-- **The honest round prover's run in closed form**: draw `a`, then emit the transcript `⟨g, a⟩`,
 the output statement `roundOut stmt g a` and the witness unchanged. Everything about the run is a
 function of the one challenge. -/
@@ -249,8 +245,7 @@ lemma roundProver_run_eq {TCom Wit : Type} (i : ℕ)
   simp only [roundProver, liftM, monadLift, MonadLift.monadLift]
   rfl
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
 /-- **Honest-run characterization of one round.** Every outcome of an honest run is the single
 success determined by the drawn challenge `a`: prover and verifier both output
 `roundOut stmt g a` at the honest message `g`, and the witness is passed through.
@@ -297,8 +292,8 @@ lemma roundReduction_run_support
     Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
   exact hx
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Perfect completeness of one paired sumcheck round**, error exactly `0`.
 
 The honest message passes the round check (`roundCheck_honestComputeG`) and the output statement
@@ -368,7 +363,7 @@ def roundsReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) (count : �
       (roundsSpec F b count) :=
   roundsReductionAux Φ m₁ b (TCom := TCom) hb φF count hcount
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **The honest chain and the soundness chain share their verifier**, at every `count`. Proved by
 recursion rather than by `rfl`: the two chains associate their appends the same way, but for an
 open `count` the recursion's endpoints are only definitional per instance, so the induction step
@@ -386,8 +381,7 @@ theorem roundsReduction_verifier (init : ProbComp σ)
     congrArg (fun V => Verifier.append V (roundVerifier Φ (M + 1) m₁ b (TCom := K.TCom) count))
       (roundsReduction_verifier init impl K hb φF count (by omega))
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **Perfect completeness of the honest round chain**, by recursion on `count`: the zero-round
 base is `ReduceClaim` at the identity map, and each step appends one
 `roundReduction_perfectCompleteness`.
@@ -421,8 +415,7 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
       (roundsReductionAux_perfectCompleteness init impl K hb φF count (by omega))
       (roundReduction_perfectCompleteness Φ m₁ bound bDig b init impl K hb φF count (by omega))
 
-set_option linter.unusedSectionVars false in
-omit [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- Perfect completeness of `roundsReduction`, the exposed form of
 `roundsReductionAux_perfectCompleteness`. ⚠ Inherits `sorryAx` for the same reason. -/
 theorem roundsReduction_perfectCompleteness (init : ProbComp σ)
@@ -471,8 +464,8 @@ def sumcheckReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
     ((roundsReduction Φ m₁ b (TCom := TCom) hb φF (M + 1) le_rfl).append
       (finalEvalReduction Φ (M + 1) m₁ bound b φF))
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
+omit [NeZero q] in
 /-- **Perfect completeness of the local Hachi sumcheck**, from `relNestedZeroCheck` to
 `relWEvalClaim`, error `0`.
 

@@ -30,7 +30,6 @@ namespace Impl.FRS
 open scoped NNReal ENNReal
 open Polynomial ReedSolomon.Folded Code
 
-set_option maxRecDepth 8000 in
 /-- **An exact-order field element.** There exists `γ : KoalaBear.Ext6`
 with `γ ≠ 0` and multiplicative order exactly `2^21`. KoalaBear's prime
 `q = 2^31 - 2^24 + 1` has `2^24 | q - 1`, so the multiplicative group of
@@ -188,7 +187,6 @@ theorem encoder_injective : Function.Injective encoder := by
   rw [Fintype.card_fin]; norm_num
 
 open Classical in
-set_option maxRecDepth 8000 in
 /-- **The folded encoder's image is exactly the folded RS code** `FRS[domain, 2^20,
 32, foldOmega]`. The FRS counterpart of `koalaEnc_range`: `encoder = frsEvalOnPoints ∘
 (degreeLTEquiv).symm`, and as the latter ranges over all degree-`< 2^20` polynomials its
@@ -351,7 +349,6 @@ theorem encoder12_injective : Function.Injective encoder12 := by
   rw [Fintype.card_fin]; norm_num
 
 open Classical in
-set_option maxRecDepth 8000 in
 /-- **The `s = 2^12` folded encoder's image is exactly `frsCode`** — the large-folding
 counterpart of `encoder_range`. -/
 theorem encoder12_range :
@@ -372,7 +369,6 @@ theorem encoder12_range :
       LinearEquiv.symm_apply_apply, LinearMap.domRestrict_apply]
 
 open Classical in
-set_option maxRecDepth 8000 in
 /-- **Folded-RS minimum relative distance at `s = 2^12`**, derived through
 `ReedSolomon.Folded.minDist_frsCode` exactly as `minRelHammingDistCode_range_encoder`.
 `minRelHammingDistCode (Set.range ⇑encoder12) = 257/512`, the folded-Singleton distance for

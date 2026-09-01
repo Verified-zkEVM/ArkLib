@@ -458,7 +458,7 @@ noncomputable def genMatrixCols [Field F] (LC : LinearCode ι F) :
 /-- The dimension of a linear code equals the rank of its associated generator matrix.
 -/
 lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
-  G.rank = dim (fromColGenMat G) := rfl
+    G.rank = dim (fromColGenMat G) := rfl
 
 end
 

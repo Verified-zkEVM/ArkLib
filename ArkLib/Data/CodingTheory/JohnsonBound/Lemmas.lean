@@ -35,14 +35,22 @@ private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
-lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by aesop (add simp [Fi])
+lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by
+  ext x
+  simp only [Finset.mem_biUnion, Finset.mem_univ, true_and, Fi, Finset.mem_filter]
+  constructor
+  · exact fun hx ↦ ⟨x i, hx, rfl⟩
+  · exact fun ⟨_, hx, _⟩ ↦ hx
 
 /-- The sets `Fi B i α` are pairwise disjoint. -/
 @[simp]
 lemma Fis_pairwise_disjoint : Set.PairwiseDisjoint Set.univ (Fi B i) := by
-  unfold Fi
-  rintro x - y - h₁ _ h₂ h₃ _ contra
-  specialize h₂ contra; specialize h₃ contra; aesop
+  intro a _ b _ hab
+  change Disjoint (Fi B i a) (Fi B i b)
+  rw [Finset.disjoint_left]
+  intro x hxa hxb
+  simp only [Fi, Finset.mem_filter, Finset.mem_univ, true_and] at hxa hxb
+  exact hab (hxa.2.symm.trans hxb.2)
 
 /-- The cardinalities `K B i α` sum to `|B|`. -/
 @[simp]
@@ -218,7 +226,10 @@ private def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
 lemma F2i_disjoint : Set.PairwiseDisjoint Set.univ (F2i B i) := by
   intros a _ b _ hab
   simp only [disjoint_left, Prod.forall]
-  unfold F2i; aesop
+  intro x y hxa hxb
+  simp only [F2i, Finset.mem_filter, Finset.mem_univ, true_and,
+    Finset.mem_product] at hxa hxb
+  exact hab (hxa.2.2.1.symm.trans hxb.2.2.1)
 
 /-- `|F2i B i α| = K(α) · (K(α) - 1)`. -/
 lemma F2i_card {α : F} : (F2i B i α).card = K B i α * (K B i α - 1) := by
@@ -235,7 +246,15 @@ private def Bi (B : Finset (Fin n → F)) (i : Fin n) :=
   {x ∈ B ×ˢ B | x.1 ≠ x.2 ∧ x.1 i = x.2 i}
 
 /-- `Bi` decomposes as a disjoint union of `F2i` over all field elements. -/
-lemma Bi_biUnion_F2i : Bi B i = univ.biUnion (F2i B i) := by unfold Bi F2i; ext; aesop
+lemma Bi_biUnion_F2i : Bi B i = univ.biUnion (F2i B i) := by
+  ext x
+  simp only [Bi, F2i, Finset.mem_filter, Finset.mem_product, Finset.mem_biUnion,
+    Finset.mem_univ, true_and]
+  constructor
+  · rintro ⟨hmem, hne, heq⟩
+    exact ⟨x.1 i, hmem, hne, rfl, heq.symm⟩
+  · rintro ⟨a, hmem, hne, hxa, hya⟩
+    exact ⟨hmem, hne, hxa.trans hya.symm⟩
 
 /-- `|Bi B i| = ∑ α, K(α) · (K(α) - 1)`. -/
 lemma Bi_card : (Bi B i).card = ∑ α : F, K B i α * (K B i α - 1) := by
@@ -413,8 +432,9 @@ lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
           simp only [c1]
           ring
         _ = 1 + 1 / c1 := by rw [add_div, div_self n₂]
-    grind only [= e.eq_1]
-  grind only
+    rw [this]
+    ring_nf
+  ring_nf
 
 /-- Johnson bound in squared-deviation form, at the zero vector. -/
 lemma johnson_bound₀ [Zero F]
@@ -496,8 +516,7 @@ lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
   set frac := q / (q - 1)
   have h_frac_pos : 1 < frac := by rw [lt_div_iff₀] <;> linarith
   have h_sqrt_eq : 1 - √(1 - δ) = (1 / frac) * (1 - √(1 - frac * δ)) := by
-    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from
-      by
+    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from by
         dsimp [δ] at h_muln h_J_bound h_eq ⊢
         norm_cast at h_muln h_J_bound h_eq ⊢
         exact le_antisymm (h_J_bound.trans_eq h_eq.symm) h_muln]
@@ -540,6 +559,14 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
       (JohnsonBound.d B / n - 2 * JohnsonBound.e B v / n +
       frac * (JohnsonBound.e B v / n) ^ 2) ≤
     (d / n) / (d / n - 2 * e / n + frac * (e / n) ^ 2) := by
+  have h_e_le_d : (e : ℚ) ≤ d := by
+    exact_mod_cast (by
+      nlinarith [h, show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)),
+        mul_self_sqrt (show 0 ≤ (n : ℝ) * (n - d) by
+          nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
+  have h_e_div_le_d_div : (e / n : ℚ) ≤ d / n := by gcongr
+  have h_frac_e_div_le_one : frac * (e / n : ℚ) ≤ 1 :=
+    (mul_le_mul_of_nonneg_left h_e_div_le_d_div (by positivity)).trans h_d_close_n
   have h_frac_ineq : (JohnsonBound.d B / n : ℚ) * (d / n - 2 * (e / n) +
       frac * (e / n) ^ 2) ≤ (d / n) * (JohnsonBound.d B / n - 2 *
         (JohnsonBound.e B v / n) + frac * (JohnsonBound.e B v / n) ^ 2) := by
@@ -549,31 +576,12 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
           (2 - frac * (e / n + JohnsonBound.e B v / n)) ≥ 0 := by
       refine ⟨mul_nonneg ?_ ?_, mul_nonneg ?_ ?_⟩
       · exact sub_nonneg_of_le (by gcongr)
-      · have h_frac_le_one : frac * (e / n : ℚ) ≤ 1 := by
-          have h_e_le_d : (e / n : ℚ) ≤ (d / n : ℚ) := by
-            have h_e_le_d : (e : ℝ) ≤ n - √(n * (n - d)) := by grind
-            have h_e_le_d : (e : ℚ) ≤ d := by
-              exact_mod_cast (by nlinarith [
-                show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)), mul_self_sqrt (
-                  show 0 ≤ (n : ℝ) * (n - d) by
-                  nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
-            gcongr
-          exact le_trans (mul_le_mul_of_nonneg_left h_e_le_d (by positivity)) h_d_close_n
-        nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
+      · nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
       · exact sub_nonneg_of_le (by gcongr)
-      · have h_frac_e_n_le_1 : frac * (e / n : ℚ) ≤ 1 := by
-          refine le_trans (mul_le_mul_of_nonneg_left (show (e : ℚ) / n ≤ d / n from ?_)
-            (by positivity)) h_d_close_n
-          have h_e_le_d : (e : ℚ) ≤ d := by
-            exact_mod_cast (by nlinarith [
-              show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)), mul_self_sqrt (
-                show 0 ≤ (n : ℝ) * (n - d) by
-                nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
-          gcongr
-        have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
+      · have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
           le_trans (mul_le_mul_of_nonneg_left
             (div_le_div_of_nonneg_right (show (JohnsonBound.e B v : ℚ) ≤ e by
-              exact_mod_cast e_ineq) (Nat.cast_nonneg _)) (by positivity)) h_frac_e_n_le_1
+              exact_mod_cast e_ineq) (Nat.cast_nonneg _)) (by positivity)) h_frac_e_div_le_one
         linarith
     nlinarith [show (0 : ℚ) < n from hn_pos,
       mul_div_cancel₀ (e : ℚ) (by positivity : (n : ℚ) ≠ 0),

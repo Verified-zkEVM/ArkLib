@@ -190,7 +190,7 @@ def nestedSumcheckBridgePackage (init : ProbComp σ)
     (fun s w =>
       mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound bDig K φF b s w hb hd hμn)
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] in
 /-- The bridge's protocol object and its certificate speak about the same verifier. Holds by
 `rfl`. -/
 @[simp] theorem nestedSumcheckBridgeReduction_verifier (init : ProbComp σ)
