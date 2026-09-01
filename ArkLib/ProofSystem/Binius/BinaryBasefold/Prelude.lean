@@ -912,17 +912,18 @@ theorem fold_advances_evaluation_poly
       ↓reduceDIte, add_tsub_cancel_right, Fin.eta, imp_self, implies_true]
   set P_i_plus_1 := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i + 1, by omega⟩) (h_i := by simp only; omega) new_coeffs
+  have h_odd_coeff_index (j : Fin (2 ^ (ℓ - (i + 1)))) :
+      j.val * 2 + 1 < 2 ^ (ℓ - i) := by
+    have h1 : ℓ - (i + 1) + 1 = ℓ - i := by omega
+    have h2 : 2 ^ (ℓ - (i + 1) + 1) = 2 ^ (ℓ - i) := by rw [h1]
+    have h3 : 2 ^ (ℓ - (i + 1)) * 2 = 2 ^ (ℓ - (i + 1) + 1) := by rw [pow_succ]
+    rw [← h2, ← h3]
+    omega
   -- Set up the even and odd refinement polynomials
   set P₀_coeffs := fun j : Fin (2^(ℓ - (i + 1))) => coeffs ⟨j.val * 2, by
-    have h1 : ℓ - (i + 1) + 1 = ℓ - i := by omega
-    have h2 : 2^(ℓ - (i + 1) + 1) = 2^(ℓ - i) := by rw [h1]
-    have h3 : 2^(ℓ - (i + 1)) * 2 = 2^(ℓ - (i + 1) + 1) := by rw [pow_succ]
-    rw [← h2, ← h3]; omega⟩
+    exact Nat.lt_of_succ_lt (h_odd_coeff_index j)⟩
   set P₁_coeffs := fun j : Fin (2^(ℓ - (i + 1))) => coeffs ⟨j.val * 2 + 1, by
-    have h1 : ℓ - (i + 1) + 1 = ℓ - i := by omega
-    have h2 : 2^(ℓ - (i + 1) + 1) = 2^(ℓ - i) := by rw [h1]
-    have h3 : 2^(ℓ - (i + 1)) * 2 = 2^(ℓ - (i + 1) + 1) := by rw [pow_succ]
-    rw [← h2, ← h3]; omega⟩
+    exact h_odd_coeff_index j⟩
   set P₀ := evenRefinement 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i, by omega⟩) (h_i := by simp only; omega) coeffs
   set P₁ := oddRefinement 𝔽q β h_ℓ_add_R_rate
