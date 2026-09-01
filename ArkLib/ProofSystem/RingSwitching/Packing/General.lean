@@ -119,27 +119,35 @@ open Sumcheck.Structured
 section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-lemma batchingCore_perfectCompleteness :
+omit [Fintype L] [Fintype K] [DecidableEq K]
+  [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
+lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
   (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K P ℓ')
   (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
   (relOut := mlIOPCS.toRelInput)
   (init:=init) (impl:=impl) := by
+  let _ := Fintype.ofFinite L
+  let _ := Fintype.ofFinite K
+  classical
   apply OracleReduction.append_perfectCompleteness
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
        mlIOPCS.toAbstractOStmtIn
   · exact SumcheckPhase.coreInteraction_perfectCompleteness
       κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl)
 
-omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-theorem fullOracleReduction_perfectCompleteness :
+omit [Fintype L] [Fintype K] [DecidableEq K]
+  [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
+theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
     OracleProof.perfectCompleteness
       (oracleProof := fullOracleReduction κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (relation := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l
         mlIOPCS.toAbstractOStmtIn)
       (init := init)
       (impl := impl) := by
+  let _ := Fintype.ofFinite L
+  let _ := Fintype.ofFinite K
+  classical
   exact OracleReduction.append_perfectCompleteness
     (R₁ := batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
     (R₂ := mlIOPCS.oracleReduction)
@@ -158,14 +166,17 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (g:=mlIOPCS.rbrKnowledgeError)
   (ChallengeIdx.sumEquiv.symm i)
 
+omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
+theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [IsDomain L] :
     OracleProof.rbrKnowledgeSoundness
       (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (init := init)
       (impl := impl)
       (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
       (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) := by
+  let _ := Fintype.ofFinite K
+  classical
   unfold fullOracleVerifier fullRbrKnowledgeError
   have batchInteractionRBRKS :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
