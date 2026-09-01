@@ -35,14 +35,22 @@ private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
-lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by aesop (add simp [Fi])
+lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by
+  ext x
+  simp only [Finset.mem_biUnion, Finset.mem_univ, true_and, Fi, Finset.mem_filter]
+  constructor
+  · exact fun hx ↦ ⟨x i, hx, rfl⟩
+  · exact fun ⟨_, hx, _⟩ ↦ hx
 
 /-- The sets `Fi B i α` are pairwise disjoint. -/
 @[simp]
 lemma Fis_pairwise_disjoint : Set.PairwiseDisjoint Set.univ (Fi B i) := by
-  unfold Fi
-  rintro x - y - h₁ _ h₂ h₃ _ contra
-  specialize h₂ contra; specialize h₃ contra; aesop
+  intro a _ b _ hab
+  change Disjoint (Fi B i a) (Fi B i b)
+  rw [Finset.disjoint_left]
+  intro x hxa hxb
+  simp only [Fi, Finset.mem_filter, Finset.mem_univ, true_and] at hxa hxb
+  exact hab (hxa.2.symm.trans hxb.2)
 
 /-- The cardinalities `K B i α` sum to `|B|`. -/
 @[simp]
@@ -551,6 +559,14 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
       (JohnsonBound.d B / n - 2 * JohnsonBound.e B v / n +
       frac * (JohnsonBound.e B v / n) ^ 2) ≤
     (d / n) / (d / n - 2 * e / n + frac * (e / n) ^ 2) := by
+  have h_e_le_d : (e : ℚ) ≤ d := by
+    exact_mod_cast (by
+      nlinarith [h, show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)),
+        mul_self_sqrt (show 0 ≤ (n : ℝ) * (n - d) by
+          nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
+  have h_e_div_le_d_div : (e / n : ℚ) ≤ d / n := by gcongr
+  have h_frac_e_div_le_one : frac * (e / n : ℚ) ≤ 1 :=
+    (mul_le_mul_of_nonneg_left h_e_div_le_d_div (by positivity)).trans h_d_close_n
   have h_frac_ineq : (JohnsonBound.d B / n : ℚ) * (d / n - 2 * (e / n) +
       frac * (e / n) ^ 2) ≤ (d / n) * (JohnsonBound.d B / n - 2 *
         (JohnsonBound.e B v / n) + frac * (JohnsonBound.e B v / n) ^ 2) := by
@@ -560,31 +576,13 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
           (2 - frac * (e / n + JohnsonBound.e B v / n)) ≥ 0 := by
       refine ⟨mul_nonneg ?_ ?_, mul_nonneg ?_ ?_⟩
       · exact sub_nonneg_of_le (by gcongr)
-      · have h_frac_le_one : frac * (e / n : ℚ) ≤ 1 := by
-          have h_e_le_d : (e / n : ℚ) ≤ (d / n : ℚ) := by
-            have h_e_le_d : (e : ℝ) ≤ n - √(n * (n - d)) := by grind
-            have h_e_le_d : (e : ℚ) ≤ d := by
-              exact_mod_cast (by nlinarith [
-                show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)), mul_self_sqrt (
-                  show 0 ≤ (n : ℝ) * (n - d) by
-                  nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
-            gcongr
-          exact le_trans (mul_le_mul_of_nonneg_left h_e_le_d (by positivity)) h_d_close_n
+      ·
         nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
       · exact sub_nonneg_of_le (by gcongr)
-      · have h_frac_e_n_le_1 : frac * (e / n : ℚ) ≤ 1 := by
-          refine le_trans (mul_le_mul_of_nonneg_left (show (e : ℚ) / n ≤ d / n from ?_)
-            (by positivity)) h_d_close_n
-          have h_e_le_d : (e : ℚ) ≤ d := by
-            exact_mod_cast (by nlinarith [
-              show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)), mul_self_sqrt (
-                show 0 ≤ (n : ℝ) * (n - d) by
-                nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
-          gcongr
-        have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
+      · have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
           le_trans (mul_le_mul_of_nonneg_left
             (div_le_div_of_nonneg_right (show (JohnsonBound.e B v : ℚ) ≤ e by
-              exact_mod_cast e_ineq) (Nat.cast_nonneg _)) (by positivity)) h_frac_e_n_le_1
+              exact_mod_cast e_ineq) (Nat.cast_nonneg _)) (by positivity)) h_frac_e_div_le_one
         linarith
     nlinarith [show (0 : ℚ) < n from hn_pos,
       mul_div_cancel₀ (e : ℚ) (by positivity : (n : ℚ) ≠ 0),
