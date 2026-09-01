@@ -165,7 +165,11 @@ lemma mem_pullback₁_iff_mem_pullback₂ {i : Fin (2 ^ n)} (hl : l ≤ r) (hr :
 lemma mem_pullback₁_iff_mem_pullback₂_l_0 {i : Fin (2 ^ n)} (hr : r ≤ n) :
   ω i ∈ ω '' pullback₁ ω 0 r s ↔ ω i ^ 2 ^ r ∈ subdomain ω r '' pullback₂ ω 0 r s := by
   rw [←mem_pullback₁_iff_mem_pullback₂ (by simp) hr]
-  simp_all
+  constructor
+  · rintro ⟨x, hx, hxi⟩
+    exact ⟨x, hx, by simpa only [subdomain_0_apply, pow_zero, pow_one] using hxi⟩
+  · rintro ⟨x, hx, hxi⟩
+    exact ⟨x, hx, by simpa only [subdomain_0_apply, pow_zero, pow_one] using hxi⟩
 
 /-- The connection between components of the pullback set when `l = 1`. -/
 lemma mem_pullback₁_iff_mem_pullback₂_l_1 {i : Fin (2 ^ n)} (h1r : 1 ≤ r) (hr : r ≤ n) :

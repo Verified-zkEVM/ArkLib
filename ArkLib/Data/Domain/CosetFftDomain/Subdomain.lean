@@ -156,8 +156,6 @@ lemma subdomain_apply (i : ℕ) (k : Fin (2 ^ (n - i))) :
   rw [CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain,
     subdomain_generator_pow_generator, subdomain_subgroupUnit]
 
-set_option warning.simp.varHead false in
-@[simp]
 lemma subdomain_0_apply (i : Fin (2 ^ n)) :
   no_index (subdomain ω 0 i) = ω i := by
   rw [subdomain_apply]
@@ -168,12 +166,13 @@ lemma subdomain_0_apply (i : Fin (2 ^ n)) :
     simp [CosetFftDomainClass.subdomain_embed, mkSubgroupUnit]
   · simp [CosetFftDomainClass.subdomain_embed, mkSubgroupUnit, hn]
 
-set_option warning.simp.varHead false in
 /-- Membership to the `0`th subdomain is
   the same as membership to the original coset FFT domain. -/
-@[simp]
 lemma mem_subdomain_0_iff_mem :
-  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by simp [mem_def]
+  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by
+  simp only [mem_def]
+  constructor <;> rintro ⟨i, hi⟩ <;>
+    exact ⟨i, by simpa only [subdomain_0_apply] using hi⟩
 
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
@@ -426,7 +425,8 @@ lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ} (hk : k ≤ n) (hx 
   conv_rhs =>
     rw [←h]
   apply congrArg
-  aesop
+  ext y
+  simp only [mem_block, mem_subdomain_0_iff_mem]
 
 /-- The generalized modular reduction map from `Fin (2^n)` to `Fin (2^(n-i))`,
 sending `u` to `u % 2^(n-i)`. Can be used to compute indices of powers of subdomain memebers. -/
