@@ -20,13 +20,6 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -39,7 +32,7 @@ coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^�
 This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
 theorem common_disagreement_intersection :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+      ∀ {ι : Type} [Fintype ι]
         (M : ℕ), Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
         ∀ S : Fin M → Finset ι,
           (∀ j, Nat.floor (p * Fintype.card ι) < (S j).card) →
@@ -47,7 +40,7 @@ theorem common_disagreement_intersection :
             Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
               ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ _ M hM S hS
+  intro ℓ hℓ p hp hp_lt ι _ M hM S hS
   let n := Fintype.card ι
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
@@ -178,7 +171,7 @@ theorem common_disagreement_intersection :
 theorem balanced_center_from_far_family
     (ℓ M : ℕ) (hℓ : 2 ≤ ℓ) (p : ℝ) (hp : 0 < p) (hp_lt : p < 1)
     (hM : Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M)
-    {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [DecidableEq A]
     (c : ι → A) (v : Fin M → ι → A)
     (hfar : ∀ j, Nat.floor (p * Fintype.card ι) < hammingDist c (v j))
     (hnear : ∀ j, hammingDist c (v j) ≤
@@ -243,8 +236,8 @@ codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ
 the balanced-centre construction a hypothetical excess. -/
 theorem local_neighborhood_bound :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-        {A : Type} [Fintype A] [DecidableEq A]
+      ∀ {ι : Type} [Fintype ι] [Nonempty ι]
+        {A : Type} [Finite A] [DecidableEq A]
         (C : Set (ι → A)), Lambda C p ≤ (ℓ : ℕ∞) →
         8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
         ∀ c ∈ C,
@@ -253,7 +246,7 @@ theorem local_neighborhood_bound :
               Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
             ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ _ _ A _ _ C hLambda hsize c hc
+  intro ℓ hℓ p hp hp_lt ι _ _ A _ _ C hLambda hsize c hc
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
@@ -378,9 +371,9 @@ theorem many_nonsingleton_fibers
   change s.card ≤ 2 * multi.card
   omega
 
+open Classical in
 theorem many_restriction_alternatives
-    {ι A : Type} [Fintype ι] [DecidableEq ι]
-      [Fintype A] [DecidableEq A]
+    {ι A : Type} [Fintype A]
     (C : Set (ι → A)) (hC : C.Finite) (S : Finset ι)
     (aFamily : ℕ) (hScard : S.card = aFamily)
     (hmany : 2 * Fintype.card A ^ aFamily ≤ C.ncard) :
@@ -426,8 +419,7 @@ theorem many_restriction_alternatives
 
 theorem good_base_word
     (W aFamily aUnion : ℕ)
-    {ι A : Type} [Fintype ι] [DecidableEq ι]
-      [Fintype A] [DecidableEq A]
+    {ι A : Type} [DecidableEq ι] [Fintype A]
     (C : Set (ι → A)) (hC : C.Finite) (hA : 2 ≤ Fintype.card A)
     (family : LargeUnionFamily ι W aFamily aUnion)
     (hmany : 2 * Fintype.card A ^ aFamily ≤ C.ncard) :

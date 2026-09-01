@@ -49,13 +49,6 @@ The keys cited here — [AGL23] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -378,7 +371,7 @@ theorem ceil_linear_bound
   exact hceil.trans_le hunit
 
 theorem choose_distinct_images
-    {X Y : Type} [DecidableEq X] [DecidableEq Y]
+    {X Y : Type} [DecidableEq Y]
     (s : Finset X) (f : X → Y) (k : ℕ)
     (hcard : k ≤ (s.image f).card) :
     ∃ sel : Fin k → X, (∀ j, sel j ∈ s) ∧
@@ -533,12 +526,12 @@ theorem coordinate_blocks_exists :
 /-- The coordinates a block structure uses number exactly `dZero + ℓ · dOne`. -/
 theorem coordinate_blocks_used_card :
     ∀ (ℓ dZero dOne : ℕ),
-      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+      ∀ {ι : Type} [DecidableEq ι]
         (blocks : CoordinateBlocks ι ℓ dZero dOne),
         let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
         used.card = dZero + ℓ * dOne := by
   classical
-  intro ℓ dZero dOne ι _ _ blocks
+  intro ℓ dZero dOne ι _ blocks
   dsimp
   have hpair :
       ((Finset.univ : Finset (Fin ℓ)) : Set (Fin ℓ)).PairwiseDisjoint blocks.other := by
@@ -556,14 +549,14 @@ theorem coordinate_blocks_used_card :
 
 /-- A set of size at least `k · t` contains `k` pairwise disjoint subsets of size `t`. -/
 theorem disjoint_equal_blocks :
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+    ∀ {ι : Type}
       (S : Finset ι) (k t : ℕ), k * t ≤ S.card →
         ∃ blocks : Fin k → Finset ι,
           (∀ j, blocks j ⊆ S) ∧
           (∀ j, (blocks j).card = t) ∧
           ∀ i j, i ≠ j → Disjoint (blocks i) (blocks j) := by
   classical
-  intro ι _ _ S k t hcard
+  intro ι S k t hcard
   have htotal : 0 + k * t ≤ Fintype.card S := by
     simpa only [zero_add, Fintype.card_coe] using hcard
   obtain ⟨base, hbase⟩ :=
@@ -588,12 +581,12 @@ theorem disjoint_equal_blocks :
 /-- **Small fibers force a large image.** If every fiber of `f` on `s` has fewer than `W` elements
 and `W · ℓ ≤ |s|`, then `f` takes at least `ℓ` distinct values on `s`. -/
 theorem distinct_alternatives_of_bounded_fibers :
-    ∀ {α β : Type} [DecidableEq α] [DecidableEq β]
+    ∀ {α β : Type} [DecidableEq β]
       (s : Finset α) (f : α → β) (W ℓ : ℕ), 0 < W →
         W * ℓ ≤ s.card →
         (∀ y, (s.filter fun x => f x = y).card < W) →
         ℓ ≤ (s.image f).card := by
-  intro α β _ _ s f W ℓ hW hcard hfiber
+  intro α β _ s f W ℓ hW hcard hfiber
   have hsle : s.card ≤ W * (s.image f).card := by
     apply Finset.card_le_mul_card_image s W
     intro y hy
@@ -813,12 +806,13 @@ theorem floor_radius_ratio_le
   exact Nat.floor_le (mul_nonneg hp (Nat.cast_nonneg n))
 
 theorem good_base_by_double_count
-    {X Y : Type} [DecidableEq X] [DecidableEq Y]
+    {X Y : Type}
     (s : Finset X) (t : Finset Y) (P : X → Y → Prop) [DecidableRel P]
     (hs : s.Nonempty)
     (hcol : ∀ y ∈ t, s.card ≤
       2 * (s.filter fun x => P x y).card) :
     ∃ x ∈ s, t.card ≤ 2 * (t.filter fun y => P x y).card := by
+  classical
   by_contra hno
   have hrow : ∀ x ∈ s,
       2 * (t.filter fun y => P x y).card < t.card := by

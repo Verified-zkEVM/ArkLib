@@ -19,13 +19,6 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -138,7 +131,7 @@ theorem greedy_separated_extraction :
 
 theorem hamming_center_from_disjoint_blocks
     (ℓ r r' t : ℕ)
-    {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [DecidableEq A]
     (c : ι → A) (v : Fin ℓ → ι → A) (S : Finset ι)
     (blocks : Fin ℓ → Finset ι)
     (hblocks_sub : ∀ j, blocks j ⊆ S)
@@ -229,7 +222,7 @@ boosted radius and they disagree with `c` on a large common set, then some singl
 radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
 theorem balanced_center_construction :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+      ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
         (c : ι → A) (v : Fin ℓ → ι → A),
         (∀ j, hammingDist c (v j) ≤
           Nat.floor (boostedRadius ℓ p * Fintype.card ι)) →
@@ -240,7 +233,7 @@ theorem balanced_center_construction :
           hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
           ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι A _ _ _ c v hdist hsize hcommonCard
+  intro ℓ hℓ p hp hp_lt ι A _ _ c v hdist hsize hcommonCard
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
@@ -277,10 +270,11 @@ theorem balanced_center_construction :
     simpa only [r, n] using hyv j
 
 theorem hamming_dist_le_card_compl_of_agree
-    {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [DecidableEq A]
     (u v : ι → A) (S : Finset ι)
     (hagree : ∀ i ∈ S, u i = v i) :
     hammingDist u v ≤ Fintype.card ι - S.card := by
+  classical
   unfold hammingDist
   have hsub : (Finset.univ.filter fun i => u i ≠ v i) ⊆
       Finset.univ \ S := by
@@ -580,11 +574,11 @@ theorem incidence_power_gap :
 /-- Counting incidences two ways: `∑ᵢ #{j : i ∈ S j} = ∑_j |S j|`. -/
 theorem incidence_sum_double_count :
     ∀ {ι κ : Type} [Fintype ι] [Fintype κ]
-      [DecidableEq ι] [DecidableEq κ] (S : κ → Finset ι),
+      [DecidableEq ι] (S : κ → Finset ι),
       ∑ i, (Finset.univ.filter fun j => i ∈ S j).card =
         ∑ j, (S j).card := by
   classical
-  intro ι κ _ _ _ _ S
+  intro ι κ _ _ _ S
   calc
     (∑ i, (Finset.univ.filter fun j => i ∈ S j).card) =
         ∑ i, ∑ j, if i ∈ S j then 1 else 0 := by
@@ -602,7 +596,7 @@ theorem incidence_sum_double_count :
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
 theorem injective_family_of_ncard_diff
-    {α : Type} [Fintype α] [DecidableEq α]
+    {α : Type} [Finite α]
     (I B : Set α) (ℓ M : ℕ) (hIB : I ⊆ B)
     (hI : I.ncard ≤ ℓ) (hB : ℓ + M < B.ncard) :
     ∃ v : Fin M → α, Function.Injective v ∧ ∀ j, v j ∈ B \ I := by
@@ -631,8 +625,8 @@ theorem injective_family_of_ncard_diff
 open _root_.Code in
 theorem lambda_contradiction_of_injective_center
     (ℓ : ℕ)
-    {ι A : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-      [Fintype A] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [Nonempty ι]
+      [Finite A] [DecidableEq A]
     (C : Set (ι → A)) (p : ℝ) (hp : 0 ≤ p)
     (c : ι → A) (hc : c ∈ C)
     (u : Fin ℓ → ι → A) (huinj : Function.Injective u)
@@ -677,7 +671,7 @@ theorem lambda_contradiction_of_injective_center
   omega
 
 theorem large_fiber_of_image_bound
-    {X Y : Type} [DecidableEq X] [DecidableEq Y]
+    {X Y : Type} [DecidableEq Y]
     (s : Finset X) (f : X → Y) (B k : ℕ)
     (hs : s.Nonempty) (himage : (s.image f).card ≤ B)
     (hlarge : B * k ≤ s.card) :
