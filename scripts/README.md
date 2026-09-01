@@ -11,10 +11,7 @@ This directory contains various utility scripts for the ArkLib project.
 - **`build_timing_metadata.py`** - Versioned attribution metadata writer/validator for timing artifacts
 - **`test-build-timing-report.sh`** - Deterministic report, metadata, and workflow-policy fixtures
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
-- **`check-imports.sh`** - Reject blanket package-root imports and check whether `ArkLib.lean` is
-  up to date with all tracked source modules
-- **`test-check-blanket-imports.sh`** - Focused fixtures for multiline/commented legacy and
-  module-system import-header spellings accepted by the blanket-import scanner
+- **`check-imports.sh`** - Check whether `ArkLib.lean` is up to date with all tracked source modules
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
@@ -34,8 +31,9 @@ This directory contains various utility scripts for the ArkLib project.
   about six minutes, which is why it is not gated: the honest sumcheck prover dominates the cost
   of the entire chain. `--timing` reports per-check costs
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
-- **`lint-style.py`** - Python-based style linting
-- **`lint-style.lean`** - Lean-based style linting
+- **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
+  exception-free source policy, including import discipline, whitespace, headers, line/file size,
+  suppression prevention, and hazardous-Unicode checks
 
 ### Dependency Analysis
 - **`dependency_analysis/`** - Complete dependency analysis toolkit
@@ -61,9 +59,6 @@ This directory contains various utility scripts for the ArkLib project.
 
 ### Validation With Optional Checks
 ```bash
-# Add Lean style linting
-./scripts/validate.sh --lint
-
 # Build API docs too
 ./scripts/validate.sh --docs
 
@@ -110,8 +105,11 @@ bash scripts/build_timing_report.sh --help
 # Check if imports are up to date
 ./scripts/check-imports.sh
 
-# Exercise the blanket-import scanner fixtures directly
-./scripts/test-check-blanket-imports.sh
+# Run only the Lean-native source-policy gate
+lake exe lint-style
+
+# Apply safe whitespace fixes, then rerun the gate
+lake exe lint-style --fix
 ```
 
 ### Check Docs Integrity

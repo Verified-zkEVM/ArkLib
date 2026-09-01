@@ -57,6 +57,22 @@ name = "hachi-runtime"
 srcDir = "scripts"
 root = "HachiRuntime"
 
+# Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link
+# Lake explicitly; keeping it out of the default target avoids adding linter-only dependencies to
+# the library build graph.
+[[lean_lib]]
+name = "LintStyleLib"
+srcDir = "scripts"
+roots = []
+globs = ["LintStyle.Checks"]
+
+[[lean_exe]]
+name = "lint-style"
+srcDir = "scripts"
+root = "LintStyle"
+supportInterpreter = true
+weakLinkArgs = ["-lLake"]
+
 # Isolated executable fixtures for the axiom-sweep mutation matrix
 # (scripts/test-axiomsweep.sh). Not a default target: it deliberately contains
 # synthetic kernel taint of every shape the sweep reasons about.

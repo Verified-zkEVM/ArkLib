@@ -67,7 +67,7 @@ jobs:
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime lint-style" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
@@ -149,7 +149,7 @@ jobs:
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
+            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime lint-style'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
