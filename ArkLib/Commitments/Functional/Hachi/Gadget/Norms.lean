@@ -149,10 +149,8 @@ omit [NeZero q] in
 /-- **`ℓ∞` shortness of `G⁻¹` from a digit bound, for an arbitrary `DigitDecomposition`.** Every
 block of the decomposition inherits whatever centered bound `γ` the digit map satisfies, because
 `gadgetDecompose_coeff` identifies each coefficient of the output with a single digit of a single
-input coefficient. The concrete base-`b` instance is
-`gadgetDecompose_zmod_lInftyNorm_le` below (at `γ = b - 1`); the general form is what
-completeness proofs need, since they are stated for whichever decomposition the honest prover
-was instantiated with. -/
+input coefficient. The general form is what completeness proofs need, since they are stated for
+whichever decomposition the honest prover was instantiated with. -/
 theorem gadgetDecompose_lInftyNorm_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
     (dd : DigitDecomposition base digits)
     (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
@@ -190,13 +188,6 @@ theorem gadgetDecompose_vecLInftyNorm_le_of_digit_le {base : ZMod q} {digits row
     vecLInftyNorm Φ (gadgetDecompose Φ dd x) ≤ γ := by
   unfold vecLInftyNorm
   exact Finset.sup_le (fun j _ => gadgetDecompose_lInftyNorm_le_of_digit_le Φ dd hdd x j)
-
-/-- Each gadget-decomposition block is `ℓ∞`-short: its centered `ℓ∞` norm is `≤ b - 1`. -/
-theorem gadgetDecompose_zmod_lInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b - 1 ≤ q / 2) (x : PolyVec (Rq Φ) rows)
-    (j : Fin (rows * digits)) :
-    Rq.lInftyNorm Φ (gadgetDecompose Φ (zmodDigitDecomposition b digits hb hq) x j) ≤ b - 1 :=
-  gadgetDecompose_lInftyNorm_le_of_digit_le Φ _ (zmodDigit_natAbs_le hb hq hbq) x j
 
 /-- **`ℓ∞` shortness of `G⁻¹`.** The full gadget decomposition has centered `ℓ∞` norm `≤ b - 1`. -/
 theorem gadgetDecompose_zmod_vecLInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)

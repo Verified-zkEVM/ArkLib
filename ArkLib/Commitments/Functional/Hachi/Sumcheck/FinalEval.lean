@@ -132,14 +132,6 @@ def finalEvalVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F) :
   out := fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩
   verify_eq := fun _ _ => rfl
 
-/-- The final-evaluation verifier is guarded — definitionally, by `finalCheck`. -/
-theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
-    (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)
-      φF).IsGuarded :=
-  ⟨fun stmt tr => finalCheck Φ m₀ m₁ bound b φF stmt (tr 0),
-   fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩,
-   fun _ _ => rfl⟩
-
 /-- The final-evaluation prover shell, parametric in the claimed evaluation: sends
 `y′ := computeY stmt wit` and carries `w̃` forward as the output witness. The honest
 instantiation is `computeY := honestComputeY` (i.e. `wTableMleEval`), packaged as

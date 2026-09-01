@@ -26,8 +26,6 @@ Block-level facts about the honest decompositions `generateDecomps`, over any fi
 
 * `generateDecomps_derivedMessage`: the derived message recovers the message, `G · sᵢ = mᵢ`.
 * `generateDecomps_inner_eq`: the inner gadget relation `G · t̂ᵢ = A sᵢ` holds.
-* `generateDecomps_message_checks`, `generateDecomps_inner_checks`: the corresponding per-block
-  `Simple.verify` checks all pass.
 
 Perfect correctness of the bundled `commitmentScheme`, over `R = ZMod q` (where the norms live):
 
@@ -68,23 +66,6 @@ theorem generateDecomps_derivedMessage (base : R)
     derivedMessage Φ base (generateDecomps Φ decomp pp m) i = m i := by
   simpa [derivedMessage, Simple.commit, gadgetMul, generateDecomps] using hMessageDecomp (m i)
 
-omit [DecidableEq (PolyVec (Rq Φ) innerRows)] in
-/-- Honest message decompositions pass the message gadget checks. -/
-theorem generateDecomps_message_checks (base : R)
-    (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
-    (hMessageDecomp : IsLawfulGadgetDecomposition Φ base decomp.message)
-    (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
-    (m : Message Φ messageRows blocks) :
-    (List.finRange blocks).all (fun i =>
-      Simple.verify Φ (gadgetMatrix Φ base messageRows messageDigits)
-        ((generateDecomps Φ decomp pp m).message i) (m i) ()) = true := by
-  simp only [List.all_eq_true]
-  intro i _
-  have hprod : Simple.commit Φ (gadgetMatrix Φ base messageRows messageDigits)
-      ((generateDecomps Φ decomp pp m).message i) = m i := by
-    simpa [Simple.commit, gadgetMul, generateDecomps] using hMessageDecomp (m i)
-  simp [Simple.verify, hprod]
-
 omit [DecidableEq (PolyVec (Rq Φ) messageRows)] [DecidableEq (PolyVec (Rq Φ) innerRows)] in
 /-- Honest inner decompositions satisfy the inner gadget relation `G · t̂ᵢ = A sᵢ`. -/
 theorem generateDecomps_inner_eq (base : R)
@@ -97,22 +78,6 @@ theorem generateDecomps_inner_eq (base : R)
       Simple.commit Φ pp.innerMatrix ((generateDecomps Φ decomp pp m).message i) := by
   simpa [Simple.commit, gadgetMul, generateDecomps] using
     hInnerDecomp (Simple.commit Φ pp.innerMatrix (decomp.message (m i)))
-
-omit [DecidableEq (PolyVec (Rq Φ) messageRows)] in
-/-- Honest inner decompositions pass the inner gadget checks. -/
-theorem generateDecomps_inner_checks (base : R)
-    (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
-    (hInnerDecomp : IsLawfulGadgetDecomposition Φ base decomp.inner)
-    (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
-    (m : Message Φ messageRows blocks) :
-    (List.finRange blocks).all (fun i =>
-      Simple.verify Φ (gadgetMatrix Φ base innerRows innerDigits)
-        ((generateDecomps Φ decomp pp m).innerDecomp i)
-        (Simple.commit Φ pp.innerMatrix ((generateDecomps Φ decomp pp m).message i)) ())
-      = true := by
-  simp only [List.all_eq_true]
-  intro i _
-  simp [Simple.verify, generateDecomps_inner_eq Φ base decomp hInnerDecomp pp m i]
 
 end ArkLib.Lattices.Ajtai.InnerOuter
 

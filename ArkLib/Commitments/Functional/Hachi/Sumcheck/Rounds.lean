@@ -150,13 +150,6 @@ theorem roundVerifier_isGuardedWith {TCom : Type} (i : ℕ) :
         (tr.challenges ⟨1, rfl⟩)) :=
   fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
-/-- The round verifier is guarded — definitionally, by `roundCheck`. -/
-theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
-    (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (n := n) (μ := μ) (TCom := TCom)
-      (F := F) i).IsGuarded :=
-  ⟨_, _, roundVerifier_isGuardedWith Φ m₀ m₁ b i⟩
-
 /-- The `i`-th round's honest prover skeleton: the round-polynomial pair is computed by the
 parameter `computeG` (honestly `honestComputeG`, `Sumcheck/Completeness.lean`: the computable
 partial hypercube sums of the two sumcheck polynomials in the free variable), and the witness is

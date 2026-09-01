@@ -125,9 +125,8 @@ python3 -m pip install leanblueprint
 
 ## Checking axiom hygiene correctly
 
-ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}` (see
-[`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
-naive check report success on something that should fail:
+ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}`. Two traps make
+a naive check report success on something that should fail:
 
 - **`#print axioms` is only meaningful for declarations that elaborated cleanly.**
   (`Lean.collectAxioms` does traverse both the type and the value, so a `sorry`-patched

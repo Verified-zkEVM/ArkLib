@@ -16,44 +16,41 @@ commitment input → relPolyEval → bridge → QuadEval → R^lin → lift → 
   → zero-check → sumcheck → relWEvalClaim → reveal-and-check → acceptRejectRel
 ```
 
-The recursion adapters (`Recursion/PartialEval`, `ZBatchBridge`, `TraceHandoff`) are deliberately
-**not** part of this run. Instead of recursing on `relWEvalClaim`, the chain is closed by a
-non-succinct `SendWitness`-style **terminal base case**: the prover sends the final
-`LiftedWitness` in the clear, and the verifier decides the *entire* `relWEvalClaim` predicate on
-it — running `endPieceCheck`, the **same** decision procedure the soundness-side `endPiece`
-(`EndPiece/Reduction.lean`) guards on, with the reflection lemma `endPieceCheck_eq_true_iff`.
-This is a genuine terminal verifier — it can reject — so the composition is a complete executable
-commitment opening, at the cost of a witness-sized final message.
+Instead of recursing on `relWEvalClaim`, the chain is closed by a non-succinct `SendWitness`-style
+**terminal base case**: the prover sends the final `LiftedWitness` in the clear, and the verifier
+decides the *entire* `relWEvalClaim` predicate on it — running `endPieceCheck`, the same decision
+procedure the soundness-side `endPiece` (`EndPiece/Reduction.lean`) guards on, with the reflection
+lemma `endPieceCheck_eq_true_iff`. This is a genuine terminal verifier — it can reject — so the
+composition is a complete executable commitment opening, at the cost of a witness-sized final
+message.
+
+Composed completeness statements go through the generic `Reduction.append_completeness`, which
+this repository still admits; each link's own completeness is axiom-clean.
 
 ## Main definitions
 
 * `pSpecTerminal`: the terminal wire format — `pSpecEndPiece` at the `LiftedWitness`, named for
   the scheme plumbing.
 * `nonrecursiveTerminalReduction` / `…_perfectCompleteness`: the reveal-and-check reduction from
-  `relWEvalClaim` to `acceptRejectRel`, perfectly complete, axiom-clean. Its verifier returns
-  `endPieceCheck` as its Boolean verdict — the `Commitment.Scheme` interface fixes the `Proof`
-  shape to a `Bool` output — where `EndPiece/`'s guarded `endPieceVerifier` *guards* on that same
-  check; `terminalVerifier_verify_eq_endPieceCheck` and the shared constant keep the two
-  directions of the closing link on one decision procedure.
-* `nonrecursiveOpeningReduction` / `…_perfectCompleteness`: the honest chain through the sumcheck
-  (`completeThroughSumcheckReduction`) closed by the terminal base case: `relPolyEval` to
-  `acceptRejectRel`. ⚠ Inherits `sorryAx` from the generic `Reduction.append_completeness`
-  (an admitted framework dependency), which is also the sole provenance of the sumcheck link's own
-  internal taint; the remaining links are axiom-clean on their own.
+  `relWEvalClaim` to `acceptRejectRel`. Its verifier returns `endPieceCheck` as its Boolean
+  verdict — the `Commitment.Scheme` interface fixes the `Proof` shape to a `Bool` output — where
+  `EndPiece/`'s guarded `endPieceVerifier` *guards* on that same check;
+  `terminalVerifier_verify_eq_endPieceCheck` keeps the two directions of the closing link on one
+  decision procedure.
 * `relCommitInput` / `commitInputReduction` / `…_perfectCompleteness`: the zero-round head that
   converts the commitment API's claim (an honest **balanced** commitment plus a truthful
   evaluation claim) into `relPolyEval`, with the relation step
   `mem_relPolyEval_of_relCommitInput`.
-* `hachiNonrecursiveOpening` / `…_perfectCompleteness`: input adapter ▷ chain through the sumcheck
-  ▷ terminal reveal-and-check — the complete opening protocol, from `relCommitInput` to
+* `nonrecursiveOpeningReduction`, `hachiNonrecursiveOpening` and their completeness: the honest
+  chain through the sumcheck (`completeThroughSumcheckReduction`) closed by the terminal base
+  case, with the input adapter in front — the complete opening protocol, from `relCommitInput` to
   `acceptRejectRel`.
 * `hachiNonrecursive`: Hachi as a `Commitment.Scheme` with that opening and the balanced committer
-  `commitBalanced`; unlike `hachi` (`Commitment.lean`) every field is real and the `pSpec` is the
-  actual composed specification.
+  `commitBalanced`.
 * `hachiNonrecursive_perfectCorrectness`: `Commitment.perfectCorrectness` for it, through the
   generic bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
-  (`Commitments/Functional/Basic.lean`). Same `sorryAx` provenance as above, and nothing else.
-  `Concrete.lean` instantiates all of this at the Ajtai lift commitment.
+  (`Commitments/Functional/Basic.lean`). `Concrete.lean` instantiates all of this at the Ajtai
+  lift commitment.
 
 ## References
 
@@ -259,9 +256,8 @@ omit [DecidableEq F] in
 `acceptRejectRel`, error `0`. The hypotheses are exactly those of
 `completeThroughSumcheckReduction_perfectCompleteness`; the terminal link needs nothing.
 
-⚠ **Inherits `sorryAx`** through `Reduction.append_perfectCompleteness` (the generic
-`Reduction.append_completeness` is still `sorry` — an admitted framework dependency). The
-terminal link itself (`nonrecursiveTerminalReduction_perfectCompleteness`) is axiom-clean. -/
+Depends on the admitted `Reduction.append_completeness` through the append; the terminal link
+itself is axiom-clean. -/
 theorem nonrecursiveOpeningReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -473,13 +469,11 @@ end InputAdapter
 
 /-! ## The nonrecursive Hachi scheme
 
-`hachiNonrecursive` packages the balanced committer with the *complete* opening protocol —
+`hachiNonrecursive` packages the balanced committer with the complete opening protocol —
 input adapter ▷ chain through the sumcheck ▷ terminal reveal-and-check — as a
-`Commitment.Scheme`. It is introduced as a new scheme rather than a change to `hachi`: the
-existing public value keeps its (bridge ▷ QuadEval prefix) `pSpec` while the complete protocol's
-much larger spec lives here, and the committer is `commitBalanced` because the honest chain's
-input relation is established for balanced digits (`mem_relPolyEval_of_relCommitInput`; the
-unsigned `commit` supports only the ball-relaxed `QuadEval` reading — see `Commitment.lean`). -/
+`Commitment.Scheme`. The committer is `commitBalanced` because the honest chain's input relation
+is established for balanced digits (`mem_relPolyEval_of_relCommitInput`); the unsigned `commit`
+supports only the ball-relaxed `QuadEval` reading (see `Commitment.lean`). -/
 
 section Scheme
 
@@ -520,7 +514,7 @@ omit [DecidableEq F] in
 /-- **Perfect completeness of the complete nonrecursive opening**, from `relCommitInput` (the
 honest balanced commitment plus a truthful evaluation claim) to `acceptRejectRel`, error `0`.
 
-⚠ Inherits `sorryAx` through `Reduction.append_perfectCompleteness` only; the adapter and
+Depends on the admitted `Reduction.append_completeness` through the appends; the adapter and
 terminal links are axiom-clean. -/
 theorem hachiNonrecursiveOpening_perfectCompleteness
     [∀ i, SampleableType
@@ -549,14 +543,11 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
       𝓜(q, α) P init impl pp (Nat.le_pow_clog P.hb q) (Nat.le_pow_clog P.hb q)
       hclog hclog hd hbZero K φF hμn hZeroγ)
 
-/-- **Hachi, nonrecursive, as a functional commitment** (`Commitment.Scheme`), with a *complete*
-opening protocol: the multilinear evaluation oracle, honest key generation, the **balanced**
-committer `commitBalanced` (the one the honest chain's input relation is established for), and
-the full composed opening `hachiNonrecursiveOpening` — input adapter, bridge, `QuadEval`,
-`R^lin` adapter, lift, batching, nested zero-check, sumcheck, and the terminal
-reveal-and-check. Unlike `hachi` (whose `opening` is a placeholder and whose declared `pSpec` is
-only the bridge ▷ QuadEval prefix), every field here is real and the `pSpec` is the actual
-composed specification. Perfect correctness is `hachiNonrecursive_perfectCorrectness`.
+/-- **Hachi, nonrecursive, as a functional commitment** (`Commitment.Scheme`): the multilinear
+evaluation oracle, honest key generation, the **balanced** committer `commitBalanced`, and the
+full composed opening `hachiNonrecursiveOpening` — input adapter, bridge, `QuadEval`, `R^lin`
+adapter, lift, batching, nested zero-check, sumcheck, and the terminal reveal-and-check. Perfect
+correctness is `hachiNonrecursive_perfectCorrectness`.
 
 The opening keys both prover and verifier by the committer key `keys.1`; honest key generation
 returns identical keys, so nothing is lost for correctness. A soundness treatment would want the
@@ -595,14 +586,12 @@ Hypotheses, by role: the chain's own parameter conditions
 (`completeThroughSumcheckReduction_perfectCompleteness`'s, including the reverse range
 orientation `hZeroγ` of the nested zero-check seam, which together with the bundled digit-base
 facts pins `P.γ = P.bZero − 1 < q/2` — `pinned_of_soundness_orientations`, realized at every
-digit base by `ofPinnedDigitBase`); and the two
-genuinely necessary environment conditions `hInit`/`hKeygen` — the ambient state and the
-simulated key-generation sampling must never fail (an adversarial `impl` could fail, and then no
-scheme is correct).
+digit base by `ofPinnedDigitBase`); and the two environment conditions `hInit`/`hKeygen` — the
+ambient state and the simulated key-generation sampling must never fail, since an adversarial
+`impl` could fail and then no scheme is correct.
 
-⚠ **Inherits `sorryAx`** through `Reduction.append_perfectCompleteness` only (the admitted
-generic `Reduction.append_completeness`); the adapter, the terminal link, and the correctness
-bridge (`Commitment.perfectCorrectness_of_opening_perfectCompleteness`) are axiom-clean. -/
+Depends on the admitted `Reduction.append_completeness` through the appends; the adapter, the
+terminal link, and the correctness bridge are axiom-clean. -/
 theorem hachiNonrecursive_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec

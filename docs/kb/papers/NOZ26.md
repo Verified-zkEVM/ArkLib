@@ -83,16 +83,10 @@ Ring-switching layer:
   Committing the raw quotient instead admits only the unconditional bound `q/2`
   (`rhoShort_half`) — sharp, since the `R^lin` matrix carries the Ajtai key — forcing a zero-check
   range base of at least `q/2 + 1` and, with the batching bridge's pull-back orientations, the
-  collapse `γ = q/2 = bZero − 1`. Two witnesses separate the regimes, and they are **not**
-  interchangeable:
-
-  * `HonestRangeParams.ofDigitBase b` — `bZero = b`, `γ = ⌊b/2⌋`. The *honest-direction* witness;
-    `γ` is as small as completeness allows, and for `b > 2` it does **not** satisfy the pull-back
-    orientation `bZero − 1 ≤ γ`.
-  * `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`, `γ = b − 1`. The *two-sided* witness,
-    which does satisfy it; `pinned_of_soundness_orientations` applied to it gives
-    `γ = bZero − 1 ∧ γ < q/2`, checked as an `example` in `HonestChain.lean`. This — not
-    `ofDigitBase` — is what carries the conclusion that the pinned regime is realizable at `O(b)`.
+  collapse `γ = q/2 = bZero − 1`. `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`,
+  `γ = b − 1` — is the witness for the two-sided regime: it satisfies the pull-back orientation
+  `bZero − 1 ≤ γ`, and `pinned_of_soundness_orientations` applied to it gives
+  `γ = bZero − 1 ∧ γ < q/2`, so the pinned regime is realizable at `O(b)`.
 
   `moduleSIS_relation_of_mem_Collision` states the payoff: `LiftCom.Collision` satisfies
   `ModuleSIS.relation` for the lift's Ajtai key at radius `2·bound` (nonzero via

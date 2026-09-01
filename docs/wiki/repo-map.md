@@ -280,10 +280,9 @@ home_page/            site assets and assembled website root
     `HonestRangeParams` (digit base `b`, Eq. (20) ball radius `γ`, zero-check range base `bZero` —
     which is also the base of the quotient's hidden gadget decomposition — with the box→ball
     condition, the batching bridge's *honest-direction* inequality, and the digit-base
-    admissibility triple `DigitBaseOk q γ bZero`, plus two witnesses that are **not**
-    interchangeable: `HonestRangeParams.ofDigitBase` at `γ = ⌊b/2⌋`, `bZero = b`, which is
-    honest-direction-only, and `ofPinnedDigitBase` at `γ = b − 1`, which also meets the pull-back
-    orientation and so realizes the two-sided regime), one named corollary per seam,
+    admissibility triple `DigitBaseOk q γ bZero`, plus the witness
+    `HonestRangeParams.ofPinnedDigitBase` at `γ = b − 1`, `bZero = b`, which also meets the
+    pull-back orientation and so realizes the two-sided regime), one named corollary per seam,
     and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
     zero-check protocol, whose completeness is proved **modulo the sorried generic
     `Reduction.append_completeness` / `liftContext_completeness`** (so it is `sorryAx`-tainted, by

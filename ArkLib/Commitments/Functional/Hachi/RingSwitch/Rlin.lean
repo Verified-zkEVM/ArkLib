@@ -35,8 +35,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
   `S_b` range checks, becomes the single `‖ζ‖∞ ≤ bound` conjunct, equivalent by
   `vecLInftyNorm_append`.) This file is the zero-round `ReduceClaim` bridge realizing that
   reading — **statement reshaping only**: no soundness error, CWSS for any structure, pure
-  verifier — assembled sorry-free from
-  `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`.
+  verifier — assembled from `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`.
 
   The substance is the block-row equivalence `rlin_iff_relOut` (`M ζ = y ∧ ‖ζ‖∞ ≤ γ`, at the
   assembled statement, ⟺ the Eq. (20) relation `relOut` at the un-stacked response), proved via
@@ -61,83 +60,6 @@ namespace ArkLib.Lattices.Ajtai.InnerOuter
 open CompPoly ArkLib.Lattices.CyclotomicModulus
 open WeakBinding
 open OracleComp OracleSpec ProtocolSpec CoordinateWise
-
-/-! ## Generic index / vector helpers
-
-Small reusable facts about `Fin.append`, `dot`, and `matVecMul` used to split the Eq. (20) block
-matrix along its rows and columns. Stated locally; candidates for promotion to `Data/Lattices`. -/
-
-section GenericHelpers
-
-/-- Split a `∀` over `Fin (m + n)` into its `castAdd`/`natAdd` halves. -/
-theorem forall_fin_add {m n : ℕ} {motive : Fin (m + n) → Prop} :
-    (∀ i, motive i) ↔
-      (∀ i : Fin m, motive (Fin.castAdd n i)) ∧ (∀ i : Fin n, motive (Fin.natAdd m i)) := by
-  constructor
-  · intro h; exact ⟨fun i => h _, fun i => h _⟩
-  · rintro ⟨h1, h2⟩ i; exact Fin.addCases h1 h2 i
-
-/-- Two functions on `Fin (m + n)` agree iff their `castAdd`/`natAdd` restrictions agree. -/
-theorem funext_fin_add_iff {α : Type*} {m n : ℕ} {f g : Fin (m + n) → α} :
-    f = g ↔
-      (fun i : Fin m => f (Fin.castAdd n i)) = (fun i => g (Fin.castAdd n i)) ∧
-      (fun i : Fin n => f (Fin.natAdd m i)) = (fun i => g (Fin.natAdd m i)) := by
-  rw [funext_iff, forall_fin_add]
-  simp only [funext_iff]
-
-variable {P : Type} [CommRing P]
-
-/-- `dot` splits along an append in its first argument. -/
-theorem dot_append {m n : ℕ} (u : ArkLib.Lattices.PolyVec P m) (v : ArkLib.Lattices.PolyVec P n)
-    (w : ArkLib.Lattices.PolyVec P (m + n)) :
-    ArkLib.Lattices.dot (Fin.append u v) w
-      = ArkLib.Lattices.dot u (fun k => w (Fin.castAdd n k))
-        + ArkLib.Lattices.dot v (fun k => w (Fin.natAdd m k)) := by
-  simp only [dot_eq_sum]
-  rw [Fin.sum_univ_add]
-  congr 1 <;> refine Finset.sum_congr rfl (fun i _ => ?_)
-  · rw [Fin.append_left]
-  · rw [Fin.append_right]
-
-/-- `dot` with a zero first argument is zero. -/
-theorem dot_zero_left {k : ℕ} (w : ArkLib.Lattices.PolyVec P k) :
-    ArkLib.Lattices.dot (0 : ArkLib.Lattices.PolyVec P k) w = 0 := by
-  simp only [dot_eq_sum, Pi.zero_apply, zero_mul, Finset.sum_const_zero]
-
-/-- `dot` negates in its first argument. -/
-theorem dot_neg_left {k : ℕ} (u w : ArkLib.Lattices.PolyVec P k) :
-    ArkLib.Lattices.dot (-u) w = -(ArkLib.Lattices.dot u w) := by
-  simp only [dot_eq_sum, Pi.neg_apply, neg_mul, Finset.sum_neg_distrib]
-
-/-- **Transpose adjunction for `dot`**: `⟨u, A v⟩ = ⟨Aᵀ u, v⟩`. Moves a public gadget matrix off
-the witness side onto the coefficient side (Eq. (20) rows c3/c4). -/
-theorem dot_matVecMul_transpose {a b : ℕ} (A : ArkLib.Lattices.PolyMatrix P a b)
-    (u : ArkLib.Lattices.PolyVec P a) (v : ArkLib.Lattices.PolyVec P b) :
-    ArkLib.Lattices.dot u (A *ᵥ v) = ArkLib.Lattices.dot (A.transpose *ᵥ u) v := by
-  have h := splitForm_transpose A u v
-  simp only [splitForm] at h
-  rw [h]; exact dot_comm _ _
-
--- v4.33 respects transparency when matching implicit arguments, so the `Fin.append_left`/
--- `_right` rewrites below no longer unify through the semireducible `PolyMatrix`/`PolyVec`.
-set_option backward.isDefEq.respectTransparency false in
-/-- `matVecMul` splits along a row-append: block rows act independently. -/
-theorem matVecMul_append_rows {a b c : ℕ} (M₁ : ArkLib.Lattices.PolyMatrix P a c)
-    (M₂ : ArkLib.Lattices.PolyMatrix P b c) (ζ : ArkLib.Lattices.PolyVec P c) :
-    (Fin.append M₁ M₂ : ArkLib.Lattices.PolyMatrix P (a + b) c) *ᵥ ζ
-      = Fin.append (M₁ *ᵥ ζ) (M₂ *ᵥ ζ) := by
-  funext i
-  refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-  · rw [Fin.append_left]
-    change ArkLib.Lattices.dot (Fin.append M₁ M₂ (Fin.castAdd b i)) ζ =
-      ArkLib.Lattices.dot (M₁ i) ζ
-    rw [Fin.append_left]
-  · rw [Fin.append_right]
-    change ArkLib.Lattices.dot (Fin.append M₁ M₂ (Fin.natAdd a i)) ζ =
-      ArkLib.Lattices.dot (M₂ i) ζ
-    rw [Fin.append_right]
-
-end GenericHelpers
 
 section Rlin
 
@@ -412,7 +334,7 @@ theorem vecLInftyNorm_append {a b : Nat} (u : ArkLib.Lattices.PolyVec (Rq Φ) a)
     (v : ArkLib.Lattices.PolyVec (Rq Φ) b) (γ : ℕ) :
     vecLInftyNorm Φ (Fin.append u v) ≤ γ ↔ vecLInftyNorm Φ u ≤ γ ∧ vecLInftyNorm Φ v ≤ γ := by
   simp only [vecLInftyNorm, Finset.sup_le_iff, Finset.mem_univ, true_implies]
-  rw [forall_fin_add]
+  rw [Fin.forall_fin_add]
   simp only [Fin.append_left, Fin.append_right]
 
 omit [NeZero q] in
@@ -609,9 +531,9 @@ def rlinVerifierPureForm
 
 /-- **The `R^lin` adapter as a (plain) `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the
 zero-round `ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to
-`relRlin`. Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
-`ReduceClaim.verifier_coordinateWiseSpecialSoundWith` at the proven block-row pull-back
-`mem_relOut_of_relRlin` — sorry-free. -/
+`relRlin`. Pure statement reshaping with no cryptographic content, hence escape-free. Assembled
+from `ReduceClaim.verifier_coordinateWiseSpecialSoundWith` at the block-row pull-back
+`mem_relOut_of_relRlin`. -/
 def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ) :

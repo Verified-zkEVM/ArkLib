@@ -11,10 +11,8 @@ import ArkLib.Commitments.Functional.Hachi.Correctness
 `hachiNonrecursive` (`Correctness.lean`) is parameterized by an *abstract* `LiftCom`: the lift's
 commitment space `K.TCom` and map `K.com` are opaque, which is right for the correctness proof —
 correctness holds for any commitment — but leaves the scheme with nothing an implementation could
-compute. This file closes that hole by instantiating at `hachiLiftCom`
-(`RingSwitch/Reduction.lean`), the Ajtai product `D · (z ‖ ρ)`.
-
-The general theorems are untouched; both declarations here are applications of them.
+compute. This file instantiates at `hachiLiftCom` (`RingSwitch/Reduction.lean`), the Ajtai product
+`D · (z ‖ ρ)`. Both declarations here are applications of the general theorems.
 
 ## Main definitions
 
@@ -22,8 +20,7 @@ The general theorems are untouched; both declarations here are applications of t
   whole honest run is computable (see `scripts/HachiRuntime.lean` for an evaluated accepting
   run).
 * `hachiNonrecursiveConcrete_perfectCorrectness` — perfect correctness, as a corollary of
-  `hachiNonrecursive_perfectCorrectness`. It inherits that theorem's `sorryAx` dependency
-  through `Reduction.append_completeness` and nothing else.
+  `hachiNonrecursive_perfectCorrectness`.
 
 ## References
 
@@ -90,11 +87,8 @@ set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect correctness of nonrecursive Hachi at the concrete commitment** — the corollary of
 `hachiNonrecursive_perfectCorrectness` at `K := nonrecursiveLiftCom P D`. Same hypotheses, same
-proof; the general theorem is what carries the content, and instantiating it is all that is
-needed because correctness never inspects the commitment beyond its being a function.
-
-⚠ Inherits `sorryAx` exactly as the general theorem does (through the admitted generic
-`Reduction.append_completeness`); this file adds none. -/
+proof: correctness never inspects the commitment beyond its being a function, so instantiating the
+general theorem is all that is needed. -/
 theorem hachiNonrecursiveConcrete_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec

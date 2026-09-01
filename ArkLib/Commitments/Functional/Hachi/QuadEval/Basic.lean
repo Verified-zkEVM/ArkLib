@@ -37,14 +37,10 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   (`buildWitness`, split into the plain assembler `quadEvalMkWitness` and the escape event
   `quadEvalEscLocal`) and the escape-threaded coordinate-wise special soundness
   `quadEval_coordinateWiseSpecialSoundWithEscape` at the **plain** relations, bundled as the
-  composable `quadEvalPackage`; also the
-  reduction's derived norm constants `B_z` / `βSq`. The soundness is genuinely `sorry`-free —
-  axiom-clean (`#print axioms` gives only `propext` / `Classical.choice` / `Quot.sound`), and its
-  one deep input, Lyubashevsky–Seiler short-element invertibility `isUnit_of_l1Norm_le`, is itself
-  proven, not deferred.
+  composable `quadEvalPackage`; also the reduction's derived norm constants `B_z` / `βSq`. Its
+  one deep input is Lyubashevsky–Seiler short-element invertibility, `isUnit_of_l1Norm_le`.
 * `QuadEval/Completeness.lean` — the honest direction, in **two readings** that must not be
-  conflated (the file's docstring is the reference; both are error `0`, `sorry`-free and
-  axiom-clean):
+  conflated (both at error `0`; the file's docstring is the reference):
   - *ball-relaxed*, into ArkLib's `relOut`: `quadEvalReduction_perfectCompleteness`, with
     `…_zmodDigits` at the unsigned base-`b` digits;
   - *paper-exact*, into `paperRelOut` (Eq. (20) verbatim, box `S_b`):

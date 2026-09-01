@@ -30,8 +30,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   The result is a polynomial-level input relation `relPolyEval` (a weak `VerifiedOpening` whose
   *extracted polynomial* evaluates to `y` at `xl ++ xh`) that
   `QuadEval`'s two-round reduction refines to Hachi Eq. (20). `Composition.lean` chains the bridge
-  before `QuadEval` at the head of the `iteration` (`bridgePackage ▷ quadEvalPackage ▷ …`); this
-  two-link front is sorry-free.
+  before `QuadEval` at the head of the `iteration` (`bridgePackage ▷ quadEvalPackage ▷ …`).
 
   ## Main definitions
 
@@ -43,7 +42,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `bridgeReduction`: the computable protocol object of the link (that verifier paired with the
     honest prover, which applies the same reinterpretation and passes the witness through).
   * `extractedPoly`: the polynomial read back from a weak opening's Eq. (15) derived-message
-    matrix via `Hachi.toPolynomial` (round-trip: `toMatrix_extractedPoly`).
+    matrix via `Hachi.toPolynomial`.
   * `relPolyEval`: the polynomial-level input relation described above.
   * `bridgeVerifierPureForm`: the verifier's purity as data (`toQuadEvalStatement` as the verdict),
     which the package carries and a composed chain runs at the seam.
@@ -54,7 +53,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `mem_relPolyEval_of_relIn`: `QuadEval`'s `relIn` at `toQuadEvalStatement Φ s` pulls back to
     `relPolyEval` at `s`, via `splitForm_monomialBasis_eq_eval`.
   * `bridge_coordinateWiseSpecialSoundWith`: the bridge is CWSS for any `D`, at the named
-    witness-only `ReduceClaim.treeExtractor`. All proofs in this file are sorry-free.
+    witness-only `ReduceClaim.treeExtractor`.
   * `mem_relIn_of_relPolyEval`: the converse push-forward, so `relPolyEval` is *exactly* the
     pull-back of `relIn` along `toQuadEvalStatement`.
   * `bridgeReduction_perfectCompleteness`: perfect completeness of the link, error `0`; the
@@ -195,20 +194,13 @@ variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
 variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- The polynomial extracted from a weak opening: the inverse reshape (`Hachi.toPolynomial`) of the
-Eq. (15) derived-message matrix `M`. A bijection, so
-`toMatrix (extractedPoly …) = derivedMsgMatrix …` (`toMatrix_extractedPoly`), keeping the
-polynomial reading interchangeable with the matrix reading for downstream binding arguments. -/
+Eq. (15) derived-message matrix `M`. The reshape is a bijection
+(`Hachi.toMatrix_toPolynomial`), so the polynomial reading stays interchangeable with the matrix
+reading. -/
 def extractedPoly (base : ZMod q)
     (o : Opening Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
     CMlPolynomial (Rq Φ) (r + m) :=
   Hachi.toPolynomial (derivedMsgMatrix Φ base o)
-
-omit [NeZero q] in
-/-- Round-trip: the reshaped `extractedPoly` recovers the Eq. (15) derived-message matrix. -/
-@[simp] theorem toMatrix_extractedPoly (base : ZMod q)
-    (o : Opening Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
-    Hachi.toMatrix (extractedPoly Φ base o) = derivedMsgMatrix Φ base o := by
-  simp only [extractedPoly, Hachi.toMatrix_toPolynomial]
 
 /-- **`relPolyEval` — the polynomial-level input relation** of the composed Hachi evaluation
 protocol: a weak `VerifiedOpening` for `u` under the fixed key `pp` whose *extracted polynomial*

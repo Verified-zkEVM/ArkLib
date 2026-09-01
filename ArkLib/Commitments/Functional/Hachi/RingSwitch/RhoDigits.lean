@@ -103,15 +103,6 @@ theorem balancedDigit_valMinAbs_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q 
   rw [show e = ((⟨e, he⟩ : Fin digits) : ℕ) from rfl, balancedDigit_eq_digit hb hq]
   exact balancedZmodDigit_natAbs_le hb hq hbq c _
 
-/-- **Core per-digit bound**, two-sided box form: every balanced digit lies in the paper's box
-`S_b = [−⌊b/2⌋, ⌈b/2⌉−1]` ([NOZ26] §2.1), which is the interval Eq. (20)'s range check tests. -/
-theorem balancedDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b ≤ q / 2) (c : ZMod q) {e : ℕ} (he : e < digits) :
-    -((b / 2 : ℕ) : ℤ) ≤ (balancedDigit b digits c e).valMinAbs ∧
-      (balancedDigit b digits c e).valMinAbs ≤ (((b + 1) / 2 : ℕ) : ℤ) - 1 := by
-  rw [show e = ((⟨e, he⟩ : Fin digits) : ℕ) from rfl, balancedDigit_eq_digit hb hq]
-  exact balancedZmodDigit_valMinAbs_mem hb hq hbq c _
-
 end BalancedDigit
 
 /-! ## The quotient digits -/

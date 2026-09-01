@@ -24,9 +24,9 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
     `liftShort` are discharged — the `z`-bound from seam membership
     (`vecLInftyNorm_le_of_mem_relRlinImage`), the quotient bound from the digit encoding
     (`rhoDigitsShort_of_digitBaseOk`) — so no admissibility hypothesis on the witness remains.
-    `…_of_zShort` is the parameterized form over an arbitrary input relation,
-    the latter at the sharp quotient bound `μ · 2d · βM · βz` for a caller with a short matrix.
-  * `rhoShort_honestLiftWitness` / `…_half` — the `ρ`-half of `liftShort` in those two forms.
+    `…_of_zShort` is the parameterized form over an arbitrary input relation.
+  * `rhoShort_honestLiftWitness` — the `ρ`-half of `liftShort` at the sharp quotient bound
+    `μ · 2d · βM · βz`, for a caller whose `R^lin` matrix is short.
 
   The lift consumes `relRlinImage`, not `relRlin`: `relRlin` forgets the matrix provenance and the
   value of `s.bound`, and `∀ s, bound ≤ s.bound` is false for positive `bound`, so the honest side
@@ -148,7 +148,7 @@ variable {n μ : ℕ} {F : Type} [Field F] (bound bDig : ℕ)
 per-row honest quotients of the cyclotomic presentation — the generic
 `RingSwitching.Lift.honestWitness` at `cyclotomicPresentation`. This is what the honest Figure-4
 prover commits to and later outputs, and it is the term whose `liftShort` admissibility the
-completeness theorems discharge — the quotient half by `rhoShort_honestLiftWitness_half`, the
+completeness theorems discharge — the quotient half from the digit encoding, the
 `z` half from the image seam (`liftReduction_perfectCompleteness_image`).
 
 `noncomputable`, because the quotients are Mathlib polynomials produced by division: the lifted
@@ -231,16 +231,6 @@ theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X 
           = (cyclotomicPresentation Φ).quotient s.M z s.yvec i
         from CPolynomial.toPoly_mk_toImpl _]
     exact valMinAbs_natAbs_coeff_quotient_le Φ hφ hdpos s.M z s.yvec hM hz i k
-
-omit [NeZero q] in
-/-- **`RhoShort (q/2)` for the honest quotient family, unconditionally**: centered representatives
-never exceed `q/2` (`rhoShort_half`). For the Hachi chain this is the operative bound, and
-`rhoShort_half`'s docstring records why no sharper one is available there: `rlinStmt`'s matrix
-carries the Ajtai key blocks and the gadget powers, so its honest `βM` is `q/2`. -/
-theorem rhoShort_honestLiftWitness_half (hd : 0 < Φ.φ.natDegree) (s : RlinStatement Φ n μ)
-    (z : ArkLib.Lattices.PolyVec (Rq Φ) μ) :
-    RhoShort (q / 2) (honestLiftWitness Φ hd s z).ρ :=
-  rhoShort_half _
 
 omit [NeZero q] in
 /-- **Perfect completeness of Hachi's lift from an honest seam, at the digit base `bDig`** —

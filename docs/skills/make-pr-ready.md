@@ -100,9 +100,9 @@ Work through these in order. Do not stop until every item is complete.
   For anything left that reads as a working plan, **warn the user**, naming each file and whether
   it is untracked, staged, or already committed, and let them decide. Leave untracked plans
   untracked and staged ones staged; just do not carry them into a commit you make on the author's
-  behalf. Prevention lives upstream of this step: [`prove-milestone.md`](prove-milestone.md)
-  requires scratch manifests and experiments to be written under `/tmp` rather than as root-level
-  planning files, so a plan surfacing here means that rule was bypassed — worth saying out loud.
+  behalf. Prevention lives upstream of this step: write scratch manifests and experiments under
+  `/tmp` rather than as root-level planning files, so a plan surfacing here means that rule was
+  bypassed — worth saying out loud.
 
   **Stripping the plan file is only half the job.** Lean docstrings written alongside it almost
   always cite it (`see \`PLAN.md\` §3.K`), and those citations become dead the moment the file is

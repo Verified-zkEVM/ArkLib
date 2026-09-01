@@ -323,19 +323,6 @@ theorem hAlpha_eq_zero_of_evaluationTree {k m : ℕ} (hk : 2 ≤ k) (φF : ZMod 
   CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd hk tree (hAlpha Φ m₁ φF b s α w)
     hDistinct hVanishes
 
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H₀` vanishes. -/
-theorem hZeroML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    (hZeroML Φ m₀ φF b w).val = 0 ↔ hZero Φ m₀ φF b w = 0 := by
-  rw [hZeroML, MLE_eq_zero_iff, hZero_eq_zero_iff]
-
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H_α` vanishes. -/
-theorem hAlphaML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) :
-    (hAlphaML Φ m₁ φF b s α w).val = 0 ↔ hAlpha Φ m₁ φF b s α w = 0 := by
-  rw [hAlphaML, MLE_eq_zero_iff, hAlpha_eq_zero_iff]
-
 /-- The computable multilinear extension of the table `w̃` itself, the committed object the
 final-evaluation step opens. -/
 def cWTableMle (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :

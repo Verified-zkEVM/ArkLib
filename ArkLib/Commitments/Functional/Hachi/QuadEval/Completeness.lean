@@ -519,31 +519,4 @@ theorem quadEvalReduction_perfectCompleteness_balancedDigits
     (fun x e => balancedZmodDigit_valMinAbs_mem hb hqm hbq x e)
     (fun x e => balancedZmodDigit_valMinAbs_mem hb hqz hbq x e)
 
-set_option linter.unusedSectionVars false in
-/-- **Ball-relaxed completeness derived from the paper-exact one**, through the containment
-`paperRelOut ⊆ relOut` (`paperRelOut_subset_relOut`) and `Reduction.completeness_relOut_mono`.
-
-This is the honest direction's use of the box→ball containment, and it makes the direction explicit:
-paper-exact completeness *implies* the relaxed statement, never the other way round. Note the input
-relation stays `relInBox`, which is stronger than `relIn` — so this is not the same theorem as
-`quadEvalReduction_perfectCompleteness`, which reaches `relOut` from all of `relIn` but under the
-one-sided digit hypotheses. -/
-theorem quadEvalReduction_perfectCompleteness_relOut_of_balancedDigits
-    [∀ i, SampleableType ((qePSpec Φ dRows ω r).Challenge i)]
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
-      dRows)
-    {b : ℕ} (hb : 1 < b) (hqm : q ≤ b ^ messageDigits) (hqz : q ≤ b ^ zDigits)
-    (hbq : b ≤ q / 2)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
-    {βSq γ κ γ' : ℕ} (hγ : b / 2 ≤ γ') :
-    (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
-        (balancedZmodDigitDecomposition b messageDigits hb hqm)
-        (balancedZmodDigitDecomposition b zDigits hb hqz)).perfectCompleteness init impl
-      (relInBox Φ pp (b : ZMod q) βSq γ κ b)
-      (relOut (zDigits := zDigits) Φ pp (b : ZMod q) ω γ') :=
-  Reduction.completeness_relOut_mono init impl (paperRelOut_subset_relOut Φ pp (b : ZMod q) ω hγ)
-    (quadEvalReduction_perfectCompleteness_balancedDigits Φ init impl pp hb hqm hqz hbq
-      hmd hτ hdeg)
-
 end ArkLib.Lattices.Ajtai.InnerOuter
