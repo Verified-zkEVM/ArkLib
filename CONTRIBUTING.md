@@ -58,7 +58,14 @@ The description should include:
 
 ## Style and Naming Guidelines
 We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
-Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of these guidelines.
+The default validation command runs ArkLib's Lean-native source-policy gate. You can run its
+text-and-import checks directly with `lake exe lint-style`. The normal `lake build` also loads a
+Lean syntax-tree plugin that rejects linter suppressions; neither gate supports exceptions. The
+text gate is an independent, fail-closed backstop: forbidden `set_option` spellings are reserved
+across the entire production source, while `nolint` attribute heads are also reserved in active code
+and literal bodies. Put policy examples in `scripts/LintStyleFixtures`, which is outside the
+library-source closure; policy-like quoted identifiers and syntax quotations are reserved for the
+same reason.
 
 ### Naming Conventions
 
