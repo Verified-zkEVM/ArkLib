@@ -34,13 +34,6 @@ witness.
   Corollary 1 = source of Theorem 4.17.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -454,7 +447,7 @@ private theorem cs25_shell_power_bound
       simp only [pow_succ]
 
 private theorem epsCa_le_one
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≤ 1 := by
@@ -467,7 +460,7 @@ private theorem epsCa_le_one
 
 open scoped ProbabilityTheory in
 private theorem epsCa_eq_one_of_all_folds_close_not_joint
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (δ : NNReal) (u : Code.WordStack F (Fin 2) ι)
     (hjoint : ¬ Code.jointProximity C (u := u) δ)
@@ -598,8 +591,8 @@ private theorem nat_card_lt_pow_pred_of_weighted_bound
   exact (not_le_of_gt hsmall) hcontr
 
 private theorem not_jointProximity_of_second_row_far
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F]
     (C : Set (ι → F)) (u : Code.WordStack F (Fin 2) ι) (δ : NNReal)
     (hfar : ¬ Code.relDistFromCode (u 1) C ≤ (δ : ENNReal)) :
     ¬ Code.jointProximity C (u := u) δ := by
@@ -690,8 +683,8 @@ private def rsBoundaryWord {ι F : Type} [Monoid F] (domain : ι ↪ F) (k : ℕ
   fun i => domain i ^ k
 
 private theorem rsBoundaryWord_far
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hslack : k + f + 2 ≤ Fintype.card ι) :
     Code.distFromCode (rsBoundaryWord domain k)
@@ -738,11 +731,12 @@ private theorem rsBoundaryWord_far
   exact (not_le_of_gt hfar) (by exact_mod_cast hdist)
 
 private theorem rsCode_disjoint_supported_of_small
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [Nonempty ι]
+    [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
     Disjoint (ReedSolomon.code domain k) (Pi.spanSubset F (E : Set ι)) := by
+  classical
   rw [Submodule.disjoint_def]
   intro c hc hsupport
   by_contra hne
@@ -1031,10 +1025,11 @@ private noncomputable def rsFarWords
     ¬ Code.distFromCode w (ReedSolomon.code domain k : Set (ι → F)) ≤ f
 
 private theorem rsSupportedSpace_sup
-    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    {ι F : Type} [Finite ι] [DecidableEq ι]
     [Field F] (E E' : Finset ι) :
     Pi.spanSubset F (E : Set ι) ⊔ Pi.spanSubset F (E' : Set ι) =
       Pi.spanSubset F (((E ∪ E' : Finset ι) : Set ι)) := by
+  let := Fintype.ofFinite ι
   ext v
   rw [Submodule.mem_sup]
   constructor
@@ -2016,7 +2011,7 @@ private theorem rsFarWords_card_lt_of_entropy_rate_proof
 open scoped ProbabilityTheory in
 open scoped BigOperators in
 private theorem rs_epsCa_eq_one_of_entropy_rate_impl
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)

@@ -342,11 +342,10 @@ section AffineFinsetBridge
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-omit [Nonempty ι] [DecidableEq ι] in
-set_option linter.unusedFintypeInType false in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 /-- The AffineSubspace and Finset.image representations of an affine subspace
 have the same membership. -/
-private theorem affine_mem_iff_finset_mem {k : ℕ}
+private theorem affine_mem_iff_finset_mem [Finite F] {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F) (x : ι → F) :
     x ∈ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs : Set (ι → F)) ↔
     x ∈ (Submodule.span F (Finset.univ.image dirs : Set (ι → F)) : Set (ι → F)).toFinset.image
@@ -917,7 +916,7 @@ section Bucketing
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq ι] in
 /-- BCIKS20 §6.3 bucketing: given an affine subspace U whose elements are all δ-close
 to a linear code V, there exist a codeword v₀ and agreement set D' of size ≥ (1-δ)|ι|
 such that the basepoint agrees with v₀ on D' and every generator direction agrees with
