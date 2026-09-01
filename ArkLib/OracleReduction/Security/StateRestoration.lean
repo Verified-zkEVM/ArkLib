@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen, Alexander Hicks
+Authors: Quang Dao, Chung Thai Nguyen, Alexander Hicks, Michele Orrù
 -/
 
 import ArkLib.OracleReduction.Security.Basic
@@ -48,13 +48,13 @@ def StateRestoration.KnowledgeSoundness (oSpec : OracleSpec ι) (StmtIn WitOut :
 /-- **Coin-bearing** state-restoration soundness prover.
 
 `Prover.StateRestoration.Soundness` is deterministic given its oracle answers. A *compiled* prover —
-e.g. DSFS's `D2SAlgo^f`, which samples during lookahead/backtrack — needs **private coins**.
-We model those by appending an extra oracle `auxSpec` after the SR interface `oSpec + chal`,
-giving the
+e.g. DSFS's `D2SAlgo^f`, which samples during lookahead/backtrack — needs **private coins**. We
+model
+those by appending an extra oracle `auxSpec` after the SR interface `oSpec + chal`, giving the
 **Option A** order `(oSpec + srChallengeOracle …) + auxSpec`.  This is exactly the natural ambient
-of a compiled prover `D2SAlgo^f` (`oSpec`, then the challenge oracle, then its sampled coins),
-so the coins are answered at game time by a sampler `auxImpl` appended to the standard SR
-handler (see
+of a compiled prover `D2SAlgo^f` (`oSpec`, then the challenge oracle, then its sampled
+coins), so the
+coins are answered at game time by a sampler `auxImpl` appended to the standard SR handler (see
 `coinSRExperimentProb`); the verifier never sees `auxSpec`.  Taking `auxSpec := []ₒ` recovers
 `Soundness` up to `+ []ₒ`. -/
 abbrev StateRestoration.SoundnessWithCoins (oSpec : OracleSpec ι) (StmtIn : Type)
@@ -98,10 +98,15 @@ end OracleProver
 
 namespace Extractor
 
-/-- A straightline extractor for state-restoration.
+/-- A straightline extractor for state-restoration (CO25 Def 3.14): a *deterministic,
+trace-based* map — given the statement, the claimed output witness, the full transcript, the
+prover's query log (its state-restoration move-response trace), and the verifier's query log, it
+either outputs an input witness or fails.
 
-The extractor is partial: failure to output a witness must count as extraction failure in the
-knowledge-soundness game whenever the prover convinces the verifier. -/
+Following the paper, a straightline extractor is deterministic given the trace: it is a plain
+function, not an oracle algorithm.  The extractor is partial: failure to output a witness counts
+as extraction failure in the knowledge-soundness game whenever the prover convinces the
+verifier. -/
 def StateRestoration (oSpec : OracleSpec ι)
     (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
   StmtIn → -- input statement
@@ -109,7 +114,7 @@ def StateRestoration (oSpec : OracleSpec ι)
   pSpec.FullTranscript → -- transcript
   QueryLog (oSpec + (srChallengeOracle StmtIn pSpec)) → -- prover's query log
   QueryLog oSpec → -- verifier's query log
-  OptionT (OracleComp oSpec) WitIn -- an oracle computation that outputs an input witness
+  Option WitIn -- the extracted input witness, if any
 
 end Extractor
 
@@ -197,13 +202,11 @@ def coinSRExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srProver : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec) : ENNReal :=
-  let gameImpl : QueryImpl ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec)
-      (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp) :=
-    (impl.addLift srChallengeQueryImpl' :
-      QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-        (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl
   Pr[ fun | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn | _ => False
-    | do (simulateQ gameImpl <| (do
+    | do (simulateQ (((impl.addLift srChallengeQueryImpl' :
+            QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
+              (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl)
+          : QueryImpl _ (StateT _ ProbComp)) <| (do
       let ⟨transcript, stmtIn⟩ ← srSoundnessGameWithCoins srProver
       let stmtOut ← liftComp (verifier.run stmtIn transcript) _
       return (stmtIn, stmtOut))).run' (← init)
@@ -212,23 +215,29 @@ def coinSRExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
 /-- **Coin-bearing** state-restoration soundness: identical to `soundness`, but the prover may use
 private coins `auxSpec` (answered at game time by the sampler `auxImpl`). The challenge oracle is
 still answered by `srChallengeQueryImpl'` (the pre-sampled function in `init`), the IP's shared
-oracle by `impl`. Taking `auxSpec := []ₒ` recovers `soundness`. -/
+oracle by `impl`. Taking `auxSpec := []ₒ` recovers `soundness`.
+
+The error is quantified over the prover class carved out by `bound` (CO25's query-bounded
+provers: instantiate with `fun P => P.IsQueryBound b canQuery cost`); `bound := fun _ => True`
+recovers the unbounded statement. -/
 def soundnessWithCoins {κ : Type} (auxSpec : OracleSpec κ)
     (auxImpl : QueryImpl auxSpec ProbComp)
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (bound : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec → Prop)
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec,
+    bound srProver →
     coinSRExperimentProb (init := init) (impl := impl) auxImpl langIn langOut verifier srProver
       ≤ srSoundnessError
 
 /-- State-restoration knowledge soundness (w/ straightline extractor).
 
-The state-restoration extractor returns an `OptionT` computation, so it may fail. We run this
-`OptionT` layer explicitly and keep the resulting `Option WitIn` in the game output. Thus,
-extractor failure counts as a bad event whenever the state-restoration prover convinces the
-verifier, matching the standard knowledge-soundness experiment where the extractor is required
-to produce a valid witness on accepting executions.
+The experiment logs the prover's run (its state-restoration move-response trace) and the
+verifier's run, and hands both logs — together with the full transcript — to the trace-based
+extractor.  The extractor is partial, so extraction failure counts as a bad event whenever the
+state-restoration prover convinces the verifier, matching the standard knowledge-soundness
+experiment where the extractor is required to produce a valid witness on accepting executions.
 -/
 def knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -244,18 +253,23 @@ def knowledgeSoundness
     | do
       (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
-            let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
-            let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-            let extractedWitIn? ← liftM (srExtractor stmtIn witOut transcript default default).run
-            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)
+            let ⟨⟨stmtIn, messages, witOut⟩, tr⟩ ← (simulateQ loggingOracle srProver).run
+            let transcript ← messages.deriveTranscriptSR stmtIn
+            let ⟨stmtOut, tr_V⟩ ←
+              liftComp (simulateQ loggingOracle (verifier.run stmtIn transcript).run).run _
+            return (stmtIn, srExtractor stmtIn witOut transcript tr tr_V,
+              stmtOut, witOut))).run' (← init)
     ] ≤ srKnowledgeSoundnessError
 
 /-- Coin-bearing SR knowledge-soundness experiment (Option A) for a *fixed* extractor + coin-prover.
 The prover lives over the Option-A ambient `(oSpec + chal) + auxSpec` (coins answered by `auxImpl`,
-appended to the standard SR handler), but the *straightline* extractor and the verifier live over
-**base** `oSpec` (they make no coin queries) and are `liftComp`-ed into the game spec.
-This keeps the extractor a base-`oSpec` object — exactly what a downstream FS extractor (DSFS
-Construction 6.3) consumes. -/
+appended to the standard SR handler); the verifier lives over **base** `oSpec` (it makes no coin
+queries) and is `liftComp`-ed into the game spec.
+
+The experiment logs the prover's run and the verifier's run, and hands the *trace-based*
+extractor (CO25 Def 3.14) the full transcript, the `oSpec + chal` projection of the prover's log
+(the state-restoration move-response trace — the prover's private-coin queries are excluded),
+and the verifier's `oSpec`-query log. -/
 def coinKSExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
     (auxImpl : QueryImpl auxSpec ProbComp)
     (srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec)
@@ -263,31 +277,36 @@ def coinKSExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srProver : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
       auxSpec) : ENNReal :=
-  let gameImpl : QueryImpl ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec)
-      (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp) :=
-    (impl.addLift srChallengeQueryImpl' :
-      QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-        (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl
   Pr[ relationKSFailEvent relIn relOut
-    | do (simulateQ gameImpl <| (do
-          let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGameWithCoins srProver
-          let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-          let witInOpt ← liftComp (srExtractor stmtIn witOut transcript default default).run _
-          return (stmtIn, witInOpt, stmtOut, witOut))).run' (← init)
+    | do (simulateQ (((impl.addLift srChallengeQueryImpl' :
+              QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
+                (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl)
+            : QueryImpl _ (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)) <| (do
+          let ⟨⟨stmtIn, messages, witOut⟩, tr⟩ ← (simulateQ loggingOracle srProver).run
+          let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) stmtIn)
+            ((oSpec + fsChallengeOracle StmtIn pSpec) + auxSpec)
+          let ⟨stmtOut, tr_V⟩ ←
+            liftComp (simulateQ loggingOracle (verifier.run stmtIn transcript).run).run _
+          return (stmtIn, srExtractor stmtIn witOut transcript tr.fst tr_V,
+            stmtOut, witOut))).run' (← init)
     ]
 
 /-- **Coin-bearing** SR knowledge soundness (KS analog of `soundnessWithCoins`): there is a
 *straightline* (base-`oSpec`) extractor such that every coin-bearing SR-KS prover (over
-`oSpec + auxSpec`) has extraction-failure probability ≤ the error.  Taking `auxSpec := []ₒ` recovers
-`knowledgeSoundness`. -/
+`oSpec + auxSpec`) in the class carved out by `bound` has extraction-failure probability ≤ the
+error.  Taking `auxSpec := []ₒ` recovers `knowledgeSoundness`; `bound := fun _ => True` is the
+unbounded statement, `fun P => P.IsQueryBound b canQuery cost` the CO25 query-bounded one. -/
 def knowledgeSoundnessWithCoins {κ : Type} (auxSpec : OracleSpec κ)
     (auxImpl : QueryImpl auxSpec ProbComp)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (bound : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
+      auxSpec → Prop)
     (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
       auxSpec,
+    bound srProver →
     coinKSExperimentProb (init := init) (impl := impl) auxImpl srExtractor relIn relOut verifier
       srProver ≤ srKnowledgeSoundnessError
 
