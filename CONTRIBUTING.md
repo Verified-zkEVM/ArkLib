@@ -181,7 +181,26 @@ We aim for consistent representations of equivalent statements:
 
 ### Tactic Mode & Performance
 
-* **Squeezing Simp**: Do not "squeeze" terminal `simp` calls (replacing `simp` with `simp only [...]`) unless necessary for performance or stability. Un-squeezed `simp` is often more readable and robust to minor library changes.
+* **Expose the mathematical structure**: Prefer proofs whose intermediate statements and named
+  helper lemmas make the argument visible. If the same induction, extensionality argument, cast,
+  or normalization step recurs, look for a missing lemma in the module that owns the underlying
+  definition.
+* **Use automation on well-scoped goals**: `simp`, `aesop`, `grind`, `omega`, `linarith`, and
+  `nlinarith` are all acceptable. They are best used as terminal steps, or after an explicit
+  transformation that leaves a clear goal. Avoid using broad automation as an intermediate step
+  before a tactic that depends on a particular goal shape.
+* **Profile before rewriting for speed**: For a slow proof, use Lean's profiler to locate the
+  expensive declaration and tactic. Then consider narrower imports, fewer local hypotheses,
+  `simp only`, `grind only`, `linarith only`, or `nlinarith only`, or replace repeated search with
+  a reusable structural lemma. Do not perform repository-wide mechanical tactic substitutions
+  without measured evidence.
+* **Do not squeeze stable terminal `simp` calls by default**: Replacing a short terminal `simp`
+  with a long `simp only [...]` list can obscure the important lemmas and make renames more
+  disruptive. Squeeze when it improves stability or produces a measured performance benefit.
+  This follows Mathlib's guidance on
+  [squeezing simp calls](https://leanprover-community.github.io/contribute/style.html#squeezing-simp-calls),
+  [nonterminal simplification](https://leanprover-community.github.io/extras/simp.html#non-terminal-simps),
+  and [profiling slow proofs](https://leanprover-community.github.io/extras/speedup.html).
 * **Comments**: Use `--` for inline comments and `/- ... -/` for block comments.
 
 ### Transparency and API Design

@@ -401,8 +401,8 @@ lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
 lemma eval_property_of_folding_polynomial_x_k {f : F[X]} {k : ℕ} {x : F} :
     ((foldingPolynomial (X ^ k) f).map (Polynomial.evalRingHom (x ^ k))).eval x =
     f.eval x := by
-  have := eval_property_of_folding_polynomial (f := f) (q := X ^ k) (x := x)
-  aesop
+  simpa only [Polynomial.eval_X_pow] using
+    (eval_property_of_folding_polynomial (f := f) (q := X ^ k) (x := x))
 
 /-- The degree of `foldingPolynomial` is less than `q.degree` in the second variable,
   when `q` is not a constant polynomial.
