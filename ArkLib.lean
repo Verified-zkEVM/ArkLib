@@ -139,6 +139,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.WeightedAgreement
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy.Counting
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
