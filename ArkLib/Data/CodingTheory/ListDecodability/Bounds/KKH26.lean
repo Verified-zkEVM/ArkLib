@@ -330,6 +330,10 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c
     set P : F[X] := (∏ α ∈ S, (X - C α)) - ∏ α ∈ T, (X - C α) with hP
     have hPne : P ≠ 0 := sub_ne_zero.mpr hprod_ne
     -- ... their difference has degree `< k̂` (both are monic of degree `k̂`), ...
+    have hmonicS : (∏ α ∈ S, (X - C α)).Monic :=
+      Polynomial.monic_prod_of_monic _ _ fun α _ ↦ Polynomial.monic_X_sub_C α
+    have hmonicT : (∏ α ∈ T, (X - C α)).Monic :=
+      Polynomial.monic_prod_of_monic _ _ fun α _ ↦ Polynomial.monic_X_sub_C α
     have hdegS : (∏ α ∈ S, (X - C α)).degree = (khat : WithBot ℕ) := by
       rw [Polynomial.degree_prod]
       simp [Polynomial.degree_X_sub_C, hScard]
@@ -339,11 +343,8 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c
     have hPdeg : P.natDegree < khat := by
       rw [Polynomial.natDegree_lt_iff_degree_lt hPne]
       refine lt_of_lt_of_eq (Polynomial.degree_sub_lt_left (hdegS.trans hdegT.symm) ?_ ?_) hdegS
-      · exact (Polynomial.monic_prod_of_monic _ _
-          fun α _ => Polynomial.monic_X_sub_C α).ne_zero
-      · rw [(Polynomial.monic_prod_of_monic _ _ fun α _ =>
-              Polynomial.monic_X_sub_C α).leadingCoeff,
-          (Polynomial.monic_prod_of_monic _ _ fun α _ => Polynomial.monic_X_sub_C α).leadingCoeff]
+      · exact hmonicS.ne_zero
+      · rw [hmonicS.leadingCoeff, hmonicT.leadingCoeff]
     -- ... yet `P(x^d)` vanishes on all `n` domain points: contradiction with `k̂ ≤ h`.
     have hQzero : ∀ i, (P.comp (X ^ d)).eval (domain i) = 0 := by
       intro i
