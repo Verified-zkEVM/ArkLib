@@ -210,7 +210,6 @@ def iteratedSumcheckKStateProp (i : Fin ℓ') (m : Fin (2 + 1))
       ⟨⟨0, Nat.lt_of_succ_le hm⟩, by simp [pSpecSumcheckRound]; rfl⟩
     let h_i : L⦃≤ 2⦄[X] := msgsUpTo i_msg1
     h_i
-
   let get_rᵢ' := fun (m: Fin (2 + 1)) (tr: Transcript m (pSpecSumcheckRound L)) (hm: 2 ≤ m.val) =>
     let ⟨msgsUpTo, chalsUpTo⟩ := Transcript.equivMessagesChallenges (k := m)
       (pSpec := pSpecSumcheckRound L) tr
@@ -221,7 +220,6 @@ def iteratedSumcheckKStateProp (i : Fin ℓ') (m : Fin (2 + 1))
       ⟨⟨1, Nat.lt_of_succ_le hm⟩, by simp only [Nat.reduceAdd]; rfl⟩
     let r_i' : L := chalsUpTo i_msg2
     r_i'
-
   match m with
   | ⟨0, _⟩ => -- equiv s relIn
     RingSwitching.masterKStateProp κ L K P ℓ ℓ' h_l
@@ -272,35 +270,31 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
     · -- m = 0: succ = 1, castSucc = 0
       unfold iteratedSumcheckKStateProp
       simp only [masterKStateProp, iteratedSumcheckRbrExtractor, true_and]
-      simp only [Fin.succ_mk, Fin.castSucc_mk, Fin.castAdd_mk]
+      simp only [Fin.succ_mk, Fin.castSucc_mk]
       tauto
     · -- m = 1: dir 1 = V_to_P, contradicts hDir
-      simp [pSpecSumcheckRound] at hDir
-  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut => by
-    intro h_relOut
-    simp at h_relOut
-    rcases h_relOut with ⟨stmtOut, ⟨oStmtOut, h_conj⟩⟩
-    have h_simulateQ := h_conj.1
-    have h_SumcheckStepRelOut := h_conj.2
-    set witLast := (iteratedSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn i).extractOut
-      ⟨stmtLast, oStmtLast⟩ tr witOut
-    simp only [Fin.reduceLast, Fin.isValue]
-    -- ⊢ iteratedSumcheckKStateProp 𝔽q β 2 tr stmtLast witLast oStmtLast
-    -- TODO : prove this via the relations between stmtLast & stmtOut,
-      -- witLast & witOut, oStmtLast & oStmtOut
+      simp at hDir
+  toFun_full := fun _ _ _ _ => by
     sorry
 
+section
+local instance : DecidableEq K := Classical.decEq K
+
+omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
 theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [IsDomain L] (i : Fin ℓ') :
     (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).rbrKnowledgeSoundness init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.castSucc)
       (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.succ)
       (fun j => roundKnowledgeError L ℓ' i) := by
+  classical
   use fun _ => SumcheckWitness L ℓ' i.castSucc
   use iteratedSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn i
   use iteratedSumcheckKnowledgeStateFunction κ L K P ℓ ℓ' h_l aOStmtIn i
   intro stmtIn witIn prover j
   sorry
+
+end
 
 end IteratedSumcheckStep
 
@@ -386,6 +380,7 @@ noncomputable def finalSumcheckOracleReduction :
   prover := finalSumcheckProver κ L K P ℓ ℓ' aOStmtIn
   verifier := finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn
 
+omit [Fintype L] [Fintype K] [DecidableEq K] in
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   (init : ProbComp σ)
@@ -441,7 +436,6 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
     let i_msg0 : tr_so_far.MessageIdx := ⟨⟨0, by omega⟩, rfl⟩
     let c : L := (ProtocolSpec.Transcript.equivMessagesChallenges (k := 1)
       (pSpec := pSpecFinalSumcheck L) tr).1 i_msg0
-
     let stmtOut : MLPEvalStatement L ℓ' := {
       t_eval_point := stmt.challenges,
       original_claim := c
@@ -450,7 +444,6 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
       let eq_tilde_eval : L := compute_final_eq_value κ L K P ℓ ℓ' h_l
         stmt.ctx.t_eval_point stmt.challenges stmt.ctx.r_batching
       stmt.sumcheck_target = eq_tilde_eval * c
-
     let final_eval : Prop := witMid.t'.val.eval stmt.challenges = c
     sumcheckFinalLocalCheck ∧ final_eval
     ∧ aOStmtIn.initialCompatibility ⟨witMid.t', oStmt⟩
@@ -474,18 +467,25 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
   toFun_full := fun stmt tr witOut h => by
     sorry
 
+section
+local instance : DecidableEq K := Classical.decEq K
+
+omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the final sumcheck step -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [Fintype L] [IsDomain L] {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [IsDomain L] {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).rbrKnowledgeSoundness init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
       (relOut := aOStmtIn.toRelInput)
       (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) := by
+  classical
   use (fun _ => SumcheckWitness L ℓ' (Fin.last ℓ'))
   use finalSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn
   use finalSumcheckKnowledgeStateFunction κ L K P ℓ ℓ' h_l aOStmtIn init impl
   intro stmtIn witIn prover j
   sorry
+
+end
 
 end FinalSumcheckStep
 
@@ -541,6 +541,7 @@ def coreInteractionOracleReduction :=
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
+omit [Fintype L] [Fintype K] [DecidableEq K] in
 /-- Perfect completeness for large-field reduction (Sumcheck ++ FinalSum) -/
 theorem coreInteraction_perfectCompleteness :
   OracleReduction.perfectCompleteness
@@ -594,6 +595,10 @@ def coreInteractionRbrKnowledgeError (j : (pSpecCoreInteraction L ℓ').Challeng
 
 -- TODO: iteratedSumcheckLoop_rbrKnowledgeSoundness
 
+section
+local instance : DecidableEq K := Classical.decEq K
+
+omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum) -/
 theorem coreInteraction_rbrKnowledgeSoundness [IsDomain L] :
   OracleVerifier.rbrKnowledgeSoundness
@@ -609,7 +614,11 @@ theorem coreInteraction_rbrKnowledgeSoundness [IsDomain L] :
     (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
     (relOut := aOStmtIn.toRelInput)
     (rbrKnowledgeError := coreInteractionRbrKnowledgeError (L:=L) (ℓ':=ℓ')) := by
+  classical
   sorry
+
+
+end
 
 end LargeFieldReduction
 end
