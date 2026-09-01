@@ -97,7 +97,8 @@ def symm (eqv : Equiv pSpec pSpec') : Equiv pSpec' pSpec where
   dir_eq := fun i => by simp [eqv.dir_eq]
   typeEquiv := fun i => (eqv.typeEquiv (Fin.cast (eqv.round_eq.symm) i)).symm
 
-/-- Compose protocol specification equivalences (spelled `equivTrans` because `trans` is reserved). -/
+/-- Compose protocol specification equivalences (spelled `equivTrans` because `trans` is
+reserved). -/
 def equivTrans (eqv : Equiv pSpec pSpec') (eqv' : Equiv pSpec' pSpec'') : Equiv pSpec pSpec'' where
   round_eq := eqv.round_eq.trans eqv'.round_eq
   dir_eq := fun i => by simp [eqv.dir_eq, eqv'.dir_eq]

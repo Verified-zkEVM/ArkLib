@@ -168,13 +168,14 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
 
 omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [IsDomain L] :
+theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
     OracleProof.rbrKnowledgeSoundness
       (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (init := init)
       (impl := impl)
       (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
       (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   let _ := Fintype.ofFinite K
   classical
   unfold fullOracleVerifier fullRbrKnowledgeError

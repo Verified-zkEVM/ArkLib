@@ -252,7 +252,7 @@ lemma toOutCodewordsCount_succ_eq (i : Fin ℓ) :
     simp only [left_eq_ite_iff, Nat.add_eq_left, one_ne_zero, imp_false, Decidable.not_not]
     exact hv
   · rw [isCommitmentRound]
-    simp [ne_eq, hv, ↓reduceIte]
+    simp only [ne_eq, hv, ↓reduceIte]
     unfold toOutCodewordsCount
     have h_i_lt_ℓ: i.castSucc.val < ℓ := by
       change i.val < ℓ
@@ -543,7 +543,6 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
     }
   -- Run Berlekamp-Welch decoder to get P(X) in monomial basis
   let berlekamp_welch_result: Option L[X] := BerlekampWelch.decoder e k ωs f_vals
-
   match berlekamp_welch_result with
   | none => exact none -- Decoder failed
   | some P =>
@@ -587,7 +586,6 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
           have : ℓ < r := by omega
           exact Nat.le_of_lt this
         some (AdditiveNTT.monomialToNovelCoeffs 𝔽q β (ℓ - i.val) (by omega) monomial_coeffs)
-
       match novel_coeffs with
       | none => exact none
       | some t_coeffs =>
@@ -598,7 +596,6 @@ noncomputable def extractMLP (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_ra
           let w_index : Fin (2^(ℓ - i.val)) := Nat.binaryFinMapToNat
             (n:=ℓ - i.val) (m:=w) (h_binary:=by intro j; simp only [Nat.cast_id]; omega)
           t_coeffs w_index
-
         let t_multilinear_mv := MvPolynomial.MLE hypercube_evals
         exact some ⟨t_multilinear_mv, MLE_mem_restrictDegree hypercube_evals⟩
 
@@ -1020,24 +1017,20 @@ def finalNonDoomedFoldingProp {h_le : ϑ ≤ ℓ}
     exact isCompliant (i := ⟨k, by rw [h_k]; exact rounds_sub_steps_lt⟩) (steps := ϑ)
       (h_i_add_steps := by simp only; exact Nat.le_of_eq h_k_add_ϑ) (f_i := f_k)
       (f_i_plus_steps := by simp only [h_k_add_ϑ]; exact f_ℓ) (challenges := challenges)
-
   -- If oracleFoldingConsistency is true, then we can extract the original
     -- well-formed poly `t` and derive witnesses that satisfy the relations at any state
   let oracleFoldingConsistency: Prop :=
     (oracleFoldingConsistencyProp 𝔽q β (i := Fin.last ℓ)
       (challenges := stmt.challenges) (oStmt := oStmt))
     ∧ finalOracleFoldingConsistency
-
   let finalFoldingBadEvent : Prop :=
     Binius.BinaryBasefold.foldingBadEvent (i := ⟨k, by rw [h_k]; exact rounds_sub_steps_lt⟩)
       (steps := ϑ) (h_i_add_steps := by simp only; exact Nat.le_of_eq h_k_add_ϑ) (f_i := f_k)
       (challenges := challenges)
-
   -- All bad folding events are fully formed across the sum-check rounds,
     -- no new bad event at the final sumcheck step
   let foldingBadEventExists : Prop := badEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
     (oStmt := oStmt) (challenges := stmt.challenges)
-
   oracleFoldingConsistency ∨ foldingBadEventExists
 
 /-- Input relation for round i: R_i must hold at the beginning of round i -/

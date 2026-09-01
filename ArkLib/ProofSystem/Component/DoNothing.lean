@@ -95,7 +95,7 @@ theorem oracleReduction_perfectCompleteness :
 
 /-- The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound. -/
 @[simp]
-theorem oracleVerifier_rbrKnowledgeSoundness [DecidablePred (· ∈ rel)] :
+theorem oracleVerifier_rbrKnowledgeSoundness :
     (oracleVerifier oSpec Statement OStatement).rbrKnowledgeSoundness init impl rel rel 0 :=
   OracleVerifier.id_rbrKnowledgeSoundness init impl
 

@@ -282,11 +282,12 @@ local instance : DecidableEq K := Classical.decEq K
 
 omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
-theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [IsDomain L] (i : Fin ℓ') :
+theorem iteratedSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] (i : Fin ℓ') :
     (iteratedSumcheckOracleVerifier κ L K P ℓ ℓ' aOStmtIn i).rbrKnowledgeSoundness init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.castSucc)
       (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i.succ)
       (fun j => roundKnowledgeError L ℓ' i) := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   classical
   use fun _ => SumcheckWitness L ℓ' i.castSucc
   use iteratedSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn i
@@ -472,12 +473,13 @@ local instance : DecidableEq K := Classical.decEq K
 
 omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the final sumcheck step -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [IsDomain L] {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).rbrKnowledgeSoundness init impl
       (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ'))
       (relOut := aOStmtIn.toRelInput)
       (rbrKnowledgeError := fun _ => finalSumcheckRbrKnowledgeError (L := L)) := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   classical
   use (fun _ => SumcheckWitness L ℓ' (Fin.last ℓ'))
   use finalSumcheckRbrExtractor κ L K P ℓ ℓ' h_l aOStmtIn
@@ -600,7 +602,7 @@ local instance : DecidableEq K := Classical.decEq K
 
 omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum) -/
-theorem coreInteraction_rbrKnowledgeSoundness [IsDomain L] :
+theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L] :
   OracleVerifier.rbrKnowledgeSoundness
     (verifier := coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0)
@@ -614,6 +616,7 @@ theorem coreInteraction_rbrKnowledgeSoundness [IsDomain L] :
     (relIn := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
     (relOut := aOStmtIn.toRelInput)
     (rbrKnowledgeError := coreInteractionRbrKnowledgeError (L:=L) (ℓ':=ℓ')) := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
   classical
   sorry
 
