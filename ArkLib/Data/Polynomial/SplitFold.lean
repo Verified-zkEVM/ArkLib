@@ -122,7 +122,10 @@ private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m
   · aesop (add safe [cases Fin, (by omega)])
 
 private lemma splitNth_eq_splitNthNoncomputable {n : ℕ} {f : 𝔽[X]} :
-  splitNth f n = splitNthNoncomputable f n := by aesop
+  splitNth f n = splitNthNoncomputable f n := by
+  funext i
+  ext m
+  rw [splitNth_coeff, splitNthNoncomputable_coeff]
 
 /-- The key identity `splitNth` satisfies: `f` is recovered from its `n` components. -/
 lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
@@ -224,7 +227,9 @@ theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
     {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
   FoldingPolynomial.foldingPolynomial (X ^ n)
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) =
-      ∑ i, Polynomial.X ^ i.val * C (u i) := by simp_all
+      ∑ i, Polynomial.X ^ i.val * C (u i) := by
+  rw [folding_polynomial_eq_sum_splitNth]
+  simp only [splitNth_of_sum_comp, mul_comm]
 
 /-- `polyFold` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
     polynomial `∑ i, r^i * u i`. -/
@@ -234,11 +239,8 @@ theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
   FoldingPolynomial.polyFold
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) n r =
       ∑ i, r ^ i.val • (u i) := by
-  aesop
-    (add simp [FoldingPolynomial.polyFold,
-               Polynomial.eval_finsetSum,
-               Polynomial.smul_eq_C_mul])
-    (add safe (by grind))
+  rw [polyFold_eq_sum_of_splitNth]
+  simp only [splitNth_of_sum_comp, Polynomial.smul_eq_C_mul]
 
 /--
 Lemma bridges the coefficient-level identity `eq_sum_splitNth` and
