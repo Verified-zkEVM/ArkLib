@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen, Alexander Hicks, Michele Orrù
 -/
 
 import ArkLib.OracleReduction.Security.Basic
@@ -44,6 +44,26 @@ type. -/
 def StateRestoration.KnowledgeSoundness (oSpec : OracleSpec ι) (StmtIn WitOut : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) :=
   OracleComp (oSpec + (srChallengeOracle StmtIn pSpec)) (StmtIn × pSpec.Messages × WitOut)
+
+/-- **Coin-bearing** state-restoration soundness prover.
+
+`Prover.StateRestoration.Soundness` is deterministic given its oracle answers. A *compiled* prover —
+e.g. DSFS's `D2SAlgo^f`, which samples during lookahead/backtrack — needs **private coins**. We
+model those by appending `auxSpec` to the SR interface, giving the oracle layout
+`(oSpec + srChallengeOracle …) + auxSpec`: base queries, challenge queries, then private coins.
+The coins are answered by a sampler `auxImpl` appended to the standard SR handler (see
+`coinSRExperimentProb`); the verifier never sees `auxSpec`.  Taking `auxSpec := []ₒ` recovers
+`Soundness` up to `+ []ₒ`. -/
+abbrev StateRestoration.SoundnessWithCoins (oSpec : OracleSpec ι) (StmtIn : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n) {κ : Type} (auxSpec : OracleSpec κ) :=
+  OracleComp ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec) (StmtIn × pSpec.Messages)
+
+/-- **Coin-bearing** state-restoration knowledge-soundness prover — the KS analog of
+`SoundnessWithCoins`, additionally outputting a witness. The oracle layout is
+`(oSpec + srChallengeOracle …) + auxSpec`. -/
+abbrev StateRestoration.KnowledgeSoundnessWithCoins (oSpec : OracleSpec ι) (StmtIn WitOut : Type)
+    {n : ℕ} (pSpec : ProtocolSpec n) {κ : Type} (auxSpec : OracleSpec κ) :=
+  OracleComp ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec) (StmtIn × pSpec.Messages × WitOut)
 
 end Prover
 
@@ -110,6 +130,18 @@ def srSoundnessGame (P : Prover.StateRestoration.Soundness oSpec StmtIn pSpec) :
   let transcript ← messages.deriveTranscriptSR stmtIn
   return ⟨transcript, stmtIn⟩
 
+/-- The state-restoration soundness game for a **coin-bearing** prover over
+`(oSpec + chal) + auxSpec`. Identical to `srSoundnessGame`, but the prover may sample private coins
+`auxSpec`; the transcript derivation (over `oSpec + chal`) is lifted into the coin-extended spec. -/
+def srSoundnessGameWithCoins {κ : Type} {auxSpec : OracleSpec κ}
+    (P : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec) :
+    OracleComp ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec)
+      (pSpec.FullTranscript × StmtIn) := do
+  let ⟨stmtIn, messages⟩ ← P
+  let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) stmtIn)
+    ((oSpec + fsChallengeOracle StmtIn pSpec) + auxSpec)
+  return ⟨transcript, stmtIn⟩
+
 /-- The state-restoration game for knowledge soundness. Basically a wrapper around the
     state-restoration prover (for knowledge soundness) to derive the full transcript from the
     messages output by the prover, with the challenges computed from the state-restoration oracle.
@@ -120,6 +152,17 @@ def srKnowledgeSoundnessGame
       (pSpec.FullTranscript × StmtIn × WitOut) := do
   let ⟨stmtIn, messages, witOut⟩ ← P
   let transcript ← messages.deriveTranscriptSR stmtIn
+  return ⟨transcript, stmtIn, witOut⟩
+
+/-- The state-restoration knowledge-soundness game for a **coin-bearing** prover over
+`(oSpec + chal) + auxSpec`. KS analog of `srSoundnessGameWithCoins`. -/
+def srKnowledgeSoundnessGameWithCoins {κ : Type} {auxSpec : OracleSpec κ}
+    (P : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec auxSpec) :
+    OracleComp ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec)
+      (pSpec.FullTranscript × StmtIn × WitOut) := do
+  let ⟨stmtIn, messages, witOut⟩ ← P
+  let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) stmtIn)
+    ((oSpec + fsChallengeOracle StmtIn pSpec) + auxSpec)
   return ⟨transcript, stmtIn, witOut⟩
 
 namespace Verifier
@@ -139,6 +182,46 @@ def soundness
     let stmtOut ← liftComp (verifier.run stmtIn transcript) _
     return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
+
+/-- The false-acceptance probability of the coin-bearing SR experiment for a *fixed*
+prover `srProver`.  The handler is the standard SR handler `impl.addLift srChallengeQueryImpl'` with
+the coin sampler appended on the outside (`… .addLift auxImpl`) — answering `oSpec` by `impl`, the
+pre-sampled challenge oracle by `srChallengeQueryImpl'`, the prover's private coins `auxSpec` by
+`auxImpl`.  The IP verifier lives over base `oSpec` and is lifted into the game spec (it never sees
+the coins).  Taking `auxSpec := []ₒ` recovers `srExperimentProb` up to `+ []ₒ`. -/
+def coinSRExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srProver : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec) : ENNReal :=
+  Pr[ fun | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn | _ => False
+    | do (simulateQ (((impl.addLift srChallengeQueryImpl' :
+            QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
+              (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl) :
+          QueryImpl _ (StateT _ ProbComp)) <| (do
+      let ⟨transcript, stmtIn⟩ ← srSoundnessGameWithCoins srProver
+      let stmtOut ← liftComp (verifier.run stmtIn transcript) _
+      return (stmtIn, stmtOut))).run' (← init)
+  ]
+
+/-- **Coin-bearing** state-restoration soundness: identical to `soundness`, but the prover may use
+private coins `auxSpec` (answered at game time by the sampler `auxImpl`). The challenge oracle is
+still answered by `srChallengeQueryImpl'` (the pre-sampled function in `init`), the IP's shared
+oracle by `impl`. Taking `auxSpec := []ₒ` recovers `soundness`.
+
+The error is quantified over the prover class carved out by `bound` (CO25's query-bounded
+provers: instantiate with `fun P => P.IsQueryBound b canQuery cost`); `bound := fun _ => True`
+recovers the unbounded statement. -/
+def soundnessWithCoins {κ : Type} (auxSpec : OracleSpec κ)
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (bound : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec → Prop)
+    (srSoundnessError : ENNReal) : Prop :=
+  ∀ srProver : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec,
+    bound srProver →
+    coinSRExperimentProb (init := init) (impl := impl) auxImpl langIn langOut verifier srProver
+      ≤ srSoundnessError
 
 /-- State-restoration knowledge soundness (w/ straightline extractor).
 
@@ -162,11 +245,73 @@ def knowledgeSoundness
     | do
       (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
-            let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
-            let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-            let extractedWitIn? ← liftM (srExtractor stmtIn witOut transcript default default).run
-            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)
+            let ⟨⟨stmtIn, messages, witOut⟩, tr⟩ ← (simulateQ loggingOracle srProver).run
+            let transcript ← messages.deriveTranscriptSR stmtIn
+            let ⟨stmtOut, tr_V⟩ ←
+              liftComp (simulateQ loggingOracle (verifier.run stmtIn transcript).run).run _
+            let witIn? ← liftComp (srExtractor stmtIn witOut transcript tr tr_V).run _
+            return (stmtIn, witIn?,
+              stmtOut, witOut))).run' (← init)
     ] ≤ srKnowledgeSoundnessError
+
+/-- Coin-bearing SR knowledge-soundness experiment for a *fixed* extractor and coin-bearing prover.
+The prover uses `(oSpec + chal) + auxSpec` (coins answered by `auxImpl`,
+appended to the standard SR handler); the verifier lives over **base** `oSpec` (it makes no coin
+queries) and is `liftComp`-ed into the game spec.
+
+The experiment logs the prover's run and the verifier's run, and hands the *trace-based*
+extractor (CO25 Def 3.14) the full transcript, the `oSpec + chal` projection of the prover's log
+(the state-restoration move-response trace — the prover's private-coin queries are excluded),
+and the verifier's `oSpec`-query log. -/
+def coinKSExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srProver : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
+      auxSpec) : ENNReal :=
+  Pr[ relationKSFailEvent relIn relOut
+    | do (simulateQ (((impl.addLift srChallengeQueryImpl' :
+              QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
+                (StateT
+                  (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl) :
+            QueryImpl _ (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)) <| (do
+          let ⟨⟨stmtIn, messages, witOut⟩, tr⟩ ← (simulateQ loggingOracle srProver).run
+          let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) stmtIn)
+            ((oSpec + fsChallengeOracle StmtIn pSpec) + auxSpec)
+          let ⟨stmtOut, tr_V⟩ ←
+            liftComp (simulateQ loggingOracle (verifier.run stmtIn transcript).run).run _
+          let witIn? ← liftComp (srExtractor stmtIn witOut transcript tr.fst tr_V).run _
+          return (stmtIn, witIn?,
+            stmtOut, witOut))).run' (← init)
+    ]
+
+/-- State-restoration KS for one supplied extractor. Quantify this extractor before a
+budget family to express uniform security; the underlying experiment is unchanged. -/
+def knowledgeSoundnessWithCoinsWithExtractor {κ : Type} (auxSpec : OracleSpec κ)
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec)
+    (bound : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
+      auxSpec → Prop)
+    (srKnowledgeSoundnessError : ENNReal) : Prop :=
+  ∀ srProver : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
+      auxSpec,
+    bound srProver →
+    coinKSExperimentProb (init := init) (impl := impl) auxImpl srExtractor relIn relOut verifier
+      srProver ≤ srKnowledgeSoundnessError
+
+/-- One SR extractor for an entire bound/error family, chosen before its budget index. -/
+def knowledgeSoundnessWithCoins {κ B : Type} (auxSpec : OracleSpec κ)
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (bound : B → Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut
+      pSpec auxSpec → Prop)
+    (error : B → ENNReal) : Prop :=
+  ∃ extractor, ∀ b, knowledgeSoundnessWithCoinsWithExtractor init impl auxSpec auxImpl
+    relIn relOut verifier extractor (bound b) (error b)
 
 end StateRestoration
 

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.Execution
@@ -404,6 +404,333 @@ class Extractor.Straightline.IsMonotone
     -- ≤ Pr[extraction game succeeds on proveQueryLog₂, verifyQueryLog₂]
 
 end Verifier
+
+/-! ## Adaptive, query-bounded security (generic)
+
+`Verifier.soundness` / `Verifier.knowledgeSoundness` above are *selective* (statement fixed upfront,
+`∀ stmtIn ∉ langIn`) and *unbounded* (one error bounds **every** prover).  Non-interactive arguments
+in the ideal-permutation model (CO25 §6) instead need:
+
+- **Adaptive** soundness: the prover *outputs* its statement and the break event is read off that
+  output (`stmt ∉ langIn ∧ accept`).
+- **Query-bounded** error: the error depends on the prover's query budget (the Key-Lemma `η★` term
+  grows with the number of permutation/hash queries), so the intended bound restricts provers
+  through a `bound` predicate.
+
+The `Verifier.adaptiveNARG*` definitions below state this directly — `∀ P, bound P → Pr[evt | game
+P] ≤ error` (soundness) and `∃ extractor, ∀ P, bound P → Pr[evt | game extractor P] ≤ error` (KS),
+with the straightline extractor type written explicitly (its `auxSpecE` access is a `P`-independent
+helper/sampler, never the prover).  `bound := fun _ => True` recovers the unbounded form; DSFS
+instantiates these as the conclusions of `duplex_sponge_fiat_shamir_soundness` /
+`duplex_sponge_fiat_shamir_knowledge_soundness`.
+
+**Non-rewinding interface.** Extraction receives the two logs, not a prover handle.
+Its auxiliary handler is fixed independently of the malicious prover. The coin-free experiment
+runs extraction through that handler separately; the `WithCoins` experiment additionally permits
+base-oracle queries in the final prover/verifier state. Neither interface supplies an operation
+for invoking or rewinding the malicious prover. This is not a determinism or running-time claim. -/
+
+/-! ### Concrete non-interactive (NARG) experiments — CO25 Def 3.5 / Def 3.6
+
+The definitions below follow CO25's experiment structure, with the KS extractor interface
+specified below: sample the oracle, run the adaptive malicious prover for `(x, π)`, run the
+verifier, and evaluate the event on the resulting tuple. These experiments describe a
+**non-interactive argument in an oracle model**, then phrase soundness / KS as the `∀ P …` / `∃
+extractor, ∀ P …` statements (so the experiment lives in the library, not the call site).
+
+**Oracle access (`P̃^f`, `V^f`).** `oSpec` is the public oracle interface. `init` samples the
+initial state and `impl` answers prover and verifier queries in one shared stateful execution.
+The types also permit randomized answers and state updates; fixed-oracle semantics require a
+suitable handler, such as the concrete sampled-table handlers used by DSFS.
+When the prover's oracle interface is
+larger than the verifier's (DSFS: prover has `p⁻¹`, verifier does not), take `oSpec` to be the
+*prover's* spec and lift `verify` into it.
+
+Modeling: the decision bit `V^f(x,π)=1` generalizes to "verifier produces `stmtOut ∈ langOut`"
+(`langOut = {true}` recovers Boolean); the prover is the flat adaptive `OracleComp oSpec
+(StmtIn × Proof)` (it *outputs* `x`); for KS the experiment logs both phases and feeds
+`(x, π, tr_P, tr_V)` to an extractor with a separate auxiliary oracle. -/
+section AdaptiveNARG
+
+/-! ### Knowledge-soundness contract boundary
+
+Extractors receive both query logs and may use randomness and oracle queries. This differs
+from the deterministic, prover-trace-only interface of CO25 Definition 3.6. The extractor
+has no prover handle and cannot rewind it. No running-time guarantee is formalized here.
+
+The `WithExtractor` predicates for NARG knowledge soundness
+take an explicit extractor. Quantify it before a budget family to express uniform security.
+The canonical predicates choose one extractor before every index of a supplied bound/error
+family. The `WithExtractor` predicates above support transporting a supplied extractor.
+-/
+
+/-- **CO25 Def 3.5 experiment** — the adaptive NARG soundness game in an oracle model: sample the
+oracle handler (`init`/`impl`), run the adaptive prover `P` for `(x, π)`, run the verifier
+`verify x π`, and return `(x, stmtOut)` (the whole run `none`-aborts when the verifier rejects).
+
+The inner computation is written in the **`OptionT`/abort** monad so that verifier rejection is
+modeled by `OptionT` abort (the framework convention, matching `OracleVerifier` and the
+duplex-sponge `dsfsGame`) rather than an in-band `Option` value — this keeps the structure identical
+to the games it is compared against (e.g. `dsfsNargSoundnessExp_eq_dsfsGame`).  The `ProbComp`
+result is unchanged (`OptionT (OracleComp oSpec) α` reduces to `OracleComp oSpec (Option α)`). -/
+def adaptiveNARGSoundnessExp {ι : Type} {oSpec : OracleSpec ι} {σ StmtIn Proof StmtOut : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (P : OracleComp oSpec (StmtIn × Proof)) :
+    ProbComp (Option (StmtIn × StmtOut)) := do
+  (simulateQ impl (do
+    let ⟨x, π⟩ ← P
+    let stmtOut ← verifier.verify x (Fin.cons π (fun i => i.elim0))
+    return (x, stmtOut) : OptionT (OracleComp oSpec) (StmtIn × StmtOut))).run' (← init)
+
+/-- **CO25 Def 3.5 false-acceptance event** on the NARG soundness experiment output
+`Option (StmtIn × StmtOut)`: the prover output a false statement (`x ∉ langIn`) the verifier
+accepted into `stmtOut ∈ langOut`.  A *named* event (not an inline `match`) so the same term is
+shared between
+`adaptiveNARGSoundness` and downstream game-match lemmas (e.g. DSFS
+`dsfsNargSoundnessExp_eq_dsfsGame`) — inline `match` lambdas compile to distinct per-declaration
+aux-defs that block `rw`/`exact`. -/
+def nargSoundFailEvent {StmtIn StmtOut : Type} (langIn : Set StmtIn) (langOut : Set StmtOut) :
+    Option (StmtIn × StmtOut) → Prop
+  | some (x, stmtOut) => x ∉ langIn ∧ stmtOut ∈ langOut
+  | none => False
+
+/-- **CO25 Def 3.5** — adaptive, query-bounded soundness of a non-interactive argument: every
+`t`-query (i.e. `bound`-meeting) adaptive prover convinces the verifier of a false statement
+(`x ∉ langIn ∧ stmtOut ∈ langOut`) with probability at most `error`. -/
+def Verifier.adaptiveNARGSoundness {ι : Type} {oSpec : OracleSpec ι}
+    {σ StmtIn Proof StmtOut : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (bound : OracleComp oSpec (StmtIn × Proof) → Prop) (error : ENNReal) : Prop :=
+  ∀ P : OracleComp oSpec (StmtIn × Proof), bound P →
+    Pr[ nargSoundFailEvent langIn langOut
+      | adaptiveNARGSoundnessExp init impl verifier P ] ≤ error
+
+/-- Run a non-interactive verifier and record its base-oracle queries, including on rejection. -/
+abbrev runVerifierWithLog {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn Proof StmtOut : Type}
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (x : StmtIn) (π : Proof) : OracleComp oSpec (Option StmtOut × QueryLog oSpec) :=
+  withQueryLog (verifier.verify x (Fin.cons π (fun i => i.elim0))).run
+
+/-- **CO25 Def 3.6, adapted to the extractor interface above** — the NARG-KS game:
+the prover outputs
+`(x, π)` exactly as in the paper. The experiment captures the prover query log `tr` **and** the
+verifier query log `tr_V` (both via `loggingOracle`), runs the verifier `verify x π`
+(`none` = reject) and the straightline extractor `extractor x π tr tr_V`, returning
+`(x, extracted-witness?, stmtOut?)`.
+
+The extractor receives the prover and verifier query logs **separately** (matching CO25
+Construction 6.3's `𝓔(𝕩, π, tr, tr_𝒱, 𝓟̃)`, where `𝓔` internally forms `D2STrace(tr ‖ tr_𝒱)`). -/
+def adaptiveNARGKnowledgeSoundnessExp
+    {ι κE : Type} {oSpec : OracleSpec ι} {auxSpecE : OracleSpec κE}
+    {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp auxSpecE) WitIn)
+    (P : OracleComp oSpec (StmtIn × Proof)) :
+    ProbComp (StmtIn × Option WitIn × Option StmtOut) := do
+  -- Prover and verifier share state through `impl`. Extraction receives their logs and runs
+  -- separately through `auxImplE`, which may provide randomness or other oracle answers.
+  -- The final state `σ` is not passed to the extractor or its handler.
+  let ⟨x, π, tr, stmtOut?, tr_V⟩ ←
+    (simulateQ impl (do
+      let ⟨⟨x, π⟩, tr⟩ ← (simulateQ loggingOracle P).run
+      let ⟨stmtOut?, tr_V⟩ ← runVerifierWithLog verifier x π
+      pure (x, π, tr, stmtOut?, tr_V))).run' (← init)
+  let witIn? ← simulateQ auxImplE (extractor x π tr tr_V).run
+  pure (x, witIn?, stmtOut?)
+
+/-- **CO25 Def 3.6 extraction-failure event** on the NARG-KS experiment output
+`StmtIn × Option WitIn × Option StmtOut`: the verifier accepted into `langOut` yet the extracted
+input witness misses `relIn` (or none was produced). No output witness is supplied by the malicious
+NARG prover: Definition 3.6 quantifies over the same proof-only `(x, π)` adversaries as Definition
+3.5. -/
+def nargKSFailEvent {StmtIn WitIn StmtOut : Type}
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) :
+    StmtIn × Option WitIn × Option StmtOut → Prop
+  | (x, some witIn, some stmtOut) => stmtOut ∈ langOut ∧ (x, witIn) ∉ relIn
+  | (_, none, some stmtOut) => stmtOut ∈ langOut
+  | _ => False
+
+/-- Extraction-failure event for ArkLib's relation-valued reduction and state-restoration
+interfaces. Unlike the paper's NARG event, these interfaces genuinely carry an output witness. -/
+def relationKSFailEvent {StmtIn WitIn StmtOut WitOut : Type}
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) :
+    StmtIn × Option WitIn × Option StmtOut × WitOut → Prop
+  | (x, some witIn, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut ∧ (x, witIn) ∉ relIn
+  | (_, none, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut
+  | _ => False
+
+/-- Fixed-extractor security predicate. The caller supplies one extractor before choosing
+the budget/error; no existential extractor choice is hidden inside this predicate.
+NARG variants allow randomness and both prover/verifier traces, not just the deterministic
+prover-trace-only contract of CO25 Definition 3.6. -/
+def Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor
+    {ι κE : Type} {oSpec : OracleSpec ι} {auxSpecE : OracleSpec κE}
+    {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp auxSpecE) WitIn)
+    (bound : OracleComp oSpec (StmtIn × Proof) → Prop) (error : ENNReal) : Prop :=
+  ∀ P : OracleComp oSpec (StmtIn × Proof), bound P →
+    Pr[ nargKSFailEvent relIn langOut
+      | adaptiveNARGKnowledgeSoundnessExp init impl auxImplE verifier extractor P ] ≤ error
+
+/-! ### Coin-bearing NARG experiments (compiled / randomized provers)
+
+CO25 §6 reduces a NARG to its interactive proof via a *compiled* prover that samples its own private
+randomness (DSFS's `D2SAlgo^f(P̃)` does lookahead/backtrack sampling).  Such a prover is not
+coin-free, so the soundness/KS experiment must answer its coins.  Mirroring the SR layer's
+`SoundnessWithCoins` / `coinSRExperimentProb`, the prover here queries `oSpec + auxSpec` (the random
+oracle interface `oSpec` plus private coins `auxSpec`); `impl` serves `oSpec` against the
+`init`-draw and `auxImpl` serves the coins at game time. The verifier uses only `oSpec`.
+For KS, extraction uses `oSpec + auxSpecE` and continues in the final prover/verifier state;
+prover-private coin queries are excluded from its supplied log.
+Taking `auxSpec := []ₒ` recovers the coin-free soundness experiment up to `+ []ₒ`.
+For KS this only removes prover-private coins: the coin-free KS interface instead executes
+extraction separately through `auxImplE`, so the two KS experiments are not general
+specializations of one another. -/
+
+/-- Coin-bearing CO25 Def 3.5 experiment: the prover may sample private coins `auxSpec` (answered by
+`auxImpl`). -/
+def adaptiveNARGSoundnessExpWithCoins
+    {ι κ : Type} {oSpec : OracleSpec ι} {auxSpec : OracleSpec κ}
+    {σ StmtIn Proof StmtOut : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (P : OracleComp (oSpec + auxSpec) (StmtIn × Proof)) :
+    ProbComp (Option (StmtIn × StmtOut)) := do
+  (simulateQ ((impl.addLift auxImpl) : QueryImpl (oSpec + auxSpec) (StateT σ ProbComp))
+    ((do
+      let ⟨x, π⟩ ← P
+      let stmtOut ←
+        OptionT.mk (liftComp (verifier.verify x
+          (Fin.cons π (fun i => i.elim0))).run (oSpec + auxSpec))
+      return (x, stmtOut)) :
+    OptionT (OracleComp (oSpec + auxSpec)) (StmtIn × StmtOut))).run' (← init)
+
+/-- Coin-bearing CO25 Def 3.5 — adaptive, query-bounded soundness against provers with private
+coins. -/
+def Verifier.adaptiveNARGSoundnessWithCoins
+    {ι κ : Type} {oSpec : OracleSpec ι} {auxSpec : OracleSpec κ}
+    {σ StmtIn Proof StmtOut : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (bound : OracleComp (oSpec + auxSpec) (StmtIn × Proof) → Prop) (error : ENNReal) : Prop :=
+  ∀ P : OracleComp (oSpec + auxSpec) (StmtIn × Proof), bound P →
+    Pr[ fun out => match out with
+        | some (x, stmtOut) => x ∉ langIn ∧ stmtOut ∈ langOut
+        | none => False
+      | adaptiveNARGSoundnessExpWithCoins init impl auxImpl verifier P ] ≤ error
+
+/-- Knowledge-soundness experiment with prover-private coins.
+The prover and verifier run first; extraction
+then continues in their final oracle state. Extractor helper queries use `auxImplE`, while its
+base queries use the same `impl` as the prover and verifier. Prover private-coin queries are
+excluded from the supplied log. The extractor may inspect fresh base-oracle answers correlated
+with the preceding execution. -/
+def adaptiveNARGKnowledgeSoundnessExpWithCoins
+    {ι κ κE : Type} {oSpec : OracleSpec ι} {auxSpec : OracleSpec κ} {auxSpecE : OracleSpec κE}
+    {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImpl : QueryImpl auxSpec ProbComp)
+    (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp (oSpec + auxSpecE)) WitIn)
+    (P : OracleComp (oSpec + auxSpec) (StmtIn × Proof)) :
+    ProbComp (StmtIn × Option WitIn × Option StmtOut) := do
+  StateT.run' (do
+    let ⟨x, π, tr, stmtOut?, tr_V⟩ ←
+      simulateQ (impl.addLift auxImpl) (do
+        let ⟨⟨x, π⟩, tr⟩ ← (simulateQ loggingOracle P).run
+        let ⟨stmtOut?, tr_V⟩ ←
+          liftComp (runVerifierWithLog verifier x π) (oSpec + auxSpec)
+        pure (x, π, tr, stmtOut?, tr_V))
+    let witIn? ← simulateQ (impl.addLift auxImplE) (extractor x π tr.fst tr_V).run
+    pure (x, witIn?, stmtOut?)) (← init)
+
+/-- A base-only extractor can be executed inside the original prover/verifier interpreter.
+No purity assumption is needed: its fresh queries use the continuing shared state. -/
+theorem adaptiveNARGKnowledgeSoundnessExpWithCoins_base
+    {ι κ κE : Type} {oSpec : OracleSpec ι} {auxSpec : OracleSpec κ} {auxSpecE : OracleSpec κE}
+    {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImpl : QueryImpl auxSpec ProbComp) (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp oSpec) WitIn)
+    (P : OracleComp (oSpec + auxSpec) (StmtIn × Proof)) :
+    adaptiveNARGKnowledgeSoundnessExpWithCoins init impl auxImpl auxImplE
+      verifier (fun x π tr tr_V => OptionT.mk (liftComp (extractor x π tr tr_V).run
+        (oSpec + auxSpecE))) P =
+    (do StateT.run' (simulateQ (impl.addLift auxImpl) (do
+      let ⟨⟨x, π⟩, tr⟩ ← (simulateQ loggingOracle P).run
+      let ⟨stmtOut?, tr_V⟩ ← liftComp (runVerifierWithLog verifier x π) (oSpec + auxSpec)
+      let w ← liftComp (extractor x π tr.fst tr_V).run (oSpec + auxSpec)
+      pure (x, w, stmtOut?))) (← init)) := by
+  unfold adaptiveNARGKnowledgeSoundnessExpWithCoins
+  simp only [OptionT.run_mk, simulateQ_bind, simulateQ_pure,
+    QueryImpl.addLift, QueryImpl.simulateQ_add_liftComp_left, bind_assoc, pure_bind]
+
+/-- Fixed-extractor knowledge soundness with shared base-oracle access during extraction.
+The extractor is supplied before the prover bound and error, and its helper oracle does not
+expose the prover's private-coin interface. -/
+def Verifier.adaptiveNARGKnowledgeSoundnessWithCoinsWithExtractor
+    {ι κ κE : Type} {oSpec : OracleSpec ι} {auxSpec : OracleSpec κ} {auxSpecE : OracleSpec κE}
+    {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImpl : QueryImpl auxSpec ProbComp) (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp (oSpec + auxSpecE)) WitIn)
+    (bound : OracleComp (oSpec + auxSpec) (StmtIn × Proof) → Prop)
+    (error : ENNReal) : Prop :=
+  ∀ P, bound P → Pr[ nargKSFailEvent relIn langOut |
+    adaptiveNARGKnowledgeSoundnessExpWithCoins
+      init impl auxImpl auxImplE verifier extractor P ] ≤ error
+
+/-- One NARG extractor for an entire bound/error family. The extractor is chosen before
+the family index, not separately for each budget. -/
+def Verifier.adaptiveNARGKnowledgeSoundness
+    {ι κE B : Type} {oSpec : OracleSpec ι} {auxSpecE : OracleSpec κE}
+    {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (bound : B → OracleComp oSpec (StmtIn × Proof) → Prop) (error : B → ENNReal) : Prop :=
+  ∃ extractor, ∀ b, Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor init impl auxImplE verifier
+    relIn langOut extractor (bound b) (error b)
+
+/-- One extractor for every budget against provers with private coins. This is the
+uniform existential closure of the fixed-extractor predicate, with extraction continuing
+in the prover/verifier's final oracle state. -/
+def Verifier.adaptiveNARGKnowledgeSoundnessWithCoins
+    {ι κ κE B : Type} {oSpec : OracleSpec ι} {auxSpec : OracleSpec κ}
+    {auxSpecE : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (auxImpl : QueryImpl auxSpec ProbComp) (auxImplE : QueryImpl auxSpecE ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
+    (bound : B → OracleComp (oSpec + auxSpec) (StmtIn × Proof) → Prop)
+    (error : B → ENNReal) : Prop :=
+  ∃ extractor, ∀ b, Verifier.adaptiveNARGKnowledgeSoundnessWithCoinsWithExtractor
+    init impl auxImpl auxImplE verifier relIn langOut extractor (bound b) (error b)
+
+end AdaptiveNARG
 
 end Soundness
 
