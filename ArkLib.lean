@@ -148,6 +148,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers.Incidence
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding.Internal
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
