@@ -299,7 +299,7 @@ variable {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
 @[simp]
 lemma coe_embedding_apply (ω : D) (i : ι) : ((ω : ι ↪ F) i) = ω i := rfl
 
-set_option linter.unusedSectionVars false in
+omit [AddCommGroup ι] [Field F] [CosetFftDomainClass D ι F] in
 /-- Extensionality for class-level coset FFT domains.
   Domains are equal if their evaluations are equal. -/
 @[ext]

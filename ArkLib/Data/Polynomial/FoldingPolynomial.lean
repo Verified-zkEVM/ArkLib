@@ -127,6 +127,22 @@ private lemma folding_polynomial_def_base_case {q f : F[X]}
       simp [map_C, folding_polynomial_C_q])
   rw [folding_polynomial_eq_map_of_f_degree_lt_q_degree h]
 
+private lemma natDegree_div_eq_sub_of_degree_le {q f : F[X]}
+    (hq : q ≠ 0) (hdeg : q.degree ≤ f.degree) :
+    (f / q).natDegree = f.natDegree - q.natDegree := by
+  have hdiv : f / q ≠ 0 :=
+    mt (Polynomial.div_eq_zero_iff hq).mp (not_lt_of_ge hdeg)
+  have hadd := Polynomial.degree_add_div hq hdeg
+  rw [Polynomial.degree_eq_natDegree hq,
+    Polynomial.degree_eq_natDegree hdiv] at hadd
+  have hf : f ≠ 0 := by
+    intro hf
+    subst f
+    exact hq (Polynomial.degree_eq_bot.mp (bot_unique hdeg))
+  rw [Polynomial.degree_eq_natDegree hf] at hadd
+  norm_cast at hadd
+  omega
+
 private lemma folding_polynomial_aux_natDegree_fuel_is_enough {q f : F[X]} {fuel : ℕ}
   (h : f.natDegree ≤ fuel) :
   foldingPolynomialAux q f f.natDegree = foldingPolynomialAux q f fuel := by
@@ -224,11 +240,8 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
               = foldingPolynomialAux q (f / q) (deg - 1) := by
             have h_deg : (f / q).natDegree ≤ deg - 1 := by
               have h_deg : (f / q).natDegree ≤ f.natDegree - q.natDegree := by
-                rw [Polynomial.div_def]
-                rw [Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic]
-                · rw [Polynomial.natDegree_mul'] <;> aesop
-                · exact Polynomial.monic_mul_leadingCoeff_inv (by aesop)
-                · aesop
+                rw [natDegree_div_eq_sub_of_degree_le
+                  (Polynomial.ne_zero_of_degree_gt h₂) h₁]
               exact le_trans h_deg (Nat.sub_le_sub_right hdeg _)
                 |> le_trans
                 <| Nat.sub_le_sub_left (Polynomial.natDegree_pos_iff_degree_pos.mpr h₂) _
@@ -273,13 +286,12 @@ lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
           refine
             ⟨Polynomial.natDegree (f / q),
             by {
-              have h_deg_f : f.natDegree = q.natDegree + (f / q).natDegree := by
-                rw [←Polynomial.natDegree_mul']
-                · rw [EuclideanDomain.mul_div_cancel'] <;> aesop
-                · aesop
-              linarith [
-                Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.1,
-                Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.2]
+              rw [natDegree_div_eq_sub_of_degree_le
+                (Polynomial.ne_zero_of_degree_gt h₁.2.2) h₁.1]
+              rw [← n]
+              exact Nat.sub_lt
+                (Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.1)
+                (Polynomial.natDegree_pos_iff_degree_pos.mpr h₁.2.2)
             },
             f / q,
             by simp_all +decide,
@@ -348,20 +360,17 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
           (Polynomial.map q.compRingHom
             (foldingPolynomial q (f / q))) = f / q := by
         convert ih (Polynomial.natDegree (f / q)) _ rfl using 1
-        rw [←n, Polynomial.div_def]
-        rw [Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic] <;> norm_num
-        · by_cases hq : q = 0
-            <;> simp_all only [not_or, not_lt, not_le, Polynomial.map_add, Polynomial.map_mul,
-              map_C, coe_compRingHom, X_comp, eval_add, eval_mul, eval_C, add_left_inj,
-              leadingCoeff_C, ne_eq, leadingCoeff_eq_zero, not_false_eq_true, mul_inv_cancel₀,
-              one_ne_zero, natDegree_mul',
-              natDegree_C, add_zero, degree_zero, not_lt_bot, bot_le, or_true, not_true_eq_false]
-          exact ⟨n.symm
-            ▸ Polynomial.natDegree_pos_iff_degree_pos.mpr
-              h_deg.2.1,
-            Polynomial.natDegree_pos_iff_degree_pos.mpr h_deg.2.2⟩
-        · exact Polynomial.monic_mul_leadingCoeff_inv (by aesop)
-        · aesop
+        have hqpos : 0 < q.degree :=
+          lt_of_not_ge fun h => h_deg (Or.inr (Or.inr h))
+        have hfpos : 0 < f.degree :=
+          lt_of_not_ge fun h => h_deg (Or.inr (Or.inl h))
+        have hqle : q.degree ≤ f.degree :=
+          le_of_not_gt fun h => h_deg (Or.inl h)
+        rw [←n, natDegree_div_eq_sub_of_degree_le
+          (Polynomial.ne_zero_of_degree_gt hqpos) hqle]
+        exact Nat.sub_lt
+          (Polynomial.natDegree_pos_iff_degree_pos.mpr hfpos)
+          (Polynomial.natDegree_pos_iff_degree_pos.mpr hqpos)
       rw [
         ‹Polynomial.eval Polynomial.X
           (Polynomial.map q.compRingHom
@@ -433,19 +442,12 @@ theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
     }) (by {
       apply lt_of_le_of_lt (Polynomial.natDegree_C_mul_le _ _)
       apply ih _ _ h rfl
-      rw [←n, Polynomial.div_def]
-      rw [
-        Polynomial.natDegree_C_mul,
-        Polynomial.natDegree_divByMonic]
-          <;> norm_num [
-            Polynomial.natDegree_mul',
-            Polynomial.natDegree_C, show q ≠ 0 by aesop]
-      · simp only [not_lt] at hq
-        exact
-          ⟨Polynomial.natDegree_pos_iff_degree_pos.mpr
-            (lt_of_lt_of_le h hq),
-            Polynomial.natDegree_pos_iff_degree_pos.mpr h⟩
-      · exact Polynomial.monic_mul_leadingCoeff_inv (by aesop)
+      have hqle : q.degree ≤ f.degree := le_of_not_gt hq
+      rw [←n, natDegree_div_eq_sub_of_degree_le
+        (Polynomial.ne_zero_of_degree_gt h) hqle]
+      exact Nat.sub_lt
+        (Polynomial.natDegree_pos_iff_degree_pos.mpr (lt_of_lt_of_le h hqle))
+        (Polynomial.natDegree_pos_iff_degree_pos.mpr h)
     }))
 
 /-- The degree of `foldingPolynomial` is less than `k` in the second variable,
@@ -542,9 +544,12 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
           folding_polynomial_deg_x_base h₁
         have h_deg_zero : f.natDegree < q.natDegree := by
           by_cases hf : f = 0
-            <;> by_cases hq : q = 0
-            <;> simp_all +decide [Polynomial.degree_eq_natDegree]
-          aesop
+          · simp [hf, Polynomial.natDegree_pos_iff_degree_pos.mpr h]
+          · rcases h₁ with hlt | hle | hqle
+            · exact Polynomial.natDegree_lt_natDegree hf hlt
+            · rw [Polynomial.natDegree_eq_zero_iff_degree_le_zero.mpr hle]
+              exact Polynomial.natDegree_pos_iff_degree_pos.mpr h
+            · exact (not_lt_of_ge hqle h).elim
         rw [Nat.div_eq_of_lt] <;> aesop
       · have h_deg :
           degreeX (foldingPolynomial q f) = 1 + degreeX (foldingPolynomial q (f / q)) := by
@@ -552,11 +557,9 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
           · exact le_of_not_gt fun h₂ ↦ h₁ <| Or.inl h₂
           · exact h
         have h_deg_f_div_q : (f / q).natDegree = f.natDegree - q.natDegree := by
-          rw [Polynomial.div_def]
-          rw [Polynomial.natDegree_C_mul, Polynomial.natDegree_divByMonic]
-          · rw [Polynomial.natDegree_mul'] <;> aesop
-          · exact Polynomial.monic_mul_leadingCoeff_inv (Polynomial.ne_zero_of_degree_gt h)
-          · aesop
+          exact natDegree_div_eq_sub_of_degree_le
+            (Polynomial.ne_zero_of_degree_gt h)
+            (le_of_not_gt fun h' => h₁ (Or.inl h'))
         rw [h_deg, ih _ _ h h_deg_f_div_q]
         · rw [←n, Nat.add_comm]
           rw [
@@ -787,18 +790,14 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
             Function.comp_apply, monic_X_pow, Monic.leadingCoeff, mul_one, leadingCoeff_eq_zero,
             not_false_eq_true, natDegree_mul', natDegree_comp, natDegree_pow, natDegree_X]
           by_contra h_contra
-          exact hij
-            (by nlinarith
-                [show Polynomial.natDegree (Q.coeff i)
-                    = Polynomial.natDegree (Q.coeff j)
-                      by nlinarith
-                        [show i < q.natDegree
-                          from lt_of_le_of_lt
-                          (Polynomial.le_natDegree_of_ne_zero (by aesop)) h_y,
-                          show j < q.natDegree
-                          from lt_of_le_of_lt
-                            (Polynomial.le_natDegree_of_ne_zero
-                              (by aesop)) h_y]])
+          have hiq : i < q.natDegree := lt_of_le_of_lt
+            (Polynomial.le_natDegree_of_ne_zero (by aesop)) h_y
+          have hjq : j < q.natDegree := lt_of_le_of_lt
+            (Polynomial.le_natDegree_of_ne_zero (by aesop)) h_y
+          have hcoeff : Polynomial.natDegree (Q.coeff i) =
+              Polynomial.natDegree (Q.coeff j) := by
+            nlinarith only [h_contra, hiq, hjq]
+          exact hij (by nlinarith only [h_contra, hcoeff])
     · aesop
   contrapose! h_x
   rw [h, folding_polynomial_deg_x]
@@ -1023,18 +1022,20 @@ def cpolyFoldAux (p : CompPoly.CPolynomial F) (k : ℕ) (r : F) : ℕ → CompPo
 def cpolyFold (p : CompPoly.CPolynomial F) (k : ℕ) (r : F) : CompPoly.CPolynomial F :=
   cpolyFoldAux p k r p.natDegree
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq F] in
 private lemma toPoly_iterate_divX (p : CompPoly.CPolynomial F) (k : ℕ) :
     (CompPoly.CPolynomial.divX^[k] p).toPoly = Polynomial.divX^[k] p.toPoly := by
+  classical
   induction k generalizing p with
   | zero => simp
   | succ k ih =>
     rw [Function.iterate_succ', Function.comp_apply, Function.iterate_succ',
         Function.comp_apply, CompPoly.CPolynomial.divX_toPoly, ih]
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq F] in
 private lemma natDegree_iterate_divX_le (p : CompPoly.CPolynomial F) (k : ℕ) :
     (CompPoly.CPolynomial.divX^[k] p).natDegree ≤ p.natDegree - k := by
+  classical
   have h_p : p.natDegree = p.toPoly.natDegree := CompPoly.CPolynomial.natDegree_toPoly p
   have h_iter : (CompPoly.CPolynomial.divX^[k] p).natDegree
       = (Polynomial.divX^[k] p.toPoly).natDegree := by

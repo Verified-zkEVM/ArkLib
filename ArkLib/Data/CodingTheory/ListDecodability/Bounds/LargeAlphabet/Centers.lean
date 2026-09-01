@@ -19,13 +19,6 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -138,7 +131,7 @@ theorem greedy_separated_extraction :
 
 theorem hamming_center_from_disjoint_blocks
     (ℓ r r' t : ℕ)
-    {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [DecidableEq A]
     (c : ι → A) (v : Fin ℓ → ι → A) (S : Finset ι)
     (blocks : Fin ℓ → Finset ι)
     (hblocks_sub : ∀ j, blocks j ⊆ S)
@@ -229,7 +222,7 @@ boosted radius and they disagree with `c` on a large common set, then some singl
 radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
 theorem balanced_center_construction :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+      ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
         (c : ι → A) (v : Fin ℓ → ι → A),
         (∀ j, hammingDist c (v j) ≤
           Nat.floor (boostedRadius ℓ p * Fintype.card ι)) →
@@ -240,7 +233,7 @@ theorem balanced_center_construction :
           hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
           ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι A _ _ _ c v hdist hsize hcommonCard
+  intro ℓ hℓ p hp hp_lt ι A _ _ c v hdist hsize hcommonCard
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
@@ -277,10 +270,11 @@ theorem balanced_center_construction :
     simpa only [r, n] using hyv j
 
 theorem hamming_dist_le_card_compl_of_agree
-    {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [DecidableEq A]
     (u v : ι → A) (S : Finset ι)
     (hagree : ∀ i ∈ S, u i = v i) :
     hammingDist u v ≤ Fintype.card ι - S.card := by
+  classical
   unfold hammingDist
   have hsub : (Finset.univ.filter fun i => u i ≠ v i) ⊆
       Finset.univ \ S := by
@@ -529,23 +523,24 @@ theorem incidence_power_gap :
   have hsize : 4 * (ℓ : ℝ) ^ 2 / p ≤ (M : ℝ) :=
     (Nat.ceil_le).mp hM
   have hpm : 4 * (ℓ : ℝ) ^ 2 ≤ p * M := by
-    have h := (div_le_iff₀ hp).mp hsize
-    nlinarith
+    simpa only [mul_comm] using (div_le_iff₀ hp).mp hsize
   have hden : (0 : ℝ) < 4 * ℓ := by positivity
   have hratio : (ℓ : ℝ) - 1 ≤ p * M / (4 * ℓ) := by
     rw [le_div_iff₀ hden]
     have haux : 4 * (ℓ : ℝ) * ((ℓ : ℝ) - 1) ≤ 4 * (ℓ : ℝ) ^ 2 := by
-      nlinarith
+      calc
+        4 * (ℓ : ℝ) * ((ℓ : ℝ) - 1) ≤ 4 * (ℓ : ℝ) * ℓ :=
+          mul_le_mul_of_nonneg_left (sub_le_self _ zero_le_one)
+            (mul_nonneg (by norm_num) hℓR.le)
+        _ = 4 * (ℓ : ℝ) ^ 2 := by ring
     exact (by
       simpa only [mul_comm, mul_left_comm, mul_assoc] using haux.trans hpm)
   let q : ℝ := 1 - 1 / (4 * ℓ)
   have hone : 1 / (4 * (ℓ : ℝ)) ≤ 1 :=
-    (div_le_one hden).2 (by nlinarith)
-  have hq : 0 ≤ q := by
-    dsimp [q]
-    linarith
+    (div_le_one hden).2 (by nlinarith only [hℓtwo])
+  have hq : 0 ≤ q := by simpa only [q] using sub_nonneg.mpr hone
   have hneg : (-2 : ℝ) ≤ -(1 / (4 * (ℓ : ℝ))) := by
-    linarith
+    exact neg_le_neg (hone.trans (by norm_num))
   have hbern : (3 : ℝ) / 4 ≤ q ^ ℓ := by
     calc
       (3 : ℝ) / 4 =
@@ -579,11 +574,11 @@ theorem incidence_power_gap :
 /-- Counting incidences two ways: `∑ᵢ #{j : i ∈ S j} = ∑_j |S j|`. -/
 theorem incidence_sum_double_count :
     ∀ {ι κ : Type} [Fintype ι] [Fintype κ]
-      [DecidableEq ι] [DecidableEq κ] (S : κ → Finset ι),
+      [DecidableEq ι] (S : κ → Finset ι),
       ∑ i, (Finset.univ.filter fun j => i ∈ S j).card =
         ∑ j, (S j).card := by
   classical
-  intro ι κ _ _ _ _ S
+  intro ι κ _ _ _ S
   calc
     (∑ i, (Finset.univ.filter fun j => i ∈ S j).card) =
         ∑ i, ∑ j, if i ∈ S j then 1 else 0 := by
@@ -601,7 +596,7 @@ theorem incidence_sum_double_count :
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
 theorem injective_family_of_ncard_diff
-    {α : Type} [Fintype α] [DecidableEq α]
+    {α : Type} [Finite α]
     (I B : Set α) (ℓ M : ℕ) (hIB : I ⊆ B)
     (hI : I.ncard ≤ ℓ) (hB : ℓ + M < B.ncard) :
     ∃ v : Fin M → α, Function.Injective v ∧ ∀ j, v j ∈ B \ I := by
@@ -630,8 +625,8 @@ theorem injective_family_of_ncard_diff
 open _root_.Code in
 theorem lambda_contradiction_of_injective_center
     (ℓ : ℕ)
-    {ι A : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-      [Fintype A] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [Nonempty ι]
+      [Finite A] [DecidableEq A]
     (C : Set (ι → A)) (p : ℝ) (hp : 0 ≤ p)
     (c : ι → A) (hc : c ∈ C)
     (u : Fin ℓ → ι → A) (huinj : Function.Injective u)
@@ -676,7 +671,7 @@ theorem lambda_contradiction_of_injective_center
   omega
 
 theorem large_fiber_of_image_bound
-    {X Y : Type} [DecidableEq X] [DecidableEq Y]
+    {X Y : Type} [DecidableEq Y]
     (s : Finset X) (f : X → Y) (B k : ℕ)
     (hs : s.Nonempty) (himage : (s.image f).card ≤ B)
     (hlarge : B * k ≤ s.card) :
@@ -1021,8 +1016,11 @@ theorem rounded_barrier_other_codeword_bound_core
   have hbalanceN :
       R * n + p * n + (p / (ℓ : ℝ)) * n =
         (n : ℝ) - η * n := by
-    have h := congrArg (fun x : ℝ => x * (n : ℝ)) hbalance
-    nlinarith
+    calc
+      R * n + p * n + (p / (ℓ : ℝ)) * n =
+          (R + p + p / (ℓ : ℝ)) * n := by ring
+      _ = (1 - η) * n := by rw [hbalance]
+      _ = (n : ℝ) - η * n := by ring
   have hslack := barrier_k_slack ℓ B hℓ
   change (B : ℝ) + 4 + 1 / (ℓ : ℝ) ≤
     K * (1 - 1 / (ℓ : ℝ)) - 1 at hslack
@@ -1034,7 +1032,11 @@ theorem rounded_barrier_other_codeword_bound_core
   have hfactorGrow :
       K * (1 - 1 / (ℓ : ℝ)) - 1 ≤
         (K * (1 - 1 / (ℓ : ℝ)) - 1) * (η * n) := by
-    nlinarith [mul_nonneg hfactorNonneg (sub_nonneg.mpr hone)]
+    calc
+      K * (1 - 1 / (ℓ : ℝ)) - 1 =
+          (K * (1 - 1 / (ℓ : ℝ)) - 1) * 1 := by ring
+      _ ≤ (K * (1 - 1 / (ℓ : ℝ)) - 1) * (η * n) :=
+        mul_le_mul_of_nonneg_left hone hfactorNonneg
   have hbudget :
       (B : ℝ) + 4 + 1 / (ℓ : ℝ) ≤
         (K * (1 - 1 / (ℓ : ℝ)) - 1) * (η * n) :=
@@ -1139,11 +1141,13 @@ theorem incidence_moment_lower :
   have hsize : 4 * (ℓ : ℝ) ^ 2 / p ≤ (M : ℝ) :=
     (Nat.ceil_le).mp hM
   have hpm : 4 * (ℓ : ℝ) ^ 2 ≤ p * M := by
-    have h := (div_le_iff₀ hp).mp hsize
-    nlinarith
+    simpa only [mul_comm] using (div_le_iff₀ hp).mp hsize
   have hgap_nonneg : 0 ≤ p * M - ((ℓ : ℝ) - 1) := by
     have hℓtwo : (2 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
-    nlinarith
+    have hsmall : (ℓ : ℝ) - 1 ≤ 4 * (ℓ : ℝ) ^ 2 := by
+      nlinarith only [hℓtwo, sq_nonneg (ℓ : ℝ)]
+    apply sub_nonneg.mpr
+    exact hsmall.trans hpm
   have hmeanpow :
       (p * M - ((ℓ : ℝ) - 1)) ^ ℓ ≤ ((∑ i, b i) / n) ^ ℓ :=
     pow_le_pow_left₀ hgap_nonneg hmean ℓ

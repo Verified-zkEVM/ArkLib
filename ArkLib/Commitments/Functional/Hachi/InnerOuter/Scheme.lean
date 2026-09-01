@@ -6,7 +6,6 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
 import ArkLib.Commitments.Functional.Hachi.Gadget.Core
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
-import VCVio
 
 /-!
 # Inner-Outer Ajtai Commitment Scheme

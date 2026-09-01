@@ -19,13 +19,6 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -1000,7 +993,7 @@ theorem robust_minimum_distance_barrier :
         (2 : ℝ) ^ ((γ / 4) * n) ≤
           (2 : ℝ) ^ ((γ / 2) * n) := by
       convert habsorbRaw using 1
-      ring
+      ring_nf
     exact barrier_exponent_contradiction
       Kfac family.sets.card n γ hγ hnNat hlower hupper habsorb
 

@@ -44,7 +44,7 @@ theorem IsPure.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
   obtain ⟨f₁, hf₁⟩ := h₁.is_pure
   obtain ⟨f₂, hf₂⟩ := h₂.is_pure
   refine ⟨fun stmt tr => f₂ (f₁ stmt tr.fst) tr.snd, fun stmt tr => ?_⟩
-  simp only [Verifier.append, hf₁, hf₂, pure_bind, bind_pure]
+  simp only [Verifier.append, hf₁, hf₂, pure_bind]
 
 /-- **Purity data composes computably**: the composed verdict runs the left verdict on the
   transcript prefix and the right verdict on the suffix, from the statement the left verifier
@@ -61,7 +61,7 @@ def PureForm.append {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
   verify_eq := fun stmt tr => by
     have h₁ := P₁.verify_eq
     have h₂ := P₂.verify_eq
-    simp only [Verifier.append, h₁, h₂, pure_bind, bind_pure]
+    simp only [Verifier.append, h₁, h₂, pure_bind]
 
 /-- Purity is preserved by `n`-ary sequential composition of verifiers. The base case is the
   identity verifier (`Verifier.seqCompose` reduces to `Verifier.id` at `m = 0`); the step case is

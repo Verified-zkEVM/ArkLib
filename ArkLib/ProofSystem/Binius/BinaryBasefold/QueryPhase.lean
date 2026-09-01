@@ -91,12 +91,10 @@ def proximityChecksSpec (γ_challenges :
       -- Create the suffix `(v_{i+ϑ}, ..., v_{ℓ+R-1})` as an element of `S^(i+ϑ)`
       let next_suffix_of_v := extractNextSuffixFromChallenge 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v i h_i_add_ϑ_le_ℓ
-
       let next_suffix_of_v_fin : Fin (2 ^ (ℓ + 𝓡 - (i + ϑ))) :=
         by simpa [Fin.val_mk] using
           sDomainToFin 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i + ϑ, by omega⟩ (by
               apply Nat.lt_add_of_pos_right_of_le; simp only; omega) next_suffix_of_v
-
       -- Create the fiber evaluation mapping by querying oracle f^(i) at all fiber points
       let f_i_on_fiber : Fin (2^ϑ) → L := fun u =>
         let x: Fin (2 ^ (ℓ + 𝓡 - i)) := by
@@ -110,14 +108,11 @@ def proximityChecksSpec (γ_challenges :
         let x_point := finToSDomain 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩ (by
             apply Nat.lt_add_of_pos_right_of_le; simp only; omega) x
         oStmt k_th_oracleIdx x_point
-
       -- Compute the next value using localized fold matrix form
       let cur_challenge_batch : Fin ϑ → L := fun j => fold_challenges ⟨i + j.val, by omega⟩
-
       let c_next := localized_fold_matrix_form 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i:=⟨i, by omega⟩) (steps:=ϑ) (h_i_add_steps:=by simp only; omega)
         (r_challenges:=cur_challenge_batch) (y:=next_suffix_of_v) (fiber_eval_mapping:=f_i_on_fiber)
-
       -- NOTE: at i, we do the consistency check FOR THE NEXT LEVEL (`i + ϑ`):
       -- `c_next ?= f^(i + ϑ)(v_{i + ϑ}, ..., v_{ℓ+R-1})`, the final check is also covered
       let consistency_check : Prop :=
@@ -151,7 +146,8 @@ def queryCodeword (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
       OracleComp.lift <| by
         exact OracleSpec.query
             (show
-                [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ.Domain from
+                [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                  (Fin.last ℓ)]ₒ.Domain from
               ⟨⟨j, by omega⟩, point⟩)
 
 section FinalQueryRoundIOR
@@ -202,7 +198,8 @@ noncomputable def queryOracleVerifier :
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (fun (stmt: FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (challenges: (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges) => do
+    (challenges:
+      (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges) => do
     -- Get all γ challenges from the second message (final sumcheck already checked earlier).
     let c := stmt.final_constant
     let fold_challenges : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0 :=
@@ -367,7 +364,8 @@ else
     let r := stmt.ctx.t_eval_point
     let s := stmt.ctx.original_claim
     let challenges : Fin ℓ → L := stmt.challenges
-    let tr_so_far := (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).take m m.is_le
+    let tr_so_far :=
+      (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).take m m.is_le
     let chalIdx : tr_so_far.ChallengeIdx := ⟨⟨0,
       Nat.lt_of_succ_le (by omega)⟩, by simp only [Nat.reduceAdd]; rfl⟩
     let γ_challenges : Fin γ_repetitions → sDomain 𝔽q
@@ -400,7 +398,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     sorry
 
 /-- Round-by-round knowledge soundness for the oracle verifier (query phase) -/
-theorem queryOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type} (init : ProbComp σ)
+theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.rbrKnowledgeSoundness init impl
     (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))

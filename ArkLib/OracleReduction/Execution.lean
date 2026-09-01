@@ -2,6 +2,9 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
 import ArkLib.ToMathlib.Control.MonadLift
 import ArkLib.ToVCVio.OracleComp.EvalDist
+-- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
+import VCVio.OracleComp.Constructions.Replicate
+import VCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions

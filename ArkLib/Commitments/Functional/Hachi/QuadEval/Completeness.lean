@@ -5,6 +5,7 @@ Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — completeness (Hachi §4.2, Figure 3)

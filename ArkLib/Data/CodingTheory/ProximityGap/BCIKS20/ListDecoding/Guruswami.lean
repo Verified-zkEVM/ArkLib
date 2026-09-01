@@ -75,7 +75,7 @@ structure ModifiedGuruswami
             ≥ m
   /-- The X-degree bound. -/
   Q_deg_X :
-    degreeX Q < D_X ((k + 1) / (n : ℚ)) n m
+    Trivariate.degreeInX Q < D_X ((k + 1) / (n : ℚ)) n m
   /-- The Y-degree bound. -/
   Q_D_Y :
     D_Y Q < D_X ((k + 1 : ℚ) / n) n m / k
@@ -952,7 +952,7 @@ private theorem symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
 private theorem symbolicGSPoly_DYZ_le {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
     Trivariate.D_YZ (symbolicGSPoly (F := F) A c) ≤ symbolicYSum A := by
-  unfold Trivariate.D_YZ
+  unfold Trivariate.D_YZ Trivariate.degreeYZ
   apply finsetMaxGetD_le
   intro outer houter
   rw [Finset.mem_image] at houter
@@ -1060,9 +1060,9 @@ private theorem modified_guruswami_has_a_solution_core
   · apply symbolicGSPolyMultiplicityBridge hQ
     exact symbolicGSKernelWitness_shift_vanish A ωs u₀ u₁ w
   · have hx := Polynomial.Bivariate.degreeX_le_natWeightedDegree Q k
-    exact lt_of_le_of_lt (by exact_mod_cast hx) hdeg
+    exact lt_of_le_of_lt (by simpa [Trivariate.degreeInX] using hx) hdeg
   · have hy := symbolicDY_lt_of_weighted (Q := Q) hk hdeg
-    simpa only [Trivariate.D_Y] using hy
+    simpa only [Trivariate.D_Y, Trivariate.degreeInY] using hy
   · have hyz := symbolicGSPoly_DYZ_le A w.c
     have hyzR : (Trivariate.D_YZ Q : ℝ) ≤ symbolicYSum A := by
       exact_mod_cast hyz

@@ -232,7 +232,8 @@ theorem subspaceDesign_tau_lower_of_ne_bot
         rw [eq_bot_iff]
         rintro y ⟨hyA, hyk⟩
         obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hyA
-        have hc0 : c • a i = 0 := by simpa [LinearMap.mem_ker] using hyk
+        change c • a i = 0 at hyk
+        have hc0 : c • a i = 0 := hyk
         rcases smul_eq_zero.mp hc0 with hc | hzero
         · simp [hc]
         · exact absurd hzero hai
@@ -662,12 +663,14 @@ theorem isSubspaceDesign_frsCode_sub_one
       have hn1 : (1 : ℝ) ≤ Fintype.card ι := by exact_mod_cast Fintype.card_pos
       have hs1 : (1 : ℝ) ≤ s := by exact_mod_cast (show 1 ≤ s by omega)
       rw [sub_nonneg, div_le_one (by positivity)]
-      nlinarith
+      simpa only [one_mul] using mul_le_mul hn1 hs1 zero_le_one (by positivity)
     have hid : (1 - 1 / ((Fintype.card ι : ℝ) * s)) * s
         = (s : ℝ) - 1 / Fintype.card ι := by
       field_simp
     rw [div_lt_iff₀ hb_pos] at hτnear
-    nlinarith [mul_le_mul_of_nonneg_left hden_le hfac_nonneg]
+    have hle := mul_le_mul_of_nonneg_left hden_le hfac_nonneg
+    rw [hid] at hle
+    exact (not_lt_of_ge hle) (by simpa only [mul_one] using hτnear)
   have hdim : Module.finrank F (ReedSolomon.Folded.frsCode domain k s ω) = k :=
     ReedSolomon.Folded.dim_frsCode domain k s ω hadm hω0 hk_le
   have hτval : τ r = ((k : ℝ) - 1) / Fintype.card ι / ((s : ℝ) - r + 1) := by
@@ -1056,12 +1059,14 @@ theorem isSubspaceDesign_umCode_sub_one
       have hn1 : (1 : ℝ) ≤ Fintype.card ι := by exact_mod_cast Fintype.card_pos
       have hs1 : (1 : ℝ) ≤ s := by exact_mod_cast (show 1 ≤ s by omega)
       rw [sub_nonneg, div_le_one (by positivity)]
-      nlinarith
+      simpa only [one_mul] using mul_le_mul hn1 hs1 zero_le_one (by positivity)
     have hid : (1 - 1 / ((Fintype.card ι : ℝ) * s)) * s
         = (s : ℝ) - 1 / Fintype.card ι := by
       field_simp
     rw [div_lt_iff₀ hb_pos] at hτnear
-    nlinarith [mul_le_mul_of_nonneg_left hden_le hfac_nonneg]
+    have hle := mul_le_mul_of_nonneg_left hden_le hfac_nonneg
+    rw [hid] at hle
+    exact (not_lt_of_ge hle) (by simpa only [mul_one] using hτnear)
   have hdim : Module.finrank F (ReedSolomon.Multiplicity.umCode domain k s) = k :=
     ReedSolomon.Multiplicity.dim_umCode domain hchar hk_le
   have hτval : τ r = ((k : ℝ) - 1) / Fintype.card ι / ((s : ℝ) - r + 1) := by

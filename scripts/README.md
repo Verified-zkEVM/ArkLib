@@ -8,14 +8,22 @@ This directory contains various utility scripts for the ArkLib project.
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
 - **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
+- **`build_timing_metadata.py`** - Versioned attribution metadata writer/validator for timing artifacts
+- **`test-build-timing-report.sh`** - Deterministic report, metadata, and workflow-policy fixtures
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
-- **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
+- **`check-imports.sh`** - Reject blanket package-root imports and check whether `ArkLib.lean` is
+  up to date with all tracked source modules
+- **`test-check-blanket-imports.sh`** - Focused fixtures for multiline/commented legacy and
+  module-system import-header spellings accepted by the blanket-import scanner
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
 - **`test-axiomsweep.sh`** - Executable fixture matrix certifying the axiomsweep tool itself
   (gate directions, native-trust floor, exit-code contract), against the synthetic-taint
   fixtures in `AxiomSweepTestFixtures/`
+- **`source-trust-audit.py`** - Deterministic source-token inventory for constructs outside
+  the environment sweep's visibility, with optional Git-ref comparison
+- **`test-source-trust-audit.py`** - Focused lexer/diff fixtures for the source inventory
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
@@ -101,6 +109,9 @@ bash scripts/build_timing_report.sh --help
 
 # Check if imports are up to date
 ./scripts/check-imports.sh
+
+# Exercise the blanket-import scanner fixtures directly
+./scripts/test-check-blanket-imports.sh
 ```
 
 ### Check Docs Integrity
@@ -140,8 +151,7 @@ lake exe axiomsweep
 # Full per-declaration report (name, module, kind, line, axioms)
 lake exe axiomsweep --out /tmp/axiom-report.json
 
-# Regression gate: fail iff a declaration is tainted that
-# scripts/axiom_baseline.json does not already list
+# Regression gate: fail iff current taint is not covered by the baseline
 lake exe axiomsweep --check
 
 # Refresh the baseline (after intentionally adding a tagged sorry, or after
@@ -149,13 +159,15 @@ lake exe axiomsweep --check
 lake exe axiomsweep --update-baseline
 ```
 
-The committed baseline makes the distinction the repo cares about mechanical:
-pre-existing `sorry` gaps are allowed, *new* ones fail `--check`. The baseline is an
-allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
+The committed baseline makes the distinction the repo cares about mechanical. Pre-existing
+`sorry` gaps are allowed while recorded; additions fail `--check` until an intentional
+`lake exe axiomsweep --update-baseline` diff is reviewed and committed. Removed debt is
+reported without failing so cleanup is never discouraged; refresh the baseline in the same
+PR. The baseline is an allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
 `Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
 minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
 regardless of the baseline, and `--update-baseline` refuses to write while it is present.
-CI runs the library check report-only; `./scripts/validate.sh --axioms` runs it enforcing.
+CI and `./scripts/validate.sh --axioms` both run the check enforcing.
 
 The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
 `AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep
@@ -169,12 +181,31 @@ lake build AxiomSweepTestFixtures
 ./scripts/test-axiomsweep.sh
 ```
 
+### Source Trust Inventory
+
+`source-trust-audit.py` complements axiomsweep by lexically scanning every tracked
+`ArkLib/**/*.lean` source file, whether imported or not. It masks nested comments, strings,
+and quoted identifiers, then inventories exact admission, `example`, explicit-`axiom`, and
+native/compiler-trust reference tokens. This sees admissions in examples and
+defaults/autoparams that attach to no environment declaration. It deliberately reports rather
+than bans `sorry` debt, and native references are conservative visibility because metaprogram
+syntax quotations can mention a tactic without executing it. The kernel-level sweep owns the
+enforcing taint verdict and zero-native-trust floor.
+
+```bash
+python3 scripts/test-source-trust-audit.py
+python3 scripts/source-trust-audit.py --base-ref origin/main --json /tmp/source-trust.json
+```
+
 ### `build_timing_report.sh`
 
 Helper used by CI to measure and render build timings for clean builds, warm
 rebuilds, the native build, and the `./scripts/validate.sh` path. The CI workflow uploads
-timing-data artifacts so PR runs can compare against a previously recorded
-baseline without rerunning that baseline in the same job. This supports
+timing-data artifacts so PR runs can compare against the successful push run for the PR's exact
+base SHA without rerunning that base in the same job. It never silently substitutes a previous PR
+update or a different `main` commit when the exact artifact is unavailable. Each artifact also
+records the measured checkout, PR head/base, dependency-manifest hash, cache provenance, and runner
+image; the report shows wall time beside `user + sys` CPU work. This supports
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 The four measurements share one tree and run in order, so each leaves it warmer than the last.
@@ -183,6 +214,9 @@ The four measurements share one tree and run in order, so each leaves it warmer 
 and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
+
+`./scripts/test-build-timing-report.sh` exercises metadata validation, exact-base/missing-base
+rendering, CPU deltas, native-command ownership, and the stale-run guard in the trusted reporter.
 
 ## Requirements
 

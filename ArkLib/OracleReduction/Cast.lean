@@ -57,8 +57,13 @@ protected def cast (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁) :
 @[simp]
 theorem cast_id :
     Prover.cast rfl rfl = (id : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁ → _) := by
-  funext; simp [Prover.cast]; ext <;> simp
-  · funext _ _; simp [MessageIdx.cast, bind_pure]
+  funext
+  unfold Prover.cast
+  simp only [ProtocolSpec.cast_id, id_eq]
+  ext <;> simp only [MessageIdx, Function.comp_apply, Fin.cast_eq_self, Message,
+    ChallengeIdx, Challenge, cast_eq, bind_pure_comp, heq_eq_eq]
+  · funext _ _
+    simp [MessageIdx.cast]
   · apply heq_of_eq
     funext _ _
     simp [ChallengeIdx.cast]
@@ -80,6 +85,7 @@ protected def cast (P : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut
     OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₂ :=
   Prover.cast hn hSpec P
 
+omit Oₛᵢ Oₛₒ in
 @[simp]
 theorem cast_id :
     OracleProver.cast rfl rfl =
@@ -259,8 +265,13 @@ theorem cast_processRound (j : Fin n₁)
       cast (by subst_vars; simp [Prover.cast]; rfl)
         ((P.cast hn hSpec).processRound (Fin.cast hn j)
           (cast (by subst_vars; simp [Prover.cast]; rfl) currentResult)) := by
-  subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
-  · funext _ _; simp [MessageIdx.cast, bind_pure]
+  subst hn; subst hSpec; congr 1
+  unfold Prover.cast
+  ext <;> simp only [MessageIdx, Function.comp_apply, Fin.cast_eq_self, Message,
+    ChallengeIdx, Challenge, cast_eq, bind_pure_comp, heq_eq_eq]
+  · apply heq_of_eq
+    funext _ _
+    simp [MessageIdx.cast]
   · apply heq_of_eq
     funext _ _
     simp [ChallengeIdx.cast]
@@ -271,8 +282,13 @@ theorem cast_runToRound (j : Fin (n₁ + 1)) (stmt : StmtIn) (wit : WitIn)
     P.runToRound j stmt wit =
       cast (by subst_vars; simp [Prover.cast]; rfl)
         ((P.cast hn hSpec).runToRound (Fin.cast (congrArg (· + 1) hn) j) stmt wit) := by
-  subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
-  · funext _ _; simp [MessageIdx.cast, bind_pure]
+  subst hn; subst hSpec; congr 1
+  unfold Prover.cast
+  ext <;> simp only [MessageIdx, Function.comp_apply, Fin.cast_eq_self, Message,
+    ChallengeIdx, Challenge, cast_eq, bind_pure_comp, heq_eq_eq]
+  · apply heq_of_eq
+    funext _ _
+    simp [MessageIdx.cast]
   · apply heq_of_eq
     funext _ _
     simp [ChallengeIdx.cast]
@@ -359,7 +375,8 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
-  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ init impl relIn relOut V ε
+  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ
+    init impl relIn relOut V ε
   have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
       𝒮[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] =

@@ -122,6 +122,9 @@ import pathlib
 import re
 import sys
 
+sys.path.insert(0, str(pathlib.Path("scripts").resolve()))
+from build_timing_metadata import MetadataError, load_metadata
+
 results_path = pathlib.Path(sys.argv[1])
 baseline_dir = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2] else None
 test_path_name = os.environ.get("BUILD_TIMING_TEST_NAME", "Validation wrapper")
@@ -203,6 +206,70 @@ def seconds(record: dict | None) -> str:
     return "n/a" if not measured(record) else fmt(record["real"])
 
 
+def cpu_seconds(record: dict | None) -> float | None:
+    if record is None or not measured(record):
+        return None
+    return record["user"] + record["sys"]
+
+
+def fmt_change(current: float, baseline: float) -> str:
+    delta = current - baseline
+    if baseline == 0:
+        return fmt_delta(delta)
+    return f"{fmt_delta(delta)} ({delta / baseline:+.1%})"
+
+
+def read_metadata(path: pathlib.Path) -> tuple[dict | None, str | None]:
+    if not path.exists():
+        return None, "metadata.json is absent (legacy artifact)"
+    try:
+        return load_metadata(path), None
+    except MetadataError as error:
+        return None, str(error)
+
+
+def abbrev_sha(value: str | None) -> str:
+    return value[:7] if value else "unknown"
+
+
+def cache_summary(metadata: dict | None) -> str:
+    if metadata is None:
+        return "unknown"
+    cache = metadata["cache"]
+    if cache["exact_hit"] is True:
+        return "exact hit"
+    if cache["matched_key"]:
+        return "fallback restore"
+    if cache["exact_hit"] is False:
+        return "miss"
+    if cache["primary_key"]:
+        return "miss"
+    return "unknown"
+
+
+def cache_key(metadata: dict | None) -> str:
+    if metadata is None:
+        return "unknown"
+    cache = metadata["cache"]
+    return cache["matched_key"] or cache["primary_key"] or "unknown"
+
+
+def manifest_summary(metadata: dict | None) -> str:
+    if metadata is None:
+        return "unknown"
+    return metadata["dependencies"]["lake_manifest_sha256"][:12]
+
+
+def runner_summary(metadata: dict | None) -> str:
+    if metadata is None:
+        return "unknown"
+    runner = metadata["runner"]
+    image = runner["image_os"] or runner["os"]
+    version = f" {runner['image_version']}" if runner["image_version"] else ""
+    cores = f", {runner['cores']} cores" if runner["cores"] else ""
+    return f"{image}{version}, {runner['arch']}{cores}"
+
+
 def module_to_source_path(target: str) -> str | None:
     # Lake captions are facet-qualified (`Mod:c.o`, `Mod:dynlib`); only the module part maps to
     # a source file, and the facet has to stay visible or native and olean rows collide.
@@ -280,6 +347,17 @@ def target_key(entry: dict) -> str:
 current_records = load_records(results_path)
 baseline_records = load_records(baseline_dir / "results.jsonl") if baseline_dir else {}
 
+current_metadata_path_env = os.environ.get("BUILD_TIMING_METADATA_PATH")
+current_metadata_path = (
+    pathlib.Path(current_metadata_path_env)
+    if current_metadata_path_env
+    else results_path.parent / "metadata.json"
+)
+current_metadata, current_metadata_error = read_metadata(current_metadata_path)
+baseline_metadata, baseline_metadata_error = (
+    read_metadata(baseline_dir / "metadata.json") if baseline_dir else (None, None)
+)
+
 current_log_dir = os.environ.get("BUILD_TIMING_LOG_DIR")
 current_log_path = pathlib.Path(current_log_dir) / "clean_build.log" if current_log_dir else None
 current_clean_build_targets = extract_clean_build_targets(current_log_path)
@@ -303,11 +381,23 @@ if source_sha:
         commit_ref = f"[`{short_sha}`](https://github.com/{source_repo}/commit/{source_sha})"
     else:
         commit_ref = f"`{short_sha}`"
-    print(f"- Commit: {commit_ref}")
+    source_label = (
+        "PR head"
+        if current_metadata and current_metadata["run"]["event"] == "pull_request"
+        else "Source head"
+    )
+    print(f"- {source_label}: {commit_ref}")
 if source_subject:
     print(f"- Message: {md_text(source_subject)}")
 if source_branch:
     print(f"- Ref: {md_code(source_branch)}")
+if current_metadata:
+    checkout_sha = current_metadata["git"]["checkout_sha"]
+    head_sha = current_metadata["git"]["head_sha"]
+    print(
+        f"- Measured checkout: `{abbrev_sha(checkout_sha)}` "
+        f"(workflow head `{abbrev_sha(head_sha)}`)."
+    )
 if baseline_records:
     if baseline_sha:
         baseline_short_sha = baseline_sha[:7]
@@ -323,7 +413,33 @@ if baseline_records:
             print(f"- Comparison baseline: {baseline_commit_ref}.")
     elif baseline_label:
         print(f"- Comparison baseline: {md_text(baseline_label)}.")
-print("- Measured on `ubuntu-latest` with `/usr/bin/time -p`.")
+else:
+    print("- Comparison baseline: exact-base timing artifact unavailable; no substitute was used.")
+print(f"- Runner: current {md_code(runner_summary(current_metadata))}.")
+print(
+    f"- Dependency cache: current **{md_text(cache_summary(current_metadata))}** "
+    f"({md_code(cache_key(current_metadata))}); manifest {md_code(manifest_summary(current_metadata))}."
+)
+if baseline_records:
+    print(
+        f"- Baseline environment: runner {md_code(runner_summary(baseline_metadata))}; "
+        f"dependency cache **{md_text(cache_summary(baseline_metadata))}** "
+        f"({md_code(cache_key(baseline_metadata))}); manifest "
+        f"{md_code(manifest_summary(baseline_metadata))}."
+    )
+if current_metadata_error:
+    print(f"- Attribution note: current {md_text(current_metadata_error)}.")
+if baseline_records and baseline_metadata_error:
+    print(f"- Attribution note: baseline {md_text(baseline_metadata_error)}.")
+if current_metadata and baseline_metadata:
+    current_manifest = current_metadata["dependencies"]["lake_manifest_sha256"]
+    baseline_manifest = baseline_metadata["dependencies"]["lake_manifest_sha256"]
+    if current_manifest != baseline_manifest:
+        print("- Comparability warning: current and baseline dependency manifests differ.")
+if current_metadata:
+    print("- Measured on the pinned `ubuntu-24.04` runner with `/usr/bin/time -p`.")
+else:
+    print("- Measured with `/usr/bin/time -p`; runner pin unavailable for this legacy artifact.")
 print(
     "- Commands: "
     + "; ".join(
@@ -345,8 +461,11 @@ if not current_records:
     sys.exit(0)
 
 if baseline_records:
-    print("| Measurement | Baseline (s) | Current (s) | Delta (s) | Status |")
-    print("| --- | ---: | ---: | ---: | --- |")
+    print(
+        "| Measurement | Base wall (s) | Current wall (s) | Wall change | "
+        "Base CPU (s) | Current CPU (s) | CPU change | Status |"
+    )
+    print("| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |")
     for label in ordered_labels:
         baseline_record = baseline_records.get(label)
         current_record = current_records.get(label)
@@ -360,22 +479,41 @@ if baseline_records:
             and measured(baseline_record)
             and measured(current_record)
         )
-        delta = (
-            fmt_delta(current_record["real"] - baseline_record["real"]) if comparable else "-"
+        wall_change = (
+            fmt_change(current_record["real"], baseline_record["real"]) if comparable else "-"
+        )
+        baseline_cpu = cpu_seconds(baseline_record)
+        current_cpu = cpu_seconds(current_record)
+        cpu_change = (
+            fmt_change(current_cpu, baseline_cpu)
+            if baseline_cpu is not None and current_cpu is not None
+            else "-"
         )
         current_status = status(current_record) if current_record else "-"
         print(
-            f"| {display[label]['name']} | {baseline_time} | {current_time} | {delta} | "
+            f"| {display[label]['name']} | {baseline_time} | {current_time} | {wall_change} | "
+            f"{fmt(baseline_cpu) if baseline_cpu is not None else '-'} | "
+            f"{fmt(current_cpu) if current_cpu is not None else '-'} | {cpu_change} | "
             f"{current_status} |"
         )
 else:
-    print("| Measurement | Wall (s) | Status |")
-    print("| --- | ---: | --- |")
+    print("| Measurement | Wall (s) | CPU work (s) | Status |")
+    print("| --- | ---: | ---: | --- |")
     for label in ordered_labels:
         if label not in current_records:
             continue
         record = current_records[label]
-        print(f"| {display[label]['name']} | {seconds(record)} | {status(record)} |")
+        cpu = cpu_seconds(record)
+        print(
+            f"| {display[label]['name']} | {seconds(record)} | "
+            f"{fmt(cpu) if cpu is not None else '-'} | {status(record)} |"
+        )
+
+print()
+print(
+    "CPU work is `user + sys`. Compare it with wall time to distinguish changed compilation "
+    "work from runner scheduling noise; neither metric is a standalone performance verdict."
+)
 
 clean = current_records.get("clean_build")
 warm = current_records.get("warm_rebuild")
