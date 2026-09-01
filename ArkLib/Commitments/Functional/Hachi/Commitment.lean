@@ -264,7 +264,6 @@ theorem verifiedOpening_honestOpening (base : ZMod q) (βSq γ κ : ℕ)
         exact hβ i
       inner_eq := generateDecomps_inner_eq Φ base decomp hInnerDecomp pp msg i }
 
-set_option linter.unusedSectionVars false in
 /-- **The honest inner decomposition lies in Eq. (20)'s box `S_b`** when the committer is
 instantiated with the *balanced* digits. Each block is `gadgetDecompose … (balanced …)` applied to
 that block's inner commitment, so each of its coefficients is a balanced digit
@@ -286,7 +285,6 @@ section RelInBox
 
 variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
 
-set_option linter.unusedSectionVars false in
 /-- **The honest balanced commitment establishes `relInBox`** — paper-exact `QuadEval`
 completeness's input relation.
 
@@ -367,7 +365,6 @@ section CommitBalancedRelInBox
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
 variable {innerRows outerRows dRows m r : Nat} (b : ℕ)
 
-set_option linter.unusedSectionVars false in
 /-- `commitBalanced`'s commitment is the outer commitment of its own decompositions. Holds by
 `rfl`; recorded so the `relInBox` corollary can be stated against the committer's output rather than
 against a re-spelled `commitWithDecomps` term. -/
@@ -382,7 +379,6 @@ theorem commitBalanced_fst (hb : 1 < b)
         pp.toPublicParams (Hachi.toMatrix p)) :=
   rfl
 
-set_option linter.unusedSectionVars false in
 /-- `commitBalanced`'s decommitment is its honest decomposition data. Holds by `rfl`. -/
 theorem commitBalanced_snd (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
@@ -398,7 +394,6 @@ theorem commitBalanced_snd (hb : 1 < b)
 -- canonical `ZMod.decidableEq` is used in `Decomposition.ofDigits`. With a local instance binder
 -- the committer's decomposition and the generic lemma's carry *different* `DecidableEq` instances,
 -- and unifying them is not just slow but impossible — the symptom is a diverging `whnf`.
-set_option linter.unusedSectionVars false in
 /-- **`commitBalanced` establishes paper-exact `QuadEval`'s input relation `relInBox`.**
 `mem_relInBox_of_honestBalanced` at the actual output of the balanced committer: the statement's
 commitment is `(commitBalanced …).1` and the witness is the honest opening over

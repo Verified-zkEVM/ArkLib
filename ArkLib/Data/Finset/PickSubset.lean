@@ -38,19 +38,19 @@ noncomputable def pickSubset (s : Finset α) (n : ℕ) : Finset α :=
 /-- Picking zero elements yields an empty set. -/
 @[simp]
 lemma pick_subset_zero {s : Finset α} :
-  pickSubset s 0 = ∅ := rfl
+    pickSubset s 0 = ∅ := rfl
 
 /-- Picking from an empty set always yields an empty set. -/
 @[simp]
 lemma pick_subset_empty {n : ℕ} :
-  pickSubset (∅ : Finset α) n = ∅ := by
+    pickSubset (∅ : Finset α) n = ∅ := by
   induction n with
   | zero => rfl
   | succ n ih => simp [pickSubset, ih]
 
 /-- `pickSubset s n` is indeed a subset of `s`. -/
 lemma pick_subset_subset {s : Finset α} {n : ℕ} :
-  pickSubset s n ⊆ s := by
+    pickSubset s n ⊆ s := by
   induction n with
   | zero => simp
   | succ n ih =>
@@ -64,7 +64,7 @@ lemma pick_subset_subset {s : Finset α} {n : ℕ} :
 /-- The cardinality of picked subset is `min s.card n`. -/
 @[simp]
 lemma card_pick_subset {s : Finset α} {n : ℕ} :
-  (pickSubset s n).card = min s.card n := by
+    (pickSubset s n).card = min s.card n := by
   induction n generalizing s with
   | zero => simp [Finset.pickSubset]
   | succ n ih =>
@@ -83,12 +83,12 @@ lemma card_pick_subset {s : Finset α} {n : ℕ} :
 
 @[simp]
 lemma card_pick_subset_le {s : Finset α} {n : ℕ} :
-  (pickSubset s n).card ≤ n := by simp
+    (pickSubset s n).card ≤ n := by simp
 
 /-- Picking non-zero elements from a non-empty set is not empty. -/
 @[simp]
 lemma nonempty_pick_subset_of_nonempty_of_ne {s : Finset α} {n : ℕ}
-  (h : s.Nonempty)
+    (h : s.Nonempty)
   (hn : n ≠ 0) :
   (pickSubset s n).Nonempty := by
   have h_card : (pickSubset s n).card ≠ 0 := by
@@ -99,7 +99,7 @@ lemma nonempty_pick_subset_of_nonempty_of_ne {s : Finset α} {n : ℕ}
 /-- If the target cardinality `n` exceeds or is equal to the cardinality
   of the set `s` then `pickSubset` returns the whole set `s`. -/
 lemma pick_subset_eq_s_of_card_le_n {s : Finset α} {n : ℕ}
-  (h : s.card ≤ n) :
+    (h : s.card ≤ n) :
   pickSubset s n = s := by
   rw [←Finset.eq_iff_card_le_of_subset pick_subset_subset]
   simp [h]
@@ -107,14 +107,14 @@ lemma pick_subset_eq_s_of_card_le_n {s : Finset α} {n : ℕ}
 /-- If the picked subset does not meet the target cardinality requirement
   then we must have obtained the original set `s`. -/
 lemma pick_subset_eq_of_card_pick_subset_lt {s : Finset α} {n : ℕ}
-  (h : (s.pickSubset n).card < n) :
+    (h : (s.pickSubset n).card < n) :
   pickSubset s n = s := by
   rw [←Finset.eq_iff_card_le_of_subset pick_subset_subset]
   aesop (add safe (by omega))
 
 /-- `pickSubset` is of cardinality `n` if it is a proper subset of `s`. -/
 lemma pick_subset_card_eq_of_ne {s : Finset α} {n : ℕ}
-  (h : pickSubset s n ≠ s) :
+    (h : pickSubset s n ≠ s) :
   (pickSubset s n).card = n := by
   by_contra contra
   exact h ∘ pick_subset_eq_of_card_pick_subset_lt <|

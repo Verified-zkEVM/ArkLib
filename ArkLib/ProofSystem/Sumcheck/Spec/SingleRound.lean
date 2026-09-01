@@ -180,14 +180,14 @@ instance instSampleableTypeChallengePSpec [SampleableType R] :
 namespace Simpler
 
 -- We further break it down into each message:
--- In order of (witness, oracle statement, public statement ; relation):
--- (∅, p : R⦃≤ d⦄[X], old_claim : R ; ∑ x ∈ univ.map D, p.eval x = old_claim) =>[Initial Context]
--- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], old_claim : R ;
---   ∑ x ∈ univ.map D, q.eval x = old_claim ; p = q) =>[Send Claim] (note replaced `p` with `q`)
--- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], old_claim : R ; p = q) =>[Check Claim]
--- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], ∅ ; p = q) =>[Reduce Claim]
--- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], r : R ; p.eval r = q.eval r) =>[Random Query]
--- (∅, p : R⦃≤ d⦄[X], new_claim : R ; ∑ x ∈ univ.map D, p.eval x = new_claim) =>[Reduce Claim]
+-- In order of (witness, oracle statement, public statement; relation):
+-- (∅, p : R⦃≤ d⦄[X], old_claim : R; ∑ x ∈ univ.map D, p.eval x = old_claim) =>[Initial Context]
+-- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], old_claim : R;
+--   ∑ x ∈ univ.map D, q.eval x = old_claim; p = q) =>[Send Claim] (note replaced `p` with `q`)
+-- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], old_claim : R; p = q) =>[Check Claim]
+-- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], ∅; p = q) =>[Reduce Claim]
+-- (∅, (p, q) : R⦃≤ d⦄[X] × R⦃≤ d⦄[X], r : R; p.eval r = q.eval r) =>[Random Query]
+-- (∅, p : R⦃≤ d⦄[X], new_claim : R; ∑ x ∈ univ.map D, p.eval x = new_claim) =>[Reduce Claim]
 
 /-!
 ### Composing a single sum-check round from components
@@ -403,7 +403,7 @@ variable [DecidableEq R] [SampleableType R]
 
 /-- The verifier for the simple description of a single round of sum-check -/
 def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
-                              (StmtOut R × (∀ i, OStmtOut R deg i)) (pSpec R deg) where
+    (StmtOut R × (∀ i, OStmtOut R deg i)) (pSpec R deg) where
   verify := fun ⟨target, oStmt⟩ transcript => do
     letI polyLE := transcript 0
     guard (∑ x ∈ (univ.map D), polyLE.val.eval x = target)
@@ -412,7 +412,7 @@ def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
 
 /-- The reduction for the simple description of a single round of sum-check -/
 def reduction : Reduction oSpec (StmtIn R × (∀ i, OStmtIn R deg i)) Unit
-                                (StmtOut R × (∀ i, OStmtOut R deg i)) Unit (pSpec R deg) where
+    (StmtOut R × (∀ i, OStmtOut R deg i)) Unit (pSpec R deg) where
   prover := prover R deg oSpec
   verifier := verifier R deg D oSpec
 
@@ -446,7 +446,7 @@ def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R)
       rw [show Function.Embedding.inl i = Sum.inl i from rfl] }
 
 def oracleReduction : OracleReduction oSpec (StmtIn R) (OStmtIn R deg) Unit
-                                            (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) where
+    (StmtOut R) (OStmtOut R deg) Unit (pSpec R deg) where
   prover := prover R deg oSpec
   verifier := oracleVerifier R deg D oSpec
 

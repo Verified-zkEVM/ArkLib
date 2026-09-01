@@ -12,6 +12,12 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import CompPoly.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 
+/-!
+# ArkLib.Data.MvPolynomial.EvenAndOdd
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace MvPolynomial
 
 open BigOperators Fintype Finset
@@ -168,8 +174,7 @@ private lemma formula_generic
       (substPlus (monomial m (p.coeff m)) +
         substMinus (monomial m (p.coeff m))) * C (2⁻¹) +
           X 0 * ((substPlus (monomial m (p.coeff m)) -
-          substMinus (monomial m (p.coeff m))) * C (2⁻¹)) = monomial m (p.coeff m) :=
-    by
+          substMinus (monomial m (p.coeff m))) * C (2⁻¹)) = monomial m (p.coeff m) := by
       intro m hm
       exact formula_for_monomial h2ne0 m (p.coeff m)
         (fun i ↦ (mem_restrictDegree _ p 1).mp hp m hm i)
@@ -182,7 +187,7 @@ private lemma formula_generic
   simp [mul_sub, Finset.mul_sum]
 
 lemma even_and_odd_formula
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   (even p).1 + (MvPolynomial.X 0) * (odd p).1 = p.1 := formula_generic
     (by aesop (add simp [CharP.charP_iff_prime_eq_zero, Nat.prime_two])) p.1 p.2
@@ -278,8 +283,8 @@ private lemma aeval_shift_monomial_nonzero_case
           then 1
           else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ t x) =
             MvPolynomial.monomial
-              (∑ x : Fin n, if h : x = 0 then 0 else Finsupp.single ⟨↑x - 1, by omega⟩ (t x)) 1 :=
-      by
+              (∑ x : Fin n, if h : x = 0 then 0 else
+                Finsupp.single ⟨↑x - 1, by omega⟩ (t x)) 1 := by
       intro t
       induction (Finset.univ : Finset (Fin n)) using Finset.induction
         <;> aesop
@@ -304,7 +309,7 @@ lemma aeval_shift_monomial_mem {n : ℕ} [NeZero n]
   · rw [aeval_shift_monomial_zero_case m c hm h0]; exact zero_mem _
 
 lemma aeval_shift_mem_restrictDegree
-  (q : MvPolynomial (Fin n) R) (hq : q ∈ restrictDegree (Fin n) R 1) :
+    (q : MvPolynomial (Fin n) R) (hq : q ∈ restrictDegree (Fin n) R 1) :
   q.aeval (fun i ↦ if h : i = (0 : Fin n) then (0 : MvPolynomial (Fin (n - 1)) R)
     else X ⟨i.val - 1, by omega⟩) ∈ restrictDegree (Fin (n - 1)) R 1 := by
   rw [MvPolynomial.as_sum q, map_sum]
@@ -324,7 +329,7 @@ noncomputable def odd_pred (p : R⦃≤ 1⦄[X (Fin n)]) : R⦃≤ 1⦄[X (Fin (
       by exact aeval_shift_mem_restrictDegree (odd p).1 (odd p).2⟩
 
 lemma even_and_odd_formula'
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   (even_pred p).1.aeval
     (fun i ↦ X (⟨i.val + 1, by omega⟩ : Fin n)) +
@@ -337,7 +342,7 @@ lemma even_and_odd_formula'
   exact even_and_odd_formula hchar
 
 lemma even_and_odd_eval
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]}
   {α : R} :
   p.1.aeval
@@ -363,7 +368,7 @@ noncomputable def shiftedPowAlgHom :
 omit [NeZero n] in
 open LinearMvExtension in
 lemma shiftedPowAlgHom_eq_powAlgHom_comp_sq_x
-  {p : MvPolynomial (Fin (n - 1)) R} :
+    {p : MvPolynomial (Fin (n - 1)) R} :
   shiftedPowAlgHom p = (powAlgHom p).comp (Polynomial.X ^ 2) := by
   induction p using MvPolynomial.induction_on
     <;> aesop
@@ -381,7 +386,7 @@ private lemma powAlgHom_aeval_shift (q : MvPolynomial (Fin (n - 1)) R) :
 
 open LinearMvExtension in
 lemma powAlgHom_eq_even_add_odd
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   powAlgHom p.1 =
     shiftedPowAlgHom (even_pred p).1 +
@@ -394,7 +399,7 @@ lemma powAlgHom_eq_even_add_odd
 
 open LinearMvExtension in
 lemma powAlgHom_eq_even_add_odd_powAlgHom
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   powAlgHom p.1 =
     (powAlgHom (even_pred p).1).comp (Polynomial.X ^ 2) +

@@ -109,7 +109,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 /-- Perfect completeness of the non-commitment round reduction follows by append composition
     of the fold-round and the transfer-round reductions. -/
 theorem foldRelayOracleReduction_perfectCompleteness
-     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
+    (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFoldRelay (L:=L) (d := mp.degCombinator + 1))
     (relIn := roundRelation (mp := mp) 𝔽q β (ϑ:=ϑ)
@@ -162,7 +162,7 @@ section FoldCommitRound -- foldRound + commit
 
 @[reducible]
 def foldCommitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
-  OracleVerifier []ₒ
+    OracleVerifier []ₒ
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc)
     (StmtOut := Statement (L := L) Context i.succ)
@@ -411,8 +411,7 @@ def sumcheckFoldOracleVerifier :=
     (StmtOut := Statement (L := L) (ℓ := ℓ) Context (Fin.last ℓ))
     (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (pSpec := pSpecSumcheckFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (d := mp.degCombinator + 1))
-    := by
+      (d := mp.degCombinator + 1)) := by
     let res := OracleVerifier.append (oSpec:=[]ₒ)
       (V₁:=by
         exact nonLastBlocksOracleVerifier
@@ -625,8 +624,7 @@ def sumcheckFoldOracleReduction :=
       (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ)
         (Fin.last ℓ) (d := mp.degCombinator + 1))
       (pSpec := pSpecSumcheckFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (d := mp.degCombinator + 1))
-     := by
+        (d := mp.degCombinator + 1)) := by
     let res := OracleReduction.append (oSpec:=[]ₒ)
       (R₁:=by
         exact nonLastBlocksOracleReduction

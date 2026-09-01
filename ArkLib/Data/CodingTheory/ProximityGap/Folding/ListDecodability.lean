@@ -8,6 +8,12 @@ import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
 import ArkLib.Data.CodingTheory.ProximityGap.Folding
 import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
 
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function
@@ -38,7 +44,7 @@ open FoldingContext in
 
   This is a part of the proof of the claim 4.22 of [ACFY24]. -/
 lemma folding_contracts_block_distance [FoldingContextMiddle k n]
-  {α : F} {u : Word F (Fin (2 ^ n))} :
+    {α : F} {u : Word F (Fin (2 ^ n))} :
   Δ𞁒(k - 1, ω.subdomain 1, foldWord ω u 1 α, foldWord ω f 1 α) ≤
     Δ𞁒(k , ω, u, f) := by
   simp only [blockDistance, card_disagreementSet', card_toFinset,
@@ -66,7 +72,7 @@ lemma folding_contracts_block_distance [FoldingContextMiddle k n]
 
   This is a part of the proof of the claim 4.22 of [ACFY24]. -/
 lemma folding_contracts_block_rel_distance [FoldingContextMiddle k n]
-  {α : F} {u : Word F (Fin (2 ^ n))} :
+    {α : F} {u : Word F (Fin (2 ^ n))} :
   δ𞁒(k - 1, ω.subdomain 1, foldWord ω u 1 α, foldWord ω f 1 α) ≤
     δ𞁒(k , ω, u, f) := by
   aesop
@@ -81,7 +87,7 @@ open FoldingContext in
   This is the claim 4.22 from [ACFY24] with unfolded definition `⊆`.
 -/
 lemma folding_block_rel_ball {d : ℕ} [FoldingContext k d n]
-  {α : F} {δ : ℝ≥0} {u : Word F (Fin (2 ^ n))}
+    {α : F} {δ : ℝ≥0} {u : Word F (Fin (2 ^ n))}
   (hu : u ∈ Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) :
   foldWord ω u 1 α ∈
     Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
@@ -101,7 +107,7 @@ lemma folding_block_rel_ball {d : ℕ} [FoldingContext k d n]
   This is the claim 4.22 from [ACFY24].
 -/
 theorem folding_preserves_block_balls {d : ℕ} [FoldingContext k d n] {α : F} {δ : ℝ≥0} :
-  Set.image
+    Set.image
     (fun u ↦ foldWord ω u 1 α)
     (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) ⊆
       Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),

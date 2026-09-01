@@ -9,6 +9,12 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Spec
 import ArkLib.OracleReduction.Basic
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
 
+/-!
+# ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+
+Definitions and results for this component of ArkLib.
+-/
+
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix
 open scoped NNReal
@@ -90,7 +96,7 @@ and other logic required by the protocol.
 
 /-- A dummy state returned by the verifier upon failure of Check 1. -/
 def failureState (stmt : BatchingStmtIn L ℓ) (s_hat : P.A) :
-  Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 := {
+    Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 := {
     ctx := {
       t_eval_point := stmt.t_eval_point,
       original_claim := stmt.original_claim
@@ -209,7 +215,7 @@ def batchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
 /-- Input relation: the witness `t` and `t'` are consistent,
 and `t` satisfies the original claim. -/
 def batchingInputRelation :
-  Set ((BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)) × BatchingWitIn L K ℓ ℓ') :=
+    Set ((BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)) × BatchingWitIn L K ℓ ℓ') :=
   {⟨⟨stmt, oStmt⟩, wit⟩ | batchingInputRelationProp κ L K P ℓ ℓ' h_l aOStmtIn stmt oStmt wit }
 
 /-- Intermediate witness types for RBR knowledge soundness. -/
@@ -326,7 +332,7 @@ noncomputable def batchingKnowledgeStateFunction :
 omit [Fintype L] [Fintype K] [DecidableEq K] in
 /-- Perfect completeness for the batching phase oracle reduction. -/
 theorem batchingReduction_perfectCompleteness :
-  OracleReduction.perfectCompleteness
+    OracleReduction.perfectCompleteness
     (oracleReduction := batchingOracleReduction κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
     (relIn := batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
@@ -340,7 +346,7 @@ theorem batchingReduction_perfectCompleteness :
 omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for the batching phase oracle verifier. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] :
-  OracleVerifier.rbrKnowledgeSoundness
+    OracleVerifier.rbrKnowledgeSoundness
     (verifier := oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
     (init := init) (impl := impl)
     (relIn := batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)

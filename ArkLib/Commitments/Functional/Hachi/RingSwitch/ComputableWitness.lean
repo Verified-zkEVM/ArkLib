@@ -91,7 +91,7 @@ def honestLiftWitnessC (hd : 0 < Φ.φ.natDegree)
   z := z
   ρ := fun i => cQuotient Φ s z i
   hρ := fun i => by
-    haveI := isPresentation_cyclotomic Φ hd
+    have := isPresentation_cyclotomic Φ hd
     rw [cQuotient_toPoly]
     have h := (cyclotomicPresentation Φ).natDegree_quotient_le s.M z s.yvec i
     rw [cyclotomicPresentation_modulus_natDegree] at h
@@ -118,7 +118,7 @@ theorem honestLiftWitnessC_eq_honestWitness (hd : 0 < Φ.φ.natDegree)
     honestLiftWitnessC Φ hd s z
       = Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
           (cyclotomicPresentation_modulus_natDegree Φ) s z := by
-  haveI := isPresentation_cyclotomic Φ hd
+  have := isPresentation_cyclotomic Φ hd
   refine liftedWitness_eq_of Φ rfl (funext fun i => ?_)
   have h : (cQuotient Φ s z i).toPoly
       = ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)

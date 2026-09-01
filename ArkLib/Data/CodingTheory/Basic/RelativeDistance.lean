@@ -64,18 +64,18 @@ omit [Nonempty ι] in
 /-- Membership in the relative Hamming ball, spelled out. -/
 @[simp]
 theorem mem_relHammingBall_iff {A : Type*} [DecidableEq A] (y x : ι → A) (r : ℝ) :
-  x ∈ relHammingBall y r ↔ (δᵣ(y, x) : ℝ) ≤ r := by
+    x ∈ relHammingBall y r ↔ (δᵣ(y, x) : ℝ) ≤ r := by
   aesop (add simp [relHammingBall, relHammingDist])
 
 omit [Nonempty ι] in
 lemma relHammingDist_coe {u v : ι → R} :
-  (Code.relHammingDist u v : ℝ) = (Δ₀(u, v) : ℝ) / (Fintype.card ι : ℝ) := by
+    (Code.relHammingDist u v : ℝ) = (Δ₀(u, v) : ℝ) / (Fintype.card ι : ℝ) := by
   simp [Code.relHammingDist]
 
 omit [Nonempty ι] in
 /-- Post-composition with an injection preserves the relative Hamming distance. -/
 theorem relHammingDist_comp {A B : Type*} [DecidableEq A] [DecidableEq B] {e : A → B}
-  (he : Function.Injective e) (u v : ι → A) :
+    (he : Function.Injective e) (u v : ι → A) :
   δᵣ(e ∘ u, e ∘ v) = δᵣ(u, v) := by
   aesop (add simp [relHammingDist, hammingDist_comp'])
 

@@ -68,8 +68,8 @@ theorem roundPoly_degreeLE_finset {R : Type*} [CommSemiring R] {n deg : ℕ} (i 
 
 /- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation. Degree-generic: the round polynomial
 `h` and the resulting univariate `g_i` share the degree bound `d` (inferred from `h`). -/
-def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ) (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)])
-    : L⦃≤ d⦄[X] := by
+def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
+    (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] := by
   have h_i_lt_ℓ : ℓ - ↑i.castSucc > 0 := by
     have hi := i.2
     exact Nat.zero_lt_sub_of_lt hi
@@ -175,8 +175,7 @@ from the after-challenge prover state. -/
 def getRoundProverFinalOutput (i : Fin ℓ)
     (finalPrvState : roundPrvState (L := L) ℓ Context (OStmtIn := OStmtIn) d i 2) :
     ((Statement (L := L) (ℓ := ℓ) Context i.succ
-      × (∀ j, OStmtIn j)) × SumcheckWitness L ℓ i.succ d)
-  := by
+      × (∀ j, OStmtIn j)) × SumcheckWitness L ℓ i.succ d) := by
   let (stmtIn, oStmtIn, witIn, h_i, r_i') := finalPrvState
   let newSumcheckTarget : L := h_i.val.eval r_i'
   let stmtOut : Statement (L := L) (ℓ := ℓ) Context i.succ := {
@@ -210,7 +209,7 @@ def getRoundProverFinalOutput (i : Fin ℓ)
 the round polynomial `H_i`. `receiveChallenge 1` stores the verifier's challenge `r'_i`.
 `output` advances the witness via `getRoundProverFinalOutput`. -/
 def roundOracleProver (i : Fin ℓ) :
-  OracleProver (oSpec := []ₒ)
+    OracleProver (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context i.castSucc)
     (OStmtIn := OStmtIn)
     (WitIn := SumcheckWitness L ℓ i.castSucc d)
@@ -248,7 +247,7 @@ Receives the degree-`d` univariate `h_i(X)` from the prover, checks
 domain, to match how the prover builds it; for the boolean hypercube this is `h_i(0) + h_i(1)`),
 samples `r'_i ∈ L`, and outputs the updated statement with `s_{i+1} := h_i(r'_i)`. -/
 def roundOracleVerifier (i : Fin ℓ) :
-  OracleVerifier
+    OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context i.castSucc)
     (OStmtIn := OStmtIn)
@@ -287,7 +286,7 @@ def roundOracleVerifier (i : Fin ℓ) :
 
 /-- The oracle reduction bundling the per-round prover and verifier. -/
 def roundOracleReduction (i : Fin ℓ) :
-  OracleReduction (oSpec := []ₒ)
+    OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ) Context i.castSucc)
     (OStmtIn := OStmtIn)
     (WitIn := SumcheckWitness L ℓ i.castSucc d)

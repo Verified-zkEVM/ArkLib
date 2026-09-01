@@ -8,6 +8,12 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ReedSolomon
 
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function Code

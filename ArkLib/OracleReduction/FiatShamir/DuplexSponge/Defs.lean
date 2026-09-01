@@ -74,7 +74,8 @@ It is indexed over the challenge rounds of the protocol specification, and for e
 - The output is a vector of units of size `Lᵥ(i)` (the number of queries to the permutation oracle
   needed to absorb the `i`-th challenge) -/
 def duplexSpongeHybridOracle : OracleSpec
-    ((i : pSpec.ChallengeIdx) × StmtIn × ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
+    ((i : pSpec.ChallengeIdx) × StmtIn ×
+      ((j : pSpec.MessageIdx) → (j.1 < i.1) → Vector U (pSpec.Lₚᵢ j))) :=
   fun i => Vector U (pSpec.Lᵥᵢ i.1)
 
 alias «𝒟_Σ» := duplexSpongeHybridOracle
@@ -164,8 +165,7 @@ Prover's function for processing the next round, given the current result of the
 This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
 -/
 @[inline, specialize]
-def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)]
-     (j : Fin n)
+def Prover.processRoundDSFS (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (currentResult : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (pSpec.MessagesUpTo j.castSucc ×
@@ -177,15 +177,18 @@ def Prover.processRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)]
   match hDir : pSpec.dir j with
   | .V_to_P => do
     let f ← prover.receiveChallenge ⟨j, hDir⟩ state
-    let (challenge, newSponge) ←
-      liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)) (DuplexSponge.squeeze sponge (challengeSize ⟨j, hDir⟩))
+    let (challenge, newSponge) ← liftM
+      (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
+      (DuplexSponge.squeeze sponge (challengeSize ⟨j, hDir⟩))
     -- Deserialize the challenge
     let deserializedChallenge : pSpec.Challenge ⟨j, hDir⟩ := Deserialize.deserialize challenge
     return ⟨messages.extend hDir, newSponge, f deserializedChallenge⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
     let serializedMessage : Vector U (messageSize ⟨j, hDir⟩) := Serialize.serialize msg
-    let newSponge ← liftM (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)) (DuplexSponge.absorb sponge serializedMessage.toList)
+    let newSponge ← liftM
+      (m := OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U))
+      (DuplexSponge.absorb sponge serializedMessage.toList)
     return ⟨messages.concat hDir msg, newSponge, newState⟩
 
 /--
@@ -194,7 +197,7 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
   to round `i`, and the prover's state after round `i`.
 -/
 @[inline, specialize]
-def Prover.runToRoundDSFS [∀ i, VCVCompatible (pSpec.Challenge i)] (i : Fin (n + 1))
+def Prover.runToRoundDSFS (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
         OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)

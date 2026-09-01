@@ -9,6 +9,12 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 import ArkLib.Data.CodingTheory.ReedSolomon
 
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory Code

@@ -57,7 +57,7 @@ def commit (srs : Vector G₁ (n + 1)) (coeffs : Fin (n + 1) → ZMod p) : G₁ 
 
 /-- To generate an opening proving that a polynomial `poly` has a certain evaluation at `z`,
   we return the commitment to the polynomial `q(X) = (poly(X) - poly.eval z) / (X - z)` -/
-def generateOpening [Fact (Nat.Prime p)] (srs : Vector G₁ (n + 1))
+def generateOpening (srs : Vector G₁ (n + 1))
     (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) : G₁ :=
     letI poly : CPolynomial (ZMod p) := CPolynomial.ofFn coeffs
     letI q : CPolynomial (ZMod p) := divByMonic (poly - C (eval z poly)) (X - C z)

@@ -83,8 +83,7 @@ lemma e_le_dist_over_3_strong
       let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
           (deg := deg) (α := α) (e := e) :=
         fun r ↦
-          ⟨u + r.1 • v,
-            by
+          ⟨u + r.1 • v, by
               refine ⟨?_, r.2⟩
               refine
                 (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
@@ -546,8 +545,7 @@ lemma dir_close_of_many_close_pts
     let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
         (deg := deg) (α := α) (e := e) :=
       fun r ↦
-        ⟨u + r.1 • v,
-          by
+        ⟨u + r.1 • v, by
             refine ⟨?_, r.2⟩
             refine
               (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
@@ -1046,8 +1044,7 @@ private lemma all_close_not_few_close_pts
     let g : F → closePtsOnAffineLine (F := F) (u := u) (v := v)
         (deg := deg) (α := α) (e := e) :=
       fun r ↦
-        ⟨u + r • v,
-          by
+        ⟨u + r • v, by
             refine ⟨?_, ?_⟩
             · refine
                 (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
@@ -1312,8 +1309,7 @@ lemma prob_of_bad_pts
         let f : fiber → closePtsOnAffineLine (F := F) (u := u0) (v := v_star)
             (deg := deg) (α := α) (e := e) :=
           fun w ↦
-            ⟨(w.1 : ι → F),
-              by
+            ⟨(w.1 : ι → F), by
                 refine ⟨?_, ?_⟩
                 · -- membership in the affine line: `w - rep q ∈ V`.
                   have hwq : π w.1 = π (rep q) := by
@@ -1394,8 +1390,7 @@ lemma prob_of_bad_pts
           let g : F → closePtsOnAffineLine (F := F) (u := u0) (v := v_star)
               (deg := deg) (α := α) (e := e) :=
             fun r ↦
-              ⟨u0 + r • v_star,
-                by
+              ⟨u0 + r • v_star, by
                   refine ⟨?_, ?_⟩
                   · refine
                       (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u0)

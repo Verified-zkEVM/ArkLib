@@ -73,7 +73,8 @@ variable {StmtIn StmtOut WitIn WitOut : Type}
     {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
     {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
 
--- def BCSTransform (reduction : OracleReduction pSpec oSpec StmtIn StmtOut WitIn WitOut OStmtIn OStmtOut) :
+  -- def BCSTransform
+  --     (reduction : OracleReduction pSpec oSpec StmtIn StmtOut WitIn WitOut OStmtIn OStmtOut) :
 --     Reduction (pSpec.BCSTransform commitmentScheme) oSpec StmtIn StmtOut WitIn WitOut :=
 --     sorry
 

@@ -44,7 +44,7 @@ variable {k : ℕ} {x : F}
 open FoldingContext in
 /-- One step of lemma 4.15 from [ACFY24]. -/
 lemma foldWord_eq_evalOnPoints_powAlgHom [FoldingContext 1 d n] {α : F}
-  {g : F⦃≤ 1⦄[X (Fin d)]}
+    {g : F⦃≤ 1⦄[X (Fin d)]}
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
   foldWord domain f 1 α =
     evalOnPoints
@@ -131,7 +131,7 @@ open FoldingContext in
   compute the corresponding multilinear extension
   for the interated folding of codewords. -/
 theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
-  {α : Fin k → F} {g : F⦃≤ 1⦄[X (Fin d)]}
+    {α : Fin k → F} {g : F⦃≤ 1⦄[X (Fin d)]}
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
   iteratedFoldWord domain f k α =
       evalOnPoints

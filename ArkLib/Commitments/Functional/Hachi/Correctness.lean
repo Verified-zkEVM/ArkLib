@@ -253,7 +253,6 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
       Φ P pp hqm hqz K hd hbZero φF).append
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ P.bZero P.bZero K φF)
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect completeness of the nonrecursive opening**, from `relPolyEval` to
 `acceptRejectRel`, error `0`. The hypotheses are exactly those of
@@ -359,7 +358,6 @@ def relCommitInput (hb : 1 < b)
   {p | (p.1.1, p.2.2) = commitBalanced b hb pp p.2.1 ∧
     CMlPolynomial.eval p.2.1 p.1.2.1 = p.1.2.2}
 
-set_option linter.unusedSectionVars false in
 /-- **The honest commitment input satisfies `relPolyEval`** — the forward relation lemma of the
 input adapter, and the only direction correctness needs.
 
@@ -450,7 +448,6 @@ def commitInputReduction :
     (fun _ w => commitInputWitMap b w)
 
 
-set_option linter.unusedSectionVars false in
 /-- **Perfect completeness of the commitment-input adapter**, from `relCommitInput` to
 `relPolyEval`, error `0` — `ReduceClaim.reduction_completeness_of_imp` at the forward honest
 relation lemma. Axiom-clean. -/
@@ -515,7 +512,6 @@ def hachiNonrecursiveOpening (P : HonestRangeParams q)
     (nonrecursiveOpeningReduction (oSpec := unifSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
       𝓜(q, α) P pp (Nat.le_pow_clog P.hb q) (Nat.le_pow_clog P.hb q) K hd hbZero φF)
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect completeness of the complete nonrecursive opening**, from `relCommitInput` (the
 honest balanced commitment plus a truthful evaluation claim) to `acceptRejectRel`, error `0`.
@@ -585,7 +581,6 @@ def hachiNonrecursive (P : HonestRangeParams q)
   opening := fun keys =>
     hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁) P keys.1 K hd hbZero φF
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect correctness of the nonrecursive Hachi commitment scheme**: for every committed
 multilinear polynomial and every evaluation query, the honest run — key generation, balanced

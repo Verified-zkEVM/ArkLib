@@ -396,25 +396,25 @@ theorem completePrefixReduction_perfectCompleteness
     Φ P init impl K φF hd
   have hZero := nestedZeroCheckReduction_perfectCompleteness
     Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
-  letI sampleEmptyNested : ∀ i, SampleableType
+  let sampleEmptyNested : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
       (h₂ := instSampleableTypeChallengePSpecNestedZeroCheck)
-  letI sampleScalarTail : ∀ i, SampleableType
+  let sampleScalarTail : ∀ i, SampleableType
       ((pSpecScalar K.TCom F ++ₚ
         ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁)).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := CoordinateWise.ScalarRound.instSampleableTypeChallengePSpecScalar)
       (h₂ := sampleEmptyNested)
-  letI sampleEmptyScalarTail : ∀ i, SampleableType
+  let sampleEmptyScalarTail : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ
         (pSpecScalar K.TCom F ++ₚ
           ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁))).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
       (h₂ := sampleScalarTail)
-  letI sampleQuadTail : ∀ i, SampleableType
+  let sampleQuadTail : ∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
           (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
         ((!p[] : ProtocolSpec 0) ++ₚ
@@ -503,7 +503,6 @@ generic append instance does not fire reliably through a deeply nested `Protocol
   ProtocolSpec.instSampleableTypeChallengeAppend
     (h₁ := completePrefixSpecSampleable Φ) (h₂ := sumcheckSpecSampleable bZero (M + 1))
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect completeness of the honest Hachi chain through the sumcheck**, from `relPolyEval` to
 the evaluation claim `relWEvalClaim`, error `0`.

@@ -5,6 +5,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Binius.BinaryBasefold.QueryPhase
 
 /-!
@@ -322,7 +328,7 @@ noncomputable def queryOracleProof : OracleProof
 
 /-- Perfect completeness for the final query round (using the oracle queryProof). -/
 theorem queryOracleProof_perfectCompleteness {σ : Type}
-  (init : ProbComp σ)
+    (init : ProbComp σ)
   (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleProof.perfectCompleteness
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
@@ -351,7 +357,7 @@ noncomputable def queryRbrExtractor :
   extractOut := fun _ _ _ => ()
 
 def queryKStateProp {m : Fin (1 + 1)}
-  (tr : ProtocolSpec.Transcript m
+    (tr : ProtocolSpec.Transcript m
     (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
   (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
   (witMid : Unit)
