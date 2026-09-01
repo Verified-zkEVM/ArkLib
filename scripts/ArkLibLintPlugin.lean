@@ -44,9 +44,10 @@ private partial def collectSuppressions (stx : Syntax) (acc : Array (Syntax × M
     result := collectSuppressions child result
   return result
 
-private def suppressionLinter : Linter where
-  run stx := for (location, message) in collectSuppressions stx #[] do logErrorAt location message
+private def suppressionLinter : ModuleLinter where
+  run commands := for command in commands do
+    for (location, message) in collectSuppressions command #[] do logErrorAt location message
 
-initialize addLinter suppressionLinter
+initialize addModuleLinter suppressionLinter
 
 end ArkLib.LintStyle

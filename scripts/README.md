@@ -34,9 +34,9 @@ This directory contains various utility scripts for the ArkLib project.
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
   and hazardous-Unicode checks
-- **`ArkLibLintPlugin.lean`** - build-time Lean syntax-tree gate rejecting `set_option` linter,
+- **`ArkLibLintPlugin.lean`** - end-of-module Lean syntax-tree gate rejecting `set_option` linter,
   pretty-printer, profiler, and trace changes and `@[nolint]` attributes, including suppressions
-  nested in tactics, terms, and extensible interpolated strings
+  nested in tactics, terms, extensible interpolated strings, and diagnostic-capturing commands
 
 ### Dependency Analysis
 - **`dependency_analysis/`** - Complete dependency analysis toolkit
