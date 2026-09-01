@@ -347,6 +347,7 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents.Core
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KnowledgeSoundness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Soundness
