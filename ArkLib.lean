@@ -141,8 +141,10 @@ import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers.Incidence
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
