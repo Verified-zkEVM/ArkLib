@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Authority), Aristotle (Harmonic)
+Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Authority),
+  Aristotle (Harmonic)
 -/
 
 import Mathlib.Tactic.FieldSimp
@@ -34,7 +35,7 @@ variable {m : ℕ}
 /-- Fact 4.10
   Geometric series formula in a field, for a unit `r : F`. -/
 lemma geometric_sum_units {r : Fˣ} {a : ℕ} :
-  ∑ j ∈ range (a + 1), (r ^ j : F) =
+    ∑ j ∈ range (a + 1), (r ^ j : F) =
     if r = 1 then (a + 1 : F)
     else (1 - r ^ (a + 1)) / (1 - r) := by
   have h_geo_series : ∀ r : F, r ≠ 1 → ∑ j ∈ Finset.range (a + 1), r ^ j =
@@ -48,17 +49,16 @@ def ri (dstar : ℕ) (degs : Fin m → ℕ) (r : F) (i : Fin m) : F :=
   let exp := i + ∑ j < i, (dstar - degs j)
   r ^ exp
 
-/-- Definition 4.11.1
-    Combine(d*, r, (f_0, d_0), …, (f_{m-1}, d_{m-1}))(x)
-      := sum_{i < m} r_i * f_i(x) * ( sum_{l < (d* - d_i + 1)} (r * φ(x))^l ) -/
+/-- Definition 4.11.1: `Combine(d*, r, (f_0, d_0), …, (f_{m-1}, d_{m-1}))(x)` is
+`sum_{i < m} r_i * f_i(x) * (sum_{l < (d* - d_i + 1)} (r * φ(x))^l)`. -/
 def combine
-  (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ) (x : ι) : F :=
+    (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ) (x : ι) : F :=
     ∑ i, (ri dstar degs r i) * (fs i x) * (∑ l ∈ range (dstar - degs i + 1), ((φ x) * r)^l)
 
 omit [DecidableEq F] in
 @[simp]
 lemma combine_dstar_zero
-  {φ : ι ↪ F} {r : F} {fs : Fin m → ι → F} {degs : Fin m → ℕ} :
+    {φ : ι ↪ F} {r : F} {fs : Fin m → ι → F} {degs : Fin m → ℕ} :
   combine φ 0 r fs degs =
     ∑ i, (r ^ i.val) • fs i := by aesop (add simp [combine, ri])
 
@@ -76,7 +76,7 @@ private lemma geom_sum_cases (q : F) (n : ℕ) :
       else sum_{i < m} r_i * f_i(x) * (1 - r * φ(x)^(dstar - degree + 1)) / (1 - r * φ(x))
 -/
 lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
-  (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ)
+    (φ : ι ↪ F) (dstar : ℕ) (r : F) (fs : Fin m → ι → F) (degs : Fin m → ℕ)
     (hdegs : ∀ i, degs i ≤ dstar) :
   combine φ dstar r fs degs =
     fun x ↦
@@ -86,11 +86,15 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
       else ∑ i, (ri dstar degs r i) * (fs i x) *  (dstar - degs i + 1) := by
   funext x
   simp only [combine]
-  split_ifs
-  · aesop
-      (add simp [geom_sum_cases])
-      (add safe (by ring))
-  · simp_all
+  split_ifs with hq
+  · simp_rw [geom_sum_cases, if_pos hq]
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  · simp_rw [geom_sum_cases, if_neg hq]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [Nat.cast_add, Nat.cast_sub (hdegs i), Nat.cast_one]
 
 open Finset
 open BigOperators
@@ -126,7 +130,7 @@ private lemma block_start_filter_nonempty
   {dstar : ℕ} {degs : Fin m.succ → ℕ} {l : ℕ} :
   (univ.filter (fun j ↦ block_start dstar degs j ≤ l)).Nonempty := by
   exists 0
-  aesop (add simp [block_start])
+  simp [block_start]
 
 private lemma block_idx_eq_max
   {dstar : ℕ} {degs : Fin m → ℕ}
@@ -141,9 +145,6 @@ private lemma block_idx_eq_max
     (block_end_le_block_start ha)
 
 omit [DecidableEq F] in
-set_option maxRecDepth 4000 in
-set_option synthInstance.maxHeartbeats 20000 in
-set_option synthInstance.maxSize 128 in
 private lemma combine_eq_flat
   (φ : ι ↪ F) (dstar : ℕ) (r : F)
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) :
@@ -275,8 +276,10 @@ private lemma combine_eq_flat'
   exact Finset.sum_equiv (Equiv.refl _) (by simp) <| fun i hi ↦ by
     have h : Finset.max {j | block_start dstar degs j ≤ i} =
       Finset.max' {j | block_start dstar degs j ≤ i} block_start_filter_nonempty := by
-        aesop (add simp [Finset.max, Finset.max'])
-    aesop
+      exact (Finset.coe_max' block_start_filter_nonempty).symm
+    rw [h]
+    simp [Finset.mem_range.mp hi]
+    rfl
 
 omit [DecidableEq F] in
 private lemma combine_eq_flat''
@@ -290,7 +293,7 @@ private lemma combine_eq_flat''
       let k := l - block_start dstar degs i
       r ^ (i + ∑ j < i, (dstar - degs j)) *
         fs i x * (φ x * r) ^ k := by
-  aesop (add safe combine_eq_flat')
+  simpa only [ri] using combine_eq_flat' φ dstar r fs degs
 
 omit [DecidableEq F] in
 private lemma combine_eq_flat'''
@@ -317,24 +320,31 @@ private lemma combine_eq_flat'''
         · exact Finset.mem_filter.mp
             (Finset.max'_mem (Finset.univ.filter
               (Combine.block_start dstar degs · ≤ l)) _) |>.2
-        · aesop (add safe Finset.le_max')
+        · intro j hj
+          exact Finset.le_max' _ j (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hj⟩)
   convert Combine.combine_eq_flat'' φ dstar r fs degs using 1
   funext x
   exact Finset.sum_congr rfl <| fun l _ ↦ by
     obtain ⟨i, hi, hi'⟩ := h_block l
     have hi_eq : (Finset.max'
-      (filter (Combine.block_start dstar degs · ≤ l) Finset.univ)
-      Combine.block_start_filter_nonempty) = i :=
-        le_antisymm
-          (by simp_all [Finset.max'])
-          (by aesop (add simp [Finset.max']))
+        (filter (Combine.block_start dstar degs · ≤ l) Finset.univ)
+        Combine.block_start_filter_nonempty) = i := by
+      apply le_antisymm
+      · apply Finset.max'_le
+        intro j hj
+        exact hi' j (Finset.mem_filter.mp hj).2
+      · exact Finset.le_max' _ i (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hi⟩)
     rw [hi_eq, ←Nat.add_sub_of_le hi]
     ring_nf
     simp only [block_start, Nat.succ_eq_add_one, block_size, sum_add_distrib, sum_const,
       smul_eq_mul, mul_comm, one_mul, add_tsub_cancel_left, mul_assoc, mul_left_comm,
       mul_eq_mul_left_iff]
-    rw [show filter _ _ = Finset.Iio i by aesop]
-    aesop (add safe (by ring))
+    rw [show filter _ _ = Finset.Iio i by
+      ext j
+      simp only [mem_filter, mem_univ, true_and, mem_Iio]]
+    left
+    simp only [Fin.card_Iio]
+    ring
 
 omit [DecidableEq F] in
 private lemma combine_eq_flat_final
@@ -347,27 +357,36 @@ private lemma combine_eq_flat_final
           let k := l - block_start dstar degs i
           fs i x * (φ x) ^ k) :=
   match m with
-  | 0 => by aesop (add simp Option.elim)
+  | 0 => by
+    have htotal : total_terms dstar degs = 0 := by simp [total_terms]
+    rw [combine_eq_flat, htotal]
+    simp [Option.elim]
+    rfl
   | Nat.succ m => by
     have h {l : Fin (total_terms dstar degs)} :
       Finset.max {j | block_start dstar degs j ≤ ↑l} =
         Finset.max' {j | block_start dstar degs j ≤ ↑l}
           block_start_filter_nonempty := by
-            aesop (add simp [Finset.max, Finset.max'])
-    aesop (add simp [Option.elim, combine_eq_flat'''])
+      exact (Finset.coe_max' block_start_filter_nonempty).symm
+    rw [combine_eq_flat''' φ dstar r fs degs]
+    funext x
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    exact Finset.sum_congr rfl fun l _ ↦ by
+      rw [h]
+      rfl
 
 -- def DegCor
 
 /-- Definition 4.12.1
     DegCor(d*, r, f, degree)(x) := f(x) * ( sum_{ l < d* - d + 1 } (r * φ(x))^l ) -/
 def degCor
-  (φ : ι ↪ F) (dstar degree : ℕ) (r : F) (f : ι → F) (x : ι) : F :=
+    (φ : ι ↪ F) (dstar degree : ℕ) (r : F) (f : ι → F) (x : ι) : F :=
     f x * ∑ l ∈ range (dstar - degree + 1), ((φ x) * r) ^ l
 
 /-- Definition 4.12.2
     DegCor(d*, r, f, d)(x) := f(x) * conditionalExp(x) -/
 lemma degreeCor_eq {F : Type u_1} [Field F] [DecidableEq F] {ι : Type u_2} (φ : ι ↪ F)
-  (dstar degree : ℕ) (r : F) (f : ι → F) (hd : degree ≤ dstar) (x : ι) :
+    (dstar degree : ℕ) (r : F) (f : ι → F) (hd : degree ≤ dstar) (x : ι) :
   let q := φ x * r
   degCor φ dstar degree r f x =
     if q ≠ 1
@@ -403,11 +422,10 @@ private lemma even_more_glorious_lemma
  push_cast
  ring
 
-set_option maxHeartbeats 0 in
 omit [DecidableEq F] [Fintype F] in
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
-  [Nonempty ι]
+    [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
   {fs : Fin m → ι → F} {degs : Fin m → ℕ} (hdegs : ∀ i, degs i ≤ dstar)
   {δ : ℝ≥0}
@@ -447,22 +465,15 @@ lemma master_lemma
     specialize ih (j + 1) h_fin (by omega)
     let q : Polynomial F := Polynomial.X * v i ⟨j, hj⟩
     have hq_deg : q.degree < dstar + 1 := by
-      rw [WithBot.lt_def]
-      by_cases hv: v i ⟨j, hj⟩ = 0
-      · aesop
-      · right
-        simp only [Polynomial.degree_mul, Polynomial.degree_X, q]
-        rw [Polynomial.degree_eq_natDegree hv]
-        exists (1 + (v i ⟨j ,hj⟩).natDegree)
-        aesop
-          (add unsafe (by rw [add_comm]))
-          (add unsafe forward [Nat.add_lt_add_right])
-          (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+      simp only [q]
+      rw [Polynomial.degree_mul, Polynomial.degree_X, add_comm 1]
+      exact WithBot.add_lt_add_right (by simp) (hv_deg i ⟨j, hj⟩)
     have hq_coincide :
       ∀ x ∈ S, q.eval (φ x) = (v i ⟨j + 1, h_fin⟩).eval (φ x) := by
-      aesop
-        (add simp [q])
-        (add safe (by ring_nf))
+      intro x hx
+      simp only [q, Polynomial.eval_mul, Polynomial.eval_X]
+      rw [hv_eval i ⟨j, hj⟩ x hx, hv_eval i ⟨j + 1, h_fin⟩ x hx]
+      ring
     have hq_coincide :=
       Polynomial.eq_of_eval_eq_degree
         (q := v i ⟨j + 1, h_fin⟩)
@@ -473,7 +484,7 @@ lemma master_lemma
           aesop
         ) (Finset.image φ S) (by {
           simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
-          rw [Finset.card_image_of_injective _ (fun x y hxy ↦ by aesop)]
+          rw [Finset.card_image_of_injective _ φ.injective]
           have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
             glorious_lemma
               (by simpa using hδLt)
@@ -493,14 +504,16 @@ lemma master_lemma
               hS_card
           norm_cast at h
         })
-        (by aesop)
+        (by
+          intro y hy
+          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
+          exact hq_coincide x hx)
     simp only [q] at hq_coincide
     rw [←hq_coincide] at ih
     simp only [Polynomial.degree_mul, Polynomial.degree_X, WithBot.coe_add, WithBot.coe_one] at ih
     rw [←add_assoc, add_comm 1] at ih
     exact (WithBot.add_lt_add_iff_right (by simp)).mp ih
 
-set_option maxHeartbeats 0 in
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
 /-- Lemma 4.13
   Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
@@ -509,7 +522,7 @@ open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
       Pr_{r ← F} [δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
                    > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
 theorem combine_theorem
-  {φ : ι ↪ F} {dstar m : ℕ}
+    {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
   (δ : ℝ≥0) (hδPos : δ > 0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
@@ -519,8 +532,7 @@ theorem combine_theorem
     ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : Fin m → ι → F, ∀ i,
         v i ∈ (code φ (degs i)) ∧
-          S ⊆ Finset.filter (fun j => v i j = fs i j) Finset.univ
-    := by
+          S ⊆ Finset.filter (fun j => v i j = fs i j) Finset.univ := by
   by_cases hempty : Fintype.card ι = 0
   · exists ∅
     simp only [card_empty, CharP.cast_eq_zero, hempty, mul_zero, ge_iff_le, Std.le_refl,
@@ -594,7 +606,7 @@ theorem combine_theorem
                 ext x
                 rw [Nat.sub_add_comm (hdegs x)]
               rw [show ∑ x, (dstar - degs x + 1) = total + 1 by
-                aesop (add simp [total_terms, block_size])]
+                simpa only [total_terms, block_size] using htotal]
               simp
             · exact lt_of_lt_of_le hProb <| le_of_eq <| by
                 congr
@@ -657,9 +669,9 @@ theorem combine_theorem
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
           _ _ _ _ hdegs _
-          hδLt _ (by aesop) (v := v) (fs := fs)
-        (by aesop)
-        (by aesop)
+          hδLt _ hS_card (v := v) (fs := fs)
+          (fun i j => (hv i j).1)
+          (fun i j x hx => (hv i j).2 x hx)
       exists S
       simp only [ge_iff_le, hS_card, true_and]
       have hf : ∀ i, 0 < block_size dstar degs i := by simp [block_size]

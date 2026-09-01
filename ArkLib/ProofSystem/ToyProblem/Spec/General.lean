@@ -159,8 +159,6 @@ open Probability
 -- decidability bodies but do not surface in the alphabet-generic lemma types;
 -- suppress the `unused…InType` linter file-wide (the same toy idiom used in
 -- `SoundnessBounds.lean`).
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 /-! ### Type-level definitions and relations
 
@@ -1254,11 +1252,11 @@ private noncomputable def rbrKnowledgeStateFunction
     accepts_of_probEvent_pos_verifier_run (k := k) (t := t) init impl encode
       stmtIn tr witOut _ h
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- Per-transcript combination-round bound for the generic classical
 toy-protocol extractor.  The error is the certified affine-line
 MCA-plus-two-row-list upper bound. -/
-lemma gamma_round_game_bound [SampleableType F] [Nonempty ι]
+lemma gamma_round_game_bound [SampleableType F] [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
@@ -1274,6 +1272,7 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι]
             (stmtIn.2 0) (stmtIn.2 1) γ w
       | $ᵗ F] ≤ (certifiedGammaError C δ : ENNReal) := by
   classical
+  let _ := Fintype.ofFinite A
   rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ outputRelationFor k
@@ -1311,8 +1310,7 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι]
         (stmtIn.2 0) (stmtIn.2 1) hNoWit) (le_of_eq ?_)
       rw [coe_certifiedGammaError]
 
-omit [DecidableEq ι] [Fintype F] [Fintype A] in
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Per-transcript spot-check-round bound for the toy protocol: if the
 post-combination knowledge state is false, uniform spot checks accept with
 probability at most `(1 - δ)^t`. -/
@@ -1326,6 +1324,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
           Accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2 γ g xs
       | $ᵗ (Fin t → ι)] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal) := by
   classical
+  let _ : DecidableEq F := Classical.decEq F
   rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hbad : GammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
       (stmtIn.2 0) (stmtIn.2 1) γ g
@@ -1367,13 +1366,13 @@ lemma spotcheck_round_game_bound [Nonempty ι]
       ← ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)]
     exact ENNReal.coe_le_coe.mpr hbase
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype A] in
 /-- Worst-case-per-fixed-prefix round-by-round knowledge soundness of
 the toy protocol in the alphabet-generic classical-extractor form.  Concrete
 IRS clients should prefer `Impl.IRS.oracleVerifier_rbrKnowledgeSoundnessWorstCase`,
 whose extractor is executable and named. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    [SampleableType F] [SampleableType ι] [Nonempty ι] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (C : ModuleCode ι F A) (δ : ℝ≥0)
@@ -1390,6 +1389,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase
       (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
         OutputWitness))
       (fun i ↦ if i.1 = 0 then certifiedGammaError C δ else (1 - δ) ^ t) := by
+  let _ := Fintype.ofFinite A
   unfold Verifier.rbrKnowledgeSoundnessWorstCase
   refine ⟨rbrWitMid (F := F) k,
     rbrExtractor k t (encode : (Fin k → F) → (ι → A)) δ,
@@ -1405,11 +1405,11 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase
       (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
   · exact absurd hi (by omega)
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype A] in
 /-- Averaged round-by-round knowledge soundness, retained under the established
 public API name as a corollary of the stronger worst-case-per-prefix theorem. -/
 theorem oracleVerifier_rbrKnowledgeSoundness
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    [SampleableType F] [SampleableType ι] [Nonempty ι] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (C : ModuleCode ι F A) (δ : ℝ≥0)
@@ -1426,6 +1426,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness
       (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
         OutputWitness))
       (fun i ↦ if i.1 = 0 then certifiedGammaError C δ else (1 - δ) ^ t) := by
+  let _ := Fintype.ofFinite A
   unfold OracleVerifier.rbrKnowledgeSoundness
   exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
     init impl (oracleVerifier_rbrKnowledgeSoundnessWorstCase k t init impl C δ encode

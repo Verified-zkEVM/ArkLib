@@ -5,6 +5,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Binius.BinaryBasefold.CoreInteraction
 /-!
 ## Binary Basefold single steps
@@ -53,7 +59,6 @@ variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumche
 section FoldStep
 /-- Most security properties happen at FoldStep, the CommitmentRound is
   just to place the conditional oracle message -/
-
 def foldPrvState (i : Fin ℓ) : Fin (2 + 1) → Type := fun
   -- Initial : current witness x t_eval_point x challenges
   | ⟨0, _⟩ => (Statement (L := L) Context i.castSucc ×
@@ -79,8 +84,7 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
   ((Statement (L := L) Context i.succ × ((j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
     OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
       × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
-        (d := mp.degCombinator + 1))
-  := by
+        (d := mp.degCombinator + 1)) := by
   let (stmtIn, oStmtIn, witIn, h_i, r_i') := finalPrvState
   let newSumcheckTarget : L := h_i.val.eval r_i'
   let stmtOut : Statement (L := L) Context i.succ := {
@@ -173,9 +177,8 @@ noncomputable def foldOracleVerifier (i : Fin ℓ) :
     -- Message 0 : Receive h_i(X) from prover
     let h_i ← query (spec := [(pSpecFold (L := L) (d := mp.degCombinator + 1)).Message]ₒ)
       ⟨⟨0, rfl⟩, ()⟩
-
-    -- Check sumcheck : s_i ?= h_i((0 : L)) + h_i((1 : L)), i.e. ∑_{y ∈ univ.map (boolEmbedding L)} h_i(y)
-    -- (matching how the prover sums the round poly over `univ.map (boolEmbedding L)`, not literal `0`/`1`).
+    -- Check sumcheck: `s_i = h_i(0) + h_i(1)`, matching the prover's sum over
+    -- `univ.map (boolEmbedding L)` rather than a literal pair of points.
     let sumcheck_check := h_i.val.eval ((0 : L)) + h_i.val.eval ((1 : L)) = stmtIn.sumcheck_target
     unless sumcheck_check do
       -- Return a dummy statement indicating failure
@@ -185,7 +188,6 @@ noncomputable def foldOracleVerifier (i : Fin ℓ) :
         challenges := Fin.snoc stmtIn.challenges 0
       }
       return dummyStmt
-
     -- Message 1 : Sample challenge r'_i and send to prover
     let r_i' : L := pSpecChallenges ⟨1, rfl⟩ -- This gets the challenge for message 1
 
@@ -195,7 +197,6 @@ noncomputable def foldOracleVerifier (i : Fin ℓ) :
       sumcheck_target := h_i.val.eval r_i',
       challenges := Fin.snoc stmtIn.challenges r_i'
     }
-
     pure stmtOut
   outputOracle := .inl {
     embed := ⟨fun j => by
@@ -323,7 +324,6 @@ def foldKStateProp {i : Fin ℓ} (m : Fin (2 + 1))
       ⟨⟨0, Nat.lt_of_succ_le hm⟩, by simp [pSpecFold]; rfl⟩
     let h_i : L⦃≤ mp.degCombinator + 1⦄[X] := msgsUpTo i_msg1
     h_i
-
   let get_rᵢ' := fun (m: Fin (2 + 1))
       (tr: Transcript m (pSpecFold (L := L) (d := mp.degCombinator + 1)))
       (hm: 2 ≤ m.val) =>
@@ -336,7 +336,6 @@ def foldKStateProp {i : Fin ℓ} (m : Fin (2 + 1))
       ⟨⟨1, Nat.lt_of_succ_le hm⟩, by simp only [Nat.reduceAdd]; rfl⟩
     let r_i' : L := chalsUpTo i_msg2
     r_i'
-
   match m with
   | ⟨0, _⟩ => -- equiv s relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -390,18 +389,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     fin_cases m
     · exact fun ⟨_, h⟩ => ⟨trivial, h⟩
     · simp at hDir
-  toFun_full := fun ⟨stmtLast, oStmtLast⟩ tr witOut h_relOut => by
-    simp at h_relOut
-    rcases h_relOut with ⟨stmtOut, ⟨oStmtOut, h_conj⟩⟩
-    have h_simulateQ := h_conj.1
-    have h_foldStepRelOut := h_conj.2
-    set witLast := (foldRbrExtractor (mp:=mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).extractOut
-      ⟨stmtLast, oStmtLast⟩ tr witOut
-    simp only [Fin.reduceLast, Fin.isValue]
-    -- ⊢ foldKStateProp 𝔽q β 2 tr stmtLast witLast oStmtLast
-    -- TODO : prove this via the relations between stmtLast & stmtOut,
-      -- witLast & witOut, oStmtLast & oStmtOut
-    have h_oStmt : oStmtLast = oStmtOut := by sorry
+  toFun_full := fun _ _ _ _ => by
     sorry
 
 /-- RBR knowledge soundness for a single round oracle verifier -/
@@ -510,7 +498,8 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound �
       intro a b h_ab_eq
       simp only [MessageIdx, Fin.isValue] at h_ab_eq
       split_ifs at h_ab_eq with h_ab_eq_l h_ab_eq_r
-      · simp at h_ab_eq; apply Fin.eq_of_val_eq; exact h_ab_eq
+      · simp only [Sum.inl.injEq, Fin.mk.injEq] at h_ab_eq
+        exact Fin.eq_of_val_eq h_ab_eq
       · have ha_lt : a < toOutCodewordsCount ℓ ϑ i.succ := by omega
         have hb_lt : b < toOutCodewordsCount ℓ ϑ i.succ := by omega
         conv_rhs at ha_lt => rw [toOutCodewordsCount_succ_eq ℓ ϑ i]
@@ -636,13 +625,11 @@ noncomputable def commitRbrExtractor (i : Fin ℓ) :
 /-- Note : stmtIn and witMid already advances to state `(i+1)` from the fold step,
 while oStmtIn is not. -/
 def commitKStateProp (i : Fin ℓ) (m : Fin (1 + 1))
-  (stmtIn : Statement (L := L) Context i.succ)
+    (stmtIn : Statement (L := L) Context i.succ)
   (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
     (d := mp.degCombinator + 1))
   (oStmtIn : (i_1 : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
-    OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc i_1)
-  : Prop :=
-
+    OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc i_1) : Prop :=
   match m with
   | ⟨0, _⟩ => -- same as relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -679,6 +666,7 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   toFun_full := fun (stmtIn, oStmtIn) tr witOut=> by
     sorry
 
+omit [CharP L 2] [SampleableType L] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
 theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
@@ -820,11 +808,11 @@ noncomputable def relayRbrExtractor (i : Fin ℓ) :
   extractOut := fun _ _ witOut => witOut
 
 def relayKStateProp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
-  (stmtIn : Statement (L := L) Context i.succ)
+    (stmtIn : Statement (L := L) Context i.succ)
   (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
     (d := mp.degCombinator + 1))
-  (oStmtIn : (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
-  : Prop :=
+  (oStmtIn : (∀ j,
+    OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) : Prop :=
   masterKStateProp (mp := mp) (ϑ := ϑ) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (stmtIdx := i.succ) (oracleIdx := i.succ)
     (h_le := le_refl _)
@@ -855,6 +843,7 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
   toFun_next := fun m hDir (stmtIn, oStmtIn) tr msg witMid => by exact fun a ↦ a
   toFun_full := fun (stmtIn, oStmtIn) tr witOut=> by sorry
 
+omit [SampleableType L] in
 /-- RBR knowledge soundness for a single round oracle verifier -/
 theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
@@ -924,8 +913,7 @@ noncomputable def finalSumcheckProver :
 
   sendMessage
   | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩ => do
-    let fℓ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ, by omega⟩)
-      := witIn.f
+    let fℓ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ, by omega⟩) := witIn.f
     -- Evaluate f^(ℓ) at the zero point to get the final constant
     let c : L := fℓ ⟨0, by simp only [zero_mem]⟩ -- f^(ℓ)(0, ..., 0)
     pure ⟨c, (stmtIn, oStmtIn, witIn, c)⟩
@@ -941,7 +929,6 @@ noncomputable def finalSumcheckProver :
       challenges := stmtIn.challenges,
       final_constant := c
     }
-
     pure (⟨stmtOut, oStmtIn⟩, ())
 
 /-- The verifier for the final sumcheck step -/
@@ -955,8 +942,8 @@ noncomputable def finalSumcheckVerifier :
     (pSpec := pSpecFinalSumcheckStep (L := L)) where
   verify := fun stmtIn _ => do
     -- Get the final constant `c` from the prover's message
-    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
-
+    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ)
+      ⟨⟨0, rfl⟩, ()⟩
     -- Check final sumcheck consistency
     let eq_tilde_eval : L := eqTilde (r := stmtIn.ctx.t_eval_point) (r' := stmtIn.challenges)
     unless stmtIn.sumcheck_target = eq_tilde_eval * c do
@@ -966,7 +953,6 @@ noncomputable def finalSumcheckVerifier :
         challenges := 0,
         final_constant := 0
       }
-
     -- Return the final sumcheck statement with the constant
     let stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ) := {
       ctx := stmtIn.ctx,
@@ -1009,7 +995,7 @@ noncomputable def finalSumcheckOracleReduction :
 
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
-  (init : ProbComp σ)
+    (init : ProbComp σ)
   (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheckStep (L := L))
@@ -1037,8 +1023,9 @@ def FinalSumcheckWit := fun (m : Fin (1 + 1)) =>
 /-- The round-by-round extractor for the final sumcheck step -/
 noncomputable def finalSumcheckRbrExtractor :
   Extractor.RoundByRound []ₒ
-    (StmtIn := (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ)) × (∀ j, OracleStatement 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j))
+    (StmtIn := (Statement (L := L) (SumcheckBaseContext L ℓ) (Fin.last ℓ)) ×
+      (∀ j, OracleStatement 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
     (WitOut := Unit)
     (pSpec := pSpecFinalSumcheckStep (L := L))
@@ -1081,21 +1068,18 @@ def finalSumcheckKStateProp {m : Fin (1 + 1)} (tr : Transcript m (pSpecFinalSumc
     let i_msg0 : tr_so_far.MessageIdx := ⟨⟨0, by omega⟩, rfl⟩
     let c : L := (ProtocolSpec.Transcript.equivMessagesChallenges (k := 1)
       (pSpec := pSpecFinalSumcheckStep (L := L)) tr).1 i_msg0
-
     let stmtOut : FinalSumcheckStatementOut (L := L) (ℓ := ℓ) := {
       ctx := stmt.ctx,
       sumcheck_target := stmt.sumcheck_target,
       challenges := stmt.challenges,
       final_constant := c
     }
-
     let sumcheckFinalCheck : Prop := stmt.sumcheck_target = eqTilde r stmt.challenges * c
     let finalFoldingProp := finalNonDoomedFoldingProp 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_le := by
         apply Nat.le_of_dvd;
         · exact Nat.pos_of_neZero ℓ
         · exact hdiv.out) (input := ⟨stmtOut, oStmt⟩)
-
     sumcheckFinalCheck ∧ finalFoldingProp -- local checks ∧ (oracleConsitency ∨ badEventExists)
 
 /-- The knowledge state function for the final sumcheck step -/
@@ -1118,8 +1102,9 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
   toFun_full := fun stmt tr witOut h => by
     sorry
 
+omit [CharP L 2] in
 /-- Round-by-round knowledge soundness for the final sumcheck step -/
-theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type}
+theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).rbrKnowledgeSoundness init impl
       (relIn := roundRelation 𝔽q β (ϑ := ϑ)

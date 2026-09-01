@@ -373,10 +373,9 @@ freeze, and re-prove the affected obligations. Do not patch around the finding i
 
 Once the clean-room review is clean:
 
-1. Run each changed Lean file directly, then `./scripts/validate.sh`; run scoped style linting and
-   the relevant `ReadLints` checks, and use `./scripts/validate.sh --lint` when repo-wide lint debt
-   will not obscure the result. Add `--docs` when Lean docstrings or documentation changed, and run
-   `git diff --check`.
+1. Run each changed Lean file directly, then `./scripts/validate.sh`; its source-policy gate is
+   repository-wide and exception-free. Run the relevant `ReadLints` checks, add `--docs` when Lean
+   docstrings or documentation changed, and run `git diff --check`.
 2. Re-run the target-closure placeholder scan and the complete axiom manifest.
 3. Update `hachi-overview.html` only from verified source facts: file status, exact genuine `sorry`
    count, milestone description, and “proven” claim. Do not erase a known paper deviation or open

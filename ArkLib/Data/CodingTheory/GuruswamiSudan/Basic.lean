@@ -145,17 +145,17 @@ lemma card_weightBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
     have h_inner : ∀ j ∈ range (D / (k - 1) + 1), ∑ i ∈ range (D + 1),
         (if i + (k - 1) * j ≤ D then 1 else 0) = (D - (k - 1) * j) + 1 := by
       intro j hj
+      have hjle : j ≤ D / (k - 1) := Nat.lt_succ_iff.mp (mem_range.mp hj)
+      have hcj : (k - 1) * j ≤ D := by
+        calc
+          (k - 1) * j ≤ (k - 1) * (D / (k - 1)) := Nat.mul_le_mul_left _ hjle
+          _ ≤ D := Nat.mul_div_le D (k - 1)
       have h_filter : filter (fun i ↦ i + (k - 1) * j ≤ D) (range (D + 1)) =
           Icc 0 (D - (k - 1) * j) := by
         ext i
         simp only [mem_filter, mem_range, mem_Icc, zero_le, true_and]
-        refine ⟨fun h ↦ Nat.le_sub_of_add_le <| by linarith, fun h ↦ ⟨by
-            nlinarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
-              nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
-                linarith [mem_range.mp hj], Nat.div_mul_le_self D (k - 1)]], by
-                  linarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
-                    nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
-                      linarith [mem_range.mp hj], Nat.div_mul_le_self D (k - 1)]]⟩⟩
+        exact ⟨fun h ↦ Nat.le_sub_of_add_le h.2, fun hi ↦
+          ⟨Nat.lt_succ_of_le (hi.trans (Nat.sub_le _ _)), Nat.add_le_of_le_sub hcj hi⟩⟩
       simp_all
     exact h_split.trans (sum_congr rfl h_inner)
 
@@ -172,13 +172,14 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
               ∑ j ∈ range (D / (k - 1) + 1), (k - 1) * j := by
           exact eq_tsub_of_add_eq <| by
             rw [← sum_add_distrib]
-            exact sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le <| by
-              nlinarith [mem_range.mp hx, Nat.div_mul_le_self D (k - 1)]
-        simp_all only [mul_comm, sum_const, card_range, smul_eq_mul]
-        exact congrArg _ (Eq.symm <| Nat.div_eq_of_eq_mul_left zero_lt_two <| by
-          rw [← sum_mul _ _ _]
-          exact (D / (k - 1)).recOn (by norm_num) fun n ih ↦ by
-            norm_num [range_add_one] at *; linarith)
+            refine sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le ?_
+            exact (Nat.mul_le_mul_left _ (Nat.lt_succ_iff.mp (mem_range.mp hx))).trans
+              (Nat.mul_div_le D (k - 1))
+        rw [h_simp, ← Finset.mul_sum, Finset.sum_range_id]
+        simp only [sum_const, card_range, smul_eq_mul]
+        simp only [Nat.add_sub_cancel]
+        rw [Nat.mul_comm (D / (k - 1) + 1) (D / (k - 1)), ← Nat.mul_div_assoc]
+        exact even_iff_two_dvd.mp (by simpa [parity_simps] using Nat.even_or_odd (D / (k - 1)))
       rw [sum_add_distrib]
       simp only [sum_const, card_range, smul_eq_mul, mul_one]
       rw [h_simp]
@@ -499,45 +500,37 @@ noncomputable def constraintMap (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n →
   map_add' c d := by simp +zetaDelta at *; rfl
   map_smul' a c := by unfold evalConstraint coeffsToPoly; aesop
 
+/-- A dimension surplus gives a nonzero coefficient vector in the constraint map's kernel. -/
+private lemma exists_nonzero_solution_of_numVars_gt (k n m : ℕ) (ωs : Fin n ↪ F)
+    (f : Fin n → F) (D : ℕ) (hD : numVars k D > numConstraints n m) :
+    ∃ c : (weightBoundIndices k D) → F, c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 := by
+  have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k D) → F) >
+      Module.finrank F ((Fin n → constraintIndices m → F)) := by
+    convert hD using 1
+    · simp [numVars]
+    · simp [numConstraints]
+      norm_num [Module.finrank]
+  have h_inj : ¬ Function.Injective (constraintMap k n m ωs f D) := by
+    intro h_inj
+    exact h_kernel_nontrivial.not_ge
+      (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
+  contrapose! h_inj
+  exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
+    by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
+
 /-- There exists a non-zero polynomial satisfying the conditions. -/
 lemma exists_nonzero_solution (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     ∃ c : (weightBoundIndices k (proximity_gap_degree_bound k n m)) → F,
-    c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k
-        (proximity_gap_degree_bound k n m)) → F) >
-          Module.finrank F ((Fin n → constraintIndices m → F)) := by
-        convert numVars_gt_numConstraints k n m using 1
-        · simp [numVars]
-        · simp [numConstraints]
-          norm_num [Module.finrank]
-      have h_inj : ¬ Function.Injective
-          (constraintMap k n m ωs f (proximity_gap_degree_bound k n m)) := by
-        intro h_inj
-        exact h_kernel_nontrivial.not_ge
-          (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
-      contrapose! h_inj
-      exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
-        by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
+    c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 :=
+  exists_nonzero_solution_of_numVars_gt k n m ωs f _ (numVars_gt_numConstraints k n m)
 
 /-- Generalized existence: non-zero kernel element for arbitrary degree bound D,
     given numVars k D > numConstraints n m. -/
 lemma exists_nonzero_solution_gen (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (D : ℕ)
     (hD : numVars k D > numConstraints n m) :
     ∃ c : (weightBoundIndices k D) → F,
-    c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k D) → F) >
-          Module.finrank F ((Fin n → constraintIndices m → F)) := by
-        convert hD using 1
-        · simp [numVars]
-        · simp [numConstraints]
-          norm_num [Module.finrank]
-      have h_inj : ¬ Function.Injective (constraintMap k n m ωs f D) := by
-        intro h_inj
-        exact h_kernel_nontrivial.not_ge
-          (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
-      contrapose! h_inj
-      exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
-        by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
+    c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 :=
+  exists_nonzero_solution_of_numVars_gt k n m ωs f D hD
 
 /-- The polynomial solution constructed from the non-zero kernel element. -/
 noncomputable def polySol (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : F[X][Y] :=
@@ -586,7 +579,7 @@ lemma polySol_ne_zero :
       have : Function.Injective (linearCombination F
         (fun p : weightBoundIndices k (proximity_gap_degree_bound k n m) ↦
           monomial (F := F) p.1.1 p.1.2)) :=
-        linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
+        linearIndependent_monomials.comp _ (fun _ _ h ↦ Subtype.ext h)
       exact this.comp (LinearEquiv.injective _)
     exact fun h ↦ this.1 <| h_inj <| by simpa [polySol] using h
 
@@ -764,7 +757,8 @@ lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : 
           (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1 )))
       rotate_left
       · exact p.1 + p.2
-      · rw [List.mem_filterMap]; aesop
+      · rw [List.mem_filterMap]
+        exact ⟨p, hp.1, by simp only [if_neg hp.2.2, hp.2.1]⟩
       · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
           then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
             (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop

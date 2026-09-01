@@ -8,6 +8,12 @@ import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Real.Basic
 import Mathlib.Analysis.Real.Sqrt
 
+/-!
+# ArkLib.ProofSystem.Stir.ProximityBound
+
+Definitions and results for this component of ArkLib.
+-/
+
 open NNReal
 
 namespace STIR

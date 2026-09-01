@@ -7,7 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
-import VCVio
+import VCVio.OracleComp.SimSemantics.Append
 
 /-!
   # Duplex Sponge API (Overwrite Mode)

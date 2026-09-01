@@ -5,6 +5,8 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 concurrency:
@@ -13,14 +15,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
-      actions: read
       contents: read
-      id-token: write
-      issues: write
-      pages: write
-      pull-requests: write
 
     steps:
       - name: Cleanup to free disk space
@@ -47,8 +44,7 @@ jobs:
           )
         run: |
           changed="$(git diff --name-only \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}" \
+            "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}" \
             -- docs/kb/_generated)"
           if [ -n "$changed" ]; then
             echo "Do not commit docs/kb/_generated files in feature PRs."
@@ -63,30 +59,20 @@ jobs:
           echo "BUILD_TIMING_LOG_DIR=$RUNNER_TEMP/build-timing-logs" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_ARTIFACT_DIR=$RUNNER_TEMP/build-timing-artifact" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_ARTIFACT_NAME=arklib-build-timing-data" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_BASELINE_DIR=$RUNNER_TEMP/build-timing-baseline" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_METADATA_PATH=$RUNNER_TEMP/build-timing-artifact/metadata.json" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
+          echo "SOURCE_TRUST_REPORT=$RUNNER_TEMP/source-trust.json" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_SOURCE_SHA=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_BRANCH=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_BASE_REF=" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_MERGE_BASE_SHA=" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime lint-style" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
             echo "EOF"
           } >> "$GITHUB_ENV"
-
-      - name: Determine PR timing merge base
-        if: github.event_name == 'pull_request'
-        run: |
-          echo "BUILD_TIMING_BASE_REF=${{ github.event.pull_request.base.ref }}" >> "$GITHUB_ENV"
-          merge_base_sha="$(git merge-base "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" || true)"
-          if [ -n "$merge_base_sha" ]; then
-            echo "BUILD_TIMING_MERGE_BASE_SHA=$merge_base_sha" >> "$GITHUB_ENV"
-          fi
 
       - name: Restore Lean cache
         uses: actions/cache/restore@v6
@@ -103,8 +89,25 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Complements the kernel-level sweep with a lexical inventory of constructs that
+      # attach to no environment declaration (for example `example`s and sorry-backed
+      # defaults/autoparams), including tracked files outside the import roots. This inventory
+      # is report-only; the enforcing kernel sweep below owns all taint verdicts.
+      - name: Audit source-level trust blind spots
+        env:
+          SOURCE_TRUST_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+        run: |
+          python3 scripts/test-source-trust-audit.py
+          args=(--json "$SOURCE_TRUST_REPORT")
+          if [ -n "$SOURCE_TRUST_BASE_REF" ] &&
+             [ "$SOURCE_TRUST_BASE_REF" != "0000000000000000000000000000000000000000" ]; then
+            args+=(--base-ref "$SOURCE_TRUST_BASE_REF")
+          fi
+          python3 scripts/source-trust-audit.py "${args[@]}" | tee "$RUNNER_TEMP/source-trust.md"
+          cat "$RUNNER_TEMP/source-trust.md" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Set up Lean environment
-        uses: leanprover/lean-action@v1.5.0
+        uses: leanprover/lean-action@v1.6.0
         with:
           auto-config: false
           build: false
@@ -146,7 +149,7 @@ jobs:
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
+            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime lint-style'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
@@ -154,19 +157,10 @@ jobs:
       - name: Test the axiom sweep tool
         run: ./scripts/test-axiomsweep.sh
 
-      # Taint findings are report-only during the initial soak (flip to enforcing by
-      # failing on exit 1 too); infrastructure failures (exit != 1: missing baseline,
-      # tool build breakage) always fail so the soak cannot silently rot.
-      - name: Axiom sweep (report-only)
-        run: |
-          status=0
-          lake exe axiomsweep --check || status=$?
-          if [ "$status" -eq 1 ]; then
-            echo "::warning::axiomsweep found new axiom/sorry taint (report-only during soak)"
-          elif [ "$status" -ne 0 ]; then
-            echo "::error::axiomsweep infrastructure failure (exit $status) — not a taint verdict"
-            exit "$status"
-          fi
+      # Enforcing regression gate. Intentional sorry debt remains possible by refreshing
+      # and reviewing scripts/axiom_baseline.json; native/compiler trust cannot be baselined.
+      - name: Check the library axiom baseline
+        run: lake exe axiomsweep --check
 
       - name: Time validation wrapper
         run: |
@@ -180,8 +174,8 @@ jobs:
           path: ./.lake
           key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
 
-      # Reuse the project build above for blueprint/checkdecls validation on PRs.
-      # On pushes, the action additionally builds API docs and deploys Pages.
+      # Reuse the project build above for blueprint/checkdecls validation and, on trusted
+      # main pushes, API-doc generation. The action cannot publish from this read-only job.
       - name: Build blueprint and documentation
         uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
         env:
@@ -190,19 +184,47 @@ jobs:
           blueprint: true
           homepage: home_page
           build-page: false
-          deploy: ${{ github.event_name == 'push' }}
+          deploy: false
           references: blueprint/src/references.bib
+
+      # The pinned docgen action writes blueprint/API output under `homepage` and, with
+      # build-page false, its own deploy path is exactly `${homepage}/`. Transfer that directory
+      # instead of recompiling the project in the privileged publisher. This artifact contains
+      # no credentials and is only deployed after a main push.
+      - name: Upload Pages site for publication
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: arklib-pages-site
+          path: home_page
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Prepare timing artifact
         if: always()
+        env:
+          BUILD_TIMING_RUN_ID: ${{ github.run_id }}
+          BUILD_TIMING_RUN_ATTEMPT: ${{ github.run_attempt }}
+          BUILD_TIMING_EVENT: ${{ github.event_name }}
+          BUILD_TIMING_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BUILD_TIMING_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || '' }}
+          BUILD_TIMING_REF: ${{ github.head_ref || github.ref_name }}
+          BUILD_TIMING_CACHE_EXACT_HIT: ${{ steps.lake-cache.outputs.cache-hit }}
+          BUILD_TIMING_CACHE_PRIMARY_KEY: ${{ steps.lake-cache.outputs.cache-primary-key }}
+          BUILD_TIMING_CACHE_MATCHED_KEY: ${{ steps.lake-cache.outputs.cache-matched-key }}
         run: |
           rm -rf "$BUILD_TIMING_ARTIFACT_DIR"
           mkdir -p "$BUILD_TIMING_ARTIFACT_DIR"
+          python3 scripts/build_timing_metadata.py "$BUILD_TIMING_METADATA_PATH"
           if [ -f "$BUILD_TIMING_RESULTS" ]; then
             cp "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_ARTIFACT_DIR/results.jsonl"
           fi
           if [ -f "$BUILD_TIMING_LOG_DIR/clean_build.log" ]; then
             cp "$BUILD_TIMING_LOG_DIR/clean_build.log" "$BUILD_TIMING_ARTIFACT_DIR/clean_build.log"
+          fi
+          if [ -f "$SOURCE_TRUST_REPORT" ]; then
+            cp "$SOURCE_TRUST_REPORT" "$BUILD_TIMING_ARTIFACT_DIR/source-trust.json"
           fi
 
       - name: Upload timing artifact
@@ -214,128 +236,36 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Determine comparison baseline artifact
-        if: always() && github.event_name == 'pull_request'
-        id: timing-baseline
-        uses: actions/github-script@v9
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const artifactName = process.env.BUILD_TIMING_ARTIFACT_NAME;
-            const workflowName = process.env.GITHUB_WORKFLOW;
-            const currentRunId = Number(process.env.GITHUB_RUN_ID);
-            const currentSha = process.env.GITHUB_SHA;
-            const pullRequest = context.payload.pull_request;
-            const headRef = pullRequest.head.ref;
-            const baseRef = process.env.BUILD_TIMING_BASE_REF;
-            const mergeBaseSha = process.env.BUILD_TIMING_MERGE_BASE_SHA;
-
-            async function firstRunWithArtifact(runs) {
-              for (const run of runs) {
-                if (run.id === currentRunId) {
-                  continue;
-                }
-                if (run.name !== workflowName || run.conclusion !== 'success') {
-                  continue;
-                }
-                const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
-                  owner,
-                  repo,
-                  run_id: run.id,
-                  per_page: 100,
-                });
-                const artifact = artifactsResponse.data.artifacts.find(candidate =>
-                  candidate.name === artifactName && !candidate.expired
-                );
-                if (artifact) {
-                  return run;
-                }
-              }
-              return null;
-            }
-
-            const prRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              event: 'pull_request',
-              branch: headRef,
-              status: 'completed',
-              per_page: 100,
-            });
-            const previousPrCandidates = prRunsResponse.data.workflow_runs.filter(run => {
-              if (run.head_sha === currentSha) {
-                return false;
-              }
-              const prs = run.pull_requests || [];
-              return prs.length === 0 || prs.some(pr => pr.number === pullRequest.number);
-            });
-            const previousPrRun = await firstRunWithArtifact(previousPrCandidates);
-            if (previousPrRun) {
-              core.setOutput('run-id', String(previousPrRun.id));
-              core.setOutput('sha', previousPrRun.head_sha);
-              core.setOutput('label', 'the previous successful PR update');
-              return;
-            }
-
-            const baseRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              event: 'push',
-              branch: baseRef,
-              status: 'completed',
-              per_page: 100,
-            });
-            const baseCandidates = baseRunsResponse.data.workflow_runs.filter(run =>
-              run.name === workflowName && run.conclusion === 'success'
-            );
-            const exactMergeBaseCandidates = mergeBaseSha
-              ? baseCandidates.filter(run => run.head_sha === mergeBaseSha)
-              : [];
-            const exactMergeBaseRun =
-              exactMergeBaseCandidates.length > 0
-                ? await firstRunWithArtifact(exactMergeBaseCandidates)
-                : null;
-            const fallbackBaseCandidates = mergeBaseSha
-              ? baseCandidates.filter(run => run.head_sha !== mergeBaseSha)
-              : baseCandidates;
-            const baseRun =
-              exactMergeBaseRun ?? await firstRunWithArtifact(fallbackBaseCandidates);
-            if (baseRun) {
-              const isMergeBase = Boolean(mergeBaseSha) && baseRun.head_sha === mergeBaseSha;
-              core.setOutput('run-id', String(baseRun.id));
-              core.setOutput('sha', baseRun.head_sha);
-              core.setOutput(
-                'label',
-                isMergeBase
-                  ? `merge-base on \`${baseRef}\``
-                  : `the latest successful \`${baseRef}\` run`
-              );
-              return;
-            }
-
-            core.info('No comparison baseline artifact found.');
-            core.setOutput('run-id', '');
-            core.setOutput('sha', '');
-            core.setOutput('label', '');
-
-      - name: Download comparison baseline artifact
-        if: always() && steps.timing-baseline.outputs.run-id != ''
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ env.BUILD_TIMING_ARTIFACT_NAME }}
-          path: ${{ env.BUILD_TIMING_BASELINE_DIR }}
-          run-id: ${{ steps.timing-baseline.outputs.run-id }}
-          github-token: ${{ github.token }}
-
       - name: Render build timing report
         if: always()
-        env:
-          BUILD_TIMING_BASELINE_LABEL: ${{ steps.timing-baseline.outputs.label }}
-          BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
         run: |
-          if [ -f "$BUILD_TIMING_BASELINE_DIR/results.jsonl" ]; then
-            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" "$BUILD_TIMING_BASELINE_DIR" > "$BUILD_TIMING_REPORT"
-          else
-            bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
-          fi
+          bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
           cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
+
+  # This job is never instantiated for a pull_request event, so PR-head code receives
+  # neither the Pages token nor an OIDC token. It runs only after trusted main has passed.
+  publish-docs:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download generated Pages site
+        uses: actions/download-artifact@v8
+        with:
+          name: arklib-pages-site
+          path: ${{ runner.temp }}/arklib-pages-site
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/arklib-pages-site
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

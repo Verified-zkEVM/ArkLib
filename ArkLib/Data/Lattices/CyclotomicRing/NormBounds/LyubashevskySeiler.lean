@@ -133,8 +133,6 @@ theorem isUnit_mk_of_isCoprime {a f : (ZMod q)[X]} (h : IsCoprime a f) :
   rw [map_add, map_mul, map_mul, hf, mul_zero, add_zero, map_one] at hkey
   rw [mul_comm]; exact hkey
 
-set_option maxHeartbeats 1600000 in
--- This combined assembly proof exceeds the default heartbeat budget.
 omit [NeZero q] in
 open Polynomial in
 /-- **Algebraic core.** If `c : Rq Φ` over `q ≡ 5 (mod 8)` is *not* a unit,

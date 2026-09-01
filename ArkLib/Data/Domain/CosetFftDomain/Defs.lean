@@ -139,7 +139,7 @@ namespace CosetFftDomain
 /-- Evaluation of a concrete coset FFT domain is multiplication of
   the coset generator by the subgroup element indexed by `i`. -/
 lemma eval_coset_fft_domain_eq_eval_generator_mul_domain
-  {cosetDomain : CosetFftDomain ι F} {i : ι} :
+    {cosetDomain : CosetFftDomain ι F} {i : ι} :
   cosetDomain i = cosetDomain.cosetGenerator * cosetDomain.subgroupUnit i := rfl
 
 end CosetFftDomain
@@ -203,12 +203,12 @@ private lemma mkSubgroupUnit_injective {D : Type} [FunLike D ι F] [CosetFftDoma
     exact congr_arg Units.val hab
   exact mul_left_cancel₀
     (inv_ne_zero (show ω 0 ≠ 0 from by have :=
-      (‹CosetFftDomainClass D ι F›.ne_zero ω 0) ; aesop)) h_eq
+      (‹CosetFftDomainClass D ι F›.ne_zero ω 0); aesop)) h_eq
 
 /-- Reconstruct a concrete `CosetFftDomain` from any object
   of a type satisfying `CosetFftDomainClass`. -/
 def toCosetFftDomain {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
-  (ω : D) :
+    (ω : D) :
   CosetFftDomain ι F where
   subgroupDomain := {
     toFun := fun i ↦ mkSubgroupUnit ω (Multiplicative.toAdd i)
@@ -262,7 +262,7 @@ lemma toCosetFftDomain_apply
 /-- Reconstructing a concrete coset FFT domain from its class instance
   gives back the original domain. -/
 lemma toCosetFftDomain_of_CosetFftDomain {ω : CosetFftDomain ι F} :
-  toCosetFftDomain ω = ω := by
+    toCosetFftDomain ω = ω := by
   apply CosetFftDomain.eq_iff_gen_and_domains_eq.mpr
   constructor
   · apply Units.ext
@@ -281,7 +281,7 @@ lemma toCosetFftDomain_of_CosetFftDomain {ω : CosetFftDomain ι F} :
 
 /-- Reconstructing a concrete coset FFT domain preserves evaluation. -/
 lemma toCosetFftDomain_apply_self {ω : CosetFftDomain ι F} {i : ι} :
-  toCosetFftDomain ω i = ω i := by
+    toCosetFftDomain ω i = ω i := by
   exact toCosetFftDomain_apply ω i
 
 end CosetFftDomainClass
@@ -299,7 +299,7 @@ variable {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
 @[simp]
 lemma coe_embedding_apply (ω : D) (i : ι) : ((ω : ι ↪ F) i) = ω i := rfl
 
-set_option linter.unusedSectionVars false in
+omit [AddCommGroup ι] [Field F] [CosetFftDomainClass D ι F] in
 /-- Extensionality for class-level coset FFT domains.
   Domains are equal if their evaluations are equal. -/
 @[ext]
@@ -311,19 +311,19 @@ namespace CosetFftDomain
 
 /-- The value at zero is the coset generator. -/
 lemma map_0_eq_coset_generator {ω : CosetFftDomain ι F} :
-  ω 0 = ω.cosetGenerator := by
+    ω 0 = ω.cosetGenerator := by
   simp only [eval_coset_fft_domain_eq_eval_generator_mul_domain, subgroupUnit_zero,
     Units.val_one, mul_one]
 
 /-- A concrete coset FFT domain is injective as a function. -/
 @[simp]
 lemma injective {ω : CosetFftDomain ι F} :
-  Injective ω := CosetFftDomainClass.injective _
+    Injective ω := CosetFftDomainClass.injective _
 
 /-- A concrete coset FFT domain is injective on every set. -/
 @[simp]
 lemma injOn {ω : CosetFftDomain ι F} {s : Set ι} :
-  Set.InjOn ω s := fun _ _ _ _ h ↦ injective h
+    Set.InjOn ω s := fun _ _ _ _ h ↦ injective h
 
 end CosetFftDomain
 
@@ -336,13 +336,13 @@ variable [Fintype ι] [DecidableEq F]
 namespace CosetFftDomainClass
 /-- The elements of a domain as a finset. -/
 def toFinset {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
-  (ω : D) : Finset F := Finset.image ω Finset.univ
+    (ω : D) : Finset F := Finset.image ω Finset.univ
 
 /-- The cardinality of the finset of elements of a domain is
   the cardinality of the indexing type. -/
 @[simp]
 lemma card_toFinset {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
-  {ω : D} :
+    {ω : D} :
   Finset.card (CosetFftDomainClass.toFinset ω) = Fintype.card ι := by
   simp [CosetFftDomainClass.toFinset,
         Finset.card_image_of_injective,

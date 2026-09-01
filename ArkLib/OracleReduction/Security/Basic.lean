@@ -149,7 +149,6 @@ theorem completeness_relIn_mono {ε : ℝ≥0} {relIn' : Set (StmtIn × WitIn)}
 /-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
   satisfies completeness with error `ε` for any relation `relOut'` that is a superset of `relOut`.
 -/
-
 theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOut)}
     (hrelOut : relOut ⊆ relOut') :
       completeness init impl relIn relOut reduction ε →
@@ -529,7 +528,7 @@ namespace Proof
 /-! All security notions are inherited from `Reduction`, with the output relation specialized to the
   trivial accept/reject one: `fun accRej _ => accRej`. -/
 
-open Reduction Classical
+open Reduction
 
 @[reducible, simp]
 def completeness (relation : Set (Statement × Witness)) (completenessError : ℝ≥0)
@@ -557,7 +556,7 @@ end Proof
 
 namespace OracleProof
 
-open OracleReduction Classical
+open OracleReduction
 
 /-- Completeness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
@@ -638,8 +637,9 @@ theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} :
       (Prod.fst <$> (pure (some ((default, stmtIn, witIn), stmtIn)) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, stmtIn, witIn), stmtIn) := by
+      exact Set.mem_singleton_iff.mp hx
+    cases hx'
     exact ⟨hIn, rfl⟩
 
 private lemma Reduction.run_mk_verifier_id {WitIn WitOut : Type}

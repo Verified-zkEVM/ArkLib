@@ -24,8 +24,10 @@ Import this file for all of it, or an individual module for a narrower dependenc
 
 `H : F[X][Y]` plays the role of the paper's `H(Y, Z)`: the outer variable is `Y` and the
 coefficient variable is the paper's `Z`. For the trivariate `R : F[X][X][Y]` the outer variable is
-`Y`, the middle one is the paper's `X` and the innermost is `Z`, so `Bivariate.evalX (C x₀) R` is
-the specialization `R(x₀, Y, Z)`.
+`Y`, the middle one is the paper's `X` and the innermost is `Z`, so `Trivariate.evalAtX x₀ R`
+(definitionally the existing `Bivariate.evalX (C x₀) R` expressions in this package) is the
+specialization `R(x₀, Y, Z)`. Generic bivariate operations on `R.coeff i` are intentional: that
+coefficient is genuinely bivariate in `(Z, X)`.
 
 ## Layout
 

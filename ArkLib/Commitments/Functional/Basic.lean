@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
 
-import VCVio
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.Data.Fin.Fold
 import ArkLib.ToVCVio.EvalDist.Instances.OptionT
@@ -231,7 +230,6 @@ abbrev ExtractabilityAdversary (oSpec : OracleSpec ι) (Data Commitment AuxState
     [O : OracleInterface Data] :=
   OracleComp oSpec (Commitment × (q : O.Query) × O.Response q × AuxState)
 
-set_option linter.unusedVariables false
 
 /-- A commitment scheme satisfies **extractability** with error `extractabilityError` if there
     exists a straightline extractor `E` such that for all adversaries that output a commitment `cm`,
@@ -246,11 +244,11 @@ set_option linter.unusedVariables false
   Informally, extractability says that if an adversary can convince the verifier to accept an
   opening, then the extractor must be able to recover some underlying data that is consistent with
   the evaluation query. -/
-def extractability (extractabilityError : ℝ≥0) : Prop :=
-  ∃ extractor : StraightlineExtractor oSpec Data Commitment,
+def extractability (_extractabilityError : ℝ≥0) : Prop :=
+  ∃ _extractor : StraightlineExtractor oSpec Data Commitment,
   ∀ AuxState : Type,
-  ∀ adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
-  ∀ prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
+  ∀ _adversary : ExtractabilityAdversary oSpec Data Commitment AuxState,
+  ∀ _prover : Prover oSpec (Commitment × (q : O.Query) × O.Response q) AuxState Bool Unit pSpec,
     False
     -- [ fun ⟨b, d, q, r⟩ ↦ b ∧ O.answer d q = r | do
     --     let result ← liftM (simulate loggingOracle ∅ adversary)
@@ -261,7 +259,6 @@ def extractability (extractabilityError : ℝ≥0) : Prop :=
     --     letI data := extractor cm queryLog
     --     return (accept, data, query, response)] ≤ extractabilityError
 
-set_option linter.unusedVariables true
 
 -- TODO: version where the query is chosen according to some public coin?
 

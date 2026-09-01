@@ -99,6 +99,7 @@ def oracleVerifier : OracleVerifier oSpec
       change HEq O O
       rfl }
 
+omit inst in
 @[simp]
 theorem oracleVerifier_materializeOutput (challenges : (pSpec OStatement).Challenges)
     (oStmt : ∀ i, OStmtIn OStatement i) (messages : (pSpec OStatement).Messages) :
@@ -117,7 +118,7 @@ its output statement also contains the challenge `q`.
 -/
 @[inline, specialize]
 def oracleReduction :
-  OracleReduction oSpec Unit (fun _ : Fin 2 => OStatement) Unit
+    OracleReduction oSpec Unit (fun _ : Fin 2 => OStatement) Unit
     (Query OStatement) (fun _ : Fin 2 => OStatement) Unit (pSpec OStatement) where
   prover := oracleProver oSpec OStatement
   verifier := oracleVerifier oSpec OStatement
@@ -127,7 +128,6 @@ instance : VerifierOnly (pSpec OStatement) where
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-set_option linter.unusedSimpArgs false in
 /-- The `RandomQuery` oracle reduction is perfectly complete. -/
 @[simp]
 theorem oracleReduction_completeness :
@@ -142,28 +142,17 @@ theorem oracleReduction_completeness :
     OracleVerifier.toVerifier, Verifier.run]
   simp_rw [show (pure : _ → OptionT (OracleComp _) _) = fun x => (pure (some x) :
     OracleComp _ _) from rfl]
-  simp only [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
-    pure_bind, bind_assoc]
+  simp only [OracleComp.liftComp_pure, ← OracleComp.liftComp_eq_liftM, pure_bind]
   erw [simulateQ_bind]
   erw [simulateQ_bind]
-  simp only [QueryImpl.addLift_def, simulateQ_pure,
-    QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
-    simulateQ_query,
-    ← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
-    pure_bind, bind_assoc, map_pure, monadLift_pure, monadLift_bind]
+  simp only [QueryImpl.addLift_def, monadLift_bind, monadLift_pure, simulateQ_pure,
+    bind_assoc, pure_bind]
   erw [simulateQ_bind]
-  simp only [QueryImpl.addLift_def, simulateQ_pure,
-    QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
-    simulateQ_query,
-    ← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
-    pure_bind, bind_assoc, map_pure, monadLift_pure, monadLift_bind,
-    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
-    Option.getM, Option.bind_some, Option.elimM,
-    FullTranscript.challenges, FullTranscript.messages, ChallengeIdx, Challenge,
-    hEq]
+  simp only [Challenge, ChallengeIdx, simulateQ_pure, OptionT.run,
+    FullTranscript.challenges, map_pure, Option.getM, bind_assoc, pure_bind]
   erw [simulateQ_query]
   simp only [StmtOut, OStmtOut, WitOut, Fin.isValue, Fin.vcons_of_one, ChallengeIdx,
-    Challenge, ofPFunctor_toPFunctor, QueryImpl.liftTarget_self, MessageIdx, OStmtIn,
+    Challenge, ofPFunctor_toPFunctor, QueryImpl.liftTarget_self, MessageIdx,
     Message, bind_map_left, StateT.run'_eq, StateT.run_bind, map_bind, OptionT.mk_bind,
     Set.mem_ofPred_eq, probEvent_eq_one_iff, probFailure_bind_eq_zero_iff,
     OptionT.probFailure_liftM, probFailure_eq_zero, OptionT.support_liftM,
@@ -172,32 +161,25 @@ theorem oracleReduction_completeness :
     exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.mk.injEq]
   constructor <;> intro <;> intro <;> intro <;> intro
   all_goals try erw [simulateQ_bind]
-  all_goals simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift]
-  all_goals simp only [OracleComp.liftComp_pure, QueryImpl.simulateQ_add_liftComp_left,
-    simulateQ_pure, simulateQ_id', pure_bind, bind_assoc, map_pure, monadLift_pure,
-    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
-    StateT.run'_eq, probFailure_eq_zero, hEq,
-    support_pure, Set.mem_singleton_iff, Prod.eq_iff_fst_eq_snd_eq]
+  all_goals simp only [monadLift, MonadLift.monadLift, liftM]
+  all_goals simp only [OptionT.run]
   all_goals try erw [simulateQ_pure]
-  all_goals try simp_all only [simulateQ_pure, pure_bind, map_pure,
-    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run,
-    StateT.run'_eq, StateT.run_pure, probFailure_eq_zero,
-    support_pure, support_map, Set.mem_singleton_iff, Set.mem_image,
-    OptionT.probFailure_eq, probOutput_pure, hEq]
+  all_goals try simp_all only [pure_bind, OptionT.probFailure_eq, OptionT.run,
+    probFailure_eq_zero]
   · rw [show OptionT.mk = id from rfl]
     simp only [ChallengeIdx, Fin.vcons_of_one, Challenge, Fin.isValue, input_query,
-      cont_query, input_apply, id_eq, zero_add, probOutput_eq_zero_iff, support_map,
+      cont_query, id_eq, zero_add, probOutput_eq_zero_iff, support_map,
       Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, not_exists]
     intro
     erw [simulateQ_pure]
-    simp [support_pure, pure_bind]
+    simp only [Fin.isValue, StmtIn, StateT.run_pure, support_pure,
+      Set.mem_singleton_iff, Prod.mk.injEq, reduceCtorEq, false_and,
+      not_false_eq_true, implies_true]
   · intro a b x hx x_1 hx1 x_2 x_3
     erw [simulateQ_bind]
-    simp only [liftComp_eq_liftM, pure_bind, simulateQ_pure, OptionT.lift,
-      OptionT.run_mk, map_pure]
+    simp only [OptionT.lift]
     erw [simulateQ_pure]
-    simp only [pure_bind, simulateQ_pure, support_pure, StateT.run, StateT.run',
-      Set.mem_singleton_iff, Prod.mk.injEq]
+    simp only [StateT.run, pure_bind]
     rintro ⟨⟨rfl, rfl⟩, rfl⟩
     refine ⟨?_, rfl, ?_⟩ <;> congr 1
 
@@ -234,7 +216,8 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
     -- absorbs the outer `pure (stmtOut, ...)`.
     erw [simulateQ_pure] at hx
     -- Now hx : some x ∈ support ((pure (some (tr.challenges ⟨0,_⟩, fun i => oStmt i))).run' s)
-    -- `pure` in `StateT σ ProbComp` unfolds via `StateT.run_pure`, then `map_pure` + `support_pure`.
+    -- `pure` in `StateT σ ProbComp` unfolds via `StateT.run_pure`, then `map_pure` and
+    -- `support_pure`.
     simp only [StateT.run'_eq, StateT.run_pure, map_pure, support_pure,
       Set.mem_singleton_iff, Option.map_some, Option.some.injEq] at hx
     subst x
@@ -310,13 +293,14 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
   refine ⟨fun _ => Unit, rbrExtractor oSpec OStatement,
     knowledgeStateFunction oSpec OStatement, ?_⟩
   rintro ⟨stmt, oracles⟩ i transcript
-  have hi : i = ⟨0, by simp [pSpec]⟩ := by aesop
+  have hi : i = ⟨0, by simp⟩ := by aesop
   subst i
   have htr : transcript = fun j => Fin.elim0 j := by
     funext j
     exact Fin.elim0 j
   rw [htr]
-  simp [knowledgeStateFunction, rbrExtractor, pSpec]
+  dsimp [knowledgeStateFunction, rbrExtractor, pSpec]
+  simp only [exists_const]
   rcases Classical.em (oracles 0 = oracles 1) with hOracles | hOracles
   · simp [hOracles]
   · simp only [hOracles, not_false_eq_true, true_and]
@@ -346,9 +330,12 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
       ext q
       simp
     rw [hfilter]
+    have hdenom : (Fintype.card (Query OStatement) : ℝ≥0) ≠ 0 := by
+      exact_mod_cast Fintype.card_ne_zero
+    rw [ENNReal.coe_div hdenom]
     apply ENNReal.div_le_div_right
-    have hcard := hDist (oracles 0) (oracles 1) hOracles
-    exact Nat.cast_le.mpr hcard
+    · have hcard := hDist (oracles 0) (oracles 1) hOracles
+      exact Nat.cast_le.mpr hcard
 
 end RandomQuery
 
@@ -358,9 +345,9 @@ end RandomQuery
 --   Random query where we throw away the second oracle, and replace with the response:
 --   - The input relation is `{ ⟨⟨_, 𝒪⟩, _⟩ | 𝒪 0 = 𝒪 1 }`.
 --   - The output relation is `{ ⟨⟨q, r⟩, 𝒪⟩, _⟩ | oracle (𝒪 0) q = r }`.
---   - The (oracle) verifier sends a single random query `q` to the prover, queries the oracle `𝒪 1` at
---     `q` to get response `r`, returns `(q, r)` as the output statement, and drop `𝒪 1` from the
---     output oracle statement.
+--   - The (oracle) verifier sends a single random query `q` to the prover, queries the oracle
+--     `𝒪 1` at `q` to get response `r`, returns `(q, r)` as the output statement, and drops
+--     `𝒪 1` from the output oracle statement.
 
 --   This is just the concatenation of `RandomQuery` and `ReduceClaim`.
 -- -/
@@ -379,8 +366,8 @@ end RandomQuery
 --   oracles 0 = oracles 1
 
 -- /--
--- The final relation states that the first oracle `oStmt ()` agrees with the response `r` at the query
--- `q`.
+-- The final relation states that the first oracle `oStmt ()` agrees with the response `r` at the
+-- query `q`.
 -- -/
 -- @[reducible, simp]
 -- def relOut : (StmtOut OStatement × ∀ i, OStmtOut OStatement i) → WitOut → Prop :=

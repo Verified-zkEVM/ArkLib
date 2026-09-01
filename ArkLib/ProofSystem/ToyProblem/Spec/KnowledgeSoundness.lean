@@ -31,8 +31,6 @@ open OracleSpec OracleComp ProtocolSpec
 open Probability
 open scoped NNReal ENNReal ProbabilityTheory
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 variable {ι F A : Type} [Fintype ι] [DecidableEq ι]
 variable [Field F] [Fintype F] [DecidableEq F]
@@ -137,12 +135,12 @@ private theorem prover_run_map_eq {k t : ℕ} {β : Type}
     Function.comp, Fin.castSucc_zero', Fin.isValue]
   dsimp only [Fin.succ, Fin.castSucc, Fin.castAdd, Fin.castLE, Fin.castLT, Fin.last]
   simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift,
-    pure_bind, bind_assoc, FullTranscript.challenges, FullTranscript.messages,
+    FullTranscript.challenges, FullTranscript.messages,
     Transcript.concat, Fin.snoc, Fin.val_zero, Fin.val_one, Fin.val_two,
     lt_self_iff_false, Fin.val_castLT, Fin.castSucc_castLT,
     show (0 : ℕ) < 2 from by norm_num, show (0 : ℕ) < 1 from by norm_num,
     show (1 : ℕ) < 2 from by norm_num, show ¬ ((2 : ℕ) < 0) from by norm_num,
-    dif_pos, cast_eq, dite_false]
+    dif_pos, dite_false]
   rfl
 
 omit [DecidableEq ι] [Fintype F] [Fintype A] in
@@ -395,6 +393,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
       _ ≤ (winningSetDensity encode δ : ENNReal) := by
         exact_mod_cast winningSetRatio_le_winningSetDensity x
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Direct simplified-IOR game theorem at the worst-case winning-set density.
 
 This is the protocol-level upper coupling missing from the bare combinatorial
@@ -403,7 +402,7 @@ probability at most `winningSetDensity encode δ`.  It does not assert the
 separate optimal-adversary/lower-coupling result that would identify this
 quantity as the minimal achievable game error. -/
 theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
-    {k : ℕ} [SampleableType F]
+    {k : ℕ} [SampleableType F] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
@@ -417,6 +416,7 @@ theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
       (SimplifiedIOR.transitionStraightlineExtractor k
         (choiceTransition (encode : (Fin k → F) → (ι → A)) δ))
       (winningSetDensity encode δ) := by
+  let _ := Fintype.ofFinite A
   apply SimplifiedIOR.knowledgeSoundnessWith_of_transition_failure_prob_le
   exact choiceTransition_failure_sample_le encode δ
 
