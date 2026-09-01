@@ -70,7 +70,7 @@ theorem binary_basis_vector_sum {b : ℕ}
   funext j
   simp [binary_basis_vector]
 
-theorem binary_functional_ker_nat_card {b : ℕ}
+private theorem binary_functional_ker_nat_card {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
     Nat.card (LinearMap.ker h) = 2 ^ (b - 1) := by
   have hdim := Module.Dual.finrank_ker_add_one_of_ne_zero hh
@@ -81,7 +81,7 @@ theorem binary_functional_ker_nat_card {b : ℕ}
   rw [Module.natCard_eq_pow_finrank (K := ZMod 2) (V := LinearMap.ker h), hker]
   norm_num [ZMod.card]
 
-theorem binary_functional_fiber_card {b : ℕ}
+private theorem binary_functional_fiber_card {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0)
     (z : ZMod 2) : Fintype.card {x : Fin b → ZMod 2 // h x = z} = 2 ^ (b - 1) := by
   have hsurj : Function.Surjective h := LinearMap.surjective hh
@@ -114,7 +114,7 @@ noncomputable def binary_functional_root_polynomial {b : ℕ}
   exact ∏ x : Fin b → ZMod 2, (Polynomial.X - Polynomial.C (h x))
 
 open scoped BigOperators in
-theorem binary_functional_root_polynomial_of_ne_zero {b : ℕ}
+private theorem binary_functional_root_polynomial_of_ne_zero {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
     binary_functional_root_polynomial h =
       Polynomial.X ^ (2 ^ (b - 1)) *
@@ -157,7 +157,7 @@ theorem binary_functional_lambda_one {b : ℕ}
   decide
 
 open scoped BigOperators in
-theorem binary_functional_root_polynomial_zero (b : ℕ) :
+private theorem binary_functional_root_polynomial_zero (b : ℕ) :
     binary_functional_root_polynomial
       (0 : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) = Polynomial.X ^ (2 ^ b) := by
   classical
@@ -180,7 +180,7 @@ def binary_graph_embedding_prod {b : ℕ}
       ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
   LinearMap.prod LinearMap.id φ
 
-theorem binary_graph_embedding_prod_injective {b : ℕ}
+private theorem binary_graph_embedding_prod_injective {b : ℕ}
     (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
     Function.Injective (binary_graph_embedding_prod φ) := by
   intro x y hxy
@@ -191,14 +191,14 @@ def binary_graph_subspace_prod {b : ℕ}
     Submodule (ZMod 2) ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
   LinearMap.range (binary_graph_embedding_prod φ)
 
-theorem binary_graph_subspace_prod_finrank {b : ℕ}
+private theorem binary_graph_subspace_prod_finrank {b : ℕ}
     (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
     Module.finrank (ZMod 2) (binary_graph_subspace_prod φ) = b := by
   rw [binary_graph_subspace_prod, LinearMap.finrank_range_of_inj
     (binary_graph_embedding_prod_injective φ)]
   simp
 
-theorem binary_graph_subspace_prod_injective {b : ℕ} :
+private theorem binary_graph_subspace_prod_injective {b : ℕ} :
     Function.Injective (binary_graph_subspace_prod (b := b)) := by
   intro φ ψ hφψ
   apply LinearMap.ext

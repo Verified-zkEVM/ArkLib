@@ -43,7 +43,7 @@ structure PowersBadWitness
     ∃ j : Fin (k + 1),
       LinearCode.projectedWord (U j) T ∉ LinearCode.projectedCodeSubmod C T
 
-theorem module_code_eq_of_agree_gt_card_sub_min_dist
+private theorem module_code_eq_of_agree_gt_card_sub_min_dist
     {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [DecidableEq A] [AddCommMonoid A] [Module F A]
@@ -57,7 +57,7 @@ theorem module_code_eq_of_agree_gt_card_sub_min_dist
   have hsum := Code.agree_add_hammingDist (u := c₁) (v := c₂)
   omega
 
-theorem module_code_eq_of_eq_on_large_finset
+private theorem module_code_eq_of_eq_on_large_finset
     {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [DecidableEq A] [AddCommMonoid A] [Module F A]
@@ -74,7 +74,7 @@ theorem module_code_eq_of_eq_on_large_finset
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
   exact heq i hi
 
-theorem normalized_module_code_min_dist_le_one
+private theorem normalized_module_code_min_dist_le_one
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -93,7 +93,7 @@ def powers_bad_seed_embedding
   ⟨Subtype.val, Subtype.val_injective⟩
 
 open scoped BigOperators in
-noncomputable def powers_bad_witness_of_is_mca
+private noncomputable def powers_bad_witness_of_is_mca
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     {A : Type} [AddCommMonoid A] [Module F A]
@@ -131,7 +131,7 @@ noncomputable def powers_bad_witness_of_bad_seed_subtype
   exact (hB x.1).mp x.2
 
 open scoped BigOperators in
-theorem powers_bad_witness_w_eq_interpolated_of_eq_on_large_finset
+private theorem powers_bad_witness_w_eq_interpolated_of_eq_on_large_finset
     {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -208,7 +208,7 @@ noncomputable def powers_middle_bound (n q : ℕ) (k : ℕ) (δmin η : ℝ) : �
             - powers_radius_base δmin η ^ ((1 : ℝ) / (k + 1))) * q))
         (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η * q))
 
-theorem powers_radius_base_mem_ioo (δmin η : NNReal)
+private theorem powers_radius_base_mem_ioo (δmin η : NNReal)
     (hδmin_le : (δmin : ℝ) ≤ 1) (hη : 0 < η) (hηlt : η < δmin) :
     powers_radius_base (δmin : ℝ) (η : ℝ) ∈ Set.Ioo (0 : ℝ) 1 := by
   constructor
@@ -232,7 +232,7 @@ theorem powers_radius_base_mem_ioo_of_module_code
     (normalized_module_code_min_dist_le_one C δmin hδmin) hη hηlt
 
 open scoped BigOperators in
-noncomputable def powers_scalar_polynomial
+private noncomputable def powers_scalar_polynomial
     {F : Type} [Field F]
     {A : Type} [AddCommGroup A] [Module F A]
     (k : ℕ) (φ : A →ₗ[F] F) (v : Fin (k + 1) → A) : Polynomial F :=
@@ -298,7 +298,7 @@ theorem powers_bad_seed_final_arithmetic
   linarith
 
 open scoped ProbabilityTheory in
-theorem powers_bad_seed_probability_le_card
+private theorem powers_bad_seed_probability_le_card
     {S : Type} [Fintype S] [Nonempty S]
     (P : S → Prop) (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
@@ -354,7 +354,7 @@ theorem powers_collision_tuple_card_le
       Fintype.card_le_of_injective f hf
     _ = (Fintype.card S) ^ t := by simp
 
-theorem powers_common_domain_difference_ne
+private theorem powers_common_domain_difference_ne
     {ι : Type} [Fintype ι]
     {A : Type} [DecidableEq A] [AddCommGroup A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A) (i : ι)
@@ -368,7 +368,7 @@ theorem powers_common_domain_difference_ne
   simp only [Pi.zero_apply] at hj
   exact sub_eq_zero.mp hj
 
-theorem powers_complement_card_real_le
+private theorem powers_complement_card_real_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
     (T : Finset ι) (γ : ℝ)
     (hT : (T.card : ℝ) ≥ (Fintype.card ι : ℝ) * (1 - γ)) :
@@ -478,7 +478,7 @@ theorem powers_large_branch_arithmetic
   exact ⟨hc, lt_trans hκhalf hmul⟩
 
 open scoped BigOperators in
-theorem powers_module_zero_set_card_le
+private theorem powers_module_zero_set_card_le
     {F : Type} [Field F] [Fintype F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (v : Fin (k + 1) → A) (hv : v ≠ 0) :
@@ -550,7 +550,7 @@ theorem powers_module_zero_set_card_le
   exact (Polynomial.mem_roots hp).2 heval
 
 open scoped BigOperators in
-theorem powers_coefficients_eq_of_agree_on_distinct_seeds
+private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
     {ι : Type}
     {F : Type} [Field F] [Finite F]
     {A : Type} [AddCommGroup A] [Module F A]
@@ -651,7 +651,7 @@ theorem powers_coordinate_agreement_seeds_card_le
   exact hroot
 
 open scoped BigOperators in
-theorem powers_middle_good_seeds_card_le
+private theorem powers_middle_good_seeds_card_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -689,7 +689,7 @@ theorem powers_middle_good_seeds_card_le
   simpa [T] using hcount
 
 open scoped BigOperators in
-theorem powers_middle_good_seeds_real_card_le
+private theorem powers_middle_good_seeds_real_card_le
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
