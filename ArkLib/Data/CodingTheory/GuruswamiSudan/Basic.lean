@@ -500,7 +500,7 @@ noncomputable def constraintMap (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n →
   map_add' c d := by simp +zetaDelta at *; rfl
   map_smul' a c := by unfold evalConstraint coeffsToPoly; aesop
 
-/-- There exists a non-zero polynomial satisfying the conditions. -/
+/-- A dimension surplus gives a nonzero coefficient vector in the constraint map's kernel. -/
 private lemma exists_nonzero_solution_of_numVars_gt (k n m : ℕ) (ωs : Fin n ↪ F)
     (f : Fin n → F) (D : ℕ) (hD : numVars k D > numConstraints n m) :
     ∃ c : (weightBoundIndices k D) → F, c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 := by
