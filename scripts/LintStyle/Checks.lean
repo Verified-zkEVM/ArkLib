@@ -52,6 +52,14 @@ private def dropHashes : Nat → List Char → Option (List Char)
   | n + 1, '#' :: rest => dropHashes n rest
   | _, _ => none
 
+private def canonicalQuotedOptionRoot? : List Char → Option (List Char × List Char)
+  | 'l' :: 'i' :: 'n' :: 't' :: 'e' :: 'r' :: '»' :: rest => some ("linter".toList, rest)
+  | 'p' :: 'p' :: '»' :: rest => some ("pp".toList, rest)
+  | 'p' :: 'r' :: 'o' :: 'f' :: 'i' :: 'l' :: 'e' :: 'r' :: '»' :: rest =>
+      some ("profiler".toList, rest)
+  | 't' :: 'r' :: 'a' :: 'c' :: 'e' :: '»' :: rest => some ("trace".toList, rest)
+  | _ => none
+
 /-- Replace comments and string/raw-string literals with spaces, preserving line structure. -/
 private partial def sanitizeChars (chars : List Char) (mode : ScanMode) : List Char × ScanMode :=
   match chars, mode with
@@ -66,12 +74,14 @@ private partial def sanitizeChars (chars : List Char) (mode : ScanMode) : List C
   | '\'' :: '"' :: '\'' :: rest, .code =>
       let (out, mode) := sanitizeChars rest .code
       (spaces 3 ++ out, mode)
-  | '«' :: 'l' :: 'i' :: 'n' :: 't' :: 'e' :: 'r' :: '»' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .code
-      ("linter".toList ++ out, mode)
   | '«' :: rest, .code =>
-      let (out, mode) := sanitizeChars rest .quotedIdent
-      ('x' :: out, mode)
+      match canonicalQuotedOptionRoot? rest with
+      | some (root, tail) =>
+          let (out, mode) := sanitizeChars tail .code
+          (root ++ out, mode)
+      | none =>
+          let (out, mode) := sanitizeChars rest .quotedIdent
+          ('x' :: out, mode)
   | 'r' :: rest, .code =>
       let (hashes, afterHashes) := countHashes rest
       match afterHashes with
@@ -262,12 +272,6 @@ private def lineViolations (lines codeLines : Array String) : Array Violation :=
         !line.contains "see adaptation note" then
       result := result.push <| violation "ERR_ADN" (i + 1)
         "Use the `#adaptation_note` command instead of a handwritten adaptation note"
-    if trimmed.startsWith "set_option " then
-      let option := ((trimmed.drop 11).toString.splitOn " ").head?.getD ""
-      let root := (option.splitOn ".").head?.getD option
-      if root == "pp" || root == "profiler" || root == "trace" then
-        result := result.push <| violation "ERR_OPT" (i + 1)
-          "Forbidden `set_option`; fix the source instead of changing or suppressing the linter"
     if i + 1 < lines.size && startsDeclaration code then
       let next := lines[i + 1]!
       let nextCode := codeLines[i + 1]!
@@ -291,49 +295,57 @@ private def fileLengthViolations (lines : Array String) (importsOnly : Bool) : A
     #[violation "ERR_NUM_LIN" 1 s!"File contains {lines.size} lines; split it below 1500 lines"]
   else #[]
 
-private partial def sourceTokens (chars current : List Char) (acc : List String) : List String :=
+private structure SourceToken where
+  text : String
+  line : Nat
+
+private partial def sourceTokens (chars current : List Char) (acc : List SourceToken)
+    (line : Nat) : List SourceToken :=
   match chars with
   | [] =>
-      let acc := if current.isEmpty then acc else String.ofList current.reverse :: acc
+      let acc := if current.isEmpty then acc else { text := String.ofList current.reverse, line } :: acc
       acc.reverse
   | c :: rest =>
       if c.isWhitespace then
-        let acc := if current.isEmpty then acc else String.ofList current.reverse :: acc
-        sourceTokens rest [] acc
+        let acc := if current.isEmpty then acc else
+          { text := String.ofList current.reverse, line } :: acc
+        sourceTokens rest [] acc (if c == '\n' then line + 1 else line)
       else if ['@', '[', ']', '(', ')', ','].contains c then
-        let acc := if current.isEmpty then acc else String.ofList current.reverse :: acc
-        sourceTokens rest [] (c.toString :: acc)
+        let acc := if current.isEmpty then acc else
+          { text := String.ofList current.reverse, line } :: acc
+        sourceTokens rest [] ({ text := c.toString, line } :: acc) line
       else
-        sourceTokens rest (c :: current) acc
+        sourceTokens rest (c :: current) acc line
 
-private def containsNoLintAttribute (tokens : List String) : Bool := Id.run do
+private def noLintAttributeLine? (tokens : List SourceToken) : Option Nat := Id.run do
   let mut squareDepth := 0
   let mut attributeDepth? : Option Nat := none
   let mut previous := ""
   for token in tokens do
-    if token == "[" then
+    if token.text == "[" then
       squareDepth := squareDepth + 1
       if previous == "@" || previous == "attribute" then
         attributeDepth? := some squareDepth
-    else if token == "]" then
+    else if token.text == "]" then
       if attributeDepth? == some squareDepth then attributeDepth? := none
       squareDepth := squareDepth - 1
-    else if token == "nolint" && attributeDepth?.isSome then
-      return true
-    previous := token
-  return false
+    else if token.text == "nolint" && attributeDepth?.isSome then
+      return some token.line
+    previous := token.text
+  return none
 
 private def suppressionViolations (codeLines : Array String) : Array Violation := Id.run do
   let code := "\n".intercalate codeLines.toList
-  let tokens := sourceTokens code.toList [] []
+  let tokens := sourceTokens code.toList [] [] 1
   let mut result := #[]
   for (current, next) in tokens.zip tokens.tail do
-    if current == "set_option" && next.startsWith "linter." then
-      let line := (codeLines.findIdx? fun line => line.contains "set_option").map (· + 1) |>.getD 1
-      result := result.push <| violation "ERR_OPT" line
-        "Forbidden `set_option linter.*`; fix the source instead of suppressing the linter"
-  if containsNoLintAttribute tokens then
-    let line := (codeLines.findIdx? fun line => line.contains "nolint").map (· + 1) |>.getD 1
+    let optionRoot := (next.text.splitOn ".").head?.getD next.text
+    if current.text == "set_option" &&
+        ["linter", "pp", "profiler", "trace"].contains optionRoot then
+      let message := s!"Forbidden `set_option {optionRoot}.*`; fix the source instead of " ++
+        "changing or suppressing the linter"
+      result := result.push <| violation "ERR_OPT" current.line message
+  if let some line := noLintAttributeLine? tokens then
     result := result.push <| violation "ERR_NOLINT" line
       "`@[nolint]` suppressions are forbidden; fix the declaration"
   return result
@@ -394,10 +406,25 @@ def runSelfTests : IO Unit := do
   assertSelfTest (hasCode "ERR_OPT" #["def «x/-y» : Nat := 1", "set_option",
     "  linter.unusedVariables false"])
     "comment syntax inside a quoted identifier must not mask a following suppression"
-  assertSelfTest (hasCode "ERR_OPT" #["set_option «linter».unusedVariables false"])
-    "a quoted linter root must not bypass suppression detection"
+  for root in ["linter", "pp", "profiler", "trace"] do
+    assertSelfTest (hasCode "ERR_OPT" #["set_option", s!"  {root}.test false"])
+      s!"a multiline set_option for {root} must not bypass suppression detection"
+    assertSelfTest (hasCode "ERR_OPT" #[s!"set_option «{root}».test false"])
+      s!"a quoted {root} root must not bypass suppression detection"
+  assertSelfTest (!hasCode "ERR_OPT" #["set_option maxRecDepth 1000"])
+    "unrelated local options remain available"
   assertSelfTest (!hasCode "ERR_NOLINT" #["def nolint : Nat := 0"])
     "an ordinary identifier named nolint is not a suppression"
+  let optionLocations := lintLines #["set_option maxRecDepth 1000",
+    "set_option linter.test false"]
+  assertSelfTest (optionLocations.any fun violation =>
+    violation.code == "ERR_OPT" && violation.line == 2)
+    "set_option diagnostics must report the suppression token's line"
+  let noLintLocations := lintLines #["def nolint : Nat := 0", "@[nolint unusedArguments]",
+    "def f (x : Nat) := 1"]
+  assertSelfTest (noLintLocations.any fun violation =>
+    violation.code == "ERR_NOLINT" && violation.line == 2)
+    "nolint diagnostics must report the attribute token's line"
   assertSelfTest (violationExitCode 0 == 0 && violationExitCode 1 == 1 &&
     violationExitCode 125 == 125 && violationExitCode 126 == 125)
     "violations must map to a portable nonzero process exit code"

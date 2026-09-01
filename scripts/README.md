@@ -228,5 +228,5 @@ rendering, CPU deltas, native-command ownership, and the stale-run guard in the 
 - Some scripts may require specific Lean toolchain versions
 - `validate.sh` is the recommended local wrapper; use the lower-level scripts directly when you
   want to run or debug one piece in isolation
-- `validate.sh` currently enforces a zero non-`sorry` warning budget under `ArkLib/Data/**`
+- `validate.sh` enforces a zero non-`sorry` warning budget across `ArkLib/**`
 - New `ArkLib/**/*.lean` files must be staged before `update-lib.sh` or `check-imports.sh`

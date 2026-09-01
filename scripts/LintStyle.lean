@@ -7,6 +7,7 @@ Authors: Quang Dao
 import Lake.CLI.Main
 import ImportGraph.Imports.FromSource
 import LintStyle.Checks
+import Lean.Parser.Module
 
 /-!
 # ArkLib's Lean-native source linter
@@ -42,20 +43,31 @@ private def sourceLines (content : String) : Array String :=
   let pieces := normalized.splitOn "\n"
   (if normalized.endsWith "\n" then pieces.dropLast else pieces).toArray
 
-private def importLine (lines : Array String) (name : Name) : Nat := Id.run do
-  let needle := name.toString
-  for h : i in [:lines.size] do
-    if lines[i].contains needle then return i + 1
-  return 1
-
-private def lintImports (path : FilePath) (content : String) (lines : Array String) :
-    IO (Array Violation) := do
-  let header ← Lean.parseImports' content path.toString
-  let mut result := #[]
-  for imp in header.imports do
-    if let some (code, message) := importViolation? imp.module then
-      result := result.push { code, line := importLine lines imp.module, message }
+private def lintImports (path : FilePath) (content : String) : IO (Array Violation) := do
+  let _ ← Lean.parseImports' content path.toString
+  let inputCtx := Lean.Parser.mkInputContext content path.toString
+  let (headerStx, _, _) ← Lean.Parser.parseHeader inputCtx
+  let `(Parser.Module.header| $[module]? $[prelude]? $importsStx*) := headerStx
+    | throw <| IO.userError s!"lint-style: could not inspect parsed imports in {path}"
+  let mut result : Array Violation := #[]
+  for importStx in importsStx do
+    if let `(Parser.Module.import| $[public]? $[meta]? import $[all]? $moduleId) := importStx then
+      if let some (code, message) := importViolation? moduleId.getId then
+        let pos := moduleId.raw.getPos?.getD 0
+        let line := inputCtx.fileMap.toPosition pos |>.line
+        result := result.push { code := code, line := line, message := message }
   return result
+
+private def runImportPositionSelfTest : IO Unit := do
+  let violations ← lintImports "fixture.lean" "/- Mathlib -/\nimport Mathlib\n"
+  unless violations.any fun violation => violation.code == "ERR_ROOT_IMPORT" && violation.line == 2 do
+    throw <| IO.userError "lint-style self-test failed: import diagnostics must use parser positions"
+  let moduleViolations ← lintImports "module-fixture.lean"
+    "module\n/- ArkLib -/\npublic meta import all «ArkLib»\n"
+  unless moduleViolations.any fun violation =>
+      violation.code == "ERR_ROOT_IMPORT" && violation.line == 3 do
+    throw <| IO.userError
+      "lint-style self-test failed: module-system import diagnostics must use parser positions"
 
 private def formatViolation (github : Bool) (path : FilePath) (v : Violation) : String :=
   if github then
@@ -102,6 +114,7 @@ private def repositoryHygiene (github : Bool) : IO Nat := do
 
 private def lintRepository (config : Config) : IO UInt32 := do
   runSelfTests
+  runImportPositionSelfTest
   if config.selfTestOnly then
     IO.println "lint-style self-tests passed"
     return 0
@@ -116,7 +129,7 @@ private def lintRepository (config : Config) : IO UInt32 := do
     if !content.endsWith "\n" then
       violations := violations.push
         { code := "ERR_EOF", line := max lines.size 1, message := "File must end with a newline" }
-    violations := violations ++ (← lintImports path content lines)
+    violations := violations ++ (← lintImports path content)
     for v in violations do IO.println (formatViolation config.github path v)
     errorCount := errorCount + violations.size
   errorCount := errorCount + (← repositoryHygiene config.github)
