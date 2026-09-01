@@ -149,8 +149,9 @@ theorem bucket_exists_common_codeword
             · push Not at hδ_le
               have hδ_real : (1 : ℝ) < (δ : ℝ) := by exact_mod_cast hδ_le
               linarith only [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
-                        mul_nonpos_of_nonpos_of_nonneg (by linarith only [hδ_real] : (1 : ℝ) - ↑δ ≤ 0)
-                          (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
+                mul_nonpos_of_nonpos_of_nonneg
+                  (by linarith only [hδ_real] : (1 : ℝ) - ↑δ ≤ 0)
+                  (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
           linarith only [h2]
   have h_cw_bound : closeWords.card < Fintype.card F := by
     apply h_list_bound u₀
