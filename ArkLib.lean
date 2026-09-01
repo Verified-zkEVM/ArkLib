@@ -501,4 +501,5 @@ public import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 public import ArkLib.ToVCVio.OracleComp.EvalDist
 public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
 public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import ArkLib.ToVCVio.Tactic.VCVNorm
 public import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic
