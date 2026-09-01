@@ -126,6 +126,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
+import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
