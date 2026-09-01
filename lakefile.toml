@@ -35,7 +35,13 @@ git = "https://github.com/Verified-zkEVM/CompPoly"
 rev = "v4.33.1"
 
 [[lean_lib]]
+name = "ArkLibLintPlugin"
+srcDir = "scripts"
+roots = ["ArkLibLintPlugin"]
+
+[[lean_lib]]
 name = "ArkLib"
+plugins = ["ArkLibLintPlugin:shared"]
 
 # Kernel-level axiom / sorry accounting; see scripts/AxiomSweep.lean.
 # Runtime-imports the built ArkLib oleans, so run it after `lake build`.

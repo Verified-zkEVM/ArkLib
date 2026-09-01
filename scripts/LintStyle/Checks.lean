@@ -12,9 +12,10 @@ import Lean.Elab.ParseImportsFast
 This module contains the pure part of ArkLib's text-based source linter. The policy is deliberately
 fail-closed and has no exception mechanism: a violation must be fixed in source.
 
-Unicode mathematical notation, including variation selectors, is unrestricted. We reject control,
-bidirectional, joining, annotation/tag, and nonstandard spacing characters that can make reviewed
-source differ from what it appears to say.
+Unicode mathematical notation is unrestricted. Common mathematical variation selectors U+FE00–
+U+FE0F and U+E0100–U+E01EF remain valid; we reject control, bidirectional, joining, annotation/tag,
+Mongolian free variation selectors, and nonstandard spacing characters that can make reviewed source
+differ from what it appears to say.
 -/
 
 open Lean System
@@ -33,12 +34,10 @@ private def violation (code : String) (line : Nat) (message : String) : Violatio
 
 private inductive ScanMode where
   | code
-  | interpolation (resume : ScanMode) (escaped : Bool)
-  | interpolationCode (resume : ScanMode) (depth : Nat)
-  | quoted (resume : ScanMode) (escaped : Bool)
-  | blockComment (depth : Nat) (resume : ScanMode)
-  | raw (hashes : Nat) (resume : ScanMode)
-  | quotedIdent (resume : ScanMode)
+  | blockComment (depth : Nat)
+  | quoted (escaped : Bool)
+  | raw (hashes : Nat)
+  | quotedIdent
 deriving BEq, Repr
 
 private def spaces (n : Nat) : List Char := List.replicate n ' '
@@ -54,14 +53,6 @@ private def dropHashes : Nat → List Char → Option (List Char)
   | n + 1, '#' :: rest => dropHashes n rest
   | _, _ => none
 
-private def canonicalQuotedOptionRoot? : List Char → Option (List Char × List Char)
-  | 'l' :: 'i' :: 'n' :: 't' :: 'e' :: 'r' :: '»' :: rest => some ("linter".toList, rest)
-  | 'p' :: 'p' :: '»' :: rest => some ("pp".toList, rest)
-  | 'p' :: 'r' :: 'o' :: 'f' :: 'i' :: 'l' :: 'e' :: 'r' :: '»' :: rest =>
-      some ("profiler".toList, rest)
-  | 't' :: 'r' :: 'a' :: 'c' :: 'e' :: '»' :: rest => some ("trace".toList, rest)
-  | _ => none
-
 /-- Find the closing quote of an escaped character token and return its width and remaining input. -/
 private def escapedCharLiteralEnd? : List Char → Option (Nat × List Char)
   | '\'' :: '\'' :: rest => some (2, rest)
@@ -69,151 +60,92 @@ private def escapedCharLiteralEnd? : List Char → Option (Nat × List Char)
   | _ :: rest => (escapedCharLiteralEnd? rest).map fun (width, tail) => (width + 1, tail)
   | [] => none
 
-mutual
-  /-- Replace comments and literals with spaces, preserving line structure.
+/-- Replace comments and literals with spaces, preserving line structure.
 
-  When `preserveModuleDocs` is true, a module-doc opener encountered in top-level code is retained
-  so the header check can distinguish it from the same text nested inside an ordinary comment.
-  -/
-  private partial def sanitizeCodeChars (chars : List Char) (mode : ScanMode)
-      (preserveModuleDocs : Bool) : List Char × ScanMode :=
-    match chars with
-    | [] => ([], mode)
-    | '-' :: '-' :: rest => (spaces rest.length, mode)
-    | '/' :: '-' :: '!' :: rest =>
-        let (tail, next) := sanitizeChars rest (.blockComment 1 mode) preserveModuleDocs
-        let marker := preserveModuleDocs && mode == .code
-        ((if marker then "/-!".toList else spaces 3) ++ tail, next)
-    | '/' :: '-' :: rest =>
-        let (tail, next) := sanitizeChars rest (.blockComment 1 mode) preserveModuleDocs
-        (' ' :: ' ' :: tail, next)
-    | '\'' :: '\\' :: rest =>
-        match escapedCharLiteralEnd? rest with
-        | some (width, tail) =>
-            let (out, next) := sanitizeChars tail mode preserveModuleDocs
-            (spaces (width + 2) ++ out, next)
-        | none =>
-            let (out, next) := sanitizeChars rest mode preserveModuleDocs
-            ('\'' :: '\\' :: out, next)
-    | '\'' :: _ :: '\'' :: rest =>
-        let (out, next) := sanitizeChars rest mode preserveModuleDocs
-        (spaces 3 ++ out, next)
-    | '«' :: rest =>
-        match canonicalQuotedOptionRoot? rest with
-        | some (root, tail) =>
-            let (out, next) := sanitizeChars tail mode preserveModuleDocs
-            (root ++ out, next)
-        | none =>
-            let (out, next) := sanitizeChars rest (.quotedIdent mode) preserveModuleDocs
-            ('x' :: out, next)
-    | 'r' :: rest =>
-        let (hashes, afterHashes) := countHashes rest
-        match afterHashes with
-        | '"' :: tail =>
-            let (out, next) := sanitizeChars tail (.raw hashes mode) preserveModuleDocs
-            (spaces (hashes + 2) ++ out, next)
-        | _ =>
-            let (out, next) := sanitizeChars rest mode preserveModuleDocs
-            ('r' :: out, next)
-    | 's' :: '!' :: '"' :: rest =>
-        let (out, next) := sanitizeChars rest (.interpolation mode false) preserveModuleDocs
-        (spaces 3 ++ out, next)
-    | '"' :: rest =>
-        let (out, next) := sanitizeChars rest (.quoted mode false) preserveModuleDocs
-        (' ' :: out, next)
-    | '{' :: rest =>
-        match mode with
-        | .interpolationCode resume depth =>
-            let (out, next) := sanitizeChars rest (.interpolationCode resume (depth + 1))
-              preserveModuleDocs
-            (' ' :: out, next)
-        | _ =>
-            let (out, next) := sanitizeChars rest mode preserveModuleDocs
-            ('{' :: out, next)
-    | '}' :: rest =>
-        match mode with
-        | .interpolationCode resume 1 =>
-            let (out, next) := sanitizeChars rest resume preserveModuleDocs
-            (' ' :: out, next)
-        | .interpolationCode resume (depth + 2) =>
-            let (out, next) := sanitizeChars rest (.interpolationCode resume (depth + 1))
-              preserveModuleDocs
-            (' ' :: out, next)
-        | _ =>
-            let (out, next) := sanitizeChars rest mode preserveModuleDocs
-            ('}' :: out, next)
-    | c :: rest =>
-        let (out, next) := sanitizeChars rest mode preserveModuleDocs
-        (c :: out, next)
-
-  private partial def sanitizeChars (chars : List Char) (mode : ScanMode)
-      (preserveModuleDocs : Bool) : List Char × ScanMode :=
-    match mode with
-    | .code => sanitizeCodeChars chars .code preserveModuleDocs
-    | .interpolationCode resume depth =>
-        sanitizeCodeChars chars (.interpolationCode resume depth) preserveModuleDocs
-    | mode => match chars, mode with
-      | [], mode => ([], mode)
-      | '\\' :: rest, .interpolation resume false =>
-          let (out, next) := sanitizeChars rest (.interpolation resume true) preserveModuleDocs
-          (' ' :: out, next)
-      | _ :: rest, .interpolation resume true =>
-          let (out, next) := sanitizeChars rest (.interpolation resume false) preserveModuleDocs
-          (' ' :: out, next)
-      | '"' :: rest, .interpolation resume false =>
-          let (out, next) := sanitizeChars rest resume preserveModuleDocs
-          (' ' :: out, next)
-      | '{' :: rest, mode@(.interpolation _ false) =>
-          let (out, next) := sanitizeChars rest (.interpolationCode mode 1) preserveModuleDocs
-          (' ' :: out, next)
-      | _ :: rest, .interpolation resume false =>
-          let (out, next) := sanitizeChars rest (.interpolation resume false) preserveModuleDocs
-          (' ' :: out, next)
-      | '\\' :: rest, .quoted resume false =>
-          let (out, next) := sanitizeChars rest (.quoted resume true) preserveModuleDocs
-          (' ' :: out, next)
-      | _ :: rest, .quoted resume true =>
-          let (out, next) := sanitizeChars rest (.quoted resume false) preserveModuleDocs
-          (' ' :: out, next)
-      | '"' :: rest, .quoted resume false =>
-          let (out, next) := sanitizeChars rest resume preserveModuleDocs
-          (' ' :: out, next)
-      | _ :: rest, .quoted resume false =>
-          let (out, next) := sanitizeChars rest (.quoted resume false) preserveModuleDocs
-          (' ' :: out, next)
-      | '/' :: '-' :: rest, .blockComment depth resume =>
-          let (out, next) := sanitizeChars rest (.blockComment (depth + 1) resume)
-            preserveModuleDocs
-          (' ' :: ' ' :: out, next)
-      | '-' :: '/' :: rest, .blockComment 1 resume =>
-          let (out, next) := sanitizeChars rest resume preserveModuleDocs
-          (' ' :: ' ' :: out, next)
-      | '-' :: '/' :: rest, .blockComment (depth + 2) resume =>
-          let (out, next) := sanitizeChars rest (.blockComment (depth + 1) resume)
-            preserveModuleDocs
-          (' ' :: ' ' :: out, next)
-      | _ :: rest, .blockComment depth resume =>
-          let (out, next) := sanitizeChars rest (.blockComment depth resume) preserveModuleDocs
-          (' ' :: out, next)
-      | '"' :: rest, .raw hashes resume =>
-          match dropHashes hashes rest with
-          | some tail =>
-              let (out, next) := sanitizeChars tail resume preserveModuleDocs
-              (spaces (hashes + 1) ++ out, next)
-          | none =>
-              let (out, next) := sanitizeChars rest (.raw hashes resume) preserveModuleDocs
-              (' ' :: out, next)
-      | _ :: rest, .raw hashes resume =>
-          let (out, next) := sanitizeChars rest (.raw hashes resume) preserveModuleDocs
-          (' ' :: out, next)
-      | '»' :: rest, .quotedIdent resume =>
-          let (out, next) := sanitizeChars rest resume preserveModuleDocs
-          (' ' :: out, next)
-      | _ :: rest, .quotedIdent resume =>
-          let (out, next) := sanitizeChars rest (.quotedIdent resume) preserveModuleDocs
-          (' ' :: out, next)
-      | chars, mode => (chars, mode)
-end
+When `preserveModuleDocs` is true, a module-doc opener encountered in top-level code is retained so
+the header check can distinguish it from the same text nested inside an ordinary comment.
+-/
+private partial def sanitizeChars (chars : List Char) (mode : ScanMode)
+    (preserveModuleDocs : Bool) : List Char × ScanMode :=
+  match chars, mode with
+  | [], mode => ([], mode)
+  | '-' :: '-' :: rest, .code => (spaces rest.length, .code)
+  | '/' :: '-' :: '!' :: rest, .code =>
+      let (tail, mode) := sanitizeChars rest (.blockComment 1) preserveModuleDocs
+      ((if preserveModuleDocs then "/-!".toList else spaces 3) ++ tail, mode)
+  | '/' :: '-' :: rest, .code =>
+      let (tail, mode) := sanitizeChars rest (.blockComment 1) preserveModuleDocs
+      (' ' :: ' ' :: tail, mode)
+  | '\'' :: '\\' :: rest, .code =>
+      match escapedCharLiteralEnd? rest with
+      | some (width, tail) =>
+          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
+          (spaces (width + 2) ++ out, mode)
+      | none =>
+          let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+          ('\'' :: '\\' :: out, mode)
+  | '\'' :: _ :: '\'' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+      (spaces 3 ++ out, mode)
+  | '«' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .quotedIdent preserveModuleDocs
+      ('x' :: out, mode)
+  | 'r' :: rest, .code =>
+      let (hashes, afterHashes) := countHashes rest
+      match afterHashes with
+      | '"' :: tail =>
+          let (out, mode) := sanitizeChars tail (.raw hashes) preserveModuleDocs
+          (spaces (hashes + 2) ++ out, mode)
+      | _ =>
+          let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+          ('r' :: out, mode)
+  | '"' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
+      (' ' :: out, mode)
+  | c :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+      (c :: out, mode)
+  | '/' :: '-' :: rest, .blockComment depth =>
+      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1)) preserveModuleDocs
+      (' ' :: ' ' :: out, mode)
+  | '-' :: '/' :: rest, .blockComment 1 =>
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+      (' ' :: ' ' :: out, mode)
+  | '-' :: '/' :: rest, .blockComment (depth + 2) =>
+      let (out, mode) := sanitizeChars rest (.blockComment (depth + 1)) preserveModuleDocs
+      (' ' :: ' ' :: out, mode)
+  | _ :: rest, .blockComment depth =>
+      let (out, mode) := sanitizeChars rest (.blockComment depth) preserveModuleDocs
+      (' ' :: out, mode)
+  | '\\' :: rest, .quoted false =>
+      let (out, mode) := sanitizeChars rest (.quoted true) preserveModuleDocs
+      (' ' :: out, mode)
+  | _ :: rest, .quoted true =>
+      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
+      (' ' :: out, mode)
+  | '"' :: rest, .quoted false =>
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+      (' ' :: out, mode)
+  | _ :: rest, .quoted false =>
+      let (out, mode) := sanitizeChars rest (.quoted false) preserveModuleDocs
+      (' ' :: out, mode)
+  | '"' :: rest, .raw hashes =>
+      match dropHashes hashes rest with
+      | some tail =>
+          let (out, mode) := sanitizeChars tail .code preserveModuleDocs
+          (spaces (hashes + 1) ++ out, mode)
+      | none =>
+          let (out, mode) := sanitizeChars rest (.raw hashes) preserveModuleDocs
+          (' ' :: out, mode)
+  | _ :: rest, .raw hashes =>
+      let (out, mode) := sanitizeChars rest (.raw hashes) preserveModuleDocs
+      (' ' :: out, mode)
+  | '»' :: rest, .quotedIdent =>
+      let (out, mode) := sanitizeChars rest .code preserveModuleDocs
+      (' ' :: out, mode)
+  | _ :: rest, .quotedIdent =>
+      let (out, mode) := sanitizeChars rest .quotedIdent preserveModuleDocs
+      (' ' :: out, mode)
 
 private def sanitizeLinesWith (lines : Array String) (preserveModuleDocs : Bool) :
     Array String := Id.run do
@@ -387,66 +319,11 @@ private def fileLengthViolations (lines : Array String) (importsOnly : Bool) : A
     #[violation "ERR_NUM_LIN" 1 s!"File contains {lines.size} lines; split it below 1500 lines"]
   else #[]
 
-private structure SourceToken where
-  text : String
-  line : Nat
-
-private partial def sourceTokens (chars current : List Char) (acc : List SourceToken)
-    (line : Nat) : List SourceToken :=
-  match chars with
-  | [] =>
-      let acc := if current.isEmpty then acc else { text := String.ofList current.reverse, line } :: acc
-      acc.reverse
-  | c :: rest =>
-      if c.isWhitespace then
-        let acc := if current.isEmpty then acc else
-          { text := String.ofList current.reverse, line } :: acc
-        sourceTokens rest [] acc (if c == '\n' then line + 1 else line)
-      else if ['@', '[', ']', '(', ')', ','].contains c then
-        let acc := if current.isEmpty then acc else
-          { text := String.ofList current.reverse, line } :: acc
-        sourceTokens rest [] ({ text := c.toString, line } :: acc) line
-      else
-        sourceTokens rest (c :: current) acc line
-
-private def noLintAttributeLine? (tokens : List SourceToken) : Option Nat := Id.run do
-  let mut squareDepth := 0
-  let mut attributeDepth? : Option Nat := none
-  let mut previous := ""
-  for token in tokens do
-    if token.text == "[" then
-      squareDepth := squareDepth + 1
-      if previous == "@" || previous == "attribute" then
-        attributeDepth? := some squareDepth
-    else if token.text == "]" then
-      if attributeDepth? == some squareDepth then attributeDepth? := none
-      squareDepth := squareDepth - 1
-    else if token.text == "nolint" && attributeDepth?.isSome then
-      return some token.line
-    previous := token.text
-  return none
-
-private def suppressionViolations (codeLines : Array String) : Array Violation := Id.run do
-  let code := "\n".intercalate codeLines.toList
-  let tokens := sourceTokens code.toList [] [] 1
-  let mut result := #[]
-  for (current, next) in tokens.zip tokens.tail do
-    let optionRoot := (next.text.splitOn ".").head?.getD next.text
-    if current.text == "set_option" &&
-        ["linter", "pp", "profiler", "trace"].contains optionRoot then
-      let message := s!"Forbidden `set_option {optionRoot}.*`; fix the source instead of " ++
-        "changing or suppressing the linter"
-      result := result.push <| violation "ERR_OPT" current.line message
-  if let some line := noLintAttributeLine? tokens then
-    result := result.push <| violation "ERR_NOLINT" line
-      "`@[nolint]` suppressions are forbidden; fix the declaration"
-  return result
-
-/-- Apply all pure text checks. Import checks are performed separately after Lean parses the header. -/
+/-- Apply pure text checks. Syntax and import checks are performed separately with Lean's parser. -/
 def lintLines (lines : Array String) : Array Violation :=
   let codeLines := sanitizeLines lines
   unicodeViolations lines ++ lineViolations lines codeLines ++
-    suppressionViolations codeLines ++ fileLengthViolations lines (isImportsOnly codeLines) ++
+    fileLengthViolations lines (isImportsOnly codeLines) ++
     headerViolations lines codeLines
 
 /-- Convert a violation count to a portable nonzero process exit code. -/
@@ -486,44 +363,6 @@ def runSelfTests : IO Unit := do
     "comments and strings must be masked, including nested comments"
   let raw := sanitizeLines #["def ok := r###\"@[nolint]\"###"]
   assertSelfTest (!raw[0]!.contains "nolint") "raw strings must be masked"
-  assertSelfTest (hasCode "ERR_NOLINT" #["def quoteChar : Char := '\"'",
-    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
-    "a quote character literal must not mask a following suppression"
-  assertSelfTest (hasCode "ERR_NOLINT" #["def escapedQuoteChar : Char := '\\\"'",
-    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
-    "an escaped quote character literal must not mask a following suppression"
-  assertSelfTest (hasCode "ERR_OPT" #["def leftGuillemet : Char := '«'", "set_option",
-    "  pp.universes true"])
-    "a guillemet character literal must not mask a following forbidden option"
-  assertSelfTest (hasCode "ERR_NOLINT" #["def leftGuillemet : Char := '«'",
-    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
-    "a guillemet character literal must not mask a following suppression"
-  assertSelfTest (hasCode "ERR_NOLINT" #["def «x\"y» : Nat := 1",
-    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
-    "a quote inside a quoted identifier must not mask a following suppression"
-  assertSelfTest (hasCode "ERR_OPT" #["def «x/-y» : Nat := 1", "set_option",
-    "  linter.unusedVariables false"])
-    "comment syntax inside a quoted identifier must not mask a following suppression"
-  for root in ["linter", "pp", "profiler", "trace"] do
-    assertSelfTest (hasCode "ERR_OPT" #["set_option", s!"  {root}.test false"])
-      s!"a multiline set_option for {root} must not bypass suppression detection"
-    assertSelfTest (hasCode "ERR_OPT" #[s!"set_option «{root}».test false"])
-      s!"a quoted {root} root must not bypass suppression detection"
-    let interpolation := "def p := s!\"{set_option " ++ root ++
-      ".test false in (1 : Nat)}\""
-    assertSelfTest (hasCode "ERR_OPT" #[interpolation])
-      s!"an interpolated-string antiquotation for {root} must not bypass suppression detection"
-  assertSelfTest (!hasCode "ERR_OPT" #["def inert := \"set_option linter.test false\""])
-    "suppression-like literal text must remain inert"
-  assertSelfTest (!hasCode "ERR_OPT" #["def inert := \"{set_option linter.test false}\""])
-    "braced suppression-like text in an ordinary string must remain inert"
-  assertSelfTest (hasCode "ERR_OPT" #["def openBrace := \"{\"",
-    "set_option linter.test false"])
-    "an ordinary string containing an unmatched brace must not mask following source"
-  assertSelfTest (!hasCode "ERR_OPT" #["set_option maxRecDepth 1000"])
-    "unrelated local options remain available"
-  assertSelfTest (!hasCode "ERR_NOLINT" #["def nolint : Nat := 0"])
-    "an ordinary identifier named nolint is not a suppression"
   let validHeader := #["/-", "Copyright (c) 2026 ArkLib Contributors.",
     "Released under Apache 2.0 license.", "Authors: ArkLib Contributors", "-/"]
   assertSelfTest (!hasCode "ERR_MOD" (validHeader ++ #["/-! Real module docstring. -/",
@@ -535,16 +374,6 @@ def runSelfTests : IO Unit := do
   assertSelfTest (hasCode "ERR_MOD" (validHeader ++ #["/- outer comment", "/-! nested fake -/",
     "-/", "def x := 1"]))
     "a module-doc opener nested in an ordinary comment must not satisfy the header policy"
-  let optionLocations := lintLines #["set_option maxRecDepth 1000",
-    "set_option linter.test false"]
-  assertSelfTest (optionLocations.any fun violation =>
-    violation.code == "ERR_OPT" && violation.line == 2)
-    "set_option diagnostics must report the suppression token's line"
-  let noLintLocations := lintLines #["def nolint : Nat := 0", "@[nolint unusedArguments]",
-    "def f (x : Nat) := 1"]
-  assertSelfTest (noLintLocations.any fun violation =>
-    violation.code == "ERR_NOLINT" && violation.line == 2)
-    "nolint diagnostics must report the attribute token's line"
   assertSelfTest (violationExitCode 0 == 0 && violationExitCode 1 == 1 &&
     violationExitCode 125 == 125 && violationExitCode 126 == 125)
     "violations must map to a portable nonzero process exit code"
@@ -557,20 +386,13 @@ def runSelfTests : IO Unit := do
     ("ERR_DOT", #[". exact h"]),
     ("ERR_CLN", #[": Nat"]),
     ("ERR_ADN", #["-- Adaptation note: legacy"]),
-    ("ERR_OPT", #["set_option linter.foo false"]),
-    ("ERR_NOLINT", #["@[nolint unusedArguments]"]),
     ("ERR_IND", #["def x :", " Nat := 1"]),
     ("ERR_NSP", #["  simp", "  exact h"])
   ]
   for (code, lines) in checks do
     assertSelfTest (hasCode code lines) s!"expected fixture to trigger {code}"
-  assertSelfTest (hasCode "ERR_OPT" #["set_option", "  linter.foo false"])
-    "multiline linter suppressions must be rejected"
   assertSelfTest (hasCode "ERR_NUM_LIN"
     (#["def x := 1"] ++ Array.replicate 1500 "")) "1500-line cap must be enforced"
-  assertSelfTest (!hasCode "ERR_NOLINT" #["-- @[nolint unusedArguments]",
-    "def x := \"set_option linter.foo false\""])
-    "suppression-like text in comments and strings must be accepted"
   let allowed ← Lean.parseImports' "import ArkLib.Data.Math.Basic\n" "allowed.lean"
   assertSelfTest (allowed.imports.all (importViolation? ·.module |>.isNone))
     "specific owner-module imports must be accepted"

@@ -18,6 +18,7 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 Default checks:
   - lake build
   - lake exe lint-style
+  - ./scripts/test-lint-plugin.sh
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
   - fail on non-`sorry` warnings under ArkLib/
@@ -84,6 +85,10 @@ if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
 else
   lake exe lint-style
 fi
+
+echo ""
+echo "# Testing build-time source-policy plugin"
+./scripts/test-lint-plugin.sh
 
 echo ""
 echo "# Running toy-problem compiled runtime checks"

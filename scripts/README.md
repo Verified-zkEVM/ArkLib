@@ -33,7 +33,10 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
-  suppression prevention, and hazardous-Unicode checks
+  and hazardous-Unicode checks
+- **`ArkLibLintPlugin.lean`** - build-time Lean syntax-tree gate rejecting `set_option` linter,
+  pretty-printer, profiler, and trace changes and `@[nolint]` attributes, including suppressions
+  nested in tactics, terms, and extensible interpolated strings
 
 ### Dependency Analysis
 - **`dependency_analysis/`** - Complete dependency analysis toolkit
@@ -107,6 +110,9 @@ bash scripts/build_timing_report.sh --help
 
 # Run only the Lean-native source-policy gate
 lake exe lint-style
+
+# Test the build-time suppression plugin against accepted and rejected syntax fixtures
+./scripts/test-lint-plugin.sh
 
 ```
 

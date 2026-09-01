@@ -54,8 +54,8 @@ clean.
 ### Long File
 
 - Split the file along a conceptual API or proof boundary before it exceeds 1500 lines.
-- Do not add `set_option linter.*` or `@[nolint]`; the source-policy gate rejects suppressions and
-  has no exception file.
+- Do not add `set_option linter.*` or `@[nolint]`; the build-time Lean syntax-tree gate rejects
+  suppressions and has no exception mechanism.
 
 ### Unused Simp Arguments
 

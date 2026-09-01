@@ -58,8 +58,9 @@ The description should include:
 
 ## Style and Naming Guidelines
 We aim to adhere to the [Lean community's contribution guidelines](https://github.com/leanprover-community/leanprover-community.github.io/tree/lean4/templates/contribute).
-The default validation command runs ArkLib's Lean-native source-policy gate. You can run that gate
-directly with `lake exe lint-style`; it supports no exception list or linter suppressions.
+The default validation command runs ArkLib's Lean-native source-policy gate. You can run its
+text-and-import checks directly with `lake exe lint-style`. The normal `lake build` also loads a
+Lean syntax-tree plugin that rejects linter suppressions; neither gate supports exceptions.
 
 ### Naming Conventions
 

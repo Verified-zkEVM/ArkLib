@@ -46,7 +46,8 @@ lake exe lint-style
 by `ArkLib.lean`, parses import headers with Lean itself, and has no exception file. It allows
 project-specific mathematical Unicode notation, while rejecting invisible controls, bidirectional
 controls, and nonstandard space characters that can conceal source changes. It also rejects
-blanket package-root imports and source-level linter suppressions.
+blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
+rejects source-level linter suppressions in their actual parsed context.
 
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
