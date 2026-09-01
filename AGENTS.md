@@ -41,6 +41,11 @@ Start with [`README.md`](README.md) for project overview.
   `dependency_graphs/`, or `home_page/docs/`.
 - Pre-existing `sorry` blocks exist in active formalizations; distinguish existing gaps from new
   regressions.
+- Prefer proof scripts that expose the key mathematical steps and compose predictably. Broad
+  automation is welcome when it closes a well-scoped goal quickly and clearly; for a slow proof,
+  profile first, then narrow imports, local hypotheses, simp sets, or automation rules, or move a
+  recurring argument into its owner layer. Do not mechanically expand a short, stable terminal
+  `simp` into a brittle `simp only` list.
 - If a PR changes commands, repo structure, generated outputs, or the blueprint/citation
   workflow, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the same PR.
 - Promote recurring agent learnings into [`docs/wiki/`](docs/wiki/README.md); do not let stable

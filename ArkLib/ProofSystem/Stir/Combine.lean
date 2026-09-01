@@ -130,7 +130,7 @@ private lemma block_start_filter_nonempty
   {dstar : ℕ} {degs : Fin m.succ → ℕ} {l : ℕ} :
   (univ.filter (fun j ↦ block_start dstar degs j ≤ l)).Nonempty := by
   exists 0
-  aesop (add simp [block_start])
+  simp [block_start]
 
 private lemma block_idx_eq_max
   {dstar : ℕ} {degs : Fin m → ℕ}
@@ -276,8 +276,10 @@ private lemma combine_eq_flat'
   exact Finset.sum_equiv (Equiv.refl _) (by simp) <| fun i hi ↦ by
     have h : Finset.max {j | block_start dstar degs j ≤ i} =
       Finset.max' {j | block_start dstar degs j ≤ i} block_start_filter_nonempty := by
-        aesop (add simp [Finset.max, Finset.max'])
-    aesop
+      exact (Finset.coe_max' block_start_filter_nonempty).symm
+    rw [h]
+    simp [Finset.mem_range.mp hi]
+    rfl
 
 omit [DecidableEq F] in
 private lemma combine_eq_flat''
@@ -340,7 +342,9 @@ private lemma combine_eq_flat'''
     rw [show filter _ _ = Finset.Iio i by
       ext j
       simp only [mem_filter, mem_univ, true_and, mem_Iio]]
-    aesop (add safe (by ring))
+    left
+    simp only [Fin.card_Iio]
+    ring
 
 omit [DecidableEq F] in
 private lemma combine_eq_flat_final
@@ -363,7 +367,7 @@ private lemma combine_eq_flat_final
       Finset.max {j | block_start dstar degs j ≤ ↑l} =
         Finset.max' {j | block_start dstar degs j ≤ ↑l}
           block_start_filter_nonempty := by
-      aesop (add simp [Finset.max, Finset.max'])
+      exact (Finset.coe_max' block_start_filter_nonempty).symm
     rw [combine_eq_flat''' φ dstar r fs degs]
     funext x
     simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]

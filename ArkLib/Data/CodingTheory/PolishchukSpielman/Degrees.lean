@@ -107,24 +107,19 @@ lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]
   grind only [cases Or]
 
 private lemma ps_swap_coeff {F : Type} [CommRing F] (g : F[X][Y]) (i j : ℕ) :
-    Bivariate.coeff (swap g) i j = Bivariate.coeff g j i := by
-  have h_swap_coeff : ∀ (g : F[X][Y]) (i j : ℕ),
-      Bivariate.coeff (swap g) i j = Bivariate.coeff g j i := by
-    unfold Bivariate.coeff
-    -- By definition of swap, we have that swap g = ∑ i, ∑ j, g.coeff j * X^i * Y^j.
-    have h_swap_def : ∀ g : F[X][Y], swap g = ∑ i ∈ g.support,
-        ∑ j ∈ (g.coeff i).support, monomial j (monomial i ((g.coeff i).coeff j)) := by
-      intro g
-      simp [swap, eval_finsetSum, aeval_def, eval₂_eq_sum, sum_def,
-        ← C_mul_X_pow_eq_monomial, Finset.sum_mul _ _ _ ]
-      ac_rfl
-    simp only [h_swap_def, finsetSum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
-    intro g i j
-    rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
-    · split_ifs <;> simp_all
-    · intro b hb hb'; split_ifs <;> simp_all [coeff_monomial]
-    · push Not; intro h; simp [h]
-  exact h_swap_coeff g i j
+    ((swap g).coeff j).coeff i = (g.coeff i).coeff j := by
+  -- By definition of swap, we have that swap g = ∑ i, ∑ j, g.coeff j * X^i * Y^j.
+  have h_swap_def : ∀ g : F[X][Y], swap g = ∑ i ∈ g.support,
+      ∑ j ∈ (g.coeff i).support, monomial j (monomial i ((g.coeff i).coeff j)) := by
+    intro g
+    simp [swap, eval_finsetSum, aeval_def, eval₂_eq_sum, sum_def,
+      ← C_mul_X_pow_eq_monomial, Finset.sum_mul _ _ _ ]
+    ac_rfl
+  simp only [h_swap_def, finsetSum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
+  rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
+  · split_ifs <;> simp_all
+  · intro b hb hb'; split_ifs <;> simp_all [coeff_monomial]
+  · push Not; intro h; simp [h]
 
 private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
     degreeX (swap f) ≤ natDegreeY f := by
@@ -135,7 +130,7 @@ private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
   obtain ⟨m, hm⟩ : ∃ m > f.natDegree, ((swap f).coeff n).coeff m ≠ 0 := by
     exact ⟨((swap f).coeff n).natDegree, hn.2.2.2, by aesop⟩
   have h_coeff_swap : ((swap f).coeff n).coeff m = (f.coeff m).coeff n := by
-    convert ps_swap_coeff f m n using 1 <;> rfl
+    exact ps_swap_coeff f m n
   exact hm.2 (h_coeff_swap.symm ▸ by rw [coeff_eq_zero_of_natDegree_lt hm.1]; aesop)
 
 private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f ≠ 0) :
@@ -146,8 +141,8 @@ private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f 
   obtain ⟨n, hn⟩ : ∃ n, n = (f.coeff N).natDegree ∧ (f.coeff N).coeff n ≠ 0 := by
     contrapose! hN; aesop;
   have h_swap_coeff_nonzero : ((swap f).coeff n).coeff N ≠ 0 := by
-    convert hn.2 using 1;
-    convert ps_swap_coeff f N n using 1 <;> rfl
+    rw [ps_swap_coeff f N n]
+    exact hn.2
   have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 :=
     (ne_of_apply_ne Polynomial.coeff fun a ↦ h_swap_coeff_nonzero (congrFun a.symm N)).symm
   have h_swap_coeff_nonzero_natDegree_le : Nat.max (((swap f).coeff n).natDegree)

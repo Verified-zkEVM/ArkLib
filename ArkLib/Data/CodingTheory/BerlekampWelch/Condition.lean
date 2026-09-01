@@ -84,7 +84,9 @@ lemma linsolve_is_berlekamp_welch_solution
 lemma is_berlekamp_welch_solution_ext
     (h : ∀ i, (Matrix.mulVec (BerlekampWelchMatrix e k ωs f) v) i = -(f i) * (ωs i) ^ e) :
     IsBerlekampWelchSolution e k ωs f v := by
-  aesop (add simp [IsBerlekampWelchSolution, Rhs])
+  rw [IsBerlekampWelchSolution]
+  funext i
+  simpa only [Rhs] using h i
 
 @[simp]
 lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
@@ -107,7 +109,10 @@ def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
 lemma coeff_truncate : (truncate p n).coeff k = if k < n then p.coeff k else 0 := rfl
 
 @[simp]
-lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by aesop
+lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by
+  ext i
+  simp only [coeff_truncate, Nat.not_lt_zero, ↓reduceIte]
+  rfl
 
 @[simp]
 lemma natDegree_truncate [φ : NeZero n] : (truncate p n).natDegree < n := by

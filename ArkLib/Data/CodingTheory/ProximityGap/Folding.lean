@@ -376,7 +376,7 @@ theorem foldWord_codeword {d : ℕ} [FoldingContext k d n]
     toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval (by simp)]
-  aesop
+  rfl
 
 theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
     {α : F} {p : Polynomial F}
