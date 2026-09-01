@@ -576,8 +576,7 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
           (2 - frac * (e / n + JohnsonBound.e B v / n)) ≥ 0 := by
       refine ⟨mul_nonneg ?_ ?_, mul_nonneg ?_ ?_⟩
       · exact sub_nonneg_of_le (by gcongr)
-      ·
-        nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
+      · nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
       · exact sub_nonneg_of_le (by gcongr)
       · have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
           le_trans (mul_le_mul_of_nonneg_left

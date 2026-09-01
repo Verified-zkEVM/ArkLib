@@ -315,8 +315,7 @@ theorem balanced_center_arithmetic
       exact hfive.trans_lt (hfive_lt.trans hrlt)
     have hnat : ℓ * t < r + 1 := by exact_mod_cast hlt
     simpa only [r, r', t] using (Nat.lt_succ_iff.mp hnat)
-  ·
-    have hthree : (ℓ : ℝ) * t ≤ 3 * (p ^ ℓ * n) / 4 := by
+  · have hthree : (ℓ : ℝ) * t ≤ 3 * (p ^ ℓ * n) / 4 := by
       nlinarith only [hmul_t, hsize]
     have hceil : 3 * (p ^ ℓ * n) / 4 ≤
         (Nat.ceil ((3 * p ^ ℓ / 4) * n) : ℝ) := by
