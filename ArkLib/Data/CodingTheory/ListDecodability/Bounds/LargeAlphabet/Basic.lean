@@ -268,7 +268,7 @@ theorem balanced_center_arithmetic
     have hprod : p ^ ℓ * (n : ℝ) ≤ 0 :=
       mul_nonpos_of_nonneg_of_nonpos (pow_nonneg hp.le ℓ) hnle
     have hleft : (0 : ℝ) < 8 * ℓ := by positivity
-    nlinarith
+    exact (not_le_of_gt hleft) (hsize.trans hprod)
   have hboost : p ≤ boostedRadius ℓ p := by
     unfold boostedRadius
     have hpow : 0 ≤ p ^ ℓ := by positivity
@@ -279,32 +279,31 @@ theorem balanced_center_arithmetic
     mul_le_mul_of_nonneg_right hboost hnR.le
   have hrle : Nat.floor (p * n) ≤
       Nat.floor (boostedRadius ℓ p * n) := Nat.floor_mono hmul
+  let r := Nat.floor (p * n)
+  let r' := Nat.floor (boostedRadius ℓ p * n)
+  let t := r' - r
+  have htcast : (t : ℝ) = (r' : ℝ) - r := Nat.cast_sub hrle
+  have hr'le : (r' : ℝ) ≤ boostedRadius ℓ p * n :=
+    Nat.floor_le (mul_nonneg hboostPos.le hnR.le)
+  have hr'le' : (r' : ℝ) ≤ p * n + p ^ ℓ * n / (2 * ℓ) := by
+    calc
+      (r' : ℝ) ≤ boostedRadius ℓ p * n := hr'le
+      _ = p * n + p ^ ℓ * n / (2 * ℓ) := by
+        unfold boostedRadius
+        ring
+  have hrlt : p * n < (r : ℝ) + 1 := Nat.lt_floor_add_one _
+  have ht : (t : ℝ) ≤ p ^ ℓ * n / (2 * ℓ) + 1 := by
+    rw [htcast]
+    linarith only [hr'le', hrlt]
+  have hmul_t : (ℓ : ℝ) * t ≤ p ^ ℓ * n / 2 + ℓ := by
+    calc
+      (ℓ : ℝ) * t ≤ (ℓ : ℝ) * (p ^ ℓ * n / (2 * ℓ) + 1) :=
+        mul_le_mul_of_nonneg_left ht hℓR.le
+      _ = p ^ ℓ * n / 2 + ℓ := by field_simp [ne_of_gt hℓR]
   refine ⟨hrle, ?_, ?_, ?_⟩
   · omega
-  · let r := Nat.floor (p * n)
-    let r' := Nat.floor (boostedRadius ℓ p * n)
-    let t := r' - r
-    have htcast : (t : ℝ) = (r' : ℝ) - r := Nat.cast_sub hrle
-    have hr'le : (r' : ℝ) ≤ boostedRadius ℓ p * n :=
-      Nat.floor_le (mul_nonneg hboostPos.le hnR.le)
-    have hr'le' : (r' : ℝ) ≤ p * n + p ^ ℓ * n / (2 * ℓ) := by
-      calc
-        (r' : ℝ) ≤ boostedRadius ℓ p * n := hr'le
-        _ = p * n + p ^ ℓ * n / (2 * ℓ) := by
-          unfold boostedRadius
-          ring
-    have hrlt : p * n < (r : ℝ) + 1 := Nat.lt_floor_add_one _
-    have ht : (t : ℝ) ≤ p ^ ℓ * n / (2 * ℓ) + 1 := by
-      rw [htcast]
-      linarith
-    have hmul_t : (ℓ : ℝ) * t ≤ p ^ ℓ * n / 2 + ℓ := by
-      have h := mul_le_mul_of_nonneg_left ht hℓR.le
-      calc
-        (ℓ : ℝ) * t ≤ (ℓ : ℝ) * (p ^ ℓ * n / (2 * ℓ) + 1) := h
-        _ = p ^ ℓ * n / 2 + ℓ := by
-          field_simp [ne_of_gt hℓR]
-    have hfive : (ℓ : ℝ) * t ≤ 5 * (p ^ ℓ * n) / 8 := by
-      nlinarith
+  · have hfive : (ℓ : ℝ) * t ≤ 5 * (p ^ ℓ * n) / 8 := by
+      nlinarith only [hmul_t, hsize]
     have hpPowLt : p ^ ℓ < p :=
       pow_lt_self_of_lt_one₀ hp hp_lt (by omega)
     have hP_lt : p ^ ℓ * n < p * n :=
@@ -312,34 +311,12 @@ theorem balanced_center_arithmetic
     have hlt : (ℓ : ℝ) * t < (r : ℝ) + 1 := by
       have hfive_lt : 5 * (p ^ ℓ * n) / 8 < p * n := by
         have hPnonneg : 0 ≤ p ^ ℓ * n := by positivity
-        nlinarith
-      nlinarith
+        exact lt_of_le_of_lt (by nlinarith only [hPnonneg]) hP_lt
+      exact hfive.trans_lt (hfive_lt.trans hrlt)
     have hnat : ℓ * t < r + 1 := by exact_mod_cast hlt
     simpa only [r, r', t] using (Nat.lt_succ_iff.mp hnat)
-  · let r := Nat.floor (p * n)
-    let r' := Nat.floor (boostedRadius ℓ p * n)
-    let t := r' - r
-    have htcast : (t : ℝ) = (r' : ℝ) - r := Nat.cast_sub hrle
-    have hr'le : (r' : ℝ) ≤ boostedRadius ℓ p * n :=
-      Nat.floor_le (mul_nonneg hboostPos.le hnR.le)
-    have hr'le' : (r' : ℝ) ≤ p * n + p ^ ℓ * n / (2 * ℓ) := by
-      calc
-        (r' : ℝ) ≤ boostedRadius ℓ p * n := hr'le
-        _ = p * n + p ^ ℓ * n / (2 * ℓ) := by
-          unfold boostedRadius
-          ring
-    have hrlt : p * n < (r : ℝ) + 1 := Nat.lt_floor_add_one _
-    have ht : (t : ℝ) ≤ p ^ ℓ * n / (2 * ℓ) + 1 := by
-      rw [htcast]
-      linarith
-    have hmul_t : (ℓ : ℝ) * t ≤ p ^ ℓ * n / 2 + ℓ := by
-      have h := mul_le_mul_of_nonneg_left ht hℓR.le
-      calc
-        (ℓ : ℝ) * t ≤ (ℓ : ℝ) * (p ^ ℓ * n / (2 * ℓ) + 1) := h
-        _ = p ^ ℓ * n / 2 + ℓ := by
-          field_simp [ne_of_gt hℓR]
-    have hthree : (ℓ : ℝ) * t ≤ 3 * (p ^ ℓ * n) / 4 := by
-      nlinarith
+  · have hthree : (ℓ : ℝ) * t ≤ 3 * (p ^ ℓ * n) / 4 := by
+      nlinarith only [hmul_t, hsize]
     have hceil : 3 * (p ^ ℓ * n) / 4 ≤
         (Nat.ceil ((3 * p ^ ℓ / 4) * n) : ℝ) := by
       calc

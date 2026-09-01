@@ -336,7 +336,13 @@ lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
       mul_nonneg (Nat.cast_nonneg _) (sq_nonneg _)
     have hD_eq : frac * JohnsonBound.d B / n = D := by rw [hD_def]; ring
     rw [hD_eq] at hjb
-    nlinarith [hjb, hsq]
+    calc
+      (B.card : ℚ) * (D - 1) ≤
+          (B.card : ℚ) * (1 - frac * (JohnsonBound.e B (fun _ => a) / n)) ^ 2 +
+            B.card * (D - 1) := le_add_of_nonneg_left hsq
+      _ = (B.card : ℚ) *
+          ((1 - frac * (JohnsonBound.e B (fun _ => a) / n)) ^ 2 - (1 - D)) := by ring
+      _ ≤ D := hjb
   -- Failed guard: `D > ℓ/(ℓ-1)`, i.e. `ℓ < D · (ℓ-1)`.
   have hDgt : (ℓ : ℚ) < D * ((ℓ : ℚ) - 1) := by
     have hmd : ((mDist : ℚ) / n) ≤ JohnsonBound.d B / n := by gcongr
@@ -348,8 +354,19 @@ lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
           mul_lt_mul_of_pos_right h1 hℓQ_pos
       _ = D * ((ℓ : ℚ) - 1) := by rw [hD_def]; field_simp
   -- `D > 1`, then `|B| ≤ D/(D-1) < ℓ`.
-  have hD1 : (1 : ℚ) < D := by nlinarith [hDgt, hℓQ]
-  have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by nlinarith [hmain, hDgt, hD1]
+  have hD1 : (1 : ℚ) < D := by
+    by_contra hD1
+    have hprod_le : D * ((ℓ : ℚ) - 1) ≤ 1 * (ℓ - 1) :=
+      mul_le_mul_of_nonneg_right (le_of_not_gt hD1) (by linarith : (0 : ℚ) ≤ ℓ - 1)
+    exact (not_lt_of_ge (hprod_le.trans (by linarith : (1 : ℚ) * (ℓ - 1) ≤ ℓ))) hDgt
+  have hD_lt : D < (ℓ : ℚ) * (D - 1) := by
+    rw [← sub_pos]
+    convert sub_pos.mpr hDgt using 1
+    all_goals ring
+  have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by
+    by_contra hcard
+    have hmul := mul_le_mul_of_nonneg_right (le_of_not_gt hcard) (sub_nonneg.mpr hD1.le)
+    exact (not_lt_of_ge (hmul.trans hmain)) hD_lt
   exact_mod_cast hfinal.le
 
 /-- The Johnson list-size bound in the regime where the `Jqℓ` radicand is nonnegative, so

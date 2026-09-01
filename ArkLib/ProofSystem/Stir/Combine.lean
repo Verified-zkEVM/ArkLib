@@ -86,11 +86,15 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
       else ∑ i, (ri dstar degs r i) * (fs i x) *  (dstar - degs i + 1) := by
   funext x
   simp only [combine]
-  split_ifs
-  · aesop
-      (add simp [geom_sum_cases])
-      (add safe (by ring))
-  · simp_all
+  split_ifs with hq
+  · simp_rw [geom_sum_cases, if_pos hq]
+    apply Finset.sum_congr rfl
+    intro i _
+    ring
+  · simp_rw [geom_sum_cases, if_neg hq]
+    apply Finset.sum_congr rfl
+    intro i _
+    rw [Nat.cast_add, Nat.cast_sub (hdegs i), Nat.cast_one]
 
 open Finset
 open BigOperators
@@ -314,23 +318,28 @@ private lemma combine_eq_flat'''
         · exact Finset.mem_filter.mp
             (Finset.max'_mem (Finset.univ.filter
               (Combine.block_start dstar degs · ≤ l)) _) |>.2
-        · aesop (add safe Finset.le_max')
+        · intro j hj
+          exact Finset.le_max' _ j (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hj⟩)
   convert Combine.combine_eq_flat'' φ dstar r fs degs using 1
   funext x
   exact Finset.sum_congr rfl <| fun l _ ↦ by
     obtain ⟨i, hi, hi'⟩ := h_block l
     have hi_eq : (Finset.max'
-      (filter (Combine.block_start dstar degs · ≤ l) Finset.univ)
-      Combine.block_start_filter_nonempty) = i :=
-        le_antisymm
-          (by simp_all [Finset.max'])
-          (by aesop (add simp [Finset.max']))
+        (filter (Combine.block_start dstar degs · ≤ l) Finset.univ)
+        Combine.block_start_filter_nonempty) = i := by
+      apply le_antisymm
+      · apply Finset.max'_le
+        intro j hj
+        exact hi' j (Finset.mem_filter.mp hj).2
+      · exact Finset.le_max' _ i (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hi⟩)
     rw [hi_eq, ←Nat.add_sub_of_le hi]
     ring_nf
     simp only [block_start, Nat.succ_eq_add_one, block_size, sum_add_distrib, sum_const,
       smul_eq_mul, mul_comm, one_mul, add_tsub_cancel_left, mul_assoc, mul_left_comm,
       mul_eq_mul_left_iff]
-    rw [show filter _ _ = Finset.Iio i by ext j; simp]
+    rw [show filter _ _ = Finset.Iio i by
+      ext j
+      simp only [mem_filter, mem_univ, true_and, mem_Iio]]
     aesop (add safe (by ring))
 
 omit [DecidableEq F] in

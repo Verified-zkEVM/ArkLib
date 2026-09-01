@@ -792,13 +792,7 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
   -- ENUMERATION (bijection codewords ↔ message pairs via the injective `enc`).
   -- `encStack enc` is injective: its two columns determine `enc m.1, enc m.2`, hence (by
   -- `hinj`) `m.1, m.2`.
-  have hencStack_inj : Function.Injective (encStack enc) := by
-    intro p q hpq
-    have h1 : enc p.1 = enc q.1 := by
-      rw [← encStack_transpose_zero enc p, ← encStack_transpose_zero enc q, hpq]
-    have h2 : enc p.2 = enc q.2 := by
-      rw [← encStack_transpose_one enc p, ← encStack_transpose_one enc q, hpq]
-    exact Prod.ext (hinj h1) (hinj h2)
+  have hencStack_inj : Function.Injective (encStack enc) := encStack_injective hinj
   have hSmsgN : Smsg.card = N := by
     -- ABF26-L6.12 enumeration: `encStack enc` is a bijection from the message pairs `Smsg`
     -- onto `closeCodewordsRel C^{≡2} fStar δ`. Injective by `hencStack_inj`; surjective
@@ -822,20 +816,15 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
           exact hV.1 1
         obtain ⟨m₀, hm₀⟩ := hcol0
         obtain ⟨m₁, hm₁⟩ := hcol1
-        refine ⟨(m₀, m₁), ?_, ?_⟩
-        · -- `encStack enc (m₀, m₁) ∈ closeCodewordsRel`, since it equals `V`.
-          have hVeq : encStack enc (m₀, m₁) = V := by
-            funext i j; fin_cases j
-            · change encStack enc (m₀, m₁) i 0 = V i 0
-              rw [encStack_apply_zero]; exact congrFun hm₀ i
-            · change encStack enc (m₀, m₁) i 1 = V i 1
-              rw [encStack_apply_one]; exact congrFun hm₁ i
-          rw [hVeq]; exact hV
-        · funext i j; fin_cases j
+        have hVeq : encStack enc (m₀, m₁) = V := by
+          funext i j; fin_cases j
           · change encStack enc (m₀, m₁) i 0 = V i 0
             rw [encStack_apply_zero]; exact congrFun hm₀ i
           · change encStack enc (m₀, m₁) i 1 = V i 1
             rw [encStack_apply_one]; exact congrFun hm₁ i
+        refine ⟨(m₀, m₁), ?_, hVeq⟩
+        rw [hVeq]
+        exact hV
     calc Smsg.card
         = (Smsg : Set ((Fin k → F) × (Fin k → F))).ncard := (Set.ncard_coe_finset _).symm
       _ = (encStack enc '' (Smsg : Set ((Fin k → F) × (Fin k → F)))).ncard :=

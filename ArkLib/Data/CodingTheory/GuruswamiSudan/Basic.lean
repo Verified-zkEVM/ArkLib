@@ -500,45 +500,37 @@ noncomputable def constraintMap (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n →
   map_add' c d := by simp +zetaDelta at *; rfl
   map_smul' a c := by unfold evalConstraint coeffsToPoly; aesop
 
+/-- A dimension surplus gives a nonzero coefficient vector in the constraint map's kernel. -/
+private lemma exists_nonzero_solution_of_numVars_gt (k n m : ℕ) (ωs : Fin n ↪ F)
+    (f : Fin n → F) (D : ℕ) (hD : numVars k D > numConstraints n m) :
+    ∃ c : (weightBoundIndices k D) → F, c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 := by
+  have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k D) → F) >
+      Module.finrank F ((Fin n → constraintIndices m → F)) := by
+    convert hD using 1
+    · simp [numVars]
+    · simp [numConstraints]
+      norm_num [Module.finrank]
+  have h_inj : ¬ Function.Injective (constraintMap k n m ωs f D) := by
+    intro h_inj
+    exact h_kernel_nontrivial.not_ge
+      (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
+  contrapose! h_inj
+  exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
+    by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
+
 /-- There exists a non-zero polynomial satisfying the conditions. -/
 lemma exists_nonzero_solution (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     ∃ c : (weightBoundIndices k (proximity_gap_degree_bound k n m)) → F,
-    c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k
-        (proximity_gap_degree_bound k n m)) → F) >
-          Module.finrank F ((Fin n → constraintIndices m → F)) := by
-        convert numVars_gt_numConstraints k n m using 1
-        · simp [numVars]
-        · simp [numConstraints]
-          norm_num [Module.finrank]
-      have h_inj : ¬ Function.Injective
-          (constraintMap k n m ωs f (proximity_gap_degree_bound k n m)) := by
-        intro h_inj
-        exact h_kernel_nontrivial.not_ge
-          (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
-      contrapose! h_inj
-      exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
-        by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
+    c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 :=
+  exists_nonzero_solution_of_numVars_gt k n m ωs f _ (numVars_gt_numConstraints k n m)
 
 /-- Generalized existence: non-zero kernel element for arbitrary degree bound D,
     given numVars k D > numConstraints n m. -/
 lemma exists_nonzero_solution_gen (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (D : ℕ)
     (hD : numVars k D > numConstraints n m) :
     ∃ c : (weightBoundIndices k D) → F,
-    c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k D) → F) >
-          Module.finrank F ((Fin n → constraintIndices m → F)) := by
-        convert hD using 1
-        · simp [numVars]
-        · simp [numConstraints]
-          norm_num [Module.finrank]
-      have h_inj : ¬ Function.Injective (constraintMap k n m ωs f D) := by
-        intro h_inj
-        exact h_kernel_nontrivial.not_ge
-          (LinearMap.finrank_range_of_inj h_inj ▸ Submodule.finrank_le _)
-      contrapose! h_inj
-      exact LinearMap.ker_eq_bot.mp (eq_bot_iff.mpr fun x hx ↦
-        by_contra fun hx' ↦ h_inj x hx' <| by simpa using hx)
+    c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 :=
+  exists_nonzero_solution_of_numVars_gt k n m ωs f D hD
 
 /-- The polynomial solution constructed from the non-zero kernel element. -/
 noncomputable def polySol (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : F[X][Y] :=
@@ -765,7 +757,8 @@ lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : 
           (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1 )))
       rotate_left
       · exact p.1 + p.2
-      · rw [List.mem_filterMap]; aesop
+      · rw [List.mem_filterMap]
+        exact ⟨p, hp.1, by simp only [if_neg hp.2.2, hp.2.1]⟩
       · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
           then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
             (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop
