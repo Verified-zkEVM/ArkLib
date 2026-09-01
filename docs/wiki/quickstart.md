@@ -48,7 +48,6 @@ project-specific mathematical Unicode notation, while rejecting invisible contro
 controls, and nonstandard space characters that can conceal source changes. It also rejects
 blanket package-root imports and source-level linter suppressions.
 
-Use `lake exe lint-style --fix` for safe whitespace fixes. It does not rewrite proofs or notation.
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
@@ -217,9 +216,10 @@ python3 -m pip install leanblueprint
 
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,
-import, docs-integrity, and whitespace workflows run again on that `merge_group` ref before GitHub
-may merge it. PR-only timing comparisons and comments remain attached to the ordinary PR run and
-are intentionally skipped for merge groups, which do not carry a pull-request payload.
+import, and docs-integrity workflows run again on that `merge_group` ref before GitHub may merge it.
+The CI validation path includes the Lean-native source-policy gate. PR-only timing comparisons and
+comments remain attached to the ordinary PR run and are intentionally skipped for merge groups,
+which do not carry a pull-request payload.
 
 ## Manual Timing Helper
 

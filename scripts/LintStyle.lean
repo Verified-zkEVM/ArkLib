@@ -20,13 +20,11 @@ open ArkLib.LintStyle
 
 private structure Config where
   github := false
-  fix := false
   selfTestOnly := false
 
 private def usage : String :=
-  "Usage: lake exe lint-style [--github] [--fix] [--self-test]\n" ++
+  "Usage: lake exe lint-style [--github] [--self-test]\n" ++
   "  --github    emit GitHub workflow annotations\n" ++
-  "  --fix       apply safe whitespace-only fixes (the command still reports violations)\n" ++
   "  --self-test run deterministic scanner and policy tests only"
 
 private def parseArgs (args : List String) : IO Config := do
@@ -34,7 +32,6 @@ private def parseArgs (args : List String) : IO Config := do
   for arg in args do
     match arg with
     | "--github" => config := { config with github := true }
-    | "--fix" => config := { config with fix := true }
     | "--self-test" => config := { config with selfTestOnly := true }
     | "--help" | "-h" => IO.println usage; IO.Process.exit 0
     | other => throw <| IO.userError s!"unknown lint-style argument: {other}\n{usage}"
@@ -59,13 +56,6 @@ private def lintImports (path : FilePath) (content : String) (lines : Array Stri
     if let some (code, message) := importViolation? imp.module then
       result := result.push { code, line := importLine lines imp.module, message }
   return result
-
-private def safeFix (content : String) : String :=
-  let normalized := content.replace "\r\n" "\n"
-  let lines := normalized.splitOn "\n" |>.map fun line =>
-    line.trimAsciiEnd.toString
-  let joined := "\n".intercalate lines
-  if joined.endsWith "\n" then joined else joined ++ "\n"
 
 private def formatViolation (github : Bool) (path : FilePath) (v : Violation) : String :=
   if github then
@@ -129,13 +119,12 @@ private def lintRepository (config : Config) : IO UInt32 := do
     violations := violations ++ (← lintImports path content lines)
     for v in violations do IO.println (formatViolation config.github path v)
     errorCount := errorCount + violations.size
-    if config.fix && safeFix content != content then IO.FS.writeFile path (safeFix content)
   errorCount := errorCount + (← repositoryHygiene config.github)
   if errorCount == 0 then
     IO.println "Lean source style checks passed"
   else
     IO.eprintln s!"lint-style: found {errorCount} violation(s); no exceptions or suppressions are supported"
-  if config.fix then return 0 else return (min errorCount 125).toUInt32
+  return violationExitCode errorCount
 
 /-- Entry point for `lake exe lint-style`. -/
 def main (args : List String) : IO UInt32 := do

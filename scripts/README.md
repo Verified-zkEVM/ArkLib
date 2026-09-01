@@ -108,8 +108,6 @@ bash scripts/build_timing_report.sh --help
 # Run only the Lean-native source-policy gate
 lake exe lint-style
 
-# Apply safe whitespace fixes, then rerun the gate
-lake exe lint-style --fix
 ```
 
 ### Check Docs Integrity

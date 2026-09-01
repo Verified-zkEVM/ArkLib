@@ -12,8 +12,9 @@ import Lean.Elab.ParseImportsFast
 This module contains the pure part of ArkLib's text-based source linter. The policy is deliberately
 fail-closed and has no exception mechanism: a violation must be fixed in source.
 
-Unicode mathematical notation is unrestricted. We reject only invisible, bidirectional, control,
-and nonstandard spacing characters that can make reviewed source differ from what it appears to say.
+Unicode mathematical notation, including variation selectors, is unrestricted. We reject control,
+bidirectional, joining, annotation/tag, and nonstandard spacing characters that can make reviewed
+source differ from what it appears to say.
 -/
 
 open Lean System
@@ -35,6 +36,7 @@ private inductive ScanMode where
   | blockComment (depth : Nat)
   | quoted (escaped : Bool)
   | raw (hashes : Nat)
+  | quotedIdent
 deriving BEq, Repr
 
 private def spaces (n : Nat) : List Char := List.replicate n ' '
@@ -58,6 +60,18 @@ private partial def sanitizeChars (chars : List Char) (mode : ScanMode) : List C
   | '/' :: '-' :: rest, .code =>
       let (tail, mode) := sanitizeChars rest (.blockComment 1)
       (' ' :: ' ' :: tail, mode)
+  | '\'' :: '\\' :: '"' :: '\'' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .code
+      (spaces 4 ++ out, mode)
+  | '\'' :: '"' :: '\'' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .code
+      (spaces 3 ++ out, mode)
+  | '«' :: 'l' :: 'i' :: 'n' :: 't' :: 'e' :: 'r' :: '»' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .code
+      ("linter".toList ++ out, mode)
+  | '«' :: rest, .code =>
+      let (out, mode) := sanitizeChars rest .quotedIdent
+      ('x' :: out, mode)
   | 'r' :: rest, .code =>
       let (hashes, afterHashes) := countHashes rest
       match afterHashes with
@@ -108,6 +122,12 @@ private partial def sanitizeChars (chars : List Char) (mode : ScanMode) : List C
   | _ :: rest, .raw hashes =>
       let (out, mode) := sanitizeChars rest (.raw hashes)
       (' ' :: out, mode)
+  | '»' :: rest, .quotedIdent =>
+      let (out, mode) := sanitizeChars rest .code
+      (' ' :: out, mode)
+  | _ :: rest, .quotedIdent =>
+      let (out, mode) := sanitizeChars rest .quotedIdent
+      (' ' :: out, mode)
 
 private def sanitizeLines (lines : Array String) : Array String := Id.run do
   let mut mode := ScanMode.code
@@ -153,7 +173,8 @@ def isHazardousUnicode (c : Char) : Bool :=
     (0x2000 ≤ n && n ≤ 0x200f) ||
     (0x2028 ≤ n && n ≤ 0x202f) ||
     (0x205f ≤ n && n ≤ 0x206f) ||
-    n == 0x3000 || n == 0xfeff
+    n == 0x3000 || n == 0xfeff || (0xfff9 ≤ n && n ≤ 0xfffb) ||
+    n == 0xe0001 || (0xe0020 ≤ n && n ≤ 0xe007f)
 
 private def hexDigit (n : Nat) : Char :=
   if n < 10 then Char.ofNat ('0'.toNat + n) else Char.ofNat ('A'.toNat + n - 10)
@@ -270,18 +291,48 @@ private def fileLengthViolations (lines : Array String) (importsOnly : Bool) : A
     #[violation "ERR_NUM_LIN" 1 s!"File contains {lines.size} lines; split it below 1500 lines"]
   else #[]
 
+private partial def sourceTokens (chars current : List Char) (acc : List String) : List String :=
+  match chars with
+  | [] =>
+      let acc := if current.isEmpty then acc else String.ofList current.reverse :: acc
+      acc.reverse
+  | c :: rest =>
+      if c.isWhitespace then
+        let acc := if current.isEmpty then acc else String.ofList current.reverse :: acc
+        sourceTokens rest [] acc
+      else if ['@', '[', ']', '(', ')', ','].contains c then
+        let acc := if current.isEmpty then acc else String.ofList current.reverse :: acc
+        sourceTokens rest [] (c.toString :: acc)
+      else
+        sourceTokens rest (c :: current) acc
+
+private def containsNoLintAttribute (tokens : List String) : Bool := Id.run do
+  let mut squareDepth := 0
+  let mut attributeDepth? : Option Nat := none
+  let mut previous := ""
+  for token in tokens do
+    if token == "[" then
+      squareDepth := squareDepth + 1
+      if previous == "@" || previous == "attribute" then
+        attributeDepth? := some squareDepth
+    else if token == "]" then
+      if attributeDepth? == some squareDepth then attributeDepth? := none
+      squareDepth := squareDepth - 1
+    else if token == "nolint" && attributeDepth?.isSome then
+      return true
+    previous := token
+  return false
+
 private def suppressionViolations (codeLines : Array String) : Array Violation := Id.run do
   let code := "\n".intercalate codeLines.toList
-  let tokens := (code.split fun c =>
-    c.isWhitespace || ['@', '[', ']', '(', ')', ','].contains c).toList.map (·.toString) |>.filter
-      (!·.isEmpty)
+  let tokens := sourceTokens code.toList [] []
   let mut result := #[]
   for (current, next) in tokens.zip tokens.tail do
     if current == "set_option" && next.startsWith "linter." then
       let line := (codeLines.findIdx? fun line => line.contains "set_option").map (· + 1) |>.getD 1
       result := result.push <| violation "ERR_OPT" line
         "Forbidden `set_option linter.*`; fix the source instead of suppressing the linter"
-  if tokens.contains "nolint" then
+  if containsNoLintAttribute tokens then
     let line := (codeLines.findIdx? fun line => line.contains "nolint").map (· + 1) |>.getD 1
     result := result.push <| violation "ERR_NOLINT" line
       "`@[nolint]` suppressions are forbidden; fix the declaration"
@@ -293,6 +344,10 @@ def lintLines (lines : Array String) : Array Violation :=
   unicodeViolations lines ++ lineViolations lines codeLines ++
     suppressionViolations codeLines ++ fileLengthViolations lines (isImportsOnly codeLines) ++
     headerViolations lines codeLines
+
+/-- Convert a violation count to a portable nonzero process exit code. -/
+def violationExitCode (errorCount : Nat) : UInt32 :=
+  (min errorCount 125).toUInt32
 
 /-- Direct imports prohibited by ArkLib's import-discipline policy. -/
 def importViolation? (name : Name) : Option (String × String) :=
@@ -313,11 +368,13 @@ private def hasCode (code : String) (lines : Array String) : Bool :=
 /-- Fast, deterministic checks for the source scanner and security policy. -/
 def runSelfTests : IO Unit := do
   assertSelfTest (!isHazardousUnicode 'ŵ' && !isHazardousUnicode '⧺' &&
-    !isHazardousUnicode '◌' && !isHazardousUnicode '\u0303')
+    !isHazardousUnicode '◌' && !isHazardousUnicode '\u0303' &&
+    !isHazardousUnicode '\ufe0f' && !isHazardousUnicode (Char.ofNat 0xe0100))
     "mathematical notation must not be restricted by a closed allowlist"
   assertSelfTest (isHazardousUnicode '\u00a0' && isHazardousUnicode '\u200b' &&
-    isHazardousUnicode '\u202e' && isHazardousUnicode '\u2066')
-    "invisible and bidirectional controls must be rejected"
+    isHazardousUnicode '\u202e' && isHazardousUnicode '\u2066' &&
+    isHazardousUnicode '\ufff9' && isHazardousUnicode (Char.ofNat 0xe007f))
+    "invisible, annotation/tag, and bidirectional controls must be rejected"
   let sample := #["def ok := \"@[nolint] set_option linter.foo true\"",
     "/- outer /- @[nolint] -/ set_option pp.foo true -/"]
   let masked := sanitizeLines sample
@@ -325,6 +382,25 @@ def runSelfTests : IO Unit := do
     "comments and strings must be masked, including nested comments"
   let raw := sanitizeLines #["def ok := r###\"@[nolint]\"###"]
   assertSelfTest (!raw[0]!.contains "nolint") "raw strings must be masked"
+  assertSelfTest (hasCode "ERR_NOLINT" #["def quoteChar : Char := '\"'",
+    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
+    "a quote character literal must not mask a following suppression"
+  assertSelfTest (hasCode "ERR_NOLINT" #["def escapedQuoteChar : Char := '\\\"'",
+    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
+    "an escaped quote character literal must not mask a following suppression"
+  assertSelfTest (hasCode "ERR_NOLINT" #["def «x\"y» : Nat := 1",
+    "@[nolint unusedArguments]", "def f (x : Nat) := 1"])
+    "a quote inside a quoted identifier must not mask a following suppression"
+  assertSelfTest (hasCode "ERR_OPT" #["def «x/-y» : Nat := 1", "set_option",
+    "  linter.unusedVariables false"])
+    "comment syntax inside a quoted identifier must not mask a following suppression"
+  assertSelfTest (hasCode "ERR_OPT" #["set_option «linter».unusedVariables false"])
+    "a quoted linter root must not bypass suppression detection"
+  assertSelfTest (!hasCode "ERR_NOLINT" #["def nolint : Nat := 0"])
+    "an ordinary identifier named nolint is not a suppression"
+  assertSelfTest (violationExitCode 0 == 0 && violationExitCode 1 == 1 &&
+    violationExitCode 125 == 125 && violationExitCode 126 == 125)
+    "violations must map to a portable nonzero process exit code"
   let checks := #[
     ("ERR_COP", #["def x := 1"]),
     ("ERR_LIN", #[String.ofList (List.replicate 101 'x')]),
