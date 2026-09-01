@@ -205,8 +205,8 @@ def coinSRExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
   Pr[ fun | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn | _ => False
     | do (simulateQ (((impl.addLift srChallengeQueryImpl' :
             QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-              (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl)
-          : QueryImpl _ (StateT _ ProbComp)) <| (do
+              (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl) :
+          QueryImpl _ (StateT _ ProbComp)) <| (do
       let ⟨transcript, stmtIn⟩ ← srSoundnessGameWithCoins srProver
       let stmtOut ← liftComp (verifier.run stmtIn transcript) _
       return (stmtIn, stmtOut))).run' (← init)
@@ -280,8 +280,9 @@ def coinKSExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
   Pr[ relationKSFailEvent relIn relOut
     | do (simulateQ (((impl.addLift srChallengeQueryImpl' :
               QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-                (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl)
-            : QueryImpl _ (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)) <| (do
+                (StateT
+                  (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift auxImpl) :
+            QueryImpl _ (StateT (QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)) <| (do
           let ⟨⟨stmtIn, messages, witOut⟩, tr⟩ ← (simulateQ loggingOracle srProver).run
           let transcript ← liftComp (messages.deriveTranscriptSR (oSpec := oSpec) stmtIn)
             ((oSpec + fsChallengeOracle StmtIn pSpec) + auxSpec)

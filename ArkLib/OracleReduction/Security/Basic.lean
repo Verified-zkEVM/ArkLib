@@ -421,7 +421,8 @@ The `Verifier.adaptiveNARG*` definitions below state this directly — `∀ P, b
 P] ≤ error` (soundness) and `∃ extractor, ∀ P, bound P → Pr[evt | game extractor P] ≤ error` (KS),
 with the straightline extractor type written explicitly (its `auxSpecE` access is a `P`-independent
 helper/sampler, never the prover).  `bound := fun _ => True` recovers the unbounded form; DSFS
-instantiates these as the conclusions of `theorem_6_1_soundness` / `theorem_6_2_straightline`.
+instantiates these as the conclusions of `duplex_sponge_fiat_shamir_soundness` /
+`duplex_sponge_fiat_shamir_straightline_knowledge_soundness`.
 
 **Straightline firewall.** The KS extractor lives in `OptionT (OracleComp auxSpecE)` for *arbitrary*
 `auxSpecE`, yet cannot rewind: `auxImplE : QueryImpl auxSpecE ProbComp` is a *leading* parameter

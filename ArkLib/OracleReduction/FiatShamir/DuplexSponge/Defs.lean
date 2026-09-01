@@ -1064,6 +1064,13 @@ def runForwardVerifierWide (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec)
     ((V.toDSFS δ).run stmtIn (fun i => match i with | ⟨0, _⟩ => proof)).run
   liftComp verifyCompNarrow (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
+/-- The DSFS NARG verifier packaged over the wide sponge oracle. Its one-message verification
+path is definitionally the Section 5 forward verifier `runForwardVerifierWide`. -/
+def Verifier.dsfsNargNIV (δ : Nat) (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
+      (oSpec + duplexSpongeChallengeOracle StmtIn U) StmtIn StmtOut where
+  verify := fun stmtIn proof => OptionT.mk (runForwardVerifierWide δ V stmtIn (proof 0))
+
 /-- Short alias for `Verifier.singleSaltFiatShamir` — lift an interactive `Verifier` to the
 paper-faithful FS-standard salted NARG verifier `𝒱_std^f` (`FSStdSaltedVerifier`).
 

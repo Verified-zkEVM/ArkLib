@@ -247,8 +247,6 @@ state-restoration definitions. The `Unit` component carries no adversarial claim
 def unitOutputRelation (langOut : Set StmtOut) : Set (StmtOut × Unit) :=
   {p | p.1 ∈ langOut}
 
-set_option linter.unusedDecidableInType false
-
 omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   [∀ i, SampleableType (pSpec.Challenge i)] [DecidableEq StmtIn]
   [∀ i, DecidableEq (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Challenge i)] in
@@ -333,8 +331,8 @@ theorem fsNARGSoundnessExp_eq_srExp {Salt : Type} [VCVCompatible Salt]
       (do (simulateQ (((fsImpl.addLift srChallengeQueryImpl' :
             QueryImpl (oSpec + srChallengeOracle (StmtIn × Salt) pSpec)
               (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)).addLift
-              auxImpl)
-          : QueryImpl _ (StateT _ ProbComp)) <| (do
+              auxImpl) :
+          QueryImpl _ (StateT _ ProbComp)) <| (do
         let ⟨transcript, stmtIn⟩ ← srSoundnessGameWithCoins (srInducedProver P)
         let stmtOut ← liftComp ((saltedIPVerifier (Salt := Salt) V).run stmtIn transcript) _
         return (stmtIn, stmtOut))).run' (← fsInit)) := by
