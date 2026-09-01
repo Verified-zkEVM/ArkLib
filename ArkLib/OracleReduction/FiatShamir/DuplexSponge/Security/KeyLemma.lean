@@ -961,8 +961,9 @@ abbrev IsD2SAlgoChallengeQueryBound
 
 /-- CO25 Lemma 5.1 (§5.8) — **inner, concrete-transform form.** Identical to
 `lemma_5_1` but with the two transforms *fixed* to the concrete `ProverTransform.d2sAlgo` and
-`d2sTraceSalted` (rather than hidden behind `∃`). This is the form a later concrete extractor
-proof consumes: the extractor runs the concrete `d2sTraceSalted`, so
+`d2sTraceSalted` (rather than hidden behind `∃`).  This is the form §6.2 consumes
+(`duplex_sponge_fiat_shamir_straightline_knowledge_soundness`): Construction 6.3's extractor runs
+the concrete `d2sTraceSalted`, so
 `Hyb₀`/`Hyb₄` must carry the *same* concrete maps for the game-match `hL1`/`hL3` to hold
 definitionally — an opaque `∃`-witness would block that defeq. `lemma_5_1` re-packages this as the
 existential. The common verifier query upper bound is

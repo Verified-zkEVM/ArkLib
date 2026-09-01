@@ -298,6 +298,7 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents.Core
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents.Lemma5_8
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KnowledgeSoundness
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Soundness

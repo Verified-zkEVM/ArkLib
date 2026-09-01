@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen, Michele Orrù
+Authors: Quang Dao, Chung Thai Nguyen, Michele Orrù, Yuxi Zheng
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
@@ -10,9 +10,10 @@ import ArkLib.OracleReduction.FiatShamir.SingleSalt
 import ArkLib.ToVCVio.Tactic.VCVNorm
 
 /-!
-# Soundness and Knowledge Soundness of Duplex Sponge Fiat–Shamir (CO25 §6)
+# Soundness of Duplex Sponge Fiat–Shamir (CO25 §6)
 
-This file formalizes Theorems 6.1 and 6.2 from CO25 and Construction 6.3.
+This file formalizes Theorem 6.1 from CO25 and the shared infrastructure for Construction 6.3 and
+Theorem 6.2. The knowledge-soundness derivation is completed in `KnowledgeSoundness.lean`.
 
 ## Main results
 
@@ -25,9 +26,7 @@ This file formalizes Theorems 6.1 and 6.2 from CO25 and Construction 6.3.
   reconstructs the IP transcript from the DSFS proof (via the sponge) and calls the IP SR
   extractor `E_IP` on the reconstructed transcript and separated prover/verifier logs.
 
-- **Theorem 6.2** (`theorem_6_2_straightline`): if IP has SR-KS, then the DSFS scheme has
-  straightline KS (via Construction 6.3) with error `κ + ηStarTotal`, concluding CO25 Def 3.6
-  (`adaptiveNARGKnowledgeSoundness`) at the DSFS NARG, query-bounded.
+- **Theorem 6.2** is proved in `KnowledgeSoundness.lean` from the infrastructure here.
 
 ## Proof strategy
 
@@ -38,10 +37,9 @@ Hyb_4 = IP SR game        (fsChallengeOracle = srChallengeOracle, alias)
 IP SR game ≤ κ             (IP SR-soundness/KS hypothesis)
 ```
 
-The Section 5 proof is deliberately outside this file. Both public theorems take
-`KeyLemmaSecurityWitness` explicitly; all remaining steps, including the Fiat–Shamir lifting
-through Theorems 3.18 and 3.19, are proved here. This keeps the Section 6 derivations free of
-`sorryAx` while making Lemma 5.1 the visible deferred boundary.
+The Section 5 proof is deliberately outside this file. The public theorems—Theorem 6.1 here and
+Theorem 6.2 in `KnowledgeSoundness.lean`—take `KeyLemmaSecurityWitness` explicitly. This keeps the
+Section 6 derivations free of `sorryAx` while making Lemma 5.1 the visible deferred boundary.
 
 ## Type-level compatibility
 
@@ -472,7 +470,7 @@ def srReassocImpl :
       + ((Unit →ₒ U) + unifSpec)) (Sum.inr qA)
 
 /-- Reassociate a wide Hyb₄ query log in the same way as `srReassocImpl`. -/
-private def srReassocQueryLog
+def srReassocQueryLog
     (log : QueryLog (oSpec + (srChallengeOracle (StmtIn × Salt) pSpec +
       ((Unit →ₒ U) + unifSpec)))) :
     QueryLog ((oSpec + srChallengeOracle (StmtIn × Salt) pSpec) +
@@ -485,7 +483,7 @@ private def srReassocQueryLog
 omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] [SpongeUnit U]
   [SpongeSize] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Message i)] codec
   [VCVCompatible Salt] [DecidableEq StmtIn] [DecidableEq U] in
-private theorem srReassocQueryLog_fst
+theorem srReassocQueryLog_fst
     (log : QueryLog (oSpec + (srChallengeOracle (StmtIn × Salt) pSpec +
       ((Unit →ₒ U) + unifSpec)))) :
     (srReassocQueryLog log).fst =
@@ -529,7 +527,7 @@ private theorem withQueryLog_simulateQ_srReassoc_query
 omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] [SpongeUnit U]
   [SpongeSize] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Message i)] codec
   [VCVCompatible Salt] [DecidableEq StmtIn] [DecidableEq U] in
-private theorem withQueryLog_simulateQ_srReassoc {α : Type}
+theorem withQueryLog_simulateQ_srReassoc {α : Type}
     (X : OracleComp (oSpec + (srChallengeOracle (StmtIn × Salt) pSpec +
       ((Unit →ₒ U) + unifSpec))) α) :
     (simulateQ loggingOracle (simulateQ srReassocImpl X)).run =
@@ -645,7 +643,7 @@ private theorem withQueryLog_simulateQ_liftFS {α : Type}
 omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] [SpongeUnit U]
   [SpongeSize] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Message i)] codec
   [VCVCompatible Salt] [DecidableEq StmtIn] [DecidableEq U] in
-private theorem filter_withQueryLog_simulateQ_liftFS {α : Type}
+theorem filter_withQueryLog_simulateQ_liftFS {α : Type}
     (X : OracleComp (oSpec + srChallengeOracle (StmtIn × Salt) pSpec) α) :
     (fun p => (p.1,
         filterD2SChallengePlusUnitQueryLog (oSpec := oSpec) (U := U) p.2)) <$>
@@ -1331,7 +1329,6 @@ theorem duplex_sponge_fiat_shamir_soundness
         add_le_add le_rfl (ENNReal.ofReal_le_ofReal
           (etaStar_le_etaStarTotal U tₕ tₚ tₚᵢ (L_totalRateBlocks δ pSpec)
             t codec.decodingBias hTotal))
-
 
 end
 
