@@ -132,7 +132,7 @@ test_path_command = os.environ.get("BUILD_TIMING_TEST_COMMAND", "./scripts/valid
 
 native_build_name = os.environ.get("BUILD_TIMING_NATIVE_NAME", "Native build")
 native_build_command = os.environ.get(
-    "BUILD_TIMING_NATIVE_COMMAND", "lake build toyproblem-runtime"
+    "BUILD_TIMING_NATIVE_COMMAND", "lake build toyproblem-runtime hachi-runtime lint-style"
 )
 
 display = {
@@ -451,7 +451,7 @@ print(
     f"- The rows run in order against one tree, so {display['native_build']['name'].lower()} and "
     f"{display['test_path']['name'].lower()} both measure an already-built project: "
     f"{display['test_path']['name'].lower()} is the cost of the gate itself, not of a cold "
-    f"`{test_path_command}`. CI passes it no flags, so `--lint`, `--docs`, `--site` and "
+    f"`{test_path_command}`. CI passes it no flags, so `--docs`, `--site` and "
     "`--axioms` contribute nothing."
 )
 print()
