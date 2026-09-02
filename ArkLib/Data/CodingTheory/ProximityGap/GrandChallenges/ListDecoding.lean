@@ -13,8 +13,11 @@ import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 
 `GrandChallenges.lean` states the Grand List-Decoding Challenge on the interleaved list size
 `Λ(C^⋈m, δ)` and carries the one-sided witness types `ListLowerWitness` / `ListUpperWitness`,
-but ships no constructor for either. This module supplies the first two `ListLowerWitness`
-constructors, one in the unique-decoding regime and one at the Johnson radius.
+together with the generic shapes that repackage a `Λ` bound as a witness
+(`ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`, `ListUpperWitness.ofEncardGt`). What it has
+no constructor for is a witness whose `Λ` bound comes from coding theory rather than from the
+caller. This module supplies the first two, one in the unique-decoding regime and one at the
+Johnson radius.
 
 ## Main definitions
 
@@ -46,13 +49,28 @@ The Johnson constructor reaches much further, and — unlike its MCA counterpart
 itself axiom-clean, so it applies to the interleaved code at alphabet `Fin m → F` directly.
 
 Note the alphabet the Johnson radius is computed at. For the interleaved code that is
-`q = |F|^m`, not `|F|`; since `q/(q-1)` decreases in `q`, interleaving widens rather than
-narrows the usable radius. The relative minimum distance is unchanged, so the whole effect of
-`m` on the bound enters through `q`.
+`q = |F|^m`, not `|F|`. The relative minimum distance is unchanged, so the whole effect of `m`
+on the bound enters through `q` — and it enters against us. Writing `c = q/(q-1)`,
 
-Neither constructor approaches the prize thresholds — both bound `Λ` by a constant, whereas
-`ε* = 2⁻¹²⁸` demands `ℓ ≤ ε* · |F|` — but they are the two admit-free footholds the challenge
-API previously lacked entirely.
+`J_q(δ) = (1/c) · (1 - √(1 - c·δ)) = δ · h(c·δ)`  where  `h(u) = (1 - √(1 - u))/u`,
+
+and `h` is increasing on `(0, 1]`, so `J_q(δ)` is increasing in `c` and therefore *decreasing*
+in `q`, tending to `1 - √(1 - δ)` from above. So the larger alphabet of the interleaved code
+narrows this Johnson radius rather than widening it: `Jqℓ 4 2 1 ≈ 0.317` against
+`Jqℓ 2 2 1 = 0.5`. (The comparison lives in the regime where the radicand `1 - c·δ` is
+non-negative; outside it `Real.sqrt` is clamped to `0` and `J_q` collapses to `1 - 1/q`.)
+`lambda_interleavedCode_le_of_le_johnson` states its hypothesis at `q = |F|^m` either way — the
+interleaved code's own alphabet is what the Johnson bound is applied at, so the theorem is
+correct as stated; what shrinks with `m` is only the room a caller has to work in.
+
+Neither constructor resolves the challenge, but the gap is narrower than a list budget. `ℓ` is
+a parameter of `ofJohnsonBound`, which accepts any proof of `ℓ ≤ ε* · |F|`, so the prize's
+`Λ ≤ ε* · |F|` shape is already expressible here rather than being cut off at a fixed constant.
+The binding constraint is the radius: `Jqℓ q ℓ δ_min` is capped by `J_q(δ_min)` however large
+`ℓ` grows, and a resolution needs a full per-rate `GrandListResolution` — safety at every grid
+point, or an exact adjacent-grid crossing — plus a concrete `ListUpperWitness`, none of which
+this module supplies. What it does supply are the two admit-free footholds the challenge API
+previously lacked entirely.
 
 ## Implementation note
 
@@ -77,6 +95,9 @@ by `exact` at default transparency and avoids re-entering that thicket.
 
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and Correlated
   Agreement*][ABF26]
+* [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S., *On Proximity Gaps for
+  Reed-Solomon Codes*][BCHKS25] — cited above only for the admit underlying the MCA-side
+  Johnson-range witness, which this module's counterpart does not need.
 -/
 
 namespace ProximityGap.GrandChallenges
@@ -94,7 +115,7 @@ interleaving leaves the minimum distance alone (`Code.minDist_interleavedCodeSet
 length `|ι|` normalizing it is untouched as well. -/
 theorem relUDR_interleavedCode_eq (C : Set (ι → F)) {m : ℕ} (hm : 0 < m) :
     relativeUniqueDecodingRadius (C^⋈(Fin m)) = relativeUniqueDecodingRadius C := by
-  haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+  have : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
   have hmd : minDist (C^⋈(Fin m)) = minDist C := minDist_interleavedCodeSet (κ := Fin m) C
   have h : dist (C^⋈(Fin m)) = dist C :=
     (dist_eq_minDist _).trans (hmd.trans (dist_eq_minDist C).symm)
@@ -148,7 +169,7 @@ theorem lambda_interleavedCode_le_of_le_johnson (C : Set (ι → F)) {m ℓ : �
     (hδ : (δ : ℝ) ≤ JohnsonBound.Jqℓ ((Fintype.card F : ℚ) ^ m) (ℓ : ℚ)
             ((Code.minDist C : ℚ) / (Fintype.card ι : ℚ))) :
     Lambda (C^⋈(Fin m)) (δ : ℝ) ≤ (ℓ : ℕ∞) := by
-  haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+  have : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
   have hcard : (Fintype.card (Fin m → F) : ℚ) = (Fintype.card F : ℚ) ^ m := by
     simp
   have hmd : (Code.minDist (C^⋈(Fin m)) : ℚ) = (Code.minDist C : ℚ) := by

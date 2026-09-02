@@ -97,15 +97,19 @@ manuscript, not to the original sources it cites — those get their own keys (`
   unique-decoding radius (`relUDR_interleavedCode_eq`), and inside that radius the interleaved
   point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. `ofJohnsonBound` reaches the Johnson
   radius, via `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at
-  alphabet `Fin m → F`; the radius is computed at `q = |F|^m` rather than `|F|`, which widens
-  it, since `q/(q-1)` decreases in `q`, while the relative minimum distance is unchanged.
+  alphabet `Fin m → F`; the radius is computed at `q = |F|^m` rather than `|F|`, which *narrows*
+  it, while the relative minimum distance is unchanged. Writing `c = q/(q-1)`, the Johnson
+  function is `J_q(δ) = δ · h(c·δ)` with `h(u) = (1 - √(1 - u))/u` increasing, so `J_q(δ)`
+  decreases in `q` down to `1 - √(1 - δ)` — e.g. `Jqℓ 4 2 1 ≈ 0.317 < Jqℓ 2 2 1 = 0.5`. The
+  bound is stated at the interleaved code's own alphabet and is correct as such; the alphabet
+  simply costs radius rather than buying it.
   Note the asymmetry with the MCA side: `McaLowerWitness.ofJohnsonRangeBound` is sorry-tainted
   through the external [BCHKS25] admit `rs_mcaError_le_in_johnson_range`, whereas the list-side
   Johnson witness rests on an in-tree axiom-clean bound and needs no admit.
   The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`, and
   `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with an
-  oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. Both constructors
-  bound `Λ` by a constant, so neither approaches the prize thresholds; see the gap note below.
+  oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. Neither
+  constructor resolves the challenge; see the gap note below.
 - **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
   `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
   connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
@@ -293,8 +297,10 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   `McaUpperWitness` or `ListUpperWitness` is built for a concrete code (`McaUpperWitness.ofGt`,
   `.ofEpsCaGt`, and `ListUpperWitness.ofGt`, `.ofEncardGt` are generic shapes awaiting a real
   large-list or CA-failure construction). On the safe side both list constructors now exist, at
-  the unique-decoding and Johnson radii; what neither reaches, and what a prize resolution would
-  need, is a bound of the shape `Λ ≤ ε* · |F|` rather than `Λ ≤ ℓ` for a fixed `ℓ`.
+  the unique-decoding and Johnson radii. The remaining shortfall there is the radius, not the
+  list budget: `ℓ` is a parameter of `ofJohnsonBound` and the constructor already accepts a
+  proof of `ℓ ≤ ε* · |F|`, so the prize's bound shape is expressible, but `Jqℓ q ℓ δ_min` stays
+  capped by `J_q(δ_min)` however large `ℓ` grows.
 - **L2.10.** The interleaved-code list-size comparison is present as an external `[GGR11]` leaf;
   proving it in-tree remains open.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
