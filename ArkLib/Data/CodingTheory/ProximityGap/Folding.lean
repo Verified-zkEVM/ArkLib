@@ -261,7 +261,7 @@ theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
     ring
 
 lemma foldWord_k_1_eval_domain [NeZero n] {i : Fin (2 ^ (n - 1))}
-  {j : Fin (2 ^ n)} (hj : domain j ^ 2 = domain.subdomain 1 i) :
+    {j : Fin (2 ^ n)} (hj : domain j ^ 2 = domain.subdomain 1 i) :
   foldWord domain f 1 (domain j) i = f j := by
   let j' := domain.log ⟨-domain j, by simp⟩
   have hjj' : j ≠ j' := fun contra ↦ by
@@ -302,7 +302,7 @@ lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
   of `p₀ + α * p₁` on the halved domain. -/
 @[simp]
 lemma foldWord_evalOnPoints_split [NeZero n] {p₀ p₁ : Polynomial F} {α : F}
-  {i : Fin (2 ^ (n - 1))} :
+    {i : Fin (2 ^ (n - 1))} :
   foldWord domain (evalOnPoints (domain : Fin (2 ^ n) ↪ F)
       (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2))) 1 α i =
     p₀.eval (domain.subdomain 1 i) + α * p₁.eval (domain.subdomain 1 i) := by

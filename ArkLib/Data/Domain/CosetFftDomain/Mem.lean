@@ -90,9 +90,6 @@ lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
 lemma card_toFinset_le_fintype_card [Fintype F] [Fintype ι] [DecidableEq F] :
     Finset.card (toFinset ω) ≤ Fintype.card F := Finset.card_le_card (by simp)
 
-lemma card_toFinset_le_fintype_card [Fintype F] [Fintype ι] [DecidableEq F] :
-  Finset.card (toFinset ω) ≤ Fintype.card F := Finset.card_le_card (by simp)
-
 /-- Zero is not a member of a coset FFT domain. -/
 @[simp]
 lemma not_zero_mem :

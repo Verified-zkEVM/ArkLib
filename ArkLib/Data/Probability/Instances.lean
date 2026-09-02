@@ -359,7 +359,7 @@ theorem prob_marginalization_first_of_prod {α β : Type} [Fintype α] [Fintype 
 
 /-- A probability is at most one. -/
 lemma prob_le_one {α : Type} (D : PMF α) (P : α → Prop) :
-  Pr_{ let a ← D }[P a] ≤ 1 := by
+    Pr_{ let a ← D }[P a] ≤ 1 := by
   classical
   rw [ProbabilityTheory.Pr_eq_tsum_indicator]
   calc ∑' a, D a * (if P a then (1 : ENNReal) else 0)
@@ -369,7 +369,7 @@ lemma prob_le_one {α : Type} (D : PMF α) (P : α → Prop) :
 
 /-- An impossible event has probability zero. -/
 lemma prob_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop) (h : ∀ a, ¬ P a) :
-  Pr_{ let a ← D }[P a] = 0 := by
+    Pr_{ let a ← D }[P a] = 0 := by
   classical
   rw [ProbabilityTheory.Pr_eq_tsum_indicator]
   simp [h]

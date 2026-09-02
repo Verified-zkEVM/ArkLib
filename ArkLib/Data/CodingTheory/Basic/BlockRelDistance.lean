@@ -116,16 +116,16 @@ noncomputable def blockDistanceFromCode
 
 @[simp]
 lemma blockDistance_le :
-  Δ𞁒(k, φ, f, g) ≤ 2 ^ (n - k) := by simp [blockDistance]
+    Δ𞁒(k, φ, f, g) ≤ 2 ^ (n - k) := by simp [blockDistance]
 
 lemma blockDistance_symm :
-  Δ𞁒(k, φ, f, g) = Δ𞁒(k, φ, g, f) := by
+    Δ𞁒(k, φ, f, g) = Δ𞁒(k, φ, g, f) := by
   aesop
     (add unsafe congrArg)
     (add simp [blockDistance, disagreementSet])
 
 lemma blockRelDistance_symm :
-  δ𞁒(k, φ, f, g) = δ𞁒(k, φ, g, f) := by
+    δ𞁒(k, φ, f, g) = δ𞁒(k, φ, g, f) := by
   unfold blockRelDistance
   rw [blockDistance_symm]
 
@@ -149,8 +149,8 @@ lemma blockRelDistance_eq_relHammingDist_k_0 :
     δ𞁒(0, φ, f, g) = δᵣ(f, g) := by simp [blockRelDistance, Code.relHammingDist]
 
 @[simp]
-lemma blockRelDistance_le_1 :
-  δ𞁒(k, φ, f, g) ≤ 1 := by
+lemma blockRelDistance_le_one :
+    δ𞁒(k, φ, f, g) ≤ 1 := by
   simp only [blockRelDistance, card_toFinset, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat]
   rw [show (2 ^ (n - k) : ℚ≥0) = Nat.cast (2 ^ (n - k)) by simp,
       show (OfNat.ofNat 1 : ℚ≥0) = Nat.cast (2 ^ (n - k))/ (Nat.cast (2 ^ (n - k))) by simp]
@@ -173,13 +173,13 @@ scoped notation "Λ𞁒("C", "k", "φ'", "f", "δ")" =>
 
 @[simp]
 lemma mem_blockRelDistanceBall {g : Fin (2 ^ n) → F}
-  (C : Set (Fin (2 ^ n) → F)) (δ : ℝ≥0) :
+    (C : Set (Fin (2 ^ n) → F)) (δ : ℝ≥0) :
   f ∈ Λ𞁒(C, k, φ, g, δ) ↔ f ∈ C ∧ δ𞁒(k, φ, f, g) ≤ δ := by
   simp [blockRelDistanceBall, blockRelDistance_symm]
 
 @[simp]
 lemma not_mem_blockRelDistanceBall {g : Fin (2 ^ n) → F}
-  (C : Set (Fin (2 ^ n) → F)) (δ : ℝ≥0) :
+    (C : Set (Fin (2 ^ n) → F)) (δ : ℝ≥0) :
   f ∉ Λ𞁒(C, k, φ, g, δ) ↔ f ∉ C ∨ δ < δ𞁒(k, φ, f, g) := by
   aesop (add safe (by grind))
 
@@ -191,7 +191,7 @@ lemma blockRelDistanceBall_zero {n : ℕ} {ω : SmoothCosetFftDomain n F}
   aesop (add simp blockRelDistanceBall)
 
 def complDisagreementSet
-  (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
+    (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
   (φ.subdomain k).toFinset \ disagreementSet k φ f g
 
 lemma complDisagreementSet_def' :
@@ -235,7 +235,7 @@ lemma card_disagreementSet' :
     (add unsafe (by rw [Nat.sub_sub_self (by simp)]))
 
 def agreementBlockUnion
-  (k : ℕ) (φ : SmoothCosetFftDomain n F)
+    (k : ℕ) (φ : SmoothCosetFftDomain n F)
   (f g : Fin (2 ^ n) → F) : Finset (Fin (2 ^ n)) :=
   Finset.biUnion (complDisagreementSet k φ f g) (blockIdx φ k)
 

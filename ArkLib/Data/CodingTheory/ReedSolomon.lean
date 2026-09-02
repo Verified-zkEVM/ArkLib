@@ -591,7 +591,7 @@ lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
 /-- Two Reed-Solomon codewords of degree `< m` that agree on at least `m` positions
   are equal. -/
 lemma eq_of_agree_of_card_le {ι : Type} [Finite ι] [Field F]
-  {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
+    {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
   (hc : c ∈ code α n) (hc' : c' ∈ code α n)
   {T : Finset ι} (hT : n ≤ T.card) (hagree : ∀ t ∈ T, c t = c' t) : c = c' := by
   classical

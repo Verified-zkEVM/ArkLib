@@ -183,7 +183,7 @@ lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
 /-- Given a `[FoldingContextMiddle k n]` we have `k - 1 + (n - k) = n - 1`. -/
 @[grind _=_]
 lemma k_sub_1_add_n_sub_k_eq_n_sub_1 {k n : ℕ} [FoldingContextMiddle k n] :
-  k - 1 + (n - k) = n - 1 := by
+    k - 1 + (n - k) = n - 1 := by
   have := FoldingContextMiddle.k_ge_1
   have := FoldingContextMiddle.k_le_n
   omega
