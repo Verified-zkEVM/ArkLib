@@ -188,9 +188,12 @@ open NNReal in
   `(1 - √ρ - η, 1/(2η√ρ))`-list decodable, for every `η > 0`: the same Johnson-type bound as for
   the base code, at the same list size.
 
-  This appears as lemma 4.4 in [ACFY24].
+  This appears as lemma 4.4 in [ACFY24]. The paper proves it by identifying `C^k` with a
+  Reed-Solomon code over the degree-`k` extension field; here the bound is instead derived
+  directly from the pairwise-agreement counting bound `Code.card_le_of_pairwise_agree_le`,
+  and the field-extension isomorphism itself is not formalized.
 -/
-theorem interleaved_listDecodable {F : Type*} [Field F]
+theorem interleavedCodeSet_isListDecodable {F : Type*} [Field F]
     {ι : Type*} [Fintype ι] [Nonempty ι]
     (domain : ι ↪ F) (m k : ℕ) (hm : 0 < m)
     (η : ℝ≥0) (hη : 0 < η) :
