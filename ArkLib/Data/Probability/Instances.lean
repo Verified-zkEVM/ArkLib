@@ -163,8 +163,7 @@ theorem prob_split_uniform_sampling_of_prod {γ δ : Type}
     -- Fintype & Nonempty assumptions for all types
     [Fintype γ] [Fintype δ] [Nonempty γ] [Nonempty δ]
     -- The predicate on the original (combined) type
-    (P : γ × δ → Prop)
-    :
+    (P : γ × δ → Prop) :
     -- LHS: Probability over the combined space
     Pr_{ let r ← $ᵖ (γ × δ) }[ P r ] =
     -- RHS: Probability over the sequential, split spaces
@@ -260,8 +259,7 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
     -- The equivalence that splits α into γ × δ
     (e : α ≃ γ × δ)
     -- The predicate on the original (combined) type
-    (P : α → Prop)
-    :
+    (P : α → Prop) :
     -- LHS: Probability over the combined space
     Pr_{ let r ← $ᵖ α }[ P r ] =
     -- RHS: Probability over the sequential, split spaces
@@ -317,8 +315,7 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
 probability, sampling `r_last` *first*, then `r_init`.
 -/
 theorem prob_split_last_uniform_sampling_of_finFun {ϑ : ℕ} {F : Type} [Fintype F] [Nonempty F]
-    (P : F → (Fin ϑ → F) → Prop)
-    :
+    (P : F → (Fin ϑ → F) → Prop) :
     Pr_{ let r ← $ᵖ (Fin (ϑ + 1) → F) }[ P (r (Fin.last ϑ)) (fun i ↦ r i.castSucc) ] =
     Pr_{ let r_last ← $ᵖ F; let r_init ← $ᵖ (Fin ϑ → F) }[ P r_last r_init ] := by
   classical
@@ -617,7 +614,7 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
       (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
   classical
-  letI : Field R := Fintype.fieldOfDomain R
+  let : Field R := Fintype.fieldOfDomain R
   exact prob_eval_zero_univ_le_div P h_nonzero h_deg
 
 /-- **Schwartz-Zippel**, in probability form at the degree bound `n`: the `d := n`

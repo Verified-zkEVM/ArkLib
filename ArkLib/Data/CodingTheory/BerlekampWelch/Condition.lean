@@ -84,7 +84,9 @@ lemma linsolve_is_berlekamp_welch_solution
 lemma is_berlekamp_welch_solution_ext
     (h : ∀ i, (Matrix.mulVec (BerlekampWelchMatrix e k ωs f) v) i = -(f i) * (ωs i) ^ e) :
     IsBerlekampWelchSolution e k ωs f v := by
-  aesop (add simp [IsBerlekampWelchSolution, Rhs])
+  rw [IsBerlekampWelchSolution]
+  funext i
+  simpa only [Rhs] using h i
 
 @[simp]
 lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
@@ -107,7 +109,10 @@ def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
 lemma coeff_truncate : (truncate p n).coeff k = if k < n then p.coeff k else 0 := rfl
 
 @[simp]
-lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by aesop
+lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by
+  ext i
+  simp only [coeff_truncate, Nat.not_lt_zero, ↓reduceIte]
+  rfl
 
 @[simp]
 lemma natDegree_truncate [φ : NeZero n] : (truncate p n).natDegree < n := by
@@ -131,10 +136,10 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
   IsBerlekampWelchSolution e k ωs f (E_and_Q_to_a_solution e E Q) := by
   rcases h with ⟨h_cond, h_E_deg, h_E_coeff, h_Q_deg⟩
   refine is_berlekamp_welch_solution_ext fun i ↦ ?p₁
-  letI bound := 2 * e + k
+  let bound := 2 * e + k
   generalize eq : BerlekampWelchMatrix _ _ _ f = M₁
-  letI leftσ : Finset _ := {j : Fin bound | j < e}
-  letI rightσ : Finset _ := univ (α := Fin bound) \ leftσ
+  let leftσ : Finset _ := {j : Fin bound | j < e}
+  let rightσ : Finset _ := univ (α := Fin bound) \ leftσ
   generalize eq₁ : ∑ j ∈ leftσ, E.coeff j * (ωs i)^j.1 = σ₁
   generalize eq₂ : ∑ j ∈ rightσ, Q.coeff (j - e) * -(ωs i)^(j - e) = σ₂
   calc _ = ∑ j : Fin bound, if ↑j < e
@@ -158,7 +163,7 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
                              apply sum_nbij (i := Fin.val) <;>
                                try intros a _; aesop (add safe (by existsi ⟨a, by omega⟩))
                                                      (add simp Set.InjOn)
-  letI δσ := {j | j < e + k}.toFinset
+  let δσ := {j | j < e + k}.toFinset
   replace eq₂ : -eval (ωs i) Q = σ₂ := calc
                 _              = -∑ j ∈ δσ.attach, ωs i ^ j.1 * Q.coeff j := by
                   rw [
@@ -302,7 +307,13 @@ lemma eval_solutionToQ_zero {x : F} {v} : eval x (solutionToQ 0 k v) =
 lemma solutionToE_and_Q_E_and_Q_to_a_solution :
     E_and_Q_to_a_solution e (solutionToE e k v) (solutionToQ e k v) = v := by
   ext i
-  aesop (add simp liftF) (add safe (by omega))
+  by_cases hi : i.1 < e
+  · have hne : i.1 ≠ e := Nat.ne_of_lt hi
+    simp [E_and_Q_to_a_solution, liftF, hi, hne]
+  · have hei : e ≤ i.1 := Nat.le_of_not_gt hi
+    have hsub : i.1 - e < e + k := by omega
+    have hadd : e + (i.1 - e) = i.1 := Nat.add_sub_of_le hei
+    simp [E_and_Q_to_a_solution, liftF, hi, hsub, hadd]
 
 @[simp]
 lemma solutionToQ_zero {v : Fin (2 * 0 + 0) → F} :

@@ -161,8 +161,13 @@ theorem dconcat_castSucc {motive : Fin (n + 1) → Sort u} (v : (i : Fin n) → 
   | succ n ih =>
     simp only [dconcat]
     cases i using cases with
-    | zero => simp
-    | succ i => simp [ih]
+    | zero => exact dcons_zero _ _
+    | succ i =>
+      rw! (castMode := .all) [Fin.castSucc_succ i]
+      simp only [dcons]
+      change dconcat (motive := fun j => motive j.succ) (fun j => v j.succ) a i.castSucc =
+        v i.succ
+      exact ih (motive := fun j : Fin (n + 1) => motive j.succ) (fun j => v j.succ) a i
 
 @[simp]
 theorem vconcat_castSucc (v : Fin n → α) (a : α) (i : Fin n) :
@@ -201,7 +206,7 @@ theorem dconcat_dcons_eq_dcons_dconcat {motive : Fin (n + 2) → Sort u} (a : mo
   | 0 => cases i using cases <;> simp [dconcat, dcons]
   | n + 1 =>
     cases i using cases with
-    | zero => simp [dcons_eq_cons, dconcat_eq_snoc]
+    | zero => rfl
     | succ i =>
       by_cases hi : i = last (n + 1)
       · rw [hi]
@@ -649,10 +654,12 @@ theorem fconcat₂_castSucc {α₁ : Fin n → A} {α₂ : Fin n → B} {β₁ :
   | succ n ih =>
     simp only [fconcat₂]
     induction i using induction with
-    | zero => simp; rfl
+    | zero => simp
     | succ i ih' =>
-      simp only [castSucc_succ, fcons₂_succ, ih]
-      exact _root_.cast_cast ..
+      rw! (castMode := .all) [Fin.castSucc_succ i]
+      change fconcat₂ (fun j => v j.succ) a i.castSucc = _
+      rw! (castMode := .all) [ih]
+      rfl
 
 @[simp]
 theorem fconcat₂_last {α₁ : Fin n → A} {α₂ : Fin n → B} {β₁ : A} {β₂ : B}
@@ -662,7 +669,10 @@ theorem fconcat₂_last {α₁ : Fin n → A} {α₂ : Fin n → B} {β₁ : A} 
   | zero => rfl
   | succ n ih =>
     have : last (n + 1) = (last n).succ := by simp
-    rw! [this, fconcat₂, fcons₂_succ, ih]; rfl
+    rw! (castMode := .all) [this, fconcat₂]
+    change fconcat₂ (fun j => v j.succ) a (last n) = _
+    rw! (castMode := .all) [ih]
+    rfl
 
 theorem fconcat₂_injective2 {α₁ : Fin n → A} {α₂ : Fin n → B} {β₁ : A} {β₂ : B} :
     Function.Injective2 (@fconcat₂ A B F₂ n α₁ β₁ α₂ β₂) := by
@@ -702,7 +712,7 @@ theorem fappend₂_succ {α₁ : Fin m → A} {α₂ : Fin m → B}
     (u : (i : Fin m) → F₂ (α₁ i) (α₂ i)) (v : (i : Fin (n + 1)) → F₂ (β₁ i) (β₂ i)) :
     fappend₂ (F := F₂) u v =
       fconcat₂ (F := F₂) (fappend₂ (F := F₂) u (fun i => v (castSucc i))) (v (last n)) := by
-  induction n <;> simp [fappend₂] <;> rfl
+  induction n <;> simp [fappend₂]
 
 @[simp]
 theorem fappend₂_left {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fin n → A} {β₂ : Fin n → B}
@@ -710,7 +720,7 @@ theorem fappend₂_left {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fin
     fappend₂ (F := F₂) u v (castAdd n i) =
       cast (by simp [vappend_left]) (u i) := by
   induction n with
-  | zero => simp [fappend₂]
+  | zero => exact (cast_eq _ _).symm
   | succ n ih =>
     simp only [fappend₂_succ]
     have : castAdd (n + 1) i = castSucc (castAdd n i) := by ext; simp
@@ -731,7 +741,7 @@ theorem fappend₂_right {α₁ : Fin m → A} {α₂ : Fin m → B} {β₁ : Fi
       rw! [this, fconcat₂_castSucc]
       have : ⟨m + i.val, by simp [h]⟩ = natAdd m ⟨i, h⟩ := by ext; simp
       rw! [this, ih]
-      simp; rfl
+      simp
     · have hi : i = last n := by ext; simp; omega
       have : natAdd m i = last (m + n) := by ext; simp; omega
       rw! [this, fconcat₂_last, hi]; rfl
@@ -816,10 +826,12 @@ theorem fconcat_castSucc {α : Fin n → A} {β : A}
   | succ n ih =>
     simp only [fconcat]
     induction i using induction with
-    | zero => simp; rfl
+    | zero => simp
     | succ i _ =>
-      simp only [castSucc_succ, fcons_succ, ih]
-      exact _root_.cast_cast ..
+      rw! (castMode := .all) [Fin.castSucc_succ i]
+      change fconcat (fun j => v j.succ) b i.castSucc = _
+      rw! (castMode := .all) [ih]
+      rfl
 
 @[simp]
 theorem fconcat_last {α : Fin n → A} {β : A} (v : (i : Fin n) → F (α i)) (b : F β) :
@@ -828,7 +840,9 @@ theorem fconcat_last {α : Fin n → A} {β : A} (v : (i : Fin n) → F (α i)) 
   | zero => rfl
   | succ n ih =>
     have : last (n + 1) = (last n).succ := by simp
-    rw! [this, fconcat, fcons_succ, ih]
+    rw! (castMode := .all) [this, fconcat]
+    change fconcat (fun j => v j.succ) b (last n) = _
+    rw! (castMode := .all) [ih]
     rfl
 
 -- Injectivity properties for fconcat
@@ -871,14 +885,14 @@ theorem fappend_zero {β : Fin m → A} {α : Fin 0 → A}
 theorem fappend_succ {α : Fin m → A} {β : Fin (n + 1) → A}
     (u : (i : Fin m) → F (α i)) (v : (i : Fin (n + 1)) → F (β i)) :
     fappend u v = fconcat (fappend u (fun i => v (castSucc i))) (v (last n)) := by
-  induction n <;> simp [fappend] <;> rfl
+  induction n <;> simp [fappend]
 
 @[simp]
 theorem fappend_left {α : Fin m → A} {β : Fin n → A}
     (u : (i : Fin m) → F (α i)) (v : (i : Fin n) → F (β i)) (i : Fin m) :
     fappend u v (castAdd n i) = cast (by simp [vappend_left]) (u i) := by
   induction n with
-  | zero => simp [fappend]
+  | zero => exact (cast_eq _ _).symm
   | succ n ih =>
     simp only [fappend_succ]
     have : castAdd (n + 1) i = castSucc (castAdd n i) := by ext; simp
@@ -898,7 +912,7 @@ theorem fappend_right {α : Fin m → A} {β : Fin n → A}
       rw! [this, fconcat_castSucc]
       have : ⟨m + i.val, by simp [h]⟩ = natAdd m ⟨i, h⟩ := by ext; simp
       rw! [this, ih]
-      simp; rfl
+      simp
     · have hi : i = last n := by ext; simp; omega
       have : natAdd m i = last (m + n) := by ext; simp; omega
       rw! [this, fconcat_last, hi]; rfl

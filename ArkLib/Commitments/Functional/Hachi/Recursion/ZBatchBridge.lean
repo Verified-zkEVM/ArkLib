@@ -68,7 +68,7 @@ section Bridge
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ)
+variable (mLow κ : ℕ) (bound bDig : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The `Z`-packed table evaluation (Hachi Eqs. (25)–(26) left-hand side):
@@ -87,12 +87,12 @@ The `liftShort` conjunct is carried unchanged from `relWEvalClaim` (see there); 
 handoff pushes through `ψ` — Lemma 6's `‖ψ(a)‖∞ ≤ 2β` — to produce the next iteration's `Short`,
 so it must survive this seam. -/
 def relHatEval (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Set (HatEvalStatement K.TCom F mLow × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
-    liftShort Φ bound ρBound p.2 ∧
+    liftShort Φ bound bDig p.2 ∧
     hatEval Φ mLow κ φF zpow p.2 p.1.pointLow = p.1.value}
 
 /-- The bridge's statement map: forget the peeled point half and pack the partial evaluations
@@ -109,21 +109,34 @@ the module docstring for the explicit `κ = 1` cheat). The sorry is kept — del
 in this zero-round seam — until a repair (batching challenge / generic §3.1 packing) is adopted;
 any repair changes this bridge's *protocol content*, not the surrounding seams. -/
 theorem mem_relPartialEval_of_relHatEval (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F)
     (s : PartialEvalStatement K.TCom F mLow κ) (w : LiftedWitness Φ μ n)
-    (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEval Φ mLow κ bound ρBound zpow K φF) :
-    (s, w) ∈ relPartialEval Φ mLow κ bound ρBound K φF := by
+    (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEval Φ mLow κ bound bDig zpow K φF) :
+    (s, w) ∈ relPartialEval Φ mLow κ bound bDig K φF := by
   sorry
 
-/-- **The `Z`-packing bridge as a (plain) `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)): zero-round
+/-- **The `Z`-packing bridge verifier's purity as data** (`Verifier.PureForm`): the verdict is
+`toHatEvalStatement`, read off the zero-round `ReduceClaim` head, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def zBatchVerifierPureForm {TCom : Type} (zpow : Fin (2 ^ κ) → F) :
+    (ReduceClaim.verifier oSpec
+      (toHatEvalStatement (TCom := TCom) mLow κ zpow)).PureForm where
+  verify := fun stmt _ => toHatEvalStatement mLow κ zpow stmt
+  verify_eq := fun _ _ => rfl
+
+/-- **The `Z`-packing bridge as a (plain) `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)):
+    zero-round
 `ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing `relPartialEval` to `relHatEval`. A pure
 statement repacking, hence escape-free.
 ⚠ Its certificate rests on the sorried — and expectedly unprovable as stated — un-packing
 pull-back; see the module docstring. -/
-noncomputable def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     CWSSPackage init impl
       (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n)
@@ -131,16 +144,15 @@ noncomputable def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (St
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (toHatEvalStatement mLow κ zpow)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relPartialEval Φ mLow κ bound ρBound K φF
-  relOut := relHatEval Φ mLow κ bound ρBound zpow K φF
-  isPure := ⟨fun stmt _ => toHatEvalStatement mLow κ zpow stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := toHatEvalStatement mLow κ zpow)
-    (relHatEval Φ mLow κ bound ρBound zpow K φF) (fun _ w => w) CWSSStructure.ofIsEmpty
+  relIn := relPartialEval Φ mLow κ bound bDig K φF
+  relOut := relHatEval Φ mLow κ bound bDig zpow K φF
+  isPure := zBatchVerifierPureForm mLow κ zpow
+  extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
-    (relIn := relPartialEval Φ mLow κ bound ρBound K φF)
-    (relOut := relHatEval Φ mLow κ bound ρBound zpow K φF)
+    (relIn := relPartialEval Φ mLow κ bound bDig K φF)
+    (relOut := relHatEval Φ mLow κ bound bDig zpow K φF)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (fun s w h => mem_relPartialEval_of_relHatEval Φ mLow κ bound ρBound zpow K φF s w h)
+    (fun s w h => mem_relPartialEval_of_relHatEval Φ mLow κ bound bDig zpow K φF s w h)
 
 end Bridge
 

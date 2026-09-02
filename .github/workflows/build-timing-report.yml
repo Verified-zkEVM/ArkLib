@@ -58,6 +58,20 @@ jobs:
               pull_number: pullNumber,
             });
             const pullRequest = pullRequestResponse.data;
+            const runPullRequest = run.pull_requests?.find(
+              candidate => candidate.number === pullRequest.number
+            );
+
+            // A workflow_run reporter can start after a newer commit has been pushed. Never let
+            // the older artifact overwrite the comment while masquerading as the current head.
+            if (pullRequest.head.sha !== run.head_sha) {
+              core.info(
+                `Skipping stale CI run ${run.id}: it measured ${run.head_sha}, ` +
+                `but PR #${pullRequest.number} is now at ${pullRequest.head.sha}.`
+              );
+              core.setOutput('should-report', 'false');
+              return;
+            }
 
             const artifactsResponse = await github.rest.actions.listWorkflowRunArtifacts({
               owner,
@@ -78,16 +92,19 @@ jobs:
             core.setOutput('artifact-name', artifactName);
             core.setOutput('pr-number', String(pullRequest.number));
             core.setOutput('head-ref', pullRequest.head.ref);
-            core.setOutput('head-sha', pullRequest.head.sha);
-            core.setOutput('base-ref', pullRequest.base.ref);
-            core.setOutput('base-sha', pullRequest.base.sha);
+            core.setOutput('head-sha', run.head_sha);
+            // workflow_run preserves the base that produced GitHub's measured merge checkout;
+            // the live PR base may already have advanced by the time this reporter starts.
+            core.setOutput('base-ref', runPullRequest?.base?.ref || pullRequest.base.ref);
+            core.setOutput('base-sha', runPullRequest?.base?.sha || pullRequest.base.sha);
             core.setOutput('source-subject', run.display_title || '');
 
       - name: Check out reporting scripts
         if: steps.timing-context.outputs.should-report == 'true'
         uses: actions/checkout@v7
         with:
-          ref: ${{ steps.timing-context.outputs.base-ref }}
+          # Execute only the reporter committed at the exact trusted base measured below.
+          ref: ${{ steps.timing-context.outputs.base-sha }}
 
       - name: Download current timing artifact
         if: steps.timing-context.outputs.should-report == 'true'
@@ -108,9 +125,6 @@ jobs:
             const artifactName = '${{ steps.timing-context.outputs.artifact-name }}';
             const workflowName = 'CI';
             const currentRunId = Number('${{ github.event.workflow_run.id }}');
-            const currentSha = '${{ steps.timing-context.outputs.head-sha }}';
-            const pullNumber = Number('${{ steps.timing-context.outputs.pr-number }}');
-            const headRef = '${{ steps.timing-context.outputs.head-ref }}';
             const baseRef = '${{ steps.timing-context.outputs.base-ref }}';
             const baseSha = '${{ steps.timing-context.outputs.base-sha }}';
 
@@ -138,29 +152,6 @@ jobs:
               return null;
             }
 
-            const prRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              event: 'pull_request',
-              branch: headRef,
-              status: 'completed',
-              per_page: 100,
-            });
-            const previousPrCandidates = prRunsResponse.data.workflow_runs.filter(candidateRun => {
-              if (candidateRun.head_sha === currentSha) {
-                return false;
-              }
-              const prs = candidateRun.pull_requests || [];
-              return prs.length === 0 || prs.some(pr => pr.number === pullNumber);
-            });
-            const previousPrRun = await firstRunWithArtifact(previousPrCandidates);
-            if (previousPrRun) {
-              core.setOutput('run-id', String(previousPrRun.id));
-              core.setOutput('sha', previousPrRun.head_sha);
-              core.setOutput('label', 'the previous successful PR update');
-              return;
-            }
-
             const baseRunsResponse = await github.rest.actions.listWorkflowRunsForRepo({
               owner,
               repo,
@@ -175,23 +166,17 @@ jobs:
             const exactBaseRun = await firstRunWithArtifact(
               baseCandidates.filter(candidateRun => candidateRun.head_sha === baseSha)
             );
-            const baseRun = exactBaseRun ?? await firstRunWithArtifact(
-              baseCandidates.filter(candidateRun => candidateRun.head_sha !== baseSha)
-            );
-            if (baseRun) {
-              const isExactBase = baseRun.head_sha === baseSha;
-              core.setOutput('run-id', String(baseRun.id));
-              core.setOutput('sha', baseRun.head_sha);
-              core.setOutput(
-                'label',
-                isExactBase
-                  ? `current base of \`${baseRef}\``
-                  : `the latest successful \`${baseRef}\` run`
-              );
+            if (exactBaseRun) {
+              core.setOutput('run-id', String(exactBaseRun.id));
+              core.setOutput('sha', exactBaseRun.head_sha);
+              core.setOutput('label', `exact PR base on \`${baseRef}\``);
               return;
             }
 
-            core.info('No comparison baseline artifact found.');
+            core.info(
+              `No successful CI timing artifact exists for exact base ${baseSha}; ` +
+              'the report will not substitute another commit.'
+            );
             core.setOutput('run-id', '');
             core.setOutput('sha', '');
             core.setOutput('label', '');
@@ -219,6 +204,8 @@ jobs:
           BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
           BUILD_TIMING_TEST_NAME: Validation wrapper
           BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
+          BUILD_TIMING_NATIVE_NAME: Native build
+          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime lint-style
         run: |
           baseline_dir="${{ runner.temp }}/build-timing-baseline"
           if [ -f "$baseline_dir/results.jsonl" ]; then

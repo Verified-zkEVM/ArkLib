@@ -47,13 +47,6 @@ The keys cited here — [CZ25] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -218,7 +211,7 @@ theorem basisFlagLevel_mem_iff_le
     exact b.flag_mono hle (basisFlagLevel_mem_flag b x)
 
 theorem exists_minimal_subset_property
-    {V : Type*} [DecidableEq V] (P : Finset V → Prop)
+    {V : Type*} (P : Finset V → Prop)
     (S : Finset V) (hPS : P S) :
     ∃ T : Finset V, T ⊆ S ∧ P T ∧
       ∀ U : Finset V, U ⊂ T → ¬ P U := by
@@ -248,13 +241,14 @@ theorem exists_minimal_subset_property
 proper subset of size `≥ 2` heavy. Minimality is what supplies the lower bound the design premise
 then contradicts. -/
 theorem exists_minimal_linear_heavy_subset
-    {V : Type*} [DecidableEq V] (weight : Finset V → ℝ)
+    {V : Type*} (weight : Finset V → ℝ)
     (κ : ℝ) (S : Finset V) (hScard : 2 ≤ S.card)
     (hSheavy : (((S.card - 1 : ℕ) : ℝ)) * κ ≤ weight S) :
     ∃ T : Finset V, T ⊆ S ∧ 2 ≤ T.card ∧
       (((T.card - 1 : ℕ) : ℝ)) * κ ≤ weight T ∧
       ∀ U : Finset V, U ⊂ T → 2 ≤ U.card →
         weight U < (((U.card - 1 : ℕ) : ℝ)) * κ := by
+  classical
   let P : Finset V → Prop := fun T =>
     2 ≤ T.card ∧ (((T.card - 1 : ℕ) : ℝ)) * κ ≤ weight T
   have hPS : P S := ⟨hScard, hSheavy⟩
@@ -316,7 +310,7 @@ theorem exists_selectedGeometricFlagBasis
   have hAD : A = Submodule.span F (D : Set V) := by
     dsimp [A, D]
     exact vectorSpan_eq_span_vsub_finset_right_ne F ha
-  letI : FiniteDimensional F (Submodule.span F (D : Set V)) :=
+  let : FiniteDimensional F (Submodule.span F (D : Set V)) :=
     FiniteDimensional.span_of_finite F D.finite_toSet
   have hex := Submodule.exists_fun_fin_finrank_span_eq F (D : Set V)
   rw [← hAD] at hex
@@ -360,10 +354,10 @@ theorem exists_selectedGeometricFlagBasis
 
 theorem geometricAffineRank_pos_of_two_le_card
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
-    [DecidableEq V] (S : Finset V) (hS : 2 ≤ S.card) :
+    (S : Finset V) (hS : 2 ≤ S.card) :
     1 ≤ geometricAffineRank (F := F) S := by
   classical
-  letI : FiniteDimensional F (vectorSpan F (S : Set V)) :=
+  let : FiniteDimensional F (vectorSpan F (S : Set V)) :=
     finiteDimensional_vectorSpan_of_finite F S.finite_toSet
   unfold geometricAffineRank
   rw [Submodule.one_le_finrank_iff]
@@ -383,7 +377,7 @@ def geometricEdgeWeight {V : Type*} (S : Finset V) : ℕ :=
 
 theorem geometricAffineRank_le_edgeWeight
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
-    [DecidableEq V] (S : Finset V) :
+    (S : Finset V) :
     geometricAffineRank (F := F) S ≤ geometricEdgeWeight S := by
   classical
   by_cases hS : S = ∅
@@ -931,7 +925,7 @@ theorem selectedGeometricFlagPart_image_card_le
     exact hpickE j
   have hspan : vectorSpan F (Set.range pick) ≤ vectorSpan F (E : Set V) :=
     vectorSpan_mono F hrange
-  letI : FiniteDimensional F (vectorSpan F (E : Set V)) :=
+  let : FiniteDimensional F (vectorSpan F (E : Set V)) :=
     finiteDimensional_vectorSpan_of_finite F E.finite_toSet
   have hfin := Submodule.finrank_mono hspan
   calc
@@ -1030,7 +1024,7 @@ theorem subspaceDesign_kernelSum_le_profile
 
 open scoped Pointwise in
 theorem vectorSpan_agreementEdges_le_inf_ker
-    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {ι : Type*}
     {F : Type*} [Field F] [DecidableEq F]
     (s : ℕ) (T : Finset (ι → Fin s → F)) (f : ι → Fin s → F) (i : ι) :
     vectorSpan F (agreementEdges T f i : Set (ι → Fin s → F)) ≤
@@ -1054,7 +1048,7 @@ theorem vectorSpan_agreementEdges_le_inf_ker
 
 theorem vectorSpan_finset_le_submodule_of_subset
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
-    [DecidableEq V] (S : Finset V) (C : Submodule F V)
+    (S : Finset V) (C : Submodule F V)
     (hSC : ∀ x ∈ S, x ∈ C) :
     vectorSpan F (S : Set V) ≤ C := by
   classical
@@ -1128,7 +1122,7 @@ theorem agreementWeight_lt_of_subspaceDesign
     apply vectorSpan_finset_le_submodule_of_subset
     intro c hc
     exact hTC c (hUT hc)
-  letI : FiniteDimensional F A :=
+  let : FiniteDimensional F A :=
     finiteDimensional_vectorSpan_of_finite F U.finite_toSet
   have hsum :
       (∑ i : ι, (geometricAffineRank (F := F) (agreementEdges U y i) : ℝ)) ≤

@@ -19,8 +19,6 @@ For now, we only state the theorems. It's likely that we will split this file in
 a single `Implication` folder in the future, each file for the proof of a single implication.
 -/
 
-noncomputable section
-
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
@@ -35,9 +33,9 @@ section Implications
 
 /- TODO: add the following results
 - `knowledgeSoundness` implies `soundness`
-- `roundByRoundSoundness` implies `soundness`
-- `roundByRoundKnowledgeSoundness` implies `roundByRoundSoundness`
-- `roundByRoundKnowledgeSoundness` implies `knowledgeSoundness`
+- `rbrSoundness` implies `soundness`
+- `rbrKnowledgeSoundness` implies `rbrSoundness`
+- `rbrKnowledgeSoundness` implies `knowledgeSoundness`
 
 In other words, we have a lattice of security notions, with `knowledge` and `roundByRound` being
 two strengthenings of soundness.
@@ -52,7 +50,12 @@ theorem knowledgeSoundness_implies_soundness
     (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :
       knowledgeSoundness init impl relIn relOut verifier knowledgeError →
         soundness init impl relIn.language relOut.language verifier knowledgeError := by
-  simp [knowledgeSoundness, soundness, Set.language]
+  simp only [knowledgeSoundness, ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_map, simulateQ_option_elimM, simulateQ_pure, simulateQ_map,
+    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta, soundness,
+    Set.language, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
+    not_exists, forall_exists_index]
   intro extractor hKS WitIn' WitOut' witIn' prover stmtIn hStmtIn
   sorry
   -- have hKS' := hKS stmtIn witIn' prover
@@ -376,7 +379,8 @@ theorem coordinateWiseSpecialSound_ofSpecialSound_iff (k : pSpec.ChallengeIdx �
     (hk : ∀ i, 2 ≤ k i)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
-    verifier.coordinateWiseSpecialSound init impl (CWSSStructure.ofSpecialSound k hk) relIn relOut
+    verifier.coordinateWiseSpecialSound (WitOut := WitOut) init impl
+      (CWSSStructure.ofSpecialSound k hk) relIn relOut
       ↔ verifier.specialSound init impl k relIn relOut := by
   unfold Verifier.coordinateWiseSpecialSound Verifier.specialSound
   rw [toShape_ofSpecialSound_eq_distinctShape]
@@ -400,7 +404,8 @@ theorem coordinateWiseSpecialSound_ofSpecialSound_iff (k : pSpec.ChallengeIdx �
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-    verifier.coordinateWiseSpecialSound init impl (CWSSStructure.ofSpecialSound k hk) relIn relOut
+    verifier.coordinateWiseSpecialSound (WitOut := WitOut) init impl
+      (CWSSStructure.ofSpecialSound k hk) relIn relOut
       ↔ verifier.specialSound init impl k relIn relOut :=
   Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff init impl k hk relIn relOut
     verifier.toVerifier

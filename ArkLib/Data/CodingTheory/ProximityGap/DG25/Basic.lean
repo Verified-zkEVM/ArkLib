@@ -197,6 +197,9 @@ lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
         Fin.eta] at res
       exact res
 
+-- Preserve the public `Matrix` aliases for interleaved words. Lean v4.33 otherwise refuses
+-- to unfold them while matching the proof's implicit word types.
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty ι] [DecidableEq ι] [Fintype A] [AddCommMonoid A] in
 /-- NOTE: This could be generalized to 2 * N instead of 2 ^ (ϑ + 1).
 Also, this can be proved for `↔` instead of `→`. -/
@@ -264,8 +267,8 @@ theorem CA_split_rowwise_implies_CA
         have hRes₁ := hRes 1 ⟨rowIdx - 2 ^ ϑ, by omega⟩
         dsimp only [splitHalfRowWiseInterleavedWords, Fin.isValue, U₁] at hRes₁
         rw [←hRes₁]
-        simp only [Interleavable.interleave, interleaveWordStack, finMapTwoWords,
-          Matrix.transpose_apply]
+        simp only [Interleavable.interleave, interleaveWordStack, Matrix.transpose_apply,
+          finMapTwoWords]
         rw! [Nat.sub_add_cancel (h := by omega)]
         rfl
 

@@ -27,17 +27,15 @@ import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 
 ## Main definitions
 
-* `foldWord`
-  : the folding function that is to be used by the verifier to fold
+* `foldWord` : the folding function that is to be used by the verifier to fold
     purported codeword using a random challenge.
-* `folding_preserves_distance`
-  : lemma 4.9 from [ACFY24]. "Soundness" of the folding operation.
+* `folding_preserves_distance` : lemma 4.9 from [ACFY24]. "Soundness" of the folding operation.
     If a purported codeword `f`
     has distance `δ` to a given RS-code then,
     with high probability over the choice of folding randomness,
     its folding also has distance `δ` to the "k-wise folded" RS-code.
-* `foldWord_codeword`
-  : a bonus theorem not present in [ACFY24]. "Completeness" of the folding operation.
+* `foldWord_codeword` : a bonus theorem not present in [ACFY24]. "Completeness" of the folding
+    operation.
     folding a codeword is the same RS-encoding folding polynomial applied to
     the message.
 
@@ -79,7 +77,7 @@ private lemma even_add_odd_eq_of_2_ne_0
 /-- An explicit formula to compute `foldWordAux` when `k = 2`
   not involving Lagrange interpolation. -/
 lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :
-  foldWordAux domain f 1 (domain.subdomain 1 i) =
+    foldWordAux domain f 1 (domain.subdomain 1 i) =
     let x : domain := CosetFftDomain.twoNthRoot (i := 1)
       ⟨domain.subdomain 1 i, by simp⟩
     let i := domain.log x
@@ -147,14 +145,14 @@ lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :
       simp
     · rw [Lagrange.eval_interpolate_at_node _ CosetFftDomain.injOn (by simp), hy]
       conv_lhs => rw [hj']
-      simp
+      simp?
       grind
 
 /-- The degree of the auxiliary polynomial `foldWordAux`
   is less than 2^k. -/
 @[simp]
 lemma foldWordAux_degree {k : ℕ} {x : F} :
-  (foldWordAux domain f k x).degree < 2 ^ k :=
+    (foldWordAux domain f k x).degree < 2 ^ k :=
   lt_of_lt_of_le
     (Lagrange.degree_interpolate_lt _ (by simp))
     (by norm_cast; simp)
@@ -163,7 +161,7 @@ lemma foldWordAux_degree {k : ℕ} {x : F} :
   is less than 2^k. -/
 @[simp]
 lemma foldWordAux_natDegree {k : ℕ} {x : F} :
-  (foldWordAux domain f k x).natDegree < 2 ^ k := by
+    (foldWordAux domain f k x).natDegree < 2 ^ k := by
   by_cases foldWordAux domain f k x = 0 <;>
     aesop (add simp Polynomial.natDegree_lt_iff_degree_lt)
 
@@ -176,31 +174,30 @@ noncomputable def foldValue (domain : SmoothCosetFftDomain n F)
   (foldWordAux domain f k x).eval α
 
 lemma foldValue_def {α : F} {x : F} :
-  foldValue domain f k α x = (foldWordAux domain f k x).eval α := rfl
+    foldValue domain f k α x = (foldWordAux domain f k x).eval α := rfl
 
 lemma foldValue_def' {α : F} {x : F} :
-  foldValue domain f k α x = (Lagrange.interpolate (blockIdx domain k x) domain f).eval α := rfl
+    foldValue domain f k α x = (Lagrange.interpolate (blockIdx domain k x) domain f).eval α := rfl
 
 @[simp]
 lemma foldValue_pow_x_k {i : Fin (2 ^ n)} :
-  foldValue domain f k (domain i) (domain i ^ 2 ^ k) = f i :=
+    foldValue domain f k (domain i) (domain i ^ 2 ^ k) = f i :=
   Lagrange.eval_interpolate_at_node _ (by simp) (by simp)
 
 @[simp]
 lemma foldValue_zero {k : ℕ} :
-  foldValue domain 0 k = 0 := by aesop (add simp [foldValue, foldWordAux])
+    foldValue domain 0 k = 0 := by aesop (add simp [foldValue, foldWordAux])
 
 /-- An explicit formula for `foldValue` when `k = 1`. -/
 lemma foldValue_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
-  foldValue domain f 1 α (domain.subdomain 1 i) =
+    foldValue domain f 1 α (domain.subdomain 1 i) =
     let x : domain := CosetFftDomain.twoNthRoot (i := 1)
         ⟨domain.subdomain 1 i, by simp⟩
     let i := domain.log x
     let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
-  aesop
-    (add simp [foldValue, foldWordAux_of_k_2])
-    (add safe (by grind))
+  simp [foldValue, foldWordAux_of_k_2]
+  ring
 
 /-- Fold a word. Takes a word `f` over `Fin (2 ^ n)` and randomness
   `a`, and returns a word over `Fin (2 ^ (n - k))`. -/
@@ -211,12 +208,12 @@ noncomputable def foldWord (domain : SmoothCosetFftDomain n F)
 
 @[simp]
 lemma foldWord_zero {k : ℕ} :
-  foldWord domain 0 k = 0 := by aesop (add simp [foldWord])
+    foldWord domain 0 k = 0 := by aesop (add simp [foldWord])
 
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation. -/
 theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
-  foldWord domain f 1 α i =
+    foldWord domain f 1 α i =
     let x : domain := CosetFftDomain.twoNthRoot (i := 1)
         ⟨domain.subdomain 1 i, by simp⟩
     let i := domain.log x
@@ -227,7 +224,7 @@ theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation. Functional version. -/
 theorem foldWord_k_1' [NeZero n] {α : F} :
-  foldWord domain f 1 α = fun i ↦
+    foldWord domain f 1 α = fun i ↦
     let x : domain := CosetFftDomain.twoNthRoot (i := 1)
         ⟨domain.subdomain 1 i, by simp⟩
     let i := domain.log x
@@ -237,12 +234,12 @@ theorem foldWord_k_1' [NeZero n] {α : F} :
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation and avoids using `log`. -/
 theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
-  {j j' : Fin (2 ^ n)} (hjj' : j ≠ j')
+    {j j' : Fin (2 ^ n)} (hjj' : j ≠ j')
   (hj : domain j ^ 2 = domain.subdomain 1 i) (hj' : domain j' ^ 2 = domain.subdomain 1 i) :
   foldWord domain f 1 α i =
     ((f j + f j') / 2) + α * ((f j - f j') / (2 * domain j)) := by
   have hn : n ≠ 0 := by aesop (add safe [cases Fin, (by omega)])
-  letI : NeZero n := ⟨hn⟩
+  let : NeZero n := ⟨hn⟩
   rw [foldWord_k_1]
   extract_lets x a b
   have ha : domain a = x := by simp [a]
@@ -278,7 +275,7 @@ lemma foldWord_k_1_eval_domain [NeZero n] {i : Fin (2 ^ (n - 1))}
 
 /-- The "even" part of the folding function. -/
 def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
-  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
+    (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
   let x : domain := CosetFftDomain.twoNthRoot (i := 1)
         ⟨domain.subdomain 1 i, by simp⟩
   let i := domain.log x
@@ -287,7 +284,7 @@ def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
 
 /-- The "odd" part of the folding function. -/
 def foldWordOdd [NeZero n] (domain : SmoothCosetFftDomain n F)
-  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
+    (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
   let x : domain := CosetFftDomain.twoNthRoot (i := 1)
         ⟨domain.subdomain 1 i, by simp⟩
   let i := domain.log x
@@ -297,7 +294,7 @@ def foldWordOdd [NeZero n] (domain : SmoothCosetFftDomain n F)
 /-- `foldWord` equals the natural linear combination
   of its even and odd parts. -/
 lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
-  foldWord domain f 1 α =
+    foldWord domain f 1 α =
     foldWordEven domain f + α • foldWordOdd domain f := by
   aesop (add simp [foldWord_k_1, foldWordEven, foldWordOdd])
 
@@ -338,10 +335,10 @@ noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
 
 @[simp]
 lemma iteratedFoldWord_zero {α : Fin 0 → F} :
-  iteratedFoldWord domain f 0 α = f := rfl
+    iteratedFoldWord domain f 0 α = f := rfl
 
 lemma iteratedFoldWord_succ {α : Fin (k + 1) → F} :
-  iteratedFoldWord domain f (k + 1) α =
+    iteratedFoldWord domain f (k + 1) α =
     foldWord (domain.subdomain k)
       (iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩)) 1 (α ⟨k, by omega⟩) := by aesop
 
@@ -371,8 +368,7 @@ private lemma interpolate_eq_folding_poly_eval
   ((Lagrange.interpolate (blockIdx domain k x) domain)
     f) =
   (Polynomial.map (evalRingHom x)
-    (FoldingPolynomial.foldingPolynomial (Y ^ 2 ^ k) ((Lagrange.interpolate univ ⇑domain) f))) :=
-  by
+    (FoldingPolynomial.foldingPolynomial (Y ^ 2 ^ k) ((Lagrange.interpolate univ ⇑domain) f))) := by
   by_cases hf : f = 0
   · simp [hf]
   · apply eq_of_eval_eq_degree (n := 2 ^ k)
@@ -412,20 +408,20 @@ open FoldingContext in
   respectively.
 -/
 theorem foldWord_codeword {d : ℕ} [FoldingContext k d n]
-  {α : F}
+    {α : F}
   {p : ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)} :
   foldWord domain p k α =
     evalOnPoints (domain.subdomain k)
         (FoldingPolynomial.polyFold (ReedSolomon.toPolynomial p) (2 ^ k) α) := by
   ext x
   simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
-    Embedding.coeFn_mk, toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
+    toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval (by simp)]
-  aesop
+  rfl
 
 theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
-  {α : F} {p : Polynomial F}
+    {α : F} {p : Polynomial F}
   (hp_deg : p.degree < 2 ^ n) :
   foldWord domain (evalOnPoints domain p) k α =
     evalOnPoints (domain.subdomain k)
@@ -443,7 +439,7 @@ theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
   original RS-code respectively.
 -/
 theorem foldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
-  {α : F}
+    {α : F}
   {f : Word F (Fin (2 ^ n))}
   (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) :
   foldWord domain f k α ∈
@@ -464,7 +460,7 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
   · intro i
     have := foldWord_codeword (α := α) (p := ⟨f, hf⟩)
     simp only at this
-    simp only [this, evalOnPoints, Embedding.coeFn_mk,
+    simp only [this, evalOnPoints,
       LinearMap.coe_mk, AddHom.coe_mk]
     obtain ⟨hp_deg, hf'⟩ := hf'
     subst hf'
@@ -495,7 +491,7 @@ private lemma iteratedFoldWord_mem_code_of_mem_code_aux {d : ℕ}
   | zero => simpa using hf
   | succ k ih =>
     have hprev := ih (α := fun i ↦ α ⟨i.val, by omega⟩) (by omega)
-    haveI : FoldingContext 1 (d - k) (n - k) := FoldingContext.mk' le_rfl (by omega) (by omega)
+    have : FoldingContext 1 (d - k) (n - k) := FoldingContext.mk' le_rfl (by omega) (by omega)
     have hstep := foldWord_mem_code_of_mem_code (domain := domain.subdomain k) (k := 1)
       (α := α ⟨k, by omega⟩) hprev
     rw [subdomain_subdomain_one (by omega)] at hstep
@@ -506,7 +502,7 @@ private lemma iteratedFoldWord_mem_code_of_mem_code_aux {d : ℕ}
   then its `iteratedFoldWord` belongs to a folded RS-code.
 -/
 theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
-  {α : Fin k → F} {f : Word F (Fin (2 ^ n))}
+    {α : Fin k → F} {f : Word F (Fin (2 ^ n))}
   (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) :
   iteratedFoldWord domain f k α ∈
     ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) :=
@@ -645,15 +641,7 @@ private lemma indicated_polynomial_eq_foldAux'
     (Polynomial.evalRingHom x)
     (indicatedPolynomial domain f k s')) =
     foldWordAux domain f k x := by
-  apply Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := (2 ^ k))
-    <;> try tauto
-  · aesop
-     (add safe [(by rw [←eval_comm]),
-      (by rw
-        [indicated_polynomial_eq_combination_of_correlated,
-          ←foldValue_def,
-          foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha])])
-     (add simp [eval_finsetSum])
+  refine Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := 2 ^ k) ?_ ?_ ?_ ?_
   · simp only
       [indicatedPolynomial, Polynomial.map_sum,
         Polynomial.map_mul, map_C, coe_evalRingHom]
@@ -663,6 +651,13 @@ private lemma indicated_polynomial_eq_foldAux'
           (add simp [Polynomial.map_map])
           (add safe [foldWordAux_natDegree])
   · exact foldWordAux_natDegree
+  · simpa using h_card
+  · intro α _
+    rw [←eval_comm,
+      indicated_polynomial_eq_combination_of_correlated h_s' hu hu_deg,
+      eval_finsetSum, ←foldValue_def,
+      foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
+    simp only [eval_mul, eval_C, hx]
 
 private lemma foldWordAux_poly_sum {a : F} :
   ((foldWordAux domain f k a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) =
@@ -822,33 +817,41 @@ private lemma dist_from_code_bound_of_correlated_agreement
     exact le_trans (b := 2 ^ n) (by grind) <| by
       convert card_toFinset_le_fintype_card (ω := domain) <;> aesop
   }) h_u_deg
-    simp only [Set.mem_setOf_eq, Nat.cast_le]
+    simp only [Set.mem_ofPred_eq, Nat.cast_le]
     aesop (add safe [evalOnPoints_mem_code_of_natDegree_lt])
 
 omit [DecidableEq F] in
 /-- The rate of the folded RS-code is the same. -/
 lemma folded_rate_eq {d : ℕ} [FoldingContext k d n] :
-  LinearCode.rate
+    LinearCode.rate
       (ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k))) =
     LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) := by
-  aesop
-    (add simp [rateOfLinearCode_eq_min_div, min_def])
-    (add unsafe (by rw [←pow_add, ←pow_add]))
-    (add safe [(by grind), (by field_simp)])
+  simp only [rateOfLinearCode_eq_min_div, Fintype.card_fin]
+  rw [min_def, min_def]
+  have hdk : 2 ^ (d - k) ≤ 2 ^ (n - k) :=
+    Nat.pow_le_pow_right (by omega) (Nat.sub_le_sub_right FoldingContextRight.d_le_n k)
+  have hdn : 2 ^ d ≤ 2 ^ n :=
+    Nat.pow_le_pow_right (by omega) FoldingContextRight.d_le_n
+  rw [if_pos hdk, if_pos hdn]
+  field_simp
+  norm_cast
+  rw [← pow_add]
+  have hk_d : k ≤ d := FoldingContextLeft.k_le_d
+  have hd_n : d ≤ n := FoldingContextRight.d_le_n
+  have hexp : d - k + n = n - k + d := by omega
+  rw [hexp]
+  exact pow_add 2 (n - k) d
 
 omit [DecidableEq F] in
 /-- The square root of the rate of the folded RS-code is the same. -/
 lemma folded_sqrtRate_eq {d : ℕ} [FoldingContext k d n] :
-  ReedSolomon.sqrtRate
+    ReedSolomon.sqrtRate
      (2 ^ (d - k))
      (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) =
     ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F) := by
   simp [ReedSolomon.sqrtRate, folded_rate_eq]
 
 open FoldingContext in
-set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
-                                           -- which is a result of it missing
-                                           -- from the proximity gap theorem args.
 /--
 Folding preserves distance from Reed–Solomon codes.
 
@@ -865,11 +868,12 @@ the corresponding Reed–Solomon code except with probability controlled by
 `ProximityGap.errorBound`.
 -/
 theorem folding_preserves_distance
-  [Fintype F]
+    [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   [FoldingContext k d n]
   {δ : ℝ≥0}
-  (δ_gt_0 : 0 < δ) -- this one is not used but should be.
+  -- Retained to match the mathematical statement; the imported gap bound omits it.
+  (_δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)))
     (1 - (ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F)))) :
     Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r,
@@ -887,7 +891,7 @@ theorem folding_preserves_distance
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
         (2 ^ k - 1) ((2 ^ (d - k)))
         (domain := domain.subdomain k) (δ := δ)
-        (hδ_pos := δ_gt_0) (hδ := bound_tighter)
+        (hδ_pos := _δ_gt_0) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
     simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map,
@@ -951,10 +955,14 @@ theorem folding_preserves_distance
       (fun i j hj ↦ by
         clear *- hj h'
         let i' := cast' i
-        obtain ⟨j', hj, _⟩ := by simpa using hj
+        simp only [Finset.mem_image] at hj
+        obtain ⟨j', hj, rfl⟩ := hj
         specialize h' i' hj
         have h_spec := congrFun (a := j') <| Classical.choose_spec (h_rs i') |>.2
-        aesop (add norm evalOnPoints)
+        have h_agree' := (Finset.mem_filter.mp h').2
+        have h_agree : v i' j' = foldWordAuxCoeff domain f k i (domain.subdomain k j') := by
+          simpa [i', cast, cast'] using h_agree'
+        exact h_spec.symm.trans h_agree
       )
       (d := d)
       (fun i ↦
@@ -979,7 +987,7 @@ theorem folding_preserves_distance
           apply le_trans (b := 2 ^ k * ↑↑(#S))
           · rw [mul_assoc,
                 ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
-            have h_card := ENNReal.coe_le_coe_of_le h_card
+            have h_card := ENNReal.coe_le_coe.mpr h_card
             exact (swap le_trans h_card) (by norm_cast)
           · norm_cast
         · rw [mul_comm,

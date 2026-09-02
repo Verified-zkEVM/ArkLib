@@ -431,7 +431,7 @@ theorem transitionExtractor_pointList_and_affine [Nonempty ι]
         (encoder_range k s hdvd domain) ▸ Set.mem_range_self g
       exact hg
     · funext x
-      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      simp only [LinearCode.projectedWord, Set.domRestrict_apply]
       have hx := mem_gammaAgreementSet k s hdvd domain
         (f₁ := stmtIn.2 0) (f₂ := stmtIn.2 1) (γ := γ) (g := g)
         (j := x) |>.mp x.property
@@ -582,7 +582,7 @@ theorem exactGammaFailure_prob_le [Nonempty ι]
       exact Set.ncard_le_ncard hsub (Set.toFinite _)
     have hcast : (Smsg.card : ENat) ≤ Code.Lambda Cint (δ : ℝ) :=
       le_trans (by exact_mod_cast hncard) hencard
-    rwa [← ENat.coe_toNat hfinite, Nat.cast_le] at hcast
+    rwa [← ENat.natCast_toNat hfinite, Nat.cast_le] at hcast
   have hδ1 : δ < 1 := lt_of_lt_of_le hδ (by
     exact_mod_cast (Code.minRelHammingDistCode_le_one
       (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
@@ -727,7 +727,7 @@ theorem simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor
   exact exactGammaFailure_sample_le
     k s hdvd domain hfull δ hδ stmtIn
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq ι] in
 /-- Existential C6.9 knowledge soundness, retained as a corollary of the
 public exact straightline-extractor theorem. -/
 theorem simplifiedOracleVerifier_knowledgeSoundness
@@ -744,6 +744,7 @@ theorem simplifiedOracleVerifier_knowledgeSoundness
         init impl (Spec.outputRelationFor k (encoder k s hdvd domain) δ)
         (SimplifiedIOR.outputRelationFor k (encoder k s hdvd domain) δ)
         (certifiedGammaError k s domain δ) := by
+  classical
   exact OracleVerifier.knowledgeSoundness_of_with init impl
     (simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor
       k s hdvd domain hfull δ hδ init impl)
@@ -834,7 +835,7 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
     (simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
       k s hdvd domain hfull δ hδ init impl)
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq ι] in
 /-- Existential worst-case C6.9 RBR knowledge soundness, retained only as a
 corollary of the exact-object theorem. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCase
@@ -860,7 +861,7 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCase
     simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
       k s hdvd domain hfull δ hδ init impl⟩
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq ι] in
 /-- Existential averaged C6.9 RBR knowledge soundness, retained only as a
 corollary of the exact-object theorem. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundness

@@ -62,7 +62,10 @@ def toSubgroup (ω : D) : Subgroup Fˣ where
   one_mem' := by {
     simp only [Finset.coe_image, CosetFftDomainClass.mkSubgroupUnit]
     exists 0
-    aesop
+    refine ⟨Finset.mem_univ 0, ?_⟩
+    apply Units.ext
+    simp only [CosetFftDomainClass.mkSubgroupUnit, FftDomainClass.generator_eq_one,
+      inv_one, one_mul, Units.val_one]
   }
   inv_mem' {x} hx := by {
     simp_all only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range]
@@ -75,7 +78,7 @@ def toSubgroup (ω : D) : Subgroup Fˣ where
 /-- A unit belongs to the subgroup associated to an FFT domain iff
   its value belongs to the finset of elements of the domain. -/
 lemma mem_subgroup_iff_mem_finset {x : Fˣ} :
-  x ∈ toSubgroup ω ↔ x.val ∈ CosetFftDomainClass.toFinset ω := by
+    x ∈ toSubgroup ω ↔ x.val ∈ CosetFftDomainClass.toFinset ω := by
   aesop
     (add simp [toSubgroup, CosetFftDomainClass.toFinset,
                 CosetFftDomainClass.mkSubgroupUnit, generator_eq_one])
@@ -84,7 +87,7 @@ lemma mem_subgroup_iff_mem_finset {x : Fˣ} :
   its value belongs to the FFT domain. -/
 @[simp]
 lemma mem_subgroup_iff_mem_domain {ω : D} {x : Fˣ} :
-  x ∈ toSubgroup ω ↔ x.val ∈ ω := by simp [mem_subgroup_iff_mem_finset]
+    x ∈ toSubgroup ω ↔ x.val ∈ ω := by simp [mem_subgroup_iff_mem_finset]
 
 end FftDomainClass
 

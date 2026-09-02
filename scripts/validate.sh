@@ -7,7 +7,6 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-run_lint=0
 run_docs=0
 run_site=0
 run_axioms=0
@@ -18,14 +17,18 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 
 Default checks:
   - lake build
+  - lake exe lint-style
+  - ./scripts/test-lint-plugin.sh
   - lake exe toyproblem-runtime
-  - fail on non-`sorry` warnings under ArkLib/Data/
+  - lake exe hachi-runtime
+  - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/check-imports.sh
+  - ./scripts/test-build-timing-report.sh
   - python3 ./scripts/check-docs-integrity.py
   - python3 ./scripts/kb/lint.py
 
 Optional checks:
-  --lint    Run ./scripts/lint-style.sh
+  --lint    Deprecated compatibility flag; style linting is always enforced
   --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
   --site    Run ./scripts/build-web.sh (implies --docs)
   --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
@@ -35,7 +38,7 @@ EOF
 for arg in "$@"; do
   case "$arg" in
     --lint)
-      run_lint=1
+      echo "NOTE: --lint is no longer needed; Lean source style is checked by default."
       ;;
     --docs)
       run_docs=1
@@ -69,19 +72,41 @@ echo "# Building project"
 lake build 2>&1 | tee "$build_log"
 
 echo ""
-echo "# Checking Data warning budget"
+echo "# Checking ArkLib warning budget"
 python3 ./scripts/check-warning-log.py "$build_log" \
-  --path-prefix ArkLib/Data/ \
+  --path-prefix ArkLib/ \
   --exclude-substring 'declaration uses `sorry`' \
-  --label 'ArkLib/Data non-sorry warnings'
+  --label 'ArkLib non-sorry warnings'
+
+echo ""
+echo "# Running Lean-native source-policy gate"
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  lake exe lint-style --github
+else
+  lake exe lint-style
+fi
+
+echo ""
+echo "# Testing build-time source-policy plugin"
+./scripts/test-lint-plugin.sh
 
 echo ""
 echo "# Running toy-problem compiled runtime checks"
 lake exe toyproblem-runtime
 
 echo ""
+echo "# Running nonrecursive-Hachi compiled runtime checks"
+# Default target only: the composed opening run (`--full`) is dominated by the honest sumcheck
+# prover and is far too slow to gate on. See scripts/HachiRuntime.lean.
+lake exe hachi-runtime
+
+echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
+
+echo ""
+echo "# Testing build timing report fixtures"
+./scripts/test-build-timing-report.sh
 
 echo ""
 echo "# Checking docs integrity"
@@ -103,12 +128,6 @@ if (( run_axioms )); then
     git -C .lake/packages/VCVio submodule update --init --recursive --quiet
   fi
   lake exe axiomsweep --check
-fi
-
-if (( run_lint )); then
-  echo ""
-  echo "# Running Lean style lint"
-  ./scripts/lint-style.sh
 fi
 
 if (( run_docs )); then

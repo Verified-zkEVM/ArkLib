@@ -56,7 +56,7 @@ theorem append_left_injective {pSpec : ProtocolSpec n} :
     Function.Injective (@ProtocolSpec.append m n · pSpec) := by
   simp only [append, Fin.vappend_eq_append]
   intro x y h
-  simp at h
+  simp only [mk.injEq] at h
   obtain ⟨hDir, hType⟩ := h
   ext i
   · simp [Fin.append_left_injective pSpec.dir hDir]
@@ -67,7 +67,7 @@ theorem append_right_injective {pSpec : ProtocolSpec m} :
   unfold ProtocolSpec.append
   simp only [Fin.vappend_eq_append]
   intro x y h
-  simp at h
+  simp only [mk.injEq] at h
   obtain ⟨hDir, hType⟩ := h
   ext i
   · simp [Fin.append_right_injective pSpec.dir hDir]
@@ -183,8 +183,8 @@ theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpe
     (T ++ₜ T').take m (Nat.le_add_right m n) =
       T.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
-  simp [take, append, ProtocolSpec.append, Fin.castLE,
-    FullTranscript.cast, Transcript.cast]
+  simp only [take, append, ProtocolSpec.append, Fin.castLE, FullTranscript.cast,
+    Transcript.cast, Fin.take_apply]
   have : ⟨i.val, by omega⟩ = Fin.castAdd n i := by ext; simp
   rw! (castMode := .all) [this, Fin.happend_left]
   rfl
@@ -194,7 +194,8 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
     (T ++ₜ T').rtake n (Nat.le_add_left n m) =
       T'.cast rfl (by simp [ProtocolSpec.append]) := by
   ext i
-  simp [rtake, Fin.rtake, append, Fin.cast, FullTranscript.cast, Transcript.cast]
+  simp only [rtake, Fin.rtake, append, Fin.cast, Fin.val_natAdd, FullTranscript.cast,
+    Transcript.cast, Fin.val_last, Fin.cast_eq_self, take_Type]
   have : ⟨m + n - n + i.val, by omega⟩ = Fin.natAdd m i := by ext; simp
   rw! (castMode := .all) [this, Fin.happend_right]
   apply eq_of_heq
@@ -238,10 +239,12 @@ def MessageIdx.sumEquiv :
   toFun := Sum.elim (MessageIdx.inl) (MessageIdx.inr)
   invFun := fun ⟨i, h⟩ => by
     by_cases hi : i < m
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inl ⟨⟨i, hi⟩, h⟩
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
+    · exact Sum.inl ⟨⟨i, hi⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
+    · exact Sum.inr ⟨⟨i - m, by omega⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
   left_inv := fun i => by
     rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
     simp [MessageIdx.inl, MessageIdx.inr, isLt]
@@ -286,10 +289,12 @@ def ChallengeIdx.sumEquiv :
   toFun := Sum.elim (ChallengeIdx.inl) (ChallengeIdx.inr)
   invFun := fun ⟨i, h⟩ => by
     by_cases hi : i < m
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inl ⟨⟨i, hi⟩, h⟩
-    · simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi] at h
-      exact Sum.inr ⟨⟨i - m, by omega⟩, h⟩
+    · exact Sum.inl ⟨⟨i, hi⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
+    · exact Sum.inr ⟨⟨i - m, by omega⟩, by
+        convert h using 1; simp [Fin.vappend_eq_append, Fin.append, Fin.addCases, hi];
+          congr⟩
   left_inv := fun i => by
     rcases i with ⟨⟨i, isLt⟩, h⟩ | ⟨⟨i, isLt⟩, h⟩ <;>
     simp [ChallengeIdx.inl, ChallengeIdx.inr, isLt]
@@ -572,9 +577,11 @@ def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, 
     (k : (seqCompose pSpec).ChallengeIdx) : (i : Fin m) × (pSpec i).ChallengeIdx :=
   let ij := Fin.splitSum k.1
   ⟨ij.1, ⟨ij.2, by
-    simp [ij]; have := k.property; simp at this
+    simp only [ij]
+    have := k.property
+    simp only [seqCompose_dir] at this
     have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
-    simp [hk] at this
+    simp only [hk, Fin.vflatten_embedSum] at this
     exact this⟩⟩
 
 /-- The challenge type of a sequential composition at a combined challenge index equals the
@@ -612,9 +619,11 @@ def seqComposeMessageIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Pr
     (k : (seqCompose pSpec).MessageIdx) : (i : Fin m) × (pSpec i).MessageIdx :=
   let ij := Fin.splitSum k.1
   ⟨ij.1, ⟨ij.2, by
-    simp [ij]; have := k.property; simp at this
+    simp only [ij]
+    have := k.property
+    simp only [seqCompose_dir] at this
     have hk : k.1 = Fin.embedSum ij.1 ij.2 := by simp [ij]
-    simp [hk] at this
+    simp only [hk, Fin.vflatten_embedSum] at this
     exact this⟩⟩
 
 /-- The equivalence between the message indices of the individual protocols and the message

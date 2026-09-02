@@ -108,7 +108,7 @@ open Module
 This views `L ⊗ L` as a module over `L` (left action)
 and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
 def decompose_tensor_algebra_rows {σ : Type*} (β : Basis σ K L)
-  (s_hat : TensorAlgebra K L) : σ → L :=
+    (s_hat : TensorAlgebra K L) : σ → L :=
   fun u =>
     (β.baseChange L).repr s_hat u
 
@@ -143,10 +143,8 @@ def packMLE (β : Basis (Fin κ → Fin 2) K L) (t : MultilinearPoly K ℓ) :
           w ⟨i.val - κ, by omega⟩
       -- Evaluate the small-field polynomial `t` at this point.
       MvPolynomial.eval (fun i => ↑(concatenated_point i)) t.val
-
     -- b. Use `equivFun.symm` = ∑ v, (coeffs_for_w v) • (β v).
     β.equivFun.symm coeffs_for_w
-
   -- 2. The packed polynomial `t'` is the multilinear extension of this function.
   ⟨MvPolynomial.MLE packing_func, MLE_mem_restrictDegree packing_func⟩
 
@@ -166,17 +164,14 @@ def unpackMLE (β : Basis (Fin κ → Fin 2) K L) (t' : MultilinearPoly L ℓ') 
     -- a. Deconstruct the evaluation point `p` into `v` (first κ bits) and `w` (last ℓ' bits).
     let v (i : Fin κ) : Fin 2 := p ⟨i.val, by omega⟩
     let w (i : Fin ℓ') : Fin 2 := p ⟨i.val + κ, by { rw [h_l]; omega }⟩
-
     -- b. Evaluate the large-field polynomial `t'` at the point `w`.
     let t'_eval_at_w : L := MvPolynomial.eval (fun i => ↑(w i)) t'.val
-
     -- c. Get the K-coefficients of this L-element with respect to the basis `β`.
     -- `β.repr/β.equivFun` maps an element of L to its coordinate function `(Fin κ → Fin 2) → K`.
     let coeffs : (Fin κ → Fin 2) → K := β.repr t'_eval_at_w
     -- d. The desired evaluation t(p) = t(v,w)
       -- is the coefficient corresponding to the basis vector `β_v`.
     coeffs v
-
   -- 2. The unpacked polynomial `t` is the multilinear extension of this evaluation function.
   ⟨MvPolynomial.MLE unpacked_evals, MLE_mem_restrictDegree unpacked_evals⟩
 
@@ -260,7 +255,7 @@ structure AbstractOStmtIn where
   initialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
 
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
-  Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
+    Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
     MLPEvalRelation L ℓ' aOStmtIn.ιₛᵢ aOStmtIn.OStmtIn input
     ∧ aOStmtIn.initialCompatibility ⟨input.2.t, input.1.2⟩}
@@ -340,7 +335,7 @@ def eqWeightedCoordSum (c : (Fin κ → Fin 2) → L) (r : Fin κ → L) : L :=
 `ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))`. This is the prover's batching-phase message; its
 row/column coordinates carry the claims the verifier checks and batches. -/
 def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
-  P.A :=
+    P.A :=
   -- This implements the identity:
   -- ŝ = Σ_{w ∈ {0,1}^ℓ'} eq̃(r_suffix, w) ⊗ t'(w)
   let r_suffix : Fin ℓ' → L :=
@@ -383,7 +378,7 @@ def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
 `compute_A_func`, the public factor of the relocation sumcheck's polynomial `h = A · t'`
 ([DP24] step 4b). -/
 def compute_A_MLE
-  (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
+    (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
   MultilinearPoly L ℓ' :=
   let A_func := compute_A_func κ L K P ℓ' original_r_eval_suffix r''_batching
   let A_MLE: MultilinearPoly L ℓ' := ⟨MvPolynomial.MLE A_func, MLE_mem_restrictDegree A_func⟩
@@ -394,7 +389,7 @@ def getEvaluationPointSuffix (r : Fin ℓ → L) : Fin ℓ' → L :=
 
 /-- Ring-Switching multiplier parameter for sumcheck, using `A_MLE` as the multiplier. -/
 def RingSwitching_SumcheckMultParam :
-  SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ P) :=
+    SumcheckMultiplierParam L ℓ' (RingSwitchingBaseContext κ L K ℓ P) :=
 { multpoly := fun ctx => -- This is supposed to be (r_κ, …, r_{ℓ-1})
     compute_A_MLE κ L K P ℓ' (original_r_eval_suffix :=
       getEvaluationPointSuffix κ L ℓ ℓ' h_l (r := ctx.t_eval_point))
@@ -456,7 +451,7 @@ def sumcheckRoundRelationProp (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ'
 
 /-- Input relation for single round: proper sumcheck statement -/
 def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1)) :
-  Set (((Statement (L := L) (RingSwitchingBaseContext κ L K ℓ P) i) ×
+    Set (((Statement (L := L) (RingSwitchingBaseContext κ L K ℓ P) i) ×
     (∀ j, aOStmtIn.OStmtIn j)) × SumcheckWitness L ℓ' i) :=
   { ((stmt, oStmt), wit) | sumcheckRoundRelationProp κ L K P ℓ ℓ' h_l
     aOStmtIn i stmt oStmt wit }
@@ -487,17 +482,17 @@ existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axi
     refine Finset.sum_congr rfl fun u _ => ?_
     unfold decompose_tensor_algebra_rows
     rw [Basis.baseChange_apply, smul_tmul']
-    show _ = (φ₀ L K) _ * (φ₁ L K) _
+    change _ = (φ₀ L K) _ * (φ₁ L K) _
     unfold φ₀ φ₁
     simp [Algebra.TensorProduct.tmul_mul_tmul]
   decomposeColumns_spec := fun z => by
-    letI rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
-    letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
+    let rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
+    let rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
     conv_lhs => rw [← (Basis.baseChangeRight (b := β) (Right := L)).sum_repr z]
     refine Finset.sum_congr rfl fun v _ => ?_
     unfold decompose_tensor_algebra_columns
     rw [Basis.baseChangeRight_apply, Algebra.smul_def]
-    show algebraMap L (L ⊗[K] L) _ * _ = (φ₁ L K) _ * (φ₀ L K) _
+    change algebraMap L (L ⊗[K] L) _ * _ = (φ₁ L K) _ * (φ₀ L K) _
     rw [show (algebraMap L (L ⊗[K] L)) =
       (Algebra.TensorProduct.includeRight).toRingHom.comp (algebraMap L L) by rfl]
     unfold φ₀ φ₁

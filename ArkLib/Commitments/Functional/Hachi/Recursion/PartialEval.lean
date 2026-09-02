@@ -79,7 +79,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (mLow κ : ℕ) (bound bDig : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The `i`-th true partial evaluation of the table (Eq. (24)):
@@ -124,6 +124,19 @@ def partialEvalVerifier {TCom : Type} :
     pure ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
       deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩
 
+/-- **The partial-evaluation verifier's purity as data** (`Verifier.PureForm`): the verdict is the
+split point with the sent partials installed and `y₀` derived, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def partialEvalVerifierPureForm {TCom : Type} :
+    (partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := TCom) (F := F)).PureForm where
+  verify := fun stmt tr =>
+    ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
+      deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩
+  verify_eq := fun _ _ => rfl
+
 /-- The honest partial-evaluation prover skeleton: sends the true partials at the nonzero
 indices (the parameter `computeY`, honestly `partialEvalAt`). -/
 def partialEvalProver {TCom Wit : Type}
@@ -153,12 +166,12 @@ claim is the `Recursion/ZBatchBridge.lean` step (⚠ see there).
 The `liftShort` conjunct is the commitment's shortness index, carried unchanged from
 `relWEvalClaim` (see there for why a norm-free seam is not an option) and consumed at the §4.5
 handoff, whose output must exhibit the *next* iteration's `Short`. -/
-def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Set (PartialEvalStatement K.TCom F mLow κ × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
-    liftShort Φ bound ρBound p.2 ∧
+    liftShort Φ bound bDig p.2 ∧
     ∀ i, partialEvalAt Φ mLow κ φF p.2 p.1.pointLow i = p.1.partials i}
 
 variable [SampleableType F]
@@ -166,12 +179,16 @@ variable [SampleableType F]
 /-- **The partial-evaluation extraction algorithm.**
 
 **Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
-proof plan on `partialEval_coordinateWiseSpecialSoundWith`). -/
-noncomputable def partialEvalExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+proof plan on `partialEval_coordinateWiseSpecialSoundWith`).
+
+No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
+so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
+generated code panics when run. -/
+def partialEvalExtractor
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Extractor.TreeBased (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
-      (pSpecPartialEval F κ)
+      (LiftedWitness Φ μ n) (pSpecPartialEval F κ)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecPartialEval F κ))).arity :=
   sorry
@@ -189,23 +206,23 @@ statement, the mle splitting identity `wTableMleEval_split` plus the derivation 
 membership. -/
 theorem partialEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
-      (relWEvalClaim Φ (mLow + κ) bound ρBound b K φF)
-      (relPartialEval Φ mLow κ bound ρBound K φF)
+      (relWEvalClaim Φ (mLow + κ) bound bDig b K φF)
+      (relPartialEval Φ mLow κ bound bDig K φF)
       (partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom) (F := F))
-      (partialEvalExtractor Φ mLow κ bound ρBound K φF) := by
+      (partialEvalExtractor Φ mLow κ bound bDig K φF) := by
   sorry
 
-/-- **The partial-evaluation head as a (plain) `CWSSPackage`** (Hachi §4.5, Eq. (24)): the pure
-one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
+/-- **The partial-evaluation head as a (plain) `CWSSPackage`** (Hachi §4.5, Eq. (24)): the
+pure one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
 `relWEvalClaim` to the per-`i` claims `relPartialEval`. A sound, zero-error reshaping, hence
 escape-free. -/
-noncomputable def partialEvalPackage (init : ProbComp σ)
+def partialEvalPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     CWSSPackage init impl
       (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
@@ -213,14 +230,11 @@ noncomputable def partialEvalPackage (init : ProbComp σ)
       (pSpecPartialEval F κ) where
   verifier := partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom) (F := F)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relWEvalClaim Φ (mLow + κ) bound ρBound b K φF
-  relOut := relPartialEval Φ mLow κ bound ρBound K φF
-  isPure := ⟨fun stmt tr =>
-    ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
-      deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩,
-    fun _ _ => rfl⟩
-  extractor := partialEvalExtractor Φ mLow κ bound ρBound K φF
-  isCWSS := partialEval_coordinateWiseSpecialSoundWith Φ mLow κ bound ρBound b init impl K φF
+  relIn := relWEvalClaim Φ (mLow + κ) bound bDig b K φF
+  relOut := relPartialEval Φ mLow κ bound bDig K φF
+  isPure := partialEvalVerifierPureForm mLow κ
+  extractor := partialEvalExtractor Φ mLow κ bound bDig K φF
+  isCWSS := partialEval_coordinateWiseSpecialSoundWith Φ mLow κ bound bDig b init impl K φF
 
 end Protocol
 

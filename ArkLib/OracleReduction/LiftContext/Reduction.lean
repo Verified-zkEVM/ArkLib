@@ -224,8 +224,7 @@ theorem liftContext_processRound
   simp only [bind_pure_comp]
   congr 1; funext ⟨tr, ps, outerStmtIn', outerWitIn'⟩
   simp only [pure_bind]
-  split <;> simp [Functor.map_map, Function.comp, liftM_map, map_bind,
-    bind_assoc, pure_bind, bind_map_left, bind_pure_comp]
+  split <;> simp [Functor.map_map, liftM_map, map_bind]
 
 
 theorem liftContext_runToRound
@@ -260,7 +259,7 @@ theorem liftContext_runWithLogToRound
         return ⟨⟨transcript, ⟨prvState, outerStmtIn, outerWitIn⟩⟩, queryLog⟩ := by
   unfold runWithLogToRound
   induction i using Fin.induction with
-  | zero => simp [liftContext, Function.uncurry]
+  | zero => simp [runToRound, liftContext, Function.uncurry, simulateQ_pure]
   | succ i ih => simp [liftContext_runToRound, Function.uncurry]
 
 /-- Running the lifted outer prover is equivalent to running the inner prover on the projected
@@ -290,7 +289,8 @@ theorem liftContext_runWithLog
           P.runWithLog.uncurry (lens.proj (outerStmtIn, outerWitIn))
         return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩, queryLog⟩ := by
   rw [runWithLog, liftContext_run]
-  simp [Function.uncurry]
+  simp only [ChallengeIdx, Challenge, Function.uncurry, bind_pure_comp, simulateQ_map,
+    WriterT.run_map]
   congr
 
 end Prover
@@ -308,9 +308,11 @@ theorem liftContext_run
         return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩ ,
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩ := by
   unfold run
-  simp [liftContext, Prover.liftContext_run, Verifier.liftContext, Verifier.run, Function.uncurry]
+  simp only [ChallengeIdx, Challenge, liftContext, Verifier.liftContext, bind_pure_comp,
+    Prover.liftContext_run, Function.uncurry, liftM_map, Verifier.run, OptionT.run_map,
+    bind_map_left, map_bind, Functor.map_map]
   congr 1; funext ⟨_, _⟩; congr 1; funext a_1
-  simp [Functor.map_map, Function.comp]
+  simp?
   cases a_1 <;> simp [Option.getM, map_pure]
 
 theorem liftContext_runWithLog
@@ -356,7 +358,7 @@ theorem liftContext_completeness
     (lensComplete.proj_complete _ _ hRelIn)
   rw [Reduction.liftContext_run]
   refine le_trans hR ?_
-  simp
+  simp?
   sorry
   -- refine probEvent_mono ?_
   -- intro ⟨innerContextOut, a, b⟩ hSupport ⟨hRelOut, hRelOut'⟩
@@ -407,7 +409,11 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   unfold soundness Reduction.run at h ⊢
   -- Note: there is no distinction between `Outer` and `Inner` here
   intro WitIn WitOut outerWitIn outerP outerStmtIn hOuterStmtIn
-  simp at h ⊢
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_monadLift, monadLift_self, OptionT.run_map, Option.elimM_map,
+    Option.elim_some, simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind,
+    OptionT.mk_bind] at h ⊢
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
     PrvState := outerP.PrvState
     input := fun _ => outerP.input (outerStmtIn, outerWitIn)
@@ -453,7 +459,10 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
   obtain ⟨E, h'⟩ := h
   refine ⟨E.liftContext ⟨stmtLens, witLens⟩, ?_⟩
   intro outerStmtIn outerWitIn outerP
-  simp [Extractor.Straightline.liftContext]
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, Extractor.Straightline.liftContext,
+    bind_pure_comp, OptionT.run_map, liftM_map, Functor.map_map, OptionT.run_bind,
+    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta]
   let innerP : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec :=
     {
       PrvState := outerP.PrvState
@@ -466,9 +475,14 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
     }
   have h_innerP_input {innerStmtIn} {innerWitIn} :
       innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
-  simp at h'
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_map, StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta] at h'
   have hR := h' (stmtLens.proj outerStmtIn) default innerP
-  simp [Reduction.runWithLog, Verifier.liftContext, Verifier.run] at hR ⊢
+  simp only [Reduction.runWithLog, ChallengeIdx, Challenge, run, bind_pure_comp,
+    OptionT.run_bind, OptionT.run_monadLift, monadLift_self, OptionT.run_map,
+    Option.elimM_map, Option.elim_some, Option.elimM_bind, simulateQ_bind,
+    StateT.run_bind, map_bind, OptionT.mk_bind, liftContext, ge_iff_le] at hR ⊢
   have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
       innerP.runWithLog innerStmtIn innerWitIn
       = do
@@ -498,7 +512,10 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
       (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut rbrSoundnessError := by
   unfold rbrSoundness at h ⊢
   obtain ⟨stF, h⟩ := h
-  simp at h ⊢
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, HasQuery.instOfMonadLift_query, bind_pure_comp,
+    simulateQ_bind, simulateQ_map, StateT.run'_eq, StateT.run_bind, StateT.run_map,
+    map_bind, Functor.map_map, Subtype.forall] at h ⊢
   refine ⟨stF.liftContext lens (lensSound := lensSound), ?_⟩
   intro outerStmtIn hOuterStmtIn WitIn WitOut witIn outerP roundIdx hDir
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
@@ -556,20 +573,20 @@ def InnerStmtIn_Test := ℤ[X] × ℤ
 
 @[simp]
 def outerRelIn_Test : Set (OuterStmtIn_Test × Unit) :=
-  setOf (fun ⟨⟨p, q, t⟩, _⟩ => ∑ x ∈ {0, 1}, (p * q).eval x = t)
+  Set.ofPred (fun ⟨⟨p, q, t⟩, _⟩ => ∑ x ∈ {0, 1}, (p * q).eval x = t)
 @[simp]
 def innerRelIn_Test : Set (InnerStmtIn_Test × Unit) :=
-  setOf (fun ⟨⟨f, t⟩, _⟩ => ∑ x ∈ {0, 1}, f.eval x = t)
+  Set.ofPred (fun ⟨⟨f, t⟩, _⟩ => ∑ x ∈ {0, 1}, f.eval x = t)
 
 def OuterStmtOut_Test := ℤ[X] × ℤ[X] × ℤ × ℤ
 def InnerStmtOut_Test := ℤ[X] × ℤ × ℤ
 
 @[simp]
 def outerRelOut_Test : Set (OuterStmtOut_Test × Unit) :=
-  setOf (fun ⟨⟨p, q, t, r⟩, _⟩ => (p * q).eval r = t)
+  Set.ofPred (fun ⟨⟨p, q, t, r⟩, _⟩ => (p * q).eval r = t)
 @[simp]
 def innerRelOut_Test : Set (InnerStmtOut_Test × Unit) :=
-  setOf (fun ⟨⟨f, t, r⟩, _⟩ => f.eval r = t)
+  Set.ofPred (fun ⟨⟨f, t, r⟩, _⟩ => f.eval r = t)
 
 @[simp]
 def testStmtLens :
@@ -578,35 +595,37 @@ def testStmtLens :
 
 @[simp]
 def testLens : Context.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test
-                Unit Unit Unit Unit where
+    Unit Unit Unit Unit where
   stmt := testStmtLens
   wit := Witness.Lens.id
 
 @[simp]
 def testLensE : Extractor.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test
-                Unit Unit Unit Unit where
+    Unit Unit Unit Unit where
   stmt := testStmtLens
   wit := Witness.InvLens.id
 
 instance instTestLensComplete : testLens.IsComplete
       outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨⟨p, q, _⟩, _⟩ ⟨⟨f, _⟩, _⟩ => p * q = f) where
-  proj_complete := fun ⟨p, q, t⟩ () hRelIn => by simp_all
+  proj_complete := fun ⟨p, q, t⟩ () hRelIn => by
+    simpa [outerRelIn_Test, innerRelIn_Test, testLens, testStmtLens, eval_mul] using hRelIn
   lift_complete := fun ⟨p, q, t⟩ _ ⟨f, t', r⟩ _ hCompat hRelIn hRelOut' => by
-    simp_all only [outerRelIn_Test, eval_mul, Finset.mem_singleton, zero_ne_one,
-      not_false_eq_true, Finset.sum_insert, Finset.sum_singleton, Set.mem_setOf_eq,
-      innerRelOut_Test, outerRelOut_Test, testLens, testStmtLens]
-    simp [← hRelOut', ← hCompat]
+    change (p * q).eval r = t'
+    change f.eval r = t' at hRelOut'
+    simpa [hCompat] using hRelOut'
 
-def instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
-      outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
+theorem instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
+    outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨p, q, _⟩ ⟨f, _⟩ => p * q = f) (fun _ _ => True) where
   proj_knowledgeSound := fun ⟨p, q, t⟩ ⟨f, t', r⟩ _ h h' => by
-    simp_all only [outerRelOut_Test, eval_mul, Statement.Lens.lift,
-      testLensE, testStmtLens, Set.mem_setOf_eq, innerRelOut_Test]
-    simp [← h', ← h]
-  lift_knowledgeSound := fun ⟨p, q, t⟩ _ _ _ _ => by
-    simp_all
+    change f.eval r = t'
+    change (p * q).eval r = t' at h'
+    simpa [← h] using h'
+  lift_knowledgeSound := fun ⟨p, q, t⟩ _ _ _ hInner => by
+    have hInner' : (p * q).eval 0 + (p * q).eval 1 = t := by
+      simpa [innerRelIn_Test, testLensE, testStmtLens] using hInner
+    simpa [outerRelIn_Test] using hInner'
 
 end
 

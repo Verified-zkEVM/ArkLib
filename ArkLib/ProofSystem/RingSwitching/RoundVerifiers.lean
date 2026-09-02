@@ -93,7 +93,6 @@ def messageRoundOracleVerifier
     hEq := fun i => rfl
     outputInterface_heq := by
       intro i
-      simp only [Function.Embedding.coeFn_mk]
       rfl }
 
 /-- Check-then-update verifier for the message-then-scalar-challenge round: query the message,
@@ -117,7 +116,6 @@ def scalarRoundOracleVerifier
       hEq := fun i => rfl
       outputInterface_heq := by
         intro i
-        simp only [Function.Embedding.coeFn_mk]
         rfl } }
 
 end Combinators

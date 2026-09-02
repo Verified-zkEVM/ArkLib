@@ -23,9 +23,6 @@ import CompPoly.Data.Vector.Basic
     <https://github.com/leanEthereum/leanSpec/blob/main/src/lean_spec/subspecs/poseidon2/>
 -/
 
-set_option linter.style.nativeDecide false
--- set_option maxRecDepth 300
-
 open Vector
 
 namespace Poseidon2

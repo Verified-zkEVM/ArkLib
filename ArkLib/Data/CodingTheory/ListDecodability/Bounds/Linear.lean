@@ -31,13 +31,6 @@ are resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability
 every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -48,6 +41,8 @@ section LowerBounds_General
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
+omit [DecidableEq ι] in
+open Classical in
 /-- **The volume lower bound on list size** ([ABF26] Lemma 3.7, after [Eli57]), at the source's
 generality: for any code `C ⊆ A^n` over a finite alphabet `A` with `|C| = q^k`,
 
@@ -65,7 +60,7 @@ The codeword count enters only as the hypothesis `hcard`, so linear, module-alph
 interleaved codes can all instantiate this with their own cardinality argument;
 `linear_lambda_ge_elias_volume` is the field-linear case. `[Nonempty A]` is needed for the
 positivity of `q` that the averaging step rests on. -/
-theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A] [DecidableEq A]
+theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A]
     (C : Set (ι → A)) (k : ℕ) (hcard : C.ncard = Fintype.card A ^ k)
     (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
     ENNReal.ofReal
@@ -125,6 +120,7 @@ theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A] [DecidableEq 
     _ = ((cnt f₀ : ℕ∞) : ENNReal) := by rw [ENNReal.ofReal_natCast, ENat.toENNReal_coe]
     _ ≤ (Lambda C δ : ENNReal) := hLam
 
+omit [DecidableEq ι] [DecidableEq F] in
 /-- **The volume lower bound on list size** for a field-linear code ([ABF26] Lemma 3.7):
 
   `|Λ(C, δ)| ≥ Vol_q(δ, n) / q^(n-k)`
@@ -163,8 +159,6 @@ theorem stirlingSeq_pos_of_pos (n : ℕ) (hn : 0 < n) :
   unfold Stirling.stirlingSeq
   positivity
 
-set_option maxHeartbeats 1000000 in
--- `field_simp`/`ring_nf` on the four-factorial identity below exceeds the default budget.
 /-- **The central binomial mass, exactly, in terms of Stirling's sequence.** For `d, m > 0`,
 
 `C(d+m, d) · (d/(d+m))^d · (m/(d+m))^m
@@ -504,6 +498,8 @@ theorem qary_shell_entropy_lower
     _ = ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) := by
       rw [Nat.cast_mul, Nat.cast_pow]
 
+omit [DecidableEq ι] in
+open Classical in
 open _root_.Code in
 /-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
 [MS77] binary binomial-coefficient estimate into `lambda_ge_elias_volume`, dividing by `q^{n-k}`
@@ -524,7 +520,7 @@ The hypothesis `_hδn_int` is exactly [MS77]'s `δn`-integrality condition. It i
 without it the bound is **false** at small `δ`, since for `0 < δ·n < 1` the relative ball collapses
 to Hamming
 radius `0`, so the list is `{f} ∩ C` while the entropy-volume right-hand side can exceed `1`. -/
-theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A] [DecidableEq A]
+theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A]
     (C : Set (ι → A)) (k : ℕ) (hcard : C.ncard = Fintype.card A ^ k)
     (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδn_int : ∃ d : ℕ, (d : ℝ) = δ * Fintype.card ι) :
@@ -592,6 +588,7 @@ theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A] [Decidabl
         (q : ℝ) ^ ((n : ℝ) - k) :=
       div_le_div_of_nonneg_right hvol (Real.rpow_nonneg hq_posR.le _)
 
+omit [DecidableEq ι] [DecidableEq F] in
 /-- **The entropy form of the volume lower bound** for a field-linear code ([ABF26] Corollary
 3.8), specialized from `lambda_ge_entropy_volume`. -/
 theorem linear_lambda_ge_entropy_volume
@@ -608,6 +605,7 @@ theorem linear_lambda_ge_entropy_volume
   lambda_ge_entropy_volume (C : Set (ι → F)) (Module.finrank F C)
     (submodule_ncard_eq_pow_finrank C) δ _hδ_pos _hδ_lt _hδn_int
 
+omit [DecidableEq ι] [DecidableEq F] in
 /-- **The cardinality bound from the rate–radius relation** — the arithmetic half of [ABF26]
 Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` of rate `ρ`,
 
@@ -675,6 +673,7 @@ theorem linear_card_le_of_rate_radius
     _ ≤ (q : ℝ) ^ ((n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ)) :=
         Real.rpow_le_rpow_of_exponent_le hq1 hexp
 
+omit [DecidableEq ι] [DecidableEq F] in
 /-- **The generalized Singleton bound for list decoding** ([ABF26] Theorem 3.9, after
 [ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)` with `δ·n` an integer, and
 a linear code `C ⊆ F^n` with `|Λ(C, δ)| ≤ ℓ`:

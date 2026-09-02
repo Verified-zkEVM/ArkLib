@@ -47,7 +47,6 @@ Its main components are:
 - [KKH26] Krachun, Kazanin, Haböck. *Failure of proximity gaps close to capacity*. ePrint 2026/782.
 -/
 
-set_option linter.unusedVariables false
 
 open Polynomial Finset Code ProximityGap Real Filter Topology
 open scoped NNReal BigOperators
@@ -89,7 +88,7 @@ theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
 
 /-- Analytic core: `(2^K)^{cp} ≤ (2^b / khat)^{khat}` when `khat ≈ ρ·2^b` and
 `cp·K·log 2 ≤ ρ·log(1/ρ)·2^b - 2`. -/
-theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (cp : ℕ) (hcp : 1 ≤ cp)
+theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (_hρ1 : ρ < 1) (cp : ℕ) (_hcp : 1 ≤ cp)
     (b K khat : ℕ) (hkhat1 : 1 ≤ khat)
     (hkhat_lo : ρ * 2 ^ b < (khat : ℝ)) (hkhat_hi : (khat : ℝ) ≤ ρ * 2 ^ b + 2)
     (hkhat_lt : (khat : ℝ) < 2 ^ b) (hbig : (2 : ℝ) ≤ (1 - ρ) * 2 ^ b)
@@ -146,8 +145,6 @@ theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (cp : ℕ) (hcp : 1
 
 /-! ## Parameter selection -/
 
-set_option maxHeartbeats 1600000 in
--- Long `Filter.Eventually`/`nlinarith`/`Real.log` chain over many hypotheses; raised limit.
 /-- For every rate `ρ ∈ (0,1)` and `c ∈ ℕ`, there is a constant `Kc > 0` and a threshold
 `b₀` such that
 for every `b ≥ b₀` the parameters `a`, `k = ⌈ρ·2^{a+b}⌉`, `khat = ⌈k/2^a⌉` satisfy the
@@ -180,7 +177,8 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
     filter_upwards [this] with b hb
     simp only [pow_one] at hb
     have h2 : (0 : ℝ) < 2 ^ b := by positivity
-    rw [div_lt_iff₀ h2] at hb; nlinarith [hb]
+    rw [div_lt_iff₀ h2] at hb
+    exact hb.le
   have hpowlim : Filter.Tendsto (fun b : ℕ => (2 : ℝ) ^ b) atTop atTop :=
     tendsto_pow_atTop_atTop_of_one_lt (by norm_num)
   have ev2 : ∀ᶠ b : ℕ in atTop, (2 : ℝ) ≤ (1 - ρ) * 2 ^ b :=
@@ -226,15 +224,27 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
     rwa [Nat.cast_mul, Nat.cast_sub hq1, Nat.cast_one] at this
   have hRlo : ρ * 2 ^ b < (khat : ℝ) := by
     have h1 : ρ * (2 : ℝ) ^ a * 2 ^ b < (khat : ℝ) * d := by
-      rw [hnpow] at hrate_lo; nlinarith [hrate_lo, hN1R]
-    rw [hdR] at h1; nlinarith [h1, h2apos]
+      rw [hnpow] at hrate_lo
+      exact lt_of_lt_of_le (by simpa [mul_assoc] using hrate_lo) hN1R
+    rw [hdR] at h1
+    apply lt_of_mul_lt_mul_right (a := (2 : ℝ) ^ a) _ h2apos.le
+    simpa only [mul_assoc, mul_left_comm, mul_comm] using h1
   have hRhi : (khat : ℝ) < ρ * 2 ^ b + 2 := by
     have h1 : ((khat : ℝ) - 1) * d < ρ * (2 : ℝ) ^ a * 2 ^ b + 1 := by
-      rw [hnpow] at hrate_hi; nlinarith [hN2R, hrate_hi]
+      rw [hnpow] at hrate_hi
+      exact lt_of_lt_of_le hN2R (by simpa [mul_assoc] using hrate_hi)
     rw [hdR] at h1
     have h2a1 : (1 : ℝ) ≤ (2 : ℝ) ^ a := one_le_pow₀ (by norm_num)
-    nlinarith [h1, h2apos, h2a1]
-  have hF2 : (khat : ℝ) < 2 ^ b := by nlinarith [hRhi, P2]
+    have hscaled : ((khat : ℝ) - 1) * (2 : ℝ) ^ a <
+        (ρ * 2 ^ b + 1) * 2 ^ a := by
+      calc ((khat : ℝ) - 1) * (2 : ℝ) ^ a
+          < ρ * (2 : ℝ) ^ a * 2 ^ b + 1 := h1
+        _ ≤ ρ * (2 : ℝ) ^ a * 2 ^ b + 2 ^ a := add_le_add_right h2a1 _
+        _ = (ρ * 2 ^ b + 1) * 2 ^ a := by ring
+    have hcancel : (khat : ℝ) - 1 < ρ * 2 ^ b + 1 :=
+      lt_of_mul_lt_mul_right hscaled h2apos.le
+    linarith
+  have hF2 : (khat : ℝ) < 2 ^ b := by linarith [hRhi, P2]
   have hF2n : khat < 2 ^ b := by exact_mod_cast hF2
   have N1' : k ≤ khat * 2 ^ a := by rw [← hddef]; exact N1
   have N2' : (khat - 1) * 2 ^ a < k := by rw [← hddef]; exact N2
@@ -284,7 +294,8 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
     have hfinal : (1 : ℝ) / 2 ^ b ≤ Kc / ((a + b : ℕ) : ℝ) := by
       rw [div_le_div_iff₀ h2bpos hKfpos, one_mul]
       have hcastab : ((a + b : ℕ) : ℝ) = (Kf : ℝ) := by exact_mod_cast hab
-      rw [hcastab]; nlinarith [hKf_le]
+      rw [hcastab]
+      exact hKf_le
     calc (↑(khat * 2 ^ a - k + 1) : ℝ) / 2 ^ (a + b) ≤ (2 : ℝ) ^ a / 2 ^ (a + b) := hstep
       _ = 1 / 2 ^ b := hexp
       _ ≤ Kc / ((a + b : ℕ) : ℝ) := hfinal
@@ -292,8 +303,6 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
 
 /-! ## Main theorem -/
 
-set_option maxHeartbeats 1600000 in
--- Large existential goal with many instance-carrying witnesses; raised limit.
 /-- For every rate `ρ ∈ (0,1)` and `c ∈ ℕ`, given arbitrarily large smooth Reed--Solomon
 evaluation domains, there is a constant `Kc > 0` such
 that for every `N` there is a smooth RS code `C = RS[F, L, k]` with block length `n = |L| ≥ N`,

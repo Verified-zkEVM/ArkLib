@@ -149,7 +149,6 @@ theorem completeness_relIn_mono {ε : ℝ≥0} {relIn' : Set (StmtIn × WitIn)}
 /-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
   satisfies completeness with error `ε` for any relation `relOut'` that is a superset of `relOut`.
 -/
-
 theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOut)}
     (hrelOut : relOut ⊆ relOut') :
       completeness init impl relIn relOut reduction ε →
@@ -172,6 +171,34 @@ theorem perfectCompleteness_eq_prob_one :
   exact forall_congr' fun _ => forall_congr' fun _ => imp_congr_right fun _ =>
     ⟨fun h => le_antisymm probEvent_le_one (ge_iff_le.mp h),
      fun h => ge_of_eq h⟩
+
+/-- **Support criterion for perfect completeness.** A reduction is perfectly complete as soon as
+every element of the support of the *unsimulated* execution `(reduction.run stmtIn witIn).run` is
+a successful result satisfying the completeness event.
+
+This is the standard route to `perfectCompleteness` for protocols whose honest execution is
+deterministic in the challenges: it discharges the probabilistic content once and for all, leaving
+a purely support-level obligation about `Reduction.run`. In particular no property of the challenge
+distribution is needed — only that `oSpec`'s queries are answered by `impl` and the initial state
+is drawn from `init`, both of which the underlying VCVio lemma
+`OptionT.probEvent_eq_one_of_simulateQ_support_bind` handles uniformly.
+
+The triple to supply for each `x` in the support is: a result `result` with `x = some result`
+(execution never fails), `(result.2, result.1.2.2) ∈ relOut` (the verifier's output statement
+paired with the prover's output witness lies in the output relation), and
+`result.1.2.1 = result.2` (the prover's and the verifier's output statements agree). -/
+theorem perfectCompleteness_of_run_support
+    (h : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
+      ∀ x ∈ support (reduction.run stmtIn witIn).run,
+        ∃ result, x = some result ∧
+          (result.2, result.1.2.2) ∈ relOut ∧ result.1.2.1 = result.2) :
+    reduction.perfectCompleteness init impl relIn relOut := by
+  rw [perfectCompleteness_eq_prob_one]
+  intro stmtIn witIn hIn
+  exact OptionT.probEvent_eq_one_of_simulateQ_support_bind init _ _ _
+    (fun x hx => by
+      obtain ⟨⟨⟨tr, prvStmtOut, witOut⟩, stmtOut⟩, hx, hrel, hstmt⟩ := h stmtIn witIn hIn x hx
+      exact ⟨⟨⟨tr, prvStmtOut, witOut⟩, stmtOut⟩, hx, hrel, hstmt⟩)
 
 -- /-- For a reduction without shared oracles (i.e. `oSpec = []ₒ`), perfect completeness occurs
 --   when the reduction produces satisfying statement-witness pairs for all possible challenges. -/
@@ -501,7 +528,7 @@ namespace Proof
 /-! All security notions are inherited from `Reduction`, with the output relation specialized to the
   trivial accept/reject one: `fun accRej _ => accRej`. -/
 
-open Reduction Classical
+open Reduction
 
 @[reducible, simp]
 def completeness (relation : Set (Statement × Witness)) (completenessError : ℝ≥0)
@@ -529,7 +556,7 @@ end Proof
 
 namespace OracleProof
 
-open OracleReduction Classical
+open OracleReduction
 
 /-- Completeness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
@@ -610,8 +637,9 @@ theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} :
       (Prod.fst <$> (pure (some ((default, stmtIn, witIn), stmtIn)) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, stmtIn, witIn), stmtIn) := by
+      exact Set.mem_singleton_iff.mp hx
+    cases hx'
     exact ⟨hIn, rfl⟩
 
 private lemma Reduction.run_mk_verifier_id {WitIn WitOut : Type}

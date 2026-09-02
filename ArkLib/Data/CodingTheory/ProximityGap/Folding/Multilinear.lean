@@ -44,7 +44,7 @@ variable {k : ℕ} {x : F}
 open FoldingContext in
 /-- One step of lemma 4.15 from [ACFY24]. -/
 lemma foldWord_eq_evalOnPoints_powAlgHom [FoldingContext 1 d n] {α : F}
-  {g : F⦃≤ 1⦄[X (Fin d)]}
+    {g : F⦃≤ 1⦄[X (Fin d)]}
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
   foldWord domain f 1 α =
     evalOnPoints
@@ -114,7 +114,7 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
     aesop
   | succ m ih =>
     intro hm β
-    haveI : NeZero (n - m) := ⟨by omega⟩
+    have : NeZero (n - m) := ⟨by omega⟩
     have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1 ∈
       MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
     have hmem :
@@ -131,7 +131,7 @@ open FoldingContext in
   compute the corresponding multilinear extension
   for the interated folding of codewords. -/
 theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
-  {α : Fin k → F} {g : F⦃≤ 1⦄[X (Fin d)]}
+    {α : Fin k → F} {g : F⦃≤ 1⦄[X (Fin d)]}
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
   iteratedFoldWord domain f k α =
       evalOnPoints
@@ -151,7 +151,7 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
     aesop
   | succ k ih =>
     intro hk' α
-    haveI : NeZero (d - k) := ⟨by omega⟩
+    have : NeZero (d - k) := ⟨by omega⟩
     have hprev := ih (by omega) (fun j ↦ α ⟨j.val, by omega⟩)
     have hmem := aeval_substFun_mem (gg := g)
       (domain_implies_char_ne_2 domain) k (by omega)
@@ -162,7 +162,7 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
         foldWord_eq_evalOnPoints_powAlgHom (g := ⟨_, hmem⟩) (α := α ⟨k, by omega⟩) hprev,
         aeval_substFun_comp]
     funext i
-    simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Function.Embedding.coeFn_mk]
+    simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
     congr 1
     exact subdomain_comp (ω := domain) (k := k) (j := 1) (by grind) rfl
 

@@ -51,7 +51,7 @@ theorem two_pow_dvd_four_pow_sub_one_iff (κ α n : ℕ) (hκ : κ + 1 ≤ α) :
     Nat.cast_ofNat, pow_dvd_iff_le_emultiplicity,
     show ((α + 1 : ℕ) : ℕ∞) = ((κ + 2 : ℕ) : ℕ∞) + ((α - κ - 1 : ℕ) : ℕ∞) by
       rw [← Nat.cast_add]; congr 1; omega]
-  exact WithTop.add_le_add_iff_left (ENat.coe_ne_top (κ + 2))
+  exact WithTop.add_le_add_iff_left (ENat.natCast_ne_top (κ + 2))
 
 /-- The `ℕ`-level divisibility characterization: `2^{α+1} ∣ gⁿ − 1 ↔ 2^{α-κ-1} ∣ n`. -/
 theorem four_pow_dvd_iff_nat (κ α n : ℕ) (hκ : κ + 1 ≤ α) :

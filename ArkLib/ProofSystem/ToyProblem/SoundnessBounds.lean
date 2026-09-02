@@ -50,14 +50,15 @@ message pair accounts for at most one affine challenge.
   Correlated Agreement*][ABF26], Section 6.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 namespace ToyProblem
 
 open Code InterleavedCode ProximityGap CoreDefinitions
 open scoped NNReal ENNReal ProbabilityTheory
 open Probability
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 variable {ι F : Type} [Fintype ι] [Field F] [Fintype F] [DecidableEq F]
 variable {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -91,7 +92,7 @@ theorem encStack_injective {k : ℕ} {enc : (Fin k → F) →ₗ[F] (ι → A)}
     funext i
     exact congrFun (congrFun hpq i) 1
 
-omit [Fintype F] [DecidableEq F] [Fintype A] in
+omit [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- A stacked encoded pair is in the interleaved point list exactly when both
 rows agree with the received pair on one sufficiently large column set. -/
 theorem encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
@@ -103,6 +104,7 @@ theorem encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
       fStar (δ : ℝ) ↔
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i ∈ S, fStar i 0 = enc m.1 i ∧ fStar i 1 = enc m.2 i := by
+  classical
   rw [Code.mem_closeCodewordsRel_iff]
   have hmem : encStack enc m ∈
       (C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) := by
@@ -260,7 +262,7 @@ theorem gamma_bad_pair {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ
     have hm : enc m ∈ (C : Set (ι → A)) := hC ▸ Set.mem_range_self m
     refine ⟨enc m, hm, ?_⟩
     funext x
-    simp only [LinearCode.projectedWord, Set.restrict_apply]
+    simp only [LinearCode.projectedWord, Set.domRestrict_apply]
     simpa [AffineLineGenerator, Fin.sum_univ_two] using hagree x x.property
   have hall : ∀ i : Fin 2,
       LinearCode.projectedWord (![f₁, f₂] i) S ∈
@@ -314,7 +316,7 @@ theorem gamma_bad_pair {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ
     rw [hm, hsum] at hconstr
     exact hconstr
 
-omit [Fintype F] [DecidableEq F] [Fintype A] in
+omit [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Every point-list message pair violates at least one original constraint when
 the two-row input has no relaxed witness. -/
 theorem not_constraint_pair_of_mem_closeCodewordsRel {k : ℕ} [Nonempty ι]
@@ -331,6 +333,7 @@ theorem not_constraint_pair_of_mem_closeCodewordsRel {k : ℕ} [Nonempty ι]
       ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
       (fun i ↦ ![f₁ i, f₂ i]) (δ : ℝ)) :
     ¬ ((∑ j, p.1 j * v j) = μ₁ ∧ (∑ j, p.2 j * v j) = μ₂) := by
+  classical
   rintro ⟨h1, h2⟩
   obtain ⟨S, hScard, hagree⟩ :=
     (encStack_mem_closeCodewordsRel_iff enc C hC hδ1 p).mp hp
@@ -343,11 +346,12 @@ theorem not_constraint_pair_of_mem_closeCodewordsRel {k : ℕ} [Nonempty ι]
     · exact (hagree j hj).1
     · exact (hagree j hj).2
 
+omit [DecidableEq F] [Fintype A] in
 /-- **Combination-round MCA-plus-list bound.**  For a two-row input with no
 relaxed witness, the probability of reaching the post-`γ` state is at most the
 canonical affine-line MCA error plus the two-row point-list size divided by the
 field size. -/
-theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
+theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (hinj : Function.Injective enc)
     (hC : Set.range enc = (C : Set (ι → A)))
@@ -364,6 +368,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
           ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
           (δ : ℝ)).toNat : ENNReal) / (Fintype.card F : ENNReal) := by
   classical
+  let _ := Fintype.ofFinite A
   have hδ1 : δ < 1 :=
     lt_of_lt_of_le hδ_lt
       (by exact_mod_cast Code.minRelHammingDistCode_le_one (C := (C : Set (ι → A))))
@@ -392,7 +397,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
       exact Set.ncard_le_ncard hsub (Set.toFinite _)
     have hcast : (Smsg.card : ENat) ≤ Code.Lambda Cint (δ : ℝ) :=
       le_trans (by exact_mod_cast hncard) hencard
-    rwa [← ENat.coe_toNat hfinite, Nat.cast_le] at hcast
+    rwa [← ENat.natCast_toNat hfinite, Nat.cast_le] at hcast
   have hcards : (Finset.univ.filter (fun γ : F ↦
       GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ ∧
         ¬ IsMCA (AffineLineGenerator F) C γ ![f₁, f₂] (δ : ℝ))).card ≤
@@ -494,6 +499,7 @@ lemma encStack_transpose_one {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)
     (fun i ↦ encStack enc m i 1) = enc m.2 := by
   funext i; rfl
 
+omit [DecidableEq F] in
 open Probability in
 /-- **First Claim-B.1 application (abstract inner-product form).** For an
 injective family `a : σ → (F^k)²` of message pairs, there is a constraint vector
@@ -578,6 +584,7 @@ private lemma affine_collision_card_le_one {a₁ a₂ b₁ b₂ μ₂ : F}
     have : a₁ = b₁ := sub_right_injective hx'
     rw [this]
 
+omit [DecidableEq F] in
 open Probability in
 /-- **Second Claim-B.1 application (abstract affine form).** For a set `T ⊆ F×F`
 with `|T| < |F|`, there is a value `μ₂` avoiding every second coordinate of `T`
@@ -650,7 +657,7 @@ theorem mem_winningSetFor_of_agree {k : ℕ} {δ : ℝ≥0}
     (S : Finset ι) (hScard : (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card)
     (hagree : ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j) :
     γ ∈ winningSetFor enc δ v μ₁ μ₂ f₁ f₂ := by
-  rw [winningSetFor, Set.mem_setOf_eq]
+  rw [winningSetFor, Set.mem_ofPred_eq]
   exact ⟨fun _ ↦ enc m,
     ⟨fun _ ↦ m, fun _ ↦ rfl, fun _ ↦ hconstr⟩,
     S, hScard, fun _ j hj ↦ hagree j hj⟩
@@ -679,7 +686,7 @@ lemma listDecoding_div_le_div {Fc N s : ℝ} (hF : (1 : ℝ) ≤ Fc) (hN : (1 : 
   nlinarith [mul_le_mul_of_nonneg_left hslb' (by linarith : (0 : ℝ) ≤ Fc), hs1, hN, hF,
     mul_nonneg (by linarith : (0:ℝ) ≤ s) (by linarith : (0:ℝ) ≤ N)]
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- **List-decoding lower bound on the simplified IOR.**
 
 Coding-theory form: if `C` is a linear code (the image of an `F`-linear
@@ -747,7 +754,7 @@ collision via `affine_collision_card_le_one`), `image_bound_toReal` (the
 ENNReal→ℝ bridge), `listDecoding_div_le_div` (the `z ↦ z/(F+z−1)` denominator
 chain), and `mem_winningSetFor_of_agree` (the membership step). -/
 theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
-    [Nonempty ι]
+    [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ) (_hδ_lt : δ < 1)
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (hinj : Function.Injective enc)
     (hC : Set.range enc = (C : Set (ι → A)))
@@ -765,6 +772,7 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
                 (((C^⋈(Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A)))
                 (δ : ℝ)).toNat : ℝ)) := by
   classical
+  let _ := Fintype.ofFinite A
   set Cint : Set (ι → Fin 2 → A) :=
     ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
     with hCint
@@ -784,13 +792,7 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
   -- ENUMERATION (bijection codewords ↔ message pairs via the injective `enc`).
   -- `encStack enc` is injective: its two columns determine `enc m.1, enc m.2`, hence (by
   -- `hinj`) `m.1, m.2`.
-  have hencStack_inj : Function.Injective (encStack enc) := by
-    intro p q hpq
-    have h1 : enc p.1 = enc q.1 := by
-      rw [← encStack_transpose_zero enc p, ← encStack_transpose_zero enc q, hpq]
-    have h2 : enc p.2 = enc q.2 := by
-      rw [← encStack_transpose_one enc p, ← encStack_transpose_one enc q, hpq]
-    exact Prod.ext (hinj h1) (hinj h2)
+  have hencStack_inj : Function.Injective (encStack enc) := encStack_injective hinj
   have hSmsgN : Smsg.card = N := by
     -- ABF26-L6.12 enumeration: `encStack enc` is a bijection from the message pairs `Smsg`
     -- onto `closeCodewordsRel C^{≡2} fStar δ`. Injective by `hencStack_inj`; surjective
@@ -814,20 +816,15 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
           exact hV.1 1
         obtain ⟨m₀, hm₀⟩ := hcol0
         obtain ⟨m₁, hm₁⟩ := hcol1
-        refine ⟨(m₀, m₁), ?_, ?_⟩
-        · -- `encStack enc (m₀, m₁) ∈ closeCodewordsRel`, since it equals `V`.
-          have hVeq : encStack enc (m₀, m₁) = V := by
-            funext i j; fin_cases j
-            · change encStack enc (m₀, m₁) i 0 = V i 0
-              rw [encStack_apply_zero]; exact congrFun hm₀ i
-            · change encStack enc (m₀, m₁) i 1 = V i 1
-              rw [encStack_apply_one]; exact congrFun hm₁ i
-          rw [hVeq]; exact hV
-        · funext i j; fin_cases j
+        have hVeq : encStack enc (m₀, m₁) = V := by
+          funext i j; fin_cases j
           · change encStack enc (m₀, m₁) i 0 = V i 0
             rw [encStack_apply_zero]; exact congrFun hm₀ i
           · change encStack enc (m₀, m₁) i 1 = V i 1
             rw [encStack_apply_one]; exact congrFun hm₁ i
+        refine ⟨(m₀, m₁), ?_, hVeq⟩
+        rw [hVeq]
+        exact hV
     calc Smsg.card
         = (Smsg : Set ((Fin k → F) × (Fin k → F))).ncard := (Set.ncard_coe_finset _).symm
       _ = (encStack enc '' (Smsg : Set ((Fin k → F) × (Fin k → F)))).ncard :=
@@ -995,7 +992,7 @@ theorem mem_winningSetFor_zero_of_relClose {k : ℕ} [Nonempty ι]
     (f₁ f₂ : ι → A) {γ : F} (hγ : δᵣ(f₁ + γ • f₂, C) ≤ δ) :
     γ ∈ winningSetFor enc δ (0 : Fin k → F) 0 0 f₁ f₂ := by
   classical
-  rw [winningSetFor, Set.mem_setOf_eq]
+  rw [winningSetFor, Set.mem_ofPred_eq]
   rw [relCloseToCode_iff_relCloseToCodeword_of_minDist] at hγ
   obtain ⟨w, hwC, hwd⟩ := hγ
   obtain ⟨m, hm⟩ : ∃ m, enc m = w := by
@@ -1019,11 +1016,11 @@ theorem mem_winningSetFor_zero_of_relClose {k : ℕ} [Nonempty ι]
     have hagree := (hSagree j).1 hj
     simpa only [Pi.add_apply, Pi.smul_apply] using hagree
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Fintype A] in
 /-- Correlated-agreement lower bound, fixed-encoding form: positive correlated-agreement
 error yields an explicit violating instance whose winning-set ratio
 lower-bounds that error. -/
-theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι]
+theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι] [Finite A]
     (C : Set (ι → A)) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ)
     (hδ_lt : δ < 1)
     (enc : (Fin k → F) →ₗ[F] (ι → A))
@@ -1035,6 +1032,7 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι]
         epsCa (F := F) (A := A) C δ δ *
           (Fintype.card F : ENNReal) := by
   classical
+  let _ := Fintype.ofFinite A
   obtain ⟨u, hu_max⟩ := Finite.exists_max
     (fun u : WordStack A (Fin 2) ι ↦
       if jointProximity C u δ then (0 : ENNReal)
@@ -1085,7 +1083,7 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι]
             (Fintype.card F : ENNReal) =
           ({γ : F | δᵣ(u 0 + γ • u 1, C) ≤ δ}.ncard : ENNReal) := by
       rw [prob_uniform_eq_card_filter_div_card,
-        Set.ncard_eq_toFinset_card', Set.toFinset_setOf]
+        Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
       push_cast
       rw [ENNReal.div_mul_cancel (by exact_mod_cast hF0)
         (ENNReal.natCast_ne_top _)]
@@ -1152,7 +1150,7 @@ omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 theorem winningSetRatio_le_one {k : ℕ}
     {enc : (Fin k → F) →ₗ[F] (ι → A)} {δ : ℝ≥0}
     (x : ViolatingInstance enc δ) : winningSetRatio x ≤ 1 := by
-  haveI : Nonempty F := ⟨0⟩
+  have : Nonempty F := ⟨0⟩
   have hpos : (0 : ℝ≥0) < (Fintype.card F : ℝ≥0) := by
     exact_mod_cast Fintype.card_pos
   rw [winningSetRatio, div_le_one hpos]
@@ -1188,14 +1186,16 @@ theorem winningSetDensity_le_one {k : ℕ}
     winningSetDensity enc δ ≤ 1 :=
   ciSup_le' (fun x ↦ winningSetRatio_le_one x)
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Fintype A] in
 /-- Correlated-agreement error lower-bounds the worst-case winning-set density. -/
-theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι]
+theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι] [Finite A]
     {C : Set (ι → A)} (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc) (henc_range : Set.range enc = C) :
     epsCa (F := F) (A := A) C δ δ ≤
       (winningSetDensity enc δ : ENNReal) := by
+  classical
+  let _ := Fintype.ofFinite A
   rcases eq_or_lt_of_le
       (zero_le (a := epsCa (F := F) (A := A) C δ δ)) with hzero | hca
   · rw [← hzero]
@@ -1219,9 +1219,9 @@ theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι]
     (Or.inl (ENNReal.natCast_ne_top _))]
   exact hbound
 
-omit [DecidableEq F] in
+omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- The two-row point-list attack lower-bounds the worst-case winning-set density. -/
-theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι]
+theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
@@ -1237,6 +1237,8 @@ theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι]
             ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) :
               Set (ι → Fin 2 → A))
             (δ : ℝ)).toNat : ℝ≥0)) ≤ winningSetDensity enc δ := by
+  classical
+  let _ := Fintype.ofFinite A
   obtain ⟨v, μ₁, μ₂, f₁, f₂, hviol, hbound⟩ :=
     exists_winningSetFor_ncard_ge_of_lambda_lt_card
       C δ hδpos hδlt enc henc_inj henc_range hF
@@ -1288,9 +1290,10 @@ theorem coe_certifiedGammaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
   rw [ENNReal.add_ne_top]
   exact ⟨mcaError_ne_top _ _ _, ENNReal.div_ne_top (by simp) (by simp)⟩
 
+omit [DecidableEq F] [Fintype A] in
 /-- The worst-case winning-set density is bounded by the certified
 MCA-plus-list extractor error. -/
-theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι]
+theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))
@@ -1299,6 +1302,7 @@ theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     (henc_range : Set.range enc = (C : Set (ι → A))) :
     winningSetDensity enc δ ≤ certifiedGammaError C δ := by
   classical
+  let _ := Fintype.ofFinite A
   obtain ⟨hδpos, hδlt⟩ := hδ
   refine ciSup_le' (fun x ↦ ?_)
   obtain ⟨v, μ₁, μ₂, f₁, f₂, hviol⟩ := x
@@ -1333,7 +1337,7 @@ theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     (gamma_transition_prob_le C δ enc henc_inj henc_range hδpos hδlt
       v μ₁ μ₂ f₁ f₂ hNoWit)
   rw [winningSetRatio, prob_uniform_eq_card_filter_div_card, hWEvent,
-    Set.ncard_eq_toFinset_card', Set.toFinset_setOf,
+    Set.ncard_eq_toFinset_card', Set.toFinset_ofPred,
     ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
     ENNReal.coe_natCast, ENNReal.coe_natCast]
 
@@ -1355,16 +1359,19 @@ noncomputable def certifiedExtractorError
     (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ) : ℝ≥0 :=
   (1 - δ) ^ t + certifiedGammaError C δ * (1 - (1 - δ) ^ t)
 
+omit [DecidableEq F] [Fintype A] in
 /-- The winning-set/spot-check upper bound is no larger than the executable
 extractor's certificate. -/
 theorem winningSetUpperBound_le_certifiedExtractorError {k : ℕ}
-    [Nonempty ι] (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ)
+    [Nonempty ι] [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))
     (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
     (henc_range : Set.range enc = (C : Set (ι → A))) :
     winningSetUpperBound enc δ t ≤ certifiedExtractorError C δ t := by
+  classical
+  let _ := Fintype.ofFinite A
   rw [winningSetUpperBound, certifiedExtractorError]
   gcongr
   exact winningSetDensity_le_certifiedGammaError

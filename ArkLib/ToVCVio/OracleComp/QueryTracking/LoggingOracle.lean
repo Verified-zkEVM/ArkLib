@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import VCVio
+import VCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
 # Additions to VCV-io's `loggingOracle`

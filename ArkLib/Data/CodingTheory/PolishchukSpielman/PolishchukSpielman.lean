@@ -68,7 +68,7 @@ theorem polishchuk_spielman {F : Type} [Field F]
       ∧ (∃ Q_y : Finset F, Q_y.card ≥ (n_y : ℕ) - a_y ∧ Q_y ⊆ P_y ∧
           ∀ y ∈ Q_y, Polynomial.Bivariate.evalY y P = quot_x y) := by
   classical
-  letI : DecidableEq F := Classical.decEq F
+  let : DecidableEq F := Classical.decEq F
   -- 1. obtain P with B = P * A
   obtain ⟨P, hBA⟩ :=
     ps_exists_p (F := F) a_x a_y b_x b_y n_x n_y h_bx_ge_ax h_by_ge_ay A B

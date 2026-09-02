@@ -20,13 +20,6 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -39,7 +32,7 @@ coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^�
 This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
 theorem common_disagreement_intersection :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+      ∀ {ι : Type} [Fintype ι]
         (M : ℕ), Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
         ∀ S : Fin M → Finset ι,
           (∀ j, Nat.floor (p * Fintype.card ι) < (S j).card) →
@@ -47,7 +40,7 @@ theorem common_disagreement_intersection :
             Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
               ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ _ M hM S hS
+  intro ℓ hℓ p hp hp_lt ι _ M hM S hS
   let n := Fintype.card ι
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
@@ -145,7 +138,7 @@ theorem common_disagreement_intersection :
         {i : ι | ∀ j, j ∈ J → i ∈ S j} := by
       ext i
       simp only [common, Finset.coe_filter, Finset.mem_univ, true_and,
-        Set.mem_setOf_eq]
+        Set.mem_ofPred_eq]
     have hncard :
         ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard =
           (common J).card := by
@@ -178,7 +171,7 @@ theorem common_disagreement_intersection :
 theorem balanced_center_from_far_family
     (ℓ M : ℕ) (hℓ : 2 ≤ ℓ) (p : ℝ) (hp : 0 < p) (hp_lt : p < 1)
     (hM : Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M)
-    {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+    {ι A : Type} [Fintype ι] [DecidableEq A]
     (c : ι → A) (v : Fin M → ι → A)
     (hfar : ∀ j, Nat.floor (p * Fintype.card ι) < hammingDist c (v j))
     (hnear : ∀ j, hammingDist c (v j) ≤
@@ -243,8 +236,8 @@ codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ
 the balanced-centre construction a hypothetical excess. -/
 theorem local_neighborhood_bound :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-      ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-        {A : Type} [Fintype A] [DecidableEq A]
+      ∀ {ι : Type} [Fintype ι] [Nonempty ι]
+        {A : Type} [Finite A] [DecidableEq A]
         (C : Set (ι → A)), Lambda C p ≤ (ℓ : ℕ∞) →
         8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
         ∀ c ∈ C,
@@ -253,7 +246,7 @@ theorem local_neighborhood_bound :
               Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
             ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ _ _ A _ _ C hLambda hsize c hc
+  intro ℓ hℓ p hp hp_lt ι _ _ A _ _ C hLambda hsize c hc
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
   let r' := Nat.floor (boostedRadius ℓ p * n)
@@ -378,9 +371,9 @@ theorem many_nonsingleton_fibers
   change s.card ≤ 2 * multi.card
   omega
 
+open Classical in
 theorem many_restriction_alternatives
-    {ι A : Type} [Fintype ι] [DecidableEq ι]
-      [Fintype A] [DecidableEq A]
+    {ι A : Type} [Fintype A]
     (C : Set (ι → A)) (hC : C.Finite) (S : Finset ι)
     (aFamily : ℕ) (hScard : S.card = aFamily)
     (hmany : 2 * Fintype.card A ^ aFamily ≤ C.ncard) :
@@ -426,8 +419,7 @@ theorem many_restriction_alternatives
 
 theorem good_base_word
     (W aFamily aUnion : ℕ)
-    {ι A : Type} [Fintype ι] [DecidableEq ι]
-      [Fintype A] [DecidableEq A]
+    {ι A : Type} [DecidableEq ι] [Fintype A]
     (C : Set (ι → A)) (hC : C.Finite) (hA : 2 ≤ Fintype.card A)
     (family : LargeUnionFamily ι W aFamily aUnion)
     (hmany : 2 * Fintype.card A ^ aFamily ≤ C.ncard) :
@@ -609,7 +601,7 @@ theorem deterministic_pigeonhole_bound :
   have hιpos : 0 < Fintype.card ι := by
     rw [hcard]
     exact hn
-  letI : Nonempty ι := Fintype.card_pos_iff.mp hιpos
+  let : Nonempty ι := Fintype.card_pos_iff.mp hιpos
   have hp : 0 ≤ (radius : ℝ) / n := by positivity
   have hfloor :
       Nat.floor (((radius : ℝ) / n) * Fintype.card ι) = radius := by
@@ -853,14 +845,15 @@ theorem barrier_density_real_gaps
     nlinarith
   have hxiLt : ξ < p / (ℓ : ℝ) := hxiLe.trans_lt hpDivStrict
   have hxiMul : ξ * (1 - p) ≤ ξ := by
-    nlinarith [mul_nonneg hXi.le hp.le]
+    rw [mul_sub, mul_one]
+    exact sub_le_self _ (mul_nonneg hXi.le hp.le)
   have hxiMulLt : ξ * (1 - p) < p / (ℓ : ℝ) :=
     hxiMul.trans_lt hxiLt
   have hgapOne :
       β * (1 - p) - R =
         η + p / (ℓ : ℝ) - ξ * (1 - p) := by
     dsimp only [β, barrierBetaDensity]
-    nlinarith [hbalance]
+    linear_combination -hbalance
   have hpowMono : p₀ ^ ℓ ≤ p ^ ℓ :=
     pow_le_pow_left₀ hp₀.le hp₀le ℓ
   have hfourXi : 4 * ξ ≤ p ^ ℓ / (2 * (ℓ : ℝ)) := by
@@ -938,13 +931,13 @@ theorem rounded_barrier_basic_bounds
   have hcross := (lt_div_iff₀ hden).mp hηSecondStrict
   have hKeta :
       (barrierK ℓ B + 1) * η < smallRadius ℓ R / 2 := by
-    nlinarith
+    nlinarith only [hcross]
   have hKetaN :
       (barrierK ℓ B + 1) * η * n <
         smallRadius ℓ R / 2 * n :=
     mul_lt_mul_of_pos_right hKeta hnR
   have hhalfP : smallRadius ℓ R / 2 < relRadius ℓ R η := by
-    nlinarith [hpMinLe]
+    nlinarith only [hpMin, hpMinLe]
   have hhalfPN : smallRadius ℓ R / 2 * n <
       relRadius ℓ R η * n :=
     mul_lt_mul_of_pos_right hhalfP hnR
@@ -1163,7 +1156,8 @@ theorem rounded_barrier_quotient_bounds
   have hbalance := relRadius_balance ℓ hℓpos R η
   have hpDiv : 0 < relRadius ℓ R η / (ℓ : ℝ) :=
     div_pos hp hℓR
-  have hRp : R + relRadius ℓ R η < 1 := by linarith
+  have hRp : R + relRadius ℓ R η < 1 := by
+    linarith only [hbalance, hpDiv, hηpos]
   have hRfloor : (Nat.floor (R * n) : ℝ) ≤ R * n :=
     Nat.floor_le (mul_nonneg hRpos.le hnR.le)
   have hPfloor : (Nat.floor (relRadius ℓ R η * n) : ℝ) ≤
@@ -1226,6 +1220,15 @@ theorem rounded_barrier_quotient_bounds
       (Nat.mul_le_mul_left (ℓ + 1) hmLower)
   exact ⟨hused, hrUsed, hmLower, hmUpper, hfloorM, haM, hnM⟩
 
+private theorem one_sub_mul_le_nat_sub
+    (p : ℝ) (n radius : ℕ) (hRadiusLe : radius ≤ n)
+    (hRadiusFloor : (radius : ℝ) ≤ p * n) :
+    (1 - p) * (n : ℝ) ≤ (n - radius : ℕ) := by
+  rw [Nat.cast_sub hRadiusLe]
+  calc
+    (1 - p) * (n : ℝ) = (n : ℝ) - p * n := by ring
+    _ ≤ (n : ℝ) - radius := sub_le_sub_left hRadiusFloor _
+
 theorem rounded_barrier_upper_family_density
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R : ℝ) (hRpos : 0 < R) (hRlt : R < 1)
     (B : ℕ) (hB : 0 < B) (η : ℝ) (hηpos : 0 < η)
@@ -1285,11 +1288,8 @@ theorem rounded_barrier_upper_family_density
   have hRadiusFloor : (d.radius : ℝ) ≤ p * n := by
     dsimp only [d, roundedBarrierData, p]
     exact Nat.floor_le (by positivity)
-  have hSubCast : ((n - d.radius : ℕ) : ℝ) =
-      (n : ℝ) - d.radius := Nat.cast_sub hRadiusLe
-  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) := by
-    rw [hSubCast]
-    nlinarith
+  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) :=
+    one_sub_mul_le_nat_sub p n d.radius hRadiusLe hRadiusFloor
   have hmLowerR : ((n - d.radius : ℕ) : ℝ) ≤ d.unused := by
     exact_mod_cast hmLower
   have hGapN : R * (n : ℝ) < β * ((1 - p) * n) := by
@@ -1368,10 +1368,16 @@ theorem rounded_barrier_upper_union_density
     norm_num
   have hUnionBase : (d.aUnion : ℝ) ≤ (1 - p') * n + 1 := by
     rw [hAUnionCast]
-    nlinarith
+    calc
+      (n : ℝ) + 1 - d.boosted ≤ (n : ℝ) + 1 - p' * n :=
+        sub_le_sub_left hBoostLower _
+      _ = (1 - p') * n + 1 := by ring
   have hUnionBudget : (1 - p') * n + 1 ≤
       (1 - p' + 3 * ξ) * n := by
-    nlinarith
+    calc
+      (1 - p') * n + 1 ≤ (1 - p') * n + 3 * ξ * n :=
+        add_le_add_right hXiBudget _
+      _ = (1 - p' + 3 * ξ) * n := by ring
   have hGapN : (1 - p' + 3 * ξ) * n ≤
       β * ((1 - p) * n) := by
     calc
@@ -1381,11 +1387,8 @@ theorem rounded_barrier_upper_union_density
   have hRadiusFloor : (d.radius : ℝ) ≤ p * n := by
     dsimp only [d, roundedBarrierData, p]
     exact Nat.floor_le (by positivity)
-  have hSubCast : ((n - d.radius : ℕ) : ℝ) =
-      (n : ℝ) - d.radius := Nat.cast_sub hRadiusLe
-  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) := by
-    rw [hSubCast]
-    nlinarith
+  have hOneP : (1 - p) * (n : ℝ) ≤ (n - d.radius : ℕ) :=
+    one_sub_mul_le_nat_sub p n d.radius hRadiusLe hRadiusFloor
   have hmLowerR : ((n - d.radius : ℕ) : ℝ) ≤ d.unused := by
     exact_mod_cast hmLower
   have hBetaSub : β * ((1 - p) * n) ≤ β * d.unused := by

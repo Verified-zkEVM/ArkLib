@@ -153,7 +153,7 @@ theorem rs_large_agreement_card [Fintype ι] [Nonempty ι] {k : ℕ} [NeZero k]
       (((minRelHammingDistCode
         (ReedSolomon.code domain k : Set (ι → F)) : ℚ≥0) : ℝ)) =
         ((Fintype.card ι - k + 1 : ℕ) : ℝ) / Fintype.card ι := by
-    letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
+    let : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
     have h := minDist_div_card_eq_minRelHammingDistCode
       (ReedSolomon.code domain k : Set (ι → F))
     rw [ReedSolomon.minDist_eq_card_sub_min_add_1, min_eq_left hk] at h

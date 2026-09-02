@@ -89,30 +89,24 @@ scoped instance {k n : ℕ} [FoldingContextMiddle k n] : NeZero n where
     have := FoldingContextMiddle.k_le_n
     omega
 
-set_option linter.defProp false in
 /-- Build a `FoldingContext` from the three inequalities `1 ≤ k`, `k ≤ d` and `d ≤ n`. -/
-@[reducible]
-def mk' {k d n : ℕ} (h_k_ge_1 : 1 ≤ k) (h_k_le_d : k ≤ d)
+abbrev mk' {k d n : ℕ} (h_k_ge_1 : 1 ≤ k) (h_k_le_d : k ≤ d)
   (h_d_le_n : d ≤ n) : FoldingContext k d n where
   k_ge_1 := h_k_ge_1
   k_le_d := h_k_le_d
   d_le_n := h_d_le_n
 
-set_option linter.defProp false in
 /-- Any `FoldingContextMiddle k n` upgrades to the degenerate full context
   `FoldingContext k n n`, i.e. the rate-one case where messages may have degree up to
   the size of the domain. Useful for reusing full-context lemmas when only the middle
   context is available. -/
-@[reducible]
-def ofMiddle {k n : ℕ} [FoldingContextMiddle k n] : FoldingContext k n n where
+abbrev ofMiddle {k n : ℕ} [FoldingContextMiddle k n] : FoldingContext k n n where
   k_ge_1 := FoldingContextMiddle.k_ge_1
   k_le_d := FoldingContextMiddle.k_le_n
   d_le_n := le_refl _
 
-set_option linter.defProp false in
 /-- If `k` folding steps are allowed then so is just one step. -/
-@[reducible]
-def oneStep {k d n : ℕ} [FoldingContext k d n] : FoldingContext 1 d n where
+abbrev oneStep {k d n : ℕ} [FoldingContext k d n] : FoldingContext 1 d n where
   k_ge_1 := by rfl
   k_le_d := by
     have := FoldingContextLeft.k_ge_1
@@ -130,14 +124,14 @@ attribute [grind cases] FoldingContext
   Appears when comparing block indices after a single halving step. -/
 @[grind! →]
 lemma k_sub_one_le_n_sub_one {k n : ℕ} [FoldingContextMiddle k n] :
-  k - 1 ≤ n - 1 := by
+    k - 1 ≤ n - 1 := by
   grind
 
 /-- `2 ^ k ≤ 2 ^ n` in any ordered monoid where `1 ≤ 2`: the block size never exceeds
   the domain size. -/
 @[grind! →]
 lemma two_pow_k_le_two_pow_n
-  {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+    {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] (h_two : (1 : A) ≤ 2) :
   (2 : A) ^ k ≤ (2 : A) ^ n := pow_le_pow_right' h_two (by grind)
 
@@ -145,21 +139,21 @@ lemma two_pow_k_le_two_pow_n
   the degree bound. -/
 @[grind! →]
 lemma two_pow_k_le_two_pow_d
-  {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+    {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] (h_two : (1 : A) ≤ 2) :
   (2 : A) ^ k ≤ (2 : A) ^ d := pow_le_pow_right' h_two (by grind)
 
 /-- `2 ^ d ≤ 2 ^ n` in any ordered monoid where `1 ≤ 2`: the code has rate at most one. -/
 @[grind! →]
 lemma two_pow_d_le_two_pow_n
-  {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+    {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
   {d n : ℕ} [FoldingContextRight d n] (h_two : (1 : A) ≤ 2) :
   (2 : A) ^ d ≤ (2 : A) ^ n := pow_le_pow_right' h_two (by grind)
 
 /-- The folded code still has rate at most one: `2 ^ (d - k) ≤ 2 ^ (n - k)`. -/
 @[grind! →]
 lemma two_pow_d_sub_k_le_two_pow_n_sub_k
-  {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+    {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] (h_two : (1 : A) ≤ 2) :
   (2 : A) ^ (d - k) ≤ (2 : A) ^ (n - k) :=
   pow_le_pow_right' h_two (by grind)
@@ -167,13 +161,13 @@ lemma two_pow_d_sub_k_le_two_pow_n_sub_k
 /-- Truncated subtraction cancels on the left of `k`, since `1 ≤ k`. -/
 @[grind =]
 lemma one_add_sub_one {k d : ℕ} [FoldingContextLeft k d] :
-  1 + (k - 1) = k := by
+    1 + (k - 1) = k := by
   rw [Nat.add_sub_cancel' (by grind)]
 
 /-- Truncated subtraction cancels on the left of `k`, since `1 ≤ k`. -/
 @[grind =]
 lemma one_add_sub_one' {k n : ℕ} [FoldingContextMiddle k n] :
-  1 + (k - 1) = k := by
+    1 + (k - 1) = k := by
   have := FoldingContextMiddle.k_ge_1
   rw [Nat.add_sub_cancel' (by omega)]
 
@@ -181,7 +175,7 @@ lemma one_add_sub_one' {k n : ℕ} [FoldingContextMiddle k n] :
   This is the index-arithmetic counterpart of folding one step at a time. -/
 @[grind =]
 lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
-  n - 1 - (k - 1) = n - k := by
+    n - 1 - (k - 1) = n - k := by
   have := FoldingContextMiddle.k_ge_1
   have := FoldingContextMiddle.k_le_n
   omega
@@ -198,7 +192,7 @@ lemma k_sub_1_add_n_sub_k_eq_n_sub_1 {k n : ℕ} [FoldingContextMiddle k n] :
   the original size by the block size. -/
 @[grind =]
 lemma pow_2_n_sub_k_eq_n_sub_k
-  {A : Type*} [Group A] [OfNat A 2]
+    {A : Type*} [Group A] [OfNat A 2]
   {k n : ℕ} [FoldingContextMiddle k n] :
   (2 : A) ^ n / (2 : A) ^ k = (2 : A) ^ (n - k) := by
   calc
@@ -212,7 +206,7 @@ lemma pow_2_n_sub_k_eq_n_sub_k
   `2 ^ (n - 1) / 2 ^ (k - 1) = 2 ^ (n - k)`. -/
 @[grind =]
 lemma pow_2_n_sub_1_div_pow_2_k_sub_1_eq_n_sub_k
-  {A : Type*} [Group A] [OfNat A 2]
+    {A : Type*} [Group A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] :
   (2 : A) ^ (n - 1) / (2 : A) ^ ((k - 1)) = (2 : A) ^ (n - k) := by
   calc
@@ -225,39 +219,39 @@ lemma pow_2_n_sub_1_div_pow_2_k_sub_1_eq_n_sub_k
 /-- `n - k + k` cancels, since `k ≤ n`. -/
 @[grind =]
 lemma n_sub_k_add_k {k n : ℕ} [FoldingContextMiddle k n] :
-  n - k + k = n := by
+    n - k + k = n := by
   grind
 
 /-- `d - k + k` cancels, since `k ≤ d`. -/
 @[grind =]
 lemma d_sub_k_add_k {k d : ℕ} [FoldingContextLeft k d] :
-  d - k + k = d := by
+    d - k + k = d := by
   grind
 
 /-- Reassociation of subtraction for `grind`: `(d - k) + n = (n + d) - k`. -/
 @[grind _=_]
 lemma d_sub_k_add_n {k d n : ℕ} [FoldingContext k d n] :
-  d - k + n = n + d - k := by
+    d - k + n = n + d - k := by
   grind
 
 /-- Reassociation of subtraction for `grind`: `(n - k) + d = (n + d) - k`. -/
 @[grind _=_]
 lemma n_sub_k_add_d {k d n : ℕ} [FoldingContext k d n] :
-  n - k + d = n + d - k := by
+    n - k + d = n + d - k := by
   grind
 
 /-- The folded degree bound times the block size recovers the original degree bound:
   `2 ^ (d - k) * 2 ^ k = 2 ^ d`. -/
 @[grind _=_]
 lemma pow_2_d_sub_k_mul_pow_2_k {A : Type*} [Monoid A] [OfNat A 2]
-  {k d : ℕ} [FoldingContextLeft k d] :
+    {k d : ℕ} [FoldingContextLeft k d] :
   (2 : A) ^ (d - k) * (2 : A) ^ k = (2 : A) ^ d := by
   aesop (add safe [(by rw [←pow_add]), (by grind)])
 
 /-- Commuted form of `pow_2_d_sub_k_mul_pow_2_k`: `2 ^ k * 2 ^ (d - k) = 2 ^ d`. -/
 @[grind _=_]
 lemma pow_2_k_mul_pow_2_d_sub_k {A : Type*} [Monoid A] [OfNat A 2]
-  {k d : ℕ} [FoldingContextLeft k d] :
+    {k d : ℕ} [FoldingContextLeft k d] :
   (2 : A) ^ k * (2 : A) ^ (d - k) = (2 : A) ^ d := by
   aesop (add safe [(by rw [←pow_add]), (by grind)])
 
@@ -265,13 +259,13 @@ lemma pow_2_k_mul_pow_2_d_sub_k {A : Type*} [Monoid A] [OfNat A 2]
   the shape in which the rate of a Reed–Solomon code is computed. -/
 @[grind =]
 lemma min_pow_2_d_pow_2_n {d n : ℕ} [FoldingContextRight d n] :
-  min ((2 : ℕ) ^ d) ((2 : ℕ) ^ n) = 2 ^ d := by grind
+    min ((2 : ℕ) ^ d) ((2 : ℕ) ^ n) = 2 ^ d := by grind
 
 /-- Forward direction of `pow_2_k_mul_le_pow_2_d_iff`, stated with the minimal typeclass
   assumptions: bounding `x` by the folded degree bound bounds `2 ^ k * x` by `2 ^ d`. -/
 @[grind! →]
 lemma pow_2_k_mul_le_pow_2_d_of {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
-  {k d : ℕ} [FoldingContextLeft k d] {x : A}
+    {k d : ℕ} [FoldingContextLeft k d] {x : A}
   (h : x ≤ (2 : A) ^ (d - k)) :
     (2 : A) ^ k * x ≤ (2 : A) ^ d := by grind [mul_le_mul_right]
 
@@ -279,7 +273,7 @@ lemma pow_2_k_mul_le_pow_2_d_of {A : Type*} [Monoid A] [LinearOrder A] [MulLeftM
   between a polynomial and its `2 ^ k`-fold. -/
 @[grind .]
 lemma pow_2_k_mul_le_pow_2_d_iff {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
-  [MulLeftStrictMono A]
+    [MulLeftStrictMono A]
   [OfNat A 2] {k d : ℕ} [FoldingContextLeft k d] {x : A} :
   (2 : A) ^ k * x ≤ (2 : A) ^ d ↔
     x ≤ (2 : A) ^ (d - k) where

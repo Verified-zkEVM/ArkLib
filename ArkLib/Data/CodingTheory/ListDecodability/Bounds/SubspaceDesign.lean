@@ -28,13 +28,6 @@ The keys cited here — [ABF26], [CZ25] — are resolved in the reference list o
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -110,8 +103,8 @@ of [CZ25] which [CZ25] does not prove, and it is *not* refuted by either counter
 `η`. It remains an open generalization. `subspaceDesign_lambda_le_of_eta` is its shape at the pinned
 profile. -/
 theorem subspaceDesign_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (_hR : (LinearCode.alphabetRate C : ℝ) = R)
     (_h : IsSubspaceDesign s
@@ -121,7 +114,7 @@ theorem subspaceDesign_lambda_le
     Lambda ((C : Set (ι → Fin s → F)))
         ((L : ℝ) / (L + 1) * (1 - s * R / (s - L + 1))) ≤ (L : ℕ∞) := by
   classical
-  letI : DecidableEq (Fin s → F) := Classical.decEq _
+  let : DecidableEq (Fin s → F) := Classical.decEq _
   apply Lambda_le_of_forall_finset_card_le
   intro y T hT
   by_contra hTL
@@ -135,7 +128,7 @@ theorem subspaceDesign_lambda_le
         (L : ℝ) / (L + 1) * (1 - s * R / ((s : ℝ) - L + 1)) := by
     intro c hc
     have hcball := (hT c (hUT hc)).2
-    simpa only [Code.relHammingBall, Set.mem_setOf_eq] using hcball
+    simpa only [Code.relHammingBall, Set.mem_ofPred_eq] using hcball
   have hupper0 := agreementWeight_lt_of_subspaceDesign_rate
     _hR _h L _hL_pos _hL_le y U hUcard hUC
   have hupper : (agreementWeight y U : ℝ) <
@@ -181,8 +174,8 @@ mirrors [CZ25]'s own derivation of its Corollary 2.21 from its Theorem 1.3.
 Note this is generic in the *dominating value* `t`, not in the profile: the profile stays pinned,
 for the reason spelled out on `subspaceDesign_lambda_le`. -/
 theorem subspaceDesign_lambda_le_of_profile_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
@@ -230,7 +223,7 @@ theorem subspaceDesign_lambda_le_of_profile_le
         closeCodewordsRel ((C : Set (ι → Fin s → F))) f (1 - t - η) = ∅ := by
       intro f
       ext c
-      simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq,
+      simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_ofPred_eq,
         Set.mem_empty_iff_false, iff_false, not_and]
       intro _ hball
       exact absurd (hball.trans_lt hrad_neg) (not_lt.mpr (by positivity))
@@ -259,8 +252,8 @@ Non-negativity of `R` is *proved* rather than hypothesised (`LinearCode.alphabet
 `ℚ≥0`). `1/η ≤ s` keeps the instantiation point inside [CZ25]'s range `L ≤ s`; it is the hypothesis
 the abstract statement omits and its only instantiation carries as `1/η < s`. -/
 theorem subspaceDesign_lambda_le_of_eta
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
@@ -317,8 +310,8 @@ degenerates — at `ω = 1` all folds collapse — and the capacity bound is fal
 of [CZ25] and Guruswami–Rudra, where the fold element is primitive. `ω ≠ 0` is not a separate
 hypothesis, being derivable from it. -/
 theorem frs_lambda_le_capacity
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hs_pos : 0 < s)
     (_hFn : Fintype.card ι < Fintype.card F)
@@ -410,8 +403,8 @@ must be a unit for `d < k`) and which the disjunction with `ringChar F = 0` keep
 `LinearCode.alphabetRate`; unlike the folded case there is no admissibility or generator
 hypothesis, multiplicity codes needing neither. -/
 theorem um_lambda_le_capacity
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F]
     (domain : ι ↪ F) (k s : ℕ)
     (_hs_pos : 0 < s)
     (_hchar : ringChar F = 0 ∨ k ≤ ringChar F)

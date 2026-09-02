@@ -30,7 +30,6 @@ namespace Impl.FRS
 open scoped NNReal ENNReal
 open Polynomial ReedSolomon.Folded Code
 
-set_option maxRecDepth 8000 in
 /-- **An exact-order field element.** There exists `γ : KoalaBear.Ext6`
 with `γ ≠ 0` and multiplicative order exactly `2^21`. KoalaBear's prime
 `q = 2^31 - 2^24 + 1` has `2^24 | q - 1`, so the multiplicative group of
@@ -118,6 +117,9 @@ noncomputable def domain : Fin (2 ^ 16) ↪ KoalaBear.Ext6 where
     have hj : 32 * (j : ℕ) < 2 ^ 21 := by have := j.isLt; omega
     exact Fin.val_injective (by have := gamma_pow_left_inj hi hj hij; omega)
 
+@[simp]
+lemma domain_apply (j : Fin (2 ^ 16)) : domain j = gamma ^ (32 * j.val) := rfl
+
 open Classical in
 /-- **`(L, 32)`-admissibility of the progression domain.** The `32 · 2^16 = 2^21` folded points
 `γ^(32·a) · γ^i = γ^(32·a + i)` are pairwise distinct because all exponents lie below
@@ -131,16 +133,16 @@ lemma admissible_domain :
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα hβ
     obtain ⟨a, rfl⟩ := hα
     obtain ⟨b, rfl⟩ := hβ
-    simp only [domain, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hαβ hcontra
+    simp only [domain_apply, foldOmega, ← pow_add] at hcontra
     have ha := a.isLt; have hb := b.isLt
-    have hab : (a : ℕ) ≠ (b : ℕ) := fun h => hαβ (by rw [h])
+    have hab : (a : ℕ) ≠ (b : ℕ) := fun h => hαβ (congrArg domain (Fin.ext h))
     have := gamma_pow_left_inj (a := 32 * a.val + i) (b := 32 * b.val) (by omega) (by omega)
       hcontra
     omega
   · intro α hα i hipos hi hcontra
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα
     obtain ⟨a, rfl⟩ := hα
-    simp only [domain, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hcontra
+    simp only [domain_apply, foldOmega, ← pow_add] at hcontra
     have ha := a.isLt
     have := gamma_pow_left_inj (a := 32 * a.val + i) (b := 32 * a.val) (by omega) (by omega)
       hcontra
@@ -177,7 +179,7 @@ bridge that also backs the FRS dimension formula `dim_frsCode`): the encoder is
 consumes `admissible_domain`, `gamma_ne_zero`, and `k = 2^20 ≤ 32 · 2^16 =
 2^21 = s · |ι|`. The order witness `gamma_exists` is proved using abstract cyclicity. -/
 theorem encoder_injective : Function.Injective encoder := by
-  haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
+  have : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
   simp only [encoder, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap]
   refine (ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective (k := 2 ^ 20) (s := 32)
     domain foldOmega admissible_domain gamma_ne_zero ?_).comp
@@ -185,7 +187,6 @@ theorem encoder_injective : Function.Injective encoder := by
   rw [Fintype.card_fin]; norm_num
 
 open Classical in
-set_option maxRecDepth 8000 in
 /-- **The folded encoder's image is exactly the folded RS code** `FRS[domain, 2^20,
 32, foldOmega]`. The FRS counterpart of `koalaEnc_range`: `encoder = frsEvalOnPoints ∘
 (degreeLTEquiv).symm`, and as the latter ranges over all degree-`< 2^20` polynomials its
@@ -219,8 +220,8 @@ Hamming distance is `D = |L| − 32767 = 65536 − 32767 = 32769` and `δ_min = 
 absolute-to-relative bridge `minDist_div_card_eq_minRelHammingDistCode`. -/
 theorem minRelHammingDistCode_range_encoder :
     minRelHammingDistCode (Set.range ⇑encoder) = (32769 / 65536 : ℚ≥0) := by
-  haveI : Nonempty (Fin (2 ^ 16)) := inferInstance
-  haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
+  have : Nonempty (Fin (2 ^ 16)) := inferInstance
+  have : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
   have hcode : Set.range ⇑encoder =
       (↑(ReedSolomon.Folded.frsCode domain (2 ^ 20) 32 foldOmega) :
         Set (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6)) := encoder_range
@@ -291,6 +292,9 @@ noncomputable def domain12 : Fin (2 ^ 9) ↪ KoalaBear.Ext6 where
     have hj : 2 ^ 12 * (j : ℕ) < 2 ^ 21 := by have := j.isLt; omega
     exact Fin.val_injective (by have := gamma_pow_left_inj hi hj hij; omega)
 
+@[simp]
+lemma domain12_apply (j : Fin (2 ^ 9)) : domain12 j = gamma ^ (2 ^ 12 * j.val) := rfl
+
 open Classical in
 /-- **`(L, 2^12)`-admissibility of the `s = 2^12` progression domain.** The `2^12 · 2^9 = 2^21`
 folded points `γ^(2^12·a) · γ^i = γ^(2^12·a + i)` are pairwise distinct, all exponents
@@ -303,16 +307,16 @@ lemma admissible_domain12 :
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα hβ
     obtain ⟨a, rfl⟩ := hα
     obtain ⟨b, rfl⟩ := hβ
-    simp only [domain12, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hαβ hcontra
+    simp only [domain12_apply, foldOmega, ← pow_add] at hcontra
     have ha := a.isLt; have hb := b.isLt
-    have hab : (a : ℕ) ≠ (b : ℕ) := fun h => hαβ (by rw [h])
+    have hab : (a : ℕ) ≠ (b : ℕ) := fun h => hαβ (congrArg domain12 (Fin.ext h))
     have := gamma_pow_left_inj (a := 2 ^ 12 * a.val + i) (b := 2 ^ 12 * b.val)
       (by omega) (by omega) hcontra
     omega
   · intro α hα i hipos hi hcontra
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα
     obtain ⟨a, rfl⟩ := hα
-    simp only [domain12, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hcontra
+    simp only [domain12_apply, foldOmega, ← pow_add] at hcontra
     have ha := a.isLt
     have := gamma_pow_left_inj (a := 2 ^ 12 * a.val + i) (b := 2 ^ 12 * a.val)
       (by omega) (by omega) hcontra
@@ -337,7 +341,7 @@ open Classical in
 `admissible_domain12`, `gamma_ne_zero`, and `k = 2^20 ≤ s·|L| = 2^12·2^9 =
 2^21`. It uses the same shared order witness `gamma_exists` as the `s = 32` row. -/
 theorem encoder12_injective : Function.Injective encoder12 := by
-  haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
+  have : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
   simp only [encoder12, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap]
   refine (ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective (k := 2 ^ 20) (s := 2 ^ 12)
     domain12 foldOmega admissible_domain12 gamma_ne_zero ?_).comp
@@ -345,7 +349,6 @@ theorem encoder12_injective : Function.Injective encoder12 := by
   rw [Fintype.card_fin]; norm_num
 
 open Classical in
-set_option maxRecDepth 8000 in
 /-- **The `s = 2^12` folded encoder's image is exactly `frsCode`** — the large-folding
 counterpart of `encoder_range`. -/
 theorem encoder12_range :
@@ -366,7 +369,6 @@ theorem encoder12_range :
       LinearEquiv.symm_apply_apply, LinearMap.domRestrict_apply]
 
 open Classical in
-set_option maxRecDepth 8000 in
 /-- **Folded-RS minimum relative distance at `s = 2^12`**, derived through
 `ReedSolomon.Folded.minDist_frsCode` exactly as `minRelHammingDistCode_range_encoder`.
 `minRelHammingDistCode (Set.range ⇑encoder12) = 257/512`, the folded-Singleton distance for
@@ -375,8 +377,8 @@ set_option maxRecDepth 8000 in
 `δ_min = 257/512`. -/
 theorem minRelHammingDistCode_range_encoder12 :
     minRelHammingDistCode (Set.range ⇑encoder12) = (257 / 512 : ℚ≥0) := by
-  haveI : Nonempty (Fin (2 ^ 9)) := inferInstance
-  haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
+  have : Nonempty (Fin (2 ^ 9)) := inferInstance
+  have : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
   have hcode : Set.range ⇑encoder12 =
       (↑(ReedSolomon.Folded.frsCode domain12 (2 ^ 20) (2 ^ 12) foldOmega) :
         Set (Fin (2 ^ 9) → Fin (2 ^ 12) → KoalaBear.Ext6)) := encoder12_range

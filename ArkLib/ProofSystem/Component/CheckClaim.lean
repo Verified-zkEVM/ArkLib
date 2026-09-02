@@ -82,12 +82,13 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
+theorem reduction_completeness [Nonempty σ] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
+  classical
   simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro stmt () valid
-  simp only [relIn, Set.mem_setOf_eq] at valid
+  simp only [relIn, Set.mem_ofPred_eq] at valid
   -- valid : pred stmt
   -- First simplify the reduction run
   have hrun : (reduction oSpec Statement pred).run stmt () =
@@ -126,8 +127,9 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
       (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, stmt, ()), stmt) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     simp [relOut]
 
 /-- The knowledge state function for the `CheckClaim` reduction, mirroring the trivial-verifier
@@ -247,7 +249,8 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
   simp only [Verifier.run, OracleVerifier.toVerifier]
   rw [oracleVerifier_materializeOutput]
   simp only [oracleVerifier]
-  simp [OptionT.run_pure, simulateQ_pure]
+  simp only [MessageIdx, Message, OptionT.run_pure, simulateQ_pure, map_pure,
+    Option.map_some]
   apply OptionT.ext
   rfl
 
@@ -319,22 +322,28 @@ theorem oracleReduction_completeness
       (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, ((stmt, oStmt), ())), (stmt, oStmt)) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
 
 /-- **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure
 pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
 `coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level obligation. The
-named extractor is trivial (`fun _ _ => ()`, there is no witness); since the pass-through output
-equals the input and `oracleRelOut P relIn ⊆ relIn`, accepting into `oracleRelOut.language`
-forces the input into `relIn`. Holds for any coordinate-wise structure `D`. -/
+named extractor is trivial (`fun _ _ _ => some ()`, there is no witness); since the pass-through
+output equals the input and `oracleRelOut P relIn ⊆ relIn`, accepting into `oracleRelOut.language`
+forces the input into `relIn`. Holds for any coordinate-wise structure `D`.
+
+The extractor is **witnessing-agnostic** — it never consults its leaf witnessing — which is the
+shape of a *closing* factor of a chain. -/
 theorem oracleVerifier_coordinateWiseSpecialSoundWith
     (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    (oracleVerifier oSpec Statement OStatement).coordinateWiseSpecialSoundWith init impl D relIn
+    (oracleVerifier oSpec Statement OStatement).coordinateWiseSpecialSoundWith init impl D
+      relIn
       (oracleRelOut P relIn)
-      (fun _ _ => ()) := by
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+      (fun _ _ _ => some ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl
+    D
     (oracleVerifier oSpec Statement OStatement) relIn (oracleRelOut P relIn) (fun _ _ => ())
     (fun s tr hAcc => by
       have hmem := Verifier.mem_of_pure_accepting init impl

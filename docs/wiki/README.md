@@ -11,6 +11,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`quickstart.md`](quickstart.md) - canonical agent command and validation playbook.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of truth.
+- [`module-system.md`](module-system.md) - where ArkLib stands relative to Lean's module system,
+  and what a migration would have to solve.
 - [`blueprint-and-citations.md`](blueprint-and-citations.md) - blueprint workflow, paper
   references, and citation keys.
 - [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
@@ -18,10 +20,14 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`coding-theory-conventions.md`](coding-theory-conventions.md) - notation in scope, which
   numeric type each quantity uses, and the naming and layout choices local to
   `ArkLib/Data/CodingTheory/`.
+- [`polynomial-conventions.md`](polynomial-conventions.md) - semantic axes for nested bivariate
+  and trivariate polynomial representations.
 - [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
+- [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
+  architecture, current implementation status, and staged migration plan.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
   - paper-to-ArkLib status matrix for *Open Problems in List Decoding and Correlated Agreement*.
 
@@ -32,9 +38,11 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `quickstart.md` for commands, validation, and when to run which checks.
   - `repo-map.md` for repo structure and main work areas.
   - `generated-files.md` for derived outputs and source-of-truth rules.
+  - `module-system.md` for ArkLib's position on Lean's module system and the migration blockers.
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
   - `coding-theory-conventions.md` for notation, types and local conventions in `CodingTheory/`.
+  - `polynomial-conventions.md` for nested polynomial axes and semantic evaluation/degree APIs.
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
