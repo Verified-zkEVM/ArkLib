@@ -1101,7 +1101,6 @@ theorem hypercubeSum_zero (H : CMvPolynomial m₀ F) :
       ∑ x : Fin m₀ → Fin 2, H.eval ((x : Fin m₀ → F)) := rfl
 
 omit [NeZero q] [IsCyclotomic Φ] in
-omit [NeZero q] [IsCyclotomic Φ] in
 /-- The full-cube sum of the range summand `F_{0,τ₀}` equals `H₀(τ₀)`.
 
 ### Deliberate divergence: no `1_{≤μ}` indicator
@@ -1301,7 +1300,6 @@ theorem sum_cube_rowIndexed (τ₁ : Fin m₁ → F) (f : Fin n → F) :
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hk
   rw [dif_pos hk, dif_pos k.isLt, mul_comm]
 
-omit [NeZero q] in
 omit [NeZero q] in
 /-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
 
