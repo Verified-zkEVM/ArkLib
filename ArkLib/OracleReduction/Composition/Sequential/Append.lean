@@ -27,7 +27,7 @@ open OracleComp OracleSpec SubSpec
 
 -- The `Prover.append_run` transport ladder (`section AppendRunHelpers` below) pushes this file
 -- past the default cap.
-set_option linter.style.longFile 2700
+set_option linter.style.longFile 2800
 
 universe u v
 
@@ -180,6 +180,114 @@ def Reduction.append (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec
       Reduction oSpec Stmt₁ Wit₁ Stmt₃ Wit₃ (pSpec₁ ++ₚ pSpec₂) where
   prover := Prover.append R₁.prover R₂.prover
   verifier := Verifier.append R₁.verifier R₂.verifier
+
+/-! ## Challenge-sampling transport across `++ₚ`
+
+The security definitions draw challenges by `uniformSample`-ing the protocol's challenge type at a
+given index, using the `SampleableType` instance found there. For an appended protocol that
+instance is built by `Fin.fappend₂`, so it is not *syntactically* the component's instance — it is
+the component's instance transported along `challenge_append_inl` / `challenge_append_inr`.
+
+Every distributional comparison between an appended protocol and its components needs to know that
+this transport is the identity on distributions. That is what the lemmas below establish. They are
+the `SampleableType` analogue of `messageInterfaceInl` / `messageInterfaceInr` below, and are
+proved the same way, by computing the `Fin.fappend₂` with `Fin.fappend₂_left` / `_right`. -/
+
+section ChallengeSampling
+
+variable [inst₁ : ∀ i, SampleableType (pSpec₁.Challenge i)]
+    [inst₂ : ∀ i, SampleableType (pSpec₂.Challenge i)]
+
+/-- Transporting a uniform sample along an equality of types, when the two `SampleableType`
+instances correspond across that equality, leaves the distribution unchanged. -/
+private theorem uniformSample_cast {α β : Type} (h : α = β)
+    (instα : SampleableType α) (instβ : SampleableType β) (hI : HEq instα instβ) :
+    cast h <$> (@uniformSample α instα) = (@uniformSample β instβ) := by
+  subst h
+  cases hI
+  have hc : (cast (rfl : α = α)) = id := rfl
+  rw [hc, id_map]
+
+/-- The appended protocol's `SampleableType` instance at a left-injected challenge index is the
+first component's instance, transported along `challenge_append_inl`. -/
+private theorem challengeSampleableInl (i : pSpec₁.ChallengeIdx) : HEq (inst₁ i)
+    (inferInstance : SampleableType ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))) := by
+  rcases i with ⟨i, hi⟩
+  let u : (i : Fin m) →
+      (h : pSpec₁.dir i = .V_to_P) → SampleableType (pSpec₁.«Type» i) :=
+    fun i h => inst₁ ⟨i, h⟩
+  let v : (i : Fin n) →
+      (h : pSpec₂.dir i = .V_to_P) → SampleableType (pSpec₂.«Type» i) :=
+    fun i h => inst₂ ⟨i, h⟩
+  have hf : HEq
+      (Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+        (_ : dir = Direction.V_to_P) → SampleableType type)
+        u v (Fin.castAdd n i))
+      (u i) := by
+    rw [Fin.fappend₂_left]
+    exact cast_heq _ _
+  have hDomain : (pSpec₁.dir i = Direction.V_to_P) =
+      ((Fin.vappend pSpec₁.dir pSpec₂.dir) (Fin.castAdd n i) = Direction.V_to_P) :=
+    congrArg (· = Direction.V_to_P) (Fin.vappend_left pSpec₁.dir pSpec₂.dir i).symm
+  have ha : HEq hi (ChallengeIdx.inl ⟨i, hi⟩).property :=
+    (cast_heq hDomain hi).symm.trans (heq_of_eq (Subsingleton.elim _ _))
+  change HEq (inst₁ ⟨i, hi⟩)
+    ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+      (_ : dir = Direction.V_to_P) → SampleableType type)
+      u v (Fin.castAdd n i)) (ChallengeIdx.inl ⟨i, hi⟩).property)
+  exact heqFunApply hDomain
+    (congrArg SampleableType (Fin.vappend_left pSpec₁.«Type» pSpec₂.«Type» i).symm)
+    hf.symm ha
+
+/-- The appended protocol's `SampleableType` instance at a right-injected challenge index is the
+second component's instance, transported along `challenge_append_inr`. -/
+private theorem challengeSampleableInr (i : pSpec₂.ChallengeIdx) : HEq (inst₂ i)
+    (inferInstance : SampleableType ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))) := by
+  rcases i with ⟨i, hi⟩
+  let u : (i : Fin m) →
+      (h : pSpec₁.dir i = .V_to_P) → SampleableType (pSpec₁.«Type» i) :=
+    fun i h => inst₁ ⟨i, h⟩
+  let v : (i : Fin n) →
+      (h : pSpec₂.dir i = .V_to_P) → SampleableType (pSpec₂.«Type» i) :=
+    fun i h => inst₂ ⟨i, h⟩
+  have hf : HEq
+      (Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+        (_ : dir = Direction.V_to_P) → SampleableType type)
+        u v (Fin.natAdd m i))
+      (v i) := by
+    rw [Fin.fappend₂_right]
+    exact cast_heq _ _
+  have hDomain : (pSpec₂.dir i = Direction.V_to_P) =
+      ((Fin.vappend pSpec₁.dir pSpec₂.dir) (Fin.natAdd m i) = Direction.V_to_P) :=
+    congrArg (· = Direction.V_to_P) (Fin.vappend_right pSpec₁.dir pSpec₂.dir i).symm
+  have ha : HEq hi (ChallengeIdx.inr ⟨i, hi⟩).property :=
+    (cast_heq hDomain hi).symm.trans (heq_of_eq (Subsingleton.elim _ _))
+  change HEq (inst₂ ⟨i, hi⟩)
+    ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+      (_ : dir = Direction.V_to_P) → SampleableType type)
+      u v (Fin.natAdd m i)) (ChallengeIdx.inr ⟨i, hi⟩).property)
+  exact heqFunApply hDomain
+    (congrArg SampleableType (Fin.vappend_right pSpec₁.«Type» pSpec₂.«Type» i).symm)
+    hf.symm ha
+
+/-- **Challenge transport, left.** Sampling the appended protocol's challenge at a left-injected
+index and casting back along `challenge_append_inl` is exactly sampling the first component's
+challenge. -/
+theorem uniformSample_challenge_append_inl (i : pSpec₁.ChallengeIdx) :
+    cast (challenge_append_inl (pSpec₂ := pSpec₂) i) <$>
+        ($ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i)))
+      = ($ᵗ (pSpec₁.Challenge i)) :=
+  uniformSample_cast _ _ _ (challengeSampleableInl (pSpec₂ := pSpec₂) i).symm
+
+/-- **Challenge transport, right.** The `challenge_append_inr` analogue of
+`uniformSample_challenge_append_inl`. -/
+theorem uniformSample_challenge_append_inr (i : pSpec₂.ChallengeIdx) :
+    cast (challenge_append_inr (pSpec₁ := pSpec₁) i) <$>
+        ($ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i)))
+      = ($ᵗ (pSpec₂.Challenge i)) :=
+  uniformSample_cast _ _ _ (challengeSampleableInr (pSpec₁ := pSpec₁) i).symm
+
+end ChallengeSampling
 
 section OracleProtocol
 
@@ -2384,6 +2492,38 @@ theorem append_knowledgeSoundness
       (V₁.append V₂).knowledgeSoundness init impl
         rel₁ rel₃ (knowledgeError₁ + knowledgeError₂) := by
   sorry
+
+/-! ### Two blockers for the RBR composition theorems below
+
+Recorded from an attempt at `append_rbrSoundness`, so they are not rediscovered.
+
+**1. `StateFunction.append` is not a usable witness past the seam.** Its `toFun` at a round index
+`> m` is exactly `S₂ ⟨roundIdx - m⟩ (verify stmt tr₁) tr₂` — it keeps no record of `S₁`'s verdict.
+Applying `h₂` needs `h₂`'s precondition `verify stmt tr₁ ∉ lang₂`, and past the seam that is not
+derivable: only the *seam* round carries `¬ S₁ (last m)` as its hypothesis (whence
+`verify_notMem_of_not_toFun` applies). At a later challenge round `i₂ > 0` the bad transition is
+`¬ S₂ i₂.castSucc ∧ S₂ i₂.succ` with nothing said about `S₁`, and `stmt₂` may well lie in `lang₂`
+— nothing in `StateFunction` forces a *true* state to stay true (`toFun_next` propagates falsity
+only, and only across `P_to_V` rounds), so `S₂` can go true → false → true with no bound from `h₂`.
+
+The fix is a different witness, not a different proof: score the composite past the seam as
+`S₁ (last m) stmt tr₁ ∨ S₂ ⟨roundIdx - m⟩ (verify stmt tr₁) tr₂` ("the adversary is winning if it
+already won the first half"). Then the bad transition at `i₂ > 0` carries `¬ S₁ (last m)` as a
+conjunct, which is exactly what `verify_notMem_of_not_toFun` needs. Since `rbrSoundness` is an `∃`
+over state functions this can be a *new* definition; `StateFunction.append` need not change, though
+its three obligations would have to be reproved for the disjunctive variant.
+
+**2. Prover restriction is missing.** Both halves need it, not just soundness. `rbrSoundness`
+quantifies over an arbitrary prover for `pSpec₁ ++ₚ pSpec₂`, while `h₁` / `h₂` quantify over
+provers for the components, so applying either requires restricting the combined prover to a
+component and a lemma relating the two `runToRound` distributions across `liftAppendLeft` /
+`liftAppendRight`. This is the `-- TODO: Need to define a function that "extracts" a second prover`
+item in `namespace Prover` above, and is comparable in size to the `AppendRunHelpers` block. The
+right half additionally needs its restriction to be parameterised by the (random) first-half
+transcript, plus a conditioning argument over that randomness.
+
+The challenge-transport lemmas these proofs will need are proved:
+`uniformSample_challenge_append_inl` / `_inr`. -/
 
 /-- If two verifiers satisfy round-by-round soundness with compatible languages and respective RBR
     soundness errors, then their sequential composition also satisfies round-by-round soundness.
