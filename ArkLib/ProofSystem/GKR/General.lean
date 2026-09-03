@@ -25,10 +25,14 @@ relation:
 So each layer reduction carries `layerRel i.castSucc` to `layerRel i.succ`, which is exactly
 the shape `Reduction.seqCompose_perfectCompleteness` consumes.
 
-The resulting `gkrReduction_perfectCompleteness` reduces a true claim about the *output* layer
-to a true claim about the *input* layer. It stops there: the reduction hands back a claim, and
-nothing here checks it. Neither end of the real protocol is present — no opening from a claimed
-circuit output, and no terminal check of the surviving claim against the input.
+The resulting `Materialized.gkrReduction_perfectCompleteness` reduces a true claim about the
+*output* layer to a true claim about the *input* layer. It stops there: the reduction hands back a
+claim, and nothing here checks it. Neither end of the real protocol is present — no opening from a
+claimed circuit output, and no terminal check of the surviving claim against the input.
+
+Everything here therefore lives under `Materialized`, because the verifier is handed the honest
+next-layer extension through the statement lens rather than querying it. That is a correct
+relation-level statement, but it is not the GKR verifier, and soundness for it would be vacuous.
 
 Both are supplied in `OracleLayer.lean`, where the protocol is restated as an `OracleReduction`.
 `Oracle.gkrFull_perfectCompleteness` runs from `evalCircuit c input = y` to the verifier
@@ -47,6 +51,14 @@ open MvPolynomial Polynomial OracleSpec OracleComp ProtocolSpec
 
 variable (R : Type) [CommRing R] [IsDomain R] [DecidableEq R] [SampleableType R] (n : ℕ)
 variable {k : ℕ} (c : Circuit k n) (input : Index k → R)
+
+/-! ## Materialized scaffolding
+
+The verifier below receives the honest next-layer extension, so it is not the GKR verifier. The
+algebra and the chaining argument are correct, which is why this is kept; the actual protocol is
+`Oracle.gkrFull` in `OracleLayer.lean`.
+-/
+namespace Materialized
 
 /-- The chain relation: at layer `i`, `value` is what layer `i`'s multilinear extension
 gives at `point`. -/
@@ -92,7 +104,8 @@ noncomputable def gkrReduction :
     (Stmt := fun i => GKRStatement R n k i) (Wit := fun _ => Unit)
     (gkrLayer R n c input)
 
-/-- **Perfect completeness of GKR.** . This is our capstone theorem. -/
+/-- Perfect completeness of the materialized chain. Not the protocol's capstone — see
+`Oracle.gkrFull_perfectCompleteness`. -/
 theorem gkrReduction_perfectCompleteness :
     (gkrReduction R n c input).perfectCompleteness init impl
       (layerRel R n c input 0) (layerRel R n c input (Fin.last n)) :=
@@ -100,5 +113,7 @@ theorem gkrReduction_perfectCompleteness :
     (rel := layerRel R n c input)
     (R := gkrLayer R n c input)
     (h := fun l => gkrLayer_perfectCompleteness R n c input l)
+
+end Materialized
 
 end GKR

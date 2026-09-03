@@ -17,9 +17,9 @@ import ArkLib.ProofSystem.Component.CheckClaim
 of what a verifier can afford to compute: the verifier receives its whole input as data, so
 nothing stops it from holding the next layer's multilinear extension — and in the plain
 development it does, because the statement lens materializes `roundPolyFinOracle … V` and
-`gkrLayer` instantiates `V := layerMLE`. Completeness still holds, but the object proved complete
-is a verifier parameterized by the answer it is meant to check, and soundness for it would be a
-theorem about the wrong protocol.
+`Materialized.gkrLayer` instantiates `V := layerMLE`. Completeness still holds, but the object
+proved complete is a verifier parameterized by the answer it is meant to check, and soundness for
+it would be a theorem about the wrong protocol.
 
 This file restates the whole protocol as an `OracleReduction`, where the verifier receives only
 the challenges and reaches everything else through queries. Concretely:
