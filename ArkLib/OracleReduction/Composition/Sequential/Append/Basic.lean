@@ -1,50 +1,37 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
+import ArkLib.ToMathlib.Logic.HEq
 import ArkLib.OracleReduction.Security.RoundByRound
 import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
-  # Sequential Composition of Two (Oracle) Reductions
+  # Sequential Composition: The `append` Operations
 
-  This file gives the definition & properties of the sequential composition of two (oracle)
-  reductions. For composition to be valid, we need that the output context (statement + oracle
-  statement + witness) for the first (oracle) reduction is the same as the input context for the
-  second (oracle) reduction.
+  The `append` operations themselves — `Prover.append`, `Verifier.append`, `Reduction.append`, and
+  their oracle-protocol counterparts `OracleVerifier.append` / `OracleReduction.append` — together
+  with the challenge-sampling transport lemmas across `++ₚ`. For composition to be valid, we need
+  that the output context (statement + oracle statement + witness) for the first (oracle) reduction
+  is the same as the input context for the second (oracle) reduction.
 
   The composition logic for `ProtocolSpec` and its associated structures lives in
   `ProtocolSpec/SeqCompose.lean`; we use the definitions from there.
 
-  We will prove that the composition of reductions preserve all completeness & soundness properties
-  of the reductions being composed (with extra conditions on the extractor).
+  This is the base of the four-module `Append` tree; see `Composition/Sequential/Append.lean` for
+  the umbrella and the routing to `Append.StateFunction`, `Append.Execution`, and
+  `Append.Security`, the last of which carries the completeness & soundness composition theorems.
 -/
 
 open OracleComp OracleSpec SubSpec
-
-universe u v
-
-section find_home
-
-variable {ι ι' : Type} {spec : OracleSpec ι} {spec' : OracleSpec ι'} {α β : Type}
-    (oa : OracleComp spec α)
-
-end find_home
 
 open ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
   {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-
-private theorem heqFunApply {A A' : Sort u} {B B' : Sort v}
-    (hA : A = A') (hB : B = B') {f : A → B} {f' : A' → B'}
-    (hf : HEq f f') {a : A} {a' : A'} (ha : HEq a a') : HEq (f a) (f' a') := by
-  subst hA
-  subst hB
-  exact heq_of_eq (by rw [eq_of_heq hf, eq_of_heq ha])
 
 private theorem simulateQueryAlongHEq {A B : Type}
     (OA : OracleInterface A) (OB : OracleInterface B)
@@ -163,6 +150,102 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
         nonpos_iff_eq_zero, hn, ↓reduceDIte, eq_rec_constant] at state
       exact P₂.output (dcast (by simp [this, Fin.last]) state)
 
+/-! ### Computation rules for `Prover.append`
+
+`Prover.append` defines `PrvState` by a `Fin.append` and `output` by a `dif` on whether the second
+protocol is empty, so both fields only reduce once the round index has been placed relative to the
+seam. The four lemmas below do that placement once, and are what every proof about an appended
+prover — `Prover.OutputIsPure.append` just below, and the `runToRound` ladder in
+`Append/Execution.lean` — starts from. -/
+
+namespace Prover
+
+variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
+    {P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂}
+
+/-- Below the seam, the appended prover's state family is the first prover's. -/
+theorem append_prvState_left (k : Fin (m + n + 1)) (j : Fin (m + 1)) (hkj : k.val = j.val) :
+    (P₁.append P₂).PrvState k = P₁.PrvState j := by
+  change (Fin.append (m := m + 1) P₁.PrvState (Fin.tail P₂.PrvState)
+    ∘ Fin.cast (by omega)) k = P₁.PrvState j
+  have hcast : Fin.cast (show m + n + 1 = m + 1 + n by omega) k = Fin.castAdd n j := by
+    ext; simpa using hkj
+  simp only [Function.comp_apply, hcast, Fin.append_left]
+
+/-- Past the seam, the appended prover's state family is the second prover's. -/
+theorem append_prvState_right (k : Fin (m + n + 1)) (j : Fin (n + 1)) (hk : m < k.val)
+    (hkj : k.val = m + j.val) :
+    (P₁.append P₂).PrvState k = P₂.PrvState j := by
+  change (Fin.append (m := m + 1) P₁.PrvState (Fin.tail P₂.PrvState)
+    ∘ Fin.cast (by omega)) k = P₂.PrvState j
+  have hcast : Fin.cast (show m + n + 1 = m + 1 + n by omega) k
+      = Fin.natAdd (m + 1) ⟨j.val - 1, by omega⟩ := by
+    ext; simp; omega
+  simp only [Function.comp_apply, hcast, Fin.append_right, Fin.tail]
+  congr 1
+  ext; simp; omega
+
+/-- When the second protocol has rounds, the appended prover's output step is the second prover's,
+on the transported final state. -/
+theorem append_output_pos (hn : n ≠ 0)
+    (state : (P₁.append P₂).PrvState (Fin.last (m + n)))
+    (state₂ : P₂.PrvState (Fin.last n)) (hst : HEq state state₂) :
+    (P₁.append P₂).output state = P₂.output state₂ := by
+  conv_lhs => unfold Prover.append
+  dsimp only
+  rw [dif_neg hn]
+  exact congrArg P₂.output
+    (eq_of_heq ((heq_dcast _ _).trans ((heq_eqMp _ _).trans hst)))
+
+/-- When the second protocol is empty, the seam collapses into the output step: the appended
+prover's output runs `P₁.output`, feeds the result through `P₂.input`, then runs `P₂.output`. -/
+theorem append_output_zero (hn : n = 0)
+    (state : (P₁.append P₂).PrvState (Fin.last (m + n)))
+    (state₁ : P₁.PrvState (Fin.last m)) (hst : HEq state state₁) :
+    (P₁.append P₂).output state
+      = (do let ctx ← P₁.output state₁
+            P₂.output (dcast (by simp [hn]) (P₂.input ctx))) := by
+  conv_lhs => unfold Prover.append
+  dsimp only
+  rw [dif_pos hn]
+  congr 1
+  exact congrArg P₁.output (eq_of_heq ((heq_eqMp _ _).trans hst))
+
+/-- Purity of the output step is preserved by binary sequential composition of provers.
+
+The appended prover's `output` field (see `Prover.append`) splits on whether the second protocol is
+empty: when `pSpec₂` has rounds it is `P₂.output` on the transported final state
+(`append_output_pos`), and when `pSpec₂` is empty the seam collapses into the output step, making it
+`P₁.output`, then `P₂.input`, then `P₂.output` (`append_output_zero`). Both branches are pure as
+soon as `P₁` and `P₂` have pure output.
+
+This is the prover-side analogue of `Verifier.IsPure.append`, and it is what lets a chain of binary
+appends discharge the `Prover.OutputIsPure` hypothesis of `Prover.append_run` from per-factor
+purity. `Prover.instOutputIsPureAppend` below is the instance form, so that nested appends
+propagate automatically. -/
+theorem OutputIsPure.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+    (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
+    (h₁ : P₁.OutputIsPure) (h₂ : P₂.OutputIsPure) :
+    (P₁.append P₂).OutputIsPure := by
+  obtain ⟨f₁, hf₁⟩ := h₁.output_is_pure
+  obtain ⟨f₂, hf₂⟩ := h₂.output_is_pure
+  by_cases hn : n = 0
+  · subst hn
+    refine ⟨fun st =>
+      f₂ (dcast (by simp) (P₂.input (f₁ (cast (append_prvState_left _ _ (by simp)) st)))),
+      fun st => ?_⟩
+    rw [append_output_zero rfl st _ (cast_heq _ st).symm, hf₁, pure_bind, hf₂]
+  · refine ⟨fun st =>
+      f₂ (cast (append_prvState_right _ _ (by simp; omega) (by simp)) st), fun st => ?_⟩
+    rw [append_output_pos hn st _ (cast_heq _ st).symm, hf₂]
+
+/-- Instance form of `Prover.OutputIsPure.append`, so that nested appends discharge the
+`Prover.append_run` hypothesis automatically. -/
+instance instOutputIsPureAppend [h₁ : P₁.OutputIsPure] [h₂ : P₂.OutputIsPure] :
+    (P₁.append P₂).OutputIsPure := OutputIsPure.append P₁ P₂ h₁ h₂
+
+end Prover
+
 /-- Composition of verifiers. Return the conjunction of the decisions of the two verifiers. -/
 def Verifier.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) :
@@ -231,7 +314,7 @@ private theorem challengeSampleableInl (i : pSpec₁.ChallengeIdx) : HEq (inst�
     ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
       (_ : dir = Direction.V_to_P) → SampleableType type)
       u v (Fin.castAdd n i)) (ChallengeIdx.inl ⟨i, hi⟩).property)
-  exact heqFunApply hDomain
+  exact heq_apply hDomain
     (congrArg SampleableType (Fin.vappend_left pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 
@@ -262,7 +345,7 @@ private theorem challengeSampleableInr (i : pSpec₂.ChallengeIdx) : HEq (inst�
     ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
       (_ : dir = Direction.V_to_P) → SampleableType type)
       u v (Fin.natAdd m i)) (ChallengeIdx.inr ⟨i, hi⟩).property)
-  exact heqFunApply hDomain
+  exact heq_apply hDomain
     (congrArg SampleableType (Fin.vappend_right pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 
@@ -318,7 +401,7 @@ private theorem messageInterfaceInl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
     ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
       (_ : dir = Direction.P_to_V) → OracleInterface type)
       u v (Fin.castAdd n i)) (MessageIdx.inl ⟨i, hi⟩).property)
-  exact heqFunApply hDomain
+  exact heq_apply hDomain
     (congrArg OracleInterface (Fin.vappend_left pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 
@@ -347,7 +430,7 @@ private theorem messageInterfaceInr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i)
     ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
       (_ : dir = Direction.P_to_V) → OracleInterface type)
       u v (Fin.natAdd m i)) (MessageIdx.inr ⟨i, hi⟩).property)
-  exact heqFunApply hDomain
+  exact heq_apply hDomain
     (congrArg OracleInterface (Fin.vappend_right pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 

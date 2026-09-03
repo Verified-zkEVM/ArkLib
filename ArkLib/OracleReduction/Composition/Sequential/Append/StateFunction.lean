@@ -20,8 +20,6 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
 
 open OracleComp OracleSpec SubSpec
 
-universe u v
-
 open ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
@@ -167,12 +165,6 @@ These are index-bookkeeping lemmas for partial transcripts of an appended protoc
 stated with `HEq` because the round indices involved (`min k m`, `k - m`, ...) are only
 *propositionally* equal to the ones appearing in the goals. -/
 
-/-- Transporting along a type equality is the identity up to `HEq`. Used to peel off the
-coercions that `Verifier.StateFunction.append`'s `toFun` inserts when it re-indexes a partial
-transcript. -/
-private lemma heq_eqMp {α β : Sort u} (h : α = β) (a : α) : HEq (Eq.mp h a) a := by
-  rw [eq_mp_eq_cast]; exact cast_heq _ _
-
 /-- Extensionality for partial transcripts sitting at propositionally equal round indices. -/
 private lemma transcript_heq_ext {N : ℕ} {pSpec : ProtocolSpec N} {k k' : Fin (N + 1)}
     {T : pSpec.Transcript k} {T' : pSpec.Transcript k'} (hk : k.val = k'.val)
@@ -190,25 +182,6 @@ private lemma transcript_fst_apply {k : Fin (m + n + 1)}
 private lemma transcript_snd_apply {k : Fin (m + n + 1)}
     (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) (i : ℕ) (hi : i < k.val - m) (hi' : m + i < k.val) :
     HEq (T.snd ⟨i, hi⟩) (T ⟨m + i, hi'⟩) := cast_heq _ _
-
-/-- Below the last round, `Transcript.concat` agrees with the transcript it extends. -/
-private lemma transcript_concat_apply_lt {N : ℕ} {pSpec : ProtocolSpec N} {k : Fin N}
-    (T : pSpec.Transcript k.castSucc) (msg : pSpec.«Type» k) (i : ℕ) (hi : i < k.val)
-    (hi' : i < (k.succ : Fin (N + 1)).val) :
-    HEq (T.concat msg ⟨i, hi'⟩) (T ⟨i, hi⟩) := by
-  unfold Transcript.concat Fin.snoc
-  rw [dif_pos hi]
-  exact cast_heq _ _
-
-/-- At the last round, `Transcript.concat` returns the newly appended message. -/
-private lemma transcript_concat_apply_last {N : ℕ} {pSpec : ProtocolSpec N} {k : Fin N}
-    (T : pSpec.Transcript k.castSucc) (msg : pSpec.«Type» k) (i : ℕ) (hik : i = k.val)
-    (hi' : i < (k.succ : Fin (N + 1)).val) :
-    HEq (T.concat msg ⟨i, hi'⟩) msg := by
-  subst hik
-  unfold Transcript.concat Fin.snoc
-  rw [dif_neg (Nat.lt_irrefl k.val)]
-  exact cast_heq _ _
 
 /-- A state function's value only depends on the round index, statement, and transcript up to
 (heterogeneous) equality. -/
@@ -337,17 +310,34 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 
 /-- The sequential composition of two state functions.
 
-Rounds `0, …, m` of the appended protocol are scored by `S₁`, and rounds `m+1, …, m+n` are scored
-by `S₂`, started at the statement `verify` produces from the first half of the transcript. In
-particular the second half is scored by `S₂` **alone**: the first half's verdict is not carried
-along as a conjunct.
+Rounds `0, …, m` of the appended protocol are scored by `S₁`. Rounds `m+1, …, m+n` are scored
+**disjunctively**, as
 
-The reason is that the *only* thing a `StateFunction` promises about a "bad" state is
-`toFun_full`, and at a full transcript of the appended protocol it is `V₂` that produces the
-output statement. Conjoining `S₁` would let the composite be bad on account of its first half
-while `S₂` — the half that actually decides — is good and `V₂` accepts, contradicting
-`toFun_full`. Handing the verdict to whichever half owns the last round is what makes the
-composite honest.
+    S₁ ⟨m, _⟩ stmt₁ transcript₁ ∨ S₂ ⟨roundIdx - m, _⟩ (verify stmt₁ transcript₁) …
+
+where `transcript₁` is the completed first half: the composite is winning if the adversary already
+won the first half, or is winning the second. The first half's verdict is therefore *retained*
+past the seam, as a disjunct.
+
+Neither of the two other candidates works, and it is worth recording why:
+
+* **`S₂` alone.** The composite then forgets whether `S₁` had already been won, so a past-seam bad
+  transition is `¬ S₂ i₂.castSucc ∧ S₂ i₂.succ` with nothing known about `S₁`. That does not yield
+  `verify stmt tr₁ ∉ lang₂` — the precondition of `S₂`'s own rbr-soundness hypothesis — and
+  `Verifier.append_rbrSoundness` cannot be proved from it.
+* **`S₁ ∧ S₂`.** `toFun_full` breaks instead: the *only* thing a `StateFunction` promises about a
+  "bad" state is `toFun_full`, and at a full transcript it is `V₂` that produces the output
+  statement. From `¬(S₁ ∧ S₂)` one cannot extract `¬ S₂`, so `S₂.toFun_full` never fires.
+* **`S₁ ∨ S₂`.** `¬ toFun` gives *both* `¬ S₁ ⟨m, _⟩` and `¬ S₂`. The second discharges
+  `toFun_full` via `S₂.toFun_full`; the first is exactly what `verify_notMem_of_not_toFun`
+  consumes to supply `verify stmt tr₁ ∉ lang₂` at every past-seam bad transition.
+
+The disjunct is a constant past the seam, since `transcript₁` no longer changes, so it is not
+expected to cost anything in the error bound: a past-seam bad transition becomes
+`¬ S₁ ⟨m,_⟩ ∧ ¬ S₂ i₂.castSucc ∧ S₂ i₂.succ`, which is at most `S₂`'s own bad transition at that
+round. Only the three `StateFunction` obligations are discharged here;
+`Verifier.append_rbrSoundness` is still admitted for an unrelated reason (prover restriction — see
+the note above it).
 
 The hand-off at round `m` uses `hVerify`: `V₁` is deterministic, so there is a single
 intermediate statement `verify stmt tr₁` to start `S₂` from, and `S₁` rejecting the first half
@@ -432,12 +422,12 @@ def StateFunction.append
       have hi'' : i < j.val + 1 := hi'
       rcases Nat.lt_or_ge i j.val with hij | hij
       · exact ((transcript_fst_apply _ i hi hi').trans
-          (transcript_concat_apply_lt tr msg i hij hi')).trans
-            ((transcript_concat_apply_lt T₁ (cast htype msg) i hij hi').trans (cast_heq _ _)).symm
+          (Transcript.concat_apply_lt tr msg i hij hi')).trans
+            ((Transcript.concat_apply_lt T₁ (cast htype msg) i hij hi').trans (cast_heq _ _)).symm
       · obtain rfl : i = j.val := le_antisymm (by omega) hij
         exact ((transcript_fst_apply _ j.val hi hi').trans
-          (transcript_concat_apply_last tr msg j.val rfl hi')).trans
-            ((transcript_concat_apply_last T₁ (cast htype msg) j.val rfl hi').trans
+          (Transcript.concat_apply_last tr msg j.val rfl hi')).trans
+            ((Transcript.concat_apply_last T₁ (cast htype msg) j.val rfl hi').trans
               (cast_heq _ _)).symm
     · -- Case 2: the boundary round `j.val = m`. The hypothesis is the `then` branch (`S₁` at its
       -- last round) and the goal is the `else` branch (`S₂` at its round `1`). The appended
@@ -460,7 +450,7 @@ def StateFunction.append
           HEq ((Transcript.concat msg tr).fst ⟨i.val, h1⟩) (tr.fst ⟨i.val, h2⟩) := by
         intro i h1 h2
         exact ((transcript_fst_apply _ i.val h1 (by omega)).trans
-          (transcript_concat_apply_lt tr msg i.val (by omega) (by omega))).trans
+          (Transcript.concat_apply_lt tr msg i.val (by omega) (by omega))).trans
             (transcript_fst_apply tr i.val h2 (by omega)).symm
       rw [dif_pos (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
       -- `S₁` rejects the completed first half.  This is the shared ingredient: it rules out the
@@ -501,8 +491,8 @@ def StateFunction.append
         intro i hi hi'
         obtain rfl : i = 0 := by have : i < 0 + 1 := hi'; omega
         exact ((transcript_snd_apply (Transcript.concat msg tr) 0 hi (by omega)).trans
-          (transcript_concat_apply_last tr msg (m + 0) (by omega) (by omega))).trans
-            ((transcript_concat_apply_last _ (cast htype₂ msg) 0 rfl hi').trans
+          (Transcript.concat_apply_last tr msg (m + 0) (by omega) (by omega))).trans
+            ((Transcript.concat_apply_last _ (cast htype₂ msg) 0 rfl hi').trans
               (cast_heq _ _)).symm
       refine S₂.toFun_next ⟨0, hn⟩ hDir₂ _ _ h0 (cast htype₂ msg)
         (stateFunction_toFun_heq S₂
@@ -526,7 +516,7 @@ def StateFunction.append
           HEq ((Transcript.concat msg tr).fst ⟨i.val, h1⟩) (tr.fst ⟨i.val, h2⟩) := by
         intro i h1 h2
         exact ((transcript_fst_apply _ i.val h1 (by omega)).trans
-          (transcript_concat_apply_lt tr msg i.val (by omega) (by omega))).trans
+          (Transcript.concat_apply_lt tr msg i.val (by omega) (by omega))).trans
             (transcript_fst_apply tr i.val h2 (by omega)).symm
       rw [dif_neg (show ¬ ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
       intro hgoal
@@ -546,12 +536,12 @@ def StateFunction.append
         have hi2 : i < j.val - m + 1 := hi'
         rcases Nat.lt_or_ge i (j.val - m) with hij | hij
         · exact ((transcript_snd_apply (Transcript.concat msg tr) i hi (by omega)).trans
-            (transcript_concat_apply_lt tr msg (m + i) (by omega) (by omega))).trans
-              ((transcript_concat_apply_lt tr.snd (cast htype₂ msg) i hij hi').trans
+            (Transcript.concat_apply_lt tr msg (m + i) (by omega) (by omega))).trans
+              ((Transcript.concat_apply_lt tr.snd (cast htype₂ msg) i hij hi').trans
                 (transcript_snd_apply tr i hij (by omega))).symm
         · exact ((transcript_snd_apply (Transcript.concat msg tr) i hi (by omega)).trans
-            (transcript_concat_apply_last tr msg (m + i) (by omega) (by omega))).trans
-              ((transcript_concat_apply_last tr.snd (cast htype₂ msg) i
+            (Transcript.concat_apply_last tr msg (m + i) (by omega) (by omega))).trans
+              ((Transcript.concat_apply_last tr.snd (cast htype₂ msg) i
                 (by change i = j.val - m; omega) hi').trans (cast_heq _ _)).symm
       have hnot₂ : ¬ S₂.toFun (⟨j.val - m, hkn⟩ : Fin n).castSucc
           (verify stmt fun i => tr.fst ⟨i.val,

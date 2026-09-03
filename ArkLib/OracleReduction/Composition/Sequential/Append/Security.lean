@@ -73,10 +73,11 @@ theorem append_completeness
   have h₁' := h₁ stmtIn witIn hRelIn
   clear h₁
   unfold Reduction.append Reduction.run
-  -- `Prover.append_run` requires `R₁.prover.OutputIsPure` (see its docstring), which is not
-  -- available for an arbitrary `R₁`, so it does not fire as a `simp` lemma here. Discharging it
-  -- will mean either assuming that purity or reasoning about the seam ordering directly.
-  simp [Verifier.append_run]
+  -- `Verifier.append_run` splits the verifier side, but `Prover.append_run` requires
+  -- `R₁.prover.OutputIsPure` (see its docstring), which is not available for an arbitrary `R₁`, so
+  -- the prover side does not split here. Discharging this will mean either assuming that purity or
+  -- reasoning about the seam ordering directly. Nothing is `simp`ed before the `sorry`, so that the
+  -- admitted goal stays the unmassaged statement rather than one particular normal form.
   sorry
 
 /-- If two reductions satisfy perfect completeness with compatible relations, then their

@@ -988,10 +988,12 @@ function of the prover's final state, wrapped in `pure`.
 
 This is deliberately kept separate from `Prover.IsPure`, which constrains `sendMessage` instead.
 Sequential composition needs purity of `output` alone, so bundling the two would impose a stronger
-hypothesis than the composition theorems require. See `Prover.append_run`, whose statement is
-*false* without this assumption: the appended prover runs `P₁.output` from inside the seam round,
-after that round's challenge has already been drawn, so an `output` step that queries oracles
-issues its queries in a different order than running the two provers separately does. -/
+hypothesis than the composition theorems require. See `Prover.append_run`, which is not provable in
+general without this assumption: when the second protocol opens with a verifier-to-prover round,
+the appended prover runs `P₁.output` from inside that seam round, after the round's challenge has
+already been drawn, so an `output` step that queries oracles issues its queries in a different
+order than running the two provers separately does. That docstring records which cases are in fact
+unconditional, and names the in-tree prover that fails the assumption. -/
 class Prover.OutputIsPure (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) where
     output_is_pure : ∃ output : _ → _, ∀ st, P.output st = pure (output st)
 

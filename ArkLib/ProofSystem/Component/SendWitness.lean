@@ -69,6 +69,10 @@ def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec W
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨stmt, wit⟩ => pure (⟨stmt, wit⟩, ())
 
+/-- The `SendWitness` prover has pure output: it pairs up the state it already holds, with no
+  oracle query. -/
+instance instOutputIsPure : (prover oSpec Statement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 @[inline, specialize]
 def verifier : Verifier oSpec Statement (Statement × Witness) (pSpec Witness) where
   verify := fun stmt transcript => pure ⟨stmt, transcript 0⟩
@@ -225,6 +229,11 @@ def oracleProver : OracleProver oSpec
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt wit⟩, ())
 
+/-- The `SendWitness` oracle prover has pure output: it exposes the witness alongside the input
+  oracles, with no oracle query. -/
+instance instOutputIsPureOracle :
+    (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 -- /-- The oracle verifier for the `SendWitness` oracle reduction.
 
 -- It receives the input statement `stmt` and returns it, and also specifying the combination of
@@ -321,6 +330,11 @@ def oracleProver : OracleProver oSpec
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, wit⟩ => pure (wit, ⟨stmt, wit⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
+
+/-- The `SendSingleWitness` oracle prover has pure output: it exposes the witness message
+  alongside the input oracles, with no oracle query. -/
+instance instOutputIsPure :
+    (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The index embedding that exposes every input oracle and the single witness
 message as output oracles. -/

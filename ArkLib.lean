@@ -417,6 +417,7 @@ import ArkLib.ToMathlib.InformationTheory.Hamming
 import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Logic.HEq
 import ArkLib.ToMathlib.Polynomial.AevalXPow
 import ArkLib.ToMathlib.Polynomial.CompositionDegree
 import ArkLib.ToMathlib.Polynomial.DegreeLT

@@ -22,9 +22,11 @@ import ArkLib.OracleReduction.Composition.Sequential.General
   package's extractor read its seam statement without `Classical.choice`.
 
   The same is done for the prover's *output* step (`Prover.OutputIsPure`), which is the hypothesis
-  of `Prover.append_run`. The binary case is `Prover.OutputIsPure.append`, an instance living next
-  to `Prover.append` itself; here we add the identity prover (`Prover.instOutputIsPureId`) and the
-  `n`-ary composition (`Prover.OutputIsPure.seqCompose`).
+  of `Prover.append_run`. The binary case is the theorem `Prover.OutputIsPure.append` (with instance
+  form `Prover.instOutputIsPureAppend`); it lives in `Append/Basic.lean` next to `Prover.append`
+  itself, because it is proved directly from that definition's `output` computation rules
+  (`Prover.append_output_zero` / `Prover.append_output_pos`). Here we add the identity prover
+  (`Prover.instOutputIsPureId`) and the `n`-ary composition (`Prover.OutputIsPure.seqCompose`).
 -/
 
 open OracleComp OracleSpec ProtocolSpec
