@@ -1006,10 +1006,12 @@ def StateFunction.append
     -- If the round index falls in the first protocol, then we simply invokes the first state fn
       S₁ ⟨roundIdx, by omega⟩ stmt₁ (by simpa [h] using transcript.fst)
     else
-    -- If the round index falls in the second protocol, then we hand the first protocol's
-    -- transcript to `verify` and score the remaining transcript with the second state fn.
+    -- If the round index falls in the second protocol, then the composite is winning if the
+    -- first half was already won (`S₁` on the completed first transcript), or if the second
+    -- state fn is winning on the remaining transcript, started from `verify`'s output.
       have hm : min roundIdx.val m = m := min_eq_right_of_lt (by omega)
       let transcript₁ : pSpec₁.FullTranscript := fun i => transcript.fst ⟨i, by simp [hm]⟩
+      S₁ ⟨m, by omega⟩ stmt₁ transcript₁ ∨
       S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁ transcript₁)
         (by simpa [h] using transcript.snd)
   toFun_empty := by
@@ -1096,18 +1098,12 @@ def StateFunction.append
           (transcript_concat_apply_lt tr msg i.val (by omega) (by omega))).trans
             (transcript_fst_apply tr i.val h2 (by omega)).symm
       rw [dif_pos (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
-      intro hgoal
-      rw [dif_neg (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
-      -- `S₁` rejects the completed first half, so `V₁`'s output misses `lang₂`, so `S₂` is false
-      -- at its round `0` on that output.
-      have h0 : ¬ S₂.toFun (⟨0, hn⟩ : Fin n).castSucc
-          (verify stmt fun i => tr.fst ⟨i.val,
-            show i.val < min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by have := i.isLt; omega⟩)
-          (fun i => Fin.elim0 i) := by
-        intro hc
-        refine verify_notMem_of_not_toFun S₁ hVerify stmt _ ?_
-          ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
-            (heq_of_eq (funext fun i => Fin.elim0 i)) hc))
+      -- `S₁` rejects the completed first half.  This is the shared ingredient: it rules out the
+      -- new `S₁` disjunct, and through `verify_notMem_of_not_toFun` it starts `S₂` off false.
+      have hS₁ : ¬ S₁.toFun ⟨m, by omega⟩ stmt
+          (fun i => tr.fst ⟨i.val,
+            show i.val < min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by
+              have := i.isLt; omega⟩) := by
         intro hc₁
         refine hnot (stateFunction_toFun_heq S₁
           (Fin.ext (show m = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc₁)
@@ -1116,6 +1112,21 @@ def StateFunction.append
           (k' := ⟨min ((j.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
           (show m = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
           (fun i hi hi' => HEq.rfl)
+      intro hgoal
+      rw [dif_neg (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+      -- The `S₁` disjunct is impossible: a message at round `m` leaves the first half unchanged.
+      replace hgoal := hgoal.resolve_left (fun hc => hS₁ (stateFunction_toFun_heq S₁ rfl rfl
+        (heq_of_eq (funext fun i => eq_of_heq (hTr i _ _))) hc))
+      -- `S₁` rejects the completed first half, so `V₁`'s output misses `lang₂`, so `S₂` is false
+      -- at its round `0` on that output.
+      have h0 : ¬ S₂.toFun (⟨0, hn⟩ : Fin n).castSucc
+          (verify stmt fun i => tr.fst ⟨i.val,
+            show i.val < min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by have := i.isLt; omega⟩)
+          (fun i => Fin.elim0 i) := by
+        intro hc
+        exact verify_notMem_of_not_toFun S₁ hVerify stmt _ hS₁
+          ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
+            (heq_of_eq (funext fun i => Fin.elim0 i)) hc))
       -- The second protocol's half of the new transcript is exactly its single new message.
       have hSnd : HEq ((Transcript.concat msg tr).snd)
           (Transcript.concat (cast htype₂ msg) (fun i => Fin.elim0 i)) := by
@@ -1134,7 +1145,7 @@ def StateFunction.append
           ?_ hSnd hgoal)
       exact congrArg (verify stmt) (funext fun i => eq_of_heq (hTr i _ _))
     · -- Case 3: the new round lies strictly inside the second protocol, so both sides take the
-      -- `else` branch. The `S₁` conjunct carries over verbatim and the `S₂` conjunct is the
+      -- `else` branch. The `S₁` disjunct carries over verbatim and the `S₂` disjunct is the
       -- contrapositive of `S₂.toFun_next` at round `⟨j.val - m, _⟩`.
       have hkn : j.val - m < n := by omega
       have hDir₂ : pSpec₂.dir ⟨j.val - m, hkn⟩ = Direction.P_to_V := by
@@ -1155,6 +1166,10 @@ def StateFunction.append
       rw [dif_neg (show ¬ ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
       intro hgoal
       rw [dif_neg (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+      -- The `S₁` disjunct carries over verbatim, so it cannot be the one that just became true.
+      replace hgoal := hgoal.resolve_left (fun hc => hnot (Or.inl
+        (stateFunction_toFun_heq S₁ rfl rfl
+          (heq_of_eq (funext fun i => eq_of_heq (hTr i _ _))) hc)))
       -- The second protocol's half gains exactly the new message at its last position.
       have hSnd : HEq ((Transcript.concat msg tr).snd)
           (Transcript.concat (cast htype₂ msg) tr.snd) := by
@@ -1178,8 +1193,9 @@ def StateFunction.append
             show i.val < min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by have := i.isLt; omega⟩)
           tr.snd := by
         intro hc
-        refine hnot (stateFunction_toFun_heq S₂
-          (Fin.ext (show j.val - m = ((j.castSucc : Fin (m + n + 1)) : ℕ) - m by omega)) rfl ?_ hc)
+        refine hnot (Or.inr (stateFunction_toFun_heq S₂
+          (Fin.ext (show j.val - m = ((j.castSucc : Fin (m + n + 1)) : ℕ) - m by omega))
+          rfl ?_ hc))
         exact HEq.rfl
       refine absurd (stateFunction_toFun_heq S₂
         (Fin.ext (show ((j.succ : Fin (m + n + 1)) : ℕ) - m = j.val - m + 1 by omega))
@@ -1206,7 +1222,7 @@ def StateFunction.append
       -- `hnot` is literally the hypothesis of `S₂`'s own `toFun_full`.
       rw [dif_neg (show ¬ (((Fin.last (m + n)) : Fin (m + n + 1)) : ℕ) ≤ m by
         simp only [Fin.val_last]; omega)] at hnot
-      refine S₂.toFun_full _ _ fun hc => hnot ?_
+      refine S₂.toFun_full _ _ fun hc => hnot (Or.inr ?_)
       exact stateFunction_toFun_heq S₂ (Fin.ext (by simp))
         (congrArg (verify stmt) (transcript_fst_eq_full tr).symm)
         (transcript_snd_heq_full tr).symm hc
@@ -2493,37 +2509,24 @@ theorem append_knowledgeSoundness
         rel₁ rel₃ (knowledgeError₁ + knowledgeError₂) := by
   sorry
 
-/-! ### Two blockers for the RBR composition theorems below
+/-! ### Remaining blocker for the RBR composition theorems below
 
-Recorded from an attempt at `append_rbrSoundness`, so they are not rediscovered.
+Recorded from an attempt at `append_rbrSoundness`, so it is not rediscovered.
 
-**1. `StateFunction.append` is not a usable witness past the seam.** Its `toFun` at a round index
-`> m` is exactly `S₂ ⟨roundIdx - m⟩ (verify stmt tr₁) tr₂` — it keeps no record of `S₁`'s verdict.
-Applying `h₂` needs `h₂`'s precondition `verify stmt tr₁ ∉ lang₂`, and past the seam that is not
-derivable: only the *seam* round carries `¬ S₁ (last m)` as its hypothesis (whence
-`verify_notMem_of_not_toFun` applies). At a later challenge round `i₂ > 0` the bad transition is
-`¬ S₂ i₂.castSucc ∧ S₂ i₂.succ` with nothing said about `S₁`, and `stmt₂` may well lie in `lang₂`
-— nothing in `StateFunction` forces a *true* state to stay true (`toFun_next` propagates falsity
-only, and only across `P_to_V` rounds), so `S₂` can go true → false → true with no bound from `h₂`.
+**Prover restriction is missing.** `rbrSoundness` quantifies over an arbitrary prover for
+`pSpec₁ ++ₚ pSpec₂`, while `h₁` / `h₂` quantify over provers for the *components*, so applying
+either requires restricting the combined prover to a component together with a lemma relating the
+two `runToRound` distributions across `liftAppendLeft` / `liftAppendRight`. This is the
+`-- TODO: Need to define a function that "extracts" a second prover` item in `namespace Prover`
+above, and is comparable in size to the `AppendRunHelpers` block. The right half additionally
+needs its restriction parameterised by the (random) first-half transcript, plus a conditioning
+argument over that randomness.
 
-The fix is a different witness, not a different proof: score the composite past the seam as
-`S₁ (last m) stmt tr₁ ∨ S₂ ⟨roundIdx - m⟩ (verify stmt tr₁) tr₂` ("the adversary is winning if it
-already won the first half"). Then the bad transition at `i₂ > 0` carries `¬ S₁ (last m)` as a
-conjunct, which is exactly what `verify_notMem_of_not_toFun` needs. Since `rbrSoundness` is an `∃`
-over state functions this can be a *new* definition; `StateFunction.append` need not change, though
-its three obligations would have to be reproved for the disjunctive variant.
-
-**2. Prover restriction is missing.** Both halves need it, not just soundness. `rbrSoundness`
-quantifies over an arbitrary prover for `pSpec₁ ++ₚ pSpec₂`, while `h₁` / `h₂` quantify over
-provers for the components, so applying either requires restricting the combined prover to a
-component and a lemma relating the two `runToRound` distributions across `liftAppendLeft` /
-`liftAppendRight`. This is the `-- TODO: Need to define a function that "extracts" a second prover`
-item in `namespace Prover` above, and is comparable in size to the `AppendRunHelpers` block. The
-right half additionally needs its restriction to be parameterised by the (random) first-half
-transcript, plus a conditioning argument over that randomness.
-
-The challenge-transport lemmas these proofs will need are proved:
-`uniformSample_challenge_append_inl` / `_inr`. -/
+The two ingredients that are in place: `Verifier.StateFunction.append` is scored past the seam as
+`S₁ (last m) ∨ S₂ (…)`, so every past-seam bad transition carries `¬ S₁ (last m)` as a conjunct —
+which is exactly what `verify_notMem_of_not_toFun` needs to supply `h₂`'s precondition
+`verify stmt tr₁ ∉ lang₂`; and the challenge-transport lemmas
+`uniformSample_challenge_append_inl` / `_inr` are proved. -/
 
 /-- If two verifiers satisfy round-by-round soundness with compatible languages and respective RBR
     soundness errors, then their sequential composition also satisfies round-by-round soundness.
