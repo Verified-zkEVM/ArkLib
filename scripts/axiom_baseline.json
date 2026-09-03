@@ -202,7 +202,6 @@
   "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPi",
   "PolynomialGenIsMCA.isMCAGenerator_tensorGeneratorPiUnivariateOn",
   "PolynomialGenIsMCA.isMCAGenerator_univariatePowersGeneratorOn",
-  "Prover.append_run",
   "ProximityGap.GrandChallenges.McaLowerWitness.ofJohnsonRangeBound",
   "ProximityGap.H",
   "ProximityGap.H_dvd_evalX_R",
