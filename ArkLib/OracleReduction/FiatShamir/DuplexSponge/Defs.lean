@@ -641,10 +641,10 @@ instance instVCVCompatibleCanonicalSpongeState
   (inferInstance : VCVCompatible (Vector U SpongeSize.N))
 
 /-- Uniform random-function distribution for the `h` component of `𝒟_𝔖`. -/
-noncomputable def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
-    [VCVCompatible StartType] [VCVCompatible U] :
+noncomputable def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U]
+    [SpongeSize] [VCVCompatible StartType] [VCVCompatible U] :
     OracleReduction.OracleDistribution (StartType →ₒ Vector U SpongeSize.C) :=
-  OracleReduction.D_ROM _
+  OracleReduction.D_ROM (instSampleable := OracleReduction.sampleableTypePiVCV)
 
 /-- Uniform random-permutation distribution for the `(p, p⁻¹)` component of `𝒟_𝔖`.
 
@@ -653,7 +653,7 @@ noncomputable def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUn
     [VCVCompatible U] :
     OracleReduction.OracleDistribution (permutationOracle (CanonicalSpongeState U)) where
   Carrier := Equiv.Perm (CanonicalSpongeState U)
-  sample := $ᵗ (Equiv.Perm (CanonicalSpongeState U))
+  sample := uniformSample _ (h := VCVCompatible.toSampleableTypePerm)
   toImpl := permutationOracleQueryImpl
 
 /-- CO25 Definition 4.2 — ideal duplex-sponge oracle distribution `𝒟_𝔖`.
@@ -689,9 +689,8 @@ lemma duplexSpongeOracleDistribution_sample
     [VCVCompatible StartType] [VCVCompatible U] :
     (duplexSpongeOracleDistribution StartType U).sample =
       (do
-        let h ← $ᵗ (OracleReduction.OracleFamily
-          (StartType →ₒ Vector U SpongeSize.C))
-        let p ← $ᵗ (Equiv.Perm (CanonicalSpongeState U))
+        let h ← uniformSample _ (h := OracleReduction.sampleableTypePiVCV)
+        let p ← uniformSample _ (h := VCVCompatible.toSampleableTypePerm)
         pure (h, p)) := rfl
 
 end OracleDistribution

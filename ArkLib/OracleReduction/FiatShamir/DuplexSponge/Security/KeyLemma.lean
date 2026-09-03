@@ -225,7 +225,7 @@ def dsfsGame (V : Verifier oSpec StmtIn StmtOut pSpec)
 /-- CO25 §5.8. Execute a Section 5.8 line-4 trace map (e.g. D2STrace = `(φ⁻¹, ψ) ∘ StdTrace`)
 inside `ProbComp` by interpreting the auxiliary unit-sampling oracle uniformly. -/
 def runSection58TraceMap
-    [SampleableType U]
+    [instSampleable : SampleableType U]
     {κ : Type} {challengeSpec : OracleSpec κ}
     (traceMap : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U) challengeSpec)
@@ -257,7 +257,7 @@ and held fixed (CO25 Eq. 16 / Eq. 53 / Eq. 55).  The paper has no ambient distri
 take an arbitrary `QueryImpl oSpec ProbComp` instead, which the caller specializes (e.g. to
 the empty spec for paper fidelity). -/
 def hybChallengeImpl
-    [SampleableType U]
+    [instSampleable : SampleableType U]
     {κ : Type} {challengeSpec : OracleSpec κ}
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (D_chal : OracleReduction.OracleDistribution challengeSpec) :
@@ -382,7 +382,7 @@ Claims 5.21–5.24. Polymorphic over the **inner state type `M`** that `gImpl` c
 (trivial `PUnit` for `Hyb_1` / `Hyb_2`; `D2SAlgoMemo …` for `Hyb_3`'s `tr_i` table —
 see `hybridGame`). -/
 def hybridGameDist -- apply traceMap into output of `hybridGame`
-    [SampleableType U]
+    [instSampleable : SampleableType U]
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Message i)]
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -460,7 +460,7 @@ def dsfsGameDist
 `𝒟_𝔖(λ,n)` and apply the line-4 trace map D2STrace = `(φ⁻¹, ψ) ∘ StdTrace` to produce a
 basic-FS query log. Corresponds to `Pr[𝒱^{h,p}(𝕩, π) = 1]` in the lemma statement. -/
 def mappedDSFSGameDist
-    [SampleableType U]
+    [instSampleable : SampleableType U]
     {σ : Type}
     (init : ProbComp σ)
     (impl : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
@@ -602,7 +602,7 @@ def hyb_0
     ProbComp (Option <| BasicFiatShamirGameOutput
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (Salt := Salt)) :=
-  mappedDSFSGameDist
+  mappedDSFSGameDist (instSampleable := VCVCompatible.toSampleableType)
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U) (Salt := Salt)
     (init := hyb0Init (StmtIn := StmtIn) (U := U))
@@ -644,13 +644,13 @@ def hyb_1
               (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
               (.inl q))
   exact
-    hybridGameDist
+    hybridGameDist (instSampleable := VCVCompatible.toSampleableType)
       (δ := δ) (Salt := Salt)
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := hybChallengeInit (challengeSpec := challengeSpec) D_g)
-      (impl := hybChallengeImpl
+      (impl := hybChallengeImpl (instSampleable := VCVCompatible.toSampleableType)
         (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_g)
       (gImpl := gImpl) V maliciousProver
       (hyb1Line4Trace
@@ -758,13 +758,13 @@ def hyb_2
             (pSpec := pSpec) (U := U)
             (challengeSpec := challengeSpec) challenge
   exact
-    hybridGameDist
+    hybridGameDist (instSampleable := VCVCompatible.toSampleableType)
       (δ := δ) (Salt := Salt)
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := hybChallengeInit (challengeSpec := challengeSpec) D_e)
-      (impl := hybChallengeImpl
+      (impl := hybChallengeImpl (instSampleable := VCVCompatible.toSampleableType)
         (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_e)
       gImpl V maliciousProver
       (hyb2Line4Trace
@@ -823,13 +823,13 @@ def hyb_3
   let gImpl := d2sCodecBridgeImplMemo (δ := δ) (Salt := Salt)
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   exact
-    hybridGameDist
+    hybridGameDist (instSampleable := VCVCompatible.toSampleableType)
       (δ := δ) (Salt := Salt)
       (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U)
       (init := hybChallengeInit (challengeSpec := challengeSpec) D_IP_salted)
-      (impl := hybChallengeImpl
+      (impl := hybChallengeImpl (instSampleable := VCVCompatible.toSampleableType)
         (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_IP_salted)
       gImpl V maliciousProver
       (traceMap := hyb3Line4Trace (Salt := Salt) (oSpec := oSpec)
@@ -889,15 +889,15 @@ def hyb_4
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt)) :
     ProbComp (Option <| BasicFiatShamirGameOutput
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (Salt := Salt)) :=
+      (pSpec := pSpec) (Salt := Salt)) := by
   let challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec
   let D_IP_salted :=
     D_IP_salted (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec)
-  basicFiatShamirGameDist
+  exact basicFiatShamirGameDist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (Salt := Salt)
     (init := hybChallengeInit (challengeSpec := challengeSpec) D_IP_salted)
-    (impl := hybChallengeImpl
+    (impl := hybChallengeImpl (instSampleable := VCVCompatible.toSampleableType)
       (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_IP_salted)
     V (d2sAlgoTransform maliciousProver)
 

@@ -62,15 +62,16 @@ abbrev OracleFamily (spec : OracleSpec ι) : Type _ := (q : spec.Domain) → spe
 def tableQueryImpl {spec : OracleSpec ι} (g : OracleFamily spec) :
     QueryImpl spec ProbComp := fun q => pure (g q)
 
-/-- `VCVCompatible` on both domain and range implies `SampleableType (α → β)`.
+/-- Explicit `SampleableType (α → β)` construction from `VCVCompatible` domain and range.
 
-`OracleFamily (α →ₒ β)` is definitionally `α → β`, so this instance also fires for
-`[SampleableType (OracleFamily (StartType →ₒ Vector U n))]` via reducibility of `OracleFamily`. -/
-noncomputable instance instSampleableTypePiVCV
+`OracleFamily (α →ₒ β)` is definitionally `α → β`. This remains a definition rather than a
+global instance because `SampleableType` carries sampler data and VCVio already provides
+function-specific sampling instances. -/
+@[reducible] noncomputable def sampleableTypePiVCV
     {α β : Type} [VCVCompatible α] [VCVCompatible β] :
     SampleableType (α → β) := by
-  letI : FinEnum α := VCVCompatible.instFinEnum
-  letI : FinEnum β := VCVCompatible.instFinEnum
+  letI : FinEnum α := VCVCompatible.toFinEnum
+  letI : FinEnum β := VCVCompatible.toFinEnum
   letI : Nonempty (α → β) := ⟨fun _ => default⟩
   infer_instance
 
@@ -119,7 +120,7 @@ def functionTable (D : ProbComp (OracleFamily spec)) : OracleDistribution spec w
 
 /-- Uniform full-table sampling. Requires `SampleableType` over the dependent product
 `OracleFamily spec`, which holds when `ι` and each `spec i` are finite + decidable. -/
-def uniform (spec : OracleSpec ι) [SampleableType (OracleFamily spec)] :
+def uniform (spec : OracleSpec ι) [instSampleable : SampleableType (OracleFamily spec)] :
     OracleDistribution spec :=
   functionTable (D := $ᵗ OracleFamily spec)
 
@@ -315,7 +316,7 @@ section OracleDistribution.Examples
 /-- Generic `D_ROM` constructor for any random-function oracle spec:
 uniformly sample one deterministic table realization. -/
 @[reducible]
-def D_ROM {ι : Type} (spec : OracleSpec ι) [SampleableType (OracleFamily spec)] :
+def D_ROM {ι : Type} (spec : OracleSpec ι) [instSampleable : SampleableType (OracleFamily spec)] :
     OracleDistribution spec :=
   OracleDistribution.uniform spec
 

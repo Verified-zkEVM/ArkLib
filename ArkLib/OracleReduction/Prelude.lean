@@ -58,57 +58,50 @@ class Sampleable (α : Type) extends VCVCompatible α, SampleableType α
 instance {α : Type} [Sampleable α] : DecidableEq α := inferInstance
 
 /-!
-## FinEnum bridge instances
+## Explicit FinEnum and sampling bridges
 
-These four instances form a chain that lets typeclass synthesis derive
-`SampleableType (OracleFamily spec)` and `SampleableType (Equiv.Perm α)`
-from granular `[VCVCompatible _]` hypotheses alone, without requiring verbose
-`[SampleableType (OracleFamily (...))]` assumptions at call sites.
-
-Chain: `VCVCompatible α` → `FinEnum α`
-  → `FinEnum (Vector α n)` (via `Equiv.rootVectorEquivFin`)
-  → `FinEnum (Equiv.Perm α)` (via `Fintype.equivFin`)
-  → `SampleableType _` (via `FinEnum.SampleableType`)
+`VCVCompatible` contains enough data to construct `FinEnum` and `SampleableType`, but the
+bridges with general heads remain definitions. Both classes carry computational data, so global
+instances would create non-definitionally-equal enumeration and sampler diamonds. Call sites that
+choose this construction install it locally. The derived `Vector` and permutation enumerations
+remain explicit for the same reason.
 -/
 
-/-- `VCVCompatible` implies `FinEnum` (noncomputable, via `Fintype.equivFin`).
-Low priority so explicit `FinEnum` instances on specific types take precedence. -/
-noncomputable instance (priority := 50) VCVCompatible.instFinEnum
+/-- Explicit noncomputable `VCVCompatible` to `FinEnum` bridge, via `Fintype.equivFin`.
+This is deliberately not an instance because `FinEnum` carries enumeration data. -/
+@[reducible] noncomputable def VCVCompatible.toFinEnum
     {α : Type*} [VCVCompatible α] : FinEnum α where
   card := Fintype.card α
   equiv := Fintype.equivFin α
   decEq := inferInstance
 
-/-- `FinEnum α` implies `FinEnum (Vector α n)` via `Equiv.rootVectorEquivFin`. -/
-noncomputable instance Vector.instFinEnum
+/-- Explicit `FinEnum (Vector α n)` construction via `Equiv.rootVectorEquivFin`. -/
+@[reducible] noncomputable def Vector.toFinEnum
     {α : Type*} {n : ℕ} [FinEnum α] : FinEnum (Vector α n) :=
   FinEnum.ofEquiv _ Equiv.rootVectorEquivFin
 
 /-- `Equiv.Perm α` is always nonempty (contains `Equiv.refl α`). -/
 instance instNonemptyEquivPerm {α : Type*} : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
 
-/-- `FinEnum α` implies `FinEnum (Equiv.Perm α)` noncomputably. -/
-noncomputable instance instFinEnumEquivPerm
+/-- Explicit noncomputable `FinEnum (Equiv.Perm α)` construction. -/
+@[reducible] noncomputable def finEnumEquivPerm
     {α : Type*} [FinEnum α] : FinEnum (Equiv.Perm α) where
   card := Fintype.card (Equiv.Perm α)
   equiv := Fintype.equivFin _
   decEq := inferInstance
 
-/-- `VCVCompatible α` implies `SampleableType α`.
-
-Direct bridge: `VCVCompatible` → `FinEnum` → `SampleableType`, without relying on
-multi-step typeclass synthesis that may fail at priority 50. -/
-noncomputable instance VCVCompatible.instSampleableType
+/-- Explicit `VCVCompatible` to `SampleableType` bridge.
+This is deliberately not an instance because `SampleableType` carries sampler data. -/
+@[reducible] noncomputable def VCVCompatible.toSampleableType
     {α : Type} [VCVCompatible α] : SampleableType α :=
-  letI : FinEnum α := VCVCompatible.instFinEnum
+  letI : FinEnum α := VCVCompatible.toFinEnum
   inferInstance
 
-/-- `VCVCompatible α` implies `SampleableType (Equiv.Perm α)`.
-
-Consolidates the chain: `VCVCompatible` → `FinEnum` → `FinEnum (Perm)` → `SampleableType`. -/
-noncomputable instance instSampleableTypeEquivPermVCV
+/-- Explicit uniform sampler for permutations of a `VCVCompatible` type.
+This is deliberately not an instance to avoid competing with VCVio's permutation sampler. -/
+@[reducible] noncomputable def VCVCompatible.toSampleableTypePerm
     {α : Type} [VCVCompatible α] : SampleableType (Equiv.Perm α) := by
-  letI : FinEnum α := VCVCompatible.instFinEnum
+  letI : FinEnum α := VCVCompatible.toFinEnum
   letI : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
   infer_instance
 
