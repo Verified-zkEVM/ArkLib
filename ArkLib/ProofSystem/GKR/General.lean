@@ -26,8 +26,16 @@ So each layer reduction carries `layerRel i.castSucc` to `layerRel i.succ`, whic
 the shape `Reduction.seqCompose_perfectCompleteness` consumes.
 
 The resulting `gkrReduction_perfectCompleteness` reduces a true claim about the *output* layer
-to a true claim about the *input* layer — which the verifier checks directly, since it knows
-the input.
+to a true claim about the *input* layer. It stops there: the reduction hands back a claim, and
+nothing here checks it. Neither end of the real protocol is present — no opening from a claimed
+circuit output, and no terminal check of the surviving claim against the input.
+
+Both are supplied in `OracleLayer.lean`, where the protocol is restated as an `OracleReduction`.
+`Oracle.gkrFull_perfectCompleteness` runs from `evalCircuit c input = y` to the verifier
+accepting, with `Oracle.terminalCheck` evaluating the input's own multilinear extension —
+which the verifier can afford, since it holds the input. `Circuit.layerValues_zero` and
+`Circuit.layerValues_last` are the facts that tie layer `0` to `evalCircuit` and the last layer
+to `input`.
 
 Note this inherits ArkLib's unproved composition lemmas (`Reduction.append_completeness`,
 `Reduction.liftContext_completeness`, `Prover.append_run`), so `#print axioms` reports

@@ -8,6 +8,7 @@ import ArkLib.ProofSystem.GKR.SingleRound
 import ArkLib.OracleReduction.LiftContext.OracleReduction
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Composition.Sequential.General
+import ArkLib.ProofSystem.Component.CheckClaim
 
 /-!
 # GKR in the oracle model
@@ -779,5 +780,187 @@ theorem oracleGkr_perfectCompleteness :
     (R := fun l => oracleLayer R n c l (layerMLE R c input l.succ) (fun i => MLE_degreeOf _ i))
     (h := fun l => oracleLayer_chain R n c input l)
 
+/-! ## The terminal check
+
+`oracleGkr` reduces a layer-`0` claim to a layer-`n` claim, but a claim is not a decision. The
+last layer is the input, which the verifier holds, so it can finish the protocol itself: evaluate
+the input's multilinear extension at the surviving point and compare.
+
+Note what the predicate mentions. Only `input` — never `c`, never `layerMLE`, never
+`honestLayers`. That is what makes it a check the verifier can actually run; evaluating the input
+extension costs `O(2 ^ k)`, which is GKR's accepted verifier cost, whereas evaluating a layer
+extension would cost a full circuit evaluation. The oracle family stays pinned by the relation,
+not by the guard, which is why the composition goes through `completeness_relOut_mono` rather
+than by strengthening the predicate.
+-/
+
+/-- the multilinear extension of the input, which the verifier computes itself -/
+noncomputable def inputMLE : MvPolynomial (Fin k) R :=
+  MLE (fun w => input (finTwoEquiv ∘ w))
+
+/-- the last layer's extension is the input's extension -/
+theorem layerMLE_last : layerMLE R c input (Fin.last n) = inputMLE R input := by
+  unfold layerMLE inputMLE
+  rw [layerValues_last]
+
+/-- what the verifier checks at the end, using only the input it already holds -/
+def terminalPred : (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j)) → Prop :=
+  fun x => MvPolynomial.eval x.1.point (inputMLE R input) = x.1.value
+
+theorem oChain_last_subset :
+    oChain R n c input (Fin.last n)
+      ⊆ CheckClaim.relIn (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j))
+          (terminalPred R n input) := by
+  rintro ⟨⟨⟨point, value⟩, oStmt⟩, ⟨⟩⟩ h
+  simp only [oChain, Set.mem_ofPred_eq] at h
+  rw [layerMLE_last] at h
+  simp only [CheckClaim.relIn, terminalPred, Set.mem_ofPred_eq]
+  exact h.2
+
+/-- inference does not fire on `++ₚ`; supply it by name, as sum-check and Hachi do -/
+instance instSampleableWithCheck :
+    ∀ i, SampleableType
+      (((ProtocolSpec.seqCompose
+          fun _ : Fin n => Sumcheck.Spec.pSpec R 2 (k + k) ++ₚ GKR.Combine.pSpec R k)
+        ++ₚ !p[]).Challenge i) :=
+  ProtocolSpec.instSampleableTypeChallengeAppend
+
+open scoped Classical in
+/-- the terminal step: the verifier checks the last claim against the input it holds -/
+noncomputable def terminalCheck :
+    Reduction ([]ₒ : OracleSpec PEmpty)
+      (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j)) Unit
+      (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j)) Unit !p[] :=
+  CheckClaim.reduction []ₒ _ (terminalPred R n input)
+
+open scoped Classical in
+/-- GKR's layers followed by the verifier's own check of the surviving claim -/
+noncomputable def gkrWithTerminalCheck :=
+  (oracleGkr R n c input).toReduction.append (terminalCheck R n input)
+
+open scoped Classical in
+/-- **A true layer-`0` claim leads to the verifier accepting.** The output relation is trivial;
+all the content is in the run succeeding, since the terminal `guard` would fail otherwise. -/
+theorem gkrWithTerminalCheck_perfectCompleteness [Nonempty σ] :
+    (gkrWithTerminalCheck R n c input).perfectCompleteness init impl
+      (oChain R n c input 0)
+      (CheckClaim.relOut (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j))) := by
+  refine Reduction.append_perfectCompleteness _ _ ?_
+    (CheckClaim.reduction_completeness []ₒ _ (terminalPred R n input))
+  have h : Reduction.completeness init impl (oChain R n c input 0)
+      (oChain R n c input (Fin.last n)) (oracleGkr R n c input).toReduction 0 :=
+    oracleGkr_perfectCompleteness R n c input
+  exact Reduction.completeness_relOut_mono init impl (oChain_last_subset R n c input) h
+
+/-! ## The claimed-output opening
+
+`gkrWithTerminalCheck` reaches a decision, but it still begins by *assuming* a layer-`0` claim.
+The real protocol begins with the prover claiming `evalCircuit c input = y`; the verifier samples
+a point and evaluates the claimed output's own extension there, and that is the layer-`0` claim.
+
+Completeness here needs no randomness argument: if the circuit really outputs `y` then layer `0`'s
+extension *is* `y`'s extension (`layerMLE_zero`), so the claim holds at every point, not merely a
+random one. Randomness is what soundness needs, and that is not claimed here.
+-/
+
+/-- layer 0's extension is the extension of the circuit's output -/
+theorem layerMLE_zero : layerMLE R c input 0 = inputMLE R (evalCircuit c input) := by
+  unfold layerMLE inputMLE
+  rw [layerValues_zero]
+
+/-- one `V_to_P` round carrying the evaluation point -/
+def openPSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Fin k → R]⟩
+
+instance instSampleableOpen : ∀ i, SampleableType ((openPSpec R (k := k)).Challenge i)
+  | ⟨0, _⟩ => (inferInstance : SampleableType (Fin k → R))
+
+instance instVerifierOnlyOpen : VerifierOnly (openPSpec R (k := k)) where
+  verifier_first' := by simp [openPSpec]
+
+@[reducible] def OpenStmtIn (k : ℕ) := (Index k → R) × (∀ j, LayerFam R n k j)
+@[reducible] def OpenStmtOut (k : ℕ) := GKRStatement R n k 0 × (∀ j, LayerFam R n k j)
+
+noncomputable def openProver :
+    Prover ([]ₒ : OracleSpec PEmpty) (OpenStmtIn R n k) Unit (OpenStmtOut R n k) Unit
+      (openPSpec R (k := k)) where
+  PrvState
+  | 0 => OpenStmtIn R n k
+  | 1 => OpenStmtIn R n k × (Fin k → R)
+  input := Prod.fst
+  sendMessage | ⟨0, h⟩ => nomatch h
+  receiveChallenge | ⟨0, _⟩ => fun st => pure fun z => (st, z)
+  output := fun ⟨⟨y, oStmt⟩, z⟩ =>
+    pure ((⟨z, MvPolynomial.eval z (inputMLE R y)⟩, oStmt), ())
+
+noncomputable def openVerifier :
+    Verifier ([]ₒ : OracleSpec PEmpty) (OpenStmtIn R n k) (OpenStmtOut R n k)
+      (openPSpec R (k := k)) where
+  verify := fun s transcript =>
+    pure (⟨transcript 0, MvPolynomial.eval (transcript 0) (inputMLE R s.1)⟩, s.2)
+
+noncomputable def openReduction :
+    Reduction ([]ₒ : OracleSpec PEmpty) (OpenStmtIn R n k) Unit (OpenStmtOut R n k) Unit
+      (openPSpec R (k := k)) where
+  prover := openProver R n
+  verifier := openVerifier R n
+
+/-- the claim the protocol starts from: the circuit really outputs `y` -/
+def openRelIn : Set (OpenStmtIn R n k × Unit) :=
+  { ⟨⟨y, oStmt⟩, _⟩ | oStmt = honestLayers R n c input ∧ evalCircuit c input = y }
+
+theorem openReduction_perfectCompleteness :
+    (openReduction R n (k := k)).perfectCompleteness init impl
+      (openRelIn R n c input) (oChain R n c input 0) := by
+  apply Reduction.perfectCompleteness_of_run_support
+  rintro ⟨y, oStmt⟩ ⟨⟩ h x hx
+  obtain ⟨hW, hy⟩ := h
+  subst hy
+  simp only [openReduction, Reduction.run, Prover.run_of_verifier_first,
+    openProver, openVerifier, Verifier.run] at hx
+  simp only [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_bind, OracleComp.liftComp_pure,
+    OracleComp.liftComp_query, pure_bind, bind_pure_comp, map_pure, bind_assoc,
+    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run_lift,
+    Option.getM, Option.bind_some, Option.elimM, Option.elim_some, Option.elim_none,
+    OptionT.run_map, Function.comp_apply,
+    support_bind, support_map, support_pure, support_query,
+    Set.mem_iUnion, Set.mem_image, Set.mem_singleton_iff, exists_prop] at hx
+  obtain ⟨i, hi, hx⟩ := hx
+  simp only [OptionT.run_monadLift, _root_.monadLift_self, support_map, Set.mem_image] at hi
+  obtain ⟨w, ⟨z, -, rfl⟩, rfl⟩ := hi
+  simp only [Option.elim_some, OptionT.run_monadLift, _root_.monadLift_self,
+    pure_bind, support_map, Set.mem_image, support_pure, Set.mem_singleton_iff,
+    OptionT.run_pure, Option.map_some] at hx
+  simp at hx
+  subst hx
+  refine ⟨_, rfl, ?_, rfl⟩
+  simp only [oChain, Set.mem_ofPred_eq]
+  exact ⟨hW, by rw [layerMLE_zero]⟩
+
+
+/-- inference does not fire on `++ₚ`; supply it by name -/
+instance instSampleableFull :
+    ∀ i, SampleableType
+      ((openPSpec R (k := k) ++ₚ
+        ((ProtocolSpec.seqCompose
+            fun _ : Fin n => Sumcheck.Spec.pSpec R 2 (k + k) ++ₚ GKR.Combine.pSpec R k)
+          ++ₚ !p[])).Challenge i) :=
+  ProtocolSpec.instSampleableTypeChallengeAppend
+
+open scoped Classical in
+/-- **GKR end to end**: from a claim about the circuit's output to the verifier's decision. -/
+noncomputable def gkrFull :=
+  (openReduction R n (k := k)).append (gkrWithTerminalCheck R n c input)
+
+open scoped Classical in
+/-- **The capstone.** If the circuit really outputs `y`, the honest run ends with the verifier
+accepting. The output relation is trivial; the content is that the run succeeds, which it does
+only because the terminal `guard` passes. -/
+theorem gkrFull_perfectCompleteness [Nonempty σ] :
+    (gkrFull R n c input).perfectCompleteness init impl
+      (openRelIn R n c input)
+      (CheckClaim.relOut (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j))) :=
+  Reduction.append_perfectCompleteness _ _
+    (openReduction_perfectCompleteness R n c input)
+    (gkrWithTerminalCheck_perfectCompleteness R n c input)
 
 end GKR.Oracle

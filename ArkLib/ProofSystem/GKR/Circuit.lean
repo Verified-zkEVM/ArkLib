@@ -119,6 +119,32 @@ theorem layerValues_castSucc
       exact ih c.tail i
 
 /--
+layer 0 is the output of the circuit
+-/
+theorem layerValues_zero
+  {k d : ℕ}
+  {F : Type} [CommSemiring F]
+  (c : Circuit k d) (input : Index k → F) :
+    layerValues c input 0 = evalCircuit c input := by
+  induction d with
+  | zero => rfl
+  | succ m ih => exact congrArg (evalLayer (c.gate 0)) (ih c.tail)
+
+/--
+the last layer is the input
+-/
+theorem layerValues_last
+  {k d : ℕ}
+  {F : Type} [CommSemiring F]
+  (c : Circuit k d) (input : Index k → F) :
+    layerValues c input (Fin.last d) = input := by
+  induction d with
+  | zero => rfl
+  | succ m ih =>
+    rw [← Fin.succ_last]
+    exact ih c.tail
+
+/--
 add predicate
 at level l, we have a gate z and at level l + 1 we have gates x and y
 we return wether z is an add gate
