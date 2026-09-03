@@ -70,10 +70,7 @@ structure GKRStatement (k : ℕ) (l : Fin (n + 1)) where
   point : Fin k → R
   value : R
 
-/--
-In each layer we get oracle access to a multilinear extension of some polynomial
--/
-def OracleStatement (k : ℕ) : Unit → Type := fun _ => R⦃≤ 1⦄[X Fin k]
+
 
 /-- Send a Boolean gate index to the corresponding point of `R`, mapping `false` to `0` and
 `true` to `1`.

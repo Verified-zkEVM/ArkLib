@@ -360,6 +360,7 @@ import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
 import ArkLib.ProofSystem.GKR.Circuit
 import ArkLib.ProofSystem.GKR.General
+import ArkLib.ProofSystem.GKR.OracleLayer
 import ArkLib.ProofSystem.GKR.SingleRound
 import ArkLib.ProofSystem.GKR.SumcheckAux
 import ArkLib.ProofSystem.Plonk.Basic
