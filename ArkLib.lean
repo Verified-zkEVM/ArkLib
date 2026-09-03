@@ -282,6 +282,10 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
+import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
+import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+import ArkLib.OracleReduction.Composition.Sequential.Append.Security
+import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.IsPure
 import ArkLib.OracleReduction.Equiv
