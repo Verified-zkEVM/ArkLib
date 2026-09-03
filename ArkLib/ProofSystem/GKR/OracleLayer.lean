@@ -504,7 +504,8 @@ theorem simulateRoundPoly_eq {k : ℕ} (c : Circuit k n) (l : Fin n) (point : Fi
     OracleInterface.simOracle0, QueryImpl.liftTarget_apply, pure_bind]
   congr 1
   exact (output_relation_to_wiring_identity R c l point
-    (MvPolynomial.eval xy (roundPolyFin R c l point (oStmt l.succ).val)) xy (oStmt l.succ).val rfl).symm
+    (MvPolynomial.eval xy (roundPolyFin R c l point (oStmt l.succ).val)) xy
+    (oStmt l.succ).val rfl).symm
 
 
 /-! ## The full oracle-statement lens for one GKR layer -/
@@ -637,8 +638,7 @@ theorem liftedInnerOracle_perfectCompleteness {k : ℕ} (c : Circuit k n) (l : F
       (oLayerRelOut R n c l W)
       (Sumcheck.Spec.relationRound R (k + k) 2 (D R) (Fin.last (k + k)))
       ((Sumcheck.Spec.oracleReduction R 2 (D R) (k + k) []ₒ).toReduction.compatContext
-        (layerCtxLens R n c l).toLens.toContext)]
- :
+        (layerCtxLens R n c l).toLens.toContext)] :
     (liftedInnerOracle R n c l).perfectCompleteness init impl
       (oLayerRelIn R n c l W) (oRelIn R n c l W V) := by
   rw [← oLayerRelOut_eq_oRelIn R n c l W V hVW]
@@ -673,7 +673,8 @@ instance layerLensComplete {k : ℕ} (c : Circuit k n) (l : Fin n) (W : ∀ j, L
     have hOracle : oOut = fun _ => roundPolyFinOracle R c l point (oStmt l.succ).val hdeg := by
       obtain ⟨x, hx, hxeq⟩ := hCompat
       have := Sumcheck.Spec.oracleReduction_run_preserves_oracle R 2 (D R) (k + k) []ₒ
-        ⟨⟨value, Fin.elim0⟩, fun _ => roundPolyFinOracle R c l point (oStmt l.succ).val hdeg⟩ () x hx
+        ⟨⟨value, Fin.elim0⟩,
+          fun _ => roundPolyFinOracle R c l point (oStmt l.succ).val hdeg⟩ () x hx
       simp only [Function.comp_apply] at hxeq
       rw [hxeq] at this
       dsimp only at this

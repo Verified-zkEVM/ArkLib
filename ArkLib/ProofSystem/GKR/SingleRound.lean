@@ -395,14 +395,13 @@ Degreee of a polynomial that we are doing sumcheck over is <= 2
 roundPolynomial defined above has a degree less than 2 in each of the variables
 -/
 theorem degreeOf_roundPoly_le
-{k : ℕ} [Nontrivial R] (point : Fin k → R) (V : MvPolynomial (Fin k) R)
+    {k : ℕ} [Nontrivial R] (point : Fin k → R) (V : MvPolynomial (Fin k) R)
     (hV : ∀ i, degreeOf i V ≤ 1)
     (A M : MvPolynomial (Fin k ⊕ Fin k ⊕ Fin k) R)
     (hA : ∀ i, degreeOf i A ≤ 1) (hM : ∀ i, degreeOf i M ≤ 1)
     (j : Fin k ⊕ Fin k) :
     degreeOf j (bind₁ (substZ R point) A * (rename Sum.inl V + rename Sum.inr V)
-      + bind₁ (substZ R point) M * (rename Sum.inl V * rename Sum.inr V)) ≤ 2 :=
-    by
+      + bind₁ (substZ R point) M * (rename Sum.inl V * rename Sum.inr V)) ≤ 2 := by
   -- ultimately we want
   -- A * (V(x) + V(y)) + M * (V(x) * V(y)) has degree of most 2 in each variable
   -- provided that we have thar A, M and V are multilinear
@@ -448,9 +447,9 @@ theorem degreeOf_roundPoly_le
     -- V(x) + V(y) is multilinear
     have hSumVxy (j : Fin k ⊕ Fin k) : degreeOf j (rename Sum.inl V + rename Sum.inr V) ≤ 1 := by
        calc
-       _ ≤ max (degreeOf j ((rename Sum.inl) V)) (degreeOf j ((rename Sum.inr) V))
-          := by exact degreeOf_add_le j (rename Sum.inl V) (rename Sum.inr V)
-       _ ≤ 1 := by rw [max_le_iff] ; exact ⟨hVleft j, hVright j⟩
+       _ ≤ max (degreeOf j ((rename Sum.inl) V)) (degreeOf j ((rename Sum.inr) V)) := by
+         exact degreeOf_add_le j (rename Sum.inl V) (rename Sum.inr V)
+       _ ≤ 1 := by rw [max_le_iff]; exact ⟨hVleft j, hVright j⟩
 
     -- V(X) * V(y)  is multilinear
     have hProdVxy (j : Fin k ⊕ Fin k) : degreeOf j (rename Sum.inl V * rename Sum.inr V) ≤ 1 := by
@@ -564,12 +563,14 @@ theorem degreeOf_roundPoly_le
       _ ≤ 2 := by
           apply max_le
           · calc degreeOf j (bind₁ (substZ R point) A * (rename Sum.inl V + rename Sum.inr V))
-                ≤ degreeOf j (bind₁ (substZ R point) A) + degreeOf j (rename Sum.inl V + rename Sum.inr V) :=
+                ≤ degreeOf j (bind₁ (substZ R point) A)
+                    + degreeOf j (rename Sum.inl V + rename Sum.inr V) :=
                   degreeOf_mul_le _ _ _
               _ ≤ 1 + 1 := Nat.add_le_add (hSubstZ A hA j) (hSumVxy j)
               _ = 2 := rfl
           · calc degreeOf j (bind₁ (substZ R point) M * (rename Sum.inl V * rename Sum.inr V))
-                ≤ degreeOf j (bind₁ (substZ R point) M) + degreeOf j (rename Sum.inl V * rename Sum.inr V) :=
+                ≤ degreeOf j (bind₁ (substZ R point) M)
+                    + degreeOf j (rename Sum.inl V * rename Sum.inr V) :=
                   degreeOf_mul_le _ _ _
               _ ≤ 1 + 1 := Nat.add_le_add (hSubstZ M hM j) (hProdVxy j)
               _ = 2 := rfl
@@ -581,8 +582,9 @@ noncomputable def roundPolyFin {k d : ℕ} (c : Circuit k d) (l : Fin d) (point 
     (V : MvPolynomial (Fin k) R) : MvPolynomial (Fin (k + k)) R :=
   MvPolynomial.rename finSumFinEquiv (roundPoly R c l point V)
 
-theorem degreeOf_roundPolyFin_le {k d : ℕ} [Nontrivial R] (c : Circuit k d) (l : Fin d) (point : Fin k → R)
-    (V : MvPolynomial (Fin k) R) (hV : ∀ i, degreeOf i V ≤ 1) (j : Fin (k + k)) :
+theorem degreeOf_roundPolyFin_le {k d : ℕ} [Nontrivial R] (c : Circuit k d) (l : Fin d)
+    (point : Fin k → R) (V : MvPolynomial (Fin k) R) (hV : ∀ i, degreeOf i V ≤ 1)
+    (j : Fin (k + k)) :
     degreeOf j (roundPolyFin R c l point V) ≤ 2 := by
   unfold roundPolyFin
   rw [← finSumFinEquiv.apply_symm_apply j, degreeOf_rename_of_injective finSumFinEquiv.injective]
@@ -697,9 +699,11 @@ theorem sum_roundPolyFin_eq {k d : ℕ} [Nontrivial R] [DecidableEq R] (c : Circ
         MvPolynomial.eval z (roundPolyFin R c l point V) =
       ∑ x : Index k, ∑ y : Index k,
         (MvPolynomial.eval (Sum.elim point (Sum.elim (bridge R x) (bridge R y)))
-            (addPredMLE R c l) * (MvPolynomial.eval (bridge R x) V + MvPolynomial.eval (bridge R y) V)
+            (addPredMLE R c l)
+              * (MvPolynomial.eval (bridge R x) V + MvPolynomial.eval (bridge R y) V)
           + MvPolynomial.eval (Sum.elim point (Sum.elim (bridge R x) (bridge R y)))
-            (mulPredMLE R c l) * (MvPolynomial.eval (bridge R x) V * MvPolynomial.eval (bridge R y) V)) := by
+            (mulPredMLE R c l)
+              * (MvPolynomial.eval (bridge R x) V * MvPolynomial.eval (bridge R y) V)) := by
   rw [sum_piFinset_D R (fun z => MvPolynomial.eval z (roundPolyFin R c l point V))]
   rw [sum_finSumFinEquiv (fun g => MvPolynomial.eval (D R ∘ g) (roundPolyFin R c l point V))]
   simp_rw [sum_finTwoEquiv]
@@ -1273,7 +1277,8 @@ noncomputable def liftedInner [Nontrivial R] [DecidableEq R] [SampleableType R]
 
 -- Everything below is AI generated.
 -- It glues the two halves of a layer together: the lifted inner sum-check, then the combine
--- step. The oracle-preservation step is discharged by `Sumcheck.Spec.reduction_run_preserves_oracle`
+-- step. The oracle-preservation step is discharged by
+-- `Sumcheck.Spec.reduction_run_preserves_oracle`
 -- (proved in `GKR/SumcheckAux.lean`).
 
 instance lensIsComplete [Nontrivial R] [DecidableEq R] [SampleableType R]

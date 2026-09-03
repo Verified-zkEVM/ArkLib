@@ -86,7 +86,8 @@ theorem gkrLayer_perfectCompleteness (l : Fin n) :
 noncomputable def gkrReduction :
     Reduction []ₒ
       (GKRStatement R n k 0) Unit (GKRStatement R n k (Fin.last n)) Unit
-      (ProtocolSpec.seqCompose (fun _ : Fin n => Sumcheck.Spec.pSpec R 2 (k + k) ++ₚ Combine.pSpec R k)) :=
+      (ProtocolSpec.seqCompose
+        (fun _ : Fin n => Sumcheck.Spec.pSpec R 2 (k + k) ++ₚ Combine.pSpec R k)) :=
   Reduction.seqCompose
     (Stmt := fun i => GKRStatement R n k i) (Wit := fun _ => Unit)
     (gkrLayer R n c input)

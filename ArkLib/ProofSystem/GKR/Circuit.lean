@@ -51,21 +51,21 @@ structure Circuit (k : ℕ) (d : ℕ) where
 Peel the layer of a circuit
 -/
 def Circuit.tail
- {k : ℕ}
- {d : ℕ}
- (c : Circuit k (d + 1)) : Circuit k d where
+    {k : ℕ}
+    {d : ℕ}
+    (c : Circuit k (d + 1)) : Circuit k d where
   gate := fun i z => c.gate i.succ z -- i.succ takes in Fin n and returns Fin n + 1
 
 /--
 Evaluate one layer of an arithmetic circuit
 -/
 def evalLayer
- {k : ℕ}
- {F : Type} [CommSemiring F]
- (thisLayer : Index k → Gate k)
- (lowerLayer : Index k -> F)
- : Index k → F :=
- fun z =>
+    {k : ℕ}
+    {F : Type} [CommSemiring F]
+    (thisLayer : Index k → Gate k)
+    (lowerLayer : Index k -> F) :
+    Index k → F :=
+  fun z =>
   match thisLayer z with
   | Gate.add a b => lowerLayer a + lowerLayer b
   | Gate.mul a b => lowerLayer a * lowerLayer b
@@ -74,12 +74,12 @@ def evalLayer
 Evaluate the whole arithmetic circuit
 -/
 def evalCircuit
-  {k : ℕ}
-  {d : ℕ}
-  {F : Type} [CommSemiring F]
-  (c : Circuit k d)
-  (input : Index k → F)
-  : Index k → F :=
+    {k : ℕ}
+    {d : ℕ}
+    {F : Type} [CommSemiring F]
+    (c : Circuit k d)
+    (input : Index k → F) :
+    Index k → F :=
   match d , c with
   | 0, _ => input
   | (_ + 1), c => evalLayer (c.gate 0) (evalCircuit c.tail input)
@@ -88,12 +88,12 @@ def evalCircuit
 get a value at every layer
 -/
 def layerValues
-  {k : ℕ}
-  {d : ℕ}
-  {F : Type} [CommSemiring F]
-  (c : Circuit k d)
-  (input : Index k → F)
-  : (Fin (d + 1)) → (Index k) → F :=
+    {k : ℕ}
+    {d : ℕ}
+    {F : Type} [CommSemiring F]
+    (c : Circuit k d)
+    (input : Index k → F) :
+    (Fin (d + 1)) → (Index k) → F :=
   match d, c with
   | 0, _ => fun _ => input
   | _ + 1, c =>
@@ -106,9 +106,9 @@ Morally the definition of `layerValues`, but that definition recurses with `Fin.
 `Circuit.tail`, so extracting it in this form takes an induction on depth.
 -/
 theorem layerValues_castSucc
-  {k d : ℕ}
-  {F : Type} [CommSemiring F]
-  (c : Circuit k d) (input : Index k → F) (l : Fin d) :
+    {k d : ℕ}
+    {F : Type} [CommSemiring F]
+    (c : Circuit k d) (input : Index k → F) (l : Fin d) :
     layerValues c input l.castSucc = evalLayer (c.gate l) (layerValues c input l.succ) := by
   induction d with
   | zero => exact absurd l.2 (by omega)
@@ -122,9 +122,9 @@ theorem layerValues_castSucc
 layer 0 is the output of the circuit
 -/
 theorem layerValues_zero
-  {k d : ℕ}
-  {F : Type} [CommSemiring F]
-  (c : Circuit k d) (input : Index k → F) :
+    {k d : ℕ}
+    {F : Type} [CommSemiring F]
+    (c : Circuit k d) (input : Index k → F) :
     layerValues c input 0 = evalCircuit c input := by
   induction d with
   | zero => rfl
@@ -134,9 +134,9 @@ theorem layerValues_zero
 the last layer is the input
 -/
 theorem layerValues_last
-  {k d : ℕ}
-  {F : Type} [CommSemiring F]
-  (c : Circuit k d) (input : Index k → F) :
+    {k d : ℕ}
+    {F : Type} [CommSemiring F]
+    (c : Circuit k d) (input : Index k → F) :
     layerValues c input (Fin.last d) = input := by
   induction d with
   | zero => rfl
@@ -150,11 +150,11 @@ at level l, we have a gate z and at level l + 1 we have gates x and y
 we return wether z is an add gate
 -/
 def addPred
-  {k d : ℕ}
-  (F : Type) [CommSemiring F]
-  (c : Circuit k d)
-  (l : Fin (d))
-  (z x y : Index k) : F :=
+    {k d : ℕ}
+    (F : Type) [CommSemiring F]
+    (c : Circuit k d)
+    (l : Fin (d))
+    (z x y : Index k) : F :=
   match c.gate l z with
   | Gate.add a b => if a = x ∧ b = y then 1 else 0
   | Gate.mul _ _ => 0
@@ -165,11 +165,11 @@ at level l, we have a gate z and at level l + 1 we have gates x and y
 we return wether z is a mul gate
 -/
 def mulPred
-  {k d : ℕ}
-  (F : Type) [CommSemiring F]
-  (c : Circuit k d)
-  (l : Fin (d))
-  (z x y : Index k) : F :=
+    {k d : ℕ}
+    (F : Type) [CommSemiring F]
+    (c : Circuit k d)
+    (l : Fin (d))
+    (z x y : Index k) : F :=
   match c.gate l z with
   | Gate.mul a b => if a = x ∧ b = y then 1 else 0
   | Gate.add _ _ => 0
