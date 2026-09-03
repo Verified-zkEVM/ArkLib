@@ -656,6 +656,42 @@ def hyb_1
         (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
+/-! ### Malicious-prover query bounds -/
+
+/-- DS hash queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1HashQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inl _) => True
+  | _ => False
+
+/-- DS forward-permutation queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1PermQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inl _)) => True
+  | _ => False
+
+/-- DS inverse-permutation queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1PermInvQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inr _)) => True
+  | _ => False
+
+/-- CO25 Theorem 5.1 query-bound predicate for the malicious prover `𝒫̃`.
+`t_h`, `t_p`, and `t_{p⁻¹}` are aggregate bounds for the hash, forward-permutation, and
+inverse-permutation oracle families. The ambient `oSpec` handler is unconstrained: CO25's
+statement contains no ambient-oracle query budget. -/
+abbrev IsLemma5_1QueryBound
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  by
+    classical
+    exact OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
+      OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
+      OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
+
 /-- CO25 Claim 5.21.
 `Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` with `Hyb_0 / Hyb_1` sampled eagerly via
 `hyb_0` / `hyb_1`. -/
@@ -883,24 +919,6 @@ theorem claim_5_24
 
 /-! ### Main lemma 5.1: existential statement and salted `D2SAlgo` witness -/
 
-/-- DS hash queries in the combined Lemma 5.1 prover surface. -/
-def isLemma5_1HashQuery :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inl _) => True
-  | _ => False
-
-/-- DS forward-permutation queries in the combined Lemma 5.1 prover surface. -/
-def isLemma5_1PermQuery :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inr (.inl _)) => True
-  | _ => False
-
-/-- DS inverse-permutation queries in the combined Lemma 5.1 prover surface. -/
-def isLemma5_1PermInvQuery :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inr (.inr _)) => True
-  | _ => False
-
 /-- Basic-FS challenge queries made by `D2SAlgo`; ambient queries and its private sampling
 oracles are deliberately excluded. -/
 def isD2SAlgoChallengeQuery :
@@ -908,22 +926,6 @@ def isD2SAlgoChallengeQuery :
       (fsChallengeOracle (StmtIn × Salt) pSpec)).Domain → Prop
   | .inr (.inl _) => True
   | _ => False
-
-/-- CO25 Theorem 5.1 query-bound predicate for the malicious prover `𝒫̃`.
-`t_h`, `t_p`, and `t_{p⁻¹}` are aggregate bounds for the hash, forward-permutation, and
-inverse-permutation oracle families.  The ambient `oSpec` handler is unconstrained: CO25's
-statement contains no ambient-oracle query budget. -/
-abbrev IsLemma5_1QueryBound
-    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  by
-    classical
-    exact OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
-      OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
-      OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
 
 /-- CO25 Theorem 5.1's `θ★` query bound for the transformed prover.  This counts precisely the
 basic-FS challenge-oracle calls; `oSpec` and D2SAlgo's private sampling oracles are not adversary
