@@ -41,10 +41,17 @@ variable {innerRows outerRows dRows m r M m₁ : Nat} {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 variable {σ : Type}
 
+/-! `τ` (the folded witness's digit count) and `zBound` (the honest `ℓ∞` bound on `z` it is sized
+for) are independent parameters here, exactly as in `Correctness.lean`: the message and inner
+decompositions stay full-width at `δ = ⌈log_b q⌉`, while `τ` comes from the honest shortness bound.
+`μ₀` and hence the lift key's width `μ₀ + n₀·δ_{bZero}` depend on `τ`. -/
+
+variable {τ zBound : Nat}
+
 local notation "δ" P => Nat.clog (HonestRangeParams.b P) q
 local notation "μ₀" P =>
   rlinCols innerRows (Nat.clog (HonestRangeParams.b P) q) (Nat.clog (HonestRangeParams.b P) q)
-    (Nat.clog (HonestRangeParams.b P) q) m r
+    τ m r
 local notation "n₀" => rlinRows innerRows outerRows dRows
 
 /-- The concrete lift commitment of the nonrecursive chain: `hachiLiftCom` at the chain's own
@@ -79,8 +86,9 @@ def hachiNonrecursiveConcrete (P : HonestRangeParams q)
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
     (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :=
-  hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P
+  hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P hcap
     (nonrecursiveLiftCom (α := α) P D) hd hbZero φF
 
 set_option linter.unusedSectionVars false in
@@ -105,14 +113,17 @@ theorem hachiNonrecursiveConcrete_perfectCorrectness
         (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
     (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
+    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
     (φF : ZMod q →+* F)
     (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
     (hZeroγ : P.bZero - 1 ≤ P.γ) :
     Commitment.perfectCorrectness init impl
-      (hachiNonrecursiveConcrete (F := F) (ω := ω) (M := M) (m₁ := m₁) P D hd hbZero φF) :=
+      (hachiNonrecursiveConcrete (F := F) (ω := ω) (M := M) (m₁ := m₁)
+        P D hcap hd hbZero φF) :=
   hachiNonrecursive_perfectCorrectness (F := F) (ω := ω) (M := M) (m₁ := m₁)
-    P init impl hInit hKeygen hclog hd hbZero (nonrecursiveLiftCom (α := α) P D) φF hμn
-    hZeroγ
+    P init impl hInit hKeygen hcap hzb hτ hclog hd hbZero
+    (nonrecursiveLiftCom (α := α) P D) φF hμn hZeroγ
 
 end Concrete
 

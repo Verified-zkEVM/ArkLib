@@ -371,8 +371,13 @@ set_option linter.unusedSectionVars false in
 /-- **`commitBalanced` establishes paper-exact `QuadEval`'s input relation `relInBox`.**
 `mem_relInBox_of_honestBalanced` at the actual output of the balanced committer: the statement's
 commitment is `(commitBalanced …).1` and the witness is the honest opening over
-`(commitBalanced …).2`, so the paper-exact completeness theorem
-(`quadEvalReduction_perfectCompleteness_balancedDigits`) now has a real committer to apply to.
+`(commitBalanced …).2`, so the paper-exact completeness theorems
+(`quadEvalReduction_perfectCompleteness_balancedDigits` at the full width `τ = δ`, and
+`…_boundedBalancedDigits_paperRelOut` at a `τ` sized from the honest bound on `z`) now have a real
+committer to apply to. Both take `relInBoxMsgShort` — `relInBox` plus the committer's own message
+`ℓ∞` bound `⌊b/2⌋`, which follows from the very same balanced-digit fact used here
+(`balancedZmodDigit_natAbs_le` through `gadgetDecompose_vecLInftyNorm_le_of_digit_le`; see
+`mem_relPolyEvalMsgShort_of_relCommitInput` in `Correctness.lean`).
 
 The remaining hypothesis `heval` is Eq. (15) evaluation consistency of the committed polynomial
 against the statement's bases — the polynomial layer's obligation, not the committer's. -/

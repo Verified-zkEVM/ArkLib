@@ -649,8 +649,8 @@ theorem quadEvalPackage_verifier_eq_quadEvalReduction_verifier
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
-    {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
-    (ddZ : DigitDecomposition base zDigits) :
+    {base : ZMod q} {zBound : ℕ} (ddCarrier : DigitDecomposition base messageDigits)
+    (ddZ : BoundedDigitDecomposition base zDigits zBound) :
     (quadEvalPackage (zDigits := zDigits) (b := b) (γ := γ) init impl hq5 hκ hτ pp).verifier
       = (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω)
           𝓜(q, α) pp ddCarrier ddZ).verifier :=

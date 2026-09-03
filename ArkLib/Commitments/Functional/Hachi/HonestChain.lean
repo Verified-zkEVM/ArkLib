@@ -254,7 +254,8 @@ section CompletePrefix
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r m₀ m₁ : Nat} {ω : ℕ}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits zBound m r m₀ m₁ : Nat}
+  {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
@@ -290,7 +291,7 @@ zero-check. -/
 def completePrefixReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (hd : 0 < Φ.φ.natDegree) : Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -305,7 +306,7 @@ def completePrefixReduction (P : HonestRangeParams q)
   (bridgeReduction (oSpec := oSpec) Φ).append
     ((quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
       (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
-      (balancedZmodDigitDecomposition P.b zDigits P.hb hqz)).append
+      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)).append
     ((rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp (P.b : ZMod q) ω P.γ).append
     ((liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).append
     ((batchReduction (oSpec := oSpec) Φ P.γ P.bZero K).append
@@ -328,23 +329,27 @@ theorem completePrefixReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := m₀) (m₁ := m₁)
-      Φ P pp hqm hqz K hd).perfectCompleteness init impl
-      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      Φ P pp hqm hcap K hd).perfectCompleteness init impl
+      (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       (relNestedZeroCheck Φ m₀ m₁ P.γ P.bZero K φF P.bZero) := by
   have hBridge :=
-    bridgeReduction_perfectCompleteness Φ init impl pp (P.b : ZMod q) βSq P.γ κ
+    bridgeReduction_perfectCompleteness_msgShort Φ init impl pp (P.b : ZMod q) βSq P.γ κ
+      (P.b / 2)
   have hQuad := quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
-      (βSq := βSq) (γ := P.γ) (κ := κ)
-      Φ init impl pp _ _ hmd hτ hd
+      (βSq := βSq) (γ := P.γ) (κ := κ) (msgBound := P.b / 2)
+      Φ init impl pp (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
+      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)
+      hmul hmd hτ hd hzb
       (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqm P.hbq x e) P.hbγ)
-      (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqz P.hbq x e) P.hbγ)
+      (fun x e => le_trans (boundedBalancedZmodDigit_natAbs_le P.hb P.hbq x e) P.hbγ)
   have hRlin := rlinReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
     Φ P init impl pp (P.b : ZMod q)
   have hLift := liftReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
@@ -404,7 +409,8 @@ section ThroughSumcheck
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r M m₁ : Nat} {ω : ℕ}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits zBound m r M m₁ : Nat}
+  {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
@@ -416,7 +422,7 @@ prefix (`completePrefixReduction`) followed by the local sumcheck
 def completeThroughSumcheckReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) : Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -430,7 +436,7 @@ def completeThroughSumcheckReduction (P : HonestRangeParams q)
               ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F (M + 1) m₁))))) ++ₚ
         sumcheckSpec F P.bZero (M + 1)) :=
   (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := M + 1) (m₁ := m₁)
-      Φ P pp hqm hqz K hd).append
+      Φ P pp hqm hcap K hd).append
     (sumcheckReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ P.γ P.bZero hbZero φF)
 
 /-- Sampleability of the through-sumcheck wire format: the prefix's own instance appended to the
@@ -471,7 +477,8 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
@@ -479,13 +486,13 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
     (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      Φ P pp hqm hqz K hd hbZero φF).perfectCompleteness init impl
-      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      Φ P pp hqm hcap K hd hbZero φF).perfectCompleteness init impl
+      (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       (relWEvalClaim Φ (M + 1) P.γ P.bZero P.bZero K φF) :=
   Reduction.append_perfectCompleteness _ _
     (completePrefixReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (m₀ := M + 1) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hqz hmd hτ hd K φF hμn hZeroγ)
+      Φ P init impl pp hqm hcap hmul hzb hmd hτ hd K φF hμn hZeroγ)
     (sumcheckReduction_perfectCompleteness Φ m₁ P.γ P.bZero P.bZero init impl K hbZero
       P.one_lt_bZero φF hd hμn)
 

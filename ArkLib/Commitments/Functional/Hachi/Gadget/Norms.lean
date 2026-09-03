@@ -47,6 +47,12 @@ This file bridges the gadget algebra (`Hachi.Gadget.Core`) and the centered norm
   `‖G ·ᵥ v‖∞ ≤ (∑_{u<digits} bᵘ) · γ`, hence `‖G ·ᵥ v‖₂²` is within `zRecomposeL2SqBound`.
 * `gadgetMul_zmod_sub_l2NormSq_le`: two range-checked recompositions differ in `ℓ₂²` by at most
   `subL2NormSqBound (zRecomposeL2SqBound …)` — the `4·B_z` bound Lemma 8 needs.
+* `boundedBalancedZmodDigit_valMinAbs_mem` / `boundedBalancedZmodDigit_natAbs_le`: the
+  **short-input** balanced digits (`Gadget/Core.lean`) land in the same box `S_b` / ball `⌊b/2⌋`,
+  for every input and with no `q ≤ b ^ digits` hypothesis.
+* `boundedGadgetDecompose_gadgetMul_eq_of_vecLInftyNorm_le`: the bounded gadget inverse round-trips
+  under `G` on every `ℓ∞`-short input — the honest `z = J·ẑ` step at `τ` chosen from the honest
+  bound on `z`.
 
 ## References
 
@@ -83,17 +89,38 @@ theorem zmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits
   omega
 
 omit [NeZero q] in
+/-- The `k`-th coefficient (`k < deg φ`) of a `gadgetDecomposeFun` block is exactly the
+corresponding digit of the corresponding input coefficient. All the range bookkeeping below is a
+consequence of this one identity, and it holds at the level of the *bare* digit map, so the full
+(`DigitDecomposition`) and bounded (`BoundedDigitDecomposition`) decompositions share it. -/
+theorem gadgetDecomposeFun_coeff {rows digits : ℕ} (digit : ZMod q → Fin digits → ZMod q)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    (gadgetDecomposeFun Φ digit x j).1.coeff k =
+      digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2 := by
+  rw [show gadgetDecomposeFun Φ digit x j =
+      Rq.ofFinCoeff Φ Φ.φ.natDegree (fun k =>
+        digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
+
+omit [NeZero q] in
 /-- The `k`-th coefficient (`k < deg φ`) of a gadget-decomposition block is exactly the
 corresponding digit of the corresponding input coefficient. -/
 theorem gadgetDecompose_coeff {base : ZMod q} {rows digits : ℕ}
     (dd : DigitDecomposition base digits) (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits))
     {k : ℕ} (hk : k < Φ.φ.natDegree) :
     (gadgetDecompose Φ dd x j).1.coeff k =
-      dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2 := by
-  rw [show gadgetDecompose Φ dd x j =
-      Rq.ofFinCoeff Φ Φ.φ.natDegree (fun k =>
-        dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
-    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
+      dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2 :=
+  gadgetDecomposeFun_coeff Φ dd.digit x j hk
+
+omit [NeZero q] in
+/-- The bounded counterpart of `gadgetDecompose_coeff`: same identity, over a
+`BoundedDigitDecomposition`'s digit map. -/
+theorem boundedGadgetDecompose_coeff {base : ZMod q} {rows digits bound : ℕ}
+    (bdd : BoundedDigitDecomposition base digits bound) (x : PolyVec (Rq Φ) rows)
+    (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    (bdd.gadgetDecompose Φ x j).1.coeff k =
+      bdd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2 :=
+  gadgetDecomposeFun_coeff Φ bdd.digit x j hk
 
 omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **Core balanced-digit bound.** Each digit of `balancedZmodDigitDecomposition`, as a centered
@@ -143,23 +170,93 @@ theorem balancedZmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b 
   obtain ⟨hlo, hhi⟩ := balancedZmodDigit_valMinAbs_mem hb hq hbq c e
   omega
 
+/-! ### The bounded balanced digits: same range, no `q ≤ b ^ digits`
+
+`boundedBalancedZmodDigit` is the short-input decomposition Hachi's folded witness `z` uses
+(`Gadget/Core.lean`). Its digits are `u − ⌊b/2⌋` for an ordinary base-`b` digit `u < b` of a
+*nonnegative* integer, exactly as in the full-width balanced case — so the range statements are
+identical, hold for **every** input (shortness buys the reconstruction law, not the range), and
+crucially require no `q ≤ b ^ digits`. -/
+
+omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- **The bounded balanced digits lie in the paper's box `S_b`** — `[−⌊b/2⌋, ⌈b/2⌉−1]` ([NOZ26]
+§2.1), for every input and with no `q ≤ b ^ digits` hypothesis. Same mechanism as
+`balancedZmodDigit_valMinAbs_mem`: the digit is `u − ⌊b/2⌋` for an unsigned base-`b` digit `u < b`,
+and `b ≤ q/2` is the anti-wraparound condition making that integer *be* the centered
+representative. -/
+theorem boundedBalancedZmodDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2)
+    (x : ZMod q) (e : Fin digits) :
+    -((b / 2 : ℕ) : ℤ) ≤ (boundedBalancedZmodDigit b digits x e).valMinAbs ∧
+      (boundedBalancedZmodDigit b digits x e).valMinAbs
+        ≤ (((b + 1) / 2 : ℕ) : ℤ) - 1 := by
+  have hq0 : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+  simp only [boundedBalancedZmodDigit]
+  set n : ℕ :=
+    (x.valMinAbs + ((b / 2 : ℕ) : ℤ) * (digitOnesValue b digits : ℤ)).toNat with hn
+  set u := (Nat.digits b n).getD (e : ℕ) 0 with hu
+  have hub : u < b := by
+    rcases lt_or_ge (e : ℕ) (Nat.digits b n).length with hlt | hge
+    · rw [hu, List.getD_eq_getElem _ _ hlt]
+      exact Nat.digits_lt_base hb (List.getElem_mem _)
+    · rw [hu, List.getD_eq_default _ _ hge]; omega
+  have hval : ((u : ZMod q) - ((b / 2 : ℕ) : ZMod q)).valMinAbs
+      = (u : ℤ) - ((b / 2 : ℕ) : ℤ) := by
+    refine (ZMod.valMinAbs_spec _ _).mpr ⟨?_, ?_⟩
+    · simp only [Int.cast_sub, Int.cast_natCast]
+    · rw [Set.mem_Ioc]
+      omega
+  rw [hval]
+  omega
+
+omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- **Ball form of the bounded balanced-digit bound**: every digit has centered absolute value at
+most `⌊b/2⌋` — the form Eq. (20)'s relaxed `c6` ball check consumes. -/
+theorem boundedBalancedZmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2)
+    (x : ZMod q) (e : Fin digits) :
+    (boundedBalancedZmodDigit b digits x e).valMinAbs.natAbs ≤ b / 2 := by
+  obtain ⟨hlo, hhi⟩ := boundedBalancedZmodDigit_valMinAbs_mem hb hbq x e
+  omega
+
+omit [NeZero q] in
+/-- **The conditional gadget round-trip in `ℓ∞` form** `G · G⁻¹(x) = x`: the bounded gadget inverse
+is inverted by `G` on every input within the decomposition's bound. This is the honest
+`z = J · ẑ` reconstruction (Hachi Eq. (20) rows c4/c5) at a digit count `τ` set by the honest
+shortness bound on `z` rather than by `q` — the whole point of the bounded abstraction. -/
+theorem boundedGadgetDecompose_gadgetMul_eq_of_vecLInftyNorm_le {base : ZMod q}
+    {digits bound rows : ℕ} (hd : 0 < digits) (h1 : 1 ≤ Φ.φ.natDegree)
+    (bdd : BoundedDigitDecomposition base digits bound) (x : PolyVec (Rq Φ) rows)
+    (hx : vecLInftyNorm Φ x ≤ bound) :
+    gadgetMul Φ base (bdd.gadgetDecompose Φ x) = x :=
+  boundedGadgetDecompose_gadgetMul_eq Φ hd h1 bdd x
+    (fun i _k hk => Rq.valMinAbs_natAbs_coeff_le_of_vecLInftyNorm_le Φ hx i hk)
+
 /-! ## `ℓ∞` bound -/
 
 omit [NeZero q] in
-/-- **`ℓ∞` shortness of `G⁻¹` from a digit bound, for an arbitrary `DigitDecomposition`.** Every
-block of the decomposition inherits whatever centered bound `γ` the digit map satisfies, because
-`gadgetDecompose_coeff` identifies each coefficient of the output with a single digit of a single
-input coefficient. The general form is what completeness proofs need, since they are stated for
-whichever decomposition the honest prover was instantiated with. -/
+/-- **`ℓ∞` shortness of `G⁻¹` from a digit bound, for a bare digit map.** Every block of the
+decomposition inherits whatever centered bound `γ` the digit map satisfies, because
+`gadgetDecomposeFun_coeff` identifies each coefficient of the output with a single digit of a
+single input coefficient. Shared by the full and the bounded decomposition. -/
+theorem gadgetDecomposeFun_lInftyNorm_le_of_digit_le {digits rows γ : ℕ}
+    (digit : ZMod q → Fin digits → ZMod q)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) :
+    Rq.lInftyNorm Φ (gadgetDecomposeFun Φ digit x j) ≤ γ := by
+  unfold Rq.lInftyNorm
+  refine Finset.sup_le (fun k hk => ?_)
+  rw [gadgetDecomposeFun_coeff Φ _ x j (Finset.mem_range.mp hk)]
+  exact hdd _ _
+
+omit [NeZero q] in
+/-- **`ℓ∞` shortness of `G⁻¹` from a digit bound, for an arbitrary `DigitDecomposition`.** The
+form completeness proofs need, since they are stated for whichever decomposition the honest prover
+was instantiated with. -/
 theorem gadgetDecompose_lInftyNorm_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
     (dd : DigitDecomposition base digits)
     (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
     (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) :
-    Rq.lInftyNorm Φ (gadgetDecompose Φ dd x j) ≤ γ := by
-  unfold Rq.lInftyNorm
-  refine Finset.sup_le (fun k hk => ?_)
-  rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
-  exact hdd _ _
+    Rq.lInftyNorm Φ (gadgetDecompose Φ dd x j) ≤ γ :=
+  gadgetDecomposeFun_lInftyNorm_le_of_digit_le Φ dd.digit hdd x j
 
 omit [NeZero q] in
 /-- **Two-sided (box) form of the same bookkeeping**: if every digit of `dd` has its centered
@@ -168,15 +265,50 @@ representative in the interval `[lo, hi]`, so does every coefficient of the gadg
 The `ℓ∞` lemmas above give a symmetric ball; Hachi's exact Eq. (20) range check is the asymmetric
 box `S_b`, so the honest side of `paperRelOut` needs this form. Same one-line mechanism
 (`gadgetDecompose_coeff`): each output coefficient *is* a digit of an input coefficient. -/
+theorem gadgetDecomposeFun_coeff_valMinAbs_mem_of_digit_mem {digits rows : ℕ}
+    {lo hi : ℤ} (digit : ZMod q → Fin digits → ZMod q)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits),
+      lo ≤ (digit c e).valMinAbs ∧ (digit c e).valMinAbs ≤ hi)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    lo ≤ ((gadgetDecomposeFun Φ digit x j).1.coeff k).valMinAbs ∧
+      ((gadgetDecomposeFun Φ digit x j).1.coeff k).valMinAbs ≤ hi := by
+  rw [gadgetDecomposeFun_coeff Φ _ x j hk]
+  exact hdd _ _
+
+omit [NeZero q] in
+/-- Box form for a `DigitDecomposition`, from the bare-digit-map version above. -/
 theorem gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem {base : ZMod q} {digits rows : ℕ}
     {lo hi : ℤ} (dd : DigitDecomposition base digits)
     (hdd : ∀ (c : ZMod q) (e : Fin digits),
       lo ≤ (dd.digit c e).valMinAbs ∧ (dd.digit c e).valMinAbs ≤ hi)
     (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
     lo ≤ ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ∧
-      ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ≤ hi := by
-  rw [gadgetDecompose_coeff Φ _ x j hk]
-  exact hdd _ _
+      ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ≤ hi :=
+  gadgetDecomposeFun_coeff_valMinAbs_mem_of_digit_mem Φ dd.digit hdd x j hk
+
+omit [NeZero q] in
+/-- Box form for a `BoundedDigitDecomposition` — the paper-exact `S_b` range check on the honest
+`ẑ` at a `τ` chosen from the honest bound rather than from `q`. Note it is **unconditional**: what
+shortness of the input buys is the reconstruction law, never the digit range. -/
+theorem boundedGadgetDecompose_coeff_valMinAbs_mem_of_digit_mem {base : ZMod q}
+    {digits rows bound : ℕ} {lo hi : ℤ} (bdd : BoundedDigitDecomposition base digits bound)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits),
+      lo ≤ (bdd.digit c e).valMinAbs ∧ (bdd.digit c e).valMinAbs ≤ hi)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    lo ≤ ((bdd.gadgetDecompose Φ x j).1.coeff k).valMinAbs ∧
+      ((bdd.gadgetDecompose Φ x j).1.coeff k).valMinAbs ≤ hi :=
+  gadgetDecomposeFun_coeff_valMinAbs_mem_of_digit_mem Φ bdd.digit hdd x j hk
+
+omit [NeZero q] in
+/-- Vector form of `gadgetDecomposeFun_lInftyNorm_le_of_digit_le`. -/
+theorem gadgetDecomposeFun_vecLInftyNorm_le_of_digit_le {digits rows γ : ℕ}
+    (digit : ZMod q → Fin digits → ZMod q)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) :
+    vecLInftyNorm Φ (gadgetDecomposeFun Φ digit x) ≤ γ := by
+  unfold vecLInftyNorm
+  exact Finset.sup_le
+    (fun j _ => gadgetDecomposeFun_lInftyNorm_le_of_digit_le Φ digit hdd x j)
 
 omit [NeZero q] in
 /-- Vector form of `gadgetDecompose_lInftyNorm_le_of_digit_le`: the whole gadget decomposition is
@@ -185,9 +317,18 @@ theorem gadgetDecompose_vecLInftyNorm_le_of_digit_le {base : ZMod q} {digits row
     (dd : DigitDecomposition base digits)
     (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
     (x : PolyVec (Rq Φ) rows) :
-    vecLInftyNorm Φ (gadgetDecompose Φ dd x) ≤ γ := by
-  unfold vecLInftyNorm
-  exact Finset.sup_le (fun j _ => gadgetDecompose_lInftyNorm_le_of_digit_le Φ dd hdd x j)
+    vecLInftyNorm Φ (gadgetDecompose Φ dd x) ≤ γ :=
+  gadgetDecomposeFun_vecLInftyNorm_le_of_digit_le Φ dd.digit hdd x
+
+omit [NeZero q] in
+/-- Vector `ℓ∞` bound for a `BoundedDigitDecomposition` — the `c6` range check on the honest `ẑ`
+in the ball-relaxed reading. Unconditional in the input, like its box counterpart. -/
+theorem boundedGadgetDecompose_vecLInftyNorm_le_of_digit_le {base : ZMod q}
+    {digits rows bound γ : ℕ} (bdd : BoundedDigitDecomposition base digits bound)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (bdd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) :
+    vecLInftyNorm Φ (bdd.gadgetDecompose Φ x) ≤ γ :=
+  gadgetDecomposeFun_vecLInftyNorm_le_of_digit_le Φ bdd.digit hdd x
 
 /-- **`ℓ∞` shortness of `G⁻¹`.** The full gadget decomposition has centered `ℓ∞` norm `≤ b - 1`. -/
 theorem gadgetDecompose_zmod_vecLInftyNorm_le {b digits rows : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)

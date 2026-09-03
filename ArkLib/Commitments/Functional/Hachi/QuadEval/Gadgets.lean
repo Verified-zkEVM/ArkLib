@@ -3,6 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 
@@ -140,6 +141,48 @@ theorem z_eq_jMatrix {n zDigits : Nat} {base : R} (hd : 0 < zDigits)
   rw [zDecomp, jMatrix]; exact (gadgetDecompose_lawful Φ hd h1 ddZ z).symm
 
 end JGadget
+
+/-! ### The bounded `J⁻¹` — the short-`z` decomposition Hachi's `τ` is sized for
+
+Hachi's `ẑ = J⁻¹(z)` is the one gadget step whose digit count `τ` the paper does **not** take to be
+`⌈log_b q⌉`: `z = Σᵢ cᵢ sᵢ` is deterministically short in an honest run ([NOZ26] §4.4), and `τ` is
+chosen from that bound. Correspondingly `zDecompBounded` decomposes with a
+`BoundedDigitDecomposition` (`Gadget/Core.lean`), whose round-trip below is conditional on the
+`ℓ∞` shortness of `z` — the whole content of the separation between `τ` and `δ`. -/
+
+section BoundedJGadget
+
+variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+  (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
+
+/-- The **bounded** response decomposition `ẑ := J⁻¹(z)` (Hachi Eq. (20)), over a
+`BoundedDigitDecomposition`. Executable and total: the digit map is total, and only the round-trip
+identity is conditional. -/
+def zDecompBounded {n zDigits zBound : Nat} {base : ZMod q}
+    (bddZ : BoundedDigitDecomposition base zDigits zBound) (z : PolyVec (Rq Φ) n) :
+    PolyVec (Rq Φ) (n * zDigits) :=
+  bddZ.gadgetDecompose Φ z
+
+omit [NeZero q] in
+/-- `zDecompBounded` at the compatibility wrapper `DigitDecomposition.toBounded` is the ordinary
+full-width `zDecomp` — the `τ := δ` path, unchanged. -/
+@[simp] theorem zDecompBounded_toBounded {n zDigits : Nat} {base : ZMod q}
+    (ddZ : DigitDecomposition base zDigits) (zBound : ℕ) (z : PolyVec (Rq Φ) n) :
+    zDecompBounded Φ (ddZ.toBounded zBound) z = zDecomp Φ ddZ z := rfl
+
+omit [NeZero q] in
+/-- **Conditional roundtrip `z = J *ᵥ ẑ` for the bounded decomposition**: the verifier's Eq. (20)
+reconstruction of `z` from `ẑ`, valid exactly when `z` is within the decomposition's bound. At the
+`ℓ = 30` parameters with ArkLib's conservative `τ = 5` (`Params.lean`) this is what makes that
+digit count correct while `q ≤ 16⁵` is false. -/
+theorem z_eq_jMatrix_bounded {n zDigits zBound : Nat} {base : ZMod q} (hd : 0 < zDigits)
+    (h1 : 1 ≤ Φ.φ.natDegree) (bddZ : BoundedDigitDecomposition base zDigits zBound)
+    (z : PolyVec (Rq Φ) n) (hz : vecLInftyNorm Φ z ≤ zBound) :
+    z = jMatrix Φ base n zDigits *ᵥ zDecompBounded Φ bddZ z := by
+  rw [zDecompBounded, jMatrix]
+  exact (boundedGadgetDecompose_gadgetMul_eq_of_vecLInftyNorm_le Φ hd h1 bddZ z hz).symm
+
+end BoundedJGadget
 
 /-! ## The block-weighted gadget sums `tensorG` (c5) and `tensorG1` (c4) -/
 

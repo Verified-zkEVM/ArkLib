@@ -39,14 +39,23 @@ this repository still admits; each link's own completeness is axiom-clean.
   decision procedure.
 * `relCommitInput` / `commitInputReduction` / `…_perfectCompleteness`: the zero-round head that
   converts the commitment API's claim (an honest **balanced** commitment plus a truthful
-  evaluation claim) into `relPolyEval`, with the relation step
-  `mem_relPolyEval_of_relCommitInput`.
+  evaluation claim) into `relPolyEvalMsgShort`, with the relation step
+  `mem_relPolyEvalMsgShort_of_relCommitInput` (and `mem_relPolyEval_of_relCommitInput` as its
+  forgetful corollary). The `MsgShort` conjunct is the `ℓ∞` bound `⌊b/2⌋` on the balanced
+  committer's message decomposition — the only extra invariant the honest-`z` shortness bound
+  needs, and hence the reason the folded-witness digit count `τ` can be chosen from
+  `2ʳ·ω·⌊b/2⌋` instead of from `q`.
 * `nonrecursiveOpeningReduction`, `hachiNonrecursiveOpening` and their completeness: the honest
   chain through the sumcheck (`completeThroughSumcheckReduction`) closed by the terminal base
   case, with the input adapter in front — the complete opening protocol, from `relCommitInput` to
   `acceptRejectRel`.
 * `hachiNonrecursive`: Hachi as a `Commitment.Scheme` with that opening and the balanced committer
-  `commitBalanced`.
+  `commitBalanced`. Its `τ` (folded-witness digit count) and `zBound` are **independent
+  parameters**: the message and inner digit counts stay `δ = ⌈log_b q⌉`, while `τ` is constrained
+  only by `hcap : zBound ≤ balancedDigitCapacity P.b τ` and `hzb : 2ʳ·ω·⌊b/2⌋ ≤ zBound`. At the
+  `ℓ = 30` parameters with ArkLib's conservative `τ = 5` (`Params.lean`) that is `τ = 5 < δ = 8`,
+  and `q ≤ 16⁵` is nowhere assumed — it is false. Setting `τ := δ` recovers the old full-width
+  behaviour as an instance.
 * `hachiNonrecursive_perfectCorrectness`: `Commitment.perfectCorrectness` for it, through the
   generic bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
   (`Commitments/Functional/Basic.lean`). `Concrete.lean` instantiates all of this at the Ajtai
@@ -175,7 +184,8 @@ section NonrecursiveOpening
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r M m₁ : Nat} {ω : ℕ}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits zBound m r M m₁ : Nat}
+  {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
@@ -235,7 +245,7 @@ polynomial-evaluation relation to a Boolean verdict; no recursion adapter is inv
 def nonrecursiveOpeningReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero)) [DecidableEq K.TCom]
     (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
     Reduction oSpec
@@ -247,7 +257,7 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
         (innerDigits := innerDigits) (dRows := dRows) (zDigits := zDigits)
         (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω) Φ K.TCom P.bZero) :=
   (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      Φ P pp hqm hqz K hd hbZero φF).append
+      Φ P pp hqm hcap K hd hbZero φF).append
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ P.bZero P.bZero K φF)
 
 set_option linter.unusedSectionVars false in
@@ -266,7 +276,8 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero)) [DecidableEq K.TCom]
@@ -274,13 +285,13 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
     (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (nonrecursiveOpeningReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      Φ P pp hqm hqz K hd hbZero φF).perfectCompleteness init impl
-      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      Φ P pp hqm hcap K hd hbZero φF).perfectCompleteness init impl
+      (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       acceptRejectRel :=
   Reduction.append_perfectCompleteness _ _
     (completeThroughSumcheckReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hqz hmd hτ hd hbZero K φF hμn hZeroγ)
+      Φ P init impl pp hqm hcap hmul hzb hmd hτ hd hbZero K φF hμn hZeroγ)
     (nonrecursiveTerminalReduction_perfectCompleteness Φ (M + 1) P.γ P.bZero P.bZero K φF
       init impl)
 
@@ -356,17 +367,21 @@ def relCommitInput (hb : 1 < b)
     CMlPolynomial.eval p.2.1 p.1.2.1 = p.1.2.2}
 
 set_option linter.unusedSectionVars false in
-/-- **The honest commitment input satisfies `relPolyEval`** — the forward relation lemma of the
-input adapter, and the only direction correctness needs.
+/-- **The honest commitment input satisfies `relPolyEvalMsgShort`** — the forward relation lemma
+of the input adapter, and the only direction correctness needs.
 
-The `VerifiedOpening` conjunct is `verifiedOpening_honestOpening` with the two norm side
-conditions discharged for the balanced digits (short at *half* the unsigned radius, hence the
-`⌊b/2⌋`-shaped honest bounds, relaxed into the target parameters by `hβSq`/`hγ`). The evaluation
-conjunct is the reconstruction chain: the derived message matrix of the honest opening *is* the
+Three conjuncts. The `VerifiedOpening` one is `verifiedOpening_honestOpening` with the two norm
+side conditions discharged for the balanced digits (short at *half* the unsigned radius, hence the
+`⌊b/2⌋`-shaped honest bounds, relaxed into the target parameters by `hβSq`/`hγ`). The **message
+`ℓ∞` bound** `⌊b/2⌋` is the same balanced-digit fact read through
+`gadgetDecompose_vecLInftyNorm_le_of_digit_le`; it is what the honest-`z` shortness bound
+downstream consumes, and hence what lets the folded-witness digit count `τ` be sized from
+`2ʳ·ω·⌊b/2⌋` rather than from `q`. The evaluation conjunct is the reconstruction chain: the
+derived message matrix of the honest opening *is* the
 committed coefficient matrix (`generateDecomps_derivedMessage`), whose polynomial is the data
 (`toPolynomial_toMatrix`), evaluated at the recombined query point
 (`Vector.cast_take_append_cast_drop`). -/
-theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
+theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
     (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
     (hβSq : (2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
     (hγ : b / 2 ≤ γ)
@@ -375,7 +390,8 @@ theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
     (s : CommitInputStatement q α outerRows m r) (w : CommitInputWitness b q α innerRows m r)
     (h : (s, w) ∈ relCommitInput b hb pp) :
     (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s,
-      commitInputWitMap b w) ∈ relPolyEval 𝓜(q, α) pp (b : ZMod q) βSq γ κ := by
+      commitInputWitMap b w)
+      ∈ relPolyEvalMsgShort 𝓜(q, α) pp (b : ZMod q) βSq γ κ (b / 2) := by
   obtain ⟨hcm, heval⟩ := h
   set dd := balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q) with hdd
   -- The two components of the honest committer's output.
@@ -392,7 +408,7 @@ theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
     unfold commitInputWitMap honestOpening
     rw [hdc]
   rw [hwit]
-  constructor
+  refine ⟨⟨?_, ?_⟩, ?_⟩
   · -- `VerifiedOpening`, with the balanced-digit norm bounds relaxed into the parameters.
     have hβ : ∀ i, ‖(generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
         pp.toPublicParams (Hachi.toMatrix w.1)).message i‖₂² ≤ βSq := by
@@ -433,6 +449,30 @@ theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
       ((s.2.1.take r).cast (by omega) ++ (s.2.1.drop r).cast (by omega)) = s.2.2
     rw [Vector.cast_take_append_cast_drop]
     exact heval
+  · -- The honest message decomposition is `ℓ∞`-short at the balanced radius `⌊b/2⌋`: the input
+    -- to the honest-`z` bound (`vecLInftyNorm_honestZ_le`), and the reason `τ` may sit below `δ`.
+    intro i
+    change vecLInftyNorm 𝓜(q, α) (gadgetDecompose 𝓜(q, α) dd _) ≤ b / 2
+    exact gadgetDecompose_vecLInftyNorm_le_of_digit_le 𝓜(q, α) dd
+      (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) hbq c e) _
+
+set_option linter.unusedSectionVars false in
+/-- **The honest commitment input satisfies `relPolyEval`** — the old, weaker form of
+`mem_relPolyEvalMsgShort_of_relCommitInput`, through the forgetful inclusion
+`relPolyEvalMsgShort ⊆ relPolyEval`. Kept because it is the statement any consumer of the
+unstrengthened relation wants. -/
+theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
+    (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
+    (hβSq : (2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
+    (hγ : b / 2 ≤ γ)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
+      (Nat.clog b q) dRows)
+    (s : CommitInputStatement q α outerRows m r) (w : CommitInputWitness b q α innerRows m r)
+    (h : (s, w) ∈ relCommitInput b hb pp) :
+    (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s,
+      commitInputWitMap b w) ∈ relPolyEval 𝓜(q, α) pp (b : ZMod q) βSq γ κ :=
+  relPolyEvalMsgShort_subset_relPolyEval 𝓜(q, α) pp (b : ZMod q) βSq γ κ (b / 2)
+    (mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq hdeg hclog hκ hβSq hγ pp s w h)
 
 /-- **The commitment-input adapter**: the zero-round `ReduceClaim` head converting the
 commitment API's opening claim into the Hachi chain's polynomial-evaluation claim. -/
@@ -460,10 +500,10 @@ theorem commitInputReduction_perfectCompleteness {βSq γ κ : ℕ} (hb : 1 < b)
     (commitInputReduction (oSpec := oSpec) (innerRows := innerRows) (dRows := dRows)
         b).perfectCompleteness init impl
       (relCommitInput b hb pp)
-      (relPolyEval 𝓜(q, α) pp (b : ZMod q) βSq γ κ) :=
+      (relPolyEvalMsgShort 𝓜(q, α) pp (b : ZMod q) βSq γ κ (b / 2)) :=
   ReduceClaim.reduction_completeness_of_imp _ _
     (fun stmt wit h =>
-      mem_relPolyEval_of_relCommitInput b hb hbq hdeg hclog hκ hβSq hγ pp stmt wit h)
+      mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq hdeg hclog hκ hβSq hγ pp stmt wit h)
 
 end InputAdapter
 
@@ -482,10 +522,23 @@ variable {innerRows outerRows dRows m r M m₁ : Nat} {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 variable {σ : Type}
 
+/-! ### `τ` is an independent protocol parameter
+
+The message and inner gadget steps decompose arbitrary residues, so their digit counts are pinned
+to `δ = ⌈log_b q⌉` (`Nat.clog`) — that is correct and necessary. The **folded-witness** step is
+different: `z = Σᵢ cᵢ sᵢ` is deterministically short, so its digit count is a free parameter `τ`,
+sized from the honest bound `2ʳ·ω·⌊b/2⌋` rather than from `q`. `τ` and `zBound` are therefore
+section variables here, and they flow into `μ₀`, the lift/sumcheck table widths, and the
+soundness-side `quadEvalBetaSq` alike. Setting `τ := δ` recovers the old full-width behaviour as an
+instance (the capacity hypothesis is then slack), so no separate compatibility path is needed at
+this layer. -/
+
+variable {τ zBound : Nat}
+
 local notation "δ" P => Nat.clog (HonestRangeParams.b P) q
 local notation "μ₀" P =>
   rlinCols innerRows (Nat.clog (HonestRangeParams.b P) q) (Nat.clog (HonestRangeParams.b P) q)
-    (Nat.clog (HonestRangeParams.b P) q) m r
+    τ m r
 local notation "n₀" => rlinRows innerRows outerRows dRows
 
 /-- **The complete nonrecursive opening**: input adapter ▷ chain through the sumcheck ▷ terminal
@@ -493,6 +546,7 @@ reveal-and-check, from the commitment API's claim to a Boolean verdict, over the
 protocol specification. -/
 def hachiNonrecursiveOpening (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (δ P) outerRows (2 ^ r) (δ P) dRows)
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
@@ -502,12 +556,12 @@ def hachiNonrecursiveOpening (P : HonestRangeParams q)
       ((!p[] : ProtocolSpec 0) ++ₚ
         nonrecursiveOpeningSpec (F := F) (innerRows := innerRows)
           (messageDigits := δ P) (outerRows := outerRows) (innerDigits := δ P)
-          (dRows := dRows) (zDigits := δ P) (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω)
+          (dRows := dRows) (zDigits := τ) (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω)
           𝓜(q, α) K.TCom P.bZero) :=
   (commitInputReduction (oSpec := unifSpec) (innerRows := innerRows) (dRows := dRows)
       P.b).append
     (nonrecursiveOpeningReduction (oSpec := unifSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      𝓜(q, α) P pp (Nat.le_pow_clog P.hb q) (Nat.le_pow_clog P.hb q) K hd hbZero φF)
+      𝓜(q, α) P pp (Nat.le_pow_clog P.hb q) hcap K hd hbZero φF)
 
 set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
@@ -523,6 +577,8 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
     (P : HonestRangeParams q)
     (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (δ P) outerRows (2 ^ r) (δ P) dRows)
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
+    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
@@ -533,15 +589,16 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
     {βSq κ : ℕ} (hκ : 1 ≤ κ)
     (hβSq : (2 ^ m) * Nat.clog P.b q * (𝓜(q, α).φ.natDegree * (P.b / 2) ^ 2) ≤ βSq) :
     (hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      P pp K hd hbZero φF).perfectCompleteness init impl
+      P pp hcap K hd hbZero φF).perfectCompleteness init impl
       (relCommitInput P.b P.hb pp) acceptRejectRel :=
   Reduction.append_perfectCompleteness _ _
     (commitInputReduction_perfectCompleteness (βSq := βSq) (γ := P.γ) (κ := κ)
       P.b P.hb init impl P.hbq hd hclog hκ hβSq P.hbγ pp)
-    (nonrecursiveOpeningReduction_perfectCompleteness (zDigits := δ P) (ω := ω)
+    (nonrecursiveOpeningReduction_perfectCompleteness (zDigits := τ) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      𝓜(q, α) P init impl pp (Nat.le_pow_clog P.hb q) (Nat.le_pow_clog P.hb q)
-      hclog hclog hd hbZero K φF hμn hZeroγ)
+      𝓜(q, α) P init impl pp (Nat.le_pow_clog P.hb q) hcap
+      (powTwoCyclotomic_hasMulLInftyBound α) hzb
+      hclog hτ hd hbZero K φF hμn hZeroγ)
 
 /-- **Hachi, nonrecursive, as a functional commitment** (`Commitment.Scheme`): the multilinear
 evaluation oracle, honest key generation, the **balanced** committer `commitBalanced`, and the
@@ -557,6 +614,7 @@ def hachiNonrecursive (P : HonestRangeParams q)
     [SampleableType
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
@@ -569,12 +627,12 @@ def hachiNonrecursive (P : HonestRangeParams q)
       ((!p[] : ProtocolSpec 0) ++ₚ
         nonrecursiveOpeningSpec (F := F) (innerRows := innerRows)
           (messageDigits := δ P) (outerRows := outerRows) (innerDigits := δ P)
-          (dRows := dRows) (zDigits := δ P) (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω)
+          (dRows := dRows) (zDigits := τ) (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω)
           𝓜(q, α) K.TCom P.bZero) where
   keygen := keygen P.b
   commit := fun pp p => pure (commitBalanced P.b P.hb pp p)
   opening := fun keys =>
-    hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁) P keys.1 K hd hbZero φF
+    hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁) P keys.1 hcap K hd hbZero φF
 
 set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
@@ -606,6 +664,8 @@ theorem hachiNonrecursive_perfectCorrectness
     (hKeygen : ∀ s : σ, NeverFail ((simulateQ impl
       (keygen (q := q) (α := α) (innerRows := innerRows) (outerRows := outerRows)
         (dRows := dRows) (m := m) (r := r) P.b)).run s))
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
+    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ P.bZero))
     [DecidableEq K.TCom]
@@ -613,7 +673,7 @@ theorem hachiNonrecursive_perfectCorrectness
     (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
     (hZeroγ : P.bZero - 1 ≤ P.γ) :
     Commitment.perfectCorrectness init impl
-      (hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P K hd hbZero φF) := by
+      (hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P hcap K hd hbZero φF) := by
   refine Commitment.perfectCorrectness_of_opening_perfectCompleteness init impl _
     (fun ck _vk => relCommitInput P.b P.hb ck) hInit hKeygen ?_ ?_ ?_
   · -- The committer is deterministic (`pure`), so its simulation never fails.
@@ -627,7 +687,7 @@ theorem hachiNonrecursive_perfectCorrectness
     intro ck vk _hkg s
     exact hachiNonrecursiveOpening_perfectCompleteness (F := F) (ω := ω) (M := M) (m₁ := m₁)
       (βSq := (2 ^ m) * Nat.clog P.b q * (𝓜(q, α).φ.natDegree * (P.b / 2) ^ 2)) (κ := 1)
-      P (pure s) impl ck hclog hd hbZero K φF hμn hZeroγ le_rfl le_rfl
+      P (pure s) impl ck hcap hzb hτ hclog hd hbZero K φF hμn hZeroγ le_rfl le_rfl
 
 end Scheme
 

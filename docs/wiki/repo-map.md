@@ -82,6 +82,20 @@ home_page/            site assets and assembled website root
   - `Gadget/` (§2.1) — `Gadget/Core` is the base-`b` gadget matrix `G` and its norm-reducing digit
     decomposition `G⁻¹`; `Gadget/Norms` is the centered `ℓ₂²`/`ℓ∞` shortness bounds for both
     directions the honest case and Lemma 8 need. `Gadget/Basic.lean` re-exports both.
+    **Two decompositions coexist and must not be confused.** `DigitDecomposition` is the
+    *full-width* one: its reconstruction law holds for every residue, which over `ZMod q` forces
+    `q ≤ base ^ digits` and hence the digit count `δ = ⌈log_b q⌉`. That is right for the message
+    and inner steps, whose coefficients are arbitrary residues. `BoundedDigitDecomposition base
+    digits bound` is the *short-input* one: a total, executable digit map whose reconstruction law
+    is conditional on `|x| ≤ bound`, realized by `boundedBalancedZmodDigitDecomposition` on the
+    balanced interval `[-⌊b/2⌋·S, (b-1-⌊b/2⌋)·S]`, `S = digitOnesValue b digits`. It exists for
+    Hachi's folded witness `z = Σᵢ cᵢ sᵢ`, whose digit count `τ` is set by the deterministic bound
+    `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` and **not** by `q`: at the `ℓ = 30` parameters with ArkLib's conservative
+    `τ = 5` (see `Params.lean`) one has `16⁵ < q`, so no full-width `5`-digit decomposition exists,
+    yet `τ = 5` is perfectly correct. `DigitDecomposition.toBounded`
+    is the forgetful wrapper recovering the full-width choice `τ := δ`; `gadgetDecomposeFun` (a
+    bare per-coefficient digit map) is the shared computational core, so the layout and norm
+    bookkeeping is proved once for both.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
@@ -302,8 +316,11 @@ home_page/            site assets and assembled website root
     `relWEvalClaim` predicate on it by returning `endPieceCheck` — the very check the guarded
     `EndPiece/` verifier guards on, with reflection lemma `endPieceCheck_eq_true_iff`, both
     axiom-clean — as its Boolean verdict (`terminalVerifier_verify_eq_endPieceCheck`). A zero-round
-    **input adapter** (`commitInputReduction`, honest lemma `mem_relPolyEval_of_relCommitInput`)
-    converts the commitment API's claim into `relPolyEval` for the balanced committer. Adapter ▷
+    **input adapter** (`commitInputReduction`, honest lemma
+    `mem_relPolyEvalMsgShort_of_relCommitInput`, with `mem_relPolyEval_of_relCommitInput` as its
+    forgetful corollary) converts the commitment API's claim into `relPolyEvalMsgShort` for the
+    balanced committer — `relPolyEval` plus the `ℓ∞` bound `⌊b/2⌋` on the committer's message
+    decomposition, the one extra invariant the honest-`z` shortness bound consumes. Adapter ▷
     chain-through-sumcheck ▷ terminal compose into `hachiNonrecursiveOpening`, packaged with
     `commitBalanced` as the scheme `hachiNonrecursive`, and
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
@@ -313,6 +330,51 @@ home_page/            site assets and assembled website root
     admitted generic `Reduction.append_completeness` only (recorded in the baseline); every link,
     the adapter, the terminal step, and the bridge are individually axiom-clean. Recursion
     (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
+    **`τ` is an independent parameter here.** `hachiNonrecursiveOpening` / `hachiNonrecursive` /
+    their correctness theorems take the folded-witness digit count `τ` and its bound `zBound` as
+    section variables, constrained only by `hcap : zBound ≤ balancedDigitCapacity P.b τ`,
+    `hzb : 2ʳ·ω·⌊b/2⌋ ≤ zBound` and `0 < τ`; the message and inner digit counts stay `δ`. `μ₀`
+    (`rlinCols`), the lift key width and the sumcheck table width all depend on `τ`, so a
+    correctness statement and the soundness-side `quadEvalBetaSq` cannot silently disagree about
+    it. No `q ≤ P.b ^ τ` hypothesis exists on this path (it is false at the `ℓ = 30` parameters);
+    `τ := δ` recovers the old full-width behaviour as an instance.
+  - `Concrete.lean` — the same scheme at the concrete Ajtai lift commitment `D · (z ‖ ρ)`
+    (`nonrecursiveLiftCom`), where every honest field is computable; it carries the same `τ` /
+    `zBound` parameters. `scripts/HachiRuntime.lean` (the `hachi-runtime` executable) runs it at
+    toy parameters with `τ = 1 < δ = 2`, so the bounded `z` decomposition is exercised, and checks
+    the bounded digit function directly at the production digit parameters `b = 16` and ArkLib's
+    `τ = 5`.
+  - `Params.lean` — the [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197` — primality proved
+    by `norm_num`'s Pratt certificate — `b = 16`, `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`,
+    `d = 1024`) **with ArkLib's conservative `τ = 5`** in place of Figure 9's own `τ = 4`. The `τ`
+    divergence is deliberate and is the one place this profile is not Figure 9: only the naive
+    bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` is formalized here, and five digits are minimal for it,
+    whereas Figure 9's `τ = 4` rests on its own sharper bound `30583`. Do not describe this as the
+    exact Figure 9 profile. The file carries the arithmetic the chain consumes
+    at it: `16⁷ < q ≤ 16⁸`, `Nat.clog 16 q = 8`, the deliberate `16⁵ < q`, the balanced capacity
+    `489335` of five base-`16` digits, the honest bound `131072` (and the paper's coarser
+    `262144`) fitting inside it, and `μ₀ = 57344` at `τ = 5` versus `81920` at `τ = δ`.
+    **`τ = 5` is minimal, not merely sufficient**: `tau_minimal` rules out every `t < 5`, since
+    `balancedDigitCapacity 16 4 = 30583 < 131072` and capacity is monotone
+    (`balancedDigitCapacity_mono`). Worth knowing: `30583` is *exactly* [NOZ26] Figure 9's own `z`
+    bound, listed there alongside its `τ = 4` — so the paper's `τ = 4` is admissible only under a
+    sharper `‖z‖∞` bound than the naive `2ʳ·ω·⌊b/2⌋` proved here, and that sharper bound saturates
+    four digits on the nose. The file then instantiates the `τ = 5` `QuadEval` link with every
+    hypothesis discharged, in **both** readings —
+    `quadEvalLink_perfectCompleteness_atProfile` (ball-relaxed) and `…_paperRelOut` (Eq. (20)'s box
+    `S₁₆` verbatim) — which is the machine-checked form of "no `q ≤ 16⁵` is required". Finally it
+    pins the **two security directions to one `τ`**: `packageAtProfile` is Lemma 8's certificate at
+    `zDigits = 5`, `packageAtProfile_relOut` equates its output relation with the completeness
+    theorems' (a statement that cannot be written at two different `zDigits` — the
+    `QuadEvalResponse` types would differ), and
+    `relInMsgShort_atProfile_subset_packageAtProfile_relIn` lands the correctness input relation in
+    the package's `relIn` at `βSq = betaSq = quadEvalBetaSq … hachiTau …`. The *scheme*-level
+    substitution is deliberately not written out: it adds no mathematical content
+    (`hachiNonrecursiveConcrete_perfectCorrectness` is parametric and every profile hypothesis is
+    discharged, `hμn` by `sumcheckWidthAtProfile` at `M = 25`) and it does not elaborate — the
+    composed scheme's type carries `Nat.clog params.b 4294967197` inside `Fin (2¹⁰)`-indexed
+    matrices and a 26-deep `ProtocolSpec` append tower, which drives `isDefEq` to a heartbeat
+    timeout and then to an OOM kill. That is an elaborator cost, and the file says so.
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).

@@ -342,6 +342,54 @@ theorem bridgeReduction_perfectCompleteness {σ : Type}
     (fun s w => ⟨mem_relIn_of_relPolyEval Φ pp base βSq γ κ s w,
       mem_relPolyEval_of_relIn Φ pp base βSq γ κ s w⟩)
 
+/-! ## The message-bounded seam, for the bounded-`z` reading of `QuadEval`
+
+`QuadEval`'s bounded-`z` completeness runs from `relInMsgShort` — `relIn` plus an `ℓ∞` bound on
+the honest committer's message decomposition, which is what makes the folded witness
+`z = Σᵢ cᵢ sᵢ` short and hence `τ`-digit reconstructible (see `relInMsgShort`). The bridge has to
+carry that conjunct across, so the polynomial-level relation gets the same strengthening. The
+witness type is unchanged by the bridge, so the conjunct passes through literally and the
+strengthened equivalence is the old one plus `Iff.rfl` on the new part. -/
+
+/-- **`relPolyEval` with the honest committer's message decomposition pinned `ℓ∞`-short** — the
+polynomial-level counterpart of `relInMsgShort`, and the input relation of the bounded-`z` honest
+chain. `relPolyEvalMsgShort_subset_relPolyEval` is the forgetful inclusion; the soundness-side
+`relPolyEval` is untouched. -/
+def relPolyEvalMsgShort
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (βSq γ κ msgBound : ℕ) :
+    Set (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r ×
+         QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
+  { p | p ∈ relPolyEval Φ pp base βSq γ κ ∧
+      ∀ i, vecLInftyNorm Φ (p.2.message i) ≤ msgBound }
+
+omit [NeZero q] in
+/-- **The forgetful inclusion `relPolyEvalMsgShort ⊆ relPolyEval`.** -/
+theorem relPolyEvalMsgShort_subset_relPolyEval
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (βSq γ κ msgBound : ℕ) :
+    relPolyEvalMsgShort Φ pp base βSq γ κ msgBound ⊆ relPolyEval Φ pp base βSq γ κ :=
+  fun _ h => h.1
+
+omit [NeZero q] in
+/-- **Perfect completeness of the bridge at the message-bounded relations.** Identical to
+`bridgeReduction_perfectCompleteness` — the bridge is a statement reinterpretation with an identity
+witness map, so the extra `ℓ∞` conjunct on the (unchanged) witness transports by `Iff.rfl`. -/
+theorem bridgeReduction_perfectCompleteness_msgShort {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (βSq γ κ msgBound : ℕ) :
+    (bridgeReduction (oSpec := oSpec) Φ (innerRows := innerRows)
+        (messageDigits := messageDigits) (outerRows := outerRows) (innerDigits := innerDigits)
+        (dRows := dRows) (m := m) (r := r)).perfectCompleteness init impl
+      (relPolyEvalMsgShort Φ pp base βSq γ κ msgBound)
+      (relInMsgShort Φ pp base βSq γ κ msgBound) :=
+  ReduceClaim.reduction_completeness (relPolyEvalMsgShort Φ pp base βSq γ κ msgBound)
+    (relInMsgShort Φ pp base βSq γ κ msgBound)
+    (fun s w =>
+      ⟨fun h => ⟨mem_relIn_of_relPolyEval Φ pp base βSq γ κ s w h.1, h.2⟩,
+       fun h => ⟨mem_relPolyEval_of_relIn Φ pp base βSq γ κ s w h.1, h.2⟩⟩)
+
 end ZModDefs
 
 end ArkLib.Lattices.Ajtai.InnerOuter

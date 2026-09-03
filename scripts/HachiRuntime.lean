@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.Concrete
+import ArkLib.Commitments.Functional.Hachi.Params
 
 /-!
 # Compiled nonrecursive-Hachi runtime checks
@@ -36,26 +36,35 @@ check together finish in milliseconds, while the composed run — the same chain
 sumcheck — takes minutes. The reason is the shape of the summand: `sumcheckPolyZero` is a
 product of `bZero` copies of an `m₀`-variate multilinear extension, so it carries up to
 `(bZero + 1)^m₀` monomials, and `computableRoundPoly` evaluates all of them at `2^(m₀ - i)`
-points in round `i`. Here `m₀ = 5` is the floor the digit-committed table forces — the table
-is `(μ₀ + n₀·δ)·d = 18` rows once the quotient block is committed as digits, and a `16`-point
-cube cannot hold it (`cubeCoversTable` certifies `18 ≤ 32` at compile time) — and `bZero = 3`,
-and the run still takes minutes — so this is the first thing to profile if the honest prover is
-ever wanted at a realistic size. Raising `α` from `0` to `1` alone doubles `d`, pushing the
-table width to `36 > 2^5` and hence `m₀` to `6` — several times the composed run's cost.
+points in round `i`. Here `m₀ = 4`, the digit-committed table being `(μ₀ + n₀·δ)·d = 16` rows
+once the quotient block is committed as digits (`cubeCoversTable` certifies `16 ≤ 16` at compile
+time), and `bZero = 3` — and the run still takes minutes, so this is the first thing to profile if
+the honest prover is ever wanted at a realistic size. Every extra cube coordinate multiplies the
+cost several-fold: raising `α` from `0` to `1` doubles `d` and so pushes `m₀` to `5`, and the
+`τ = δ` table would have done the same.
 
 **The parameters.** `q = 7`, `α = 0` (so `Rq = Z₇[X]/(X+1) ≅ Z₇`, ring dimension `d = 1`),
 digit base `b = 3` (hence `δ = ⌈log₃ 7⌉ = 2`, for the message digits and — since `bZero = b` —
-also for the quotient digits), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 8`, `n₀ = 5`. The
+also for the quotient digits), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 6`, `n₀ = 5`. The
 range parameters sit at the healthy point the gadget decomposition buys — `bZero = b = 3` and
 `γ = bZero − 1 = 2 < ⌊q/2⌋ = 3`, so Eq. (20)'s ball check is a real constraint (see `P` below) —
-and the committed table is `μ₀ + n₀·δ = 18` rows wide, making `M + 1 = 5` the smallest sumcheck
-width satisfying `(μ₀ + n₀·δ)·deg φ ≤ 2^(M+1)` (`18 ≤ 32`, `cubeCoversTable`). Not `q = 5`, the
-smallest prime admitting honest range parameters at all: that `q` forces `b = bZero = 2`, whose
-`δ = ⌈log₂ 5⌉ = 3` inflates the table to `15 + 5·3 = 30` — it fits the same `32`-point cube but
-nearly saturates it (one more row would force `m₀ = 6`), and the toy data below (keys,
-witnesses, the separating pair of `liftComDistinguishes`) is built over `Z₇`. Deliberately tiny
-beyond that: this is a code-generation check, and the security theorems are parametric, so
-nothing is learned by running it larger.
+and the committed table is `μ₀ + n₀·δ = 16` rows wide, so `M + 1 = 4` already satisfies
+`(μ₀ + n₀·δ)·deg φ ≤ 2^(M+1)` (`16 ≤ 16`, `cubeCoversTable`) — the `τ = δ` table's `18` rows
+would have forced `M + 1 = 5`. Not `q = 5`, the
+smallest prime admitting honest range parameters at all: the toy data below (keys, witnesses, the
+separating pair of `liftComDistinguishes`) is built over `Z₇`. Deliberately tiny beyond that:
+this is a code-generation check, and the security theorems are parametric, so nothing is learned
+by running it larger.
+
+**`τ` is explicit, and strictly below `δ`.** The folded-witness digit count is the parameter
+`Tau = 1`, *not* `δ = 2` (`tauLtDigits`), so the composed run genuinely exercises the **bounded**
+`z` decomposition (`boundedBalancedZmodDigitDecomposition`) rather than a full-width one; `ω` is
+`1` so that the honest bound `2ʳ·ω·⌊b/2⌋ = 1` fits the balanced capacity of one base-`3` digit,
+which is also `1` (`hcapToy` / `hzbToy`). Beyond the composed run, the bounded digit function is
+checked directly at the **production** digit parameters `q = 4294967197`, `b = 16` and ArkLib's
+conservative `τ = 5` (`Params.lean`; [NOZ26] Figure 9 itself uses `τ = 4`)
+(`boundedDigitsReconstructProd`, `boundedDigitsInBoxProd`) — cheap, and the arithmetic an
+extraction target has to reproduce. The full `ℓ = 30` prover is *not* run here.
 -/
 
 -- v4.33 respects transparency when synthesizing instances: `DecidableEq K.TCom` / `BEq K.TCom`
@@ -94,12 +103,30 @@ abbrev OR : ℕ := 1  -- outerRows
 abbrev DR : ℕ := 1  -- dRows
 abbrev Mm : ℕ := 0  -- m
 abbrev Rr : ℕ := 0  -- r
-abbrev MM : ℕ := 4  -- sumcheck width is M + 1 = 5; pinned by `cubeCoversTable` below
+abbrev MM : ℕ := 3  -- sumcheck width is M + 1 = 4; pinned by `cubeCoversTable` below
 abbrev M1 : ℕ := 1  -- the nested zero-check's second block
-abbrev W : ℕ := 3   -- ℓ₁ bound on short challenges
+abbrev W : ℕ := 1   -- ℓ₁ bound on short challenges (`ω`)
 
-/-- `μ₀ = 8`: the `R^lin` column count at these parameters. -/
-abbrev Mu : ℕ := rlinCols IR Dg Dg Dg Mm Rr
+/-- **`τ = 1`, the folded-witness digit count — deliberately *below* `δ = 2`.** This is what makes
+the composed run exercise the bounded `z` decomposition: a full `DigitDecomposition` of `ZMod 7`
+into one base-`3` digit does not exist (`3 < 7`), and the honest `z` is short instead. -/
+abbrev Tau : ℕ := 1
+/-- The honest `ℓ∞` bound on `z` the `τ = 1` decomposition is sized for: `2ʳ·ω·⌊b/2⌋ = 1`. -/
+abbrev ZB : ℕ := 1
+
+/-- `τ < δ`: the toy profile really separates the two digit counts. -/
+theorem tauLtDigits : Tau < Dg := by
+  have hb : (1 : ℕ) < 3 := by norm_num
+  have hδ : Nat.clog 3 7 = 2 := by
+    have h1 : Nat.clog 3 7 ≤ 2 := (Nat.clog_le_iff_le_pow hb).mpr (by norm_num)
+    have h2 : ¬ Nat.clog 3 7 ≤ 1 := fun h =>
+      absurd ((Nat.clog_le_iff_le_pow hb).mp h) (by norm_num)
+    omega
+  simp [Dg, Tau, B, Q, hδ]
+
+/-- `μ₀ = 6`: the `R^lin` column count at these parameters, **at `τ = 1`** (it would be `8` at the
+full width `τ = δ = 2`). -/
+abbrev Mu : ℕ := rlinCols IR Dg Dg Tau Mm Rr
 /-- `n₀ = 5`: the `R^lin` row count at these parameters. -/
 abbrev Nn : ℕ := rlinRows IR OR DR
 
@@ -116,6 +143,18 @@ def P : HonestRangeParams Q where
   hbZero := by decide
   hbZeroq := by decide
   hbZeroγ := by decide
+
+/-- `hcap` at the toy profile: the honest bound `ZB = 1` fits the balanced capacity of one
+base-`3` digit, `(3 − 1 − 1)·1 = 1`. -/
+theorem hcapToy : ZB ≤ balancedDigitCapacity P.b Tau := by
+  norm_num [ZB, balancedDigitCapacity, digitOnesValue, P, B, Tau]
+
+/-- `hzb` at the toy profile: `2ʳ·ω·⌊b/2⌋ = 1 ≤ ZB`. -/
+theorem hzbToy : 2 ^ Rr * W * (P.b / 2) ≤ ZB := by
+  norm_num [ZB, Rr, W, P, B]
+
+/-- `hτ`: `0 < τ`. -/
+theorem hTauToy : 0 < Tau := by norm_num [Tau]
 
 /-- A ring element from two coefficients. -/
 def rr (a b : ℕ) : Rng := Rq.mk _ (CPolynomial.ofArray #[(a : ZMod Q), (b : ZMod Q)])
@@ -135,9 +174,10 @@ def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn * rhoDigitCount Q P.
 
 /-- **The sumcheck cube covers the committed table** — the coverage hypothesis (`hμn`/`hcov`) of
 the chain's theorems, certified at the toy parameters so that this executable stays a model of
-them. This is what pins `MM`: the digit-committed table is `μ₀ + n₀·δ = 8 + 5·2 = 18` rows, so
-the cube needs `18·d ≤ 2^(M+1)` — a `16`-point cube holds an undigited table's `13` rows but
-not these `18`. Without it the checks can silently run on a truncated table: `wTable`
+them. At `τ = 1` the digit-committed table is `μ₀ + n₀·δ = 6 + 5·2 = 16` rows, so the cube needs
+`16·d ≤ 2^(M+1)`, and `MM = 3` meets it exactly (`16 ≤ 16`) — one coordinate fewer than the
+`τ = δ` table's `18` rows needed, which is the sumcheck cost the `τ` separation saves here.
+Without this hypothesis the checks can silently run on a truncated table: `wTable`
 returns `0` off-cube, so every off-cube row would escape the range check and the `M̃_α`
 contraction. -/
 theorem cubeCoversTable :
@@ -245,7 +285,7 @@ fire reliably through a `ProtocolSpec` this deeply nested, so each layer is appl
 @[reducible] instance instInhOpeningSpec :
     ∀ i, Inhabited
       ((nonrecursiveOpeningSpec (F := Fld) (innerRows := IR) (messageDigits := Dg)
-        (outerRows := OR) (innerDigits := Dg) (dRows := DR) (zDigits := Dg)
+        (outerRows := OR) (innerDigits := Dg) (dRows := DR) (zDigits := Tau)
         (m := Mm) (r := Rr) (M := MM) (m₁ := M1) (ω := W)
         𝓜(Q, A) K.TCom P.bZero).Challenge i) :=
   ProtocolSpec.instInhabitedChallengeAppend
@@ -255,7 +295,7 @@ fire reliably through a `ProtocolSpec` this deeply nested, so each layer is appl
     ∀ i, Inhabited
       (((!p[] : ProtocolSpec 0) ++ₚ
         nonrecursiveOpeningSpec (F := Fld) (innerRows := IR) (messageDigits := Dg)
-          (outerRows := OR) (innerDigits := Dg) (dRows := DR) (zDigits := Dg)
+          (outerRows := OR) (innerDigits := Dg) (dRows := DR) (zDigits := Tau)
           (m := Mm) (r := Rr) (M := MM) (m₁ := M1) (ω := W)
           𝓜(Q, A) K.TCom P.bZero).Challenge i) :=
   ProtocolSpec.instInhabitedChallengeAppend
@@ -279,7 +319,8 @@ def witIn : CommitInputWitness B Q A IR Mm Rr := (toyPoly, cd.2)
 def opening :=
   hachiNonrecursiveOpening (F := Fld) (ω := W) (M := MM) (m₁ := M1)
     (α := A) (innerRows := IR) (outerRows := OR) (dRows := DR) (m := Mm) (r := Rr)
-    P pp K hdToy (by decide) (RingHom.id (ZMod Q))
+    (τ := Tau) (zBound := ZB)
+    P pp hcapToy K hdToy (by decide) (RingHom.id (ZMod Q))
 
 /-- Answer every uniform query with the largest index — a fixed, total oracle standing in for
 the sampling one. -/
@@ -410,6 +451,57 @@ def terminalRejectsWrongCommitment : Unit → Bool := fun _ =>
 /-- **The composed honest run is accepted.** -/
 def openingAccepts : Unit → Bool := fun _ => honestVerdict () == some true
 
+/-! ### The bounded (short-input) `z` decomposition, run directly
+
+The composed run above already goes through `boundedBalancedZmodDigitDecomposition` at `τ = 1`.
+These checks exercise the same digit function *at the production digit parameters*
+(`q = 4294967197`, `b = 16`, `τ = 5` — `HachiParams`, ArkLib's conservative reading of the `ℓ = 30`
+parameters, not [NOZ26] Figure 9's `τ = 4`), where the interesting arithmetic lives and
+where a full-width `5`-digit decomposition is impossible (`16⁵ < q`,
+`HachiParams.sixteen_pow_tau_lt_q`). Cheap: a handful of `ZMod q` sums. -/
+
+open ArkLib.Lattices.Ajtai.InnerOuter.HachiParams in
+/-- Centered representatives to test the bounded decomposition on: `0`, `±1`, the honest bound
+`±131072`, and the extreme representable `±489335`. Encoded as canonical residues. -/
+def prodTestResidues : List ℕ :=
+  [0, 1, hachiQ - 1, 131072, hachiQ - 131072, 489335, hachiQ - 489335]
+
+open ArkLib.Lattices.Ajtai.InnerOuter.HachiParams in
+/-- **The `τ = 5` bounded balanced decomposition reconstructs every short value.** For each test
+residue `x`, `∑_{e<5} 16ᵉ · digit x e = x` — the executable counterpart of
+`boundedBalancedZmodDigit_reconstruct`, at the production parameters. -/
+def boundedDigitsReconstructProd : Unit → Bool := fun _ =>
+  prodTestResidues.all fun v =>
+    let x : ZMod hachiQ := (v : ℕ)
+    (∑ e : Fin hachiTau, (hachiB : ZMod hachiQ) ^ (e : ℕ)
+        * boundedBalancedZmodDigit hachiB hachiTau x e) == x
+
+open ArkLib.Lattices.Ajtai.InnerOuter.HachiParams in
+/-- **Its digits lie in the paper's balanced box `S_b = [-8, 7]`** (`b = 16`), so the Eq. (20)
+range check accepts them — the executable counterpart of
+`boundedBalancedZmodDigit_valMinAbs_mem`. -/
+def boundedDigitsInBoxProd : Unit → Bool := fun _ =>
+  prodTestResidues.all fun v =>
+    let x : ZMod hachiQ := (v : ℕ)
+    (List.finRange hachiTau).all fun e =>
+      let d := ZMod.valMinAbs (boundedBalancedZmodDigit hachiB hachiTau x e)
+      decide (-8 ≤ d) && decide (d ≤ 7)
+
+/-- **Non-vacuity**: at least one test residue has a nonzero digit, so the checks above are not
+all reading zeros. -/
+def boundedDigitsNonzeroProd : Unit → Bool := fun _ =>
+  prodTestResidues.any fun v =>
+    let x : ZMod HachiParams.hachiQ := (v : ℕ)
+    (List.finRange HachiParams.hachiTau).any fun e =>
+      !(boundedBalancedZmodDigit HachiParams.hachiB HachiParams.hachiTau x e == 0)
+
+/-- The same reconstruction check at the **toy** parameters `q = 7`, `b = 3`, `τ = 1` — the very
+instance the composed run uses, on all three residues that are short there (`0`, `±1`). -/
+def boundedDigitsReconstructToy : Unit → Bool := fun _ =>
+  ([0, 1, Q - 1] : List ℕ).all fun v =>
+    let x : ZMod Q := (v : ℕ)
+    (∑ e : Fin Tau, (B : ZMod Q) ^ (e : ℕ) * boundedBalancedZmodDigit B Tau x e) == x
+
 def check (name : String) (ok : Bool) : IO Unit :=
   unless ok do throw <| IO.userError s!"Hachi runtime check failed: {name}"
 
@@ -436,6 +528,11 @@ def runFast : IO Unit := do
   check "terminal check accepts the honest claim" (terminalAcceptsHonest ())
   check "terminal check rejects a perturbed claim" (terminalRejectsPerturbed ())
   check "terminal check rejects a wrong commitment" (terminalRejectsWrongCommitment ())
+  check "bounded z-digits reconstruct (toy q=7, b=3, tau=1)" (boundedDigitsReconstructToy ())
+  check "bounded z-digits reconstruct (q=4294967197, b=16, tau=5)"
+    (boundedDigitsReconstructProd ())
+  check "bounded z-digits lie in the balanced box S_16 = [-8,7]" (boundedDigitsInBoxProd ())
+  check "bounded z-digits are not all zero (non-vacuity)" (boundedDigitsNonzeroProd ())
   IO.println "Hachi nonrecursive runtime checks passed"
 
 /-- The composed run, behind `--full`. Separated from `runFast` because the sumcheck's honest
@@ -453,6 +550,10 @@ def runTiming : IO Unit := do
   timedCheck "terminal check (accept)" terminalAcceptsHonest
   timedCheck "terminal check (reject value)" terminalRejectsPerturbed
   timedCheck "terminal check (reject commitment)" terminalRejectsWrongCommitment
+  timedCheck "bounded z-digits reconstruct (toy)" boundedDigitsReconstructToy
+  timedCheck "bounded z-digits reconstruct (tau=5)" boundedDigitsReconstructProd
+  timedCheck "bounded z-digits in box S_16" boundedDigitsInBoxProd
+  timedCheck "bounded z-digits non-vacuity" boundedDigitsNonzeroProd
   timedCheck "composed opening (prefix + sumcheck + terminal)" openingAccepts
 
 end HachiRuntime

@@ -8,6 +8,7 @@ import ArkLib.Commitments.Functional.Hachi.Composition
 import ArkLib.Commitments.Functional.Hachi.HonestChain
 import ArkLib.Commitments.Functional.Hachi.Correctness
 import ArkLib.Commitments.Functional.Hachi.Concrete
+import ArkLib.Commitments.Functional.Hachi.Params
 import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
@@ -44,7 +45,12 @@ The folder is organized by paper section; each subfolder carries a `Basic.lean` 
 re-export, and this file is the umbrella for the whole development.
 
 * `Gadget/` (§2.1) — the base-`b` Ajtai gadget matrix `G` and its digit-decomposition inverse
-  `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).
+  `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`). `Core`
+  carries **two** decompositions, deliberately: the full-width `DigitDecomposition` for arbitrary
+  residues (message and inner digits, `δ = ⌈log_b q⌉`) and the short-input
+  `BoundedDigitDecomposition` for the folded witness `z`, whose digit count `τ` is set by the
+  deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at ArkLib's conservative
+  reading of the `ℓ = 30` parameters — see `Params.lean`).
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings
@@ -70,6 +76,13 @@ re-export, and this file is the umbrella for the whole development.
   commitment-input adapter, the scheme `hachiNonrecursive`, and its perfect correctness.
 * `Concrete.lean` — the same scheme at the concrete Ajtai lift commitment `D · (z ‖ ρ)`, where
   the whole honest run is computable; `scripts/HachiRuntime.lean` runs it.
+* `Params.lean` — the [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`,
+  `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`) **with ArkLib's conservative `τ = 5`** in place of
+  Figure 9's `τ = 4`, plus the arithmetic facts the chain consumes at them: `16⁵ < q` — the reason
+  `τ` needs the bounded decomposition — and `honestZBound ≤ balancedDigitCapacity 16 5`. The `τ`
+  divergence is deliberate: this development proves only the naive `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072`,
+  for which `5` digits are minimal (`tau_minimal`), whereas Figure 9's `τ = 4` rests on its own
+  sharper bound `30583` (not formalized here).
 
 Importing this file brings in the whole development. A new file joins its folder umbrella; the
 umbrella chain carries it here.
