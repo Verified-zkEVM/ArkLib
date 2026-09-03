@@ -768,14 +768,16 @@ def hyb_2
 
 /-- CO25 Claim 5.22.
 `Δ(Hyb_1, Hyb_2) ≤ θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}` with `Hyb_1 / Hyb_2` sampled
-eagerly via `hyb_1` / `hyb_2`. -/
+eagerly via `hyb_1` / `hyb_2`. `hBound` ties the numerical query budgets to
+`maliciousProver`; its forward-permutation component is the part needed by this transition. -/
 theorem claim_5_22
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ) :
     tvDist
       (hyb_1 (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (Salt := Salt)
