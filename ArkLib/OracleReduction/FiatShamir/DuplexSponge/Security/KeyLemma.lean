@@ -694,14 +694,15 @@ abbrev IsLemma5_1QueryBound
 
 /-- CO25 Claim 5.21.
 `Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` with `Hyb_0 / Hyb_1` sampled eagerly via
-`hyb_0` / `hyb_1`. -/
+`hyb_0` / `hyb_1`. `hBound` ties the numerical query budgets to `maliciousProver`. -/
 theorem claim_5_21
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ) :
     tvDist
       (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
         (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
@@ -899,14 +900,16 @@ def hyb_4
 /-- CO25 Claim 5.24.
 `Δ(Hyb_3, Hyb_4) ≤ (7·(L+1)·(2t_h+1+2t_p+L+2t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`.
 `Hyb_3` and `Hyb_4` use the *same* eager salted FS oracle (`D_IP_salted`,
-matching CO25 line 1784); only the prover/verifier algorithm differs. -/
+matching CO25 line 1784); only the prover/verifier algorithm differs. `hBound` ties the numerical
+query budgets to `maliciousProver`. -/
 theorem claim_5_24
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ) :
     tvDist
       (hyb_3 (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
