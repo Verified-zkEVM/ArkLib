@@ -433,6 +433,8 @@ The linear scan separately rejects self-loops and repeated input capacities as i
 Black-box over `[LawfulTraceTable T_P ...]` via `TraceTableOps.entries`; both forward and inverse
 permutation directions already collapse into the same bidirectional `tr_∇.p`
 (cf. `TraceNabla.ofQueryLog` dispatch). -/
+-- TODO: Replace this linear `entries` scan with a conflict-aware, logarithmic lookup by output
+-- capacity, as required by CO25 Eq. 13.
 private def predecessorCandidates
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (nextInputCap : Vector U SpongeSize.C) :

@@ -141,6 +141,8 @@ abbrev S_LA
 
 Unlike `TraceTableOps.inlu`, this keeps all forward matches so multiple successor chains reach
 `S_LA` and are reported as paper-`err` by Step 2. -/
+-- TODO: Replace this linear `entries` scan with a conflict-aware, logarithmic lookup by input
+-- state, as required by CO25 Eq. 15.
 private def successorCandidates
     (trΔp : T_P) (current : CanonicalSpongeState U) :
     List (CanonicalSpongeState U) :=
