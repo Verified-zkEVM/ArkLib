@@ -114,6 +114,21 @@ noncomputable def blockDistanceFromCode
   (C : Set (Fin (2 ^ n) → F)) : ℕ∞ :=
   sInf {d | ∃ v ∈ C, blockDistance k φ f v ≤ d}
 
+@[simp]
+lemma blockDistance_le :
+    Δ𞁒(k, φ, f, g) ≤ 2 ^ (n - k) := by simp [blockDistance]
+
+lemma blockDistance_symm :
+    Δ𞁒(k, φ, f, g) = Δ𞁒(k, φ, g, f) := by
+  aesop
+    (add unsafe congrArg)
+    (add simp [blockDistance, disagreementSet])
+
+lemma blockRelDistance_symm :
+    δ𞁒(k, φ, f, g) = δ𞁒(k, φ, g, f) := by
+  unfold blockRelDistance
+  rw [blockDistance_symm]
+
 /-- blockRelDistance from a set of words. -/
 noncomputable def blockRelDistanceFromCode
   (k : ℕ) (φ : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
@@ -133,6 +148,14 @@ lemma blockDistance_eq_hammingDist_k_0 :
 lemma blockRelDistance_eq_relHammingDist_k_0 :
     δ𞁒(0, φ, f, g) = δᵣ(f, g) := by simp [blockRelDistance, Code.relHammingDist]
 
+@[simp]
+lemma blockRelDistance_le_one :
+    δ𞁒(k, φ, f, g) ≤ 1 := by
+  simp only [blockRelDistance, card_toFinset, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat]
+  rw [show (2 ^ (n - k) : ℚ≥0) = Nat.cast (2 ^ (n - k)) by simp,
+      show (OfNat.ofNat 1 : ℚ≥0) = Nat.cast (2 ^ (n - k))/ (Nat.cast (2 ^ (n - k))) by simp]
+  aesop (add safe [(by field_simp), (by norm_cast)])
+
 /-- Definition 4.18
   For a smooth ReedSolomon code C = RS[F, ι^(2ⁱ), φ', m], proximity parameter δ ∈ [0,1]
   function f : ι^(2ⁱ) → F, we define the following as the list of codewords of C δ-close to f,
@@ -148,8 +171,27 @@ noncomputable def blockRelDistanceBall
 scoped notation "Λ𞁒("C", "k", "φ'", "f", "δ")" =>
   blockRelDistanceBall k φ' f δ C
 
-private def complDisagreementSet
-  (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
+@[simp]
+lemma mem_blockRelDistanceBall {g : Fin (2 ^ n) → F}
+    (C : Set (Fin (2 ^ n) → F)) (δ : ℝ≥0) :
+  f ∈ Λ𞁒(C, k, φ, g, δ) ↔ f ∈ C ∧ δ𞁒(k, φ, f, g) ≤ δ := by
+  simp [blockRelDistanceBall, blockRelDistance_symm]
+
+@[simp]
+lemma not_mem_blockRelDistanceBall {g : Fin (2 ^ n) → F}
+    (C : Set (Fin (2 ^ n) → F)) (δ : ℝ≥0) :
+  f ∉ Λ𞁒(C, k, φ, g, δ) ↔ f ∉ C ∨ δ < δ𞁒(k, φ, f, g) := by
+  aesop (add safe (by grind))
+
+/-- The `0`-wise block relative distance list is the ordinary list of codewords within relative
+  Hamming distance `δ`. -/
+lemma blockRelDistanceBall_zero {n : ℕ} {ω : SmoothCosetFftDomain n F}
+    (C : Set (Fin (2 ^ n) → F)) (g : Fin (2 ^ n) → F) (δ : ℝ≥0) :
+    Λ𞁒(C, 0, ω, g, δ) = {u | u ∈ C ∧ ((δᵣ(g, u) : ℚ≥0) : ℝ≥0) ≤ δ} := by
+  aesop (add simp blockRelDistanceBall)
+
+def complDisagreementSet
+    (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
   (φ.subdomain k).toFinset \ disagreementSet k φ f g
 
 lemma complDisagreementSet_def' :
@@ -192,8 +234,8 @@ lemma card_disagreementSet' :
     (add simp [card_complDisagreementSet])
     (add unsafe (by rw [Nat.sub_sub_self (by simp)]))
 
-private def agreementBlockUnion
-  (k : ℕ) (φ : SmoothCosetFftDomain n F)
+def agreementBlockUnion
+    (k : ℕ) (φ : SmoothCosetFftDomain n F)
   (f g : Fin (2 ^ n) → F) : Finset (Fin (2 ^ n)) :=
   Finset.biUnion (complDisagreementSet k φ f g) (blockIdx φ k)
 
