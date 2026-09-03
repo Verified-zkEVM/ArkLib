@@ -25,10 +25,6 @@ import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 open OracleComp OracleSpec SubSpec
 
--- The `Prover.append_run` transport ladder (`section AppendRunHelpers` below) pushes this file
--- past the default cap.
-set_option linter.style.longFile 2800
-
 universe u v
 
 section find_home
@@ -716,7 +712,7 @@ private lemma witMid_append_right {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ 
       = Fin.natAdd (m + 1) ⟨j.val - 1, by omega⟩ := by
     ext; simp; omega
   rw [Function.comp_apply, hcast, Fin.append_right]
-  show Fin.tail WitMid₂ _ = _
+  change Fin.tail WitMid₂ _ = _
   unfold Fin.tail
   congr 1
   ext; simp; omega
@@ -1053,16 +1049,21 @@ def StateFunction.append
         intro hc
         apply hnot
         rw [dif_pos (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
-        convert hc using 2
-        exact (heq_eqMp _ _).trans (transcript_heq_ext (by simp; omega) (fun i hi hi' => HEq.rfl))
+        refine stateFunction_toFun_heq S₁
+          (Fin.ext (show j.val = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
+        refine HEq.trans ?_ (heq_eqMp _ _).symm
+        exact transcript_heq_ext (k := ⟨j.val, by omega⟩)
+          (k' := ⟨min ((j.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
+          (show j.val = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
+          (fun i hi hi' => HEq.rfl)
       have key := S₁.toFun_next ⟨j.val, hlt⟩ hDir' stmt T₁ hnot₁ (cast htype msg)
       intro hgoal
       rw [dif_pos (show ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
       refine key ?_
       convert hgoal using 2
       · rfl
-      refine HEq.symm ((heq_eqMp _ _).trans (transcript_heq_ext
-        (show min ((j.succ : Fin (m + n + 1)) : ℕ) m = j.val + 1 by omega) ?_))
+      refine eq_of_heq (HEq.symm ((heq_eqMp _ _).trans (transcript_heq_ext
+        (show min ((j.succ : Fin (m + n + 1)) : ℕ) m = j.val + 1 by omega) ?_)))
       intro i hi hi'
       have hi'' : i < j.val + 1 := hi'
       rcases Nat.lt_or_ge i j.val with hij | hij
@@ -1357,7 +1358,6 @@ private theorem append_sendMessage_left (i : Fin (m + n)) (hi : i.val < m)
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_pos hi]
-  simp only [id_eq]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_eqMp' _ _).trans hst)
@@ -1373,7 +1373,6 @@ private theorem append_receiveChallenge_left (i : Fin (m + n)) (hi : i.val < m)
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_pos hi]
-  simp only [id_eq]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_eqMp' _ _).trans hst)
@@ -1615,7 +1614,6 @@ private theorem append_sendMessage_seam (i : Fin (m + n)) (him : i.val = m) (hn 
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
-  simp only [id_eq]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
   rw [hOutput]
   simp only [pure_bind]
@@ -1634,7 +1632,6 @@ private theorem append_receiveChallenge_seam (i : Fin (m + n)) (him : i.val = m)
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
-  simp only [id_eq]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
   rw [hOutput]
   simp only [pure_bind]
@@ -1651,7 +1648,6 @@ private theorem append_sendMessage_right (i : Fin (m + n)) (hi : m < i.val) (hik
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_neg (by omega : ¬ i.val < m), dif_neg (by omega : ¬ i.val = m)]
-  simp only [id_eq]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_dcast _ _).trans ((heq_eqMp' _ _).trans hst))
@@ -1667,7 +1663,6 @@ private theorem append_receiveChallenge_right (i : Fin (m + n)) (hi : m < i.val)
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_neg (by omega : ¬ i.val < m), dif_neg (by omega : ¬ i.val = m)]
-  simp only [id_eq]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_dcast _ _).trans ((heq_eqMp' _ _).trans hst))
@@ -2176,8 +2171,11 @@ private theorem append_run_pos (hn : 0 < n)
   refine eq_of_heq ?_
   unfold Prover.run
   refine HEq.trans (heq_bind hα rfl key hf) ?_
-  simp only [bind_map_left, concatLR_last]
-  rfl
+  refine HEq.trans (heq_of_eq (bind_map_left _ _ _)) (heq_of_eq ?_)
+  congr 1
+  funext q
+  refine congrArg (fun t => liftM (P₂.output q.2.2) >>= fun ctx => pure (t, ctx)) ?_
+  exact concatLR_last hkl q.1 q.2.1
 
 private theorem runToRound_last_zero {pSpec : ProtocolSpec 0}
     (P : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec) (s : Stmt₂) (w : Wit₂) :
