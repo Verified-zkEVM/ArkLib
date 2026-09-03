@@ -2119,9 +2119,9 @@ witness `wit₁` behaves as expected: it first runs `P₁` to obtain an intermed
 to produce the final statement `stmt₃`, witness `wit₃`, and transcript `transcript₂`.
 The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcript₁ ++ₜ transcript₂`.
 
-**Why the extra hypothesis `hOutput`.** Without it this statement is *false*, so it has been
-weakened rather than dropped. The reason is a difference in *when* the first prover's output step
-happens on the two sides of the equation:
+**Why the extra hypothesis `[P₁.OutputIsPure]`.** Without it this statement is *false*, so it has
+been weakened rather than dropped. The reason is a difference in *when* the first prover's output
+step happens on the two sides of the equation:
 
 * `Prover.processRound` always draws a challenge round's challenge from the challenge oracle
   *before* handing it to `receiveChallenge`;
@@ -2133,19 +2133,19 @@ challenge and only *then* runs `P₁.output`, whereas the right-hand side finish
 output included — before `P₂.run` draws anything. If `P₁.output` makes oracle queries of its own,
 the two sides issue their queries in a different order, and the two computations genuinely differ.
 
-`hOutput` says exactly that `P₁.output` makes no oracle queries: it is some plain function
-`outputFn` of the prover's final state, wrapped in `pure`. For such an output step the ordering is
+`Prover.OutputIsPure` says exactly that `P₁.output` makes no oracle queries: it is some plain
+function of the prover's final state, wrapped in `pure`. For such an output step the ordering is
 immaterial and the identity holds. This covers every prover in the library, whose output step is a
 pure read-off of the accumulated state; it excludes only provers that query oracles while
 producing their output.
 -/
-theorem append_run (stmt : Stmt₁) (wit : Wit₁)
-    (outputFn : P₁.PrvState (Fin.last m) → Stmt₂ × Wit₂)
-    (hOutput : P₁.output = fun st => pure (outputFn st)) :
-      (P₁.append P₂).run stmt wit = (do
-        let ⟨transcript₁, stmt₂, wit₂⟩ ← liftAppendLeft pSpec₂ (P₁.run stmt wit)
-        let ⟨transcript₂, stmt₃, wit₃⟩ ← liftAppendRight pSpec₁ (P₂.run stmt₂ wit₂)
-        return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
+theorem append_run [hPure : P₁.OutputIsPure] (stmt : Stmt₁) (wit : Wit₁) :
+    (P₁.append P₂).run stmt wit = (do
+      let ⟨transcript₁, stmt₂, wit₂⟩ ← liftAppendLeft pSpec₂ (P₁.run stmt wit)
+      let ⟨transcript₂, stmt₃, wit₃⟩ ← liftAppendRight pSpec₁ (P₂.run stmt₂ wit₂)
+      return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
+  obtain ⟨outputFn, hOutputPt⟩ := hPure.output_is_pure
+  have hOutput : P₁.output = fun st => pure (outputFn st) := funext hOutputPt
   rcases Nat.eq_zero_or_pos n with hn | hn
   · subst hn
     have hStS : (P₁.append P₂).PrvState (Fin.last (m + 0)) = P₁.PrvState (Fin.last m) :=
@@ -2195,6 +2195,36 @@ theorem append_run (stmt : Stmt₁) (wit : Wit₁)
     unfold rightRun Prover.run
     simp only [hOutput, liftM_bind, liftM_pure, liftAppendRight_liftM, bind_assoc,
       pure_bind]
+
+/-- Purity of the output step is preserved by binary sequential composition of provers.
+
+The appended prover's `output` field (see `Prover.append`) splits on whether the second protocol is
+empty: when `pSpec₂` has rounds it is `P₂.output` on the transported final state, and when `pSpec₂`
+is empty the seam collapses into the output step, making it `P₁.output`, then `P₂.input`, then
+`P₂.output`. Both branches are pure as soon as `P₁` and `P₂` have pure output.
+
+This is the prover-side analogue of `Verifier.IsPure.append`, and it is what lets a chain of binary
+appends discharge the `Prover.OutputIsPure` hypothesis of `Prover.append_run` from per-factor
+purity. `Prover.instOutputIsPureAppend` below is the instance form, so that nested appends
+propagate automatically. -/
+theorem OutputIsPure.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+    (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
+    (h₁ : P₁.OutputIsPure) (h₂ : P₂.OutputIsPure) :
+    (P₁.append P₂).OutputIsPure := by
+  obtain ⟨f₁, hf₁⟩ := h₁.output_is_pure
+  obtain ⟨f₂, hf₂⟩ := h₂.output_is_pure
+  by_cases hn : n = 0
+  · subst hn
+    refine ⟨fun st =>
+      f₂ (dcast (by simp) (P₂.input (f₁ (cast (prvState_left _ _ (by simp)) st)))), fun st => ?_⟩
+    rw [append_output_zero rfl st _ (cast_heq _ st).symm, hf₁, pure_bind, hf₂]
+  · refine ⟨fun st => f₂ (cast (prvState_right _ _ (by simp; omega) (by simp)) st), fun st => ?_⟩
+    rw [append_output_pos hn st _ (cast_heq _ st).symm, hf₂]
+
+/-- Instance form of `Prover.OutputIsPure.append`, so that nested appends discharge the
+`Prover.append_run` hypothesis automatically. -/
+instance instOutputIsPureAppend [h₁ : P₁.OutputIsPure] [h₂ : P₂.OutputIsPure] :
+    (P₁.append P₂).OutputIsPure := OutputIsPure.append P₁ P₂ h₁ h₂
 
 -- TODO: Need to define a function that "extracts" a second prover from the combined prover
 
@@ -2302,8 +2332,9 @@ theorem append_completeness
   have h₁' := h₁ stmtIn witIn hRelIn
   clear h₁
   unfold Reduction.append Reduction.run
-  -- `Prover.append_run` now carries a deterministic-output hypothesis (see its docstring), so it
-  -- no longer fires as an unconditional `simp` lemma here; it has to be applied by hand.
+  -- `Prover.append_run` requires `R₁.prover.OutputIsPure` (see its docstring), which is not
+  -- available for an arbitrary `R₁`, so it does not fire as a `simp` lemma here. Discharging it
+  -- will mean either assuming that purity or reasoning about the seam ordering directly.
   simp [Verifier.append_run]
   sorry
 
