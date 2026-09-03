@@ -654,9 +654,9 @@ open CoreDefinitions unitInterval in
   union bound over the per-round failure probabilities of `folding_reflects_balls`.
 
   The paper states the range as `δ < 1 - B⋆(C⁽ⁱ⁾, 2)`; here the mutual-correlated-agreement
-  error is total in `δ`, so only the rate bound `1 - rate(C⁽ⁱ⁾)` (which every `B⋆` satisfies,
-  as `B⋆ ≥ √rate ≥ rate`) is needed — it makes the codewords explaining the folded agreement
-  unique. -/
+  error is total in `δ`, so only the rate bound `1 - rate(C⁽ⁱ⁾)` is needed to make the codewords
+  explaining the folded agreement unique. Every regime proposed in the paper has
+  `B⋆ ≥ rate` (with equality in the capacity regime), so the paper's range implies this one. -/
 theorem iterated_folding_reflects_balls [Fintype F]
     [FoldingContext k d n]
     {ω : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
