@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Michele Orrù
 -/
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
 
 /-!

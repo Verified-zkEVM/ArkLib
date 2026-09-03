@@ -287,6 +287,7 @@ import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Preliminaries
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.AbortAnalysis
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack

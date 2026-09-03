@@ -6,6 +6,7 @@ Authors: Quang Dao, Devon Tuma, Chung Thai Nguyen, Michele Orrù
 
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Nondegeneracy
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
@@ -694,7 +695,9 @@ abbrev IsLemma5_1QueryBound
 
 /-- CO25 Claim 5.21.
 `Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` with `Hyb_0 / Hyb_1` sampled eagerly via
-`hyb_0` / `hyb_1`. `hBound` ties the numerical query budgets to `maliciousProver`. -/
+`hyb_0` / `hyb_1`. `hBound` ties the numerical query budgets to `maliciousProver`;
+`hRounds` makes explicit the nondegenerate paired-round model used by the paper's BackTrack
+analysis. The hybrid games themselves remain generic. -/
 theorem claim_5_21
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -702,7 +705,8 @@ theorem claim_5_21
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ)
-    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ) :
+    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ)
+    (hRounds : NondegenerateRounds pSpec) :
     tvDist
       (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
         (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
@@ -901,7 +905,8 @@ def hyb_4
 `Δ(Hyb_3, Hyb_4) ≤ (7·(L+1)·(2t_h+1+2t_p+L+2t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`.
 `Hyb_3` and `Hyb_4` use the *same* eager salted FS oracle (`D_IP_salted`,
 matching CO25 line 1784); only the prover/verifier algorithm differs. `hBound` ties the numerical
-query budgets to `maliciousProver`. -/
+query budgets to `maliciousProver`; `hRounds` records the nondegenerate paired-round model
+implicitly used by the BackTrack-dependent comparison. -/
 theorem claim_5_24
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -909,7 +914,8 @@ theorem claim_5_24
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ)
-    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ) :
+    (hBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ)
+    (hRounds : NondegenerateRounds pSpec) :
     tvDist
       (hyb_3 (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
@@ -962,7 +968,7 @@ theorem lemma_5_1_inner
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ) (hRounds : NondegenerateRounds pSpec) :
       ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
         tvDist
@@ -993,7 +999,7 @@ theorem lemma_5_1_inner_tvBound
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ) (hRounds : NondegenerateRounds pSpec) :
     ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       tvDist
@@ -1057,7 +1063,7 @@ theorem lemma_5_1
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ) (hRounds : NondegenerateRounds pSpec) :
     ∃ (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (d2sTraceTransform : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
@@ -1080,7 +1086,7 @@ theorem lemma_5_1
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
     d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
-    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ⟩
+    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ hRounds⟩
 
 end KeyLemma
 
