@@ -369,7 +369,7 @@ private def d2sHandleHashQuery
       -- Item 2(c) — append `('h', 𝕩, s_{C,out})` to `tr`; return `s_{C,out}`.
       let trace' := st.trace ++ [⟨dsHashQuery stmt, sampled⟩]
       let trΔ' : TraceNabla T_H T_P StmtIn U :=
-        { st.trΔ with h := TraceTableOps.add st.trΔ.h stmt sampled }
+        { st.trΔ with h := TraceTableOps.insert st.trΔ.h stmt sampled }
       let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
         TraceNabla.IsSubsetOfQueryLog_append_hash st.h_inv stmt sampled
       set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
@@ -404,7 +404,7 @@ private def d2sHandleInversePermQuery
       -- Item 3(c) — append `('p⁻¹', s_out, s_in)` to `tr`; return `s_in`.
       let trace' := st.trace ++ [⟨dsPermInvQuery stateOut, sampled⟩]
       let trΔ' : TraceNabla T_H T_P StmtIn U :=
-        { st.trΔ with p := TraceTableOps.add st.trΔ.p sampled stateOut }
+        { st.trΔ with p := TraceTableOps.insert st.trΔ.p sampled stateOut }
       let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
         TraceNabla.IsSubsetOfQueryLog_append_perm_inv st.h_inv sampled stateOut
       set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
@@ -454,7 +454,7 @@ private def d2sHandleBacktrackNoResult
           -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
           let trace' := st.trace ++ [⟨dsPermQuery stateIn, sampledOut⟩]
           let trΔ' : TraceNabla T_H T_P StmtIn U :=
-            { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }
+            { st.trΔ with p := TraceTableOps.insert st.trΔ.p stateIn sampledOut }
           let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
             TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn sampledOut
           set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
@@ -555,7 +555,7 @@ private def d2sHandleBacktrackSome
         -- Paper Item 4(e)iii.F — `tr_∇.p.add(s_in, s_out)`
         let trace' := st.trace ++ [⟨dsPermQuery stateIn, s_out⟩]
         let trΔ' : TraceNabla T_H T_P StmtIn U :=
-          { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn s_out }
+          { st.trΔ with p := TraceTableOps.insert st.trΔ.p stateIn s_out }
         let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
           TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn s_out
         set { st with trace := trace', cacheP := cache', trΔ := trΔ', h_inv := h_inv' }
@@ -576,7 +576,7 @@ private def d2sHandleBacktrackSome
           d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
         let trace' := st.trace ++ [⟨dsPermQuery stateIn, sampledOut⟩]
         let trΔ' : TraceNabla T_H T_P StmtIn U :=
-          { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }
+          { st.trΔ with p := TraceTableOps.insert st.trΔ.p stateIn sampledOut }
         let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
           TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn sampledOut
         set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }

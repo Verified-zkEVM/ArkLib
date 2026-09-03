@@ -426,8 +426,8 @@ one element, and any scan-time fork is subsumed by the bad events `E_fork,p ∪ 
 Downstream proofs (`BadEvents`, `AbortAnalysis`) quantify over `S_BT` as an explicit structure
 hypothesis and never need to compute the family. -/
 
-/-- Paper §5.2 partial-cap-segment matching for `BackTrack`: enumerate all `(stateIn, stateOut)`
-pairs in `tr_∇.p` whose `stateOut.capacitySegment` equals `nextInput.capacitySegment`.
+/-- Paper §5.2 partial-cap-segment matching for `BackTrack`: enumerate all distinct
+`(stateIn, stateOut)` pairs in `tr_∇.p` whose output capacity matches the next input capacity.
 The linear scan separately rejects self-loops and repeated input capacities as invalid candidates.
 
 Black-box over `[LawfulTraceTable T_P ...]` via `TraceTableOps.entries`; both forward and inverse
@@ -439,12 +439,9 @@ private def predecessorCandidates
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (nextInputCap : Vector U SpongeSize.C) :
     List (CanonicalSpongeState U × CanonicalSpongeState U) := by
-  exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p).filterMap fun pair =>
+  exact ((TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p).filterMap fun pair =>
     let stateOut := pair.2
-    if stateOut.capacitySegment = nextInputCap then
-      some pair
-    else
-      none
+    if stateOut.capacitySegment = nextInputCap then some pair else none).dedup
 
 /-! ### Linear-scan helpers (CO25 §5.2 BackTrack "look for at most one element" optimization)
 
@@ -465,21 +462,20 @@ private def classifyLookup {α : Type _} (xs : List α) : LookupResult α :=
   | [a] => .unique a
   | _ :: _ :: _ => .conflict
 
-/-- Paper §5.2 Step 4 hash anchor lookup: filter `tr_∇.h.entries` for statements whose stored
-capacity matches the chain's initial capacity. Multiple matches indicate `E_fork,h,p`. -/
+/-- Paper §5.2 Step 4 hash anchor lookup: collect distinct statements whose stored capacity
+matches the chain's initial capacity. Multiple distinct matches indicate `E_fork,h,p`. -/
 private def hashAnchorCandidates
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (cap : Vector U SpongeSize.C) : List StmtIn := by
   classical
-  exact (TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h).filterMap fun pair =>
-    if pair.2 = cap then some pair.1 else none
+  exact ((TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h).filterMap fun pair =>
+    if pair.2 = cap then some pair.1 else none).dedup
 
 /-! ### Helper lemmas connecting `trΔ.h`/`trΔ.p` entries to the original `trace`
 
-The key insight: by `LawfulTraceTable.toMultiSet_ofEntries`, membership in `entries`
-is equivalent to membership in the abstract multiset model. By `toMultiSet_add`,
-each fold step adds exactly one pair to the multiset. So induction on the trace
-connects multiset membership back to the original trace entry. -/
+The key insight: `toMultiSet_ofEntries` equates public-entry and abstract membership, while
+`mem_toMultiSet_insert_iff` says each fold step preserves old pairs and represents the current
+pair. Induction therefore connects table membership back to an original trace entry. -/
 
 /-- An intermediate data structure representing a partially constructed backtrack sequence.
 It carries all incremental properties of a valid chain from `head` to
@@ -605,13 +601,13 @@ private def completeBacktrackSequence
 /-! ### Bridge lemmas: `classifyLookup` + `filterMap` → entry membership -/
 
 omit [SpongeSize] in
-private lemma classifyLookup_filterMap_singleton_mem {α β : Type _}
+private lemma classifyLookup_filterMap_singleton_mem {α β : Type _} [DecidableEq β]
     (l : List α) (f : α → Option β) (b : β)
-    (h : classifyLookup (l.filterMap f) = .unique b) :
+    (h : classifyLookup (l.filterMap f).dedup = .unique b) :
     ∃ a ∈ l, f a = some b := by
-  have : b ∈ l.filterMap f := by
-    have : l.filterMap f = [b] := by
-      cases h' : l.filterMap f with
+  have hMemDedup : b ∈ (l.filterMap f).dedup := by
+    have : (l.filterMap f).dedup = [b] := by
+      cases h' : (l.filterMap f).dedup with
       | nil => rw [h'] at h; unfold classifyLookup at h; contradiction
       | cons hd tl =>
         cases tl with
@@ -620,7 +616,7 @@ private lemma classifyLookup_filterMap_singleton_mem {α β : Type _}
             injection h with hEq; subst hEq; rfl
         | cons _ _ => rw [h'] at h; unfold classifyLookup at h; contradiction
     rw [this]; exact .head ..
-  exact List.mem_filterMap.mp this
+  exact List.mem_filterMap.mp (List.mem_dedup.mp hMemDedup)
 
 private lemma hash_unique_mem_entries
     (trΔ : TraceNabla T_H T_P StmtIn U)

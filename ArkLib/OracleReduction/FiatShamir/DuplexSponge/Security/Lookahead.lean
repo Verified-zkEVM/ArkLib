@@ -137,19 +137,19 @@ abbrev S_LA
 
 /-! ## §5.3 Step 1 — Parse `tr_∇.p` into the maximal family `S_LA(tr_∇.p, s, i)` (Eq. 14) -/
 
-/-- Successor candidates from the query-answer entries of `tr_∇.p`.
+/-- Distinct successor candidates from the query-answer entries of `tr_∇.p`.
 
-Unlike `TraceTableOps.inlu`, this keeps all forward matches so multiple successor chains reach
-`S_LA` and are reported as paper-`err` by Step 2. -/
+Unlike `TraceTableOps.inlu`, this keeps all distinct forward matches so genuine successor forks
+reach `S_LA` and are reported as paper-`err` by Step 2. -/
 -- TODO: Replace this linear `entries` scan with a conflict-aware, logarithmic lookup by input
 -- state, as required by CO25 Eq. 15.
 private def successorCandidates
     (trΔp : T_P) (current : CanonicalSpongeState U) :
     List (CanonicalSpongeState U) :=
-  (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
+  ((TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap fun pair =>
     if pair.1 = current then
       some pair.2
-    else none
+    else none).dedup
 
 private def singletonLookaheadSequence
     (trΔp : T_P)
@@ -340,8 +340,14 @@ private lemma successor_singleton_mem_entries
     (current, next) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔp := by
   unfold successorCandidates at h
   classical
+  have hMemDedup : next ∈
+      ((TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap
+        (fun pair => if pair.1 = current then some pair.2 else none)).dedup := by
+    rw [h]
+    exact .head ..
   have hMem : next ∈ (TraceTableOps.entries (V := CanonicalSpongeState U) trΔp).filterMap
-      (fun pair => if pair.1 = current then some pair.2 else none) := by rw [h]; exact .head ..
+      (fun pair => if pair.1 = current then some pair.2 else none) :=
+    List.mem_dedup.mp hMemDedup
   obtain ⟨pair, hPairMem, hPairEq⟩ := List.mem_filterMap.mp hMem
   split at hPairEq
   · next hCurr =>

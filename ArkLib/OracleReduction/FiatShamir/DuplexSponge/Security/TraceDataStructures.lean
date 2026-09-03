@@ -20,13 +20,11 @@ shape: `empty`, `add`, `inlu` (forward lookup), `outlu` (backward lookup).
 
 The lawful class `LawfulTraceTable` uses a `Multiset (K × V)` model:
 
-- `inlu t k = some v` iff `(k, v)` occurs exactly once in the multiset and no conflicting
-  value `v'` exists.
-- `outlu t v = some k` iff `(k, v)` occurs exactly once in the multiset and no conflicting
-  key `k'` exists.
+- `inlu t k = some v` iff `(k, v)` occurs and no distinct value `v'` occurs at `k`.
+- `outlu t v = some k` iff `(k, v)` occurs and no distinct key `k'` occurs at `v`.
 
-Duplicate entries, even identical duplicate `(k, v)` entries, are treated as multiple matches and
-therefore lookup failure, matching CO25 Definition 5.2's sorted-list lookup semantics.
+The external query log retains occurrences, while `tr_∇` has set semantics: repeated identical
+`(k, v)` pairs are harmless, but distinct mappings remain conflicts.
 
 By parameterizing algorithms (`BackTrack`, `LookAhead`) over `TraceTableOps`, we can swap in an
 `O(log N)` or `O(1)` implementation later without touching algorithms or security proofs.
@@ -105,35 +103,98 @@ class TraceTableOps (T : Type) (K V : outParam Type) where
   /-- `entries(t)` — enumerate all `(k, v)` pairs (CO25 §5.2 partial-key matching). -/
   entries : T → List (K × V)
 
+/-- Set-semantic insertion for `tr_∇`. The query log retains every occurrence, whereas the
+internal table records an already-present normalized pair only once. -/
+def TraceTableOps.insert {T K V : Type} [TraceTableOps T K V] [DecidableEq K] [DecidableEq V]
+    (t : T) (k : K) (v : V) : T :=
+  if (k, v) ∈ TraceTableOps.entries t then t else TraceTableOps.add t k v
+
 /-! ### Refinement-model lawful class -/
 
 /-- Refinement-model lawfulness for a trace table, expressed via a `Multiset (K × V)` model.
 
-`toMultiSet` is the abstract mathematical content of the table.
-The `inlu`/`outlu` laws state that a lookup succeeds iff the entry exists exactly once and is the
-unique value/key match in the multiset; duplicate-entry traces are treated as multiple matches. -/
+`toMultiSet` is the abstract mathematical content of the table. The lookup laws are insensitive
+to multiplicity: success requires the represented pair to exist and forbids only a distinct
+value/key match. -/
 class LawfulTraceTable (T : Type) (K V : outParam Type) [DecidableEq K] [DecidableEq V]
 extends TraceTableOps T K V where
   toMultiSet : T → Multiset (K × V)
   toMultiSet_empty : toMultiSet TraceTableOps.empty = (0 : Multiset (K × V)) := by simp [empty]
   toMultiSet_add : ∀ t k v, toMultiSet (add t k v) = (k, v) ::ₘ toMultiSet t
-  -- **inlu's query result MUST BE UNIQUE**, i.e. two copies
-    -- of `(k, v)` in the multiset trigger the "multiple" case
   inlu_eq_some : ∀ t k v,
     inlu t k = some v ↔
-      (toMultiSet t).count (k, v) = 1 ∧ -- Uniqueness of the whole (query, answer) pair `(k, v)`
+      (k, v) ∈ toMultiSet t ∧
       (∀ v', (k, v') ∈ toMultiSet t → v' = v) -- Uniqueness of answer value `v` according
         -- to the query key `k`
-  -- **outlu's query result MUST BE UNIQUE**, i.e. two copies
-    -- of `(k, v)` in the multiset trigger the "multiple" case
   outlu_eq_some : ∀ t k v,
     outlu t v = some k ↔
-      (toMultiSet t).count (k, v) = 1 ∧ -- Uniqueness of the whole (query, answer) pair `(k, v)`
+      (k, v) ∈ toMultiSet t ∧
       (∀ k', (k', v) ∈ toMultiSet t → k' = k) -- Uniqueness of query key `k` according
         -- to the query value `v`
   /-- `entries` reflects the abstract multiset content. Order is unspecified; only the multiset
   reading is stable. Used by paper §5.2 partial-key enumeration in `BackTrack`. -/
   toMultiSet_ofEntries : ∀ t, (TraceTableOps.entries t : Multiset (K × V)) = toMultiSet t
+
+/-- Set-semantic insertion adds membership for the requested pair and preserves all old pairs. -/
+lemma TraceTableOps.mem_toMultiSet_insert_iff
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) (k : K) (v : V) (pair : K × V) :
+    pair ∈ LawfulTraceTable.toMultiSet (TraceTableOps.insert t k v) ↔
+      pair = (k, v) ∨ pair ∈ LawfulTraceTable.toMultiSet t := by
+  by_cases hmem : (k, v) ∈ TraceTableOps.entries t
+  · have hmem' : (k, v) ∈ LawfulTraceTable.toMultiSet t := by
+      rw [← LawfulTraceTable.toMultiSet_ofEntries]
+      exact Multiset.mem_coe.mpr hmem
+    simp only [TraceTableOps.insert, hmem, if_pos]
+    constructor
+    · exact Or.inr
+    · rintro (rfl | h)
+      · exact hmem'
+      · exact h
+  · simp [TraceTableOps.insert, hmem, LawfulTraceTable.toMultiSet_add]
+
+/-- Public-entry membership has the same set-union behavior under `insert`. -/
+lemma TraceTableOps.mem_entries_insert_iff
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) (k : K) (v : V) (pair : K × V) :
+    pair ∈ TraceTableOps.entries (TraceTableOps.insert t k v) ↔
+      pair = (k, v) ∨ pair ∈ TraceTableOps.entries t := by
+  constructor
+  · intro h
+    have hms : pair ∈ LawfulTraceTable.toMultiSet (TraceTableOps.insert t k v) := by
+      rw [← LawfulTraceTable.toMultiSet_ofEntries]
+      exact Multiset.mem_coe.mpr h
+    rw [TraceTableOps.mem_toMultiSet_insert_iff] at hms
+    rcases hms with rfl | hOld
+    · exact Or.inl rfl
+    · exact Or.inr (Multiset.mem_coe.mp
+        ((LawfulTraceTable.toMultiSet_ofEntries t).symm ▸ hOld))
+  · rintro (rfl | hOld)
+    · apply Multiset.mem_coe.mp
+      rw [LawfulTraceTable.toMultiSet_ofEntries,
+        TraceTableOps.mem_toMultiSet_insert_iff]
+      exact Or.inl rfl
+    · apply Multiset.mem_coe.mp
+      rw [LawfulTraceTable.toMultiSet_ofEntries,
+        TraceTableOps.mem_toMultiSet_insert_iff]
+      right
+      rw [← LawfulTraceTable.toMultiSet_ofEntries]
+      exact Multiset.mem_coe.mpr hOld
+
+/-- Inserting a normalized pair already represented by the table is a no-op. -/
+lemma TraceTableOps.insert_eq_self_of_mem
+    {T K V : Type} [TraceTableOps T K V] [DecidableEq K] [DecidableEq V]
+    (t : T) (k : K) (v : V) (h : (k, v) ∈ TraceTableOps.entries t) :
+    TraceTableOps.insert t k v = t := by
+  simp [TraceTableOps.insert, h]
+
+/-- Inserting the same normalized pair twice is idempotent. -/
+lemma TraceTableOps.insert_idem
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) (k : K) (v : V) :
+    TraceTableOps.insert (TraceTableOps.insert t k v) k v = TraceTableOps.insert t k v := by
+  apply TraceTableOps.insert_eq_self_of_mem
+  exact (TraceTableOps.mem_entries_insert_iff t k v (k, v)).mpr (Or.inl rfl)
 
 class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
     [DecidableEq StmtIn] [DecidableEq U] where
@@ -171,13 +232,13 @@ variable {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
 
 /-- Build a `TraceNabla` from a `DuplexSpongeTrace` (CO25 Definition 5.2).
 
-Generic over any `LawfulTraceTable` implementations `T_H` and `T_P`; only uses `empty` and `add`
-from `TraceTableOps`, so the construction is independent of the concrete data structure.
+Generic over any `LawfulTraceTable` implementations `T_H` and `T_P`; set-semantic `insert`
+coalesces repeated identical pairs while retaining distinct conflicting mappings.
 
 Dispatch rules (matching the three tuple forms of Definition 5.2):
-- `.inl stmt`         → `('h', stmt, capSeg)` → `T_H.add acc.h stmt capSeg`
-- `.inr (.inl sIn)`   → `('p', sIn, sOut)`    → `T_P.add acc.p sIn sOut`
-- `.inr (.inr sOut)`  → `('p⁻¹', sOut, sIn)`  → `T_P.add acc.p sIn sOut`
+- `.inl stmt`         → `('h', stmt, capSeg)` → `T_H.insert acc.h stmt capSeg`
+- `.inr (.inl sIn)`   → `('p', sIn, sOut)`    → `T_P.insert acc.p sIn sOut`
+- `.inr (.inr sOut)`  → `('p⁻¹', sOut, sIn)`  → `T_P.insert acc.p sIn sOut`
 
 Both permutation directions contribute `(s_in, s_out)` pairs to the **same** bidirectional `p`
 table, because `tr_∇.p` is the single bidirectional structure over `(s_in, s_out)` pairs. -/
@@ -187,23 +248,54 @@ def TraceNabla.ofQueryLog
   log.foldl (init := ⟨TraceTableOps.empty, TraceTableOps.empty⟩)
     fun acc entry =>
       match entry with
-      | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.add acc.h stmt capSeg }
-      | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.add acc.p sIn sOut }
-      | ⟨.inr (.inr sOut), sIn⟩    => { acc with p := TraceTableOps.add acc.p sIn sOut }
+      | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.insert acc.h stmt capSeg }
+      | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.insert acc.p sIn sOut }
+      | ⟨.inr (.inr sOut), sIn⟩    => { acc with p := TraceTableOps.insert acc.p sIn sOut }
 
 /-- Build the `tr_∇` used by CO25 StdTrace §5.5.1 Step 3.
 
 Unlike `TraceNabla.ofQueryLog`, this constructor deliberately ignores inverse-permutation trace
-entries, matching Step 3(c) of StdTrace. D2SQuery still uses the bidirectional constructor above. -/
+entries, matching Step 3(c) of StdTrace. It coalesces repeated identical forward entries; D2SQuery
+still uses the bidirectional constructor above. -/
 def TraceNabla.ofQueryLogForwardOnly
     (log : DuplexSpongeTrace StmtIn U) :
     TraceNabla T_H T_P StmtIn U :=
   log.foldl (init := ⟨TraceTableOps.empty, TraceTableOps.empty⟩)
     fun acc entry =>
       match entry with
-      | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.add acc.h stmt capSeg }
-      | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.add acc.p sIn sOut }
+      | ⟨.inl stmt,        capSeg⟩ => { acc with h := TraceTableOps.insert acc.h stmt capSeg }
+      | ⟨.inr (.inl sIn),  sOut⟩   => { acc with p := TraceTableOps.insert acc.p sIn sOut }
       | ⟨.inr (.inr _),    _⟩      => acc
+
+/-- Regression for occurrence replay: two adjacent identical log entries have the same normalized
+bidirectional `tr_∇` as one occurrence. -/
+lemma TraceNabla.ofQueryLog_duplicate_head
+    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U))
+    (trace : DuplexSpongeTrace StmtIn U) :
+    TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) (entry :: entry :: trace) =
+      TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) (entry :: trace) := by
+  rcases entry with ⟨q, answer⟩
+  rcases q with stmt | stateIn | stateOut
+  · simp only [TraceNabla.ofQueryLog, List.foldl_cons]
+    rw [TraceTableOps.insert_idem]
+  · simp only [TraceNabla.ofQueryLog, List.foldl_cons]
+    rw [TraceTableOps.insert_idem]
+  · simp only [TraceNabla.ofQueryLog, List.foldl_cons]
+    rw [TraceTableOps.insert_idem]
+
+/-- The forward-only StdTrace constructor likewise coalesces repeated identical occurrences. -/
+lemma TraceNabla.ofQueryLogForwardOnly_duplicate_head
+    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U))
+    (trace : DuplexSpongeTrace StmtIn U) :
+    TraceNabla.ofQueryLogForwardOnly (T_H := T_H) (T_P := T_P) (entry :: entry :: trace) =
+      TraceNabla.ofQueryLogForwardOnly (T_H := T_H) (T_P := T_P) (entry :: trace) := by
+  rcases entry with ⟨q, answer⟩
+  rcases q with stmt | stateIn | stateOut
+  · simp only [TraceNabla.ofQueryLogForwardOnly, List.foldl_cons]
+    rw [TraceTableOps.insert_idem]
+  · simp only [TraceNabla.ofQueryLogForwardOnly, List.foldl_cons]
+    rw [TraceTableOps.insert_idem]
+  · rfl
 
 def TraceNabla.IsSubsetOfQueryLog
     (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop :=
@@ -218,11 +310,11 @@ private def ofQueryLogStep
     TraceNabla T_H T_P StmtIn U :=
   match entry with
   | ⟨.inl stmt, capSeg⟩ =>
-      { acc with h := TraceTableOps.add acc.h stmt capSeg }
+      { acc with h := TraceTableOps.insert acc.h stmt capSeg }
   | ⟨.inr (.inl sIn), sOut⟩ =>
-      { acc with p := TraceTableOps.add acc.p sIn sOut }
+      { acc with p := TraceTableOps.insert acc.p sIn sOut }
   | ⟨.inr (.inr sOut), sIn⟩ =>
-      { acc with p := TraceTableOps.add acc.p sIn sOut }
+      { acc with p := TraceTableOps.insert acc.p sIn sOut }
 
 private lemma ofQueryLog_eq_foldl
     (trace : DuplexSpongeTrace StmtIn U) :
@@ -251,12 +343,12 @@ private lemma hash_ms_foldl_inv
     -- Hash query: adds (stmt', a) to h
     case inl =>
       simp only [ofQueryLogStep] at hp
-      have hIH := ih {init with h := TraceTableOps.add init.h stmt' a} hp
-      have : ({init with h := TraceTableOps.add init.h stmt' a} :
-          TraceNabla T_H T_P StmtIn U).h = TraceTableOps.add init.h stmt' a := rfl
-      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
+      have hIH := ih {init with h := TraceTableOps.insert init.h stmt' a} hp
+      have : ({init with h := TraceTableOps.insert init.h stmt' a} :
+          TraceNabla T_H T_P StmtIn U).h = TraceTableOps.insert init.h stmt' a := rfl
+      rw [this] at hIH
       rcases hIH with hMem | hIn
-      · rw [Multiset.mem_cons] at hMem
+      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
         rcases hMem with hEq | hRest
         · subst hEq; right; exact .head ..
         · exact Or.inl hRest
@@ -264,13 +356,13 @@ private lemma hash_ms_foldl_inv
     -- Forward perm: h unchanged
     case inr.inl =>
       simp only [ofQueryLogStep] at hp
-      rcases ih {init with p := TraceTableOps.add init.p sIn' a} hp with hMem | hIn
+      rcases ih {init with p := TraceTableOps.insert init.p sIn' a} hp with hMem | hIn
       · exact Or.inl hMem
       · exact Or.inr (List.mem_cons_of_mem _ hIn)
     -- Inverse perm: h unchanged
     case inr.inr =>
       simp only [ofQueryLogStep] at hp
-      rcases ih {init with p := TraceTableOps.add init.p a sOut'} hp with hMem | hIn
+      rcases ih {init with p := TraceTableOps.insert init.p a sOut'} hp with hMem | hIn
       · exact Or.inl hMem
       · exact Or.inr (List.mem_cons_of_mem _ hIn)
 
@@ -296,19 +388,19 @@ private lemma perm_ms_foldl_inv
     -- Hash query: p unchanged
     case inl =>
       simp only [ofQueryLogStep] at hp
-      rcases ih {init with h := TraceTableOps.add init.h stmt' a} hp with hMem | h1 | h2
+      rcases ih {init with h := TraceTableOps.insert init.h stmt' a} hp with hMem | h1 | h2
       · exact Or.inl hMem
       · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
       · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
     -- Forward perm: adds (sIn', a) to p
     case inr.inl =>
       simp only [ofQueryLogStep] at hp
-      have hIH := ih {init with p := TraceTableOps.add init.p sIn' a} hp
-      have : ({init with p := TraceTableOps.add init.p sIn' a} :
-          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p sIn' a := rfl
-      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
+      have hIH := ih {init with p := TraceTableOps.insert init.p sIn' a} hp
+      have : ({init with p := TraceTableOps.insert init.p sIn' a} :
+          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.insert init.p sIn' a := rfl
+      rw [this] at hIH
       rcases hIH with hMem | hIn
-      · rw [Multiset.mem_cons] at hMem
+      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
         rcases hMem with hEq | hRest
         · subst hEq; exact Or.inr (Or.inl (by exact .head ..))
         · exact Or.inl hRest
@@ -318,12 +410,12 @@ private lemma perm_ms_foldl_inv
     -- Inverse perm: adds (a, sOut') to p
     case inr.inr =>
       simp only [ofQueryLogStep] at hp
-      have hIH := ih {init with p := TraceTableOps.add init.p a sOut'} hp
-      have : ({init with p := TraceTableOps.add init.p a sOut'} :
-          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p a sOut' := rfl
-      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
+      have hIH := ih {init with p := TraceTableOps.insert init.p a sOut'} hp
+      have : ({init with p := TraceTableOps.insert init.p a sOut'} :
+          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.insert init.p a sOut' := rfl
+      rw [this] at hIH
       rcases hIH with hMem | hIn
-      · rw [Multiset.mem_cons] at hMem
+      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
         rcases hMem with hEq | hRest
         · subst hEq; exact Or.inr (Or.inr (by exact .head ..))
         · exact Or.inl hRest
@@ -371,9 +463,9 @@ private def ofQueryLogForwardOnlyStep
     TraceNabla T_H T_P StmtIn U :=
   match entry with
   | ⟨.inl stmt, capSeg⟩ =>
-      { acc with h := TraceTableOps.add acc.h stmt capSeg }
+      { acc with h := TraceTableOps.insert acc.h stmt capSeg }
   | ⟨.inr (.inl sIn), sOut⟩ =>
-      { acc with p := TraceTableOps.add acc.p sIn sOut }
+      { acc with p := TraceTableOps.insert acc.p sIn sOut }
   | ⟨.inr (.inr _), _⟩ => acc
 
 private lemma ofQueryLogForwardOnly_eq_foldl
@@ -400,19 +492,19 @@ private lemma hash_ms_foldl_fwd_inv
     rcases q with stmt' | sIn' | sOut'
     case inl =>
       simp only [ofQueryLogForwardOnlyStep] at hp
-      have hIH := ih {init with h := TraceTableOps.add init.h stmt' a} hp
-      have : ({init with h := TraceTableOps.add init.h stmt' a} :
-          TraceNabla T_H T_P StmtIn U).h = TraceTableOps.add init.h stmt' a := rfl
-      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
+      have hIH := ih {init with h := TraceTableOps.insert init.h stmt' a} hp
+      have : ({init with h := TraceTableOps.insert init.h stmt' a} :
+          TraceNabla T_H T_P StmtIn U).h = TraceTableOps.insert init.h stmt' a := rfl
+      rw [this] at hIH
       rcases hIH with hMem | hIn
-      · rw [Multiset.mem_cons] at hMem
+      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
         rcases hMem with hEq | hRest
         · subst hEq; right; exact .head ..
         · exact Or.inl hRest
       · exact Or.inr (List.mem_cons_of_mem _ hIn)
     case inr.inl =>
       simp only [ofQueryLogForwardOnlyStep] at hp
-      rcases ih {init with p := TraceTableOps.add init.p sIn' a} hp with hMem | hIn
+      rcases ih {init with p := TraceTableOps.insert init.p sIn' a} hp with hMem | hIn
       · exact Or.inl hMem
       · exact Or.inr (List.mem_cons_of_mem _ hIn)
     case inr.inr =>
@@ -440,18 +532,18 @@ private lemma perm_ms_foldl_fwd_inv
     rcases q with stmt' | sIn' | sOut'
     case inl =>
       simp only [ofQueryLogForwardOnlyStep] at hp
-      rcases ih {init with h := TraceTableOps.add init.h stmt' a} hp with hMem | h1 | h2
+      rcases ih {init with h := TraceTableOps.insert init.h stmt' a} hp with hMem | h1 | h2
       · exact Or.inl hMem
       · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
       · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
     case inr.inl =>
       simp only [ofQueryLogForwardOnlyStep] at hp
-      have hIH := ih {init with p := TraceTableOps.add init.p sIn' a} hp
-      have : ({init with p := TraceTableOps.add init.p sIn' a} :
-          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.add init.p sIn' a := rfl
-      rw [this] at hIH; erw [LawfulTraceTable.toMultiSet_add] at hIH
+      have hIH := ih {init with p := TraceTableOps.insert init.p sIn' a} hp
+      have : ({init with p := TraceTableOps.insert init.p sIn' a} :
+          TraceNabla T_H T_P StmtIn U).p = TraceTableOps.insert init.p sIn' a := rfl
+      rw [this] at hIH
       rcases hIH with hMem | hIn
-      · rw [Multiset.mem_cons] at hMem
+      · rw [TraceTableOps.mem_toMultiSet_insert_iff] at hMem
         rcases hMem with hEq | hRest
         · subst hEq; exact Or.inr (Or.inl (by exact .head ..))
         · exact Or.inl hRest
@@ -507,8 +599,8 @@ namespace ListBacked
 
 /-- Default list-backed implementation for trace tables.
 `add` is pure cons — `O(1)` insertion. The multiset model is `↑entries`.
-`inlu`/`outlu` are computable: filter entries by key/value and return `some` iff exactly one
-match exists (zero or multiple → `none`), matching the paper's sorted-list semantics. -/
+`inlu`/`outlu` deduplicate exact pairs, then return `some` iff exactly one distinct mapping
+matches. -/
 structure ListTraceTable (K V : Type) where
   entries : List (K × V)  -- list of `(k, v)` pairs; multiset model `↑entries`
 deriving Inhabited
@@ -524,27 +616,47 @@ variable {K V : Type} [DecidableEq K] [DecidableEq V]
 
 @[inline] def toMultiSet (t : ListTraceTable K V) : Multiset (K × V) := t.entries
 
-/-- `inlu` succeeds iff `(k, v)` appears exactly once **and** is the unique value for key `k`.
-Two copies of `(k, v)` → `none` (paper: "multiple matches"). -/
+/-- `inlu` succeeds iff `(k, v)` appears and is the unique distinct value for key `k`. -/
 @[inline] def fwdProp (t : ListTraceTable K V) (k : K) (v : V) : Prop :=
-  (toMultiSet t).count (k, v) = 1 ∧ ∀ v', (k, v') ∈ toMultiSet t → v' = v
+  (k, v) ∈ toMultiSet t ∧ ∀ v', (k, v') ∈ toMultiSet t → v' = v
 
-/-- `outlu` succeeds iff `(k, v)` appears exactly once **and** is the unique key for value `v`.
-Two copies of `(k, v)` → `none` (paper: "multiple matches"). -/
+/-- `outlu` succeeds iff `(k, v)` appears and is the unique distinct key for value `v`. -/
 @[inline] def bwdProp (t : ListTraceTable K V) (k : K) (v : V) : Prop :=
-  (toMultiSet t).count (k, v) = 1 ∧ ∀ k', (k', v) ∈ toMultiSet t → k' = k
+  (k, v) ∈ toMultiSet t ∧ ∀ k', (k', v) ∈ toMultiSet t → k' = k
 
-/-- Computable forward lookup: collect all values for key `k`; return `some v` iff exactly one. -/
+/-- Computable forward lookup modulo repeated identical pairs. -/
 def inlu (t : ListTraceTable K V) (k : K) : Option V :=
-  match t.entries.filterMap (fun p => if p.1 = k then some p.2 else none) with
+  match t.entries.dedup.filterMap (fun p => if p.1 = k then some p.2 else none) with
   | [v] => some v
   | _   => none
 
-/-- Computable backward lookup: collect all keys for value `v`; return `some k` iff exactly one. -/
+/-- Computable backward lookup modulo repeated identical pairs. -/
 def outlu (t : ListTraceTable K V) (v : V) : Option K :=
-  match t.entries.filterMap (fun p => if p.2 = v then some p.1 else none) with
+  match t.entries.dedup.filterMap (fun p => if p.2 = v then some p.1 else none) with
   | [k] => some k
   | _   => none
+
+/-! Identical occurrences are harmless; distinct mappings remain conflicts. -/
+
+omit [SpongeSize] in
+@[simp] lemma inlu_identical_duplicate (k : K) (v : V) :
+    inlu (⟨[(k, v), (k, v)]⟩ : ListTraceTable K V) k = some v := by
+  simp [inlu]
+
+omit [SpongeSize] in
+@[simp] lemma outlu_identical_duplicate (k : K) (v : V) :
+    outlu (⟨[(k, v), (k, v)]⟩ : ListTraceTable K V) v = some k := by
+  simp [outlu]
+
+omit [SpongeSize] in
+lemma inlu_distinct_conflict (k : K) (v₁ v₂ : V) (hne : v₁ ≠ v₂) :
+    inlu (⟨[(k, v₁), (k, v₂)]⟩ : ListTraceTable K V) k = none := by
+  simp [inlu, hne]
+
+omit [SpongeSize] in
+lemma outlu_distinct_conflict (k₁ k₂ : K) (v : V) (hne : k₁ ≠ k₂) :
+    outlu (⟨[(k₁, v), (k₂, v)]⟩ : ListTraceTable K V) v = none := by
+  simp [outlu, hne]
 
 /-- Shared singleton-lookup law for list-backed trace-table lookups. -/
 private def lookupBy {α κ υ : Type} [DecidableEq κ]
@@ -698,10 +810,16 @@ private lemma lookupBy_eq_some_iff {α κ υ : Type} [DecidableEq α] [Decidable
     simp [hbefore_none, hafter_none, hentry_key]
 
 omit [SpongeSize] in
+private lemma count_coe_dedup_eq_one_iff_mem {α : Type} [DecidableEq α]
+    (entries : List α) (entry : α) :
+    (entries.dedup : Multiset α).count entry = 1 ↔ entry ∈ (entries : Multiset α) := by
+  simp [List.count_dedup]
+
+omit [SpongeSize] in
 lemma inlu_eq_some_iff (t : ListTraceTable K V) (k : K) (v : V) :
     inlu t k = some v ↔ fwdProp t k v := by
-  change lookupBy t.entries Prod.fst Prod.snd k = some v ↔ fwdProp t k v
-  rw [lookupBy_eq_some_iff t.entries Prod.fst Prod.snd k (k, v) rfl (by
+  change lookupBy t.entries.dedup Prod.fst Prod.snd k = some v ↔ fwdProp t k v
+  rw [lookupBy_eq_some_iff t.entries.dedup Prod.fst Prod.snd k (k, v) rfl (by
     intro found hkey hvalue
     rcases found with ⟨k', v'⟩
     simp only at hkey hvalue
@@ -710,21 +828,26 @@ lemma inlu_eq_some_iff (t : ListTraceTable K V) (k : K) (v : V) :
     rfl)]
   constructor
   · intro h
-    exact ⟨h.1, fun v' hmem => Prod.mk.inj (h.2 (k, v') hmem rfl) |>.2⟩
+    exact ⟨(count_coe_dedup_eq_one_iff_mem t.entries (k, v)).mp h.1,
+      fun v' hmem => Prod.mk.inj (h.2 (k, v')
+        (Multiset.mem_coe.mpr (List.mem_dedup.mpr (Multiset.mem_coe.mp hmem))) rfl) |>.2⟩
   · intro h
-    exact ⟨h.1, fun entry hmem hkey => by
+    exact ⟨(count_coe_dedup_eq_one_iff_mem t.entries (k, v)).mpr h.1,
+      fun entry hmem hkey => by
       rcases entry with ⟨k', v'⟩
       simp only at hkey
       subst k'
-      have hv' := h.2 v' hmem
+      have hmem' : (k, v') ∈ (t.entries : Multiset (K × V)) :=
+        Multiset.mem_coe.mpr (List.mem_dedup.mp (Multiset.mem_coe.mp hmem))
+      have hv' := h.2 v' hmem'
       subst v'
       rfl⟩
 
 omit [SpongeSize] in
 lemma outlu_eq_some_iff (t : ListTraceTable K V) (k : K) (v : V) :
     outlu t v = some k ↔ bwdProp t k v := by
-  change lookupBy t.entries Prod.snd Prod.fst v = some k ↔ bwdProp t k v
-  rw [lookupBy_eq_some_iff t.entries Prod.snd Prod.fst v (k, v) rfl (by
+  change lookupBy t.entries.dedup Prod.snd Prod.fst v = some k ↔ bwdProp t k v
+  rw [lookupBy_eq_some_iff t.entries.dedup Prod.snd Prod.fst v (k, v) rfl (by
     intro found hkey hvalue
     rcases found with ⟨k', v'⟩
     simp only at hkey hvalue
@@ -733,13 +856,18 @@ lemma outlu_eq_some_iff (t : ListTraceTable K V) (k : K) (v : V) :
     rfl)]
   constructor
   · intro h
-    exact ⟨h.1, fun k' hmem => Prod.mk.inj (h.2 (k', v) hmem rfl) |>.1⟩
+    exact ⟨(count_coe_dedup_eq_one_iff_mem t.entries (k, v)).mp h.1,
+      fun k' hmem => Prod.mk.inj (h.2 (k', v)
+        (Multiset.mem_coe.mpr (List.mem_dedup.mpr (Multiset.mem_coe.mp hmem))) rfl) |>.1⟩
   · intro h
-    exact ⟨h.1, fun entry hmem hkey => by
+    exact ⟨(count_coe_dedup_eq_one_iff_mem t.entries (k, v)).mpr h.1,
+      fun entry hmem hkey => by
       rcases entry with ⟨k', v'⟩
       simp only at hkey
       subst v'
-      have hk' := h.2 k' hmem
+      have hmem' : (k', v) ∈ (t.entries : Multiset (K × V)) :=
+        Multiset.mem_coe.mpr (List.mem_dedup.mp (Multiset.mem_coe.mp hmem))
+      have hk' := h.2 k' hmem'
       subst k'
       rfl⟩
 
@@ -816,19 +944,16 @@ lemma TraceNabla.IsSubsetOfQueryLog_append_any
 lemma TraceNabla.IsSubsetOfQueryLog_append_hash
     {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
     (hSub : trΔ.IsSubsetOfQueryLog trace) (stmt : StmtIn) (cap : Vector U SpongeSize.C) :
-    ({trΔ with h := TraceTableOps.add trΔ.h stmt cap} : TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog
+    ({trΔ with h := TraceTableOps.insert trΔ.h stmt cap} :
+      TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog
       (trace ++ [⟨.inl stmt, cap⟩]) := by
   constructor
   · intro stmt' cap' hMem
-    have h1 : (stmt', cap') ∈ LawfulTraceTable.toMultiSet (TraceTableOps.add trΔ.h stmt cap) := by
-      rw [← LawfulTraceTable.toMultiSet_ofEntries]; exact hMem
-    rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at h1
+    have h1 := (TraceTableOps.mem_entries_insert_iff trΔ.h stmt cap (stmt', cap')).mp hMem
     rcases h1 with hEq | hRest
     · injection hEq with hS hC; subst hS hC
       exact List.mem_append_right _ (List.mem_singleton.mpr rfl)
-    · have h2 : (stmt', cap') ∈ TraceTableOps.entries trΔ.h :=
-        Multiset.mem_coe.mp ((LawfulTraceTable.toMultiSet_ofEntries trΔ.h).symm ▸ hRest)
-      exact List.mem_append_left _ (hSub.1 _ _ h2)
+    · exact List.mem_append_left _ (hSub.1 _ _ hRest)
   · intro sIn sOut hMem
     rcases hSub.2 _ _ hMem with hL | hR
     · exact Or.inl (List.mem_append_left _ hL)
@@ -837,42 +962,36 @@ lemma TraceNabla.IsSubsetOfQueryLog_append_hash
 lemma TraceNabla.IsSubsetOfQueryLog_append_perm
     {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
     (hSub : trΔ.IsSubsetOfQueryLog trace) (sIn sOut : CanonicalSpongeState U) :
-    ({trΔ with p := TraceTableOps.add trΔ.p sIn sOut} : TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog
+    ({trΔ with p := TraceTableOps.insert trΔ.p sIn sOut} :
+      TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog
       (trace ++ [⟨.inr (.inl sIn), sOut⟩]) := by
   constructor
   · intro stmt' cap' hMem
     exact List.mem_append_left _ (hSub.1 _ _ hMem)
   · intro sIn' sOut' hMem
-    have h1 : (sIn', sOut') ∈ LawfulTraceTable.toMultiSet (TraceTableOps.add trΔ.p sIn sOut) := by
-      rw [← LawfulTraceTable.toMultiSet_ofEntries]; exact hMem
-    rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at h1
+    have h1 := (TraceTableOps.mem_entries_insert_iff trΔ.p sIn sOut (sIn', sOut')).mp hMem
     rcases h1 with hEq | hRest
     · injection hEq with hS hO; subst hS hO
       exact Or.inl (List.mem_append_right _ (List.mem_singleton.mpr rfl))
-    · have h2 : (sIn', sOut') ∈ TraceTableOps.entries trΔ.p :=
-        Multiset.mem_coe.mp ((LawfulTraceTable.toMultiSet_ofEntries trΔ.p).symm ▸ hRest)
-      rcases hSub.2 _ _ h2 with hL | hR
+    · rcases hSub.2 _ _ hRest with hL | hR
       · exact Or.inl (List.mem_append_left _ hL)
       · exact Or.inr (List.mem_append_left _ hR)
 
 lemma TraceNabla.IsSubsetOfQueryLog_append_perm_inv
     {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
     (hSub : trΔ.IsSubsetOfQueryLog trace) (sIn sOut : CanonicalSpongeState U) :
-    ({trΔ with p := TraceTableOps.add trΔ.p sIn sOut} : TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog
+    ({trΔ with p := TraceTableOps.insert trΔ.p sIn sOut} :
+      TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog
       (trace ++ [⟨.inr (.inr sOut), sIn⟩]) := by
   constructor
   · intro stmt' cap' hMem
     exact List.mem_append_left _ (hSub.1 _ _ hMem)
   · intro sIn' sOut' hMem
-    have h1 : (sIn', sOut') ∈ LawfulTraceTable.toMultiSet (TraceTableOps.add trΔ.p sIn sOut) := by
-      rw [← LawfulTraceTable.toMultiSet_ofEntries]; exact hMem
-    rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at h1
+    have h1 := (TraceTableOps.mem_entries_insert_iff trΔ.p sIn sOut (sIn', sOut')).mp hMem
     rcases h1 with hEq | hRest
     · injection hEq with hS hO; subst hS hO
       exact Or.inr (List.mem_append_right _ (List.mem_singleton.mpr rfl))
-    · have h2 : (sIn', sOut') ∈ TraceTableOps.entries trΔ.p :=
-        Multiset.mem_coe.mp ((LawfulTraceTable.toMultiSet_ofEntries trΔ.p).symm ▸ hRest)
-      rcases hSub.2 _ _ h2 with hL | hR
+    · rcases hSub.2 _ _ hRest with hL | hR
       · exact Or.inl (List.mem_append_left _ hL)
       · exact Or.inr (List.mem_append_left _ hR)
 
