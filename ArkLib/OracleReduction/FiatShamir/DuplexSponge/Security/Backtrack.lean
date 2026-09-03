@@ -745,8 +745,14 @@ private def challengeIdxListBefore (i : pSpec.ChallengeIdx) : List pSpec.Challen
 private def lastMessageBefore? (i : pSpec.ChallengeIdx) : Option pSpec.MessageIdx :=
   (messageIdxListBefore (pSpec := pSpec) i).getLast?
 
-private def sumMessageBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
-  (messageIdxListBefore (pSpec := pSpec) i).foldl (fun acc j => acc + pSpec.Lₚᵢ j) 0
+/-- Sum the prover-message blocks from rounds strictly before the round ending at challenge `i`.
+
+`messageIdxListBefore i` also contains the current round's message because its flat protocol-step
+index precedes `i`; `dropLast` excludes that message from the paper's `ι < i` sum. This
+interpretation is used under `NondegenerateRounds pSpec` by the Section-5 correctness theorems. -/
+private def sumMessageBlocksBeforeExclLast (i : pSpec.ChallengeIdx) : Nat :=
+  ((messageIdxListBefore (pSpec := pSpec) i).dropLast).foldl
+    (fun acc j => acc + pSpec.Lₚᵢ j) 0
 
 private def sumChallengeBlocksBefore (i : pSpec.ChallengeIdx) : Nat :=
   (challengeIdxListBefore (pSpec := pSpec) i).foldl (fun acc j => acc + pSpec.Lᵥᵢ j) 0
@@ -957,7 +963,7 @@ private def BacktrackSequence.extractCandidate
       (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)) := []
   -- Step 4(a): For every i ∈ [k] = {1, …, k}.
   for i in challengeIdxList (pSpec := pSpec) do
-    let L_P_before := sumMessageBlocksBefore (pSpec := pSpec) i
+    let L_P_before := sumMessageBlocksBeforeExclLast (pSpec := pSpec) i
     let L_V_before := sumChallengeBlocksBefore (pSpec := pSpec) i
     -- Step 4(a).i — block pointer at round `i`:
     --   `L_ptr(i) := L_δ + Σ_{j<i} L_P(j) + Σ_{j<i} L_V(j)`  (CO25 Eq. 7/8).
