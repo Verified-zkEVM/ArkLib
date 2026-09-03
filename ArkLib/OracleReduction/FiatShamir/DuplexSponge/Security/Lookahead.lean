@@ -364,7 +364,8 @@ private inductive LinearForwardScanResult {T_P : Type}
   | done (seq? : Option (LookaheadSequence trΔp state))
 
 /-- CO25 §5.3 LookAhead linear forwards scan: from `current`, classify successor candidates in
-`tr_∇.p`. `[]` ends scan; `[next]` continues; `_::_::_` → `.forkErr`. -/
+`tr_∇.p`. `[]` ends the scan; `[next]` continues unless it is a self-loop, which terminates
+the current candidate; `_::_::_` produces `.forkErr`. -/
 private def linearScanForwards
     (trΔp : T_P) (fuel : Nat) (current : CanonicalSpongeState U) :
     LinearForwardScanResult (U := U) trΔp current :=
@@ -377,20 +378,20 @@ private def linearScanForwards
     | [] => .done none -- No successor, sequence ends
     | [next] =>
         -- Found unique successor (CO25 §5.3 maximal sequence)
-        if hNoLoop : current.capacitySegment = next.capacitySegment then
-          .forkErr -- Self-loop → `E_inv`
+        if hLoop : current.capacitySegment = next.capacitySegment then
+          .done none -- Step 1(d): terminate here; a forward self-loop is an `E_p` case
         else
-          have hNoLoop' : current.capacitySegment ≠ next.capacitySegment := hNoLoop
+          have hNoLoop : current.capacitySegment ≠ next.capacitySegment := hLoop
           have hEntry : (current, next) ∈ TraceTableOps.entries trΔp :=
             successor_singleton_mem_entries trΔp current next hSuccs
           match linearScanForwards trΔp fuel' next with
           | .forkErr => .forkErr
           | .done none =>
               .done (some (singletonLookaheadSequence (T_P := T_P) (U := U)
-                trΔp current next hEntry hNoLoop'))
+                trΔp current next hEntry hNoLoop))
           | .done (some tailSeq) =>
               .done (some (prependLookaheadSequence (T_P := T_P) (U := U) trΔp
-                current next hEntry hNoLoop' tailSeq))
+                current next hEntry hNoLoop tailSeq))
     | _ :: _ :: _ => .forkErr -- `tr_∇.p` collision → `E_prp`
 
 private lemma linearScanForwards_seq_length_le
@@ -408,7 +409,7 @@ private lemma linearScanForwards_seq_length_le
         simp at hScan
       · next next hSuccEq => -- succs = [next]
           split at hScan
-          · -- loop detected: .forkErr, contradiction
+          · -- Self-loop returns `.done none`, contradicting `.done (some seq)`.
             simp at hScan
           · -- no loop: match on recursive result
             split at hScan
