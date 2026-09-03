@@ -224,8 +224,7 @@ Wiki: no command/structure/blueprint change ⇒ no `docs/wiki/` update owed. Reg
 3. A regression probe: `IsMCA` at `A := F` is propositionally the pre-PR definition (so #610/#611
    rebase against a semantics-preserving change on their axis).
 4. A probe exhibiting the tight bound's mechanism: the case-(b) family `w` is `x'`-independent.
-5. `lint-style.sh` no worse than `main` kind-by-kind; `check-imports`, `check-docs-integrity`,
-   `kb/check_generated`, `lintWhitespace` pass.
+5. `lake exe lint-style`, `check-imports`, `check-docs-integrity`, and `kb/check_generated` pass.
 
 ## 7. Paper findings to raise with the BCGM25 authors
 

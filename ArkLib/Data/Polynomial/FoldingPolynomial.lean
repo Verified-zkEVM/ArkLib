@@ -90,14 +90,14 @@ noncomputable def foldingPolynomial (q f : F[X]) : F[X][Y] :=
   foldingPolynomialAux q f f.natDegree
 
 lemma folding_polynomial_eq_map_of_f_degree_lt_q_degree {q f : F[X]}
-  (h : f.degree < q.degree) :
+    (h : f.degree < q.degree) :
     foldingPolynomial q f = Polynomial.map C f := by
   unfold foldingPolynomial foldingPolynomialAux
   simp [h]
 
 @[simp]
 lemma folding_polynomial_C_q {q : F} {f : F[X]} :
-  foldingPolynomial (C q) f = Polynomial.map C f := by
+    foldingPolynomial (C q) f = Polynomial.map C f := by
   unfold foldingPolynomial foldingPolynomialAux
   simp only [ite_eq_left_iff, not_le, not_lt]
   intro h
@@ -107,13 +107,13 @@ lemma folding_polynomial_C_q {q : F} {f : F[X]} :
 
 @[simp]
 lemma foldingPolynomial_C_f {f : F} {q : F[X]} :
-  foldingPolynomial q (C f) = C (C f) := by
+    foldingPolynomial q (C f) = C (C f) := by
   unfold foldingPolynomial foldingPolynomialAux
   simp
 
 @[simp]
 lemma foldingPolynomial_zero {q : F[X]} :
-  foldingPolynomial q 0 = 0 := by
+    foldingPolynomial q 0 = 0 := by
   unfold foldingPolynomial foldingPolynomialAux
   simp
 
@@ -253,7 +253,7 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
 /-- If the folding polynomial is zero
   then so is the original polynomial. -/
 lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
-  (h : foldingPolynomial q f = 0) : f = 0 := by
+    (h : foldingPolynomial q f = 0) : f = 0 := by
     induction n : f.natDegree using Nat.strong_induction_on generalizing f with
     | h n' ih =>
       by_cases h₁ :
@@ -301,12 +301,11 @@ lemma eq_zero_of_folding_polynomial_eq_zero {q f : F[X]}
         aesop
 
 lemma folding_polynomial_ne_zero_of_ne_zero {q f : F[X]}
-  (h : f ≠ 0) : foldingPolynomial q f ≠ 0 := fun contra ↦ by
+    (h : f ≠ 0) : foldingPolynomial q f ≠ 0 := fun contra ↦ by
   simp_all [eq_zero_of_folding_polynomial_eq_zero contra]
 
 lemma substitution_property_of_folding_polynomial {q f : F[X]} :
-    ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X = f :=
-  by
+    ((foldingPolynomial q f).map (Polynomial.compRingHom q)).eval X = f := by
   revert q f
   intro q f
   induction n : f.natDegree using Nat.strong_induction_on generalizing q f with
@@ -385,7 +384,7 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
 /-- A means to evaluate the original polynomial in terms of
   the folding polynomial. -/
 lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
-  ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by
+    ((foldingPolynomial q f).map (Polynomial.evalRingHom (q.eval x))).eval x = f.eval x := by
   have h_subst : ((Polynomial.FoldingPolynomial.foldingPolynomial q f).map
     (Polynomial.compRingHom q)).eval X = f :=
       substitution_property_of_folding_polynomial
@@ -400,16 +399,16 @@ lemma eval_property_of_folding_polynomial {q f : F[X]} {x : F} :
 /-- A means to evaluate the original polynomial in terms of
   the folding polynomial when `q = X ^ k`. -/
 lemma eval_property_of_folding_polynomial_x_k {f : F[X]} {k : ℕ} {x : F} :
-  ((foldingPolynomial (X ^ k) f).map (Polynomial.evalRingHom (x ^ k))).eval x =
+    ((foldingPolynomial (X ^ k) f).map (Polynomial.evalRingHom (x ^ k))).eval x =
     f.eval x := by
-  have := eval_property_of_folding_polynomial (f := f) (q := X ^ k) (x := x)
-  aesop
+  simpa only [Polynomial.eval_X_pow] using
+    (eval_property_of_folding_polynomial (f := f) (q := X ^ k) (x := x))
 
 /-- The degree of `foldingPolynomial` is less than `q.degree` in the second variable,
   when `q` is not a constant polynomial.
 -/
 theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
-   natDegreeY (foldingPolynomial q f) < q.degree := by
+    natDegreeY (foldingPolynomial q f) < q.degree := by
   simp only [natDegreeY, coe_lt_degree]
   induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
   | h n ih =>
@@ -454,7 +453,7 @@ theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
   when `q = X ^ k` and `k ≠ 0`.
 -/
 theorem folding_polynomial_deg_y_bound_x_k {f : F[X]} {k : ℕ}
-  [NeZero k] :
+    [NeZero k] :
   natDegreeY (foldingPolynomial (X ^ k) f) < k := by
   simpa using (folding_polynomial_deg_y_bound (q := X ^ k)
                 (f := f) (by aesop
@@ -531,7 +530,7 @@ private lemma folding_polynomial_deg_x_C_q {q : F} {f : F[X]} :
     `f.natDegree / q.natDegree` in the first variable. -/
 @[simp]
 theorem folding_polynomial_deg_x {q f : F[X]} :
-  degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree := by
+    degreeX (foldingPolynomial q f) = f.natDegree / q.natDegree := by
     by_cases h: q.degree ≤ 0
     · rw [Polynomial.degree_le_zero_iff] at h
       rw [h, folding_polynomial_deg_x_C_q]
@@ -583,7 +582,7 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
 
 /-- A degreeX bound for folding polynomial from the STIR paper. -/
 lemma folding_polynomial_deg_x_bound {q f : F[X]} {t : ℕ}
-  (h : f.natDegree < t * q.natDegree) :
+    (h : f.natDegree < t * q.natDegree) :
   degreeX (foldingPolynomial q f) < t := by
   rw [folding_polynomial_deg_x]
   by_cases heq: q.natDegree = 0
@@ -651,14 +650,14 @@ private lemma satisfies_composition_property_implies_is_the_reminder
     as the reminder in bivariate polynomial division
     of the form `f = Q' * (X - q(Y)) + Q`. -/
 lemma folding_polynomial_is_the_reminder {q f : F[X]} :
-  ∃ Q': F[X][Y],
+    ∃ Q': F[X][Y],
     Polynomial.map C f = Q' * (C X - Polynomial.map C q) + (foldingPolynomial q f) :=
     satisfies_composition_property_implies_is_the_reminder
       substitution_property_of_folding_polynomial
 
 /-- The uniqueness of the folding polynomial. -/
 theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
-  (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
+    (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
   (h_x : degreeX Q = f.natDegree / q.natDegree)
   (h_y : natDegreeY Q < q.natDegree) :
   Q = foldingPolynomial q f := by
@@ -667,12 +666,10 @@ theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
       ∃ Q' : F[X][Y],
         Q - foldingPolynomial q f =
           Q' * (C Polynomial.X - Polynomial.map (Polynomial.C) q) := by
-      obtain ⟨Q', hQ'⟩
-        := satisfies_composition_property_implies_is_the_reminder
+      obtain ⟨Q', hQ'⟩ := satisfies_composition_property_implies_is_the_reminder
           (show ((Q.map (Polynomial.compRingHom q)
             |> Polynomial.eval Polynomial.X)) = f from h)
-      obtain ⟨Q'', hQ''⟩
-        := satisfies_composition_property_implies_is_the_reminder
+      obtain ⟨Q'', hQ''⟩ := satisfies_composition_property_implies_is_the_reminder
           (show ((foldingPolynomial q f
             |> Polynomial.map (Polynomial.compRingHom q)
             |> Polynomial.eval Polynomial.X)) = f from
@@ -713,7 +710,7 @@ theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
     a univariate polynomial with a degree bound.
 -/
 lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
-  (h_x : degreeX Q < t)
+    (h_x : degreeX Q < t)
   (h_y : natDegreeY Q < q.natDegree) :
   ((Q.map (Polynomial.compRingHom q)).eval X).natDegree < t * q.natDegree := by
   have h : Q = foldingPolynomial q ((Q.map (Polynomial.compRingHom q)).eval X) := by
@@ -811,7 +808,7 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
     as a supremum so inequality is much easier to prove for it.
 -/
 theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Polynomial F)}
-  (h : (Q.map (Polynomial.compRingHom q)).eval Polynomial.X = f)
+    (h : (Q.map (Polynomial.compRingHom q)).eval Polynomial.X = f)
   (h_x : degreeX Q ≤ f.natDegree / q.natDegree)
   (h_y : natDegreeY Q < q.natDegree) :
   Q = foldingPolynomial q f := by
@@ -853,12 +850,12 @@ noncomputable def polyFold (f : F[X]) (k : ℕ) (r : F) : F[X] :=
 
 @[simp high]
 lemma polyFold_zero_eq_zero {k : ℕ} {r : F} :
-  polyFold 0 k r = 0 := by simp [polyFold]
+    polyFold 0 k r = 0 := by simp [polyFold]
 
 /-- The degree bound of `polyFold` in terms of the degree of
     the original polynomial and `k`. -/
 lemma polyFold_natDegree_le {f : F[X]} {k : ℕ} {r : F} :
-  (polyFold f k r).natDegree ≤ f.natDegree / k := by
+    (polyFold f k r).natDegree ≤ f.natDegree / k := by
     have h_deg_le_degX : ∀ (g : F[X][Y]) (r : F), (g.eval (C r)).natDegree ≤ degreeX g := by
       intro g r
       simp only [degreeX]

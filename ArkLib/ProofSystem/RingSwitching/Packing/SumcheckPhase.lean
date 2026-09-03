@@ -10,6 +10,12 @@ import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Security.RoundByRound
 
+/-!
+# ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
+
+Definitions and results for this component of ArkLib.
+-/
+
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix
 open scoped NNReal
@@ -111,7 +117,7 @@ def getIteratedSumcheckProverFinalOutput (i : Fin ℓ')
 
 @[reducible]
 def iteratedSumcheckOracleProver (i : Fin ℓ') :
-  OracleProver (oSpec := []ₒ)
+    OracleProver (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) i.castSucc)
     (OStmtIn := aOStmtIn.OStmtIn)
     (WitIn := SumcheckWitness L ℓ' i.castSucc)
@@ -124,7 +130,7 @@ def iteratedSumcheckOracleProver (i : Fin ℓ') :
 
 @[reducible]
 def iteratedSumcheckOracleVerifier (i : Fin ℓ') :
-  OracleVerifier
+    OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) i.castSucc)
     (OStmtIn := aOStmtIn.OStmtIn)
@@ -136,7 +142,7 @@ def iteratedSumcheckOracleVerifier (i : Fin ℓ') :
 
 @[reducible]
 def iteratedSumcheckOracleReduction (i : Fin ℓ') :
-  OracleReduction (oSpec := []ₒ)
+    OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) i.castSucc)
     (OStmtIn := aOStmtIn.OStmtIn)
     (WitIn := SumcheckWitness L ℓ' i.castSucc)
@@ -384,7 +390,7 @@ noncomputable def finalSumcheckOracleReduction :
 omit [Fintype L] [Fintype K] [DecidableEq K] in
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
-  (init : ProbComp σ)
+    (init : ProbComp σ)
   (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheck L)
@@ -505,7 +511,7 @@ def sumcheckLoopOracleVerifier :=
 /-- Composed oracle reduction for the SumcheckStep (seqCompose over ℓ') -/
 @[reducible]
 def sumcheckLoopOracleReduction :
-  OracleReduction (oSpec := []ₒ)
+    OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0)
     (OStmtIn := aOStmtIn.OStmtIn)
     (StmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) (Fin.last ℓ'))
@@ -546,7 +552,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 omit [Fintype L] [Fintype K] [DecidableEq K] in
 /-- Perfect completeness for large-field reduction (Sumcheck ++ FinalSum) -/
 theorem coreInteraction_perfectCompleteness :
-  OracleReduction.perfectCompleteness
+    OracleReduction.perfectCompleteness
     (oracleReduction := coreInteractionOracleReduction κ L K P ℓ ℓ' h_l aOStmtIn)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0)
     (OStmtIn := aOStmtIn.OStmtIn)
@@ -603,7 +609,7 @@ local instance : DecidableEq K := Classical.decEq K
 omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for large-field reduction (Sumcheck ++ FinalSum) -/
 theorem coreInteraction_rbrKnowledgeSoundness [NoZeroDivisors L] :
-  OracleVerifier.rbrKnowledgeSoundness
+    OracleVerifier.rbrKnowledgeSoundness
     (verifier := coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn)
     (StmtIn := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0)
     (OStmtIn := aOStmtIn.OStmtIn)

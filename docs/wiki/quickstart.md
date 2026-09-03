@@ -36,14 +36,19 @@ git add path/to/newfile.lean
 `./scripts/update-lib.sh` only considers tracked files, and fails fast if untracked
 `ArkLib/**/*.lean` files are present.
 
-### Lean-heavy refactors or cleanup
+### Lean source-policy checks
 
 ```bash
-./scripts/validate.sh --lint
+lake exe lint-style
 ```
 
-This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build runs with
-`lint: false`, so this is opt-in.
+`./scripts/validate.sh` runs this gate by default. The Lean executable scans every module imported
+by `ArkLib.lean`, parses import headers with Lean itself, and has no exception file. It allows
+project-specific mathematical Unicode notation, while rejecting invisible controls, bidirectional
+controls, and nonstandard space characters that can conceal source changes. It also rejects
+blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
+rejects source-level linter suppressions in their actual parsed context.
+
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
@@ -102,9 +107,9 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, the compiled `toyproblem-runtime` and `hachi-runtime` checks,
-  `./scripts/check-imports.sh`, and `python3 ./scripts/check-docs-integrity.py`, plus
-  knowledge-base linting from source inputs.
+- By default it runs `lake build`, rejects non-`sorry` warnings anywhere under `ArkLib/`, runs the
+  Lean-native source-policy gate, runs the compiled `toyproblem-runtime` and `hachi-runtime`
+  checks, checks generated imports and documentation integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
@@ -112,21 +117,13 @@ python3 -m pip install leanblueprint
 - `scripts/README.md` is the inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
   tool-dependent than normal Lean builds.
-- `--lint` fails on `main` as well as on feature branches: `scripts/lint-style.sh` reports a
-  large pre-existing style backlog, and `validate.sh` runs under `set -euo pipefail`, so `--lint`
-  **aborts the script before `--docs`**. To exercise the docgen gate, run
-  `./scripts/validate.sh --docs` on its own. When checking that a branch adds no new style lint,
-  compare the `(file, error-kind)` multiset against the merge-base rather than the total count.
-  That comparison is deliberately coarse: it is blind to *additional* violations of a kind the
-  file already had, so a branch that adds a third over-long line to a file that already had one
-  registers as zero delta. For line length specifically, also diff the per-file counts, e.g.
-  `git diff --name-only <merge-base>... -- 'ArkLib/**/*.lean'` piped through
-  `awk 'length($0) > 100'` on both sides.
+- `--lint` remains a deprecated compatibility flag; style linting is always enforced.
 
 ## Checking axiom hygiene correctly
 
-ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}`. Two traps make
-a naive check report success on something that should fail:
+ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}` (see
+[`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
+naive check report success on something that should fail:
 
 - **`#print axioms` is only meaningful for declarations that elaborated cleanly.**
   (`Lean.collectAxioms` does traverse both the type and the value, so a `sorry`-patched
@@ -220,9 +217,10 @@ python3 -m pip install leanblueprint
 
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,
-import, docs-integrity, and whitespace workflows run again on that `merge_group` ref before GitHub
-may merge it. PR-only timing comparisons and comments remain attached to the ordinary PR run and
-are intentionally skipped for merge groups, which do not carry a pull-request payload.
+import, and docs-integrity workflows run again on that `merge_group` ref before GitHub may merge it.
+The CI validation path includes the Lean-native source-policy gate. PR-only timing comparisons and
+comments remain attached to the ordinary PR run and are intentionally skipped for merge groups,
+which do not carry a pull-request payload.
 
 ## Manual Timing Helper
 
@@ -235,7 +233,7 @@ bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
 bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c 'lake build'
 bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime lint-style'
 bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
@@ -245,11 +243,12 @@ Read the rows in that order, because they share one tree and each leaves it warm
 
 - `clean_build` and `warm_rebuild` bracket the incremental-build signal.
 - `native_build` carries the `.c.o` chain that the compiled executables link — currently
-  `toyproblem-runtime` and `hachi-runtime`. It is the row that swings on `.lake` cache state, so a
-  dependency bump shows its cost here. **Adding a compiled executable to `validate.sh` means
+  `toyproblem-runtime`, `hachi-runtime`, and `lint-style`. It is the row that swings on `.lake`
+  cache state, so a dependency bump shows its cost here. **Adding a compiled executable to
+  `validate.sh` means
   adding it to this command too**, or its link cost lands in `test_path` instead.
 - `test_path` is therefore the cost of the validation gate itself on an already-built project,
-  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
+  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--docs`, `--site` and
   `--axioms` never appear in it.
 
 A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.

@@ -58,7 +58,7 @@ def toFftDomain (ω : D) : FftDomain ι F where
 
 /-- Evaluation in the normalized FFT domain is `(ω 0)⁻¹ * ω i`. -/
 lemma eval_toFftDomain {ω : D} {i : ι} :
-  toFftDomain ω i = (ω 0)⁻¹ * ω i := by
+    toFftDomain ω i = (ω 0)⁻¹ * ω i := by
   aesop (add
     simp [
       toFftDomain,
@@ -75,7 +75,7 @@ lemma eval_toFftDomain_eq_mkSubgroupUnit {ω : D} {i : ι} :
 /-- An element lies in the normalized FFT domain iff multiplying it by
   the original coset representative gives an element of the original coset domain. -/
 lemma mem_toFftDomain_iff_mul_mem {ω : D} {x : F} :
-  x ∈ toFftDomain ω ↔ ω 0 * x ∈ ω := by
+    x ∈ toFftDomain ω ↔ ω 0 * x ∈ ω := by
   unfold toFftDomain
   rw [FftDomain.mem_iff_mem_toCosetFftDomain,
       CosetFftDomain.mem_iff_exists_mul]
@@ -90,7 +90,7 @@ lemma mem_toFftDomain_iff_mul_mem {ω : D} {x : F} :
 /-- Multiplying an element of the normalized FFT domain by
   an element of the original coset domain gives another element of the original coset domain. -/
 lemma mul_mem_of_mem_toFftDomain_of_mem {ω : D} {x y : F}
-  (hx : x ∈ toFftDomain ω)
+    (hx : x ∈ toFftDomain ω)
   (hy : y ∈ ω) :
   x * y ∈ ω := by
   simp_all only
@@ -108,7 +108,7 @@ lemma mul_mem_of_mem_toFftDomain_of_mem {ω : D} {x y : F}
 /-- Multiplying an element of the original coset domain by
   an element of the normalized FFT domain gives another element of the original coset domain. -/
 lemma mul_mem_of_mem_of_mem_toFftDomain {ω : D} {x y : F}
-  (hx : x ∈ ω)
+    (hx : x ∈ ω)
   (hy : y ∈ toFftDomain ω) :
   x * y ∈ ω := by
   rw [mul_comm]
@@ -118,7 +118,7 @@ lemma mul_mem_of_mem_of_mem_toFftDomain {ω : D} {x y : F}
   the original coset FFT-domain image. -/
 @[simp]
 lemma toFinset_image_toFftDomain_eq_toFinset [Fintype ι] [DecidableEq F] {ω : D} :
-  Finset.image (fun (w : F) ↦ ω 0 * w) (toFftDomain ω).toFinset =
+    Finset.image (fun (w : F) ↦ ω 0 * w) (toFftDomain ω).toFinset =
     CosetFftDomainClass.toFinset ω := by
   ext x
   constructor <;> rintro h
@@ -137,7 +137,7 @@ lemma toFinset_image_toFftDomain_eq_toFinset [Fintype ι] [DecidableEq F] {ω : 
 /-- The original coset FFT domain and its normalized FFT domain have
   the same number of elements. -/
 lemma card_toFinset_eq_card_toFftDomain_toFinset [Fintype ι] [DecidableEq F] {ω : D} :
-  Finset.card (toFinset ω) = Finset.card (toFftDomain ω).toFinset := by
+    Finset.card (toFinset ω) = Finset.card (toFftDomain ω).toFinset := by
   aesop (add simp [toFinset_image_toFftDomain_eq_toFinset])
 
 end CosetFftDomainClass
@@ -150,12 +150,12 @@ abbrev toFftDomain (ω : CosetFftDomain ι F) : FftDomain ι F :=
   CosetFftDomainClass.toFftDomain ω
 
 lemma mem_toFftDomain_iff_mul_mem :
-  x ∈ ω.toFftDomain ↔ ω.cosetGenerator * x ∈ ω := by
+    x ∈ ω.toFftDomain ↔ ω.cosetGenerator * x ∈ ω := by
   rw [← CosetFftDomain.map_0_eq_coset_generator]
   exact CosetFftDomainClass.mem_toFftDomain_iff_mul_mem
 
 lemma mul_mem_of_mem_toFftDomain_of_mem {y : F}
-  (hx : x ∈ ω.toFftDomain)
+    (hx : x ∈ ω.toFftDomain)
   (hy : y ∈ ω) :
   x * y ∈ ω := CosetFftDomainClass.mul_mem_of_mem_toFftDomain_of_mem hx hy
 
@@ -164,7 +164,7 @@ end CosetFftDomain
 namespace FftDomain
 
 lemma toFftDomain_eq_self {ω : FftDomain ι F} :
-  ω.toFftDomain = ω := by
+    ω.toFftDomain = ω := by
   ext i
   rw [CosetFftDomainClass.eval_toFftDomain,
     ← FftDomain.eval_fft_domain_eq_eval_coset_fft_domain,

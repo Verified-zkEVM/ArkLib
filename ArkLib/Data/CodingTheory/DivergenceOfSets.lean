@@ -14,6 +14,12 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
 
+/-!
+# ArkLib.Data.CodingTheory.DivergenceOfSets
+
+Definitions and results for this component of ArkLib.
+-/
+
 open NNReal ProximityGap
 
 /-!

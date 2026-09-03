@@ -8,6 +8,12 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ReedSolomon
 
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory Code
@@ -827,8 +833,7 @@ theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
     (hv : Function.Injective v) :
     ∀ i j : Fin n,
       ((-Matrix.vandermonde (fun t : Fin n => (Polynomial.C (v t) : F[X])))⁻¹ i j).natDegree =
-        0 :=
-    by
+        0 := by
   classical
   intro i j
   let f : F →+* F[X] := Polynomial.C

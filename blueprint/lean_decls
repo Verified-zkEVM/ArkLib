@@ -155,7 +155,7 @@ LinearCode.byCheckMatrix
 LinearCode
 Code.interleavedCodeSet
 ReedSolomon.code
-ReedSolomon.smoothCode
+Domain.SmoothCosetFftDomain
 ReedSolomon.constrainedCode
 ReedSolomon.multiConstrainedCode
 ProximityGap.proximityMeasure

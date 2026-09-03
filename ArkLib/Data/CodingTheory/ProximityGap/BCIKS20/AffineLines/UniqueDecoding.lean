@@ -9,6 +9,12 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
 
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory Code

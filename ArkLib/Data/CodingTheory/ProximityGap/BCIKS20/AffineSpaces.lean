@@ -148,10 +148,11 @@ theorem bucket_exists_common_codeword
                     rw [NNReal.coe_mul, NNReal.coe_sub hδ_le, NNReal.coe_one, NNReal.coe_natCast]
             · push Not at hδ_le
               have hδ_real : (1 : ℝ) < (δ : ℝ) := by exact_mod_cast hδ_le
-              linarith [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
-                        mul_nonpos_of_nonpos_of_nonneg (by linarith : (1 : ℝ) - ↑δ ≤ 0)
-                          (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
-          linarith
+              linarith only [Nat.cast_nonneg' (α := ℝ) (S_x x hx).card,
+                mul_nonpos_of_nonpos_of_nonneg
+                  (by linarith only [hδ_real] : (1 : ℝ) - ↑δ ≤ 0)
+                  (Nat.cast_nonneg' (α := ℝ) (Fintype.card ι))]
+          linarith only [h2]
   have h_cw_bound : closeWords.card < Fintype.card F := by
     apply h_list_bound u₀
     intro v hv
@@ -543,7 +544,8 @@ private lemma gs_degree_bound_le_inv_mu
       field_simp
       nlinarith only [hsqn]
     linarith only [h1, h2]
-  have hdeg_le_2d1 : (deg : ℝ) ≤ 2 * ↑(deg - 1 : ℕ) := by linarith [hdeg1_ge]
+  have hdeg_le_2d1 : (deg : ℝ) ≤ 2 * ↑(deg - 1 : ℕ) := by
+    linarith only [hdeg1_ge]
   have h3 : (deg : ℝ) / (2 * η) / (↑(deg - 1 : ℕ) : ℝ) ≤ 1 / η := by
     have hd1_pos : (0 : ℝ) < ↑(deg - 1 : ℕ) := by exact_mod_cast hdeg1
     rw [div_div, div_le_div_iff₀ (mul_pos (by positivity) hd1_pos) hη_pos, one_mul]
@@ -553,10 +555,11 @@ private lemma gs_degree_bound_le_inv_mu
     rw [div_div, div_le_div_iff₀ (mul_pos (by positivity) hd1_pos) hs_pos]
     nlinarith only [mul_le_mul_of_nonneg_right hdeg_le_2d1 hs_pos.le]
   have h5 : 1 / η ≤ 1 / μ := by
-    rw [div_le_div_iff₀ hη_pos hμ_pos]; linarith [hμ_le_η]
+    rw [div_le_div_iff₀ hη_pos hμ_pos]
+    linarith only [hμ_le_η]
   have h6 : 5 / s ≤ 1 / (4 * μ) := by
     rw [div_le_div_iff₀ hs_pos (by positivity : (0:ℝ) < 4 * μ)]
-    linarith [hμ_le_s20]
+    linarith only [hμ_le_s20]
   calc (↑m + 1/2) * s * (n : ℝ) / (↑(deg - 1 : ℕ) : ℝ)
       ≤ ((deg : ℝ) / (2 * η) + 5 * (deg : ℝ) / (2 * s)) / (↑(deg - 1 : ℕ) : ℝ) :=
         div_le_div_of_nonneg_right h_num (by positivity)
@@ -586,7 +589,8 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     calc (δ : ℝ) < ((1 - ReedSolomon.sqrtRate deg domain : ℝ≥0) : ℝ) := by exact_mod_cast hδ
       _ = 1 - (ReedSolomon.sqrtRate deg domain : ℝ) := by
           rw [NNReal.coe_sub hsqrt_le, NNReal.coe_one]
-  have hη_pos : 0 < 1 - (ReedSolomon.sqrtRate deg domain : ℝ) - (δ : ℝ) := by linarith
+  have hη_pos : 0 < 1 - (ReedSolomon.sqrtRate deg domain : ℝ) - (δ : ℝ) := by
+    linarith only [hδ_real]
   set s : ℝ := (ReedSolomon.sqrtRate deg domain : ℝ) with hs_def
   set η : ℝ := 1 - s - (δ : ℝ) with hη_def
   -- For deg ≤ 1: degree bound is trivial (Nat division by 0 = 0)
@@ -617,7 +621,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         have h1 : s / (2 * η) ≤ ↑(Nat.ceil (s / (2 * η))) := Nat.le_ceil _
         have h2 : (↑(Nat.ceil (s / (2 * η))) : ℝ) + 1 = (m : ℝ) := by
           simp only [m, Nat.cast_add, Nat.cast_one]
-        linarith
+        linarith only [h1, h2]
       have hs_nn : (0 : ℝ) ≤ s := by positivity
       have hs_div_lt : s / (2 * ↑m) < η := by
         rcases eq_or_lt_of_le hs_nn with hs0 | hs_pos
@@ -626,13 +630,14 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           rw [div_lt_iff₀ h2m_pos]
           have h2η_pos : (0 : ℝ) < 2 * η := by positivity
           have := (div_lt_iff₀ h2η_pos).mp hm_gt
-          linarith
-      linarith
+          linarith only [this]
+      linarith only [hs_div_lt]
     · -- Degree bound: gs_degree_bound deg n m / (deg - 1) < |F|
       have hn_pos : (0 : ℝ) < Fintype.card ι := by
         exact_mod_cast (show 0 < Fintype.card ι from Fintype.card_pos)
       have hdeg_pos : (0 : ℝ) < deg := by exact_mod_cast (show 0 < deg by omega)
-      have hs_lt_one : s < 1 := by linarith [NNReal.coe_pos.mpr hδ_pos, hδ_real]
+      have hs_lt_one : s < 1 := by
+        linarith only [NNReal.coe_pos.mpr hδ_pos, hδ_real]
       have hs_eq : s = Real.sqrt ((deg : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]; congr 1
@@ -651,7 +656,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         have hmul := (div_lt_iff₀ hdeg1_cast).mp h_real
         exact Nat.div_lt_of_lt_mul (by
           have : (gs_degree_bound deg (Fintype.card ι) m : ℝ) <
-            ↑(deg - 1 : ℕ) * ↑(Fintype.card F) := by linarith
+            ↑(deg - 1 : ℕ) * ↑(Fintype.card F) := by linarith only [hmul]
           exact_mod_cast this)
       -- floor ≤ real expression
       have hfloor_le : (gs_degree_bound deg (Fintype.card ι) m : ℝ) ≤
@@ -670,7 +675,8 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       have hdeg1_cast_eq : (↑(deg - 1 : ℕ) : ℝ) = (deg : ℝ) - 1 := by
         rw [Nat.cast_sub (by omega : 1 ≤ deg), Nat.cast_one]
       have hdeg1_ge : (↑(deg - 1 : ℕ) : ℝ) ≥ (deg : ℝ) / 2 := by
-        rw [hdeg1_cast_eq]; linarith [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
+        rw [hdeg1_cast_eq]
+        linarith only [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
       set μ : ℝ := min η (s / 20) with hμ_def
       have hμ_pos : 0 < μ := lt_min hη_pos (by positivity)
       have hμ_le_η : μ ≤ η := min_le_left _ _
@@ -681,7 +687,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           simp only [m, Nat.cast_add, Nat.cast_one]
         have hceil_le : (↑(Nat.ceil (s / (2 * η))) : ℝ) ≤ s / (2 * η) + 1 :=
           le_of_lt (Nat.ceil_lt_add_one (by positivity : (0 : ℝ) ≤ s / (2 * η)))
-        linarith
+        linarith only [hm_eq, hceil_le]
       have h_le_54μ : (↑m + 1/2) * s * (Fintype.card ι : ℝ) /
           (↑(deg - 1 : ℕ) : ℝ) ≤ 5 / (4 * μ) :=
         gs_degree_bound_le_inv_mu hs_pos hη_pos hs_sq hn_pos hdeg
@@ -734,7 +740,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         have hcast : (↑(↑deg ^ 2 : ℝ≥0) : ℝ) = (↑deg : ℝ) ^ 2 := by push_cast; ring
         rw [hcast] at hlt
         rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 128 * μ ^ 7)]
-        linarith
+        linarith only [hlt]
       calc (gs_degree_bound deg (Fintype.card ι) m : ℝ) / ↑(deg - 1 : ℕ)
           ≤ (↑m + 1/2) * s * ↑(Fintype.card ι) / ↑(deg - 1 : ℕ) :=
             div_le_div_of_nonneg_right hfloor_le (by positivity)
@@ -780,8 +786,8 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           rw [div_lt_iff₀ h2m_pos]
           have h2η_pos : (0 : ℝ) < 2 * η := by positivity
           have := (div_lt_iff₀ h2η_pos).mp hm_gt
-          linarith
-      linarith
+          linarith only [this]
+      linarith only [hs_div_lt]
     · -- deg = 0: gs_johnson 0 n m = 1 trivially > δ
       have hdeg0 : deg = 0 := by omega
       subst hdeg0
@@ -792,7 +798,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         simp only [gs_johnson, CharP.cast_eq_zero, zero_div, Rat.cast_zero, Real.sqrt_zero,
           sub_zero, Nat.cast_one, mul_one]
       rw [hgs0]
-      linarith [hδ_real, show (0 : ℝ) ≤ s from by positivity]
+      linarith only [hδ_real, show (0 : ℝ) ≤ s from by positivity]
 
 omit [DecidableEq ι] in
 theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
@@ -845,7 +851,8 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
         simpa [ReedSolomon.code_zero] using (hclose v hv).1
       have : closeWords.card ≤ 1 :=
         Finset.card_le_one_iff.mpr (fun hx hy => (hcode_triv _ hx).trans (hcode_triv _ hy).symm)
-      linarith [Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial : Nontrivial F)]
+      linarith only [this,
+        Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial : Nontrivial F)]
     · -- deg = 1: each poly has degree < 1, so is constant: p = C(p.coeff 0).
       -- Inject closeWords into F via coeff 0. Strict < follows from injectivity.
       have hinj_F : ∀ (v₁ : ι → F) (hv₁ : v₁ ∈ closeWords)
@@ -1012,7 +1019,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
                 1 / Fintype.card ι := by
               have h : (Fintype.card ι - 1 : ℝ) / Fintype.card ι =
                   1 - 1 / Fintype.card ι := by field_simp
-              linarith [hrel_val, hrel_le_delta, h_add_real]
+              linarith only [hrel_val, hrel_le_delta, h_add_real, h]
             -- sqrtRate > 1/n: √rate > rate ≥ 1/n
             have hrate_pos : (0 : ℝ≥0) <
                 (LinearCode.rate (ReedSolomon.code domain 1) : ℝ≥0) := by
@@ -1059,7 +1066,7 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
                 calc (1 : ℝ≥0) / _ ≤ _ := hrate_ge_inv
                   _ < NNReal.sqrt _ := h_sqrt_gt
                   _ = ReedSolomon.sqrtRate 1 domain := by simp [ReedSolomon.sqrtRate]
-            linarith
+            linarith only [hsqrt_le_inv, hsqrt_gt_inv]
         · -- range(w).card < |F|
           calc closeWords.card ≤ (Finset.image w Finset.univ).card := hcard_le_range
             _ < Fintype.card F := by omega
@@ -1114,7 +1121,8 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
           (C := (ReedSolomon.code domain deg : Set (ι → F))) :=
         (Code.dist_le_UDR_iff_relDist_le_relUDR _ _).2 h_v₂_le
       exact eq_of_le_uniqueDecodingRadius _ w hv₁_code hv₂_code hudr₁ hudr₂
-    linarith [Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial : Nontrivial F)]
+    linarith only [hcard_le_one,
+      Fintype.one_lt_card_iff_nontrivial.mpr (Field.toNontrivial : Nontrivial F)]
   -- Johnson regime: use Guruswami-Sudan with parameterized multiplicity m.
   suffices ∃ (Q : Polynomial (Polynomial F)), Q ≠ 0 ∧ Q.natDegree < Fintype.card F ∧
       ∀ P ∈ polys, (Polynomial.X - Polynomial.C P) ∣ Q by

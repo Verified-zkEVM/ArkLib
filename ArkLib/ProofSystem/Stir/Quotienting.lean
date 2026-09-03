@@ -7,6 +7,12 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
 import CompPoly.Data.MvPolynomial.Notation
 
+/-!
+# ArkLib.ProofSystem.Stir.Quotienting
+
+Definitions and results for this component of ArkLib.
+-/
+
 open Polynomial NNReal ReedSolomon Code
 
 namespace Quotienting
@@ -59,7 +65,7 @@ noncomputable def disagreementSet (f : ι → F) (S : Finset F) (Ans : S → F) 
   `δᵣ(funcQuotient(f, S, Ans, Fill), code[ι, F, degree - |S|]) + |T|/|ι| > δ`,
   where T is the disagreementSet as defined above -/
 lemma quotienting {degree : ℕ} {domain : ι ↪ F} [Nonempty ι]
-  (S : Finset F) (hS_lt : S.card < degree) (r : F)
+    (S : Finset F) (hS_lt : S.card < degree) (r : F)
   (f : ι → F) (Ans Fill : S → F) (δ : ℝ≥0) (hδPos : δ > 0) (hδLt : δ < 1)
   (h : ∀ u : code domain degree, u.val ∈ (closeCodewordsRel ↑(code domain degree) f δ) →
     ∃ x : S, ((toPolynomialLT u) : F[X]).eval x.val ≠ Ans x) :

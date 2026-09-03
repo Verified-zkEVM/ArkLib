@@ -77,7 +77,7 @@ def IsPolynomialGenerator {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ i,
 /-- The generator `G` evaluates the given linearly independent family of polynomials `P`:
 the witness-carrying form of `IsPolynomialGenerator`. -/
 def IsPolynomialGeneratorOf {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ i, S i) ℓ F)
-  (P : ℓ → MvPolynomial (Fin s) F) : Prop :=
+    (P : ℓ → MvPolynomial (Fin s) F) : Prop :=
   LinearIndependent F P ∧ ∀ x : (∀ i, S i), G x = MvPolynomial.eval (fun i ↦ (x i : F)) ∘ P
 
 /-- A polynomial generator where each `S i` is the whole field `F`. -/
@@ -95,7 +95,7 @@ noncomputable example {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : G
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
 function is a generator matrix for an MDS code. -/
 def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
-  Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
+    Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
 /-- The condition for MCA generator.
 
@@ -112,7 +112,7 @@ asserted at the endpoints. The `[0,1]` typing lives on the *error bound*: `IsMCA
 quantifies `δ : I`. See
 `docs/wiki/proximity-error-conventions.md`. -/
 def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
-  (G : Generator S ℓ F) (MC : ModuleCode ι F A)
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A)
   (x : S) (U : ℓ → (ι → A)) (δ : ℝ) : Prop :=
   let v : ι → A := fun k => ∑ j, G x j • U j k
   ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
@@ -169,7 +169,7 @@ The radius is quantified over `I`, the closed unit interval: this is the bound, 
 where `[0,1]` belongs, while the value underneath is total in the radius. See
 `docs/wiki/proximity-error-conventions.md`. -/
 def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
-  (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
+    (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
   ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
 
 /-- **Unfolding lemma for `IsMCAGenerator`.** It *is* the `mcaError` bound, by definition; this is
@@ -246,7 +246,7 @@ lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [Ad
 /-- Let `G : S → F^ℓ` and `G′: S′ → F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x , x′) ↦ G(x) ⊗ G′(x′)`. -/
 def TensorGenerator {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
-  (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
+    (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
   (S × S') → TensorProduct F (ℓ → F) (ℓ' → F)
 | (x, x') => TensorProduct.tmul F (G x) (G' x')
 
@@ -280,7 +280,7 @@ noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
 `TensorGenerator_Explicit` agree under the canonical isomorphism between `F^ℓ ⊗ F^ℓ′` and
 `(ℓ × ℓ') → F`. -/
 theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] [DecidableEq ℓ]
-  [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
+    [DecidableEq ℓ'] {S S' : Type} (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (p : S × S') :
     tensorProductPiFunEquiv F ℓ ℓ' (TensorGenerator G G' p) = TensorGenerator_Explicit G G' p := by
   unfold tensorProductPiFunEquiv TensorGenerator TensorGenerator_Explicit
   convert (Pi.basisFun F ℓ).tensorProduct (Pi.basisFun F ℓ') |> fun b =>
@@ -360,14 +360,14 @@ This is the total-degree reading. An individual-degree reading of the same fact 
 the reasoning is the same and only the version of Schwartz–Zippel used for the upper bound
 differs. -/
 theorem poly_gen_is_zero_evading
-  {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F]
   {ℓ : Type} [Fintype ℓ]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Nonempty ↥(S i)]
   {P : ℓ → MvPolynomial (Fin s) F}
   {G : Generator (∀ i, ↥(S i)) ℓ F} (hG : IsPolynomialGeneratorOf S G P)
-  (hdm : MvPolynomial.maxTotalDegree P ≤ minSeedCard S)
-  : IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
+  (hdm : MvPolynomial.maxTotalDegree P ≤ minSeedCard S) :
+    IsZeroEvadingGenerator G ⟨(maxTotalDegree P : ℝ) / minSeedCard S,
     error_in_unit_interval (maxTotalDegree P) (minSeedCard S) (minSeedCard_pos S) hdm⟩ := by
   classical
   unfold IsZeroEvadingGenerator

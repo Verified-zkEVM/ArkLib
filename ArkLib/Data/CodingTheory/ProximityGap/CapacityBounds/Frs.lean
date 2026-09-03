@@ -64,11 +64,11 @@ private theorem strongLineDecodable_of_subspaceDesign
           ((Module.finrank F (lineCloseSpan f₀ f₁ U (δ : ℝ)) : ℝ) + ε) ≤
         ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) * ((r : ℝ) + ε) := by
     apply mul_le_mul_of_nonneg_left _ hA0
-    linarith
+    linarith only [hdR]
   have hchain : (b : ℝ) * ((r : ℝ) + ε) ≤
       ((linePinnedSeedsOn T f₀ f₁ U S).card : ℝ) * ((r : ℝ) + ε) :=
     hretain.trans (haeps.trans (hpot.trans hdim))
-  have hden : 0 < (r : ℝ) + ε := by linarith
+  have hden : 0 < (r : ℝ) + ε := by linarith only [hrR, hεpos]
   have hbR : (b : ℝ) ≤ (linePinnedSeedsOn T f₀ f₁ U S).card :=
     le_of_mul_le_mul_right hchain hden
   have hbNat : b ≤ (linePinnedSeedsOn T f₀ f₁ U S).card := by
@@ -108,7 +108,7 @@ private theorem strongLineDecodable_two_mul_of_profile_le
     have hid : 1 / (2 * (t : ℝ)) + 3 / (2 * (t : ℝ)) = 2 / (t : ℝ) := by
       field_simp
       ring
-    nlinarith
+    nlinarith only [hprofile, hδ, hid]
   have heps : 2 / (((2 * t : ℕ) : ℝ)) < 3 / (2 * (t : ℝ)) := by
     push_cast
     exact div_lt_div_of_pos_right (by norm_num) hden
@@ -118,10 +118,10 @@ private theorem strongLineDecodable_two_mul_of_profile_le
     have hsq : (9 : ℝ) ≤ (t : ℝ) ^ 2 := by
       have hmul : (0 : ℝ) ≤ ((t : ℝ) - 3) * ((t : ℝ) + 3) :=
         mul_nonneg (sub_nonneg.mpr htR3) (by linarith)
-      nlinarith
+      nlinarith only [hmul]
     push_cast
     field_simp
-    nlinarith
+    nlinarith only [hsq]
   exact strongLineDecodable_of_subspaceDesign τ C hdesign (by omega)
     (3 / (2 * (t : ℝ))) heps δ hrad (by omega) hret
 
@@ -176,20 +176,19 @@ private theorem frs_mcaError_le_proof
   · have htR0 : (0 : ℝ) < t := by exact_mod_cast _ht_pos
     have hR0' : 0 ≤ R := by dsimp [R]; positivity
     dsimp [δr] at hδpos
-    interval_cases t <;> norm_num at hδpos ⊢ <;> nlinarith
+    interval_cases t <;> norm_num at hδpos ⊢ <;> nlinarith only [hδpos, hR0']
   have ht3 : 3 ≤ t := by omega
   have htR : (0 : ℝ) < t := by exact_mod_cast (show 0 < t by omega)
-  have hs_pos : 0 < s := by nlinarith [_hs_gt]
+  have hs_pos : 0 < s := lt_of_le_of_lt (Nat.zero_le _) _hs_gt
   have hFn : Fintype.card ι < Fintype.card F := by
-    have hnpos : 0 < Fintype.card ι := Fintype.card_pos
-    nlinarith [_hcard]
+    exact lt_of_le_of_lt (Nat.le_mul_of_pos_left _ hs_pos) _hcard
   have hR0 : 0 ≤ R := by dsimp [R]; positivity
   have hR1 : R ≤ 1 := by
     dsimp [δr] at hδ0
-    nlinarith [div_pos (show (0 : ℝ) < 2 by norm_num) htR]
+    nlinarith only [hδ0, div_pos (show (0 : ℝ) < 2 by norm_num) htR]
   have hRlt : R < 1 := by
     dsimp [δr] at hδ0
-    nlinarith [div_pos (show (0 : ℝ) < 2 by norm_num) htR]
+    nlinarith only [hδ0, div_pos (show (0 : ℝ) < 2 by norm_num) htR]
   have hsn_pos : (0 : ℝ) < (s : ℝ) * Fintype.card ι := by positivity
   have hkR : (k : ℝ) < (s : ℝ) * Fintype.card ι := by
     rw [← div_lt_one hsn_pos]
@@ -209,7 +208,8 @@ private theorem frs_mcaError_le_proof
   have hrate : (LinearCode.alphabetRate C : ℝ) = R := by
     simpa only [C, R, Nat.cast_mul] using
       (ReedSolomon.Folded.alphabetRate_frsCode domain k s ω _hadm _hω hk)
-  have h2tle : 2 * t ≤ s := by nlinarith [_hs_gt, sq_nonneg ((t : ℝ) - 1)]
+  have h2tle : 2 * t ≤ s := by
+    nlinarith only [_hs_gt, sq_nonneg ((t : ℝ) - 1)]
   have ht_le_s : t ≤ s := le_trans (by omega : t ≤ 2 * t) h2tle
   change IsSubspaceDesign s (sharpSubspaceProfile (ι := ι) s R) C at hdesign
   have hdesignList := hdesign
@@ -238,7 +238,7 @@ private theorem frs_mcaError_le_proof
       change δr < (1 : ℝ)
       dsimp [δr]
       have htwo : (0 : ℝ) < 2 / t := div_pos (by norm_num) htR
-      nlinarith
+      nlinarith only [hR0, htwo]
     have hmca := IsLineDecodable.mcaError_le C δ
       (Fintype.card ι * t + 3 * t ^ 3)
       (by exact_mod_cast hδpos) hδlt hline
@@ -258,7 +258,7 @@ private theorem frs_mcaError_le_proof
   · have hq : Fintype.card F ≤ (t + 1) ^ 2 := by omega
     have hqP : Fintype.card F ≤ Fintype.card ι * t + 3 * t ^ 3 := by
       have hn : 1 ≤ Fintype.card ι := Fintype.card_pos
-      nlinarith [sq_nonneg (t - 1)]
+      nlinarith only [hq, hn, ht3, sq_nonneg (t - 1)]
     refine (mcaError_le_one (AffineLineGenerator F) C δr).trans ?_
     rw [← ENNReal.ofReal_one]
     apply ENNReal.ofReal_le_ofReal

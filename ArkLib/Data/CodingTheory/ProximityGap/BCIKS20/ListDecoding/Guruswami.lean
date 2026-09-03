@@ -10,6 +10,12 @@ import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 import ArkLib.Data.Polynomial.Trivariate
 
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory Code
@@ -53,8 +59,7 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
     {p : ReedSolomon.code ωs (k + 1)}
     (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n <
-         _root_.proximity_gap_johnson (k + 1) n m)
-    :
+         _root_.proximity_gap_johnson (k + 1) n m) :
     (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q :=
   GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
@@ -1092,8 +1097,9 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
 noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
 
 /-- The set `S` (equation 5.2 of [BCIKS20]). -/
-noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-    : Finset F := Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
+noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ)
+    (u₀ u₁ : Fin n → F) : Finset F :=
+  Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ }
 
 open Polynomial
 
@@ -1102,8 +1108,7 @@ omit [DecidableEq (RatFunc F)] in
 lemma exists_Pz_of_coeffs_of_close_proximity
     {k : ℕ}
   {z : F}
-  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁)
-    :
+  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁) :
   ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
     unfold coeffs_of_close_proximity at hS
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by

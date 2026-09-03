@@ -205,7 +205,7 @@ jobs:
           BUILD_TIMING_TEST_NAME: Validation wrapper
           BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
           BUILD_TIMING_NATIVE_NAME: Native build
-          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime
+          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime lint-style
         run: |
           baseline_dir="${{ runner.temp }}/build-timing-baseline"
           if [ -f "$baseline_dir/results.jsonl" ]; then

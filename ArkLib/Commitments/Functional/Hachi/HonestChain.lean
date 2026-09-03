@@ -456,7 +456,6 @@ generic append instance does not fire reliably through a deeply nested `Protocol
   ProtocolSpec.instSampleableTypeChallengeAppend
     (h₁ := completePrefixSpecSampleable Φ) (h₂ := sumcheckSpecSampleable bZero (M + 1))
 
-set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
 /-- **Perfect completeness of the honest Hachi chain through the sumcheck**, from `relPolyEval` to
 the evaluation claim `relWEvalClaim`, error `0`.

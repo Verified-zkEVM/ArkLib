@@ -12,6 +12,12 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 import CompPoly.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 
+/-!
+# ArkLib.Data.MvPolynomial.EvenAndOdd
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace MvPolynomial
 
 open BigOperators Fintype Finset
@@ -168,8 +174,7 @@ private lemma formula_generic
       (substPlus (monomial m (p.coeff m)) +
         substMinus (monomial m (p.coeff m))) * C (2⁻¹) +
           X 0 * ((substPlus (monomial m (p.coeff m)) -
-          substMinus (monomial m (p.coeff m))) * C (2⁻¹)) = monomial m (p.coeff m) :=
-    by
+          substMinus (monomial m (p.coeff m))) * C (2⁻¹)) = monomial m (p.coeff m) := by
       intro m hm
       exact formula_for_monomial h2ne0 m (p.coeff m)
         (fun i ↦ (mem_restrictDegree _ p 1).mp hp m hm i)
@@ -182,7 +187,7 @@ private lemma formula_generic
   simp [mul_sub, Finset.mul_sum]
 
 lemma even_and_odd_formula
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   (even p).1 + (MvPolynomial.X 0) * (odd p).1 = p.1 := formula_generic
     (by aesop (add simp [CharP.charP_iff_prime_eq_zero, Nat.prime_two])) p.1 p.2
@@ -215,17 +220,40 @@ private lemma shiftDown_shiftUp_eq (q : MvPolynomial (Fin n) R) :
     change i.val - 1 + 1 = i.val
     omega
 
+private lemma substNoX0_eq_self_of_aeval (c : R) (q : MvPolynomial (Fin n) R) :
+    (q.aeval (fun i ↦ if i = 0 then C c else X i)).aeval
+      (fun i ↦ if i = 0 then 0 else X i) =
+        q.aeval (fun i ↦ if i = 0 then C c else X i) := by
+  induction q using MvPolynomial.induction_on with
+  | C a => simp
+  | add q r hq hr => simp only [map_add, hq, hr]
+  | mul_X q i hq =>
+    simp only [map_mul, aeval_X]
+    rw [hq]
+    by_cases hi : i = 0
+    · subst i
+      simp
+    · simp only [hi, ↓reduceIte, aeval_X]
+
+private lemma substNoX0_eq_self_of_substPlus (q : MvPolynomial (Fin n) R) :
+    (substPlus q).aeval (fun i ↦ if i = 0 then 0 else X i) = substPlus q := by
+  simpa only [substPlus, map_one] using substNoX0_eq_self_of_aeval 1 q
+
+private lemma substNoX0_eq_self_of_substMinus (q : MvPolynomial (Fin n) R) :
+    (substMinus q).aeval (fun i ↦ if i = 0 then 0 else X i) = substMinus q := by
+  simpa only [substMinus, map_neg, map_one] using substNoX0_eq_self_of_aeval (-1) q
+
 private lemma substNoX0_eq_self_of_even
   (p : restrictDegree (Fin n) R 1) :
   (even p).1.aeval
     (fun i : Fin n ↦
       if _ : i = (0 : Fin n) then (0 : MvPolynomial (Fin n) R) else X i) = (even p).1 := by
   unfold even
-  simp only [aeval_eq_bind₁, substPlus, substMinus, map_mul, map_add, algHom_C, algebraMap_eq,
-    mul_eq_mul_right_iff, map_eq_zero, inv_eq_zero]
-  left
-  congr! 1
-  all_goals induction p.val using MvPolynomial.induction_on <;> aesop
+  simp only [map_mul, map_add, algHom_C, algebraMap_eq]
+  exact congrArg (fun q : MvPolynomial (Fin n) R ↦ q * C (2⁻¹))
+    (congrArg₂ (fun a b ↦ a + b)
+      (substNoX0_eq_self_of_substPlus p.val)
+      (substNoX0_eq_self_of_substMinus p.val))
 
 private lemma substNoX0_eq_self_of_odd
   (p : restrictDegree (Fin n) R 1) :
@@ -233,10 +261,11 @@ private lemma substNoX0_eq_self_of_odd
     (fun i : Fin n ↦
       if _ : i = (0 : Fin n) then (0 : MvPolynomial (Fin n) R) else X i) = (odd p).1 := by
   unfold odd
-  unfold MvPolynomial.substPlus MvPolynomial.substMinus
-  simp only [aeval_eq_bind₁, sub_mul, map_sub, map_mul, algHom_C, algebraMap_eq]
-  congr! 2
-  all_goals induction p.val using MvPolynomial.induction_on <;> aesop
+  simp only [map_mul, map_sub, algHom_C, algebraMap_eq]
+  exact congrArg (fun q : MvPolynomial (Fin n) R ↦ q * C (2⁻¹))
+    (congrArg₂ (fun a b ↦ a - b)
+      (substNoX0_eq_self_of_substPlus p.val)
+      (substNoX0_eq_self_of_substMinus p.val))
 
 -- For the case m 0 ≠ 0: the product contains a zero factor
 private lemma aeval_shift_monomial_zero_case {n : ℕ} [NeZero n]
@@ -278,8 +307,8 @@ private lemma aeval_shift_monomial_nonzero_case
           then 1
           else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ t x) =
             MvPolynomial.monomial
-              (∑ x : Fin n, if h : x = 0 then 0 else Finsupp.single ⟨↑x - 1, by omega⟩ (t x)) 1 :=
-      by
+              (∑ x : Fin n, if h : x = 0 then 0 else
+                Finsupp.single ⟨↑x - 1, by omega⟩ (t x)) 1 := by
       intro t
       induction (Finset.univ : Finset (Fin n)) using Finset.induction
         <;> aesop
@@ -304,7 +333,7 @@ lemma aeval_shift_monomial_mem {n : ℕ} [NeZero n]
   · rw [aeval_shift_monomial_zero_case m c hm h0]; exact zero_mem _
 
 lemma aeval_shift_mem_restrictDegree
-  (q : MvPolynomial (Fin n) R) (hq : q ∈ restrictDegree (Fin n) R 1) :
+    (q : MvPolynomial (Fin n) R) (hq : q ∈ restrictDegree (Fin n) R 1) :
   q.aeval (fun i ↦ if h : i = (0 : Fin n) then (0 : MvPolynomial (Fin (n - 1)) R)
     else X ⟨i.val - 1, by omega⟩) ∈ restrictDegree (Fin (n - 1)) R 1 := by
   rw [MvPolynomial.as_sum q, map_sum]
@@ -324,7 +353,7 @@ noncomputable def odd_pred (p : R⦃≤ 1⦄[X (Fin n)]) : R⦃≤ 1⦄[X (Fin (
       by exact aeval_shift_mem_restrictDegree (odd p).1 (odd p).2⟩
 
 lemma even_and_odd_formula'
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   (even_pred p).1.aeval
     (fun i ↦ X (⟨i.val + 1, by omega⟩ : Fin n)) +
@@ -337,7 +366,7 @@ lemma even_and_odd_formula'
   exact even_and_odd_formula hchar
 
 lemma even_and_odd_eval
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]}
   {α : R} :
   p.1.aeval
@@ -363,7 +392,7 @@ noncomputable def shiftedPowAlgHom :
 omit [NeZero n] in
 open LinearMvExtension in
 lemma shiftedPowAlgHom_eq_powAlgHom_comp_sq_x
-  {p : MvPolynomial (Fin (n - 1)) R} :
+    {p : MvPolynomial (Fin (n - 1)) R} :
   shiftedPowAlgHom p = (powAlgHom p).comp (Polynomial.X ^ 2) := by
   induction p using MvPolynomial.induction_on
     <;> aesop
@@ -381,7 +410,7 @@ private lemma powAlgHom_aeval_shift (q : MvPolynomial (Fin (n - 1)) R) :
 
 open LinearMvExtension in
 lemma powAlgHom_eq_even_add_odd
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   powAlgHom p.1 =
     shiftedPowAlgHom (even_pred p).1 +
@@ -394,7 +423,7 @@ lemma powAlgHom_eq_even_add_odd
 
 open LinearMvExtension in
 lemma powAlgHom_eq_even_add_odd_powAlgHom
-  (hchar : ¬CharP R 2)
+    (hchar : ¬CharP R 2)
   {p : R⦃≤ 1⦄[X (Fin n)]} :
   powAlgHom p.1 =
     (powAlgHom (even_pred p).1).comp (Polynomial.X ^ 2) +

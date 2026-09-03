@@ -5,6 +5,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Binius.BinaryBasefold.CoreInteraction
 /-!
 ## Binary Basefold single steps
@@ -78,8 +84,7 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
   ((Statement (L := L) Context i.succ × ((j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
     OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
       × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
-        (d := mp.degCombinator + 1))
-  := by
+        (d := mp.degCombinator + 1)) := by
   let (stmtIn, oStmtIn, witIn, h_i, r_i') := finalPrvState
   let newSumcheckTarget : L := h_i.val.eval r_i'
   let stmtOut : Statement (L := L) Context i.succ := {
@@ -620,12 +625,11 @@ noncomputable def commitRbrExtractor (i : Fin ℓ) :
 /-- Note : stmtIn and witMid already advances to state `(i+1)` from the fold step,
 while oStmtIn is not. -/
 def commitKStateProp (i : Fin ℓ) (m : Fin (1 + 1))
-  (stmtIn : Statement (L := L) Context i.succ)
+    (stmtIn : Statement (L := L) Context i.succ)
   (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
     (d := mp.degCombinator + 1))
   (oStmtIn : (i_1 : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
-    OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc i_1)
-  : Prop :=
+    OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc i_1) : Prop :=
   match m with
   | ⟨0, _⟩ => -- same as relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -804,11 +808,11 @@ noncomputable def relayRbrExtractor (i : Fin ℓ) :
   extractOut := fun _ _ witOut => witOut
 
 def relayKStateProp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
-  (stmtIn : Statement (L := L) Context i.succ)
+    (stmtIn : Statement (L := L) Context i.succ)
   (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ
     (d := mp.degCombinator + 1))
-  (oStmtIn : (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
-  : Prop :=
+  (oStmtIn : (∀ j,
+    OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) : Prop :=
   masterKStateProp (mp := mp) (ϑ := ϑ) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (stmtIdx := i.succ) (oracleIdx := i.succ)
     (h_le := le_refl _)
@@ -909,8 +913,7 @@ noncomputable def finalSumcheckProver :
 
   sendMessage
   | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩ => do
-    let fℓ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ, by omega⟩)
-      := witIn.f
+    let fℓ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := ⟨ℓ, by omega⟩) := witIn.f
     -- Evaluate f^(ℓ) at the zero point to get the final constant
     let c : L := fℓ ⟨0, by simp only [zero_mem]⟩ -- f^(ℓ)(0, ..., 0)
     pure ⟨c, (stmtIn, oStmtIn, witIn, c)⟩
@@ -992,7 +995,7 @@ noncomputable def finalSumcheckOracleReduction :
 
 /-- Perfect completeness for the final sumcheck step -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
-  (init : ProbComp σ)
+    (init : ProbComp σ)
   (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFinalSumcheckStep (L := L))

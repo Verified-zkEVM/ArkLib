@@ -91,7 +91,7 @@ namespace FftDomain
 
 /-- Evaluation of an FFT domain is evaluation of its underlying subgroup parametrization. -/
 lemma eval_fft_domain_eq_eval_domain
-  {fftDomain : FftDomain ι F} {i : ι} :
+    {fftDomain : FftDomain ι F} {i : ι} :
   fftDomain i = fftDomain.subgroupUnit i := rfl
 
 end FftDomain
@@ -133,7 +133,7 @@ namespace FftDomain
 
 /-- Viewing an FFT domain as a coset FFT domain does not change its values. -/
 lemma eval_fft_domain_eq_eval_coset_fft_domain
-  {ω : FftDomain ι F} {i : ι} :
+    {ω : FftDomain ι F} {i : ι} :
   ω i = ω.toCosetFftDomain i := by
   rw [eval_fft_domain_eq_eval_domain,
     CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain,
@@ -147,11 +147,11 @@ namespace FftDomain
 
 /-- An FFT domain is injective as a function. -/
 lemma injective {ω : FftDomain ι F} :
-  Function.Injective ω := CosetFftDomainClass.injective _
+    Function.Injective ω := CosetFftDomainClass.injective _
 
 /-- An FFT domain is injective on every set. -/
 lemma injOn {ω : FftDomain ι F} {s : Set ι} :
-  Set.InjOn ω s := fun _ _ _ _ h ↦ ω.injective h
+    Set.InjOn ω s := fun _ _ _ _ h ↦ ω.injective h
 
 end FftDomain
 

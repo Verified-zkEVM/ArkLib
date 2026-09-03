@@ -85,7 +85,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 -- `[IsCyclotomic Φ]` is needed only to synthesize the `Rq`/`wTable` instances inside the `hZero`
 -- term carried by the relations, which the linter's usage analysis misses.
-set_option linter.unusedSectionVars false in
+omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **The relation-preservation step of the zero-check.** An honest witness for the batched
 identities satisfies the point relation at *every* pair of evaluation points, so no property of
 the challenges is used.
@@ -123,7 +123,7 @@ invariant below is what makes the prover's and verifier's output statements agre
 prefix the prover carries in its state *is* the transcript, because `Transcript.concat` and the
 prover's `Fin.snoc` are the same operation. -/
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
 /-- **Honest-run invariant.** After `i` challenge rounds, the honest prover's state is the input
 statement/witness pair together with the transcript so far — the accumulated challenges *are* the
 transcript, since `Transcript.concat` is by definition the `Fin.snoc` the prover uses.
@@ -163,7 +163,7 @@ lemma nestedZeroCheckProver_state_eq_of_mem_support {TCom Wit : Type} [Sampleabl
     subst hx
     rfl
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
 /-- **Honest prover output.** Every result of an honest run of the zero-check prover carries the
 input witness unchanged and the statement reshaped by exactly the `castAdd`/`natAdd` split of the
 produced transcript that `nestedZeroCheckVerifier` performs.
@@ -188,7 +188,7 @@ lemma nestedZeroCheckProver_output_of_mem_support {TCom Wit : Type} [SampleableT
   subst hx
   rfl
 
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
 /-- **Honest-run characterization.** Every element of the support of an honest execution of
 `nestedZeroCheckReduction` is a success, and it is determined by the transcript alone: the input
 witness is transported unchanged, and prover and verifier both output
@@ -231,7 +231,7 @@ lemma nestedZeroCheckReduction_run_support {TCom Wit : Type} [SampleableType F]
   have hout := nestedZeroCheckProver_output_of_mem_support Φ m₀ m₁ X w pr hpr
   exact ⟨pr.1, by rw [hx, ← hout]⟩
 
-set_option linter.unusedSectionVars false in
+omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Perfect completeness of the zero-check (Hachi Figure 5).** An honest prover holding a witness
 for the batched identities `H₀ ≡ 0 ∧ H_α ≡ 0` is accepted with probability one, and the pair it
 hands on lies in `relNestedZeroCheck`, with the prover's and the verifier's output statements
@@ -280,7 +280,7 @@ def batchReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig
       (!p[] : ProtocolSpec 0) :=
   ReduceClaim.reduction oSpec id (fun _ w => w)
 
-set_option linter.unusedSectionVars false in
+omit [BEq F] [LawfulBEq F] in
 /-- The bridge's protocol object and its soundness certificate share a verifier. Holds by `rfl`. -/
 @[simp] theorem batchReduction_verifier
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -292,7 +292,7 @@ set_option linter.unusedSectionVars false in
       = (batchPackage Φ m₀ m₁ bound bDig init impl K φF b hb hn hd hμn hbound hdig).verifier :=
   rfl
 
-set_option linter.unusedSectionVars false in
+omit [BEq F] [LawfulBEq F] in
 /-- **Perfect completeness of the batching bridge** (Hachi Eqs. (22)–(23)), at error exactly `0`.
 
 An honest prover holding a lift-valid short witness is accepted with probability one and the very

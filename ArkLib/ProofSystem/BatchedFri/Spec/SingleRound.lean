@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Julian Sutherland, Quang Dao, Alexander Hicks, Devon Tuma, Ilia Vlasov
+-/
+
 import ArkLib.OracleReduction.Basic
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
@@ -149,7 +155,7 @@ theorem simulateQ_queryInput
 
 /-- The batching round oracle prover. -/
 def batchProver :
-  OracleProver []ₒ
+    OracleProver []ₒ
     Unit (OracleStatement m ω) (Witness F s d m)
     (Fri.Spec.Statement F (0 : Fin (k + 1)))
       (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
@@ -171,13 +177,12 @@ def batchProver :
         (ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1
       ⟨cs, os,
         ⟨
-          q,
-          by
+          q, by
             unfold Fri.Spec.Witness
             simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod]
             rw [CompPoly.CPolynomial.degreeLT_toPoly]
-            change (((ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1)
-              : CompPoly.CPolynomial F).toPoly ∈ _
+            change (((ps 0).1 + ∑ i, CompPoly.CPolynomial.C (cs i) * (ps i.succ).1) :
+              CompPoly.CPolynomial F).toPoly ∈ _
             rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_sum]
             simp only [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.C_toPoly]
             set q : F[X] :=
@@ -254,7 +259,7 @@ def outputSimulation :
 
 /-- The batching round oracle verifier. -/
 def batchVerifier :
-  OracleVerifier []ₒ
+    OracleVerifier []ₒ
     Unit (OracleStatement m ω)
     (Fri.Spec.Statement F (0 : Fin (k + 1)))
     (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
@@ -264,7 +269,7 @@ def batchVerifier :
 
 /-- The batching round oracle reduction. -/
 def batchOracleReduction :
-  OracleReduction []ₒ
+    OracleReduction []ₒ
     Unit (OracleStatement m ω) (Witness F s d m)
     (Fri.Spec.Statement F (0 : Fin (k + 1)))
     (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))

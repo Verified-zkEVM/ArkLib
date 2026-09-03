@@ -289,7 +289,6 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-! ### Completeness, both readings -/
 
-set_option linter.unusedSectionVars false in
 /-- **Perfect completeness of Hachi's polynomial-evaluation link at this file's profile** — the
 [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`, `δ = 8`, `r = m = 10`, `ω = 16`,
 `α = 10`) with ArkLib's conservative `τ = 5` — ball-relaxed reading, error `0`.
@@ -322,7 +321,6 @@ theorem quadEvalLink_perfectCompleteness_atProfile
     params_hzb
     (by norm_num [hachiDelta]) hachiTau_pos ringDim_pos
 
-set_option linter.unusedSectionVars false in
 /-- **Paper-exact perfect completeness at this file's profile** — the Figure 3 *verifier* verbatim
 (Eq. (20)'s balanced-digit box `S₁₆ = [-8, 7]`, not the enclosing `ℓ∞` ball), at ArkLib's
 conservative `τ = 5`, error `0`. "Paper-exact" here qualifies the verifier, not the digit count: the
@@ -375,7 +373,6 @@ def packageAtProfile
   quadEvalPackage (zDigits := hachiTau) (b := hachiB) (ω := hachiOmega) (γ := params.γ)
     init impl hachiQ_mod_eight sq_two_omega_lt_q hachiTau_pos pp
 
-set_option linter.unusedSectionVars false in
 /-- **Coupling, output side.** The soundness certificate's output relation is the relation the
 completeness theorems land in, at `γ = params.γ`. Holds by `rfl`; note it could not be *stated* at
 two different `zDigits`, since `relOut`'s witnesses are `QuadEvalResponse … zDigits`. -/
@@ -388,7 +385,6 @@ theorem packageAtProfile_relOut
           hachiOmega params.γ :=
   rfl
 
-set_option linter.unusedSectionVars false in
 /-- **Coupling, input side.** The correctness-side input relation at the profile —
 `relInMsgShort` at the certificate's own `βSq = betaSq` and `κ = 2ω` — lands inside the package's
 `relIn`. So the `βSq` the extractor produces and the `βSq` the honest chain is stated at are the

@@ -67,7 +67,7 @@ jobs:
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime lint-style" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
@@ -107,7 +107,7 @@ jobs:
           cat "$RUNNER_TEMP/source-trust.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set up Lean environment
-        uses: leanprover/lean-action@v1.5.0
+        uses: leanprover/lean-action@v1.6.0
         with:
           auto-config: false
           build: false
@@ -149,7 +149,7 @@ jobs:
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
+            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime lint-style'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
@@ -262,10 +262,10 @@ jobs:
           path: ${{ runner.temp }}/arklib-pages-site
 
       - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/arklib-pages-site
 
       - name: Deploy GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
