@@ -78,7 +78,7 @@ instance instDecidableEqNonrecursiveLiftComTCom (P : HonestRangeParams q)
 scheme's type with `K.TCom` replaced by `CarrierCom 𝓜(q, α) dRows`, and restating that whole
 composed `pSpec` here would only invite it to drift.
 
-A plain `def`, so every field — `keygen`, the balanced committer, and the full composed opening —
+A plain `def`, so every field — `keygen`, the committer, and the full composed opening —
 is executable. -/
 def hachiNonrecursiveConcrete (P : HonestRangeParams q)
     [SampleableType (Simple.PublicParams 𝓜(q, α) innerRows ((2 ^ m) * Nat.clog P.b q))]

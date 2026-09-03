@@ -29,7 +29,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   `quadEvalEscLocal`, lives in `QuadEval/Soundness.lean`. The file closes with the protocol (the
   two-round
   `pSpec ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin 2ʳ → C]⟩` of `CoordinateWise.SingleRound`,
-  the pure pass-through `verifier`, and the honest `prover` skeleton). Round 0 (P→V) sends the
+  the pure pass-through `verifier`, and the honest `prover`). Round 0 (P→V) sends the
   short commitment `v = D ŵ`; round 1 (V→P) is the challenge vector; the triple `(ŵ, t̂, ẑ)` is
   the **output witness** (`QuadEvalResponse`, never sent — §4.3 proves knowledge of it instead),
   so the verifier is a pure pass-through.
@@ -489,8 +489,8 @@ def prover (WitIn : Type)
 /-! ### The honest computations, and the protocol object
 
 `prover` above is parametric in the two honest computations. Here they are instantiated with the
-concrete gadget algebra of `QuadEval/Gadgets.lean`, which turns the skeleton into the actual
-Figure-3 prover, and pairing that with `verifier` gives the **protocol** `quadEvalReduction` — the
+concrete gadget algebra of `QuadEval/Gadgets.lean`, giving the actual Figure-3 prover; pairing
+that with `verifier` gives the **protocol** `quadEvalReduction` — the
 computable object an honest execution runs, and the one perfect completeness is stated about
 (`QuadEval/Completeness.lean`). The Lemma-8 certificate `quadEvalPackage`
 (`QuadEval/Soundness.lean`) is a statement about the *same* verifier; that they cannot drift apart
@@ -546,11 +546,9 @@ Deliberately computable — this is what an honest execution runs, what perfect 
 stated about (`QuadEval/Completeness.lean`), and what the extraction rail consumes. The digit
 decompositions `ddCarrier` (for `G⁻¹`, `messageDigits` digits) and `ddZ` (for `J⁻¹`, `zDigits`
 digits) must share the gadget base `base`, since the verifier's Eq.-(20) rows recompose both with
-the same `base`. They differ in *kind*, and deliberately so: `ddCarrier` is a full-width
-`DigitDecomposition` (carrier coefficients are arbitrary residues), while `ddZ` is a
-`BoundedDigitDecomposition` at the honest shortness bound on `z`, which is what decouples `τ` from
-`δ = ⌈log_b q⌉`. The old full-width choice `τ := δ` is recovered by passing
-`ddZ.toBounded bound` (`DigitDecomposition.toBounded`). -/
+the same `base`. They differ in kind: `ddCarrier` is a full-width `DigitDecomposition` (carrier
+coefficients are arbitrary residues), while `ddZ` is a `BoundedDigitDecomposition` at the honest
+shortness bound on `z`, which is what decouples `τ` from `δ = ⌈log_b q⌉`. -/
 def quadEvalReduction
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)

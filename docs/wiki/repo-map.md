@@ -75,7 +75,7 @@ home_page/            site assets and assembled website root
   CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
 - Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
-  ring `Rq Φ`. **This development is in progress.** The folder is organized by paper section;
+  ring `Rq Φ`. The folder is organized by paper section;
   every subfolder carries its umbrella as `Basic.lean` inside that subfolder.
   `ArkLib/Commitments/Functional/Hachi/Basic.lean` is the folder-level landing page, with the full
   folder map in its module docstring. Layout:
@@ -92,15 +92,14 @@ home_page/            site assets and assembled website root
     Hachi's folded witness `z = Σᵢ cᵢ sᵢ`, whose digit count `τ` is set by the deterministic bound
     `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` and **not** by `q`: at the `ℓ = 30` parameters with ArkLib's conservative
     `τ = 5` (see `Params.lean`) one has `16⁵ < q`, so no full-width `5`-digit decomposition exists,
-    yet `τ = 5` is perfectly correct. `DigitDecomposition.toBounded`
-    is the forgetful wrapper recovering the full-width choice `τ := δ`; `gadgetDecomposeFun` (a
-    bare per-coefficient digit map) is the shared computational core, so the layout and norm
-    bookkeeping is proved once for both.
+    yet `τ = 5` is perfectly correct. `gadgetDecomposeFun` (a bare per-coefficient digit map) is
+    the shared computational core of both, so the layout and norm bookkeeping is proved once.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
     `toPolynomial` and the bridge lemma `splitForm_monomialBasis_eq_eval` consumed by
-    `QuadEval/Bridge`. Kept top-level because the future §3 packing head reuses it over the subfield.
+    `QuadEval/Bridge`. Kept top-level rather than inside `QuadEval/`, since it is a statement about
+    the polynomial layer alone.
   - `InnerOuter/` (§4.1) — the scheme itself: `Scheme` (the inner/outer commit composition and its
     *weak opening*, following [NOZ26, §4.1]), `Correctness` (perfect correctness for lawful
     gadget decompositions), `Security` (the weak-binding reduction to Module-SIS via
@@ -139,7 +138,7 @@ home_page/            site assets and assembled website root
     `ReduceClaim` head draws no challenge and performs no check, so all of its content is that
     relation equivalence). `QuadEval/Completeness` is the **honest direction**, in
     two readings that must not be conflated. *Ball-relaxed*
-    (`quadEvalReduction_perfectCompleteness`, `…_zmodDigits` at the unsigned base-`b` digits)
+    (`quadEvalReduction_perfectCompleteness`, concretely `…_boundedBalancedDigits`)
     reaches ArkLib's `relOut`, whose c6 is the symmetric ball, **not** Eq. (20)'s box `S_b` — the
     containment
     `paperRelOut ⊆ relOut` transports *soundness* to the paper's verifier and is useless in the
@@ -241,7 +240,7 @@ home_page/            site assets and assembled website root
     `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
     extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
     side: every *folded* completeness statement inherits `sorryAx` from the generic
-    `Reduction.append_completeness`, which is still `sorry`.
+    `Reduction.append_completeness`, which this repository admits.
   - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
     reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
     (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
@@ -253,8 +252,8 @@ home_page/            site assets and assembled website root
     `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
     (`Correctness.lean`), so the closing link has one decision procedure.
     `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
-  - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
-    `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
+  - `Recursion/` (§4.5) — the recursion adapters, **outside the completed development and not
+    composed into `Composition.lean`'s chain**: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
     (Eqs. (27)–(28)
@@ -273,23 +272,22 @@ home_page/            site assets and assembled website root
     Escape events compose along the chain by `ChallengeTree.EscapeEvent.append`, so only relation
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
-    `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
-    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece, the §4.5
-    recursion tail, and the recursive honest-prover layer). It also carries the **honest-committer facts**
-    the honest chain needs: `verifiedOpening_honestOpening` (the committer's own output is a
-    `WeakBinding.VerifiedOpening` — it lives here, not in `InnerOuter/Correctness`, because
-    `InnerOuter/Security` imports that file), `vecInSb_honestInnerDecomp_balanced`, and
-    `mem_relInBox_of_honestBalanced` / `mem_relInBox_of_commitBalanced`: with
-    `balancedZmodDigitDecomposition` the honest opening satisfies paper-exact `QuadEval`'s input
-    relation `relInBox`, given Eq. (15) evaluation consistency — the second one at the actual
-    output of `commitBalanced`. **The packaged `hachi.commit` uses unsigned digits**, so the
-    paper-exact link does not apply to it (only the ball-relaxed reading does); switching the
-    scheme's committer is part of the opening work. Weak-opening validity, evaluation consistency
-    and box membership stay separate, and establishing that input relation is **not** a claim about
-    `Commitment.perfectCorrectness` (`hachi.opening` is still `sorry`, and the declared `pSpec`
-    covers only the bridge ▷ QuadEval prefix, not the full opening protocol). The **nonrecursive**
-    scheme `hachiNonrecursive` in `Correctness.lean` is where the balanced committer is packaged
-    with a complete opening and perfect correctness is actually proved.
+    `keygen`/`commit` (the paper's **balanced** base-`b` gadget decomposition at width
+    `δ = ⌈log_b q⌉`, digits in Eq. (20)'s box `S_b` — `[-8, 7]` at `b = 16`), and the `hachi`
+    scheme value, whose `opening` field is the §4.5 *recursive* opening and is `sorry` (the
+    recursion boundary; the declared `pSpec` covers only the bridge ▷ QuadEval prefix). `hachi` and
+    `hachiNonrecursive` share this committer; the unsigned `zmodDigitDecomposition` survives only
+    as the building block the balanced digits are shifted from (`Gadget/Core`), and
+    `InnerOuter.perfectlyCorrect` is likewise stated at the balanced digits. The file also carries
+    the **honest-committer facts** the honest chain needs: `verifiedOpening_honestOpening` (the
+    committer's output is a `WeakBinding.VerifiedOpening` — it lives here, not in
+    `InnerOuter/Correctness`, because `InnerOuter/Security` imports that file),
+    `vecInSb_honestInnerDecomp_balanced`, and `mem_relInBox_of_honestBalanced` /
+    `mem_relInBox_of_commit`: the honest opening satisfies paper-exact `QuadEval`'s input relation
+    `relInBox`, given Eq. (15) evaluation consistency — the second one at the actual output of
+    `commit`. Weak-opening validity, evaluation consistency and box membership stay separate
+    conjuncts. The **nonrecursive** scheme `hachiNonrecursive` in `Correctness.lean` is where the
+    same committer is packaged with a complete opening and perfect correctness is proved.
   - `HonestChain.lean` — the honest side's **parameter interface** and prefix composition:
     `HonestRangeParams` (digit base `b`, Eq. (20) ball radius `γ`, zero-check range base `bZero` —
     which is also the base of the quotient's hidden gadget decomposition — with the box→ball
@@ -322,7 +320,7 @@ home_page/            site assets and assembled website root
     balanced committer — `relPolyEval` plus the `ℓ∞` bound `⌊b/2⌋` on the committer's message
     decomposition, the one extra invariant the honest-`z` shortness bound consumes. Adapter ▷
     chain-through-sumcheck ▷ terminal compose into `hachiNonrecursiveOpening`, packaged with
-    `commitBalanced` as the scheme `hachiNonrecursive`, and
+    `commit` as the scheme `hachiNonrecursive`, and
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
     bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
     (`Commitments/Functional/Basic.lean`, axiom-clean, on the new
@@ -336,8 +334,7 @@ home_page/            site assets and assembled website root
     `hzb : 2ʳ·ω·⌊b/2⌋ ≤ zBound` and `0 < τ`; the message and inner digit counts stay `δ`. `μ₀`
     (`rlinCols`), the lift key width and the sumcheck table width all depend on `τ`, so a
     correctness statement and the soundness-side `quadEvalBetaSq` cannot silently disagree about
-    it. No `q ≤ P.b ^ τ` hypothesis exists on this path (it is false at the `ℓ = 30` parameters);
-    `τ := δ` recovers the old full-width behaviour as an instance.
+    it. No `q ≤ P.b ^ τ` hypothesis exists on this path (it is false at the `ℓ = 30` parameters).
   - `Concrete.lean` — the same scheme at the concrete Ajtai lift commitment `D · (z ‖ ρ)`
     (`nonrecursiveLiftCom`), where every honest field is computable; it carries the same `τ` /
     `zBound` parameters. `scripts/HachiRuntime.lean` (the `hachi-runtime` executable) runs it at
@@ -350,17 +347,15 @@ home_page/            site assets and assembled website root
     divergence is deliberate and is the one place this profile is not Figure 9: only the naive
     bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` is formalized here, and five digits are minimal for it,
     whereas Figure 9's `τ = 4` rests on its own sharper bound `30583`. Do not describe this as the
-    exact Figure 9 profile. The file carries the arithmetic the chain consumes
-    at it: `16⁷ < q ≤ 16⁸`, `Nat.clog 16 q = 8`, the deliberate `16⁵ < q`, the balanced capacity
-    `489335` of five base-`16` digits, the honest bound `131072` (and the paper's coarser
-    `262144`) fitting inside it, and `μ₀ = 57344` at `τ = 5` versus `81920` at `τ = δ`.
+    exact Figure 9 profile. The file carries the arithmetic the chain consumes at it:
+    `q ≤ 16⁸` with `Nat.clog 16 q = 8`, the deliberate `16⁵ < q`, the balanced capacity `489335` of
+    five base-`16` digits with the honest bound `131072` fitting inside it, and `μ₀ = 57344`.
     **`τ = 5` is minimal, not merely sufficient**: `tau_minimal` rules out every `t < 5`, since
     `balancedDigitCapacity 16 4 = 30583 < 131072` and capacity is monotone
-    (`balancedDigitCapacity_mono`). Worth knowing: `30583` is *exactly* [NOZ26] Figure 9's own `z`
-    bound, listed there alongside its `τ = 4` — so the paper's `τ = 4` is admissible only under a
-    sharper `‖z‖∞` bound than the naive `2ʳ·ω·⌊b/2⌋` proved here, and that sharper bound saturates
-    four digits on the nose. The file then instantiates the `τ = 5` `QuadEval` link with every
-    hypothesis discharged, in **both** readings —
+    (`balancedDigitCapacity_mono`). That `30583` is exactly [NOZ26] Figure 9's own `z` bound, listed
+    alongside its `τ = 4`, so the paper's `τ = 4` is admissible only under a sharper `‖z‖∞` bound
+    than the naive `2ʳ·ω·⌊b/2⌋` proved here. The file then instantiates the `τ = 5` `QuadEval` link
+    with every hypothesis discharged, in **both** readings —
     `quadEvalLink_perfectCompleteness_atProfile` (ball-relaxed) and `…_paperRelOut` (Eq. (20)'s box
     `S₁₆` verbatim) — which is the machine-checked form of "no `q ≤ 16⁵` is required". Finally it
     pins the **two security directions to one `τ`**: `packageAtProfile` is Lemma 8's certificate at
@@ -368,13 +363,11 @@ home_page/            site assets and assembled website root
     theorems' (a statement that cannot be written at two different `zDigits` — the
     `QuadEvalResponse` types would differ), and
     `relInMsgShort_atProfile_subset_packageAtProfile_relIn` lands the correctness input relation in
-    the package's `relIn` at `βSq = betaSq = quadEvalBetaSq … hachiTau …`. The *scheme*-level
-    substitution is deliberately not written out: it adds no mathematical content
-    (`hachiNonrecursiveConcrete_perfectCorrectness` is parametric and every profile hypothesis is
-    discharged, `hμn` by `sumcheckWidthAtProfile` at `M = 25`) and it does not elaborate — the
-    composed scheme's type carries `Nat.clog params.b 4294967197` inside `Fin (2¹⁰)`-indexed
-    matrices and a 26-deep `ProtocolSpec` append tower, which drives `isDefEq` to a heartbeat
-    timeout and then to an OOM kill. That is an elaborator cost, and the file says so.
+    the package's `relIn` at `βSq = betaSq`. The *scheme*-level substitution is not written out:
+    every profile hypothesis it would need is already discharged here (`hμn` by
+    `sumcheckWidthAtProfile` at `M = 25`), and the composed scheme's type carries
+    `Nat.clog params.b 4294967197` inside `Fin (2¹⁰)`-indexed matrices and a 26-deep
+    `ProtocolSpec` append tower, which exhausts the elaborator's `isDefEq` budget.
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).

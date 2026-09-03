@@ -331,7 +331,7 @@ chain are two faces of one protocol.
 
 **Axiom boundary.** `roundsReductionAux_perfectCompleteness` and everything downstream of it go
 through `Reduction.append_perfectCompleteness`, which is `convert`-ed from the generic
-`Reduction.append_completeness` — still `sorry` in
+`Reduction.append_completeness`, admitted in
 `OracleReduction/Composition/Sequential/Append.lean`. Those theorems therefore *depend on
 `sorryAx`*, and `#print axioms` reports it. The per-round result
 `roundReduction_perfectCompleteness` above is axiom-clean and is what actually carries the Hachi

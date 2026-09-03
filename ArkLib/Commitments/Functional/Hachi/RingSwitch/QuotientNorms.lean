@@ -143,7 +143,7 @@ theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polyn
       ≤ μ * (2 * d * (βM * βz)) := by
   have hdegΦ : Φ.φ.natDegree = d := by
     rw [CPolynomial.natDegree_toPoly, hφ, ← Polynomial.C_1, Polynomial.natDegree_X_pow_add_C]
-  haveI : Lift.IsPresentation (cyclotomicPresentation Φ) :=
+  have : Lift.IsPresentation (cyclotomicPresentation Φ) :=
     isPresentation_cyclotomic Φ (by omega)
   have hmod : (cyclotomicPresentation Φ).modulus.toPoly = Polynomial.X ^ d + 1 := hφ
   -- The dividend and its degree.

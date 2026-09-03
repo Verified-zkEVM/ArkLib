@@ -14,8 +14,9 @@ data `CMlPolynomial (Rq 𝓜(q,α)) (r + m)` — an `(r + m)`-variable multiline
 coefficients in the power-of-two cyclotomic ring `Rq 𝓜(q,α) = (ZMod q)[X] / (X^{2^α} + 1)`. This
 file supplies what the generic interface asks of a functional commitment: the multilinear
 eval-oracle interface (`multilinearEvalOracleInterface`), honest key generation and commitment
-(`keygen` / `commit`, using the canonical base-`b` gadget decomposition `zmodDigitDecomposition` at
-the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`, Hachi §2.1/§4.1), and the `hachi` scheme itself.
+(`keygen` / `commit`, using the balanced base-`b` gadget decomposition
+`balancedZmodDigitDecomposition` at the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`,
+[NOZ26] §2.1/§4.1), and the `hachi` scheme itself.
 
 The complete scheme is `hachiNonrecursive` (`Correctness.lean`), which packages these pieces with
 the composed opening and proves perfect correctness. The `hachi` value here is the *recursive*
@@ -27,13 +28,12 @@ packaging; its succinct opening is part of [NOZ26] §4.5, outside this developme
   queried at an evaluation point, returning its value there — the `Data` of the commitment.
 * `keygen`: honest key generation — sample the inner/outer/short Ajtai matrices `(A, B, D)`
   uniformly; the resulting `PublicParamsD` serves as both committer and verifier key.
-* `commit`: honest commitment — reshape the polynomial into its `2^r × 2^m` coefficient matrix,
-  gadget-decompose it, and outer-commit; the decommitment is the `Decomp` data. Deterministic.
-* `commitBalanced`: the same committer at the **balanced** base-`b` digits, whose range is
-  Eq. (20)'s box `S_b` — the committer the paper-exact `QuadEval` reading and
-  `hachiNonrecursive` are established for.
-* `mem_relInBox_of_commitBalanced`: the balanced committer's output satisfies paper-exact
-  `QuadEval`'s input relation `relInBox`.
+* `commit`: the honest Hachi commitment — reshape the polynomial into its `2^r × 2^m` coefficient
+  matrix, gadget-decompose it at the balanced base-`b` digits, whose range is Eq. (20)'s box `S_b`,
+  and outer-commit; the decommitment is the `Decomp` data. Deterministic, and the committer of both
+  `hachi` and `hachiNonrecursive`.
+* `mem_relInBox_of_commit`: the honest committer's output satisfies paper-exact `QuadEval`'s input
+  relation `relInBox`.
 
 Namespace/opens discipline follows the rest of the tree
 (`namespace ArkLib.Lattices.Ajtai.InnerOuter`, `open WeakBinding`).
@@ -96,43 +96,19 @@ def keygen :
     { innerMatrix := A, outerMatrix := B, dMatrix := D }
   pure (pp, pp)
 
-/-- Honest **commitment** to a multilinear polynomial `p`: reshape it into its `2^r × 2^m`
-coefficient matrix (`Hachi.toMatrix`, definitionally a `Message 𝓜(q,α) (2^m) (2^r)`),
-gadget-decompose it into the per-block messages/inner decompositions with the **canonical
-*unsigned* base-`b` digit decomposition** `zmodDigitDecomposition` at the paper's width
-`δ = ⌈log_b q⌉ = Nat.clog b q` (the `q ≤ bᵟ` obligation is `Nat.le_pow_clog`), and outer-commit
-(`commitWithDecomps`). Deterministic; the decommitment is the `Decomp` data.
+/-- **The honest Hachi commitment**, at the paper's balanced base-`b` digits.
 
-Its digits lie in `[0, b − 1]`, **not** in Eq. (20)'s balanced box `S_b`, so this committer supports
-the ball-relaxed reading of `QuadEval` completeness only; the paper-exact reading needs
-`commitBalanced`. -/
+Reshape `p` into its `2^r × 2^m` coefficient matrix (`Hachi.toMatrix`, definitionally a
+`Message 𝓜(q,α) (2^m) (2^r)`), gadget-decompose it into the per-block messages/inner decompositions
+with `balancedZmodDigitDecomposition` at the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q` (the
+`q ≤ bᵟ` obligation is `Nat.le_pow_clog`), and outer-commit (`commitWithDecomps`). Deterministic;
+the decommitment is the `Decomp` data.
+
+The digits are *balanced* because [NOZ26] §2.1/§4.1's gadget digits are centered,
+`⌈-b/2⌉ ≤ dᵢ ≤ ⌈b/2⌉ − 1`, and Eq. (20) range-checks exactly that box `S_b` — a condition the
+unsigned digits `[0, b − 1]` violate even though they reconstruct just as well. The output's
+membership in `QuadEval`'s box-carrying input relation is `mem_relInBox_of_commit`. -/
 def commit [DecidableEq (ZMod q)] (hb : 1 < b)
-    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
-      (Nat.clog b q) dRows)
-    (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
-    Commitment 𝓜(q, α) outerRows ×
-      Decomp 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q) :=
-  let decomps := generateDecomps 𝓜(q, α)
-    (Decomposition.ofDigits 𝓜(q, α)
-      (zmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
-      (zmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
-    pp.toPublicParams (Hachi.toMatrix p)
-  (commitWithDecomps 𝓜(q, α) pp.toPublicParams decomps, decomps)
-
-/-- **Honest commitment with *balanced* base-`b` digits** — the variant paper-exact `QuadEval`
-completeness applies to.
-
-Identical to `commit` except that both gadget steps use `balancedZmodDigitDecomposition` instead of
-the unsigned `zmodDigitDecomposition`. The difference is not cosmetic: Eq. (20)'s range check is
-the balanced-digit box `S_b`, which unsigned digits generally violate (a digit `b − 1` exceeds the
-box's upper end `⌈b/2⌉ − 1` once `b ≥ 3`). So `commit` supports only the ball-relaxed reading of
-`QuadEval` completeness, while `commitBalanced` supports the paper-exact one
-(`mem_relInBox_of_commitBalanced`).
-
-Both are honest and both reconstruct (`gadgetDecompose_lawful`), so `commit` is not wrong — it is
-simply the decomposition whose digits live in `[0, b − 1]` rather than in `S_b`. The balanced
-committer is the one `hachiNonrecursive` (`Correctness.lean`) packages. -/
-def commitBalanced [DecidableEq (ZMod q)] (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
     (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
@@ -147,16 +123,16 @@ def commitBalanced [DecidableEq (ZMod q)] (hb : 1 < b)
 
 /-- **Hachi's recursive packaging as a `Commitment.Scheme`.** Over the multilinear data
 `CMlPolynomial (Rq 𝓜(q,α)) (r + m)`, with the `r`/`m` split feeding the outer/inner gadgets. It
-commits a polynomial directly: the honest `commit` uses the canonical base-`b` gadget
-decomposition at the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q` ([NOZ26] §2.1/§4.1), shared by
-the message and inner gadgets, so `messageDigits`/`innerDigits` are not free parameters. The only
-parameters are the gadget base `b` and `1 < b`.
+commits a polynomial directly: the honest committer is `commit`, the paper's **balanced** base-`b`
+gadget decomposition at the width `δ = ⌈log_b q⌉ = Nat.clog b q`
+([NOZ26] §2.1/§4.1), shared by the message and inner gadgets, so `messageDigits`/`innerDigits` are
+not free parameters. The only parameters are the gadget base `b` and `1 < b`.
 
 ⚠ Recursion boundary. The `opening` field is the *succinct, recursive* opening of [NOZ26] §4.5,
 which is outside the completed development (`Recursion/`): it is `sorry`, and the declared `pSpec`
 records only the bridge ▷ `QuadEval` prefix rather than a full opening spec. **The complete scheme
-is `hachiNonrecursive` (`Correctness.lean`)**, which packages `commitBalanced` with the composed
-opening and is proved perfectly correct. -/
+is `hachiNonrecursive` (`Correctness.lean`)**, which packages the same `commit` with the
+composed opening and is proved perfectly correct. -/
 def hachi [DecidableEq (ZMod q)] (hb : 1 < b) :
     Commitment.Scheme unifSpec
       (CMlPolynomial (Rq 𝓜(q, α)) (r + m))
@@ -178,16 +154,15 @@ Three separate notions, deliberately not merged:
 
 * **weak-opening validity** — the committer's output is a `WeakBinding.VerifiedOpening`
   (`verifiedOpening_honestOpening`);
-* **balanced-box membership** — its inner decomposition lies in Eq. (20)'s box `S_b`, a fact
-  about *which* digit decomposition the committer was instantiated with
-  (`vecInSb_honestInnerDecomp_balanced`, true for `commitBalanced`, false in general for `commit`);
+* **balanced-box membership** — its inner decomposition lies in Eq. (20)'s box `S_b`, a fact about
+  *which* digit decomposition the committer was instantiated with
+  (`vecInSb_honestInnerDecomp_balanced`);
 * **evaluation consistency** — Eq. (15), a property of the polynomial layer, supplied by the caller.
 
 `mem_relInBox_of_honestBalanced` combines them into `QuadEval`'s box-carrying input relation
 `relInBox`, the input of paper-exact `QuadEval` completeness, and
-`mem_relInBox_of_commitBalanced` restates it at the actual output of `commitBalanced` — so the
-paper-exact link has a real committer to apply to. It does **not** apply to the unsigned `commit`,
-which only supports the ball-relaxed reading.
+`mem_relInBox_of_commit` restates it at the actual output of `commit`, the committer
+`hachi` and `hachiNonrecursive` use, so the paper-exact link applies to the honest scheme itself.
 
 This establishes that input relation only; end-to-end commitment correctness is
 `hachiNonrecursive_perfectCorrectness` (`Correctness.lean`). -/
@@ -267,9 +242,10 @@ The three conjuncts come from the three separate places they belong:
 * `VerifiedOpening` — `verifiedOpening_honestOpening`, with its two norm side conditions discharged
   here for the balanced digits: `ℓ₂²` shortness at `βSq = (2ᵐ·δ)·(deg φ)·⌊b/2⌋²`
   (`gadgetDecompose_vecL2NormSq_le_of_digit_le`) and `ℓ∞` shortness at `γ = ⌊b/2⌋`
-  (`gadgetDecompose_vecLInftyNorm_le_of_digit_le`), both via `balancedZmodDigit_natAbs_le`. Note the
-  balanced digits are short at *half* the unsigned radius, which is why `γ = ⌊b/2⌋` here where
-  `perfectlyCorrect` has `b − 1`.
+  (`gadgetDecompose_vecLInftyNorm_le_of_digit_le`), both via `balancedZmodDigit_natAbs_le` — the
+  same two bounds `InnerOuter.perfectlyCorrect` discharges for the generic inner-outer scheme.
+  Balanced digits are short at radius `⌊b/2⌋`, roughly half the `b − 1` naive unsigned digits
+  would give.
 * Eq. (15) evaluation consistency — the hypothesis `heval`, supplied by the polynomial layer (it is
   `Hachi.splitForm_monomialBasis_eq_eval` at the statement's monomial bases; see
   `QuadEval/Bridge.lean`).
@@ -329,22 +305,22 @@ end HonestBalanced
 
 end FunctionalCommitment
 
-/-! ## The balanced committer and paper-exact `QuadEval` -/
+/-! ## The honest committer's output -/
 
-section CommitBalancedRelInBox
+section CommitOutput
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
 variable {innerRows outerRows dRows m r : Nat} (b : ℕ)
 
 set_option linter.unusedSectionVars false in
-/-- `commitBalanced`'s commitment is the outer commitment of its own decompositions. Holds by
-`rfl`; recorded so the `relInBox` corollary can be stated against the committer's output rather than
-against a re-spelled `commitWithDecomps` term. -/
-theorem commitBalanced_fst (hb : 1 < b)
+/-- `commit`'s commitment is the outer commitment of its own decompositions (by `rfl`), so
+`mem_relInBox_of_commit` can be stated against the committer's output rather than against a
+re-spelled `commitWithDecomps` term. -/
+theorem commit_fst (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
     (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
-    (commitBalanced b hb pp p).1 = commitWithDecomps 𝓜(q, α) pp.toPublicParams
+    (commit b hb pp p).1 = commitWithDecomps 𝓜(q, α) pp.toPublicParams
       (generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
@@ -352,43 +328,41 @@ theorem commitBalanced_fst (hb : 1 < b)
   rfl
 
 set_option linter.unusedSectionVars false in
-/-- `commitBalanced`'s decommitment is its honest decomposition data. Holds by `rfl`. -/
-theorem commitBalanced_snd (hb : 1 < b)
+/-- `commit`'s decommitment is its honest decomposition data. Holds by `rfl`. -/
+theorem commit_snd (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
     (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
-    (commitBalanced b hb pp p).2 = generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
+    (commit b hb pp p).2 = generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
       (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
       (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
       pp.toPublicParams (Hachi.toMatrix p) :=
   rfl
 
--- NB: these three results deliberately take **no** `[DecidableEq (ZMod q)]` binder, so that the
--- canonical `ZMod.decidableEq` is used in `Decomposition.ofDigits`. With a local instance binder
--- the committer's decomposition and the generic lemma's carry *different* `DecidableEq` instances,
--- and unifying them is not just slow but impossible — the symptom is a diverging `whnf`.
+-- NB: the three results in this section take **no** `[DecidableEq (ZMod q)]` binder, so that
+-- `Decomposition.ofDigits` uses the canonical `ZMod.decidableEq`. Under a local instance binder the
+-- committer's decomposition and the generic lemma's carry different `DecidableEq` instances, and
+-- unification diverges in `whnf`.
 set_option linter.unusedSectionVars false in
-/-- **`commitBalanced` establishes paper-exact `QuadEval`'s input relation `relInBox`.**
-`mem_relInBox_of_honestBalanced` at the actual output of the balanced committer: the statement's
-commitment is `(commitBalanced …).1` and the witness is the honest opening over
-`(commitBalanced …).2`, so the paper-exact completeness theorems
-(`quadEvalReduction_perfectCompleteness_balancedDigits` at the full width `τ = δ`, and
-`…_boundedBalancedDigits_paperRelOut` at a `τ` sized from the honest bound on `z`) now have a real
-committer to apply to. Both take `relInBoxMsgShort` — `relInBox` plus the committer's own message
-`ℓ∞` bound `⌊b/2⌋`, which follows from the very same balanced-digit fact used here
-(`balancedZmodDigit_natAbs_le` through `gadgetDecompose_vecLInftyNorm_le_of_digit_le`; see
-`mem_relPolyEvalMsgShort_of_relCommitInput` in `Correctness.lean`).
+/-- **`commit` establishes paper-exact `QuadEval`'s input relation `relInBox`.**
+`mem_relInBox_of_honestBalanced` at the actual output of the committer: the statement's commitment
+is `(commit …).1` and the witness is the honest opening over `(commit …).2`. Paper-exact
+completeness (`quadEvalReduction_perfectCompleteness_boundedBalancedDigits_paperRelOut`) takes
+`relInBoxMsgShort` — `relInBox` plus the committer's own message `ℓ∞` bound `⌊b/2⌋`, which
+follows from the same balanced-digit fact used here (`balancedZmodDigit_natAbs_le` through
+`gadgetDecompose_vecLInftyNorm_le_of_digit_le`; see `mem_relPolyEvalMsgShort_of_relCommitInput` in
+`Correctness.lean`).
 
-The remaining hypothesis `heval` is Eq. (15) evaluation consistency of the committed polynomial
-against the statement's bases — the polynomial layer's obligation, not the committer's. -/
-theorem mem_relInBox_of_commitBalanced {κ : ℕ} (hb : 1 < b)
+The hypothesis `heval` is Eq. (15) evaluation consistency of the committed polynomial against the
+statement's bases — the polynomial layer's obligation, not the committer's. -/
+theorem mem_relInBox_of_commit {κ : ℕ} (hb : 1 < b)
     (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
     (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m))
     (stmt : QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
-    (hu : stmt.u = (commitBalanced b hb pp p).1)
+    (hu : stmt.u = (commit b hb pp p).1)
     (heval : evalConsistency 𝓜(q, α) (b : ZMod q) stmt.avec stmt.bvec stmt.y
       (honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
@@ -405,12 +379,12 @@ theorem mem_relInBox_of_commitBalanced {κ : ℕ} (hb : 1 < b)
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
         pp.toPublicParams (Hachi.toMatrix p)) :=
-    hu.trans (commitBalanced_fst b hb pp p)
+    hu.trans (commit_fst b hb pp p)
   -- `heval` is discharged against the *instantiated* goal: passing it positionally makes the
   -- unifier compare two copies of the `Rq 𝓜(q,α)` instance tower and blow up.
   exact mem_relInBox_of_honestBalanced 𝓜(q, α) hb (Nat.le_pow_clog hb q) (Nat.le_pow_clog hb q)
     hbq hdeg hclog hκ pp (Hachi.toMatrix p) stmt hu' heval
 
-end CommitBalancedRelInBox
+end CommitOutput
 
 end ArkLib.Lattices.Ajtai.InnerOuter

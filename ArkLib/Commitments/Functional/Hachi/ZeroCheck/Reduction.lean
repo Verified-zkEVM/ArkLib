@@ -36,9 +36,10 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   Since `w̃` is committed before `τ` is drawn, the *protocol* is fine: Schwartz–Zippel gives
   knowledge error `≈ (m₀ + m₁) / |F|` for Figure 5 exactly as printed. That argument is
   probabilistic, so it does not fit the coordinate-wise special-soundness framework this chain
-  composes in ([FMN24], `CWSSPackage`), which is why the repair below is stated instead.
+  composes in ([FMN24], `CWSSPackage`), which is why the scalar-round route below is stated
+  instead.
 
-  ## What the repair changes, and what it does not
+  ## What the scalar rounds change, and what they do not
 
   This formalization draws the coordinates of `τ₀` and `τα` as `m₀ + m₁` consecutive scalar
   rounds. Since **no prover message separates them** (`pSpecNestedScalar` has no `P_to_V` round),
@@ -133,7 +134,8 @@ one coordinate and soundness parameter two, hence exactly two pairwise-distinct 
 /-! ### Size of the transcript tree
 
 `CWSSStructure` carries no size bound, so `coordinateWiseSpecialSound` alone cannot tell a usable
-repair from one whose family is exponential in the witness length. The two facts below record the
+construction from one whose family is exponential in the witness length. The two facts below
+record the
 size, with two caveats on what they establish:
 
 * `nestedZeroCheck_numLeaves` counts the leaves of the *adapter's* `NestedEvaluationTree`. The
@@ -602,8 +604,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.1 using 1
       congr 2
-      simp only [Function.comp_apply, ChallengeTree.LeafPath.fullTranscript,
-        nestedTranscriptSuffix_zero]
+      simp only [ChallengeTree.LeafPath.fullTranscript, nestedTranscriptSuffix_zero]
       funext i
       rfl
     have hVanishesα : (∀ path, resp path = resp (nestedLeftPath tree)) →
@@ -618,8 +619,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.2.1 using 1
       congr 2
-      simp only [Function.comp_apply, ChallengeTree.LeafPath.fullTranscript,
-        nestedTranscriptSuffix_zero]
+      simp only [ChallengeTree.LeafPath.fullTranscript, nestedTranscriptSuffix_zero]
       funext i
       rfl
     rcases nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound bDig K φF b stmt tree resp

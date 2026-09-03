@@ -77,10 +77,10 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
   change bound ≤ s.rlin.bound at hBound
   refine ⟨hCom, hShort, ?_, ?_, hBound⟩
   · rw [hZero_eval_eq]
-    rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ w] at hZero
+    rw [sum_sumcheckPolyZero Φ m₀ φF b s.τ₀ w] at hZero
     exact hZero
   · rw [hAlpha_eval_eq]
-    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b hb s.rlin s.α s.τα w hd hμn] at hAlpha
+    rw [sum_sumcheckPolyAlpha Φ m₀ m₁ φF b hb s.rlin s.α s.τα w hd hμn] at hAlpha
     exact add_eq_right.mp hAlpha
 
 /-! ## The honest direction -/
@@ -110,11 +110,11 @@ theorem mem_nestedRoundRel_of_relNestedZeroCheck
   rw [hAlpha_eval_eq] at hAlpha
   refine ⟨hCom, hShort, ?_, ?_, hBound⟩
   · change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b s.τ₀ w) 0 (fun j => j.elim0) = 0
-    rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ w]
+    rw [sum_sumcheckPolyZero Φ m₀ φF b s.τ₀ w]
     exact hZero
   · change hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s.rlin s.α s.τα w) 0
       (fun j => j.elim0) = zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα
-    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b hb s.rlin s.α s.τα w hd hμn, hAlpha, zero_add]
+    rw [sum_sumcheckPolyAlpha Φ m₀ m₁ φF b hb s.rlin s.α s.τα w hd hμn, hAlpha, zero_add]
 
 /-- **The sumcheck bridge as a protocol object**: the zero-round `ReduceClaim` reduction at
 `mapStmt := nestedToRoundStatement`, with the witness passed through. Its verifier is

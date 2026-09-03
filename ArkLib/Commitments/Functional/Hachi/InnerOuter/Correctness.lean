@@ -17,8 +17,8 @@ The honest opening pairs the committer's decompositions with the trivial challen
 under which the weak verifier `verify_weak` (Hachi's relaxed opening check, see
 `InnerOuter.Scheme`) collapses to the ordinary honest check. Correctness therefore splits into
 the structural gadget relations, which follow from lawfulness alone over any field, and the weak
-verifier's shortness side conditions, which the genuine base-`b` digit decomposition of `ZMod q`
-satisfies via the centered norm bounds of `Gadget/Norms`.
+verifier's shortness side conditions, which Hachi's balanced base-`b` digit decomposition of
+`ZMod q` satisfies via the centered norm bounds of `Gadget/Norms`.
 
 ## Main results
 
@@ -32,12 +32,13 @@ Perfect correctness of the bundled `commitmentScheme`, over `R = ZMod q` (where 
 * `perfectlyCorrect_of_lawful`: for any lawful decompositions, assuming the trivial challenge is
   admissible (`0 < ‖1‖₁ ≤ κ`) and the honest decompositions meet the shortness bounds
   (`‖sᵢ‖₂² ≤ βSq`, `‖t̂‖∞ ≤ γ`).
-* `perfectlyCorrect_of_digits`: for genuine base-`b` digit decompositions; lawfulness is
+* `perfectlyCorrect_of_digits`: for an arbitrary `DigitDecomposition`; lawfulness is
   discharged by `gadgetDecompose_lawful`, the shortness bounds remain hypotheses.
-* `perfectlyCorrect`: unconditional, for the concrete decomposition `zmodDigitDecomposition`
-  (the Hachi gadget inverse `G⁻¹`), with `βSq := (mr·md)·(deg φ)·(b-1)²` and `γ := b - 1`
-  discharged by `Gadget/Norms`, under only the digit-reconstruction hypotheses (`1 < b`,
-  `q ≤ b^digits`, `1 ≤ deg φ`), `1 ≤ κ`, and the no-wraparound condition `b - 1 ≤ q/2`.
+* `perfectlyCorrect`: unconditional, for the concrete decomposition
+  `balancedZmodDigitDecomposition` (the Hachi gadget inverse `G⁻¹`, [NOZ26] §2.1), with
+  `βSq := (mr·md)·(deg φ)·⌊b/2⌋²` and `γ := ⌊b/2⌋` discharged by `Gadget/Norms`, under only the
+  digit-reconstruction hypotheses (`1 < b`, `q ≤ b^digits`, `1 ≤ deg φ`), `1 ≤ κ`, and the
+  no-wraparound condition `b ≤ q/2`.
 
 ## References
 
@@ -83,9 +84,10 @@ end ArkLib.Lattices.Ajtai.InnerOuter
 
 /-! ## Concrete instantiation over `ZMod q`
 
-The genuine base-`b` (binary) gadget decomposition `zmodDigitDecomposition` instantiates the
+Hachi's balanced base-`b` gadget decomposition `balancedZmodDigitDecomposition` instantiates the
 inner-outer commitment over `R = ZMod q`, giving perfect correctness whenever `1 < b`, every
-residue fits in the chosen digit count (`q ≤ b ^ digits`), and `1 ≤ deg φ`. -/
+residue fits in the chosen digit count (`q ≤ b ^ digits`), `1 ≤ deg φ`, and the digits do not wrap
+(`b ≤ q/2`). -/
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
@@ -154,7 +156,7 @@ omit [NeZero q] in
 weak-verifier shortness side conditions. Instantiates `perfectlyCorrect_of_lawful` with
 `gadgetDecompose` (lawful by `gadgetDecompose_lawful`), discharging gadget lawfulness; the
 trivial-challenge admissibility (`hκpos`, `hκle`) and the honest shortness bounds (`hβ`, `hγ`)
-remain explicit. For the concrete binary decomposition they are discharged unconditionally by
+remain explicit. For the concrete balanced decomposition they are discharged unconditionally by
 `perfectlyCorrect` below (via `Rq.l1Norm_one` and the `Gadget/Norms` bounds). -/
 theorem perfectlyCorrect_of_digits (base : ZMod q) (βSq γ κ : Nat)
     (hdeg : 1 ≤ Φ.φ.natDegree) (hmsg : 0 < messageDigits) (hinner : 0 < innerDigits)
@@ -176,31 +178,34 @@ theorem perfectlyCorrect_of_digits (base : ZMod q) (βSq γ κ : Nat)
     (gadgetDecompose_lawful Φ hinner hdeg ddInner)
     hκpos hκle hβ hγ
 
-/-- **Unconditional perfect correctness with the concrete binary decomposition.** Both message
-and inner decompositions are the genuine base-`b` digit decomposition of `ZMod q`
-(`zmodDigitDecomposition`, the Hachi gadget inverse `G⁻¹`). All weak-verifier side conditions are
-discharged automatically: the trivial challenge `cᵢ = 1` is short (`Rq.l1Norm_one`), and the
-digit decompositions are short (`Gadget/Norms`), with `βSq := (mr·md)·(deg φ)·(b-1)²` and
-`γ := b - 1`. The hypotheses are exactly those for reconstruction (`1 < b`, `q ≤ bᵈⁱᵍⁱᵗˢ`,
-`1 ≤ deg φ`, positive digit counts), plus `1 ≤ κ` and the no-wraparound condition `b - 1 ≤ q/2`
-for the centered digit norm. -/
-theorem perfectlyCorrect (b κ : ℕ) (hb : 1 < b) (hκ : 1 ≤ κ) (hbq : b - 1 ≤ q / 2)
+/-- **Unconditional perfect correctness with Hachi's balanced decomposition.** Both message and
+inner decompositions are the balanced base-`b` digit decomposition of `ZMod q`
+(`balancedZmodDigitDecomposition`, the Hachi gadget inverse `G⁻¹` of [NOZ26] §2.1, whose digits lie
+in the box `S_b`). All weak-verifier side conditions are discharged automatically: the trivial
+challenge `cᵢ = 1` is short (`Rq.l1Norm_one`), and the digit decompositions are short
+(`Gadget/Norms`, through `balancedZmodDigit_natAbs_le`), with `βSq := (mr·md)·(deg φ)·⌊b/2⌋²` and
+`γ := ⌊b/2⌋`. The hypotheses are exactly those for reconstruction (`1 < b`, `q ≤ bᵈⁱᵍⁱᵗˢ`,
+`1 ≤ deg φ`, positive digit counts), plus `1 ≤ κ` and the no-wraparound condition `b ≤ q/2` for
+the centered digit range. -/
+theorem perfectlyCorrect (b κ : ℕ) (hb : 1 < b) (hκ : 1 ≤ κ) (hbq : b ≤ q / 2)
     (hdeg : 1 ≤ Φ.φ.natDegree) (hmsg : 0 < messageDigits) (hinner : 0 < innerDigits)
     (hqm : q ≤ b ^ messageDigits) (hqi : q ≤ b ^ innerDigits) :
     (commitmentScheme Φ (messageRows := messageRows) (innerRows := innerRows)
         (outerRows := outerRows) (blocks := blocks) (b : ZMod q)
-        (messageRows * messageDigits * (Φ.φ.natDegree * (b - 1) ^ 2))
-        (b - 1) κ
-        (Decomposition.ofDigits Φ (zmodDigitDecomposition b messageDigits hb hqm)
-          (zmodDigitDecomposition b innerDigits hb hqi))).PerfectlyCorrect := by
+        (messageRows * messageDigits * (Φ.φ.natDegree * (b / 2) ^ 2))
+        (b / 2) κ
+        (Decomposition.ofDigits Φ (balancedZmodDigitDecomposition b messageDigits hb hqm)
+          (balancedZmodDigitDecomposition b innerDigits hb hqi))).PerfectlyCorrect := by
   refine perfectlyCorrect_of_digits Φ (b : ZMod q) _ _ κ hdeg hmsg hinner _ _ ?_ ?_ ?_ ?_
   · rw [Rq.l1Norm_one Φ hdeg]; norm_num
   · rw [Rq.l1Norm_one Φ hdeg]; exact hκ
   · intro pp m i
-    exact gadgetDecompose_zmod_vecL2NormSq_le Φ hb hqm hbq (m i)
+    exact gadgetDecompose_vecL2NormSq_le_of_digit_le Φ _
+      (fun c e => balancedZmodDigit_natAbs_le hb hqm hbq c e) (m i)
   · intro pp m
-    exact vecLInftyNorm_flattenBlocks_le Φ _
-      (fun i => gadgetDecompose_zmod_vecLInftyNorm_le Φ hb hqi hbq _)
+    exact vecLInftyNorm_flattenBlocks_le Φ _ (fun i =>
+      gadgetDecompose_vecLInftyNorm_le_of_digit_le Φ _
+        (fun c e => balancedZmodDigit_natAbs_le hb hqi hbq c e) _)
 
 /-! ## The honest opening as a weak opening
 

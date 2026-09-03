@@ -24,7 +24,9 @@ of each coefficient is placed in the `bᵉ`-slot of its block. Trading one ring 
 `digits` elements with small digit coefficients is what keeps honest Ajtai openings short
 (the norm bounds live in `Gadget.Norms`). The decomposition is captured abstractly by
 `DigitDecomposition` (a per-coefficient digit map satisfying the base-`b` reconstruction law)
-and realized concretely over `ZMod q` by `zmodDigitDecomposition`.
+and realized concretely over `ZMod q` by `balancedZmodDigitDecomposition` — the paper's balanced
+digits `⌈-b/2⌉ ≤ dᵢ ≤ ⌈b/2⌉ - 1`, built by shifting the unsigned digits of
+`zmodDigitDecomposition`.
 
 ## Main definitions
 
@@ -32,8 +34,12 @@ and realized concretely over `ZMod q` by `zmodDigitDecomposition`.
 * `IsLawfulGadgetDecomposition`: a decomposition is lawful when `G · G⁻¹(x) = x` for all `x`.
 * `DigitDecomposition`: abstract base-`b` digit map on the coefficient ring, with the
   reconstruction law `∑ₑ bᵉ · digit c e = c`.
-* `zmodDigitDecomposition`: the concrete digits of the canonical representative over `ZMod q`,
-  valid when `1 < b` and `q ≤ b ^ digits`.
+* `zmodDigitDecomposition`: the unsigned digits `[0, b − 1]` of the canonical representative over
+  `ZMod q`, valid when `1 < b` and `q ≤ b ^ digits`. It is the building block the balanced digits
+  are shifted from, not itself a Hachi gadget inverse.
+* `balancedZmodDigitDecomposition`: **the Hachi gadget inverse `G⁻¹`** — the unsigned digits of the
+  shifted coefficient `c + ⌊b/2⌋·(1 + b + ⋯)`, each less `⌊b/2⌋`, so every digit lies in the paper's
+  box `S_b = [⌈-b/2⌉, ⌈b/2⌉ - 1]`.
 * `BoundedDigitDecomposition`: the **short-input** counterpart — a total, executable digit map
   whose reconstruction law is guaranteed only for coefficients whose centered representative is
   within `bound`. This is what Hachi's folded witness `z = Σᵢ cᵢ sᵢ` needs: `z` is
@@ -121,10 +127,15 @@ section ZModDigit
 
 variable {q : ℕ} [NeZero q]
 
-/-- The genuine base-`b` (binary, for `b = 2`) digit decomposition over `ZMod q`: digit `e`
-of a coefficient `c` is the `e`-th base-`b` digit of its canonical representative `c.val`.
-Reconstruction holds whenever `1 < b` and `q ≤ b ^ digits` (so every residue fits in
-`digits` base-`b` digits). This is the coefficient-level Hachi `G⁻¹`. -/
+/-- The naive **unsigned** base-`b` digit decomposition over `ZMod q`: digit `e` of a coefficient
+`c` is the `e`-th base-`b` digit of its canonical representative `c.val`, in `[0, b − 1]`.
+Reconstruction holds whenever `1 < b` and `q ≤ b ^ digits` (so every residue fits in `digits`
+base-`b` digits).
+
+Not itself a Hachi gadget inverse: [NOZ26] §2.1 writes digits in the balanced range
+`⌈-b/2⌉ ≤ dᵢ ≤ ⌈b/2⌉ - 1`, which unsigned digits violate (at `b = 16`, `[0, 15]` against `[-8, 7]`).
+The Hachi `G⁻¹` is `balancedZmodDigitDecomposition`, which shifts the input and re-centers each
+digit of this one. -/
 def zmodDigitDecomposition (b digits : ℕ) (hb : 1 < b) (hq : q ≤ b ^ digits) :
     DigitDecomposition (R := ZMod q) (b : ZMod q) digits where
   digit c e := ((Nat.digits b c.val).getD (e : ℕ) 0 : ZMod q)
@@ -207,20 +218,6 @@ structure BoundedDigitDecomposition (base : ZMod q) (digits bound : ℕ) where
   /-- The digits reconstruct every **short** coefficient. -/
   reconstruct_of_bound : ∀ x : ZMod q, x.valMinAbs.natAbs ≤ bound →
     ∑ e : Fin digits, base ^ (e : ℕ) * digit x e = x
-
-/-- **Compatibility wrapper**: a full-width `DigitDecomposition` is a bounded one at *every*
-bound, its reconstruction law being unconditional. This recovers the old `τ := δ` full-width
-instantiations inside the bounded API. -/
-def DigitDecomposition.toBounded {base : ZMod q} {digits : ℕ}
-    (dd : DigitDecomposition base digits) (bound : ℕ) :
-    BoundedDigitDecomposition base digits bound where
-  digit := dd.digit
-  reconstruct_of_bound x _ := dd.reconstruct x
-
-omit [NeZero q] in
-@[simp] theorem DigitDecomposition.toBounded_digit {base : ZMod q} {digits : ℕ}
-    (dd : DigitDecomposition base digits) (bound : ℕ) :
-    (dd.toBounded bound).digit = dd.digit := rfl
 
 /-! ### The concrete bounded balanced base-`b` decomposition
 
@@ -522,18 +519,6 @@ def gadgetDecompose {rows digits : Nat} (dd : DigitDecomposition base digits)
     (x : PolyVec (Rq Φ) rows) : PolyVec (Rq Φ) (rows * digits) :=
   gadgetDecomposeFun Φ dd.digit x
 
-/-- `gadgetDecompose` is `gadgetDecomposeFun` at the decomposition's digit map. -/
-theorem gadgetDecompose_eq_fun {rows digits : Nat} (dd : DigitDecomposition base digits)
-    (x : PolyVec (Rq Φ) rows) :
-    gadgetDecompose Φ dd x = gadgetDecomposeFun Φ dd.digit x := rfl
-
-/-- Value of `gadgetDecompose` at the flattened index `finProdFinEquiv (i, e)`. -/
-theorem gadgetDecompose_apply {rows digits : Nat} (dd : DigitDecomposition base digits)
-    (x : PolyVec (Rq Φ) rows) (i : Fin rows) (e : Fin digits) :
-    gadgetDecompose Φ dd x (finProdFinEquiv (i, e))
-      = Rq.ofFinCoeff Φ Φ.φ.natDegree (fun k => dd.digit ((x i).1.coeff k) e) :=
-  gadgetDecomposeFun_apply Φ dd.digit x i e
-
 /-- The base-`b` gadget decomposition is a lawful gadget decomposition. -/
 theorem gadgetDecompose_lawful {rows digits : Nat} (hd : 0 < digits) (h1 : 1 ≤ Φ.φ.natDegree)
     (dd : DigitDecomposition base digits) :
@@ -560,21 +545,6 @@ def BoundedDigitDecomposition.gadgetDecompose
     (bdd : BoundedDigitDecomposition base digits bound) {rows : Nat}
     (x : PolyVec (Rq Φ) rows) : PolyVec (Rq Φ) (rows * digits) :=
   gadgetDecomposeFun Φ bdd.digit x
-
-omit [NeZero q] in
-/-- The bounded gadget inverse is `gadgetDecomposeFun` at the bounded decomposition's digit map. -/
-theorem BoundedDigitDecomposition.gadgetDecompose_eq_fun
-    (bdd : BoundedDigitDecomposition base digits bound) {rows : Nat}
-    (x : PolyVec (Rq Φ) rows) :
-    bdd.gadgetDecompose Φ x = gadgetDecomposeFun Φ bdd.digit x := rfl
-
-omit [NeZero q] in
-/-- **The bounded gadget inverse is a `DigitDecomposition`-free compatibility point**: the wrapper
-`DigitDecomposition.toBounded` decomposes exactly as the original did. -/
-@[simp] theorem DigitDecomposition.toBounded_gadgetDecompose
-    (dd : DigitDecomposition base digits) (bound : ℕ) {rows : Nat}
-    (x : PolyVec (Rq Φ) rows) :
-    (dd.toBounded bound).gadgetDecompose Φ x = gadgetDecompose Φ dd x := rfl
 
 omit [NeZero q] in
 /-- **The conditional gadget round-trip** `G · G⁻¹(x) = x` for the bounded decomposition, from the

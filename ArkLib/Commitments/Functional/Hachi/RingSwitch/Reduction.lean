@@ -167,7 +167,7 @@ every link that consumes the digit encoding needs exactly this triple:
 * `radius_le` — the digit radius `⌊bDig/2⌋` fits inside the declared bound.
 
 Under them the quotient half of `liftShort` costs nothing at all
-(`rhoDigitsShort_of_digitBaseOk`), for an arbitrary quotient. That is the parameter repair stated
+(`rhoDigitsShort_of_digitBaseOk`), for an arbitrary quotient. That is the parameter choice stated
 as a hypothesis class: with the raw quotient the corresponding condition was
 `q/2 ≤ bound` (`rhoShort_half`), which is what pinned `γ = q/2 = bZero − 1`. -/
 structure DigitBaseOk (q bound bDig : ℕ) : Prop where
@@ -184,7 +184,7 @@ shortness hypothesis, no assumption that the commitment key is short — the bal
 digits are `⌊b/2⌋`-bounded, so `RhoDigitsShort` holds at every `bound ≥ ⌊b/2⌋`.
 
 This is the exact counterpart of `rhoShort_half` (`QuotientNorms.lean`), and the contrast is the
-parameter repair in one line: the raw quotient could only be bounded by `q/2`, its digits are
+parameter choice in one line: the raw quotient could only be bounded by `q/2`, its digits are
 bounded by `⌊b/2⌋ = O(b)`. -/
 theorem rhoDigitsShort_of_half_le {bound bDig : ℕ} (hb : 1 < bDig) (hbq : bDig ≤ q / 2)
     (hbound : bDig / 2 ≤ bound) (ρ : Fin n → CPolynomial (ZMod q)) :

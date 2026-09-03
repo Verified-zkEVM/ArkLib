@@ -145,8 +145,8 @@ def ofPinnedDigitBase (b : ℕ) (hb : 1 < b) (hbq : b ≤ q / 2) : HonestRangePa
 
 variable (P : HonestRangeParams q)
 
-/-- **Where the parameters pin, after the repair.** Adding the batching bridge's *pull-back*
-orientation `bZero − 1 ≤ γ` — the one `HonestRangeParams` deliberately omits, because honest
+/-- **Where the parameters pin, with the digit-committed quotient.** Adding the batching bridge's
+*pull-back* orientation `bZero − 1 ≤ γ` — the one `HonestRangeParams` omits, because honest
 completeness does not need it — forces `γ = bZero − 1`, and that value is **strictly below** `q/2`.
 
 Both `γ` and the range box `[−(bZero−1), bZero−1]` are therefore real constraints, and at
@@ -358,25 +358,25 @@ theorem completePrefixReduction_perfectCompleteness
     Φ P init impl K φF hd
   have hZero := nestedZeroCheckReduction_perfectCompleteness
     Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
-  letI sampleEmptyNested : ∀ i, SampleableType
+  let sampleEmptyNested : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
       (h₂ := instSampleableTypeChallengePSpecNestedZeroCheck)
-  letI sampleScalarTail : ∀ i, SampleableType
+  let sampleScalarTail : ∀ i, SampleableType
       ((pSpecScalar K.TCom F ++ₚ
         ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁)).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := CoordinateWise.ScalarRound.instSampleableTypeChallengePSpecScalar)
       (h₂ := sampleEmptyNested)
-  letI sampleEmptyScalarTail : ∀ i, SampleableType
+  let sampleEmptyScalarTail : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ
         (pSpecScalar K.TCom F ++ₚ
           ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁))).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
       (h₂ := sampleScalarTail)
-  letI sampleQuadTail : ∀ i, SampleableType
+  let sampleQuadTail : ∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
           (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
         ((!p[] : ProtocolSpec 0) ++ₚ

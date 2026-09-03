@@ -1101,6 +1101,7 @@ theorem hypercubeSum_zero (H : CMvPolynomial m₀ F) :
       ∑ x : Fin m₀ → Fin 2, H.eval ((x : Fin m₀ → F)) := rfl
 
 omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- The full-cube sum of the range summand `F_{0,τ₀}` equals `H₀(τ₀)`.
 
 ### Deliberate divergence: no `1_{≤μ}` indicator
@@ -1140,14 +1141,6 @@ theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ 
   refine Finset.sum_congr rfl fun x _ => ?_
   rw [sumcheckPolyZero, CPoly.eval_mul, cEqualityPolynomial_eval_boolean, cRangeProduct_eval,
     cMultilinearExtension_eval_boolean, mul_comm]
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- Alias of `sum_sumcheckPolyZero` retained for the sumcheck bridge. -/
-theorem sum_sumcheckPolyZero' (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
-    (w : LiftedWitness Φ μ n) :
-    hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
-      MvPolynomial.eval τ₀ (hZeroML Φ m₀ φF b w).val :=
-  sum_sumcheckPolyZero Φ m₀ φF b τ₀ w
 
 /-! ### The `α`-summand's table contraction
 
@@ -1309,6 +1302,7 @@ theorem sum_cube_rowIndexed (τ₁ : Fin m₁ → F) (f : Fin n → F) :
   rw [dif_pos hk, dif_pos k.isLt, mul_comm]
 
 omit [NeZero q] in
+omit [NeZero q] in
 /-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
 
 The two hypotheses are the ones that make the table encoding faithful, and both are already
@@ -1371,17 +1365,6 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s :
     rw [alphaDefect, rhoDigits_evalAt Φ φF α hb hd (w.ρ i) (w.hρ i)] at hdef
     linear_combination hdef
   · rw [dif_neg hi, dif_neg hi, dif_neg hi, add_zero]
-
-omit [NeZero q] in
-/-- Alias of `sum_sumcheckPolyAlpha` retained for the sumcheck bridge. -/
-theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
-    (s : RlinStatement Φ n μ) (α : F)
-    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
-    hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
-      MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
-        zcTargetAlpha Φ m₁ φF s α τ₁ :=
-  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b hb s α τ₁ w hd hμn
 
 /-! ### Evaluation at a point: the final-evaluation factorizations
 

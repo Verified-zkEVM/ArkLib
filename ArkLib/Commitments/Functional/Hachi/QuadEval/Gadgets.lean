@@ -164,13 +164,6 @@ def zDecompBounded {n zDigits zBound : Nat} {base : ZMod q}
   bddZ.gadgetDecompose Φ z
 
 omit [NeZero q] in
-/-- `zDecompBounded` at the compatibility wrapper `DigitDecomposition.toBounded` is the ordinary
-full-width `zDecomp` — the `τ := δ` path, unchanged. -/
-@[simp] theorem zDecompBounded_toBounded {n zDigits : Nat} {base : ZMod q}
-    (ddZ : DigitDecomposition base zDigits) (zBound : ℕ) (z : PolyVec (Rq Φ) n) :
-    zDecompBounded Φ (ddZ.toBounded zBound) z = zDecomp Φ ddZ z := rfl
-
-omit [NeZero q] in
 /-- **Conditional roundtrip `z = J *ᵥ ẑ` for the bounded decomposition**: the verifier's Eq. (20)
 reconstruction of `z` from `ẑ`, valid exactly when `z` is within the decomposition's bound. At the
 `ℓ = 30` parameters with ArkLib's conservative `τ = 5` (`Params.lean`) this is what makes that

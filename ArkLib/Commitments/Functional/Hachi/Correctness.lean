@@ -24,8 +24,8 @@ lemma `endPieceCheck_eq_true_iff`. This is a genuine terminal verifier — it ca
 composition is a complete executable commitment opening, at the cost of a witness-sized final
 message.
 
-Composed completeness statements go through the generic `Reduction.append_completeness`, which
-this repository still admits; each link's own completeness is axiom-clean.
+Composed completeness statements go through the generic `Reduction.append_completeness`, which this
+repository admits; each link's own completeness is axiom-clean.
 
 ## Main definitions
 
@@ -38,8 +38,8 @@ this repository still admits; each link's own completeness is axiom-clean.
   `terminalVerifier_verify_eq_endPieceCheck` keeps the two directions of the closing link on one
   decision procedure.
 * `relCommitInput` / `commitInputReduction` / `…_perfectCompleteness`: the zero-round head that
-  converts the commitment API's claim (an honest **balanced** commitment plus a truthful
-  evaluation claim) into `relPolyEvalMsgShort`, with the relation step
+  converts the commitment API's claim (an honest commitment plus a truthful evaluation claim) into
+  `relPolyEvalMsgShort`, with the relation step
   `mem_relPolyEvalMsgShort_of_relCommitInput` (and `mem_relPolyEval_of_relCommitInput` as its
   forgetful corollary). The `MsgShort` conjunct is the `ℓ∞` bound `⌊b/2⌋` on the balanced
   committer's message decomposition — the only extra invariant the honest-`z` shortness bound
@@ -49,13 +49,12 @@ this repository still admits; each link's own completeness is axiom-clean.
   chain through the sumcheck (`completeThroughSumcheckReduction`) closed by the terminal base
   case, with the input adapter in front — the complete opening protocol, from `relCommitInput` to
   `acceptRejectRel`.
-* `hachiNonrecursive`: Hachi as a `Commitment.Scheme` with that opening and the balanced committer
-  `commitBalanced`. Its `τ` (folded-witness digit count) and `zBound` are **independent
-  parameters**: the message and inner digit counts stay `δ = ⌈log_b q⌉`, while `τ` is constrained
-  only by `hcap : zBound ≤ balancedDigitCapacity P.b τ` and `hzb : 2ʳ·ω·⌊b/2⌋ ≤ zBound`. At the
-  `ℓ = 30` parameters with ArkLib's conservative `τ = 5` (`Params.lean`) that is `τ = 5 < δ = 8`,
-  and `q ≤ 16⁵` is nowhere assumed — it is false. Setting `τ := δ` recovers the old full-width
-  behaviour as an instance.
+* `hachiNonrecursive`: Hachi as a `Commitment.Scheme` with that opening and the honest committer
+  `commit`. Its `τ` (folded-witness digit count) and `zBound` are **independent parameters**: the
+  message and inner digit counts stay `δ = ⌈log_b q⌉`, while `τ` is constrained only by
+  `hcap : zBound ≤ balancedDigitCapacity P.b τ` and `hzb : 2ʳ·ω·⌊b/2⌋ ≤ zBound`. At the `ℓ = 30`
+  parameters with ArkLib's conservative `τ = 5` (`Params.lean`) that is `τ = 5 < δ = 8`, and
+  `q ≤ 16⁵` is nowhere assumed — it is false.
 * `hachiNonrecursive_perfectCorrectness`: `Commitment.perfectCorrectness` for it, through the
   generic bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
   (`Commitments/Functional/Basic.lean`). `Concrete.lean` instantiates all of this at the Ajtai
@@ -355,15 +354,14 @@ def commitInputWitMap (w : CommitInputWitness b q α innerRows m r) :
   toDecomp := w.2
   challenge := fun _ => 1
 
-/-- **The honest commitment-input relation**: the commitment and decommitment are the balanced
+/-- **The honest commitment-input relation**: the commitment and decommitment are the honest
 committer's output on the data, and the claimed response is the data's actual evaluation at the
-query. This is the commitment API's opening relation, specialized to the (deterministic) honest
-`commitBalanced`. -/
+query — the commitment API's opening relation, specialized to the deterministic `commit`. -/
 def relCommitInput (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows) :
     Set (CommitInputStatement q α outerRows m r × CommitInputWitness b q α innerRows m r) :=
-  {p | (p.1.1, p.2.2) = commitBalanced b hb pp p.2.1 ∧
+  {p | (p.1.1, p.2.2) = commit b hb pp p.2.1 ∧
     CMlPolynomial.eval p.2.1 p.1.2.1 = p.1.2.2}
 
 set_option linter.unusedSectionVars false in
@@ -371,8 +369,8 @@ set_option linter.unusedSectionVars false in
 of the input adapter, and the only direction correctness needs.
 
 Three conjuncts. The `VerifiedOpening` one is `verifiedOpening_honestOpening` with the two norm
-side conditions discharged for the balanced digits (short at *half* the unsigned radius, hence the
-`⌊b/2⌋`-shaped honest bounds, relaxed into the target parameters by `hβSq`/`hγ`). The **message
+side conditions discharged for the balanced digits (short at radius `⌊b/2⌋`, relaxed into the
+target parameters by `hβSq`/`hγ`). The **message
 `ℓ∞` bound** `⌊b/2⌋` is the same balanced-digit fact read through
 `gadgetDecompose_vecLInftyNorm_le_of_digit_le`; it is what the honest-`z` shortness bound
 downstream consumes, and hence what lets the folded-witness digit count `τ` be sized from
@@ -398,10 +396,10 @@ theorem mem_relPolyEvalMsgShort_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b
   have hu : s.1 = commitWithDecomps 𝓜(q, α) pp.toPublicParams
       (generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
         pp.toPublicParams (Hachi.toMatrix w.1)) :=
-    (congrArg Prod.fst hcm).trans (commitBalanced_fst b hb pp w.1)
+    (congrArg Prod.fst hcm).trans (commit_fst b hb pp w.1)
   have hdc : w.2 = generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α) dd dd)
       pp.toPublicParams (Hachi.toMatrix w.1) :=
-    (congrArg Prod.snd hcm).trans (commitBalanced_snd b hb pp w.1)
+    (congrArg Prod.snd hcm).trans (commit_snd b hb pp w.1)
   -- The adapter's witness is the honest opening.
   have hwit : commitInputWitMap b w = honestOpening 𝓜(q, α)
       (Decomposition.ofDigits 𝓜(q, α) dd dd) pp.toPublicParams (Hachi.toMatrix w.1) := by
@@ -509,11 +507,10 @@ end InputAdapter
 
 /-! ## The nonrecursive Hachi scheme
 
-`hachiNonrecursive` packages the balanced committer with the complete opening protocol —
-input adapter ▷ chain through the sumcheck ▷ terminal reveal-and-check — as a
-`Commitment.Scheme`. The committer is `commitBalanced` because the honest chain's input relation
-is established for balanced digits (`mem_relPolyEval_of_relCommitInput`); the unsigned `commit`
-supports only the ball-relaxed `QuadEval` reading (see `Commitment.lean`). -/
+`hachiNonrecursive` packages the honest committer `commit` with the complete opening protocol —
+input adapter ▷ chain through the sumcheck ▷ terminal reveal-and-check — as a `Commitment.Scheme`.
+The honest chain's input relation is established for that committer by
+`mem_relPolyEval_of_relCommitInput`. -/
 
 section Scheme
 
@@ -601,7 +598,7 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
       hclog hτ hd hbZero K φF hμn hZeroγ)
 
 /-- **Hachi, nonrecursive, as a functional commitment** (`Commitment.Scheme`): the multilinear
-evaluation oracle, honest key generation, the **balanced** committer `commitBalanced`, and the
+evaluation oracle, honest key generation, the honest committer `commit`, and the
 full composed opening `hachiNonrecursiveOpening` — input adapter, bridge, `QuadEval`, `R^lin`
 adapter, lift, batching, nested zero-check, sumcheck, and the terminal reveal-and-check. Perfect
 correctness is `hachiNonrecursive_perfectCorrectness`.
@@ -630,7 +627,7 @@ def hachiNonrecursive (P : HonestRangeParams q)
           (dRows := dRows) (zDigits := τ) (m := m) (r := r) (M := M) (m₁ := m₁) (ω := ω)
           𝓜(q, α) K.TCom P.bZero) where
   keygen := keygen P.b
-  commit := fun pp p => pure (commitBalanced P.b P.hb pp p)
+  commit := fun pp p => pure (commit P.b P.hb pp p)
   opening := fun keys =>
     hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁) P keys.1 hcap K hd hbZero φF
 

@@ -36,9 +36,7 @@ import VCVio.OracleComp.QueryTracking.ProgrammingOracle
   and an `ℓ∞` bound on the committer's message decomposition. The latter is not a consequence of
   `relIn`, so it is carried by the correctness-only strengthenings `relInMsgShort` /
   `relInBoxMsgShort`, with forgetful inclusions back into `relIn` / `relInBox` — the soundness-side
-  relations are untouched. The full-width `τ := δ` behaviour survives as the compatibility wrappers
-  `…_zmodDigits` / `…_balancedDigits`, routed through `DigitDecomposition.toBounded`; those are the
-  only theorems here that carry `q ≤ b ^ zDigits`.
+  relations are untouched. No theorem here carries `q ≤ b ^ zDigits`.
 
   Everything rests on four pieces: `honestRows_of_relIn` (Eq. (20) rows c1–c5, shared by both
   readings and valid at *every* challenge, which is why the error is `0`), the honest-`z` bound
@@ -536,41 +534,6 @@ theorem quadEvalReduction_perfectCompleteness_boundedBalancedDigits
     (fun x e => le_trans (boundedBalancedZmodDigit_natAbs_le hb hbq x e) (Nat.div_le_self b 2))
 
 set_option linter.unusedSectionVars false in
-/-- **Ball-relaxed completeness at the concrete *unsigned* base-`b` digit decomposition, full
-width on both sides** — the compatibility wrapper for the old `τ := δ` choice.
-`quadEvalReduction_perfectCompleteness` instantiated with `zmodDigitDecomposition` at both gadget
-steps (the `z` side through `DigitDecomposition.toBounded`, whose reconstruction law is
-unconditional), whose digits are the unsigned digits `0, …, b − 1`, centered-bounded by `b - 1 ≤ b`
-(`zmodDigit_natAbs_le`).
-
-Retained because it is the reading that needs *no* honest-`z` bound at all; it is not what the
-concrete profile uses (see `…_boundedBalancedDigits`), and it does carry the
-`hqz : q ≤ b ^ zDigits` hypothesis that the `τ = 5` path must not have.
-
-**Exact boundary.** The output relation is `relOut` at `γ := b`, i.e. the symmetric ball of radius
-`b` — *not* Eq. (20)'s box `S_b`, which unsigned digits generally violate (a digit `b − 1` exceeds
-the box's upper end `⌈b/2⌉ − 1` as soon as `b ≥ 3`). -/
-theorem quadEvalReduction_perfectCompleteness_zmodDigits
-    [∀ i, SampleableType ((qePSpec Φ dRows ω r).Challenge i)]
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
-      dRows)
-    (hmul : Rq.HasMulLInftyBound Φ)
-    {b : ℕ} (hb : 1 < b) (hqm : q ≤ b ^ messageDigits) (hqz : q ≤ b ^ zDigits)
-    (hbq : b - 1 ≤ q / 2)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
-    {βSq κ msgBound : ℕ} (hzb : 2 ^ r * ω * msgBound ≤ zBound) :
-    (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
-        (zmodDigitDecomposition b messageDigits hb hqm)
-        ((zmodDigitDecomposition b zDigits hb hqz).toBounded
-          zBound)).perfectCompleteness init impl
-      (relInMsgShort Φ pp (b : ZMod q) βSq b κ msgBound)
-      (relOut (zDigits := zDigits) Φ pp (b : ZMod q) ω b) :=
-  quadEvalReduction_perfectCompleteness Φ init impl pp _ _ hmul hmd hτ hdeg hzb
-    (fun x e => le_trans (zmodDigit_natAbs_le hb hqm hbq x e) (Nat.sub_le b 1))
-    (fun x e => le_trans (zmodDigit_natAbs_le hb hqz hbq x e) (Nat.sub_le b 1))
-
-set_option linter.unusedSectionVars false in
 /-- **Paper-exact perfect completeness of Figure 3** (Hachi Eq. (20) verbatim, box `S_b` and all):
 the honest prover of Figure 3 is accepted with probability one and its response lies in
 `paperRelOut`, the relation the paper's verifier actually checks.
@@ -636,30 +599,5 @@ theorem quadEvalReduction_perfectCompleteness_boundedBalancedDigits_paperRelOut
   quadEvalReduction_perfectCompleteness_paperRelOut Φ init impl pp _ _ hmul hmd hτ hdeg hzb
     (fun x e => balancedZmodDigit_valMinAbs_mem hb hqm hbq x e)
     (fun x e => boundedBalancedZmodDigit_valMinAbs_mem hb hbq x e)
-
-set_option linter.unusedSectionVars false in
-/-- **Paper-exact perfect completeness at the balanced base-`b` digit decomposition, full width on
-both sides** — the compatibility wrapper for the old `τ := δ` choice, with the `z` side routed
-through `DigitDecomposition.toBounded`. Carries `hqz : q ≤ b ^ zDigits`, which the `τ = 5` path
-(`…_boundedBalancedDigits_paperRelOut`) does not. -/
-theorem quadEvalReduction_perfectCompleteness_balancedDigits
-    [∀ i, SampleableType ((qePSpec Φ dRows ω r).Challenge i)]
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
-      dRows)
-    (hmul : Rq.HasMulLInftyBound Φ)
-    {b : ℕ} (hb : 1 < b) (hqm : q ≤ b ^ messageDigits) (hqz : q ≤ b ^ zDigits)
-    (hbq : b ≤ q / 2)
-    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hdeg : 1 ≤ Φ.φ.natDegree)
-    {βSq γ κ msgBound : ℕ} (hzb : 2 ^ r * ω * msgBound ≤ zBound) :
-    (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
-        (balancedZmodDigitDecomposition b messageDigits hb hqm)
-        ((balancedZmodDigitDecomposition b zDigits hb hqz).toBounded
-          zBound)).perfectCompleteness init impl
-      (relInBoxMsgShort Φ pp (b : ZMod q) βSq γ κ b msgBound)
-      (paperRelOut (zDigits := zDigits) Φ pp (b : ZMod q) ω b) :=
-  quadEvalReduction_perfectCompleteness_paperRelOut Φ init impl pp _ _ hmul hmd hτ hdeg hzb
-    (fun x e => balancedZmodDigit_valMinAbs_mem hb hqm hbq x e)
-    (fun x e => balancedZmodDigit_valMinAbs_mem hb hqz hbq x e)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

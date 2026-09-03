@@ -34,8 +34,8 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   `honestComputeResp`) bundled with the verifier as the computable protocol object
   `quadEvalReduction`. The `ẑ = J⁻¹(z)` step takes a **`BoundedDigitDecomposition`**: the
   folded witness is deterministically short, so its digit count `τ` is set by that bound and not
-  by `q` (`DigitDecomposition.toBounded` recovers the old full-width `τ := δ`). The
-  correctness-only strengthening `relInMsgShort` (`relIn` plus `‖sᵢ‖∞ ≤ msgBound`) carries the one
+  by `q`. The correctness-only strengthening `relInMsgShort` (`relIn` plus `‖sᵢ‖∞ ≤ msgBound`)
+  carries the one
   extra invariant that bound needs, with `relInMsgShort_subset_relIn` keeping the soundness-side
   relation untouched.
 * `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extraction
@@ -47,12 +47,11 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
 * `QuadEval/Completeness.lean` — the honest direction, in **two readings** that must not be
   conflated (both at error `0`; the file's docstring is the reference):
   - *ball-relaxed*, into ArkLib's `relOut`: `quadEvalReduction_perfectCompleteness`, concretely
-    `…_boundedBalancedDigits` at `τ` chosen from the honest bound (and `…_zmodDigits` as the
-    full-width `τ := δ` compatibility wrapper, at the unsigned base-`b` digits);
+    `…_boundedBalancedDigits` at `τ` chosen from the honest bound;
   - *paper-exact*, into `paperRelOut` (Eq. (20) verbatim, box `S_b`):
     `quadEvalReduction_perfectCompleteness_paperRelOut`, concretely
-    `…_boundedBalancedDigits_paperRelOut` at the bounded balanced digits (and `…_balancedDigits`
-    as the full-width wrapper), from the box-carrying input relation `relInBox`.
+    `…_boundedBalancedDigits_paperRelOut` at the bounded balanced digits, from the box-carrying
+    input relation `relInBox`.
 
   The shared linear content is `honestRows_of_relIn` (Eq.-(20) rows c1–c5 at *every* challenge
   vector — hence error `0`); the deterministic shortness of `z` is `vecLInftyNorm_honestZ_le`

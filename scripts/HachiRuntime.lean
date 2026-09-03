@@ -8,7 +8,7 @@ import ArkLib.Commitments.Functional.Hachi.Params
 /-!
 # Compiled nonrecursive-Hachi runtime checks
 
-**What this certifies.** That the nonrecursive Hachi opening chain — `commitBalanced`, the
+**What this certifies.** That the nonrecursive Hachi opening chain — `commit`, the
 computable honest lifted witness, the concrete Ajtai lift commitment, the terminal
 reveal-and-check, and the whole composed reduction `hachiNonrecursiveOpening` — is *executable*,
 by running it at toy parameters against a deterministic oracle and checking that the honest run
@@ -196,7 +196,7 @@ def toyPoly : CMlPolynomial Rng (Rr + Mm) :=
   CMlPolynomial.mk _ (Vector.ofFn (fun i : Fin (2 ^ (Rr + Mm)) => rr (i.val + 1) 1))
 
 /-- The honest balanced commitment and its decommitment. -/
-def cd := commitBalanced (α := A) B (by decide) pp toyPoly
+def cd := commit (α := A) B (by decide) pp toyPoly
 
 /-- The concrete lift commitment of the chain. -/
 abbrev K : LiftCom (LiftedWitness 𝓜(Q, A) Mu Nn) (liftShort 𝓜(Q, A) P.γ P.bZero) :=
@@ -543,7 +543,7 @@ def runFull : IO Unit := do
 
 /-- Same checks, with per-check timings, for locating the cost. -/
 def runTiming : IO Unit := do
-  timedCheck "commitBalanced" commitRuns
+  timedCheck "commit" commitRuns
   timedCheck "computable quotient identity" quotientIdentityHolds
   timedCheck "computable quotient non-vacuity" quotientNonzero
   timedCheck "concrete lift commitment (distinguishes)" liftComDistinguishes
