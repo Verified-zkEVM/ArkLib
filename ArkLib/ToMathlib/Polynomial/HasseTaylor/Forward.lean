@@ -163,6 +163,14 @@ variable [Ring R]
 def forwardTaylorRemainder (m : ℕ) (a : R) (p : R[X]) : R[X] :=
   taylor a p - forwardTaylorTruncation m a p
 
+/-- Forward Taylor remainders are natural under coefficient-ring homomorphisms. -/
+theorem map_forwardTaylorRemainder {S : Type*} [Ring S] (f : R →+* S)
+    (m : ℕ) (a : R) (p : R[X]) :
+    (forwardTaylorRemainder m a p).map f =
+      forwardTaylorRemainder m (f a) (p.map f) := by
+  rw [forwardTaylorRemainder, forwardTaylorRemainder, Polynomial.map_sub, map_taylor,
+    map_forwardTaylorTruncation]
+
 /-- Every coefficient of the forward Taylor remainder below `m` vanishes. -/
 theorem coeff_forwardTaylorRemainder_of_lt (m : ℕ) (a : R) (p : R[X]) {i : ℕ}
     (hi : i < m) : (forwardTaylorRemainder m a p).coeff i = 0 := by
@@ -198,6 +206,15 @@ theorem coeff_forwardTaylorQuotient (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
     coeff_forwardTaylorTruncation_of_le m a p (Nat.le_add_left m i), sub_zero,
     taylor_coeff] at h
   exact h
+
+/-- Canonical forward Taylor quotients are natural under coefficient-ring homomorphisms. -/
+theorem map_forwardTaylorQuotient {S : Type*} [Ring S] (f : R →+* S)
+    (m : ℕ) (a : R) (p : R[X]) :
+    (forwardTaylorQuotient m a p).map f =
+      forwardTaylorQuotient m (f a) (p.map f) := by
+  ext i
+  rw [coeff_map, coeff_forwardTaylorQuotient, coeff_forwardTaylorQuotient]
+  exact map_hasseCoeffAt f a (i + m) p
 
 /-- Finite forward Hasse--Taylor reconstruction with a canonical quotient remainder. -/
 theorem taylor_eq_forwardTaylorTruncation_add_X_pow_mul_quotient
