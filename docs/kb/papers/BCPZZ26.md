@@ -13,6 +13,8 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/ListDecoding/Specification.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Contracts.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Variables.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Substitution.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/LowRateListDecoding/Main.lean
 ---
 
@@ -84,8 +86,10 @@ enumerates a bounded candidate list.
 - Lemma 3.2 uses the false inequality `ceil x ≤ x`; the repaired support-cap estimate is recorded
   in the statement audit and blueprint.
 - ArkLib has no Kopparty differential-equation root finder.
-- The Hasse–Taylor, multivariate weighted-support, weighted-simplex, local-rank, executable
-  interpolation, and parameter-arithmetic layers remain to be built.
+- The Hasse–Taylor toolkit and generic multivariate weighted-support API are under review. The
+  paper-specific named variables and the two-stage local substitution are implemented on top of
+  them. The weighted-simplex, local-rank, executable interpolation, and parameter-arithmetic layers
+  remain to be built.
 
 ## Source Access
 
