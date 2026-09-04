@@ -60,4 +60,21 @@ example :
       · rw [hasseJet_apply, X_pow_eq_monomial]
         simp [hasseDeriv_monomial]
 
+/-- An affine-scaling canary: for `p = X²`, offset `1`, scale `2`, and observation point `1`,
+the translated point is `3` and Hasse orders scale by `1, 2, 4`. -/
+example :
+    hasseJet 3 (1 : ZMod 5) ((taylor 1 (X ^ 2)).comp (C 2 * X)) = ![4, 2, 4] := by
+  rw [hasseJet_taylor_comp_C_mul_X]
+  funext i
+  fin_cases i
+  · norm_num [hasseJet_apply, hasseDeriv_monomial]
+    decide
+  · norm_num [hasseJet_apply, hasseDeriv_monomial]
+    decide
+  · rw [hasseJet_apply, X_pow_eq_monomial]
+    simp only [mul_one, hasseDeriv_monomial, tsub_self, Nat.choose_self, Nat.cast_one,
+      monomial_zero_left, map_one, eval_one, one_mul, Nat.succ_eq_add_one, Nat.reduceAdd,
+      Fin.reduceFinMk, Matrix.cons_val]
+    decide
+
 end Polynomial
