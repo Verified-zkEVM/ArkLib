@@ -357,6 +357,13 @@ theorem forwardTaylorQuotient_zero (a : R) (p : R[X]) :
     forwardTaylorQuotient 0 a p = taylor a p := by
   simp [forwardTaylorQuotient]
 
+/-- The canonical order-`m` Taylor tail is obtained by dropping the first `m` coefficients of
+the full Taylor shift. -/
+theorem forwardTaylorQuotient_eq_iterate_divX_taylor (m : ℕ) (a : R) (p : R[X]) :
+    forwardTaylorQuotient m a p = divX^[m] (taylor a p) := by
+  simpa only [zero_add, forwardTaylorQuotient_zero] using
+    forwardTaylorQuotient_add_eq_iterate_divX 0 m a p
+
 /-- A truncation past the degree of `p` also has zero canonical quotient. -/
 theorem forwardTaylorQuotient_eq_zero_of_mem_degreeLT (m : ℕ) (a : R) (p : R[X])
     (hp : p ∈ degreeLT R m) : forwardTaylorQuotient m a p = 0 := by
