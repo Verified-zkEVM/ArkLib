@@ -36,10 +36,31 @@ example : normalizedBackwardTaylorError (1 : ℤ) (X ^ 2) 1 = -X := by
   · have hn' : 1 ≠ n := Ne.symm hn
     simp [coeff_divX, coeff_X_pow, coeff_X, hn, hn']
 
-private theorem hasseDeriv_one_X_cube :
-    hasseDeriv 1 (X ^ 3 : ℤ[X]) = monomial 2 3 := by
+private theorem hasseDeriv_one_X_cube {R : Type*} [CommRing R] :
+    hasseDeriv 1 (X ^ 3 : R[X]) = C 3 * X ^ 2 := by
   rw [X_pow_eq_monomial, hasseDeriv_monomial]
   norm_num
+  rw [← C_mul_X_pow_eq_monomial]
+
+private theorem backwardTaylorResidual_X_cube_one {R : Type*} [CommRing R] (a : R) :
+    backwardTaylorResidual a (X ^ 3) 1 =
+      (1 - C 3) * X ^ 3 - C (3 * a) * X ^ 2 := by
+  rw [backwardTaylorResidual, movingHasseSum]
+  norm_num [Finset.sum_range_succ, hasseDeriv_one_X_cube, taylor_apply]
+  rw [C_ofNat]
+  ring
+
+private theorem normalizedBackwardTaylorError_X_cube_one {R : Type*} [CommRing R] (a : R) :
+    normalizedBackwardTaylorError a (X ^ 3) 1 =
+      (1 - C 3) * X ^ 2 - C (3 * a) * X := by
+  rw [normalizedBackwardTaylorError]
+  have hfactor : backwardTaylorResidual a (X ^ 3) 1 =
+      X * ((1 - C 3) * X ^ 2 - C (3 * a) * X) := by
+    rw [backwardTaylorResidual_X_cube_one]
+    ring
+  rw [hfactor]
+  ext n
+  simp [coeff_divX, coeff_X_mul]
 
 private theorem hasseDeriv_two_X_cube :
     hasseDeriv 2 (X ^ 3 : ℤ[X]) = monomial 1 3 := by
@@ -74,13 +95,8 @@ example :
   rw [LinearMap.map_smul, normalizedBackwardTaylorErrorLinearMap_apply,
     X_cube_order_two_oracle.2, smul_eq_C_mul]
 
-/-- Asymmetric centers detect an inverse shift or a dropped first center in composition. -/
-example :
-    movingHasseSum (1 : ZMod 5) (taylor (2 : ZMod 5) (X ^ 2)) 1 =
-      C 2 * X ^ 2 + X := by
-  rw [movingHasseSum_taylor]
-  have hc : (1 + 2 : ZMod 5) = 3 := by decide
-  rw [hc]
+private theorem movingHasseSum_three_X_sq_one :
+    movingHasseSum (3 : ZMod 5) (X ^ 2) 1 = C 2 * X ^ 2 + X := by
   norm_num [movingHasseSum, hasseDeriv_monomial, taylor_apply]
   have h : C (2 : ZMod 5) * C 3 = 1 := by
     rw [← C_mul]
@@ -89,6 +105,31 @@ example :
     (X * (C 2 * (X + C 3)) : (ZMod 5)[X]) =
         C 2 * X ^ 2 + X * (C 2 * C 3) := by ring
     _ = C 2 * X ^ 2 + X := by rw [h, mul_one]
+
+/-- Asymmetric centers detect an inverse shift or a dropped first center in composition. -/
+example :
+    movingHasseSum (1 : ZMod 5) (taylor (2 : ZMod 5) (X ^ 2)) 1 =
+      C 2 * X ^ 2 + X := by
+  rw [movingHasseSum_taylor]
+  have hc : (1 + 2 : ZMod 5) = 3 := by decide
+  rw [hc, movingHasseSum_three_X_sq_one]
+
+/-- A nonzero translation, observation point, and scale detect loss of any affine parameter. -/
+example :
+    movingHasseSum (1 : ZMod 5)
+        ((taylor (1 : ZMod 5) (X ^ 2)).comp (C 2 * X)) 1 =
+      C 3 * X ^ 2 + C 2 * X := by
+  rw [movingHasseSum_taylor_comp_C_mul_X]
+  have hc : (2 * 1 + 1 : ZMod 5) = 3 := by decide
+  rw [hc, movingHasseSum_three_X_sq_one, add_comp, mul_comp, C_comp, pow_comp, X_comp,
+    mul_pow]
+  have h : C (2 : ZMod 5) * C 2 ^ 2 = C 3 := by
+    rw [← map_pow, ← map_mul]
+    congr 1
+  calc
+    (C 2 * (C 2 ^ 2 * X ^ 2) + C 2 * X : (ZMod 5)[X]) =
+        (C 2 * C 2 ^ 2) * X ^ 2 + C 2 * X := by ring
+    _ = C 3 * X ^ 2 + C 2 * X := by rw [h]
 
 /-- Scaling by `2` exercises both powers of `2` and the alternating order-one sign;
 the normalized error carries the additional leading factor from removing `X`. -/
@@ -118,6 +159,23 @@ example :
     _ = C (2 * 3 * 2 ^ 2 : ZMod 5) * X ^ 2 := by
       simp only [map_mul, map_pow]
     _ = C 4 * X ^ 2 := by congr 2
+
+/-- A nonzero center ensures affine scaling uses `c * a`; the linear coefficient also detects the
+extra normalization factor. -/
+example :
+    normalizedBackwardTaylorError (1 : ZMod 5)
+        ((X ^ 3).comp (C 2 * X)) 1 = C 4 * X ^ 2 + X := by
+  rw [normalizedBackwardTaylorError_comp_C_mul_X]
+  simp only [mul_one, normalizedBackwardTaylorError_X_cube_one, sub_comp, mul_comp, C_comp,
+    pow_comp, X_comp, mul_pow]
+  rw [one_comp]
+  norm_num [C_ofNat]
+  ring_nf
+  ext n
+  simp [coeff_add, coeff_sub, coeff_neg, coeff_X_pow, coeff_X]
+  split_ifs <;> norm_num
+  all_goals try omega
+  all_goals decide
 
 /-- Order zero reduces to the ordinary shifted increment quotient. -/
 example (a : ℤ) (p : ℤ[X]) :
