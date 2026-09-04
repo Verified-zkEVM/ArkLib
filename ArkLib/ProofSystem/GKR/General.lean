@@ -37,8 +37,8 @@ relation-level statement, but it is not the GKR verifier, and soundness for it w
 Both are supplied in `OracleLayer.lean`, where the protocol is restated as an `OracleReduction`.
 `Oracle.gkrFull_perfectCompleteness` runs from `evalCircuit c input = y` to the verifier
 accepting, with `Oracle.terminalCheck` evaluating the input's own multilinear extension —
-which the verifier can afford, since it holds the input. `Circuit.layerValues_zero` and
-`Circuit.layerValues_last` are the facts that tie layer `0` to `evalCircuit` and the last layer
+which the verifier can afford, since it holds the input. `layerValues_zero` and
+`layerValues_last` are the facts that tie layer `0` to `evalCircuit` and the last layer
 to `input`.
 
 Note this inherits ArkLib's unproved composition lemmas (`Reduction.append_completeness`,
