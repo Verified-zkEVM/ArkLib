@@ -121,6 +121,26 @@ private theorem divX_sub (p q : R[X]) : (p - q).divX = p.divX - q.divX := by
   ext n
   simp [coeff_divX]
 
+private theorem hasseDeriv_comp_C_mul_X (p : R[X]) (c : R) (k : ℕ) :
+    hasseDeriv k (p.comp (C c * X)) =
+      C (c ^ k) * (hasseDeriv k p).comp (C c * X) := by
+  ext n
+  simp only [hasseDeriv_coeff, coeff_C_mul, comp_C_mul_X_coeff, pow_add]
+  ring
+
+private theorem taylor_comp_C_mul_X (p : R[X]) (a c : R) :
+    taylor a (p.comp (C c * X)) = (taylor (c * a) p).comp (C c * X) := by
+  simp only [taylor_apply, comp_assoc, add_comp, X_comp, C_comp, mul_comp]
+  congr 2
+  rw [map_mul]
+  ring
+
+private theorem divX_comp_C_mul_X (q : R[X]) (c : R) :
+    (q.comp (C c * X)).divX = C c * q.divX.comp (C c * X) := by
+  ext n
+  simp only [coeff_divX, comp_C_mul_X_coeff, coeff_C_mul, pow_succ]
+  ring
+
 /-- Hasse vanishing at `a` is equivalent to divisibility by the corresponding root factor. -/
 theorem X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero (p : R[X]) (a : R) (m : ℕ) :
     (X - C a) ^ m ∣ p ↔ ∀ i < m, (hasseDeriv i p).eval a = 0 := by
@@ -298,6 +318,18 @@ theorem movingHasseSum_taylor (a b : R) (p : R[X]) (d : ℕ) :
   intro j _
   rw [hasseDeriv_taylor, taylor_taylor]
 
+/-- Scaling the input variable scales every moving Hasse order by the corresponding power. -/
+theorem movingHasseSum_comp_C_mul_X (a c : R) (p : R[X]) (d : ℕ) :
+    movingHasseSum a (p.comp (C c * X)) d =
+      (movingHasseSum (c * a) p d).comp (C c * X) := by
+  rw [movingHasseSum, movingHasseSum, sum_comp]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [mul_comp, mul_comp, C_comp, pow_comp, X_comp, hasseDeriv_comp_C_mul_X,
+    taylor_mul, taylor_C, taylor_comp_C_mul_X, mul_pow, C_pow]
+  simp only [map_pow]
+  ring
+
 /-- Adding one truncation order appends exactly the next alternating moving-Hasse term. -/
 theorem movingHasseSum_succ (a : R) (p : R[X]) (d : ℕ) :
     movingHasseSum a p (d + 1) = movingHasseSum a p d +
@@ -360,6 +392,16 @@ theorem backwardTaylorResidual_taylor (a b : R) (p : R[X]) (d : ℕ) :
       backwardTaylorResidual (b + a) p d := by
   rw [backwardTaylorResidual, backwardTaylorResidual, taylor_taylor, taylor_eval,
     movingHasseSum_taylor]
+
+/-- The backward numerator commutes with scaling the input variable. -/
+theorem backwardTaylorResidual_comp_C_mul_X (a c : R) (p : R[X]) (d : ℕ) :
+    backwardTaylorResidual a (p.comp (C c * X)) d =
+      (backwardTaylorResidual (c * a) p d).comp (C c * X) := by
+  rw [backwardTaylorResidual, backwardTaylorResidual, sub_comp, sub_comp,
+    C_comp, taylor_comp_C_mul_X, movingHasseSum_comp_C_mul_X]
+  congr 2
+  rw [eval_comp]
+  simp
 
 /-- Increasing the truncation order subtracts the next moving-Hasse term from the residual. -/
 theorem backwardTaylorResidual_succ (a : R) (p : R[X]) (d : ℕ) :
@@ -457,6 +499,13 @@ theorem normalizedBackwardTaylorError_taylor (a b : R) (p : R[X]) (d : ℕ) :
       normalizedBackwardTaylorError (b + a) p d := by
   rw [normalizedBackwardTaylorError, normalizedBackwardTaylorError,
     backwardTaylorResidual_taylor]
+
+/-- Scaling the input variable contributes one extra factor of `c` after normalization by `X`. -/
+theorem normalizedBackwardTaylorError_comp_C_mul_X (a c : R) (p : R[X]) (d : ℕ) :
+    normalizedBackwardTaylorError a (p.comp (C c * X)) d =
+      C c * (normalizedBackwardTaylorError (c * a) p d).comp (C c * X) := by
+  rw [normalizedBackwardTaylorError, normalizedBackwardTaylorError,
+    backwardTaylorResidual_comp_C_mul_X, divX_comp_C_mul_X]
 
 /-- Increasing the truncation order subtracts the next normalized moving-Hasse term. -/
 theorem normalizedBackwardTaylorError_succ (a : R) (p : R[X]) (d : ℕ) :

@@ -90,6 +90,35 @@ example :
         C 2 * X ^ 2 + X * (C 2 * C 3) := by ring
     _ = C 2 * X ^ 2 + X := by rw [h, mul_one]
 
+/-- Scaling by `2` exercises both powers of `2` and the alternating order-one sign;
+the normalized error carries the additional leading factor from removing `X`. -/
+example :
+    normalizedBackwardTaylorError (0 : ZMod 5)
+        ((X ^ 3).comp (C 2 * X)) 1 = C 4 * X ^ 2 := by
+  rw [normalizedBackwardTaylorError_comp_C_mul_X]
+  simp only [mul_zero]
+  have hbase : normalizedBackwardTaylorError (0 : ZMod 5) (X ^ 3) 1 = C 3 * X ^ 2 := by
+    have hres : backwardTaylorResidual (0 : ZMod 5) (X ^ 3) 1 = C 3 * X ^ 3 := by
+      norm_num [backwardTaylorResidual, movingHasseSum, hasseDeriv_monomial,
+        Finset.sum_range_succ, taylor_zero]
+      have hc : (1 - C 3 : (ZMod 5)[X]) = C 3 := by
+        rw [← C_1, ← map_sub]
+        congr 1
+      calc
+        (X ^ 3 - X * (C 3 * X ^ 2) : (ZMod 5)[X]) =
+            (1 - C 3) * X ^ 3 := by ring
+        _ = C 3 * X ^ 3 := by rw [hc]
+    rw [normalizedBackwardTaylorError, hres]
+    ext n
+    simp [coeff_divX, coeff_X_pow]
+  norm_num [hbase, mul_pow]
+  calc
+    (C 2 * (C 3 * (C 2 ^ 2 * X ^ 2)) : (ZMod 5)[X]) =
+        (C 2 * C 3 * C 2 ^ 2) * X ^ 2 := by ring
+    _ = C (2 * 3 * 2 ^ 2 : ZMod 5) * X ^ 2 := by
+      simp only [map_mul, map_pow]
+    _ = C 4 * X ^ 2 := by congr 2
+
 /-- Order zero reduces to the ordinary shifted increment quotient. -/
 example (a : ℤ) (p : ℤ[X]) :
     normalizedBackwardTaylorError a p 0 = shiftIncrementQuotient a p :=
