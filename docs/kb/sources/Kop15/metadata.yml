@@ -1,0 +1,5 @@
+bibkey: Kop15
+source_kind: journal-article
+canonical_url: https://theoryofcomputing.org/articles/v011a005/
+committed_artifacts: []
+notes: "Theory of Computing 11(5), 2015. BCPZZ26 Theorem 2.1 restates Theorem 4.3 and specializes its solution-count bound to q^(4d+6)."

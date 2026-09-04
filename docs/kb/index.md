@@ -25,6 +25,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   coding-theory formalization it drives in ArkLib.
 - [`papers/BCGM25.md`](papers/BCGM25.md) - polynomial-generator MCA and related ArkLib
   proximity-generator infrastructure.
+- [`papers/BCPZZ26.md`](papers/BCPZZ26.md) - low-rate capacity-achieving Reed–Solomon list
+  decoding, its hidden-derivative interpolation method, and the central formalization target.
 - [`papers/BCS16.md`](papers/BCS16.md) - original IOP reference used by the core oracle-reduction
   layer.
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
@@ -51,6 +53,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   development.
 - [`papers/KSY14.md`](papers/KSY14.md) - high-rate codes with sublinear-time decoding; the
   multiplicity-code analysis, whose Hasse-derivative variant differs from `ABF26` Definition A.6.
+- [`papers/Kop15.md`](papers/Kop15.md) - polynomial differential-equation root finding and the
+  exact candidate bound used by the low-rate Reed–Solomon decoder.
 
 - [`papers/AHIV22.md`](papers/AHIV22.md) - Ligero-family interleaved-code and affine-line proximity
   statements, secondary to the `BCIKS20` development.
@@ -120,6 +124,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)
   - detailed paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*
     (dated April 8, 2026).
+- [`audits/bcpzz26-main-theorem.md`](audits/bcpzz26-main-theorem.md) - clause-by-clause audit of
+  the published corollary, parametric contract architecture, and confirmed source repairs.
 
 ## Source Metadata
 
