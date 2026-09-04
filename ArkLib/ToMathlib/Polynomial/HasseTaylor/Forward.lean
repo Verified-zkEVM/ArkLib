@@ -41,6 +41,24 @@ theorem coeff_forwardTaylorTruncation (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
       if i < m then hasseCoeffAt a i p else 0 := by
   simp [forwardTaylorTruncation, finsetSum_coeff]
 
+/-- Forward Taylor truncation as an ambient-polynomial linear map, before restricting its
+codomain to `degreeLT`. -/
+private def forwardTaylorTruncationToPolynomial (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] where
+  toFun := forwardTaylorTruncation m a
+  map_add' p q := by
+    ext i
+    simp only [coeff_add, coeff_forwardTaylorTruncation]
+    split_ifs <;> simp
+  map_smul' c p := by
+    ext i
+    simp only [coeff_smul, coeff_forwardTaylorTruncation]
+    split_ifs <;> simp
+
+/-- At the origin, Hasse coefficients are ordinary polynomial coefficients. -/
+theorem hasseCoeffAt_zero_eq_coeff (i : ℕ) (p : R[X]) :
+    hasseCoeffAt (0 : R) i p = p.coeff i := by
+  rw [hasseCoeffAt_apply, ← taylor_coeff, taylor_zero]
+
 /-- Below the truncation order, the finite polynomial agrees coefficientwise with `p(X + a)`. -/
 theorem coeff_forwardTaylorTruncation_of_lt (m : ℕ) (a : R) (p : R[X]) {i : ℕ}
     (hi : i < m) : (forwardTaylorTruncation m a p).coeff i = (taylor a p).coeff i := by
@@ -56,6 +74,25 @@ theorem forwardTaylorTruncation_mem_degreeLT (m : ℕ) (a : R) (p : R[X]) :
     forwardTaylorTruncation m a p ∈ degreeLT R m := by
   rw [mem_degreeLT, degree_lt_iff_coeff_zero]
   exact fun i hi ↦ coeff_forwardTaylorTruncation_of_le m a p hi
+
+/-- Forward Taylor truncation as a linear map whose codomain records the strict degree bound. -/
+def forwardTaylorTruncationLinearMap (m : ℕ) (a : R) :
+    R[X] →ₗ[R] degreeLT R m :=
+  (forwardTaylorTruncationToPolynomial m a).codRestrict
+    (degreeLT R m) (forwardTaylorTruncation_mem_degreeLT m a)
+
+@[simp]
+theorem forwardTaylorTruncationLinearMap_apply_coe (m : ℕ) (a : R) (p : R[X]) :
+    (forwardTaylorTruncationLinearMap m a p : R[X]) = forwardTaylorTruncation m a p :=
+  rfl
+
+/-- The coefficient coordinates of the degree-bounded truncation are exactly the Hasse jet. -/
+theorem forwardTaylorTruncationLinearMap_coordinates (m : ℕ) (a : R) (p : R[X]) :
+    degreeLTEquiv R m (forwardTaylorTruncationLinearMap m a p) = hasseJet m a p := by
+  ext i
+  change (forwardTaylorTruncation m a p).coeff i = hasseJet m a p i
+  rw [coeff_forwardTaylorTruncation, if_pos i.isLt]
+  rfl
 
 /-- Once `m` is a strict degree bound for `p`, its finite forward truncation is the full Taylor
 shift.  Stating the hypothesis with `degreeLT` includes the zero polynomial even at `m = 0`. -/
@@ -98,6 +135,16 @@ theorem forwardTaylorTruncation_X_pow (m n : ℕ) :
       simp
     · rw [if_neg hn, coeff_zero]
       simp [hin]
+
+/-- Re-truncating the coefficient polynomial at zero composes the two bounds by `min`. -/
+theorem forwardTaylorTruncation_zero_comp (m n : ℕ) (a : R) (p : R[X]) :
+    forwardTaylorTruncation m 0 (forwardTaylorTruncation n a p) =
+      forwardTaylorTruncation (min m n) a p := by
+  ext i
+  rw [coeff_forwardTaylorTruncation, hasseCoeffAt_zero_eq_coeff,
+    coeff_forwardTaylorTruncation, coeff_forwardTaylorTruncation]
+  simp only [lt_min_iff]
+  split_ifs <;> simp_all
 
 end Semiring
 
