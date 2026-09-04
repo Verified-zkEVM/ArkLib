@@ -11,7 +11,7 @@ import ArkLib.Data.MvPolynomial.WeightedDegree
 # Variables and weights for hidden-derivative interpolation
 
 This file names the variables used by the hidden-derivative interpolation construction and packages
-its three weight functions:
+its four weight functions:
 
 * `interpolationWeight` assigns weights `(1, K - 1, ..., K - d - 1)` to
   `(X, Y₀, ..., Y_d)`.
@@ -19,6 +19,8 @@ its three weight functions:
   variables.
 * `localMultiplicityWeight` records the local quantity `i + d * b` on monomials containing
   `T ^ i * E ^ b`.
+* `localDerivativeWeight` is the local-coordinate form of `highDerivativeWeight`, with
+  `Yhi j` assigned weight `j`.
 
 The support spaces use `MvPolynomial.restrictWeightedDegree`, so their caps are inclusive. In
 particular, a source condition written as weighted degree strictly less than `C` should use cap
