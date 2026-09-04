@@ -270,6 +270,36 @@ theorem forwardTaylorQuotient_mem_degreeLT (m d : ℕ) (a : R) (p : R[X])
     rw [hasseDeriv_coeff, hp (j + (i + m)) (by omega), mul_zero, coeff_zero]
   rw [hderiv, eval_zero]
 
+/-- Removing `m + n` Taylor coefficients at once is the same as dropping another `n`
+coefficients from the order-`m` quotient. -/
+theorem forwardTaylorQuotient_add_eq_iterate_divX (m n : ℕ) (a : R) (p : R[X]) :
+    forwardTaylorQuotient (m + n) a p =
+      divX^[n] (forwardTaylorQuotient m a p) := by
+  ext i
+  rw [coeff_forwardTaylorQuotient]
+  have coeff_iterate_divX (f : R[X]) (k j : ℕ) :
+      (divX^[k] f).coeff j = f.coeff (j + k) := by
+    induction k generalizing f j with
+    | zero => simp
+    | succ k ih =>
+      rw [Function.iterate_succ', Function.comp_apply, coeff_divX, ih]
+      congr 1
+      omega
+  rw [coeff_iterate_divX, coeff_forwardTaylorQuotient]
+  congr 2
+  omega
+
+/-- Canonical Taylor quotients form a tail tower: taking an order-`n` quotient at zero from the
+order-`m` quotient is the order-`m + n` quotient of the original polynomial. -/
+theorem forwardTaylorQuotient_zero_comp (m n : ℕ) (a : R) (p : R[X]) :
+    forwardTaylorQuotient n 0 (forwardTaylorQuotient m a p) =
+      forwardTaylorQuotient (m + n) a p := by
+  ext i
+  rw [coeff_forwardTaylorQuotient, hasseCoeffAt_zero_eq_coeff,
+    coeff_forwardTaylorQuotient, coeff_forwardTaylorQuotient]
+  congr 2
+  omega
+
 /-- Canonical forward Taylor quotients are natural under coefficient-ring homomorphisms. -/
 theorem map_forwardTaylorQuotient {S : Type*} [Ring S] (f : R →+* S)
     (m : ℕ) (a : R) (p : R[X]) :
