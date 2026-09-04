@@ -106,6 +106,10 @@ section CommRing
 
 variable {R : Type*} [CommRing R]
 
+private theorem divX_sub (p q : R[X]) : (p - q).divX = p.divX - q.divX := by
+  ext n
+  simp [coeff_divX]
+
 /-- Hasse vanishing at `a` is equivalent to divisibility by the corresponding root factor. -/
 theorem X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero (p : R[X]) (a : R) (m : ℕ) :
     (X - C a) ^ m ∣ p ↔ ∀ i < m, (hasseDeriv i p).eval a = 0 := by
@@ -347,6 +351,19 @@ theorem backwardTaylorResidual_eq_zero_of_natDegree_le (a : R) (p : R[X]) (d : �
 def normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   (backwardTaylorResidual a p d).divX
 
+/-- Increasing the truncation order subtracts the next normalized moving-Hasse term. -/
+theorem normalizedBackwardTaylorError_succ (a : R) (p : R[X]) (d : ℕ) :
+    normalizedBackwardTaylorError a p (d + 1) = normalizedBackwardTaylorError a p d -
+      C ((-1 : R) ^ d) * (X ^ d * taylor a (hasseDeriv (d + 1) p)) := by
+  rw [normalizedBackwardTaylorError, normalizedBackwardTaylorError,
+    backwardTaylorResidual_succ, divX_sub]
+  have hterm :
+      C ((-1 : R) ^ d) * (X ^ (d + 1) * taylor a (hasseDeriv (d + 1) p)) =
+        X * (C ((-1 : R) ^ d) * (X ^ d * taylor a (hasseDeriv (d + 1) p))) := by
+    rw [pow_succ]
+    ring
+  rw [hterm, divX_X_mul]
+
 /-- Normalization lowers the residual degree by one. -/
 theorem natDegree_normalizedBackwardTaylorError_le (a : R) (p : R[X]) (d : ℕ) :
     (normalizedBackwardTaylorError a p d).natDegree ≤ p.natDegree - 1 := by
@@ -398,6 +415,12 @@ theorem normalizedBackwardTaylorError_zero (a : R) (p : R[X]) :
   ext n
   simp [normalizedBackwardTaylorError, backwardTaylorResidual, movingHasseSum,
     shiftIncrementQuotient, coeff_divX]
+
+/-- The first update subtracts the shifted ordinary derivative from the increment quotient. -/
+theorem normalizedBackwardTaylorError_one (a : R) (p : R[X]) :
+    normalizedBackwardTaylorError a p 1 =
+      shiftIncrementQuotient a p - taylor a p.derivative := by
+  simpa [normalizedBackwardTaylorError_zero] using normalizedBackwardTaylorError_succ a p 0
 
 /-- The reconstruction determines its normalized error uniquely. -/
 theorem normalizedBackwardTaylorError_unique (a : R) (p : R[X]) (d : ℕ) {e : R[X]}
