@@ -129,4 +129,38 @@ example : composed.execute () () true =
         PFunctor.FreeM.Path.packAppend prefixTree suffixTree (fun _ _ => Unit) tr₁ tr₂ ()⟩,
       PFunctor.FreeM.Path.packAppend prefixTree suffixTree (fun _ _ => Nat) tr₁ tr₂ 2⟩ := rfl
 
+/-! ## Distinct intermediate outputs
+
+Composition must preserve each participant's own statement and the prover's private witness,
+even when the intermediate statements disagree. Agreement is a later correctness obligation.
+-/
+
+/-- A prefix whose prover and verifier deliberately return different statements. -/
+def disagreeingPrefix : Reduction Id Unit (fun _ => prefixTree) (fun _ => prefixRoles)
+    PrefixStatement PrefixWitness MidStatement (fun _ _ => Nat) where
+  prover _ _ bit := ⟨bit, ⟨true, 7⟩⟩
+  verifier _ _ _ := false
+
+/-- A terminal suffix exposing the statement and witness it actually received. -/
+def observingSuffix : Reduction Id SuffixShared
+    (fun _ => TypeTree.done) (fun _ => ⟨⟩)
+    SuffixStatement (fun _ => Nat) (fun _ _ => Bool) (fun _ _ => Nat) where
+  prover _ stmt wit := ⟨stmt, wit + 1⟩
+  verifier _ stmt := stmt
+
+/-- The suffix sees the prover's `true`, the verifier's `false`, and the private witness `7`. -/
+example : (Reduction.comp
+    (ctx₂ := fun _ _ => TypeTree.done) (roles₂ := fun _ _ => ⟨⟩)
+    (StmtOut := fun _ _ _ => Bool) (WitOut := fun _ _ _ => Nat)
+    disagreeingPrefix observingSuffix).execute () () false =
+    let tr₁ : TypeTree.Path prefixTree := ⟨false, ⟨⟩⟩
+    let tr₂ : TypeTree.Path TypeTree.done := ⟨⟩
+    ⟨PFunctor.FreeM.Path.append prefixTree (fun _ => TypeTree.done) tr₁ tr₂,
+      ⟨PFunctor.FreeM.Path.packAppend prefixTree (fun _ => TypeTree.done)
+          (fun _ _ => Bool) tr₁ tr₂ true,
+        PFunctor.FreeM.Path.packAppend prefixTree (fun _ => TypeTree.done)
+          (fun _ _ => Nat) tr₁ tr₂ 8⟩,
+      PFunctor.FreeM.Path.packAppend prefixTree (fun _ => TypeTree.done)
+        (fun _ _ => Bool) tr₁ tr₂ false⟩ := rfl
+
 end Interaction.Reduction.DependentExample

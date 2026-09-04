@@ -592,3 +592,9 @@ home_page/            site assets and assembled website root
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).
+
+## Acceptance tests
+
+`ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
+`lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
+the generated `ArkLib.lean` umbrella and production modules must not import them.
