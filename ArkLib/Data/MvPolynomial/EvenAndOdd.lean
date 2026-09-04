@@ -4,13 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
-import Mathlib.Algebra.MvPolynomial.Monad
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Algebra.CharP.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 
 import CompPoly.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
+import ArkLib.Data.MvPolynomial.WeightedDegree
 
 /-!
 # ArkLib.Data.MvPolynomial.EvenAndOdd
@@ -267,79 +267,45 @@ private lemma substNoX0_eq_self_of_odd
       (substNoX0_eq_self_of_substPlus p.val)
       (substNoX0_eq_self_of_substMinus p.val))
 
--- For the case m 0 ≠ 0: the product contains a zero factor
-private lemma aeval_shift_monomial_zero_case {n : ℕ} [NeZero n]
-  (m : Fin n →₀ ℕ) (c : R) (hm : ∀ i, m i ≤ 1) (h0 : m 0 ≠ 0) :
-  (monomial m c).aeval (fun i : Fin n ↦ if h : i = (0 : Fin n)
-    then (0 : MvPolynomial (Fin (n - 1)) R)
-    else X ⟨i.val - 1, by omega⟩) = 0 := by
-  change bind₁ _ (monomial m c) = 0
-  rw [bind₁_monomial]
-  have h01 : m 0 = 1 := Nat.le_antisymm (hm 0) (Nat.pos_of_ne_zero h0)
-  have h0s : (0 : Fin n) ∈ m.support := by simp [Finsupp.mem_support_iff, h0]
-  apply mul_eq_zero_of_right
-  apply Finset.prod_eq_zero h0s
-  simp [h01]
-
-/-
-For the case m 0 = 0: the result is a shifted monomial
--/
-private lemma aeval_shift_monomial_nonzero_case
-  (m : Fin n →₀ ℕ) (c : R) (hm : ∀ i, m i ≤ 1) (h0 : m 0 = 0) :
-  (monomial m c).aeval (fun i : Fin n ↦ if h : i = (0 : Fin n)
-      then (0 : MvPolynomial (Fin (n - 1)) R)
-      else X ⟨i.val - 1, by omega⟩) ∈ restrictDegree (Fin (n - 1)) R 1 := by
-  rw [MvPolynomial.mem_restrictDegree]
-  intro s hs i
-  contrapose! hs
-  simp_all only [aeval_eq_bind₁, monomial_eq, Finsupp.prod_pow, map_mul, algHom_C, algebraMap_eq,
-    map_prod, map_pow, bind₁_X_right, dite_pow, pow_zero, mem_support_iff, coeff_C_mul, ne_eq,
-    mul_eq_zero, not_or, not_and, not_not]
-  have h_coeff :
-    coeff s (∏ x : Fin n,
-      if h : x = 0
-      then 1
-      else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ m x) = 0 := by
-    have h_coeff :
-      ∀ (t : Fin n → ℕ),
-        (∏ x : Fin n,
-          if h : x = 0
-          then 1
-          else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ t x) =
-            MvPolynomial.monomial
-              (∑ x : Fin n, if h : x = 0 then 0 else
-                Finsupp.single ⟨↑x - 1, by omega⟩ (t x)) 1 := by
-      intro t
-      induction (Finset.univ : Finset (Fin n)) using Finset.induction
-        <;> aesop
-              (add simp [Finset.prod_insert, MvPolynomial.monomial_mul,
-                          MvPolynomial.X_pow_eq_monomial])
-    simp_all only [coeff_monomial, ite_eq_right_iff, one_ne_zero, imp_false, ne_eq]
-    intro h
-    replace h := congr_arg (fun f ↦ f i) h
-    simp_all only [sum_apply']
-    rw
-      [Finset.sum_eq_single ⟨i + 1, by grind⟩] at h
-      <;> aesop (add safe (by grind))
-  exact fun _ => h_coeff
+lemma aeval_shift_mem_restrictDegree
+    (q : MvPolynomial (Fin n) R) (hq : q ∈ restrictDegree (Fin n) R 1) :
+  q.aeval (fun i ↦ if h : i = (0 : Fin n) then (0 : MvPolynomial (Fin (n - 1)) R)
+    else X ⟨i.val - 1, by omega⟩) ∈ restrictDegree (Fin (n - 1)) R 1 := by
+  rw [mem_restrictDegree_iff_forall_mem_restrictWeightedDegree_piSingle]
+  intro i
+  let source : Fin n := ⟨i.val + 1, by omega⟩
+  let w : Fin n → ℕ := Pi.single source 1
+  apply aeval_mem_restrictWeightedDegree (w := w) (v := Pi.single i 1)
+  · intro j
+    by_cases hj0 : j = 0
+    · rw [dif_pos hj0]
+      exact (restrictWeightedDegree (R := R) (Pi.single i 1) (w j)).zero_mem
+    · rw [dif_neg hj0]
+      apply X_mem_restrictWeightedDegree
+      by_cases hjs : j = source
+      · subst j
+        simp [w, source]
+      · have hne : (⟨j.val - 1, by omega⟩ : Fin (n - 1)) ≠ i := by
+          intro h
+          apply hjs
+          apply Fin.ext
+          have hjpos : 0 < j.val := Nat.pos_of_ne_zero fun h => hj0 (Fin.ext h)
+          have hv := congrArg Fin.val h
+          change j.val - 1 = i.val at hv
+          change j.val = i.val + 1
+          omega
+        simp [w, hjs, hne]
+  · change q ∈ restrictWeightedDegree (Pi.single source 1) 1
+    exact (mem_restrictDegree_iff_forall_mem_restrictWeightedDegree_piSingle q 1).mp hq source
 
 lemma aeval_shift_monomial_mem {n : ℕ} [NeZero n]
     (m : Fin n →₀ ℕ) (c : R) (hm : ∀ i, m i ≤ 1) :
     (monomial m c).aeval (fun i : Fin n ↦ if h : i = (0 : Fin n)
       then (0 : MvPolynomial (Fin (n - 1)) R)
       else X ⟨i.val - 1, by omega⟩) ∈ restrictDegree (Fin (n - 1)) R 1 := by
-  by_cases h0 : m 0 = 0
-  · exact aeval_shift_monomial_nonzero_case m c hm h0
-  · rw [aeval_shift_monomial_zero_case m c hm h0]; exact zero_mem _
-
-lemma aeval_shift_mem_restrictDegree
-    (q : MvPolynomial (Fin n) R) (hq : q ∈ restrictDegree (Fin n) R 1) :
-  q.aeval (fun i ↦ if h : i = (0 : Fin n) then (0 : MvPolynomial (Fin (n - 1)) R)
-    else X ⟨i.val - 1, by omega⟩) ∈ restrictDegree (Fin (n - 1)) R 1 := by
-  rw [MvPolynomial.as_sum q, map_sum]
-  apply Submodule.sum_mem
-  intro m hm
-  exact aeval_shift_monomial_mem m (q.coeff m) (fun i => (mem_restrictDegree _ q 1).mp hq m hm i)
+  apply aeval_shift_mem_restrictDegree
+  rw [restrictDegree, monomial_mem_restrictSupport]
+  exact Or.inl hm
 
 noncomputable def even_pred (p : R⦃≤ 1⦄[X (Fin n)]) : R⦃≤ 1⦄[X (Fin (n - 1))] :=
   ⟨(even p).1.aeval
