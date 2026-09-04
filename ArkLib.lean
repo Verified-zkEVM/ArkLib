@@ -180,6 +180,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Contracts
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Variables
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Specification
