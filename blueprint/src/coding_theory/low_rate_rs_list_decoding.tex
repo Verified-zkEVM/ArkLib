@@ -71,6 +71,89 @@ caps.
   \leanok
 \end{definition}
 
+\subsection{Named variables, weights, and local rewrites}
+
+The interpolation polynomial uses the finite variable type
+\[
+  \operatorname{InterpolationVar}(d)=\{X,Y_0,\ldots,Y_d\}.
+\]
+The local constraint polynomial uses
+\[
+  \operatorname{LocalVar}(d)=\{T,E,Y_1,\ldots,Y_d\},
+\]
+where the Lean constructor \texttt{Yhi r} denotes $Y_{r+1}$.  This offset keeps $Y_0$ exclusive to
+the interpolation polynomial and makes the local variables match the paper's equations~(14) and
+(25).  Both encodings have decidable equality and finite enumerations, including at $d=0$.
+
+\begin{definition}[Named interpolation variables]
+  \label{def:hidden_derivative_interpolation_variables}
+  \lean{ReedSolomon.HiddenDerivative.InterpolationVar}
+  \leanok
+\end{definition}
+
+\begin{definition}[Named local variables]
+  \label{def:hidden_derivative_local_variables}
+  \lean{ReedSolomon.HiddenDerivative.LocalVar}
+  \leanok
+\end{definition}
+
+Four weights serve different proof obligations and must not be conflated:
+\begin{align*}
+  w_K(X)&=1, & w_K(Y_j)&=K-j-1,\\
+  \omega(X)&=0, & \omega(Y_j)&=\max(j-1,0),\\
+  \mu_d(T)&=1, & \mu_d(E)&=d, & \mu_d(Y_j)&=0,\\
+  \omega_{\mathrm{loc}}(T)&=\omega_{\mathrm{loc}}(E)=0,
+    & \omega_{\mathrm{loc}}(Y_j)&=j-1.
+\end{align*}
+Here $w_K$ is the interpolation and root-solver weight, $\omega$ controls the high-derivative
+support, $\mu_d$ encodes the divisibility quantity $i+db$ on $T^iE^b$, and
+$\omega_{\mathrm{loc}}$ is the same high-derivative weight after reindexing the local variables.
+The corresponding Lean declarations are \texttt{interpolationWeight},
+\texttt{highDerivativeWeight}, \texttt{localMultiplicityWeight}, and
+\texttt{localDerivativeWeight}.  Their support spaces are backed by the generic bounded weighted
+support submodule.  These caps are inclusive; a source inequality of the form $\deg_w Q<C$ becomes
+cap $C-1$ only after proving $C>0$.  Since $\omega$ has zero-weight variables, its support bound
+alone does not imply finite-dimensionality.
+
+\begin{definition}[Weighted hidden-derivative support spaces]
+  \label{def:hidden_derivative_weighted_supports}
+  \lean{ReedSolomon.HiddenDerivative.interpolationWeightedSupport}
+  \uses{def:hidden_derivative_interpolation_variables,def:hidden_derivative_local_variables,
+    def:hidden_derivative_parameters}
+  \leanok
+\end{definition}
+
+For a received point $(\alpha,y)$, equation~(14) first applies the unscaled substitution
+\[
+  X\mapsto\alpha+T,\qquad
+  Y_0\mapsto y+\sum_{j=1}^d(-1)^{j+1}T^jY_j+TE,
+  \qquad Y_j\mapsto Y_j\quad(1\le j\le d).
+\]
+The Lean API names the displayed sum \texttt{localCorrection} and the variable map
+\texttt{unscaledLocalSubstitution}.  The error rescaling \texttt{scaleLocalError} sends
+$E\mapsto T^dE$ and fixes the other local variables.  Applying it after the unscaled substitution
+gives the normalized Algorithm~1 substitution~(25), named \texttt{normalizedLocalSubstitution},
+whose $Y_0$ image contains $T^{d+1}E$.  The compatibility theorem is
+\texttt{normalizedLocalSubstitution\_eq\_scaleLocalError\_comp}.
+
+\begin{definition}[Two-stage local substitution]
+  \label{def:hidden_derivative_local_substitution}
+  \lean{ReedSolomon.HiddenDerivative.normalizedLocalSubstitution}
+  \uses{def:hidden_derivative_interpolation_variables,def:hidden_derivative_local_variables}
+  \notready
+\end{definition}
+
+\begin{theorem}[Normalized substitution factors through error rescaling]
+  \label{thm:hidden_derivative_normalized_substitution_comp}
+  \lean{ReedSolomon.HiddenDerivative.normalizedLocalSubstitution_eq_scaleLocalError_comp}
+  \uses{def:hidden_derivative_local_substitution}
+  \notready
+\end{theorem}
+
+These definitions freeze the variable bookkeeping and the two source substitutions only.  They do
+not prove the interpolation constraints, the local coefficient map, its rank bound, or the global
+received-word constraint map.
+
 For a concrete equation type $E$, a predicate $\operatorname{Valid}:E\to\mathrm{Prop}$, and a
 satisfaction relation
 \[
