@@ -82,14 +82,41 @@ example :
   · apply normalizedBackwardTaylorError_eq_zero_of_natDegree_le
     norm_num [natDegree_X_pow]
 
-/-- A concrete coefficient reduction checks naturality across genuinely different rings. -/
+/-- A coefficient-sensitive reduction checks naturality across genuinely different rings. Both
+sides are computed independently, rather than discharged by the naturality theorem itself. -/
 example :
-    (normalizedBackwardTaylorError (2 : ℤ) (X ^ 3 + C 7) 2).map
+    (normalizedBackwardTaylorError (0 : ℤ) (C 7 * X ^ 3) 2).map
         (Int.castRingHom (ZMod 5)) =
-      normalizedBackwardTaylorError ((Int.castRingHom (ZMod 5)) 2)
-        ((X ^ 3 + C 7 : ℤ[X]).map (Int.castRingHom (ZMod 5))) 2 := by
-  exact map_normalizedBackwardTaylorError (Int.castRingHom (ZMod 5))
-    (2 : ℤ) (X ^ 3 + C 7) 2
+      normalizedBackwardTaylorError (0 : ZMod 5)
+        ((C 7 * X ^ 3 : ℤ[X]).map (Int.castRingHom (ZMod 5))) 2 := by
+  have hInt : normalizedBackwardTaylorError (0 : ℤ) (C 7 * X ^ 3) 2 =
+      C 7 * X ^ 2 := by
+    have hzero : normalizedBackwardTaylorError (0 : ℤ) (C 7 * X ^ 3) 3 = 0 := by
+      apply normalizedBackwardTaylorError_eq_zero_of_natDegree_le
+      norm_num [natDegree_C_mul_X_pow]
+    have hder : hasseDeriv 3 (C 7 * X ^ 3 : ℤ[X]) = C 7 := by
+      rw [C_mul_X_pow_eq_monomial, hasseDeriv_monomial]
+      norm_num
+    have hrec := normalizedBackwardTaylorError_succ (0 : ℤ) (C 7 * X ^ 3) 2
+    rw [hzero, hder, taylor_zero] at hrec
+    norm_num at hrec ⊢
+    have h := sub_eq_zero.mp hrec.symm
+    simpa [mul_comm] using h
+  have hMod : normalizedBackwardTaylorError (0 : ZMod 5) (C 2 * X ^ 3) 2 =
+      C 2 * X ^ 2 := by
+    have hzero : normalizedBackwardTaylorError (0 : ZMod 5) (C 2 * X ^ 3) 3 = 0 := by
+      apply normalizedBackwardTaylorError_eq_zero_of_natDegree_le
+      rw [natDegree_C_mul_X_pow 3 2 (by decide)]
+    have hder : hasseDeriv 3 (C 2 * X ^ 3 : (ZMod 5)[X]) = C 2 := by
+      rw [C_mul_X_pow_eq_monomial, hasseDeriv_monomial]
+      norm_num
+    have hrec := normalizedBackwardTaylorError_succ (0 : ZMod 5) (C 2 * X ^ 3) 2
+    rw [hzero, hder, taylor_zero] at hrec
+    norm_num at hrec ⊢
+    exact sub_eq_zero.mp hrec.symm
+  rw [hInt]
+  norm_num
+  exact hMod.symm
 
 end
 

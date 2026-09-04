@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 import Mathlib.Algebra.Polynomial.Div
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Data.Nat.Choose.Sum
@@ -33,12 +34,6 @@ term `j` has Hasse order `j + 1`, sign `(-1)^j`, and derivative evaluated at the
 namespace Polynomial
 
 noncomputable section
-
-private theorem map_hasseDeriv {R S : Type*} [Semiring R] [Semiring S]
-    (f : R →+* S) (p : R[X]) (k : ℕ) :
-    (hasseDeriv k p).map f = hasseDeriv k (p.map f) := by
-  ext n
-  simp [hasseDeriv_coeff]
 
 private theorem map_divX {R S : Type*} [Semiring R] [Semiring S]
     (f : R →+* S) (p : R[X]) : p.divX.map f = (p.map f).divX := by
