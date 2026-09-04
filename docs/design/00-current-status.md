@@ -1,6 +1,6 @@
 # Current status and first implementation train
 
-**Status date:** 2026-08-29. **Scope:** the supported starting point for implementing ArkLib's
+**Status date:** 2026-09-03. **Scope:** the supported starting point for implementing ArkLib's
 typed oracle-reduction architecture.
 
 The core implementation can begin now. PolyFun's typed interaction, cursor, restriction, append,
@@ -15,7 +15,7 @@ The first implementation train uses one tested dependency chain:
 
 | Repository | Revision | Role |
 |---|---|---|
-| ArkLib | `3f3f045dd295834c262bd6f0d9dfdfee07cc8e76` | clean default-branch base |
+| ArkLib | `22dbd4e836c15a21f68889afa69b7130da04abbb` | AR-1 comparison base |
 | VCVio | `f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24` | direct ArkLib dependency |
 | PolyFun | `c0c923693fc827a41d17116579a0c16ed4873b19` | revision selected and tested by VCVio |
 | Lean | `v4.33.1` | common toolchain |
@@ -134,8 +134,11 @@ Every implementation PR starts from current `main` and leaves the legacy layer w
 | 6 | Typed composition and legacy bridge | Exercise dependent append and virtual substitution; prove a two-way protocol bridge | unblocked after slice 5 |
 | 7 | Execution artifact and ordinary security | Add or upstream the artifact and outcome boundaries; prove admissibility-aware composition | blocked on named VCVio gaps |
 
-The first code PR introduces the smallest plain reduction wrapper whose execution is definitionally
-the current PolyFun runner. It does not port the archive's whole `ArkLib/Interaction` tree.
+AR-1 introduces the smallest plain reduction wrapper whose execution is definitionally the current
+PolyFun runner. It supports complete-path-dependent append and exposes the general effectful
+factorization boundary through `LawfulCommMonad`; PolyFun's pure-suffix theorem remains available
+under `LawfulMonad`. The executable acceptance client selects different suffix message types from
+the first complete path. AR-1 does not port the archive's whole `ArkLib/Interaction` tree.
 
 ## Deferred work
 

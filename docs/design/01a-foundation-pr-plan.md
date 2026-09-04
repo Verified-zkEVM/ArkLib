@@ -91,6 +91,9 @@ declaration; historical upstream plans no longer appear as live work.
 
 ### AR-1 — plain dependent reduction kernel
 
+**Status.** Implemented by the first typed-interaction PR. The next independent core slices are
+AR-2A and AR-4A.
+
 **Goal.** Add the smallest ArkLib prover, verifier, and reduction packages over PolyFun
 `Interaction.TypeTree`, two-party roles, strategies, and execution.
 

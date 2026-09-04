@@ -277,6 +277,8 @@ import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.KoalaBear
 import ArkLib.Data.Probability.Notation
+import ArkLib.Interaction.Reduction
+import ArkLib.Interaction.Reduction.DependentExample
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
