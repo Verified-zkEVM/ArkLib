@@ -492,8 +492,8 @@ Route B is no longer required to precede `M0` if Route A succeeds. It remains a 
 
 | ID | Work package | Depends on | Initial status | Acceptance condition |
 |---|---|---|---|---|
-| R0 | Define differential polynomials, solutions of bounded degree, highest active derivative, and regular jets. | S0, F1 | queued | Definitions support partial derivatives in `Y_j`, specialization, recursion, and characteristic bounds. |
-| R1 | Prove derivative descent to a nonzero highest-variable derivative. | R0 | queued | Positive individual degree `< char(F)` prevents formal differentiation from annihilating dependence. |
+| R0 | Define differential polynomials, solutions of bounded degree, highest active derivative, and regular jets. | S0, F1 | landed (`14c56aaa`) | Definitions support partial derivatives in `Y_j`, specialization, recursion, and characteristic bounds. |
+| R1 | Prove derivative descent to a nonzero highest-variable derivative. | R0 | landed (`14c56aaa`) | Positive individual degree `< char(F)` prevents formal differentiation from annihilating dependence. |
 | R2 | Prove unique coefficient lifting from a nonsingular initial Hasse jet. | R1 | queued | Every recurrence coefficient is explicit; nonvanishing binomial coefficients follow from the characteristic bound. |
 | R3 | Prove singular solutions are covered recursively by derivatives of the differential polynomial. | R1 | queued | Recursion terminates under a lexicographic or total individual-degree measure; all solutions enter a regular branch. |
 | R4 | Count regular witnesses and solutions over a sufficiently large field. | R2, R3 | queued | Proves the division-free inequality `(S-H) * card Roots ≤ S * Δ * S^d`; specialization degree bounds the exceptional points. |
@@ -720,6 +720,7 @@ At least one audit worktree should verify that the proof breaks when each of the
 | Ambient filtering and radius bridge | Landed at `d970f64c` and `45f98802`. The two filtering holes from PR 855 are proved. The point-list/evaluation-image equality and its `Code.Lambda` corollary include the exact `Nat.ceil` rounding and do not require injectivity of evaluation. |
 | Axiom-free donor foundation | Landed at merge `52903c27`: six modules covering free-order parameters, a finite zero-weight-safe interpolation space, repaired rectangular dimension counting, scoped finrank bounds, and canaries. Kopparty assumptions, `FieldCost`, and algorithmic wrappers were excluded. |
 | Hidden substitutions and local identity | Landed at `33f1f3ac`: local variables, factored and normalized substitutions, weighted bounds with explicit `d < D`, the genuine-polynomial Hasse identity, canonical reduced error, and characteristic-two canaries. The remaining `L0` edge is only an adapter to the root solver's canonical specialization API. |
+| Differential root foundation | Landed at `14c56aaa`: bounded differential solutions, scalar and polynomial jets, active/highest jets, separants, regularity, exact root-specialization weights, characteristic contracts, and nonannihilating highest-variable derivative descent. `ZMod 2` versus `ZMod 3` canaries check the strict characteristic boundary. |
 
 ## 13. Decisions already made
 
@@ -752,7 +753,6 @@ before duplicating them:
 
 - the final `L0` adapter: identify the shifted local-identity specialization with the canonical
   root-solver specialization after affine translation;
-- `R0-R1`: differential-polynomial interfaces and characteristic-safe derivative descent.
 - `R2`: an external independent sprint is developing regular-jet coefficient lifting against the
   current root-solver contract.
 - `I0`: an active agent is completing the exact finite interpolation index.
