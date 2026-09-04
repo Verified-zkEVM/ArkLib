@@ -266,6 +266,28 @@ def basisRestrictWeightedDegree (w : σ → ℕ) (d : ℕ) :
     Basis {m : σ →₀ ℕ // m.weight w ≤ d} R (restrictWeightedDegree (R := R) w d) :=
   basisRestrictSupport R {m | m.weight w ≤ d}
 
+/-- Coefficient projection from a bounded weighted-degree submodule at an allowed monomial. -/
+def restrictWeightedDegreeCoeff (w : σ → ℕ) (d : ℕ)
+    (m : {m : σ →₀ ℕ // m.weight w ≤ d}) :
+    restrictWeightedDegree (R := R) w d →ₗ[R] R :=
+  lcoeff R m ∘ₗ Submodule.subtype _
+
+@[simp]
+theorem restrictWeightedDegreeCoeff_apply (w : σ → ℕ) (d : ℕ)
+    (m : {m : σ →₀ ℕ // m.weight w ≤ d})
+    (p : restrictWeightedDegree (R := R) w d) :
+    restrictWeightedDegreeCoeff (R := R) w d m p =
+      coeff m (p : MvPolynomial σ R) :=
+  rfl
+
+/-- Coefficients outside the weighted-degree bound vanish. -/
+theorem coeff_eq_zero_of_mem_restrictWeightedDegree {w : σ → ℕ} {d : ℕ}
+    {p : MvPolynomial σ R} (hp : p ∈ restrictWeightedDegree (R := R) w d)
+    {m : σ →₀ ℕ} (hm : d < m.weight w) :
+    coeff m p = 0 := by
+  rw [← notMem_support_iff]
+  exact fun hmem => Nat.not_le_of_gt hm ((mem_restrictWeightedDegree.mp hp) m hmem)
+
 /-- With finitely many variables and positive weights, the bounded weighted-degree submodule is
 finitely generated. -/
 theorem restrictWeightedDegree_fg [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
