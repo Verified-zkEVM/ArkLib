@@ -40,6 +40,13 @@ example :
   rw [forwardTaylorTruncation_X_pow]
   simp
 
+/-- An asymmetric center-composition canary: shifting first by `2` and then taking the order-two
+truncation at `1` uses center `1 + 2 = 3`, not the inverse shift. -/
+example :
+    forwardTaylorTruncation 2 (1 : ZMod 5) (taylor 2 X) = C 3 + X := by
+  rw [forwardTaylorTruncation_taylor]
+  norm_num [forwardTaylorTruncation, Finset.sum_range_succ, hasseCoeffAt_apply]
+
 /-- A high-truncation canary: all three Hasse coefficients retain the shifted quadratic, leaving
 both the remainder and its canonical quotient zero. -/
 example :
