@@ -296,6 +296,18 @@ theorem movingHasseSum_add (a : R) (p q : R[X]) (d : ℕ) :
     movingHasseSum a (p + q) d = movingHasseSum a p d + movingHasseSum a q d := by
   simp only [movingHasseSum, LinearMap.map_add, mul_add, Finset.sum_add_distrib]
 
+/-- The moving-Hasse correction sum respects coefficient scalar multiplication. -/
+theorem movingHasseSum_smul (c a : R) (p : R[X]) (d : ℕ) :
+    movingHasseSum a (c • p) d = c • movingHasseSum a p d := by
+  simp only [movingHasseSum, smul_eq_C_mul]
+  rw [Finset.mul_sum]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [show C c * p = c • p by rw [smul_eq_C_mul]]
+  rw [LinearMap.map_smul, LinearMap.map_smul]
+  simp only [smul_eq_C_mul]
+  ring
+
 @[simp]
 theorem movingHasseSum_zero (a : R) (d : ℕ) : movingHasseSum a 0 d = 0 := by
   simp [movingHasseSum]
@@ -344,9 +356,27 @@ theorem backwardTaylorResidual_add (a : R) (p q : R[X]) (d : ℕ) :
     LinearMap.map_add, eval_add, map_add, movingHasseSum_add]
   ring
 
+/-- The moving-point backward numerator respects coefficient scalar multiplication. -/
+theorem backwardTaylorResidual_smul (c a : R) (p : R[X]) (d : ℕ) :
+    backwardTaylorResidual a (c • p) d = c • backwardTaylorResidual a p d := by
+  rw [backwardTaylorResidual, backwardTaylorResidual]
+  simp only [LinearMap.map_smul, eval_smul, movingHasseSum_smul]
+  simp only [smul_eq_C_mul, smul_eq_mul, map_mul]
+  ring
+
 @[simp]
 theorem backwardTaylorResidual_zero (a : R) (d : ℕ) : backwardTaylorResidual a 0 d = 0 := by
   simp [backwardTaylorResidual]
+
+/-- The moving-point backward numerator as an `R`-linear map in the input polynomial. -/
+def backwardTaylorResidualLinearMap (a : R) (d : ℕ) : R[X] →ₗ[R] R[X] where
+  toFun p := backwardTaylorResidual a p d
+  map_add' p q := backwardTaylorResidual_add a p q d
+  map_smul' c p := backwardTaylorResidual_smul c a p d
+
+@[simp]
+theorem backwardTaylorResidualLinearMap_apply (a : R) (d : ℕ) (p : R[X]) :
+    backwardTaylorResidualLinearMap a d p = backwardTaylorResidual a p d := rfl
 
 /-- The order-one residual recovers the earlier derivative-contact identity exactly. -/
 theorem backwardTaylorResidual_one (a : R) (p : R[X]) :
@@ -450,11 +480,29 @@ theorem normalizedBackwardTaylorError_add (a : R) (p q : R[X]) (d : ℕ) :
   ext n
   simp only [coeff_normalizedBackwardTaylorError, backwardTaylorResidual_add, coeff_add]
 
+/-- The normalized moving-point error respects coefficient scalar multiplication. -/
+theorem normalizedBackwardTaylorError_smul (c a : R) (p : R[X]) (d : ℕ) :
+    normalizedBackwardTaylorError a (c • p) d =
+      c • normalizedBackwardTaylorError a p d := by
+  ext n
+  simp only [coeff_normalizedBackwardTaylorError, backwardTaylorResidual_smul, coeff_smul]
+
 @[simp]
 theorem normalizedBackwardTaylorError_zero_poly (a : R) (d : ℕ) :
     normalizedBackwardTaylorError a 0 d = 0 := by
   ext n
   simp [coeff_normalizedBackwardTaylorError]
+
+/-- The normalized moving-point error as an `R`-linear map in the input polynomial. -/
+def normalizedBackwardTaylorErrorLinearMap (a : R) (d : ℕ) : R[X] →ₗ[R] R[X] where
+  toFun p := normalizedBackwardTaylorError a p d
+  map_add' p q := normalizedBackwardTaylorError_add a p q d
+  map_smul' c p := normalizedBackwardTaylorError_smul c a p d
+
+@[simp]
+theorem normalizedBackwardTaylorErrorLinearMap_apply (a : R) (d : ℕ) (p : R[X]) :
+    normalizedBackwardTaylorErrorLinearMap a d p =
+      normalizedBackwardTaylorError a p d := rfl
 
 /-- Finite moving-point backward reconstruction, with signs `+,-,+,...` from Hasse order one. -/
 theorem backwardTaylorReconstruction (a : R) (p : R[X]) (d : ℕ) :

@@ -48,7 +48,7 @@ private theorem hasseDeriv_two_X_cube :
 
 /-- A genuine order-two example exercises both the positive first-Hasse and negative
 second-Hasse moving terms. -/
-example :
+private theorem X_cube_order_two_oracle :
     movingHasseSum (1 : ℤ) (X ^ 3) 2 = C 3 * X + C 3 * X ^ 2 ∧
       normalizedBackwardTaylorError (1 : ℤ) (X ^ 3) 2 = X ^ 2 := by
   have hm : movingHasseSum (1 : ℤ) (X ^ 3) 2 = C 3 * X + C 3 * X ^ 2 := by
@@ -66,6 +66,13 @@ example :
   · subst n
     simp [coeff_divX, coeff_X_pow]
   · simp [coeff_divX, coeff_X_pow, hn]
+
+/-- A nontrivial scalar checks the packaged linear map and its coefficient action. -/
+example :
+    normalizedBackwardTaylorErrorLinearMap (1 : ℤ) 2
+        ((7 : ℤ) • (X ^ 3 : ℤ[X])) = C 7 * X ^ 2 := by
+  rw [LinearMap.map_smul, normalizedBackwardTaylorErrorLinearMap_apply,
+    X_cube_order_two_oracle.2, smul_eq_C_mul]
 
 /-- Order zero reduces to the ordinary shifted increment quotient. -/
 example (a : ℤ) (p : ℤ[X]) :
