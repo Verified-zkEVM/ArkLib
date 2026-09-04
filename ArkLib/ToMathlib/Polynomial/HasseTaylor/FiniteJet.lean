@@ -200,6 +200,26 @@ theorem map_hasseJet_taylor {S : Type*} [Semiring S] (f : R →+* S)
   rw [hasseJet_taylor]
   simpa using map_hasseJet f m (s + r) p
 
+/-- Under the affine substitution `X ↦ cX + a`, Hasse order `i` scales by `c ^ i` and its
+evaluation point moves from `b` to `c * b + a`. -/
+theorem hasseCoeffAt_taylor_comp_C_mul_X (a b c : R) (i : ℕ) (p : R[X]) :
+    hasseCoeffAt b i ((taylor a p).comp (C c * X)) =
+      hasseCoeffAt (c * b + a) i p * c ^ i := by
+  rw [hasseCoeffAt_apply, ← taylor_coeff]
+  rw [show taylor b ((taylor a p).comp (C c * X)) =
+      (taylor (c * b + a) p).comp (C c * X) by
+    simp only [taylor_apply, comp_assoc, add_comp, mul_comp, C_comp, X_comp]
+    congr 1
+    rw [mul_add, ← C_mul, add_assoc, ← C_add]]
+  rw [comp_C_mul_X_coeff, taylor_coeff, ← hasseCoeffAt_apply]
+
+/-- Componentwise affine-substitution law for finite Hasse jets. -/
+theorem hasseJet_taylor_comp_C_mul_X (m : ℕ) (a b c : R) (p : R[X]) :
+    hasseJet m b ((taylor a p).comp (C c * X)) =
+      fun i ↦ hasseJet m (c * b + a) p i * c ^ (i : ℕ) := by
+  ext i
+  exact hasseCoeffAt_taylor_comp_C_mul_X a b c i p
+
 end CommSemiring
 
 section CommRing
