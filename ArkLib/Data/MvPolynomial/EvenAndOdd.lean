@@ -220,17 +220,40 @@ private lemma shiftDown_shiftUp_eq (q : MvPolynomial (Fin n) R) :
     change i.val - 1 + 1 = i.val
     omega
 
+private lemma substNoX0_eq_self_of_aeval (c : R) (q : MvPolynomial (Fin n) R) :
+    (q.aeval (fun i ↦ if i = 0 then C c else X i)).aeval
+      (fun i ↦ if i = 0 then 0 else X i) =
+        q.aeval (fun i ↦ if i = 0 then C c else X i) := by
+  induction q using MvPolynomial.induction_on with
+  | C a => simp
+  | add q r hq hr => simp only [map_add, hq, hr]
+  | mul_X q i hq =>
+    simp only [map_mul, aeval_X]
+    rw [hq]
+    by_cases hi : i = 0
+    · subst i
+      simp
+    · simp only [hi, ↓reduceIte, aeval_X]
+
+private lemma substNoX0_eq_self_of_substPlus (q : MvPolynomial (Fin n) R) :
+    (substPlus q).aeval (fun i ↦ if i = 0 then 0 else X i) = substPlus q := by
+  simpa only [substPlus, map_one] using substNoX0_eq_self_of_aeval 1 q
+
+private lemma substNoX0_eq_self_of_substMinus (q : MvPolynomial (Fin n) R) :
+    (substMinus q).aeval (fun i ↦ if i = 0 then 0 else X i) = substMinus q := by
+  simpa only [substMinus, map_neg, map_one] using substNoX0_eq_self_of_aeval (-1) q
+
 private lemma substNoX0_eq_self_of_even
   (p : restrictDegree (Fin n) R 1) :
   (even p).1.aeval
     (fun i : Fin n ↦
       if _ : i = (0 : Fin n) then (0 : MvPolynomial (Fin n) R) else X i) = (even p).1 := by
   unfold even
-  simp only [aeval_eq_bind₁, substPlus, substMinus, map_mul, map_add, algHom_C, algebraMap_eq,
-    mul_eq_mul_right_iff, map_eq_zero, inv_eq_zero]
-  left
-  congr! 1
-  all_goals induction p.val using MvPolynomial.induction_on <;> aesop
+  simp only [map_mul, map_add, algHom_C, algebraMap_eq]
+  exact congrArg (fun q : MvPolynomial (Fin n) R ↦ q * C (2⁻¹))
+    (congrArg₂ (fun a b ↦ a + b)
+      (substNoX0_eq_self_of_substPlus p.val)
+      (substNoX0_eq_self_of_substMinus p.val))
 
 private lemma substNoX0_eq_self_of_odd
   (p : restrictDegree (Fin n) R 1) :
@@ -238,10 +261,11 @@ private lemma substNoX0_eq_self_of_odd
     (fun i : Fin n ↦
       if _ : i = (0 : Fin n) then (0 : MvPolynomial (Fin n) R) else X i) = (odd p).1 := by
   unfold odd
-  unfold MvPolynomial.substPlus MvPolynomial.substMinus
-  simp only [aeval_eq_bind₁, sub_mul, map_sub, map_mul, algHom_C, algebraMap_eq]
-  congr! 2
-  all_goals induction p.val using MvPolynomial.induction_on <;> aesop
+  simp only [map_mul, map_sub, algHom_C, algebraMap_eq]
+  exact congrArg (fun q : MvPolynomial (Fin n) R ↦ q * C (2⁻¹))
+    (congrArg₂ (fun a b ↦ a - b)
+      (substNoX0_eq_self_of_substPlus p.val)
+      (substNoX0_eq_self_of_substMinus p.val))
 
 -- For the case m 0 ≠ 0: the product contains a zero factor
 private lemma aeval_shift_monomial_zero_case {n : ℕ} [NeZero n]

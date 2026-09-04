@@ -194,16 +194,14 @@ private def StdTraceState.appendEntry
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (rhoHat_i : Vector U (challengeSize q.roundIdx)) :
-    StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      :=
+    StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
   { st with trStd := st.trStd ++ [{ query := q, response := rhoHat_i }] }
 
 private def StdTraceState.appendMemoAndEntry
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     (rhoHat_i : Vector U (challengeSize q.roundIdx)) :
-    StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      :=
+    StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
   { trStd := st.trStd ++ [{ query := q, response := rhoHat_i }]
     -- cache `((i, 𝕩, τ, α̂_{<i}), ρ̂_i)` into `tr_std^LA`
     trStdLA := insertStdTraceMemo

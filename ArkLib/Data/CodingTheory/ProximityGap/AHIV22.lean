@@ -31,6 +31,27 @@ local instance : Fintype F := Fintype.ofFinite F
 namespace ProximityToRS
 open ReedSolomon NNReal
 
+omit [Finite F] [DecidableEq F] in
+private lemma direction_eq_of_two_affine_values
+    {u v c₀ c₁ r₀ r₁ : F}
+    (h₀ : u + r₀ * v = c₀) (h₁ : u + r₁ * v = c₁) (hr : r₁ ≠ r₀) :
+    v = (r₁ - r₀)⁻¹ * (c₁ - c₀) := by
+  rw [← h₀, ← h₁]
+  field_simp [sub_ne_zero.mpr hr]
+  ring
+
+omit [Finite F] [DecidableEq F] in
+private lemma directions_eq_of_two_affine_values
+    {u v c w r s : F}
+    (hr : u + r * v = c + r * w) (hs : u + s * v = c + s * w) (hrs : r ≠ s) :
+    v = w := by
+  have hzero : (r - s) * (v - w) = 0 := by
+    calc
+      (r - s) * (v - w) =
+          (u + r * v - (c + r * w)) - (u + s * v - (c + s * w)) := by ring
+      _ = 0 := by rw [hr, hs]; ring
+  exact sub_eq_zero.mp ((mul_eq_zero.mp hzero).resolve_left (sub_ne_zero.mpr hrs))
+
 -- Distance-bound form, proved first; the mutual-exclusion corollary `e_le_dist_over_3` follows.
 /-- **Lemma 4.4, [AHIV22] (strong form).**
 
@@ -149,19 +170,10 @@ lemma e_le_dist_over_3_strong
     have hv_eq_w_of_notin (j : ι) (hj0 : j ∉ E r0) (hj1 : j ∉ E r1) : v j = w j := by
       have h1 : (u + r1.1 • v) j = c r1 j := hE_agree r1 j hj1
       have h0 : (u + r0.1 • v) j = c r0 j := hE_agree r0 j hj0
-      have hdiff :
-          (r1.1 - r0.1) * v j = c r1 j - c r0 j := by
-        have : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by
-          simp [h1, h0]
-        have hdiff' : r1.1 * v j - r0.1 * v j = c r1 j - c r0 j := by
-          simpa [Pi.add_apply, Pi.smul_apply] using (by
-            simpa [Pi.add_apply, Pi.smul_apply] using this)
-        simpa [sub_mul] using hdiff'
-      calc
-        v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by
-          simp [hr10]
-        _   = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
-        _   = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
+      simpa [w, Pi.smul_apply, Pi.sub_apply] using
+        direction_eq_of_two_affine_values
+          (by simpa [Pi.add_apply, Pi.smul_apply] using h0)
+          (by simpa [Pi.add_apply, Pi.smul_apply] using h1) (sub_ne_zero.mp hr10)
     -- Define the base codeword so that `c r = cBase + r•w`.
     let cBase : ι → F := c r0 - r0.1 • w
     have hcBase_mem : cBase ∈ CRS := by
@@ -209,19 +221,10 @@ lemma e_le_dist_over_3_strong
               have hv0r : v i = w0r i := by
                 have hr_eq : (u + r.1 • v) i = c r i := hE_agree r i hir
                 have h0_eq : (u + r0.1 • v) i = c r0 i := hE_agree r0 i hi0
-                have hdiff :
-                    (r.1 - r0.1) * v i = c r i - c r0 i := by
-                  have : (u + r.1 • v) i - (u + r0.1 • v) i = c r i - c r0 i := by
-                    simp [hr_eq, h0_eq]
-                  have hdiff' : r.1 * v i - r0.1 * v i = c r i - c r0 i := by
-                    simpa [Pi.add_apply, Pi.smul_apply] using (by
-                      simpa [Pi.add_apply, Pi.smul_apply] using this)
-                  simpa [sub_mul] using hdiff'
-                calc
-                  v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by
-                    simp [hneq]
-                  _   = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
-                  _   = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
+                simpa [w0r, Pi.smul_apply, Pi.sub_apply] using
+                  direction_eq_of_two_affine_values
+                    (by simpa [Pi.add_apply, Pi.smul_apply] using h0_eq)
+                    (by simpa [Pi.add_apply, Pi.smul_apply] using hr_eq) (sub_ne_zero.mp hneq)
               exact hi (hv0r.symm.trans hvw)
             have hcard_le : (E r0 ∪ E r1 ∪ E r).card ≤ 3 * e := by
               have h01 : (E r0 ∪ E r1).card ≤ (E r0).card + (E r1).card :=
@@ -293,29 +296,7 @@ lemma e_le_dist_over_3_strong
               simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
             have hsj : u j + s.1 * v j = cBase j + s.1 * w j := by
               simpa [Pi.add_apply, Pi.smul_apply] using hs_eq
-            have hrj' : u j - cBase j = r.1 * (w j - v j) := by
-              have h1 := congrArg (fun t ↦ t - cBase j) hrj
-              have h1' : u j + r.1 * v j - cBase j = r.1 * w j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-              have h2 := congrArg (fun t ↦ t - r.1 * v j) h1'
-              have h2' : u j - cBase j = r.1 * w j - r.1 * v j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-              simpa [mul_sub] using h2'
-            have hsj' : u j - cBase j = s.1 * (w j - v j) := by
-              have h1 := congrArg (fun t ↦ t - cBase j) hsj
-              have h1' : u j + s.1 * v j - cBase j = s.1 * w j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-              have h2 := congrArg (fun t ↦ t - s.1 * v j) h1'
-              have h2' : u j - cBase j = s.1 * w j - s.1 * v j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-              simpa [mul_sub] using h2'
-            have hmul : r.1 * (w j - v j) = s.1 * (w j - v j) := Eq.trans hrj'.symm hsj'
-            have hzero : (r.1 - s.1) * (w j - v j) = 0 := by
-              have : r.1 * (w j - v j) - s.1 * (w j - v j) = 0 := sub_eq_zero.mpr hmul
-              simpa [sub_mul] using this
-            have hrs_ne : (r.1 - s.1) ≠ 0 := sub_ne_zero.mpr hrs_val
-            have : w j - v j = 0 := (mul_eq_zero.mp hzero).resolve_left hrs_ne
-            exact (sub_eq_zero.mp this).symm
+            exact directions_eq_of_two_affine_values hrj hsj hrs_val
           have hu0 : u j = cBase j := by
             have : u j + r.1 * v j = cBase j + r.1 * w j := by
               simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
@@ -611,16 +592,10 @@ lemma dir_close_of_many_close_pts
   have hv_eq_w_of_notin (j : ι) (hj0 : j ∉ E r0) (hj1 : j ∉ E r1) : v j = w j := by
     have h1 : (u + r1.1 • v) j = c r1 j := hE_agree r1 j hj1
     have h0 : (u + r0.1 • v) j = c r0 j := hE_agree r0 j hj0
-    have hdiff : (r1.1 - r0.1) * v j = c r1 j - c r0 j := by
-      have hsub : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by
-        simp [h1, h0]
-      have hdiff' : r1.1 * v j - r0.1 * v j = c r1 j - c r0 j := by
-        simpa [Pi.add_apply, Pi.smul_apply] using hsub
-      simpa [sub_mul] using hdiff'
-    calc
-      v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by simp [hr10]
-      _   = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
-      _   = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
+    simpa [w, Pi.smul_apply, Pi.sub_apply] using
+      direction_eq_of_two_affine_values
+        (by simpa [Pi.add_apply, Pi.smul_apply] using h0)
+        (by simpa [Pi.add_apply, Pi.smul_apply] using h1) (sub_ne_zero.mp hr10)
   -- Define the base codeword so that `c r = cBase + r•w`.
   let cBase : ι → F := c r0 - r0.1 • w
   have hcBase_mem : cBase ∈ CRS := by
@@ -666,18 +641,10 @@ lemma dir_close_of_many_close_pts
             have hv0r : v i = w0r i := by
               have hr_eq : (u + r.1 • v) i = c r i := hE_agree r i hir
               have hr0_eq : (u + r0.1 • v) i = c r0 i := hE_agree r0 i hi0
-              have hdiff :
-                  (r.1 - r0.1) * v i = c r i - c r0 i := by
-                have : (u + r.1 • v) i - (u + r0.1 • v) i = c r i - c r0 i := by
-                  simp [hr_eq, hr0_eq]
-                have hdiff' : r.1 * v i - r0.1 * v i = c r i - c r0 i := by
-                  simpa [Pi.add_apply, Pi.smul_apply] using
-                    (by simpa [Pi.add_apply, Pi.smul_apply] using this)
-                simpa [sub_mul] using hdiff'
-              calc
-                v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by simp [hneq]
-                _ = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
-                _ = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
+              simpa [w0r, Pi.smul_apply, Pi.sub_apply] using
+                direction_eq_of_two_affine_values
+                  (by simpa [Pi.add_apply, Pi.smul_apply] using hr0_eq)
+                  (by simpa [Pi.add_apply, Pi.smul_apply] using hr_eq) (sub_ne_zero.mp hneq)
             exact hi (hv0r.symm.trans hvw)
           have hcard_le : (E r0 ∪ E r1 ∪ E r).card ≤ 3 * e := by
             have h01 :
@@ -745,33 +712,7 @@ lemma dir_close_of_many_close_pts
             simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
           have hsj : u j + s.1 * v j = cBase j + s.1 * w j := by
             simpa [Pi.add_apply, Pi.smul_apply] using hs_eq
-          have hrj' : u j - cBase j = r.1 * (w j - v j) := by
-            have h1 := congrArg (fun t ↦ t - cBase j) hrj
-            have h1' : u j + r.1 * v j - cBase j = r.1 * w j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-            have h2 := congrArg (fun t ↦ t - r.1 * v j) h1'
-            have h2' : u j - cBase j = r.1 * w j - r.1 * v j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-            simpa [mul_sub] using h2'
-          have hsj' : u j - cBase j = s.1 * (w j - v j) := by
-            have h1 := congrArg (fun t ↦ t - cBase j) hsj
-            have h1' : u j + s.1 * v j - cBase j = s.1 * w j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-            have h2 := congrArg (fun t ↦ t - s.1 * v j) h1'
-            have h2' : u j - cBase j = s.1 * w j - s.1 * v j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-            simpa [mul_sub] using h2'
-          have hmul : r.1 * (w j - v j) = s.1 * (w j - v j) := Eq.trans hrj'.symm hsj'
-          have hzero : (r.1 - s.1) * (w j - v j) = 0 := by
-            have : r.1 * (w j - v j) - s.1 * (w j - v j) = 0 := sub_eq_zero.mpr hmul
-            simpa [sub_mul] using this
-          have hne : r.1 - s.1 ≠ 0 := sub_ne_zero.mpr hrs_val
-          have : w j - v j = 0 := by
-            have := mul_eq_zero.mp hzero
-            rcases this with h | h
-            · exact False.elim (hne h)
-            · exact h
-          exact (sub_eq_zero.mp this).symm
+          exact directions_eq_of_two_affine_values hrj hsj hrs_val
         have hu_eq : u j = cBase j := by
           have hrj : u j + r.1 * v j = cBase j + r.1 * w j := by
             simpa [Pi.add_apply, Pi.smul_apply] using hr_eq

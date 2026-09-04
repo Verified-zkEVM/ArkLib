@@ -169,9 +169,8 @@ private def firstOccurrenceOfEither
 This calculate `J_BT(tr,s)` from a lawful backtracking sequence `S_BT(tr,s)`. -/
 def BacktrackSequence.Index (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (state : CanonicalSpongeState U) (seq : BacktrackSequence trace state) :
-    Fin trace.length × (Fin seq.inputState.length → Fin (trace.length + 1)) :=
-  by
-    classical
+    Fin trace.length × (Fin seq.inputState.length → Fin (trace.length + 1)) := by
+  classical
     have hInputStateNonempty : 0 < seq.inputState.length := by
       rw [seq.inputState_length_eq_outputState_length_succ]
       exact Nat.succ_pos _

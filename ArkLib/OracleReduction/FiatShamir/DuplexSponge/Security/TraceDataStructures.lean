@@ -71,7 +71,7 @@ def filterHash (tr : DuplexSpongeTrace StmtIn U) : List (StmtIn × Vector U Spon
 `(tr.prefix_lt_j j).filterFwdPerm` is exactly `tr_p^{<j}` from CO25 Definition 5.2.
 This is the log of the oracle spec `(forwardPermutationOracle (CanonicalSpongeState U))`. -/
 def filterFwdPerm (tr : DuplexSpongeTrace StmtIn U) :
-  List (CanonicalSpongeState U × CanonicalSpongeState U) :=
+    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
   tr.filterMap fun
     | ⟨.inr (.inl sIn), sOut⟩ => some (sIn, sOut)
     | _ => none
@@ -80,7 +80,7 @@ def filterFwdPerm (tr : DuplexSpongeTrace StmtIn U) :
 `(tr.prefix_lt_j j).filterBwdPerm` is exactly `tr_{p⁻¹}^{<j}` from CO25 Definition 5.2.
 This is the log of the oracle spec `(backwardPermutationOracle (CanonicalSpongeState U))`. -/
 def filterBwdPerm (tr : DuplexSpongeTrace StmtIn U) :
-  List (CanonicalSpongeState U × CanonicalSpongeState U) :=
+    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
   tr.filterMap fun
     | ⟨.inr (.inr sOut), sIn⟩ => some (sOut, sIn)
     | _ => none

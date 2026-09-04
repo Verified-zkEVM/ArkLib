@@ -172,7 +172,6 @@ private def singletonLookaheadSequence
       subst hPair'
       exact hNoLoop }
 
-set_option linter.flexible false in
 private def prependLookaheadSequence
     (trΔp : T_P)
     (state next : CanonicalSpongeState U)
@@ -197,8 +196,7 @@ private def prependLookaheadSequence
           have hHead : head.1 = next := by
             have hHd := tail.first_inputState_eq_state
             rw [hPairs] at hHd
-            simp at hHd
-            exact hHd
+            simpa only [List.head?_cons, Option.map_some, Option.some.injEq] using hHd
           have hTailChain : List.IsChain (fun a b => a.2 = b.1) (head :: rest) := by
             have hCh := tail.outputState_eq_next_inputState
             rw [hPairs] at hCh

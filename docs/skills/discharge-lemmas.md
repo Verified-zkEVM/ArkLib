@@ -98,7 +98,7 @@ the rating and placement decisions are what keep the result maintainable.
     [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
 - Run [`fix-lean-warnings.md`](fix-lean-warnings.md) over the changed files so no new lint or style
   warnings ship.
-- Confirm `./scripts/validate.sh` passes (add `--lint`/`--docs` as appropriate).
+- Confirm `./scripts/validate.sh` passes (add `--docs` when appropriate; style is always checked).
 
 ### 6. Summarize for the user and suggest skill improvements
 

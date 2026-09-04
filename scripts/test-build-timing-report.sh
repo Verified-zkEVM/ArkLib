@@ -106,7 +106,7 @@ BUILD_TIMING_SOURCE_SUBJECT='timing <report>' \
 BUILD_TIMING_SOURCE_BRANCH='feature|timing' \
 BUILD_TIMING_BASELINE_SHA="$(printf 'c%.0s' {1..40})" \
 BUILD_TIMING_BASELINE_LABEL='exact PR base on `main`' \
-BUILD_TIMING_NATIVE_COMMAND='lake build toyproblem-runtime hachi-runtime' \
+BUILD_TIMING_NATIVE_COMMAND='lake build toyproblem-runtime hachi-runtime lint-style' \
   bash scripts/build_timing_report.sh render "$current_dir/results.jsonl" "$base_dir" > "$report"
 
 grep -Fq -- '- PR head: `aaaaaaa`' "$report"
@@ -115,7 +115,7 @@ grep -Fq -- '- Ref: <code>feature&#124;timing</code>' "$report"
 grep -Fq -- 'Dependency cache: current **exact hit**' "$report"
 grep -Fq -- 'dependency cache **fallback restore**' "$report"
 grep -Fq -- '| Clean build | 100.00 | 90.00 | -10.00 (-10.0%) | 90.00 | 80.00 | -10.00 (-11.1%) | ok |' "$report"
-grep -Fq -- 'native build `lake build toyproblem-runtime hachi-runtime`' "$report"
+grep -Fq -- 'native build `lake build toyproblem-runtime hachi-runtime lint-style`' "$report"
 grep -Fq -- '| 12 | 12 | +0 | <code>ArkLib/Slow.lean</code> |' "$report"
 
 BUILD_TIMING_LOG_DIR="$current_dir" \
@@ -182,7 +182,7 @@ PY
 grep -Fq 'pullRequest.head.sha !== run.head_sha' .github/workflows/build-timing-report.yml
 grep -Fq 'runPullRequest?.base?.sha || pullRequest.base.sha' \
   .github/workflows/build-timing-report.yml
-grep -Fq 'BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime' \
+grep -Fq 'BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime hachi-runtime lint-style' \
   .github/workflows/build-timing-report.yml
 if grep -Fq 'the previous successful PR update' .github/workflows/build-timing-report.yml; then
   echo 'reporter must not silently use a moving previous-PR baseline' >&2

@@ -175,7 +175,7 @@ Runs `𝒱_std^f` against the compiled prover `D2SAlgo^f(𝒫̃~)`.
 - Verifier queries `f` at `(𝕩, τ̌, messages)`
 -/
 def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
-  (P : AbortComp (oSpec +
+    (P : AbortComp (oSpec +
       D2SChallengePlusUnitOracle (U := U) (fsChallengeOracle (StmtIn × Salt) pSpec))
       (StmtIn × FSSaltedProof pSpec Salt)) :
     AbortComp (oSpec +
@@ -690,15 +690,14 @@ inverse-permutation oracle families. The ambient `oSpec` handler is unconstraine
 statement contains no ambient-oracle query budget. -/
 abbrev IsLemma5_1QueryBound
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  by
-    classical
-    exact OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
-      OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
-      OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
+    (tₕ tₚ tₚᵢ : ℕ) : Prop := by
+  classical
+  exact OracleComp.IsQueryBoundP maliciousProver
+      (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
+    OracleComp.IsQueryBoundP maliciousProver
+      (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
+    OracleComp.IsQueryBoundP maliciousProver
+      (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
 
 /-- CO25 Claim 5.21.
 `Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` with `Hyb_0 / Hyb_1` sampled eagerly via
@@ -954,15 +953,12 @@ queries in the target FS security game. -/
 abbrev IsD2SAlgoChallengeQueryBound
     (prover : AbortComp (oSpec + D2SChallengePlusUnitOracle (U := U)
       (fsChallengeOracle (StmtIn × Salt) pSpec)) (StmtIn × FSSaltedProof pSpec Salt))
-    (t : ℕ) : Prop :=
-  by
-    classical
-    exact OracleComp.IsQueryBoundP prover
-      (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
-        (Salt := Salt) (pSpec := pSpec)) t
+    (t : ℕ) : Prop := by
+  classical
+  exact OracleComp.IsQueryBoundP prover
+    (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+      (Salt := Salt) (pSpec := pSpec)) t
 
-set_option linter.unusedDecidableInType false in
-set_option linter.unusedFintypeInType false in
 /-- CO25 Lemma 5.1 (§5.8) — **inner, concrete-transform form.** Identical to
 `lemma_5_1` but with the two transforms *fixed* to the concrete `ProverTransform.d2sAlgo` and
 `d2sTraceSalted` (rather than hidden behind `∃`). This is the form a later concrete extractor
@@ -975,7 +971,6 @@ omits the paper's condition `t_p ≥ max {L_P, L_V}`. Its intended proof combine
 distance claims with the `D2SAlgo` query bound, but its current body is still a single `sorry`;
 none of `claim_5_21`–`claim_5_24` is wired into this declaration yet. -/
 theorem lemma_5_1_inner
-    [DecidableEq ι]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
@@ -1051,9 +1046,6 @@ theorem lemma_5_1_inner_queryBound
         (θStar tₕ tₚ tₚᵢ) := by
   sorry
 
-set_option linter.unusedDecidableInType false in
-set_option linter.unusedFintypeInType false in
-set_option linter.unusedSectionVars false in
 /-- CO25 Lemma 5.1 (§5.8, canonical existential form).
 For every malicious prover `𝒫̃` making at most `t_h` queries to `h` and `t_p` / `t_{p⁻¹}`
 queries to `p / p⁻¹`, there exist a D2SAlgo prover transform and a D2STrace line-4 map
@@ -1075,7 +1067,6 @@ this condition, so its omission is intentional. Although placing the budgets bef
 budget-dependent witnesses at the type level, the witnesses supplied below are the concrete
 `ProverTransform.d2sAlgo` and `d2sTraceSalted`, neither of which depends on those budgets. -/
 theorem lemma_5_1
-    [DecidableEq ι]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)

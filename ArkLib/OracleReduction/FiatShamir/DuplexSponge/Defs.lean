@@ -10,6 +10,23 @@ import ArkLib.OracleReduction.FiatShamir.SingleSalt
 
 import ArkLib.OracleReduction.Security.OracleDistribution
 
+/-!
+# Duplex Sponge Fiat-Shamir
+
+We define the (multi-round) Fiat-Shamir transformation using duplex sponges.
+
+This file provides:
+- an unsalted DSFS surface (`duplexSpongeFiatShamir`) used by existing Section 5 machinery, and
+- an explicit salted surface (`duplexSpongeFiatShamirSalted`) matching Construction 4.3 shape,
+  where a salt `τ ∈ Σ^δ` is absorbed before round processing and included in the proof string.
+- Oracle distributions:
+  + duplexSpongeHashOracleDistribution: `h`-oracle
+  + duplexSpongePermutationOracleDistribution: `(p, p⁻¹)`-oracle
+  + duplexSpongeOracleDistribution (D_𝔖): `(h, p, p⁻¹)`-oracle
+  + D_g: for Hyb1
+  + D_e: for Hyb2
+  + D_IP_salted (D_f): single-salt FS random oracle
+-/
 
 /-- Explicitly distinguish Prover and Verifier queries within a single combined query log.
 Used by the §5 Fiat-Shamir games to preserve boundary information after trace-concatenation,
@@ -52,24 +69,6 @@ theorem verifierLog_tagAppend {ι : Type} {spec : OracleSpec ι}
   simp [verifierLog, List.filterMap_append, List.filterMap_map, Function.comp]
 
 end TaggedQueryLog
-
-/-!
-# Duplex Sponge Fiat-Shamir
-
-We define the (multi-round) Fiat-Shamir transformation using duplex sponges.
-
-This file provides:
-- an unsalted DSFS surface (`duplexSpongeFiatShamir`) used by existing Section 5 machinery, and
-- an explicit salted surface (`duplexSpongeFiatShamirSalted`) matching Construction 4.3 shape,
-  where a salt `τ ∈ Σ^δ` is absorbed before round processing and included in the proof string.
-- Oracle distributions:
-  + duplexSpongeHashOracleDistribution: `h`-oracle
-  + duplexSpongePermutationOracleDistribution: `(p, p⁻¹)`-oracle
-  + duplexSpongeOracleDistribution (D_𝔖): `(h, p, p⁻¹)`-oracle
-  + D_g: for Hyb1
-  + D_e: for Hyb2
-  + D_IP_salted (D_f): single-salt FS random oracle
--/
 
 /-- Result type for three-valued algorithm outcomes: paper-`err`, paper-`none`, success.
 
@@ -554,9 +553,9 @@ def duplexSpongeChallengeOracle (StartType : Type) (U : Type) [SpongeUnit U] [Sp
   (StartType →ₒ Vector U SpongeSize.C) + permutationOracle (CanonicalSpongeState U)
 
 /-- The type of a single entry in a duplex sponge query trace -/
-abbrev duplexSpongeTraceEntry {StartType : Type} {U : Type} [SpongeUnit U] [SpongeSize]
-  := Sigma (α := StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U)
-      (β := duplexSpongeChallengeOracle StartType U)
+abbrev duplexSpongeTraceEntry {StartType : Type} {U : Type} [SpongeUnit U] [SpongeSize] :=
+  Sigma (α := StartType ⊕ CanonicalSpongeState U ⊕ CanonicalSpongeState U)
+    (β := duplexSpongeChallengeOracle StartType U)
 
 alias «𝒟_𝔖» := duplexSpongeChallengeOracle
 

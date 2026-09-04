@@ -528,7 +528,7 @@ lemma subdomain_comp
   simp only [CosetFftDomainClass.subdomain_embed_zero, pow_add, pow_mul]
   field_simp
 
-@[simp, grind =]
+@[simp, grind _=_]
 theorem mem_subdomain_comp_iff_mem
     {k j : ℕ} (hk : k + j ≤ n) {x : F} :
   x ∈ subdomain (subdomain ω k) j ↔ x ∈ subdomain ω (k + j) := by

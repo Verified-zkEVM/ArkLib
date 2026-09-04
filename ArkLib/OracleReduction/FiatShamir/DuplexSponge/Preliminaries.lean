@@ -36,11 +36,11 @@ theorem preimageNonempty (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
   exact ⟨⟨b, rfl⟩⟩
 
 /-- Sample a uniformly random preimage of `a` under `ψ`. -/
-noncomputable def sampleUniformPreimage (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) : PMF B :=
-  by
-    classical
-    let _ := preimageNonempty ψ hψ a
-    exact (PMF.uniformOfFintype (Preimage ψ a)).map Subtype.val
+noncomputable def sampleUniformPreimage (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
+    PMF B := by
+  classical
+  let _ := preimageNonempty ψ hψ a
+  exact (PMF.uniformOfFintype (Preimage ψ a)).map Subtype.val
 
 /-- Pointwise description of `sampleUniformPreimage`
 Probability of sampling `b` from the fiber of `a` = `1/|fiber_{a}|` or `0` -/

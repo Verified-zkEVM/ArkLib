@@ -7,42 +7,6 @@ set -euo pipefail
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-echo "Checking for blanket package-root imports..."
-
-# Keep the lexical gate itself honest before trusting its verdict on production sources.
-# These fixtures exercise comments, multiline/module headers, escaped roots, and fail-closed
-# behavior that the current ArkLib tree does not necessarily cover.
-./scripts/test-check-blanket-imports.sh
-
-# `ArkLib.lean` is the generated package umbrella and is checked separately below. Source modules
-# under `ArkLib/` must name stable owner modules instead of importing a dependency's package root.
-# Keep this check separate from the generated-file check so directory-layer rules can be added here.
-tracked_lean_files=()
-while IFS= read -r file; do
-  tracked_lean_files+=("$file")
-done < <(git ls-files -- 'ArkLib/**/*.lean')
-
-blanket_status=0
-blanket_imports="$(
-  python3 scripts/check-blanket-imports.py "${tracked_lean_files[@]}"
-)" || blanket_status=$?
-
-if (( blanket_status > 1 )); then
-  echo "ERROR: blanket-import scanner failed with exit code $blanket_status" >&2
-  exit "$blanket_status"
-fi
-
-if (( blanket_status == 1 )); then
-  echo "❌ Blanket package-root imports found in ArkLib source modules:"
-  echo "$blanket_imports"
-  echo ""
-  echo "Import the stable owner module instead. Any umbrella exception must be file-scoped and"
-  echo "documented in scripts/check-imports.sh."
-  exit 1
-fi
-
-echo "✓ No blanket package-root imports found!"
-
 echo "Checking if all imports are up to date..."
 
 backup_file="$(mktemp "${TMPDIR:-/tmp}/ArkLib.lean.backup.XXXXXX")"

@@ -97,6 +97,7 @@ import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
 import ArkLib.Data.CodingTheory.JohnsonBound.Family
 import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
 import ArkLib.Data.CodingTheory.ListDecodability
+import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
@@ -175,6 +176,7 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
@@ -292,6 +294,8 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Preliminaries
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.AbortAnalysis
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents.Core
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents.Lemma5_8
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead

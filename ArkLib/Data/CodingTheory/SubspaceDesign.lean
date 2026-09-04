@@ -288,7 +288,7 @@ theorem subspaceDesign_tau_lower_of_ne_bot
       ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) := by
     rw [hcards, Nat.cast_sub hwt_le_n]
     have : ((Finset.univ.filter (fun i => a i ≠ 0)).card : ℝ) ≤ d := by exact_mod_cast hwt_le_d
-    linarith
+    linarith only [this]
   have hkey : (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι ≤
       ((Fintype.card ι : ℝ) - d) / Fintype.card ι := by
     have hdiv : (Module.finrank F C : ℝ) / (s * Fintype.card ι) ≤
@@ -302,7 +302,7 @@ theorem subspaceDesign_tau_lower_of_ne_bot
         ((Fintype.card ι : ℝ) - d) / Fintype.card ι := by
       rw [div_sub_div_same]
       ring_nf
-    linarith
+    linarith only [hdiv, hsplit]
   calc (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι
       ≤ ((Fintype.card ι : ℝ) - d) / Fintype.card ι := hkey
     _ ≤ ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) / Fintype.card ι := by gcongr
@@ -618,7 +618,7 @@ theorem isSubspaceDesign_frsCode_sub_one
       rw [← Nat.cast_sum]
       exact_mod_cast hnat
     rw [div_le_iff₀ hn_pos, sub_mul, div_mul_cancel₀ _ (ne_of_gt hn_pos)]
-    linarith
+    linarith only [hcast]
   -- Near-saturation escape: for `τ r ≥ 1 - 1/(n*s)` the sharper count already suffices.
   by_cases hτnear : 1 - 1 / ((Fintype.card ι : ℝ) * s) ≤ τ r
   case pos =>
@@ -626,12 +626,12 @@ theorem isSubspaceDesign_frsCode_sub_one
     rw [mul_sub, mul_one]
     have hkey : (σ : ℝ) * (1 / ((Fintype.card ι : ℝ) * s)) ≤ 1 / Fintype.card ι := by
       rw [mul_one_div, div_le_div_iff₀ (by positivity) hn_pos]
-      nlinarith
-    linarith
+      nlinarith only [hσs_real]
+    linarith only [hkey]
   rw [not_le] at hτnear
   have hτ1 : τ r < 1 := by
     have : (0 : ℝ) < 1 / ((Fintype.card ι : ℝ) * s) := by positivity
-    linarith
+    linarith only [hτnear, this]
   have hτrate : τ r =
       ((s : ℝ) * (LinearCode.alphabetRate (ReedSolomon.Folded.frsCode domain k s ω) : ℝ)
           - 1 / Fintype.card ι) /
@@ -639,7 +639,7 @@ theorem isSubspaceDesign_frsCode_sub_one
     rw [hτdef r, if_pos hrmem]
   have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
     have : (r : ℝ) ≤ s := by exact_mod_cast hrs
-    linarith
+    linarith only [this]
   have hcast_b : (((s - r + 1 : ℕ)) : ℝ) = (s : ℝ) - r + 1 := by
     push_cast [Nat.cast_sub hrs]; ring
   have hk_le : k ≤ s * Fintype.card ι := by
@@ -658,7 +658,7 @@ theorem isSubspaceDesign_frsCode_sub_one
     rw [hτrate, hrate] at hτnear
     have hden_le : (s : ℝ) - r + 1 ≤ s := by
       have : (1 : ℝ) ≤ r := by exact_mod_cast hr1
-      linarith
+      linarith only [this]
     have hfac_nonneg : (0 : ℝ) ≤ 1 - 1 / ((Fintype.card ι : ℝ) * s) := by
       have hn1 : (1 : ℝ) ≤ Fintype.card ι := by exact_mod_cast Fintype.card_pos
       have hs1 : (1 : ℝ) ≤ s := by exact_mod_cast (show 1 ≤ s by omega)
@@ -918,11 +918,11 @@ theorem isSubspaceDesign_frsCode
   · simp only [hr, if_true]
     have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
       have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
-      linarith
+      linarith only [this]
     have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
     rw [sub_div]
     have hdrop : (0 : ℝ) ≤ (1 / (Fintype.card ι : ℝ)) / ((s : ℝ) - r + 1) := by positivity
-    linarith
+    linarith only [hdrop]
   · simp [hr]
 
 /-- Univariate multiplicity codes are subspace designs for the profile
@@ -1015,7 +1015,7 @@ theorem isSubspaceDesign_umCode_sub_one
       rw [← Nat.cast_sum]
       exact_mod_cast hnat
     rw [div_le_iff₀ hn_pos, sub_mul, div_mul_cancel₀ _ (ne_of_gt hn_pos)]
-    linarith
+    linarith only [hcast]
   -- Near-saturation escape: for `τ r ≥ 1 - 1/(n*s)` the sharper count already suffices.
   by_cases hτnear : 1 - 1 / ((Fintype.card ι : ℝ) * s) ≤ τ r
   case pos =>
@@ -1023,12 +1023,12 @@ theorem isSubspaceDesign_umCode_sub_one
     rw [mul_sub, mul_one]
     have hkey : (σ : ℝ) * (1 / ((Fintype.card ι : ℝ) * s)) ≤ 1 / Fintype.card ι := by
       rw [mul_one_div, div_le_div_iff₀ (by positivity) hn_pos]
-      nlinarith
-    linarith
+      nlinarith only [hσs_real]
+    linarith only [hkey]
   rw [not_le] at hτnear
   have hτ1 : τ r < 1 := by
     have : (0 : ℝ) < 1 / ((Fintype.card ι : ℝ) * s) := by positivity
-    linarith
+    linarith only [hτnear, this]
   have hτrate : τ r =
       ((s : ℝ) * (LinearCode.alphabetRate
         (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) - 1 / Fintype.card ι) /
@@ -1036,7 +1036,7 @@ theorem isSubspaceDesign_umCode_sub_one
     rw [hτdef r, if_pos hrmem]
   have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
     have : (r : ℝ) ≤ s := by exact_mod_cast hrs
-    linarith
+    linarith only [this]
   have hk_le : k ≤ s * Fintype.card ι := by
     by_contra hk
     have hdim : Module.finrank F (ReedSolomon.Multiplicity.umCode domain k s) =
@@ -1054,7 +1054,7 @@ theorem isSubspaceDesign_umCode_sub_one
     rw [hτrate, hrate] at hτnear
     have hden_le : (s : ℝ) - r + 1 ≤ s := by
       have : (1 : ℝ) ≤ r := by exact_mod_cast hr1
-      linarith
+      linarith only [this]
     have hfac_nonneg : (0 : ℝ) ≤ 1 - 1 / ((Fintype.card ι : ℝ) * s) := by
       have hn1 : (1 : ℝ) ≤ Fintype.card ι := by exact_mod_cast Fintype.card_pos
       have hs1 : (1 : ℝ) ≤ s := by exact_mod_cast (show 1 ≤ s by omega)
@@ -1257,11 +1257,11 @@ theorem isSubspaceDesign_umCode
   · simp only [hr, if_true]
     have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
       have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
-      linarith
+      linarith only [this]
     have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
     rw [sub_div]
     have hdrop : (0 : ℝ) ≤ (1 / (Fintype.card ι : ℝ)) / ((s : ℝ) - r + 1) := by positivity
-    linarith
+    linarith only [hdrop]
   · simp [hr]
 
 end CodingTheory
