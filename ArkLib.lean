@@ -178,8 +178,12 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Contracts
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Specification
+import ArkLib.Data.CodingTheory.ReedSolomon.LowRateListDecoding.Main
 import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
 import ArkLib.Data.CodingTheory.SubspaceDesign

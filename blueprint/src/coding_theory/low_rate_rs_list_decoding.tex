@@ -1,0 +1,199 @@
+\section{Hidden-derivative Reed--Solomon list decoding}
+\label{sec:low_rate_rs_list_decoding}
+
+This section fixes the public interfaces for the formalization of
+Brakensiek--Chen--Putterman--Zhang--Zheng~\cite{BCPZZ26}.  The mathematical engine consumes exact
+natural-number inequalities.  Rates, asymptotics, and named parameter choices are producers of
+those inequalities and must not be dependencies of the algebra, rank, or root-solver trunks.
+
+\subsection{Generic exact decoder contract}
+
+Let $F$ be a semiring, let $\alpha : I \hookrightarrow F$ be an evaluation domain, and let
+$k,A,L\in\N$.  A decoder certificate contains a map
+\[
+  D : (I\to F) \longrightarrow \operatorname{Finset}\{P\in F[X] : \deg P<k\}
+\]
+such that, for every received word $y$ and degree-bounded polynomial $P$,
+\[
+  P\in D(y)
+  \quad\Longleftrightarrow\quad
+  A \le \bigl|\{i\in I : P(\alpha_i)=y_i\}\bigr|,
+  \qquad |D(y)|\le L.
+\]
+The subtype enforces $\deg P<k$; the equivalence enforces both soundness and completeness.  The
+certificate does not assert computability or a running-time bound.
+
+\begin{definition}[Exact decoder]
+  \label{def:low_rate_exact_decoder}
+  \lean{ReedSolomon.ListDecoding.IsExactDecoder}
+  \leanok
+\end{definition}
+
+\begin{definition}[Decoder certificate]
+  \label{def:low_rate_decoder_certificate}
+  \lean{ReedSolomon.ListDecoding.DecoderCertificate}
+  \uses{def:low_rate_exact_decoder}
+  \leanok
+\end{definition}
+
+An ambient candidate certificate uses a possibly larger design dimension $K$.  It need only contain
+every degree-$<K$ polynomial with agreement at least $A$; it may contain false positives.  For every
+$k\le K$, taking the preimage of degree-$<k$ polynomials and filtering by actual agreement gives an
+exact decoder without increasing $L$.
+
+\begin{definition}[Ambient candidate certificate]
+  \label{def:hidden_derivative_candidate_certificate}
+  \lean{ReedSolomon.ListDecoding.CandidateCertificate}
+  \leanok
+\end{definition}
+
+\begin{definition}[Filter ambient candidates]
+  \label{def:hidden_derivative_filter_candidates}
+  \lean{ReedSolomon.ListDecoding.CandidateCertificate.toDecoderCertificate}
+  \uses{def:low_rate_decoder_certificate,def:hidden_derivative_candidate_certificate}
+  \notready
+\end{definition}
+
+\subsection{Exact-parameter integration boundary}
+
+The interpolation configuration is data-only:
+\[
+  (K,A,d,m,B,W,C)\in\N^7,
+\]
+represented respectively by \texttt{designDim}, \texttt{minAgreement}, \texttt{derivOrder},
+\texttt{multiplicity}, \texttt{yDegreeCap}, \texttt{weightCap}, and \texttt{l1Cap}.  In particular,
+the core does not set $d=\lceil\eta^{-3/\theta}\rceil$, $m=d^3$, or any of the paper's support
+caps.
+
+\begin{definition}[Hidden-derivative parameters]
+  \label{def:hidden_derivative_parameters}
+  \lean{ReedSolomon.HiddenDerivative.Parameters}
+  \leanok
+\end{definition}
+
+For a concrete equation type $E$, a predicate $\operatorname{Valid}:E\to\mathrm{Prop}$, and a
+satisfaction relation
+\[
+  \operatorname{Satisfies}:E\to\{P:\deg P<K\}\to\mathrm{Prop},
+\]
+the interpolation contract constructs a valid equation $Q_y$ for every received word and proves
+\[
+  A\le\operatorname{agree}(P(\alpha),y)
+  \quad\Longrightarrow\quad
+  \operatorname{Satisfies}(Q_y,P).
+\]
+The validity predicate is where a concrete development records nonzeroness, weighted-degree bounds,
+characteristic requirements, and any other exact root-solver preconditions.
+
+\begin{definition}[Exact interpolation contract]
+  \label{def:hidden_derivative_interpolation_contract}
+  \lean{ReedSolomon.HiddenDerivative.InterpolationContract}
+  \uses{def:hidden_derivative_parameters}
+  \leanok
+\end{definition}
+
+A root-solver contract exactly enumerates the degree-$<K$ solutions of every valid equation and
+proves a caller-supplied cardinality bound $L$.  The contract deliberately does not fix Kopparty's
+quadratic hitting extension or the exponent $4d+6$: improved lifting or received-word-specific
+solvers can instantiate the same interface with a better $L$.
+
+\begin{definition}[Exact root-solver contract]
+  \label{def:hidden_derivative_root_solver_contract}
+  \lean{ReedSolomon.HiddenDerivative.RootSolverContract}
+  \leanok
+\end{definition}
+
+\begin{theorem}[Conditional exact decoder]
+  \label{thm:hidden_derivative_conditional_decoder}
+  \lean{ReedSolomon.HiddenDerivative.exists_decoderCertificate_of_contracts}
+  \uses{def:hidden_derivative_filter_candidates,def:hidden_derivative_interpolation_contract,
+    def:hidden_derivative_root_solver_contract}
+  \leanok
+\end{theorem}
+
+The theorem root-finds at $K$, filters to any $k\le K$ and actual agreement, and returns an exact
+decoder with the arbitrary solver bound $L$.  This is the stable join for the interpolation,
+root-finding, and decoder trunks.
+
+\subsection{Source-fidelity corollary}
+
+Fix natural numbers $n,k,q$, real numbers $\varepsilon,\theta$, and a proof that $q$ is prime.
+Assume
+\[
+  1\le k\le n,\qquad 0<\varepsilon,\theta<1,
+  \qquad d:=\left\lceil\varepsilon^{-3/\theta}\right\rceil<k,
+\]
+\[
+  \frac{k}{n}\le(1-\theta)\varepsilon,
+  \qquad
+  \varepsilon<
+    \left(\frac{\theta^3(1-\theta)}{768}\right)^{(5+\theta)/(1-\theta)},
+\]
+and
+\[
+  q\ge n,
+  \qquad
+  q\ge 4\varepsilon^{1-9/\theta}\frac{n}{k}.
+\]
+For every embedding $\alpha:\operatorname{Fin}(n)\hookrightarrow\F_q$, there should exist a
+decoder certificate at $A=\lceil\varepsilon n\rceil$ and exact list bound $L=q^{4d+6}$.  The same
+hypotheses should imply that the code is $(1-\varepsilon,L)$-list decodable in ArkLib's canonical
+\texttt{Code.IsListDecodable} sense.
+
+\begin{theorem}[Published low-rate corollary]
+  \label{thm:low_rate_rs_list_decoding}
+  \lean{ReedSolomon.LowRateListDecoding.exists_decoderCertificate_of_low_rate}
+  \uses{def:reed_solomon_code,def:list_decodable,def:low_rate_decoder_certificate,
+    thm:hidden_derivative_conditional_decoder}
+  \notready
+\end{theorem}
+
+The explicit $q^{4d+6}$ bound comes from the paper's specialization of Kopparty's
+differential-equation root finder~\cite[Theorem~4.3]{Kop15}; it is stronger than the headline
+$q^{O(\varepsilon^{-3/\theta})}$ presentation.
+
+\subsection{Source-audit obligations}
+
+\paragraph{Message dimension versus design dimension.}
+The interpolation proposition assumes $k/n\le(1-\theta)\varepsilon$, but its proof uses
+$k=\lfloor(1-\theta)\varepsilon n\rfloor$.  The repair is to set the ambient design dimension
+$K=\lfloor(1-\theta)\varepsilon n\rfloor$, prove $k\le K$, interpolate and root-find at $K$, then
+use Definition~\ref{def:hidden_derivative_filter_candidates}.  The published corollary retains the
+paper's quantification over every smaller $k$.
+
+\paragraph{Explicit lattice growth.}
+For $m=d^3$, $d\ge3$, and the paper's $W$, the hidden term can be replaced by the exact estimate
+\[
+  (d-1)\frac{m+\binom d2}{W}
+  \le \frac{2}{2+\theta}\log d+\frac54.
+\]
+It is therefore enough to prove
+\[
+  \frac{\theta(1-\theta)}{18}\log d
+  \ge \log\frac{4+3\theta}{\theta}+\frac54.
+\]
+The parameter-discharge layer must prove that the paper's condition implies this inequality; the
+exact-parameter contracts do not depend on the constant $768$.
+
+\paragraph{Ceiling in the support cap.}
+The proof of the support estimate uses the false inequality $\lceil x\rceil\le x$.  The repaired
+argument must instead use
+\[
+  \frac{mA}{K-1}-|c|
+  > \frac{\theta m}{4}+\frac{\theta^2m}{1-\theta}-1
+\]
+and discharge nonnegativity of the final two terms from the published hypotheses.
+
+\paragraph{Possible stronger regimes.}
+Keeping $d,m,W$ and the support caps free suggests a fixed-rate, fixed-positive-gap corollary and
+better interpolation and root-list exponents.  These are theorem candidates, not claims of the
+present formalization.  They require independent reconstruction or author confirmation, but they
+must be expressible as new parameter discharges without changing the contracts above.
+
+\subsection{Scope and trust boundary}
+
+The source claims deterministic running time $q^{O(\varepsilon^{-12/\theta})}$.  ArkLib has no
+shared machine-cost model for the required solvers, so the Lean corollary currently states only
+extensional correctness and list size.  A concrete executable decoder must prove that its output
+satisfies the certificate; a future complexity theorem must additionally connect the implementation
+to a declared cost model.  Neither \texttt{Nonempty} nor executability alone is such evidence.
