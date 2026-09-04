@@ -89,6 +89,18 @@ theorem forwardTaylorTruncationLinearMap_coordinates (m : ℕ) (a : R) (p : R[X]
   rw [coeff_forwardTaylorTruncation, if_pos i.isLt]
   rfl
 
+/-- Forward Taylor truncation is natural under coefficient-ring homomorphisms. -/
+theorem map_forwardTaylorTruncation {S : Type*} [Semiring S] (f : R →+* S)
+    (m : ℕ) (a : R) (p : R[X]) :
+    (forwardTaylorTruncation m a p).map f =
+      forwardTaylorTruncation m (f a) (p.map f) := by
+  ext i
+  simp only [coeff_map, coeff_forwardTaylorTruncation]
+  by_cases hi : i < m
+  · rw [if_pos hi, if_pos hi]
+    exact map_hasseCoeffAt f a i p
+  · rw [if_neg hi, if_neg hi, map_zero]
+
 /-- Once `m` is a strict degree bound for `p`, its finite forward truncation is the full Taylor
 shift.  Stating the hypothesis with `degreeLT` includes the zero polynomial even at `m = 0`. -/
 theorem forwardTaylorTruncation_eq_taylor_of_mem_degreeLT (m : ℕ) (a : R) (p : R[X])
