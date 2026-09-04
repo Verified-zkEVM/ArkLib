@@ -755,19 +755,22 @@ before duplicating them:
 - `R0-R1`: differential-polynomial interfaces and characteristic-safe derivative descent.
 - `R2`: an external independent sprint is developing regular-jet coefficient lifting against the
   current root-solver contract.
+- `I0`: an active agent is completing the exact finite interpolation index.
+- `C0`: an active agent is building exact finite band, shell, and rank-sum counts.
 
 The best independent assignments for additional contributors are, in priority order:
 
-1. `I0`: finish the exact finite interpolation index on top of the landed support-first space,
-   including all caps for the zero-weight variables.
-2. `C0`: define exact finite counting functions for interpolation bands, shells, and local-rank sums,
-   with executable small-instance canaries. This should not assume that the certified rank bound is
-   the true rank.
-3. `U0`: formalize ambient padding and its rate-uniform inequalities independently of interpolation.
+1. `V0` plus the theorem-independent part of `V2`: finish the exact finite rate cover, ceiling
+   monotonicity, finite maxima, and uniform side-condition arithmetic. Leave the donor-theorem and
+   root-solver premises as explicit inputs rather than axioms.
+2. `U0`: formalize ambient padding and its rate-uniform inequalities independently of interpolation.
    Keep every floor, ceiling, positivity, and `D > d` side condition explicit.
-4. `R4-R6` support: develop the generic finite-field counting, sufficiently-large extension, and
+3. `R4-R6` support: develop the generic finite-field counting, sufficiently-large extension, and
    base-solution injection lemmas needed for the division-free root-count inequality. Keep these
    files independent of the still-moving `R0-R3` interface where possible.
+4. `I3-I4` support: port or independently prove the donor's scaled-shell and contact-envelope
+   kernel lemmas in new files, coordinating exact count names with the `C0` owner. State only the
+   exhibited-kernel rank upper bound, never equality with the true local rank.
 5. `O0-O1` audit support: independently develop the continuous and discrete sharp-constant
    certificates in non-overlapping helper files. These are separate audit routes and should not
    share unproved numerical lemmas; final composition still waits for `C0`, `I4`, and `U0`.
