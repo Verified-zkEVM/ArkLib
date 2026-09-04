@@ -116,6 +116,7 @@ abbrev oneStep {k d n : ℕ} [FoldingContext k d n] : FoldingContext 1 d n where
 
 attribute [grind →] FoldingContextLeft.k_ge_1 FoldingContextLeft.k_le_d
                           FoldingContextRight.d_le_n FoldingContextMiddle.k_le_n
+                            FoldingContextMiddle.k_ge_1
 
 attribute [grind cases] FoldingContext
 
@@ -175,6 +176,14 @@ lemma one_add_sub_one' {k n : ℕ} [FoldingContextMiddle k n] :
 @[grind =]
 lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
     n - 1 - (k - 1) = n - k := by
+  have := FoldingContextMiddle.k_ge_1
+  have := FoldingContextMiddle.k_le_n
+  omega
+
+/-- Given a `[FoldingContextMiddle k n]` we have `k - 1 + (n - k) = n - 1`. -/
+@[grind _=_]
+lemma k_sub_1_add_n_sub_k_eq_n_sub_1 {k n : ℕ} [FoldingContextMiddle k n] :
+    k - 1 + (n - k) = n - 1 := by
   have := FoldingContextMiddle.k_ge_1
   have := FoldingContextMiddle.k_le_n
   omega

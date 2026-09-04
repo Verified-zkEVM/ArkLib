@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova
+Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
+         Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Probability.ProbabilityMassFunction.Monad
@@ -355,6 +356,62 @@ theorem prob_marginalization_first_of_prod {α β : Type} [Fintype α] [Fintype 
   unfold D_rest
   -- ⊢ (D_rest x) True = if P x then 1 else 0
   simp only [Bind.bind, pure, PMF.bind_const, PMF.pure_apply, eq_iff_iff, true_iff]
+
+/-- A probability is at most one. -/
+lemma prob_le_one {α : Type} (D : PMF α) (P : α → Prop) :
+    Pr_{ let a ← D }[P a] ≤ 1 := by
+  classical
+  rw [ProbabilityTheory.Pr_eq_tsum_indicator]
+  calc ∑' a, D a * (if P a then (1 : ENNReal) else 0)
+      ≤ ∑' a, D a * 1 := by gcongr with a
+                            split <;> simp
+    _ = 1 := by simp [D.tsum_coe]
+
+/-- An impossible event has probability zero. -/
+lemma prob_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop) (h : ∀ a, ¬ P a) :
+    Pr_{ let a ← D }[P a] = 0 := by
+  classical
+  rw [ProbabilityTheory.Pr_eq_tsum_indicator]
+  simp [h]
+
+/-- Sampling `Fin (k + 1) → F` uniformly is sampling the first `k` coordinates and the last
+  coordinate independently: the probability decomposes as a `tsum` over the first `k`
+  coordinates of the conditional probability over the last one. -/
+lemma prob_fin_succ_split {F : Type} [Fintype F] [Nonempty F] {k : ℕ}
+    (P : (Fin (k + 1) → F) → Prop) :
+    Pr_{ let α ←$ᵖ (Fin (k + 1) → F) }[P α] =
+      ∑' y : (Fin k → F), (PMF.uniformOfFintype (Fin k → F)) y *
+        Pr_{ let x ←$ᵖ F }[P (Fin.snoc y x)] := by
+  classical
+  let e : ((Fin k → F) × F) ≃ (Fin (k + 1) → F) :=
+    { toFun := fun r => Fin.snoc r.1 r.2
+      invFun := fun α => (Fin.init α, α (Fin.last k))
+      left_inv := by
+        rintro ⟨y, x⟩
+        simp [Fin.init_snoc]
+      right_inv := by
+        intro α
+        simp [Fin.snoc_init_self] }
+  rw [←ProbabilityTheory.Pr_uniform_equiv e P,
+      Probability.prob_split_uniform_sampling_of_prod (P := fun r ↦ P (e r))]
+  exact Probability.prob_tsum_form_split_first _ _
+
+open scoped Classical in
+/-- The union bound step: if for every value of the first block of randomness the conditional
+  probability `g` is at most `1` when the bad event `Q` holds and at most `c` otherwise, then
+  the total probability is at most `Pr[Q] + c`. -/
+lemma tsum_prob_le_add {α : Type} (D : PMF α) (g : α → ENNReal) (Q : α → Prop) (c : ENNReal)
+    (h : ∀ a, g a ≤ (if Q a then 1 else 0) + c) :
+    ∑' a, D a * g a ≤ Pr_{ let a ← D }[Q a] + c := by
+  have h1 : ∑' a, D a * g a ≤ ∑' a, (D a * (if Q a then 1 else 0) + D a * c) := by
+    refine ENNReal.tsum_le_tsum fun a ↦ ?_
+    rw [←mul_add]
+    exact mul_le_mul_right (h a) _
+  have h2 : ∑' a, (D a * (if Q a then 1 else 0) + D a * c) = Pr_{ let a ← D }[Q a] + c := by
+    rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, D.tsum_coe, one_mul,
+      ProbabilityTheory.Pr_eq_tsum_indicator]
+  exact h2 ▸ h1
+
 /--
 **Monotonicity of Probability**
 
