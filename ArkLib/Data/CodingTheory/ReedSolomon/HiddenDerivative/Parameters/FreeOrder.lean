@@ -322,6 +322,26 @@ theorem exists_freeOrderRankThreshold {epsilon theta : ℝ} (hepsilon : 0 < epsi
   exact Filter.eventually_atTop.mp
     (hproduct.eventually (Filter.eventually_gt_atTop (1 : ℝ)))
 
+/-- One finite threshold packages the elementary large-order conditions needed downstream.
+
+The shell-count threshold is intentionally absent: it belongs to the still-unported discrete
+lattice lane. -/
+theorem exists_freeOrderElementaryThreshold {epsilon theta : ℝ} (hepsilon : 0 < epsilon)
+    (htheta : 0 < theta) (hthetaOne : theta < 1) :
+    ∃ d₀ : ℕ, ∀ d : ℕ, d₀ ≤ d →
+      2 ≤ d ∧
+      2 ≤ theta * (multiplicity d : ℝ) / 16 ∧
+      1 < (theta ^ 3 / 262144) * ((1 - theta) * epsilon / 2) *
+        (d : ℝ) ^ rankSavingExponent theta := by
+  obtain ⟨dBox, hBox⟩ := exists_orderThreshold_for_boxWidth htheta
+  obtain ⟨dRank, hRank⟩ := exists_freeOrderRankThreshold hepsilon htheta hthetaOne
+  refine ⟨max 2 (max dBox dRank), ?_⟩
+  intro d hd
+  have hdTwo : 2 ≤ d := (Nat.le_max_left 2 _).trans hd
+  have hrest : max dBox dRank ≤ d := (Nat.le_max_right 2 _).trans hd
+  exact ⟨hdTwo, hBox d ((Nat.le_max_left _ _).trans hrest),
+    hRank d ((Nat.le_max_right _ _).trans hrest)⟩
+
 /-- The rounded ambient rate is at least half its unrounded target once `2 ≤ d < K`. -/
 theorem half_rate_le_ambientDimension_sub_one_div {epsilon theta : ℝ} {d n : ℕ}
     (hd : 2 ≤ d) (hdK : d < ambientDimension epsilon theta n) :
