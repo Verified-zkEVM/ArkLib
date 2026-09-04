@@ -25,6 +25,8 @@ section Semiring
 
 variable [Semiring R]
 
+/-! ### Zero jets and divisibility in shifted coordinates -/
+
 /-- A Taylor shift is divisible by `X ^ m` exactly when its length-`m` Hasse jet is zero. -/
 theorem X_pow_dvd_taylor_iff_hasseJet_eq_zero (p : R[X]) (a : R) (m : ℕ) :
     X ^ m ∣ taylor a p ↔ hasseJet m a p = 0 := by
@@ -42,6 +44,8 @@ end Semiring
 section CommRing
 
 variable [CommRing R]
+
+/-! ### Equal jets, root factors, and root multiplicity -/
 
 /-- A root has multiplicity at least `m` exactly when its length-`m` Hasse jet vanishes. -/
 theorem X_sub_C_pow_dvd_iff_hasseJet_eq_zero (p : R[X]) (a : R) (m : ℕ) :

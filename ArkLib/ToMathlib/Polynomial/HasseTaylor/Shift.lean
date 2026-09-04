@@ -44,6 +44,8 @@ section Semiring
 
 variable {R : Type*} [Semiring R]
 
+/-! ### Elementary shift quotients -/
+
 /-- Removing the leading `X` from `X * p` recovers `p`. -/
 private theorem divX_X_mul (p : R[X]) : (X * p).divX = p := by
   ext n
@@ -96,6 +98,8 @@ section CommSemiring
 
 variable {R : Type*} [CommSemiring R]
 
+/-! ### Hasse derivatives under shifts -/
+
 /-- Hasse differentiation commutes with shifting the polynomial's input. -/
 theorem hasseDeriv_taylor (p : R[X]) (a : R) (k : ℕ) :
     hasseDeriv k (taylor a p) = taylor a (hasseDeriv k p) := by
@@ -111,6 +115,8 @@ end CommSemiring
 section CommRing
 
 variable {R : Type*} [CommRing R]
+
+/-! ### Scalar Hasse vanishing and root multiplicity -/
 
 private theorem divX_sub (p q : R[X]) : (p - q).divX = p.divX - q.divX := by
   ext n
@@ -136,6 +142,8 @@ theorem hasseDeriv_eval_eq_zero_iff_le_rootMultiplicity {p : R[X]} (hp : p ≠ 0
     (∀ i < m, (hasseDeriv i p).eval a = 0) ↔ m ≤ p.rootMultiplicity a :=
   (X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero p a m).symm.trans
     (le_rootMultiplicity_iff hp).symm
+
+/-! ### Generic backward correction in shifted coordinates -/
 
 private theorem Int.alternating_sum_choose_succ {n : ℕ} (hn : n ≠ 0) :
     (∑ j ∈ Finset.range n, (-1 : ℤ) ^ j * (n.choose (j + 1) : ℤ)) = 1 := by
@@ -270,6 +278,8 @@ theorem X_mul_normalizedBackwardHasseResidual (d : ℕ) (q : R[X]) :
   have hzero := X_pow_dvd_iff.mp (X_pow_succ_dvd_backwardHasseResidual d q) 0 (by omega)
   simpa only [normalizedBackwardHasseResidual, hzero, C_0, add_zero] using
     X_mul_divX_add (backwardHasseResidual d q)
+
+/-! ### Moving-point backward reconstruction -/
 
 /-- Paper-facing correction sum. Derivatives are evaluated at moving point `a + X`. -/
 def movingHasseSum (a : R) (p : R[X]) (d : ℕ) : R[X] :=
