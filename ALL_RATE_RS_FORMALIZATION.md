@@ -438,7 +438,7 @@ Status values are `blocked`, `queued`, `active`, `review`, and `landed`. A node 
 | P0 | Record provenance, permission, source commits, and citation keys. | None | active | Every imported file names its source and commit; bibliography entries build; permission record is durable. |
 | S0 | Freeze exact Lean statements for combinatorial, exact-decoder, characteristic, and refinement theorems. | None | queued | Quantifier order visibly gives `d = d(δ)` before all code parameters; edge cases and radius conversion are explicit. |
 | F0 | Integrate and re-audit PR 857 weighted-support API. | P0 | landed (`5bc284d7`) | Head `f37f25ba` is represented without regressions; no zero-weight finrank theorem is misapplied. |
-| F1 | Integrate and re-audit PR 856 Hasse-Taylor API. | P0 | queued | Head `0c6d0a40` is represented; characteristic-safe identities and divisibility canaries pass. |
+| F1 | Integrate and re-audit PR 856 Hasse-Taylor API. | P0 | landed (`611afa07`) | Head `0c6d0a40` is represented; characteristic-safe identities and divisibility canaries pass. |
 | F2 | Port ArkLib-native list specification, agreement-radius bridge, ambient subcode, and exact filtering contracts. | P0, S0 | queued | Uses canonical `ReedSolomon.code` and `Code.Lambda`; closes PR 855's two filtering holes; contains no stale low-rate capstone. |
 | F3 | Port hidden variables and substitution bounds. | P0, F0 | queued | Only algebraic commits are adapted; `D > d` is explicit; boundary canaries cover truncated natural subtraction. |
 | F4 | Port the audited free-order donor explainer layer at `9699ee7...`. | P0 | queued | Reusable finite-order and threshold lemmas are adapted to ArkLib; no pointwise `(ε,θ)` quantifier is mistaken for uniform `d(δ)`; both Kopparty axioms and the weak cost wrapper remain outside trusted endpoints. |
@@ -709,7 +709,7 @@ At least one audit worktree should verify that the proof breaks when each of the
 | `rs-ld-mca` trust check | Main file passed `lean --trust=0`; project script passed. |
 | `rs-ld-mca` proof holes | No `sorry` or `admit`; two explicit Kopparty project axioms remain. |
 | `rs-ld-mca` runtime claim | The `FieldCost` carrier permits arbitrary results with arbitrary stated charges, so the top-level algorithmic existence theorem is not an executable-computation certificate. |
-| PR 856 Hasse-Taylor | Clean reusable foundation at `0c6d0a40`; not yet integrated. |
+| PR 856 Hasse-Taylor | Landed on the integration branch at merge `611afa07`, with source head `0c6d0a40` preserved as merge ancestry. Targeted builds, trust-zero warning-as-error checks, characteristic-two canaries, source-trust checks, and axiom inspection passed. |
 | PR 857 weighted support | Landed on the integration branch at merge `5bc284d7`, preserving the seven source patches through `f37f25ba`; targeted builds, warning-as-error checks, import regeneration, source-trust checks, and axiom inspection passed. The zero-weight finrank limitation is documented explicitly. |
 | PR 855 specification | Useful design, but two filtering sorries and one stale low-rate theorem sorry; do not import as verified. |
 | Hidden substitution stack | Builds, but inherits PR 855 holes; port only selected algebraic commits. |

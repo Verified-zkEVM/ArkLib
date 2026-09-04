@@ -419,6 +419,15 @@ import ArkLib.ToMathlib.Polynomial.CompositionDegree
 import ArkLib.ToMathlib.Polynomial.DegreeLT
 import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 import ArkLib.ToMathlib.Polynomial.EvalExt
+import ArkLib.ToMathlib.Polynomial.HasseTaylor
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJetCanary
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.ForwardCanary
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibilityCanary
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.ShiftCanary
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 import ArkLib.ToMathlib.Set.Finite
