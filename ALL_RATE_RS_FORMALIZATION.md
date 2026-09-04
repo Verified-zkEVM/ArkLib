@@ -449,7 +449,7 @@ The weighted-degree finrank theorem currently requires nonzero variable weights.
 
 | ID | Work package | Depends on | Initial status | Acceptance condition |
 |---|---|---|---|---|
-| L0 | Connect actual polynomials and Hasse jets to the hidden local substitution, including the normalized error divisible by `T^d`. | F1, F3 | active; core at `33f1f3ac` | The theorem specializes a genuine `P` and proves the exact divisibility used by local constraints. |
+| L0 | Connect actual polynomials and Hasse jets to the hidden local substitution, including the normalized error divisible by `T^d`. | F1, F3 | landed (`33f1f3ac`, `592458da`) | The theorem specializes a genuine `P` and proves the exact divisibility used by local constraints. |
 | L1 | Turn the local identity into order-`m` contact at an agreement point. | L0 | queued | No characteristic restriction beyond the algebraic identity; all truncation indices are checked. |
 | I0 | Define the exact finite interpolation monomial band and its coefficient space. | F0, F3 | queued | Fintype and basis are explicit; zero-weight variables have finite caps; evaluator agrees with paper weights. |
 | I1 | Define differential specialization `Y_j ↦ P^[j]` and prove its degree bound. | F0, F1 | queued | Uses exact derivative weights where possible; proves strict `< mA`, including all floor and ceiling cases. |
@@ -719,7 +719,7 @@ At least one audit worktree should verify that the proof breaks when each of the
 | All-rate contracts | Landed at merge `7715c089`. The exact threshold, `Code.Lambda` radius, qualitative all-rate quantifier order, strong derivative-order target, and larger-field refinement are frozen. The decoder contract is intentionally extensional and noncomputable; executable enumeration and cost remain separate obligations. |
 | Ambient filtering and radius bridge | Landed at `d970f64c` and `45f98802`. The two filtering holes from PR 855 are proved. The point-list/evaluation-image equality and its `Code.Lambda` corollary include the exact `Nat.ceil` rounding and do not require injectivity of evaluation. |
 | Axiom-free donor foundation | Landed at merge `52903c27`: six modules covering free-order parameters, a finite zero-weight-safe interpolation space, repaired rectangular dimension counting, scoped finrank bounds, and canaries. Kopparty assumptions, `FieldCost`, and algorithmic wrappers were excluded. |
-| Hidden substitutions and local identity | Landed at `33f1f3ac`: local variables, factored and normalized substitutions, weighted bounds with explicit `d < D`, the genuine-polynomial Hasse identity, canonical reduced error, and characteristic-two canaries. The remaining `L0` edge is only an adapter to the root solver's canonical specialization API. |
+| Hidden substitutions and local identity | Landed at `33f1f3ac` and completed at `592458da`: local variables, factored and normalized substitutions, weighted bounds with explicit `d < D`, the genuine-polynomial Hasse identity, canonical reduced error, characteristic-two canaries, and an algebra-hom identity with the root solver's canonical specialization after affine Taylor translation. |
 | Differential root foundation | Landed at `14c56aaa`: bounded differential solutions, scalar and polynomial jets, active/highest jets, separants, regularity, exact root-specialization weights, characteristic contracts, and nonannihilating highest-variable derivative descent. `ZMod 2` versus `ZMod 3` canaries check the strict characteristic boundary. |
 
 ## 13. Decisions already made
@@ -751,8 +751,6 @@ Until those choices are made, contributors should prioritize the axiom-clean all
 The following nodes are already owned as of the latest update. Coordinate with the integration owner
 before duplicating them:
 
-- the final `L0` adapter: identify the shifted local-identity specialization with the canonical
-  root-solver specialization after affine translation;
 - `R2`: an external independent sprint is developing regular-jet coefficient lifting against the
   current root-solver contract.
 - `I0`: an active agent is completing the exact finite interpolation index.
