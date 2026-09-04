@@ -184,9 +184,12 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.DonorPortCanary
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.GlobalDimension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.InterpolationSpace
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.LocalIdentity
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.ScopedGlobalDimension
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Substitution
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Variables
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Specification
