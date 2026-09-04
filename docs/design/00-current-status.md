@@ -1,6 +1,6 @@
 # Current status and first implementation train
 
-**Status date:** 2026-09-03. **Scope:** the supported starting point for implementing ArkLib's
+**Status date:** 2026-09-04. **Scope:** the supported starting point for implementing ArkLib's
 typed oracle-reduction architecture.
 
 The core implementation can begin now. PolyFun's typed interaction, cursor, restriction, append,
@@ -142,7 +142,12 @@ the first complete path. AR-1 does not port the archive's whole `ArkLib/Interact
 
 AR-2A adds the structural oracle refinement: public moves choose continuations, opaque oracle
 payloads remain in `ExecutionPath`, and `ExecutionPath.toBranchPath` replaces each oracle payload
-with the unique `PUnit` branch. Roles and oracle-interface decorations remain in AR-2B.
+with the unique `PUnit` branch.
+
+AR-2B adds position-indexed `RoleDecoration` and `OracleDecoration` specializations over that tree.
+Public nodes store an explicit role and unit oracle metadata; oracle nodes store an interface and
+unit role metadata, then project to sender-owned runtime nodes. Both decorations restrict through
+PolyFun's real `FreeM.Cursor`, and `Oracle.Protocol` bundles the tree with those decorations.
 
 ## Deferred work
 

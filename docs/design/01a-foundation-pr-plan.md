@@ -108,8 +108,8 @@ the first complete path.
 
 ### AR-2A — oracle type trees and path projections
 
-**Status.** Implemented by the second typed-interaction PR. AR-2B adds the decorations that depend
-on this structural path boundary.
+**Status.** Implemented by the second typed-interaction PR. The third PR builds AR-2B on this
+structural path boundary.
 
 **Goal.** Add `Oracle.Position`, `Oracle.TypeTree`, the runtime lens to generic `TypeTree`,
 `BranchPath`, `ExecutionPath`, and projection from execution to structural branch.
@@ -118,6 +118,9 @@ on this structural path boundary.
 present in `ExecutionPath`, and oracle branch indices are `PUnit` in `BranchPath`.
 
 ### AR-2B — role and oracle decorations
+
+**Status.** Implemented by the third typed-interaction PR. AR-3A is the next oracle-specific
+foundation slice.
 
 **Goal.** Decorate the oracle type tree with roles, public/oracle status, and the projections needed
 by later prover and verifier views.

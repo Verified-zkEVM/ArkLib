@@ -277,7 +277,10 @@ import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.KoalaBear
 import ArkLib.Data.Probability.Notation
+import ArkLib.Interaction.Oracle.Protocol
 import ArkLib.Interaction.Oracle.TypeTree
+import ArkLib.Interaction.Oracle.TypeTree.Decoration
+import ArkLib.Interaction.Oracle.TypeTree.DecorationExample
 import ArkLib.Interaction.Oracle.TypeTree.MixedExample
 import ArkLib.Interaction.Reduction
 import ArkLib.Interaction.Reduction.DependentExample
