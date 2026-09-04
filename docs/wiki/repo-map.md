@@ -554,10 +554,29 @@ home_page/            site assets and assembled website root
   removed rather than renamed: downstream code should compose
   `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
   `BatchedFri.Spec.batchedFRIreduction` does.
+- Binary sequential composition lives in the four-module tree
+  `OracleReduction/Composition/Sequential/Append/`, with
+  `Composition/Sequential/Append.lean` kept as the umbrella that imports all four (so existing
+  importers are unaffected):
+  - `Append/Basic.lean` — the `append` operations on provers, verifiers, and reductions, their
+    oracle-protocol counterparts, and challenge-sampling transport across `++ₚ`.
+  - `Append/StateFunction.lean` — composition of straightline and round-by-round extractors, and
+    of verifier state functions. Past the seam the composed state function is scored
+    *disjunctively* (`S₁ ∨ S₂`); see `Verifier.StateFunction.append` for why the two alternatives
+    fail.
+  - `Append/Execution.lean` — running an appended prover / verifier, and `Prover.append_run`
+    (which carries a `Prover.OutputIsPure` hypothesis on the left prover).
+  - `Append/Security.lean` — completeness and soundness of the composition.
+
+  These proofs run on `HEq` transport, since transcripts and prover states are families indexed by
+  the round number. The generic congruence lemmas for that (`heq_apply`, `heq_funext`, `heq_pi`,
+  `heq_bind`, …) live in `ToMathlib/Logic/HEq.lean`, and the `ℕ`-indexed `HEq` computation rules for
+  `Transcript.concat` next to `concat` itself in `ProtocolSpec/Basic.lean` — put new ones there
+  rather than re-deriving them privately per module.
 - Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
   not close the inherited generic append-security boundary: the unrestricted `StateT`
-  completeness/soundness composition theorems in `Composition/Sequential/Append.lean` remain
-  admitted and must not anchor a standalone security claim.
+  completeness/soundness composition theorems in `Composition/Sequential/Append/Security.lean`
+  remain admitted and must not anchor a standalone security claim.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
   `Packing/` is the small→large packing family: `Profile.lean` holds the shared

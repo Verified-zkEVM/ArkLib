@@ -539,6 +539,31 @@ lemma concat_zero {pSpec : ProtocolSpec 1} (msg : pSpec.«Type» (0 : Fin 1))
     (T : Transcript (Fin.castSucc (0 : Fin 1)) pSpec) : T.concat msg (0 : Fin 1) = msg := by
   exact concat_last msg T
 
+/-! `concat_castSucc` and `concat_last` above index the transcript by `Fin`, which forces the caller
+to already hold the index in the right `Fin` type. Composition proofs instead carry their index
+arithmetic in `ℕ` and discharge it with `omega`, so they need the same two computation rules stated
+at a raw `ℕ` index with its bound supplied separately. Those forms conclude in `HEq`, since the two
+sides then sit at indices that are only propositionally equal. -/
+
+/-- Below the last round, `Transcript.concat` agrees with the transcript it extends.
+`ℕ`-indexed, `HEq`-valued form of `concat_castSucc`. -/
+lemma concat_apply_lt {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSpec.«Type» m)
+    (i : ℕ) (hi : i < m.val) (hi' : i < (m.succ : Fin (n + 1)).val) :
+    HEq (T.concat msg ⟨i, hi'⟩) (T ⟨i, hi⟩) := by
+  unfold concat Fin.snoc
+  rw [dif_pos hi]
+  exact cast_heq _ _
+
+/-- At the last round, `Transcript.concat` returns the newly appended message.
+`ℕ`-indexed, `HEq`-valued form of `concat_last`. -/
+lemma concat_apply_last {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSpec.«Type» m)
+    (i : ℕ) (him : i = m.val) (hi' : i < (m.succ : Fin (n + 1)).val) :
+    HEq (T.concat msg ⟨i, hi'⟩) msg := by
+  subst him
+  unfold concat Fin.snoc
+  rw [dif_neg (Nat.lt_irrefl m.val)]
+  exact cast_heq _ _
+
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
 
 variable {k : Fin (n + 1)}

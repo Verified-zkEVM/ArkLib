@@ -282,6 +282,10 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
+import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
+import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+import ArkLib.OracleReduction.Composition.Sequential.Append.Security
+import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.IsPure
 import ArkLib.OracleReduction.Equiv
@@ -413,6 +417,7 @@ import ArkLib.ToMathlib.InformationTheory.Hamming
 import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Logic.HEq
 import ArkLib.ToMathlib.Polynomial.AevalXPow
 import ArkLib.ToMathlib.Polynomial.CompositionDegree
 import ArkLib.ToMathlib.Polynomial.DegreeLT
