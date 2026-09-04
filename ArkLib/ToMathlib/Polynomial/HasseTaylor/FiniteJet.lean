@@ -108,6 +108,12 @@ theorem hasseJet_castLE {m n : ℕ} (h : m ≤ n) (r : R) (p : R[X]) (i : Fin m)
     hasseJet n r p (Fin.castLE h i) = hasseJet m r p i :=
   rfl
 
+/-- Restricting an order-`m + n` Hasse jet along the canonical prefix embedding gives the
+order-`m` jet. -/
+theorem hasseJet_castAdd (m n : ℕ) (r : R) (p : R[X]) :
+    (fun i : Fin m ↦ hasseJet (m + n) r p (Fin.castAdd n i)) = hasseJet m r p :=
+  rfl
+
 /-- The first `m` entries of the order-`m+1` Hasse jet are the order-`m` jet. -/
 theorem hasseJet_castSucc (m : ℕ) (r : R) (p : R[X]) (i : Fin m) :
     hasseJet (m + 1) r p i.castSucc = hasseJet m r p i :=

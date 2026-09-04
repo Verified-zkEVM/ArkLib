@@ -77,4 +77,14 @@ example :
       Fin.reduceFinMk, Matrix.cons_val]
     decide
 
+/-- A prefix-orientation canary: the first two coordinates of the length-three jet are
+`[D⁽⁰⁾, D⁽¹⁾] = [1, 2]`, not the last two coordinates `[2, 1]`. -/
+example :
+    (fun i : Fin 2 ↦ hasseJet 3 (1 : ZMod 5) (X ^ 2) (Fin.castAdd 1 i)) = ![1, 2] := by
+  calc
+    _ = hasseJet 2 (1 : ZMod 5) (X ^ 2) := hasseJet_castAdd 2 1 1 (X ^ 2)
+    _ = ![1, 2] := by
+      funext i
+      fin_cases i <;> norm_num [hasseJet_apply, hasseDeriv_monomial]
+
 end Polynomial
