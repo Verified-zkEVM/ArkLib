@@ -35,6 +35,37 @@ example : normalizedBackwardTaylorError (1 : ℤ) (X ^ 2) 1 = -X := by
   · have hn' : 1 ≠ n := Ne.symm hn
     simp [coeff_divX, coeff_X_pow, coeff_X, hn, hn']
 
+private theorem hasseDeriv_one_X_cube :
+    hasseDeriv 1 (X ^ 3 : ℤ[X]) = monomial 2 3 := by
+  rw [X_pow_eq_monomial, hasseDeriv_monomial]
+  norm_num
+
+private theorem hasseDeriv_two_X_cube :
+    hasseDeriv 2 (X ^ 3 : ℤ[X]) = monomial 1 3 := by
+  rw [X_pow_eq_monomial, hasseDeriv_monomial]
+  norm_num
+
+/-- A genuine order-two example exercises both the positive first-Hasse and negative
+second-Hasse moving terms. -/
+example :
+    movingHasseSum (1 : ℤ) (X ^ 3) 2 = C 3 * X + C 3 * X ^ 2 ∧
+      normalizedBackwardTaylorError (1 : ℤ) (X ^ 3) 2 = X ^ 2 := by
+  have hm : movingHasseSum (1 : ℤ) (X ^ 3) 2 = C 3 * X + C 3 * X ^ 2 := by
+    norm_num [movingHasseSum, Finset.sum_range_succ, hasseDeriv_one_X_cube,
+      hasseDeriv_two_X_cube, taylor_monomial, taylor_C, taylor_apply]
+    ring
+  refine ⟨hm, ?_⟩
+  have hr : backwardTaylorResidual (1 : ℤ) (X ^ 3) 2 = X ^ 3 := by
+    rw [backwardTaylorResidual, hm]
+    norm_num [taylor_apply]
+    ring
+  rw [normalizedBackwardTaylorError, hr]
+  ext n
+  by_cases hn : n = 2
+  · subst n
+    simp [coeff_divX, coeff_X_pow]
+  · simp [coeff_divX, coeff_X_pow, hn]
+
 /-- Order zero reduces to the ordinary shifted increment quotient. -/
 example (a : ℤ) (p : ℤ[X]) :
     normalizedBackwardTaylorError a p 0 = shiftIncrementQuotient a p :=
