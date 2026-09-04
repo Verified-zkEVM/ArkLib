@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 
 /-!
@@ -21,6 +22,8 @@ The API has three layers:
   exact degree lowering and finite-coordinate equivalences;
 * `HasseTaylor.Forward` gives explicit finite forward truncations with a canonical `X ^ m`
   remainder quotient;
+* `HasseTaylor.JetDivisibility` identifies zero or equal finite jets with the corresponding
+  shifted-power divisibility statements;
 * `HasseTaylor.Shift` gives Hasse vanishing/divisibility bridges and the moving-point backward
   identity, including the normalized error used by hidden-derivative interpolation.
 
