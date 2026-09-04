@@ -203,6 +203,8 @@ class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
   /-- lawful trace data structure implementation for the permutation queries (`p` and `p⁻¹`) -/
   lawfulPermutation : LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)
 
+attribute [instance_reducible] LawfulTraceNablaImpl.lawfulHash
+  LawfulTraceNablaImpl.lawfulPermutation
 attribute [instance] LawfulTraceNablaImpl.lawfulHash LawfulTraceNablaImpl.lawfulPermutation
 
 /-! ### CO25 `tr_∇` — generic trace payload -/
@@ -891,8 +893,7 @@ instance instLawfulListBasedTraceTable {K V : Type} [DecidableEq K] [DecidableEq
 
 /-! ### Default `tr_∇` type alias and `ofQueryLog` -/
 
-instance instLawfulTraceNablaImplListBased [SpongeUnit U] [SpongeSize]
-    [DecidableEq StmtIn] [DecidableEq U] :
+instance instLawfulTraceNablaImplListBased :
     LawfulTraceNablaImpl
       (ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
       (ListBacked.ListTraceTable (CanonicalSpongeState U) (CanonicalSpongeState U))
@@ -901,8 +902,8 @@ instance instLawfulTraceNablaImplListBased [SpongeUnit U] [SpongeSize]
 
 /-- The default (list-backed) `tr_∇`. In fact we want to use a more optimized data structure
 for efficient storage and query complexity. -/
-abbrev DefaultTraceDelta (StmtIn U : Type) [SpongeUnit U] [SpongeSize]
-  [DecidableEq StmtIn] [DecidableEq U] :=
+abbrev DefaultTraceDelta (StmtIn U : Type) [SpongeUnit U]
+    [DecidableEq StmtIn] [DecidableEq U] :=
   TraceNabla
     (DuplexSpongeFS.DSTraceStorage.ListBacked.ListTraceTable StmtIn (Vector U SpongeSize.C))
     (DuplexSpongeFS.DSTraceStorage.ListBacked.ListTraceTable

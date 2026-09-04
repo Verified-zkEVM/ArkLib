@@ -233,7 +233,7 @@ def runSection58TraceMap
     ProbComp
       (Option (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))) :=
   simulateQ
-    (d2sUnitSampleImpl (U := U))
+    (d2sUnitSampleImpl (instSampleable := instSampleable) (U := U))
     ((traceMap fullTrace).run)
 
 /-! ### Common eager-sample handler for `Hyb_1` / `Hyb_2` / `Hyb_3` / `Hyb_4` -/
@@ -271,7 +271,7 @@ def hybChallengeImpl
         let kC : D_chal.Carrier ← get
         StateT.lift <| D_chal.toImpl kC qChal
     | .inr (.inr (.inl (qUnit : Unit))) => -- (Unit →ₒ U) => alphabet sampling, e.g. in LookAhead
-        StateT.lift <| d2sUnitSampleImpl (U := U) qUnit
+        StateT.lift <| d2sUnitSampleImpl (instSampleable := instSampleable) (U := U) qUnit
     | .inr (.inr (.inr (qUnif : ℕ))) => -- unifSpec => default from ProbComp, we adopt it for `ψ⁻¹`
         StateT.lift <|
           (show ProbComp (unifSpec.Range qUnif) from
@@ -321,7 +321,6 @@ no-memo skeleton; for `M := D2SAlgoMemo …`, threading realizes the paper's
 `𝒫̃^{D2SQuery^{ψ⁻¹∘f∘φ⁻¹}}` (paper Eq. 17 RHS), mirroring `D2FQueryProver` in
 `ProverTransform.lean`. -/
 def hybridGame
-    [∀ i, Fintype (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Message i)]
     {κ : Type} {challengeSpec : OracleSpec κ}
     {T_H : Type} {T_P : Type}
@@ -383,7 +382,6 @@ Claims 5.21–5.24. Polymorphic over the **inner state type `M`** that `gImpl` c
 see `hybridGame`). -/
 def hybridGameDist -- apply traceMap into output of `hybridGame`
     [instSampleable : SampleableType U]
-    [∀ i, Fintype (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Message i)]
     {κ : Type} {challengeSpec : OracleSpec κ}
     {T_H : Type} {T_P : Type}
@@ -627,7 +625,8 @@ def hyb_1
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (Salt := Salt)) := by
   let challengeSpec := gSpec (U := U) StmtIn pSpec δ -- implemented via using `g ← D_g`
-  let D_g := D_Sigma (U := U) StmtIn pSpec δ
+  let D_g := D_Sigma (instSampleable := instSampleableTypeEncodedChallengeOracle)
+    (U := U) StmtIn pSpec δ
   -- `Hyb_1` `gᵢ`-realization: forward each `gSpec` query straight into the encoded challenge
   -- oracle exposed by `challengeSpec`.  No `ψᵢ⁻¹` step is needed since `challengeSpec`
   -- already returns the encoded `ρ̂ᵢ ∈ Σ^{ℓ_V(i)}`.  Trivial inner state `M := PUnit` —
@@ -736,7 +735,8 @@ def hyb_2
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (Salt := Salt)) := by
   let challengeSpec := eSpec (U := U) StmtIn pSpec δ
-  let D_e := D_e (U := U) StmtIn pSpec δ
+  let D_e := D_e (instSampleable := instSampleableTypeDecodedChallengeOracle)
+    (U := U) StmtIn pSpec δ
   -- `Hyb_2` `gᵢ`-realization: query the decoded challenge oracle `eᵢ` for
   -- `ρᵢ ∈ ℳ_{V,i}`, then sample a uniform `ψᵢ⁻¹` preimage to recover the encoded
   -- `ρ̂ᵢ ∈ Σ^{ℓ_V(i)}` (CO25 §5.4 Item 4(e)i).  Trivial inner state `M := PUnit`
@@ -963,7 +963,7 @@ existential.  Its intended proof combines the §5.8 distance claims with the `D2
 but its current body is still a single `sorry`; none of `claim_5_21`–`claim_5_24` is wired into
 this declaration yet. -/
 theorem lemma_5_1_inner
-    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    [DecidableEq ι]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
@@ -994,7 +994,7 @@ theorem lemma_5_1_inner
 omit [DecidableEq StmtIn] [DecidableEq U] in
 /-- The total-variation component of the concrete form of Lemma 5.1. -/
 theorem lemma_5_1_inner_tvBound
-    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    [DecidableEq U] [DecidableEq StmtIn]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
@@ -1023,7 +1023,7 @@ Only a forward-permutation query can trigger an `f`-query: it produces at most o
 whose codec bridge makes at most one `fᵢ` query.  Hash and inverse-permutation queries make none;
 memoization only decreases the count.  `IsD2SAlgoChallengeQueryBound` formalizes `#queries_f`. -/
 theorem lemma_5_1_inner_queryBound
-    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    [DecidableEq U] [DecidableEq StmtIn]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
@@ -1058,7 +1058,7 @@ salted `𝒟_IP(λ,n) = D_IP_salted` for `f`.
 Re-packages the concrete `lemma_5_1_inner` (the witnesses are `ProverTransform.d2sAlgo` and
 `d2sTraceSalted`) as the existential consumed by `theorem_6_1_soundness`. -/
 theorem lemma_5_1
-    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    [DecidableEq ι]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)

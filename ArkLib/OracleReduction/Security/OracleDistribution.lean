@@ -37,10 +37,11 @@ namespace OracleComp
 `sampler` with `impl` has the same joint output-state distribution as a fresh uniform sample paired
 with the unchanged initial state. This simultaneously captures uniformity, independence from the
 initial state, state preservation, and absence of failure. -/
-def IsFreshUniformSampler {ι σ α : Type} {spec : OracleSpec ι} [SampleableType α]
+def IsFreshUniformSampler {ι σ α : Type} {spec : OracleSpec ι}
+    [instSampleable : SampleableType α]
     (sampler : OracleComp spec α) (impl : QueryImpl spec (StateT σ ProbComp)) : Prop :=
   ∀ state, discreteEvalDist ((simulateQ impl sampler).run state) = discreteEvalDist (do
-    let value ← $ᵗ α
+    let value ← uniformSample _ (h := instSampleable)
     return (value, state))
 
 end OracleComp
@@ -122,7 +123,7 @@ def functionTable (D : ProbComp (OracleFamily spec)) : OracleDistribution spec w
 `OracleFamily spec`, which holds when `ι` and each `spec i` are finite + decidable. -/
 def uniform (spec : OracleSpec ι) [instSampleable : SampleableType (OracleFamily spec)] :
     OracleDistribution spec :=
-  functionTable (D := $ᵗ OracleFamily spec)
+  functionTable (D := uniformSample _ (h := instSampleable))
 
 /-- Bridge to the existing VCVio pattern `let k ← keygen; simulateQ (mkImpl k) A`.
 Wraps a parameter sampler + table builder into a paper-faithful `OracleDistribution`. -/
@@ -164,7 +165,7 @@ variable {spec : OracleSpec ι}
 
 private noncomputable def mapRangeAt {spec : OracleSpec ι} (q : spec.Domain)
     (e : spec.Range q ≃ spec.Range q) : OracleFamily spec ≃ OracleFamily spec :=
-  letI : DecidableEq spec.Domain := Classical.typeDecidableEq _
+  let _ : DecidableEq spec.Domain := Classical.typeDecidableEq _
   { toFun := fun g => Function.update g q (e (g q))
     invFun := fun g => Function.update g q (e.symm (g q))
     left_inv := by
@@ -185,7 +186,7 @@ private noncomputable def mapRangeAt {spec : OracleSpec ι} (q : spec.Domain)
 private lemma mapRangeAt_apply_self {spec : OracleSpec ι} (q : spec.Domain)
     (e : spec.Range q ≃ spec.Range q) (g : OracleFamily spec) :
     (mapRangeAt q e g) q = e (g q) := by
-  letI : DecidableEq spec.Domain := Classical.typeDecidableEq _
+  let _ : DecidableEq spec.Domain := Classical.typeDecidableEq _
   simp [mapRangeAt, Function.update]
 
 private theorem probOutput_uniform_marginal_eq
@@ -193,7 +194,7 @@ private theorem probOutput_uniform_marginal_eq
     (y z : spec.Range q) :
     Pr[= y | do let g ← (OracleDistribution.uniform spec).sample; pure (g q)] =
       Pr[= z | do let g ← (OracleDistribution.uniform spec).sample; pure (g q)] := by
-  letI : DecidableEq (spec.Range q) := Classical.typeDecidableEq _
+  let _ : DecidableEq (spec.Range q) := Classical.typeDecidableEq _
   let e : spec.Range q ≃ spec.Range q := Equiv.swap y z
   let T : OracleFamily spec ≃ OracleFamily spec := mapRangeAt q e
   rw [probOutput_bind_eq_tsum, probOutput_bind_eq_tsum]
@@ -318,7 +319,7 @@ uniformly sample one deterministic table realization. -/
 @[reducible]
 def D_ROM {ι : Type} (spec : OracleSpec ι) [instSampleable : SampleableType (OracleFamily spec)] :
     OracleDistribution spec :=
-  OracleDistribution.uniform spec
+  OracleDistribution.uniform (instSampleable := instSampleable) spec
 
 /-! ### `D_IP` — ideal-protocol Fiat-Shamir challenger.
 
@@ -368,7 +369,7 @@ noncomputable def D_IP {n : ℕ} (Statement : Type) (pSpec : ProtocolSpec n)
     [∀ i, VCVCompatible (pSpec.Message i)]
     [∀ i, VCVCompatible (pSpec.Challenge i)] :
     OracleDistribution (ProtocolSpec.fsChallengeOracle Statement pSpec) :=
-  D_ROM (spec := ProtocolSpec.fsChallengeOracle Statement pSpec)
+  D_ROM (instSampleable := instSampleableTypeFSChallengeOracle)
 
 /-! ### `D_Σ` — §5.8 encoded-challenge oracle.
 
@@ -397,52 +398,5 @@ def DHyb2_decoded {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) (δ : ℕ) 
 -/
 
 end OracleDistribution.Examples
-
-/-! ## §7. Probes — FinEnum-route inference for `SampleableType (OracleFamily spec)`
-
-These probes verify that `[FinEnum ι] + [∀ q, FinEnum (spec.Range q)] + Nonempty` is enough
-for typeclass synthesis to find `SampleableType (OracleFamily spec)` via
-`Pi.finEnum` ∘ `FinEnum.SampleableType`. If they typecheck, the FinEnum route is free.
--/
-
-section BridgeProbes
-
-noncomputable def VCVCompatible.toFinEnum_aux {α : Type} [VCVCompatible α] : FinEnum α where
-  card := Fintype.card α
-  equiv := Fintype.equivFin α
-  decEq := inferInstance
-
--- rootVectorEquivFin : Vector α n ≃ (Fin n → α), direction: from Vector to Pi
-noncomputable def Vector.toFinEnum_aux {α : Type} {n : ℕ} [FinEnum α] : FinEnum (Vector α n) :=
-  FinEnum.ofEquiv _ Equiv.rootVectorEquivFin
-
--- Composite probe 1: hash oracle family
-noncomputable example {StartType U : Type} (n : ℕ) [VCVCompatible StartType] [VCVCompatible U] :
-    SampleableType (OracleFamily (StartType →ₒ Vector U n)) := by
-  letI : FinEnum StartType := VCVCompatible.toFinEnum_aux
-  letI : FinEnum U := VCVCompatible.toFinEnum_aux
-  letI : FinEnum (Vector U n) := Vector.toFinEnum_aux
-  infer_instance
-
--- Composite probe 2: Equiv.Perm of Vector (manual FinEnum construction for Perm)
-noncomputable example {U : Type} (n : ℕ) [VCVCompatible U] :
-    SampleableType (Equiv.Perm (Vector U n)) := by
-  letI : FinEnum U := VCVCompatible.toFinEnum_aux
-  letI : FinEnum (Vector U n) := Vector.toFinEnum_aux
-  -- FinEnum → Fintype + DecidableEq on Vector U n
-  letI : Fintype (Vector U n) := inferInstance
-  letI : DecidableEq (Vector U n) := inferInstance
-  -- Fintype + DecidableEq on Perm
-  letI : Fintype (Equiv.Perm (Vector U n)) := inferInstance
-  letI : DecidableEq (Equiv.Perm (Vector U n)) := inferInstance
-  -- Build FinEnum (Perm ...) noncomputably
-  letI : FinEnum (Equiv.Perm (Vector U n)) :=
-    { card := Fintype.card (Equiv.Perm (Vector U n))
-      equiv := Fintype.equivFin _
-      decEq := inferInstance }
-  letI : Nonempty (Equiv.Perm (Vector U n)) := ⟨Equiv.refl _⟩
-  infer_instance
-
-end BridgeProbes
 
 end OracleReduction

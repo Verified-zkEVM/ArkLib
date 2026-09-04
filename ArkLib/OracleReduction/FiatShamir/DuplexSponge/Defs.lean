@@ -342,6 +342,8 @@ variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
 
 section Section58Oracles
 
+open OracleReduction
+
 /-- Section 5.8 `Hyb₁` challenge-oracle surface: encoded prover-prefix queries, encoded verifier
 responses.
 
@@ -352,7 +354,7 @@ strictly before `i`. With `Fintype` instances for the components this Query is a
 which is required for the eager full-table `OracleDistribution.uniform _` realization. -/
 @[inline, reducible]
 def gSpecInterface
-    {U : Type} [SpongeUnit U] [SpongeSize]
+    {U : Type} [SpongeUnit U]
     {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n)
     (δ : Nat)
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :
@@ -366,7 +368,7 @@ def gSpecInterface
 /-- Oracle family for the `gᵢ` queries in Section 5.8 `Hyb₁`. -/
 @[inline, reducible]
 def gSpec
-    {U : Type} [SpongeUnit U] [SpongeSize]
+    {U : Type} [SpongeUnit U]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (δ : Nat)
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :
@@ -382,7 +384,7 @@ Same CO25 Eq. 53 prefix shape as `gSpecInterface` (encoded messages
 indexed by rounds `< i`); only the response type differs (decoded `pSpec.Challenge i`). -/
 @[inline, reducible]
 def eSpecInterface
-    {U : Type} [SpongeUnit U] [SpongeSize]
+    {U : Type} [SpongeUnit U]
     {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) (δ : Nat) [HasMessageSize pSpec] :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query :=
@@ -394,7 +396,7 @@ def eSpecInterface
 /-- Oracle family for the `eᵢ` queries in Section 5.8 `Hyb₂`. -/
 @[inline, reducible]
 def eSpec
-    {U : Type} [SpongeUnit U] [SpongeSize]
+    {U : Type} [SpongeUnit U]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat) [HasMessageSize pSpec] :
     OracleSpec (((i : pSpec.ChallengeIdx) ×
       (eSpecInterface (U := U) StmtIn pSpec δ i).Query)) :=
@@ -410,16 +412,14 @@ hypothesis matches CO25: with a fixed-length round-indexed prefix (see `EncodedM
 oracle's domain is finite, and uniform sampling of the function table is the canonical realization
 of `g ← 𝒰((dom_i → Σ^{ℓ_V(i)})_{i∈[k]})`. -/
 def D_Sigma
-    {U : Type} [SpongeUnit U] [SpongeSize]
+    {U : Type} [SpongeUnit U]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (δ : Nat)
     [HasMessageSize pSpec] [HasChallengeSize pSpec]
-    [SampleableType
-      (OracleReduction.OracleFamily
-        (gSpec (U := U) StmtIn pSpec δ))] :
+    [instSampleable : SampleableType (OracleFamily (gSpec (U := U) StmtIn pSpec δ))] :
     OracleReduction.OracleDistribution
       (gSpec (U := U) StmtIn pSpec δ) :=
-  OracleReduction.D_ROM _
+  OracleReduction.D_ROM (instSampleable := instSampleable)
 
 /-- Bridge: `SampleableType` for `gSpec` (Hyb₁ `g`) derived from
 granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
@@ -432,11 +432,10 @@ eager `𝒟_Σ` sampling.
 `δ > 0`) is. Both hypotheses are ambient at every §5.8 call site (`KeyLemma`, `BadEvents`),
 matching `instSampleableTypeDecodedChallengeOracle` below. -/
 noncomputable instance instSampleableTypeEncodedChallengeOracle
-    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
+    {U : Type} [SpongeUnit U] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
     [VCVCompatible StmtIn] [VCVCompatible U]
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :
-    SampleableType (OracleReduction.OracleFamily
-      (gSpec (U := U) StmtIn pSpec δ)) := by
+    SampleableType (OracleFamily (gSpec (U := U) StmtIn pSpec δ)) := by
   -- The `gSpec` domain is definitionally the sigma of a challenge index and its query type;
   -- state the `Fintype`/`DecidableEq` instances on the unfolded form (default-transparency
   -- unification sees through `toOracleSpec`, which is not reducible for TC search).
@@ -449,10 +448,10 @@ noncomputable instance instSampleableTypeEncodedChallengeOracle
   letI : ∀ q : (gSpec (U := U) StmtIn pSpec δ).Domain,
       Fintype ((gSpec (U := U) StmtIn pSpec δ).Range q) := fun q =>
     (inferInstance : Fintype (Vector U (challengeSize (pSpec := pSpec) q.1)))
-  letI : Fintype (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
+  letI : Fintype (OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
     inferInstance
   -- Every encoded response type is inhabited (`U` has a default element).
-  letI : Nonempty (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
+  letI : Nonempty (OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
     ⟨fun q => (default : Vector U (challengeSize (pSpec := pSpec) q.1))⟩
   apply SampleableType.ofFintype
 
@@ -463,16 +462,14 @@ Same eager full-table semantics as `D_Sigma`, with the
 response type swapped from `Σ^{ℓ_V(i)}` to the decoded `pSpec.Challenge i`. Realizes
 `e ← 𝒰((dom_i → ℳ_{V,i})_{i∈[k]})`. -/
 def D_e
-    {U : Type} [SpongeUnit U] [SpongeSize]
+    {U : Type} [SpongeUnit U]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (δ : Nat)
     [HasMessageSize pSpec]
-    [SampleableType
-      (OracleReduction.OracleFamily
-        (eSpec (U := U) StmtIn pSpec δ))] :
+    [instSampleable : SampleableType (OracleFamily (eSpec (U := U) StmtIn pSpec δ))] :
     OracleReduction.OracleDistribution
       (eSpec (U := U) StmtIn pSpec δ) :=
-    OracleReduction.D_ROM _
+    OracleReduction.D_ROM (instSampleable := instSampleable)
 
 /-! ## Setup: oracle distributions and `SampleableType` bridges -/
 
@@ -505,11 +502,10 @@ noncomputable def D_f
 granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
 (eSpec …))` at call sites in §5.8 hybrids. -/
 noncomputable instance instSampleableTypeDecodedChallengeOracle
-    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
+    {U : Type} [SpongeUnit U] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
     [VCVCompatible StmtIn] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Challenge i)]
     [HasMessageSize pSpec] :
-    SampleableType (OracleReduction.OracleFamily
-      (eSpec (U := U) StmtIn pSpec δ)) := by
+    SampleableType (OracleFamily (eSpec (U := U) StmtIn pSpec δ)) := by
   -- Same recipe as `instSampleableTypeEncodedChallengeOracle`; only the response type differs
   -- (decoded `pSpec.Challenge i` instead of encoded `Vector U (challengeSize i)`).
   letI : Fintype (eSpec (U := U) StmtIn pSpec δ).Domain :=
@@ -521,10 +517,10 @@ noncomputable instance instSampleableTypeDecodedChallengeOracle
   letI : ∀ q : (eSpec (U := U) StmtIn pSpec δ).Domain,
       Fintype ((eSpec (U := U) StmtIn pSpec δ).Range q) := fun q =>
     (inferInstance : Fintype (pSpec.Challenge q.1))
-  letI : Fintype (OracleReduction.OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
+  letI : Fintype (OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
     inferInstance
   -- Every decoded response type is inhabited via `VCVCompatible (pSpec.Challenge i)`.
-  letI : Nonempty (OracleReduction.OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
+  letI : Nonempty (OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
     ⟨fun q => (default : pSpec.Challenge q.1)⟩
   apply SampleableType.ofFintype
 
@@ -720,7 +716,7 @@ generalization; `oSpec = []ₒ` recovers the paper's pure-IP case), and outputs 
 Used uniformly in §5.4 (`D2SAlgo` input), §5.6 (`BadEvents.lemma_5_8` — LHS matches `Hyb_0`,
 RHS matches `Hyb_1`), §5.8 hybrids `Hyb_0 .. Hyb_4`, and Lemma 5.1. -/
 abbrev MaliciousProver {n : ℕ} {ι : Type} (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n)
-    (StmtIn U : Type) [SpongeUnit U] [SpongeSize] (δ : ℕ) :=
+    (StmtIn U : Type) [SpongeUnit U] (δ : ℕ) :=
   OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
     (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)
 
@@ -738,7 +734,7 @@ Lemma 5.1. For the wide-spec variant kept for `Reduction.duplexSpongeFiatShamirS
 compatibility (with `p⁻¹` in the spec but unused), see
 `Verifier.duplexSpongeFiatShamirSalted`. -/
 abbrev DSFSSaltedVerifier {n : ℕ} {ι : Type} (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n)
-    (StmtIn StmtOut U : Type) [SpongeUnit U] [SpongeSize] (δ : ℕ) :=
+    (StmtIn StmtOut U : Type) [SpongeUnit U] (δ : ℕ) :=
   NonInteractiveVerifier (DSSaltedProof (pSpec := pSpec) (U := U) δ)
     (oSpec + duplexSpongeForwardOracle StmtIn U)
     StmtIn StmtOut
@@ -1091,7 +1087,7 @@ section TransformTypes
 
 variable {ι : Type} {oSpec : OracleSpec ι}
   {n : ℕ} {pSpec : ProtocolSpec n}
-  {StmtIn : Type} {U : Type} [SpongeUnit U] [SpongeSize]
+  {StmtIn : Type} {U : Type} [SpongeUnit U]
   {δ : Nat}
   [codec : Codec pSpec U]
 

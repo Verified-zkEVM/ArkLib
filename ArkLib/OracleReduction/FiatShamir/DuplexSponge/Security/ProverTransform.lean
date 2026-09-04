@@ -136,10 +136,10 @@ private def mkStateFromSegments
 
 /-- CO25 §5.4 — `𝒰(Σ)` realization of `Unit →ₒ U` in `ProbComp`; used by §5.4 fresh-sample
 branches (Items 2(b), 3(b), 4(c)iii, 4(e)iiiC). -/
-def d2sUnitSampleImpl [SampleableType U] :
+def d2sUnitSampleImpl [instSampleable : SampleableType U] :
     QueryImpl (Unit →ₒ U) ProbComp :=
   fun
-  | () => $ᵗ U
+  | () => uniformSample _ (h := instSampleable)
 
 end D2SQueryState
 
@@ -160,7 +160,7 @@ preimage sampler `uniformDeserializePreimage`; surjectivity of `ψᵢ` (`Codec.d
 guarantees nonemptiness. -/
 noncomputable def deserializePreimageFinset
     {i : pSpec.ChallengeIdx}
-    [Fintype U] [DecidableEq U]
+    [Fintype U]
     [Fintype (pSpec.Challenge i)] [DecidableEq (pSpec.Challenge i)]
     (challenge : pSpec.Challenge i) :
     Finset (Vector U (challengeSize (pSpec := pSpec) i)) := by
@@ -170,7 +170,7 @@ noncomputable def deserializePreimageFinset
     Deserialize.deserialize encoded = challenge
 
 /-- Sample a uniformly random element from a non-empty list using the `unifSpec` branch. -/
-def sampleFromList {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U]
+def sampleFromList {α κ : Type} {challengeSpec : OracleSpec κ}
     (l : List α) (hl : l ≠ []) :
     OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec) α := do
   let idxRaw ← query
@@ -186,7 +186,7 @@ def sampleFromList {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U]
 `deserializePreimageFinset α` and indexing via `unifSpec` -/
 noncomputable def uniformDeserializePreimage
     {κ : Type} {challengeSpec : OracleSpec κ}
-    [Fintype U] [DecidableEq U]
+    [Fintype U]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     {i : pSpec.ChallengeIdx}
     (challenge : pSpec.Challenge i) :
@@ -668,7 +668,7 @@ Single interface used by:
   `OptionT`-abort halts the §5.8 experiment (paper line 1417); the partial trace at the moment
   of abort is preserved by `BadEvents.lemma5_8ProjectedTraceDistAbortable`. -/
 def d2sQueryImpl
-    {m : Type → Type} [Monad m] [Alternative m]
+    {m : Type → Type} [AlternativeMonad m]
     (gImpl :
       QueryImpl (gSpec (U := U) StmtIn pSpec δ) m)
     (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) m) :
@@ -796,8 +796,9 @@ abbrev D2SAlgoMemo (StmtIn : Type) (U : Type) (δ : ℕ) (Salt : Type)
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :=
   List (D2SAlgoMemoEntry StmtIn U δ Salt pSpec)
 
-instance [HasMessageSize pSpec] [HasChallengeSize pSpec] :
-    Inhabited (D2SAlgoMemo StmtIn U δ Salt pSpec) := ⟨[]⟩
+instance {StmtIn' U' Salt' : Type} {δ' n' : ℕ} {pSpec' : ProtocolSpec n'}
+    [HasMessageSize pSpec'] [HasChallengeSize pSpec'] :
+    Inhabited (D2SAlgoMemo StmtIn' U' δ' Salt' pSpec') := ⟨[]⟩
 
 open Classical in
 /-- CO25 §5.4 D2SAlgo Item 3 — `tr_i[(i, 𝕩, τ̂, α̂_1, …, α̂_i)]`, returning `some ρ̂_i` if the

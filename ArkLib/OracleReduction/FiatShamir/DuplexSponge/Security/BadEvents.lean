@@ -537,7 +537,7 @@ For a `(tₕ, tₚ, tₚᵢ)`-query prover with `L` verifier permutation queries
 ```
 
 where `T = tₕ + 1 + tₚ + L + tₚᵢ`. -/
-noncomputable def lemma5_8Bound (U : Type) [SpongeUnit U] [SpongeSize] [Fintype U]
+noncomputable def lemma5_8Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
   let tShift : ℝ := (tₕ + 1 + tₚ + L + tₚᵢ : ℕ)
   (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
@@ -561,7 +561,7 @@ def traceDistOfConcreteExperiment
 variable {StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   [codec : Codec pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
-  [VCVCompatible U] [SampleableType U]
+  [VCVCompatible U]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
   {T_H : Type}
@@ -769,8 +769,7 @@ noncomputable def lemma5_8SigmaTraceDist
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
-  let k_g ←
-    (D_Sigma (U := U) StmtIn pSpec δ).sample
+  let k_g ← (D_Sigma (U := U) StmtIn pSpec δ).sample
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U) (δ := δ)
     (init := pure default)
@@ -780,7 +779,8 @@ noncomputable def lemma5_8SigmaTraceDist
       (gImpl := fun q => OptionT.lift
         ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q))
       (auxImpl := fun aux => OptionT.lift
-        ((ProverTransform.d2sUnitSampleImpl (U := U) +
+        ((ProverTransform.d2sUnitSampleImpl
+            (instSampleable := VCVCompatible.toSampleableType) (U := U) +
           QueryImpl.id' unifSpec) aux)))
     V maliciousProver
 
@@ -804,7 +804,6 @@ CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the right-hand 
 `g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to `KeyLemma.hybridGame`
 instantiated as `Hyb_1`. -/
 theorem lemma_5_8
-    [Fintype U]
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ)
@@ -1623,7 +1622,8 @@ lemma lemma_5_16 (h : ¬ E trace)
       have := seq.inputState_length_eq_outputState_length_succ; omega
     by_cases h0 : 0 < seq.outputState.length
     · -- Step 0 exists; collide its query capacity with the hash anchor's answer capacity.
-      obtain ⟨i0, hi0val, hi0eq⟩ := fwdStep_base (trace := trace) (state := state) h S_BT hseq 0 h0 hpos
+      obtain ⟨i0, hi0val, hi0eq⟩ :=
+        fwdStep_base (trace := trace) (state := state) h S_BT hseq 0 h0 hpos
       obtain ⟨iH, hiHval, hiHeq⟩ := hashAnchor_base (trace := trace) (state := state) seq hpos
       have hij : i0 ≤ iH := by
         have h1 : i0.val ≤ iH.val := by
@@ -1637,7 +1637,8 @@ lemma lemma_5_16 (h : ¬ E trace)
     · -- No steps: `j_0 = |trace|`, but `j_h < |trace|`, so `j_h > j_0` is impossible.
       exfalso
       rw [Backtrack.BacktrackSequence.Index_snd_eq_length seq (by omega) hpos] at hgt
-      exact absurd hgt (by have := (Backtrack.BacktrackSequence.Index trace state seq).1.isLt; omega)
+      exact absurd hgt
+        (by have := (Backtrack.BacktrackSequence.Index trace state seq).1.isLt; omega)
   · -- `E_time_p`: step `ι` query is later than step `ι+1` query.
     obtain ⟨p, hp, ι, hι1, hgt⟩ := htime
     obtain ⟨seq, hseq, rfl⟩ := Finset.mem_image.mp hp
