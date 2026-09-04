@@ -41,23 +41,11 @@ theorem X_pow_dvd_taylor_iff_hasseJet_eq_zero (p : R[X]) (a : R) (m : ℕ) :
 
 end Semiring
 
-section CommRing
+section Ring
 
-variable [CommRing R]
+variable [Ring R]
 
-/-! ### Equal jets, root factors, and root multiplicity -/
-
-/-- A root has multiplicity at least `m` exactly when its length-`m` Hasse jet vanishes. -/
-theorem X_sub_C_pow_dvd_iff_hasseJet_eq_zero (p : R[X]) (a : R) (m : ℕ) :
-    (X - C a) ^ m ∣ p ↔ hasseJet m a p = 0 := by
-  rw [X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero]
-  constructor
-  · intro h
-    funext i
-    simpa using h i i.isLt
-  · intro h i hi
-    have hi := congrFun h ⟨i, hi⟩
-    simpa using hi
+/-! ### Equal jets and divisibility in shifted coordinates -/
 
 /-- Two polynomials agree to Hasse order `< m` at `a` exactly when their shifted difference is
 divisible by `X ^ m`. -/
@@ -70,6 +58,26 @@ theorem X_pow_dvd_taylor_sub_iff_hasseJet_eq (p q : R[X]) (a : R) (m : ℕ) :
     exact h i i.isLt
   · intro h i hi
     exact congrFun h ⟨i, hi⟩
+
+end Ring
+
+section CommRing
+
+variable [CommRing R]
+
+/-! ### Root factors and root multiplicity -/
+
+/-- A root has multiplicity at least `m` exactly when its length-`m` Hasse jet vanishes. -/
+theorem X_sub_C_pow_dvd_iff_hasseJet_eq_zero (p : R[X]) (a : R) (m : ℕ) :
+    (X - C a) ^ m ∣ p ↔ hasseJet m a p = 0 := by
+  rw [X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero]
+  constructor
+  · intro h
+    funext i
+    simpa using h i i.isLt
+  · intro h i hi
+    have hi := congrFun h ⟨i, hi⟩
+    simpa using hi
 
 /-- Two polynomials have the same length-`m` Hasse jet at `a` exactly when their difference is
 divisible by the `m`-th power of the corresponding root factor. -/
