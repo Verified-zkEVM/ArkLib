@@ -29,11 +29,13 @@ nonvanishing condition from the source; the below-characteristic corollary disch
 
 The result is stated after Taylor shifting, using `shiftedJetSubstitution`, so the modulus is
 `X^k`.  This is equivalent to the paper's centered modulus `(X-alpha)^k`; the adapter
-`shiftedJetSubstitution_eq_taylor_differentialSpecialization` identifies this presentation with
+`taylor_differentialSpecialization` identifies this presentation with
 the root solver's unshifted `differentialSpecialization` without changing its algebraic content.
 
 This file does not formalize the singular recursion or the general-characteristic branching count
-of [Kop15, Corollary 4.5].
+of [Kop15, Corollary 4.5].  Its pivot is the literal top coordinate `Fin.last r`; applying it to
+the root solver's arbitrary highest active coordinate requires restriction or reindexing of the
+active jet prefix.
 
 ## References
 
@@ -72,32 +74,12 @@ theorem shiftedJetSubstitution_eq_eval₂Hom (Q : DifferentialPolynomial F r)
       MvPolynomial.eval₂Hom Polynomial.C (shiftedJetValues center P) Q := by
   rfl
 
-/-- Shifted-jet substitution is the Taylor shift of the root solver's unshifted differential
-specialization. -/
-theorem shiftedJetSubstitution_eq_taylor_differentialSpecialization
-    (Q : DifferentialPolynomial F r) (center : F) (P : F[X]) :
-    shiftedJetSubstitution center P Q = taylor center (differentialSpecialization Q P) := by
-  rw [shiftedJetSubstitution, differentialSpecialization, taylor_apply]
-  change MvPolynomial.eval₂Hom Polynomial.C _ Q =
-    Polynomial.compRingHom (X + C center)
-      (MvPolynomial.eval₂Hom Polynomial.C _ Q)
-  rw [MvPolynomial.map_eval₂Hom]
-  apply MvPolynomial.eval₂Hom_congr
-  · ext x
-    simp
-  · funext v
-    rcases v with _ | j
-    · simp [Polynomial.coe_compRingHom_apply]
-      ring
-    · simp [Polynomial.coe_compRingHom_apply, taylor_apply]
-  · rfl
-
 /-- The constant term of a shifted separant is its scalar evaluation on the initial Hasse jet. -/
 theorem eval_zero_shiftedJetSubstitution_separant (Q : DifferentialPolynomial F r)
     (center : F) (P : F[X]) :
     (shiftedJetSubstitution center P (separant Q (Fin.last r))).eval 0 =
       jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) := by
-  rw [shiftedJetSubstitution_eq_taylor_differentialSpecialization]
+  rw [← taylor_differentialSpecialization]
   rw [← coeff_zero_eq_eval_zero, taylor_coeff_zero]
   exact
     eval_differentialSpecialization (separant Q (Fin.last r)) P center
@@ -307,6 +289,60 @@ theorem existsUnique_regularLiftCoefficient_of_le_of_lt_ringChar (hk : 0 < k)
       X ^ (k + 1) ∣
         shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q := by
   apply existsUnique_regularLiftCoefficient (k := k) hk Q center P hresidual
+  · exact Polynomial.natCast_choose_ne_zero_of_lt_ringChar
+      (hdegree.trans_lt hD) (by omega)
+  · exact hseparant
+
+/-! ### Centered source-facing statements -/
+
+/-- Taylor translation identifies divisibility by `X^m` with divisibility by the centered
+factor `(X - C center)^m`. -/
+theorem X_pow_dvd_taylor_iff_X_sub_C_pow_dvd (p : F[X]) (center : F) (m : ℕ) :
+    X ^ m ∣ taylor center p ↔ (X - C center) ^ m ∣ p := by
+  rw [X_pow_dvd_taylor_iff, X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero]
+
+/-- Source-facing centered form of [Kop15, Theorem 4.4]. -/
+theorem existsUnique_regularLiftCoefficient_centered (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center : F) (P : F[X])
+    (hresidual : (X - C center) ^ k ∣ differentialSpecialization Q P)
+    (hbinomial : ((k + r).choose r : F) ≠ 0)
+    (hseparant :
+      jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) ≠ 0) :
+    ∃! gamma : F,
+      (X - C center) ^ (k + 1) ∣
+        differentialSpecialization Q (regularLiftCandidate center gamma k r P) := by
+  have hshifted : X ^ k ∣ shiftedJetSubstitution center P Q := by
+    rw [← taylor_differentialSpecialization,
+      X_pow_dvd_taylor_iff_X_sub_C_pow_dvd]
+    exact hresidual
+  obtain ⟨gamma, hgamma, hunique⟩ :=
+    existsUnique_regularLiftCoefficient (k := k) hk Q center P hshifted hbinomial hseparant
+  refine ⟨gamma, ?_, ?_⟩
+  · change (X - C center) ^ (k + 1) ∣
+      differentialSpecialization Q (regularLiftCandidate center gamma k r P)
+    rw [← X_pow_dvd_taylor_iff_X_sub_C_pow_dvd,
+      taylor_differentialSpecialization]
+    exact hgamma
+  · intro gamma' hgamma'
+    apply hunique gamma'
+    change (X - C center) ^ (k + 1) ∣
+      differentialSpecialization Q (regularLiftCandidate center gamma' k r P) at hgamma'
+    rw [← taylor_differentialSpecialization,
+      X_pow_dvd_taylor_iff_X_sub_C_pow_dvd]
+    exact hgamma'
+
+/-- Below-characteristic specialization of the centered one-step lift used by the all-rate
+Reed--Solomon proof. -/
+theorem existsUnique_regularLiftCoefficient_centered_of_le_of_lt_ringChar (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center : F) (P : F[X]) (D : ℕ)
+    (hdegree : k + r ≤ D) (hD : D < ringChar F)
+    (hresidual : (X - C center) ^ k ∣ differentialSpecialization Q P)
+    (hseparant :
+      jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) ≠ 0) :
+    ∃! gamma : F,
+      (X - C center) ^ (k + 1) ∣
+        differentialSpecialization Q (regularLiftCandidate center gamma k r P) := by
+  apply existsUnique_regularLiftCoefficient_centered (k := k) hk Q center P hresidual
   · exact Polynomial.natCast_choose_ne_zero_of_lt_ringChar
       (hdegree.trans_lt hD) (by omega)
   · exact hseparant

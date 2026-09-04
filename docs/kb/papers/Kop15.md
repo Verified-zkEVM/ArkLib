@@ -10,6 +10,10 @@ related_concepts:
   - reed-solomon-proximity
 related_modules:
   - ArkLib/ToMathlib/Polynomial/HasseTaylor/FiniteJet.lean
+  - ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean
+  - ArkLib/ToMathlib/MvPolynomial/FirstOrderTaylor.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLifting.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLiftingCanary.lean
 ---
 
 # Kop15
@@ -61,9 +65,18 @@ characteristic.
 - [`ArkLib/ToMathlib/Polynomial/HasseTaylor/FiniteJet.lean`](../../../ArkLib/ToMathlib/Polynomial/HasseTaylor/FiniteJet.lean)
   — the characteristic-free finite Hasse-jet coordinates used for initial conditions and
   Taylor coefficients.
-- The regular-lifting modules added by the R2 contribution — the exact paths and public
-  theorem names will be recorded here when the independently reviewed integration commit
-  is assembled.
+- [`ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean`](../../../ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean)
+  — centered coefficient perturbations, exact Hasse-derivative formulas, binomial
+  nonresonance, and characteristic-safe generic lifting helpers.
+- [`ArkLib/ToMathlib/MvPolynomial/FirstOrderTaylor.lean`](../../../ArkLib/ToMathlib/MvPolynomial/FirstOrderTaylor.lean)
+  — the multivariable first-order congruence that isolates the unique active pivot term.
+- [`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLifting.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLifting.lean)
+  — `existsUnique_regularLiftCoefficient_centered` is the source-facing one-step theorem;
+  `existsUnique_regularLiftCoefficient_centered_of_le_of_lt_ringChar` is the all-rate
+  below-characteristic specialization.
+- [`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLiftingCanary.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLiftingCanary.lean)
+  — direct `ZMod 5` sign/multiplier/pivot validation and the sharp `ZMod 2` resonant
+  counterexample.
 - `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/` — the downstream differential
   specialization, separant, and bounded-solution interfaces used by the all-rate proof.
 
@@ -81,6 +94,9 @@ characteristic.
   also supports characteristic zero; the below-characteristic result is a corollary.
 - Regularity means that the partial derivative with respect to the highest derivative
   variable (the separant), evaluated at the initial jet, is nonzero.
+- The present public theorem uses the literal top coordinate `Fin.last r`.  The broader
+  root solver also exposes an arbitrary highest active coordinate; downstream composition
+  must restrict or reindex that active prefix before applying this theorem.
 
 ## Version and Lineage Notes
 
@@ -101,7 +117,8 @@ characteristic.
   the list-size count in general characteristic, or the root-finding runtime bound.
 - It does not claim that every initial jet extends to a full solution.  The regular lift
   gives unique continuation when the current truncation satisfies the required residual
-  congruence; the final uniqueness theorem compares actual solutions.
+  congruence.  Iterating this step into fixed-jet uniqueness for complete bounded solutions
+  remains a downstream theorem.
 - No code is copied from Kopparty's article.  The mathematical proof lineage is cited;
   Lean proof engineering and supporting generic lemmas are ArkLib work.
 
