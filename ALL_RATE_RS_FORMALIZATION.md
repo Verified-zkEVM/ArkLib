@@ -436,7 +436,7 @@ Status values are `blocked`, `queued`, `active`, `review`, and `landed`. A node 
 | ID | Work package | Depends on | Status | Acceptance condition |
 |---|---|---|---|---|
 | P0 | Record provenance, permission, source commits, and citation keys. | None | active | Every imported file names its source and commit; bibliography entries build; permission record is durable. |
-| S0 | Freeze exact Lean statements for combinatorial, exact-decoder, characteristic, and refinement theorems. | None | queued | Quantifier order visibly gives `d = d(δ)` before all code parameters; edge cases and radius conversion are explicit. |
+| S0 | Freeze exact Lean statements for combinatorial, exact-decoder, characteristic, and refinement theorems. | None | landed (`7715c089`) | Quantifier order visibly gives `d = d(δ)` before all code parameters; edge cases and radius conversion are explicit. |
 | F0 | Integrate and re-audit PR 857 weighted-support API. | P0 | landed (`5bc284d7`) | Head `f37f25ba` is represented without regressions; no zero-weight finrank theorem is misapplied. |
 | F1 | Integrate and re-audit PR 856 Hasse-Taylor API. | P0 | landed (`611afa07`) | Head `0c6d0a40` is represented; characteristic-safe identities and divisibility canaries pass. |
 | F2 | Port ArkLib-native list specification, agreement-radius bridge, ambient subcode, and exact filtering contracts. | P0, S0 | queued | Uses canonical `ReedSolomon.code` and `Code.Lambda`; closes PR 855's two filtering holes; contains no stale low-rate capstone. |
@@ -466,7 +466,7 @@ The weighted-degree finrank theorem currently requires nonzero variable weights.
 
 | ID | Work package | Depends on | Initial status | Acceptance condition |
 |---|---|---|---|---|
-| V0 | Define a finite `δ/2`-mesh covering every feasible rate in `[0,1-δ]`. | S0 | queued | Every feasible `k/n` has a positive bin endpoint `a` with `k/n ≤ a ≤ k/n+δ/2`; endpoints give valid `ε_a,θ_a ∈ (0,1)`. |
+| V0 | Define a finite `δ/2`-mesh covering every feasible rate in `[0,1-δ]`. | S0 | active (primitives at `7715c089`) | Every feasible `k/n` has a positive bin endpoint `a` with `k/n ≤ a ≤ k/n+δ/2`; endpoints give valid `ε_a,θ_a ∈ (0,1)`. |
 | V1 | Instantiate the donor free-order theorem in every rate bin. | V0, F4 | queued | Proves `(1-θ_a)ε_a=a`, ambient containment, and threshold monotonicity with exact floors and ceilings. |
 | V2 | Take finite maxima of derivative and block-length thresholds. | V1 | queued | Produces `d(δ),N(δ)` before `n,k,q`; uniformly discharges `d<K`, `B<q`, and `mA≤q²` from `n≥N,q≥n`. |
 | V3 | Replace the donor root axiom by `R6` and package the uniform additive-gap theorem. | V2, F2, I6, R6 | queued | Exact list theorem has the required quantifier order, arbitrary evaluation points, and no project axioms. |
@@ -716,6 +716,7 @@ At least one audit worktree should verify that the proof breaks when each of the
 | ArkLib root solver | No suitable reusable implementation found. |
 | Advanced lattice analysis | No reusable ArkLib library sufficient for the sharp derivative dependence found. |
 | Donor port to ArkLib 4.33.1 | First 19 of 51 original modules compile unmodified. `GlobalDimension.lean` needs moderate Fin/Finsupp API repairs; the new parameter and free-threshold modules themselves compile over compatible dependency oleans. |
+| All-rate contracts | Landed at merge `7715c089`. The exact threshold, `Code.Lambda` radius, qualitative all-rate quantifier order, strong derivative-order target, and larger-field refinement are frozen. The decoder contract is intentionally extensional and noncomputable; executable enumeration and cost remain separate obligations. |
 
 ## 13. Decisions already made
 
