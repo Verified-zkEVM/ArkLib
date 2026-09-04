@@ -497,6 +497,18 @@ theorem X_pow_succ_dvd_backwardTaylorResidual (a : R) (p : R[X]) (d : ℕ) :
   rw [backwardTaylorResidual_eq]
   exact X_pow_succ_dvd_backwardHasseResidual d (taylor a p)
 
+/-- Paper-facing congruence from Equation (13), written directly as divisibility by
+`X ^ (d + 1)`. -/
+theorem X_pow_succ_dvd_taylor_sub_C_sub_movingHasseSum (a : R) (p : R[X]) (d : ℕ) :
+    X ^ (d + 1) ∣ taylor a p - C (p.eval a) - movingHasseSum a p d := by
+  exact X_pow_succ_dvd_backwardTaylorResidual a p d
+
+/-- Equation (13) with a caller-supplied center value `y`. -/
+theorem X_pow_succ_dvd_taylor_sub_C_sub_movingHasseSum_of_eval_eq
+    {a y : R} {p : R[X]} (d : ℕ) (h : p.eval a = y) :
+    X ^ (d + 1) ∣ taylor a p - C y - movingHasseSum a p d := by
+  simpa only [h] using X_pow_succ_dvd_taylor_sub_C_sub_movingHasseSum a p d
+
 /-- The order-one contact residual is divisible by `X²`. -/
 theorem X_sq_dvd_taylor_sub_C_sub_X_mul_derivative (a : R) (p : R[X]) :
     X ^ 2 ∣ taylor a p - C (p.eval a) - X * taylor a p.derivative := by

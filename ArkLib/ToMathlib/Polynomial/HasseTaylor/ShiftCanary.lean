@@ -182,6 +182,12 @@ example (a : ℤ) (p : ℤ[X]) :
     normalizedBackwardTaylorError a p 0 = shiftIncrementQuotient a p :=
   normalizedBackwardTaylorError_zero a p
 
+/-- The direct Equation-(13) API accepts a caller-supplied received value without unfolding the
+residual package. -/
+example {a y : ℤ} {p : ℤ[X]} (h : p.eval a = y) (d : ℕ) :
+    X ^ (d + 1) ∣ taylor a p - C y - movingHasseSum a p d :=
+  X_pow_succ_dvd_taylor_sub_C_sub_movingHasseSum_of_eval_eq d h
+
 /-- Once the truncation reaches the polynomial degree, both residuals vanish. -/
 example :
     backwardTaylorResidual (7 : ℤ) (X ^ 2) 2 = 0 ∧
