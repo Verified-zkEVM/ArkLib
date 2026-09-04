@@ -247,6 +247,29 @@ theorem coeff_forwardTaylorQuotient (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
     taylor_coeff] at h
   exact h
 
+/-- Removing the first `m` Taylor coefficients lowers natural degree by at least `m`.
+
+This formulation is zero-aware: it remains meaningful for `p = 0` and when `m` exceeds the
+degree of `p`. -/
+theorem natDegree_forwardTaylorQuotient_le (m : ℕ) (a : R) (p : R[X]) :
+    (forwardTaylorQuotient m a p).natDegree ≤ p.natDegree - m := by
+  rw [natDegree_le_iff_coeff_eq_zero]
+  intro i hi
+  rw [coeff_forwardTaylorQuotient, hasseCoeffAt_apply,
+    hasseDeriv_eq_zero_of_lt_natDegree p (i + m) (by omega), eval_zero]
+
+/-- A strict degree bound on `p` descends by `m` to its canonical forward Taylor quotient. -/
+theorem forwardTaylorQuotient_mem_degreeLT (m d : ℕ) (a : R) (p : R[X])
+    (hp : p ∈ degreeLT R d) :
+    forwardTaylorQuotient m a p ∈ degreeLT R (d - m) := by
+  rw [mem_degreeLT, degree_lt_iff_coeff_zero] at hp ⊢
+  intro i hi
+  rw [coeff_forwardTaylorQuotient, hasseCoeffAt_apply]
+  have hderiv : hasseDeriv (i + m) p = 0 := by
+    ext j
+    rw [hasseDeriv_coeff, hp (j + (i + m)) (by omega), mul_zero, coeff_zero]
+  rw [hderiv, eval_zero]
+
 /-- Canonical forward Taylor quotients are natural under coefficient-ring homomorphisms. -/
 theorem map_forwardTaylorQuotient {S : Type*} [Ring S] (f : R →+* S)
     (m : ℕ) (a : R) (p : R[X]) :
