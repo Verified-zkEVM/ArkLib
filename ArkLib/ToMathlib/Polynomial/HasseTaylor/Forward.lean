@@ -54,11 +54,6 @@ private def forwardTaylorTruncationToPolynomial (m : ℕ) (a : R) : R[X] →ₗ[
     simp only [coeff_smul, coeff_forwardTaylorTruncation]
     split_ifs <;> simp
 
-/-- At the origin, Hasse coefficients are ordinary polynomial coefficients. -/
-theorem hasseCoeffAt_zero_eq_coeff (i : ℕ) (p : R[X]) :
-    hasseCoeffAt (0 : R) i p = p.coeff i := by
-  rw [hasseCoeffAt_apply, ← taylor_coeff, taylor_zero]
-
 /-- Below the truncation order, the finite polynomial agrees coefficientwise with `p(X + a)`. -/
 theorem coeff_forwardTaylorTruncation_of_lt (m : ℕ) (a : R) (p : R[X]) {i : ℕ}
     (hi : i < m) : (forwardTaylorTruncation m a p).coeff i = (taylor a p).coeff i := by
@@ -180,6 +175,17 @@ theorem X_pow_mul_forwardTaylorQuotient (m : ℕ) (a : R) (p : R[X]) :
       (X_pow_dvd_forwardTaylorRemainder m a p)
   simpa [forwardTaylorQuotient, hmod] using
     modByMonic_add_div (forwardTaylorRemainder m a p) (X ^ m)
+
+/-- Coefficient `i` of the canonical quotient is Hasse--Taylor order `i + m` of `p` at `a`. -/
+@[simp]
+theorem coeff_forwardTaylorQuotient (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
+    (forwardTaylorQuotient m a p).coeff i = hasseCoeffAt a (i + m) p := by
+  have h := congrArg (fun q : R[X] ↦ q.coeff (i + m))
+    (X_pow_mul_forwardTaylorQuotient m a p)
+  rw [coeff_X_pow_mul, forwardTaylorRemainder, coeff_sub,
+    coeff_forwardTaylorTruncation_of_le m a p (Nat.le_add_left m i), sub_zero,
+    taylor_coeff] at h
+  exact h
 
 /-- Finite forward Hasse--Taylor reconstruction with a canonical quotient remainder. -/
 theorem taylor_eq_forwardTaylorTruncation_add_X_pow_mul_quotient

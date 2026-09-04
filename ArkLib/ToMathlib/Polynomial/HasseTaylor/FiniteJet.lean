@@ -43,6 +43,11 @@ theorem hasseCoeffAt_apply (r : R) (i : ℕ) (p : R[X]) :
     hasseCoeffAt r i p = (hasseDeriv i p).eval r :=
   rfl
 
+/-- At the origin, Hasse coefficients are ordinary polynomial coefficients. -/
+theorem hasseCoeffAt_zero_eq_coeff (i : ℕ) (p : R[X]) :
+    hasseCoeffAt (0 : R) i p = p.coeff i := by
+  rw [hasseCoeffAt_apply, ← taylor_coeff, taylor_zero]
+
 /-- The first `m` Hasse coefficients of a polynomial at `r`.
 
 Index `i : Fin m` records `D⁽ⁱ⁾ p(r)`, where `D⁽ⁱ⁾` is the Hasse derivative.  Thus
