@@ -57,6 +57,20 @@ theorem forwardTaylorTruncation_mem_degreeLT (m : ℕ) (a : R) (p : R[X]) :
   rw [mem_degreeLT, degree_lt_iff_coeff_zero]
   exact fun i hi ↦ coeff_forwardTaylorTruncation_of_le m a p hi
 
+/-- Once `m` is a strict degree bound for `p`, its finite forward truncation is the full Taylor
+shift.  Stating the hypothesis with `degreeLT` includes the zero polynomial even at `m = 0`. -/
+theorem forwardTaylorTruncation_eq_taylor_of_mem_degreeLT (m : ℕ) (a : R) (p : R[X])
+    (hp : p ∈ degreeLT R m) : forwardTaylorTruncation m a p = taylor a p := by
+  ext i
+  by_cases hi : i < m
+  · exact coeff_forwardTaylorTruncation_of_lt m a p hi
+  · rw [coeff_forwardTaylorTruncation_of_le m a p (not_lt.mp hi)]
+    have hdeg : (taylor a p).degree < (i : WithBot ℕ) := by
+      rw [degree_taylor]
+      exact (mem_degreeLT.mp hp).trans_le
+        (WithBot.coe_le_coe.mpr (not_lt.mp hi))
+    exact (coeff_eq_zero_of_degree_lt hdeg).symm
+
 @[simp]
 theorem forwardTaylorTruncation_zero (a : R) (p : R[X]) :
     forwardTaylorTruncation 0 a p = 0 := by
@@ -139,6 +153,12 @@ theorem forwardTaylorRemainder_zero (a : R) (p : R[X]) :
     forwardTaylorRemainder 0 a p = taylor a p := by
   simp [forwardTaylorRemainder]
 
+/-- A truncation past the degree of `p` has zero forward remainder. -/
+theorem forwardTaylorRemainder_eq_zero_of_mem_degreeLT (m : ℕ) (a : R) (p : R[X])
+    (hp : p ∈ degreeLT R m) : forwardTaylorRemainder m a p = 0 := by
+  rw [forwardTaylorRemainder, forwardTaylorTruncation_eq_taylor_of_mem_degreeLT m a p hp,
+    sub_self]
+
 @[simp]
 theorem forwardTaylorRemainder_one (a : R) (p : R[X]) :
     forwardTaylorRemainder 1 a p = taylor a p - C (p.eval a) := by
@@ -148,6 +168,12 @@ theorem forwardTaylorRemainder_one (a : R) (p : R[X]) :
 theorem forwardTaylorQuotient_zero (a : R) (p : R[X]) :
     forwardTaylorQuotient 0 a p = taylor a p := by
   simp [forwardTaylorQuotient]
+
+/-- A truncation past the degree of `p` also has zero canonical quotient. -/
+theorem forwardTaylorQuotient_eq_zero_of_mem_degreeLT (m : ℕ) (a : R) (p : R[X])
+    (hp : p ∈ degreeLT R m) : forwardTaylorQuotient m a p = 0 := by
+  rw [forwardTaylorQuotient, forwardTaylorRemainder_eq_zero_of_mem_degreeLT m a p hp,
+    zero_divByMonic]
 
 end Ring
 
