@@ -7,6 +7,7 @@ Authors: Quang Dao
 import Mathlib.Init
 import Mathlib.Logic.Embedding.Basic
 import Mathlib.Probability.Distributions.Uniform
+import ToMathlib.Probability.ProbabilityMassFunction.TotalVariation
 
 /-!
   # Serialization and Deserialization
@@ -33,18 +34,14 @@ class Serialize.IsInjective (α : Type u) (β : Type v) [inst : Serialize α β]
 class Deserialize (α : Type u) (β : Type v) where
   deserialize : β → α
 
--- Local instance for now, will need to develop statistical distance a lot more
-instance {α : Type*} [Fintype α] : Dist (PMF α) where
-  dist := fun a b => ∑ x, abs ((a x).toReal - (b x).toReal)
-
 open NNReal in
 /-- Type class for deserialization on two non-empty finite types `α`, `β`, which pushes forward the
-  uniform distribution of `β` to the uniform distribution of `α`, up to some error -/
+  uniform distribution of `β` to within total-variation distance `ε` of the uniform distribution
+  on `α`. -/
 class Deserialize.CloseToUniform (α : Type u) (β : Type u)
     [Fintype α] [Fintype β] [Nonempty α] [Nonempty β] [Deserialize α β] where
   ε : ℝ≥0
-  ε_close : dist (PMF.uniformOfFintype α) (deserialize <$> PMF.uniformOfFintype β) ≤ ε
-
+  ε_close : (PMF.uniformOfFintype α).tvDist (deserialize <$> PMF.uniformOfFintype β) ≤ ε
 
 /-- Type class for types that can be deserialized from another type (most often `ByteArray` or
   `String`), returning an `Option` if the deserialization fails. -/

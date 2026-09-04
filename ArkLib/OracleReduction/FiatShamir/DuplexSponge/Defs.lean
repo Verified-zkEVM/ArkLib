@@ -177,12 +177,13 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   /-- `ψᵢ : Σ^{ℓ_V(i)} → Challenge i` — challenge decoder (CO25 Def. 4.1). -/
   decode : (i : pSpec.ChallengeIdx) → Vector U (challengeSize i) → pSpec.Challenge i
   decodingBias : pSpec.ChallengeIdx → NNReal -- `ε_cdc`
-  /-- For every `i`, `decode i` is ε-biased: `dist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i)`
-    ≤ `decodingBias i`. Matches `Deserialize.CloseToUniform.ε_close` (CO25 Definition 4.1). -/
+  /-- For every `i`, `decode i` is ε-biased in total variation:
+    `tvDist (𝒰 Challenge_i) (decode_i <$> 𝒰 Domain_i) ≤ decodingBias i`
+    (CO25 Definition 4.1). -/
   decode_isBiased : ∀ (i : pSpec.ChallengeIdx)
       [Fintype (Vector U (challengeSize i))] [Nonempty (Vector U (challengeSize i))]
       [Fintype (pSpec.Challenge i)] [Nonempty (pSpec.Challenge i)],
-      dist (PMF.uniformOfFintype (pSpec.Challenge i))
+      (PMF.uniformOfFintype (pSpec.Challenge i)).tvDist
         (decode i <$> PMF.uniformOfFintype (Vector U (challengeSize i))) ≤ decodingBias i
   /-- For every `i`, `decode i` is surjective: every challenge has at least one encoded preimage.
     Required for the `ψ⁻¹` sampler in the Section 5.8 reduction. -/
