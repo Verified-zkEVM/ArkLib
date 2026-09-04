@@ -80,6 +80,16 @@ theorem hasseJet_eq_taylor_coeff (m : ℕ) (r : R) (p : R[X]) (i : Fin m) :
     hasseJet m r p i = (taylor r p).coeff i := by
   rw [hasseJet_apply, taylor_coeff]
 
+/-- A longer Hasse jet restricts definitionally to every shorter prefix. -/
+theorem hasseJet_castLE {m n : ℕ} (h : m ≤ n) (r : R) (p : R[X]) (i : Fin m) :
+    hasseJet n r p (Fin.castLE h i) = hasseJet m r p i :=
+  rfl
+
+/-- The first `m` entries of the order-`m+1` Hasse jet are the order-`m` jet. -/
+theorem hasseJet_castSucc (m : ℕ) (r : R) (p : R[X]) (i : Fin m) :
+    hasseJet (m + 1) r p i.castSucc = hasseJet m r p i :=
+  rfl
+
 /-- Taking the `k`-th Hasse derivative lowers a strict degree bound from `n + k` to `n`.
 
 The additive indexing makes the boundary case explicit and avoids truncated-subtraction side
@@ -122,6 +132,16 @@ theorem hasseCoeffAt_mul (r : R) (n : ℕ) (p q : R[X]) :
       ∑ ij ∈ Finset.antidiagonal n,
         hasseCoeffAt r ij.1 p * hasseCoeffAt r ij.2 q := by
   simp only [hasseCoeffAt_apply, hasseDeriv_mul, eval_finsetSum, eval_mul]
+
+/-- Iterating Hasse derivatives introduces the expected binomial coefficient. -/
+theorem hasseCoeffAt_hasseDeriv (r : R) (i k : ℕ) (p : R[X]) :
+    hasseCoeffAt r i (hasseDeriv k p) =
+      (Nat.choose (i + k) i : R) * hasseCoeffAt r (i + k) p := by
+  change (hasseDeriv i (hasseDeriv k p)).eval r = _
+  have h := LinearMap.congr_fun (hasseDeriv_comp (R := R) i k) p
+  rw [LinearMap.comp_apply, LinearMap.smul_apply] at h
+  rw [h]
+  simp
 
 /-- Shifting a polynomial translates the point at which its Hasse jet is evaluated. -/
 theorem hasseCoeffAt_taylor (r s : R) (i : ℕ) (p : R[X]) :
