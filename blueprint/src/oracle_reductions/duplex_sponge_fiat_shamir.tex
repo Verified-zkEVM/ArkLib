@@ -1,0 +1,484 @@
+\section{Duplex-Sponge Fiat--Shamir Security}
+\label{sec:duplex_sponge_fiat_shamir_security}
+
+This section formalizes the soundness and straightline knowledge-soundness reductions for the
+duplex-sponge Fiat--Shamir (DSFS) transformation of Chiesa and Orr\`u~\cite{CO25}.  The proof is
+factored through the canonical single-salt Fiat--Shamir transformation:
+\[
+  \text{DSFS game}
+    \xrightarrow{\text{Section 5 hybrids}}
+  \text{single-salt FS game}
+    \xrightarrow{\text{Theorems 3.18 and 3.19}}
+  \text{state-restoration game}.
+\]
+The first arrow is exposed as the Key Lemma witness.  This section proves all remaining reduction
+steps, including the construction of the straightline extractor and the transfer of query and
+probability bounds.
+
+\subsection{Adaptive NARG security}
+
+Let $\mathcal V$ be a non-interactive verifier, let $\mathcal L_{\mathrm{in}}$ be its input
+language, and let $\mathcal L_{\mathrm{out}}$ be the set of accepting verifier outputs.  The
+malicious prover is adaptive: it chooses both the statement $x$ and the proof $\pi$.
+
+\begin{definition}[Adaptive NARG soundness experiment]
+  \label{def:adaptive_narg_soundness_experiment}
+  For an oracle initialization procedure $\mathsf{init}$, oracle implementation $\mathsf{impl}$,
+  verifier $\mathcal V$, and malicious prover $\widetilde{\mathcal P}$, define
+  \[
+    \mathsf{NARGSoundExp}(\widetilde{\mathcal P}) :=
+    \begin{array}{l}
+      \sigma \leftarrow \mathsf{init};\\
+      (x,\pi) \leftarrow \widetilde{\mathcal P}^{\mathsf{impl}(\sigma)};\\
+      y \leftarrow \mathcal V^{\mathsf{impl}(\sigma)}(x,\pi);\\
+      \mathsf{return}\ (x,y).
+    \end{array}
+  \]
+  Rejection is represented by an abort, so the experiment has output type
+  $\mathsf{Option}(\mathsf{StmtIn}\times\mathsf{StmtOut})$.
+  \lean{adaptiveNARGSoundnessExp}
+  \leanok
+\end{definition}
+
+\begin{definition}[NARG false-acceptance event]
+  \label{def:narg_soundness_failure}
+  The failure event is
+  \[
+    \mathsf{SoundFail}(z) :=
+    \begin{cases}
+      x\notin\mathcal L_{\mathrm{in}}\ \wedge\
+        y\in\mathcal L_{\mathrm{out}}, & z=\mathsf{some}(x,y),\\
+      \mathsf{False}, & z=\mathsf{none}.
+    \end{cases}
+  \]
+  Thus a rejected execution never contributes to the failure probability.
+  \lean{nargSoundFailEvent}
+  \leanok
+\end{definition}
+
+\begin{definition}[Adaptive NARG soundness]
+  \label{def:adaptive_narg_soundness}
+  Given a predicate $\mathsf{Bound}$ selecting the admissible prover class, $\mathcal V$ has
+  adaptive NARG soundness error at most $\varepsilon$ when
+  \[
+    \forall\widetilde{\mathcal P},\quad
+      \mathsf{Bound}(\widetilde{\mathcal P})\Longrightarrow
+      \Pr\!\left[
+        \mathsf{SoundFail}\mid
+        \mathsf{NARGSoundExp}(\widetilde{\mathcal P})
+      \right]\leq\varepsilon.
+  \]
+  The abstract predicate is instantiated below with the three DSFS oracle-query budgets.
+  \lean{Verifier.adaptiveNARGSoundness}
+  \uses{def:adaptive_narg_soundness_experiment, def:narg_soundness_failure}
+  \leanok
+\end{definition}
+
+\begin{definition}[Adaptive straightline knowledge-soundness experiment]
+  \label{def:adaptive_narg_knowledge_soundness_experiment}
+  The prover still outputs only $(x,\pi)$.  Its oracle queries and the verifier's oracle queries
+  are logged separately as $\mathsf{tr}_{\mathcal P}$ and $\mathsf{tr}_{\mathcal V}$.  A
+  straightline extractor $\mathcal E$ receives these logs as data:
+  \[
+    \begin{array}{l}
+      \sigma \leftarrow \mathsf{init};\\
+      ((x,\pi),\mathsf{tr}_{\mathcal P})
+        \leftarrow \mathsf{log}(\widetilde{\mathcal P}^{\mathsf{impl}(\sigma)});\\
+      (y?,\mathsf{tr}_{\mathcal V})
+        \leftarrow \mathsf{log}(\mathcal V^{\mathsf{impl}(\sigma)}(x,\pi));\\
+      w? \leftarrow \mathcal E(x,\pi,\mathsf{tr}_{\mathcal P},\mathsf{tr}_{\mathcal V});\\
+      \mathsf{return}\ (x,w?,y?).
+    \end{array}
+  \]
+  The extractor runs after the prover and verifier and has access only to its own auxiliary
+  sampler.  In particular, it neither invokes nor rewinds the malicious prover.
+  \lean{adaptiveNARGKnowledgeSoundnessExp}
+  \leanok
+\end{definition}
+
+\begin{definition}[NARG extraction-failure event]
+  \label{def:narg_knowledge_soundness_failure}
+  For an input relation $\mathcal R_{\mathrm{in}}$ and accepting-output language
+  $\mathcal L_{\mathrm{out}}$, define
+  \[
+    \mathsf{KSFail}(x,w?,y?) :=
+    \begin{cases}
+      y\in\mathcal L_{\mathrm{out}}\ \wedge\
+        (x,w)\notin\mathcal R_{\mathrm{in}},
+        & w?=\mathsf{some}(w),\ y?=\mathsf{some}(y),\\
+      y\in\mathcal L_{\mathrm{out}},
+        & w?=\mathsf{none},\ y?=\mathsf{some}(y),\\
+      \mathsf{False}, & y?=\mathsf{none}.
+    \end{cases}
+  \]
+  No output witness is supplied by the malicious NARG prover.  This is the proof-only adversary
+  class of Definition~3.6, rather than a syntactically restricted relation-valued adversary.
+  \lean{nargKSFailEvent}
+  \leanok
+\end{definition}
+
+\begin{definition}[Adaptive straightline knowledge soundness]
+  \label{def:adaptive_narg_knowledge_soundness}
+  The verifier has straightline knowledge-soundness error at most $\varepsilon$ if
+  \[
+    \exists\mathcal E,\ \forall\widetilde{\mathcal P},\quad
+      \mathsf{Bound}(\widetilde{\mathcal P})\Longrightarrow
+      \Pr\!\left[
+        \mathsf{KSFail}\mid
+        \mathsf{NARGKSExp}(\mathcal E,\widetilde{\mathcal P})
+      \right]\leq\varepsilon.
+  \]
+  \lean{Verifier.adaptiveNARGKnowledgeSoundness}
+  \uses{def:adaptive_narg_knowledge_soundness_experiment,
+    def:narg_knowledge_soundness_failure}
+  \leanok
+\end{definition}
+
+The formalization also provides coin-bearing forms of both experiments.  The malicious prover may
+query a private auxiliary oracle, while the verifier uses the shared public oracle.  The private
+queries are not included in the public transcript passed to the straightline extractor.
+\lean{adaptiveNARGSoundnessExpWithCoins}
+\lean{adaptiveNARGKnowledgeSoundnessExpWithCoins}
+\lean{Verifier.adaptiveNARGSoundnessWithCoins}
+\lean{Verifier.adaptiveNARGKnowledgeSoundnessWithCoins}
+
+\subsection{State-restoration security}
+
+The canonical single-salt reduction targets the state-restoration (SR) security of the original
+interactive protocol.  The sampled challenge function is shared by all SR moves.  The prover may
+also use private coins, modeled by an auxiliary oracle independent of that function.
+
+\begin{definition}[State-restoration soundness with coins]
+  \label{def:state_restoration_soundness_with_coins}
+  An SR soundness prover outputs a salted statement and a vector of prover messages.  The verifier
+  reconstructs the full transcript using the sampled challenge function.  For a prover-class
+  predicate $\mathsf{SRBound}$, soundness with error $\varepsilon_{\mathrm{sr}}$ means
+  \[
+    \forall\mathcal P_{\mathrm{sr}},\quad
+      \mathsf{SRBound}(\mathcal P_{\mathrm{sr}})\Longrightarrow
+      \Pr\!\left[
+        x\notin\mathcal L_{\mathrm{in}}\ \wedge\
+        \mathcal V(x,\mathsf{tr})\in\mathcal L_{\mathrm{out}}
+      \right]\leq\varepsilon_{\mathrm{sr}}.
+  \]
+  \lean{Verifier.StateRestoration.soundnessWithCoins}
+  \leanok
+\end{definition}
+
+\begin{definition}[State-restoration straightline knowledge soundness with coins]
+  \label{def:state_restoration_knowledge_soundness_with_coins}
+  An SR knowledge-soundness prover additionally returns an output witness required by ArkLib's
+  relation-valued SR interface.  A straightline extractor receives the statement, output witness,
+  reconstructed full transcript, prover log, and verifier log.  Knowledge soundness requires an
+  extractor whose accepting-but-invalid extraction probability is at most
+  $\varepsilon_{\mathrm{sr}}$ for every $\mathsf{SRBound}$ prover.
+
+  Only the SR move-response part of the prover log is passed to the extractor; private coin queries
+  are removed.  This is the formal counterpart of a deterministic straightline extractor reading
+  the completed execution transcript.
+  \lean{Verifier.StateRestoration.knowledgeSoundnessWithCoins}
+  \lean{Extractor.StateRestoration}
+  \leanok
+\end{definition}
+
+\subsection{Canonical single-salt Fiat--Shamir}
+
+For a salt space $\mathsf{Salt}$, a single-salt proof is a pair
+$\pi=(\tau,\mathbf m)$ consisting of a salt and all prover messages.  The input language and
+relation are lifted by ignoring the salt:
+\[
+  \mathcal L_{\mathrm{in}}^{\tau}
+    := \{(x,\tau)\mid x\in\mathcal L_{\mathrm{in}}\},\qquad
+  \mathcal R_{\mathrm{in}}^{\tau}
+    := \{((x,\tau),w)\mid(x,w)\in\mathcal R_{\mathrm{in}}\}.
+\]
+The accepting-output language is embedded into the generic SR output relation by
+\[
+  \mathcal R_{\mathrm{out}}^{1}
+    := \{(y,())\mid y\in\mathcal L_{\mathrm{out}}\}.
+\]
+\lean{langInSalted}
+\lean{relInSalted}
+\lean{unitOutputRelation}
+
+\begin{definition}[Induced SR prover]
+  \label{def:single_salt_induced_sr_prover}
+  Given a single-salt malicious prover
+  $\widetilde{\mathcal P}$ returning $(x,(\tau,\mathbf m))$, the induced SR prover returns
+  $((x,\tau),\mathbf m)$.  The two provers use the same typed challenge-oracle interface, so this
+  is a pure repackaging and makes exactly the same oracle queries.
+  \lean{srInducedProver}
+  \lean{isQueryBound_srInducedProver_iff}
+  \leanok
+\end{definition}
+
+\begin{theorem}[Canonical single-salt soundness]
+  \label{thm:single_salt_fiat_shamir_soundness}
+  Suppose the salted interactive verifier has SR soundness error
+  $\varepsilon_{\mathrm{sr}}$ against $\mathsf{SRBound}$ provers, and every
+  $\mathsf{Bound}$ single-salt prover induces an $\mathsf{SRBound}$ SR prover.  Then the
+  single-salt Fiat--Shamir verifier has adaptive NARG soundness error
+  $\varepsilon_{\mathrm{sr}}$ against $\mathsf{Bound}$ provers.
+  \lean{single_salt_fiat_shamir_soundness}
+  \uses{def:adaptive_narg_soundness, def:state_restoration_soundness_with_coins,
+    def:single_salt_induced_sr_prover}
+  \leanok
+\end{theorem}
+
+\begin{proof}
+  Fix a bounded malicious prover $\widetilde{\mathcal P}$ and form its induced SR prover.  The
+  single-salt NARG experiment is exactly the accepting-output marginal of the SR experiment:
+  \[
+    \mathsf{NARGSoundExp}(\widetilde{\mathcal P})
+      = \mathsf{map}\bigl(\mathsf{acceptReadout},
+          \mathsf{SRSoundExp}(\mathcal P_{\mathrm{sr}})\bigr).
+  \]
+  The false-acceptance predicates agree under this map.  Query boundedness is preserved because
+  the induced prover only repackages the final output.  The SR hypothesis therefore gives the
+  desired bound without any probability loss.
+  \lean{fsNARGSoundnessExp_eq_srExp}
+  \leanok
+\end{proof}
+
+\begin{definition}[Single-salt straightline extractor]
+  \label{def:single_salt_straightline_extractor}
+  Let $\mathcal E_{\mathrm{sr}}$ be an SR extractor.  On input
+  $(x,(\tau,\mathbf m),\mathsf{tr}_{\mathcal P},\mathsf{tr}_{\mathcal V})$, the canonical
+  extractor performs the following steps.
+  \begin{enumerate}
+    \item Read the challenge tuple from the verifier's logged challenge-oracle queries.
+    \item Reconstruct the full interactive transcript from $\mathbf m$ and those challenges.
+    \item Invoke $\mathcal E_{\mathrm{sr}}$ on the salted statement $(x,\tau)$, the reconstructed
+      transcript, the prover log, and the base-oracle projection of the verifier log.
+  \end{enumerate}
+  The reconstruction is a single pass over the verifier trace, followed by one invocation of the
+  SR extractor; it does not query or rewind the malicious prover.
+  \lean{fsSRDelegatingExtractor}
+  \leanok
+\end{definition}
+
+\begin{theorem}[Canonical single-salt straightline knowledge soundness]
+  \label{thm:single_salt_fiat_shamir_straightline_knowledge_soundness}
+  Suppose the salted interactive verifier has SR straightline knowledge-soundness error
+  $\varepsilon_{\mathrm{sr}}$ against $\mathsf{SRBound}$ provers, and every
+  $\mathsf{Bound}$ single-salt prover induces an $\mathsf{SRBound}$ SR prover.  Then the
+  single-salt Fiat--Shamir verifier has adaptive straightline knowledge-soundness error
+  $\varepsilon_{\mathrm{sr}}$ against every $\mathsf{Bound}$ proof-only prover.
+  \lean{single_salt_fiat_shamir_straightline_knowledge_soundness}
+  \uses{def:adaptive_narg_knowledge_soundness,
+    def:state_restoration_knowledge_soundness_with_coins,
+    def:single_salt_straightline_extractor}
+  \leanok
+\end{theorem}
+
+\begin{proof}
+  Use the extractor from Definition~\ref{def:single_salt_straightline_extractor}.  The logged
+  single-salt verifier produces the canonical challenge log, so reading that log reconstructs
+  exactly the transcript used in the SR experiment.  The NARG knowledge-soundness experiment is
+  therefore the corresponding marginal of the SR knowledge-soundness experiment, and the two
+  extraction-failure predicates coincide.  The induced prover again preserves all query budgets
+  exactly, so the SR bound applies with no additional error.
+  \leanok
+\end{proof}
+
+\subsection{The Section 5 interface}
+
+Fix prover budgets $t_h,t_p,t_{p^{-1}}$.  The salted verifier's conservative
+forward-permutation bound is
+\[
+  L_{\mathrm{tot}}:=L_{\delta}+L_P+L_V
+    =\left\lceil\frac{\delta}{r}\right\rceil+L_P+L_V.
+\]
+It includes the rate blocks used to absorb the salt; $L_P+L_V$ alone counts only the protocol
+messages and challenges.  Let
+\[
+  t_{\Sigma}:=t_h+t_p+t_{p^{-1}},\qquad \ell:=L_{\mathrm{tot}}+1,
+\]
+and let $\varepsilon_{\mathrm{cdc},i}$ be the decoding bias in round $i$.  The exact Key Lemma
+parameters used by the formalization are
+\[
+  \theta_{\star}(t_h,t_p,t_{p^{-1}}):=t_p
+\]
+and
+\[
+  \eta_{\star}:=
+    \frac{
+      7t_{\Sigma}^{2}+28\ell t_{\Sigma}+14\ell^{2}
+        -3t_{\Sigma}-13\ell
+    }{2|\Sigma|^{c}}
+    +t_p\max_i\varepsilon_{\mathrm{cdc},i}
+    +\sum_i\varepsilon_{\mathrm{cdc},i}.
+\]
+\lean{DuplexSpongeFS.KeyLemma.θStar}
+\lean{DuplexSpongeFS.KeyLemma.ηStar}
+\lean{ProtocolSpec.L_totalRateBlocks}
+
+For the public Section~6 statement, if $t_{\Sigma}\leq t$, set
+\[
+  T:=\max\{t,L_{\mathrm{tot}}+1\},\qquad
+  \eta_{\star}^{\mathrm{total}}(t,L_{\mathrm{tot}}):=
+    \frac{25T^2}{|\Sigma|^c}
+      +t\max_i\varepsilon_{\mathrm{cdc},i}
+      +\sum_i\varepsilon_{\mathrm{cdc},i}.
+\]
+Then $\eta_{\star}\leq\eta_{\star}^{\mathrm{total}}(t,L_{\mathrm{tot}})$.
+\lean{DuplexSpongeFS.ηStarTotal}
+\lean{DuplexSpongeFS.etaStar_le_etaStarTotal}
+\leanok
+
+\begin{definition}[Key Lemma security witness]
+  \label{def:dsfs_key_lemma_security_witness}
+  A Key Lemma witness packages the concrete Section~5 transforms
+  $\mathsf{D2STrace}$ and $\mathsf{D2SAlgo}$.  For every DSFS malicious prover
+  $\widetilde{\mathcal P}$ satisfying the three query bounds, its validity field gives
+  \begin{align*}
+    \Delta_{\mathrm{TV}}\bigl(
+      \mathsf{Hyb}_0(\mathsf{D2STrace}),
+      \mathsf{Hyb}_4(\mathsf{D2SAlgo}(\widetilde{\mathcal P}))
+    \bigr)
+      &\leq \eta_{\star},\\
+    \mathsf{ChallengeQueries}\bigl(
+      \mathsf{D2SAlgo}(\widetilde{\mathcal P})
+    \bigr)
+      &\leq \theta_{\star}.
+  \end{align*}
+  \lean{DuplexSpongeFS.KeyLemmaSecurityWitness}
+\end{definition}
+
+The witness is an explicit hypothesis of both final theorems.  Consequently, the Section~6
+reduction code is complete while the Section~5 hybrid proof remains a visible, separately
+checkable obligation.  The intermediate hybrids are not duplicated in this Section~6 blueprint.
+
+\subsection{DSFS soundness}
+
+\begin{theorem}[DSFS soundness]
+  \label{thm:duplex_sponge_fiat_shamir_soundness}
+  Assume $t_h+t_p+t_{p^{-1}}\leq t$, a valid Key Lemma witness, and SR soundness of the salted
+  interactive verifier with error $\varepsilon_{\mathrm{sr}}$ against provers making at most
+  $\theta_{\star}$ challenge queries.  Then the DSFS verifier has adaptive soundness against every
+  prover satisfying the $(t_h,t_p,t_{p^{-1}})$ bounds, with error
+  \[
+    \varepsilon_{\mathrm{sr}}
+      +\eta_{\star}^{\mathrm{total}}
+        \bigl(t,L_{\mathrm{tot}}\bigr).
+  \]
+  \lean{DuplexSpongeFS.duplex_sponge_fiat_shamir_soundness}
+  \uses{def:adaptive_narg_soundness, def:dsfs_key_lemma_security_witness,
+    thm:single_salt_fiat_shamir_soundness}
+  \leanok
+\end{theorem}
+
+\begin{proof}
+  Fix a query-bounded DSFS prover $\widetilde{\mathcal P}$.  First identify its NARG
+  false-acceptance experiment with the false-acceptance marginal of the concrete DSFS game.  The
+  trace transformation preserves that marginal, hence
+  \[
+    \Pr[\mathsf{DSFSFail}]
+      =\Pr[\mathsf{SoundFail}\mid\mathsf{Hyb}_0].
+  \]
+  Statistical distance bounds the change of any event, so the Key Lemma gives
+  \[
+    \Pr[\mathsf{SoundFail}\mid\mathsf{Hyb}_0]
+      \leq
+    \Pr[\mathsf{SoundFail}\mid\mathsf{Hyb}_4]
+      +\eta_{\star}.
+  \]
+  The fourth hybrid is the canonical single-salt game for
+  $\mathsf{D2SAlgo}(\widetilde{\mathcal P})$.  The Key Lemma's second guarantee places this prover
+  in the challenge-query class required by canonical single-salt soundness, and
+  Theorem~\ref{thm:single_salt_fiat_shamir_soundness} bounds the remaining probability by
+  $\varepsilon_{\mathrm{sr}}$.  Finally use
+  $\eta_{\star}\leq\eta_{\star}^{\mathrm{total}}$.
+
+  The formal proof is decomposed into explicit game-identification, event-transport, and endpoint
+  lemmas, so no equality of experiments is hidden inside the final inequality.
+  \lean{DuplexSpongeFS.dsfsNargSoundnessExp_eq_dsfsGame}
+  \lean{DuplexSpongeFS.dsfsGame_falseAccept_eq_hyb0}
+  \lean{DuplexSpongeFS.hyb4_falseAccept_le_nargSoundness}
+  \leanok
+\end{proof}
+
+\subsection{DSFS straightline knowledge soundness}
+
+\begin{definition}[DSFS straightline extractor]
+  \label{def:dsfs_straightline_extractor}
+  Let $\mathcal E_{\mathrm{std}}$ be the canonical single-salt extractor supplied by
+  Theorem~\ref{thm:single_salt_fiat_shamir_straightline_knowledge_soundness}.  Given a DSFS
+  statement $x$, proof $(\tau,\mathbf m)$, prover log $\mathsf{tr}_{\mathcal P}$, and verifier log
+  $\mathsf{tr}_{\mathcal V}$, define $\mathcal E_{\mathrm{dsfs}}$ as follows.
+  \begin{enumerate}
+    \item Tag the prover and verifier logs by their source and concatenate them.
+    \item Run the concrete $\mathsf{D2STrace}$ transform on the combined log.  If this transform
+      aborts, use the empty transformed log, matching the first hybrid's bad-trace branch.
+    \item Split the transformed log back into prover and verifier components.
+    \item Encode the DSFS salt, regard $(\mathsf{encode}(\tau),\mathbf m)$ as a single-salt proof,
+      and invoke $\mathcal E_{\mathrm{std}}$ with the two transformed logs.
+  \end{enumerate}
+  The only oracle used by this wrapper is the independent uniform sampler required by
+  $\mathsf{D2STrace}$.  It has no access to the malicious prover and performs no rewinding.
+  \lean{DuplexSpongeFS.dsfsStraightlineExtractor}
+  \lean{DuplexSpongeFS.dsfsNargExtractor}
+  \uses{def:single_salt_straightline_extractor, def:dsfs_key_lemma_security_witness}
+  \leanok
+\end{definition}
+
+\begin{theorem}[DSFS straightline knowledge soundness]
+  \label{thm:duplex_sponge_fiat_shamir_straightline_knowledge_soundness}
+  Assume $t_h+t_p+t_{p^{-1}}\leq t$, a valid Key Lemma witness, and SR straightline knowledge
+  soundness of the salted interactive verifier with error $\varepsilon_{\mathrm{sr}}$ against
+  provers making at most $\theta_{\star}$ challenge queries.  Then the DSFS verifier has adaptive
+  straightline knowledge soundness against every proof-only DSFS prover satisfying the
+  $(t_h,t_p,t_{p^{-1}})$ bounds, with error
+  \[
+    \varepsilon_{\mathrm{sr}}
+      +\eta_{\star}^{\mathrm{total}}
+        \bigl(t,L_{\mathrm{tot}}\bigr).
+  \]
+  \lean{DuplexSpongeFS.duplex_sponge_fiat_shamir_straightline_knowledge_soundness}
+  \uses{def:adaptive_narg_knowledge_soundness, def:dsfs_straightline_extractor,
+    def:dsfs_key_lemma_security_witness,
+    thm:single_salt_fiat_shamir_straightline_knowledge_soundness}
+  \leanok
+\end{theorem}
+
+\begin{proof}
+  The SR hypothesis and the canonical single-salt theorem first supply an extractor
+  $\mathcal E_{\mathrm{std}}$ and the bound
+  \[
+    \Pr[\mathsf{KSFail}\mid
+      \mathsf{SingleSaltKS}(\mathcal E_{\mathrm{std}},
+        \mathsf{D2SAlgo}(\widetilde{\mathcal P}))]
+      \leq\varepsilon_{\mathrm{sr}}.
+  \]
+  Use Definition~\ref{def:dsfs_straightline_extractor} to construct
+  $\mathcal E_{\mathrm{dsfs}}$.  For a fixed DSFS malicious prover, the resulting extraction
+  experiment is $\mathsf{Hyb}_0\mathbin{\gg=}k$, where the common post-processing kernel $k$
+  runs the extractor and records the knowledge-soundness result.  The endpoint single-salt
+  experiment is $\mathsf{Hyb}_4\mathbin{\gg=}k$.
+
+  Total variation distance contracts under common randomized post-processing:
+  \[
+    \Delta_{\mathrm{TV}}(\mathsf{Hyb}_0\mathbin{\gg=}k,
+                         \mathsf{Hyb}_4\mathbin{\gg=}k)
+      \leq
+    \Delta_{\mathrm{TV}}(\mathsf{Hyb}_0,\mathsf{Hyb}_4)
+      \leq\eta_{\star}.
+  \]
+  Applying the generic event bound and then the canonical extractor guarantee yields
+  \begin{align*}
+    \Pr[\mathsf{KSFail}\mid\mathsf{DSFSKS}]
+      &\leq
+        \Pr[\mathsf{KSFail}\mid
+          \mathsf{SingleSaltKS}(\mathcal E_{\mathrm{std}},
+            \mathsf{D2SAlgo}(\widetilde{\mathcal P}))]
+          +\eta_{\star}\\
+      &\leq \varepsilon_{\mathrm{sr}}+\eta_{\star}\\
+      &\leq \varepsilon_{\mathrm{sr}}+\eta_{\star}^{\mathrm{total}}.
+  \end{align*}
+  Because the same kernel is applied to both hybrid endpoints, no additional assumption about a
+  canonical or complete family of backtracking sequences is needed in this Section~6 argument.
+  \lean{DuplexSpongeFS.dsfsNargKSExp_eq_dsfsKSGame}
+  \lean{DuplexSpongeFS.dsfs_knowledge_soundness_failure_eq_hyb0}
+  \lean{DuplexSpongeFS.hyb4_knowledge_soundness_failure_eq_single_salt}
+  \leanok
+\end{proof}
