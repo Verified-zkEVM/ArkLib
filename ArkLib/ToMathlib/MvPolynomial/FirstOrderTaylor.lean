@@ -142,6 +142,39 @@ theorem pow_succ_dvd_eval₂Hom_add_sub_firstOrderIncrement (f : R →+* S) (a d
   rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at hmem
   exact (pow_dvd_pow u (by omega : k + 1 ≤ k * 2)).trans (by simpa [pow_mul] using hmem)
 
+/-- A distinguished-coordinate form of the first-order Taylor congruence.
+
+If the pivot perturbation is divisible by `u ^ k` while every other perturbation is already
+divisible by `u ^ (k + 1)`, only the pivot partial derivative remains modulo `u ^ (k + 1)`.
+This is the form used after differentiating the candidate solution in [Kop15, Theorem 4.4]: the
+highest formal derivative supplies the pivot coordinate and all lower derivative perturbations
+vanish to the next order. -/
+theorem pow_succ_dvd_eval₂Hom_add_sub_pderiv (f : R →+* S) (a d : σ → S)
+    (s : Finset σ) (p : MvPolynomial σ R) (pivot : σ) (u : S) (k : ℕ) (hk : 0 < k)
+    (hpivot : pivot ∈ s) (hd_pivot : u ^ k ∣ d pivot)
+    (hd_other : ∀ i ∈ s, i ≠ pivot → u ^ (k + 1) ∣ d i)
+    (hd_zero : ∀ i, i ∉ s → d i = 0) :
+    u ^ (k + 1) ∣ eval₂Hom f (a + d) p - eval₂Hom f a p -
+      eval₂Hom f a (pderiv pivot p) * d pivot := by
+  classical
+  have hd (i : σ) (hi : i ∈ s) : u ^ k ∣ d i := by
+    by_cases hip : i = pivot
+    · simpa [hip] using hd_pivot
+    · exact (pow_dvd_pow u (Nat.le_succ k)).trans (hd_other i hi hip)
+  have htaylor := pow_succ_dvd_eval₂Hom_add_sub_firstOrderIncrement
+    f a d s p u k hk hd hd_zero
+  have hother :
+      u ^ (k + 1) ∣ firstOrderIncrement f a d s p -
+        eval₂Hom f a (pderiv pivot p) * d pivot := by
+    rw [firstOrderIncrement, ← s.add_sum_erase
+      (fun i ↦ eval₂Hom f a (pderiv i p) * d i) hpivot, add_sub_cancel_left]
+    apply Finset.dvd_sum
+    intro i hi
+    have hi' := Finset.mem_erase.mp hi
+    exact dvd_mul_of_dvd_right (hd_other i hi'.2 hi'.1) _
+  convert htaylor.add hother using 1
+  ring
+
 end
 
 end MvPolynomial
