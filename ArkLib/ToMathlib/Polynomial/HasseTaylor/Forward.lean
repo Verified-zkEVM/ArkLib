@@ -209,6 +209,15 @@ variable [Ring R]
 def forwardTaylorRemainder (m : ℕ) (a : R) (p : R[X]) : R[X] :=
   taylor a p - forwardTaylorTruncation m a p
 
+/-- The forward Taylor remainder as a linear map in the input polynomial. -/
+def forwardTaylorRemainderLinearMap (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] :=
+  taylor a - forwardTaylorTruncationToPolynomial m a
+
+@[simp]
+theorem forwardTaylorRemainderLinearMap_apply (m : ℕ) (a : R) (p : R[X]) :
+    forwardTaylorRemainderLinearMap m a p = forwardTaylorRemainder m a p :=
+  rfl
+
 /-- Forward Taylor remainders are natural under coefficient-ring homomorphisms. -/
 theorem map_forwardTaylorRemainder {S : Type*} [Ring S] (f : R →+* S)
     (m : ℕ) (a : R) (p : R[X]) :
@@ -252,6 +261,22 @@ theorem coeff_forwardTaylorQuotient (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
     coeff_forwardTaylorTruncation_of_le m a p (Nat.le_add_left m i), sub_zero,
     taylor_coeff] at h
   exact h
+
+/-- The canonical forward Taylor tail as a linear map in the input polynomial. -/
+def forwardTaylorQuotientLinearMap (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] where
+  toFun := forwardTaylorQuotient m a
+  map_add' p q := by
+    ext i
+    simp only [coeff_add, coeff_forwardTaylorQuotient, LinearMap.map_add]
+  map_smul' c p := by
+    ext i
+    rw [coeff_smul, coeff_forwardTaylorQuotient, coeff_forwardTaylorQuotient]
+    simp
+
+@[simp]
+theorem forwardTaylorQuotientLinearMap_apply (m : ℕ) (a : R) (p : R[X]) :
+    forwardTaylorQuotientLinearMap m a p = forwardTaylorQuotient m a p :=
+  rfl
 
 /-- The final `n` coordinates of an order-`m + n` jet are the order-`n` jet at zero of the
 order-`m` forward Taylor quotient.  The canonical `Fin.natAdd` embedding selects this tail. -/

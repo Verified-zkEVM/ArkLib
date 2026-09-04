@@ -124,6 +124,38 @@ example :
     simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_C, coeff_X,
       hi0, hi1]
 
+/-- The packaged remainder linear map retains exactly the positive-degree part of the shift. -/
+example :
+    forwardTaylorRemainderLinearMap 1 (1 : ZMod 5) (X ^ 2) =
+      X ^ 2 + C 2 * X := by
+  rw [forwardTaylorRemainderLinearMap_apply]
+  norm_num [forwardTaylorRemainder, forwardTaylorTruncation, hasseCoeffAt_apply, taylor_apply]
+  rw [C_ofNat]
+  ring
+
+/-- The packaged quotient linear map preserves a nontrivial scalar and the independently
+computed order-three tail. -/
+example :
+    forwardTaylorQuotientLinearMap 3 (1 : ZMod 5) ((2 : ZMod 5) • (X ^ 4)) =
+      C 3 + C 2 * X := by
+  rw [LinearMap.map_smul, forwardTaylorQuotientLinearMap_apply]
+  have htail : forwardTaylorQuotient 3 (1 : ZMod 5) (X ^ 4) = C 4 + X := by
+    ext i
+    rw [coeff_forwardTaylorQuotient, X_pow_eq_monomial]
+    by_cases hi : i < 2
+    · interval_cases i <;>
+        norm_num [hasseCoeffAt_apply, hasseDeriv_monomial, coeff_add, coeff_X]
+    · have hchoose : Nat.choose 4 (i + 3) = 0 := Nat.choose_eq_zero_of_lt (by omega)
+      have hi0 : i ≠ 0 := by omega
+      have hi1 : 1 ≠ i := by omega
+      simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_C,
+        coeff_X, hi0, hi1]
+  rw [htail, smul_eq_C_mul, mul_add]
+  have hc : C (2 : ZMod 5) * C 4 = C 3 := by
+    rw [← C_mul]
+    congr 1
+  rw [hc]
+
 /-- The extra tail operation is inert when either added order is zero. -/
 example :
     forwardTaylorQuotient 0 0
