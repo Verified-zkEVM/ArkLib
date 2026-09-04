@@ -122,6 +122,26 @@ def runtimeLens : PFunctor.Lens basePFunctor _root_.Interaction.TypeTree.basePFu
     | .public _, move => move
     | .oracle _, _ => PUnit.unit
 
+@[simp]
+theorem runtimeLens_toFunA_public (Moves : Type u) :
+    runtimeLens.toFunA (.public Moves) = Moves :=
+  rfl
+
+@[simp]
+theorem runtimeLens_toFunA_oracle (Messages : Type u) :
+    runtimeLens.toFunA (.oracle Messages) = Messages :=
+  rfl
+
+@[simp]
+theorem runtimeLens_toFunB_public (Moves : Type u) (move : Moves) :
+    runtimeLens.toFunB (.public Moves) move = move :=
+  rfl
+
+@[simp]
+theorem runtimeLens_toFunB_oracle (Messages : Type u) (message : Messages) :
+    runtimeLens.toFunB (.oracle Messages) message = PUnit.unit :=
+  rfl
+
 /-- Erase the public/oracle distinction to the generic runtime type tree. -/
 def toTypeTree (tree : TypeTree) : _root_.Interaction.TypeTree :=
   tree.mapLens runtimeLens
