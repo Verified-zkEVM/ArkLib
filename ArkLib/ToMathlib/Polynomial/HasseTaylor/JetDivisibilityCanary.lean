@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 import Mathlib.Data.ZMod.Basic
+import Mathlib.Tactic.FinCases
 
 /-!
 # Canaries for finite Hasse jets and local divisibility
@@ -26,5 +27,20 @@ example :
     (X - C (0 : ZMod 2)) ^ 2 ∣ (X ^ 2 - 0) ↔
       hasseJet 2 (0 : ZMod 2) (X ^ 2) = hasseJet 2 (0 : ZMod 2) 0 :=
   X_sub_C_pow_dvd_sub_iff_hasseJet_eq (X ^ 2) 0 0 2
+
+example : (X - C (0 : ZMod 2)) ^ 2 ∣ (X ^ 2 - 0) := by
+  simp
+
+example : hasseJet 2 (0 : ZMod 2) (X ^ 2) = hasseJet 2 (0 : ZMod 2) 0 := by
+  funext i
+  fin_cases i <;> simp [hasseJet_apply]
+
+/-- Extending the jet by one coordinate detects the nonzero second Hasse derivative, even though
+the ordinary derivative of `X²` vanishes in characteristic two. -/
+example : hasseJet 3 (0 : ZMod 2) (X ^ 2) ≠ hasseJet 3 (0 : ZMod 2) 0 := by
+  intro h
+  have h2 := congrFun h (2 : Fin 3)
+  rw [hasseJet_apply, hasseJet_apply, X_pow_eq_monomial] at h2
+  simp at h2
 
 end Polynomial
