@@ -30,4 +30,15 @@ example : forwardTaylorTruncation 3 (0 : ZMod 2) (X ^ 4) = 0 := by
   rw [forwardTaylorTruncation_X_pow]
   simp
 
+/-- A high-truncation canary: all three Hasse coefficients retain the shifted quadratic, leaving
+both the remainder and its canonical quotient zero. -/
+example :
+    forwardTaylorRemainder 3 (1 : ZMod 2) (X ^ 2) = 0 ∧
+      forwardTaylorQuotient 3 (1 : ZMod 2) (X ^ 2) = 0 := by
+  have hp : (X ^ 2 : (ZMod 2)[X]) ∈ degreeLT (ZMod 2) 3 := by
+    rw [mem_degreeLT, degree_X_pow]
+    exact WithBot.coe_lt_coe.mpr (Nat.lt_succ_self 2)
+  exact ⟨forwardTaylorRemainder_eq_zero_of_mem_degreeLT 3 1 (X ^ 2) hp,
+    forwardTaylorQuotient_eq_zero_of_mem_degreeLT 3 1 (X ^ 2) hp⟩
+
 end Polynomial
