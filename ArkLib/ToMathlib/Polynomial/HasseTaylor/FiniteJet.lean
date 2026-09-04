@@ -90,6 +90,20 @@ theorem hasseJet_castSucc (m : ℕ) (r : R) (p : R[X]) (i : Fin m) :
     hasseJet (m + 1) r p i.castSucc = hasseJet m r p i :=
   rfl
 
+/-- The jet through the natural degree of `p` detects whether `p` is zero.
+
+This finite identity principle works over every semiring: its last coordinate is the leading
+coefficient of `p`. -/
+theorem hasseJet_natDegree_add_one_eq_zero_iff (r : R) (p : R[X]) :
+    hasseJet (p.natDegree + 1) r p = 0 ↔ p = 0 := by
+  constructor
+  · intro h
+    rw [← leadingCoeff_eq_zero]
+    have hi := congrFun h ⟨p.natDegree, Nat.lt_add_one _⟩
+    simpa [hasseJet_apply, hasseDeriv_natDegree_eq_C] using hi
+  · rintro rfl
+    exact LinearMap.map_zero _
+
 /-- Taking the `k`-th Hasse derivative lowers a strict degree bound from `n + k` to `n`.
 
 The additive indexing makes the boundary case explicit and avoids truncated-subtraction side
