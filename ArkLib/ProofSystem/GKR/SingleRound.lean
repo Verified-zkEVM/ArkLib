@@ -91,7 +91,7 @@ noncomputable def addPredMLE {k d : ℕ} (R : Type) [CommRing R] (c : Circuit k 
       (finTwoEquiv ∘ (w ∘ Sum.inr ∘ Sum.inl))
       (finTwoEquiv ∘ (w ∘ Sum.inr ∘ Sum.inr)))
 
-noncomputable def mulPredMLE {k d : ℕ}(R : Type)[CommRing R](c : Circuit k d)(l : Fin d):
+noncomputable def mulPredMLE {k d : ℕ} (R : Type) [CommRing R] (c : Circuit k d) (l : Fin d) :
     MvPolynomial (Fin k ⊕ Fin k ⊕ Fin k) R :=
   MLE (fun w =>
     mulPred R c l
@@ -241,18 +241,19 @@ theorem eval_wiringPoly {k d : ℕ} (c : Circuit k d) (l : Fin d)
 theorem degreeOf_substXY_le {k : ℕ} (x y : Fin k → R) (i : Fin k ⊕ Fin k ⊕ Fin k) (j : Fin k) :
     degreeOf j (substXY R x y i) ≤ 1 := by
   rcases i with i | i | i
-  · rcases eq_or_ne j i with h | h <;> simp [substXY, degreeOf_X, h, MvPolynomial.degreeOf_X_le]
+  · rcases eq_or_ne j i with h | h <;> simp [substXY, h, MvPolynomial.degreeOf_X_le]
   · simp [substXY, degreeOf_C]
   · simp [substXY, degreeOf_C]
 
 /-- Substituting into a multilinear polynomial keeps it multilinear in a given output variable
 `j`, provided every substituted polynomial has degree at most `1` in `j` and only one of them
 mentions `j` at all. (This is the `key` step inside `degreeOf_roundPoly_le`, generalised.) -/
-theorem degreeOf_bind₁_le {σ τ : Type} [DecidableEq σ] (f : σ → MvPolynomial τ R)
+theorem degreeOf_bind₁_le {σ τ : Type} (f : σ → MvPolynomial τ R)
     (p : MvPolynomial σ R) (hp : ∀ i, degreeOf i p ≤ 1) (j : τ) (i₀ : σ)
     (hf : ∀ i, degreeOf j (f i) ≤ 1)
     (hzero : ∀ i, i ≠ i₀ → degreeOf j (f i) = 0) :
     degreeOf j (MvPolynomial.bind₁ f p) ≤ 1 := by
+  have := Classical.decEq σ
   conv_lhs => rw [p.as_sum]
   rw [map_sum]
   refine le_trans (degreeOf_sum_le j p.support _) ?_
@@ -318,7 +319,7 @@ theorem layerMLE_eq_wiringPoly {k d : ℕ} [IsDomain R] (c : Circuit k d) (input
     layerMLE R c input l.castSucc = wiringPoly R c l (layerMLE R c input l.succ) := by
   rw [is_multilinear_eq_iff_eq_evals_zeroOne]
   · funext w
-    show MvPolynomial.eval _ _ = MvPolynomial.eval _ _
+    change MvPolynomial.eval _ _ = MvPolynomial.eval _ _
     have hcoe : ((w : Fin k → Fin 2) : Fin k → R) = bridge R (finTwoEquiv ∘ w) := by
       funext i; simp [bridge]
     rw [hcoe, eval_wiringPoly, eval_layerMLE_bool,
@@ -405,7 +406,6 @@ theorem degreeOf_roundPoly_le
   -- ultimately we want
   -- A * (V(x) + V(y)) + M * (V(x) * V(y)) has degree of most 2 in each variable
   -- provided that we have thar A, M and V are multilinear
-
   -- V(x) is multilinear
     have hVleft (j : Fin k ⊕ Fin k): degreeOf j (rename Sum.inl V) ≤ 1 :=
       by cases j with
@@ -424,7 +424,6 @@ theorem degreeOf_roundPoly_le
             exact Sum.inl_ne_inr heq
           omega
         · exact Sum.inl_injective
-
   -- V(y) is multilinear
     have hVright (j : Fin k ⊕ Fin k): degreeOf j (rename Sum.inr V) ≤ 1 :=
       by cases j with
@@ -443,14 +442,12 @@ theorem degreeOf_roundPoly_le
       · intro x y h
         apply Sum.inr_injective
         exact h
-
     -- V(x) + V(y) is multilinear
     have hSumVxy (j : Fin k ⊕ Fin k) : degreeOf j (rename Sum.inl V + rename Sum.inr V) ≤ 1 := by
        calc
        _ ≤ max (degreeOf j ((rename Sum.inl) V)) (degreeOf j ((rename Sum.inr) V)) := by
          exact degreeOf_add_le j (rename Sum.inl V) (rename Sum.inr V)
        _ ≤ 1 := by rw [max_le_iff]; exact ⟨hVleft j, hVright j⟩
-
     -- V(X) * V(y)  is multilinear
     have hProdVxy (j : Fin k ⊕ Fin k) : degreeOf j (rename Sum.inl V * rename Sum.inr V) ≤ 1 := by
       cases j with
@@ -480,7 +477,6 @@ theorem degreeOf_roundPoly_le
               rw [hzero, zero_add, degreeOf_rename_of_injective]
               · exact hV m
               · exact Sum.inr_injective
-
     -- substitution at a point has degree at msot 1, helpthe below lemmaer for
     have hSubstZ_pt : ∀ (i : Fin k ⊕ Fin k ⊕ Fin k) (j' : Fin k ⊕ Fin k),
         degreeOf j' (substZ R point i) ≤ 1 := by
@@ -489,7 +485,6 @@ theorem degreeOf_roundPoly_le
       · simp [substZ, degreeOf_C]
       · rcases eq_or_ne j' (Sum.inl i) with h | h <;> simp [substZ, degreeOf_X, h]
       · rcases eq_or_ne j' (Sum.inr i) with h | h <;> simp [substZ, degreeOf_X, h]
-
     -- we need this to show that A and M stay mutlilinear when we fix k out of their 3k variables
     -- (they turn into a multili polynomial in 2k variables)
     have hSubstZ : ∀ (p : MvPolynomial (Fin k ⊕ Fin k ⊕ Fin k) R), (∀ i, degreeOf i p ≤ 1) →
@@ -553,7 +548,6 @@ theorem degreeOf_roundPoly_le
           rw [degreeOf_X]
           simp only [ite_eq_right_iff]
           intro h; exact absurd (Sum.inr.inj h).symm hi
-
     -- here we finish of the inequality
     calc degreeOf j (bind₁ (substZ R point) A * (rename Sum.inl V + rename Sum.inr V)
         + bind₁ (substZ R point) M * (rename Sum.inl V * rename Sum.inr V))
@@ -626,10 +620,11 @@ def D [Nontrivial R] : Fin 2  ↪ R where
 /-- Summing over the "Boolean cube via `D`" (as `Fintype.piFinset`/`^ᶠ` presents it in
 `Sumcheck.Spec.relationRound`) is the same as summing over all of `Fin k' → Fin 2`,
 precomposed with `D`. -/
-theorem sum_piFinset_D [Nontrivial R] [DecidableEq R] {k' : ℕ} {M : Type} [AddCommMonoid M]
+theorem sum_piFinset_D [Nontrivial R] {k' : ℕ} {M : Type} [AddCommMonoid M]
     (F : (Fin k' → R) → M) :
     ∑ x ∈ Fintype.piFinset (fun _ : Fin k' ↦ (Finset.univ.map (D R))), F x
       = ∑ g : Fin k' → Fin 2, F (D R ∘ g) := by
+  have := Classical.decEq R
   have h1 : (fun _ : Fin k' ↦ (Finset.univ.map (D R) : Finset R))
       = fun _ ↦ ((Finset.univ : Finset (Fin 2)).image (D R)) := by
     funext _
@@ -693,7 +688,7 @@ theorem sum_finTwoEquiv {k' : ℕ} {M : Type} [AddCommMonoid M] (F : (Fin k' →
   `relationRound` presents it, via `D`/`Fintype.piFinset`) equals `relationRound`'s
   wiring-sum formula. This is the fact needed to transport GKR's completeness down to
   `innerReduction`'s (i.e. plain sum-check's) completeness. -/
-theorem sum_roundPolyFin_eq {k d : ℕ} [Nontrivial R] [DecidableEq R] (c : Circuit k d) (l : Fin d)
+theorem sum_roundPolyFin_eq {k d : ℕ} [Nontrivial R] (c : Circuit k d) (l : Fin d)
     (point : Fin k → R) (V : MvPolynomial (Fin k) R) :
     ∑ z ∈ Fintype.piFinset (fun _ : Fin (k + k) ↦ (Finset.univ.map (D R))),
         MvPolynomial.eval z (roundPolyFin R c l point V) =
@@ -704,6 +699,7 @@ theorem sum_roundPolyFin_eq {k d : ℕ} [Nontrivial R] [DecidableEq R] (c : Circ
           + MvPolynomial.eval (Sum.elim point (Sum.elim (bridge R x) (bridge R y)))
             (mulPredMLE R c l)
               * (MvPolynomial.eval (bridge R x) V * MvPolynomial.eval (bridge R y) V)) := by
+  have := Classical.decEq R
   rw [sum_piFinset_D R (fun z => MvPolynomial.eval z (roundPolyFin R c l point V))]
   rw [sum_finSumFinEquiv (fun g => MvPolynomial.eval (D R ∘ g) (roundPolyFin R c l point V))]
   simp_rw [sum_finTwoEquiv]
@@ -742,15 +738,16 @@ noncomputable def roundPolyFinOracle {k d : ℕ} [Nontrivial R] (c : Circuit k d
   challenges, oracle := `roundPolyFinOracle`) satisfies `Sumcheck.Spec.relationRound` at
   round `0`. This is what lets `innerReduction`'s (plain sum-check's) completeness transport
   to GKR. -/
-theorem relationRound_to_relationRound {k d : ℕ} [Nontrivial R] [DecidableEq R]
+theorem relationRound_to_relationRound {k d : ℕ} [Nontrivial R]
     (c : Circuit k d) (l : Fin d) (point : Fin k → R) (value : R)
     (V : MvPolynomial (Fin k) R) (hV : ∀ j, degreeOf j V ≤ 1)
     (h : ⟨⟨point, value⟩, ()⟩ ∈ relationRound R d k c l V) :
     ⟨⟨(⟨value, Fin.elim0⟩ : Sumcheck.Spec.StatementRound R (k + k) 0),
        fun (_ : Unit) => roundPolyFinOracle R c l point V hV⟩, ()⟩
       ∈ Sumcheck.Spec.relationRound R (k + k) 2 (D R) 0 := by
+  have := Classical.decEq R
   have key := sum_roundPolyFin_eq R c l point V
-  simp only [relationRound, Set.mem_setOf_eq] at h
+  simp only [relationRound, Set.mem_ofPred_eq] at h
   change ∑ z ∈ Fintype.piFinset (fun _ : Fin (k + k) ↦ (Finset.univ.map (D R))),
       MvPolynomial.eval (Fin.append (Fin.elim0 : Fin 0 → R) z ∘ Fin.cast (by omega))
         (roundPolyFin R c l point V) = value
@@ -829,7 +826,7 @@ theorem sumcheck_output_mem_to_eval {k : ℕ} [Nontrivial R]
     (h : ⟨⟨⟨target, challenges⟩, polyOracle⟩, ()⟩ ∈
       Sumcheck.Spec.relationRound R (k + k) 2 (D R) (Fin.last (k + k))) :
     MvPolynomial.eval challenges (polyOracle ()).val = target := by
-  simp only [Sumcheck.Spec.relationRound, Set.mem_setOf_eq] at h
+  simp only [Sumcheck.Spec.relationRound, Set.mem_ofPred_eq] at h
   have hempty : IsEmpty (Fin (k + k - (Fin.last (k + k) : Fin (k + k + 1)))) := by
     constructor
     intro i
@@ -1045,7 +1042,7 @@ theorem reduction_perfectCompleteness [DecidableEq R] [SampleableType R]
     apply OptionT.ext
     change (monadLift mx : OptionT M α).run = some <$> mx
     rw [OptionT.run_monadLift, monadLift_self]
-  simp only [relIn, Set.mem_setOf_eq] at hValid
+  simp only [relIn, Set.mem_ofPred_eq] at hValid
   -- restate the hypothesis in the `q 0`/`q 1` form the verifier actually checks
   have hCheck := combine_check_passes R c l s.claim.point V s.claim.value
     (leftHalf R s.challenges) (rightHalf R s.challenges) hValid
@@ -1060,19 +1057,19 @@ theorem reduction_perfectCompleteness [DecidableEq R] [SampleableType R]
   -- unfold the honest execution
   simp only [reduction, Reduction.run, Prover.run, Verifier.run, prover, verifier,
     Prover.runToRound, Prover.processRound, Fin.induction_two, pSpec,
-    bind_pure_comp, Functor.map_map, Function.comp]
+    bind_pure_comp]
   -- round 0 is `P_to_V`, round 1 is `V_to_P`; the other cases are impossible
   split <;> rename_i hDir0
   · exact absurd hDir0 (by decide)
-  try simp only [pure_bind, map_pure, Functor.map_map, Function.comp, bind_pure_comp]
+  try simp only [pure_bind]
   split <;> rename_i hDir1
   swap
   · exact absurd hDir1 (by decide)
   -- the verifier's `guard` succeeds, by `hCheck`
   simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift,
-    OracleComp.liftComp_pure, pure_bind, map_pure, Functor.map_map, Function.comp,
-    bind_pure_comp, Transcript.concat, Fin.snoc_last, Fin.snoc_castSucc,
-    guard, if_pos hCheck', optionT_lift_eq_map, OptionT.mk]
+    OracleComp.liftComp_pure, pure_bind, map_pure,
+    bind_pure_comp, Transcript.concat,
+    guard, optionT_lift_eq_map, OptionT.mk]
   -- probability 1 splits into: never fails, and every output is good
   rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
   refine ⟨?_, ?_⟩
@@ -1105,7 +1102,7 @@ theorem reduction_perfectCompleteness [DecidableEq R] [SampleableType R]
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq2
     dsimp only [] at hs
     rcases val2 with _ | out
-    · simp only [Option.getM, pure_bind] at hs
+    · simp only [Option.getM] at hs
       erw [simulateQ_pure] at hs
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hs
       erw [simulateQ_bind] at hval
@@ -1123,24 +1120,17 @@ theorem reduction_perfectCompleteness [DecidableEq R] [SampleableType R]
       simp only [support_map, Set.mem_image] at hchal
       obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_c
-      simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_apply,
-        QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
-        simulateQ_query, simulateQ_pure, simulateQ_bind, simulateQ_map,
-        QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
-        OracleComp.liftComp_map, OracleComp.liftComp_pure,
-        pure_bind, map_pure, Functor.map_map, Function.comp,
-        OracleQuery.cont, OracleQuery.input_query,
-        StateT.run_bind, StateT.run_map, StateT.run_pure,
-        support_map, support_pure, Set.mem_singleton_iff, Set.mem_image,
-        Prod.mk.injEq, Option.some.injEq, Fin.snoc] at hval2
+      simp only [QueryImpl.addLift_def,
+        OracleQuery.input_query,
+        Fin.snoc] at hval2
       norm_num at hval2
-      simp only [cast_eq, sentPoly] at hval2
+      simp only [sentPoly] at hval2
       erw [if_pos hCheck] at hval2
       simp only [map_pure] at hval2
       erw [simulateQ_pure] at hval2
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hval2
       exact absurd (congr_arg Prod.fst hval2) (by simp)
-    · simp only [Option.getM, pure_bind] at hs
+    · simp only [Option.getM] at hs
       erw [simulateQ_pure] at hs
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hs
       exact absurd (congr_arg Prod.fst hs) (by simp)
@@ -1172,11 +1162,11 @@ theorem reduction_perfectCompleteness [DecidableEq R] [SampleableType R]
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq2
     dsimp only [] at hx_rest
     rcases val2 with _ | out
-    · simp only [Option.getM, pure_bind] at hx_rest
+    · simp only [Option.getM] at hx_rest
       erw [simulateQ_pure] at hx_rest
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hx_rest
       exact absurd (congr_arg Prod.fst hx_rest) (by simp)
-    · simp only [Option.getM, pure_bind] at hx_rest
+    · simp only [Option.getM] at hx_rest
       erw [simulateQ_pure] at hx_rest
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hx_rest
       obtain ⟨rfl, rfl⟩ := hx_rest
@@ -1195,22 +1185,15 @@ theorem reduction_perfectCompleteness [DecidableEq R] [SampleableType R]
       simp only [support_map, Set.mem_image] at hchal
       obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_c
-      simp only [QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftComp_right,
+      simp only [QueryImpl.addLift_def,
         QueryImpl.simulateQ_add_liftComp_left, simulateQ_pure,
         StateT.run_pure, support_pure, Set.mem_singleton_iff, Prod.mk.injEq] at hvalp
       obtain ⟨rfl, rfl⟩ := hvalp
-      simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_apply,
-        QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
-        simulateQ_query, simulateQ_pure, simulateQ_bind, simulateQ_map,
-        QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
-        OracleComp.liftComp_map, OracleComp.liftComp_pure,
-        pure_bind, map_pure, Functor.map_map, Function.comp,
-        OracleQuery.cont, OracleQuery.input_query,
-        StateT.run_bind, StateT.run_map, StateT.run_pure,
-        support_map, support_pure, Set.mem_singleton_iff, Set.mem_image,
-        Prod.mk.injEq, Option.some.injEq, Fin.snoc] at hval2
+      simp only [QueryImpl.addLift_def,
+        OracleQuery.input_query,
+        Fin.snoc] at hval2
       norm_num at hval2
-      simp only [cast_eq, sentPoly] at hval2
+      simp only [sentPoly] at hval2
       erw [if_pos hCheck] at hval2
       simp only [map_pure] at hval2
       erw [simulateQ_pure] at hval2

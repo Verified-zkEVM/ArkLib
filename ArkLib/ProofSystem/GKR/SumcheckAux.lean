@@ -83,7 +83,7 @@ theorem seqCompose_run_preserves_snd {M : ℕ} (A : Fin (M + 1) → Type) (B : T
       have h2 : stmt₃.2 = stmt₂.2 :=
         ih (A ∘ Fin.succ) (fun i => P i.succ) (fun i s w => hP i.succ s w) stmt₂ _
           (OracleComp.mem_support_of_mem_support_liftComp _ _ _ hstep2)
-      simp only [support_pure, Set.mem_singleton_iff] at hx
+      simp only [] at hx
       subst hx
       exact h2.trans h1
 

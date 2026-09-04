@@ -132,13 +132,13 @@ def queryMsg (pt : R) :
   liftM (OracleSpec.query
     (show [(pSpec R k).Message]ₒ.Domain from ⟨⟨0, rfl⟩, pt⟩))
 
+omit [Nontrivial R] [DecidableEq R] in
 @[simp] theorem simulateQ_queryMsg (oStmt : ∀ i, LayerFam R n k i)
     (messages : (pSpec R k).Messages) (pt : R) :
     simulateQ (OracleInterface.simOracle2 oSpec oStmt messages) (queryMsg R n oSpec pt)
       = pure ((messages ⟨0, rfl⟩).val.eval pt) := by
-  simp only [queryMsg, OracleInterface.simOracle2,
-    QueryImpl.simulateQ_add_add_liftM_query_right, QueryImpl.liftTarget_apply,
-    OracleInterface.simOracle0]
+  simp only [queryMsg, OracleInterface.simOracle2
+]
   rfl
 
 /-- **The combine step's oracle verifier.** It queries the prover's message oracle `q` at
@@ -166,8 +166,9 @@ noncomputable def oracleVerifier :
     outputInterface_heq := fun _ => HEq.rfl }
 
 
+omit [Nontrivial R] [DecidableEq R] in
 /-- Degree bound extracted from the oracle. -/
-theorem layerFam_degreeOf (oStmt : ∀ j, LayerFam R n k j) (j : Fin (n+1)) (i : Fin k) :
+theorem layerFam_degreeOf (oStmt : ∀ j, LayerFam R n k j) (j : Fin (n + 1)) (i : Fin k) :
     degreeOf i (oStmt j).val ≤ 1 := by
   have := (oStmt j).2
   rw [mem_restrictDegree_iff_degreeOf_le] at this
@@ -230,6 +231,8 @@ def oRelOut (W : ∀ j, LayerFam R n k j) (V : MvPolynomial (Fin k) R) :
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 variable [SampleableType R]
 
+omit [SampleableType R] in
+omit [Nontrivial R] in
 /-- **The materialized oracle verifier equals the original, with the oracle carried.**
 Mirrors `Sumcheck.Spec.SingleRound.Simple.oracleVerifier_eq_verifier`. -/
 theorem oracleVerifier_eq_verifier :
@@ -240,14 +243,15 @@ theorem oracleVerifier_eq_verifier :
   ext ⟨s, oStmt⟩ transcript
   simp only [OracleVerifier.toVerifier, oracleVerifier, GKR.Combine.verifier,
     OracleVerifier.materializeOutput, OracleVerifier.materializeOutputOracle,
-    simulateQ_optionT_bind, simulateQ_optionT_lift, simulateQ_queryMsg,
+    simulateQ_queryMsg,
     OptionT.run_bind, OptionT.run_pure, OptionT.run_mk, OptionT.run_lift,
-    pure_bind, bind_pure_comp, map_pure, Option.map_map, Function.comp,
+    pure_bind, bind_pure_comp, map_pure,
     FullTranscript.challenges, FullTranscript.messages,
     Option.elimM, simulateQ_bind, simulateQ_map, simulateQ_pure,
-    Option.elim_some, Option.elim_none, guard, apply_ite]
+    Option.elim_some, guard, apply_ite]
   split_ifs <;> rfl
 
+omit [Nontrivial R] [SampleableType R] in
 /-- The materialized oracle reduction: original prover, original verifier + passenger. -/
 theorem oracleReduction_toReduction_eq (V : MvPolynomial (Fin k) R)
     (hV : ∀ i, degreeOf i V ≤ 1) :
@@ -260,6 +264,7 @@ theorem oracleReduction_toReduction_eq (V : MvPolynomial (Fin k) R)
   congr 1
   exact oracleVerifier_eq_verifier R n oSpec c l
 
+omit [Nontrivial R] in
 /-- **Perfect completeness of the ported combine step.** -/
 theorem oracleReduction_perfectCompleteness (W : ∀ j, LayerFam R n k j) (V : MvPolynomial (Fin k) R)
     (hV : ∀ i, degreeOf i V ≤ 1) :
@@ -291,20 +296,17 @@ theorem oracleReduction_perfectCompleteness (W : ∀ j, LayerFam R n k j) (V : M
           * (sentPoly R V hV s.challenges).val.eval 1) := hCheck
   simp only [Reduction.run, Prover.run, Verifier.run, oracleProver, GKR.Combine.verifier,
     Prover.runToRound, Prover.processRound, Fin.induction_two, pSpec,
-    bind_pure_comp, Functor.map_map, Function.comp]
+    bind_pure_comp, Functor.map_map]
   split <;> rename_i hDir0
   · exact absurd hDir0 (by decide)
-  try simp only [pure_bind, map_pure, Functor.map_map, Function.comp, bind_pure_comp]
+  try simp only [pure_bind]
   split <;> rename_i hDir1
   swap
   · exact absurd hDir1 (by decide)
   simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift,
-    OracleComp.liftComp_pure, pure_bind, map_pure, Functor.map_map, Function.comp,
-    bind_pure_comp, Transcript.concat, Fin.snoc_last, Fin.snoc_castSucc,
-    OracleVerifier.materializeOutput, OracleVerifier.materializeOutputOracle,
-    simulateQ_queryMsg,
-    OptionT.run_bind, OptionT.run_pure, OptionT.run_mk, OptionT.run_lift,
-    guard, if_pos hCheck', optionT_lift_eq_map, OptionT.mk, OptionT.run]
+    OracleComp.liftComp_pure, pure_bind, map_pure,
+    bind_pure_comp, Transcript.concat,
+    guard, optionT_lift_eq_map, OptionT.mk, OptionT.run]
   rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
   refine ⟨?_, ?_⟩
   -- ## the execution never fails
@@ -336,7 +338,7 @@ theorem oracleReduction_perfectCompleteness (W : ∀ j, LayerFam R n k j) (V : M
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq2
     dsimp only [] at hs
     rcases val2 with _ | out
-    · simp only [Option.getM, pure_bind] at hs
+    · simp only [Option.getM] at hs
       erw [simulateQ_pure] at hs
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hs
       erw [simulateQ_bind] at hval
@@ -354,24 +356,17 @@ theorem oracleReduction_perfectCompleteness (W : ∀ j, LayerFam R n k j) (V : M
       simp only [support_map, Set.mem_image] at hchal
       obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_c
-      simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_apply,
-        QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
-        simulateQ_query, simulateQ_pure, simulateQ_bind, simulateQ_map,
-        QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
-        OracleComp.liftComp_map, OracleComp.liftComp_pure,
-        pure_bind, map_pure, Functor.map_map, Function.comp,
-        OracleQuery.cont, OracleQuery.input_query,
-        StateT.run_bind, StateT.run_map, StateT.run_pure,
-        support_map, support_pure, Set.mem_singleton_iff, Set.mem_image,
-        Prod.mk.injEq, Option.some.injEq, Fin.snoc] at hval2
+      simp only [QueryImpl.addLift_def,
+        OracleQuery.input_query,
+        Fin.snoc] at hval2
       norm_num at hval2
-      simp only [cast_eq, sentPoly] at hval2
+      simp only [sentPoly] at hval2
       erw [if_pos hCheck] at hval2
       simp only [map_pure] at hval2
       erw [simulateQ_pure] at hval2
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hval2
       exact absurd (congr_arg Prod.fst hval2) (by simp)
-    · simp only [Option.getM, pure_bind] at hs
+    · simp only [Option.getM] at hs
       erw [simulateQ_pure] at hs
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hs
       exact absurd (congr_arg Prod.fst hs) (by simp)
@@ -403,11 +398,11 @@ theorem oracleReduction_perfectCompleteness (W : ∀ j, LayerFam R n k j) (V : M
     obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq2
     dsimp only [] at hx_rest
     rcases val2 with _ | out
-    · simp only [Option.getM, pure_bind] at hx_rest
+    · simp only [Option.getM] at hx_rest
       erw [simulateQ_pure] at hx_rest
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hx_rest
       exact absurd (congr_arg Prod.fst hx_rest) (by simp)
-    · simp only [Option.getM, pure_bind] at hx_rest
+    · simp only [Option.getM] at hx_rest
       erw [simulateQ_pure] at hx_rest
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hx_rest
       obtain ⟨rfl, rfl⟩ := hx_rest
@@ -426,22 +421,15 @@ theorem oracleReduction_perfectCompleteness (W : ∀ j, LayerFam R n k j) (V : M
       simp only [support_map, Set.mem_image] at hchal
       obtain ⟨⟨inner_val, s_inner⟩, hinner, heq_c⟩ := hchal
       obtain ⟨rfl, rfl⟩ := Prod.mk.inj heq_c
-      simp only [QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftComp_right,
+      simp only [QueryImpl.addLift_def,
         QueryImpl.simulateQ_add_liftComp_left, simulateQ_pure,
         StateT.run_pure, support_pure, Set.mem_singleton_iff, Prod.mk.injEq] at hvalp
       obtain ⟨rfl, rfl⟩ := hvalp
-      simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_apply,
-        QueryImpl.add_apply_inl, QueryImpl.add_apply_inr,
-        simulateQ_query, simulateQ_pure, simulateQ_bind, simulateQ_map,
-        QueryImpl.simulateQ_add_liftComp_right, QueryImpl.simulateQ_add_liftComp_left,
-        OracleComp.liftComp_map, OracleComp.liftComp_pure,
-        pure_bind, map_pure, Functor.map_map, Function.comp,
-        OracleQuery.cont, OracleQuery.input_query,
-        StateT.run_bind, StateT.run_map, StateT.run_pure,
-        support_map, support_pure, Set.mem_singleton_iff, Set.mem_image,
-        Prod.mk.injEq, Option.some.injEq, Fin.snoc] at hval2
+      simp only [QueryImpl.addLift_def,
+        OracleQuery.input_query,
+        Fin.snoc] at hval2
       norm_num at hval2
-      simp only [cast_eq, sentPoly] at hval2
+      simp only [sentPoly] at hval2
       erw [if_pos hCheck] at hval2
       simp only [map_pure] at hval2
       erw [simulateQ_pure] at hval2
@@ -488,6 +476,7 @@ noncomputable def materializeRoundPoly {k : ℕ} (c : Circuit k n) (l : Fin n)
       rw [mem_restrictDegree_iff_degreeOf_le] at this
       exact this j)
 
+omit [DecidableEq R] [SampleableType R] in
 /-- **The agreement obligation.** Answering a query by two layer-oracle lookups plus
 public wiring gives the same value as evaluating the materialized polynomial. -/
 theorem simulateRoundPoly_eq {k : ℕ} (c : Circuit k n) (l : Fin n) (point : Fin k → R)
@@ -500,9 +489,7 @@ theorem simulateRoundPoly_eq {k : ℕ} (c : Circuit k n) (l : Fin n) (point : Fi
   rcases q with ⟨u, xy⟩
   rcases u with ⟨⟩
   simp only [simulateRoundPoly, queryLayer, materializeRoundPoly, roundPolyFinOracle,
-    simulateQ_bind, simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query,
-    OracleInterface.simOracle0, QueryImpl.liftTarget_apply, pure_bind]
-  congr 1
+    simulateQ_bind]
   exact (output_relation_to_wiring_identity R c l point
     (MvPolynomial.eval xy (roundPolyFin R c l point (oStmt l.succ).val)) xy
     (oStmt l.succ).val rfl).symm
@@ -540,8 +527,7 @@ noncomputable def layerExecLens {k : ℕ} (c : Circuit k n) (l : Fin n) :
     intro outerOStmt innerOStmt q
     rcases q with ⟨u, point⟩
     rcases u with ⟨⟩
-    simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query,
-      QueryImpl.add_apply_inl, OracleInterface.simOracle0, QueryImpl.liftTarget_apply]
+    simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query]
     rfl
 
 
@@ -612,6 +598,7 @@ def oLayerRelOut {k : ℕ} (c : Circuit k n) (l : Fin n) (W : ∀ j, LayerFam R 
     MvPolynomial.eval ch (roundPolyFin R c l point (oStmt l.succ).val) = target }
 
 
+omit [Nontrivial R] [DecidableEq R] [SampleableType R] in
 /-- **The junction.** The relation the lifted sum-check lands in is exactly the relation the
 combine step consumes: `roundPolyFin` evaluated at the challenge point *is* the wiring
 expression. This is what lets the two halves append. -/
@@ -680,7 +667,7 @@ instance layerLensComplete {k : ℕ} (c : Circuit k n) (l : Fin n) (W : ∀ j, L
       dsimp only at this
       exact this
     subst hOracle
-    show MvPolynomial.eval challenges (roundPolyFin R c l point (oStmt l.succ).val) = target
+    change MvPolynomial.eval challenges (roundPolyFin R c l point (oStmt l.succ).val) = target
     exact sumcheck_output_mem_to_eval R target challenges
       (fun _ => roundPolyFinOracle R c l point (oStmt l.succ).val hdeg) hInner
 
@@ -718,9 +705,22 @@ theorem oracleLayer_perfectCompleteness {k : ℕ} (c : Circuit k n) (l : Fin n)
     (liftedInnerOracle_perfectCompleteness R n c l W V hVW)
     (oracleReduction_perfectCompleteness R n []ₒ c l W V hV)
 
-/-! ## GKR composed across all layers, in the oracle model -/
+end GKR.Oracle
 
-variable [IsDomain R] (input : Index k → R)
+/-! ## GKR composed across all layers, in the oracle model
+
+`IsDomain R` replaces `Nontrivial R` from here on — the chaining fact
+`layerMLE_eval_eq_wiring_sum'` needs it, and it implies the weaker assumption, so the section
+above keeps the more general hypothesis and this one does not carry both.
+-/
+
+namespace GKR.Oracle
+open MvPolynomial Polynomial OracleSpec OracleComp ProtocolSpec GKR GKR.Combine
+
+variable (R : Type) [CommRing R] [IsDomain R] [DecidableEq R] [SampleableType R] (n : ℕ)
+variable {k : ℕ} (c : Circuit k n) (input : Index k → R)
+variable {σ : Type} {init : ProbComp σ}
+    {impl : QueryImpl ([]ₒ : OracleSpec PEmpty) (StateT σ ProbComp)}
 
 /-- The honest layer family: layer `j`'s multilinear extension, as an oracle. -/
 noncomputable def honestLayers : ∀ j, LayerFam R n k j :=
@@ -734,17 +734,19 @@ def oChain (i : Fin (n + 1)) : Set ((GKRStatement R n k i × (∀ j, LayerFam R 
     oStmt = honestLayers R n c input ∧
     MvPolynomial.eval point (layerMLE R c input i) = value }
 
+omit [DecidableEq R] [SampleableType R] in
 /-- At layer `l` the chain relation *is* the lifted sum-check's input relation. -/
 theorem oChain_castSucc (l : Fin n) :
     oChain R n c input l.castSucc = oLayerRelIn R n c l (honestLayers R n c input) := by
   ext ⟨⟨⟨point, value⟩, oStmt⟩, ⟨⟩⟩
-  simp only [oChain, oLayerRelIn, honestLayers, Set.mem_ofPred_eq]
+  simp only [oChain, oLayerRelIn, Set.mem_ofPred_eq]
   constructor
   · rintro ⟨rfl, rfl⟩
     exact ⟨rfl, layerMLE_eval_eq_wiring_sum' R c input l point⟩
   · rintro ⟨rfl, h⟩
     exact ⟨rfl, by rw [h]; exact layerMLE_eval_eq_wiring_sum' R c input l point⟩
 
+omit [IsDomain R] [DecidableEq R] [SampleableType R] in
 /-- At layer `l+1` the chain relation *is* the combine step's output relation. -/
 theorem oChain_succ (l : Fin n) :
     oChain R n c input l.succ
@@ -799,6 +801,7 @@ than by strengthening the predicate.
 noncomputable def inputMLE : MvPolynomial (Fin k) R :=
   MLE (fun w => input (finTwoEquiv ∘ w))
 
+omit [IsDomain R] [DecidableEq R] [SampleableType R] in
 /-- the last layer's extension is the input's extension -/
 theorem layerMLE_last : layerMLE R c input (Fin.last n) = inputMLE R input := by
   unfold layerMLE inputMLE
@@ -808,6 +811,7 @@ theorem layerMLE_last : layerMLE R c input (Fin.last n) = inputMLE R input := by
 def terminalPred : (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j)) → Prop :=
   fun x => MvPolynomial.eval x.1.point (inputMLE R input) = x.1.value
 
+omit [IsDomain R] [DecidableEq R] [SampleableType R] in
 theorem oChain_last_subset :
     oChain R n c input (Fin.last n)
       ⊆ CheckClaim.relIn (GKRStatement R n k (Fin.last n) × (∀ j, LayerFam R n k j))
@@ -864,6 +868,7 @@ extension *is* `y`'s extension (`layerMLE_zero`), so the claim holds at every po
 random one. Randomness is what soundness needs, and that is not claimed here.
 -/
 
+omit [IsDomain R] [DecidableEq R] [SampleableType R] in
 /-- layer 0's extension is the extension of the circuit's output -/
 theorem layerMLE_zero : layerMLE R c input 0 = inputMLE R (evalCircuit c input) := by
   unfold layerMLE inputMLE
@@ -909,6 +914,7 @@ noncomputable def openReduction :
 def openRelIn : Set (OpenStmtIn R n k × Unit) :=
   { ⟨⟨y, oStmt⟩, _⟩ | oStmt = honestLayers R n c input ∧ evalCircuit c input = y }
 
+omit [IsDomain R] [DecidableEq R] in
 theorem openReduction_perfectCompleteness :
     (openReduction R n (k := k)).perfectCompleteness init impl
       (openRelIn R n c input) (oChain R n c input 0) := by
@@ -918,20 +924,18 @@ theorem openReduction_perfectCompleteness :
   subst hy
   simp only [openReduction, Reduction.run, Prover.run_of_verifier_first,
     openProver, openVerifier, Verifier.run] at hx
-  simp only [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_bind, OracleComp.liftComp_pure,
-    OracleComp.liftComp_query, pure_bind, bind_pure_comp, map_pure, bind_assoc,
-    OptionT.run_mk, OptionT.run_pure, OptionT.run_bind, OptionT.run_lift,
-    Option.getM, Option.bind_some, Option.elimM, Option.elim_some, Option.elim_none,
-    OptionT.run_map, Function.comp_apply,
-    support_bind, support_map, support_pure, support_query,
-    Set.mem_iUnion, Set.mem_image, Set.mem_singleton_iff, exists_prop] at hx
+  simp only [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_pure,
+    pure_bind, bind_pure_comp, map_pure,
+    OptionT.run_pure, OptionT.run_bind,
+    Option.getM, Option.elimM,
+    OptionT.run_map,
+    support_bind,
+    Set.mem_iUnion, exists_prop] at hx
   obtain ⟨i, hi, hx⟩ := hx
   simp only [OptionT.run_monadLift, _root_.monadLift_self, support_map, Set.mem_image] at hi
   obtain ⟨w, ⟨z, -, rfl⟩, rfl⟩ := hi
-  simp only [Option.elim_some, OptionT.run_monadLift, _root_.monadLift_self,
-    pure_bind, support_map, Set.mem_image, support_pure, Set.mem_singleton_iff,
-    OptionT.run_pure, Option.map_some] at hx
-  simp at hx
+  simp only [Option.elim_some
+] at hx
   subst hx
   refine ⟨_, rfl, ?_, rfl⟩
   simp only [oChain, Set.mem_ofPred_eq]

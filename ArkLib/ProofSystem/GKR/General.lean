@@ -69,7 +69,7 @@ def layerRel (i : Fin (n + 1)) : Set (GKRStatement R n k i × Unit) :=
 theorem layerRel_castSucc_eq (l : Fin n) :
     layerRel R n c input l.castSucc = relationRound R n k c l (layerMLE R c input l.succ) := by
   ext ⟨⟨point, value⟩, u⟩
-  simp only [layerRel, relationRound, Set.mem_setOf_eq]
+  simp only [layerRel, relationRound, Set.mem_ofPred_eq]
   constructor
   · rintro rfl; exact layerMLE_eval_eq_wiring_sum' R c input l point
   · intro h; rw [h]; exact layerMLE_eval_eq_wiring_sum' R c input l point
