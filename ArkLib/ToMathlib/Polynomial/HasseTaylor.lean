@@ -16,7 +16,7 @@ This module exports ArkLib's reusable univariate Hasse--Taylor API.  It builds o
 `Polynomial.hasseDeriv` and `Polynomial.taylor` without introducing factorial denominators or
 characteristic lower bounds.
 
-The API has three layers:
+The API has four layers:
 
 * `HasseTaylor.FiniteJet` packages derivative orders `< m` as the linear map `hasseJet` and gives
   exact degree lowering and finite-coordinate equivalences;
