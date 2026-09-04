@@ -137,4 +137,19 @@ example :
       forwardTaylorQuotient (0 + 2) (1 : ℤ) (X ^ 4) := by
   exact forwardTaylorQuotient_zero_comp 0 2 1 (X ^ 4)
 
+/-- A tail-embedding canary: after skipping the zeroth coordinate of `[1, 2, 1]`, `Fin.natAdd`
+selects `[2, 1]`, which is the jet at zero of the order-one quotient. -/
+example :
+    (fun i : Fin 2 ↦ hasseJet 3 (1 : ZMod 5) (X ^ 2) (Fin.natAdd 1 i)) =
+        hasseJet 2 0 (forwardTaylorQuotient 1 (1 : ZMod 5) (X ^ 2)) ∧
+      hasseJet 2 0 (forwardTaylorQuotient 1 (1 : ZMod 5) (X ^ 2)) = ![2, 1] := by
+  constructor
+  · exact hasseJet_natAdd_eq_forwardTaylorQuotient 1 2 1 (X ^ 2)
+  · rw [← hasseJet_natAdd_eq_forwardTaylorQuotient]
+    funext i
+    fin_cases i
+    · norm_num [hasseJet_apply, hasseDeriv_monomial]
+    · rw [hasseJet_apply, X_pow_eq_monomial]
+      simp [hasseDeriv_monomial]
+
 end Polynomial

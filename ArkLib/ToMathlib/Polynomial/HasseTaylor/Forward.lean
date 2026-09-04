@@ -247,6 +247,19 @@ theorem coeff_forwardTaylorQuotient (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
     taylor_coeff] at h
   exact h
 
+/-- The final `n` coordinates of an order-`m + n` jet are the order-`n` jet at zero of the
+order-`m` forward Taylor quotient.  The canonical `Fin.natAdd` embedding selects this tail. -/
+theorem hasseJet_natAdd_eq_forwardTaylorQuotient
+    (m n : ℕ) (a : R) (p : R[X]) :
+    (fun i : Fin n ↦ hasseJet (m + n) a p (Fin.natAdd m i)) =
+      hasseJet n 0 (forwardTaylorQuotient m a p) := by
+  ext i
+  change hasseCoeffAt a (m + (i : ℕ)) p =
+    hasseCoeffAt 0 (i : ℕ) (forwardTaylorQuotient m a p)
+  rw [hasseCoeffAt_zero_eq_coeff, coeff_forwardTaylorQuotient]
+  congr 2
+  omega
+
 /-- Removing the first `m` Taylor coefficients lowers natural degree by at least `m`.
 
 This formulation is zero-aware: it remains meaningful for `p = 0` and when `m` exceeds the
