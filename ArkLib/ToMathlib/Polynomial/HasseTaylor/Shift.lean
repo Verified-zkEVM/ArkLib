@@ -27,6 +27,7 @@ term `j` has Hasse order `j + 1`, sign `(-1)^j`, and derivative evaluated at the
 * `backwardTaylorReconstruction`: finite moving-point backward reconstruction.
 * `X_pow_succ_dvd_backwardTaylorResidual`: divisibility of the unnormalized numerator.
 * `X_pow_dvd_normalizedBackwardTaylorError`: divisibility after removing one factor of `X`.
+* `X_mul_normalizedBackwardTaylorError`: the normalized-error identity itself.
 -/
 
 namespace Polynomial
@@ -36,6 +37,11 @@ noncomputable section
 section Semiring
 
 variable {R : Type*} [Semiring R]
+
+/-- Removing the leading `X` from `X * p` recovers `p`. -/
+theorem divX_X_mul (p : R[X]) : (X * p).divX = p := by
+  ext n
+  simp [coeff_divX, coeff_X_mul]
 
 /-- `X ^ m` divides the Taylor expansion at `a` iff the first `m` Hasse derivatives vanish. -/
 theorem X_pow_dvd_taylor_iff (p : R[X]) (a : R) (m : ℕ) :
@@ -268,18 +274,26 @@ theorem X_pow_dvd_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) :
   rw [normalizedBackwardTaylorError, backwardTaylorResidual_eq]
   exact X_pow_dvd_normalizedBackwardHasseResidual d (taylor a p)
 
+/-- Equation (16): multiplying the normalized moving error by `X` recovers its numerator. -/
+theorem X_mul_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) :
+    X * normalizedBackwardTaylorError a p d = backwardTaylorResidual a p d := by
+  rw [normalizedBackwardTaylorError, backwardTaylorResidual_eq]
+  exact X_mul_normalizedBackwardHasseResidual d (taylor a p)
+
+theorem coeff_normalizedBackwardTaylorError (a : R) (p : R[X]) (d n : ℕ) :
+    (normalizedBackwardTaylorError a p d).coeff n =
+      (backwardTaylorResidual a p d).coeff (n + 1) := by
+  rw [normalizedBackwardTaylorError, coeff_divX]
+
 /-- Finite moving-point backward reconstruction, with signs `+,-,+,...` from Hasse order one. -/
 theorem backwardTaylorReconstruction (a : R) (p : R[X]) (d : ℕ) :
     taylor a p = C (p.eval a) + movingHasseSum a p d +
       X * normalizedBackwardTaylorError a p d := by
-  have hx : X * normalizedBackwardTaylorError a p d = backwardTaylorResidual a p d := by
-    rw [normalizedBackwardTaylorError, backwardTaylorResidual_eq]
-    exact X_mul_normalizedBackwardHasseResidual d (taylor a p)
   calc
     taylor a p = C (p.eval a) + movingHasseSum a p d + backwardTaylorResidual a p d := by
       simp only [backwardTaylorResidual]
       ring
-    _ = _ := by rw [hx]
+    _ = _ := by rw [X_mul_normalizedBackwardTaylorError]
 
 theorem backwardTaylorReconstruction_of_eval_eq {a y : R} {p : R[X]} (d : ℕ)
     (h : p.eval a = y) :
@@ -293,11 +307,28 @@ theorem normalizedBackwardTaylorError_zero (a : R) (p : R[X]) :
   simp [normalizedBackwardTaylorError, backwardTaylorResidual, movingHasseSum,
     shiftIncrementQuotient, coeff_divX]
 
+/-- The reconstruction determines its normalized error uniquely. -/
+theorem normalizedBackwardTaylorError_unique (a : R) (p : R[X]) (d : ℕ) {e : R[X]}
+    (h : taylor a p = C (p.eval a) + movingHasseSum a p d + X * e) :
+    e = normalizedBackwardTaylorError a p d := by
+  have hres : backwardTaylorResidual a p d = X * e := by
+    rw [backwardTaylorResidual, h]
+    ring
+  rw [← divX_X_mul e, ← hres]
+  rfl
+
 /-- At or above the polynomial degree, the normalized moving error is zero. -/
 theorem normalizedBackwardTaylorError_eq_zero_of_natDegree_le (a : R) (p : R[X]) (d : ℕ)
     (hdeg : p.natDegree ≤ d) : normalizedBackwardTaylorError a p d = 0 := by
   rw [normalizedBackwardTaylorError,
     backwardTaylorResidual_eq_zero_of_natDegree_le a p d hdeg, divX_zero]
+
+/-- At or above the polynomial degree, the finite reconstruction is exact without a remainder. -/
+theorem backwardTaylorReconstruction_of_natDegree_le (a : R) (p : R[X]) (d : ℕ)
+    (hdeg : p.natDegree ≤ d) :
+    taylor a p = C (p.eval a) + movingHasseSum a p d := by
+  simpa only [normalizedBackwardTaylorError_eq_zero_of_natDegree_le a p d hdeg,
+    mul_zero, add_zero] using backwardTaylorReconstruction a p d
 
 end CommRing
 
