@@ -347,6 +347,30 @@ theorem existsUnique_regularLiftCoefficient_centered_of_le_of_lt_ringChar (hk : 
       (hdegree.trans_lt hD) (by omega)
   · exact hseparant
 
+/-- Regular-jet packaged form of the exact centered lift.  The equation-at-the-center conjunct
+belongs to the root-counting interface; the one-step algebra uses its separant conjunct. -/
+theorem existsUnique_regularLiftCoefficient_centered_of_isRegularJet (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center : F) (P : F[X])
+    (hregular : IsRegularJet Q (Fin.last r) center (polynomialJet center P))
+    (hresidual : (X - C center) ^ k ∣ differentialSpecialization Q P)
+    (hbinomial : ((k + r).choose r : F) ≠ 0) :
+    ∃! gamma : F,
+      (X - C center) ^ (k + 1) ∣
+        differentialSpecialization Q (regularLiftCandidate center gamma k r P) := by
+  exact existsUnique_regularLiftCoefficient_centered hk Q center P hresidual hbinomial hregular.2
+
+/-- Regular-jet packaged form used below the characteristic bound. -/
+theorem existsUnique_regularLiftCoefficient_centered_of_isRegularJet_of_le_of_lt_ringChar
+    (hk : 0 < k) (Q : DifferentialPolynomial F r) (center : F) (P : F[X]) (D : ℕ)
+    (hregular : IsRegularJet Q (Fin.last r) center (polynomialJet center P))
+    (hdegree : k + r ≤ D) (hD : D < ringChar F)
+    (hresidual : (X - C center) ^ k ∣ differentialSpecialization Q P) :
+    ∃! gamma : F,
+      (X - C center) ^ (k + 1) ∣
+        differentialSpecialization Q (regularLiftCandidate center gamma k r P) := by
+  exact existsUnique_regularLiftCoefficient_centered_of_le_of_lt_ringChar
+    hk Q center P D hdegree hD hresidual hregular.2
+
 end
 
 end ReedSolomon.HiddenDerivative
