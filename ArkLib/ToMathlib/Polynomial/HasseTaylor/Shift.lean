@@ -290,6 +290,14 @@ theorem map_movingHasseSum {S : Type*} [CommRing S] (f : R →+* S)
   intro j _
   simp [map_hasseDeriv, map_taylor]
 
+/-- Successive changes of origin add their centers in the moving-Hasse correction sum. -/
+theorem movingHasseSum_taylor (a b : R) (p : R[X]) (d : ℕ) :
+    movingHasseSum b (taylor a p) d = movingHasseSum (b + a) p d := by
+  rw [movingHasseSum, movingHasseSum]
+  apply Finset.sum_congr rfl
+  intro j _
+  rw [hasseDeriv_taylor, taylor_taylor]
+
 /-- Adding one truncation order appends exactly the next alternating moving-Hasse term. -/
 theorem movingHasseSum_succ (a : R) (p : R[X]) (d : ℕ) :
     movingHasseSum a p (d + 1) = movingHasseSum a p d +
@@ -345,6 +353,13 @@ theorem map_backwardTaylorResidual {S : Type*} [CommRing S] (f : R →+* S)
     (backwardTaylorResidual a p d).map f =
       backwardTaylorResidual (f a) (p.map f) d := by
   simp [backwardTaylorResidual, map_taylor, eval_map, map_movingHasseSum]
+
+/-- Successive changes of origin add their centers in the moving-point backward numerator. -/
+theorem backwardTaylorResidual_taylor (a b : R) (p : R[X]) (d : ℕ) :
+    backwardTaylorResidual b (taylor a p) d =
+      backwardTaylorResidual (b + a) p d := by
+  rw [backwardTaylorResidual, backwardTaylorResidual, taylor_taylor, taylor_eval,
+    movingHasseSum_taylor]
 
 /-- Increasing the truncation order subtracts the next moving-Hasse term from the residual. -/
 theorem backwardTaylorResidual_succ (a : R) (p : R[X]) (d : ℕ) :
@@ -435,6 +450,13 @@ theorem map_normalizedBackwardTaylorError {S : Type*} [CommRing S] (f : R →+* 
     (normalizedBackwardTaylorError a p d).map f =
       normalizedBackwardTaylorError (f a) (p.map f) d := by
   simp [normalizedBackwardTaylorError, map_divX, map_backwardTaylorResidual]
+
+/-- Successive changes of origin add their centers in the normalized moving-point error. -/
+theorem normalizedBackwardTaylorError_taylor (a b : R) (p : R[X]) (d : ℕ) :
+    normalizedBackwardTaylorError b (taylor a p) d =
+      normalizedBackwardTaylorError (b + a) p d := by
+  rw [normalizedBackwardTaylorError, normalizedBackwardTaylorError,
+    backwardTaylorResidual_taylor]
 
 /-- Increasing the truncation order subtracts the next normalized moving-Hasse term. -/
 theorem normalizedBackwardTaylorError_succ (a : R) (p : R[X]) (d : ℕ) :

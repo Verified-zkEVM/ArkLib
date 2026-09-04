@@ -74,6 +74,22 @@ example :
   rw [LinearMap.map_smul, normalizedBackwardTaylorErrorLinearMap_apply,
     X_cube_order_two_oracle.2, smul_eq_C_mul]
 
+/-- Asymmetric centers detect an inverse shift or a dropped first center in composition. -/
+example :
+    movingHasseSum (1 : ZMod 5) (taylor (2 : ZMod 5) (X ^ 2)) 1 =
+      C 2 * X ^ 2 + X := by
+  rw [movingHasseSum_taylor]
+  have hc : (1 + 2 : ZMod 5) = 3 := by decide
+  rw [hc]
+  norm_num [movingHasseSum, hasseDeriv_monomial, taylor_apply]
+  have h : C (2 : ZMod 5) * C 3 = 1 := by
+    rw [← C_mul]
+    congr 1
+  calc
+    (X * (C 2 * (X + C 3)) : (ZMod 5)[X]) =
+        C 2 * X ^ 2 + X * (C 2 * C 3) := by ring
+    _ = C 2 * X ^ 2 + X := by rw [h, mul_one]
+
 /-- Order zero reduces to the ordinary shifted increment quotient. -/
 example (a : ℤ) (p : ℤ[X]) :
     normalizedBackwardTaylorError a p 0 = shiftIncrementQuotient a p :=
