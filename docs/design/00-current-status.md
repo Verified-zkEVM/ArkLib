@@ -1,6 +1,6 @@
 # Current status and first implementation train
 
-**Status date:** 2026-08-29. **Scope:** the supported starting point for implementing ArkLib's
+**Status date:** 2026-09-03. **Scope:** the supported starting point for implementing ArkLib's
 typed oracle-reduction architecture.
 
 The core implementation can begin now. PolyFun's typed interaction, cursor, restriction, append,
@@ -134,8 +134,11 @@ Every implementation PR starts from current `main` and leaves the legacy layer w
 | 6 | Typed composition and legacy bridge | Exercise dependent append and virtual substitution; prove a two-way protocol bridge | unblocked after slice 5 |
 | 7 | Execution artifact and ordinary security | Add or upstream the artifact and outcome boundaries; prove admissibility-aware composition | blocked on named VCVio gaps |
 
-The first code PR introduces the smallest plain reduction wrapper whose execution is definitionally
-the current PolyFun runner. It does not port the archive's whole `ArkLib/Interaction` tree.
+AR-1 introduces the smallest plain reduction wrapper whose execution is definitionally the current
+PolyFun runner. It supports complete-path-dependent append and exposes the general effectful
+factorization boundary through `LawfulCommMonad`; PolyFun's pure-suffix theorem remains available
+under `LawfulMonad`. The executable acceptance client selects different suffix message types from
+the first complete path. AR-1 does not port the archive's whole `ArkLib/Interaction` tree.
 
 ## Deferred work
 
