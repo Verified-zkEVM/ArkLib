@@ -439,9 +439,9 @@ Status values are `blocked`, `queued`, `active`, `review`, and `landed`. A node 
 | S0 | Freeze exact Lean statements for combinatorial, exact-decoder, characteristic, and refinement theorems. | None | landed (`7715c089`) | Quantifier order visibly gives `d = d(δ)` before all code parameters; edge cases and radius conversion are explicit. |
 | F0 | Integrate and re-audit PR 857 weighted-support API. | P0 | landed (`5bc284d7`) | Head `f37f25ba` is represented without regressions; no zero-weight finrank theorem is misapplied. |
 | F1 | Integrate and re-audit PR 856 Hasse-Taylor API. | P0 | landed (`611afa07`) | Head `0c6d0a40` is represented; characteristic-safe identities and divisibility canaries pass. |
-| F2 | Port ArkLib-native list specification, agreement-radius bridge, ambient subcode, and exact filtering contracts. | P0, S0 | queued | Uses canonical `ReedSolomon.code` and `Code.Lambda`; closes PR 855's two filtering holes; contains no stale low-rate capstone. |
+| F2 | Port ArkLib-native list specification, agreement-radius bridge, ambient subcode, and exact filtering contracts. | P0, S0 | landed (`d970f64c`, `45f98802`) | Uses canonical `ReedSolomon.code` and `Code.Lambda`; closes PR 855's two filtering holes; contains no stale low-rate capstone. |
 | F3 | Port hidden variables and substitution bounds. | P0, F0 | queued | Only algebraic commits are adapted; `D > d` is explicit; boundary canaries cover truncated natural subtraction. |
-| F4 | Port the audited free-order donor explainer layer at `9699ee7...`. | P0 | queued | Reusable finite-order and threshold lemmas are adapted to ArkLib; no pointwise `(ε,θ)` quantifier is mistaken for uniform `d(δ)`; both Kopparty axioms and the weak cost wrapper remain outside trusted endpoints. |
+| F4 | Port the audited free-order donor explainer layer at `9699ee7...`. | P0 | landed foundation (`52903c27`) | Reusable finite-order and threshold lemmas are adapted to ArkLib; no pointwise `(ε,θ)` quantifier is mistaken for uniform `d(δ)`; both Kopparty axioms and the weak cost wrapper remain outside trusted endpoints. |
 
 The weighted-degree finrank theorem currently requires nonzero variable weights. The hidden-derivative weight gives weight zero to `X`, `Y₀`, and `Y₁`. `I0` must therefore define a genuinely finite interpolation band with separate caps or an exact finite index type. Treating the unrestricted zero-weight space as finite-dimensional would be a correctness bug.
 
@@ -717,6 +717,8 @@ At least one audit worktree should verify that the proof breaks when each of the
 | Advanced lattice analysis | No reusable ArkLib library sufficient for the sharp derivative dependence found. |
 | Donor port to ArkLib 4.33.1 | First 19 of 51 original modules compile unmodified. `GlobalDimension.lean` needs moderate Fin/Finsupp API repairs; the new parameter and free-threshold modules themselves compile over compatible dependency oleans. |
 | All-rate contracts | Landed at merge `7715c089`. The exact threshold, `Code.Lambda` radius, qualitative all-rate quantifier order, strong derivative-order target, and larger-field refinement are frozen. The decoder contract is intentionally extensional and noncomputable; executable enumeration and cost remain separate obligations. |
+| Ambient filtering and radius bridge | Landed at `d970f64c` and `45f98802`. The two filtering holes from PR 855 are proved. The point-list/evaluation-image equality and its `Code.Lambda` corollary include the exact `Nat.ceil` rounding and do not require injectivity of evaluation. |
+| Axiom-free donor foundation | Landed at merge `52903c27`: six modules covering free-order parameters, a finite zero-weight-safe interpolation space, repaired rectangular dimension counting, scoped finrank bounds, and canaries. Kopparty assumptions, `FieldCost`, and algorithmic wrappers were excluded. |
 
 ## 13. Decisions already made
 
@@ -749,25 +751,24 @@ before duplicating them:
 
 - `F3` and the first `L0` bridge: hidden variables, substitution bounds, and genuine-polynomial
   Hasse remainder;
-- `F4`: the axiom-free donor combinatorial and free-order layer;
 - `R0-R1`: differential-polynomial interfaces and characteristic-safe derivative descent.
+- `R2`: an external independent sprint is developing regular-jet coefficient lifting against the
+  current root-solver contract.
 
 The best independent assignments for additional contributors are, in priority order:
 
-1. `F2`: prove the exact agreement-threshold to `Code.Lambda` radius bridge, ambient-subcode
-   monotonicity, and degree/agreement filtering lemmas over the contracts already on the branch.
-2. `C0`: define exact finite counting functions for interpolation bands, shells, and local-rank sums,
+1. `C0`: define exact finite counting functions for interpolation bands, shells, and local-rank sums,
    with executable small-instance canaries. This should not assume that the certified rank bound is
    the true rank.
-3. `U0`: formalize ambient padding and its rate-uniform inequalities independently of interpolation.
+2. `U0`: formalize ambient padding and its rate-uniform inequalities independently of interpolation.
    Keep every floor, ceiling, positivity, and `D > d` side condition explicit.
-4. `R4-R6` support: develop the generic finite-field counting, sufficiently-large extension, and
+3. `R4-R6` support: develop the generic finite-field counting, sufficiently-large extension, and
    base-solution injection lemmas needed for the division-free root-count inequality. Keep these
    files independent of the still-moving `R0-R3` interface where possible.
-5. `O0-O1` audit support: independently develop the continuous and discrete sharp-constant
+4. `O0-O1` audit support: independently develop the continuous and discrete sharp-constant
    certificates in non-overlapping helper files. These are separate audit routes and should not
    share unproved numerical lemmas; final composition still waits for `C0`, `I4`, and `U0`.
-6. `N0` or `N2`: formalize the exact-capacity bad ball or the bounded-characteristic obstruction.
+5. `N0` or `N2`: formalize the exact-capacity bad ball or the bounded-characteristic obstruction.
    These are useful independent checks, but they do not replace a critical-path node.
 
 An autoformalization agent should be given this entire document and the following operating
