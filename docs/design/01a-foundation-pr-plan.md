@@ -108,6 +108,9 @@ the first complete path.
 
 ### AR-2A — oracle type trees and path projections
 
+**Status.** Implemented by the second typed-interaction PR. AR-2B adds the decorations that depend
+on this structural path boundary.
+
 **Goal.** Add `Oracle.Position`, `Oracle.TypeTree`, the runtime lens to generic `TypeTree`,
 `BranchPath`, `ExecutionPath`, and projection from execution to structural branch.
 

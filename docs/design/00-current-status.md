@@ -140,6 +140,10 @@ factorization boundary through `LawfulCommMonad`; PolyFun's pure-suffix theorem 
 under `LawfulMonad`. The executable acceptance client selects different suffix message types from
 the first complete path. AR-1 does not port the archive's whole `ArkLib/Interaction` tree.
 
+AR-2A adds the structural oracle refinement: public moves choose continuations, opaque oracle
+payloads remain in `ExecutionPath`, and `ExecutionPath.toBranchPath` replaces each oracle payload
+with the unique `PUnit` branch. Roles and oracle-interface decorations remain in AR-2B.
+
 ## Deferred work
 
 The first train deliberately excludes:

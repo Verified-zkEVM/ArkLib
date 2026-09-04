@@ -25,6 +25,8 @@ home_page/            site assets and assembled website root
 
 - `ArkLib/Interaction/` is the new typed-interaction foundation. Its plain reduction layer is
   intentionally independent of oracle, probability, and legacy protocol semantics.
+- `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions and keeps
+  structural `BranchPath` separate from concrete `ExecutionPath` messages.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, `ArkLib/ToCompPoly/`, and `ArkLib/ToVCVio/` support the
