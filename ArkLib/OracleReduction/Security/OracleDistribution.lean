@@ -293,21 +293,17 @@ require `Carrier := Equiv.Perm State` to enforce the bijection invariant. The co
 
 - `D_𝔖`  — base IPM. Spec `duplexSpongeChallengeOracle StmtIn U`. Shape:
   `OracleFamily × Equiv.Perm`. Defined in `DuplexSponge/Defs.lean`.
-- `D_Σ`  — Hyb1 (encoded). Spec `section58EncodedChallengeOracle StmtIn pSpec δ`.
-  Shape: random function. Defined in
-  `DuplexSponge/Security/TraceTransform.lean`.
-- Eq. 52 — Hyb2 (decoded). Spec `section58DecodedChallengeOracle StmtIn pSpec δ`.
-  Shape: random function (this is *not* `D_Σ`). Same file as Hyb1.
+- `D_Σ` — Hyb1 (encoded). Spec `gSpec StmtIn pSpec δ`, distributed by `D_Sigma`.
+  Shape: random function. Defined in `DuplexSponge/Defs.lean`.
+- Eq. 53 — Hyb2 (decoded). Spec `eSpec StmtIn pSpec δ`, distributed by `D_e`.
+  Shape: random function (this is *not* `D_Σ`). Defined in `DuplexSponge/Defs.lean`.
 - `D_IP` — Hyb3 / Hyb4 (salted). Spec
   `fsChallengeOracle (StmtIn × Salt) pSpec` (paper's pre-encoded `{0,1}^{δ⋆}`; the on-sponge
   `Vector U δ` salt is bridged via `SaltCodec.encode = bin`). Shape: random function.
   Realized at call sites.
 
-The §5.8-specific encoded/decoded challenge oracles currently live in
-`Security/TraceTransform.lean`; if they grow theorem-facing uses they may deserve their own
-`Defs`-level module. To keep `OracleDistribution.lean` import-light, this file demonstrates only
-the *generic* random-function shapes; concrete DSFS instances are produced at the call sites by
-partial application of `OracleDistribution.uniform`.
+To keep `OracleDistribution.lean` import-light, the concrete §5.8 distributions live in
+`DuplexSponge/Defs.lean`; this file provides their generic random-function foundation.
 -/
 
 section OracleDistribution.Examples
@@ -377,25 +373,14 @@ Paper `D_Σ` (Hyb1) has domain
 `(i : pSpec.ChallengeIdx) × (StmtIn × Vector U δ × List <prover-prefix entries>)`
 and range `Vector U (challengeSize i)`.
 
-The realization lives at the call site (e.g. `FiatShamir/DuplexSponge/Security/...`):
-```
-def DΣ_encoded {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) (δ : ℕ) … :
-    OracleDistribution (section58EncodedChallengeOracle StmtIn pSpec δ) :=
-  OracleDistribution.uniform _
-```
-The pattern is identical to `D_ROM` / `D_IP`; only the underlying spec differs. -/
+The concrete `gSpec` and `D_Sigma` declarations live in `DuplexSponge/Defs.lean`; their
+random-function construction is the same as `D_ROM` / `D_IP`. -/
 
 /-! ### Hyb2 decoded challenge distribution.
 
 Hyb2 samples `e_i` with the same input domain as `D_Σ`, but range `pSpec.Challenge i`
 (`𝓜_{V,i}` in the paper). This is not `D_Σ`; it is the decoded verifier-message oracle family
-from Eq. (52). At the concrete DSFS call site:
-```
-def DHyb2_decoded {n : ℕ} (StmtIn : Type) (pSpec : ProtocolSpec n) (δ : ℕ) … :
-    OracleDistribution (section58DecodedChallengeOracle StmtIn pSpec δ) :=
-  OracleDistribution.uniform _
-```
--/
+from Eq. (53), concretely `eSpec` with distribution `D_e` in `DuplexSponge/Defs.lean`. -/
 
 end OracleDistribution.Examples
 

@@ -723,9 +723,6 @@ private def linearScanBackwards
 
 end S_BT_BacktrackComputation
 
-/-- CO25 Eq. 7 — `L_δ = ⌈δ / r⌉`: number of rate blocks for the salt. -/
-private def Lδ : Nat := Nat.ceil ((δ : ℚ) / SpongeSize.R)
-
 private def challengeIdxList : List pSpec.ChallengeIdx :=
   (List.finRange n).filterMap fun i =>
     if h : pSpec.dir i = .V_to_P then some (⟨i, h⟩ : pSpec.ChallengeIdx) else none
@@ -1025,12 +1022,16 @@ private def BacktrackSequence.extractCandidate
     --   `(i, 𝕩^(k), τ^(k), (α̂_1^(k), …, α̂_i^(k)))` in `Outs`.
     if L_ptr + L_P_i == m_k_plus_1 then
       let acc := alphaHat_acc
-      let msgs : pSpec.EncodedMessagesBefore U i.1.castSucc :=
-        fun ⟨j, _⟩ =>
-          match acc.findSome? (fun p => if h : p.1 = j then some (h ▸ p.2) else none) with
-          | some v => v
-          | none => Vector.replicate (messageSize j) (0 : U)
-      return some { roundIdx := i, stmt := seq.stmt, salt := salt, encodedMessages := msgs }
+      let findMsg : (j : pSpec.MessageIdxBefore i.1.castSucc) →
+          Option (Vector U (messageSize j.val)) := fun ⟨j, _⟩ =>
+        acc.findSome? fun p =>
+          if h : p.1 = j then some (h ▸ p.2 : Vector U (messageSize j)) else none
+      if hMsgs : ∀ j, (findMsg j).isSome then
+        let msgs : pSpec.EncodedMessagesBefore U i.1.castSucc :=
+          fun j => (findMsg j).get (hMsgs j)
+        return some { roundIdx := i, stmt := seq.stmt, salt := salt, encodedMessages := msgs }
+      else
+        return none -- an unassembled prefix message makes this candidate invalid
     -- Step 4(a).iii.E — verifier squeeze window check via `checkSqueezeWindow`
     -- on the range `[L_ptr(i)+L_P(i), L_ptr(i)+L_P(i)+L_V(i))` (CO25 Step 4(a).iii.E).
     let L_V_i := pSpec.Lᵥᵢ i

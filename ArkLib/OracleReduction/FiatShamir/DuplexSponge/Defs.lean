@@ -794,6 +794,10 @@ section Execution
 Prover's function for processing the next round, given the current result of the previous round.
 
 This is modified for Fiat-Shamir, where we only accumulate the messages and not the challenges.
+
+For a specification ending in a prover message, this absorbs that final message, unlike the
+`i < k` guard in CO25 Construction 4.3. Section 5 uses `NondegenerateRounds` specifications ending
+in a challenge; any future terminal-prover schedule must include this absorption in its query bound.
 -/
 @[inline, specialize]
 def Prover.processRoundDSFS (j : Fin n)
@@ -1039,7 +1043,7 @@ wide spec `oSpec + duplexSpongeChallengeOracle StmtIn U`.
 
 Shared by:
 - `dsfsGame` / `hybridGame` (KeyLemma.lean — `Hyb_0` through `Hyb_3` skeleton);
-- `lemma5_8ProjectedTraceDistAbortable` / `lemma5_8TraceExperiment` (BadEvents.lean — §5.6).
+- `lemma5_8ProjectedTraceDistAbortable` (BadEvents.lean — §5.6).
 
 Encodes CO25 Figure 4 line 3 at the type level: the narrow input spec
 `oSpec + duplexSpongeForwardOracle StmtIn U` exposes only `(h, p)`, while the wide output spec

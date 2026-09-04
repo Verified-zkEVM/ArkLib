@@ -500,7 +500,7 @@ open scoped NNReal
 
 /-! ### Numerical bounds: `θ★`, `CodecBias`, `η★`, per-claim bounds -/
 
-/-- CO25 Theorem 5.1 / Eq. (5). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
+/-- CO25 Theorem 5.1 / Eq. (6). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
 query-bound multiplier in `η★`. -/
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
 
@@ -514,8 +514,8 @@ abbrev CodecBias :=
 ```
 η★ := numerator / (2 · |Σ|^c) + θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}
 ```
-where `numerator = 7(t+L)² + … − 13(L+1)` with `t = t_h + t_p + t_{p⁻¹}`, `L` the total
-permutation-query count from message/challenge absorb.  Sums the four hybrid-step bounds from
+where `numerator = 7t² + 28(L+1)t + 14(L+1)² − 3t − 13(L+1)` with
+`t = t_h + t_p + t_{p⁻¹}` and `L` the total permutation-query count. Sums the four bounds from
 Claims 5.21 (Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
 (Hyb_3 → Hyb_4). -/
 def ηStar (U : Type) [SpongeUnit U] [Fintype U]
@@ -955,8 +955,8 @@ set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
 /-- CO25 Theorem 5.1 (Main lemma §5.8) — **inner, concrete-transform form.**  Identical to
 `lemma_5_1` but with the two transforms *fixed* to the concrete `ProverTransform.d2sAlgo` and
-`d2sTraceSalted` (rather than hidden behind `∃`).  This is the form §6.2 consumes
-(`theorem_6_2_straightline`): Construction 6.3's extractor runs the concrete `d2sTraceSalted`, so
+`d2sTraceSalted` (rather than hidden behind `∃`). This is the form a later concrete extractor
+proof consumes: the extractor runs the concrete `d2sTraceSalted`, so
 `Hyb₀`/`Hyb₄` must carry the *same* concrete maps for the game-match `hL1`/`hL3` to hold
 definitionally — an opaque `∃`-witness would block that defeq.  `lemma_5_1` re-packages this as the
 existential.  Its intended proof combines the §5.8 distance claims with the `D2SAlgo` query bound,
@@ -1056,7 +1056,7 @@ the caller-supplied handler `oSpecImpl`. Left: `oSpecImpl` plus
 salted `𝒟_IP(λ,n) = D_IP_salted` for `f`.
 
 Re-packages the concrete `lemma_5_1_inner` (the witnesses are `ProverTransform.d2sAlgo` and
-`d2sTraceSalted`) as the existential consumed by `theorem_6_1_soundness`. -/
+`d2sTraceSalted`) as the canonical existential interface for later soundness arguments. -/
 theorem lemma_5_1
     [DecidableEq ι]
     {T_H : Type} {T_P : Type}

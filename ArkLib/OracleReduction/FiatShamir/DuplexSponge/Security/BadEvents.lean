@@ -497,8 +497,8 @@ Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻�
 
 **Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 27; Case 2 (`j`-th entry
 `p⁻¹`) has no paper counterpart but is *required* by `not_collisionFwdBwd_of_not_combined`
-(Lemma 5.10, Item 3). The `≠`-output conditions are forced by base-trace non-redundancy.
-See `DSFS-archive/BadEvents_deep_analysis.md` §7. -/
+(Lemma 5.10, Item 3). It symmetrically excludes a later forward query on the same input that
+disagrees with an earlier inverse query; the `≠`-output guards exclude redundant copies. -/
 def E_func : Prop :=
   let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ stateIn stateOut : CanonicalSpongeState U,
@@ -541,22 +541,6 @@ noncomputable def lemma5_8Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
   let tShift : ℝ := (tₕ + 1 + tₚ + L + tₚᵢ : ℕ)
   (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
-
-/-- CO25 §5.6 — Run a concrete duplex-sponge experiment under an oracle implementation and return
-the full DS query-answer trace.  Used as the building block for both the real (`𝒟_𝔖`) and
-simulator (`𝒟_Σ`) trace distributions in Lemma 5.8. -/
-def traceDistOfConcreteExperiment
-    {σ α : Type}
-    (init : ProbComp σ)
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
-    (exp : OracleComp (duplexSpongeChallengeOracle StmtIn U) α) :
-    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
-  let outWithLog :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U)
-        (α × QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
-    (simulateQ loggingOracle exp).run
-  let ⟨_, trace⟩ ← (simulateQ impl outWithLog).run' (← init)
-  pure trace
 
 variable {StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
@@ -607,14 +591,8 @@ def lemma5_8ProjectTraceLog
     | ⟨.inl q, _⟩ => PEmpty.elim q
     | ⟨.inr q, r⟩ => some ⟨q, r⟩
 
-/-- The empty-oracle branch of the Section 5.6 experiment is uncallable. -/
-private def lemma5_8EmptyQueryImpl {σ : Type} :
-    QueryImpl []ₒ (StateT σ ProbComp) :=
-  fun q => PEmpty.elim q
-
-/-- Generic-`m` sibling of `lemma5_8EmptyQueryImpl`: the empty-oracle branch is uncallable in any
-target monad. Used to build `QueryImpl ([]ₒ + DS) (OptionT (StateT _ ProbComp))` via `QueryImpl.+`
-where the right summand is the abortable DS impl. -/
+/-- The empty-oracle branch is uncallable in any target monad. Used to build
+`QueryImpl ([]ₒ + DS) (OptionT (StateT _ ProbComp))` via `QueryImpl.+`. -/
 private def lemma5_8EmptyQueryImplGeneric {m : Type → Type} : QueryImpl []ₒ m :=
   fun q => PEmpty.elim q
 
@@ -689,48 +667,6 @@ noncomputable def lemma5_8ProjectedTraceDistAbortable
       pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP,
             lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trV)
 
-/-- CO25 §5.6 — Run a concrete Lemma 5.8 experiment over `[]ₒ + DS` and keep only the DS trace.
-Combines the logging oracle with the given DS implementation, runs the experiment, and projects
-the combined trace down to the DS component. -/
-def lemma5_8ProjectedTraceDistOfConcreteExperiment
-    {σ α : Type}
-    (init : ProbComp σ)
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
-    (exp : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α) :
-    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
-  let combinedImpl :
-      QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp) :=
-    (lemma5_8EmptyQueryImpl (σ := σ)) + impl
-  let outWithLog :
-      OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
-        (α × QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) :=
-    (simulateQ loggingOracle exp).run
-  let ⟨_, trace⟩ ←
-    (simulateQ combinedImpl outWithLog).run' (← init)
-  pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trace)
-
-/-- CO25 §5.6 Lemma 5.8 — Shared experiment shape for both sides of Lemma 5.8.
-Runs the malicious prover under the DS oracle, then runs the DSFS verifier on the resulting
-`(statement, proof)` pair.  Returns the optional verifier output.
-
-Type-level CO25 Figure 4 line 3: the honest verifier is invoked at the narrow forward-only spec
-`[]ₒ + duplexSpongeForwardOracle StmtIn U` (`𝒱^{h,p}` — no `p⁻¹`); its computation is then
-`liftComp`-ed into the wide spec used by the (adversarial) prover for trace concatenation. -/
-def lemma5_8TraceExperiment
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
-    OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) := do
-  let _ : Codec pSpec U := codec
-  let ⟨stmtIn, messages⟩ ← maliciousProver
-  let verifyCompNarrow :
-      OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
-    ((Verifier.duplexSpongeFiatShamirForward
-        (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
-        (U := U) V).run
-      stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
-  liftComp verifyCompNarrow ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
-
 /-- CO25 §5.6 (Option G) — Trivially lift a total `StateT σ ProbComp` DS implementation to the
 abortable shape `StateT σ (OptionT ProbComp)` required by `lemma5_8ProjectedTraceDistAbortable`.
 The lifted impl never produces `none`. -/
@@ -769,7 +705,9 @@ noncomputable def lemma5_8SigmaTraceDist
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
-  let k_g ← (D_Sigma (U := U) StmtIn pSpec δ).sample
+  let k_g ←
+    (D_Sigma (instSampleable := instSampleableTypeEncodedChallengeOracle)
+      (U := U) StmtIn pSpec δ).sample
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U) (δ := δ)
     (init := pure default)
@@ -777,7 +715,8 @@ noncomputable def lemma5_8SigmaTraceDist
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       (gImpl := fun q => OptionT.lift
-        ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q))
+        ((D_Sigma (instSampleable := instSampleableTypeEncodedChallengeOracle)
+          (U := U) StmtIn pSpec δ).toImpl k_g q))
       (auxImpl := fun aux => OptionT.lift
         ((ProverTransform.d2sUnitSampleImpl
             (instSampleable := VCVCompatible.toSampleableType) (U := U) +
@@ -1398,6 +1337,9 @@ def E_fork_h_p (S_BT : Backtrack.S_BT trace state) : Prop :=
       have := S₁.inputState_length_eq_outputState_length_succ; omega)).capacitySegment =
     S₂.outputState[ι].capacitySegment
 
+/-- CO25 Definition 5.13 — `E_fork(tr, s)`: the backtrack family has multiple sequences.
+`E_fork_h`, `E_fork_p`, and `E_fork_h_p` are the paper's unconsumed special cases
+(Eqs. 39–41); their exhaustiveness is not formalized here. -/
 def E_fork (S_BT : Backtrack.S_BT trace state) : Prop :=
   S_BT.seqFamily.card > 1
 
