@@ -39,7 +39,7 @@ section Semiring
 variable {R : Type*} [Semiring R]
 
 /-- Removing the leading `X` from `X * p` recovers `p`. -/
-theorem divX_X_mul (p : R[X]) : (X * p).divX = p := by
+private theorem divX_X_mul (p : R[X]) : (X * p).divX = p := by
   ext n
   simp [coeff_divX, coeff_X_mul]
 
@@ -55,11 +55,13 @@ This is not the moving-point backward error defined later in this file. -/
 def shiftIncrementQuotient (a : R) (p : R[X]) : R[X] :=
   (taylor a p).divX
 
+/-- Decompose a Taylor shift into its center value and shifted increment quotient. -/
 theorem taylor_eq_C_add_X_mul_shiftIncrementQuotient (p : R[X]) (a : R) :
     taylor a p = C (p.eval a) + X * shiftIncrementQuotient a p := by
   simpa only [shiftIncrementQuotient, taylor_coeff_zero, add_comm] using
     (X_mul_divX_add (taylor a p)).symm
 
+/-- Decomposition with a caller-supplied center value. -/
 theorem taylor_eq_C_add_X_mul_shiftIncrementQuotient_of_eval_eq {p : R[X]} {a y : R}
     (h : p.eval a = y) :
     taylor a p = C y + X * shiftIncrementQuotient a p := by
@@ -70,10 +72,12 @@ theorem coeff_shiftIncrementQuotient (p : R[X]) (a : R) (i : ℕ) :
     (shiftIncrementQuotient a p).coeff i = (hasseDeriv (i + 1) p).eval a := by
   rw [shiftIncrementQuotient, coeff_divX, taylor_coeff]
 
+/-- The increment quotient has degree one below the original polynomial. -/
 theorem natDegree_shiftIncrementQuotient (p : R[X]) (a : R) :
     (shiftIncrementQuotient a p).natDegree = p.natDegree - 1 := by
   rw [shiftIncrementQuotient, natDegree_divX_eq_natDegree_tsub_one, natDegree_taylor]
 
+/-- Vanishing orders one through `m` are equivalent to `X ^ m` dividing the increment quotient. -/
 theorem X_pow_dvd_shiftIncrementQuotient_iff (p : R[X]) (a : R) (m : ℕ) :
     X ^ m ∣ shiftIncrementQuotient a p ↔
       ∀ i < m, (hasseDeriv (i + 1) p).eval a = 0 := by
@@ -102,18 +106,21 @@ section CommRing
 
 variable {R : Type*} [CommRing R]
 
+/-- Hasse vanishing at `a` is equivalent to divisibility by the corresponding root factor. -/
 theorem X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero (p : R[X]) (a : R) (m : ℕ) :
     (X - C a) ^ m ∣ p ↔ ∀ i < m, (hasseDeriv i p).eval a = 0 := by
   rw [X_sub_C_pow_dvd_iff]
   change X ^ m ∣ taylor a p ↔ ∀ i < m, (hasseDeriv i p).eval a = 0
   exact X_pow_dvd_taylor_iff p a m
 
+/-- Matching length-`m` Hasse jets are equivalent to a shifted congruence modulo `X ^ m`. -/
 theorem X_pow_dvd_taylor_sub_iff (p q : R[X]) (a : R) (m : ℕ) :
     X ^ m ∣ taylor a p - taylor a q ↔
       ∀ i < m, (hasseDeriv i p).eval a = (hasseDeriv i q).eval a := by
   rw [← LinearMap.map_sub, X_pow_dvd_taylor_iff]
   simp only [LinearMap.map_sub, eval_sub, sub_eq_zero]
 
+/-- Hasse vanishing characterizes root multiplicity for a nonzero polynomial. -/
 theorem hasseDeriv_eval_eq_zero_iff_le_rootMultiplicity {p : R[X]} (hp : p ≠ 0)
     (a : R) (m : ℕ) :
     (∀ i < m, (hasseDeriv i p).eval a = 0) ↔ m ≤ p.rootMultiplicity a :=
@@ -189,6 +196,7 @@ theorem coeff_backwardHasseSum_eq_zero_of_natDegree_lt {d n : ℕ} (q : R[X])
 def backwardHasseResidual (d : ℕ) (q : R[X]) : R[X] :=
   q - C (q.coeff 0) - backwardHasseSum d q
 
+/-- The generic backward numerator is divisible by `X ^ (d + 1)`. -/
 theorem X_pow_succ_dvd_backwardHasseResidual (d : ℕ) (q : R[X]) :
     X ^ (d + 1) ∣ backwardHasseResidual d q := by
   rw [X_pow_dvd_iff]
@@ -220,6 +228,7 @@ theorem backwardHasseResidual_eq_zero_of_natDegree_le (d : ℕ) (q : R[X])
 def normalizedBackwardHasseResidual (d : ℕ) (q : R[X]) : R[X] :=
   (backwardHasseResidual d q).divX
 
+/-- Removing one `X` leaves a residual divisible by `X ^ d`. -/
 theorem X_pow_dvd_normalizedBackwardHasseResidual (d : ℕ) (q : R[X]) :
     X ^ d ∣ normalizedBackwardHasseResidual d q := by
   rw [X_pow_dvd_iff]
@@ -227,6 +236,7 @@ theorem X_pow_dvd_normalizedBackwardHasseResidual (d : ℕ) (q : R[X]) :
   rw [normalizedBackwardHasseResidual, coeff_divX]
   exact X_pow_dvd_iff.mp (X_pow_succ_dvd_backwardHasseResidual d q) (n + 1) (by omega)
 
+/-- Multiplication by `X` reconstructs the generic backward numerator. -/
 theorem X_mul_normalizedBackwardHasseResidual (d : ℕ) (q : R[X]) :
     X * normalizedBackwardHasseResidual d q = backwardHasseResidual d q := by
   have hzero := X_pow_dvd_iff.mp (X_pow_succ_dvd_backwardHasseResidual d q) 0 (by omega)
@@ -238,15 +248,37 @@ def movingHasseSum (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   ∑ j ∈ Finset.range d,
     C ((-1 : R) ^ j) * (X ^ (j + 1) * taylor a (hasseDeriv (j + 1) p))
 
+/-- Adding one truncation order appends exactly the next alternating moving-Hasse term. -/
+theorem movingHasseSum_succ (a : R) (p : R[X]) (d : ℕ) :
+    movingHasseSum a p (d + 1) = movingHasseSum a p d +
+      C ((-1 : R) ^ d) * (X ^ (d + 1) * taylor a (hasseDeriv (d + 1) p)) := by
+  rw [movingHasseSum, movingHasseSum, Finset.sum_range_succ]
+
+/-- Moving derivatives of `p` are ordinary Hasse derivatives of its Taylor shift. -/
 theorem movingHasseSum_eq_backwardHasseSum (a : R) (p : R[X]) (d : ℕ) :
     movingHasseSum a p d = backwardHasseSum d (taylor a p) := by
   apply Finset.sum_congr rfl
   intro j _
   rw [hasseDeriv_taylor]
 
+/-- The correction sum reproduces each nonconstant Taylor coefficient through order `d`. -/
+theorem coeff_movingHasseSum {a : R} {p : R[X]} {d n : ℕ} (hn : n ≠ 0) (hnd : n ≤ d) :
+    (movingHasseSum a p d).coeff n = (hasseDeriv n p).eval a := by
+  rw [movingHasseSum_eq_backwardHasseSum,
+    coeff_backwardHasseSum (taylor a p) hn hnd, taylor_coeff]
+
+/-- Numerator left by the finite paper-facing moving-Hasse correction sum. -/
 def backwardTaylorResidual (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   taylor a p - C (p.eval a) - movingHasseSum a p d
 
+/-- Increasing the truncation order subtracts the next moving-Hasse term from the residual. -/
+theorem backwardTaylorResidual_succ (a : R) (p : R[X]) (d : ℕ) :
+    backwardTaylorResidual a p (d + 1) = backwardTaylorResidual a p d -
+      C ((-1 : R) ^ d) * (X ^ (d + 1) * taylor a (hasseDeriv (d + 1) p)) := by
+  rw [backwardTaylorResidual, backwardTaylorResidual, movingHasseSum_succ]
+  ring
+
+/-- The paper-facing residual is the generic residual applied to the shifted polynomial. -/
 theorem backwardTaylorResidual_eq (a : R) (p : R[X]) (d : ℕ) :
     backwardTaylorResidual a p d = backwardHasseResidual d (taylor a p) := by
   rw [backwardTaylorResidual, backwardHasseResidual, movingHasseSum_eq_backwardHasseSum,
@@ -257,6 +289,11 @@ theorem X_pow_succ_dvd_backwardTaylorResidual (a : R) (p : R[X]) (d : ℕ) :
     X ^ (d + 1) ∣ backwardTaylorResidual a p d := by
   rw [backwardTaylorResidual_eq]
   exact X_pow_succ_dvd_backwardHasseResidual d (taylor a p)
+
+/-- Every coefficient below degree `d + 1` of the numerator vanishes. -/
+theorem coeff_backwardTaylorResidual_eq_zero (a : R) (p : R[X]) (d n : ℕ)
+    (hn : n < d + 1) : (backwardTaylorResidual a p d).coeff n = 0 :=
+  X_pow_dvd_iff.mp (X_pow_succ_dvd_backwardTaylorResidual a p d) n hn
 
 /-- At or above the polynomial degree, the moving-point backward expansion has no error. -/
 theorem backwardTaylorResidual_eq_zero_of_natDegree_le (a : R) (p : R[X]) (d : ℕ)
@@ -269,10 +306,16 @@ theorem backwardTaylorResidual_eq_zero_of_natDegree_le (a : R) (p : R[X]) (d : �
 def normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   (backwardTaylorResidual a p d).divX
 
+/-- The normalized moving-point error is divisible by `X ^ d`. -/
 theorem X_pow_dvd_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) :
     X ^ d ∣ normalizedBackwardTaylorError a p d := by
   rw [normalizedBackwardTaylorError, backwardTaylorResidual_eq]
   exact X_pow_dvd_normalizedBackwardHasseResidual d (taylor a p)
+
+/-- Every coefficient below degree `d` of the normalized error vanishes. -/
+theorem coeff_normalizedBackwardTaylorError_eq_zero (a : R) (p : R[X]) (d n : ℕ)
+    (hn : n < d) : (normalizedBackwardTaylorError a p d).coeff n = 0 :=
+  X_pow_dvd_iff.mp (X_pow_dvd_normalizedBackwardTaylorError a p d) n hn
 
 /-- Equation (16): multiplying the normalized moving error by `X` recovers its numerator. -/
 theorem X_mul_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) :
@@ -280,6 +323,7 @@ theorem X_mul_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) :
   rw [normalizedBackwardTaylorError, backwardTaylorResidual_eq]
   exact X_mul_normalizedBackwardHasseResidual d (taylor a p)
 
+/-- Coefficients of the normalized error are shifted numerator coefficients. -/
 theorem coeff_normalizedBackwardTaylorError (a : R) (p : R[X]) (d n : ℕ) :
     (normalizedBackwardTaylorError a p d).coeff n =
       (backwardTaylorResidual a p d).coeff (n + 1) := by
@@ -295,6 +339,7 @@ theorem backwardTaylorReconstruction (a : R) (p : R[X]) (d : ℕ) :
       ring
     _ = _ := by rw [X_mul_normalizedBackwardTaylorError]
 
+/-- Reconstruction with a caller-supplied center value `y`. -/
 theorem backwardTaylorReconstruction_of_eval_eq {a y : R} {p : R[X]} (d : ℕ)
     (h : p.eval a = y) :
     taylor a p = C y + movingHasseSum a p d + X * normalizedBackwardTaylorError a p d := by
