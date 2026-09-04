@@ -112,6 +112,22 @@ theorem hasseDeriv_taylor (p : R[X]) (a : R) (k : ℕ) :
 
 end CommSemiring
 
+section Ring
+
+variable {R : Type*} [Ring R]
+
+/-! ### Shifted-difference congruences -/
+
+/-- Matching Hasse coefficients through order `m - 1` are equivalent to a shifted congruence
+modulo `X ^ m`. -/
+theorem X_pow_dvd_taylor_sub_iff (p q : R[X]) (a : R) (m : ℕ) :
+    X ^ m ∣ taylor a p - taylor a q ↔
+      ∀ i < m, (hasseDeriv i p).eval a = (hasseDeriv i q).eval a := by
+  rw [← LinearMap.map_sub, X_pow_dvd_taylor_iff]
+  simp only [LinearMap.map_sub, eval_sub, sub_eq_zero]
+
+end Ring
+
 section CommRing
 
 variable {R : Type*} [CommRing R]
@@ -128,13 +144,6 @@ theorem X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero (p : R[X]) (a : R) (m : ℕ)
   rw [X_sub_C_pow_dvd_iff]
   change X ^ m ∣ taylor a p ↔ ∀ i < m, (hasseDeriv i p).eval a = 0
   exact X_pow_dvd_taylor_iff p a m
-
-/-- Matching length-`m` Hasse jets are equivalent to a shifted congruence modulo `X ^ m`. -/
-theorem X_pow_dvd_taylor_sub_iff (p q : R[X]) (a : R) (m : ℕ) :
-    X ^ m ∣ taylor a p - taylor a q ↔
-      ∀ i < m, (hasseDeriv i p).eval a = (hasseDeriv i q).eval a := by
-  rw [← LinearMap.map_sub, X_pow_dvd_taylor_iff]
-  simp only [LinearMap.map_sub, eval_sub, sub_eq_zero]
 
 /-- Hasse vanishing characterizes root multiplicity for a nonzero polynomial. -/
 theorem hasseDeriv_eval_eq_zero_iff_le_rootMultiplicity {p : R[X]} (hp : p ≠ 0)
