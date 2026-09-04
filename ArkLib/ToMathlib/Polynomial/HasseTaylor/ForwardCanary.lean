@@ -106,4 +106,35 @@ example (m : ℕ) : forwardTaylorQuotient m (2 : ℤ) 0 = 0 := by
   simp [forwardTaylorQuotient, forwardTaylorRemainder, forwardTaylorTruncation,
     hasseCoeffAt_apply]
 
+/-- An asymmetric tail-tower canary: dropping one coefficient and then two more gives the
+order-three tail, whose independently computed value is `4 + X` here. -/
+example :
+    forwardTaylorQuotient 2 0
+      (forwardTaylorQuotient 1 (1 : ZMod 5) (X ^ 4)) = C 4 + X := by
+  rw [forwardTaylorQuotient_zero_comp]
+  ext i
+  rw [coeff_forwardTaylorQuotient, X_pow_eq_monomial]
+  by_cases hi : i < 2
+  · interval_cases i
+    · norm_num [hasseCoeffAt_apply, hasseDeriv_monomial, coeff_add, coeff_X]
+    · norm_num [hasseCoeffAt_apply, hasseDeriv_monomial, coeff_add, coeff_X]
+  · have hchoose : Nat.choose 4 (i + 3) = 0 := Nat.choose_eq_zero_of_lt (by omega)
+    have hi0 : i ≠ 0 := by omega
+    have hi1 : 1 ≠ i := by omega
+    simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_C, coeff_X,
+      hi0, hi1]
+
+/-- The extra tail operation is inert when either added order is zero. -/
+example :
+    forwardTaylorQuotient 0 0
+        (forwardTaylorQuotient 2 (1 : ℤ) (X ^ 4)) =
+      forwardTaylorQuotient (2 + 0) (1 : ℤ) (X ^ 4) := by
+  exact forwardTaylorQuotient_zero_comp 2 0 1 (X ^ 4)
+
+example :
+    forwardTaylorQuotient 2 0
+        (forwardTaylorQuotient 0 (1 : ℤ) (X ^ 4)) =
+      forwardTaylorQuotient (0 + 2) (1 : ℤ) (X ^ 4) := by
+  exact forwardTaylorQuotient_zero_comp 0 2 1 (X ^ 4)
+
 end Polynomial
