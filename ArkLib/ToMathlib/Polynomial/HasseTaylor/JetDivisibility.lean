@@ -67,6 +67,19 @@ theorem X_pow_dvd_taylor_sub_iff_hasseJet_eq (p q : R[X]) (a : R) (m : ℕ) :
   · intro h i hi
     exact congrFun h ⟨i, hi⟩
 
+/-- Two polynomials have the same length-`m` Hasse jet at `a` exactly when their difference is
+divisible by the `m`-th power of the corresponding root factor. -/
+theorem X_sub_C_pow_dvd_sub_iff_hasseJet_eq (p q : R[X]) (a : R) (m : ℕ) :
+    (X - C a) ^ m ∣ p - q ↔ hasseJet m a p = hasseJet m a q := by
+  rw [X_sub_C_pow_dvd_iff_hasseDeriv_eval_eq_zero]
+  constructor
+  · intro h
+    ext i
+    simpa only [LinearMap.map_sub, eval_sub, sub_eq_zero, hasseJet_apply] using h i i.isLt
+  · intro h i hi
+    simpa only [LinearMap.map_sub, eval_sub, sub_eq_zero, hasseJet_apply] using
+      congrFun h ⟨i, hi⟩
+
 /-- For a nonzero polynomial, a zero finite Hasse jet is the corresponding root-multiplicity
 lower bound. -/
 theorem hasseJet_eq_zero_iff_le_rootMultiplicity {p : R[X]} (hp : p ≠ 0)
