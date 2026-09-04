@@ -89,6 +89,17 @@ theorem forwardTaylorTruncationLinearMap_coordinates (m : ℕ) (a : R) (p : R[X]
   rw [coeff_forwardTaylorTruncation, if_pos i.isLt]
   rfl
 
+/-- The degree-bounded forward truncation map is obtained by decoding Hasse-jet coordinates. -/
+theorem forwardTaylorTruncationLinearMap_eq_degreeLTEquiv_symm_comp_hasseJet
+    (m : ℕ) (a : R) :
+    forwardTaylorTruncationLinearMap m a =
+      (degreeLTEquiv R m).symm.toLinearMap.comp (hasseJet m a) := by
+  apply LinearMap.ext
+  intro p
+  apply (degreeLTEquiv R m).injective
+  rw [forwardTaylorTruncationLinearMap_coordinates]
+  simp
+
 /-- Forward Taylor truncation is natural under coefficient-ring homomorphisms. -/
 theorem map_forwardTaylorTruncation {S : Type*} [Semiring S] (f : R →+* S)
     (m : ℕ) (a : R) (p : R[X]) :
