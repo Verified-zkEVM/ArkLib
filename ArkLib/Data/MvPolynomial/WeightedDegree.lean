@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import Mathlib.Algebra.MvPolynomial.Monad
+import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
 import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
@@ -113,6 +114,13 @@ theorem weightedTotalDegree_C (w : σ → ℕ) (r : R) :
   rw [weightedTotalDegree, support_C]
   split_ifs <;> simp
 
+/-- The weighted total degree of a nonzero monomial is the weight of its exponent. -/
+theorem weightedTotalDegree_monomial (w : σ → ℕ) (m : σ →₀ ℕ) (r : R) (hr : r ≠ 0) :
+    weightedTotalDegree w (monomial m r) = weight w m := by
+  classical
+  rw [weightedTotalDegree, support_monomial, if_neg hr]
+  simp
+
 /-- Taking the `n`th power multiplies the weighted-total-degree upper bound by `n`. -/
 theorem weightedTotalDegree_pow_le (w : σ → ℕ) (p : MvPolynomial σ R) (n : ℕ) :
     weightedTotalDegree w (p ^ n) ≤ n * weightedTotalDegree w p := by
@@ -216,6 +224,18 @@ theorem aeval_mem_restrictWeightedDegree {τ : Type*} {w : σ → ℕ} {v : τ �
   rw [aeval_eq_bind₁]
   exact bind₁_mem_restrictWeightedDegree hf hp
 
+/-- Bounded substitutions compose: applying a `w`-to-`v` substitution followed by a
+`v`-to-`u` substitution preserves the original bound. -/
+theorem bind₁_comp_mem_restrictWeightedDegree {τ υ : Type*}
+    {w : σ → ℕ} {v : τ → ℕ} {u : υ → ℕ} {d : ℕ}
+    {f : σ → MvPolynomial τ R} {g : τ → MvPolynomial υ R} {p : MvPolynomial σ R}
+    (hf : ∀ i, f i ∈ restrictWeightedDegree (R := R) v (w i))
+    (hg : ∀ j, g j ∈ restrictWeightedDegree (R := R) u (v j))
+    (hp : p ∈ restrictWeightedDegree (R := R) w d) :
+    bind₁ (fun i => bind₁ g (f i)) p ∈ restrictWeightedDegree (R := R) u d := by
+  rw [← bind₁_bind₁]
+  exact bind₁_mem_restrictWeightedDegree hg (bind₁_mem_restrictWeightedDegree hf hp)
+
 /-- A zero-weight variable, and every power of it, belongs to the weight-zero piece.  No
 positivity hypothesis belongs in the generic bounded-degree API. -/
 theorem X_pow_mem_restrictWeightedDegree_zero {w : σ → ℕ} {i : σ} (hi : w i = 0) (n : ℕ) :
@@ -266,6 +286,15 @@ def basisRestrictWeightedDegree (w : σ → ℕ) (d : ℕ) :
     Basis {m : σ →₀ ℕ // m.weight w ≤ d} R (restrictWeightedDegree (R := R) w d) :=
   basisRestrictSupport R {m | m.weight w ≤ d}
 
+/-- Coordinates in the restricted monomial basis are the ordinary polynomial coefficients. -/
+@[simp]
+theorem basisRestrictWeightedDegree_repr_apply (w : σ → ℕ) (d : ℕ)
+    (p : restrictWeightedDegree (R := R) w d)
+    (m : {m : σ →₀ ℕ // m.weight w ≤ d}) :
+    (basisRestrictWeightedDegree (R := R) w d).repr p m =
+      coeff m (p : MvPolynomial σ R) :=
+  rfl
+
 /-- Coefficient projection from a bounded weighted-degree submodule at an allowed monomial. -/
 def restrictWeightedDegreeCoeff (w : σ → ℕ) (d : ℕ)
     (m : {m : σ →₀ ℕ // m.weight w ≤ d}) :
@@ -288,6 +317,12 @@ theorem coeff_eq_zero_of_mem_restrictWeightedDegree {w : σ → ℕ} {d : ℕ}
   rw [← notMem_support_iff]
   exact fun hmem => Nat.not_le_of_gt hm ((mem_restrictWeightedDegree.mp hp) m hmem)
 
+/-- With finitely many variables and positive weights, there are finitely many exponent vectors
+of weight at most `d`. -/
+theorem weightedDegreeSupport_finite [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
+    Set.Finite {m : σ →₀ ℕ | m.weight w ≤ d} :=
+  Finsupp.finite_of_nat_weight_le w hw d
+
 /-- With finitely many variables and positive weights, the bounded weighted-degree submodule is
 finitely generated. -/
 theorem restrictWeightedDegree_fg [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
@@ -298,6 +333,17 @@ theorem restrictWeightedDegree_fg [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i 
   exact @Module.Finite.of_basis R (restrictWeightedDegree (R := R) w d)
     {m : σ →₀ ℕ // m.weight w ≤ d} _ _ _ finiteExponents
     (basisRestrictWeightedDegree (R := R) w d)
+
+/-- Over a field, the dimension of a bounded weighted-degree submodule is the number of allowed
+monomials. -/
+theorem finrank_restrictWeightedDegree {K : Type*} [Field K] [Finite σ]
+    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
+    Module.finrank K (restrictWeightedDegree (R := K) w d) =
+      Set.ncard {m : σ →₀ ℕ | m.weight w ≤ d} := by
+  let _ : Finite {m : σ →₀ ℕ // m.weight w ≤ d} :=
+    (weightedDegreeSupport_finite w hw d).to_subtype
+  exact (Module.finrank_eq_nat_card_basis
+    (basisRestrictWeightedDegree (R := K) w d)).trans (Nat.card_coe_set_eq _)
 
 /-! ### A nonuniform-weight mutation canary -/
 
@@ -315,5 +361,27 @@ theorem nonuniformWeight_canary :
     · exact X_mem_restrictWeightedDegree ![1, 2] 2 1 (by decide)
   · rw [X_pow_eq_monomial, monomial_mem_restrictWeightedDegree]
     norm_num [weight_single]
+
+/-- A genuine nonuniform substitution canary. Target weights are `(2, 5)`; replacing the first
+variable by its cube and the second by its square sends `X₀ * X₁` to exact weighted degree
+`3 * 2 + 2 * 5 = 16`, so the neighboring bound `15` is rejected. This catches swapped weights,
+identity substitution, dropped exponents, and off-by-one bounds. -/
+theorem nonuniformSubstitution_canary :
+    let v : Bool → ℕ := fun b => bif b then 5 else 2
+    let f : Bool → MvPolynomial Bool ℕ := fun b =>
+      bif b then X true ^ 2 else X false ^ 3
+    let p : MvPolynomial Bool ℕ := X false * X true
+    weightedTotalDegree v (bind₁ f p) = 16 ∧
+      ¬weightedTotalDegree v (bind₁ f p) ≤ 15 := by
+  dsimp only
+  have hbind :
+      bind₁ (fun b : Bool => bif b then X true ^ 2 else X false ^ 3)
+          (X false * X true : MvPolynomial Bool ℕ) =
+        monomial (Finsupp.single false 3 + Finsupp.single true 2) 1 := by
+    simp [X_pow_eq_monomial]
+  constructor <;>
+    rw [hbind, weightedTotalDegree_monomial _ _ _ one_ne_zero, map_add,
+      weight_single, weight_single] <;>
+    norm_num
 
 end MvPolynomial
