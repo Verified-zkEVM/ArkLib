@@ -42,7 +42,7 @@ Hyb_3  salted FS `f`      f ← 𝒟_IP_salted           ── Claim 5.24 ─�
 Hyb_4  basic FS           f ← 𝒟_IP_salted (same f, different algos)
 ```
 
-Triangle-inequality sum of the four claim bounds gives `η★` (CO25 Eq. 58), the headline
+Triangle-inequality sum of the four claim bounds gives `η★` (CO25 Eq. 5), the headline
 error bound of `lemma_5_1`.
 
 ## Section map (top-to-bottom)
@@ -131,7 +131,7 @@ def filterD2SChallengePlusUnitQueryLog
 
 /-! ### Game output types and game bodies (`Hyb_0` / `Hyb_4`) -/
 
-/-- CO25 Theorem 5.1. Output type for the salted basic Fiat-Shamir game (`Hyb_4`):
+/-- CO25 Lemma 5.1. Output type for the salted basic Fiat-Shamir game (`Hyb_4`):
 `(b, 𝕩, π = (τ̌, messages), tr)` where
 - `τ̌ = bin (τ) ∈ {0,1}^{δ⋆}`
 - `tr` is the combined query log over the salted `fsChallengeOracle (StmtIn × Salt) pSpec`
@@ -140,14 +140,14 @@ abbrev BasicFiatShamirGameOutput :=
   StmtIn × StmtOut × FSSaltedProof pSpec Salt ×
     TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
 
-/-- CO25 Theorem 5.1. Output type for the duplex-sponge Fiat-Shamir game (`Hyb_0` left-hand
+/-- CO25 Lemma 5.1. Output type for the duplex-sponge Fiat-Shamir game (`Hyb_0` left-hand
 experiment): statement-in, statement-out, salted proof, and combined query log over
 `duplexSpongeChallengeOracle`. -/
 abbrev DSFSGameOutput :=
   StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
     TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)
 
-/-- CO25 Theorem 5.1. The basic-FS verifier `𝒱_std^f` as a standalone computation: derive the FS
+/-- CO25 Lemma 5.1. The basic-FS verifier `𝒱_std^f` as a standalone computation: derive the FS
 transcript from the salted proof — routing `fsChallengeOracle` queries into the wide
 `D2SChallengePlusUnitOracle` spec via `liftFSSaltedQueriesToD2SChallengePlusUnit`, lifting the
 `V.verify` call (which uses only `oSpec`) the same way — and return the optional output statement.
@@ -169,7 +169,7 @@ def basicFSVerifierComp (V : Verifier oSpec StmtIn StmtOut pSpec)
       (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
     ((fsSaltedVerify (Salt := Salt) V stmtAndProof.1 stmtAndProof.2).run)
 
-/-- CO25 Theorem 5.1. Right-hand game for Lemma 5.1 (the basic-FS game).
+/-- CO25 Lemma 5.1. Right-hand game for Lemma 5.1 (the basic-FS game).
 Runs `𝒱_std^f` against the compiled prover `D2SAlgo^f(𝒫̃~)`.
 - Prover outputs `(𝕩, (τ̌, messages))`
 - Verifier queries `f` at `(𝕩, τ̌, messages)`
@@ -202,7 +202,7 @@ def basicFiatShamirGame (V : Verifier oSpec StmtIn StmtOut pSpec)
   let taggedV := verifyQueryLog.map fun e => (SourceTag.verifier, e)
   return ⟨stmtAndProof.1, ← stmtOut.getM, stmtAndProof.2, taggedP ++ taggedV⟩
 
-/-- CO25 Theorem 5.1. Left-hand game for Lemma 5.1 (the DSFS game).
+/-- CO25 Lemma 5.1. Left-hand game for Lemma 5.1 (the DSFS game).
 Runs `𝒱^{h,p}` against the malicious prover `𝒫̃~` (this is `Hyb_0`).
 - Prover outputs `(𝕩, (τ, messages))`
 - Verifier queries `h, p` only (no `p⁻¹` per Figure 4 line 3)
@@ -410,7 +410,10 @@ def hybridGameDist -- apply traceMap into output of `hybridGame`
         gImpl V P).run)).run' (← init)
   match hybridOutput with
   | none => return none
-  | some (⟨stmtIn, stmtOut, proof, projectedTrace⟩ : (StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ × TaggedQueryLog (oSpec + challengeSpec))) => do
+  | some
+      (⟨stmtIn, stmtOut, proof, projectedTrace⟩ :
+        StmtIn × StmtOut × DSSaltedProof (pSpec := pSpec) (U := U) δ ×
+          TaggedQueryLog (oSpec + challengeSpec)) => do
       -- Paper Items 4-6: bridge on-sponge `Vector U δ` salt → FS-std `Salt` via
       -- `SaltCodec.encode = bin` at the hybrid game boundary.
       let π : FSSaltedProof pSpec Salt :=
@@ -426,7 +429,7 @@ def hybridGameDist -- apply traceMap into output of `hybridGame`
       | some fullTraceFS =>
           return some (stmtIn, stmtOut, π, fullTraceFS)
 
-/-- CO25 Theorem 5.1. Distribution of the basic-FS game (`Hyb_4` right-hand side) under a
+/-- CO25 Lemma 5.1. Distribution of the basic-FS game (`Hyb_4` right-hand side) under a
 concrete oracle implementation (oracle family `𝒟_IP`). Used for `hyb_4`. -/
 def basicFiatShamirGameDist
     {σ : Type}
@@ -442,7 +445,7 @@ def basicFiatShamirGameDist
       (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt)) := do
   (simulateQ impl (basicFiatShamirGame (V := V) (Salt := Salt) P)).run' (← init)
 
-/-- CO25 Theorem 5.1. Distribution of the DSFS game (`Hyb_0` left-hand side) under a concrete
+/-- CO25 Lemma 5.1. Distribution of the DSFS game (`Hyb_0` left-hand side) under a concrete
 oracle implementation (oracle family `𝒟_𝔖`). Used via `mappedDSFSGameDist`. -/
 def dsfsGameDist
     {σ : Type}
@@ -454,7 +457,7 @@ def dsfsGameDist
       (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)) := do
   (simulateQ impl (dsfsGame (V := V) P)).run' (← init)
 
-/-- CO25 Theorem 5.1. Left experiment of Lemma 5.1 (`Hyb_0`): run the DSFS game under
+/-- CO25 Lemma 5.1. Left experiment of Lemma 5.1 (`Hyb_0`): run the DSFS game under
 `𝒟_𝔖(λ,n)` and apply the line-4 trace map D2STrace = `(φ⁻¹, ψ) ∘ StdTrace` to produce a
 basic-FS query log. Corresponds to `Pr[𝒱^{h,p}(𝕩, π) = 1]` in the lemma statement. -/
 def mappedDSFSGameDist
@@ -500,8 +503,11 @@ open scoped NNReal
 
 /-! ### Numerical bounds: `θ★`, `CodecBias`, `η★`, per-claim bounds -/
 
-/-- CO25 Theorem 5.1 / Eq. (6). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
-query-bound multiplier in `η★`. -/
+/-- CO25 Lemma 5.1 / Eq. (6). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`,
+used as the query-bound multiplier in `η★`. The printed statement assumes
+`t_p ≥ max {L_P, L_V}`. That side condition is not used by the query-count or
+statistical-distance statements formalized here; ArkLib does not state the paper's running-time
+bound. -/
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
 
 /-- CO25 Definition 4.1. Per-round codec bias profile `i ↦ ε_{cdc,i}(λ,n)`.
@@ -510,13 +516,15 @@ carries only the per-round values `ε_{cdc,i}` used in Claims 5.22 and the `η�
 abbrev CodecBias :=
   pSpec.ChallengeIdx → ℝ≥0
 
-/-- CO25 Theorem 5.1 / Eq. (5). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
+/-- CO25 Lemma 5.1 / Eq. (5). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
 ```
 η★ := numerator / (2 · |Σ|^c) + θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}
 ```
 where `numerator = 7t² + 28(L+1)t + 14(L+1)² − 3t − 13(L+1)` with
-`t = t_h + t_p + t_{p⁻¹}` and `L` the total permutation-query count. Sums the four bounds from
-Claims 5.21 (Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
+`t = t_h + t_p + t_{p⁻¹}` and `L` an upper bound on the verifier's forward-permutation queries.
+For the salted hybrids, callers instantiate `L` with
+`L_totalRateBlocks δ pSpec = L_δ + L_P + L_V`. Sums the four bounds from Claims 5.21
+(Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
 (Hyb_3 → Hyb_4). -/
 def ηStar (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ : ℕ) (L : ℕ) (εcodec : CodecBias (pSpec := pSpec)) : ℝ :=
@@ -676,7 +684,7 @@ def isLemma5_1PermInvQuery :
   | .inr (.inr (.inr _)) => True
   | _ => False
 
-/-- CO25 Theorem 5.1 query-bound predicate for the malicious prover `𝒫̃`.
+/-- CO25 Lemma 5.1 query-bound predicate for the malicious prover `𝒫̃`.
 `t_h`, `t_p`, and `t_{p⁻¹}` are aggregate bounds for the hash, forward-permutation, and
 inverse-permutation oracle families. The ambient `oSpec` handler is unconstrained: CO25's
 statement contains no ambient-oracle query budget. -/
@@ -696,7 +704,8 @@ abbrev IsLemma5_1QueryBound
 `Δ(Hyb_0, Hyb_1) ≤ (7·T² − 3·T) / (2·|Σ|^c)` with `Hyb_0 / Hyb_1` sampled eagerly via
 `hyb_0` / `hyb_1`. `hBound` ties the numerical query budgets to `maliciousProver`;
 `hRounds` makes explicit the nondegenerate paired-round model used by the paper's BackTrack
-analysis. The hybrid games themselves remain generic. -/
+analysis. The hybrid games themselves remain generic. The bound uses the salt-aware verifier
+query upper bound `L_totalRateBlocks δ pSpec`. -/
 theorem claim_5_21
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -716,13 +725,13 @@ theorem claim_5_21
       (hyb_1 (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
-    ≤ claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries := by
+    ≤ claim5_21Bound U tₕ tₚ tₚᵢ (L_totalRateBlocks δ pSpec) := by
   sorry
 
 /-- CO25 §5.8 Hyb_2. `Hyb_2` distribution sampled via state-based evaluation
 (`simulateQ` with `StateT`): ambient `oSpec` answered by caller-supplied `oSpecImpl`,
 decoded challenge oracle
-`e := (e_i)_{i ∈ [k]}` (CO25 Eq. 53) sampled eagerly via `section58DecodedChallengeDist`,
+`e := (e_i)_{i ∈ [k]}` (CO25 Eq. 53) sampled eagerly via `D_e`,
 auxiliary slots inline. Line-4 trace map is `φ⁻¹(tr_𝒫̃ ‖ tr_𝒱)`
 (`hyb2Line4Trace`). -/
 def hyb_2
@@ -906,7 +915,8 @@ def hyb_4
 `Hyb_3` and `Hyb_4` use the *same* eager salted FS oracle (`D_IP_salted`,
 matching CO25 line 1784); only the prover/verifier algorithm differs. `hBound` ties the numerical
 query budgets to `maliciousProver`; `hRounds` records the nondegenerate paired-round model
-implicitly used by the BackTrack-dependent comparison. -/
+implicitly used by the BackTrack-dependent comparison. The bound uses the salt-aware verifier
+query upper bound `L_totalRateBlocks δ pSpec`. -/
 theorem claim_5_24
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -925,7 +935,7 @@ theorem claim_5_24
         oSpecImpl V maliciousProver
         (d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-    ≤ claim5_24Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries := by
+    ≤ claim5_24Bound U tₕ tₚ tₚᵢ (L_totalRateBlocks δ pSpec) := by
   sorry
 
 /-! ### Main lemma 5.1: existential statement and salted `D2SAlgo` witness -/
@@ -938,7 +948,7 @@ def isD2SAlgoChallengeQuery :
   | .inr (.inl _) => True
   | _ => False
 
-/-- CO25 Theorem 5.1's `θ★` query bound for the transformed prover.  This counts precisely the
+/-- CO25 Lemma 5.1's `θ★` query bound for the transformed prover. This counts precisely the
 basic-FS challenge-oracle calls; `oSpec` and D2SAlgo's private sampling oracles are not adversary
 queries in the target FS security game. -/
 abbrev IsD2SAlgoChallengeQueryBound
@@ -953,15 +963,17 @@ abbrev IsD2SAlgoChallengeQueryBound
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
-/-- CO25 Theorem 5.1 (Main lemma §5.8) — **inner, concrete-transform form.**  Identical to
+/-- CO25 Lemma 5.1 (§5.8) — **inner, concrete-transform form.** Identical to
 `lemma_5_1` but with the two transforms *fixed* to the concrete `ProverTransform.d2sAlgo` and
 `d2sTraceSalted` (rather than hidden behind `∃`). This is the form a later concrete extractor
 proof consumes: the extractor runs the concrete `d2sTraceSalted`, so
 `Hyb₀`/`Hyb₄` must carry the *same* concrete maps for the game-match `hL1`/`hL3` to hold
-definitionally — an opaque `∃`-witness would block that defeq.  `lemma_5_1` re-packages this as the
-existential.  Its intended proof combines the §5.8 distance claims with the `D2SAlgo` query bound,
-but its current body is still a single `sorry`; none of `claim_5_21`–`claim_5_24` is wired into
-this declaration yet. -/
+definitionally — an opaque `∃`-witness would block that defeq. `lemma_5_1` re-packages this as the
+existential. The common verifier query upper bound is
+`L_totalRateBlocks δ pSpec = L_δ + L_P + L_V`. As documented at `θStar`, ArkLib intentionally
+omits the paper's condition `t_p ≥ max {L_P, L_V}`. Its intended proof combines the §5.8
+distance claims with the `D2SAlgo` query bound, but its current body is still a single `sorry`;
+none of `claim_5_21`–`claim_5_24` is wired into this declaration yet. -/
 theorem lemma_5_1_inner
     [DecidableEq ι]
     {T_H : Type} {T_P : Type}
@@ -982,7 +994,8 @@ theorem lemma_5_1_inner
           oSpecImpl V maliciousProver
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ)
+        ≤ (ηStar U tₕ tₚ tₚᵢ (L := L_totalRateBlocks δ pSpec)
+            (εcodec := codec.decodingBias) : ℝ)
       ∧ IsD2SAlgoChallengeQueryBound
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
@@ -1013,7 +1026,8 @@ theorem lemma_5_1_inner_tvBound
           oSpecImpl V maliciousProver
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ) := by
+        ≤ (ηStar U tₕ tₚ tₚᵢ (L := L_totalRateBlocks δ pSpec)
+            (εcodec := codec.decodingBias) : ℝ) := by
   sorry
 
 omit [DecidableEq StmtIn] [DecidableEq U] in
@@ -1040,7 +1054,7 @@ theorem lemma_5_1_inner_queryBound
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
 set_option linter.unusedSectionVars false in
-/-- CO25 Theorem 5.1 (Main lemma §5.8, canonical existential form).
+/-- CO25 Lemma 5.1 (§5.8, canonical existential form).
 For every malicious prover `𝒫̃` making at most `t_h` queries to `h` and `t_p` / `t_{p⁻¹}`
 queries to `p / p⁻¹`, there exist a D2SAlgo prover transform and a D2STrace line-4 map
 such that:
@@ -1055,8 +1069,11 @@ the caller-supplied handler `oSpecImpl`. Left: `oSpecImpl` plus
 `𝒟_𝔖(λ,n) = duplexSpongeOracleDistribution` for `(h, p, p⁻¹)`. Right: `oSpecImpl` plus
 salted `𝒟_IP(λ,n) = D_IP_salted` for `f`.
 
-Re-packages the concrete `lemma_5_1_inner` (the witnesses are `ProverTransform.d2sAlgo` and
-`d2sTraceSalted`) as the canonical existential interface for later soundness arguments. -/
+The paper additionally assumes `t_p ≥ max {L_P, L_V}`. ArkLib does not state the paper's
+running-time bound, and the query/statistical-distance conclusions formalized here do not use
+this condition, so its omission is intentional. Although placing the budgets before `∃` permits
+budget-dependent witnesses at the type level, the witnesses supplied below are the concrete
+`ProverTransform.d2sAlgo` and `d2sTraceSalted`, neither of which depends on those budgets. -/
 theorem lemma_5_1
     [DecidableEq ι]
     {T_H : Type} {T_P : Type}
@@ -1079,7 +1096,7 @@ theorem lemma_5_1
         (hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
           (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
           oSpecImpl V maliciousProver d2sAlgoTransform)
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
+        ≤ (ηStar U tₕ tₚ tₚᵢ (L := L_totalRateBlocks δ pSpec)
             (εcodec := codec.decodingBias) : ℝ)
       ∧ IsD2SAlgoChallengeQueryBound (d2sAlgoTransform maliciousProver) (θStar tₕ tₚ tₚᵢ) :=
   ⟨ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)

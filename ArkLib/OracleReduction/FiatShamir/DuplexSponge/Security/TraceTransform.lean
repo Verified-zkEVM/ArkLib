@@ -413,7 +413,8 @@ noncomputable def hyb1Line4Trace
     UnitSampleM U
       (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
   pure (log.filterMap fun ⟨tag, entry⟩ =>
-    match hyb1RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) entry with
+    match hyb1RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
+        (U := U) (δ := δ) (Salt := Salt) entry with
     | some mapped => some (tag, mapped)
     | none => none)
 
@@ -445,7 +446,8 @@ noncomputable def hyb2Line4Trace
     UnitSampleM U
       (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :=
   pure (log.filterMap fun ⟨tag, entry⟩ =>
-    match hyb2RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) entry with
+    match hyb2RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
+        (U := U) (δ := δ) (Salt := Salt) entry with
     | some mapped => some (tag, mapped)
     | none => none)
 

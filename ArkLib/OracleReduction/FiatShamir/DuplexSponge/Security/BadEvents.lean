@@ -486,10 +486,12 @@ and `p⁻¹`:
 ```
 E_func(tr) := ∃ j > 0 :
   [Case 1] tr̄_j = (p, s_in, s_out)  and  ∃ j' < j :
-    (tr̄_{j'} = (p, s_in, s_out') ∧ s_out' ≠ s_out)  ∨  (tr̄_{j'} = (p⁻¹, s_out', s_in) ∧ s_out' ≠ s_out)
+    (tr̄_{j'} = (p, s_in, s_out') ∧ s_out' ≠ s_out)  ∨
+      (tr̄_{j'} = (p⁻¹, s_out', s_in) ∧ s_out' ≠ s_out)
   or
   [Case 2] tr̄_j = (p⁻¹, s_out, s_in)  and  ∃ j' < j :
-    (tr̄_{j'} = (p⁻¹, s_out, s_in') ∧ s_in' ≠ s_in)  ∨  (tr̄_{j'} = (p, s_in', s_out) ∧ s_in' ≠ s_in)
+    (tr̄_{j'} = (p⁻¹, s_out, s_in') ∧ s_in' ≠ s_in)  ∨
+      (tr̄_{j'} = (p, s_in', s_out) ∧ s_in' ≠ s_in)
 ```
 
 Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻¹`, but may hold
@@ -726,21 +728,25 @@ noncomputable def lemma5_8SigmaTraceDist
 
 set_option linter.unusedDecidableInType false in
 /-- CO25 Lemma 5.8 — Bad-event probability bound (eager statement).
-For every salted `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃, where
-`L = pSpec.totalNumPermQueries = Lₚ + Lᵥ` is the verifier's total message/challenge
-permutation-query count, matching the §5.8 hybrid bookkeeping in `claim_5_21` / `_22` / `_24`,
+For every salted `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃, let
+`L_totalRateBlocks δ pSpec = Lδ + Lₚ + Lᵥ` be the conservative upper bound that accounts for
+both the initial salt absorption and the verifier's protocol execution. This is the common `L`
+instantiation in `claim_5_21`, `claim_5_24`, and the final `ηStar` bound.
 
 ```
 max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
   ≤ (7·T² − 3·T) / (2·|Σ|^c)
 ```
 
-where `T = tₕ + 1 + tₚ + L + tₚᵢ`. The experiment distributions match CO25 Lemma 5.8, but
-`E` uses the documented bidirectional strengthening of the paper's one-sided `E_func`; this
-statement intentionally retains the same closed-form bound for that stronger event. The left-hand
-side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment (eager sampling,
-CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the right-hand side runs
-`g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to `KeyLemma.hybridGame`
+where `T = tₕ + 1 + tₚ + L_totalRateBlocks δ pSpec + tₚᵢ`. Relative to the printed lemma,
+the salt-aware `L` accounts for the logged verifier's salt absorption. This statement also omits
+the paper's `tₚ ≥ Lₚ + Lᵥ` condition: it is unnecessary for the birthday-bound argument, so this
+is an intentional strengthening. The experiment distributions match CO25 Lemma 5.8, but `E`
+uses the documented bidirectional strengthening of the paper's one-sided `E_func`; this
+statement intentionally retains the same closed-form bound for that stronger event. The
+left-hand side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment (eager
+sampling, CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the right-hand side
+runs `g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to `KeyLemma.hybridGame`
 instantiated as `Hyb_1`. -/
 theorem lemma_5_8
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
@@ -768,7 +774,7 @@ theorem lemma_5_8
             (StmtIn := StmtIn) (StmtOut := StmtOut)
             (n := n) (pSpec := pSpec) (U := U)
             V maliciousProver])
-      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) := by
+      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ (L := L_totalRateBlocks δ pSpec)) := by
   let _ := hMaliciousBound
   sorry
 
@@ -949,8 +955,7 @@ end Lemma5_10
 
 /-! ## Toolbox for Lemmas 5.12 / 5.14 / 5.16
 
-Following the patch `DSFS-archive/(Analysis #1) …`, §4 (Lemma B) and §5.  The proofs of the three
-BackTrack-family lemmas reduce to two freshness corollaries of `¬E_dup`:
+The proofs of the three BackTrack-family lemmas reduce to two freshness corollaries of `¬E_dup`:
 
 - **(B1)** distinct base entries have distinct *answer capacities* (`answerCap_inj`);
 - **(B2)** a base entry's answer capacity never equals the *query capacity* of an earlier-or-equal

@@ -22,13 +22,16 @@ abbrev TaggedQueryLog {ι : Type} (spec : OracleSpec ι) := List (SourceTag × S
 
 namespace TaggedQueryLog
 
-def proverLog {ι : Type} {spec : OracleSpec ι} (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
+def proverLog {ι : Type} {spec : OracleSpec ι}
+    (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
   log.filterMap fun ⟨tag, entry⟩ => if tag = SourceTag.prover then some entry else none
 
-def verifierLog {ι : Type} {spec : OracleSpec ι} (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
+def verifierLog {ι : Type} {spec : OracleSpec ι}
+    (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
   log.filterMap fun ⟨tag, entry⟩ => if tag = SourceTag.verifier then some entry else none
 
-def untagged {ι : Type} {spec : OracleSpec ι} (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
+def untagged {ι : Type} {spec : OracleSpec ι}
+    (log : TaggedQueryLog spec) : OracleSpec.QueryLog spec :=
   log.map Prod.snd
 
 /-- Tagging the prover/verifier logs then concatenating, then projecting the prover side, recovers
@@ -209,6 +212,7 @@ instance (priority := high) instDeserializeChallenge [c : Codec pSpec U] (i : pS
 /-- hax-pipeline constructor: assemble a `Codec` from external `Serialize`/`Deserialize`
     instances supplied by Rust→hax extraction, plus the math-side metadata. `decodingBias` is
     derived from `[decChalUniform]`'s `ε` field; no separate bias parameter is needed. -/
+@[instance_reducible]
 def mk' {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
     (mSize : pSpec.MessageIdx → Nat) (cSize : pSpec.ChallengeIdx → Nat)
     [∀ i, Fintype (Vector U (cSize i))] [∀ i, Nonempty (Vector U (cSize i))]
@@ -330,6 +334,14 @@ def totalNumPermQueries : Nat :=
 alias L := totalNumPermQueries
 
 end BlockCountNotation
+
+/-- Salt-aware upper bound on the verifier's forward-permutation queries in Section 5:
+`L_totalRateBlocks = L_δ + L = ⌈δ / r⌉ + L_P + L_V`. The paper's `L` from Equation 8
+counts only protocol messages and challenges, although the salted verifier first absorbs `δ`
+salt units. This sum is conservative: the salt and first prover message may share a rate block. -/
+def L_totalRateBlocks {n : ℕ} [SpongeSize] (δ : Nat) (pSpec : ProtocolSpec n)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] : Nat :=
+  numSaltBlocks δ + pSpec.totalNumPermQueries
 
 variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     {U : Type} [SpongeUnit U] [SpongeSize]

@@ -563,7 +563,8 @@ private lemma perm_ms_foldl_fwd_inv
 
 lemma TraceNabla.ofQueryLogForwardOnly_isSubset
     (trace : DuplexSpongeTrace StmtIn U) :
-    (TraceNabla.ofQueryLogForwardOnly (T_H := T_H) (T_P := T_P) trace).IsSubsetOfQueryLog trace := by
+    (TraceNabla.ofQueryLogForwardOnly (T_H := T_H) (T_P := T_P) trace).IsSubsetOfQueryLog
+      trace := by
   constructor
   · intro stmt cap hMem
     rw [ofQueryLogForwardOnly_eq_foldl] at hMem
@@ -932,7 +933,8 @@ lemma TraceNabla.IsSubsetOfQueryLog_empty_nil :
 
 lemma TraceNabla.IsSubsetOfQueryLog_append_any
     {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
-    (hSub : trΔ.IsSubsetOfQueryLog trace) (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
+    (hSub : trΔ.IsSubsetOfQueryLog trace)
+    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
     trΔ.IsSubsetOfQueryLog (trace ++ [entry]) := by
   constructor
   · intros stmt cap hMem

@@ -28,8 +28,9 @@ variable {A B : Type*} [DecidableEq A] [Fintype B]
 /-- The fiber of `ψ` over `a`. -/
 abbrev Preimage (ψ : B → A) (a : A) := { b : B // ψ b = a }
 
+omit [DecidableEq A] [Fintype B] in
 /-- Surjectivity provides a canonical nonempty witness for each fiber. -/
-noncomputable def preimageNonempty (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
+theorem preimageNonempty (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) :
     Nonempty (Preimage ψ a) := by
   rcases hψ a with ⟨b, rfl⟩
   exact ⟨⟨b, rfl⟩⟩
@@ -38,7 +39,7 @@ noncomputable def preimageNonempty (ψ : B → A) (hψ : Function.Surjective ψ)
 noncomputable def sampleUniformPreimage (ψ : B → A) (hψ : Function.Surjective ψ) (a : A) : PMF B :=
   by
     classical
-    letI := preimageNonempty ψ hψ a
+    let _ := preimageNonempty ψ hψ a
     exact (PMF.uniformOfFintype (Preimage ψ a)).map Subtype.val
 
 /-- Pointwise description of `sampleUniformPreimage`
@@ -47,7 +48,7 @@ theorem sampleUniformPreimage_apply (ψ : B → A) (hψ : Function.Surjective ψ
     sampleUniformPreimage ψ hψ a b =
       if ψ b = a then (Fintype.card (Preimage ψ a) : ENNReal)⁻¹ else 0 := by
   classical
-  letI := preimageNonempty ψ hψ a
+  let _ := preimageNonempty ψ hψ a
   rw [sampleUniformPreimage, PMF.map_apply]
   by_cases h : ψ b = a
   · rw [tsum_eq_single ⟨b, h⟩]
@@ -97,7 +98,7 @@ theorem bind_sampleUniformPreimage_eq_uniform (ψ : B → A) (hψ : Function.Sur
   intro b
   let c : ENNReal := (Fintype.card (Preimage ψ (ψ b)) : ENNReal)⁻¹
   have hcard_nat : Fintype.card (Preimage ψ (ψ b)) ≠ 0 := by
-    letI := preimageNonempty ψ hψ (ψ b)
+    let _ := preimageNonempty ψ hψ (ψ b)
     exact Fintype.card_ne_zero
   have hcard :
       (Fintype.card (Preimage ψ (ψ b)) : ENNReal) ≠ 0 := by
