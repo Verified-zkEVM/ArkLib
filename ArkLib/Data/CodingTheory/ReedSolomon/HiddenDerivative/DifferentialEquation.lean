@@ -41,6 +41,16 @@ variable {F : Type*} {d : ℕ}
 
 /-! ### Differential specialization and scalar jets -/
 
+/-- Algebra homomorphism substituting a polynomial and its Hasse derivatives for the formal jet
+variables. Keeping the homomorphism itself available lets local-coordinate changes compose with
+the root solver without restating generator equations. -/
+def differentialSpecializationHom [CommSemiring F] (P : F[X]) :
+    DifferentialPolynomial F d →ₐ[F] F[X] :=
+  MvPolynomial.aeval
+    (fun v : JetVariable d ↦ match v with
+      | none => Polynomial.X
+      | some j => Polynomial.hasseDeriv j P)
+
 /-- Substitute `X`, a polynomial `P`, and its Hasse derivatives into a differential polynomial. -/
 def differentialSpecialization [CommSemiring F] (Q : DifferentialPolynomial F d) (P : F[X]) :
     F[X] :=
@@ -48,6 +58,10 @@ def differentialSpecialization [CommSemiring F] (Q : DifferentialPolynomial F d)
     (fun v ↦ match v with
       | none => Polynomial.X
       | some j => Polynomial.hasseDeriv j P) Q
+
+theorem differentialSpecializationHom_apply [CommSemiring F]
+    (Q : DifferentialPolynomial F d) (P : F[X]) :
+    differentialSpecializationHom P Q = differentialSpecialization Q P := rfl
 
 @[simp]
 theorem differentialSpecialization_C [CommSemiring F] (a : F) (P : F[X]) :

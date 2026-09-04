@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Substitution
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.DifferentialEquation
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 import Mathlib.Data.ZMod.Basic
 
@@ -90,6 +91,28 @@ theorem shiftedJetSubstitution_Y_succ (center : R) (P : R[X]) (j : Fin d) :
     shiftedJetSubstitution center P (MvPolynomial.X (some j.succ)) =
       Polynomial.taylor center (Polynomial.hasseDeriv (j.val + 1) P) := by
   simp [shiftedJetSubstitution]
+
+/-- The local shifted-jet semantics is affine Taylor translation after the root solver's canonical
+differential specialization. This is the adapter between the local-contact and root-count lanes. -/
+theorem taylorAlgHom_comp_differentialSpecializationHom (center : R) (P : R[X]) :
+    (Polynomial.taylorAlgHom center).comp (differentialSpecializationHom (d := d) P) =
+      shiftedJetSubstitution (d := d) center P := by
+  apply MvPolynomial.algHom_ext
+  intro v
+  rcases v with _ | j
+  · simp [differentialSpecializationHom, shiftedJetSubstitution]
+    ring
+  · simp [differentialSpecializationHom, shiftedJetSubstitution]
+
+/-- Polynomial-level form of the canonical-specialization adapter. -/
+theorem taylor_differentialSpecialization (Q : DifferentialPolynomial R d)
+    (center : R) (P : R[X]) :
+    Polynomial.taylor center (differentialSpecialization Q P) =
+      shiftedJetSubstitution center P Q := by
+  rw [← differentialSpecializationHom_apply]
+  change (Polynomial.taylorAlgHom center)
+    (differentialSpecializationHom (d := d) P Q) = shiftedJetSubstitution center P Q
+  exact DFunLike.congr_fun (taylorAlgHom_comp_differentialSpecializationHom center P) Q
 
 /-- Under actual moving jets, the formal local correction becomes the Hasse--Taylor correction
 sum from the reusable polynomial API. -/
