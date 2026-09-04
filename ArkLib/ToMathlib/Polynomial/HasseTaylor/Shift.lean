@@ -29,6 +29,12 @@ term `j` has Hasse order `j + 1`, sign `(-1)^j`, and derivative evaluated at the
 * `X_pow_succ_dvd_backwardTaylorResidual`: divisibility of the unnormalized numerator.
 * `X_pow_dvd_normalizedBackwardTaylorError`: divisibility after removing one factor of `X`.
 * `X_mul_normalizedBackwardTaylorError`: the normalized-error identity itself.
+
+## References
+
+* J. Brakensiek, Y. Chen, E. Putterman, M. Zhang, and G. Zheng,
+  *Algorithmic List Decoding of Reed--Solomon Codes up to Capacity in the Low-Rate Regime*,
+  [ECCC TR26-164](https://eccc.weizmann.ac.il/report/2026/164/), 2026.
 -/
 
 namespace Polynomial
