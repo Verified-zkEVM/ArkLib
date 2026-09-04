@@ -176,6 +176,7 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.AllRateListDecoding.AgreementRadius
 import ArkLib.Data.CodingTheory.ReedSolomon.AllRateListDecoding.Contracts
 import ArkLib.Data.CodingTheory.ReedSolomon.AllRateListDecoding.RateCover
 import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
