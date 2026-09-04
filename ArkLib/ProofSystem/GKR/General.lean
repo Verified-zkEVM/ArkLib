@@ -65,6 +65,7 @@ gives at `point`. -/
 def layerRel (i : Fin (n + 1)) : Set (GKRStatement R n k i × Unit) :=
   { ⟨⟨point, value⟩, _⟩ | MvPolynomial.eval point (layerMLE R c input i) = value }
 
+omit [DecidableEq R] [SampleableType R] in
 /-- The chain relation at layer `l` *is* the inner sum-check's input relation. -/
 theorem layerRel_castSucc_eq (l : Fin n) :
     layerRel R n c input l.castSucc = relationRound R n k c l (layerMLE R c input l.succ) := by
@@ -74,6 +75,7 @@ theorem layerRel_castSucc_eq (l : Fin n) :
   · rintro rfl; exact layerMLE_eval_eq_wiring_sum' R c input l point
   · intro h; rw [h]; exact layerMLE_eval_eq_wiring_sum' R c input l point
 
+omit [IsDomain R] [DecidableEq R] [SampleableType R] in
 /-- The chain relation at layer `l+1` *is* the combine step's output relation. -/
 theorem layerRel_succ_eq (l : Fin n) :
     layerRel R n c input l.succ = Combine.relOut R n l (layerMLE R c input l.succ) := rfl
