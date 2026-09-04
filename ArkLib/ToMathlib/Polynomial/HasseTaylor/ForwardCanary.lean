@@ -78,4 +78,32 @@ example :
     simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_one, coeff_X,
       hi0, hi1]
 
+/-- A degree-drop canary: removing orders zero and one from a shifted quartic leaves a quadratic,
+and the general `degreeLT` bound records the same strict bound. -/
+example :
+    (forwardTaylorQuotient 2 (1 : ℤ) (X ^ 4)).natDegree = 2 ∧
+      forwardTaylorQuotient 2 (1 : ℤ) (X ^ 4) ∈ degreeLT ℤ 3 := by
+  have hle : (forwardTaylorQuotient 2 (1 : ℤ) (X ^ 4)).natDegree ≤ 2 := by
+    have h := natDegree_forwardTaylorQuotient_le 2 (1 : ℤ) (X ^ 4)
+    rw [natDegree_X_pow] at h
+    norm_num at h ⊢
+    exact h
+  have hcoeff : (forwardTaylorQuotient 2 (1 : ℤ) (X ^ 4)).coeff 2 ≠ 0 := by
+    rw [coeff_forwardTaylorQuotient, X_pow_eq_monomial]
+    norm_num [hasseCoeffAt_apply, hasseDeriv_monomial]
+  have hdegree : (forwardTaylorQuotient 2 (1 : ℤ) (X ^ 4)).natDegree = 2 :=
+    natDegree_eq_of_le_of_coeff_ne_zero hle hcoeff
+  refine ⟨hdegree, forwardTaylorQuotient_mem_degreeLT 2 5 (1 : ℤ) (X ^ 4) ?_⟩
+  rw [mem_degreeLT, degree_X_pow]
+  exact WithBot.coe_lt_coe.mpr (by omega)
+
+/-- At order zero the quotient is the full shift, so its degree is unchanged. -/
+example : (forwardTaylorQuotient 0 (2 : ℤ) (X ^ 4)).natDegree = 4 := by
+  rw [forwardTaylorQuotient_zero, natDegree_taylor, natDegree_X_pow]
+
+/-- The zero polynomial has zero quotient at every order. -/
+example (m : ℕ) : forwardTaylorQuotient m (2 : ℤ) 0 = 0 := by
+  simp [forwardTaylorQuotient, forwardTaylorRemainder, forwardTaylorTruncation,
+    hasseCoeffAt_apply]
+
 end Polynomial
