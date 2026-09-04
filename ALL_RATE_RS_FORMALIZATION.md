@@ -744,12 +744,41 @@ Until those choices are made, contributors should prioritize the axiom-clean all
 
 ## 15. Next actionable assignments
 
-The first available contributors should claim these in parallel:
+The following nodes are already owned as of the latest update. Coordinate with the integration owner
+before duplicating them:
 
-1. `S0 + F2`: define the exact ArkLib-native all-rate theorem and close the abstract filtering proofs.
-2. `F0 + I0`: integrate weighted support and build a finite interpolation index safe for zero-weight variables.
-3. `F1 + F3 + L0`: integrate Hasse-Taylor, adapt hidden substitutions, and prove the genuine-polynomial local identity.
-4. `R0 + R1 + R2`: start the differential root solver, with a small nonsingular-lifting theorem as the first checkpoint.
-5. `C0 + U0`: specify the exact finite certificate and formalize uniform ambient-padding geometry.
+- `F3` and the first `L0` bridge: hidden variables, substitution bounds, and genuine-polynomial
+  Hasse remainder;
+- `F4`: the axiom-free donor combinatorial and free-order layer;
+- `R0-R1`: differential-polynomial interfaces and characteristic-safe derivative descent.
 
-When a slot opens, assign `I2-I4` before quantitative refinements. The root solver and local-rank proof are the two most likely blockers; the plan should keep independent reviewers on both rather than concentrating all effort on easy infrastructure.
+The best independent assignments for additional contributors are, in priority order:
+
+1. `F2`: prove the exact agreement-threshold to `Code.Lambda` radius bridge, ambient-subcode
+   monotonicity, and degree/agreement filtering lemmas over the contracts already on the branch.
+2. `C0`: define exact finite counting functions for interpolation bands, shells, and local-rank sums,
+   with executable small-instance canaries. This should not assume that the certified rank bound is
+   the true rank.
+3. `U0`: formalize ambient padding and its rate-uniform inequalities independently of interpolation.
+   Keep every floor, ceiling, positivity, and `D > d` side condition explicit.
+4. `R4-R6` support: develop the generic finite-field counting, sufficiently-large extension, and
+   base-solution injection lemmas needed for the division-free root-count inequality. Keep these
+   files independent of the still-moving `R0-R3` interface where possible.
+5. `O0-O1` audit support: independently develop the continuous and discrete sharp-constant
+   certificates in non-overlapping helper files. These are separate audit routes and should not
+   share unproved numerical lemmas; final composition still waits for `C0`, `I4`, and `U0`.
+6. `N0` or `N2`: formalize the exact-capacity bad ball or the bounded-characteristic obstruction.
+   These are useful independent checks, but they do not replace a critical-path node.
+
+An autoformalization agent should be given this entire document and the following operating
+contract: fetch the current head of `quang/all-rate-rs-capacity-formalization`; name one node and its
+owned files before editing; work on a temporary branch or worktree; do not edit this tracker or
+`ArkLib.lean`; introduce no `sorry`, `admit`, project axiom, `unsafe`, or `native_decide`; run the
+targeted build, trust-zero warning-as-error check, source-trust audit, and `#print axioms`; then
+return a commit hash, exact theorem names, test evidence, and residual assumptions to the integration
+owner. The integration owner alone updates this document, regenerates `ArkLib.lean`, and pushes the
+canonical branch.
+
+After `F3`, `F4`, and `R0-R1` land, assign `L0-L1`, `I0-I4`, `V0-V3`, and `R2-R3` immediately.
+The root solver and local-rank proof are the two largest schedule risks; keep independent reviewers
+on both rather than concentrating all effort on infrastructure or constants.
