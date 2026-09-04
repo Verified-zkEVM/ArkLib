@@ -424,6 +424,7 @@ import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJetCanary
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.ForwardCanary
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
+import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibilityCanary
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.ShiftCanary
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum

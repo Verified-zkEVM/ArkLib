@@ -88,6 +88,14 @@ theorem hasseJet_eq_zero_iff_le_rootMultiplicity {p : R[X]} (hp : p ≠ 0)
   rw [← X_sub_C_pow_dvd_iff_hasseJet_eq_zero]
   exact (le_rootMultiplicity_iff hp).symm
 
+/-- Distinct polynomials have the same length-`m` Hasse jet exactly when their difference has
+root multiplicity at least `m`. -/
+theorem hasseJet_eq_iff_le_rootMultiplicity_sub {p q : R[X]} (hpq : p ≠ q)
+    (a : R) (m : ℕ) :
+    hasseJet m a p = hasseJet m a q ↔ m ≤ (p - q).rootMultiplicity a := by
+  rw [← sub_eq_zero, ← LinearMap.map_sub]
+  exact hasseJet_eq_zero_iff_le_rootMultiplicity (sub_ne_zero.mpr hpq) a m
+
 end CommRing
 
 end
