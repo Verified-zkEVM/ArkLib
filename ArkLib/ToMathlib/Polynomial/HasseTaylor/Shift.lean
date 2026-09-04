@@ -34,6 +34,17 @@ namespace Polynomial
 
 noncomputable section
 
+private theorem map_hasseDeriv {R S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (p : R[X]) (k : ℕ) :
+    (hasseDeriv k p).map f = hasseDeriv k (p.map f) := by
+  ext n
+  simp [hasseDeriv_coeff]
+
+private theorem map_divX {R S : Type*} [Semiring R] [Semiring S]
+    (f : R →+* S) (p : R[X]) : p.divX.map f = (p.map f).divX := by
+  ext n
+  simp [coeff_divX]
+
 section Semiring
 
 variable {R : Type*} [Semiring R]
@@ -270,6 +281,15 @@ def movingHasseSum (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   ∑ j ∈ Finset.range d,
     C ((-1 : R) ^ j) * (X ^ (j + 1) * taylor a (hasseDeriv (j + 1) p))
 
+/-- The moving-Hasse correction sum is natural under coefficient-ring homomorphisms. -/
+theorem map_movingHasseSum {S : Type*} [CommRing S] (f : R →+* S)
+    (a : R) (p : R[X]) (d : ℕ) :
+    (movingHasseSum a p d).map f = movingHasseSum (f a) (p.map f) d := by
+  rw [movingHasseSum, movingHasseSum, Polynomial.map_sum f]
+  apply Finset.sum_congr rfl
+  intro j _
+  simp [map_hasseDeriv, map_taylor]
+
 /-- Adding one truncation order appends exactly the next alternating moving-Hasse term. -/
 theorem movingHasseSum_succ (a : R) (p : R[X]) (d : ℕ) :
     movingHasseSum a p (d + 1) = movingHasseSum a p d +
@@ -306,6 +326,13 @@ theorem movingHasseSum_one (a : R) (p : R[X]) :
 /-- Numerator left by the finite paper-facing moving-Hasse correction sum. -/
 def backwardTaylorResidual (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   taylor a p - C (p.eval a) - movingHasseSum a p d
+
+/-- The moving-point backward numerator is natural under coefficient-ring homomorphisms. -/
+theorem map_backwardTaylorResidual {S : Type*} [CommRing S] (f : R →+* S)
+    (a : R) (p : R[X]) (d : ℕ) :
+    (backwardTaylorResidual a p d).map f =
+      backwardTaylorResidual (f a) (p.map f) d := by
+  simp [backwardTaylorResidual, map_taylor, eval_map, map_movingHasseSum]
 
 /-- Increasing the truncation order subtracts the next moving-Hasse term from the residual. -/
 theorem backwardTaylorResidual_succ (a : R) (p : R[X]) (d : ℕ) :
@@ -371,6 +398,13 @@ theorem backwardTaylorResidual_eq_zero_of_natDegree_le (a : R) (p : R[X]) (d : �
 /-- Canonical normalized moving-point error; unlike the increment quotient, this depends on `d`. -/
 def normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   (backwardTaylorResidual a p d).divX
+
+/-- The normalized moving-point error is natural under coefficient-ring homomorphisms. -/
+theorem map_normalizedBackwardTaylorError {S : Type*} [CommRing S] (f : R →+* S)
+    (a : R) (p : R[X]) (d : ℕ) :
+    (normalizedBackwardTaylorError a p d).map f =
+      normalizedBackwardTaylorError (f a) (p.map f) d := by
+  simp [normalizedBackwardTaylorError, map_divX, map_backwardTaylorResidual]
 
 /-- Increasing the truncation order subtracts the next normalized moving-Hasse term. -/
 theorem normalizedBackwardTaylorError_succ (a : R) (p : R[X]) (d : ℕ) :

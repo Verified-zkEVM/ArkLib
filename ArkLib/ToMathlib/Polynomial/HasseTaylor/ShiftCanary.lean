@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+import Mathlib.Data.ZMod.Basic
 import Mathlib.Tactic.NormNum
 
 /-! Mutation canaries for Hasse--Taylor shift orientation, characteristic, and signs. -/
@@ -80,6 +81,15 @@ example :
     norm_num [natDegree_X_pow]
   · apply normalizedBackwardTaylorError_eq_zero_of_natDegree_le
     norm_num [natDegree_X_pow]
+
+/-- A concrete coefficient reduction checks naturality across genuinely different rings. -/
+example :
+    (normalizedBackwardTaylorError (2 : ℤ) (X ^ 3 + C 7) 2).map
+        (Int.castRingHom (ZMod 5)) =
+      normalizedBackwardTaylorError ((Int.castRingHom (ZMod 5)) 2)
+        ((X ^ 3 + C 7 : ℤ[X]).map (Int.castRingHom (ZMod 5))) 2 := by
+  exact map_normalizedBackwardTaylorError (Int.castRingHom (ZMod 5))
+    (2 : ℤ) (X ^ 3 + C 7) 2
 
 end
 
