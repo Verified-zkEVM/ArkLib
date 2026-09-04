@@ -276,6 +276,15 @@ theorem movingHasseSum_succ (a : R) (p : R[X]) (d : ℕ) :
       C ((-1 : R) ^ d) * (X ^ (d + 1) * taylor a (hasseDeriv (d + 1) p)) := by
   rw [movingHasseSum, movingHasseSum, Finset.sum_range_succ]
 
+/-- The moving-Hasse correction sum is additive in the input polynomial. -/
+theorem movingHasseSum_add (a : R) (p q : R[X]) (d : ℕ) :
+    movingHasseSum a (p + q) d = movingHasseSum a p d + movingHasseSum a q d := by
+  simp only [movingHasseSum, LinearMap.map_add, mul_add, Finset.sum_add_distrib]
+
+@[simp]
+theorem movingHasseSum_zero (a : R) (d : ℕ) : movingHasseSum a 0 d = 0 := by
+  simp [movingHasseSum]
+
 /-- Moving derivatives of `p` are ordinary Hasse derivatives of its Taylor shift. -/
 theorem movingHasseSum_eq_backwardHasseSum (a : R) (p : R[X]) (d : ℕ) :
     movingHasseSum a p d = backwardHasseSum d (taylor a p) := by
@@ -304,6 +313,18 @@ theorem backwardTaylorResidual_succ (a : R) (p : R[X]) (d : ℕ) :
       C ((-1 : R) ^ d) * (X ^ (d + 1) * taylor a (hasseDeriv (d + 1) p)) := by
   rw [backwardTaylorResidual, backwardTaylorResidual, movingHasseSum_succ]
   ring
+
+/-- The moving-point backward numerator is additive in the input polynomial. -/
+theorem backwardTaylorResidual_add (a : R) (p q : R[X]) (d : ℕ) :
+    backwardTaylorResidual a (p + q) d =
+      backwardTaylorResidual a p d + backwardTaylorResidual a q d := by
+  rw [backwardTaylorResidual, backwardTaylorResidual, backwardTaylorResidual,
+    LinearMap.map_add, eval_add, map_add, movingHasseSum_add]
+  ring
+
+@[simp]
+theorem backwardTaylorResidual_zero (a : R) (d : ℕ) : backwardTaylorResidual a 0 d = 0 := by
+  simp [backwardTaylorResidual]
 
 /-- The order-one residual recovers the earlier derivative-contact identity exactly. -/
 theorem backwardTaylorResidual_one (a : R) (p : R[X]) :
@@ -392,6 +413,19 @@ theorem coeff_normalizedBackwardTaylorError (a : R) (p : R[X]) (d n : ℕ) :
     (normalizedBackwardTaylorError a p d).coeff n =
       (backwardTaylorResidual a p d).coeff (n + 1) := by
   rw [normalizedBackwardTaylorError, coeff_divX]
+
+/-- The normalized moving-point error is additive in the input polynomial. -/
+theorem normalizedBackwardTaylorError_add (a : R) (p q : R[X]) (d : ℕ) :
+    normalizedBackwardTaylorError a (p + q) d =
+      normalizedBackwardTaylorError a p d + normalizedBackwardTaylorError a q d := by
+  ext n
+  simp only [coeff_normalizedBackwardTaylorError, backwardTaylorResidual_add, coeff_add]
+
+@[simp]
+theorem normalizedBackwardTaylorError_zero_poly (a : R) (d : ℕ) :
+    normalizedBackwardTaylorError a 0 d = 0 := by
+  ext n
+  simp [coeff_normalizedBackwardTaylorError]
 
 /-- Finite moving-point backward reconstruction, with signs `+,-,+,...` from Hasse order one. -/
 theorem backwardTaylorReconstruction (a : R) (p : R[X]) (d : ℕ) :
