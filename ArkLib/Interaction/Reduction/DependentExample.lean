@@ -33,9 +33,16 @@ def suffixRoles : (tr : TypeTree.Path prefixTree) → RoleDecoration (suffixTree
   | ⟨false, ⟨⟩⟩ => ⟨Role.sender, fun _ => ⟨⟩⟩
   | ⟨true, ⟨⟩⟩ => ⟨Role.sender, fun _ => ⟨⟩⟩
 
+/-- The public input family for the prefix reduction. -/
 abbrev PrefixStatement (_ : Unit) := Unit
+
+/-- The private input family carrying the prefix bit. -/
 abbrev PrefixWitness (_ : Unit) := Bool
+
+/-- The prefix exposes its sent bit as the suffix statement. -/
 abbrev MidStatement (_ : Unit) (_ : TypeTree.Path prefixTree) := Bool
+
+/-- The prefix does not pass private data to the suffix. -/
 abbrev MidWitness (_ : Unit) (_ : TypeTree.Path prefixTree) := Unit
 
 /-- The prefix reduction forwards the sent Boolean as its next statement. -/
@@ -44,9 +51,31 @@ def prefixReduction : Reduction Id Unit (fun _ => prefixTree) (fun _ => prefixRo
   prover _ _ bit := ⟨bit, ⟨bit, ()⟩⟩
   verifier _ _ bit := bit
 
+/-- The suffix index remembers the original input and complete prefix path. -/
 abbrev SuffixShared := (i : Unit) × PrefixStatement i × TypeTree.Path prefixTree
+
+/-- The suffix statement is selected by its remembered prefix path. -/
 abbrev SuffixStatement (shared : SuffixShared) := MidStatement shared.1 shared.2.2
+
+/-- The suffix witness is selected by its remembered prefix path. -/
 abbrev SuffixWitness (shared : SuffixShared) := MidWitness shared.1 shared.2.2
+
+section UniverseCanary
+
+universe uShared uStatement uWitness uInteraction
+
+/-- Compile-time canary that shared, statement, witness, and interaction universes remain
+independent. -/
+abbrev UniverseSeparatedReduction
+    (Shared : Type uShared)
+    (Context : Shared → TypeTree.{uInteraction})
+    (Roles : (i : Shared) → RoleDecoration (Context i))
+    (Statement : Shared → Type uStatement)
+    (Witness : Shared → Type uWitness)
+    (StatementOut WitnessOut : (i : Shared) → TypeTree.Path (Context i) → Type uInteraction) :=
+  Reduction Id Shared Context Roles Statement Witness StatementOut WitnessOut
+
+end UniverseCanary
 
 /-- The suffix emits a branch-specific message and turns it into a natural-number statement.
 

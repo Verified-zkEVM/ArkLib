@@ -25,7 +25,8 @@ Start with [`README.md`](README.md) for project overview.
 ## Where To Work
 
 - `ArkLib/Data/` - reusable math, coding theory, polynomials, and supporting definitions.
-- `ArkLib/OracleReduction/` - core IOR abstractions and security theory.
+- `ArkLib/Interaction/` - typed interactions and dependent reduction foundations.
+- `ArkLib/OracleReduction/` - legacy IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
