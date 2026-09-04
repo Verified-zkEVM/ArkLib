@@ -28,6 +28,8 @@ section Semiring
 
 variable [Semiring R]
 
+/-! ### Finite truncation and degree-bounded coordinates -/
+
 /-- The polynomial consisting of Hasse--Taylor orders strictly below `m` at `a`.
 
 It is expressed in the forward displacement variable: coefficient `i < m` is `D⁽ⁱ⁾ p(a)`. -/
@@ -170,6 +172,8 @@ section CommSemiring
 
 variable [CommSemiring R]
 
+/-! ### Change of center and affine substitution -/
+
 /-- Successive changes of origin add their centers before finite forward truncation. -/
 theorem forwardTaylorTruncation_taylor (m : ℕ) (a b : R) (p : R[X]) :
     forwardTaylorTruncation m b (taylor a p) =
@@ -198,6 +202,8 @@ end CommSemiring
 section Ring
 
 variable [Ring R]
+
+/-! ### Canonical forward remainders and tail quotients -/
 
 /-- The part of the forward Taylor shift left after removing all orders below `m`. -/
 def forwardTaylorRemainder (m : ℕ) (a : R) (p : R[X]) : R[X] :=
@@ -368,6 +374,8 @@ end Ring
 section CommRing
 
 variable [CommRing R]
+
+/-! ### Change of center and affine substitution for remainders -/
 
 /-- Successive changes of origin add their centers before taking the forward remainder. -/
 theorem forwardTaylorRemainder_taylor (m : ℕ) (a b : R) (p : R[X]) :

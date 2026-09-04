@@ -32,6 +32,8 @@ section Semiring
 
 variable [Semiring R]
 
+/-! ### Finite Hasse coordinates -/
+
 /-- The `i`-th Hasse coefficient of `p` at `r`, packaged as a linear functional.
 
 Equivalently, this is coefficient `i` of `p(X + r)`. -/
@@ -133,6 +135,8 @@ theorem hasseJet_natDegree_add_one_eq_zero_iff (r : R) (p : R[X]) :
   · rintro rfl
     exact LinearMap.map_zero _
 
+/-! ### Degree-lowering Hasse derivatives -/
+
 /-- Taking the `k`-th Hasse derivative lowers a strict degree bound from `n + k` to `n`.
 
 The additive indexing makes the boundary case explicit and avoids truncated-subtraction side
@@ -168,6 +172,8 @@ end Semiring
 section CommSemiring
 
 variable [CommSemiring R]
+
+/-! ### Products, shifts, and affine substitutions -/
 
 /-- The product rule for Hasse coefficients, with no characteristic assumptions. -/
 theorem hasseCoeffAt_mul (r : R) (n : ℕ) (p q : R[X]) :
@@ -231,6 +237,8 @@ end CommSemiring
 section CommRing
 
 variable [CommRing R]
+
+/-! ### Finite-jet coordinates for degree-bounded polynomials -/
 
 /-- Hasse jets at `r` are linear coordinates on polynomials of degree strictly less than `m`.
 
