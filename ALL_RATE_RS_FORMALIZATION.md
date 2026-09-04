@@ -125,7 +125,7 @@ Exact bibliographic entries and theorem-to-source links must be added to `bluepr
 
 ### 4.2 Prior Lean formalization
 
-Kai Zhe Zheng's repository <https://github.com/kz99/rs-ld-mca>, pinned at commit `82c1d5c00820f74a7ec18be716c033430bef5ae8`, is an approved source of formalization material. Its substantive formalization commit is `be57cd2`. Adapted material must credit Kai Zhe Zheng, preserve the source commit, and state that it is used with permission.
+Kai Zhe Zheng's repository <https://github.com/kz99/rs-ld-mca>, pinned at commit `82c1d5c00820f74a7ec18be716c033430bef5ae8`, is an approved source of formalization material. Its substantive formalization commit is `be57cd2`. Adapted material must credit Kai Zhe Zheng, preserve the source commit, and state that it is used with permission. The durable project-owner attestation, exact source revisions, current adaptation map, and unresolved evidence fields are recorded in [`docs/kb/sources/rs-ld-mca/PERMISSION.md`](docs/kb/sources/rs-ld-mca/PERMISSION.md).
 
 The pinned repository currently:
 
@@ -144,7 +144,7 @@ During this audit, canonical `kz99/rs-ld-mca` main advanced to `9699ee7a6143f6ef
 
 The new head has now passed a separate clean audit at its own pins: `lake build --wfail`, the repository trust script, and `lean --trust=0` with warnings as errors on both the main module and axiom-audit module. No proof hole was found beyond the same two explicit Kopparty axioms. The original `82c1d5c...` snapshot remains recorded because it was the exact version first audited; new reuse work should pin `9699ee7...` or a later explicitly audited head.
 
-The source repository has no visible license file at the pinned commit. Before verbatim code is published on this public branch, preserve a durable record of the authors' permission and the intended license compatibility. Mathematical reimplementation with explicit credit remains permissible under the approval reported by the project owner.
+The source repository has no visible license file at the pinned commits. The permission record now durably preserves Quang Dao's attestation that one of the source formalization's authors approved reuse for this formalization. It does not yet archive the direct grant, identify its grantor, or establish Apache-2.0 compatibility. Do not claim a blanket public license or license compatibility until direct evidence with adequate scope is added to that record.
 
 ### 4.3 Existing ArkLib work
 
@@ -435,7 +435,7 @@ Status values are `blocked`, `queued`, `active`, `review`, and `landed`. A node 
 
 | ID | Work package | Depends on | Status | Acceptance condition |
 |---|---|---|---|---|
-| P0 | Record provenance, permission, source commits, and citation keys. | None | active | Every imported file names its source and commit; bibliography entries build; permission record is durable. |
+| P0 | Record provenance, permission, source commits, and citation keys. | None | active (project-owner attestation recorded; direct grant evidence pending) | Every imported file names its source and commit; bibliography entries build; permission record is durable. |
 | S0 | Freeze exact Lean statements for combinatorial, exact-decoder, characteristic, and refinement theorems. | None | landed (`7715c089`) | Quantifier order visibly gives `d = d(δ)` before all code parameters; edge cases and radius conversion are explicit. |
 | F0 | Integrate and re-audit PR 857 weighted-support API. | P0 | landed (`5bc284d7`) | Head `f37f25ba` is represented without regressions; no zero-weight finrank theorem is misapplied. |
 | F1 | Integrate and re-audit PR 856 Hasse-Taylor API. | P0 | landed (`611afa07`) | Head `0c6d0a40` is represented; characteristic-safe identities and divisibility canaries pass. |
@@ -740,7 +740,7 @@ The following project decisions do not need to be revisited unless a formal obst
 
 These questions do not block phase-one proof work, but should be resolved before publication or upstream submission:
 
-1. Where should the durable written permission and license grant for adapting `kz99/rs-ld-mca` be stored or linked? The source repository has no license file at the pinned commit.
+1. Can direct evidence of the `kz99/rs-ld-mca` permission grant, including its grantor and scope, be archived or linked from [`docs/kb/sources/rs-ld-mca/PERMISSION.md`](docs/kb/sources/rs-ld-mca/PERMISSION.md)? The durable storage location is now fixed, but the direct grant and license-compatibility terms remain unrecorded.
 2. Should the first upstream artifact expose only the axiom-clean combinatorial theorem, or wait for the fully verified executable decoder and cost theorem?
 3. Should quantitative lower bounds and the small-characteristic obstruction ship in the first formalization release, or in a second refinement release after `M0` and `M1`?
 
