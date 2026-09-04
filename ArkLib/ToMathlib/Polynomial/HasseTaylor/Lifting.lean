@@ -191,10 +191,12 @@ theorem isUnit_natCast_choose_of_le_of_lt_ringChar {D i s : ℕ}
 
 /-! ### Unique choice of a lifted coefficient -/
 
-/-- Below the characteristic, the newly exposed Hasse coefficient is injective as a function of
-the perturbation coefficient. -/
-theorem hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective
-    (p : F[X]) (a : F) {i s : ℕ} (hsi : s ≤ i) (hi : i < ringChar F) :
+/-- If the relevant binomial coefficient is nonzero, the newly exposed Hasse coefficient is
+injective as a function of the perturbation coefficient.  This nonresonance form also applies in
+characteristic zero and in positive-characteristic steps beyond the uniform below-characteristic
+range. -/
+theorem hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective_of_choose_ne_zero
+    (p : F[X]) (a : F) {i s : ℕ} (hsi : s ≤ i) (hchoose : (i.choose s : F) ≠ 0) :
     Function.Injective fun gamma ↦
       hasseCoeffAt a (i - s) (hasseDeriv s (p + hassePerturbation a gamma i)) := by
   intro gamma gamma' h
@@ -203,29 +205,38 @@ theorem hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective
   rw [hasseCoeffAt_hasseDeriv_add_hassePerturbation p a gamma hsi,
     hasseCoeffAt_hasseDeriv_add_hassePerturbation p a gamma' hsi,
     add_left_cancel_iff] at h
-  exact mul_left_cancel₀ (natCast_choose_ne_zero_of_lt_ringChar hi hsi) h
+  exact mul_left_cancel₀ hchoose h
 
-/-- Below the characteristic, there is a unique centered perturbation producing any prescribed
-new Hasse coefficient after differentiation.
+/-- Below the characteristic, the newly exposed Hasse coefficient is injective as a function of
+the perturbation coefficient. -/
+theorem hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective
+    (p : F[X]) (a : F) {i s : ℕ} (hsi : s ≤ i) (hi : i < ringChar F) :
+    Function.Injective fun gamma ↦
+      hasseCoeffAt a (i - s) (hasseDeriv s (p + hassePerturbation a gamma i)) := by
+  exact hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective_of_choose_ne_zero p a hsi
+    (natCast_choose_ne_zero_of_lt_ringChar hi hsi)
+
+/-- If the relevant binomial coefficient is nonzero, there is a unique centered perturbation
+producing any prescribed new Hasse coefficient after differentiation.
 
 This is the one-variable affine equation solved inside a regular lift.  A differential-equation
 consumer additionally multiplies `Nat.choose i s` by the nonzero highest-variable partial
 derivative. -/
-theorem existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq
-    (p : F[X]) (a y : F) {i s : ℕ} (hsi : s ≤ i) (hi : i < ringChar F) :
+theorem existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq_of_choose_ne_zero
+    (p : F[X]) (a y : F) {i s : ℕ} (hsi : s ≤ i) (hchoose : (i.choose s : F) ≠ 0) :
     ∃! gamma : F,
       hasseCoeffAt a (i - s) (hasseDeriv s (p + hassePerturbation a gamma i)) = y := by
   let b := hasseCoeffAt a (i - s) (hasseDeriv s p)
   let c : F := i.choose s
-  have hc : c ≠ 0 := natCast_choose_ne_zero_of_lt_ringChar hi hsi
   refine ⟨c⁻¹ * (y - b), ?_, ?_⟩
   · change hasseCoeffAt a (i - s)
       (hasseDeriv s (p + hassePerturbation a (c⁻¹ * (y - b)) i)) = y
     rw [hasseCoeffAt_hasseDeriv_add_hassePerturbation p a _ hsi]
     change b + c * (c⁻¹ * (y - b)) = y
-    rw [← mul_assoc, mul_inv_cancel₀ hc, one_mul, add_sub_cancel]
+    rw [← mul_assoc, mul_inv_cancel₀ hchoose, one_mul, add_sub_cancel]
   · intro gamma hgamma
-    apply hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective p a hsi hi
+    apply hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective_of_choose_ne_zero
+      p a hsi hchoose
     change hasseCoeffAt a (i - s) (hasseDeriv s (p + hassePerturbation a gamma i)) =
       hasseCoeffAt a (i - s)
         (hasseDeriv s (p + hassePerturbation a (c⁻¹ * (y - b)) i))
@@ -233,7 +244,16 @@ theorem existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq
     rw [hasseCoeffAt_hasseDeriv_add_hassePerturbation p a _ hsi]
     symm
     change b + c * (c⁻¹ * (y - b)) = y
-    rw [← mul_assoc, mul_inv_cancel₀ hc, one_mul, add_sub_cancel]
+    rw [← mul_assoc, mul_inv_cancel₀ hchoose, one_mul, add_sub_cancel]
+
+/-- Below the characteristic, there is a unique centered perturbation producing any prescribed
+new Hasse coefficient after differentiation. -/
+theorem existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq
+    (p : F[X]) (a y : F) {i s : ℕ} (hsi : s ≤ i) (hi : i < ringChar F) :
+    ∃! gamma : F,
+      hasseCoeffAt a (i - s) (hasseDeriv s (p + hassePerturbation a gamma i)) = y :=
+  existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq_of_choose_ne_zero
+    p a y hsi (natCast_choose_ne_zero_of_lt_ringChar hi hsi)
 
 end Field
 
