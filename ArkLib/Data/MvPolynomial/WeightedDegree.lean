@@ -19,6 +19,11 @@ zero.
 The bound is additive under multiplication.  Consequently, the weight-zero piece is also closed
 under multiplication, while a positive fixed bound is not in general.
 
+The finiteness and finrank results below require every variable weight to be nonzero.  This
+hypothesis is load-bearing: if a variable has weight zero, all of its powers remain in every
+bounded piece.  In particular, a downstream interpolation weight with untracked, weight-zero
+variables must add separate degree caps before using a finite-dimensional count.
+
 ## Main declarations
 
 * `restrictWeightedDegree`: the bounded-support submodule.
@@ -370,8 +375,9 @@ theorem restrictWeightedDegree_fg [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i 
     {m : σ →₀ ℕ // m.weight w ≤ d} _ _ _ finiteExponents
     (basisRestrictWeightedDegree (R := R) w d)
 
-/-- Over a field, the dimension of a bounded weighted-degree submodule is the number of allowed
-monomials. -/
+/-- Over a field and with every variable assigned nonzero weight, the dimension of a bounded
+weighted-degree submodule is the number of allowed monomials.  The nonzero-weight hypothesis is
+essential; see `X_pow_mem_restrictWeightedDegree_zero`. -/
 theorem finrank_restrictWeightedDegree {K : Type*} [Field K] [Finite σ]
     (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
     Module.finrank K (restrictWeightedDegree (R := K) w d) =
