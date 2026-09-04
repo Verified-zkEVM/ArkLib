@@ -150,18 +150,26 @@ theorem hasseCoeffAt_hasseDeriv_add_hassePerturbation
 
 end CommRing
 
+section AddMonoidWithOne
+
+variable [AddMonoidWithOne R]
+
+/-! ### Binomial coefficients in a prime characteristic -/
+
+/-- A binomial coefficient whose upper index is below a prime characteristic remains nonzero after
+casting to any additive monoid with one of that characteristic. -/
+theorem natCast_choose_ne_zero_of_lt_charP {p i s : ℕ} [CharP R p]
+    (hp : p.Prime) (hip : i < p) (hsi : s ≤ i) : (i.choose s : R) ≠ 0 := by
+  rw [Ne, CharP.cast_eq_zero_iff R p]
+  exact hp.coprime_iff_not_dvd.mp (hp.coprime_choose_of_lt hip hsi)
+
+end AddMonoidWithOne
+
 section Field
 
 variable [Field F]
 
 /-! ### Characteristic-safe binomial multipliers -/
-
-/-- A binomial coefficient whose upper index is below a prime characteristic is nonzero in the
-field. -/
-theorem natCast_choose_ne_zero_of_lt_charP {p i s : ℕ} [CharP F p]
-    (hp : p.Prime) (hip : i < p) (hsi : s ≤ i) : (i.choose s : F) ≠ 0 := by
-  rw [Ne, CharP.cast_eq_zero_iff F p]
-  exact hp.coprime_iff_not_dvd.mp (hp.coprime_choose_of_lt hip hsi)
 
 /-- A binomial coefficient whose upper index is below the field characteristic is nonzero. -/
 theorem natCast_choose_ne_zero_of_lt_ringChar {i s : ℕ}
