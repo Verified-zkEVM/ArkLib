@@ -192,9 +192,27 @@ theorem coeff_backwardHasseSum_eq_zero_of_natDegree_lt {d n : ℕ} (q : R[X])
     simp
   · simp
 
+/-- The backward correction sum does not increase natural degree. -/
+theorem natDegree_backwardHasseSum_le (d : ℕ) (q : R[X]) :
+    (backwardHasseSum d q).natDegree ≤ q.natDegree := by
+  rw [natDegree_le_iff_coeff_eq_zero]
+  intro n hn
+  exact coeff_backwardHasseSum_eq_zero_of_natDegree_lt q hn
+
 /-- Numerator remaining after the constant and first `d` moving-Hasse terms are removed. -/
 def backwardHasseResidual (d : ℕ) (q : R[X]) : R[X] :=
   q - C (q.coeff 0) - backwardHasseSum d q
+
+/-- The generic backward residual does not increase natural degree. -/
+theorem natDegree_backwardHasseResidual_le (d : ℕ) (q : R[X]) :
+    (backwardHasseResidual d q).natDegree ≤ q.natDegree := by
+  rw [natDegree_le_iff_coeff_eq_zero]
+  intro n hn
+  have hn0 : n ≠ 0 := by omega
+  rw [backwardHasseResidual, coeff_sub, coeff_sub, coeff_C, if_neg hn0,
+    coeff_eq_zero_of_natDegree_lt hn,
+    coeff_backwardHasseSum_eq_zero_of_natDegree_lt q hn]
+  simp
 
 /-- The generic backward numerator is divisible by `X ^ (d + 1)`. -/
 theorem X_pow_succ_dvd_backwardHasseResidual (d : ℕ) (q : R[X]) :
@@ -267,6 +285,11 @@ theorem coeff_movingHasseSum {a : R} {p : R[X]} {d n : ℕ} (hn : n ≠ 0) (hnd 
   rw [movingHasseSum_eq_backwardHasseSum,
     coeff_backwardHasseSum (taylor a p) hn hnd, taylor_coeff]
 
+/-- At order one, the moving-Hasse sum is the shifted ordinary derivative times `X`. -/
+theorem movingHasseSum_one (a : R) (p : R[X]) :
+    movingHasseSum a p 1 = X * taylor a p.derivative := by
+  simp [movingHasseSum]
+
 /-- Numerator left by the finite paper-facing moving-Hasse correction sum. -/
 def backwardTaylorResidual (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   taylor a p - C (p.eval a) - movingHasseSum a p d
@@ -278,17 +301,35 @@ theorem backwardTaylorResidual_succ (a : R) (p : R[X]) (d : ℕ) :
   rw [backwardTaylorResidual, backwardTaylorResidual, movingHasseSum_succ]
   ring
 
+/-- The order-one residual recovers the earlier derivative-contact identity exactly. -/
+theorem backwardTaylorResidual_one (a : R) (p : R[X]) :
+    backwardTaylorResidual a p 1 =
+      taylor a p - C (p.eval a) - X * taylor a p.derivative := by
+  rw [backwardTaylorResidual, movingHasseSum_one]
+
 /-- The paper-facing residual is the generic residual applied to the shifted polynomial. -/
 theorem backwardTaylorResidual_eq (a : R) (p : R[X]) (d : ℕ) :
     backwardTaylorResidual a p d = backwardHasseResidual d (taylor a p) := by
   rw [backwardTaylorResidual, backwardHasseResidual, movingHasseSum_eq_backwardHasseSum,
     taylor_coeff_zero]
 
+/-- The paper-facing backward numerator does not increase the degree of `p`. -/
+theorem natDegree_backwardTaylorResidual_le (a : R) (p : R[X]) (d : ℕ) :
+    (backwardTaylorResidual a p d).natDegree ≤ p.natDegree := by
+  rw [backwardTaylorResidual_eq, ← natDegree_taylor p a]
+  exact natDegree_backwardHasseResidual_le d (taylor a p)
+
 /-- The paper-facing numerator has a zero of order at least `d + 1`. -/
 theorem X_pow_succ_dvd_backwardTaylorResidual (a : R) (p : R[X]) (d : ℕ) :
     X ^ (d + 1) ∣ backwardTaylorResidual a p d := by
   rw [backwardTaylorResidual_eq]
   exact X_pow_succ_dvd_backwardHasseResidual d (taylor a p)
+
+/-- The order-one contact residual is divisible by `X²`. -/
+theorem X_sq_dvd_taylor_sub_C_sub_X_mul_derivative (a : R) (p : R[X]) :
+    X ^ 2 ∣ taylor a p - C (p.eval a) - X * taylor a p.derivative := by
+  simpa only [backwardTaylorResidual_one, Nat.reduceAdd] using
+    X_pow_succ_dvd_backwardTaylorResidual a p 1
 
 /-- Every coefficient below degree `d + 1` of the numerator vanishes. -/
 theorem coeff_backwardTaylorResidual_eq_zero (a : R) (p : R[X]) (d n : ℕ)
@@ -305,6 +346,12 @@ theorem backwardTaylorResidual_eq_zero_of_natDegree_le (a : R) (p : R[X]) (d : �
 /-- Canonical normalized moving-point error; unlike the increment quotient, this depends on `d`. -/
 def normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) : R[X] :=
   (backwardTaylorResidual a p d).divX
+
+/-- Normalization lowers the residual degree by one. -/
+theorem natDegree_normalizedBackwardTaylorError_le (a : R) (p : R[X]) (d : ℕ) :
+    (normalizedBackwardTaylorError a p d).natDegree ≤ p.natDegree - 1 := by
+  rw [normalizedBackwardTaylorError, natDegree_divX_eq_natDegree_tsub_one]
+  exact Nat.sub_le_sub_right (natDegree_backwardTaylorResidual_le a p d) 1
 
 /-- The normalized moving-point error is divisible by `X ^ d`. -/
 theorem X_pow_dvd_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : ℕ) :
