@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.LocalIdentity
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.DifferentialEquation
 import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 
@@ -27,9 +28,9 @@ nonvanishing condition from the source; the below-characteristic corollary disch
 `k+r < ringChar F`, the specialization used by the all-rate Reed--Solomon development.
 
 The result is stated after Taylor shifting, using `shiftedJetSubstitution`, so the modulus is
-`X^k`.  This is equivalent to the paper's centered modulus `(X-alpha)^k`; a separate adapter to
-the root solver's unshifted `differentialSpecialization` can transport the theorem without
-changing its algebraic content.
+`X^k`.  This is equivalent to the paper's centered modulus `(X-alpha)^k`; the adapter
+`shiftedJetSubstitution_eq_taylor_differentialSpecialization` identifies this presentation with
+the root solver's unshifted `differentialSpecialization` without changing its algebraic content.
 
 This file does not formalize the singular recursion or the general-characteristic branching count
 of [Kop15, Corollary 4.5].
@@ -70,6 +71,36 @@ theorem shiftedJetSubstitution_eq_eval₂Hom (Q : DifferentialPolynomial F r)
     shiftedJetSubstitution center P Q =
       MvPolynomial.eval₂Hom Polynomial.C (shiftedJetValues center P) Q := by
   rfl
+
+/-- Shifted-jet substitution is the Taylor shift of the root solver's unshifted differential
+specialization. -/
+theorem shiftedJetSubstitution_eq_taylor_differentialSpecialization
+    (Q : DifferentialPolynomial F r) (center : F) (P : F[X]) :
+    shiftedJetSubstitution center P Q = taylor center (differentialSpecialization Q P) := by
+  rw [shiftedJetSubstitution, differentialSpecialization, taylor_apply]
+  change MvPolynomial.eval₂Hom Polynomial.C _ Q =
+    Polynomial.compRingHom (X + C center)
+      (MvPolynomial.eval₂Hom Polynomial.C _ Q)
+  rw [MvPolynomial.map_eval₂Hom]
+  apply MvPolynomial.eval₂Hom_congr
+  · ext x
+    simp
+  · funext v
+    rcases v with _ | j
+    · simp [Polynomial.coe_compRingHom_apply]
+      ring
+    · simp [Polynomial.coe_compRingHom_apply, taylor_apply]
+  · rfl
+
+/-- The constant term of a shifted separant is its scalar evaluation on the initial Hasse jet. -/
+theorem eval_zero_shiftedJetSubstitution_separant (Q : DifferentialPolynomial F r)
+    (center : F) (P : F[X]) :
+    (shiftedJetSubstitution center P (separant Q (Fin.last r))).eval 0 =
+      jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) := by
+  rw [shiftedJetSubstitution_eq_taylor_differentialSpecialization]
+  rw [← coeff_zero_eq_eval_zero, taylor_coeff_zero]
+  exact
+    eval_differentialSpecialization (separant Q (Fin.last r)) P center
 
 /-- A regular candidate lift changes its shifted jet by `regularLiftIncrement`. -/
 theorem shiftedJetValues_regularLiftCandidate (center gamma : F) (k r : ℕ) (P : F[X]) :
@@ -138,6 +169,147 @@ theorem X_pow_succ_dvd_shiftedJetSubstitution_regularLiftCandidate_sub (hk : 0 <
   · intro v _ hv
     exact X_pow_succ_dvd_regularLiftIncrement_of_ne_top gamma k r v hv
   · simp
+
+/-- The first unresolved residual coefficient depends affinely on the lifted candidate
+coefficient.  Its slope is the source's binomial multiplier times the separant at the initial
+jet. -/
+theorem coeff_shiftedJetSubstitution_regularLiftCandidate (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center gamma : F) (P : F[X]) :
+    (shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q).coeff k =
+      (shiftedJetSubstitution center P Q).coeff k +
+        (((k + r).choose r : F) * gamma) *
+          jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) := by
+  have hdiv := X_pow_succ_dvd_shiftedJetSubstitution_regularLiftCandidate_sub
+    (k := k) hk Q center gamma P
+  have hcoeff := Polynomial.X_pow_dvd_iff.mp hdiv k (by omega)
+  rw [regularLiftIncrement_top] at hcoeff
+  simp only [coeff_sub, ← mul_assoc, coeff_mul_X_pow', if_pos le_rfl, Nat.sub_self,
+    coeff_mul_C] at hcoeff
+  change
+    (shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q).coeff k -
+        (shiftedJetSubstitution center P Q).coeff k -
+      (shiftedJetSubstitution center P (separant Q (Fin.last r))).coeff 0 *
+          ((k + r).choose r : F) * gamma = 0 at hcoeff
+  rw [coeff_zero_eq_eval_zero, eval_zero_shiftedJetSubstitution_separant] at hcoeff
+  rw [sub_eq_zero, sub_eq_iff_eq_add] at hcoeff
+  simpa [add_comm, add_left_comm, add_assoc, mul_comm, mul_left_comm, mul_assoc] using hcoeff
+
+/-! ### Unique one-step lifting -/
+
+/-- A polynomial already divisible by `X^k` gains one more factor exactly when its coefficient
+in degree `k` vanishes. -/
+theorem X_pow_succ_dvd_iff_coeff_eq_zero_of_X_pow_dvd (p : F[X]) (k : ℕ)
+    (hp : X ^ k ∣ p) : X ^ (k + 1) ∣ p ↔ p.coeff k = 0 := by
+  constructor
+  · intro h
+    exact Polynomial.X_pow_dvd_iff.mp h k (by omega)
+  · intro hk
+    rw [Polynomial.X_pow_dvd_iff]
+    intro i hi
+    by_cases hik : i < k
+    · exact Polynomial.X_pow_dvd_iff.mp hp i hik
+    · have : i = k := by omega
+      simpa [this] using hk
+
+/-- A regular candidate lift preserves the already established residual divisibility. -/
+theorem X_pow_dvd_shiftedJetSubstitution_regularLiftCandidate (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center gamma : F) (P : F[X])
+    (hresidual : X ^ k ∣ shiftedJetSubstitution center P Q) :
+    X ^ k ∣ shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q := by
+  let pivot : JetVariable r := some (Fin.last r)
+  let linearTerm : F[X] :=
+    shiftedJetSubstitution center P (separant Q (Fin.last r)) *
+      regularLiftIncrement gamma k r pivot
+  have hnext := X_pow_succ_dvd_shiftedJetSubstitution_regularLiftCandidate_sub
+    (k := k) hk Q center gamma P
+  have hremainder :
+      X ^ k ∣
+        shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q -
+          shiftedJetSubstitution center P Q - linearTerm := by
+    exact (pow_dvd_pow X (Nat.le_succ k)).trans (by simpa [linearTerm, pivot, separant] using hnext)
+  have hincrement : X ^ k ∣ regularLiftIncrement gamma k r pivot := by
+    simpa [pivot] using X_pow_dvd_regularLiftIncrement_top gamma k r
+  have hlinear : X ^ k ∣ linearTerm := by
+    exact dvd_mul_of_dvd_right hincrement _
+  have hsum := hremainder.add (hresidual.add hlinear)
+  have heq :
+      shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q =
+        (shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q -
+            shiftedJetSubstitution center P Q - linearTerm) +
+          (shiftedJetSubstitution center P Q + linearTerm) := by
+    ring
+  rw [heq]
+  exact hsum
+
+/-- Exact nonresonant form of the regular one-step lift.
+
+This is the formal counterpart of [Kop15, Theorem 4.4].  The binomial hypothesis is stated
+directly, as in the source, so the theorem also applies in characteristic zero and at any
+nonresonant step in positive characteristic. -/
+theorem existsUnique_regularLiftCoefficient (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center : F) (P : F[X])
+    (hresidual : X ^ k ∣ shiftedJetSubstitution center P Q)
+    (hbinomial : ((k + r).choose r : F) ≠ 0)
+    (hseparant :
+      jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) ≠ 0) :
+    ∃! gamma : F,
+      X ^ (k + 1) ∣
+        shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q := by
+  let beta := (shiftedJetSubstitution center P Q).coeff k
+  let slope := ((k + r).choose r : F) *
+    jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P)
+  have hslope : slope ≠ 0 := mul_ne_zero hbinomial hseparant
+  let gamma₀ := -slope⁻¹ * beta
+  have hcoeff₀ :
+      (shiftedJetSubstitution center (regularLiftCandidate center gamma₀ k r P) Q).coeff k =
+        0 := by
+    rw [coeff_shiftedJetSubstitution_regularLiftCandidate (k := k) hk]
+    change beta + ((k + r).choose r : F) * gamma₀ *
+      jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) = 0
+    calc
+      beta + ((k + r).choose r : F) * gamma₀ *
+          jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) =
+          beta - (slope * slope⁻¹) * beta := by
+            simp only [gamma₀]
+            dsimp only [slope]
+            ring
+      _ = 0 := by rw [mul_inv_cancel₀ hslope]; ring
+  have hresidual₀ := X_pow_dvd_shiftedJetSubstitution_regularLiftCandidate
+    (k := k) hk Q center gamma₀ P hresidual
+  have hlift₀ :
+      X ^ (k + 1) ∣
+        shiftedJetSubstitution center (regularLiftCandidate center gamma₀ k r P) Q :=
+    (X_pow_succ_dvd_iff_coeff_eq_zero_of_X_pow_dvd _ k hresidual₀).2 hcoeff₀
+  refine ⟨gamma₀, hlift₀, ?_⟩
+  intro gamma hgamma
+  have hcoeff :
+      (shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q).coeff k =
+        0 := Polynomial.X_pow_dvd_iff.mp hgamma k (by omega)
+  have heq :
+      (shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q).coeff k =
+        (shiftedJetSubstitution center (regularLiftCandidate center gamma₀ k r P) Q).coeff k := by
+    rw [hcoeff, hcoeff₀]
+  rw [coeff_shiftedJetSubstitution_regularLiftCandidate (k := k) hk,
+    coeff_shiftedJetSubstitution_regularLiftCandidate (k := k) hk,
+    add_left_cancel_iff] at heq
+  apply mul_left_cancel₀ hslope
+  simpa [slope, mul_comm, mul_left_comm, mul_assoc] using heq
+
+/-- Below the characteristic, every lift step whose new candidate coefficient has degree at most
+`D` is nonresonant and therefore has a unique continuation coefficient. -/
+theorem existsUnique_regularLiftCoefficient_of_le_of_lt_ringChar (hk : 0 < k)
+    (Q : DifferentialPolynomial F r) (center : F) (P : F[X]) (D : ℕ)
+    (hdegree : k + r ≤ D) (hD : D < ringChar F)
+    (hresidual : X ^ k ∣ shiftedJetSubstitution center P Q)
+    (hseparant :
+      jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) ≠ 0) :
+    ∃! gamma : F,
+      X ^ (k + 1) ∣
+        shiftedJetSubstitution center (regularLiftCandidate center gamma k r P) Q := by
+  apply existsUnique_regularLiftCoefficient (k := k) hk Q center P hresidual
+  · exact Polynomial.natCast_choose_ne_zero_of_lt_ringChar
+      (hdegree.trans_lt hD) (by omega)
+  · exact hseparant
 
 end
 
