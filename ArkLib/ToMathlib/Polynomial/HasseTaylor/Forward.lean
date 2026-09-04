@@ -180,6 +180,19 @@ theorem forwardTaylorTruncation_taylor (m : ℕ) (a b : R) (p : R[X]) :
   · rw [hasseCoeffAt_taylor]
   · rfl
 
+/-- Finite forward truncation commutes with an affine substitution, with the output variable
+scaled by the same factor. -/
+theorem forwardTaylorTruncation_taylor_comp_C_mul_X
+    (m : ℕ) (a b c : R) (p : R[X]) :
+    forwardTaylorTruncation m b ((taylor a p).comp (C c * X)) =
+      (forwardTaylorTruncation m (c * b + a) p).comp (C c * X) := by
+  ext i
+  rw [coeff_forwardTaylorTruncation, comp_C_mul_X_coeff,
+    coeff_forwardTaylorTruncation]
+  by_cases hi : i < m
+  · rw [if_pos hi, if_pos hi, hasseCoeffAt_taylor_comp_C_mul_X]
+  · rw [if_neg hi, if_neg hi, zero_mul]
+
 end CommSemiring
 
 section Ring
@@ -302,6 +315,29 @@ theorem forwardTaylorQuotient_taylor (m : ℕ) (a b : R) (p : R[X]) :
     forwardTaylorQuotient m b (taylor a p) =
       forwardTaylorQuotient m (b + a) p := by
   rw [forwardTaylorQuotient, forwardTaylorQuotient, forwardTaylorRemainder_taylor]
+
+/-- Forward Taylor remainders commute with affine substitution. -/
+theorem forwardTaylorRemainder_taylor_comp_C_mul_X
+    (m : ℕ) (a b c : R) (p : R[X]) :
+    forwardTaylorRemainder m b ((taylor a p).comp (C c * X)) =
+      (forwardTaylorRemainder m (c * b + a) p).comp (C c * X) := by
+  rw [forwardTaylorRemainder, forwardTaylorRemainder, sub_comp,
+    forwardTaylorTruncation_taylor_comp_C_mul_X]
+  congr 1
+  ext i
+  rw [taylor_coeff, comp_C_mul_X_coeff, taylor_coeff]
+  exact hasseCoeffAt_taylor_comp_C_mul_X a b c i p
+
+/-- Under affine substitution, the canonical tail quotient scales by the `m`-th power of the
+linear coefficient, in addition to scaling its output variable. -/
+theorem forwardTaylorQuotient_taylor_comp_C_mul_X
+    (m : ℕ) (a b c : R) (p : R[X]) :
+    forwardTaylorQuotient m b ((taylor a p).comp (C c * X)) =
+      C (c ^ m) * (forwardTaylorQuotient m (c * b + a) p).comp (C c * X) := by
+  ext i
+  rw [coeff_forwardTaylorQuotient, coeff_C_mul, comp_C_mul_X_coeff,
+    coeff_forwardTaylorQuotient, hasseCoeffAt_taylor_comp_C_mul_X, pow_add]
+  ac_rfl
 
 end CommRing
 
