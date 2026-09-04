@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import Mathlib.Algebra.MvPolynomial.Monad
 import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+import Mathlib.RingTheory.MvPolynomial.Homogeneous
 import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
@@ -51,6 +52,15 @@ theorem mem_restrictWeightedDegree_iff_weightedTotalDegree_le {w : σ → ℕ} {
 theorem restrictWeightedDegree_mono (w : σ → ℕ) {d e : ℕ} (hde : d ≤ e) :
     restrictWeightedDegree (R := R) w d ≤ restrictWeightedDegree (R := R) w e := by
   exact restrictSupport_mono R fun _ hm => Nat.le_trans hm hde
+
+/-- Assigning weight one to every variable recovers mathlib's total-degree submodule. -/
+@[simp]
+theorem restrictWeightedDegree_one (d : ℕ) :
+    restrictWeightedDegree (R := R) (fun _ : σ => 1) d = restrictTotalDegree σ R d := by
+  ext p
+  rw [mem_restrictWeightedDegree_iff_weightedTotalDegree_le, mem_restrictTotalDegree]
+  change weightedTotalDegree (1 : σ → ℕ) p ≤ d ↔ p.totalDegree ≤ d
+  rw [weightedTotalDegree_one]
 
 /-- A monomial is bounded exactly when its exponent has bounded weight, unless its coefficient
 vanishes. -/
