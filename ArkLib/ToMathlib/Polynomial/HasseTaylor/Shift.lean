@@ -33,7 +33,7 @@ moving point `a + X`. The numerator is divisible by `X ^ (d + 1)` and its normal
 
 ## References
 
-* J. Brakensiek, Y. Chen, E. Putterman, M. Zhang, and G. Zheng,
+* Joshua Brakensiek, Yeyuan Chen, Aaron Putterman, Zihan Zhang, and Kai Zhe Zheng,
   *Algorithmic List Decoding of Reed--Solomon Codes up to Capacity in the Low-Rate Regime*,
   [ECCC TR26-164](https://eccc.weizmann.ac.il/report/2026/164/), 2026.
 -/
