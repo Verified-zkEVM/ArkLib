@@ -5,9 +5,8 @@ Authors: Quang Dao
 -/
 
 import Mathlib.Algebra.MvPolynomial.Monad
-import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 import Mathlib.RingTheory.MvPolynomial.Homogeneous
-import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
 # Weighted-degree bounds for multivariate polynomials
@@ -19,6 +18,16 @@ zero.
 
 The bound is additive under multiplication.  Consequently, the weight-zero piece is also closed
 under multiplication, while a positive fixed bound is not in general.
+
+## Main declarations
+
+* `restrictWeightedDegree`: the bounded-support submodule.
+* `weightedTotalDegree_bind₁_le` and `weightedTotalDegree_aeval_le`: substitution bounds with
+  induced source weights.
+* `bind₁_mem_restrictWeightedDegree`: preservation under prescribed-weight substitution.
+* `basisRestrictWeightedDegree` and `restrictWeightedDegreeCoeff`: its monomial basis and
+  coefficient projections.
+* `finrank_restrictWeightedDegree`: the finite positive-weight dimension formula.
 -/
 
 noncomputable section
@@ -61,6 +70,23 @@ theorem restrictWeightedDegree_one (d : ℕ) :
   rw [mem_restrictWeightedDegree_iff_weightedTotalDegree_le, mem_restrictTotalDegree]
   change weightedTotalDegree (1 : σ → ℕ) p ≤ d ↔ p.totalDegree ≤ d
   rw [weightedTotalDegree_one]
+
+/-- Bounding the degree in every individual variable is equivalent to imposing all singleton
+weighted-degree bounds. -/
+theorem mem_restrictDegree_iff_forall_mem_restrictWeightedDegree_piSingle
+    [DecidableEq σ] (p : MvPolynomial σ R) (d : ℕ) :
+    p ∈ restrictDegree σ R d ↔
+      ∀ i, p ∈ restrictWeightedDegree (R := R) (Pi.single i 1) d := by
+  classical
+  rw [mem_restrictDegree]
+  constructor
+  · intro hp i
+    rw [mem_restrictWeightedDegree]
+    intro m hm
+    simpa [Finsupp.weight_single_one_apply] using hp m hm i
+  · intro hp m hm i
+    have hi := (mem_restrictWeightedDegree.mp (hp i)) m hm
+    simpa [Finsupp.weight_single_one_apply] using hi
 
 /-- A monomial is bounded exactly when its exponent has bounded weight, unless its coefficient
 vanishes. -/
@@ -352,8 +378,14 @@ theorem finrank_restrictWeightedDegree {K : Type*} [Field K] [Finite σ]
       Set.ncard {m : σ →₀ ℕ | m.weight w ≤ d} := by
   let _ : Finite {m : σ →₀ ℕ // m.weight w ≤ d} :=
     (weightedDegreeSupport_finite w hw d).to_subtype
-  exact (Module.finrank_eq_nat_card_basis
-    (basisRestrictWeightedDegree (R := K) w d)).trans (Nat.card_coe_set_eq _)
+  let b := basisRestrictWeightedDegree (R := K) w d
+  let _ : FiniteDimensional K (restrictWeightedDegree (R := K) w d) :=
+    b.finiteDimensional_of_finite
+  have h := congrArg Cardinal.toNat (Module.finrank_eq_card_basis' b)
+  have hcard : Module.finrank K (restrictWeightedDegree (R := K) w d) =
+      Nat.card {m : σ →₀ ℕ // m.weight w ≤ d} := by
+    simpa [Nat.card] using h
+  exact hcard.trans (Nat.card_coe_set_eq _)
 
 /-! ### A nonuniform-weight mutation canary -/
 
