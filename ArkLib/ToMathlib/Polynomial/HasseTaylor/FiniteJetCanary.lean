@@ -42,4 +42,22 @@ example : hasseJet 2 (1 : ZMod 5) (taylor 2 X) = ![3, 1] := by
   funext i
   fin_cases i <;> norm_num [hasseJet_apply, taylor_X]
 
+/-- A map/shift commutation canary: the integral jet `[1, 2, 1]` of `(X + 1)²` maps to
+`[1, 0, 1]` in characteristic two. -/
+example :
+    (fun i ↦ (Int.castRingHom (ZMod 2))
+      (hasseJet 3 (0 : ℤ) (taylor 1 (X ^ 2)) i)) = ![1, 0, 1] := by
+  calc
+    _ = hasseJet 3 ((Int.castRingHom (ZMod 2)) 0 + (Int.castRingHom (ZMod 2)) 1)
+        ((X ^ 2 : ℤ[X]).map (Int.castRingHom (ZMod 2))) :=
+      map_hasseJet_taylor (Int.castRingHom (ZMod 2)) 3 1 0 (X ^ 2)
+    _ = ![1, 0, 1] := by
+      funext i
+      fin_cases i
+      · norm_num [hasseJet_apply, hasseDeriv_monomial]
+      · have hone : (1 + 1 : ZMod 2) = 0 := by decide
+        simpa [hasseJet_apply, hasseDeriv_monomial] using hone
+      · rw [hasseJet_apply, X_pow_eq_monomial]
+        simp [hasseDeriv_monomial]
+
 end Polynomial

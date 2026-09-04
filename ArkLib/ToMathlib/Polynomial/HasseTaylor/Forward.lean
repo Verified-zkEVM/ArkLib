@@ -155,6 +155,22 @@ theorem forwardTaylorTruncation_zero_comp (m n : ℕ) (a : R) (p : R[X]) :
 
 end Semiring
 
+section CommSemiring
+
+variable [CommSemiring R]
+
+/-- Successive changes of origin add their centers before finite forward truncation. -/
+theorem forwardTaylorTruncation_taylor (m : ℕ) (a b : R) (p : R[X]) :
+    forwardTaylorTruncation m b (taylor a p) =
+      forwardTaylorTruncation m (b + a) p := by
+  ext i
+  simp only [coeff_forwardTaylorTruncation]
+  split_ifs
+  · rw [hasseCoeffAt_taylor]
+  · rfl
+
+end CommSemiring
+
 section Ring
 
 variable [Ring R]
@@ -258,6 +274,25 @@ theorem forwardTaylorQuotient_eq_zero_of_mem_degreeLT (m : ℕ) (a : R) (p : R[X
     zero_divByMonic]
 
 end Ring
+
+section CommRing
+
+variable [CommRing R]
+
+/-- Successive changes of origin add their centers before taking the forward remainder. -/
+theorem forwardTaylorRemainder_taylor (m : ℕ) (a b : R) (p : R[X]) :
+    forwardTaylorRemainder m b (taylor a p) =
+      forwardTaylorRemainder m (b + a) p := by
+  rw [forwardTaylorRemainder, forwardTaylorRemainder, taylor_taylor,
+    forwardTaylorTruncation_taylor]
+
+/-- Successive changes of origin add their centers before taking the canonical tail quotient. -/
+theorem forwardTaylorQuotient_taylor (m : ℕ) (a b : R) (p : R[X]) :
+    forwardTaylorQuotient m b (taylor a p) =
+      forwardTaylorQuotient m (b + a) p := by
+  rw [forwardTaylorQuotient, forwardTaylorQuotient, forwardTaylorRemainder_taylor]
+
+end CommRing
 
 end
 

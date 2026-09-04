@@ -192,6 +192,14 @@ theorem hasseJet_taylor (m : ℕ) (r s : R) (p : R[X]) :
   ext i
   exact hasseCoeffAt_taylor r s i p
 
+/-- Mapping coefficients after a forward shift gives the jet at the mapped translated point. -/
+theorem map_hasseJet_taylor {S : Type*} [CommSemiring S] (f : R →+* S)
+    (m : ℕ) (r s : R) (p : R[X]) :
+    (fun i ↦ f (hasseJet m s (taylor r p) i)) =
+      hasseJet m (f s + f r) (p.map f) := by
+  rw [hasseJet_taylor]
+  simpa using map_hasseJet f m (s + r) p
+
 end CommSemiring
 
 section CommRing

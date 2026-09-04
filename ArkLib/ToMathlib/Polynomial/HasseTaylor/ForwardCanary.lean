@@ -30,6 +30,16 @@ example : forwardTaylorTruncation 3 (0 : ZMod 2) (X ^ 4) = 0 := by
   rw [forwardTaylorTruncation_X_pow]
   simp
 
+/-- A center-composition canary: two unit shifts cancel in characteristic two before
+order-two truncation. -/
+example :
+    forwardTaylorTruncation 2 (1 : ZMod 2) (taylor 1 (X ^ 2)) = 0 := by
+  rw [forwardTaylorTruncation_taylor]
+  have htwo : (1 + 1 : ZMod 2) = 0 := by decide
+  rw [htwo]
+  rw [forwardTaylorTruncation_X_pow]
+  simp
+
 /-- A high-truncation canary: all three Hasse coefficients retain the shifted quadratic, leaving
 both the remainder and its canonical quotient zero. -/
 example :
