@@ -17,9 +17,10 @@ elementary shift increment quotient and the paper's truncation-dependent backwar
 different constructions and are named separately.
 
 The moving-point API formalizes the finite form of the backward identity used as Equation (13)
-and its normalized remainder from Equation (16) in BCPZZ26. For truncation order `d`, correction
-term `j` has Hasse order `j + 1`, sign `(-1)^j`, and derivative evaluated at the moving point
-`a + X`. The numerator is divisible by `X ^ (d + 1)` and its normalized error by `X ^ d`.
+and its normalized remainder from Equation (16) of ECCC TR26-164. For truncation order `d`,
+correction term `j` has Hasse order `j + 1`, sign `(-1)^j`, and derivative evaluated at the
+moving point `a + X`. The numerator is divisible by `X ^ (d + 1)` and its normalized error by
+`X ^ d`.
 
 ## Main declarations
 
@@ -576,7 +577,8 @@ theorem coeff_normalizedBackwardTaylorError_eq_zero (a : R) (p : R[X]) (d n : â„
     (hn : n < d) : (normalizedBackwardTaylorError a p d).coeff n = 0 :=
   X_pow_dvd_iff.mp (X_pow_dvd_normalizedBackwardTaylorError a p d) n hn
 
-/-- Equation (16): multiplying the normalized moving error by `X` recovers its numerator. -/
+/-- Cleared-denominator form of Equation (16): multiplying the normalized moving error by `X`
+recovers its numerator. -/
 theorem X_mul_normalizedBackwardTaylorError (a : R) (p : R[X]) (d : â„•) :
     X * normalizedBackwardTaylorError a p d = backwardTaylorResidual a p d := by
   rw [normalizedBackwardTaylorError, backwardTaylorResidual_eq]
