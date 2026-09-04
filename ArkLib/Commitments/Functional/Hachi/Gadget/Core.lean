@@ -195,8 +195,8 @@ def balancedZmodDigitDecomposition (b digits : ℕ) (hb : 1 < b) (hq : q ≤ b ^
 `ZMod q` forces `q ≤ base ^ digits` (see `zmodDigitDecomposition`). That is the right demand for
 ordinary committed message coefficients, which are arbitrary residues. It is the *wrong* demand
 for Hachi's folded witness `z = Σᵢ cᵢ sᵢ`: at the `ℓ = 30` parameters (`q = 4294967197`,
-`b = 16`) with ArkLib's conservative `τ = 5` (`Params.lean`; [NOZ26] Figure 9 itself uses `τ = 4`,
-under a sharper `‖z‖∞` bound than is formalized here) one has `16⁵ < q`, so no `5`-digit base-`16`
+`b = 16`) with `τ = 5` (`Params.lean`; Figure 9's table says `4`, but §4.4's own rule gives `5`)
+one has `16⁵ < q`, so no `5`-digit base-`16`
 decomposition of every residue exists — and yet `τ = 5` is correct, because an honest `z` is
 *deterministically short*
 (`‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋`, [NOZ26] §4.4). The abstraction below separates the two notions rather than
@@ -367,8 +367,8 @@ theorem boundedBalancedZmodDigit_reconstruct {b digits bound : ℕ} (hb : 1 < b)
 `boundedBalancedZmodDigit` packaged with its conditional reconstruction law, at any `bound` within
 the balanced capacity of `digits` digits.
 
-This is the `τ = 5` instance of `Params.lean` (ArkLib's conservative choice, not [NOZ26]
-Figure 9's `τ = 4`): at `q = 4294967197`, `b = 16`, `digits = 5` the capacity is
+This is the `τ = 5` instance of `Params.lean` ([NOZ26] §4.4's own rule; Figure 9's table says
+`4`): at `q = 4294967197`, `b = 16`, `digits = 5` the capacity is
 `(16-1-8)·(1+16+256+4096+65536) = 7 · 69905 = 489335`, comfortably above the honest bound
 `2¹⁰ · 16 · 8 = 131072` — and `q ≤ 16⁵` is nowhere assumed (it is false). -/
 def boundedBalancedZmodDigitDecomposition (b digits bound : ℕ) (hb : 1 < b)

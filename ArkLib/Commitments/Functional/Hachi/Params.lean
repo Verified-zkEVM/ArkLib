@@ -8,7 +8,7 @@ import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
 import Mathlib.Tactic.NormNum.Prime
 
 /-!
-# The `ℓ = 30` Hachi parameters, with ArkLib's conservative `τ = 5`
+# The `ℓ = 30` Hachi parameters, at `τ = 5`
 
 The [NOZ26] Figure 9 parameter set — the one the Hachi paper benchmarks — **except for the
 folded-witness digit count `τ`**, together with the arithmetic facts the correctness chain consumes
@@ -24,15 +24,28 @@ about values*, and the theorems of `Correctness.lean` / `Concrete.lean` stay par
   α  = 10, d = 2^α = 1024   ring dimension of R_q               Figure 9
   n_A = n_B = n_D = 1  commitment-matrix heights                Figure 9
 
-  τ  = 5               folded-witness digit count   ← ArkLib's, NOT Figure 9's
+  τ  = 5               folded-witness digit count   ← §4.4's rule; Figure 9's table says 4
 ```
 
-**`τ` differs from the paper's.** Figure 9 lists `τ = 4` together with its own `‖z‖∞ ≤ 30583`.
-What is proved here is the *naive* deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` ([NOZ26] §4.4),
-and `131072` does not fit four balanced base-`16` digits, whose capacity is exactly the paper's
-`30583` (`balancedDigitCapacity_four_eq`). So `τ = 5` is the least digit count that bound admits
-(`tau_minimal`); `τ = 4` requires the sharper `‖z‖∞` analysis behind Figure 9's `30583`, which is
-not formalized here. Everything else in the table is Figure 9 verbatim.
+**`τ` differs from Figure 9's table, and agrees with the paper's own rule.** [NOZ26] §4.4 fixes the
+digit count as *the smallest integer `τ` with `b^τ > β`*, for the deterministic bound
+`β := 2ʳ·ω·b`. At the parameters above that is `β = 2¹⁰·16·16 = 262144`, and `16⁴ = 65536 < β`,
+so §4.4's own rule yields `τ = 5`. This file proves the sharper `β = 2ʳ·ω·⌊b/2⌋ = 131072` — the
+digits of `ŵ`, `t̂` lie in `[⌈−b/2⌉, ⌈b/2⌉−1]`, so `‖sᵢ‖∞ ≤ ⌊b/2⌋` and [Mic07] gives
+`‖cᵢ·sᵢ‖∞ ≤ ‖cᵢ‖₁·‖sᵢ‖∞` — and `τ = 5` remains the least count that admits it (`tau_minimal`).
+
+Figure 9 nevertheless tabulates `τ = 4`, alongside `z = 30583` for the maximum `ℓ∞` norm of `z`.
+That `30583` is *exactly* `balancedDigitCapacity 16 4 = (16−1−8)·(1+16+16²+16³)`
+(`balancedDigitCapacity_four_eq`) — the largest value four balanced base-`16` digits represent. So
+the tabulated `z` is the capacity of `τ = 4` rather than a bound established on `z`: §4.2 defines
+`τ := ⌈log_b β⌉` with `β` "the maximum `L∞` norm of `z`" but never bounds `β` below the §4.4
+figure, and Figure 3's `if ‖z‖∞ > β, abort` branch is never analyzed (§4.2 states only that
+"completeness follows directly from the protocol rationale"). Reaching `τ = 4` therefore needs a
+*statistical* completeness argument over that abort — concentration over the challenge's
+independently signed ±1 coefficients, since Figure 9 pairs `ω = 16` with `c = 16` — which the paper
+does not give and which is a separate track here. What this file proves is the deterministic
+reading. Everything else in the table is Figure 9 verbatim. See
+[`docs/kb/papers/NOZ26.md`](../../../../docs/kb/papers/NOZ26.md), "Known Divergences From ArkLib".
 
 ## Why `τ = 5` is not a full-width decomposition
 
@@ -69,6 +82,8 @@ what `BoundedDigitDecomposition` (`Gadget/Core.lean`) is for.
 
 ## References
 
+* [Micciancio, D., *Generalized Compact Knapsacks, Cyclic Lattices, and Efficient One-Way
+    Functions*][Mic07]
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
@@ -85,8 +100,10 @@ def hachiQ : ℕ := 4294967197
 def hachiB : ℕ := 16
 /-- The message / inner digit count `δ = ⌈log_b q⌉ = 8`. -/
 def hachiDelta : ℕ := 8
-/-- The folded-witness digit count `τ = 5`, independent of `δ` and not [NOZ26] Figure 9's `τ = 4`:
-it is the least count the bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` admits (`tau_minimal`). -/
+/-- The folded-witness digit count `τ = 5`, independent of `δ`: the least count the deterministic
+bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` admits (`tau_minimal`), and the value [NOZ26] §4.4's own rule
+("the smallest `τ` with `b^τ > β`") yields at these parameters. Figure 9's table says `4`; see the
+module docstring. -/
 def hachiTau : ℕ := 5
 /-- The outer folding parameter `r = 10`. -/
 def hachiR : ℕ := 10
@@ -104,8 +121,9 @@ def hachiN : ℕ := 1
 
 /-- The deterministic bound on the honest folded witness proved here:
 `‖z‖∞ ≤ 2ʳ · ω · ⌊b/2⌋ = 131072` (`vecLInftyNorm_honestZ_le`). This is the `zBound` the bounded `z`
-decomposition is sized for, and hence what fixes `τ = 5`; [NOZ26] Figure 9's sharper `30583` is not
-formalized here. -/
+decomposition is sized for, and hence what fixes `τ = 5`. It is sharper than [NOZ26] §4.4's own
+`2ʳ·ω·b = 262144`, which fixes the same `τ`; Figure 9's tabulated `30583` is not a bound on `z` at
+all but the capacity of its `τ = 4` (see the module docstring). -/
 def honestZBound : ℕ := 2 ^ hachiR * hachiOmega * (hachiB / 2)
 
 /-! ## The modulus -/
@@ -170,16 +188,20 @@ theorem honestZBound_le_capacity : honestZBound ≤ balancedDigitCapacity hachiB
 /-! ### `τ = 5` is minimal, not merely sufficient
 
 Four digits have capacity `7·(1+16+16²+16³) = 30583 < 131072`, and capacity is monotone in the digit
-count (`balancedDigitCapacity_mono`), so the failure propagates to every `t < 5`. The `30583` is
-precisely the value [NOZ26] Figure 9 lists for the maximum `ℓ∞` norm of `z` alongside its `τ = 4`:
-four digits are saturated on the nose by the paper's sharper bound, and need five under the naive
-one proved here. -/
+count (`balancedDigitCapacity_mono`), so the failure propagates to every `t < 5`.
+
+That `30583` is precisely the value [NOZ26] Figure 9 tabulates for the maximum `ℓ∞` norm of `z`
+alongside its `τ = 4`. The coincidence is the point: the tabulated `z` is the *capacity* of four
+balanced base-`16` digits, not a bound derived on `z`. No bound below §4.4's `2ʳ·ω·b = 262144`
+appears anywhere in the paper, and §4.4's own rule ("the smallest `τ` with `b^τ > β`") yields `5` at
+both that figure and the sharper `131072` proved here. -/
 
 /-- `∑_{e<4} 16ᵉ = 4369`. -/
 theorem digitOnesValue_four_eq : digitOnesValue hachiB 4 = 4369 := by
   norm_num [digitOnesValue, hachiB, Finset.sum_range_succ]
 
-/-- `balancedDigitCapacity 16 4 = 30583` — which is exactly [NOZ26] Figure 9's `z` bound. -/
+/-- `balancedDigitCapacity 16 4 = 30583` — exactly the `z` value [NOZ26] Figure 9 tabulates beside
+its `τ = 4`, which is what identifies that entry as four digits' capacity rather than a bound. -/
 theorem balancedDigitCapacity_four_eq : balancedDigitCapacity hachiB 4 = 30583 := by
   rw [balancedDigitCapacity, digitOnesValue_four_eq]
   norm_num [hachiB]
@@ -291,7 +313,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- **Perfect completeness of Hachi's polynomial-evaluation link at this file's profile** — the
 [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`, `δ = 8`, `r = m = 10`, `ω = 16`,
-`α = 10`) with ArkLib's conservative `τ = 5` — ball-relaxed reading, error `0`.
+`α = 10`) at `τ = 5` — ball-relaxed reading, error `0`.
 
 Every hypothesis is discharged from this file's arithmetic: the message side by
 `q_le_sixteen_pow_delta`, the `z` side by `honestZBound_le_capacity` (capacity `489335 ≥ 131072`)
@@ -322,9 +344,9 @@ theorem quadEvalLink_perfectCompleteness_atProfile
     (by norm_num [hachiDelta]) hachiTau_pos ringDim_pos
 
 /-- **Paper-exact perfect completeness at this file's profile** — the Figure 3 *verifier* verbatim
-(Eq. (20)'s balanced-digit box `S₁₆ = [-8, 7]`, not the enclosing `ℓ∞` ball), at ArkLib's
-conservative `τ = 5`, error `0`. "Paper-exact" here qualifies the verifier, not the digit count: the
-`τ` is ours, Figure 9's is `4`.
+(Eq. (20)'s balanced-digit box `S₁₆ = [-8, 7]`, not the enclosing `ℓ∞` ball), at `τ = 5`,
+error `0`. "Paper-exact" here qualifies the verifier, not the digit count: `τ = 5` is what §4.4's
+rule gives, while Figure 9's table says `4`.
 
 Same discharge as the ball-relaxed reading, with the box range steps in place of the ball ones:
 `boundedBalancedZmodDigit_valMinAbs_mem` puts the honest `ẑ` digits exactly in `S₁₆`, and does so

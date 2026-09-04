@@ -49,8 +49,8 @@ re-export, and this file is the umbrella for the whole development.
   carries **two** decompositions, deliberately: the full-width `DigitDecomposition` for arbitrary
   residues (message and inner digits, `δ = ⌈log_b q⌉`) and the short-input
   `BoundedDigitDecomposition` for the folded witness `z`, whose digit count `τ` is set by the
-  deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at ArkLib's conservative
-  reading of the `ℓ = 30` parameters — see `Params.lean`).
+  deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at the `ℓ = 30`
+  parameters — see `Params.lean`).
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings
@@ -77,12 +77,14 @@ re-export, and this file is the umbrella for the whole development.
 * `Concrete.lean` — the same scheme at the concrete Ajtai lift commitment `D · (z ‖ ρ)`, where
   the whole honest run is computable; `scripts/HachiRuntime.lean` runs it.
 * `Params.lean` — the [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`,
-  `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`) **with ArkLib's conservative `τ = 5`** in place of
-  Figure 9's `τ = 4`, plus the arithmetic facts the chain consumes at them: `16⁵ < q` — the reason
-  `τ` needs the bounded decomposition — and `honestZBound ≤ balancedDigitCapacity 16 5`. The `τ`
-  divergence is deliberate: this development proves only the naive `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072`,
-  for which `5` digits are minimal (`tau_minimal`), whereas Figure 9's `τ = 4` rests on its own
-  sharper bound `30583` (not formalized here).
+  `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`) **at `τ = 5`** rather than Figure 9's tabulated
+  `τ = 4`, plus the arithmetic facts the chain consumes at them: `16⁵ < q` — the reason `τ` needs
+  the bounded decomposition — and `honestZBound ≤ balancedDigitCapacity 16 5`. `τ = 5` is what
+  §4.4's own rule ("the smallest `τ` with `b^τ > β`") yields here, under both §4.4's
+  `β = 2ʳ·ω·b = 262144` and the sharper `131072` proved in this development, for which `5` digits
+  are minimal (`tau_minimal`). Figure 9's tabulated `z = 30583` is exactly four digits' balanced
+  capacity, so it records the capacity of `τ = 4` rather than a bound on `z`; see `Params.lean`'s
+  module docstring and `docs/kb/papers/NOZ26.md`.
 
 Importing this file brings in the whole development. A new file joins its folder umbrella; the
 umbrella chain carries it here.

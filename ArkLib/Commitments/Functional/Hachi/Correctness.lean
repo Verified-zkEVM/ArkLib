@@ -53,7 +53,7 @@ repository admits; each link's own completeness is axiom-clean.
   `commit`. Its `τ` (folded-witness digit count) and `zBound` are **independent parameters**: the
   message and inner digit counts stay `δ = ⌈log_b q⌉`, while `τ` is constrained only by
   `hcap : zBound ≤ balancedDigitCapacity P.b τ` and `hzb : 2ʳ·ω·⌊b/2⌋ ≤ zBound`. At the `ℓ = 30`
-  parameters with ArkLib's conservative `τ = 5` (`Params.lean`) that is `τ = 5 < δ = 8`, and
+  parameters, where `τ = 5` (`Params.lean`), that is `τ = 5 < δ = 8`, and
   `q ≤ 16⁵` is nowhere assumed — it is false.
 * `hachiNonrecursive_perfectCorrectness`: `Commitment.perfectCorrectness` for it, through the
   generic bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`

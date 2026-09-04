@@ -90,8 +90,8 @@ home_page/            site assets and assembled website root
     is conditional on `|x| ≤ bound`, realized by `boundedBalancedZmodDigitDecomposition` on the
     balanced interval `[-⌊b/2⌋·S, (b-1-⌊b/2⌋)·S]`, `S = digitOnesValue b digits`. It exists for
     Hachi's folded witness `z = Σᵢ cᵢ sᵢ`, whose digit count `τ` is set by the deterministic bound
-    `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` and **not** by `q`: at the `ℓ = 30` parameters with ArkLib's conservative
-    `τ = 5` (see `Params.lean`) one has `16⁵ < q`, so no full-width `5`-digit decomposition exists,
+    `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` and **not** by `q`: at the `ℓ = 30` parameters, where `τ = 5`
+    (see `Params.lean`), one has `16⁵ < q`, so no full-width `5`-digit decomposition exists,
     yet `τ = 5` is perfectly correct. `gadgetDecomposeFun` (a bare per-coefficient digit map) is
     the shared computational core of both, so the layout and norm bookkeeping is proved once.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
@@ -339,22 +339,27 @@ home_page/            site assets and assembled website root
     (`nonrecursiveLiftCom`), where every honest field is computable; it carries the same `τ` /
     `zBound` parameters. `scripts/HachiRuntime.lean` (the `hachi-runtime` executable) runs it at
     toy parameters with `τ = 1 < δ = 2`, so the bounded `z` decomposition is exercised, and checks
-    the bounded digit function directly at the production digit parameters `b = 16` and ArkLib's
-    `τ = 5`.
+    the bounded digit function directly at the production digit parameters `b = 16` and `τ = 5`.
   - `Params.lean` — the [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197` — primality proved
     by `norm_num`'s Pratt certificate — `b = 16`, `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`,
-    `d = 1024`) **with ArkLib's conservative `τ = 5`** in place of Figure 9's own `τ = 4`. The `τ`
-    divergence is deliberate and is the one place this profile is not Figure 9: only the naive
-    bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` is formalized here, and five digits are minimal for it,
-    whereas Figure 9's `τ = 4` rests on its own sharper bound `30583`. Do not describe this as the
-    exact Figure 9 profile. The file carries the arithmetic the chain consumes at it:
+    `d = 1024`) **at `τ = 5`** rather than Figure 9's tabulated `τ = 4`. The `τ` divergence is
+    deliberate and is the one place this profile departs from Figure 9's table — but it is *not* a
+    departure from the paper's own prescription: §4.4 fixes `τ` as the smallest integer with
+    `b^τ > β` for `β := 2ʳ·ω·b = 262144`, and `16⁴ = 65536`, so §4.4's rule yields `5`. The same
+    holds under the sharper `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋ = 131072` formalized here, for which five digits are
+    minimal. Do not describe this as the exact Figure 9 profile, and do not describe `τ = 5` as
+    conservative relative to the paper. The file carries the arithmetic the chain consumes at it:
     `q ≤ 16⁸` with `Nat.clog 16 q = 8`, the deliberate `16⁵ < q`, the balanced capacity `489335` of
     five base-`16` digits with the honest bound `131072` fitting inside it, and `μ₀ = 57344`.
     **`τ = 5` is minimal, not merely sufficient**: `tau_minimal` rules out every `t < 5`, since
     `balancedDigitCapacity 16 4 = 30583 < 131072` and capacity is monotone
-    (`balancedDigitCapacity_mono`). That `30583` is exactly [NOZ26] Figure 9's own `z` bound, listed
-    alongside its `τ = 4`, so the paper's `τ = 4` is admissible only under a sharper `‖z‖∞` bound
-    than the naive `2ʳ·ω·⌊b/2⌋` proved here. The file then instantiates the `τ = 5` `QuadEval` link
+    (`balancedDigitCapacity_mono`). That `30583` is exactly the `z` value [NOZ26] Figure 9
+    tabulates alongside its `τ = 4` — i.e. the entry records four digits' *capacity*, not a bound
+    established on `z`; the paper bounds `‖z‖∞` nowhere below §4.4's `262144`, and Figure 3's
+    `if ‖z‖∞ > β, abort` branch is never analyzed. Reaching `τ = 4` needs a statistical
+    completeness argument over that abort, which the paper does not give. See
+    [`../kb/papers/NOZ26.md`](../kb/papers/NOZ26.md), "Known Divergences From ArkLib". The file
+    then instantiates the `τ = 5` `QuadEval` link
     with every hypothesis discharged, in **both** readings —
     `quadEvalLink_perfectCompleteness_atProfile` (ball-relaxed) and `…_paperRelOut` (Eq. (20)'s box
     `S₁₆` verbatim) — which is the machine-checked form of "no `q ≤ 16⁵` is required". Finally it

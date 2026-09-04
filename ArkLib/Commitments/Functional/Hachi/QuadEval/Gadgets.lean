@@ -166,7 +166,7 @@ def zDecompBounded {n zDigits zBound : Nat} {base : ZMod q}
 omit [NeZero q] in
 /-- **Conditional roundtrip `z = J *ᵥ ẑ` for the bounded decomposition**: the verifier's Eq. (20)
 reconstruction of `z` from `ẑ`, valid exactly when `z` is within the decomposition's bound. At the
-`ℓ = 30` parameters with ArkLib's conservative `τ = 5` (`Params.lean`) this is what makes that
+`ℓ = 30` parameters, where `τ = 5` (`Params.lean`), this is what makes that
 digit count correct while `q ≤ 16⁵` is false. -/
 theorem z_eq_jMatrix_bounded {n zDigits zBound : Nat} {base : ZMod q} (hd : 0 < zDigits)
     (h1 : 1 ≤ Φ.φ.natDegree) (bddZ : BoundedDigitDecomposition base zDigits zBound)

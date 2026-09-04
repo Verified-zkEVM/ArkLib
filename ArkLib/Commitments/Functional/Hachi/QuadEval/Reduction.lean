@@ -522,8 +522,8 @@ decomposition `ẑ = J⁻¹(z)` of the masked opening `z = Σᵢ cᵢ sᵢ`.
 
 The `z` step uses a **`BoundedDigitDecomposition`** (`Gadget/Core.lean`), *not* a full-width one:
 `z` is deterministically short in an honest run, so the digit count `τ = zDigits` is sized from
-that bound and may be far below `⌈log_b q⌉` (at the `ℓ = 30` parameters with ArkLib's
-conservative `τ = 5`, `Params.lean`, that is `τ = 5 < δ = 8`, and `q ≤ 16⁵` is false). The digit
+that bound and may be far below `⌈log_b q⌉` (at the `ℓ = 30` parameters, where `τ = 5`
+(`Params.lean`), that is `τ = 5 < δ = 8`, and `q ≤ 16⁵` is false). The digit
 map is total, so this remains a plain computable function — only the
 round-trip `z = J ẑ` needs shortness, and that is discharged in the completeness layer. The carrier
 step keeps the ordinary full-width `DigitDecomposition`, since carrier coefficients are arbitrary

@@ -61,8 +61,8 @@ by running it larger.
 `z` decomposition (`boundedBalancedZmodDigitDecomposition`) rather than a full-width one; `ω` is
 `1` so that the honest bound `2ʳ·ω·⌊b/2⌋ = 1` fits the balanced capacity of one base-`3` digit,
 which is also `1` (`hcapToy` / `hzbToy`). Beyond the composed run, the bounded digit function is
-checked directly at the **production** digit parameters `q = 4294967197`, `b = 16` and ArkLib's
-conservative `τ = 5` (`Params.lean`; [NOZ26] Figure 9 itself uses `τ = 4`)
+checked directly at the **production** digit parameters `q = 4294967197`, `b = 16` and
+`τ = 5` (`Params.lean`; [NOZ26] Figure 9's table says `τ = 4`, but §4.4's own rule gives `5`)
 (`boundedDigitsReconstructProd`, `boundedDigitsInBoxProd`) — cheap, and the arithmetic an
 extraction target has to reproduce. The full `ℓ = 30` prover is *not* run here.
 -/
@@ -455,9 +455,9 @@ def openingAccepts : Unit → Bool := fun _ => honestVerdict () == some true
 
 The composed run above already goes through `boundedBalancedZmodDigitDecomposition` at `τ = 1`.
 These checks exercise the same digit function *at the production digit parameters*
-(`q = 4294967197`, `b = 16`, `τ = 5` — `HachiParams`, ArkLib's conservative reading of the `ℓ = 30`
-parameters, not [NOZ26] Figure 9's `τ = 4`), where the interesting arithmetic lives and
-where a full-width `5`-digit decomposition is impossible (`16⁵ < q`,
+(`q = 4294967197`, `b = 16`, `τ = 5` — `HachiParams`, the `ℓ = 30` parameters at the digit count
+[NOZ26] §4.4's rule yields, not Figure 9's tabulated `4`), where the interesting arithmetic lives
+and where a full-width `5`-digit decomposition is impossible (`16⁵ < q`,
 `HachiParams.sixteen_pow_tau_lt_q`). Cheap: a handful of `ZMod q` sums. -/
 
 open ArkLib.Lattices.Ajtai.InnerOuter.HachiParams in
