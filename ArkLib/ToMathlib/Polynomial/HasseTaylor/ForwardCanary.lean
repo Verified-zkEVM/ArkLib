@@ -58,4 +58,24 @@ example :
   exact ⟨forwardTaylorRemainder_eq_zero_of_mem_degreeLT 3 1 (X ^ 2) hp,
     forwardTaylorQuotient_eq_zero_of_mem_degreeLT 3 1 (X ^ 2) hp⟩
 
+/-- An affine quotient-factor canary: the `c ^ m = 2²` factor is essential here. -/
+example :
+    forwardTaylorQuotient 2 (1 : ZMod 5)
+      ((taylor 1 (X ^ 3)).comp (C 2 * X)) = 1 + C 3 * X := by
+  rw [forwardTaylorQuotient_taylor_comp_C_mul_X]
+  ext i
+  rw [coeff_C_mul, comp_C_mul_X_coeff, coeff_forwardTaylorQuotient]
+  rw [X_pow_eq_monomial]
+  by_cases hi : i < 2
+  · interval_cases i
+    · norm_num [hasseCoeffAt_apply, hasseDeriv_monomial, coeff_add, coeff_one, coeff_X]
+      decide
+    · norm_num [hasseCoeffAt_apply, hasseDeriv_monomial, coeff_add, coeff_one, coeff_X]
+      decide
+  · have hchoose : Nat.choose 3 (i + 2) = 0 := Nat.choose_eq_zero_of_lt (by omega)
+    have hi0 : i ≠ 0 := by omega
+    have hi1 : 1 ≠ i := by omega
+    simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_one, coeff_X,
+      hi0, hi1]
+
 end Polynomial
