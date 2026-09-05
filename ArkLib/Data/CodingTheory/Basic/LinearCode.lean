@@ -81,7 +81,7 @@ theorem projection_injective
   have hdiff : hammingDist u v ≥ ‖C‖₀ := by
     simp only [Code.dist, ne_eq, ge_iff_le]
     refine Nat.sInf_le ?_
-    refine Set.mem_setOf.mpr ?_
+    refine Set.mem_ofPred.mpr ?_
     use u
     refine exists_and_left.mp ?_
     use v
@@ -105,13 +105,18 @@ theorem projection_injective
   let diff : Set n := {i : n | ¬i ∈ S}
   have hsub : D ⊆ diff  := by
     unfold diff
-    refine Set.subset_setOf.mpr ?_
+    refine Set.subset_ofPred.mpr ?_
     intro x hxd
     solve_by_elim
   have hcard_compl : @card diff (ofFinite diff) = ‖C‖₀ - 1 := by
+    classical
     unfold diff
-    simp only [ge_iff_le, card_coe, Set.coe_setOf, card_subtype_compl] at *
-    rw[hS]
+    rw [← @Nat.card_eq_fintype_card diff (ofFinite diff)]
+    change Nat.card {i : n // i ∉ S} = ‖C‖₀ - 1
+    rw [Nat.card_eq_fintype_card]
+    rw [Fintype.card_subtype_compl (fun i : n ↦ i ∈ S)]
+    rw [Fintype.card_coe] at hS ⊢
+    rw [hS]
     have stronger : ‖C‖₀ ≤ card n := by
       apply Code.dist_le_card
     omega
@@ -300,7 +305,7 @@ lemma alphabetRate_cast_eq [Semiring F] {s : ℕ}
 /-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
 Definition 3.7 [BCGM25]. -/
-def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
+def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.domRestrict T c
 
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
 as the set of projected codewords.
@@ -367,12 +372,15 @@ noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode �
 Theorem 2.2.7 [GRS25]. -/
 lemma gen_matrix_exists [Field F] (LC : LinearCode ι F) :
     ∃ (G : Matrix (Fin (dim LC)) ι F), LC = fromRowGenMat G := by
+  unfold dim
   unfold fromRowGenMat
   have LC_basis := Module.finBasis F LC
   let G : Matrix (Fin (Module.finrank F ↥LC)) ι F :=
     fun i => LC_basis i
   use G
-  simp only [range_vecMulLinear, G, Matrix.row]
+  change LC = LinearMap.range G.vecMulLinear
+  rw [range_vecMulLinear]
+  change LC = Submodule.span F (Set.range fun i => (LC_basis i : ι → F))
   ext x
   rw [Submodule.mem_span_range_iff_exists_fun]
   constructor
@@ -450,7 +458,7 @@ noncomputable def genMatrixCols [Field F] (LC : LinearCode ι F) :
 /-- The dimension of a linear code equals the rank of its associated generator matrix.
 -/
 lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
-  G.rank = dim (fromColGenMat G) := rfl
+    G.rank = dim (fromColGenMat G) := rfl
 
 end
 

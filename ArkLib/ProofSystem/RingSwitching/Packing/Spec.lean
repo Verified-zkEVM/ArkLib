@@ -8,6 +8,12 @@ import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 
+/-!
+# ArkLib.ProofSystem.RingSwitching.Packing.Spec
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace RingSwitching
 
 /-!
@@ -104,11 +110,12 @@ instance : OracleInterface (Fin κ → L) := OracleInterface.instDefault
 -- `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound` along with the spec itself.
 -- Anonymous instances are looked up globally regardless of namespace, so no shim is needed.
 
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecSumcheckLoopWithDegree (L:=L) ℓ' d).Message j)
-  := instOracleInterfaceMessageSeqCompose
+instance {d : ℕ} : ∀ j,
+    OracleInterface ((pSpecSumcheckLoopWithDegree (L := L) ℓ' d).Message j) :=
+  instOracleInterfaceMessageSeqCompose
 
-instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L:=L) ℓ').Message j)
-  := instOracleInterfaceMessageSeqCompose
+instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L := L) ℓ').Message j) :=
+  instOracleInterfaceMessageSeqCompose
 
 -- The message interface of `pSpecFinalSumcheck` is the canonical in-the-clear instance of
 -- the one-message wire `pSpecMessage` (`RingSwitching/RoundVerifiers.lean`).
@@ -139,11 +146,11 @@ instance : ∀ i, OracleInterface ((fullPspec κ (L:=L) (K:=K) P (ℓ':=ℓ') ml
 -- globally, so no shim is needed.
 
 instance {d : ℕ} : ∀ j,
-    SampleableType ((pSpecSumcheckLoopWithDegree (L:=L) ℓ' d).Challenge j)
-  := instSampleableTypeChallengeSeqCompose
+    SampleableType ((pSpecSumcheckLoopWithDegree (L := L) ℓ' d).Challenge j) :=
+  instSampleableTypeChallengeSeqCompose
 
-instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
-  := instSampleableTypeChallengeSeqCompose
+instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L := L) ℓ').Challenge j) :=
+  instSampleableTypeChallengeSeqCompose
 
 -- `pSpecFinalSumcheck` has no challenges; the empty `SampleableType` instance comes with
 -- `pSpecMessage` (`RingSwitching/RoundVerifiers.lean`).

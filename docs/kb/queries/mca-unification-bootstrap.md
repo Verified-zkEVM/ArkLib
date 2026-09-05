@@ -1,5 +1,9 @@
 # MCA unification — reviewed execution plan (new PR on top of `main`)
 
+> **Historical record (2026-08-05).** Declaration names and file paths below predate the
+> `ProximityGenerator/` rename and the naming pass that landed with the polynomial-generator PR;
+> for the current paper-to-Lean map see `docs/kb/audits/bcgm25-mca-generators.md`.
+
 **Status: S0–S6 EXECUTED + ADVERSARIALLY REVIEWED 2026-08-05, 7 commits on
 `feat/mca-unification` (`5334b21c..5a51c7f0`), unpushed.** Full `lake build ArkLib` green;
 `#print axioms` = `[propext, Classical.choice, Quot.sound]` on `tensor_isMCAGenerator`,
@@ -220,8 +224,7 @@ Wiki: no command/structure/blueprint change ⇒ no `docs/wiki/` update owed. Reg
 3. A regression probe: `IsMCA` at `A := F` is propositionally the pre-PR definition (so #610/#611
    rebase against a semantics-preserving change on their axis).
 4. A probe exhibiting the tight bound's mechanism: the case-(b) family `w` is `x'`-independent.
-5. `lint-style.sh` no worse than `main` kind-by-kind; `check-imports`, `check-docs-integrity`,
-   `kb/check_generated`, `lintWhitespace` pass.
+5. `lake exe lint-style`, `check-imports`, `check-docs-integrity`, and `kb/check_generated` pass.
 
 ## 7. Paper findings to raise with the BCGM25 authors
 

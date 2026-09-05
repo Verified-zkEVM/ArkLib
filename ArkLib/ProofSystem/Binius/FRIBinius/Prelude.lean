@@ -34,7 +34,7 @@ variable [hdiv : Fact (ϑ ∣ ℓ')]
 
 omit [NeZero κ] in
 lemma card_bool_hypercube_eq :
-  Fintype.card (Fin κ → Fin 2) = 2 ^ κ := by
+    Fintype.card (Fin κ → Fin 2) = 2 ^ κ := by
   simp only [Fintype.card_pi, Fintype.card_fin, prod_const, card_univ]
 
 def hypercubeEquivFin : (Fin κ → Fin 2) ≃ Fin (2 ^ κ) :=

@@ -106,6 +106,7 @@ section Restrict
 variable {n : ℕ}
 
 /-- Take the first `m ≤ n` rounds of a `ProtocolSpec n` -/
+@[implicit_reducible]
 def take (m : ℕ) (h : m ≤ n) (pSpec : ProtocolSpec n) : ProtocolSpec m :=
   {dir := Fin.take m h pSpec.dir, «Type» := Fin.take m h pSpec.«Type»}
 
@@ -271,7 +272,9 @@ section Instances
 /-- There is only one protocol specification with 0 messages (the empty one) -/
 instance : Unique (ProtocolSpec 0) where
   default := empty
-  uniq := fun ⟨_, _⟩ => by simp; constructor <;> (funext i; exact Fin.elim0 i)
+  uniq := fun ⟨_, _⟩ => by
+    simp only [mk.injEq]
+    constructor <;> (funext i; exact Fin.elim0 i)
 
 -- Note these strange instance syntheses. This is necessary to avoid diamonds later on when
 -- going to sequential composition.
@@ -516,6 +519,26 @@ abbrev concat {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pS
     Transcript m.succ pSpec :=
   Fin.snoc T msg
 
+/-- Appending a message preserves every earlier transcript entry. -/
+@[simp]
+lemma concat_castSucc {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec)
+    (i : Fin m) : T.concat msg i.castSucc = T i := by
+  unfold concat
+  exact @Fin.snoc_castSucc m.val (fun i => pSpec⟦:m.succ.val⟧.«Type» i) msg T i
+
+/-- The last entry of a transcript after appending a message is that message. -/
+@[simp]
+lemma concat_last {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec) :
+    T.concat msg (Fin.last m) = msg := by
+  unfold concat
+  exact @Fin.snoc_last m.val (fun i => pSpec⟦:m.succ.val⟧.«Type» i) msg T
+
+/-- The sole entry of a one-round transcript after appending its message. -/
+@[simp]
+lemma concat_zero {pSpec : ProtocolSpec 1} (msg : pSpec.«Type» (0 : Fin 1))
+    (T : Transcript (Fin.castSucc (0 : Fin 1)) pSpec) : T.concat msg (0 : Fin 1) = msg := by
+  exact concat_last msg T
+
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
 
 variable {k : Fin (n + 1)}
@@ -655,6 +678,7 @@ instance challengeOracleInterface {pSpec : ProtocolSpec n} :
     toOC.impl := fun _ => do read }
 
 -- dtumad: Longer term I think you want this, but need to change `[_]ₒ` stuff for that
+@[instance_reducible]
 def challengeOracleInterface' {pSpec : ProtocolSpec n} :
     OracleInterface (∀ i, pSpec.Challenge i) where
   Query := pSpec.ChallengeIdx
@@ -749,7 +773,7 @@ what VCV-io needs to preserve the uniform distribution on challenges under the l
 theorem lawfulSubSpecOfChallengeReindex :
     letI := subSpecOfChallengeReindex f hf
     [p.Challenge]ₒ ˡ⊂ₒ [q.Challenge]ₒ := by
-  letI := subSpecOfChallengeReindex f hf
+  let := subSpecOfChallengeReindex f hf
   exact ⟨challengeReindexResponse_bijective f hf⟩
 
 /-- Two reindexings into a common protocol have disjoint query images as soon as their index maps
@@ -761,8 +785,8 @@ theorem disjointSubSpecOfChallengeReindex {k' : ℕ} {p' : ProtocolSpec k'}
     letI := subSpecOfChallengeReindex f hf
     letI := subSpecOfChallengeReindex f' hf'
     OracleSpec.DisjointSubSpec [p.Challenge]ₒ [p'.Challenge]ₒ [q.Challenge]ₒ := by
-  letI := subSpecOfChallengeReindex f hf
-  letI := subSpecOfChallengeReindex f' hf'
+  let := subSpecOfChallengeReindex f hf
+  let := subSpecOfChallengeReindex f' hf'
   exact ⟨fun t t' h => hdisj t.1 t'.1 (congrArg Sigma.fst h)⟩
 
 end ChallengeReindex
@@ -795,7 +819,8 @@ the input statement (i.e. we can always transform a given reduction into one whe
 random salt). -/
 @[inline, reducible]
 def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
-    OracleSpec (((i : pSpec.ChallengeIdx) × (challengeOracleInterfaceSR Statement pSpec i).Query)) :=
+    OracleSpec
+      ((i : pSpec.ChallengeIdx) × (challengeOracleInterfaceSR Statement pSpec i).Query) :=
   [pSpec.Challenge]ₒ'(challengeOracleInterfaceSR Statement pSpec)
 
 alias fsChallengeOracle := srChallengeOracle
@@ -857,8 +882,7 @@ def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
 def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
     [∀ i, SampleableType (pSpec.Challenge i)] :
     QueryImpl (srChallengeOracle Statement pSpec)
-      (StateT (QueryImpl (srChallengeOracle Statement pSpec) Id) ProbComp)
-    :=
+      (StateT (QueryImpl (srChallengeOracle Statement pSpec) Id) ProbComp) :=
   fun | ⟨i, t⟩ => fun f => pure (f ⟨i, t⟩, f)
 
 alias fsChallengeQueryImpl' := srChallengeQueryImpl'

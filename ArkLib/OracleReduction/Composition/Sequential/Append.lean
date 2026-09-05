@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 import ArkLib.OracleReduction.Security.RoundByRound
+import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
   # Sequential Composition of Two (Oracle) Reductions
@@ -81,7 +82,9 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
 
   /- The combined prover's input function is the first prover's input function, except for when the
   first protocol is empty, in which case it is the second prover's input function -/
-  input := fun ctxIn => by simp; exact P₁.input ctxIn
+  input := fun ctxIn => by
+    simp only [Function.comp_apply, Fin.cast_zero, Fin.append_zero_of_succ_left]
+    exact P₁.input ctxIn
 
   /- The combined prover sends messages according to the round index `i` as follows:
   - if `i < m`, then it sends the message & updates the state as the first prover
@@ -93,19 +96,25 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
       Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
-      simp [hi, Fin.vappend_left_of_lt] at hDir ⊢
-      simp [this] at state
+      simp only [hi, Fin.vappend_left_of_lt, Order.lt_add_one_iff, Order.add_one_le_iff,
+        ↓reduceDIte] at hDir ⊢
+      simp only [this, ↓reduceDIte] at state
       exact P₁.sendMessage ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
-      · simp [hi', Fin.vappend_right_of_not_lt] at hDir state ⊢
+      · simp only [hi', lt_self_iff_false, not_false_eq_true,
+          Fin.vappend_right_of_not_lt, tsub_self,
+          lt_add_iff_pos_right, Order.lt_one_iff, ↓reduceDIte, zero_add,
+          eq_rec_constant] at hDir state ⊢
         exact (do
           let ctxIn₂ ← P₁.output state
           letI state₂ := P₂.input ctxIn₂
           P₂.sendMessage ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
-        simp [hi, Fin.vappend_right_of_not_lt] at hDir ⊢
-        simp [hi1] at state
+        simp only [hi, not_false_eq_true, Fin.vappend_right_of_not_lt,
+          Order.lt_add_one_iff, Order.add_one_le_iff, ↓reduceDIte,
+          Nat.reduceSubDiff, eq_rec_constant] at hDir ⊢
+        simp only [hi1, ↓reduceDIte, eq_rec_constant] at state
         exact P₂.sendMessage ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state)
 
   /- Receiving challenges is implemented essentially the same as sending messages, modulo the
@@ -115,19 +124,25 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
       Fin.cast, Fin.castLT, Fin.succ, Fin.castSucc] at hDir state ⊢
     by_cases hi : i < m
     · haveI : i < m + 1 := by omega
-      simp [hi, Fin.vappend_left_of_lt] at hDir ⊢
-      simp [this] at state
+      simp only [hi, Fin.vappend_left_of_lt, Order.lt_add_one_iff, Order.add_one_le_iff,
+        ↓reduceDIte] at hDir ⊢
+      simp only [this, ↓reduceDIte] at state
       exact P₁.receiveChallenge ⟨⟨i, hi⟩, hDir⟩ state
     · by_cases hi' : i = m
-      · simp [hi', Fin.vappend_right_of_not_lt] at hDir state ⊢
+      · simp only [hi', lt_self_iff_false, not_false_eq_true,
+          Fin.vappend_right_of_not_lt, tsub_self,
+          lt_add_iff_pos_right, Order.lt_one_iff, ↓reduceDIte, zero_add,
+          eq_rec_constant] at hDir state ⊢
         exact (do
           let ctxIn₂ ← P₁.output state
           letI state₂ := P₂.input ctxIn₂
           P₂.receiveChallenge ⟨⟨0, by omega⟩, hDir⟩ state₂)
       · haveI hi1 : ¬ i < m + 1 := by omega
         haveI hi2 : i - (m + 1) + 1 = i - m := by omega
-        simp [hi, Fin.vappend_right_of_not_lt] at hDir ⊢
-        simp [hi1] at state
+        simp only [hi, not_false_eq_true, Fin.vappend_right_of_not_lt,
+          Order.lt_add_one_iff, Order.add_one_le_iff, ↓reduceDIte,
+          Nat.reduceSubDiff, eq_rec_constant] at hDir ⊢
+        simp only [hi1, ↓reduceDIte, eq_rec_constant] at state
         exact P₂.receiveChallenge ⟨⟨i - m, by omega⟩, hDir⟩ (dcast (by simp [hi2]) state)
 
   /- The combined prover's output function has two cases:
@@ -137,13 +152,15 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
   output := fun state => by
     dsimp [Fin.append, Fin.addCases, Fin.tail, Fin.cast, Fin.last, Fin.subNat] at state
     by_cases hn : n = 0
-    · simp [hn] at state
+    · simp only [hn, add_zero, lt_add_iff_pos_right, Order.lt_one_iff,
+        ↓reduceDIte] at state
       exact (do
         let ctxIn₂ ← P₁.output state
         letI state₂ := P₂.input ctxIn₂
         P₂.output (dcast (by simp [hn]) state₂))
     · haveI : m + n - (m + 1) + 1 = n := by omega
-      simp [hn] at state
+      simp only [Order.lt_add_one_iff, add_le_iff_nonpos_right,
+        nonpos_iff_eq_zero, hn, ↓reduceDIte, eq_rec_constant] at state
       exact P₂.output (dcast (by simp [this, Fin.last]) state)
 
 /-- Composition of verifiers. Return the conjunction of the decisions of the two verifiers. -/
@@ -267,19 +284,11 @@ private theorem simulateMessageQueryInl
   apply simulateQueryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
     _ q _ (messages.fst i) (messages (MessageIdx.inl i)) hab
   intro t
-  calc
-    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-        (((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
-          (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
-            ⟨MessageIdx.inl i, t⟩) =
-      liftM (OracleInterface.simOracle0 _ messages ⟨MessageIdx.inl i, t⟩) := by
-        exact OracleVerifier.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
-          (OracleInterface.simOracle0 OStmt₁ oStmt)
-          (OracleInterface.simOracle0 _ messages)
-          (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)
-    _ = pure ((inferInstance : OracleInterface
-        ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i))).answer
-          (messages (MessageIdx.inl i)) t) := rfl
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+    (OracleInterface.simOracle0 OStmt₁ oStmt)
+    (OracleInterface.simOracle0 _ messages)
+    (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)) ?_
+  rfl
 
 private theorem simulateMessageQueryInr
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
@@ -297,19 +306,11 @@ private theorem simulateMessageQueryInr
   apply simulateQueryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
     _ q _ (messages.snd i) (messages (MessageIdx.inr i)) hab
   intro t
-  calc
-    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-        (((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
-          (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
-            ⟨MessageIdx.inr i, t⟩) =
-      liftM (OracleInterface.simOracle0 _ messages ⟨MessageIdx.inr i, t⟩) := by
-        exact OracleVerifier.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
-          (OracleInterface.simOracle0 OStmt₁ oStmt)
-          (OracleInterface.simOracle0 _ messages)
-          (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)
-    _ = pure ((inferInstance : OracleInterface
-        ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i))).answer
-          (messages (MessageIdx.inr i)) t) := rfl
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+    (OracleInterface.simOracle0 OStmt₁ oStmt)
+    (OracleInterface.simOracle0 _ messages)
+    (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)) ?_
+  rfl
 
 private def firstQueryImpl : QueryImpl (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))
     (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
@@ -514,7 +515,9 @@ lemma OracleVerifier.append_toVerifier
     show Challenges.snd transcript.challenges = transcript.snd.challenges from rfl,
     show Messages.fst transcript.messages = transcript.fst.messages from rfl,
     show Messages.snd transcript.messages = transcript.snd.messages from rfl]
-  simp [OptionT.run_bind, Option.elimM, Function.comp_def]
+  simp only [MessageIdx, Message, OptionT.run_bind, Option.elimM, map_bind,
+    OptionT.mk_bind, OptionT.run_monadLift, monadLift_self, OptionT.run_mk,
+    bind_map_left, Option.elim_some, Option.elim_map, Function.comp_def]
   rw [show
     OptionT.run (simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.fst.messages)
       (V₁.verify stmt transcript.fst.challenges) :
@@ -590,7 +593,9 @@ def RoundByRound.append
       Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂)
         (Fin.append (m := m + 1) WitMid₁ (Fin.tail WitMid₂) ∘ Fin.cast (by omega)) where
   eqIn := by
-    simp [Fin.append, Fin.addCases, Fin.castLT]
+    simp only [Fin.append, Function.comp_apply, Fin.addCases, Fin.cast_zero,
+      Fin.coe_ofNat_eq_mod, Nat.zero_mod, lt_add_iff_pos_left,
+      Order.lt_add_one_iff, zero_le, ↓reduceDIte, Fin.castLT, Fin.zero_eta]
     exact E₁.eqIn
   extractMid := fun idx stmt₁ tr h => by
     dsimp [Fin.append, Fin.addCases, Fin.tail, Fin.castLT, Fin.cast] at h ⊢
@@ -629,7 +634,7 @@ def StateFunction.append
     -- the first state fn on the first protocol's transcript, and the second state fn on the
     -- remaining transcript.
       have hm : min roundIdx.val m = m := min_eq_right_of_lt (by omega)
-      let transcript₁ : pSpec₁.FullTranscript := fun i => transcript.fst ⟨i, by simpa [hm]⟩
+      let transcript₁ : pSpec₁.FullTranscript := fun i => transcript.fst ⟨i, by simp [hm]⟩
       S₁ ⟨m, by omega⟩ stmt₁ transcript₁ ∧
       S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁ transcript₁)
         (by simpa [h] using transcript.snd)
@@ -696,7 +701,7 @@ to produce the final statement `stmt₃`, witness `wit₃`, and transcript `tran
 The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcript₁ ++ₜ transcript₂`.
 -/
 theorem append_run (stmt : Stmt₁) (wit : Wit₁) :
-      (P₁.append P₂).run stmt wit = (do
+    (P₁.append P₂).run stmt wit = (do
         let ⟨transcript₁, stmt₂, wit₂⟩ ← liftM (P₁.run stmt wit)
         let ⟨transcript₂, stmt₃, wit₃⟩ ← liftM (P₂.run stmt₂ wit₂)
         return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
@@ -716,7 +721,7 @@ variable {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁} {V₂ : Verifier oSpec
   is equivalent to running the first verifier on the first part of the transcript, and the second
   verifier on the second part of the transcript, and returning the final statement. -/
 theorem append_run (tr : (pSpec₁ ++ₚ pSpec₂).FullTranscript) :
-      (V₁.append V₂).run stmt tr =
+    (V₁.append V₂).run stmt tr =
         (do
           let stmt₂ ← V₁.run stmt tr.fst
           let stmt₃ ← V₂.run stmt₂ tr.snd

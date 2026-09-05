@@ -8,14 +8,14 @@ Start with [`README.md`](README.md) for project overview.
 ## Fast Start
 
 1. For a convenient routine check, start with `./scripts/validate.sh`.
-   Before committing or pushing, run it in full; it enforces the `ArkLib/Data` zero-warning gate.
+   Before committing or pushing, run it in full; it enforces repository-wide non-`sorry` warnings
+   and the Lean-native source-policy gate across `ArkLib/` and `ArkLibTest/`. It also runs `lake test` and rejects all test warnings.
 2. On a cold clone, run `lake exe cache get` first.
 3. If you add, rename, or delete files under `ArkLib/`, `git add` new paths before validation.
-4. If you also want Lean style linting, run `./scripts/validate.sh --lint`.
-5. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
-6. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
+4. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
+5. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
    `./scripts/validate.sh --site`.
-7. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
+6. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
    `./scripts/validate.sh --axioms`; it first certifies the sweep tool against its
    fixture matrix (`./scripts/test-axiomsweep.sh`), then runs the regression gate.
    Refresh `scripts/axiom_baseline.json` with `lake exe axiomsweep --update-baseline`
@@ -25,7 +25,9 @@ Start with [`README.md`](README.md) for project overview.
 ## Where To Work
 
 - `ArkLib/Data/` - reusable math, coding theory, polynomials, and supporting definitions.
-- `ArkLib/OracleReduction/` - core IOR abstractions and security theory.
+- `ArkLibTest/` - compile-time acceptance examples and regression tests; run `lake test`.
+- `ArkLib/Interaction/` - typed interactions and dependent reduction foundations.
+- `ArkLib/OracleReduction/` - legacy IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
@@ -34,13 +36,19 @@ Start with [`README.md`](README.md) for project overview.
 
 ## Guardrails
 
-- Lean defaults: `autoImplicit = false`; the long-file linter cap is `1500` unless a file opts
-  out locally.
+- Lean defaults: `autoImplicit = false`; source files must remain at or below 1500 lines.
+- Source-policy exceptions and linter suppressions are not supported. Fix the source or improve the
+  linter with a repository-wide, tested policy change.
 - `ArkLib.lean` is generated; do not hand-edit it.
 - Edit source, not derived output such as `.lake/`, `blueprint/web/`, `blueprint/print/`,
   `dependency_graphs/`, or `home_page/docs/`.
 - Pre-existing `sorry` blocks exist in active formalizations; distinguish existing gaps from new
   regressions.
+- Prefer proof scripts that expose the key mathematical steps and compose predictably. Broad
+  automation is welcome when it closes a well-scoped goal quickly and clearly; for a slow proof,
+  profile first, then narrow imports, local hypotheses, simp sets, or automation rules, or move a
+  recurring argument into its owner layer. Do not mechanically expand a short, stable terminal
+  `simp` into a brittle `simp only` list.
 - If a PR changes commands, repo structure, generated outputs, or the blueprint/citation
   workflow, update the matching page in [`docs/wiki/`](docs/wiki/README.md) in the same PR.
 - Promote recurring agent learnings into [`docs/wiki/`](docs/wiki/README.md); do not let stable

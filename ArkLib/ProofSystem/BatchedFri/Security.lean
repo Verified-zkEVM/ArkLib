@@ -1,11 +1,12 @@
-/- Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
-  Released under Apache 2.0 license as described in the file LICENSE.
-  Authors: František Silváši, Julian Sutherland, Ilia Vlasov
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 
-  [BCIKS20] refers to the paper "Proximity Gaps for Reed-Solomon Codes" by Eli Ben-Sasson,
-  Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
+[BCIKS20] refers to the paper "Proximity Gaps for Reed-Solomon Codes" by Eli Ben-Sasson,
+Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
 
-  Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
+Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
 -/
 
 import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
@@ -29,13 +30,19 @@ import ArkLib.ToMathlib.List.Basic
 import ArkLib.ToMathlib.Finset.Basic
 import Mathlib.Algebra.Ring.NonZeroDivisors
 
+/-!
+# ArkLib.ProofSystem.BatchedFri.Security
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Fri
 section Fri
 
 open OracleComp OracleSpec ProtocolSpec ReedSolomon Domain
 open NNReal Finset Function ProbabilityTheory
 
-variable {𝔽 : Type} [NonBinaryField 𝔽] [Fintype 𝔽] [DecidableEq 𝔽] [Nontrivial 𝔽]
+variable {𝔽 : Type} [NonBinaryField 𝔽] [Fintype 𝔽] [DecidableEq 𝔽]
 variable (n : ℕ)
 variable (g : 𝔽ˣ) {k : ℕ}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
@@ -56,11 +63,10 @@ abbrev evalDomainSigma {n k : ℕ} (s : Fin (k + 1) → ℕ+)
   ω.subdomain (∑ j' ∈ finRangeTo (k + 1) i, s j')
 
 def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
-      (j : Fin (2 ^ (s i).1)) : evalDomainSigma s ω ↑i :=
+    (j : Fin (2 ^ (s i).1)) : evalDomainSigma s ω ↑i :=
   let r : {x | x ∈ ω.toFftDomain.subdomain (n - ↑(s i))} :=
     ⟨ω.toFftDomain.subdomain (n - (s i).1)
-      ⟨j.1,
-        by
+      ⟨j.1, by
           have s_i_lim : (s i).1 < n + 1 := by
             apply Nat.lt_succ_of_le
             rw [Finset.sum_eq_sum_sdiff_singleton_add (i := i) (by simp)] at k_le_n
@@ -100,8 +106,7 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
   ⟩
   ↑x
 
-def cosetG (s₀ : evalDomainSigma s ω ↑i)
-  : Finset (evalDomainSigma s ω ↑i) :=
+def cosetG (s₀ : evalDomainSigma s ω ↑i) : Finset (evalDomainSigma s ω ↑i) :=
   if k_le_n : ∑ j', (s j').1 ≤ n
   then
     (Finset.univ).image (cosetEnum n s s₀ k_le_n)
@@ -111,13 +116,13 @@ def pows (z : 𝔽) (ℓ : ℕ) : Matrix Unit (Fin ℓ) 𝔽 :=
   Matrix.of <| fun _ j => z ^ j.val
 
 def VDM (s₀ : evalDomainSigma s ω ↑i) :
-  Matrix (Fin (2 ^ (s i : ℕ))) (Fin (2 ^ (s i : ℕ))) 𝔽 :=
+    Matrix (Fin (2 ^ (s i : ℕ))) (Fin (2 ^ (s i : ℕ))) 𝔽 :=
   if k_le_n : (∑ j', (s j').1) ≤ n
   then Matrix.vandermonde (fun j => (cosetEnum n s s₀ k_le_n j).1)
   else 1
 
 def cosetEnum' (s₀ : evalDomainSigma s ω ↑i)
-  (k_le_n : ∑ j', (s j').1 ≤ n)
+    (k_le_n : ∑ j', (s j').1 ≤ n)
   (j : Fin (2 ^ (s i).1)) : cosetG n s s₀ :=
   ⟨
     cosetEnum n s s₀ k_le_n j,
@@ -132,25 +137,19 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
   unfold Function.Bijective
   apply And.intro
   · intros a b h
-    simp only [finRangeTo.eq_1, Subtype.mk.injEq] at h
-    simp only [mul_eq_mul_left_iff] at h
-    rcases h with h | h
-    · have h := FftDomain.injective h
-      aesop
-    · rcases s₀ with ⟨s₀, hs₀⟩
-      subst h
-      simp only [finRangeTo.eq_1, evalDomainSigma] at hs₀
-      rw [CosetFftDomainClass.mem_toFinset_iff_mem] at hs₀
-      have hs₀ := CosetFftDomainClass.not_zero_mem hs₀
-      simp at hs₀
+    have h := congr_arg (fun x ↦ (x.1.1 : 𝔽)) h
+    have hs₀_ne : (s₀ : 𝔽) ≠ 0 := CosetFftDomainClass.ne_zero_dep s₀
+    have h := mul_left_cancel₀ hs₀_ne h
+    have h := FftDomain.injective h
+    exact Fin.ext (by simpa using h)
   · rintro ⟨⟨y, h'⟩, h⟩
-    simp only [finRangeTo.eq_1, Subtype.mk.injEq]
     simp only [cosetG, k_le_n, ↓reduceDIte] at h
     obtain ⟨a, -, ha⟩ := Finset.mem_image.mp h
     have ha := congr_arg Subtype.val ha
-    simp only [finRangeTo.eq_1, cosetEnum] at ha
+    simp only [cosetEnum] at ha
     exact ⟨a, by aesop⟩
 
+@[instance_reducible]
 def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s₀) := by
   haveI : NeZero (VDM n s s₀).det := by
     constructor
@@ -172,9 +171,9 @@ def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s�
         simp_all only [lt_self_iff_false]
       intros contra
       apply this
-      rw [sub_eq_zero, cosetEnum, cosetEnum] at contra
-      simp only [Nat.succ_eq_add_one, finRangeTo, Fin.ofNat_eq_cast, Fin.val_natCast,
-        Set.mem_setOf_eq, mul_eq_mul_left_iff] at contra
+      rw [sub_eq_zero] at contra
+      unfold cosetEnum at contra
+      simp only [finRangeTo, mul_eq_mul_left_iff] at contra
       rcases contra with contra | contra
       · have h := FftDomain.injective contra
         simp only [Fin.mk.injEq] at h
@@ -182,8 +181,7 @@ def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s�
         exact (symm h)
       · rcases s₀ with ⟨s₀, hs₀⟩
         subst contra
-        simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
-          evalDomainSigma] at hs₀
+        simp only [evalDomainSigma] at hs₀
         rw [CosetFftDomainClass.mem_toFinset_iff_mem] at hs₀
         have hs₀ := CosetFftDomainClass.not_zero_mem hs₀
         simp at hs₀
@@ -219,53 +217,50 @@ noncomputable def f_succ'
     ∃ s₀ : (ω.subdomain (∑ j' ∈ finRangeTo _ (i.1), (s j').1)).toFinset,
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
     rcases s₀' with ⟨s₀', hs₀'⟩
-    simp only [Fin.val_natCast]
     simp only [evalDomainSigma] at hs₀'
     rw [CosetFftDomain.mem_toFinset_iff_mem] at hs₀'
     rw [CosetFftDomainClass.mem_subdomain_of_eq_vals
       (ω := ω)
       (j := (∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1))
-      (by {
+      (by
         rw [←sum_finRangeTo_add_one]
         rfl
-    })] at hs₀'
+      )] at hs₀'
     have h := CosetFftDomainClass.root_exists (ω := ω)
       (i := (∑ j' ∈ finRangeTo (k + 1) ↑i, ↑(s j')))
       (j := (s i).1)
-      (by {
+      (by
         trans (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1)
-        rw [sum_finRangeTo_add_one]
-        rfl
-        apply (swap le_trans) k_le_n
-        apply Finset.sum_le_sum_of_subset (by simp)
-      })
+        · rw [sum_finRangeTo_add_one]
+          rfl
+        · apply (swap le_trans) k_le_n
+          apply Finset.sum_le_sum_of_subset (by simp))
       hs₀'
     rcases h with ⟨y, ⟨h1, h2⟩⟩
-    exists ⟨y, by {
+    exists ⟨y, by
       rw [CosetFftDomain.mem_toFinset_iff_mem]
       exact h1
-    }⟩
+    ⟩
   let s₀ := Classical.choose this
   (pows z _ *ᵥ VDMInv n s s₀ k_le_n *ᵥ Finset.restrict (cosetG n s s₀) f) ()
 
+omit [Fintype 𝔽] in
 /-- This theorem asserts that given an appropriate codeword,
   `f` of an appropriate Reed-Solomon code, the result of honestly folding the corresponding
   polynomial is then itself a member of the next Reed-Solomon code.
 
   Corresponds to Claim 8.1 of [BCIKS20] -/
 lemma fri_round_consistency_completeness
-  {f : ReedSolomon.code
+    {f : ReedSolomon.code
     (⟨fun x => x, by simp⟩ : evalDomainSigma s ω i ↪ 𝔽)
     (2 ^ (n - (∑ j' ∈ finRangeTo _ i, (s j' : ℕ))))}
   {z : 𝔽}
-  (k_le_n : ∑ j', ↑(s j') ≤ n)
-  :
+  (k_le_n : ∑ j', ↑(s j') ≤ n) :
   f_succ' n s f.val z k_le_n ∈
     (ReedSolomon.code
       (⟨fun x => x, by simp⟩ : (evalDomainSigma s ω (i.1 + 1)).toFinset ↪ 𝔽)
       (2 ^ (n - (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j' : ℕ))))
-    ).carrier
-  := by sorry
+    ).carrier := by sorry
 
 end Completeness
 
@@ -279,7 +274,6 @@ def Fₛ {ι : Type} [Fintype ι] {t : ℕ} (f : Fin t.succ → (ι → 𝔽)) :
   f 0 +ᵥ affineSpan 𝔽 (Finset.univ.image (f ∘ Fin.succ))
 
 noncomputable def correlated_agreement_density {ι : Type} [Fintype ι]
-  [Fintype 𝔽]
   (Fₛ : AffineSubspace 𝔽 (ι → 𝔽)) (V : Submodule 𝔽 (ι → 𝔽)) : ℝ :=
   haveI : Fintype Fₛ.carrier := Set.Finite.fintype (Set.toFinite _)
   haveI : Fintype V.carrier := Set.Finite.fintype (Set.toFinite _)
@@ -347,6 +341,7 @@ instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype
 noncomputable instance {l : ℕ} : IsUniformSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
   IsUniformSpec.ofFintypeInhabited _
 
+omit [Fintype 𝔽] in
 open ENNReal in
 noncomputable def εC
     (𝔽 : Type) [Fintype 𝔽] (n : ℕ) {k : ℕ} (s : Fin (k + 1) → ℕ+) (m : ℕ) (ρ_sqrt : ℝ≥0) : ℝ≥0∞ :=
@@ -357,7 +352,8 @@ noncomputable def εC
 
 private abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain n 𝔽) :=
   (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-    (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l (ω := ω))
+    (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+      Spec.QueryRound.pSpec l (ω := ω))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ∀ j,
@@ -623,7 +619,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/
 lemma fri_query_soundness
-  {t : ℕ}
+    {t : ℕ}
   {α : ℝ}
   (f : Fin t.succ → (ω.subdomain 0 → 𝔽))
   (h_agreement :
@@ -632,8 +628,7 @@ lemma fri_query_soundness
       (ReedSolomon.code (⟨fun x => x, by simp⟩ : ω.subdomain 0 ↪ 𝔽) (2 ^ n))
     ≤ α)
   {m : ℕ}
-  (m_ge_3 : m ≥ 3)
-  :
+  (m_ge_3 : m ≥ 3) :
     let ρ_sqrt :=
       ReedSolomon.sqrtRate
         (2 ^ n)
@@ -652,8 +647,7 @@ lemma fri_query_soundness
                     Fri.Spec.QueryRound.queryVerifier
                       (ω := ω)
                       (n := n) s
-                      (
-                        by
+                      ( by
                           apply Spec.round_bound (d := d)
                           transitivity
                           · exact domain_size_cond
@@ -663,8 +657,7 @@ lemma fri_query_soundness
                       1
                   ).verify
                     z
-                    (fun i =>
-                      by
+                    (fun i => by
                         simpa only
                           [
                             Spec.QueryRound.pSpec, Challenge,
@@ -677,8 +670,7 @@ lemma fri_query_soundness
           )]
         = 1
       ]
-    Pr_{let x ←$ᵖ (Fin t → 𝔽); let z ←$ᵖ (Fin (k + 1) → 𝔽)}[ εQ x z > α0 ] ≤ εC 𝔽 n s m ρ_sqrt
-  := by
+    Pr_{let x ←$ᵖ (Fin t → 𝔽); let z ←$ᵖ (Fin (k + 1) → 𝔽)}[ εQ x z > α0 ] ≤ εC 𝔽 n s m ρ_sqrt := by
   sorry
 
 -- set_option diagnostics true
@@ -747,10 +739,9 @@ lemma fri_query_soundness
 open ENNReal in
 /-- Corresponds to Claim 8.3 of [BCIKS20] -/
 lemma fri_soundness
-  {t l m : ℕ}
+    {t l m : ℕ}
   (f : Fin t.succ → (ω → 𝔽))
-  (m_ge_3 : m ≥ 3)
-  :
+  (m_ge_3 : m ≥ 3) :
     let ρ_sqrt :=
       ReedSolomon.sqrtRate
         (2 ^ n)
@@ -761,7 +752,8 @@ lemma fri_soundness
           OracleReduction.run () f ()
             ⟨
               prov,
-              (BatchedFri.Spec.batchedFRIreduction (ω := ω) (n := n) k s d domain_size_cond l t).verifier
+              (BatchedFri.Spec.batchedFRIreduction
+                (ω := ω) (n := n) k s d domain_size_cond l t).verifier
             ⟩
         ] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
       Code.jointAgreement

@@ -214,8 +214,8 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
     have := by simpa [g_y] using ps_card_eval_y_eq_zero_le_nat_degree_y G hG0 P_y
     have : {a ∈ P_y | ¬evalY a G = 0}.card = Py'.card := rfl
     omega
-  haveI : Nonempty Px' := ⟨⟨_, (Finset.card_pos.mp (by omega)).choose_spec⟩⟩
-  haveI : Nonempty Py' := ⟨⟨_, (Finset.card_pos.mp (by omega)).choose_spec⟩⟩
+  have : Nonempty Px' := ⟨⟨_, (Finset.card_pos.mp (by omega)).choose_spec⟩⟩
+  have : Nonempty Py' := ⟨⟨_, (Finset.card_pos.mp (by omega)).choose_spec⟩⟩
   let ax' := a_x - g_x; let ay' := a_y - g_y
   let bx' := b_x - g_x; let by' := b_y - g_y
   let nx' : ℕ+ := ⟨(n_x : ℕ) - g_x, Nat.sub_pos_of_lt hx_lt_nx⟩
@@ -288,7 +288,7 @@ lemma ps_exists_p {F : Type} [Field F]
     (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) :
     ∃ P : F[X][Y], B = P * A := by
   classical
-  letI : DecidableEq F := Classical.decEq F
+  let : DecidableEq F := Classical.decEq F
   by_cases hB0 : B = 0
   · exact ⟨0, by simp [hB0]⟩
   by_cases hA0 : A = 0

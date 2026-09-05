@@ -3,6 +3,8 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+import CompPoly.Univariate.Basic
+import CompPoly.Univariate.ToPoly
 import Mathlib.Algebra.Polynomial.Div
 import Mathlib.Tactic.LinearCombination
 import ArkLib.Data.Lattices.Vectors
@@ -17,10 +19,17 @@ import ArkLib.ProofSystem.RingSwitching.Transport.Eval
   definition. This file abstracts exactly that data, mirroring the
   `CyclotomicModulus`/`IsCyclotomic` split of the lattice layer:
 
-  * `Presentation R S` — proof-free data: the monic modulus `φ : R[X]` and a canonical
-    representative map `rep : S → R[X]`;
-  * `IsPresentation P` — the laws: `φ` monic, representatives of degree `< deg φ`, `rep`
-    injective, and `rep` additive/multiplicative *up to multiples of `φ`* (the coset laws).
+  * `Presentation R S` — proof-free **computable** data: the monic modulus `φ : CPolynomial R`
+    and a canonical representative map `rep : S → CPolynomial R`;
+  * `IsPresentation P` — the laws, stated as the Mathlib semantics of that data (via `toPoly`):
+    `φ` monic, representatives of degree `< deg φ`, `rep` injective, and `rep`
+    additive/multiplicative *up to multiples of `φ`* (the coset laws).
+
+  The carrier split is deliberate and matches the lattice layer: **data lives in the computable
+  carrier, the laws are its `toPoly` semantics, and the proof engine never leaves
+  `Polynomial`-land.** Mathlib's `Finsupp`-backed `Polynomial` has no computable values at all
+  (not even `0`), so a presentation over it could neither be constructed concretely nor kept as
+  an argument of a package that is meant to run.
 
   On top of the laws, this file proves the whole lift algebra of the switch. Here “lift” has
   its literal quotient-algebra meaning: replace equality modulo the modulus by an exact
@@ -65,7 +74,7 @@ import ArkLib.ProofSystem.RingSwitching.Transport.Eval
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-open Polynomial ArkLib.Lattices
+open Polynomial ArkLib.Lattices CompPoly
 
 namespace RingSwitching.Lift
 
@@ -76,51 +85,62 @@ namespace RingSwitching.Lift
 /-! ## The presentation data and its laws -/
 
 /-- Proof-free presentation data for a ring `S` as a quotient `R[X]/(φ)`: the modulus and a
-canonical representative map. The laws live in `IsPresentation`, mirroring the
+canonical representative map, over **computable** polynomials (`CPolynomial`). The laws live in
+`IsPresentation` and speak about the `toPoly` semantics of this data, mirroring the
 `CyclotomicModulus`/`IsCyclotomic` split, so that instances (e.g. Hachi's `Rq Φ`) can be
-constructed without positivity or well-formedness side conditions. -/
+constructed without positivity or well-formedness side conditions — and so that concrete
+presentations are ordinary values (Mathlib's `Finsupp`-backed `Polynomial` has no computable
+values at all, not even `0`). -/
 structure Presentation (R S : Type*) [CommRing R] [CommRing S] where
   /-- The modulus polynomial presenting `S`, e.g. `X^d + 1`. -/
-  modulus : Polynomial R
+  modulus : CPolynomial R
   /-- Canonical (degree-reduced) representative of a ring element. -/
-  rep : S → Polynomial R
+  rep : S → CPolynomial R
 
-/-- The presentation laws: monic modulus, degree-reduced injective representatives, and the
+/-- The presentation laws, stated as the Mathlib semantics (`toPoly`) of the computable data —
+the `IsCyclotomic` idiom: monic modulus, degree-reduced injective representatives, and the
 coset laws (`rep` is additive and multiplicative up to multiples of the modulus). The two
 coset laws are the base compatibility facts; everything else the switch needs — sums, dot
-products, the quotient-witness correspondence — is derived below. -/
+products, the quotient-witness correspondence — is derived below.
+
+`rep_injective` is injectivity of the *semantic* representative `s ↦ (P.rep s).toPoly`, which
+is what the algebra below consumes and what the cyclotomic instance's `val_toPoly_injective`
+provides verbatim; it implies injectivity of `P.rep` itself. -/
 class IsPresentation {R S : Type*} [CommRing R] [CommRing S]
     (P : Presentation R S) : Prop where
   /-- The modulus is monic (so division with remainder applies). -/
-  monic : P.modulus.Monic
+  monic : P.modulus.toPoly.Monic
   /-- Representatives are degree-reduced. In particular the modulus has positive degree. -/
-  natDegree_rep_lt : ∀ s : S, (P.rep s).natDegree < P.modulus.natDegree
-  /-- Distinct elements have distinct representatives. -/
-  rep_injective : Function.Injective P.rep
+  natDegree_rep_lt : ∀ s : S, (P.rep s).toPoly.natDegree < P.modulus.toPoly.natDegree
+  /-- Distinct elements have distinct (semantic) representatives. -/
+  rep_injective : Function.Injective (fun s : S => (P.rep s).toPoly)
   /-- Coset law for addition. -/
-  modulus_dvd_rep_add : ∀ a b : S, P.modulus ∣ P.rep (a + b) - (P.rep a + P.rep b)
+  modulus_dvd_rep_add : ∀ a b : S,
+    P.modulus.toPoly ∣ (P.rep (a + b)).toPoly - ((P.rep a).toPoly + (P.rep b).toPoly)
   /-- Coset law for multiplication. -/
-  modulus_dvd_rep_mul : ∀ a b : S, P.modulus ∣ P.rep (a * b) - P.rep a * P.rep b
+  modulus_dvd_rep_mul : ∀ a b : S,
+    P.modulus.toPoly ∣ (P.rep (a * b)).toPoly - (P.rep a).toPoly * (P.rep b).toPoly
 
 namespace Presentation
 
 variable {R S : Type*} [CommRing R] [CommRing S] (P : Presentation R S) [IsPresentation P]
 
 /-- The modulus has positive degree: even `0` has a representative of smaller degree. -/
-theorem natDegree_modulus_pos : 0 < P.modulus.natDegree :=
+theorem natDegree_modulus_pos : 0 < P.modulus.toPoly.natDegree :=
   Nat.lt_of_le_of_lt (Nat.zero_le _) (IsPresentation.natDegree_rep_lt (P := P) 0)
 
 /-- The representative of `0` is a multiple of the modulus (in fact the coset laws force it). -/
-theorem modulus_dvd_rep_zero : P.modulus ∣ P.rep 0 := by
+theorem modulus_dvd_rep_zero : P.modulus.toPoly ∣ (P.rep 0).toPoly := by
   have h := IsPresentation.modulus_dvd_rep_add (P := P) 0 0
   rw [add_zero] at h
-  have h' : P.rep 0 - (P.rep 0 + P.rep 0) = -P.rep 0 := by ring
+  have h' : (P.rep (0 : S)).toPoly - ((P.rep (0 : S)).toPoly + (P.rep (0 : S)).toPoly)
+      = -(P.rep (0 : S)).toPoly := by ring
   rw [h'] at h
   exact dvd_neg.mp h
 
 /-- Coset law for finite sums, by induction from the addition law. -/
 theorem modulus_dvd_rep_sum {ι : Type*} (t : Finset ι) (f : ι → S) :
-    P.modulus ∣ P.rep (∑ j ∈ t, f j) - ∑ j ∈ t, P.rep (f j) := by
+    P.modulus.toPoly ∣ (P.rep (∑ j ∈ t, f j)).toPoly - ∑ j ∈ t, (P.rep (f j)).toPoly := by
   classical
   induction t using Finset.induction_on with
   | empty => simpa using P.modulus_dvd_rep_zero
@@ -133,19 +153,21 @@ theorem modulus_dvd_rep_sum {ι : Type*} (t : Finset ι) (f : ι → S) :
 
 /-- Two elements whose representatives differ by a multiple of the modulus are equal: the
 difference has degree below the monic modulus, so divisibility forces it to vanish. -/
-theorem eq_of_modulus_dvd {a b : S} (h : P.modulus ∣ P.rep a - P.rep b) : a = b := by
-  have hz : P.rep a - P.rep b = 0 := by
+theorem eq_of_modulus_dvd {a b : S}
+    (h : P.modulus.toPoly ∣ (P.rep a).toPoly - (P.rep b).toPoly) : a = b := by
+  have hz : (P.rep a).toPoly - (P.rep b).toPoly = 0 := by
     obtain ⟨c, hc⟩ := h
     rcases eq_or_ne c 0 with rfl | hc0
     · simpa using hc
     · exfalso
-      have hne : P.modulus.leadingCoeff * c.leadingCoeff ≠ 0 := by
+      have hne : P.modulus.toPoly.leadingCoeff * c.leadingCoeff ≠ 0 := by
         rw [(IsPresentation.monic (P := P)).leadingCoeff, one_mul]
         exact Polynomial.leadingCoeff_ne_zero.mpr hc0
       have hdeg := Polynomial.natDegree_mul' hne
       have h1 := IsPresentation.natDegree_rep_lt (P := P) a
       have h2 := IsPresentation.natDegree_rep_lt (P := P) b
-      have h3 : (P.rep a - P.rep b).natDegree < P.modulus.natDegree :=
+      have h3 : ((P.rep a).toPoly - (P.rep b).toPoly).natDegree
+          < P.modulus.toPoly.natDegree :=
         lt_of_le_of_lt (Polynomial.natDegree_sub_le _ _) (max_lt h1 h2)
       rw [hc, hdeg] at h3
       omega
@@ -159,13 +181,13 @@ stronger than the shipped divisibility lemmas and come free to every instance. -
 
 /-- **Vanishing kernel**: a modulus-multiple of degree below the monic modulus is zero (a
 nonzero multiple of a monic polynomial has at least the modulus degree). -/
-theorem eq_zero_of_modulus_dvd_of_natDegree_lt {p : Polynomial R} (h : P.modulus ∣ p)
-    (hdeg : p.natDegree < P.modulus.natDegree) : p = 0 := by
+theorem eq_zero_of_modulus_dvd_of_natDegree_lt {p : Polynomial R} (h : P.modulus.toPoly ∣ p)
+    (hdeg : p.natDegree < P.modulus.toPoly.natDegree) : p = 0 := by
   obtain ⟨c, hc⟩ := h
   rcases eq_or_ne c 0 with rfl | hc0
   · simpa using hc
   · exfalso
-    have hne : P.modulus.leadingCoeff * c.leadingCoeff ≠ 0 := by
+    have hne : P.modulus.toPoly.leadingCoeff * c.leadingCoeff ≠ 0 := by
       rw [(IsPresentation.monic (P := P)).leadingCoeff, one_mul]
       exact Polynomial.leadingCoeff_ne_zero.mpr hc0
     have hmul := Polynomial.natDegree_mul' hne
@@ -173,32 +195,34 @@ theorem eq_zero_of_modulus_dvd_of_natDegree_lt {p : Polynomial R} (h : P.modulus
     omega
 
 /-- The representative of `0` is exactly `0`. -/
-theorem rep_zero : P.rep (0 : S) = 0 :=
+theorem rep_zero : (P.rep (0 : S)).toPoly = 0 :=
   P.eq_zero_of_modulus_dvd_of_natDegree_lt P.modulus_dvd_rep_zero
     (IsPresentation.natDegree_rep_lt (P := P) 0)
 
 /-- `rep` is exactly additive: the coset defect has degree below the monic modulus. -/
-theorem rep_add (a b : S) : P.rep (a + b) = P.rep a + P.rep b := by
-  have hz : P.rep (a + b) - (P.rep a + P.rep b) = 0 := by
+theorem rep_add (a b : S) :
+    (P.rep (a + b)).toPoly = (P.rep a).toPoly + (P.rep b).toPoly := by
+  have hz : (P.rep (a + b)).toPoly - ((P.rep a).toPoly + (P.rep b).toPoly) = 0 := by
     refine P.eq_zero_of_modulus_dvd_of_natDegree_lt
       (IsPresentation.modulus_dvd_rep_add (P := P) a b) ?_
     have h1 := IsPresentation.natDegree_rep_lt (P := P) (a + b)
     have h2 := IsPresentation.natDegree_rep_lt (P := P) a
     have h3 := IsPresentation.natDegree_rep_lt (P := P) b
-    have h4 := Polynomial.natDegree_add_le (P.rep a) (P.rep b)
-    have h5 := Polynomial.natDegree_sub_le (P.rep (a + b)) (P.rep a + P.rep b)
+    have h4 := Polynomial.natDegree_add_le ((P.rep a).toPoly) ((P.rep b).toPoly)
+    have h5 := Polynomial.natDegree_sub_le ((P.rep (a + b)).toPoly)
+      ((P.rep a).toPoly + (P.rep b).toPoly)
     omega
   linear_combination hz
 
 /-- `rep` commutes with negation exactly. -/
-theorem rep_neg (a : S) : P.rep (-a) = -P.rep a := by
+theorem rep_neg (a : S) : (P.rep (-a)).toPoly = -(P.rep a).toPoly := by
   have h := P.rep_add a (-a)
   rw [add_neg_cancel, P.rep_zero] at h
   linear_combination -h
 
 /-- `rep` commutes with finite sums exactly — the exact form of `modulus_dvd_rep_sum`. -/
 theorem rep_sum {ι : Type*} (t : Finset ι) (f : ι → S) :
-    P.rep (∑ j ∈ t, f j) = ∑ j ∈ t, P.rep (f j) := by
+    (P.rep (∑ j ∈ t, f j)).toPoly = ∑ j ∈ t, (P.rep (f j)).toPoly := by
   classical
   induction t using Finset.induction_on with
   | empty => simpa using P.rep_zero
@@ -208,29 +232,37 @@ theorem rep_sum {ι : Type*} (t : Finset ι) (f : ι → S) :
 
 variable {n μ : ℕ}
 
-/-- The `i`-th lifted row's left-hand side `∑ⱼ rep(Mᵢⱼ)·rep(zⱼ) ∈ R[X]`, on canonical
-representatives (each factor has degree `< d`, so the row sum has degree `≤ 2d − 2`). -/
+/-- The `i`-th lifted row's left-hand side `∑ⱼ rep(Mᵢⱼ)·rep(zⱼ) ∈ R[X]`, on the semantics of
+canonical representatives (each factor has degree `< d`, so the row sum has degree `≤ 2d − 2`).
+
+**`noncomputable` by design, not computability debt**: this is a `Polynomial R`-valued *spec*
+object, reachable only through `Prop`s (`checkAt`, the theorems below). The data lives in the
+presentation's `CPolynomial` fields; the algebra is Mathlib's. A marker sweep should leave this
+marker alone. -/
 noncomputable def rowSum (M : PolyMatrix S n μ) (z : PolyVec S μ) (i : Fin n) :
     Polynomial R :=
-  ∑ j, P.rep (M i j) * P.rep (z j)
+  ∑ j, (P.rep (M i j)).toPoly * (P.rep (z j)).toPoly
 
 /-- Structural degree bound of a lifted row: `deg (∑ⱼ rep(Mᵢⱼ)·rep(zⱼ)) ≤ 2d − 2`. -/
 theorem natDegree_rowSum_le (M : PolyMatrix S n μ) (z : PolyVec S μ) (i : Fin n) :
-    (P.rowSum M z i).natDegree ≤ 2 * P.modulus.natDegree - 2 := by
+    (P.rowSum M z i).natDegree ≤ 2 * P.modulus.toPoly.natDegree - 2 := by
   refine Polynomial.natDegree_sum_le_of_forall_le _ _ (fun j _ => ?_)
   have h1 := IsPresentation.natDegree_rep_lt (P := P) (M i j)
   have h2 := IsPresentation.natDegree_rep_lt (P := P) (z j)
-  have h3 := Polynomial.natDegree_mul_le (p := P.rep (M i j)) (q := P.rep (z j))
+  have h3 := Polynomial.natDegree_mul_le
+    (p := (P.rep (M i j)).toPoly) (q := (P.rep (z j)).toPoly)
   omega
 
 /-- The representative of a matrix-vector row agrees with the lifted row up to a multiple of
 the modulus — the summed coset law. -/
 theorem modulus_dvd_rep_mulVec_sub_rowSum (M : PolyMatrix S n μ) (z : PolyVec S μ)
-    (i : Fin n) : P.modulus ∣ P.rep ((M *ᵥ z) i) - P.rowSum M z i := by
+    (i : Fin n) :
+    P.modulus.toPoly ∣ (P.rep ((M *ᵥ z) i)).toPoly - P.rowSum M z i := by
   have hmv : (M *ᵥ z) i = ∑ j, M i j * z j := by
     rw [matVecMul_apply, dot_eq_sum]
   have h1 := P.modulus_dvd_rep_sum Finset.univ (fun j => M i j * z j)
-  have h2 : P.modulus ∣ (∑ j, P.rep (M i j * z j)) - ∑ j, P.rep (M i j) * P.rep (z j) := by
+  have h2 : P.modulus.toPoly ∣ (∑ j, (P.rep (M i j * z j)).toPoly)
+      - ∑ j, (P.rep (M i j)).toPoly * (P.rep (z j)).toPoly := by
     rw [← Finset.sum_sub_distrib]
     exact Finset.dvd_sum (fun j _ => IsPresentation.modulus_dvd_rep_mul (P := P) (M i j) (z j))
   have h3 := dvd_add h1 h2
@@ -243,38 +275,64 @@ the extraction consumes): a per-row lift identity in `R[X]` descends to the row 
 over `S`. -/
 theorem mulVec_eq_of_rowSum_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
     {y : PolyVec S n} {i : Fin n} {ρ : Polynomial R}
-    (h : P.rowSum M z i = P.rep (y i) + P.modulus * ρ) :
+    (h : P.rowSum M z i = (P.rep (y i)).toPoly + P.modulus.toPoly * ρ) :
     (M *ᵥ z) i = y i := by
   apply P.eq_of_modulus_dvd
   have h1 := P.modulus_dvd_rep_mulVec_sub_rowSum M z i
-  have h2 : P.modulus ∣ P.rowSum M z i - P.rep (y i) := ⟨ρ, by rw [h]; ring⟩
+  have h2 : P.modulus.toPoly ∣ P.rowSum M z i - (P.rep (y i)).toPoly :=
+    ⟨ρ, by rw [h]; ring⟩
   have h3 := dvd_add h1 h2
   convert h3 using 1
   ring
 
-/-- **Quotient witness** (the `⇒`/honest direction): a row equation over `S` lifts to an
-`R[X]` identity with an explicit quotient polynomial `ρ := (rowSum − rep yᵢ) /ₘ φ` of degree
-`≤ d − 2`. -/
-theorem exists_rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
+/-- The **honest quotient** of row `i`: the explicit polynomial `ρ := (rowSum − rep yᵢ) /ₘ φ`
+that witnesses the lift of the row equation. The honest prover of a quotient-evaluation switch
+computes exactly this (it is the `ρ` produced by `exists_rowSum_eq_of_mulVec_eq`, named so that a
+prover can be *defined* rather than only shown to exist), and its two properties are
+`natDegree_quotient_le` (unconditional) and `rowSum_eq_of_mulVec_eq` (at a valid row). -/
+noncomputable def quotient (M : PolyMatrix S n μ) (z : PolyVec S μ) (y : PolyVec S n)
+    (i : Fin n) : Polynomial R :=
+  (P.rowSum M z i - (P.rep (y i)).toPoly) /ₘ P.modulus.toPoly
+
+/-- Degree bound of the honest quotient: `≤ d − 2`, and note this holds **unconditionally** —
+the row equation is not needed, only the structural degree bounds of the row sum and of `rep`.
+That is what lets a prover carry the `LiftedWitness` degree field for any input. -/
+theorem natDegree_quotient_le (M : PolyMatrix S n μ) (z : PolyVec S μ) (y : PolyVec S n)
+    (i : Fin n) : (P.quotient M z y i).natDegree ≤ P.modulus.toPoly.natDegree - 2 := by
+  rw [quotient, Polynomial.natDegree_divByMonic _ (IsPresentation.monic (P := P))]
+  have h1 := P.natDegree_rowSum_le M z i
+  have h2 := IsPresentation.natDegree_rep_lt (P := P) (y i)
+  have h3 := Polynomial.natDegree_sub_le (P.rowSum M z i) ((P.rep (y i)).toPoly)
+  have h4 := P.natDegree_modulus_pos
+  omega
+
+/-- **Quotient witness, explicit form** (the `⇒`/honest direction): at a valid row the lift
+identity holds with the honest quotient. This is the fact an honest prover's `checkAt` obligation
+reduces to, after applying `evalAt`. -/
+theorem rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
     {y : PolyVec S n} {i : Fin n} (h : (M *ᵥ z) i = y i) :
-    ∃ ρ : Polynomial R, ρ.natDegree ≤ P.modulus.natDegree - 2 ∧
-      P.rowSum M z i = P.rep (y i) + P.modulus * ρ := by
-  have hdvd : P.modulus ∣ P.rowSum M z i - P.rep (y i) := by
+    P.rowSum M z i = (P.rep (y i)).toPoly + P.modulus.toPoly * P.quotient M z y i := by
+  have hdvd : P.modulus.toPoly ∣ P.rowSum M z i - (P.rep (y i)).toPoly := by
     have h1 := P.modulus_dvd_rep_mulVec_sub_rowSum M z i
     rw [h] at h1
     simpa [neg_sub] using dvd_neg.mpr h1
-  refine ⟨(P.rowSum M z i - P.rep (y i)) /ₘ P.modulus, ?_, ?_⟩
-  · rw [Polynomial.natDegree_divByMonic _ (IsPresentation.monic (P := P))]
-    have h1 := P.natDegree_rowSum_le M z i
-    have h2 := IsPresentation.natDegree_rep_lt (P := P) (y i)
-    have h3 := Polynomial.natDegree_sub_le (P.rowSum M z i) (P.rep (y i))
-    have h4 := P.natDegree_modulus_pos
-    omega
-  · have hmod : (P.rowSum M z i - P.rep (y i)) %ₘ P.modulus = 0 :=
-      (Polynomial.modByMonic_eq_zero_iff_dvd (IsPresentation.monic (P := P))).mpr hdvd
-    have hdiv := Polynomial.modByMonic_add_div (P.rowSum M z i - P.rep (y i)) P.modulus
-    rw [hmod, zero_add] at hdiv
-    linear_combination -hdiv
+  have hmod : (P.rowSum M z i - (P.rep (y i)).toPoly) %ₘ P.modulus.toPoly = 0 :=
+    (Polynomial.modByMonic_eq_zero_iff_dvd (IsPresentation.monic (P := P))).mpr hdvd
+  have hdiv := Polynomial.modByMonic_add_div
+    (P.rowSum M z i - (P.rep (y i)).toPoly) P.modulus.toPoly
+  rw [hmod, zero_add] at hdiv
+  rw [quotient]
+  linear_combination -hdiv
+
+/-- **Quotient witness** (the `⇒`/honest direction): a row equation over `S` lifts to an
+`R[X]` identity with an explicit quotient polynomial `ρ := (rowSum − rep yᵢ) /ₘ φ` of degree
+`≤ d − 2`. The witness is `P.quotient`; this existential form is what the descent argument
+consumes. -/
+theorem exists_rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
+    {y : PolyVec S n} {i : Fin n} (h : (M *ᵥ z) i = y i) :
+    ∃ ρ : Polynomial R, ρ.natDegree ≤ P.modulus.toPoly.natDegree - 2 ∧
+      P.rowSum M z i = (P.rep (y i)).toPoly + P.modulus.toPoly * ρ :=
+  ⟨P.quotient M z y i, P.natDegree_quotient_le M z y i, P.rowSum_eq_of_mulVec_eq h⟩
 
 /-- **The per-row recovery engine**, over an arbitrary presentation: if a row's lifted
 equation (with quotient `ρ` of degree `≤ d − 1`) holds under `evalAt` at `2d`
@@ -297,13 +355,13 @@ context (the CWSS challenge tree could not exist either, and the paper's `(2d �
 soundness error is only meaningful for `|F_{q^k}| > 2d`), but it is worth stating so that nobody
 instantiates at a small carrier and believes something has been proved. -/
 theorem mulVec_eq_of_evalAt_rowSum {F : Type*} [Field F] {φF : R →+* F}
-    (hφF : Function.Injective φF) {d : ℕ} (hd : P.modulus.natDegree = d)
+    (hφF : Function.Injective φF) {d : ℕ} (hd : P.modulus.toPoly.natDegree = d)
     {M : PolyMatrix S n μ} {z : PolyVec S μ} {y : PolyVec S n} {i : Fin n}
     {ρ : Polynomial R} (hρ : ρ.natDegree ≤ d - 1)
     {A : Fin (2 * d) → F} (hA : Function.Injective A)
     (h : ∀ j, evalAt φF (A j) (P.rowSum M z i)
-          = evalAt φF (A j) (P.rep (y i))
-            + evalAt φF (A j) P.modulus * evalAt φF (A j) ρ) :
+          = evalAt φF (A j) ((P.rep (y i)).toPoly)
+            + evalAt φF (A j) (P.modulus.toPoly) * evalAt φF (A j) ρ) :
     (M *ᵥ z) i = y i := by
   refine P.mulVec_eq_of_rowSum_eq (ρ := ρ) ?_
   refine eq_of_evalAt_eq hφF (N := 2 * d) ?_ ?_ hA ?_
@@ -311,8 +369,8 @@ theorem mulVec_eq_of_evalAt_rowSum {F : Type*} [Field F] {φF : R →+* F}
     have h2 := P.natDegree_modulus_pos
     omega
   · have h1 := IsPresentation.natDegree_rep_lt (P := P) (y i)
-    have h2 := Polynomial.natDegree_mul_le (p := P.modulus) (q := ρ)
-    have h3 := Polynomial.natDegree_add_le (P.rep (y i)) (P.modulus * ρ)
+    have h2 := Polynomial.natDegree_mul_le (p := P.modulus.toPoly) (q := ρ)
+    have h3 := Polynomial.natDegree_add_le ((P.rep (y i)).toPoly) (P.modulus.toPoly * ρ)
     have h4 := P.natDegree_modulus_pos
     omega
   · intro j

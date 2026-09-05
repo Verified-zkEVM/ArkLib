@@ -6,6 +6,7 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.Prelims
+import ArkLib.Data.Polynomial.Trivariate
 import Mathlib.FieldTheory.RatFunc.Defs
 import Mathlib.RingTheory.Ideal.Quotient.Defs
 import Mathlib.RingTheory.Ideal.Span
@@ -66,15 +67,13 @@ lemma henselDenominatorExponent_succ (t : ℕ) :
 /-- A total degree for the trivariate polynomial `R`, represented as a polynomial in `Y` with
 bivariate coefficients in the `Z` and `X` variables. -/
 def trivariateTotalDegree (R : F[X][X][Y]) : ℕ :=
-  R.support.sup (fun i => Bivariate.totalDegree (R.coeff i) + i)
+  Trivariate.totalDegreeXYZ R
 
 /-- Each coefficient of `R` is bounded by `trivariateTotalDegree R`. -/
 lemma coeff_totalDegree_add_index_le_trivariateTotalDegree (R : F[X][X][Y]) {i : ℕ}
     (hi : i ∈ R.support) :
     Bivariate.totalDegree (R.coeff i) + i ≤ trivariateTotalDegree R := by
-  classical
-  unfold trivariateTotalDegree
-  exact Finset.le_sup (f := fun i => Bivariate.totalDegree (R.coeff i) + i) hi
+  exact Trivariate.coeff_totalDegree_add_index_le_totalDegree R hi
 
 /-- A canonical degree bound large enough for both `H` and all coefficients of `R`. -/
 def defaultDegreeBound (R : F[X][X][Y]) (H : F[X][Y]) : ℕ :=
@@ -138,23 +137,23 @@ def IsHenselNumeratorSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 bound on `R(x₀,·,Z)`. -/
 theorem evalX_totalDegree_le_of_coeff_bound (x₀ : F) (R : F[X][X][Y]) {D : ℕ}
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D) :
-    Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D := by
+    Bivariate.totalDegree (Trivariate.evalAtX x₀ R) ≤ D := by
   classical
   unfold Bivariate.totalDegree
   refine Finset.sup_le ?_
   intro i hi
-  have hcoeff_eval_ne : (Bivariate.evalX (Polynomial.C x₀) R).coeff i ≠ 0 :=
+  have hcoeff_eval_ne : (Trivariate.evalAtX x₀ R).coeff i ≠ 0 :=
     Polynomial.mem_support_iff.mp hi
-  have hcoeff_eq : (Bivariate.evalX (Polynomial.C x₀) R).coeff i =
+  have hcoeff_eq : (Trivariate.evalAtX x₀ R).coeff i =
       (R.coeff i).eval (Polynomial.C x₀) := by
-    simp [Bivariate.evalX_eq_map, Polynomial.coeff_map]
+    simp [Trivariate.evalAtX, Bivariate.evalX_eq_map, Polynomial.coeff_map]
   have hRcoeff_ne : R.coeff i ≠ 0 := by
     intro h0
     apply hcoeff_eval_ne
     rw [hcoeff_eq, h0]
     simp
   have hiR : i ∈ R.support := Polynomial.mem_support_iff.mpr hRcoeff_ne
-  have heval_deg : ((Bivariate.evalX (Polynomial.C x₀) R).coeff i).natDegree ≤
+  have heval_deg : ((Trivariate.evalAtX x₀ R).coeff i).natDegree ≤
       Bivariate.totalDegree (R.coeff i) := by
     rw [hcoeff_eq]
     have hP : (Polynomial.C x₀ : F[X]).natDegree ≤ 1 - 1 := by
@@ -664,13 +663,11 @@ theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
         Polynomial.eval₂ (liftToFunctionField (H := H))
           (functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff) H := by
   unfold liftToFunctionField functionFieldT coeffAsRatFunc
-  unfold monicizeRatFunc
-  simp only [Polynomial.coeff_natDegree, ToRatFunc.bivPolyHom, Polynomial.coe_mapRingHom,
+  simp only [ToRatFunc.bivPolyHom, Polynomial.coe_mapRingHom,
     Polynomial.map_C, RingHom.comp_apply]
   let Wp : Polynomial (RatFunc F) := Polynomial.C (univPolyHom (F := F) H.leadingCoeff)
   let I : Ideal (Polynomial (RatFunc F)) := Ideal.span
-      ({Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
-          (Polynomial.X / Wp) H} : Set (Polynomial (RatFunc F)))
+      ({monicizeRatFunc H} : Set (Polynomial (RatFunc F)))
   let q : Polynomial (RatFunc F) →+* 𝕃 H := Ideal.Quotient.mk I
   have hW_ne : univPolyHom (F := F) H.leadingCoeff ≠ 0 := by
     intro h
@@ -690,11 +687,10 @@ theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
       rw [mul_inv_cancel₀ hW_ne]
       exact map_one q
     exact (inv_eq_of_mul_eq_one_right hmul).symm
-  change q
-      (Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
-          (Polynomial.X / Wp) H) = q Wp ^ (H.natDegree - 1) * Polynomial.eval₂
+  change q (monicizeRatFunc H) = q Wp ^ (H.natDegree - 1) * Polynomial.eval₂
           (q.comp ((Polynomial.mapRingHom (univPolyHom (F := F))).comp Polynomial.C))
           (q Polynomial.X / q Wp) H
+  rw [congrArg q (monicizeRatFunc_eq H)]
   rw [map_mul, map_pow]
   rw [← hdiv]
   rw [Polynomial.hom_eval₂]

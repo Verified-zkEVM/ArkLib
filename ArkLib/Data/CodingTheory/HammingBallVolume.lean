@@ -74,7 +74,7 @@ lemma card_filter_hammingDist_eq
       (t := Finset.univ.powersetCard i)
       (H := by
         intro x hx
-        simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hx
+        simp only [Finset.coe_filter, Set.mem_ofPred_eq, Finset.mem_univ, true_and] at hx
         simp only [Finset.mem_coe, Finset.mem_powersetCard, Finset.subset_univ,
           true_and, h_dis_card, hx])]
   -- Step 2: each fiber `{x | dis x = S}` has `(Fintype.card F - 1) ^ i` words.
@@ -166,13 +166,13 @@ theorem hammingBallVolume_eq_ncard_hammingBall
     apply Finset.card_bij (fun x _ ↦ x)
     · intro x hx
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-      rw [Set.Finite.mem_toFinset, Code.hammingBall, Set.mem_setOf_eq] at hx
+      rw [Set.Finite.mem_toFinset, Code.hammingBall, Set.mem_ofPred_eq] at hx
       convert hx using 2
     · intros; assumption
     · intro x hx
       refine ⟨x, ?_, rfl⟩
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
-      rw [Set.Finite.mem_toFinset, Code.hammingBall, Set.mem_setOf_eq]
+      rw [Set.Finite.mem_toFinset, Code.hammingBall, Set.mem_ofPred_eq]
       convert hx using 2
   -- Step 2: partition by exact distance.
   have h_partition :

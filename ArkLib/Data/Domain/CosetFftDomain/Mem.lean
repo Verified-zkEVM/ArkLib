@@ -68,40 +68,39 @@ lemma mem_def : x ∈ ω ↔ ∃ i, ω i = x := by rfl
 /-- Every value of a coset FFT domain belongs to that domain. -/
 @[simp high]
 lemma mem_self {i : ι} :
-  ω i ∈ ω := by simp [mem_def]
+    ω i ∈ ω := by simp [mem_def]
 
 /-- Membership is preserved by converting a class-level coset FFT domain
   to the concrete `CosetFftDomain` structure. -/
 @[simp]
 lemma mem_toCosetFftDomain_iff_mem :
-  x ∈ toCosetFftDomain ω ↔ x ∈ ω := by
-  aesop (add simp
-          [mkSubgroupUnit,
-            mem_def,
-            toCosetFftDomain,
-            CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+    x ∈ toCosetFftDomain ω ↔ x ∈ ω := by
+  simp only [mem_def, toCosetFftDomain_apply]
 
 /-- Membership in the finset of elements is the same as membership in the coset FFT domain. -/
 @[simp]
 lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
-  x ∈ toFinset ω ↔ x ∈ ω := by aesop (add simp [toFinset, mem_def])
+    x ∈ toFinset ω ↔ x ∈ ω := by aesop (add simp [toFinset, mem_def])
 
 /-- Every value of a coset FFT domain belongs to the set of its elements. -/
 @[simp high]
 lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
-  ω i ∈ toFinset ω := by simp
+    ω i ∈ toFinset ω := by simp
+
+lemma card_toFinset_le_fintype_card [Fintype F] [Fintype ι] [DecidableEq F] :
+    Finset.card (toFinset ω) ≤ Fintype.card F := Finset.card_le_card (by simp)
 
 /-- Zero is not a member of a coset FFT domain. -/
 @[simp]
 lemma not_zero_mem :
-  0 ∉ ω := fun contra ↦ by
+    0 ∉ ω := fun contra ↦ by
   rw [mem_def] at contra
   obtain ⟨i, contra⟩ := contra
   exact CosetFftDomainClass.ne_zero ω i (by simp_all)
 
 @[simp]
 lemma ne_zero_dep [Fintype ι] [DecidableEq F] (x : ω) :
-  x.val ≠ 0 := fun contra ↦ by
+    x.val ≠ 0 := fun contra ↦ by
   have := x.2
   simp_all
 
@@ -130,25 +129,25 @@ variable {ω : CosetFftDomain ι F} {x : F}
 /-- Membership in a concrete coset FFT domain means
   being a coset generator times some subgroup element. -/
 lemma mem_iff_exists_mul :
-  x ∈ ω ↔ ∃ i, x = ω.cosetGenerator * ω.subgroupDomain i := by
+    x ∈ ω ↔ ∃ i, x = ω.cosetGenerator * ω.subgroupDomain i := by
   aesop (add simp [Membership.mem])
 
 /-- Membership in the finset of elements of a concrete coset FFT domain means
   being a coset generator times some subgroup element. -/
 lemma mem_toFinset_iff_exists_mul [Fintype ι] [DecidableEq F] :
-  x ∈ ω.toFinset ↔ ∃ i, x = ω.cosetGenerator * ω.subgroupDomain i := by
+    x ∈ ω.toFinset ↔ ∃ i, x = ω.cosetGenerator * ω.subgroupDomain i := by
   simp [mem_iff_exists_mul]
 
 /-- Membership in the finset of elements is
   the same as membership in the concrete coset FFT domain. -/
 @[simp]
 lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
-  x ∈ ω.toFinset ↔ x ∈ ω := CosetFftDomainClass.mem_toFinset_iff_mem
+    x ∈ ω.toFinset ↔ x ∈ ω := CosetFftDomainClass.mem_toFinset_iff_mem
 
 /-- Every value of a concrete coset FFT domain belongs to its finset of elements. -/
 @[simp high]
 lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
-  ω i ∈ ω.toFinset := CosetFftDomainClass.mem_toFinset_self
+    ω i ∈ ω.toFinset := CosetFftDomainClass.mem_toFinset_self
 
 end CosetFftDomain
 

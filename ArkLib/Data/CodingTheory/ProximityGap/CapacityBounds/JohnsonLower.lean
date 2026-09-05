@@ -4,15 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
-import Mathlib.Algebra.Algebra.ZMod
-import Mathlib.FieldTheory.Finite.Basic
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
 
 /-!
 # Reed--Solomon lower bound at the Johnson radius
 
 This file proves the characteristic-two BCHKS25 construction using binary graph subspaces,
 linearized polynomials, and Schwartz--Zippel.
+
+The binary functional and graph-subspace foundation lives in `JohnsonLower.BinaryBasics`;
+this module develops the separator construction and the public Reed--Solomon lower bound.
 
 ## Main result
 
@@ -22,13 +23,6 @@ linearized polynomials, and Schwartz--Zippel.
 
 - [BCHKS25] Corollary 1.7.
 -/
-
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
 
 namespace CodingTheory
 
@@ -40,185 +34,7 @@ section ReedSolomon
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-private def IsBinaryLinearized {K : Type} [Field K] (P : Polynomial K) : Prop :=
-  ∀ n ∈ P.support, ∃ i : ℕ, n = 2 ^ i
-
-open scoped NNReal in
-private theorem agreement_card_gt_two_mul_of_lt_seven_eighths
-    {ι : Type} [Fintype ι]
-    (d : ℕ) (hd : 0 < d) (δ : ℝ≥0) (S : Finset ι)
-    (hcard : Fintype.card ι = 16 * d)
-    (hS : (1 - δ) * (Fintype.card ι : ℝ≥0) ≤ (S.card : ℝ≥0))
-    (hδ : (δ : ℝ) < 7 / 8) :
-    2 * d < S.card := by
-  have hδle : δ ≤ 1 := by
-    rw [← NNReal.coe_le_coe]
-    push_cast
-    linarith
-  have hSco := NNReal.coe_le_coe.mpr hS
-  rw [NNReal.coe_mul, NNReal.coe_sub hδle] at hSco
-  rw [hcard] at hSco
-  push_cast at hSco
-  by_contra hnot
-  have hle : S.card ≤ 2 * d := Nat.le_of_not_gt hnot
-  have hleR : (S.card : ℝ) ≤ ((2 * d : ℕ) : ℝ) := by
-    exact_mod_cast hle
-  push_cast at hleR
-  have hdR : (0 : ℝ) < (d : ℝ) := by exact_mod_cast hd
-  nlinarith
-
-private def binary_basis_vector {b : ℕ} (i : Fin b) : Fin b → ZMod 2 :=
-  fun i' => if i' = i then 1 else 0
-
-open scoped BigOperators in
-private theorem binary_basis_vector_sum {b : ℕ}
-    (x : Fin b → ZMod 2) :
-    (∑ i : Fin b, x i • binary_basis_vector i) = x := by
-  classical
-  funext j
-  simp [binary_basis_vector]
-
-private theorem binary_functional_ker_nat_card {b : ℕ}
-    (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
-    Nat.card (LinearMap.ker h) = 2 ^ (b - 1) := by
-  have hdim := Module.Dual.finrank_ker_add_one_of_ne_zero hh
-  have hamb : Module.finrank (ZMod 2) (Fin b → ZMod 2) = b := by
-    simp
-  rw [hamb] at hdim
-  have hker : Module.finrank (ZMod 2) (LinearMap.ker h) = b - 1 := by omega
-  rw [Module.natCard_eq_pow_finrank (K := ZMod 2) (V := LinearMap.ker h), hker]
-  norm_num [ZMod.card]
-
-private theorem binary_functional_fiber_card {b : ℕ}
-    (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0)
-    (z : ZMod 2) : Fintype.card {x : Fin b → ZMod 2 // h x = z} = 2 ^ (b - 1) := by
-  have hsurj : Function.Surjective h := LinearMap.surjective hh
-  rcases hsurj z with ⟨a, ha⟩
-  rw [← Nat.card_eq_fintype_card]
-  calc
-    Nat.card {x : Fin b → ZMod 2 // h x = z} =
-        Nat.card (LinearMap.ker h) := by
-      apply Nat.card_congr
-      exact
-        { toFun := fun x => ⟨x.1 - a, by
-              change h (x.1 - a) = 0
-              rw [LinearMap.map_sub, x.2, ha, sub_self]⟩
-          invFun := fun x => ⟨x.1 + a, by
-              rw [LinearMap.map_add, x.2, ha, zero_add]⟩
-          left_inv := by
-            intro x
-            apply Subtype.ext
-            simp only [sub_add_cancel]
-          right_inv := by
-            intro x
-            apply Subtype.ext
-            simp only [add_sub_cancel_right] }
-    _ = 2 ^ (b - 1) := binary_functional_ker_nat_card h hh
-
-open scoped BigOperators in
-private noncomputable def binary_functional_root_polynomial {b : ℕ}
-    (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) : Polynomial (ZMod 2) := by
-  classical
-  exact ∏ x : Fin b → ZMod 2, (Polynomial.X - Polynomial.C (h x))
-
-open scoped BigOperators in
-private theorem binary_functional_root_polynomial_of_ne_zero {b : ℕ}
-    (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
-    binary_functional_root_polynomial h =
-      Polynomial.X ^ (2 ^ (b - 1)) *
-        (Polynomial.X - Polynomial.C 1) ^ (2 ^ (b - 1)) := by
-  classical
-  unfold binary_functional_root_polynomial
-  calc
-    Finset.univ.prod (fun x : (Fin b → ZMod 2) =>
-        Polynomial.X - Polynomial.C (h x)) =
-      Finset.univ.prod (fun z : ZMod 2 =>
-        Finset.univ.prod (fun _x : {x : Fin b → ZMod 2 // h x = z} =>
-          Polynomial.X - Polynomial.C z)) := by
-      symm
-      exact Fintype.prod_fiberwise' h (fun z => Polynomial.X - Polynomial.C z)
-    _ = Finset.univ.prod (fun z : ZMod 2 =>
-        (Polynomial.X - Polynomial.C z) ^ (2 ^ (b - 1))) := by
-      apply Finset.prod_congr rfl
-      intro z hz
-      rw [Finset.prod_const, Finset.card_univ, binary_functional_fiber_card h hh z]
-    _ = Polynomial.X ^ (2 ^ (b - 1)) *
-        (Polynomial.X - Polynomial.C 1) ^ (2 ^ (b - 1)) := by
-      rw [← Fintype.prod_equiv (ZMod.finEquiv 2).toEquiv
-        (fun i : Fin 2 =>
-          (Polynomial.X - Polynomial.C ((ZMod.finEquiv 2) i)) ^ (2 ^ (b - 1)))
-        (fun z : ZMod 2 => (Polynomial.X - Polynomial.C z) ^ (2 ^ (b - 1)))
-        (by intro i; rfl)]
-      rw [Fin.prod_univ_two]
-      norm_num
-
-private theorem binary_functional_lambda_one {b : ℕ}
-    (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
-    (binary_functional_root_polynomial h).coeff (2 ^ (b - 1)) = 1 := by
-  rw [binary_functional_root_polynomial_of_ne_zero h hh]
-  have hshift := Polynomial.coeff_X_pow_mul
-    (((Polynomial.X - Polynomial.C 1) ^ (2 ^ (b - 1))) : Polynomial (ZMod 2))
-    (2 ^ (b - 1)) 0
-  rw [zero_add] at hshift
-  rw [hshift, Polynomial.coeff_zero_eq_eval_zero]
-  norm_num
-  decide
-
-open scoped BigOperators in
-private theorem binary_functional_root_polynomial_zero (b : ℕ) :
-    binary_functional_root_polynomial
-      (0 : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) = Polynomial.X ^ (2 ^ b) := by
-  classical
-  unfold binary_functional_root_polynomial
-  simp [ZMod.card]
-
-open scoped BigOperators in
-private theorem binary_functional_lambda_zero (b : ℕ) (hb : 0 < b) :
-    (binary_functional_root_polynomial
-      (0 : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2)).coeff (2 ^ (b - 1)) = 0 := by
-  rw [binary_functional_root_polynomial_zero]
-  rw [Polynomial.coeff_X_pow]
-  have hsub : b - 1 < b := by omega
-  have hpow : 2 ^ (b - 1) < 2 ^ b := pow_right_strictMono₀ (by omega) hsub
-  rw [if_neg (ne_of_lt hpow)]
-
-private def binary_graph_embedding_prod {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    (Fin b → ZMod 2) →ₗ[ZMod 2]
-      ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
-  LinearMap.prod LinearMap.id φ
-
-private theorem binary_graph_embedding_prod_injective {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    Function.Injective (binary_graph_embedding_prod φ) := by
-  intro x y hxy
-  exact congrArg Prod.fst hxy
-
-private def binary_graph_subspace_prod {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    Submodule (ZMod 2) ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
-  LinearMap.range (binary_graph_embedding_prod φ)
-
-private theorem binary_graph_subspace_prod_finrank {b : ℕ}
-    (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
-    Module.finrank (ZMod 2) (binary_graph_subspace_prod φ) = b := by
-  rw [binary_graph_subspace_prod, LinearMap.finrank_range_of_inj
-    (binary_graph_embedding_prod_injective φ)]
-  simp
-
-private theorem binary_graph_subspace_prod_injective {b : ℕ} :
-    Function.Injective (binary_graph_subspace_prod (b := b)) := by
-  intro φ ψ hφψ
-  apply LinearMap.ext
-  intro x
-  funext j
-  have hx : binary_graph_embedding_prod φ x ∈ binary_graph_subspace_prod ψ := by
-    rw [← hφψ]
-    exact ⟨x, rfl⟩
-  rcases hx with ⟨y, hy⟩
-  have hyx : y = x := congrArg Prod.fst hy
-  subst y
-  exact congrFun (congrArg Prod.snd hy).symm j
+open JohnsonLowerInternal
 
 private def binary_matrix_distinguishing_tuple {b : ℕ}
     (N : Fin 2 → Fin b → ZMod 2) (j : Fin 2) : Fin (b + 2) → ZMod 2 :=
@@ -1025,9 +841,9 @@ private noncomputable def binary_tuple_linear_map {K : Type} [Field K] [CharP K 
 
 open scoped NNReal ProbabilityTheory in
 private theorem eps_ca_lower_of_finset_witness
-    {ι F A : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
-    [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {ι F A : Type} [Fintype ι] [Nonempty ι]
+    [Field F] [Fintype F]
+    [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0)
     (u : Code.WordStack A (Fin 2) ι) (S : Finset F)
     (hnot : ¬ Code.jointProximity C (u := u) δ_int)
@@ -1035,6 +851,7 @@ private theorem eps_ca_lower_of_finset_witness
     (S.card : ENNReal) / (Fintype.card F : ENNReal) ≤
       ProximityGap.epsCa (F := F) (A := A) C δ_fld δ_int := by
   classical
+  let _ := Fintype.ofFinite A
   unfold ProximityGap.epsCa
   refine le_trans ?_ (le_iSup _ u)
   rw [if_neg hnot]
@@ -1190,10 +1007,11 @@ private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero
     (binary_matrix_lambda_mv_injective hb)
 
 private theorem mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card
-    {n : ℕ} {K : Type} [Field K] [Fintype K] [DecidableEq K]
+    {n : ℕ} {K : Type} [Field K] [Fintype K]
     (p : MvPolynomial (Fin n) K) (hp : p ≠ 0)
     (hdeg : p.totalDegree < Fintype.card K) :
     ∃ t : Fin n → K, MvPolynomial.eval t p ≠ 0 := by
+  classical
   by_contra hall
   push Not at hall
   have hsz := MvPolynomial.schwartz_zippel_totalDegree hp (Finset.univ : Finset K)
@@ -1217,13 +1035,14 @@ private theorem mv_polynomial_total_degree_map_le
 
 open scoped BigOperators in
 private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
-    {K : Type} [Field K] [Fintype K] [DecidableEq K]
+    {K : Type} [Field K] [Fintype K]
     [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
     (hcard : binary_matrix_separator_threshold b ≤ Fintype.card K) :
     ∃ t : Fin (b + 2) → K,
       MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
-        (binary_matrix_direct_configuration_separator b) ≠ 0 := by
+      (binary_matrix_direct_configuration_separator b) ≠ 0 := by
+  classical
   have horig :
       (binary_matrix_direct_configuration_separator b).totalDegree < Fintype.card K := by
     unfold binary_matrix_separator_threshold at hcard
@@ -1245,7 +1064,7 @@ private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
 
 open scoped BigOperators in
 private theorem exists_binary_matrix_generic_tuple
-    {K : Type} [Field K] [Fintype K] [DecidableEq K]
+    {K : Type} [Field K] [Fintype K]
     [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
     (hcard : binary_matrix_separator_threshold b ≤ Fintype.card K) :
@@ -1253,6 +1072,7 @@ private theorem exists_binary_matrix_generic_tuple
       Function.Injective (binary_product_tuple_linear_map t) ∧
       Function.Injective (fun M : Fin 2 → Fin b → ZMod 2 =>
         MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M)) := by
+  classical
   obtain ⟨t, ht⟩ :=
     exists_binary_matrix_direct_configuration_separator_eval_ne_zero b hb hcard
   exact ⟨t, binary_matrix_generic_tuple_of_separator_eval_ne_zero t ht⟩
@@ -1414,7 +1234,7 @@ private theorem binary_matrix_johnson_raw
   obtain ⟨r, hrpow⟩ := exists_binary_matrix_exponent_parameter ε hε
   refine ⟨binary_matrix_separator_threshold (r + 2), ?_⟩
   intro FC _ _ _ _ hFC
-  letI : Algebra (ZMod 2) FC := ZMod.algebra FC 2
+  let : Algebra (ZMod 2) FC := ZMod.algebra FC 2
   obtain ⟨t, htinj, hcoeffinj⟩ :=
     exists_binary_matrix_generic_tuple (K := FC) (r + 2) (by omega) hFC
   let ιC : Type :=
@@ -1461,8 +1281,8 @@ private theorem binary_matrix_johnson_raw
 
 open scoped NNReal in
 private theorem rs_fold_close_of_graph_agreement
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [Nonempty ι]
+    [Field F] [Finite F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ)
     (hcard : Fintype.card ι = 16 * d)
     (γ : F) (S : Finset ι) (p : Polynomial F)
@@ -1474,6 +1294,7 @@ private theorem rs_fold_close_of_graph_agreement
         γ • (fun i => domain i ^ (2 * d)),
       (ReedSolomon.code domain (d + 1) : Set (ι → F))) ≤ (3 / 4 : ℝ≥0) := by
   classical
+  let _ := Fintype.ofFinite F
   let w : ι → F := fun i => p.eval (domain i)
   have hw : w ∈ (ReedSolomon.code domain (d + 1) : Set (ι → F)) :=
     ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval p hpdeg
@@ -1507,8 +1328,8 @@ private theorem rs_fold_close_of_graph_agreement
       exact (hagree i hi).symm
 
 private theorem rs_monomial_agreement_card_le_two_mul
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Finite ι] [Nonempty ι]
+    [Field F] [Finite F]
     (domain : ι ↪ F) (d : ℕ) (hd : 0 < d)
     (v : ι → F)
     (hv : v ∈ (ReedSolomon.code domain (d + 1) : Set (ι → F)))
@@ -1516,7 +1337,9 @@ private theorem rs_monomial_agreement_card_le_two_mul
     (hagree : ∀ i ∈ S, v i = domain i ^ (2 * d)) :
     S.card ≤ 2 * d := by
   classical
-  letI : NeZero (d + 1) := ⟨by omega⟩
+  let _ := Fintype.ofFinite ι
+  let _ := Fintype.ofFinite F
+  let : NeZero (d + 1) := ⟨by omega⟩
   obtain ⟨p, hpdeg, hpeval⟩ :=
     ReedSolomon.mem_code_iff_eval_of_ne_zero.mp hv
   let Q : Polynomial F := Polynomial.X ^ (2 * d) - p
@@ -1546,8 +1369,8 @@ private theorem rs_monomial_agreement_card_le_two_mul
 
 open scoped NNReal in
 private theorem binary_monomial_stack_not_joint
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [Nonempty ι]
+    [Field F] [Finite F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ) (hd : 0 < d)
     (hcard : Fintype.card ι = 16 * d)
     (δ_int : ℝ≥0) (hδ : (δ_int : ℝ) < 7 / 8) :
@@ -1557,6 +1380,7 @@ private theorem binary_monomial_stack_not_joint
         (fun i => domain i ^ (4 * d))
         (fun i => domain i ^ (2 * d))) δ_int := by
   classical
+  let _ := Fintype.ofFinite F
   intro hj
   rw [← Code.jointAgreement_iff_jointProximity] at hj
   obtain ⟨S, hScard, v, hv⟩ := hj
@@ -1575,13 +1399,14 @@ private theorem binary_monomial_stack_not_joint
 
 private theorem rs_relative_min_dist_fifteen_sixteen
     {ι K : Type} [Fintype ι] [Nonempty ι]
-    [Field K] [Fintype K] [DecidableEq K]
+    [Field K] [Finite K] [DecidableEq K]
     (domain : ι ↪ K) (t : ℕ) (ht : 0 < t)
     (hcard : Fintype.card ι = 16 * t) :
     (Code.minDist ((ReedSolomon.code domain (t + 1) : Set (ι → K))) : ℝ) /
         Fintype.card ι = (15 : ℝ) / 16 := by
+  let _ := Fintype.ofFinite K
   have hkpos : 0 < t + 1 := by omega
-  letI : NeZero (t + 1) := ⟨hkpos.ne'⟩
+  let : NeZero (t + 1) := ⟨hkpos.ne'⟩
   have hk : t + 1 ≤ Fintype.card ι := by
     rw [hcard]
     omega
@@ -1614,9 +1439,9 @@ theorem exists_rs_epsCa_large_at_johnson_radius
   intro FC _ _ _ _ hFC
   obtain ⟨ιC, instι, neι, decι, domain, d, G,
     hd, hcard, hG, hagree⟩ := hraw hFC
-  letI : Fintype ιC := instι
-  letI : Nonempty ιC := neι
-  letI : DecidableEq ιC := decι
+  let : Fintype ιC := instι
+  let : Nonempty ιC := neι
+  let : DecidableEq ιC := decι
   refine ⟨ιC, inferInstance, inferInstance, inferInstance,
     domain, d + 1, rs_relative_min_dist_fifteen_sixteen domain d hd hcard, ?_⟩
   intro δ_int hδ
@@ -1646,5 +1471,3 @@ theorem exists_rs_epsCa_large_at_johnson_radius
 end ReedSolomon
 
 end CodingTheory
-
-set_option linter.style.longFile 1800

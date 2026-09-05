@@ -35,9 +35,8 @@ open OracleSpec OracleComp PFunctor
   output statements (from the outer to the inner context).
 -/
 @[inline, reducible]
-def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
-  := PFunctor.Lens (OuterStmtIn X^ OuterStmtOut)
-                   (InnerStmtIn X^ InnerStmtOut)
+def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type) :=
+  PFunctor.Lens (OuterStmtIn X^ OuterStmtOut) (InnerStmtIn X^ InnerStmtOut)
 
 namespace Statement.Lens
 
@@ -66,8 +65,8 @@ def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Ty
     {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
     {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
     {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
-    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) [∀ i, OracleInterface (InnerOStmtOut i)]
-  :=
+    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type)
+    [∀ i, OracleInterface (InnerOStmtOut i)] :=
     Statement.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
   -- TODO: fill in the extra conditions
@@ -217,9 +216,10 @@ end OracleStatement.ExecutableLens
   The inclusion of the statements are necessary when we consider the full view of the prover. In
   practice as well, oftentimes a lens between only witnesses are not enough. -/
 @[inline, reducible]
-def Witness.Lens (OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens ((OuterStmtIn × OuterWitIn) X^ OuterWitOut)
-                     (InnerWitIn X^ (InnerStmtOut × InnerWitOut))
+def Witness.Lens
+    (OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
+  PFunctor.Lens ((OuterStmtIn × OuterWitIn) X^ OuterWitOut)
+    (InnerWitIn X^ (InnerStmtOut × InnerWitOut))
 
 namespace Witness.Lens
 
@@ -368,9 +368,8 @@ This goes in the reverse direction (output to input) compared to the witness len
 and requires in addition the outer input statement.
 -/
 @[inline, reducible]
-def Witness.InvLens (OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type)
-    := PFunctor.Lens ((OuterStmtIn × OuterWitOut) X^ OuterWitIn)
-                     (InnerWitOut X^ InnerWitIn)
+def Witness.InvLens (OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
+  PFunctor.Lens ((OuterStmtIn × OuterWitOut) X^ OuterWitIn) (InnerWitOut X^ InnerWitIn)
 
 namespace Witness.InvLens
 
@@ -413,7 +412,7 @@ variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
   context -/
 @[inline, reducible]
 def proj (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
-              OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
     OuterStmtIn × OuterWitOut → InnerStmtIn × InnerWitOut :=
   fun ⟨stmtIn, witOut⟩ => ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witOut)⟩
 
@@ -555,14 +554,16 @@ instance [Inhabited OuterWitOut]
       innerRelIn.language innerRelOut.language
       compatStmt where
   proj_sound := fun outerStmtIn hCompat => by
-    simp [Set.language] at hCompat ⊢
+    simp only [Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
+      not_exists] at hCompat ⊢
     intro innerWitIn hRelIn
     contrapose! hCompat
     let outerWitIn := lens.wit.lift (outerStmtIn, default) innerWitIn
     have hOuterWitIn := instKS.lift_knowledgeSound outerStmtIn default innerWitIn (by simp) hRelIn
     exact ⟨outerWitIn, hOuterWitIn⟩
   lift_sound := fun outerStmtIn innerStmtOut hCompat hInnerRelOut => by
-    simp [Set.language] at hCompat hInnerRelOut ⊢
+    simp only [Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
+      not_exists] at hCompat hInnerRelOut ⊢
     intro outerWitOut hOuterRelOut
     contrapose! hInnerRelOut
     let innerWitOut := lens.wit.proj (outerStmtIn, outerWitOut)

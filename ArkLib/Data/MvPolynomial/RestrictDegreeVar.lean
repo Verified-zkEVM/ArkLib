@@ -21,10 +21,8 @@ plain multilinear case is `b = fun _ => 1`. The degree machinery (`degreeOf`) is
 per-coordinate, so the characterisation `mem_restrictDegreeVar_iff_degreeOf_le` is immediate.
 -/
 
--- The `sumAlgEquiv_monomial_aux` lemma below + the two helper lemmas mirror the (private) uniform
--- proofs in `RestrictDegree.lean`. The `multiGoal` linter fires on a `congr! 2` split inside
--- `sumAlgEquiv_monomial_aux`; scope-suppress it file-wide.
-set_option linter.style.multiGoal false
+-- The `sumAlgEquiv_monomial_aux` lemma below and its two helpers mirror the private uniform
+-- proofs in `RestrictDegree.lean`.
 
 namespace MvPolynomial
 
@@ -39,7 +37,7 @@ noncomputable def restrictDegreeVar (σ : Type*) (R : Type*) [CommSemiring R] (b
 theorem mem_restrictDegreeVar {b : σ → ℕ} (p : MvPolynomial σ R) :
     p ∈ restrictDegreeVar σ R b ↔ ∀ s ∈ p.support, ∀ i, (s : σ →₀ ℕ) i ≤ b i := by
   simp only [restrictDegreeVar, mem_restrictSupport_iff, Set.subset_def, Finset.mem_coe,
-    Set.mem_setOf_eq]
+    Set.mem_ofPred_eq]
 
 /-- The uniform bound `b = fun _ => m` recovers `restrictDegree σ R m` definitionally. So
 `restrictDegreeVar` is a drop-in generalisation: existing `restrictDegree`/`R⦃≤ m⦄[X σ]` users are

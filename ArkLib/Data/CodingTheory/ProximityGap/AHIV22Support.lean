@@ -79,7 +79,7 @@ private lemma exists_common_support_of_wt_le
     (hF : Fintype.card F > e) :
     ∃ D : Finset ι, D.card ≤ e ∧ ∀ x : E, ∀ j, j ∉ D → (x : ι → F) j = 0 := by
   classical
-  letI : Fintype E := Fintype.ofFinite E
+  let : Fintype E := Fintype.ofFinite E
   let f : E → ℕ := fun x ↦ (vecSupport (F := F) (x : ι → F)).card
   have huniv : (Finset.univ : Finset E).Nonempty := Finset.univ_nonempty
   obtain ⟨x0, hx0⟩ := Finset.exists_maximalFor (f := f) (s := (Finset.univ : Finset E)) huniv
@@ -345,7 +345,8 @@ lemma dist_interleaved_code_to_code_lb
     refine (Code.mem_moduleInterleavedCode_iff (F := F) (A := F) (κ := κ) (ι := ι) (MC := L)
       (v := (⋈|V))).2 ?_
     intro k
-    simpa [V] using hdec_mem ⟨U_star k, h_row_in_span k⟩
+    change dec ⟨U_star k, h_row_in_span k⟩ ∈ L
+    exact hdec_mem ⟨U_star k, h_row_in_span k⟩
   have h_dist_rows : ∀ k j, j ∉ D → U_star k j = V k j := by
     intro k j hj
     have hz :
@@ -365,8 +366,8 @@ lemma dist_interleaved_code_to_code_lb
     by_contra hjD
     apply hj
     funext k
-    have := h_dist_rows k j hjD
-    simpa [V] using this
+    change U_star k j = V k j
+    exact h_dist_rows k j hjD
   have h_dist_to_code : Δ₀(⋈|U_star, (L^⋈κ)) ≤ e := by
     exact le_trans
       (Code.distFromCode_le_dist_to_mem (C := (L^⋈κ)) (u := (⋈|U_star)) (v := (⋈|V))

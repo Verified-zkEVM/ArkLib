@@ -35,7 +35,7 @@ theorem linear_mcaError_ge_information_set
       (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) := by
   classical
-  haveI : Nonempty F := ⟨0⟩
+  have : Nonempty F := ⟨0⟩
   set n : ℕ := Fintype.card ι with hn
   set d : ℕ := Code.dist (C : Set (ι → F)) with hd
   set m : ℕ := ⌊δ * (n : ℝ≥0)⌋₊ with hm

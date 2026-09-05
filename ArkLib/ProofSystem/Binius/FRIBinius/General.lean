@@ -60,12 +60,16 @@ def fullPspec := (batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) ++�
   (BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 instance : ∀ j, OracleInterface ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Message j) :=
-  instOracleInterfaceMessageAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K (biniusProfile κ L K β))
-    (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+  instOracleInterfaceMessageAppend
+    (pSpec₁ := RingSwitching.pSpecBatching κ L K (biniusProfile κ L K β))
+    (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 instance : ∀ j, SampleableType ((batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Challenge j) :=
-  instSampleableTypeChallengeAppend (pSpec₁ := RingSwitching.pSpecBatching κ L K (biniusProfile κ L K β))
-    (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+  instSampleableTypeChallengeAppend
+    (pSpec₁ := RingSwitching.pSpecBatching κ L K (biniusProfile κ L K β))
+    (pSpec₂ := BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 instance : ∀ j, OracleInterface ((fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions
     h_ℓ_add_R_rate).Message j) :=

@@ -133,7 +133,7 @@ notation "‖" u "‖₀" => hammingNorm u
 /-- Post-composition with an injection preserves the Hamming distance.
   A non-dependent version of the Mathlib's hammingDist_comp. -/
 theorem hammingDist_comp' {A B : Type*} [DecidableEq A] [DecidableEq B]
-  {ι : Type*} [Fintype ι]
+    {ι : Type*} [Fintype ι]
   {e : A → B} (he : Function.Injective e) (u v : ι → A) :
   hammingDist (e ∘ u) (e ∘ v) = hammingDist u v := by
   simp only [hammingDist, Function.comp_apply]
@@ -198,8 +198,9 @@ alphabet of columns, disagree. -/
 lemma _root_.Matrix.neqCols_eq_disagreementCols_transpose
     {ι ι' F : Type*} [Fintype ι] [Fintype ι'] [DecidableEq F] (U V : Matrix ι ι' F) :
     Matrix.neqCols U V = disagreementCols U.transpose V.transpose := by
+  unfold Matrix.neqCols disagreementCols
   ext j
-  simp [Matrix.neqCols, mem_disagreementCols, Function.ne_iff, ne_comm]
+  simp [Function.ne_iff, ne_comm]
 
 /-- The Hamming distance of a code `C` is the minimum Hamming distance between any two distinct
   elements of the code.
@@ -236,7 +237,7 @@ def hammingBall (y : n → R) (r : ℕ) : Set (n → R) :=
 
 @[simp]
 theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
-  x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
+    x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
   aesop (add simp [hammingBall, hammingDist])
 
 section Agreement
@@ -280,7 +281,7 @@ private lemma sq_le_sum_agree :
 
 /-- Cauchy–Schwarz for the agreement counts. -/
 lemma sq_sum_agree_le :
-  (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
+    (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
     (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
   rw [sum_agree_eq]
   calc (∑ i : n, ((T.filter fun c => c i = u i).card : ℝ)) ^ 2
@@ -301,11 +302,11 @@ lemma distFromCode_le_dist_to_mem (u : n → R) {C : Set (n → R)} (v : n → R
   · -- Show the set is bounded below
     use 0
     intro d hd
-    simp only [Set.mem_setOf_eq] at hd
+    simp only [Set.mem_ofPred_eq] at hd
     rcases hd with ⟨w, _, h_dist⟩
     exact bot_le
   · -- Show hammingDist u v is in the set
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     exact ⟨v, hv, le_refl _⟩
 
 /-- If `u` and `v` are distinct members of a code `C`, their distance is at least `‖C‖₀`. -/
@@ -314,7 +315,7 @@ lemma pairDist_ge_code_mindist_of_ne {C : Set (n → R)} {u v : n → R}
     Δ₀(u, v) ≥ ‖C‖₀:= by
   unfold Code.dist -- We use the property of sInf: if `k` is in the set `S`, then `sInf S ≤ k`.
   apply Nat.sInf_le
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   exists u
   constructor
   · exact hu
@@ -324,7 +325,7 @@ noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
 
 lemma minDist_le_dist {C : Set (n → R)} {u v : n → R}
-  (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
+    (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
   minDist C ≤ Δ₀(u, v) := Nat.sInf_le ⟨u, hu, v, hv, huv, rfl⟩
 
 /-- Two codewords are equal if the coordinates on which they disagree are contained in a set
@@ -367,7 +368,7 @@ theorem dist_le_card (C : Set (n → R)) : dist C ≤ Fintype.card n := by
     unfold Set.Nontrivial at h
     obtain ⟨u, hu, v, hv, huv⟩ := h
     refine Nat.sInf_le ?_
-    simp only [ne_eq, Set.mem_setOf_eq]
+    simp only [ne_eq, Set.mem_ofPred_eq]
     refine ⟨u, And.intro hu ⟨v, And.intro hv ⟨huv, hammingDist_le_card_fintype⟩⟩⟩
 
 lemma dist_eq_minDist {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F] (C : Set (ι → F)) :
@@ -485,7 +486,7 @@ lemma exists_closest_codeword_of_Nonempty_Code {ι : Type*} [Fintype ι] {F : Ty
     -- let S_nat := (fun (g : C_i) => hammingDist f g) '' Set.univ
   have hS_nonempty : S.Nonempty := Set.image_nonempty.mpr Set.univ_nonempty
   have h_coe_sinfS_eq_sinfSENat : ↑(sInf S) = sInf SENat := by
-    rw [ENat.coe_sInf (hs := hS_nonempty)]
+    rw [ENat.natCast_sInf (hs := hS_nonempty)]
     simp only [SENat, Set.image_univ, sInf_range]
     simp only [S, Set.image_univ, iInf_range]
   rcases Nat.sInf_mem hS_nonempty with ⟨g_subtype, hg_subtype, hg_min⟩
@@ -559,7 +560,7 @@ theorem closeToWord_iff_exists_possibleDisagreeCols
       rw [hD_card_eq_dist]
       -- Assume Δ₀(word, codeword) = hammingDist word codeword (perhaps needs coercion)
       -- Let's assume Δ₀ returns ℕ∞ and hammingDist returns ℕ for now
-      apply ENat.coe_le_coe.mp -- Convert goal to ℕ ≤ ℕ
+      apply ENat.natCast_le_natCast.mp -- Convert goal to ℕ ≤ ℕ
       -- Goal: ↑(hammingDist u ↑v) ≤ ↑e
       rw [Nat.cast_le (α := ENat)]
       exact h_dist_le_e
@@ -593,10 +594,10 @@ theorem closeToWord_iff_exists_possibleDisagreeCols
       hammingDist_eq_disagreementCols_card u v
     -- Combine the inequalities
     -- Assuming Δ₀(w, c) = ↑(hammingDist w c)
-    rw [← ENat.coe_le_coe] -- Convert goal to ℕ∞ ≤ ℕ∞
+    rw [← ENat.natCast_le_natCast] -- Convert goal to ℕ∞ ≤ ℕ∞
     -- Goal: ↑(hammingDist u ↑v) ≤ ↑e
-    apply le_trans (ENat.coe_le_coe.mpr (by rw [h_dist_eq_card_diff]))
-    apply ENat.coe_le_coe.mpr
+    apply le_trans (ENat.natCast_le_natCast.mpr (by rw [h_dist_eq_card_diff]))
+    apply ENat.natCast_le_natCast.mpr
     exact Nat.le_trans h_card_diff_le_card_D hD_card_le_e
 
 theorem closeToWord_iff_exists_agreementCols
@@ -694,7 +695,7 @@ theorem eq_of_lt_dist {C : Set (n → R)} {u v : n → R} (hu : u ∈ C) (hv : v
   revert huv
   simp only [ne_eq, imp_false, not_lt]
   refine Nat.sInf_le ?_
-  simp only [Set.mem_setOf_eq]
+  simp only [Set.mem_ofPred_eq]
   refine ⟨u, And.intro hu ⟨v, And.intro hv ⟨hNe, le_rfl⟩⟩⟩
 
 @[simp]
@@ -709,7 +710,7 @@ theorem distFromCode_eq_top_iff_empty (u : n → R) (C : Set (n → R)) : Δ₀(
     intro v hv
     apply sInf_eq_top.mp at h
     revert h
-    simp only [Set.mem_setOf_eq, forall_exists_index, and_imp, imp_false, not_forall]
+    simp only [Set.mem_ofPred_eq, forall_exists_index, and_imp, imp_false, not_forall]
     refine ⟨Fintype.card n, v, hv, ?_, ?_⟩
     · norm_num; exact hammingDist_le_card_fintype
     · norm_num
@@ -718,7 +719,7 @@ theorem distFromCode_eq_top_iff_empty (u : n → R) (C : Set (n → R)) : Δ₀(
 lemma distFromCode_le_card_index_of_Nonempty (u : n → R) {C : Set (n → R)} [Nonempty C] :
     Δ₀(u, C) ≤ Fintype.card n := by
   -- exact an element from C since C is nonempty
-  letI h_nonempty : Set.Nonempty C := by (expose_names; exact Set.nonempty_coe_sort.mp inst_2)
+  let h_nonempty : Set.Nonempty C := by (expose_names; exact Set.nonempty_coe_sort.mp inst_2)
   let v : n → R := Classical.choose h_nonempty
   have hv : v ∈ C := Classical.choose_spec h_nonempty
   have h_dist_u_C_le_dist_u_v : Δ₀(u, C) ≤ Δ₀(u, v) := by
@@ -774,9 +775,9 @@ lemma closeToCode_iff_closeToCodeword_of_minDist {ι : Type*} [Fintype ι] {F : 
       rw [distFromCode_of_empty] at h_dist_le_e
       -- h_dist_le_e is now `⊤ ≤ ↑e`.
       -- Since `e : ℕ`, `↑e` is finite (i.e., `↑e ≠ ⊤`).
-      have h_e_ne_top : (e : ℕ∞) ≠ ⊤ := ENat.coe_ne_top e
+      have h_e_ne_top : (e : ℕ∞) ≠ ⊤ := ENat.natCast_ne_top e
       -- `⊤ ≤ ↑e` is only true if `↑e = ⊤`, so this is a contradiction.
-      simp only [top_le_iff, ENat.coe_ne_top] at h_dist_le_e
+      simp only [top_le_iff, ENat.natCast_ne_top] at h_dist_le_e
     · -- Case 2: C is non-empty
       have hC_nonempty : Set.Nonempty C := Set.nonempty_iff_ne_empty.mpr hC_empty
       have hC_nonempty_instance : Nonempty C := Set.Nonempty.to_subtype hC_nonempty
@@ -784,7 +785,7 @@ lemma closeToCode_iff_closeToCodeword_of_minDist {ι : Type*} [Fintype ι] {F : 
       use v; constructor
       · simp only [Subtype.coe_prop]
       · rw [distFromPickClosestCodeword_of_Nonempty_Code] at h_dist_le_e
-        rw [ENat.coe_le_coe] at h_dist_le_e
+        rw [ENat.natCast_le_natCast] at h_dist_le_e
         exact h_dist_le_e
   · -- Direction 2: (←)
     -- Assume: `∃ v ∈ C, Δ₀(u, v) ≤ e`
@@ -797,10 +798,10 @@ lemma closeToCode_iff_closeToCodeword_of_minDist {ι : Type*} [Fintype ι] {F : 
     -- which says `sInf S ≤ x` if `x ∈ S`.
     have h_sInf_le: Δ₀(u, C) ≤ Δ₀(u, v) := by
       apply sInf_le
-      simp only [Set.mem_setOf_eq, Nat.cast_le]
+      simp only [Set.mem_ofPred_eq, Nat.cast_le]
       use v
     calc Δ₀(u, C) ≤ Δ₀(u, v) := h_sInf_le
-    _ ≤ e := by exact ENat.coe_le_coe.mpr h_dist_le_e
+    _ ≤ e := by exact ENat.natCast_le_natCast.mpr h_dist_le_e
 
 section Computable
 
@@ -855,6 +856,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
       -- First, rewrite ‖C‖₀' as the minimum of `vals` in `ℕ∞`.
       have hmin_coe : ‖C‖₀' = (vals.min : ℕ∞) := by
         simp only [dist', hvals, hpairs]
+        rfl
       -- Next, show `(vals.min : ℕ∞) = dStar` by sandwiching with ≤.
       have hmem_min' : dStar ∈ vals := by
         simpa [hdstar] using
@@ -961,7 +963,7 @@ lemma possibleDistsToCode_nonempty_iff
     (possibleDistsToCode w C δf).Nonempty ↔ (C \ {w}).Nonempty := by
   -- 1. Unfold definitions
   unfold possibleDistsToCode
-  simp only [Set.nonempty_def, Set.mem_setOf_eq]
+  simp only [Set.nonempty_def, Set.mem_ofPred_eq]
   -- Goal: (∃ d, ∃ c ∈ C, c ≠ w ∧ δf w c = d) ↔ (∃ c, c ∈ C \ {w})
 
   -- 2. Unfold set difference on RHS
@@ -1019,7 +1021,7 @@ lemma distFromCode'_eq_distFromCode (C : Set (n → R)) [Fintype C] (u : n → R
   by_cases hC_empty: C = ∅
   · subst hC_empty
     simp only [distFromCode', Finset.univ_eq_empty, Finset.image_empty, Finset.min_empty,
-      distFromCode, Set.mem_empty_iff_false, false_and, exists_false, Set.setOf_false,
+      distFromCode, Set.mem_empty_iff_false, false_and, exists_false, Set.ofPred_false,
       _root_.sInf_empty]
     rfl
   · have hC_nonempty : Nonempty C := Set.nonempty_iff_ne_empty'.mpr hC_empty
@@ -1034,11 +1036,11 @@ lemma distFromCode'_eq_distFromCode (C : Set (n → R)) [Fintype C] (u : n → R
       · -- The inf set is nonempty
         obtain ⟨c, hc⟩ := (inferInstance : Nonempty C)
         use (hammingDist u c : ℕ∞)
-        simp only [Set.mem_setOf_eq]
+        simp only [Set.mem_ofPred_eq]
         exact ⟨c, hc, le_refl _⟩
       · -- min is a lower bound
         intro d hd
-        simp only [Set.mem_setOf_eq] at hd
+        simp only [Set.mem_ofPred_eq] at hd
         obtain ⟨v, hv, hdist⟩ := hd
         exact le_trans (Finset.min_le (Finset.mem_image.mpr ⟨⟨v, hv⟩, Finset.mem_univ _, rfl⟩))
           hdist
@@ -1049,7 +1051,6 @@ lemma distFromCode'_eq_distFromCode (C : Set (n → R)) [Fintype C] (u : n → R
         intro d _
         exact bot_le
       · -- min is in the set of upper bounds
-        simp only [Set.mem_setOf_eq]
         obtain ⟨min_val, hmin⟩ := Finset.min_of_nonempty h_nonempty
         -- 1. The minimum value must belong to the set
         have h_in_set : min_val ∈ (@Finset.univ C _).image (fun v => hammingDist u v.1) :=

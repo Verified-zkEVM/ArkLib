@@ -94,8 +94,8 @@ theorem FixedRadiusParameters.winningSetUpperBound_le_certifiedExtractorError
       ((minRelHammingDistCode (p.code : Set (ι → A)) : ℝ≥0))) :
     p.winningSetUpperBound δ ≤ p.certifiedExtractorError δ := by
   classical
-  letI := Fintype.ofFinite A
-  letI : DecidableEq F := Classical.decEq F
+  let := Fintype.ofFinite A
+  let : DecidableEq F := Classical.decEq F
   exact ToyProblem.winningSetUpperBound_le_certifiedExtractorError
     p.code δ p.t hδ p.encoder p.encoder_injective p.encoder_range
 

@@ -206,15 +206,15 @@ private theorem simulateAddSaltQueryImpl
       rfl
     · rcases q with ⟨i, q⟩
       obtain ⟨i, hDir⟩ := i
-      simp only [addSaltQueryImpl, simulateQ_query]
-      simp only [OracleQuery.input_query, OracleQuery.cont_query,
-        OracleInterface.simOracle2, QueryImpl.addLift, QueryImpl.add_apply_inr,
-        QueryImpl.liftTarget_apply]
-      change id <$> liftM (OracleInterface.simOracle0
-          (pSpec.addSalt Salt).Message messages ⟨⟨i, hDir⟩, q⟩) =
-        liftM (OracleInterface.simOracle0 pSpec.Message
+      simp only [addSaltQueryImpl]
+      simp only [OracleInterface.simOracle2, QueryImpl.addLift,
+        QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply]
+      change id <$> (liftM (OracleInterface.simOracle0
+          (pSpec.addSalt Salt).Message messages ⟨⟨i, hDir⟩, q⟩) :
+            OracleComp _ _) =
+        (liftM (OracleInterface.simOracle0 pSpec.Message
           (Messages.removeSalt (pSpec := pSpec) (Salt := Salt) messages)
-          ⟨⟨i, hDir⟩, q⟩)
+          ⟨⟨i, hDir⟩, q⟩) : OracleComp _ _)
       unfold OracleInterface.simOracle0
       simp only [addSalt_answer, Messages.removeSalt]
       congr 1

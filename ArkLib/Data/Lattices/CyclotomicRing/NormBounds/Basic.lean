@@ -60,6 +60,36 @@ theorem valMinAbs_natAbs_le {a : ZMod q} (m : ℤ) (h : (m : ZMod q) = a) :
     intro ht habs
     omega
 
+/-- Centered representative of a product: submultiplicative. Note there is **no wraparound
+condition**: `valMinAbs` is minimal among all integer representatives
+(`valMinAbs_natAbs_le`), and `a.valMinAbs * b.valMinAbs` is one, so the bound survives however
+much `a * b` wraps. -/
+theorem valMinAbs_natAbs_mul_le (a b : ZMod q) :
+    (a * b).valMinAbs.natAbs ≤ a.valMinAbs.natAbs * b.valMinAbs.natAbs := by
+  have h : ((a.valMinAbs * b.valMinAbs : ℤ) : ZMod q) = a * b := by
+    rw [Int.cast_mul, ZMod.coe_valMinAbs, ZMod.coe_valMinAbs]
+  exact le_of_le_of_eq (valMinAbs_natAbs_le _ h) (Int.natAbs_mul _ _)
+
+/-- Centered representative of a finite sum: triangle inequality. Again no wraparound condition is
+needed, for the same reason as `valMinAbs_natAbs_mul_le`. -/
+theorem valMinAbs_natAbs_sum_le {ι : Type*} (s : Finset ι) (f : ι → ZMod q) :
+    (∑ i ∈ s, f i).valMinAbs.natAbs ≤ ∑ i ∈ s, (f i).valMinAbs.natAbs := by
+  have h : ((∑ i ∈ s, (f i).valMinAbs : ℤ) : ZMod q) = ∑ i ∈ s, f i := by
+    rw [Int.cast_sum]
+    exact Finset.sum_congr rfl fun i _ => ZMod.coe_valMinAbs (f i)
+  refine le_trans (valMinAbs_natAbs_le _ h) ?_
+  calc (∑ i ∈ s, (f i).valMinAbs).natAbs
+      ≤ ∑ i ∈ s, (f i).valMinAbs.natAbs := Int.natAbs_sum_le s _
+    _ = ∑ i ∈ s, (f i).valMinAbs.natAbs := rfl
+
+/-- Uniform bound on a finite sum of centered representatives: `card · β`. The shape most norm
+arguments need (`Finset.sum_le_card_nsmul` at a constant bound). -/
+theorem valMinAbs_natAbs_sum_le_card_mul {ι : Type*} (s : Finset ι) (f : ι → ZMod q) {β : ℕ}
+    (hf : ∀ i ∈ s, (f i).valMinAbs.natAbs ≤ β) :
+    (∑ i ∈ s, f i).valMinAbs.natAbs ≤ s.card * β :=
+  le_trans (valMinAbs_natAbs_sum_le s f)
+    (le_trans (Finset.sum_le_sum hf) (by rw [Finset.sum_const, smul_eq_mul]))
+
 /-- Centered representative of a difference: bounded by the sum of the centered
 representatives' absolute values. -/
 theorem valMinAbs_sub_natAbs_le (a b : ZMod q) :
@@ -107,6 +137,31 @@ notation "‖" a "‖₁" => Rq.l1Norm _ a
 notation "‖" a "‖₂²" => Rq.l2NormSq _ a
 /-- Centered squared-`ℓ₂` norm `‖z‖₂²` of a vector (`Φ` inferred). -/
 notation "‖" z "‖₂²" => vecL2NormSq _ z
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Read a coefficient bound off an `ℓ∞` bound: every coefficient in the modulus' degree range has
+centered absolute value at most the `ℓ∞` norm. The elimination counterpart of the `Finset.sup_le`
+introductions used throughout this file. -/
+theorem Rq.valMinAbs_natAbs_coeff_le_of_lInftyNorm_le {B : ℕ} {a : Rq Φ}
+    (h : Rq.lInftyNorm Φ a ≤ B) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    ((a.1.coeff k).valMinAbs).natAbs ≤ B :=
+  le_trans (Finset.le_sup (f := fun k => ((a.1.coeff k).valMinAbs).natAbs)
+    (Finset.mem_range.mpr hk)) h
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Read an entrywise `ℓ∞` bound off a vector `ℓ∞` bound. -/
+theorem Rq.lInftyNorm_le_of_vecLInftyNorm_le {cols B : ℕ} {z : PolyVec (Rq Φ) cols}
+    (h : vecLInftyNorm Φ z ≤ B) (i : Fin cols) : Rq.lInftyNorm Φ (z i) ≤ B :=
+  le_trans (Finset.le_sup (f := fun i => Rq.lInftyNorm Φ (z i)) (Finset.mem_univ i)) h
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Coefficientwise form of a vector `ℓ∞` bound: every coefficient of every entry has centered
+absolute value at most the bound. -/
+theorem Rq.valMinAbs_natAbs_coeff_le_of_vecLInftyNorm_le {cols B : ℕ} {z : PolyVec (Rq Φ) cols}
+    (h : vecLInftyNorm Φ z ≤ B) (i : Fin cols) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    (((z i).1.coeff k).valMinAbs).natAbs ≤ B :=
+  Rq.valMinAbs_natAbs_coeff_le_of_lInftyNorm_le Φ
+    (Rq.lInftyNorm_le_of_vecLInftyNorm_le Φ h i) hk
 
 omit [NeZero q] in
 /-- The underlying polynomial of `1 : Rq Φ` is the constant `1` (no reduction occurs, as

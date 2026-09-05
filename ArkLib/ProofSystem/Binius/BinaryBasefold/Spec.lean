@@ -5,6 +5,12 @@ Authors: Chung Thai Nguyen, Quang Dao
 -/
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+
+Definitions and results for this component of ArkLib.
+-/
+
 namespace Binius.BinaryBasefold
 
 /-! ## Protocol Specs for Binary Basefold
@@ -176,7 +182,6 @@ lemma isCommitmentRoundOfNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :
     rw [Nat.add_assoc, Nat.sub_add_cancel (by exact NeZero.one_le)];
     conv_lhs => enter [2]; rw [←Nat.one_mul (n:=ϑ)]
     rw [←Nat.add_mul];
-
   have hdivLe: ϑ ∣ ↑bIdx * ϑ + (ϑ - 1) + 1 := by
     rw [h_eq]
     exact Nat.dvd_mul_left ϑ (↑bIdx + 1)
@@ -222,6 +227,7 @@ def pSpecFoldRelay (d : ℕ := 2) : ProtocolSpec (2) :=
   pSpecFold (L:=L) (d := d) ++ₚ pSpecRelay
 
 -- Round-segment-level reductions
+@[implicit_reducible]
 def pSpecFoldRelaySequence (n : ℕ) (d : ℕ := 2) :=
   ProtocolSpec.seqCompose fun (_: Fin n) ↦ pSpecFoldRelay (L:=L) (d := d)
 -- Block-level reductions
@@ -235,6 +241,7 @@ def pSpecFullNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) (d : ℕ := 2) :=
             (i:=⟨ϑ - 1, by exact ϑ_sub_one_le_self⟩)⟩ (d := d))
 
 /-- The last block consists of `ϑ` fold-relay rounds -/
+@[implicit_reducible]
 def pSpecLastBlock (d : ℕ := 2) := pSpecFoldRelaySequence (L:=L) (n:=ϑ) (d := d)
 
 /-- A sequence of `(ℓ / ϑ - 1)` non-last blocks -/
@@ -407,6 +414,7 @@ instance {d : ℕ} : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=
   instSampleableTypeChallengeAppend
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
+@[instance_reducible]
 def instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
     SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
   let T := sDomain 𝔽q β h_ℓ_add_R_rate i
