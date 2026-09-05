@@ -361,6 +361,14 @@ import ArkLib.ProofSystem.ConstraintSystem.R1CS
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
+import ArkLib.ProofSystem.Logup.Algebra
+import ArkLib.ProofSystem.Logup.Algebra.Lemmas
+import ArkLib.ProofSystem.Logup.Protocol
+import ArkLib.ProofSystem.Logup.Security.Common
+import ArkLib.ProofSystem.Logup.Security.Completeness
+import ArkLib.ProofSystem.Logup.Security.Soundness
+import ArkLib.ProofSystem.Logup.Security.Soundness.Bounds
+import ArkLib.ProofSystem.Logup.Security.Soundness.Lemmas
 import ArkLib.ProofSystem.Plonk.Basic
 import ArkLib.ProofSystem.RingSwitching.Basic
 import ArkLib.ProofSystem.RingSwitching.Lift

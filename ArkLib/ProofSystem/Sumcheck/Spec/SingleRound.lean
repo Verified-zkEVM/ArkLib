@@ -140,6 +140,46 @@ def relationRound (i : Fin (n + 1)) :
   { ⟨⟨⟨target, challenges⟩, polyOracle⟩, _⟩ |
     ∑ x ∈ (univ.map D) ^ᶠ (n - i), (polyOracle ()).val ⸨challenges, x⸩ = target }
 
+/-- At the final round, the Sumcheck relation is exactly the final point-evaluation claim. -/
+theorem relationRound_last_iff
+    {stmt : StatementRound R n (Fin.last n)}
+    {polyOracle : ∀ i, OracleStatement R n deg i} :
+    ((stmt, polyOracle), ()) ∈ relationRound R n deg D (Fin.last n) ↔
+      MvPolynomial.eval (fun i : Fin n => stmt.challenges i) (polyOracle ()).val =
+        stmt.target := by
+  unfold relationRound
+  simp only [Set.mem_setOf_eq]
+  have htail : n - (Fin.last n : Fin (n + 1)) = 0 := by simp
+  let tail0 : Fin (n - (Fin.last n : Fin (n + 1))) → R :=
+    fun i => Fin.elim0 (Fin.cast htail i)
+  have htail_eval :
+      (polyOracle ()).val ⸨stmt.challenges, tail0⸩ =
+        MvPolynomial.eval (fun i : Fin n => stmt.challenges i) (polyOracle ()).val := by
+    have hargs :
+        Fin.append stmt.challenges tail0 ∘ Fin.cast (by omega) =
+          (fun i : Fin n => stmt.challenges i) := by
+      funext i
+      rw [Fin.append_right_nil stmt.challenges tail0 htail]
+      congr 1
+    change MvPolynomial.eval (Fin.append stmt.challenges tail0 ∘ Fin.cast (by omega))
+        (polyOracle ()).val =
+      MvPolynomial.eval (fun i : Fin n => stmt.challenges i) (polyOracle ()).val
+    rw [hargs]
+  have hsum :
+      (∑ x ∈ (univ.map D) ^ᶠ (n - (Fin.last n : Fin (n + 1))),
+          (polyOracle ()).val ⸨stmt.challenges, x⸩) =
+        MvPolynomial.eval (fun i : Fin n => stmt.challenges i) (polyOracle ()).val := by
+    rw [Finset.sum_eq_single tail0]
+    · exact htail_eval
+    · intro b _ hb
+      exact False.elim (hb (funext fun i => Fin.elim0 (Fin.cast htail i)))
+    · intro hnot
+      exact False.elim (hnot (by
+        rw [Fintype.mem_piFinset]
+        intro i
+        exact Fin.elim0 (Fin.cast htail i)))
+  rw [hsum]
+
 namespace SingleRound
 
 /-- The protocol specification for a single round of sum-check.
@@ -993,6 +1033,53 @@ lemma reduction_verifier_eq_verifier {i : Fin n} :
 @[simp]
 lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
     (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
+  rfl
+
+omit [SampleableType R] in
+/-- One Sumcheck round preserves the oracle statement on prover-supported outputs. -/
+theorem prover_preserves_oracleStmt
+    {i : Fin n}
+    (stmt : StatementRound R n i.castSucc × (∀ j, OracleStatement R n deg j))
+    (out : StatementRound R n i.succ × (∀ j, OracleStatement R n deg j))
+    (tr : (pSpec R deg).FullTranscript)
+    (h : (tr, out, ()) ∈ support
+      (Prover.run stmt () ((oracleReduction R n deg D oSpec i).toReduction.prover))) :
+    out.2 = stmt.2 := by
+  rw [oracleReduction, OracleReduction.toReduction, OracleReduction.liftContext,
+    OracleProver.liftContext, Prover.liftContext_run] at h
+  rw [mem_support_bind_iff] at h
+  rcases h with ⟨⟨trInner, innerOut, innerWit⟩, _, hout⟩
+  rw [support_pure, Set.mem_singleton_iff] at hout
+  cases hout
+  rcases stmt with ⟨⟨oldTarget, challenges⟩, oStmt⟩
+  rcases innerOut with ⟨⟨newTarget, chal⟩, oStmt'⟩
+  rfl
+
+omit [SampleableType R] in
+/-- One Sumcheck round preserves the oracle statement on verifier-supported outputs. -/
+theorem verifier_preserves_oracleStmt
+    {i : Fin n}
+    {stmt : StatementRound R n i.castSucc × (∀ j, OracleStatement R n deg j)}
+    {out : StatementRound R n i.succ × (∀ j, OracleStatement R n deg j)}
+    {tr : (pSpec R deg).FullTranscript}
+    (h : out ∈ support ((verifier R n deg D oSpec i).run stmt tr)) :
+    out.2 = stmt.2 := by
+  rw [verifier, Verifier.run, Verifier.liftContext] at h
+  rw [mem_support_bind_iff] at h
+  rcases h with ⟨innerOut, _hInner, hOut⟩
+  rw [support_pure, Set.mem_singleton_iff] at hOut
+  cases hOut
+  rcases stmt with ⟨⟨_oldTarget, _challenges⟩, oStmt⟩
+  rcases innerOut with ⟨⟨_newTarget, _chal⟩, _oStmt'⟩
+  rfl
+
+@[simp]
+theorem oracleReduction_toReduction_verifier_eq_verifier {i : Fin n} :
+    ((oracleReduction R n deg D oSpec i).toReduction).verifier =
+      verifier R n deg D oSpec i := by
+  rw [oracleReduction]
+  rw [OracleReduction.liftContext_toReduction_comm]
+  rw [Simple.oracleReduction_eq_reduction]
   rfl
 
 section Security

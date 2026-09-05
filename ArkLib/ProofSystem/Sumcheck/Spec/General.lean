@@ -199,6 +199,86 @@ lemma oracleReduction_verifier_eq_oracleVerifier :
     (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by
   rfl
 
+omit [SampleableType R] in
+/-- The full Sumcheck prover preserves the oracle statement through all rounds. -/
+theorem prover_preserves_oracleStmt
+    (stmt : StatementRound R n 0 × (∀ j, OracleStatement R n deg j))
+    (out : StatementRound R n (Fin.last n) × (∀ j, OracleStatement R n deg j))
+    (tr : (pSpec R deg n).FullTranscript)
+    (h : (tr, out, ()) ∈ support
+      (Prover.run stmt () ((oracleReduction R deg D n oSpec).toReduction.prover))) :
+    out.2 = stmt.2 := by
+  refine @Prover.seqCompose_preserves ι oSpec n
+    (Stmt := fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+    (Wit := fun _ => Unit)
+    (O := ∀ j, OracleStatement R n deg j)
+    (n := fun _ => 2)
+    (pSpec := fun _ => SingleRound.pSpec R deg)
+    (P := fun i => (SingleRound.oracleReduction R n deg D oSpec i).toReduction.prover)
+    (proj := fun _ stmt => stmt.2) ?_ stmt () out () tr ?_
+  · intro i stmt wit out outWit tr h
+    cases wit
+    cases outWit
+    exact SingleRound.prover_preserves_oracleStmt R n deg D oSpec stmt out tr h
+  · simpa [oracleReduction, OracleReduction.seqCompose, OracleProver.seqCompose,
+      OracleReduction.toReduction] using h
+
+omit [SampleableType R] in
+/-- The full Sumcheck verifier preserves the oracle statement through all rounds. -/
+theorem verifier_preserves_oracleStmt
+    {stmt : StatementRound R n 0 × (∀ j, OracleStatement R n deg j)}
+    {out : StatementRound R n (Fin.last n) × (∀ j, OracleStatement R n deg j)}
+    {tr : (pSpec R deg n).FullTranscript}
+    (h : out ∈ support ((verifier R deg D n oSpec).run stmt tr)) :
+    out.2 = stmt.2 := by
+  refine @Verifier.seqCompose_preserves ι oSpec n
+    (Stmt := fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+    (O := ∀ j, OracleStatement R n deg j)
+    (n := fun _ => 2)
+    (pSpec := fun _ => SingleRound.pSpec R deg)
+    (V := fun i => SingleRound.verifier R n deg D oSpec i)
+    (proj := fun _ stmt => stmt.2) ?_ stmt out tr ?_
+  · intro i stmt out tr h
+    exact SingleRound.verifier_preserves_oracleStmt
+      (R := R) (n := n) (deg := deg) (D := D) (oSpec := oSpec) h
+  · exact h
+
+@[simp]
+theorem oracleReduction_toReduction_verifier_eq_verifier :
+    (oracleReduction R deg D n oSpec).verifier.toVerifier =
+      verifier R deg D n oSpec := by
+  have h := congrArg Reduction.verifier
+    (OracleReduction.seqCompose_toReduction
+      (oSpec := oSpec)
+      (Stmt := StatementRound R n)
+      (OStmt := fun _ => OracleStatement R n deg)
+      (Wit := fun _ => Unit)
+      (pSpec := fun _ => SingleRound.pSpec R deg)
+      (R := SingleRound.oracleReduction R n deg D oSpec))
+  change (oracleReduction R deg D n oSpec).verifier.toVerifier =
+      (Reduction.seqCompose
+        (fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+        (fun _ => Unit)
+        (fun i => (SingleRound.oracleReduction R n deg D oSpec i).toReduction)
+      ).verifier at h
+  rw [h]
+  change
+      Verifier.seqCompose
+        (fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+        (fun i => ((SingleRound.oracleReduction R n deg D oSpec i).toReduction).verifier) =
+      verifier R deg D n oSpec
+  change
+      Verifier.seqCompose
+        (fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+        (fun i => ((SingleRound.oracleReduction R n deg D oSpec i).toReduction).verifier) =
+      Verifier.seqCompose
+        (fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+        (SingleRound.verifier R n deg D oSpec)
+  congr
+  funext i
+  exact SingleRound.oracleReduction_toReduction_verifier_eq_verifier
+    (R := R) (n := n) (deg := deg) (D := D) (oSpec := oSpec)
+
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 open NNReal
@@ -211,6 +291,15 @@ theorem reduction_perfectCompleteness :
     (rel := relationRound R n deg D)
     (R := SingleRound.reduction R n deg D oSpec)
     (h := fun i => SingleRound.reduction_perfectCompleteness i)
+
+/-- Perfect completeness for the (full) sum-check oracle reduction. -/
+theorem oracleReduction_perfectCompleteness :
+    (oracleReduction R deg D n oSpec).perfectCompleteness init impl
+      (relationRound R n deg D 0) (relationRound R n deg D (.last n)) :=
+  OracleReduction.seqCompose_perfectCompleteness
+    (rel := relationRound R n deg D)
+    (R := SingleRound.oracleReduction R n deg D oSpec)
+    (h := fun i => SingleRound.oracleReduction_perfectCompleteness i)
 
 /-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
   sum-check protocol -/
