@@ -1008,19 +1008,39 @@ theorem hcons_fin_zero {α : Sort u} {β : Fin 0 → Sort u} (a : α) (v : (i : 
     hcons a v = fun i => match i with | 0 => a := by
   ext i; rfl
 
+/-- Appending a final entry commutes with prepending an entry to a heterogeneous tuple. -/
 theorem hconcat_hcons {α : Sort u} {β : Fin n → Sort u} {γ : Sort u}
-    (_a : α) (_v : (i : Fin n) → β i) (_c : γ) :
-    True := by
-    simp_all only
+    (a : α) (v : (i : Fin n) → β i) (c : γ) :
+    HEq (hconcat (hcons a v) c) (hcons a (hconcat v c)) := by
+  induction n with
+  | zero => exact heq_of_eq rfl
+  | succ _ _ => exact heq_of_eq rfl
 
 -- Init/concat properties
-theorem dinit_hconcat {α : Fin n → Sort u} {β : Sort u} (_v : (i : Fin n) → α i) (_b : β) :
-    True := by
-  simp_all only
+/-- Removing the final entry of an extended heterogeneous tuple recovers the original tuple. -/
+theorem dinit_hconcat {α : Fin n → Sort u} {β : Sort u} (v : (i : Fin n) → α i) (b : β) :
+    HEq (fun i => hconcat v b (castSucc i)) v := by
+  apply Function.hfunext rfl
+  intro i j hij
+  have : i = j := by ext; exact (Fin.heq_ext_iff rfl).mp hij
+  subst this
+  rw [hconcat_castSucc]
+  exact cast_heq _ _
 
-theorem hconcat_init_self {α : Fin n.succ → Sort u} (_v : (i : Fin (n + 1)) → α i) :
-    True := by
-  simp_all only
+/-- A heterogeneous tuple is recovered from its initial entries and its final entry. -/
+theorem hconcat_init_self {α : Fin n.succ → Sort u} (v : (i : Fin (n + 1)) → α i) :
+    HEq (hconcat (fun i => v (castSucc i)) (v (last n))) v := by
+  apply Function.hfunext rfl
+  intro i j hij
+  have : i = j := by ext; exact (Fin.heq_ext_iff rfl).mp hij
+  subst this
+  by_cases h : i.val < n
+  · have hi : i = castSucc ⟨i.val, h⟩ := by ext; simp
+    rw [hi, hconcat_castSucc]
+    exact cast_heq _ _
+  · have hi : i = last n := by ext; simp; omega
+    rw [hi, hconcat_last]
+    exact cast_heq _ _
 
 -- Injectivity properties for concat (from functorial versions)
 theorem hconcat_injective2 {α : Fin n → Sort u} {β : Sort u} :
@@ -1197,9 +1217,10 @@ theorem hcons_happend_comm {β : Fin m → Sort u} {γ : Fin n → Sort u}
     True := by
     simp_all only
 
-theorem happend_singleton {α : Fin m → Sort u} {β : Sort u} (_u : (i : Fin m) → α i) (_a : β) :
-    True := by
-    simp_all only
+/-- Appending a singleton heterogeneous tuple agrees with adjoining its entry. -/
+theorem happend_singleton {α : Fin m → Sort u} {β : Sort u} (u : (i : Fin m) → α i) (a : β) :
+    happend u (hcons a (Fin.dempty : (i : Fin 0) → Fin.vempty i)) = hconcat u a :=
+  rfl
 
 theorem singleton_happend {β : Fin n → Sort u} (_a : α) (_v : (i : Fin n) → β i) :
     True := by
