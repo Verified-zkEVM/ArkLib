@@ -27,7 +27,7 @@ The other pages have narrower jobs:
 | [`00-end-state.md`](00-end-state.md) | The ambition and coverage contract | directional |
 | [`01-foundations.md`](01-foundations.md) | Library ownership and the current cross-library contract | normative |
 | [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) | Live dependency gaps and ArkLib PR slices | operational |
-| [`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md) | Landed generic names and planned ArkLib oracle names | normative |
+| [`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md) | Landed generic and ArkLib oracle names | normative |
 | [`02-oracle-reduction-core.md`](02-oracle-reduction-core.md) | Claims, virtual oracles, closing, and composition | normative |
 | [`03-adversarial-oracle-execution.md`](03-adversarial-oracle-execution.md) | Worlds, traces, games, state restoration, extractors, and budgets | normative core, fluid periphery |
 | [`04-oracle-elimination-compiler.md`](04-oracle-elimination-compiler.md) | Compiler passes, backend capabilities, and guarantee transport | normative interfaces, fluid internals |
@@ -81,8 +81,9 @@ every ideal oracle guarantee becomes an explicit commit, open, or link obligatio
 - **D6 — Interaction names describe what the objects are.** PolyFun's generic carrier is
   `Interaction.TypeTree` and its complete branch is `TypeTree.Path`. ArkLib's oracle refinement is
   `Interaction.Oracle.TypeTree`, with `BranchPath` for structural choices and `ExecutionPath` for
-  concrete messages. The generic rename has landed; the ArkLib refinement remains an implementation
-  contract.
+  concrete messages. The generic rename, structural refinement, and typed role/interface
+  decorations have landed; later oracle access and execution layers remain implementation
+  contracts.
 
 ## Ground rules
 

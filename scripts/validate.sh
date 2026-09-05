@@ -17,6 +17,7 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 
 Default checks:
   - lake build
+  - lake test (ArkLibTest compile-time acceptance clients)
   - lake exe lint-style
   - ./scripts/test-lint-plugin.sh
   - lake exe toyproblem-runtime
@@ -70,6 +71,16 @@ trap cleanup EXIT
 
 echo "# Building project"
 lake build 2>&1 | tee "$build_log"
+
+echo ""
+echo "# Building compile-time acceptance clients"
+lake test 2>&1 | tee -a "$build_log"
+
+echo ""
+echo "# Checking ArkLibTest warning budget"
+python3 ./scripts/check-warning-log.py "$build_log" \
+  --path-prefix ArkLibTest/ \
+  --label "ArkLibTest warnings (including admissions)"
 
 echo ""
 echo "# Checking ArkLib warning budget"

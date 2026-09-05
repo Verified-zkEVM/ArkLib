@@ -67,6 +67,13 @@ and literal bodies. Put policy examples in `scripts/LintStyleFixtures`, which is
 library-source closure; policy-like quoted identifiers and syntax quotations are reserved for the
 same reason.
 
+### Acceptance Tests
+
+Keep compile-time examples and regression tests in `ArkLibTest/`, mirroring production paths.
+`lake test` builds them, and `./scripts/validate.sh` runs the test target with a zero-warning budget.
+Stage new tests before validation. Production modules must not import tests; both trees share the
+source-style policy and build-time lint plugin. See [ArkLibTest/README.md](ArkLibTest/README.md).
+
 ### Naming Conventions
 
 * **Files**: `UpperCamelCase.lean` (e.g., `BinarySearch.lean`).

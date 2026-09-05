@@ -95,7 +95,7 @@ def Oracle.TypeTree.OracleMessagesAt :
   | .oracle X cont, ⟨_, tail⟩ => X × OracleMessagesAt (cont ⟨⟩) tail
 ```
 
-with `answerAt` (taking the `OracleDeco`) the structural sibling of `answerQuery`. Not "always
+with `answerAt` (taking the `OracleDecoration`) the structural sibling of `answerQuery`. Not "always
 inhabited": the correct statement is that **every realized execution path canonically produces
 one** — the conversion is the theorem the execution layer exports.
 
