@@ -194,7 +194,10 @@ Total (all real uses in the repo are); never load-bearing for security; the hone
 
 ## 8. Universe and notation discipline
 
-Pinned universes matching the current stack (`Oracle.TypeTree : Type 1`, families in `Type`,
-`OracleSpec.{0,0}`); polymorphization is a tracked follow-up. Naming: `srcSpec` for bare
-signatures, `Src : SourceCtx` for contexts; `OStatementIn/Out` spellings per the consensus note;
-declaration-name references, not line numbers.
+The structural layer is universe-polymorphic: `Oracle.TypeTree.{u} : Type (u + 1)`, and its
+branch and execution paths retain that generality. Later query and runtime layers preserve
+independent universes until an `OracleInterface` or `OracleSpec` operation forces a concrete
+constraint; existing legacy clients commonly use `OracleSpec.{0,0}`, but that is not a
+foundation-wide pin. Naming: `srcSpec` for bare signatures, `Src : SourceCtx` for contexts;
+`OStatementIn/Out` spellings per the consensus note; declaration-name references, not line
+numbers.
