@@ -249,6 +249,7 @@ import ArkLib.Data.Misc.Basic
 import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.EvenAndOdd
 import ArkLib.Data.MvPolynomial.Interpolation
+import ArkLib.Data.MvPolynomial.LineRestriction
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.Data.MvPolynomial.NestedEvaluationTree
@@ -361,6 +362,11 @@ import ArkLib.ProofSystem.ConstraintSystem.R1CS
 import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
+import ArkLib.ProofSystem.GKR.Circuit
+import ArkLib.ProofSystem.GKR.General
+import ArkLib.ProofSystem.GKR.OracleLayer
+import ArkLib.ProofSystem.GKR.SingleRound
+import ArkLib.ProofSystem.GKR.SumcheckAux
 import ArkLib.ProofSystem.Plonk.Basic
 import ArkLib.ProofSystem.RingSwitching.Basic
 import ArkLib.ProofSystem.RingSwitching.Lift
