@@ -1,0 +1,5 @@
+bibkey: BCPZZ26
+source_kind: technical-report
+canonical_url: https://eccc.weizmann.ac.il/report/2026/164/
+committed_artifacts: []
+notes: "ECCC TR26-164, published 2026-09-04. Initial source audit used the public PDF with SHA-256 b749151a7b5961e34760c735cf64067f0c3dea632030f2e69737b6caef7a3e70. The report contains a message-dimension mismatch in Proposition 3.13 and an unexpanded O_theta(1) term in the lattice-growth argument; see docs/kb/audits/bcpzz26-main-theorem.md."
