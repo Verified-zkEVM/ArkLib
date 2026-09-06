@@ -33,7 +33,7 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
-  and hazardous-Unicode checks. It verifies that every tracked `ArkLib/**/*.lean` file is in the
+  and hazardous-Unicode checks. It verifies that every tracked Lean file under `ArkLib/` and `ArkLibTest/` file is in the
   `ArkLib.lean` closure, and independently rejects forbidden option and `nolint`-attribute syntax
   even if module code captures diagnostics or mutates Lean's in-process linter registry. This
   lexical backstop is deliberately conservative across literal bodies (and across comments for
@@ -193,7 +193,7 @@ lake build AxiomSweepTestFixtures
 ### Source Trust Inventory
 
 `source-trust-audit.py` complements axiomsweep by lexically scanning every tracked
-`ArkLib/**/*.lean` source file, whether imported or not. It masks nested comments, strings,
+Lean file under `ArkLib/` and `ArkLibTest/`, whether imported or not. It masks nested comments, strings,
 and quoted identifiers, then inventories exact admission, `example`, explicit-`axiom`, and
 native/compiler-trust reference tokens. This sees admissions in examples and
 defaults/autoparams that attach to no environment declaration. It deliberately reports rather

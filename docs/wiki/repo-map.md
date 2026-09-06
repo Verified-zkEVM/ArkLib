@@ -8,6 +8,7 @@ Many developments are paper-scoped and spread across several modules.
 ```text
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
+  Interaction/        typed prover, verifier, and reduction foundations
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
   ProofSystem/        protocol families and higher-level proofs
@@ -22,7 +23,13 @@ home_page/            site assets and assembled website root
 
 ## Conceptual Layering
 
-- `ArkLib/OracleReduction/` is the conceptual center of the library.
+- `ArkLib/Interaction/` is the new typed-interaction foundation. Its plain reduction layer is
+  intentionally independent of oracle, probability, and legacy protocol semantics.
+- `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
+  structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
+  role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
+- `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
+  layer while protocol clients migrate.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, `ArkLib/ToCompPoly/`, and `ArkLib/ToVCVio/` support the
   core with reusable definitions and lemmas.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.
@@ -32,7 +39,8 @@ home_page/            site assets and assembled website root
 ## Where To Start By Task
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
-- Changing core reduction or security abstractions: start in `ArkLib/OracleReduction/`.
+- Changing typed interaction or dependent reduction foundations: start in `ArkLib/Interaction/`.
+- Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
   (`Ordinary/` for plain commit-and-open schemes whose definition comes from the VCV-io
@@ -643,3 +651,9 @@ home_page/            site assets and assembled website root
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).
+
+## Acceptance tests
+
+`ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
+`lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
+the generated `ArkLib.lean` umbrella and production modules must not import them.
