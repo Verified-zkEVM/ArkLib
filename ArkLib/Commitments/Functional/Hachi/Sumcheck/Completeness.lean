@@ -37,13 +37,11 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
   ## Axiom boundary
 
   `roundReduction_perfectCompleteness` — the per-round result, which carries all of the Hachi
-  content — is **axiom-clean** (`propext`, `Classical.choice`, `Quot.sound`). Every *folded*
-  statement (`roundsReductionAux_perfectCompleteness`, `roundsReduction_perfectCompleteness`,
-  `sumcheckReduction_perfectCompleteness`) goes through `Reduction.append_perfectCompleteness`,
-  which is `convert`-ed from the generic `Reduction.append_completeness` of
-  `OracleReduction/Composition/Sequential/Append.lean` — **still `sorry`**. Those statements
-  therefore depend on `sorryAx`, and each says so in its docstring. Nothing in this file adds a
-  `sorry` of its own.
+  content — is axiom-clean. Every *folded* statement (`roundsReductionAux_perfectCompleteness`,
+  `roundsReduction_perfectCompleteness`, `sumcheckReduction_perfectCompleteness`) goes through
+  `Reduction.append_perfectCompleteness`, hence through the generic
+  `Reduction.append_completeness` of `OracleReduction/Composition/Sequential/Append.lean`, which
+  this repository admits.
 
   ## References
 
@@ -328,7 +326,7 @@ chain are two faces of one protocol.
 
 **Axiom boundary.** `roundsReductionAux_perfectCompleteness` and everything downstream of it go
 through `Reduction.append_perfectCompleteness`, which is `convert`-ed from the generic
-`Reduction.append_completeness` — still `sorry` in
+`Reduction.append_completeness`, admitted in
 `OracleReduction/Composition/Sequential/Append.lean`. Those theorems therefore *depend on
 `sorryAx`*, and `#print axioms` reports it. The per-round result
 `roundReduction_perfectCompleteness` above is axiom-clean and is what actually carries the Hachi
@@ -386,8 +384,8 @@ omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 base is `ReduceClaim` at the identity map, and each step appends one
 `roundReduction_perfectCompleteness`.
 
-⚠ **Inherits `sorryAx`** through `Reduction.append_perfectCompleteness`, whose content is the
-still-unproved generic `Reduction.append_completeness`. The per-round input is axiom-clean. -/
+Depends on the admitted `Reduction.append_completeness` through the append; the per-round input
+is axiom-clean. -/
 theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
@@ -417,7 +415,7 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- Perfect completeness of `roundsReduction`, the exposed form of
-`roundsReductionAux_perfectCompleteness`. ⚠ Inherits `sorryAx` for the same reason. -/
+`roundsReductionAux_perfectCompleteness`, with the same append dependency. -/
 theorem roundsReduction_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
@@ -476,10 +474,9 @@ exactly the union of the links' own — `0 < b` (rounds), `0 < deg φ` and
 commitment assumptions. No hypothesis is needed for the final-evaluation step: its bound-sanity
 conjunct is *carried* by the round relation.
 
-⚠ **Inherits `sorryAx`** through `Reduction.append_perfectCompleteness` (generic
-`Reduction.append_completeness`, still `sorry`). All three inputs are individually axiom-clean:
-`nestedSumcheckBridgeReduction_perfectCompleteness`, `roundReduction_perfectCompleteness`,
-`finalEvalReduction_perfectCompleteness`. -/
+Depends on the admitted `Reduction.append_completeness` through the appends. All three inputs
+are individually axiom-clean: `nestedSumcheckBridgeReduction_perfectCompleteness`,
+`roundReduction_perfectCompleteness`, `finalEvalReduction_perfectCompleteness`. -/
 theorem sumcheckReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))

@@ -132,15 +132,6 @@ def finalEvalVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F) :
   out := fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩
   verify_eq := fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The final-evaluation verifier is guarded — definitionally, by `finalCheck`. -/
-theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
-    (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)
-      φF).IsGuarded :=
-  ⟨fun stmt tr => finalCheck Φ m₀ m₁ bound b φF stmt (tr 0),
-   fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩,
-   fun _ _ => rfl⟩
-
 /-- The final-evaluation prover shell, parametric in the claimed evaluation: sends
 `y′ := computeY stmt wit` and carries `w̃` forward as the output witness. The honest
 instantiation is `computeY := honestComputeY` (i.e. `wTableMleEval`), packaged as
@@ -178,8 +169,7 @@ variable [SampleableType F]
 /-- The final-evaluation extraction algorithm reads the opening from the unique valid leaf
 witness. -/
 def finalEvalExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (_φF : ZMod q →+* F) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) :
     Extractor.TreeBased (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n)
       (LiftedWitness Φ μ n) (pSpecFinalEval F)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
@@ -205,7 +195,7 @@ theorem finalEval_coordinateWiseSpecialSoundWith
       (nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀)
       (relWEvalClaim Φ m₀ bound bDig b K φF)
       (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF)
-      (finalEvalExtractor Φ m₀ m₁ bound bDig K φF) := by
+      (finalEvalExtractor Φ m₀ m₁ bound bDig K) := by
   intro stmt tree _ hAcc o hvalid
   obtain ⟨w, hw, out, hout, hrel⟩ := hvalid tree.onlyPath
   have hacc := hAcc _ tree.onlyPath.mem_fullTranscripts
@@ -431,7 +421,7 @@ def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
   relIn := nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀
   relOut := relWEvalClaim Φ m₀ bound bDig b K φF
   isGuarded := finalEvalVerifierGuardedForm Φ m₀ m₁ bound b φF
-  extractor := finalEvalExtractor Φ m₀ m₁ bound bDig K φF
+  extractor := finalEvalExtractor Φ m₀ m₁ bound bDig K
   isCWSS := finalEval_coordinateWiseSpecialSoundWith Φ m₀ m₁ bound bDig b init impl K φF
 
 omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in

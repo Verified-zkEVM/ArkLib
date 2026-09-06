@@ -93,9 +93,8 @@ Multilinearity is therefore guaranteed by the type rather than proved with `degr
 
 The derived Mathlib views `hZeroML` and `hAlphaML` rebuild the same value tables with
 `MvPolynomial.MLE` and are used only in algebraic proofs (the nested-tree zero test crosses to
-Mathlib internally); `hZeroML_eq_zero_iff` / `hAlphaML_eq_zero_iff` connect the proof views'
-zero identities to the primary vectors, and `hZero_eval_eq` / `hAlpha_eval_eq` bridge pointwise
-evaluations.
+Mathlib internally); `hZero_eval_eq` / `hAlpha_eval_eq` bridge pointwise evaluations between the
+two representations.
 
 | Object | Computable definition | Mathlib view | Bridge lemma |
 | --- | --- | --- | --- |
@@ -105,8 +104,8 @@ evaluations.
 | Evaluation at `α` | `cEvalAt` (`CPolynomial.eval₂`) | `evalAt` (`eval₂RingHom`) | `cEvalAt_cRowSum_eq_evalAt`, `cEvalAt_eq_evalAt_toPoly` |
 | Range factor `P_b` | `rangeProduct` (scalar) | — | `rangeProduct_eq_zero_iff` |
 | Table `w̃`, Eq. (21) | `wTable` | — | `wTable_zRow`, `wTable_rRow` |
-| `H₀`, Eq. (23) | `hZero : CMlPolynomialEval F m₀` | `hZeroML` | `hZero_eq_zero_iff`, `hZeroML_eq_zero_iff` |
-| `H_α`, Eq. (22) | `hAlpha : CMlPolynomialEval F m₁` | `hAlphaML` | `hAlpha_eq_zero_iff`, `hAlphaML_eq_zero_iff` |
+| `H₀`, Eq. (23) | `hZero : CMlPolynomialEval F m₀` | `hZeroML` | `hZero_eq_zero_iff`, `hZero_eval_eq` |
+| `H_α`, Eq. (22) | `hAlpha : CMlPolynomialEval F m₁` | `hAlphaML` | `hAlpha_eq_zero_iff`, `hAlpha_eval_eq` |
 | Public matrix `M̃_α`, power vector `α̃` | `mAlphaTilde`, `alphaTilde` | — | `alphaDefect_wTable` (contraction = row defect), `hAlpha_eq_zero_iff_alphaDefect` |
 | `mle[w̃]` and its opening | `cWTableMle`, `wTableMleEval` | — | `wTableMleEval_eq` |
 | Sumcheck summands `F_{0,τ₀}`, `F_{α,τ₁}` | `sumcheckPolyZero`, `sumcheckPolyAlpha` (via `cEqualityPolynomial`, `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`) | `hZeroML`/`hAlphaML` in the sum identities | `sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` (**both proven, axiom-clean**) |

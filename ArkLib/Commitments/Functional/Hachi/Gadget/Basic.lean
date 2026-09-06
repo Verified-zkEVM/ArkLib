@@ -21,9 +21,10 @@ through `G`.
 
 * `Gadget/Core.lean` — the algebra: the gadget matrix `G` (`gadgetMatrix` / `gadgetMul`), lawful
   decompositions (`IsLawfulGadgetDecomposition`, i.e. `G · G⁻¹(x) = x`), the abstract
-  per-coefficient digit map (`DigitDecomposition`) with its concrete `ZMod q` instance
-  (`zmodDigitDecomposition`), and the induced gadget inverse `gadgetDecompose` with its
-  lawfulness proof.
+  per-coefficient digit map (`DigitDecomposition`) with its concrete `ZMod q` instance — the
+  paper's **balanced** digits `balancedZmodDigitDecomposition`, shifted from the naive unsigned
+  `zmodDigitDecomposition` — and the induced gadget inverse `gadgetDecompose` with its lawfulness
+  proof.
 * `Gadget/Norms.lean` — the analysis: centered `ℓ∞` / `ℓ₂²` shortness of the honest
   decomposition `G⁻¹(x)` (feeding perfect correctness in `InnerOuter/Correctness.lean`), and
   controlled norm growth of the recomposition `G·ẑ` for any range-checked `ẑ` (feeding Lemma 8

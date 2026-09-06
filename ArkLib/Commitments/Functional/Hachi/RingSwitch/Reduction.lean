@@ -67,11 +67,9 @@ import CompPoly.Univariate.ToPoly.Impl
   therefore carries (i) `liftShort bound bDig w̃` — feeding
   both the collision argument and, (ii) via the public sanity conjunct `bound ≤ s.bound`, the
   statement-level `R^lin` bound of the extraction target (assembled statements have
-  `s.bound = γ = bound`, so completeness is unaffected). `hachiLiftCom` supplies the commitment
-  map; what is still to come is the *soundness* side of that instantiation — discharging
-  `LiftCom.Collision` by `outputToModuleSIS_valid_of_verified` ([NOZ26] §4.5) — and the
-  commitment reinterpretation at the next ring dimension used by the recursion handoff
-  (`Recursion/TraceHandoff.lean`).
+  `s.bound = γ = bound`, so completeness is unaffected). At the concrete instantiation
+  `hachiLiftCom`, a short collision is a Module-SIS solution for the key `D`
+  (`moduleSIS_relation_of_mem_Collision`).
 
   ## Paper-model boundary — closed
 
@@ -169,7 +167,7 @@ every link that consumes the digit encoding needs exactly this triple:
 * `radius_le` — the digit radius `⌊bDig/2⌋` fits inside the declared bound.
 
 Under them the quotient half of `liftShort` costs nothing at all
-(`rhoDigitsShort_of_digitBaseOk`), for an arbitrary quotient. That is the parameter repair stated
+(`rhoDigitsShort_of_digitBaseOk`), for an arbitrary quotient. That is the parameter choice stated
 as a hypothesis class: with the raw quotient the corresponding condition was
 `q/2 ≤ bound` (`rhoShort_half`), which is what pinned `γ = q/2 = bZero − 1`. -/
 structure DigitBaseOk (q bound bDig : ℕ) : Prop where
@@ -186,7 +184,7 @@ shortness hypothesis, no assumption that the commitment key is short — the bal
 digits are `⌊b/2⌋`-bounded, so `RhoDigitsShort` holds at every `bound ≥ ⌊b/2⌋`.
 
 This is the exact counterpart of `rhoShort_half` (`QuotientNorms.lean`), and the contrast is the
-parameter repair in one line: the raw quotient could only be bounded by `q/2`, its digits are
+parameter choice in one line: the raw quotient could only be bounded by `q/2`, its digits are
 bounded by `⌊b/2⌋ = O(b)`. -/
 theorem rhoDigitsShort_of_half_le {bound bDig : ℕ} (hb : 1 < bDig) (hbq : bDig ≤ q / 2)
     (hbound : bDig / 2 ≤ bound) (ρ : Fin n → CPolynomial (ZMod q)) :
@@ -238,12 +236,11 @@ c1 row consumes (`rlin_linear_iff`). Its width is wrong: `PublicParamsD.dMatrix`
 `blocks * messageDigits = rlinCW` columns — the *carrier slice* `ŵ` alone — whereas the committed
 vector of a lifted witness is `μ + n·δ` ring elements (`μ = rlinCW + (rlinCT + rlinCZ)` for the
 `R^lin` witness `z`, plus `δ = clog_b q` digit rows per quotient row). Committing under
-`pp.dMatrix` would therefore have to drop `ρ` and
-two thirds of `z`, leaving a commitment whose `LiftCom.Collision` set is enormous and which the
-deferred Module-SIS argument could never discharge. The c1 commitment and the lift's commitment
-are different objects: c1 constrains the carrier decomposition inside the statement, the lift
-binds the whole opening. So the key is taken as a parameter at the matching width; a full
-treatment would sample it in `keygen` alongside `D`, which needs a new `PublicParamsD` field. -/
+`pp.dMatrix` would therefore have to drop `ρ` and two thirds of `z`, leaving a commitment whose
+`LiftCom.Collision` set is enormous and carries no Module-SIS content. The c1 commitment and the
+lift's commitment are different objects: c1 constrains the carrier decomposition inside the
+statement, the lift binds the whole opening. The key is therefore a parameter at the matching
+width; sampling it in `keygen` alongside `D` would need a new `PublicParamsD` field. -/
 
 /-- A quotient row of a lifted witness, read back as a ring element. The rows have degree
 `≤ d − 1` (`LiftedWitness.hρ`), so the reduced representative of degree `< d` loses nothing —
@@ -275,29 +272,13 @@ def liftMessage (b : ℕ) (w : LiftedWitness Φ μ n) :
   Fin.append w.z (rhoDigitAsRq Φ b w.ρ)
 
 /-- **The concrete lift commitment**: the Ajtai product `D · (z ‖ ρ)` at a key of the matching
-width. Computable, so the whole nonrecursive chain can be run once its other links are; and a
-genuine Module-SIS shape, so the deferred escape-event argument has a real target — a member of
-`LiftCom.Collision` here is a short nonzero kernel vector of `D`. -/
+width. Computable, so the whole nonrecursive chain runs; and a genuine Module-SIS shape, since a
+member of `LiftCom.Collision` here is a short nonzero kernel vector of `D`. -/
 def hachiLiftCom {dRows : ℕ} (bound bDig : ℕ)
     (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig)) :
     LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig) where
   TCom := Simple.Commitment Φ dRows
   com := fun w => Simple.commit Φ D (liftMessage Φ bDig w)
-
-omit [NeZero q] in
-/-- The concrete commitment's space is the same `PolyVec (Rq Φ) dRows` the chain already carries
-as `CarrierCom`, so `DecidableEq` is derivable and the terminal check's instance argument is
-discharged without `Classical.dec`. Holds by `rfl`. -/
-@[simp] theorem hachiLiftCom_TCom {dRows : ℕ} (bound bDig : ℕ)
-    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig)) :
-    (hachiLiftCom Φ (n := n) (μ := μ) bound bDig D).TCom = CarrierCom Φ dRows := rfl
-
-omit [NeZero q] in
-/-- The concrete commitment map, unfolded. Holds by `rfl`. -/
-@[simp] theorem hachiLiftCom_com {dRows : ℕ} (bound bDig : ℕ)
-    (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig)) (w : LiftedWitness Φ μ n) :
-    (hachiLiftCom Φ (n := n) (μ := μ) bound bDig D).com w
-      = Simple.commit Φ D (liftMessage Φ bDig w) := rfl
 
 /-! ### What the digit encoding buys the escape target
 
@@ -415,20 +396,15 @@ omit [NeZero q] in
 `2·bound`: the difference of the two committed vectors is nonzero (`liftMessage_injective`, using
 `hp`'s `p.1 ≠ p.2`), `2·bound`-short, and in the kernel of `D`.
 
-This is the statement the whole gadget decomposition exists to make true, and the one the deferred
-escape-event argument ([NOZ26] §4.5) consumes.
+This is the statement the gadget decomposition of the quotient exists to make true: it is what
+turns a weak-binding collision of the lift commitment into a hardness instance.
 
-⚠ **Scope.** The reduction is complete *for the key `D` it is stated at*, and `D` is a parameter of
-`hachiLiftCom` — `keygen` does not sample it alongside the inner-outer commitment's own key (see
-"Why the lift needs its own key" above). So this closes the collision-to-Module-SIS step locally;
-tying `D` into key generation, and thence discharging the escape event through
-`outputToModuleSIS_valid_of_verified` (`InnerOuter/Security.lean`), is still open.
+The reduction is stated *for the key `D` it is given*, which is a parameter of `hachiLiftCom`
+rather than something `keygen` samples (see "Why the lift needs its own key" above).
 
-At the honest parameters `bound = γ` with
-`γ = ⌊b/2⌋` available (`HonestRangeParams.ofDigitBase`, or `γ = b − 1` at
-`ofPinnedDigitBase` if the two-sided regime is wanted), so the radius is `O(b)`. Committing the
-raw quotient instead leaves the norm conjunct vacuous — see the section note above — and the
-solution worthless even though the other two conjuncts still hold. -/
+At the chain's parameters `bound = γ = O(b)` (`HonestRangeParams.ofPinnedDigitBase`), so the
+radius is `O(b)`. Committing the raw quotient instead leaves the norm conjunct vacuous — see the
+section note above — and the solution worthless even though the other two conjuncts still hold. -/
 theorem moduleSIS_relation_of_mem_Collision {dRows : ℕ} (bound bDig : ℕ)
     (hdig : DigitBaseOk q bound bDig) (hd : 0 < Φ.φ.natDegree)
     (D : Simple.PublicParams Φ dRows (μ + n * rhoDigitCount q bDig))

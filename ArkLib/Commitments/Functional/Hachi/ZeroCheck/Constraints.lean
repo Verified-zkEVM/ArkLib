@@ -323,19 +323,6 @@ theorem hAlpha_eq_zero_of_evaluationTree {k m : ℕ} (hk : 2 ≤ k) (φF : ZMod 
   CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd hk tree (hAlpha Φ m₁ φF b s α w)
     hDistinct hVanishes
 
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H₀` vanishes. -/
-theorem hZeroML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    (hZeroML Φ m₀ φF b w).val = 0 ↔ hZero Φ m₀ φF b w = 0 := by
-  rw [hZeroML, MLE_eq_zero_iff, hZero_eq_zero_iff]
-
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H_α` vanishes. -/
-theorem hAlphaML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) :
-    (hAlphaML Φ m₁ φF b s α w).val = 0 ↔ hAlpha Φ m₁ φF b s α w = 0 := by
-  rw [hAlphaML, MLE_eq_zero_iff, hAlpha_eq_zero_iff]
-
 /-- The computable multilinear extension of the table `w̃` itself, the committed object the
 final-evaluation step opens. -/
 def cWTableMle (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
@@ -1154,14 +1141,6 @@ theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ 
   rw [sumcheckPolyZero, CPoly.eval_mul, cEqualityPolynomial_eval_boolean, cRangeProduct_eval,
     cMultilinearExtension_eval_boolean, mul_comm]
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- Alias of `sum_sumcheckPolyZero` retained for the sumcheck bridge. -/
-theorem sum_sumcheckPolyZero' (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
-    (w : LiftedWitness Φ μ n) :
-    hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
-      MvPolynomial.eval τ₀ (hZeroML Φ m₀ φF b w).val :=
-  sum_sumcheckPolyZero Φ m₀ φF b τ₀ w
-
 /-! ### The `α`-summand's table contraction
 
 `alphaPublicEvals` multiplies the committed table by the public data at the *flat cube index*,
@@ -1384,17 +1363,6 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s :
     rw [alphaDefect, rhoDigits_evalAt Φ φF α hb hd (w.ρ i) (w.hρ i)] at hdef
     linear_combination hdef
   · rw [dif_neg hi, dif_neg hi, dif_neg hi, add_zero]
-
-omit [NeZero q] in
-/-- Alias of `sum_sumcheckPolyAlpha` retained for the sumcheck bridge. -/
-theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
-    (s : RlinStatement Φ n μ) (α : F)
-    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
-    hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
-      MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
-        zcTargetAlpha Φ m₁ φF s α τ₁ :=
-  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b hb s α τ₁ w hd hμn
 
 /-! ### Evaluation at a point: the final-evaluation factorizations
 

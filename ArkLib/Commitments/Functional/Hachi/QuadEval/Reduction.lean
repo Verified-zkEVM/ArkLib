@@ -29,7 +29,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   `quadEvalEscLocal`, lives in `QuadEval/Soundness.lean`. The file closes with the protocol (the
   two-round
   `pSpec ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin 2ʳ → C]⟩` of `CoordinateWise.SingleRound`,
-  the pure pass-through `verifier`, and the honest `prover` skeleton). Round 0 (P→V) sends the
+  the pure pass-through `verifier`, and the honest `prover`). Round 0 (P→V) sends the
   short commitment `v = D ŵ`; round 1 (V→P) is the challenge vector; the triple `(ŵ, t̂, ẑ)` is
   the **output witness** (`QuadEvalResponse`, never sent — §4.3 proves knowledge of it instead),
   so the verifier is a pure pass-through.
@@ -193,7 +193,7 @@ section ZModDefs
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {innerRows messageRows messageDigits outerRows blocks innerDigits dRows zDigits
-  m r : Nat}
+  zBound m r : Nat}
 
 /-- The matrix `M` of Hachi Eq. (15): row `i` = derived message block `G_{2^m} · sᵢ`; rows are
 indexed by the outer basis `b`, columns by the inner basis `a`. -/
@@ -387,6 +387,34 @@ def relIn
   { p | VerifiedOpening Φ base βSq γ κ pp.toPublicParams p.1.u p.2 ∧
       evalConsistency Φ base p.1.avec p.1.bvec p.1.y p.2 }
 
+/-- **`relIn` with the honest committer's message decomposition pinned `ℓ∞`-short** — the
+correctness-side input relation of the bounded-`z` reading.
+
+The extra conjunct is exactly what the honest-`z` bound needs and nothing more. It is a genuine
+strengthening (a `relIn` member need not have short message blocks), so it belongs in the relation,
+where the layer that *chose* the committer's decomposition establishes it: for the balanced
+committer it is `gadgetDecompose_vecLInftyNorm_le_of_digit_le` at
+`balancedZmodDigit_natAbs_le`, giving `msgBound = ⌊b/2⌋`. `relInMsgShort_subset_relIn` is the
+forgetful inclusion, so nothing downstream of `relOut` — in particular no soundness statement —
+sees the strengthening. -/
+def relInMsgShort
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (βSq γ κ msgBound : ℕ) :
+    Set (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
+         QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
+  { p | p ∈ relIn Φ pp base βSq γ κ ∧
+      ∀ i, vecLInftyNorm Φ (p.2.message i) ≤ msgBound }
+
+omit [NeZero q] in
+/-- **The forgetful inclusion `relInMsgShort ⊆ relIn`.** The strengthening is correctness-only: it
+never reaches a soundness statement, and any consumer of `relIn` accepts a `relInMsgShort`
+member. -/
+theorem relInMsgShort_subset_relIn
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (βSq γ κ msgBound : ℕ) :
+    relInMsgShort Φ pp base βSq γ κ msgBound ⊆ relIn Φ pp base βSq γ κ :=
+  fun _ h => h.1
+
 /-! ## The protocol: pure pass-through verifier and honest prover -/
 
 section Protocol
@@ -461,8 +489,8 @@ def prover (WitIn : Type)
 /-! ### The honest computations, and the protocol object
 
 `prover` above is parametric in the two honest computations. Here they are instantiated with the
-concrete gadget algebra of `QuadEval/Gadgets.lean`, which turns the skeleton into the actual
-Figure-3 prover, and pairing that with `verifier` gives the **protocol** `quadEvalReduction` — the
+concrete gadget algebra of `QuadEval/Gadgets.lean`, giving the actual Figure-3 prover; pairing
+that with `verifier` gives the **protocol** `quadEvalReduction` — the
 computable object an honest execution runs, and the one perfect completeness is stated about
 (`QuadEval/Completeness.lean`). The Lemma-8 certificate `quadEvalPackage`
 (`QuadEval/Soundness.lean`) is a statement about the *same* verifier; that they cannot drift apart
@@ -490,9 +518,18 @@ def honestZ (wit : QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) in
 
 /-- **The honest output witness** `(ŵ, t̂, ẑ)` of Hachi Eq. (20): the carrier decomposition
 `ŵ = G⁻¹(w)` committed in round 0, the witness's own inner decompositions `t̂`, and the
-decomposition `ẑ = J⁻¹(z)` of the masked opening `z = Σᵢ cᵢ sᵢ`. -/
+decomposition `ẑ = J⁻¹(z)` of the masked opening `z = Σᵢ cᵢ sᵢ`.
+
+The `z` step uses a **`BoundedDigitDecomposition`** (`Gadget/Core.lean`), *not* a full-width one:
+`z` is deterministically short in an honest run, so the digit count `τ = zDigits` is sized from
+that bound and may be far below `⌈log_b q⌉` (at the `ℓ = 30` parameters, where `τ = 5`
+(`Params.lean`), that is `τ = 5 < δ = 8`, and `q ≤ 16⁵` is false). The digit
+map is total, so this remains a plain computable function — only the
+round-trip `z = J ẑ` needs shortness, and that is discharged in the completeness layer. The carrier
+step keeps the ordinary full-width `DigitDecomposition`, since carrier coefficients are arbitrary
+residues. -/
 def honestComputeResp {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
-    (ddZ : DigitDecomposition base zDigits)
+    (ddZ : BoundedDigitDecomposition base zDigits zBound)
     (stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (wit : QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
@@ -500,7 +537,7 @@ def honestComputeResp {base : ZMod q} (ddCarrier : DigitDecomposition base messa
     QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits where
   carrierDec := Hachi.carrierDecomp Φ ddCarrier stmt.avec wit.message
   innerDec := wit.innerDecomp
-  zDec := Hachi.zDecomp Φ ddZ (honestZ Φ wit c)
+  zDec := Hachi.zDecompBounded Φ ddZ (honestZ Φ wit c)
 
 /-- **The `QuadEval` protocol** (Hachi §4.2, Figure 3): the honest prover paired with the
 pass-through verifier.
@@ -509,12 +546,14 @@ Deliberately computable — this is what an honest execution runs, what perfect 
 stated about (`QuadEval/Completeness.lean`), and what the extraction rail consumes. The digit
 decompositions `ddCarrier` (for `G⁻¹`, `messageDigits` digits) and `ddZ` (for `J⁻¹`, `zDigits`
 digits) must share the gadget base `base`, since the verifier's Eq.-(20) rows recompose both with
-the same `base`. -/
+the same `base`. They differ in kind: `ddCarrier` is a full-width `DigitDecomposition` (carrier
+coefficients are arbitrary residues), while `ddZ` is a `BoundedDigitDecomposition` at the honest
+shortness bound on `z`, which is what decouples `τ` from `δ = ⌈log_b q⌉`. -/
 def quadEvalReduction
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
-    (ddZ : DigitDecomposition base zDigits) :
+    (ddZ : BoundedDigitDecomposition base zDigits zBound) :
     Reduction oSpec
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
       (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)

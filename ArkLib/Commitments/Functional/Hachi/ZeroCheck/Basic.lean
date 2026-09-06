@@ -29,7 +29,7 @@ multilinear polynomial. No prover message separates those rounds, so the interac
 unchanged.
 
 That file's header states the deviation, the witness-fed extractor interface, and the genuine costs
-of the repaired route: `ChallengeTree.LeafWitnesses` supplies candidate output witnesses at the
+of the scalar-round route: `ChallengeTree.LeafWitnesses` supplies candidate output witnesses at the
 leaves, `nestedZeroCheckExtractor` reads the all-left entry without a relation search, and the full
 tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
 `docs/kb/audits/noz26-zero-check-lemma10.md`.
@@ -51,8 +51,8 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   identification of `H_α` with paper Eq. (22) is `hAlpha_eq_zero_iff_alphaDefect`) and
   **derives shortness `liftShort` from `H₀ ≡ 0`** (via `hZero_eq_zero_imp_liftShort`, arity
   `(μ + n·δ)·deg φ ≤ 2 ^ m₀`, range-base fit `b − 1 ≤ γ`, digit-base admissibility) — so
-  shortness is proved,
-  not assumed (`relBatched` carries no `liftShort` conjunct). The point relations below it
+  shortness is proved, not assumed (`relBatched` carries no `liftShort` conjunct). The point
+  relations below it
   *do* carry one, but as the commitment's **shortness index**, not as a range assumption:
   `LiftCom.Collision` is defined on pairs of distinct *short* openings, so the conjunct is what
   makes the weak-binding branch a Module-SIS break. Since `relBatched` — the relation whose
@@ -76,15 +76,12 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   distribution is used and the error is exactly `0` — and its execution half
   `nestedZeroCheckReduction_run_support` shows an honest run cannot fail and gives prover and
   verifier the same output statement. They are joined by the generic
-  `Reduction.perfectCompleteness_of_run_support`
-  (`OracleReduction/Security/Basic.lean`), added there for this proof and reusable by every other
-  link. The file also closes the **batching bridge** on the honest side:
+  `Reduction.perfectCompleteness_of_run_support` (`OracleReduction/Security/Basic.lean`). The
+  file also closes the **batching bridge** on the honest side:
   `batchReduction_perfectCompleteness` (protocol object `batchReduction`, verifier shared with
   `batchPackage` by `rfl`), from `Batch.lean`'s honest direction `mem_relBatched_of_relLift`
   through `ReduceClaim.reduction_completeness_of_imp`. Both links of this folder are therefore
-  certified in both directions; what the honest side of the *chain* still lacks is only the
-  composition of the links, which inherits `sorryAx` from the sorried generic
-  `Reduction.append_completeness` (the appended statements are in `HonestChain.lean`).
+  certified in both directions; the appended statements live in `HonestChain.lean`.
 
 The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` (Mathlib-level,
 `k`-ary trees and individual degree `< k`) with the computable view in

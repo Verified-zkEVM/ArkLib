@@ -12,9 +12,8 @@ Umbrella module for `Hachi/Sumcheck/`: the sumcheck loop that finishes Hachi's o
 (§4.3 of [NOZ26]). It reduces the zero-check's point-evaluation claims
 `H₀(τ₀) = 0 ∧ H_α(τ_α) = 0` to hypercube-sum claims, runs `m₀` sumcheck rounds down to a
 single evaluation of the committed table `w̃`, and closes with the final-evaluation step that
-hands the resulting short-opening evaluation claim to `EndPiece/`'s `endPiece` (and, in
-future work, to the recursion adapters). It operates on the
-batched-constraint encoding of `ZeroCheck/Constraints.lean` (the sumcheck polynomials
+hands the resulting short-opening evaluation claim to `EndPiece/`'s `endPiece`. It operates on
+the batched-constraint encoding of `ZeroCheck/Constraints.lean` (the sumcheck polynomials
 `F_{0,τ₀}`/`F_{α,τ₁}` and `nestedRoundRel`).
 
 ## Relation to `ArkLib/ProofSystem/Sumcheck`
@@ -32,10 +31,6 @@ sumcheck in `ProofSystem/Sumcheck/`:
   challenge, and its verifier is a plain `Verifier` (the round polynomials go in the clear),
   not an `OracleVerifier`;
 * neither generic mode carries a soundness proof to inherit.
-
-If this material is ever generalized, the natural direction is to promote the guarded round
-and the round-polynomial layer (`Sumcheck/RoundPoly.lean`) into the generic sumcheck layer as
-a guarded/paired variant.
 
 ## Folder structure
 
@@ -55,60 +50,33 @@ a guarded/paired variant.
   conditions `i < m₀` and `0 < b`.
 * `Sumcheck/FinalEval.lean` — the closing step: the prover sends the claimed evaluation
   `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and the output is
-  the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters. Soundness is
+  the evaluation claim `mle[w̃](a) = y′`. Soundness is
   `finalEval_coordinateWiseSpecialSoundWith`, with its computable `finalEvalExtractor` reading
   the unique leaf opening directly; the honest half (`honestComputeY`,
-  `finalEvalReduction_perfectCompleteness`) lives there too.
+  `finalEvalReduction_perfectCompleteness`) lives there too. This is the first Hachi link whose
+  verifier can actually reject, so "the honest run cannot fail" is proved from the guard lemma
+  rather than holding by construction.
 * `Sumcheck/Completeness.lean` — the honest side of the loop: the computable round message
-  `honestComputeG`, one round's perfect completeness, the `m₀`-fold honest chain
-  `roundsReduction`, and `sumcheckReduction` = bridge ▷ rounds ▷ final evaluation.
+  `honestComputeG` (the summand evaluated in `CPolynomial F` itself, with `X` in the free
+  coordinate and constants elsewhere, summed over the remaining cube), one round's perfect
+  completeness, the `m₀`-fold honest chain `roundsReduction`, and `sumcheckReduction` = bridge
+  ▷ rounds ▷ final evaluation. The `m₀`-fold and composed statements depend on the admitted
+  `Reduction.append_completeness`; the per-round ones are axiom-clean.
 
 This umbrella re-exports the folder (`Completeness` transitively imports `FinalEval`,
 `Rounds`, `RoundPoly` and `Bridge`). The output relation `relWEvalClaim` is the seam after an
 iteration; the full chain is composed in `Composition.lean`.
 
-## Status
-
-The soundness side is complete and `sorry`-free. So is the honest side, per link:
-
-* `Bridge` — done. `mem_nestedRoundRel_of_relNestedZeroCheck` (the point-to-sum push-forward,
-  converse of the pull-back) and `nestedSumcheckBridgeReduction_perfectCompleteness`
-  (zero-round `ReduceClaim`, error `0`, unconditional beyond the two arity conditions the sum
-  identities need). Verifier shared with the package by `rfl`.
-* `FinalEval` — done. `honestComputeY := wTableMleEval`, the protocol object
-  `finalEvalReduction`, the guard-passage lemma `finalCheck_honestComputeY`, relation
-  preservation `mem_relWEvalClaim_of_nestedRoundRel`, the run characterization
-  `finalEvalProver_run_support` and `finalEvalReduction_perfectCompleteness` (error `0`,
-  unconditional). This is the **first** Hachi link whose verifier can actually reject, so
-  "the honest run cannot fail" had to be *proved* (from the guard lemma) rather than holding
-  by construction.
-* `Rounds` / `Completeness` — done, with one framework caveat. The computable round message is
-  `computableRoundPoly` (`RoundPoly`): the summand evaluated in the ring `CPolynomial F` itself
-  (`CMvPolynomial.eval₂`, which *is* computable), with `X` in the free coordinate and constants
-  elsewhere, summed over the remaining cube. `computableRoundPoly_toPoly` identifies it with the
-  proof-side `roundPoly`, which is where its values (`computableRoundPoly_eval`) and its two
-  `degreeLE` memberships come from. `honestComputeG` packages the pair,
-  `roundReduction_perfectCompleteness` is one round's completeness (error `0`, hypotheses `0 < b`
-  and `i < m₀` — the same two the round's soundness carries), and `roundsReduction` folds `m₀` of
-  them, sharing its verifier with `roundsChain` (`roundsReduction_verifier`).
-
-  ⚠ **The caveat is the fold, not the round.** `roundsReduction_perfectCompleteness` and
-  `sumcheckReduction_perfectCompleteness` (bridge ▷ rounds ▷ final evaluation) go through
-  `Reduction.append_perfectCompleteness`, hence through the still-`sorry`
-  `Reduction.append_completeness`, and so depend on `sorryAx`. Everything per-link is
-  axiom-clean. Downstream, `Correctness.lean`'s nonrecursive opening and its perfect correctness
-  inherit `sorryAx` from that same framework lemma and from nothing else; `hachi.opening`
-  (`Commitment.lean`) stays a `sorry` for a different reason — it is the *recursive* opening,
-  which additionally needs the §4.5 tail.
-
 Extraction here is tree-based: it yields a witness (or an escape) from a structured accepting
-tree, and says nothing about a *probability* of extraction. Turning that into a
-knowledge-soundness error — the per-round Schwartz–Zippel `2b/|F|`, and the `(2b+1)^{m₀}`
-leaf count the composed structure demands — needs a Lemma-4-style bridge in the sense of
-FMN24, which the repo does not have for any protocol yet.
+tree, and says nothing about a *probability* of extraction. Converting that into a
+knowledge-soundness error — the per-round Schwartz–Zippel `2b/|F|` against the `(2b+1)^{m₀}`
+leaf count the composed structure demands — needs an [FMN24]-style bridge, which this repository
+does not have for any protocol.
 
 ## References
 
+* [Fenzi, G., Moghaddas, H., and Nguyen, N. K., *Lattice-Based Polynomial Commitments:
+    Improved and Extended*][FMN24]
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/

@@ -11,10 +11,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
   A sequence of scalar challenge rounds reducing the batched polynomial identities
   `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`, `ZeroCheck/Batch.lean`) to evaluations at direct points; the
-  two
-  evaluation claims then seed the sumcheck (`Sumcheck/Bridge.lean`). It is stated over the lifted
-  witness `LiftedWitness Φ μ n` and the weak-binding `LiftCom`, and composes into the §4.3 opening
-  chain (`Composition.lean`).
+  two evaluation claims then seed the sumcheck (`Sumcheck/Bridge.lean`). Stated over the lifted
+  witness `LiftedWitness Φ μ n` and the weak-binding `LiftCom`.
 
   ## Deviation from the paper's Lemma 10
 
@@ -38,9 +36,10 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   Since `w̃` is committed before `τ` is drawn, the *protocol* is fine: Schwartz–Zippel gives
   knowledge error `≈ (m₀ + m₁) / |F|` for Figure 5 exactly as printed. That argument is
   probabilistic, so it does not fit the coordinate-wise special-soundness framework this chain
-  composes in ([FMN24], `CWSSPackage`), which is why the repair below is stated instead.
+  composes in ([FMN24], `CWSSPackage`), which is why the scalar-round route below is stated
+  instead.
 
-  ## What the repair changes, and what it does not
+  ## What the scalar rounds change, and what they do not
 
   This formalization draws the coordinates of `τ₀` and `τα` as `m₀ + m₁` consecutive scalar
   rounds. Since **no prover message separates them** (`pSpecNestedScalar` has no `P_to_V` round),
@@ -71,11 +70,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
      (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
      `relBatched` membership.
 
-  This is a repaired scalar-round CWSS route rather than the paper's printed star extraction. Its
-  complete tree has `2 ^ (m₀ + m₁)` leaves, and Fiat–Shamir must hash its coordinates sequentially.
-  The extractor itself is executable: `ChallengeTree.LeafWitnesses` supplies an `Option` candidate
-  output witness at every leaf, and `nestedZeroCheckExtractor` returns the all-left entry without
-  searching the output relation. The certificate proves this lookup correct for *every* valid leaf
+  The extractor is executable: `ChallengeTree.LeafWitnesses` supplies an `Option` candidate output
+  witness at every leaf, and `nestedZeroCheckExtractor` returns the all-left entry without
+  searching the output relation; the certificate proves that lookup correct for *every* valid leaf
   witnessing. Classical choice is confined to the proof, where it assembles a total response family
   from validity witnesses in order to invoke the evaluation-tree argument. Tree size:
   `nestedZeroCheck_numLeaves`/`_lt`.
@@ -92,8 +89,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   batching bridge, from `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), and `relBatched` remains
   norm-free. (Its quotient half needs no derivation: the committed block holds base-`b` digits,
   which are `⌊b/2⌋`-bounded by construction.) That separation is what this seam has to preserve,
-  because it genuinely cannot
-  recover the range identity: a single evaluation `H₀(τ₀) = 0` never implies `H₀ ≡ 0`.
+  because this seam genuinely cannot recover the range identity: a single evaluation
+  `H₀(τ₀) = 0` never implies `H₀ ≡ 0`.
 
   ## References
 
@@ -137,34 +134,29 @@ one coordinate and soundness parameter two, hence exactly two pairwise-distinct 
 /-! ### Size of the transcript tree
 
 `CWSSStructure` carries no size bound, so `coordinateWiseSpecialSound` alone cannot tell a usable
-repair from one whose family is exponential in the witness length. The two facts below record the
-size, but note what they do and do not establish.
+construction from one whose family is exponential in the witness length. The two facts below
+record the
+size, with two caveats on what they establish:
 
 * `nestedZeroCheck_numLeaves` counts the leaves of the *adapter's* `NestedEvaluationTree`. The
-quantity the extractor actually consumes is the number of `ChallengeTree.LeafPath`s of the
-structured transcript tree; that the two agree is evident from the adapter but is **not
-formalized**.
-* `nestedZeroCheck_numLeaves_lt` is arithmetic on naturals. Minimality of `m₀`, `m₁` enters as its
-  hypotheses and is **not enforced** anywhere in this development: `hμn` and `hn` bound the arities
-  from below only, so an instantiation with oversized `m₀` satisfies every theorem here while
-  blowing up the tree.
+  quantity the extractor consumes is the number of `ChallengeTree.LeafPath`s of the structured
+  transcript tree; that the two agree is evident from the adapter but is not formalized.
+* `nestedZeroCheck_numLeaves_lt` is arithmetic on naturals: minimality of `m₀`, `m₁` enters as its
+  hypotheses rather than being enforced, since `hμn` and `hn` bound the arities from below only.
 
 Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n·δ) * deg φ`
 entries, `δ = clog_b q`. The digit widening touches only the quotient block: at `q ≈ 2 ^ 32` and
 `deg φ = 2 ^ 10` it grows from `n·d ≈ 2 ^ 12.3` to `n·δ·d ≤ 2 ^ 17.3` (`δ ≤ 32`, maximal at
 `b = 2`), adding `≲ 0.25%` to the `≈ 2 ^ 26` that `μ·d` contributes — so the table is still
 `≈ 2 ^ 26` and `m₀ = 26`, and `rlinRows = 5` rows gives `m₁ = 3`: about `2 ^ 29` transcripts,
-against
-the `2 * D - 1 = 4095` of the printed Lemma 10's `SS(F, 2, D)` family at
+against the `2 * D - 1 = 4095` of the printed Lemma 10's `SS(F, 2, D)` family at
 `D = max (2 * d) (2 * b - 1) = 2048`. Polynomial in the witness dimensions, but roughly `2 ^ 17`
-times the paper's family — and since CWSS leaf counts multiply across rounds, that factor is what
-the composed §4.3 chain (`Composition.lean`) inherits; no aggregate bound is stated there.
+times the paper's family, and CWSS leaf counts multiply across rounds.
 
 Only `2 ^ m₀ + 2 ^ m₁ - 1` leaves are *used* (`H₀` needs one accepting continuation per
 `τ₀`-prefix, `H_α` one complete `m₁`-subtree), while `ChallengeTree.IsStructured` demands the
-complete tree. For [FMN24] Lemma 4 to convert coordinate-wise special soundness into knowledge
-soundness one needs `K = poly(λ)`; that lemma is not formalized in ArkLib, so nothing below is
-connected to a knowledge-error statement. -/
+complete tree. Converting coordinate-wise special soundness into a knowledge error would need
+`K = poly(λ)` in an [FMN24] Lemma-4-style bridge, which this repository does not formalize. -/
 
 /-- The evaluation tree the adapter produces has exactly `2 ^ (m₀ + m₁)` leaves: `m₀ + m₁` challenge
 rounds, two pairwise-distinct children each. -/
@@ -613,8 +605,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.1 using 1
       congr 2
-      simp only [ChallengeTree.LeafPath.fullTranscript,
-        nestedTranscriptSuffix_zero]
+      simp only [ChallengeTree.LeafPath.fullTranscript, nestedTranscriptSuffix_zero]
       funext i
       rfl
     have hVanishesα : (∀ path, resp path = resp (nestedLeftPath tree)) →
@@ -629,8 +620,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.2.1 using 1
       congr 2
-      simp only [ChallengeTree.LeafPath.fullTranscript,
-        nestedTranscriptSuffix_zero]
+      simp only [ChallengeTree.LeafPath.fullTranscript, nestedTranscriptSuffix_zero]
       funext i
       rfl
     rcases nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound bDig K φF b stmt tree resp

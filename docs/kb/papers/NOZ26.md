@@ -83,16 +83,10 @@ Ring-switching layer:
   Committing the raw quotient instead admits only the unconditional bound `q/2`
   (`rhoShort_half`) — sharp, since the `R^lin` matrix carries the Ajtai key — forcing a zero-check
   range base of at least `q/2 + 1` and, with the batching bridge's pull-back orientations, the
-  collapse `γ = q/2 = bZero − 1`. Two witnesses separate the regimes, and they are **not**
-  interchangeable:
-
-  * `HonestRangeParams.ofDigitBase b` — `bZero = b`, `γ = ⌊b/2⌋`. The *honest-direction* witness;
-    `γ` is as small as completeness allows, and for `b > 2` it does **not** satisfy the pull-back
-    orientation `bZero − 1 ≤ γ`.
-  * `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`, `γ = b − 1`. The *two-sided* witness,
-    which does satisfy it; `pinned_of_soundness_orientations` applied to it gives
-    `γ = bZero − 1 ∧ γ < q/2`, checked as an `example` in `HonestChain.lean`. This — not
-    `ofDigitBase` — is what carries the conclusion that the pinned regime is realizable at `O(b)`.
+  collapse `γ = q/2 = bZero − 1`. `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`,
+  `γ = b − 1` — is the witness for the two-sided regime: it satisfies the pull-back orientation
+  `bZero − 1 ≤ γ`, and `pinned_of_soundness_orientations` applied to it gives
+  `γ = bZero − 1 ∧ γ < q/2`, so the pinned regime is realizable at `O(b)`.
 
   `moduleSIS_relation_of_mem_Collision` states the payoff: `LiftCom.Collision` satisfies
   `ModuleSIS.relation` for the lift's Ajtai key at radius `2·bound` (nonzero via
@@ -178,6 +172,25 @@ Ring-switching layer:
   treats `(τ₀, τ₁)` as `log μ + log d + log n` coordinates, contradicting the lemma's own `ℓ = 2`,
   and `τ₀`'s stated domain `F^{log μ + log d}` on p. 20 disagrees with `w̃`'s domain
   `[μ + n·δ] × [d]`; ArkLib takes `ℓ = 2` and pins `m₀` to `log(μ + n·δ) + log d`.
+
+- **Figure 9's `τ = 4` does not follow the paper's own rule for `τ`, and ArkLib uses `τ = 5`.**
+  §4.4 fixes the folded-witness digit count as *the smallest integer `τ` with `b^τ > β`*, for the
+  deterministic bound `β := 2ʳ·ω·b`. At Figure 9's own parameters (`b = 16`, `r = 10`, `ω = 16`)
+  that is `β = 262144`, and `16⁴ = 65536 < β`, so §4.4's rule yields `τ = 5`. The same holds under
+  the sharper `β = 2ʳ·ω·⌊b/2⌋ = 131072` that ArkLib proves (`vecLInftyNorm_honestZ_le`, using
+  `‖sᵢ‖∞ ≤ ⌊b/2⌋` from the balanced digits of §2.1 together with [Mic07]): `16⁴` is still short.
+  Figure 9 nonetheless tabulates `τ = 4`, alongside `z = 30583` for the maximum `L∞` norm of `z`.
+  That `30583` is *exactly* `(16−1−8)·(1+16+16²+16³)` — the largest value four balanced base-`16`
+  digits represent (`HachiParams.balancedDigitCapacity_four_eq`). The tabulated `z` is therefore
+  the capacity of `τ = 4`, not a bound established on `z`: §4.2 introduces `τ := ⌈log_b β⌉` with
+  `β` "the maximum `L∞` norm of `z`" but never bounds `β` below the §4.4 figure, and Figure 3's
+  `if ‖z‖∞ > β, abort` branch is never analyzed — §4.2 says only that "completeness follows
+  directly from the protocol rationale". Reaching `τ = 4` thus requires a *statistical*
+  completeness argument over that abort (concentration over the challenge's independently signed
+  ±1 coefficients, since Figure 9 pairs `ω = 16` with `c = 16`), which the paper does not supply.
+  ArkLib formalizes the deterministic reading, where `τ = 5` is minimal
+  (`HachiParams.tau_minimal`); everything else in Figure 9 is used verbatim. The τ = 4 statistical
+  track is separate and not part of the profile in `Params.lean`.
 
 - ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
   `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made
