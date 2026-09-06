@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 228,
+    "files_with_citations": 234,
     "keys_cited": 65,
-    "total_citation_edges": 371
+    "total_citation_edges": 378
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -410,11 +410,14 @@
       "GaoKL24",
       "KKH26"
     ],
-    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean": [
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy/Counting.lean": [
       "ABF26",
       "CS25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs.lean": [
+      "GG25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs/LineDecoding.lean": [
       "GG25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonCa.lean": [
@@ -423,16 +426,28 @@
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean": [
       "BCHKS25"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower/BinaryBasics.lean": [
+      "BCHKS25"
+    ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonMca.lean": [
       "GaoKL24"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean": [
       "BCGM25"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers/Incidence.lean": [
+      "BCGM25"
+    ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Sampling.lean": [
       "DG25dist"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean": [
+      "CS25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Algebra.lean": [
+      "CS25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Moments.lean": [
       "CS25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/UniqueDecoding.lean": [
@@ -494,12 +509,16 @@
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Constrained.lean": [
+      "ACFY24"
+    ],
     "ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean": [
       "ABF26",
       "GR08"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean": [
-      "ABF26"
+      "ABF26",
+      "ACFY24"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability.lean": [
       "ACFY24"
@@ -853,7 +872,7 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/SubspaceDesign.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean",
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy/Counting.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Errors.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean",
@@ -883,6 +902,8 @@
       "ArkLib/Data/CodingTheory/ProximityGap/Folding/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Constrained.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
@@ -937,6 +958,7 @@
     "BCGM25": [
       "ArkLib/Data/CodingTheory/Basic/LinearCode.lean",
       "ArkLib/Data/CodingTheory/InterleavedCode.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers/Incidence.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean",
       "ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean",
@@ -949,6 +971,7 @@
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/BCHKS25.lean",
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/EpsCa.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower/BinaryBasics.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/UniqueDecoding.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean",
@@ -1023,7 +1046,9 @@
     "CS25": [
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/CS25.lean",
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy/Counting.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Algebra.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Moments.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean"
     ],
@@ -1079,6 +1104,7 @@
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean"
     ],
     "GG25": [
+      "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs/LineDecoding.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Frs.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean",
       "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
