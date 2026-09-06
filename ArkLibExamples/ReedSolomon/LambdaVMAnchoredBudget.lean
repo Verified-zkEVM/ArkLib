@@ -33,8 +33,9 @@ cubic-field elements.
 
 ## Reading the paper's final EQ-table statement
 
-Start at `exists_certified_anchored_main_budgets`, corresponding to `eq:lambda-local-bound`
-and `tab:lambda-local`. The five indices select trace lengths 2048, 4096, 8192, 16384, and 32768.
+Start at `exists_certified_anchored_main_budgets`, corresponding to Section 6.5, equation (56),
+and Table 3 of the main paper. The five indices select trace lengths
+2048, 4096, 8192, 16384, and 32768.
 Here `profiles` supplies the original main-tuple dimension `T + 3`, while `lambdaVM` supplies
 the initial and folding curve profiles. Distinguishing these prevents a degree-`T + 2` recovered
 main polynomial from being mistaken for a degree-`< T` DEEP quotient.

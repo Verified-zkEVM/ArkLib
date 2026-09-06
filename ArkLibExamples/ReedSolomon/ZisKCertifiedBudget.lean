@@ -22,7 +22,7 @@ The accompanying inequality checks the corresponding local algebraic error slot.
 
 ## Paper correspondence and entry point
 
-Read `exists_exceptional_at_target` for the six curve rows in the paper's ZisK subsection.
+Read `exists_exceptional_at_target` for the six curve rows in Section 6.4 (ZisK) of the main paper.
 `i = 0` is the initial powers batching; the other five indices are folding rows.
 `Fin r` means an index with `r` possible values, and `↪` requires distinct evaluation points.
 The arbitrary `values` are the received constituent words, not assumed polynomial messages.

@@ -25,7 +25,7 @@ queries and the independently derived bounds `E = 93006457356522169112176655917`
 
 ## Reading this file alongside the paper
 
-The ProveKit subsection (`sec:modular-applications`, table `tab:modular-whir`) uses `E` for
+Section 6.3 (ProveKit: fewer WHIR openings) and Table 2 of the main paper use `E` for
 exceptional challenges and `Λ` for close candidates. Here these are `exceptionalCount` and
 `listSize`. Start with `GoldilocksCubic113CertifiedLocalBudget` or
 `BN254Retuned108CertifiedLocalBudget`, then read the constructor theorem immediately below.
