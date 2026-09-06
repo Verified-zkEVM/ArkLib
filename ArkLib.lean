@@ -354,6 +354,8 @@ import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.ProofSystem.Component.SendChallenge
 import ArkLib.ProofSystem.Component.SendClaim
 import ArkLib.ProofSystem.Component.SendWitness
+import ArkLib.ProofSystem.ConstraintSystem.Basic
+import ArkLib.ProofSystem.ConstraintSystem.Examples
 import ArkLib.ProofSystem.ConstraintSystem.Lookup
 import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 import ArkLib.ProofSystem.ConstraintSystem.Plonk
