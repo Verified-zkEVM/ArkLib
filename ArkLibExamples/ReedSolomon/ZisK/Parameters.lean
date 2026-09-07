@@ -17,8 +17,9 @@ The proposed change reduces 54 queries to 53 and preserves the existing 22-bit h
 namespace ArkLibExamples.ReedSolomon.ZisK
 open CurveProfile
 
-/-- Inner powers degrees, in the order of the five opening groups. -/
-def innerDegree : Fin 5 → ℕ := ![1, 2, 103, 24, 0]
+/-- Inner degrees in increasing outer powers order: opening points `2, 1, 0, -1, -2`.
+This reverses the opening-point order traversed by the outer Horner evaluation. -/
+def innerDegree : Fin 5 → ℕ := ![0, 24, 103, 2, 1]
 
 /-- Exact finite supports and challenge heights for the five batching and three fold curves. -/
 def profiles : Fin 8 → LineProfile := ![
@@ -60,7 +61,10 @@ def profiles : Fin 8 → LineProfile := ![
 def splits : Fin 8 → ℕ := ![39863, 39847, 39835, 39835, 39840, 4981, 623, 75]
 
 /-- Integer ceilings, subsequently proved to bound actual exceptional sets. -/
-def exceptionalCounts : Fin 8 → ℕ := ![42856230830712318, 86096673661637490, 4450305636508366542, 1037001715557082149, 172577519297966305, 4701453548397283, 71138720230254, 796551213271]
+def exceptionalCounts : Fin 8 → ℕ := ![
+  42856230830712318, 86096673661637490, 4450305636508366542,
+  1037001715557082149, 172577519297966305, 4701453548397283,
+  71138720230254, 796551213271]
 
 /-- Cardinality of the actual cubic Goldilocks challenge field. -/
 def fieldSize : ℕ := 6277101731002175853884774869567645561244584131361410908161

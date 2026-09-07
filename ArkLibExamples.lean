@@ -35,5 +35,6 @@ import ArkLibExamples.ReedSolomon.ProveKitQueryTuningCurveArithmetic
 import ArkLibExamples.ReedSolomon.ProveKitSharpLists
 import ArkLibExamples.ReedSolomon.ProveKitSharpMCA
 import ArkLibExamples.ReedSolomon.ZisK
-import ArkLibExamples.ReedSolomon.ZisKCertifiedBudget
-import ArkLibExamples.ReedSolomon.ZisKInterpolation
+import ArkLibExamples.ReedSolomon.ZisK.FinalStark
+import ArkLibExamples.ReedSolomon.ZisK.Interpolation
+import ArkLibExamples.ReedSolomon.ZisK.Parameters

@@ -9,15 +9,14 @@ import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveFinite
 
 /-!
-# Exact polynomial-curve interpolation for ZisK and LambdaVM
+# Exact polynomial-curve interpolation for LambdaVM
 
 The interpolation equation must hold on the polynomial received curve used by powers
 batching, not only on an affine line. At batching degree `ℓ`, the shifted engine assigns
 weight `ℓ * t` to total jet grade `t` on both source columns and compressed local-image rows.
 This module checks that finite height test at the exact heights recorded in the certificates.
 
-The ZisK family contains its initial degree-181 curve and all five folds. The LambdaVM
-family contains all five equality-table configurations from the paper, with their initial
+The LambdaVM family contains all five equality-table configurations, with their initial
 degree-17 curves and every binary fold down to domain size 256. Rows are ordered first by
 increasing initial table size and then by decreasing folding domain size.
 
@@ -39,47 +38,6 @@ open ReedSolomon.HiddenDerivative
 namespace ArkLibExamples.ReedSolomon.ConcreteCurves
 
 open CurveProfile LambdaVMInterpolation
-
-/-- The six ZisK initial and folding profiles. -/
-def zisK : Fin 6 → LineProfile := ![
-  { n := 524288, k := 131072, agreement := 260512, multiplicity := 9,
-    firstDerivativeCap := 3, totalJetCap := 17, batchingDegree := 181,
-    supportDimension := 75053054, localRank := 140,
-    columnY₀Weight := 388950086, height := 22707, heightSlots := 1703915800146 },
-  { n := 65536, k := 16384, agreement := 32564, multiplicity := 9,
-    firstDerivativeCap := 3, totalJetCap := 17, batchingDegree := 7,
-    supportDimension := 9382246, localRank := 140,
-    columnY₀Weight := 48624814, height := 1642, heightSlots := 15366405364 },
-  { n := 8192, k := 2048, agreement := 4071, multiplicity := 9,
-    firstDerivativeCap := 3, totalJetCap := 17, batchingDegree := 7,
-    supportDimension := 1173692, localRank := 140,
-    columnY₀Weight := 6086468, height := 1589, heightSlots := 1860083812 },
-  { n := 1024, k := 256, agreement := 509, multiplicity := 9,
-    firstDerivativeCap := 3, totalJetCap := 17, batchingDegree := 7,
-    supportDimension := 147400, localRank := 140,
-    columnY₀Weight := 767440, height := 1329, heightSlots := 195274560 },
-  { n := 128, k := 32, agreement := 64, multiplicity := 9,
-    firstDerivativeCap := 3, totalJetCap := 17, batchingDegree := 7,
-    supportDimension := 19262, localRank := 140,
-    columnY₀Weight := 103718, height := 541, heightSlots := 10336286 },
-  { n := 32, k := 8, agreement := 16, multiplicity := 9,
-    firstDerivativeCap := 3, totalJetCap := 17, batchingDegree := 3,
-    supportDimension := 5342, localRank := 140,
-    columnY₀Weight := 31118, height := 108, heightSlots := 551160 }
-]
-
-/-- Each zisK row passes the exact polynomial-curve height test. -/
-theorem zisK_verified (i : Fin 6) : (zisK i).CurveVerification := by
-  fin_cases i <;> decide +kernel
-
-/-- Every zisK row supplies an actual curve equation at its stated batching degree. -/
-theorem zisK_exists_certificate {F : Type*} [Field F] (i : Fin 6)
-    (domain : Fin (zisK i).n ↪ F) (w : Fin (zisK i).n → F[X])
-    (hw : ∀ j, (w j).natDegree ≤ (zisK i).batchingDegree) :
-    Nonempty (FirstOrderCurveCertificate (zisK i).D (zisK i).agreement
-      (zisK i).multiplicity (zisK i).firstDerivativeCap (zisK i).totalJetCap
-      (zisK i).k (zisK i).height domain w (zisK i).columns) :=
-  LineProfile.CurveVerification.exists_certificate (zisK_verified i) domain w hw
 
 /-- All 35 LambdaVM initial and binary-fold profiles. -/
 def lambdaVM : Fin 35 → LineProfile := ![

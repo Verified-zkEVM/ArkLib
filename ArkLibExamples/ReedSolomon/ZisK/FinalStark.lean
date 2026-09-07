@@ -12,6 +12,11 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.NestedPowerAgree
 The batching, individual folds, and query checks each meet a 128-bit bound.
 These separate phase bounds do not assert a 128-bit bound on their union.
 The proof-size calculation changes only the query count and adds no nonce.
+
+The grouped words below include the fixed opening-point weights. The groups follow increasing
+outer powers order, reversing the outer Horner traversal; within each group the words
+also follow increasing powers order. The theorem applies to arbitrary such words fixed before both
+challenges; it does not formalize the implementation’s construction of those words.
 -/
 open Polynomial ReedSolomon
 namespace ArkLibExamples.ReedSolomon.ZisK
@@ -27,8 +32,8 @@ theorem batchingCount_eq :
       exceptionalCounts 3 + exceptionalCounts 4 = batchingCount := by decide
 
 /-- The singleton opening group needs no exceptional challenges. -/
-def innerCounts : Fin 5 → ℕ := ![exceptionalCounts 0, exceptionalCounts 1,
-  exceptionalCounts 2, exceptionalCounts 3, 0]
+def innerCounts : Fin 5 → ℕ := ![0, exceptionalCounts 3, exceptionalCounts 2,
+  exceptionalCounts 1, exceptionalCounts 0]
 
 open Classical in
 /-- The two actual powers challenges recover every original message outside one
@@ -45,11 +50,11 @@ theorem exists_nested_exceptional
   have hi (g : Fin 5) :
       UniformExactPowerAgreement domain (values g) 32768 131069 (innerCounts g) := by
     fin_cases g
-    · exact exists_exceptional 0 domain (values 0)
-    · exact exists_exceptional 1 domain (values 1)
+    · exact uniformExactPowerAgreement_singleton domain (values 0) 32768 131069
+    · exact exists_exceptional 3 domain (values 1)
     · exact exists_exceptional 2 domain (values 2)
-    · exact exists_exceptional 3 domain (values 3)
-    · exact uniformExactPowerAgreement_singleton domain (values 4) 32768 131069
+    · exact exists_exceptional 1 domain (values 3)
+    · exact exists_exceptional 0 domain (values 4)
   have ho (u : GoldilocksCubic) : UniformExactPowerAgreement domain
       (fun g ↦ powerBatchedWord (values g) u) 32768 131069 (exceptionalCounts 4) :=
     exists_exceptional 4 domain (fun g ↦ powerBatchedWord (values g) u)

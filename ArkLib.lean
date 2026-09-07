@@ -197,6 +197,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FullAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.HalfGap.Line
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.LineToAffine
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.NestedPowerAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Pairs.ExceptionalSet
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Pairs.Family
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.PolynomialCurve.Agreement

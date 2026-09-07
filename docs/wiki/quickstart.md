@@ -74,13 +74,15 @@ correlated agreement (MCA), and query/payload arithmetic. Start with the applica
   the width-18 tuples. `LambdaVMCertifiedBudget` constructs the 35 exceptional sets and combines
   their five window sums with those list bounds to prove the local error targets.
   `LambdaVMTables` contains the underlying arithmetic and payload identities.
-- `ConcreteCurves` constructs actual polynomial-curve interpolation certificates for all six
-  ZisK profiles and all 35 LambdaVM initial/folding profiles. `ConcreteCurveBounds` checks their
-  sharp rational envelopes. `ConcreteCurveMCA` derives the actual exceptional-cardinality
-  bounds and exact power agreement, also covering the original BN254 and cubic-Goldilocks
-  ProveKit rows. `ZisKCertifiedBudget` discharges the field conditions and six local slots.
-  `AppendixCurveMCA` covers the two published 512-word BN254 bounds; one uses a smaller
-  interpolation witness to establish the same published conclusion.
+- `CurveCertificate` turns a checked finite profile into a uniform exceptional set.
+  `ZisK/Parameters`, `ZisK/Interpolation`, and `ZisK/FinalStark` use it for the
+  compressed final STARK: nested powers batching, three folds, and 53 queries with
+  the existing 22-bit query grinding. Each phase meets its own 128-bit target;
+  the payload model saves 3920 bytes. `NestedPowerAgreement` supplies the generic
+  composition theorem, including singleton groups with no exceptions.
+- `ConcreteCurves`, `ConcreteCurveBounds`, and `ConcreteCurveMCA` retain the 35
+  LambdaVM equality-table profiles and the ProveKit specializations.
+  `AppendixCurveMCA` covers the two published 512-word BN254 bounds.
 - `Fields` supplies canonical mathematical models and proved cardinalities/characteristics
   for BN254 and cubic Goldilocks.
 
@@ -102,8 +104,8 @@ Read the generic development in this order:
    transfer, followed by the affine-space consequence.
 
 The application endpoints construct exceptional sets and derive their cardinality bounds; they
-do not assume the final MCA counts. The original `ZisK` and `LambdaVM` arithmetic modules are
-reusable numerical layers, with the derived bounds supplied by the certified-budget modules.
+do not assume the final MCA counts. The ZisK endpoint preserves the two independent powers
+challenges and constructs one exceptional set before the candidate polynomial is chosen.
 These examples prove mathematical specializations and explicit payload-model identities; they
 do not formalize a complete deployed transcript or its serializer.
 

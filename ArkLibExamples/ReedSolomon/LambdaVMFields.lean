@@ -7,7 +7,6 @@ Authors: Quang Dao
 import ArkLibExamples.ReedSolomon.Fields
 import ArkLibExamples.ReedSolomon.LambdaVMInterleaving
 import ArkLibExamples.ReedSolomon.LambdaVMTables
-import ArkLibExamples.ReedSolomon.ZisK
 
 /-!
 # Concrete cubic Goldilocks consequences for LambdaVM
@@ -26,8 +25,8 @@ original LambdaVM tuple represented by the degree-17 batching curve.
 
 Each conclusion uses the `listBudget` in the matching `LambdaVMTables` row. That value is proved
 equal to the sharp bound derived from the first-order interpolation certificate; no list cap is
-an assumption. The two cardinality lemmas identify the numeric denominators used by LambdaVM and
-ZisK with the actual cardinality of the same cubic Goldilocks model.
+an assumption. The cardinality lemma identifies LambdaVM’s numeric denominator with the
+actual cardinality of the cubic Goldilocks model.
 
 ## Mathematical scope
 
@@ -81,11 +80,5 @@ theorem goldilocksCubic_card_eq_lambdaVM :
     Fintype.card GoldilocksCubic = LambdaVM.challengeCardinality := by
   rw [goldilocksCubic_card]
   norm_num [Goldilocks.fieldSize, LambdaVM.challengeCardinality]
-
-/-- ZisK uses the same concrete cubic Goldilocks challenge field. -/
-theorem goldilocksCubic_card_eq_zisK :
-    Fintype.card GoldilocksCubic = ZisK.challengeCardinality := by
-  rw [goldilocksCubic_card]
-  norm_num [Goldilocks.fieldSize, ZisK.challengeCardinality]
 
 end ArkLibExamples.ReedSolomon.LambdaVMFields

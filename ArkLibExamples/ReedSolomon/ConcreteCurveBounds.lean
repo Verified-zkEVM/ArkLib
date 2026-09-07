@@ -29,34 +29,6 @@ namespace ArkLibExamples.ReedSolomon.ConcreteCurveBounds
 
 open CurveProfile ConcreteCurves CurveCertificate
 
-/-! ## Revised ZisK initial row -/
-
-/-- Retained-pair split for the revised ZisK initial powers row. -/
-def zisKRevisedInitialSplit : ℕ := 136608
-
-/-- Shifted finite-constructor height for the revised ZisK initial powers row. -/
-def zisKRevisedInitialHeight : ℕ := 22707
-
-/-- The ZisK initial row uses `τ = 2k - 3 = 262141`. -/
-theorem zisKRevisedInitial_taylorExponent :
-    2 * (zisK 0).k - 3 = 262141 := by
-  norm_num [zisK]
-
-/-- The revised ZisK exponent is sufficient at every derivative order. -/
-theorem zisKRevisedInitial_taylorExponent_sufficient (r : ℕ) :
-    TaylorExponentSufficient r (zisK 0).k 262141 := by
-  simpa [zisK] using
-    taylorExponentSufficient_two_mul_sub_three r (by norm_num : 2 ≤ 131072)
-
-/-- The revised ZisK `λ₁η` envelope lies below the one-bit-grinding count used by the
-concrete exceptional-set theorem. -/
-theorem zisKRevisedInitial_envelope_le :
-    firstOrderCurveBound 524288 131072 131072 zisKRevisedInitialSplit 260512
-        17 3 181 zisKRevisedInitialHeight 262141
-          (firstOrderCurveDirectRatio 524288 131072 260512) ≤
-      32400105256997946305 := by
-  decide +kernel
-
 /-! ## Revised ProveKit cubic-Goldilocks row -/
 
 /-- The retained-pair split selected for the revised cubic-Goldilocks row. -/
@@ -84,37 +56,6 @@ theorem proveKitGoldilocksCubic_envelope_le :
           (firstOrderCurveDirectRatio 1048576 262144 508263) ≤
       ProveKit.goldilocksCubic113.exceptionalCount := by
   decide +kernel
-
-/-- Recorded split for each zisK curve profile. -/
-def zisKSplit : Fin 6 → ℕ := ![
-  136608,
-  16746,
-  2093,
-  261,
-  32,
-  8
-]
-
-/-- Recorded budget for each zisK curve profile. -/
-def zisKBudget : Fin 6 → ℕ := ![
-  32400105256997946305,
-  36668433835251914,
-  554102788624746,
-  7211277004693,
-  43704620659,
-  477333081
-]
-
-/-- Every selected split lies in the geometric range. -/
-theorem zisK_split_admissible (i : Fin 6) :
-    (zisK i).k ≤ zisKSplit i ∧ zisKSplit i ≤ (zisK i).agreement ∧
-      (zisK i).agreement ≤ (zisK i).n := by
-  fin_cases i <;> decide
-
-/-- The exact rational envelope is below its displayed integer ceiling. -/
-theorem zisK_envelope_le (i : Fin 6) :
-    envelope (zisK i) (zisKSplit i) ≤ zisKBudget i := by
-  fin_cases i <;> decide +kernel
 
 /-- Recorded split for each lambdaVM curve profile. -/
 def lambdaVMSplit : Fin 35 → ℕ := ![

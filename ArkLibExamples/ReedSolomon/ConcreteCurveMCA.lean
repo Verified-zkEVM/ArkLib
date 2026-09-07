@@ -11,7 +11,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrderCurve
 /-!
 # Concrete polynomial-curve agreement bounds
 
-This module instantiates the first-order polynomial-curve theorem for every ZisK and LambdaVM
+This module instantiates the first-order polynomial-curve theorem for every LambdaVM
 curve row and for the two published ProveKit profiles. Each conclusion constructs an actual
 base-field exceptional set and gives exact power agreement outside it.
 
@@ -52,27 +52,6 @@ noncomputable section
 set_option maxRecDepth 4096
 
 universe u
-
-/-- Every ZisK curve row has an actual base-field exceptional set within its recorded budget. -/
-theorem zisK_exists_exceptional_exact_powerAgreement
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
-    (i : Fin 6) (domain : Fin (zisK i).n ↪ F)
-    (values : Fin ((zisK i).batchingDegree + 1) → Fin (zisK i).n → F)
-    (iota : F →+* E)
-    (hchar : ringChar F = 0 ∨
-      max ((zisK i).k - 1) (zisK i).totalJetCap < ringChar F) :
-    ∃ exceptional : Finset F, (exceptional.card : ℚ) ≤ zisKBudget i ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < (zisK i).k →
-        (zisK i).agreement ≤
-          (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
-        HasExactPowerAgreement domain values (RingHom.id F) (zisK i).k z P := by
-  apply CurveCertificate.exists_exceptional_exact_powerAgreement
-    (F := F) (E := E) (p := zisK i) (zisK_verified i)
-    (zisKSplit i) (zisKBudget i) (zisK_split_admissible i)
-  · fin_cases i <;> decide
-  · exact zisK_envelope_le i
-  · exact iota
-  · exact hchar
 
 /-- Every LambdaVM curve row has an actual base-field exceptional set within its recorded
 budget. -/
