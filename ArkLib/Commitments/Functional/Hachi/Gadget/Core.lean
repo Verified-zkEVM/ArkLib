@@ -191,12 +191,13 @@ def balancedZmodDigitDecomposition (b digits : ℕ) (hb : 1 < b) (hq : q ≤ b ^
 
 /-! ## Bounded (short-input) digit decompositions over `ZMod q`
 
-`DigitDecomposition` demands the reconstruction law for **every** coefficient, which over
-`ZMod q` forces `q ≤ base ^ digits` (see `zmodDigitDecomposition`). That is the right demand for
-ordinary committed message coefficients, which are arbitrary residues. It is the *wrong* demand
-for Hachi's folded witness `z = Σᵢ cᵢ sᵢ`: at the `ℓ = 30` parameters (`q = 4294967197`,
+`DigitDecomposition` demands reconstruction for **every** coefficient, without restricting the
+digit range. For digits restricted to a base-`b` box of size `b`, covering `ZMod q` requires
+`q ≤ b ^ digits`. Ordinary committed message coefficients are arbitrary residues and need that
+coverage. Hachi's folded witness `z = Σᵢ cᵢ sᵢ` only needs reconstruction on short inputs:
+at the `ℓ = 30` parameters (`q = 4294967197`,
 `b = 16`) with `τ = 5` (`Params.lean`; Figure 9's table says `4`, but §4.4's own rule gives `5`)
-one has `16⁵ < q`, so no `5`-digit base-`16`
+one has `16⁵ < q`, so no five-digit balanced base-`16`
 decomposition of every residue exists — and yet `τ = 5` is correct, because an honest `z` is
 *deterministically short*
 (`‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋`, [NOZ26] §4.4). The abstraction below separates the two notions rather than

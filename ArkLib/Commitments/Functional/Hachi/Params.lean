@@ -36,21 +36,21 @@ digits of `ŵ`, `t̂` lie in `[⌈−b/2⌉, ⌈b/2⌉−1]`, so `‖sᵢ‖∞ 
 
 Figure 9 nevertheless tabulates `τ = 4`, alongside `z = 30583` for the maximum `ℓ∞` norm of `z`.
 That `30583` is *exactly* `balancedDigitCapacity 16 4 = (16−1−8)·(1+16+16²+16³)`
-(`balancedDigitCapacity_four_eq`) — the largest value four balanced base-`16` digits represent. So
-the tabulated `z` is the capacity of `τ = 4` rather than a bound established on `z`: §4.2 defines
-`τ := ⌈log_b β⌉` with `β` "the maximum `L∞` norm of `z`" but never bounds `β` below the §4.4
-figure, and Figure 3's `if ‖z‖∞ > β, abort` branch is never analyzed (§4.2 states only that
-"completeness follows directly from the protocol rationale"). Reaching `τ = 4` therefore needs a
-*statistical* completeness argument over that abort — concentration over the challenge's
-independently signed ±1 coefficients, since Figure 9 pairs `ω = 16` with `c = 16` — which the paper
-does not give and which is a separate track here. What this file proves is the deterministic
+(`balancedDigitCapacity_four_eq`) — the largest value four balanced base-`16` digits represent.
+This numerical agreement does not establish how the table's norm bound was obtained. The paper
+does not derive `30583` as a deterministic bound: §4.2 defines `τ := ⌈log_b β⌉` using the maximum
+norm, but does not reconcile it with §4.4's bound or analyze Figure 3's abort when `‖z‖∞ > β`.
+A `τ = 4` profile needs a justified completeness bound for that abort. A statistical analysis of
+the implementation's independently signed sparse challenges is a possible route, outside this
+development. What this file proves is the deterministic
 reading. Everything else in the table is Figure 9 verbatim. See
 [`docs/kb/papers/NOZ26.md`](../../../../docs/kb/papers/NOZ26.md), "Known Divergences From ArkLib".
 
 ## Why `τ = 5` is not a full-width decomposition
 
-`16 ^ 5 = 1048576 < q` (`sixteen_pow_tau_lt_q`), so **no** `5`-digit base-`16` decomposition of
-every residue of `ZMod q` exists: a `DigitDecomposition (16 : ZMod q) 5` is impossible. What makes
+`16 ^ 5 = 1048576 < q` (`sixteen_pow_tau_lt_q`), so five digits in the balanced box `[-8, 7]`
+cannot represent every residue of `ZMod q`. The abstract `DigitDecomposition` imposes no digit
+range and does not imply this obstruction. What makes
 `τ = 5` correct is that the honest folded witness `z = Σᵢ cᵢ sᵢ` is *deterministically* short,
 
 ```
@@ -122,8 +122,8 @@ def hachiN : ℕ := 1
 /-- The deterministic bound on the honest folded witness proved here:
 `‖z‖∞ ≤ 2ʳ · ω · ⌊b/2⌋ = 131072` (`vecLInftyNorm_honestZ_le`). This is the `zBound` the bounded `z`
 decomposition is sized for, and hence what fixes `τ = 5`. It is sharper than [NOZ26] §4.4's own
-`2ʳ·ω·b = 262144`, which fixes the same `τ`; Figure 9's tabulated `30583` is not a bound on `z` at
-all but the capacity of its `τ = 4` (see the module docstring). -/
+`2ʳ·ω·b = 262144`, which fixes the same `τ`; Figure 9's tabulated `30583` is not established as
+a deterministic bound on `z` (see the module docstring). -/
 def honestZBound : ℕ := 2 ^ hachiR * hachiOmega * (hachiB / 2)
 
 /-! ## The modulus -/
@@ -160,8 +160,8 @@ theorem clog_eq_delta : Nat.clog hachiB hachiQ = hachiDelta := by
   simp only [hachiDelta]
   omega
 
-/-- **`16 ^ 5 < q`**: no full-width `5`-digit decomposition of `ZMod q` exists, which is why the
-`z` side goes through `BoundedDigitDecomposition` rather than `DigitDecomposition`. -/
+/-- **`16 ^ 5 < q`**: five balanced base-`16` digits cannot cover `ZMod q`, which is why the
+short-digit `z` map uses the conditional reconstruction law of `BoundedDigitDecomposition`. -/
 theorem sixteen_pow_tau_lt_q : hachiB ^ hachiTau < hachiQ := by
   norm_num [hachiB, hachiQ, hachiTau]
 
@@ -191,9 +191,9 @@ Four digits have capacity `7·(1+16+16²+16³) = 30583 < 131072`, and capacity i
 count (`balancedDigitCapacity_mono`), so the failure propagates to every `t < 5`.
 
 That `30583` is precisely the value [NOZ26] Figure 9 tabulates for the maximum `ℓ∞` norm of `z`
-alongside its `τ = 4`. The coincidence is the point: the tabulated `z` is the *capacity* of four
-balanced base-`16` digits, not a bound derived on `z`. No bound below §4.4's `2ʳ·ω·b = 262144`
-appears anywhere in the paper, and §4.4's own rule ("the smallest `τ` with `b^τ > β`") yields `5` at
+alongside its `τ = 4`. The table entry equals four balanced digits' capacity, but the paper gives
+no derivation establishing it as a deterministic bound on `z`. Section 4.4's bound is
+`2ʳ·ω·b = 262144`, and its rule (the smallest `τ` with `b^τ > β`) yields `5` at
 both that figure and the sharper `131072` proved here. -/
 
 /-- `∑_{e<4} 16ᵉ = 4369`. -/
@@ -201,7 +201,7 @@ theorem digitOnesValue_four_eq : digitOnesValue hachiB 4 = 4369 := by
   norm_num [digitOnesValue, hachiB, Finset.sum_range_succ]
 
 /-- `balancedDigitCapacity 16 4 = 30583` — exactly the `z` value [NOZ26] Figure 9 tabulates beside
-its `τ = 4`, which is what identifies that entry as four digits' capacity rather than a bound. -/
+its `τ = 4`. This numerical identity does not prove a norm bound on `z`. -/
 theorem balancedDigitCapacity_four_eq : balancedDigitCapacity hachiB 4 = 30583 := by
   rw [balancedDigitCapacity, digitOnesValue_four_eq]
   norm_num [hachiB]
@@ -313,7 +313,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- **Perfect completeness of Hachi's polynomial-evaluation link at this file's profile** — the
 [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`, `δ = 8`, `r = m = 10`, `ω = 16`,
-`α = 10`) at `τ = 5` — ball-relaxed reading, error `0`.
+`α = 10`) at `τ = 5` — ball-relaxed reading at the chain's `γ = params.γ = 15`, error `0`.
 
 Every hypothesis is discharged from this file's arithmetic: the message side by
 `q_le_sixteen_pow_delta`, the `z` side by `honestZBound_le_capacity` (capacity `489335 ≥ 131072`)
@@ -333,15 +333,20 @@ theorem quadEvalLink_perfectCompleteness_atProfile
         (balancedZmodDigitDecomposition hachiB hachiDelta one_lt_hachiB q_le_sixteen_pow_delta)
         (boundedBalancedZmodDigitDecomposition hachiB hachiTau honestZBound one_lt_hachiB
           honestZBound_le_capacity)).perfectCompleteness init impl
-      (relInMsgShort 𝓜(hachiQ, hachiAlpha) pp (hachiB : ZMod hachiQ) βSq hachiB κ (hachiB / 2))
+      (relInMsgShort 𝓜(hachiQ, hachiAlpha) pp (hachiB : ZMod hachiQ)
+        βSq params.γ κ (hachiB / 2))
       (relOut (zDigits := hachiTau) 𝓜(hachiQ, hachiAlpha) pp (hachiB : ZMod hachiQ)
-        hachiOmega hachiB) :=
-  quadEvalReduction_perfectCompleteness_boundedBalancedDigits
-    𝓜(hachiQ, hachiAlpha) init impl pp
+        hachiOmega params.γ) :=
+  quadEvalReduction_perfectCompleteness
+    𝓜(hachiQ, hachiAlpha) init impl pp _ _
     (powTwoCyclotomic_hasMulLInftyBound hachiAlpha)
-    one_lt_hachiB q_le_sixteen_pow_delta honestZBound_le_capacity hachiB_le_half
-    params_hzb
     (by norm_num [hachiDelta]) hachiTau_pos ringDim_pos
+    params_hzb
+    (fun x e => le_trans
+      (balancedZmodDigit_natAbs_le one_lt_hachiB q_le_sixteen_pow_delta hachiB_le_half x e)
+      params.hbγ)
+    (fun x e => le_trans
+      (boundedBalancedZmodDigit_natAbs_le one_lt_hachiB hachiB_le_half x e) params.hbγ)
 
 /-- **Paper-exact perfect completeness at this file's profile** — the Figure 3 *verifier* verbatim
 (Eq. (20)'s balanced-digit box `S₁₆ = [-8, 7]`, not the enclosing `ℓ∞` ball), at `τ = 5`,

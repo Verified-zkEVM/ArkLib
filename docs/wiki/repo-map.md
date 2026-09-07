@@ -91,15 +91,16 @@ home_page/            site assets and assembled website root
     decomposition `G⁻¹`; `Gadget/Norms` is the centered `ℓ₂²`/`ℓ∞` shortness bounds for both
     directions the honest case and Lemma 8 need. `Gadget/Basic.lean` re-exports both.
     **Two decompositions coexist and must not be confused.** `DigitDecomposition` is the
-    *full-width* one: its reconstruction law holds for every residue, which over `ZMod q` forces
-    `q ≤ base ^ digits` and hence the digit count `δ = ⌈log_b q⌉`. That is right for the message
+    *full-input* one: its reconstruction law holds for every residue, without restricting digit
+    range. Restricting the digits to a base-`b` box of size `b` requires `q ≤ b ^ digits` to cover
+    `ZMod q`; the concrete construction uses `δ = ⌈log_b q⌉`. That is right for the message
     and inner steps, whose coefficients are arbitrary residues. `BoundedDigitDecomposition base
     digits bound` is the *short-input* one: a total, executable digit map whose reconstruction law
     is conditional on `|x| ≤ bound`, realized by `boundedBalancedZmodDigitDecomposition` on the
     balanced interval `[-⌊b/2⌋·S, (b-1-⌊b/2⌋)·S]`, `S = digitOnesValue b digits`. It exists for
     Hachi's folded witness `z = Σᵢ cᵢ sᵢ`, whose digit count `τ` is set by the deterministic bound
     `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` and **not** by `q`: at the `ℓ = 30` parameters, where `τ = 5`
-    (see `Params.lean`), one has `16⁵ < q`, so no full-width `5`-digit decomposition exists,
+    (see `Params.lean`), one has `16⁵ < q`, so five balanced digits cannot cover every residue,
     yet `τ = 5` is perfectly correct. `gadgetDecomposeFun` (a bare per-coefficient digit map) is
     the shared computational core of both, so the layout and norm bookkeeping is proved once.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
@@ -165,8 +166,8 @@ home_page/            site assets and assembled website root
     and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
     escape *event*) for the links whose extraction can break an assumption. The nine-link
     iteration's soundness side is **complete and axiom-clean**, with a **computable**
-    composed extractor — as is the closing `EndPiece/` — so the remaining work is the
-    honest-prover/completeness layer.
+    composed extractor — as is the closing `EndPiece/`. The honest nonrecursive chain is in
+    `Correctness.lean`; its composed completeness still depends on generic append completeness.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
@@ -305,7 +306,7 @@ home_page/            site assets and assembled website root
     pull-back orientation and so realizes the two-sided regime), one named corollary per seam,
     and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
     zero-check protocol, whose completeness is proved **modulo the sorried generic
-    `Reduction.append_completeness` / `liftContext_completeness`** (so it is `sorryAx`-tainted, by
+    `Reduction.append_completeness`** (so it is `sorryAx`-tainted, by
     design and recorded in the baseline; the per-link theorems it composes are not). What the
     non-short honest lift quotient *used to* cost was a zero-check range base of at least
     `q/2 + 1`, and — with the pull-back orientations — the collapse `γ = q/2 = bZero − 1`. Since
@@ -362,10 +363,10 @@ home_page/            site assets and assembled website root
     **`τ = 5` is minimal, not merely sufficient**: `tau_minimal` rules out every `t < 5`, since
     `balancedDigitCapacity 16 4 = 30583 < 131072` and capacity is monotone
     (`balancedDigitCapacity_mono`). That `30583` is exactly the `z` value [NOZ26] Figure 9
-    tabulates alongside its `τ = 4` — i.e. the entry records four digits' *capacity*, not a bound
-    established on `z`; the paper bounds `‖z‖∞` nowhere below §4.4's `262144`, and Figure 3's
-    `if ‖z‖∞ > β, abort` branch is never analyzed. Reaching `τ = 4` needs a statistical
-    completeness argument over that abort, which the paper does not give. See
+    tabulates alongside its `τ = 4`. This equality does not establish how that entry was derived.
+    The paper does not prove `30583` as a deterministic bound or analyze Figure 3's abort when
+    `‖z‖∞ > β`. A `τ = 4` profile needs a justified completeness bound for that abort;
+    statistical analysis is one possible route. See
     [`../kb/papers/NOZ26.md`](../kb/papers/NOZ26.md), "Known Divergences From ArkLib". The file
     then instantiates the `τ = 5` `QuadEval` link
     with every hypothesis discharged, in **both** readings —

@@ -108,8 +108,8 @@ abbrev M1 : ℕ := 1  -- the nested zero-check's second block
 abbrev W : ℕ := 1   -- ℓ₁ bound on short challenges (`ω`)
 
 /-- **`τ = 1`, the folded-witness digit count — deliberately *below* `δ = 2`.** This is what makes
-the composed run exercise the bounded `z` decomposition: a full `DigitDecomposition` of `ZMod 7`
-into one base-`3` digit does not exist (`3 < 7`), and the honest `z` is short instead. -/
+the composed run exercise the bounded `z` decomposition: one balanced base-`3` digit cannot
+represent every residue of `ZMod 7` (`3 < 7`), and the honest `z` is short instead. -/
 abbrev Tau : ℕ := 1
 /-- The honest `ℓ∞` bound on `z` the `τ = 1` decomposition is sized for: `2ʳ·ω·⌊b/2⌋ = 1`. -/
 abbrev ZB : ℕ := 1

@@ -181,13 +181,13 @@ Ring-switching layer:
   `‖sᵢ‖∞ ≤ ⌊b/2⌋` from the balanced digits of §2.1 together with [Mic07]): `16⁴` is still short.
   Figure 9 nonetheless tabulates `τ = 4`, alongside `z = 30583` for the maximum `L∞` norm of `z`.
   That `30583` is *exactly* `(16−1−8)·(1+16+16²+16³)` — the largest value four balanced base-`16`
-  digits represent (`HachiParams.balancedDigitCapacity_four_eq`). The tabulated `z` is therefore
-  the capacity of `τ = 4`, not a bound established on `z`: §4.2 introduces `τ := ⌈log_b β⌉` with
-  `β` "the maximum `L∞` norm of `z`" but never bounds `β` below the §4.4 figure, and Figure 3's
-  `if ‖z‖∞ > β, abort` branch is never analyzed — §4.2 says only that "completeness follows
-  directly from the protocol rationale". Reaching `τ = 4` thus requires a *statistical*
-  completeness argument over that abort (concentration over the challenge's independently signed
-  ±1 coefficients, since Figure 9 pairs `ω = 16` with `c = 16`), which the paper does not supply.
+  digits represent (`HachiParams.balancedDigitCapacity_four_eq`). This numerical agreement does
+  not establish how the table's norm bound was obtained. The paper does not derive `30583` as a
+  deterministic bound or reconcile it with §4.4's figure. Section 4.2 defines `τ := ⌈log_b β⌉`
+  using the maximum norm, and asserts completeness without analyzing Figure 3's abort when
+  `‖z‖∞ > β`. A `τ = 4` profile needs a justified completeness bound for that abort. Statistical
+  analysis of the implementation's independently signed sparse challenges is a possible route;
+  the paper does not supply that analysis.
   ArkLib formalizes the deterministic reading, where `τ = 5` is minimal
   (`HachiParams.tau_minimal`); everything else in Figure 9 is used verbatim. The τ = 4 statistical
   track is separate and not part of the profile in `Params.lean`.

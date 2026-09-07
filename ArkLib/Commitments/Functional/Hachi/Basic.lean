@@ -78,13 +78,13 @@ re-export, and this file is the umbrella for the whole development.
   the whole honest run is computable; `scripts/HachiRuntime.lean` runs it.
 * `Params.lean` — the [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`,
   `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`) **at `τ = 5`** rather than Figure 9's tabulated
-  `τ = 4`, plus the arithmetic facts the chain consumes at them: `16⁵ < q` — the reason `τ` needs
-  the bounded decomposition — and `honestZBound ≤ balancedDigitCapacity 16 5`. `τ = 5` is what
+  `τ = 4`, plus the arithmetic facts the chain consumes at them: `16⁵ < q` — five balanced digits
+  cannot cover all residues — and `honestZBound ≤ balancedDigitCapacity 16 5`. `τ = 5` is what
   §4.4's own rule ("the smallest `τ` with `b^τ > β`") yields here, under both §4.4's
   `β = 2ʳ·ω·b = 262144` and the sharper `131072` proved in this development, for which `5` digits
   are minimal (`tau_minimal`). Figure 9's tabulated `z = 30583` is exactly four digits' balanced
-  capacity, so it records the capacity of `τ = 4` rather than a bound on `z`; see `Params.lean`'s
-  module docstring and `docs/kb/papers/NOZ26.md`.
+  capacity; the paper does not derive that entry as a deterministic bound on `z`. See the
+  `Params.lean` module docstring and `docs/kb/papers/NOZ26.md`.
 
 Importing this file brings in the whole development. A new file joins its folder umbrella; the
 umbrella chain carries it here.
