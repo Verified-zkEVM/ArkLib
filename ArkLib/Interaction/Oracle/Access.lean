@@ -85,7 +85,7 @@ theorem eval_queryPrior {Messages : Type u} (access : PFunctor.{v, u})
     simulateQ (Access.extendImpl access interface prior message)
         (Access.queryPrior access interface q) =
       prior q := by
-  rw [queryPrior, simulateQ_spec_query]
+  rw [queryPrior, simulateQ_spec_query, extendImpl_prior]
 
 @[simp]
 theorem eval_queryLatest {Messages : Type u} (access : PFunctor.{v, u})
@@ -95,7 +95,7 @@ theorem eval_queryLatest {Messages : Type u} (access : PFunctor.{v, u})
     simulateQ (Access.extendImpl access interface prior message)
         (Access.queryLatest access interface q) =
       @OracleInterface.answer _ interface message q := by
-  rw [queryLatest, simulateQ_spec_query]
+  rw [queryLatest, simulateQ_spec_query, extendImpl_latest]
 
 end Access
 
