@@ -8,87 +8,146 @@ import ArkLib.Interaction.Oracle.Access
 /-!
 # Accumulated-access acceptance client
 
-This client exercises AR-3A on a public branch selecting two different oracle-message types. It
-checks that public branching does not itself change oracle access, that each oracle message becomes
-queryable only in its continuation, and that the concrete extension implementation routes old and
-new queries to the correct source.
+Public branches select different message types. Rejection tests attempt unavailable queries, with
+positive counterparts after the send. Terminal access, cursor composition, repeated signatures,
+and a non-faithful oracle interface exercise the semantic boundaries, not just tuple projections.
 -/
 
 namespace Interaction.Oracle.TypeTree.AccessExample
 
 open OracleComp OracleSpec
 
-/-- One ambient input resource available throughout the protocol. -/
+/-- One input resource available from the start. -/
 def baseSpec : OracleSpec Unit := Unit →ₒ Nat
 
-/-- A concrete implementation used to check passthrough routing. -/
+/-- Input behavior is supplied directly, not assumed to come from an honest representation. -/
 def baseImpl : QueryImpl baseSpec Id := fun _ => 7
 
-/-- Public future reached after the Boolean oracle branch. -/
-def falseFuture : Oracle.TypeTree :=
-  .public (Fin 2) fun _ => .done
-
-/-- Public future reached after the `Fin 3` oracle branch. -/
-def trueFuture : Oracle.TypeTree :=
-  .public Bool fun _ => .done
-
-/-- A public Boolean selects two different oracle messages. -/
+/-- A public choice changes the next oracle message type. -/
 def accessTree : Oracle.TypeTree :=
   .public Bool fun
-    | false => .oracle Bool fun _ => falseFuture
-    | true => .oracle (Fin 3) fun _ => trueFuture
+    | false => .oracle Bool fun _ => .public (Fin 2) fun _ => .done
+    | true => .oracle (Fin 3) fun _ => .public Bool fun _ => .done
 
-/-- Interfaces matching the two branch-dependent oracle nodes. -/
+/-- Explicit interfaces for the branch-dependent messages. -/
 def accessOracles : accessTree.OracleDecoration :=
   ⟨PUnit.unit, fun
     | false => ⟨OracleInterface.instDefault, fun _ => ⟨PUnit.unit, fun _ => ⟨⟩⟩⟩
     | true => ⟨OracleInterface.instDefault, fun _ => ⟨PUnit.unit, fun _ => ⟨⟩⟩⟩⟩
 
-/-- Accumulated access starting from the ambient input resource. -/
+/-- The derived presentation of access before each node. -/
 def access : accessTree.AccessDecoration :=
   AccessDecoration.build accessTree accessOracles baseSpec
 
-/-- Public branching preserves the current oracle capabilities on either branch. -/
-example : (access.2 false).1.1 = Unit :=
-  rfl
+example : (access.2 false).1.A = Unit := rfl
 
-example : (access.2 true).1.1 = Unit :=
-  rfl
+example : (access.2 true).1.A = Unit := rfl
 
-/-- Negative canary: at either oracle-send node the only query domain is still the ambient input
-resource. A query of shape `.inr _` for the current prover message is not typeable here. -/
-example : access.1.1 = Unit :=
-  rfl
+/-- This actually attempts to type a query for the unsent message. -/
+example : True := by
+  fail_if_success
+    have _ : (access.2 false).1.A := Sum.inr ()
+  trivial
 
-/-- After the Boolean oracle message is sent, its query slot is appended to the prior access. -/
-example : ((access.2 false).2 PUnit.unit).1.1 = Unit ⊕ Unit :=
-  rfl
+/-- The identical query constructor is accepted after the send. -/
+example : ((access.2 false).2 PUnit.unit).1.A := Sum.inr ()
 
-/-- The appended Boolean slot has Boolean responses. -/
-example : ((access.2 false).2 PUnit.unit).1.2 (.inr ()) = Bool :=
-  rfl
+example : ((access.2 false).2 PUnit.unit).1.B (.inr ()) = Bool := rfl
 
-/-- The other public branch grows by the `Fin 3` oracle interface instead. -/
-example : ((access.2 true).2 PUnit.unit).1.2 (.inr ()) = Fin 3 :=
-  rfl
+example : ((access.2 true).2 PUnit.unit).1.B (.inr ()) = Fin 3 := rfl
 
-/-- Extending a concrete implementation preserves routing to the ambient input resource. -/
-example :
-    (AccessSpec.ofSpec baseSpec).extendImpl OracleInterface.instDefault baseImpl true (.inl ()) = 7 :=
-  rfl
+/-- Cursor stopping after the false-branch oracle send. -/
+def afterSend : PFunctor.FreeM.Cursor accessTree :=
+  .down false (.down PUnit.unit (.root (.public (Fin 2) fun _ => .done)))
 
-/-- The newly appended slot routes to the concrete prover message. -/
-example :
-    (AccessSpec.ofSpec baseSpec).extendImpl OracleInterface.instDefault baseImpl true (.inr ()) = true :=
-  rfl
+example : (accessAt afterSend accessOracles baseSpec.toPFunctor).A = Unit ⊕ Unit := rfl
 
-/-- Cursor selecting the public future after the Boolean oracle message. -/
-def falseFutureCursor : PFunctor.FreeM.Cursor accessTree :=
-  PFunctor.FreeM.Cursor.down false <|
-    PFunctor.FreeM.Cursor.down PUnit.unit (PFunctor.FreeM.Cursor.root falseFuture)
+/-- The public future can be selected without any concrete Boolean oracle payload. -/
+example : AccessDecoration.restrict afterSend access =
+    AccessDecoration.build afterSend.residual
+      (OracleDecoration.restrict afterSend accessOracles)
+      (OracleSpec.ofPFunctor (accessAt afterSend accessOracles baseSpec.toPFunctor)) :=
+  AccessDecoration.restrict_build afterSend accessOracles baseSpec.toPFunctor
 
-/-- Restriction recovers exactly the access available at the selected future node. -/
-example : (AccessDecoration.restrict falseFutureCursor access).1.1 = Unit ⊕ Unit :=
-  rfl
+/-- Distinct oracle payloads leave the structural projection unchanged. -/
+def leftPath : ExecutionPath accessTree := ⟨false, false, (0 : Fin 2), PUnit.unit⟩
+
+/-- Same public choices, different concrete oracle payload. -/
+def rightPath : ExecutionPath accessTree := ⟨false, true, (0 : Fin 2), PUnit.unit⟩
+
+example : leftPath ≠ rightPath := by
+  intro h
+  have impossible : false = true := congrArg
+    (fun p : ExecutionPath accessTree => match p with
+      | ⟨false, message, _⟩ => message
+      | ⟨true, _, _⟩ => false) h
+  cases impossible
+
+example : accessAfter accessTree accessOracles baseSpec.toPFunctor leftPath.toBranchPath =
+    accessAfter accessTree accessOracles baseSpec.toPFunctor rightPath.toBranchPath :=
+  accessAfter_eq_of_toBranchPath_eq accessOracles baseSpec.toPFunctor rfl
+
+/-- A deliberately non-faithful interface: only the first coordinate is observable. -/
+def firstInterface : OracleInterface (Nat × Nat) where
+  Query := Unit
+  toOC.spec := Unit →ₒ Nat
+  toOC.impl _ := do return (← read).1
+
+/-- A send immediately followed by a terminal leaf. -/
+def terminalTree : Oracle.TypeTree := .oracle (Nat × Nat) fun _ => .done
+
+/-- Oracle decoration for the terminal-send regression. -/
+def terminalOracles : terminalTree.OracleDecoration :=
+  ⟨firstInterface, fun _ => ⟨⟩⟩
+
+/-- Complete cursor; node decorations alone have only unit at this residual. -/
+def terminalCursor : PFunctor.FreeM.Cursor terminalTree :=
+  .down PUnit.unit (.root .done)
+
+example : (accessAt terminalCursor terminalOracles baseSpec.toPFunctor).A = Unit ⊕ Unit := rfl
+
+example : (accessAt terminalCursor terminalOracles baseSpec.toPFunctor).B (.inr ()) = Nat := rfl
+
+/-- Two same-signature sources are still explicitly routed to different slots. -/
+def derivedQuery : OracleComp
+    (OracleSpec.ofPFunctor (Access.extend baseSpec.toPFunctor firstInterface)) Nat := do
+  let old ← Access.queryPrior baseSpec.toPFunctor firstInterface ()
+  let fresh ← Access.queryLatest baseSpec.toPFunctor firstInterface ()
+  return old + fresh
+
+example : simulateQ
+    (Access.extendImpl baseSpec.toPFunctor firstInterface baseImpl (11, 42)) derivedQuery = 18 := by
+  simp [derivedQuery, baseImpl, firstInterface, OracleInterface.answer]
+
+/-- Hidden representation data do not leak through the handler. -/
+example (visible hidden₁ hidden₂ : Nat) :
+    Access.extendImpl baseSpec.toPFunctor firstInterface baseImpl (visible, hidden₁) =
+      Access.extendImpl baseSpec.toPFunctor firstInterface baseImpl (visible, hidden₂) := by
+  funext q
+  cases q <;> rfl
+
+/-- A second oracle is not available after only the first send. -/
+example : True := by
+  fail_if_success
+    have _ : OracleComp
+        (OracleSpec.ofPFunctor (Access.extend baseSpec.toPFunctor firstInterface)) Nat :=
+      Access.queryLatest (Access.extend baseSpec.toPFunctor firstInterface) firstInterface ()
+  trivial
+
+/-- The same second-slot query is well typed after the second extension. -/
+example : OracleComp
+    (OracleSpec.ofPFunctor
+      (Access.extend (Access.extend baseSpec.toPFunctor firstInterface) firstInterface)) Nat :=
+  Access.queryLatest (Access.extend baseSpec.toPFunctor firstInterface) firstInterface ()
+
+/-- Message/response universe above the query universe. -/
+example (Messages : Type 1) (interface : OracleInterface.{1, 0} Messages)
+    (initial : PFunctor.{0, 1}) : PFunctor.{0, 1} :=
+  Access.extend initial interface
+
+/-- Query universe above the message/response universe. -/
+example (Messages : Type) (interface : OracleInterface.{0, 1} Messages)
+    (initial : PFunctor.{1, 0}) : PFunctor.{1, 0} :=
+  Access.extend initial interface
 
 end Interaction.Oracle.TypeTree.AccessExample
