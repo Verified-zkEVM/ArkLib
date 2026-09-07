@@ -35,7 +35,7 @@ def firstInterface : OracleInterface (Nat × Nat) where
   toOC.impl _ := do return (← read).1
 
 /-- Both public roles and two oracle messages; the final send has no later protocol node. -/
-def protocol : Oracle.Protocol :=
+abbrev protocol : Oracle.Protocol :=
   .public .sender Bool fun _ =>
     .oracleWith (Nat × Nat) firstInterface <|
       .public .receiver Nat fun _ =>
@@ -76,7 +76,7 @@ def prover (hidden : Nat) : Prover.Strategy ambient protocol.tree protocol.roles
     (fun _ => Nat × Nat) :=
   pure ⟨true, do
     let _ ← liftM (ambient.query 1)
-    return ⟨(11, hidden), fun challenge => pure <| do
+    return ⟨(11, hidden), fun (challenge : Nat) => pure <| do
       let _ ← liftM (ambient.query 4)
       return ⟨(challenge + 1, 99), (777, hidden)⟩⟩⟩
 
@@ -107,16 +107,20 @@ example (hidden : Nat) : (observed hidden).1.2.1 = (777, hidden) := rfl
 
 /-- Only public choices, not the pair payloads, occur in the projected public result. -/
 example (hidden : Nat) :
-    (publicResult (observed hidden).1).1 =
+    (publicResult (tree := protocol.tree) (OutP := fun _ => Nat × Nat)
+      (OutV := fun _ => Nat) (observed hidden).1).1 =
       ⟨true, PUnit.unit, 18, PUnit.unit, PUnit.unit⟩ :=
   rfl
 
 /-- Hidden representation data can vary without changing this client's public result. -/
 example (hidden₁ hidden₂ : Nat) :
-    publicResult (observed hidden₁).1 = publicResult (observed hidden₂).1 := rfl
+    publicResult (tree := protocol.tree) (OutP := fun _ => Nat × Nat)
+      (OutV := fun _ => Nat) (observed hidden₁).1 =
+    publicResult (tree := protocol.tree) (OutP := fun _ => Nat × Nat)
+      (OutV := fun _ => Nat) (observed hidden₂).1 := rfl
 
 /-- A one-oracle tree used to test opacity without a preceding public node. -/
-def opaqueProtocol : Oracle.Protocol :=
+abbrev opaqueProtocol : Oracle.Protocol :=
   .oracleWith (Nat × Nat) firstInterface .done
 
 /-- The oracle-node authoring type does not accept a function receiving its opaque payload. -/
@@ -153,5 +157,15 @@ example (hidden : Nat) :
         return ⟨TypeTree.ExecutionPath.ofTypeTreePath result.1, result.2.1, out⟩) :=
   executeStrategies_eq_run ambient protocol.tree protocol.roles protocol.oracles
     inputSpec.toPFunctor inputImpl (prover hidden) verifier
+
+/-! Kernel dependency reports for the public structural and execution laws. The build and
+zero-warning gates must pass before these reports are interpreted as validation evidence. -/
+
+#print axioms Interaction.Oracle.TypeTree.accessAt_comp
+#print axioms Interaction.Oracle.TypeTree.AccessDecoration.restrict_build
+#print axioms Interaction.Oracle.Verifier.decorate_access
+#print axioms Interaction.Oracle.Verifier.toCounterpart_oracle_eq_of_answer_eq
+#print axioms Interaction.Oracle.executeStrategies_eq_run
+#print axioms Interaction.Oracle.Reduction.execute
 
 end Interaction.Oracle.ExecutionExample
