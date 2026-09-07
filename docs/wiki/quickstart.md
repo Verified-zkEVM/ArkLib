@@ -43,6 +43,13 @@ Run `lake test` to build them; `./scripts/validate.sh` runs this target by defau
 test warnings, including admissions. Stage new tests so source linting and the trust inventory
 include them. Production modules must not import tests.
 
+Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
+branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
+the existing build-time source-policy plugin and rejects every warning in those modules,
+including admissions. This is early feedback, not a replacement for `lake test` or the full
+validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
+[`../design/01c-access-execution-contract.md`](../design/01c-access-execution-contract.md).
+
 ### Lean source-policy checks
 
 ```bash
@@ -215,6 +222,11 @@ python3 -m pip install leanblueprint
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
   workflow, which computes the baseline comparison and posts the PR report.
+- [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
+  provides focused compilation and zero-warning checks for typed Interaction production and
+  acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
+  but never saves, the shared `.lake` cache and does not retain checkout credentials. Passing
+  this check does not waive the full validation/axiom gate for the eventual `main` target.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
