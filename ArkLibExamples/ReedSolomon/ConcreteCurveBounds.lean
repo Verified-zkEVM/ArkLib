@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLibExamples.ReedSolomon.ConcreteCurves
+import ArkLibExamples.ReedSolomon.CurveCertificate
 import ArkLibExamples.ReedSolomon.LambdaVMTables
 import ArkLibExamples.ReedSolomon.ProveKit
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Symbolic.FirstOrderCurveBound
@@ -26,7 +27,7 @@ open ReedSolomon.HiddenDerivative
 
 namespace ArkLibExamples.ReedSolomon.ConcreteCurveBounds
 
-open CurveProfile ConcreteCurves
+open CurveProfile ConcreteCurves CurveCertificate
 
 /-! ## Revised ZisK initial row -/
 
@@ -83,21 +84,6 @@ theorem proveKitGoldilocksCubic_envelope_le :
           (firstOrderCurveDirectRatio 1048576 262144 508263) ≤
       ProveKit.goldilocksCubic113.exceptionalCount := by
   decide +kernel
-
-/-- Minimal common Taylor exponent used by the first-order geometry when `2 ≤ k`. -/
-def taylorExponent (p : LineProfile) : ℕ := 2 * p.k - 3
-
-/-- The chosen exponent is sufficient at every derivative order when `2 ≤ k`. -/
-theorem taylorExponent_sufficient (p : LineProfile) (hk : 2 ≤ p.k) (r : ℕ) :
-    TaylorExponentSufficient r p.k (taylorExponent p) := by
-  simpa [taylorExponent] using taylorExponentSufficient_two_mul_sub_three r hk
-
-/-- Evaluate the revised sharp expression at one profile and split.  Order-one stages use the
-independent direct ratio from `k` to agreement `A`, while every stage uses `τ = 2k - 3`. -/
-def envelope (p : LineProfile) (split : ℕ) : ℚ :=
-  firstOrderCurveBound p.n p.k p.k split p.agreement p.totalJetCap
-    p.firstDerivativeCap p.batchingDegree p.height (taylorExponent p)
-      (firstOrderCurveDirectRatio p.n p.k p.agreement)
 
 /-- Recorded split for each zisK curve profile. -/
 def zisKSplit : Fin 6 → ℕ := ![

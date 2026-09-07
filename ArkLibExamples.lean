@@ -2,6 +2,7 @@ import ArkLibExamples.ReedSolomon.AppendixCurveMCA
 import ArkLibExamples.ReedSolomon.ConcreteCurveBounds
 import ArkLibExamples.ReedSolomon.ConcreteCurveMCA
 import ArkLibExamples.ReedSolomon.ConcreteCurves
+import ArkLibExamples.ReedSolomon.CurveCertificate
 import ArkLibExamples.ReedSolomon.CurveProfile
 import ArkLibExamples.ReedSolomon.Fields
 import ArkLibExamples.ReedSolomon.LambdaVM

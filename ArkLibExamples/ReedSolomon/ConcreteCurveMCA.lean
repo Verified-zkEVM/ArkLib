@@ -24,7 +24,7 @@ an exact power combination of constituent messages. Its entire agreement set is 
 agreement set of those messages with the received tuple. This is stronger than recovering a
 correlated tuple on some chosen subset of `A` positions.
 
-`LineProfile.exists_exceptional_exact_powerAgreement` is the reusable specialization step.
+`CurveCertificate.exists_exceptional_exact_powerAgreement` is the reusable specialization step.
 Its inputs are the executable interpolation-height certificate, an admissible split, a rational
 envelope inequality, and the characteristic condition. The named application theorems discharge
 all the numerical inputs. The final exceptional-cardinality bound is a conclusion, not a premise.
@@ -45,55 +45,13 @@ open ReedSolomon.HiddenDerivative
 
 namespace ArkLibExamples.ReedSolomon.ConcreteCurveMCA
 
-open CurveProfile ConcreteCurves ConcreteCurveBounds
+open CurveProfile ConcreteCurves ConcreteCurveBounds CurveCertificate
 
 noncomputable section
 
 set_option maxRecDepth 4096
 
 universe u
-
-/-- Any verified concrete curve profile inherits the semantic exceptional-set theorem once a
-split and integer ceiling have been checked. -/
-theorem LineProfile.exists_exceptional_exact_powerAgreement
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
-    {p : LineProfile} (hp : p.CurveVerification)
-    (split budget : ℕ)
-    (hsplit : p.k ≤ split ∧ split ≤ p.agreement ∧ p.agreement ≤ p.n)
-    (hcurve : 0 < p.batchingDegree + p.height)
-    (hbound : ConcreteCurveBounds.envelope p split ≤ budget)
-    (domain : Fin p.n ↪ F)
-    (values : Fin (p.batchingDegree + 1) → Fin p.n → F)
-    (iota : F →+* E)
-    (hchar : ringChar F = 0 ∨
-      max (p.k - 1) p.totalJetCap < ringChar F) :
-    ∃ exceptional : Finset F, (exceptional.card : ℚ) ≤ budget ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < p.k →
-        p.agreement ≤
-          (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
-        HasExactPowerAgreement domain values (RingHom.id F) p.k z P := by
-  rcases hp with ⟨hD, hcoeff, hkD, hheight, _, _⟩
-  have hk : 0 < p.k := by
-    simp only [LineProfile.D] at hD
-    omega
-  have hK : 1 < p.k := by
-    simp only [LineProfile.D] at hD
-    omega
-  have hheight' :
-      firstOrderCurveShiftedRowSlotBound p.D p.agreement p.multiplicity
-          p.firstDerivativeCap p.totalJetCap p.n p.batchingDegree p.height <
-        firstOrderCurveShiftedHeightSlotCount p.D p.agreement p.multiplicity
-          p.firstDerivativeCap p.totalJetCap p.batchingDegree p.height := by
-    simpa only [LineProfile.shiftedRowSlots, LineProfile.shiftedHeightSlots] using hheight
-  obtain ⟨exceptional, hcard, hgood⟩ :=
-    exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight
-      (D := p.D) (A := p.agreement) (m := p.multiplicity)
-      (M := p.firstDerivativeCap) (mu := p.totalJetCap) (k := p.k)
-      (h := p.height) (n := p.n) (K := p.k) (L := split)
-      (ell := p.batchingDegree) domain values iota hD hcoeff hkD hheight'
-        hK le_rfl hk hsplit.1 hsplit.2.1 hsplit.2.2 hcurve hchar
-  refine ⟨exceptional, hcard.trans ?_, hgood⟩
-  simpa only [ConcreteCurveBounds.envelope, ConcreteCurveBounds.taylorExponent] using hbound
 
 /-- Every ZisK curve row has an actual base-field exceptional set within its recorded budget. -/
 theorem zisK_exists_exceptional_exact_powerAgreement
@@ -108,7 +66,7 @@ theorem zisK_exists_exceptional_exact_powerAgreement
         (zisK i).agreement ≤
           (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (zisK i).k z P := by
-  apply LineProfile.exists_exceptional_exact_powerAgreement
+  apply CurveCertificate.exists_exceptional_exact_powerAgreement
     (F := F) (E := E) (p := zisK i) (zisK_verified i)
     (zisKSplit i) (zisKBudget i) (zisK_split_admissible i)
   · fin_cases i <;> decide
@@ -130,7 +88,7 @@ theorem lambdaVM_exists_exceptional_exact_powerAgreement
         (lambdaVM i).agreement ≤
           (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (lambdaVM i).k z P := by
-  apply LineProfile.exists_exceptional_exact_powerAgreement
+  apply CurveCertificate.exists_exceptional_exact_powerAgreement
     (F := F) (E := E) (p := lambdaVM i) (lambdaVM_verified i)
     (lambdaVMSplit i) (lambdaVMBudget i) (lambdaVM_split_admissible i)
   · fin_cases i <;> decide
