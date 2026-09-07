@@ -32,7 +32,9 @@ There is no second packed-signature record. Query and response universes remain 
 namespace Access
 
 /-- Add a disjoint query slot for a newly sent oracle message. This is signature extension, not a
-claim that two same-signature resources have the same identity. -/
+claim that two same-signature resources have the same identity. The signature's query domain must
+reduce at implicit transparency when checking dependent query arguments in interpreter laws. -/
+@[implicit_reducible]
 def extend {Messages : Type u} (access : PFunctor.{v, u})
     (interface : OracleInterface.{u, v} Messages) : PFunctor.{v, u} :=
   ((OracleSpec.ofPFunctor access) + @OracleInterface.spec _ interface).toPFunctor
