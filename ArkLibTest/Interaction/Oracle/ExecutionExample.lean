@@ -119,12 +119,19 @@ example (hidden : Nat) :
       ⟨true, PUnit.unit, 18, PUnit.unit, PUnit.unit⟩ :=
   rfl
 
+/-- Normalize one public result before comparing two executions. -/
+theorem publicResult_eq (hidden : Nat) :
+    publicResult (tree := protocol.tree) (OutP := fun _ => Nat × Nat)
+      (OutV := fun _ => Nat) (observed hidden).1 =
+      ⟨⟨true, PUnit.unit, 18, PUnit.unit, PUnit.unit⟩, 37⟩ := rfl
+
 /-- Hidden representation data can vary without changing this client's public result. -/
 example (hidden₁ hidden₂ : Nat) :
     publicResult (tree := protocol.tree) (OutP := fun _ => Nat × Nat)
       (OutV := fun _ => Nat) (observed hidden₁).1 =
     publicResult (tree := protocol.tree) (OutP := fun _ => Nat × Nat)
-      (OutV := fun _ => Nat) (observed hidden₂).1 := rfl
+      (OutV := fun _ => Nat) (observed hidden₂).1 := by
+  rw [publicResult_eq, publicResult_eq]
 
 /-- A one-oracle tree used to test opacity without a preceding public node. -/
 abbrev opaqueProtocol : Oracle.Protocol :=

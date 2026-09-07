@@ -45,7 +45,7 @@ import ArkLib.ToCompPoly.Multilinear.Basic
   (bottom of this file) is the batching bridge as a protocol object and its perfect completeness,
   so the honest side reaches `relBatched` from `relLift` and the two links meet. What is *not*
   here is the composition of the two: appending completeness needs the generic
-  `Reduction.append_completeness`, still `sorry` (the appended statements live in
+  `Reduction.append_completeness`, which this repository admits (the appended statements live in
   `HonestChain.lean` and carry the resulting `sorryAx`).
 
   ## Why the two directions are so unequal in difficulty
@@ -60,9 +60,8 @@ import ArkLib.ToCompPoly.Multilinear.Basic
 
   The soundness direction is the hard one for the mirror-image reason: a single evaluation
   `H₀(τ₀) = 0` does not imply `H₀ ≡ 0`
-  (`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`), which is what forced the repair
-  documented in `ZeroCheck/Reduction.lean`. The asymmetry is structural, not an artefact of how
-  much effort went into either side.
+  (`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`), which is what forces the per-coordinate
+  scalar rounds documented in `ZeroCheck/Reduction.lean`. The asymmetry is structural.
 
   ## Shortness
 
