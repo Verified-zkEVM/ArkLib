@@ -11,10 +11,8 @@ import ArkLib.Commitments.Functional.Hachi.Correctness
 `hachiNonrecursive` (`Correctness.lean`) is parameterized by an *abstract* `LiftCom`: the lift's
 commitment space `K.TCom` and map `K.com` are opaque, which is right for the correctness proof —
 correctness holds for any commitment — but leaves the scheme with nothing an implementation could
-compute. This file closes that hole by instantiating at `hachiLiftCom`
-(`RingSwitch/Reduction.lean`), the Ajtai product `D · (z ‖ ρ)`.
-
-The general theorems are untouched; both declarations here are applications of them.
+compute. This file instantiates at `hachiLiftCom` (`RingSwitch/Reduction.lean`), the Ajtai product
+`D · (z ‖ ρ)`. Both declarations here are applications of the general theorems.
 
 ## Main definitions
 
@@ -22,8 +20,7 @@ The general theorems are untouched; both declarations here are applications of t
   whole honest run is computable (see `scripts/HachiRuntime.lean` for an evaluated accepting
   run).
 * `hachiNonrecursiveConcrete_perfectCorrectness` — perfect correctness, as a corollary of
-  `hachiNonrecursive_perfectCorrectness`. It inherits that theorem's `sorryAx` dependency
-  through `Reduction.append_completeness` and nothing else.
+  `hachiNonrecursive_perfectCorrectness`.
 
 ## References
 
@@ -44,10 +41,17 @@ variable {innerRows outerRows dRows m r M m₁ : Nat} {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 variable {σ : Type}
 
+/-! `τ` (the folded witness's digit count) and `zBound` (the honest `ℓ∞` bound on `z` it is sized
+for) are independent parameters here, exactly as in `Correctness.lean`: the message and inner
+decompositions stay full-width at `δ = ⌈log_b q⌉`, while `τ` comes from the honest shortness bound.
+`μ₀` and hence the lift key's width `μ₀ + n₀·δ_{bZero}` depend on `τ`. -/
+
+variable {τ zBound : Nat}
+
 local notation "δ" P => Nat.clog (HonestRangeParams.b P) q
 local notation "μ₀" P =>
   rlinCols innerRows (Nat.clog (HonestRangeParams.b P) q) (Nat.clog (HonestRangeParams.b P) q)
-    (Nat.clog (HonestRangeParams.b P) q) m r
+    τ m r
 local notation "n₀" => rlinRows innerRows outerRows dRows
 
 /-- The concrete lift commitment of the nonrecursive chain: `hachiLiftCom` at the chain's own
@@ -74,7 +78,7 @@ instance instDecidableEqNonrecursiveLiftComTCom (P : HonestRangeParams q)
 scheme's type with `K.TCom` replaced by `CarrierCom 𝓜(q, α) dRows`, and restating that whole
 composed `pSpec` here would only invite it to drift.
 
-A plain `def`, so every field — `keygen`, the balanced committer, and the full composed opening —
+A plain `def`, so every field — `keygen`, the committer, and the full composed opening —
 is executable. -/
 def hachiNonrecursiveConcrete (P : HonestRangeParams q)
     [SampleableType (Simple.PublicParams 𝓜(q, α) innerRows ((2 ^ m) * Nat.clog P.b q))]
@@ -82,18 +86,16 @@ def hachiNonrecursiveConcrete (P : HonestRangeParams q)
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
     (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
     (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :=
-  hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P
+  hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P hcap
     (nonrecursiveLiftCom (α := α) P D) hd hbZero φF
 
 omit [DecidableEq F] in
 /-- **Perfect correctness of nonrecursive Hachi at the concrete commitment** — the corollary of
 `hachiNonrecursive_perfectCorrectness` at `K := nonrecursiveLiftCom P D`. Same hypotheses, same
-proof; the general theorem is what carries the content, and instantiating it is all that is
-needed because correctness never inspects the commitment beyond its being a function.
-
-⚠ Inherits `sorryAx` exactly as the general theorem does (through the admitted generic
-`Reduction.append_completeness`); this file adds none. -/
+proof: correctness never inspects the commitment beyond its being a function, so instantiating the
+general theorem is all that is needed. -/
 theorem hachiNonrecursiveConcrete_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -110,14 +112,17 @@ theorem hachiNonrecursiveConcrete_perfectCorrectness
         (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
     (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
+    (hcap : zBound ≤ balancedDigitCapacity P.b τ)
+    (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
     (φF : ZMod q →+* F)
     (hμn : ((μ₀ P) + n₀ * rhoDigitCount q P.bZero) * 𝓜(q, α).φ.natDegree ≤ 2 ^ (M + 1))
     (hZeroγ : P.bZero - 1 ≤ P.γ) :
     Commitment.perfectCorrectness init impl
-      (hachiNonrecursiveConcrete (F := F) (ω := ω) (M := M) (m₁ := m₁) P D hd hbZero φF) :=
+      (hachiNonrecursiveConcrete (F := F) (ω := ω) (M := M) (m₁ := m₁)
+        P D hcap hd hbZero φF) :=
   hachiNonrecursive_perfectCorrectness (F := F) (ω := ω) (M := M) (m₁ := m₁)
-    P init impl hInit hKeygen hclog hd hbZero (nonrecursiveLiftCom (α := α) P D) φF hμn
-    hZeroγ
+    P init impl hInit hKeygen hcap hzb hτ hclog hd hbZero
+    (nonrecursiveLiftCom (α := α) P D) φF hμn hZeroγ
 
 end Concrete
 

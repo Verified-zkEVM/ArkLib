@@ -22,7 +22,7 @@ during knowledge extraction (the honest committer uses `cᵢ = 1`).
   `Decomp` and its challenge extension `Opening`, honest commitment (`generateDecomps` /
   `commitWithDecomps`), the weak verifier `verify_weak`, and the bundled `commitmentScheme`.
 * `InnerOuter/Correctness.lean` — perfect correctness for lawful gadget decompositions,
-  unconditional for the genuine base-`b` digit decomposition (`perfectlyCorrect`).
+  unconditional for Hachi's balanced base-`b` digit decomposition (`perfectlyCorrect`).
 * `InnerOuter/Security.lean` — weak binding: two differing verified weak openings yield a
   Module-SIS solution for the inner matrix `A` or the outer matrix `B`
   (`outputToModuleSIS_valid`, `advantage_le_moduleSIS`).

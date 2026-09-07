@@ -17,6 +17,7 @@ import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
+import ArkLib.Commitments.Functional.Hachi.Params
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
@@ -277,6 +278,7 @@ import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.KoalaBear
 import ArkLib.Data.Probability.Notation
+import ArkLib.Interaction.Oracle.Access
 import ArkLib.Interaction.Oracle.Protocol
 import ArkLib.Interaction.Oracle.Source
 import ArkLib.Interaction.Oracle.TypeTree

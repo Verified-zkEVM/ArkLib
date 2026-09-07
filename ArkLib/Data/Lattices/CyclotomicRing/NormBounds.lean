@@ -17,7 +17,12 @@ relies on:
 * `NormBounds.Basic` — the centered `ℓ₁`/`ℓ₂²` norms, the bound expressions
   (`subL2NormSqBound`, `scalarVecMulMulL2NormSqBound`), and the proven subtraction bound
   `sub_l2NormSq_le`.
-* `NormBounds.MicciancioYoung` — the proved product bound `scalarVecMul_mul_l2NormSq_le`.
+* `NormBounds.MicciancioYoung` — the proved product bounds `scalarVecMul_mul_l2NormSq_le`
+  (`ℓ₂²`) and `Rq.lInftyNorm_mul_le` (`ℓ∞`, [Mic07, ineq. (2.7)]), the latter packaged as
+  `powTwoCyclotomic_hasMulLInftyBound : Rq.HasMulLInftyBound (powTwoCyclotomic α)`. `ℓ∞` product
+  growth is what bounds Hachi's folded witness `z = Σᵢ cᵢ sᵢ` deterministically, and hence what
+  lets its digit count be chosen below `⌈log_b q⌉`; both bounds are pinned to the negacyclic
+  modulus, where multiplication by `X` permutes coefficients up to sign.
 * `NormBounds.LyubashevskySeiler` — short-element invertibility `isUnit_of_l1Norm_le`
   (proved).
 

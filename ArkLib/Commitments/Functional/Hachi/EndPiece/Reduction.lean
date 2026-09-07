@@ -126,20 +126,6 @@ theorem rhoDigitsShortCheck_eq_true_iff (ρ : Fin n → CPolynomial (ZMod q)) :
       simp
   · exact fun h i u hu k _ => h i ⟨u, hu⟩ k
 
-omit [NeZero q] [IsCyclotomic Φ] [Field F] [BEq F] [LawfulBEq F] in
-/-- **The digit conjunct of `liftShortCheck` always passes** at an admissible digit base: the
-committed digits are `⌊bDig/2⌋`-bounded for every quotient (`rhoDigitsShort_of_digitBaseOk`).
-
-So at the chain's parameters `liftShortCheck` is effectively the `z`-norm check alone. It is kept
-as a conjunct because the check must decide `liftShort` *as stated* — with no side condition on the
-base — and because the soundness side reads `liftShort` at whatever regime the commitment is
-indexed by. The corresponding conjunct on raw quotient rows would be `RhoShort`, which
-`rhoShort_half` shows can only be met at `q/2`. -/
-theorem rhoDigitsShortCheck_eq_true_of_digitBaseOk (h : DigitBaseOk q bound bDig)
-    (ρ : Fin n → CPolynomial (ZMod q)) :
-    rhoDigitsShortCheck Φ bound bDig ρ = true :=
-  (rhoDigitsShortCheck_eq_true_iff Φ bound bDig ρ).mpr (rhoDigitsShort_of_digitBaseOk Φ h ρ)
-
 /-- Decides `liftShort`: the `ℓ∞` bound on `z` plus the truncated digit check. -/
 def liftShortCheck (w : LiftedWitness Φ μ n) : Bool :=
   decide (vecLInftyNorm Φ w.z ≤ bound) && rhoDigitsShortCheck Φ bound bDig w.ρ
@@ -180,15 +166,6 @@ def endPieceVerifierGuardedForm
   check := fun stmt tr => endPieceCheck Φ m₀ bound bDig b K φF stmt (tr 0)
   out := fun _ _ => ()
   verify_eq := fun _ _ => rfl
-
-omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
-/-- The verifier is guarded, with `endPieceCheck` as its check. True by definition: the verifier
-is literally `if endPieceCheck … then pure () else failure`. -/
-theorem endPieceVerifier_isGuarded
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    [BEq K.TCom] (φF : ZMod q →+* F) :
-    (endPieceVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF).IsGuarded :=
-  (endPieceVerifierGuardedForm Φ m₀ bound bDig b K φF).isGuarded
 
 /-- The witness read off a transcript: the prover's single message. Kept apart from
 `endPieceExtractor` so that the extraction itself is a computable function of the transcript. -/

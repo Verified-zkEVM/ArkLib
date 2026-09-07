@@ -256,46 +256,49 @@ private lemma sum_conv_sq_le {n : ℕ} (da wb c : ℕ → ℤ)
         rw [← Finset.sum_mul]
     _ = (∑ i ∈ Finset.range n, da i) ^ 2 * ∑ j ∈ Finset.range n, wb j ^ 2 := by ring
 
+omit [NeZero q] in
+/-- Coefficients at or above the modulus' degree vanish, hence so do their centered
+representatives — the padding fact both convolution bounds need. -/
+private lemma valMinAbs_coeff_eq_zero_of_le (v : Rq Φ) {i : ℕ} (hi : 2 ^ α ≤ i) :
+    (v.1.coeff i).valMinAbs = 0 := by
+  have hc : v.1.coeff i = 0 := by
+    rw [CompPoly.CPolynomial.coeff_toPoly]
+    refine Polynomial.coeff_eq_zero_of_degree_lt
+      (lt_of_lt_of_le ((Φ).degree_toPoly_lt_of_reduced v.2) ?_)
+    rw [hachi_degree, hachi_natDegree]; exact_mod_cast hi
+  rw [hc, ZMod.valMinAbs_zero]
+
+/-- **Per-coefficient convolution bound over the negacyclic ring.** The centered absolute value of
+a product coefficient is at most the cyclic convolution of the factors' centered absolute values.
+The shared analytic core of the `ℓ₂` bound (`Rq.l2NormSq_mul_le`) and the `ℓ∞` bound
+(`Rq.lInftyNorm_mul_le`). -/
+private lemma natAbs_coeff_mul_le_conv (d w : Rq Φ) {k : ℕ} (hk : k < 2 ^ α) :
+    ((d * w).1.coeff k).valMinAbs.natAbs
+      ≤ ∑ i ∈ Finset.range (2 ^ α),
+          ((d.1.coeff i).valMinAbs).natAbs
+            * ((w.1.coeff ((k + 2 ^ α - i) % (2 ^ α))).valMinAbs).natAbs := by
+  refine le_trans (valMinAbs_natAbs_le
+      ((∑ p ∈ Finset.antidiagonal k, (d.1.coeff p.1).valMinAbs * (w.1.coeff p.2).valMinAbs)
+        - ∑ p ∈ Finset.antidiagonal (2 ^ α + k),
+            (d.1.coeff p.1).valMinAbs * (w.1.coeff p.2).valMinAbs) ?_)
+    (natAbs_conv_le (by positivity) k hk
+      (fun i => (d.1.coeff i).valMinAbs) (fun j => (w.1.coeff j).valMinAbs)
+      (fun i hi => valMinAbs_coeff_eq_zero_of_le α d hi)
+      (fun j hj => valMinAbs_coeff_eq_zero_of_le α w hj))
+  rw [Int.cast_sub, cast_conv (α := α) d w k, cast_conv (α := α) d w (2 ^ α + k),
+      ← coeff_mul_rq_two_block (α := α) d w hk]
+
 /-- **Per-entry product norm bound (Micciancio/Young, cf. [Mic07, ineqs. (2.6)–(2.7)]).**
 Over the negacyclic ring `X^{2^α}+1`, `‖d·w‖₂² ≤ ‖d‖₁²·‖w‖₂²`. -/
 theorem Rq.l2NormSq_mul_le (d w : Rq Φ) :
     Rq.l2NormSq Φ (d * w) ≤ (Rq.l1Norm Φ d) ^ 2 * Rq.l2NormSq Φ w := by
-  have hAzero : ∀ i, 2 ^ α ≤ i → (d.1.coeff i).valMinAbs = 0 := by
-    intro i hi
-    have hc : d.1.coeff i = 0 := by
-      rw [CompPoly.CPolynomial.coeff_toPoly]
-      refine Polynomial.coeff_eq_zero_of_degree_lt
-        (lt_of_lt_of_le ((Φ).degree_toPoly_lt_of_reduced d.2) ?_)
-      rw [hachi_degree, hachi_natDegree]; exact_mod_cast hi
-    rw [hc, ZMod.valMinAbs_zero]
-  have hBzero : ∀ j, 2 ^ α ≤ j → (w.1.coeff j).valMinAbs = 0 := by
-    intro j hj
-    have hc : w.1.coeff j = 0 := by
-      rw [CompPoly.CPolynomial.coeff_toPoly]
-      refine Polynomial.coeff_eq_zero_of_degree_lt
-        (lt_of_lt_of_le ((Φ).degree_toPoly_lt_of_reduced w.2) ?_)
-      rw [hachi_degree, hachi_natDegree]; exact_mod_cast hj
-    rw [hc, ZMod.valMinAbs_zero]
   have hc : ∀ k ∈ Finset.range (2 ^ α),
       (((d * w).1.coeff k).valMinAbs.natAbs : ℤ)
         ≤ ∑ i ∈ Finset.range (2 ^ α),
             ((d.1.coeff i).valMinAbs.natAbs : ℤ)
               * ((w.1.coeff ((k + 2 ^ α - i) % (2 ^ α))).valMinAbs.natAbs : ℤ) := by
     intro k hk
-    have hkn : k < 2 ^ α := Finset.mem_range.mp hk
-    have hnat : ((d * w).1.coeff k).valMinAbs.natAbs
-        ≤ ∑ i ∈ Finset.range (2 ^ α),
-            ((d.1.coeff i).valMinAbs).natAbs
-              * ((w.1.coeff ((k + 2 ^ α - i) % (2 ^ α))).valMinAbs).natAbs := by
-      refine le_trans (valMinAbs_natAbs_le
-          ((∑ p ∈ Finset.antidiagonal k, (d.1.coeff p.1).valMinAbs * (w.1.coeff p.2).valMinAbs)
-            - ∑ p ∈ Finset.antidiagonal (2 ^ α + k),
-                (d.1.coeff p.1).valMinAbs * (w.1.coeff p.2).valMinAbs) ?_)
-        (natAbs_conv_le (by positivity) k hkn
-          (fun i => (d.1.coeff i).valMinAbs) (fun j => (w.1.coeff j).valMinAbs) hAzero hBzero)
-      rw [Int.cast_sub, cast_conv (α := α) d w k, cast_conv (α := α) d w (2 ^ α + k),
-          ← coeff_mul_rq_two_block (α := α) d w hkn]
-    exact_mod_cast hnat
+    exact_mod_cast natAbs_coeff_mul_le_conv α d w (Finset.mem_range.mp hk)
   have key := sum_conv_sq_le (n := 2 ^ α)
       (fun i => ((d.1.coeff i).valMinAbs.natAbs : ℤ))
       (fun j => ((w.1.coeff j).valMinAbs.natAbs : ℤ))
@@ -313,6 +316,40 @@ theorem Rq.l2NormSq_mul_le (d w : Rq Φ) :
   have hgoal : (Rq.l2NormSq Φ (d * w) : ℤ) ≤ ((Rq.l1Norm Φ d : ℤ)) ^ 2 * (Rq.l2NormSq Φ w : ℤ) := by
     rw [e1, e2, e3]; exact key
   exact_mod_cast hgoal
+
+/-- **Per-entry `ℓ∞` product norm bound** ([Mic07, ineq. (2.7)]; [NOZ26] Lemma 2). Over the
+negacyclic ring `X^{2^α}+1`, `‖d·w‖∞ ≤ ‖d‖₁·‖w‖∞`.
+
+This is the inequality that makes Hachi's folded witness `z = Σᵢ cᵢ sᵢ` deterministically short:
+each `cᵢ` is `ℓ₁`-bounded by `ω` (carried by `ShortChallenge`) and each message block by `⌊b/2⌋`
+(the balanced committer), so `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` — the bound that lets the `ẑ` digit count `τ` be
+chosen far below `⌈log_b q⌉`. Same convolution core as the `ℓ₂` bound above, but with the trivial
+`∑ᵢ |dᵢ|·‖w‖∞` estimate in place of Cauchy–Schwarz. -/
+theorem Rq.lInftyNorm_mul_le (d w : Rq Φ) :
+    Rq.lInftyNorm Φ (d * w) ≤ Rq.l1Norm Φ d * Rq.lInftyNorm Φ w := by
+  have hdeg : (Φ).φ.natDegree = 2 ^ α := hachi_natDegree α
+  unfold Rq.lInftyNorm Rq.l1Norm
+  rw [hdeg]
+  refine Finset.sup_le fun k hk => ?_
+  have hkn : k < 2 ^ α := Finset.mem_range.mp hk
+  calc ((d * w).1.coeff k).valMinAbs.natAbs
+      ≤ ∑ i ∈ Finset.range (2 ^ α),
+          ((d.1.coeff i).valMinAbs).natAbs
+            * ((w.1.coeff ((k + 2 ^ α - i) % (2 ^ α))).valMinAbs).natAbs :=
+        natAbs_coeff_mul_le_conv α d w hkn
+    _ ≤ ∑ i ∈ Finset.range (2 ^ α), ((d.1.coeff i).valMinAbs).natAbs
+          * (Finset.range (2 ^ α)).sup (fun j => (w.1.coeff j).valMinAbs.natAbs) :=
+        Finset.sum_le_sum fun i _ => Nat.mul_le_mul_left _
+          (Finset.le_sup (f := fun j => (w.1.coeff j).valMinAbs.natAbs)
+            (Finset.mem_range.mpr (Nat.mod_lt _ (by positivity))))
+    _ = (∑ i ∈ Finset.range (2 ^ α), ((d.1.coeff i).valMinAbs).natAbs)
+          * (Finset.range (2 ^ α)).sup (fun j => (w.1.coeff j).valMinAbs.natAbs) := by
+        rw [Finset.sum_mul]
+
+/-- **The power-of-two cyclotomic modulus satisfies the `ℓ∞` product bound**, packaged as the
+named property `Rq.HasMulLInftyBound` that the `Φ`-generic Hachi layers take as a hypothesis. -/
+theorem powTwoCyclotomic_hasMulLInftyBound : Rq.HasMulLInftyBound (Φ) :=
+  fun d w => Rq.lInftyNorm_mul_le α d w
 
 end Helpers
 

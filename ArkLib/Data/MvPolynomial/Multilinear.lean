@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Aristotle (Harmonic), Elias Judin, Stefano Rocca
 -/
 
 import CompPoly.Data.MvPolynomial.Notation
@@ -101,6 +101,22 @@ theorem eqPolynomial_symm (x : σ → R) (y : σ → R) :
   funext
   ring_nf
 
+/-- The equality kernel is a product of one affine equality factor per coordinate. -/
+theorem eqTilde_eq_prod (x y : σ → R) :
+    eqTilde x y = ∏ i, (x i * y i + (1 - x i) * (1 - y i)) := by
+  unfold eqTilde
+  rw [eqPolynomial_expanded]
+  simp only [map_prod, map_add, map_mul, map_sub, map_one, eval_C, eval_X]
+  exact Finset.prod_congr rfl fun i _ => by ring
+
+/-- The equality kernel factors across appended coordinate blocks. -/
+theorem eqTilde_append {m n : ℕ} (x₁ y₁ : Fin m → R) (x₂ y₂ : Fin n → R) :
+    eqTilde (Fin.append x₁ x₂) (Fin.append y₁ y₂) =
+      eqTilde x₁ y₁ * eqTilde x₂ y₂ := by
+  simp only [eqTilde_eq_prod]
+  rw [Fin.prod_univ_add]
+  congr 1 <;> exact Finset.prod_congr rfl fun i _ => by simp [Fin.append]
+
 -- @[simp]
 theorem eqPolynomial_zeroOne (r : σ → Fin 2) : (eqPolynomial r : MvPolynomial σ R) =
     ∏ i : σ, if r i = 0 then 1 - X i else X i := by
@@ -141,6 +157,12 @@ theorem MLE_expanded (evals : (σ → Fin 2) → R) : MLE evals =
     ∑ x : σ → Fin 2, (∏ i : σ, ((1 - C (x i : R)) * (1 - X i) + C (x i : R) * X i))
       * C (evals x) := by
   unfold MLE; congr
+
+/-- Evaluation of `MLE evals` at an arbitrary point, expressed in the equality-kernel basis. -/
+theorem MLE_eval (x : σ → R) (evals : (σ → Fin 2) → R) :
+    eval x (MLE evals) =
+      ∑ b : σ → Fin 2, eqTilde (b : σ → R) x * evals b := by
+  simp only [MLE, eval_sum, eval_mul, eval_C, eqTilde]
 
 @[simp]
 theorem MLE_eval_zeroOne (x : σ → Fin 2) (evals : (σ → Fin 2) → R) :
@@ -233,7 +255,88 @@ theorem MLE_eq_zero_iff (evals : (σ → Fin 2) → R) : MLE evals = 0 ↔ ∀ x
   · intro h
     simp [MLE, h]
 
--- TODO: add lemmas about the uniqueness of multilinear polynomials up to evaluations on hypercube
+/-! ### Uniqueness on the Boolean hypercube -/
+
+/-- A polynomial of individual degree at most one that vanishes on the Boolean hypercube is zero.
+
+Unlike uniqueness from evaluation on a general finite grid, this result holds over every
+commutative ring, including rings with zero divisors. -/
+theorem eq_zero_of_degreeOf_le_one_of_eval_zeroOne_eq_zero :
+    ∀ {n : ℕ} (p : MvPolynomial (Fin n) R),
+      (∀ i, degreeOf i p ≤ 1) →
+      (∀ x : Fin n → Fin 2, eval (x : Fin n → R) p = 0) →
+      p = 0 := by
+  intro n
+  induction n with
+  | zero =>
+      intro p _ heval
+      have h := heval fun _ => 0
+      rw [eq_C_of_isEmpty p] at h ⊢
+      simpa using h
+  | succ n ih =>
+      intro p hdegree heval
+      let f := finSuccEquiv R n p
+      have hnatDegree : f.natDegree ≤ 1 := by
+        simpa [f, natDegree_finSuccEquiv] using hdegree 0
+      have hf : f = Polynomial.C (f.coeff 1) * Polynomial.X + Polynomial.C (f.coeff 0) :=
+        Polynomial.eq_X_add_C_of_natDegree_le_one hnatDegree
+      have hdegreeCoeff (k : ℕ) (i : Fin n) : degreeOf i (f.coeff k) ≤ 1 :=
+        (degreeOf_coeff_finSuccEquiv p i k).trans (hdegree i.succ)
+      have hcoeffZero : f.coeff 0 = 0 := by
+        refine ih _ (hdegreeCoeff 0) fun x => ?_
+        have h := eval_comp_eval_C_finSuccEquiv p (x : Fin n → R) 0
+        change eval (x : Fin n → R) (Polynomial.eval (C 0) f) = _ at h
+        rw [hf] at h
+        simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+          Polynomial.eval_X, mul_zero, zero_add, map_zero] at h
+        rw [h]
+        convert heval (Fin.cons 0 x) using 1
+        apply congrArg (fun y => eval y p)
+        funext i
+        refine Fin.cases ?_ (fun j => ?_) i <;> simp
+      have hcoeffOne : f.coeff 1 = 0 := by
+        refine ih _ (hdegreeCoeff 1) fun x => ?_
+        have h := eval_comp_eval_C_finSuccEquiv p (x : Fin n → R) 1
+        change eval (x : Fin n → R) (Polynomial.eval (C 1) f) = _ at h
+        rw [hf] at h
+        simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
+          Polynomial.eval_X, mul_one, map_one, map_add] at h
+        rw [hcoeffZero] at h
+        simp only [map_zero, add_zero] at h
+        rw [h]
+        convert heval (Fin.cons 1 x) using 1
+        apply congrArg (fun y => eval y p)
+        funext i
+        refine Fin.cases ?_ (fun j => ?_) i <;> simp
+      have hfZero : f = 0 := by
+        rw [hf, hcoeffZero, hcoeffOne]
+        simp
+      have hp : p = (finSuccEquiv R n).symm f := by
+        simp [f]
+      rw [hp, hfZero, map_zero]
+
+/-- Two polynomials of individual degree at most one are equal if they agree on the Boolean
+hypercube. This criterion only compares Boolean evaluations, not all evaluations in the ring. -/
+theorem eq_of_degreeOf_le_one_of_eval_zeroOne_eq {n : ℕ}
+    (p q : MvPolynomial (Fin n) R) (hp : ∀ i, degreeOf i p ≤ 1)
+    (hq : ∀ i, degreeOf i q ≤ 1)
+    (heval : ∀ x : Fin n → Fin 2, eval (x : Fin n → R) p = eval (x : Fin n → R) q) :
+    p = q := by
+  apply sub_eq_zero.mp
+  refine eq_zero_of_degreeOf_le_one_of_eval_zeroOne_eq_zero (p - q) ?_ ?_
+  · exact fun i => (degreeOf_sub_le i p q).trans (max_le (hp i) (hq i))
+  · intro x
+    rw [eval_sub, heval x, sub_self]
+
+/-- A multilinear polynomial interpolating `evals` on the Boolean hypercube is `MLE evals`. -/
+theorem eq_MLE_of_degreeOf_le_one_of_eval_zeroOne_eq {n : ℕ}
+    (evals : (Fin n → Fin 2) → R) (p : MvPolynomial (Fin n) R)
+    (hdegree : ∀ i, degreeOf i p ≤ 1)
+    (heval : ∀ x : Fin n → Fin 2, eval (x : Fin n → R) p = evals x) :
+    p = MLE evals := by
+  refine eq_of_degreeOf_le_one_of_eval_zeroOne_eq p (MLE evals) hdegree
+    (MLE_degreeOf evals) fun x => ?_
+  rw [heval x, MLE_eval_zeroOne]
 
 /-! ### Axis-cross vanishing does not determine a multilinear polynomial
 
