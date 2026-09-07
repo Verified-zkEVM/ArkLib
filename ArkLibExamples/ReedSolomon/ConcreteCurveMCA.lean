@@ -11,8 +11,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrderCurve
 /-!
 # Concrete polynomial-curve agreement bounds
 
-This module instantiates the first-order polynomial-curve theorem for every LambdaVM
-curve row and for the two published ProveKit profiles. Each conclusion constructs an actual
+This module instantiates the first-order polynomial-curve theorem for the two published
+ProveKit profiles. Each conclusion constructs an actual
 base-field exceptional set and gives exact power agreement outside it.
 
 ## Reading the statements
@@ -45,35 +45,13 @@ open ReedSolomon.HiddenDerivative
 
 namespace ArkLibExamples.ReedSolomon.ConcreteCurveMCA
 
-open CurveProfile ConcreteCurves ConcreteCurveBounds CurveCertificate
+open CurveProfile ConcreteCurveBounds CurveCertificate
 
 noncomputable section
 
 set_option maxRecDepth 4096
 
 universe u
-
-/-- Every LambdaVM curve row has an actual base-field exceptional set within its recorded
-budget. -/
-theorem lambdaVM_exists_exceptional_exact_powerAgreement
-    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
-    (i : Fin 35) (domain : Fin (lambdaVM i).n ↪ F)
-    (values : Fin ((lambdaVM i).batchingDegree + 1) → Fin (lambdaVM i).n → F)
-    (iota : F →+* E)
-    (hchar : ringChar F = 0 ∨
-      max ((lambdaVM i).k - 1) (lambdaVM i).totalJetCap < ringChar F) :
-    ∃ exceptional : Finset F, (exceptional.card : ℚ) ≤ lambdaVMBudget i ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < (lambdaVM i).k →
-        (lambdaVM i).agreement ≤
-          (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
-        HasExactPowerAgreement domain values (RingHom.id F) (lambdaVM i).k z P := by
-  apply CurveCertificate.exists_exceptional_exact_powerAgreement
-    (F := F) (E := E) (p := lambdaVM i) (lambdaVM_verified i)
-    (lambdaVMSplit i) (lambdaVMBudget i) (lambdaVM_split_admissible i)
-  · fin_cases i <;> decide
-  · exact lambdaVM_envelope_le i
-  · exact iota
-  · exact hchar
 
 /-- The published BN254 exceptional budget bounds the sharp curve envelope. -/
 theorem bn254_curve_envelope_le :

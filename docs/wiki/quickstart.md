@@ -63,25 +63,24 @@ correlated agreement (MCA), and query/payload arithmetic. Start with the applica
   affine denominator `q - 1`. `ProveKitExpectedPayload` proves exact intervals for the
   expected authentication-payload savings, using the finite uniform-query counting theorem
   in `Data/Probability/UniformQueryBoundary`.
-- `LambdaVMAnchoredLists` supplies the current two-anchor list profiles at dimension `T + 3`,
-  with bounds for every interleaving width. `Interleaved/AnchoredReconstruction` proves the
-  cubic quotient degree shift, anchor values, and trace-zerofier remainder properties.
-  `LambdaVMAnchoredBudget` is the current local error and net-payload endpoint; it includes
-  two-point collisions and charges 576 bytes for the early evaluations.
-  `LambdaVMAnchoredCandidates` derives the collision theorem's finite candidate-count premise
-  from joint agreement and the proved list bound.
-- `LambdaVMFields` gives the earlier equality-table list bounds over cubic Goldilocks, including
-  the width-18 tuples. `LambdaVMCertifiedBudget` constructs the 35 exceptional sets and combines
-  their five window sums with those list bounds to prove the local error targets.
-  `LambdaVMTables` contains the underlying arithmetic and payload identities.
+- `LambdaVM/CPU` is the CPU-table endpoint at 32768 trace rows: 212 queries,
+  two early evaluations of 38 main columns, and 34968 net field-and-hash bytes
+  saved. `Parameters` and `Certificates` derive the degree-50 powers and eight
+  fold bounds, plus the separate dimension-`T + 3` candidate list.
+  `Reconstruction` connects all 51 DEEP terms to the main columns; `Folding`
+  transfers exact agreement back through square-paired domains.
+  `Interleaved/AnchoredAgreement` selects a candidate before later randomness,
+  including the case where no candidate is consistent with the early claims.
+  `AirBounds` derives residual and cancellation estimates, and `Budget` sums
+  the local error terms. `Payload` includes both the early-evaluation cost and
+  the deduplicated-response expectation proved in `Data/Probability/DistinctQueries`.
 - `CurveCertificate` turns a checked finite profile into a uniform exceptional set.
   `ZisK/Parameters`, `ZisK/Interpolation`, and `ZisK/FinalStark` use it for the
   compressed final STARK: nested powers batching, three folds, and 53 queries with
   the existing 22-bit query grinding. Each phase meets its own 128-bit target;
   the payload model saves 3920 bytes. `NestedPowerAgreement` supplies the generic
   composition theorem, including singleton groups with no exceptions.
-- `ConcreteCurves`, `ConcreteCurveBounds`, and `ConcreteCurveMCA` retain the 35
-  LambdaVM equality-table profiles and the ProveKit specializations.
+- `ConcreteCurveBounds` and `ConcreteCurveMCA` supply the ProveKit specializations.
   `AppendixCurveMCA` covers the two published 512-word BN254 bounds.
 - `Fields` supplies canonical mathematical models and proved cardinalities/characteristics
   for BN254 and cubic Goldilocks.

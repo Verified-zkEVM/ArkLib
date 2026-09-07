@@ -179,6 +179,7 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.BinaryFoldAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Midpoint
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Parameters
@@ -568,6 +569,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.WeightedSupportElig
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AffineAgreementBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.AgreementList
@@ -975,6 +977,7 @@ import ArkLib.Data.Polynomial.SampledCoefficients
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Combinatorial
+import ArkLib.Data.Probability.DistinctQueries
 import ArkLib.Data.Probability.FiniteFieldBudget
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.KoalaBear
