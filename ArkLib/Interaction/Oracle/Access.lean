@@ -42,7 +42,9 @@ def extendImpl {Messages : Type u} (access : PFunctor.{v, u})
     (interface : OracleInterface.{u, v} Messages)
     (prior : QueryImpl (OracleSpec.ofPFunctor access) Id) (message : Messages) :
     QueryImpl (OracleSpec.ofPFunctor (Access.extend access interface)) Id :=
-  prior + fun q => @OracleInterface.answer _ interface message q
+  QueryImpl.add prior
+    (show QueryImpl (@OracleInterface.spec _ interface) Id from
+      fun q => @OracleInterface.answer _ interface message q)
 
 @[simp]
 theorem extendImpl_prior {Messages : Type u} (access : PFunctor.{v, u})
@@ -106,9 +108,9 @@ def accessAlong :
     PFunctor.FreeM.Cursor.Spine tree residual → OracleDecoration.{u, v} tree →
     PFunctor.{v, u} → PFunctor.{v, u}
   | _, _, .root _, _, access => access
-  | _, _, .down (a := .public _) move tail, oracles, access =>
+  | _, _, .down (a := Oracle.Position.public _) move tail, oracles, access =>
       accessAlong tail (oracles.2 move) access
-  | _, _, .down (a := .oracle _) marker tail, oracles, access =>
+  | _, _, .down (a := Oracle.Position.oracle _) marker tail, oracles, access =>
       accessAlong tail (oracles.2 marker) (Access.extend access oracles.1)
 
 /-- Canonical available signature at a syntactic protocol prefix. A terminal cursor still retains
@@ -150,9 +152,9 @@ theorem accessAlong_comp :
       accessAlong second (OracleDecoration.restrict ⟨middle, first⟩ oracles)
         (accessAlong first oracles initial)
   | _, _, _, .root _, _, _, _ => rfl
-  | _, _, _, .down (a := .public _) move tail, second, oracles, initial =>
+  | _, _, _, .down (a := Oracle.Position.public _) move tail, second, oracles, initial =>
       accessAlong_comp tail second (oracles.2 move) initial
-  | _, _, _, .down (a := .oracle _) marker tail, second, oracles, initial =>
+  | _, _, _, .down (a := Oracle.Position.oracle _) marker tail, second, oracles, initial =>
       accessAlong_comp tail second (oracles.2 marker) (Access.extend initial oracles.1)
 
 /-- Continuing a cursor computes exactly the access accumulated by continuing from its residual. -/
@@ -257,9 +259,9 @@ theorem restrict_build_spine :
       build residual (OracleDecoration.restrict ⟨residual, spine⟩ oracles)
         (OracleSpec.ofPFunctor (accessAlong spine oracles initial))
   | _, _, .root _, _, _ => rfl
-  | _, _, .down (a := .public _) move tail, oracles, initial =>
+  | _, _, .down (a := Oracle.Position.public _) move tail, oracles, initial =>
       restrict_build_spine tail (oracles.2 move) initial
-  | _, _, .down (a := .oracle _) marker tail, oracles, initial =>
+  | _, _, .down (a := Oracle.Position.oracle _) marker tail, oracles, initial =>
       restrict_build_spine tail (oracles.2 marker) (Access.extend initial oracles.1)
 
 /-- Cursor-facing canonical restriction/rebuild law. -/
