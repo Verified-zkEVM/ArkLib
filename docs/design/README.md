@@ -28,13 +28,16 @@ The other pages have narrower jobs:
 | [`01-foundations.md`](01-foundations.md) | Library ownership and the current cross-library contract | normative |
 | [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) | Live dependency gaps and ArkLib PR slices | operational |
 | [`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md) | Landed generic and ArkLib oracle names | normative |
+| [`01c-access-execution-contract.md`](01c-access-execution-contract.md) | Canonical prefix access, payload opacity, and receive/send/terminal effect boundaries | normative |
 | [`02-oracle-reduction-core.md`](02-oracle-reduction-core.md) | Claims, virtual oracles, closing, and composition | normative |
 | [`03-adversarial-oracle-execution.md`](03-adversarial-oracle-execution.md) | Worlds, traces, games, state restoration, extractors, and budgets | normative core, fluid periphery |
 | [`04-oracle-elimination-compiler.md`](04-oracle-elimination-compiler.md) | Compiler passes, backend capabilities, and guarantee transport | normative interfaces, fluid internals |
 | [`05-roadmap.md`](05-roadmap.md) | Implementation phases, gates, and parallel upstream work | operational |
 
 Read them in that order for a full architecture review. To start implementation, read `00`, the
-relevant ArkLib slice in `01a`, and then the owning normative page.
+relevant ArkLib slice in `01a`, and then the owning normative page. AR-3A and AR-3B additionally
+follow `01c`: access signatures are derived at real cursors including terminal leaves, and oracle
+payload opacity must hold in verifier authoring, not merely in a projected final result.
 
 ## Status vocabulary
 

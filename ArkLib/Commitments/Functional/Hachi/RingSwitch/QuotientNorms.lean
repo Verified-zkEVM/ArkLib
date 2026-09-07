@@ -39,7 +39,7 @@ representative bounds it. `valMinAbs_natAbs_mul_le` and `valMinAbs_natAbs_sum_le
 * `valMinAbs_natAbs_coeff_quotient_le`: the quotient bound `μ · 2d · βM · βz` (assembled into
   `RhoShort` for the honest lifted witness by `rhoShort_honestLiftWitness` in
   `RingSwitch/Completeness`, where the honest witness is named).
-* `Rq.lInftyNorm_le_half`, `vecLInftyNorm_le_half`, `rhoShort_half`: the *unconditional* fallback.
+* `Rq.lInftyNorm_le_half`, `rhoShort_half`: the *unconditional* fallback.
   Every element of `Rq Φ` has centered `ℓ∞` norm `≤ q/2`, so `RhoShort (q/2)` holds for **any**
   quotient family with no hypotheses at all. This is what makes the honest lift's `liftShort`
   obligation dischargeable for the Hachi chain, where the `R^lin` matrix contains the Ajtai key
@@ -69,12 +69,6 @@ representative lies in `(−q/2, q/2]` (`ZMod.natAbs_valMinAbs_le`). Trivial, bu
 `βM` for a matrix built from a uniformly random Ajtai key. -/
 theorem Rq.lInftyNorm_le_half (a : Rq Φ) : Rq.lInftyNorm Φ a ≤ q / 2 :=
   Finset.sup_le fun _ _ => ZMod.natAbs_valMinAbs_le _
-
-omit [IsCyclotomic Φ] in
-/-- Vector form of `Rq.lInftyNorm_le_half`. -/
-theorem vecLInftyNorm_le_half {cols : ℕ} (v : PolyVec (Rq Φ) cols) :
-    vecLInftyNorm Φ v ≤ q / 2 :=
-  Finset.sup_le fun i _ => Rq.lInftyNorm_le_half Φ (v i)
 
 /-! ## Coefficient bounds for the structured row sum -/
 

@@ -291,4 +291,66 @@ theorem matVecMul_scalarVecMul_mul_eq_of_eq {rows cols : ℕ} (A : PolyMatrix P 
 
 end AlgebraRing
 
+/-! ## Splitting along `Fin.append`
+
+Block decompositions of vectors and matrices: how `dot` and `matVecMul` interact with an appended
+index. Used to split a block matrix along its rows and columns. -/
+
+section Append
+
+/-- Two functions on `Fin (m + n)` agree iff their `castAdd`/`natAdd` restrictions agree. -/
+theorem funext_fin_add_iff {α : Type*} {m n : ℕ} {f g : Fin (m + n) → α} :
+    f = g ↔
+      (fun i : Fin m => f (Fin.castAdd n i)) = (fun i => g (Fin.castAdd n i)) ∧
+      (fun i : Fin n => f (Fin.natAdd m i)) = (fun i => g (Fin.natAdd m i)) := by
+  rw [funext_iff, Fin.forall_fin_add]
+  simp only [funext_iff]
+
+variable {P : Type u} [CommRing P]
+
+/-- `dot` splits along an append in its first argument. -/
+theorem dot_append {m n : ℕ} (u : PolyVec P m) (v : PolyVec P n) (w : PolyVec P (m + n)) :
+    dot (Fin.append u v) w
+      = dot u (fun k => w (Fin.castAdd n k)) + dot v (fun k => w (Fin.natAdd m k)) := by
+  simp only [dot_eq_sum]
+  rw [Fin.sum_univ_add]
+  congr 1 <;> refine Finset.sum_congr rfl (fun i _ => ?_)
+  · rw [Fin.append_left]
+  · rw [Fin.append_right]
+
+/-- `dot` with a zero first argument is zero. -/
+theorem dot_zero_left {k : ℕ} (w : PolyVec P k) : dot (0 : PolyVec P k) w = 0 := by
+  simp only [dot_eq_sum, Pi.zero_apply, zero_mul, Finset.sum_const_zero]
+
+/-- `dot` negates in its first argument. -/
+theorem dot_neg_left {k : ℕ} (u w : PolyVec P k) : dot (-u) w = -(dot u w) := by
+  simp only [dot_eq_sum, Pi.neg_apply, neg_mul, Finset.sum_neg_distrib]
+
+/-- **Transpose adjunction for `dot`**: `⟨u, A v⟩ = ⟨Aᵀ u, v⟩`, which moves a public matrix off
+the vector side onto the coefficient side. -/
+theorem dot_matVecMul_transpose {a b : ℕ} (A : PolyMatrix P a b) (u : PolyVec P a)
+    (v : PolyVec P b) : dot u (A *ᵥ v) = dot (A.transpose *ᵥ u) v := by
+  have h := splitForm_transpose A u v
+  simp only [splitForm] at h
+  rw [h]; exact dot_comm _ _
+
+-- Lean 4.33 respects transparency when matching implicit arguments, so the
+-- `Fin.append_left`/`_right` rewrites below no longer unify through the semireducible
+-- `PolyMatrix`/`PolyVec`.
+set_option backward.isDefEq.respectTransparency false in
+/-- `matVecMul` splits along a row-append: block rows act independently. -/
+theorem matVecMul_append_rows {a b c : ℕ} (M₁ : PolyMatrix P a c) (M₂ : PolyMatrix P b c)
+    (ζ : PolyVec P c) :
+    (Fin.append M₁ M₂ : PolyMatrix P (a + b) c) *ᵥ ζ = Fin.append (M₁ *ᵥ ζ) (M₂ *ᵥ ζ) := by
+  funext i
+  refine Fin.addCases (fun i => ?_) (fun i => ?_) i
+  · rw [Fin.append_left]
+    change dot (Fin.append M₁ M₂ (Fin.castAdd b i)) ζ = dot (M₁ i) ζ
+    rw [Fin.append_left]
+  · rw [Fin.append_right]
+    change dot (Fin.append M₁ M₂ (Fin.natAdd a i)) ζ = dot (M₂ i) ζ
+    rw [Fin.append_right]
+
+end Append
+
 end ArkLib.Lattices

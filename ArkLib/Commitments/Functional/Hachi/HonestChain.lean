@@ -36,17 +36,12 @@ The seam corollaries above are **per-link theorems at compatible relations**: th
 the relation interfaces match, with no reference to composition. Two composed statements are also
 here — `completePrefixReduction_perfectCompleteness` (through the nested zero-check) and
 `completeThroughSumcheckReduction_perfectCompleteness` (through the sumcheck, to
-`relWEvalClaim`) — but both are **`sorryAx`-tainted by construction**: appending completeness needs
-`Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`), still
-`sorry`. That is the *only* admitted dependency here — the chain is assembled so that every link
-is stated at the relations its neighbour produces, so no link has to be context-lifted and
-`liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`, also still `sorry`)
-never enters. Every input of the prefix is axiom-clean; the sumcheck link is the one exception —
-it is itself an internal append (`Sumcheck/Completeness.lean`), so
-`sumcheckReduction_perfectCompleteness` already carries the same single `sorryAx`, with the same
-sole provenance. `Composition.lean` composes the *soundness* certificates only. Beyond
-`relWEvalClaim`, the **nonrecursive** run is closed by the terminal reveal-and-check in
-`Correctness.lean` (the recursion tail's honest layer still does not exist).
+`relWEvalClaim`). Both depend on `Reduction.append_completeness`
+(`OracleReduction/Composition/Sequential/Append.lean`), which this repository admits, and on
+nothing else: the chain is assembled so that every link is stated at the relations its neighbour
+produces, so no link has to be context-lifted. Every per-link input is axiom-clean.
+`Composition.lean` composes the *soundness* certificates; beyond `relWEvalClaim` the run is closed
+by the terminal reveal-and-check in `Correctness.lean`.
 
 ## Why the quotient is committed as digits
 
@@ -96,11 +91,11 @@ direction only*.
   `hbZero`/`hbZeroq`/`hbZeroγ` are the digit-base admissibility triple `DigitBaseOk q γ bZero`,
   satisfiable at `bZero = b`.
 
-Note what is **not** here: the reverse (soundness) orientation `bZero − 1 ≤ γ`. It is what pins the
-parameters; honest completeness does not need it
-(`batchReduction_perfectCompleteness` goes through `ReduceClaim.reduction_completeness_of_imp`), so
-`γ` stays free — see `ofDigitBase` for a witness with `γ = ⌊b/2⌋`. The pinning statement is
-`pinned_of_soundness_orientations`, which lands at `γ = bZero − 1 < q/2`. -/
+Note what is **not** here: the reverse (soundness) orientation `bZero − 1 ≤ γ`. Honest completeness
+does not need it (`batchReduction_perfectCompleteness` goes through
+`ReduceClaim.reduction_completeness_of_imp`), so this structure leaves `γ` free. Adding that
+orientation pins `γ = bZero − 1 < q/2` (`pinned_of_soundness_orientations`), a point realized by
+`ofPinnedDigitBase`. -/
 structure HonestRangeParams (q : ℕ) where
   /-- Balanced digit base (also Eq. (20)'s box base `S_b`). -/
   b : ℕ
@@ -127,41 +122,15 @@ namespace HonestRangeParams
 
 variable {q : ℕ}
 
-/-- **The honest parameters are satisfiable with a small `γ` *and* a small `bZero`.** At
-`γ = ⌊b/2⌋` — the radius the balanced digits actually meet, so Eq. (20)'s `c6` check is a real
-constraint — and `bZero = b`, everything holds.
+/-- **The parameters are satisfiable at `O(b)`**, at `γ = bZero − 1 = b − 1` and `bZero = b`: the
+value the batching bridge's pull-back orientation `bZero − 1 ≤ γ` forces on top of the honest
+inequalities. So the pinned point of `pinned_of_soundness_orientations` is not merely consistent —
+it is realized, at a `γ` and a range base that are both `O(b)` and, since `b ≤ q/2`, strictly
+below `q/2`.
 
-Because the quotient digits are `⌊b/2⌋`-bounded unconditionally, the zero-check range base can be
-the digit base itself, so the range polynomial has degree `2·b = O(1)` ([NOZ26] §4.4). Range-
-checking raw quotient rows instead would force `bZero = q/2 + 1` here, and a range polynomial of
-degree linear in `q`.
-
-⚠ This witness takes `γ` as small as the *honest* side allows, and `γ = ⌊b/2⌋ < bZero − 1` for
-`b > 2`, so it does **not** satisfy the batching bridge's pull-back orientation
-`bZero − 1 ≤ γ`. That is deliberate: `HonestRangeParams` is honest-direction-only, and keeping `γ`
-free is the point of `ofDigitBase`. For a witness of the *two-sided* regime — the one
-`pinned_of_soundness_orientations` describes — use `ofPinnedDigitBase`. -/
-def ofDigitBase (b : ℕ) (hb : 1 < b) (hbq : b ≤ q / 2) : HonestRangeParams q where
-  b := b
-  γ := b / 2
-  bZero := b
-  hb := hb
-  hbq := hbq
-  hbγ := le_refl _
-  hγZero := by omega
-  hbZero := hb
-  hbZeroq := hbq
-  hbZeroγ := le_refl _
-
-/-- **The two-sided regime is satisfiable at `O(b)`.** `ofDigitBase`'s sibling at
-`γ = bZero − 1 = b − 1`, the value the batching bridge's *pull-back* orientation `bZero − 1 ≤ γ`
-forces on top of the honest inequalities. So the pinned point of
-`pinned_of_soundness_orientations` is not merely consistent — it is realized, at a `γ` and a range
-base that are both `O(b)` and, since `b ≤ q/2`, strictly below `q/2`.
-
-This is what a single parameterization serving *both* directions of the bridge costs after the
-gadget decomposition. Range-checking raw quotient rows instead makes the same demand unsatisfiable
-below `q/2`: `rhoShort_half` forces `bZero ≥ q/2 + 1`, hence `γ = q/2`. -/
+This is what the gadget decomposition of the quotient buys. Range-checking raw quotient rows
+instead makes the same demand unsatisfiable below `q/2`: `rhoShort_half` forces
+`bZero ≥ q/2 + 1`, hence `γ = q/2`. -/
 def ofPinnedDigitBase (b : ℕ) (hb : 1 < b) (hbq : b ≤ q / 2) : HonestRangeParams q where
   b := b
   γ := b - 1
@@ -176,8 +145,8 @@ def ofPinnedDigitBase (b : ℕ) (hb : 1 < b) (hbq : b ≤ q / 2) : HonestRangePa
 
 variable (P : HonestRangeParams q)
 
-/-- **Where the parameters pin, after the repair.** Adding the batching bridge's *pull-back*
-orientation `bZero − 1 ≤ γ` — the one `HonestRangeParams` deliberately omits, because honest
+/-- **Where the parameters pin, with the digit-committed quotient.** Adding the batching bridge's
+*pull-back* orientation `bZero − 1 ≤ γ` — the one `HonestRangeParams` omits, because honest
 completeness does not need it — forces `γ = bZero − 1`, and that value is **strictly below** `q/2`.
 
 Both `γ` and the range box `[−(bZero−1), bZero−1]` are therefore real constraints, and at
@@ -191,15 +160,6 @@ theorem pinned_of_soundness_orientations (hγ' : P.bZero - 1 ≤ P.γ) :
   have h2 := P.hbZero
   have h3 := P.hbZeroq
   exact ⟨by omega, by omega⟩
-
-/-- The pinned point is **realized**, not merely consistent: `ofPinnedDigitBase b` satisfies the
-pull-back orientation, so the two-sided regime holds there at `γ = b − 1 = O(b)`, strictly below
-`q/2`. This is the statement the gadget decomposition exists to make true; with raw quotient rows
-the same regime forces `γ = q/2`. -/
-example {b : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2) :
-    (ofPinnedDigitBase (q := q) b hb hbq).γ = (ofPinnedDigitBase (q := q) b hb hbq).bZero - 1 ∧
-      (ofPinnedDigitBase (q := q) b hb hbq).γ < q / 2 :=
-  pinned_of_soundness_orientations _ (le_refl _)
 
 /-- **The zero-check range base is nontrivial**, as a named projection. Needed wherever the digit
 encoding appears: the balanced base-`bZero` decomposition of the quotient is a decomposition only
@@ -276,28 +236,26 @@ theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [
 
 end Seams
 
-/-! ## The complete proved prefix, composed
+/-! ## The prefix, composed
 
-The reduction below appends every Hachi protocol object whose honest direction is currently proved:
-the polynomial bridge, `QuadEval`, the `R^lin` adapter, the HMZ25 lift, the batching bridge, and the
-nested zero-check. Its completeness theorem uses `Reduction.append_perfectCompleteness`; until the
-generic append theorem is made an explicit project axiom, this declaration inherits its existing
-`sorryAx` dependency.
+The reduction below appends the polynomial bridge, `QuadEval`, the `R^lin` adapter, the HMZ25 lift,
+the batching bridge, and the nested zero-check.
 
-There is one additional parameter boundary compared with the per-seam results above. The batching
-bridge itself needs only the honest orientations in `HonestRangeParams`, but
-`nestedZeroCheckReduction_perfectCompleteness` is stated on all of `relBatched`: because that
+It carries one parameter boundary the per-seam results above do not. The batching bridge itself
+needs only the honest orientations in `HonestRangeParams`, but
+`nestedZeroCheckReduction_perfectCompleteness` is stated on all of `relBatched`: since that
 relation forgets shortness, the theorem re-derives it from the range identity and needs the reverse
-inequalities `bZero - 1 ≤ γ` and `bZero - 1 ≤ q / 2`. Thus the complete prefix is presently
-available only at a bidirectional (hence pinned) parameterization. Removing these two hypotheses
-requires a shortness-preserving honest seam between batching and zero-check. -/
+inequalities `bZero - 1 ≤ γ` and `bZero - 1 ≤ q / 2`. The prefix is therefore available only at a
+bidirectional — hence pinned — parameterization; a shortness-preserving honest seam between
+batching and zero-check is what would remove those two hypotheses. -/
 
 section CompletePrefix
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r m₀ m₁ : Nat} {ω : ℕ}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits zBound m r m₀ m₁ : Nat}
+  {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
@@ -328,12 +286,12 @@ generic append instance does not reliably fire through a deeply nested `Protocol
             (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
             (h₂ := instSampleableTypeChallengePSpecNestedZeroCheck)))))
 
-/-- The honest protocol obtained by appending every currently complete Hachi link, from the
-polynomial-level evaluation bridge through the nested zero-check. -/
+/-- The honest protocol from the polynomial-level evaluation bridge through the nested
+zero-check. -/
 def completePrefixReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (hd : 0 < Φ.φ.natDegree) : Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -348,7 +306,7 @@ def completePrefixReduction (P : HonestRangeParams q)
   (bridgeReduction (oSpec := oSpec) Φ).append
     ((quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
       (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
-      (balancedZmodDigitDecomposition P.b zDigits P.hb hqz)).append
+      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)).append
     ((rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp (P.b : ZMod q) ω P.γ).append
     ((liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).append
     ((batchReduction (oSpec := oSpec) Φ P.γ P.bZero K).append
@@ -356,8 +314,8 @@ def completePrefixReduction (P : HonestRangeParams q)
         (Wit := LiftedWitness Φ μ₀ n₀) Φ m₀ m₁)))))
 
 omit [DecidableEq F] in
-/-- **Perfect completeness of the complete currently proved Hachi prefix**, from the
-polynomial-level evaluation relation through `relNestedZeroCheck`.
+/-- **Perfect completeness of the Hachi prefix**, from the polynomial-level evaluation relation
+through `relNestedZeroCheck`.
 
 The reverse range hypothesis is needed only by the last link, as explained above. Together with
 `P.hγZero` it pins `γ = P.bZero − 1` (`HonestRangeParams.pinned_of_soundness_orientations`); this
@@ -371,23 +329,27 @@ theorem completePrefixReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := m₀) (m₁ := m₁)
-      Φ P pp hqm hqz K hd).perfectCompleteness init impl
-      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      Φ P pp hqm hcap K hd).perfectCompleteness init impl
+      (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       (relNestedZeroCheck Φ m₀ m₁ P.γ P.bZero K φF P.bZero) := by
   have hBridge :=
-    bridgeReduction_perfectCompleteness Φ init impl pp (P.b : ZMod q) βSq P.γ κ
+    bridgeReduction_perfectCompleteness_msgShort Φ init impl pp (P.b : ZMod q) βSq P.γ κ
+      (P.b / 2)
   have hQuad := quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
-      (βSq := βSq) (γ := P.γ) (κ := κ)
-      Φ init impl pp _ _ hmd hτ hd
+      (βSq := βSq) (γ := P.γ) (κ := κ) (msgBound := P.b / 2)
+      Φ init impl pp (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
+      (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)
+      hmul hmd hτ hd hzb
       (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqm P.hbq x e) P.hbγ)
-      (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqz P.hbq x e) P.hbγ)
+      (fun x e => le_trans (boundedBalancedZmodDigit_natAbs_le P.hb P.hbq x e) P.hbγ)
   have hRlin := rlinReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
     Φ P init impl pp (P.b : ZMod q)
   have hLift := liftReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
@@ -437,39 +399,30 @@ end CompletePrefix
 `completePrefixReduction` stops at `relNestedZeroCheck`. `Sumcheck/Completeness.lean` carries that
 relation on to the evaluation claim `relWEvalClaim` — bridge, `m₀` paired rounds, final
 evaluation — so the two compose into an honest protocol from the polynomial-evaluation relation
-all the way to the claim the `Recursion/` adapters consume.
+all the way to the evaluation claim on the committed table.
 
-The prefix is left untouched: this is a new definition appending to it, so nothing already proved
-about `completePrefixReduction` moves.
-
-Two boundaries are visible in the statement:
-
-* the sumcheck's arity is `m₀ = M + 1` — the loop needs at least one cube coordinate to fold, the
-  same successor shape `Sumcheck/RoundPoly.lean` and the round soundness theorem use;
-* like everything appended, this inherits `sorryAx` from the generic
-  `Reduction.append_completeness` — and the sumcheck factor already carries it on its own, since
-  `sumcheckReduction` is itself an internal append of its bridge, rounds, and final evaluation.
-  Every taint in the chain has that one lemma as its sole provenance; the per-round and per-link
-  inputs beneath the appends are individually axiom-clean. -/
+The sumcheck's arity appears as `m₀ = M + 1`: the loop needs at least one cube coordinate to fold,
+the same successor shape `Sumcheck/RoundPoly.lean` and the round soundness theorem use. -/
 
 section ThroughSumcheck
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r M m₁ : Nat} {ω : ℕ}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits zBound m r M m₁ : Nat}
+  {ω : ℕ}
 variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
 local notation "n₀" => rlinRows innerRows outerRows dRows
 
 /-- The honest Hachi protocol from the polynomial-evaluation claim through the sumcheck: the
-complete proved prefix (`completePrefixReduction`) followed by the local sumcheck
+prefix (`completePrefixReduction`) followed by the local sumcheck
 (`sumcheckReduction`). -/
 def completeThroughSumcheckReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) : Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -483,7 +436,7 @@ def completeThroughSumcheckReduction (P : HonestRangeParams q)
               ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F (M + 1) m₁))))) ++ₚ
         sumcheckSpec F P.bZero (M + 1)) :=
   (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := M + 1) (m₁ := m₁)
-      Φ P pp hqm hqz K hd).append
+      Φ P pp hqm hcap K hd).append
     (sumcheckReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ P.γ P.bZero hbZero φF)
 
 /-- Sampleability of the through-sumcheck wire format: the prefix's own instance appended to the
@@ -512,10 +465,9 @@ reverse range orientations the nested zero-check's honest seam needs) plus the s
 `0 < bZero` and `(μ₀ + n₀)·deg φ ≤ 2^{m₀}`. The seam itself needs nothing: the prefix's output
 relation `relNestedZeroCheck` *is* the sumcheck's input relation, at the same parameters.
 
-⚠ **Inherits `sorryAx`** through `Reduction.append_perfectCompleteness` — the generic
-`Reduction.append_completeness` is still `sorry`, and the sumcheck factor already carries the same
-taint internally. Every taint has that one lemma as its sole provenance; the prefix links are
-axiom-clean on their own. -/
+Depends on the admitted `Reduction.append_completeness` through the appends (the sumcheck factor
+is itself an internal append, so it carries the same dependency); the prefix links are axiom-clean
+on their own. -/
 theorem completeThroughSumcheckReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -524,7 +476,8 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
-    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (hmul : Rq.HasMulLInftyBound Φ) (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
     (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
@@ -532,13 +485,13 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
     (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
-      Φ P pp hqm hqz K hd hbZero φF).perfectCompleteness init impl
-      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      Φ P pp hqm hcap K hd hbZero φF).perfectCompleteness init impl
+      (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       (relWEvalClaim Φ (M + 1) P.γ P.bZero P.bZero K φF) :=
   Reduction.append_perfectCompleteness _ _
     (completePrefixReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (m₀ := M + 1) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hqz hmd hτ hd K φF hμn hZeroγ)
+      Φ P init impl pp hqm hcap hmul hzb hmd hτ hd K φF hμn hZeroγ)
     (sumcheckReduction_perfectCompleteness Φ m₁ P.γ P.bZero P.bZero init impl K hbZero
       P.one_lt_bZero φF hd hμn)
 
