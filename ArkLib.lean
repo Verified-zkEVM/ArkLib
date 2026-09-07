@@ -273,6 +273,9 @@ import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.SplitFold
+import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
+import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
+import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
 import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.Instances
