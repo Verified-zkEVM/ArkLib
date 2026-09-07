@@ -114,8 +114,8 @@ example :
 /-- Two same-signature sources are still explicitly routed to different slots. -/
 def derivedQuery : OracleComp
     (OracleSpec.ofPFunctor (Access.extend baseSpec.toPFunctor firstInterface)) Nat := do
-  let old ← Access.queryPrior baseSpec.toPFunctor firstInterface ()
-  let fresh ← Access.queryLatest baseSpec.toPFunctor firstInterface ()
+  let old : Nat ← Access.queryPrior baseSpec.toPFunctor firstInterface ()
+  let fresh : Nat ← Access.queryLatest baseSpec.toPFunctor firstInterface ()
   return old + fresh
 
 example : simulateQ

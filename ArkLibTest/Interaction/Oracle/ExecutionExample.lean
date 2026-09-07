@@ -51,7 +51,7 @@ abbrev finalAccess : PFunctor := Access.extend firstAccess firstInterface
 def terminal (announced : Bool) (challenge : Nat) :
     OracleComp (ambient + OracleSpec.ofPFunctor finalAccess) Nat := do
   let _ ← liftM ((ambient + OracleSpec.ofPFunctor finalAccess).query (.inl 3))
-  let latest ← liftM
+  let latest : Nat ← liftM
     ((ambient + OracleSpec.ofPFunctor finalAccess).query (.inr (.inr ())))
   return if announced then latest + challenge else 0
 
@@ -62,11 +62,11 @@ def verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.o
     let _ ← liftM ((ambient + inputSpec).query (.inl 0))
     return (do
       let _ ← liftM ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inl 5))
-      let sent ← liftM
+      let sent : Nat ← liftM
         ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inr (.inr ())))
       return (do
         let _ ← liftM ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inl 2))
-        let old ← liftM
+        let old : Nat ← liftM
           ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inr (.inl ())))
         let challenge := old + sent
         return ⟨challenge, pure (terminal announced challenge)⟩))
@@ -131,7 +131,7 @@ example : True := by
 example : Verifier.Strategy ambient opaqueProtocol.tree opaqueProtocol.roles
     opaqueProtocol.oracles inputSpec.toPFunctor (fun _ => Nat) :=
   do
-    let answer ← liftM
+    let answer : Nat ← liftM
       ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inr (.inr ())))
     return pure answer
 

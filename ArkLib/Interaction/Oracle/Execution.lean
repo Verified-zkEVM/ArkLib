@@ -192,6 +192,7 @@ theorem toCounterpart_oracle_eq_of_answer_eq {ι : Type u} (ambient : OracleSpec
     | inl q => rfl
     | inr q => exact h q
   simp only [toCounterpart, same]
+  rfl
 
 end Verifier
 
