@@ -24,6 +24,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean
   - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean
   - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean
   - ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean
   - ArkLib/Data/CodingTheory/SubspaceDesign.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean
@@ -90,6 +91,25 @@ manuscript, not to the original sources it cites — those get their own keys (`
   adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
   `epsCa`, and their comparisons with affine-line `mcaError`. The information-set lower bound is
   in `InformationSetLowerBound.lean`.
+- **§1 one-sided list witnesses.** `GrandChallenges/ListDecoding.lean` holds the two
+  `ListLowerWitness` constructors, both axiom-clean, as is the whole of `GrandChallenges.lean`.
+  `ofUniqueDecodingRange` is the floor: interleaving preserves minimum distance, hence the
+  unique-decoding radius (`relUDR_interleavedCode_eq`), and inside that radius the interleaved
+  point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. `ofJohnsonBound` reaches the Johnson
+  radius, via `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at
+  alphabet `Fin m → F`; the radius is computed at `q = |F|^m` rather than `|F|`, which *narrows*
+  it, while the relative minimum distance is unchanged. Writing `c = q/(q-1)`, the Johnson
+  function is `J_q(δ) = δ · h(c·δ)` with `h(u) = (1 - √(1 - u))/u` increasing, so `J_q(δ)`
+  decreases in `q` down to `1 - √(1 - δ)` — e.g. `Jqℓ 4 2 1 ≈ 0.317 < Jqℓ 2 2 1 = 0.5`. The
+  bound is stated at the interleaved code's own alphabet and is correct as such; the alphabet
+  simply costs radius rather than buying it.
+  Note the asymmetry with the MCA side: `McaLowerWitness.ofJohnsonRangeBound` is sorry-tainted
+  through the external [BCHKS25] admit `rs_mcaError_le_in_johnson_range`, whereas the list-side
+  Johnson witness rests on an in-tree axiom-clean bound and needs no admit.
+  The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`, and
+  `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with an
+  oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. Neither
+  constructor resolves the challenge; see the gap note below.
 - **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
   `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
   connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
@@ -267,6 +287,20 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
     either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs
     [CZ25]'s `(k−1)` level). Both have compiled axiom-clean counterexamples.
+- **§1 challenge resolutions.** Both prize propositions remain unproved at every rate, and this
+  is the open research question rather than a formalization backlog: `mcaPrize` and
+  `listDecodingPrize` reduce to `McaPrizeResolution` / `ListPrizeResolution`, neither of which is
+  ever constructed, because each demands a full `GrandMcaResolution` / `GrandListResolution` —
+  an exact adjacent-grid crossing, or safety at every grid point. Nothing outside
+  `GrandChallenges.lean` instantiates `prizeDimension` / `prizeRate` at any `j : Fin 4`, so the
+  rates `1/4`, `1/8`, `1/16` are untouched. The nearer gap is ordinary formalization work: no
+  `McaUpperWitness` or `ListUpperWitness` is built for a concrete code (`McaUpperWitness.ofGt`,
+  `.ofEpsCaGt`, and `ListUpperWitness.ofGt`, `.ofEncardGt` are generic shapes awaiting a real
+  large-list or CA-failure construction). On the safe side both list constructors now exist, at
+  the unique-decoding and Johnson radii. The remaining shortfall there is the radius, not the
+  list budget: `ℓ` is a parameter of `ofJohnsonBound` and the constructor already accepts a
+  proof of `ℓ ≤ ε* · |F|`, so the prize's bound shape is expressible, but `Jqℓ q ℓ δ_min` stays
+  capped by `J_q(δ_min)` however large `ℓ` grows.
 - **L2.10.** The interleaved-code list-size comparison is present as an external `[GGR11]` leaf;
   proving it in-tree remains open.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and

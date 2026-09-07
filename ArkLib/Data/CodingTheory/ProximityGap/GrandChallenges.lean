@@ -553,6 +553,35 @@ theorem ListUpperWitness.boundary_lt {C : Set (ι → F)} {m : ℕ} {ε_star : �
   push Not at h
   exact absurd (R.le_of_gridPt h) (not_le.mpr w.exceeds)
 
+/-- A list-size upper bound at a unit-interval radius gives a safe witness. -/
+def ListLowerWitness.ofLe {C : Set (ι → F)} {m : ℕ} {ε_star δ : ℝ≥0}
+    (hδ : δ ≤ 1)
+    (h : (Code.Lambda (C^⋈(Fin m)) (δ : ℝ) : ENNReal) ≤
+      (ε_star : ENNReal) * (Fintype.card F : ENNReal)) :
+    ListLowerWitness C m ε_star := ⟨δ, hδ, h⟩
+
+/-- A list-size lower bound at a unit-interval radius gives an unsafe witness. -/
+def ListUpperWitness.ofGt {C : Set (ι → F)} {m : ℕ} {ε_star δ : ℝ≥0}
+    (hδ : δ ≤ 1)
+    (h : (Code.Lambda (C^⋈(Fin m)) (δ : ℝ) : ENNReal) >
+      (ε_star : ENNReal) * (Fintype.card F : ENNReal)) :
+    ListUpperWitness C m ε_star := ⟨δ, hδ, h⟩
+
+/-- A single word with an oversized point list gives an unsafe witness. This is the primitive
+form: `Lambda` is a supremum over words, so exhibiting one word whose interleaved point list
+outruns the threshold suffices, and no bound on any other word is needed.
+
+It is the entry point for a concrete large-list construction, which produces exactly this shape —
+a specific word together with a lower bound on its own list. -/
+def ListUpperWitness.ofEncardGt {C : Set (ι → F)} {m : ℕ} {ε_star δ : ℝ≥0}
+    (hδ : δ ≤ 1) (f : ι → (Fin m → F))
+    (h : (ε_star : ENNReal) * (Fintype.card F : ENNReal) <
+      ((Code.closeCodewordsRel (C^⋈(Fin m)) f (δ : ℝ)).encard : ENNReal)) :
+    ListUpperWitness C m ε_star :=
+  ListUpperWitness.ofGt hδ
+    (lt_of_lt_of_le h (by
+      exact_mod_cast Code.encard_closeCodewordsRel_le_Lambda (C ^⋈ (Fin m)) (δ : ℝ) f))
+
 end GrandChallenges
 
 end ProximityGap
