@@ -57,8 +57,15 @@ def terminal (announced : Bool) (challenge : Nat) :
 
 /-- No concrete message is an argument to either oracle-node verifier continuation. -/
 def verifier : Verifier.Strategy ambient protocol.tree protocol.roles protocol.oracles
-    inputSpec.toPFunctor (fun _ => Nat) :=
-  fun announced => do
+    inputSpec.toPFunctor (fun _ => Nat) := by
+  -- Expose the four phase types before elaborating query lifts. The protocol constructors
+  -- remain opaque to instance search; this is a definitional change, not a cast or assumption.
+  change Bool → OracleComp (ambient + inputSpec)
+    (OracleComp (ambient + OracleSpec.ofPFunctor firstAccess)
+      (OracleComp (ambient + OracleSpec.ofPFunctor firstAccess)
+        (Σ _ : Nat, OracleComp (ambient + OracleSpec.ofPFunctor finalAccess)
+          (OracleComp (ambient + OracleSpec.ofPFunctor finalAccess) Nat))))
+  exact fun announced => do
     let _ ← liftM ((ambient + inputSpec).query (.inl 0))
     return (do
       let _ ← liftM ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inl 5))
@@ -133,8 +140,10 @@ example : True := by
 
 /-- Its positive counterpart queries only the observable coordinate after the oracle receive. -/
 example : Verifier.Strategy ambient opaqueProtocol.tree opaqueProtocol.roles
-    opaqueProtocol.oracles inputSpec.toPFunctor (fun _ => Nat) :=
-  do
+    opaqueProtocol.oracles inputSpec.toPFunctor (fun _ => Nat) := by
+  change OracleComp (ambient + OracleSpec.ofPFunctor firstAccess)
+    (OracleComp (ambient + OracleSpec.ofPFunctor firstAccess) Nat)
+  exact do
     let answer : Nat ← liftM
       ((ambient + OracleSpec.ofPFunctor firstAccess).query (.inr (.inr ())))
     return pure answer
