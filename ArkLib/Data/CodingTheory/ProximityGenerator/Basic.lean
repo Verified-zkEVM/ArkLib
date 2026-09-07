@@ -43,6 +43,8 @@ The correspondence to [BCGM25]'s numbered statements is in
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
     with Mutual Correlated Agreement*][BCGM25]
+* [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
+    *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Theorem 4.6.
 -/
 
 section
@@ -118,6 +120,35 @@ def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Modu
   ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
   projectedWord v T ∈ projectedCodeSubmod MC T ∧
   ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod MC T
+
+/-- Outside the MCA error event, every sufficiently large agreement set of the generated word
+admits codeword extensions of all input words on that same set. The extensions may depend on
+the agreement set. This is the simultaneous-extension formulation used in [BCHKS25, Theorem 4.6]. -/
+theorem not_isMCA_iff_forall_exists_codewords
+    {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (x : S) (U : ℓ → ι → A) (δ : ℝ) :
+    ¬ IsMCA G MC x U δ ↔
+      ∀ T : Finset ι, (T.card : ℝ) ≥ Fintype.card ι * (1 - δ) →
+        projectedWord (fun i => ∑ j, G x j • U j i) T ∈ projectedCodeSubmod MC T →
+        ∃ p : ℓ → MC, ∀ j i, i ∈ T → (p j).val i = U j i := by
+  classical
+  constructor
+  · intro h T hT hv
+    have hU : ∀ j, projectedWord (U j) T ∈ projectedCodeSubmod MC T := by
+      intro j
+      by_contra hj
+      exact h ⟨T, hT, hv, j, hj⟩
+    choose p hp heq using fun j => (mem_projectedCodeSubmod_iff MC T _).mp (hU j)
+    refine ⟨fun j => ⟨p j, hp j⟩, ?_⟩
+    intro j i hi
+    exact (congrFun (heq j) ⟨i, hi⟩).symm
+  · intro h ⟨T, hT, hv, j, hj⟩
+    obtain ⟨p, hp⟩ := h T hT hv
+    apply hj
+    apply (mem_projectedCodeSubmod_iff MC T _).mpr
+    refine ⟨p j, (p j).property, ?_⟩
+    funext i
+    exact (hp j i i.property).symm
 
 omit [Fintype ι] in
 /-- Over the alphabet `A := F`, the linear combination in `IsMCA` is the matrix-vector
@@ -304,6 +335,24 @@ abbrev AffineSpaceGenerator (F : Type) [Field F] (ℓ : ℕ) : Generator (Fin �
 abbrev univariatePowersGenerator (F : Type) [Field F] (k : ℕ) :
     Generator F (Fin (k + 1)) F :=
   fun x i => x ^ (i : ℕ)
+
+/-- The degree-one powers curve is the affine line generator. -/
+theorem univariatePowersGenerator_one_eq_affineLineGenerator :
+    univariatePowersGenerator F 1 = AffineLineGenerator F := by
+  funext x i
+  fin_cases i <;> simp [univariatePowersGenerator, AffineLineGenerator]
+
+/-- The same-agreement-set interpretation of MCA for a polynomial curve of arbitrary degree.
+This is a statement bridge for [BCHKS25, Theorem 4.6], independent of its exceptional-set bound. -/
+theorem not_isMCA_univariatePowersGenerator_iff [Fintype F]
+    {A : Type} [AddCommMonoid A] [Module F A]
+    (M : ℕ) (MC : ModuleCode ι F A) (z : F) (U : Fin (M + 1) → ι → A) (δ : ℝ) :
+    ¬ IsMCA (univariatePowersGenerator F M) MC z U δ ↔
+      ∀ T : Finset ι, (T.card : ℝ) ≥ Fintype.card ι * (1 - δ) →
+        projectedWord (fun i => ∑ j : Fin (M + 1), z ^ (j : ℕ) • U j i) T ∈
+          projectedCodeSubmod MC T →
+        ∃ p : Fin (M + 1) → MC, ∀ j i, i ∈ T → (p j).val i = U j i :=
+  not_isMCA_iff_forall_exists_codewords (univariatePowersGenerator F M) MC z U δ
 
 end CoreDefinitions
 
