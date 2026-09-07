@@ -278,6 +278,7 @@ import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.KoalaBear
 import ArkLib.Data.Probability.Notation
 import ArkLib.Interaction.Oracle.Access
+import ArkLib.Interaction.Oracle.Execution
 import ArkLib.Interaction.Oracle.Protocol
 import ArkLib.Interaction.Oracle.TypeTree
 import ArkLib.Interaction.Oracle.TypeTree.Decoration
