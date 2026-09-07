@@ -11,8 +11,10 @@ import ArkLibExamples.ReedSolomon.CurveProfile
 # ProveKit shifted first-order interpolation certificates
 
 Both application rows use the canonical finite first-order support and the same shifted graded
-row engine. The BN254 row is the line case `ℓ = 1`. The revised cubic Goldilocks row uses
-agreement 508263, support `(16,7,30)`, and height 339.
+row engine. The BN254 row is the line case `ℓ = 1`; it uses agreement 492831, support
+`(384,168,688)`, and height 867623, which is the least height passing the shifted surplus for
+that support. The revised cubic Goldilocks row uses agreement 508263, support `(16,7,30)`, and
+height 339.
 -/
 
 open PolynomialDifferential Polynomial
@@ -55,64 +57,64 @@ private theorem shiftedHeightSlotCount_eq_sumChunk
 /-- The degree-`t` shifted row contribution for the BN254 support. -/
 private def bn254ShiftedRowTerm (t : ℕ) : ℕ :=
   1048576 * firstOrderGradedRankBound 262143 492831 384 168 t *
-    (1905902 + 1 - 1 * t)
+    (867623 + 1 - 1 * t)
 
 /-- The degree-`t` shifted source contribution for the BN254 support. -/
 private def bn254ShiftedSourceTerm (t : ℕ) : ℕ :=
   ∑ b ∈ Finset.range (min t 168 + 1),
-    (384 * 492831 + b - 262143 * t) * (1905902 + 1 - 1 * t)
+    (384 * 492831 + b - 262143 * t) * (867623 + 1 - 1 * t)
 
 private theorem bn254_shifted_row_slots_eq_sumChunk :
-    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 1905902 =
+    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 867623 =
       sumChunk bn254ShiftedRowTerm 0 689 := by
   rw [shiftedRowSlotBound_eq_sumChunk]
   rfl
 
 private theorem bn254_shifted_source_slots_eq_sumChunk :
-    firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 1905902 =
+    firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 867623 =
       sumChunk bn254ShiftedSourceTerm 0 689 := by
   rw [shiftedHeightSlotCount_eq_sumChunk]
   rfl
 
 private theorem bn254_shifted_row_chunk_zero :
-    sumChunk bn254ShiftedRowTerm 0 128 = 4938634411617812480 := by decide
+    sumChunk bn254ShiftedRowTerm 0 128 = 2248098769163780096 := by decide
 
 private theorem bn254_shifted_row_chunk_one :
-    sumChunk bn254ShiftedRowTerm 128 128 = 7934064154460028928 := by decide
+    sumChunk bn254ShiftedRowTerm 128 128 = 3611399677655646208 := by decide
 
 private theorem bn254_shifted_row_chunk_two :
-    sumChunk bn254ShiftedRowTerm 256 128 = 3573479316496842752 := by decide
+    sumChunk bn254ShiftedRowTerm 256 128 = 1626439830172860416 := by decide
 
 private theorem bn254_shifted_row_chunk_three :
-    sumChunk bn254ShiftedRowTerm 384 128 = 798895946103521280 := by decide
+    sumChunk bn254ShiftedRowTerm 384 128 = 363584364132433920 := by decide
 
 private theorem bn254_shifted_row_chunk_four :
-    sumChunk bn254ShiftedRowTerm 512 128 = 11887724692766720 := by decide
+    sumChunk bn254ShiftedRowTerm 512 128 = 5409873770577920 := by decide
 
 private theorem bn254_shifted_row_chunk_five :
     sumChunk bn254ShiftedRowTerm 640 49 = 0 := by decide
 
 private theorem bn254_shifted_source_chunk_zero :
-    sumChunk bn254ShiftedSourceTerm 0 128 = 2628476872952183840 := by decide
+    sumChunk bn254ShiftedSourceTerm 0 128 = 1196498687857102304 := by decide
 
 private theorem bn254_shifted_source_chunk_one :
-    sumChunk bn254ShiftedSourceTerm 128 128 = 5494142276322121082 := by decide
+    sumChunk bn254ShiftedSourceTerm 128 128 = 2500797754813413914 := by decide
 
 private theorem bn254_shifted_source_chunk_two :
-    sumChunk bn254ShiftedSourceTerm 256 128 = 4348575489110456448 := by decide
+    sumChunk bn254ShiftedSourceTerm 256 128 = 1979208535621442112 := by decide
 
 private theorem bn254_shifted_source_chunk_three :
-    sumChunk bn254ShiftedSourceTerm 384 128 = 2965214796812990592 := by decide
+    sumChunk bn254ShiftedSourceTerm 384 128 = 1349479233439291968 := by decide
 
 private theorem bn254_shifted_source_chunk_four :
-    sumChunk bn254ShiftedSourceTerm 512 128 = 1582039921271781504 := by decide
+    sumChunk bn254ShiftedSourceTerm 512 128 = 719935748013398592 := by decide
 
 private theorem bn254_shifted_source_chunk_five :
-    sumChunk bn254ShiftedSourceTerm 640 49 = 239566440270554124 := by decide
+    sumChunk bn254ShiftedSourceTerm 640 49 = 109012555294875960 := by decide
 
 private theorem bn254_shifted_row_slots :
-    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 1905902 =
-      17256961553370972160 := by
+    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 867623 =
+      7854932514895298560 := by
   rw [bn254_shifted_row_slots_eq_sumChunk]
   rw [show 689 = 128 + 561 by norm_num, sumChunk_add,
     show 561 = 128 + 433 by norm_num, sumChunk_add,
@@ -124,8 +126,8 @@ private theorem bn254_shifted_row_slots :
     bn254_shifted_row_chunk_four, bn254_shifted_row_chunk_five]
 
 private theorem bn254_shifted_source_slots :
-    firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 1905902 =
-      17258015796740087590 := by
+    firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 867623 =
+      7854932515039524850 := by
   rw [bn254_shifted_source_slots_eq_sumChunk]
   rw [show 689 = 128 + 561 by norm_num, sumChunk_add,
     show 561 = 128 + 433 by norm_num, sumChunk_add,
@@ -136,17 +138,17 @@ private theorem bn254_shifted_source_slots :
     bn254_shifted_source_chunk_two, bn254_shifted_source_chunk_three,
     bn254_shifted_source_chunk_four, bn254_shifted_source_chunk_five]
 
-/-- Height 1905902 passes the shifted line surplus for the BN254 support. -/
+/-- Height 867623 passes the shifted line surplus for the BN254 support. -/
 theorem bn254_interpolation_height :
-    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 1905902 <
-      firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 1905902 := by
+    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 867623 <
+      firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 867623 := by
   rw [bn254_shifted_row_slots, bn254_shifted_source_slots]
   norm_num
 
 /-- The full primitive BN254 line certificate produced by the shifted engine. -/
 theorem bn254_exists_symbolicCertificate {F : Type*} [Field F]
     (centers : Fin 1048576 ↪ F) (f g : Fin 1048576 → F) :
-    Nonempty (FirstOrderSymbolicCertificate 262143 492831 384 168 688 262144 1905902
+    Nonempty (FirstOrderSymbolicCertificate 262143 492831 384 168 688 262144 867623
       centers f g (firstOrderColumns
         (D := 262143) (A := 492831) (m := 384) (M := 168) (μ := 688))) := by
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
@@ -165,7 +167,7 @@ def goldilocksCubic113Profile : LineProfile where
   localRank := 780
   columnY₀Weight := 7427747152
   height := 339
-  heightSlots := 271702835922
+  heightSlots := 274294395088
 
 /-- Lean checks the exact shifted row/source surplus at height 339. -/
 theorem goldilocksCubic113_verified : goldilocksCubic113Profile.CurveVerification := by

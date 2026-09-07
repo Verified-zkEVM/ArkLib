@@ -18,7 +18,7 @@ fields, the affine MCA bound, the interleaved list bound, and the corresponding 
 query, and payload calculations.
 
 The original BN254 package uses 109 queries and the published bounds
-`E = 1126820196482631879700641773`, `L = 147000408479737`. The retuned BN254 package uses 108
+`E = 513074544911280471520373905`, `L = 147000408479737`. The retuned BN254 package uses 108
 queries and the independently derived bounds `E = 93006457356522169112176655917`,
 `L = 1011109123693944`. The cubic Goldilocks package uses the revised 113-query row and bounds
 `E = 14436064712520704240`, `L = 8279136487`.

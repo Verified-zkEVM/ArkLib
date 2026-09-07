@@ -57,7 +57,7 @@ def initial : LineProfile where
   localRank := 140
   columnY₀Weight := 388950086
   height := 22707
-  heightSlots := 1615531117915
+  heightSlots := 1703915800146
 
 /-- Lean recomputes the revised degree-181 shifted source and row slots at height 22707. -/
 theorem initial_verified : initial.CurveVerification := by decide

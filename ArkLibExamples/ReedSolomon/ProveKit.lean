@@ -17,7 +17,7 @@ and vector size `2^21`. The BN254 row selects agreement `492831 / 1048576` and 1
 cubic Goldilocks row selects agreement `508263 / 1048576`, 113 queries, and a second initial
 out-of-domain sample.
 
-The BN254 certificate supplies `E = 1126820196482631879700641773` and
+The BN254 certificate supplies `E = 513074544911280471520373905` and
 `L = 147000408479737`. The cubic Goldilocks arithmetic uses
 `E = 14436064712520704240` and `L = 8279136487`. Their derivation from the revised finite
 certificate remains a separate geometric seam.
@@ -118,7 +118,7 @@ def bn254 : Profile where
   multiplicity := 384
   firstJetCap := 168
   totalJetDegreeCap := 688
-  exceptionalCount := 1126820196482631879700641773
+  exceptionalCount := 513074544911280471520373905
   listSize := 147000408479737
   queries := 109
   initialOodSamples := 1

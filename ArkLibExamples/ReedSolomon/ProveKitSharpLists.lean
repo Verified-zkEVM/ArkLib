@@ -80,7 +80,7 @@ theorem bn254_finite_list_bound_sharp {F : Type*} [Field F]
     (S.card : ℚ) ≤ bn254.listSize := by
   have hb := finite_firstOrder_list_bound_of_heightSlotCount_sharp
     (F := F) (D := 262143) (A := 492831) (m := 384) (M := 168) (μ := 688)
-      (k := 262144) (h := 1905902) (K := 262144)
+      (k := 262144) (h := 867623) (K := 262144)
       (by norm_num) (by norm_num) (by norm_num)
       (by simpa only [bn254] using domain) (by simpa only [bn254] using received)
       bn254_interpolation_height

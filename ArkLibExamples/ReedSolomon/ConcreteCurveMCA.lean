@@ -140,7 +140,7 @@ theorem lambdaVM_exists_exceptional_exact_powerAgreement
 
 /-- The published BN254 exceptional budget bounds the sharp curve envelope. -/
 theorem bn254_curve_envelope_le :
-    firstOrderCurveBound 1048576 262144 262144 262197 492831 688 168 1 1905902
+    firstOrderCurveBound 1048576 262144 262144 262197 492831 688 168 1 867623
         (τ := 524285) (η := firstOrderCurveDirectRatio 1048576 262144 492831) ≤
       ProveKit.bn254.exceptionalCount := by
   decide +kernel
@@ -152,10 +152,10 @@ theorem goldilocksCubic113_curve_envelope_le :
       ProveKit.goldilocksCubic113.exceptionalCount := by
   decide +kernel
 
-/-- Height 1905902 passes the actual degree-one polynomial-curve coefficient test. -/
+/-- Height 867623 passes the actual degree-one polynomial-curve coefficient test. -/
 theorem bn254_curve_interpolation_height :
-    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 1905902 <
-      firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 1905902 :=
+    firstOrderCurveShiftedRowSlotBound 262143 492831 384 168 688 1048576 1 867623 <
+      firstOrderCurveShiftedHeightSlotCount 262143 492831 384 168 688 1 867623 :=
   ProveKit.bn254_interpolation_height
 
 /-- Height 339 passes the revised degree-one polynomial-curve coefficient test. -/
@@ -181,7 +181,7 @@ theorem bn254_exists_exceptional_exact_powerAgreement
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight
       (D := 262143) (A := 492831) (m := 384) (M := 168) (mu := 688)
-      (k := 262144) (h := 1905902) (n := 1048576) (K := 262144)
+      (k := 262144) (h := 867623) (n := 1048576) (K := 262144)
       (L := 262197) (ell := 1) domain values iota
       (by norm_num) (by norm_num) (by norm_num) bn254_curve_interpolation_height
       (by norm_num) le_rfl (by norm_num) (by norm_num) (by norm_num) (by norm_num)

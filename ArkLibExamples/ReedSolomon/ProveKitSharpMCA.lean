@@ -76,7 +76,7 @@ theorem bn254_exists_exceptional_exact_correlatedPair_sharp
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_tight
       (D := 262143) (A := 492831) (m := 384) (M := 168) (mu := 688)
-      (k := 262144) (h := 1905902) (n := 1048576) (K := 262144)
+      (k := 262144) (h := 867623) (n := 1048576) (K := 262144)
       (L := 262197) (ell := 1) domain ![f, g] iota
       (by norm_num) (by norm_num) (by norm_num)
       ConcreteCurveMCA.bn254_curve_interpolation_height

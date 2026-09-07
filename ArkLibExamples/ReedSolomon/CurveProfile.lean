@@ -126,11 +126,17 @@ theorem Verification.exists_symbolicCertificate {F : Type u} [Field F] {p : Line
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     hp.D_gt_one hp.budget_pos hp.degree_le centers f g hp.heightSurplus
 
-/-- Exact facts required by the polynomial-curve interpolation constructor. -/
+/-- Exact facts required by the polynomial-curve interpolation constructor.
+
+The first four conjuncts are the constructor's hypotheses.  The last four re-derive every
+remaining recorded field of the row from the support itself, so that no number in a curve
+table can silently drift away from the object it describes. -/
 def CurveVerification (p : LineProfile) : Prop :=
   1 < p.D ∧ 0 < p.multiplicity * p.agreement ∧ p.k ≤ p.D + 1 ∧
     p.shiftedRowSlots p.batchingDegree < p.shiftedHeightSlots p.batchingDegree ∧
-    p.computedDimension = p.supportDimension ∧ p.computedLocalRank = p.localRank
+    p.computedDimension = p.supportDimension ∧ p.computedLocalRank = p.localRank ∧
+    p.totalJetCap ≤ p.height ∧ p.computedHeightSlots = p.heightSlots ∧
+    p.heightSlots + p.columnY₀Weight = p.supportDimension * (p.height + 1)
 
 instance (p : LineProfile) : Decidable p.CurveVerification := by
   unfold CurveVerification
