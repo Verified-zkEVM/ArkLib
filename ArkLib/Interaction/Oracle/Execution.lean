@@ -83,9 +83,9 @@ theorem decorate_access :
 /-- Verifier-local syntax over the structural, not runtime, lens. Oracle-receive effects run over
 the extended signature, but their continuation is indexed by `PUnit`, never the concrete payload.
 Public-sender effects run after receipt; public-receiver effects run before the selected move. -/
-def syntax {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
+def localSyntax {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
     SyntaxOver (PFunctor.Lens.id TypeTree.basePFunctor) PUnit.{u + 1} Context where
-  Node _ position data Cont :=
+  Node := fun _ position data (Cont : position.Branch → Type u) =>
     match position with
     | .public Moves =>
         match data.1 with
@@ -102,7 +102,7 @@ while its terminal action may query every resource accumulated along those choic
 abbrev Strategy {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (tree : Oracle.TypeTree.{u}) (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration)
     (initial : PFunctor.{u, u}) (Out : tree.BranchPath → Type u) :=
-  StrategyOver (syntax ambient) PUnit.unit tree (decorate tree roles oracles initial)
+  StrategyOver (localSyntax ambient) PUnit.unit tree (decorate tree roles oracles initial)
     (fun path => OracleComp
       (ambient + OracleSpec.ofPFunctor (TypeTree.accessAfter tree oracles initial path)) (Out path))
 

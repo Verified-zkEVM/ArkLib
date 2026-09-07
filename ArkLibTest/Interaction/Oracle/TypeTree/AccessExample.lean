@@ -18,7 +18,7 @@ namespace Interaction.Oracle.TypeTree.AccessExample
 open OracleComp OracleSpec
 
 /-- One input resource available from the start. -/
-def baseSpec : OracleSpec Unit := Unit →ₒ Nat
+abbrev baseSpec : OracleSpec Unit := Unit →ₒ Nat
 
 /-- Input behavior is supplied directly, not assumed to come from an honest representation. -/
 def baseImpl : QueryImpl baseSpec Id := fun _ => 7
@@ -58,9 +58,10 @@ example : ((access.2 true).2 PUnit.unit).1.B (.inr ()) = Fin 3 := rfl
 
 /-- Cursor stopping after the false-branch oracle send. -/
 def afterSend : PFunctor.FreeM.Cursor accessTree :=
-  .down false (.down PUnit.unit (.root (.public (Fin 2) fun _ => .done)))
+  .down false (.down PUnit.unit
+    (.root (Oracle.TypeTree.public (Fin 2) fun _ => Oracle.TypeTree.done)))
 
-example : (accessAt afterSend accessOracles baseSpec.toPFunctor).A = Unit ⊕ Unit := rfl
+example : (accessAt afterSend accessOracles baseSpec.toPFunctor).A = (Unit ⊕ Unit) := rfl
 
 /-- The public future can be selected without any concrete Boolean oracle payload. -/
 example : AccessDecoration.restrict afterSend access =
@@ -88,6 +89,7 @@ example : accessAfter accessTree accessOracles baseSpec.toPFunctor leftPath.toBr
   accessAfter_eq_of_toBranchPath_eq accessOracles baseSpec.toPFunctor rfl
 
 /-- A deliberately non-faithful interface: only the first coordinate is observable. -/
+@[reducible]
 def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := Unit →ₒ Nat
@@ -102,11 +104,12 @@ def terminalOracles : terminalTree.OracleDecoration :=
 
 /-- Complete cursor; node decorations alone have only unit at this residual. -/
 def terminalCursor : PFunctor.FreeM.Cursor terminalTree :=
-  .down PUnit.unit (.root .done)
+  .down PUnit.unit (.root Oracle.TypeTree.done)
 
-example : (accessAt terminalCursor terminalOracles baseSpec.toPFunctor).A = Unit ⊕ Unit := rfl
+example : (accessAt terminalCursor terminalOracles baseSpec.toPFunctor).A = (Unit ⊕ Unit) := rfl
 
-example : (accessAt terminalCursor terminalOracles baseSpec.toPFunctor).B (.inr ()) = Nat := rfl
+example :
+    (accessAt terminalCursor terminalOracles baseSpec.toPFunctor).B (Sum.inr ()) = Nat := rfl
 
 /-- Two same-signature sources are still explicitly routed to different slots. -/
 def derivedQuery : OracleComp
@@ -116,8 +119,8 @@ def derivedQuery : OracleComp
   return old + fresh
 
 example : simulateQ
-    (Access.extendImpl baseSpec.toPFunctor firstInterface baseImpl (11, 42)) derivedQuery = 18 := by
-  simp [derivedQuery, baseImpl, firstInterface, OracleInterface.answer]
+    (Access.extendImpl baseSpec.toPFunctor firstInterface baseImpl (11, 42)) derivedQuery = 18 :=
+  rfl
 
 /-- Hidden representation data do not leak through the handler. -/
 example (visible hidden₁ hidden₂ : Nat) :

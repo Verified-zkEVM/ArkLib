@@ -19,15 +19,16 @@ namespace Interaction.Oracle.ExecutionExample
 open OracleComp OracleSpec TwoParty
 
 /-- Ambient operations are tagged so a stateful interpreter can observe order and multiplicity. -/
-def ambient : OracleSpec Nat := Nat →ₒ Nat
+abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- Pure input behavior is deliberately supplied without an honest input object. -/
-def inputSpec : OracleSpec Unit := Unit →ₒ Nat
+abbrev inputSpec : OracleSpec Unit := Unit →ₒ Nat
 
 /-- The fixed input handler. -/
 def inputImpl : QueryImpl inputSpec Id := fun _ => 7
 
 /-- Only the first coordinate of a concrete message is queryable. -/
+@[reducible]
 def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := Unit →ₒ Nat
@@ -41,10 +42,10 @@ def protocol : Oracle.Protocol :=
         .oracleWith (Nat × Nat) firstInterface .done
 
 /-- Access after the first oracle send. -/
-def firstAccess : PFunctor := Access.extend inputSpec.toPFunctor firstInterface
+abbrev firstAccess : PFunctor := Access.extend inputSpec.toPFunctor firstInterface
 
 /-- Access after the second oracle send. -/
-def finalAccess : PFunctor := Access.extend firstAccess firstInterface
+abbrev finalAccess : PFunctor := Access.extend firstAccess firstInterface
 
 /-- The terminal action queries the final message and performs a tagged ambient operation. -/
 def terminal (announced : Bool) (challenge : Nat) :
@@ -126,7 +127,7 @@ example : True := by
       fun (message : Nat × Nat) => pure message.2
   trivial
 
-/-- Its positive counterpart queries only the observable coordinate at the terminal leaf. -/
+/-- Its positive counterpart queries only the observable coordinate after the oracle receive. -/
 example : Verifier.Strategy ambient opaqueProtocol.tree opaqueProtocol.roles
     opaqueProtocol.oracles inputSpec.toPFunctor (fun _ => Nat) :=
   do
