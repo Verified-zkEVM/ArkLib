@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder
 
 
 /-!
@@ -153,6 +154,52 @@ structure CapacityListBounds (δ : ℝ) (n k q A ℓ : ℕ) : Prop where
     2 * (weightedSupportMultiplicity δ * A + capacityDerivativeOrder δ -
       max k ⌊δ * (n : ℝ) / 2⌋₊) ≤ q →
     ℓ ≤ 4 * weightedSupportMultiplicity δ * q ^ capacityDerivativeOrder δ
+
+/-- **Uniform first-order capacity lists from gap `6/25`.**  The fixed height-851
+certificate represents the exact list by at most `13623 n` polynomials.  The threshold
+`n ≥ 23`, together with `n ≤ q`, supplies precisely the positive-characteristic condition
+`max (k - 1) 22 < q` when `k ≥ 2`; the elementary `k = 1` branch is characteristic-free.
+
+This is a mathematical list theorem.  It does not change the derivative order, multiplicity,
+or runtime regimes of the executable capacity decoder. -/
+theorem uniformFirstOrder_capacity_list (δ : ℝ) (hδ : (6 / 25 : ℝ) ≤ δ) :
+    HasCapacityLists δ 23 (fun n _k _q _A ℓ ↦ ℓ ≤ 13623 * n) := by
+  classical
+  intro n k q A hn hk hkn hq hnq hgap _hAupper domain received
+  by_cases hAn : A ≤ n
+  · let _ : Fact q.Prime := ⟨hq⟩
+    have hgapUniform : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A := by
+      have hnnonneg : (0 : ℝ) ≤ n := by positivity
+      have hmul := mul_le_mul_of_nonneg_right hδ hnnonneg
+      linarith
+    have hchar : 2 ≤ k →
+        ringChar (ZMod q) = 0 ∨ max (k - 1) 22 < ringChar (ZMod q) := by
+      intro hkTwo
+      right
+      rw [ringChar.eq (ZMod q) q]
+      have hn23 : 23 ≤ n := hn
+      omega
+    obtain ⟨list, hlist, hcard⟩ :=
+      exists_uniformFirstOrder_list n k A domain received
+        (by omega) hk hAn hgapUniform hchar
+    refine ⟨list, ?_, ?_, hcard⟩
+    · intro P
+      rw [hlist]
+      simp only [closePolynomialSet]
+      simp [polynomialAgreementSet, Code.agree]
+    · intro hover
+      exact (Nat.not_lt_of_ge hAn hover).elim
+  · refine ⟨∅, ?_, fun _ ↦ rfl, by simp⟩
+    intro P
+    constructor
+    · intro hmem
+      simp at hmem
+    · rintro ⟨_hdegree, hagree⟩
+      exfalso
+      apply hAn
+      have hcard := Code.agree_le_card
+        (u := fun i ↦ P.eval (domain i)) (v := received)
+      exact hagree.trans (by simpa using hcard)
 
 /-- **Capacity lists at every rate, with all prescribed list bounds.**
 

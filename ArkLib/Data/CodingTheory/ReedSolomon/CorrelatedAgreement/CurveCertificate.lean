@@ -110,7 +110,7 @@ theorem finiteListBound_of_profile
     (hkA : p.k ≤ p.agreement) (hAn : p.agreement ≤ p.n)
     {F : Type u} [Field F]
     (domain : Fin p.n ↪ F) (received : Fin p.n → F)
-    (hchar : ringChar F = 0 ∨ max p.n p.totalJetCap < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (p.k - 1) p.totalJetCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received p.k p.agreement P) :
     (S.card : ℚ) ≤ tightListEnvelope p := by

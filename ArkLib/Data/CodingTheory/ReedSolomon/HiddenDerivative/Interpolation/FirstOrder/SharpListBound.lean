@@ -26,7 +26,7 @@ proves
 * `domain` is an arbitrary embedding of `n` distinct centers, `received` is an arbitrary word,
   and `S` is any finite family of degree-`< k` polynomials with at least `A` agreements.
 * The field is arbitrary of characteristic zero or characteristic strictly greater than
-  `max n μ`. The result is scalar and uniform over all data satisfying these hypotheses.
+  `max (K - 1) μ`. The result is scalar and uniform over all data satisfying these hypotheses.
 * The first theorem consumes an existing `FirstOrderSymbolicCertificate` for the constant line
   `received + Z * 0`. The second constructs that certificate from the complete finite support
   and the executable shifted line surplus.
@@ -70,7 +70,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_sharp
       (fun _ ↦ 0) columns)
     (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
     (S.card : ℚ) ≤
@@ -113,7 +113,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_tight
       (fun _ ↦ 0) columns)
     (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
     (S.card : ℚ) ≤ firstOrderTightListWeight n A k K (2 * K - 3) μ M := by
@@ -156,7 +156,7 @@ theorem finite_firstOrder_list_bound_of_heightSlotCount_sharp
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
     (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
     (S.card : ℚ) ≤
@@ -182,7 +182,7 @@ theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
     (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
     (S.card : ℚ) ≤ firstOrderTightListWeight n A k K (2 * K - 3) μ M := by

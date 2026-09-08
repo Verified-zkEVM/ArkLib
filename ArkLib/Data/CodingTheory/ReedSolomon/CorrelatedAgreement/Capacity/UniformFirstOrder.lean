@@ -332,7 +332,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
     (n k A : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
     (hn : 2 ≤ n) (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F) :
+    (hchar : ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
     ∃ list : Finset F[X],
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
       list.card ≤ 13623 * n := by
@@ -365,7 +365,7 @@ private theorem exists_uniformFirstOrder_lineMCA_of_two_le
     (n k A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
     (hn : 2 ≤ n) (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F) :
+    (hchar : ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ 571487759 * (n : ℝ) ^ 2 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
@@ -383,17 +383,12 @@ private theorem exists_uniformFirstOrder_lineMCA_of_two_le
     uniformFirstOrder_parameters n k A hn hk hAn hgapNat
   have hkpos : 0 < k := by omega
   have hmid := correlatedMidpoint_bounds (6 / 25 : ℝ) n k A (by norm_num) hgap hAn
-  have hchar' : ringChar F = 0 ∨ max (k - 1) 22 < ringChar F := by
-    apply hchar.imp_right
-    intro hc
-    exact (max_le_max (Nat.sub_le k 1 |>.trans
-      (hmid.1.trans (hmid.2.1.trans hAn))) le_rfl).trans_lt hc
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight
       (D := D) (A := A) (m := 12) (M := 4) (mu := 22) (k := k) (h := 851)
       (n := n) (K := k) (L := L) (ell := 1)
       domain values iota (by omega) hbudget hkD hheight (by omega) (le_refl k) hkpos
-        hmid.1 hmid.2.1 hAn (by norm_num) hchar'
+        hmid.1 hmid.2.1 hAn (by norm_num) hchar
   refine ⟨exceptional, ?_, ?_⟩
   · have hcardR : (exceptional.card : ℝ) ≤
         (firstOrderCurveBound n k k L A 22 4 1 851
@@ -504,13 +499,13 @@ theorem exists_uniformFirstOrder_list
     (n k A : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F) :
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
     ∃ list : Finset F[X],
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
       list.card ≤ 13623 * n := by
   by_cases hkTwo : 2 ≤ k
   · exact exists_uniformFirstOrder_list_of_two_le n k A domain received
-      hn hkTwo hAn hgap hchar
+      hn hkTwo hAn hgap (hchar hkTwo)
   · have hkOne : k = 1 := by omega
     subst k
     have hOneA : 1 ≤ A := by exact_mod_cast (show (1 : ℝ) ≤ A by linarith)
@@ -530,7 +525,7 @@ theorem exists_uniformFirstOrder_lineMCA
     (n k A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F) :
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ 571487759 * (n : ℝ) ^ 2 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
@@ -538,7 +533,7 @@ theorem exists_uniformFirstOrder_lineMCA
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   by_cases hkTwo : 2 ≤ k
   · exact exists_uniformFirstOrder_lineMCA_of_two_le n k A domain f g
-      hn hkTwo hAn hgap hchar
+      hn hkTwo hAn hgap (hchar hkTwo)
   · have hkOne : k = 1 := by omega
     subst k
     have hA : 0 < A := by exact_mod_cast (show (0 : ℝ) < A by linarith)
@@ -550,7 +545,7 @@ theorem lineExactAgreementBound_uniformFirstOrder
     (n k A : ℕ) (domain : Fin n ↪ F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F) :
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
     LineExactAgreementBound domain k A (571487759 * (n : ℝ) ^ 2) := by
   intro f g
   obtain ⟨exceptional, hcard, hgood⟩ :=
@@ -569,7 +564,7 @@ theorem mcaError_affineLine_uniformFirstOrder_le
     (n k A : ℕ) (domain : Fin n ↪ F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F)
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F)
     (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineLineGenerator F) (code domain k) radius ≤
       ENNReal.ofReal
@@ -586,7 +581,7 @@ theorem mcaError_affineSpace_uniformFirstOrder_le
     (n k A s : ℕ) (domain : Fin n ↪ F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max n 22 < ringChar F)
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F)
     (hs : 1 ≤ s) (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineSpaceGenerator F s) (code domain k) radius ≤
       ENNReal.ofReal

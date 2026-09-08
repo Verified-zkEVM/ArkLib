@@ -7,7 +7,6 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedLine
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedCurve
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.QuarterGap
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.ExtensionDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.HalfGap.Line
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.PolynomialCurve.ExtensionDescent
@@ -48,9 +47,10 @@ Affine densities and the final probability formulation require finite fields.
 These are mathematical agreement theorems, not running-time bounds. In the small-gap regime,
 `exists_prescribedLineMCA` and `exists_prescribedCurveMCA` use the manuscript's exact
 mixed-bidegree constant `prescribedMCAConstant`. The existential presentations below use that
-same constant in this regime. For lines and their affine consequences, gaps between one quarter
-and one half use the explicit quadratic coefficient `quarterGapMCAConstant` at length at least
-`512`. The half-gap line theorem states the sharper `2 * n` bound separately, over every field.
+same constant in this regime. For lines and their affine consequences, gaps from `6/25` to one
+half use the fixed height-851 first-order certificate: from length `23`, its exceptional set has
+size at most `571487759 * n²`. The half-gap line theorem states the sharper `2 * n` bound
+separately, over every field.
 Thus the line theorem uses all three parameter regimes of the manuscript. Power batching uses
 the general mixed-bidegree parameters, without asserting a separate quarter-gap refinement.
 
@@ -177,23 +177,30 @@ theorem halfGap_capacity_lineAgreement (δ : ℝ) (hδ : (1 / 2 : ℝ) ≤ δ) :
     simpa using hcardReal
   · simpa only [Polynomial.smul_eq_C_mul] using hgood
 
-/-- **Quarter-gap line agreement.** For `1/4 ≤ δ < 1/2` and `n ≥ 512`, the exceptional set has
-size at most `(1449 + 156274905024 / δ² + 6740636 / δ) * n²`.
-
-This is the quarter-gap case of [DKTZ26, “Explicit exceptional-challenge bounds”]. It retains
-the common capacity interface, including equality of full agreement sets and thresholds above
-the length.
-The fixed first-order interpolation uses multiplicity `64`, first-jet cap `16`, total jet
-degree `119`, and challenge height `1449`. -/
-theorem quarterGap_capacity_lineAgreement (δ : ℝ)
-    (hquarter : (1 / 4 : ℝ) ≤ δ) (hhalf : δ < 1 / 2) :
-    HasCapacityLineAgreement δ 512
-      (fun n ↦ quarterGapMCAConstant δ * (n : ℝ) ^ 2) := by
+/-- **Uniform first-order line agreement.** For `6/25 ≤ δ`, every block length `n ≥ 23`
+inherits the fixed-gap height-851 theorem.  One exceptional set of at most
+`571487759 * n²` challenges works for every close polynomial and preserves the complete
+agreement set. -/
+theorem uniformFirstOrder_capacity_lineAgreement (δ : ℝ)
+    (huniform : (6 / 25 : ℝ) ≤ δ) :
+    HasCapacityLineAgreement δ 23
+      (fun n ↦ 571487759 * (n : ℝ) ^ 2) := by
   classical
   intro n k A hn hk hkn hgap F _ _ hchar domain f g
   by_cases hAn : A ≤ n
-  · obtain ⟨exceptional, hcard, hgood⟩ :=
-      exists_quarterGapLineMCA δ n k A domain f g hn hquarter hhalf hk hkn hAn hgap hchar
+  · have hgapUniform : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A := by
+      have hnnonneg : (0 : ℝ) ≤ n := by positivity
+      have hmul := mul_le_mul_of_nonneg_right huniform hnnonneg
+      linarith
+    have hcharUniform : 2 ≤ k →
+        ringChar F = 0 ∨ max (k - 1) 22 < ringChar F := by
+      intro hkTwo
+      apply hchar.imp_right
+      intro hnchar
+      have hmax : max (k - 1) 22 < n := by omega
+      exact hmax.trans_le hnchar
+    obtain ⟨exceptional, hcard, hgood⟩ := exists_uniformFirstOrder_lineMCA
+      n k A domain f g (by omega) hk hAn hgapUniform hcharUniform
     refine ⟨exceptional, hcard, ?_⟩
     intro z hz P hdegree hagree
     obtain ⟨pair, hleft, hright, heq, hsets⟩ := hgood z hz P hdegree hagree
@@ -201,10 +208,7 @@ theorem quarterGap_capacity_lineAgreement (δ : ℝ)
     · simpa [correlatedPairSpecialization, Polynomial.smul_eq_C_mul] using heq
     · simpa [mappedDomain] using hsets
   · refine ⟨∅, ?_, ?_⟩
-    · simp only [Finset.card_empty, Nat.cast_zero]
-      have hδ : 0 < δ := by linarith
-      unfold quarterGapMCAConstant
-      positivity
+    · norm_num
     · intro z _ P _ hagree
       have hcard :
           (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card ≤ n :=
@@ -221,12 +225,11 @@ theorem exists_capacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
   by_cases hhalf : (1 / 2 : ℝ) ≤ δ
   · refine ⟨0, 0, 2, by norm_num, ?_⟩
     simpa using halfGap_capacity_lineAgreement δ hhalf
-  by_cases hquarter : (1 / 4 : ℝ) ≤ δ
-  · refine ⟨512, 1, quarterGapMCAConstant δ, ?_, ?_⟩
-    · unfold quarterGapMCAConstant
-      positivity
-    · simpa using quarterGap_capacity_lineAgreement δ hquarter (lt_of_not_ge hhalf)
-  have hδquarter : δ < 1 / 4 := lt_of_not_ge hquarter
+  by_cases huniform : (6 / 25 : ℝ) ≤ δ
+  · refine ⟨23, 1, 571487759, by norm_num, ?_⟩
+    simpa using uniformFirstOrder_capacity_lineAgreement δ huniform
+  have hδuniform : δ < 6 / 25 := lt_of_not_ge huniform
+  have hδquarter : δ < 1 / 4 := hδuniform.trans_le (by norm_num)
   let d := Nat.ceil (Real.exp ((27 / 10) / δ))
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonicNumber (d - 1))
   let C := prescribedMCAConstant δ

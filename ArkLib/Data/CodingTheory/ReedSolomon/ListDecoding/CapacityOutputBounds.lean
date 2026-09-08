@@ -60,6 +60,39 @@ theorem oversized_empty (domain : Fin n ↪ F) (received : Fin n → F) (out : L
   rw [agreeingPolynomials_eq_empty_of_card_lt (by simpa using hA) received] at hc
   simpa using hc
 
+/-- Any exact small-polynomial output satisfying the exact physical-output contract inherits
+the uniform first-order list bound from gap `6/25`.  This theorem only bounds the length of an
+already supplied exact output; it does not select interpolation parameters or alter the
+executable decoder's regime. -/
+theorem uniformFirstOrder_length_le (delta : ℝ) (hdelta : (6 / 25 : ℝ) ≤ delta)
+    (domain : Fin n ↪ F) (received : Fin n → F) (out : List (List F))
+    (hn : 23 ≤ n) (hk : 0 < k)
+    (hgap : (k : ℝ) + delta * n ≤ A)
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F)
+    (he : ExactOutput domain received k A out) :
+    out.length ≤ 13623 * n := by
+  by_cases hAn : A ≤ n
+  · have hgapUniform : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A := by
+      have hnnonneg : (0 : ℝ) ≤ n := by positivity
+      have hmul := mul_le_mul_of_nonneg_right hdelta hnnonneg
+      linarith
+    obtain ⟨list, hlist, hcard⟩ := exists_uniformFirstOrder_list
+      n k A domain received (by omega) hk hAn hgapUniform hchar
+    have hsame : (out.map coefficientPolynomial).toFinset = list := by
+      ext P
+      simp only [List.mem_toFinset]
+      rw [he.2.2.1 P, hlist P]
+      simp [closePolynomialSet, polynomialAgreementSet, Code.agree, evalOnPoints]
+      tauto
+    calc
+      out.length = (out.map coefficientPolynomial).length := by simp
+      _ = (out.map coefficientPolynomial).toFinset.card :=
+        (List.toFinset_card_of_nodup he.1).symm
+      _ = list.card := congrArg Finset.card hsame
+      _ ≤ 13623 * n := hcard
+  · rw [oversized_empty domain received out he (lt_of_not_ge hAn)]
+    simp
+
 /-- The original gap regimes bound the same supplied exact coefficient-vector output.
 The gap-only d,m,N choices and the reduced large-field threshold are unchanged. -/
 theorem capacity_output_bounds (delta : ℝ) (hdelta : 0 < delta) (_hOne : delta < 1) :

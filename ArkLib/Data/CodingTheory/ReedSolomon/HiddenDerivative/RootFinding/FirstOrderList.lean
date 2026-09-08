@@ -33,7 +33,8 @@ exponent `τ`, so concrete applications can use the first-order exponent `2 K - 
 * `K` is the Taylor cutoff. The hypotheses `1 < K`, `k ≤ K`, and `K ≤ n` discharge
   the Taylor and binomial-pivot conditions; `τ` must suffice for both active orders.
 * The field may have characteristic zero. In positive characteristic, the sufficient
-  condition is `max n μ < ringChar F`.
+  condition is `max (K - 1) μ < ringChar F`: the Taylor pivots only use indices below
+  `K`, while the separant recursion only uses jet degrees at most `μ`.
 
 ## Proof route and scope
 
@@ -297,7 +298,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
     (haccept : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
@@ -327,7 +328,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     exact haccept source.1 source.2
   have recurse : ∀ (μ M : ℕ) (current : DifferentialPolynomial F 1), current ≠ 0 →
       jetTotalDegree current ≤ μ → jetDegree current (1 : Fin 2) ≤ M →
-      (ringChar F = 0 ∨ max n μ < ringChar F) →
+      (ringChar F = 0 ∨ max (K - 1) μ < ringChar F) →
       ∀ currentRoots : Finset (BoundedSolution current (k - 1)),
         (∀ solution ∈ currentRoots,
           IsAgreementSolution domain received k A solution.polynomial) →
@@ -372,8 +373,8 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
                 let _ : CharZero F := CharP.charP_to_charZero F
                 exact separant_ne_zero_of_dependsOnJet_charZero current s hactiveJet
               · exact separant_ne_zero_of_dependsOnJet_of_lt_ringChar current s hactiveJet
-                  ((jetDegree_le_total current s).trans hcurrentDegree |>.trans_lt
-                    ((Nat.le_max_right n (bound + 1)).trans_lt hpos))
+                    ((jetDegree_le_total current s).trans hcurrentDegree |>.trans_lt
+                    ((Nat.le_max_right (K - 1) (bound + 1)).trans_lt hpos))
             have hregularAccepts : ∀ solution ∈ regularRoots,
                 IsAgreementSolution domain received k A solution.polynomial := by
               intro solution hsolution
@@ -401,9 +402,9 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
             have hnextDegree : jetTotalDegree (separant current s) ≤ bound := by
               have hsep := separant_total_le current s
               omega
-            have hnextChar : ringChar F = 0 ∨ max n bound < ringChar F :=
+            have hnextChar : ringChar F = 0 ∨ max (K - 1) bound < ringChar F :=
               hcurrentChar.imp_right fun hpos ↦
-                (max_le_max_left n (Nat.le_succ bound)).trans_lt hpos
+                (max_le_max_left (K - 1) (Nat.le_succ bound)).trans_lt hpos
             cases M with
             | zero =>
                 have hs : s = (0 : Fin 2) := by
@@ -494,9 +495,10 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
                         (hτ 1 (by omega)) hτpos hK hkK domain received hk hkA hAn
                         hcurrentDegree hcurrentDerivative (by omega) (min_le_right _ _)
                         (fun i hri hiK ↦ binomial_pivots_of_characteristic
-                          (hcurrentChar.imp_right fun hpos ↦
-                            (hKn.trans (Nat.le_max_left n (bound + 1))).trans
-                              (Nat.le_of_lt hpos)) 1 i hri hiK)
+                          (hcurrentChar.imp_right fun hpos ↦ by
+                            have hKm1 : K - 1 < ringChar F :=
+                              (Nat.le_max_left (K - 1) (bound + 1)).trans_lt hpos
+                            omega) 1 i hri hiK)
                         regularRoots hregularAccepts hregularSep
                 have hpartition : regularRoots.card + singularRoots.card = currentRoots.card :=
                   card_regular_add_card_singular current s (k - 1) currentRoots
@@ -601,7 +603,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_sharp
     {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (hK : 1 < K) (hkK : k ≤ K) (hKn : K ≤ n)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (K - 1) μ < ringChar F)
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
     (haccept : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
