@@ -22,7 +22,10 @@ increment. The constant coefficient of the prior prefix is deliberately zero.
 
 Adapted from Jieyi Long's universal numerator construction, building on Remco Bloemen's BCHKS
 formalization (Apache-2.0):
-https://github.com/proximity-prize/proximity-prize/blob/19bc7d3e21b2261257e1961acd720b2c395d87e1/ProximityPrize/SubmissionLower/BCHKSUniversalNumerator.lean
+* Repository: https://github.com/proximity-prize/proximity-prize
+* Commit: `19bc7d3e21b2261257e1961acd720b2c395d87e1`
+* File: `ProximityPrize/SubmissionLower/BCHKSUniversalNumerator.lean`
+
 The recurrence is defined directly here, without importing the donor's Hensel engine.
 -/
 
