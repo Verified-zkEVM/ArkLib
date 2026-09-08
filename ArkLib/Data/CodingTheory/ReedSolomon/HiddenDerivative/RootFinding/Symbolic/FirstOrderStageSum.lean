@@ -16,10 +16,11 @@ by first-order agreement geometry.
 
 ## Reading the statement
 
-Give an order-zero charge `c₀ j` and an order-one charge `c₁ j` for a stage of total jet
-degree `j`. If both charges increase with `j`, are nonnegative, and `c₀ ≤ c₁`, then a chain
-of total jet degree at most `μ` and first-derivative degree at most `M` costs no more than the
-full schedule with `c₁` on the largest `min M μ` degrees and `c₀` on the rest.
+Give an order-zero charge `c₀ j` and an order-one charge `c₁ j r` for a stage of total jet
+degree `j` and first-derivative degree `r`. If both charges increase in their degree arguments,
+are nonnegative, and the first order-one slot dominates the order-zero charge, then a chain of
+total jet degree at most `μ` and first-derivative degree at most `M` costs no more than the full
+schedule with `c₁ j (j - (μ - min M μ))` on the largest `min M μ` degrees and `c₀` on the rest.
 
 The result is purely an aggregation theorem. Concrete joint and fiber degree formulas are supplied
 by later geometry modules.
@@ -36,42 +37,48 @@ open scoped BigOperators
 
 variable {R : Type*} [CommSemiring R]
 
-/-- Charge a first-order stage according to its actual active jet order and total jet degree. -/
-def firstOrderStageCharge (c₀ c₁ : ℕ → ℚ) (stage : Stage R 1) : ℚ :=
-  if stage.2 = 0 then c₀ (jetWeight stage.1) else c₁ (jetWeight stage.1)
+/-- Charge a first-order stage according to its actual active jet order, total jet degree, and
+first-derivative degree. -/
+def firstOrderStageCharge (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (stage : Stage R 1) : ℚ :=
+  if stage.2 = 0 then c₀ (jetWeight stage.1)
+  else c₁ (jetWeight stage.1) (jetDegree stage.1 1)
 
 /-- The extremal two-block schedule: order zero on the lower degrees and order one on the
-largest `min M μ` degrees. -/
-def firstOrderStageCap (c₀ c₁ : ℕ → ℚ) (μ M : ℕ) : ℚ :=
+largest `min M μ` degrees, with the derivative degree increasing from one across the
+order-one block. -/
+def firstOrderStageCap (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (μ M : ℕ) : ℚ :=
   ∑ t ∈ Finset.range (μ - min M μ), c₀ (t + 1) +
-    ∑ t ∈ Finset.Ico (μ - min M μ) μ, c₁ (t + 1)
+    ∑ t ∈ Finset.Ico (μ - min M μ) μ,
+      c₁ (t + 1) (t + 1 - (μ - min M μ))
 
 @[simp]
-private theorem firstOrderStageCap_zero (c₀ c₁ : ℕ → ℚ) (M : ℕ) :
+private theorem firstOrderStageCap_zero (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (M : ℕ) :
     firstOrderStageCap c₀ c₁ 0 M = 0 := by
   simp [firstOrderStageCap]
 
 @[simp]
-private theorem firstOrderStageCap_succ_zero (c₀ c₁ : ℕ → ℚ) (μ : ℕ) :
+private theorem firstOrderStageCap_succ_zero (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (μ : ℕ) :
     firstOrderStageCap c₀ c₁ (μ + 1) 0 =
       firstOrderStageCap c₀ c₁ μ 0 + c₀ (μ + 1) := by
   simp [firstOrderStageCap, Finset.sum_range_succ]
 
 @[simp]
-private theorem firstOrderStageCap_succ_succ (c₀ c₁ : ℕ → ℚ) (μ M : ℕ) :
+private theorem firstOrderStageCap_succ_succ (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (μ M : ℕ) :
     firstOrderStageCap c₀ c₁ (μ + 1) (M + 1) =
-      firstOrderStageCap c₀ c₁ μ M + c₁ (μ + 1) := by
+      firstOrderStageCap c₀ c₁ μ M + c₁ (μ + 1) (min (M + 1) (μ + 1)) := by
   rw [firstOrderStageCap, firstOrderStageCap]
   simp only [Nat.succ_min_succ, Nat.succ_sub_succ_eq_sub]
   rw [Finset.sum_Ico_succ_top (Nat.sub_le μ (min M μ))]
+  have hlast : μ + 1 - (μ - min M μ) = (min M μ).succ := by omega
+  rw [hlast]
   ring
 
-private theorem firstOrderStageCap_nonneg (c₀ c₁ : ℕ → ℚ) (μ M : ℕ)
-    (hc₀ : ∀ j, 0 ≤ c₀ j) (hc₁ : ∀ j, 0 ≤ c₁ j) :
+private theorem firstOrderStageCap_nonneg (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (μ M : ℕ)
+    (hc₀ : ∀ j, 0 ≤ c₀ j) (hc₁ : ∀ j r, 0 ≤ c₁ j r) :
     0 ≤ firstOrderStageCap c₀ c₁ μ M := by
   unfold firstOrderStageCap
   exact add_nonneg (Finset.sum_nonneg fun j _ ↦ hc₀ (j + 1))
-    (Finset.sum_nonneg fun j _ ↦ hc₁ (j + 1))
+    (Finset.sum_nonneg fun j _ ↦ hc₁ (j + 1) (j + 1 - (μ - min M μ)))
 
 private theorem jetDegree_one_separant_le_sub_one
     (Q : DifferentialPolynomial R 1) (j : Fin 2)
@@ -90,11 +97,13 @@ private theorem jetDegree_one_separant_le_sub_one
 that assigns order one to the largest `min M μ` possible stage degrees. -/
 theorem Chain.sum_firstOrderStageCharge_le
     {Q terminal : DifferentialPolynomial R 1} {stages : List (Stage R 1)}
-    (hc : Chain Q stages terminal) (c₀ c₁ : ℕ → ℚ) {μ M : ℕ}
+    (hc : Chain Q stages terminal) (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) {μ M : ℕ}
     (hμ : jetWeight Q ≤ μ) (hM : jetDegree Q 1 ≤ M)
-    (hc₀ : ∀ j, 0 ≤ c₀ j) (hc₁ : ∀ j, 0 ≤ c₁ j)
-    (hmono₀ : Monotone c₀) (hmono₁ : Monotone c₁)
-    (hc₀₁ : ∀ j, c₀ j ≤ c₁ j) :
+    (hc₀ : ∀ j, 0 ≤ c₀ j) (hc₁ : ∀ j r, 0 ≤ c₁ j r)
+    (hmono₀ : Monotone c₀)
+    (hmono₁Total : ∀ {j w r}, r ≤ j → j ≤ w → c₁ j r ≤ c₁ w r)
+    (hmono₁Derivative : ∀ {j r q}, r ≤ q → q ≤ j → c₁ j r ≤ c₁ j q)
+    (hc₀₁ : ∀ j, c₀ j ≤ c₁ j 1) :
     (stages.map (firstOrderStageCharge c₀ c₁)).sum ≤
       firstOrderStageCap c₀ c₁ μ M := by
   induction hc generalizing μ M with
@@ -139,15 +148,27 @@ theorem Chain.sum_firstOrderStageCharge_le
                 have hstep := jetDegree_one_separant_le_sub_one Q j hhighest
                 omega
               have htail := ih htailWeight htailDegree
-              have hhead : firstOrderStageCharge c₀ c₁ (Q, j) ≤ c₁ (μ + 1) := by
+              have hdegreeCap : jetDegree Q 1 ≤ min (M + 1) (μ + 1) := by
+                apply le_min hM
+                exact (jetDegree_le_jetWeight Q 1).trans hμ
+              have hcapPos : 1 ≤ min (M + 1) (μ + 1) := by
+                have hweightOne : 1 ≤ μ + 1 := by omega
+                omega
+              have hhead : firstOrderStageCharge c₀ c₁ (Q, j) ≤
+                  c₁ (μ + 1) (min (M + 1) (μ + 1)) := by
                 fin_cases j
-                · simpa [firstOrderStageCharge] using (hc₀₁ _).trans (hmono₁ hμ)
-                · simpa [firstOrderStageCharge] using hmono₁ hμ
+                · simp only [firstOrderStageCharge, Fin.isValue]
+                  exact (hmono₀ hμ).trans ((hc₀₁ _).trans
+                    (hmono₁Derivative hcapPos (by omega)))
+                · simp only [firstOrderStageCharge, Fin.isValue]
+                  exact (hmono₁Total (jetDegree_le_jetWeight Q 1) hμ).trans
+                    (hmono₁Derivative hdegreeCap (by omega))
               simp only [List.map_cons, List.sum_cons]
               calc
                 firstOrderStageCharge c₀ c₁ (Q, j) +
                     (tail.map (firstOrderStageCharge c₀ c₁)).sum ≤
-                    c₁ (μ + 1) + firstOrderStageCap c₀ c₁ μ M :=
+                    c₁ (μ + 1) (min (M + 1) (μ + 1)) +
+                      firstOrderStageCap c₀ c₁ μ M :=
                   add_le_add hhead htail
                 _ = firstOrderStageCap c₀ c₁ (μ + 1) (M + 1) := by
                   rw [firstOrderStageCap_succ_succ]
