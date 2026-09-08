@@ -265,6 +265,7 @@ import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.FractionField
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
