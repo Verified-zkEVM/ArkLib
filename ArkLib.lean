@@ -299,7 +299,10 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 import ArkLib.OracleReduction.Composition.Sequential.Completeness
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 import ArkLib.OracleReduction.Composition.Sequential.IsPure
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
@@ -316,6 +319,7 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 import ArkLib.OracleReduction.LiftContext.Lens
 import ArkLib.OracleReduction.LiftContext.OracleReduction
+import ArkLib.OracleReduction.LiftContext.Purity
 import ArkLib.OracleReduction.LiftContext.Reduction
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.OracleReduction.Prelude

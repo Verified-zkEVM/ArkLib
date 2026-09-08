@@ -651,7 +651,12 @@ home_page/            site assets and assembled website root
 
   `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
   `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers and stays
-  outside the binary umbrella to avoid an import cycle. The test tree also includes the shared-state
+  outside the binary umbrella to avoid an import cycle. `Sequential/GuardedNary.lean` extends
+  guarded completeness to finite chains, and `Sequential/OracleCompleteness.lean` supplies the
+  binary and finite-chain oracle-reduction wrappers. `Sequential/NoAmbient.lean` proves output
+  purity for empty ambient oracles and builds guarded forms from explicit fallback maps.
+  `LiftContext/Purity.lean` transports output purity and guarded forms through context lifting.
+  The test tree also includes the shared-state
   completeness counterexample and a positive simulated-factorization case outside the structural
   seam restriction. See [sequential composition contracts](sequential-composition.md).
 

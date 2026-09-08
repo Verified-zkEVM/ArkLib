@@ -55,6 +55,19 @@ in their outputs; pure verifier forms and state-uniform suffix completeness rema
 corollary. Every component has pure output and verdict, and is complete from every deterministic
 state. The total error is the sum of component errors.
 
+`Sequential/GuardedNary.lean` provides `seqCompose_completeness_of_guarded_verifiers`
+and its perfect-completeness corollary. Every component has pure output, a guarded verifier form,
+and completeness from every deterministic state. Rejection remains part of the failure event;
+the total error is the sum of the component errors. `Sequential/OracleCompleteness.lean` exports
+binary and finite-chain guarded wrappers for oracle reductions using their proved conversions.
+
+For empty ambient oracles, `Sequential/NoAmbient.lean` derives `Prover.OutputIsPure` by structural
+elimination of impossible queries. `Verifier.GuardedForm.of_empty` additionally requires an explicit
+input-to-output fallback map for rejecting executions. This premise avoids imposing an inhabitance
+assumption on arbitrary statement or oracle families. An always-rejecting verifier from `Unit` to
+`Empty` has no guarded form. `LiftContext/Purity.lean` preserves output purity and guarded forms
+under context lifting without additional lens laws or assumptions about oracle state.
+
 ## Round-by-round soundness
 
 `Verifier.append_rbrSoundnessWorstCase_of_pure_first` composes fixed-prefix
@@ -100,5 +113,6 @@ it does not execute the expensive complete opening run.
 
 Run `./scripts/validate.sh --axioms`. The normal `lake test` gate includes the composition tests:
 execution routes, both counterexamples, the positive simulated-factorization case, empty and
-state-mutating completeness, rejecting verifiers, and specialization checks. Named results have
+state-mutating completeness, rejecting verifiers, specialization checks, and the empty-oracle
+fallback boundary. Named results have
 permanent standard-axiom assertions. The library axiom sweep covers the production declarations.
