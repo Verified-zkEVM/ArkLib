@@ -265,7 +265,7 @@ theorem passportOuter_finiteListBound
     (i : Fin 6) {F : Type u} [Field F]
     (domain : Fin (passportOuterProfiles i).n ↪ F)
     (received : Fin (passportOuterProfiles i).n → F)
-    (hchar : ringChar F = 0 ∨ max (passportOuterProfiles i).n
+    (hchar : ringChar F = 0 ∨ max ((passportOuterProfiles i).k - 1)
       (passportOuterProfiles i).totalJetCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received (passportOuterProfiles i).k
@@ -281,7 +281,7 @@ theorem passportInternal_finiteListBound
     (i : Fin 4) {F : Type u} [Field F]
     (domain : Fin (passportInternalProfiles i).n ↪ F)
     (received : Fin (passportInternalProfiles i).n → F)
-    (hchar : ringChar F = 0 ∨ max (passportInternalProfiles i).n
+    (hchar : ringChar F = 0 ∨ max ((passportInternalProfiles i).k - 1)
       (passportInternalProfiles i).totalJetCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received (passportInternalProfiles i).k
@@ -297,7 +297,7 @@ theorem goldilocksWitness_finiteListBound
     (i : Fin 4) {F : Type u} [Field F]
     (domain : Fin (goldilocksWitnessProfiles i).n ↪ F)
     (received : Fin (goldilocksWitnessProfiles i).n → F)
-    (hchar : ringChar F = 0 ∨ max (goldilocksWitnessProfiles i).n
+    (hchar : ringChar F = 0 ∨ max ((goldilocksWitnessProfiles i).k - 1)
       (goldilocksWitnessProfiles i).totalJetCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received (goldilocksWitnessProfiles i).k
@@ -313,7 +313,7 @@ theorem goldilocksBlind_finiteListBound
     {F : Type u} [Field F]
     (domain : Fin goldilocksBlindProfile.n ↪ F)
     (received : Fin goldilocksBlindProfile.n → F)
-    (hchar : ringChar F = 0 ∨ max goldilocksBlindProfile.n
+    (hchar : ringChar F = 0 ∨ max (goldilocksBlindProfile.k - 1)
       goldilocksBlindProfile.totalJetCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received goldilocksBlindProfile.k

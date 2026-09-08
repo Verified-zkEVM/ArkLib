@@ -39,21 +39,21 @@ theorem field_card : Fintype.card GoldilocksCubic = goldilocksCubicFieldSize := 
 
 theorem witness_characteristic (i : Fin 4) :
     ringChar GoldilocksCubic = 0 ∨
-      max (goldilocksWitnessProfiles i).n (goldilocksWitnessProfiles i).totalJetCap <
+      max ((goldilocksWitnessProfiles i).k - 1) (goldilocksWitnessProfiles i).totalJetCap <
         ringChar GoldilocksCubic := by
   right
   rw [goldilocksCubic_ringChar]
   fin_cases i
   · norm_num [goldilocksWitnessProfiles, passportInternalProfiles, Goldilocks.fieldSize]
   · norm_num [goldilocksWitnessProfiles, Goldilocks.fieldSize]
-  · change max 1024 114 < Goldilocks.fieldSize
+  · change max 15 114 < Goldilocks.fieldSize
     norm_num [Goldilocks.fieldSize]
-  · change max 512 227 < Goldilocks.fieldSize
+  · change max 1 227 < Goldilocks.fieldSize
     norm_num [Goldilocks.fieldSize]
 
 theorem blind_characteristic :
     ringChar GoldilocksCubic = 0 ∨
-      max goldilocksBlindProfile.n goldilocksBlindProfile.totalJetCap <
+      max (goldilocksBlindProfile.k - 1) goldilocksBlindProfile.totalJetCap <
         ringChar GoldilocksCubic := by
   right
   rw [goldilocksCubic_ringChar]

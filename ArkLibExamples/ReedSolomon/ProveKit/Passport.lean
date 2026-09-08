@@ -43,7 +43,7 @@ theorem field_card : Fintype.card BN254Scalar = bn254FieldSize := by
 
 theorem outer_characteristic (i : Fin 6) :
     ringChar BN254Scalar = 0 ∨
-      max (passportOuterProfiles i).n (passportOuterProfiles i).totalJetCap <
+      max ((passportOuterProfiles i).k - 1) (passportOuterProfiles i).totalJetCap <
         ringChar BN254Scalar := by
   right
   rw [bn254Scalar_ringChar]
@@ -51,7 +51,7 @@ theorem outer_characteristic (i : Fin 6) :
 
 theorem internal_characteristic (i : Fin 4) :
     ringChar BN254Scalar = 0 ∨
-      max (passportInternalProfiles i).n (passportInternalProfiles i).totalJetCap <
+      max ((passportInternalProfiles i).k - 1) (passportInternalProfiles i).totalJetCap <
         ringChar BN254Scalar := by
   right
   rw [bn254Scalar_ringChar]
