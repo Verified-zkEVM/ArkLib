@@ -54,6 +54,21 @@ def firstOrderCurveFiberStageOne (K j r τ : ℕ) : ℕ :=
   let c := firstOrderTaylorDerivativeCap K j r τ
   AffineHilbert.fixedFiberDerivativeImageDegree j r b c
 
+/-- Every nonzero first-order stage degree dominates the order-zero charge at the same total
+jet degree. -/
+theorem le_firstOrderCurveFiberStageOne {K j r τ : ℕ}
+    (hK : 2 ≤ K) :
+    j ≤ firstOrderCurveFiberStageOne K j r τ := by
+  let b := firstOrderTaylorTotalCap j τ
+  let c := firstOrderTaylorDerivativeCap K j r τ
+  have hc : 0 < c := by
+    dsimp only [c]
+    unfold firstOrderTaylorDerivativeCap firstOrderTaylorTotalCap
+    apply lt_min (by omega)
+    omega
+  unfold firstOrderCurveFiberStageOne AffineHilbert.fixedFiberDerivativeImageDegree
+  exact (Nat.le_mul_of_pos_right j hc).trans (Nat.le_add_right _ _)
+
 /-- Cap-sensitive joint-image degree for one order-one stage. -/
 def firstOrderCurveJointStageOne (K ell h j r τ : ℕ) : ℕ :=
   let b := firstOrderTaylorTotalCap j τ
@@ -104,6 +119,20 @@ theorem firstOrderCurveFiberStageOne_mono_derivative {K τ j r q : ℕ}
     nlinarith
   unfold firstOrderCurveFiberStageOne
   exact_mod_cast hz
+
+/-- Forgetting the separate derivative cap recovers the old full-triangle fiber bound. -/
+theorem firstOrderCurveFiberStageOne_le_full {K j r τ : ℕ} (hrj : r ≤ j) :
+    firstOrderCurveFiberStageOne K j r τ ≤
+      j * firstOrderTaylorTotalCap j τ := by
+  let b := firstOrderTaylorTotalCap j τ
+  let c := firstOrderTaylorDerivativeCap K j r τ
+  have hcb : c ≤ b := min_le_left _ _
+  rw [firstOrderCurveFiberStageOne]
+  rw [AffineHilbert.fixedFiberDerivativeImageDegree_eq hrj hcb]
+  calc
+    (j - r) * c + r * b ≤ (j - r) * b + r * b := by gcongr
+    _ = j * b := by
+      rw [← Nat.add_mul, Nat.sub_add_cancel hrj]
 
 /-- The joint-image stage degree increases with the total jet degree while the derivative
 degree is held fixed. -/

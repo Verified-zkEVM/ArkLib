@@ -7,6 +7,8 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.TaylorCharZeroSolutions
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.SharpPairCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Symbolic.FirstOrderCurveBound
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.DerivativePairCounting
 
 /-!
 # Cap-sensitive first-order differential list counting
@@ -19,7 +21,7 @@ is at most `M`, a separant chain can select the top jet at most `M` times. At to
 j (1 + τ (j - 1)) (n - k + 1) / (A - k + 1).
 ```
 
-`firstOrderTightListWeight n A k τ μ M` sums these charges, assigning the order-one
+`firstOrderTightListWeight n A k K τ μ M` sums these charges, assigning the order-one
 charge to the highest `min(M, μ)` stages. The main theorem accepts any sufficient Taylor
 exponent `τ`, so concrete applications can use the first-order exponent `2 K - 3`.
 
@@ -73,17 +75,17 @@ def firstOrderListWeight (K : ℕ) : ℕ → ℕ → ℕ
 /-- The dimension-sensitive first-order list charge. Order-zero stages contribute their degree
 directly. Order-one stages use the exact Taylor exponent and the coefficient-space incidence
 ratio `(n-k+1)/(A-k+1)`. -/
-def firstOrderTightListWeight (n A k τ : ℕ) : ℕ → ℕ → ℚ
+def firstOrderTightListWeight (n A k K τ : ℕ) : ℕ → ℕ → ℚ
   | 0, _ => 0
-  | μ + 1, 0 => (μ + 1 : ℚ) + firstOrderTightListWeight n A k τ μ 0
+  | μ + 1, 0 => (μ + 1 : ℚ) + firstOrderTightListWeight n A k K τ μ 0
   | μ + 1, M + 1 =>
-      (μ + 1 : ℚ) * (1 + τ * μ) *
+      (firstOrderCurveFiberStageOne K (μ + 1) (min (M + 1) (μ + 1)) τ : ℚ) *
           ((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) +
-        firstOrderTightListWeight n A k τ μ M
+        firstOrderTightListWeight n A k K τ μ M
 
 /-- The dimension-sensitive list charge is nonnegative. -/
-theorem firstOrderTightListWeight_nonneg (n A k τ μ M : ℕ) :
-    0 ≤ firstOrderTightListWeight n A k τ μ M := by
+theorem firstOrderTightListWeight_nonneg (n A k K τ μ M : ℕ) :
+    0 ≤ firstOrderTightListWeight n A k K τ μ M := by
   induction μ generalizing M with
   | zero => simp [firstOrderTightListWeight]
   | succ μ ih =>
@@ -93,10 +95,7 @@ theorem firstOrderTightListWeight_nonneg (n A k τ μ M : ℕ) :
           exact add_nonneg (by positivity) (ih 0)
       | succ M =>
           simp only [firstOrderTightListWeight]
-          exact add_nonneg
-            (div_nonneg (mul_nonneg (mul_nonneg (by positivity) (by positivity)) (by positivity))
-              (by positivity))
-            (ih M)
+          exact add_nonneg (by positivity) (ih M)
 
 open Classical in
 private theorem finite_regular_solutions_card_le_sharp_of_exponent
@@ -141,6 +140,55 @@ private theorem finite_regular_solutions_card_le_sharp_of_exponent
       (fun jet hjet ↦ (hJ jet hjet).2.2.2)
   rw [hcard] at hcount
   simpa only [QE, rationalTaylorCutDegreeBound, totalJetDegree_map_eq f Q] using hcount
+
+open Classical in
+private theorem finite_regular_solutions_card_le_derivativeCapped_of_exponent
+    (Q : DifferentialPolynomial F 1) (K k j r τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ) (hK : 1 < K)
+    (hkK : k ≤ K)
+    (hj : 0 < j) (hr : 0 < r) (hrj : r ≤ j)
+    (hjet : jetTotalDegree Q ≤ j) (hderiv : jetDegree Q 1 ≤ r)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (S : Finset (Polynomial F))
+    (hdegree : ∀ P ∈ S, P.degree < k)
+    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (hsep : ∀ P ∈ S, differentialSpecialization (separant Q (Fin.last 1)) P ≠ 0)
+    (hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0)
+    (hagree : ∀ P ∈ S,
+      A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
+    (S.card : ℚ) ≤ firstOrderCurveFiberStageOne K j r τ *
+      (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
+  classical
+  let E := AlgebraicClosure F
+  let f := algebraMap F E
+  let QE := MvPolynomial.map f Q
+  obtain ⟨center, J, hcard, hJ⟩ := exists_regular_solution_jet_family_of_exponent
+    f Q K k τ hτ hkK S domain received hdegree hsol hsep hbin hagree
+  by_cases hJempty : J = ∅
+  · have hScard : S.card = 0 := by simpa [hJempty] using hcard.symm
+    rw [hScard, Nat.cast_zero]
+    positivity
+  have hsepE : initialJetSeparant center QE ≠ 0 := by
+    obtain ⟨jet, hjetmem⟩ := Finset.nonempty_iff_ne_empty.mpr hJempty
+    intro hz
+    exact (hJ jet hjetmem).2.1 (by rw [hz, map_zero])
+  let domainE : Fin n ↪ E := domain.trans ⟨f, f.injective⟩
+  have hcount := finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
+      center QE K k j r τ hτ hτpos hK hsepE hj hr hrj
+      (by
+        rw [totalJetDegree_map_eq]
+        rw [← jetTotalDegree_eq_weightedTotalDegree_elim]
+        exact hjet)
+      (by
+        change jetDegree QE 1 ≤ r
+        simpa only [QE, jetDegree_map_eq f f.injective Q 1] using hderiv)
+      domainE (fun i ↦ f (received i)) hk hkA hAn J
+      (fun jet hjetmem ↦ ⟨(hJ jet hjetmem).1, (hJ jet hjetmem).2.1,
+        fun l ↦ (hJ jet hjetmem).2.2.1 l.val l.property⟩)
+      (fun jet hjetmem ↦ (hJ jet hjetmem).2.2.2)
+  rw [hcard] at hcount
+  exact hcount
 
 /-- A regular branch whose highest active jet is `Y₀` costs only its total jet degree. -/
 private theorem regularSolutions_card_le_of_agreement_orderZero
@@ -307,6 +355,78 @@ private theorem regularSolutions_card_le_of_agreement_tight_of_exponent
     _ ≤ (ν : ℚ) * ((((((n - k + 1) * (1 + τ * (ν - 1)) : ℕ) : ℚ) /
           ((A - k + 1 : ℕ) : ℚ))) ^ 1) := by gcongr
 
+private theorem regularSolutions_card_le_of_agreement_derivativeCapped_of_exponent
+    (current : DifferentialPolynomial F 1)
+    (hhighest : highestActiveJet current = some (1 : Fin 2))
+    (K k ν ρ τ : ℕ) (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
+    (hK : 1 < K) (hkK : k ≤ K)
+    {n A : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (hdegree : jetTotalDegree current ≤ ν) (hderiv : jetDegree current 1 ≤ ρ)
+    (hρ : 0 < ρ) (hρν : ρ ≤ ν)
+    (hbin : ∀ i, 1 < i → i < K → (i.choose 1 : F) ≠ 0)
+    {D : ℕ}
+    (regular : Finset (BoundedSolution current D))
+    (haccepts : ∀ solution ∈ regular,
+      IsAgreementSolution domain received k A solution.polynomial)
+    (hseparant : ∀ solution ∈ regular,
+      differentialSpecialization (separant current 1) solution.polynomial ≠ 0) :
+    (regular.card : ℚ) ≤ firstOrderCurveFiberStageOne K ν ρ τ *
+      (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
+  classical
+  obtain ⟨Q', hQ'⟩ := exists_prefixDifferentialPolynomial current (1 : Fin 2)
+    (isHighestActiveJet_of_highestActiveJet_eq_some hhighest)
+  let polys : Finset F[X] := regular.image fun solution ↦ solution.polynomial
+  have hinjective : Function.Injective (fun solution : BoundedSolution current D ↦
+      solution.polynomial) := by
+    intro left right heq
+    exact Subtype.ext (Subtype.ext heq)
+  have hcard : polys.card = regular.card :=
+    Finset.card_image_of_injective regular hinjective
+  have hQ'Degree : jetTotalDegree Q' ≤ ν := by
+    rw [← jetTotalDegree_rename_jetPrefixEmbedding (1 : Fin 2) Q', hQ']
+    exact hdegree
+  have hQ'Deriv : jetDegree Q' 1 ≤ ρ := by
+    have hlast : jetDegree Q' (Fin.last (1 : Fin 2).val) ≤ ρ := by
+      unfold jetDegree at hderiv ⊢
+      rw [← MvPolynomial.degreeOf_rename_of_injective
+        (jetPrefixEmbedding (1 : Fin 2)).injective
+          (some (Fin.last (1 : Fin 2).val)),
+        jetPrefixEmbedding_top (1 : Fin 2), hQ']
+      simpa using hderiv
+    simpa using hlast
+  have hstage := finite_regular_solutions_card_le_derivativeCapped_of_exponent
+    Q' K k ν ρ τ hτ hτpos hK hkK (by omega) hρ hρν hQ'Degree hQ'Deriv
+      domain received hk hkA hAn polys
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      exact (haccepts solution hsolution).1)
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      simpa only [← hQ', differentialSpecialization_rename_jetPrefixEmbedding] using
+        solution.equation)
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      have hs := hseparant solution hsolution
+      have hsepPoly := separant_rename_jetPrefixEmbedding (1 : Fin 2) Q'
+      rw [hQ'] at hsepPoly
+      have heqsep :
+          differentialSpecialization (separant current (1 : Fin 2)) solution.polynomial =
+            differentialSpecialization (separant Q' (Fin.last (1 : Fin 2).val))
+              solution.polynomial := by
+        calc
+          _ = differentialSpecialization
+              (MvPolynomial.rename (jetPrefixEmbedding (1 : Fin 2))
+                (separant Q' (Fin.last (1 : Fin 2).val))) solution.polynomial := by
+              rw [hsepPoly]
+          _ = _ := differentialSpecialization_rename_jetPrefixEmbedding _ _ _
+      exact fun hz ↦ hs (heqsep.trans hz))
+    hbin
+    (fun P hP ↦ by
+      rcases Finset.mem_image.mp hP with ⟨solution, hsolution, rfl⟩
+      exact (haccepts solution hsolution).2)
+  rwa [hcard] at hstage
+
 /-- Dimension-sensitive first-order list counting.  The exact Taylor exponent is retained in
 the order-one charge, while order-zero stages incur no agreement-ratio loss. -/
 theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
@@ -321,8 +441,12 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
     (haccept : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
-    (S.card : ℚ) ≤ firstOrderTightListWeight n A k τ μ M := by
+    (S.card : ℚ) ≤ firstOrderTightListWeight n A k K τ μ M := by
   classical
+  have hτpos : 0 < τ := by
+    have ht := hτ 0 (by omega) (⟨1, hK⟩ : Fin K)
+    norm_num [TaylorExponentSufficient] at ht
+    omega
   let toRoot : {P // P ∈ S} → BoundedSolution Q (k - 1) := fun P ↦
     ⟨⟨P.1, by
       rw [Polynomial.mem_degreeLT]
@@ -347,7 +471,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
       ∀ currentRoots : Finset (BoundedSolution current (k - 1)),
         (∀ solution ∈ currentRoots,
           IsAgreementSolution domain received k A solution.polynomial) →
-        (currentRoots.card : ℚ) ≤ firstOrderTightListWeight n A k τ μ M := by
+        (currentRoots.card : ℚ) ≤ firstOrderTightListWeight n A k K τ μ M := by
     intro bound
     induction bound with
     | zero =>
@@ -375,7 +499,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
               exact isEmptyElim solution
             rw [hempty]
             simp only [Finset.card_empty, Nat.cast_zero]
-            exact firstOrderTightListWeight_nonneg n A k τ (bound + 1) M
+            exact firstOrderTightListWeight_nonneg n A k K τ (bound + 1) M
         | some s =>
             let regularRoots := regularSolutions current s (k - 1) currentRoots
             let singularRoots := singularSolutions current s (k - 1) currentRoots
@@ -439,7 +563,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
                 have hpartition : regularRoots.card + singularRoots.card = currentRoots.card :=
                   card_regular_add_card_singular current (0 : Fin 2) (k - 1) currentRoots
                 have hsingular : (singularRoots.card : ℚ) ≤
-                    firstOrderTightListWeight n A k τ bound 0 := by
+                    firstOrderTightListWeight n A k K τ bound 0 := by
                   rw [← card_singularDescendants current (0 : Fin 2) (k - 1) currentRoots]
                   exact hnext
                 calc
@@ -447,7 +571,7 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
                       (regularRoots.card : ℚ) + (singularRoots.card : ℚ) := by
                     exact_mod_cast hpartition.symm
                   _ ≤ _ := add_le_add hregular hsingular
-                  _ = firstOrderTightListWeight n A k τ (bound + 1) 0 := by
+                  _ = firstOrderTightListWeight n A k K τ (bound + 1) 0 := by
                     simp only [firstOrderTightListWeight]
                     push_cast
                     ring
@@ -467,18 +591,57 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
                     exact hd.trans (by omega)
                 have hnext := ih cap (separant current s) hnextNe hnextDegree hnextFirst
                   hnextChar nextRoots hnextAccepts
-                have hregular := regularSolutions_card_le_of_agreement_tight_of_exponent
-                  current s hactive K k (bound + 1) τ hτ hK hkK domain received hk hkA hAn
-                    hcurrentDegree
-                    (fun r _ i hri hiK ↦ binomial_pivots_of_characteristic
-                      (hcurrentChar.imp_right fun hpos ↦
-                        (hKn.trans (Nat.le_max_left n (bound + 1))).trans
-                          (Nat.le_of_lt hpos)) r i hri hiK)
-                    regularRoots hregularAccepts hregularSep
+                have hregular : (regularRoots.card : ℚ) ≤
+                    (firstOrderCurveFiberStageOne K (bound + 1)
+                      (min (cap + 1) (bound + 1)) τ : ℕ) *
+                        ((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+                  fin_cases s
+                  · have hzero := regularSolutions_card_le_of_agreement_orderZero
+                      current (0 : Fin 2) rfl hactive K k (bound + 1) hkK domain received
+                        hk hkA hAn hcurrentDegree regularRoots hregularAccepts hregularSep
+                    have hratio : (1 : ℚ) ≤
+                        ((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+                      rw [le_div_iff₀ (by exact_mod_cast (show 0 < A - k + 1 by omega))]
+                      norm_cast
+                      omega
+                    have hhead : (bound + 1 : ℚ) ≤
+                        (firstOrderCurveFiberStageOne K (bound + 1)
+                          (min (cap + 1) (bound + 1)) τ : ℕ) := by
+                      exact_mod_cast le_firstOrderCurveFiberStageOne (K := K)
+                        (j := bound + 1) (r := min (cap + 1) (bound + 1))
+                        (τ := τ) (by omega)
+                    calc
+                      (regularRoots.card : ℚ) ≤ bound + 1 := by
+                        simpa only [Nat.cast_add, Nat.cast_one] using hzero
+                      _ ≤ (firstOrderCurveFiberStageOne K (bound + 1)
+                          (min (cap + 1) (bound + 1)) τ : ℕ) := hhead
+                      _ ≤ (firstOrderCurveFiberStageOne K (bound + 1)
+                            (min (cap + 1) (bound + 1)) τ : ℕ) *
+                          (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
+                        simpa only [mul_one] using mul_le_mul_of_nonneg_left hratio (by positivity :
+                          (0 : ℚ) ≤ firstOrderCurveFiberStageOne K (bound + 1)
+                            (min (cap + 1) (bound + 1)) τ)
+                      _ = _ := by ring
+                  · have hcurrentDerivative : jetDegree current (1 : Fin 2) ≤
+                        min (cap + 1) (bound + 1) := by
+                      apply le_min hcurrentFirst
+                      exact (jetDegree_le_total current 1).trans hcurrentDegree
+                    have hactiveDerivative : 0 < jetDegree current (1 : Fin 2) :=
+                      (isHighestActiveJet_of_highestActiveJet_eq_some hactive).1
+                    simpa only [mul_div_assoc] using
+                      regularSolutions_card_le_of_agreement_derivativeCapped_of_exponent
+                      current hactive K k (bound + 1) (min (cap + 1) (bound + 1)) τ
+                        (hτ 1 (by omega)) hτpos hK hkK domain received hk hkA hAn
+                        hcurrentDegree hcurrentDerivative (by omega) (min_le_right _ _)
+                        (fun i hri hiK ↦ binomial_pivots_of_characteristic
+                          (hcurrentChar.imp_right fun hpos ↦
+                            (hKn.trans (Nat.le_max_left n (bound + 1))).trans
+                              (Nat.le_of_lt hpos)) 1 i hri hiK)
+                        regularRoots hregularAccepts hregularSep
                 have hpartition : regularRoots.card + singularRoots.card = currentRoots.card :=
                   card_regular_add_card_singular current s (k - 1) currentRoots
                 have hsingular : (singularRoots.card : ℚ) ≤
-                    firstOrderTightListWeight n A k τ bound cap := by
+                    firstOrderTightListWeight n A k K τ bound cap := by
                   rw [← card_singularDescendants current s (k - 1) currentRoots]
                   exact hnext
                 calc
@@ -486,10 +649,8 @@ theorem finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
                       (regularRoots.card : ℚ) + (singularRoots.card : ℚ) := by
                     exact_mod_cast hpartition.symm
                   _ ≤ _ := add_le_add hregular hsingular
-                  _ = firstOrderTightListWeight n A k τ (bound + 1) (cap + 1) := by
-                    simp only [firstOrderTightListWeight, pow_one]
-                    push_cast
-                    ring
+                  _ = firstOrderTightListWeight n A k K τ (bound + 1) (cap + 1) := by
+                    simp only [firstOrderTightListWeight]
   have hbound := recurse μ M Q hQ hdegree hfirst hchar roots hroots
   rwa [hcard] at hbound
 
@@ -499,7 +660,7 @@ expression. This comparison lets existing consumers keep `firstOrderListWeight` 
 second separant induction. -/
 theorem firstOrderTightListWeight_two_mul_le (n A k K μ M : ℕ)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n) :
-    firstOrderTightListWeight n A k (2 * K) μ M ≤
+    firstOrderTightListWeight n A k K (2 * K) μ M ≤
       ((n * firstOrderListWeight K μ M : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
   have hdenNat : 0 < A - k + 1 := by omega
   have hden : (0 : ℚ) < (A - k + 1 : ℕ) := by exact_mod_cast hdenNat
@@ -523,7 +684,7 @@ theorem firstOrderTightListWeight_two_mul_le (n A k K μ M : ℕ)
             simpa only [mul_one] using
               (mul_le_mul_of_nonneg_left hone (by positivity : (0 : ℚ) ≤ μ + 1))
           calc
-            (μ : ℚ) + 1 + firstOrderTightListWeight n A k (2 * K) μ 0 ≤
+            (μ : ℚ) + 1 + firstOrderTightListWeight n A k K (2 * K) μ 0 ≤
                 ((μ : ℚ) + 1) * ((n : ℚ) / (A - k + 1 : ℕ)) +
                   ((n * firstOrderListWeight K μ 0 : ℕ) : ℚ) /
                     ((A - k + 1 : ℕ) : ℚ) := add_le_add hhead (ih 0)
@@ -533,21 +694,35 @@ theorem firstOrderTightListWeight_two_mul_le (n A k K μ M : ℕ)
               field_simp
       | succ M =>
           simp only [firstOrderTightListWeight, firstOrderListWeight]
+          have hstageNat := firstOrderCurveFiberStageOne_le_full
+            (K := K) (j := μ + 1) (r := min (M + 1) (μ + 1)) (τ := 2 * K)
+            (min_le_right _ _)
+          have hstage :
+              (firstOrderCurveFiberStageOne K (μ + 1) (min (M + 1) (μ + 1))
+                (2 * K) : ℚ) ≤
+                ((μ + 1) * (1 + 2 * K * μ) : ℕ) := by
+            simpa [firstOrderTaylorTotalCap] using (show
+              (firstOrderCurveFiberStageOne K (μ + 1) (min (M + 1) (μ + 1))
+                (2 * K) : ℚ) ≤
+                  ((μ + 1) * firstOrderTaylorTotalCap (μ + 1) (2 * K) : ℕ) by
+                    exact_mod_cast hstageNat)
+          push_cast at hstage
           have hhead :
-              ((μ : ℚ) + 1) * (1 + ((2 * K : ℕ) : ℚ) * μ) *
+              (firstOrderCurveFiberStageOne K (μ + 1) (min (M + 1) (μ + 1))
+                (2 * K) : ℚ) *
                   ((n - k + 1 : ℕ) : ℚ) / (A - k + 1 : ℕ) ≤
-                ((μ : ℚ) + 1) * (1 + ((2 * K : ℕ) : ℚ) * μ) *
+                ((μ : ℚ) + 1) * (1 + 2 * (K : ℚ) * μ) *
                   (n : ℚ) / (A - k + 1 : ℕ) := by
             apply div_le_div_of_nonneg_right
-            · apply mul_le_mul_of_nonneg_left
-              · exact_mod_cast (show n - k + 1 ≤ n by omega)
-              · positivity
+            · exact mul_le_mul hstage (by exact_mod_cast (show n - k + 1 ≤ n by omega))
+                (by positivity) (by positivity)
             · exact hden.le
           calc
-            ((μ : ℚ) + 1) * (1 + ((2 * K : ℕ) : ℚ) * μ) *
+            (firstOrderCurveFiberStageOne K (μ + 1) (min (M + 1) (μ + 1))
+                  (2 * K) : ℚ) *
                   ((n - k + 1 : ℕ) : ℚ) / (A - k + 1 : ℕ) +
-                firstOrderTightListWeight n A k (2 * K) μ M ≤
-              ((μ : ℚ) + 1) * (1 + ((2 * K : ℕ) : ℚ) * μ) *
+                firstOrderTightListWeight n A k K (2 * K) μ M ≤
+              ((μ : ℚ) + 1) * (1 + 2 * (K : ℚ) * μ) *
                   (n : ℚ) / (A - k + 1 : ℕ) +
                 ((n * firstOrderListWeight K μ M : ℕ) : ℚ) /
                   ((A - k + 1 : ℕ) : ℚ) := add_le_add hhead (ih M)
