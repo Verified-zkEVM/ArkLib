@@ -282,6 +282,7 @@ import ArkLib.Interaction.Oracle.Access
 import ArkLib.Interaction.Oracle.Claim
 import ArkLib.Interaction.Oracle.CoreRun
 import ArkLib.Interaction.Oracle.Execution
+import ArkLib.Interaction.Oracle.Prefix
 import ArkLib.Interaction.Oracle.Protocol
 import ArkLib.Interaction.Oracle.Resource
 import ArkLib.Interaction.Oracle.RunSources
