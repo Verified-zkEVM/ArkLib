@@ -39,7 +39,8 @@ statement into field arithmetic, where sumcheck-style protocols run efficiently.
   `ArkLib/Data/Lattices/CyclotomicRing/QuotientLift.lean` (generic, monic cyclotomic modulus,
   abstract extension embedding `φF : R →+* F`) — proven and axiom-clean.
 - The lift as a two-round subprotocol (commit to the lifted witness, evaluate at a random `α`)
-  with `k = 2d` plain special soundness, **formalized generically** in
+  with a `2d`-challenge extraction kernel and a **CWSS certificate with collision escape**,
+  formalized generically in
   `ArkLib/ProofSystem/RingSwitching/Lift/` over any monic-modulus presentation `S ≅ R[X]/(φ)`
   (`Presentation`/`IsPresentation`), on the committed-scalar shell
   `ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`;
@@ -70,7 +71,11 @@ statement into field arithmetic, where sumcheck-style protocols run efficiently.
 ## Known Divergences From ArkLib
 
 - ArkLib formalizes only the lift step as used inside Hachi's opening argument, not the paper's
-  full Ring-R1CS proof system.
+  full Ring-R1CS proof system. The paper also targets Galois rings for prime-power moduli,
+  using exceptional challenge sets (pairwise invertible differences; §2.1, Definition 2 and
+  Proposition 2). ArkLib's `Lift` security currently targets fields; its monic presentation
+  algebra is separate from that interpolation assumption. See the
+  [model and coverage audit](../audits/ring-switching-model-coverage.md).
 - ArkLib never sends the lifted witness `(z, r)` in the clear: it is the output-relation witness of
   the composed chain, and the verifier is a pure statement-extending pass-through; the paper's
   final-message checks live in the output relation `relLift`.
@@ -80,17 +85,22 @@ statement into field arithmetic, where sumcheck-style protocols run efficiently.
   (`CommittedScalar.escEvent`, targeting `LiftCom.Collision`), not by a widened relation or a
   sum-typed extractor: the certificate concludes "either the tree exhibits a short collision of the
   commitment, or extraction succeeds".
-- The paper's full protocol digit-decomposes the quotient before commitment. ArkLib currently
-  exposes that encoding boundary through `RhoShort`; the concrete digit encoding and completeness
-  bound belong to the downstream Hachi constraint layer.
-- The modulus is an arbitrary monic cyclotomic `Φ.φ` (paper: `X^d + 1`), and the extension field is
-  abstract with an embedding (paper: `F_{q^k}`).
+- Hachi's full protocol digit-decomposes the quotient before commitment. This encoding is now
+  implemented in `Hachi/RingSwitch/RhoDigits.lean`, with reconstruction and per-digit shortness
+  proofs, and committed by `liftMessage`. The generic `Lift` kernel still uses the raw quotient
+  as its algebraic witness; Hachi supplies the concrete encoding at its commitment boundary.
+  See [NOZ26](NOZ26.md) for completeness and key-sampling integration limits.
+- The generic `Lift.Presentation` permits any monic modulus. Hachi's concrete instance uses a
+  monic cyclotomic `Φ.φ` (paper: `X^d + 1`), with an abstract coefficient embedding into a
+  field (Hachi: `F_{q^k}`).
 
 ## Version Notes
 
 Cited via the ePrint version (2025/199); Hachi ([`NOZ26`](NOZ26.md)) cites the same report. ArkLib
 follows Hachi's presentation of the lift rather than the original Ring-R1CS setting. Track the
-version if proof obligations start depending on exact statements.
+version if proof obligations start depending on exact statements. The coverage audit inspected
+the web-served 31-page PDF headed February 10, 2025; the ePrint landing page separately reports
+a May 21, 2026 revision. Its HMZ section/page locators refer to the inspected version.
 
 ## Source Access
 

@@ -71,8 +71,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   `splitForm_monomialBasis_eq_eval` on the nose.
 
   This is the `Rq`-level protocol of Hachi §4.2/Figure 3 (`Data = CMlPolynomial (Rq Φ) (r + m)`);
-  the paper's headline multilinear-over-`𝔽_{q^k}` protocol (§3 packing) is a later
-  zero-round head adapter in front of `relPolyEval`, built by the same recipe.
+  the scalar protocol of §3.1 has a one-message, zero-challenge guarded trace head in
+  `TraceHead/`. It packs monomial coefficients over the actual fixed subring, checks the
+  unnormalized trace equation, and forwards the same weak opening to `relPolyEval`.
 
   Sits inside `namespace ArkLib.Lattices.Ajtai.InnerOuter` (activates the scoped
   `PolyVec`/`*ᵥ`/`dot`/`splitForm`) with `open WeakBinding`; the split layer is reached as

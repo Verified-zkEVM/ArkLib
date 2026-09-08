@@ -32,13 +32,9 @@ that other protocols (e.g. a Galois-ring PCS) can reuse them without
 depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
 wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
 
-Note on rejection: `roundOracleVerifier` below rejects by emitting a **dummy statement** rather
-than `failure`. That is fine for a round-by-round soundness argument, but it is not usable for
-tree-based (coordinate-wise special soundness) extraction, where all siblings of a node share the
-prover message and a dummy output collapses every branch onto the same statement. Protocols that
-need the latter use a `failure`-guarded verifier instead — Hachi's §4.3 round
-(`Commitments/Functional/Hachi/Sumcheck/Rounds.lean`) is the worked example, and generalizing it
-here is the natural way to give this layer a CWSS certificate.
+A failed local sumcheck equation aborts the verifier with `failure`. In particular, rejection
+cannot be turned into an accepting opening by a later reduction in the chain. Hachi's paired
+sumcheck has its own wire format and extraction proofs, but shares this rejection behavior.
 -/
 
 namespace Sumcheck.Structured
@@ -263,12 +259,7 @@ def roundOracleVerifier (i : Fin ℓ) :
     -- evaluation domain of coordinate `i` (for the boolean hypercube this is `h_i(0) + h_i(1)`).
     let sumcheck_check := (∑ b ∈ D.points i, h_i.val.eval b) = stmtIn.sumcheck_target
     unless sumcheck_check do
-      let dummyStmt : Statement (L := L) (ℓ := ℓ) Context i.succ := {
-        ctx := stmtIn.ctx,
-        sumcheck_target := 0,
-        challenges := Fin.snoc stmtIn.challenges 0
-      }
-      return dummyStmt
+      failure
     -- Message 1: V samples r'_i and sends it to P.
     let r_i' : L := pSpecChallenges ⟨1, rfl⟩
     let stmtOut : Statement (L := L) (ℓ := ℓ) Context i.succ := {

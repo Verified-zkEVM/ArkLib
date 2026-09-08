@@ -102,6 +102,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`concepts/reed-solomon-proximity.md`](concepts/reed-solomon-proximity.md) - proximity gaps,
   WHIR/STIR context, and the main ArkLib coding-theory entry points.
 
+- [`concepts/ring-switching.md`](concepts/ring-switching.md) - coordinate packing, trace
+  relocation, quotient lift, and their distinct relation/security boundaries.
+
 ## Audit Pages
 
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
@@ -120,6 +123,10 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)
   - detailed paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*
     (dated April 8, 2026).
+
+- [`audits/ring-switching-model-coverage.md`](audits/ring-switching-model-coverage.md)
+  - source-pinned algebra/protocol comparison for DP24, the generalized note, Flock, Hachi,
+    and HMZ25; implemented versus proposed boundaries and negative acceptance cases.
 
 ## Source Metadata
 

@@ -74,8 +74,50 @@ transcript prefix, under a pure first verifier. Each round retains its component
 these hypotheses. Prover-averaged component bounds alone do not supply this contract.
 
 Generic soundness composition and the implication from round-by-round to ordinary soundness
-remain admitted. Sumcheck, Packing, and Binius use the proved completeness interfaces above;
-their completeness theorems still depend on separate component and context-lifting admissions.
+remain admitted. Legacy Sumcheck, Packing, and Binius clients use the proved completeness
+interfaces above but retain separate component and context-lifting admissions. The new generic
+`Packing/Tail/` pipelines have proved component obligations and axiom-clean completeness and
+round-by-round knowledge theorems.
+
+## Round-by-round knowledge soundness
+
+Import `Append/Knowledge.lean` explicitly. It cannot be exported by `Append.lean` while the
+canonical `GuardedForm` owner transitively imports that umbrella.
+
+`KnowledgeStateFunction.appendGuarded` constructs the knowledge state for the existing
+`Extractor.RoundByRound.append`. The first verifier must have `GuardedForm`; the second may
+perform arbitrary shared-oracle queries. The state retains the first component through the seam
+and carries its guard in every state strictly after the seam. A first right-hand transition runs
+the actual left output extractor on the witness supplied by the right predecessor state.
+
+`append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first` preserves the exact component
+extractors and knowledge states. Each challenge retains its component error, with the existential
+successor witness inside the sampled event. Both protocol lengths may be zero. The `_With`
+averaged wrapper preserves these objects; the existential wrappers hide them. The oracle-verifier
+wrapper uses actual oracle materialization through `append_toVerifier`.
+
+Both component hypotheses are **worst-case per prefix**. An averaged component result is not
+sufficient. These theorems implement ArkLib's current extractor-aware knowledge-state contract;
+they do not establish a stronger same-witness or terminal-iff definition. They also do not prove
+a component's commitment, sumcheck, or opening obligations.
+
+`GuardedKnowledge.lean` tests empty components, both challenge directions at the seam, a first
+right prover message, absorbing rejection, rejection in post-seam knowledge states, and a right
+oracle query whose state change survives composition. Named axiom assertions cover the constructor
+and exact worst-case theorem.
+
+For finite guarded chains, import `Sequential/KnowledgeNary.lean`.
+`Verifier.KnowledgeSeqCompose` exposes the recursive `Witness`, `extractor`, `state` and `error`
+used by `seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_verifiers`. Every component
+supplies its own exact extractor, knowledge state, guarded form and worst-case bound. The empty
+sequence uses identity extraction; successor steps use the proved guarded append theorem.
+`error_component` and `error_eq_sigma` identify each challenge with the existing public
+component-and-local-challenge decoder. The averaged wrapper preserves the same objects.
+
+The corresponding `KnowledgeNary.lean` acceptance tests check actual empty/singleton execution,
+a rejected middle component and its later knowledge states, extraction across a seam, and distinct
+later-component errors. This guarded specialization leaves the unrestricted admitted theorem
+unchanged. A final verifier with arbitrary effects can use the binary guarded-first theorem.
 
 ## Clients and validation
 

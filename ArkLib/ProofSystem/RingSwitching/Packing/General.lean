@@ -27,14 +27,16 @@ multilinear. Output: accept/reject. The composition is
    `MLIOPCS` parameter, an arbitrary multilinear opening protocol bundled with its own
    completeness and round-by-round soundness.
 
-Perfect completeness composes from the phases. Round-by-round knowledge soundness composes
-with total error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+ 1/|L|` (final step)
-`+` the downstream protocol's error; the Schwartz–Zippel steps require `[IsDomain L]`. Leaf
-proofs are open (`sorry`).
+The final deterministic step has proved perfect completeness and zero-error worst-case
+knowledge soundness over commutative rings. The declared full error is `κ/|L|` (batching)
+`+ 2/|L|` per sumcheck round `+` the downstream protocol's error; root bounds require a
+domain. Batching and loop leaves remain admitted, and this assembly still uses admitted
+general knowledge composition. The downstream `MLIOPCS` contract supplies averaged
+soundness; a worst-case assembly requires a corresponding downstream opening contract.
 
-This is one construction of the ring-switching family, not the family itself — see the
-folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
-instantiated by `ProofSystem/Binius/FRIBinius/`.
+See `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the family taxonomy. The batching phase
+is reused by `ProofSystem/Binius/FRIBinius/`, whose downstream pipeline interleaves FRI and sumcheck
+instead of instantiating this complete sequential wrapper.
 
 ## References
 
@@ -179,7 +181,8 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
 
 omit [Fintype K] [DecidableEq K] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
+theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L]
+    (hfunctional : mlIOPCS.toAbstractOStmtIn.Functional) :
     OracleProof.rbrKnowledgeSoundness
       (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
       (init := init)
@@ -200,9 +203,9 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [Finite K] [NoZeroDivisors L] :
     (rbrKnowledgeError₁:=BatchingPhase.batchingRBRKnowledgeError κ L K P)
     (rbrKnowledgeError₂:=SumcheckPhase.coreInteractionRbrKnowledgeError L ℓ')
     (h₁:=BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundness κ L K P ℓ
-      ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+      ℓ' h_l mlIOPCS.toAbstractOStmtIn hfunctional)
     (h₂:=SumcheckPhase.coreInteraction_rbrKnowledgeSoundness κ L K P ℓ ℓ' h_l
-      mlIOPCS.toAbstractOStmtIn)
+      mlIOPCS.toAbstractOStmtIn hfunctional)
 
   have res :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)

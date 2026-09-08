@@ -25,8 +25,9 @@ related_modules:
 multilinear polynomial commitment scheme over extension fields, built on power-of-two cyclotomic
 rings, with a "square-root" verifier-time complexity under Module-SIS. ArkLib touches it from two
 directions: it formalizes the paper's **commitment-layer building blocks** (cyclotomic modulus,
-gadget decomposition, inner-outer commitment), and it treats Hachi as the **second intended
-instance** of the generic ring-switching abstraction (the first being Binius / [`DP24`](DP24.md)).
+gadget decomposition, inner-outer commitment), and develops Hachi's ring-switching constructions.
+Its §3 trace relocation and §4.3 quotient lift have different laws and security boundaries from
+the randomized coordinate-packing protocol used by Binius / [DP24](DP24.md).
 
 ## What ArkLib Uses From This Paper
 
@@ -42,12 +43,13 @@ Ring-switching layer:
 - The §3 subfield layer: `R_q^H`, its cardinality `q^k`, the packing bijection `ψ`, the trace
   inner-product identity, and Lemma 6's norm bound. The final Lemma 5 field/isomorphism
   declarations retain one explicit proof gap; see the dedicated audit below.
-- The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
-  to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
-  shape ArkLib factors out as `RingSwitchingProfile`.
-- The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
-  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the
-  ring-switching shape ArkLib factors out as `RingSwitchingProfile`.
+- The **extension-field → cyclotomic-ring reduction** (§3.1): a one-message deterministic
+  trace relocation. It packs monomial coefficients over the fixed subfield, sends a ring
+  evaluation Y, and checks `Tr_H(Y·σ₋₁(v))=(d/k)·y`. `Hachi/TraceHead/` implements this head
+  over the actual fixed subring: monomial packing inverses, unit cancellation of d/k, actual
+  guarded execution, completeness, CWSS, and source coverage using the real committer. Its
+  output retains the same norm-conditioned opening at `relPolyEval`. See the
+  [coverage audit](../audits/ring-switching-model-coverage.md).
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's
@@ -94,9 +96,10 @@ Ring-switching layer:
   `hachiLiftCom`, not yet sampled by `keygen` alongside the inner-outer commitment's own — so the
   collision-to-Module-SIS reduction is complete locally, while the end-to-end security integration
   ([NOZ26] §4.5, `outputToModuleSIS_valid_of_verified`) is not.
-- The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
-  automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
-  laws for the Hachi instance.
+- Theorem 2 gives a finite-free packing map ψ and the scaled trace pairing. These support
+  a separate trace head; the existing `RingSwitchingProfile` reconstruction laws do not by
+  themselves certify that protocol. A Boolean-table version additionally needs explicit
+  transport from the paper's monomial coefficients, with commitment and norm accounting.
 - Parameter translation: Hachi's Theorem 2 packs `d/k` subfield elements. ArkLib's
   `RingSwitchingProfile ... κ` uses `2^κ` for this packing rank, so this `κ` is
   `log₂(d/k)` in Hachi notation, not Hachi's extension-degree parameter `k`/`κ`.
@@ -105,7 +108,8 @@ Ring-switching layer:
 
 - [`ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean)
   — umbrella for Lemma 5, Theorem 2, and Lemma 6.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean)
+- [`ArkLib/Commitments/Functional/Hachi/TraceHead/Basic.lean`](../../../ArkLib/Commitments/Functional/Hachi/TraceHead/Basic.lean)
+  — the scalar head and actual honest committer connection.
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
 - [`ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean)
@@ -116,16 +120,25 @@ Ring-switching layer:
 
 ## Known Divergences From ArkLib
 
-- ArkLib has not yet built the Hachi ring-switching instance; the abstraction is designed to admit
-  it but only the Binius instance is implemented.
+- The implemented §3.1 trace head uses the actual fixed subring without relying on its
+  unfinished identification with `GF(q^k)`. Its ring/trace infrastructure is noncomputable,
+  and it is not yet packaged as an executable scalar Scheme. The trace remains unnormalized:
+  Theorem 2 and `traceH_psi_mul_conj` retain d/k, while the p.13 prose saying it fixes subfield
+  elements omits that factor. The formal head cancels the actual unit d/k.
+- Hachi §3.2 and §4.5 compress field-valued partials through `Σ_i y_i Z^i`, but powers of Z
+  form a basis only over the base field. For two partials, errors `(Zδ,−δ)` preserve that
+  equation while altering reconstruction at a by `δ(Z−a)`. This is the noninjective
+  recombination rejected by Flock Remark 5. The recursive pull-back needs a sound replacement;
+  ψ alone does not repair it without new layout, commitment, trace, norm, and security proofs.
+  See the [coverage audit](../audits/ring-switching-model-coverage.md).
 - Hachi Lemma 5 is only **conditionally complete**: `fixedSubring_isField` and
   `fixedSubringEquivGaloisField` depend on the sorried factor-swap lemma
   `no_selfReciprocal_factor`. Eq. (7), the fixed-subring cardinality, Theorem 2, and Lemma 6 do
   not depend on that gap. Lemma 6 is fully proved, under the weaker odd-characteristic
   assumption actually used by its coefficient argument.
-- `R_q` is **not an integral domain**, so the generic `[IsDomain L]` Schwartz–Zippel soundness
-  theorem does not instantiate Hachi. Hachi soundness (a CWSS-style argument) is a separate theorem
-  with a different error and is out of scope for the current ring-switching module.
+- `R_q` is **not an integral domain**. Field-style Schwartz–Zippel with denominator `|R_q|`
+  does not apply. The §3.1 trace head is deterministic; Hachi's downstream security uses its
+  CWSS chain and norm-conditioned binding/collision escape.
 - Hachi Lemma 10's uniform-vector CWSS argument is invalid for multivariate multilinear
   polynomials: a coordinate-wise star supplies only an axis cross, which does not determine the
   polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) draws each of the `m₀ + m₁`
@@ -198,13 +211,14 @@ Ring-switching layer:
 
 ## Open Formalization Gaps
 
-- Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
-  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
+- Package the proved §3.1 head with the full nonrecursive opening when an external scalar
+  Scheme is needed. Its actual weak-opening and MsgShort seams are available; preserve the
+  downstream collision escapes and distinguish semantic definitions from executable code.
 - Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
   Lemma 5's field/isomorphism conclusion.
 - Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
   partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
-  soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
+  soundness defect described above), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
   proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
   (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
   coordinate-wise special soundness and perfect completeness, and the one-iteration soundness

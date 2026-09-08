@@ -626,6 +626,22 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
       (n : ℝ≥0) / (Fintype.card R : ℝ≥0) :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
 
+/-- Scalar-challenge form of the polynomial root bound for one variable. -/
+lemma prob_schwartz_zippel_single_variable {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    (p : MvPolynomial (Fin 1) R) (d : ℕ) (hne : p ≠ 0) (hdeg : p.totalDegree ≤ d) :
+    Pr_{ let γ ←$ᵖ R }[MvPolynomial.eval (fun _ : Fin 1 => γ) p = 0] ≤
+      (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+  rw [← prob_uniform_singleton_finFun_eq
+    (P := fun γ => MvPolynomial.eval (fun _ : Fin 1 => γ) p = 0)]
+  calc
+    Pr_{ let r ←$ᵖ (Fin 1 → R) }[MvPolynomial.eval (fun _ : Fin 1 => r 0) p = 0]
+        = Pr_{ let r ←$ᵖ (Fin 1 → R) }[MvPolynomial.eval r p = 0] := by
+      refine Pr_congr fun r => ?_
+      have hr : (fun _ : Fin 1 => r 0) = r :=
+        funext fun i => congrArg r (Subsingleton.elim 0 i)
+      rw [hr]
+    _ ≤ _ := prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hne hdeg
+
 /-- The polynomial identity lemma in individual-degree form: for a nonzero `m`-variate
 polynomial `P` of individual degree `< d` in each variable,
 

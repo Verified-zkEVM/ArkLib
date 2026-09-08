@@ -1,0 +1,264 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ArkLib Contributors
+-/
+import ArkLib.Commitments.Functional.Hachi.TraceHead.Coordinates
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+
+/-!
+# Hachi §3.1: the one-message scalar-to-ring trace head
+
+The input polynomial is the coefficientwise decoding of the actual weak opening of the
+committed ring polynomial. The sole message is the latter's evaluation at the retained point.
+The verifier checks the unnormalized trace equation and forwards the same commitment and weak
+opening to `relPolyEval`. All norm and key parameters of `VerifiedOpening` remain unchanged.
+The existing `traceH` and fixed-subring definitions are noncomputable; this exact semantic
+protocol does not assert an executable implementation of those algebra operations.
+-/
+
+open CompPoly ArkLib.Lattices.CyclotomicModulus
+open ArkLib.Lattices.Ajtai.InnerOuter ArkLib.Lattices.Ajtai.InnerOuter.WeakBinding
+open OracleComp OracleSpec ProtocolSpec CoordinateWise
+
+namespace ArkLib.Lattices.Hachi.TraceHead
+
+noncomputable section
+
+variable {q : ℕ} [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+variable (α κ : ℕ)
+variable {innerRows messageDigits outerRows innerDigits dRows m r : ℕ}
+variable {ι : Type} {oSpec : OracleSpec ι}
+
+/-- The scalar opening query: retained first variables split for the existing ring-level bridge,
+then the packed suffix; the original scalar claim is in the actual fixed subring. -/
+structure Statement (q : ℕ) [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+    (α κ innerRows messageDigits outerRows innerDigits dRows m r : ℕ) where
+  /-- The same outer commitment consumed by the ring-level opening protocol. -/
+  u : Commitment (powTwoCyclotomic (R := ZMod q) α) outerRows
+  /-- The first retained variables, indexing matrix rows downstream. -/
+  xl : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) r
+  /-- The remaining retained variables, indexing matrix columns downstream. -/
+  xh : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) m
+  /-- The final variables, whose monomial coefficients are packed. -/
+  xp : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) (α - κ)
+  /-- The claimed scalar evaluation. -/
+  value : fixedSubring (R := ZMod q) α (2 ^ κ)
+
+/-- Exactly one ring-element message and no challenge. -/
+def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Rq (powTwoCyclotomic (R := ZMod q) α)]⟩
+
+instance : IsEmpty (pSpec (q := q) α).ChallengeIdx := ⟨fun ⟨0, h⟩ => nomatch h⟩
+instance : ∀ i, SampleableType ((pSpec (q := q) α).Challenge i) := fun i => isEmptyElim i
+instance : ProverOnly (pSpec (q := q) α) where prover_first' := rfl
+
+/-- The ring-level opening statement drops the suffix and forwards the actual sent value. -/
+def output (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (Y : Rq (powTwoCyclotomic (R := ZMod q) α)) :
+    PolyEvalStatement (powTwoCyclotomic (R := ZMod q) α)
+      innerRows messageDigits outerRows innerDigits dRows m r where
+  u := s.u
+  xl := s.xl.map (algebraMap _ _)
+  xh := s.xh.map (algebraMap _ _)
+  y := Y
+
+variable (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+
+/-- The public packed monomial vector, computed by the actual finite sum `psi`. -/
+def packedMonomial (xp : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) (α - κ)) :
+    Rq (powTwoCyclotomic (R := ZMod q) α) :=
+  psi α (2 ^ κ) (fun j => (CMlPolynomial.monomialBasis xp).get
+    (finCongr (packingRank_eq α κ hk) j))
+
+/-- The paper's scaled trace equality, checked as equality in the actual quotient ring. -/
+def check (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (Y : Rq (powTwoCyclotomic (R := ZMod q) α)) : Bool :=
+  traceH α (2 ^ κ) (Y * conjAut α (packedMonomial α κ hk s.xp)) ==
+    (2 ^ α / 2 ^ κ) • (s.value : Rq (powTwoCyclotomic (R := ZMod q) α))
+
+/-- A failed scalar trace check aborts; a passing one forwards the sent ring evaluation. -/
+def verifier : Verifier oSpec
+    (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (PolyEvalStatement (powTwoCyclotomic (R := ZMod q) α)
+      innerRows messageDigits outerRows innerDigits dRows m r) (pSpec (q := q) α) where
+  verify := fun s tr => if check α κ hk s (tr 0) then pure (output α κ s (tr 0)) else failure
+
+/-- The exact runtime guard and output are data for guarded composition. -/
+def guardedForm : (verifier (q := q) (oSpec := oSpec) α κ hk
+    (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
+    (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)).GuardedForm where
+  check := fun s tr => check α κ hk s (tr 0)
+  out := fun s tr => output α κ s (tr 0)
+  verify_eq := fun _ _ => rfl
+
+variable (h2 : (2 : ZMod q) ≠ 0)
+
+/-- The scalar relation uses the actual norm-conditioned weak opening of the same commitment,
+and evaluates its coefficientwise decoding. It adds no inverse norm assertion. -/
+def relIn
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ) :
+    Set (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r ×
+      QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+        innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
+  {p | VerifiedOpening (powTwoCyclotomic (R := ZMod q) α) base βSq γ bound
+      pp.toPublicParams p.1.u p.2 ∧
+    (unpackCoefficients (coefficientEquiv q α κ h2 hk)
+      (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base p.2)).eval
+        ((p.1.xl ++ p.1.xh) ++ p.1.xp) = p.1.value}
+
+/-- From a valid ring-level opening and the actual passing check, recover the scalar claim. -/
+theorem mem_relIn_of_output
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (Y : Rq (powTwoCyclotomic (R := ZMod q) α))
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (hc : check α κ hk s Y = true)
+    (hout : (output α κ s Y, w) ∈
+      relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound) :
+    (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound := by
+  refine ⟨hout.1, ?_⟩
+  apply (trace_eval_eq_iff q α κ h2 hk _ (s.xl ++ s.xh) s.xp s.value).1
+  have hev := hout.2
+  change (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w).eval
+    (s.xl.map (algebraMap _ _) ++ s.xh.map (algebraMap _ _)) = Y at hev
+  rw [Vector.map_append, hev]
+  simpa only [check, beq_iff_eq, packedMonomial, coefficientEquiv_apply] using hc
+
+/-- The honest message is the evaluation of the actual ring polynomial extracted from the weak
+opening; the prover does not need to compute inverse packing coordinates. -/
+def honestMessage (base : ZMod q)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
+    Rq (powTwoCyclotomic (R := ZMod q) α) :=
+  (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w).eval
+    ((s.xl ++ s.xh).map (algebraMap _ _))
+
+/-- Scalar source validity makes the honest ring evaluation pass the exact trace check. -/
+theorem check_honestMessage
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (h : (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound) :
+    check α κ hk s (honestMessage α κ base s w) = true := by
+  have ht := (trace_eval_eq_iff q α κ h2 hk _ (s.xl ++ s.xh) s.xp s.value).2 h.2
+  simpa only [check, beq_iff_eq, honestMessage, packedMonomial, coefficientEquiv_apply] using ht
+
+/-- The honest output keeps the same norm-conditioned opening and its actual ring evaluation. -/
+theorem mem_output_of_relIn
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (h : (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound) :
+    (output α κ s (honestMessage α κ base s w), w) ∈
+      relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound := by
+  refine ⟨h.1, ?_⟩
+  simp only [output, honestMessage, Vector.map_append]
+
+/-- The actual one-message prover passes its original weak opening forward. -/
+def prover (base : ZMod q) : Prover oSpec
+    (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (PolyEvalStatement (powTwoCyclotomic (R := ZMod q) α)
+      innerRows messageDigits outerRows innerDigits dRows m r)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) (pSpec (q := q) α) where
+  PrvState
+    | 0 => Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r ×
+        QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+          innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits
+    | 1 => Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r ×
+        QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+          innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits
+  input := id
+  sendMessage
+    | ⟨0, _⟩ => fun st => pure (honestMessage α κ base st.1 st.2, st)
+  receiveChallenge
+    | ⟨0, h⟩ => nomatch h
+  output := fun st => pure (output α κ st.1 (honestMessage α κ base st.1 st.2), st.2)
+
+/-- The trace head's protocol object uses precisely the verifier certified below. -/
+def reduction (base : ZMod q) : Reduction oSpec
+    (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (PolyEvalStatement (powTwoCyclotomic (R := ZMod q) α)
+      innerRows messageDigits outerRows innerDigits dRows m r)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) (pSpec (q := q) α) where
+  prover := prover α κ base
+  verifier := verifier α κ hk
+
+/-- The extractor reads the same weak opening from the unique valid leaf. -/
+def extractor : Extractor.TreeBased
+    (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (pSpec (q := q) α) (CWSSStructure.ofIsEmpty (pSpec := pSpec (q := q) α)).toShape.arity :=
+  fun _ tree leaves => leaves tree.onlyPath
+
+/-- Zero-challenge CWSS of the actual guarded trace head. The opening is supplied by the valid
+leaf, while reachability fixes the forwarded value and forces the scalar check to pass. -/
+theorem coordinateWiseSpecialSoundWith {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ) :
+    Verifier.coordinateWiseSpecialSoundWith init impl CWSSStructure.ofIsEmpty
+      (relIn α κ hk h2 pp base βSq γ bound)
+      (relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound)
+      (verifier (oSpec := oSpec) α κ hk) (extractor α κ) := by
+  intro s tree _ hAcc leaves hvalid
+  obtain ⟨w, hw, out, hout, hrel⟩ := hvalid tree.onlyPath
+  have hc : check α κ hk s (tree.onlyPath.fullTranscript 0) = true := by
+    by_contra hfail
+    exact Verifier.not_accepting_of_failure
+      (V := verifier (oSpec := oSpec) α κ hk) (stmt := s)
+      (tr := tree.onlyPath.fullTranscript) (by simp [verifier, hfail])
+      (hAcc _ tree.onlyPath.mem_fullTranscripts)
+  have hout' := Verifier.outputs_guarded_subsingleton init impl
+    (verifier (oSpec := oSpec) α κ hk) (guardedForm α κ hk).check
+    (guardedForm α κ hk).out (guardedForm α κ hk).verify_eq
+    s tree.onlyPath.fullTranscript hout
+  rw [hout'] at hrel
+  exact ⟨w, hw, mem_relIn_of_output α κ hk h2 pp base βSq γ bound s _ w hc hrel⟩
+
+/-- Guarded CWSS data retains the real Hachi output relation, so downstream collision escapes
+can be composed without asserting exact binding of the commitment. -/
+def package {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ) : GCWSSPackage init impl
+      (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+        innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (PolyEvalStatement (powTwoCyclotomic (R := ZMod q) α)
+        innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+        innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) (pSpec (q := q) α) where
+  verifier := verifier α κ hk
+  struct := CWSSStructure.ofIsEmpty
+  relIn := relIn α κ hk h2 pp base βSq γ bound
+  relOut := relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound
+  isGuarded := guardedForm α κ hk
+  extractor := extractor α κ
+  isCWSS := coordinateWiseSpecialSoundWith α κ hk h2 init impl pp base βSq γ bound
+
+end
+
+end ArkLib.Lattices.Hachi.TraceHead
