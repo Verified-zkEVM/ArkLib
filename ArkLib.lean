@@ -400,6 +400,7 @@ import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
 import ArkLib.ProofSystem.Sumcheck.Interaction.Projection
 import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
 import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
+import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
 import ArkLib.ProofSystem.Sumcheck.Spec.General
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Structured
