@@ -12,7 +12,7 @@ import ArkLibTest.Interaction.Oracle.CoreRunExample
 
 Reuse the existing branch-distinguishing strategies to test the new producer. These checks catch
 lost source queries, reversed logs, wrong extension routing, reordered ambient effects, and
-executing a terminal virtual oracle eagerly. No arbitrary artifact is constructed.
+executing a terminal virtual oracle eagerly. No result is assembled from separate runs.
 -/
 
 namespace Interaction.Oracle.LoggedExecutionExample

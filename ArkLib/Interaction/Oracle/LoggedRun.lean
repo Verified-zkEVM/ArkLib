@@ -44,7 +44,7 @@ variable {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
 
 /-- Verifier observations derived from the enclosing execution's log, without replay. This view
 contains the structural public path, source observations, and terminal output. Ambient world
-observations belong to the enclosing VCVio runtime artifact. -/
+observations belong to the enclosing VCVio run result. -/
 def verifierLocalView (run : LoggedRun protocol initial Stmt Out OutP) :
     (path : protocol.tree.BranchPath) ×
       QueryLog (OracleSpec.ofPFunctor
