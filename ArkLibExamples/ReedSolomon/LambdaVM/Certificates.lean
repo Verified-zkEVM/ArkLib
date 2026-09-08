@@ -160,7 +160,7 @@ The field, domain, received word, and finite candidate family are arbitrary. The
 condition and agreement predicate are the only hypotheses on them. -/
 theorem finite_list_bound {F : Type*} [Field F]
     (domain : Fin listProfile.n ↪ F) (received : Fin listProfile.n → F)
-    (hchar : ringChar F = 0 ∨ max listProfile.n listProfile.totalJetCap < ringChar F)
+    (hchar : ringChar F = 0 ∨ max (listProfile.k - 1) listProfile.totalJetCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received listProfile.k
       listProfile.agreement P) :
@@ -194,7 +194,7 @@ theorem radius_eq :
 /-- Every interleaving width inherits the scalar CPU list ceiling without a width factor. -/
 theorem lambda_le {F : Type*} [Field F] (width : ℕ)
     (domain : Fin listProfile.n ↪ F)
-    (hchar : ringChar F = 0 ∨ max listProfile.n listProfile.totalJetCap < ringChar F) :
+    (hchar : ringChar F = 0 ∨ max (listProfile.k - 1) listProfile.totalJetCap < ringChar F) :
     Lambda
         (Code.interleavedCodeSet (κ := Fin width)
           (ReedSolomon.code domain listProfile.k : Set (Fin listProfile.n → F)))
@@ -203,7 +203,7 @@ theorem lambda_le {F : Type*} [Field F] (width : ℕ)
     gap gap_admissible.1 gap_admissible.2 domain
   intro received S hS
   have hcharRat : ringChar (RatFunc F) = 0 ∨
-      max listProfile.n listProfile.totalJetCap < ringChar (RatFunc F) := by
+      max (listProfile.k - 1) listProfile.totalJetCap < ringChar (RatFunc F) := by
     simpa only [ReedSolomon.ringChar_ratFunc] using hchar
   have hS' : ∀ P ∈ S,
       IsAgreementSolution
@@ -221,7 +221,7 @@ theorem lambda_le {F : Type*} [Field F] (width : ℕ)
 /-- Cubic Goldilocks satisfies the characteristic condition for the CPU list profile. -/
 theorem characteristic_admissible :
     ringChar GoldilocksCubic = 0 ∨
-      max listProfile.n listProfile.totalJetCap < ringChar GoldilocksCubic := by
+      max (listProfile.k - 1) listProfile.totalJetCap < ringChar GoldilocksCubic := by
   right
   rw [goldilocksCubic_ringChar]
   norm_num [listProfile, Goldilocks.fieldSize]
