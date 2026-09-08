@@ -23,7 +23,7 @@ abbrev ambient : OracleSpec Unit := Unit →ₒ Unit
 example : ([0, 1].map (fun x => polynomial.val.eval x)).sum = (1 : ZMod 17) := by
   simp [polynomial]
 
-/-- The actual paired executor accepts and obtains target five from the input oracle. -/
+/-- The actual paired executor accepts and obtains target five from the sent polynomial. -/
 example :
     executeAt (ZMod 17) 1 ambient polynomial polynomial [0, 1] 1 5 =
       pure ⟨⟨polynomial, (5 : ZMod 17), PUnit.unit⟩, (5, 5), some (5, 5)⟩ := by
@@ -39,6 +39,21 @@ example :
     add_zero, zero_add]
   have h : (1 : ZMod 17) ≠ 2 := by decide
   rw [if_neg h]
+
+/-- The false input polynomial in the degree-zero soundness regression. -/
+noncomputable def zeroMessage : Message (ZMod 17) 0 :=
+  ⟨0, Polynomial.mem_degreeLE.mpr (by simp)⟩
+
+/-- A dishonest constant message passes the claimed sum on the singleton domain. -/
+noncomputable def oneMessage : Message (ZMod 17) 0 :=
+  ⟨1, Polynomial.mem_degreeLE.mpr (by simp)⟩
+
+/-- A dishonest accepted message supplies the next target, rather than the input oracle. -/
+example (r : ZMod 17) :
+    executeAt (ZMod 17) 0 ambient zeroMessage oneMessage [0] 1 r =
+      pure ⟨⟨oneMessage, r, PUnit.unit⟩, (1, r), some (1, r)⟩ := by
+  rw [executeAt_eq]
+  simp [oneMessage]
 
 #print axioms executeAt_eq
 #print axioms executeAt_honest

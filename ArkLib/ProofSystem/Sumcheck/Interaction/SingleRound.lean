@@ -10,7 +10,8 @@ import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 # Typed single-round Sumcheck strategies
 
 The oracle message is degree-refined. The verifier checks its sum by queries and obtains the
-new target from the input oracle, matching the legacy `Simple.oracleVerifier` convention.
+new target from the sent polynomial. The output claim retains the input oracle, so equality
+at the fresh challenge is a substantive condition even for a dishonest message.
 Challenges are explicit open programs; this module makes no soundness or sampling claim.
 -/
 
@@ -62,7 +63,7 @@ def terminal [DecidableEq R] (domain : List R) (target challenge : R) :
   let total ← sumQueries R deg ambient domain
   if total = target then
     let value : R ← liftM
-      ((ambient + OracleSpec.ofPFunctor (access R deg)).query (.inr (.inl challenge)))
+      ((ambient + OracleSpec.ofPFunctor (access R deg)).query (.inr (.inr challenge)))
     return some (value, challenge)
   else return none
 
@@ -105,17 +106,17 @@ theorem simulate_sumQueries (p q : Message R deg) (domain : List R) :
       rw [ih]
       simp
 
-/-- The terminal program checks the sent polynomial but evaluates the input polynomial. -/
+/-- The terminal program checks and evaluates the sent polynomial. -/
 theorem simulate_terminal [DecidableEq R] (p q : Message R deg)
     (domain : List R) (target r : R) :
     simulateQ (Verifier.readImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
         (inputImpl R deg p) q)) (terminal R deg ambient domain target r) =
       pure (if (domain.map (fun x => q.val.eval x)).sum = target then
-        some (p.val.eval r, r) else none) := by
+        some (q.val.eval r, r) else none) := by
   simp only [terminal, simulateQ_bind, simulate_sumQueries, pure_bind]
   split
-  · change (pure (p.val.eval r) >>= fun value => pure (some (value, r))) = _
+  · change (pure (q.val.eval r) >>= fun value => pure (some (value, r))) = _
     rfl
   · rfl
 
@@ -125,13 +126,13 @@ def executeAt [DecidableEq R] (p q : Message R deg) (domain : List R) (target r 
     (protocol R deg).oracles (inputSpec R).toPFunctor (inputImpl R deg p)
     (prover R deg ambient q) (verifier R deg ambient domain target (pure r))
 
-/-- The exported paired runner returns the checked sum and the input evaluation. -/
+/-- The exported paired runner returns the checked sum and the sent evaluation. -/
 theorem executeAt_eq [DecidableEq R] (p q : Message R deg)
     (domain : List R) (target r : R) :
     executeAt R deg ambient p q domain target r =
       pure ⟨⟨q, r, PUnit.unit⟩, (q.val.eval r, r),
         if (domain.map (fun x => q.val.eval x)).sum = target then
-          some (p.val.eval r, r) else none⟩ := by
+          some (q.val.eval r, r) else none⟩ := by
   change (simulateQ (Verifier.readImpl ambient (access R deg)
     (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
       (inputImpl R deg p) q)) (terminal R deg ambient domain target r) >>= fun out =>
