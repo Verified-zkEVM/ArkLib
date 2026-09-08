@@ -8,6 +8,9 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
+import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
+import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
 import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
 /-!
@@ -24,5 +27,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Security
   * `Append.StateFunction` — composition of extractors and verifier state functions.
   * `Append.Execution` — running appended provers / verifiers, with explicit seam conditions.
   * `Append.Simulation` — exact simulated execution, preserving the shared oracle state.
-  * `Append.Security` — completeness and soundness of the composition.
+  * `Append.Completeness` — completeness from simulated factorization and state-uniform suffixes.
+  * `Append.OneMessage` — the effectful-prover, one-message completeness specialization.
+  * `Append.RoundByRound` — soundness from fixed-prefix bounds under a pure first verifier.
+  * `Append.Security` — legacy admitted composition claims and their inherited wrappers.
 -/

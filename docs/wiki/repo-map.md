@@ -622,9 +622,9 @@ home_page/            site assets and assembled website root
   removed rather than renamed: downstream code should compose
   `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
   `BatchedFri.Spec.batchedFRIreduction` does.
-- Binary sequential composition lives in the five-module tree
+- Binary sequential composition lives in the module tree
   `OracleReduction/Composition/Sequential/Append/`, with
-  `Composition/Sequential/Append.lean` kept as the umbrella that imports all five (so existing
+  `Composition/Sequential/Append.lean` kept as the umbrella (so existing
   importers are unaffected):
   - `Append/Basic.lean` — the `append` operations on provers, verifiers, and reductions, their
     oracle-protocol counterparts, and challenge-sampling transport across `++ₚ`.
@@ -637,6 +637,10 @@ home_page/            site assets and assembled website root
     `Prover.append_run` specializes it to pure left output for arbitrary suffix protocols.
   - `Append/Simulation.lean` — exact simulation of both explicitly routed challenge inclusions
     and appended prover execution, including the final shared oracle state.
+  - `Append/Completeness.lean` — quantitative completeness from exact simulated factorization,
+    with seam and purity corollaries and state-uniform suffix correctness.
+  - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
+  - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
   - `Append/Security.lean` — the legacy completeness and soundness claims, still admitted.
 
   `ArkLibTest/OracleReduction/Composition/Sequential/` exercises the execution boundaries and
@@ -644,6 +648,12 @@ home_page/            site assets and assembled website root
   It also retains Richard Goodman's historical raw execution counterexample from #643:
   a challenge-opening suffix can reorder an effectful prefix output. These acceptance tests run
   through `lake test` and assert the standard-only axioms of their named results.
+
+  `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
+  `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers and stays
+  outside the binary umbrella to avoid an import cycle. The test tree also includes the shared-state
+  completeness counterexample and a positive simulated-factorization case outside the structural
+  seam restriction. See [sequential composition contracts](sequential-composition.md).
 
   These proofs run on `HEq` transport, since transcripts and prover states are families indexed by
   the round number. The generic congruence lemmas for that (`heq_apply`, `heq_funext`, `heq_pi`,

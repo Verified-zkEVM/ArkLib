@@ -24,6 +24,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   and trivariate polynomial representations.
 - [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
+- [`sequential-composition.md`](sequential-composition.md) - execution, state-aware completeness,
+  fixed-prefix soundness, and legacy composition boundaries.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
 - [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
@@ -45,6 +47,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `polynomial-conventions.md` for nested polynomial axes and semantic evaluation/degree APIs.
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
+  - `sequential-composition.md` for proved composition contracts and their remaining boundaries.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,

@@ -120,4 +120,35 @@ theorem simulateQ_append_run
           (P₂.run stmt₂ wit₂)
         return ⟨tr₁ ++ₜ tr₂, stmt₃, wit₃⟩) :=
   simulateQ_append_run_of_seam P₁ P₂ (fun _ => Or.inl inferInstance) impl stmt wit
+variable {σ : Type}
+
+/-- Equality of simulated prover programs at every input and deterministic shared state.
+This preserves the input/state scope of the factorization premise from PR #635.
+The result includes both transcripts, the output statement and witness, and final state. -/
+def SimulatedAppendFactorization
+    (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+    (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) : Prop :=
+  ∀ stmt wit s,
+    (simulateQ (impl.addLift (challengeQueryImpl (pSpec := pSpec₁ ++ₚ pSpec₂)) :
+      QueryImpl _ (StateT σ ProbComp)) ((P₁.append P₂).run stmt wit)).run s = (do
+        let r₁ ← simulateQ
+          (impl.addLift (challengeQueryImpl (pSpec := pSpec₁)) :
+            QueryImpl _ (StateT σ ProbComp)) (P₁.run stmt wit)
+        let r₂ ← simulateQ
+          (impl.addLift (challengeQueryImpl (pSpec := pSpec₂)) :
+            QueryImpl _ (StateT σ ProbComp)) (P₂.run r₁.2.1 r₁.2.2)
+        pure (r₁.1 ++ₜ r₂.1, r₂.2)).run s
+
+/-- The structural seam condition supplies exact simulated factorization. -/
+theorem simulatedAppendFactorization_of_seam
+    (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
+    (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
+    (hSeam : ∀ hn : 0 < n, P₁.OutputIsPure ∨ pSpec₂.dir ⟨0, hn⟩ = .P_to_V)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    P₁.SimulatedAppendFactorization P₂ impl := by
+  intro stmt wit s
+  rw [simulateQ_append_run_of_seam P₁ P₂ hSeam]
+
+
 end Prover

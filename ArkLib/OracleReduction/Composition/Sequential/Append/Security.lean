@@ -7,9 +7,11 @@ Authors: Quang Dao, scaraven
 import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 
 /-!
-  # Sequential Composition: Security
+  # Sequential Composition: Legacy Security Contracts
 
-  Completeness and soundness of the sequential composition of two (oracle) reductions.
+  Admitted composition contracts and their inherited oracle-reduction wrappers. The fixed-init
+  completeness contracts are false as stated and await caller migration and retirement.
+  Use the proved interfaces in `Append/Completeness.lean` and `Sequential/GuardedCompleteness.lean`.
 -/
 
 open OracleComp OracleSpec SubSpec
@@ -25,12 +27,22 @@ open scoped NNReal
 
 /-! ### Admitted security-composition boundary
 
-The virtual-output execution semantics and the `append_toVerifier` commutation theorem above are
-proved. The generic completeness and security theorems below remain admitted because appended
-execution orders both prover phases before both verifier phases, while sequential execution
-interleaves each prover with its verifier. Their unrestricted `StateT` statements must therefore
-not be treated as established composition security. Standalone protocol theorems that do not invoke
-these declarations are outside this inherited trust boundary. -/
+The execution and conversion equalities are proved, but they do not establish the generic
+security contracts below. The fixed-initial-state completeness claim is false, even with pure
+verifiers and pure left prover output: the suffix receives the state left by the prefix, while
+its standalone premise only covers the original initialization distribution.
+
+`AppendStateCounterexample.not_append_perfectCompleteness` is the kernel-checked witness in
+`ArkLibTest/OracleReduction/Composition/Sequential/SharedStateCounterexample.lean`.
+Both binary completeness contracts and their oracle wrappers await caller migration and
+retirement. Their current callers inherit `sorryAx`.
+
+The proved `Reduction.append_completeness_of_proverFactorization` requires exact simulated prover
+factorization, pure verifier forms, and suffix completeness from every deterministic shared state.
+Its seam/purity corollaries and the guarded-verifier variant supply convenient sufficient
+contracts. The separate fixed-prefix RBR theorem requires worst-case component bounds and a pure
+first verifier. None of these results discharges the legacy ordinary or knowledge-soundness claims.
+Standalone theorems with no dependency on these declarations remain outside this trust boundary. -/
 
 section Protocol
 
@@ -41,25 +53,19 @@ variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
     {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
 
 /-
-TODO: when do these theorems hold? The answer may be that when oracle queries are answered according
-to a _commutative_ monad, which are then interpreted into a probability distribution.
-
-Unfortunately, this means that `StateT` is out; this works for `ReaderT` and `WriterT` into a
-commutative monoid. If we still want composition to work for `StateT`, then we need to have extra
-conditions (what are they?)
+The fixed-init completeness contract needs correction, not merely a proof of query commutation.
+The proved APIs preserve the actual shared state and intermediate prover/verifier agreement.
+The declarations below remain only while their existing callers are migrated.
 -/
 
 namespace Reduction
 
-/-- Sequential composition preserves completeness
+/-- Legacy fixed-init completeness contract, false as stated and pending retirement.
 
-  Namely, two reductions satisfy completeness with compatible relations (`rel₁`, `rel₂` for `R₁` and
-  `rel₂`, `rel₃` for `R₂`), and respective completeness errors `completenessError₁` and
-  `completenessError₂`, then their sequential composition `R₁.append R₂` also satisfies
-  completeness with respect to `rel₁` and `rel₃`.
-
-  The completeness error of the appended reduction is the sum of the individual errors
-  (`completenessError₁ + completenessError₂`). -/
+The two standalone premises do not supply suffix correctness from the state left by the prefix.
+See `AppendStateCounterexample.not_append_perfectCompleteness` in the shared-state test.
+Use `Reduction.append_completeness_of_proverFactorization`, its
+`append_completeness_of_pure_verifiers` seam corollary, or the guarded-verifier interface. -/
 theorem append_completeness
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
@@ -80,8 +86,10 @@ theorem append_completeness
   -- admitted goal stays the unmassaged statement rather than one particular normal form.
   sorry
 
-/-- If two reductions satisfy perfect completeness with compatible relations, then their
-  concatenation also satisfies perfect completeness. -/
+/-- Legacy zero-error wrapper of the false fixed-init completeness contract, pending retirement.
+Use `Reduction.append_perfectCompleteness_of_pure_verifiers` or
+`Reduction.append_perfectCompleteness_of_guarded_verifiers` with state-uniform suffix correctness.
+The supplied-factorization interface also has a perfect-completeness wrapper. -/
 theorem append_perfectCompleteness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (h₁ : R₁.perfectCompleteness init impl rel₁ rel₂)
@@ -201,15 +209,10 @@ variable {Stmt₁ : Type} {ιₛ₁ : Type} {OStmt₁ : ιₛ₁ → Type} [Oₛ
 
 namespace OracleReduction
 
-/-- Sequential composition preserves completeness
-
-  Namely, two oracle reductions satisfy completeness with compatible relations (`rel₁`, `rel₂` for
-  `R₁` and `rel₂`, `rel₃` for `R₂`), and respective completeness errors `completenessError₁` and
-  `completenessError₂`, then their sequential composition `R₁.append R₂` also satisfies completeness
-  with respect to `rel₁` and `rel₃`.
-
-  The completeness error of the appended reduction is the sum of the individual errors
-  (`completenessError₁ + completenessError₂`). -/
+/-- Legacy oracle wrapper of the false fixed-init completeness contract, pending retirement.
+This inherits the admitted ordinary-reduction theorem; converting to oracle reductions does not
+repair its missing shared-state premise. Use
+`OracleReduction.append_completeness_of_pure_verifiers` with state-uniform suffix correctness. -/
 theorem append_completeness
     (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)
@@ -222,8 +225,9 @@ theorem append_completeness
   convert Reduction.append_completeness R₁.toReduction R₂.toReduction h₁ h₂
   simp only [append_toReduction]
 
-/-- If two oracle reductions satisfy perfect completeness with compatible relations, then their
-  sequential composition also satisfies perfect completeness. -/
+/-- Legacy zero-error oracle wrapper of the false fixed-init completeness contract.
+It awaits caller migration and retirement together with `OracleReduction.append_completeness`.
+Use `OracleReduction.append_perfectCompleteness_of_pure_verifiers` under its explicit hypotheses. -/
 theorem append_perfectCompleteness
     (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)
