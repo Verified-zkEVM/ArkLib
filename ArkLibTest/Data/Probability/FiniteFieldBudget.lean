@@ -11,7 +11,7 @@ import ArkLibExamples.ReedSolomon.ProveKit.ExpectedPayload
 /-!
 # Acceptance checks for finite-field and authentication budgets
 
-The small cases distinguish the inclusive grinding threshold, binary-tree factor seven,
+The small cases distinguish the inclusive grinding threshold, height-three level factor three,
 target OOD count in a transition, and repeated-query treatment at a strided opening.
 -/
 
@@ -30,8 +30,8 @@ example : RepeatedOodMeetsTarget 2 2 4 2 1 := by norm_num [RepeatedOodMeetsTarge
 example : TensorFoldIdentityMeetsTarget 1 1 0 4 1 := by
   norm_num [TensorFoldIdentityMeetsTarget]
 
--- Three shared challenge levels cost seven line counts in the safe binary-tree bound.
-example : ¬TensorFoldIdentityMeetsTarget 3 1 0 12 1 := by
+-- Three shared challenge levels cost three width-independent level events.
+example : ¬TensorFoldIdentityMeetsTarget 3 1 0 5 1 := by
   norm_num [TensorFoldIdentityMeetsTarget]
 
 example : TransitionMeetsTarget 1 1 1 10 1 := by norm_num [TransitionMeetsTarget]

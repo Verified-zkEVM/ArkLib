@@ -10,9 +10,9 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 /-!
 # Shared-level tensor-fold agreement for interleaved Reed--Solomon codes
 
-This file lifts an exact scalar line certificate to a full-agreement line witness for every
-nonempty row-wise interleaving, without a factor depending on the number of rows.  It then
-specializes the generic binary tensor-fold theorem at height three.
+This file lifts an exact scalar line certificate to a full-agreement level witness for every
+finite family over a nonempty row-wise interleaving, without a factor depending on either width.
+It then specializes the generic binary tensor-fold theorem at height three.
 -/
 
 namespace ReedSolomon
@@ -158,32 +158,31 @@ private theorem exists_forall_notMem_of_card_le
 
 open Classical in
 private theorem interleaved_lineProjectionBad_card_le
-    {ι F A : Type} [Fintype ι]
+    {ι F A τ : Type} [Fintype ι]
     [Field F] [Fintype F]
-    [AddCommMonoid A] [Module F A]
-    (C : ModuleCode ι F A) {agreement t exceptionalCount : ℕ}
-    (ht : 0 < t)
+    [AddCommMonoid A] [Module F A] [Finite τ] [Nonempty τ]
+    (C : ModuleCode ι F A) {agreement exceptionalCount : ℕ}
     (hscalar : ∀ v₀ v₁ : ι → A,
       (Finset.univ.filter fun r : F ↦ lineProjectionBad C agreement r v₀ v₁).card ≤
         exceptionalCount)
-    (u₀ u₁ : ι → Fin t → A) :
+    (u₀ u₁ : ι → τ → A) :
     (Finset.univ.filter fun r : F ↦
-      lineProjectionBad (C ^⋈ (Fin t)) agreement r u₀ u₁).card ≤ exceptionalCount := by
+      lineProjectionBad (C ^⋈ τ) agreement r u₀ u₁).card ≤ exceptionalCount := by
   classical
-  let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
-  let isBad (r : F) := lineProjectionBad (C ^⋈ (Fin t)) agreement r u₀ u₁
+  let : Fintype τ := Fintype.ofFinite τ
+  let isBad (r : F) := lineProjectionBad (C ^⋈ τ) agreement r u₀ u₁
   let bad := Finset.univ.filter isBad
   obtain ⟨T, hT⟩ : ∃ T : F → Finset ι, ∀ r, isBad r →
       agreement ≤ (T r).card ∧
       projectedWord (binaryLineFold r u₀ u₁) (T r) ∈
-        projectedCodeSubmod (C ^⋈ (Fin t)) (T r) ∧
-      (projectedWord u₀ (T r) ∉ projectedCodeSubmod (C ^⋈ (Fin t)) (T r) ∨
-        projectedWord u₁ (T r) ∉ projectedCodeSubmod (C ^⋈ (Fin t)) (T r)) := by
+        projectedCodeSubmod (C ^⋈ τ) (T r) ∧
+      (projectedWord u₀ (T r) ∉ projectedCodeSubmod (C ^⋈ τ) (T r) ∨
+        projectedWord u₁ (T r) ∉ projectedCodeSubmod (C ^⋈ τ) (T r)) := by
     choose! T hT using fun r (hr : isBad r) => hr
     exact ⟨T, hT⟩
-  let rowComb (l : Fin t → F) (b : Bool) : ι → A := fun i =>
+  let rowComb (l : τ → F) (b : Bool) : ι → A := fun i =>
     ∑ j, l j • (if b then u₁ i j else u₀ i j)
-  let K (r : F) : Submodule F (Fin t → F) := {
+  let K (r : F) : Submodule F (τ → F) := {
     carrier := {l | ∀ b : Bool,
       projectedWord (rowComb l b) (T r) ∈ projectedCodeSubmod C (T r)}
     zero_mem' := by
@@ -211,24 +210,24 @@ private theorem interleaved_lineProjectionBad_card_le
       exact (projectedCodeSubmod C (T r)).smul_mem a (hl b) }
   have hK (r : F) (hr : r ∈ bad) : K r ≠ ⊤ := by
     rcases (hT r (Finset.mem_filter.mp hr).2).2.2 with hbad | hbad
-    · have hbad' : ∃ j : Fin t,
+    · have hbad' : ∃ j : τ,
           projectedWord (fun i ↦ u₀ i j) (T r) ∉ projectedCodeSubmod C (T r) := by
         by_contra hall
         push Not at hall
         apply hbad
-        exact (projectedCodeSubmod_moduleInterleavedCode_iff F A (Fin t) ι C u₀ (T r)).mpr hall
+        exact (projectedCodeSubmod_moduleInterleavedCode_iff F A τ ι C u₀ (T r)).mpr hall
       obtain ⟨j, hj⟩ := hbad'
       intro htop
       have he : Pi.single j (1 : F) ∈ K r := by rw [htop]; exact Submodule.mem_top
       apply hj
       have hrow := he false
       simpa [K, rowComb] using hrow
-    · have hbad' : ∃ j : Fin t,
+    · have hbad' : ∃ j : τ,
           projectedWord (fun i ↦ u₁ i j) (T r) ∉ projectedCodeSubmod C (T r) := by
         by_contra hall
         push Not at hall
         apply hbad
-        exact (projectedCodeSubmod_moduleInterleavedCode_iff F A (Fin t) ι C u₁ (T r)).mpr hall
+        exact (projectedCodeSubmod_moduleInterleavedCode_iff F A τ ι C u₁ (T r)).mpr hall
       obtain ⟨j, hj⟩ := hbad'
       intro htop
       have he : Pi.single j (1 : F) ∈ K r := by rw [htop]; exact Submodule.mem_top
@@ -244,10 +243,10 @@ private theorem interleaved_lineProjectionBad_card_le
     have hrbad : r ∈ bad := Finset.mem_filter.mpr ⟨Finset.mem_univ _, hr⟩
     have hd := hT r hr
     refine ⟨T r, hd.1, ?_, ?_⟩
-    · have hrows : ∀ j : Fin t,
+    · have hrows : ∀ j : τ,
           projectedWord (fun i => binaryLineFold r u₀ u₁ i j) (T r) ∈
             projectedCodeSubmod C (T r) :=
-        (projectedCodeSubmod_moduleInterleavedCode_iff F A (Fin t) ι C
+        (projectedCodeSubmod_moduleInterleavedCode_iff F A τ ι C
           (binaryLineFold r u₀ u₁) (T r)).mp hd.2.1
       rw [mem_projectedCodeSubmod_iff]
       convert projectedCode_linearCombination C (T r)
@@ -277,18 +276,18 @@ private theorem interleaved_lineProjectionBad_card_le
     _ ≤ exceptionalCount := hscalar _ _
 
 private theorem interleaved_eq_of_agree_on
-    {F : Type} [Field F] {n k t : ℕ} (domain : Fin n ↪ F)
+    {F τ : Type} [Field F] {n k : ℕ} (domain : Fin n ↪ F)
     (S : Finset (Fin n)) (hkS : k ≤ S.card)
-    {c d : Fin n → Fin t → F}
-    (hc : c ∈ ModuleCode.moduleInterleavedCode F F (Fin t) (Fin n) (code domain k))
-    (hd : d ∈ ModuleCode.moduleInterleavedCode F F (Fin t) (Fin n) (code domain k))
+    {c d : Fin n → τ → F}
+    (hc : c ∈ ModuleCode.moduleInterleavedCode F F τ (Fin n) (code domain k))
+    (hd : d ∈ ModuleCode.moduleInterleavedCode F F τ (Fin n) (code domain k))
     (hagree : ∀ i ∈ S, c i = d i) : c = d := by
   apply _root_.funext
   intro i
   apply _root_.funext
   intro j
-  have hcj := (mem_moduleInterleavedCode_iff F F (Fin t) (Fin n) (code domain k) c).mp hc j
-  have hdj := (mem_moduleInterleavedCode_iff F F (Fin t) (Fin n) (code domain k) d).mp hd j
+  have hcj := (mem_moduleInterleavedCode_iff F F τ (Fin n) (code domain k) c).mp hc j
+  have hdj := (mem_moduleInterleavedCode_iff F F τ (Fin n) (code domain k) d).mp hd j
   obtain ⟨P, hP, hPeval⟩ := mem_code_iff_eval.mp hcj
   obtain ⟨Q, hQ, hQeval⟩ := mem_code_iff_eval.mp hdj
   change ∀ x, P.eval (domain x) = c x j at hPeval
@@ -302,36 +301,46 @@ private theorem interleaved_eq_of_agree_on
   change c i j = d i j
   rw [← hPeval i, ← hQeval i, hPQ]
 
-/-- A scalar exact-line certificate gives a full-set binary-line witness for every nonempty
-row-wise interleaving, at the same exceptional count. -/
-theorem fullSetLineWitness_interleaved_of_exactAgreement
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {n k agreement exceptionalCount width : ℕ}
+/-- A scalar exact-line certificate gives one full-set binary-line witness over any finite
+nonempty row index, at the same exceptional count. -/
+private theorem exists_exceptional_fullSetLine_interleaved_of_exactAgreement
+    {F τ : Type} [Field F] [Fintype F] [DecidableEq F]
+    [Fintype τ] [Nonempty τ]
+    {n k agreement exceptionalCount : ℕ}
     (domain : Fin n ↪ F)
     (hline : LineExactAgreementBound domain k agreement exceptionalCount)
-    (hwidth : 0 < width) (hkAgreement : k ≤ agreement) :
-    FullSetLineWitness ((code domain k) ^⋈ (Fin width)) agreement exceptionalCount := by
+    (hkAgreement : k ≤ agreement) :
+    ∀ u₀ u₁ : Fin n → τ → F, ∃ exceptional : Finset F,
+      exceptional.card ≤ exceptionalCount ∧
+      ∀ r ∉ exceptional, ∀ c : Fin n → τ → F,
+        c ∈ ((code domain k) ^⋈ τ) →
+        agreement ≤ (fullAgreementSet c (binaryLineFold r u₀ u₁)).card →
+        ∃ c₀ c₁ : Fin n → τ → F,
+          c₀ ∈ ((code domain k) ^⋈ τ) ∧ c₁ ∈ ((code domain k) ^⋈ τ) ∧
+          c = binaryLineFold r c₀ c₁ ∧
+          fullAgreementSet c (binaryLineFold r u₀ u₁) =
+            fullAgreementSet c₀ u₀ ∩ fullAgreementSet c₁ u₁ := by
   intro u₀ u₁
   classical
   let exceptional := Finset.univ.filter fun r : F ↦
-    lineProjectionBad ((code domain k) ^⋈ (Fin width)) agreement r u₀ u₁
+    lineProjectionBad ((code domain k) ^⋈ τ) agreement r u₀ u₁
   refine ⟨exceptional, ?_, ?_⟩
-  · exact interleaved_lineProjectionBad_card_le (code domain k) hwidth
+  · exact interleaved_lineProjectionBad_card_le (code domain k)
       (scalar_lineProjectionBad_card_le domain hline) u₀ u₁
   · intro r hr c hc hagreement
-    have hgood : ¬ lineProjectionBad ((code domain k) ^⋈ (Fin width))
+    have hgood : ¬ lineProjectionBad ((code domain k) ^⋈ τ)
         agreement r u₀ u₁ := by
       simpa [exceptional] using hr
     let S := fullAgreementSet c (binaryLineFold r u₀ u₁)
     have hroot : projectedWord (binaryLineFold r u₀ u₁) S ∈
-        projectedCodeSubmod ((code domain k) ^⋈ (Fin width)) S := by
+        projectedCodeSubmod ((code domain k) ^⋈ τ) S := by
       rw [mem_projectedCodeSubmod_iff]
       refine ⟨c, hc, ?_⟩
       funext i
       exact (Finset.mem_filter.mp i.property).2.symm
     have hchildren :
-        projectedWord u₀ S ∈ projectedCodeSubmod ((code domain k) ^⋈ (Fin width)) S ∧
-        projectedWord u₁ S ∈ projectedCodeSubmod ((code domain k) ^⋈ (Fin width)) S := by
+        projectedWord u₀ S ∈ projectedCodeSubmod ((code domain k) ^⋈ τ) S ∧
+        projectedWord u₁ S ∈ projectedCodeSubmod ((code domain k) ^⋈ τ) S := by
       by_contra h
       apply hgood
       exact ⟨S, hagreement, hroot, not_and_or.mp h⟩
@@ -340,11 +349,11 @@ theorem fullSetLineWitness_interleaved_of_exactAgreement
     obtain ⟨c₁, hc₁, hc₁S⟩ :=
       (mem_projectedCodeSubmod_iff _ S _).mp hchildren.2
     have hfoldmem : binaryLineFold r c₀ c₁ ∈
-        ModuleCode.moduleInterleavedCode F F (Fin width) (Fin n) (code domain k) := by
-      exact (ModuleCode.moduleInterleavedCode F F (Fin width) (Fin n) (code domain k)).add_mem
-        ((ModuleCode.moduleInterleavedCode F F (Fin width) (Fin n)
+        ModuleCode.moduleInterleavedCode F F τ (Fin n) (code domain k) := by
+      exact (ModuleCode.moduleInterleavedCode F F τ (Fin n) (code domain k)).add_mem
+        ((ModuleCode.moduleInterleavedCode F F τ (Fin n)
           (code domain k)).smul_mem (1 - r) hc₀)
-        ((ModuleCode.moduleInterleavedCode F F (Fin width) (Fin n)
+        ((ModuleCode.moduleInterleavedCode F F τ (Fin n)
           (code domain k)).smul_mem r hc₁)
     have hcEq : c = binaryLineFold r c₀ c₁ := by
       apply interleaved_eq_of_agree_on domain S (hkAgreement.trans hagreement) hc hfoldmem
@@ -366,7 +375,83 @@ theorem fullSetLineWitness_interleaved_of_exactAgreement
     · rintro ⟨h0, h1⟩
       simp [hcEq, binaryLineFold, h0, h1]
 
-/-- Height three has the safe shared-level factor seven, independent of interleaving width. -/
+/-- A scalar exact-line certificate controls every finite family of lines over a nonempty
+row-wise interleaving.  The parent-family index and the original row index are combined into one
+larger interleaving, so the exceptional count is independent of both widths. -/
+theorem fullSetLevelWitness_interleaved_of_exactAgreement
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {n k agreement exceptionalCount width : ℕ}
+    (domain : Fin n ↪ F)
+    (hline : LineExactAgreementBound domain k agreement exceptionalCount)
+    (hwidth : 0 < width) (hkAgreement : k ≤ agreement) :
+    FullSetLevelWitness ((code domain k) ^⋈ (Fin width)) agreement exceptionalCount := by
+  intro β _ _ u₀ u₁
+  classical
+  let pack (u : β → Fin n → Fin width → F) : Fin n → β × Fin width → F :=
+    fun i p ↦ u p.1 i p.2
+  let : Nonempty (Fin width) := Fin.pos_iff_nonempty.mp hwidth
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_fullSetLine_interleaved_of_exactAgreement
+      (τ := β × Fin width) domain hline hkAgreement (pack u₀) (pack u₁)
+  refine ⟨exceptional, hcard, ?_⟩
+  intro r hr c hc hagreement
+  have pack_mem (d : β → Fin n → Fin width → F)
+      (hd : ∀ b, d b ∈ ((code domain k) ^⋈ (Fin width))) :
+      pack d ∈ ((code domain k) ^⋈ (β × Fin width)) := by
+    change ∀ p : β × Fin width, (fun i ↦ pack d i p) ∈ code domain k
+    rintro ⟨b, j⟩
+    have hdb := hd b
+    change ∀ row, (fun i ↦ d b i row) ∈ code domain k at hdb
+    exact hdb j
+  have agreementSet_pack (d v : β → Fin n → Fin width → F) :
+      familyAgreementSet d v = fullAgreementSet (pack d) (pack v) := by
+    ext i
+    simp only [familyAgreementSet, fullAgreementSet, Finset.mem_filter,
+      Finset.mem_univ, true_and]
+    constructor
+    · intro hi
+      funext p
+      exact congrFun (hi p.1) p.2
+    · intro hi b
+      funext j
+      exact congrFun hi (b, j)
+  have pack_fold (d₀ d₁ : β → Fin n → Fin width → F) :
+      pack (fun b ↦ binaryLineFold r (d₀ b) (d₁ b)) =
+        binaryLineFold r (pack d₀) (pack d₁) := by
+    rfl
+  have hagreement' : agreement ≤
+      (fullAgreementSet (pack c) (binaryLineFold r (pack u₀) (pack u₁))).card := by
+    rw [← pack_fold u₀ u₁]
+    rw [← agreementSet_pack c (fun b ↦ binaryLineFold r (u₀ b) (u₁ b))]
+    exact hagreement
+  obtain ⟨d₀, d₁, hd₀, hd₁, hdEq, hset⟩ :=
+    hgood r hr (pack c) (pack_mem c hc) hagreement'
+  let c₀ : β → Fin n → Fin width → F := fun b i j ↦ d₀ i (b, j)
+  let c₁ : β → Fin n → Fin width → F := fun b i j ↦ d₁ i (b, j)
+  have hc₀ : ∀ b, c₀ b ∈ ((code domain k) ^⋈ (Fin width)) := by
+    intro b
+    change ∀ j, (fun i ↦ c₀ b i j) ∈ code domain k
+    have hrows := hd₀
+    change ∀ p, (fun i ↦ d₀ i p) ∈ code domain k at hrows
+    exact fun j ↦ hrows (b, j)
+  have hc₁ : ∀ b, c₁ b ∈ ((code domain k) ^⋈ (Fin width)) := by
+    intro b
+    change ∀ j, (fun i ↦ c₁ b i j) ∈ code domain k
+    have hrows := hd₁
+    change ∀ p, (fun i ↦ d₁ i p) ∈ code domain k at hrows
+    exact fun j ↦ hrows (b, j)
+  have hpack₀ : pack c₀ = d₀ := by rfl
+  have hpack₁ : pack c₁ = d₁ := by rfl
+  refine ⟨c₀, c₁, hc₀, hc₁, ?_, ?_⟩
+  · intro b
+    funext i j
+    exact congrFun (congrFun hdEq i) (b, j)
+  · rw [agreementSet_pack c (fun b ↦ binaryLineFold r (u₀ b) (u₁ b)),
+      agreementSet_pack c₀ u₀, agreementSet_pack c₁ u₁,
+      pack_fold, hpack₀, hpack₁]
+    exact hset
+
+/-- Height three has three shared-level exceptional events, independent of interleaving width. -/
 theorem interleavedRS_tensorFoldBad_card_le_heightThree
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {n k agreement exceptionalCount width : ℕ}
@@ -375,10 +460,10 @@ theorem interleavedRS_tensorFoldBad_card_le_heightThree
     (hwidth : 0 < width) (hkAgreement : k ≤ agreement)
     (u : (Fin 3 → Bool) → Fin n → Fin width → F) :
     (tensorFoldBad
-      (fullSetLineWitness_interleaved_of_exactAgreement domain hline hwidth hkAgreement) u).card ≤
-        7 * exceptionalCount * Fintype.card F ^ 2 := by
+      (fullSetLevelWitness_interleaved_of_exactAgreement domain hline hwidth hkAgreement) u).card ≤
+        3 * exceptionalCount * Fintype.card F ^ 2 := by
   simpa using tensorFoldBad_card_le
-    (fullSetLineWitness_interleaved_of_exactAgreement domain hline hwidth hkAgreement) u
+    (fullSetLevelWitness_interleaved_of_exactAgreement domain hline hwidth hkAgreement) u
 
 end
 

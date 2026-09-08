@@ -40,10 +40,10 @@ def RepeatedOodMeetsTarget
   listSize * (listSize - 1) * (vectorSize - 1) ^ samples * 2 ^ security ≤
     2 * fieldSize ^ samples
 
-/-- Height-`h` binary tensor bad-count plus two identity tests, cross-multiplied exactly. -/
+/-- Height-`h` levelwise tensor bad-count plus two identity tests, cross-multiplied exactly. -/
 def TensorFoldIdentityMeetsTarget
     (height exceptionalCount listSize fieldSize security : ℕ) : Prop :=
-  ((2 ^ height - 1) * exceptionalCount + 2 * listSize) * 2 ^ security ≤ fieldSize
+  (height * exceptionalCount + 2 * listSize) * 2 ^ security ≤ fieldSize
 
 /-- One full-set line-transfer exceptional count, kept apart from tensor folding. -/
 def LineTransferMeetsTarget (exceptionalCount fieldSize security : ℕ) : Prop :=

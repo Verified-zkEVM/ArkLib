@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 This capstone specializes the two lookup witnesses and the independent blinding proof to the
 canonical cubic Goldilocks field.  It derives scalar list, exact-line, and height-three tensor
 semantics row by row.  The fixed blind tail retains its own transition, OOD, query, and identity
-theorems from `Budgets.lean`. The tensor theorem supplies semantic `7E` counting and the
+theorems from `Budgets.lean`. The tensor theorem supplies semantic `3E` counting and the
 finite-list theorem supplies scalar `L` counting; those results and the arithmetic checks for
 `2L`, OOD, transitions, and auxiliary phases are not combined into one failure event.
 -/
@@ -83,12 +83,12 @@ theorem witness_line
 theorem witness_tensorWitness
     (copy : Fin 2) (i : Fin 4)
     (domain : Fin (goldilocksWitnessProfiles i).n ↪ GoldilocksCubic) :
-    FullSetLineWitness
+    FullSetLevelWitness
       ((code domain (goldilocksWitnessProfiles i).k) ^⋈
         (Fin (goldilocksLookupWitness.row i).vectorCount))
       (goldilocksWitnessProfiles i).agreement
       (goldilocksLookupWitness.row i).exceptionalCount := by
-  apply fullSetLineWitness_interleaved_of_exactAgreement domain (witness_line copy i domain)
+  apply fullSetLevelWitness_interleaved_of_exactAgreement domain (witness_line copy i domain)
   · fin_cases i <;> decide
   · fin_cases i <;> decide
 
@@ -98,7 +98,7 @@ theorem witness_tensorBad_card_le
     (u : (Fin 3 → Bool) → Fin (goldilocksWitnessProfiles i).n →
       Fin (goldilocksLookupWitness.row i).vectorCount → GoldilocksCubic) :
     (tensorFoldBad (witness_tensorWitness copy i domain) u).card ≤
-      7 * (goldilocksLookupWitness.row i).exceptionalCount *
+      3 * (goldilocksLookupWitness.row i).exceptionalCount *
         Fintype.card GoldilocksCubic ^ 2 := by
   apply interleavedRS_tensorFoldBad_card_le_heightThree domain (witness_line copy i domain)
   · fin_cases i <;> decide
@@ -126,18 +126,18 @@ theorem blind_line
 
 theorem blind_tensorWitness
     (domain : Fin goldilocksBlindProfile.n ↪ GoldilocksCubic) :
-    FullSetLineWitness
+    FullSetLevelWitness
       ((code domain goldilocksBlindProfile.k) ^⋈
         (Fin (goldilocksLookupBlind.row 0).vectorCount))
       goldilocksBlindProfile.agreement (goldilocksLookupBlind.row 0).exceptionalCount := by
-  apply fullSetLineWitness_interleaved_of_exactAgreement domain (blind_line domain) <;> decide
+  apply fullSetLevelWitness_interleaved_of_exactAgreement domain (blind_line domain) <;> decide
 
 theorem blind_tensorBad_card_le
     (domain : Fin goldilocksBlindProfile.n ↪ GoldilocksCubic)
     (u : (Fin 3 → Bool) → Fin goldilocksBlindProfile.n →
       Fin (goldilocksLookupBlind.row 0).vectorCount → GoldilocksCubic) :
     (tensorFoldBad (blind_tensorWitness domain) u).card ≤
-      7 * (goldilocksLookupBlind.row 0).exceptionalCount *
+      3 * (goldilocksLookupBlind.row 0).exceptionalCount *
         Fintype.card GoldilocksCubic ^ 2 := by
   apply interleavedRS_tensorFoldBad_card_le_heightThree domain (blind_line domain) <;> decide
 

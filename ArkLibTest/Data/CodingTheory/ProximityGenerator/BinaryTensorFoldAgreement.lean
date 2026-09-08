@@ -28,14 +28,33 @@ example (r : Fin 2 → F) (u : (Fin 2 → Bool) → ι → A) :
         (fun _ ↦ binaryEqualityGenerator) r leaf • u leaf i :=
   binaryTensorFold_eq_tensorGeneratorPi r u
 
-/-- Height two pays for all three internal nodes, including two nodes sharing the second-level
-challenge. -/
+/-- The abstract hypothesis is uniform over a family, rather than a scalar-only line premise. -/
 example {C : ModuleCode ι F A} {agreement exceptionalCount : ℕ}
-    (hline : FullSetLineWitness C agreement exceptionalCount)
+    (hlevel : FullSetLevelWitness C agreement exceptionalCount)
+    (u₀ u₁ : Fin 5 → ι → A) :
+    (levelExceptional hlevel u₀ u₁).card ≤ exceptionalCount :=
+  levelExceptional_card_le hlevel u₀ u₁
+
+/-- Height zero has no level event. -/
+example {C : ModuleCode ι F A} {agreement exceptionalCount : ℕ}
+    (hlevel : FullSetLevelWitness C agreement exceptionalCount)
+    (u : (Fin 0 → Bool) → ι → A) : tensorFoldBad hlevel u = ∅ :=
+  tensorFoldBad_eq_empty_height_zero hlevel u
+
+/-- Height one pays for exactly one possible level event. -/
+example {C : ModuleCode ι F A} {agreement exceptionalCount : ℕ}
+    (hlevel : FullSetLevelWitness C agreement exceptionalCount)
+    (u : (Fin 1 → Bool) → ι → A) :
+    (tensorFoldBad hlevel u).card ≤ exceptionalCount := by
+  simpa using tensorFoldBad_card_le hlevel u
+
+/-- Height two pays for one width-independent exceptional event per level. -/
+example {C : ModuleCode ι F A} {agreement exceptionalCount : ℕ}
+    (hlevel : FullSetLevelWitness C agreement exceptionalCount)
     (u : (Fin 2 → Bool) → ι → A) :
-    (tensorFoldBad hline u).card ≤
-      3 * exceptionalCount * Fintype.card F := by
-  simpa using tensorFoldBad_card_le hline u
+    (tensorFoldBad hlevel u).card ≤
+      2 * exceptionalCount * Fintype.card F := by
+  simpa using tensorFoldBad_card_le hlevel u
 
 end TensorMCA
 
@@ -43,7 +62,7 @@ namespace ReedSolomon
 
 open Code TensorMCA
 
-/-- The interleaved specialization retains the height-three factor seven at width eight. -/
+/-- The interleaved specialization has height-three factor three at width eight. -/
 example {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {n k agreement exceptionalCount : ℕ}
     (domain : Fin n ↪ F)
@@ -51,9 +70,9 @@ example {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (hkAgreement : k ≤ agreement)
     (u : (Fin 3 → Bool) → Fin n → Fin 8 → F) :
     (tensorFoldBad
-      (fullSetLineWitness_interleaved_of_exactAgreement
+      (fullSetLevelWitness_interleaved_of_exactAgreement
         domain hline (by omega) hkAgreement) u).card ≤
-        7 * exceptionalCount * Fintype.card F ^ 2 :=
+        3 * exceptionalCount * Fintype.card F ^ 2 :=
   interleavedRS_tensorFoldBad_card_le_heightThree domain hline (by omega) hkAgreement u
 
 end ReedSolomon

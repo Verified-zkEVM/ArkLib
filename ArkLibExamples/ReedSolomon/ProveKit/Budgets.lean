@@ -16,10 +16,10 @@ This module checks the integer arithmetic for every frozen ProveKit code round. 
 phase is compared separately with `2^-128`, following the implementation generator's allocation;
 the results do not assert a transcript-wide union bound.  They also do not supply a semantic MCA
 or tensor-fold theorem.  Those coding statements belong in `Certificates.lean` and remain
-separate from the numerical `(7E+2L)/q` calculation here.
+separate from the numerical `(3E+2L)/q` calculation here.
 
-Only the query-survival phase receives the existing inclusive PoW factor.  OOD counts, fold
-factor seven, and transition formulas are unchanged.
+Only the query-survival phase receives the existing inclusive PoW factor.  The budgets use the
+original OOD counts and transition formulas, with the levelwise fold factor three.
 -/
 
 namespace ArkLibExamples.ReedSolomon.ProveKit

@@ -17,9 +17,9 @@ the two intended outer invocations and the two intended internal invocations; it
 that the protocol makes those invocations or that their randomness is independent.
 
 The tensor theorems use `vectorCount` as the row-wise interleaving width.  The separate
-`foldWidth = 8` is represented by the height-three binary tensor, whose seven shared internal
-challenges give the factor in the exact arithmetic budget. The tensor theorem supplies semantic
-`7E` counting and the finite-list theorem supplies scalar `L` counting. The arithmetic checks for
+`foldWidth = 8` is represented by the height-three binary tensor, whose three challenge levels
+give the factor in the exact arithmetic budget. The tensor theorem supplies semantic
+`3E` counting and the finite-list theorem supplies scalar `L` counting. The arithmetic checks for
 `2L`, OOD, transitions, and auxiliary phases are not assembled here into a single failure event.
 -/
 
@@ -82,11 +82,11 @@ theorem outer_line
 theorem outer_tensorWitness
     (copy : Fin 2) (i : Fin 6)
     (domain : Fin (passportOuterProfiles i).n ↪ BN254Scalar) :
-    FullSetLineWitness
+    FullSetLevelWitness
       ((code domain (passportOuterProfiles i).k) ^⋈
         (Fin (passportOuterWitness.row i).vectorCount))
       (passportOuterProfiles i).agreement (passportOuterWitness.row i).exceptionalCount := by
-  apply fullSetLineWitness_interleaved_of_exactAgreement domain (outer_line copy i domain)
+  apply fullSetLevelWitness_interleaved_of_exactAgreement domain (outer_line copy i domain)
   · fin_cases i <;> decide
   · fin_cases i <;> decide
 
@@ -97,7 +97,7 @@ theorem outer_tensorBad_card_le
     (u : (Fin 3 → Bool) → Fin (passportOuterProfiles i).n →
       Fin (passportOuterWitness.row i).vectorCount → BN254Scalar) :
     (tensorFoldBad (outer_tensorWitness copy i domain) u).card ≤
-      7 * (passportOuterWitness.row i).exceptionalCount * Fintype.card BN254Scalar ^ 2 := by
+      3 * (passportOuterWitness.row i).exceptionalCount * Fintype.card BN254Scalar ^ 2 := by
   apply interleavedRS_tensorFoldBad_card_le_heightThree domain (outer_line copy i domain)
   · fin_cases i <;> decide
   · fin_cases i <;> decide
@@ -132,11 +132,11 @@ theorem internal_line
 theorem internal_tensorWitness
     (copy : Fin 2) (i : Fin 4)
     (domain : Fin (passportInternalProfiles i).n ↪ BN254Scalar) :
-    FullSetLineWitness
+    FullSetLevelWitness
       ((code domain (passportInternalProfiles i).k) ^⋈
         (Fin (passportInternalZk.row i).vectorCount))
       (passportInternalProfiles i).agreement (passportInternalZk.row i).exceptionalCount := by
-  apply fullSetLineWitness_interleaved_of_exactAgreement domain (internal_line copy i domain)
+  apply fullSetLevelWitness_interleaved_of_exactAgreement domain (internal_line copy i domain)
   · fin_cases i <;> decide
   · fin_cases i <;> decide
 
@@ -146,7 +146,7 @@ theorem internal_tensorBad_card_le
     (u : (Fin 3 → Bool) → Fin (passportInternalProfiles i).n →
       Fin (passportInternalZk.row i).vectorCount → BN254Scalar) :
     (tensorFoldBad (internal_tensorWitness copy i domain) u).card ≤
-      7 * (passportInternalZk.row i).exceptionalCount * Fintype.card BN254Scalar ^ 2 := by
+      3 * (passportInternalZk.row i).exceptionalCount * Fintype.card BN254Scalar ^ 2 := by
   apply interleavedRS_tensorFoldBad_card_le_heightThree domain (internal_line copy i domain)
   · fin_cases i <;> decide
   · fin_cases i <;> decide
