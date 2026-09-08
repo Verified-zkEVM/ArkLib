@@ -30,12 +30,48 @@ def fullAgreementSet [DecidableEq A] (c u : ι → A) : Finset ι :=
 def binaryLineFold (r : F) (u₀ u₁ : ι → A) : ι → A :=
   fun i ↦ (1 - r) • u₀ i + r • u₁ i
 
+/-- Equality weights, indexed by the two children of a binary fold. -/
+def binaryEqualityGenerator : Generator F Bool F :=
+  fun r b ↦ if b then r else 1 - r
+
 /-- The shared-level binary fold, recursively from the root challenge. -/
 def binaryTensorFold : ∀ {h : ℕ}, (Fin h → F) → ((Fin h → Bool) → ι → A) → ι → A
   | 0, _, u => u default
   | _ + 1, r, u => binaryLineFold (r 0)
       (binaryTensorFold (Fin.tail r) (fun leaf ↦ u (Fin.cons false leaf)))
       (binaryTensorFold (Fin.tail r) (fun leaf ↦ u (Fin.cons true leaf)))
+
+omit [Fintype ι] [DecidableEq ι] in
+/-- The recursive binary fold is exactly the existing iterated tensor generator specialized to
+the equality weights `1-r` and `r`. -/
+theorem binaryTensorFold_eq_tensorGeneratorPi : ∀ {h : ℕ}
+    (r : Fin h → F) (u : (Fin h → Bool) → ι → A),
+    binaryTensorFold r u = fun i ↦
+      ∑ leaf, PolynomialGenIsMCA.tensorGeneratorPi
+        (fun _ ↦ binaryEqualityGenerator) r leaf • u leaf i := by
+  intro h
+  induction h with
+  | zero =>
+      intro r u
+      funext i
+      simp [binaryTensorFold, PolynomialGenIsMCA.tensorGeneratorPi,
+        Subsingleton.elim (default : Fin 0 → Bool) (fun _ ↦ false)]
+      exact congrArg (fun leaf : Fin 0 → Bool ↦ u leaf i) (Subsingleton.elim _ _)
+  | succ h ih =>
+      intro r u
+      funext i
+      rw [binaryTensorFold]
+      simp only [binaryLineFold, ih]
+      rw [Finset.smul_sum, Finset.smul_sum]
+      let e := Fin.consEquiv (fun _ : Fin (h + 1) ↦ Bool)
+      have he (b : Bool) (tail : Fin h → Bool) : e (b, tail) = Fin.cons b tail := rfl
+      rw [← e.sum_comp (fun leaf ↦
+        PolynomialGenIsMCA.tensorGeneratorPi
+          (fun _ ↦ binaryEqualityGenerator) r leaf • u leaf i)]
+      rw [Fintype.sum_prod_type, Fintype.sum_bool]
+      simp [e, PolynomialGenIsMCA.tensorGeneratorPi, Fin.prod_univ_succ,
+        binaryEqualityGenerator, Fin.tail, Fin.consEquiv_apply, mul_smul, he]
+      rw [add_comm]
 
 /-- A line certificate supplies a bounded exceptional set and, outside it, constituent
 codewords whose common agreement set is exactly the folded codeword's full agreement set. -/
