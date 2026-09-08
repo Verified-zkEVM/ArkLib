@@ -28,7 +28,7 @@ noncomputable def observe (missingFault : Fault) (program : m (Terminal Claim Fa
     Measure (Terminal Claim Fault) :=
   (evalDistWithFailure program).map (decodeRuntime missingFault)
 
-/-- Explicit runtime-fault materialization cannot create or remove an accepting result. -/
+/-- Assigning a fault to a missing result cannot create or remove acceptance. -/
 theorem observe_accept (missingFault : Fault) (program : m (Terminal Claim Fault)) (claim : Claim) :
     observe missingFault program {accept claim} = evalDist program {accept claim} := by
   rw [observe, Measure.map_apply Measurable.of_discrete (measurableSet_singleton _)]

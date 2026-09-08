@@ -104,7 +104,7 @@ theorem ofOption_map (f : Claim → Claim') (outcome : Option Claim) :
     (ofOption (outcome.map f) : Terminal Claim' Fault) = (ofOption outcome).map f := by
   cases outcome <;> rfl
 
-/-- Collapse materialized missing mass only when the caller names its runtime fault.
+/-- Decode a missing runtime result only when the caller names its runtime fault.
 The outer `none` is distinct from the optional-claim rejection decoded by `ofOption`. -/
 def decodeRuntime (missingFault : Fault) : Option (Terminal Claim Fault) → Terminal Claim Fault
   | some outcome => outcome
@@ -118,7 +118,7 @@ theorem decodeRuntime_some (missingFault : Fault) (outcome : Terminal Claim Faul
 theorem decodeRuntime_none (missingFault : Fault) :
     decodeRuntime missingFault (none : Option (Terminal Claim Fault)) = .fault missingFault := rfl
 
-/-- An accepting materialized result must have been returned by the protocol. -/
+/-- A decoded acceptance must have been returned by the protocol. -/
 @[simp]
 theorem decodeRuntime_eq_accept_iff (missingFault : Fault)
     (outcome : Option (Terminal Claim Fault)) (claim : Claim) :
