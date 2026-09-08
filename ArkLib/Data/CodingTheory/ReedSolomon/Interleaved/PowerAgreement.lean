@@ -186,19 +186,19 @@ theorem exists_vector_avoiding_submodules
 
 /-- Two interleaved Reed--Solomon codewords agreeing on at least `k` positions are equal. -/
 theorem interleavedCodeword_eq_of_agree_on
-    {n k width : ℕ} (domain : Fin n ↪ F)
+    {τ : Type} {n k : ℕ} (domain : Fin n ↪ F)
     (S : Finset (Fin n)) (hkS : k ≤ S.card)
-    {c d : Fin n → Fin width → F}
-    (hc : c ∈ ModuleCode.moduleInterleavedCode F F (Fin width) (Fin n) (code domain k))
-    (hd : d ∈ ModuleCode.moduleInterleavedCode F F (Fin width) (Fin n) (code domain k))
+    {c d : Fin n → τ → F}
+    (hc : c ∈ ModuleCode.moduleInterleavedCode F F (τ) (Fin n) (code domain k))
+    (hd : d ∈ ModuleCode.moduleInterleavedCode F F (τ) (Fin n) (code domain k))
     (hagree : ∀ i ∈ S, c i = d i) : c = d := by
   apply _root_.funext
   intro i
   apply _root_.funext
   intro j
-  have hcj := (mem_moduleInterleavedCode_iff F F (Fin width) (Fin n)
+  have hcj := (mem_moduleInterleavedCode_iff F F (τ) (Fin n)
     (code domain k) c).mp hc j
-  have hdj := (mem_moduleInterleavedCode_iff F F (Fin width) (Fin n)
+  have hdj := (mem_moduleInterleavedCode_iff F F (τ) (Fin n)
     (code domain k) d).mp hd j
   obtain ⟨P, hP, hPeval⟩ := mem_code_iff_eval.mp hcj
   obtain ⟨Q, hQ, hQeval⟩ := mem_code_iff_eval.mp hdj

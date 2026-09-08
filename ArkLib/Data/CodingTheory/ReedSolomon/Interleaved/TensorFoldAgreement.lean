@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 
 /-!
 # Shared-level tensor-fold agreement for interleaved Reed--Solomon codes
@@ -91,71 +91,6 @@ private theorem scalar_lineProjectionBad_card_le
         rw [hi0, hiD]
         ring
 
-/-- At most `|K|` proper subspaces cannot cover a nontrivial finite `K`-vector space. -/
-private theorem exists_forall_notMem_of_card_le
-    {α K M : Type} [Field K] [Fintype K] [AddCommGroup M] [Module K M]
-    [Finite M] [Nontrivial M]
-    (s : Finset α) (p : α → Submodule K M)
-    (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
-    ∃ x : M, ∀ i ∈ s, x ∉ p i := by
-  classical
-  let := Fintype.ofFinite M
-  let q := Fintype.card K
-  let d := Module.finrank K M
-  let nz (i : α) := Finset.univ.filter fun x : M => x ∈ p i ∧ x ≠ 0
-  let covered := insert (0 : M) (s.biUnion nz)
-  have hq : 1 < q := Fintype.one_lt_card
-  have hd : 0 < d := Module.finrank_pos
-  have hnz (i : α) (hi : i ∈ s) : (nz i).card ≤ q ^ (d - 1) - 1 := by
-    let allp := Finset.univ.filter fun x : M => x ∈ p i
-    have hzero : (0 : M) ∈ allp := by simp [allp]
-    have hnz_eq : nz i = allp.erase 0 := by
-      ext x
-      simp [nz, allp, and_comm]
-    rw [hnz_eq, Finset.card_erase_of_mem hzero]
-    have hcard : allp.card = Fintype.card (p i) := by
-      symm
-      exact Fintype.card_ofFinset allp (by simp [allp])
-    have hcardpow : Fintype.card (p i) = q ^ Module.finrank K (p i) := by
-      simpa [q] using (Module.card_eq_pow_finrank (K := K) (V := p i))
-    rw [hcard, hcardpow]
-    exact Nat.sub_le_sub_right
-      (Nat.pow_le_pow_right (Nat.zero_lt_of_lt hq)
-        (Nat.le_sub_one_of_lt (Submodule.finrank_lt (hp i hi)))) 1
-  have hcovered : covered.card < Fintype.card M := by
-    have hbi : (s.biUnion nz).card ≤ s.card * (q ^ (d - 1) - 1) := by
-      calc
-        (s.biUnion nz).card ≤ ∑ i ∈ s, (nz i).card := Finset.card_biUnion_le
-        _ ≤ ∑ _i ∈ s, (q ^ (d - 1) - 1) :=
-          Finset.sum_le_sum fun i hi => hnz i hi
-        _ = s.card * (q ^ (d - 1) - 1) := by simp
-    have hmul : s.card * (q ^ (d - 1) - 1) ≤ q * (q ^ (d - 1) - 1) :=
-      Nat.mul_le_mul_right _ hs
-    have hpow : q ^ d = q * q ^ (d - 1) := by
-      conv_lhs => rw [← Nat.succ_pred_eq_of_pos hd]
-      simp [pow_succ, Nat.mul_comm]
-    have hcardM : Fintype.card M = q ^ d := by
-      simpa [q, d] using (Module.card_eq_pow_finrank (K := K) (V := M))
-    rw [hcardM, hpow]
-    calc
-      covered.card ≤ (s.biUnion nz).card + 1 := Finset.card_insert_le _ _
-      _ ≤ s.card * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hbi 1
-      _ ≤ q * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hmul 1
-      _ < q * q ^ (d - 1) := by
-        have hpos : 0 < q ^ (d - 1) := pow_pos (Nat.zero_lt_of_lt hq) _
-        have hqmul : q ≤ q * q ^ (d - 1) := by
-          simpa using Nat.mul_le_mul_left q hpos
-        rw [Nat.mul_sub_left_distrib]
-        simp only [mul_one]
-        omega
-  obtain ⟨x, -, hx⟩ := Finset.exists_mem_notMem_of_card_lt_card
-    (s := covered) (t := Finset.univ) (by simpa using hcovered)
-  refine ⟨x, fun i hi hxi => hx ?_⟩
-  by_cases hx0 : x = 0
-  · simp [covered, hx0]
-  · simp only [covered, Finset.mem_insert]
-    exact Or.inr (Finset.mem_biUnion.mpr ⟨i, hi, by simp [nz, hxi, hx0]⟩)
-
 open Classical in
 private theorem interleaved_lineProjectionBad_card_le
     {ι F A τ : Type} [Fintype ι]
@@ -236,7 +171,7 @@ private theorem interleaved_lineProjectionBad_card_le
       simpa [K, rowComb] using hrow
   have hbadcard : bad.card ≤ Fintype.card F := by
     simpa [bad] using Finset.card_filter_le Finset.univ isBad
-  obtain ⟨l, hl⟩ := exists_forall_notMem_of_card_le bad K hK hbadcard
+  obtain ⟨l, hl⟩ := exists_vector_avoiding_submodules bad K hK hbadcard
   have himp : ∀ r : F, isBad r → lineProjectionBad C agreement r
       (rowComb l false) (rowComb l true) := by
     intro r hr
@@ -274,32 +209,6 @@ private theorem interleaved_lineProjectionBad_card_le
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hr ⊢
       exact himp r hr
     _ ≤ exceptionalCount := hscalar _ _
-
-private theorem interleaved_eq_of_agree_on
-    {F τ : Type} [Field F] {n k : ℕ} (domain : Fin n ↪ F)
-    (S : Finset (Fin n)) (hkS : k ≤ S.card)
-    {c d : Fin n → τ → F}
-    (hc : c ∈ ModuleCode.moduleInterleavedCode F F τ (Fin n) (code domain k))
-    (hd : d ∈ ModuleCode.moduleInterleavedCode F F τ (Fin n) (code domain k))
-    (hagree : ∀ i ∈ S, c i = d i) : c = d := by
-  apply _root_.funext
-  intro i
-  apply _root_.funext
-  intro j
-  have hcj := (mem_moduleInterleavedCode_iff F F τ (Fin n) (code domain k) c).mp hc j
-  have hdj := (mem_moduleInterleavedCode_iff F F τ (Fin n) (code domain k) d).mp hd j
-  obtain ⟨P, hP, hPeval⟩ := mem_code_iff_eval.mp hcj
-  obtain ⟨Q, hQ, hQeval⟩ := mem_code_iff_eval.mp hdj
-  change ∀ x, P.eval (domain x) = c x j at hPeval
-  change ∀ x, Q.eval (domain x) = d x j at hQeval
-  have hPQ : P = Q := by
-    apply Polynomial.eq_of_degrees_lt_of_eval_index_eq (s := S) domain.injective.injOn
-      (hP.trans_le (by exact_mod_cast hkS)) (hQ.trans_le (by exact_mod_cast hkS))
-    intro x hx
-    rw [hPeval x, hQeval x]
-    exact congrFun (hagree x hx) j
-  change c i j = d i j
-  rw [← hPeval i, ← hQeval i, hPQ]
 
 /-- A scalar exact-line certificate gives one full-set binary-line witness over any finite
 nonempty row index, at the same exceptional count. -/
@@ -356,7 +265,7 @@ private theorem exists_exceptional_fullSetLine_interleaved_of_exactAgreement
         ((ModuleCode.moduleInterleavedCode F F τ (Fin n)
           (code domain k)).smul_mem r hc₁)
     have hcEq : c = binaryLineFold r c₀ c₁ := by
-      apply interleaved_eq_of_agree_on domain S (hkAgreement.trans hagreement) hc hfoldmem
+      apply interleavedCodeword_eq_of_agree_on domain S (hkAgreement.trans hagreement) hc hfoldmem
       intro i hi
       have hci := (Finset.mem_filter.mp hi).2
       have h0 := congrFun hc₀S ⟨i, hi⟩
