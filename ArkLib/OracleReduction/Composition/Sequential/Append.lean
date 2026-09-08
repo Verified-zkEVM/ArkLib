@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
 import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
 /-!
@@ -21,6 +22,7 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
   * `Append.Basic` — the `append` operations themselves, plus challenge-sampling transport.
   * `Append.StateFunction` — composition of extractors and verifier state functions.
-  * `Append.Execution` — running an appended prover / verifier, and `Prover.append_run`.
+  * `Append.Execution` — running appended provers / verifiers, with explicit seam conditions.
+  * `Append.Simulation` — exact simulated execution, preserving the shared oracle state.
   * `Append.Security` — completeness and soundness of the composition.
 -/

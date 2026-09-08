@@ -622,9 +622,9 @@ home_page/            site assets and assembled website root
   removed rather than renamed: downstream code should compose
   `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
   `BatchedFri.Spec.batchedFRIreduction` does.
-- Binary sequential composition lives in the four-module tree
+- Binary sequential composition lives in the five-module tree
   `OracleReduction/Composition/Sequential/Append/`, with
-  `Composition/Sequential/Append.lean` kept as the umbrella that imports all four (so existing
+  `Composition/Sequential/Append.lean` kept as the umbrella that imports all five (so existing
   importers are unaffected):
   - `Append/Basic.lean` — the `append` operations on provers, verifiers, and reductions, their
     oracle-protocol counterparts, and challenge-sampling transport across `++ₚ`.
@@ -632,9 +632,18 @@ home_page/            site assets and assembled website root
     of verifier state functions. Past the seam the composed state function is scored
     *disjunctively* (`S₁ ∨ S₂`); see `Verifier.StateFunction.append` for why the two alternatives
     fail.
-  - `Append/Execution.lean` — running an appended prover / verifier, and `Prover.append_run`
-    (which carries a `Prover.OutputIsPure` hypothesis on the left prover).
-  - `Append/Security.lean` — completeness and soundness of the composition.
+  - `Append/Execution.lean` — running appended provers / verifiers. `Prover.append_run_of_seam`
+    permits effectful left output when the suffix is empty or opens with a message;
+    `Prover.append_run` specializes it to pure left output for arbitrary suffix protocols.
+  - `Append/Simulation.lean` — exact simulation of both explicitly routed challenge inclusions
+    and appended prover execution, including the final shared oracle state.
+  - `Append/Security.lean` — the legacy completeness and soundness claims, still admitted.
+
+  `ArkLibTest/OracleReduction/Composition/Sequential/` exercises the execution boundaries and
+  observes the distinct raw challenge indices even for coincident component specifications.
+  It also retains Richard Goodman's historical raw execution counterexample from #643:
+  a challenge-opening suffix can reorder an effectful prefix output. These acceptance tests run
+  through `lake test` and assert the standard-only axioms of their named results.
 
   These proofs run on `HEq` transport, since transcripts and prover states are families indexed by
   the round number. The generic congruence lemmas for that (`heq_apply`, `heq_funext`, `heq_pi`,

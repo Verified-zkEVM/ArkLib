@@ -323,23 +323,20 @@ private theorem append_runToRound_left (stmt : Stmt₁) (wit : Wit₁) (j : Fin 
 /-! ### The seam round `m`, and rounds above it -/
 
 /-- **The seam round, `P_to_V` case.** The appended prover's message at round `m` is the second
-prover's first message, on the state `P₂.input` produces from `P₁`'s (pure) output. -/
+prover's first message, after binding the first prover's output. -/
 private theorem append_sendMessage_seam (i : Fin (m + n)) (him : i.val = m) (hn : 0 < n)
-    (outputFn : P₁.PrvState (Fin.last m) → Stmt₂ × Wit₂)
-    (hOutput : P₁.output = fun st => pure (outputFn st))
     (hDir : (pSpec₁ ++ₚ pSpec₂).dir i = .P_to_V)
     (hDir₂ : pSpec₂.dir ⟨0, hn⟩ = .P_to_V)
     (state : (P₁.append P₂).PrvState i.castSucc)
     (state₁ : P₁.PrvState (Fin.last m)) (hst : HEq state state₁) :
     HEq ((P₁.append P₂).sendMessage ⟨i, hDir⟩ state)
-        (P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input (outputFn state₁))) := by
+        (P₁.output state₁ >>= fun ctx => P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input ctx)) := by
   conv_lhs => unfold Prover.append
   dsimp only
   rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
   refine (heq_eqMpr _ _).trans (heq_of_eq ?_)
-  rw [hOutput]
-  simp only [pure_bind]
-  exact congrArg (fun z => P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input (outputFn z)))
+  exact congrArg (fun z => P₁.output z >>= fun ctx =>
+    P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input ctx))
     (eq_of_heq ((heq_eqMp _ _).trans hst))
 
 /-- **The seam round, `V_to_P` case.** The `receiveChallenge` counterpart of
@@ -703,13 +700,79 @@ private theorem append_processRound_seam_pureInput (hjlt : m < m + n) (hn : 0 < 
       congrArg₂ Prod hMsgIdx hStS
     refine heq_bind hα hβ ?_ ?_
     · exact heq_liftM hα
-        (append_sendMessage_seam ⟨m, hjlt⟩ rfl hn outputFn hOutput hA hB st st₁ hst)
+        (by simpa only [hOutput, pure_bind] using
+          append_sendMessage_seam ⟨m, hjlt⟩ rfl hn hA hB st st₁ hst)
     · refine heq_funext hα (congrArg _ hβ) ?_
       intro x x' hx
       refine heq_pure hβ ?_
       refine heq_prod rfl hStS ?_ (heq_snd hMsgIdx hStS hx)
       exact heq_of_eq (concatLR_seam hjlt hn tr tr₁ htr x.1 x'.1
         (heq_fst hMsgIdx hStS hx) hkl)
+
+/-- The seam factors through an effectful output if it starts with a message, or if the
+left output is pure. -/
+private theorem append_processRound_seam (hjlt : m < m + n) (hn : 0 < n)
+    (hSeam : P₁.OutputIsPure ∨ pSpec₂.dir ⟨0, hn⟩ = .P_to_V)
+    (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (⟨m, hjlt⟩ : Fin (m + n)).castSucc)
+    (tr₁ : pSpec₁.FullTranscript) (htr : HEq tr tr₁)
+    (st : (P₁.append P₂).PrvState (⟨m, hjlt⟩ : Fin (m + n)).castSucc)
+    (st₁ : P₁.PrvState (Fin.last m)) (hst : HEq st st₁)
+    (hkl : ((⟨m, hjlt⟩ : Fin (m + n)).succ : Fin (m + n + 1)).val
+      = m + ((⟨0, hn⟩ : Fin n).succ).val) :
+    HEq ((P₁.append P₂).processRound ⟨m, hjlt⟩ (pure ⟨tr, st⟩))
+        ((liftM (P₁.output st₁) :
+            OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) (Stmt₂ × Wit₂)) >>= fun ctx =>
+          (fun p => ((concatLR hkl tr₁ p.1 :
+              (pSpec₁ ++ₚ pSpec₂).Transcript (⟨m, hjlt⟩ : Fin (m + n)).succ), p.2)) <$>
+          liftAppendRight pSpec₁
+            (P₂.processRound ⟨0, hn⟩ (pure ⟨emptyTranscript hn, P₂.input ctx⟩))) := by
+  rcases hSeam with hPure | hFirst
+  · obtain ⟨outputFn, hOutputPt⟩ := hPure.output_is_pure
+    have hOutput : P₁.output = fun st => pure (outputFn st) := funext hOutputPt
+    simpa only [hOutput, liftM_pure, pure_bind] using
+      append_processRound_seam_pureInput hjlt hn outputFn hOutput tr tr₁ htr st st₁ hst hkl
+  · have hdir : Fin.vappend pSpec₁.dir pSpec₂.dir ⟨m, hjlt⟩ = pSpec₂.dir ⟨0, hn⟩ := by
+      rw [Fin.vappend_right_of_not_lt _ _ _ (show ¬ m < m by omega)]
+      congr 1
+      exact Fin.ext (show m - m = 0 by omega)
+    have hMsg : (pSpec₁ ++ₚ pSpec₂).«Type» (⟨m, hjlt⟩ : Fin (m + n)) = pSpec₂.«Type» ⟨0, hn⟩ :=
+      (append_Type_ge (⟨m, hjlt⟩ : Fin (m + n)) (show m - m < n by omega)
+        (show m ≤ m by omega)).trans (congrArg pSpec₂.«Type» (Fin.ext (show m - m = 0 by omega)))
+    have hStS : (P₁.append P₂).PrvState (⟨m, hjlt⟩ : Fin (m + n)).succ
+        = P₂.PrvState (⟨0, hn⟩ : Fin n).succ :=
+      Prover.append_prvState_right _ _ (show m < m + 1 by omega) (show m + 1 = m + (0 + 1) by omega)
+    have hβ : (((pSpec₁ ++ₚ pSpec₂).Transcript (⟨m, hjlt⟩ : Fin (m + n)).succ)
+          × (P₁.append P₂).PrvState (⟨m, hjlt⟩ : Fin (m + n)).succ)
+        = (((pSpec₁ ++ₚ pSpec₂).Transcript (⟨m, hjlt⟩ : Fin (m + n)).succ)
+          × P₂.PrvState (⟨0, hn⟩ : Fin n).succ) := congrArg₂ Prod rfl hStS
+    have hFirstA : (pSpec₁ ++ₚ pSpec₂).dir ⟨m, hjlt⟩ = .P_to_V := hdir.trans hFirst
+    unfold Prover.processRound liftAppendRight
+    simp only [pure_bind]
+    split <;> rename_i hA <;> split <;> rename_i hB
+    all_goals try { rw [hdir, hFirst] at hA; contradiction }
+    all_goals try { rw [hFirst] at hB; contradiction }
+    simp only [liftM_bind, liftM_pure, liftAppendRight_liftM, map_bind, map_pure]
+    have hMsgIdx : (pSpec₁ ++ₚ pSpec₂).Message
+          (⟨⟨m, hjlt⟩, hFirstA⟩ : MessageIdx (pSpec₁ ++ₚ pSpec₂))
+        = pSpec₂.Message ⟨⟨0, hn⟩, hFirst⟩ := hMsg
+    have hα : ((pSpec₁ ++ₚ pSpec₂).Message
+          (⟨⟨m, hjlt⟩, hFirstA⟩ : MessageIdx (pSpec₁ ++ₚ pSpec₂))
+          × (P₁.append P₂).PrvState (⟨m, hjlt⟩ : Fin (m + n)).succ)
+        = (pSpec₂.Message ⟨⟨0, hn⟩, hFirst⟩ × P₂.PrvState (⟨0, hn⟩ : Fin n).succ) :=
+      congrArg₂ Prod hMsgIdx hStS
+    have hSend := heq_liftM (superSpec := oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) hα
+      (append_sendMessage_seam ⟨m, hjlt⟩ rfl hn hFirstA hFirst st st₁ hst)
+    simp only [liftM_bind] at hSend
+    refine HEq.trans (heq_bind hα hβ hSend
+      (f' := fun x => pure (concatLR hkl tr₁ (Transcript.concat x.1 (emptyTranscript hn)),
+        x.2)) ?_) ?_
+    · refine heq_funext hα (congrArg _ hβ) ?_
+      intro x x' hx
+      refine heq_pure hβ ?_
+      refine heq_prod rfl hStS ?_ (heq_snd hMsgIdx hStS hx)
+      exact heq_of_eq (concatLR_seam hjlt hn tr tr₁ htr x.1 x'.1
+        (heq_fst hMsgIdx hStS hx) hkl)
+    · exact heq_of_eq (bind_assoc _ _ _)
 
 /-! ### Running past the seam -/
 
@@ -728,29 +791,29 @@ private theorem runToRound_castSucc_zero (hl : 0 < n) (s : Stmt₂) (w : Wit₂)
 
 /-- The un-glued right-hand run: the left half's result paired with the second prover's
 partial run.  Gluing is applied by an outer `map`, which is what makes the induction compose. -/
-private def rightRun (outputFn : P₁.PrvState (Fin.last m) → Stmt₂ × Wit₂)
+private def rightRun
     (stmt : Stmt₁) (wit : Wit₁) (l : Fin (n + 1)) :
     OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ)
       (pSpec₁.FullTranscript × (pSpec₂.Transcript l × P₂.PrvState l)) := do
   let p₁ ← liftAppendLeft pSpec₂ (P₁.runToRound (Fin.last m) stmt wit)
-  let p₂ ← liftAppendRight pSpec₁
-    (P₂.runToRound l (outputFn p₁.2).1 (outputFn p₁.2).2)
+  let ctx ← (liftM (P₁.output p₁.2) :
+    OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) (Stmt₂ × Wit₂))
+  let p₂ ← liftAppendRight pSpec₁ (P₂.runToRound l ctx.1 ctx.2)
   pure (p₁.1, p₂)
 
 /-- **Running past the seam.** Up to round `m + l'` (for `l' > 0`), running the appended prover is
 the full left run followed by the second prover's run to round `l'`, with the two transcripts glued
-by `concatLR`. Induction on `l`, with `append_processRound_seam_pureInput` as the base case and
+by `concatLR`. Induction on `l`, with `append_processRound_seam` as the base case and
 `append_processRound_right_pureInput` as the step. -/
 private theorem append_runToRound_right (hn : 0 < n)
-    (outputFn : P₁.PrvState (Fin.last m) → Stmt₂ × Wit₂)
-    (hOutput : P₁.output = fun st => pure (outputFn st))
+    (hSeam : P₁.OutputIsPure ∨ pSpec₂.dir ⟨0, hn⟩ = .P_to_V)
     (stmt : Stmt₁) (wit : Wit₁) :
     ∀ (l : ℕ) (_hl : l < n) (k : Fin (m + n + 1)) (l' : Fin (n + 1))
       (hkl : k.val = m + l'.val) (_hl' : l'.val = l + 1),
       HEq ((P₁.append P₂).runToRound k stmt wit)
           ((fun q : pSpec₁.FullTranscript × (pSpec₂.Transcript l' × P₂.PrvState l') =>
               ((concatLR hkl q.1 q.2.1 : (pSpec₁ ++ₚ pSpec₂).Transcript k), q.2.2))
-            <$> rightRun (P₂ := P₂) outputFn stmt wit l') := by
+            <$> rightRun (P₁ := P₁) (P₂ := P₂) stmt wit l') := by
   intro l
   induction l with
   | zero =>
@@ -772,16 +835,14 @@ private theorem append_runToRound_right (hn : 0 < n)
       (append_runToRound_left stmt wit (Fin.last m) _ (by simp)) ?_
     refine heq_funext (payload_left_eq _ (Fin.last m) (by simp)) (congrArg _ hβ) ?_
     intro x p₁ hx
-    refine HEq.trans (append_processRound_seam_pureInput hjlt hl outputFn hOutput x.1 p₁.1
+    refine HEq.trans (append_processRound_seam hjlt hl hSeam x.1 p₁.1
       (heq_fst (transcript_left_type_eq _ (Fin.last m) (by simp))
         (Prover.append_prvState_left _ (Fin.last m) (by simp)) hx) x.2 p₁.2
       (heq_snd (transcript_left_type_eq _ (Fin.last m) (by simp))
         (Prover.append_prvState_left _ (Fin.last m) (by simp)) hx) hkl) ?_
     refine heq_of_eq ?_
-    first
-      | rfl
-      | simp only [map_bind, map_pure]
-      | (rw [map_eq_bind_pure_comp]; rfl)
+    simp only [map_eq_bind_pure_comp]
+    rfl
   | succ l ih =>
     intro hl k l' hkl hl'
     obtain rfl : l' = (⟨l + 1, hl⟩ : Fin n).succ := Fin.ext (by simpa using hl')
@@ -869,11 +930,10 @@ private theorem concatLR_last (hkl : (Fin.last (m + n)).val = m + (Fin.last n).v
 /-- `Prover.append_run` for a non-empty second protocol: `append_runToRound_right` at `l' = n`,
 followed by the output step (`Prover.append_output_pos`). -/
 private theorem append_run_pos (hn : 0 < n)
-    (outputFn : P₁.PrvState (Fin.last m) → Stmt₂ × Wit₂)
-    (hOutput : P₁.output = fun st => pure (outputFn st))
+    (hSeam : P₁.OutputIsPure ∨ pSpec₂.dir ⟨0, hn⟩ = .P_to_V)
     (stmt : Stmt₁) (wit : Wit₁) :
     (P₁.append P₂).run stmt wit
-      = (rightRun (P₂ := P₂) outputFn stmt wit (Fin.last n) >>= fun q =>
+      = (rightRun (P₁ := P₁) (P₂ := P₂) stmt wit (Fin.last n) >>= fun q =>
           ((liftM (P₂.output q.2.2) :
               OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) (Stmt₃ × Wit₃))
             >>= fun ctx =>
@@ -885,7 +945,7 @@ private theorem append_run_pos (hn : 0 < n)
         × (P₁.append P₂).PrvState (Fin.last (m + n)))
       = (((pSpec₁ ++ₚ pSpec₂).Transcript (Fin.last (m + n))) × P₂.PrvState (Fin.last n)) :=
     congrArg₂ Prod rfl hStS
-  have key := append_runToRound_right (P₁ := P₁) (P₂ := P₂) hn outputFn hOutput stmt wit
+  have key := append_runToRound_right (P₁ := P₁) (P₂ := P₂) hn hSeam stmt wit
     (n - 1) (by omega)
     (Fin.last (m + n)) (Fin.last n) hkl (by simp; omega)
   have hf : HEq
@@ -970,42 +1030,26 @@ witness `wit₁` behaves as expected: it first runs `P₁` to obtain an intermed
 to produce the final statement `stmt₃`, witness `wit₃`, and transcript `transcript₂`.
 The overall output is `stmt₃`, `wit₃`, and the combined transcript `transcript₁ ++ₜ transcript₂`.
 
-**Why the extra hypothesis `[P₁.OutputIsPure]`.** The statement is not provable in general without
-it, so it has been weakened rather than dropped. The reason is a difference in *when* the first
-prover's output step happens on the two sides of the equation:
+The seam hypothesis permits a pure left output, an empty right protocol, or a right protocol
+whose first round is prover-to-verifier. Subsequent rounds may have either direction. In
+particular, it covers message-only protocols with arbitrary effectful left output.
 
-* `Prover.processRound` always draws a challenge round's challenge from the challenge oracle
-  *before* handing it to `receiveChallenge`;
-* in `P₁.append P₂`, the seam round (the first round of `pSpec₂`) is precisely where `P₁.output`
-  is invoked, from inside that `receiveChallenge`.
+When the right protocol instead starts with a challenge, `processRound` samples that challenge
+before invoking the appended prover's `receiveChallenge`, which is where `P₁.output` runs.
+The sequential right-hand side runs `P₁.output` before sampling that challenge. These free-monad
+computations can differ if the output is effectful; purity ensures the ordering is immaterial.
+The empty case needs no hypothesis because the seam is part of the output step itself.
 
-So when `pSpec₂` opens with a verifier-to-prover round, the left-hand side draws `pSpec₂`'s first
-challenge and only *then* runs `P₁.output`, whereas the right-hand side finishes `P₁.run` —
-output included — before `P₂.run` draws anything. If `P₁.output` makes oracle queries of its own,
-the two sides issue their queries in a different order, and the two computations genuinely differ.
-
-A `V_to_P` opening round is the *only* case that breaks. The identity in fact holds
-unconditionally when `n = 0` (the seam collapses into the output step) and when
-`pSpec₂.dir ⟨0, _⟩ = .P_to_V` (the seam runs `P₁.output` from inside `sendMessage`, with nothing
-drawn before it); in both, the two sides bind `P₁.output` at the same point. The hypothesis is
-assumed uniformly here because the statement quantifies over every `pSpec₂`. Note that the `n = 0`
-branch of the proof below uses `hOutput` only to keep the rewrite short, not out of necessity.
-
-`Prover.OutputIsPure` says exactly that `P₁.output` makes no oracle queries: it is some plain
-function of the prover's final state, wrapped in `pure`. For such an output step the ordering is
-immaterial and the identity holds. Almost every prover in the library qualifies — their `output`
-fields are literally `pure` applied to a read-off of the accumulated state. The exception, and the
-concrete shape of the counterexample above, is `NoInteraction.prover`: its `output` is
-`NoInteraction.combineMap mapStmt mapWit`, which runs the arbitrary oracle computations
-`mapStmt` and `mapWit`.
+For the common pure-output case, use `append_run`, which supplies the seam hypothesis from
+the `Prover.OutputIsPure` instance.
 -/
-theorem append_run [hPure : P₁.OutputIsPure] (stmt : Stmt₁) (wit : Wit₁) :
+theorem append_run_of_seam
+    (hSeam : ∀ hn : 0 < n, P₁.OutputIsPure ∨ pSpec₂.dir ⟨0, hn⟩ = .P_to_V)
+    (stmt : Stmt₁) (wit : Wit₁) :
     (P₁.append P₂).run stmt wit = (do
       let ⟨transcript₁, stmt₂, wit₂⟩ ← liftAppendLeft pSpec₂ (P₁.run stmt wit)
       let ⟨transcript₂, stmt₃, wit₃⟩ ← liftAppendRight pSpec₁ (P₂.run stmt₂ wit₂)
       return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) := by
-  obtain ⟨outputFn, hOutputPt⟩ := hPure.output_is_pure
-  have hOutput : P₁.output = fun st => pure (outputFn st) := funext hOutputPt
   rcases Nat.eq_zero_or_pos n with hn | hn
   · subst hn
     have hStS : (P₁.append P₂).PrvState (Fin.last (m + 0)) = P₁.PrvState (Fin.last m) :=
@@ -1040,21 +1084,31 @@ theorem append_run [hPure : P₁.OutputIsPure] (stmt : Stmt₁) (wit : Wit₁) :
     unfold Prover.run
     refine HEq.trans (heq_bind hα rfl key hf) ?_
     refine heq_of_eq ?_
-    simp only [hOutput, liftM_bind, liftM_pure, liftAppendRight_liftM, bind_assoc,
+    simp only [liftM_bind, liftM_pure, liftAppendLeft_liftM, liftAppendRight_liftM, bind_assoc,
       pure_bind, runToRound_last_zero]
     refine bind_congr (fun p => ?_)
-    have hd : (dcast (by simp) (P₂.input (outputFn p.2)) : P₂.PrvState (Fin.last 0))
-        = P₂.input (outputFn p.2) := eq_of_heq (heq_dcast _ _)
+    refine bind_congr (fun ctx => ?_)
+    have hd : (dcast (by simp) (P₂.input ctx) : P₂.PrvState (Fin.last 0))
+        = P₂.input ctx := eq_of_heq (heq_dcast _ _)
     have hc : (cast hTr.symm p.1 : (pSpec₁ ++ₚ pSpec₂).FullTranscript)
         = p.1 ++ₜ (fun z => Fin.elim0 z) :=
       eq_of_heq ((cast_heq hTr.symm p.1).trans
         (heq_append_nil rfl p.1 (fun z => Fin.elim0 z)).symm)
     rw [hd, hc]
     rfl
-  · rw [append_run_pos hn outputFn hOutput stmt wit]
+  · rw [append_run_pos hn (hSeam hn) stmt wit]
     unfold rightRun Prover.run
-    simp only [hOutput, liftM_bind, liftM_pure, liftAppendRight_liftM, bind_assoc,
+    simp only [liftM_bind, liftM_pure, liftAppendLeft_liftM, liftAppendRight_liftM, bind_assoc,
       pure_bind]
+
+/-- Running an appended prover factors into its component runs when the left output is pure.
+For effectful outputs, `append_run_of_seam` also covers empty and message-opening protocols. -/
+theorem append_run [hPure : P₁.OutputIsPure] (stmt : Stmt₁) (wit : Wit₁) :
+    (P₁.append P₂).run stmt wit = (do
+      let ⟨transcript₁, stmt₂, wit₂⟩ ← liftAppendLeft pSpec₂ (P₁.run stmt wit)
+      let ⟨transcript₂, stmt₃, wit₃⟩ ← liftAppendRight pSpec₁ (P₂.run stmt₂ wit₂)
+      return ⟨transcript₁ ++ₜ transcript₂, stmt₃, wit₃⟩) :=
+  append_run_of_seam (fun _ => Or.inl hPure) stmt wit
 
 -- TODO: Need to define a function that "extracts" a second prover from the combined prover
 

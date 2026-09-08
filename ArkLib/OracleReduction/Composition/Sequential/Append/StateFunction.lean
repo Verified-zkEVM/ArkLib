@@ -583,4 +583,163 @@ def StateFunction.append
         (congrArg (verify stmt) (transcript_fst_eq_full tr).symm)
         (transcript_snd_heq_full tr).symm hc
 
+variable {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
+    {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂}
+
+/-- Before the seam, every transition from a losing appended state projects to a transition
+from a losing first-component state, with one fixed prefix for all possible next messages. -/
+theorem StateFunction.append_transition_left
+    (S₁ : V₁.StateFunction init impl lang₁ lang₂)
+    (S₂ : V₂.StateFunction init impl lang₂ lang₃)
+    (verify : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hVerify : V₁ = ⟨fun stmt tr => pure (verify stmt tr)⟩)
+    (j : Fin m) (stmt : Stmt₁)
+    (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (Fin.castAdd n j).castSucc)
+    (hnot : ¬ (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify)
+      (Fin.castAdd n j).castSucc stmt tr) :
+    ∃ tr₁ : pSpec₁.Transcript j.castSucc, ¬ S₁ j.castSucc stmt tr₁ ∧
+      ∀ msg : (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n j),
+        (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify)
+          (Fin.castAdd n j).succ stmt (tr.concat msg) →
+        S₁ j.succ stmt (tr₁.concat (cast (append_Type_castAdd j) msg)) := by
+  let idx := Fin.castAdd n j
+  have hlt : idx.val < m := j.isLt
+  have hidx := idx.isLt
+  have hcs : idx.castSucc.val = idx.val := rfl
+  have hsc : idx.succ.val = idx.val + 1 := rfl
+  change (pSpec₁ ++ₚ pSpec₂).Transcript idx.castSucc at tr
+  have htype : (pSpec₁ ++ₚ pSpec₂).«Type» idx = pSpec₁.«Type» j := append_Type_castAdd j
+  change ¬ (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify).toFun
+    idx.castSucc stmt tr at hnot
+  dsimp only [StateFunction.append] at hnot
+  let T₁ : pSpec₁.Transcript ⟨idx.val, by omega⟩ := fun i =>
+    cast (append_Type_castAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)
+      ⟨i.val, by have hi : i.val < idx.val := i.isLt; omega⟩)
+      (tr ⟨i.val, by have hi : i.val < idx.val := i.isLt; omega⟩)
+  have hnot₁ : ¬ S₁.toFun ⟨idx.val, by omega⟩ stmt T₁ := by
+    intro hc
+    apply hnot
+    rw [dif_pos (show ((idx.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
+    refine stateFunction_toFun_heq S₁
+      (Fin.ext (show idx.val = ((idx.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
+    refine HEq.trans ?_ (heq_eqMp _ _).symm
+    exact transcript_heq_ext (k := ⟨idx.val, by omega⟩)
+      (k' := ⟨min ((idx.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
+      (show idx.val = min ((idx.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
+      (fun i hi hi' => HEq.rfl)
+  refine ⟨T₁, hnot₁, ?_⟩
+  intro msg hgoal
+  change (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify).toFun
+    idx.succ stmt (tr.concat msg) at hgoal
+  dsimp only [StateFunction.append] at hgoal
+  rw [dif_pos (show ((idx.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+  convert hgoal using 2
+  · rfl
+  refine eq_of_heq (HEq.symm ((heq_eqMp _ _).trans (transcript_heq_ext
+    (show min ((idx.succ : Fin (m + n + 1)) : ℕ) m = idx.val + 1 by omega) ?_)))
+  intro i hi hi'
+  have hi'' : i < idx.val + 1 := hi'
+  rcases Nat.lt_or_ge i idx.val with hij | hij
+  · exact ((transcript_fst_apply _ i hi hi').trans
+      (Transcript.concat_apply_lt tr msg i hij hi')).trans
+        ((Transcript.concat_apply_lt T₁ (cast htype msg) i hij hi').trans (cast_heq _ _)).symm
+  · obtain rfl : i = idx.val := le_antisymm (by omega) hij
+    exact ((transcript_fst_apply _ idx.val hi hi').trans
+      (Transcript.concat_apply_last tr msg idx.val rfl hi')).trans
+        ((Transcript.concat_apply_last T₁ (cast htype msg) idx.val rfl hi').trans
+          (cast_heq _ _)).symm
+
+/-- At and after the seam, a losing appended state determines a false intermediate statement
+and a losing second-component prefix. Both are fixed before the next message is sampled. -/
+theorem StateFunction.append_transition_right
+    (S₁ : V₁.StateFunction init impl lang₁ lang₂)
+    (S₂ : V₂.StateFunction init impl lang₂ lang₃)
+    (verify : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hVerify : V₁ = ⟨fun stmt tr => pure (verify stmt tr)⟩)
+    (j : Fin n) (stmt : Stmt₁)
+    (tr : (pSpec₁ ++ₚ pSpec₂).Transcript (Fin.natAdd m j).castSucc)
+    (hnot : ¬ (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify)
+      (Fin.natAdd m j).castSucc stmt tr) :
+    ∃ stmt₂, stmt₂ ∉ lang₂ ∧ ∃ tr₂ : pSpec₂.Transcript j.castSucc,
+      ¬ S₂ j.castSucc stmt₂ tr₂ ∧
+      ∀ msg : (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.natAdd m j),
+        (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify)
+          (Fin.natAdd m j).succ stmt (tr.concat msg) →
+        S₂ j.succ stmt₂ (tr₂.concat (cast (append_Type_natAdd j) msg)) := by
+  let idx := Fin.natAdd m j
+  have hidx : idx.val = m + j.val := rfl
+  have hj := j.isLt
+  have hcs : idx.castSucc.val = idx.val := rfl
+  have hsc : idx.succ.val = idx.val + 1 := rfl
+  have hraw : (Fin.natAdd m j).succ.val = idx.val + 1 := rfl
+  change (pSpec₁ ++ₚ pSpec₂).Transcript idx.castSucc at tr
+  change ¬ (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify).toFun
+    idx.castSucc stmt tr at hnot
+  dsimp only [StateFunction.append] at hnot
+  let T₁ : pSpec₁.FullTranscript := fun i => tr.fst ⟨i.val, by
+    change i.val < min idx.castSucc.val m
+    have := i.isLt
+    omega⟩
+  let T₂ : pSpec₂.Transcript j.castSucc := fun i =>
+    cast (append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)
+      ⟨i.val, by have hi : i.val < j.val := i.isLt; omega⟩)
+      (tr ⟨m + i.val, by have hi : i.val < j.val := i.isLt; omega⟩)
+  have hS₁ : ¬ S₁.toFun (Fin.last m) stmt T₁ := by
+    intro hc
+    by_cases heq : idx.val = m
+    · rw [dif_pos (show idx.castSucc.val ≤ m by omega)] at hnot
+      refine hnot (stateFunction_toFun_heq S₁ (Fin.ext (by simp; omega)) rfl ?_ hc)
+      refine HEq.trans ?_ (heq_eqMp _ _).symm
+      exact transcript_heq_ext (k := Fin.last m)
+        (k' := ⟨min idx.castSucc.val m, by omega⟩) (by simp; omega)
+        (fun i hi hi' => HEq.rfl)
+    · rw [dif_neg (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
+      exact hnot (Or.inl hc)
+  have hmem : verify stmt T₁ ∉ lang₂ := verify_notMem_of_not_toFun S₁ hVerify stmt T₁ hS₁
+  have hnot₂ : ¬ S₂.toFun j.castSucc (verify stmt T₁) T₂ := by
+    intro hc
+    by_cases heq : j.val = 0
+    · exact hmem ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂
+        (Fin.ext (by simp; omega)) rfl
+        (transcript_heq_ext (k := j.castSucc) (k' := 0) (by simp; omega)
+          (fun i hi _ => by have : i < j.val := hi; omega)) hc))
+    · rw [dif_neg (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
+      refine hnot (Or.inr (stateFunction_toFun_heq S₂
+        (Fin.ext (show j.val = idx.castSucc.val - m by omega)) rfl ?_ hc))
+      exact transcript_heq_ext (k := j.castSucc)
+        (k' := ⟨idx.castSucc.val - m, by omega⟩) (show j.val = idx.castSucc.val - m by omega)
+        (fun i hi hi' => HEq.rfl)
+  refine ⟨verify stmt T₁, hmem, T₂, hnot₂, ?_⟩
+  intro msg hgoal
+  change (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify).toFun
+    idx.succ stmt (tr.concat msg) at hgoal
+  dsimp only [StateFunction.append] at hgoal
+  rw [dif_neg (show ¬ idx.succ.val ≤ m by omega)] at hgoal
+  have hTr : ∀ (i : Fin m) (h1 : i.val < min idx.succ.val m)
+      (h2 : i.val < min idx.castSucc.val m),
+      HEq ((Transcript.concat msg tr).fst ⟨i.val, h1⟩) (tr.fst ⟨i.val, h2⟩) := by
+    intro i h1 h2
+    exact ((transcript_fst_apply _ i.val h1 (by omega)).trans
+      (Transcript.concat_apply_lt tr msg i.val (by omega) (by omega))).trans
+        (transcript_fst_apply tr i.val h2 (by omega)).symm
+  replace hgoal := hgoal.resolve_left (fun hc => hS₁ (stateFunction_toFun_heq S₁ rfl rfl
+    (heq_of_eq (funext fun i => eq_of_heq (hTr i _ _))) hc))
+  have hSnd : HEq ((Transcript.concat msg tr).snd)
+      (Transcript.concat (cast (append_Type_natAdd j) msg) T₂) := by
+    refine transcript_heq_ext (k := ⟨idx.succ.val - m, by omega⟩)
+      (k' := j.succ) (show idx.succ.val - m = j.val + 1 by omega) ?_
+    intro i hi hi'
+    have hi2 : i < j.val + 1 := hi'
+    rcases Nat.lt_or_ge i j.val with hij | hij
+    · exact ((transcript_snd_apply (Transcript.concat msg tr) i hi (by omega)).trans
+        (Transcript.concat_apply_lt tr msg (m + i) (by omega) (by omega))).trans
+          ((Transcript.concat_apply_lt T₂ (cast (append_Type_natAdd j) msg) i hij hi').trans
+            (cast_heq _ _)).symm
+    · exact ((transcript_snd_apply (Transcript.concat msg tr) i hi (by omega)).trans
+        (Transcript.concat_apply_last tr msg (m + i) (by omega) (by omega))).trans
+          ((Transcript.concat_apply_last T₂ (cast (append_Type_natAdd j) msg) i
+            (by omega) hi').trans (cast_heq _ _)).symm
+  exact stateFunction_toFun_heq S₂ (Fin.ext (show idx.succ.val - m = j.val + 1 by omega))
+    (congrArg (verify stmt) (funext fun i => eq_of_heq (hTr i _ _))) hSnd hgoal
+
 end Verifier
