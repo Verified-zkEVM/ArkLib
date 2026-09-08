@@ -7,7 +7,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
+import CompPoly.LinearAlgebra.TensorProduct.Basis
 import ArkLib.ProofSystem.RingSwitching.Packing.Profile
 import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 import ArkLib.ProofSystem.Sumcheck.Structured
@@ -75,9 +75,7 @@ The concrete carrier of the binary-tower instance: `A = L ⊗[K] L`, its two emb
 `K`-basis `β` of `L`.
 -/
 
-/-- The tensor-algebra carrier `A = L ⊗[K] L`: as a `K`-module, a `(2^κ) × (2^κ)` array of
-`K`-elements, holding polynomial data (`φ₁`-factor) and evaluation-point data (`φ₀`-factor)
-independently. The imported `TensorAlgebra` file provides the left-algebra instances. -/
+/-- The tensor-product algebra `L ⊗[K] L`. -/
 abbrev TensorAlgebra (K L : Type*) [CommRing K] [CommRing L] [Algebra K L] := L ⊗[K] L
 
 /--
@@ -459,13 +457,10 @@ def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1
 end Relations
 
 open Module in
-/-- The Binius (binary-tower) instantiation of `RingSwitchingProfile`, built from the tensor-algebra
-definitions above: `A := L ⊗[K] L`, embeddings `φ₀ = · ⊗ 1` / `φ₁ = 1 ⊗ ·`, and the decompositions
-are the `K`-basis coordinates via the left/right `L`-module structures.
+/-- The tensor-product ring-switching profile associated with the basis `β`.
 
-Marked `@[reducible]` so that, once the protocol code is rewired through the profile, references to
-`(binaryTowerProfile …).A` (etc.) unfold to `L ⊗[K] L` at reducible transparency — preserving the
-existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axioms`). -/
+The two ring homomorphisms send `x` to `x ⊗ 1` and `1 ⊗ x`. Row coordinates use the
+left-factor scalar action, and column coordinates use the right-factor scalar action. -/
 @[reducible] def binaryTowerProfile (κ : ℕ) [NeZero κ] (K L : Type)
     [Field K] [Field L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
     RingSwitchingProfile K L κ where

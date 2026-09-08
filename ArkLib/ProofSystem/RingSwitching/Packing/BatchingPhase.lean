@@ -7,7 +7,6 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 import ArkLib.ProofSystem.RingSwitching.Packing.Spec
 import ArkLib.OracleReduction.Basic
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
 
 /-!
 # ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
