@@ -274,6 +274,7 @@ import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.Trivariate
+import ArkLib.Data.Polynomial.UniversalHenselNumerator
 import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.Probability.KoalaBear
