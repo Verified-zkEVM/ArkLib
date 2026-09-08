@@ -43,6 +43,43 @@ example :
     exact h
   · simp [polynomial]
 
+/-- Actual closing retains the input oracle, so a dishonest accepted message has a false output. -/
+example (r : ZMod 17) :
+    (fun run => run.closed.map (closedOutputRelation (ZMod 17) 0)) <$>
+      executeCore (claimReduction (ZMod 17) 0 ambient [0] r)
+        (inputImpl (ZMod 17) 0 zeroMessage) 1 oneMessage = pure (some False) := by
+  have hrun : executeCore (claimReduction (ZMod 17) 0 ambient [0] r)
+      (inputImpl (ZMod 17) 0 zeroMessage) 1 oneMessage =
+      pure { (honestRun (ZMod 17) 0 zeroMessage r) with
+        path := ⟨oneMessage, r, PUnit.unit⟩
+        proverOut := (1, r)
+        outcome := some (outputClaim (ZMod 17) 0 (1, r)) } := by
+    simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
+      pure_bind]
+    change ((simulateQ (Verifier.readImpl ambient (access (ZMod 17) 0)
+        (Access.extendImpl (inputSpec (ZMod 17)).toPFunctor (polynomialInterface (ZMod 17) 0)
+          (inputImpl (ZMod 17) 0 zeroMessage) oneMessage))
+        (Option.map (outputClaim (ZMod 17) 0) <$>
+          terminal (ZMod 17) 0 ambient [0] 1 r) >>= fun out =>
+          pure (⟨⟨oneMessage, r, PUnit.unit⟩, (oneMessage.val.eval r, r), out⟩ :
+            (path : (protocol (ZMod 17) 0).tree.ExecutionPath) × (ZMod 17 × ZMod 17) ×
+              TerminalClaim (protocol (ZMod 17) 0) (inputSpec (ZMod 17)).toPFunctor
+                (fun _ => ZMod 17 × ZMod 17) (fun _ => outputFamily (ZMod 17) 0)
+                path.toBranchPath)) >>= fun result => pure
+          (⟨result.1, inputImpl (ZMod 17) 0 zeroMessage, result.2.1, result.2.2⟩ :
+            CoreRun (protocol (ZMod 17) 0) (inputSpec (ZMod 17)).toPFunctor
+              (fun _ => ZMod 17 × ZMod 17) (fun _ => outputFamily (ZMod 17) 0)
+              (fun _ => ZMod 17 × ZMod 17))) = _
+    rw [simulateQ_map, simulate_terminal]
+    simp [oneMessage]
+    rfl
+  rw [hrun]
+  simp only [map_pure]
+  change (pure (some (zeroMessage.val.eval r = 1)) : OracleComp ambient (Option Prop)) =
+    pure (some False)
+  have h : (0 : ZMod 17) ≠ 1 := by decide
+  simp [zeroMessage, h]
+
 #print axioms executeCore_closed
 #print axioms executeCore_degree_complete
 #print axioms executeSampled_eq
