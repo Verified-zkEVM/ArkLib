@@ -396,6 +396,8 @@ import ArkLib.ProofSystem.Stir.ProximityGap
 import ArkLib.ProofSystem.Stir.Quotienting
 import ArkLib.ProofSystem.Sumcheck.Domain
 import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
+import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
 import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
