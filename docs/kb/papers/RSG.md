@@ -51,6 +51,13 @@ Likewise, the reduction needs the downstream commitment's real extraction or bin
 semantics. A carrier instance or an identity commitment alone does not certify a PCS
 integration.
 
+`Packing/FiniteObservation.lean` proves the representation-independent observation identity
+underneath the coordinate argument. Its actual consumers include Boolean interpolation in
+`Packing/Relations.lean`, native tensor observations in `Packing/ProfileCoordinates.lean`,
+and monomial coefficient evaluation in Hachi's `TraceHead/Coordinates.lean`. The Hachi adapter
+proves the correspondence with its actual ψ basis and trace check; it does not apply the
+note's field batching bound to the cyclotomic ring.
+
 `Packing/Tail/FullFamilyOpening.lean` implements the checked-slice variant through the actual
 sumcheck sequence and terminal opening relation, with state-aware completeness and exact-object
 worst-case RBR knowledge under explicit functionality and injective compatible P→C transport.

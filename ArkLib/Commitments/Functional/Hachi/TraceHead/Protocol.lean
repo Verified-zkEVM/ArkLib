@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 import ArkLib.Commitments.Functional.Hachi.TraceHead.Coordinates
+import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
@@ -109,6 +110,91 @@ def relIn
       (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base p.2)).eval
         ((p.1.xl ++ p.1.xh) ++ p.1.xp) = p.1.value}
 
+/-- The honest message is the evaluation of the actual ring polynomial extracted from the weak
+opening; the prover does not need to compute inverse packing coordinates. -/
+def honestMessage (base : ZMod q)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
+    Rq (powTwoCyclotomic (R := ZMod q) α) :=
+  (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w).eval
+    ((s.xl ++ s.xh).map (algebraMap _ _))
+
+/-- The actual monomial evaluation is an observation of the sent ring value, with the same
+weak-opening witness. The unconditional identity comes from shared finite reconstruction. -/
+def observation (base : ZMod q) : RingSwitching.Packing.CheckedObservation
+    (Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+    (Rq (powTwoCyclotomic (R := ZMod q) α)) (fixedSubring (R := ZMod q) α (2 ^ κ)) where
+  witnessEquiv := Equiv.refl _
+  honestMsg := honestMessage α κ base
+  scalarEval s w :=
+    (unpackCoefficients (coefficientEquiv q α κ h2 hk)
+      (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w)).eval
+        ((s.xl ++ s.xh) ++ s.xp)
+  observe s Y := ∑ j, (packingData q α κ h2 hk).packBasis.repr Y j *
+    (CMlPolynomial.monomialBasis s.xp).get (finCongr (packingRank_eq α κ hk) j)
+  eval_eq_observe s w := unpack_eval_eq_observation q α κ h2 hk
+    (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w) (s.xl ++ s.xh) s.xp
+
+/-- The original input relation is the same weak-opening predicate and scalar observation. -/
+theorem relIn_iff_observation
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
+    (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound ↔
+      VerifiedOpening (powTwoCyclotomic (R := ZMod q) α) base βSq γ bound
+        pp.toPublicParams s.u w ∧
+          s.value = (observation α κ hk h2 base).scalarEval s w := by
+  exact and_congr_right fun _ => eq_comm
+
+set_option backward.isDefEq.respectTransparency false in
+/-- For every sent ring value, the actual scaled-trace guard is the observation equality. -/
+theorem check_iff_observation (base : ZMod q)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (Y : Rq (powTwoCyclotomic (R := ZMod q) α)) :
+    check α κ hk s Y = true ↔ s.value = (observation α κ hk h2 base).observe s Y := by
+  have h := trace_coefficientEquiv_eq_iff q α κ h2 hk
+    ((coefficientEquiv q α κ h2 hk).symm Y) (CMlPolynomial.monomialBasis s.xp).get s.value
+  rw [LinearEquiv.apply_symm_apply] at h
+  rw [check, beq_iff_eq]
+  change traceH α (2 ^ κ) (Y * conjAut α
+      (coefficientEquiv q α κ h2 hk (CMlPolynomial.monomialBasis s.xp).get)) =
+    (2 ^ α / 2 ^ κ) • (s.value : Rq (powTwoCyclotomic α)) ↔ _
+  rw [h]
+  change _ ↔ s.value = ∑ j, (packingData q α κ h2 hk).packBasis.repr Y j *
+    (CMlPolynomial.monomialBasis s.xp).get (finCongr (packingRank_eq α κ hk) j)
+  simp_rw [packingData_repr]
+  dsimp +instances only [packingData]
+  rw [Equiv.sum_comp (finCongr (packingRank_eq α κ hk)) (fun i =>
+    (coefficientEquiv q α κ h2 hk).symm Y i * (CMlPolynomial.monomialBasis s.xp).get i)]
+  exact eq_comm
+
+/-- The existing output relation fixes the honest ring value and keeps the original opening. -/
+theorem relOut_iff_observation
+    (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (base : ZMod q) (βSq γ bound : ℕ)
+    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
+    (Y : Rq (powTwoCyclotomic (R := ZMod q) α))
+    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
+      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
+    (output α κ s Y, w) ∈
+      relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound ↔
+      VerifiedOpening (powTwoCyclotomic (R := ZMod q) α) base βSq γ bound
+        pp.toPublicParams s.u w ∧
+          Y = (observation α κ hk h2 base).honestMsg s w := by
+  change (_ ∧ (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w).eval
+    (s.xl.map (algebraMap _ _) ++ s.xh.map (algebraMap _ _)) = Y) ↔ _
+  simp only [observation, honestMessage, Vector.map_append]
+  exact and_congr_right fun _ => eq_comm
+
 /-- From a valid ring-level opening and the actual passing check, recover the scalar claim. -/
 theorem mem_relIn_of_output
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
@@ -122,23 +208,12 @@ theorem mem_relIn_of_output
     (hout : (output α κ s Y, w) ∈
       relPolyEval (powTwoCyclotomic (R := ZMod q) α) pp base βSq γ bound) :
     (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound := by
-  refine ⟨hout.1, ?_⟩
-  apply (trace_eval_eq_iff q α κ h2 hk _ (s.xl ++ s.xh) s.xp s.value).1
-  have hev := hout.2
-  change (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w).eval
-    (s.xl.map (algebraMap _ _) ++ s.xh.map (algebraMap _ _)) = Y at hev
-  rw [Vector.map_append, hev]
-  simpa only [check, beq_iff_eq, packedMonomial, coefficientEquiv_apply] using hc
-
-/-- The honest message is the evaluation of the actual ring polynomial extracted from the weak
-opening; the prover does not need to compute inverse packing coordinates. -/
-def honestMessage (base : ZMod q)
-    (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
-    (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
-      innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
-    Rq (powTwoCyclotomic (R := ZMod q) α) :=
-  (extractedPoly (powTwoCyclotomic (R := ZMod q) α) base w).eval
-    ((s.xl ++ s.xh).map (algebraMap _ _))
+  apply (relIn_iff_observation α κ hk h2 pp base βSq γ bound s w).2
+  exact (observation α κ hk h2 base).readback_keep
+    (fun s w => VerifiedOpening (powTwoCyclotomic (R := ZMod q) α) base βSq γ bound
+      pp.toPublicParams s.u w)
+    ((check_iff_observation α κ hk h2 base s Y).1 hc)
+    ((relOut_iff_observation α κ hk h2 pp base βSq γ bound s Y w).1 hout)
 
 /-- Scalar source validity makes the honest ring evaluation pass the exact trace check. -/
 theorem check_honestMessage
@@ -150,8 +225,9 @@ theorem check_honestMessage
       innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
     (h : (s, w) ∈ relIn α κ hk h2 pp base βSq γ bound) :
     check α κ hk s (honestMessage α κ base s w) = true := by
-  have ht := (trace_eval_eq_iff q α κ h2 hk _ (s.xl ++ s.xh) s.xp s.value).2 h.2
-  simpa only [check, beq_iff_eq, honestMessage, packedMonomial, coefficientEquiv_apply] using ht
+  apply (check_iff_observation α κ hk h2 base s _).2
+  exact (observation α κ hk h2 base).honest_check
+    ((relIn_iff_observation α κ hk h2 pp base βSq γ bound s w).1 h).2
 
 /-- The honest output keeps the same norm-conditioned opening and its actual ring evaluation. -/
 theorem mem_output_of_relIn

@@ -280,8 +280,9 @@ two auxiliary knowledge states. `Legacy.lean` and `Orientation.lean` under
 honest nonzero source and failure through actual verifier append. New execution and coordinate
 lemmas passed independent named axiom checks. The final leaf now has ring-valid actual-run
 completeness, both KSF boundaries and zero-error worst-case knowledge proofs; its product-ring
-client covers packed value1 with multiplier0. Legacy batching/loop and general-composition
-admissions remain open.
+client covers packed value1 with multiplier0. The native tensor batching head now has proved
+state-aware completeness, both knowledge-state boundaries and exact worst-case-per-prefix
+knowledge security. Legacy loop and unrestricted general-composition admissions remain open.
 
 The actual FRI-Binius initial compatibility relation has separate proofs of functionality and
 honest coverage. Its GF(16) acceptance client constructs the field, basis, size/rate parameters,
@@ -291,20 +292,54 @@ those same production semantics. Its GF(16) clients prove source coverage, same-
 output, rejection and actual knowledge/completeness through both the full-family phase and
 the complete generic product-sumcheck pipeline. The latter rejects false original families
 for every later tail transcript.
-This does not certify the downstream interleaved FRI-Binius opening.
+The existing FRI-Binius completeness assembly now invokes the native batching specialization;
+its native verifier's exact knowledge theorem uses the actual `binaryBasefold_functional` proof.
+The one tensor message, vector challenge, retained commitment and interleaved-core input relation
+are preserved. The actual FRI-Binius final verifier also aborts failed checks and preserves the
+received constant on acceptance. General execution and arbitrary-suffix rejection equations,
+plus inhabited GF(16) regressions, certify that local repair. They do not certify the downstream
+interleaved FRI-Binius opening; the full completeness assembly still inherits downstream admissions.
+
+### Shared proofs consumed by production definitions
+
+An instance declaration or acceptance client alone does not establish production reuse. The
+following paths occur in actual declaration bodies. Their source relations and algebraic
+correspondences were reviewed separately from their named axiom dependencies.
+
+| Shared layer | Concrete evidence supplied | Actual consumers and preserved boundary |
+|---|---|---|
+| `PackingData.transpose_observe` / `readback_coordinateSlices` | Independent finite bases and a finite table with arbitrary opening-algebra weights | Generic `Relations` read-back; native `ProfileCoordinates.columns_observation` and `BatchingAlgebra`; Hachi `Coordinates` monomial observation using its actual ψ basis. No field, domain or common packing/opening rank is required. |
+| `CheckedObservation.honest_check` / `readback_keep` | A genuine witness equivalence and unconditional evaluation identity; actual guard/input/output correspondence | `ScalarHead.honest_check` / `readback`, Hachi `check_honestMessage` / `mem_relIn_of_output`, and the native tensor head through `nativeObservation`. Existing completeness, KSF and Hachi CWSS proofs consume these endpoints. The weak opening and its norm predicates remain intact. |
+| `ClaimLayout` and polynomial transport | `RingSwitching.packMLE_eq_packedMLE` in `LegacyLayout.lean` (the actual DP24 `splitFirst` components), both native packing inverses, and prefix/suffix index identities | The native scalar check reads back the actual original source polynomial, not an unrelated family witness. DP24 and Flock ordinary/quirky layouts supply their own reconstruction identities to the same `ClaimLayout` interface and scalar-head proofs; no production Flock PCS is implemented. |
+| `FullFamily.compatibility_badEvent_le` | The actual compatibility relation, explicit functionality and injective coefficient transport | Both generic family separation and native `BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. A committed polynomial is fixed before the challenge; honest coverage is not invented as a security premise. |
+| Native batching completeness and exact knowledge theorem | Existing Binius profile, oracle relation and real unique-distance binding | `FullFRIBinius.batchingReduction_perfectCompleteness` is called by the existing full completeness assembly. `FullFRIBinius.batchingVerifier_rbrKnowledgeSoundnessWorstCaseWith` supplies `binaryBasefold_functional` and retains the exact native extractor/state and error `κ/|L|`. Downstream FRI security remains separate. |
+
+Hachi therefore shares reconstruction and deterministic checked-output proofs with Binius and
+the generic scalar head. It retains its own trace guard, one-message protocol and CWSS contract;
+no conversion to functional-commitment RBR security is asserted. The native Binius head shares
+the probabilistic separation theorem as well. Flock layouts share the scalar-head proofs, while
+list/OOD binding and a production Flock integration remain additional work.
+
+Permanent additional clients exercise arbitrary finite observations over `ZMod 6` with unequal
+basis ranks, empty observations, a non-self-inverse witness permutation with a proper retained
+predicate, Hachi's nonzero coefficient polynomial and real weak opening, and the actual GF(16)
+native batching input/output relations and `batchingCoreVerifier` rejection. Independent review
+checks actual proof-value paths rather than merely imports or theorem signatures. Standard-only
+axiom probes separately certify the new contracts; the full FRI assembly's remaining debt is
+reported independently.
 
 - The legacy modules in `Packing/` retain admitted leaves. The coordinate, terminal-value and
   rejection repairs above correct their contracts; they do not by themselves discharge those
   proof obligations or certify a generic end-to-end protocol.
-- The separately based core is implemented in `Packing/Coordinates.lean`, `Polynomial.lean`,
-  `Relations.lean`, and `Batching.lean`: two-sided polynomial transport, full-family read-back,
+- The separately based core is implemented in `Packing/Coordinates.lean`, `FiniteObservation.lean`,
+  `Polynomial.lean`, `Relations.lean`, and `Batching.lean`: two-sided polynomial transport, full-family read-back,
   and fixed-family separation have proofs over their stated algebraic assumptions. Independent
   review and named axiom checks cover this core. Its proofs do not inherit a certificate from
   the legacy profile.
 - The checked-slice `FullFamily/` phase is implemented and independently reviewed. Its actual
   verifier retains the same commitment relation, aborts failed checks, and reduces the public
   family to a C-valued sumcheck claim. State-uniform completeness and exact-object worst-case
-  knowledge proofs are standard-axiom-only. Concrete production clients cover non-domain rings,
+  knowledge proofs are standard-axiom-only. Concrete acceptance clients cover non-domain rings,
   incompatible packing/opening fields, and a larger challenge field. Its polynomial-oracle test
   fixture is an explicit generic example; the base commitment admits finite candidate sets,
   while this randomized theorem explicitly requires functionality. Its precise downstream
@@ -366,8 +401,11 @@ This does not certify the downstream interleaved FRI-Binius opening.
   the composition and commitment-extraction dependencies need separate axiom checks.
 - Hachi's `TraceHead/` is implemented and independently reviewed. It proves both monomial
   packing inverses, uses the actual ψ basis, and cancels the trace scale as a unit in R_q.
-  Its one-message phase, ordinary/MsgShort completeness and CWSS preserve the actual weak
-  opening. Honest source coverage commits every original polynomial's packed coefficients
+  Its actual monomial observation consumes `PackingData`'s shared finite-observation theorem;
+  its honest-check and source read-back consume `CheckedObservation` through proved guard and
+  relation equivalences. The arbitrary-message trace guard uses the actual scaled trace and
+  ψ reindexing, without assuming the message is honest. Its one-message phase, ordinary/MsgShort
+  completeness and CWSS preserve the actual weak opening. Honest source coverage commits every original polynomial's packed coefficients
   with the real balanced-gadget committer. A concrete rank-two/rank-one nonzero source rejects
   a false zero claim in the full reduction. All named new algebra/protocol/consumer probes are
   standard-axiom-only. The fixed-subring field conclusion remains conditional on
@@ -388,14 +426,16 @@ source review and named axiom checks; permanent acceptance clients exercise its 
 | Model and legacy audit | Separate B/P/E/C roles; faithful legacy coordinates and absorbing failure | Nonconstant orientation, non-domain and terminal-value counterexamples |
 | Generic algebra | Coordinate transpose, polynomial inverses, batching and matrix multiplier | Unequal ranks, incompatible fields and nonmultiplicative observations |
 | Original-source heads | DP24/Flock layouts, quirky interpolation and Hachi monomial trace head | Actual source reconstruction, failed checks and norm-conditioned Hachi coverage |
+| Shared production proofs | Finite and checked observations consumed by native Binius and Hachi; native batching separation and real Binius binding | Actual declaration-value paths, standard-only named axioms, native GF(16) head/core rejection and Hachi weak-opening execution |
 | Commitment and composition | Base/functionality split; real Binius adapter; guarded append and finite sequence | Ambiguous finite candidates, shared-state seams and explicit recursive extraction |
 | Complete generic packing | Actual scalar/family heads, product sumcheck, terminal and error accounting | Empty/two-round execution, extension-valued opening, real GF(16) total 7/16 |
 | Downstream assembly | Actual opening contract and append wrapper | Checked-oracle closure of both public pipelines and effectful suffix behavior |
 
-Further work has separate proof obligations: remove the redundant scalar slice message with a
-proved protocol correspondence if exact DP24/Flock transcripts are needed; supply Flock list/OOD
-probability accounting; discharge the legacy batching/loop and interleaved FRI-Binius opening
-proofs; package Hachi's semantic trace head for the executable scalar scheme and repair its
+Further work has separate proof obligations: remove the redundant scalar slice message from
+the generic scalar-family composition with a proved protocol correspondence if exact DP24/Flock
+transcripts are needed (the native Binius head already preserves its single tensor message);
+supply Flock list/OOD probability accounting and a production PCS integration; discharge the
+legacy loop and interleaved FRI-Binius opening proofs; package Hachi's semantic trace head for the executable scalar scheme and repair its
 §4.5 recombination; and add HMZ exceptional-set security and the Galois product-carrier adapter.
 These extensions must preserve their source relations and stated binding models. They are not
 premises silently supplied by the generic packing proofs above.

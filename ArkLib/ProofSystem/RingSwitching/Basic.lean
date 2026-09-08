@@ -32,9 +32,10 @@ The two construction families, one folder each:
      reconstruction; `FullFamily/` proves checked coordinate batching to a sumcheck claim.
      `Tail/` composes the actual scalar or full-family head with product sumcheck and terminal
      read-back to the same packed opening relation, with explicit commitment functionality
-     at its randomized security bounds. The legacy pipeline retains admitted batching/loop security
-     and general composition;
-     FRI-Binius reuses its batching and then interleaves FRI with sumcheck.
+     at its randomized security bounds. The native tensor batching head consumes those shared
+     reconstruction and separation proofs, with completeness and exact worst-case knowledge
+     security. FRI-Binius instantiates it with its actual commitment binding, then interleaves
+     FRI with sumcheck. Legacy loop and unrestricted composition admissions remain separate.
    * **deterministic relocation** — `Commitments/Functional/Hachi/TraceHead/` implements
      the one-message, zero-challenge trace head at fixed-subring points ([NOZ26] §3.1).
      Actual monomial packing, the unit trace factor, honest committer coverage, completeness
@@ -48,11 +49,16 @@ The two construction families, one folder each:
    polynomial equality before being transported to the field. Generic
    over any monic-modulus presentation of `S` (`Lift/Presentation.lean` — *not*
    specific to cyclotomic rings), with coordinate-wise special soundness at `k = 2·deg φ`
-   via the committed-scalar seam. The cyclotomic instance
+   and a commitment-collision escape via the committed-scalar seam. The cyclotomic instance
    (`Commitments/Functional/Hachi/RingSwitch/`) realizes [HMZ25]'s lift as used by Hachi.
 
 ## Shared support
 
+* Within **Packing**, `FiniteObservation.lean` proves weighted coordinate reconstruction for
+  arbitrary finite tables. Actual Boolean, native tensor and Hachi monomial proofs consume it.
+  `CheckedObservation.lean` shares deterministic checking and exact inverse witness transport
+  while retaining each protocol's concrete guard and commitment predicate. Hachi's CWSS and
+  randomized packing's RBR knowledge certificates retain their separate security contracts.
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
   is "one prover message, a deterministic local check, an accept/reject statement update" —
   message-only (`pSpecMessage` + `guardedMessageRoundOracleVerifier`: scalar claim heads

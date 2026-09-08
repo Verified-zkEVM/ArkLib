@@ -51,6 +51,28 @@ noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
 
+/-- Fixing an empty prefix preserves the polynomial, including its variable indices. -/
+theorem fixFirstVariablesOfMQP_zero (p : MvPolynomial (Fin ℓ) L) :
+    fixFirstVariablesOfMQP ℓ 0 p Fin.elim0 = p := by
+  unfold fixFirstVariablesOfMQP
+  change map (eval (σ := Fin 0) Fin.elim0)
+    (sumAlgEquiv L (Fin ℓ) (Fin 0) (rename _ p)) = p
+  induction p using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simpa using congrArg₂ (· + ·) hp hq
+  | mul_X p i hp =>
+    simp only [map_mul] at hp ⊢
+    rw [hp]
+    congr 1
+    have hi : finSumFinEquiv.symm (Fin.cast (show ℓ = 0 + (ℓ - 0) by omega) i) =
+        Sum.inr i := by
+      apply finSumFinEquiv.injective
+      simp
+    erw [rename_X]
+    simp only [Equiv.trans_apply, finCongr_apply, Equiv.sumComm_apply]
+    erw [hi]
+    simp
+
 /-- The per-variable / prismalinear degree-survival lemma: if a polynomial respects a per-variable
 degree bound `b : Fin ℓ → ℕ`, then fixing the first `v` variables to scalars produces a polynomial
 whose surviving `Fin (ℓ-v)` variables respect `b` restricted to their original suffix indices.

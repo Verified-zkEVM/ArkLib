@@ -50,6 +50,13 @@ Ring-switching layer:
   guarded execution, completeness, CWSS, and source coverage using the real committer. Its
   output retains the same norm-conditioned opening at `relPolyEval`. See the
   [coverage audit](../audits/ring-switching-model-coverage.md).
+  The actual ψ basis is identified with `PackingData` coordinates, including the numeric
+  monomial-index transport. `TraceHead.unpack_eval_eq_observation` invokes the shared
+  `PackingData.readback_coordinateSlices` law. The actual head's observation adapter uses that
+  unconditional identity; its honest checking and read-back invoke shared `CheckedObservation`
+  lemmas, carrying both dependencies into production completeness and CWSS. The real scaled-trace
+  guard is proved equivalent to observation for arbitrary sent ring values. The common algebra
+  allows arbitrary finite weights; Hachi instantiates monomial weights at fixed-subring points.
 - The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
   [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
   `liftPackage` in Hachi's

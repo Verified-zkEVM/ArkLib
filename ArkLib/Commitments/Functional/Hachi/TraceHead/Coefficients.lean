@@ -96,4 +96,22 @@ theorem unpackCoefficients_eval (F : CMlPolynomial A n) (x : Vector B n)
   simp only [toMatrix]
   ring
 
+/-- Decoding a coefficient polynomial gives its actual monomial matrix contraction.
+This identity concerns coefficients, before choosing any observation of the packed ring. -/
+theorem unpackCoefficients_eval_components (F : CMlPolynomial A n) (x : Vector B n)
+    (xp : Vector B t) :
+    (unpackCoefficients e F).eval (x ++ xp) =
+      ∑ j, (∑ i, (CMlPolynomial.monomialBasis x).get i * e.symm (F.get i) j) *
+        (CMlPolynomial.monomialBasis xp).get j := by
+  rw [← evalSplit_eq_eval]
+  simp only [evalSplit, splitForm, dot_eq_sum, matVecMul_apply, Finset.mul_sum,
+    Finset.sum_mul, toMatrix, unpackCoefficients, Vector.get_ofFn,
+    Equiv.symm_apply_apply]
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro j _
+  apply Finset.sum_congr rfl
+  intro i _
+  ring
+
 end ArkLib.Lattices.Hachi.TraceHead

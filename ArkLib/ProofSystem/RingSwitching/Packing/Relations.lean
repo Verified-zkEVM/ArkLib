@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
+import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
 import ArkLib.ProofSystem.RingSwitching.Packing.Polynomial
 import Mathlib.Algebra.Algebra.Tower
 
@@ -56,28 +57,24 @@ theorem aeval_unpack_of_slices {m : ℕ} {r : Fin m → data.E}
         = ∑ y : Fin m → Fin 2, eqTilde (y : Fin m → data.E) r *
           algebraMap B data.E ((data.unpack p i).val.eval (y : Fin m → B)) :=
       aeval_multilinear_eq_sum_eqTilde (data.unpack p i).property r
-    _ = ∑ y : Fin m → Fin 2, ∑ u, (data.eqCoord r y u *
-          data.packBasis.repr (p.val.eval (y : Fin m → data.P)) i) • data.openBasis u := by
-      refine Finset.sum_congr rfl fun y _ => ?_
-      rw [data.unpack_eval_zeroOne]
+    _ = data.observe (fun y : Fin m → Fin 2 => eqTilde r (y : Fin m → data.E))
+        (fun y => p.val.eval (y : Fin m → data.P)) i := by
+      apply Finset.sum_congr rfl
+      intro y _
       have heq : eqTilde (y : Fin m → data.E) r = eqTilde r (y : Fin m → data.E) :=
         eqPolynomial_symm _ _
-      rw [heq, ← data.openBasis.sum_repr (eqTilde r (y : Fin m → data.E)), Finset.sum_mul]
-      refine Finset.sum_congr rfl fun u _ => ?_
-      rw [smul_mul_assoc, ← Algebra.commutes, ← Algebra.smul_def, smul_smul]
-      rfl
-    _ = ∑ u, data.packBasis.repr (∑ y : Fin m → Fin 2,
-          data.eqCoord r y u • p.val.eval (y : Fin m → data.P)) i • data.openBasis u := by
-      rw [Finset.sum_comm]
-      refine Finset.sum_congr rfl fun u _ => ?_
-      rw [← Finset.sum_smul]
-      congr 1
-      rw [map_sum, Finsupp.finsetSum_apply]
-      refine Finset.sum_congr rfl fun y _ => ?_
-      rw [map_smul, Finsupp.smul_apply, smul_eq_mul]
+      rw [data.unpack_eval_zeroOne, Algebra.smul_def, heq]
+      exact mul_comm _ _
     _ = ∑ u, data.packBasis.repr (s u) i • data.openBasis u := by
-      refine Finset.sum_congr rfl fun u _ => ?_
-      rw [← hs u]
+      have hs' : data.coordinateSlices
+          (fun y : Fin m → Fin 2 => eqTilde r (y : Fin m → data.E))
+          (fun y => p.val.eval (y : Fin m → data.P)) = s :=
+        funext fun u => (hs u).symm
+      have h := congrFun (data.readback_coordinateSlices
+        (fun y : Fin m → Fin 2 => eqTilde r (y : Fin m → data.E))
+        (fun y => p.val.eval (y : Fin m → data.P))) i
+      rw [hs', data.transpose_symm_apply] at h
+      exact h.symm
 
 /-- Honest slices of a packed family satisfy the consistency check. -/
 theorem claimConsistent_of_slices {m : ℕ} {r : Fin m → data.E}

@@ -39,28 +39,42 @@ def afterChallenge (α : data.ιP → data.E) (r : Fin m → data.E)
     (target data bat s c, p) ∈ data.sumcheckClaimRel m r (bat.weight c)
 
 /-- Fixed-prefix bad-transition bound with no challenge-dependent witness choice hidden in it. -/
+theorem compatibility_badEvent_le {O : Type*}
+    (commitsTo : O → data.P⦃≤ 1⦄[X Fin m] → Prop)
+    (hfunctional : ∀ {o p p'}, commitsTo o p → commitsTo o p' → p = p')
+    (hinj : Function.Injective (algebraMap data.P C))
+    (r : Fin m → data.E) (o : O) (s : data.ιE → data.P) :
+    Pr_{ let c ←$ᵖ bat.Challenge }[
+      ∃ p, commitsTo o p ∧ (s, p) ∉ data.sliceRel m r ∧
+        (target data bat s c, p) ∈ data.sumcheckClaimRel m r (bat.weight c)] ≤
+      (bat.error : ℝ≥0∞) := by
+  classical
+  by_cases hlive : ∃ p₀, commitsTo o p₀ ∧ (s, p₀) ∉ data.sliceRel m r
+  · obtain ⟨p₀, hcommit, hslice⟩ := hlive
+    have hne : s ≠ honestSlices data m r p₀ := fun h => hslice fun u => congrFun h u
+    refine (Pr_le_Pr_of_implies _ _ _ ?_).trans
+      (bat.separates_map (algebraMap data.P C) hinj s (honestSlices data m r p₀) hne)
+    rintro c ⟨p, hcommit', _, hsum⟩
+    obtain rfl : p = p₀ := hfunctional hcommit' hcommit
+    have hhonest := data.sumcheckClaim_of_slices
+      (honestSlices_mem_sliceRel data m r p) (bat.weight c)
+    exact hsum.trans hhonest.symm
+  · refine le_of_eq_of_le (prob_eq_zero_of_forall_not _ _ ?_) zero_le
+    rintro c ⟨p, hcommit, hslice, _⟩
+    exact hlive ⟨p, hcommit, hslice⟩
+
+/-- The phase's fixed-prefix bound consumes compatibility-only separation; an honest
+commitment constructor is not needed by the underlying collision argument. -/
 theorem badEvent_le (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     (α : data.ιP → data.E) (r : Fin m → data.E) (oStmt : ∀ j, pc.OStmt j)
     (s : data.ιE → data.P) :
     Pr_{ let c ←$ᵖ bat.Challenge }[
       ∃ p, ¬ beforeChallenge data m pc α r oStmt s p ∧
         afterChallenge data m bat pc α r oStmt s c p] ≤ (bat.error : ℝ≥0∞) := by
-  classical
-  by_cases hlive : ∃ p₀, pc.commitsTo oStmt p₀ ∧ data.claimConsistent α s ∧
-      (s, p₀) ∉ data.sliceRel m r
-  · obtain ⟨p₀, hcommit, _, hslice⟩ := hlive
-    have hne : s ≠ honestSlices data m r p₀ := fun h => hslice fun u => congrFun h u
-    refine (Pr_le_Pr_of_implies _ _ _ ?_).trans
-      (bat.separates_map (algebraMap data.P C) hinj s (honestSlices data m r p₀) hne)
-    rintro c ⟨p, _, _, hcommit', hsum⟩
-    obtain rfl : p = p₀ := hfunctional hcommit' hcommit
-    have hhonest := data.sumcheckClaim_of_slices
-      (honestSlices_mem_sliceRel data m r p) (bat.weight c)
-    exact hsum.trans hhonest.symm
-  · push Not at hlive
-    refine le_of_eq_of_le (prob_eq_zero_of_forall_not _ _ ?_) zero_le
-    rintro c ⟨p, hnot, hc, hcommit, _⟩
-    exact hnot ⟨hc, hcommit, hlive p hcommit hc⟩
+  refine (Pr_le_Pr_of_implies _ _ _ ?_).trans
+    (compatibility_badEvent_le data m bat pc.commitsTo hfunctional hinj r oStmt s)
+  rintro c ⟨p, hnot, hc, hcommit, hsum⟩
+  exact ⟨p, hcommit, fun hslice => hnot ⟨hc, hcommit, hslice⟩, hsum⟩
 
 end RingSwitching.Packing.FullFamily
 

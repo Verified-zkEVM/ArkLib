@@ -28,6 +28,18 @@ The coordinate core in `Packing/Coordinates.lean` uses a commutative base ring B
 one P-element. The opening algebra E and packing algebra P need no embedding between them.
 Neither an integral-domain condition nor a power-of-two rank is needed for this algebra.
 
+`Packing/FiniteObservation.lean` supplies the common reconstruction law for arbitrary finite
+tables `v : Y → P` and weights `a : Y → E`. Observing the packing coordinates and then
+transposing gives the same result as observing the packed table in each opening coordinate:
+
+```text
+T(i ↦ ∑ y, [v(y)]β,i • a(y)) = (u ↦ ∑ y, [a(y)]ε,u • v(y)).
+```
+
+Boolean interpolation and Hachi's monomial evaluation instantiate this same proved identity.
+The finite set Y is independent of both basis ranks and may be empty. The actual Hachi adapter
+proves that its ψ basis and numeric monomial indices agree with these packing coordinates.
+
 For base-valued tables `f_i(y)` and an opening point `r : E^m`, expand the public Boolean weights
 `eq(r,y)` in the ε-basis. Each claimed E-value `α_i` then has B-coordinates. Transpose that
 coordinate matrix and pack each row using β. Both basis inverse laws give a linear equivalence
@@ -45,12 +57,14 @@ challenge algebra C. The proof allows a nonmultiplicative final coordinate obser
 certifies one matrix-vector action per retained variable, excluding preprocessing. It needs
 no embedding of E into C.
 
-An optional tensor carrier `E ⊗[B] P` mathematically represents the same transport; a
-formal carrier-equivalence adapter is separate from these coordinate proofs. DP24 specializes
+An optional tensor carrier `E ⊗[B] P` mathematically represents the same transport. DP24 specializes
 to `E = P = L` and `L ⊗[B] L`. The legacy `RingSwitchingProfile` has a single L and two
 coordinate directions. Its repaired laws require two-sided decomposition/recomposition inverses
 and agreement of the embeddings on B. They imply coordinate linearity and pure-tensor formulas.
-Rows recover the original partial values; columns retain packed values for batching. The
+`Packing/ProfileCoordinates.lean` proves the carrier-to-family equivalences and identifies
+columns with the shared transpose of rows for every carrier message. Its finite tensor-sum
+observation uses the same common theorem. Rows recover the original partial values; columns
+retain packed values for batching. The
 [coverage audit](../audits/ring-switching-model-coverage.md) records counterexamples to the former
 one-sided laws and the former swapped coordinate uses.
 
@@ -72,6 +86,15 @@ Tr_H(ψ(a) · σ₋₁(ψ(b))) = (d/k) · ⟨a,b⟩.
 The verifier must keep this factor or use an explicitly normalized trace. Sound read-back needs
 scalar cancellation. The trace-head implementation proves that d/k is a unit in R_q under
 its odd-characteristic and power-of-two assumptions, retaining the actual trace equation.
+
+`Packing/CheckedObservation.lean` shares the deterministic head proof. An instance provides
+an exact source/output witness equivalence and proves, for every source witness, that its scalar
+evaluation is the observation of the honest message. Honest checking and checked-output read-back
+then preserve any supplied commitment/witness predicate. ScalarHead uses its component layout;
+Hachi keeps the same weak-opening witness and proves the real scaled-trace guard equivalent to
+the coordinate observation for every sent ring value. Native Binius uses its proved pack/unpack
+equivalence and tensor message. Each adapter proves correspondence with its existing relations.
+The common lemmas do not equate RBR knowledge soundness with CWSS or infer commitment uniqueness.
 
 Field batching and sumcheck obtain root-count bounds from their challenge distribution. A
 commutative ring alone does not justify `degree / |ring|`. HMZ additionally uses Galois rings with
@@ -129,7 +152,14 @@ including an honest nonzero source previously rejected by the verifier. Two auxi
 states were corrected: a sampled accidental root need not make the previous claim true, and the
 final state must retain its structural witness invariant. These operational and algebraic fixes
 now support proved ring-valid final-leaf completeness and zero-error knowledge soundness.
-The legacy batching/loop and general-composition admissions remain separate.
+The native tensor batching head also has proved state-aware completeness, exact knowledge-state
+boundaries and worst-case-per-prefix knowledge security. `LegacyLayout.lean` identifies its
+actual Boolean-table packing with the shared DP24 layout; `BatchingAlgebra.lean` identifies
+its actual tensor observation, scalar guard and round-zero residual relation with shared
+packing relations. The same finite-observation and checked-observation lemmas therefore support
+the native Binius and Hachi heads. The batching bound uses the shared compatibility-relation
+separation theorem with explicit functionality; it does not assume honest commitment coverage.
+Legacy loop and unrestricted general-composition admissions remain separate.
 
 The actual FRI-Binius initial compatibility relation now has proved uniqueness and honest coverage.
 The adapter `FRIBinius/RingSwitchingCommitment.lean` supplies the generic base commitment, its
@@ -138,8 +168,16 @@ relation, oracle and honest codeword constructor. A concrete
 GF(16) client runs the complete generic full-family and sumcheck pipeline on the production
 oracle, with its original source relation and the same packed opening endpoint. It instantiates
 exact-extractor knowledge and state-uniform completeness, and a false original family rejects
-for every later tail transcript. Separate commitment tests distinguish two nonconstant witnesses. The downstream interleaved
-FRI-Binius opening proofs remain separate.
+for every later tail transcript. Separate commitment tests distinguish two nonconstant witnesses.
+The existing production FRI-Binius assembly also consumes the native batching completeness
+specialization, and its native head has exact worst-case knowledge security using the real
+`binaryBasefold_functional` proof. This keeps the original one-tensor-message/vector-challenge
+transcript and the interleaved-core input relation. Concrete GF(16) tests exercise that actual
+head and failed-head absorption through `batchingCoreVerifier`.
+The actual FRI-Binius terminal verifier now aborts a failed multiplier check; it preserves the
+received opening value, including a nonzero value under a zero multiplier. Its execution and
+suffix-failure tests certify this local repair. The downstream interleaved FRI-Binius security
+proofs remain separate, and its full completeness assembly still depends on downstream admissions.
 The proved `Append/Knowledge.lean` specialization composes a deterministic guarded first
 verifier with an arbitrary right verifier, using worst-case-per-prefix component knowledge
 bounds. Its averaged wrappers do not accept averaged-only component premises. `Sequential/KnowledgeNary.lean` extends this to actual finite guarded sequences, with explicit
@@ -163,6 +201,12 @@ See the [Hachi paper page](../papers/NOZ26.md) for the current proof and composi
   [`Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean), and
   [`Batching.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Batching.lean) — independent
   finite-free algebras, polynomial transport, full-family read-back, and fixed-family separation.
+- [`Packing/FiniteObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/FiniteObservation.lean)
+  and [`CheckedObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/CheckedObservation.lean) —
+  finite reconstruction and deterministic read-back shared by actual Binius and Hachi proofs.
+- [`Packing/BatchingPhase.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean)
+  and [`FRIBinius/General.lean`](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean) —
+  native tensor head, its shared-proof instantiation and production binding specialization.
 - [`Packing/Multiplier.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean) —
   multiplication-matrix evaluator, correctness and instrumented action count.
 - [`Packing/FullFamily/Phase.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/FullFamily/Phase.lean),

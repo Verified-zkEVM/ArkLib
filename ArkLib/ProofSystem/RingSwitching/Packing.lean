@@ -30,6 +30,18 @@ basis of `E` decomposes the family's evaluation values. Transposing those coordi
 an exact linear equivalence. Neither a field/domain condition nor an embedding between
 `P` and `E` is needed for the packing algebra.
 
+`FiniteObservation.lean` proves that weighted observation of an arbitrary finite table commutes
+with coordinate transposition. The actual Boolean-polynomial read-back and Hachi monomial
+evaluation proofs instantiate the same theorem. `ProfileCoordinates.lean` also identifies native
+carrier columns with the transpose of rows for every message, and applies the observation law
+to finite tensor sums. These are concrete proof dependencies beyond constructing packing data.
+
+`CheckedObservation.lean` shares honest checking and exact read-back from an unconditional
+evaluation/observation identity and a lossless witness equivalence. ScalarHead, the actual Hachi
+trace head, and native tensor-head algebra instantiate it with their concrete representations.
+Their existing guard and commitment relations remain explicit; the common deterministic proof
+does not infer uniqueness or identify different security notions.
+
 `Polynomial.lean` proves both polynomial packing inverses. `Relations.lean` proves that
 an entire family of claimed evaluations is equivalent to the corresponding packed slice
 claims. `Batching.lean` supplies separation laws for two fixed distinct families, with
@@ -70,8 +82,11 @@ The legacy DP24 pipeline in this folder uses `RingSwitchingProfile`: one extensi
 a tensor-style carrier, two explicit embeddings, and two coordinate directions. With its
 reconstruction conventions, rows recover the original partial values and columns retain
 packed values for batching. `General.lean` assembles that pipeline with a downstream opening;
-its final leaf has ring-valid completeness and zero-error knowledge proofs. The batching/loop
-leaves and old general knowledge-composition pathway retain separate proof obligations.
+its final leaf has ring-valid completeness and zero-error knowledge proofs. The native batching
+head now reuses the shared observation, layout and separation lemmas, with state-aware
+completeness and exact worst-case knowledge security under explicit functionality. FRI-Binius
+supplies its actual first-codeword binding theorem. Legacy loop and old general knowledge
+composition retain separate proof obligations.
 
 Hachi [NOZ26, §3.1] uses a distinct deterministic trace head on monomial coefficients at
 subfield-valued points. It needs the scaled trace identity, unit cancellation, and the actual
@@ -84,6 +99,11 @@ is another protocol family.
 ## Main modules
 
 * `Coordinates.lean` — independent finite-free algebras and faithful coordinate transpose.
+* `FiniteObservation.lean` — shared weighted observation for Boolean and monomial representations.
+* `CheckedObservation.lean` — deterministic checking and exact witness read-back.
+* `ProfileCoordinates.lean` — native carrier/family equivalences and finite tensor observations.
+* `LegacyLayout.lean`, `BatchingAlgebra.lean` — actual Boolean-table packing, native scalar
+  reconstruction and the existing round-zero relation as shared packing instances.
 * `Polynomial.lean` — coefficient packing/unpacking and the public multilinear multiplier.
 * `Multiplier.lean` — actual multiplication-matrix evaluator, MLE correctness and action count.
 * `Relations.lean` — full-family and slice relations, ring-valid read-back, and C-valued batching.

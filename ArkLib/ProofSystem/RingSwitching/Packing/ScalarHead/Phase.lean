@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 
 import ArkLib.ProofSystem.RingSwitching.Packing.ScalarHead.Layout
 import ArkLib.ProofSystem.RingSwitching.Packing.FullFamily.Phase
+import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 
 /-!
 # Checked scalar-to-family claim head
@@ -40,6 +41,15 @@ instance : ∀ i, SampleableType ((pSpec data).Challenge i)
 def partials (q : layout.Query) (ps : data.ιP → B⦃≤ 1⦄[X Fin m]) : data.ιP → data.E :=
   fun i => aeval (layout.point q) (ps i).val
 
+/-- The concrete layout reconstructs the source evaluation from the actual partial message. -/
+def observation : CheckedObservation layout.Query layout.Source
+    (data.ιP → B⦃≤ 1⦄[X Fin m]) (data.ιP → data.E) data.E where
+  witnessEquiv := layout.components
+  honestMsg := partials data m layout
+  scalarEval := layout.eval
+  observe q α := ∑ i, layout.weight q i * α i
+  eval_eq_observe := layout.reconstruct
+
 /-- The scalar check uses the layout's concrete weight vector. -/
 def check (stmt : Input data m layout) (α : data.ιP → data.E) : Prop :=
   stmt.2 = ∑ i, layout.weight stmt.1 i * α i
@@ -60,6 +70,31 @@ theorem relIn_honest (q : layout.Query) (p : layout.Source) :
 
 /-- The output relation is exactly the input relation of full-family packing. -/
 abbrev relOut := FullFamily.relIn data m pc
+
+/-- The original scalar relation retains the same commitment in observation coordinates. -/
+theorem relIn_iff_observation (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j)
+    (p : layout.Source) :
+    ((stmt, ost), p) ∈ relIn data m layout pc ↔
+      pc.commitsTo ost (data.packedMLE (layout.components p)) ∧
+        stmt.2 = (observation data m layout).scalarEval stmt.1 p :=
+  and_comm
+
+/-- The existing scalar check is precisely equality with the concrete observation. -/
+theorem check_iff_observation (stmt : Input data m layout) (α : data.ιP → data.E) :
+    check data m layout stmt α ↔ stmt.2 = (observation data m layout).observe stmt.1 α :=
+  Iff.rfl
+
+/-- At the actual output map, family validity fixes the message and keeps the same oracle. -/
+theorem relOut_iff_observation (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j)
+    (α : data.ιP → data.E) (ps : data.ιP → B⦃≤ 1⦄[X Fin m]) :
+    ((nextStatement data m layout stmt α, ost), ps) ∈ relOut data m pc ↔
+      pc.commitsTo ost (data.packedMLE ps) ∧
+        α = (observation data m layout).honestMsg stmt.1 ps := by
+  constructor
+  · intro h
+    exact ⟨h.2, funext h.1⟩
+  · rintro ⟨hc, hα⟩
+    exact ⟨fun i => congrFun hα i, hc⟩
 
 /-- Before sending the family, retain the source; afterwards retain its components. -/
 def ProverState : Fin 2 → Type
@@ -116,8 +151,10 @@ instance : (prover data m layout pc).OutputIsPure where
 /-- The honest scalar check is precisely the concrete layout reconstruction theorem. -/
 theorem honest_check {stmt : Input data m layout} {ost : ∀ j, pc.OStmt j} {p : layout.Source}
     (h : ((stmt, ost), p) ∈ relIn data m layout pc) :
-    check data m layout stmt (partials data m layout stmt.1 (layout.components p)) :=
-  h.1.trans (layout.reconstruct stmt.1 p)
+    check data m layout stmt (partials data m layout stmt.1 (layout.components p)) := by
+  apply (check_iff_observation data m layout _ _).2
+  exact (observation data m layout).honest_check
+    ((relIn_iff_observation data m layout pc stmt ost p).1 h).2
 
 /-- Honest output retains the same oracle and satisfies the full-family relation. -/
 theorem honest_relOut {stmt : Input data m layout} {ost : ∀ j, pc.OStmt j} {p : layout.Source}
@@ -131,10 +168,11 @@ theorem readback (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j)
     (hc : check data m layout stmt α)
     (ho : ((nextStatement data m layout stmt α, ost), ps) ∈ relOut data m pc) :
     ((stmt, ost), layout.components.symm ps) ∈ relIn data m layout pc := by
-  refine ⟨?_, ?_⟩
-  · rw [layout.reconstruct, layout.components.apply_symm_apply]
-    exact hc.trans (Finset.sum_congr rfl fun i _ => congrArg _ (ho.1 i))
-  · simpa only [layout.components.apply_symm_apply] using ho.2
+  apply (relIn_iff_observation data m layout pc stmt ost _).2
+  exact (observation data m layout).readback_keep
+    (fun _ ps => pc.commitsTo ost (data.packedMLE ps))
+    ((check_iff_observation data m layout stmt α).1 hc)
+    ((relOut_iff_observation data m layout pc stmt ost α ps).1 ho)
 
 end RingSwitching.Packing.ScalarHead
 

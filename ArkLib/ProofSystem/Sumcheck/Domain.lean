@@ -66,6 +66,25 @@ def points (D : SumcheckDomain R k) (i : Fin k) : Finset R := Finset.univ.map (D
 `Fin k → R`. Generalises the homogeneous `(univ.map D₀) ^ᶠ k`. -/
 def cube (D : SumcheckDomain R k) : Finset (Fin k → R) := Fintype.piFinset D.points
 
+/-- Sum over a domain cube by its finite coordinate indices, preserving each actual embedding. -/
+theorem sum_cube {M : Type*} [AddCommMonoid M] (D : SumcheckDomain R k)
+    (f : (Fin k → R) → M) :
+    ∑ x ∈ D.cube, f x = ∑ v : ∀ i, Fin (D.size i), f (fun i => D.embed i (v i)) := by
+  classical
+  symm
+  apply Finset.sum_bij (fun v _ => fun i => D.embed i (v i))
+  · intro v _
+    simp [cube, points]
+  · intro v _ w _ h
+    funext i
+    exact (D.embed i).injective (congrFun h i)
+  · intro x hx
+    simp only [cube, Fintype.mem_piFinset, points, Finset.mem_map,
+      Finset.mem_univ, true_and] at hx
+    choose v hv using hx
+    exact ⟨v, Finset.mem_univ _, funext hv⟩
+  · intros; rfl
+
 /-- The *uniform* domain: the same `m`-point embedding `D₀` in every one of the `k` coordinates.
 
 Its `cube` is *definitionally* `Fintype.piFinset (fun _ : Fin k => univ.map D₀)`, which is exactly
@@ -177,6 +196,11 @@ def boolEmbedding (R : Type u) [CommSemiring R] [Nontrivial R] : Fin 2 ↪ R whe
 
 @[simp] lemma boolEmbedding_one (R : Type u) [CommSemiring R] [Nontrivial R] :
     boolEmbedding R 1 = (1 : R) := rfl
+
+/-- The Boolean domain embedding is exactly the natural-number cast of its Boolean index. -/
+lemma boolEmbedding_apply (R : Type u) [CommSemiring R] [Nontrivial R] (i : Fin 2) :
+    boolEmbedding R i = (i : R) := by
+  fin_cases i <;> simp
 
 /-- The Boolean hypercube `{0,1}^k` as a `SumcheckDomain`: the canonical `0 ↦ 0, 1 ↦ 1` embedding in
 every coordinate. This is the plain multilinear sum-check domain (Binius, Hachi, …). -/
