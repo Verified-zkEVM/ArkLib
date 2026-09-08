@@ -30,3 +30,6 @@ Current audit pages:
 - [`bcgm25-mca-generators.md`](bcgm25-mca-generators.md)
   - [`BCGM25`](../papers/BCGM25.md) generator layer: definition and result correspondence, the two
     forms Lemma 4.4 is proved in and why, and a gap in the paper's Theorem 9.2 citation.
+- [`ring-switching-model-coverage.md`](ring-switching-model-coverage.md)
+  - coordinate packing, weighted and trace reconstruction, quotient lift, and the source
+    correspondence and security assumptions for DP24, Flock, Hachi and HMZ25.

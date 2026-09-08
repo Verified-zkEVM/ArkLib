@@ -55,6 +55,20 @@ The current KB policy is:
 Because the resolution reads the base ref, a paper page added in the same PR is not picked up
 automatically — attach it under `Internal:`.
 
+### Documenting shared formalizations
+
+A cross-protocol reference should identify the common theorem, its concrete consumers and the
+relations each adapter preserves. Include the relevant witness transport, commitment predicate,
+challenge distribution and failure behavior. Keep source-version distinctions and remaining proof
+obligations in the concept or audit page.
+
+For proof reuse, inspect the consumer's declaration value and its concrete reconstruction lemmas;
+imports alone do not show which proof is used. Check axiom dependencies on both the shared theorem
+and the consumer. Keep build logs, source hashes and commit-specific review results outside the KB,
+following its [maintenance contract](../kb/README.md#maintenance-contract).
+
+### Preparing review context
+
 To prepare a comment body locally, use:
 
 ```bash

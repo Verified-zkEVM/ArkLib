@@ -8,23 +8,24 @@ import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
+import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitchingCommitment
 import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 
 /-!
 # FRI-Binius IOPCS
 
-The FRI-Binius IOPCS consists of the following phases:
-1. **Batching Phase**: polynomial packing and batching via tensor algebra operations
-2. **Core Interaction Phase**: Interactive sumcheck + FRI folding over ℓ' rounds
-3. **Query Phase**: FRI-style proximity testing with γ repetitions
+FRI-Binius has three phases: tensor packing and batching, interleaved sumcheck and FRI
+folding over shared challenges, and repeated FRI proximity queries. The batching phase
+uses the finite-coordinate reconstruction and separation lemmas with the initial code's
+unique-distance binding. Its output is the interleaved core's round-zero relation.
+
+Batching completeness and worst-case knowledge soundness are proved. The complete
+reduction's guarantees still depend on admitted core, query, and composition results.
 
 ## References
-- State RBR KS
 
-## References
-
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
-  Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
 
 namespace Binius.FRIBinius.FullFRIBinius
@@ -181,6 +182,43 @@ noncomputable def fullOracleProof :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
+omit [CharP L 2] [DecidableEq K] h_β₀_eq_1 [NeZero 𝓡] in
+/-- Perfect completeness of batching into the interleaved-core input relation. -/
+theorem batchingReduction_perfectCompleteness :
+    (BatchingPhase.batchingOracleReduction κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+      (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)).perfectCompleteness
+      init impl
+      (BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+      (sumcheckRoundRelation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) 0) :=
+  BatchingPhase.batchingReduction_perfectCompleteness κ L K (biniusProfile κ L K β)
+    ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
+
+omit [CharP L 2] [DecidableEq K] h_β₀_eq_1 [NeZero 𝓡] in
+/--
+Worst-case knowledge soundness of batching on the interleaved-core oracle relation, using
+unique-distance binding before the vector challenge.
+-/
+theorem batchingVerifier_rbrKnowledgeSoundnessWorstCaseWith :
+    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+      (sumcheckRoundRelation κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate) 0)
+      (BatchingPhase.oracleVerifier κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)).toVerifier
+      (BatchingPhase.batchingWitMid L K ℓ ℓ')
+      (BatchingPhase.batchingRbrExtractor κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+      (BatchingPhase.batchingKnowledgeStateFunction κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+        (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+      (BatchingPhase.batchingRBRKnowledgeError κ L K (biniusProfile κ L K β)) :=
+  BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith
+    κ L K (biniusProfile κ L K β) ℓ ℓ' h_l
+    (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
+    (binaryBasefold_functional κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
+
 /-- The full FRI-Binius oracle proof is perfectly complete. -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
@@ -226,9 +264,8 @@ theorem fullOracleReduction_perfectCompleteness :
         (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ =>
           (⟨⟨0, fun _ => 0, ⟨0, 0⟩⟩, 0⟩, fun _ _ => 0)))
         (hSeam := fun _ => Or.inl inferInstance)
-      · apply BatchingPhase.batchingReduction_perfectCompleteness κ L K
-          (biniusProfile κ L K β) ℓ ℓ' h_l
-          (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
+      · apply batchingReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
+          h_ℓ_add_R_rate h_l
       · intro s
         apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
           κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l

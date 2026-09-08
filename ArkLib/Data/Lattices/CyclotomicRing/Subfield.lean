@@ -9,6 +9,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Bijectivity
+import ArkLib.Data.Lattices.CyclotomicRing.Subfield.LinearEquiv
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Field
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.NormBound

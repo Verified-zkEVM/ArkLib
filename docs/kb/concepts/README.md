@@ -8,6 +8,6 @@ Use this directory for topics such as:
 - Reed-Solomon proximity;
 - list decoding;
 - binary-tower proof systems;
-- [ring switching](ring-switching.md) (small-ring → large-ring evaluation reduction).
+- [ring switching](ring-switching.md) (coordinate packing, trace relocation, and quotient lifts).
 
 Concept pages should link back to canonical paper pages under `../papers/`.

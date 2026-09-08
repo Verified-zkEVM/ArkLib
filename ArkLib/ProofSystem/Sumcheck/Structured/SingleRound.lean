@@ -25,20 +25,13 @@ This file collects single-round primitives for the structured (witness-mode) sum
 - `roundKnowledgeError` — the `d / |L|` Schwartz–Zippel round error for the explicit round
   polynomial degree bound `d`.
 
-These were originally housed in `Binius.BinaryBasefold.Prelude`,
-`RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
-generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that other protocols (e.g. a Galois-ring PCS) can reuse them without
-depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
-wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
+The definitions are parameterized by the protocol context and oracle statement family.
+`RingSwitching.Packing.SumcheckPhase` specializes these parameters to its tensor-packing
+statement and commitment relation.
 
-Note on rejection: `roundOracleVerifier` below rejects by emitting a **dummy statement** rather
-than `failure`. That is fine for a round-by-round soundness argument, but it is not usable for
-tree-based (coordinate-wise special soundness) extraction, where all siblings of a node share the
-prover message and a dummy output collapses every branch onto the same statement. Protocols that
-need the latter use a `failure`-guarded verifier instead — Hachi's §4.3 round
-(`Commitments/Functional/Hachi/Sumcheck/Rounds.lean`) is the worked example, and generalizing it
-here is the natural way to give this layer a CWSS certificate.
+A failed local sumcheck equation aborts the verifier with `failure`. In particular, rejection
+cannot be turned into an accepting opening by a later reduction in the chain. Hachi's paired
+sumcheck has its own wire format and extraction proofs, but shares this rejection behavior.
 -/
 
 namespace Sumcheck.Structured
@@ -51,12 +44,7 @@ section RoundPoly
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L ℓ)
 
-/-- Degree bound for the prover's round polynomial over an **arbitrary** summation set `S`.
-This is the heterogeneous generalisation of `Spec.SingleRound.sumcheck_roundPoly_degreeLE`, which
-fixes `S` to a uniform cube `(univ.map D) ^ᶠ (n - i)`. The per-round / hyperprism sumcheck sums over
-heterogeneous cubes `(SumcheckDomain.drop …).cube`, so the degree bound must not depend on the shape
-of `S` — and indeed it doesn't: each summand has degree `≤ deg` in the free variable, and a finite
-sum preserves that. -/
+/-- The sumcheck round polynomial has the claimed degree bound over any finite summation set. -/
 theorem roundPoly_degreeLE_finset {R : Type*} [CommSemiring R] {n deg : ℕ} (i : Fin (n + 1))
     {challenges : Fin i.castSucc → R} {poly : R[X Fin (n + 1)]}
     (hp : poly ∈ R⦃≤ deg⦄[X Fin (n + 1)]) (S : Finset (Fin (n - i) → R)) :
@@ -263,12 +251,7 @@ def roundOracleVerifier (i : Fin ℓ) :
     -- evaluation domain of coordinate `i` (for the boolean hypercube this is `h_i(0) + h_i(1)`).
     let sumcheck_check := (∑ b ∈ D.points i, h_i.val.eval b) = stmtIn.sumcheck_target
     unless sumcheck_check do
-      let dummyStmt : Statement (L := L) (ℓ := ℓ) Context i.succ := {
-        ctx := stmtIn.ctx,
-        sumcheck_target := 0,
-        challenges := Fin.snoc stmtIn.challenges 0
-      }
-      return dummyStmt
+      failure
     -- Message 1: V samples r'_i and sends it to P.
     let r_i' : L := pSpecChallenges ⟨1, rfl⟩
     let stmtOut : Statement (L := L) (ℓ := ℓ) Context i.succ := {

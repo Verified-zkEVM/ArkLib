@@ -1,120 +1,99 @@
-# Ring Switching
+# Ring switching
 
-This page is the KB landing page for the **ring-switching** technique. Ring switching is a
-*family* of constructions, not one protocol — ArkLib formalizes two construction folders,
-each with its own data layer: `Packing/` (`RingSwitchingProfile`, small→large packing)
-and `Lift/` (`Lift.Presentation`, large quotient ring→field, the generic
-HMZ25 switch); the taxonomy lives in the folder umbrella
-`ArkLib/ProofSystem/RingSwitching/Basic.lean`. What the two constructions share sits at the folder
-top level: the check-then-update round-shape verifiers (`RoundVerifiers.lean`) and the
-embed-and-evaluate transport algebra (`Transport/Eval.lean` univariate, `Transport/Coeffs.lean`
-degree-generic multivariate).
+Ring switching changes the coefficient algebra used to represent or verify a polynomial claim.
+ArkLib separates coordinate packing in `ProofSystem/RingSwitching/Packing/`, quotient lifting in
+`Lift/`, and Hachi's deterministic trace head in `Commitments/Functional/Hachi/TraceHead/`.
+The [coverage audit](../audits/ring-switching-model-coverage.md) gives source versions, equations
+and detailed proof boundaries.
 
-The folder names describe the algebraic operation, not merely the source and target types:
+## Construction map
 
-- **Packing** groups a basis-sized block of small-ring coefficients into the coordinates of
-  one large-ring element. For rank `2^κ`, this turns `2^κ` coefficients—and therefore `κ`
-  Boolean-variable positions—into one coefficient over the large ring.
-- **Lift** replaces an equality in `S ≅ R[X]/(φ)`, which holds only modulo `φ`, by an exact
-  equality in `R[X]` with an explicit quotient witness. Evaluating that lifted equality in a
-  field is the subsequent verification step.
+| Construction | Input → output | Interaction |
+|---|---|---|
+| [DP24/Binius](../papers/DP24.md), [Flock](../papers/BRW26.md) | Scalar claim on a base-valued table → packed-polynomial opening | Partial values, weighted reconstruction, coordinate batching and sumcheck |
+| [Generalized packing](../papers/RSG.md) | Full family of evaluations over E → packed opening over P or a compatible extension C | Coordinate slices, batching and sumcheck |
+| [Hachi §3.1](../papers/NOZ26.md) | Fixed-subring scalar evaluation → cyclotomic-ring evaluation | One ring-element message and a scaled trace check |
+| [HMZ/Hachi lift](../papers/HMZ25.md) | Linear equality modulo a monic polynomial → evaluated lifted identity | Commitment, scalar challenge and commitment-consistent output relation |
 
-This distinction matters: both operations are called ring switching in the literature, but
-they require different data layers and different security arguments.
+## Shared packing algebra
 
-## Scope
+Take finite bases `β : Basis I B P` and `ε : Basis J B E` over a commutative ring B. The
+packing and opening algebras P and E may have different ranks and need no embedding between them.
+Coordinate transposition gives a B-linear equivalence `T : (I → E) ≃ₗ[B] (J → P)`.
+For arbitrary finite tables `v : Y → P` and weights `a : Y → E`, it satisfies
 
-Use this page when a question is about:
+```text
+T(i ↦ Σ_y [v(y)]β,i • a(y)) = (u ↦ Σ_y [a(y)]ε,u • v(y)).
+```
 
-- what ring switching is and why a polynomial commitment scheme uses it;
-- the `RingSwitchingProfile` abstraction and how a protocol family instantiates it;
-- where Binius plugs in, and how Hachi (and other small-ring/large-ring PCS work) would;
-- which security statements are generic vs. instance-specific.
+[`FiniteObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/FiniteObservation.lean)
+proves this identity, including empty Y and rings with zero divisors. Boolean interpolation and
+Hachi monomial evaluation instantiate it through their concrete layouts. The tensor
+carrier uses rows for partial evaluations and columns for packed slices.
 
-## The idea
+[`CheckedObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/CheckedObservation.lean)
+shares deterministic scalar reconstruction. An adapter supplies an exact source/output witness
+equivalence, an unconditional honest-evaluation identity, and correspondence with its actual guard
+and relations. Read-back preserves the supplied commitment/witness predicate. The generic scalar
+head, Binius tensor head and Hachi trace head use these common lemmas.
 
-Ring switching reduces a multilinear evaluation claim `s = t(r)` over a **small** coefficient ring
-`B` (a binary-tower field, `𝔽₂`, or a cyclotomic ring `R_q`) to an evaluation claim over a **large**
-extension `L` and **without re-committing** over `L`. Field instances such as Binius pay only an
-additive `O(ℓ/|L|)` soundness cost (`O(1/|L|)` per challenge); Hachi's cyclotomic-ring instance has a separate CWSS-style
-soundness theorem because `R_q` is not a domain. This lets a PCS commit cheaply over a tiny ring
-while running sum-check and the final opening over a carrier large enough for the intended
-soundness argument.
+Hachi's weights are monomials at fixed-subring points. Its trace is unnormalized:
 
-With `ℓ = ℓ' + κ`, a small-field multilinear `t` in `ℓ` variables is *packed* into a large-field
-multilinear `t'` in `ℓ'` variables (`packMLE`): each block of `2^κ` coefficients becomes one
-`L`-element via a `B`-basis `β` of `L`. The interaction runs in a *pack/trace carrier* `A` where the
-folded element `ŝ` lives; an eq̃/trace inner-product identity (DP24 §2.5) ties `ŝ`'s coordinates to
-the original claim and the new sum-check target.
+```text
+Tr_H(ψ(a) · σ₋₁(ψ(b))) = (d/k) · ⟨a,b⟩.
+```
 
-## ArkLib's abstraction
+The trace head proves d/k is a unit and retains the same norm-conditioned weak opening. Its
+completeness and CWSS proofs use the fixed subring as a ring, independently of its unfinished
+identification with an external finite field.
 
-ArkLib formalizes the packing *data layer* once, generic over a `RingSwitchingProfile (B L) κ`:
+## Component guide
 
-- `basis`, carrier `A`, embeddings `φ₀`/`φ₁ : L →+* A`, coordinate maps `decomposeRows`/`Columns`,
-- plus two **reconstruction laws** (`decomposeRows_spec`, `decomposeColumns_spec`) that tie the
-  coordinate maps to `φ₀`/`φ₁`/`basis` and rule out law-free profiles.
+| Module under `Packing/` | Role |
+|---|---|
+| `Coordinates`, `Polynomial`, `Relations` | Independent bases, polynomial packing inverses and full-family/slice equivalence |
+| `Profile`, `ProfileCoordinates`, `ProfileLayout`, `BatchingAlgebra` | Tensor representation, tensor DP24 table layout and scalar/round-zero relation correspondence |
+| `ScalarHead/` | DP24 packed-prefix, Flock packed-suffix and quirky Lagrange/Boolean reconstruction |
+| `FullFamily/`, `ScalarFamily/` | Checked-slice phase and its composition with a scalar head |
+| `Batching`, `FullFamily/Separation` | Fixed-family and functional-compatibility separation bounds |
+| `Multiplier` | Multiplication-matrix evaluation of the public multiplier's multilinear extension |
+| `Tail/` | Degree-two product sumcheck, deterministic terminal and composed opening reductions |
+| `PackedCommitment`, `ExactCommitment` | Oracle relation and honest coverage; separate functionality specialization |
+| `Opening` | Downstream reduction contract on precisely the same commitment's `evalRel` |
 
-Those laws are the algebraic profile boundary, not a complete soundness theorem by themselves.
-The batching/sum-check proofs still have to connect the profile coordinates to `packMLE`,
-`embedded_MLP_eval`, `compute_A_func`, and the instance's eq̃/trace identity.
+The matrix evaluator maps B-valued entries to C without an `E → C` embedding or a multiplicative
+coordinate observation. Its instrumented count is one matrix-vector action per retained variable,
+excluding preprocessing.
 
-The *protocol* on top of the profile is per-construction. The DP24 packing protocol
-(the protocol files of `ProofSystem/RingSwitching/Packing/`) is three phases (batching → sum-check → large-field IOPCS
-opening); see the blueprint section *Ring Switching*
-(`blueprint/src/proof_systems/ring_switching.tex`) for the protocol and security statements.
-Its RBR knowledge error is `κ/|L| + Σ 2/|L| + 1/|L| + ε_IOPCS` (DP24 §3.1–3.2), and soundness
-requires `[IsDomain L]` (Schwartz–Zippel).
+`FullFamilyOpening` and `ScalarOpening` end at a C-valued opening of the same packed polynomial.
+The checked-slice variant sends a message that the generalized note derives publicly.
+`ScalarOpening` sends partial values and then checked slices, whereas DP24/Flock use one family
+message. Binius's tensor head retains its one tensor message and vector challenge before its own
+interleaved FRI/sumcheck suffix.
 
-## The three constructions
+## Security and implementation boundaries
 
-- **DP24 packing switch** (`ProofSystem/RingSwitching/Packing/`, instance
-  `binaryTowerProfile`):
-  small field → large field; `A = L ⊗_K L`, `φ₀ = ·⊗1`, `φ₁ = 1⊗·`, coordinates from the
-  left/right `L`-module bases; the two profile laws are **proven** in ArkLib. Because the
-  evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
-  (batching challenge + dedicated packing sum-check).
-- **Hachi §3 packing head** ([`../papers/NOZ26.md`](../papers/NOZ26.md), planned): `L = R_q`,
-  `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁`, `β = ψ` (Theorem 2). Same packing algebra, but the
-  evaluation point is engineered to be subfield-valued, so the reduction is **deterministic**
-  (one message + one trace check, no challenges, no sum-check). `R_q` is not a domain, so the
-  Schwartz–Zippel soundness theorem does not apply — Hachi soundness is a separate (CWSS)
-  argument.
-- **HMZ25 `Lift` construction** ([`../papers/HMZ25.md`](../papers/HMZ25.md)): the
-  *opposite* direction, `S ≅ R[X]/(φ)` → a field `F` — lift `M z = y` to `R[X]` and evaluate
-  at a random `α`. **Formalized generically** in `ProofSystem/RingSwitching/Lift/`
-  over any monic-modulus presentation (`Presentation`/`IsPresentation` — not
-  cyclotomic-specific), with CWSS at `k = 2·deg φ` proven once from the presentation laws,
-  on top of the committed-scalar shell
-  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`).
-  Hachi's link 4 (`Commitments/Functional/Hachi/RingSwitch/Reduction.lean`) is the proven
-  cyclotomic instance (`cyclotomicPresentation`). It does **not** instantiate
-  `RingSwitchingProfile`; what it shares with DP24 is the `pSpecScalar` wire shape and the
-  top-level layer of `ProofSystem/RingSwitching/` (round-shape verifiers, embed-and-evaluate
-  transport).
+Deterministic algebra and completeness use `PackedCommitment` without uniqueness. The randomized
+knowledge bounds require its explicit `Functional` property, finite-domain challenges, and
+injective compatible `P → C` transport at the family head. The generic tail's aggregate error is
+`batching error + m * (2/|C|)`. Its terminal contributes no challenge error and forwards the packed
+value itself even when the public multiplier is zero. Rejection is absorbing.
 
-## Core References
+The generic opening pipelines have proved state-aware completeness and worst-case-per-prefix
+knowledge contracts through guarded binary and finite-sequence composition. `PackedOpening`
+requires the downstream verifier's own worst-case contract on `pc.evalRel`; completeness also
+requires guarded verification, correctness from every seam state and the stated prover seam
+condition. Concrete packing prefixes use the empty ambient oracle.
 
-- [`../papers/DP24.md`](../papers/DP24.md) — origin of ring switching for binary towers.
-- [`../papers/NOZ26.md`](../papers/NOZ26.md) — Hachi; the extension-field→cyclotomic-ring reduction.
+Binius's real codeword commitment supplies honest coverage and unique-distance functionality to
+the generic adapter and the tensor batching head. Tensor batching and the profile-based terminal
+have proved completeness and knowledge contracts. The profile-based loop and unrestricted
+composition retain admissions. FRI-Binius's final verifier has execution and rejection proofs;
+its downstream interleaved security and full completeness assembly remain partly admitted.
 
-## Main ArkLib Touchpoints
-
-- [`../../../ArkLib/ProofSystem/RingSwitching/Basic.lean`](../../../ArkLib/ProofSystem/RingSwitching/Basic.lean) — the family taxonomy umbrella.
-- [`../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean`](../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean) — the shared check-then-update round verifiers.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Transport.lean`](../../../ArkLib/ProofSystem/RingSwitching/Transport.lean) — the shared claim-transport algebra (umbrella for `Transport/`).
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean) — the packing abstraction.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — `packMLE`, the Binius instance `binaryTowerProfile`, DP24 defs.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean) — the generic `Lift` construction + CWSS.
-- [`../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean) — the committed-scalar protocol seam.
-- [`../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean`](../../../ArkLib/ProofSystem/Binius/FRIBinius/General.lean) — `biniusProfile`, the concrete instantiation.
-
-## Notes
-
-- The DP24 protocol skeleton and security *statements* are profile-generic and final; the leaf
-  completeness/soundness *proofs* are open (`sorry`) and tracked as follow-up.
-- Soundness reuse across instances is weaker than data-layer reuse: the `[IsDomain L]` theorems fit
-  field instances (Binius) but not non-domain rings (Hachi `R_q`), whose soundness is a sibling
-  theorem with a different error.
+Flock's ordinary and quirky heads are implemented; a production Flock PCS and list/OOD security
+are separate. Hachi uses CWSS with norm-conditioned collision escape. Its semantic trace head
+is not packaged as an executable scalar Scheme,
+and its §3.2/§4.5 same-field recombination lacks sound read-back. The quotient lift proves the
+field-target CWSS specialization; HMZ exceptional-set security over Galois rings is outside that
+contract. See the paper pages and audit for the precise source correspondences.

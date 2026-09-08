@@ -626,6 +626,20 @@ def sigmaChallengeIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, 
     (i : Fin m) (j : (pSpec i).ChallengeIdx) : (seqCompose pSpec).ChallengeIdx :=
   ⟨Fin.embedSum i j.1, by simp [j.property]⟩
 
+/-- A challenge of the first component uses the left inclusion at the first append seam. -/
+@[simp]
+theorem sigmaChallengeIdxToSeqCompose_zero {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} (j : (pSpec 0).ChallengeIdx) :
+    sigmaChallengeIdxToSeqCompose 0 j =
+      ChallengeIdx.inl (pSpec₂ := seqCompose (fun i => pSpec i.succ)) j := rfl
+
+/-- A challenge of a later component uses the right inclusion of its suffix challenge. -/
+@[simp]
+theorem sigmaChallengeIdxToSeqCompose_succ {m : ℕ} {n : Fin (m + 1) → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)} (i : Fin m) (j : (pSpec i.succ).ChallengeIdx) :
+    sigmaChallengeIdxToSeqCompose i.succ j =
+      ChallengeIdx.inr (pSpec₁ := pSpec 0) (sigmaChallengeIdxToSeqCompose i j) := rfl
+
 def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (k : (seqCompose pSpec).ChallengeIdx) : (i : Fin m) × (pSpec i).ChallengeIdx :=
   let ij := Fin.splitSum k.1

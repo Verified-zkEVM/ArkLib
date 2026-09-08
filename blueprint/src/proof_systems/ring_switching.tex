@@ -1,136 +1,594 @@
 \section{Ring Switching}\label{sec:ring_switching}
 
-\emph{Ring switching} is a reduction that turns a multilinear evaluation claim over a \emph{small}
-coefficient ring $B$ into an evaluation claim over a \emph{large} extension $L$, paying only an
-additive $O(1/\lvert L\rvert)$ soundness cost and \emph{without re-committing} over $L$. It is the
-technique that lets a polynomial commitment scheme commit cheaply over a tiny ring (a binary-tower
-field, $\mathbb{F}_2$, or a cyclotomic ring $R_q$) while running sum-check and the final opening over
-a field large enough for soundness. It was introduced for binary towers in \cite{DP24}; the same
-shape underlies Hachi's extension-field-to-cyclotomic-ring reduction \cite{NOZ26}.
+Ring switching is a family of reductions that change the coefficient algebra used to represent
+or check a claim. Coordinate packing appears in Binius \cite{DP24}, the generalized note
+\cite{RSG}, and Flock \cite[Appendix B]{BRW26}. Hachi's subfield-to-cyclotomic trace reduction
+\cite[\S3.1]{NOZ26} and the monic-quotient lift of \cite{HMZ25} have distinct relations and
+security arguments. The packing construction consists of finite-basis reconstruction, a checked
+claim head, randomized batching, and an opening reduction. Its security assumptions depend on
+the commitment relation and challenge distribution. The trace and quotient-lift constructions
+retain their respective weak-opening and collision contracts.
 
-ArkLib formalizes ring switching \emph{once}, as a generic oracle reduction parameterized by a
-\emph{packing profile}, with the binary-tower (Binius) construction as one instance.
+\subsection{Independent packing and evaluation algebras}
 
-\subsection{The packing profile}
+\begin{definition}[Finite-free packing data]
+  \lean{RingSwitching.Packing.PackingData}
+  \leanok
+  \label{def:finite_free_packing_data}
+  Let $B$ be a commutative ring. Choose independently two commutative $B$-algebras $P$ and $E$
+  with finite bases $(\beta_i)_{i\in I}$ and $(\epsilon_u)_{u\in J}$. The indices may have
+  different cardinalities. No embedding between $P$ and $E$, field structure, or domain
+  hypothesis is required.
+\end{definition}
 
-The data and algebraic laws that every ring-switching reduction abstracts over are collected into a
-single structure.
+\begin{definition}[Coordinate transpose]
+  \lean{RingSwitching.Packing.PackingData.transpose}
+  \leanok
+  \uses{def:finite_free_packing_data}
+  \label{def:packing_coordinate_transpose}
+  The $B$-linear equivalence from $I\to E$ to $J\to P$ is
+  \[
+    T(\alpha)_u=\sum_i \beta_i\,[\alpha_i]_{\epsilon,u}.
+  \]
+  Its inverse unpacks each $P$-coordinate and recombines along the $E$-basis. Both inverse
+  identities follow from the basis laws.
+\end{definition}
 
-\begin{definition}[Ring-switching profile]
+\begin{theorem}[Finite weighted observation]
+  \lean{RingSwitching.Packing.PackingData.transpose_observe,
+        RingSwitching.Packing.PackingData.readback_coordinateSlices}
+  \leanok
+  \uses{def:packing_coordinate_transpose}
+  \label{thm:packing_finite_observation}
+  For any finite set $Y$, weights $a:Y\to E$ and table $v:Y\to P$, set
+  \[
+    O(a,v)_i=\sum_{y\in Y}[v(y)]_{\beta,i}\,a(y),\qquad
+    S(a,v)_u=\sum_{y\in Y}[a(y)]_{\epsilon,u}\,v(y).
+  \]
+  Then $T(O(a,v))=S(a,v)$ and $T^{-1}(S(a,v))=O(a,v)$.
+  This holds over the stated commutative rings, including zero divisors and empty $Y$.
+  Boolean interpolation and Hachi's monomial evaluation use this same reconstruction law.
+\end{theorem}
+\begin{proof}\leanok
+Expand in the finite bases, interchange finite sums, and apply the basis inverse laws.
+\end{proof}
+
+\begin{definition}[Polynomial packing]
+  \lean{RingSwitching.Packing.PackingData.polynomialEquiv}
+  \leanok
+  \uses{def:finite_free_packing_data}
+  \label{def:packing_polynomial_equiv}
+  A family of $B$-multilinears $(f_i)_{i\in I}$ in $m$ variables packs coefficientwise to
+  $p=\sum_i\beta_i f_i$ over $P$. Unpacking each coefficient is the inverse operation.
+  The equivalence also holds for $m=0$ and for commutative rings with zero divisors.
+\end{definition}
+
+\begin{theorem}[Family and slice read-back]
+  \lean{RingSwitching.Packing.PackingData.openingClaimRel_iff_sliceRel}
+  \leanok
+  \uses{thm:packing_finite_observation, def:packing_polynomial_equiv}
+  \label{thm:packing_family_slice}
+  Fix $r\in E^m$, public values $(\alpha_i)$, and a packed polynomial $p$.
+  The unpacked family satisfies $f_i(r)=\alpha_i$ for every $i$ if and only if
+  \[
+    T(\alpha)_u=
+    \sum_{y\in\{0,1\}^m}[\widetilde{\mathrm{eq}}(r,y)]_{\epsilon,u}\,p(y)
+    \quad\text{for every }u.
+  \]
+  This follows from the multilinear Boolean interpolation identity over commutative rings;
+  no integral-domain interpolation assumption is needed.
+\end{theorem}
+\begin{proof}\leanok
+Expand multilinears on the Boolean cube and apply finite-observation read-back with Boolean
+equality weights.
+\end{proof}
+
+A compatible challenge algebra $C$ may extend $P$, with the same $B$-action along
+$B\to P\to C$. For weights $w_u\in C$, define the $B$-linear map
+$\Phi_w(z)=\sum_u[z]_{\epsilon,u}\,w_u$. The public multiplier is the multilinear extension
+\[
+  M_{r,w}=\operatorname{MLE}_C
+    \bigl(y\mapsto\Phi_w(\widetilde{\mathrm{eq}}_E(r,y))\bigr).
+\]
+It is defined from a Boolean table. Since $\Phi_w$ need not preserve multiplication, its value
+at an arbitrary $C$-point cannot be obtained by applying $\Phi_w$ to an unrelated $E$-evaluation.
+The slice equations imply the sumcheck claim
+\[
+  \sum_u w_u\,\operatorname{map}_{P\to C}(T(\alpha)_u)
+  =\sum_{y\in\{0,1\}^m}M_{r,w}(y)\,\operatorname{map}_{P\to C}(p(y)).
+\]
+Injectivity of $P\to C$ is a separate hypothesis for security read-back and separation; the
+forward identity only needs compatible coefficient transport.
+
+\begin{theorem}[Public multiplier evaluator]
+  \lean{RingSwitching.Packing.PackingData.evaluateMultiplier_eq}
+  \leanok
+  \uses{def:finite_free_packing_data}
+  \label{thm:packing_multiplier_evaluator}
+  In the opening basis, form the multiplication matrices of $1-r_i$ and $r_i$ over $B$.
+  Transport their entries into $C$ and interpolate layer $i$ as
+  $(1-z_i)M_i(0)+z_iM_i(1)$. Applying these layers to the coordinates of $1$ and observing
+  the final state with weights $w$ gives exactly $M_{r,w}(z)$. The observation is only linear;
+  no embedding $E\to C$ or multiplicativity law is required.
+\end{theorem}
+\begin{proof}\leanok
+Apply the read-once matrix interpolation identity to the opening-coordinate
+multiplication matrices.
+\end{proof}
+
+The evaluator uses one matrix-vector action per retained variable, with width $|J|$, followed
+by one weighted dot product. This operation count excludes basis and matrix preprocessing.
+
+\subsection{Claim heads and batching}
+
+The full-family reduction takes public evaluations $(\alpha_i)$ at a common point. Its
+checked-slice presentation receives $T(\alpha)$ as a prover message and verifies that equality
+before batching. In the generalized note \cite{RSG}, the verifier computes these slices directly.
+
+A scalar head receives partial evaluations and checks their weighted reconstruction of the
+original claim. Binius uses Boolean equality weights \cite{DP24}; Flock's quirky head uses
+products of Lagrange and Boolean equality weights \cite[Appendix B]{BRW26}.
+
+\begin{definition}[Checked observation]
+  \lean{RingSwitching.Packing.CheckedObservation}
+  \leanok
+  \label{def:packing_checked_observation}
+  Choose an equivalence $e:W_{\mathrm{in}}\simeq W_{\mathrm{out}}$, an honest message
+  $h(q,w')$, a source evaluation $f(q,w)$ and a message observation $o(q,z)$.
+  Require the unconditional identity $f(q,w)=o(q,h(q,e(w)))$ for every query and source
+  witness. A protocol instance identifies its guard and input/output relations with these
+  observations and witness coordinates.
+\end{definition}
+
+\begin{theorem}[Deterministic observation read-back]
+  \lean{RingSwitching.Packing.CheckedObservation.honest_check,
+        RingSwitching.Packing.CheckedObservation.readback_keep}
+  \leanok
+  \uses{def:packing_checked_observation}
+  \label{thm:packing_checked_observation}
+  A correct source claim passes the observation check on its honest message. Conversely,
+  if the claim equals $o(q,z)$ and a valid output witness satisfies $z=h(q,w')$, then
+  $e^{-1}(w')$ has that claimed source evaluation. Any retained predicate on $w'$ is preserved.
+  No uniqueness, domain or probabilistic assumption is needed.
+\end{theorem}
+\begin{proof}\leanok
+Substitute the honest-message equality into the observation check and apply the unconditional
+identity and the two inverse laws of $e$.
+\end{proof}
+
+\begin{theorem}[Scalar-source reconstruction]
+  \lean{RingSwitching.Packing.ScalarHead.readback}
+  \leanok
+  \uses{thm:packing_checked_observation}
+  \label{thm:packing_scalar_readback}
+  A lossless component layout records the original scalar source, its retained evaluation point,
+  and a proved weighted reconstruction. If the sent partial family passes that scalar check and
+  satisfies the full-family relation on the same packed commitment, inverse component assembly
+  recovers a source satisfying the original scalar claim. The one-message head has perfect completeness and zero-challenge
+  knowledge soundness.
+\end{theorem}
+\begin{proof}\leanok
+Instantiate checked observation with the layout reconstruction and inverse component assembly,
+preserving the packed commitment through the input and output relation equivalences.
+\end{proof}
+
+DP24's concrete layout packs the first Boolean block and retains the suffix; ordinary Flock
+packs the suffix and retains the prefix. Their lossless Boolean-table splits hold over
+commutative rings, including empty blocks.
+
+\begin{theorem}[Flock quirky reconstruction]
+  \lean{RingSwitching.Packing.ScalarHead.quirky_reconstruct}
+  \leanok
+  \label{thm:packing_quirky_readback}
+  Let skipped indices enumerate distinct interpolation nodes in the opening field. Define the
+  original quirky extension by Lagrange interpolation of the table's multilinear sections.
+  Packing the pair $(\sigma,b)$ gives reconstruction weights
+  $L_\sigma(\zeta)\widetilde{\mathrm{eq}}(\rho,b)$. The interpolant has degree below the number
+  of nodes and agrees with the original section at each node.
+\end{theorem}
+\begin{proof}\leanok
+Expand the Lagrange interpolation of the multilinear sections and apply the lossless component
+split.
+\end{proof}
+
+Batching strategies bound collisions between two fixed distinct families. Over a finite
+integral domain $C$, power weights $1,c,\ldots,c^{e-1}$ have error at most
+$(e-1)/|C|$ for $e\geq1$; equality folding over $\kappa$ coordinates has error
+$\kappa/|C|$. Singleton and empty-index batching have zero error.
+
+The security event permits witnesses to depend on the challenge. Functionality of the fixed
+commitment relation identifies every compatible witness with one polynomial chosen before
+sampling, allowing the fixed-family separation bound to apply.
+
+\begin{theorem}[Separation for a functional compatibility relation]
+  \lean{RingSwitching.Packing.FullFamily.compatibility_bad_event_le}
+  \leanok
+  \uses{thm:packing_family_slice}
+  \label{thm:packing_compatibility_separation}
+  Fix an oracle, a compatibility relation functional in its packed polynomial, injective
+  compatible $P\to C$ transport, and a batching strategy. The probability that some compatible
+  polynomial violates the slice equations but satisfies the challenged sumcheck claim is at
+  most the strategy error. This contract requires no honest commitment coverage.
+\end{theorem}
+\begin{proof}\leanok
+If a compatible polynomial exists, choose it before the challenge. Functionality identifies
+all later compatible witnesses with it, so the fixed-family separation bound applies.
+\end{proof}
+
+\begin{definition}[Packed commitment relation]
+  \lean{RingSwitching.Packing.PackedCommitment}
+  \leanok
+  \label{def:packing_commitment}
+  An oracle family carries a fixed relation to packed $P$-polynomials and an honest constructor
+  covering every polynomial. Its opening relation preserves the same commitment and asserts
+  the polynomial's evaluation at a $C$-point. No uniqueness is assumed by this base interface.
+\end{definition}
+
+\begin{definition}[Exact packed commitment]
+  \lean{RingSwitching.Packing.ExactPackedCommitment}
+  \leanok
+  \uses{def:packing_commitment}
+  \label{def:packing_exact_commitment}
+  The exact specialization additionally proves functionality for every fixed oracle collection.
+  The generic phases, extractors, knowledge states and completeness use the base relation;
+  randomized separation uses this functionality proof explicitly. Finite-list commitments can
+  use the same phases, but require separate list/OOD probability bounds.
+\end{definition}
+
+\begin{theorem}[Checked full-family phase]
+  \lean{RingSwitching.Packing.FullFamily.rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{thm:packing_family_slice, def:packing_exact_commitment}
+  \label{thm:packing_full_family_knowledge}
+  For a functional packed commitment, compatible injective $P\to C$ transport and a batching
+  strategy, the checked-slice verifier has worst-case-per-prefix knowledge error given by
+  that strategy.
+  Its extractor unpacks the committed polynomial. Failed read-back aborts, and the output
+  retains the same oracle statements and commitment relation in the sumcheck claim.
+\end{theorem}
+\begin{proof}\leanok
+Functionality fixes the committed polynomial before sampling; injective transport and the
+batching separation bound control the bad event.
+\end{proof}
+
+\begin{theorem}[Scalar and family composition]
+  \lean{RingSwitching.Packing.ScalarFamily.rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{thm:packing_scalar_readback, thm:packing_full_family_knowledge}
+  \label{thm:packing_scalar_family_knowledge}
+  Appending the scalar head and checked family phase preserves both guards, the composed
+  extractor, and the knowledge state. Under the family phase's security hypotheses, the only
+  challenge has its batching error. Perfect completeness holds for the base commitment relation
+  from every initial state. The composition sends partial values and their checked slices in
+  two consecutive messages.
+\end{theorem}
+\begin{proof}\leanok
+Apply guarded-first knowledge composition to the proved zero-error scalar head and checked
+family phase.
+\end{proof}
+
+The Binius commitment instance uses first-codeword compatibility and unique-distance binding.
+Its tensor head combines scalar checking and batching in one message. The FRI-Binius continuation
+interleaves FRI with sumcheck; the generic continuation below runs product sumcheck followed by
+a packed opening.
+
+\subsection{The generic product-sumcheck tail}
+
+For a public context selecting a multilinear multiplier $M\in C[X_1,\ldots,X_m]$, the tail
+tracks the residual Boolean sum of $M\cdot\operatorname{map}_{P\to C}(p)$ after a prefix of
+scalar challenges. Each factor is multilinear, so the product has individual degree at most two.
+The original $P$-polynomial and commitment oracle family remain in every relation.
+
+\begin{theorem}[Generic sumcheck round]
+  \lean{RingSwitching.Packing.Tail.Round.rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{def:packing_commitment}
+  \label{thm:packing_tail_round}
+  The round verifier reads a degree-two polynomial $g$, checks $g(0)+g(1)$ against its input
+  target, and extends the prefix by a uniform scalar challenge $c\in C$ with target $g(c)$.
+  Before the challenge, knowledge requires the residual polynomial of the committed witness. Afterward it
+  requires the local guard and the sampled residual relation. Over a finite integral
+  domain, explicit commitment functionality fixes the witness before sampling and gives
+  worst-case-per-prefix error $2/|C|$. Honest execution is perfectly complete over finite
+  commutative challenge rings.
+\end{theorem}
+\begin{proof}\leanok
+Fix the committed polynomial before sampling and bound roots of the degree-two difference from
+the residual polynomial of the committed witness.
+\end{proof}
+
+\begin{theorem}[Generic terminal opening]
+  \lean{RingSwitching.Packing.Tail.Terminal.rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{def:packing_commitment}
+  \label{thm:packing_tail_terminal}
+  After all variables are fixed, the prover sends $v$. The verifier checks
+  $s=M(r')v$ and forwards $(r',v)$ on the same commitment. Correct output read-back needs
+  no cancellation and no functionality; the deterministic step adds no challenge error.
+  With $m=0$, the empty sequence is identity and reaches this same terminal message.
+\end{theorem}
+\begin{proof}\leanok
+Substitute the accepted packed evaluation into the local guard and the terminal residual
+identity; no multiplier cancellation is used.
+\end{proof}
+
+\begin{theorem}[Composed packing reductions]
+  \lean{RingSwitching.Packing.FullFamilyOpening.rbrKnowledgeSoundnessWorstCaseWith,
+        RingSwitching.Packing.ScalarOpening.rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{thm:packing_full_family_knowledge, thm:packing_scalar_family_knowledge,
+        thm:packing_tail_round, thm:packing_tail_terminal}
+  \label{thm:packing_generic_pipeline}
+  Sequential composition of the corresponding head, the $m$ scalar rounds and terminal
+  check reduces the original full-family or scalar relation to the same commitment's
+  $C$-valued opening relation. The exact extractor and knowledge state use the proved guarded
+  composition constructors. Under explicit functionality, finite-domain challenges and
+  compatible injective $P\to C$ transport, the batching challenge retains its strategy error
+  and each tail challenge has error $2/|C|$. Averaging preserves these exact objects.
+  Stateful perfect completeness uses the base commitment relation without functionality.
+\end{theorem}
+\begin{proof}\leanok
+Compose the guarded head, finite sequence of product-sumcheck rounds, and terminal check
+using their exact extractors and knowledge states.
+\end{proof}
+
+\begin{theorem}[Exact challenge-error accounting]
+  \lean{RingSwitching.Packing.FullFamilyOpening.rbrError_sum,
+        RingSwitching.Packing.ScalarOpening.rbrError_sum}
+  \leanok
+  \uses{thm:packing_generic_pipeline}
+  \label{thm:packing_error_sum}
+  The sum of the declared errors over the challenge indices is
+  $\varepsilon_{\mathrm{batch}}+m(2/|C|)$ in both pipelines. The deterministic scalar
+  head, empty adapter and terminal message add no challenge. This arithmetic identity
+  does not assert an ordinary-soundness bound.
+\end{theorem}
+\begin{proof}\leanok
+Use the canonical sequence and append challenge-index equivalences and the public component error
+lookup identities.
+\end{proof}
+
+\begin{definition}[Same-commitment downstream opening]
+  \lean{RingSwitching.Packing.PackedOpening}
+  \leanok
+  \uses{def:packing_commitment}
+  \label{def:packing_downstream_opening}
+  A downstream opening argument is an oracle reduction whose input relation is precisely
+  the packed commitment's $C$-valued evaluation relation. Its output statement, oracle family,
+  witness and relation are explicit. The front and opening share the same ambient oracle.
+\end{definition}
+
+\begin{theorem}[Composition with a packed opening]
+  \lean{RingSwitching.Packing.PackedOpening.rbrKnowledgeSoundnessWorstCaseWith,
+        RingSwitching.Packing.PackedOpening.perfectCompleteness}
+  \leanok
+  \uses{thm:packing_generic_pipeline, def:packing_downstream_opening}
+  \label{thm:packing_downstream_assembly}
+  Append composes worst-case knowledge contracts at the same evaluation seam,
+  using their exact extractors and guarded knowledge states. The downstream verifier may have
+  arbitrary effects. Perfect completeness separately requires guarded verification, completeness
+  from every seam state, and the stated pure-output or first-message condition.
+\end{theorem}
+\begin{proof}\leanok
+Apply guarded-first knowledge append and, separately, guarded completeness append with the
+stated seam-state and execution hypotheses.
+\end{proof}
+
+The packing heads use the empty ambient oracle. The composition interface also permits a
+common nonempty ambient oracle, with state-dependent downstream execution. Each opening
+protocol supplies the security contract for its own output relation.
+
+\subsection{Tensor-message packing}
+
+\begin{definition}[Faithful tensor profile]
   \lean{RingSwitching.RingSwitchingProfile}
+  \leanok
   \label{def:ring_switching_profile}
-  Fix commutative rings $B$ (small) and $L$ (large) with $L$ a $B$-algebra, and $\kappa \in
-  \mathbb{N}$. A \emph{ring-switching profile} consists of:
-  \begin{itemize}
-    \item a rank-$2^\kappa$ $B$-basis $\beta = (\beta_u)_{u \in \{0,1\}^\kappa}$ of $L$;
-    \item a commutative \emph{pack/trace carrier} $A$ that is an $L$-algebra (the type sent on the
-      wire);
-    \item two ring homomorphisms $\varphi_0, \varphi_1 : L \to A$ (the \emph{column} and \emph{row}
-      embeddings);
-    \item coordinate maps $\mathrm{decomposeColumns}, \mathrm{decomposeRows} : A \to (\{0,1\}^\kappa
-      \to L)$;
-    \item subject to the two \emph{reconstruction laws}
-      \begin{align}
-        z &= \textstyle\sum_{u} \varphi_0(\mathrm{decomposeRows}(z)_u)\cdot \varphi_1(\beta_u),
-          \label{eq:rs_rows}\\
-        z &= \textstyle\sum_{v} \varphi_1(\mathrm{decomposeColumns}(z)_v)\cdot \varphi_0(\beta_v)
-          \label{eq:rs_cols}
-      \end{align}
-      for all $z \in A$.
-  \end{itemize}
+  Let $B$ and $L$ be commutative rings, with $L$ a $B$-algebra and basis
+  $(\beta_u)_{u\in\{0,1\}^{\kappa}}$. A tensor profile supplies a commutative ring $A$
+  with an ambient $L$-algebra structure, two ring homomorphisms
+  $\varphi_0,\varphi_1:L\to A$, and row and column coordinates. Each coordinate map is a
+  two-sided inverse to its corresponding recomposition:
+  \[
+    R(c)=\sum_u\varphi_0(c_u)\varphi_1(\beta_u),\qquad
+    Q(c)=\sum_u\varphi_1(c_u)\varphi_0(\beta_u).
+  \]
+  The homomorphisms agree on $B$. These inverse laws identify each carrier element with its
+  complete row or column family. The coordinate laws use the explicit homomorphisms;
+  neither is identified with the ambient algebra map.
 \end{definition}
 
-Laws \eqref{eq:rs_rows}--\eqref{eq:rs_cols} are the e\~q/trace structural identity of
-\cite[\S2.5]{DP24}: they pin the two coordinate maps to $\varphi_0,\varphi_1,\beta$ and are precisely
-what the completeness and soundness proofs consume. They also rule out degenerate profiles (e.g.
-$\mathrm{decomposeColumns} \equiv 0$), so the protocol's security statements are non-vacuous.
-
-\begin{definition}[Binius instance]
+\begin{definition}[Binius tensor instance]
   \lean{RingSwitching.binaryTowerProfile}
-  \uses{def:ring_switching_profile, def:binary_tower_field}
+  \leanok
+  \uses{def:ring_switching_profile}
   \label{def:binary_tower_profile}
-  For binary-tower fields $B = K$, $L$ a degree-$2^\kappa$ extension, the profile takes the
-  \emph{tensor carrier} $A := L \otimes_K L$, with $\varphi_0(\alpha) = \alpha \otimes 1$,
-  $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
-  for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
-  $L$-module structures on $A$. Laws \eqref{eq:rs_rows}--\eqref{eq:rs_cols} hold by
-  \texttt{Basis.sum\_repr} on these bases and are proven in ArkLib.
+  Set $A=L\otimes_B L$, $\varphi_0(x)=x\otimes1$, and $\varphi_1(y)=1\otimes y$.
+  The left and right base-changed bases provide the respective coordinate maps and prove all
+  profile laws. This algebraic constructor accepts commutative rings.
 \end{definition}
 
-The Hachi construction \cite{NOZ26} is the intended second instance: $L = R_q$ a cyclotomic ring,
-$A = R_q$ itself, $\varphi_0 = \mathrm{id}$, $\varphi_1 = \sigma_{-1}$ (the order-two automorphism),
-and $\beta = \psi$ from its Theorem~2. Because $R_q$ is not an integral domain, the Schwartz--Zippel
-soundness statement below does not apply to it; Hachi soundness is a separate argument.
+The pure-tensor laws determine the orientation:
+\[
+  \operatorname{Rows}(\varphi_0(x)\varphi_1(y))_u=x[y]_{\beta,u},\qquad
+  \operatorname{Columns}(\varphi_0(x)\varphi_1(y))_u=y[x]_{\beta,u}.
+\]
+Rows recover the original partial evaluations; columns retain packed values for batching and
+the public multiplier.
 
-\subsection{Packing the witness}
-
-\begin{definition}[Multilinear packing]
+\begin{definition}[Boolean-table packing]
   \lean{RingSwitching.packMLE}
+  \leanok
   \uses{def:ring_switching_profile}
   \label{def:pack_mle}
-  With $\ell = \ell' + \kappa$, a small-field multilinear $t$ in $\ell$ variables is packed into a
-  large-field multilinear $t'$ in $\ell'$ variables by bundling each block of $2^\kappa$ coefficients
-  into one $L$-element:
+  For $\ell=\kappa+\ell'$, the packed polynomial has Boolean values
   \[
-    t'(w) \;=\; \sum_{v \in \{0,1\}^\kappa} t(v, w)\,\beta_v, \qquad w \in \{0,1\}^{\ell'}.
+    t'(w)=\sum_{v\in\{0,1\}^{\kappa}}\beta_v\,t(v,w).
   \]
+  This groups Boolean table entries. Hachi's monomial-coefficient convention is a different
+  layout and requires its own correspondence.
 \end{definition}
 
-\subsection{The reduction}
+\begin{theorem}[Tensor observation and scalar reconstruction]
+  \lean{RingSwitching.RingSwitchingProfile.columns_observation,
+        RingSwitching.packMLE_eq_packedMLE,
+        RingSwitching.packMLE_unpackMLE,
+        RingSwitching.unpackMLE_packMLE,
+        RingSwitching.original_claim_of_check,
+        RingSwitching.initial_consistency_iff}
+  \leanok
+  \uses{def:ring_switching_profile, def:pack_mle, thm:packing_finite_observation,
+        thm:packing_checked_observation, thm:packing_family_slice}
+  \label{thm:tensor_packing_head}
+  Boolean-table packing agrees with the packed-prefix layout and has two-sided inverses.
+  Its tensor message is a finite observation in carrier coordinates. The scalar guard recovers
+  the original source evaluation, and round-zero residual consistency is the challenged
+  sumcheck relation.
+\end{theorem}
+\begin{proof}\leanok
+Prove the prefix/suffix index transport and polynomial correspondence, then apply finite
+observation to the embedded packed evaluation. Instantiate checked observation with
+the packing equivalence. Identify the multiplier polynomial and Boolean sum
+with the shared multiplier and slice target.
+\end{proof}
 
-The full reduction is a sequential composition of three phases, ending in a call to an underlying
-large-field multilinear IOPCS over $L$.
+\begin{theorem}[Tensor batching completeness and knowledge]
+  \lean{RingSwitching.BatchingPhase.batchingReduction_perfectCompleteness,
+        RingSwitching.BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{thm:tensor_packing_head, thm:packing_compatibility_separation}
+  \label{thm:tensor_batching_security}
+  The tensor-message/vector-challenge head has perfect completeness from every initial state.
+  Under functional compatibility and finite-domain challenge hypotheses, its extractor and
+  knowledge states have worst-case-per-prefix error $\kappa/|L|$. The output is the round-zero
+  sumcheck relation on the same committed polynomial.
+\end{theorem}
+\begin{proof}\leanok
+Use the exact guarded execution equation and tensor observation identity for honest runs.
+At the message boundary apply checked read-back; at the output boundary recover the structural
+residual relation. Include the tensor head's challenge bad event in the shared compatibility
+separation event, using functionality to fix the polynomial before sampling. Derive the
+averaged theorem from this worst-case theorem.
+\end{proof}
 
-\begin{enumerate}
-  \item \textbf{Batching} (\lean{RingSwitching.BatchingPhase.batchingOracleReduction}). The prover
-    sends the folded element $\hat s \in A$. The verifier checks the original claim against its
-    column-decomposition, $s = \sum_v \tilde{\mathrm{eq}}(v, r_{0..\kappa-1})\cdot
-    \mathrm{decomposeColumns}(\hat s)_v$, then sends a batching challenge $r'' \in L^\kappa$,
-    collapsing the $\kappa$ packed coordinates into a single sum-check target $s_0 = \sum_u
-    \tilde{\mathrm{eq}}(u, r'')\cdot \mathrm{decomposeRows}(\hat s)_u$. (Soundness loss
-    $\kappa/\lvert L\rvert$.)
-  \item \textbf{Sum-check} (\lean{RingSwitching.SumcheckPhase.coreInteractionOracleReduction}). A
-    degree-$2$ multilinear sum-check over $L$ on $H = A_{\mathrm{MLE}} \cdot t'$, over $\ell'$ rounds
-    plus a final round, reducing the sum claim to a single evaluation of $t'$ at a random point.
-    (Loss $2/\lvert L\rvert$ per round, $1/\lvert L\rvert$ final.)
-  \item \textbf{Opening}. The residual evaluation claim about $t'$ over $L$ is discharged by the
-    underlying large-field multilinear IOPCS.
-\end{enumerate}
+\begin{theorem}[FRI-Binius batching]
+  \lean{Binius.FRIBinius.FullFRIBinius.batchingReduction_perfectCompleteness,
+        Binius.FRIBinius.FullFRIBinius.batchingVerifier_rbrKnowledgeSoundnessWorstCaseWith}
+  \leanok
+  \uses{def:binary_tower_profile, thm:tensor_batching_security}
+  \label{thm:binius_tensor_batching}
+  The Binius tensor profile and first-codeword compatibility instantiate the batching head.
+  Unique-distance binding supplies functionality. Completeness reaches the interleaved-core
+  input relation, and knowledge security uses the batching extractor, state, and error.
+\end{theorem}
+\begin{proof}\leanok
+Apply the tensor batching theorems with \texttt{binaryBasefold\_functional}.
+\end{proof}
 
-\begin{definition}[Full ring-switching reduction]
+\begin{definition}[Sequential tensor-profile reduction]
   \lean{RingSwitching.FullRingSwitching.fullOracleReduction}
+  \leanok
   \uses{def:ring_switching_profile, def:pack_mle}
   \label{def:full_ring_switching}
-  The composition of the batching phase, the core sum-check interaction, and the large-field IOPCS
-  invocation.
+  The tensor-profile construction composes its checked scalar/batching phase, degree-two sumcheck,
+  and a supplied dense multilinear opening protocol.
 \end{definition}
 
-\subsection{Security}
+Each failed local check causes monadic failure. At the terminal check
+$\mathrm{target}=M(r')s'$, the verifier forwards the opening value $s'$, including when
+$M(r')=0$. The final leaf has ring-valid completeness and zero-error knowledge soundness.
 
-\begin{theorem}[Perfect completeness]
-  \lean{RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness}
-  \uses{def:full_ring_switching}
-  \label{thm:ring_switching_completeness}
-  The full ring-switching oracle reduction is perfectly complete: an honest prover holding a witness
-  in the input relation always produces a transcript accepted into the output relation. The honest
-  prover's folded $\hat s$ satisfies the verifier's column check by reconstruction law
-  \eqref{eq:rs_cols}.
+\begin{theorem}[FRI-Binius terminal execution]
+  \lean{Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifier_verify,
+        Binius.FRIBinius.CoreInteractionPhase.finalSumcheckVerifier_append_failure}
+  \leanok
+  \label{thm:binius_final_execution}
+  The FRI-Binius terminal verifier rejects a failed multiplier equation and remains
+  failed through every appended oracle verifier. On acceptance it forwards the received
+  constant, including under a zero multiplier, with the original claim, the prescribed point
+  suffix, the same target and challenges, and every forwarded oracle.
 \end{theorem}
+\begin{proof}\leanok
+Interpret the guarded message verifier and apply absorbing failure to oracle append.
+\end{proof}
 
-\begin{theorem}[Round-by-round knowledge soundness]
-  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
-  \uses{def:full_ring_switching}
-  \label{thm:ring_switching_soundness}
-  When $L$ is an integral domain, the full reduction is round-by-round knowledge sound, with the
-  additive error
-  \[
-    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert} \;+\;
-    \frac{1}{\lvert L\rvert} \;+\; \varepsilon_{\mathrm{IOPCS}},
-  \]
-  matching \cite[\S3.1--3.2]{DP24}. The integral-domain hypothesis is exactly the Schwartz--Zippel
-  ingredient (a nonzero degree-$d$ univariate over $L$ has at most $d$ roots).
+\subsection{Trace relocation and quotient lifting}
+
+Hachi's deterministic head uses the monomial packing $\psi$ and subfield-valued points. Its
+trace pairing is scaled:
+\[
+  \operatorname{Tr}_H(\psi(a)\sigma_{-1}(\psi(b)))=(d/k)\langle a,b\rangle.
+\]
+\begin{theorem}[Exact scalar trace check]
+  \lean{ArkLib.Lattices.Hachi.TraceHead.trace_eval_eq_iff,
+        ArkLib.Lattices.Hachi.TraceHead.check_iff_observation}
+  \leanok
+  \uses{thm:packing_finite_observation}
+  \label{thm:hachi_scalar_trace_check}
+  Pack the last variables' monomial coefficients using the $\psi$ equivalence.
+  At retained points embedded from the fixed subring, the scaled trace check on the packed
+  polynomial's ring evaluation holds if and only if its decoded scalar polynomial has the
+  original claimed evaluation. The factor $d/k$ is a unit in the cyclotomic ring by odd
+  characteristic and the power-of-two rank. No fixed-subring field instance is used.
+  For every sent ring value, the scaled-trace guard is equivalently the weighted
+  observation of its $\psi$ coordinates, with the same monomial index transport.
 \end{theorem}
+\begin{proof}\leanok
+Identify the $\psi$ coordinates and monomial indices, apply finite-observation read-back
+to the coefficient table, then apply the scaled trace pairing and cancel its proved unit factor.
+\end{proof}
 
-\noindent The leaf completeness and soundness proofs are in progress; the statements above are
-final and instance-independent, and instantiate to end-to-end Binius security via
-Definition~\ref{def:binary_tower_profile}.
+\begin{theorem}[Honest scalar commitment coverage]
+  \lean{ArkLib.Lattices.Hachi.TraceHead.committed_source_valid}
+  \leanok
+  \uses{thm:hachi_scalar_trace_check}
+  \label{thm:hachi_scalar_commitment_coverage}
+  For every scalar coefficient polynomial and query, apply the Hachi committer to
+  its coefficient packing. Balanced gadget reconstruction recovers that same ring polynomial
+  from the honest decommitment. Under the digit/norm inequalities, it supplies a valid
+  source weak opening, including the message bound required by the nonrecursive honest chain.
+\end{theorem}
+\begin{proof}\leanok
+Use balanced-gadget reconstruction of the committed packing and the honest-opening norm
+bounds.
+\end{proof}
+
+\begin{theorem}[Trace-head completeness and special soundness]
+  \lean{ArkLib.Lattices.Hachi.TraceHead.coordinateWiseSpecialSoundWith,
+        ArkLib.Lattices.Hachi.TraceHead.perfectCompleteness}
+  \leanok
+  \uses{thm:packing_checked_observation, thm:hachi_scalar_trace_check}
+  \label{thm:hachi_shared_trace_head}
+  The one-message trace head has perfect completeness and zero-challenge coordinate-wise
+  special soundness (CWSS), preserving the commitment and norm-conditioned weak opening at
+  the ring-evaluation relation. Its checked-observation instance has the identity witness
+  equivalence and the proved monomial observation identity.
+\end{theorem}
+\begin{proof}\leanok
+Apply the guard and relation equivalences, the checked-observation lemmas, and guarded
+execution. The retained predicate is the same norm-conditioned weak opening.
+\end{proof}
+
+The quotient lift in \texttt{RingSwitching/Lift/} moves an identity modulo a monic polynomial
+to a polynomial identity with an explicit quotient witness, then evaluates it in a field.
+Its CWSS contract allows a commitment-collision escape. The cyclotomic instance implements the
+lift used in Hachi \S4.3 \cite{NOZ26}, following \cite{HMZ25}.
+
+\subsection{Formalization boundary}
+
+The generic scalar and full-family pipelines have completeness and round-by-round knowledge
+proofs to the packed opening relation. Each downstream opening protocol supplies its own
+security contract; ordinary soundness requires a separate conversion from those knowledge
+properties.
+
+FRI-Binius uses the proved tensor batching head, while its full interleaved core/query proofs
+remain incomplete. The sequential tensor-profile sumcheck loop and unrestricted knowledge
+composition also contain admissions. The terminal execution theorem above specifies local
+verification behavior; it does not establish full FRI-Binius security.
+
+Flock's ordinary and quirky layouts instantiate the scalar head. Its production commitment
+integration and list/out-of-domain binding analysis remain separate. Hachi's trace-head proofs
+use the fixed subring as a ring and preserve norm-conditioned weak openings; executable scalar
+scheme packaging, fixed-subring field identification, and recursive recombination remain open.
+Exceptional-set security for Galois-ring quotient lifts and the Galois product-carrier instance
+are additional specializations.

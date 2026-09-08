@@ -8,16 +8,11 @@ import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 
 /-!
-# Operations preserving `MvPolynomial.restrictDegree`
+# Operations preserving individual polynomial degree bounds
 
-This file collects lemmas about how the basic `MvPolynomial` operations interact with
-`MvPolynomial.restrictDegree`, plus a "fix first `v` variables" helper.
-
-The contents were originally housed in `Binius.BinaryBasefold.Prelude`. They are fully
-generic (no binary-tower or characteristic dependencies) and have been promoted here so
-that the structured (witness-mode) sumcheck — see
-`ArkLib.ProofSystem.Sumcheck.Structured` — and any future ring-switching protocol can
-import them without depending on `Binius.BinaryBasefold.*`.
+Basic polynomial operations preserve `MvPolynomial.restrictDegree` under the corresponding
+degree inequalities. The file also defines evaluation of an initial variable block, leaving
+the remaining variables free. These operations require no protocol or field-tower assumptions.
 -/
 
 namespace MvPolynomial
@@ -50,6 +45,28 @@ noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   -- Step 3 : Evaluate the poly at the point challenges to get a final L[X Fin (ℓ - v)]
   let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
+
+/-- Fixing an empty prefix preserves the polynomial, including its variable indices. -/
+theorem fixFirstVariablesOfMQP_zero (p : MvPolynomial (Fin ℓ) L) :
+    fixFirstVariablesOfMQP ℓ 0 p Fin.elim0 = p := by
+  unfold fixFirstVariablesOfMQP
+  change map (eval (σ := Fin 0) Fin.elim0)
+    (sumAlgEquiv L (Fin ℓ) (Fin 0) (rename _ p)) = p
+  induction p using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simpa using congrArg₂ (· + ·) hp hq
+  | mul_X p i hp =>
+    simp only [map_mul] at hp ⊢
+    rw [hp]
+    congr 1
+    have hi : finSumFinEquiv.symm (Fin.cast (show ℓ = 0 + (ℓ - 0) by omega) i) =
+        Sum.inr i := by
+      apply finSumFinEquiv.injective
+      simp
+    erw [rename_X]
+    simp only [Equiv.trans_apply, finCongr_apply, Equiv.sumComm_apply]
+    erw [hi]
+    simp
 
 /-- The per-variable / prismalinear degree-survival lemma: if a polynomial respects a per-variable
 degree bound `b : Fin ℓ → ℕ`, then fixing the first `v` variables to scalars produces a polynomial
@@ -98,10 +115,10 @@ theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challen
     fixFirstVariablesOfMQP ℓ v poly challenges ∈ L⦃≤ deg⦄[X Fin (ℓ - v)] :=
   fixFirstVariablesOfMQP_degreeVarLE ℓ (b := fun _ => deg) v hp
 
-/-- For a multilinear `t` (each variable has `degreeOf ≤ 1`), substituting `t` into a univariate
-`Q : L[X]` via `Polynomial.aeval` yields a multivariate polynomial whose degree in each variable is
-bounded by `Q.natDegree`. Used by the structured sumcheck to bound the degree of `Q(witness)` in
-the round polynomial `H = P · Q(t)`. -/
+/--
+Substituting a multilinear polynomial into a univariate polynomial gives individual degree at
+most the univariate polynomial's natural degree.
+-/
 theorem degreeOf_aeval_le {L : Type*} [CommSemiring L] {σ : Type*} (i : σ)
     (Q : Polynomial L) (t : MvPolynomial σ L) (ht : degreeOf i t ≤ 1) :
     degreeOf i (Polynomial.aeval t Q) ≤ Q.natDegree := by

@@ -16,24 +16,32 @@ move an evaluation or linear claim between a small ring and a large ring — so 
 of a proof system can run where it is cheap or sound: commit over the small ring, evaluate
 and open over a large extension; or state a relation over a structured quotient ring, check
 it inside a field. The constructions share *algebra*, not *protocol*; no single *protocol* in
-this library unifies Lift and Packing. Generic work on the Packing side is in progress and is
-intended to subsume the shared packing abstraction, but it does not subsume `Lift`, which is the
-[HMZ25] quotient-evaluation lift rather than a packing. The two construction families, one folder
-each:
+this library unifies Lift and Packing. The coordinate core of Packing permits independent
+packing and evaluation algebras; it does not subsume the [HMZ25] quotient-evaluation lift.
+The two construction families, one folder each:
 
-1. **Packing** (`Packing/`) — small ring `B` → large ring `L`, `L` free of rank
-   `2^κ` over `B`. A basis identifies each `2^κ`-block of a `B`-multilinear's coefficients
-   with one `L`-element, so the polynomial *packs* into an `L`-multilinear in fewer
-   variables, and the claim about the original must be relocated onto the packed one. The
-   packing data is one shared abstraction (`RingSwitchingProfile`,
-   `Packing/Profile.lean`); the relocation is per-instance:
-   * **interactive relocation** (the protocol files of `Packing/`) — for an arbitrary
-     large-ring evaluation point: carrier message, batching challenge, dedicated packing
-     sumcheck; RBR knowledge soundness (`[IsDomain L]`). Consumed by
-     `ProofSystem/Binius/FRIBinius/` (this is [DP24]'s construction).
-   * **deterministic relocation** (planned) — for a subring-valued evaluation point the
-     interaction collapses to one message and one identity check, with zero soundness error;
-     a second `Profile` instance ([NOZ26] §3).
+1. **Packing** (`Packing/`) — a finite basis of a commutative `B`-algebra `P` packs
+   a family of `B`-multilinears into one `P`-multilinear. Evaluations may take values
+   in an independent finite-free `B`-algebra `E`, with a different basis rank. The coordinate
+   transpose and polynomial inverses need no embedding between `P` and `E`. The binary-table
+   specialization groups `2^κ` Boolean table entries and reduces the number of variables.
+   The tensor-profile data boundary (`RingSwitchingProfile`, `Packing/Profile.lean`) requires
+   faithful tensor coordinates, including two-sided inverse laws and agreement of the
+   embeddings on `B`.
+   Distinct relocation constructions require their own laws:
+   * **interactive relocation** — `ScalarHead/` proves the original DP24/Flock scalar
+     reconstruction; `FullFamily/` proves checked coordinate batching to a sumcheck claim.
+     `Tail/` composes the scalar or full-family head with product sumcheck and terminal
+     read-back to the same packed opening relation, with explicit commitment functionality
+     at its randomized security bounds. The tensor batching head consumes those shared
+     reconstruction and separation proofs, with completeness and exact worst-case knowledge
+     security. FRI-Binius instantiates it with its commitment binding, then interleaves
+     FRI with sumcheck. The profile-based loop and unrestricted composition retain separate
+     proof obligations.
+   * **deterministic relocation** — `Commitments/Functional/Hachi/TraceHead/` implements
+     the one-message, zero-challenge trace head at fixed-subring points ([NOZ26] §3.1).
+     Monomial packing, the unit trace factor, honest committer coverage, completeness
+     and CWSS preserve the existing norm-conditioned ring-opening relation.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
    `S ≅ R[X]/(φ)` → a field `F ⊇ R`. Each row of a linear claim `M z = y` over `S` lifts to
@@ -43,16 +51,21 @@ each:
    polynomial equality before being transported to the field. Generic
    over any monic-modulus presentation of `S` (`Lift/Presentation.lean` — *not*
    specific to cyclotomic rings), with coordinate-wise special soundness at `k = 2·deg φ`
-   via the committed-scalar seam. The cyclotomic instance
+   and a commitment-collision escape via the committed-scalar seam. The cyclotomic instance
    (`Commitments/Functional/Hachi/RingSwitch/`) realizes [HMZ25]'s lift as used by Hachi.
 
-## What is genuinely shared between the two families
+## Shared support
 
+* Within **Packing**, `FiniteObservation.lean` proves weighted coordinate reconstruction for
+  arbitrary finite tables. Boolean, tensor and Hachi monomial proofs consume it.
+  `CheckedObservation.lean` shares deterministic checking and exact inverse witness transport
+  while retaining each protocol's concrete guard and commitment predicate. Hachi's CWSS and
+  randomized packing's RBR knowledge certificates retain their separate security contracts.
 * The **round-shape verifiers** (this folder's top level): every verifier round of the family
   is "one prover message, a deterministic local check, an accept/reject statement update" —
-  message-only (`pSpecMessage` + `messageRoundOracleVerifier`: DP24's final step today,
-  Hachi §3's trace-check head tomorrow) or with a trailing scalar challenge
-  (`pSpecScalar` + `scalarRoundOracleVerifier`: DP24's batching round; the check-free limit
+  message-only (`pSpecMessage` + `guardedMessageRoundOracleVerifier`: scalar claim heads
+  and DP24's final step) or with a trailing scalar challenge
+  (`pSpecScalar` + `guardedScalarRoundOracleVerifier`: DP24's batching round; the check-free limit
   of this shape is the committed-scalar verifier `Lift` builds on). See
   `RoundVerifiers.lean`.
 * The **claim-transport algebra** (`Transport/`): both constructions move a polynomial claim
@@ -69,36 +82,38 @@ each:
   which is why it lives under `OracleReduction/`, not here.
 * The wire format `CoordinateWise.ScalarRound.pSpecScalar` — the two-round
   message-then-scalar-challenge shape both DP24's batching round and the `Lift`
-  round run on (and which `scalarRoundOracleVerifier` above is the verifier skeleton of); it
+  round run on (and which `guardedScalarRoundOracleVerifier` above is the verifier skeleton of); it
   stays under `OracleReduction/` with the CWSS machinery built on it.
 
 Anything else — the tensor-algebra batching check, the relocation sumcheck, the
 quotient-witness correspondence, the trace identity — belongs to exactly one construction and
-lives with it. In particular the two *data layers* do not unify: above a spanning-and-faithful
-core their law sets are incomparable (coordinate additivity is not derivable from
-`decomposeRows_spec` alone, and `rep` is not multiplicative on the nose), so no common parent
-structure would carry a lemma either side's proofs consume.
+lives with it. The faithful tensor-coordinate laws and the monic-quotient representative laws
+are distinct.
+Coordinate additivity follows from the Profile inverse laws; a quotient representative need not
+preserve multiplication as a polynomial. The shared verifier shapes do not identify these laws
+or supply a shared security theorem.
 
 ## Folder structure
 
 * `Basic.lean` — this family-taxonomy umbrella.
 * `RoundVerifiers.lean` — the family's shared verifier skeletons: the one-message wire
-  `pSpecMessage` and the check-then-update verifiers `messageRoundOracleVerifier` /
-  `scalarRoundOracleVerifier`.
+  `pSpecMessage` and guarded message/scalar verifiers with absorbing failure. Total fallback
+  variants are also available; their rejection statements need a separate relation contract.
 * `Transport/` — the shared claim-transport algebra (see `Transport.lean`): evaluation
   through a ring embedding with the interpolation kernel (`Eval.lean`, univariate) and
   degree-bounded coefficient transport (`Coeffs.lean`, multivariate).
-* `Packing/` — packing data layer + the DP24 construction (see `Packing.lean`).
+* `Packing/` — finite-free coordinate algebra, checked scalar and full-family phases,
+  the generic sumcheck pipelines to a packed opening, and the tensor-profile construction.
+  See `Packing.lean`.
 * `Lift/` — the generic quotient-ring lift to field evaluations (see `Lift.lean`).
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
-* [HMZ25] Huang, M.-Y. M., Mao, X., and Zhang, J. "Sublinear Proofs over Polynomial Rings."
-  Cryptology ePrint Archive (2025).
-* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
-  Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
+* [Huang, M.-Y. M., Mao, X., and Zhang, J., *Sublinear Proofs over Polynomial Rings*][HMZ25]
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 
 See also the KB concept page `docs/kb/concepts/ring-switching.md`.
 -/

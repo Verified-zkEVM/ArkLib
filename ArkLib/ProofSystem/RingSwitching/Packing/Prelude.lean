@@ -44,8 +44,8 @@ message flow.
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
 
 noncomputable section
@@ -123,11 +123,8 @@ def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L) (s_hat : L
     letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
     exact b.repr s_hat v
 /--
-**MLE packing**: pack a small-ring multilinear `t` into a large-ring multilinear `t'` by
-reinterpreting each chunk of `2^κ` coefficients as a single `L`-element along the basis `β`
-([DP24] Definition 2.1).
-For each `w ∈ {0,1}^ℓ'`, the evaluation `t'(w)` is defined as:
-`t'(w) := ∑_{v ∈ {0,1}^κ} t(v₀, ..., v_{κ-1}, w₀, ..., w_{ℓ'-1}) ⋅ β_v`
+Pack the Boolean evaluations along the first `κ` variables in the basis `β`, then extend the
+resulting table multilinearly over the retained variables.
 -/
 def packMLE (β : Basis (Fin κ → Fin 2) K L) (t : MultilinearPoly K ℓ) :
     MultilinearPoly L ℓ' :=
@@ -254,6 +251,14 @@ structure AbstractOStmtIn where
   -- MLPEvalRelation, forms the initial input relation for the MLIOPCS.
   initialCompatibility : (MultilinearPoly L ℓ') × (∀ j, OStmtIn j) → Prop
 
+/-- Exact compatibility: a fixed collection of oracle statements determines at most one
+packed polynomial. This premise is needed by the single-witness RBR bounds; list or collision
+interfaces require their own security statements. -/
+def AbstractOStmtIn.Functional (aOStmtIn : AbstractOStmtIn L ℓ') : Prop :=
+  ∀ (oStmt : ∀ j, aOStmtIn.OStmtIn j) (t₁ t₂ : MultilinearPoly L ℓ'),
+    aOStmtIn.initialCompatibility (t₁, oStmt) →
+    aOStmtIn.initialCompatibility (t₂, oStmt) → t₁ = t₂
+
 def AbstractOStmtIn.toRelInput (aOStmtIn : AbstractOStmtIn L ℓ') :
     Set (((MLPEvalStatement L ℓ') × (∀ j, aOStmtIn.OStmtIn j)) × (WitMLP L ℓ')) :=
   {input |
@@ -318,13 +323,10 @@ variable (P : RingSwitchingProfile K L κ)
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
 
-/-- **The verifier's coordinate-reconstruction subroutine**: the eq̃-weighted sum
-`∑_{u ∈ {0,1}^κ} eq̃(u, r) ⋅ c u` of a `2^κ`-indexed coordinate family `c` at the round
-randomness `r` — equivalently, the evaluation at `r` of the multilinear extension of `c`
-(Boolean points cast into `L`). Every DP24 verifier check below is this sum at a different
-coordinate family and randomness: step 2 checks the original claim against the column
-coordinates of `ŝ`, step 5 batches the row coordinates of `ŝ` into the sumcheck target `s₀`,
-and step 8 weighs the row coordinates of the final eq̃-tensor. -/
+/--
+Evaluate the multilinear extension of a coordinate family at the supplied point; equivalently,
+sum the coordinates with Boolean equality-polynomial weights.
+-/
 def eqWeightedCoordSum (c : (Fin κ → Fin 2) → L) (r : Fin κ → L) : L :=
   Finset.sum Finset.univ fun (u : Fin κ → Fin 2) =>
     let u_as_L : Fin κ → L := fun i => if (u i == 1) then 1 else 0
@@ -344,19 +346,17 @@ def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
   let φ₀_mapped_r: Fin ℓ' → P.A := fun i => P.φ₀ (r_suffix i)
   φ₁_mapped_t'.val.eval φ₀_mapped_r
 
-/-- The verifier's claim-consistency check: the claimed evaluation `s` must equal the
-eq̃-weighted reconstruction from `ŝ`'s column coordinates at the point prefix,
-`s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v` — `eqWeightedCoordSum` at
-`P.decomposeColumns` ([DP24] step 2, Check 1). -/
+/--
+Check the claimed scalar against the equality-weighted row coordinates at the evaluation
+point's prefix.
+-/
 def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : P.A) : Bool :=
   let r_prefix : Fin κ → L := fun i => r ⟨i.val, by omega⟩
-  decide (s = eqWeightedCoordSum κ L (P.decomposeColumns s_hat) r_prefix)
+  decide (s = eqWeightedCoordSum κ L (P.decomposeRows s_hat) r_prefix)
 
-/-- The batched-multiplier function on the cube: for each `w ∈ {0,1}^{ℓ'}`, decompose
-`eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1}) =: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u` into basis
-coordinates and batch those with the eq̃-weights of the batching scalars,
-`A : w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
-([DP24] step 4a).
+/--
+Batch the basis coordinates of the retained-variable equality polynomial at a Boolean point,
+using equality weights from the batching challenge.
 -/
 def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
     (r''_batching : Fin κ → L) : ((Fin (ℓ') → (Fin 2)) → L) :=
@@ -374,9 +374,9 @@ def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
       let eq_u_r_batching : L := eqTilde u_as_L r''_batching
       A_w_u • eq_u_r_batching
 
-/-- The batched multiplier `A(X_0, ..., X_{ℓ'-1})` — the multilinear extension of
-`compute_A_func`, the public factor of the relocation sumcheck's polynomial `h = A · t'`
-([DP24] step 4b). -/
+/--
+The multilinear extension of the batched equality-coordinate table `compute_A_func`.
+-/
 def compute_A_MLE
     (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
   MultilinearPoly L ℓ' :=
@@ -400,11 +400,11 @@ def RingSwitching_SumcheckMultParam :
   combinator_natDegree_le := by intro _; exact Polynomial.natDegree_X_le
 }
 
-/-- The batched sumcheck target: `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where `ŝ_u`
-are the row components of `ŝ` — `eqWeightedCoordSum` at `P.decomposeRows` and the batching
-scalars ([DP24] step 5). -/
+/--
+Sum the carrier's column coordinates with the equality weights of the batching challenge.
+-/
 def compute_s0 (s_hat : P.A) (r''_batching : Fin κ → L) : L :=
-  eqWeightedCoordSum κ L (P.decomposeRows s_hat) r''_batching
+  eqWeightedCoordSum κ L (P.decomposeColumns s_hat) r''_batching
 
 /-- Compute the tensor `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` -/
 def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' → L) : P.A :=
@@ -413,14 +413,14 @@ def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' → L) : P.A :=
   let φ₁_mapped_r': Fin ℓ' → P.A := fun i => P.φ₁ (r' i)
   eqTilde φ₀_mapped_r_suffix φ₁_mapped_r'
 
-/-- Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`,
-where e_u is the row components of e.
+/-- Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} φ₀(β_u) * φ₁(e_u)`,
+where e_u is the column components of e.
 Then compute `Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u`.
 -/
 def compute_final_eq_value (r_eval : Fin ℓ → L)
     (r'_challenges : Fin ℓ' → L) (r''_batching : Fin κ → L) : L :=
   let e_tensor := compute_final_eq_tensor κ L K P ℓ ℓ' h_l r_eval r'_challenges
-  eqWeightedCoordSum κ L (P.decomposeRows e_tensor) r''_batching
+  eqWeightedCoordSum κ L (P.decomposeColumns e_tensor) r''_batching
 
 /-- This condition ensures that the witness polynomial `H` has the
 correct structure `A(...) * t'(...)` -/
@@ -467,7 +467,7 @@ Marked `@[reducible]` so that, once the protocol code is rewired through the pro
 `(binaryTowerProfile …).A` (etc.) unfold to `L ⊗[K] L` at reducible transparency — preserving the
 existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axioms`). -/
 @[reducible] def binaryTowerProfile (κ : ℕ) [NeZero κ] (K L : Type)
-    [Field K] [Field L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
+    [CommRing K] [CommRing L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
     RingSwitchingProfile K L κ where
   basis := β
   A := TensorAlgebra K L
@@ -497,5 +497,19 @@ existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axi
       (Algebra.TensorProduct.includeRight).toRingHom.comp (algebraMap L L) by rfl]
     unfold φ₀ φ₁
     simp [Algebra.TensorProduct.tmul_mul_tmul]
+  decomposeRows_recompose := fun c => by
+    classical
+    funext v
+    simp [decompose_tensor_algebra_rows, φ₀, φ₁,
+      Algebra.TensorProduct.tmul_mul_tmul, map_sum, Basis.baseChange_repr_tmul]
+  decomposeColumns_recompose := fun c => by
+    classical
+    funext v
+    simp [decompose_tensor_algebra_columns, φ₀, φ₁,
+      Algebra.TensorProduct.tmul_mul_tmul, map_sum, Basis.baseChangeRight_repr_tmul]
+  embeddings_agree := fun b => by
+    change (algebraMap K L b) ⊗ₜ[K] (1 : L) = (1 : L) ⊗ₜ[K] (algebraMap K L b)
+    simpa only [Algebra.smul_def, mul_one] using
+      (TensorProduct.smul_tmul (R := K) b (1 : L) (1 : L))
 
 end RingSwitching

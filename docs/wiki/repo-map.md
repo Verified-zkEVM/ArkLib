@@ -656,29 +656,41 @@ home_page/            site assets and assembled website root
   `Composition/Sequential/Append/Security.lean` remain admitted and must not anchor a standalone
   security claim. Completeness composition uses the proved interfaces with explicit shared-state
   hypotheses.
-- Ring switching is a **family of constructions, not one protocol** — the umbrella
-  `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
-  `Packing/` is the small→large packing family: `Profile.lean` holds the shared
-  packing data layer `RingSwitchingProfile` (packing data + reconstruction laws) and the
-  remaining files are the DP24/Binius construction (`Prelude` with `packMLE` + the Binius
-  instance `binaryTowerProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
-  soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
-  (`biniusProfile`), and Hachi's §3 packing head is the intended next `Profile` instance.
-  `Lift/` is the **generic HMZ25 lift** (large quotient ring →
-  field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
-  `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific
-  — with the full lift algebra and interpolation engine proven over the laws), and
-  `Reduction.lean` is the protocol layer over the committed-scalar shell
-  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
-  recovery obligation proven generically. Hachi's `Commitments/Functional/Hachi/RingSwitch/`
-  is its cyclotomic instance, with law-discharge lemmas in
-  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. What the two families share lives at the
-  folder top level — the check-then-update round-shape verifiers (`RoundVerifiers.lean`,
-  over the `pSpecScalar` wire shape and the one-message `pSpecMessage` wire) and the
-  embed-and-evaluate transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`) — plus the
-  committed-scalar seam under `OracleReduction/`.
-  Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
-  `proof_systems/ring_switching.tex`. Structured sum-check support lives in
+- `Sequential/Append/Knowledge.lean` proves guarded-first RBR knowledge composition for exact
+  extractors and knowledge states, with worst-case component hypotheses and arbitrary right-hand
+  oracle effects. It supports empty components and exposes averaged wrappers. Import it explicitly
+  to avoid the current `GuardedForm` owner cycle; see
+  [sequential composition](sequential-composition.md). The unrestricted admitted theorem remains
+  a separate contract.
+- Ring switching has coordinate-packing and quotient-lift constructions, introduced by
+  `ProofSystem/RingSwitching/Basic.lean`. The [concept page](../kb/concepts/ring-switching.md)
+  gives the component guide; the [coverage audit](../kb/audits/ring-switching-model-coverage.md)
+  gives source relations and security assumptions.
+  `Packing/Coordinates`, `FiniteObservation`, `Polynomial` and `Relations` own finite-free
+  coordinate transport, polynomial packing and weighted reconstruction over commutative rings.
+  `CheckedObservation` shares honest checking and source read-back across tensor, scalar and
+  Hachi trace heads. `Multiplier` owns the public multiplication-matrix evaluator.
+  `Packing/Profile`, `ProfileCoordinates`, `ProfileLayout` and `BatchingAlgebra` connect the
+  DP24 tensor carrier and Boolean-table layout to those shared proofs. `BatchingPhase` supplies
+  the one-message/vector-challenge head. `Binius/FRIBinius/General` instantiates it using the
+  production codeword commitment, then interleaves FRI and sumcheck. Tensor batching and the
+  profile-based terminal have completeness and knowledge proofs; the profile-based loop and
+  downstream interleaved FRI-Binius proofs retain admissions.
+  `Packing/PackedCommitment` owns the oracle relation and honest coverage, with a separate
+  functionality proposition; `ExactCommitment` bundles that specialization. The Binius adapter
+  is `FRIBinius/RingSwitchingCommitment`. `ScalarHead/` owns packed-prefix, packed-suffix and quirky
+  layouts; `FullFamily/` and `ScalarFamily/` own checked-slice and composed scalar heads.
+  `Tail/FullFamilyOpening` and `Tail/ScalarOpening` run product sumcheck to the same commitment's
+  evaluation relation; `Tail/Accounting` sums the challenge errors. `Packing/Opening` supplies
+  downstream append at that exact relation, with explicit knowledge and completeness premises.
+  Hachi's monomial trace head is `Commitments/Functional/Hachi/TraceHead/`. Its shared observation
+  proofs preserve the actual ψ basis, scaled trace and norm-conditioned weak opening. It proves
+  completeness and CWSS over the fixed subring without its unfinished field identification;
+  the ring/trace definitions remain noncomputable.
+  `Lift/Presentation` and `Lift/Reduction` own monic quotient algebra and field-target CWSS with
+  collision escape. Hachi's cyclotomic instance lives in `Hachi/RingSwitch/`, with presentation
+  laws in `Data/Lattices/CyclotomicRing/QuotientLift`. `RoundVerifiers` and `Transport/` own the
+  shared check/update wire shapes and evaluation transport. Structured sumcheck support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).

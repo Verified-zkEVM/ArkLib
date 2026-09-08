@@ -8,6 +8,7 @@ import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
 
 /-!
 # Core Interaction Phase of FRI-Binius IOPCS
@@ -560,27 +561,18 @@ noncomputable def finalSumcheckVerifier :
       stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching
     -- 9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1},`
       -- `r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
-    unless stmtIn.sumcheck_target = eq_tilde_eval * s' do
-      return { -- dummy stmtOut
+    if stmtIn.sumcheck_target = eq_tilde_eval * s' then
+      -- Preserve the received folded constant, including when the multiplier is zero.
+      pure {
         ctx := {
-          t_eval_point := 0,
-          original_claim := 0,
+          t_eval_point := getEvaluationPointSuffix κ L ℓ ℓ' h_l stmtIn.ctx.t_eval_point,
+          original_claim := stmtIn.ctx.original_claim,
         },
-        sumcheck_target := 0,
-        challenges := 0,
-        final_constant := 0,
+        sumcheck_target := stmtIn.sumcheck_target,
+        challenges := stmtIn.challenges,
+        final_constant := s',
       }
-    -- Return the final sumcheck statement with the constant
-    let stmtOut : BinaryBasefold.FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ') := {
-      ctx := {
-        t_eval_point := getEvaluationPointSuffix κ L ℓ ℓ' h_l stmtIn.ctx.t_eval_point,
-        original_claim := stmtIn.ctx.original_claim,
-      },
-      sumcheck_target := stmtIn.sumcheck_target,
-      challenges := stmtIn.challenges,
-      final_constant := s',
-    }
-    pure stmtOut
+    else failure
 
   outputOracle := .inl {
     embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
@@ -588,6 +580,61 @@ noncomputable def finalSumcheckVerifier :
     outputInterface_heq := by
       intro oracleIdx
       rfl }
+
+section FinalVerifierExecution
+
+omit [CharP L 2] [SampleableType L] [DecidableEq K] hF₂ h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] hdiv
+
+set_option backward.isDefEq.respectTransparency false in
+/-- Exact final-verifier execution: the received constant and all input oracles are retained
+on acceptance; a failed equation produces no output statement. -/
+theorem finalSumcheckVerifier_verify
+    (stmt : Statement (L := L) (ℓ := ℓ')
+      (RingSwitchingBaseContext κ L K ℓ (biniusProfile κ L K β)) (Fin.last ℓ'))
+    (oStmt : ∀ j, BinaryBasefold.OracleStatement K β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ') j)
+    (tr : FullTranscript (BinaryBasefold.pSpecFinalSumcheckStep (L := L))) :
+    let msg : L := tr.messages ⟨0, rfl⟩
+    (finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l).toVerifier.verify
+      (stmt, oStmt) tr =
+      (if stmt.sumcheck_target = compute_final_eq_value κ L K
+          (biniusProfile κ L K β) ℓ ℓ' h_l
+          stmt.ctx.t_eval_point stmt.challenges stmt.ctx.r_batching * msg then
+        pure (⟨⟨stmt.sumcheck_target, stmt.challenges,
+          ⟨getEvaluationPointSuffix κ L ℓ ℓ' h_l stmt.ctx.t_eval_point,
+            stmt.ctx.original_claim⟩⟩, msg⟩, oStmt)
+      else failure) := by
+  apply guardedMessageRoundOracleVerifier_verify
+
+/-- A failed final equation stays failed through any appended oracle verifier. -/
+theorem finalSumcheckVerifier_append_failure {n : ℕ} {p : ProtocolSpec n}
+    [∀ i, OracleInterface (p.Message i)] {T J : Type} {O : J → Type}
+    [∀ i, OracleInterface (O i)]
+    (W : OracleVerifier []ₒ (BinaryBasefold.FinalSumcheckStatementOut (L := L) (ℓ := ℓ'))
+      (BinaryBasefold.OracleStatement K β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ')) T O p)
+    (stmt : Statement (L := L) (ℓ := ℓ')
+      (RingSwitchingBaseContext κ L K ℓ (biniusProfile κ L K β)) (Fin.last ℓ'))
+    (oStmt : ∀ j, BinaryBasefold.OracleStatement K β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ') j)
+    (tr : FullTranscript (BinaryBasefold.pSpecFinalSumcheckStep (L := L)))
+    (tr' : FullTranscript p)
+    (h : let msg : L := tr.messages ⟨0, rfl⟩
+      stmt.sumcheck_target ≠ compute_final_eq_value κ L K
+      (biniusProfile κ L K β) ℓ ℓ' h_l
+      stmt.ctx.t_eval_point stmt.challenges stmt.ctx.r_batching * msg) :
+    (OracleVerifier.append
+      (finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l) W).toVerifier.verify
+        (stmt, oStmt) (tr ++ₜ tr') = failure := by
+  rw [OracleVerifier.append_toVerifier]
+  change ((finalSumcheckVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l).toVerifier.verify
+    (stmt, oStmt) (tr ++ₜ tr').fst >>= fun out =>
+      W.toVerifier.verify out (tr ++ₜ tr').snd) = failure
+  rw [FullTranscript.append_fst, FullTranscript.append_snd,
+    finalSumcheckVerifier_verify, if_neg h]
+  simp
+
+end FinalVerifierExecution
 
 /-- The oracle reduction for the final sumcheck step -/
 noncomputable def finalSumcheckOracleReduction :

@@ -16,9 +16,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   `CMlPolynomial` (a computable multilinear polynomial, stored as its coefficient vector).
   `EvalSplit.lean` proves that a multilinear evaluation factors as the split bilinear form
   of a reshaped coefficient matrix against the monomial tensor bases (`evalSplit_eq_eval`,
-  `splitForm_monomialBasis_eq_eval`), but nothing connects the two.
+  `splitForm_monomialBasis_eq_eval`), and this module supplies the statement map between them.
 
-  This module is the connective tissue: a zero-round **bridge** that reinterprets a
+  The zero-round bridge reinterprets a
   `CMlPolynomial`-level statement (`PolyEvalStatement`) as a `QuadEvalStatement` by taking the
   Eq. (12) bases to be the monomial tensor bases `mb(xl)` / `mb(xh)` of the low/high halves of the
   evaluation point (`toQuadEvalStatement`), realized as the `ReduceClaim` reduction. Because
@@ -71,8 +71,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   `splitForm_monomialBasis_eq_eval` on the nose.
 
   This is the `Rq`-level protocol of Hachi §4.2/Figure 3 (`Data = CMlPolynomial (Rq Φ) (r + m)`);
-  the paper's headline multilinear-over-`𝔽_{q^k}` protocol (§3 packing) is a later
-  zero-round head adapter in front of `relPolyEval`, built by the same recipe.
+  the scalar protocol of §3.1 has a one-message, zero-challenge guarded trace head in
+  `TraceHead/`. It packs monomial coefficients over the fixed subring, checks the
+  unnormalized trace equation, and forwards the same weak opening to `relPolyEval`.
 
   Sits inside `namespace ArkLib.Lattices.Ajtai.InnerOuter` (activates the scoped
   `PolyVec`/`*ᵥ`/`dot`/`splitForm`) with `open WeakBinding`; the split layer is reached as
@@ -99,12 +100,10 @@ variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [
 variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
 variable {ι : Type} {oSpec : OracleSpec ι}
 
-/-- Input statement of the composed Hachi evaluation protocol at the polynomial level (Hachi
-§4.2/Figure 3, `Rq`-level): the outer commitment `u`, the evaluation point *split as a pair*
-`(xl, xh)` (low/first `r` variables and high/last `m` variables — storing the split avoids
-`take`/`drop` casts; `xl ++ xh` recovers the paper's point), and the claimed evaluation
-`y = f(xl ++ xh)`. As at the `QuadEval` level, the public parameters `(A, B, D)` are the fixed
-commitment key — a parameter of the relations, not statement data. -/
+/--
+A polynomial evaluation statement: outer commitment, split low/high evaluation point, and
+claimed value. The commitment key is a relation parameter.
+-/
 structure PolyEvalStatement (Φ : CyclotomicModulus R)
     (innerRows messageDigits outerRows innerDigits dRows m r : Nat) where
   /-- The outer commitment `u`. -/
@@ -139,16 +138,10 @@ def bridgeVerifier :
       !p[] :=
   ReduceClaim.verifier oSpec (toQuadEvalStatement Φ)
 
-/-- The zero-round **bridge protocol** (Hachi §4.2/Figure 3, the polynomial-level head): the
-`ReduceClaim` reduction whose prover and verifier both reinterpret the statement by
-`toQuadEvalStatement` and hand the witness on untouched (the witness type is unchanged, so the
-honest witness map is the identity — the same map the extractor inverts).
-
-This is the primary object of the link: computable, and what an honest execution runs. Its verifier
-is `bridgeVerifier` on the nose (`bridgeReduction_verifier`, a `rfl` check), the very verifier the
-soundness certificate `bridgePackage` is stated about, so the two security directions of the link
-cannot drift onto different verifiers. Perfect completeness is
-`bridgeReduction_perfectCompleteness`. -/
+/--
+The zero-round reduction that reinterprets a polynomial evaluation as a quadratic evaluation
+and preserves its opening witness.
+-/
 def bridgeReduction :
     Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -158,9 +151,7 @@ def bridgeReduction :
       !p[] :=
   ReduceClaim.reduction oSpec (toQuadEvalStatement Φ) (fun _ w => w)
 
-/-- The bridge protocol's verifier **is** `bridgeVerifier`, the verifier of the soundness
-certificate `bridgePackage`: completeness and coordinate-wise special soundness of this link speak
-about the same object. Holds by `rfl`. -/
+/-- The statement-reinterpretation reduction has verifier `bridgeVerifier`. -/
 @[simp] theorem bridgeReduction_verifier :
     (bridgeReduction (oSpec := oSpec) Φ (innerRows := innerRows)
         (messageDigits := messageDigits) (outerRows := outerRows) (innerDigits := innerDigits)
@@ -238,13 +229,10 @@ theorem mem_relPolyEval_of_relIn
   exact hec
 
 omit [NeZero q] in
-/-- **CWSS of the bridge, named form.** The zero-round `ReduceClaim` head is coordinate-wise
-special sound for any `D`, at the named witness-only `ReduceClaim.treeExtractor`: the tree carries
-no information, so extraction is the pull-back of the leaf witnessing's output witness, and the
-statement it must certify is pinned by the verifier's own verdict. The protocol content is the
-transcript-level pull-back `mem_relPolyEval_of_relIn`, reducing `QuadEval`'s `relIn` to the
-polynomial-level `relPolyEval`. The witness type is unchanged (`QuadEvalWitness`), so the witness
-pull-back is the identity. -/
+/--
+Coordinate-wise special soundness of the zero-round bridge, with the identity pullback of the
+leaf opening witness.
+-/
 theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
@@ -261,15 +249,10 @@ theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
     (mapWitInv := fun _ w => w) (D := D)
     (mem_relPolyEval_of_relIn Φ pp base βSq γ κ)
 
-/-- **The polynomial-level bridge as a (plain) `CWSSPackage`** (Hachi [NOZ26, §4.2]): the
-zero-round `ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure
-(`ofIsEmpty`) and its named CWSS certificate `bridge_coordinateWiseSpecialSoundWith`, ready to be
-`▷`-composed before `QuadEval`. Its public `relOut` is `QuadEval`'s ordinary input relation
-`relIn`.
-
-The bridge is a statement *reinterpretation* with no cryptographic content, so it carries no escape
-event; composing it before the escape-aware `quadEvalPackage` costs nothing, the universal `▷`
-lifting it at the never-firing event. -/
+/--
+The zero-round polynomial-to-quadratic evaluation bridge as a coordinate-wise special
+soundness package with no escape event.
+-/
 def bridgePackage {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
@@ -292,15 +275,10 @@ def bridgePackage {σ : Type}
 /-! ## Completeness: the honest direction of the bridge -/
 
 omit [NeZero q] in
-/-- **Push-forward lemma** (the honest direction, converse of `mem_relPolyEval_of_relIn`): a weak
-opening whose *extracted polynomial* evaluates to `y` at `xl ++ xh` is, at the reinterpreted
-statement `toQuadEvalStatement Φ s`, eval-consistent in the matrix sense of `QuadEval`'s `relIn`.
-
-Same one rewrite as the pull-back, run the other way: `Hachi.splitForm_monomialBasis_eq_eval`
-identifies `CMlPolynomial.eval (toPolynomial M) (xl ++ xh)` with
-`splitForm M (mb xl) (mb xh)`, and the `VerifiedOpening` conjunct is literally shared (the
-reinterpretation leaves `u` alone). Together with `mem_relPolyEval_of_relIn` this makes
-`relPolyEval` *exactly* the pull-back of `relIn`, which is what the bridge's completeness needs. -/
+/--
+A weak opening with the claimed extracted-polynomial evaluation satisfies the quadratic
+evaluation relation at the reinterpreted statement.
+-/
 theorem mem_relIn_of_relPolyEval
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (βSq γ κ : ℕ)
@@ -349,12 +327,12 @@ the honest committer's message decomposition, which is what makes the folded wit
 `z = Σᵢ cᵢ sᵢ` short and hence `τ`-digit reconstructible (see `relInMsgShort`). The bridge has to
 carry that conjunct across, so the polynomial-level relation gets the same strengthening. The
 witness type is unchanged by the bridge, so the conjunct passes through literally and the
-strengthened equivalence is the old one plus `Iff.rfl` on the new part. -/
+message norm bound is preserved by the identity witness map. -/
 
-/-- **`relPolyEval` with the honest committer's message decomposition pinned `ℓ∞`-short** — the
-polynomial-level counterpart of `relInMsgShort`, and the input relation of the bounded-`z` honest
-chain. `relPolyEvalMsgShort_subset_relPolyEval` is the forgetful inclusion; the soundness-side
-`relPolyEval` is untouched. -/
+/--
+The polynomial evaluation relation with an additional infinity-norm bound on each message
+vector of the opening witness.
+-/
 def relPolyEvalMsgShort
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (βSq γ κ msgBound : ℕ) :
@@ -372,9 +350,10 @@ theorem relPolyEvalMsgShort_subset_relPolyEval
   fun _ h => h.1
 
 omit [NeZero q] in
-/-- **Perfect completeness of the bridge at the message-bounded relations.** Identical to
-`bridgeReduction_perfectCompleteness` — the bridge is a statement reinterpretation with an identity
-witness map, so the extra `ℓ∞` conjunct on the (unchanged) witness transports by `Iff.rfl`. -/
+/--
+Perfect completeness of the bridge with the additional message norm bound on its opening
+witness.
+-/
 theorem bridgeReduction_perfectCompleteness_msgShort {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
