@@ -284,6 +284,8 @@ import ArkLib.Interaction.Oracle.CoreRun
 import ArkLib.Interaction.Oracle.Execution
 import ArkLib.Interaction.Oracle.LoggedExecution
 import ArkLib.Interaction.Oracle.LoggedRun
+import ArkLib.Interaction.Oracle.PhasedExecution
+import ArkLib.Interaction.Oracle.PhasedRun
 import ArkLib.Interaction.Oracle.Prefix
 import ArkLib.Interaction.Oracle.Protocol
 import ArkLib.Interaction.Oracle.Resource
@@ -296,6 +298,7 @@ import ArkLib.Interaction.Oracle.TerminalRun
 import ArkLib.Interaction.Oracle.TypeTree
 import ArkLib.Interaction.Oracle.TypeTree.Decoration
 import ArkLib.Interaction.Oracle.Virtual
+import ArkLib.Interaction.Oracle.WorldSegments
 import ArkLib.Interaction.Reduction
 import ArkLib.OracleReduction.BCS.Basic
 import ArkLib.OracleReduction.Basic
