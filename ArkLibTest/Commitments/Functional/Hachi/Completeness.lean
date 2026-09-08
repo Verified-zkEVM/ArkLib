@@ -9,9 +9,8 @@ import ArkLib.Commitments.Functional.Hachi.Params
 /-!
 # Hachi completeness and correctness axiom boundaries
 
-The nonrecursive chain retains its current public hypotheses and protocol definitions while using
-proved state-aware composition. These assertions protect all nine migrated declarations, their
-verifier certificates, and the completeness/soundness relation alignment at the supported profile.
+These assertions check the nonrecursive completeness and correctness results, their verifier
+certificates, and relation alignment at the supported parameter profile.
 -/
 
 /--

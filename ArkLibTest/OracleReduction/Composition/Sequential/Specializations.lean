@@ -35,7 +35,7 @@ theorem oneMessage_all_distributions
 
 /-- A message-only suffix of arbitrary length factors after any prefix, retaining the
 challenge-free execution case without a separate proof ladder or a prover purity assumption. -/
-theorem messageOnly_suffix_factorization
+theorem message_only_suffix_factorization
     {ι S₁ W₁ S₂ W₂ S₃ W₃ : Type} {oSpec : OracleSpec ι}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     (P₁ : Prover oSpec S₁ W₁ S₂ W₂ pSpec₁)
@@ -85,22 +85,22 @@ info: 'Verifier.append_rbrSoundnessWorstCase_of_pure_first' depends on axioms:
 #print axioms Verifier.append_rbrSoundnessWorstCase_of_pure_first
 
 /--
-info: 'Verifier.append_rbrSoundness_of_worstCase_of_pure_first' depends on axioms:
+info: 'Verifier.append_rbrSoundness_of_worst_case_of_pure_first' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.append_rbrSoundness_of_worstCase_of_pure_first
+#print axioms Verifier.append_rbrSoundness_of_worst_case_of_pure_first
 
 /--
-info: 'OracleVerifier.append_rbrSoundness_of_worstCase_of_pure_first' depends on axioms:
+info: 'OracleVerifier.append_rbrSoundness_of_worst_case_of_pure_first' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.append_rbrSoundness_of_worstCase_of_pure_first
+#print axioms OracleVerifier.append_rbrSoundness_of_worst_case_of_pure_first
 
 /--
-info: 'AppendSpecializationRegression.messageOnly_suffix_factorization' depends on axioms:
+info: 'AppendSpecializationRegression.message_only_suffix_factorization' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms AppendSpecializationRegression.messageOnly_suffix_factorization
+#print axioms AppendSpecializationRegression.message_only_suffix_factorization

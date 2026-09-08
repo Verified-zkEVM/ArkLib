@@ -114,7 +114,7 @@ variable [∀ i, SampleableType (pSpec₂.Challenge i)]
 
 /-- Quantitative completeness from equality of simulated prover programs at every input
 and initial shared state. The suffix is complete from every deterministic state. -/
-theorem append_completeness_of_guarded_proverFactorization
+theorem append_completeness_of_guarded_prover_factorization
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (V₁ : R₁.verifier.GuardedForm) (V₂ : R₂.verifier.GuardedForm)
@@ -133,15 +133,9 @@ theorem append_completeness_of_guarded_proverFactorization
     (completeness_iff_of_guarded_verifier R₂ V₂ rel₂ rel₃ ε₂).mp (h₂ s)
   have herr : 1 - ((ε₁ + ε₂ : ℝ≥0) : ℝ≥0∞) ≤
       (1 - (ε₁ : ℝ≥0∞)) * (1 - (ε₂ : ℝ≥0∞)) := by
-    rw [ENNReal.coe_add, tsub_add_eq_tsub_tsub]
-    calc
-      _ ≤ (1 - (ε₁ : ℝ≥0∞)) * 1 - (1 - (ε₁ : ℝ≥0∞)) * ε₂ := by
-        simp only [mul_one]
-        exact tsub_le_tsub_left (by
-          calc (1 - (ε₁ : ℝ≥0∞)) * ε₂ ≤ 1 * ε₂ :=
-                 mul_le_mul' tsub_le_self le_rfl
-               _ = ε₂ := one_mul _) _
-      _ = _ := (ENNReal.mul_sub (by intros; finiteness)).symm
+    rw [ENNReal.coe_add, tsub_add_eq_tsub_tsub,
+      ENNReal.mul_sub (by intros; finiteness), mul_one]
+    exact tsub_le_tsub_left (mul_le_of_le_one_left zero_le tsub_le_self) _
   refine herr.trans ?_
   dsimp only [Reduction.append]
   simp only [hFactor stmt wit,
@@ -172,10 +166,11 @@ theorem append_completeness_of_guarded_verifiers
     (h₁ : R₁.completeness init impl rel₁ rel₂ ε₁)
     (h₂ : ∀ s : σ, R₂.completeness (pure s) impl rel₂ rel₃ ε₂) :
     (R₁.append R₂).completeness init impl rel₁ rel₃ (ε₁ + ε₂) :=
-  append_completeness_of_guarded_proverFactorization R₁ R₂ V₁ V₂
+  append_completeness_of_guarded_prover_factorization R₁ R₂ V₁ V₂
     (Prover.simulatedAppendFactorization_of_seam R₁.prover R₂.prover hSeam impl) h₁ h₂
 
-/-- Perfect completeness is the zero-error instance of state-aware append completeness. -/
+/-- Guarded verifiers compose perfectly when prover execution factors at the seam and the suffix
+is perfectly complete from every deterministic shared state. -/
 theorem append_perfectCompleteness_of_guarded_verifiers
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)

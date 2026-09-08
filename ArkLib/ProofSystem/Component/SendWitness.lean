@@ -70,7 +70,7 @@ def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec W
   output := fun ⟨stmt, wit⟩ => pure (⟨stmt, wit⟩, ())
 
 /-- The `SendWitness` prover has pure output: it pairs up the state it already holds, with no
-  oracle query. -/
+oracle query. -/
 instance instOutputIsPure : (prover oSpec Statement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 @[inline, specialize]
@@ -230,7 +230,7 @@ def oracleProver : OracleProver oSpec
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt wit⟩, ())
 
 /-- The `SendWitness` oracle prover has pure output: it exposes the witness alongside the input
-  oracles, with no oracle query. -/
+oracles, with no oracle query. -/
 instance instOutputIsPureOracle :
     (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
 
@@ -332,7 +332,7 @@ def oracleProver : OracleProver oSpec
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
 
 /-- The `SendSingleWitness` oracle prover has pure output: it exposes the witness message
-  alongside the input oracles, with no oracle query. -/
+alongside the input oracles, with no oracle query. -/
 instance instOutputIsPure :
     (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
 

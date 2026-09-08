@@ -47,12 +47,8 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   receiveChallenge := fun i => nomatch i
   output := combineMap mapStmt mapWit
 
-/- **No `Prover.OutputIsPure` instance.** Unlike the other components, this prover's `output` runs
-`mapStmt` and `mapWit`, which are arbitrary `OracleComp`s, so it is not of the form `pure ∘ f` and
-the class genuinely does not hold. It is therefore the in-tree witness that `Prover.append_run`'s
-purity hypothesis is not vacuous: appending this prover on the left of a protocol that opens with a
-challenge round reorders the queries. A caller who instantiates `mapStmt` / `mapWit` at `pure`
-functions can supply the instance at that instantiation. -/
+/- Output executes the supplied `mapStmt` and `mapWit` computations. Purity requires an
+additional condition on those computations. -/
 
 /-- The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a
   function `mapStmt : StmtIn → OracleComp oSpec StmtOut` -/

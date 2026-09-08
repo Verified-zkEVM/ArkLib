@@ -26,32 +26,31 @@ open ProtocolSpec OracleSpec OracleComp
 -- Minimal instance: empty left protocol, one V-round right protocol,
 -- one Bool-oracle ambient spec, an output that queries it.
 /-- The ambient Boolean oracle. -/
-def oS : OracleSpec Unit := Unit →ₒ Bool
+def oracleSpec : OracleSpec Unit := Unit →ₒ Bool
 /-- The empty left protocol. -/
-def pS1 : ProtocolSpec 0 := ⟨![], ![]⟩
+def leftSpec : ProtocolSpec 0 := ⟨![], ![]⟩
 /-- The challenge-opening right protocol. -/
-def pS2 : ProtocolSpec 1 := ⟨![.V_to_P], ![Bool]⟩
+def rightSpec : ProtocolSpec 1 := ⟨![.V_to_P], ![Bool]⟩
 
 /-- The left prover queries the ambient oracle during output. -/
-def P1 : Prover oS Unit Unit Unit Unit pS1 where
+def leftProver : Prover oracleSpec Unit Unit Unit Unit leftSpec where
   PrvState := fun _ => Unit
   input := fun _ => ()
   sendMessage := fun i => absurd i.1.isLt (by simp)
   receiveChallenge := fun i => absurd i.1.isLt (by simp)
-  output := fun _ => do let _ ← (query (spec := oS) () : OracleComp oS Bool); pure ((), ())
+  output := fun _ => do
+    let _ ← (query (spec := oracleSpec) () : OracleComp oracleSpec Bool)
+    pure ((), ())
 
 /-- The right prover receives the opening challenge. -/
-def P2 : Prover oS Unit Unit Unit Unit pS2 where
+def rightProver : Prover oracleSpec Unit Unit Unit Unit rightSpec where
   PrvState := fun _ => Unit
   input := fun _ => ()
   sendMessage := fun i _ => absurd i.2 (by fin_cases i)
   receiveChallenge := fun _ _ => pure (fun _ => ())
   output := fun _ => pure ((), ())
 
-/-- Head-query observer: `true` iff the computation's first action is a query
-to the LEFT (ambient) component of a sum spec. Constructor-level: no rewriting
-of lifted-query spellings needed — `congrArg headIsLeft` + kernel evaluation
-discriminates the two effect orders. -/
+/-- Return true precisely when the first operation queries the left oracle summand. -/
 def headIsLeft {ι₁ ι₂ : Type} {spec : OracleSpec (ι₁ ⊕ ι₂)} {α : Type} :
     OracleComp spec α → Bool
   | PFunctor.FreeM.liftBind (Sum.inl _) _ => true
@@ -59,9 +58,9 @@ def headIsLeft {ι₁ ι₂ : Type} {spec : OracleSpec (ι₁ ⊕ ι₂)} {α : 
 
 /-- Raw execution fails to factor for this effectful, challenge-opening seam. -/
 theorem raw_factorization_fails :
-    ¬ ((P1.append P2).run () () = (do
-      let r₁ ← liftAppendLeft pS2 (P1.run () ())
-      let r₂ ← liftAppendRight pS1 (P2.run r₁.2.1 r₁.2.2)
+    ¬ ((leftProver.append rightProver).run () () = (do
+      let r₁ ← liftAppendLeft rightSpec (leftProver.run () ())
+      let r₂ ← liftAppendRight leftSpec (rightProver.run r₁.2.1 r₁.2.2)
       pure (r₁.1 ++ₜ r₂.1, r₂.2))) := by
   intro h
   -- Kernel evaluation: the composed run's first action is the boundary
@@ -70,15 +69,13 @@ theorem raw_factorization_fails :
   -- head-query observer maps them to `false` and `true` respectively.
   exact Bool.noConfusion (congrArg headIsLeft h)
 
-/-- Effect-order witnesses, pinned as `rfl` probes: the composed machine's
-first action is the boundary challenge (right component)... -/
-example : headIsLeft ((P1.append P2).run () ()) = false := rfl
+/-- Appended execution first queries the challenge oracle. -/
+example : headIsLeft ((leftProver.append rightProver).run () ()) = false := rfl
 
-/-- ...while the sequential factorization's first action is the handoff
-output's ambient oracle query (left component). -/
+/-- Sequential execution first queries the ambient oracle. -/
 example : headIsLeft (do
-    let r₁ ← liftAppendLeft pS2 (P1.run () ())
-    let r₂ ← liftAppendRight pS1 (P2.run r₁.2.1 r₁.2.2)
+    let r₁ ← liftAppendLeft rightSpec (leftProver.run () ())
+    let r₂ ← liftAppendRight leftSpec (rightProver.run r₁.2.1 r₁.2.2)
     pure (r₁.1 ++ₜ r₂.1, r₂.2)) = true := rfl
 
 end ArkLib.AppendRunNecessity

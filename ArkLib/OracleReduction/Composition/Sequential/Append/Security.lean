@@ -37,7 +37,7 @@ its standalone premise only covers the original initialization distribution.
 Both binary completeness contracts and their oracle wrappers await caller migration and
 retirement. Their current callers inherit `sorryAx`.
 
-The proved `Reduction.append_completeness_of_proverFactorization` requires exact simulated prover
+The proved `Reduction.append_completeness_of_prover_factorization` requires exact simulated prover
 factorization, pure verifier forms, and suffix completeness from every deterministic shared state.
 Its seam/purity corollaries and the guarded-verifier variant supply convenient sufficient
 contracts. The separate fixed-prefix RBR theorem requires worst-case component bounds and a pure
@@ -60,12 +60,8 @@ The declarations below remain only while their existing callers are migrated.
 
 namespace Reduction
 
-/-- Legacy fixed-init completeness contract, false as stated and pending retirement.
-
-The two standalone premises do not supply suffix correctness from the state left by the prefix.
-See `AppendStateCounterexample.not_append_perfectCompleteness` in the shared-state test.
-Use `Reduction.append_completeness_of_proverFactorization`, its
-`append_completeness_of_pure_verifiers` seam corollary, or the guarded-verifier interface. -/
+/-- Admitted completeness contract with both components initialized from the same distribution.
+It is false in general: the suffix instead receives the state left by the prefix. -/
 theorem append_completeness
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
@@ -79,17 +75,10 @@ theorem append_completeness
   have h₁' := h₁ stmtIn witIn hRelIn
   clear h₁
   unfold Reduction.append Reduction.run
-  -- `Verifier.append_run` splits the verifier side, but `Prover.append_run` requires
-  -- `R₁.prover.OutputIsPure` (see its docstring), which is not available for an arbitrary `R₁`, so
-  -- the prover side does not split here. Discharging this will mean either assuming that purity or
-  -- reasoning about the seam ordering directly. Nothing is `simp`ed before the `sorry`, so that the
-  -- admitted goal stays the unmassaged statement rather than one particular normal form.
   sorry
 
-/-- Legacy zero-error wrapper of the false fixed-init completeness contract, pending retirement.
-Use `Reduction.append_perfectCompleteness_of_pure_verifiers` or
-`Reduction.append_perfectCompleteness_of_guarded_verifiers` with state-uniform suffix correctness.
-The supplied-factorization interface also has a perfect-completeness wrapper. -/
+/-- Admitted perfect completeness for appending reductions complete from the same initial
+distribution; false in general. -/
 theorem append_perfectCompleteness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (h₁ : R₁.perfectCompleteness init impl rel₁ rel₂)
@@ -98,14 +87,6 @@ theorem append_perfectCompleteness (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt�
   dsimp [perfectCompleteness] at h₁ h₂ ⊢
   convert Reduction.append_completeness R₁ R₂ h₁ h₂
   simp only [add_zero]
-
-variable {R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
-  {R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂}
-
--- Synthesization issues...
--- So maybe no synthesization but simp is fine? Maybe not...
--- instance [R₁.IsComplete rel₁ rel₂] [R₂.IsComplete rel₂ rel₃] :
---     (R₁.append R₂).IsComplete rel₁ rel₃ := by sorry
 
 end Reduction
 
@@ -209,10 +190,8 @@ variable {Stmt₁ : Type} {ιₛ₁ : Type} {OStmt₁ : ιₛ₁ → Type} [Oₛ
 
 namespace OracleReduction
 
-/-- Legacy oracle wrapper of the false fixed-init completeness contract, pending retirement.
-This inherits the admitted ordinary-reduction theorem; converting to oracle reductions does not
-repair its missing shared-state premise. Use
-`OracleReduction.append_completeness_of_pure_verifiers` with state-uniform suffix correctness. -/
+/-- Admitted additive completeness for oracle reductions complete from the same initial
+distribution; false in general. -/
 theorem append_completeness
     (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)
@@ -225,9 +204,8 @@ theorem append_completeness
   convert Reduction.append_completeness R₁.toReduction R₂.toReduction h₁ h₂
   simp only [append_toReduction]
 
-/-- Legacy zero-error oracle wrapper of the false fixed-init completeness contract.
-It awaits caller migration and retirement together with `OracleReduction.append_completeness`.
-Use `OracleReduction.append_perfectCompleteness_of_pure_verifiers` under its explicit hypotheses. -/
+/-- Admitted perfect completeness for appending oracle reductions complete from the same
+initial distribution; false in general. -/
 theorem append_perfectCompleteness
     (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)

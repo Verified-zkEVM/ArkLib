@@ -10,20 +10,14 @@ import ArkLib.OracleReduction.Security.RoundByRound
 import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
-  # Sequential Composition: The `append` Operations
+# Sequential composition of provers and verifiers
 
-  The `append` operations themselves — `Prover.append`, `Verifier.append`, `Reduction.append`, and
-  their oracle-protocol counterparts `OracleVerifier.append` / `OracleReduction.append` — together
-  with the challenge-sampling transport lemmas across `++ₚ`. For composition to be valid, we need
-  that the output context (statement + oracle statement + witness) for the first (oracle) reduction
-  is the same as the input context for the second (oracle) reduction.
+Binary composition feeds the first reduction's output statement and witness into the second.
+The component context types must agree. This module defines the append operations and proves
+challenge-sampling transport and oracle-verifier conversion equalities.
 
-  The composition logic for `ProtocolSpec` and its associated structures lives in
-  `ProtocolSpec/SeqCompose.lean`; we use the definitions from there.
-
-  This is the base of the four-module `Append` tree; see `Composition/Sequential/Append.lean` for
-  the umbrella and the routing to `Append.StateFunction`, `Append.Execution`, and
-  `Append.Security`, the last of which carries the completeness & soundness composition theorems.
+Protocol specifications and transcript operations are defined in `ProtocolSpec/SeqCompose.lean`.
+`Composition/Sequential/Append.lean` exports execution and security results.
 -/
 
 open OracleComp OracleSpec SubSpec
@@ -33,7 +27,7 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
   {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 
-private theorem simulateQueryAlongHEq {A B : Type}
+private theorem simulateQ_queryAlongHEq {A B : Type}
     (OA : OracleInterface A) (OB : OracleInterface B)
     (hType : A = B) (hInterface : HEq OA OB)
     {ι' : Type} {spec : OracleSpec ι'}
@@ -49,16 +43,9 @@ private theorem simulateQueryAlongHEq {A B : Type}
   cases eq_of_heq hab
   exact hImpl q
 
-/--
-Appending two provers corresponding to two reductions, where the output statement & witness type for
-the first prover is equal to the input statement & witness type for the second prover. We also
-require a verifier for the first protocol in order to derive the intermediate statement for the
-second prover.
-
-This is defined by combining the two provers' private states and functions, with the exception that
-the last private state of the first prover is "merged" into the first private state of the second
-prover (via outputting the new statement and witness, and then inputting these into the second
-prover). -/
+/-- Compose two provers by feeding the first prover's output into the second prover's input.
+The first prover's final state is retained until the second protocol's first round; for an empty
+second protocol, the transfer occurs during output. -/
 def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂) :
       Prover oSpec Stmt₁ Wit₁ Stmt₃ Wit₃ (pSpec₁ ++ₚ pSpec₂) where
@@ -195,7 +182,7 @@ theorem append_output_pos (hn : n ≠ 0)
   dsimp only
   rw [dif_neg hn]
   exact congrArg P₂.output
-    (eq_of_heq ((heq_dcast _ _).trans ((heq_eqMp _ _).trans hst)))
+    (eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst)))
 
 /-- When the second protocol is empty, the seam collapses into the output step: the appended
 prover's output runs `P₁.output`, feeds the result through `P₂.input`, then runs `P₂.output`. -/
@@ -209,20 +196,9 @@ theorem append_output_zero (hn : n = 0)
   dsimp only
   rw [dif_pos hn]
   congr 1
-  exact congrArg P₁.output (eq_of_heq ((heq_eqMp _ _).trans hst))
+  exact congrArg P₁.output (eq_of_heq ((cast_heq _ _).trans hst))
 
-/-- Purity of the output step is preserved by binary sequential composition of provers.
-
-The appended prover's `output` field (see `Prover.append`) splits on whether the second protocol is
-empty: when `pSpec₂` has rounds it is `P₂.output` on the transported final state
-(`append_output_pos`), and when `pSpec₂` is empty the seam collapses into the output step, making it
-`P₁.output`, then `P₂.input`, then `P₂.output` (`append_output_zero`). Both branches are pure as
-soon as `P₁` and `P₂` have pure output.
-
-This is the prover-side analogue of `Verifier.IsPure.append`, and it is what lets a chain of binary
-appends discharge the `Prover.OutputIsPure` hypothesis of `Prover.append_run` from per-factor
-purity. `Prover.instOutputIsPureAppend` below is the instance form, so that nested appends
-propagate automatically. -/
+/-- Sequential composition preserves pure prover output, including empty components. -/
 theorem OutputIsPure.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (P₂ : Prover oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (h₁ : P₁.OutputIsPure) (h₂ : P₂.OutputIsPure) :
@@ -239,21 +215,21 @@ theorem OutputIsPure.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ p
       f₂ (cast (append_prvState_right _ _ (by simp; omega) (by simp)) st), fun st => ?_⟩
     rw [append_output_pos hn st _ (cast_heq _ st).symm, hf₂]
 
-/-- Instance form of `Prover.OutputIsPure.append`, so that nested appends discharge the
-`Prover.append_run` hypothesis automatically. -/
+/-- Sequential composition of provers with pure output has pure output. -/
 instance instOutputIsPureAppend [h₁ : P₁.OutputIsPure] [h₂ : P₂.OutputIsPure] :
     (P₁.append P₂).OutputIsPure := OutputIsPure.append P₁ P₂ h₁ h₂
 
 end Prover
 
-/-- Composition of verifiers. Return the conjunction of the decisions of the two verifiers. -/
+/-- Run the first verifier on the transcript prefix, then pass its output statement to the
+second verifier on the transcript suffix. Failure in either verifier propagates. -/
 def Verifier.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) :
       Verifier oSpec Stmt₁ Stmt₃ (pSpec₁ ++ₚ pSpec₂) where
   verify := fun stmt transcript => do
     return ← V₂.verify (← V₁.verify stmt transcript.fst) transcript.snd
 
-/-- Composition of reductions boils down to composing the provers and verifiers. -/
+/-- Compose the component provers and verifiers of two reductions. -/
 def Reduction.append (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂) :
       Reduction oSpec Stmt₁ Wit₁ Stmt₃ Wit₃ (pSpec₁ ++ₚ pSpec₂) where
@@ -269,7 +245,7 @@ the component's instance transported along `challenge_append_inl` / `challenge_a
 
 Every distributional comparison between an appended protocol and its components needs to know that
 this transport is the identity on distributions. That is what the lemmas below establish. They are
-the `SampleableType` analogue of `messageInterfaceInl` / `messageInterfaceInr` below, and are
+the `SampleableType` analogue of `message_interface_inl` / `message_interface_inr` below, and are
 proved the same way, by computing the `Fin.fappend₂` with `Fin.fappend₂_left` / `_right`. -/
 
 section ChallengeSampling
@@ -284,12 +260,11 @@ private theorem uniformSample_cast {α β : Type} (h : α = β)
     cast h <$> (@uniformSample α instα) = (@uniformSample β instβ) := by
   subst h
   cases hI
-  have hc : (cast (rfl : α = α)) = id := rfl
-  rw [hc, id_map]
+  exact id_map _
 
 /-- The appended protocol's `SampleableType` instance at a left-injected challenge index is the
 first component's instance, transported along `challenge_append_inl`. -/
-private theorem challengeSampleableInl (i : pSpec₁.ChallengeIdx) : HEq (inst₁ i)
+private theorem challenge_sampleable_inl (i : pSpec₁.ChallengeIdx) : HEq (inst₁ i)
     (inferInstance : SampleableType ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i))) := by
   rcases i with ⟨i, hi⟩
   let u : (i : Fin m) →
@@ -320,7 +295,7 @@ private theorem challengeSampleableInl (i : pSpec₁.ChallengeIdx) : HEq (inst�
 
 /-- The appended protocol's `SampleableType` instance at a right-injected challenge index is the
 second component's instance, transported along `challenge_append_inr`. -/
-private theorem challengeSampleableInr (i : pSpec₂.ChallengeIdx) : HEq (inst₂ i)
+private theorem challenge_sampleable_inr (i : pSpec₂.ChallengeIdx) : HEq (inst₂ i)
     (inferInstance : SampleableType ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i))) := by
   rcases i with ⟨i, hi⟩
   let u : (i : Fin m) →
@@ -356,7 +331,7 @@ theorem uniformSample_challenge_append_inl (i : pSpec₁.ChallengeIdx) :
     cast (challenge_append_inl (pSpec₂ := pSpec₂) i) <$>
         ($ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i)))
       = ($ᵗ (pSpec₁.Challenge i)) :=
-  uniformSample_cast _ _ _ (challengeSampleableInl (pSpec₂ := pSpec₂) i).symm
+  uniformSample_cast _ _ _ (challenge_sampleable_inl (pSpec₂ := pSpec₂) i).symm
 
 /-- **Challenge transport, right.** The `challenge_append_inr` analogue of
 `uniformSample_challenge_append_inl`. -/
@@ -364,7 +339,7 @@ theorem uniformSample_challenge_append_inr (i : pSpec₂.ChallengeIdx) :
     cast (challenge_append_inr (pSpec₁ := pSpec₁) i) <$>
         ($ᵗ ((pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i)))
       = ($ᵗ (pSpec₂.Challenge i)) :=
-  uniformSample_cast _ _ _ (challengeSampleableInr (pSpec₁ := pSpec₁) i).symm
+  uniformSample_cast _ _ _ (challenge_sampleable_inr (pSpec₁ := pSpec₁) i).symm
 
 end ChallengeSampling
 
@@ -376,7 +351,7 @@ variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   {ιₛ₂ : Type} {OStmt₂ : ιₛ₂ → Type} [Oₛ₂ : ∀ i, OracleInterface (OStmt₂ i)]
   {ιₛ₃ : Type} {OStmt₃ : ιₛ₃ → Type} [Oₛ₃ : ∀ i, OracleInterface (OStmt₃ i)]
 
-private theorem messageInterfaceInl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
+private theorem message_interface_inl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
     (inferInstance : OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i))) := by
   rcases i with ⟨i, hi⟩
   let u : (i : Fin m) →
@@ -405,7 +380,7 @@ private theorem messageInterfaceInl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
     (congrArg OracleInterface (Fin.vappend_left pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 
-private theorem messageInterfaceInr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i)
+private theorem message_interface_inr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i)
     (inferInstance : OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i))) := by
   rcases i with ⟨i, hi⟩
   let u : (i : Fin m) →
@@ -443,7 +418,7 @@ private def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
     rcases q with ⟨i, q⟩
     have hType : pSpec₁.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i) := by
       simp [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left]
-    exact OracleVerifier.queryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
+    exact OracleVerifier.queryAlongHEq (Oₘ₁ i) inferInstance hType (message_interface_inl i)
       (fun t => ((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
         (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
           ⟨MessageIdx.inl i, t⟩) q
@@ -454,12 +429,12 @@ private def messageQueryInr : QueryImpl [pSpec₂.Message]ₒ (OracleComp
     rcases q with ⟨i, q⟩
     have hType : pSpec₂.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i) := by
       simp [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
-    exact OracleVerifier.queryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
+    exact OracleVerifier.queryAlongHEq (Oₘ₂ i) inferInstance hType (message_interface_inr i)
       (fun t => ((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
         (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
           ⟨MessageIdx.inr i, t⟩) q
 
-private theorem simulateMessageQueryInl
+private theorem simulateQ_messageQueryInl
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
     (q : [pSpec₁.Message]ₒ.Domain) :
     simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
@@ -472,7 +447,7 @@ private theorem simulateMessageQueryInl
     unfold Messages.fst
     exact cast_heq _ _
   unfold messageQueryInl
-  apply simulateQueryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
+  apply simulateQ_queryAlongHEq (Oₘ₁ i) inferInstance hType (message_interface_inl i)
     _ q _ (messages.fst i) (messages (MessageIdx.inl i)) hab
   intro t
   refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
@@ -481,7 +456,7 @@ private theorem simulateMessageQueryInl
     (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)) ?_
   rfl
 
-private theorem simulateMessageQueryInr
+private theorem simulateQ_messageQueryInr
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
     (q : [pSpec₂.Message]ₒ.Domain) :
     simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
@@ -494,7 +469,7 @@ private theorem simulateMessageQueryInr
     unfold Messages.snd
     exact cast_heq _ _
   unfold messageQueryInr
-  apply simulateQueryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
+  apply simulateQ_queryAlongHEq (Oₘ₂ i) inferInstance hType (message_interface_inr i)
     _ q _ (messages.snd i) (messages (MessageIdx.inr i)) hab
   intro t
   refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
@@ -515,7 +490,7 @@ private def firstQueryImpl : QueryImpl (oSpec + ([OStmt₁]ₒ + [pSpec₁.Messa
       messageQueryInl (oSpec := oSpec) (OStmt₁ := OStmt₁)
         (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
 
-private theorem simulateFirstQueryImpl
+private theorem simulateQ_firstQueryImpl
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
     (q : (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ)).Domain) :
     simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
@@ -526,9 +501,9 @@ private theorem simulateFirstQueryImpl
   · rcases q with q | q
     · rcases q with ⟨i, q⟩
       rfl
-    · exact simulateMessageQueryInl oStmt messages q
+    · exact simulateQ_messageQueryInl oStmt messages q
 
-private theorem simulateFirstQueryImplComp
+private theorem simulateQ_simulateQ_firstQueryImpl
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
     {α : Type} (oa : OracleComp (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ)) α) :
     simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
@@ -537,9 +512,9 @@ private theorem simulateFirstQueryImplComp
   rw [← QueryImpl.simulateQ_compose]
   apply congrArg (fun impl => simulateQ impl oa)
   apply QueryImpl.ext
-  exact simulateFirstQueryImpl oStmt messages
+  exact simulateQ_firstQueryImpl oStmt messages
 
-private theorem simulateFirstQueryImplOptionTComp
+private theorem simulateQ_simulateQ_firstQueryImpl_optionT
     (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
     {α : Type} (oa : OptionT
       (OracleComp (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))) α) :
@@ -547,16 +522,7 @@ private theorem simulateFirstQueryImplOptionTComp
         (simulateQ (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁)) oa) =
       simulateQ (OracleInterface.simOracle2 oSpec oStmt messages.fst) oa := by
   apply OptionT.ext
-  exact simulateFirstQueryImplComp oStmt messages oa.run
-
-private theorem simulateOutputQueryEq
-    (V : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
-    (messages : pSpec₁.Messages) (q : [OStmt₂]ₒ.Domain) :
-    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-        (V.simulateOutputQuery challenges q) =
-      pure ((Oₛ₂ q.1).answer (V.materializeOutput challenges oStmt messages q.1) q.2) := by
-  exact V.simulateOutputQuery_eq challenges oStmt messages q
+  exact simulateQ_simulateQ_firstQueryImpl oStmt messages oa.run
 
 private def secondQueryImpl
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
@@ -574,7 +540,7 @@ private def secondQueryImpl
       messageQueryInr (oSpec := oSpec) (OStmt₁ := OStmt₁)
         (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
 
-private theorem simulateSecondQueryImpl
+private theorem simulateQ_secondQueryImpl
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
     (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
@@ -592,11 +558,11 @@ private theorem simulateSecondQueryImpl
             (V₁.simulateOutputQuery challenges ⟨i, q⟩)) =
         pure ((Oₛ₂ i).answer
           (V₁.materializeOutput challenges oStmt messages.fst i) q)
-      rw [simulateFirstQueryImplComp]
-      exact simulateOutputQueryEq V₁ challenges oStmt messages.fst ⟨i, q⟩
-    · exact simulateMessageQueryInr oStmt messages q
+      rw [simulateQ_simulateQ_firstQueryImpl]
+      exact V₁.simulateOutputQuery_eq challenges oStmt messages.fst ⟨i, q⟩
+    · exact simulateQ_messageQueryInr oStmt messages q
 
-private theorem simulateSecondQueryImplComp
+private theorem simulateQ_simulateQ_secondQueryImpl
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
     (messages : (pSpec₁ ++ₚ pSpec₂).Messages) {α : Type}
@@ -608,9 +574,9 @@ private theorem simulateSecondQueryImplComp
   rw [← QueryImpl.simulateQ_compose]
   apply congrArg (fun impl => simulateQ impl oa)
   apply QueryImpl.ext
-  exact simulateSecondQueryImpl V₁ challenges oStmt messages
+  exact simulateQ_secondQueryImpl V₁ challenges oStmt messages
 
-private theorem simulateSecondQueryImplOptionTComp
+private theorem simulateQ_simulateQ_secondQueryImpl_optionT
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
     (messages : (pSpec₁ ++ₚ pSpec₂).Messages) {α : Type}
@@ -620,7 +586,7 @@ private theorem simulateSecondQueryImplOptionTComp
       simulateQ (OracleInterface.simOracle2 oSpec
         (V₁.materializeOutput challenges oStmt messages.fst) messages.snd) oa := by
   apply OptionT.ext
-  exact simulateSecondQueryImplComp V₁ challenges oStmt messages oa.run
+  exact simulateQ_simulateQ_secondQueryImpl V₁ challenges oStmt messages oa.run
 
 private def appendOutputSimulation
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
@@ -634,8 +600,8 @@ private def appendOutputSimulation
       (V₂.simulateOutputQuery challenges.snd q)
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
-    rw [simulateSecondQueryImplComp]
-    exact simulateOutputQueryEq V₂ challenges.snd
+    rw [simulateQ_simulateQ_secondQueryImpl]
+    exact V₂.simulateOutputQuery_eq challenges.snd
       (V₁.materializeOutput challenges.fst oStmt
         (Messages.fst (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) messages))
       (Messages.snd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) messages) q
@@ -675,8 +641,8 @@ private theorem append_verify_simulate
         (V₁.materializeOutput challenges.fst oStmt messages.fst) messages.snd)
         (V₂.verify stmt₂ challenges.snd)) : OptionT (OracleComp oSpec) Stmt₃) := by
   unfold OracleVerifier.append
-  rw [simulateQ_optionT_bind, simulateFirstQueryImplOptionTComp]
-  simp_rw [simulateSecondQueryImplOptionTComp]
+  rw [simulateQ_optionT_bind, simulateQ_simulateQ_firstQueryImpl_optionT]
+  simp_rw [simulateQ_simulateQ_secondQueryImpl_optionT]
 
 @[simp]
 lemma OracleVerifier.append_toVerifier

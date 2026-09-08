@@ -117,7 +117,7 @@ theorem stage_completeness (s : σ) :
 theorem output_agreement (stmt : ℕ) (c : Fin 4) :
     stage.prover.output (stmt, c) = pure (guardedForm.out stmt (fun _ => c), ()) := rfl
 
-/-- The two genuinely rejecting stages compose with a nontrivial error bound below one. -/
+/-- Two stages with error one quarter compose with error at most one half. -/
 theorem append_completeness (init : ProbComp σ) :
     (stage.append stage).completeness init impl Set.univ Set.univ (1 / 2) := by
   have hfirst : stage.completeness init impl Set.univ Set.univ (1 / 4) :=

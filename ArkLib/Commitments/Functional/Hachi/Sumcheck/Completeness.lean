@@ -344,8 +344,7 @@ def roundsReductionAux {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
     (roundsReductionAux hb φF count (by omega)).append
       (roundReduction Φ m₁ b hb φF count (by omega))
 
-/-- Guarded verifier data for the honest round loop, assembled with the same recursion as
-its reduction. Each runtime round check is retained by guarded append. -/
+/-- The honest sumcheck loop has a deterministic verifier whose guard retains each round check. -/
 def roundsReductionAuxGuardedForm {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
     (count : ℕ) → (hcount : count ≤ M + 1) →
       (roundsReductionAux (oSpec := oSpec) (TCom := TCom) (n := n) (μ := μ)
@@ -385,12 +384,8 @@ theorem roundsReduction_verifier (init : ProbComp σ)
       (roundsReduction_verifier init impl K hb φF count (by omega))
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
-/-- **Perfect completeness of the honest round chain**, by recursion on `count`: the zero-round
-base is `ReduceClaim` at the identity map, and each step appends one
-`roundReduction_perfectCompleteness`.
-
-Composition retains the guarded verifier checks and uses each next round's completeness from
-every shared oracle state. -/
+/-- The honest sumcheck loop is perfectly complete from the initial round relation to the
+relation after the requested number of rounds. -/
 theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
@@ -423,8 +418,7 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
         (pure s) impl K hb φF count (by omega))
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
-/-- Perfect completeness of `roundsReduction`, the exposed form of
-`roundsReductionAux_perfectCompleteness`, with the same append dependency. -/
+/-- The exposed honest sumcheck loop is perfectly complete for every permitted round count. -/
 theorem roundsReduction_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
@@ -471,8 +465,8 @@ def sumcheckReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
     ((roundsReduction Φ m₁ b (TCom := TCom) hb φF (M + 1) le_rfl).append
       (finalEvalReduction Φ (M + 1) m₁ bound b φF))
 
-/-- Guarded verifier data for the complete local sumcheck. The bridge always accepts, and
-the composed check retains every round guard and the final-evaluation guard. -/
+/-- The local sumcheck verifier is deterministic and retains its round and final-evaluation
+guards. -/
 def sumcheckReductionGuardedForm
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) :
@@ -484,19 +478,8 @@ def sumcheckReductionGuardedForm
 
 omit [DecidableEq F] in
 omit [NeZero q] in
-/-- **Perfect completeness of the local Hachi sumcheck**, from `relNestedZeroCheck` to
-`relWEvalClaim`, error `0`.
-
-The three links meet on the nose: the bridge installs `nestedRoundRel 0`, the loop carries it to
-`nestedRoundRel m₀`, and the final-evaluation step turns that into `relWEvalClaim`. Hypotheses are
-exactly the union of the links' own — `0 < b` (rounds), `0 < deg φ` and
-`(μ + n·δ)·deg φ ≤ 2^{m₀}` (the bridge's sum identities) — plus the standing field, sampling and
-commitment assumptions. No hypothesis is needed for the final-evaluation step: its bound-sanity
-conjunct is *carried* by the round relation.
-
-The guarded composition theorem applies without extra mathematical hypotheses: the bridge has
-pure output, the final-evaluation protocol opens with a prover message, and the existing component
-completeness results hold from every shared oracle state. -/
+/-- The local Hachi sumcheck is perfectly complete from the nested zero-check relation to the
+witness-evaluation claim under the stated digit-base and degree bounds. -/
 theorem sumcheckReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))

@@ -108,7 +108,7 @@ def headChallengeIndex {n : ℕ} {p : ProtocolSpec n} {α : Type} :
 theorem coincident_left_index :
     headChallengeIndex (liftAppendLeft oneChallenge componentChallenge) = some 0 := rfl
 
-/-- The right copy queries appended round one, so swapping or identifying the routes fails. -/
+/-- The right copy queries appended round one. -/
 theorem coincident_right_index :
     headChallengeIndex (liftAppendRight oneChallenge componentChallenge) = some 1 := rfl
 

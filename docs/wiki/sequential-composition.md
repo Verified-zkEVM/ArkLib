@@ -1,104 +1,81 @@
-# Sequential composition contracts
+# Sequential composition
 
-Binary composition lives in `ArkLib/OracleReduction/Composition/Sequential/Append/`.
-The `Append.lean` umbrella exports both proved interfaces and legacy admitted interfaces.
-Import a specific module when auditing its dependency boundary.
+Sequential composition uses `Prover.append`, `Verifier.append`, and `Reduction.append` in
+`ArkLib/OracleReduction/Composition/Sequential/Append/`. Oracle reductions have corresponding
+operations. Import the module containing the theorem you need; `Append.lean` is the binary umbrella.
 
-## Execution and simulation
+## Execution
 
-`Prover.append_run_of_seam` factors raw execution when the left prover has `OutputIsPure`,
-or the right protocol starts with a prover message. An empty right protocol needs no restriction
-on left output. Later challenges are permitted in the message-opening case.
-`Prover.append_run` supplies the pure-output convenience form.
+`Prover.append_run_of_seam` factors raw prover execution under any of these conditions:
 
-`ProtocolSpec.liftAppendLeft` and `liftAppendRight` pin the challenge routes explicitly, including
-when component specifications coincide. `Append/Simulation.lean` proves that both inclusions
-preserve simulation, with all shared effects and final oracle state retained.
+- The left prover has `Prover.OutputIsPure`.
+- The right protocol starts with a prover message; later challenges are allowed.
+- The right protocol is empty.
 
-## Completeness
+`Prover.append_run` is the pure-output specialization for arbitrary suffix protocols.
+`ProtocolSpec.liftAppendLeft` and `liftAppendRight` distinguish the two challenge routes, including
+when the component specifications coincide. `Append/Simulation.lean` transports these routes
+through simulation and retains the final shared oracle state.
 
-The underlying interface is `Reduction.append_completeness_of_proverFactorization`. It requires:
+## Choosing a completeness theorem
 
-- Pure verifier forms for both components: deterministic, non-failing verdicts.
-- `Prover.SimulatedAppendFactorization`: equality of the simulated prover programs for every
-  input statement, witness, and deterministic starting state.
-- First-stage completeness for the chosen initial distribution.
-- Second-stage completeness from every deterministic shared oracle state.
+All completeness theorems below require suffix correctness at every deterministic shared oracle
+state. A suffix starts in the state left by the prefix, so correctness only at the original
+initial distribution is insufficient. Component errors add, and the perfect-completeness
+corollaries set those errors to zero.
 
-The factorization equality retains the transcript, output statement and witness, and final state.
-It is equality of `ProbComp` programs after simulation and `StateT.run`, not merely equality of
-probability distributions. The suffix receives the state left by the prefix. The proof retains
-intermediate prover/verifier statement agreement on the successful event.
+| Verifiers and prover execution | Binary theorem in namespace `Reduction` |
+| --- | --- |
+| Pure verifier forms; exact simulated prover factorization | `append_completeness_of_prover_factorization` |
+| Pure verifier forms; one of the execution conditions above | `append_completeness_of_pure_verifiers` |
+| Pure verifiers and pure left output, supplied by typeclasses | `append_completeness_of_pure` |
+| Guarded verifier forms; exact simulated prover factorization | `append_completeness_of_guarded_prover_factorization` |
+| Guarded verifier forms; one of the execution conditions above | `append_completeness_of_guarded_verifiers` |
 
-The resulting error is the sum of the component errors. The perfect-completeness wrapper
-`append_perfectCompleteness_of_proverFactorization` accepts suffix correctness from every initial
-state distribution; specializing to `pure s` supplies the deterministic-state premise. Conversely,
-`completeness_of_pure_states` lifts deterministic-state correctness to arbitrary mixtures.
+Pure verifier forms describe deterministic verifiers that do not reject. A
+`Verifier.GuardedForm` describes a deterministic verifier with an explicit acceptance check;
+rejection contributes to the completeness error. Guarded theorems live in
+`Sequential/GuardedCompleteness.lean`, imported separately from the binary umbrella.
 
-The seam-based `append_completeness_of_pure_verifiers` derives factorization from the structural
-execution theorem. Its `_of_pure` convenience form uses purity typeclasses; perfect-completeness
-corollaries set both errors to zero. The oracle-reduction wrappers use the converted ordinary
-verifiers and the proved `append_toReduction` equality.
+`Prover.SimulatedAppendFactorization` equates the simulated prover programs for every input
+statement, witness, and deterministic initial state. The equality is between `ProbComp` programs
+after `StateT.run`, including transcript, output statement, witness, and final state. It can hold
+even when raw execution does not factor. The completeness proof also checks agreement between
+the prover's and verifier's intermediate statements.
 
-For deterministic verifiers that may reject, use
-`append_completeness_of_guarded_proverFactorization` or its seam corollary
-`append_completeness_of_guarded_verifiers` in `Sequential/GuardedCompleteness.lean`.
-Supply `Verifier.GuardedForm` data. The success event requires both checks to pass, so rejection
-contributes failed mass. This module stays outside the `Append.lean` umbrella to avoid an import
-cycle through guarded-verifier infrastructure.
+`completeness_of_pure_states` lifts correctness from deterministic states to arbitrary initial
+distributions. The factorization-based perfect-completeness wrapper accepts suffix correctness
+from every initial distribution and specializes it to `pure s`.
 
-`Append/OneMessage.lean` provides `ProtocolSpec.oneMessage` and the short
-`append_perfectCompleteness_of_oneMessage` specialization. Component provers may query oracles
-in their outputs; pure verifier forms and state-uniform suffix completeness remain required.
-
-`Sequential/Completeness.lean` provides `seqCompose_completeness_of_pure` and its perfect
-corollary. Every component has pure output and verdict, and is complete from every deterministic
-state. The total error is the sum of component errors.
+`Append/OneMessage.lean` supplies `append_perfectCompleteness_of_oneMessage` for two one-message
+protocols with pure verifiers, allowing effectful prover outputs. `Sequential/Completeness.lean`
+supplies `seqCompose_completeness_of_pure` for finite chains with pure prover outputs and verifiers,
+requiring each component to be complete from every deterministic state.
+The ordinary pure-verifier binary theorems have oracle-reduction wrappers in
+`Append/Completeness.lean`, using `OracleReduction.append_toReduction`.
 
 ## Round-by-round soundness
 
-`Verifier.append_rbrSoundnessWorstCase_of_pure_first` composes fixed-prefix
-`rbrSoundnessWorstCase` contracts under a pure first verifier. Each round keeps its component
-error. The second-component proof fixes the intermediate statement and transcript prefix before
-sampling its challenge, and proves that statement lies outside the second language when a bad
-transition is possible.
+`Verifier.append_rbrSoundnessWorstCase_of_pure_first` composes bounds that hold for each fixed
+transcript prefix, under a pure first verifier. Each round retains its component error.
+`append_rbrSoundness_of_worst_case_of_pure_first` derives the prover-averaged conclusion from
+these hypotheses. Prover-averaged component bounds alone do not supply this contract.
 
-`append_rbrSoundness_of_worstCase_of_pure_first` derives the prover-averaged contract from those
-stronger hypotheses. It does not prove composition from prover-averaged component bounds alone.
-The legacy implication from round-by-round soundness to ordinary soundness remains admitted.
+The fixed-initial-state completeness declarations in `Append/Security.lean` and
+`Sequential/General.lean` are false and remain admitted; use the proved completeness interfaces
+above. Generic soundness composition and the implication from round-by-round to ordinary
+soundness remain admitted.
 
-## Counterexamples and trust boundary
+## Clients and validation
 
-`ArkLibTest/OracleReduction/Composition/Sequential/` contains two complementary counterexamples.
-`RawExecutionCounterexample.lean` distinguishes raw query order at a challenge-opening seam.
-`SharedStateCounterexample.lean` refutes fixed-initial-state completeness composition, even with
-pure verifiers and pure left output. `SimulatedFactorization.lean` uses the raw counterexample's
-provers with a pure ambient implementation: raw programs differ, yet simulated programs agree
-and the factorization completeness theorem applies outside the structural seam restriction.
+Hachi's nonrecursive chain uses pure verifier forms for its prefix and guarded forms for
+sumcheck. `Hachi/HonestChain.lean` contains the prefix certificates; `Hachi/Correctness.lean`
+composes the commitment-input adapter, chain, and terminal check. Its folded-witness width `τ`
+and bounded decomposition are parameters of these certificates.
 
-The generic security admissions and their inherited wrappers remain in the legacy API. In
-particular, eight binary/n-ary completeness contracts across `Reduction` and `OracleReduction`
-need caller migration and retirement. New restricted theorems do not repair those contracts or
-remove existing callers' dependencies automatically. Ordinary and knowledge soundness require
-separate proofs; execution factorization supplies neither claim.
-
-## Hachi caller migration
-
-The nonrecursive Hachi chain uses the proved composition interfaces: pure verifier forms for the
-prefix, guarded forms for sumcheck, and state-uniform completeness for each suffix. Nine composed
-completeness/correctness declarations, through `hachiNonrecursiveConcrete_perfectCorrectness`,
-have standard-only axiom dependencies. The permanent Hachi test also checks the seven added
-verifier/output certificates and the two supported-profile relation-coupling theorems.
-
-The public theorem hypotheses and protocol definitions are preserved, including `hInit`/`hKeygen`,
-`relPolyEvalMsgShort`, the commitment-input adapter, independent folded-witness width `τ`, and the
-bounded decomposition. Recursive opening and general security composition remain separate work.
-The default runtime gate covers the supported `τ = 1 < δ = 2` profile and decomposition checks;
-it does not execute the expensive complete opening run.
-
-## Validation
-
-Run `./scripts/validate.sh --axioms`. The normal `lake test` gate includes the composition tests:
-execution routes, both counterexamples, the positive simulated-factorization case, empty and
-state-mutating completeness, rejecting verifiers, and specialization checks. Named results have
-permanent standard-axiom assertions. The library axiom sweep covers the production declarations.
+Run `./scripts/validate.sh --axioms` for the library, compile-time tests, runtime checks, and
+axiom regression gate. `ArkLibTest/OracleReduction/Composition/Sequential/` covers challenge
+routing, rejecting verifiers, raw query-order failure, and the need for suffix correctness at
+the state left by the prefix. It also contains a simulated factorization example outside the
+raw execution conditions. Hachi's tests check its composed theorem dependencies; the default
+runtime exercises bounded decomposition but does not execute the expensive complete opening run.
