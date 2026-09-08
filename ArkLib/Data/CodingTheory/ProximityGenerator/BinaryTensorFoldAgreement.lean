@@ -54,8 +54,10 @@ theorem binaryTensorFold_eq_tensorGeneratorPi : ∀ {h : ℕ}
   | zero =>
       intro r u
       funext i
-      simp [binaryTensorFold, PolynomialGenIsMCA.tensorGeneratorPi,
-        Subsingleton.elim (default : Fin 0 → Bool) (fun _ ↦ false)]
+      change u default i = ∑ leaf : Fin 0 → Bool,
+        (∏ j : Fin 0, binaryEqualityGenerator (r j) (leaf j)) • u leaf i
+      rw [Finset.univ_unique, Finset.sum_singleton, Finset.univ_eq_empty,
+        Finset.prod_empty, one_smul]
       exact congrArg (fun leaf : Fin 0 → Bool ↦ u leaf i) (Subsingleton.elim _ _)
   | succ h ih =>
       intro r u
@@ -69,8 +71,9 @@ theorem binaryTensorFold_eq_tensorGeneratorPi : ∀ {h : ℕ}
         PolynomialGenIsMCA.tensorGeneratorPi
           (fun _ ↦ binaryEqualityGenerator) r leaf • u leaf i)]
       rw [Fintype.sum_prod_type, Fintype.sum_bool]
-      simp [e, PolynomialGenIsMCA.tensorGeneratorPi, Fin.prod_univ_succ,
-        binaryEqualityGenerator, Fin.tail, Fin.consEquiv_apply, mul_smul, he]
+      simp only [PolynomialGenIsMCA.tensorGeneratorPi, binaryEqualityGenerator, Fin.tail,
+        Fin.consEquiv_apply, Fin.prod_univ_succ, Fin.cons_zero, ↓reduceIte, Fin.cons_succ,
+        he, mul_smul, Bool.false_eq_true, e]
       rw [add_comm]
 
 /-- A line certificate supplies a bounded exceptional set and, outside it, constituent
@@ -157,6 +160,7 @@ private theorem card_le_of_eq_inter_right [DecidableEq A]
   exact Finset.card_le_card Finset.inter_subset_right
 
 set_option maxHeartbeats 800000 in
+-- Recursive witness assembly expands dependent function equalities at every tree level.
 /-- Avoiding every node's line exceptional set gives a complete leaf decomposition. -/
 theorem hasFullTensorDecomposition_of_good [DecidableEq A]
     {C : ModuleCode ι F A} {agreement exceptionalCount h : ℕ}
@@ -290,6 +294,7 @@ noncomputable def tensorFoldBad [Fintype F] [DecidableEq A]
     exact Finset.univ.filter fun r ↦ ¬ TensorFoldGood hline r u
 
 set_option maxHeartbeats 800000 in
+-- The finite-cardinality recurrence normalizes nested filters and natural powers.
 /-- A binary height-`h` shared-level fold has at most `2^h - 1` line events.  Each event fixes
 one field challenge to one of at most `exceptionalCount` values and leaves the other `h - 1`
 levels free. -/

@@ -158,8 +158,8 @@ private theorem exists_forall_notMem_of_card_le
 
 open Classical in
 private theorem interleaved_lineProjectionBad_card_le
-    {ι F A : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F A : Type} [Fintype ι]
+    [Field F] [Fintype F]
     [AddCommMonoid A] [Module F A]
     (C : ModuleCode ι F A) {agreement t exceptionalCount : ℕ}
     (ht : 0 < t)
