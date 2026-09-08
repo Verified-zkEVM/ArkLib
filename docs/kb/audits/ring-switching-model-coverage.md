@@ -33,11 +33,13 @@ February version rather than asserting a comparison against the latest revision.
 
 ## Reconciliation with current main
 
-The implementation review uses main `66f3d089a41704597f54d641b78254d2a8f361f8` and the
-pending composition stack #885 (`d513d5a7977680b4b3cf88fe6c5c937b23ffa46d`) and #887
-(`c37a66264740a816d8a7e6b8639b8fe13f3a72bb`). Both dependency PRs were still open at the
-last review; building on their commits does not mean they have merged. The earlier #615
-snapshot is `e5b94f4dfe19cd4e4463088482de723758cc1038`.
+The original implementation review compared main `66f3d089a41704597f54d641b78254d2a8f361f8`
+with composition snapshots #885 (`d513d5a7977680b4b3cf88fe6c5c937b23ffa46d`) and #887
+(`c37a66264740a816d8a7e6b8639b8fe13f3a72bb`). Both dependencies have now merged. Main
+`8d7e758b5c4421711358595870ff7fbcee2a3a9f` has exactly the same Git tree as the reviewed
+composition snapshot `c37a66264740a816d8a7e6b8639b8fe13f3a72bb`, with different ancestry.
+The earlier #615 snapshot is `e5b94f4dfe19cd4e4463088482de723758cc1038`; the historical
+main pin above remains the source of the pre-existing defects described below.
 
 The new work uses current `Packing/` ownership rather than restoring the draft's older
 `Generic/` hierarchy. Recent changes affect both the mathematics and integration:
