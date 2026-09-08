@@ -20,6 +20,13 @@ import ArkLib.OracleReduction.Composition.Sequential.General
   The same closure holds for purity as **data** (`Verifier.PureForm`, `OracleReduction.Basic`):
   `PureForm.append` composes the two verdict functions computably, which is what lets a composed
   package's extractor read its seam statement without `Classical.choice`.
+
+  The same is done for the prover's *output* step (`Prover.OutputIsPure`), which is the hypothesis
+  of `Prover.append_run`. The binary case is the theorem `Prover.OutputIsPure.append` (with instance
+  form `Prover.instOutputIsPureAppend`); it lives in `Append/Basic.lean` next to `Prover.append`
+  itself, because it is proved directly from that definition's `output` computation rules
+  (`Prover.append_output_zero` / `Prover.append_output_pos`). Here we add the identity prover
+  (`Prover.instOutputIsPureId`) and the `n`-ary composition (`Prover.OutputIsPure.seqCompose`).
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -77,3 +84,29 @@ theorem IsPure.seqCompose :
         (IsPure.seqCompose (Stmt ∘ Fin.succ) (fun i => V (Fin.succ i)) (fun i => hV (Fin.succ i)))
 
 end Verifier
+
+namespace Prover
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+
+/-- The identity prover has pure output: its `output` field is literally `pure`. -/
+instance instOutputIsPureId {Statement Witness : Type} :
+    (Prover.id (oSpec := oSpec) (Statement := Statement) (Witness := Witness)).OutputIsPure :=
+  ⟨_root_.id, fun _ => rfl⟩
+
+/-- Purity of the output step is preserved by `n`-ary sequential composition of provers. The base
+  case is the identity prover (`Prover.seqCompose` reduces to `Prover.id` at `m = 0`); the step
+  case is `Prover.OutputIsPure.append` of the head with the recursively-composed tail. -/
+theorem OutputIsPure.seqCompose :
+    {m : ℕ} → (Stmt : Fin (m + 1) → Type) → (Wit : Fin (m + 1) → Type) → {n : Fin m → ℕ} →
+      {pSpec : ∀ i, ProtocolSpec (n i)} →
+      (P : (i : Fin m) →
+        Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) →
+      (hP : ∀ i, (P i).OutputIsPure) → (Prover.seqCompose Stmt Wit P).OutputIsPure
+  | 0, _, _, _, _, _, _ => ⟨_root_.id, fun _ => rfl⟩
+  | _ + 1, Stmt, Wit, _, _, P, hP =>
+      OutputIsPure.append (P 0) _ (hP 0)
+        (OutputIsPure.seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ)
+          (fun i => P (Fin.succ i)) (fun i => hP (Fin.succ i)))
+
+end Prover

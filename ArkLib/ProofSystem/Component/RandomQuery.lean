@@ -79,6 +79,10 @@ def oracleProver : OracleProver oSpec
 
   output := fun (oracles, q) => pure ((q, oracles), ())
 
+/-- The `RandomQuery` oracle prover has pure output: it repackages the received challenge and
+  the oracles, with no oracle query. -/
+instance instOutputIsPure : (oracleProver oSpec OStatement).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 /--
 The oracle verifier simply returns the challenge, and performs no checks.
 -/

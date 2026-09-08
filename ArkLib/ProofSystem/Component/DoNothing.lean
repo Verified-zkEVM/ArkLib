@@ -29,6 +29,10 @@ section Reduction
 @[inline, specialize, simp]
 def prover : Prover oSpec Statement Witness Statement Witness !p[] := Prover.id
 
+/-- The `DoNothing` prover has pure output: it is `Prover.id`, whose `output` is literally
+  `pure`. -/
+instance instOutputIsPure : (prover oSpec Statement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 /-- The verifier for the `DoNothing` reduction. -/
 @[inline, specialize, simp]
 def verifier : Verifier oSpec Statement Statement !p[] := Verifier.id
@@ -66,6 +70,11 @@ section OracleReduction
 @[inline, specialize, simp]
 def oracleProver : OracleProver oSpec
     Statement OStatement Witness Statement OStatement Witness !p[] := OracleProver.id
+
+/-- The `DoNothing` oracle prover has pure output: it is `OracleProver.id`, which unfolds to
+  `Prover.id`, whose `output` is literally `pure`. -/
+instance instOutputIsPureOracle :
+    (oracleProver oSpec Statement OStatement Witness).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier for the `DoNothing` oracle reduction. -/
 @[inline, specialize, simp]

@@ -81,6 +81,11 @@ def oracleProver : OracleProver oSpec
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨stmt, oStmt⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => f stmt oStmt)⟩, ())
 
+/-- The `SendClaim` oracle prover has pure output: it exposes the claim it already computed
+  alongside the input oracles, with no oracle query. -/
+instance instOutputIsPure :
+    (oracleProver oSpec Statement OStatement Message f).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 /-- The oracle verifier for `SendClaim` is a **pure pass-through**: it returns the statement and
 exposes the input oracle statements together with the prover's message as the output oracles. The
 claim predicate is enforced in `toORelOut`, not at runtime, keeping the verifier `IsPure`. -/

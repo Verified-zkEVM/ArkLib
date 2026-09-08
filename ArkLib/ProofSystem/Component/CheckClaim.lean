@@ -58,6 +58,10 @@ def prover : Prover oSpec Statement Unit Statement Unit !p[] where
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
 
+/-- The `CheckClaim` prover has pure output: it reads its statement off the state, with no oracle
+  query. This discharges the `Prover.OutputIsPure` hypothesis of `Prover.append_run`. -/
+instance instOutputIsPure : (prover oSpec Statement).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 variable (pred : Statement → Prop) [DecidablePred pred]
 
 /-- The verifier for the `CheckClaim` reduction. -/
@@ -195,6 +199,11 @@ def oracleProver : OracleProver oSpec
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
+
+/-- The `CheckClaim` oracle prover has pure output: it forwards the statement and oracle statements
+  with no oracle query. -/
+instance instOutputIsPureOracle : (oracleProver oSpec Statement OStatement).OutputIsPure :=
+  ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier for the `CheckClaim` oracle reduction is a **pure pass-through**: it
 returns the statement and all oracle statements unchanged. The predicate
