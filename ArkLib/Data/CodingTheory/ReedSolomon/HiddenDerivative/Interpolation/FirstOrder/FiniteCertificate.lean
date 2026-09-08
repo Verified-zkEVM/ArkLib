@@ -78,7 +78,8 @@ theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
       (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) := by
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
   obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    1 hD hbudget hkD centers w (fun i ↦ receivedLine_natDegree_le (f i) (g i)) hheight
+    1 (Nat.zero_lt_of_lt hD) hbudget hkD centers w
+      (fun i ↦ receivedLine_natDegree_le (f i) (g i)) hheight
   refine ⟨{
     coefficients := cert.coefficients
     Q := cert.Q

@@ -101,6 +101,14 @@ theorem passportInternalZk_initialEvaluationCancellation :
     FieldCollisionMeetsTarget 1 bn254FieldSize security := by
   norm_num [FieldCollisionMeetsTarget, bn254FieldSize, security]
 
+/-- The implementation allocates the initial line bad set and evaluation cancellation together
+as `(E + 1)/q`; this grouped check accompanies the two constituent bounds above. -/
+theorem passportInternalZk_initialLineAndEvaluation :
+    FieldCollisionMeetsTarget ((passportInternalZk.row 0).exceptionalCount + 1)
+      bn254FieldSize security := by
+  norm_num [FieldCollisionMeetsTarget, passportInternalZk, codeRound, powThreshold,
+    bn254FieldSize, security]
+
 /-- The two linear forms and one OOD form share the separately sampled constraint RLC. -/
 theorem passportInternalZk_initialConstraintRlc :
     FieldCollisionMeetsTarget 2 bn254FieldSize security := by
