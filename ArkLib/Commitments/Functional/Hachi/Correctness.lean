@@ -5,6 +5,7 @@ Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.HonestChain
 import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
+import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
 # Nonrecursive Hachi: the terminal reveal-and-check and perfect correctness
@@ -24,8 +25,8 @@ lemma `endPieceCheck_eq_true_iff`. This is a genuine terminal verifier — it ca
 composition is a complete executable commitment opening, at the cost of a witness-sized final
 message.
 
-Composed completeness statements go through the generic `Reduction.append_completeness`, which this
-repository admits; each link's own completeness is axiom-clean.
+Composed completeness uses proved guarded composition, retaining the sumcheck rejection checks
+and using each suffix's completeness from every shared oracle state.
 
 ## Main definitions
 
@@ -138,6 +139,14 @@ def nonrecursiveTerminalReduction [BEq K.TCom] :
       (pSpecTerminal Φ μ n) where
   prover := terminalProver Φ m₀ bound bDig b K φF
   verifier := terminalVerifier Φ m₀ bound bDig b K φF
+
+/-- The terminal verifier returns a deterministic Boolean verdict, so its guarded form has
+an always-passing outer check. The Boolean verdict itself records the terminal relation check. -/
+def nonrecursiveTerminalReductionGuardedForm [BEq K.TCom] :
+    (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).verifier.GuardedForm :=
+  (show (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).verifier.PureForm
+    from ⟨fun stmt tr => endPieceCheck Φ m₀ bound bDig b K φF stmt (tr 0),
+      fun _ _ => rfl⟩).toGuardedForm
 
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The terminal reduction's honest run, in closed form: one pure message round and a pure
@@ -259,13 +268,29 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
       Φ P pp hqm hcap K hd hbZero φF).append
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ P.bZero P.bZero K φF)
 
+/-- The through-sumcheck verifier and terminal Boolean verdict form a deterministic verifier
+that may reject at the sumcheck checks. -/
+def nonrecursiveOpeningReductionGuardedForm (P : HonestRangeParams q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero)) [DecidableEq K.TCom]
+    (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
+    (nonrecursiveOpeningReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
+      Φ P pp hqm hcap K hd hbZero φF).verifier.GuardedForm :=
+  (completeThroughSumcheckReductionGuardedForm (oSpec := oSpec) (F := F) (ω := ω)
+    (M := M) (m₁ := m₁) Φ P pp hqm hcap K hd hbZero φF).append
+    (nonrecursiveTerminalReductionGuardedForm (oSpec := oSpec)
+      Φ (M + 1) P.γ P.bZero P.bZero K φF)
+
 omit [DecidableEq F] in
-/-- **Perfect completeness of the nonrecursive opening**, from `relPolyEval` to
+/-- **Perfect completeness of the nonrecursive opening**, from `relPolyEvalMsgShort` to
 `acceptRejectRel`, error `0`. The hypotheses are exactly those of
 `completeThroughSumcheckReduction_perfectCompleteness`; the terminal link needs nothing.
 
-Depends on the admitted `Reduction.append_completeness` through the append; the terminal link
-itself is axiom-clean. -/
+The terminal protocol starts with a prover message, so execution factors even with effectful
+predecessor output. Its completeness holds from every shared oracle state; guarded composition
+retains the sumcheck verifier's runtime rejection checks. -/
 theorem nonrecursiveOpeningReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -286,12 +311,17 @@ theorem nonrecursiveOpeningReduction_perfectCompleteness
       Φ P pp hqm hcap K hd hbZero φF).perfectCompleteness init impl
       (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       acceptRejectRel :=
-  Reduction.append_perfectCompleteness _ _
+  Reduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (completeThroughSumcheckReductionGuardedForm (oSpec := oSpec) (F := F) (ω := ω)
+      (M := M) (m₁ := m₁) Φ P pp hqm hcap K hd hbZero φF)
+    (nonrecursiveTerminalReductionGuardedForm (oSpec := oSpec)
+      Φ (M + 1) P.γ P.bZero P.bZero K φF)
+    (fun _ => Or.inr rfl)
     (completeThroughSumcheckReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
       Φ P init impl pp hqm hcap hmul hzb hmd hτ hd hbZero K φF hμn hZeroγ)
-    (nonrecursiveTerminalReduction_perfectCompleteness Φ (M + 1) P.γ P.bZero P.bZero K φF
-      init impl)
+    (fun s => nonrecursiveTerminalReduction_perfectCompleteness
+      Φ (M + 1) P.γ P.bZero P.bZero K φF (pure s) impl)
 
 end NonrecursiveOpening
 
@@ -299,11 +329,11 @@ end NonrecursiveOpening
 
 The commitment API opens on the statement `Commitment × (x : Query) × Response` with witness
 `Data × Decommitment`; the Hachi chain starts at `PolyEvalStatement × QuadEvalWitness` and
-`relPolyEval`. The zero-round `ReduceClaim` head below converts: the evaluation query splits
+`relPolyEvalMsgShort`. The zero-round `ReduceClaim` head below converts: the evaluation query splits
 into the low/high point halves, the claimed response becomes the claimed evaluation, the
 commitment passes through, and the decommitment (the honest balanced decompositions) becomes the
 honest weak opening at the trivial challenge. The honest direction
-(`mem_relPolyEval_of_relCommitInput`) is all correctness needs
+(`mem_relPolyEvalMsgShort_of_relCommitInput`) is all correctness needs
 (`ReduceClaim.reduction_completeness_of_imp`); no reverse implication is required. -/
 
 section InputAdapter
@@ -506,7 +536,7 @@ end InputAdapter
 `hachiNonrecursive` packages the honest committer `commit` with the complete opening protocol —
 input adapter ▷ chain through the sumcheck ▷ terminal reveal-and-check — as a `Commitment.Scheme`.
 The honest chain's input relation is established for that committer by
-`mem_relPolyEval_of_relCommitInput`. -/
+`mem_relPolyEvalMsgShort_of_relCommitInput`. -/
 
 section Scheme
 
@@ -560,8 +590,8 @@ omit [DecidableEq F] in
 /-- **Perfect completeness of the complete nonrecursive opening**, from `relCommitInput` (the
 honest balanced commitment plus a truthful evaluation claim) to `acceptRejectRel`, error `0`.
 
-Depends on the admitted `Reduction.append_completeness` through the appends; the adapter and
-terminal links are axiom-clean. -/
+The input adapter has pure output. The remaining guarded opening is complete from every
+shared oracle state, as required by the sequential composition theorem. -/
 theorem hachiNonrecursiveOpening_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -583,12 +613,19 @@ theorem hachiNonrecursiveOpening_perfectCompleteness
     (hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁)
       P pp hcap K hd hbZero φF).perfectCompleteness init impl
       (relCommitInput P.b P.hb pp) acceptRejectRel :=
-  Reduction.append_perfectCompleteness _ _
+  Reduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    ⟨fun _ _ => true,
+      fun stmt _ => commitInputStmtMap (innerRows := innerRows) (dRows := dRows) P.b stmt,
+      fun _ _ => rfl⟩
+    (nonrecursiveOpeningReductionGuardedForm (oSpec := unifSpec) (F := F) (ω := ω)
+      (M := M) (m₁ := m₁) 𝓜(q, α) P pp (Nat.le_pow_clog P.hb q)
+      hcap K hd hbZero φF)
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩)
     (commitInputReduction_perfectCompleteness (βSq := βSq) (γ := P.γ) (κ := κ)
       P.b P.hb init impl P.hbq hd hclog hκ hβSq P.hbγ pp)
-    (nonrecursiveOpeningReduction_perfectCompleteness (zDigits := τ) (ω := ω)
+    (fun s => nonrecursiveOpeningReduction_perfectCompleteness (zDigits := τ) (ω := ω)
       (M := M) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      𝓜(q, α) P init impl pp (Nat.le_pow_clog P.hb q) hcap
+      𝓜(q, α) P (pure s) impl pp (Nat.le_pow_clog P.hb q) hcap
       (powTwoCyclotomic_hasMulLInftyBound α) hzb
       hclog hτ hd hbZero K φF hμn hZeroγ)
 
@@ -639,8 +676,8 @@ digit base by `ofPinnedDigitBase`); and the two environment conditions `hInit`/`
 ambient state and the simulated key-generation sampling must never fail, since an adversarial
 `impl` could fail and then no scheme is correct.
 
-Depends on the admitted `Reduction.append_completeness` through the appends; the adapter, the
-terminal link, and the correctness bridge are axiom-clean. -/
+The opening completeness proof uses guarded, state-aware composition throughout, including
+the sumcheck checks that may reject invalid transcripts. -/
 theorem hachiNonrecursive_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec

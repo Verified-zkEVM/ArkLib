@@ -247,9 +247,9 @@ home_page/            site assets and assembled website root
     `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
     re-exports the folder and records why this round layer is *not* built on the generic
     `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
-    extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
-    side: every *folded* completeness statement inherits `sorryAx` from the generic
-    `Reduction.append_completeness`, which this repository admits.
+    extraction, and neither carries a soundness certificate to inherit). The folded honest
+    completeness statements use proved guarded composition and suffix completeness from every
+    shared oracle state; their axiom dependencies are standard only.
   - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
     reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
     (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
@@ -305,9 +305,9 @@ home_page/            site assets and assembled website root
     `HonestRangeParams.ofPinnedDigitBase` at `γ = b − 1`, `bZero = b`, which also meets the
     pull-back orientation and so realizes the two-sided regime), one named corollary per seam,
     and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
-    zero-check protocol, whose completeness is proved **modulo the sorried generic
-    `Reduction.append_completeness`** (so it is `sorryAx`-tainted, by
-    design and recorded in the baseline; the per-link theorems it composes are not). What the
+    zero-check protocol. Its completeness uses proved pure-verifier composition, and the
+    extension through sumcheck uses guarded composition. Each suffix is complete from every
+    shared oracle state, so both composed results have standard-only axiom dependencies. What the
     non-short honest lift quotient *used to* cost was a zero-check range base of at least
     `q/2 + 1`, and — with the pull-back orientations — the collapse `γ = q/2 = bZero − 1`. Since
     `ZeroCheck/Constraints`'s `w̃` carries the quotient's base-`bZero` **digits** (NOZ26 §4.3's
@@ -333,9 +333,9 @@ home_page/            site assets and assembled website root
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
     bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
     (`Commitments/Functional/Basic.lean`, axiom-clean, on the new
-    `OptionT.probEvent_eq_one_bind`). The three composed theorems inherit `sorryAx` from the
-    admitted generic `Reduction.append_completeness` only (recorded in the baseline); every link,
-    the adapter, the terminal step, and the bridge are individually axiom-clean. Recursion
+    `OptionT.probEvent_eq_one_bind`). The composed opening/correctness theorems use proved
+    guarded composition and have standard-only axiom dependencies, as do their individual links,
+    adapter, terminal step, and correctness bridge. The public hypotheses are unchanged. Recursion
     (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
     **`τ` is an independent parameter here.** `hachiNonrecursiveOpening` / `hachiNonrecursive` /
     their correctness theorems take the folded-witness digit count `τ` and its bound `zBound` as

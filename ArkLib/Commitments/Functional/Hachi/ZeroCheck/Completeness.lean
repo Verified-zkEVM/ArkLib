@@ -43,10 +43,9 @@ import ArkLib.ToCompPoly.Multilinear.Basic
 
   The preceding link is closed here too. `batchReduction` / `batchReduction_perfectCompleteness`
   (bottom of this file) is the batching bridge as a protocol object and its perfect completeness,
-  so the honest side reaches `relBatched` from `relLift` and the two links meet. What is *not*
-  here is the composition of the two: appending completeness needs the generic
-  `Reduction.append_completeness`, which this repository admits (the appended statements live in
-  `HonestChain.lean` and carry the resulting `sorryAx`).
+  so the honest side reaches `relBatched` from `relLift` and the two links meet. Their composition
+  lives in `HonestChain.lean`, using the proved pure-verifier append theorem and completeness of
+  each suffix from every shared oracle state.
 
   ## Why the two directions are so unequal in difficulty
 

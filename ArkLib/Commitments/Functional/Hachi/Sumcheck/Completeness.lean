@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
   # The honest side of the Hachi sumcheck (§4.3)
@@ -34,14 +35,12 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
   Everything is stated at arity `m₀ = M + 1`: a round only exists when a cube coordinate is left
   to fold, the same successor shape `Sumcheck/RoundPoly.lean` and the round soundness theorem use.
 
-  ## Axiom boundary
+  ## Composition assumptions
 
-  `roundReduction_perfectCompleteness` — the per-round result, which carries all of the Hachi
-  content — is axiom-clean. Every *folded* statement (`roundsReductionAux_perfectCompleteness`,
-  `roundsReduction_perfectCompleteness`, `sumcheckReduction_perfectCompleteness`) goes through
-  `Reduction.append_perfectCompleteness`, hence through the generic
-  `Reduction.append_completeness` of `OracleReduction/Composition/Sequential/Append.lean`, which
-  this repository admits.
+  The per-round and folded completeness results use proved composition for guarded verifiers.
+  Each right-hand stage is complete from every shared oracle state, and every appended round
+  opens with a prover message. The initial bridge has pure output. These conditions preserve
+  the intended execution order without resetting the shared state.
 
   ## References
 
@@ -324,13 +323,8 @@ with the honest prover in place of the soundness certificate. `roundsReduction_v
 that the two recursions build the *same* verifier, so the honest chain and the special-soundness
 chain are two faces of one protocol.
 
-**Axiom boundary.** `roundsReductionAux_perfectCompleteness` and everything downstream of it go
-through `Reduction.append_perfectCompleteness`, which is `convert`-ed from the generic
-`Reduction.append_completeness`, admitted in
-`OracleReduction/Composition/Sequential/Append.lean`. Those theorems therefore *depend on
-`sorryAx`*, and `#print axioms` reports it. The per-round result
-`roundReduction_perfectCompleteness` above is axiom-clean and is what actually carries the Hachi
-content; the folded statements are exactly as strong as the framework's append lemma. -/
+The folded completeness proof uses the guarded append theorem with each next round's
+completeness specialized to the shared state left by its predecessor. -/
 
 /-- The honest sumcheck loop over `count` rounds, by recursion over the binary append: the
 zero-round `ReduceClaim` identity, then one `roundReduction` per round. Mirrors `roundsChainAux`
@@ -349,6 +343,17 @@ def roundsReductionAux {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
   | count + 1, hcount =>
     (roundsReductionAux hb φF count (by omega)).append
       (roundReduction Φ m₁ b hb φF count (by omega))
+
+/-- Guarded verifier data for the honest round loop, assembled with the same recursion as
+its reduction. Each runtime round check is retained by guarded append. -/
+def roundsReductionAuxGuardedForm {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
+    (count : ℕ) → (hcount : count ≤ M + 1) →
+      (roundsReductionAux (oSpec := oSpec) (TCom := TCom) (n := n) (μ := μ)
+        Φ m₁ b hb φF count hcount).verifier.GuardedForm
+  | 0, _ => (roundsBaseVerifierPureForm Φ (M + 1) m₁).toGuardedForm
+  | count + 1, hcount =>
+    (roundsReductionAuxGuardedForm hb φF count (by omega)).append
+      (roundVerifierGuardedForm Φ (M + 1) m₁ b count)
 
 /-- The honest sumcheck loop, from the round-`0` statement (installed by the sumcheck bridge) to
 the round-`count` statement (consumed by the final-evaluation step). Instantiated at
@@ -384,8 +389,8 @@ omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 base is `ReduceClaim` at the identity map, and each step appends one
 `roundReduction_perfectCompleteness`.
 
-Depends on the admitted `Reduction.append_completeness` through the append; the per-round input
-is axiom-clean. -/
+Composition retains the guarded verifier checks and uses each next round's completeness from
+every shared oracle state. -/
 theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
@@ -407,11 +412,15 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
     exact ⟨_, ReduceClaim.reduction_run_support (mapStmt := id) (mapWit := fun _ w => w)
       stmt w x hx, hmem, rfl⟩
   | count + 1, hcount =>
-    Reduction.append_perfectCompleteness
+    Reduction.append_perfectCompleteness_of_guarded_verifiers
       (roundsReductionAux Φ m₁ b hb φF count (by omega))
       (roundReduction Φ m₁ b hb φF count (by omega))
+      (roundsReductionAuxGuardedForm Φ m₁ b hb φF count (by omega))
+      (roundVerifierGuardedForm Φ (M + 1) m₁ b count)
+      (fun _ => Or.inr rfl)
       (roundsReductionAux_perfectCompleteness init impl K hb φF count (by omega))
-      (roundReduction_perfectCompleteness Φ m₁ bound bDig b init impl K hb φF count (by omega))
+      (fun s => roundReduction_perfectCompleteness Φ m₁ bound bDig b
+        (pure s) impl K hb φF count (by omega))
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- Perfect completeness of `roundsReduction`, the exposed form of
@@ -462,6 +471,17 @@ def sumcheckReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
     ((roundsReduction Φ m₁ b (TCom := TCom) hb φF (M + 1) le_rfl).append
       (finalEvalReduction Φ (M + 1) m₁ bound b φF))
 
+/-- Guarded verifier data for the complete local sumcheck. The bridge always accepts, and
+the composed check retains every round guard and the final-evaluation guard. -/
+def sumcheckReductionGuardedForm
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
+    (hb : 0 < b) (φF : ZMod q →+* F) :
+    (sumcheckReduction (oSpec := oSpec) (TCom := K.TCom) (n := n) (μ := μ) (M := M)
+      Φ m₁ bound b hb φF).verifier.GuardedForm :=
+  (nestedSumcheckBridgeVerifierPureForm Φ (M + 1) m₁ bound bDig K φF).toGuardedForm.append
+    ((roundsReductionAuxGuardedForm Φ m₁ b hb φF (M + 1) le_rfl).append
+      (finalEvalVerifierGuardedForm Φ (M + 1) m₁ bound b φF))
+
 omit [DecidableEq F] in
 omit [NeZero q] in
 /-- **Perfect completeness of the local Hachi sumcheck**, from `relNestedZeroCheck` to
@@ -474,9 +494,9 @@ exactly the union of the links' own — `0 < b` (rounds), `0 < deg φ` and
 commitment assumptions. No hypothesis is needed for the final-evaluation step: its bound-sanity
 conjunct is *carried* by the round relation.
 
-Depends on the admitted `Reduction.append_completeness` through the appends. All three inputs
-are individually axiom-clean: `nestedSumcheckBridgeReduction_perfectCompleteness`,
-`roundReduction_perfectCompleteness`, `finalEvalReduction_perfectCompleteness`. -/
+The guarded composition theorem applies without extra mathematical hypotheses: the bridge has
+pure output, the final-evaluation protocol opens with a prover message, and the existing component
+completeness results hold from every shared oracle state. -/
 theorem sumcheckReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
@@ -486,12 +506,21 @@ theorem sumcheckReduction_perfectCompleteness
         φF).perfectCompleteness init impl
       (relNestedZeroCheck Φ (M + 1) m₁ bound bDig K φF b)
       (relWEvalClaim Φ (M + 1) bound bDig b K φF) :=
-  Reduction.append_perfectCompleteness _ _
+  Reduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (nestedSumcheckBridgeVerifierPureForm Φ (M + 1) m₁ bound bDig K φF).toGuardedForm
+    ((roundsReductionAuxGuardedForm Φ m₁ b hb φF (M + 1) le_rfl).append
+      (finalEvalVerifierGuardedForm Φ (M + 1) m₁ bound b φF))
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩)
     (nestedSumcheckBridgeReduction_perfectCompleteness Φ (M + 1) m₁ bound bDig init impl K φF b
       hb1 hd hμn)
-    (Reduction.append_perfectCompleteness _ _
-      (roundsReduction_perfectCompleteness Φ m₁ bound bDig b init impl K hb φF (M + 1) le_rfl)
-      (finalEvalReduction_perfectCompleteness Φ (M + 1) m₁ bound bDig b init impl K φF))
+    (fun s => Reduction.append_perfectCompleteness_of_guarded_verifiers _ _
+      (roundsReductionAuxGuardedForm Φ m₁ b hb φF (M + 1) le_rfl)
+      (finalEvalVerifierGuardedForm Φ (M + 1) m₁ bound b φF)
+      (fun _ => Or.inr rfl)
+      (roundsReduction_perfectCompleteness Φ m₁ bound bDig b
+        (pure s) impl K hb φF (M + 1) le_rfl)
+      (fun t => finalEvalReduction_perfectCompleteness Φ (M + 1) m₁ bound bDig b
+        (pure t) impl K φF))
 
 end Rounds
 

@@ -82,6 +82,20 @@ need caller migration and retirement. New restricted theorems do not repair thos
 remove existing callers' dependencies automatically. Ordinary and knowledge soundness require
 separate proofs; execution factorization supplies neither claim.
 
+## Hachi caller migration
+
+The nonrecursive Hachi chain uses the proved composition interfaces: pure verifier forms for the
+prefix, guarded forms for sumcheck, and state-uniform completeness for each suffix. Nine composed
+completeness/correctness declarations, through `hachiNonrecursiveConcrete_perfectCorrectness`,
+have standard-only axiom dependencies. The permanent Hachi test also checks the seven added
+verifier/output certificates and the two supported-profile relation-coupling theorems.
+
+The public theorem hypotheses and protocol definitions are preserved, including `hInit`/`hKeygen`,
+`relPolyEvalMsgShort`, the commitment-input adapter, independent folded-witness width `τ`, and the
+bounded decomposition. Recursive opening and general security composition remain separate work.
+The default runtime gate covers the supported `τ = 1 < δ = 2` profile and decomposition checks;
+it does not execute the expensive complete opening run.
+
 ## Validation
 
 Run `./scripts/validate.sh --axioms`. The normal `lake test` gate includes the composition tests:
