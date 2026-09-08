@@ -9,7 +9,7 @@ import
 import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveTransfer
 import
-  ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.PolynomialCurve.SharpRegularEquation
+  ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.PolynomialCurve.DerivativeImage
 import
   ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.PolynomialCurve.SharpGeneralEquation
 import
@@ -69,7 +69,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
     {F E : Type u} [Field F] [Field E] [DecidableEq E] [IsAlgClosed E]
     {D A m M mu k h n K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
@@ -177,23 +177,50 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
       have hweightExtended :
           jetWeight (extendSymbolicCoefficients iota pres.equation) ≤ jetWeight stageQ :=
         (jetWeight_extendSymbolicCoefficients_le iota pres.equation).trans_eq hpresWeight
+      have hstageDerivativePos : 0 < jetDegree stageQ 1 := by
+        have hhighest := (chain.stage_contract (stageQ, 1) hstage).2.1
+        exact (isHighestActiveJet_of_highestActiveJet_eq_some hhighest).1
+      have hstageDerivativeWeight : jetDegree stageQ 1 ≤ jetWeight stageQ :=
+        jetDegree_le_jetWeight stageQ 1
+      have hderivExtended :
+          (extendSymbolicCoefficients iota pres.equation).degreeOf (some 1) ≤
+            jetDegree stageQ 1 := by
+        have hmap :
+            (extendSymbolicCoefficients iota pres.equation).degreeOf
+                (some (Fin.last (1 : Fin 2).val)) ≤
+              pres.equation.degreeOf (some (Fin.last (1 : Fin 2).val)) := by
+          apply MvPolynomial.degreeOf_le_iff.mpr
+          intro mon hmon
+          exact MvPolynomial.monomial_le_degreeOf _
+            (MvPolynomial.support_map_subset (Polynomial.mapRingHom iota)
+              pres.equation hmon)
+        have ht := hmap.trans_eq pres.top_jetDegree
+        have hone : (Fin.last (1 : Fin 2).val : Fin 2) = 1 := by decide
+        rw [hone] at ht
+        exact ht
       have hbinExtended : ∀ i, 1 < i → i < K → (i.choose 1 : E) ≠ 0 := by
         intro i hi hiK hzero
         apply hbin 1 (by omega) i hi hiK
         apply iota.injective
         simpa only [map_natCast, map_zero] using hzero
       obtain ⟨exceptional, hcard, hgoodStage⟩ :=
-        exists_exceptional_regularSymbolicCurveMCA_hybrid_two_of_exponent domain values iota
+        exists_exceptional_regularSymbolicCurveMCA_derivativeCapped_of_exponent
+          domain values iota
           (extendSymbolicCoefficients iota pres.equation) K k L A
-          (jetWeight stageQ) h τ hτ1 hτpos hK hkK hk hkL hLA hAn hcurve
-          hstageWeightPos hweightExtended
+          (jetWeight stageQ) (jetDegree stageQ 1) h τ hτ1 hτpos hK hkK hk hkL hLA
+          hAn hcurve hstageWeightPos hstageDerivativePos hstageDerivativeWeight hweightExtended
           (challengeHeightLE_extendSymbolicCoefficients iota pres.equation hpresHeight)
+          hderivExtended
           hbinExtended
       refine ⟨exceptional, ?_, ?_⟩
       · apply hcard.trans_eq
         simp [firstOrderCurveStageCharge, firstOrderStageCharge, curveStageOne,
-          regularSymbolicCurveMCASharpBoundTwo, sourceCurveInitialMixedDegreeTwo,
+          regularSymbolicCurveMCADerivativeBoundTwo,
           sourceCurveCutChallengeDegree, sourceCurveCutJetDegree,
+          sourceCurveCutDerivativeDegree, firstOrderTaylorTotalCap,
+          firstOrderTaylorDerivativeCap, firstOrderCurveJointStageOne,
+          firstOrderCurveFiberStageOne, AffineHilbert.mixedDerivativeImageDegree,
+          AffineHilbert.fixedFiberDerivativeImageDegree,
           firstOrderCurveJointRatio, firstOrderCurveFiberRatio,
           firstOrderCurveDirectRatio]
         ring
@@ -221,7 +248,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
             hzero
   obtain ⟨exceptional, hcard, hgood⟩ :=
     cert.exists_exceptional_of_regular_stage_bounds_of_exponent
-      chain iota K L ell τ hk hkL hLA hAn
+      chain iota K L ell τ (by omega) hk hkL hLA hAn
       (fun z P ↦ HasExactPowerAgreement domain values iota k z P) hregular
   refine ⟨exceptional, hcard, ?_⟩
   intro z hz P hdegree hagree
@@ -239,7 +266,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
     {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
     {D A m M mu k h n K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
@@ -269,7 +296,7 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_tight
     {F E : Type u} [Field F] [Field E] [DecidableEq E] [IsAlgClosed E]
     {D A m M mu k h n K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
@@ -293,7 +320,7 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight
     {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
     {D A m M mu k h n K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
       firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
     (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)

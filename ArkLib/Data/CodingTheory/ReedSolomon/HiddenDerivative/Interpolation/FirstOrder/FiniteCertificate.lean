@@ -70,7 +70,7 @@ variable {F : Type*} [Field F]
 first-order symbolic certificate. All matrix and rank facts are discharged internally. -/
 theorem exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
     {D A m M μ k h n : ℕ}
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (centers : Fin n ↪ F) (f g : Fin n → F)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h) :

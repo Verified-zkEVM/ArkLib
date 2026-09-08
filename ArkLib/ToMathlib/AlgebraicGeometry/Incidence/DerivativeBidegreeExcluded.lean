@@ -7,6 +7,15 @@ Authors: Quang Dao
 import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegreePoints
 import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
 
+/-!
+# Joint incidence with a separate derivative-degree bound
+
+The monomial presentation makes agreement and high-coefficient cuts linear. Its degree
+retains both total jet degree and degree in the derivative variable. The strict truncated
+triangle and full-triangle boundary are treated separately, then exposed through one theorem.
+The coefficient-space dimensions are checked on the original source components.
+-/
+
 noncomputable section
 
 open MvPolynomial

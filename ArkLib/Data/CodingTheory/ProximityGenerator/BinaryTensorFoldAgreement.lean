@@ -288,10 +288,9 @@ private theorem tensorFoldBound_succ (q exceptionalCount h : ℕ) :
 noncomputable def tensorFoldBad [Fintype F] [DecidableEq A]
     {C : ModuleCode ι F A} {agreement exceptionalCount h : ℕ}
     (hline : FullSetLineWitness C agreement exceptionalCount)
-    (u : (Fin h → Bool) → ι → A) : Finset (Fin h → F) :=
-  by
-    classical
-    exact Finset.univ.filter fun r ↦ ¬ TensorFoldGood hline r u
+    (u : (Fin h → Bool) → ι → A) : Finset (Fin h → F) := by
+  classical
+  exact Finset.univ.filter fun r ↦ ¬ TensorFoldGood hline r u
 
 set_option maxHeartbeats 800000 in
 -- The finite-cardinality recurrence normalizes nested filters and natural powers.

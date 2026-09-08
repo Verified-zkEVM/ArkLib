@@ -41,7 +41,8 @@ theorem mul_mem_restrictTwoJet {b c b' c' : ℕ} {P Q : MvPolynomial (Fin 2) F}
   intro m hm
   obtain ⟨u, hu, v, hv, rfl⟩ := Finset.mem_add.mp (support_mul P Q hm)
   constructor
-  · simpa [Finsupp.degree_eq_sum, Fin.sum_univ_two, Nat.add_assoc, Nat.add_left_comm, Nat.add_comm] using Nat.add_le_add (hP u hu).1 (hQ v hv).1
+  · simpa [Finsupp.degree_eq_sum, Fin.sum_univ_two, Nat.add_assoc, Nat.add_left_comm,
+      Nat.add_comm] using Nat.add_le_add (hP u hu).1 (hQ v hv).1
   · exact Nat.add_le_add (hP u hu).2 (hQ v hv).2
 
 instance (b c : ℕ) : Module.Finite F (restrictTwoJet (F := F) b c) := by
@@ -247,7 +248,8 @@ theorem twoJetMap_totalDegree_le (b c : ℕ)
     (P : MvPolynomial (CappedTwoJetIndex b c) F) :
     (twoJetMap b c P).totalDegree ≤ b * P.totalDegree := by
   rw [← weightedTotalDegree_one]
-  exact twoJetMap_weightedTotalDegree_le b c 1 b (fun m ↦ by simpa [Finsupp.degree_eq_weight_one, Pi.one_def] using m.property.1) P
+  exact twoJetMap_weightedTotalDegree_le b c 1 b
+    (fun m ↦ by simpa [Finsupp.degree_eq_weight_one, Pi.one_def] using m.property.1) P
 
 theorem twoJetMap_derivativeDegree_le (b c : ℕ)
     (P : MvPolynomial (CappedTwoJetIndex b c) F) :
@@ -417,8 +419,8 @@ theorem twoJetDifference_natDegree_le (b c j r : ℚ) :
   simp [twoJetDifference]
 
 theorem eval_twoJetDifference_natCast (b c j r N : ℕ)
-    (hcb : c ≤ b) (hj : j ≤ b*N) (hr : r ≤ c*N)
-    (hshift : c*N-r ≤ b*N-j) :
+    (hcb : c ≤ b) (hj : j ≤ b * N) (hr : r ≤ c * N)
+    (hshift : c * N - r ≤ b * N - j) :
     (twoJetDifference b c j r).eval (N : ℚ) =
       ((twoJetMonomialCount (b*N) (c*N) -
         twoJetMonomialCount (b*N-j) (c*N-r) : ℕ) : ℚ) := by

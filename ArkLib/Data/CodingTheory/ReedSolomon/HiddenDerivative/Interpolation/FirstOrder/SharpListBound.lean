@@ -116,7 +116,7 @@ theorem firstOrder_finite_agreement_solutions_card_le_tight
     (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
-    (S.card : ℚ) ≤ firstOrderTightListWeight n A k (2 * K - 3) μ M := by
+    (S.card : ℚ) ≤ firstOrderTightListWeight n A k K (2 * K - 3) μ M := by
   classical
   let φ := Polynomial.eval₂RingHom (RingHom.id F) 0
   let Q : DifferentialPolynomial F 1 := MvPolynomial.map φ cert.Q
@@ -150,7 +150,7 @@ open Classical in
 cap-sensitive finite-list bound. -/
 theorem finite_firstOrder_list_bound_of_heightSlotCount_sharp
     {D A m M μ k h n K : ℕ}
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
@@ -176,7 +176,7 @@ open Classical in
 dimension-sensitive first-order list bound with no supplied rank or list-size premise. -/
 theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
     {D A m M μ k h n K : ℕ}
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n 1 h <
       firstOrderCurveShiftedHeightSlotCount D A m M μ 1 h)
@@ -185,7 +185,7 @@ theorem finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
     (hchar : ringChar F = 0 ∨ max n μ < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received k A P) :
-    (S.card : ℚ) ≤ firstOrderTightListWeight n A k (2 * K - 3) μ M := by
+    (S.card : ℚ) ≤ firstOrderTightListWeight n A k K (2 * K - 3) μ M := by
   have hcert : Nonempty (FirstOrderSymbolicCertificate.{u, u} (F := F)
       D A m M μ k h domain received (fun _ ↦ 0)
         (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) :=

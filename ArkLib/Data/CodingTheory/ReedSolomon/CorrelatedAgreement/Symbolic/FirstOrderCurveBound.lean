@@ -7,7 +7,10 @@ Authors: Quang Dao
 import Mathlib.Data.Rat.Cast.Order
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Tactic.GCongr
-import Mathlib.Tactic
+import Mathlib.Tactic.Linarith
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Positivity
+import Mathlib.Tactic.Ring
 import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
 
 /-!

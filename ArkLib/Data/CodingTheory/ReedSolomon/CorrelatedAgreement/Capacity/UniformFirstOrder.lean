@@ -63,23 +63,8 @@ private theorem uniformFirstOrder_jointZero_two_mul (n : ℕ) :
   norm_num [firstOrderCurveJointZero, Finset.sum_range_succ]
   ring
 
-set_option maxHeartbeats 4000000 in
--- Expanding the four active quadratic terms needs more than the default heartbeat budget.
-private theorem uniformFirstOrder_jointOne_two_mul (n : ℕ) :
-    firstOrderCurveJointOne n 22 4 1 851 (2 * n) =
-      16114536 * n ^ 2 + 551056 * n + 3568 := by
-  norm_num [firstOrderCurveJointOne, Finset.sum_range_succ]
-  ring
-
 private theorem uniformFirstOrder_fiberZero_eq :
     firstOrderCurveFiberZero 22 4 = 171 := by decide
-
-set_option maxHeartbeats 4000000 in
--- Expanding the four active fiber terms needs more than the default heartbeat budget.
-private theorem uniformFirstOrder_fiberOne_two_mul (n : ℕ) :
-    firstOrderCurveFiberOne n 22 4 (2 * n) = 3208 * n + 82 := by
-  norm_num [firstOrderCurveFiberOne, Finset.sum_range_succ]
-  ring
 
 private theorem uniformFirstOrder_jointZero_mono {k n τ : ℕ} (hτ : τ ≤ 2 * n) :
     firstOrderCurveJointZero k 22 4 1 851 τ ≤
@@ -89,24 +74,65 @@ private theorem uniformFirstOrder_jointZero_mono {k n τ : ℕ} (hτ : τ ≤ 2 
   intro t ht
   gcongr
 
-private theorem uniformFirstOrder_jointOne_mono {k n τ : ℕ} (hτ : τ ≤ 2 * n) :
-    firstOrderCurveJointOne k 22 4 1 851 τ ≤
-      firstOrderCurveJointOne n 22 4 1 851 (2 * n) := by
-  unfold firstOrderCurveJointOne
-  apply Finset.sum_le_sum
-  intro t ht
-  split
-  · gcongr
-  · exact le_rfl
+/-- Forgetting the derivative restriction is enough for this uniform corollary. -/
+private theorem uniformFirstOrder_jointStage_le {k n j r τ : ℕ}
+    (hrj : r ≤ j) (hτ : τ ≤ 2 * n) :
+    firstOrderCurveJointStageOne k 1 851 j r τ ≤
+      851 * (1 + 2 * n * (j - 1)) ^ 2 +
+        2 * (1 + 2 * n * 851) * (j * (1 + 2 * n * (j - 1))) := by
+  let b := firstOrderTaylorTotalCap j τ
+  let c := firstOrderTaylorDerivativeCap k j r τ
+  have harea : 2 * b * c - c ^ 2 ≤ b ^ 2 := by
+    apply Nat.sub_le_iff_le_add.mpr
+    nlinarith [sq_nonneg ((b : ℤ) - c)]
+  have hB := firstOrderCurveFiberStageOne_le_full (K := k) (τ := τ) hrj
+  change 851 * (2 * b * c - c ^ 2) +
+    2 * (1 + τ * 851) * firstOrderCurveFiberStageOne k j r τ ≤ _
+  calc
+    _ ≤ 851 * b ^ 2 + 2 * (1 + τ * 851) * (j * b) := by gcongr
+    _ ≤ _ := by dsimp [b, firstOrderTaylorTotalCap]; gcongr
 
-private theorem uniformFirstOrder_fiberOne_mono {k n τ : ℕ} (hτ : τ ≤ 2 * n) :
-    firstOrderCurveFiberOne k 22 4 τ ≤ firstOrderCurveFiberOne n 22 4 (2 * n) := by
-  unfold firstOrderCurveFiberOne
-  apply Finset.sum_le_sum
-  intro t ht
-  split
-  · gcongr
-  · exact le_rfl
+set_option maxHeartbeats 4000000 in
+-- The four full-triangle upper bounds expand to a closed quadratic polynomial.
+private theorem uniformFirstOrder_jointOne_le_two_mul {k n τ : ℕ} (hτ : τ ≤ 2 * n) :
+    firstOrderCurveJointOne k 22 4 1 851 τ ≤
+      16114536 * n ^ 2 + 551056 * n + 3568 := by
+  have hsum : firstOrderCurveJointOne k 22 4 1 851 τ ≤
+      ∑ t ∈ Finset.range 22, if 18 ≤ t then
+        851 * (1 + 2 * n * t) ^ 2 +
+          2 * (1 + 2 * n * 851) * ((t + 1) * (1 + 2 * n * t)) else 0 := by
+    unfold firstOrderCurveJointOne
+    apply Finset.sum_le_sum
+    intro t ht
+    norm_num only [Nat.min_eq_left (by decide : 4 ≤ 22), Nat.reduceSub]
+    split
+    · simpa using uniformFirstOrder_jointStage_le
+        (k := k) (j := t + 1) (r := t + 1 - 18) (Nat.sub_le _ _) hτ
+    · exact le_rfl
+  convert hsum using 1
+  norm_num [Finset.sum_range_succ]
+  ring
+
+set_option maxHeartbeats 4000000 in
+-- The four full-triangle fiber upper bounds expand to a closed linear polynomial.
+private theorem uniformFirstOrder_fiberOne_le_two_mul {k n τ : ℕ} (hτ : τ ≤ 2 * n) :
+    firstOrderCurveFiberOne k 22 4 τ ≤ 3208 * n + 82 := by
+  have hsum : firstOrderCurveFiberOne k 22 4 τ ≤
+      ∑ t ∈ Finset.range 22, if 18 ≤ t then
+        (t + 1) * (1 + 2 * n * t) else 0 := by
+    unfold firstOrderCurveFiberOne
+    apply Finset.sum_le_sum
+    intro t ht
+    norm_num only [Nat.min_eq_left (by decide : 4 ≤ 22), Nat.reduceSub]
+    split
+    · exact (firstOrderCurveFiberStageOne_le_full (Nat.sub_le _ _)).trans (by
+        unfold firstOrderTaylorTotalCap
+        simp only [Nat.add_sub_cancel]
+        gcongr)
+    · exact le_rfl
+  convert hsum using 1
+  norm_num [Finset.sum_range_succ]
+  ring
 
 private theorem uniformFirstOrder_directRatio_le
     (n k A : ℕ) (hk : 0 < k) (hAn : A ≤ n)
@@ -179,11 +205,8 @@ private theorem uniformFirstOrder_curveBound_le (n k A : ℕ)
         (16390956 : ℚ) * n ^ 2 := by
     calc
       (firstOrderCurveJointOne k 22 4 1 851 (2 * k - 3) : ℚ) ≤
-          firstOrderCurveJointOne n 22 4 1 851 (2 * n) := by
-            exact_mod_cast uniformFirstOrder_jointOne_mono hτ
-      _ = 16114536 * n ^ 2 + 551056 * n + 3568 := by
-        rw [uniformFirstOrder_jointOne_two_mul]
-        norm_num only [Nat.cast_add, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat]
+          16114536 * n ^ 2 + 551056 * n + 3568 := by
+            exact_mod_cast uniformFirstOrder_jointOne_le_two_mul (k := k) hτ
       _ ≤ (16390956 : ℚ) * n ^ 2 := by
         have hnQ : (2 : ℚ) ≤ n := by exact_mod_cast hn
         nlinarith [sq_nonneg ((n : ℚ) - 2)]
@@ -193,11 +216,8 @@ private theorem uniformFirstOrder_curveBound_le (n k A : ℕ)
       (firstOrderCurveFiberOne k 22 4 (2 * k - 3) : ℚ) ≤ 3249 * n := by
     calc
       (firstOrderCurveFiberOne k 22 4 (2 * k - 3) : ℚ) ≤
-          firstOrderCurveFiberOne n 22 4 (2 * n) := by
-            exact_mod_cast uniformFirstOrder_fiberOne_mono hτ
-      _ = 3208 * n + 82 := by
-        rw [uniformFirstOrder_fiberOne_two_mul]
-        norm_num only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat]
+          3208 * n + 82 := by
+            exact_mod_cast uniformFirstOrder_fiberOne_le_two_mul (k := k) hτ
       _ ≤ 3249 * n := by
         have hnQ : (2 : ℚ) ≤ n := by exact_mod_cast hn
         nlinarith
@@ -333,7 +353,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
     exact (mem_closePolynomialSet_iff_isAgreementSolution domain received P).mp
       (hfin.mem_toFinset.mp hP)
   have hcard := finite_firstOrder_list_bound_of_heightSlotCount_sharp
-    (F := F) hD hbudget hkD domain received hheight (by omega) (le_refl k)
+    (F := F) (by omega) hbudget hkD domain received hheight (by omega) (le_refl k)
       (hkA.trans hAn) (by omega) hkA hAn hchar list hsolutions
   refine ⟨list, hlist, ?_⟩
   exact_mod_cast hcard.trans (uniformFirstOrder_listRatio_le n k A hn hk hAn hgap)
@@ -372,7 +392,7 @@ private theorem exists_uniformFirstOrder_lineMCA_of_two_le
     exists_baseExceptional_firstOrderCurve_of_heightSlotCount_tight
       (D := D) (A := A) (m := 12) (M := 4) (mu := 22) (k := k) (h := 851)
       (n := n) (K := k) (L := L) (ell := 1)
-      domain values iota hD hbudget hkD hheight (by omega) (le_refl k) hkpos
+      domain values iota (by omega) hbudget hkD hheight (by omega) (le_refl k) hkpos
         hmid.1 hmid.2.1 hAn (by norm_num) hchar'
   refine ⟨exceptional, ?_, ?_⟩
   · have hcardR : (exceptional.card : ℝ) ≤

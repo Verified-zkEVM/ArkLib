@@ -7,7 +7,7 @@ import ArkLibExamples.ReedSolomon.ZisK.Interpolation
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.NestedPowerAgreement
 
 /-!
-# The compressed final STARK: 53 queries with the existing grinding hook
+# The compressed final STARK: 52 queries with the existing grinding hook
 
 The batching, individual folds, and query checks each meet a 128-bit bound.
 These separate phase bounds do not assert a 128-bit bound on their union.
@@ -24,7 +24,7 @@ open ConcreteFields
 noncomputable section
 
 /-- Sum of the four positive inner bounds and the outer bound. -/
-def batchingCount : ℕ := 5788837775855764804
+def batchingCount : ℕ := 2906967379857620493
 
 /-- The singleton contributes zero to the sum of batching exceptions. -/
 theorem batchingCount_eq :
@@ -44,22 +44,22 @@ theorem exists_nested_exceptional
     ∃ exceptional : Finset (GoldilocksCubic × GoldilocksCubic),
       exceptional.card ≤ fieldSize * batchingCount ∧
       ∀ u v, (u, v) ∉ exceptional → ∀ P : GoldilocksCubic[X], P.degree < 32768 →
-        131069 ≤ (polynomialAgreementSet domain
+        127623 ≤ (polynomialAgreementSet domain
           (powerBatchedWord (fun g ↦ powerBatchedWord (values g) u) v) P).card →
         HasExactNestedPowerAgreement domain innerDegree values 32768 u v P := by
   have hi (g : Fin 5) :
-      UniformExactPowerAgreement domain (values g) 32768 131069 (innerCounts g) := by
+      UniformExactPowerAgreement domain (values g) 32768 127623 (innerCounts g) := by
     fin_cases g
-    · exact uniformExactPowerAgreement_singleton domain (values 0) 32768 131069
+    · exact uniformExactPowerAgreement_singleton domain (values 0) 32768 127623
     · exact exists_exceptional 3 domain (values 1)
     · exact exists_exceptional 2 domain (values 2)
     · exact exists_exceptional 1 domain (values 3)
     · exact exists_exceptional 0 domain (values 4)
   have ho (u : GoldilocksCubic) : UniformExactPowerAgreement domain
-      (fun g ↦ powerBatchedWord (values g) u) 32768 131069 (exceptionalCounts 4) :=
+      (fun g ↦ powerBatchedWord (values g) u) 32768 127623 (exceptionalCounts 4) :=
     exists_exceptional 4 domain (fun g ↦ powerBatchedWord (values g) u)
   obtain ⟨bad, hcard, hgood⟩ := nestedPowerAgreement domain innerDegree values
-    32768 131069 innerCounts (exceptionalCounts 4) hi ho
+    32768 127623 innerCounts (exceptionalCounts 4) hi ho
   refine ⟨bad, ?_, hgood⟩
   rw [fieldSize_eq] at hcard
   have hs : (∑ g, innerCounts g) + exceptionalCounts 4 = batchingCount := by
@@ -108,26 +108,32 @@ theorem exists_fold_at_target (i : Fin 3)
   apply div_le_div_of_nonneg_right _ (by positivity)
   exact_mod_cast hcard
 
-/-- The exact finite agreement threshold permits 53 queries at the existing 22-bit hook. -/
+/-- The exact finite agreement threshold permits 52 queries at the existing 22-bit hook. -/
 theorem queries_at_target :
-    (131069 / 524288 : ℚ) ^ 53 / 2 ^ 22 ≤ 1 / 2 ^ 128 := by decide +kernel
+    (127623 / 524288 : ℚ) ^ 52 / 2 ^ 22 ≤ 1 / 2 ^ 128 := by decide +kernel
 
-/-- At rate `1/16`, every positive-gap implemented Johnson threshold exceeds `1/4`;
-53 queries then fail the target at the same 22-bit hook. This concerns that formula,
-not all possible Johnson analyses. -/
-theorem johnson_queries_fail (a : ℚ) (ha : 1 / 4 < a) :
-    1 / 2 ^ 128 < a ^ 53 / 2 ^ 22 := by
-  have hp : (1 / 4 : ℚ) ^ 53 < a ^ 53 :=
-    pow_lt_pow_left₀ ha (by norm_num) (by decide)
-  have heq : (1 / 4 : ℚ) ^ 53 / 2 ^ 22 = 1 / 2 ^ 128 := by norm_num
-  rw [← heq]
-  exact div_lt_div_of_pos_right hp (by positivity)
+/-- The exact squared finite-Johnson comparison underlying the query-only floor. -/
+theorem johnson_squared_queries_fail :
+    (1 / 2 ^ 256 : ℚ) < (32767 / 524288 : ℚ) ^ 52 / 2 ^ 44 := by
+  decide +kernel
 
-/-- With all fixed payload retained, removing one response saves exactly 3920 bytes. -/
+/-- Even at the finite Johnson boundary `sqrt ((k - 1) / n)`, 52 queries fail the target
+at the same 22-bit hook. Thus the new profile is below the Johnson query-only floor. -/
+theorem johnson_queries_fail (a : ℚ) (ha : 0 ≤ a)
+    (hj : (32767 / 524288 : ℚ) ≤ a ^ 2) :
+    1 / 2 ^ 128 < a ^ 52 / 2 ^ 22 := by
+  have hlo : (249 / 1000 : ℚ) < a := by nlinarith
+  have hp : (249 / 1000 : ℚ) ^ 52 < a ^ 52 :=
+    pow_lt_pow_left₀ hlo (by norm_num) (by decide)
+  exact lt_trans (by decide +kernel :
+    (1 / 2 ^ 128 : ℚ) < (249 / 1000 : ℚ) ^ 52 / 2 ^ 22)
+    (div_lt_div_of_pos_right hp (by norm_num))
+
+/-- With all fixed payload retained, removing two responses saves exactly 7840 bytes. -/
 theorem proof_size :
     54 * 3920 + 42352 = (254032 : ℕ) ∧
-    53 * 3920 + 42352 = (250112 : ℕ) ∧
-    254032 - 250112 = (3920 : ℕ) := by decide
+    52 * 3920 + 42352 = (246192 : ℕ) ∧
+    254032 - 246192 = (7840 : ℕ) := by decide
 
 end
 end ArkLibExamples.ReedSolomon.ZisK

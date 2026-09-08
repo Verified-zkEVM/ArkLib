@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLibExamples.ReedSolomon.Fields
-import Mathlib.Tactic
+import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.NormNum
 
 /-!
 # Frozen ProveKit code-round parameters

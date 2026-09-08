@@ -36,16 +36,16 @@ def localError (exceptional list queries : ℕ) (collision : ℚ) : ℚ :=
 
 /-- All five terms together, including early binding, fit the CPU's 128-bit local target. -/
 theorem budget_at_target :
-    localError totalExceptionalCount listBound 212 (anchorError listBound) <
+    localError totalExceptionalCount listBound 210 (anchorError listBound) <
       (1 / 2 ^ 128 : ℚ) := by
   unfold localError anchorError
   rw [Nat.choose_two_right]
   decide +kernel
 
-/-- With these fixed finite certificates, removing an eighth query would exceed the target. -/
-theorem budget_211_fails :
+/-- With these fixed finite certificates, removing one more query would exceed the target. -/
+theorem budget_209_fails :
     (1 / 2 ^ 128 : ℚ) <
-      localError totalExceptionalCount listBound 211 (anchorError listBound) := by
+      localError totalExceptionalCount listBound 209 (anchorError listBound) := by
   unfold localError anchorError
   rw [Nat.choose_two_right]
   decide +kernel
@@ -54,7 +54,7 @@ theorem budget_211_fails :
 theorem local_error_of_bounds {exceptional list : ℕ} {collision : ℚ}
     (hE : exceptional ≤ totalExceptionalCount) (hL : list ≤ listBound)
     (hcollision : collision ≤ anchorError listBound) :
-    localError exceptional list 212 collision < (1 / 2 ^ 128 : ℚ) := by
+    localError exceptional list 210 collision < (1 / 2 ^ 128 : ℚ) := by
   apply lt_of_le_of_lt _ budget_at_target
   unfold localError
   gcongr

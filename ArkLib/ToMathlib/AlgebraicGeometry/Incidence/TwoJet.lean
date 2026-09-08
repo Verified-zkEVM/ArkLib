@@ -23,7 +23,7 @@ variable {F : Type*} [Field F] [IsAlgClosed F]
 caps obeys the sharp one-dimensional incidence bound.  All cuts are linear after passage to
 the capped two-jet presentation; component recognition is stated back in source coordinates. -/
 theorem twoJetHypersurface_source_incidence_sharp
-    {b c j r n A k : ℕ} (hb : 0 < b) (hc : 0 < c) (hcb : c ≤ b) (hrj : r ≤ j)
+    {b c j r n A k : ℕ} (hb : 0 < b) (hc : 0 < c) (hcb : c ≤ b)
     (hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
     (g s : MvPolynomial (Fin 2) F) (hg0 : g ≠ 0)
     (hproper : Ideal.span ({g} : Set (MvPolynomial (Fin 2) F)) ≠ ⊤)
@@ -139,7 +139,7 @@ theorem twoJetHypersurface_source_incidence_sharp
       rw [twoJetHypersurfaceIdeal_eq_sup b c g hgbc hb hc]
       exact le_sup_left
     let Q : Ideal (MvPolynomial (Fin 2) F) := P.map (twoJetMap b c).toRingHom
-    letI : P.IsPrime := hprimeOpen.1
+    let _ : P.IsPrime := hprimeOpen.1
     have hQprime : Q.IsPrime := Ideal.map_isPrime_of_surjective
       (f := (twoJetMap b c).toRingHom) (twoJetMap_surjective b c hb hc) hbaseP
     have hcomap : Q.comap (twoJetMap b c).toRingHom = P := by

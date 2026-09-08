@@ -110,7 +110,8 @@ theorem flattenChallenge_degreeOf_le {F σ : Type*} [Field F]
       intro j _
       exact (degreeOf_pow_le _ _ _).trans (by simp [degreeOf_X])
     _ = m i := by
-      simp
+      simp only [mul_ite, mul_one, mul_zero, Finset.sum_ite_eq, Finsupp.mem_support_iff,
+        ne_eq, ite_not, ite_eq_right_iff]
       exact Eq.symm
     _ ≤ P.degreeOf i := monomial_le_degreeOf i hm
 

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLibExamples.ReedSolomon.LambdaVM.Parameters
-import ArkLibExamples.ReedSolomon.CurveCertificate
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -31,7 +31,7 @@ open ReedSolomon ReedSolomon.ListDecoding ReedSolomon.HiddenDerivative
 
 namespace ArkLibExamples.ReedSolomon.LambdaVM.CPU
 
-open ConcreteFields CurveProfile
+open ConcreteFields _root_.ReedSolomon.CurveProfile
 
 noncomputable section
 
@@ -45,7 +45,7 @@ theorem splits_admissible (i : Fin 9) :
 
 /-- The sharp rational geometric expressions lie below the generated integer ceilings. -/
 theorem envelopes_le (i : Fin 9) :
-    CurveCertificate.envelope (profiles i) (splits i) ≤ exceptionalCounts i := by
+    _root_.ReedSolomon.CurveCertificate.envelope (profiles i) (splits i) ≤ exceptionalCounts i := by
   fin_cases i <;> decide +kernel
 
 /-- Goldilocks characteristic exceeds each curve's candidate degree and jet cap. -/
@@ -68,7 +68,8 @@ theorem exists_exceptional (i : Fin 9)
         HasExactPowerAgreement domain values (RingHom.id GoldilocksCubic)
           (profiles i).k z P := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
-    CurveCertificate.exists_exceptional_exact_powerAgreement (profiles_verified i)
+    _root_.ReedSolomon.CurveCertificate.exists_exceptional_exact_powerAgreement
+      (profiles_verified i)
       (splits i) (exceptionalCounts i) (splits_admissible i)
       (by fin_cases i <;> decide) (envelopes_le i) domain values
       (algebraMap GoldilocksCubic (AlgebraicClosure GoldilocksCubic))
@@ -146,10 +147,12 @@ theorem listProfile_admissible :
 
 /-- The sharp scalar list expression is at most the generated list ceiling. -/
 theorem list_envelope_le :
-    firstOrderTightListWeight listProfile.n listProfile.agreement listProfile.k
+    firstOrderTightListWeight listProfile.n listProfile.agreement listProfile.k listProfile.k
       (2 * listProfile.k - 3) listProfile.totalJetCap listProfile.firstDerivativeCap ≤
         listBound := by
-  norm_num [listProfile, listBound, firstOrderTightListWeight]
+  norm_num [listProfile, listBound, firstOrderTightListWeight,
+    firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
+    firstOrderTaylorDerivativeCap, AffineHilbert.fixedFiberDerivativeImageDegree]
 
 /-- Every finite scalar list satisfying the CPU agreement predicate has the stated size bound.
 
@@ -164,12 +167,12 @@ theorem finite_list_bound {F : Type*} [Field F]
     (S.card : ℚ) ≤ listBound := by
   obtain ⟨hk, hkn, hka, han⟩ := listProfile_admissible
   have hb := finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
-    listProfile_verified.D_gt_one listProfile_verified.budget_pos
+    listProfile_verified.D_pos listProfile_verified.budget_pos
     listProfile_verified.degree_le domain received listProfile_verified.heightSurplus
     hk le_rfl hkn (by omega) hka han hchar S hS
   exact hb.trans list_envelope_le
 
-/-- Additive capacity gap corresponding exactly to CPU agreement `45880`. -/
+/-- Additive capacity gap corresponding exactly to CPU agreement `45810`. -/
 noncomputable def gap : ℝ :=
   (((listProfile.agreement - listProfile.k : ℕ) : ℝ) / listProfile.n)
 

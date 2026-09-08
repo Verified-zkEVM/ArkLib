@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.SharpPairCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorDerivativeDegree
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorDerivativeDegree
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Symbolic.FirstOrderCurveBound
 import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.TwoJet
 
@@ -240,7 +241,7 @@ theorem finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
             center Q hvQ K τ hτ _ _).trans hchartTotal)
       · exact degreeOf_taylorAgreementEquation_firstOrder_le
           center Q r K τ hτ hr hderiv _ _
-  refine twoJetHypersurface_source_incidence_sharp hb hc hcb hrj hk hkA hAn
+  refine twoJetHypersurface_source_incidence_sharp hb hc hcb hk hkA hAn
     g s hg0 hproper hg hgbc hsbc highCuts hhigh cuts hcuts S ?_ hA ?_
   · intro x hx
     refine ⟨(hS x hx).1, (hS x hx).2.1, ?_⟩

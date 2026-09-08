@@ -4,17 +4,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLibExamples.ReedSolomon.CurveProfile
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveProfile
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrderCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Symbolic.FirstOrderCurveBound
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Numerator
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
 
 /-!
-# From a finite interpolation profile to exact powers agreement
+# From finite interpolation profiles to list and curve bounds
 
 A concrete application supplies a verified interpolation profile, a split threshold, and an
 integer upper bound for the explicit geometric expression. This module turns those finite
-checks into an actual exceptional set. It contains no system-specific parameter tables.
+checks into an actual exceptional set. For a line profile, `finiteListBound_of_profile`
+also bounds every finite set of close polynomials using the same interpolation data.
+It contains no system-specific parameter tables.
 
 Read `exists_exceptional_exact_powerAgreement` from left to right: the domain and received
 words are arbitrary; the interpolation and characteristic conditions are checked inputs. The
@@ -26,7 +30,7 @@ the original field.
 
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
 
-namespace ArkLibExamples.ReedSolomon.CurveCertificate
+namespace ReedSolomon.CurveCertificate
 
 open CurveProfile
 
@@ -93,6 +97,39 @@ theorem exists_exceptional_exact_powerAgreement
   refine ⟨exceptional, hcard.trans ?_, hgood⟩
   simpa only [envelope, taylorExponent] using hbound
 
+/-- The derivative-degree scalar-list expression attached to a finite profile. -/
+def tightListEnvelope (p : LineProfile) : ℚ :=
+  firstOrderTightListWeight p.n p.agreement p.k p.k (2 * p.k - 3)
+    p.totalJetCap p.firstDerivativeCap
+
+/-- A verified curve profile also constructs the scalar equation used by the tight finite
+list theorem, including the endpoint `D = 1`. -/
+theorem finiteListBound_of_profile
+    {p : LineProfile} (hp : p.CurveVerification)
+    (hell : p.batchingDegree = 1) (hkn : p.k ≤ p.n)
+    (hkA : p.k ≤ p.agreement) (hAn : p.agreement ≤ p.n)
+    {F : Type u} [Field F]
+    (domain : Fin p.n ↪ F) (received : Fin p.n → F)
+    (hchar : ringChar F = 0 ∨ max p.n p.totalJetCap < ringChar F)
+    (S : Finset F[X])
+    (hS : ∀ P ∈ S, IsAgreementSolution domain received p.k p.agreement P) :
+    (S.card : ℚ) ≤ tightListEnvelope p := by
+  have hD := hp.1
+  have hk : 0 < p.k := by
+    simp only [LineProfile.D] at hD
+    omega
+  have hK : 1 < p.k := by
+    simp only [LineProfile.D] at hD
+    omega
+  have hheight := hp.2.2.2.1
+  rw [hell] at hheight
+  obtain ⟨cert⟩ :=
+    exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+      hp.1 hp.2.1 hp.2.2.1 domain received (fun _ ↦ 0) hheight
+  simpa only [tightListEnvelope] using
+    firstOrder_finite_agreement_solutions_card_le_tight domain received p.columns cert
+      hK le_rfl hkn hk hkA hAn hchar S hS
+
 end
 
-end ArkLibExamples.ReedSolomon.CurveCertificate
+end ReedSolomon.CurveCertificate

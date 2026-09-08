@@ -6,7 +6,8 @@ Authors: Quang Dao
 
 import ArkLib.Data.Probability.FiniteFieldBudget
 import ArkLibExamples.ReedSolomon.ProveKit.Parameters
-import Mathlib.Tactic
+import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.NormNum
 
 /-!
 # Exact local ProveKit budgets

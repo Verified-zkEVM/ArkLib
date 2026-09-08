@@ -12,7 +12,7 @@ import ArkLibExamples.ReedSolomon.LambdaVM.Folding
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 
 /-!
-# LambdaVM's CPU table at 212 queries
+# LambdaVM's CPU table at 210 queries
 
 Fix the 38 received main columns before sampling two distinct early evaluation points.
 The complete candidate family uses degree bound `T + 3`: undoing the cubic DEEP divisor
@@ -36,7 +36,7 @@ noncomputable section
 local instance cPUDecidableEq : DecidableEq GoldilocksCubic := Classical.decEq _
 
 /-- The list theorem's threshold is exactly the selected integer agreement. -/
-theorem cpu_threshold : agreementThreshold gap 65536 (32768 + 3) ≤ 45880 := by
+theorem cpu_threshold : agreementThreshold gap 65536 (32768 + 3) ≤ 45810 := by
   simpa [listProfile] using le_of_eq threshold_eq
 
 /-- Every jointly agreeing main tuple belongs to this complete finite candidate family.
@@ -44,7 +44,7 @@ It depends on the committed words, before either early point or any lookup chall
 def mainCandidates (domain : Fin 65536 ↪ GoldilocksCubic)
     (received : Matrix (Fin 65536) (Fin 38) GoldilocksCubic) :
     Finset (Fin 38 → GoldilocksCubic[X]) :=
-  AnchoredAgreement.candidateFamily (T := 32768) (A := 45880)
+  AnchoredAgreement.candidateFamily (T := 32768) (A := 45810)
     domain received gap gap_admissible.1 (by decide) (by decide) cpu_threshold
     (widthThirtyEight_lambda_le domain)
 
@@ -86,7 +86,7 @@ theorem trace_fixed_before_lookup
         AnchoredAgreement.twoAnchorValues s₁ s₂ tuple = ⟨claimed₁, claimed₂⟩) ∧
       ∀ later : AnchoredAgreement.LaterCubicReconstruction (F := GoldilocksCubic) 38,
         AnchoredAgreement.SuccessfulCubicReconstruction domain received s₁ s₂
-            claimed₁ claimed₂ (T := 32768) (A := 45880) later →
+            claimed₁ claimed₂ (T := 32768) (A := 45810) later →
           selected.map (AnchoredAgreement.traceRemainderTuple 32768) =
             some (AnchoredAgreement.traceRemainderTuple 32768
               (AnchoredAgreement.cubicReconstructedTuple s₁ s₂ later.z
@@ -105,7 +105,7 @@ theorem exists_certified_cpu_budget
     (received : Matrix (Fin 65536) (Fin 38) GoldilocksCubic) :
     ∃ family : ExceptionalFamily domains values,
       (mainCandidates (domains 0) received).card ≤ listBound ∧
-      localError (∑ i, (family.exceptional i).card) listBound 212
+      localError (∑ i, (family.exceptional i).card) listBound 210
         (AnchoredAgreement.badAnchorRate (domains 0)
           (mainCandidates (domains 0) received)) < (1 / 2 ^ 128 : ℚ) := by
   obtain ⟨family⟩ := exists_exceptionalFamily domains values

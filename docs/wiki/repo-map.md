@@ -87,6 +87,19 @@ are grouped by mathematical role:
   `CorrelatedAgreement/Pairs` packages polynomial pairs and their exceptional sets;
   `CorrelatedAgreement/Symbolic` connects symbolic equations to agreement certificates.
   `CorrelatedAgreement/TaylorChart` contains the chart-specific incidence argument.
+- `CorrelatedAgreement/CurveProfile` and `CurveCertificate` are the reusable adapters from finite
+  interpolation parameters to exact agreement. They include degree-one polynomial codes and do
+  not contain application tables. The derivative-degree refinements live beside the Taylor
+  numerator, fixed-fiber incidence, and polynomial-curve arguments that use them.
+- Shared-level binary folding lives in `ProximityGenerator/BinaryTensorFoldAgreement` and
+  `BinaryTensorFoldProbability`; `ReedSolomon/Interleaved/TensorFoldAgreement` supplies the
+  width-independent Reed--Solomon bridge. The recursive binary view is proved equal to the
+  existing tensor generator, with equality of the complete agreement set.
+- Maintained concrete schedules live in `ArkLibExamples/ReedSolomon/ProveKit/`, `ZisK/`, and
+  `LambdaVM/`. ProveKit separates parameters, coding certificates, per-phase arithmetic,
+  application theorems, and expected raw payload. Generic finite-field budgets and the
+  strided-query authentication identity remain in `ArkLib/Data/Probability`. Measured compressed
+  proof sizes and deployed serializer correctness are not Lean theorems.
 - The reusable `ToMathlib/AlgebraicGeometry` development is organized into `Hilbert`,
   `PrincipalCut`, `PrincipalOpen`, `CutFamily`, `ZeroLocus`, and `Incidence`.
   These modules do not belong to Reed–Solomon coding theory.

@@ -15,8 +15,8 @@ They do not compose those terms into a protocol theorem.
 
 The query predicate includes an inclusive grinding threshold.  The OOD predicate is the union
 bound for an unordered pair from a list after repeated independent extension-field samples.
-The affine predicate combines an exceptional-set term with two polynomial-identity terms.  The
-last definitions give the raw byte accounting used with uniformly sampled Merkle leaves.
+The tensor predicate combines a height-dependent exceptional-set term with two polynomial-identity
+terms. The remaining definitions give raw byte accounting for uniformly sampled Merkle leaves.
 -/
 
 namespace ArkLib.FiniteFieldBudget
@@ -49,7 +49,7 @@ def TensorFoldIdentityMeetsTarget
 def LineTransferMeetsTarget (exceptionalCount fieldSize security : ℕ) : Prop :=
   exceptionalCount * 2 ^ security ≤ fieldSize
 
-/-- A fixed number of independent field-collision numerators. -/
+/-- Union bound for a fixed number of field-collision terms. Independence is not needed. -/
 def FieldCollisionMeetsTarget (count fieldSize security : ℕ) : Prop :=
   count * 2 ^ security ≤ fieldSize
 
@@ -57,17 +57,6 @@ def FieldCollisionMeetsTarget (count fieldSize security : ℕ) : Prop :=
 def TransitionMeetsTarget
     (sourceQueries targetOod targetListSize fieldSize security : ℕ) : Prop :=
   2 * (sourceQueries + targetOod) * targetListSize * 2 ^ security ≤ fieldSize
-
-/-- Affine exceptional-set loss plus two polynomial-identity tests. -/
-def AffineMcaIdentityMeetsTarget
-    (exceptionalCount listSize fieldSize security : ℕ) : Prop :=
-  (exceptionalCount : ℚ) / (fieldSize - 1) + (2 * listSize : ℚ) / fieldSize ≤
-    (1 : ℚ) / 2 ^ security
-
-/-- First-switch constraint-combination union bound. -/
-def FirstSwitchMeetsTarget
-    (targetListSize queries fieldSize security : ℕ) : Prop :=
-  2 * (1 + queries) * targetListSize * 2 ^ security ≤ fieldSize
 
 /-- An algebraic bad-set count after `grindingBits` bits of ideal uniform grinding. -/
 def GroundCountMeetsTarget

@@ -1,5 +1,16 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+
 import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
+
+/-! # Public statements for binary tensor folding
+
+These examples check the equality-weight interpretation and the full-set agreement interface.
+-/
 
 namespace TensorMCA
 
@@ -40,7 +51,8 @@ example {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (hkAgreement : k ≤ agreement)
     (u : (Fin 3 → Bool) → Fin n → Fin 8 → F) :
     (tensorFoldBad
-      (fullSetLineWitness_interleaved_of_exactAgreement domain hline (by omega) hkAgreement) u).card ≤
+      (fullSetLineWitness_interleaved_of_exactAgreement
+        domain hline (by omega) hkAgreement) u).card ≤
         7 * exceptionalCount * Fintype.card F ^ 2 :=
   interleavedRS_tensorFoldBad_card_le_heightThree domain hline (by omega) hkAgreement u
 

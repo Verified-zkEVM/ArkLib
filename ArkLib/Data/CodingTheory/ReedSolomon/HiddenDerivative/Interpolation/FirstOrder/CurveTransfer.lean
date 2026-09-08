@@ -40,7 +40,7 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
     {stages : List (Stage F[X] 1)} {terminal : DifferentialPolynomial F[X] 1}
     (hc : Chain cert.Q stages terminal) (ι : F →+* E)
     (K L ell τ : ℕ) (η : ℚ) (hη : 1 ≤ η)
-    (hk : 0 < k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hK : 2 ≤ K) (hk : 0 < k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
     (conclusion : E → E[X] → Prop)
     (hregular : ∀ stage ∈ stages, ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤
@@ -91,7 +91,7 @@ theorem exists_exceptional_of_regular_stage_bounds_of_factors
             (τ := τ) (η := η))).sum := by
         rw [List.sum_toFinset _ hnodup]
       _ ≤ _ := hc.sum_firstOrderCurveStageCharge_add_height_le_of_factors τ η hη
-        cert.jetWeight_le cert.jetDegree_one_le hk hkL hLA hAn
+        cert.jetWeight_le cert.jetDegree_one_le hK hk hkL hLA hAn
   · intro z hz indices P hdegree hagree hvalues
     have hzbase : z ∉ base := fun hm ↦ hz (Finset.mem_union_left _ hm)
     obtain ⟨stage, hs, hsol, hsep⟩ := hcover z hzbase indices P hdegree hagree hvalues
@@ -106,7 +106,8 @@ theorem exists_exceptional_of_regular_stage_bounds_of_exponent
     (cert : FirstOrderCurveCertificate.{u, u} D A m M μ k h domain w columns)
     {stages : List (Stage F[X] 1)} {terminal : DifferentialPolynomial F[X] 1}
     (hc : Chain cert.Q stages terminal) (ι : F →+* E)
-    (K L ell τ : ℕ) (hk : 0 < k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (K L ell τ : ℕ) (hK : 2 ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hLA : L ≤ A) (hAn : A ≤ n)
     (conclusion : E → E[X] → Prop)
     (hregular : ∀ stage ∈ stages, ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤ firstOrderCurveStageCharge n K k L A ell h stage
@@ -128,6 +129,6 @@ theorem exists_exceptional_of_regular_stage_bounds_of_exponent
   cert.exists_exceptional_of_regular_stage_bounds_of_factors hc ι K L ell τ
     (firstOrderCurveDirectRatio n k A)
     (firstOrderCurveDirectRatio_one_le (hkL.trans hLA) hAn)
-    hk hkL hLA hAn conclusion hregular
+    hK hk hkL hLA hAn conclusion hregular
 
 end ReedSolomon.HiddenDerivative.FirstOrderCurveCertificate

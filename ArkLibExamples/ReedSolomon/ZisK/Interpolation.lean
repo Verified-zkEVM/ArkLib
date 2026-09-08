@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLibExamples.ReedSolomon.ZisK.Parameters
-import ArkLibExamples.ReedSolomon.CurveCertificate
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveCertificate
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
@@ -17,7 +17,7 @@ Neither a recovery assumption nor an exceptional-set bound is an input.
 -/
 open Polynomial ReedSolomon
 namespace ArkLibExamples.ReedSolomon.ZisK
-open ConcreteFields CurveProfile
+open ConcreteFields _root_.ReedSolomon.CurveProfile
 noncomputable section
 
 /-- Every split is in the admissible interval between dimension and agreement. -/
@@ -28,7 +28,7 @@ theorem splits_admissible (i : Fin 8) :
 
 /-- The sharp rational geometric bounds lie below the stated integer ceilings. -/
 theorem envelopes_le (i : Fin 8) :
-    CurveCertificate.envelope (profiles i) (splits i) ≤ exceptionalCounts i := by
+    _root_.ReedSolomon.CurveCertificate.envelope (profiles i) (splits i) ≤ exceptionalCounts i := by
   fin_cases i <;> decide +kernel
 
 /-- Goldilocks characteristic exceeds every candidate degree and jet cap used here. -/
@@ -49,7 +49,8 @@ theorem exists_exceptional (i : Fin 8)
           (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id GoldilocksCubic) (profiles i).k z P := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
-    CurveCertificate.exists_exceptional_exact_powerAgreement (profiles_verified i)
+    _root_.ReedSolomon.CurveCertificate.exists_exceptional_exact_powerAgreement
+      (profiles_verified i)
       (splits i) (exceptionalCounts i) (splits_admissible i)
       (by fin_cases i <;> decide) (envelopes_le i) domain values
       (algebraMap GoldilocksCubic (AlgebraicClosure GoldilocksCubic))

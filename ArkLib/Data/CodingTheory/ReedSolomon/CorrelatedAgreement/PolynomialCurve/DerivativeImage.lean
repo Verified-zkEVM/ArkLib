@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.PolynomialCurve.DerivativeSupport
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.DerivativeTupleCounting
 import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DerivativeBidegreeExcluded
 
 /-! Derivative-capped regular first-order source incidence. -/
@@ -46,6 +47,74 @@ private theorem source_initial_ne_zero_of_regular (center z : E)
   rw [map_initialJetEquationOver, map_zero,
     show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C] at hm
   exact hi hm
+
+private theorem derivative_source_initial_eval {r : ℕ} (center z : E)
+    (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E) :
+    aeval (fun i ↦ i.elim z jet) (symbolicSourceInitialEquation center Q) =
+      aeval jet (initialJetEquation center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
+  rw [symbolicSourceInitialEquation, aeval_optionEquivRight_symm,
+    map_initialJetEquationOver]
+  simp only [Option.elim_none, Option.elim_some]
+  rw [show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C]
+  rfl
+
+private theorem derivative_source_separant_eval {r : ℕ} (center z : E)
+    (Q : DifferentialPolynomial E[X] r) (jet : Fin (r + 1) → E) :
+    aeval (fun i ↦ i.elim z jet) (symbolicSourceSeparant center Q) =
+      aeval jet (initialJetSeparant center (MvPolynomial.map (Polynomial.evalRingHom z) Q)) := by
+  rw [symbolicSourceSeparant, aeval_optionEquivRight_symm,
+    map_initialJetSeparantOver]
+  simp only [Option.elim_none, Option.elim_some]
+  rw [show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C]
+  rfl
+
+private theorem derivative_source_numerator_eval {r : ℕ} (center z : E)
+    (Q : DifferentialPolynomial E[X] r) (K : ℕ) (l : Fin K)
+    (jet : Fin (r + 1) → E) :
+    aeval (fun i ↦ i.elim z jet) (symbolicSourceNumerator center Q K l) =
+      aeval jet (commonTaylorNumerator center
+        (MvPolynomial.map (Polynomial.evalRingHom z) Q) K l) := by
+  rw [symbolicSourceNumerator, aeval_optionEquivRight_symm, eval_commonTaylorNumeratorOver]
+  rfl
+
+private theorem derivative_source_numerator_eval_of_exponent {r : ℕ} (center z : E)
+    (Q : DifferentialPolynomial E[X] r) (K τ : ℕ) (l : Fin K)
+    (jet : Fin (r + 1) → E) :
+    aeval (fun i ↦ i.elim z jet)
+        ((optionEquivRight E _).symm
+          (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q K l (τ := τ))) =
+      aeval jet (commonTaylorNumerator center
+        (MvPolynomial.map (Polynomial.evalRingHom z) Q) K l (τ := τ)) := by
+  rw [aeval_optionEquivRight_symm]
+  simp only [Option.elim_none, Option.elim_some]
+  rw [eval_commonTaylorNumeratorOver center z Q K l τ]
+
+private theorem derivative_source_curveAgreement_eval_of_exponent {r : ℕ} (center z alpha : E)
+    (values : Fin (ℓ + 1) → E) (Q : DifferentialPolynomial E[X] r)
+    (K τ : ℕ) (jet : Fin (r + 1) → E) :
+    aeval (fun i ↦ i.elim z jet)
+        (symbolicSourceCurveAgreement_of_exponent center Q K τ alpha values) =
+      aeval jet (taylorAgreementEquation center
+        (MvPolynomial.map (Polynomial.evalRingHom z) Q) K alpha
+        (∑ t, z ^ t.val * values t) (τ := τ)) := by
+  rw [symbolicSourceCurveAgreement_of_exponent, aeval_optionEquivRight_symm]
+  simp only [Option.elim_none, Option.elim_some]
+  let φ : E[X] →ₐ[E] E := Polynomial.aeval z
+  have hφ : φ.toRingHom = Polynomial.evalRingHom z := by
+    ext a <;> simp [φ]
+  have hc : φ (Polynomial.C center) = center := by simp [φ]
+  have hx : φ (Polynomial.C alpha) = alpha := by simp [φ]
+  have hy : φ (powerBatchedCoordinate values) = ∑ t, z ^ t.val * values t := by
+    change (powerBatchedCoordinate values).eval z = _
+    exact powerBatchedCoordinate_eval values z
+  have he := map_taylorAgreementEquationOver_eq φ
+    (Polynomial.C center) Q K (Polynomial.C alpha) (powerBatchedCoordinate values) τ
+  rw [hφ, hc, hx] at he
+  exact congrArg (MvPolynomial.aeval jet) (he.trans (congrArg
+    (fun received ↦ taylorAgreementEquation center
+      (MvPolynomial.map (Polynomial.evalRingHom z) Q) K alpha received (τ := τ))
+    hy))
+
 
 /-- Exact dimension-sensitive off-tuple incidence for a first-order source equation at a
 sufficient common Taylor exponent.  The agreement cuts are linear in the bidegree presentation,
@@ -153,6 +222,142 @@ theorem finite_sourceCurve_points_off_tuples_card_le_derivativeCapped_of_exponen
   · simpa only [cuts] using hA
 
 
+/-- Combine any source-point incidence estimate with sharp tuple counting and the exact
+`ell * (n-L)` accidental-root bound.  The geometric source estimate is isolated in
+`hsourceBound`; this partition and counting argument is independent of the source dimension. -/
+private theorem
+    finite_sourceCurve_bad_challenges_card_le_of_source_bound_derivativeCapped_of_exponent
+    [DecidableEq F] [DecidableEq E] [IsAlgClosed E]
+    (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (center : E) (Q : DifferentialPolynomial E[X] 1) (K k L A v u τ : ℕ)
+    (hτ : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
+    (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hLA : L ≤ A) (hAn : A ≤ n)
+    (hu : 0 < u) (huv : u ≤ v)
+    (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ v)
+    (hderiv : Q.degreeOf (some 1) ≤ u)
+    (offBound : ℚ)
+    (hsourceBound : ∀ S : Finset (Option (Fin 2) → E),
+      (∀ x ∈ S, aeval x (symbolicSourceInitialEquation center Q) = 0 ∧
+        aeval x (symbolicSourceSeparant center Q) ≠ 0 ∧
+        (∀ l : Fin K, k ≤ l.val →
+          aeval x ((optionEquivRight E _).symm
+            (commonTaylorNumeratorOver (F := E) (Polynomial.C center) Q K l
+              (τ := τ))) = 0) ∧
+        x ∉ sourceCurveTupleLocus_of_exponent domain w iota center Q K k L τ) →
+      (∀ x ∈ S, A ≤ (agreementIndices (fun i ↦
+        symbolicSourceCurveAgreement_of_exponent center Q K τ (iota (domain i))
+          (fun t ↦ iota (w t i))) x).card) →
+      (S.card : ℚ) ≤ offBound)
+    (challenges : Finset E) (witness : E → E[X]) (jet : E → Fin 2 → E)
+    (hchart : ∀ z ∈ challenges,
+      let Qz := MvPolynomial.map (Polynomial.evalRingHom z) Q
+      (witness z).degree < k ∧
+        aeval (jet z) (initialJetEquation center Qz) = 0 ∧
+        aeval (jet z) (initialJetSeparant center Qz) ≠ 0 ∧
+        (∀ l : Fin K, k ≤ l.val →
+          aeval (jet z) (commonTaylorNumerator center Qz K l (τ := τ)) = 0) ∧
+        rationalTaylorPolynomial center Qz K (jet z) = witness z)
+    (hagree : ∀ z ∈ challenges,
+      A ≤ (polynomialAgreementSet (mappedDomain domain iota)
+        (powerBatchedWord (fun t i ↦ iota (w t i)) z) (witness z)).card)
+    (hbad : ∀ z ∈ challenges,
+      ¬ HasExactPowerAgreement domain w iota k z (witness z)) :
+    (challenges.card : ℚ) ≤ offBound +
+      ((ℓ * (n - L) : ℕ) : ℚ) *
+        (firstOrderCurveFiberStageOne K v u τ : ℚ) *
+          (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ)) := by
+  classical
+  let tuples := (polynomialTupleFamily domain w k).filter
+    (IsAdmissibleChartTupleAtExponent domain w iota center Q K k L τ)
+  have htuple (P : Fin (ℓ + 1) → F[X]) (hP : P ∈ tuples) :=
+    (Finset.mem_filter.mp hP).2
+  obtain ⟨exceptional, hexc, hexact⟩ := exists_exceptional_exactPowerAgreement_family
+    (k := k) (L := L) domain w iota tuples
+      (fun P hP ↦ (htuple P hP).degree) (fun P hP ↦ (htuple P hP).common)
+  let remaining := challenges \ exceptional
+  let point : E → Option (Fin 2) → E := fun z i ↦ i.elim z (jet z)
+  have hpointinj : Function.Injective point := by
+    intro z z' heq
+    exact congrFun heq none
+  let S := remaining.image point
+  have hcard : S.card = remaining.card := Finset.card_image_of_injective _ hpointinj
+  have hoff (z : E) (hz : z ∈ remaining) :
+      point z ∉ sourceCurveTupleLocus_of_exponent domain w iota center Q K k L τ := by
+    obtain ⟨hzc, hze⟩ := Finset.mem_sdiff.mp hz
+    rintro ⟨P, hP, heq⟩
+    have hjetEq : jet z = chartTupleJet iota center z P := by
+      funext j
+      exact congrFun heq (some j)
+    have hs := (hchart z hzc).2.2.1
+    have hregular :
+        (chartTuplePullback iota center P (symbolicSourceSeparant center Q)).eval z ≠ 0 := by
+      rw [chartTuplePullback, eval_polynomialGraphPullback]
+      rw [← show point z = polynomialGraphPoint
+        (powerBatchedJetGraph (r := 1) center (fun t ↦ (P t).map iota)) z from heq]
+      rw [derivative_source_separant_eval]
+      exact hs
+    have hrec := (hP.specialize hτ hkK z hregular).2.2.2
+    have hw : witness z = powerBatchedPolynomial (fun t ↦ (P t).map iota) z := by
+      rw [← (hchart z hzc).2.2.2.2, hjetEq]
+      exact hrec
+    have hPmem : P ∈ tuples := by
+      apply Finset.mem_filter.mpr
+      exact ⟨mem_polynomialTupleFamily_of_commonAgreement domain w P k hP.degree
+        (hkL.trans hP.common), hP⟩
+    apply hbad z hzc
+    rw [hw]
+    exact hexact P hPmem z hze
+  have hoffbound : (remaining.card : ℚ) ≤ offBound := by
+    rw [← hcard]
+    apply hsourceBound S
+    · intro x hx
+      obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
+      have hzc := (Finset.mem_sdiff.mp hz).1
+      refine ⟨?_, ?_, ?_, hoff z hz⟩
+      · exact (derivative_source_initial_eval center z Q (jet z)).trans (hchart z hzc).2.1
+      · rw [derivative_source_separant_eval]
+        exact (hchart z hzc).2.2.1
+      · intro l hl
+        rw [derivative_source_numerator_eval_of_exponent]
+        exact (hchart z hzc).2.2.2.1 l hl
+    · intro x hx
+      obtain ⟨z, hz, rfl⟩ := Finset.mem_image.mp hx
+      have hzc := (Finset.mem_sdiff.mp hz).1
+      apply (hagree z hzc).trans
+      apply Finset.card_le_card
+      intro i hi
+      rw [mem_agreementIndices, derivative_source_curveAgreement_eval_of_exponent,
+        taylorAgreementEquation_eq_zero_iff_of_exponent _ _ _ τ hτ _
+          (hchart z hzc).2.2.1,
+        (hchart z hzc).2.2.2.2]
+      exact (Finset.mem_filter.mp hi).2
+  have htuplebound := admissibleChartTuples_card_le_derivativeCapped_of_exponent
+    domain w iota center Q K k L v u τ hτ hτpos hK hkK hk hkL (hLA.trans hAn)
+      hu huv hjet hderiv tuples htuple
+  have hexcbound : (exceptional.card : ℚ) ≤
+      ((ℓ * (n - L) : ℕ) : ℚ) *
+        (firstOrderCurveFiberStageOne K v u τ : ℚ) *
+          (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ)) := by
+    have he : (exceptional.card : ℚ) ≤
+        (tuples.card : ℚ) * ((ℓ * (n - L) : ℕ) : ℚ) := by
+      exact_mod_cast hexc
+    apply he.trans
+    have hm := mul_le_mul_of_nonneg_right htuplebound
+      (show (0 : ℚ) ≤ ((ℓ * (n - L) : ℕ) : ℚ) by positivity)
+    simpa only [mul_assoc, mul_comm, mul_left_comm] using hm
+  have hcover : challenges.card ≤ remaining.card + exceptional.card := by
+    have he := Finset.card_sdiff_add_card_inter challenges exceptional
+    have hi := Finset.card_le_card (Finset.inter_subset_right :
+      challenges ∩ exceptional ⊆ exceptional)
+    dsimp only [remaining]
+    omega
+  have hcoverQ : (challenges.card : ℚ) ≤
+      (remaining.card : ℚ) + (exceptional.card : ℚ) := by
+    exact_mod_cast hcover
+  exact hcoverQ.trans (add_le_add hoffbound hexcbound)
+
+
 /-- First-order regular MCA budget with the actual derivative degrees of the source equation
 and the common Taylor cuts. -/
 def regularSymbolicCurveMCADerivativeBoundTwo
@@ -163,9 +368,9 @@ def regularSymbolicCurveMCADerivativeBoundTwo
       (sourceCurveCutDerivativeDegree K v u τ) : ℚ) *
       (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
         (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) +
-    ((ℓ * (n - L) : ℕ) : ℚ) * (v : ℚ) *
-      (sourceCurveCutJetDegree K v (τ := τ) : ℚ) *
-        dimensionSensitiveIncidenceProduct n L k 1 1
+    ((ℓ * (n - L) : ℕ) : ℚ) *
+      (firstOrderCurveFiberStageOne K v u τ : ℚ) *
+        (((n - k + 1 : ℕ) : ℚ) / ((L - k + 1 : ℕ) : ℚ))
 
 /-- Exact fixed-center first-order bad-challenge bound at a sufficient Taylor exponent.  The
 joint term uses the direct dimension-sensitive factor, while the persistent-tuple term uses the
@@ -204,14 +409,15 @@ theorem finite_sourceCurve_bad_challenges_card_le_derivativeCapped_of_exponent
     exact add_nonneg
       (mul_nonneg (mul_nonneg (by positivity) (div_nonneg (by positivity) (by positivity)))
         (div_nonneg (by positivity) (by positivity)))
-      (mul_nonneg (mul_nonneg (mul_nonneg (by positivity) (by positivity)) (by positivity))
-        (dimensionSensitiveIncidenceProduct_nonneg _ _ _ _ _))
+      (mul_nonneg (mul_nonneg (by positivity) (by positivity))
+        (div_nonneg (by positivity) (by positivity)))
   obtain ⟨z₀, hz₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
   have hinit := source_initial_ne_zero_of_regular center z₀ Q (jet z₀)
     (hchart z₀ hz₀).2.2.1
   unfold regularSymbolicCurveMCADerivativeBoundTwo
-  convert (finite_sourceCurve_bad_challenges_card_le_of_source_bound_of_exponent
-      domain w iota center Q K k L A v τ hτ hK hkK hk hkL hLA hAn hjet
+  convert (finite_sourceCurve_bad_challenges_card_le_of_source_bound_derivativeCapped_of_exponent
+      domain w iota center Q K k L A v u τ hτ hτpos hK hkK hk hkL hLA hAn
+      hu huv hjet hderiv
       ((mixedDerivativeImageDegree h v u
           (sourceCurveCutChallengeDegree ℓ K h (τ := τ))
           (sourceCurveCutJetDegree K v (τ := τ))
@@ -222,9 +428,6 @@ theorem finite_sourceCurve_bad_challenges_card_le_derivativeCapped_of_exponent
         domain w iota center Q K k L A v u h τ hτ hτpos hK hkK hkL hLA hAn hD hv
           hu huv hinit hjet hheight hderiv S hS hA)
       challenges witness jet hchart hagree hbad) using 1
-  simp only [dimensionSensitiveIncidenceProduct_one, Nat.mul_one]
-  push_cast
-  ring
 
 
 /-- Every finite set of regular first-order bad challenges satisfies the exact

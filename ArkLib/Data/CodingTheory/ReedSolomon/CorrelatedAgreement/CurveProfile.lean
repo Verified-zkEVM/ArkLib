@@ -22,7 +22,7 @@ the separate geometric and probability theorems used by each application.
 
 open PolynomialDifferential Polynomial
 
-namespace ArkLibExamples.ReedSolomon.CurveProfile
+namespace ReedSolomon.CurveProfile
 
 open ReedSolomon.HiddenDerivative
 open ReedSolomon.HiddenDerivative.SymbolicWeightedSupportInterpolation
@@ -77,7 +77,7 @@ def shiftedHeightSlots (p : LineProfile) (ℓ : ℕ) : ℕ :=
 
 /-- Exact facts needed by the scalar finite symbolic constructor. -/
 structure Verification (p : LineProfile) : Prop where
-  D_gt_one : 1 < p.D
+  D_pos : 0 < p.D
   budget_pos : 0 < p.multiplicity * p.agreement
   degree_le : p.k ≤ p.D + 1
   cap_le_height : p.totalJetCap ≤ p.height
@@ -91,7 +91,7 @@ structure Verification (p : LineProfile) : Prop where
 theorem Verification.support_card_eq {p : LineProfile} (hp : p.Verification) :
     (firstOrderExponents p.D p.agreement p.multiplicity p.firstDerivativeCap
       p.totalJetCap).card = p.supportDimension := by
-  rw [card_firstOrderExponents_eq_dimensionCount (Nat.zero_lt_of_lt hp.D_gt_one)]
+  rw [card_firstOrderExponents_eq_dimensionCount hp.D_pos]
   simpa [computedDimension] using hp.dimension_eq
 
 /-- The recorded column weight equals the sum of all `Y₀` exponents. -/
@@ -104,7 +104,7 @@ theorem Verification.columnY₀Weight_eq {p : LineProfile} (hp : p.Verification)
   have hslots : firstOrderHeightSlotCount p.D p.agreement p.multiplicity
       p.firstDerivativeCap p.totalJetCap p.height = p.heightSlots := by
     simpa [computedHeightSlots] using hp.heightSlots_eq
-  rw [firstOrderColumnSlotCount_eq_heightSlotCount (Nat.zero_lt_of_lt hp.D_gt_one),
+  rw [firstOrderColumnSlotCount_eq_heightSlotCount hp.D_pos,
     hslots, hp.support_card_eq] at hrectangle
   exact Nat.add_left_cancel (hp.columnWeight_eq.trans hrectangle.symm)
 
@@ -124,15 +124,16 @@ theorem Verification.exists_symbolicCertificate {F : Type u} [Field F] {p : Line
     (hp : p.Verification) (centers : Fin p.n ↪ F) (f g : Fin p.n → F) :
     Nonempty (p.SymbolicCertificate.{u, v} centers f g) := by
   exact exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-    hp.D_gt_one hp.budget_pos hp.degree_le centers f g hp.heightSurplus
+    hp.D_pos hp.budget_pos hp.degree_le centers f g hp.heightSurplus
 
 /-- Exact facts required by the polynomial-curve interpolation constructor.
 
-The first four conjuncts are the constructor's hypotheses.  The last four re-derive every
-remaining recorded field of the row from the support itself, so that no number in a curve
-table can silently drift away from the object it describes. -/
+The first four conjuncts are the constructor's hypotheses. The remaining conjuncts re-derive the
+recorded fields of the row from the support itself, so that no number in a curve
+table can silently drift away from the object it describes. Only `D > 0` is needed: the direct
+weighted-degree argument includes degree-one candidate polynomials. -/
 def CurveVerification (p : LineProfile) : Prop :=
-  1 < p.D ∧ 0 < p.multiplicity * p.agreement ∧ p.k ≤ p.D + 1 ∧
+  0 < p.D ∧ 0 < p.multiplicity * p.agreement ∧ p.k ≤ p.D + 1 ∧
     p.shiftedRowSlots p.batchingDegree < p.shiftedHeightSlots p.batchingDegree ∧
     p.computedDimension = p.supportDimension ∧ p.computedLocalRank = p.localRank ∧
     p.totalJetCap ≤ p.height ∧ p.computedHeightSlots = p.heightSlots ∧
@@ -155,4 +156,4 @@ end LineProfile
 
 end
 
-end ArkLibExamples.ReedSolomon.CurveProfile
+end ReedSolomon.CurveProfile

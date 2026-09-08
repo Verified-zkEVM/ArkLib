@@ -39,12 +39,12 @@ theorem main_reconstruction_of_exact
     (hWords : ∀ i j, (cubicAnchorDivisor s₁ s₂ z).eval (domain i) * values (main j) i =
       received i j - (I j).eval (domain i))
     (Q : GoldilocksCubic[X])
-    (hClose : 45880 ≤ (polynomialAgreementSet domain (powerBatchedWord values γ) Q).card)
+    (hClose : 45810 ≤ (polynomialAgreementSet domain (powerBatchedWord values γ) Q).card)
     (hExact : HasExactPowerAgreement domain values (RingHom.id GoldilocksCubic) 32768 γ Q) :
     ∃ later : LaterCubicReconstruction (F := GoldilocksCubic) 38,
       later.z = z ∧ later.claimedZ = claimedZ ∧ later.interpolant = I ∧
       SuccessfulCubicReconstruction domain received s₁ s₂ claimed₁ claimed₂
-        (T := 32768) (A := 45880) later := by
+        (T := 32768) (A := 45810) later := by
   obtain ⟨P, hPdeg, _, hPset⟩ := hExact
   let later : LaterCubicReconstruction (F := GoldilocksCubic) 38 :=
     ⟨z, claimedZ, fun j ↦ P (main j), I⟩
