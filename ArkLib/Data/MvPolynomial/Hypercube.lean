@@ -22,7 +22,7 @@ variable {F : Type*} [CommRing F] {M : ℕ}
 def hypercubePoint (m i : ℕ) (cs : Fin i → F) (x : Fin (m - i) → Fin 2) : Fin m → F :=
   fun j => if h : j.val < i then cs ⟨j, h⟩ else (x ⟨j.val - i, by omega⟩ : F)
 
-/-- Sum the actual polynomial after fixing a challenge prefix. -/
+/-- Sum a polynomial over Boolean completions of a fixed challenge prefix. -/
 def hypercubeSum (m : ℕ) (H : MvPolynomial (Fin m) F) (i : ℕ) (cs : Fin i → F) : F :=
   ∑ x : Fin (m - i) → Fin 2, H.eval (hypercubePoint m i cs x)
 
@@ -39,9 +39,10 @@ theorem hypercubeSum_last (m : ℕ) (H : MvPolynomial (Fin m) F) (cs : Fin m →
     simp [hypercubePoint, j.isLt]
   simp [hypercubeSum, hp]
 
-/-- Peeling the leading free coordinate: prepending `b` to the summation index of the
-round-`(i+1)` cube is the same as appending `b` to the round-`i` challenge prefix — both name
-the same point of `F^{M+1}`. -/
+/--
+Prepending the first free coordinate to a Boolean completion equals appending it to the fixed
+prefix.
+-/
 theorem hypercubePoint_cons (i : Fin (M + 1)) (cs : Fin i → F) (b : Fin 2)
     (y : Fin (M + 1 - ((i : ℕ) + 1)) → Fin 2) :
     hypercubePoint (M + 1) i cs (Fin.cons b y ∘ finCongr (by omega)) =
@@ -67,10 +68,7 @@ theorem hypercubePoint_cons (i : Fin (M + 1)) (cs : Fin i → F) (b : Fin 2)
           = Fin.succ ⟨(j : ℕ) - ((i : ℕ) + 1), by omega⟩ from Fin.ext (by simp; omega),
         Fin.cons_succ]
 
-/-- The cube split — the identity every sumcheck round turns on: the round-`i` partial sum is
-the sum of the two round-`(i+1)` partial sums at the two Boolean extensions of the challenge
-prefix. Together with the round check `g(0) + g(1) = input target` this is what carries a
-round's claim back to the previous round. -/
+/-- The Boolean cube sum splits into the sums at the two Boolean extensions of the fixed prefix. -/
 theorem hypercubeSum_succ (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     hypercubeSum (M + 1) H i cs =
       hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs 0) +
@@ -155,9 +153,7 @@ theorem roundPoly_eval (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1))
   refine Finset.sum_congr rfl fun y _ => ?_
   rw [← MvPolynomial.eval_eq_eval_mv_eval_finSuccEquivNth, insertNth_eq_hypercubePoint]
 
-/-- The round polynomial inherits `H`'s per-variable degree bound: each summand is a
-one-variable specialization of `H`, whose degree is `H`'s degree in the free coordinate, and
-a finite sum does not raise it. -/
+/-- The round polynomial inherits the per-variable degree bound of its multivariate polynomial. -/
 theorem roundPoly_degree_le (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (cs : Fin i → F)
     {D : ℕ} (hH : ∀ j, H.degreeOf j ≤ D) :
     (roundPoly H i cs).degree ≤ (D : WithBot ℕ) := by

@@ -11,13 +11,13 @@ import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 /-!
 # Downstream opening of the same packed commitment
 
-An opening argument starts at the existing commitment's evaluation relation over C. Its output
-types and relation are arbitrary. Assembly uses actual oracle-reduction append and its exact
+An opening argument starts at the commitment's evaluation relation over C. Its output
+types and relation are arbitrary. Assembly uses oracle-reduction append and its exact
 extractor and guarded knowledge states. Worst-case security permits an effectful opening verifier;
 the separate completeness theorem states the guarded-verifier and shared-state requirements of
-the existing proved completeness composition interface.
+the state-aware completeness composition interface.
 
-The ambient oracle is explicit. Concrete packing prefixes currently use the empty ambient oracle;
+The ambient oracle is explicit. Concrete packing prefixes use the empty ambient oracle;
 the generic assembly also supports other ambient oracles when its supplied front does.
 -/
 
@@ -28,7 +28,7 @@ namespace RingSwitching.Packing
 open OracleSpec OracleComp ProtocolSpec MvPolynomial
 open scoped NNReal
 
-/-- An actual opening reduction whose input is precisely a C-evaluation on the same commitment. -/
+/-- An opening reduction from a challenge-algebra evaluation on the same commitment. -/
 structure PackedOpening {P : Type} [CommRing P] {m : ℕ} (pc : PackedCommitment P m)
     (C : Type) [CommRing C] [Algebra P C] {ι : Type} (oSpec : OracleSpec ι)
     {n : ℕ} (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)] where
@@ -44,7 +44,7 @@ structure PackedOpening {P : Type} [CommRing P] {m : ℕ} (pc : PackedCommitment
   WitOut : Type
   /-- The opening's claimed output relation. -/
   relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut)
-  /-- The actual reduction, preserving the packed witness at its input boundary. -/
+  /-- The opening reduction with a packed polynomial as its input witness. -/
   reduction : OracleReduction oSpec ((Fin m → C) × C) pc.OStmt P⦃≤ 1⦄[X Fin m]
     StmtOut OStmtOut WitOut pSpec
 
@@ -63,17 +63,17 @@ variable {P C : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (front : OracleReduction oSpec StmtIn OStmtIn WitIn
     ((Fin m → C) × C) pc.OStmt P⦃≤ 1⦄[X Fin m] prefixSpec)
 
-/-- Assemble the supplied front and actual opening reduction without changing the seam. -/
+/-- Append the opening reduction at the packed-evaluation relation. -/
 def assemble : OracleReduction oSpec StmtIn OStmtIn WitIn
     opening.StmtOut opening.OStmtOut opening.WitOut (prefixSpec ++ₚ pSpec) :=
   front.append opening.reduction
 
-/-- Materialization of the actual assembly is the ordinary verifier append. -/
+/-- Materializing the assembled oracle verifier gives ordinary verifier append. -/
 theorem assemble_toVerifier : (opening.assemble front).verifier.toVerifier =
     front.verifier.toVerifier.append opening.reduction.verifier.toVerifier :=
   OracleVerifier.append_toVerifier _ _
 
-/-- A passing front runs the actual opening verifier; rejection prevents that verifier's effects. -/
+/-- A passing front runs the opening verifier; rejection prevents the opening verifier's effects. -/
 theorem verifier_run (G : front.verifier.toVerifier.GuardedForm)
     (stmt : StmtIn × (∀ i, OStmtIn i)) (tr : (prefixSpec ++ₚ pSpec).FullTranscript) :
     (opening.assemble front).verifier.toVerifier.run stmt tr =
@@ -88,7 +88,7 @@ variable {W₁ : Fin (k + 1) → Type} {W₂ : Fin (n + 1) → Type}
   (E₂ : Extractor.RoundByRound oSpec (((Fin m → C) × C) × (∀ i, pc.OStmt i))
     P⦃≤ 1⦄[X Fin m] opening.WitOut pSpec W₂)
 
-/-- The actual append extractor passes through the same packed evaluation witness boundary. -/
+/-- The append extractor through the packed-polynomial witness at the evaluation boundary. -/
 def extractor : Extractor.RoundByRound oSpec (StmtIn × (∀ i, OStmtIn i)) WitIn
     opening.WitOut (prefixSpec ++ₚ pSpec) (Verifier.KnowledgeAppend.Witness W₁ W₂) :=
   E₁.append E₂ G.out
@@ -113,7 +113,7 @@ def knowledgeStateFunction :
     toFun_full := fun stmt tr w h => K.toFun_full stmt tr w (by
       simpa only [Verifier.run, assemble_toVerifier] using h) }
 
-/-- Exact worst-case knowledge consumes the opening's actual WC contract at pc.evalRel. -/
+/-- Worst-case knowledge soundness from the front and opening contracts at `pc.evalRel`. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith
     {ε₁ : prefixSpec.ChallengeIdx → ℝ≥0} {ε₂ : pSpec.ChallengeIdx → ℝ≥0}
     (h₁ : front.verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
@@ -127,7 +127,7 @@ theorem rbrKnowledgeSoundnessWorstCaseWith
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) :=
   Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first G K₁ K₂ h₁ h₂
 
-/-- The same explicit assembled objects also satisfy the averaged knowledge contract. -/
+/-- The assembled extractor and knowledge state satisfy the prover-averaged contract. -/
 theorem rbrKnowledgeSoundnessWith
     {ε₁ : prefixSpec.ChallengeIdx → ℝ≥0} {ε₂ : pSpec.ChallengeIdx → ℝ≥0}
     (h₁ : front.verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
@@ -142,8 +142,10 @@ theorem rbrKnowledgeSoundnessWith
   Verifier.rbrKnowledgeSoundnessWorstCaseWith_implies_rbrKnowledgeSoundnessWith init impl
     (opening.rbrKnowledgeSoundnessWorstCaseWith front G E₁ E₂ init impl source K₁ K₂ h₁ h₂)
 
-/-- The proved completeness interface requires guarded downstream verification and completeness
-from every seam state. These extra premises do not restrict the opening data or WC contract. -/
+/--
+Perfect completeness under guarded downstream verification, completeness from every seam
+state, and compatible sampling at the seam.
+-/
 theorem perfectCompleteness (frontGuard : front.verifier.toVerifier.GuardedForm)
     (G₂ : opening.reduction.verifier.toVerifier.GuardedForm)
     (hSeam : ∀ hn : 0 < n,

@@ -9,7 +9,7 @@ import ArkLibTest.ProofSystem.RingSwitching.Legacy
 # Final packing leaf over a ring with zero divisors
 
 The committed packed polynomial is one and the public multiplier vanishes at the
-opening point. The actual input relation is satisfied, the prover sends one, and
+opening point. The input relation is satisfied, the prover sends one, and
 the verifier forwards one. The final extractor reconstructs the residual witness;
 its zero-challenge security does not require a domain or a nonzero multiplier.
 -/
@@ -36,7 +36,7 @@ def oneWitness : RingSwitching.SumcheckWitness L 1 (Fin.last 1) where
   H := projectToMidSumcheckPolyWithParam 1
     (RingSwitching_SumcheckMultParam 1 L K profile 2 1 rfl) ctx onePoly (Fin.last 1) 1
 
-/-- The zero-multiplier case has an actual nonzero compatible source witness. -/
+/-- The zero-multiplier case has a nonzero compatible source witness. -/
 lemma honest_input :
     (((finish 0, oneOracleValues), oneWitness) ∈
       sumcheckRoundRelation 1 L K profile 2 1 rfl oneOracles (Fin.last 1)) := by

@@ -7,10 +7,10 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Tail.RoundSecurity
 import ArkLibTest.ProofSystem.RingSwitching.Packing.PackedCommitment
 
 /-!
-# Adversarial roots at the actual sumcheck challenge
+# Adversarial roots at the sumcheck challenge
 
 For p=X and multiplier one over ZMod5, the forged message X² passes the Boolean sum check.
-It matches the true residual precisely at 0 and 1. The actual knowledge state must allow
+It matches the true residual precisely at 0 and 1. The knowledge state must allow
 those sampled roots after the challenge while rejecting the false global message before it.
 -/
 
@@ -46,7 +46,7 @@ theorem clear_message_answer :
       ((inferInstance : ∀ j, OracleInterface ((Tail.Round.pSpec F).Message j)) ⟨0, rfl⟩)
       forged () = forged := rfl
 
-/-- The forged quadratic satisfies the actual local Boolean-sum check. -/
+/-- The forged quadratic satisfies the local Boolean-sum check. -/
 theorem forged_check : Tail.Round.check 0 stmt forged := by
   simp [Tail.Round.check, forged, stmt]
 
@@ -57,7 +57,7 @@ theorem forged_verifier_accept (c : F) :
   rw [Tail.Round.verifier_verify]
   exact if_pos forged_check
 
-/-- The true next residual relation sees only agreement at the actually sampled coordinate. -/
+/-- The true next residual relation sees only agreement at the sampled coordinate. -/
 theorem forged_output_iff (c : F) :
     ((Tail.Round.nextStatement 0 stmt forged c, ost), p) ∈
       Tail.rel multiplier pc (0 : Fin 1).succ ↔ c ^ 2 = c := by
@@ -67,11 +67,11 @@ theorem forged_output_iff (c : F) :
   simp [Tail.Round.nextStatement, stmt, multiplier, constant, forged, p, ost,
     pc.commitsTo_commit, Fin.snoc]
 
-/-- A zero challenge is a real accidental root, so post-challenge knowledge holds. -/
+/-- A zero challenge is an accidental root, so post-challenge knowledge holds. -/
 theorem forged_after_zero : Tail.Round.afterChallenge multiplier pc 0 stmt ost forged 0 p :=
   ⟨forged_check, (forged_output_iff 0).mpr (by decide)⟩
 
-/-- One is the second real accidental root. -/
+/-- One is the second accidental root. -/
 theorem forged_after_one : Tail.Round.afterChallenge multiplier pc 0 stmt ost forged 1 p :=
   ⟨forged_check, (forged_output_iff 1).mpr (by decide)⟩
 
@@ -91,12 +91,12 @@ theorem forged_not_before : ¬ Tail.Round.beforeChallenge multiplier pc 0 stmt o
       Fin.snoc] using he
   exact (by decide : (2 : F) ^ 2 ≠ 2) hh
 
-/-- The actual one-message prefix fixes the forged polynomial before sampling. -/
+/-- The one-message prefix fixes the forged polynomial before sampling. -/
 def beforeTranscript : Transcript (1 : Fin 3) (Tail.Round.pSpec F) :=
   fun | ⟨0, _⟩ => forged
 
 /-- The exact production KSF exposes the same false-before/true-after challenge transition. -/
-theorem actual_knowledge_transition {σ : Type} (init : ProbComp σ)
+theorem knowledge_transition {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ¬ (Tail.Round.knowledgeStateFunction multiplier pc 0 init impl).toFun 1
         (stmt, ost) beforeTranscript p ∧
@@ -104,8 +104,8 @@ theorem actual_knowledge_transition {σ : Type} (init : ProbComp σ)
         (stmt, ost) (FullTranscript.mk2 forged (0 : F)) p :=
   ⟨forged_not_before, forged_after_zero⟩
 
-/-- The probability theorem uses the real polynomial oracle's binding and actual KSF. -/
-theorem actual_worstCase {σ : Type} (init : ProbComp σ)
+/-- The probability theorem uses the polynomial oracle's binding and KSF. -/
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (Tail.rel multiplier pc (0 : Fin 1).castSucc) (Tail.rel multiplier pc (0 : Fin 1).succ)
@@ -116,11 +116,11 @@ theorem actual_worstCase {σ : Type} (init : ProbComp σ)
     exactPC.commitsTo_functional init impl
 
 /-- The degree-two root bound is the concrete nonzero value two fifths. -/
-theorem actual_error (i : (Tail.Round.pSpec F).ChallengeIdx) :
+theorem error (i : (Tail.Round.pSpec F).ChallengeIdx) :
     Tail.Round.rbrError i = (2 / 5 : ℝ≥0) := by
   simp [Tail.Round.rbrError]
 
-/-- A second forged message can hide a false old target at one sampled root. -/
+/-- A second forged message can hide a false input target at one sampled root. -/
 def linearForged : F⦃≤ 2⦄[X] :=
   ⟨Polynomial.X, Polynomial.mem_degreeLE.mpr (by simp)⟩
 
@@ -139,7 +139,7 @@ theorem false_target_after_zero :
     rw [Tail.rel_last]
     exact ⟨by simp [Tail.Round.nextStatement, linearForged], pc.commitsTo_commit 0⟩
 
-/-- Knowledge before this repair is false; it cannot retain old-target truth after sampling. -/
+/-- The input target is false although the residual relation holds at the sampled root. -/
 theorem false_target_not_before :
     ¬ Tail.Round.beforeChallenge multiplier pc 0 stmt (pc.commit 0) linearForged 0 :=
   fun h => false_old_target

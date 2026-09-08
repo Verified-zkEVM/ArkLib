@@ -15,7 +15,7 @@ import Mathlib.LinearAlgebra.StdBasis
 # Production acceptance cases for checked full-family packing
 
 The execution tests use a nonconstant, nonzero family over a ring with zero divisors, packing
-rank two and opening rank one. Both the actual verifier and complete reduction retain rejection.
+rank two and opening rank one. Both the verifier and complete reduction retain rejection.
 Further clients instantiate separate finite fields and a larger challenge algebra.
 -/
 
@@ -61,11 +61,11 @@ theorem family_nonconstant :
   rw [h0, h1]
   decide
 
-/-- The input relation has a concrete nonzero witness and a matching actual oracle. -/
+/-- The input relation has a concrete nonzero witness and a matching oracle. -/
 theorem input_related : ((input, oracle), family) ∈ relIn ringData 1 commitment :=
   ⟨fun _ => rfl, commitment.commitsTo_commit _⟩
 
-/-- The actual honest slice is accepted. -/
+/-- The honest slice is accepted. -/
 theorem honest_verifier :
     (verifier ringData 1 batch commitment).toVerifier.verify (input, oracle)
       (FullTranscript.mk2 slices ()) =
@@ -116,7 +116,7 @@ theorem ring_complete {σ : Type} (init : ProbComp σ)
   perfectCompleteness ringData 1 batch commitment init impl
 
 /-- Rank-one coordinate batching has zero error even over the non-domain packed algebra. -/
-theorem ring_worstCase {σ : Type} (init : ProbComp σ)
+theorem ring_worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (relIn ringData 1 commitment) (relOut ringData 1 batch commitment)
@@ -126,8 +126,8 @@ theorem ring_worstCase {σ : Type} (init : ProbComp σ)
   rbrKnowledgeSoundnessWorstCaseWith ringData 1 batch commitment commitment.commitsTo_functional
     Function.injective_id init impl
 
-/-- Independent packing and opening fields also instantiate the actual knowledge contract. -/
-theorem separate_fields_worstCase {σ : Type} (init : ProbComp σ)
+/-- Independent packing and opening fields also instantiate the knowledge contract. -/
+theorem separate_fields_worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     let : Fintype separateFields.P := Fintype.ofFinite _
     let bat := BatchingStrategy.gammaPowers separateFields.P 3
@@ -157,7 +157,7 @@ abbrev extensionBatch := BatchingStrategy.gammaPowers (GaloisField 3 2) 2
 abbrev extensionCommitment := ExactPackedCommitment.polynomialOracle extensionData.P 1
 
 /-- The enlarged challenge algebra is used by the production verifier and explicit extractor. -/
-theorem extension_worstCase {σ : Type} (init : ProbComp σ)
+theorem extension_worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (relIn extensionData 1 extensionCommitment)

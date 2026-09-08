@@ -55,28 +55,17 @@ The current KB policy is:
 Because the resolution reads the base ref, a paper page added in the same PR is not picked up
 automatically — attach it under `Internal:`.
 
-### Reviewing shared formalizations
+### Documenting shared formalizations
 
-When a change claims cross-protocol reuse, record the actual production consumer and the shared
-theorems it uses. An imported module, a constructed data instance, and a passing acceptance client
-provide different evidence from a production completeness or security proof.
+A cross-protocol reference should identify the common theorem, its concrete consumers and the
+relations each adapter preserves. Include the relevant witness transport, commitment predicate,
+challenge distribution and failure behavior. Keep source-version distinctions and remaining proof
+obligations in the concept or audit page.
 
-- Check the concrete source/output relations, witness transport, commitment predicate and guard.
-  An adapter must prove their correspondence and its reconstruction law. Leaving the desired
-  readback as an undischarged hypothesis leaves the protocol proof outstanding.
-- Follow shared theorem references in elaborated declaration values, including theorem bodies.
-  Imports and references appearing only in types do not establish proof reuse. A syntactic path
-  is useful evidence, but source review must still rule out unused proof scaffolding.
-- Run `#print axioms` on the actual consumer as well as the new helper. A clean axiom report
-  checks trust dependencies; it does not demonstrate that the abstraction is used. Distinguish a
-  completed component from any remaining admitted downstream composition or opening theorem.
-- Exercise each concrete representation and security assumption. Preserve the actual commitment,
-  challenge distribution and failure behavior; a polynomial-oracle example alone cannot certify
-  a protocol's commitment adapter.
-
-Keep the durable consumer/theorem and remaining-obligation matrix in the relevant KB concept or
-audit page. Keep implementation snapshot hashes, build logs and commit-specific verdicts in
-the review record, following the [KB maintenance contract](../kb/README.md#maintenance-contract).
+For proof reuse, inspect the consumer's declaration value and its concrete reconstruction lemmas;
+imports alone do not show which proof is used. Check axiom dependencies on both the shared theorem
+and the consumer. Keep build logs, source hashes and commit-specific review results outside the KB,
+following its [maintenance contract](../kb/README.md#maintenance-contract).
 
 ### Preparing review context
 

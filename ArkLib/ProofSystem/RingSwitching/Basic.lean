@@ -24,21 +24,23 @@ The two construction families, one folder each:
    a family of `B`-multilinears into one `P`-multilinear. Evaluations may take values
    in an independent finite-free `B`-algebra `E`, with a different basis rank. The coordinate
    transpose and polynomial inverses need no embedding between `P` and `E`. The binary-table
-   specialization groups `2^κ` coefficients and reduces the number of variables. The legacy
-   DP24 data boundary (`RingSwitchingProfile`, `Packing/Profile.lean`) requires faithful
-   tensor coordinates, including two-sided inverse laws and agreement of the embeddings on `B`.
+   specialization groups `2^κ` Boolean table entries and reduces the number of variables.
+   The tensor-profile data boundary (`RingSwitchingProfile`, `Packing/Profile.lean`) requires
+   faithful tensor coordinates, including two-sided inverse laws and agreement of the
+   embeddings on `B`.
    Distinct relocation constructions require their own laws:
    * **interactive relocation** — `ScalarHead/` proves the original DP24/Flock scalar
      reconstruction; `FullFamily/` proves checked coordinate batching to a sumcheck claim.
-     `Tail/` composes the actual scalar or full-family head with product sumcheck and terminal
+     `Tail/` composes the scalar or full-family head with product sumcheck and terminal
      read-back to the same packed opening relation, with explicit commitment functionality
-     at its randomized security bounds. The native tensor batching head consumes those shared
+     at its randomized security bounds. The tensor batching head consumes those shared
      reconstruction and separation proofs, with completeness and exact worst-case knowledge
-     security. FRI-Binius instantiates it with its actual commitment binding, then interleaves
-     FRI with sumcheck. Legacy loop and unrestricted composition admissions remain separate.
+     security. FRI-Binius instantiates it with its commitment binding, then interleaves
+     FRI with sumcheck. The profile-based loop and unrestricted composition retain separate
+     proof obligations.
    * **deterministic relocation** — `Commitments/Functional/Hachi/TraceHead/` implements
      the one-message, zero-challenge trace head at fixed-subring points ([NOZ26] §3.1).
-     Actual monomial packing, the unit trace factor, honest committer coverage, completeness
+     Monomial packing, the unit trace factor, honest committer coverage, completeness
      and CWSS preserve the existing norm-conditioned ring-opening relation.
 
 2. **Lift** (`Lift/`) — the *opposite* direction, a quotient ring
@@ -55,7 +57,7 @@ The two construction families, one folder each:
 ## Shared support
 
 * Within **Packing**, `FiniteObservation.lean` proves weighted coordinate reconstruction for
-  arbitrary finite tables. Actual Boolean, native tensor and Hachi monomial proofs consume it.
+  arbitrary finite tables. Boolean, tensor and Hachi monomial proofs consume it.
   `CheckedObservation.lean` shares deterministic checking and exact inverse witness transport
   while retaining each protocol's concrete guard and commitment predicate. Hachi's CWSS and
   randomized packing's RBR knowledge certificates retain their separate security contracts.
@@ -101,18 +103,17 @@ or supply a shared security theorem.
   through a ring embedding with the interpolation kernel (`Eval.lean`, univariate) and
   degree-bounded coefficient transport (`Coeffs.lean`, multivariate).
 * `Packing/` — finite-free coordinate algebra, checked scalar and full-family phases,
-  the generic sumcheck pipelines to a packed opening, and the legacy DP24 construction.
+  the generic sumcheck pipelines to a packed opening, and the tensor-profile construction.
   See `Packing.lean`.
 * `Lift/` — the generic quotient-ring lift to field evaluations (see `Lift.lean`).
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
-* [HMZ25] Huang, M.-Y. M., Mao, X., and Zhang, J. "Sublinear Proofs over Polynomial Rings."
-  Cryptology ePrint Archive (2025).
-* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
-  Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
+* [Huang, M.-Y. M., Mao, X., and Zhang, J., *Sublinear Proofs over Polynomial Rings*][HMZ25]
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 
 See also the KB concept page `docs/kb/concepts/ring-switching.md`.
 -/

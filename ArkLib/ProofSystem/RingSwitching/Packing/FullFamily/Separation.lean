@@ -39,7 +39,7 @@ def afterChallenge (α : data.ιP → data.E) (r : Fin m → data.E)
     (target data bat s c, p) ∈ data.sumcheckClaimRel m r (bat.weight c)
 
 /-- Fixed-prefix bad-transition bound with no challenge-dependent witness choice hidden in it. -/
-theorem compatibility_badEvent_le {O : Type*}
+theorem compatibility_bad_event_le {O : Type*}
     (commitsTo : O → data.P⦃≤ 1⦄[X Fin m] → Prop)
     (hfunctional : ∀ {o p p'}, commitsTo o p → commitsTo o p' → p = p')
     (hinj : Function.Injective (algebraMap data.P C))
@@ -63,16 +63,18 @@ theorem compatibility_badEvent_le {O : Type*}
     rintro c ⟨p, hcommit, hslice, _⟩
     exact hlive ⟨p, hcommit, hslice⟩
 
-/-- The phase's fixed-prefix bound consumes compatibility-only separation; an honest
-commitment constructor is not needed by the underlying collision argument. -/
-theorem badEvent_le (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
+/--
+Commitment functionality and injective coefficient transport bound the fixed-prefix knowledge
+transition by the batching error.
+-/
+theorem bad_event_le (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     (α : data.ιP → data.E) (r : Fin m → data.E) (oStmt : ∀ j, pc.OStmt j)
     (s : data.ιE → data.P) :
     Pr_{ let c ←$ᵖ bat.Challenge }[
       ∃ p, ¬ beforeChallenge data m pc α r oStmt s p ∧
         afterChallenge data m bat pc α r oStmt s c p] ≤ (bat.error : ℝ≥0∞) := by
   refine (Pr_le_Pr_of_implies _ _ _ ?_).trans
-    (compatibility_badEvent_le data m bat pc.commitsTo hfunctional hinj r oStmt s)
+    (compatibility_bad_event_le data m bat pc.commitsTo hfunctional hinj r oStmt s)
   rintro c ⟨p, hnot, hc, hcommit, hsum⟩
   exact ⟨p, hcommit, fun hslice => hnot ⟨hc, hcommit, hslice⟩, hsum⟩
 

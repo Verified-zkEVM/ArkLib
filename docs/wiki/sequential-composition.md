@@ -75,9 +75,9 @@ these hypotheses. Prover-averaged component bounds alone do not supply this cont
 
 Generic soundness composition and the implication from round-by-round to ordinary soundness
 remain admitted. Legacy Sumcheck, Packing, and Binius clients use the proved completeness
-interfaces above but retain separate component and context-lifting admissions. The new generic
-`Packing/Tail/` pipelines have proved component obligations and axiom-clean completeness and
-round-by-round knowledge theorems.
+interfaces above but retain separate component and context-lifting admissions. The generic
+`Packing/Tail/` pipelines have proved completeness and round-by-round knowledge contracts
+under their explicit commitment and challenge hypotheses.
 
 ## Round-by-round knowledge soundness
 
@@ -92,19 +92,13 @@ the actual left output extractor on the witness supplied by the right predecesso
 
 `append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first` preserves the exact component
 extractors and knowledge states. Each challenge retains its component error, with the existential
-successor witness inside the sampled event. Both protocol lengths may be zero. The `_With`
+successor witness inside the sampled event, so it may depend on the challenge. Both protocol
+lengths may be zero. The `_With`
 averaged wrapper preserves these objects; the existential wrappers hide them. The oracle-verifier
 wrapper uses actual oracle materialization through `append_toVerifier`.
 
-Both component hypotheses are **worst-case per prefix**. An averaged component result is not
-sufficient. These theorems implement ArkLib's current extractor-aware knowledge-state contract;
-they do not establish a stronger same-witness or terminal-iff definition. They also do not prove
-a component's commitment, sumcheck, or opening obligations.
-
-`GuardedKnowledge.lean` tests empty components, both challenge directions at the seam, a first
-right prover message, absorbing rejection, rejection in post-seam knowledge states, and a right
-oracle query whose state change survives composition. Named axiom assertions cover the constructor
-and exact worst-case theorem.
+Both component hypotheses are **worst-case per prefix**. Averaged wrappers retain these premises;
+commitment, sumcheck and opening obligations belong to the component proofs.
 
 For finite guarded chains, import `Sequential/KnowledgeNary.lean`.
 `Verifier.KnowledgeSeqCompose` exposes the recursive `Witness`, `extractor`, `state` and `error`
@@ -114,10 +108,8 @@ sequence uses identity extraction; successor steps use the proved guarded append
 `error_component` and `error_eq_sigma` identify each challenge with the existing public
 component-and-local-challenge decoder. The averaged wrapper preserves the same objects.
 
-The corresponding `KnowledgeNary.lean` acceptance tests check actual empty/singleton execution,
-a rejected middle component and its later knowledge states, extraction across a seam, and distinct
-later-component errors. This guarded specialization leaves the unrestricted admitted theorem
-unchanged. A final verifier with arbitrary effects can use the binary guarded-first theorem.
+The unrestricted knowledge-composition theorem remains admitted. A final verifier with arbitrary
+effects can use the binary guarded-first theorem.
 
 ## Clients and validation
 
@@ -126,10 +118,7 @@ sumcheck. `Hachi/HonestChain.lean` contains the prefix certificates; `Hachi/Corr
 composes the commitment-input adapter, chain, and terminal check. Its folded-witness width `τ`
 and bounded decomposition are parameters of these certificates.
 
-Run `./scripts/validate.sh --axioms` for the library, compile-time tests, runtime checks, and
+Run `./scripts/validate.sh --axioms` for the library, compile-time tests, runtime checks and
 axiom regression gate. `ArkLibTest/OracleReduction/Composition/Sequential/` covers challenge
-routing, rejecting verifiers, raw query-order failure, and the need for suffix correctness at
-the state left by the prefix. It also contains a simulated factorization example outside the
-raw execution conditions. `RetiredCompleteness.lean` checks that the unsupported fixed-initial-state
-completeness names are absent. Hachi's tests check its composed theorem dependencies; the default
-runtime exercises bounded decomposition but does not execute the expensive complete opening run.
+routing, rejection, stateful suffixes and simulated factorization. Hachi's tests check its composed
+theorem dependencies; its default runtime exercises bounded decomposition.

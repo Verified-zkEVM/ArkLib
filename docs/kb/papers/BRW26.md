@@ -14,55 +14,52 @@ related_concepts:
 
 ## At A Glance
 
-Flock is a SNARK for batched Boolean computations by Benedikt Bünz, Ron Rothblum, and
-William Wang. ArkLib's ring-switching design uses Appendix B's coordinate packing and
-weighted claim reconstruction, together with Appendix C's distinct commitment boundary.
-The [coverage audit](../audits/ring-switching-model-coverage.md) pins the inspected PDF.
+Bünz, Rothblum and Wang's *Flock: Fast Proving for Batch Boolean Computations* uses coordinate
+packing and weighted scalar reconstruction in Appendix B. Appendix C supplies the distinct
+list-decoding and out-of-domain (OOD) commitment analysis.
 
 ## What ArkLib Uses From This Paper
 
-Appendix B represents partial evaluation values over an extension field by coordinates
-over the base field, transposes the coordinate matrix, and packs its rows. Faithful
-coordinates are essential: independence over the base field does not justify recombining
-arbitrary extension-field values as though they were base-field coordinates (Remark 5).
+The coordinate argument transposes base-field coordinates of extension-field partial values.
+Remark 5 requires faithful coordinates: basis independence over the base field does not justify
+recombining arbitrary extension-field values as base-field coordinates.
 
-The ordinary scalar head checks equality-weighted partial values. Appendix B.3 also handles
-quirky claims, with weights `L_σ(ζ) * eq(ρ,b)` combining a univariate interpolation coordinate
-and Boolean coordinates. This requires a concrete reconstruction theorem for those weights;
-a head restricted to ordinary equality weights does not implement that case.
-`Packing/ScalarHead/Quirky.lean` defines the original interpolated extension, proves its
-degree and node semantics, and derives those exact weights with the `(σ,b)` packing order.
-The checked scalar phase has actual execution, completeness and zero-error knowledge proofs.
+Ordinary claims use equality-weighted partial values. Appendix B.3's quirky claims use
+`L_σ(ζ) * eq(ρ,b)`, combining Lagrange and Boolean weights in the `(σ,b)` packing order.
+`ScalarHead/Quirky.lean` defines the original interpolated extension, proves its degree and node
+semantics, and derives this reconstruction. Both ordinary and quirky layouts instantiate the
+shared checked scalar head with completeness and zero-error knowledge contracts.
 
-Appendix B.2's matrix evaluator is implemented in `Packing/Multiplier.lean`, with proved
-correctness at every challenge point and an instrumented count of matrix-vector actions. Its specification is the multilinear extension of the Boolean table obtained
-by applying a base-linear coordinate functional to equality weights. That functional is
-not a ring homomorphism, so it cannot simply be applied to an arbitrary-point equality
-evaluation in an unrelated challenge algebra.
+The multiplier evaluator uses multiplication matrices, with Boolean interpolation at each layer.
+Its specification is the multilinear extension of the Boolean table obtained by applying a
+base-linear coordinate functional to equality weights. The functional need not be multiplicative.
+`Multiplier.lean` proves correctness at arbitrary challenge points and counts one matrix-vector
+action per retained variable, excluding preprocessing.
 
 ## Main ArkLib Touchpoints
 
-- [Ring-switching concept](../concepts/ring-switching.md) — the shared algebra and distinct
-  scalar, full-family, trace, and lift protocols.
-- [Model and coverage audit](../audits/ring-switching-model-coverage.md) — exact Flock
-  weights, source locations, multiplier semantics, and binding requirements.
-- [DP24](DP24.md) — the binary-tower protocol lineage of the existing packing pipeline.
+- [`ScalarHead/Layout.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Layout.lean) and
+  [`Quirky.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Quirky.lean) — ordinary and quirky source layouts.
+- [`ScalarHead/Phase.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ScalarHead/Phase.lean) — common checked scalar reconstruction.
+- [`Multiplier.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean) — public multiplication-matrix evaluator.
+- [Ring-switching concept](../concepts/ring-switching.md) and [coverage audit](../audits/ring-switching-model-coverage.md).
 
-## Security And Implementation Boundary
+## Implementation Boundary
 
-Flock's Ligerito integration admits lists of nearby codewords and uses out-of-domain
-selection during commitment. That selection has its own bad event; Remark 11 explains
-the candidate-list factor when the first selection is omitted. A theorem that assumes
-an exactly functional commitment relation does not discharge this integration boundary.
-Coordinate algebra, the concrete weighted heads, and the generic sumcheck tail are implemented.
-The base commitment interface admits multiple candidates: a permanent test runs the actual
-scalar/family composition with a cardinality-two oracle. Its deterministic behavior and
-completeness do not require functionality. The implemented randomized bound is the explicit
-exact-functional specialization; list/OOD security remains a separate formalization obligation.
+The base commitment interface allows multiple candidates, and deterministic reconstruction and
+completeness do not require functionality. The generic randomized knowledge bound explicitly
+requires functionality. Flock's Ligerito integration instead uses lists of nearby codewords and
+OOD selection, with its own binding bad event; Remark 11 accounts for the candidate-list factor
+when the first selection is omitted. This list/OOD security and a production Flock PCS integration
+are not implemented.
+
+The generic scalar/family composition sends partial values and a second checked-slice message;
+Flock uses a single partial-family message.
 
 ## Source Access
 
-- [Flock on the Cryptology ePrint Archive](https://eprint.iacr.org/2026/1329).
-- [Bibliographic source](../../../blueprint/src/references.bib), key `BRW26`.
-- Inspected version: 45-page PDF with creation metadata 2026-06-28; Appendix B pp.36–40
-  and Appendix C pp.40–44. The coverage audit records its SHA-256.
+- [Cryptology ePrint Archive, 2026/1329](https://eprint.iacr.org/2026/1329).
+- [Bibliography](../../../blueprint/src/references.bib), key `BRW26`.
+- The 45-page PDF has creation metadata 2026-06-28. Locators: Appendix B pp.36–40;
+  multiplication matrices B.2.1 pp.38–39 and B.4 p.39; list/OOD analysis Appendix C pp.40–44.
+  The coverage audit records the PDF hash.

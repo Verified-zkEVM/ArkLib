@@ -15,7 +15,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 The public input contains every opening claim. The prover sends the packed slices, the verifier
 checks their coordinate read-back against that public family, and a fresh challenge batches the
-slices into a sumcheck claim. Failed read-back aborts the actual verifier.
+slices into a sumcheck claim. Failed read-back aborts the verifier.
 
 The target may lie in a separate challenge algebra `C`, with compatible coefficient transport
 `B → P → C`. Injectivity is a security premise rather than a requirement on the phase itself.
@@ -28,9 +28,9 @@ coordinate read-back is the uniqueness argument of [BRW26], Appendix B, Remark 5
 
 ## References
 
-* [RSG] "Ring switching, generalized." Note, leanEthereum/leanVM-b repository.
-* [BRW26] Bünz, Benedikt, Ron Rothblum, and William Wang. "Flock: Fast Proving for Batch
-  Boolean Computations." Cryptology ePrint Archive, Report 2026/1329. Appendix B.
+* [*Ring switching, generalized*][RSG]
+* [Bünz, B., Rothblum, R., and Wang, W., *Flock: Fast Proving for Batch Boolean
+  Computations*][BRW26]
 -/
 
 noncomputable section
@@ -114,7 +114,7 @@ def verifier :
     (check := fun stmt s => data.claimConsistent stmt.1 s)
     (accept := nextStatement data m bat)
 
-/-- The actual checked-slice oracle reduction. -/
+/-- The checked-slice oracle reduction. -/
 def reduction :
     OracleReduction (oSpec := []ₒ) (StmtIn := Input data m) (OStmtIn := pc.OStmt)
       (WitIn := data.ιP → B⦃≤ 1⦄[X Fin m])

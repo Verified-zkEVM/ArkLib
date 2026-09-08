@@ -1,9 +1,8 @@
 # Ring-switching models and coverage
 
-This audit compares the algebra, relations, and security boundaries of the ring-switching
-literature with ArkLib. It distinguishes implemented modules, proposed abstractions, and
-admitted statements requiring correction. It is not a merge verdict or a completion claim.
-The [concept page](../concepts/ring-switching.md) is the shorter entry point.
+This page maps coordinate packing, trace relocation and quotient lifting to their source
+relations, algebraic laws and ArkLib proof boundaries. The
+[concept page](../concepts/ring-switching.md) is the shorter component guide.
 
 ## Sources and version scope
 
@@ -29,413 +28,200 @@ Hachi: c7c98591c2576ecd8403d22e63861cb322d2995b0a88f0bc234f161afd5e6a15
 
 DP24 is ArkLib's citation key; Flock and the generalized note cite the later publication as
 DP26. The key alone does not select a PDF revision. The HMZ locators identify the inspected
-February version rather than asserting a comparison against the latest revision.
+February version.
 
-## Reconciliation with current main
+## Finite-free coordinate reconstruction
 
-The original implementation review compared main `66f3d089a41704597f54d641b78254d2a8f361f8`
-with composition snapshots #885 (`d513d5a7977680b4b3cf88fe6c5c937b23ffa46d`) and #887
-(`c37a66264740a816d8a7e6b8639b8fe13f3a72bb`). Both dependencies have now merged. Main
-`8d7e758b5c4421711358595870ff7fbcee2a3a9f` has exactly the same Git tree as the reviewed
-composition snapshot `c37a66264740a816d8a7e6b8639b8fe13f3a72bb`, with different ancestry.
-The earlier #615 snapshot is `e5b94f4dfe19cd4e4463088482de723758cc1038`; the historical
-main pin above remains the source of the pre-existing defects described below.
-
-The new work uses current `Packing/` ownership rather than restoring the draft's older
-`Generic/` hierarchy. Recent changes affect both the mathematics and integration:
-
-- #715 corrected Binius's Boolean-table encoder. The actual commitment uniqueness proof
-  uses that encoder and its code-distance relation.
-- #849 supplies ring-valid Boolean uniqueness. Polynomial transport and final evaluation
-  reuse it without imposing a domain on the opening algebra.
-- The Lean stack is now 4.33.1. Current probability and simulation helpers replace draft-local
-  VCVio shims; those older helpers are not copied into the new implementation.
-- #885/#887 supply proved execution and guarded completeness composition, with the updated
-  `GuardedForm.ofEmpty` and factorization APIs. New guarded knowledge composition has its own
-  proof, rather than inheriting the old admitted general knowledge theorem.
-- Current Hachi weak-opening/CWSS packages, balanced digits and norm parameters are retained
-  by the trace head. Its collision escape is not replaced with exact functionality.
-- Main's interaction kernel and accumulated oracle-access work (#851–#853, #861) remain a
-  separate API line. These protocols use the existing `OracleReduction` composition API;
-  the audit does not claim a migration to the new interaction kernel.
-
-Current validation includes the source-policy and zero-warning gates, acceptance and runtime
-checks, and the axiom regression baseline. New modules are inventoried with the generated
-umbrella; existing admissions are distinguished from new proof dependencies.
-
-## Exact coordinate model
-
-Let B be a commutative ring, E and P commutative B-algebras, and
-`ε : Basis J B E`, `β : Basis I B P` finite bases. E is the opening algebra and P is the packing
-algebra; no embedding between E and P is assumed. For `y : {0,1}^m`, `r : E^m`, and a
-base-valued table `f_i(y)`, put
+Let B be a commutative ring, and let E and P be commutative B-algebras with finite bases
+`ε : Basis J B E` and `β : Basis I B P`. E is the opening algebra and P is the packing
+algebra. For a finite table `v : Y → P` and weights `a : Y → E`, define
 
 ```text
-packed(y) = Σ_i algebraMap_B_P(f_i(y)) * β_i
-A(y,u) = ε.repr(eq_E(r,y))[u]
-T(α)_u = Σ_i algebraMap_B_P(ε.repr(α_i)[u]) * β_i.
+observe(a,v)_i = Σ_y [v(y)]β,i • a(y)
+coordinateSlices(a,v)_u = Σ_y [a(y)]ε,u • v(y)
+T(α)_u = Σ_i [α_i]ε,u • β_i.
 ```
 
-Both basis inverse laws make `T : (I → E) ≃ₗ[B] (J → P)` a linear equivalence. B-linearity gives
+Here `•` is the appropriate B-action. Basis reconstruction makes T a B-linear equivalence
+`(I → E) ≃ₗ[B] (J → P)`, and finite-sum linearity gives
 
 ```text
-(∀ i, α_i = Σ_y eq_E(r,y) * algebraMap_B_E(f_i(y)))
-↔ (∀ u, T(α)_u = Σ_y algebraMap_B_P(A(y,u)) * packed(y)).
+T(observe(a,v)) = coordinateSlices(a,v).
 ```
 
-This identity needs no field, integral-domain, separability, or power-of-two-rank assumption.
-An arbitrary public kernel `w(y):E` can replace `eq_E(r,y)` by the same argument. Identifying a
-kernel with a particular polynomial evaluation is a separate interpolation/layout theorem.
-Rank one and zero retained variables are legitimate cases. A Boolean scalar-head layout needs
-an explicit `I ≃ {0,1}^κ`; the full-family algebra does not. `E ⊗[B] P` is an optional carrier
-with two faithful coordinate presentations, not a required concrete representation.
+[`FiniteObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/FiniteObservation.lean)
+proves this identity and its read-back form. It allows unequal ranks, empty Y and zero divisors.
+Neither an embedding between E and P nor a power-of-two rank is required.
 
-### Defects in the reviewed main profile
+For a family of base-valued Boolean tables `f_i`, set
+`v(y) = Σ_i f_i(y) • β_i` and `a(y) = eq_E(r,y)`. The identity becomes the full-family relation
 
-At main commit `66f3d089a`,
-[`Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean) had a
-single extension L, a carrier A, and row/column functions satisfying only reconstruction after
-decomposition. Each decomposition was consequently injective **on A**. Those laws did not imply
-linearity, preservation of zero, or decomposition after reconstruction of an arbitrary family.
-The implementation now requires both coordinate inverse laws and coherent base embeddings; the
-following counterexamples explain why that strengthening was necessary.
+```text
+(∀ i, α_i = Σ_y eq_E(r,y) * map_B_E(f_i(y)))
+↔ (∀ u, T(α)_u = Σ_y map_B_P([eq_E(r,y)]ε,u) * v(y)).
+```
 
-For example, let B=F₂, L=F₄ with basis `(1,w)`, A=L, and both embeddings the identity. Define
-both decompositions by `D(z)=(z−w,1)`. They satisfy `(z−w)+1*w=z`, so both profile laws hold.
-But `D(0)≠0`. At the zero original point/claim with zero witness, the honest carrier message
-is zero and its scalar check fails. The verifier returns dummy target and batching point zero;
-the honest prover returns batching point c and target `(-w)(1-c)+c`. For c≠0 the points differ;
-for c=0 the targets differ. Thus the outputs disagree for every challenge: returning a dummy
-does not rescue perfect completeness, whose profile-generic contract at the reviewed main commit was false. Stronger coordinate
-laws belong to the coordinate construction; Hachi's trace pairing needs its own protocol laws.
-Even adding linearity does not suffice: in the same collapsed carrier, `D(z)=(z,0)` is linear
-and satisfies reconstruction, but `D(w)=(w,0)` is not the second basis vector. Thus decomposition
-of an arbitrary encoded family still fails the inverse law. Faithful basis coordinates, not
-merely an additive choice of preimages, are the relevant requirement.
+[`Polynomial.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Polynomial.lean) supplies the
+polynomial packing inverses; [`Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean)
+uses finite observation for this equivalence over commutative rings. Boolean and monomial
+interpretations each require their own table/coefficient layout theorem.
 
-### Coordinate direction in the legacy protocol
+The tensor carrier `E ⊗[B] P` is an optional representation. In DP24's `E=P=L` specialization,
+`RingSwitchingProfile` requires two-sided coordinate inverses and agreement of the two embeddings
+on B. Rows of `φ₀(x) * φ₁(y)` are `x * basis.repr(y)`; columns are `y * basis.repr(x)`.
+Thus rows reconstruct partial evaluations and columns retain packed values for batching.
+[`ProfileCoordinates.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/ProfileCoordinates.lean)
+identifies the column family with T applied to the row family.
 
-With the profile's actual reconstruction conventions, rows of `φ₀(x) * φ₁(y)` are
-`x * basis.repr(y)`, and columns are `y * basis.repr(x)`. The embedded packed evaluation
-has the form `Σ_b φ₀(eq(r,b)) * φ₁(t′(b))`. Therefore the original scalar-claim check must
-use rows to recover the partial evaluations; batching and the public multiplier must use
-columns to retain packed-ring values. The reviewed main commit used these directions in reverse; the implementation now repairs all three uses.
+## Scalar reconstruction and trace observation
 
-For a field basis `(1,ω)`, take the source polynomial `X_prefix`, packed constant `ω`,
-and prefix point zero. The honest tensor message is `1 ⊗ ω`. Its row coordinates are
-`(0,1)` and reconstruct the correct scalar zero; its column coordinates are `(ω,0)`
-and cause the existing check to reject. Stronger profile laws alone do not fix this
-operational error. Every use of the two coordinate maps must match its reconstruction
-identity, including the batching target and final public multiplier.
+[`CheckedObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/CheckedObservation.lean)
+uses a source/output witness equivalence e and an unconditional identity
 
-## Protocol and relation matrix
+```text
+scalarEval(q,w) = observe(q, honestMsg(q,e(w))).
+```
 
-| Construction | External claim | Transcript and output | Required evidence |
-|---|---|---|---|
-| Generalized note | Every base-valued `f_i` has claimed E-value `α_i` at one common r. | Verifier derives T(α), samples batching challenge, runs sumcheck, checks public multiplier, outputs one packed opening. | Transpose identity; batching root bound; degree-2 sumcheck; commitment anchoring. |
-| Checked-slice variant | Same public full family. | Prover additionally sends slices; verifier checks them against α before batching. | Same identity plus the explicit slice check. This extra message is not in the note. |
-| DP24/Binius | One scalar evaluation of the original multilinear. | Prover sends partial family as a tensor element; verifier checks equality-weighted reconstruction before the tail. | Boolean layout, correct head check, faithful coordinates, downstream PCS interpretation. |
-| Flock ordinary/quirky | One multilinear or quirky evaluation. | Partial-family message and weighted scalar check, then coordinate batching and sumcheck. | Quirky weights `L_σ(ζ)*eq(ρ,b)` from Appendix B.3. |
-| Hachi §3.1 | One subfield-coefficient evaluation at subfield points. | Prover sends Y; verifier checks scaled trace and outputs a ring evaluation at the retained point. | Monomial-coefficient packing, subfield-linearity, ψ bijection, trace pairing, scalar cancellation. |
-| Quotient lift | Linear equality in a monic quotient presentation, with admissibility. | Commit to a lifted witness; receive α; output evaluated lift, commitment consistency, and admissibility. | Degree bound, coefficient embedding, interpolation, common-opening extraction or short collision. |
+Its honest-check and read-back lemmas transport an arbitrary retained witness predicate.
+Concrete adapters prove that their input/output relations and guards agree with these expressions.
+The inverse witness map recovers the original source witness.
 
-Concrete heads should be proved before extracting a common interface. A zero-round coercion
-from a scalar claim to public partials loses their reconstruction equation. Singleton batching
-does not construct a trace head.
+| Head | Source representation and reconstruction | Retained commitment boundary |
+|---|---|---|
+| DP24 | Boolean table split into κ packed prefix bits and m retained suffix bits; equality-weighted partial values | Same packed-table oracle; Binius tensor uses its unique-distance compatibility relation |
+| Flock ordinary | Boolean layout with packed suffix coordinates | Base commitment relation, which may admit multiple candidates |
+| Flock quirky | Lagrange/Boolean weights `L_σ(ζ) * eq(ρ,b)` in the exact `(σ,b)` packing order | Same base relation; list/OOD binding is separate |
+| Hachi §3.1 | Monomial coefficients and weights at fixed-subring points; one packed ring evaluation | Same norm-conditioned weak opening, with the existing message-shortness variant |
 
-### Multiplier and terminal opening
-
-For challenge weights λ in a commutative B-algebra C, the public table is
-`B_λ(y)=Σ_u λ_u*map_B_C(A(y,u))`. Sumcheck uses its C-multilinear extension times that of the
-packed table when C also receives P with compatible B-action. Injectivity of `P → C` is needed
-separately for the full-family security read-back. Coordinate extraction is justified on the Boolean table; a B-linear coordinate
-map cannot be treated as an E- or C-algebra homomorphism.
-
-RSG p.2 and Flock Appendix B.2.1 (pp.38–39) construct the multiplier as a multiplication-matrix
-branching program; Flock Appendix B.4 (p.39) states the general multilinear evaluation identity. Replace each Boolean layer by
-`(1-r′_i)M_i(0)+r′_i M_i(1)` to evaluate its multilinear extension. `Packing/Multiplier.lean` now proves this evaluator equals the actual multiplier polynomial
-at every C-point. It transports only B-valued matrix entries and needs no E→C or P→C map. The
-instrumented recursion counts exactly one matrix-vector action per retained variable; width is
-the opening-basis cardinality, and preprocessing is excluded. Tests include a nonmultiplicative
-observation, nonconstant direct evaluation, and opening/challenge fields admitting no homomorphism.
-Independent review additionally checked layer order with noncommuting matrices.
-
-The terminal statement is `packed^(r′)=v`, after checking `s_final=B_λ^(r′)*v`. It carries v
-itself, even when the multiplier is zero. At the reviewed main commit,
-[`finalSumcheckVerifier`](../../../ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean)
-instead forwarded the product while its prover and `finalSumcheckKStateProp` used v. This was a
-completeness/relation mismatch. Failed checks in that pipeline could also return ordinary
-statements, including `(point=0,claim=0)`, which can have valid witnesses. This audit obligation
-applies to the batching head, sumcheck loop, and final check. Rejection must be absorbing or
-proved outside the output relation throughout composition.
-
-The reviewed main also has two invalid auxiliary knowledge-state contracts. The loop's
-post-challenge state demands equality of the entire received and honest round polynomials,
-and retains the previous target's truth. A successful output opening gives their equality at
-the sampled point; it does not eliminate an accidental root of their difference. The final
-message state omits the residual-polynomial structural invariant while its message extractor
-preserves that polynomial. Consequently, a witness with an unrelated residual polynomial
-can satisfy the final message state without satisfying the preceding input state. These
-contracts need repair alongside the operational verifier checks.
-
-## Security currencies and assumptions
-
-| Boundary | Correct scope |
-|---|---|
-| Exact packing and transpose | Algebraic equivalences over B; no probabilistic error. |
-| Power batching | Note uses powers 1 through e and bound `e/|C|`; powers 0 through e−1 give a distinct sound variant `(e−1)/|C|` for e≥1. |
-| Multilinear batching | For `J≃{0,1}^κ`, uniform C^κ challenges give `κ/|C|` over a field; singleton batching is deterministic. |
-| Sumcheck | m retained variables and individual degree ≤2 give loss `2m/|C|` under the field sampling assumptions. |
-| Final multiplier check | Deterministic read-back; no new random challenge. Legacy extra `1/|L|` is not a separate source-protocol error and cannot repair a false verifier contract. |
-| Dense PCS | Exact functionality is one special case. DP24 Definition 2.9 extracts after commitment and before openings. |
-| Flock list decoding | Appendix C's OOD selection has its own binding bad event; omitting the first OOD can multiply outer error by the candidate-list size (Remark 11). |
-| Hachi trace head | Deterministic relative to a correct downstream ring opening; commitment and later reductions use CWSS with a norm-conditioned collision escape. |
-| Field-target lift | Defect degree ≤2d−1; 2d distinct accepting challenges for special soundness; probability loss `(2d−1)/|F|` in Hachi Figure 4/Lemma 9. |
-
-An identity commitment proves only that an interface can be instantiated. Real integrations
-must interpret the committed table and use their actual extraction/binding theorem. Hachi's
-short-collision event must remain restricted to short openings to give the intended Module-SIS
-witness.
-
-`PackedCommitment` carries the oracle relation and honest coverage without requiring uniqueness.
-Its `Functional` proposition is supplied separately to randomized security proofs, and
-`ExactPackedCommitment` is the specialization bundling that proof. Deterministic phases,
-extractors, knowledge states and completeness use the base relation. A concrete two-candidate
-oracle passes the actual scalar/family composition and is preserved at its output.
-
-In the exact-binding specialization, the RBR bad event existentially chooses a witness after
-the challenge. Compatibility must therefore remain in the relevant knowledge states, and a
-proved functionality law must fix the packed polynomial from the commitment before applying
-the root bound. Honest commitment coverage is a separate obligation. For Binius, functionality
-must follow from the existing first-oracle unique-decoding relation, its actual code distance,
-and injectivity of the corrected Boolean-table encoder; an arbitrary compatibility predicate
-does not supply this argument.
-
-Uniform sampling over an arbitrary finite ring does not justify a field-size denominator:
-over `C=F_q×F_q`, the polynomial `(1,0)*X` has q roots, a fraction `1/q`, not `1/q²`.
-HMZ's exceptional-set theorem requires unit differences between distinct challenges. Its
-Galois-ring targets for prime-power moduli extend beyond ArkLib's field-target `Lift` security.
-Supporting them needs a root-count/interpolation kernel, not just a weaker theorem signature.
-
-## Hachi: exact trace and source defects
-
-For `B=R_q^H`, n=d/k, Hachi Theorem 2 proves the B-linear packing bijection ψ and
+Hachi's packing map ψ is a B-linear bijection for `B=R_q^H` and n=d/k. The trace pairing is
 
 ```text
 Tr_H(ψ(a) * σ₋₁(ψ(b))) = n * ⟨a,b⟩.
 ```
 
-The trace sums automorphisms. The sentence on p.13 saying it fixes B omits n; its displayed
-verifier equation retains n correctly. Main's
-[`traceH_psi_mul_conj`](../../../ArkLib/Data/Lattices/CyclotomicRing/Subfield/TraceInnerProduct.lean)
-also retains n. Read-back needs multiplication by n to be injective (a unit suffices); the
-intended odd characteristic and power-of-two n supply this condition.
+The trace is the sum of automorphisms, so it scales fixed-subring elements by n. Theorem 2
+and the verifier equation retain this factor; the p.13 prose saying the trace fixes the subfield
+omits it. The trace head proves n is a unit under its odd-characteristic and power-of-two
+assumptions. Its guard equivalence applies to every sent ring value.
 
-Hachi §3.1 packs monomial coefficients `f_(i,j)` and checks with monomial weights
-`x_hi^i`, `x_lo^j`. A Boolean-table version needs explicit basis transport, including commitment
-interpretation and norm growth; Lemma 6's ψ bound does not automatically cover that change.
-The point must remain in the fixed subfield for trace-linearity to apply.
+[`TraceHead/Coordinates.lean`](../../../ArkLib/Commitments/Functional/Hachi/TraceHead/Coordinates.lean)
+identifies the actual ψ basis and numeric monomial indices with `PackingData`, then proves
+`unpack_eval_eq_observation`. This feeds the trace equivalence and shared checked-observation
+adapter. The proofs use the fixed subring as a ring and do not depend on its unfinished field
+identification. A Boolean-value-table reformulation would require additional basis, commitment
+and norm transport.
 
-Section 3.2 p.14 and recursive §4.5 compress field-valued partials with `Σ_i y_i Z^i`.
-The powers of Z are independent over F_q, not over the field containing y_i. For k=2,
-errors `(Zδ,−δ)` cancel there and change scalar reconstruction at a by `δ(Z−a)`.
-Flock Remark 5 warns against this same recombination. ArkLib's open `ZBatchBridge` pull-back
-needs a proved repair. Fresh random batching and a fully specified §3.1 repacking route are
-separate candidates; both need statement, commitment, layout, norm, and CWSS accounting.
+## Protocol correspondence
 
-The existing Hachi lift has progressed independently: quotient digits, reconstruction, and
-shortness are implemented in `RingSwitch/RhoDigits.lean`; the lift has a concrete Ajtai
-commitment and local collision-to-Module-SIS implication. Key-sampling and recursive end-to-end
-security remain separate boundaries. See [NOZ26](../papers/NOZ26.md).
-
-## Coverage and acceptance cases
-
-The coordinate core should support unrelated extension degrees, distinct bases, rank one,
-non-power-of-two rank, zero retained variables, and odd characteristic. Adapters should show:
-
-- DP24/Flock ordinary and Flock quirky weighted heads with exact table layouts.
-- Generalized-note E and P of coprime degrees with no embedding between them. A larger
-  challenge field also requires the PCS to support extension-valued openings.
-- Hachi's non-domain R_q with subfield points, explicit trace factor, and short-opening
-  commitment semantics; points outside the fixed subfield must not inherit the shortcut.
-- Zero public multiplier, failed check followed by a PCS-valid dummy, and false same-field
-  recombination, as negative relation tests.
-- List-valued committed candidates and a separately accounted OOD selection error.
-- HMZ exceptional-set interpolation over a Galois ring as an unimplemented security adapter.
-
-DP24 p.10 Eqs.(22)–(24) gives the Galois/product-carrier realization used to explain Hashcaster:
-`L⊗_K L ≃ ∏_(σ∈Gal(L/K)) L`. This is a change of carrier under Galois hypotheses; those
-hypotheses should not be imposed on the basic coordinate equivalence.
-
-These are finite, evidence-backed targets, not support for every present or future use of
-“ring switching.” FHE ring/modulus switching, cross-characteristic arithmetization, and code
-switching need their own relations and proofs.
-
-## Implementation and proof boundary
-
-The findings above describe the pinned-main review. The integration now repairs the legacy
-profile laws, all three coordinate directions, rejection behavior, final forwarded value, and
-two auxiliary knowledge states. `Legacy.lean` and `Orientation.lean` under
-`ArkLibTest/ProofSystem/RingSwitching/` exercise the actual production functions, including an
-honest nonzero source and failure through actual verifier append. New execution and coordinate
-lemmas passed independent named axiom checks. The final leaf now has ring-valid actual-run
-completeness, both KSF boundaries and zero-error worst-case knowledge proofs; its product-ring
-client covers packed value1 with multiplier0. The native tensor batching head now has proved
-state-aware completeness, both knowledge-state boundaries and exact worst-case-per-prefix
-knowledge security. Legacy loop and unrestricted general-composition admissions remain open.
-
-The actual FRI-Binius initial compatibility relation has separate proofs of functionality and
-honest coverage. Its GF(16) acceptance client constructs the field, basis, size/rate parameters,
-and honest oracle families for two nonconstant witnesses. The concrete `FRIBinius/RingSwitchingCommitment.lean` adapter now supplies the generic base
-commitment, separate functionality proof, exact specialization and legacy functionality with
-those same production semantics. Its GF(16) clients prove source coverage, same-oracle
-output, rejection and actual knowledge/completeness through both the full-family phase and
-the complete generic product-sumcheck pipeline. The latter rejects false original families
-for every later tail transcript.
-The existing FRI-Binius completeness assembly now invokes the native batching specialization;
-its native verifier's exact knowledge theorem uses the actual `binaryBasefold_functional` proof.
-The one tensor message, vector challenge, retained commitment and interleaved-core input relation
-are preserved. The actual FRI-Binius final verifier also aborts failed checks and preserves the
-received constant on acceptance. General execution and arbitrary-suffix rejection equations,
-plus inhabited GF(16) regressions, certify that local repair. They do not certify the downstream
-interleaved FRI-Binius opening; the full completeness assembly still inherits downstream admissions.
-
-### Shared proofs consumed by production definitions
-
-An instance declaration or acceptance client alone does not establish production reuse. The
-following paths occur in actual declaration bodies. Their source relations and algebraic
-correspondences were reviewed separately from their named axiom dependencies.
-
-| Shared layer | Concrete evidence supplied | Actual consumers and preserved boundary |
+| Construction | Messages and endpoint | ArkLib correspondence |
 |---|---|---|
-| `PackingData.transpose_observe` / `readback_coordinateSlices` | Independent finite bases and a finite table with arbitrary opening-algebra weights | Generic `Relations` read-back; native `ProfileCoordinates.columns_observation` and `BatchingAlgebra`; Hachi `Coordinates` monomial observation using its actual ψ basis. No field, domain or common packing/opening rank is required. |
-| `CheckedObservation.honest_check` / `readback_keep` | A genuine witness equivalence and unconditional evaluation identity; actual guard/input/output correspondence | `ScalarHead.honest_check` / `readback`, Hachi `check_honestMessage` / `mem_relIn_of_output`, and the native tensor head through `nativeObservation`. Existing completeness, KSF and Hachi CWSS proofs consume these endpoints. The weak opening and its norm predicates remain intact. |
-| `ClaimLayout` and polynomial transport | `RingSwitching.packMLE_eq_packedMLE` in `LegacyLayout.lean` (the actual DP24 `splitFirst` components), both native packing inverses, and prefix/suffix index identities | The native scalar check reads back the actual original source polynomial, not an unrelated family witness. DP24 and Flock ordinary/quirky layouts supply their own reconstruction identities to the same `ClaimLayout` interface and scalar-head proofs; no production Flock PCS is implemented. |
-| `FullFamily.compatibility_badEvent_le` | The actual compatibility relation, explicit functionality and injective coefficient transport | Both generic family separation and native `BatchingPhase.batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. A committed polynomial is fixed before the challenge; honest coverage is not invented as a security premise. |
-| Native batching completeness and exact knowledge theorem | Existing Binius profile, oracle relation and real unique-distance binding | `FullFRIBinius.batchingReduction_perfectCompleteness` is called by the existing full completeness assembly. `FullFRIBinius.batchingVerifier_rbrKnowledgeSoundnessWorstCaseWith` supplies `binaryBasefold_functional` and retains the exact native extractor/state and error `κ/|L|`. Downstream FRI security remains separate. |
+| Generalized note, pp.1–2 | Public family; verifier derives slices, batches, runs sumcheck and requests a packed opening | `FullFamily/` checks a prover-supplied slice message instead of deriving it silently |
+| DP24 Construction 3.1 | One tensor message for partial values, vector batching challenge, sumcheck/opening | Tensor `BatchingPhase` retains this head and its round-zero residual relation |
+| Flock Appendix B | One partial-family message and weighted scalar check, then coordinate batching and sumcheck | `ScalarHead/` implements ordinary and quirky reconstruction; `ScalarFamily/` also sends checked slices |
+| Generic scalar pipeline | Scalar partial-value message followed by a checked-slice message and sumcheck | `Tail/ScalarOpening` is a two-head-message composition variant of DP24/Flock |
+| Hachi §3.1 | One ring-element message, deterministic scaled-trace check, ring-evaluation endpoint | `Hachi/TraceHead/` retains the original weak opening and proves completeness and CWSS |
+| HMZ/Hachi quotient lift | Commitment to a lifted witness, scalar challenge, evaluated identity with commitment consistency/admissibility | `Lift/` proves the field-target CWSS specialization with collision escape |
 
-Hachi therefore shares reconstruction and deterministic checked-output proofs with Binius and
-the generic scalar head. It retains its own trace guard, one-message protocol and CWSS contract;
-no conversion to functional-commitment RBR security is asserted. The native Binius head shares
-the probabilistic separation theorem as well. Flock layouts share the scalar-head proofs, while
-list/OOD binding and a production Flock integration remain additional work.
+Binius's interleaved suffix interleaves FRI and sumcheck. It is distinct from the generic standalone
+product-sumcheck tail. The production FRI-Binius head uses the shared tensor batching proof;
+the generic Binius commitment adapter also supports `FullFamilyOpening` on the same codeword oracle.
 
-Permanent additional clients exercise arbitrary finite observations over `ZMod 6` with unequal
-basis ranks, empty observations, a non-self-inverse witness permutation with a proper retained
-predicate, Hachi's nonzero coefficient polynomial and real weak opening, and the actual GF(16)
-native batching input/output relations and `batchingCoreVerifier` rejection. Independent review
-checks actual proof-value paths rather than merely imports or theorem signatures. Standard-only
-axiom probes separately certify the new contracts; the full FRI assembly's remaining debt is
-reported independently.
+### Public multiplier and final value
 
-- The legacy modules in `Packing/` retain admitted leaves. The coordinate, terminal-value and
-  rejection repairs above correct their contracts; they do not by themselves discharge those
-  proof obligations or certify a generic end-to-end protocol.
-- The separately based core is implemented in `Packing/Coordinates.lean`, `FiniteObservation.lean`,
-  `Polynomial.lean`, `Relations.lean`, and `Batching.lean`: two-sided polynomial transport, full-family read-back,
-  and fixed-family separation have proofs over their stated algebraic assumptions. Independent
-  review and named axiom checks cover this core. Its proofs do not inherit a certificate from
-  the legacy profile.
-- The checked-slice `FullFamily/` phase is implemented and independently reviewed. Its actual
-  verifier retains the same commitment relation, aborts failed checks, and reduces the public
-  family to a C-valued sumcheck claim. State-uniform completeness and exact-object worst-case
-  knowledge proofs are standard-axiom-only. Concrete acceptance clients cover non-domain rings,
-  incompatible packing/opening fields, and a larger challenge field. Its polynomial-oracle test
-  fixture is an explicit generic example; the base commitment admits finite candidate sets,
-  while this randomized theorem explicitly requires functionality. Its precise downstream
-  packed-opening contract remains a separate component obligation.
-- `ScalarHead/` implements DP24's packed-prefix and Flock's packed-suffix layouts, with original
-  source/component equivalences over commutative rings. Quirky Flock independently defines the
-  original Lagrange extension, proves degree/node semantics and derives the exact `(σ,b)`
-  reconstruction. The actual one-message checked head has state-uniform completeness and
-  exact zero-error knowledge. Independent review covers off-grid quirky queries, failed full
-  reduction and an extra zero-variable, non-domain scalar client.
-- `ScalarFamily/` implements the actual scalar-head/family-head append. Both guards, the exact
-  appended extractor and knowledge state, and suffix-state completeness survive composition.
-  The composed scalar pipeline sends partial values and redundant checked slices in two
-  consecutive messages, a documented variant of DP24/Flock's single-family message.
-  False scalar execution still makes the suffix prover's real challenge query before producing
-  no output. Independent review covers this equation and an actual cardinality-two oracle.
-- `Tail/` implements the ring-valid residual-product relation and honest round polynomial,
-  the actual clear degree-two message/scalar-challenge rounds, and the deterministic terminal
-  check forwarding the same packed value. Before sampling, knowledge requires the honest round
-  polynomial; afterward it requires only the local guard and sampled relation. Explicit
-  functionality fixes the original witness before the `2/|C|` root bound. Terminal read-back
-  needs neither uniqueness nor cancellation. The m=0 sequence is identity followed by that leaf.
-- `Tail/FullFamilyOpening.lean` and `ScalarOpening.lean` are actual composed reductions from
-  their original full-family/scalar relations to precisely `pc.evalRel`. They use the proved
-  guarded finite-sequence/append constructors, with exact recursive extractors and knowledge
-  states. Stateful completeness applies to the base commitment; fixed-prefix knowledge adds
-  functionality and field-style challenge assumptions, with injective compatible P→C at the
-  head. Public error lookups distinguish batching from each scalar challenge. Named independent
-  axiom probes cover all production leaf and assembly contracts. These are RBR knowledge proofs
-  to an opening relation, not a proof of an unspecified downstream PCS or ordinary soundness.
-  `Tail/Accounting.lean` proves the exact sum over the actual challenge indices:
-  batching error plus `m * (2/|C|)`, with no error from the adapter or terminal.
-  Independent execution clients cover roots/nonroots of a forged quadratic, persistence of a
-  failed middle guard, ordered two-round challenge prefixes, and a GF(9) opening point proved
-  to lie outside the packing field's image. The zero-variable pipeline retains a genuine
-  two-candidate product-ring oracle and forwards the nonzero value under a zero multiplier.
-- `Packing/Opening.lean` fixes a downstream reduction's input to the same `pc.evalRel` and
-  supplies actual append assembly with exact extractor/knowledge states and component
-  worst-case premises. Arbitrary downstream verifier effects are allowed in that knowledge
-  contract. Completeness separately requires guarded verification, every-seam-state completeness
-  and a pure-output or first-message seam condition. Concrete production packing prefixes use
-  the empty ambient oracle; generic assembly takes an explicit common ambient oracle.
-  The checked polynomial-oracle client closes both actual public pipelines to a decision
-  relation and proves probability-one acceptance of a nonconstant original source. A separate
-  nonempty-ambient fixture verifies actual state-changing query execution and its prevention
-  after a failed front. No downstream security premise can be replaced by a vacuous
-  zero-challenge theorem: its knowledge-state endpoint still requires the actual opening check.
-- `Lift/` has monic presentation algebra and field-target CWSS. Hachi's lift and digit
-  encoding use that layer independently of the packing profile.
-- `Append/Knowledge.lean` proves guarded-first composition from worst-case-per-prefix component
-  knowledge bounds, including zero-round boundaries and arbitrary right effects. Independent
-  review and named axiom checks cover this specialization. `KnowledgeNary.lean` now extends the
-  proved construction to actual finite guarded sequences, including identity and empty-component
-  boundaries, while exposing the exact recursive witness/extractor/state and canonical error
-  indexing. General RBR knowledge composition
-  remains admitted in the shared security layer. Perfect
-  completeness and fixed-prefix soundness composition do not supply that theorem. Closing
-  packing leaf proofs alone therefore does not establish an end-to-end RBR knowledge result;
-  the composition and commitment-extraction dependencies need separate axiom checks.
-- Hachi's `TraceHead/` is implemented and independently reviewed. It proves both monomial
-  packing inverses, uses the actual ψ basis, and cancels the trace scale as a unit in R_q.
-  Its actual monomial observation consumes `PackingData`'s shared finite-observation theorem;
-  its honest-check and source read-back consume `CheckedObservation` through proved guard and
-  relation equivalences. The arbitrary-message trace guard uses the actual scaled trace and
-  ψ reindexing, without assuming the message is honest. Its one-message phase, ordinary/MsgShort
-  completeness and CWSS preserve the actual weak opening. Honest source coverage commits every original polynomial's packed coefficients
-  with the real balanced-gadget committer. A concrete rank-two/rank-one nonzero source rejects
-  a false zero claim in the full reduction. All named new algebra/protocol/consumer probes are
-  standard-axiom-only. The fixed-subring field conclusion remains conditional on
-  `no_selfReciprocal_factor`; these proofs do not inherit that gap. Existing noncomputable
-  infrastructure, scalar-Scheme packaging and §4.5 repair remain separate boundaries.
+For weights λ in a commutative B-algebra C, the public Boolean table is
+`B_λ(y)=Σ_u λ_u * map_B_C([eq_E(r,y)]ε,u)`. Sumcheck uses its C-multilinear extension and the
+extension of the packed table, with a compatible B-algebra map `P → C`.
 
-Independent review must examine relations, witnesses/extractors, challenge order and
-distribution, failure propagation, commitment binding, and axiom reports at each integration.
-A conditional theorem or a statement admitted with `sorry` is not a completed protocol proof.
+[`Multiplier.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean) evaluates
+that public extension by multiplication matrices. A Boolean layer is interpolated as
+`(1-z_i)M_i(0)+z_i M_i(1)`. This follows RSG p.2 and Flock Appendix B.2.1, pp.38–39, and B.4, p.39.
+Only B-valued matrix entries move to C: no `E → C` map or multiplicativity of the final
+coordinate observation is required. The instrumented evaluator counts one matrix-vector action
+per retained variable, at width `|J|`, excluding preprocessing.
 
-## Completion sequence and follow-up obligations
+The terminal check is `s_final = B_λ^(r′) * v`, and its output is the opening claim
+`packed^(r′) = v`. It forwards v even when the multiplier is zero. Failed checks abort through
+verifier composition. These semantics hold for the generic tail, the profile-based terminal,
+and the actual FRI-Binius final verifier; their proof coverage differs as listed below.
 
-The implementation follows the reviewed dependency order below. Each component has separate
-source review and named axiom checks; permanent acceptance clients exercise its actual relations.
+## Security assumptions and bounds
 
-| Stage | Delivered result | Acceptance boundary |
+`PackedCommitment` records an oracle relation and honest coverage. Its separate `Functional`
+proposition gives uniqueness; `ExactPackedCommitment` bundles this specialization. Deterministic
+reconstruction and completeness use the base relation. Randomized knowledge bounds additionally
+use functionality to fix the packed witness before the challenge, while compatibility remains
+in the knowledge states. The tensor separation theorem needs compatibility and functionality,
+without an honest-coverage premise.
+
+| Component | Bound and assumptions |
+|---|---|
+| Finite and checked reconstruction | Exact algebraic read-back; arbitrary retained witness predicate |
+| Power batching | RSG exponents 1 through e give `e/|C|`; zero-based exponents give the distinct bound `(e−1)/|C|` for e≥1 |
+| Multilinear batching | Indexing `J≃{0,1}^κ` gives `κ/|C|` for uniform finite-domain challenges |
+| Product sumcheck | Each retained-variable challenge contributes `2/|C|`; total `2m/|C|` |
+| Final multiplier check | Deterministic; no additional challenge error |
+| Full-family separation in C | Explicit functionality and injective `P → C`, compatible with the B-action |
+| Flock binding | List/OOD selection has its own bad event; Appendix C Remark 11 accounts for the candidate-list factor without the first OOD selection |
+| Hachi trace head | Deterministic CWSS read-back with the same weak opening; downstream norm-conditioned collisions remain in the Hachi security chain |
+| Field-target lift | Defect degree ≤2d−1 and 2d distinct challenges for extraction; collision escape preserves the weak-binding boundary |
+
+[`Tail/Accounting.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Tail/Accounting.lean)
+sums the actual generic challenge indices to `batching error + m * (2/|C|)`. Domain assumptions
+belong to these root bounds: over `F_q×F_q`, `(1,0)*X` vanishes at a fraction `1/q`, exceeding
+`1/|F_q×F_q|`. HMZ's exceptional sets instead require invertible differences between distinct
+challenges. Its Galois-ring targets are outside the implemented field-target security theorem.
+
+## Shared implementation and proof coverage
+
+| Shared component | Concrete consumers | Proof boundary |
 |---|---|---|
-| Model and legacy audit | Separate B/P/E/C roles; faithful legacy coordinates and absorbing failure | Nonconstant orientation, non-domain and terminal-value counterexamples |
-| Generic algebra | Coordinate transpose, polynomial inverses, batching and matrix multiplier | Unequal ranks, incompatible fields and nonmultiplicative observations |
-| Original-source heads | DP24/Flock layouts, quirky interpolation and Hachi monomial trace head | Actual source reconstruction, failed checks and norm-conditioned Hachi coverage |
-| Shared production proofs | Finite and checked observations consumed by native Binius and Hachi; native batching separation and real Binius binding | Actual declaration-value paths, standard-only named axioms, native GF(16) head/core rejection and Hachi weak-opening execution |
-| Commitment and composition | Base/functionality split; real Binius adapter; guarded append and finite sequence | Ambiguous finite candidates, shared-state seams and explicit recursive extraction |
-| Complete generic packing | Actual scalar/family heads, product sumcheck, terminal and error accounting | Empty/two-round execution, extension-valued opening, real GF(16) total 7/16 |
-| Downstream assembly | Actual opening contract and append wrapper | Checked-oracle closure of both public pipelines and effectful suffix behavior |
+| `PackingData.transpose_observe` and `readback_coordinateSlices` | Generic family read-back; tensor observations; Hachi monomial evaluation through its actual ψ basis | Commutative-ring algebra, arbitrary finite ranks/weights |
+| `CheckedObservation.honest_check` and `readback_keep` | `ScalarHead`, tensor `packingObservation`, Hachi honest checking and source read-back | Exact witness transport and concrete guard/relation equivalences; preserves weak-opening predicates |
+| `ClaimLayout` and polynomial transport | DP24 prefix split, Flock suffix and quirky layouts; `RingSwitching.packMLE_eq_packedMLE` identifies DP24 `splitFirst` components | Each layout proves its own original-source reconstruction |
+| `FullFamily.compatibility_bad_event_le` | Generic family and tensor batching knowledge proofs | Functional compatibility fixes the witness before the challenge |
+| Tensor batching specialization | `FullFRIBinius.batchingReduction_perfectCompleteness` and `batchingVerifier_rbrKnowledgeSoundnessWorstCaseWith` | Real `binaryBasefold_functional`; tensor extractor/state and error `κ/|L|` |
 
-Further work has separate proof obligations: remove the redundant scalar slice message from
-the generic scalar-family composition with a proved protocol correspondence if exact DP24/Flock
-transcripts are needed (the native Binius head already preserves its single tensor message);
-supply Flock list/OOD probability accounting and a production PCS integration; discharge the
-legacy loop and interleaved FRI-Binius opening proofs; package Hachi's semantic trace head for the executable scalar scheme and repair its
-§4.5 recombination; and add HMZ exceptional-set security and the Galois product-carrier adapter.
-These extensions must preserve their source relations and stated binding models. They are not
-premises silently supplied by the generic packing proofs above.
+The generic `FullFamily/`, `ScalarHead/`, `ScalarFamily/` and `Tail/` reductions have completeness
+from every initial oracle state. Their composed endpoints are precisely the same commitment's
+C-valued `evalRel`. Worst-case-per-prefix knowledge uses the stated functionality, challenge
+and transport hypotheses. `Append/Knowledge.lean` and `KnowledgeNary.lean` provide guarded binary
+and finite-sequence composition with explicit extractors, knowledge states and component errors.
+Averaged wrappers retain worst-case component premises.
+
+[`Packing/Opening.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Opening.lean) appends a
+supplied downstream reduction whose input is exactly `pc.evalRel`. Its knowledge contract permits
+arbitrary downstream verifier effects. Completeness separately requires guarded verification,
+every-seam-state completeness and the stated first-message or pure-output condition. Generic
+assembly has an explicit common ambient oracle; concrete packing prefixes use the empty one.
+The downstream opening must supply its own knowledge contract.
+
+The tensor head and profile-based terminal have proved completeness and knowledge
+contracts. The profile-based loop and unrestricted composition theorems retain admissions.
+The actual FRI-Binius final verifier has accepted/rejected execution and suffix-absorption
+lemmas; its downstream security and full completeness assembly still depend on admissions.
+The real Binius adapter supplies both honest coverage and uniqueness from code distance and
+injectivity of the Boolean-table encoder.
+
+Hachi's trace head has monomial packing inverses, real-committer source coverage, ordinary and
+message-shortness completeness, and same-opening CWSS. Its semantic ring/trace infrastructure
+is noncomputable; scalar-Scheme packaging is separate. Hachi's quotient lift uses balanced
+quotient digits and a local short-collision-to-Module-SIS theorem. Key sampling and recursive
+end-to-end security have additional obligations; see [NOZ26](../papers/NOZ26.md).
+
+## Coverage limits
+
+Flock's coordinate layouts and deterministic heads share the packing proofs. A production Flock
+PCS integration and list/OOD probability accounting are not implemented. Hachi §3.2/§4.5's
+same-field recombination `Σ_i y_i Z^i` does not have the required injectivity: errors
+`(Zδ,−δ)` cancel while changing scalar reconstruction at a by `δ(Z−a)`. The corresponding
+recursive pull-back requires a sound construction with its commitment and norm semantics.
+The fixed-subring field identification separately depends on `no_selfReciprocal_factor`.
+
+DP24 p.10, Eqs.(22)–(24), describes the Galois product carrier
+`L⊗_K L ≃ ∏_(σ∈Gal(L/K)) L` used for Hashcaster. This carrier adapter and HMZ exceptional-set
+security are not implemented. Neither their Galois hypotheses nor field root bounds are
+assumptions of the finite-free coordinate identity.
+
+The construction map covers coordinate packing, deterministic trace relocation and quotient
+lift. Other uses of “ring switching,” including FHE modulus switching or cross-characteristic
+arithmetization, require their own relations and algebra.

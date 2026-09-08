@@ -30,7 +30,7 @@ def Witness {m : ℕ} (Wit : Fin (m + 1) → Type) {n : Fin m → ℕ}
   | 0 => fun _ => Wit 0
   | _ + 1 => KnowledgeAppend.Witness (W 0) (Witness (Wit ∘ Fin.succ) (fun i => W i.succ))
 
-/-- The exact append extractor used at every seam of the actual composed verifier. -/
+/-- The recursively composed append extractor. -/
 def extractor {m : ℕ} (Stmt Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (V : ∀ i, Verifier oSpec (Stmt i.castSucc) (Stmt i.succ) (pSpec i))
@@ -66,7 +66,7 @@ def state {m : ℕ} (Stmt Wit : Fin (m + 1) → Type)
         (fun i => V i.succ) (fun i => G i.succ) (fun i => W i.succ)
         (fun i => E i.succ) (fun i => K i.succ))
 
-/-- The challenge error follows the same first-component/suffix split as actual composition. -/
+/-- Challenge error by the first-component/suffix decomposition of the sequence. -/
 def error {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
     (ε : ∀ i, (pSpec i).ChallengeIdx → ℝ≥0) :
     (ProtocolSpec.seqCompose pSpec).ChallengeIdx → ℝ≥0 :=
@@ -153,7 +153,7 @@ theorem seqCompose_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_verifiers
         (fun i => V i.succ) (fun i => G i.succ) (fun i => W i.succ)
         (fun i => E i.succ) (fun i => K i.succ) (fun i => ε i.succ) (fun i => h i.succ))
 
-/-- The same exact recursively composed objects satisfy the prover-averaged knowledge contract. -/
+/-- The recursive extractor and knowledge state satisfy the prover-averaged contract. -/
 theorem seqCompose_rbrKnowledgeSoundnessWith_of_worstCase_of_guarded_verifiers
     {m : ℕ} (Stmt Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}

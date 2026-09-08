@@ -19,7 +19,7 @@ namespace RingSwitching.Packing.Tail
 open Polynomial MvPolynomial
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
 
-/-- The actual C-valued product, with its degree bound derived from the two multilinears. -/
+/-- The challenge-algebra product of the multiplier and coefficient-mapped packed polynomial. -/
 def productPoly (A : C⦃≤ 1⦄[X Fin m]) (p : P⦃≤ 1⦄[X Fin m]) : C⦃≤ 2⦄[X Fin m] :=
   ⟨A.val * MvPolynomial.map (algebraMap P C) p.val, by
     rw [mem_restrictDegree_iff_degreeOf_le]
@@ -47,7 +47,7 @@ def rel (multiplier : Context → C⦃≤ 1⦄[X Fin m]) (pc : PackedCommitment 
   {x | x.1.1.target = hypercubeSum m (productPoly (multiplier x.1.1.ctx) x.2).val
       i x.1.1.challenges ∧ pc.commitsTo x.1.2 x.2}
 
-/-- The initial relation is the Boolean sum of the actual C-valued product. -/
+/-- The initial relation is the Boolean cube sum of the challenge-algebra product. -/
 theorem rel_zero (multiplier : Context → C⦃≤ 1⦄[X Fin m]) (pc : PackedCommitment P m)
     (ctx : Context) (target : C) (oStmt : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :

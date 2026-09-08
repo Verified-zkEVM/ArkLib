@@ -9,7 +9,7 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Knowledge
 /-!
 # Guarded knowledge composition at zero-round and challenge seams
 
-The fixtures retain the actual equality relation between a Boolean statement and witness. Their
+The fixtures retain the equality relation between a Boolean statement and witness. Their
 runtime guards may reject. Both directions of the empty-component boundary, a final left challenge,
 a first right challenge, and a first right prover message exercise the exact append extractor.
 -/
@@ -63,7 +63,7 @@ def extractor {n : ℕ} (p : ProtocolSpec n) :
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oracle (StateT σ ProbComp))
 
-/-- The knowledge predicate is the actual equality relation, including at round zero. -/
+/-- The knowledge predicate is the equality relation, including at round zero. -/
 def kstate {n : ℕ} (p : ProtocolSpec n) (check : p.FullTranscript → Bool) :
     (verifier p check).KnowledgeStateFunction init impl relation relation (extractor p) where
   toFun := fun _ s _ w => s = w
@@ -193,7 +193,7 @@ private def effectful_state : effectful.KnowledgeStateFunction (pure false) togg
     exact he.symm
 
 omit init impl in
-/-- An actual effectful suffix satisfies the same guarded-left composition theorem. -/
+/-- An effectful suffix satisfies the same guarded-left composition theorem. -/
 theorem effectful_suffix :
     ((verifier challenge (fun tr => tr 0)).append effectful).rbrKnowledgeSoundnessWorstCase
       (pure false) toggle relation relation (Sum.elim 0 0 ∘ ChallengeIdx.sumEquiv.symm) := by

@@ -33,7 +33,7 @@ def keep (_ : Unit) (w : Fin 3) : Prop := w ≠ 2
 /-- The interface permits multiple retained witnesses. -/
 theorem two_retained_witnesses : keep () 0 ∧ keep () 1 := by unfold keep; decide
 
-/-- Retaining this predicate is substantive: it excludes a third actual witness. -/
+/-- Retaining this predicate is substantive: it excludes a third witness. -/
 theorem excluded_witness : ¬ keep () 2 := by unfold keep; decide
 
 /-- Honest checking uses the image of the original source witness zero. -/
@@ -42,7 +42,7 @@ theorem honest_source :
       (observation.honestMsg () (observation.witnessEquiv 0)) :=
   observation.honest_check (q := ()) (w := 0) rfl
 
-/-- A valid output witness is pulled back through the actual inverse equivalence. -/
+/-- A valid output witness is pulled back through the inverse equivalence. -/
 theorem readback_source :
     keep () (observation.witnessEquiv (observation.witnessEquiv.symm 1)) ∧
       (8 : Nat) = observation.scalarEval () (observation.witnessEquiv.symm 1) :=

@@ -30,7 +30,7 @@ variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
 def transcript (α : data.ιP → data.E) : FullTranscript (pSpec data) :=
   fun | ⟨0, _⟩ => α
 
-/-- The honest prover returns the actual partials and exactly the same commitment oracle. -/
+/-- The honest prover returns the partial-evaluation family and preserves the commitment oracle. -/
 theorem prover_run (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j) (p : layout.Source) :
     (prover data m layout pc).run (stmt, ost) p =
       pure (transcript data (partials data m layout stmt.1 (layout.components p)),
@@ -76,7 +76,7 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
   subst x
   exact ⟨_, rfl, honest_relOut data m layout pc hIn, rfl⟩
 
-/-- A positive related verifier output fixes the scalar check and its actual family output. -/
+/-- A positive-probability related output determines the scalar check and family output. -/
 theorem positive_output {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j) (tr : FullTranscript (pSpec data))
@@ -145,7 +145,7 @@ theorem rbrKnowledgeSoundnessWorstCaseWith {σ : Type} (init : ProbComp σ)
   subst i
   contradiction
 
-/-- The averaged exact-extractor contract follows from the same zero-error worst-case proof. -/
+/-- The zero-error extractor and knowledge state satisfy the prover-averaged contract. -/
 theorem rbrKnowledgeSoundnessWith {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWith init impl

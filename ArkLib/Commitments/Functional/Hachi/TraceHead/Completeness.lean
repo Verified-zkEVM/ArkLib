@@ -6,7 +6,13 @@ Authors: ArkLib Contributors
 import ArkLib.Commitments.Functional.Hachi.TraceHead.Protocol
 import ArkLib.OracleReduction.Security.Basic
 
-/-! # Honest execution of Hachi's trace head -/
+/-! # Honest execution of Hachi's trace head
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
+-/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
 open ArkLib.Lattices.Ajtai.InnerOuter
@@ -30,7 +36,7 @@ def honestTranscript (base : ZMod q)
 
 omit [NeZero q] in
 set_option backward.isDefEq.respectTransparency false in
-/-- The actual prover run has no effects and emits the stated message and untouched opening. -/
+/-- The prover run has no effects and emits the trace message while preserving the opening. -/
 theorem prover_run (base : ZMod q)
     (s : Statement q α κ innerRows messageDigits outerRows innerDigits dRows m r)
     (w : QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
@@ -73,7 +79,7 @@ theorem reduction_run (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
     if_true]
   rfl
 
-/-- Perfect completeness for the actual trace-head reduction, from every shared initial state. -/
+/-- Perfect completeness of the trace head from every shared initial state. -/
 theorem perfectCompleteness (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
@@ -101,8 +107,7 @@ def relInMsgShort (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
   {p | p ∈ relIn α κ hk h2 pp base βSq γ bound ∧
     ∀ i, vecLInftyNorm (powTwoCyclotomic (R := ZMod q) α) (p.2.message i) ≤ msgBound}
 
-/-- The unchanged opening transports the stronger honest-chain bound without any inverse
-packing norm inference. -/
+/-- Perfect completeness with the stronger message norm bound on the opening witness. -/
 theorem perfectCompleteness_msgShort (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
@@ -118,8 +123,10 @@ theorem perfectCompleteness_msgShort (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMo
   subst hx
   exact ⟨_, rfl, ⟨mem_output_of_relIn α κ hk h2 pp base βSq γ bound s w h.1, h.2⟩, rfl⟩
 
-/-- The same actual extractor also preserves the honest-chain message-bound variant.
-This statement is distinct from ordinary weak-opening CWSS and uses its matching output relation. -/
+/--
+Coordinate-wise special soundness with the additional message norm bound and the identity
+opening extractor.
+-/
 theorem coordinateWiseSpecialSoundWith_msgShort
     (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

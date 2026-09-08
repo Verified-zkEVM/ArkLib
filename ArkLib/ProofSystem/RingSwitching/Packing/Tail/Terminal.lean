@@ -40,7 +40,7 @@ def check (stmt : Statement Context C (Fin.last m)) (v : C) : Prop :=
 def nextStatement (stmt : Statement Context C (Fin.last m)) (v : C) : (Fin m → C) × C :=
   (stmt.challenges, v)
 
-/-- The honest prover retains the original polynomial and the actual commitment oracle. -/
+/-- The honest prover preserves the packed polynomial and commitment oracle. -/
 def prover : OracleProver []ₒ (Statement Context C (Fin.last m)) pc.OStmt
     P⦃≤ 1⦄[X Fin m] ((Fin m → C) × C) pc.OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) where
   PrvState _ := ((Statement Context C (Fin.last m)) × (∀ j, pc.OStmt j)) ×
@@ -53,7 +53,7 @@ def prover : OracleProver []ₒ (Statement Context C (Fin.last m)) pc.OStmt
   output st := pure ((nextStatement st.1.1 (aeval st.1.1.challenges st.2.val), st.1.2), st.2)
 
 open scoped Classical in
-/-- A failed product check aborts the actual oracle verifier. -/
+/-- A failed product check aborts the oracle verifier. -/
 def verifier : OracleVerifier []ₒ (Statement Context C (Fin.last m)) pc.OStmt
     ((Fin m → C) × C) pc.OStmt (pSpec C) :=
   guardedMessageRoundOracleVerifier (check multiplier) nextStatement
@@ -106,7 +106,7 @@ theorem readback (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStm
 /-- The sole-message transcript. -/
 def transcript (v : C) : FullTranscript (pSpec C) := fun | ⟨0, _⟩ => v
 
-/-- Actual honest execution sends the C-evaluation and preserves its P witness. -/
+/-- Honest execution sends the challenge-algebra evaluation and preserves the packed witness. -/
 theorem prover_run (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :
     (prover pc).run (stmt, ost) p =
@@ -151,7 +151,7 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
   subst x
   exact ⟨_, rfl, honest_relOut multiplier pc hIn, rfl⟩
 
-/-- Positive probability of a related output pins the actual accepted guard and opening. -/
+/-- A positive-probability related output determines the accepted product check and opening. -/
 theorem positive_output {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OStmt j)

@@ -41,7 +41,7 @@ instance : ∀ i, SampleableType ((pSpec data).Challenge i)
 def partials (q : layout.Query) (ps : data.ιP → B⦃≤ 1⦄[X Fin m]) : data.ιP → data.E :=
   fun i => aeval (layout.point q) (ps i).val
 
-/-- The concrete layout reconstructs the source evaluation from the actual partial message. -/
+/-- Weighted partial evaluations reconstruct the source evaluation. -/
 def observation : CheckedObservation layout.Query layout.Source
     (data.ιP → B⦃≤ 1⦄[X Fin m]) (data.ιP → data.E) data.E where
   witnessEquiv := layout.components
@@ -63,7 +63,7 @@ def relIn : Set (((Input data m layout) × (∀ j, pc.OStmt j)) × layout.Source
   { sw | sw.1.1.2 = layout.eval sw.1.1.1 sw.2 ∧
     pc.commitsTo sw.1.2 (data.packedMLE (layout.components sw.2)) }
 
-/-- Every original source and query has a satisfying claim with its actual packed commitment. -/
+/-- Every source and query has a satisfying claim with its honest packed commitment. -/
 theorem relIn_honest (q : layout.Query) (p : layout.Source) :
     (((q, layout.eval q p), pc.commit (data.packedMLE (layout.components p))), p) ∈
       relIn data m layout pc := ⟨rfl, pc.commitsTo_commit _⟩
@@ -84,7 +84,9 @@ theorem check_iff_observation (stmt : Input data m layout) (α : data.ιP → da
     check data m layout stmt α ↔ stmt.2 = (observation data m layout).observe stmt.1 α :=
   Iff.rfl
 
-/-- At the actual output map, family validity fixes the message and keeps the same oracle. -/
+/--
+At the verifier output, family validity fixes the message and preserves the commitment oracle.
+-/
 theorem relOut_iff_observation (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j)
     (α : data.ιP → data.E) (ps : data.ιP → B⦃≤ 1⦄[X Fin m]) :
     ((nextStatement data m layout stmt α, ost), ps) ∈ relOut data m pc ↔
@@ -102,7 +104,7 @@ def ProverState : Fin 2 → Type
   | ⟨1, _⟩ => (Input data m layout × (∀ j, pc.OStmt j)) ×
       (data.ιP → B⦃≤ 1⦄[X Fin m])
 
-/-- The honest prover supplies the actual partial-evaluation family. -/
+/-- The honest prover sends the partial-evaluation family. -/
 def prover : OracleProver []ₒ (Input data m layout) pc.OStmt layout.Source
     (FullFamily.Input data m) pc.OStmt (data.ιP → B⦃≤ 1⦄[X Fin m]) (pSpec data) where
   PrvState := ProverState data m layout pc
@@ -121,7 +123,7 @@ def verifier : OracleVerifier []ₒ (Input data m layout) pc.OStmt
     (FullFamily.Input data m) pc.OStmt (pSpec data) :=
   guardedMessageRoundOracleVerifier (check data m layout) (nextStatement data m layout)
 
-/-- The actual scalar claim reduction. -/
+/-- The scalar claim reduction. -/
 def reduction : OracleReduction []ₒ (Input data m layout) pc.OStmt layout.Source
     (FullFamily.Input data m) pc.OStmt (data.ιP → B⦃≤ 1⦄[X Fin m]) (pSpec data) :=
   ⟨prover data m layout pc, verifier data m layout pc⟩
@@ -136,7 +138,7 @@ theorem verifier_verify (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j)
   apply guardedMessageRoundOracleVerifier_verify
 
 open scoped Classical in
-/-- The deterministic guarded form used for actual execution and state-aware composition. -/
+/-- The scalar verifier as a deterministic guarded form. -/
 def guardedForm : (verifier data m layout pc).toVerifier.GuardedForm where
   check stmt tr := decide (check data m layout stmt.1 (tr.messages ⟨0, rfl⟩))
   out stmt tr := (nextStatement data m layout stmt.1 (tr.messages ⟨0, rfl⟩), stmt.2)
@@ -156,7 +158,7 @@ theorem honest_check {stmt : Input data m layout} {ost : ∀ j, pc.OStmt j} {p :
   exact (observation data m layout).honest_check
     ((relIn_iff_observation data m layout pc stmt ost p).1 h).2
 
-/-- Honest output retains the same oracle and satisfies the full-family relation. -/
+/-- The honest output preserves the commitment oracle and satisfies the full-family relation. -/
 theorem honest_relOut {stmt : Input data m layout} {ost : ∀ j, pc.OStmt j} {p : layout.Source}
     (h : ((stmt, ost), p) ∈ relIn data m layout pc) :
     ((nextStatement data m layout stmt (partials data m layout stmt.1 (layout.components p)),

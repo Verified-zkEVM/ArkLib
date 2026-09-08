@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Polynomial
 /-!
 # A read-once evaluator for the public packing multiplier
 
-Multiplication in the opening algebra is represented by its actual finite-basis multiplication
+Multiplication in the opening algebra is represented by its finite-basis multiplication
 matrix over the base ring. Matrix entries are transported into the challenge algebra. Each layer
 is interpolated between multiplication by `1-rᵢ` and by `rᵢ`, and the final coordinate observation
 uses the batching weights. This evaluates the C-valued multilinear extension of the Boolean table;
@@ -24,9 +24,9 @@ These counts concern the explicit online arithmetic, excluding basis/matrix prep
 
 ## References
 
-* [RSG] "Ring switching, generalized." Note, leanEthereum/leanVM-b repository, page 2.
-* [BRW26] Bünz, Benedikt, Ron Rothblum, and William Wang. "Flock: Fast Proving for Batch
-  Boolean Computations." Cryptology ePrint Archive, Report 2026/1329. Appendix B.2.1, B.4.
+* [*Ring switching, generalized*][RSG]
+* [Bünz, B., Rothblum, R., and Wang, W., *Flock: Fast Proving for Batch Boolean
+  Computations*][BRW26]
 -/
 
 noncomputable section
@@ -43,7 +43,7 @@ def challengeCoordinates (a : data.E) : data.ιE → C :=
   fun u => algebraMap B C (data.openBasis.repr a u)
 
 open Classical in
-/-- The actual multiplication matrix, with only its base-ring entries transported into C. -/
+/-- The multiplication matrix with its base-ring entries transported to the challenge algebra. -/
 def challengeMulMatrix (a : data.E) : Matrix data.ιE data.ιE C :=
   (Algebra.leftMulMatrix data.openBasis a).map (algebraMap B C)
 
@@ -104,7 +104,7 @@ def evaluateMultiplier {m : ℕ} (r : Fin m → data.E) (weight : data.ιE → C
     (ReadOnce.run (fun i => ReadOnce.interpolate (data.multiplierLayers r i) (z i))
       (data.challengeCoordinates 1))
 
-/-- The read-once evaluator equals the actual C-valued multiplier polynomial at every C-point. -/
+/-- The read-once evaluator equals the multiplier polynomial at every challenge-algebra point. -/
 theorem evaluateMultiplier_eq {m : ℕ} (r : Fin m → data.E) (weight : data.ιE → C)
     (z : Fin m → C) :
     data.evaluateMultiplier r weight z = (data.multiplier r weight).val.eval z := by

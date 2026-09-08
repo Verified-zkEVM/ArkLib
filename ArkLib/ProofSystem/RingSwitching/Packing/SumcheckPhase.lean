@@ -13,17 +13,6 @@ import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
-# ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
-
-Definitions and results for this component of ArkLib.
--/
-
-open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
-  Module TensorProduct Nat Matrix
-open scoped NNReal
-open Sumcheck.Structured
-
-/-!
 # Relocation sumcheck and the final consistency step
 
 Second phase of the interactive packing reduction. After batching, the target `s₀` is (for
@@ -60,18 +49,23 @@ challenges, which is what the downstream opening can consume.
 9. `V` requires
    `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
 
-## Security scaffolding
+## Security
 
 Per-round and final-step extractors, knowledge-state functions and composed statements.
 Each sumcheck challenge contributes `2/|L|`; the final message adds no challenge error.
 Final-step completeness, knowledge-state obligations and worst-case security are proved.
-Loop and batching leaf security remain open (`sorry`).
+Loop knowledge soundness remains admitted; batching security is proved in `BatchingPhase.lean`.
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
+
+open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
+  Module TensorProduct Nat Matrix
+open scoped NNReal
+open Sumcheck.Structured
 
 namespace RingSwitching.SumcheckPhase
 noncomputable section
@@ -90,17 +84,9 @@ section IteratedSumcheckStep
 
 /-! ## Per-round prover / verifier (re-exported from `Sumcheck.Structured.SingleRound`)
 
-The per-round protocol code was lifted to `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound`
-as `round{PrvState, OracleProver, OracleVerifier, OracleReduction}`,
-`getRoundProverFinalOutput`, and `roundKnowledgeError`, parameterized over a generic
-`Context : Type` and `OStmtIn : ιₛᵢ → Type`.
-
-For backwards compatibility, the wrappers below preserve the original autobound signature
-(via the surrounding variable block — `κ L K ℓ ℓ' aOStmtIn`) by specializing
-`Context := RingSwitchingBaseContext κ L K ℓ` and `OStmtIn := aOStmtIn.OStmtIn`. They keep
-the `iteratedSumcheck*` names (these are what the sumcheck loop iterates over) and are
-`@[reducible]` so that subsequent soundness proofs and the seqCompose loop can still
-access fields like `.KnowledgeStateFunction` / `.rbrKnowledgeSoundness` through them. -/
+The `iteratedSumcheck*` wrappers specialize the structured single-round definitions to
+`Context := RingSwitchingBaseContext κ L K ℓ` and `OStmtIn := aOStmtIn.OStmtIn`.
+They are reducible so the sequential loop can access the underlying verifier and reduction. -/
 
 -- Ring-switching uses the plain degree-2 round polynomial (`H = P · t`), so the wrappers pin
 -- `d := 2` when specializing the degree-generic `Sumcheck.Structured.round*` definitions.
@@ -429,7 +415,7 @@ theorem finalSumcheckProver_run
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Perfect completeness for every initial oracle-state distribution, via the actual run. -/
+/-- Perfect completeness of the final reduction for every initial oracle-state distribution. -/
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckOracleReduction κ L K P ℓ ℓ' h_l aOStmtIn).perfectCompleteness init impl
@@ -521,7 +507,10 @@ theorem finalSumcheckKStateProp_next (m : Fin 1) (hDir : (pSpecFinalSumcheck L).
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
     [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Positive related output supplies the final state for the actual output extractor. -/
+/--
+A positive-probability related output satisfies the final knowledge state under output
+extraction.
+-/
 theorem finalSumcheckKStateProp_full {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (stmt : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) (Fin.last ℓ'))
@@ -593,7 +582,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith {σ : Typ
   cases hj
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L] in
-/-- Worst-case knowledge soundness with the actual final extractor and state as witnesses. -/
+/-- Worst-case knowledge soundness with the final extractor and knowledge state. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.rbrKnowledgeSoundnessWorstCase
@@ -606,7 +595,7 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundnessWorstCase {σ : Type}
       κ L K P ℓ ℓ' h_l aOStmtIn init impl⟩
 
 omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L] in
-/-- Averaged knowledge soundness follows from the proved zero-challenge worst-case contract. -/
+/-- Prover-averaged knowledge soundness of the zero-challenge final reduction. -/
 theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier κ L K P ℓ ℓ' h_l aOStmtIn).rbrKnowledgeSoundness init impl

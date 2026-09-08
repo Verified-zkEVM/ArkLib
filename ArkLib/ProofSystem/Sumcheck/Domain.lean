@@ -32,8 +32,7 @@ case-by-case basis (Boolean hypercube, SWIRL-style hyperprism, …).
 * `SumcheckDomain.points` / `SumcheckDomain.cube` — the per-coordinate domain as a `Finset R`, and
   the dependent product cube `∏ᵢ (univ.map (embed i))` as a `Finset (Fin k → R)`.
 * `SumcheckDomain.uniform D₀ k` — the same `m`-point embedding in every coordinate. Its `cube` is
-  *definitionally* the homogeneous `(univ.map D₀) ^ᶠ k` used today, so `Sumcheck.Spec` can migrate
-  onto this abstraction with no semantic change.
+  definitionally the homogeneous `(univ.map D₀) ^ᶠ k`.
 * `SumcheckDomain.prepend` — prepend a coordinate (used to build heterogeneous domains).
 * `boolDomain R k` — the Boolean hypercube `{0,1}^k` (the canonical `0 ↦ 0, 1 ↦ 1` embedding in
   every coordinate). The plain multilinear sum-check instance.
@@ -66,7 +65,7 @@ def points (D : SumcheckDomain R k) (i : Fin k) : Finset R := Finset.univ.map (D
 `Fin k → R`. Generalises the homogeneous `(univ.map D₀) ^ᶠ k`. -/
 def cube (D : SumcheckDomain R k) : Finset (Fin k → R) := Fintype.piFinset D.points
 
-/-- Sum over a domain cube by its finite coordinate indices, preserving each actual embedding. -/
+/-- Sum over a domain cube using its finite coordinate indices. -/
 theorem sum_cube {M : Type*} [AddCommMonoid M] (D : SumcheckDomain R k)
     (f : (Fin k → R) → M) :
     ∑ x ∈ D.cube, f x = ∑ v : ∀ i, Fin (D.size i), f (fun i => D.embed i (v i)) := by
@@ -85,11 +84,7 @@ theorem sum_cube {M : Type*} [AddCommMonoid M] (D : SumcheckDomain R k)
     exact ⟨v, Finset.mem_univ _, funext hv⟩
   · intros; rfl
 
-/-- The *uniform* domain: the same `m`-point embedding `D₀` in every one of the `k` coordinates.
-
-Its `cube` is *definitionally* `Fintype.piFinset (fun _ : Fin k => univ.map D₀)`, which is exactly
-the `(univ.map D₀) ^ᶠ k` used by `Sumcheck.Spec` today — so migrating `Spec` onto this abstraction
-is a `rfl`-rename with no downstream change. -/
+/-- The uniform domain with the same `m`-point embedding in every coordinate. -/
 def uniform (D₀ : Fin m ↪ R) (k : ℕ) : SumcheckDomain R k where
   size := fun _ => m
   embed := fun _ => D₀
@@ -139,9 +134,9 @@ def drop (D : SumcheckDomain R k) (j : ℕ) : SumcheckDomain R (k - j) where
 @[simp] lemma points_drop (D : SumcheckDomain R k) (j : ℕ) (i : Fin (k - j)) :
     (D.drop j).points i = D.points ⟨j + i, by omega⟩ := rfl
 
-/-- Dropping coordinates from a uniform domain is again uniform. So the per-round suffix cube
-`((uniform D₀ N).drop j).cube` reduces *definitionally* to today's `(univ.map D₀) ^ᶠ (N - j)` — the
-`rfl` hook that lets `Sumcheck.Spec`'s round-`i` sum migrate onto `drop` with no semantic change. -/
+/--
+Dropping an initial coordinate block from a uniform domain gives the smaller uniform domain.
+-/
 @[simp] lemma drop_uniform (D₀ : Fin m ↪ R) (N j : ℕ) :
     (uniform D₀ N).drop j = uniform D₀ (N - j) := rfl
 

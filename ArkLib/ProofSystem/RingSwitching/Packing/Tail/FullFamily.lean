@@ -9,7 +9,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Tail.Knowledge
 /-!
 # The full-family batched claim to its original commitment opening
 
-The actual zero-round input adapter is followed by every scalar round and the terminal value
+The zero-round input adapter is followed by every scalar round and the terminal value
 message. The output is precisely the original commitment's evaluation relation over C, on the
 same P-polynomial and oracle family. No downstream opening proof is assumed by this reduction.
 -/
@@ -22,7 +22,7 @@ variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
   {C : Type} [CommRing C] [Algebra B C] [Algebra data.P C]
   (bat : BatchingStrategy C data.ιE) (pc : PackedCommitment data.P m)
 
-/-- Reformat the input without interaction, then run the actual product-sumcheck tail. -/
+/-- Reformat the input, then run the product-sumcheck tail. -/
 def pSpec : ProtocolSpec (0 + (Fin.vsum (fun _ : Fin m => 2) + 1)) :=
   !p[] ++ₚ Tail.pSpec C m
 
@@ -32,25 +32,25 @@ instance : ∀ j, OracleInterface ((pSpec (C := C) m).Message j) :=
 instance [Fintype C] : ∀ j, SampleableType ((pSpec (C := C) m).Challenge j) :=
   ProtocolSpec.instSampleableTypeChallengeAppend (pSpec₁ := !p[]) (pSpec₂ := Tail.pSpec C m)
 
-/-- The actual oracle verifier from a batched family claim to the retained opening. -/
+/-- The oracle verifier from a batched family claim to a packed evaluation. -/
 def verifier : OracleVerifier []ₒ (FullFamily.Output data m bat) pc.OStmt
     ((Fin m → C) × C) pc.OStmt (pSpec (C := C) m) :=
   (adapterVerifier data m bat pc).append (Tail.verifier (multiplier data m bat) pc)
 
-/-- The actual reduction preserves the original packed witness and oracle family. -/
+/-- The batched-family reduction preserving the packed witness and oracle family. -/
 def reduction : OracleReduction []ₒ (FullFamily.Output data m bat) pc.OStmt
     data.P⦃≤ 1⦄[X Fin m] ((Fin m → C) × C) pc.OStmt data.P⦃≤ 1⦄[X Fin m]
     (pSpec (C := C) m) :=
   (adapterReduction data m bat pc).append (Tail.reduction (multiplier data m bat) pc)
 
 omit [Algebra data.P C] in
-/-- Materialization commutes with the actual input-adapter append. -/
+/-- Materialization commutes with the input-adapter append. -/
 theorem verifier_toVerifier : (verifier data m bat pc).toVerifier =
     (adapterVerifier data m bat pc).toVerifier.append
       (Tail.verifier (multiplier data m bat) pc).toVerifier :=
   OracleVerifier.append_toVerifier _ _
 
-/-- The input adapter and complete tail retain their guards across the actual append. -/
+/-- Guarded form of the input adapter followed by the complete tail. -/
 def guardedForm : (verifier data m bat pc).toVerifier.GuardedForm := by
   let G := (adapterGuardedForm data m bat pc).append (Tail.guardedForm (multiplier data m bat) pc)
   exact {
@@ -65,7 +65,7 @@ instance : (reduction data m bat pc).prover.OutputIsPure :=
     (show (adapterProver data m bat pc).OutputIsPure from inferInstance)
     (show (Tail.reduction (multiplier data m bat) pc).prover.OutputIsPure from inferInstance)
 
-/-- The actual batched-claim reduction is complete over a finite commutative challenge ring. -/
+/-- Perfect completeness of the batched-claim reduction over a finite commutative challenge ring. -/
 theorem perfectCompleteness [Fintype C] {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction data m bat pc).perfectCompleteness init impl
@@ -77,7 +77,7 @@ theorem perfectCompleteness [Fintype C] {σ : Type} (init : ProbComp σ)
     (adapter_perfectCompleteness data m bat pc init impl)
     (fun s => Tail.perfectCompleteness (multiplier data m bat) pc (pure s) impl)
 
-/-- The adapter's original witness followed by the actual tail intermediate witness family. -/
+/-- The input-adapter witness followed by the tail intermediate witness family. -/
 abbrev Witness : Fin (0 + (Fin.vsum (fun _ : Fin m => 2) + 1) + 1) → Type :=
   Verifier.KnowledgeAppend.Witness (AdapterWitness data m)
     (Tail.Witness (P := data.P) (m := m))
@@ -90,12 +90,12 @@ def extractor : Extractor.RoundByRound []ₒ
     (Tail.extractor (C := C) (Context := (Fin m → data.E) × bat.Challenge) pc)
     (adapterGuardedForm data m bat pc).out
 
-/-- The zero-round adapter contributes no error; indices select the actual tail challenge. -/
+/-- The error function selecting the tail challenge after the zero-round adapter. -/
 def rbrError [Fintype C] : (pSpec (C := C) m).ChallengeIdx → ℝ≥0 :=
   Sum.elim (fun _ => 0) (Tail.rbrError (C := C) (m := m)) ∘ ChallengeIdx.sumEquiv.symm
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Every actual challenge is a scalar product-sumcheck challenge. -/
+/-- Every challenge carries the scalar-round error. -/
 theorem rbrError_eq [Fintype C] (i : (pSpec (C := C) m).ChallengeIdx) :
     rbrError m i = 2 / Fintype.card C := by
   obtain ⟨j, rfl⟩ := ChallengeIdx.sumEquiv.surjective i
@@ -104,7 +104,7 @@ theorem rbrError_eq [Fintype C] (i : (pSpec (C := C) m).ChallengeIdx) :
   · simp only [rbrError, Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr]
     exact Tail.rbrError_eq j
 
-/-- The exact knowledge state on the actual materialized verifier, including the format seam. -/
+/-- The knowledge state after materialization of the input adapter and tail. -/
 def knowledgeStateFunction [Fintype C] {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier data m bat pc).toVerifier.KnowledgeStateFunction init impl
@@ -119,7 +119,7 @@ def knowledgeStateFunction [Fintype C] {σ : Type} (init : ProbComp σ)
     toFun_full := fun stmt tr p h => K.toFun_full stmt tr p (by
       simpa only [Verifier.run, verifier_toVerifier] using h) }
 
-/-- Exact fixed-prefix knowledge security on the same commitment's C-valued opening relation. -/
+/-- Worst-case knowledge soundness for a challenge-algebra evaluation on the same commitment. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith [IsDomain C] [Fintype C]
     (hfunctional : pc.Functional) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :

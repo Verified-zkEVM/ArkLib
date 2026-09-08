@@ -8,11 +8,11 @@ import ArkLibTest.ProofSystem.Binius.ConcreteCommitment
 import ArkLib.ProofSystem.Binius.FRIBinius.General
 
 /-!
-# Native FRI-Binius batching over a concrete rank-four field
+# Tensor FRI-Binius batching over a concrete rank-four field
 
-The existing tensor message and vector challenge reach the actual interleaved-core relation,
+The existing tensor message and vector challenge reach the interleaved-core relation,
 with the honest production codeword oracle and a nonconstant packed witness. These clients
-exercise the native phase; they do not assert security of the later FRI or query phases.
+exercise the tensor batching phase; they do not assert security of the later FRI or query phases.
 -/
 
 noncomputable section
@@ -49,18 +49,18 @@ def message (r : Fin 4 → L) : profile.A := embedded_MLP_eval 2 L K profile 4 2
 abbrev spec := pSpecBatching 2 L K profile
 abbrev V := BatchingPhase.oracleVerifier 2 L K profile 4 2 rfl commitment
 
-/-- The native source and packed witness agree by the actual production pack/unpack maps. -/
+/-- The source and packed witness agree by the production pack/unpack maps. -/
 theorem source_packs : packMLE 2 L K 4 2 rfl profile.basis source = packed :=
   packMLE_unpackMLE rfl profile.basis packed
 
-/-- The exact native input relation is inhabited using the production honest codeword oracle. -/
+/-- The batching input relation is inhabited using the production honest codeword oracle. -/
 theorem source_related (r : Fin 4 → L) :
     ((input r, oracle), witness) ∈
       BatchingPhase.batchingInputRelation 2 L K profile 4 2 rfl commitment :=
   ⟨source_packs.symm, rfl, honestOracle_compatible packed⟩
 
-/-- The actual tensor's column family is the shared transpose of its row family. -/
-theorem native_coordinates (r : Fin 4 → L) :
+/-- The tensor's column family is the shared transpose of its row family. -/
+theorem tensor_coordinates (r : Fin 4 → L) :
     (Packing.sameAlgebra profile.basis).transpose (profile.decomposeRows (message r)) =
       profile.decomposeColumns (message r) := profile.transpose_rows _
 
@@ -71,7 +71,7 @@ theorem core_input_related (r : Fin 4 → L) (c : Fin 2 → L) :
       sumcheckRoundRelation 2 L K profile 4 2 rfl commitment 0 :=
   BatchingPhase.honest_relOut 2 L K profile 4 2 rfl commitment (source_related r) c
 
-/-- The native verifier really forwards the same oracle and structured statement. -/
+/-- The batching verifier forwards the same oracle and structured statement. -/
 theorem accepts (r : Fin 4 → L) (c : Fin 2 → L) :
     V.toVerifier.verify (input r, oracle) (FullTranscript.mk2 (message r) c) =
       pure (BatchingPhase.nextStatement 2 L K profile 4 2 (input r) (message r) c, oracle) := by
@@ -86,7 +86,7 @@ theorem accepts (r : Fin 4 → L) (c : Fin 2 → L) :
 def falseInput (r : Fin 4 → L) : BatchingStmtIn L 4 :=
   ⟨r, aeval r source.val + 1⟩
 
-/-- Raising the actual scalar claim by one fails the native row guard. -/
+/-- Raising the scalar claim by one fails the row-coordinate guard. -/
 theorem false_guard (r : Fin 4 → L) :
     performCheckOriginalEvaluation 2 L K profile 4 2 rfl
       (falseInput r).original_claim r (message r) = false := by
@@ -98,7 +98,7 @@ theorem false_guard (r : Fin 4 → L) :
   have : (1 : L) = 0 := add_left_cancel (he.trans (add_zero _).symm)
   exact one_ne_zero this
 
-/-- The actual native verifier aborts the false input for every batching vector. -/
+/-- The batching verifier aborts the false input for every batching vector. -/
 theorem rejects (r : Fin 4 → L) (c : Fin 2 → L) :
     V.toVerifier.verify (falseInput r, oracle) (FullTranscript.mk2 (message r) c) = failure := by
   rw [BatchingPhase.oracleVerifier_verify]
@@ -114,8 +114,8 @@ abbrev coreSpec := BinaryBasefold.pSpecCoreInteraction K binaryBasis
 local instance : ∀ i, OracleInterface ((spec ++ₚ coreSpec).Message i) :=
   instOracleInterfaceMessageAppend (pSpec₁ := spec) (pSpec₂ := coreSpec)
 
-/-- The actual production batching-plus-FRI verifier cannot continue after that rejection. -/
-theorem actual_core_rejects (r : Fin 4 → L) (c : Fin 2 → L)
+/-- The production batching-plus-FRI verifier cannot continue after that rejection. -/
+theorem core_rejects (r : Fin 4 → L) (c : Fin 2 → L)
     (tr : FullTranscript (BinaryBasefold.pSpecCoreInteraction K binaryBasis
       (ϑ := 1) (h_ℓ_add_R_rate := show 2 + 1 < 2 ^ 2 by decide))) :
     (FullFRIBinius.batchingCoreVerifier 2 L K binaryBasis 4 2 1 1 rate rfl).toVerifier.verify
@@ -127,7 +127,7 @@ theorem actual_core_rejects (r : Fin 4 → L) (c : Fin 2 → L)
   rw [FullTranscript.append_fst, rejects]
   simp
 
-/-- The actual native production head is complete for every oracle state. -/
+/-- The batching head is complete for every oracle state. -/
 theorem complete {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (BatchingPhase.batchingOracleReduction 2 L K profile 4 2 rfl commitment).perfectCompleteness
@@ -136,8 +136,8 @@ theorem complete {σ : Type} (init : ProbComp σ)
   FullFRIBinius.batchingReduction_perfectCompleteness
     2 L K binaryBasis 4 2 1 1 (by decide) rfl
 
-/-- Production security uses actual binding and its exact extractor and knowledge state. -/
-theorem worstCase {σ : Type} (init : ProbComp σ)
+/-- Production security uses binding and its exact extractor and knowledge state. -/
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (BatchingPhase.batchingInputRelation 2 L K profile 4 2 rfl commitment)
@@ -149,7 +149,7 @@ theorem worstCase {σ : Type} (init : ProbComp σ)
   FullFRIBinius.batchingVerifier_rbrKnowledgeSoundnessWorstCaseWith
     2 L K binaryBasis 4 2 1 1 (by decide) rfl
 
-/-- The single native vector challenge has the proved budget two-sixteenths. -/
+/-- The single vector challenge has the error bound two-sixteenths. -/
 theorem error_value :
     BatchingPhase.batchingRBRKnowledgeError 2 L K profile ⟨1, rfl⟩ = (2 / 16 : ℝ≥0) := by
   simp only [BatchingPhase.batchingRBRKnowledgeError, field_card]

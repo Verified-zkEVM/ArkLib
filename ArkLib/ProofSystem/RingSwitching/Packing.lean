@@ -32,13 +32,13 @@ an exact linear equivalence. Neither a field/domain condition nor an embedding b
 
 `FiniteObservation.lean` proves that weighted observation of an arbitrary finite table commutes
 with coordinate transposition. The actual Boolean-polynomial read-back and Hachi monomial
-evaluation proofs instantiate the same theorem. `ProfileCoordinates.lean` also identifies native
+evaluation proofs instantiate the same theorem. `ProfileCoordinates.lean` also identifies tensor
 carrier columns with the transpose of rows for every message, and applies the observation law
-to finite tensor sums. These are concrete proof dependencies beyond constructing packing data.
+to finite tensor sums.
 
 `CheckedObservation.lean` shares honest checking and exact read-back from an unconditional
-evaluation/observation identity and a lossless witness equivalence. ScalarHead, the actual Hachi
-trace head, and native tensor-head algebra instantiate it with their concrete representations.
+evaluation/observation identity and a lossless witness equivalence. ScalarHead, the Hachi
+trace head, and tensor-head algebra instantiate it with their concrete representations.
 Their existing guard and commitment relations remain explicit; the common deterministic proof
 does not infer uniqueness or identify different security notions.
 
@@ -56,17 +56,17 @@ slices publicly. A checked-slice variant adds a prover message and verifies its 
 against that public family. `FullFamily/` implements this checked-message reduction to a
 sumcheck relation, retaining the same oracle statements. `PackedCommitment` records that relation
 and honest coverage; functionality is a separate premise used by the randomized knowledge bound.
-The phase proves actual execution and perfect completeness for every initial state. Its
+The phase proves execution and perfect completeness for every initial state. Its
 fixed-prefix knowledge theorem yields the averaged contract under the explicit binding premise.
 `ScalarHead/` implements the preceding scalar-claim head for [DP24]
 and [BRW26], including their different table layouts and Flock's quirky interpolation/equality
-weights. Its original-source reconstruction, actual execution, completeness, and zero-error
+weights. Its original-source reconstruction, execution, completeness, and zero-error
 knowledge contracts are proved independently of the later family certification. `ScalarFamily/`
-composes the two actual heads, preserving both guards and the exact extractor/knowledge state.
+composes the two heads, preserving both guards and the exact extractor/knowledge state.
 Its completeness also applies to finite-list commitments; list/OOD probability bounds remain
 separate from the exact-functional specialization.
 
-`Tail/` implements the actual degree-two product-sumcheck rounds and terminal value check.
+`Tail/` implements the degree-two product-sumcheck rounds and terminal value check.
 `FullFamilyOpening` and `ScalarOpening` compose the corresponding heads with that tail, ending
 exactly at the same commitment's `evalRel` over `C`. Their state-aware completeness uses the base
 commitment; fixed-prefix knowledge uses explicit functionality, finite-domain challenges, and
@@ -74,25 +74,25 @@ injective compatible `P → C` transport for the family head. Each tail challeng
 `2 / Fintype.card C`; the batching challenge keeps its strategy error. The terminal adds no
 challenge. `Accounting.lean` proves their exact sum is batching error plus `m * (2 / |C|)`.
 The empty loop directly reaches the same terminal check. `Opening.lean` fixes a downstream
-argument's input to that same `evalRel` and composes actual reductions using supplied worst-case
+argument's input to that same `evalRel` and composes reductions using supplied worst-case
 contracts. Its completeness wrapper states the guarded and shared-state seam requirements.
 Concrete tests close both public pipelines through a checked polynomial oracle.
 
-The legacy DP24 pipeline in this folder uses `RingSwitchingProfile`: one extension `L`,
+The tensor-profile pipeline in this folder uses `RingSwitchingProfile`: one extension `L`,
 a tensor-style carrier, two explicit embeddings, and two coordinate directions. With its
 reconstruction conventions, rows recover the original partial values and columns retain
 packed values for batching. `General.lean` assembles that pipeline with a downstream opening;
-its final leaf has ring-valid completeness and zero-error knowledge proofs. The native batching
-head now reuses the shared observation, layout and separation lemmas, with state-aware
+its final leaf has ring-valid completeness and zero-error knowledge proofs. The tensor batching
+head uses the shared observation, layout and separation lemmas, with state-aware
 completeness and exact worst-case knowledge security under explicit functionality. FRI-Binius
-supplies its actual first-codeword binding theorem. Legacy loop and old general knowledge
+supplies its first-codeword binding theorem. The profile-based loop and unrestricted knowledge
 composition retain separate proof obligations.
 
 Hachi [NOZ26, §3.1] uses a distinct deterministic trace head on monomial coefficients at
 subfield-valued points. It needs the scaled trace identity, unit cancellation, and the actual
 norm-conditioned commitment interpretation. `Commitments/Functional/Hachi/TraceHead/` supplies
-that actual head, honest committer coverage, completeness and CWSS into the existing ring-opening
-relation. It uses the fixed subring's ring structure and the actual `psi` basis, without the
+that head, honest committer coverage, completeness and CWSS into the existing ring-opening
+relation. It uses the fixed subring's ring structure and the `psi` basis, without the
 unproved external field identification. The quotient-ring construction in sibling `Lift/`
 is another protocol family.
 
@@ -101,24 +101,24 @@ is another protocol family.
 * `Coordinates.lean` — independent finite-free algebras and faithful coordinate transpose.
 * `FiniteObservation.lean` — shared weighted observation for Boolean and monomial representations.
 * `CheckedObservation.lean` — deterministic checking and exact witness read-back.
-* `ProfileCoordinates.lean` — native carrier/family equivalences and finite tensor observations.
-* `LegacyLayout.lean`, `BatchingAlgebra.lean` — actual Boolean-table packing, native scalar
+* `ProfileCoordinates.lean` — tensor carrier/family equivalences and finite tensor observations.
+* `ProfileLayout.lean`, `BatchingAlgebra.lean` — Boolean-table packing, row-coordinate scalar
   reconstruction and the existing round-zero relation as shared packing instances.
 * `Polynomial.lean` — coefficient packing/unpacking and the public multilinear multiplier.
-* `Multiplier.lean` — actual multiplication-matrix evaluator, MLE correctness and action count.
+* `Multiplier.lean` — multiplication-matrix evaluator, MLE correctness and action count.
 * `Relations.lean` — full-family and slice relations, ring-valid read-back, and C-valued batching.
 * `Batching.lean` — singleton, power, equality-fold, and reindexed separation strategies.
-* `PackedCommitment.lean` — actual oracle relation and honest coverage, with separate functionality.
+* `PackedCommitment.lean` — oracle relation and honest coverage, with separate functionality.
 * `ExactCommitment.lean` — the exact-functional specialization and polynomial-oracle example.
-* `FullFamily/` — checked slice message, actual execution, state-uniform completeness, and
+* `FullFamily/` — checked slice message, execution, state-uniform completeness, and
   fixed-prefix knowledge soundness of the reduction to a sumcheck claim.
 * `ScalarHead/` — scalar reconstruction, concrete DP24/Flock layouts and quirky interpolation,
-  actual one-message execution, completeness and zero-error knowledge.
-* `ScalarFamily/` — actual scalar/family append, guarded extraction, execution and completeness.
-* `Tail/` — product sumcheck, terminal check and actual family/scalar pipelines to `pc.evalRel`.
-* `Opening.lean` — same-commitment downstream contract and actual guarded append assembly.
-* `FinalAlgebra.lean` — the legacy public-multiplier evaluation and terminal residual identity.
-* `Profile.lean`, `Prelude.lean` — legacy carrier vocabulary, polynomial table layout,
+  one-message execution, completeness and zero-error knowledge.
+* `ScalarFamily/` — scalar/family append, guarded extraction, execution and completeness.
+* `Tail/` — product sumcheck, terminal check and family/scalar pipelines to `pc.evalRel`.
+* `Opening.lean` — same-commitment downstream contract and guarded append assembly.
+* `FinalAlgebra.lean` — the tensor public-multiplier evaluation and terminal residual identity.
+* `Profile.lean`, `Prelude.lean` — tensor carrier vocabulary, polynomial table layout,
   sumcheck relations, and the concrete tensor profile.
 * `Spec.lean`, `BatchingPhase.lean`, `SumcheckPhase.lean`, `General.lean` — the existing
   scalar-input packing pipeline and its security proof boundary.

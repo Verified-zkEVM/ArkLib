@@ -412,7 +412,6 @@ import ArkLib.ProofSystem.RingSwitching.Packing.FullFamily.Knowledge
 import ArkLib.ProofSystem.RingSwitching.Packing.FullFamily.Phase
 import ArkLib.ProofSystem.RingSwitching.Packing.FullFamily.Separation
 import ArkLib.ProofSystem.RingSwitching.Packing.General
-import ArkLib.ProofSystem.RingSwitching.Packing.LegacyLayout
 import ArkLib.ProofSystem.RingSwitching.Packing.Multiplier
 import ArkLib.ProofSystem.RingSwitching.Packing.Opening
 import ArkLib.ProofSystem.RingSwitching.Packing.PackedCommitment
@@ -420,6 +419,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Polynomial
 import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 import ArkLib.ProofSystem.RingSwitching.Packing.Profile
 import ArkLib.ProofSystem.RingSwitching.Packing.ProfileCoordinates
+import ArkLib.ProofSystem.RingSwitching.Packing.ProfileLayout
 import ArkLib.ProofSystem.RingSwitching.Packing.Relations
 import ArkLib.ProofSystem.RingSwitching.Packing.ScalarFamily.Execution
 import ArkLib.ProofSystem.RingSwitching.Packing.ScalarFamily.Phase

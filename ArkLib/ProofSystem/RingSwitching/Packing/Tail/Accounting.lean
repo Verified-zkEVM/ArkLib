@@ -6,7 +6,7 @@ Authors: ArkLib Contributors
 import ArkLib.ProofSystem.RingSwitching.Packing.Tail.FullFamilyOpening
 import ArkLib.ProofSystem.RingSwitching.Packing.Tail.ScalarOpening
 /-!
-# Accounting for the actual packing protocol's challenge errors
+# Accounting for packing protocol challenge errors
 
 The canonical sequence and append equivalences count one batching challenge and one scalar
 challenge per retained variable. These are exact sums of the declared per-challenge RBR
@@ -31,7 +31,7 @@ private theorem card_terminal : Fintype.card (Tail.Terminal.pSpec C).ChallengeId
   change Fintype.card {j : Fin 1 // (!v[Direction.P_to_V] j) = Direction.V_to_P} = 0
   decide
 
-/-- The actual finite sequence has one challenge per retained variable. -/
+/-- The scalar-round sequence has one challenge per retained variable. -/
 private theorem card_loop (m : ℕ) : Fintype.card (Tail.loopSpec C m).ChallengeIdx = m := by
   change Fintype.card (seqCompose (fun _ : Fin m => Tail.Round.pSpec C)).ChallengeIdx = m
   rw [← Fintype.card_congr (seqComposeChallengeEquiv (fun _ : Fin m => Tail.Round.pSpec C))]
@@ -44,7 +44,7 @@ private theorem card_tail (m : ℕ) : Fintype.card (Tail.pSpec C m).ChallengeIdx
     (pSpec₁ := Tail.loopSpec C m) (pSpec₂ := Tail.Terminal.pSpec C))]
   simp [Fintype.card_sum, card_loop, card_terminal]
 
-/-- The empty input adapter leaves the actual tail challenge count unchanged. -/
+/-- The empty input adapter preserves the tail challenge count. -/
 private theorem card_familyTail (m : ℕ) :
     Fintype.card (FullFamilyTail.pSpec (C := C) m).ChallengeIdx = m := by
   change Fintype.card (!p[] ++ₚ Tail.pSpec C m).ChallengeIdx = m
@@ -63,8 +63,10 @@ private theorem card_head : Fintype.card (FullFamily.pSpec data bat).ChallengeId
   decide
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The public full-family reduction has batching error plus the m actual scalar-round errors.
-This is an arithmetic identity of its declared error function, not an ordinary-soundness bound. -/
+/--
+The sum of the full-family reduction's per-challenge errors is the batching error plus `2 * m
+/ |C|`.
+-/
 theorem FullFamilyOpening.rbrError_sum : (∑ i, FullFamilyOpening.rbrError data m bat i) =
     bat.error + (m : ℝ≥0) * (2 / Fintype.card C) := by
   calc
@@ -88,8 +90,10 @@ private theorem card_scalarHead : Fintype.card (ScalarFamily.pSpec data bat).Cha
   decide
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The original-scalar reduction has the same aggregate per-challenge error accounting.
-The deterministic scalar head, format adapter and terminal message add no challenge error. -/
+/--
+The sum of the scalar reduction's per-challenge errors is the batching error plus `2 * m /
+|C|`.
+-/
 theorem ScalarOpening.rbrError_sum : (∑ i, ScalarOpening.rbrError data m bat i) =
     bat.error + (m : ℝ≥0) * (2 / Fintype.card C) := by
   calc

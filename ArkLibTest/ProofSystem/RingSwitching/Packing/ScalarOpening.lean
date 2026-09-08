@@ -7,7 +7,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Tail.ScalarOpening
 import ArkLibTest.ProofSystem.RingSwitching.Packing.ScalarFamily
 
 /-!
-# The actual original-scalar pipeline reaches the same packed opening
+# The original-scalar pipeline reaches the same packed opening
 
 The existing nonconstant source, rank-one packing, rank-two product opening algebra and ZMod5
 batching instantiate the complete scalar/family/sumcheck pipeline. Every phase retains the
@@ -23,25 +23,25 @@ open RingSwitching.Packing.Tests.ScalarFamily
 
 local instance : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
 
-/-- The original nonconstant source is an actual witness of the complete pipeline's input. -/
+/-- The original nonconstant source is a witness of the complete pipeline's input. -/
 theorem original_source : ((stmt, ost), source) ∈ ScalarHead.relIn data 1 layout pc :=
   source_related
 
-/-- The actual packed polynomial has its true opening on this very same commitment oracle. -/
-theorem actual_opening (r : Fin 1 → ZMod 5) :
+/-- The packed polynomial has its true opening on this very same commitment oracle. -/
+theorem opening (r : Fin 1 → ZMod 5) :
     (((r, aeval r (data.packedMLE (layout.components source)).val), ost),
       data.packedMLE (layout.components source)) ∈ pc.evalRel :=
   pc.evalRel_honest _ r
 
-/-- Perfect completeness is for the actual complete oracle reduction at every initial state. -/
+/-- Perfect completeness is for the complete oracle reduction at every initial state. -/
 theorem complete {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (RingSwitching.Packing.ScalarOpening.reduction data 1 layout bat pc).perfectCompleteness
       init impl (ScalarHead.relIn data 1 layout pc) pc.evalRel :=
   RingSwitching.Packing.ScalarOpening.perfectCompleteness data 1 layout bat pc init impl
 
-/-- Both the batching and scalar-round errors use the actual appended extractor and KSF. -/
-theorem worstCase {σ : Type} (init : ProbComp σ)
+/-- Both the batching and scalar-round errors use the appended extractor and KSF. -/
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (ScalarHead.relIn data 1 layout pc) pc.evalRel
@@ -53,7 +53,7 @@ theorem worstCase {σ : Type} (init : ProbComp σ)
   RingSwitching.Packing.ScalarOpening.rbrKnowledgeSoundnessWorstCaseWith data 1 layout bat pc
     pc.commitsTo_functional Function.injective_id init impl
 
-/-- Failure of the original scalar check survives the entire actual tail at every transcript. -/
+/-- Failure of the original scalar check survives the entire tail at every transcript. -/
 theorem false_scalar_rejected (c : ZMod 5)
     (tail : FullTranscript (FullFamilyTail.pSpec (C := ZMod 5) 1)) :
     (RingSwitching.Packing.ScalarOpening.verifier data 1 layout bat pc).toVerifier.run

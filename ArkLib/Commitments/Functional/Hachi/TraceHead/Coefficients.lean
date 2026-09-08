@@ -11,6 +11,11 @@ import Mathlib.LinearAlgebra.Pi
 
 The retained variables come first and the packed variables last. Indices use the existing
 little-endian `Hachi.splitEquiv`; this is coefficient packing, not Boolean-table packing.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open CompPoly
@@ -24,7 +29,7 @@ variable (e : (Fin (2 ^ t) → B) ≃ₗ[B] A)
 def packCoefficients (f : CMlPolynomial B (n + t)) : CMlPolynomial A n :=
   Vector.ofFn fun i => e (fun j => f.get (splitEquiv n t (j, i)))
 
-/-- Decode each ring coefficient in its actual packing coordinates. -/
+/-- Decode each ring coefficient in its packing coordinates. -/
 def unpackCoefficients (F : CMlPolynomial A n) : CMlPolynomial B (n + t) :=
   Vector.ofFn fun k => e.symm (F.get ((splitEquiv n t).symm k).2)
     ((splitEquiv n t).symm k).1
@@ -37,7 +42,7 @@ def unpackCoefficients (F : CMlPolynomial A n) : CMlPolynomial B (n + t) :=
   simp [unpackCoefficients, packCoefficients]
   rfl
 
-/-- Decoding and then packing recovers the actual ring polynomial. -/
+/-- Decoding and then packing recovers the ring polynomial. -/
 @[simp] theorem pack_unpackCoefficients (F : CMlPolynomial A n) :
     packCoefficients e (unpackCoefficients e F) = F := by
   apply Vector.ext
@@ -96,8 +101,7 @@ theorem unpackCoefficients_eval (F : CMlPolynomial A n) (x : Vector B n)
   simp only [toMatrix]
   ring
 
-/-- Decoding a coefficient polynomial gives its actual monomial matrix contraction.
-This identity concerns coefficients, before choosing any observation of the packed ring. -/
+/-- Decoding a coefficient polynomial gives its monomial matrix contraction. -/
 theorem unpackCoefficients_eval_components (F : CMlPolynomial A n) (x : Vector B n)
     (xp : Vector B t) :
     (unpackCoefficients e F).eval (x ++ xp) =

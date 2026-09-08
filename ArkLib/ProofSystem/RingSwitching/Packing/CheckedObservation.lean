@@ -21,7 +21,7 @@ namespace RingSwitching.Packing
 structure CheckedObservation (Q WIn WOut Message Value : Type*) where
   /-- Exact witness coordinates; readback uses this equivalence's inverse. -/
   witnessEquiv : WIn ≃ WOut
-  /-- The actual honest message computed from an output witness and the original query. -/
+  /-- The honest message computed from an output witness and query. -/
   honestMsg : Q → WOut → Message
   /-- The original scalar evaluation of the source witness. -/
   scalarEval : Q → WIn → Value
@@ -49,7 +49,7 @@ theorem readback {q : Q} {claim : Value} {msg : Message} {w : WOut}
   rw [D.eval_eq_observe, D.witnessEquiv.apply_symm_apply]
   exact hc.trans (congrArg (D.observe q) hm)
 
-/-- Checked readback retains precisely the supplied predicate on the same output witness. -/
+/-- Checked readback preserves the supplied predicate on the output witness. -/
 theorem readback_keep (Keep : Q → WOut → Prop)
     {q : Q} {claim : Value} {msg : Message} {w : WOut}
     (hc : claim = D.observe q msg) (ho : Keep q w ∧ msg = D.honestMsg q w) :

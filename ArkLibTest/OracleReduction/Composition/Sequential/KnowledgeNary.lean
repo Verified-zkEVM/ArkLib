@@ -10,9 +10,9 @@ import ArkLibTest.OracleReduction.Composition.Sequential.GuardedKnowledge
 /-!
 # Finite guarded knowledge composition acceptance cases
 
-The sequence preserves the actual equality relation between a Boolean statement and witness.
+The sequence preserves the equality relation between a Boolean statement and witness.
 Every component checks its Boolean challenge. The empty sequence, singleton, and longer sequence
-exercise the exact recursive knowledge objects and actual verifier execution.
+exercise the exact recursive knowledge objects and verifier execution.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -23,7 +23,7 @@ namespace KnowledgeNaryRegression
 open GuardedKnowledgeRegression
 open Verifier.KnowledgeSeqCompose
 
-/-- A finite sequence of actual guarded challenge verifiers. -/
+/-- A finite sequence of guarded challenge verifiers. -/
 def sequence (m : ℕ) :
     Verifier oracle Bool Bool (ProtocolSpec.seqCompose (fun _ : Fin m => challenge)) :=
   Verifier.seqCompose (fun _ => Bool) (fun _ => verifier challenge (fun tr => tr 0))
@@ -55,7 +55,7 @@ theorem sequence_sound (m : ℕ) :
     (fun _ => kstate init impl challenge (fun tr => tr 0)) (fun _ => 0)
     (fun _ => sound init impl challenge (fun tr => tr 0))
 
-/-- The zero-component contract is inhabited by the actual identity extractor and state. -/
+/-- The zero-component contract is inhabited by the identity extractor and state. -/
 theorem empty_sound :
     (sequence 0).rbrKnowledgeSoundnessWorstCaseWith init impl relation relation
       (Witness (fun _ : Fin 1 => Bool) (fun _ _ => Bool)) (sequenceExtractor 0)
@@ -80,7 +80,7 @@ omit init impl in
 /-- The empty sequence really executes the identity verifier. -/
 theorem empty_run (s : Bool) : (sequence 0).run s (fun i => i.elim0) = pure s := rfl
 
-/-- At its only cutoff, the empty recursive knowledge state is the actual input relation. -/
+/-- At its only cutoff, the empty recursive knowledge state is the input relation. -/
 theorem empty_state (s w : Bool) :
     sequenceState init impl 0 0 s (fun i => i.elim0) w ↔ s = w := Iff.rfl
 
@@ -92,7 +92,7 @@ theorem singleton_state (s w : Bool) :
   rfl
 
 omit init impl in
-/-- A rejected singleton transcript aborts the actual composed verifier. -/
+/-- A rejected singleton transcript aborts the composed verifier. -/
 theorem singleton_rejects (s : Bool) :
     (sequence 1).run s
       (FullTranscript.append (pSpec₁ := challenge) (pSpec₂ := !p[])
@@ -124,12 +124,12 @@ theorem middle_rejects (s : Bool) : (sequence 3).run s mixedTranscript = failure
   simp [form]
 
 omit init impl in
-/-- The actual recursive terminal extractor returns the same equality witness. -/
+/-- The recursive terminal extractor returns the same equality witness. -/
 theorem terminal_extraction (s w : Bool) :
     (sequenceExtractor 3).extractOut s mixedTranscript w = w := rfl
 
 omit init impl in
-/-- Extraction at the first challenge after a component seam uses the actual recursive extractor. -/
+/-- Extraction at the first challenge after a component seam uses the recursive extractor. -/
 theorem second_challenge_extraction (s w : Bool)
     (tr : (ProtocolSpec.seqCompose (fun _ : Fin 3 => challenge)).Transcript
       (Fin.succ (1 : Fin 3))) :
@@ -161,7 +161,7 @@ theorem middle_knowledge_rejects (s w : Bool) :
   cases hbad
 
 omit init impl in
-/-- Decoding a later component challenge returns its actual, distinct component error. -/
+/-- Decoding a later component challenge returns the distinct component error. -/
 theorem third_error :
     error (fun i : Fin 3 => fun _ : challenge.ChallengeIdx => (i.val + 1 : ℝ≥0))
       (sigmaChallengeIdxToSeqCompose (pSpec := fun _ : Fin 3 => challenge)

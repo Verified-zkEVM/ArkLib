@@ -27,7 +27,7 @@ abbrev data : PackingData (ZMod 6) where
 def weights : Fin 2 → data.E := ![![1, 2, 3], ![4, 5, 0]]
 def values : Fin 2 → data.P := ![![1, 2], ![3, 4]]
 
-/-- This fixture has actual nonzero zero divisors. -/
+/-- This fixture has nonzero zero divisors. -/
 theorem zero_divisors : (2 : ZMod 6) ≠ 0 ∧ (3 : ZMod 6) ≠ 0 ∧ (2 : ZMod 6) * 3 = 0 := by
   decide
 
@@ -41,7 +41,7 @@ theorem observed_values : data.observe weights values = ![![1, 5, 3], ![0, 0, 0]
       Pi.add_apply, Pi.algebraMap_apply] <;> decide
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The same table has three actual packed slices. -/
+/-- The same table has three packed slices. -/
 theorem slice_values : data.coordinateSlices weights values = ![![1, 0], ![5, 0], ![3, 0]] := by
   ext u i
   fin_cases u <;> fin_cases i <;>
@@ -50,13 +50,13 @@ theorem slice_values : data.coordinateSlices weights values = ![![1, 0], ![5, 0]
       Pi.add_apply, Pi.algebraMap_apply] <;> decide
 
 /-- The shared production theorem transposes the independently computed fixture. -/
-theorem actual_transpose :
+theorem transpose :
     data.transpose ![![1, 5, 3], ![0, 0, 0]] = ![![1, 0], ![5, 0], ![3, 0]] := by
   rw [← observed_values, ← slice_values]
   exact data.transpose_observe weights values
 
 /-- Shared readback recovers the independently computed opening-valued family. -/
-theorem actual_readback :
+theorem readback :
     data.transpose.symm ![![1, 0], ![5, 0], ![3, 0]] = ![![1, 5, 3], ![0, 0, 0]] := by
   rw [← observed_values, ← slice_values]
   exact data.readback_coordinateSlices weights values
@@ -67,7 +67,7 @@ theorem empty_observation :
       data.coordinateSlices (fun i : Fin 0 => i.elim0) (fun i => i.elim0) = 0 := by
   constructor <;> funext i <;> simp [PackingData.observe, PackingData.coordinateSlices]
 
-/-- The inverse theorem also applies to the actual empty observation set. -/
+/-- The inverse theorem also applies to the empty observation set. -/
 theorem empty_readback : data.transpose.symm (0 : data.ιE → data.P) = 0 := by
   rw [← empty_observation.2, data.readback_coordinateSlices]
   exact empty_observation.1
@@ -82,7 +82,7 @@ abbrev baseData : PackingData (ZMod 6) where
   openBasis := Module.Basis.singleton Unit _
 
 set_option backward.isDefEq.respectTransparency false in
-/-- A singleton weighted observation evaluates each actual packing coordinate. -/
+/-- A singleton weighted observation evaluates each packing coordinate. -/
 theorem singleton_readback :
     baseData.transpose.symm (fun _ => ![0, 2]) = ![0, 2] := by
   have h := baseData.readback_coordinateSlices (fun _ : Unit => (2 : ZMod 6))

@@ -16,6 +16,7 @@ import ArkLib.Data.MvPolynomial.Interpolation
   Besides the multilinear extension `MLE` and its characterizations, the file records the negative
   companion `exists_nonzero_vanishing_on_axis_cross`: vanishing on a coordinate-wise star does
   *not* determine a multilinear polynomial, in contrast with `MLE_eq_zero_iff` on the hypercube.
+  This distinguishes the uniform-vector claim in [NOZ26, Lemma 10] from Boolean interpolation.
 
   ## References
 
@@ -315,8 +316,9 @@ theorem eq_zero_of_degreeOf_le_one_of_eval_zeroOne_eq_zero :
         simp [f]
       rw [hp, hfZero, map_zero]
 
-/-- Two polynomials of individual degree at most one are equal if they agree on the Boolean
-hypercube. This criterion only compares Boolean evaluations, not all evaluations in the ring. -/
+/--
+Polynomials of individual degree at most one are equal if they agree on the Boolean hypercube.
+-/
 theorem eq_of_degreeOf_le_one_of_eval_zeroOne_eq {n : ℕ}
     (p q : MvPolynomial (Fin n) R) (hp : ∀ i, degreeOf i p ≤ 1)
     (hq : ∀ i, degreeOf i q ≤ 1)
@@ -371,10 +373,10 @@ a genuine grid of points, such as the leaves of a nested evaluation tree
 `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`).
 -/
 
-/-- A checked counterexample to the uniform-vector argument in Hachi [NOZ26, Lemma 10]. For any
-axis-cross center `(a, b)`, the nonzero multilinear polynomial
-`(X₀ - a) * (X₁ - b)` vanishes whenever either coordinate is fixed at the center. Thus arbitrarily
-many evaluations along the two arms of a coordinate-wise star do not imply a polynomial identity. -/
+/--
+For every center `(a, b)`, a nonzero multilinear polynomial vanishes on both coordinate lines
+through that center.
+-/
 theorem exists_nonzero_vanishing_on_axis_cross [Nontrivial R] (a b : R) :
     ∃ H : MvPolynomial (Fin 2) R,
       H ≠ 0 ∧ (∀ y, eval ![a, y] H = 0) ∧ ∀ x, eval ![x, b] H = 0 := by

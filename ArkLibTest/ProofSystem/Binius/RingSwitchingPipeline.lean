@@ -7,7 +7,7 @@ import ArkLibTest.ProofSystem.Binius.RingSwitchingCommitment
 import ArkLib.ProofSystem.RingSwitching.Packing.Tail.FullFamilyOpening
 
 /-!
-# Actual GF16 Binius commitment through the complete ring-switch head and tail
+# GF16 Binius commitment through the complete ring-switch head and tail
 
 The live retained-dimension-two, rank-four fixture uses its production codeword oracle and
 unique-distance compatibility relation. The complete checked family phase and product-sumcheck
@@ -29,24 +29,24 @@ local instance : Fact (Nat.Prime (ringChar (ZMod 2))) :=
 local instance : Fact (Fintype.card (ZMod 2) = 2) := ⟨ZMod.card 2⟩
 local instance : Fact (1 ∣ 2) := ⟨one_dvd 2⟩
 
-/-- The actual nonconstant source and actual codeword oracle satisfy the pipeline's input. -/
+/-- The nonconstant source and codeword oracle satisfy the pipeline's input. -/
 theorem source_related : ((input, oracle), family) ∈ FullFamily.relIn data 2 pc :=
   input_related
 
 /-- The endpoint retains the production compatibility relation on the same oracle and polynomial. -/
-theorem actual_opening_related (r : Fin 2 → PackedField) :
+theorem opening_related (r : Fin 2 → PackedField) :
     (((r, aeval r (coordinate 0).val), oracle), coordinate 0) ∈ pc.evalRel :=
   ⟨rfl, honestOracle_compatible (coordinate 0)⟩
 
-/-- Full checked ring switching is state-uniformly complete against the actual Binius commitment. -/
+/-- Full checked ring switching is state-uniformly complete against the Binius commitment. -/
 theorem complete {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (FullFamilyOpening.reduction data 2 batch pc).perfectCompleteness init impl
       (FullFamily.relIn data 2 pc) pc.evalRel :=
   FullFamilyOpening.perfectCompleteness data 2 batch pc init impl
 
-/-- The complete production pipeline uses actual binding and the exposed append extractor/state. -/
-theorem worstCase {σ : Type} (init : ProbComp σ)
+/-- The complete production pipeline uses binding and the exposed append extractor/state. -/
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (FullFamily.relIn data 2 pc) pc.evalRel

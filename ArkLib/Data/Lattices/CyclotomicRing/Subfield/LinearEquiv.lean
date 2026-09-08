@@ -8,9 +8,14 @@ import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Bijectivity
 /-!
 # Fixed-subring linear coordinates for Hachi packing
 
-The Hachi packing map is linear over the actual fixed subring and is a linear equivalence
+The Hachi packing map is linear over the fixed subring and is a linear equivalence
 under the hypotheses of `psi_bijective`. Neither this equivalence nor cancellation of the
 trace scale needs a field structure on the fixed subring.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 namespace ArkLib.Lattices.CyclotomicModulus
@@ -66,7 +71,7 @@ section Equivalence
 
 variable (q : ℕ) [Fact (Nat.Prime q)] [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
 
-/-- The actual fixed-subring linear coordinates of Hachi's packing map. -/
+/-- Fixed-subring linear coordinates of the packing map. -/
 noncomputable def psiLinearEquiv (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
     (hk : 2 * 2 ^ κ ∣ 2 ^ α) :
     (Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) ≃ₗ[

@@ -43,7 +43,7 @@ def extractor :
     | ⟨1, _⟩ => p
   extractOut _ _ p := p
 
-/-- Explicit knowledge states for the actual verifier and the anchored relation chain. -/
+/-- Verifier knowledge states for the committed relation chain. -/
 def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier data m bat pc).KnowledgeStateFunction init impl
@@ -89,7 +89,7 @@ theorem rbrKnowledgeSoundnessWorstCaseWith
         afterChallenge data m bat pc stmt.1.1 stmt.1.2 stmt.2 (tr ⟨0, by decide⟩) c p |
       $ᵗ bat.Challenge] ≤ (bat.error : ℝ≥0∞)
     rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
-    exact badEvent_le data m bat pc hfunctional hinj stmt.1.1 stmt.1.2 stmt.2 (tr ⟨0, by decide⟩)
+    exact bad_event_le data m bat pc hfunctional hinj stmt.1.1 stmt.1.2 stmt.2 (tr ⟨0, by decide⟩)
 
 /-- The averaged exact-extractor contract follows from the fixed-prefix contract. -/
 theorem rbrKnowledgeSoundnessWith

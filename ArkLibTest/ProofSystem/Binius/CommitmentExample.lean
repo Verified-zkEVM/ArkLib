@@ -9,9 +9,9 @@ import ArkLib.ProofSystem.Binius.FRIBinius.Commitment
 /-!
 # Binius commitment regression
 
-The old diagonal witness table confused `X 0` with `X 1`. The production Boolean table and honest
-oracle encoding distinguish them. The actual strict unique-radius relation cannot accept both for
-one oracle, and honest coverage holds for both nonconstant sources.
+The Boolean table and honest oracle encoding distinguish `X 0` from `X 1`. The strict
+unique-radius relation cannot accept both for one oracle, and honest coverage holds for
+both nonconstant sources.
 -/
 
 noncomputable section

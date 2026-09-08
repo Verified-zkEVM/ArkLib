@@ -456,14 +456,7 @@ theorem Pr_multi_let_equiv_single_let {α β : Type}
   dsimp only [Lean.Elab.WF.paramLet] -- Expose LHS do block
   simp only [bind_pure_comp, _root_.map_bind, Functor.map_map]
 
-/--
-**Law of Total Probability (Partitioning an Event)**
-The probability of an event `f r` occurring can be calculated by
-summing the probabilities of two disjoint cases:
-1. `f r` occurs AND `g r` occurs.
-2. `f r` occurs AND `g r` does NOT occur.
-Good to be used with `Pr_multi_let_equiv_single_let`
--/
+/-- Partition an event into its intersections with a predicate and with its complement. -/
 theorem Pr_add_split_by_complement {α : Type} (D : PMF α)
     (f g : α → Prop) :
     Pr_{ let r ← D }[ f r ] =
@@ -518,7 +511,7 @@ theorem prob_const_and_prop_eq_ite {α : Type} (D : PMF α)
     rw [prob_tsum_form_singleton]
     simp only [if_false, mul_zero, tsum_zero]
 
-/-- Congruence lemma for Probability: If P(x) ↔ Q(x) for all x, then Pr[P] = Pr[Q]. -/
+/-- Pointwise equivalent event predicates have equal probabilities. -/
 lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
     (h : ∀ x, P x ↔ Q x) : Pr_{ let x ← D }[ P x ] = Pr_{ let x ← D }[ Q x ] := by
   congr 2; funext x;
@@ -580,11 +573,8 @@ theorem Pr_exists_le {α ι : Type} [Fintype ι] (D : PMF α) (f : ι → α →
   simpa using key Finset.univ
 
 /--
-**Marginal Bound for Sequential Sampling**
-
-If, for every fixed outcome `b` of the second sample, the probability over the first sample is
-bounded by a constant `c` (not depending on `b`), then the same bound holds for the probability
-over the full sequential sample.
+A uniform probability bound over the first sample, valid for every fixed second sample, bounds
+the joint event probability.
 -/
 theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : α → β → Prop)
     {c : ENNReal} (h : ∀ b, Pr_{ let a ← Da}[Q a b] ≤ c) :
@@ -661,14 +651,10 @@ lemma prob_polynomial_identity_le {R : Type} [CommRing R] [IsDomain R] [Fintype 
     MvPolynomial.totalDegree_le_of_degreeOf_lt P h_indiv_deg
   exact prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_total_deg
 
-/-- Pushforward of `PMF.uniformOfFintype α` under a map `f : α → β` whose fibers
-over the image all have the same cardinality `k > 0` is the uniform distribution
-on the image of `f`.
-
-Useful when `f` is an affine-linear surjection: every fiber is a translate of
-the kernel and hence has constant cardinality. The proximity-gap proofs use this
-to bridge the coefficient-parameterised sampling of an affine span to the
-uniform sampling of the affine-span finset. -/
+/--
+The image of a uniform distribution under a map with nonempty fibers of equal cardinality is
+uniform on the image.
+-/
 theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
     {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq β]
     (f : α → β) {k : ℕ} (hk : 0 < k)

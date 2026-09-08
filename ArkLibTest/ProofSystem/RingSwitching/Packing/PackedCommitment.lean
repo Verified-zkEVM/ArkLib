@@ -9,7 +9,7 @@ import ArkLibTest.ProofSystem.RingSwitching.Packing.ScalarFamily
 # Nonfunctional finite-list commitment clients
 
 An oracle stores a finite set of candidate polynomials. Honest coverage uses a singleton,
-while other oracles can contain two distinct witnesses. The actual scalar head, including
+while other oracles can contain two distinct witnesses. The scalar head, including
 its exact extractor, zero-challenge knowledge and completeness, accepts this base interface.
 No list-decoding probability bound is asserted.
 -/
@@ -53,7 +53,7 @@ theorem scalar_source_related :
   ScalarHead.relIn_honest data 1 layout (finiteList data.P 1) query source
 
 open RingSwitching.Packing.Tests.ScalarFamily in
-/-- The actual scalar verifier accepts and retains the precise finite-list oracle. -/
+/-- The scalar verifier accepts and retains the precise finite-list oracle. -/
 theorem scalar_accept :
     (ScalarHead.verifier data 1 layout (finiteList data.P 1)).toVerifier.verify
       (stmt, (finiteList data.P 1).commit (data.packedMLE (layout.components source)))
@@ -65,7 +65,7 @@ theorem scalar_accept :
 
 open RingSwitching.Packing.Tests.ScalarFamily in
 /-- Scalar-head worst-case knowledge uses no commitment functionality. -/
-theorem scalar_worstCase {σ : Type} (init : ProbComp σ)
+theorem scalar_worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (ScalarHead.relIn data 1 layout (finiteList data.P 1))
@@ -77,7 +77,7 @@ theorem scalar_worstCase {σ : Type} (init : ProbComp σ)
   ScalarHead.rbrKnowledgeSoundnessWorstCaseWith data 1 layout (finiteList data.P 1) init impl
 
 open RingSwitching.Packing.Tests.ScalarFamily in
-/-- Actual scalar completeness remains uniform over oracle states for the list-valued relation. -/
+/-- Scalar completeness remains uniform over oracle states for the list-valued relation. -/
 theorem scalar_complete {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (ScalarHead.reduction data 1 layout (finiteList data.P 1)).perfectCompleteness init impl
@@ -93,7 +93,7 @@ def twoCandidateOracle : ∀ j, (finiteList data.P 1).OStmt j := fun _ =>
     data.packedMLE (layout.components source) + constant 1 1} : Finset data.P⦃≤ 1⦄[X Fin 1])
 
 open RingSwitching.Packing.Tests.ScalarFamily in
-/-- The oracle used by the production verifier actually contains two different candidates. -/
+/-- The oracle used by the production verifier contains two different candidates. -/
 theorem twoCandidateOracle_card : (twoCandidateOracle ()).card = 2 := by
   classical
   have hne : data.packedMLE (layout.components source) ≠
@@ -105,13 +105,13 @@ theorem twoCandidateOracle_card : (twoCandidateOracle ()).card = 2 := by
   simp [twoCandidateOracle, hne]
 
 open RingSwitching.Packing.Tests.ScalarFamily in
-/-- The real scalar source is valid against this very two-candidate oracle. -/
+/-- The scalar source is valid against this two-candidate oracle. -/
 theorem twoCandidate_source_related :
     ((stmt, twoCandidateOracle), source) ∈ ScalarHead.relIn data 1 layout (finiteList data.P 1) :=
   ⟨rfl, by simp [finiteList, twoCandidateOracle]⟩
 
 open RingSwitching.Packing.Tests.ScalarFamily in
-/-- Both actual phases accept the nonfunctional relation with the same finite-list oracle. -/
+/-- Both phases accept the nonfunctional relation with the same finite-list oracle. -/
 theorem scalarFamily_accept (c : ZMod 5) :
     (RingSwitching.Packing.ScalarFamily.verifier
       data 1 layout bat (finiteList data.P 1)).toVerifier.run

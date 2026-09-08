@@ -5,7 +5,7 @@ Authors: ArkLib Contributors
 -/
 import ArkLib.ProofSystem.RingSwitching.Packing.ScalarFamily.Phase
 
-/-! # Actual prover factorization and full-reduction scalar rejection -/
+/-! # Prover factorization and full-reduction scalar rejection -/
 
 noncomputable section
 
@@ -19,8 +19,10 @@ variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
   (bat : BatchingStrategy C data.ιE) (pc : PackedCommitment data.P m)
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
-/-- The actual composed prover emits the true scalar family, then executes the actual full-family
-prover with the same oracle. Its remaining challenge query is transported by the library append. -/
+/--
+The composed prover sends the partial-evaluation family, then runs the full-family prover with
+the same oracle and a transported challenge query.
+-/
 theorem prover_run (stmt : ScalarHead.Input data m layout) (ost : ∀ j, pc.OStmt j)
     (p : layout.Source) :
     (reduction data m layout bat pc).prover.run (stmt, ost) p = (do
@@ -35,8 +37,10 @@ theorem prover_run (stmt : ScalarHead.Input data m layout) (ost : ∀ j, pc.OStm
   simp only [liftAppendLeft, liftM_pure, pure_bind]
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
-/-- A false scalar check produces no full reduction output, including after the actual suffix
-prover's challenge query. This statement keeps that query instead of erasing its execution. -/
+/--
+A false scalar check rejects the composed reduction, including after the suffix prover's
+challenge query.
+-/
 theorem reduction_reject_scalar (stmt : ScalarHead.Input data m layout) (ost : ∀ j, pc.OStmt j)
     (p : layout.Source)
     (hc : ¬ ScalarHead.check data m layout stmt

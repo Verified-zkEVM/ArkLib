@@ -10,8 +10,13 @@ import ArkLib.Commitments.Functional.Hachi.Correctness
 # Honest commitment coverage for the Hachi scalar trace head
 
 The original scalar polynomial is packed coefficientwise, and the existing balanced-gadget
-Hachi committer is applied to that ring polynomial. Its actual decommitment yields the same
+Hachi committer is applied to that ring polynomial. Its decommitment yields the same
 norm-conditioned weak opening consumed by the trace head. No inverse packing norm is assumed.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
@@ -27,13 +32,13 @@ variable (b : ℕ) (hb : 1 < b)
 variable (pp : PublicParamsD (powTwoCyclotomic (R := ZMod q) α)
   innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r) (Nat.clog b q) dRows)
 
-/-- The weak opening carried by the actual honest committer, with challenge coefficients one. -/
+/-- The honest committer supplies a weak opening with challenge coefficients one. -/
 def committedOpening (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) (r + m)) :
     QuadEvalWitness (powTwoCyclotomic (R := ZMod q) α)
       innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q) :=
   commitInputWitMap b (F, (commit b hb pp F).2)
 
-/-- The actual honest decommitment decodes to the committed ring polynomial. -/
+/-- The honest decommitment decodes to the committed ring polynomial. -/
 theorem extractedPoly_committedOpening
     (hdeg : 1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree)
     (hclog : 0 < Nat.clog b q)
@@ -58,8 +63,7 @@ theorem extractedPoly_committedOpening
 
 variable (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
 
-/-- The actual scalar opening statement commits its packed monomial coefficients using the
-existing Hachi committer and claims the scalar polynomial's evaluation. -/
+/-- Commit the packed monomial coefficients and claim the scalar polynomial evaluation. -/
 def committedStatement
     (f : CMlPolynomial (fixedSubring (R := ZMod q) α (2 ^ κ)) ((r + m) + (α - κ)))
     (xl : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) r)
@@ -72,9 +76,10 @@ def committedStatement
   xp := xp
   value := f.eval ((xl ++ xh) ++ xp)
 
-/-- Every scalar coefficient polynomial and every scalar query has an honest source witness,
-under the real Hachi balanced-digit norm bounds. This also supplies the stronger message bound
-required by the current nonrecursive honest chain. -/
+/--
+Every scalar coefficient polynomial and query has an honest source witness under the
+balanced-digit norm bounds, including the stronger message bound.
+-/
 theorem committed_source_valid
     (hbq : b ≤ q / 2) (hdeg : 1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree)
     (hclog : 0 < Nat.clog b q) {βSq γ bound : ℕ} (hbound : 1 ≤ bound)

@@ -17,10 +17,10 @@ component decomposition, so a protocol head keeps the original scalar relation a
 
 ## References
 
-* [DP24] Diamond, Benjamin E. and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
-  Towers." Cryptology ePrint Archive, Report 2024/504. Construction 3.1.
-* [BRW26] Bünz, Benedikt, Ron Rothblum, and William Wang. "Flock: Fast Proving for Batch
-  Boolean Computations." Cryptology ePrint Archive, Report 2026/1329. Appendix B.1–B.3.
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
+* [Bünz, B., Rothblum, R., and Wang, W., *Flock: Fast Proving for Batch Boolean
+  Computations*][BRW26]
 -/
 
 noncomputable section
@@ -31,19 +31,29 @@ open MvPolynomial
 
 variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
 
-/-- A scalar evaluation with a lossless component layout and a proved weighted reconstruction. -/
+/-- A scalar evaluation with an invertible component layout and weighted reconstruction. -/
 structure ClaimLayout where
+  /-- Source objects whose scalar evaluations are claimed. -/
   Source : Type
+  /-- Queries specifying the source evaluation. -/
   Query : Type
+  /-- Invertible decomposition into base-ring multilinear components. -/
   components : Source ≃ (data.ιP → B⦃≤ 1⦄[X Fin m])
+  /-- Evaluation point for the retained variables. -/
   point : Query → Fin m → data.E
+  /-- Reconstruction weight for each packing coordinate. -/
   weight : Query → data.ιP → data.E
+  /-- The source scalar evaluation. -/
   eval : Query → Source → data.E
+  /-- The weighted component evaluations reconstruct the source evaluation. -/
   reconstruct : ∀ q p, eval q p =
     ∑ i, weight q i * MvPolynomial.aeval (point q) (components p i).val
 
-/-- DP24's packed prefix and retained suffix, with an explicit basis-index identification. -/
-def dp24Layout (k : ℕ) (index : data.ιP ≃ (Fin k → Fin 2)) : ClaimLayout data m where
+/--
+Pack the prefix coordinates and retain the suffix, with an explicit basis-index
+identification.
+-/
+def packedPrefixLayout (k : ℕ) (index : data.ιP ≃ (Fin k → Fin 2)) : ClaimLayout data m where
   Source := B⦃≤ 1⦄[X Fin (k + m)]
   Query := (Fin k → data.E) × (Fin m → data.E)
   components := (splitFirstEquiv k m).trans (Equiv.arrowCongr index.symm (Equiv.refl _))
@@ -54,8 +64,11 @@ def dp24Layout (k : ℕ) (index : data.ιP ≃ (Fin k → Fin 2)) : ClaimLayout 
     rw [aeval_append_splitFirst]
     exact (index.sum_comp _).symm
 
-/-- Flock's retained prefix and packed suffix, matching Appendix B.1 and Equation (5). -/
-def flockLayout (k : ℕ) (index : data.ιP ≃ (Fin k → Fin 2)) : ClaimLayout data m where
+/--
+Retain the prefix coordinates and pack the suffix, with an explicit basis-index
+identification.
+-/
+def packedSuffixLayout (k : ℕ) (index : data.ιP ≃ (Fin k → Fin 2)) : ClaimLayout data m where
   Source := B⦃≤ 1⦄[X Fin (m + k)]
   Query := (Fin m → data.E) × (Fin k → data.E)
   components := (splitLastEquiv k m).trans (Equiv.arrowCongr index.symm (Equiv.refl _))

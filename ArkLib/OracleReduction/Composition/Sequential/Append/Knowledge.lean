@@ -344,7 +344,7 @@ theorem backward_right (G : V₁.GuardedForm)
       right_concat _ _ (⟨j, hjn⟩ : Fin n) (by simp) ht]
     exact ⟨hc, hw⟩
 
-/-- Prover messages preserve the composed knowledge state under the actual append extractor. -/
+/-- Prover messages preserve the composed knowledge state under the append extractor. -/
 theorem state_next (G : V₁.GuardedForm)
     (K₁ : V₁.KnowledgeStateFunction init impl R₁ R₂ E₁)
     (K₂ : V₂.KnowledgeStateFunction init impl R₂ R₃ E₂)
@@ -553,7 +553,7 @@ theorem append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first (G : V₁.Gua
         rfl
       _ ≤ _ := h₂ s₂ i tr₂
 
-/-- The same exact extractor and state also satisfy the averaged knowledge contract. -/
+/-- The composed extractor and knowledge state satisfy the prover-averaged contract. -/
 theorem append_rbrKnowledgeSoundnessWith_of_worstCase_of_guarded_first (G : V₁.GuardedForm)
     (K₁ : V₁.KnowledgeStateFunction init impl R₁ R₂ E₁)
     (K₂ : V₂.KnowledgeStateFunction init impl R₂ R₃ E₂)
@@ -611,8 +611,10 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {R₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {R₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
-/-- Oracle-verifier composition inherits the proven guarded-left knowledge theorem through its
-ordinary verifier semantics, using the actual oracle-statement materialization. -/
+/--
+Guarded-left knowledge soundness of oracle-verifier append after oracle-statement
+materialization.
+-/
 theorem append_rbrKnowledgeSoundness_of_worstCase_of_guarded_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)

@@ -25,12 +25,9 @@ This file collects single-round primitives for the structured (witness-mode) sum
 - `roundKnowledgeError` — the `d / |L|` Schwartz–Zippel round error for the explicit round
   polynomial degree bound `d`.
 
-These were originally housed in `Binius.BinaryBasefold.Prelude`,
-`RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
-generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that other protocols (e.g. a Galois-ring PCS) can reuse them without
-depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
-wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
+The definitions are parameterized by the protocol context and oracle statement family.
+`RingSwitching.Packing.SumcheckPhase` specializes these parameters to its tensor-packing
+statement and commitment relation.
 
 A failed local sumcheck equation aborts the verifier with `failure`. In particular, rejection
 cannot be turned into an accepting opening by a later reduction in the chain. Hachi's paired
@@ -47,12 +44,7 @@ section RoundPoly
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L ℓ)
 
-/-- Degree bound for the prover's round polynomial over an **arbitrary** summation set `S`.
-This is the heterogeneous generalisation of `Spec.SingleRound.sumcheck_roundPoly_degreeLE`, which
-fixes `S` to a uniform cube `(univ.map D) ^ᶠ (n - i)`. The per-round / hyperprism sumcheck sums over
-heterogeneous cubes `(SumcheckDomain.drop …).cube`, so the degree bound must not depend on the shape
-of `S` — and indeed it doesn't: each summand has degree `≤ deg` in the free variable, and a finite
-sum preserves that. -/
+/-- The sumcheck round polynomial has the claimed degree bound over any finite summation set. -/
 theorem roundPoly_degreeLE_finset {R : Type*} [CommSemiring R] {n deg : ℕ} (i : Fin (n + 1))
     {challenges : Fin i.castSucc → R} {poly : R[X Fin (n + 1)]}
     (hp : poly ∈ R⦃≤ deg⦄[X Fin (n + 1)]) (S : Finset (Fin (n - i) → R)) :

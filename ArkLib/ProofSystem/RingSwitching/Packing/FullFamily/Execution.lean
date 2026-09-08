@@ -40,7 +40,7 @@ theorem honest_relOut {stmt : Input data m} {oStmt : ∀ j, pc.OStmt j}
   ⟨data.sumcheckClaim_of_slices (honestSlices_mem_sliceRel data m _ _) _, hIn.2⟩
 
 omit [IsScalarTower B data.P C] in
-/-- A positive-probability related output pins the guard and the actual deterministic verdict. -/
+/-- A positive-probability related output determines the passing guard and deterministic verdict. -/
 theorem positive_output {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (stmt : Input data m) (oStmt : ∀ j, pc.OStmt j) (tr : FullTranscript (pSpec data bat))

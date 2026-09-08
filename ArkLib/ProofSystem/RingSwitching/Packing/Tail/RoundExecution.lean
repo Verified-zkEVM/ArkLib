@@ -6,10 +6,10 @@ Authors: ArkLib Contributors
 import ArkLib.ProofSystem.RingSwitching.Packing.Tail.Round
 
 /-!
-# Actual execution and completeness of a product-sumcheck round
+# Execution and completeness of a product-sumcheck round
 
-The only query made by the prover samples the next scalar challenge. Every resulting honest
-message satisfies the local check and advances the actual residual-sum relation on the same
+The prover's only query samples the next scalar challenge. For related inputs, the honest
+message satisfies the local check and advances the residual-sum relation on the same
 packed witness and commitment oracle. Completeness is uniform in the initial oracle state.
 -/
 
@@ -19,7 +19,7 @@ open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial ProbabilityTheor
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Context → C⦃≤ 1⦄[X Fin m]) (pc : PackedCommitment P m) (i : Fin m)
 
-/-- The actual honest prover queries one challenge and records the corresponding transcript. -/
+/-- The honest prover samples one challenge and records the round transcript. -/
 theorem prover_run (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j)
     (p : P⦃≤ 1⦄[X Fin m]) :
     (prover multiplier pc i).run (stmt, ost) p = (do
@@ -57,7 +57,10 @@ theorem reduction_run (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.O
     FullTranscript.challenges, FullTranscript.mk2, decide_eq_true_eq]
 
 omit [Algebra P C] in
-/-- Positive related output identifies the actual accepted guard and next residual relation. -/
+/--
+A positive-probability related output determines the accepted guard and next residual
+relation.
+-/
 theorem positive_output {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j)

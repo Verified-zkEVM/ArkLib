@@ -10,8 +10,8 @@ import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
 /-!
 # Faithful tensor carriers as coordinate families
 
-The native DP24 carrier message is equivalent to its row family. Its column family is
-the shared packing transposition of those rows. These statements use the explicit two
+The tensor carrier message is equivalent to its row family. Its column family is
+the packing transposition of those rows. These statements use the explicit two
 embeddings and the profile's inverse laws, without identifying the ambient algebra
 action on the carrier with either embedding.
 -/
@@ -25,14 +25,14 @@ noncomputable section
 variable {B L : Type} {κ : ℕ} [CommRing B] [CommRing L] [Algebra B L]
   (P : RingSwitchingProfile B L κ)
 
-/-- A native carrier message and its complete row family contain the same information. -/
+/-- Equivalence between the tensor carrier and its complete row-coordinate family. -/
 def rowEquiv : P.A ≃ ((Fin κ → Fin 2) → L) where
   toFun := P.decomposeRows
   invFun c := ∑ u, P.φ₀ (c u) * P.φ₁ (P.basis u)
   left_inv z := (P.decomposeRows_spec z).symm
   right_inv := P.decomposeRows_recompose
 
-/-- A native carrier message and its complete column family contain the same information. -/
+/-- Equivalence between the tensor carrier and its complete column-coordinate family. -/
 def columnEquiv : P.A ≃ ((Fin κ → Fin 2) → L) where
   toFun := P.decomposeColumns
   invFun c := ∑ u, P.φ₁ (c u) * P.φ₀ (P.basis u)
@@ -86,8 +86,7 @@ theorem rows_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
     ∑ y, P.basis.repr (v y) i • a y
   simp only [P.decomposeRows_mul, Finset.sum_apply, Algebra.smul_def, mul_comm]
 
-/-- Columns of a finite tensor observation use the same transpose theorem as the generic
-packing relation and monomial observation clients. -/
+/-- Columns of a finite tensor observation equal the coordinate slices of its factor families. -/
 theorem columns_observation {Y : Type*} [Fintype Y] (a v : Y → L) :
     P.decomposeColumns (∑ y, P.φ₀ (a y) * P.φ₁ (v y)) =
       (Packing.sameAlgebra P.basis).coordinateSlices a v := by

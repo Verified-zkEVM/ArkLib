@@ -11,7 +11,7 @@ import ArkLibTest.ProofSystem.RingSwitching.Packing.ScalarFamily
 /-!
 # Same-commitment downstream opening assembly
 
-The concrete polynomial-oracle fixture actually queries its input oracle and checks the claimed
+The concrete polynomial-oracle fixture queries its input oracle and checks the claimed
 evaluation. It closes to the always-true decision relation, with no remaining polynomial witness.
 The production scalar and full-family prefixes are instantiated at this opening boundary.
 This fixture is not a FRI opening proof.
@@ -65,7 +65,7 @@ def opening : PackedOpening pc.toPackedCommitment F []ₒ !p[] where
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped Classical in
-/-- The checked opening reads the actual packed polynomial from this same input oracle. -/
+/-- The checked opening reads the packed polynomial from this same input oracle. -/
 theorem verifier_verify (stmt : Stmt) (ost : ∀ i, pc.OStmt i) (tr : FullTranscript !p[]) :
     verifier.toVerifier.verify (stmt, ost) tr =
       if stmt.2 = aeval stmt.1 (ost ()).val then pure ((), ost) else failure := by
@@ -96,7 +96,7 @@ def guardedForm : verifier.toVerifier.GuardedForm where
   out stmt _ := ((), stmt.2)
   verify_eq stmt tr := by rw [verifier_verify]; simp only [decide_eq_true_eq]
 
-/-- The zero-round prover sends no messages and retains the actual input oracle. -/
+/-- The zero-round prover sends no messages and retains the input oracle. -/
 theorem prover_run (stmt : Stmt) (ost : ∀ i, pc.OStmt i) (p : Poly) :
     prover.run (stmt, ost) p = pure (default, ((), ost), ()) := by
   rfl
@@ -108,7 +108,7 @@ def extractor : Extractor.RoundByRound []ₒ (Stmt × (∀ i, pc.OStmt i)) Poly 
   extractMid i := nomatch i
   extractOut stmt _ _ := stmt.2 ()
 
-/-- Positive probability of actual acceptance supplies the exact input evaluation equation. -/
+/-- Positive probability of acceptance supplies the exact input evaluation equation. -/
 theorem positive_check {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) (stmt : Stmt) (ost : ∀ i, pc.OStmt i)
     (tr : FullTranscript !p[])
@@ -134,7 +134,7 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
   toFun_full stmt tr _ h := ⟨positive_check init impl stmt.1 stmt.2 tr h, rfl⟩
 
 /-- The exact downstream WC premise closes this nontrivial evaluation relation without error. -/
-theorem worstCase {σ : Type} (init : ProbComp σ)
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl pc.evalRel relOut
       (fun _ => Poly) extractor (knowledgeStateFunction init impl) (fun _ => 0) := by
@@ -157,7 +157,7 @@ theorem complete {σ : Type} (init : ProbComp σ)
   subst x
   exact ⟨_, rfl, Set.mem_univ _, rfl⟩
 
-/-- The checked opening accepts X at two and preserves this actual oracle. -/
+/-- The checked opening accepts X at two and preserves this oracle. -/
 theorem checked_accept : verifier.toVerifier.run
     ((fun _ => 2, 2), pc.commit ScalarFamily.source) default =
       pure ((), pc.commit ScalarFamily.source) := by
@@ -165,7 +165,7 @@ theorem checked_accept : verifier.toVerifier.run
   apply if_pos
   simp [pc, ScalarFamily.pc, ExactPackedCommitment.polynomialOracle, ScalarFamily.source]
 
-/-- A false evaluation of the very same polynomial is rejected by the actual opening. -/
+/-- A false evaluation of the very same polynomial is rejected by the opening. -/
 theorem checked_reject : verifier.toVerifier.run
     ((fun _ => 2, 3), pc.commit ScalarFamily.source) default = failure := by
   rw [Verifier.run, verifier_verify]
@@ -212,8 +212,8 @@ def scalarState := opening.knowledgeStateFunction scalarFront scalarGuard
   (ScalarOpening.knowledgeStateFunction ScalarFamily.data 1 ScalarFamily.layout
     ScalarFamily.bat pc init impl) (knowledgeStateFunction init impl)
 
-/-- Actual original-scalar pipeline followed by the checked opening, with exact E and K. -/
-theorem scalar_worstCase :
+/-- Original-scalar pipeline followed by the checked opening, with exact E and K. -/
+theorem scalar_worst_case :
     (opening.assemble scalarFront).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
       init impl scalarSource relOut
       (Verifier.KnowledgeAppend.Witness (m := 6) (n := 0)
@@ -225,7 +225,7 @@ theorem scalar_worstCase :
     init impl scalarSource _ (knowledgeStateFunction init impl)
     (ScalarOpening.rbrKnowledgeSoundnessWorstCaseWith ScalarFamily.data 1 ScalarFamily.layout
       ScalarFamily.bat pc pc.commitsTo_functional Function.injective_id init impl)
-    (worstCase init impl)
+    (worst_case init impl)
 
 def familyState := opening.knowledgeStateFunction familyFront familyGuard
   (FullFamilyOpening.extractor ScalarFamily.data 1 ScalarFamily.bat pc)
@@ -233,8 +233,8 @@ def familyState := opening.knowledgeStateFunction familyFront familyGuard
   (FullFamilyOpening.knowledgeStateFunction ScalarFamily.data 1 ScalarFamily.bat pc init impl)
   (knowledgeStateFunction init impl)
 
-/-- The public full-family pipeline uses the same actual closing oracle and WC premise. -/
-theorem family_worstCase :
+/-- The public full-family pipeline uses the same closing oracle and WC premise. -/
+theorem family_worst_case :
     (opening.assemble familyFront).verifier.toVerifier.rbrKnowledgeSoundnessWorstCaseWith
       init impl familySource relOut
       (Verifier.KnowledgeAppend.Witness (m := 5) (n := 0)
@@ -246,9 +246,9 @@ theorem family_worstCase :
     init impl familySource _ (knowledgeStateFunction init impl)
     (FullFamilyOpening.rbrKnowledgeSoundnessWorstCaseWith ScalarFamily.data 1
       ScalarFamily.bat pc pc.commitsTo_functional Function.injective_id init impl)
-    (worstCase init impl)
+    (worst_case init impl)
 
-/-- The actual original-scalar assembly is complete from every shared initial state. -/
+/-- The original-scalar assembly is complete from every shared initial state. -/
 theorem scalar_complete : (opening.assemble scalarFront).perfectCompleteness init impl
     scalarSource relOut :=
   opening.perfectCompleteness scalarFront init impl scalarSource scalarGuard guardedForm
@@ -256,7 +256,7 @@ theorem scalar_complete : (opening.assemble scalarFront).perfectCompleteness ini
     (ScalarOpening.perfectCompleteness ScalarFamily.data 1 ScalarFamily.layout ScalarFamily.bat
       pc init impl) (fun s => complete (pure s) impl)
 
-/-- The actual full-family assembly is complete at the very same evaluation boundary. -/
+/-- The full-family assembly is complete at the very same evaluation boundary. -/
 theorem family_complete : (opening.assemble familyFront).perfectCompleteness init impl
     familySource relOut :=
   opening.perfectCompleteness familyFront init impl familySource familyGuard guardedForm

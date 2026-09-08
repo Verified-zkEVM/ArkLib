@@ -30,8 +30,9 @@ multilinear. Output: accept/reject. The composition is
 The final deterministic step has proved perfect completeness and zero-error worst-case
 knowledge soundness over commutative rings. The declared full error is `κ/|L|` (batching)
 `+ 2/|L|` per sumcheck round `+` the downstream protocol's error; root bounds require a
-domain. Batching and loop leaves remain admitted, and this assembly still uses admitted
-general knowledge composition. The downstream `MLIOPCS` contract supplies averaged
+domain. The batching leaf is proved under explicit commitment functionality. The loop and
+general knowledge composition retain admitted obligations. The downstream `MLIOPCS` contract
+supplies averaged
 soundness; a worst-case assembly requires a corresponding downstream opening contract.
 
 See `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the family taxonomy. The batching phase
@@ -40,8 +41,8 @@ instead of instantiating this complete sequential wrapper.
 
 ## References
 
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
 
 namespace RingSwitching.FullRingSwitching
@@ -65,7 +66,7 @@ def batchingCoreVerifier :=
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The oracle verifier for the full DP24 ring-switching protocol -/
+/-- The verifier composing tensor batching, relocation sumcheck, and packed opening. -/
 @[reducible]
 def fullOracleVerifier :=
   OracleVerifier.append (oSpec := []ₒ)
@@ -83,7 +84,7 @@ def batchingCoreReduction :=
        mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The reduction for the full DP24 ring-switching protocol -/
+/-- The reduction composing tensor batching, relocation sumcheck, and packed opening. -/
 @[reducible]
 def fullOracleReduction :
     OracleProof (oSpec:=[]ₒ)
@@ -96,7 +97,7 @@ def fullOracleReduction :
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
     mlIOPCS.oracleReduction
 
-/-- The full DP24 ring-switching protocol as a Proof -/
+/-- The composed tensor-packing and opening argument as a proof system. -/
 @[reducible]
 def fullOracleProof :
     OracleProof []ₒ

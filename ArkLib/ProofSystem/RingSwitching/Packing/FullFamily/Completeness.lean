@@ -9,7 +9,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.FullFamily.Execution
 /-!
 # Perfect completeness of full-family packing
 
-The actual honest execution is accepted for every challenge, with the same commitment oracle.
+Honest execution is accepted for every challenge, with the same commitment oracle.
 The theorem quantifies over the initial oracle-state distribution, so it also supplies the
 state-aware premise at every reachable state of a larger sequential reduction.
 -/

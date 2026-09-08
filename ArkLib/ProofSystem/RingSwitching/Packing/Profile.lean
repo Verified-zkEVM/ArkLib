@@ -26,13 +26,21 @@ interfaces. They may reuse check-then-update verifier shapes without sharing the
 The concrete tensor instance `binaryTowerProfile` in `Prelude.lean` derives these laws from the
 left and right base-changed bases of `L ⊗[B] L`. The `Algebra L A` instance is only ambient
 structure; the coordinate laws below use the explicit `φ₀` and `φ₁` actions.
+
+## References
+
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
 
 namespace RingSwitching
 
 open Module
 
-/-- Faithful tensor-coordinate data for the DP24 packing reduction. -/
+/--
+Finite-basis extension data with two compatible embeddings and invertible tensor-coordinate
+decompositions.
+-/
 structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
     [CommRing B] [CommRing L] [Algebra B L] where
   /-- Rank-`2^κ` `B`-basis of `L`. -/

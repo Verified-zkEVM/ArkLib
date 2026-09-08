@@ -8,11 +8,16 @@ import ArkLib.Commitments.Functional.Hachi.TraceHead.Coefficients
 import ArkLib.ProofSystem.RingSwitching.Packing.FiniteObservation
 
 /-!
-# Hachi's actual coefficient-packing coordinates
+# Coefficient-packing coordinates
 
 The generic algebra instance has packing algebra `Rq` and opening algebra the fixed subring.
 Its opening rank is one. The trace head uses this same packing basis, with the binary index
 transport required by `CMlPolynomial`'s monomial coefficients.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open CompPoly
@@ -28,7 +33,7 @@ include hk in
 theorem packingRank_eq : 2 ^ α / 2 ^ κ = 2 ^ (α - κ) :=
   Nat.pow_div (Nat.le_of_succ_le (succ_le_of_two_mul_two_pow_dvd hk)) (by norm_num)
 
-/-- The actual `psi` map with the monomial index type `Fin (2^(α-κ))`. -/
+/-- The `psi` map indexed by `Fin (2^(α-κ))`. -/
 noncomputable def coefficientEquiv :
     (Fin (2 ^ (α - κ)) → fixedSubring (R := ZMod q) α (2 ^ κ)) ≃ₗ[
       fixedSubring (R := ZMod q) α (2 ^ κ)] Rq (powTwoCyclotomic (R := ZMod q) α) :=
@@ -41,8 +46,7 @@ noncomputable def coefficientEquiv :
     coefficientEquiv q α κ h2 hk a =
       psi α (2 ^ κ) (fun j => a (finCongr (packingRank_eq α κ hk) j)) := rfl
 
-/-- Hachi instantiates the general finite-free algebra model with `P = Rq`, `E = B`.
-This assertion uses only the actual fixed subring's ring structure. -/
+/-- Finite-free packing data with packing algebra `Rq` and opening algebra its fixed subring. -/
 noncomputable def packingData :
     RingSwitching.Packing.PackingData (fixedSubring (R := ZMod q) α (2 ^ κ)) where
   P := Rq (powTwoCyclotomic (R := ZMod q) α)
@@ -53,7 +57,7 @@ noncomputable def packingData :
   openBasis := Module.Basis.singleton Unit _
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The generic packing basis reassembles coordinates by the actual Hachi `psi` map. -/
+/-- The packing basis reassembles coordinates by `psi`. -/
 theorem packingData_pack
     (a : Fin (2 ^ α / 2 ^ κ) → fixedSubring (R := ZMod q) α (2 ^ κ)) :
     (packingData q α κ h2 hk).packBasis.equivFun.symm a = psi α (2 ^ κ) a := by
@@ -62,7 +66,7 @@ theorem packingData_pack
   rfl
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Packing coordinates use the same numeric order as Hachi's binary monomial indices. -/
+/-- Packing coordinates follow the numeric order of the binary monomial indices. -/
 theorem packingData_repr_coefficientEquiv
     (a : Fin (2 ^ (α - κ)) → fixedSubring (R := ZMod q) α (2 ^ κ))
     (j : Fin (2 ^ α / 2 ^ κ)) :
@@ -72,7 +76,7 @@ theorem packingData_repr_coefficientEquiv
   exact congrFun ((packingData q α κ h2 hk).packBasis.equivFun.apply_symm_apply _) j
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The inverse coefficient map is the actual packing-basis representation, reindexed. -/
+/-- Inverse packing is the reindexed packing-basis representation. -/
 theorem packingData_repr (Y : Rq (powTwoCyclotomic (R := ZMod q) α))
     (j : Fin (2 ^ α / 2 ^ κ)) :
     (packingData q α κ h2 hk).packBasis.repr Y j =
@@ -81,7 +85,7 @@ theorem packingData_repr (Y : Rq (powTwoCyclotomic (R := ZMod q) α))
   exact packingData_repr_coefficientEquiv q α κ h2 hk _ j
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The singleton opening-coordinate slice is the actual packed monomial evaluation. -/
+/-- The singleton opening-coordinate slice is the packed monomial evaluation. -/
 theorem coordinateSlices_monomial {n : ℕ}
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) n)
     (x : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) n) :
@@ -99,7 +103,7 @@ theorem coordinateSlices_monomial {n : ℕ}
   rw [monomialBasis_map, Algebra.smul_def, mul_comm]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Shared finite observation reads the actual ring evaluation back in the `psi` basis. -/
+/-- Finite observation recovers the `psi` coordinates of the ring evaluation. -/
 theorem repr_eval_eq_observe {n : ℕ}
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) n)
     (x : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) n)
@@ -113,8 +117,7 @@ theorem repr_eval_eq_observe {n : ℕ}
     mul_one] using h
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The original monomial evaluation is the observation of the actual packed evaluation.
-The equality is unconditional and uses the generic finite-observation theorem with `E = B`. -/
+/-- The unpacked monomial evaluation equals the observation of the packed evaluation. -/
 theorem unpack_eval_eq_observation {n : ℕ}
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) n)
     (x : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) n)
@@ -145,8 +148,10 @@ theorem trace_coefficientEquiv_eq_iff
   rw [Equiv.sum_comp (finCongr (packingRank_eq α κ hk)) (fun i => a i * b i)]
 
 set_option backward.isDefEq.respectTransparency false in
-/-- The actual scaled trace check is precisely the decoded polynomial's scalar evaluation.
-All retained point coordinates lie in the fixed subring; `Rq` points are their embeddings. -/
+/--
+The scaled trace check equals evaluation of the decoded polynomial. Retained point coordinates
+lie in the fixed subring and are embedded into `Rq`.
+-/
 theorem trace_eval_eq_iff {n : ℕ}
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) n)
     (x : Vector (fixedSubring (R := ZMod q) α (2 ^ κ)) n)

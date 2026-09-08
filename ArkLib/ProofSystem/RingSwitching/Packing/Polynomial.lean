@@ -14,7 +14,7 @@ import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 Packing combines a family of base-ring multilinears using a finite basis. Unpacking reads
 the basis coordinates of each coefficient. Both round trips hold over commutative rings,
 without interpolation over a field. The public multiplier is specified by its Boolean table;
-an efficient branching-program evaluator can subsequently refine this specification.
+`Multiplier.lean` evaluates it by a read-once matrix program.
 -/
 
 noncomputable section

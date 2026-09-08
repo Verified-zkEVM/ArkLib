@@ -126,7 +126,7 @@ RingSwitching.Packing.CheckedObservation.honest_check
 RingSwitching.Packing.CheckedObservation.readback_keep
 RingSwitching.Packing.ScalarHead.readback
 RingSwitching.Packing.ScalarHead.quirky_reconstruct
-RingSwitching.Packing.FullFamily.compatibility_badEvent_le
+RingSwitching.Packing.FullFamily.compatibility_bad_event_le
 RingSwitching.Packing.PackedCommitment
 RingSwitching.Packing.ExactPackedCommitment
 RingSwitching.Packing.FullFamily.rbrKnowledgeSoundnessWorstCaseWith

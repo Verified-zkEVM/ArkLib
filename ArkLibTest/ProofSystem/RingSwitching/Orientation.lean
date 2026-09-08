@@ -10,8 +10,8 @@ import Mathlib.Data.ZMod.Basic
 /-!
 # Tensor-factor orientation regressions
 
-The actual honest packing and folded message of the prefix variable must pass the production
-scalar check. The formerly used opposite coordinates reject that same nonzero packed witness.
+The honest packed prefix variable passes the row-coordinate scalar check. Applying the
+column-coordinate check to that message rejects the same nonzero packed witness.
 -/
 open MvPolynomial Module RingSwitching
 namespace RingSwitching.OrientationTest
@@ -91,18 +91,18 @@ lemma honest_folded_message : embedded_MLP_eval 1 L (ZMod 3) prof 2 1 rfl
     simp [packedPoly, MLE_eval_zeroOne]
   simp [embedded_MLP_eval, componentWise_embed_MLE, embedCoeffs, hp]
 
-lemma actual_honest_check : performCheckOriginalEvaluation 1 L (ZMod 3) prof 2 1 rfl
+lemma honest_check : performCheckOriginalEvaluation 1 L (ZMod 3) prof 2 1 rfl
     0 (fun _ => 0) (embedded_MLP_eval 1 L (ZMod 3) prof 2 1 rfl
       (packMLE 1 L (ZMod 3) 2 1 rfl basis sourcePoly) (fun _ => 0)) = true := by
   rw [honest_folded_message]
   exact correct_input_check
 
-lemma actual_batched_target : compute_s0 1 L (ZMod 3) prof (prof.φ₁ y) 0 = y := by
+lemma batched_target : compute_s0 1 L (ZMod 3) prof (prof.φ₁ y) 0 = y := by
   unfold compute_s0
   rw [cols]
   exact coordSum_zero (fun _ => y)
 
-lemma actual_final_multiplier :
+lemma final_multiplier :
     compute_final_eq_value 1 L (ZMod 3) prof 2 1 rfl 0 (fun _ => y) 0 = 1 - y := by
   have ht : compute_final_eq_tensor 1 L (ZMod 3) prof 2 1 rfl 0 (fun _ => y) =
       prof.φ₁ (1 - y) := by

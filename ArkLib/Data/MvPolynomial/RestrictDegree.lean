@@ -8,16 +8,11 @@ import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 
 /-!
-# Operations preserving `MvPolynomial.restrictDegree`
+# Operations preserving individual polynomial degree bounds
 
-This file collects lemmas about how the basic `MvPolynomial` operations interact with
-`MvPolynomial.restrictDegree`, plus a "fix first `v` variables" helper.
-
-The contents were originally housed in `Binius.BinaryBasefold.Prelude`. They are fully
-generic (no binary-tower or characteristic dependencies) and have been promoted here so
-that the structured (witness-mode) sumcheck — see
-`ArkLib.ProofSystem.Sumcheck.Structured` — and any future ring-switching protocol can
-import them without depending on `Binius.BinaryBasefold.*`.
+Basic polynomial operations preserve `MvPolynomial.restrictDegree` under the corresponding
+degree inequalities. The file also defines evaluation of an initial variable block, leaving
+the remaining variables free. These operations require no protocol or field-tower assumptions.
 -/
 
 namespace MvPolynomial
@@ -120,10 +115,10 @@ theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challen
     fixFirstVariablesOfMQP ℓ v poly challenges ∈ L⦃≤ deg⦄[X Fin (ℓ - v)] :=
   fixFirstVariablesOfMQP_degreeVarLE ℓ (b := fun _ => deg) v hp
 
-/-- For a multilinear `t` (each variable has `degreeOf ≤ 1`), substituting `t` into a univariate
-`Q : L[X]` via `Polynomial.aeval` yields a multivariate polynomial whose degree in each variable is
-bounded by `Q.natDegree`. Used by the structured sumcheck to bound the degree of `Q(witness)` in
-the round polynomial `H = P · Q(t)`. -/
+/--
+Substituting a multilinear polynomial into a univariate polynomial gives individual degree at
+most the univariate polynomial's natural degree.
+-/
 theorem degreeOf_aeval_le {L : Type*} [CommSemiring L] {σ : Type*} (i : σ)
     (Q : Polynomial L) (t : MvPolynomial σ L) (ht : degreeOf i t ≤ 1) :
     degreeOf i (Polynomial.aeval t Q) ≤ Q.natDegree := by

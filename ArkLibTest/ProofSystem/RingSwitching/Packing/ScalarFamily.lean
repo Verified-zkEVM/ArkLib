@@ -9,11 +9,11 @@ import ArkLib.ProofSystem.RingSwitching.Packing.ScalarFamily.Execution
 import ArkLibTest.ProofSystem.RingSwitching.Packing.ScalarHead
 
 /-!
-# Actual scalar-family composition acceptance
+# scalar-family composition acceptance
 
 A concrete nonconstant source has an opening value in a rank-two product algebra. Packing has
 rank one and the challenge is uniform in ZMod5, giving nonzero batching error 1/5. Tests reject
-false scalar claims and false slices independently at the actual three-step verifier.
+false scalar claims and false slices independently at the three-step verifier.
 -/
 
 noncomputable section
@@ -34,7 +34,7 @@ abbrev data : PackingData (ZMod 5) where
   packBasis := Basis.singleton Unit _
   openBasis := Pi.basisFun _ _
 
-abbrev layout := ScalarHead.dp24Layout data 1 0 (Equiv.ofUnique _ _)
+abbrev layout := ScalarHead.packedPrefixLayout data 1 0 (Equiv.ofUnique _ _)
 abbrev bat := BatchingStrategy.gammaPowers (ZMod 5) 2
 abbrev pc := ExactPackedCommitment.polynomialOracle data.P 1
 
@@ -48,18 +48,18 @@ def slices := FullFamily.honestSlices data 1 point (data.packedMLE (layout.compo
 def tr (c : ZMod 5) : FullTranscript (pSpec data bat) :=
   ScalarHead.transcript data α ++ₜ FullTranscript.mk2 slices c
 
-/-- The actual original scalar relation has the nonconstant source as a witness. -/
+/-- The original scalar relation has the nonconstant source as a witness. -/
 theorem source_related : ((stmt, ost), source) ∈ relIn data 1 layout pc :=
   ScalarHead.relIn_honest data 1 layout pc query source
 
-/-- The actual full-family seam is related, with the identical commitment oracle. -/
+/-- The full-family seam is related, with the identical commitment oracle. -/
 theorem seam_related :
     ((ScalarHead.nextStatement data 1 layout stmt α, ost), layout.components source) ∈
       FullFamily.relIn data 1 pc :=
   ScalarHead.honest_relOut data 1 layout pc source_related
 
-/-- Every batching challenge accepts the actual honest three-step transcript. -/
-theorem actual_accept (c : ZMod 5) :
+/-- Every batching challenge accepts the honest three-step transcript. -/
+theorem accept (c : ZMod 5) :
     (verifier data 1 layout bat pc).toVerifier.run (stmt, ost) (tr c) =
       pure (FullFamily.nextStatement data 1 bat
         (ScalarHead.nextStatement data 1 layout stmt α) slices c, ost) := by
@@ -68,13 +68,13 @@ theorem actual_accept (c : ZMod 5) :
     (if_pos (FullFamily.honest_check data 1 pc seam_related))
 
 /-- The packed witness and same commitment satisfy the output relation for every challenge. -/
-theorem actual_output_related (c : ZMod 5) :
+theorem output_related (c : ZMod 5) :
     ((FullFamily.nextStatement data 1 bat (ScalarHead.nextStatement data 1 layout stmt α)
       slices c, ost), data.packedMLE (layout.components source)) ∈ relOut data 1 bat pc :=
   FullFamily.honest_relOut data 1 bat pc seam_related c
 
 /-- The composed knowledge contract uses the exact production extractor and both phase proofs. -/
-theorem actual_worstCase {σ : Type} (init : ProbComp σ)
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (relIn data 1 layout pc) (relOut data 1 bat pc) (verifier data 1 layout bat pc).toVerifier
@@ -83,14 +83,14 @@ theorem actual_worstCase {σ : Type} (init : ProbComp σ)
   rbrKnowledgeSoundnessWorstCaseWith data 1 layout bat pc pc.commitsTo_functional
     Function.injective_id init impl
 
-/-- The sole challenge incurs a real, nonzero 1/5 batching error. -/
-theorem actual_error (i : (pSpec data bat).ChallengeIdx) :
+/-- The sole challenge incurs a nonzero 1/5 batching error. -/
+theorem error (i : (pSpec data bat).ChallengeIdx) :
     rbrError data bat i = (1 / 5 : ℝ≥0) := by
   rw [rbrError_eq]
   norm_num [bat, BatchingStrategy.gammaPowers]
 
-/-- Perfect completeness of the actual oracle reduction from every shared initial state. -/
-theorem actual_complete {σ : Type} (init : ProbComp σ)
+/-- Perfect completeness of the oracle reduction from every shared initial state. -/
+theorem complete {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction data 1 layout bat pc).perfectCompleteness init impl
       (relIn data 1 layout pc) (relOut data 1 bat pc) :=
@@ -114,8 +114,8 @@ theorem false_scalar_rejected (c : ZMod 5) :
   rw [verifier_run]
   exact if_neg false_scalar_check
 
-/-- The actual reduction rejects the false scalar even after its suffix prover makes the
-batching challenge query; the query transport is the actual append transport. -/
+/-- The reduction rejects the false scalar even after its suffix prover makes the
+batching challenge query; the query transport is the append transport. -/
 theorem false_scalar_reduction_rejected :
     ((reduction data 1 layout bat pc).toReduction.run (falseStmt, ost) source).run = (do
       let _ ← liftAppendRight (ScalarHead.pSpec data)

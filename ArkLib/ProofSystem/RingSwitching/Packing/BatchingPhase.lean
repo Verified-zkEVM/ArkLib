@@ -12,17 +12,6 @@ import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
 
 /-!
-# ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
-
-Definitions and results for this component of ArkLib.
--/
-
-open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
-  Module TensorProduct Nat Matrix
-open scoped NNReal ENNReal
-open Sumcheck.Structured
-
-/-!
 # Batching phase — relocating the claim into the carrier
 
 First phase of the interactive packing reduction. Input: an evaluation claim `t(r) = s` over
@@ -68,7 +57,7 @@ Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover add
 
 ## Security
 
-The native extractor unpacks `t` from `t'`. Its knowledge state retains the original guard,
+The batching extractor unpacks `t` from `t'`. Its knowledge state retains the original guard,
 commitment compatibility, and the exact initial residual. Completeness follows from the
 shared checked-observation and finite-coordinate identities. The fixed-prefix knowledge bound
 uses compatibility-only shared separation with an explicit functionality premise over a domain;
@@ -76,9 +65,14 @@ the averaged contract follows from that bound. The loss is `κ/|L|` at the one v
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
+
+open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
+  Module TensorProduct Nat Matrix
+open scoped NNReal ENNReal
+open Sumcheck.Structured
 
 noncomputable section
 namespace RingSwitching.BatchingPhase
@@ -108,7 +102,7 @@ def PrvState : Fin (2 + 1) → Type
   | _ => BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)
     × BatchingWitIn L K ℓ ℓ' × P.A × (Fin κ → L)
 
-/-- The native output keeps the received carrier and batching challenge in the original context. -/
+/-- Retain the received carrier and batching challenge in the original statement context. -/
 def nextStatement (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ → L) :
     Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 :=
   { ctx := {
@@ -119,7 +113,7 @@ def nextStatement (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ → L) :
     sumcheck_target := compute_s0 κ L K P z c
     challenges := Fin.elim0 }
 
-/-- The native witness keeps the supplied packed polynomial and its exact initial residual. -/
+/-- Retain the supplied packed polynomial and construct its initial residual. -/
 def nextWitness (stmt : BatchingStmtIn L ℓ) (z : P.A) (c : Fin κ → L)
     (p : MultilinearPoly L ℓ') : SumcheckWitness L ℓ' 0 :=
   { t' := p
@@ -185,7 +179,7 @@ noncomputable def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
 
 omit [NeZero κ] [Nontrivial L] [Fintype L] [Fintype K] [DecidableEq K]
     [SampleableType L] [NeZero ℓ] [NeZero ℓ'] in
-/-- Exact native verification on every carrier and challenge, including absorbing rejection. -/
+/-- Verification either rejects the carrier or returns the next statement and original oracles. -/
 theorem oracleVerifier_verify (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (tr : FullTranscript (pSpecBatching κ L K P)) :
     (oracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.verify (stmt, oStmt) tr =
@@ -196,7 +190,7 @@ theorem oracleVerifier_verify (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOSt
       else failure) := by
   apply guardedScalarRoundOracleVerifier_verify
 
-/-- The native verifier's exact guard and deterministic output, for sequential composition. -/
+/-- The batching verifier as a deterministic guard and statement update. -/
 def guardedForm : (oracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.GuardedForm where
   check stmt tr := performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l stmt.1.original_claim
     stmt.1.t_eval_point (tr.messages ⟨0, rfl⟩)
@@ -206,7 +200,7 @@ def guardedForm : (oracleVerifier κ L K P ℓ ℓ' h_l aOStmtIn).toVerifier.Gua
 
 omit [NeZero κ] [Nontrivial L] [Fintype L] [Fintype K] [DecidableEq K]
     [DecidableEq L] [SampleableType L] [NeZero ℓ] [NeZero ℓ'] in
-/-- The honest native prover issues exactly its existing vector challenge query. -/
+/-- The honest prover issues one vector challenge query and returns the resulting transcript. -/
 theorem oracleProver_run (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (wit : BatchingWitIn L K ℓ ℓ') :
     (oracleProver κ L K P ℓ ℓ' h_l aOStmtIn).run (stmt, oStmt) wit = (do
@@ -250,7 +244,7 @@ def batchingInputRelation :
 
 omit [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L] [NeZero ℓ']
     [Nontrivial L] in
-/-- The actual honest message passes the original scalar guard for every related native input. -/
+/-- The honest tensor message passes the scalar guard for every related input. -/
 theorem honest_check {stmt : BatchingStmtIn L ℓ} {oStmt : ∀ j, aOStmtIn.OStmtIn j}
     {wit : BatchingWitIn L K ℓ ℓ'}
     (hIn : ((stmt, oStmt), wit) ∈ batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn) :
@@ -263,7 +257,7 @@ theorem honest_check {stmt : BatchingStmtIn L ℓ} {oStmt : ∀ j, aOStmtIn.OStm
 omit [Fintype L] [Fintype K] [DecidableEq K] [DecidableEq L] [SampleableType L]
     [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Every challenge gives the exact native initial-core relation with the same packed witness. -/
+/-- Every challenge gives the initial-core relation with the same packed witness. -/
 theorem honest_relOut {stmt : BatchingStmtIn L ℓ} {oStmt : ∀ j, aOStmtIn.OStmtIn j}
     {wit : BatchingWitIn L K ℓ ℓ'}
     (hIn : ((stmt, oStmt), wit) ∈ batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)
@@ -301,9 +295,7 @@ noncomputable def batchingRbrExtractor :
       exact { t := unpackMLE κ L K ℓ ℓ' h_l P.basis witSucc.t', t' := witSucc.t' }
   extractOut _ _ witOut := witOut
 
-/-- RBR knowledge soundness error for the batching phase.
-The only verifier randomness is `r''`; DP24's batching check is a nonzero `κ`-variate multilinear
-identity test, giving the Schwartz-Zippel bound `κ/|L|`. -/
+/-- The batching phase has error `κ / |L|` at its single vector challenge. -/
 def batchingRBRKnowledgeError
     (i : (pSpecBatching (κ := κ) (L := L) (K := K) (P := P)).ChallengeIdx) : ℝ≥0 :=
   match i with
@@ -367,7 +359,7 @@ def batchingKStateProp {m : Fin (2 + 1)}
 omit [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
     [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- A positive native output pins its actual guard and exact structured output relation. -/
+/-- A positive-probability related output implies the guard and the structured output relation. -/
 theorem positive_output (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.OStmtIn j)
     (tr : FullTranscript (pSpecBatching κ L K P)) (wit : SumcheckWitness L ℓ' 0)
     (h : Pr[ fun out => (out, wit) ∈ sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0 |
@@ -397,7 +389,10 @@ theorem positive_output (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, aOStmtIn.O
 omit [Fintype L] [Fintype K] [DecidableEq K] [SampleableType L]
     [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- The endpoint knowledge state retains the exact native residual and oracle compatibility. -/
+/--
+Endpoint knowledge is the initial-core relation, including residual structure and oracle
+compatibility.
+-/
 theorem batchingKStateProp_full (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (tr : FullTranscript (pSpecBatching κ L K P))
     (witOut : SumcheckWitness L ℓ' 0)
@@ -476,7 +471,7 @@ theorem batchingReduction_perfectCompleteness :
 
 omit [Fintype K] [DecidableEq K] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Exact fixed-prefix knowledge soundness for the existing native carrier/vector transcript. -/
+/-- Worst-case knowledge soundness at every fixed carrier prefix before the vector challenge. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith [NoZeroDivisors L]
     (hfunctional : aOStmtIn.Functional) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
@@ -505,7 +500,7 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith [NoZeroDivisor
       (↑((κ : ℝ≥0) / (Fintype.card L : ℝ≥0)) : ℝ≥0∞)
     rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
     refine (Probability.Pr_le_Pr_of_implies _ _ _ ?_).trans
-      (Packing.FullFamily.compatibility_badEvent_le (Packing.sameAlgebra P.basis) ℓ'
+      (Packing.FullFamily.compatibility_bad_event_le (Packing.sameAlgebra P.basis) ℓ'
         (Packing.BatchingStrategy.eqFold L κ)
         (fun o p => aOStmtIn.initialCompatibility (p, o))
         (fun {o p p'} => hfunctional o p p') (by intro x y h; exact h)

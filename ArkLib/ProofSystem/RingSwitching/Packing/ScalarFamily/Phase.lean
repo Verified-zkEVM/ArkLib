@@ -11,7 +11,7 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Knowledge
 /-!
 # Scalar claim to a batched packed-polynomial claim
 
-This actual oracle reduction appends the checked scalar head and the checked full-family phase.
+This oracle reduction appends the checked scalar head and the checked full-family phase.
 It sends a partial-evaluation family, sends its coordinate slices, then samples a batching
 challenge. Both messages are checked, and the same packed-polynomial commitment oracle survives.
 The slice message is redundant relative to the literal paper protocol and is retained here as
@@ -32,18 +32,18 @@ variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
 /-- Two prover messages followed by the full-family batching challenge. -/
 abbrev pSpec : ProtocolSpec 3 := ScalarHead.pSpec data ++ₚ FullFamily.pSpec data bat
 
-/-- The original scalar relation, including its actual packed commitment. -/
+/-- The original scalar relation with its packed commitment. -/
 abbrev relIn := ScalarHead.relIn data m layout pc
 
-/-- The final C-valued sumcheck claim on the same packed polynomial and commitment oracle. -/
+/-- The challenge-algebra sumcheck claim on the same packed polynomial and commitment oracle. -/
 abbrev relOut := FullFamily.relOut data m bat pc
 
-/-- The actual composed oracle verifier. -/
+/-- The composed scalar and full-family oracle verifier. -/
 def verifier : OracleVerifier []ₒ (ScalarHead.Input data m layout) pc.OStmt
     (FullFamily.Output data m bat) pc.OStmt (pSpec data bat) :=
   (ScalarHead.verifier data m layout pc).append (FullFamily.verifier data m bat pc)
 
-/-- The actual composed oracle reduction. -/
+/-- The composed scalar and full-family oracle reduction. -/
 def reduction : OracleReduction []ₒ (ScalarHead.Input data m layout) pc.OStmt layout.Source
     (FullFamily.Output data m bat) pc.OStmt (data.P⦃≤ 1⦄[X Fin m]) (pSpec data bat) :=
   (ScalarHead.reduction data m layout pc).append (FullFamily.reduction data m bat pc)
@@ -54,14 +54,14 @@ omit [Algebra B C] [IsScalarTower B data.P C] in
     verifier data m layout bat pc := rfl
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
-/-- Oracle materialization commutes with this actual verifier append. -/
+/-- Oracle materialization commutes with verifier append. -/
 theorem verifier_toVerifier : (verifier data m layout bat pc).toVerifier =
     (ScalarHead.verifier data m layout pc).toVerifier.append
       (FullFamily.verifier data m bat pc).toVerifier :=
   OracleVerifier.append_toVerifier _ _
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
-/-- Oracle materialization commutes with the actual reduction append. -/
+/-- Oracle materialization commutes with reduction append. -/
 theorem reduction_toReduction : (reduction data m layout bat pc).toReduction =
     (ScalarHead.reduction data m layout pc).toReduction.append
       (FullFamily.reduction data m bat pc).toReduction :=
@@ -79,8 +79,10 @@ def guardedForm : (verifier data m layout bat pc).toVerifier.GuardedForm := by
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
 open scoped Classical in
-/-- Actual verification checks the original scalar, then its slice read-back, before returning
-its batched target. The original commitment oracle is retained on every successful path. -/
+/--
+Verification checks the scalar and slice readback, then returns the batched target with the
+original commitment oracle.
+-/
 theorem verifier_run (stmt : ScalarHead.Input data m layout) (ost : ∀ j, pc.OStmt j)
     (tr : FullTranscript (pSpec data bat)) :
     (verifier data m layout bat pc).toVerifier.run (stmt, ost) tr =

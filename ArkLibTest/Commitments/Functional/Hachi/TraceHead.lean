@@ -6,7 +6,7 @@ Authors: ArkLib Contributors
 import ArkLib.Commitments.Functional.Hachi.TraceHead.Commitment
 import ArkLibTest.Commitments.Functional.Hachi.TraceHeadAlgebra
 
-/-! # Real Hachi committer and one-message trace-head acceptance -/
+/-! # Hachi committer and one-message trace-head acceptance -/
 
 open CompPoly ArkLib.Lattices.CyclotomicModulus
 open ArkLib.Lattices.Hachi ArkLib.Lattices.Hachi.TraceHead
@@ -23,7 +23,7 @@ abbrev B := HachiTraceHeadAlgebraTest.B
 abbrev A := HachiTraceHeadAlgebraTest.A
 abbrev Φ := powTwoCyclotomic (R := ZMod 5) 1
 
-/-- Actual finite Ajtai parameters, all matrix entries equal to one. -/
+/-- Finite Ajtai parameters, all matrix entries equal to one. -/
 def pp : PublicParamsD Φ 1 (2 ^ 0) (Nat.clog 2 5) 1 (2 ^ 1) (Nat.clog 2 5) 1 where
   innerMatrix := fun _ _ => 1
   outerMatrix := fun _ _ => 1
@@ -43,49 +43,49 @@ def s : Statement 5 1 0 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 :=
 def w := committedOpening 2 hb pp (packCoefficients (n := 1) (t := 1)
   (coefficientEquiv 5 1 0 h2 hk) f)
 
-/-- The nonconstant scalar polynomial has an actual weak opening from the real committer,
+/-- The nonconstant scalar polynomial has a weak opening from the committer,
 with the concrete balanced-digit norm bounds and nonzero evaluation claim. -/
-theorem actual_source_valid : (s, w) ∈ relInMsgShort 1 0 hk h2 pp 2 6 1 1 1 := by
+theorem source_valid : (s, w) ∈ relInMsgShort 1 0 hk h2 pp 2 6 1 1 1 := by
   exact committed_source_valid 2 hb pp hk h2 (by decide) hdeg hclog
     (by decide) (by rw [powTwoCyclotomic_natDegree]; decide) (by decide) f #v[0] #v[] #v[1]
 
-/-- The actual source claim is the nonzero scalar value two. -/
-theorem actual_claim_two : s.value = (2 : B) :=
-  HachiTraceHeadAlgebraTest.actual_scalar_evaluation
+/-- The source claim is the nonzero scalar value two. -/
+theorem claim_two : s.value = (2 : B) :=
+  HachiTraceHeadAlgebraTest.scalar_evaluation
 
 /-- Honest execution retains the exact original opening and agrees on the forwarded ring value. -/
-theorem actual_run_retains_opening {ι : Type} (oSpec : OracleSpec ι) :
+theorem run_retains_opening {ι : Type} (oSpec : OracleSpec ι) :
     (reduction (oSpec := oSpec) 1 0 hk 2).run s w =
       pure ((honestTranscript 1 0 2 s w, output 1 0 s (honestMessage 1 0 2 s w), w),
         output 1 0 s (honestMessage 1 0 2 s w)) :=
-  reduction_run 1 0 hk h2 pp 2 6 1 1 s w actual_source_valid.1
+  reduction_run 1 0 hk h2 pp 2 6 1 1 s w source_valid.1
 
-/-- A false source claim keeps every actual key, commitment, point, and opening fixed. -/
+/-- A false source claim keeps every key, commitment, point, and opening fixed. -/
 def bad : Statement 5 1 0 1 (Nat.clog 2 5) 1 (Nat.clog 2 5) 1 0 1 := {s with value := 0}
 
-/-- Changing the scalar claim to zero makes the actual guard fail. -/
-theorem actual_false_claim_check : check 1 0 hk bad (honestMessage 1 0 2 s w) = false := by
+/-- Changing the scalar claim to zero makes the guard fail. -/
+theorem false_claim_check : check 1 0 hk bad (honestMessage 1 0 2 s w) = false := by
   apply Bool.eq_false_iff.mpr
   intro hc
-  have hout := mem_output_of_relIn 1 0 hk h2 pp 2 6 1 1 s w actual_source_valid.1
+  have hout := mem_output_of_relIn 1 0 hk h2 pp 2 6 1 1 s w source_valid.1
   have hbout : (output 1 0 bad (honestMessage 1 0 2 s w), w) ∈
       relPolyEval Φ pp 2 6 1 1 := hout
   have hbad := mem_relIn_of_output 1 0 hk h2 pp 2 6 1 1 bad _ w hc hbout
-  have hsource := actual_source_valid.1.2
+  have hsource := source_valid.1.2
   have hz : s.value = 0 := hsource.symm.trans hbad.2
-  rw [actual_claim_two] at hz
+  rw [claim_two] at hz
   have hzA : (2 : A) = 0 := congrArg Subtype.val hz
-  exact HachiTraceHeadAlgebraTest.actual_value_ne_zero hzA
+  exact HachiTraceHeadAlgebraTest.value_ne_zero hzA
 
-/-- False-claim rejection is actual verifier failure at the production wire format. -/
-theorem actual_false_claim_failure {ι : Type} (oSpec : OracleSpec ι) :
+/-- False-claim rejection is verifier failure at the production wire format. -/
+theorem false_claim_failure {ι : Type} (oSpec : OracleSpec ι) :
     (verifier (q := 5) (oSpec := oSpec) 1 0 hk).run bad (honestTranscript 1 0 2 s w) =
       failure := by
-  simp only [Verifier.run, TraceHead.verifier, honestTranscript, actual_false_claim_check,
+  simp only [Verifier.run, TraceHead.verifier, honestTranscript, false_claim_check,
     Bool.false_eq_true, if_false]
 
 /-- The full honest-prover reduction also aborts after changing only the source scalar claim. -/
-theorem actual_false_claim_reduction_failure {ι : Type} (oSpec : OracleSpec ι) :
+theorem false_claim_reduction_failure {ι : Type} (oSpec : OracleSpec ι) :
     (reduction (oSpec := oSpec) 1 0 hk 2).run bad w = failure := by
   unfold Reduction.run
   rw [show (reduction (oSpec := oSpec) 1 0 hk 2).prover = TraceHead.prover 1 0 2 from rfl,
@@ -94,18 +94,18 @@ theorem actual_false_claim_reduction_failure {ι : Type} (oSpec : OracleSpec ι)
   rw [show (reduction (oSpec := oSpec) 1 0 hk 2).verifier =
       TraceHead.verifier 1 0 hk from rfl,
     show honestTranscript 1 0 2 bad w = honestTranscript 1 0 2 s w from rfl,
-    actual_false_claim_failure]
+    false_claim_failure]
   simp
 
-/-- The live consumer instantiates the actual strong completeness theorem at every shared state. -/
-theorem actual_perfectCompleteness {ι σ : Type} (oSpec : OracleSpec ι)
+/-- The live consumer instantiates the strong completeness theorem at every shared state. -/
+theorem perfectCompleteness {ι σ : Type} (oSpec : OracleSpec ι)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (reduction (oSpec := oSpec) 1 0 hk 2).perfectCompleteness init impl
       (relInMsgShort 1 0 hk h2 pp 2 6 1 1 1) (relPolyEvalMsgShort Φ pp 2 6 1 1 1) :=
   perfectCompleteness_msgShort 1 0 hk h2 init impl pp 2 6 1 1 1
 
-/-- The live consumer uses zero-challenge CWSS at the unchanged real weak-opening relation. -/
-theorem actual_CWSS {ι σ : Type} (oSpec : OracleSpec ι)
+/-- The live consumer uses zero-challenge CWSS at the weak-opening relation. -/
+theorem coordinate_wise_special_soundness {ι σ : Type} (oSpec : OracleSpec ι)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.coordinateWiseSpecialSoundWith init impl CWSSStructure.ofIsEmpty
       (TraceHead.relIn 1 0 hk h2 pp 2 6 1 1) (relPolyEval Φ pp 2 6 1 1)

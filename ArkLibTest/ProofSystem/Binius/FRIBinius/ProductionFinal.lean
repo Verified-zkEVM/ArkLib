@@ -8,9 +8,9 @@ import ArkLibTest.ProofSystem.Binius.ConcreteCommitment
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 import ArkLib.OracleReduction.Composition.Sequential.General
 
-/-! # Actual FRI-Binius final-check execution over an inhabited rank-four GF16 fixture
+/-! # FRI-Binius final-check execution over an inhabited rank-four GF16 fixture
 
-The runtime check needs no basis normalization hypothesis. These tests preserve the actual
+The runtime check needs no basis normalization hypothesis. These tests preserve the
 folded-oracle family and do not assert a full folding input relation or downstream FRI security.
 -/
 
@@ -55,7 +55,7 @@ def accepted (s : Stmt) (msg : L) : Out where
   ctx := ⟨getEvaluationPointSuffix 2 L 4 2 rfl s.ctx.t_eval_point, s.ctx.original_claim⟩
   final_constant := msg
 
-/-- The production equation applies to arbitrary statements, actual oracles, and messages. -/
+/-- The production equation applies to arbitrary statements, oracles, and messages. -/
 theorem runtime (s : Stmt) (o : ∀ j, O j) (tr : FullTranscript spec) :
     V.toVerifier.verify (s, o) tr =
       (if s.sumcheck_target = multiplier s * sent tr then
@@ -88,7 +88,7 @@ theorem accepted_fields :
       (accepted (statement 0) 1).challenges = 1 ∧
       (accepted (statement 0) 1).sumcheck_target = 0 := ⟨rfl, rfl, rfl⟩
 
-/-- No actual oracle suffix can revive the rejected final equation. -/
+/-- No oracle suffix can revive the rejected final equation. -/
 theorem rejects_before_oracle_suffix {n : ℕ} {p : ProtocolSpec n}
     [∀ i, OracleInterface (p.Message i)] {T J : Type} {O' : J → Type}
     [∀ i, OracleInterface (O' i)]

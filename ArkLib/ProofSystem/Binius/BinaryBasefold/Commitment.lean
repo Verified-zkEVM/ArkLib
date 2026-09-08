@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 # Binding of the initial Binary Basefold oracle
 
 The initial oracle is related to a multilinear witness by strict unique-radius proximity to its
-novel-basis Reed–Solomon encoding. This module proves that this existing relation determines the
+novel-basis Reed–Solomon encoding. This module proves that this relation determines the
 witness uniquely, and that the honest encoding satisfies it. These facts concern the commitment
 relation; they do not assert soundness of Binary Basefold's opening protocol.
 -/
@@ -43,7 +43,7 @@ variable (K : Type) [Field K] [Fintype K]
 variable [hF₂ : Fact (Fintype.card K = 2)] [Algebra K L]
 variable (β : Fin r → L) [Fact (LinearIndependent K β)]
 
-/-- Synthesis in the actual novel polynomial basis is injective on coefficient vectors. -/
+/-- Synthesis in the novel polynomial basis is injective on coefficient vectors. -/
 theorem polynomialFromNovelCoeffsF₂_injective (ℓ : ℕ) (hℓ : ℓ ≤ r) :
     Function.Injective (polynomialFromNovelCoeffsF₂ K β ℓ hℓ) := by
   have hsynth (a : Fin (2 ^ ℓ) → L) :
@@ -74,7 +74,7 @@ theorem initialDomain_degree_le_card :
   rw [initialDomain_card K β]
   exact Nat.pow_le_pow_right (by omega) (Nat.le_add_right ℓ 𝓡)
 
-/-- `BBF_CodeDistance` is the actual minimum distance at the initial oracle. -/
+/-- `BBF_CodeDistance` equals the minimum distance of the initial code. -/
 theorem initialCode_minDist :
     Code.minDist (BBF_Code K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0).carrier =
       BBF_CodeDistance ℓ 𝓡 0 := by
@@ -86,7 +86,7 @@ theorem initialCode_minDist :
     (initialDomain_degree_le_card K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
   simpa [initialDomain_card K β, BBF_CodeDistance] using hd
 
-/-- Evaluate a polynomial of the initial degree bound on the actual initial domain. -/
+/-- Evaluate a polynomial of the initial degree bound on the initial domain. -/
 def initialPolynomialEncoding (p : L⦃< 2 ^ ℓ⦄[X]) :
     sDomain K β h_ℓ_add_R_rate 0 → L := fun x => p.val.eval x.val
 
@@ -111,7 +111,7 @@ def firstOracleEncoding (t : MultilinearPoly L ℓ) : sDomain K β h_ℓ_add_R_r
     (witnessNovelCoeffs t))
 
 omit [NeZero ℓ] in
-/-- An honest first oracle belongs to the actual initial Reed–Solomon code. -/
+/-- An honest first oracle belongs to the initial Reed–Solomon code. -/
 theorem firstOracleEncoding_mem_code (t : MultilinearPoly L ℓ) :
     firstOracleEncoding K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t ∈
       BBF_Code K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 := by
@@ -160,7 +160,7 @@ theorem firstOracleWitnessConsistencyProp_honest (t : MultilinearPoly L ℓ) :
 
 variable (ϑ : ℕ) [NeZero ϑ] [Fact (ϑ ∣ ℓ)]
 
-/-- The actual initial oracle family carrying the honest first codeword. -/
+/-- The initial oracle family carrying the honest first codeword. -/
 def honestInitialOracleStatement (t : MultilinearPoly L ℓ) :
     ∀ j, OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j := by
   let j₀ : Fin (toOutCodewordsCount ℓ ϑ 0) := ⟨0, by
@@ -183,7 +183,7 @@ theorem getFirstOracle_honestInitialOracleStatement (t : MultilinearPoly L ℓ) 
   simp only [getFirstOracle, honestInitialOracleStatement, dif_pos rfl]
   exact mp_mpr_cancel _ _
 
-/-- Honest coverage uses the same oracle family and accessor as the production relation. -/
+/-- The honest oracle family satisfies the initial compatibility relation. -/
 theorem honestInitialOracleStatement_consistent (t : MultilinearPoly L ℓ) :
     firstOracleWitnessConsistencyProp K β t
       (getFirstOracle K β (honestInitialOracleStatement K β ϑ

@@ -8,7 +8,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.ScalarFamily.Phase
 /-!
 # Exact security and completeness of scalar-to-family composition
 
-The actual append extractor first unpacks the packed polynomial, then reconstructs the original
+The append extractor first unpacks the packed polynomial, then reconstructs the original
 scalar source. Its knowledge states preserve the first guard beyond the seam. Both component
 worst-case proofs are consumed directly; no averaged-to-worst-case inference is used.
 Commitment functionality is an explicit premise of the probability bounds. The state
@@ -31,14 +31,14 @@ variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
 abbrev WitMid : Fin 4 → Type :=
   Verifier.KnowledgeAppend.Witness (ScalarHead.WitMid data m layout) (FullFamily.WitMid data m)
 
-/-- The actual library append extractor, using the first verifier's true passing verdict. -/
+/-- The append extractor using the scalar verifier's passing verdict. -/
 def extractor : Extractor.RoundByRound []ₒ
     (ScalarHead.Input data m layout × (∀ j, pc.OStmt j)) layout.Source
     (data.P⦃≤ 1⦄[X Fin m]) (pSpec data bat) (WitMid data m layout) :=
   (ScalarHead.extractor data m layout pc).append (FullFamily.extractor data m bat pc)
     (ScalarHead.guardedForm data m layout pc).out
 
-/-- The concrete error function transported along the actual appended challenge indices. -/
+/-- The error function transported along appended challenge indices. -/
 def rbrError : (pSpec data bat).ChallengeIdx → ℝ≥0 :=
   Sum.elim (fun _ => 0) (FullFamily.rbrError data bat) ∘ ChallengeIdx.sumEquiv.symm
 
@@ -54,7 +54,7 @@ theorem rbrError_eq (i : (pSpec data bat).ChallengeIdx) : rbrError data bat i = 
   · simp only [rbrError, Function.comp_apply, Equiv.symm_apply_apply, Sum.elim_inr,
       FullFamily.rbrError]
 
-/-- Exact appended knowledge states for the actual oracle verifier after materialization. -/
+/-- The appended knowledge states after oracle-statement materialization. -/
 def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier data m layout bat pc).toVerifier.KnowledgeStateFunction init impl
@@ -69,7 +69,10 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     toFun_full := fun stmt tr p h => K.toFun_full stmt tr p (by
       simpa only [Verifier.run, verifier_toVerifier] using h) }
 
-/-- Actual scalar-to-family composition, at the exact appended extractor and knowledge state. -/
+/--
+Worst-case knowledge soundness of scalar-to-family composition at the appended extractor and
+knowledge state.
+-/
 theorem rbrKnowledgeSoundnessWorstCaseWith
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ)
@@ -86,7 +89,7 @@ theorem rbrKnowledgeSoundnessWorstCaseWith
     (FullFamily.rbrKnowledgeSoundnessWorstCaseWith data m bat pc hfunctional hinj init impl)
   exact h
 
-/-- Averaging the proved fixed-prefix contract preserves the same explicit extractor. -/
+/-- The appended extractor and knowledge state satisfy the prover-averaged contract. -/
 theorem rbrKnowledgeSoundnessWith
     (hfunctional : pc.Functional) (hinj : Function.Injective (algebraMap data.P C))
     {σ : Type} (init : ProbComp σ)
@@ -109,8 +112,7 @@ theorem rbrKnowledgeSoundness
     knowledgeStateFunction data m layout bat pc init impl,
     rbrKnowledgeSoundnessWith data m layout bat pc hfunctional hinj init impl⟩
 
-/-- Stateful perfect completeness of the actual composed oracle reduction. The full-family
-phase is complete from every state at the seam, and its first step is a prover message. -/
+/-- Perfect completeness of the composed reduction from every shared initial state. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction data m layout bat pc).perfectCompleteness init impl

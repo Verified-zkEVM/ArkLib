@@ -10,8 +10,8 @@ import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 /-!
 # The FRI-Binius ring-switch commitment relation
 
-The existing abstract input relation is functional because the actual novel-basis code has unique
-witnesses within strict half distance. Honest coverage uses its production oracle family and first
+The abstract input relation is functional because the novel-basis code has unique
+witnesses within strict half distance. Honest coverage uses its initial oracle family and first
 oracle accessor. These properties supply the commitment-side premises of ring switching, separately
 from the soundness of the later opening protocol.
 -/
@@ -30,7 +30,7 @@ variable [Algebra K L] (β : Basis (Fin (2 ^ κ)) K L)
 variable (ℓ' 𝓡 ϑ : ℕ) [NeZero ℓ'] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
 variable (h_ℓ_add_R_rate : ℓ' + 𝓡 < 2 ^ κ)
 
-/-- The actual FRI-Binius abstract oracle relation determines one packed polynomial. -/
+/-- The FRI-Binius oracle compatibility relation determines a unique packed polynomial. -/
 theorem binaryBasefold_initialCompatibility_functional
     (oStmt : ∀ j, (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ
       h_ℓ_add_R_rate).OStmtIn j) (t u : MultilinearPoly L ℓ')
@@ -40,12 +40,12 @@ theorem binaryBasefold_initialCompatibility_functional
       (u, oStmt)) : t = u :=
   BinaryBasefold.firstOracleWitnessConsistencyProp_functional K β _ t u ht hu
 
-/-- Honest packed polynomial oracles use the real Binary Basefold first-codeword family. -/
+/-- Honest packed-polynomial oracles from the Binary Basefold first-codeword family. -/
 def honestPackedOracle (t : MultilinearPoly L ℓ') :
     ∀ j, (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn j :=
   BinaryBasefold.honestInitialOracleStatement K β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t
 
-/-- Every packed polynomial has an oracle satisfying the unchanged FRI-Binius input relation. -/
+/-- Every packed polynomial has an oracle satisfying the FRI-Binius input relation. -/
 theorem honestPackedOracle_compatible (t : MultilinearPoly L ℓ') :
     (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).initialCompatibility
       (t, honestPackedOracle κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate t) :=

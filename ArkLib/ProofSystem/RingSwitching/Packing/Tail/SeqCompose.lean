@@ -8,11 +8,11 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Tail.Terminal
 import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 
 /-!
-# The actual generic product-sumcheck tail
+# The generic product-sumcheck tail
 
-The m scalar rounds are the library's actual sequential oracle reduction, followed by the
+The m scalar rounds are the sequential oracle reduction, followed by the
 terminal opening check. The empty sequence is the identity, so m=0 directly reaches the same
-terminal check. Every component keeps the original packed polynomial and its actual oracles.
+terminal check. Every component keeps the original packed polynomial and its oracles.
 -/
 
 noncomputable section
@@ -21,7 +21,7 @@ open OracleSpec OracleComp ProtocolSpec MvPolynomial
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Context → C⦃≤ 1⦄[X Fin m]) (pc : PackedCommitment P m)
 
-/-- The m actual scalar round protocols, including the empty protocol at m=0. -/
+/-- The scalar-round protocol sequence, empty when there are no retained variables. -/
 def loopSpec (C : Type) [CommRing C] (m : ℕ) :
     ProtocolSpec (Fin.vsum (fun _ : Fin m => 2)) :=
   ProtocolSpec.seqCompose (fun _ : Fin m => Round.pSpec C)
@@ -34,7 +34,7 @@ instance [Fintype C] : ∀ j, SampleableType ((loopSpec C m).Challenge j) :=
   inferInstanceAs (∀ j, SampleableType
     ((ProtocolSpec.seqCompose (fun _ : Fin m => Round.pSpec C)).Challenge j))
 
-/-- Sequentially run each actual scalar verifier with the same commitment oracle family. -/
+/-- Sequential composition of scalar verifiers preserving the commitment oracle family. -/
 def loopVerifier : OracleVerifier []ₒ (Statement Context C (0 : Fin (m + 1))) pc.OStmt
     (Statement Context C (Fin.last m)) pc.OStmt (loopSpec C m) :=
   OracleVerifier.seqCompose (Statement Context C) (fun _ => pc.OStmt)
@@ -48,7 +48,7 @@ def loopReduction : OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))
     (fun _ => P⦃≤ 1⦄[X Fin m]) (Round.reduction multiplier pc)
 
 omit [Algebra P C] in
-/-- Materialization commutes with the actual finite sequential verifier. -/
+/-- Materialization commutes with the finite verifier sequence. -/
 theorem loopVerifier_toVerifier :
     (loopVerifier (C := C) (Context := Context) pc).toVerifier =
       Verifier.seqCompose (fun i => Statement Context C i × (∀ j, pc.OStmt j))
@@ -79,19 +79,21 @@ instance : ∀ j, OracleInterface ((pSpec C m).Message j) :=
 instance [Fintype C] : ∀ j, SampleableType ((pSpec C m).Challenge j) :=
   inferInstanceAs (∀ j, SampleableType ((loopSpec C m ++ₚ Terminal.pSpec C).Challenge j))
 
-/-- The actual verifier composition ends at the packed opening point and value. -/
+/-- The complete-tail verifier ends at the packed evaluation point and value. -/
 def verifier : OracleVerifier []ₒ (Statement Context C (0 : Fin (m + 1))) pc.OStmt
     ((Fin m → C) × C) pc.OStmt (pSpec C m) :=
   (loopVerifier pc).append (Terminal.verifier multiplier pc)
 
-/-- The actual same-oracle product-sumcheck tail, including its terminal opening message. -/
+/--
+The product-sumcheck tail preserving the commitment oracle and ending with an opening message.
+-/
 def reduction : OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) pc.OStmt
     P⦃≤ 1⦄[X Fin m] ((Fin m → C) × C) pc.OStmt P⦃≤ 1⦄[X Fin m] (pSpec C m) :=
   (loopReduction multiplier pc).append (Terminal.reduction multiplier pc)
 
 omit [Algebra P C] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Materialization preserves the actual loop-to-terminal verifier composition. -/
+/-- Materialization commutes with loop-to-terminal composition. -/
 theorem verifier_toVerifier : (verifier multiplier pc).toVerifier =
     (loopVerifier pc).toVerifier.append (Terminal.verifier multiplier pc).toVerifier := by
   apply OracleVerifier.append_toVerifier
@@ -106,7 +108,10 @@ instance : (reduction multiplier pc).prover.OutputIsPure :=
   Prover.OutputIsPure.append _ _ inferInstance
     (show (Terminal.prover (C := C) (Context := Context) pc).OutputIsPure from inferInstance)
 
-/-- Universal-state completeness of the actual finite loop over a finite commutative ring. -/
+/--
+Perfect completeness of the finite loop over a finite commutative ring, from every initial
+state.
+-/
 theorem loop_perfectCompleteness [Fintype C] {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (loopReduction multiplier pc).perfectCompleteness init impl
@@ -118,7 +123,7 @@ theorem loop_perfectCompleteness [Fintype C] {σ : Type} (init : ProbComp σ)
     (fun i => Round.guardedForm pc i)
     (fun i s => Round.perfectCompleteness multiplier pc i (pure s) impl)
 
-/-- The full tail is perfectly complete on the actual same-commitment opening relation. -/
+/-- Perfect completeness of the complete tail on the same commitment opening relation. -/
 theorem perfectCompleteness [Fintype C] {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction multiplier pc).perfectCompleteness init impl (rel multiplier pc 0) pc.evalRel := by

@@ -21,8 +21,8 @@ The equal-algebra case is the coordinate content of the tensor presentation in [
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers."
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over Binary
+  Towers*][DP24]
 -/
 
 namespace RingSwitching.Packing

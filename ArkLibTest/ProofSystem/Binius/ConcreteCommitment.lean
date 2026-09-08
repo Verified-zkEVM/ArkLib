@@ -22,7 +22,7 @@ namespace Binius.ConcreteCommitment
 
 open MvPolynomial Module Sumcheck.Structured
 
-/-- The actual field of sixteen elements used by this acceptance fixture. -/
+/-- The field of sixteen elements used by this acceptance fixture. -/
 abbrev PackedField := GaloisField 2 4
 
 local instance : Fintype PackedField := Fintype.ofFinite PackedField
@@ -72,7 +72,7 @@ theorem coordinates_distinct : coordinate 0 ≠ coordinate 1 := by
   rw [coordinate_claims.1, coordinate_claims.2] at he
   exact one_ne_zero he
 
-/-- The actual FRI-Binius commitment relation is functional at these concrete parameters. -/
+/-- The FRI-Binius commitment relation is functional at these concrete parameters. -/
 theorem functionality (o : InitialOracles) (t u : MultilinearPoly PackedField 2)
     (ht : commitment.initialCompatibility (t, o))
     (hu : commitment.initialCompatibility (u, o)) : t = u :=
@@ -85,7 +85,7 @@ theorem coverage (t : MultilinearPoly PackedField 2) :
   FRIBinius.binaryBasefold_initialCompatibility_coverage
     2 PackedField (ZMod 2) binaryBasis 2 1 1 (by decide) t
 
-/-- Construct the actual honest initial oracle family, not an identity commitment. -/
+/-- Construct the honest initial oracle family, not an identity commitment. -/
 def honestOracle (t : MultilinearPoly PackedField 2) : InitialOracles :=
   FRIBinius.honestPackedOracle 2 PackedField (ZMod 2) binaryBasis 2 1 1 (by decide) t
 

@@ -662,64 +662,35 @@ home_page/            site assets and assembled website root
   to avoid the current `GuardedForm` owner cycle; see
   [sequential composition](sequential-composition.md). The unrestricted admitted theorem remains
   a separate contract.
-- Ring switching is a **family of constructions, not one protocol** — the umbrella
-  `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
-  `Packing/` is the coordinate packing family: `Profile.lean` holds the shared
-  legacy packing data layer `RingSwitchingProfile` (two-sided coordinate inverses and common-base
-  embedding coherence). The DP24/Binius construction comprises (`Prelude` with `packMLE` + the Binius
-  instance `binaryTowerProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
-  soundness statements, `[IsDomain L]`); Binius instantiates the carrier in
-  `ProofSystem/Binius/FRIBinius/` (`biniusProfile`), reuses batching, then interleaves FRI and
-  sumcheck. The repaired final leaf has ring-valid completeness and zero-error knowledge proofs;
-  legacy batching/loop and general-composition admissions remain. The repaired coordinate directions, terminal
-  opening value, absorbing failure, and auxiliary knowledge states have permanent regressions in
-  `ArkLibTest/ProofSystem/RingSwitching/`; the original counterexamples are recorded in the
-  [ring-switching audit](../kb/audits/ring-switching-model-coverage.md).
-  Hachi's §3.1 head lives in `Commitments/Functional/Hachi/TraceHead/`: actual monomial packing,
-  scaled trace guard, same weak-opening CWSS/completeness and real committer coverage. It uses
-  `Subfield/LinearEquiv.lean` and the fixed subring's ring structure, independently of the
-  unfinished external field identification. Existing trace definitions remain noncomputable.
-  The separately based coordinate core lives in `Packing/Coordinates.lean`, `Polynomial.lean`,
-  `Relations.lean`, and `Batching.lean`. It provides independent finite-free packing/evaluation
-  algebras, polynomial round trips, ring-valid family/slice read-back, and separation for fixed
-  families. `Packing/PackedCommitment.lean` specifies an oracle relation and honest coverage, with a
-  separate functionality proposition; `ExactCommitment.lean` bundles its proof;
-  `Packing/FullFamily/` supplies the checked-message phase, execution, state-uniform completeness,
-  and fixed-prefix knowledge proof for the reduction to a sumcheck claim.
-  `Binius/BinaryBasefold/Commitment.lean` and `Binius/FRIBinius/Commitment.lean` prove
-  uniqueness and honest coverage for the actual Binius initial compatibility relation; their
-  concrete GF(16) client lives in `ArkLibTest/ProofSystem/Binius/ConcreteCommitment.lean`.
-  `FRIBinius/RingSwitchingCommitment.lean` adapts those same production semantics to
-  the base commitment, its functionality proof, exact specialization and legacy functionality;
-  its GF(16) consumers exercise FullFamily and the complete generic pipeline
-  on the actual codeword oracle. `Packing/ScalarHead/` proves concrete DP24/Flock layouts, quirky
-  interpolation and checked scalar reduction. `ScalarFamily/` composes the actual heads.
-  `Tail/` supplies product-sumcheck rounds, terminal read-back, and the actual
-  `FullFamilyOpening`/`ScalarOpening` pipelines to the same commitment's evaluation relation.
-  `Tail/Accounting.lean` sums the actual challenge errors. `Multiplier.lean` proves the public
-  matrix evaluator and action count. `Opening.lean` defines the precise downstream contract and
-  actual guarded append with exact knowledge objects and state-aware completeness premises.
-  Its clients close both pipelines with a checked polynomial oracle; a downstream PCS must
-  supply its own knowledge contract.
-  `Lift/` is the **generic HMZ25 lift** (large quotient ring →
-  field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
-  `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific
-  — with the full lift algebra and interpolation engine proven over the laws), and
-  `Reduction.lean` is the protocol layer over the committed-scalar shell
-  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
-  recovery obligation proven generically. Hachi's `Commitments/Functional/Hachi/RingSwitch/`
-  is its cyclotomic instance, with law-discharge lemmas in
-  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. What the two families share lives at the
-  folder top level — the check-then-update round-shape verifiers (`RoundVerifiers.lean`,
-  over the `pSpecScalar` wire shape and the one-message `pSpecMessage` wire) and the
-  embed-and-evaluate transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`).
-  The committed-scalar seam under `OracleReduction/` supports `Lift`; sharing a round shape
-  does not provide a packing completeness or soundness theorem. For a new ring-switch client,
-  first identify its source/output relations, coefficient/table interpretation, failure behavior,
-  challenge distribution, and commitment/security boundary. Then select the relevant algebra and
-  protocol components using the audit; do not infer protocol coverage from a carrier example.
-  Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
-  `proof_systems/ring_switching.tex`. Structured sum-check support lives in
+- Ring switching has coordinate-packing and quotient-lift constructions, introduced by
+  `ProofSystem/RingSwitching/Basic.lean`. The [concept page](../kb/concepts/ring-switching.md)
+  gives the component guide; the [coverage audit](../kb/audits/ring-switching-model-coverage.md)
+  gives source relations and security assumptions.
+  `Packing/Coordinates`, `FiniteObservation`, `Polynomial` and `Relations` own finite-free
+  coordinate transport, polynomial packing and weighted reconstruction over commutative rings.
+  `CheckedObservation` shares honest checking and source read-back across tensor, scalar and
+  Hachi trace heads. `Multiplier` owns the public multiplication-matrix evaluator.
+  `Packing/Profile`, `ProfileCoordinates`, `ProfileLayout` and `BatchingAlgebra` connect the
+  DP24 tensor carrier and Boolean-table layout to those shared proofs. `BatchingPhase` supplies
+  the one-message/vector-challenge head. `Binius/FRIBinius/General` instantiates it using the
+  production codeword commitment, then interleaves FRI and sumcheck. Tensor batching and the
+  profile-based terminal have completeness and knowledge proofs; the profile-based loop and
+  downstream interleaved FRI-Binius proofs retain admissions.
+  `Packing/PackedCommitment` owns the oracle relation and honest coverage, with a separate
+  functionality proposition; `ExactCommitment` bundles that specialization. The Binius adapter
+  is `FRIBinius/RingSwitchingCommitment`. `ScalarHead/` owns packed-prefix, packed-suffix and quirky
+  layouts; `FullFamily/` and `ScalarFamily/` own checked-slice and composed scalar heads.
+  `Tail/FullFamilyOpening` and `Tail/ScalarOpening` run product sumcheck to the same commitment's
+  evaluation relation; `Tail/Accounting` sums the challenge errors. `Packing/Opening` supplies
+  downstream append at that exact relation, with explicit knowledge and completeness premises.
+  Hachi's monomial trace head is `Commitments/Functional/Hachi/TraceHead/`. Its shared observation
+  proofs preserve the actual ψ basis, scaled trace and norm-conditioned weak opening. It proves
+  completeness and CWSS over the fixed subring without its unfinished field identification;
+  the ring/trace definitions remain noncomputable.
+  `Lift/Presentation` and `Lift/Reduction` own monic quotient algebra and field-target CWSS with
+  collision escape. Hachi's cyclotomic instance lives in `Hachi/RingSwitch/`, with presentation
+  laws in `Data/Lattices/CyclotomicRing/QuotientLift`. `RoundVerifiers` and `Transport/` own the
+  shared check/update wire shapes and evaluation transport. Structured sumcheck support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
   [`generated-files.md`](generated-files.md).

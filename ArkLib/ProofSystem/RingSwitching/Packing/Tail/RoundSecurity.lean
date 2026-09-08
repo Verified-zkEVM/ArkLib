@@ -9,7 +9,7 @@ import ArkLib.ProofSystem.RingSwitching.Packing.Batching
 /-!
 # Fixed-prefix knowledge security of a product-sumcheck round
 
-The pre-challenge state requires the sent polynomial to be the actual residual sum polynomial.
+The pre-challenge state requires the sent polynomial to be the residual sum polynomial.
 The post-challenge state requires only the accepted guard and equality at the sampled point.
 Commitment functionality fixes the original packed witness before that challenge is drawn.
 Distinct degree-two messages collide with probability at most 2/card(C) over a finite domain.
@@ -52,12 +52,15 @@ theorem message_collision_le [IsDomain C] [Fintype C] (g h : C⦃≤ 2⦄[X]) (h
     (fun k => g.val.coeff k) (fun k => h.val.coeff k) hcoeff
   simpa only [BatchingStrategy.gammaPowers, ← message_eval, Nat.reduceSub, Nat.cast_ofNat] using hb
 
-/-- Before sampling, the message must be the actual polynomial anchored to this commitment. -/
+/--
+Before sampling, the received polynomial equals the residual polynomial of the committed
+witness.
+-/
 def beforeChallenge (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j)
     (g : C⦃≤ 2⦄[X]) (p : P⦃≤ 1⦄[X Fin m]) : Prop :=
   check i stmt g ∧ pc.commitsTo ost p ∧ g = honestMessage multiplier i stmt p
 
-/-- After sampling, retain the local guard and the actual next residual-sum relation. -/
+/-- After sampling, the local guard and next residual-sum relation hold. -/
 def afterChallenge (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j)
     (g : C⦃≤ 2⦄[X]) (c : C) (p : P⦃≤ 1⦄[X Fin m]) : Prop :=
   check i stmt g ∧ ((nextStatement i stmt g c, ost), p) ∈ rel multiplier pc i.succ
@@ -72,7 +75,7 @@ theorem readback (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt 
   exact hc.symm.trans (roundMessage_sum i (productPoly (multiplier stmt.ctx) p) stmt.challenges)
 
 /-- Fixing the input oracle collection fixes the witness before the random challenge. -/
-theorem badEvent_le [IsDomain C] [Fintype C] (hfunctional : pc.Functional)
+theorem bad_event_le [IsDomain C] [Fintype C] (hfunctional : pc.Functional)
     (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j) (g : C⦃≤ 2⦄[X]) :
     Pr_{ let c ←$ᵖ C }[∃ p, ¬ beforeChallenge multiplier pc i stmt ost g p ∧
       afterChallenge multiplier pc i stmt ost g c p] ≤
@@ -104,7 +107,7 @@ def extractor :
   extractMid _ _ _ p := p
   extractOut _ _ p := p
 
-/-- Actual verifier knowledge states with exact message and output extraction obligations. -/
+/-- Knowledge states with message and output extraction obligations. -/
 def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (verifier (C := C) (Context := Context) pc i).KnowledgeStateFunction init impl
@@ -125,7 +128,7 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
 def rbrError [Fintype C] (_j : (pSpec C).ChallengeIdx) : ℝ≥0 :=
   2 / Fintype.card C
 
-/-- Worst-case knowledge at every fixed transcript prefix, with the actual extractor exposed. -/
+/-- Worst-case knowledge soundness at every fixed transcript prefix, with the round extractor. -/
 theorem rbrKnowledgeSoundnessWorstCaseWith [IsDomain C] [Fintype C]
     (hfunctional : pc.Functional) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -144,6 +147,6 @@ theorem rbrKnowledgeSoundnessWorstCaseWith [IsDomain C] [Fintype C]
         afterChallenge multiplier pc i stmt.1 stmt.2 (tr ⟨0, by decide⟩) c p |
       $ᵗ C] ≤ (((2 : ℝ≥0) / Fintype.card C : ℝ≥0) : ℝ≥0∞)
     rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
-    exact badEvent_le multiplier pc i hfunctional stmt.1 stmt.2 (tr ⟨0, by decide⟩)
+    exact bad_event_le multiplier pc i hfunctional stmt.1 stmt.2 (tr ⟨0, by decide⟩)
 
 end RingSwitching.Packing.Tail.Round

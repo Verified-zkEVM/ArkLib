@@ -13,63 +13,47 @@ related_concepts:
 
 ## At A Glance
 
-This note generalizes coordinate ring switching to packing and evaluation extensions with
-independent degrees over a common base. The inspected note has three pages and no printed
-author byline or date. Its credits attribute the idea to Lev Soukhanov and `[[alloc]init]`.
-ArkLib uses `RSG` as a citation key, not as an authorship or publication claim.
+*Ring switching, generalized* separates the packing and evaluation extensions over a common base.
+Its three-page note has no printed author byline or date; the credits attribute the idea to Lev
+Soukhanov and `[[alloc]init]`.
 
 ## What ArkLib Uses From This Paper
 
-The input is a full family of evaluations at one point over the evaluation field E.
-The packed polynomial has coefficients in P. Choosing bases of E and P over B identifies
-the claimed family with a coordinate matrix over B; transposition and packing give the
-slice targets. Neither an embedding from E to P nor one from P to E is needed.
+The input is a full family of evaluations at one point over E. The packed polynomial has
+coefficients in P. Bases of E and P over B identify the claimed family with a B-coordinate
+matrix; transposition and packing give the slice targets. No embedding between E and P is needed.
 
-The verifier derives slices publicly, batches them using a fresh scalar challenge, runs
-degree-two sumcheck, and requests a packed-polynomial opening. The note permits challenges
-in an extension C of P when the downstream PCS supports C-valued evaluation points.
-The commitment continues to concern the original P-coefficient polynomial.
+The verifier derives the slices publicly, batches them with a fresh scalar challenge, runs
+degree-two sumcheck and requests a packed opening. Challenges may lie in an extension C of P
+when the downstream PCS supports C-valued evaluation points for the original P-polynomial.
 
 ## Main ArkLib Touchpoints
 
-- [Ring-switching concept](../concepts/ring-switching.md) — finite-free coordinate model.
-- [Model and coverage audit](../audits/ring-switching-model-coverage.md) — relation shapes,
-  source pin, challenge extension, and acceptance cases.
-- [DP24](DP24.md) and [Flock](BRW26.md) — scalar input protocols requiring their own
-  reconstruction head before a full-family reduction.
+- [`FiniteObservation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/FiniteObservation.lean) — arbitrary finite weighted coordinate reconstruction, also used by tensor packing and Hachi monomial evaluation.
+- [`Relations.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Relations.lean) — Boolean full-family/slice equivalence.
+- [`Tail/FullFamilyOpening.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Tail/FullFamilyOpening.lean) — checked-slice reduction through product sumcheck to the same packed evaluation relation.
+- [`Multiplier.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Multiplier.lean) — multiplication-matrix evaluation without an `E → C` embedding.
+- [Coverage audit](../audits/ring-switching-model-coverage.md) — equations, source correspondence and commitment assumptions.
 
 ## Protocol Variants And Proof Boundary
 
-The note uses powers with exponents 1 through e, with batching loss `e/|C|`.
-Zero-based powers give a distinct collision event at zero and the bound `(e−1)/|C|`
-for a nonempty family. Prover-supplied slices checked against the public family are
-another valid variant with an additional message; the note derives its slices publicly.
+The note uses exponents 1 through e with batching loss `e/|C|`. Zero-based powers give a distinct
+bound `(e−1)/|C|` for a nonempty family. ArkLib's checked-slice variant adds a prover message
+checked against the public family; the note derives those slices without a message.
 
-Finite-free coordinate transport extends to commutative rings. The note's field root
-bound does not automatically extend to uniform challenges over rings with zero divisors.
-Likewise, the reduction needs the downstream commitment's real extraction or binding
-semantics. A carrier instance or an identity commitment alone does not certify a PCS
-integration.
+Finite-free transport holds over commutative rings. The randomized knowledge theorem requires
+finite-domain challenges, functional compatibility and injective compatible `P → C` transport.
+Each retained-variable challenge adds `2/|C|`; the terminal adds no challenge error. The actual
+composed reduction has completeness from every initial state and ends at `pc.evalRel`; a
+downstream opening argument supplies its own contract.
 
-`Packing/FiniteObservation.lean` proves the representation-independent observation identity
-underneath the coordinate argument. Its actual consumers include Boolean interpolation in
-`Packing/Relations.lean`, native tensor observations in `Packing/ProfileCoordinates.lean`,
-and monomial coefficient evaluation in Hachi's `TraceHead/Coordinates.lean`. The Hachi adapter
-proves the correspondence with its actual ψ basis and trace check; it does not apply the
-note's field batching bound to the cyclotomic ring.
-
-`Packing/Tail/FullFamilyOpening.lean` implements the checked-slice variant through the actual
-sumcheck sequence and terminal opening relation, with state-aware completeness and exact-object
-worst-case RBR knowledge under explicit functionality and injective compatible P→C transport.
-The batching challenge uses the selected strategy's error; each scalar tail challenge uses
-`2/|C|`, and the terminal has no challenge. `Packing/Multiplier.lean` proves the multiplication-
-matrix evaluator without assuming an E→C embedding. An actual downstream opening proof still
-needs its own contract on that same packed commitment relation.
+The note begins with public partial values. [DP24](DP24.md) and [Flock](BRW26.md) begin with one
+scalar claim and therefore require their own checked reconstruction head. Hachi shares the
+finite-observation algebra but retains its trace/CWSS protocol over the cyclotomic ring.
 
 ## Source Access
 
 - [Public note](https://github.com/leanEthereum/leanVM-b/blob/main/misc/ring-switching-generalized.pdf).
-- [Bibliographic source](../../../blueprint/src/references.bib), key `RSG`.
-- Inspected version: three-page PDF with creation metadata 2026-07-01. The
-  [coverage audit](../audits/ring-switching-model-coverage.md) records its SHA-256;
-  PDF metadata is not a publication date.
+- [Bibliography](../../../blueprint/src/references.bib), key `RSG`.
+- Three-page PDF with creation metadata 2026-07-01; reduction p.1, soundness and multiplier
+  evaluation p.2. The coverage audit records its SHA-256. PDF metadata is not a publication date.

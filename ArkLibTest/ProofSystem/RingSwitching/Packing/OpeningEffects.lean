@@ -27,7 +27,7 @@ abbrev F := ZMod 5
 abbrev Poly := F⦃≤ 1⦄[X Fin 0]
 local instance : ∀ i, OracleInterface (pc.OStmt i) := pc.Oᵢ
 
-/-- The downstream verifier actually performs an ambient query before preserving the claim. -/
+/-- The downstream verifier performs an ambient query before preserving the claim. -/
 def verifier : OracleVerifier oracle Stmt pc.OStmt Stmt pc.OStmt !p[] where
   verify stmt _ := do
     let _ : Bool ← query (spec := oracle) ()
@@ -50,7 +50,7 @@ def opening : PackedOpening pc.toPackedCommitment (ZMod 5) oracle !p[] where
     exact ⟨OracleProver.id, verifier⟩
 
 set_option backward.isDefEq.respectTransparency false in
-/-- Materializing input oracles retains the actual ambient query. -/
+/-- Materializing input oracles retains the ambient query. -/
 theorem verifier_run (stmt : Stmt) (ost : ∀ i, pc.OStmt i) (tr : FullTranscript !p[]) :
     verifier.toVerifier.run (stmt, ost) tr = (do
       let _ : Bool ← query (spec := oracle) ()
@@ -92,7 +92,7 @@ def frontGuard (accept : Bool) : (front accept).verifier.toVerifier.GuardedForm 
     cases accept <;> simp [OracleVerifier.toVerifier, front, OptionT.run_failure]
     rfl
 
-/-- One call changes the actual shared Boolean state. -/
+/-- One call changes the shared Boolean state. -/
 def toggle : QueryImpl oracle (StateT Bool ProbComp) := fun _ => do
   let b ← get
   set (!b)

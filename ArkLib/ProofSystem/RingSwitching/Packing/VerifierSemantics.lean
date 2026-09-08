@@ -9,9 +9,9 @@ import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 /-!
 # Execution contracts for the packing verifier
 
-These equations describe the production verifier on an arbitrary supplied transcript. They
-prove rejection and the precise opening that is forwarded without using the admitted security
-scaffolding. Failure remains absorbing when another oracle verifier is appended.
+These equations describe the verifier on an arbitrary supplied transcript. They
+prove rejection and the precise opening that is forwarded independently of the knowledge-soundness
+proofs. Failure remains absorbing when another oracle verifier is appended.
 -/
 
 open OracleSpec OracleComp ProtocolSpec Sumcheck.Structured Polynomial
@@ -23,7 +23,7 @@ variable (κ : ℕ) (L : Type) [CommRing L] [DecidableEq L]
   (K : Type) [CommRing K] [Algebra K L] (P : RingSwitchingProfile K L κ)
   (ℓ ℓ' : ℕ) (h_l : ℓ = ℓ' + κ) (O : AbstractOStmtIn L ℓ')
 
-/-- Check 1 either aborts or retains the actual batching challenge and its target. -/
+/-- The scalar check either aborts or retains the batching challenge and target. -/
 theorem batching_verify
     (stmt : BatchingStmtIn L ℓ) (oStmt : ∀ j, O.OStmtIn j)
     (tr : FullTranscript (pSpecBatching κ L K P)) :
@@ -96,8 +96,7 @@ theorem round_verify [Nontrivial L] (i : Fin ℓ')
   simp only [Option.elimM, pure_bind, Option.elim_some]
   split <;> simp_all [OptionT.run_pure, OptionT.run_failure]
 
-/-- A rejected packing leaf cannot be revived by a downstream verifier. This uses the actual
-oracle append interpreter, including oracle materialization. -/
+/-- A rejected packing leaf remains rejected after oracle-verifier append. -/
 theorem append_verify_failure {ι : Type} {oSpec : OracleSpec ι}
     {S T U : Type} {ι₁ ι₂ ι₃ : Type} {O₁ : ι₁ → Type} {O₂ : ι₂ → Type} {O₃ : ι₃ → Type}
     [∀ i, OracleInterface (O₁ i)] [∀ i, OracleInterface (O₂ i)]

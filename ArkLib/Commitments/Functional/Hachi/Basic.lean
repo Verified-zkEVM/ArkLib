@@ -61,7 +61,7 @@ re-export, and this file is the umbrella for the whole development.
   (`Gadgets`), protocol data and relations (`Reduction`), Lemma 8 special soundness
   (`Soundness`), completeness (`Completeness`), and the zero-round polynomial-level bridge
   (`Bridge`).
-* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and actual
+* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
   honest-committer coverage into the ring-level `relPolyEval` relation.
 * `RingSwitch/`, `ZeroCheck/`, `Sumcheck/` (§4.3) — the HMZ25 lift, the zero-check, and the
   sumcheck loop, each with its own `Completeness.lean`.

@@ -18,8 +18,8 @@ Packing indexes `(σ,b)` in this order. Appendix B.3's reconstruction weights ar
 
 ## References
 
-* [BRW26] Bünz, Benedikt, Ron Rothblum, and William Wang. "Flock: Fast Proving for Batch
-  Boolean Computations." Cryptology ePrint Archive, Report 2026/1329. Appendix A, B.3.
+* [Bünz, B., Rothblum, R., and Wang, W., *Flock: Fast Proving for Batch Boolean
+  Computations*][BRW26]
 -/
 
 noncomputable section
@@ -42,7 +42,7 @@ def quirkySection (t : QuirkyTable (B := B) m ks) (σ : Fin ks → Fin 2) :
 def quirkyComponent (t : QuirkyTable (B := B) m ks) (v : (Fin ks → Fin 2) × Fin 2) :
     B⦃≤ 1⦄[X Fin m] := ⟨MLE (fun y => t (y, v.2) v.1), MLE_mem_restrictDegree _⟩
 
-/-- Component splitting has an exact inverse that reads the same original table entries. -/
+/-- Equivalence between the source table and its multilinear component family. -/
 def quirkyComponentsEquiv : QuirkyTable (B := B) m ks ≃
     (((Fin ks → Fin 2) × Fin 2) → B⦃≤ 1⦄[X Fin m]) where
   toFun := quirkyComponent m ks
@@ -106,7 +106,10 @@ def quirkyWeight (ρ ζ : data.E) (v : (Fin ks → Fin 2) × Fin 2) : data.E :=
   (Lagrange.basis Finset.univ nodes v.1).eval ζ *
     eqTilde (fun _ : Fin 1 => (v.2 : data.E)) (fun _ => ρ)
 
-/-- The quirky scalar evaluation reconstructs with the exact Appendix B.3 weights. -/
+/--
+The quirky evaluation is the sum of its components weighted by Lagrange and equality
+polynomials.
+-/
 theorem quirky_reconstruct (t : QuirkyTable (B := B) m ks)
     (r : Fin m → data.E) (ρ ζ : data.E) :
     quirkyEval data m ks nodes t r ρ ζ =
@@ -129,8 +132,8 @@ theorem quirky_reconstruct (t : QuirkyTable (B := B) m ks)
   unfold quirkyWeight
   ring
 
-/-- Flock's original quirky claim, retaining the exact `(σ,b)` packing order. -/
-def flockQuirkyLayout
+/-- The quirky evaluation layout with packed coordinates ordered as `(σ, b)`. -/
+def quirkyLayout
     (index : data.ιP ≃ ((Fin ks → Fin 2) × Fin 2)) : ClaimLayout data m where
   Source := QuirkyTable (B := B) m ks
   Query := (Fin m → data.E) × data.E × data.E

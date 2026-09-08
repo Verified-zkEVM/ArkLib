@@ -8,11 +8,11 @@ import ArkLibTest.ProofSystem.RingSwitching.Packing.PackedCommitment
 import Mathlib.FieldTheory.Finite.GaloisField
 
 /-!
-# An actual opening outside the packed coefficient field
+# An opening outside the packed coefficient field
 
 P=ZMod3 and C=GF9 are concrete, distinct finite fields. The committed polynomial is X. Its
-actual final opening at a chosen point outside the image of P is that very C-valued point.
-The round and entire tail use the actual production extractors and two-ninths challenge bound.
+final opening at a chosen point outside the image of P is that very C-valued point.
+The round and entire tail use the production extractors and two-ninths challenge bound.
 -/
 
 noncomputable section
@@ -40,7 +40,7 @@ theorem challenge_card : Fintype.card C = 9 := by
   rw [Fintype.card_eq_nat_card]
   exact GaloisField.card (p := 3) (n := 2) (by decide)
 
-/-- Actual cardinalities rule out surjective coefficient transport. -/
+/-- Cardinalities rule out surjective coefficient transport. -/
 theorem transport_not_surjective : ¬ Function.Surjective (algebraMap P C) := by
   intro h
   have hcard := Fintype.card_le_of_surjective (algebraMap P C) h
@@ -60,22 +60,22 @@ def stmt : Tail.Statement Unit C (0 : Fin 1).castSucc :=
 def g := Tail.Round.honestMessage multiplier 0 stmt p
 def next := Tail.Round.nextStatement 0 stmt g point
 
-/-- Honest input is the actual Boolean sum of the transported nonconstant packed polynomial. -/
+/-- Honest input is the Boolean sum of the transported nonconstant packed polynomial. -/
 theorem source_related : ((stmt, ost), p) ∈ Tail.rel multiplier pc (0 : Fin 1).castSucc :=
   ⟨rfl, pc.commitsTo_commit p⟩
 
-/-- The actual round accepts this genuine challenge-extension point with the same oracle. -/
+/-- The round accepts this genuine challenge-extension point with the same oracle. -/
 theorem round_accepts :
     (Tail.Round.verifier pc 0).toVerifier.verify (stmt, ost) (FullTranscript.mk2 g point) =
       pure (next, ost) := by
   rw [Tail.Round.verifier_verify]
   exact if_pos (Tail.Round.honest_check multiplier pc 0 source_related)
 
-/-- The original P-polynomial satisfies the actual residual relation at this C-valued point. -/
+/-- The original P-polynomial satisfies the residual relation at this C-valued point. -/
 theorem next_related : ((next, ost), p) ∈ Tail.rel multiplier pc (Fin.last 1) :=
   Tail.Round.honest_relOut multiplier pc 0 source_related point
 
-/-- The actual opening of X is outside the coefficient field. -/
+/-- The opening of X is outside the coefficient field. -/
 theorem packed_evaluation : aeval next.challenges p.val = point := by
   simp [next, Tail.Round.nextStatement, stmt, p, Fin.snoc]
 
@@ -86,8 +86,8 @@ theorem terminal_forwards_extension :
   rw [Tail.Terminal.verifier_verify]
   exact if_pos (packed_evaluation ▸ Tail.Terminal.honest_check multiplier pc next_related)
 
-/-- The whole actual tail's WC contract anchors the same P-polynomial via real functionality. -/
-theorem actual_worstCase {σ : Type} (init : ProbComp σ)
+/-- The whole tail's WC contract anchors the same P-polynomial by commitment functionality. -/
+theorem worst_case {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
       (Tail.rel multiplier pc 0) pc.evalRel (Tail.verifier multiplier pc).toVerifier
@@ -95,8 +95,8 @@ theorem actual_worstCase {σ : Type} (init : ProbComp σ)
       (Tail.knowledgeStateFunction multiplier pc init impl) (Tail.rbrError (C := C) (m := 1)) :=
   Tail.rbrKnowledgeSoundnessWorstCaseWith multiplier pc exactPC.commitsTo_functional init impl
 
-/-- Every real scalar-round challenge is bounded by two ninths. -/
-theorem actual_error (i : (Tail.pSpec C 1).ChallengeIdx) :
+/-- Every scalar-round challenge is bounded by two ninths. -/
+theorem error (i : (Tail.pSpec C 1).ChallengeIdx) :
     Tail.rbrError i = (2 / 9 : ℝ≥0) := by
   rw [Tail.rbrError_eq, challenge_card]
   norm_num

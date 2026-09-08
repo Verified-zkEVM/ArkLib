@@ -25,6 +25,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   coding-theory formalization it drives in ArkLib.
 - [`papers/BCGM25.md`](papers/BCGM25.md) - polynomial-generator MCA and related ArkLib
   proximity-generator infrastructure.
+- [`papers/BRW26.md`](papers/BRW26.md) - Flock's coordinate packing, quirky weighted claims and
+  list/OOD commitment boundary.
 - [`papers/BCS16.md`](papers/BCS16.md) - original IOP reference used by the core oracle-reduction
   layer.
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
@@ -90,6 +92,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   and its weak-binding reduction to Module-SIS.
 - [`papers/Poseidon2.md`](papers/Poseidon2.md) - the Poseidon2 hash, translated over `KoalaBear`.
 - [`papers/PS94.md`](papers/PS94.md) - historical provenance for the Polishchuk-Spielman lemma.
+- [`papers/RSG.md`](papers/RSG.md) - generalized coordinate packing with independent packing
+  and opening extensions.
 - [`papers/Spi95.md`](papers/Spi95.md) - the second Polishchuk-Spielman source, and why ArkLib
   uses the corrected statement.
 
@@ -101,7 +105,6 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   versus original source lineage for the Polishchuk-Spielman lemma in ArkLib.
 - [`concepts/reed-solomon-proximity.md`](concepts/reed-solomon-proximity.md) - proximity gaps,
   WHIR/STIR context, and the main ArkLib coding-theory entry points.
-
 - [`concepts/ring-switching.md`](concepts/ring-switching.md) - coordinate packing, trace
   relocation, quotient lift, and their distinct relation/security boundaries.
 
@@ -123,10 +126,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)
   - detailed paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*
     (dated April 8, 2026).
-
 - [`audits/ring-switching-model-coverage.md`](audits/ring-switching-model-coverage.md)
-  - source-pinned algebra/protocol comparison for DP24, the generalized note, Flock, Hachi,
-    and HMZ25; implemented versus proposed boundaries and negative acceptance cases.
+  - algebra, source relations, shared implementation and security boundaries for DP24,
+    the generalized note, Flock, Hachi and HMZ25.
 
 ## Source Metadata
 

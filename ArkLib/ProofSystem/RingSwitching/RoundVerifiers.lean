@@ -48,8 +48,8 @@ check-then-update shape is what the ring-switching constructions share on the wi
 
 ## References
 
-* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
-  Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open OracleSpec OracleComp ProtocolSpec CoordinateWise.ScalarRound

@@ -12,7 +12,7 @@ import Mathlib.Algebra.Module.BigOperators
 
 Observing a finite table commutes with transposing its packing and opening coordinates.
 The weights can be Boolean interpolation weights, monomials, or any opening-algebra values.
-The proof uses the actual finite bases and linearity, without a domain or commitment assumption.
+The proof uses the finite bases and linearity, without a domain or commitment assumption.
 -/
 
 noncomputable section

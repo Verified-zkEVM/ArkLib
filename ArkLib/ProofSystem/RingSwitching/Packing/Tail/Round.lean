@@ -13,7 +13,7 @@ import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 The prover sends a clear degree-two polynomial. The verifier checks its Boolean sum, then
 extends the fixed challenge prefix and retains the same commitment oracles. The honest message
-is computed from the actual C-valued product of the public multiplier and transported witness.
+is computed from the C-valued product of the public multiplier and transported witness.
 -/
 
 noncomputable section
@@ -42,7 +42,7 @@ def honestMessage (stmt : Statement Context C i.castSucc) (p : P⦃≤ 1⦄[X Fi
 def check (stmt : Statement Context C i.castSucc) (g : C⦃≤ 2⦄[X]) : Prop :=
   g.val.eval 0 + g.val.eval 1 = stmt.target
 
-/-- Append the actual scalar challenge and retain the claimed message evaluation. -/
+/-- Append the sampled scalar and set the next target to the received polynomial's evaluation. -/
 def nextStatement (stmt : Statement Context C i.castSucc) (g : C⦃≤ 2⦄[X]) (c : C) :
     Statement Context C i.succ := ⟨stmt.ctx, Fin.snoc stmt.challenges c, g.val.eval c⟩
 
@@ -73,14 +73,14 @@ def verifier : OracleVerifier []ₒ (Statement Context C i.castSucc) pc.OStmt
     (Statement Context C i.succ) pc.OStmt (pSpec C) :=
   guardedScalarRoundOracleVerifier (check i) (nextStatement i)
 
-/-- The actual same-oracle round reduction. -/
+/-- The scalar-round reduction preserving the commitment oracle. -/
 def reduction : OracleReduction []ₒ (Statement Context C i.castSucc) pc.OStmt P⦃≤ 1⦄[X Fin m]
     (Statement Context C i.succ) pc.OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) :=
   ⟨prover multiplier pc i, verifier (C := C) (Context := Context) pc i⟩
 
 open scoped Classical in
 omit [Algebra P C] in
-/-- Exact production execution, with a clear message interface and unchanged input oracles. -/
+/-- Round verification with a clear polynomial message and preserved input oracles. -/
 theorem verifier_verify (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStmt j)
     (tr : FullTranscript (pSpec C)) :
     (verifier pc i).toVerifier.verify (stmt, ost) tr =

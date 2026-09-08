@@ -4,15 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Packing.LegacyLayout
+import ArkLib.ProofSystem.RingSwitching.Packing.ProfileLayout
 import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 
 /-!
-# Native batching as shared finite-coordinate packing
+# Tensor batching in finite packing coordinates
 
-The actual carrier message, scalar reconstruction, and batched target are connected to
-the shared coordinate relations. These equalities preserve the native message and the
-original packed witness rather than inserting a second family message.
+The tensor message, row-coordinate scalar check, and column-coordinate batching target
+are instances of finite-coordinate packing. The message and packed witness are preserved:
+`CheckedObservation` gives reconstruction, and the structured round-zero relation agrees
+with the coordinate sumcheck relation.
 -/
 
 noncomputable section
@@ -37,7 +38,7 @@ private theorem map_eqTilde {R S : Type*} [CommRing R] [CommRing S] {n : ℕ}
   simp [eqTilde_eq_prod, map_prod]
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
-/-- The native honest message is the finite tensor observation of the packed Boolean table. -/
+/-- The embedded evaluation is a finite tensor observation of the packed Boolean table. -/
 theorem embedded_MLP_eval_eq_observation (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
     embedded_MLP_eval κ L K P ℓ ℓ' h_l p r =
       ∑ y : Fin ℓ' → Fin 2,
@@ -64,7 +65,7 @@ theorem embedded_MLP_eval_eq_observation (p : MultilinearPoly L ℓ') (r : Fin �
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Columns of the actual native honest message satisfy the shared packed-slice relation. -/
+/-- The embedded evaluation's columns satisfy the packed-slice relation. -/
 theorem embedded_MLP_eval_sliceRel (p : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
     (P.decomposeColumns (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r), p) ∈
       (Packing.sameAlgebra P.basis).sliceRel ℓ'
@@ -78,7 +79,7 @@ theorem embedded_MLP_eval_sliceRel (p : MultilinearPoly L ℓ') (r : Fin ℓ →
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- The shared slice relation characterizes the native honest carrier exactly. -/
+/-- The packed-slice relation characterizes the columns of the embedded evaluation. -/
 theorem embedded_MLP_eval_eq_iff_sliceRel (p : MultilinearPoly L ℓ')
     (r : Fin ℓ → L) (z : P.A) :
     embedded_MLP_eval κ L K P ℓ ℓ' h_l p r = z ↔
@@ -95,25 +96,28 @@ theorem embedded_MLP_eval_eq_iff_sliceRel (p : MultilinearPoly L ℓ')
 
 omit [NeZero κ] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Every native carrier passes the generic family-consistency identity by faithful transpose. -/
-theorem native_claimConsistent (z : P.A) :
+/-- Row and column coordinates of a carrier satisfy family consistency. -/
+theorem claimConsistent_decomposeRows_decomposeColumns (z : P.A) :
     (Packing.sameAlgebra P.basis).claimConsistent (P.decomposeRows z)
       (P.decomposeColumns z) :=
   ((Packing.sameAlgebra P.basis).claimConsistent_iff_transpose _ _).mpr (P.transpose_rows z)
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Native row readback is the shared unpacked family evaluation, for the same packed witness. -/
+/--
+The embedded evaluation's rows equal the unpacked family evaluation of the same packed
+polynomial.
+-/
 theorem rows_embedded_MLP_eval (p : MultilinearPoly L ℓ') (r : Fin ℓ → L)
     (i : Fin κ → Fin 2) :
     P.decomposeRows (embedded_MLP_eval κ L K P ℓ ℓ' h_l p r) i =
       aeval (getEvaluationPointSuffix κ L ℓ ℓ' h_l r)
         ((Packing.sameAlgebra P.basis).unpack p i).val :=
   (Packing.sameAlgebra P.basis).openingClaimRel_of_claimConsistent
-    (native_claimConsistent P _) (embedded_MLP_eval_sliceRel P h_l p r) i
+    (claimConsistent_decomposeRows_decomposeColumns P _) (embedded_MLP_eval_sliceRel P h_l p r) i
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
-/-- Native Boolean encodings are exactly the equality weights of generic coordinate batching. -/
+/-- The coordinate sum equals the sum weighted by Boolean equality polynomials. -/
 theorem eqWeightedCoordSum_eq_sum (s : (Fin κ → Fin 2) → L) (r : Fin κ → L) :
     eqWeightedCoordSum κ L s r = ∑ i : Fin κ → Fin 2, eqTilde (i : Fin κ → L) r * s i := by
   have hbit (z : Fin 2) : (if z == 1 then (1 : L) else 0) = (z : L) := by
@@ -122,7 +126,7 @@ theorem eqWeightedCoordSum_eq_sum (s : (Fin κ → Fin 2) → L) (r : Fin κ →
 
 omit [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- The native scalar check reconstructs the original polynomial through the shared layout. -/
+/-- The row-coordinate check reconstructs the original polynomial evaluation. -/
 theorem original_claim_eq_readback (t : MultilinearPoly K ℓ) (r : Fin ℓ → L) :
     aeval r t.val = eqWeightedCoordSum κ L
       (P.decomposeRows (embedded_MLP_eval κ L K P ℓ ℓ' h_l
@@ -131,10 +135,10 @@ theorem original_claim_eq_readback (t : MultilinearPoly K ℓ) (r : Fin ℓ → 
   rw [eqWeightedCoordSum_eq_sum]
   simp_rw [rows_embedded_MLP_eval]
   rw [packMLE_eq_packedMLE, (Packing.sameAlgebra P.basis).unpack_packedMLE]
-  exact legacy_aeval_split h_l t r
+  exact aeval_eq_sum_splitFirst h_l t r
 
-/-- The native tensor head is a shared checked observation with the actual pack/unpack bijection. -/
-def nativeObservation : Packing.CheckedObservation (Fin ℓ → L)
+/-- Checked observation from the polynomial pack/unpack equivalence and tensor evaluation. -/
+def packingObservation : Packing.CheckedObservation (Fin ℓ → L)
     (MultilinearPoly K ℓ) (MultilinearPoly L ℓ') P.A L where
   witnessEquiv :=
     { toFun := packMLE κ L K ℓ ℓ' h_l P.basis
@@ -148,22 +152,22 @@ def nativeObservation : Packing.CheckedObservation (Fin ℓ → L)
   eval_eq_observe r t := original_claim_eq_readback P h_l t r
 
 omit [NeZero ℓ'] in
-/-- Every related original claim passes the actual native scalar guard. -/
+/-- A related original claim passes the row-coordinate guard. -/
 theorem performCheckOriginalEvaluation_honest [DecidableEq L]
     (t : MultilinearPoly K ℓ) (r : Fin ℓ → L) :
     performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l (aeval r t.val) r
       (embedded_MLP_eval κ L K P ℓ ℓ' h_l (packMLE κ L K ℓ ℓ' h_l P.basis t) r) = true := by
   unfold performCheckOriginalEvaluation
-  exact decide_eq_true ((nativeObservation P h_l).honest_check (q := r) (w := t) rfl)
+  exact decide_eq_true ((packingObservation P h_l).honest_check (q := r) (w := t) rfl)
 
 omit [NeZero ℓ'] in
-/-- An honest packed carrier and an accepted native scalar guard recover the original claim. -/
+/-- A tensor evaluation and an accepted row-coordinate guard imply the original polynomial claim. -/
 theorem original_claim_of_check [DecidableEq L] (t : MultilinearPoly K ℓ)
     (r : Fin ℓ → L) (s : L) (z : P.A)
     (hz : embedded_MLP_eval κ L K P ℓ ℓ' h_l (packMLE κ L K ℓ ℓ' h_l P.basis t) r = z)
     (hc : performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l s r z = true) :
     s = aeval r t.val := by
-  have h := (nativeObservation P h_l).readback (q := r)
+  have h := (packingObservation P h_l).readback (q := r)
     (w := packMLE κ L K ℓ ℓ' h_l P.basis t) (of_decide_eq_true hc) hz.symm
   change s = aeval r (unpackMLE κ L K ℓ ℓ' h_l P.basis
     (packMLE κ L K ℓ ℓ' h_l P.basis t)).val at h
@@ -171,7 +175,7 @@ theorem original_claim_of_check [DecidableEq L] (t : MultilinearPoly K ℓ)
   exact h
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
-/-- The native multiplier is the shared multilinear coordinate multiplier, as a polynomial. -/
+/-- The batching polynomial equals the multilinear coordinate multiplier. -/
 theorem compute_A_MLE_eq_multiplier (r : Fin ℓ' → L) (c : Fin κ → L) :
     compute_A_MLE κ L K P ℓ' r c =
       (Packing.sameAlgebra P.basis).multiplier r
@@ -187,14 +191,14 @@ theorem compute_A_MLE_eq_multiplier (r : Fin ℓ' → L) (c : Fin κ → L) :
   rfl
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
-/-- The native target is the weighted sum of the same shared column family. -/
+/-- The batching target is the weighted sum of the column family. -/
 theorem compute_s0_eq_sum (z : P.A) (c : Fin κ → L) :
     compute_s0 κ L K P z c =
       ∑ u : Fin κ → Fin 2, eqTilde (u : Fin κ → L) c * P.decomposeColumns z u :=
   eqWeightedCoordSum_eq_sum (P.decomposeColumns z) c
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
-/-- The native initial residual is the exact product used by the shared batched relation. -/
+/-- The initial residual polynomial equals the product of the multiplier and packed polynomial. -/
 theorem initial_project_val (ctx : RingSwitchingBaseContext κ L K ℓ P)
     (p : MultilinearPoly L ℓ') :
     (projectToMidSumcheckPolyWithParam ℓ'
@@ -212,7 +216,7 @@ theorem initial_project_val (ctx : RingSwitchingBaseContext κ L K ℓ P)
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- The actual initial structured cube sum equals the shared batched packed-polynomial sum. -/
+/-- The initial structured cube sum equals the batched packed-polynomial sum. -/
 theorem initial_project_sum [Nontrivial L]
     (ctx : RingSwitchingBaseContext κ L K ℓ P) (p : MultilinearPoly L ℓ') :
     (∑ x ∈ (boolDomain L ℓ').cube,
@@ -229,7 +233,7 @@ theorem initial_project_sum [Nontrivial L]
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- The shared sum relation is exactly the native structural residual's consistency clause. -/
+/-- The batched sum relation is equivalent to consistency of the initial residual. -/
 theorem initial_consistency_iff [Nontrivial L]
     (ctx : RingSwitchingBaseContext κ L K ℓ P) (p : MultilinearPoly L ℓ') (target : L) :
     sumcheckConsistencyProp (boolDomain L ℓ') target
@@ -243,7 +247,7 @@ theorem initial_consistency_iff [Nontrivial L]
 
 omit [NeZero κ] [NeZero ℓ] [NeZero ℓ'] in
 set_option backward.isDefEq.respectTransparency false in
-/-- Shared honest-slice batching supplies the actual initial residual's target equation. -/
+/-- An honest slice family satisfies the initial residual target equation. -/
 theorem initial_consistency_of_slices [Nontrivial L]
     (ctx : RingSwitchingBaseContext κ L K ℓ P) (p : MultilinearPoly L ℓ')
     (hs : (P.decomposeColumns ctx.s_hat, p) ∈ (Packing.sameAlgebra P.basis).sliceRel ℓ'

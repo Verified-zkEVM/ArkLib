@@ -25,12 +25,12 @@ variable {B : Type} [CommRing B] (data : PackingData B) (m : ℕ)
 def multiplier (ctx : (Fin m → data.E) × bat.Challenge) : C⦃≤ 1⦄[X Fin m] :=
   data.multiplier ctx.1 (bat.weight ctx.2)
 
-/-- The actual initial tail statement uses the existing target and an empty challenge prefix. -/
+/-- The initial tail statement with the supplied target and an empty challenge prefix. -/
 def initialStatement (stmt : FullFamily.Output data m bat) :
     Tail.Statement ((Fin m → data.E) × bat.Challenge) C (0 : Fin (m + 1)) :=
   ⟨stmt.1, Fin.elim0, stmt.2⟩
 
-/-- The full-family output and the initial sumcheck claim are the same algebraic relation. -/
+/-- The full-family output relation is equivalent to the initial sumcheck relation. -/
 theorem initialStatement_rel (stmt : FullFamily.Output data m bat) (ost : ∀ j, pc.OStmt j)
     (p : data.P⦃≤ 1⦄[X Fin m]) :
     ((initialStatement data m bat stmt, ost), p) ∈ Tail.rel (multiplier data m bat) pc 0 ↔
@@ -43,7 +43,7 @@ theorem initialStatement_rel (stmt : FullFamily.Output data m bat) (ost : ∀ j,
   simp only [heval]
   rfl
 
-/-- The zero-round prover reformats the public input and keeps the same packed witness. -/
+/-- The zero-round prover reformats the statement and preserves the packed witness. -/
 def adapterProver : OracleProver []ₒ (FullFamily.Output data m bat) pc.OStmt
     data.P⦃≤ 1⦄[X Fin m]
     (Tail.Statement ((Fin m → data.E) × bat.Challenge) C (0 : Fin (m + 1))) pc.OStmt
@@ -64,7 +64,7 @@ def adapterVerifier : OracleVerifier []ₒ (FullFamily.Output data m bat) pc.OSt
     hEq := fun _ => rfl
     outputInterface_heq := fun _ => HEq.rfl }
 
-/-- The actual input-format adapter, with no protocol messages or challenges. -/
+/-- The input-format reduction with no messages or challenges. -/
 def adapterReduction : OracleReduction []ₒ (FullFamily.Output data m bat) pc.OStmt
     data.P⦃≤ 1⦄[X Fin m]
     (Tail.Statement ((Fin m → data.E) × bat.Challenge) C (0 : Fin (m + 1))) pc.OStmt
@@ -72,7 +72,7 @@ def adapterReduction : OracleReduction []ₒ (FullFamily.Output data m bat) pc.O
   ⟨adapterProver data m bat pc, adapterVerifier data m bat pc⟩
 
 omit [Algebra B C] [Algebra data.P C] in
-/-- The adapter's actual materialized output preserves the entire oracle collection. -/
+/-- The materialized input adapter preserves the entire oracle collection. -/
 theorem adapterVerifier_verify (stmt : FullFamily.Output data m bat)
     (ost : ∀ j, pc.OStmt j) (tr : FullTranscript !p[]) :
     (adapterVerifier data m bat pc).toVerifier.verify (stmt, ost) tr =
@@ -88,7 +88,7 @@ instance : (adapterProver data m bat pc).OutputIsPure where
   output_is_pure := ⟨fun st => ((initialStatement data m bat st.1.1, st.1.2), st.2), fun _ => rfl⟩
 
 omit [Algebra B C] [Algebra data.P C] in
-/-- Actual honest execution only reformats the input, with an empty transcript. -/
+/-- The input adapter produces the reformatted statement and empty transcript. -/
 theorem adapterProver_run (stmt : FullFamily.Output data m bat) (ost : ∀ j, pc.OStmt j)
     (p : data.P⦃≤ 1⦄[X Fin m]) :
     (adapterProver data m bat pc).run (stmt, ost) p =
@@ -107,7 +107,7 @@ theorem adapter_perfectCompleteness {σ : Type} (init : ProbComp σ)
   obtain rfl := OracleComp.eq_of_mem_support_pure _ hx
   exact ⟨_, rfl, (initialStatement_rel data m bat pc stmt.1 stmt.2 p).mpr h, rfl⟩
 
-/-- Positive related output pins the exact reformatted input and unchanged oracles. -/
+/-- A positive-probability related output determines the reformatted input and preserved oracles. -/
 theorem adapter_positive_output {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (stmt : FullFamily.Output data m bat) (ost : ∀ j, pc.OStmt j)
@@ -128,7 +128,7 @@ theorem adapter_positive_output {σ : Type} (init : ProbComp σ)
 /-- The packed polynomial is the witness at the only empty-protocol prefix. -/
 abbrev AdapterWitness (_i : Fin 1) : Type := data.P⦃≤ 1⦄[X Fin m]
 
-/-- The zero-round extractor preserves the same committed polynomial. -/
+/-- The zero-round extractor preserves the committed polynomial. -/
 def adapterExtractor :
     Extractor.RoundByRound []ₒ (StmtIn := FullFamily.Output data m bat × (∀ j, pc.OStmt j))
       (WitIn := data.P⦃≤ 1⦄[X Fin m]) (WitOut := data.P⦃≤ 1⦄[X Fin m])
