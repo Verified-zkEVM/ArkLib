@@ -82,7 +82,7 @@ def oracleProver : OracleProver oSpec
   output := fun ⟨stmt, oStmt⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => f stmt oStmt)⟩, ())
 
 /-- The `SendClaim` oracle prover has pure output: it exposes the claim it already computed
-  alongside the input oracles, with no oracle query. -/
+alongside the input oracles, with no oracle query. -/
 instance instOutputIsPure :
     (oracleProver oSpec Statement OStatement Message f).OutputIsPure := ⟨_, fun _ => rfl⟩
 

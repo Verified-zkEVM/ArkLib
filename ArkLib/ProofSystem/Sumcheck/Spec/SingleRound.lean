@@ -378,8 +378,7 @@ def prover : OracleProver oSpec (StmtIn R) (OStmtIn R deg) Unit (StmtOut R) (OSt
 
 /-- The simple round's output computes only polynomial values and performs no oracle query. -/
 instance instOutputIsPureProver : (prover R deg oSpec).OutputIsPure :=
-  ⟨fun ⟨polyLE, chal⟩ => (((polyLE.val.eval chal, chal), fun _ => polyLE), ()),
-    fun _ => rfl⟩
+  ⟨_, fun _ => rfl⟩
 
 variable [DecidableEq R] [SampleableType R]
 

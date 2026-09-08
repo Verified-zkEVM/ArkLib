@@ -121,14 +121,14 @@ theorem foldRelayOracleReduction_perfectCompleteness
     (oracleReduction := foldRelayOracleReduction (mp := mp) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
     (init := init) (impl := impl) := by
-    unfold foldRelayOracleReduction pSpecFoldRelay
-    exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-      (Verifier.GuardedForm.of_empty _ (fun input =>
-        (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
-      (Verifier.GuardedForm.of_empty _ (fun input => (input.1, fun _ _ => 0)))
-      (fun _ => Or.inl inferInstance)
-      (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
-      (fun s => relayOracleReduction_perfectCompleteness (init := pure s) 𝔽q β i hNCR)
+  unfold foldRelayOracleReduction pSpecFoldRelay
+  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input => (input.1, fun _ _ => 0)))
+    (fun _ => Or.inl inferInstance)
+    (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
+    (fun s => relayOracleReduction_perfectCompleteness (init := pure s) 𝔽q β i hNCR)
 
 /-- RBR Knowledge Soundness of the non-commitment round verifier via append composition
     of fold-round and transfer-round RBR KS. -/
@@ -215,14 +215,14 @@ theorem foldCommitOracleReduction_perfectCompleteness
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
       (oracleReduction := foldCommitOracleReduction (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR) (init := init) (impl := impl) := by
-    unfold foldCommitOracleReduction pSpecFoldCommit
-    exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-      (Verifier.GuardedForm.of_empty _ (fun input =>
-        (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
-      (Verifier.GuardedForm.of_empty _ (fun input => (input.1, fun _ _ => 0)))
-      (fun _ => Or.inl inferInstance)
-      (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
-      (fun s => commitOracleReduction_perfectCompleteness (init := pure s) 𝔽q β i hCR)
+  unfold foldCommitOracleReduction pSpecFoldCommit
+  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input => (input.1, fun _ _ => 0)))
+    (fun _ => Or.inl inferInstance)
+    (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
+    (fun s => commitOracleReduction_perfectCompleteness (init := pure s) 𝔽q β i hCR)
 
 /-- RBR KS for Fold+Commitment block by append composition. -/
 theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
@@ -814,12 +814,11 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
       (impl := impl) := by
   unfold coreInteractionOracleReduction pSpecCoreInteraction
   apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-    (Verifier.GuardedForm.of_empty _ (fun input =>
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
-    (Verifier.GuardedForm.of_empty _ (fun input => (⟨input.1, 0⟩, input.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input => (⟨input.1, 0⟩, input.2)))
     (fun _ => Or.inl inferInstance)
-  · -- Perfect completeness of sumcheckFoldOracleReduction
-    exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
+  · exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := BBF_SumcheckMultiplierParam)
       (init := init) (impl := impl)
   · intro s

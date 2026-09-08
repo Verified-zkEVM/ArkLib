@@ -40,7 +40,7 @@ instance Prover.instOutputIsPureEmpty
 
 /-- Extract a deterministic guarded verifier form over an empty ambient oracle. The fallback is
 used only if verification rejects; it may preserve oracle values from the input statement. -/
-def Verifier.GuardedForm.of_empty {Stmt₁ Stmt₂ : Type}
+def Verifier.GuardedForm.ofEmpty {Stmt₁ Stmt₂ : Type}
     {n : ℕ} {p : ProtocolSpec n} (V : Verifier []ₒ Stmt₁ Stmt₂ p)
     (fallback : Stmt₁ → Stmt₂) : V.GuardedForm where
   check := fun stmt tr => (V.verify stmt tr).run.runEmpty.isSome

@@ -111,8 +111,8 @@ theorem fullOracleReduction_perfectCompleteness :
       (relation := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (init := init)
-      (impl := impl) := by
-  apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
+      (impl := impl) :=
+  OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
@@ -122,19 +122,14 @@ theorem fullOracleReduction_perfectCompleteness :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
     (rel₂ := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
-    (V₁ := Verifier.GuardedForm.of_empty _ (fun input =>
+    (V₁ := Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
-    (V₂ := Verifier.GuardedForm.of_empty _ (fun _ => (false, fun i => nomatch i)))
+    (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
     (hSeam := fun _ => Or.inl inferInstance)
-    (h₁ := by
-      apply CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ)
-    )
-    (h₂ := by
-      intro s
-      apply QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions (ϑ:=ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (pure s) impl
-    )
+    (h₁ := CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+    (h₂ := fun s => QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (pure s) impl)
 
 open scoped NNReal
 

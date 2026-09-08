@@ -140,8 +140,7 @@ def nonrecursiveTerminalReduction [BEq K.TCom] :
   prover := terminalProver Φ m₀ bound bDig b K φF
   verifier := terminalVerifier Φ m₀ bound bDig b K φF
 
-/-- The terminal verifier returns a deterministic Boolean verdict, so its guarded form has
-an always-passing outer check. The Boolean verdict itself records the terminal relation check. -/
+/-- The terminal verifier has an always-true guard and returns its relation check as a Boolean. -/
 def nonrecursiveTerminalReductionGuardedForm [BEq K.TCom] :
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).verifier.GuardedForm :=
   (show (nonrecursiveTerminalReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).verifier.PureForm
@@ -268,8 +267,7 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
       Φ P pp hqm hcap K hd hbZero φF).append
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ P.bZero P.bZero K φF)
 
-/-- The through-sumcheck verifier and terminal Boolean verdict form a deterministic verifier
-that may reject at the sumcheck checks. -/
+/-- The nonrecursive opening verifier is deterministic and retains the sumcheck rejection checks. -/
 def nonrecursiveOpeningReductionGuardedForm (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
@@ -284,13 +282,8 @@ def nonrecursiveOpeningReductionGuardedForm (P : HonestRangeParams q)
       Φ (M + 1) P.γ P.bZero P.bZero K φF)
 
 omit [DecidableEq F] in
-/-- **Perfect completeness of the nonrecursive opening**, from `relPolyEvalMsgShort` to
-`acceptRejectRel`, error `0`. The hypotheses are exactly those of
-`completeThroughSumcheckReduction_perfectCompleteness`; the terminal link needs nothing.
-
-The terminal protocol starts with a prover message, so execution factors even with effectful
-predecessor output. Its completeness holds from every shared oracle state; guarded composition
-retains the sumcheck verifier's runtime rejection checks. -/
+/-- The nonrecursive opening is perfectly complete from the short-message evaluation relation
+to the accepting Boolean verdict. -/
 theorem nonrecursiveOpeningReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -587,11 +580,8 @@ def hachiNonrecursiveOpening (P : HonestRangeParams q)
       𝓜(q, α) P pp (Nat.le_pow_clog P.hb q) hcap K hd hbZero φF)
 
 omit [DecidableEq F] in
-/-- **Perfect completeness of the complete nonrecursive opening**, from `relCommitInput` (the
-honest balanced commitment plus a truthful evaluation claim) to `acceptRejectRel`, error `0`.
-
-The input adapter has pure output. The remaining guarded opening is complete from every
-shared oracle state, as required by the sequential composition theorem. -/
+/-- The complete nonrecursive opening accepts honestly generated balanced commitments with
+truthful evaluation claims. -/
 theorem hachiNonrecursiveOpening_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -664,20 +654,8 @@ def hachiNonrecursive (P : HonestRangeParams q)
     hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁) P keys.1 hcap K hd hbZero φF
 
 omit [DecidableEq F] in
-/-- **Perfect correctness of the nonrecursive Hachi commitment scheme**: for every committed
-multilinear polynomial and every evaluation query, the honest run — key generation, balanced
-commitment, and the complete composed opening — is accepted with probability `1`.
-
-Hypotheses, by role: the chain's own parameter conditions
-(`completeThroughSumcheckReduction_perfectCompleteness`'s, including the reverse range
-orientation `hZeroγ` of the nested zero-check seam, which together with the bundled digit-base
-facts pins `P.γ = P.bZero − 1 < q/2` — `pinned_of_soundness_orientations`, realized at every
-digit base by `ofPinnedDigitBase`); and the two environment conditions `hInit`/`hKeygen` — the
-ambient state and the simulated key-generation sampling must never fail, since an adversarial
-`impl` could fail and then no scheme is correct.
-
-The opening completeness proof uses guarded, state-aware composition throughout, including
-the sumcheck checks that may reject invalid transcripts. -/
+/-- The nonrecursive Hachi commitment scheme is perfectly correct under the stated parameter
+bounds, provided initialization and simulated key generation never fail. -/
 theorem hachiNonrecursive_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec

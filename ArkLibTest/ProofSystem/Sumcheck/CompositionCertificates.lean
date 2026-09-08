@@ -10,7 +10,7 @@ import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 # Sumcheck composition certificate trust checks
 
 The output-purity and guarded-verifier certificates are independent of the remaining admitted
-context-completeness theorem. These checks protect that boundary during caller migration.
+context-completeness theorem. Each certificate depends only on the standard axioms.
 -/
 
 /--

@@ -14,8 +14,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
   (`Verifier.StateFunction.append`), for two sequentially composed reductions.
 
   Past the seam the composed state function is scored *disjunctively*: the composite is winning if
-  the adversary already won the first half, or is winning the second. See
-  `Verifier.StateFunction.append` for why.
+  the adversary already won the first half, or is winning the second. A losing composed state
+  therefore retains the first-half premise needed to start the second state function.
 -/
 
 open OracleComp OracleSpec SubSpec
@@ -25,26 +25,14 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
   {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 
-/-! Sequential composition of extractors and state functions
-
-These have the following form: they needs to know the first verifier, and derive the intermediate
-statement from running the first verifier on the first statement.
-
-This leads to complications: the verifier is assumed to be a general `OracleComp oSpec`, and so
-we also need to have the extractors and state functions to be similarly `OracleComp`s.
-
-The alternative is to consider a fully deterministic (and non-failing) verifier. The non-failing
-part is somewhat problematic as we write our verifiers to be able to fail (i.e. implicit failing
-via `guard` statements).
-
-As such, the definitions below are temporary until further development. -/
+/-! Extractor composition derives the intermediate statement from the first verifier.
+Straightline extraction can run that verifier; round-by-round extraction and state functions use
+an explicit deterministic intermediate-statement function. -/
 
 namespace Extractor
 
-/-- The sequential composition of two straightline extractors.
-
-TODO: state a monotone condition on the extractor, namely that if extraction succeeds on a given
-query log, then it also succeeds on any extension of that query log -/
+/-- Extract through the second protocol and then the first, using the first verifier's
+output as the intermediate statement. -/
 def Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ Wit₁ Wit₂ pSpec₁)
     (E₂ : Extractor.Straightline oSpec Stmt₂ Wit₂ Wit₃ pSpec₂)
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) :
@@ -57,7 +45,7 @@ def Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ Wit₁ Wit�
 
 /-- The composed round-by-round witness motive of `Extractor.RoundByRound.append`, evaluated at an
 index lying in the first protocol's range, is the first extractor's witness type. -/
-private lemma witMid_append_left {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
+private lemma wit_mid_append_left {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
     (i : Fin (m + n + 1)) (j : Fin (m + 1)) (hij : i.val = j.val) :
     (Fin.append (m := m + 1) WitMid₁ (Fin.tail WitMid₂) ∘ Fin.cast (by omega)) i = WitMid₁ j := by
   have hcast : Fin.cast (show m + n + 1 = m + 1 + n by omega) i = Fin.castAdd n j := by
@@ -66,7 +54,7 @@ private lemma witMid_append_left {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ :
 
 /-- The composed round-by-round witness motive of `Extractor.RoundByRound.append`, evaluated at an
 index lying in the second protocol's range, is the second extractor's witness type. -/
-private lemma witMid_append_right {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
+private lemma wit_mid_append_right {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
     (i : Fin (m + n + 1)) (j : Fin (n + 1)) (hij : i.val = m + j.val) (hj : 0 < j.val) :
     (Fin.append (m := m + 1) WitMid₁ (Fin.tail WitMid₂) ∘ Fin.cast (by omega)) i = WitMid₂ j := by
   have hjn := j.isLt
@@ -79,17 +67,8 @@ private lemma witMid_append_right {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ 
   congr 1
   ext; simp; omega
 
-/-- The round-by-round extractor for the sequential composition of two (oracle) reductions.
-
-`verify` is the first verifier's *deterministic* next-statement function. It is needed because the
-second extractor `E₂` runs on the intermediate statement `Stmt₂`, and an appended extractor is only
-handed the *initial* statement `Stmt₁`: without `verify` there is no way to produce the `Stmt₂`
-that every call into `E₂` requires, and the definition cannot be written at all.
-
-This mirrors `Extractor.Straightline.append`, which takes the first verifier for the same reason,
-and `Verifier.StateFunction.append`, which takes this same deterministic `verify` function. A plain
-`Verifier` cannot be used here: `Verifier.verify` returns an `OptionT (OracleComp oSpec) Stmt₂`,
-whereas `extractMid` and `extractOut` are pure functions and so cannot run an oracle computation. -/
+/-- Compose round-by-round extractors using a deterministic intermediate-statement function.
+The composed witness family retains the first extractor's final witness at the boundary. -/
 def RoundByRound.append
     {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
     (E₁ : Extractor.RoundByRound oSpec Stmt₁ Wit₁ Wit₂ pSpec₁ WitMid₁)
@@ -109,19 +88,20 @@ def RoundByRound.append
     have tr' : (i : Fin (idx.val + 1)) →
         (pSpec₁ ++ₚ pSpec₂).«Type» ⟨i.val, by have := i.isLt; omega⟩ := tr
     by_cases hlt : idx.val < m
-    · exact cast (witMid_append_left (WitMid₂ := WitMid₂) idx.castSucc ⟨idx.val, by omega⟩ rfl).symm
+    · exact cast
+        (wit_mid_append_left (WitMid₂ := WitMid₂) idx.castSucc ⟨idx.val, by omega⟩ rfl).symm
         (E₁.extractMid ⟨idx.val, hlt⟩ stmt₁
           (show pSpec₁.Transcript ⟨idx.val + 1, by omega⟩ from fun i =>
             cast (ProtocolSpec.append_Type_castAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)
               ⟨i.val, by have := i.isLt; omega⟩) (tr' ⟨i.val, by have := i.isLt; omega⟩))
-          (cast (witMid_append_left (WitMid₂ := WitMid₂) idx.succ ⟨idx.val + 1, by omega⟩ rfl) h))
+          (cast (wit_mid_append_left (WitMid₂ := WitMid₂) idx.succ ⟨idx.val + 1, by omega⟩ rfl) h))
     · have hm : m ≤ idx.val := by omega
       have tr₁ : pSpec₁.FullTranscript := fun i =>
         cast (ProtocolSpec.append_Type_castAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) i)
           (tr' ⟨i.val, by have := i.isLt; omega⟩)
       by_cases heq : idx.val = m
       · have hn : 0 < n := by omega
-        exact cast (witMid_append_left (WitMid₂ := WitMid₂) idx.castSucc (Fin.last m)
+        exact cast (wit_mid_append_left (WitMid₂ := WitMid₂) idx.castSucc (Fin.last m)
             (by simp [heq])).symm
           (E₁.extractOut stmt₁ tr₁
             (cast (show WitMid₂ (⟨0, hn⟩ : Fin n).castSucc = Wit₂ by
@@ -131,24 +111,24 @@ def RoundByRound.append
                   cast (ProtocolSpec.append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)
                     ⟨i.val, by have : i.val < 1 := i.isLt; omega⟩)
                     (tr' ⟨m + i.val, by have : i.val < 1 := i.isLt; omega⟩))
-                (cast (witMid_append_right (WitMid₁ := WitMid₁) idx.succ (⟨0, hn⟩ : Fin n).succ
+                (cast (wit_mid_append_right (WitMid₁ := WitMid₁) idx.succ (⟨0, hn⟩ : Fin n).succ
                   (by simp [heq]) (by simp)) h))))
       · have hk : idx.val - m < n := by omega
-        exact cast (witMid_append_right (WitMid₁ := WitMid₁) idx.castSucc
+        exact cast (wit_mid_append_right (WitMid₁ := WitMid₁) idx.castSucc
             (⟨idx.val - m, hk⟩ : Fin n).castSucc (by simp; omega) (by simp; omega)).symm
           (E₂.extractMid ⟨idx.val - m, hk⟩ (verify stmt₁ tr₁)
             (show pSpec₂.Transcript ⟨idx.val - m + 1, by omega⟩ from fun i =>
               cast (ProtocolSpec.append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)
                 ⟨i.val, by have : i.val < idx.val - m + 1 := i.isLt; omega⟩)
                 (tr' ⟨m + i.val, by have : i.val < idx.val - m + 1 := i.isLt; omega⟩))
-            (cast (witMid_append_right (WitMid₁ := WitMid₁) idx.succ
+            (cast (wit_mid_append_right (WitMid₁ := WitMid₁) idx.succ
               (⟨idx.val - m, hk⟩ : Fin n).succ (by simp; omega) (by simp)) h))
   extractOut := fun stmt₁ tr wit₃ => by
     by_cases hn : 0 < n
-    · exact cast (witMid_append_right (WitMid₁ := WitMid₁) (Fin.last (m + n)) (Fin.last n)
+    · exact cast (wit_mid_append_right (WitMid₁ := WitMid₁) (Fin.last (m + n)) (Fin.last n)
           (by simp) (by simpa using hn)).symm
         (E₂.extractOut (verify stmt₁ tr.fst) tr.snd wit₃)
-    · exact cast (witMid_append_left (WitMid₂ := WitMid₂) (Fin.last (m + n)) (Fin.last m)
+    · exact cast (wit_mid_append_left (WitMid₂ := WitMid₂) (Fin.last (m + n)) (Fin.last m)
           (by simp; omega)).symm
         (E₁.extractOut stmt₁ tr.fst
           (cast (show WitMid₂ (Fin.last n) = Wit₂ by
@@ -262,9 +242,7 @@ private lemma mem_support_of_pure_run {σ : Type} {init : ProbComp σ}
   change some x ∈ support ((fun p => p.1) <$> (pure (some x, s) : ProbComp (Option Stmt₂ × σ)))
   simp
 
-/-- Every `ProbComp` has at least one possible outcome: `OracleComp` is a free monad with no
-failure constructor, and every `unifSpec` query has an answer. (A general fact about `ProbComp`,
-kept here only because it has no other home yet.) -/
+/-- A probabilistic oracle computation has a possible outcome because every query has an answer. -/
 private lemma probComp_support_nonempty {σ : Type} (init : ProbComp σ) :
     (support init).Nonempty := by
   induction init using OracleComp.inductionOn with
@@ -283,12 +261,8 @@ private lemma run_of_deterministic
     V₁.run stmt tr = (pure (verify stmt tr) : OptionT (OracleComp oSpec) Stmt₂) := by
   subst hVerify; rfl
 
-/-- If a deterministic first verifier's state function rejects the completed first-half transcript,
-then the statement it hands to the second verifier lies outside the intermediate language.
-
-This step needs `init` to have at least one possible outcome, since a `StateFunction`'s
-`toFun_full` field only constrains a *probability*. That is automatic for `ProbComp`
-(`probComp_support_nonempty`), so no side condition is needed. -/
+/-- If the first state function is false on a complete transcript, the deterministic first
+verifier's output lies outside the intermediate language. -/
 private lemma verify_notMem_of_not_toFun {σ : Type} {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂}
     {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁} {verify : Stmt₁ → pSpec₁.FullTranscript → Stmt₂}
@@ -308,41 +282,10 @@ namespace Verifier
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {lang₁ : Set Stmt₁} {lang₂ : Set Stmt₂} {lang₃ : Set Stmt₃}
 
-/-- The sequential composition of two state functions.
-
-Rounds `0, …, m` of the appended protocol are scored by `S₁`. Rounds `m+1, …, m+n` are scored
-**disjunctively**, as
-
-    S₁ ⟨m, _⟩ stmt₁ transcript₁ ∨ S₂ ⟨roundIdx - m, _⟩ (verify stmt₁ transcript₁) …
-
-where `transcript₁` is the completed first half: the composite is winning if the adversary already
-won the first half, or is winning the second. The first half's verdict is therefore *retained*
-past the seam, as a disjunct.
-
-Neither of the two other candidates works, and it is worth recording why:
-
-* **`S₂` alone.** The composite then forgets whether `S₁` had already been won, so a past-seam bad
-  transition is `¬ S₂ i₂.castSucc ∧ S₂ i₂.succ` with nothing known about `S₁`. That does not yield
-  `verify stmt tr₁ ∉ lang₂` — the precondition of `S₂`'s own rbr-soundness hypothesis — and
-  `Verifier.append_rbrSoundness` cannot be proved from it.
-* **`S₁ ∧ S₂`.** `toFun_full` breaks instead: the *only* thing a `StateFunction` promises about a
-  "bad" state is `toFun_full`, and at a full transcript it is `V₂` that produces the output
-  statement. From `¬(S₁ ∧ S₂)` one cannot extract `¬ S₂`, so `S₂.toFun_full` never fires.
-* **`S₁ ∨ S₂`.** `¬ toFun` gives *both* `¬ S₁ ⟨m, _⟩` and `¬ S₂`. The second discharges
-  `toFun_full` via `S₂.toFun_full`; the first is exactly what `verify_notMem_of_not_toFun`
-  consumes to supply `verify stmt tr₁ ∉ lang₂` at every past-seam bad transition.
-
-The disjunct is a constant past the seam, since `transcript₁` no longer changes, so it is not
-expected to cost anything in the error bound: a past-seam bad transition becomes
-`¬ S₁ ⟨m,_⟩ ∧ ¬ S₂ i₂.castSucc ∧ S₂ i₂.succ`, which is at most `S₂`'s own bad transition at that
-round. Only the three `StateFunction` obligations are discharged here, under the pure, total
-first-verifier hypothesis `hVerify`. The generic `Verifier.append_rbrSoundness` statement does not
-provide that hypothesis. Its remaining obligations also include prover restriction and justified
-conditioning on the first-half transcript and shared state; see the note above that theorem.
-
-The hand-off at round `m` uses `hVerify`: `V₁` is deterministic, so there is a single
-intermediate statement `verify stmt tr₁` to start `S₂` from, and `S₁` rejecting the first half
-forces that statement out of `lang₂`. -/
+/-- Compose state functions under a pure, total first verifier. Up to the boundary the
+value is the first state function; afterwards it is the disjunction of the first function's
+final value and the second function's current value. The retained disjunct ensures that a
+losing composed state supplies an intermediate statement outside the second language. -/
 def StateFunction.append
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
@@ -406,7 +349,7 @@ def StateFunction.append
         rw [dif_pos (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
         refine stateFunction_toFun_heq S₁
           (Fin.ext (show j.val = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
-        refine HEq.trans ?_ (heq_eqMp _ _).symm
+        refine HEq.trans ?_ (cast_heq _ _).symm
         exact transcript_heq_ext (k := ⟨j.val, by omega⟩)
           (k' := ⟨min ((j.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
           (show j.val = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
@@ -417,7 +360,7 @@ def StateFunction.append
       refine key ?_
       convert hgoal using 2
       · rfl
-      refine eq_of_heq (HEq.symm ((heq_eqMp _ _).trans (transcript_heq_ext
+      refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (transcript_heq_ext
         (show min ((j.succ : Fin (m + n + 1)) : ℕ) m = j.val + 1 by omega) ?_)))
       intro i hi hi'
       have hi'' : i < j.val + 1 := hi'
@@ -463,7 +406,7 @@ def StateFunction.append
         intro hc₁
         refine hnot (stateFunction_toFun_heq S₁
           (Fin.ext (show m = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc₁)
-        refine HEq.trans ?_ (heq_eqMp _ _).symm
+        refine HEq.trans ?_ (cast_heq _ _).symm
         exact transcript_heq_ext (k := ⟨m, by omega⟩)
           (k' := ⟨min ((j.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
           (show m = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
@@ -569,7 +512,7 @@ def StateFunction.append
         simp only [Fin.val_last]; omega)] at hnot
       have hS₁ : ¬ S₁.toFun (Fin.last m) stmt (FullTranscript.fst tr) := fun hc =>
         hnot (stateFunction_toFun_heq S₁ (Fin.ext (by simp)) rfl
-          ((transcript_fst_heq_full tr).symm.trans (heq_eqMp _ _).symm) hc)
+          ((transcript_fst_heq_full tr).symm.trans (cast_heq _ _).symm) hc)
       refine S₂.toFun_full _ _ fun hc => ?_
       exact verify_notMem_of_not_toFun S₁ hVerify stmt (FullTranscript.fst tr) hS₁
         ((S₂.toFun_empty _).mpr (stateFunction_toFun_heq S₂ (Fin.ext (by simp)) rfl
@@ -622,7 +565,7 @@ theorem StateFunction.append_transition_left
     rw [dif_pos (show ((idx.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
     refine stateFunction_toFun_heq S₁
       (Fin.ext (show idx.val = ((idx.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
-    refine HEq.trans ?_ (heq_eqMp _ _).symm
+    refine HEq.trans ?_ (cast_heq _ _).symm
     exact transcript_heq_ext (k := ⟨idx.val, by omega⟩)
       (k' := ⟨min ((idx.castSucc : Fin (m + n + 1)) : ℕ) m, by omega⟩)
       (show idx.val = min ((idx.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
@@ -635,7 +578,7 @@ theorem StateFunction.append_transition_left
   rw [dif_pos (show ((idx.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
   convert hgoal using 2
   · rfl
-  refine eq_of_heq (HEq.symm ((heq_eqMp _ _).trans (transcript_heq_ext
+  refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (transcript_heq_ext
     (show min ((idx.succ : Fin (m + n + 1)) : ℕ) m = idx.val + 1 by omega) ?_)))
   intro i hi hi'
   have hi'' : i < idx.val + 1 := hi'
@@ -689,7 +632,7 @@ theorem StateFunction.append_transition_right
     by_cases heq : idx.val = m
     · rw [dif_pos (show idx.castSucc.val ≤ m by omega)] at hnot
       refine hnot (stateFunction_toFun_heq S₁ (Fin.ext (by simp; omega)) rfl ?_ hc)
-      refine HEq.trans ?_ (heq_eqMp _ _).symm
+      refine HEq.trans ?_ (cast_heq _ _).symm
       exact transcript_heq_ext (k := Fin.last m)
         (k' := ⟨min idx.castSucc.val m, by omega⟩) (by simp; omega)
         (fun i hi hi' => HEq.rfl)

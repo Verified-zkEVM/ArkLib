@@ -63,7 +63,7 @@ def oracleProver : OracleProver oSpec
   output := fun ⟨⟨stmt, oStmt⟩, c⟩ => pure (((stmt, c), oStmt), ())
 
 /-- The `SendChallenge` oracle prover has pure output: it appends the received challenge to the
-  statement, with no oracle query. -/
+statement, with no oracle query. -/
 instance instOutputIsPure : (oracleProver oSpec Statement OStatement C ℓ).OutputIsPure :=
   ⟨_, fun _ => rfl⟩
 

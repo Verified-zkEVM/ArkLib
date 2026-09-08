@@ -7,11 +7,14 @@ Authors: Quang Dao, scaraven
 import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 
 /-!
-  # Sequential Composition: Legacy Security Contracts
+# Admitted soundness composition contracts
 
-  Admitted soundness and knowledge-soundness contracts and their inherited oracle wrappers.
-  The false fixed-init completeness contracts have been removed. For completeness, use the proved
-  interfaces in `Append/Completeness.lean` and `Sequential/GuardedCompleteness.lean`.
+This module contains admitted soundness and knowledge-soundness composition contracts and their
+oracle-verifier wrappers. Execution and conversion equalities do not establish these contracts.
+
+For proved completeness interfaces, use `Append/Completeness.lean` and
+`Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
+requires fixed-prefix component bounds and a pure first verifier.
 -/
 
 open OracleComp OracleSpec SubSpec
@@ -24,25 +27,6 @@ variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt
 section Security
 
 open scoped NNReal
-
-/-! ### Admitted security-composition boundary
-
-The execution and conversion equalities are proved, but they do not establish the generic
-security contracts below. The fixed-initial-state completeness claim is false, even with pure
-verifiers and pure left prover output: the suffix receives the state left by the prefix, while
-its standalone premise only covers the original initialization distribution.
-
-`AppendStateCounterexample.not_append_perfectCompleteness` is the kernel-checked witness in
-`ArkLibTest/OracleReduction/Composition/Sequential/SharedStateCounterexample.lean`.
-The binary completeness contracts and their oracle wrappers have been removed. Completeness
-composition now requires explicit execution and shared-state hypotheses.
-
-The proved `Reduction.append_completeness_of_proverFactorization` requires exact simulated prover
-factorization, pure verifier forms, and suffix completeness from every deterministic shared state.
-Its seam/purity corollaries and the guarded-verifier variant supply convenient sufficient
-contracts. The separate fixed-prefix RBR theorem requires worst-case component bounds and a pure
-first verifier. None of these results discharges the legacy ordinary or knowledge-soundness claims.
-Standalone theorems with no dependency on these declarations remain outside this trust boundary. -/
 
 section Protocol
 
@@ -78,27 +62,13 @@ theorem append_knowledgeSoundness
         rel₁ rel₃ (knowledgeError₁ + knowledgeError₂) := by
   sorry
 
-/-! ### Unresolved contracts for the RBR composition theorems below
+/-! ### Round-by-round composition assumptions
 
-The constructions above do not establish the generic statements below.
-
-**First-verifier determinism.** `Verifier.StateFunction.append` requires the first verifier to
-be pure and total, with a specified intermediate-statement function. The generic theorem below
-has no such hypothesis, so this constructor is not available directly for its arbitrary `V₁`.
-
-**Prover restriction and conditioning.** `rbrSoundness` quantifies over an arbitrary prover for
-`pSpec₁ ++ₚ pSpec₂`, while `h₁` / `h₂` quantify over component provers. A restriction argument
-would need to relate their `runToRound` distributions across `liftAppendLeft` / `liftAppendRight`.
-The suffix additionally depends on the random first-half transcript and actual shared state.
-Its input can be correlated with that state; a component bound under the original `init` does not
-by itself give the conditional bound needed after the prefix. These require an audit of the generic
-contract as well as a proof of any proposed restriction or conditioning lemmas.
-
-Under its pure, total first-verifier hypothesis, `Verifier.StateFunction.append` retains
-`S₁ (last m) ∨ S₂ (…)` past the seam. Every past-seam bad transition then carries `¬ S₁ (last m)`,
-which `verify_notMem_of_not_toFun` uses to establish `verify stmt tr₁ ∉ lang₂`.
-The challenge-transport lemmas `uniformSample_challenge_append_inl` / `_inr` are also proved.
-These ingredients alone do not discharge the missing hypotheses or conditional bounds. -/
+The generic contracts below remain admitted. The state-function constructor requires a pure,
+total first verifier, which these statements do not assume. A proof also needs compatible
+restrictions of the combined prover and bounds after conditioning on the first transcript and
+actual shared oracle state. Bounds under the original initialization distribution alone do not
+supply those conditional suffix bounds. -/
 
 /-- If two verifiers satisfy round-by-round soundness with compatible languages and respective RBR
     soundness errors, then their sequential composition also satisfies round-by-round soundness.

@@ -18,6 +18,7 @@ open OracleComp OracleSpec ProtocolSpec
 
 namespace AppendSecurityRegression
 
+/-- A Boolean ambient oracle. -/
 abbrev oracle : OracleSpec Unit := fun _ => Bool
 
 section PureCompleteness
@@ -25,7 +26,7 @@ section PureCompleteness
 local instance : ∀ i, SampleableType ((!p[] ++ₚ !p[]).Challenge i) :=
   ProtocolSpec.instSampleableTypeChallengeAppend (pSpec₁ := !p[]) (pSpec₂ := !p[])
 
--- Both protocol lengths are zero; initialization may still be an arbitrary distribution.
+/-- Appending identity reductions preserves completeness for every initial-state distribution. -/
 theorem empty_identity_complete {ι : Type} {spec : OracleSpec ι} {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl spec (StateT σ ProbComp)) :
     ((Reduction.id : Reduction spec Bool Unit Bool Unit !p[]).append
@@ -42,8 +43,7 @@ section StateMutation
 
 open AppendStateCounterexample
 
--- The first prover really changes the shared bit. An all-state-correct identity tail accepts
--- the state it receives and makes the composition perfectly complete.
+/-- A state-mutating prefix composes perfectly with an identity suffix. -/
 theorem state_mutation_complete :
     (first.append (Reduction.id : Reduction spec Bool Unit Bool Unit !p[])).perfectCompleteness
       (pure false) impl Set.univ Set.univ := by
@@ -59,14 +59,16 @@ section RejectingVerifier
 local instance : ∀ i, SampleableType ((!p[] ++ₚ !p[]).Challenge i) :=
   ProtocolSpec.instSampleableTypeChallengeAppend (pSpec₁ := !p[]) (pSpec₂ := !p[])
 
+/-- An identity prover paired with an always-rejecting verifier. -/
 def rejecting : Reduction oracle Bool Unit Bool Unit !p[] :=
   { (Reduction.id : Reduction oracle Bool Unit Bool Unit !p[]) with
     verifier := ⟨fun _ _ => failure⟩ }
 
+/-- The constant-false guard for the rejecting verifier. -/
 def rejectingForm : rejecting.verifier.GuardedForm :=
   ⟨fun _ _ => false, fun stmt _ => stmt, fun _ _ => rfl⟩
 
--- Rejection contributes failed mass: an always-rejecting tail has error one, not error zero.
+/-- Appending an always-rejecting suffix gives completeness error one. -/
 theorem rejecting_complete_error_one {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl oracle (StateT σ ProbComp)) :
     ((Reduction.id : Reduction oracle Bool Unit Bool Unit !p[]).append rejecting).completeness
@@ -77,6 +79,7 @@ theorem rejecting_complete_error_one {σ : Type} (init : ProbComp σ)
     (fun hn => by omega) (Reduction.id_perfectCompleteness init impl)
     (fun _ => by simp [Reduction.completeness])
 
+/-- An always-rejecting verifier is not perfectly complete. -/
 theorem rejecting_not_perfect {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl oracle (StateT σ ProbComp)) :
     ¬ rejecting.perfectCompleteness init impl Set.univ Set.univ := by

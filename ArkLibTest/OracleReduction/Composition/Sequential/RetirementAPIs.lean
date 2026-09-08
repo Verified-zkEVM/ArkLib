@@ -9,10 +9,10 @@ import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.OracleReduction.LiftContext.Purity
 
 /-!
-# Contracts used to retire unrestricted composition completeness
+# Guarded composition certificates and empty-oracle boundary cases
 
-These checks audit the new public declarations and exercise the inhabitedness boundary of guarded
-forms: an arbitrary oracle family can be preserved from input without assuming it is inhabited.
+These checks audit the composition declarations and show that a guarded fallback can preserve an
+arbitrary oracle family from input without assuming it is inhabited.
 -/
 
 open OracleSpec ProtocolSpec
@@ -20,9 +20,9 @@ open OracleSpec ProtocolSpec
 namespace CompositionRetirementRegression
 
 /-- The fallback preserves an arbitrary oracle value supplied in the input. -/
-def preserve_arbitrary_family {α : Type}
+def preserveArbitraryFamily {α : Type}
     (V : Verifier []ₒ (Unit × α) (Bool × α) !p[]) : V.GuardedForm :=
-  Verifier.GuardedForm.of_empty V (fun input => (false, input.2))
+  Verifier.GuardedForm.ofEmpty V (fun input => (false, input.2))
 
 /-- A rejecting verifier with empty output does not admit a total guarded verdict function. -/
 theorem no_guarded_form_for_empty_output :
@@ -53,11 +53,11 @@ info: 'Prover.instOutputIsPureEmpty' depends on axioms:
 #print axioms Prover.instOutputIsPureEmpty
 
 /--
-info: 'Verifier.GuardedForm.of_empty' depends on axioms:
+info: 'Verifier.GuardedForm.ofEmpty' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.GuardedForm.of_empty
+#print axioms Verifier.GuardedForm.ofEmpty
 
 /--
 info: 'Prover.instOutputIsPureLiftContext' depends on axioms:
@@ -123,11 +123,11 @@ info: 'OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers' depe
 #print axioms OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers
 
 /--
-info: 'CompositionRetirementRegression.preserve_arbitrary_family' depends on axioms:
+info: 'CompositionRetirementRegression.preserveArbitraryFamily' depends on axioms:
 [propext]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms CompositionRetirementRegression.preserve_arbitrary_family
+#print axioms CompositionRetirementRegression.preserveArbitraryFamily
 
 /--
 info: 'CompositionRetirementRegression.no_guarded_form_for_empty_output' depends on axioms:

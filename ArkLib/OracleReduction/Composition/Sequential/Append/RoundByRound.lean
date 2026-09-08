@@ -93,7 +93,7 @@ theorem append_rbrSoundnessWorstCase_of_pure_first
 
 /-- The fixed-prefix composition theorem also supplies the prover-averaged round-by-round
 soundness contract, with the same per-round errors. -/
-theorem append_rbrSoundness_of_worstCase_of_pure_first
+theorem append_rbrSoundness_of_worst_case_of_pure_first
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (V : V₁.PureForm)
     {ε₁ : pSpec₁.ChallengeIdx → ℝ≥0} {ε₂ : pSpec₂.ChallengeIdx → ℝ≥0}
@@ -124,7 +124,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- Oracle verifiers inherit the round-by-round composition theorem through their ordinary
 verifier semantics. The fixed-prefix hypotheses and purity concern those converted verifiers. -/
-theorem append_rbrSoundness_of_worstCase_of_pure_first
+theorem append_rbrSoundness_of_worst_case_of_pure_first
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     (V : V₁.toVerifier.PureForm)
@@ -135,7 +135,7 @@ theorem append_rbrSoundness_of_worstCase_of_pure_first
       (Sum.elim ε₁ ε₂ ∘ ChallengeIdx.sumEquiv.symm) := by
   unfold rbrSoundness
   rw [append_toVerifier]
-  exact Verifier.append_rbrSoundness_of_worstCase_of_pure_first
+  exact Verifier.append_rbrSoundness_of_worst_case_of_pure_first
     V₁.toVerifier V₂.toVerifier V h₁ h₂
 
 end OracleVerifier

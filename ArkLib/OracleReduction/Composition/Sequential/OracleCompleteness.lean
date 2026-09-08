@@ -31,8 +31,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
-/-- Oracle reductions inherit state-aware completeness through their proved execution
-commutation with `toReduction`. Guardedness concerns the resulting ordinary verifier. -/
+/-- Oracle reductions with guarded ordinary verifiers compose with the sum of their errors
+when prover execution factors at the seam and the suffix is complete from every shared state. -/
 theorem append_completeness_of_guarded_verifiers
     (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)
@@ -48,8 +48,8 @@ theorem append_completeness_of_guarded_verifiers
   exact Reduction.append_completeness_of_guarded_verifiers
     R₁.toReduction R₂.toReduction V₁ V₂ hSeam h₁ h₂
 
-/-- Perfect completeness of appended oracle reductions under guarded verdicts and state-aware
-second-stage completeness. -/
+/-- Oracle reductions with guarded ordinary verifiers compose perfectly when prover execution
+factors at the seam and the suffix is perfectly complete from every shared state. -/
 theorem append_perfectCompleteness_of_guarded_verifiers
     (R₁ : OracleReduction oSpec Stmt₁ OStmt₁ Wit₁ Stmt₂ OStmt₂ Wit₂ pSpec₁)
     (R₂ : OracleReduction oSpec Stmt₂ OStmt₂ Wit₂ Stmt₃ OStmt₃ Wit₃ pSpec₂)
@@ -69,7 +69,8 @@ namespace OracleReduction
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- A finite oracle-reduction chain composes under guarded ordinary verifier forms. -/
+/-- Pure prover outputs and guarded ordinary verifiers compose with the sum of the component
+errors when every oracle reduction is complete from every deterministic shared state. -/
 theorem seqCompose_completeness_of_guarded_verifiers
     {m : ℕ} (Stmt : Fin (m + 1) → Type)
     {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)
@@ -94,7 +95,8 @@ theorem seqCompose_completeness_of_guarded_verifiers
     (fun i => Stmt i × ∀ j, OStmt i j) Wit init impl rel
     (fun i => (R i).toReduction) ε hP hV h
 
-/-- Perfect completeness of a guarded finite oracle-reduction chain. -/
+/-- Pure prover outputs and guarded ordinary verifiers preserve perfect completeness of a finite
+oracle-reduction chain when every component is perfectly complete from every shared state. -/
 theorem seqCompose_perfectCompleteness_of_guarded_verifiers
     {m : ℕ} (Stmt : Fin (m + 1) → Type)
     {ιₛ : Fin (m + 1) → Type} (OStmt : (i : Fin (m + 1)) → ιₛ i → Type)

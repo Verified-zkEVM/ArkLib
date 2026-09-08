@@ -160,9 +160,7 @@ theorem pinned_of_soundness_orientations (hγ' : P.bZero - 1 ≤ P.γ) :
   have h3 := P.hbZeroq
   exact ⟨by omega, by omega⟩
 
-/-- **The zero-check range base is nontrivial**, as a named projection. Needed wherever the digit
-encoding appears: the balanced base-`bZero` decomposition of the quotient is a decomposition only
-for `1 < bZero` ([NOZ26] §2.1, `rhoDigits_reconstruct`). -/
+/-- The zero-check digit base is greater than one. -/
 theorem one_lt_bZero : 1 < P.bZero := P.hbZero
 
 /-- The quotient's digit base is admissible at the chain's own norm bound `γ` — the bundled form
@@ -324,7 +322,7 @@ def completePrefixReductionPureForm (P : HonestRangeParams q)
   ⟨_, fun _ _ => rfl⟩
 
 omit [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F] in
-/-- Every component of the honest prefix returns its output without oracle queries. -/
+/-- The honest prefix prover returns its output without oracle queries. -/
 theorem completePrefixReduction_outputIsPure (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
@@ -337,13 +335,8 @@ theorem completePrefixReduction_outputIsPure (P : HonestRangeParams q)
   all_goals exact ⟨_, fun _ => rfl⟩
 
 omit [DecidableEq F] in
-/-- **Perfect completeness of the Hachi prefix**, from the polynomial-level evaluation relation
-through `relNestedZeroCheck`.
-
-The reverse range hypothesis is needed only by the last link, as explained above. Together with
-`P.hγZero` it pins `γ = P.bZero − 1` (`HonestRangeParams.pinned_of_soundness_orientations`); this
-theorem does not conceal that. All individual links have error zero, so the composed prefix has
-error zero as well. -/
+/-- The honest Hachi prefix is perfectly complete from the short-message evaluation relation
+to the nested zero-check relation. -/
 theorem completePrefixReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -505,16 +498,8 @@ generic append instance does not fire reliably through a deeply nested `Protocol
     (h₁ := completePrefixSpecSampleable Φ) (h₂ := sumcheckSpecSampleable bZero (M + 1))
 
 omit [DecidableEq F] in
-/-- **Perfect completeness of the honest Hachi chain through the sumcheck**, from `relPolyEval` to
-the evaluation claim `relWEvalClaim`, error `0`.
-
-Hypotheses are the prefix's (`completePrefixReduction_perfectCompleteness`, including the two
-reverse range orientations the nested zero-check's honest seam needs) plus the sumcheck's
-`0 < bZero` and `(μ₀ + n₀ * rhoDigitCount q bZero) · deg φ ≤ 2^{M+1}`. The prefix's output
-relation `relNestedZeroCheck` *is* the sumcheck's input relation, at the same parameters.
-
-The concrete guarded verifier and completeness from every shared oracle state justify the
-composition. The prefix, sumcheck factor, and composition theorem are all axiom-clean. -/
+/-- The honest chain through sumcheck is perfectly complete from the short-message evaluation
+relation to the witness-evaluation claim. -/
 theorem completeThroughSumcheckReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec

@@ -568,15 +568,15 @@ theorem coreInteraction_perfectCompleteness :
     (impl := impl) := by
   refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ')) _ _
-    (Verifier.GuardedForm.of_empty _ (fun stmt =>
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
       (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
-    (Verifier.GuardedForm.of_empty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
     (fun _ => Or.inl inferInstance) ?_ ?_
   · apply OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers
       (rel := fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i)
       (R := fun i => iteratedSumcheckOracleReduction κ L K P ℓ ℓ' aOStmtIn i)
       (hP := fun _ => inferInstance)
-      (hV := fun _ => Verifier.GuardedForm.of_empty _ (fun stmt =>
+      (hV := fun _ => Verifier.GuardedForm.ofEmpty _ (fun stmt =>
         (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
       (h := fun i s =>
         iteratedSumcheckOracleReduction_perfectCompleteness (κ := κ) (L := L) (K := K)

@@ -26,4 +26,4 @@ run_cmd do
       `OracleReduction.seqCompose_completeness,
       `OracleReduction.seqCompose_perfectCompleteness] do
     if env.contains name then
-      throwError "Retired completeness declaration is present: {name}"
+      throwError "Retired completeness declaration is present: `{name}`"

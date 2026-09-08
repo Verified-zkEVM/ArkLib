@@ -10,10 +10,13 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
 # Completeness of sequential composition under explicit state assumptions
 
 A pure verifier can be evaluated after the prover without changing the shared oracle state.
-The explicit simulated-factorization interface preserves Richard Goodman's contribution in
-[PR #635](https://github.com/Verified-zkEVM/ArkLib/pull/635), extended here to quantitative errors.
-Composition additionally requires the second reduction to be complete from the state left by
-its predecessor. The unrestricted fixed-initial-state composition claim does not supply this.
+Exact simulated prover factorization and suffix completeness from every shared state give an
+additive bound on the composition error. The structural seam and purity corollaries supply
+sufficient execution hypotheses.
+
+## References
+
+* [Richard Goodman, completeness](https://github.com/Verified-zkEVM/ArkLib/pull/635).
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -92,7 +95,7 @@ variable [∀ i, SampleableType (pSpec₂.Challenge i)]
 
 /-- Quantitative completeness from equality of simulated prover programs at every input
 and initial shared state. The suffix is complete from every deterministic state. -/
-theorem append_completeness_of_proverFactorization
+theorem append_completeness_of_prover_factorization
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (V₁ : R₁.verifier.PureForm) (V₂ : R₂.verifier.PureForm)
@@ -117,15 +120,9 @@ theorem append_completeness_of_proverFactorization
     (completeness_iff_of_pure_verifier R₂ V₂ rel₂ rel₃ ε₂).mp (h₂ s)
   have herr : 1 - ((ε₁ + ε₂ : ℝ≥0) : ℝ≥0∞) ≤
       (1 - (ε₁ : ℝ≥0∞)) * (1 - (ε₂ : ℝ≥0∞)) := by
-    rw [ENNReal.coe_add, tsub_add_eq_tsub_tsub]
-    calc
-      _ ≤ (1 - (ε₁ : ℝ≥0∞)) * 1 - (1 - (ε₁ : ℝ≥0∞)) * ε₂ := by
-        simp only [mul_one]
-        exact tsub_le_tsub_left (by
-          calc (1 - (ε₁ : ℝ≥0∞)) * ε₂ ≤ 1 * ε₂ :=
-                 mul_le_mul' tsub_le_self le_rfl
-               _ = ε₂ := one_mul _) _
-      _ = _ := (ENNReal.mul_sub (by intros; finiteness)).symm
+    rw [ENNReal.coe_add, tsub_add_eq_tsub_tsub,
+      ENNReal.mul_sub (by intros; finiteness), mul_one]
+    exact tsub_le_tsub_left (mul_le_of_le_one_left zero_le tsub_le_self) _
   refine herr.trans ?_
   dsimp only [Reduction.append]
   simp only [hFactor stmt wit,
@@ -155,10 +152,11 @@ theorem append_completeness_of_pure_verifiers
     (h₁ : R₁.completeness init impl rel₁ rel₂ ε₁)
     (h₂ : ∀ s : σ, R₂.completeness (pure s) impl rel₂ rel₃ ε₂) :
     (R₁.append R₂).completeness init impl rel₁ rel₃ (ε₁ + ε₂) :=
-  append_completeness_of_proverFactorization R₁ R₂ V₁ V₂
+  append_completeness_of_prover_factorization R₁ R₂ V₁ V₂
     (Prover.simulatedAppendFactorization_of_seam R₁.prover R₂.prover hSeam impl) h₁ h₂
 
-/-- Perfect completeness is the zero-error instance of state-aware append completeness. -/
+/-- Pure verifiers compose perfectly when prover execution factors at the seam and the suffix
+is perfectly complete from every deterministic shared state. -/
 theorem append_perfectCompleteness_of_pure_verifiers
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
@@ -189,7 +187,8 @@ theorem append_completeness_of_pure
   exact append_completeness_of_pure_verifiers R₁ R₂ ⟨f₁, hf₁⟩ ⟨f₂, hf₂⟩
     (fun _ => Or.inl inferInstance) h₁ h₂
 
-/-- Typeclass convenience form of state-aware perfect completeness. -/
+/-- Pure verifiers and pure left prover output preserve perfect completeness when the suffix
+is perfectly complete from every deterministic shared state. -/
 theorem append_perfectCompleteness_of_pure
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
@@ -202,9 +201,9 @@ theorem append_perfectCompleteness_of_pure
   simpa only [perfectCompleteness, add_zero] using
     append_completeness_of_pure R₁ R₂ h₁ h₂
 
-/-- Compatibility with the all-distributions suffix premise of #635. The factorization
-still quantifies over every input and deterministic initial state. -/
-theorem append_perfectCompleteness_of_proverFactorization
+/-- Exact simulated prover factorization preserves perfect completeness for pure verifiers
+when the suffix is perfectly complete from every initial-state distribution. -/
+theorem append_perfectCompleteness_of_prover_factorization
     (R₁ : Reduction oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
     (R₂ : Reduction oSpec Stmt₂ Wit₂ Stmt₃ Wit₃ pSpec₂)
     (V₁ : R₁.verifier.PureForm) (V₂ : R₂.verifier.PureForm)
@@ -215,9 +214,8 @@ theorem append_perfectCompleteness_of_proverFactorization
     (h₂ : ∀ start : ProbComp σ, R₂.perfectCompleteness start impl rel₂ rel₃) :
     (R₁.append R₂).perfectCompleteness init impl rel₁ rel₃ := by
   simpa only [perfectCompleteness, add_zero] using
-    append_completeness_of_proverFactorization R₁ R₂ V₁ V₂ hFactor h₁
+    append_completeness_of_prover_factorization R₁ R₂ V₁ V₂ hFactor h₁
       (fun s => h₂ (pure s))
-
 
 end Reduction
 

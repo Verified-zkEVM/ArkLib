@@ -9,9 +9,13 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 /-!
 # Completeness of two one-message reductions
 
-This is the one-message specialization contributed in PR #636. Each prover may perform arbitrary
-oracle queries, including in its output. Pure verification and suffix completeness from every
-shared state are still required; the opening message discharges the execution seam condition.
+Each prover may perform arbitrary oracle queries, including in its output. Pure verification
+and suffix completeness from every shared state imply perfect completeness of the composition.
+The opening message supplies the execution seam condition.
+
+## References
+
+* [Richard Goodman, one-message composition](https://github.com/Verified-zkEVM/ArkLib/pull/636).
 -/
 
 open OracleComp OracleSpec ProtocolSpec

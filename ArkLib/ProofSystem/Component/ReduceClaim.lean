@@ -51,8 +51,8 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   receiveChallenge := fun i => nomatch i
   output := fun ⟨stmt, wit⟩ => pure (mapStmt stmt, mapWit stmt wit)
 
-/-- The `ReduceClaim` prover has pure output: it applies the two plain maps `mapStmt` / `mapWit`,
-  with no oracle query. -/
+/-- The `ReduceClaim` prover has pure output: it applies the two plain maps `mapStmt` /
+`mapWit`, with no oracle query. -/
 instance instOutputIsPure : (prover oSpec mapStmt mapWit).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The verifier for the `ReduceClaim` reduction. -/
@@ -286,7 +286,7 @@ def oracleProver : OracleProver oSpec
     pure ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
 
 /-- The `ReduceClaim` oracle prover has pure output: it applies the plain maps `mapStmt`,
-  `mapOStmt`, and `mapWit`, with no oracle query. -/
+`mapOStmt`, and `mapWit`, with no oracle query. -/
 instance instOutputIsPureOracle :
     (oracleProver oSpec mapStmt mapWit embedIdx hEq).OutputIsPure := ⟨_, fun _ => rfl⟩
 

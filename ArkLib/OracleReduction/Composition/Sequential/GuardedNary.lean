@@ -37,7 +37,8 @@ namespace Reduction
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- A sequence of guarded reductions has at most the sum of its component errors. -/
+/-- Pure prover outputs and guarded verifiers compose with the sum of the component errors
+when every component is complete from every deterministic shared state. -/
 theorem seqCompose_completeness_of_guarded_verifiers
     {m : ℕ} (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -69,7 +70,8 @@ theorem seqCompose_completeness_of_guarded_verifiers
         (fun i => rel i.succ) (fun i => R i.succ) (fun i => ε i.succ)
         (fun i => hP i.succ) (fun i => hV i.succ) (fun i => h i.succ)
 
-/-- Perfect completeness for a sequence with pure prover outputs and guarded verifiers. -/
+/-- Pure prover outputs and guarded verifiers preserve perfect completeness of a finite sequence
+when every component is perfectly complete from every deterministic shared state. -/
 theorem seqCompose_perfectCompleteness_of_guarded_verifiers
     {m : ℕ} (Stmt : Fin (m + 1) → Type) (Wit : Fin (m + 1) → Type)
     {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}

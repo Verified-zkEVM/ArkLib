@@ -241,12 +241,7 @@ theorem append_snd (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec
   funext i
   simp [snd, append]
 
-/-- Splitting a transcript of an appended protocol and reassembling it is the identity.
-
-This is the eta law dual to the beta laws `append_fst` / `append_snd`: those say that splitting a
-reassembled pair recovers the components, while this says every transcript of `pSpec₁ ++ₚ pSpec₂`
-*is* the append of its two halves. It is what lets an induction over the appended protocol's rounds
-reassemble its result at the end. -/
+/-- Splitting a transcript of an appended protocol and reassembling it is the identity. -/
 @[simp]
 theorem append_fst_snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) :
     T.fst ++ₜ T.snd = T := by
@@ -576,7 +571,7 @@ and pure computations do not witness such a difference. -/
 variable {ι : Type} {oSpec : OracleSpec ι} {α : Type}
 
 /-- Lift a left-component computation into the appended protocol, with the left challenge
-inclusion pinned. See the section note for why bare `liftM` is not safe here. -/
+inclusion pinned. -/
 abbrev liftAppendLeft (pSpec₂ : ProtocolSpec n)
     (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) :
     OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α :=
@@ -593,13 +588,7 @@ abbrev liftAppendRight (pSpec₁ : ProtocolSpec m)
     subSpec_challenge_append_right
   liftM oa
 
-/-! The two lemmas below are the regression anchors for the inclusions above. Nothing in the
-`SubSpec` / `LawfulSubSpec` / `DisjointSubSpec` interface pins down the response transport — any
-fibrewise automorphism composed with the cast satisfies all three — so these `rfl`-level
-computations are what actually fix the semantics, and what would break if `ChallengeIdx.inl` /
-`ChallengeIdx.inr`, `ProtocolSpec.append` or the transport lemmas were changed underneath.
-They also give downstream proofs (notably `Prover.append_run`) a rewrite target, in the same spirit
-as VCV-io's `liftM_add_left_query` / `liftM_add_right_query`. -/
+/-! Query computation rules specify both the injected index and the response transport. -/
 
 /-- Lifting a left-component challenge query queries the appended protocol at the left-injected
 index and transports the response back along `challenge_append_inl`. -/
@@ -615,15 +604,14 @@ index and transports the response back along `challenge_append_inr`. -/
         OracleQuery [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₂.Challenge i))
       = ⟨⟨ChallengeIdx.inr i, ()⟩, cast (challenge_append_inr (pSpec₁ := pSpec₁) i)⟩ := rfl
 
-/-- `getChallenge`-level form of `liftM_challenge_append_inl`: the shape that appears when a
-left-component prover's run is lifted into the appended protocol. -/
+/-- Lifting a left challenge query uses the left index and casts the response back. -/
 @[simp] theorem liftM_getChallenge_append_inl (i : ChallengeIdx pSpec₁) :
     (liftM (pSpec₁.getChallenge i) :
         OracleComp [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₁.Challenge i))
       = cast (challenge_append_inl (pSpec₂ := pSpec₂) i) <$>
           (pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inl i) := rfl
 
-/-- `getChallenge`-level form of `liftM_challenge_append_inr`. -/
+/-- Lifting a right challenge query uses the right index and casts the response back. -/
 @[simp] theorem liftM_getChallenge_append_inr (i : ChallengeIdx pSpec₂) :
     (liftM (pSpec₂.getChallenge i) :
         OracleComp [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₂.Challenge i))

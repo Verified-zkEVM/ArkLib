@@ -134,10 +134,10 @@ lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
   classical
   refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
-    (Verifier.GuardedForm.of_empty _ (fun stmt =>
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
       (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩,
         stmt.2)))
-    (Verifier.GuardedForm.of_empty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
     (fun _ => Or.inl inferInstance) ?_ ?_
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
        mlIOPCS.toAbstractOStmtIn
@@ -160,8 +160,8 @@ theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
   exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i)
     (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS) mlIOPCS.oracleReduction
-    (Verifier.GuardedForm.of_empty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
-    (Verifier.GuardedForm.of_empty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
     (fun _ => Or.inl inferInstance)
     (batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init)
     (fun _ => mlIOPCS.perfectCompleteness)

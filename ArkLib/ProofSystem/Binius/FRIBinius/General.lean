@@ -181,7 +181,7 @@ noncomputable def fullOracleProof :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-/-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
+/-- The full FRI-Binius oracle proof is perfectly complete. -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
       (oracleProof := fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
@@ -208,9 +208,9 @@ theorem fullOracleReduction_perfectCompleteness :
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
     (rel₂ := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
-    (V₁ := Verifier.GuardedForm.of_empty _ (fun _ =>
+    (V₁ := Verifier.GuardedForm.ofEmpty _ (fun _ =>
       (⟨⟨0, fun _ => 0, ⟨0, 0⟩⟩, 0⟩, fun _ _ => 0)))
-    (V₂ := Verifier.GuardedForm.of_empty _ (fun _ => (false, fun i => nomatch i)))
+    (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
     (hSeam := fun _ => Or.inl inferInstance)
     (h₁ := by
       apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
@@ -220,10 +220,10 @@ theorem fullOracleReduction_perfectCompleteness :
         ℓ ℓ' h_l (aOStmtIn := BinaryBasefoldAbstractOStmtIn κ L K β ℓ'
           𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
         (rel₃ := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-        (V₁ := Verifier.GuardedForm.of_empty _ (fun input =>
+        (V₁ := Verifier.GuardedForm.ofEmpty _ (fun input =>
           (⟨0, fun _ => 0,
             ⟨⟨input.1.t_eval_point, input.1.original_claim⟩, 0, 0⟩⟩, input.2)))
-        (V₂ := Verifier.GuardedForm.of_empty _ (fun _ =>
+        (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ =>
           (⟨⟨0, fun _ => 0, ⟨0, 0⟩⟩, 0⟩, fun _ _ => 0)))
         (hSeam := fun _ => Or.inl inferInstance)
       · apply BatchingPhase.batchingReduction_perfectCompleteness κ L K

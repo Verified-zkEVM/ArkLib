@@ -815,13 +815,12 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
       (impl := impl) := by
   unfold coreInteractionOracleReduction pSpecCoreInteraction
   apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
-    (Verifier.GuardedForm.of_empty _ (fun input =>
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
-    (Verifier.GuardedForm.of_empty _ (fun input =>
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
       (⟨⟨0, input.1.challenges, ⟨0, 0⟩⟩, 0⟩, input.2)))
     (fun _ => Or.inl inferInstance)
-  · -- Perfect completeness of sumcheckFoldOracleReduction
-    exact sumcheckFoldOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
+  · exact sumcheckFoldOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (init := init) (impl := impl)
   · intro s
     exact finalSumcheckOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
