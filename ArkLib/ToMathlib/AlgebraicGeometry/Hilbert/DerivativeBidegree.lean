@@ -60,6 +60,15 @@ theorem mem_restrictDerivativeBidegree {a b c : ℕ}
         m.weight (jetWeight (σ := Fin 2)) ≤ b ∧ m.weight derivativeWeight ≤ c := by
   rfl
 
+theorem mem_restrictBidegree_of_mem_restrictDerivativeBidegree
+    {a b c : ℕ} {P : MvPolynomial (Option (Fin 2)) F}
+    (hP : P ∈ restrictDerivativeBidegree (F := F) a b c) :
+    P ∈ restrictBidegree (F := F) (σ := Fin 2) a b := by
+  rw [mem_restrictDerivativeBidegree] at hP
+  rw [mem_restrictBidegree]
+  intro m hm
+  exact ⟨(hP m hm).1, (hP m hm).2.1⟩
+
 /-- Capped derivative rectangles are closed under multiplication. -/
 theorem mul_mem_restrictDerivativeBidegree {a b c a' b' c' : ℕ}
     {P Q : MvPolynomial (Option (Fin 2)) F}
