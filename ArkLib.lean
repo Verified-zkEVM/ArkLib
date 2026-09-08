@@ -290,6 +290,7 @@ import ArkLib.Interaction.Oracle.RunSources
 import ArkLib.Interaction.Oracle.Runtime
 import ArkLib.Interaction.Oracle.Source
 import ArkLib.Interaction.Oracle.Terminal
+import ArkLib.Interaction.Oracle.TerminalRun
 import ArkLib.Interaction.Oracle.TypeTree
 import ArkLib.Interaction.Oracle.TypeTree.Decoration
 import ArkLib.Interaction.Oracle.Virtual
