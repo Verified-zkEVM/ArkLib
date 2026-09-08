@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLibExamples.ReedSolomon.ZisK.Interpolation
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.NestedPowerAgreement
+import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 
 /-!
 # The compressed final STARK: 52 queries with the existing grinding hook
@@ -23,17 +23,12 @@ namespace ArkLibExamples.ReedSolomon.ZisK
 open ConcreteFields
 noncomputable section
 
-/-- Sum of the four positive inner bounds and the outer bound. -/
-def batchingCount : ℕ := 2906967379857620493
+/-- One degree-103 shared-inner bound plus the degree-four outer bound. -/
+def batchingCount : ℕ := 2321310860278182970
 
-/-- The singleton contributes zero to the sum of batching exceptions. -/
+/-- The shared inner curve is paid once, independently of the five group widths. -/
 theorem batchingCount_eq :
-    exceptionalCounts 0 + exceptionalCounts 1 + exceptionalCounts 2 +
-      exceptionalCounts 3 + exceptionalCounts 4 = batchingCount := by decide
-
-/-- The singleton opening group needs no exceptional challenges. -/
-def innerCounts : Fin 5 → ℕ := ![0, exceptionalCounts 3, exceptionalCounts 2,
-  exceptionalCounts 1, exceptionalCounts 0]
+    exceptionalCounts 2 + exceptionalCounts 4 = batchingCount := by decide
 
 open Classical in
 /-- The two actual powers challenges recover every original message outside one
@@ -47,24 +42,23 @@ theorem exists_nested_exceptional
         127623 ≤ (polynomialAgreementSet domain
           (powerBatchedWord (fun g ↦ powerBatchedWord (values g) u) v) P).card →
         HasExactNestedPowerAgreement domain innerDegree values 32768 u v P := by
-  have hi (g : Fin 5) :
-      UniformExactPowerAgreement domain (values g) 32768 127623 (innerCounts g) := by
-    fin_cases g
-    · exact uniformExactPowerAgreement_singleton domain (values 0) 32768 127623
-    · exact exists_exceptional 3 domain (values 1)
-    · exact exists_exceptional 2 domain (values 2)
-    · exact exists_exceptional 1 domain (values 3)
-    · exact exists_exceptional 0 domain (values 4)
+  have hdegree (g : Fin 5) : innerDegree g ≤ 103 := by
+    fin_cases g <;> decide
+  have hscalar (scalarValues : Fin (103 + 1) → Fin 524288 → GoldilocksCubic) :
+      UniformExactPowerAgreement domain scalarValues 32768 127623 (exceptionalCounts 2) :=
+    exists_exceptional 2 domain scalarValues
+  have hi : UniformExactInterleavedPowerAgreement domain
+      (paddedPowerValues innerDegree hdegree values) 32768 127623 (exceptionalCounts 2) :=
+    uniformExactInterleavedPowerAgreement_of_scalar domain hscalar (by decide) (by decide)
+      (paddedPowerValues innerDegree hdegree values)
   have ho (u : GoldilocksCubic) : UniformExactPowerAgreement domain
       (fun g ↦ powerBatchedWord (values g) u) 32768 127623 (exceptionalCounts 4) :=
     exists_exceptional 4 domain (fun g ↦ powerBatchedWord (values g) u)
-  obtain ⟨bad, hcard, hgood⟩ := nestedPowerAgreement domain innerDegree values
-    32768 127623 innerCounts (exceptionalCounts 4) hi ho
+  obtain ⟨bad, hcard, hgood⟩ := nestedPowerAgreement_sharedInner domain innerDegree hdegree values
+    (by decide) hi ho
   refine ⟨bad, ?_, hgood⟩
   rw [fieldSize_eq] at hcard
-  have hs : (∑ g, innerCounts g) + exceptionalCounts 4 = batchingCount := by
-    decide
-  simpa only [hs] using hcard
+  simpa only [batchingCount_eq] using hcard
 
 /-- The entire nested batching bound fits its own 128-bit phase, without grinding. -/
 theorem batching_at_target :

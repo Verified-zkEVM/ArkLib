@@ -243,6 +243,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.Inci
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.PairCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.PointRecognition
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.TaylorChart.SharpPairCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.UniformPowerAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.AmbientSearchCanary
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.AmbientSearchMachine
@@ -582,6 +583,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AffineAgreementBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
+import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.AgreementList
