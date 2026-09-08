@@ -40,6 +40,24 @@ def RepeatedOodMeetsTarget
   listSize * (listSize - 1) * (vectorSize - 1) ^ samples * 2 ^ security ≤
     2 * fieldSize ^ samples
 
+/-- Height-`h` binary tensor bad-count plus two identity tests, cross-multiplied exactly. -/
+def TensorFoldIdentityMeetsTarget
+    (height exceptionalCount listSize fieldSize security : ℕ) : Prop :=
+  ((2 ^ height - 1) * exceptionalCount + 2 * listSize) * 2 ^ security ≤ fieldSize
+
+/-- One full-set line-transfer exceptional count, kept apart from tensor folding. -/
+def LineTransferMeetsTarget (exceptionalCount fieldSize security : ℕ) : Prop :=
+  exceptionalCount * 2 ^ security ≤ fieldSize
+
+/-- A fixed number of independent field-collision numerators. -/
+def FieldCollisionMeetsTarget (count fieldSize security : ℕ) : Prop :=
+  count * 2 ^ security ≤ fieldSize
+
+/-- Combination of a source opening with a target list after the target OOD samples. -/
+def TransitionMeetsTarget
+    (sourceQueries targetOod targetListSize fieldSize security : ℕ) : Prop :=
+  2 * (sourceQueries + targetOod) * targetListSize * 2 ^ security ≤ fieldSize
+
 /-- Affine exceptional-set loss plus two polynomial-identity tests. -/
 def AffineMcaIdentityMeetsTarget
     (exceptionalCount listSize fieldSize security : ℕ) : Prop :=

@@ -25,24 +25,6 @@ namespace ArkLibExamples.ReedSolomon.ProveKit
 
 open ArkLib.FiniteFieldBudget
 
-/-- Height-`h` binary tensor bad-count plus two identity tests, cross-multiplied exactly. -/
-def TensorFoldIdentityMeetsTarget
-    (height exceptionalCount listSize fieldSize security : ℕ) : Prop :=
-  ((2 ^ height - 1) * exceptionalCount + 2 * listSize) * 2 ^ security ≤ fieldSize
-
-/-- One full-set line-transfer exceptional count, kept apart from tensor folding. -/
-def LineTransferMeetsTarget (exceptionalCount fieldSize security : ℕ) : Prop :=
-  exceptionalCount * 2 ^ security ≤ fieldSize
-
-/-- A fixed number of independent field-collision numerators. -/
-def FieldCollisionMeetsTarget (count fieldSize security : ℕ) : Prop :=
-  count * 2 ^ security ≤ fieldSize
-
-/-- Combination of a source opening with a target list after the target OOD samples. -/
-def TransitionMeetsTarget
-    (sourceQueries targetOod targetListSize fieldSize security : ℕ) : Prop :=
-  2 * (sourceQueries + targetOod) * targetListSize * 2 ^ security ≤ fieldSize
-
 /-- The complete numerical obligations for one committed code.  The semantic certificate and
 tensor theorem are intentionally not fields of this arithmetic structure. -/
 structure RoundBudget (r : CodeRound) (fieldSize security nonceSpace : ℕ) : Prop where

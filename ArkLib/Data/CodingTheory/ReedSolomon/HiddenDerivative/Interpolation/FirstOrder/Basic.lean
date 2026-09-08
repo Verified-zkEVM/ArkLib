@@ -171,11 +171,13 @@ theorem finrank_firstOrderSpace_eq_card [Field F] :
 
 /-- Every first-order interpolant has the required strict specialization-weight bound. -/
 theorem differentialWeightedDegree_lt_of_mem_firstOrderSpace [CommSemiring F]
-    (hbudget : 0 < m * A) (hD : 1 < D) {Q : DifferentialPolynomial F 1}
+    (hbudget : 0 < m * A) {Q : DifferentialPolynomial F 1}
     (hQ : Q ∈ firstOrderSpace F D A m M μ) :
-    differentialWeightedDegree D Q < m * A :=
-  differentialWeightedDegree_lt_of_mem_exactInterpolationSpace hbudget hD
-    (firstOrderSpace_le_exactInterpolationSpace hD hQ)
+    differentialWeightedDegree D Q < m * A := by
+  rw [differentialWeightedDegree, MvPolynomial.weightedTotalDegree,
+    Finset.sup_lt_iff hbudget]
+  intro u hu
+  exact (mem_firstOrderExponents.mp (mem_firstOrderSpace_iff.mp hQ u hu)).2.2
 
 end
 

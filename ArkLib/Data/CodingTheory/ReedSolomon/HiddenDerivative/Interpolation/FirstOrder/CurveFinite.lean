@@ -38,7 +38,7 @@ variable {F : Type*} [Field F]
 certificate. All matrix, rank, and kernel facts are discharged internally. -/
 theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
     {D A m M μ k h n : ℕ} (ℓ : ℕ)
-    (hD : 1 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
     (centers : Fin n ↪ F) (w : Fin n → F[X])
     (hw : ∀ i, (w i).natDegree ≤ ℓ)
     (hheight : firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h <
@@ -74,14 +74,11 @@ theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
   refine ⟨hnonzero ι z, ?_⟩
   intro indices P hPdegree hcard hagreements
   let φ := Polynomial.eval₂RingHom ι z
-  have hQexact : Q ∈ exactInterpolationSpace F[X] D A 1 m M 0 hD :=
-    firstOrderSpace_le_exactInterpolationSpace hD hQsupport
-  have hQmapped : MvPolynomial.map φ Q ∈
-      exactInterpolationSpace E D A 1 m M 0 hD := by
-    rw [mem_exactInterpolationSpace_iff]
+  have hQmapped : MvPolynomial.map φ Q ∈ firstOrderSpace E D A m M μ := by
+    rw [mem_firstOrderSpace_iff]
     intro u hu
     have huQ : u ∈ Q.support := MvPolynomial.support_map_subset φ Q hu
-    exact mem_exactInterpolationSpace_iff.mp hQexact u huQ
+    exact mem_firstOrderSpace_iff.mp hQsupport u huQ
   have hconstraintsE : ∀ i, SatisfiesLocalConstraints m (ι (centers i))
       ((w i).eval₂ ι z) (MvPolynomial.map φ Q) := by
     intro i
@@ -100,9 +97,13 @@ theorem exists_finite_firstOrder_curve_certificate_of_heightSlotCount
   have hcenters : Set.InjOn (fun i ↦ ι (centers i)) (indices : Set (Fin n)) := by
     intro i _ j _ hij
     exact centers.injective (ι.injective hij)
-  exact differentialSpecialization_eq_zero_of_mem_exactInterpolationSpace_of_agreements
-    hbudget hD (fun i ↦ ι (centers i)) (fun i ↦ (w i).eval₂ ι z)
-      indices hQmapped hconstraintsE P hPnat hcenters hcard hagreements
+  apply differentialSpecialization_eq_zero_of_global_multiplicity
+    (fun i ↦ ι (centers i)) indices m A (MvPolynomial.map φ Q) P hcenters hcard
+  · intro i hi
+    exact X_sub_C_pow_dvd_differentialSpecialization_of_contact
+      _ P (ι (centers i)) ((w i).eval₂ ι z) (hagreements i hi) (hconstraintsE i)
+  · exact (natDegree_differentialSpecialization_le _ P hPnat).trans_lt
+      (differentialWeightedDegree_lt_of_mem_firstOrderSpace hbudget hQmapped)
 
 
 end
