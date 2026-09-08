@@ -27,10 +27,6 @@ def coeffsEquiv : Vector Field 6 ≃ Ext6 where
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- Boolean equality on `Ext6` agrees with propositional equality coefficientwise. -/
-instance instLawfulBEq : LawfulBEq Ext6 :=
-  inferInstanceAs (LawfulBEq (Vector Field 6))
-
 /-- Sample `Ext6` by sampling its six base-field coefficients independently. -/
 def sample : ProbComp Ext6 :=
   coeffsEquiv <$> ($ᵗ (Vector Field 6))
