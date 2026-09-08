@@ -12,8 +12,10 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   This file defines the sequential composition of an arbitrary `m + 1` number of oracle reductions.
   This is defined by iterating the composition of two reductions, as defined in `Append.lean`.
 
-  The security properties of the general sequential composition of reductions are then inherited
-  from the case of composing two reductions.
+  The soundness and knowledge-soundness claims inherit the admitted binary security contracts.
+  The false fixed-init completeness contracts have been removed. Proved completeness interfaces
+  live in `Sequential/Completeness.lean`, `Sequential/GuardedNary.lean`, and
+  `Sequential/OracleCompleteness.lean`, with explicit shared-state hypotheses.
 -/
 
 open ProtocolSpec OracleComp
@@ -349,45 +351,6 @@ section Security
 
 open scoped NNReal
 
-namespace Reduction
-
-omit Oₘ in
-theorem seqCompose_completeness
-    (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
-    (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
-      (pSpec i))
-    (completenessError : Fin m → ℝ≥0)
-    (h : ∀ i, (R i).completeness init impl (rel i.castSucc) (rel i.succ) (completenessError i)) :
-      (Reduction.seqCompose Stmt Wit R).completeness init impl (rel 0) (rel (Fin.last m))
-        (∑ i, completenessError i) := by
-  induction m with
-  | zero => simp only [seqCompose_zero]; exact id_perfectCompleteness init impl
-  | succ m ih =>
-    simp only [Fin.vsum_succ, seqCompose_succ, Fin.castSucc_zero, Fin.succ_zero_eq_one,
-      Function.comp_apply, Fin.succ_last, Nat.succ_eq_add_one]
-    have := ih (fun i => rel i.succ) (fun i => R i.succ)
-      (fun i => completenessError i.succ) (fun i => h i.succ)
-    simp only [Fin.succ_zero_eq_one, Fin.succ_last, Nat.succ_eq_add_one] at this
-    rw [Fin.sum_univ_succ]
-    exact append_completeness
-      (R 0)
-      (seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => R (Fin.succ i)))
-      (h 0) this
-
-omit Oₘ in
-theorem seqCompose_perfectCompleteness
-    (rel : (i : Fin (m + 1)) → Set (Stmt i × Wit i))
-    (R : ∀ i, Reduction oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ)
-      (pSpec i))
-    (h : ∀ i, (R i).perfectCompleteness init impl (rel i.castSucc) (rel i.succ)) :
-      (Reduction.seqCompose Stmt Wit R).perfectCompleteness
-        init impl (rel 0) (rel (Fin.last m)) := by
-  unfold perfectCompleteness
-  convert seqCompose_completeness rel R 0 h
-  simp
-
-end Reduction
-
 namespace Verifier
 
 /-- If all verifiers in a sequence satisfy soundness with respective soundness errors, then their
@@ -505,35 +468,6 @@ theorem seqCompose_rbrKnowledgeSoundness
     sorry
 
 end Verifier
-
-namespace OracleReduction
-
-theorem seqCompose_completeness
-    (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
-    (R : ∀ i, OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
-      (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i))
-    (completenessError : Fin m → ℝ≥0)
-    (h : ∀ i, (R i).completeness init impl (rel i.castSucc) (rel i.succ) (completenessError i)) :
-      (OracleReduction.seqCompose Stmt OStmt Wit R).completeness
-        init impl (rel 0) (rel (Fin.last m)) (∑ i, completenessError i) := by
-  unfold completeness at h ⊢
-  convert Reduction.seqCompose_completeness rel (fun i => (R i).toReduction)
-    completenessError h
-  simp only [seqCompose_toReduction]
-
-theorem seqCompose_perfectCompleteness
-    (rel : (i : Fin (m + 1)) → Set ((Stmt i × ∀ j, OStmt i j) × Wit i))
-    (R : ∀ i, OracleReduction oSpec (Stmt i.castSucc) (OStmt i.castSucc) (Wit i.castSucc)
-      (Stmt i.succ) (OStmt i.succ) (Wit i.succ) (pSpec i))
-    (h : ∀ i, (R i).perfectCompleteness init impl (rel i.castSucc) (rel i.succ)) :
-      (OracleReduction.seqCompose Stmt OStmt Wit R).perfectCompleteness
-        init impl (rel 0) (rel (Fin.last m)) := by
-  change (OracleReduction.seqCompose Stmt OStmt Wit R).completeness
-    init impl (rel 0) (rel (Fin.last m)) 0
-  have hc := seqCompose_completeness rel R 0 h
-  simpa using hc
-
-end OracleReduction
 
 namespace OracleVerifier
 

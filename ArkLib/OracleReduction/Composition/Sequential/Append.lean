@@ -30,5 +30,5 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Security
   * `Append.Completeness` — completeness from simulated factorization and state-uniform suffixes.
   * `Append.OneMessage` — the effectful-prover, one-message completeness specialization.
   * `Append.RoundByRound` — soundness from fixed-prefix bounds under a pure first verifier.
-  * `Append.Security` — legacy admitted composition claims and their inherited wrappers.
+  * `Append.Security` — legacy admitted soundness claims and their inherited wrappers.
 -/

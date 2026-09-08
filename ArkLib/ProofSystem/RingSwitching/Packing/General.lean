@@ -9,6 +9,8 @@ import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Composition.Sequential.Append
+import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 
 /-!
 # The composed interactive packing reduction
@@ -130,11 +132,18 @@ lemma batchingCore_perfectCompleteness [Finite L] [Finite K] :
   let _ := Fintype.ofFinite L
   let _ := Fintype.ofFinite K
   classical
-  apply OracleReduction.append_perfectCompleteness
+  refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
+    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn 0) _ _
+    (Verifier.GuardedForm.of_empty _ (fun stmt =>
+      (⟨0, Fin.elim0, ⟨⟨stmt.1.t_eval_point, stmt.1.original_claim⟩, 0, fun _ => 0⟩⟩,
+        stmt.2)))
+    (Verifier.GuardedForm.of_empty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (fun _ => Or.inl inferInstance) ?_ ?_
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
        mlIOPCS.toAbstractOStmtIn
-  · exact SumcheckPhase.coreInteraction_perfectCompleteness
-      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl)
+  · intro s
+    exact SumcheckPhase.coreInteraction_perfectCompleteness
+      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (init := pure s) (impl := impl)
 
 omit [Fintype L] [Fintype K] [DecidableEq K]
   [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
@@ -148,12 +157,14 @@ theorem fullOracleReduction_perfectCompleteness [Finite L] [Finite K] :
   let _ := Fintype.ofFinite L
   let _ := Fintype.ofFinite K
   classical
-  exact OracleReduction.append_perfectCompleteness
-    (R₁ := batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
-    (R₂ := mlIOPCS.oracleReduction)
+  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (Oₛ₃ := fun i : Empty => nomatch i)
+    (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS) mlIOPCS.oracleReduction
+    (Verifier.GuardedForm.of_empty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (Verifier.GuardedForm.of_empty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (fun _ => Or.inl inferInstance)
     (batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init)
-    mlIOPCS.perfectCompleteness
+    (fun _ => mlIOPCS.perfectCompleteness)
 
 def batchingCoreRbrKnowledgeError
     (i : (pSpecBatching κ L K P ++ₚ pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=

@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 
@@ -812,13 +814,18 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
       (init := init)
       (impl := impl) := by
   unfold coreInteractionOracleReduction pSpecCoreInteraction
-  apply OracleReduction.append_perfectCompleteness
+  apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.of_empty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
+    (Verifier.GuardedForm.of_empty _ (fun input =>
+      (⟨⟨0, input.1.challenges, ⟨0, 0⟩⟩, 0⟩, input.2)))
+    (fun _ => Or.inl inferInstance)
   · -- Perfect completeness of sumcheckFoldOracleReduction
     exact sumcheckFoldOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (init := init) (impl := impl)
-  · -- Perfect completeness of finalSumcheckOracleReduction
+  · intro s
     exact finalSumcheckOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l init impl
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (pure s) impl
 
 def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=

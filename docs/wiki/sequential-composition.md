@@ -89,11 +89,15 @@ pure verifiers and pure left output. `SimulatedFactorization.lean` uses the raw 
 provers with a pure ambient implementation: raw programs differ, yet simulated programs agree
 and the factorization completeness theorem applies outside the structural seam restriction.
 
-The generic security admissions and their inherited wrappers remain in the legacy API. In
-particular, eight binary/n-ary completeness contracts across `Reduction` and `OracleReduction`
-need caller migration and retirement. New restricted theorems do not repair those contracts or
-remove existing callers' dependencies automatically. Ordinary and knowledge soundness require
-separate proofs; execution factorization supplies neither claim.
+The eight fixed-init completeness declarations have been removed: `append_completeness`,
+`append_perfectCompleteness`, `seqCompose_completeness`, and `seqCompose_perfectCompleteness`
+in both `Reduction` and `OracleReduction`. The maintained Sumcheck, Packing, and Binius callers
+use the proved guarded interfaces without changing their public hypotheses or protocol definitions.
+Their independent component admissions remain: removing the false composition contracts does not
+make these callers axiom-clean. The unused experimental Sumcheck completeness claim is also removed.
+
+Generic soundness and knowledge-soundness admissions and their inherited wrappers remain in the
+legacy API. They require separate proofs; execution factorization supplies neither claim.
 
 ## Hachi caller migration
 
@@ -114,5 +118,6 @@ it does not execute the expensive complete opening run.
 Run `./scripts/validate.sh --axioms`. The normal `lake test` gate includes the composition tests:
 execution routes, both counterexamples, the positive simulated-factorization case, empty and
 state-mutating completeness, rejecting verifiers, specialization checks, and the empty-oracle
-fallback boundary. Named results have
-permanent standard-axiom assertions. The library axiom sweep covers the production declarations.
+fallback boundary. `RetiredCompleteness.lean` checks that all eight retired declaration names
+are absent from the imported environment. Named proved results have permanent standard-axiom
+assertions. The library axiom sweep covers the production declarations and remaining admission debt.
