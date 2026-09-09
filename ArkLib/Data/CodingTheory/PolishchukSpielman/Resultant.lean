@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 
 import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
+import ArkLib.Data.Polynomial.ResultantDegree
 import Mathlib.Algebra.Polynomial.OfFn
 
 /-!
@@ -43,51 +44,8 @@ lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F] [Nontrivial F]
 lemma ps_nat_degree_resultant_le {F : Type} [Field F]
     (A B : F[X][Y]) (m n : ℕ) :
     (resultant B A n m).natDegree ≤
-      m * (degreeX B) + n * (degreeX A) := by
-  classical
-  let M : Matrix (Fin (n + m)) (Fin (n + m)) F[X] := sylvester B A n m
-  have h_coeff (P : F[X][Y]) (k : ℕ) : (P.coeff k).natDegree ≤ degreeX P := by
-    unfold degreeX
-    by_cases hk : k ∈ P.support
-    · simp [Finset.le_sup (f := fun t ↦ (P.coeff t).natDegree) hk]
-    · simp [notMem_support_iff.mp hk]
-  let cb : Fin (n + m) → ℕ :=
-    Fin.addCases (fun _ : Fin n ↦ degreeX A) (fun _ : Fin m ↦ degreeX B)
-  have h_entry (σ : Equiv.Perm (Fin (n + m))) (i : Fin (n + m)) :
-      (M (σ i) i).natDegree ≤ cb i := by
-    cases i using Fin.addCases with
-    | left i0 =>
-      simp only [cb, Fin.addCases_left]
-      have hM : M (σ (.castAdd m i0)) (.castAdd m i0) =
-          if ((σ (.castAdd m i0) : ℕ) ∈ Set.Icc (i0 : ℕ) ((i0 : ℕ) + m))
-          then A.coeff ((σ (.castAdd m i0) : ℕ) - i0) else 0 := by
-        simp [M, sylvester, of_apply, Fin.addCases_left]
-      by_cases h : (σ (.castAdd m i0) : ℕ) ∈ Set.Icc (i0 : ℕ) ((i0 : ℕ) + m)
-      · simp only [hM, h, ↓reduceIte, ge_iff_le]; exact h_coeff A _
-      · simp [hM, h]
-    | right i0 =>
-      simp only [cb, Fin.addCases_right]
-      have hM : M (σ (.natAdd n i0)) (.natAdd n i0) =
-          if ((σ (.natAdd n i0) : ℕ) ∈ Set.Icc (i0 : ℕ) ((i0 : ℕ) + n))
-          then B.coeff ((σ (.natAdd n i0) : ℕ) - i0) else 0 := by
-        simp [M, sylvester, of_apply, Fin.addCases_right]
-      by_cases h : (σ (.natAdd n i0) : ℕ) ∈ Set.Icc (i0 : ℕ) ((i0 : ℕ) + n)
-      · simp only [hM, h, ↓reduceIte, ge_iff_le]; exact h_coeff B _
-      · simp [hM, h]
-  have h_term (σ : Equiv.Perm (Fin (n + m))) :
-      (Equiv.Perm.sign σ • ∏ i : Fin (n + m), M (σ i) i).natDegree ≤
-        m * degreeX B + n * degreeX A := by
-    refine le_trans (natDegree_smul_le _ _) ?_
-    have hprod : (∏ i : Fin (n + m), M (σ i) i).natDegree ≤
-        ∑ i : Fin (n + m), (M (σ i) i).natDegree := by
-      simpa using natDegree_prod_le _ (fun i ↦ M (σ i) i)
-    refine le_trans (le_trans hprod (Finset.sum_le_sum fun i _ ↦ h_entry σ i)) ?_
-    simp [cb, Fin.sum_univ_add, Nat.add_comm]
-  have hdet : M.det.natDegree ≤ m * degreeX B + n * degreeX A := by
-    rw [det_apply]
-    exact natDegree_sum_le_of_forall_le _ _ (fun σ _ ↦ h_term σ)
-  simpa [resultant, M, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc, Nat.mul_comm,
-    Nat.mul_left_comm, Nat.mul_assoc] using hdet
+      m * (degreeX B) + n * (degreeX A) :=
+  natDegree_resultant_le_degreeX B A n m
 
 /-- The resultant commutes with ring homomorphisms. -/
 lemma ps_resultant_map {R S : Type} [CommRing R] [CommRing S]

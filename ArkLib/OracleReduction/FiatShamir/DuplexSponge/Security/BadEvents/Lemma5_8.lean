@@ -110,9 +110,12 @@ private def lemma5_8LoggingWrapper {σ : Type}
 /-- CO25 §5.6 (Option G) — Abortable Lemma-5.8 trace experiment, mirroring the §5.8 hybrid skeleton
 (`KeyLemma.dsfsGame` / `hybridGame`): the salted `maliciousProver` runs under `impl`, then the
 forward-only verifier `𝒱^{h,p} := V.toDSFS δ` (paper Figure 4 line 3) runs on its output, with the
-carrier `σ` (e.g. `D_𝔖.Carrier` / `D2SQueryState`) threaded throughout.
+carrier `σ` (e.g. `DuplexSpongeOracleFamily StmtIn U` / `D2SQueryState`) threaded throughout.
 
-Returns `(tr_P̃, tr_V)`; the bad event `E` (Def 5.7) is evaluated on `tr_P̃ ++ tr_V`. -/
+Returns `(tr_P̃, tr_V)`; the bad event `E` (Def 5.7) is evaluated on `tr_P̃ ++ tr_V`.
+Unlike `hybridGame`'s default continuation, prover failure stops this experiment before
+the verifier runs. Shared-state execution agrees on successful prover runs; this is not
+an assertion that the two experiments have identical failure behavior. -/
 noncomputable def lemma5_8ProjectedTraceDistAbortable
     {σ : Type}
     (init : ProbComp σ)
@@ -202,8 +205,8 @@ noncomputable def lemma5_8SigmaTraceDist
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
   let k_g ←
-    (D_Sigma (instSampleable := instSampleableTypeEncodedChallengeOracle)
-      (U := U) StmtIn pSpec δ).sample
+    (D_Sigma.sample (instSampleable := instSampleableTypeEncodedChallengeOracle)
+      (U := U) StmtIn pSpec δ)
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U) (δ := δ)
     (init := pure default)
@@ -211,8 +214,7 @@ noncomputable def lemma5_8SigmaTraceDist
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       (gImpl := fun q => OptionT.lift
-        ((D_Sigma (instSampleable := instSampleableTypeEncodedChallengeOracle)
-          (U := U) StmtIn pSpec δ).toImpl k_g q))
+        (pure (k_g q)))
       (auxImpl := fun aux => OptionT.lift
         ((ProverTransform.d2sUnitSampleImpl
             (instSampleable := VCVCompatible.toSampleableType) (U := U) +
@@ -256,8 +258,8 @@ theorem lemma_5_8
           lemma5_8RealTraceDist
             (StmtIn := StmtIn) (StmtOut := StmtOut)
             (n := n) (pSpec := pSpec) (U := U) (δ := δ)
-            (D_𝔖 StmtIn U).sample
-            ((D_𝔖 StmtIn U).eagerImpl)
+            (D_𝔖.sample StmtIn U)
+            D_𝔖.answer
             V maliciousProver])
         (Pr[fun (tr : QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
                       QueryLog (duplexSpongeChallengeOracle StmtIn U)) =>

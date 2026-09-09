@@ -1,4 +1,5 @@
 name = "Arklib"
+testDriver = "ArkLibTest"
 lintDriver = "batteries/runLinter"
 defaultTargets = ["ArkLib"]
 
@@ -41,6 +42,13 @@ roots = ["ArkLibLintPlugin"]
 
 [[lean_lib]]
 name = "ArkLib"
+plugins = ["ArkLibLintPlugin:shared"]
+
+# Compile-time acceptance clients, kept out of the production import graph.
+[[lean_lib]]
+name = "ArkLibTest"
+roots = []
+globs = ["ArkLibTest.+"]
 plugins = ["ArkLibLintPlugin:shared"]
 
 # Kernel-level axiom / sorry accounting; see scripts/AxiomSweep.lean.

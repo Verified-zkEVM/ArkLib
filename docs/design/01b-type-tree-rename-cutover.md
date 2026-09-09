@@ -1,8 +1,9 @@
 # Type-tree and oracle-interaction naming contract
 
 PolyFun's generic `Interaction.TypeTree` rename and its cursor/append substrate have landed. This
-document records the current generic vocabulary and fixes the names for ArkLib's still-unimplemented
-oracle refinement. It is not a plan for another PolyFun rename.
+document records the current generic vocabulary and the names implemented by ArkLib's structural
+oracle refinement. It is not a plan for another PolyFun rename; later oracle access and execution
+layers build on this contract.
 
 ## 1. Generic carrier
 
@@ -109,6 +110,10 @@ The broad prototype predates the generic rename. Ported ArkLib declarations use 
 | `Oracle.Spec.toInteractionSpec` | `Oracle.TypeTree.toTypeTree` |
 | `Oracle.Spec.PublicTranscript` | `Oracle.TypeTree.BranchPath` |
 | `Oracle.Spec.FullTranscript` | `Oracle.TypeTree.ExecutionPath` |
+| `Oracle.Spec.RoleDeco` | `Oracle.TypeTree.RoleDecoration` |
+| `Oracle.Spec.OracleDeco` | `Oracle.TypeTree.OracleDecoration` |
+| `Oracle.Spec.toSpecRoles` | `Oracle.TypeTree.RoleDecoration.toTypeTreeRoles` |
+| `Oracle.Spec.toRuntimeRoles` | `Oracle.TypeTree.RoleDecoration.toRuntimeRoles` |
 | `FullTranscript.toInteractionTranscript` | `ExecutionPath.toTypeTreePath` |
 | `projectPublicFull` | `ExecutionPath.toBranchPath` |
 | `PublicTranscript.*` | `BranchPath.*` |

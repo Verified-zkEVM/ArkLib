@@ -983,6 +983,11 @@ class Prover.IsPure (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) where
     is_pure : ∃ sendMessage : ∀ _, _ → _, ∀ i st,
       P.sendMessage i st = pure (sendMessage i st)
 
+/-- The prover's output is a deterministic function of its final private state, with no
+oracle queries. This condition does not constrain the message-sending steps. -/
+class Prover.OutputIsPure (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) where
+    output_is_pure : ∃ output : _ → _, ∀ st, P.output st = pure (output st)
+
 class Verifier.IsPure (V : Verifier oSpec StmtIn StmtOut pSpec) where
     is_pure : ∃ verify : _ → _ → _, ∀ stmtIn transcript,
       V.verify stmtIn transcript = pure (verify stmtIn transcript)

@@ -47,6 +47,9 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   receiveChallenge := fun i => nomatch i
   output := combineMap mapStmt mapWit
 
+/- Output executes the supplied `mapStmt` and `mapWit` computations. Purity requires an
+additional condition on those computations. -/
+
 /-- The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a
   function `mapStmt : StmtIn → OracleComp oSpec StmtOut` -/
 @[reducible]

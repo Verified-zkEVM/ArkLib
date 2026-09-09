@@ -1,0 +1,80 @@
+name: Interaction acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'ArkLib/Interaction/**'
+      - 'ArkLibTest/Interaction/**'
+      - 'lakefile.toml'
+      - 'lake-manifest.json'
+      - 'lean-toolchain'
+      - '.github/workflows/interaction.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: interaction-acceptance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  interaction:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Free disk space for the existing Lean cache
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # Restore only: untrusted PR code must not publish a shared dependency cache.
+      - uses: actions/cache/restore@v6
+        with:
+          path: ./.lake
+          key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+          restore-keys: |
+            ${{ runner.os }}-lean-ci-
+
+      - uses: leanprover/lean-action@v1.6.0
+        with:
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+
+      - name: Fetch dependency cache
+        run: lake exe cache get
+
+      - name: Compile production and acceptance modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t modules < <(
+            git ls-files -- 'ArkLib/Interaction/*.lean' 'ArkLibTest/Interaction/*.lean' |
+              LC_ALL=C sort | sed 's/\.lean$//;s,/,.,g'
+          )
+          if (( ${#modules[@]} == 0 )); then
+            echo 'No Interaction modules were discovered.' >&2
+            exit 1
+          fi
+          lake build "${modules[@]}" 2>&1 | tee "$RUNNER_TEMP/interaction-build.log"
+
+      - name: Enforce zero-warning budgets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+            --path-prefix ArkLib/Interaction/ --label 'Interaction warnings (including admissions)'
+          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+            --path-prefix ArkLibTest/Interaction/ --label 'Interaction acceptance warnings'

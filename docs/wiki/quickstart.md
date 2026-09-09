@@ -36,6 +36,20 @@ git add path/to/newfile.lean
 `./scripts/update-lib.sh` only considers tracked files, and fails fast if untracked
 `ArkLib/**/*.lean` files are present.
 
+### Compile-time acceptance tests
+
+Place examples and regression tests under `ArkLibTest/`, mirroring the production module path.
+Run `lake test` to build them; `./scripts/validate.sh` runs this target by default and rejects all
+test warnings, including admissions. Stage new tests so source linting and the trust inventory
+include them. Production modules must not import tests.
+
+Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
+branch. It compiles all tracked `ArkLib/Interaction/` and `ArkLibTest/Interaction/` modules with
+the existing build-time source-policy plugin and rejects every warning in those modules,
+including admissions. This is early feedback, not a replacement for `lake test` or the full
+validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
+[`../design/01c-access-execution-contract.md`](../design/01c-access-execution-contract.md).
+
 ### Lean source-policy checks
 
 ```bash
@@ -43,7 +57,7 @@ lake exe lint-style
 ```
 
 `./scripts/validate.sh` runs this gate by default. The Lean executable scans every module imported
-by `ArkLib.lean`, parses import headers with Lean itself, and has no exception file. It allows
+by `ArkLib.lean` and every tracked `ArkLibTest` module, parses import headers with Lean itself, and has no exception file. It allows
 project-specific mathematical Unicode notation, while rejecting invisible controls, bidirectional
 controls, and nonstandard space characters that can conceal source changes. It also rejects
 blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
@@ -79,7 +93,7 @@ a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses
 while such taint is present — remove the dependency instead.
 
 CI enforces both the fixture matrix and the library regression check (see `ci.yml`).
-It also runs `scripts/source-trust-audit.py` over every tracked `ArkLib/**/*.lean` file.
+It also runs `scripts/source-trust-audit.py` over every tracked Lean file under `ArkLib/` and `ArkLibTest/`.
 That deterministic, comment/string-aware inventory reports source-only constructs that an
 environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
 constructs in files outside the imported roots. Source inventory changes are review evidence,
@@ -208,6 +222,11 @@ python3 -m pip install leanblueprint
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
   workflow, which computes the baseline comparison and posts the PR report.
+- [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
+  provides focused compilation and zero-warning checks for typed Interaction production and
+  acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
+  but never saves, the shared `.lake` cache and does not retain checkout credentials. Passing
+  this check does not waive the full validation/axiom gate for the eventual `main` target.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)

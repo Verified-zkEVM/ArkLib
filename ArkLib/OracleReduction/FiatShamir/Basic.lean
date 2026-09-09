@@ -5,7 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.Security.Basic
-import ArkLib.OracleReduction.Security.OracleDistribution
+import ArkLib.OracleReduction.Security.OracleSampling
 
 /-!
   # The Basic Fiat-Shamir Transformation
@@ -161,12 +161,12 @@ variable [∀ i, SampleableType (pSpec.Challenge i)]
 /-- Completeness statement for basic Fiat-Shamir with one uniformly sampled challenge table.
 The proof is intentionally deferred. -/
 theorem fiatShamir_completeness
-    [SampleableType (OracleFamily (srChallengeOracle StmtIn pSpec))]
+    [SampleableType (QueryImpl (srChallengeOracle StmtIn pSpec) Id)]
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (completenessError : ℝ≥0) (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
   R.completeness init impl relIn relOut completenessError →
     R.fiatShamir.completeness (init := do
-        let f ← (OracleDistribution.uniform (srChallengeOracle StmtIn pSpec)).sample
+        let f ← (uniformSample (QueryImpl (srChallengeOracle StmtIn pSpec) Id))
         let challengeImpl : QueryImpl (srChallengeOracle StmtIn pSpec) Id := fun q => f q
         return (← init, challengeImpl))
       (impl := (impl.addLift fsChallengeQueryImpl' :

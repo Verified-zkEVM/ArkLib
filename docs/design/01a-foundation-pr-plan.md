@@ -91,6 +91,9 @@ declaration; historical upstream plans no longer appear as live work.
 
 ### AR-1 — plain dependent reduction kernel
 
+**Status.** Implemented by the first typed-interaction PR. The next independent core slices are
+AR-2A and AR-4A.
+
 **Goal.** Add the smallest ArkLib prover, verifier, and reduction packages over PolyFun
 `Interaction.TypeTree`, two-party roles, strategies, and execution.
 
@@ -105,6 +108,9 @@ the first complete path.
 
 ### AR-2A — oracle type trees and path projections
 
+**Status.** Implemented by the second typed-interaction PR. The third PR builds AR-2B on this
+structural path boundary.
+
 **Goal.** Add `Oracle.Position`, `Oracle.TypeTree`, the runtime lens to generic `TypeTree`,
 `BranchPath`, `ExecutionPath`, and projection from execution to structural branch.
 
@@ -112,6 +118,9 @@ the first complete path.
 present in `ExecutionPath`, and oracle branch indices are `PUnit` in `BranchPath`.
 
 ### AR-2B — role and oracle decorations
+
+**Status.** Implemented by the third typed-interaction PR. AR-3A is the next oracle-specific
+foundation slice.
 
 **Goal.** Decorate the oracle type tree with roles, public/oracle status, and the projections needed
 by later prover and verifier views.

@@ -377,6 +377,53 @@ theorem vecL2NormSq_le_card_mul_lInftyNorm_sq {cols : ℕ} (v : PolyVec (Rq Φ) 
     _ = cols * (Φ.φ.natDegree * (vecLInftyNorm Φ v) ^ 2) := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
 
+/-! ## The `ℓ∞` product bound as a hypothesis on the modulus, and its two vector consequences
+
+`‖f·g‖∞ ≤ ‖f‖₁·‖g‖∞` ([Mic07, ineq. (2.7)]; [NOZ26] Lemma 2) is what bounds Hachi's folded
+witness `z = Σᵢ cᵢ sᵢ`, but — like its `ℓ₂` twin `Rq.l2NormSq_mul_le` — it rests on
+multiplication by `X` being a coefficient permutation up to sign, which holds for the negacyclic
+`X^n + 1` and *fails* for a general cyclotomic `Φ_m`. So it is recorded here as a named property of
+the modulus, proved for `powTwoCyclotomic` in `NormBounds.MicciancioYoung`
+(`powTwoCyclotomic_hasMulLInftyBound`) and threaded as a hypothesis through the `Φ`-generic layers
+that need it. -/
+
+/-- **The negacyclic `ℓ∞` product bound as a property of the modulus**:
+`‖d·w‖∞ ≤ ‖d‖₁·‖w‖∞` for all `d, w : Rq Φ`. Proved for `powTwoCyclotomic α`; not true for every
+cyclotomic modulus, hence a hypothesis rather than a theorem at this generality. -/
+def Rq.HasMulLInftyBound : Prop :=
+  ∀ d w : Rq Φ, Rq.lInftyNorm Φ (d * w) ≤ Rq.l1Norm Φ d * Rq.lInftyNorm Φ w
+
+omit [NeZero q] in
+/-- **`ℓ∞` growth of a scalar-vector product**: `‖c •ᵥ v‖∞ ≤ κ·B` whenever `‖c‖₁ ≤ κ` and
+`‖v‖∞ ≤ B`. The entrywise instance of the modulus' product bound. -/
+theorem vecLInftyNorm_scalarVecMul_le (hmul : Rq.HasMulLInftyBound Φ) {cols κ B : ℕ}
+    (c : Rq Φ) (v : PolyVec (Rq Φ) cols) (hc : Rq.l1Norm Φ c ≤ κ)
+    (hv : vecLInftyNorm Φ v ≤ B) :
+    vecLInftyNorm Φ (scalarVecMul c v) ≤ κ * B := by
+  unfold vecLInftyNorm
+  refine Finset.sup_le fun i _ => ?_
+  rw [scalarVecMul_apply]
+  exact le_trans (hmul c (v i))
+    (Nat.mul_le_mul hc (Rq.lInftyNorm_le_of_vecLInftyNorm_le Φ hv i))
+
+/-- **`ℓ∞` triangle inequality for a finite sum of vectors**, in the uniform form the folded
+witness needs: a sum of `s.card` vectors each within `K` is within `s.card · K`. The centered
+representative of a sum is bounded by the sum of the centered representatives
+(`valMinAbs_natAbs_sum_le_card_mul`), with no wraparound condition. -/
+theorem vecLInftyNorm_sum_le_card_mul {ι : Type*} {cols K : ℕ} (s : Finset ι)
+    (v : ι → PolyVec (Rq Φ) cols) (h : ∀ i ∈ s, vecLInftyNorm Φ (v i) ≤ K) :
+    vecLInftyNorm Φ (∑ i ∈ s, v i) ≤ s.card * K := by
+  unfold vecLInftyNorm Rq.lInftyNorm
+  refine Finset.sup_le fun j _ => Finset.sup_le fun k hk => ?_
+  have happ : (∑ i ∈ s, v i) j = ∑ i ∈ s, v i j := Finset.sum_apply j s v
+  have hcoeff : ((∑ i ∈ s, v i) j).1.coeff k = ∑ i ∈ s, ((v i) j).1.coeff k := by
+    rw [happ, ← Rq.coeffHom_apply Φ k, map_sum]
+    simp only [Rq.coeffHom_apply]
+  rw [hcoeff]
+  exact valMinAbs_natAbs_sum_le_card_mul s (fun i => ((v i) j).1.coeff k)
+    (fun i hi => Rq.valMinAbs_natAbs_coeff_le_of_vecLInftyNorm_le Φ (h i hi) j
+      (Finset.mem_range.mp hk))
+
 /-! ## The recomposition growth bound -/
 
 /-- Squared-`ℓ₂` bound for a base-`b` gadget **recomposition** `z = J·ẑ` of an

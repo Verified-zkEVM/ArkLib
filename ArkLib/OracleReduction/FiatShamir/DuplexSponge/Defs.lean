@@ -8,7 +8,7 @@ import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
 
-import ArkLib.OracleReduction.Security.OracleDistribution
+import ArkLib.OracleReduction.Security.OracleSampling
 
 /-!
 # Duplex Sponge Fiat-Shamir
@@ -22,10 +22,10 @@ This file provides:
 - Oracle distributions:
   + duplexSpongeHashOracleDistribution: `h`-oracle
   + duplexSpongePermutationOracleDistribution: `(p, p⁻¹)`-oracle
-  + duplexSpongeOracleDistribution (D_𝔖): `(h, p, p⁻¹)`-oracle
-  + D_g: for Hyb1
-  + D_e: for Hyb2
-  + D_IP_salted (D_f): single-salt FS random oracle
+  + D_𝔖.sample / D_𝔖.answer: sample `(h, p)` once, then answer `(h, p, p⁻¹)` queries
+  + D_Sigma.sample: for Hyb1
+  + D_e.sample: for Hyb2
+  + D_IP_salted.sample: single-salt FS random oracle
 -/
 
 /-- Explicitly distinguish Prover and Verifier queries within a single combined query log.
@@ -358,7 +358,7 @@ Per CO25 Eq. 16: `dom_i = {0,1}^≤n × Σ^δ × Σ^{ℓ_P(1)} × … × Σ^{ℓ
 *exactly* `i` encoded messages, not an unbounded list. We model this as
 `pSpec.EncodedMessagesBefore U i.1.castSucc`, the dependent function indexed by message rounds
 strictly before `i`. With `Fintype` instances for the components this Query is also `Fintype`,
-which is required for the eager full-table `OracleDistribution.uniform _` realization. -/
+which is required for the eager full-table `uniformSample` realization. -/
 @[inline, reducible]
 def gSpecInterface
     {U : Type} [SpongeUnit U]
@@ -414,23 +414,22 @@ def eSpec
 challenge-oracle family for `Hyb₁`.
 
 Samples a single full random table `g : (q : Domain) → Range q` once at game start; all subsequent
-queries deterministically index into this fixed table. The `[SampleableType (OracleFamily _)]`
+queries deterministically index into this fixed table. The `[SampleableType (QueryImpl _ Id)]`
 hypothesis matches CO25: with a fixed-length round-indexed prefix (see `EncodedMessagesBefore`), the
 oracle's domain is finite, and uniform sampling of the function table is the canonical realization
 of `g ← 𝒰((dom_i → Σ^{ℓ_V(i)})_{i∈[k]})`. -/
-def D_Sigma
+def D_Sigma.sample
     {U : Type} [SpongeUnit U]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (δ : Nat)
     [HasMessageSize pSpec] [HasChallengeSize pSpec]
-    [instSampleable : SampleableType (OracleFamily (gSpec (U := U) StmtIn pSpec δ))] :
-    OracleReduction.OracleDistribution
-      (gSpec (U := U) StmtIn pSpec δ) :=
-  OracleReduction.D_ROM (instSampleable := instSampleable)
+    [instSampleable : SampleableType (QueryImpl (gSpec (U := U) StmtIn pSpec δ) Id)] :
+    ProbComp (QueryImpl (gSpec (U := U) StmtIn pSpec δ) Id) :=
+  OracleReduction.D_ROM.sample (instSampleable := instSampleable)
 
 /-- Bridge: `SampleableType` for `gSpec` (Hyb₁ `g`) derived from
-granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
-(gSpec …))` at call sites in §5.8 hybrids and in `BadEvents.lemma_5_8`'s
+granular `VCVCompatible` base-type hypotheses. Eliminates verbose table-sampling hypotheses
+at call sites in §5.8 hybrids and in `BadEvents.lemma_5_8`'s
 eager `𝒟_Σ` sampling.
 
 `[VCVCompatible StmtIn]` and `[VCVCompatible U]` are necessary, not just convenient:
@@ -442,7 +441,7 @@ noncomputable instance instSampleableTypeEncodedChallengeOracle
     {U : Type} [SpongeUnit U] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
     [VCVCompatible StmtIn] [VCVCompatible U]
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :
-    SampleableType (OracleFamily (gSpec (U := U) StmtIn pSpec δ)) := by
+    SampleableType (QueryImpl (gSpec (U := U) StmtIn pSpec δ) Id) := by
   -- The `gSpec` domain is definitionally the sigma of a challenge index and its query type;
   -- state the `Fintype`/`DecidableEq` instances on the unfolded form (default-transparency
   -- unification sees through `toOracleSpec`, which is not reducible for TC search).
@@ -455,28 +454,28 @@ noncomputable instance instSampleableTypeEncodedChallengeOracle
   letI : ∀ q : (gSpec (U := U) StmtIn pSpec δ).Domain,
       Fintype ((gSpec (U := U) StmtIn pSpec δ).Range q) := fun q =>
     (inferInstance : Fintype (Vector U (challengeSize (pSpec := pSpec) q.1)))
-  letI : Fintype (OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
-    inferInstance
+  letI : Fintype (QueryImpl (gSpec (U := U) StmtIn pSpec δ) Id) :=
+    show Fintype ((q : (gSpec (U := U) StmtIn pSpec δ).Domain) →
+      (gSpec (U := U) StmtIn pSpec δ).Range q) from inferInstance
   -- Every encoded response type is inhabited (`U` has a default element).
-  letI : Nonempty (OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
+  letI : Nonempty (QueryImpl (gSpec (U := U) StmtIn pSpec δ) Id) :=
     ⟨fun q => (default : Vector U (challengeSize (pSpec := pSpec) q.1))⟩
   apply SampleableType.ofFintype
 
 /-- CO25 Eq. 53 — eager full-table distribution `e` over the decoded challenge-oracle family
 for `Hyb₂`.
 
-Same eager full-table semantics as `D_Sigma`, with the
+Same eager full-table semantics as `D_Sigma.sample`, with the
 response type swapped from `Σ^{ℓ_V(i)}` to the decoded `pSpec.Challenge i`. Realizes
 `e ← 𝒰((dom_i → ℳ_{V,i})_{i∈[k]})`. -/
-def D_e
+def D_e.sample
     {U : Type} [SpongeUnit U]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (δ : Nat)
     [HasMessageSize pSpec]
-    [instSampleable : SampleableType (OracleFamily (eSpec (U := U) StmtIn pSpec δ))] :
-    OracleReduction.OracleDistribution
-      (eSpec (U := U) StmtIn pSpec δ) :=
-    OracleReduction.D_ROM (instSampleable := instSampleable)
+    [instSampleable : SampleableType (QueryImpl (eSpec (U := U) StmtIn pSpec δ) Id)] :
+    ProbComp (QueryImpl (eSpec (U := U) StmtIn pSpec δ) Id) :=
+    OracleReduction.D_ROM.sample (instSampleable := instSampleable)
 
 /-! ## Setup: oracle distributions and `SampleableType` bridges -/
 
@@ -491,28 +490,21 @@ between hybrids lies in the prover/verifier algorithm, not the oracle.
 The salt slot of `dom'_i` is the pre-encoded `{0,1}^{δ⋆}`-side, modeled here by the abstract
 type `Salt`. The on-sponge `Σ^δ` salt produced by Construction 4.3 is projected via
 `SaltCodec.encode = bin` before being used as an oracle key. -/
-noncomputable def D_IP_salted
+noncomputable def D_IP_salted.sample
     {n : ℕ} {StmtIn Salt : Type} (pSpec : ProtocolSpec n)
     [VCVCompatible StmtIn] [VCVCompatible Salt]
     [∀ i, VCVCompatible (pSpec.Message i)] [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleReduction.OracleDistribution (fsChallengeOracle (StmtIn × Salt) pSpec) :=
-  OracleReduction.D_IP (Statement := StmtIn × Salt) pSpec
-
-noncomputable def D_f
-    {n : ℕ} {StmtIn Salt : Type} (pSpec : ProtocolSpec n)
-    [VCVCompatible StmtIn] [VCVCompatible Salt]
-    [∀ i, VCVCompatible (pSpec.Message i)] [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleReduction.OracleDistribution (fsChallengeOracle (StmtIn × Salt) pSpec) :=
-  D_IP_salted pSpec
+    ProbComp (QueryImpl (fsChallengeOracle (StmtIn × Salt) pSpec) Id) :=
+  OracleReduction.D_IP.sample (Statement := StmtIn × Salt) pSpec
 
 /-- Bridge: `SampleableType` for `eSpec` (Hyb₂ `e`) derived from
-granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
-(eSpec …))` at call sites in §5.8 hybrids. -/
+granular `VCVCompatible` base-type hypotheses. Eliminates verbose table-sampling hypotheses
+at call sites in §5.8 hybrids. -/
 noncomputable instance instSampleableTypeDecodedChallengeOracle
     {U : Type} [SpongeUnit U] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
     [VCVCompatible StmtIn] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Challenge i)]
     [HasMessageSize pSpec] :
-    SampleableType (OracleFamily (eSpec (U := U) StmtIn pSpec δ)) := by
+    SampleableType (QueryImpl (eSpec (U := U) StmtIn pSpec δ) Id) := by
   -- Same recipe as `instSampleableTypeEncodedChallengeOracle`; only the response type differs
   -- (decoded `pSpec.Challenge i` instead of encoded `Vector U (challengeSize i)`).
   letI : Fintype (eSpec (U := U) StmtIn pSpec δ).Domain :=
@@ -524,10 +516,11 @@ noncomputable instance instSampleableTypeDecodedChallengeOracle
   letI : ∀ q : (eSpec (U := U) StmtIn pSpec δ).Domain,
       Fintype ((eSpec (U := U) StmtIn pSpec δ).Range q) := fun q =>
     (inferInstance : Fintype (pSpec.Challenge q.1))
-  letI : Fintype (OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
-    inferInstance
+  letI : Fintype (QueryImpl (eSpec (U := U) StmtIn pSpec δ) Id) :=
+    show Fintype ((q : (eSpec (U := U) StmtIn pSpec δ).Domain) →
+      (eSpec (U := U) StmtIn pSpec δ).Range q) from inferInstance
   -- Every decoded response type is inhabited via `VCVCompatible (pSpec.Challenge i)`.
-  letI : Nonempty (OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
+  letI : Nonempty (QueryImpl (eSpec (U := U) StmtIn pSpec δ) Id) :=
     ⟨fun q => (default : pSpec.Challenge q.1)⟩
   apply SampleableType.ofFintype
 
@@ -616,7 +609,7 @@ a random function `h : StartType → Σ^c` and a random permutation `p : Σ^{r+c
 The inverse oracle `p⁻¹` is *derived* as `p.symm`, not sampled — the bijection invariant
 `p ∘ p⁻¹ = id` holds by construction since the carrier is `Equiv.Perm`. -/
 abbrev DuplexSpongeOracleFamily (StartType : Type) (U : Type) [SpongeUnit U] [SpongeSize] :=
-  OracleReduction.OracleFamily (StartType →ₒ Vector U SpongeSize.C) ×
+  (QueryImpl (StartType →ₒ Vector U SpongeSize.C) Id) ×
     Equiv.Perm (CanonicalSpongeState U)
 
 /-- Interpret one sampled `𝒟_𝔖` realization as the concrete `(h, p, p⁻¹)` query implementation. -/
@@ -625,16 +618,33 @@ def duplexSpongeOracleQueryImpl
     {StartType U : Type} [SpongeUnit U] [SpongeSize]
     (duplexSpongeOracle : DuplexSpongeOracleFamily StartType U) :
     QueryImpl (duplexSpongeChallengeOracle StartType U) ProbComp
-  | Sum.inl qHash => OracleReduction.tableQueryImpl (g := duplexSpongeOracle.1) qHash
+  | Sum.inl qHash => pure (duplexSpongeOracle.1 qHash)
   | Sum.inr (Sum.inl state) => pure (duplexSpongeOracle.2 state)
   | Sum.inr (Sum.inr state) => pure (duplexSpongeOracle.2.symm state)
 
-/-- Interpret one sampled permutation as forward/backward permutation-oracle answers. -/
-@[reducible]
-def permutationOracleQueryImpl {α : Type} (p : Equiv.Perm α) :
-    QueryImpl (permutationOracle α) ProbComp
-  | Sum.inl state => pure (p state)
-  | Sum.inr state => pure (p.symm state)
+/-- Answer using the initially sampled pair `(h, p) ← 𝒟_𝔖` throughout the experiment.
+Hash queries use `h`, forward queries use `p`, and inverse queries use `p.symm`.
+The pair is read but never modified: this handler does not sample a new oracle. -/
+def D_𝔖.answer {StartType U : Type} [SpongeUnit U] [SpongeSize] :
+    QueryImpl (duplexSpongeChallengeOracle StartType U)
+      (StateT (DuplexSpongeOracleFamily StartType U) ProbComp) := fun q => do
+  let realization ← get
+  StateT.lift (duplexSpongeOracleQueryImpl realization q)
+
+/-- Fixed-oracle contract: every query returns the prescribed deterministic answer together
+with the unchanged realization. In particular there is no per-query resampling or failure.
+This equation applies to every realization, irrespective of the distribution used to sample it. -/
+@[simp]
+theorem D_𝔖.answer_run {StartType U : Type} [SpongeUnit U] [SpongeSize]
+    (realization : DuplexSpongeOracleFamily StartType U)
+    (q : (duplexSpongeChallengeOracle StartType U).Domain) :
+    (D_𝔖.answer q).run realization =
+      match q with
+      | Sum.inl x => pure (realization.1 x, realization)
+      | Sum.inr (Sum.inl s) => pure (realization.2 s, realization)
+      | Sum.inr (Sum.inr s) => pure (realization.2.symm s, realization) := by
+  rcases q with x | s | s <;>
+    simp [D_𝔖.answer, duplexSpongeOracleQueryImpl]
 
 /-- `CanonicalSpongeState U = Vector U SpongeSize.N` is `VCVCompatible` whenever `U` is.
 Needed so `VCVCompatible U` implies `SampleableType (Equiv.Perm (CanonicalSpongeState U))`. -/
@@ -646,51 +656,33 @@ instance instVCVCompatibleCanonicalSpongeState
 /-- Uniform random-function distribution for the `h` component of `𝒟_𝔖`. -/
 noncomputable def duplexSpongeHashOracleDistribution (StartType U : Type) [SpongeUnit U]
     [SpongeSize] [VCVCompatible StartType] [VCVCompatible U] :
-    OracleReduction.OracleDistribution (StartType →ₒ Vector U SpongeSize.C) :=
-  OracleReduction.D_ROM (instSampleable := OracleReduction.sampleableTypePiVCV)
+    (ProbComp (QueryImpl (StartType →ₒ Vector U SpongeSize.C) Id)) :=
+  OracleReduction.D_ROM.sample (instSampleable := OracleReduction.sampleableTypePiVCV)
 
 /-- Uniform random-permutation distribution for the `(p, p⁻¹)` component of `𝒟_𝔖`.
 
 Only `p` is sampled; `p⁻¹` is derived as `p.symm`. -/
 noncomputable def duplexSpongePermutationOracleDistribution (U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible U] :
-    OracleReduction.OracleDistribution (permutationOracle (CanonicalSpongeState U)) where
-  Carrier := Equiv.Perm (CanonicalSpongeState U)
-  sample := uniformSample _ (h := VCVCompatible.toSampleableTypePerm)
-  toImpl := permutationOracleQueryImpl
+    ProbComp (Equiv.Perm (CanonicalSpongeState U)) :=
+  uniformSample _ (h := VCVCompatible.toSampleableTypePerm)
 
 /-- CO25 Definition 4.2 — ideal duplex-sponge oracle distribution `𝒟_𝔖`.
 
 Samples `h` as a uniform random function and `p` as a uniform random permutation, then answers
 inverse-permutation queries using `p.symm`. -/
-noncomputable def duplexSpongeOracleDistribution (StartType U : Type) [SpongeUnit U] [SpongeSize]
+noncomputable def D_𝔖.sample (StartType U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible StartType] [VCVCompatible U] :
-    OracleReduction.OracleDistribution
-      (duplexSpongeChallengeOracle StartType U) :=
-  OracleReduction.OracleDistribution.prod -- **prod**
-    (duplexSpongeHashOracleDistribution StartType U)
-    (duplexSpongePermutationOracleDistribution U)
-
-alias D_𝔖 := duplexSpongeOracleDistribution
+    ProbComp (DuplexSpongeOracleFamily StartType U) := do
+  let h ← duplexSpongeHashOracleDistribution StartType U
+  let p ← duplexSpongePermutationOracleDistribution U
+  pure (h, p)
 
 @[simp]
-lemma duplexSpongeOracleDistribution_toImpl
-    (StartType U : Type) [SpongeUnit U] [SpongeSize]
-    [VCVCompatible StartType] [VCVCompatible U]
-    (realization : DuplexSpongeOracleFamily StartType U) :
-    (duplexSpongeOracleDistribution StartType U).toImpl realization =
-      duplexSpongeOracleQueryImpl realization := by
-  funext q
-  cases q with
-  | inl qHash => rfl
-  | inr qPerm =>
-      cases qPerm <;> rfl
-
-@[simp]
-lemma duplexSpongeOracleDistribution_sample
+lemma D_𝔖.sample_eq
     (StartType U : Type) [SpongeUnit U] [SpongeSize]
     [VCVCompatible StartType] [VCVCompatible U] :
-    (duplexSpongeOracleDistribution StartType U).sample =
+    (D_𝔖.sample StartType U) =
       (do
         let h ← uniformSample _ (h := OracleReduction.sampleableTypePiVCV)
         let p ← uniformSample _ (h := VCVCompatible.toSampleableTypePerm)

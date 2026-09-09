@@ -6,20 +6,11 @@ Authors: Tobias Rothmann
 import ArkLib.OracleReduction.Composition.Sequential.General
 
 /-!
-  # Purity of composed verifiers
+# Purity under sequential composition
 
-  A verifier is `Verifier.IsPure` when its `verify` is a deterministic (`pure`) function of the
-  statement and transcript. This is exactly the deterministic-left hypothesis `hV₁` of the
-  CWSS / tree-soundness binary append (`Verifier.append_treeSpecialSoundWith`,
-  `Verifier.append_coordinateWiseSpecialSoundWith`), so propagating `IsPure` through
-  composition lets a chain of binary appends discharge that hypothesis from per-factor purity.
-
-  We show that the identity verifier is pure (`instIsPureId`), and that purity is preserved by
-  binary `append` (`IsPure.append`) and `n`-ary `seqCompose` (`IsPure.seqCompose`).
-
-  The same closure holds for purity as **data** (`Verifier.PureForm`, `OracleReduction.Basic`):
-  `PureForm.append` composes the two verdict functions computably, which is what lets a composed
-  package's extractor read its seam statement without `Classical.choice`.
+Identity, binary, and finite sequential composition preserve deterministic verifier outputs and
+pure prover outputs. `Verifier.PureForm.append` also composes explicit deterministic verdict data.
+The binary prover-output result is defined beside the append operation in `Append/Basic.lean`.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -46,26 +37,15 @@ theorem IsPure.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
   refine ⟨fun stmt tr => f₂ (f₁ stmt tr.fst) tr.snd, fun stmt tr => ?_⟩
   simp only [Verifier.append, hf₁, hf₂, pure_bind]
 
-/-- **Purity data composes computably**: the composed verdict runs the left verdict on the
-  transcript prefix and the right verdict on the suffix, from the statement the left verifier
-  outputs at the seam. Its proof is `Verifier.IsPure.append`'s, minus the choice destructuring —
-  which is exactly what makes this the *data* form: a composed package reads the seam statement off
-  `PureForm.verify`, so its extractor stays computable
-  (`Extractor.TreeBased.append`, `CoordinateWise.CWSSPackage.append`).
-
-  Transcript-level: the seam is `tr.fst`/`tr.snd`, with no challenge-tree path machinery. -/
+/-- Compose deterministic verifier data by passing the first verdict to the second verifier. -/
 def PureForm.append {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
     {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂} (P₁ : V₁.PureForm) (P₂ : V₂.PureForm) :
     (V₁.append V₂).PureForm where
   verify := fun stmt tr => P₂.verify (P₁.verify stmt tr.fst) tr.snd
   verify_eq := fun stmt tr => by
-    have h₁ := P₁.verify_eq
-    have h₂ := P₂.verify_eq
-    simp only [Verifier.append, h₁, h₂, pure_bind]
+    simp only [Verifier.append, P₁.verify_eq, P₂.verify_eq, pure_bind]
 
-/-- Purity is preserved by `n`-ary sequential composition of verifiers. The base case is the
-  identity verifier (`Verifier.seqCompose` reduces to `Verifier.id` at `m = 0`); the step case is
-  `IsPure.append` of the head with the recursively-composed tail. -/
+/-- Finite sequential composition preserves deterministic verifier outputs. -/
 theorem IsPure.seqCompose :
     {m : ℕ} → (Stmt : Fin (m + 1) → Type) → {n : Fin m → ℕ} →
       {pSpec : ∀ i, ProtocolSpec (n i)} →
@@ -77,3 +57,27 @@ theorem IsPure.seqCompose :
         (IsPure.seqCompose (Stmt ∘ Fin.succ) (fun i => V (Fin.succ i)) (fun i => hV (Fin.succ i)))
 
 end Verifier
+
+namespace Prover
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+
+/-- The identity prover has pure output: its `output` field is literally `pure`. -/
+instance instOutputIsPureId {Statement Witness : Type} :
+    (Prover.id (oSpec := oSpec) (Statement := Statement) (Witness := Witness)).OutputIsPure :=
+  ⟨_root_.id, fun _ => rfl⟩
+
+/-- Finite sequential composition preserves pure prover outputs. -/
+theorem OutputIsPure.seqCompose :
+    {m : ℕ} → (Stmt : Fin (m + 1) → Type) → (Wit : Fin (m + 1) → Type) → {n : Fin m → ℕ} →
+      {pSpec : ∀ i, ProtocolSpec (n i)} →
+      (P : (i : Fin m) →
+        Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i)) →
+      (hP : ∀ i, (P i).OutputIsPure) → (Prover.seqCompose Stmt Wit P).OutputIsPure
+  | 0, _, _, _, _, _, _ => ⟨_root_.id, fun _ => rfl⟩
+  | _ + 1, Stmt, Wit, _, _, P, hP =>
+      OutputIsPure.append (P 0) _ (hP 0)
+        (OutputIsPure.seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ)
+          (fun i => P (Fin.succ i)) (fun i => hP (Fin.succ i)))
+
+end Prover

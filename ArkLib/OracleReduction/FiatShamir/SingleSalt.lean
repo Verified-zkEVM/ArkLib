@@ -191,7 +191,7 @@ ambient state. The proof is intentionally deferred. -/
 theorem singleSaltFiatShamir_completeness
     {Salt : Type} [VCVCompatible Salt]
     [SampleableType Salt]
-    [SampleableType (OracleFamily (srChallengeOracle (StmtIn × Salt) pSpec))]
+    [SampleableType (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id)]
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (sampleSalt : OracleComp oSpec Salt)
     (sampleSalt_uniform : sampleSalt.IsFreshUniformSampler impl)
@@ -201,7 +201,7 @@ theorem singleSaltFiatShamir_completeness
     (R.singleSaltFiatShamir sampleSalt).completeness
       (init := do
         let challengeSpec := srChallengeOracle (StmtIn × Salt) pSpec
-        let f ← (OracleDistribution.uniform challengeSpec).sample
+        let f ← (uniformSample (QueryImpl challengeSpec Id))
         let challengeImpl : QueryImpl challengeSpec Id := fun q => f q
         return (← init, challengeImpl))
       (impl := (impl.addLift fsChallengeQueryImpl' :

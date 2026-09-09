@@ -909,14 +909,24 @@ noncomputable def d2fOuterImpl
           (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
           (Sum.inr aux)))
 
-/-- CO25 §5.4 Eq. 17 RHS — generic raw pipeline for `comp^{D2SQuery^{gImpl}}`, keeping the
-post-run `D2SQueryState` and inner `M`.
+/-- Run a simulated computation from explicit outer D2SQuery and inner oracle states.
+The verifier phase resumes both states returned by the prover. -/
+noncomputable def d2fRawFrom
+    {α : Type}
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {M : Type}
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (comp : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) α)
+    (initD2S : D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (initM : M) :
+    AbortComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+        ((α × D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) ×
+          M) :=
+  (((simulateQ (d2fOuterImpl (T_H := T_H) (T_P := T_P) gImpl) comp).run initD2S).run initM)
 
-Generalizes `d2fProverRaw` from prover-only to any wide-DSFS computation. Two call sites:
-- **Prover**: `d2fProverRaw gImpl 𝒜 = d2fRaw gImpl 𝒜 default` (fresh inner state).
-- **Verifier** (in `KeyLemma.hybridGame`): `d2fRaw gImpl verifyCompWide memo₁`
-  (threads the prover's post-run `M` as the verifier's initial state, matching CO25 §5.4
-  D2SAlgo Item 3 that `tr_i` is global to a single run). -/
+/-- Fresh-outer-state wrapper for standalone computations and the initial prover phase. -/
 noncomputable def d2fRaw
     {α : Type}
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -928,7 +938,7 @@ noncomputable def d2fRaw
         ((α × D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
               (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) ×
           M) :=
-  (((simulateQ (d2fOuterImpl (T_H := T_H) (T_P := T_P) gImpl) comp).run default).run initM)
+  d2fRawFrom (T_H := T_H) (T_P := T_P) gImpl comp default initM
 
 end D2FProverRaw
 
