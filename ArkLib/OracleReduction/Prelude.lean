@@ -35,8 +35,6 @@ class VCVCompatible (α : Type*) extends Fintype α, Inhabited α where
 
 instance {α : Type*} [VCVCompatible α] : DecidableEq α := VCVCompatible.type_decidableEq'
 
--- TODO: port first to batteries, second to mathlib
-
 @[simp]
 theorem Vector.ofFn_get {α : Type*} {n : ℕ} (v : Vector α n) : Vector.ofFn (Vector.get v) = v := by
   ext
@@ -52,10 +50,60 @@ instance {α : Type*} {n : ℕ} [VCVCompatible α] : VCVCompatible (Fin n → α
 
 instance {α : Type*} {n : ℕ} [VCVCompatible α] : VCVCompatible (Vector α n) where
 
+instance {α β : Type*} [VCVCompatible α] [VCVCompatible β] : VCVCompatible (α × β) where
+
 /-- `Sampleable` extends `VCVCompabible` with `SampleableType` -/
 class Sampleable (α : Type) extends VCVCompatible α, SampleableType α
 
 instance {α : Type} [Sampleable α] : DecidableEq α := inferInstance
+
+/-!
+## Explicit FinEnum and sampling bridges
+
+`VCVCompatible` contains enough data to construct `FinEnum` and `SampleableType`, but the
+bridges with general heads remain definitions. Both classes carry computational data, so global
+instances would create non-definitionally-equal enumeration and sampler diamonds. Call sites that
+choose this construction install it locally. The derived `Vector` and permutation enumerations
+remain explicit for the same reason.
+-/
+
+/-- Explicit noncomputable `VCVCompatible` to `FinEnum` bridge, via `Fintype.equivFin`.
+This is deliberately not an instance because `FinEnum` carries enumeration data. -/
+@[reducible] noncomputable def VCVCompatible.toFinEnum
+    {α : Type*} [VCVCompatible α] : FinEnum α where
+  card := Fintype.card α
+  equiv := Fintype.equivFin α
+  decEq := inferInstance
+
+/-- Explicit `FinEnum (Vector α n)` construction via `Equiv.rootVectorEquivFin`. -/
+@[reducible] noncomputable def Vector.toFinEnum
+    {α : Type*} {n : ℕ} [FinEnum α] : FinEnum (Vector α n) :=
+  FinEnum.ofEquiv _ Equiv.rootVectorEquivFin
+
+/-- `Equiv.Perm α` is always nonempty (contains `Equiv.refl α`). -/
+instance instNonemptyEquivPerm {α : Type*} : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
+
+/-- Explicit noncomputable `FinEnum (Equiv.Perm α)` construction. -/
+@[reducible] noncomputable def finEnumEquivPerm
+    {α : Type*} [FinEnum α] : FinEnum (Equiv.Perm α) where
+  card := Fintype.card (Equiv.Perm α)
+  equiv := Fintype.equivFin _
+  decEq := inferInstance
+
+/-- Explicit `VCVCompatible` to `SampleableType` bridge.
+This is deliberately not an instance because `SampleableType` carries sampler data. -/
+@[reducible] noncomputable def VCVCompatible.toSampleableType
+    {α : Type} [VCVCompatible α] : SampleableType α :=
+  letI : FinEnum α := VCVCompatible.toFinEnum
+  inferInstance
+
+/-- Explicit uniform sampler for permutations of a `VCVCompatible` type.
+This is deliberately not an instance to avoid competing with VCVio's permutation sampler. -/
+@[reducible] noncomputable def VCVCompatible.toSampleableTypePerm
+    {α : Type} [VCVCompatible α] : SampleableType (Equiv.Perm α) := by
+  letI : FinEnum α := VCVCompatible.toFinEnum
+  letI : Nonempty (Equiv.Perm α) := ⟨Equiv.refl _⟩
+  infer_instance
 
 /-- Enum type for the direction of a round in a protocol specification. It is either `.P_to_V`
 (the prover sends a message to the verifier) or `.V_to_P` (the verifier sends a challenge to the

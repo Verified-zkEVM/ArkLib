@@ -53,6 +53,11 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- DSFS oracle sampling and marginal laws: `ArkLib/OracleReduction/Security/OracleSampling.lean`.
+  Paper-named samplers and fixed answers: `ArkLib/OracleReduction/FiatShamir/DuplexSponge/Defs.lean`.
+- DSFS hybrid state handoff and de-abort policy: `DuplexSponge/Security/KeyLemma.lean`.
+  The separate abortable experiment lives in `DuplexSponge/Security/BadEvents/Lemma5_8.lean`.
+
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
   `ArkLib.ToVCVio`; use it for reusable `VCVio` helper lemmas before they are upstreamed.

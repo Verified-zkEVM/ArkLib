@@ -279,11 +279,14 @@ namespace CanonicalSpongeState
 
 variable {U : Type} [SpongeUnit U] [SpongeSize]
 
+/-- `Vector.take` with an exact-length result when a bound proof is available. -/
+@[inline] def takeExact {n : Nat} (v : Vector U n) (k : Nat) (h : k ≤ n) : Vector U k :=
+  (Vector.take v k).cast (by simp [Nat.min_eq_left h])
+
 /-- The rate segment of a canonical sponge state, which is the first `R` elements of the state -/
 @[reducible]
 def rateSegment (state : CanonicalSpongeState U) : Vector U SpongeSize.R :=
-  -- TODO: define an alternate `take` version that directly returns `k` instead of `min k n`
-  (Vector.take state SpongeSize.R).cast (by simp)
+  takeExact state SpongeSize.R SpongeSize.R_le_N
 
 /-- The capacity segment of a canonical sponge state, which is the last `C` elements of the state -/
 @[reducible]
