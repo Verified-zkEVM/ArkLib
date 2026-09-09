@@ -3,6 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.AgreementMachine
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldExecution
 import Mathlib.Data.List.Count
 import Mathlib.Data.List.Nodup
 import Std.Data.TreeMap.Lemmas
@@ -100,5 +102,136 @@ theorem decode_nodup (threshold : ℕ) (received : List F) :
       simpa using hequal
     all_goals contradiction
   exact List.nodup_iff_pairwise_ne.mpr hpairwise
+
+/-- Every returned vector is a singleton meeting the positive frequency threshold. -/
+theorem mem_decode_iff_exists (threshold : ℕ) (received : List F) (output : List F)
+    (hthreshold : 1 ≤ threshold) :
+    output ∈ decode cmp threshold received ↔
+      ∃ value, output = [value] ∧ threshold ≤ received.count value := by
+  rw [decode, List.mem_filterMap]
+  constructor
+  · rintro ⟨⟨key, count⟩, hentry, hselected⟩
+    split at hselected
+    · injection hselected with houtput
+      have hstored := (Std.TreeMap.mem_toList_iff_getElem?_eq_some).mp hentry
+      rw [getElem?_frequencyMap] at hstored
+      split at hstored
+      · contradiction
+      · injection hstored with hcount
+        exact ⟨key, houtput.symm, by omega⟩
+    · contradiction
+  · rintro ⟨value, rfl, hcount⟩
+    have hpositive : received.count value ≠ 0 := by
+      omega
+    have hentry : (value, received.count value) ∈ (frequencyMap cmp received).toList := by
+      rw [Std.TreeMap.mem_toList_iff_getElem?_eq_some, getElem?_frequencyMap,
+        if_neg hpositive]
+    exact ⟨(value, received.count value), hentry, by simp [hcount]⟩
+
+section ExactOutput
+
+open Polynomial JetHornerMachine
+open SeparateSampleFieldExecution (ExactOutput)
+
+variable [Field F] [DecidableEq F]
+
+/-- Execute the constant decoder directly on an indexed received word. -/
+def run {n : ℕ} (threshold : ℕ) (received : Fin n → F) : List (List F) :=
+  decode cmp threshold (List.ofFn received)
+
+omit [Field F] in
+private theorem count_ofFn_eq_agree_constant {n : ℕ}
+    (received : Fin n → F) (value : F) :
+    (List.ofFn received).count value = Code.agree (fun _ => value) received := by
+  rw [List.count_eq_length_filter]
+  change (List.filter (fun x => x == value) (List.ofFn received)).length =
+    (Finset.univ.filter fun i => value = received i).card
+  rw [Finset.card_filter]
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+      rw [List.ofFn_succ, List.filter_cons, Fin.sum_univ_succ]
+      by_cases h : received 0 = value
+      · simp only [h, beq_self_eq_true, ↓reduceIte, List.length_cons]
+        rw [ih]
+        omega
+      · simp only [beq_iff_eq, h, ↓reduceIte, Ne.symm h]
+        rw [ih]
+        simp
+
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
+private theorem singleton_polynomial (value : F) :
+    coefficientPolynomial [value] = C value := by
+  simp [coefficientPolynomial]
+
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
+private theorem degree_lt_one_eq_constant {polynomial : F[X]}
+    (hdegree : polynomial.degree < 1) :
+    polynomial = C (polynomial.coeff 0) := by
+  by_cases hzero : polynomial = 0
+  · simp [hzero]
+  · apply Polynomial.eq_C_of_natDegree_eq_zero
+    have : polynomial.natDegree < 1 :=
+      (Polynomial.natDegree_lt_iff_degree_lt hzero).mpr hdegree
+    omega
+
+private theorem count_eq_agree_constant {n : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (value : F) :
+    (List.ofFn received).count value =
+      Code.agree (evalOnPoints domain (C value)) received := by
+  rw [count_ofFn_eq_agree_constant]
+  congr 1
+  funext i
+  simp [evalOnPoints]
+
+/-- Literal Reed--Solomon exact-output contract for message dimension one. -/
+theorem run_exact {n : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (threshold : ℕ) (hthreshold : 1 ≤ threshold) :
+    ExactOutput domain received 1 threshold (run cmp threshold received) := by
+  refine ⟨?_, decode_nodup cmp threshold (List.ofFn received), ?_, ?_⟩
+  · rw [run,
+      List.nodup_map_iff_inj_on (decode_nodup cmp threshold (List.ofFn received))]
+    intro left hleft right hright hequal
+    obtain ⟨leftValue, rfl, _⟩ :=
+      (mem_decode_iff_exists cmp threshold (List.ofFn received) left hthreshold).mp hleft
+    obtain ⟨rightValue, rfl, _⟩ :=
+      (mem_decode_iff_exists cmp threshold (List.ofFn received) right hthreshold).mp hright
+    rw [singleton_polynomial, singleton_polynomial] at hequal
+    exact congrArg List.singleton (Polynomial.C_injective hequal)
+  · intro polynomial
+    constructor
+    · intro hpolynomial
+      obtain ⟨coefficients, hcoefficients, rfl⟩ := List.mem_map.mp hpolynomial
+      obtain ⟨value, rfl, hcount⟩ :=
+        (mem_decode_iff_exists cmp threshold (List.ofFn received) coefficients hthreshold).mp
+          hcoefficients
+      rw [singleton_polynomial]
+      exact ⟨Polynomial.degree_C_lt,
+        (count_eq_agree_constant domain received value) ▸ hcount⟩
+    · rintro ⟨hdegree, hagree⟩
+      have hconstant := degree_lt_one_eq_constant hdegree
+      let value := polynomial.coeff 0
+      have hcount : threshold ≤ (List.ofFn received).count value := by
+        rw [count_eq_agree_constant domain received value]
+        simpa [value, ← hconstant] using hagree
+      apply List.mem_map.mpr
+      exact ⟨[value], (mem_decode_iff cmp threshold _ value hthreshold).mpr hcount,
+        by simpa [singleton_polynomial, value] using hconstant.symm⟩
+  · intro coefficients
+    constructor
+    · intro hcoefficients
+      obtain ⟨value, rfl, hcount⟩ :=
+        (mem_decode_iff_exists cmp threshold (List.ofFn received) coefficients hthreshold).mp
+          hcoefficients
+      simp only [List.length_singleton, singleton_polynomial]
+      exact ⟨trivial, Polynomial.degree_C_lt,
+        (count_eq_agree_constant domain received value) ▸ hcount⟩
+    · rintro ⟨hlength, _, hagree⟩
+      obtain ⟨value, rfl⟩ := List.length_eq_one_iff.mp hlength
+      apply (mem_decode_iff cmp threshold _ value hthreshold).mpr
+      rw [count_eq_agree_constant domain received value]
+      simpa only [singleton_polynomial] using hagree
+
+end ExactOutput
 
 end ReedSolomon.ListDecoding.ConstantDecoder
