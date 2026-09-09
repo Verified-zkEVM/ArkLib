@@ -6,6 +6,7 @@ Authors: Quang Dao
 import Mathlib.Algebra.CharP.Basic
 import Mathlib.Data.List.Nodup
 import Mathlib.Data.Nat.Digits.Lemmas
+import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Explicit finite-field candidate prefixes
@@ -51,6 +52,28 @@ def digitExpansion {F : Type*} [Semiring F]
   (List.zipWith (fun digit : ℕ ↦ fun vector : F ↦ (digit : F) * vector)
     digits basis).sum
 
+private theorem list_eq_ofFn_get_cast {A : Type*}
+    (values : List A) {length : ℕ} (hlength : values.length = length) :
+    values = List.ofFn fun i : Fin length =>
+      values.get (Fin.cast hlength.symm i) := by
+  subst length
+  exact (List.ofFn_get values).symm
+
+private theorem digitExpansion_ofFn {F : Type*} [Semiring F] {length : ℕ}
+    (vectors : Fin length → F) (digits : Fin length → ℕ) :
+    digitExpansion (List.ofFn vectors) (List.ofFn digits) =
+      ∑ i, (digits i : F) * vectors i := by
+  rw [digitExpansion]
+  have hzip :
+      List.zipWith (fun digit : ℕ ↦ fun vector : F ↦ (digit : F) * vector)
+          (List.ofFn digits) (List.ofFn vectors) =
+        List.ofFn fun i => (digits i : F) * vectors i := by
+    apply List.ext_get
+    · simp
+    · intro index hleft hright
+      simp only [List.get_eq_getElem, List.getElem_zipWith, List.getElem_ofFn]
+  rw [hzip, List.sum_ofFn]
+
 /-- A supplied computable basis with unique base-`p` digit expansions.
 The property is stated only on length-`extensionDegree` digit lists whose
 entries lie below `p`, which is exactly the domain used by `radixEncode`. -/
@@ -61,6 +84,46 @@ structure RadixBasis (F : Type*) [Semiring F]
   digitExpansion_injective : Set.InjOn (digitExpansion vectors)
     {digits : List ℕ |
       digits.length = extensionDegree ∧ ∀ digit ∈ digits, digit < p}
+
+/-- Construct the radix-basis contract from an ordinary linearly independent
+family over the prime field.  This removes the need for callers with a standard
+basis to prove digit-expansion injectivity separately. -/
+def RadixBasis.ofLinearIndependent
+    {F : Type*} [Field F] {p extensionDegree : ℕ} [Fact p.Prime]
+    [CharP F p] [Algebra (ZMod p) F]
+    (vectors : Fin extensionDegree → F)
+    (hlinear : LinearIndependent (ZMod p) vectors) :
+    RadixBasis F p extensionDegree where
+  vectors := List.ofFn vectors
+  vectors_length := by simp
+  digitExpansion_injective := by
+    intro left hleft right hright hequal
+    let leftCoefficients : Fin extensionDegree → ZMod p := fun i =>
+      left.get (Fin.cast hleft.1.symm i)
+    let rightCoefficients : Fin extensionDegree → ZMod p := fun i =>
+      right.get (Fin.cast hright.1.symm i)
+    have hleftEq := list_eq_ofFn_get_cast left hleft.1
+    have hrightEq := list_eq_ofFn_get_cast right hright.1
+    have hsum : ∑ i, leftCoefficients i • vectors i =
+        ∑ i, rightCoefficients i • vectors i := by
+      rw [hleftEq, hrightEq, digitExpansion_ofFn, digitExpansion_ofFn] at hequal
+      simpa [leftCoefficients, rightCoefficients, Algebra.smul_def] using hequal
+    have hcoefficients : leftCoefficients = rightCoefficients := by
+      apply funext
+      intro i
+      have hzero : ∑ j, (leftCoefficients j - rightCoefficients j) • vectors j = 0 := by
+        simp_rw [sub_smul]
+        rw [Finset.sum_sub_distrib, hsum, sub_self]
+      exact sub_eq_zero.mp ((Fintype.linearIndependent_iff.mp hlinear _ hzero) i)
+    have hlength : left.length = right.length := hleft.1.trans hright.1.symm
+    apply List.ext_get hlength
+    intro index hindexLeft hindexRight
+    let i : Fin extensionDegree := ⟨index, hleft.1 ▸ hindexLeft⟩
+    have hcoefficient := congr_fun hcoefficients i
+    apply CharP.natCast_injOn_Iio (ZMod p) p
+    · exact hleft.2 _ (List.get_mem left ⟨index, hindexLeft⟩)
+    · exact hright.2 _ (List.get_mem right ⟨index, hindexRight⟩)
+    · simpa [leftCoefficients, rightCoefficients, i] using hcoefficient
 
 /-- Encode an index using its padded little-endian base-`p` digits and a
 supplied extension-field basis. -/
