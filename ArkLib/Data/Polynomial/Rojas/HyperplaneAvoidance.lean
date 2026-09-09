@@ -164,8 +164,9 @@ theorem collisionPolynomial_ne_zero
     exact hdistinct (funext h)
   intro hzero
   have hcoeff := congrArg (fun polynomial : K[X] ↦ polynomial.coeff (i.val + 1)) hzero
-  simp [collisionPolynomial, shiftedProjectionPolynomial,
-    coeff_projectionPolynomial] at hcoeff
+  simp only [collisionPolynomial, shiftedProjectionPolynomial, coeff_sub,
+    coeff_add, coeff_projectionPolynomial, coeff_C_succ, add_zero,
+    sub_neg_eq_add, coeff_zero] at hcoeff
   exact hi (neg_add_eq_zero.mp hcoeff)
 
 /-- Unordered pairs of distinct point indices, represented in increasing
