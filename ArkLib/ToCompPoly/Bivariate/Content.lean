@@ -83,4 +83,57 @@ theorem dvd_yContent_iff (Q : CBivariate F) (divisor : Polynomial F) :
   · intro hdivisor
     exact dvd_yContentUpTo Q divisor fun index _ => hdivisor index
 
+/-- A nonzero bivariate polynomial has nonzero `Y`-content. -/
+theorem yContent_ne_zero {Q : CBivariate F} (hQ : Q ≠ 0) : yContent Q ≠ 0 := by
+  intro hcontent
+  apply hQ
+  rw [CPolynomial.eq_zero_iff_coeff_zero]
+  intro index
+  have hdivisor := yContent_dvd_coeff Q index
+  rw [hcontent, CPolynomial.toPoly_zero, zero_dvd_iff] at hdivisor
+  exact (CPolynomial.toPoly_eq_zero_iff (Q.val.coeff index)).mp hdivisor
+
+/-- Divide every `Y`-coefficient by the computed content. -/
+def primitivePartY (Q : CBivariate F) : CPolynomial (CPolynomial F) :=
+  CPolynomial.ofArray (Q.val.map fun coefficient => coefficient / yContent Q)
+
+theorem coeff_primitivePartY_of_lt (Q : CBivariate F) {index : ℕ}
+    (hindex : index < Q.val.size) :
+    CPolynomial.coeff (primitivePartY Q) index = Q.val.coeff index / yContent Q := by
+  rw [primitivePartY, CPolynomial.coeff_ofArray]
+  rw [CPolynomial.Raw.coeff, Array.getD_eq_getD_getElem?, Array.getElem?_map,
+    Array.getElem?_eq_getElem hindex, Option.map_some, Option.getD_some]
+  rw [Array.getD_eq_getD_getElem?, Array.getElem?_eq_getElem hindex,
+    Option.getD_some]
+
+/-- Removing the computed content is exact: multiplying the coefficientwise
+quotient by that content reconstructs the original bivariate polynomial. -/
+theorem C_yContent_mul_primitivePartY {Q : CBivariate F} (hQ : Q ≠ 0) :
+    (CPolynomial.C (yContent Q) : CPolynomial (CPolynomial F)) *
+      (primitivePartY Q : CPolynomial (CPolynomial F)) = Q := by
+  rw [CPolynomial.eq_iff_coeff]
+  intro index
+  rw [CPolynomial.coeff_C_mul]
+  by_cases hindex : index < Q.val.size
+  · rw [coeff_primitivePartY_of_lt Q hindex]
+    rw [← sub_eq_zero, ← CPolynomial.toPoly_eq_zero_iff,
+      CPolynomial.toPoly_sub, CPolynomial.toPoly_mul]
+    have hquotient :
+        ((Q.val.coeff index / yContent Q : CPolynomial F)).toPoly =
+          (Q.val.coeff index).toPoly / (yContent Q).toPoly :=
+      CPolynomial.div_toPoly_eq_div _ _
+    rw [hquotient]
+    have hcontent : (yContent Q).toPoly ≠ 0 :=
+      (CPolynomial.toPoly_eq_zero_iff (yContent Q)).not.mpr (yContent_ne_zero hQ)
+    exact sub_eq_zero.mpr
+      (EuclideanDomain.mul_div_cancel' hcontent (yContent_dvd_coeff Q index))
+  · have hle : Q.val.size ≤ index := Nat.le_of_not_gt hindex
+    have hprimitive : CPolynomial.coeff (primitivePartY Q) index = 0 := by
+      rw [primitivePartY, CPolynomial.coeff_ofArray,
+        Array.getD_eq_getD_getElem?, Array.getElem?_map,
+        Array.getElem?_eq_none hle, Option.map_none, Option.getD_none]
+    have hcoefficient : CPolynomial.coeff Q index = 0 :=
+      CPolynomial.coeff_eq_zero_of_size_le Q hle
+    rw [hprimitive, hcoefficient, mul_zero]
+
 end CompPoly.CBivariate
