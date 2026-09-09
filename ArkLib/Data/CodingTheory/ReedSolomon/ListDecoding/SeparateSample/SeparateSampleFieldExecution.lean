@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleRestricted
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 /-!
 # Exact separate-sample executions with field-size primitive bounds
 
@@ -55,15 +56,10 @@ structure AttemptPremisesWithBudget (input : Input F a) (interp : Output F) (m J
     (sourceOutputWithBudget (d := input.order) input.degree m J input.agreement interp) <
       input.residualLength
 
-/-- Exact fixed-width coefficient vectors and their polynomial interpretations, with no duplicates
-in either representation. Membership means degree below k and at least A indexed agreements. -/
-def ExactOutput (domain : Fin n ↪ F) (received : Fin n → F) (k A : ℕ)
+/-- Compatibility alias for callers that imported the old implementation-owned contract. -/
+abbrev ExactOutput (domain : Fin n ↪ F) (received : Fin n → F) (k A : ℕ)
     (out : List (List F)) : Prop :=
-  (out.map coefficientPolynomial).Nodup ∧ out.Nodup ∧
-    (∀ f : F[X], f ∈ out.map coefficientPolynomial ↔
-      f.degree < k ∧ A ≤ Code.agree (evalOnPoints domain f) received) ∧
-    (∀ cs : List F, cs ∈ out ↔ cs.length = k ∧ (coefficientPolynomial cs).degree < k ∧
-      A ≤ Code.agree (evalOnPoints domain (coefficientPolynomial cs)) received)
+  ReedSolomon.ListDecoding.ExactOutput domain received k A out
 
 /-- One completed initial-fuel execution, its exact charged trace and output specification.
 The same steps and cost satisfy the original fuel/work bounds and the displayed sum bound B.
