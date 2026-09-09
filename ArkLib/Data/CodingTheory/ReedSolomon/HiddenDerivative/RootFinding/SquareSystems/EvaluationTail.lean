@@ -31,8 +31,8 @@ def tailIndex {K k : ℕ} (hk : k ≤ K) (j : Fin (K - k)) : Fin K :=
 def evaluationTailMap (K k : ℕ) (hk : k ≤ K) (center : F) (points : Fin k ↪ F) :
     (Fin K → F) →ₗ[F] ((Fin k → F) × (Fin (K - k) → F)) where
   toFun c :=
-    (λi ↦ ∑ j : Fin K, c j * (points i - center) ^ (j : ℕ),
-      λ j ↦ c (tailIndex hk j))
+    (fun i ↦ ∑ j : Fin K, c j * (points i - center) ^ (j : ℕ),
+      fun j ↦ c (tailIndex hk j))
   map_add' c c' := by
     ext i <;> simp [Finset.sum_add_distrib, add_mul]
   map_smul' a c := by

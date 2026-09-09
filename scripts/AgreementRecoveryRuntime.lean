@@ -65,6 +65,14 @@ def run : IO Unit := do
   check "reference agreement list" <|
     actual.all (fun cs => reference.contains cs) && reference.all (fun cs => actual.contains cs)
   check "zero-width reference" <| PositionSubsetDecoder.run domain affine 0 0 == [[]]
+  check "threshold exceeds word length" <|
+    PositionSubsetDecoder.run domain affine 2 4 == []
+  check "constant decoding uses received-value frequencies" <|
+    PositionSubsetDecoder.run domain (![2, 2, 3] : Fin 3 → ZMod 5) 1 2 == [[2]]
+  check "leading zero padding" <|
+    AgreementRecovery.decode identity domain (fun _ => 2) 2 3 [pair x 0 2] == [[0, 2]]
+  check "zero polynomial padding" <|
+    AgreementRecovery.decode identity domain (fun _ => 0) 2 3 [pair x 0 0] == [[0, 0]]
   IO.println "Agreement recovery runtime checks passed."
 
 end AgreementRecoveryRuntime

@@ -67,6 +67,48 @@ theorem inverseMod?_mul_modByMonic {a modulus inverse : CPolynomial F}
       ring
     _ = modulus.toPoly * -(normXgcd a modulus).2.2.toPoly := by ring
 
+/-- The executable inverse guard succeeds exactly when the input is coprime to the modulus.
+This discharges availability after a constructor has removed the denominator's common factors.
+-/
+theorem inverseMod_exists_iff_coprime (a h : CPolynomial F) :
+    (∃ b, inverseMod? a h = some b) ↔ IsCoprime a.toPoly h.toPoly := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
+  have heq : (normXgcd a h).1 = 1 ↔ IsCoprime a.toPoly h.toPoly := by
+    rw [← toPoly_injective.eq_iff, normXgcd_fst_toPoly, toPoly_one, normalize_eq_one]
+    constructor
+    · intro hg
+      rw [isUnit_iff_dvd_one] at hg
+      obtain ⟨b, hb⟩ := hg
+      refine ⟨EuclideanDomain.gcdA a.toPoly h.toPoly * b,
+        EuclideanDomain.gcdB a.toPoly h.toPoly * b, ?_⟩
+      rw [hb, EuclideanDomain.gcd_eq_gcd_ab]
+      ring
+    · intro hc
+      rw [isUnit_iff_dvd_one]
+      obtain ⟨u, v, huv⟩ := hc
+      rw [← huv]
+      exact dvd_add (dvd_mul_of_dvd_right (EuclideanDomain.gcd_dvd_left _ _) _)
+        (dvd_mul_of_dvd_right (EuclideanDomain.gcd_dvd_right _ _) _)
+  constructor
+  · rintro ⟨b, hb⟩
+    exact heq.mp ((inverseMod?_eq_some_iff a h b).mp hb).1
+  · intro hc
+    exact ⟨_, (inverseMod?_eq_some_iff a h _).mpr ⟨heq.mpr hc, rfl⟩⟩
+
+/-- Specializing a returned inverse at any geometric root of the modulus gives the scalar
+inverse equation. This remains valid when that root is absent from the coefficient field. -/
+theorem eval₂_mul_inverseMod_eq_one {L : Type*} [Field L] (ι : F →+* L) (θ : L)
+    {a modulus inverse : CPolynomial F}
+    (hroot : modulus.toPoly.eval₂ ι θ = 0)
+    (hinverse : inverseMod? a modulus = some inverse) :
+    a.toPoly.eval₂ ι θ * inverse.toPoly.eval₂ ι θ = 1 := by
+  obtain ⟨hgcd, hinverse⟩ := (inverseMod?_eq_some_iff a modulus inverse).mp hinverse
+  have hb := normXgcd_bezout a modulus 0
+  simp only [Bezout] at hb
+  have heval := congrArg (fun p : CPolynomial F => p.toPoly.eval₂ ι θ) hb
+  rw [hgcd, ← hinverse] at heval
+  simpa [toPoly_one, toPoly_add, toPoly_mul, hroot, mul_comm] using heval.symm
+
 end CompPoly.CPolynomial
 
 namespace ArkLib.PolynomialQuotient
@@ -126,5 +168,20 @@ theorem quotientHom_mul_inverseMod?_eq_one {a modulus inverse : CPolynomial F}
         (inverseMod?_mul_modByMonic hmodulus hinverse)
     _ = quotientHom modulus 1 := quotientHom_reduce hmodulus _
     _ = 1 := map_one _
+
+/-- Reduction gives a coefficient polynomial of degree strictly below the modulus, including
+the unit modulus where the reduced polynomial is zero. -/
+theorem degree_reduce_lt {modulus : CPolynomial F} (hmodulus : modulus.monic)
+    (p : CPolynomial F) : (reduce modulus p).toPoly.degree < modulus.toPoly.degree := by
+  rw [reduce, modByMonic_toPoly_eq_modByMonic _ _ hmodulus]
+  exact Polynomial.degree_modByMonic_lt _ ((monic_toPoly_iff _).mp hmodulus)
+
+/-- Repeated reduction does not alter already canonical coefficient data. -/
+@[simp] theorem reduce_idempotent {modulus : CPolynomial F} (hmodulus : modulus.monic)
+    (p : CPolynomial F) : reduce modulus (reduce modulus p) = reduce modulus p := by
+  apply toPoly_injective
+  rw [reduce, modByMonic_toPoly_eq_modByMonic _ _ hmodulus]
+  exact (Polynomial.modByMonic_eq_self_iff ((monic_toPoly_iff _).mp hmodulus)).mpr
+    (degree_reduce_lt hmodulus p)
 
 end ArkLib.PolynomialQuotient

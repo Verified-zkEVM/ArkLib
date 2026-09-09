@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Polynomial.JetHornerMachine
+import ArkLib.Data.Polynomial.CoefficientList
 /-!
 # Closed initial-jet preparation
 
@@ -224,40 +224,16 @@ theorem rejection_runFuel (D : ℕ) (bs : List F) (h : D + 1 < bs.length) :
 theorem prepared_length (D : ℕ) (bs : List F) (h : bs.length ≤ D + 1) :
     (prepared D bs).length = D + 1 := by simp [prepared]; omega
 
-/-- Ascending coefficient interpretation, independent of any target padding width. -/
-noncomputable def ascendingPolynomial (bs : List F) : F[X] :=
-  Polynomial.JetHornerMachine.coefficientPolynomial bs.reverse
-
-private theorem ascendingPolynomial_cons (b : F) (bs : List F) :
-    ascendingPolynomial (b :: bs) = ascendingPolynomial bs * Polynomial.X + Polynomial.C b := by
-  simp [ascendingPolynomial, Polynomial.JetHornerMachine.coefficientPolynomial,
-    List.reverse_cons, List.foldl_append]
-
-/-- The ascending list specifies every coefficient, with zero outside its physical length. -/
-theorem ascendingPolynomial_coeff (bs : List F) (j : ℕ) :
-    (ascendingPolynomial bs).coeff j = bs.getD j 0 := by
-  induction bs generalizing j with
-  | nil => simp [ascendingPolynomial, Polynomial.JetHornerMachine.coefficientPolynomial]
-  | cons b bs ih =>
-      cases j <;> simp [ascendingPolynomial_cons, Polynomial.coeff_mul_X, ih]
-
-private theorem leading_zeros (n : ℕ) (cs : List F) :
-    Polynomial.JetHornerMachine.coefficientPolynomial (List.replicate n 0 ++ cs) =
-      Polynomial.JetHornerMachine.coefficientPolynomial cs := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-      simpa [Polynomial.JetHornerMachine.coefficientPolynomial, List.replicate_succ] using ih
-
 /-- Padding adds only higher zero coefficients and preserves the exact initial-jet polynomial. -/
 theorem prepared_polynomial (D : ℕ) (bs : List F) :
-    Polynomial.JetHornerMachine.coefficientPolynomial (prepared D bs) = ascendingPolynomial bs :=
-  leading_zeros (D + 1 - bs.length) bs.reverse
+    Polynomial.JetHornerMachine.coefficientPolynomial (prepared D bs) =
+      Polynomial.CoefficientList.ascendingPolynomial bs :=
+  Polynomial.CoefficientList.padReverse_polynomial (D + 1) bs
 
 /-- Every coefficient of the actual prepared output equals the supplied ascending jet entry. -/
 theorem prepared_coeff (D : ℕ) (bs : List F) (j : ℕ) :
     (Polynomial.JetHornerMachine.coefficientPolynomial (prepared D bs)).coeff j = bs.getD j 0 := by
-  rw [prepared_polynomial, ascendingPolynomial_coeff]
+  rw [prepared_polynomial, Polynomial.CoefficientList.ascendingPolynomial_coeff]
 
 /-- All coefficients above the supplied jet are zero, including padding positions. -/
 theorem prepared_coeff_eq_zero (D : ℕ) (bs : List F) (j : ℕ) (h : bs.length ≤ j) :
@@ -269,7 +245,8 @@ theorem prepared_coeff_eq_zero (D : ℕ) (bs : List F) (j : ℕ) (h : bs.length 
 theorem preparation_correct (D : ℕ) (bs : List F) (h : bs.length ≤ D + 1) :
     ∃ cs, runFuel (D + 5) (.start D bs) = (.done (some cs), successCost D bs.length) ∧
       cs.length = D + 1 ∧
-      Polynomial.JetHornerMachine.coefficientPolynomial cs = ascendingPolynomial bs ∧
+      Polynomial.JetHornerMachine.coefficientPolynomial cs =
+        Polynomial.CoefficientList.ascendingPolynomial bs ∧
       ∀ j, (Polynomial.JetHornerMachine.coefficientPolynomial cs).coeff j = bs.getD j 0 :=
   ⟨prepared D bs, preparation_runFuel D bs h, prepared_length D bs h,
     prepared_polynomial D bs, prepared_coeff D bs⟩

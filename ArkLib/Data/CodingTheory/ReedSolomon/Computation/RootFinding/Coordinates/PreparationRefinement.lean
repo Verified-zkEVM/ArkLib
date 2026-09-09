@@ -94,7 +94,7 @@ theorem decoded_run_lowering (a : F) (fuel : ℕ) (s : Configuration F) :
 theorem preparation_correct (a : F) (D : ℕ) (bs : List (Pair F)) (h : bs.length ≤ D + 1) :
     ∃ k c out, runFuel k (.start D bs) = (.done (some out), c) ∧ out.length = D + 1 ∧
       Polynomial.JetHornerMachine.coefficientPolynomial (out.map (ArithmeticMachine.decode a)) =
-        JetPreparationMachine.ascendingPolynomial (bs.map (ArithmeticMachine.decode a)) ∧
+        Polynomial.CoefficientList.ascendingPolynomial (bs.map (ArithmeticMachine.decode a)) ∧
       k + c.total ≤ 32 * (D + 5) := by
   obtain ⟨out, hs, hlen, hpoly, _⟩ := JetPreparationMachine.preparation_correct D
     (bs.map (ArithmeticMachine.decode a)) (by simpa using h)

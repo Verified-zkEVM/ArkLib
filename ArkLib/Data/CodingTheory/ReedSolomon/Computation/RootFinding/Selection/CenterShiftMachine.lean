@@ -285,8 +285,8 @@ private theorem represented_degree_le (input : Input F)
     (JetHornerMachine.coefficientPolynomial input.coefficients).natDegree ≤ input.degree := by
   apply natDegree_le_iff_coeff_eq_zero.mpr
   intro j hj
-  have hc := JetPreparationMachine.ascendingPolynomial_coeff input.coefficients.reverse j
-  simp only [JetPreparationMachine.ascendingPolynomial, List.reverse_reverse] at hc
+  have hc := Polynomial.CoefficientList.ascendingPolynomial_coeff input.coefficients.reverse j
+  simp only [Polynomial.CoefficientList.ascendingPolynomial, List.reverse_reverse] at hc
   rw [hc]
   have hlen : input.coefficients.reverse.length ≤ j := by simp [hwidth]; omega
   simp only [List.getD, List.getElem?_eq_none hlen, Option.getD_none]

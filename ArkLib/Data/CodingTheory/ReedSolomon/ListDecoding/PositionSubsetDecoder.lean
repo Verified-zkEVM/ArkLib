@@ -72,7 +72,7 @@ private theorem exists_mem_run_polynomial (domain : Fin n ↪ F) (received : Fin
   have hinterpolation : Lagrange.interpolate sample domain received = P :=
     interpolate_eq_of_agrees_on domain received k sample hcard P hdegree hsample
   have hcandidate : coefficientPolynomial (sampleCandidate domain received k sample) = P :=
-    (sampleCandidate_polynomial domain received k sample hcard).trans hinterpolation
+    (sampleCandidate_polynomial domain received k sample).trans hinterpolation
   have hcandidateAgreement :
       A ≤ Code.agree
         (evalOnPoints domain

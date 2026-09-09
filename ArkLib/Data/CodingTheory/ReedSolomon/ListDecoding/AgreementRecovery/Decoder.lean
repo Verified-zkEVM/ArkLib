@@ -155,7 +155,7 @@ theorem exists_mem_decode_of_coverage (base : F →+* E) (ι : E →+* L)
       exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hgood i (List.mem_toFinset.mp hi)⟩)
   have hpoly : coefficientPolynomial
       (sampleCandidate domain received k block.positions.toFinset) = p :=
-    (sampleCandidate_polynomial domain received k block.positions.toFinset hcard).trans hinterp
+    (sampleCandidate_polynomial domain received k block.positions.toFinset).trans hinterp
   have hchecked := checkedCandidate_of_agreement domain received k A block.positions.toFinset
     hcard (by simpa [hpoly] using hagreement)
   refine ⟨sampleCandidate domain received k block.positions.toFinset, ?_, hpoly⟩

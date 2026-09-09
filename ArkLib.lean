@@ -541,6 +541,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.Rest
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.SeparateSampleSelection
 import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.EvaluationTail
+import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FirstOrderStageSum
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FrobeniusCuts
@@ -1096,6 +1098,7 @@ import ArkLib.Data.Polynomial.AffinePowerTruncationMachineCanary
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.BivariateFactorDegrees
 import ArkLib.Data.Polynomial.ClassicalWronskian
+import ArkLib.Data.Polynomial.CoefficientList
 import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 import ArkLib.Data.Polynomial.CoefficientUpdateMachineCanary
 import ArkLib.Data.Polynomial.DegreeTruncationMachine
@@ -1137,6 +1140,7 @@ import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.ResultantDegree
 import ArkLib.Data.Polynomial.SampledCoefficients
 import ArkLib.Data.Polynomial.SplitFold
+import ArkLib.Data.Polynomial.SquarefreeSupport
 import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
