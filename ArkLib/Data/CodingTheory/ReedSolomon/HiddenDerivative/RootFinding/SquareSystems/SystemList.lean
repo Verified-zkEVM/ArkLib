@@ -7,6 +7,7 @@ Authors: Quang Dao
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
 import Mathlib.Data.List.Sublists
+import Mathlib.Data.Nat.Choose.Bounds
 
 /-!
 # Executable lists of square systems
@@ -113,6 +114,29 @@ def squareSystemsListFromEquation {F : Type*} [Field F] [BEq F] [LawfulBEq F]
     (computableFullPool center
       (fun l : Fin K => table[l.val]'(by simp [table]))
       (computableInitialJetSeparant center Q) τ k n hk domain received)
+
+/-- The concrete producer makes exactly one solver call per `r`-subset of its `n + (K-k)` pool
+labels. This count is before any coincident polynomial systems are deduplicated. -/
+theorem length_squareSystemsListFromEquation {F : Type*} [Field F] [BEq F]
+    [LawfulBEq F] [DecidableEq F] {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K τ k n : ℕ) (hk : k ≤ K)
+    (domain : Fin n ↪ F) (received : Fin n → F) :
+    (squareSystemsListFromEquation center Q K τ k n hk domain received).length =
+      (n + (K - k)).choose r := by
+  rw [squareSystemsListFromEquation, length_enumerateSquareSystemsList]
+  simp only [Fintype.card_sum, Fintype.card_fin]
+
+/-- When `K ≤ n`, the actual list producer satisfies the paper's `(2n)^r` solver-call bound. -/
+theorem length_squareSystemsListFromEquation_le {F : Type*} [Field F] [BEq F]
+    [LawfulBEq F] [DecidableEq F] {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K τ k n : ℕ) (hk : k ≤ K)
+    (hKn : K ≤ n) (domain : Fin n ↪ F) (received : Fin n → F) :
+    (squareSystemsListFromEquation center Q K τ k n hk domain received).length ≤
+      (2 * n) ^ r := by
+  rw [length_squareSystemsListFromEquation]
+  apply (Nat.choose_le_pow _ _).trans
+  apply Nat.pow_le_pow_left
+  omega
 
 /-- The concrete list and finite-family view contain exactly the same square systems. Thus the
 existing square-capture proof transfers directly to the list consumed by `flatMap` over solver
