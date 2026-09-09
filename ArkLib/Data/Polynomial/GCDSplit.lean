@@ -19,7 +19,7 @@ proofs can use Mathlib's polynomial API directly.
 
 namespace CompPoly.CPolynomial
 
-variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
+variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
 /-- The monic common factor selected when splitting `h` by an equation `e`. -/
 def gcdFactor (h e : CPolynomial F) : CPolynomial F :=
@@ -33,21 +33,20 @@ def gcdComplement (h e : CPolynomial F) : CPolynomial F :=
 def gcdSplit (h e : CPolynomial F) : CPolynomial F × CPolynomial F :=
   (gcdFactor h e, gcdComplement h e)
 
-omit [DecidableEq F] in
 @[simp] theorem gcdSplit_fst (h e : CPolynomial F) :
     (gcdSplit h e).1 = gcdFactor h e := rfl
 
-omit [DecidableEq F] in
 @[simp] theorem gcdSplit_snd (h e : CPolynomial F) :
     (gcdSplit h e).2 = gcdComplement h e := rfl
 
-theorem gcdFactor_toPoly (h e : CPolynomial F) :
+theorem gcdFactor_toPoly [DecidableEq F] (h e : CPolynomial F) :
     (gcdFactor h e).toPoly =
       normalize (EuclideanDomain.gcd h.toPoly e.toPoly) := by
   exact gcdMonic_toPoly_eq_normalize_gcd h e
 
 theorem gcdFactor_monic {h e : CPolynomial F} (hh : h ≠ 0) :
     (gcdFactor h e).monic := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [monic_toPoly_iff, gcdFactor_toPoly]
   apply Polynomial.monic_normalize
   intro hgcd
@@ -56,12 +55,14 @@ theorem gcdFactor_monic {h e : CPolynomial F} (hh : h ≠ 0) :
 
 theorem gcdFactor_dvd_left (h e : CPolynomial F) :
     (gcdFactor h e).toPoly ∣ h.toPoly := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [gcdFactor_toPoly]
   exact (normalize_associated (EuclideanDomain.gcd h.toPoly e.toPoly)).dvd.trans
     (EuclideanDomain.gcd_dvd_left h.toPoly e.toPoly)
 
 theorem gcdFactor_dvd_right (h e : CPolynomial F) :
     (gcdFactor h e).toPoly ∣ e.toPoly := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [gcdFactor_toPoly]
   exact (normalize_associated (EuclideanDomain.gcd h.toPoly e.toPoly)).dvd.trans
     (EuclideanDomain.gcd_dvd_right h.toPoly e.toPoly)
@@ -71,6 +72,7 @@ theorem eval₂_gcdFactor_eq_zero_iff_left_right
     {K : Type*} [Field K] (phi : F →+* K) (x : K) (h e : CPolynomial F) :
     (gcdFactor h e).toPoly.eval₂ phi x = 0 ↔
       h.toPoly.eval₂ phi x = 0 ∧ e.toPoly.eval₂ phi x = 0 := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
   rw [gcdFactor_toPoly]
   let g := EuclideanDomain.gcd h.toPoly e.toPoly
   have hnormalize : (normalize g).eval₂ phi x = 0 ↔ g.eval₂ phi x = 0 := by
@@ -125,6 +127,18 @@ theorem gcdComplement_squarefree {h e : CPolynomial F} (hh : h ≠ 0)
     (gcdFactor_mul_gcdComplement (h := h) (e := e) hh)
   rw [toPoly_mul] at hfac
   simpa [mul_comm] using hfac.symm
+
+/-- A monic parent splits into two monic children. -/
+theorem gcdComplement_monic {h e : CPolynomial F} (hhmonic : h.monic) :
+    (gcdComplement h e).monic := by
+  have hhpolyMonic : h.toPoly.Monic := (monic_toPoly_iff h).mp hhmonic
+  have hh : h ≠ 0 := (toPoly_eq_zero_iff h).not.mp hhpolyMonic.ne_zero
+  rw [monic_toPoly_iff]
+  apply ((monic_toPoly_iff (gcdFactor h e)).mp (gcdFactor_monic hh)).of_mul_monic_left
+  have hfac := congrArg (CPolynomial.toPoly (R := F))
+    (gcdFactor_mul_gcdComplement (h := h) (e := e) hh)
+  rw [toPoly_mul] at hfac
+  exact hfac.symm ▸ hhpolyMonic
 
 theorem gcdFactor_isRelPrime_gcdComplement {h e : CPolynomial F} (hh : h ≠ 0)
     (hhfree : Squarefree h.toPoly) :
