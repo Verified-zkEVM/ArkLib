@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
-import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ArkLib.Data.Probability.Instances
 
 /-!
 # Proximity Generators fundamental definitions
@@ -46,6 +47,8 @@ The correspondence to [BCGM25]'s numbered statements is in
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
     *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Theorem 4.6.
 -/
+
+@[expose] public section
 
 section
 

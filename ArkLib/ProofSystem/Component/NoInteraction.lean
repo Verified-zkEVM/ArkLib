@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # A classification of all (oracle) reductions with no interaction between the prover and verifier
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   prover and verifier. In this setting, there are many specializations, and we can use these to
   derive simpler conditions for completeness & soundness.
 -/
+
+@[expose] public section
 
 open OracleComp OracleInterface ProtocolSpec Function NNReal ENNReal
 

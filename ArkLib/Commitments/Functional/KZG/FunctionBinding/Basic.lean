@@ -3,10 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
 
 /-!
 # Function Binding for the KZG Polynomial Commitment Scheme
@@ -26,6 +27,8 @@ binding and interpolation branches used in the paper proof.
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 

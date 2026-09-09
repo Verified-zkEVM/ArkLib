@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.FractionFieldExpand
-import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import ArkLib.Data.Polynomial.FractionFieldExpand
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
 # Content-aware fraction-field factorization
@@ -20,6 +21,8 @@ ring. This algebraic factorization does not bound specialization exceptions.
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
   *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Section 3.2.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

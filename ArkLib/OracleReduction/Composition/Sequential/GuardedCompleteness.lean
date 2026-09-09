@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Richard Goodman, ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
-import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 
 /-!
 # Completeness of sequential composition with rejecting deterministic verifiers
@@ -14,6 +15,8 @@ A guarded verifier checks its transcript and either returns a deterministic verd
 These verifiers leave the shared oracle state unchanged. Composition requires the second
 reduction to be complete from every shared state and the prover execution to factor at the seam.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal ENNReal

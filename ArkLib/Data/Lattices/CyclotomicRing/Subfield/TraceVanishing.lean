@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
 
 /-!
 # Trace of a Monomial: the Off-Diagonal Vanishing (Hachi §3, Claims 2 & 3)
@@ -24,6 +26,8 @@ The algebraic core of Claim 2 is the geometric-sum vanishing `Σ_{j<d/2k}(X^{4ki
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 

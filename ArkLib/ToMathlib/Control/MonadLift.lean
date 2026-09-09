@@ -3,6 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
 /-!
 # Pushing a projection through a monad lift
@@ -18,6 +19,8 @@ Note on normal forms: core's simp set already rewrites this lemma's right-hand s
 left-hand side (via `liftM_map` and `bind_map_left`, both `@[simp]`), so this is deliberately not
 tagged `@[simp]` — use it explicitly, typically right-to-left to expose a lemma about `h <$> x`.
 -/
+
+@[expose] public section
 
 universe u v w
 

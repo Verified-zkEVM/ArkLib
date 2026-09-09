@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
   # Escape-aware CWSS packages and the package lattice
@@ -49,6 +51,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 
 open OracleComp OracleSpec ProtocolSpec
@@ -339,7 +343,7 @@ open Lean Elab Term Meta
 
 /-- The dispatch table of the universal append `▷` over the **canonical** package kinds: the two
 factors' kinds determine the append that composes them at their join. -/
-private def canonAppendFn : Name → Name → Option Name
+private meta def canonAppendFn : Name → Name → Option Name
   | ``CWSSPackage,        ``CWSSPackage        => some ``CWSSPackage.append
   | ``CWSSPackage,        ``EscapeCWSSPackage  => some ``CWSSPackage.appendEscape
   | ``CWSSPackage,        ``GCWSSPackage       => some ``CWSSPackage.appendGuarded
@@ -359,7 +363,7 @@ private def canonAppendFn : Name → Name → Option Name
   | _,                    _                    => none
 
 /-- The package kind — the head constant of the type — of an elaborated `▷` factor. -/
-private def packageKindOf (e : Expr) : TermElabM Name := do
+private meta def packageKindOf (e : Expr) : TermElabM Name := do
   let t ← whnf (← instantiateMVars (← inferType e))
   match t.getAppFn.constName? with
   | some n => return n
@@ -367,7 +371,7 @@ private def packageKindOf (e : Expr) : TermElabM Name := do
     throwError "▷: cannot determine the package kind of{indentExpr e}\nof type{indentExpr t}"
 
 /-- Apply a named append to two elaborated factors. -/
-private def applyAppend (fn : Name) (lE rE : Expr) : TermElabM Expr := do
+private meta def applyAppend (fn : Name) (lE rE : Expr) : TermElabM Expr := do
   let f ← mkConstWithFreshMVarLevels fn
   elabAppArgs f #[] #[.expr lE, .expr rE] (expectedType? := none)
     (explicit := false) (ellipsis := false)

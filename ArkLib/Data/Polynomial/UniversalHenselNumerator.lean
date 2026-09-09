@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jieyi Long, Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Eval.Coeff
-import Mathlib.Algebra.Polynomial.Coeff
+public import Mathlib.Algebra.Polynomial.Eval.Coeff
+public import Mathlib.Algebra.Polynomial.Coeff
 
 /-!
 # Universal implicit-function numerators
@@ -28,6 +29,8 @@ formalization (Apache-2.0):
 
 The recurrence is defined directly here, without importing the donor's Hensel engine.
 -/
+
+@[expose] public section
 
 namespace Polynomial.UniversalHenselNumerator
 

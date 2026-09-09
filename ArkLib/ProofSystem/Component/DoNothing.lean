@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # The Trivial (Oracle) Reduction: Do Nothing!
@@ -16,6 +17,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   NOTE: we have already defined these as trivial (oracle) reductions
 -/
+
+@[expose] public section
 
 namespace DoNothing
 

@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
 
 /-!
 # Hachi Sumcheck Loop
@@ -80,3 +82,5 @@ does not have for any protocol.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

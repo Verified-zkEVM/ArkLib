@@ -3,11 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Quang Dao, Natasha Klaus, Pietro Monticone, Devon Tuma, Ilia Vlasov
 -/
+module
 
-import Mathlib.LinearAlgebra.Lagrange
-import ArkLib.Data.Polynomial.SplitFold
-import CompPoly.Univariate.Lagrange
-import CompPoly.Univariate.ToPoly.Impl
+public import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Data.Polynomial.SplitFold
+public import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # FRI Round Consistency
@@ -16,6 +17,8 @@ Defines the round consistency check for FRI and proves its completeness. The che
 the Lagrange interpolant through evaluation points at scaled roots of unity equals the polynomial
 fold at the challenge point.
 -/
+
+@[expose] public section
 
 open Polynomial
 

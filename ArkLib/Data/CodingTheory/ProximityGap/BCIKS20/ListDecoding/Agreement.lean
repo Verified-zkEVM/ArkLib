@@ -4,16 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
-import ArkLib.Data.Polynomial.RationalFunctions
-import ArkLib.Data.Polynomial.Trivariate
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
+public import ArkLib.Data.Polynomial.RationalFunctions
+public import ArkLib.Data.Polynomial.Trivariate
 
 /-!
 # ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Agreement
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

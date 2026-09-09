@@ -3,20 +3,21 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.FieldTheory.RatFunc.Defs
-import Mathlib.RingTheory.Ideal.Quotient.Defs
-import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.Polynomial.GaussLemma
-import Mathlib.RingTheory.PowerSeries.Substitution
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Prelims
+public import Mathlib.FieldTheory.RatFunc.Defs
+public import Mathlib.RingTheory.Ideal.Quotient.Defs
+public import Mathlib.RingTheory.Ideal.Span
+public import Mathlib.RingTheory.Polynomial.GaussLemma
+public import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.Polynomial.RationalFunctions.Weight
-import ArkLib.Data.Polynomial.RationalFunctions.Lifts
+public import Mathlib.RingTheory.PrincipalIdealDomain
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Polynomial.RationalFunctions.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 /-!
 # The Derivative Value `ζ`, its Cleared Form `ξ`, and their Weights
 
@@ -32,6 +33,8 @@ form `ξ = W^{d-2}ζ ∈ 𝒪 H`, and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` o
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal

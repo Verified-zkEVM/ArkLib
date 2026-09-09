@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import CompPoly.Univariate.EuclideanAlgorithm
-import Mathlib.RingTheory.EuclideanDomain
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Rq
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import Mathlib.RingTheory.EuclideanDomain
 
 /-!
 # `Rq.inv` — Computable Inversion in the Cyclotomic Ring
@@ -45,6 +47,8 @@ returns whatever the Bézout cofactor happens to be, and callers are expected to
 * [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements in Partially Splitting
     Cyclotomic Rings and Applications to Lattice-Based Zero-Knowledge Proofs*][LS18]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial
 

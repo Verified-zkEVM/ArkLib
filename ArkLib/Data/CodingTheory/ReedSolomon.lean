@@ -4,16 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov,
 Mirco Richter, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.Matrix.Vandermonde
-import ArkLib.Data.MvPolynomial.LinearMvExtension
-import ArkLib.Data.Polynomial.Interface
-import ArkLib.ToMathlib.Polynomial.DegreeLT
-import CompPoly.Data.Polynomial.MonomialBasis
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.RingTheory.Henselian
-import Mathlib.Data.NNReal.Defs
-import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
+public import ArkLib.Data.Matrix.Vandermonde
+public import ArkLib.Data.MvPolynomial.LinearMvExtension
+public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.ToMathlib.Polynomial.DegreeLT
+public import CompPoly.Data.Polynomial.MonomialBasis
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.Data.NNReal.Defs
+public import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
 
 /-!
 # Reed-Solomon Codes
@@ -27,6 +28,8 @@ import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
     with Super-Fast Verification*][ACFY24]
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 
@@ -669,7 +672,7 @@ variable {F : Type*} [Field F]
 
 /-- The linear map that maps a codeword `f : ι → F` to a degree < |ι| polynomial p,
 such that `p(x) = f(x)` for all `x ∈ ι`. -/
-private noncomputable def interpolate : (ι → F) →ₗ[F] F[X] :=
+noncomputable def interpolate : (ι → F) →ₗ[F] F[X] :=
   Lagrange.interpolate univ domain
 
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial. -/

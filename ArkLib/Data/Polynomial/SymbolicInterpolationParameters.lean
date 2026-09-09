@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Real.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Data.Real.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # Real budgets for symbolic interpolation
@@ -22,6 +23,8 @@ or construct an interpolant.
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
     *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Section 3.1.
 -/
+
+@[expose] public section
 
 namespace Polynomial.SymbolicInterpolation
 

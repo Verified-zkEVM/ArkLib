@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Richard Goodman, ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 
 /-!
 # Completeness of two one-message reductions
@@ -17,6 +18,8 @@ The opening message supplies the execution seam condition.
 
 * [Richard Goodman, one-message composition](https://github.com/Verified-zkEVM/ArkLib/pull/636).
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

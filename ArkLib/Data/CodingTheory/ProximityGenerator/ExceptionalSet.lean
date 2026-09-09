@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 
 /-!
 # Exceptional sets for mutual correlated agreement
@@ -19,6 +20,8 @@ Reed–Solomon exceptional-set bound itself.
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
     *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Theorem 4.6.
 -/
+
+@[expose] public section
 
 namespace CoreDefinitions
 
