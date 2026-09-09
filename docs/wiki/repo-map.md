@@ -77,7 +77,7 @@ MCA, and decoder developments. Under its sibling directory, the mathematical ent
 | First-order rate-only and finite-probability bounds | `MutualCorrelatedAgreement/FirstOrder/RateBounds` |
 | All-characteristic Johnson MCA | `MutualCorrelatedAgreement/Johnson/Agreement` |
 | Fixed-rate capacity from shared parameters | `MutualCorrelatedAgreement/Capacity/FixedRateCombined` |
-| Exact executed output and primitive-work accounting | `ListDecoding/CapacityDecoder` |
+| Retained exhaustive output and primitive-work accounting | `ListDecoding/CapacityDecoder` |
 
 `MutualCorrelatedAgreement` names the mathematical conclusion. Its `Ordinary` subdirectory
 means an equation without hidden derivative variables; it still proves MCA along a received
@@ -485,10 +485,15 @@ there are no forwarding modules at the retired paths.
   Capacity MCA is collected in `ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`, with line,
   affine-family, and power-batching results available through that single import.
   `ReedSolomon/Agreement.lean` contains the basic agreement sets, without a decoding theorem.
-  The decoder specification is in `ReedSolomon/ListDecoding/Specification.lean`.
-  `ListDecoding/CapacityDecoder.lean` and `CapacityDecoderExecution.lean` certify the actual
-  physical output and its primitive-work bound at the prescribed parameters. The mathematical
-  capacity imports remain independent of execution machinery; no bit/RAM bound is claimed.
+  The decoder specification is in `ReedSolomon/ListSpecification.lean`.
+  `ListDecoding/CapacityDecoder.lean` and `CapacityDecoderExecution.lean` retain the exhaustive
+  initial-jet executor, with exact physical output and an observed primitive-work bound.
+  The symbolic route uses `ListDecoding/AgreementRecovery/Decoder.lean` as its shared consumer.
+  `OrdinaryInterpolatedDecoder.lean` composes computed interpolation and Newton lifting under
+  regular-center premises; `SquareSystemDecoder.lean` composes computed square systems and
+  Taylor charts with an explicit isolated-root-complete torus backend. These conditional
+  interfaces do not yet replace the public capacity executor. The mathematical capacity imports
+  remain independent of execution machinery; no bit/RAM bound is claimed.
 - Reusable finite-jet differential equations live in `Data/Polynomial/Differential`.
   Discrete-simplex cardinality, moments and variance live in
   `ToMathlib/Combinatorics/DiscreteSimplex`, independently of coding theory.

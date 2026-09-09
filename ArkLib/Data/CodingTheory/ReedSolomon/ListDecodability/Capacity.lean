@@ -24,8 +24,9 @@ prime field, evaluation points, and received word. The statement includes both
 field-size regimes and uses ordinary polynomial degree, including the zero polynomial.
 
 This module proves list existence and cardinality. The exact decoder specification is in
-`ReedSolomon/ListDecoding/Specification`, and the executable same-output theorem with its
-primitive-work ledger is in `ReedSolomon/ListDecoding/CapacityDecoderExecution`.
+`ReedSolomon/ListSpecification`, and the executable same-output theorem with its
+primitive-work ledger for the retained exhaustive initial-jet executor is in
+`ReedSolomon/ListDecoding/CapacityDecoderExecution`.
 
 ## Decoding procedure and formalization scope
 
@@ -33,9 +34,11 @@ The hidden-derivative algorithm chooses interpolation parameters and an ambient 
 solves the homogeneous local-contact constraints for a nonzero differential polynomial, enumerates
 its bounded-degree polynomial solutions by separant descent and regular Taylor lifting, and filters
 by the original degree and agreement thresholds. The interpolation and solution-counting results
-below justify the list bounds. The separate execution theorem packages these steps and proves an
-observed primitive-work bound. Neither theorem makes a bit-RAM complexity claim. Classical
-finite-set extraction here is not a claim of efficient enumeration.
+below justify the list bounds. The retained execution theorem enumerates initial jets and proves
+an observed primitive-work bound. The symbolic replacement composes square-system solving with
+Taylor-chart materialization and shared agreement recovery in `ListDecoding/SquareSystemDecoder`;
+its torus isolated-root backend remains an explicit assumption. Neither execution interface makes
+a bit-RAM complexity claim. Classical finite-set extraction here is not efficient enumeration.
 
 ## Decoding regimes
 

@@ -39,6 +39,20 @@ def solveAffine (backend : TorusBackend (F := F) (s := s))
     (backend (List.ofFn fun j => translatePolynomial c (system j))).map
       (inverseTranslateMapData c)
 
+/-- The affine wrapper multiplies a per-system output-count bound by the number of charts.
+This counts returned rational maps; it is separate from the backend's arithmetic complexity. -/
+theorem solveAffine_length_le (backend : TorusBackend (F := F) (s := s))
+    (shifts : List F) (B : ℕ) (hbackend : ∀ system, (backend system).length ≤ B)
+    (system : Fin s → CMvPolynomial s F) :
+    (solveAffine backend shifts system).length ≤ shifts.length * B := by
+  induction shifts with
+  | nil => simp [solveAffine]
+  | cons c shifts ih =>
+    have h := hbackend (List.ofFn fun j => translatePolynomial c (system j))
+    simp only [solveAffine, List.flatMap_cons, List.length_append, List.length_map,
+      List.length_cons, Nat.add_mul, one_mul] at *
+    omega
+
 /-- Interpret an indexed computable system over a coefficient-field extension. -/
 noncomputable def mappedSystem (ι : F →+* K) (system : Fin s → CMvPolynomial s F) :
     Fin s → MvPolynomial (Fin s) K := fun j =>

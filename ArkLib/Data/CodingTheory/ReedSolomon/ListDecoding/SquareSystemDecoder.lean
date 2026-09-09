@@ -53,6 +53,41 @@ def run (pchar : ℕ) [Fact pchar.Prime] [CharP E pchar]
   ComputedTaylorMap.run pchar base domain received center Q K τ k A
     (jetMaps base domain received center Q K τ k hk backend shifts)
 
+omit [Fintype E] [DecidableEq F] [BEq F] [LawfulBEq F] in
+/-- The concrete square-family bound also controls how many raw maps the program handles.
+There are at most (2n)^r systems when K≤n, and each affine wrapper makes one call per shift.
+The bound B remains the torus backend's output-count guarantee, not an assumed runtime bound. -/
+theorem jetMaps_length_le (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
+    (center : E) (Q : CMvPolynomial (r + 2) E) (K τ k : ℕ) (hk : k ≤ K) (hKn : K ≤ n)
+    (backend : TorusBackend (F := E) (s := r + 1)) (shifts : List E)
+    (B : ℕ) (hbackend : ∀ system, (backend system).length ≤ B) :
+    (jetMaps base domain received center Q K τ k hk backend shifts).length ≤
+      (2 * n) ^ r * (shifts.length * B) := by
+  have hlist : ∀ systems : List (Fin (r + 1) → CMvPolynomial (r + 1) E),
+      (systems.flatMap (solveAffine backend shifts)).length ≤
+        systems.length * (shifts.length * B) := by
+    intro systems
+    induction systems with
+    | nil => simp
+    | cons system systems ih =>
+      have h := solveAffine_length_le backend shifts B hbackend system
+      simp only [List.flatMap_cons, List.length_append, List.length_cons,
+        Nat.add_mul, one_mul]
+      omega
+  exact (hlist _).trans (Nat.mul_le_mul_right _
+    (length_squareSystemsListFromEquation_le center Q K τ k n hk hKn
+      (liftedDomain base domain) (fun i => base (received i))))
+
+/-- Final filtering and recovery cannot increase the sum of raw eliminant degrees. -/
+theorem run_length_le (pchar : ℕ) [Fact pchar.Prime] [CharP E pchar]
+    (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
+    (center : E) (Q : CMvPolynomial (r + 2) E) (K τ k A : ℕ) (hk : k ≤ K)
+    (backend : TorusBackend (F := E) (s := r + 1)) (shifts : List E) :
+    (run pchar base domain received center Q K τ k A hk backend shifts).length ≤
+      ((jetMaps base domain received center Q K τ k hk backend shifts).map
+        fun input => input.modulus.natDegree).sum :=
+  ComputedTaylorMap.run_length_le pchar base domain received center Q K τ k A _
+
 omit [BEq F] [LawfulBEq F] in
 /-- A degree threshold expressed as an agreement count supplies distinct agreeing positions.
 This witness is used only in the completeness proof; the decoder enumerates pool-row subsets
