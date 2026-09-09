@@ -552,6 +552,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.RestrictedStageRoots
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.SeparateSampleSelection
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.Bounds
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CandidatePool
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.Cardinality
 import
@@ -667,6 +668,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSeparateSampleRefinement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.AgreementMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterMachine
@@ -991,6 +993,7 @@ import ArkLib.Data.Fin.Tuple.Defs
 import ArkLib.Data.Fin.Tuple.Lemmas
 import ArkLib.Data.Fin.Tuple.Notation
 import ArkLib.Data.Fin.Tuple.TakeDrop
+import ArkLib.Data.FiniteField.Candidates
 import ArkLib.Data.Finset.PickSubset
 import ArkLib.Data.GroupTheory.PrimeOrder
 import ArkLib.Data.Hash.DomainSep
@@ -1130,6 +1133,7 @@ import ArkLib.Data.MvPolynomial.SeparantChainMachineCanary
 import ArkLib.Data.MvPolynomial.WeightedDegree
 import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
 import ArkLib.Data.Polynomial.AffinePowerTruncationMachineCanary
+import ArkLib.Data.Polynomial.Avoidance
 import ArkLib.Data.Polynomial.BatchRemainder
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.BivariateFactorDegrees
@@ -1156,6 +1160,7 @@ import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.JetHornerMachine
 import ArkLib.Data.Polynomial.JetHornerMachineCanary
 import ArkLib.Data.Polynomial.ModularInverse
+import ArkLib.Data.Polynomial.NonvanishingSearch
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.QuadraticJetHornerCanary
 import ArkLib.Data.Polynomial.QuadraticJetHornerMachine

@@ -12,10 +12,11 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.
 /-!
 # Executable agreement and coefficient-tail rows
 
-The Taylor recurrence produces a numerator N_l for each coefficient, with denominator
+The Taylor recurrence produces an unpadded numerator for each coefficient, with denominator
 S^(2(l-r)-1), where S is the initial separant. To compare coefficients in one polynomial
 system, pad every numerator to denominator S^τ. Agreement at (x,y) then becomes
-Σ_l (x-center)^l A_l - y S^τ = 0; the degree-<k condition becomes A_k=...=A_(K-1)=0.
+Σ_l (x-center)^l N_l - y B = 0, where B=S^τ and N_l is the padded numerator printed in
+the decoder section. The degree-<k condition becomes N_k=...=N_(K-1)=0.
 
 These constructors accept the computed recurrence output. The semantic lemmas identify their
 results with the paper equations used by the square-system capture proof. Sufficient-exponent
@@ -28,7 +29,7 @@ open PolynomialDifferential CPoly CPoly.CMvPolynomial
 open scoped BigOperators
 variable {F : Type*} [Field F] [DecidableEq F] {r K : ℕ}
 
-/-- Pad N_l from its individual separant power to the common exponent τ. -/
+/-- Multiply the unpadded coefficient numerator by the missing separant power to form N_l. -/
 def paddedNumerator (numerators : Fin K → CMvPolynomial (r + 1) F)
     (separant : CMvPolynomial (r + 1) F) (τ : ℕ) (l : Fin K) :
     CMvPolynomial (r + 1) F :=
@@ -45,7 +46,7 @@ private theorem denote_pow (p : CMvPolynomial (r + 1) F) (m : ℕ) :
     fromCMvPolynomial (p ^ m) = fromCMvPolynomial p ^ m :=
   _root_.map_pow (polyRingEquiv (n := r + 1) (R := F)) p m
 
-/-- Padding the concrete numerator gives exactly the paper's A_l. -/
+/-- Padding the concrete numerator gives exactly the decoder section's N_l. -/
 theorem paddedNumerator_semantics (center : F)
     (Q : PolynomialDifferential.DifferentialPolynomial F r)
     (numerators : Fin K → CMvPolynomial (r + 1) F)
@@ -113,11 +114,13 @@ theorem exists_computableSquareSystem (center : F) (Q : CMvPolynomial (r + 2) F)
     (hN : ∀ l, fromCMvPolynomial (numerators l) =
       rationalTaylorNumerator center (semanticEquation Q) l.val)
     (k n A τ : ℕ) (hK : r < K) (hk : k ≤ K) (hkA : k ≤ A)
+    -- τ dominates every coefficient denominator exponent 2(l-r)-1 for l<K; τ=2K suffices.
     (hτ : TaylorExponentSufficient r K τ)
     (domain : Fin n ↪ F) (received : Fin n → F) (agreementPositions : Fin A ↪ Fin n)
     (P : Polynomial F) (hsolution : differentialSpecialization (semanticEquation Q) P = 0)
     (hseparant : jetEvaluation (separant (semanticEquation Q) (Fin.last r)) center
       (polynomialJet center P) ≠ 0)
+    -- The pivot binomial(i,r) must be invertible to solve each higher Taylor coefficient.
     (hbinomial : ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (hdegree : P.degree < k)
     (hagreement : ∀ i, P.eval (domain (agreementPositions i)) =
@@ -163,11 +166,13 @@ The remaining hypotheses are the paper's regularity, truncation, characteristic 
 conditions; no equations or polynomial roots are supplied by an oracle. -/
 theorem squareSystemsFromEquation_covers (center : F) (Q : CMvPolynomial (r + 2) F)
     (K k n A τ : ℕ) (hK : r < K) (hk : k ≤ K) (hkA : k ≤ A)
+    -- τ dominates every coefficient denominator exponent 2(l-r)-1 for l<K; τ=2K suffices.
     (hτ : TaylorExponentSufficient r K τ)
     (domain : Fin n ↪ F) (received : Fin n → F) (agreementPositions : Fin A ↪ Fin n)
     (P : Polynomial F) (hsolution : differentialSpecialization (semanticEquation Q) P = 0)
     (hseparant : jetEvaluation (separant (semanticEquation Q) (Fin.last r)) center
       (polynomialJet center P) ≠ 0)
+    -- The pivot binomial(i,r) must be invertible to solve each higher Taylor coefficient.
     (hbinomial : ∀ i, r < i → i < K → (i.choose r : F) ≠ 0)
     (hdegree : P.degree < k)
     (hagreement : ∀ i, P.eval (domain (agreementPositions i)) =

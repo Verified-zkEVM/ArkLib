@@ -11,6 +11,9 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.Quoti
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
+import ArkLib.Data.Polynomial.NonvanishingSearch
+import ArkLib.Data.FiniteField.Candidates
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
 import ArkLib.Data.Polynomial.SquarefreeSupport
@@ -55,6 +58,18 @@ private def check (label : String) (condition : Bool) : IO Unit := do
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
   let x : CPolynomial (ZMod 5) := CPolynomial.X
+  let centers := ArkLib.FiniteFieldCandidates.primeFieldPrefix (ZMod 5) 3
+  check "batched discriminant candidate search" <|
+    CPolynomial.findNonzeroEvaluation? (.subproduct (ZMod 5) .naive .remainderOnly)
+      (x * (x - 1)) centers == some 2
+  check "identically zero discriminant has no passing center" <|
+    (CPolynomial.findNonzeroEvaluation? (.horner (ZMod 5)) 0 centers).isNone
+  match OrdinaryInterpolation.run (OrdinaryInterpolation.receivedPoints domain affine)
+      ⟨2, 1, 2⟩ with
+  | none => throw (IO.userError "ordinary multiplicity interpolation unexpectedly rejected")
+  | some Q =>
+      check "computed interpolant contains affine message" <|
+        CompPoly.CBivariate.composeY Q (x + 1) == 0
   -- The batch includes a quadratic, a repeated leaf, a unit modulus and an odd leaf count.
   -- Comparing full remainders checks order and multiplicity, beyond scalar root evaluations.
   let moduli := [x ^ 2 + 2, x - 1, 1, x ^ 2 + 2, x ^ 3 + x + 1]

@@ -39,14 +39,17 @@ theorem computedChartNumerators_length (center : E) (Q : CMvPolynomial (r + 2) E
     (K τ : ℕ) : (computedChartNumerators center Q K τ).length = K := by
   simp [computedChartNumerators]
 
+/-- Each table-produced coordinate denotes the paper's padded numerator N_i. -/
 theorem computedChartNumerators_get (center : E) (Q : CMvPolynomial (r + 2) E)
     (K τ i : ℕ) (hi : i < K) :
-    (computedChartNumerators center Q K τ)[i]'(by simpa using hi) =
-      computableCommonTaylorNumerator center Q K ⟨i, hi⟩ τ := by
+    fromCMvPolynomial ((computedChartNumerators center Q K τ)[i]'(by simpa using hi)) =
+      commonTaylorNumerator center (semanticEquation Q) K ⟨i, hi⟩ τ := by
   simp only [computedChartNumerators, List.getElem_ofFn]
-  rw [computableRationalTaylorTable_get center Q K i hi]
+  rw [fromCMvPolynomial_mul', fromCMvPolynomial_pow,
+    computableRationalTaylorTable_get center Q K i hi,
+    fromCMvPolynomial_computableRationalTaylorNumerator,
+    fromCMvPolynomial_computableInitialJetSeparant]
   rfl
-
 
 variable [Fintype E]
 
@@ -106,10 +109,10 @@ theorem fromEquationJet?_covers (center : E) (Q : CMvPolynomial (r + 2) E)
     simpa using pow_ne_zero τ ((map_ne_zero ι).mpr hS)
   · intro i
     have hi : i.val < K := by simpa [computedChartNumerators] using i.isLt
-    have hget : (computedChartNumerators center Q K τ)[i] =
-        computableCommonTaylorNumerator center Q K ⟨i.val, hi⟩ τ := by
-      exact computedChartNumerators_get center Q K τ i.val hi
-    rw [hget, fromCMvPolynomial_computableCommonTaylorNumerator center Q K _ τ,
+    have hget : fromCMvPolynomial (computedChartNumerators center Q K τ)[i] =
+        commonTaylorNumerator center (semanticEquation Q) K ⟨i.val, hi⟩ τ :=
+      computedChartNumerators_get center Q K τ i.val hi
+    rw [hget,
       fromCMvPolynomial_computableTaylorDenominator, eval₂_mapped_point, eval₂_mapped_point,
       commonTaylorNumerator_solution_of_exponent center (semanticEquation Q) P
         hsolution hseparant K τ hτ hbinomial]
@@ -126,9 +129,14 @@ theorem run_exact_of_jet_cover
     {F : Type*} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] {n : ℕ}
     (base : F →+* E) (ι : E →+* L) (domain : Fin n ↪ F) (received : Fin n → F)
     (center : E) (Q : CMvPolynomial (r + 2) E) (K τ k A : ℕ)
+    -- K is the retained Taylor width. At least k agreements determine a degree-<k message.
+    -- τ covers all individual denominator powers; the paper takes τ=2K and B=S^τ.
     (hk : k ≤ K) (hAk : k ≤ A) (hτ : TaylorExponentSufficient r K τ)
+    -- Nonzero binomial pivots make the coefficient recurrence valid in this characteristic.
     (hbinomial : ∀ i, r < i → i < K → (i.choose r : E) ≠ 0)
     (inputs : List (MapData (F := E)))
+    -- Every wanted message solves Q regularly, and the raw solver maps cover its initial jet.
+    -- This is the remaining producer premise, not an extra acceptance filter on the output.
     (hcover : ∀ P : Polynomial F, P.degree < k →
       A ≤ Code.agree (evalOnPoints domain P) received →
       differentialSpecialization (semanticEquation Q) (P.map base) = 0 ∧

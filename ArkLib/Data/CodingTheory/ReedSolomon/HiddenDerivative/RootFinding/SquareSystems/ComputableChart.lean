@@ -99,7 +99,7 @@ theorem fromCMvPolynomial_computableInitialJetSeparant {r : ℕ} (center : F)
     · exact CPoly.CMvPolynomial.fromCMvPolynomial_X j
   rw [hsubstitution]
 
-/-! ### The first higher Taylor numerator -/
+/-! ### Universal Taylor residual -/
 
 /-- The concrete variable order `ξ, c₀, ..., c_(K-1)` used for universal Taylor residuals. -/
 def finToTaylorVariable (K : ℕ) : Fin (K + 1) → Option (Fin K) :=
