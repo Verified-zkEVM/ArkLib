@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder
@@ -11,6 +12,10 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Uniform
 
 /-!
 # Exact capacity lists at every rate
+
+`exists_rateCapacity_list` uses the uniform three-halves construction and its explicit
+`rateCapacityLengthThreshold`. The earlier `exists_capacity_list` interface and its
+finite-field, quarter-gap, and half-gap refinements remain available with their own thresholds.
 
 This module assembles all mathematical list bounds accompanying [DKTZ26, Theorem 1.1].
 `HasCapacityLists` spells out the common exact-list property. `CapacityListBounds` collects
@@ -248,6 +253,62 @@ theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) (hδ_one : δ < 1) :
     exact (hsmall hs).1
   · intro hs
     exact (hsmall hs).2
+
+/-- Length threshold for the uniform three-halves capacity construction. -/
+def rateCapacityLengthThreshold (δ : ℝ) : ℕ :=
+  if (6 / 25 : ℝ) ≤ δ then 23 else HiddenDerivative.uniformRatePartitionLength δ
+
+/-- Uniform three-halves list bound, spliced with the certified first-order large-gap bound. -/
+def rateCapacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
+  if (6 / 25 : ℝ) ≤ δ then 13623 * n else
+    (HiddenDerivative.uniformRatePartitionJetBound δ : ℝ) ^ 2 *
+      (2 * HiddenDerivative.uniformRatePartitionJetBound δ / δ) ^
+        HiddenDerivative.uniformRatePartitionOrder δ *
+      n ^ HiddenDerivative.uniformRatePartitionOrder δ
+
+/-- Exact capacity lists using the uniform three-halves derivative order. The gap fixes all
+parameters before the field and code; impossible agreement thresholds return the empty list. -/
+theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
+    HasCapacityLists δ (rateCapacityLengthThreshold δ)
+      (fun n _ _ _ card => (card : ℝ) ≤ rateCapacityListBound δ n) := by
+  classical
+  by_cases hlarge : (6 / 25 : ℝ) ≤ δ
+  · have h := uniformFirstOrder_capacity_list δ hlarge
+    simpa only [rateCapacityLengthThreshold, if_pos hlarge] using h.mono
+      (fun n _ _ _ card hb ↦ by
+        simpa only [rateCapacityListBound, if_pos hlarge, Nat.cast_mul, Nat.cast_ofNat] using
+          (show (card : ℝ) ≤ 13623 * n by exact_mod_cast hb))
+  · intro n k q A hn hk _hkn hq hnq hgap _hAupper domain received
+    let _ : Fact q.Prime := ⟨hq⟩
+    by_cases hAn : A ≤ n
+    · have hn' : HiddenDerivative.uniformRatePartitionLength δ ≤ n := by
+        simpa only [rateCapacityLengthThreshold, if_neg hlarge] using hn
+      obtain ⟨hf, hb⟩ := uniformRatePartition_close_list_bound hδ (lt_of_not_ge hlarge)
+        hn' hk hgap hAn domain received (Or.inr (by
+          simpa only [ringChar.eq (ZMod q) q] using hnq))
+      refine ⟨hf.toFinset, ?_, ?_, ?_⟩
+      · intro P
+        simp only [Set.Finite.mem_toFinset, closePolynomialSet]
+        simp only [polynomialAgreementSet, Code.agree, Set.mem_ofPred_eq, and_congr_right_iff]
+        intro _
+        constructor <;> intro h <;> convert h using 1 <;> congr 1 <;> ext i <;> simp
+      · intro hover
+        exact (Nat.not_lt_of_ge hAn hover).elim
+      · rw [Set.ncard_eq_toFinset_card _ hf] at hb
+        simpa only [rateCapacityListBound, if_neg hlarge] using hb
+    · refine ⟨∅, ?_, fun _ ↦ rfl, ?_⟩
+      · intro P
+        constructor
+        · intro hmem
+          simp at hmem
+        · rintro ⟨_, hagree⟩
+          exfalso
+          apply hAn
+          have hc := Code.agree_le_card (u := fun i ↦ P.eval (domain i)) (v := received)
+          exact hagree.trans (by simpa using hc)
+      · simp only [Finset.card_empty, Nat.cast_zero, rateCapacityListBound, if_neg hlarge]
+        positivity
+
 
 end
 

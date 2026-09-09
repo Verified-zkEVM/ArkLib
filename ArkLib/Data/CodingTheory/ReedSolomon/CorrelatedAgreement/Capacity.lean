@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformRate
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedLine
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.ExtensionDescent
@@ -44,15 +45,14 @@ Every witness conclusion recovers the candidate polynomial and its **full** agre
 not merely a large common subset. Line and power-batching results allow infinite fields.
 Affine densities and the final probability formulation require finite fields.
 
-These are mathematical agreement theorems, not running-time bounds. In the small-gap regime,
-`exists_prescribedLineMCA` and `exists_prescribedCurveMCA` use the manuscript's exact
-mixed-bidegree constant `prescribedMCAConstant`. The existential presentations below use that
-same constant in this regime. For lines and their affine consequences, gaps from `6/25` to one
-half use the fixed height-851 first-order certificate: from length `23`, its exceptional set has
-size at most `571487759 * n²`. The half-gap line theorem states the sharper `2 * n` bound
-separately, over every field.
-Thus the line theorem uses all three parameter regimes of the manuscript. Power batching uses
-the general mixed-bidegree parameters, without asserting a separate quarter-gap refinement.
+The small-gap line and curve theorems use the rate-partition construction with derivative
+order `ceil(exp(3/(2δ)))`, the sharper uniform jet cap, and height `150ν`. Their public
+quantitative statements retain the exact product-counting constant. The existential wrappers
+below enlarge that constant by one to make positivity immediate.
+For lines and affine consequences, gaps from `6/25` to one half use the fixed height-851
+first-order certificate: from length `23`, the exceptional set has size at most
+`571487759 * n²`. The half-gap line theorem retains the sharper `2 * n` bound over every field.
+Power batching uses the general rate-partition parameters at gap `min(δ,1/8)`.
 
 ## References
 
@@ -229,42 +229,26 @@ theorem exists_capacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
   · refine ⟨23, 1, 571487759, by norm_num, ?_⟩
     simpa using uniformFirstOrder_capacity_lineAgreement δ huniform
   have hδuniform : δ < 6 / 25 := lt_of_not_ge huniform
-  have hδquarter : δ < 1 / 4 := hδuniform.trans_le (by norm_num)
-  let d := Nat.ceil (Real.exp ((27 / 10) / δ))
-  let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonicNumber (d - 1))
-  let C := prescribedMCAConstant δ
-  have hC : 0 < C := prescribedMCAConstant_pos hδ hδquarter
-  refine ⟨8 * m, d, C, hC, ?_⟩
-  dsimp only [HasCapacityLineAgreement]
-  intro n k A hn hk _hkn hgap F _ _ hchar domain f g
-  have hthreshold : agreementThreshold δ n k ≤ A :=
-    (agreementThreshold_le_iff_real hδ.le n k A).mpr hgap
-  by_cases hsmall : agreementThreshold δ n k ≤ n
-  · let E := AlgebraicClosure F
-    let iota : F →+* E := algebraMap F E
-    obtain ⟨_hn, _hm, _hν, _hνm, hνn, _hdK, _hkK, hKn, _hkA, _hgap⟩ :=
-      prescribed_geometric_parameters δ n k hδ hδquarter hk hn hsmall
-    have hchar' : ringChar F = 0 ∨
-        max (max k (Nat.floor (δ * n / 2)) - 1) (2 * m - 1) < ringChar F := by
-      apply hchar.imp_right
-      intro hnchar
-      apply max_lt
-      · omega
-      · exact hνn.trans_le hnchar
-    obtain ⟨exceptional, hcard, hgood⟩ := exists_prescribedLineMCA
-      δ n k domain f g iota hδ hδquarter hk hn hsmall (by simpa only [d, m] using hchar')
-    obtain ⟨baseExceptional, hbase, hbasegood⟩ :=
-      exists_exceptional_correlatedAgreement_descend domain f g iota k
-        (agreementThreshold δ n k) exceptional hgood
-    refine ⟨baseExceptional, ?_, ?_⟩
-    · apply (show (baseExceptional.card : ℝ) ≤ exceptional.card by exact_mod_cast hbase).trans
-      apply hcard.trans
-      apply mul_le_mul_of_nonneg_right
-      · dsimp [C]; linarith
+  let d := HiddenDerivative.uniformRatePartitionOrder δ
+  let ν := HiddenDerivative.uniformRatePartitionJetBound δ
+  let C := polynomialCurveProductMCAConstant δ ν (150 * ν) d + 1
+  have hC : 0 < C := by
+    dsimp [C, polynomialCurveProductMCAConstant]
+    positivity
+  refine ⟨HiddenDerivative.uniformRatePartitionLength δ, d, C, hC, ?_⟩
+  intro n k A hn hk _hkn hgap F instF decF hchar domain f g
+  by_cases hAn : A ≤ n
+  · obtain ⟨exceptional, hc, hg⟩ := exists_uniformRatePartition_lineMCA
+      hδ hδuniform hn hk hgap hAn domain f g hchar
+    have hdec : (fun a b : F ↦ Classical.propDecidable (a = b)) =
+        decF := Subsingleton.elim _ _
+    cases hdec
+    refine ⟨exceptional, hc.trans ?_, ?_⟩
+    · apply mul_le_mul_of_nonneg_right
+      · dsimp [C, ν, d]; linarith
       · positivity
     · intro z hz P hdegree hagree
-      obtain ⟨pair, hleft, hright, heq, hsets⟩ :=
-        hbasegood z hz P hdegree (hthreshold.trans hagree)
+      obtain ⟨pair, hleft, hright, heq, hsets⟩ := hg z hz P hdegree hagree
       refine ⟨pair.1, pair.2, hleft, hright, ?_, ?_⟩
       · simpa [correlatedPairSpecialization, Polynomial.smul_eq_C_mul] using heq
       · simpa [mappedDomain] using hsets
@@ -272,9 +256,9 @@ theorem exists_capacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
     · simp only [Finset.card_empty, Nat.cast_zero]
       exact mul_nonneg hC.le (by positivity)
     · intro z _ P _ hagree
-      have hcard : (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card ≤ n :=
+      have hc : (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card ≤ n :=
         (Finset.card_filter_le _ _).trans_eq (by simp)
-      exact (hsmall (hthreshold.trans (hagree.trans hcard))).elim
+      exact (hAn (hagree.trans hc)).elim
 
 /-! ## Affine families: independently sampled directions -/
 
@@ -449,59 +433,35 @@ theorem exists_capacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
       HasCapacityPowerBatchingAgreement δ N
         (fun ℓ n ↦ (ℓ : ℝ) * C * (n : ℝ) ^ (d + 1)) := by
   classical
-  let ε := if δ < 1 / 4 then δ else (1 / 8 : ℝ)
-  have hε : 0 < ε := by
-    dsimp only [ε]
-    split_ifs <;> first | exact hδ | norm_num
-  have hεquarter : ε < 1 / 4 := by
-    dsimp only [ε]
-    split_ifs with h <;> first | exact h | norm_num
-  have hεδ : ε ≤ δ := by
-    dsimp only [ε]
-    split_ifs with h
-    · exact le_refl _
-    · linarith
-  let d := Nat.ceil (Real.exp ((27 / 10) / ε))
-  let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonicNumber (d - 1))
-  let C := prescribedMCAConstant ε
-  have hC : 0 < C := prescribedMCAConstant_pos hε hεquarter
-  refine ⟨8 * m, d, C, hC, ?_⟩
-  dsimp only [HasCapacityPowerBatchingAgreement]
-  intro ℓ n k A hℓ hn hk _hkn hgap F _ _ hchar domain w
-  have hthreshold : agreementThreshold ε n k ≤ A := by
-    apply (agreementThreshold_le_iff_real hε.le n k A).mpr
-    have hmul := mul_le_mul_of_nonneg_right hεδ (Nat.cast_nonneg n : (0 : ℝ) ≤ _)
+  let ε := min δ (1 / 8 : ℝ)
+  have hε : 0 < ε := lt_min hδ (by norm_num)
+  have hεsmall : ε < 6 / 25 := (min_le_right _ _).trans_lt (by norm_num)
+  have hεδ : ε ≤ δ := min_le_left _ _
+  let d := HiddenDerivative.uniformRatePartitionOrder ε
+  let ν := HiddenDerivative.uniformRatePartitionJetBound ε
+  let C := polynomialCurveProductMCAConstant ε ν (150 * ν) d + 1
+  have hC : 0 < C := by
+    dsimp [C, polynomialCurveProductMCAConstant]
+    positivity
+  refine ⟨HiddenDerivative.uniformRatePartitionLength ε, d, C, hC, ?_⟩
+  intro ℓ n k A hℓ hn hk _hkn hgap F instF decF hchar domain w
+  have hgap' : (k : ℝ) + ε * n ≤ A := by
+    have h := mul_le_mul_of_nonneg_right hεδ (Nat.cast_nonneg n : (0 : ℝ) ≤ _)
     linarith
-  by_cases hsmall : agreementThreshold ε n k ≤ n
-  · let E := AlgebraicClosure F
-    let iota : F →+* E := algebraMap F E
-    obtain ⟨_hn, _hm, _hν, _hνm, hνn, _hdK, _hkK, hKn, _hkA, _hgap⟩ :=
-      prescribed_geometric_parameters ε n k hε hεquarter hk hn hsmall
-    have hchar' : ringChar F = 0 ∨
-        max (max k (Nat.floor (ε * n / 2)) - 1) (2 * m - 1) < ringChar F := by
-      apply hchar.imp_right
-      intro hnchar
-      apply max_lt
-      · omega
-      · exact hνn.trans_le hnchar
-    obtain ⟨exceptional, hcard, hgood⟩ := exists_prescribedCurveMCA
-      ε n k ℓ domain w iota hε hεquarter hk hℓ hn hsmall (by
-        simpa only [d, m] using hchar')
-    obtain ⟨baseExceptional, hbase, hbasegood⟩ :=
-      exists_exceptional_powerAgreement_descend domain w iota k
-        (agreementThreshold ε n k) exceptional hgood
-    refine ⟨baseExceptional, ?_, ?_⟩
-    · apply (show (baseExceptional.card : ℝ) ≤ exceptional.card by exact_mod_cast hbase).trans
-      apply hcard.trans
-      apply mul_le_mul_of_nonneg_right
+  by_cases hAn : A ≤ n
+  · obtain ⟨exceptional, hc, hg⟩ := exists_uniformRatePartition_baseCurveMCA
+      hε hεsmall hn hk hgap' hAn hℓ domain w hchar
+    have hdec : (fun a b : F ↦ Classical.propDecidable (a = b)) =
+        decF := Subsingleton.elim _ _
+    cases hdec
+    refine ⟨exceptional, hc.trans ?_, ?_⟩
+    · apply mul_le_mul_of_nonneg_right
       · apply mul_le_mul_of_nonneg_left
-        · dsimp only [C]
-          linarith
+        · dsimp [C, ν, d]; linarith
         · positivity
       · positivity
     · intro z hz Q hdegree hagree
-      obtain ⟨P, hP, heq, hsets⟩ :=
-        hbasegood z hz Q hdegree (hthreshold.trans hagree)
+      obtain ⟨P, hP, heq, hsets⟩ := hg z hz Q hdegree hagree
       refine ⟨P, hP, ?_, ?_⟩
       · simpa [powerBatchedPolynomial, Polynomial.smul_eq_C_mul] using heq
       · simpa [mappedDomain] using hsets
@@ -509,8 +469,8 @@ theorem exists_capacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
     · simp only [Finset.card_empty, Nat.cast_zero]
       positivity
     · intro z _ Q _ hagree
-      have hcard : (polynomialAgreementSet domain (powerBatchedWord w z) Q).card ≤ n :=
+      have hc : (polynomialAgreementSet domain (powerBatchedWord w z) Q).card ≤ n :=
         (Finset.card_filter_le _ _).trans_eq (by simp)
-      exact (hsmall (hthreshold.trans (hagree.trans hcard))).elim
+      exact (hAn (hagree.trans hc)).elim
 
 end ReedSolomon

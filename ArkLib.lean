@@ -187,6 +187,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Certifi
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.FirstOrderRate
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.FirstOrderRateParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.FixedRate
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.FixedRateCombined
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Midpoint
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Parameters
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedCurve
@@ -201,7 +202,14 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.Uniform
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformRate
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveProfile
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.EquationDescent
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.ExtensionDescent
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.AutomaticHybrid
+import
+ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.AutomaticHybridProbability
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.Capacity
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.HybridTransfer
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.OrdinaryTail
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrderCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FullAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FullDimension
@@ -209,12 +217,15 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.GraphLine
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.HalfGap.Line
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.LineToAffine
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.NestedPowerAgreement
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.BaseEquation
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.ContentExceptions
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.Equation
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FactorAggregationBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FactorAssembly
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FactorBounds
 import
 ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusComponentRecognition
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusEquation
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusFactorSolutions
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusGraphAdmissibility
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusGraphCounting
@@ -227,7 +238,13 @@ import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.Frobeni
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusSeparableSolutions
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusTaylorChart
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.FrobeniusWitnessEmbedding
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.IrreducibleEquation
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.Johnson
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.JohnsonProbability
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.JohnsonPublic
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.JohnsonSharp
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.RootPresentation
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.SharpEquation
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Ordinary.SharpFactorSolutions
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Pairs.ExceptionalSet
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Pairs.Family
@@ -324,6 +341,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Kernel
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Rank
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Translation
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Ordinary.JohnsonCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Counting
 import
@@ -443,6 +462,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.OrderZeroWitness
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticRecipe
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateBound
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateLimits
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateRounding
@@ -450,6 +471,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrde
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Harmonic
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.FiniteBounds
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.InterpolationBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.RoundedScaledShell
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledShellDiscrete
@@ -564,6 +586,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.To
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.TotalDegreeWitness
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.WitnessCounting
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrderHybridList
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrderList
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.AgreementGeometry
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
@@ -689,6 +712,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.AgreementList
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.AutomaticHybrid
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CertificateBound
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CertificateRootBound
