@@ -557,6 +557,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CodimensionOne
 import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputableChart
+import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CoordinateSelection
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.EvaluationTail
@@ -694,6 +696,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderProof
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RateDecoderExecution
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SampleInterpolation
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleExactness
@@ -1162,6 +1165,7 @@ import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.ResultantDegree
+import ArkLib.Data.Polynomial.Rojas.AffineCover
 import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
 import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
 import ArkLib.Data.Polynomial.SampledCoefficients
@@ -1171,6 +1175,7 @@ import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
 import ArkLib.Data.Polynomial.Trivariate
+import ArkLib.Data.Polynomial.UnivariateRepresentation.AffineTranslation
 import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
 import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
@@ -1349,6 +1354,7 @@ import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import ArkLib.ToCompPoly.Multivariate.Eval
 import ArkLib.ToCompPoly.Multivariate.PartialDerivative
+import ArkLib.ToCompPoly.Multivariate.Substitution
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Finite

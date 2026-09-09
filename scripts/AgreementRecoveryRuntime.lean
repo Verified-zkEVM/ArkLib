@@ -9,8 +9,11 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PositionSubsetDecoder
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
 import ArkLib.Data.Polynomial.SquarefreeSupport
 import ArkLib.Data.Polynomial.BatchRemainder
+import ArkLib.Data.Polynomial.Rojas.AffineCover
+import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
 import Mathlib.Algebra.Field.ZMod
 
@@ -73,6 +76,23 @@ def run : IO Unit := do
     | none => false
     | some out => out.modulus == x - 2 && out.coordinates == [CPolynomial.C 3]
   let identity := RingHom.id (ZMod 5)
+  -- The raw Taylor map has two repeated parameter roots. Its tail U−1 retains only U=1.
+  let taylorMap : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    ⟨(x ^ 2 - 1) ^ 2, 1, [x, x, x - 1]⟩
+  check "rational Taylor map tail and normalization" <|
+    match RationalRepresentationDecoder.fromRational? 5 0 2 taylorMap with
+    | none => false
+    | some r => r.modulus == x - 1 && r.coefficients == [1, 1]
+  check "rational Taylor map shared decoding" <|
+    RationalRepresentationDecoder.run 5 identity domain affine 0 2 3 [taylorMap] == [[1, 1]]
+  let shiftedMap : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    ⟨x - 1, 1, [3, 1, 0]⟩
+  check "rational Taylor map nonzero-center shift" <|
+    RationalRepresentationDecoder.run 5 identity domain affine 2 2 3 [shiftedMap] == [[1, 1]]
+  let impossibleTail : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    { taylorMap with numerators := [x, x, 1] }
+  check "rational Taylor map empty tail locus" <|
+    RationalRepresentationDecoder.run 5 identity domain affine 0 2 3 [impossibleTail] == []
   let splitRoots := pair (x ^ 2 - 1) 1 1
   let extensionRoots := pair (x ^ 2 + CPolynomial.C 2) 1 1
   check "nonlinear stopped block" <|
@@ -107,6 +127,22 @@ def run : IO Unit := do
   -- series must carry both, and gcd recovery selects the branch close to this word.
   let qx := CPoly.CMvPolynomial.X (0 : Fin 2) (R := ZMod 5)
   let qy := CPoly.CMvPolynomial.X (1 : Fin 2) (R := ZMod 5)
+  check "affine chart substitution" <|
+    CPoly.CMvPolynomial.eval₂ (RingHom.id (ZMod 5)) ![1, 2]
+      (ArkLib.Rojas.AffineCover.translatePolynomial 2 (qx * qy)) == 2
+  let perturbation := CPolynomial.ofArray #[0, x + 1, x + 2]
+  check "lowest perturbation coefficient" <|
+    ArkLib.Rojas.lowestNonzeroCoefficient? perturbation == some (x + 1)
+  let incomplete : ArkLib.Rojas.SpecializationCandidate (F := ZMod 5) :=
+    ⟨1, x ^ 2 - 1, []⟩
+  let complete : ArkLib.Rojas.SpecializationCandidate (F := ZMod 5) :=
+    ⟨2, x ^ 2 - 1, [x ^ 2 - 1, x ^ 2 - 1]⟩
+  check "Rojas guard rejects missing shifted eliminants" <|
+    !ArkLib.Rojas.hasExpectedSupportDegree 5 1 2 incomplete
+  check "Rojas deterministic full-family selection" <|
+    match ArkLib.Rojas.selectSpecialization? 5 1 2 [incomplete, complete] with
+    | none => false
+    | some selected => selected.parameter == 2
   let equation := qy ^ 2 - (qx + 1) ^ 2
   let lifted := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.newtonLift?
     equation 0 (x ^ 2 - 1) 3

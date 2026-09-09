@@ -65,6 +65,24 @@ theorem regularModulus_properties (Q : CPoly.CMvPolynomial 2 E) (center : E)
   · exact CPolynomial.gcdComplement_squarefree hne hs
   · exact (CPolynomial.gcdComplement_isCoprime_right hne hs).symm
 
+/-- The regular slice has leading coefficient one, as required by quotient reduction. -/
+theorem regularModulus_monic (Q : CPoly.CMvPolynomial 2 E) (center : E)
+    (hsection : sectionPolynomial Q center ≠ 0) :
+    (regularModulus pchar Q center).toPoly.Monic :=
+  (regularModulus_properties Q center hsection).1
+
+/-- Every geometric initial value occurs with multiplicity one in the retained modulus. -/
+theorem regularModulus_squarefree (Q : CPoly.CMvPolynomial 2 E) (center : E)
+    (hsection : sectionPolynomial Q center ≠ 0) :
+    Squarefree (regularModulus pchar Q center).toPoly :=
+  (regularModulus_properties Q center hsection).2.1
+
+/-- Removing all zero-slope roots makes the shared initial Newton inverse computable. -/
+theorem regularModulus_isCoprime_slope (Q : CPoly.CMvPolynomial 2 E) (center : E)
+    (hsection : sectionPolynomial Q center ≠ 0) :
+    IsCoprime (slope Q center).toPoly (regularModulus pchar Q center).toPoly :=
+  (regularModulus_properties Q center hsection).2.2
+
 /-- Every emitted representation satisfies the shared recovery data contract. -/
 theorem representations_wellFormed (Q : CPoly.CMvPolynomial 2 E) (center : E) (k : ℕ) :
     ∀ r ∈ representations pchar Q center k, r.WellFormed k := by
@@ -154,11 +172,13 @@ theorem exists_representation_of_regular_solution (ι : E →+* L)
     (hregular : MvPolynomial.eval₂ ι ![ι center, P.eval (ι center)]
       (MvPolynomial.pderiv 1 (CPoly.fromCMvPolynomial Q)) ≠ 0) :
     ∃ r ∈ representations pchar Q center k, r.Represents ι (P.eval (ι center)) P := by
-  have hp := regularModulus_properties Q center hsection (pchar := pchar)
-  obtain ⟨series, hrun⟩ := newtonLift_exists Q center (regularModulus pchar Q center) k hp.2.2
+  -- The regular slice has no zero-slope roots; one modular inverse lifts all remaining roots.
+  obtain ⟨series, hrun⟩ := newtonLift_exists Q center (regularModulus pchar Q center) k
+    (regularModulus_isCoprime_slope Q center hsection)
   refine ⟨materialize (regularModulus pchar Q center) center k series, ?_, ?_⟩
   · simp [representations, hsection, hrun]
-  · apply newtonLifted_represents_solution ι Q center _ hp.1 k series hrun P hdegree
+  · apply newtonLifted_represents_solution ι Q center _
+      (regularModulus_monic Q center hsection) k series hrun P hdegree
     · apply (regularModulus_root_iff ι (P.eval (ι center)) Q center hsection).mpr
       exact ⟨solution_at_center ι (CPoly.fromCMvPolynomial Q) P (ι center) hsolution,
         hregular⟩
