@@ -158,7 +158,8 @@ def run : IO Unit := do
   let taylorTable := ReedSolomon.HiddenDerivative.SquareSystems.computableRationalTaylorTable
     0 exponentialEquation 5
   check "shared Taylor table reaches fourth coefficient" <|
-    taylorTable.size == 5 && CPoly.CMvPolynomial.eval ![1, 1] taylorTable[4]! == 4
+    taylorTable.size == 5 && CPoly.CMvPolynomial.eval (R := ZMod 5) ![1, 1]
+      (taylorTable[4]'(by simp [taylorTable])) == 4
   let squareSystems := ReedSolomon.HiddenDerivative.SquareSystems.squareSystemsFromEquation
     0 derivativeEquation 3 6 2 3 (by decide) domain affine
   check "computed square-system family includes affine solution" <|

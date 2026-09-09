@@ -571,6 +571,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorNumerator
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorTable
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FirstOrderStageSum
@@ -644,6 +645,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machi
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AutomaticFirstOrderExecution
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceRefinement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCandidateMachine
@@ -1176,6 +1178,7 @@ import ArkLib.Data.Polynomial.Rojas.AffineCover
 import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
 import ArkLib.Data.Polynomial.Rojas.HyperplaneAvoidance
 import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
+import ArkLib.Data.Polynomial.Rojas.SpecializationCorrectness
 import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
 import ArkLib.Data.Polynomial.SampledCoefficients
 import ArkLib.Data.Polynomial.SplitFold

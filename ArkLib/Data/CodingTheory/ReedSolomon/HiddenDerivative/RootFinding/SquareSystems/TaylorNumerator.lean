@@ -28,7 +28,8 @@ def computableTaylorResidualCoefficient {r : ℕ} (l : ℕ) (center : F)
   CPoly.CMvPolynomial.headCoefficient (l - r)
     (computableUniversalTaylorResidual l center Q)
 
-/-- The complete executable recurrence for rational Taylor numerators. -/
+/-- Recursive specification of every rational Taylor numerator. Production callers use the
+bottom-up table in `TaylorTable`, which computes each lower coefficient once. -/
 def computableRationalTaylorNumerator {r : ℕ} (center : F)
     (Q : CPoly.CMvPolynomial (r + 2) F) (l : ℕ) :
     CPoly.CMvPolynomial (r + 1) F :=
