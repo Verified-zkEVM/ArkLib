@@ -109,4 +109,30 @@ theorem computableRationalTaylorTableEntry_eq {r : ℕ} (center : F)
   apply computableRationalTaylorTable_get
   exact i.isLt
 
+/-- A public semantic contract for the bottom-up table. -/
+theorem fromCMvPolynomial_computableRationalTaylorTableEntry {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K : ℕ) (i : Fin K) :
+    CPoly.fromCMvPolynomial (computableRationalTaylorTableEntry center Q K i) =
+      rationalTaylorNumerator center (semanticEquation Q) i.val := by
+  rw [computableRationalTaylorTableEntry_eq,
+    fromCMvPolynomial_computableRationalTaylorNumerator]
+
+/-- Common-exponent numerator built from the shared Taylor table. -/
+def computableCommonTaylorTableNumerator {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K : ℕ) (i : Fin K)
+    (τ : ℕ := 2 * K) : CPoly.CMvPolynomial (r + 1) F :=
+  computableRationalTaylorTableEntry center Q K i *
+    computableTaylorDenominator center Q (τ - (2 * (i.val - r) - 1))
+
+theorem fromCMvPolynomial_computableCommonTaylorTableNumerator {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K : ℕ) (i : Fin K)
+    (τ : ℕ := 2 * K) :
+    CPoly.fromCMvPolynomial
+        (computableCommonTaylorTableNumerator center Q K i (τ := τ)) =
+      commonTaylorNumerator center (semanticEquation Q) K i (τ := τ) := by
+  rw [computableCommonTaylorTableNumerator, commonTaylorNumerator,
+    CPoly.CMvPolynomial.fromCMvPolynomial_mul',
+    fromCMvPolynomial_computableRationalTaylorTableEntry,
+    fromCMvPolynomial_computableTaylorDenominator]
+
 end ReedSolomon.HiddenDerivative.SquareSystems
