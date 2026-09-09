@@ -257,6 +257,7 @@ import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 import ArkLib.Data.MvPolynomial.RestrictDegree
 import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+import ArkLib.Data.MvPolynomial.WeightedDegree
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.BivariateFactorDegrees
 import ArkLib.Data.Polynomial.ClassicalWronskian
