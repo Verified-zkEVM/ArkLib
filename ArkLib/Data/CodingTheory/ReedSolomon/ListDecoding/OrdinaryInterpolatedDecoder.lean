@@ -12,15 +12,16 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 # Ordinary interpolation followed by quotient lifting
 
 This module composes the verified Lee--O'Sullivan interpolation stage with ordinary quotient
-lifting and shared agreement recovery. The program computes its interpolation polynomial; callers
-supply the decoding parameters, an embedding into the working field, and a center.
+lifting and shared agreement recovery. The program computes its interpolation polynomial and
+removes its common Y-content. Callers supply the decoding parameters, a working-field embedding,
+and a center.
 The resulting coefficient lists are over the original message field, even when interpolation and
 lifting use an auxiliary extension.
 
 The exactness theorem keeps the remaining preprocessing obligations visible. Dimension slack
 makes interpolation succeed. The returned polynomial must have a nonzero slice at the supplied
 center, and every wanted message must be regular there. Selecting such a center (after the paper's
-primitive and squarefree normalization) is a separate producer step. The generic interpolation
+squarefree normalization over F(X)) is a separate producer step. The generic interpolation
 backend and Newton quotient lift do not yet carry the paper's near-linear runtime proof.
 -/
 

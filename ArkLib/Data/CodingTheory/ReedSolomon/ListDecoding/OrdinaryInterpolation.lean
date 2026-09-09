@@ -12,6 +12,8 @@ import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.ToPoly
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 import ArkLib.ToCompPoly.Bivariate.CMv
+import ArkLib.ToCompPoly.Bivariate.Content
+
 /-!
 # Executable ordinary Reed--Solomon interpolation
 
@@ -57,16 +59,18 @@ message-degree cutoff `k`, multiplicity `m`, and weighted-degree bound `W`. -/
 def run (points : Array (F × F)) (params : GSInterpParams) : Option (CBivariate F) :=
   interpolationContext.interpolate points params
 
-/-- Materialize the interpolant in ordinary decoder order `[X,Y]`. Keeping this order explicit is
-what makes the result feed both direct composition and the order-zero differential root solver. -/
+/-- Remove the common F[X] factor from all Y-coefficients, then materialize in order `[X,Y]`.
+Content removal preserves every polynomial root Q(X,P(X))=0 and prevents an X-only factor from
+making every branch singular at its roots. Squarefree normalization over F(X) is a later stage. -/
 def runCMv (points : Array (F × F)) (params : GSInterpParams) :
     Option (CPoly.CMvPolynomial 2 F) :=
-  (run points params).map CBivariate.toOrdinaryCMv
+  (run points params).map fun Q => CBivariate.toOrdinaryCMv (CBivariate.primitivePartY Q)
 
 theorem runCMv_eq_some_iff {points : Array (F × F)} {params : GSInterpParams}
     {Q : CPoly.CMvPolynomial 2 F} :
     runCMv points params = some Q ↔
-      ∃ Qb, run points params = some Qb ∧ CBivariate.toOrdinaryCMv Qb = Q := by
+      ∃ Qb, run points params = some Qb ∧
+        CBivariate.toOrdinaryCMv (CBivariate.primitivePartY Qb) = Q := by
   rw [runCMv, Option.map_eq_some_iff]
 
 omit [BEq F] [LawfulBEq F] [DecidableEq F] in
@@ -161,7 +165,8 @@ theorem runCMv_exists_of_dimension_slack {points : Array (F × F)}
     (hslack : HasInterpolationDimensionSlack points params) :
     ∃ Q, runCMv points params = some Q := by
   obtain ⟨Q, hQ⟩ := run_exists_of_dimension_slack hdistinct hslack
-  exact ⟨CBivariate.toOrdinaryCMv Q, Option.map_eq_some_iff.mpr ⟨Q, hQ, rfl⟩⟩
+  exact ⟨CBivariate.toOrdinaryCMv (CBivariate.primitivePartY Q),
+    Option.map_eq_some_iff.mpr ⟨Q, hQ, rfl⟩⟩
 
 /-- Every sufficiently agreeing degree-bounded message roots the computed interpolant. In the
 paper's notation, `hbound` is `W < m A`: agreement at `A` positions gives at least `m A` roots of
@@ -200,7 +205,10 @@ theorem runCMv_solution_of_agreement {n k A : ℕ} (domain : Fin n ↪ F)
   rw [CBivariate.eval₂_fromCMvPolynomial_toOrdinaryCMv]
   have hroot := run_solution_of_agreement domain received params hdegreeParam hbound hrunQb P
     hdegree hagreement
-  have hrootPoly := congrArg CPolynomial.toPoly hroot
+  -- The interpolation witness is nonzero, so dividing out its Y-content loses no message root.
+  have hprimitive := (CBivariate.composeY_primitivePartY_eq_zero_iff
+    (run_sound hrunQb).1 (concretePolynomial P)).mpr hroot
+  have hrootPoly := congrArg CPolynomial.toPoly hprimitive
   simpa only [GuruswamiSudan.composeY_toPoly, concretePolynomial_toPoly,
     CPolynomial.toPoly_zero] using
     hrootPoly

@@ -88,8 +88,10 @@ def run : IO Unit := do
       ⟨2, 1, 2⟩ 0 == [[1, 1]]
   let withContent : CompPoly.CBivariate (ZMod 5) :=
     CPolynomial.C (x + 1) * (CPolynomial.X + 2)
-  check "ordinary bivariate content removes common X factor" <|
+  check "ordinary bivariate content identifies common X factor" <|
     CompPoly.CBivariate.yContent withContent == x + 1
+  check "ordinary primitive part divides out common X factor" <|
+    CompPoly.CBivariate.primitivePartY withContent == CPolynomial.X + 2
   let centers := ArkLib.FiniteFieldCandidates.primeFieldPrefix (ZMod 5) 3
   check "batched discriminant candidate search" <|
     CPolynomial.findNonzeroEvaluation? (.subproduct (ZMod 5) .naive .remainderOnly)
