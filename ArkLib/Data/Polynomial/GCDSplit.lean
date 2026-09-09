@@ -200,4 +200,23 @@ theorem natDegree_gcdFactor_add_gcdComplement {h e : CPolynomial F} (hh : h ≠ 
     simpa [hq] using hfac.symm
   rw [← hfac, Polynomial.natDegree_mul hg hq]
 
+/-- Removing the gcd from a squarefree modulus leaves a factor coprime to the entire tested
+polynomial. This is the guard needed to invert a denominator on the surviving root set. -/
+theorem gcdComplement_isCoprime_right {h e : CPolynomial F}
+    (hh : h ≠ 0) (hfree : Squarefree h.toPoly) :
+    IsCoprime (gcdComplement h e).toPoly e.toPoly := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
+  apply IsRelPrime.isCoprime
+  intro d hdleft hdright
+  have hdg : d ∣ (gcdFactor h e).toPoly := by
+    rw [gcdFactor_toPoly, dvd_normalize_iff]
+    apply EuclideanDomain.dvd_gcd
+    · exact hdleft.trans (by
+        have heq := congrArg CPolynomial.toPoly
+          (gcdFactor_mul_gcdComplement (h := h) (e := e) hh)
+        rw [toPoly_mul] at heq
+        exact ⟨(gcdFactor h e).toPoly, by rw [← heq]; ring⟩)
+    · exact hdright
+  exact (gcdFactor_isRelPrime_gcdComplement (e := e) hh hfree) hdg hdleft
+
 end CompPoly.CPolynomial

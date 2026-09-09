@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decod
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PositionSubsetDecoder
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
+import ArkLib.Data.Polynomial.SquarefreeSupport
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -24,6 +26,7 @@ namespace AgreementRecoveryRuntime
 open CompPoly ReedSolomon.ListDecoding
 
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+instance : Fact (Nat.Prime 2) := ⟨by decide⟩
 
 private def domain : Fin 3 ↪ ZMod 5 where
   toFun i := i.val
@@ -107,6 +110,28 @@ def run : IO Unit := do
   check "singular slope rejects" <|
     (ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
       (qy ^ 2) 0 x 2).isNone
+  check "ordinary decoder computes its own modulus" <|
+    OrdinaryQuotientDecoder.run 5 identity domain affine 2 3 equation 0 == [[1, 1]]
+  check "ordinary decoder at nonzero center" <|
+    OrdinaryQuotientDecoder.run 5 identity domain affine 2 3 equation 2 == [[1, 1]]
+  check "repeated-root slice removes singular branches" <|
+    OrdinaryQuotientDecoder.run 5 identity domain affine 2 3 ((qy-qx-1)^2) 0 == []
+  check "zero slice is rejected" <|
+    OrdinaryQuotientDecoder.run 5 identity domain affine 2 3 (qx * qy) 0 == []
+  let x2 : CPolynomial (ZMod 2) := CPolynomial.X
+  check "inseparable squarefree support" <|
+    CPolynomial.squarefreeSupport 2 ((x2 + 1) ^ 2) == x2 + 1
+  check "mixed separable and inseparable factors" <|
+    CPolynomial.squarefreeSupport 2 (x2 ^ 2 * (x2 + 1)) == x2 * (x2 + 1)
+  check "overlapping support uses lcm" <|
+    CPolynomial.squarefreeSupport 2 (x2 ^ 3) == x2
+  let irreducible := x2 ^ 2 + x2 + 1
+  check "geometric support without base-field roots" <|
+    CPolynomial.squarefreeSupport 2 (irreducible ^ 2) == irreducible
+  check "nonmonic support normalization" <|
+    CPolynomial.squarefreeSupport 5 (CPolynomial.C 2 * (x + 1) ^ 2) == x + 1
+  check "zero support policy" <|
+    CPolynomial.squarefreeSupport 5 (0 : CPolynomial (ZMod 5)) == 0
   IO.println "Agreement recovery runtime checks passed."
 
 end AgreementRecoveryRuntime

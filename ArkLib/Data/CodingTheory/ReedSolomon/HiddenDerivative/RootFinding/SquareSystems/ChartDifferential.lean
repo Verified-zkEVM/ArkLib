@@ -34,6 +34,7 @@ noncomputable def mvPolynomialDifferential (point : ι → F) (p : MvPolynomial 
   map_smul' scalar direction := by
     simp [Finset.mul_sum, mul_assoc]
 
+omit [DecidableEq ι] in
 @[simp]
 theorem mvPolynomialDifferential_X (point : ι → F) (i : ι) :
     mvPolynomialDifferential point (X i) = LinearMap.proj i := by
@@ -183,6 +184,7 @@ theorem quotientDifferential_finsetSum {J : Type*} (point : ι → F)
   | empty => simp
   | insert j s hj ih => simp [hj, ih]
 
+omit [DecidableEq ι] in
 /-- The quotient differential of `X_i * denominator` by a nonzero denominator is projection to
 coordinate `i`. -/
 theorem quotientDifferential_X_mul (point : ι → F) (i : ι)

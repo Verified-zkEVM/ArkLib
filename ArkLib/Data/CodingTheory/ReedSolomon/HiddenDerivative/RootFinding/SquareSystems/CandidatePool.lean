@@ -66,7 +66,11 @@ theorem candidatePoolQuotientDifferential_eq (center : F)
         (taylorAgreementEquation center Q K (points i) (received i) (τ := τ))
           (initialJetSeparant center Q ^ τ) direction = _
       rw [quotientDifferential_taylorAgreementEquation center Q K τ jet hseparant]
-      simp [evaluationTailPoolMap, evaluationTailMap, rationalTaylorMapDifferential]
+      simp only [LinearMap.coe_sum, LinearMap.coe_smul, Finset.sum_apply, Pi.smul_apply,
+        smul_eq_mul, evaluationTailPoolMap, evaluationTailMap, rationalTaylorMapDifferential,
+        LinearMap.coe_comp, LinearEquiv.coe_coe, LinearMap.coe_mk, AddHom.coe_mk,
+        Function.comp_apply, LinearMap.pi_apply,
+        LinearEquiv.sumArrowLequivProdArrow_symm_apply_inl]
       apply Finset.sum_congr rfl
       intro j _
       ring

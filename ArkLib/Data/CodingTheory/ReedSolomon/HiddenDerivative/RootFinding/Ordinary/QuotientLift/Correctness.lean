@@ -264,6 +264,19 @@ theorem degree_liftSteps_lt (ι : E →+* L) (θ : L)
           (by exact_mod_cast Nat.lt_succ_self j)
     simpa [liftSteps, add_assoc, add_comm, add_left_comm] using ih (j+1) _ hnext
 
+/-- Coprimality of the initial slope and modulus makes the executable inverse guard succeed. -/
+theorem regularLift_exists (Q : CPoly.CMvPolynomial 2 E) (center : E)
+    (modulus : CPolynomial E) (k : ℕ)
+    (hcoprime : IsCoprime (slope Q center).toPoly modulus.toPoly) :
+    ∃ out, regularLift? Q center modulus k = some out := by
+  obtain ⟨inverse, hinverse⟩ :=
+    (CPolynomial.inverseMod_exists_iff_coprime (slope Q center) modulus).mpr hcoprime
+  refine ⟨liftSteps Q center modulus inverse (k - 1) 1
+    (CPolynomial.C (CPolynomial.X : CPolynomial E)), ?_⟩
+  unfold regularLift?
+  rw [hinverse]
+  rfl
+
 /-- **Simultaneous branch correctness.** For every root `θ` of `h`, a successful lift equals
 any polynomial solution of degree below `k` whose centered constant coefficient is `θ`.
 The extension field appears only in this theorem; the program operates entirely on stored
