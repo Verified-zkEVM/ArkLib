@@ -35,6 +35,14 @@ theorem eval₂_map_point {n : ℕ} (ι : F →+* L) (point : Fin n → F)
     ι ((MvPolynomial.eval₂Hom (RingHom.id F) point) (fromCMvPolynomial polynomial))
   simpa only [RingHom.comp_id] using hmap.symm
 
+omit [BEq F] [LawfulBEq F] in
+/-- Vanishing at a base-field point is equivalent to vanishing at its image in an extension. -/
+theorem eval₂_map_point_eq_zero_iff {n : ℕ} (ι : F →+* L) (point : Fin n → F)
+    (polynomial : CMvPolynomial n F) :
+    polynomial.eval₂ ι (fun i => ι (point i)) = 0 ↔ polynomial.eval point = 0 := by
+  rw [eval₂_map_point]
+  exact map_eq_zero_iff ι ι.injective
+
 /-- A nonzero concrete Jacobian determinant stays nonzero after scalar extension.
 
 Rows are equations and columns are partial-derivative coordinates, matching the matrices passed
