@@ -27,12 +27,12 @@ variable {K L : Type} {ι : Type*} [CommRing K] [CommRing L] [Algebra K L]
 example : algebraMap L (L ⊗[K] L) = Algebra.TensorProduct.includeLeftRingHom := rfl
 
 example (β : Basis ι K L) (x y : L) (i : ι) :
-    decompose_tensor_algebra_rows (L := L) (K := K) β (x ⊗ₜ[K] y) i =
+    decompose_tensor_algebra_columns (L := L) (K := K) β (x ⊗ₜ[K] y) i =
       β.repr y i • x := by
   exact Basis.baseChange_repr_tmul L β x y i
 
 example (β : Basis ι K L) (x y : L) (i : ι) :
-    decompose_tensor_algebra_columns (L := L) (K := K) β (x ⊗ₜ[K] y) i =
+    decompose_tensor_algebra_rows (L := L) (K := K) β (x ⊗ₜ[K] y) i =
       β.repr x i • y := by
   let rightAlgebra := Algebra.TensorProduct.rightAlgebra (R := K) (A := L) (B := L)
   let rightModule := rightAlgebra.toModule
@@ -42,13 +42,13 @@ end Coordinates
 
 -- Row and column coordinates differ on a proper extension, despite equal tensor factors.
 example :
-    decompose_tensor_algebra_rows (L := ℂ) (K := ℝ) Complex.basisOneI
+    decompose_tensor_algebra_columns (L := ℂ) (K := ℝ) Complex.basisOneI
         (Complex.I ⊗ₜ[ℝ] (1 : ℂ)) ≠
-      decompose_tensor_algebra_columns (L := ℂ) (K := ℝ) Complex.basisOneI
+      decompose_tensor_algebra_rows (L := ℂ) (K := ℝ) Complex.basisOneI
         (Complex.I ⊗ₜ[ℝ] (1 : ℂ)) := by
   intro h
   have h01 := congrFun h 1
-  simp [decompose_tensor_algebra_rows, decompose_tensor_algebra_columns,
+  simp [decompose_tensor_algebra_columns, decompose_tensor_algebra_rows,
     Basis.baseChange_repr_tmul, Basis.baseChangeRight_repr_tmul,
     Complex.coe_basisOneI_repr] at h01
 

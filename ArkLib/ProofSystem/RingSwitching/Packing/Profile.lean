@@ -18,22 +18,19 @@ spoken, and nothing more:
 * a **basis** exhibiting the large ring `L` as free of rank `2^κ` over the small ring `B` —
   what makes packing possible in the first place: blocks of `2^κ` small-ring coefficients
   become single `L`-elements, and back;
-* a **carrier** `A` — the ring in which the relocation checks are computed. The carrier must
-  hold the packed polynomial's values and the evaluation point *simultaneously and
-  independently*, which is why it comes with
-* **two embeddings** `φ₀, φ₁ : L →+* A` — one transports evaluation-point data, the other
-  polynomial data, so that products `φ₀(x) · φ₁(y)` keep the two roles apart inside `A`
-  (when the roles need no separation, the carrier may be `L` itself and the embeddings
-  cheap maps like `id` or an automorphism);
+* a **carrier** `A` — the commutative ring in which the relocation checks are computed;
+* **two ring homomorphisms** `φ₀, φ₁ : L →+* A` — one transports evaluation-point data,
+  the other polynomial coefficients. The structure records their reconstruction laws
+  below; injectivity or other compatibility properties must be proved for each instance;
 * **coordinate maps** `decomposeRows`/`decomposeColumns : A → (Fin κ → Fin 2) → L` — the
   `2^κ` `L`-coordinates of a carrier element, one per basis index, with two
   **reconstruction laws** stating that every carrier element is recovered from its
   coordinates as a `φ₀`/`φ₁`-weighted sum over the embedded basis.
 
-The reconstruction laws make the coordinates faithful (they rule out law-free profiles such
-as `decomposeRows ≡ 0`), but they are the data-layer boundary, not a soundness theorem: the
-protocol proofs still connect the coordinates to `packMLE`, the honest folded element, and
-the instance's own identities, each instance from its own algebra.
+The reconstruction laws make each coordinate map injective, since reconstruction is a left
+inverse. When the carrier is nontrivial, this excludes identically zero coordinate maps. These
+are data-layer laws, not a soundness theorem: protocol proofs must still connect the coordinates
+to `packMLE`, the honest folded element, and the instance's own algebraic identities.
 
 ## Design notes
 
@@ -58,10 +55,10 @@ the instance's own identities, each instance from its own algebra.
 | `φ₀`, `φ₁` | `α ↦ α ⊗ 1`, `α ↦ 1 ⊗ α` | `id`, the automorphism `σ₋₁` |
 | `decomposeRows`/`Columns` | `L`-coords of `ŝ` in `L ⊗_K L` | coords of `Y ∈ R_q` via `ψ` |
 
-The only structural difference between the two — a genuine tensor carrier versus `A = L`
-with an automorphism — is absorbed by making `A`, `φ₀`, and `φ₁` explicit fields. Binius
-discharges the reconstruction laws by `Basis.sum_repr` for the base-changed bases; the Hachi
-head will discharge them from its trace identity. The `Lift` construction
+The implemented profile is `binaryTowerProfile`; the Hachi column records a proposed adapter,
+whose reconstruction and protocol identities remain to be proved. The tensor profile discharges
+both reconstruction laws by `Basis.sum_repr` for the corresponding base-changed basis.
+The `Lift` construction
 (`../Lift/`) does not instantiate this profile at all — see the family umbrella
 `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy.
 
@@ -71,8 +68,8 @@ statements.
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
+  Binary Towers*][DP24], §2.5.
 * [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based Multilinear
   Polynomial Commitments over Extension Fields."
 -/
@@ -82,40 +79,33 @@ namespace RingSwitching
 open Module
 
 /-- The packing-layer data a ring-switching reduction abstracts over. `L` is free of rank `2^κ`
-over the small ring `B` (via `basis`); `A` is the pack/trace carrier where the folded element `ŝ`
-lives (and which the batching phase sends on the wire). See the module docstring for the Binius and
-Hachi instantiations of each field. -/
+over the small ring `B` (via `basis`); `A` is the carrier of the folded element `ŝ` sent by
+batching. The two coordinate maps reconstruct with the basis in opposite embedded factors. -/
 structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
     [CommRing B] [CommRing L] [Algebra B L] where
   /-- rank-`2^κ` `B`-basis of `L`. -/
   basis : Basis (Fin κ → Fin 2) B L
-  /-- pack/trace carrier; Binius `L ⊗[K] L`, Hachi `R_q` (`= L`). The batching wire type. -/
+  /-- Carrier of the folded element sent in the batching phase. -/
   A : Type*
   [commRingA : CommRing A]
   [algLA : Algebra L A]
-  /-- column embedding `L → A`; Binius `α ↦ α ⊗ 1`, Hachi `id`. -/
+  /-- Ring homomorphism for evaluation-point data; `α ↦ α ⊗ 1` in the tensor carrier. -/
   φ₀ : L →+* A
-  /-- row embedding `L → A`; Binius `α ↦ 1 ⊗ α`, Hachi the automorphism `σ₋₁`. -/
+  /-- Ring homomorphism for polynomial coefficients; `α ↦ 1 ⊗ α` in the tensor carrier. -/
   φ₁ : L →+* A
-  /-- The `2^κ` `L`-valued "row" coordinates of an `A`-element (Binius: `β.baseChange L`-coords of
-  `ŝ ∈ L ⊗_K L`; used in step 5 / `compute_s0`). Protocol-level identities relating these
-  coordinates to `packMLE`/`compute_A_func` are discharged by the batching proofs, not by this
-  data field alone. -/
+  /-- Row coordinates, used to batch the honest folded element and the final equality tensor.
+  For the tensor carrier these are `baseChangeRight` coordinates: the right-factor scalar
+  action, distinct from `algLA`, combines them with basis vectors in the left factor. -/
   decomposeRows : A → (Fin κ → Fin 2) → L
-  /-- The `2^κ` `L`-valued "column" coordinates of an `A`-element (Binius:
-  `baseChangeRight`-coords; used in step 2 / `performCheckOriginalEvaluation`). NOTE: in the
-  Binius instance this uses the *right* `L`-module structure on `A`, distinct from `algLA`
-  (the left/`φ₀` action). -/
+  /-- Column coordinates, used to reconstruct the original evaluation claim. For the tensor
+  carrier these are `basis.baseChange L` coordinates, using the left-factor scalar action. -/
   decomposeColumns : A → (Fin κ → Fin 2) → L
-  /-- **Row reconstruction law** (the base coordinate identity from DP24 §2.5 / Hachi Theorem 2):
-  every `A`-element is recovered from its row coordinates via the `φ₀`-image of those coordinates
-  weighted by the `φ₁`-image of the basis. This is the algebraic law tying `decomposeRows` to
-  `φ₀`/`φ₁`/`basis` and rules out law-free profiles (e.g. `decomposeRows ≡ 0`). For Binius
-  (`A = L ⊗_K L`) it is `Basis.sum_repr` for `β.baseChange L`; for Hachi it is supplied by
-  Theorem 2 together with the profile-specific trace/coordinate interpretation. -/
-  decomposeRows_spec : ∀ z : A, z = ∑ u, φ₀ (decomposeRows z u) * φ₁ (basis u)
-  /-- **Column reconstruction law**: the right/`φ₁`-action dual of `decomposeRows_spec`. -/
-  decomposeColumns_spec : ∀ z : A, z = ∑ v, φ₁ (decomposeColumns z v) * φ₀ (basis v)
+  /-- Recover a carrier element from row coordinates with the basis in the `φ₀` factor.
+  For the tensor carrier this is `z = ∑ u, basis u ⊗ decomposeRows z u`. -/
+  decomposeRows_spec : ∀ z : A, z = ∑ u, φ₀ (basis u) * φ₁ (decomposeRows z u)
+  /-- Recover a carrier element from column coordinates with the basis in the `φ₁` factor.
+  For the tensor carrier this is `z = ∑ v, decomposeColumns z v ⊗ basis v`. -/
+  decomposeColumns_spec : ∀ z : A, z = ∑ v, φ₀ (decomposeColumns z v) * φ₁ (basis v)
 
 attribute [instance] RingSwitchingProfile.commRingA RingSwitchingProfile.algLA
 

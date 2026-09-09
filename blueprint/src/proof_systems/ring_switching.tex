@@ -25,25 +25,29 @@ single structure.
     \item a rank-$2^\kappa$ $B$-basis $\beta = (\beta_u)_{u \in \{0,1\}^\kappa}$ of $L$;
     \item a commutative \emph{pack/trace carrier} $A$ that is an $L$-algebra (the type sent on the
       wire);
-    \item two ring homomorphisms $\varphi_0, \varphi_1 : L \to A$ (the \emph{column} and \emph{row}
-      embeddings);
+    \item two ring homomorphisms $\varphi_0, \varphi_1 : L \to A$ for evaluation-point data and
+      polynomial coefficients, respectively;
     \item coordinate maps $\mathrm{decomposeColumns}, \mathrm{decomposeRows} : A \to (\{0,1\}^\kappa
       \to L)$;
     \item subject to the two \emph{reconstruction laws}
-      \begin{align}
-        z &= \textstyle\sum_{u} \varphi_0(\mathrm{decomposeRows}(z)_u)\cdot \varphi_1(\beta_u),
-          \label{eq:rs_rows}\\
-        z &= \textstyle\sum_{v} \varphi_1(\mathrm{decomposeColumns}(z)_v)\cdot \varphi_0(\beta_v)
-          \label{eq:rs_cols}
-      \end{align}
+      \begin{equation}
+        z = \sum_{u} \varphi_0(\beta_u)\cdot \varphi_1(\mathrm{decomposeRows}(z)_u).
+        \label{eq:rs-rows}
+      \end{equation}
+      \begin{equation}
+        z = \sum_{v} \varphi_0(\mathrm{decomposeColumns}(z)_v)\cdot \varphi_1(\beta_v).
+        \label{eq:rs-cols}
+      \end{equation}
       for all $z \in A$.
   \end{itemize}
 \end{definition}
 
-Laws \eqref{eq:rs_rows}--\eqref{eq:rs_cols} are the e\~q/trace structural identity of
-\cite[\S2.5]{DP24}: they pin the two coordinate maps to $\varphi_0,\varphi_1,\beta$ and are precisely
-what the completeness and soundness proofs consume. They also rule out degenerate profiles (e.g.
-$\mathrm{decomposeColumns} \equiv 0$), so the protocol's security statements are non-vacuous.
+Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} fix the coordinate convention of
+\cite[\S2.5]{DP24}. They are data-layer reconstruction laws, not completeness or soundness
+statements. Protocol correctness additionally needs identities connecting these coordinates to
+packing, the honest folded element, and the batched multiplier. In a nontrivial carrier the laws
+exclude an identically zero coordinate map; they do not by themselves establish a valid protocol
+instance or non-vacuous security theorem.
 
 \begin{definition}[Binius instance]
   \lean{RingSwitching.binaryTowerProfile}
@@ -53,7 +57,8 @@ $\mathrm{decomposeColumns} \equiv 0$), so the protocol's security statements are
   \emph{tensor carrier} $A := L \otimes_K L$, with $\varphi_0(\alpha) = \alpha \otimes 1$,
   $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
   for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
-  $L$-module structures on $A$. Laws \eqref{eq:rs_rows}--\eqref{eq:rs_cols} hold by
+  $L$-module structures on $A$, giving columns and rows respectively. Thus
+  $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$. Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} hold by
   \texttt{Basis.sum\_repr} on these bases and are proven in ArkLib.
 \end{definition}
 
@@ -107,17 +112,18 @@ large-field multilinear IOPCS over $L$.
 
 \subsection{Security}
 
-\begin{theorem}[Perfect completeness]
+\begin{theorem}[Perfect completeness target]
   \lean{RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness}
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_completeness}
   The full ring-switching oracle reduction is perfectly complete: an honest prover holding a witness
   in the input relation always produces a transcript accepted into the output relation. The honest
-  prover's folded $\hat s$ satisfies the verifier's column check by reconstruction law
-  \eqref{eq:rs_cols}.
+  prover's folded $\hat s$ must satisfy the verifier's column check through the packing and
+  folded-evaluation identities, in addition to reconstruction law \eqref{eq:rs-cols}. These
+  instance-specific identities remain proof obligations in the generic development.
 \end{theorem}
 
-\begin{theorem}[Round-by-round knowledge soundness]
+\begin{theorem}[Round-by-round knowledge soundness target]
   \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
   \uses{def:full_ring_switching}
   \label{thm:ring_switching_soundness}
@@ -131,6 +137,8 @@ large-field multilinear IOPCS over $L$.
   ingredient (a nonzero degree-$d$ univariate over $L$ has at most $d$ roots).
 \end{theorem}
 
-\noindent The leaf completeness and soundness proofs are in progress; the statements above are
-final and instance-independent, and instantiate to end-to-end Binius security via
-Definition~\ref{def:binary_tower_profile}.
+\noindent The leaf completeness and soundness proofs are in progress. The displayed security
+statements describe targets, not established end-to-end Binius guarantees. A correct instance
+requires the packing, folded-evaluation, batching, and final-multiplier identities as well as the
+data-layer reconstruction laws. The concrete tensor instance and its coordinate regressions do
+not discharge those full protocol obligations.

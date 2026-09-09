@@ -44,8 +44,8 @@ message flow.
 
 ## References
 
-* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+* [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
+  Binary Towers*][DP24], §2.5.
 -/
 
 noncomputable section
@@ -102,28 +102,39 @@ def φ₁ (L K : Type*) [CommRing K] [CommRing L] [Algebra K L] : L →+* Tensor
   map_add' α β := by simp only [tmul_add]
 
 open Module
-/-- Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} ŝ_u ⊗ β_u)`.
-This views `L ⊗ L` as a module over `L` (left action)
-and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
+/-- Row coordinates in `ŝ = ∑ u, β u ⊗ ŝ_u`, using the right-factor scalar action. -/
 def decompose_tensor_algebra_rows {σ : Type*} (β : Basis σ K L)
-    (s_hat : TensorAlgebra K L) : σ → L :=
-  fun u =>
-    (β.baseChange L).repr s_hat u
+    (s_hat : TensorAlgebra K L) : σ → L := by
+  letI rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
+  letI := rightAlgebra.toModule
+  exact fun u => (β.baseChangeRight (Right := L)).repr s_hat u
 
-/-- Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} β_v ⊗ ŝ_v)`.
-This views `L ⊗ L` as a module over `L` (right action)
-and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
-def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L) (s_hat : L ⊗[K] L) : σ → L :=
-  fun v => by
-    let b := Basis.baseChangeRight (b:=β) (Right:=L)
-    letI rightAlgebra : Algebra L (L ⊗[K] L) := by
-      exact Algebra.TensorProduct.rightAlgebra
-    letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
-    exact b.repr s_hat v
+/-- Column coordinates in `ŝ = ∑ v, ŝ_v ⊗ β v`, using the left-factor scalar action. -/
+def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L)
+    (s_hat : TensorAlgebra K L) : σ → L :=
+  fun v => (β.baseChange L).repr s_hat v
+
+omit [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] in
+/-- Row coordinates decompose the left factor of a pure tensor in the chosen basis. -/
+@[simp]
+theorem decompose_tensor_algebra_rows_tmul {σ : Type*} (β : Basis σ K L)
+    (x y : L) (i : σ) :
+    decompose_tensor_algebra_rows (L := L) (K := K) β (x ⊗ₜ[K] y) i = β.repr x i • y := by
+  let rightAlgebra := Algebra.TensorProduct.rightAlgebra (R := K) (A := L) (B := L)
+  let := rightAlgebra.toModule
+  exact Basis.baseChangeRight_repr_tmul β x y i
+
+omit [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] in
+/-- Column coordinates decompose the right factor of a pure tensor in the chosen basis. -/
+@[simp]
+theorem decompose_tensor_algebra_columns_tmul {σ : Type*} (β : Basis σ K L)
+    (x y : L) (i : σ) :
+    decompose_tensor_algebra_columns (L := L) (K := K) β (x ⊗ₜ[K] y) i = β.repr y i • x := by
+  exact Basis.baseChange_repr_tmul L β x y i
+
 /--
 **MLE packing**: pack a small-ring multilinear `t` into a large-ring multilinear `t'` by
-reinterpreting each chunk of `2^κ` coefficients as a single `L`-element along the basis `β`
-([DP24] Definition 2.1).
+reinterpreting each chunk of `2^κ` coefficients as a single `L`-element along the basis `β`.
 For each `w ∈ {0,1}^ℓ'`, the evaluation `t'(w)` is defined as:
 `t'(w) := ∑_{v ∈ {0,1}^κ} t(v₀, ..., v_{κ-1}, w₀, ..., w_{ℓ'-1}) ⋅ β_v`
 -/
@@ -411,10 +422,9 @@ def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' → L) : P.A :=
   let φ₁_mapped_r': Fin ℓ' → P.A := fun i => P.φ₁ (r' i)
   eqTilde φ₀_mapped_r_suffix φ₁_mapped_r'
 
-/-- Decompose the final eq tensor `e := Σ_{u ∈ {0,1}^κ} eq̃(u, r'') ⨂ e_u`,
-where e_u is the row components of e.
-Then compute `Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u`.
--/
+/-- Batch the row coordinates of the final equality tensor at `r''_batching`.
+In the tensor carrier, first write `e = ∑ u, P.basis u ⊗ e_u`, then return
+`∑ u, eqTilde(u, r''_batching) * e_u`, casting Boolean coordinates into `L`. -/
 def compute_final_eq_value (r_eval : Fin ℓ → L)
     (r'_challenges : Fin ℓ' → L) (r''_batching : Fin κ → L) : L :=
   let e_tensor := compute_final_eq_tensor κ L K P ℓ ℓ' h_l r_eval r'_challenges
@@ -460,7 +470,7 @@ open Module in
 /-- The tensor-product ring-switching profile associated with the basis `β`.
 
 The two ring homomorphisms send `x` to `x ⊗ 1` and `1 ⊗ x`. Row coordinates use the
-left-factor scalar action, and column coordinates use the right-factor scalar action. -/
+right-factor scalar action, and column coordinates use the left-factor scalar action. -/
 @[reducible] def binaryTowerProfile (κ : ℕ) [NeZero κ] (K L : Type)
     [Field K] [Field L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
     RingSwitchingProfile K L κ where
@@ -473,23 +483,23 @@ left-factor scalar action, and column coordinates use the right-factor scalar ac
   decomposeRows := fun s => decompose_tensor_algebra_rows (L := L) (K := K) (β := β) s
   decomposeColumns := fun s => decompose_tensor_algebra_columns (L := L) (K := K) (β := β) s
   decomposeRows_spec := fun z => by
-    conv_lhs => rw [← (β.baseChange L).sum_repr z]
-    refine Finset.sum_congr rfl fun u _ => ?_
-    unfold decompose_tensor_algebra_rows
-    rw [Basis.baseChange_apply, smul_tmul']
-    change _ = (φ₀ L K) _ * (φ₁ L K) _
-    unfold φ₀ φ₁
-    simp [Algebra.TensorProduct.tmul_mul_tmul]
-  decomposeColumns_spec := fun z => by
     let rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
     let rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
     conv_lhs => rw [← (Basis.baseChangeRight (b := β) (Right := L)).sum_repr z]
-    refine Finset.sum_congr rfl fun v _ => ?_
-    unfold decompose_tensor_algebra_columns
+    refine Finset.sum_congr rfl fun u _ => ?_
+    unfold decompose_tensor_algebra_rows
     rw [Basis.baseChangeRight_apply, Algebra.smul_def]
-    change algebraMap L (L ⊗[K] L) _ * _ = (φ₁ L K) _ * (φ₀ L K) _
+    change algebraMap L (L ⊗[K] L) _ * _ = (φ₀ L K) _ * (φ₁ L K) _
     rw [show (algebraMap L (L ⊗[K] L)) =
       (Algebra.TensorProduct.includeRight).toRingHom.comp (algebraMap L L) by rfl]
+    unfold φ₀ φ₁
+    simp [Algebra.TensorProduct.tmul_mul_tmul]
+  decomposeColumns_spec := fun z => by
+    conv_lhs => rw [← (β.baseChange L).sum_repr z]
+    refine Finset.sum_congr rfl fun v _ => ?_
+    unfold decompose_tensor_algebra_columns
+    rw [Basis.baseChange_apply, smul_tmul']
+    change _ = (φ₀ L K) _ * (φ₁ L K) _
     unfold φ₀ φ₁
     simp [Algebra.TensorProduct.tmul_mul_tmul]
 
