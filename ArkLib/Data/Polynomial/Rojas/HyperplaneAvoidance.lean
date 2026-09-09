@@ -218,7 +218,10 @@ theorem collisionPolynomials_degree_le {M : ℕ} (α : K)
   obtain ⟨index, _, rfl⟩ := Finset.mem_image.mp hpolynomial
   exact natDegree_collisionPolynomial_le _ _ _ _
 
-/-- Parameters causing at least one collision in at least one family. -/
+/-- Union of roots of the collision polynomials.  When the input points are
+distinct, these are exactly the parameters causing a collision in some family;
+for repeated points the corresponding zero collision polynomial has no stored
+root multiset. -/
 noncomputable def badProjectionParameters {M : ℕ} (α : K)
     (points : Fin M → Fin s → K) : Finset K := by
   classical
