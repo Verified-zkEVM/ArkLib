@@ -567,6 +567,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CoordinateSelection
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.EvaluationTail
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.Isolation
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.LinearCapture
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
@@ -668,6 +669,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSeparateSampleRefinement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.AgreementMachine
@@ -1112,6 +1114,7 @@ import ArkLib.Data.MvPolynomial.HighestJetMachine
 import ArkLib.Data.MvPolynomial.HighestJetMachineCanary
 import ArkLib.Data.MvPolynomial.HighestJetRefinement
 import ArkLib.Data.MvPolynomial.Interpolation
+import ArkLib.Data.MvPolynomial.IsolatedRoot
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.Data.MvPolynomial.NestedEvaluationTree
@@ -1367,6 +1370,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
 import ArkLib.ProofSystem.ToyProblem.Spec.General
 import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+import ArkLib.ToCompPoly.Bivariate.CMv
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import ArkLib.ToCompPoly.Multivariate.ClearedSubstitution

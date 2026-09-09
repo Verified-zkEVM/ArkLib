@@ -11,7 +11,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.Quoti
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
 import ArkLib.Data.Polynomial.NonvanishingSearch
 import ArkLib.Data.FiniteField.Candidates
 import
@@ -58,6 +58,8 @@ private def check (label : String) (condition : Bool) : IO Unit := do
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
   let x : CPolynomial (ZMod 5) := CPolynomial.X
+  check "ordinary interpolation through Newton and recovery" <|
+    OrdinaryInterpolatedDecoder.run 5 domain affine 2 3 ⟨2, 1, 2⟩ 0 == [[1, 1]]
   let centers := ArkLib.FiniteFieldCandidates.primeFieldPrefix (ZMod 5) 3
   check "batched discriminant candidate search" <|
     CPolynomial.findNonzeroEvaluation? (.subproduct (ZMod 5) .naive .remainderOnly)
