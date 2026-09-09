@@ -553,6 +553,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.Rest
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.SeparateSampleSelection
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CandidatePool
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.Cardinality
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ChartDifferential
 import
@@ -560,12 +561,16 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputableChart
 import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
+import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CoordinateSelection
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.EvaluationTail
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.LinearCapture
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorNumerator
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FirstOrderStageSum
@@ -1356,6 +1361,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
+import ArkLib.ToCompPoly.Multivariate.ClearedSubstitution
 import ArkLib.ToCompPoly.Multivariate.Eval
 import ArkLib.ToCompPoly.Multivariate.HeadCoefficient
 import ArkLib.ToCompPoly.Multivariate.PartialDerivative
