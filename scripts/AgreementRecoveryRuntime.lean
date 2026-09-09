@@ -11,6 +11,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.Quoti
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
 import ArkLib.Data.Polynomial.SquarefreeSupport
 import ArkLib.Data.Polynomial.BatchRemainder
 import ArkLib.Data.Polynomial.Rojas.AffineCover
@@ -137,6 +139,18 @@ def run : IO Unit := do
     AgreementRecovery.decode identity domain (fun _ => 0) 2 3 [pair x 0 0] == [[0, 0]]
   -- Q=(Y-X-1)(Y+X+1) has two regular branches at center zero. The one symbolic
   -- series must carry both, and gcd recovery selects the branch close to this word.
+  -- Y' = 1 produces the affine Taylor family. All later numerator slots vanish, and
+  -- selecting one agreement row plus the initial equation yields square systems in two jets.
+  let derivativeEquation := CPoly.CMvPolynomial.X (2 : Fin 3) (R := ZMod 5) - 1
+  let secondNumerator :=
+    ReedSolomon.HiddenDerivative.SquareSystems.computableRationalTaylorNumerator
+      0 derivativeEquation 2
+  check "computed first higher Taylor numerator" <| secondNumerator == 0
+  let squareSystems := ReedSolomon.HiddenDerivative.SquareSystems.squareSystemsFromEquation
+    0 derivativeEquation 3 6 2 3 (by decide) domain affine
+  check "computed square-system family includes affine solution" <|
+    decide (∃ rows ∈ squareSystems,
+      ∀ i, CPoly.CMvPolynomial.eval ![1, 1] (rows i) = 0)
   let qx := CPoly.CMvPolynomial.X (0 : Fin 2) (R := ZMod 5)
   let qy := CPoly.CMvPolynomial.X (1 : Fin 2) (R := ZMod 5)
   let family := ArkLib.Rojas.specializationFamily (qx + qy) ![2] 1

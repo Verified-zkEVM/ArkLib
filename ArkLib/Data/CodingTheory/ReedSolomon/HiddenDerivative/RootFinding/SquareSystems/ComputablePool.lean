@@ -95,7 +95,8 @@ theorem computableFullPool_semantics (center : F)
   | inl i => exact agreementRow_semantics center Q numerators separant τ hN hS _ _
   | inr i => exact paddedNumerator_semantics center Q numerators separant τ hN hS _
 
-local instance sumFinOrderForConcretePool (a b : ℕ) : LinearOrder (Fin a ⊕ Fin b) := finSumFinEquiv.linearOrder
+local instance sumFinOrderForConcretePool (a b : ℕ) : LinearOrder (Fin a ⊕ Fin b) :=
+  finSumFinEquiv.linearOrder
 
 /-- Enumerate literal concrete square systems from a supplied Taylor numerator family. -/
 def computableSquareSystems (center : F) (Q : CMvPolynomial (r + 2) F)
