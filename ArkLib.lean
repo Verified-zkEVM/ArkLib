@@ -489,6 +489,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Weighted
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Surplus
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.ConcreteEquation
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorAllSolutions
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions
@@ -708,6 +709,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleP
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleRestricted
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.UniformRateExecution
 import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
@@ -1167,7 +1169,9 @@ import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.ResultantDegree
 import ArkLib.Data.Polynomial.Rojas.AffineCover
 import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
+import ArkLib.Data.Polynomial.Rojas.HyperplaneAvoidance
 import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
+import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
 import ArkLib.Data.Polynomial.SampledCoefficients
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.SquarefreeSupport
@@ -1353,6 +1357,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import ArkLib.ToCompPoly.Multivariate.Eval
+import ArkLib.ToCompPoly.Multivariate.HeadCoefficient
 import ArkLib.ToCompPoly.Multivariate.PartialDerivative
 import ArkLib.ToCompPoly.Multivariate.Substitution
 import ArkLib.ToCompPoly.Univariate.Basic

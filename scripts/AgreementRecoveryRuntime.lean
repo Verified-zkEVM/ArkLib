@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
 import ArkLib.Data.Polynomial.SquarefreeSupport
 import ArkLib.Data.Polynomial.BatchRemainder
 import ArkLib.Data.Polynomial.Rojas.AffineCover
-import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
+import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
 import Mathlib.Algebra.Field.ZMod
 
@@ -139,6 +139,11 @@ def run : IO Unit := do
   -- series must carry both, and gcd recovery selects the branch close to this word.
   let qx := CPoly.CMvPolynomial.X (0 : Fin 2) (R := ZMod 5)
   let qy := CPoly.CMvPolynomial.X (1 : Fin 2) (R := ZMod 5)
+  let family := ArkLib.Rojas.specializationFamily (qx + qy) ![2] 1
+  check "computed Rojas base and coordinate shifts" <|
+    family.eliminant == x + CPolynomial.C 2 &&
+      family.minus 0 == x + 1 && family.plus 0 == x + CPolynomial.C 3 &&
+      family.shiftedEliminants.length == 2
   check "affine chart substitution" <|
     CPoly.CMvPolynomial.eval₂ (RingHom.id (ZMod 5)) ![1, 2]
       (ArkLib.Rojas.AffineCover.translatePolynomial 2 (qx * qy)) == 2

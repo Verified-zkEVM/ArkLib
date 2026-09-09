@@ -83,12 +83,12 @@ def RepresentsPoint (input : MapData (F := E)) (ι : E →+* L) (θ : L) (point 
 denominator is nonzero and its Taylor ratios describe a degree-`< k` message. -/
 theorem fromJet?_covers (center : E) (k : ℕ) (input : MapData (F := E))
     (numerators : List (CPoly.CMvPolynomial s E)) (denominator : CPoly.CMvPolynomial s E)
-
+    -- A nonzero eliminant gives finitely many parameters; at least k Taylor slots are available.
     (hnonzero : input.modulus ≠ 0) (hwidth : k ≤ numerators.length)
-
+    -- The parameter and jet may live in an extension even when the recovered message is over E.
     (ι : E →+* L) (θ : L) (point : Fin s → L) (P : Polynomial L)
     (hdegree : P.degree < k) (hpoint : RepresentsPoint input ι θ point)
-
+    -- On the regular chart, the numerator/denominator ratios are exactly the Taylor coefficients.
     (hdenominator : MvPolynomial.eval₂ ι point (CPoly.fromCMvPolynomial denominator) ≠ 0)
     (hcoefficients : ∀ i : Fin numerators.length,
       MvPolynomial.eval₂ ι point (CPoly.fromCMvPolynomial numerators[i]) /
