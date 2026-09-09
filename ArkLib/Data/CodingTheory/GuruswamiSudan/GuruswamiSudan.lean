@@ -117,6 +117,79 @@ theorem dist_le_of_mem_decoder
     exact hin.2
   · simp at hin
 
+/-- From the Johnson radius condition `e < n - √((k+1)·n)` there is a multiplicity
+`m > 0` whose relative agreement requirement lies strictly inside the proximity-gap
+Johnson radius `proximity_gap_johnson k n m`. As the radius approaches the Johnson
+bound the required `m` grows without bound. -/
+lemma exists_multiplicity_of_johnson {k n e : ℕ}
+    (he : (e : ℝ) < ↑n - Real.sqrt ((↑k + 1) * ↑n)) :
+    ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m := by
+  -- Extract basic bounds from `he`.
+  have heNonneg : (0 : ℝ) ≤ e := Nat.cast_nonneg e
+  have hsqrtNonneg := Real.sqrt_nonneg ((↑k + 1) * (↑n : ℝ))
+  have hnPos : (0 : ℝ) < n := by linarith
+  -- Show there exists a suitable multiplicity parameter m such that
+  -- `proximity_gap_johnson k n m > e / n`.
+  -- `proximity_gap_johnson k n m = 1 - √ρ - √ρ/(2m)` where
+  -- $\rho = (k+1)/n$.
+  -- From `he` we get $e/n < 1 - \sqrt{\rho}$; for $m$ large enough,
+  -- $\sqrt{\rho}/(2m) < \text{gap}$.
+  -- Relate the ℚ-based √ρ in `proximity_gap_johnson` to the
+  -- ℝ-based $\sqrt{(k+1) \cdot n}$ in `he`.
+  -- $\rho = (k+1)/n$ casts to $(k+1)/n$ in ℝ, and
+  -- $\sqrt{\rho} \cdot n = \sqrt{(k+1) \cdot n}$.
+  set sqrtRho : ℝ :=
+    Real.sqrt (↑((k + 1 : ℚ) / (↑n : ℚ)))
+  have hρCast :
+      (↑((k + 1 : ℚ) / (↑n : ℚ)) : ℝ) = (↑k + 1) / ↑n := by
+    push_cast
+    ring
+  have hρNonneg :
+      (0 : ℝ) ≤ ↑((k + 1 : ℚ) / (↑n : ℚ)) := by
+    rw [hρCast]
+    positivity
+  have hsqrtRhoNonneg : 0 ≤ sqrtRho :=
+    Real.sqrt_nonneg _
+  -- Key identity: sqrtRho * n = √((k+1)*n)
+  have hsqrtRel :
+      sqrtRho * ↑n = Real.sqrt ((↑k + 1) * ↑n) := by
+    conv_rhs =>
+      rw [show (↑k + 1 : ℝ) * ↑n =
+        ↑((k + 1 : ℚ) / ↑n) * (↑n * ↑n) from by
+        rw [hρCast]; field_simp]
+    rw [Real.sqrt_mul hρNonneg,
+      Real.sqrt_mul_self (le_of_lt hnPos)]
+  -- From he, derive e/n < 1 - sqrtRho
+  have hGap : (e : ℝ) / ↑n < 1 - sqrtRho := by
+    rw [div_lt_iff₀ hnPos]
+    nlinarith [hsqrtRel]
+  -- The gap is positive
+  set gap := 1 - sqrtRho - (e : ℝ) / ↑n with gapDef
+  have hgapPos : 0 < gap := by linarith
+  -- Find m₀ > sqrtRho / (2 * gap) by the Archimedean
+  -- property
+  obtain ⟨m₀, hm₀⟩ := exists_nat_gt (sqrtRho / (2 * gap))
+  have hm₀Pos : 0 < m₀ := by
+    rcases Nat.eq_zero_or_pos m₀ with rfl | h
+    · exfalso
+      simp at hm₀
+      linarith [div_nonneg hsqrtRhoNonneg
+        (by linarith : (0:ℝ) ≤ 2 * gap)]
+    · exact h
+  -- sqrtRho / (2 * m₀) < gap
+  have hm₀PosReal : (0 : ℝ) < ↑m₀ :=
+    Nat.cast_pos.mpr hm₀Pos
+  have hm₀Bound : sqrtRho / (2 * ↑m₀) < gap := by
+    have h2m : (0 : ℝ) < 2 * ↑m₀ := by linarith
+    have h2g : (0 : ℝ) < 2 * gap := by linarith
+    rw [div_lt_iff₀ h2m]
+    have hm₀' : sqrtRho / (2 * gap) < ↑m₀ := hm₀
+    rw [div_lt_iff₀ h2g] at hm₀'
+    nlinarith
+  exact ⟨m₀, hm₀Pos, by
+    simp only [proximity_gap_johnson]
+    linarith⟩
+
 /-- If a polynomial of degree $< k$ is $e$-close to the received word,
     it appears in the decoder output. -/
 theorem mem_decoder_of_dist
@@ -144,70 +217,10 @@ theorem mem_decoder_of_dist
             Real.sqrt_le_sqrt (by exact_mod_cast this)
         _ = ↑n := Real.sqrt_mul_self (le_of_lt hnPos)
     linarith
-  -- Show there exists a suitable multiplicity parameter m such that
-  -- `proximity_gap_johnson k n m > e / n`.
-  -- `proximity_gap_johnson k n m = 1 - √ρ - √ρ/(2m)` where
-  -- $\rho = (k+1)/n$.
-  -- From `he` we get $e/n < 1 - \sqrt{\rho}$; for $m$ large enough,
-  -- $\sqrt{\rho}/(2m) < \text{gap}$.
-  have hExists :
-      ∃ m : ℕ, 0 < m ∧
-        (e : ℝ) / ↑n < proximity_gap_johnson k n m := by
-    -- Relate the ℚ-based √ρ in `proximity_gap_johnson` to the
-    -- ℝ-based $\sqrt{(k+1) \cdot n}$ in `he`.
-    -- $\rho = (k+1)/n$ casts to $(k+1)/n$ in ℝ, and
-    -- $\sqrt{\rho} \cdot n = \sqrt{(k+1) \cdot n}$.
-    set sqrtRho : ℝ :=
-      Real.sqrt (↑((k + 1 : ℚ) / (↑n : ℚ)))
-    have hρCast :
-        (↑((k + 1 : ℚ) / (↑n : ℚ)) : ℝ) = (↑k + 1) / ↑n := by
-      push_cast
-      ring
-    have hρNonneg :
-        (0 : ℝ) ≤ ↑((k + 1 : ℚ) / (↑n : ℚ)) := by
-      rw [hρCast]
-      positivity
-    have hsqrtRhoNonneg : 0 ≤ sqrtRho :=
-      Real.sqrt_nonneg _
-    -- Key identity: sqrtRho * n = √((k+1)*n)
-    have hsqrtRel :
-        sqrtRho * ↑n = Real.sqrt ((↑k + 1) * ↑n) := by
-      conv_rhs =>
-        rw [show (↑k + 1 : ℝ) * ↑n =
-          ↑((k + 1 : ℚ) / ↑n) * (↑n * ↑n) from by
-          rw [hρCast]; field_simp]
-      rw [Real.sqrt_mul hρNonneg,
-        Real.sqrt_mul_self (le_of_lt hnPos)]
-    -- From he, derive e/n < 1 - sqrtRho
-    have hGap : (e : ℝ) / ↑n < 1 - sqrtRho := by
-      rw [div_lt_iff₀ hnPos]
-      nlinarith [hsqrtRel]
-    -- The gap is positive
-    set gap := 1 - sqrtRho - (e : ℝ) / ↑n with gapDef
-    have hgapPos : 0 < gap := by linarith
-    -- Find m₀ > sqrtRho / (2 * gap) by the Archimedean
-    -- property
-    obtain ⟨m₀, hm₀⟩ := exists_nat_gt (sqrtRho / (2 * gap))
-    have hm₀Pos : 0 < m₀ := by
-      rcases Nat.eq_zero_or_pos m₀ with rfl | h
-      · exfalso
-        simp at hm₀
-        linarith [div_nonneg hsqrtRhoNonneg
-          (by linarith : (0:ℝ) ≤ 2 * gap)]
-      · exact h
-    -- sqrtRho / (2 * m₀) < gap
-    have hm₀PosReal : (0 : ℝ) < ↑m₀ :=
-      Nat.cast_pos.mpr hm₀Pos
-    have hm₀Bound : sqrtRho / (2 * ↑m₀) < gap := by
-      have h2m : (0 : ℝ) < 2 * ↑m₀ := by linarith
-      have h2g : (0 : ℝ) < 2 * gap := by linarith
-      rw [div_lt_iff₀ h2m]
-      have hm₀' : sqrtRho / (2 * gap) < ↑m₀ := hm₀
-      rw [div_lt_iff₀ h2g] at hm₀'
-      nlinarith
-    exact ⟨m₀, hm₀Pos, by
-      simp only [proximity_gap_johnson]
-      linarith⟩
+  -- A suitable multiplicity parameter exists by the Johnson-radius bound
+  -- (`exists_multiplicity_of_johnson`).
+  have hExists : ∃ m : ℕ, 0 < m ∧ (e : ℝ) / ↑n < proximity_gap_johnson k n m :=
+    exists_multiplicity_of_johnson he
   -- Unfold the decoder and enter the if-branch
   simp only [decoder]
   rw [dif_pos hExists]
