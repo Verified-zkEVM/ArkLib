@@ -83,6 +83,16 @@ theorem filterNonzero?_eq_some_iff {h denominator retained : CPolynomial F} :
     · rintro ⟨_, hresult⟩
       exact hresult.symm
 
+theorem filterNonzero?_exists (h denominator : CPolynomial F) (hh : h ≠ 0) :
+    ∃ retained, filterNonzero? h denominator = some retained := by
+  have hretained : gcdComplement h denominator ≠ 0 := by
+    intro hzero
+    have hfactor := gcdFactor_mul_gcdComplement (h := h) (e := denominator) hh
+    rw [hzero, CPolynomial.mul_zero] at hfactor
+    exact hh hfactor.symm
+  exact ⟨gcdComplement h denominator,
+    filterNonzero?_eq_some_iff.mpr ⟨hretained, rfl⟩⟩
+
 theorem filterNonzero?_ne_zero {h denominator retained : CPolynomial F}
     (hresult : filterNonzero? h denominator = some retained) : retained ≠ 0 := by
   exact ((filterNonzero?_eq_some_iff.mp hresult).2.symm ▸
@@ -139,6 +149,19 @@ theorem filterZeros?_ne_zero {h retained : CPolynomial F}
       · simp [filterZeros?, hnext] at hresult
       · simp only [filterZeros?, beq_iff_eq, hnext, if_false] at hresult
         exact ih hresult hnext
+
+theorem filterZeros?_exists (h : CPolynomial F) (equations : List (CPolynomial F))
+    (hh : h ≠ 0) : ∃ retained, filterZeros? h equations = some retained := by
+  induction equations generalizing h with
+  | nil => exact ⟨h, rfl⟩
+  | cons equation equations ih =>
+      have hnext : gcdFactor h equation ≠ 0 :=
+        (toPoly_eq_zero_iff _).not.mp
+          ((monic_toPoly_iff _).mp (gcdFactor_monic hh)).ne_zero
+      obtain ⟨retained, hretained⟩ := ih (gcdFactor h equation) hnext
+      refine ⟨retained, ?_⟩
+      simp only [filterZeros?, beq_iff_eq, hnext, if_false]
+      exact hretained
 
 theorem filterZeros?_monic {h retained : CPolynomial F}
     {equations : List (CPolynomial F)} (hresult : filterZeros? h equations = some retained)
@@ -213,6 +236,15 @@ theorem filterDomain?_eq_some_iff {h denominator retained : CPolynomial F}
   unfold filterDomain?
   cases hnonzero : filterNonzero? h denominator <;> simp_all
 
+theorem filterDomain?_exists (h denominator : CPolynomial F)
+    (zeroEquations : List (CPolynomial F)) (hh : h ≠ 0) :
+    ∃ retained, filterDomain? h denominator zeroEquations = some retained := by
+  obtain ⟨nonzeroPart, hnonzero⟩ := filterNonzero?_exists h denominator hh
+  obtain ⟨retained, hretained⟩ := filterZeros?_exists nonzeroPart zeroEquations
+    (filterNonzero?_ne_zero hnonzero)
+  exact ⟨retained, filterDomain?_eq_some_iff.mpr
+    ⟨nonzeroPart, hnonzero, hretained⟩⟩
+
 theorem filterDomain?_ne_zero {h denominator retained : CPolynomial F}
     {zeroEquations : List (CPolynomial F)}
     (hresult : filterDomain? h denominator zeroEquations = some retained) : retained ≠ 0 := by
@@ -285,6 +317,24 @@ def CoordinatesSpecializeAt
   List.Forall₂ fun numerator coordinate ↦
     coordinate.toPoly.eval₂ ι θ =
       numerator.toPoly.eval₂ ι θ / denominator.toPoly.eval₂ ι θ
+
+/-- Complete proof-facing contract of a successful postprocessing result. -/
+structure CorrectOutput (input : MapData (F := F))
+    (zeroEquations : List (CPolynomial F)) (output : Representation (F := F)) : Prop where
+  modulus_ne_zero : output.modulus ≠ 0
+  modulus_monic : output.modulus.monic
+  modulus_squarefree : Squarefree output.modulus.toPoly
+  modulus_natDegree_le : output.modulus.natDegree ≤ input.modulus.natDegree
+  coordinate_degree_lt : ∀ coordinate ∈ output.coordinates,
+    coordinate.toPoly.degree < output.modulus.toPoly.degree
+  roots : ∀ {K : Type*} [Field K] (ι : F →+* K) (θ : K),
+    output.modulus.toPoly.eval₂ ι θ = 0 ↔
+      input.modulus.toPoly.eval₂ ι θ = 0 ∧
+        input.denominator.toPoly.eval₂ ι θ ≠ 0 ∧
+        ∀ equation ∈ zeroEquations, equation.toPoly.eval₂ ι θ = 0
+  coordinates : ∀ {K : Type*} [Field K] (ι : F →+* K) (θ : K),
+    output.modulus.toPoly.eval₂ ι θ = 0 →
+      CoordinatesSpecializeAt ι θ input.denominator input.numerators output.coordinates
 
 theorem materialize_coordinates_specialize
     {K : Type*} [Field K] (ι : F →+* K) (θ : K)
@@ -423,5 +473,41 @@ theorem postprocess?_coordinates_specialize
   obtain ⟨retained, inverse, hdomain, hinverse, rfl⟩ := postprocess?_eq_some_iff.mp hresult
   exact materialize_coordinates_specialize ι θ
     (filterDomain?_monic hdomain hmonic) hroot hinverse input.numerators
+
+theorem postprocess?_correct
+    {input : MapData (F := F)} {zeroEquations : List (CPolynomial F)}
+    {output : Representation (F := F)}
+    (hresult : postprocess? input zeroEquations = some output)
+    (hmonic : input.modulus.monic) (hfree : Squarefree input.modulus.toPoly) :
+    CorrectOutput input zeroEquations output := by
+  have hmodulus : input.modulus ≠ 0 :=
+    (toPoly_eq_zero_iff input.modulus).not.mp
+      ((monic_toPoly_iff input.modulus).mp hmonic).ne_zero
+  refine {
+    modulus_ne_zero := postprocess?_modulus_ne_zero hresult
+    modulus_monic := postprocess?_modulus_monic hresult hmonic
+    modulus_squarefree := postprocess?_modulus_squarefree hresult hmodulus hfree
+    modulus_natDegree_le := postprocess?_modulus_natDegree_le hresult hmodulus
+    coordinate_degree_lt := postprocess?_coordinate_degree_lt hresult hmonic
+    roots := fun ι θ ↦
+      eval₂_postprocess?_modulus_eq_zero_iff ι θ hresult hmodulus hfree
+    coordinates := fun ι θ hroot ↦
+      postprocess?_coordinates_specialize ι θ hresult hmonic hroot }
+
+/-- A monic squarefree input always produces a fully certified result; no filter-success
+or inverse-success premise is exposed to the caller. -/
+theorem postprocess?_exists_correct
+    (input : MapData (F := F)) (zeroEquations : List (CPolynomial F))
+    (hmonic : input.modulus.monic) (hfree : Squarefree input.modulus.toPoly) :
+    ∃ output, postprocess? input zeroEquations = some output ∧
+      CorrectOutput input zeroEquations output := by
+  have hmodulus : input.modulus ≠ 0 :=
+    (toPoly_eq_zero_iff input.modulus).not.mp
+      ((monic_toPoly_iff input.modulus).mp hmonic).ne_zero
+  obtain ⟨retained, hdomain⟩ := filterDomain?_exists
+    input.modulus input.denominator zeroEquations hmodulus
+  obtain ⟨output, houtput⟩ :=
+    postprocess?_exists_of_filterDomain hdomain hmodulus hfree
+  exact ⟨output, houtput, postprocess?_correct houtput hmonic hfree⟩
 
 end ArkLib.UnivariateRepresentation
