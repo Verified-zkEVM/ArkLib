@@ -11,6 +11,7 @@ import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
 import CompPoly.Univariate.BatchEval.Context
 import CompPoly.Univariate.ToPoly
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+import ArkLib.ToCompPoly.Bivariate.CMv
 /-!
 # Executable ordinary Reed--Solomon interpolation
 
@@ -48,6 +49,17 @@ def interpolationContext : GSInterpContext F :=
 /-- Execute the ordinary multiplicity interpolation stage at supplied GS parameters. -/
 def run (points : Array (F × F)) (params : GSInterpParams) : Option (CBivariate F) :=
   interpolationContext.interpolate points params
+
+/-- Run interpolation and materialize its result in ordinary decoder variable order `[X,Y]`. -/
+def runCMv (points : Array (F × F)) (params : GSInterpParams) :
+    Option (CPoly.CMvPolynomial 2 F) :=
+  (run points params).map CBivariate.toOrdinaryCMv
+
+theorem runCMv_eq_some_iff {points : Array (F × F)} {params : GSInterpParams}
+    {Q : CPoly.CMvPolynomial 2 F} :
+    runCMv points params = some Q ↔
+      ∃ Qb, run points params = some Qb ∧ CBivariate.toOrdinaryCMv Qb = Q := by
+  rw [runCMv, Option.map_eq_some_iff]
 
 omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 @[simp]
@@ -128,6 +140,14 @@ theorem run_exists_of_dimension_slack {points : Array (F × F)}
   apply interpolationContext.complete points params hdistinct
   exact ⟨witness, denseInterpolate_sound hwitness⟩
 
+/-- Dimension slack also makes the materialized CMv interpolation run succeed. -/
+theorem runCMv_exists_of_dimension_slack {points : Array (F × F)}
+    {params : GSInterpParams} (hdistinct : DistinctXCoordinates points)
+    (hslack : HasInterpolationDimensionSlack points params) :
+    ∃ Q, runCMv points params = some Q := by
+  obtain ⟨Q, hQ⟩ := run_exists_of_dimension_slack hdistinct hslack
+  exact ⟨CBivariate.toOrdinaryCMv Q, Option.map_eq_some_iff.mpr ⟨Q, hQ, rfl⟩⟩
+
 /-- Every sufficiently agreeing degree-bounded message roots the computed interpolant. -/
 theorem run_solution_of_agreement {n k A : ℕ} (domain : Fin n ↪ F)
     (received : Fin n → F) (params : GSInterpParams)
@@ -145,5 +165,25 @@ theorem run_solution_of_agreement {n k A : ℕ} (domain : Fin n ↪ F)
   · exact receivedPoints_distinct domain received
   · rw [matchingPointCount_receivedPoints]
     exact hbound.trans_le (Nat.mul_le_mul_left params.multiplicity hagreement)
+
+/-- The materialized interpolant satisfies the equation consumed by ordinary root finding. -/
+theorem runCMv_solution_of_agreement {n k A : ℕ} (domain : Fin n ↪ F)
+    (received : Fin n → F) (params : GSInterpParams)
+    (hdegreeParam : params.messageDegree = k)
+    (hbound : params.weightedDegreeBound < params.multiplicity * A)
+    {Q : CPoly.CMvPolynomial 2 F}
+    (hrun : runCMv (receivedPoints domain received) params = some Q)
+    (P : Polynomial F) (hdegree : P.degree < k)
+    (hagreement : A ≤ Code.agree (evalOnPoints domain P) received) :
+    MvPolynomial.eval₂ Polynomial.C ![Polynomial.X, P]
+        (CPoly.fromCMvPolynomial Q) = 0 := by
+  obtain ⟨Qb, hrunQb, rfl⟩ := runCMv_eq_some_iff.mp hrun
+  rw [CBivariate.eval₂_fromCMvPolynomial_toOrdinaryCMv]
+  have hroot := run_solution_of_agreement domain received params hdegreeParam hbound hrunQb P
+    hdegree hagreement
+  have hrootPoly := congrArg CPolynomial.toPoly hroot
+  simpa only [GuruswamiSudan.composeY_toPoly, concretePolynomial_toPoly,
+    CPolynomial.toPoly_zero] using
+    hrootPoly
 
 end ReedSolomon.ListDecoding.OrdinaryInterpolation
