@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Lifting
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.ConcreteEquation
 import CompPoly.Multivariate.MvPolyEquiv.Eval
 import CompPoly.Univariate.ToPoly.Impl
 /-!
@@ -28,15 +29,6 @@ open Polynomial
 variable {F : Type*} [Field F] [DecidableEq F]
 
 /-! ### Concrete representations -/
-
-/-- Interpret concrete variables `0, 1, ..., r+1` as `X, Y₀, ..., Y_r`. -/
-def finToJetVariable (r : ℕ) : Fin (r + 2) → JetVariable r :=
-  Fin.cases none some
-
-/-- Mathematical differential polynomial denoted by a concrete differential equation. -/
-noncomputable def semanticEquation {r : ℕ} (Q : CPoly.CMvPolynomial (r + 2) F) :
-    DifferentialPolynomial F r :=
-  MvPolynomial.rename (finToJetVariable r) (CPoly.fromCMvPolynomial Q)
 
 /-- Interpret a centered coefficient polynomial as an ordinary polynomial in the original
 coordinate. -/

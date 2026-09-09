@@ -10,6 +10,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
 import ArkLib.Data.Polynomial.SquarefreeSupport
 import ArkLib.Data.Polynomial.BatchRemainder
 import ArkLib.Data.Polynomial.Rojas.AffineCover
@@ -93,6 +94,17 @@ def run : IO Unit := do
     { taylorMap with numerators := [x, x, 1] }
   check "rational Taylor map empty tail locus" <|
     RationalRepresentationDecoder.run 5 identity domain affine 0 2 3 [impossibleTail] == []
+  -- The solver denominator removes U=-1; the chart denominator removes U=0;
+  -- and the Taylor tail retains U=1. The surviving branch is the message X+1.
+  let rawJet : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    ⟨((x + 1) * x * (x - 1)) ^ 2, x + 1, [x * (x + 1)]⟩
+  let jetVariable := CPoly.CMvPolynomial.X (0 : Fin 1) (R := ZMod 5)
+  check "raw jet through chart to exact message" <|
+    match TaylorChartMap.fromJet? 5 0 2 rawJet
+        [jetVariable, jetVariable, jetVariable - 1] jetVariable with
+    | none => false
+    | some r => r.modulus == x - 1 && r.coefficients == [1, 1] &&
+        AgreementRecovery.decode identity domain affine 2 3 [r] == [[1, 1]]
   let splitRoots := pair (x ^ 2 - 1) 1 1
   let extensionRoots := pair (x ^ 2 + CPolynomial.C 2) 1 1
   check "nonlinear stopped block" <|

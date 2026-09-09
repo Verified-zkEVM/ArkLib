@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import
-ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.ConcreteEquation
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
 import ArkLib.ToCompPoly.Multivariate.PartialDerivative
