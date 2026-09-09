@@ -55,4 +55,32 @@ theorem yContent_dvd_coeff (Q : CBivariate F) (index : ℕ) :
     rw [hzero, CPolynomial.toPoly_zero]
     exact dvd_zero _
 
+/-- Every common divisor of the first `bound` coefficients divides their
+computed monic gcd. -/
+theorem dvd_yContentUpTo (Q : CBivariate F) (divisor : Polynomial F) {bound : ℕ}
+    (hdivisor : ∀ index, index < bound → divisor ∣ (Q.val.coeff index).toPoly) :
+    divisor ∣ (yContentUpTo Q bound).toPoly := by
+  induction bound with
+  | zero =>
+      rw [yContentUpTo, CPolynomial.toPoly_zero]
+      exact dvd_zero divisor
+  | succ bound ih =>
+      rw [yContentUpTo]
+      let : DecidableEq F := instDecidableEqOfLawfulBEq
+      rw [CPolynomial.gcdMonic_toPoly_eq_normalize_gcd]
+      apply (EuclideanDomain.dvd_gcd (ih fun index hindex => hdivisor index (by omega))
+        (hdivisor bound (Nat.lt_succ_self bound))).trans
+      exact (normalize_associated _).symm.dvd
+
+/-- Universal characterization of the executable `Y`-content: its divisors
+are exactly the common divisors of all `F[X]` coefficients of `Q`. -/
+theorem dvd_yContent_iff (Q : CBivariate F) (divisor : Polynomial F) :
+    divisor ∣ (yContent Q).toPoly ↔
+      ∀ index, divisor ∣ (Q.val.coeff index).toPoly := by
+  constructor
+  · intro hdivisor index
+    exact hdivisor.trans (yContent_dvd_coeff Q index)
+  · intro hdivisor
+    exact dvd_yContentUpTo Q divisor fun index _ => hdivisor index
+
 end CompPoly.CBivariate
