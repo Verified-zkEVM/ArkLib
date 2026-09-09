@@ -219,4 +219,33 @@ theorem gcdComplement_isCoprime_right {h e : CPolynomial F}
     · exact hdright
   exact (gcdFactor_isRelPrime_gcdComplement (e := e) hh hfree) hdg hdleft
 
+/-- Replacing a residual by its remainder preserves the normalized agreement factor. -/
+theorem gcdFactor_modByMonic (h e : CPolynomial F) (hh : h.monic) :
+    gcdFactor h (e.modByMonic h) = gcdFactor h e := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
+  have hn : h ≠ 0 := (toPoly_eq_zero_iff h).not.mp ((monic_toPoly_iff h).mp hh).ne_zero
+  apply toPoly_injective
+  apply Polynomial.eq_of_monic_of_associated
+    ((monic_toPoly_iff _).mp (gcdFactor_monic hn))
+    ((monic_toPoly_iff _).mp (gcdFactor_monic hn))
+  apply associated_of_dvd_dvd
+  · rw [gcdFactor_toPoly h e, dvd_normalize_iff]
+    apply EuclideanDomain.dvd_gcd
+    · exact gcdFactor_dvd_left _ _
+    · have hd := gcdFactor_dvd_right h (e.modByMonic h)
+      rw [modByMonic_toPoly_eq_modByMonic _ _ hh] at hd
+      rw [← Polynomial.modByMonic_add_div e.toPoly h.toPoly]
+      exact dvd_add hd (dvd_mul_of_dvd_left (gcdFactor_dvd_left _ _) _)
+  · rw [gcdFactor_toPoly h (e.modByMonic h), dvd_normalize_iff]
+    apply EuclideanDomain.dvd_gcd
+    · exact gcdFactor_dvd_left _ _
+    · rw [modByMonic_toPoly_eq_modByMonic _ _ hh, Polynomial.modByMonic_eq_sub_mul_div]
+      exact dvd_sub (gcdFactor_dvd_right _ _)
+        (dvd_mul_of_dvd_left (gcdFactor_dvd_left _ _) _)
+
+/-- The complementary branch is also unchanged after reducing the tested equation. -/
+theorem gcdComplement_modByMonic (h e : CPolynomial F) (hh : h.monic) :
+    gcdComplement h (e.modByMonic h) = gcdComplement h e := by
+  simp only [gcdComplement, gcdFactor_modByMonic h e hh]
+
 end CompPoly.CPolynomial

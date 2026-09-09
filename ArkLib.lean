@@ -558,6 +558,8 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.EvaluationTail
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.LinearCapture
 import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
+import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FirstOrderStageSum
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FrobeniusCuts
@@ -623,6 +625,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.RateParameters
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Batched
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
@@ -1111,6 +1114,7 @@ import ArkLib.Data.MvPolynomial.SeparantChainMachineCanary
 import ArkLib.Data.MvPolynomial.WeightedDegree
 import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
 import ArkLib.Data.Polynomial.AffinePowerTruncationMachineCanary
+import ArkLib.Data.Polynomial.BatchRemainder
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.BivariateFactorDegrees
 import ArkLib.Data.Polynomial.ClassicalWronskian
@@ -1161,6 +1165,8 @@ import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
 import ArkLib.Data.Polynomial.Trivariate
+import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
+import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
 import ArkLib.Data.Polynomial.UniversalHenselNumerator
 import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.DistinctQueries
@@ -1335,6 +1341,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import ArkLib.ToCompPoly.Multivariate.Eval
+import ArkLib.ToCompPoly.Multivariate.PartialDerivative
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Finite

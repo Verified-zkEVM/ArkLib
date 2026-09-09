@@ -10,6 +10,8 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.Polynomial.SquarefreeSupport
+import ArkLib.Data.Polynomial.BatchRemainder
+import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -47,6 +49,29 @@ private def check (label : String) (condition : Bool) : IO Unit := do
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
   let x : CPolynomial (ZMod 5) := CPolynomial.X
+  -- The batch includes a quadratic, a repeated leaf, a unit modulus and an odd leaf count.
+  -- Comparing full remainders checks order and multiplicity, beyond scalar root evaluations.
+  let moduli := [x ^ 2 + 2, x - 1, 1, x ^ 2 + 2, x ^ 3 + x + 1]
+  let residual := x ^ 9 + 3 * x ^ 4 + 2
+  check "arbitrary-factor remainder tree" <|
+    CPolynomial.BatchRemainder.remainders .naive .remainderOnly residual moduli ==
+      moduli.map (residual.modByMonic ·)
+  check "empty remainder forest" <|
+    (CPolynomial.BatchRemainder.remainders .naive .naive residual []).isEmpty
+  -- From roots 1,2,3, the denominator rejects 1 and the tail equation retains only 2.
+  -- The numerator U+1 divided by U−1 then specializes to 3 at the retained root.
+  let rational : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    ⟨(x - 1) * (x - 2) * (x - 3), x - 1, [x + 1]⟩
+  check "filter invert and materialize" <|
+    match ArkLib.UnivariateRepresentation.postprocess? rational [x - 2] with
+    | none => false
+    | some out => out.modulus == x - 2 && out.coordinates == [CPolynomial.C 3]
+  let repeated : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    { rational with modulus := rational.modulus ^ 2 }
+  check "normalize repeated eliminant before filtering" <|
+    match ArkLib.UnivariateRepresentation.postprocessRaw? 5 repeated [x - 2] with
+    | none => false
+    | some out => out.modulus == x - 2 && out.coordinates == [CPolynomial.C 3]
   let identity := RingHom.id (ZMod 5)
   let splitRoots := pair (x ^ 2 - 1) 1 1
   let extensionRoots := pair (x ^ 2 + CPolynomial.C 2) 1 1

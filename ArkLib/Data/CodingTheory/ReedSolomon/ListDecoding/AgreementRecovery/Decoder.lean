@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Batched
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SampleInterpolation
 
@@ -37,7 +38,8 @@ def equations (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
 /-- Recover and check the messages suggested by a single representation. -/
 def recover (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
     (k A : ℕ) (r : FiniteRepresentation E) : List (List F) :=
-  (run k (equations base domain received r) r.modulus).filterMap fun block =>
+  (Batched.run .naive .remainderOnly k
+    (equations base domain received r) r.modulus).filterMap fun block =>
     checkedCandidate domain received k A block.positions.toFinset
 
 /-- Recover every representation and remove repeated fixed-width coefficient vectors. -/
@@ -65,6 +67,7 @@ theorem mem_decode_properties (base : F →+* E) (domain : Fin n ↪ F)
       A ≤ Code.agree (evalOnPoints domain (coefficientPolynomial cs)) received := by
   simp only [decode, List.mem_dedup, List.mem_flatMap] at hcs
   obtain ⟨r, _, hcs⟩ := hcs
+  simp only [recover, Batched.run_eq] at hcs
   obtain ⟨block, hblock, hchecked⟩ := List.mem_filterMap.mp hcs
   have hp := checkedCandidate_properties domain received k A block.positions.toFinset
     (stopped_card base domain received k r block hblock) cs hchecked
@@ -75,6 +78,7 @@ can only remove attempts, including attempts associated with unwanted specializa
 theorem recover_length_le (base : F →+* E) (domain : Fin n ↪ F)
     (received : Fin n → F) (k A : ℕ) (r : FiniteRepresentation E) :
     (recover base domain received k A r).length ≤ r.modulus.natDegree := by
+  rw [recover, Batched.run_eq]
   exact (List.length_filterMap_le _ _).trans
     (split_length_le k (equations base domain received r) ⟨r.modulus, []⟩)
 
@@ -161,6 +165,7 @@ theorem exists_mem_decode_of_coverage (base : F →+* E) (ι : E →+* L)
   refine ⟨sampleCandidate domain received k block.positions.toFinset, ?_, hpoly⟩
   simp only [decode, List.mem_dedup, List.mem_flatMap]
   refine ⟨r, hr, ?_⟩
+  simp only [recover, Batched.run_eq]
   exact List.mem_filterMap.mpr ⟨block, hblock, hchecked⟩
 
 /-- **Exact recovery from a finite cover.** Each constructor supplies monic squarefree pairs
