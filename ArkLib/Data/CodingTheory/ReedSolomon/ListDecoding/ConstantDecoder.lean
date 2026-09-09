@@ -202,55 +202,27 @@ because `run` visits observed values rather than enumerating the field.
 theorem run_exact {n : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (threshold : ℕ) (hthreshold : 1 ≤ threshold) :
     ExactOutput domain received 1 threshold (run cmp threshold received) := by
-  -- Singleton vectors stay distinct when interpreted as constant polynomials;
-  -- vector uniqueness itself follows directly from the tree-map decoder.
-  refine ⟨?_, decode_nodup cmp threshold (List.ofFn received), ?_, ?_⟩
-  · rw [run,
-      List.nodup_map_iff_inj_on (decode_nodup cmp threshold (List.ofFn received))]
-    intro left hleft right hright hequal
-    obtain ⟨leftValue, rfl, _⟩ :=
-      (mem_decode_iff_exists cmp threshold (List.ofFn received) left hthreshold).mp hleft
-    obtain ⟨rightValue, rfl, _⟩ :=
-      (mem_decode_iff_exists cmp threshold (List.ofFn received) right hthreshold).mp hright
-    rw [singleton_polynomial, singleton_polynomial] at hequal
-    exact congrArg List.singleton (Polynomial.C_injective hequal)
-  -- Degree-below-one polynomials are constants, so polynomial exactness reduces
-  -- to the frequency characterization of `decode`.
-  · intro polynomial
-    constructor
-    · intro hpolynomial
-      obtain ⟨coefficients, hcoefficients, rfl⟩ := List.mem_map.mp hpolynomial
-      obtain ⟨value, rfl, hcount⟩ :=
-        (mem_decode_iff_exists cmp threshold (List.ofFn received) coefficients hthreshold).mp
-          hcoefficients
-      rw [singleton_polynomial]
-      exact ⟨Polynomial.degree_C_lt,
-        (count_eq_agree_constant domain received value) ▸ hcount⟩
-    · rintro ⟨hdegree, hagree⟩
-      have hconstant := degree_lt_one_eq_constant hdegree
-      let value := polynomial.coeff 0
-      have hcount : threshold ≤ (List.ofFn received).count value := by
-        rw [count_eq_agree_constant domain received value]
-        simpa [value, ← hconstant] using hagree
-      apply List.mem_map.mpr
-      exact ⟨[value], (mem_decode_iff cmp threshold _ value hthreshold).mpr hcount,
-        by simpa [singleton_polynomial, value] using hconstant.symm⟩
-  -- A length-one coefficient vector is literally `[value]`; this is the vector
-  -- form of the same frequency equivalence.
-  · intro coefficients
-    constructor
-    · intro hcoefficients
-      obtain ⟨value, rfl, hcount⟩ :=
-        (mem_decode_iff_exists cmp threshold (List.ofFn received) coefficients hthreshold).mp
-          hcoefficients
-      simp only [List.length_singleton, singleton_polynomial]
-      exact ⟨trivial, Polynomial.degree_C_lt,
-        (count_eq_agree_constant domain received value) ▸ hcount⟩
-    · rintro ⟨hlength, _, hagree⟩
-      obtain ⟨value, rfl⟩ := List.length_eq_one_iff.mp hlength
-      apply (mem_decode_iff cmp threshold _ value hthreshold).mpr
+  -- Fixed width makes polynomial interpretation injective. The common constructor derives
+  -- both duplicate-freedom clauses and vector exactness from these two semantic directions.
+  apply exactOutput_of_sound_complete domain received 1 threshold _
+    (decode_nodup cmp threshold (List.ofFn received))
+  · intro coefficients hcoefficients
+    -- A retained key yields exactly one coefficient and has enough indexed agreements.
+    obtain ⟨value, rfl, hcount⟩ :=
+      (mem_decode_iff_exists cmp threshold (List.ofFn received) coefficients hthreshold).mp
+        hcoefficients
+    simp only [List.length_singleton, singleton_polynomial]
+    exact ⟨trivial, Polynomial.degree_C_lt,
+      (count_eq_agree_constant domain received value) ▸ hcount⟩
+  · intro polynomial hdegree hagree
+    -- Degree below one forces a constant, so the frequency table cannot miss a wanted message.
+    have hconstant := degree_lt_one_eq_constant hdegree
+    let value := polynomial.coeff 0
+    have hcount : threshold ≤ (List.ofFn received).count value := by
       rw [count_eq_agree_constant domain received value]
-      simpa only [singleton_polynomial] using hagree
+      simpa [value, ← hconstant] using hagree
+    exact ⟨[value], (mem_decode_iff cmp threshold _ value hthreshold).mpr hcount,
+      by simpa [singleton_polynomial, value] using hconstant.symm⟩
 
 end ExactOutput
 
