@@ -26,6 +26,11 @@ The public `squarefreeSupport` recursively removes repeated factors, merges
 overlapping recursive supports by a monic lcm, and normalizes the result.  For
 every nonzero input it is monic, nonzero, squarefree, has no larger degree, and
 has exactly the same roots after any coefficient-field extension.
+
+The generic inverse-Frobenius kernel reads `Fintype.card F`. Computing that cardinality may
+materialize the field enumeration, especially for extension fields. A fast decoder must replace
+this metadata lookup with an explicit field size and its erased correctness proof. This module
+proves exact squarefree support; its generic kernel does not establish a polynomial-bit bound.
 -/
 
 namespace CompPoly.CPolynomial
@@ -33,7 +38,8 @@ namespace CompPoly.CPolynomial
 variable {F : Type*} [Field F] [Fintype F]
 variable (p : ℕ) [Fact p.Prime] [CharP F p]
 
-/-- Executable inverse of Frobenius on a finite field. -/
+/-- In a field of size q and characteristic p, raising to q/p inverts Frobenius:
+`(a^(q/p))^p = a^q = a`, since p divides q. The exponent also works at a=0. -/
 def inverseFrobenius (a : F) : F :=
   a ^ (Fintype.card F / p)
 
