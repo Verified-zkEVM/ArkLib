@@ -10,7 +10,7 @@ import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
 import ArkLib.Data.Polynomial.SquarefreeSupport
@@ -146,6 +146,19 @@ def run : IO Unit := do
     ReedSolomon.HiddenDerivative.SquareSystems.computableRationalTaylorNumerator
       0 derivativeEquation 2
   check "computed first higher Taylor numerator" <| secondNumerator == 0
+  let rawAffineJet : ArkLib.UnivariateRepresentation.MapData (F := ZMod 5) :=
+    ⟨x - 1, 1, [x, 1]⟩
+  check "computed equation chart through final recovery" <|
+    ComputedTaylorMap.run 5 identity domain affine 0 derivativeEquation 3 6 2 3
+      [rawAffineJet] == [[1, 1]]
+  -- Y' = Y needs several nonzero recurrence steps. At jet (1,1), the fourth coefficient
+  -- is 1/4! = 4 in F₅. This checks shared-prefix indexing beyond the first higher slot.
+  let exponentialEquation := CPoly.CMvPolynomial.X (2 : Fin 3) (R := ZMod 5) -
+    CPoly.CMvPolynomial.X (1 : Fin 3)
+  let taylorTable := ReedSolomon.HiddenDerivative.SquareSystems.computableRationalTaylorTable
+    0 exponentialEquation 5
+  check "shared Taylor table reaches fourth coefficient" <|
+    taylorTable.size == 5 && CPoly.CMvPolynomial.eval ![1, 1] taylorTable[4]! == 4
   let squareSystems := ReedSolomon.HiddenDerivative.SquareSystems.squareSystemsFromEquation
     0 derivativeEquation 3 6 2 3 (by decide) domain affine
   check "computed square-system family includes affine solution" <|

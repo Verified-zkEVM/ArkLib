@@ -124,20 +124,6 @@ def computableUniversalTaylorResidual {r : ℕ} (K : ℕ) (center : F)
       (CPoly.CMvPolynomial.C center + CPoly.CMvPolynomial.X 0)
       (fun j => computableUniversalTaylorJet K j.val)) Q
 
-/-- The coefficient polynomial that determines the first Taylor coordinate after the initial
-`r+1` jet coordinates. -/
-def computableFirstHigherResidualCoefficient {r : ℕ} (center : F)
-    (Q : CPoly.CMvPolynomial (r + 2) F) : CPoly.CMvPolynomial (r + 1) F :=
-  CPoly.CMvPolynomial.headCoefficient 1
-    (computableUniversalTaylorResidual (r + 1) center Q)
-
-/-- The first nontrivial Taylor numerator. Its denominator exponent is one, while its recursive
-cleared-substitution budget is zero, so no earlier numerator substitution remains. -/
-def computableFirstHigherTaylorNumerator {r : ℕ} (center : F)
-    (Q : CPoly.CMvPolynomial (r + 2) F) : CPoly.CMvPolynomial (r + 1) F :=
-  -CPoly.CMvPolynomial.C (((r + 1).choose r : F)⁻¹) *
-    computableFirstHigherResidualCoefficient center Q
-
 theorem toFinsupp_computableUniversalTaylorMonomial {K : ℕ} (j : ℕ) (l : Fin K) :
     (computableUniversalTaylorMonomial j l).toFinsupp =
       Finsupp.single l.succ 1 + Finsupp.single 0 (l.val - j) := by
@@ -193,66 +179,5 @@ theorem rename_fromCMvPolynomial_computableUniversalTaylorResidual {r : ℕ}
       rfl
     · exact rename_fromCMvPolynomial_computableUniversalTaylorJet K j.val
   rw [hsubstitution]
-
-/-- The computed first residual coefficient is the literal coefficient used by the recurrence. -/
-theorem fromCMvPolynomial_computableFirstHigherResidualCoefficient {r : ℕ}
-    (center : F) (Q : CPoly.CMvPolynomial (r + 2) F) :
-    CPoly.fromCMvPolynomial (computableFirstHigherResidualCoefficient center Q) =
-      ((MvPolynomial.optionEquivLeft F (Fin (r + 1))
-        (universalTaylorResidual (r + 1) center (semanticEquation Q))).coeff 1) := by
-  rw [computableFirstHigherResidualCoefficient,
-    CPoly.CMvPolynomial.fromCMvPolynomial_headCoefficient]
-  change (MvPolynomial.optionEquivLeft F (Fin (r + 1))
-    (MvPolynomial.rename (finToTaylorVariable (r + 1))
-      (CPoly.fromCMvPolynomial
-        (computableUniversalTaylorResidual (r + 1) center Q)))).coeff 1 = _
-  rw [rename_fromCMvPolynomial_computableUniversalTaylorResidual]
-
-/-- The computed first higher numerator is exactly `rationalTaylorNumerator` at `r+1`. -/
-theorem fromCMvPolynomial_computableFirstHigherTaylorNumerator {r : ℕ}
-    (center : F) (Q : CPoly.CMvPolynomial (r + 2) F) :
-    CPoly.fromCMvPolynomial (computableFirstHigherTaylorNumerator center Q) =
-      rationalTaylorNumerator center (semanticEquation Q) (r + 1) := by
-  rw [computableFirstHigherTaylorNumerator,
-    CPoly.CMvPolynomial.fromCMvPolynomial_mul',
-    fromCMvPolynomial_computableFirstHigherResidualCoefficient]
-  have hneg : CPoly.fromCMvPolynomial
-      (-CPoly.CMvPolynomial.C (n := r + 1) (((r + 1).choose r : F)⁻¹)) =
-      (-MvPolynomial.C (((r + 1).choose r : F)⁻¹) :
-        MvPolynomial (Fin (r + 1)) F) := by
-    change CPoly.polyRingEquiv
-      (-CPoly.CMvPolynomial.C (n := r + 1) (((r + 1).choose r : F)⁻¹)) = _
-    rw [map_neg]
-    exact congrArg Neg.neg
-      (CPoly.CMvPolynomial.fromCMvPolynomial_C (((r + 1).choose r : F)⁻¹))
-  rw [hneg]
-  rw [rationalTaylorNumerator, dif_neg (by omega : ¬r + 1 < r + 1)]
-  congr 1
-  have hinitial :
-      (fun i : Fin (r + 1) =>
-        rationalTaylorNumerator center (semanticEquation Q) i.val) = MvPolynomial.X := by
-    funext i
-    rw [rationalTaylorNumerator, dif_pos i.isLt]
-  have hweight : (fun i : Fin (r + 1) => 2 * (i.val - r) - 1) = 0 := by
-    funext i
-    simp only [Pi.zero_apply]
-    omega
-  rw [hinitial, hweight]
-  simp only [Nat.add_sub_cancel_left, mul_one, Nat.reduceSubDiff]
-  rw [MvPolynomial.clearedSubstitution]
-  simp only [Finsupp.weight_apply, Pi.zero_apply, Nat.zero_sub, pow_zero, mul_one]
-  have hprod (monomial : Fin (r + 1) →₀ ℕ) :
-      monomial.prod (fun i exponent =>
-        (MvPolynomial.X i : MvPolynomial (Fin (r + 1)) F) ^ exponent) =
-        ∏ i ∈ monomial.support,
-          (MvPolynomial.X i : MvPolynomial (Fin (r + 1)) F) ^ monomial i := by
-    apply Finsupp.prod_of_support_subset monomial (Finset.Subset.rfl)
-    intro i _
-    simp
-  simp_rw [← hprod]
-  simpa only [MvPolynomial.monomial_eq] using
-    (MvPolynomial.support_sum_monomial_coeff
-      ((MvPolynomial.optionEquivLeft F (Fin (r + 1))
-        (universalTaylorResidual (r + 1) center (semanticEquation Q))).coeff 1)).symm
 
 end ReedSolomon.HiddenDerivative.SquareSystems

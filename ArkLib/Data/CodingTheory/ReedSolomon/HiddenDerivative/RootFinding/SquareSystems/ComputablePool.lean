@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import
-ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorNumerator
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorTable
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
 
@@ -153,8 +153,10 @@ theorem exists_computableSquareSystem (center : F) (Q : CMvPolynomial (r + 2) F)
 def squareSystemsFromEquation (center : F) (Q : CMvPolynomial (r + 2) F)
     (K τ k n : ℕ) (hk : k ≤ K) (domain : Fin n ↪ F) (received : Fin n → F) :
     Finset (Fin (r + 1) → CMvPolynomial (r + 1) F) :=
-  computableSquareSystems center Q (fun l : Fin K =>
-    computableRationalTaylorNumerator center Q l.val) τ k n hk domain received
+  let table := computableRationalTaylorTable center Q K
+  computableSquareSystems center Q
+    (fun l : Fin K => table[l.val]'(by simp [table]))
+    τ k n hk domain received
 
 /-- The computed numerator recurrence discharges the representation hypothesis in square capture.
 The remaining hypotheses are the paper's regularity, truncation, characteristic and agreement
@@ -174,9 +176,11 @@ theorem squareSystemsFromEquation_covers (center : F) (Q : CMvPolynomial (r + 2)
       (∀ i, MvPolynomial.aeval (polynomialJet center P) (fromCMvPolynomial (rows i)) = 0) ∧
       (formalJacobian (polynomialJet center P)
         (fun i => fromCMvPolynomial (rows i))).det ≠ 0 := by
-  exact exists_computableSquareSystem center Q _
-    (fun l => fromCMvPolynomial_computableRationalTaylorNumerator center Q l.val)
+  apply exists_computableSquareSystem center Q _ ?_
     k n A τ hK hk hkA hτ domain received agreementPositions P hsolution hseparant hbinomial
     hdegree hagreement
+  intro l
+  rw [computableRationalTaylorTable_get center Q K l.val l.isLt]
+  exact fromCMvPolynomial_computableRationalTaylorNumerator center Q l.val
 
 end ReedSolomon.HiddenDerivative.SquareSystems
