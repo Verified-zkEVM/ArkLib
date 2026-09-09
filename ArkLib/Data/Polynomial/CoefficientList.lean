@@ -49,4 +49,15 @@ theorem padReverse_polynomial (width : ℕ) (bs : List F) :
     JetHornerMachine.coefficientPolynomial (padReverse width bs) = ascendingPolynomial bs :=
   JetHornerMachine.coefficientPolynomial_zero_prefix (width - bs.length) bs.reverse
 
+/-- Materializing all coefficients below a strict degree bound preserves the polynomial. -/
+theorem ascendingPolynomial_ofFn (k : ℕ) (p : F[X]) (hdegree : p.degree < k) :
+    ascendingPolynomial (List.ofFn fun i : Fin k => p.coeff i) = p := by
+  ext j
+  rw [ascendingPolynomial_coeff]
+  by_cases hj : j < k
+  · simp [List.getD, hj]
+  · have hz : p.coeff j = 0 := Polynomial.coeff_eq_zero_of_degree_lt
+      (hdegree.trans_le (by exact_mod_cast Nat.le_of_not_gt hj))
+    simp [List.getD, hj, hz]
+
 end Polynomial.CoefficientList

@@ -6,6 +6,8 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PositionSubsetDecoder
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -73,6 +75,38 @@ def run : IO Unit := do
     AgreementRecovery.decode identity domain (fun _ => 2) 2 3 [pair x 0 2] == [[0, 2]]
   check "zero polynomial padding" <|
     AgreementRecovery.decode identity domain (fun _ => 0) 2 3 [pair x 0 0] == [[0, 0]]
+  -- Q=(Y-X-1)(Y+X+1) has two regular branches at center zero. The one symbolic
+  -- series must carry both, and gcd recovery selects the branch close to this word.
+  let qx := CPoly.CMvPolynomial.X (0 : Fin 2) (R := ZMod 5)
+  let qy := CPoly.CMvPolynomial.X (1 : Fin 2) (R := ZMod 5)
+  let equation := qy ^ 2 - (qx + 1) ^ 2
+  let lifted := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
+    equation 0 (x ^ 2 - 1) 3
+  match lifted with
+  | none => throw (IO.userError "regular quotient lift unexpectedly rejected")
+  | some series =>
+    check "simultaneous quotient coefficients" <|
+      series.coeff 0 == x && series.coeff 1 == x && series.coeff 2 == 0
+    let representation := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.materialize
+      (x ^ 2 - 1) 0 2 series
+    check "lifted representation recovers affine message" <|
+      AgreementRecovery.decode identity domain affine 2 3 [representation] == [[1, 1]]
+  let shiftedLift := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
+    equation 2 (x ^ 2 - CPolynomial.C 4) 2
+  match shiftedLift with
+  | none => throw (IO.userError "nonzero-center quotient lift unexpectedly rejected")
+  | some series =>
+    let representation := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.materialize
+      (x ^ 2 - CPolynomial.C 4) 2 2 series
+    check "nonzero center shifts back correctly" <|
+      AgreementRecovery.decode identity domain affine 2 3 [representation] == [[1, 1]]
+  let linear := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.materialize
+    (x - 1) 0 2 (CPolynomial.C x + CPolynomial.X)
+  check "linear modulus reduces constant parameter" <|
+    linear.coefficients == [1, 1]
+  check "singular slope rejects" <|
+    (ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
+      (qy ^ 2) 0 x 2).isNone
   IO.println "Agreement recovery runtime checks passed."
 
 end AgreementRecoveryRuntime
