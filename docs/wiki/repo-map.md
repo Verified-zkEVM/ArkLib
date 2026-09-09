@@ -53,10 +53,32 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
-- DSFS oracle sampling and marginal laws: `ArkLib/OracleReduction/Security/OracleSampling.lean`.
-  Paper-named samplers and fixed answers: `ArkLib/OracleReduction/FiatShamir/DuplexSponge/Defs.lean`.
-- DSFS hybrid state handoff and de-abort policy: `DuplexSponge/Security/KeyLemma.lean`.
-  The separate abortable experiment lives in `DuplexSponge/Security/BadEvents/Lemma5_8.lean`.
+### Fiat–Shamir security and trace tools
+
+- `ArkLib/OracleReduction/Security/Basic.lean` owns the adaptive NARG experiments.
+  `adaptiveNARGKnowledgeSoundness` and `adaptiveNARGKnowledgeSoundnessWithCoins` choose one
+  extractor for an entire bound/error family; `WithExtractor` supports fixed-extractor proofs.
+- `ArkLib/OracleReduction/Security/StateRestoration.lean` owns the corresponding SR
+  experiments and the uniform `knowledgeSoundnessWithCoins` premise.
+- `ArkLib/OracleReduction/FiatShamir/SingleSalt.lean` transports that supplied SR extractor
+  through `fsSRDelegatingExtractor`. Transcript reconstruction rescans per challenge round;
+  it is not currently a single-pass algorithm.
+- `ArkLib/OracleReduction/FiatShamir/DuplexSponge/Security/KnowledgeSoundness.lean` owns
+  the DSFS transport and `duplex_sponge_fiat_shamir_knowledge_soundness`:
+  one extractor works for the entire budget family, given corresponding SR and Section 5
+  hypotheses. The contract explicitly permits fresh randomness and both prover/verifier
+  logs. There is no prover handle, so extraction is non-rewinding; polynomial-time guarantees
+  and equivalence to CO25's deterministic, prover-trace-only definition are not established.
+- `ArkLib/OracleReduction/ProtocolSpec/DeriveTranscript.lean` proves canonical challenge-log
+  reconstruction. Arbitrary larger logs need a consistency/first-match argument.
+- `ArkLib/ToVCVio/Tactic/VCVNorm.lean` owns monad normalization and checked log stripping.
+- `ArkLib/OracleReduction/Security/OracleSampling.lean` owns native VCVio table sampling
+  and marginal laws. DSFS paper-named samplers and the fixed-oracle `D_𝔖.answer_run` law
+  live in `DuplexSponge/Defs.lean`.
+- `DuplexSponge/Security/KeyLemma.lean` documents the hybrid state handoff and de-abort
+  policy; `BadEvents/Lemma5_8.lean` owns the separate abortable experiment.
+
+### General navigation
 
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
