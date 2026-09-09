@@ -11,10 +11,30 @@ import Mathlib.Tactic.FieldSimp
 /-!
 # Closed constants for the hybrid first-order argument
 
-This file bounds the exact regular-stage degree sums in the hybrid first-order transfer by the
-closed constants used in the rate theorem.  All final comparisons are stated before rounding:
-later cardinality theorems can therefore compare a coerced cardinality directly with the real
-closed bound, without making an invalid comparison between a ceiling and its unrounded input.
+This file relates three versions of the finite first-order constants.
+
+* The **raw** expressions retain an actual derivative degree `e` and, for exceptional sets, a
+  coordinate split `L`.
+* The **optimized** expressions maximize over every `e ≤ M` and minimize the exceptional charge
+  over admissible splits. Their natural-valued variants apply `ceil` only after this optimization.
+* The **closed** expressions `hybridLambdaClosed` and `hybridEClosed` are the formulas displayed
+  in the rate theorems.
+
+Here `D = k-1`, `theta = (n-D)/(A-D)`, `mu` is the total jet-degree cap, and `M` is the permitted
+`Y₁`-degree cap. The staircase
+
+`T = sum_{r=1}^M r * (2 * (mu-M) + r)`
+
+has the closed form `(mu-M)M(M+1) + M(M+1)(2M+1)/6`. It bounds the stage sums for every actual
+degree `e ≤ M`. In particular, the list comparison controls the complete raw expression
+`theta * B₁(e) + mu-e` by its endpoint envelope `Lambda = 2DthetaT + mu-M`; the tail term is the
+endpoint charge and need not equal the actual residual degree.
+
+The exceptional constant decomposes as `E = E₀ + E₁ + E₂`. Here `E₀` is the ordinary-tail
+budget, `E₁ = (24D²h+8D)theta²T` is the joint-family regular-stage budget, and
+`E₂ = 4D(n-D-1)thetaT` is the generic-fiber budget. All closed comparisons are stated before
+rounding, so a later theorem may compare a coerced cardinality with the real bound without
+confusing it with its natural ceiling.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -23,24 +43,26 @@ open scoped BigOperators
 
 noncomputable section
 
-/-- The denominator exponent used by the first-order specialization. -/
+/-! ## Regular-stage sums and their closed staircase bound -/
+
+/-- The denominator exponent `tau = 2D-1` used by first-order specialization. -/
 def hybridTau (D : ℕ) : ℕ := 2 * D - 1
 
-/-- The exact fixed-fiber degree sum over the `e` regular derivative stages. -/
+/-- The raw generic-fiber degree sum `B₁(e)` over the `e` regular derivative stages. -/
 def hybridB1 (D μ e : ℕ) : ℕ :=
   ∑ i ∈ Finset.range e,
     firstOrderCurveFiberStageOne (D + 1) (μ - i) (e - i) (hybridTau D)
 
-/-- The exact joint degree sum over the `e` regular derivative stages. -/
+/-- The raw joint-family degree sum `J₁(e)` over the `e` regular derivative stages. -/
 def hybridJ1 (D h μ e : ℕ) : ℕ :=
   ∑ i ∈ Finset.range e,
     firstOrderCurveJointStageOne (D + 1) 1 h (μ - i) (e - i) (hybridTau D)
 
-/-- The staircase moment controlling the first-order stage degrees. -/
+/-- The staircase `sum_{r=1}^e r * (2 * (mu-e) + r)` controlling stage degrees. -/
 def hybridMoment (μ e : ℕ) : ℕ :=
   ∑ r ∈ Finset.range e, (r + 1) * (2 * (μ - e) + (r + 1))
 
-/-- The closed real form of `hybridMoment μ M`. -/
+/-- The closed real form `T` of `hybridMoment mu M`. -/
 def hybridT (μ M : ℕ) : ℝ :=
   ((μ - M : ℕ) : ℝ) * M * (M + 1) +
     (M : ℝ) * (M + 1) * (2 * M + 1) / 6
@@ -288,7 +310,7 @@ theorem hybridT_mono {μ e M : ℕ} (heM : e ≤ M) (hMμ : M ≤ μ) :
       · have heM' : e ≤ M := by omega
         exact (ih heM' (by omega)).trans (hstep M (by omega))
 
-/-- The exact fiber sum for every actual `e ≤ M` is bounded by the closed real constant. -/
+/-- For every actual derivative degree `e ≤ M`, `B₁(e) ≤ 2D*T`. -/
 theorem hybridB1_cast_le_closed {D μ M e : ℕ}
     (hD : 1 ≤ D) (heM : e ≤ M) (hMμ : M ≤ μ) :
     (hybridB1 D μ e : ℝ) ≤ 2 * D * hybridT μ M := by
@@ -303,7 +325,7 @@ theorem hybridB1_cast_le_closed {D μ M e : ℕ}
       apply mul_le_mul_of_nonneg_left (hybridT_mono heM hMμ)
       positivity
 
-/-- The exact joint sum for every actual `e ≤ M` is bounded by the closed real constant. -/
+/-- For every actual derivative degree `e ≤ M`, `J₁(e) ≤ (12D²h+4D)*T`. -/
 theorem hybridJ1_cast_le_closed {D h μ M e : ℕ}
     (hD : 1 ≤ D) (heM : e ≤ M) (hMμ : M ≤ μ) :
     (hybridJ1 D h μ e : ℝ) ≤
@@ -320,11 +342,16 @@ theorem hybridJ1_cast_le_closed {D h μ M e : ℕ}
       apply mul_le_mul_of_nonneg_left (hybridT_mono heM hMμ)
       positivity
 
-/-- The unrounded list-size expression at actual derivative degree `e`. -/
+/-! ## Raw and closed list constants -/
+
+/-- The unrounded list expression `theta*B₁(e) + mu-e` at the actual derivative degree `e`. -/
 def hybridListRaw (theta : ℝ) (D μ e : ℕ) : ℝ :=
   theta * hybridB1 D μ e + (μ - e : ℕ)
 
-/-- The printed closed, unrounded list constant. -/
+/-- The displayed closed list constant `Lambda = 2DthetaT + mu-M`.
+
+The tail `mu-M` belongs to the endpoint envelope at `M`; it is not asserted to equal the actual
+residual degree `mu-e`. -/
 def hybridLambdaClosed (theta : ℝ) (D μ M : ℕ) : ℝ :=
   2 * D * theta * hybridT μ M + (μ - M : ℕ)
 
@@ -339,7 +366,7 @@ theorem hybridListRaw_le_succ {theta : ℝ} {D μ e : ℕ}
   push_cast
   nlinarith [mul_le_mul_of_nonneg_left hB (show 0 ≤ theta by linarith)]
 
-/-- The unrounded list expression is maximized at the declared cap `M`. -/
+/-- The complete raw list expression is maximized at the endpoint `M` whenever `e ≤ M ≤ mu`. -/
 theorem hybridListRaw_mono {theta : ℝ} {D μ e M : ℕ}
     (htheta : 1 ≤ theta) (hD : 1 ≤ D) (heM : e ≤ M) (hMμ : M ≤ μ) :
     hybridListRaw theta D μ e ≤ hybridListRaw theta D μ M := by
@@ -355,7 +382,7 @@ theorem hybridListRaw_mono {theta : ℝ} {D μ e M : ℕ}
       · have heM' : e ≤ M := by omega
         exact (ih heM' (by omega)).trans (hybridListRaw_le_succ htheta hD (by omega))
 
-/-- The optimized raw list expression is bounded by the printed closed constant. -/
+/-- Every raw list expression at an actual `e ≤ M` is bounded by the displayed closed formula. -/
 theorem hybridListRaw_le_closed {theta : ℝ} {D μ e M : ℕ}
     (htheta : 1 ≤ theta) (hD : 1 ≤ D) (heM : e ≤ M) (hMμ : M ≤ μ) :
     hybridListRaw theta D μ e ≤ 2 * D * theta * hybridT μ M + (μ - M : ℕ) := by
@@ -373,7 +400,11 @@ theorem hybridListRaw_le_lambdaClosed {theta : ℝ} {D μ e M : ℕ}
     hybridListRaw theta D μ e ≤ hybridLambdaClosed theta D μ M := by
   simpa only [hybridLambdaClosed] using hybridListRaw_le_closed htheta hD heM hMμ
 
-/-- The ordinary order-zero tail charge, including its separate zero-stage value. -/
+/-- The ordinary-tail charge, including its separate zero-stage value.
+
+At positive degree `b`, its three terms bound exceptional resultant/content specializations,
+incidence for factorwise rational images, and accidental agreements on persistent graph lines.
+At the endpoint `b = mu` this is the component `E₀` of `hybridEClosed`. -/
 def hybridOrdinaryRaw (theta : ℝ) (n D h b : ℕ) : ℝ :=
   if b = 0 then h else
     (2 * b - 1 : ℕ) * h + theta * (h + b + 4 * D * b * h) +
@@ -406,7 +437,12 @@ theorem hybridOrdinaryRaw_mono_to_top {theta : ℝ} {n D h b μ : ℕ}
         ((n - D - 1 : ℕ) : ℝ) * μ := by gcongr
     linarith
 
-/-- The direct agreement ratio `theta = (n-D)/(A-D)`. -/
+/-! ## Retention ratios and exceptional-set constants -/
+
+/-- The agreement-incidence ratio `theta = (n-D)/(A-D)`.
+
+It converts fixed-word degree bounds into candidate counts. The geometric hypotheses
+`D < A ≤ n` imply `1 ≤ theta`. -/
 def hybridTheta (n D A : ℕ) : ℝ :=
   ((n - D : ℕ) : ℝ) / (A - D : ℕ)
 
@@ -418,7 +454,7 @@ def hybridLambdaOne (n A L : ℕ) : ℝ :=
 def hybridLambdaTwo (n D L : ℕ) : ℝ :=
   ((n - D : ℕ) : ℝ) / (L - D : ℕ)
 
-/-- The balanced integer split `D + ceil((A-D)/2)`. -/
+/-- The balanced split `L = D + ceil((A-D)/2)` used for the regular-stage transfer. -/
 def hybridBalancedL (D A : ℕ) : ℕ :=
   D + (A - D + 1) / 2
 
@@ -537,21 +573,28 @@ theorem hybridTheta_one_le {n D A : ℕ} (hDA : D < A) (hAn : A ≤ n) :
   simp only [one_mul]
   exact_mod_cast (show A - D ≤ n - D by omega)
 
-/-- The optimized, unrounded exception charge for actual degree `e` and split `L`. -/
+/-- The raw exceptional-set charge for actual derivative degree `e` and split `L`.
+
+Its three summands are the ordinary-tail charge, the retained joint-family charge, and the
+fixed-coordinate generic-fiber charge. -/
 def hybridERaw (theta : ℝ) (n D A h μ e L : ℕ) : ℝ :=
   hybridOrdinaryRaw theta n D h (μ - e) +
     hybridLambdaOne n A L * theta * hybridJ1 D h μ e +
     (n - L : ℕ) * hybridLambdaTwo n D L * hybridB1 D μ e
 
-/-- The printed closed, unrounded exception constant. -/
+/-- The displayed closed exceptional-set constant `E = E₀ + E₁ + E₂`.
+
+`E₀` is `hybridOrdinaryRaw theta n D h mu`. The remaining summands are
+`E₁ = (24D²h+8D)theta²T` and `E₂ = 4D(n-D-1)thetaT`. -/
 def hybridEClosed (theta : ℝ) (n D h μ M : ℕ) : ℝ :=
   hybridOrdinaryRaw theta n D h μ +
     (24 * D ^ 2 * h + 8 * D) * theta ^ 2 * hybridT μ M +
     4 * D * (n - D - 1 : ℕ) * theta * hybridT μ M
 
-/-- At the balanced split, every optimized raw exception charge is bounded by the printed
-closed constant.  In particular, the ordinary tail is charged only once and receives no
-retention-ratio factor. -/
+/-- At the balanced split, every raw charge with actual degree `e ≤ M` is bounded by `E`.
+
+The proof uses `J₁(e) ≤ (12D²h+4D)T` and `B₁(e) ≤ 2DT`; both retention ratios are at most
+`2theta`. The ordinary tail is charged once and receives no retention-ratio factor. -/
 theorem hybridERaw_balanced_le_closed {n D A h μ M e : ℕ}
     (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hμ : 1 ≤ μ) (heM : e ≤ M) (hMμ : M ≤ μ) :
@@ -607,12 +650,14 @@ theorem hybridERaw_balanced_le_closed {n D A h μ M e : ℕ}
     4 * D * (n - D - 1 : ℕ) * theta * hybridT μ M
   linarith
 
-/-- The optimized raw list constant, maximizing over every possible actual degree `e ≤ M`. -/
+/-! ## Optimized and rounded constants -/
+
+/-- The optimized raw list constant: the maximum over every actual degree `e ≤ M`. -/
 noncomputable def hybridListOptimizedRaw (theta : ℝ) (D μ M : ℕ) : ℝ := by
   classical
   exact ((Finset.range (M + 1)).image (hybridListRaw theta D μ)).max' (by simp)
 
-/-- The natural-valued optimized list bound rounds only the optimized raw expression. -/
+/-- The natural list bound obtained by ceiling the optimized raw maximum. -/
 noncomputable def hybridListOptimizedCeil (theta : ℝ) (D μ M : ℕ) : ℕ :=
   ⌈hybridListOptimizedRaw theta D μ M⌉₊
 
@@ -627,20 +672,21 @@ noncomputable def hybridERawAtDegree
       exact ⟨D + 1, by simp only [Finset.mem_Icc]; omega⟩)
   · exact 0
 
-/-- The optimized raw exception constant, maximizing the split-optimized charge over every
-possible actual degree `e ≤ M`. -/
+/-- The optimized raw exceptional-set constant.
+
+For each `e ≤ M` it first minimizes over admissible splits, then maximizes over `e`. -/
 noncomputable def hybridEOptimizedRaw
     (theta : ℝ) (n D A h μ M : ℕ) : ℝ := by
   classical
   exact ((Finset.range (M + 1)).image
     (hybridERawAtDegree theta n D A h μ)).max' (by simp)
 
-/-- The natural-valued optimized exception bound rounds only the optimized raw expression. -/
+/-- The natural exceptional-set bound obtained by ceiling the optimized raw constant. -/
 noncomputable def hybridEOptimizedCeil
     (theta : ℝ) (n D A h μ M : ℕ) : ℕ :=
   ⌈hybridEOptimizedRaw theta n D A h μ M⌉₊
 
-/-- The optimized raw list maximum is bounded by the printed raw closed list constant. -/
+/-- The optimized raw list maximum is bounded by the displayed closed `Lambda`. -/
 theorem hybridListOptimizedRaw_le_closed {n D A μ M : ℕ}
     (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMμ : M ≤ μ) :
     hybridListOptimizedRaw (hybridTheta n D A) D μ M ≤
@@ -674,8 +720,9 @@ private theorem hybridERawAtDegree_le_balanced {theta : ℝ} {n D A h μ e : ℕ
   simp only [Finset.mem_Icc]
   omega
 
-/-- The finite max/min optimized raw exception expression is bounded by the printed raw closed
-constant. -/
+/-- The max/min optimized raw exceptional-set expression is bounded by the displayed closed `E`.
+
+This comparison still occurs in `ℝ`; applying a ceiling is a separate final operation. -/
 theorem hybridEOptimizedRaw_le_closed {n D A h μ M : ℕ}
     (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hμ : 1 ≤ μ) (hMμ : M ≤ μ) :
     hybridEOptimizedRaw (hybridTheta n D A) n D A h μ M ≤

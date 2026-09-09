@@ -9,11 +9,20 @@ import
 import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 import ArkLib.ToMathlib.Set.Finite
 /-!
-# Complete automatic first-order hybrid list bound
+# Complete first-order lists above the rate curve
 
-This file passes from the uniform finite-family Lambda estimate to the complete set of close
-Reed--Solomon message polynomials. Finiteness is derived from that same estimate, and the final
-theorems retain the optimized raw, optimized natural ceiling, and printed closed raw bounds.
+The first-order threshold is
+`a₁(ρ) = (3ρ + 2√(ρ(5 - ρ)(2 - ρ))) / (8 - ρ)`. For `a > a₁(ρ)`, the automatic
+recipe uses `a₀ = min(a,(1+a₁(ρ))/2)`, `β = 3(1-a₀)/(2(2-ρ))`, positive surplus `S`, and
+`m = ceil(4/S)`. The finite surplus supplies a nonzero first-order interpolation equation.
+Separant descent counts regular solution families while retaining the `Y₁`-degree cap; the
+residual ordinary equation supplies the tail count.
+
+The main finite theorem retains the optimized real and natural bounds. The paper-facing
+projection displays
+`Λ = 2DθT + μ - M`, where `D = k - 1`, `θ = (n - D) / (A - D)`, and
+`T = ∑_{r=1}^M r(2(μ-M)+r)`. The same bound applies to every finite subset of close
+polynomials, which proves that the complete list is finite even over an infinite field.
 -/
 
 open Polynomial
@@ -44,15 +53,27 @@ private theorem mem_closePolynomialSet_iff_isAgreementSolution
     congr 1
 
 open Classical in
-/-- The complete close-polynomial set is finite and obeys all three automatic Lambda bounds.
-Finiteness follows from the natural bound on every finite subset, rather than from a finite-field
-assumption. -/
+/-- The complete close-polynomial set is finite and obeys the optimized and closed `Λ` bounds.
+
+The rate and agreement hypotheses make the automatic interpolation surplus positive. The
+characteristic guard covers Taylor recovery through degree `D` and differentiation through the
+`Y₁`-degree cap. Finiteness follows from a uniform natural bound on every finite subset, rather
+than from a finite-field assumption. -/
 theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
     {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1)
+    /-
+
+    The dimension and integer agreement threshold enforce the fixed physical rate
+    and the requested agreement fraction.
+    -/
     (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
+    /-
+
+    Distinct evaluation points turn agreement into a count of distinct polynomial roots.
+    -/
     {F : Type*} [Field F] (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨ max D (automaticDerivativeCap rho a) < ringChar F) :
     (closePolynomialSet domain received k A).Finite ∧
@@ -87,12 +108,165 @@ theorem automaticFirstOrder_closePolynomialSet_finite_and_card_le
   · simpa only [T, hncard] using hwhole.2.2
 
 open Classical in
+/-- **The complete first-order list has size at most `Λ = 2DθT + μ-M`.**
+
+The list consists of all polynomials of degree strictly below `k` that agree with the
+received word at at least `A` of the distinct evaluation points. It includes zero when
+zero meets the agreement threshold. Finiteness is explicit because the field may be infinite.
+
+With `η₁ = a - a₁(ρ)`, the companion rate bound proves `Λ = O_ρ(n/η₁³)`.
+This declaration gives the finite expression; it does not assert a decoder runtime. In
+characteristic zero the characteristic guard is automatic; in positive characteristic it
+requires the characteristic to exceed both `D` and `M`.
+-/
+theorem automatic_first_order_list_bound
+    /-
+
+    Choose the physical rate and agreement fraction before the code data.
+    -/
+    (ρ a : ℝ)
+    (hρ : 0 < ρ)
+    (hρone : ρ < 1)
+    (ha : automaticFirstOrderThreshold ρ < a)
+    (haone : a < 1)
+    /-
+
+    Dimension k means degree strictly below k; A counts agreeing positions.
+    -/
+    (n k A : ℕ)
+    (hn : 0 < n)
+    (hk : 2 ≤ k)
+    (hrate : (k : ℝ) ≤ ρ * n)
+    (hagree : a * n ≤ A)
+    (hAn : A ≤ n)
+    /-
+
+    Distinct evaluation points over an arbitrary field.
+    -/
+    {F : Type*} [Field F]
+    (domain : Fin n ↪ F)
+    -- Taylor recovery through degree D divides by 1,...,D; separant descent
+    -- differentiates at most M times in Y₁. These require p > D and p > M
+    -- in positive characteristic. The ordinary tail is characteristic-free,
+    -- so no p > μ assumption is needed.
+    (hchar : ringChar F = 0 ∨
+      max (k - 1) (automaticDerivativeCap ρ a) < ringChar F)
+    (received : Fin n → F) :
+    /-
+
+    Candidate degrees are at most D. Agreement strictly exceeds D.
+    -/
+    let D := k - 1
+    /-
+
+    θ = (n-D)/(A-D) is the incidence factor for fixed-word solution families.
+    The hypotheses give 1 ≤ θ ≤ 1/(a-ρ).
+    -/
+    let θ := hybridTheta n D A
+    /-
+
+    M = floor(βm) bounds the Y₁ exponent; μ = ceil(m a₀/ρ) bounds
+    total degree in (Y₀,Y₁). The recipe proves its normalized M equals the
+    printed floor and satisfies M ≤ μ.
+    -/
+    let M := automaticDerivativeCap ρ a
+    let μ := automaticJetDegree ρ a
+    /-
+
+    T = sum_{r=1}^M r(2(μ-M)+r)
+      = (μ-M)M(M+1) + M(M+1)(2M+1)/6.
+    This bounds the accumulated algebraic degree at the regular stages.
+    -/
+    let T := hybridT μ M
+    /-
+
+    At actual Y₁-degree e ≤ M, the raw count is θ B₁(e) + μ-e.
+    The whole expression is monotone in e. Evaluating its envelope at M,
+    then using B₁(M) ≤ 2DT, gives the printed bound below.
+    Thus μ-M is the tail term of the envelope, not necessarily the actual tail degree.
+    -/
+    let Λ : ℝ := 2 * D * θ * T + (μ - M : ℕ)
+    /-
+
+    Finiteness and the cardinality bound concern the complete list, even over infinite fields.
+    -/
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤ Λ := by
+  dsimp only
+  obtain ⟨hfinite, _hraw, _hceil, hclosed⟩ :=
+    automaticFirstOrder_closePolynomialSet_finite_and_card_le
+      hρ hρone ha haone hn rfl hk hrate hagree hAn domain received hchar
+  exact ⟨hfinite, hclosed⟩
+
+open Classical in
+/-- Paper-facing positive-slack form of `automatic_first_order_list_bound`.
+
+Here `a = a₁(ρ) + η₁` and `η₁ > 0`, so agreement lies strictly above the first-order rate
+curve. The companion rate theorem bounds the displayed `Λ` by `O_ρ(n / η₁³)`. -/
+theorem automatic_first_order_list_bound_of_slack
+    (ρ η₁ : ℝ)
+    (hρ : 0 < ρ)
+    (hρone : ρ < 1)
+    (hη₁ : 0 < η₁)
+    (haone : automaticFirstOrderThreshold ρ + η₁ < 1)
+    /-
+
+    Dimension k means degree < k; A is the integer agreement threshold.
+    -/
+    (n k A : ℕ)
+    (hn : 0 < n)
+    (hk : 2 ≤ k)
+    (hrate : (k : ℝ) ≤ ρ * n)
+    (hagree : (automaticFirstOrderThreshold ρ + η₁) * n ≤ A)
+    (hAn : A ≤ n)
+    /-
+
+    Distinct evaluation points turn agreement into a count of distinct polynomial roots.
+    -/
+    {F : Type*} [Field F]
+    (domain : Fin n ↪ F)
+    (hchar : ringChar F = 0 ∨
+      max (k - 1)
+        (automaticDerivativeCap ρ (automaticFirstOrderThreshold ρ + η₁)) < ringChar F)
+    (received : Fin n → F) :
+    /-
+
+    Positive slack fixes a strictly above a₁(ρ); the recipe below is evaluated at this a.
+    -/
+    let a := automaticFirstOrderThreshold ρ + η₁
+    let D := k - 1
+    let θ := hybridTheta n D A
+    let M := automaticDerivativeCap ρ a
+    let μ := automaticJetDegree ρ a
+    let T := hybridT μ M
+    let Λ : ℝ := 2 * D * θ * T + (μ - M : ℕ)
+    /-
+
+    Finiteness and the cardinality bound concern the complete list, even over infinite fields.
+    -/
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤ Λ := by
+  dsimp only
+  exact automatic_first_order_list_bound ρ (automaticFirstOrderThreshold ρ + η₁)
+    hρ hρone (lt_add_of_pos_right _ hη₁) haone n k A hn hk hrate hagree hAn
+    domain hchar received
+
+open Classical in
 /-- Physical-parameter form with the exact integer threshold `A = ceil (a*n)`. -/
 theorem automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
     {rho a : ℝ} {n k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1)
+    /-
+
+    The dimension and integer agreement threshold enforce the fixed physical rate
+    and the requested agreement fraction.
+    -/
     (hn : 0 < n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    /-
+
+    Distinct evaluation points turn agreement into a count of distinct polynomial roots.
+    -/
     {F : Type*} [Field F] (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max (k - 1) (automaticDerivativeCap rho a) < ringChar F) :

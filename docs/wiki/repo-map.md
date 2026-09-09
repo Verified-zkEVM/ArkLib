@@ -86,6 +86,19 @@ The complete-list, exceptional-set, finite-probability, and executable interface
 separate field assumptions and length conditions. A bit-complexity theorem is not implied by
 the existing primitive-work ledger.
 
+For a first reading, start with the public bounds rather than the decoder implementation.
+The first-order list and MCA entry points display the closed `Λ` and `E` bounds separately;
+optimized real bounds and integer ceilings remain available in the same mathematical layer.
+Their annotations recall the paper formulas and explain each parameter's role. Read
+`HiddenDerivative/Parameters/FirstOrder/AutomaticRecipe` for the finite recipe and
+`HybridConstants` for the stage sums and comparison with the closed bounds.
+
+The uniform-capacity entry point spells out the derivative order, length threshold, and list
+prefactor. The fixed-rate statement retains its positive exponent slack and eventual small-gap
+quantifiers. Johnson MCA uses the maximum-degree ratio `(k-1)/n`, distinct from the physical rate
+`k/n`, and needs no characteristic restriction. Each headline states its field assumptions;
+finite-field probability and executable correctness are separate interfaces.
+
 The supporting modules are grouped by mathematical role:
 
 - `AgreementList` owns complete polynomial lists and elementary finiteness/incidence facts.

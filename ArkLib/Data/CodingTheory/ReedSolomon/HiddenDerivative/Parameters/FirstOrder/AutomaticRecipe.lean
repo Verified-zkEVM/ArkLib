@@ -17,9 +17,27 @@ import Mathlib.Tactic.Ring
 /-!
 # Automatic finite parameters for first-order interpolation
 
-This file implements the literal finite recipe used above the clean first-order rate curve.  Its
-parameters depend only on the physical rate and agreement fraction.  The coding-theoretic
-certificate and hybrid characteristic transfer remain in their owner modules.
+This file implements the finite first-order interpolation recipe above the clean rate curve.
+The inputs are the physical rate `rho` and requested agreement fraction `a`; every constructed
+parameter depends only on this pair.
+
+Write `a₁(rho)` for `automaticFirstOrderThreshold rho`. The recipe uses
+
+* `a₀ = min a ((1 + a₁(rho)) / 2)` to retain the requested agreement guarantee while staying
+  uniformly away from agreement one;
+* `beta = 3 * (1 - a₀) / (2 * (2 - rho))`, the derivative-degree proportion that optimizes the
+  limiting source-minus-rank bracket;
+* `S`, the resulting positive normalized surplus;
+* `m = ceil(4 / S)`, which makes `m * S ≥ 4` and pays the full `3 * m ^ 2` rounding loss;
+* `M = floor(beta * m)`, the cap on the exponent of the hidden derivative variable `Y₁`;
+* `mu = ceil(m * a₀ / rho)`, the total-degree cap in the jet variables `Y₀, Y₁`; and
+* `h = max 1 (floor(r * mu / (N₀ - r)))`, the symbolic challenge height, where `N₀` is the
+  source count and `r` is the exact certified local-rank budget.
+
+The file proves that the normalized implementation of `M` equals the displayed raw floor, that
+the finite source-minus-rank surplus remains positive after rounding, and that `h` bounds every
+scaled kernel quotient. The coding-theoretic certificate and characteristic transfer remain in
+their owner modules.
 -/
 
 open scoped BigOperators
@@ -30,42 +48,56 @@ noncomputable section
 
 set_option autoImplicit false
 
-/-- The clean first-order agreement threshold. -/
+/-! ## Continuous rate and surplus parameters -/
+
+/-- The clean first-order agreement threshold
+`a₁(rho) = (3rho + 2 * sqrt(rho(5-rho)(2-rho))) / (8-rho)`. -/
 def automaticFirstOrderThreshold (rho : ℝ) : ℝ :=
   (3 * rho + 2 * √(rho * (5 - rho) * (2 - rho))) / (8 - rho)
 
-/-- The agreement gap above the clean first-order threshold. -/
+/-- The uncapped agreement slack `eta₁ = a - a₁(rho)`. -/
 def automaticEtaOne (rho a : ℝ) : ℝ :=
   a - automaticFirstOrderThreshold rho
 
-/-- The capped gap used to keep the recipe stable near agreement one. -/
+/-- The capped slack `eta₀ = min eta₁ ((1-a₁(rho))/2)`.
+
+The second term keeps the tuned agreement uniformly below one. -/
 def automaticEtaZero (rho a : ℝ) : ℝ :=
   min (automaticEtaOne rho a) ((1 - automaticFirstOrderThreshold rho) / 2)
 
-/-- The agreement value at which the automatic finite support is tuned. -/
+/-- The tuned agreement `a₀ = a₁(rho) + eta₀`.
+
+Equivalently, `a₀ = min a ((1+a₁(rho))/2)`: tuning at `a₀` preserves every agreement guarantee
+at `a` while keeping the numerical parameters stable near one. -/
 def automaticAgreement (rho a : ℝ) : ℝ :=
   automaticFirstOrderThreshold rho + automaticEtaZero rho a
 
-/-- The derivative-degree ratio in the automatic recipe. -/
+/-- The derivative-degree proportion `beta = 3(1-a₀)/(2(2-rho))`.
+
+This value maximizes the bracket in the limiting dimension-minus-rank estimate. -/
 def automaticBeta (rho a : ℝ) : ℝ :=
   3 * (1 - automaticAgreement rho a) / (2 * (2 - rho))
 
-/-- The clean surplus bracket at the capped agreement. -/
+/-- The source-minus-rank bracket
+`a₀²/rho - 1 + 3(1-a₀)²/(4(2-rho))` at the tuned agreement. -/
 def automaticGapBracket (rho a : ℝ) : ℝ :=
   automaticAgreement rho a ^ 2 / rho - 1 +
     3 * (1 - automaticAgreement rho a) ^ 2 / (4 * (2 - rho))
 
-/-- The positive normalized finite-surplus margin. -/
+/-- The normalized surplus `S = beta/2 * (a₀²/rho - 1 + 3(1-a₀)²/(4(2-rho)))`.
+
+The positivity proof below is the analytic reason that the integer recipe has more source
+coefficients than local constraints. -/
 def automaticSurplus (rho a : ℝ) : ℝ :=
   automaticBeta rho a * automaticGapBracket rho a / 2
 
-/-- The continuous source density evaluated at the capped agreement and derivative ratio. -/
+/-- The continuous source density evaluated at `a₀` and `beta`. -/
 def automaticSourceDensity (rho a : ℝ) : ℝ :=
   let a₀ := automaticAgreement rho a
   let beta := automaticBeta rho a
   beta * a₀ ^ 2 / (2 * rho) - a₀ * beta ^ 2 / 2 + rho * beta ^ 3 / 6
 
-/-- The single cubic envelope for the continuous local-rank density. -/
+/-- The cubic envelope `beta/2 - beta²/2 + beta³/3` for the local-rank density. -/
 def automaticRankDensityEnvelope (rho a : ℝ) : ℝ :=
   let beta := automaticBeta rho a
   beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3
@@ -167,49 +199,62 @@ private theorem automaticSourceRoundingModel_ge
     linarith
   exact hleft.trans hconcave
 
-/-- The literal multiplicity `ceil (4 / S)`. -/
+/-! ## Rounded finite parameters -/
+
+/-- The interpolation multiplicity `m = ceil(4/S)`.
+
+Since `S > 0`, this choice gives `4 ≤ m*S`; the later finite estimate uses that inequality to
+absorb all `3*m²` rounding loss. -/
 def automaticMultiplicity (rho a : ℝ) : ℕ :=
   ⌈4 / automaticSurplus rho a⌉₊
 
-/-- The unnormalized derivative cap `floor (beta*m)`. -/
+/-- The paper's derivative cap `Mraw = floor(beta*m)` before normalization. -/
 def automaticDerivativeCapRaw (rho a : ℝ) : ℕ :=
   ⌊automaticBeta rho a * automaticMultiplicity rho a⌋₊
 
-/-- The rounded total jet degree `ceil (m*a0/rho)`. -/
+/-- The total jet-degree cap `mu = ceil(m*a₀/rho)` in the variables `Y₀, Y₁`. -/
 def automaticJetDegree (rho a : ℝ) : ℕ :=
   ⌈automaticMultiplicity rho a * automaticAgreement rho a / rho⌉₊
 
-/-- Generic normalization of the derivative cap by the total jet degree. -/
+/-- The normalized hidden-derivative cap `M = min Mraw mu`.
+
+Normalization makes the definition meaningful without hypotheses. In the public parameter range,
+`automaticDerivativeCap_eq_raw` proves that this minimum is exactly the paper's `floor(beta*m)`.
+-/
 def automaticDerivativeCap (rho a : ℝ) : ℕ :=
   min (automaticDerivativeCapRaw rho a) (automaticJetDegree rho a)
 
-/-- The paper's uniform real source lower count `N₀`. -/
+/-- The real source lower count `N₀` for fixed `rho`, `a₀`, `m`, `M`, and `mu`. -/
 def automaticSourceCountAt (rho a₀ : ℝ) (m M mu : ℕ) : ℝ :=
   ∑ t ∈ Finset.range (mu + 1),
     (min t M + 1 : ℕ) * max (m * a₀ - rho * t) 0
 
-/-- The paper's uniform real source lower count `N₀` at the automatic parameters. -/
+/-- The source count `N₀` specialized to the automatic parameters. -/
 def automaticSourceCount (rho a : ℝ) : ℝ :=
   automaticSourceCountAt rho (automaticAgreement rho a) (automaticMultiplicity rho a)
     (automaticDerivativeCap rho a) (automaticJetDegree rho a)
 
-/-- The exact all-`M` local-rank count in the literal automatic recipe. -/
+/-- The exact certified local-rank budget `r(m,M)` when every local constraint uses the cap `M`. -/
 def automaticRankCountAt (m M : ℕ) : ℕ :=
   ∑ s ∈ Finset.range m,
     ((s + 1) * (M + 1) - (2 * s + 1 - m) * (s + M + 1 - m))
 
-/-- The exact all-`M` local-rank count at the automatic parameters. -/
+/-- The exact certified local-rank budget `r` specialized to the automatic `m` and `M`. -/
 def automaticRankCount (rho a : ℝ) : ℕ :=
   automaticRankCountAt (automaticMultiplicity rho a) (automaticDerivativeCap rho a)
 
-/-- The uniform polynomial-kernel challenge height. -/
+/-- The challenge height `h = max 1 (floor(r*mu/(N₀-r)))`.
+
+The denominator is positive because the finite source count exceeds the certified local-rank budget.
+This choice depends only on `rho` and `a`, and uniformly bounds the symbolic kernel quotient.
+-/
 def automaticChallengeHeight (rho a : ℝ) : ℕ :=
   let r := automaticRankCount rho a
   let mu := automaticJetDegree rho a
   let N₀ := automaticSourceCount rho a
   max 1 ⌊(r : ℝ) * mu / (N₀ - r)⌋₊
 
-/-- A signed real upper count for the exact local rank. -/
+/-- A signed real upper count for the certified local-rank budget. -/
 def automaticRankCubicUpperCount (m M : ℕ) : ℝ :=
   (∑ s ∈ Finset.range m, ((s + 1 : ℕ) : ℝ) * (M + 1)) -
     ∑ s ∈ Finset.Ico (m - M) m,
@@ -219,7 +264,7 @@ private theorem automatic_rank_correction_le_ambient {m M s : ℕ} (hs : s < m) 
     (2 * s + 1 - m) * (s + M + 1 - m) ≤ (s + 1) * (M + 1) := by
   apply Nat.mul_le_mul <;> omega
 
-/-- The exact all-`M` local rank is bounded by its signed cubic upper count. -/
+/-- The certified all-`M` local-rank budget is bounded by its signed cubic upper count. -/
 theorem automaticRankCountAt_le_cubicUpperCount (m M : ℕ) :
     (automaticRankCountAt m M : ℝ) ≤ automaticRankCubicUpperCount m M := by
   rw [automaticRankCountAt, automaticRankCubicUpperCount, Nat.cast_sum]
@@ -486,7 +531,7 @@ theorem automaticFirstOrderThreshold_lt_sqrt {rho : ℝ}
   dsimp only [x, s] at hroot ⊢
   nlinarith
 
-/-- The threshold and its capped gap agree with the paper's minimum formula for `a₀`. -/
+/-- The tuned agreement is the paper's value `a₀ = min a ((1+a₁(rho))/2)`. -/
 theorem automaticAgreement_eq_min (rho a : ℝ) :
     automaticAgreement rho a = min a ((1 + automaticFirstOrderThreshold rho) / 2) := by
   unfold automaticAgreement automaticEtaZero automaticEtaOne
@@ -626,7 +671,10 @@ theorem automaticSurplus_pos {rho a : ℝ}
   positivity [automaticBeta_pos hrho hrhoOne ha haOne,
     automaticGapBracket_pos hrho hrhoOne ha]
 
-/-- The displayed `S` is exactly the continuous source-minus-rank density gap. -/
+/-- The displayed `S` is exactly the continuous source-minus-rank density gap.
+
+This identity explains the choice of `beta`: substituting the optimizing derivative proportion
+turns the difference of the two cubic densities into the explicit surplus formula. -/
 theorem automatic_sourceDensity_sub_rankDensityEnvelope {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) :
     automaticSourceDensity rho a - automaticRankDensityEnvelope rho a =
@@ -646,7 +694,7 @@ theorem automaticGapBracket_cleared {rho a : ℝ}
   field_simp [ne_of_gt hrho, ne_of_gt (show 0 < 2 - rho by linarith)]
   ring
 
-/-- Ceiling the reciprocal surplus gives the exact scaling inequality `4 ≤ m*S`. -/
+/-- The choice `m = ceil(4/S)` gives the exact scaling inequality `4 ≤ m*S`. -/
 theorem four_le_automaticMultiplicity_mul_surplus {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1) :
@@ -687,7 +735,7 @@ theorem automaticDerivativeCapRaw_le_jetDegree {rho a : ℝ}
       (⌈m * automaticAgreement rho a / rho⌉₊ : ℝ) := Nat.le_ceil _
   exact_mod_cast hfloor.trans hceil
 
-/-- Normalization therefore leaves the literal raw derivative cap unchanged. -/
+/-- In the public parameter range, normalization leaves `M = floor(beta*m)` unchanged. -/
 theorem automaticDerivativeCap_eq_raw {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1) :
@@ -958,13 +1006,18 @@ theorem automatic_rounding_loss_bound {rho a : ℝ}
   nlinarith [mul_nonneg (sq_nonneg (m : ℝ))
     (sub_nonneg.mpr hfour)]
 
-/-- The literal finite counts satisfy the manuscript's complete source-minus-rank estimate. -/
+/-- The finite source-minus-rank gap dominates `m³*S - 3*m²`.
+
+The source lattice sum loses nothing relative to its continuous density lower bound. The rank
+estimate can exceed its cubic density by at most `3*m²`; subtracting the two comparisons yields
+the displayed finite surplus. -/
 theorem automaticFiniteSurplusEstimate {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1) :
     automaticMultiplicity rho a ^ 3 * automaticSurplus rho a -
         3 * automaticMultiplicity rho a ^ 2 ≤
       automaticSourceCount rho a - automaticRankCount rho a := by
+  -- Compare the rounded source count and certified rank budget with their continuous cubic models.
   have hsource := automaticSourceDensity_mul_cube_le_sourceCount
     hrho hrhoOne ha haOne
   have hrank := automaticRankCount_le_densityEnvelope_add_rounding
@@ -978,7 +1031,7 @@ theorem automaticFiniteSurplusEstimate {rho a : ℝ}
         rw [← hdensity]
         ring]
 
-/-- A quarter of the normalized surplus remains after every rounding loss. -/
+/-- At least `m³*S/4` remains after the complete finite rounding loss. -/
 theorem automaticSurplusQuarter_le_source_sub_rank {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1) :
@@ -987,7 +1040,7 @@ theorem automaticSurplusQuarter_le_source_sub_rank {rho a : ℝ}
   (automatic_rounding_loss_bound hrho hrhoOne ha haOne).trans
     (automaticFiniteSurplusEstimate hrho hrhoOne ha haOne)
 
-/-- The automatic source count strictly exceeds the exact local rank. -/
+/-- The automatic source count `N₀` strictly exceeds the certified local-rank budget `r`. -/
 theorem automaticRankCount_lt_sourceCount {rho a : ℝ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
     (ha : automaticFirstOrderThreshold rho < a) (haOne : a < 1) :
@@ -1003,7 +1056,8 @@ theorem automaticChallengeDenominator_pos {rho a : ℝ}
     0 < automaticSourceCount rho a - automaticRankCount rho a :=
   sub_pos.mpr (automaticRankCount_lt_sourceCount hrho hrhoOne ha haOne)
 
-/-- The automatic challenge height has exactly the paper's maximum/floor form. -/
+/-- The automatic challenge height has the paper's formula
+`h = max 1 (floor(r*mu/(N₀-r)))`. -/
 theorem automaticChallengeHeight_eq (rho a : ℝ) :
     automaticChallengeHeight rho a =
       max 1 ⌊(automaticRankCount rho a : ℝ) * automaticJetDegree rho a /
@@ -1093,7 +1147,10 @@ theorem scaledKernelHeight_le_of_source_surplus
       ⌊(r : ℝ) * mu / (N₀ - r)⌋₊ := Nat.le_floor hcast
   exact hfloor.trans (le_max_right _ _)
 
-/-- The finite automatic height uniformly bounds every scaled polynomial-kernel quotient. -/
+/-- The finite automatic height uniformly bounds every scaled polynomial-kernel quotient.
+
+The positive gap `N₀-r` supplies a nonzero kernel vector, and the floor in `h` provides the
+uniform symbolic challenge-degree bound required by the interpolation certificate. -/
 theorem automatic_scaledKernelHeight_le_challengeHeight
     {rho a : ℝ} {n N : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)

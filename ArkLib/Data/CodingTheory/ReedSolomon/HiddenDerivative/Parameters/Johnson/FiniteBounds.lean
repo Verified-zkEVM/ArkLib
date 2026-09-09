@@ -27,7 +27,7 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-/-- The physical degree rate `D / n`. -/
+/-- The maximum-degree ratio `D / n`; the physical code rate is `(D + 1) / n`. -/
 def johnsonRhoMinus (n D : ℕ) : ℝ :=
   (D : ℝ) / n
 
