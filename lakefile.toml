@@ -83,6 +83,12 @@ name = "regular-lift-runtime"
 srcDir = "scripts"
 root = "RegularLiftRuntime"
 
+# Finite-representation recovery, including moduli without base-field roots.
+[[lean_exe]]
+name = "agreement-recovery-runtime"
+srcDir = "scripts"
+root = "AgreementRecoveryRuntime"
+
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link
 # Lake explicitly; keeping it out of the default target avoids adding linter-only dependencies to
 # the library build graph.

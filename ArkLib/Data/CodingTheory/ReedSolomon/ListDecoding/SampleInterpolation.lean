@@ -63,7 +63,8 @@ private theorem coefficientVector_length (k : ℕ) (p : CompPoly.CPolynomial F)
   | zero => simp [coefficientVector]
   | succ k =>
       simpa [coefficientVector] using
-        (HiddenDerivative.JetPreparationMachine.prepared_length k p.val.toList (by simpa using hsize))
+        (HiddenDerivative.JetPreparationMachine.prepared_length k p.val.toList
+          (by simpa using hsize))
 
 omit [DecidableEq F] in
 private theorem ascendingPolynomial_toList (p : CompPoly.CPolynomial F) :

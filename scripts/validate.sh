@@ -24,6 +24,7 @@ Default checks:
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
   - lake exe regular-lift-runtime
+  - lake exe agreement-recovery-runtime
   - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
@@ -123,6 +124,10 @@ lake exe hachi-runtime
 echo ""
 echo "# Running regular-lifting compiled runtime checks"
 lake exe regular-lift-runtime
+
+echo ""
+echo "# Running finite-representation recovery runtime checks"
+lake exe agreement-recovery-runtime
 
 echo ""
 echo "# Checking umbrella imports"
