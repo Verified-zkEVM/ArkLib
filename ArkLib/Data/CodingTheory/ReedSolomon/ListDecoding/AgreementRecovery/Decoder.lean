@@ -35,17 +35,51 @@ def equations (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
     (r : FiniteRepresentation E) : List (Fin n × CPolynomial E) :=
   List.ofFn fun i => (i, r.residual (base (domain i)) (base (received i)))
 
-/-- Recover and check the messages suggested by a single representation. -/
+/-- Recover one representation with explicit multiplication and monic-remainder backends.
+The backend laws are used in `Batched.run_eq`, so changing a correct backend preserves the
+actual messages and their order. -/
+def recoverWith (M : CPolynomial.MulContext E) (D : CPolynomial.ModContext E)
+    (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
+    (k A : ℕ) (r : FiniteRepresentation E) : List (List F) :=
+  (Batched.run M D k (equations base domain received r) r.modulus).filterMap fun block =>
+    checkedCandidate domain received k A block.positions.toFinset
+
+/-- Recover and check the messages using canonical multiplication and remainder-only division. -/
 def recover (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
     (k A : ℕ) (r : FiniteRepresentation E) : List (List F) :=
-  (Batched.run .naive .remainderOnly k
-    (equations base domain received r) r.modulus).filterMap fun block =>
-    checkedCandidate domain received k A block.positions.toFinset
+  recoverWith .naive .remainderOnly base domain received k A r
+
+/-- Correct polynomial backends preserve the complete recovered message list. -/
+@[simp]
+theorem recoverWith_eq (M : CPolynomial.MulContext E) (D : CPolynomial.ModContext E)
+    (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
+    (k A : ℕ) (r : FiniteRepresentation E) :
+    recoverWith M D base domain received k A r = recover base domain received k A r := by
+  simp [recover, recoverWith]
 
 /-- Recover every representation and remove repeated fixed-width coefficient vectors. -/
 def decode (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
     (k A : ℕ) (representations : List (FiniteRepresentation E)) : List (List F) :=
   (representations.flatMap (recover base domain received k A)).dedup
+
+/-- Shared decoding with caller-selected, certified polynomial backends. -/
+def decodeWith (M : CPolynomial.MulContext E) (D : CPolynomial.ModContext E)
+    (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
+    (k A : ℕ) (representations : List (FiniteRepresentation E)) : List (List F) :=
+  (representations.flatMap (recoverWith M D base domain received k A)).dedup
+
+/-- Backend substitution preserves the total decoder function, hence all exactness theorems. -/
+@[simp]
+theorem decodeWith_eq (M : CPolynomial.MulContext E) (D : CPolynomial.ModContext E)
+    (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
+    (k A : ℕ) (representations : List (FiniteRepresentation E)) :
+    decodeWith M D base domain received k A representations =
+      decode base domain received k A representations := by
+  unfold decodeWith decode
+  congr 1
+  apply List.flatMap_congr
+  intro r _
+  exact recoverWith_eq M D base domain received k A r
 
 omit [DecidableEq F] [BEq F] [LawfulBEq F] in
 /-- The stopped sample contains exactly `k` distinct input positions. -/
@@ -67,7 +101,7 @@ theorem mem_decode_properties (base : F →+* E) (domain : Fin n ↪ F)
       A ≤ Code.agree (evalOnPoints domain (coefficientPolynomial cs)) received := by
   simp only [decode, List.mem_dedup, List.mem_flatMap] at hcs
   obtain ⟨r, _, hcs⟩ := hcs
-  simp only [recover, Batched.run_eq] at hcs
+  simp only [recover, recoverWith, Batched.run_eq] at hcs
   obtain ⟨block, hblock, hchecked⟩ := List.mem_filterMap.mp hcs
   have hp := checkedCandidate_properties domain received k A block.positions.toFinset
     (stopped_card base domain received k r block hblock) cs hchecked
@@ -78,7 +112,7 @@ can only remove attempts, including attempts associated with unwanted specializa
 theorem recover_length_le (base : F →+* E) (domain : Fin n ↪ F)
     (received : Fin n → F) (k A : ℕ) (r : FiniteRepresentation E) :
     (recover base domain received k A r).length ≤ r.modulus.natDegree := by
-  rw [recover, Batched.run_eq]
+  rw [recover, recoverWith, Batched.run_eq]
   exact (List.length_filterMap_le _ _).trans
     (split_length_le k (equations base domain received r) ⟨r.modulus, []⟩)
 
@@ -165,7 +199,7 @@ theorem exists_mem_decode_of_coverage (base : F →+* E) (ι : E →+* L)
   refine ⟨sampleCandidate domain received k block.positions.toFinset, ?_, hpoly⟩
   simp only [decode, List.mem_dedup, List.mem_flatMap]
   refine ⟨r, hr, ?_⟩
-  simp only [recover, Batched.run_eq]
+  simp only [recover, recoverWith, Batched.run_eq]
   exact List.mem_filterMap.mpr ⟨block, hblock, hchecked⟩
 
 /-- **Exact recovery from a finite cover.** Each constructor supplies monic squarefree pairs

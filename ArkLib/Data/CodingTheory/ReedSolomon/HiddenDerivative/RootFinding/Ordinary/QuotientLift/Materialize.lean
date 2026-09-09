@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import
-ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Correctness
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Semantics
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 import ArkLib.Data.Polynomial.CoefficientList
 import CompPoly.Univariate.Deriv

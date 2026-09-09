@@ -523,11 +523,15 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometr
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionExtension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionGeometry
 import
-ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Correctness
-import
-ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Machine
-import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Newton
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.NewtonProof
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Semantics
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Series
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.Slice
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.DirectRegularCoefficient
@@ -1158,6 +1162,8 @@ import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.ResultantDegree
+import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
+import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
 import ArkLib.Data.Polynomial.SampledCoefficients
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.SquarefreeSupport
@@ -1165,6 +1171,7 @@ import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
 import ArkLib.Data.Polynomial.Trivariate
+import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
 import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
 import ArkLib.Data.Polynomial.UniversalHenselNumerator

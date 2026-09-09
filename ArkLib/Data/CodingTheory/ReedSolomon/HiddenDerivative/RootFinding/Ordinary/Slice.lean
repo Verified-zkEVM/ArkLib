@@ -6,6 +6,8 @@ Authors: Quang Dao
 
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
+import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.NewtonProof
 import ArkLib.Data.Polynomial.GCDSplit
 
 /-!
@@ -83,19 +85,19 @@ theorem solution_at_center (ι : E →+* L) (q : MvPolynomial (Fin 2) E)
 /-- A polynomial solution whose initial value is a modulus root is represented by the actual
 successful lift after materialization. This composes slice semantics, centered lifting, and
 shift-back, without choosing or enumerating any other roots of the modulus. -/
-theorem lifted_represents_solution
+theorem newtonLifted_represents_solution
     (ι : E →+* L) (Q : CPoly.CMvPolynomial 2 E) (center : E)
     (modulus : CPolynomial E) (hmonic : modulus.toPoly.Monic)
-    (k : ℕ) (hk : 0 < k) (out : Series E)
-    (hrun : regularLift? Q center modulus k = some out)
+    (k : ℕ) (out : Series E)
+    (hrun : newtonLift? Q center modulus k = some out)
     (P : Polynomial L) (hdegree : P.degree < k)
     (hroot : modulus.toPoly.eval₂ ι (P.eval (ι center)) = 0)
     (hsolution : MvPolynomial.eval₂ (Polynomial.C.comp ι) ![Polynomial.X, P]
       (CPoly.fromCMvPolynomial Q) = 0) :
     (materialize modulus center k out).Represents ι (P.eval (ι center)) P := by
   have hcentered := centered_solution ι (CPoly.fromCMvPolynomial Q) P (ι center) hsolution
-  have hseries := regularLift_specializes ι (P.eval (ι center)) Q center modulus
-    ((CPolynomial.monic_toPoly_iff _).mpr hmonic) hroot k hk out hrun
+  have hseries := newtonLift_specializes ι (P.eval (ι center)) Q center modulus
+    ((CPolynomial.monic_toPoly_iff _).mpr hmonic) hroot k out hrun
     (Polynomial.taylor (ι center) P) (by simpa only [Polynomial.degree_taylor] using hdegree)
     (Polynomial.taylor_coeff_zero _ _) hcentered
   exact ⟨hroot, materialize_specialize ι (P.eval (ι center)) modulus center k out P

@@ -44,7 +44,7 @@ def representations (Q : CPoly.CMvPolynomial 2 E) (center : E) (k : ℕ) :
     List (FiniteRepresentation E) :=
   if sectionPolynomial Q center == 0 then [] else
     let h := regularModulus pchar Q center
-    match regularLift? Q center h k with
+    match newtonLift? Q center h k with
     | none => []
     | some series => [materialize h center k series]
 
@@ -146,7 +146,7 @@ theorem regularModulus_root_iff (ι : E →+* L) (θ : L)
 The inverse guard succeeds from the computed modulus properties, so this is producer completeness,
 not only correctness conditional on an output certificate. -/
 theorem exists_representation_of_regular_solution (ι : E →+* L)
-    (Q : CPoly.CMvPolynomial 2 E) (center : E) (k : ℕ) (hk : 0 < k)
+    (Q : CPoly.CMvPolynomial 2 E) (center : E) (k : ℕ)
     (hsection : sectionPolynomial Q center ≠ 0)
     (P : Polynomial L) (hdegree : P.degree < k)
     (hsolution : MvPolynomial.eval₂ (Polynomial.C.comp ι) ![Polynomial.X, P]
@@ -155,10 +155,10 @@ theorem exists_representation_of_regular_solution (ι : E →+* L)
       (MvPolynomial.pderiv 1 (CPoly.fromCMvPolynomial Q)) ≠ 0) :
     ∃ r ∈ representations pchar Q center k, r.Represents ι (P.eval (ι center)) P := by
   have hp := regularModulus_properties Q center hsection (pchar := pchar)
-  obtain ⟨series, hrun⟩ := regularLift_exists Q center (regularModulus pchar Q center) k hp.2.2
+  obtain ⟨series, hrun⟩ := newtonLift_exists Q center (regularModulus pchar Q center) k hp.2.2
   refine ⟨materialize (regularModulus pchar Q center) center k series, ?_, ?_⟩
   · simp [representations, hsection, hrun]
-  · apply lifted_represents_solution ι Q center _ hp.1 k hk series hrun P hdegree
+  · apply newtonLifted_represents_solution ι Q center _ hp.1 k series hrun P hdegree
     · apply (regularModulus_root_iff ι (P.eval (ι center)) Q center hsection).mpr
       exact ⟨solution_at_center ι (CPoly.fromCMvPolynomial Q) P (ι center) hsolution,
         hregular⟩
@@ -171,7 +171,7 @@ the duplicate-free fixed-width agreement list. -/
 theorem run_exact_of_regular_cover
     {F : Type*} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] {n : ℕ}
     (base : F →+* E) (domain : Fin n ↪ F) (received : Fin n → F)
-    (k A : ℕ) (hk : 0 < k) (hAk : k ≤ A)
+    (k A : ℕ) (hAk : k ≤ A)
     (Q : CPoly.CMvPolynomial 2 E) (center : E)
     (hsection : sectionPolynomial Q center ≠ 0)
     (hsolutions : ∀ P : F[X], P.degree < k →
@@ -189,7 +189,7 @@ theorem run_exact_of_regular_cover
   have hdegree : (P.map base).degree < k := by
     simpa only [Polynomial.degree_map_eq_of_injective base.injective] using hP.1
   obtain ⟨r, hr, hrep⟩ := exists_representation_of_regular_solution
-    (pchar := pchar) (RingHom.id E) Q center k hk hsection (P.map base) hdegree
+    (pchar := pchar) (RingHom.id E) Q center k hsection (P.map base) hdegree
     (by simpa using hsolutions P hP.1 hP.2)
     (by simpa using hregular P hP.1 hP.2)
   exact ⟨r, hr, (P.map base).eval center, by simpa using hrep⟩

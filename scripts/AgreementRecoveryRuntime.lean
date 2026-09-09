@@ -108,7 +108,7 @@ def run : IO Unit := do
   let qx := CPoly.CMvPolynomial.X (0 : Fin 2) (R := ZMod 5)
   let qy := CPoly.CMvPolynomial.X (1 : Fin 2) (R := ZMod 5)
   let equation := qy ^ 2 - (qx + 1) ^ 2
-  let lifted := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
+  let lifted := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.newtonLift?
     equation 0 (x ^ 2 - 1) 3
   match lifted with
   | none => throw (IO.userError "regular quotient lift unexpectedly rejected")
@@ -119,7 +119,15 @@ def run : IO Unit := do
       (x ^ 2 - 1) 0 2 series
     check "lifted representation recovers affine message" <|
       AgreementRecovery.decode identity domain affine 2 3 [representation] == [[1, 1]]
-  let shiftedLift := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
+  -- Precision 5 forces the guarded loop through 1→2→4→8. The nonlinear equation also
+  -- requires updating the inverse at the new branch, not just adding a final coefficient.
+  match ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.newtonLift?
+      (qy ^ 2 - (qx ^ 4 + qx + 1) ^ 2) 0 (x ^ 2 - 1) 5 with
+  | none => throw (IO.userError "Newton lift unexpectedly rejected")
+  | some series =>
+    check "three Newton precision doublings" <|
+      series == CPolynomial.ofArray #[x, x, 0, 0, x]
+  let shiftedLift := ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.newtonLift?
     equation 2 (x ^ 2 - CPolynomial.C 4) 2
   match shiftedLift with
   | none => throw (IO.userError "nonzero-center quotient lift unexpectedly rejected")
@@ -133,7 +141,7 @@ def run : IO Unit := do
   check "linear modulus reduces constant parameter" <|
     linear.coefficients == [1, 1]
   check "singular slope rejects" <|
-    (ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.regularLift?
+    (ReedSolomon.HiddenDerivative.Ordinary.QuotientLift.newtonLift?
       (qy ^ 2) 0 x 2).isNone
   check "ordinary decoder computes its own modulus" <|
     OrdinaryQuotientDecoder.run 5 identity domain affine 2 3 equation 0 == [[1, 1]]

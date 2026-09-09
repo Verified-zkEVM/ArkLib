@@ -3,6 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
 import ArkLib.Data.Polynomial.GCDSplit
 import ArkLib.Data.Polynomial.ModularInverse
 
@@ -25,17 +26,6 @@ open CompPoly CompPoly.CPolynomial
 open ArkLib.PolynomialQuotient
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
-
-/-- Polynomial data returned by an upstream rational-univariate-map solver. -/
-structure MapData where
-  modulus : CPolynomial F
-  denominator : CPolynomial F
-  numerators : List (CPolynomial F)
-
-/-- A polynomial representation after denominator and equation filtering. -/
-structure Representation where
-  modulus : CPolynomial F
-  coordinates : List (CPolynomial F)
 
 /-- Reduce all numerator-times-inverse coordinates modulo the retained modulus. -/
 def materialize (modulus inverse : CPolynomial F)
