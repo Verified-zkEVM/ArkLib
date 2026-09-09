@@ -15,10 +15,12 @@ import ArkLib.ToCompPoly.Bivariate.CMv
 /-!
 # Executable ordinary Reed--Solomon interpolation
 
-This module instantiates Lee--O'Sullivan interpolation over an arbitrary field with direct
-vanishing polynomials, Horner batch evaluation, and the verified fast Mulders--Storjohann row
-reducer. Its correctness contract is functional: a successful run returns a valid multiplicity
-interpolant, and dimension slack plus distinct evaluation points makes the run succeed.
+This module instantiates Lee--O'Sullivan interpolation over an arbitrary field. The interpolation
+polynomial `Q(X,Y)` vanishes to the requested multiplicity at every received point and has bounded
+`(1,k-1)`-weighted degree. Direct vanishing polynomials, Horner batch evaluation, and the verified
+fast Mulders--Storjohann row reducer supply the concrete operations. A successful run returns a
+valid multiplicity interpolant, and dimension slack plus distinct evaluation points makes the run
+succeed.
 
 The final theorem connects the interpolation inequality to `Code.agree`. It claims no specific
 bit or quasi-linear running time for the generic backend.
@@ -30,27 +32,33 @@ open CompPoly CompPoly.GuruswamiSudan
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F] [DecidableEq F]
 
-/-- Pack a received Reed--Solomon word into the point format used by CompPoly. -/
+/-- Pair each distinct evaluation point with its received symbol. The embedding carried by
+`domain` later discharges the interpolation algorithm's distinct-X-coordinate premise. -/
 def receivedPoints {n : ℕ} (domain : Fin n → F) (received : Fin n → F) :
     Array (F × F) :=
   Array.ofFn (fun i => (domain i, received i))
 
-/-- Canonical concrete representation of a mathematical univariate polynomial. -/
+/-- Canonical concrete representation of a mathematical message polynomial. This is the boundary
+between the specification's `Polynomial` and CompPoly's executable coefficient array. -/
 def concretePolynomial (P : Polynomial F) : CPolynomial F :=
   ⟨P.toImpl, CPolynomial.Raw.isCanonical_toImpl P⟩
 
-/-- Generic-field Lee--O'Sullivan interpolation with actual verified component backends. -/
+/-- Generic-field Lee--O'Sullivan interpolation with verified component backends. The direct
+vanishing polynomial builds the interpolation module, Horner evaluation supplies point values,
+and Mulders--Storjohann selects a row of sufficiently small weighted degree. -/
 def interpolationContext : GSInterpContext F :=
   LeeOSullivan.leeOSullivanInterpContext
     (CPolynomial.VanishingPolynomialContext.direct (F := F))
     (CPolynomial.BatchEvalContext.horner F)
     (PolynomialMatrix.muldersStorjohannFastReducerContext F)
 
-/-- Execute the ordinary multiplicity interpolation stage at supplied GS parameters. -/
+/-- Execute multiplicity interpolation at the caller's GS parameters. These parameters record the
+message-degree cutoff `k`, multiplicity `m`, and weighted-degree bound `W`. -/
 def run (points : Array (F × F)) (params : GSInterpParams) : Option (CBivariate F) :=
   interpolationContext.interpolate points params
 
-/-- Run interpolation and materialize its result in ordinary decoder variable order `[X,Y]`. -/
+/-- Materialize the interpolant in ordinary decoder order `[X,Y]`. Keeping this order explicit is
+what makes the result feed both direct composition and the order-zero differential root solver. -/
 def runCMv (points : Array (F × F)) (params : GSInterpParams) :
     Option (CPoly.CMvPolynomial 2 F) :=
   (run points params).map CBivariate.toOrdinaryCMv
@@ -90,6 +98,8 @@ private theorem matchingPointCount_eq_countP (points : Array (F × F))
   let pred : F × F → Bool := fun point => CPolynomial.eval point.1 p == point.2
   let step : Nat → F × F → Nat :=
     fun count point => if pred point then count + 1 else count
+  -- CompPoly implements the count as an array fold; expose it as `List.countP` so it can be
+  -- identified with the finite-set agreement statistic used by the decoder specification.
   have hfold : ∀ (xs : List (F × F)) acc,
       xs.foldl step acc = acc + xs.countP pred := by
     intro xs
@@ -110,6 +120,8 @@ theorem matchingPointCount_receivedPoints {n : ℕ} (domain : Fin n ↪ F)
     (fun i => (domain i, received i)), List.countP_map]
   have hnodup : (List.ofFn (fun i : Fin n => i)).Nodup :=
     List.nodup_ofFn.mpr Function.injective_id
+  -- With every position listed once, counting a true equality is the cardinality of the same
+  -- predicate on `Finset.univ`, which is exactly `Code.agree`.
   have hcount := hnodup.card_eq_countP
     (P := fun i : Fin n => P.eval (domain i) = received i)
   have htoFinset : (List.ofFn (fun i : Fin n => i)).toFinset = Finset.univ := by
@@ -130,7 +142,10 @@ theorem run_sound {points : Array (F × F)} {params : GSInterpParams} {Q : CBiva
     ValidInterpolationWitness points params Q :=
   interpolationContext.sound points params Q hrun
 
-/-- Dimension slack and distinct inputs make the actual Lee--O'Sullivan run succeed. -/
+/-- Dimension slack and distinct inputs make the actual Lee--O'Sullivan run succeed. The slack
+inequality says that the allowed weighted-degree monomials outnumber all multiplicity constraints;
+the dense existence theorem supplies a witness, and backend completeness makes the executable
+module reducer return one. -/
 theorem run_exists_of_dimension_slack {points : Array (F × F)}
     {params : GSInterpParams} (hdistinct : DistinctXCoordinates points)
     (hslack : HasInterpolationDimensionSlack points params) :
@@ -148,7 +163,9 @@ theorem runCMv_exists_of_dimension_slack {points : Array (F × F)}
   obtain ⟨Q, hQ⟩ := run_exists_of_dimension_slack hdistinct hslack
   exact ⟨CBivariate.toOrdinaryCMv Q, Option.map_eq_some_iff.mpr ⟨Q, hQ, rfl⟩⟩
 
-/-- Every sufficiently agreeing degree-bounded message roots the computed interpolant. -/
+/-- Every sufficiently agreeing degree-bounded message roots the computed interpolant. In the
+paper's notation, `hbound` is `W < m A`: agreement at `A` positions gives at least `m A` roots of
+`Q(X,P(X))`, while its degree is at most `W`, forcing the composition to vanish identically. -/
 theorem run_solution_of_agreement {n k A : ℕ} (domain : Fin n ↪ F)
     (received : Fin n → F) (params : GSInterpParams)
     (hdegreeParam : params.messageDegree = k)
@@ -159,6 +176,8 @@ theorem run_solution_of_agreement {n k A : ℕ} (domain : Fin n ↪ F)
     (hagreement : A ≤ Code.agree (evalOnPoints domain P) received) :
     CBivariate.composeY Q (concretePolynomial P) = 0 := by
   apply composeY_eq_zero_of_enough_matching_multiplicity_points (run_sound hrun)
+  -- The three inputs to the multiplicity root argument are the message degree, distinct domain,
+  -- and the conversion from agreement count to total matching multiplicity.
   · unfold degreeLt
     rw [CPolynomial.degree_toPoly, concretePolynomial_toPoly, hdegreeParam]
     exact hdegree
