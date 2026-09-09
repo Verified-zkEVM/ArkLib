@@ -92,9 +92,10 @@ def block (cols : List (DenseColumn F)) : List (Row F) × ℕ :=
   let result := rows cols grid.1
   (result.1, 32 + grid.2 + result.2)
 
-/-- Actual support enumeration, column execution, row frame, and homogeneous row allocation. -/
-def assemble (D d m A : ℕ) (a y : F) : Option (List (Row F)) × ℕ :=
-  let support := InterpolationSupportMachine.enumerate D d m A
+/-- Actual support enumeration with an explicit strict jet budget, column execution, row frame,
+and homogeneous row allocation. -/
+def assembleWithBudget (D d m J A : ℕ) (a y : F) : Option (List (Row F)) × ℕ :=
+  let support := InterpolationSupportMachine.enumerateWithBudget D d m J A
   match support.1 with
   | .done vs =>
       let computed := columns d m a y vs
@@ -104,6 +105,10 @@ def assemble (D d m A : ℕ) (a y : F) : Option (List (Row F)) × ℕ :=
           let out := block cols
           (some out.1, 32 + support.2 + computed.2 + out.2)
   | _ => (none, 32 + support.2)
+
+/-- Legacy point-block assembly specializes the strict jet budget to `2 * m`. -/
+def assemble (D d m A : ℕ) (a y : F) : Option (List (Row F)) × ℕ :=
+  assembleWithBudget D d m (2 * m) A a y
 
 omit [CommRing F] in
 theorem vectors_correct (c : DenseColumn F) :

@@ -40,7 +40,7 @@ lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F] [Nontrivial F]
   simpa [Nat.sub_add_cancel hmn] using Nat.add_lt_add_left j.isLt (n - m)
 
 /-- The degree of `resultant(B, A, n, m)` is at most `m · degX(B) + n · degX(A)`. -/
-lemma ps_nat_degree_resultant_le {F : Type} [Field F]
+lemma ps_nat_degree_resultant_le {F : Type*} [CommRing F]
     (A B : F[X][Y]) (m n : ℕ) :
     (resultant B A n m).natDegree ≤
       m * (degreeX B) + n * (degreeX A) := by

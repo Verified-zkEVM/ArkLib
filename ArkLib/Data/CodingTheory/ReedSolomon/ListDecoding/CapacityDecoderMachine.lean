@@ -43,6 +43,21 @@ def run (n k d m A : ℕ) (rows : List (ZMod q × ZMod q)) :
       (decoded.1, decoded.2 + 40)
     else (none, 40)
 
+/-- Capacity decoder with independent strict interpolation cutoff `J`. -/
+def runWithBudget (n k d m J A : ℕ) (rows : List (ZMod q × ZMod q)) :
+    Option (List (List (ZMod q))) × ℕ :=
+  if n < A ∨ n ≤ 2 then
+    let small := SmallBlockDecoderMachine.runFuel n A rows 5 .start
+    match small.1 with
+    | .done out => (some out, small.2 + 40)
+    | _ => (none, small.2 + 40)
+  else
+    if h : q ≠ 2 ∧ multiplicity n d m * A ≤ q ^ 2 then
+      let decoded := QuadraticDecoderMachine.runWithBudget k d (multiplicity n d m) J A rows
+        h.1 h.2
+      (decoded.1, decoded.2 + 40)
+    else (none, 40)
+
 /-- The small-block child is the actual executed branch, with its observed cost retained. -/
 theorem run_of_small (n k d m A : ℕ) (rows : List (ZMod q × ZMod q))
     (hsmall : n < A ∨ n ≤ 2) (out : List (List (ZMod q))) (cost : ℕ)
@@ -59,5 +74,16 @@ theorem run_of_quadratic (n k d m A : ℕ) (rows : List (ZMod q × ZMod q))
   have hsmall : ¬(n < A ∨ n ≤ 2) := by omega
   have hgood : q ≠ 2 ∧ multiplicity n d m * A ≤ q ^ 2 := ⟨hodd, hL⟩
   simp only [run, if_neg hsmall, dif_pos hgood, hr]
+
+/-- The nonexceptional budget-aware capacity branch returns its quadratic child. -/
+theorem runWithBudget_of_quadratic (n k d m J A : ℕ)
+    (rows : List (ZMod q × ZMod q)) (hA : A ≤ n) (hn : 3 ≤ n) (hodd : q ≠ 2)
+    (hL : multiplicity n d m * A ≤ q ^ 2) (out : List (List (ZMod q))) (cost : ℕ)
+    (hr : QuadraticDecoderMachine.runWithBudget k d (multiplicity n d m) J A rows hodd hL =
+      (some out, cost)) :
+    runWithBudget n k d m J A rows = (some out, cost + 40) := by
+  have hsmall : ¬(n < A ∨ n ≤ 2) := by omega
+  have hgood : q ≠ 2 ∧ multiplicity n d m * A ≤ q ^ 2 := ⟨hodd, hL⟩
+  simp only [runWithBudget, if_neg hsmall, dif_pos hgood, hr]
 
 end ReedSolomon.ListDecoding.CapacityDecoderMachine

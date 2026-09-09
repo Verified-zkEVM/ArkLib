@@ -49,8 +49,10 @@ private theorem attempt_expansion (d m q : ℕ) :
       ∑ i : Fin 5, attemptCoefficients d m i * q ^ i.val := by
   simp [attemptCoefficients, Fin.sum_univ_succ, NonzeroInterpolationMachine.attemptBudget,
     NonzeroInterpolationMachine.maximumColumns, NonzeroInterpolationMachine.budget,
-    ReceivedInterpolationMatrixMachine.budget, InterpolationPointBlockMachine.assemblyBudget,
-    InterpolationPointBlockMachine.columnBudget, Matrix.NonzeroKernelMachine.budget,
+    ReceivedInterpolationMatrixMachine.budget,
+    ReceivedInterpolationMatrixMachine.budgetWithBudget,
+    InterpolationPointBlockMachine.assemblyBudgetWithBudget,
+    InterpolationPointBlockMachine.columnBudgetWithBudget, Matrix.NonzeroKernelMachine.budget,
     Matrix.ForwardEchelonMachine.budget, Matrix.ForwardEchelonMachine.stageBudget]
   ring
 
@@ -62,7 +64,9 @@ theorem attempt_budget_fixed (d m A n q : ℕ) (hq : 0 < q) (hA : A ≤ q) (hn :
       NonzeroInterpolationMachine.attemptBudget d m q q := by
     unfold NonzeroInterpolationMachine.attemptBudget NonzeroInterpolationMachine.maximumColumns
       NonzeroInterpolationMachine.budget ReceivedInterpolationMatrixMachine.budget
-      InterpolationPointBlockMachine.assemblyBudget InterpolationPointBlockMachine.columnBudget
+      ReceivedInterpolationMatrixMachine.budgetWithBudget
+      InterpolationPointBlockMachine.assemblyBudgetWithBudget
+      InterpolationPointBlockMachine.columnBudgetWithBudget
       Matrix.NonzeroKernelMachine.budget Matrix.ForwardEchelonMachine.budget
       Matrix.ForwardEchelonMachine.stageBudget
     gcongr

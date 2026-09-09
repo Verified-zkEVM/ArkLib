@@ -75,6 +75,11 @@ theorem assemble_zero_bounds (D m A : ℕ) (a y : F) :
   have h (v : List ℕ) (hv : v ∈ vs) := support_column_zero_bounds D m A a y v hv
   obtain ⟨sc, hs, hsc⟩ := InterpolationSupportMachine.enumerate_correct D 0 m A
   simp only [Nat.zero_add] at hsc
+  have hs' : InterpolationSupportMachine.enumerateWithBudget D 0 m (2 * m) A =
+      (.done (InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parametersWithBudget D 0 m (2 * m) A)), sc) := by
+    simpa [InterpolationSupportMachine.enumerate, InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using hs
   obtain ⟨cc, hc, hcc⟩ := columns_correct 0 m (zeroColumnBudget m A) a y vs
     (columnValue 0 m a y) (by
       intro v hv
@@ -91,11 +96,12 @@ theorem assemble_zero_bounds (D m A : ℕ) (a y : F) :
     exact ((support_column_refines D m A a y v hv).choose_spec.2.2.1 t ht).le
   obtain ⟨hbl, hbc⟩ := block_bounds (m * m) 2 cs hl hw
   refine ⟨(block cs).1, 32 + sc + cc + (block cs).2, ?_, ?_, ?_⟩
-  · simp only [assemble, hs]
-    change (match (columns 0 m a y vs).1 with
-      | none => _
-      | some cols => _) = _
-    rw [hc]
+  · simp only [assemble, assembleWithBudget, hs']
+    have hvs : InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parametersWithBudget D 0 m (2 * m) A) = vs := by
+      simp [vs, InterpolationSupportMachine.parameters,
+        InterpolationSupportMachine.parametersWithBudget]
+    rw [hvs, hc]
   · simpa only [cs, List.length_map] using hbl
   · have hlen : cs.length = vs.length := List.length_map _
     rw [hlen] at hbc
@@ -130,20 +136,40 @@ theorem run_zero_bounds (D m A : ℕ) (received : List (F × F)) :
       c ≤ zeroMatrixBudget m A (support D 0 m A).length received.length := by
   obtain ⟨sc, hs, hsc⟩ := InterpolationSupportMachine.enumerate_correct D 0 m A
   simp only [Nat.zero_add] at hsc
+  have hs' : InterpolationSupportMachine.enumerateWithBudget D 0 m (2 * m) A =
+      (.done (InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parametersWithBudget D 0 m (2 * m) A)), sc) := by
+    simpa [InterpolationSupportMachine.enumerate, InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using hs
   obtain ⟨tc, ht, hrows, hcost⟩ := traverse_correct D 0 m A (support D 0 m A).length
     (InterpolationPointBlockMachine.zeroAssemblyBudget m A (support D 0 m A).length)
     (m * m * (support D 0 m A).length) received (pointRows D 0 m A) (by
       intro p _
       obtain ⟨rs, c, hc, hl, hb⟩ :=
         InterpolationPointBlockMachine.assemble_zero_bounds D m A p.1 p.2
-      have hr : pointRows D 0 m A p = rs := by simp [pointRows, hc]
-      exact ⟨c, by simpa only [hr] using hc, by simpa only [hr, support] using hl, hb⟩)
+      have hc' : InterpolationPointBlockMachine.assembleWithBudget D 0 m (2 * m) A
+          p.1 p.2 = (some rs, c) := by
+        simpa [InterpolationPointBlockMachine.assemble] using hc
+      have hr : pointRows D 0 m A p = rs := by
+        simp [pointRows, pointRowsWithBudget, hc']
+      exact ⟨c, by simpa only [hr] using hc,
+        by simpa only [hr, support, supportWithBudget,
+          InterpolationSupportMachine.parameters, InterpolationSupportMachine.parametersWithBudget]
+          using hl,
+        hb⟩)
+  have ht' : traverseWithBudget D 0 m (2 * m) A (support D 0 m A).length received =
+      (some ⟨(support D 0 m A).length, received.length,
+        (received.flatMap (pointRows D 0 m A)).length,
+        received.flatMap (pointRows D 0 m A)⟩, tc) := by
+    simpa [traverse] using ht
   refine ⟨⟨(support D 0 m A).length, received.length,
     (received.flatMap (pointRows D 0 m A)).length, received.flatMap (pointRows D 0 m A)⟩,
     32 + sc + 32 * ((support D 0 m A).length + 1) + tc,
     ?_, rfl, rfl, rfl, hrows, ?_⟩
-  · simp only [run, hs, countCells_correct]
-    exact congrArg (fun r => (r.1, 32 + sc + 32 * ((support D 0 m A).length + 1) + r.2)) ht
+  · simp only [run, runWithBudget, hs', countCells_correct]
+    simpa only [support, supportWithBudget, InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using congrArg
+      (fun r => (r.1, 32 + sc + 32 * ((support D 0 m A).length + 1) + r.2)) ht'
   · unfold zeroMatrixBudget
     omega
 

@@ -24,7 +24,7 @@ primitive-work theorem for this same execution, not the unfinished bit-RAM compl
 
 namespace ReedSolomon.ListDecoding.CapacityDecoderMachine
 
-open HiddenDerivative ReedSolomon
+open HiddenDerivative PolynomialDifferential ReedSolomon
 open SeparateSampleFieldExecution (ExactOutput)
 
 /-- A gap-dependent coefficient covering positive-order, order-zero and exceptional executions. -/
@@ -40,6 +40,40 @@ private theorem constant_bound (d m q e : ℕ) (hq : 0 < q) :
   exact hc.trans (Nat.le_mul_of_pos_right _ h1)
 
 variable {q : ℕ} [Fact q.Prime]
+
+/-- A successful independently budgeted interpolation gives exact physical capacity output on
+the nonexceptional positive-order branch. -/
+theorem runWithBudget_exact_of_interpolation {n k d m J A : ℕ}
+    (domain : Fin n ↪ ZMod q) (received : Fin n → ZMod q)
+    (hd : 0 < d) (hA : A ≤ n) (hn : 3 ≤ n) (hnq : n ≤ q)
+    (hodd : q ≠ 2) (hL : m * A ≤ q ^ 2)
+    (found : AmbientSearchMachine.Output (ZMod q))
+    (hi : (InterpolationDispatch.runWithBudget k d m J A
+      (List.ofFn (fun i ↦ (domain i, received i)))).1 = some found)
+    (hdepth : d ≤ found.degree) (hk : k ≤ found.degree + 1)
+    (hD : found.degree ≤ n)
+    (hchar : IsBelowCharacteristic found.degree
+      (NonzeroInterpolationMachine.sourceOutputWithBudget (d := d)
+        found.degree m J A found.interpolant))
+    (hweight : differentialWeightedDegree found.degree
+      (NonzeroInterpolationMachine.sourceOutputWithBudget (d := d)
+        found.degree m J A found.interpolant) < m * A) :
+    ∃ out cost,
+      runWithBudget n k d m J A (List.ofFn (fun i ↦ (domain i, received i))) =
+        (some out, cost) ∧ ExactOutput domain received k A out ∧
+      cost ≤ InterpolationDispatch.budgetWithBudget k d m J A n +
+        QuadraticAlgebra.SetupMachine.budget q (m * A) +
+        QuadraticDecoderMachine.decoderFuelWithBudget d m J q
+          (if 2 * (m * A + d - (found.degree + 1)) ≤ q then 1 else 2) +
+        16 * q + 152 := by
+  obtain ⟨out, c, hr, he, hc⟩ :=
+    QuadraticDecoderMachine.runWithBudget_exact_of_interpolation k d m J A domain received
+      hodd hL found hi hdepth hk hD hnq hA hchar hweight
+  have hmul : multiplicity n d m = m := by simp only [multiplicity, if_neg (by omega : d ≠ 0)]
+  have hr' := runWithBudget_of_quadratic n k d m J A
+    (List.ofFn (fun i ↦ (domain i, received i))) hA hn hodd
+    (by simpa only [hmul] using hL) out c (by simpa only [hmul] using hr)
+  exact ⟨out, c + 40, hr', he, by omega⟩
 
 /-- Exactness of the executed exceptional branch, using the same physical coefficient lists. -/
 theorem run_exact_of_small {n k A : ℕ} (d m : ℕ)

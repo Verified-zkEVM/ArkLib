@@ -23,13 +23,129 @@ namespace ReedSolomon.HiddenDerivative.AmbientSearchMachine
 noncomputable section
 
 open PolynomialDifferential
-open NonzeroInterpolationMachine (Certified attemptBudget)
+open NonzeroInterpolationMachine
+  (Certified CertifiedWithBudget attemptBudget attemptBudgetWithBudget)
 open ReedSolomon ListDecoding
 
 variable {F : Type*} [Field F] [DecidableEq F]
 
 /-- A uniform budget for a finite candidate loop, including its terminal control step. -/
 def searchBudget (d m A n count : ℕ) : ℕ := (attemptBudget d m A n + 32) * count + 32
+
+/-- A uniform budget for a finite candidate loop at strict jet cutoff `J`. -/
+def searchBudgetWithBudget (d m J A n count : ℕ) : ℕ :=
+  (attemptBudgetWithBudget d m J A n + 32) * count + 32
+
+/-- Every explicitly budgeted search is bounded and every success is certified. -/
+theorem searchWithBudget_complete (d m J A : ℕ) (received : List (F × F)) (count D : ℕ)
+    (hcount : count ≤ D + 1) :
+    ∃ result c, searchWithBudget d m J A received count D = (result, c) ∧
+      c ≤ searchBudgetWithBudget d m J A received.length count ∧
+      ∀ out, result = some out →
+        D + 1 - count ≤ out.degree ∧ out.degree ≤ D ∧
+          CertifiedWithBudget (d := d) out.degree m J A received out.interpolant := by
+  induction count generalizing D with
+  | zero => exact ⟨none, 32, rfl, by simp [searchBudgetWithBudget], by simp⟩
+  | succ count ih =>
+    obtain ⟨result, c, hr, hc, hs⟩ :=
+      NonzeroInterpolationMachine.attemptWithBudget_uniform (d := d) D m J A received
+    cases result with
+    | some interp =>
+      refine ⟨some ⟨D, interp⟩, 32 + c, ?_, ?_, ?_⟩
+      · simp only [searchWithBudget, hr]
+      · unfold searchBudgetWithBudget
+        nlinarith
+      · intro out ho
+        cases ho
+        exact ⟨by change D + 1 - (count + 1) ≤ D; omega, le_rfl, hs interp rfl⟩
+    | none =>
+      obtain ⟨result, c', hr', hc', hs'⟩ := ih (D - 1) (by omega)
+      refine ⟨result, 32 + c + c', ?_, ?_, ?_⟩
+      · simp only [searchWithBudget, hr, hr']
+      · unfold searchBudgetWithBudget at *
+        nlinarith
+      · intro out ho
+        obtain ⟨hl, hu, hcert⟩ := hs' out ho
+        refine ⟨?_, by omega, hcert⟩
+        omega
+
+/-- A successful budget-eligible candidate forces search success at its degree or above. -/
+theorem searchWithBudget_success_of_candidate (d m J A : ℕ) (received : List (F × F))
+    (count D good : ℕ) (hcount : count ≤ D + 1)
+    (hl : D + 1 - count ≤ good) (hu : good ≤ D)
+    (hgood : (NonzeroInterpolationMachine.runWithBudget good d m J A received).1 ≠ none) :
+    ∃ out c, searchWithBudget d m J A received count D = (some out, c) ∧
+      good ≤ out.degree := by
+  induction count generalizing D with
+  | zero => omega
+  | succ count ih =>
+    obtain ⟨result, c, hr, _, _⟩ :=
+      NonzeroInterpolationMachine.attemptWithBudget_uniform (d := d) D m J A received
+    cases result with
+    | some interp =>
+      exact ⟨⟨D, interp⟩, 32 + c, by simp only [searchWithBudget, hr], hu⟩
+    | none =>
+      have hne : good ≠ D := by
+        intro he
+        apply hgood
+        simpa only [he] using congrArg Prod.fst hr
+      obtain ⟨out, c', hr', hg⟩ := ih (D - 1) (by omega) (by omega) (by omega)
+      exact ⟨out, 32 + c + c', by simp only [searchWithBudget, hr, hr'], hg⟩
+
+/-- Public budget for search with independent strict jet cutoff `J`. -/
+def budgetWithBudget (k d m J A n : ℕ) : ℕ :=
+  32 + 32 * (n + 1) +
+    searchBudgetWithBudget d m J A n (n - max (k - 1) d)
+
+/-- Total correctness for the public explicitly budgeted search. -/
+theorem runWithBudget_complete (k d m J A : ℕ) (received : List (F × F)) :
+    ∃ result c, runWithBudget k d m J A received = (result, c) ∧
+      c ≤ budgetWithBudget k d m J A received.length ∧
+      ∀ out, result = some out →
+        max (k - 1) d ≤ out.degree ∧ out.degree < received.length ∧
+          CertifiedWithBudget (d := d) out.degree m J A received out.interpolant := by
+  obtain ⟨result, c, hr, hc, hs⟩ := searchWithBudget_complete d m J A received
+    (received.length - max (k - 1) d) (received.length - 1) (by omega)
+  refine ⟨result, 32 + 32 * (received.length + 1) + c, ?_, ?_, ?_⟩
+  · simp only [runWithBudget, ReceivedInterpolationMatrixMachine.countCells_correct, hr]
+  · unfold budgetWithBudget
+    omega
+  · intro out ho
+    obtain ⟨hl, hu, hcert⟩ := hs out ho
+    have hn : 0 < received.length := by
+      by_contra hn
+      have hz : received.length = 0 := by omega
+      simp only [hz, Nat.zero_sub, searchWithBudget] at hr
+      have he := congrArg Prod.fst hr
+      rw [ho] at he
+      cases he
+    exact ⟨by omega, by omega, hcert⟩
+
+/-- The budgeted integer search succeeds from one budget-eligible interpolation witness. -/
+theorem runWithBudget_success_of_witness (k d m J A good : ℕ) (received : List (F × F))
+    (hl : max (k - 1) d ≤ good) (hu : good < received.length)
+    (Q : DifferentialPolynomial F d) (hn : Q ≠ 0)
+    (he : NonzeroInterpolationMachine.EligibleWithBudget good m J A Q)
+    (hlocal : ∀ p ∈ received, localConstraintAt m p.1 p.2 Q = 0) :
+    ∃ out c, runWithBudget k d m J A received = (some out, c) ∧
+      good ≤ out.degree ∧ out.degree < received.length ∧
+      CertifiedWithBudget (d := d) out.degree m J A received out.interpolant ∧
+      c ≤ budgetWithBudget k d m J A received.length := by
+  have hg : (NonzeroInterpolationMachine.runWithBudget good d m J A received).1 ≠ none := by
+    intro h
+    exact (NonzeroInterpolationMachine.runWithBudget_none_iff good m J A received).mp h
+      ⟨Q, hn, he, hlocal⟩
+  obtain ⟨out, c, hr, hout⟩ := searchWithBudget_success_of_candidate d m J A received
+    (received.length - max (k - 1) d) (received.length - 1) good
+    (by omega) (by omega) (by omega) hg
+  have hrun : runWithBudget k d m J A received =
+      (some out, 32 + 32 * (received.length + 1) + c) := by
+    simp only [runWithBudget, ReceivedInterpolationMatrixMachine.countCells_correct, hr]
+  obtain ⟨result, c', hr', hc', hs⟩ := runWithBudget_complete k d m J A received
+  rw [hrun] at hr'
+  cases hr'
+  obtain ⟨_, hu', hcert⟩ := hs out rfl
+  exact ⟨out, _, hrun, hout, hu', hcert, hc'⟩
 
 /-- Every execution is bounded, and all successes satisfy the exact interpolation certificate. -/
 theorem search_complete (d m A : ℕ) (received : List (F × F)) (count D : ℕ)
@@ -44,10 +160,12 @@ theorem search_complete (d m A : ℕ) (received : List (F × F)) (count D : ℕ)
   | succ count ih =>
     obtain ⟨result, c, hr, hc, hs⟩ :=
       NonzeroInterpolationMachine.attempt_uniform (d := d) D m A received
+    change NonzeroInterpolationMachine.runWithBudget D d m (2 * m) A received =
+      (result, c) at hr
     cases result with
     | some interp =>
       refine ⟨some ⟨D, interp⟩, 32 + c, ?_, ?_, ?_⟩
-      · simp only [search, hr]
+      · simp only [search, searchWithBudget, hr]
       · unfold searchBudget
         nlinarith
       · intro out ho
@@ -55,8 +173,10 @@ theorem search_complete (d m A : ℕ) (received : List (F × F)) (count D : ℕ)
         exact ⟨by change D + 1 - (count + 1) ≤ D; omega, le_rfl, hs interp rfl⟩
     | none =>
       obtain ⟨result, c', hr', hc', hs'⟩ := ih (D - 1) (by omega)
+      change searchWithBudget d m (2 * m) A received count (D - 1) =
+        (result, c') at hr'
       refine ⟨result, 32 + c + c', ?_, ?_, ?_⟩
-      · simp only [search, hr, hr']
+      · simp only [search, searchWithBudget, hr, hr']
       · unfold searchBudget at *
         nlinarith
       · intro out ho
@@ -75,16 +195,23 @@ theorem search_success_of_candidate (d m A : ℕ) (received : List (F × F))
   | succ count ih =>
     obtain ⟨result, c, hr, _, _⟩ :=
       NonzeroInterpolationMachine.attempt_uniform (d := d) D m A received
+    change NonzeroInterpolationMachine.runWithBudget D d m (2 * m) A received =
+      (result, c) at hr
     cases result with
     | some interp =>
-      exact ⟨⟨D, interp⟩, 32 + c, by simp only [search, hr], hu⟩
+      exact ⟨⟨D, interp⟩, 32 + c,
+        by simp only [search, searchWithBudget, hr], hu⟩
     | none =>
       have hne : good ≠ D := by
         intro he
         apply hgood
-        simp only [he, hr]
+        change (NonzeroInterpolationMachine.runWithBudget good d m (2 * m) A received).1 = none
+        simpa only [he] using congrArg Prod.fst hr
       obtain ⟨out, c', hr', hg⟩ := ih (D - 1) (by omega) (by omega) (by omega)
-      exact ⟨out, 32 + c + c', by simp only [search, hr, hr'], hg⟩
+      change searchWithBudget d m (2 * m) A received count (D - 1) =
+        (some out, c') at hr'
+      exact ⟨out, 32 + c + c',
+        by simp only [search, searchWithBudget, hr, hr'], hg⟩
 
 /-- The public budget includes input counting and every possible candidate attempt. -/
 def budget (k d m A n : ℕ) : ℕ :=
@@ -108,7 +235,7 @@ theorem run_complete (k d m A : ℕ) (received : List (F × F)) :
     have hn : 0 < received.length := by
       by_contra hn
       have hz : received.length = 0 := by omega
-      simp only [hz, Nat.zero_sub, search] at hr
+      simp only [hz, Nat.zero_sub, search, searchWithBudget] at hr
       have he := congrArg Prod.fst hr
       rw [ho] at he
       cases he

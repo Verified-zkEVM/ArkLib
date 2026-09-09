@@ -94,6 +94,20 @@ theorem firstJetExponent_le_totalJetDegree {d : ℕ} (u : JetVariable d →₀ �
 def fullHigherJetWeight {d : ℕ} (u : JetVariable d →₀ ℕ) : ℕ :=
   Finsupp.weight (fun j : Fin (d + 1) ↦ j.val - 1) u.some
 
+/-- Derivative-order weight on a full exponent: `Y_j` has weight `j`.
+Unlike `fullHigherJetWeight`, this charges the first derivative as well. -/
+def fullDerivativeJetWeight {d : ℕ} (u : JetVariable d →₀ ℕ) : ℕ :=
+  Finsupp.weight (fun j : Fin (d + 1) ↦ j.val) u.some
+
+/-- The derivative-order budget implies the older higher-jet budget. -/
+theorem fullHigherJetWeight_le_fullDerivativeJetWeight {d : ℕ}
+    (u : JetVariable d →₀ ℕ) :
+    fullHigherJetWeight u ≤ fullDerivativeJetWeight u := by
+  simp only [fullHigherJetWeight, fullDerivativeJetWeight, Finsupp.weight_eq_sum]
+  apply Finset.sum_le_sum
+  intro j _
+  exact Nat.mul_le_mul_left _ (Nat.sub_le _ _)
+
 /-- Ordinary degree in `Y₂, ..., Y_d`, expressed on a full exponent. -/
 def fullHigherJetDegree {d : ℕ} (u : JetVariable d →₀ ℕ) : ℕ :=
   Finsupp.weight (fun j : Fin (d + 1) ↦ if 2 ≤ j.val then 1 else 0) u.some

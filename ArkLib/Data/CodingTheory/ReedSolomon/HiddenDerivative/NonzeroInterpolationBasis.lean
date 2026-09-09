@@ -89,9 +89,11 @@ theorem support_exponents_nodup (D m A : ℕ) :
   apply List.Nodup.map_on _ (InterpolationSupportMachine.supportSpec_nodup _)
   intro v hv u hu he
   apply exponent_injective v u _ _ he
-  · simpa [InterpolationSupportMachine.parameters] using
+  · simpa [InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using
       InterpolationSupportMachine.supportSpec_width _ hv
-  · simpa [InterpolationSupportMachine.parameters] using
+  · simpa [InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using
       InterpolationSupportMachine.supportSpec_width _ hu
 
 /-- Monomial linear combination in a supplied distinct order. -/
@@ -177,7 +179,8 @@ theorem sourceCombination_eq (D m A : ℕ) (w : ℕ → F) :
   apply List.map_congr_left
   intro v hv
   exact sourceValue_eq_monomial v (by
-    simpa [InterpolationSupportMachine.parameters] using
+    simpa [InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using
       InterpolationSupportMachine.supportSpec_width _ hv)
 
 /-- Exact eligibility required from the existing interpolation witness. -/
@@ -190,7 +193,8 @@ theorem eligible_iff (D m A : ℕ) (Q : DifferentialPolynomial F d) :
       (∑ j : Fin (d + 1), e (some j)) < 2 * m ∧
         e none + ∑ j : Fin (d + 1), (D - j.val) * e (some j) < m * A := by
   simp only [Eligible, vector, ReceivedInterpolationMatrixMachine.support,
-    InterpolationSupportMachine.mem_interpolation_columns]
+    ReceivedInterpolationMatrixMachine.supportWithBudget,
+    InterpolationSupportMachine.mem_interpolation_columnsWithBudget]
 
 /-- An actual eligible nonzero polynomial supplies the solver's bounded nonzero vector. -/
 theorem witness_coordinates (D m A : ℕ) (Q : DifferentialPolynomial F d)
@@ -229,6 +233,87 @@ theorem eligible_weightedDegree (D m A : ℕ) (Q : DifferentialPolynomial F d)
   rw [differentialWeightedDegree, MvPolynomial.weightedTotalDegree, Finset.sup_lt_iff hp]
   intro e he
   exact (eligible_support_caps D m A Q h e he).2
+
+/-- The support at strict jet cutoff `J` maps to distinct source monomials. -/
+theorem supportWithBudget_exponents_nodup (D m J A : ℕ) :
+    ((ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).map
+      (exponent d)).Nodup := by
+  apply List.Nodup.map_on _ (InterpolationSupportMachine.supportSpec_nodup _)
+  intro v hv u hu he
+  apply exponent_injective v u _ _ he
+  · simpa [InterpolationSupportMachine.parametersWithBudget] using
+      InterpolationSupportMachine.supportSpec_width _ hv
+  · simpa [InterpolationSupportMachine.parametersWithBudget] using
+      InterpolationSupportMachine.supportSpec_width _ hu
+
+/-- The matrix source convention at strict jet cutoff `J`. -/
+theorem sourceCombinationWithBudget_eq (D m J A : ℕ) (w : ℕ → F) :
+    InterpolationPointBlockMachine.sourceCombination d
+      (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A) w =
+    monomialCombination
+      ((ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).map (exponent d)) w := by
+  unfold InterpolationPointBlockMachine.sourceCombination monomialCombination
+  rw [List.map_map]
+  congr 1
+  apply List.map_congr_left
+  intro v hv
+  exact sourceValue_eq_monomial v (by
+    simpa [InterpolationSupportMachine.parametersWithBudget] using
+      InterpolationSupportMachine.supportSpec_width _ hv)
+
+/-- Eligibility for the explicitly budgeted executable support. -/
+def EligibleWithBudget (D m J A : ℕ) (Q : DifferentialPolynomial F d) : Prop :=
+  ∀ e ∈ Q.support, vector e ∈ ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A
+
+/-- Budgeted eligibility is exactly the strict jet and differential-weight caps. -/
+theorem eligibleWithBudget_iff (D m J A : ℕ) (Q : DifferentialPolynomial F d) :
+    EligibleWithBudget D m J A Q ↔ ∀ e ∈ Q.support,
+      (∑ j : Fin (d + 1), e (some j)) < J ∧
+        e none + ∑ j : Fin (d + 1), (D - j.val) * e (some j) < m * A := by
+  simp only [EligibleWithBudget, vector, ReceivedInterpolationMatrixMachine.supportWithBudget,
+    InterpolationSupportMachine.mem_interpolation_columnsWithBudget]
+
+/-- A budget-eligible nonzero polynomial supplies a bounded nonzero solver vector. -/
+theorem witnessWithBudget_coordinates (D m J A : ℕ) (Q : DifferentialPolynomial F d)
+    (he : EligibleWithBudget D m J A Q) (hn : Q ≠ 0) :
+    ∃ w : ℕ → F, InterpolationPointBlockMachine.sourceCombination d
+      (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A) w = Q ∧
+      ∃ i < (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length,
+        w i ≠ 0 := by
+  let es := (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).map (exponent d)
+  let w := fun i => coeff (es.getD i 0) Q
+  have hr : monomialCombination es w = Q := combination_reconstruct es
+    (supportWithBudget_exponents_nodup D m J A) Q (by
+      intro e he'
+      exact List.mem_map.mpr ⟨vector e, he e he', exponent_vector e⟩)
+  refine ⟨w, ?_, ?_⟩
+  · rw [sourceCombinationWithBudget_eq]
+    exact hr
+  · have hh :=
+      (combination_ne_zero_iff es (supportWithBudget_exponents_nodup D m J A) w).mp
+        (by simpa only [hr] using hn)
+    simpa only [es, List.length_map] using hh
+
+/-- Semantic caps for a monomial in the explicitly budgeted support. -/
+theorem eligibleWithBudget_support_caps (D m J A : ℕ) (Q : DifferentialPolynomial F d)
+    (h : EligibleWithBudget D m J A Q) (e : JetVariable d →₀ ℕ) (he : e ∈ Q.support) :
+    totalJetDegree e < J ∧ Finsupp.weight (differentialWeight D) e < m * A := by
+  have hh := (eligibleWithBudget_iff D m J A Q).mp h e he
+  constructor
+  · simpa [totalJetDegree, Finsupp.degree_eq_sum] using hh.1
+  · simpa [Finsupp.weight_apply, Finsupp.sum_fintype, Fintype.sum_option,
+      differentialWeight, mul_comm] using hh.2
+
+/-- The source polynomial's differential weighted degree obeys its explicit budget. -/
+theorem eligibleWithBudget_weightedDegree (D m J A : ℕ) (Q : DifferentialPolynomial F d)
+    (h : EligibleWithBudget D m J A Q) (hn : Q ≠ 0) :
+    differentialWeightedDegree D Q < m * A := by
+  obtain ⟨e, he⟩ := support_nonempty.mpr hn
+  have hp : 0 < m * A := Nat.zero_lt_of_lt
+    (eligibleWithBudget_support_caps D m J A Q h e he).2
+  rw [differentialWeightedDegree, MvPolynomial.weightedTotalDegree, Finset.sup_lt_iff hp]
+  intro e he
+  exact (eligibleWithBudget_support_caps D m J A Q h e he).2
 
 end
 end ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine

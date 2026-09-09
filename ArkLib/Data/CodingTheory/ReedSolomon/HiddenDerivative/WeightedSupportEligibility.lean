@@ -26,12 +26,13 @@ open ReedSolomon ListDecoding
 
 variable {F : Type*} [Field F]
 
-/-- Strict total-jet and differential-weight bounds are exactly the executable support test. -/
-theorem weightedSupport_witness_eligible {D d m A : ℕ}
-    (Q : DifferentialPolynomial F d) (htotal : jetTotalDegree Q < 2 * m)
+/-- Strict total-jet and differential-weight bounds imply membership in the executable support
+with strict jet cutoff `J`. -/
+theorem weightedSupport_witness_eligibleWithBudget {D d m J A : ℕ}
+    (Q : DifferentialPolynomial F d) (htotal : jetTotalDegree Q < J)
     (hweight : differentialWeightedDegree D Q < m * A) :
-    NonzeroInterpolationMachine.Eligible D m A Q := by
-  apply (NonzeroInterpolationMachine.eligible_iff D m A Q).mpr
+    NonzeroInterpolationMachine.EligibleWithBudget D m J A Q := by
+  apply (NonzeroInterpolationMachine.eligibleWithBudget_iff D m J A Q).mpr
   intro u hu
   constructor
   · exact ((jetTotalDegree_le_iff Q _).mp le_rfl u hu).trans_lt htotal
@@ -40,6 +41,23 @@ theorem weightedSupport_witness_eligible {D d m A : ℕ}
     change exactInterpolationMonomialWeight D u < m * A at huweight
     simpa [exactInterpolationMonomialWeight_eq, Finsupp.weight_apply,
       Finsupp.sum_fintype, mul_comm] using huweight
+
+/-- A weak paper degree cap `≤ ν` is contained by the strict executable cutoff `ν + 1`. -/
+theorem weightedSupport_witness_eligible_succ {D d m A ν : ℕ}
+    (Q : DifferentialPolynomial F d) (htotal : jetTotalDegree Q ≤ ν)
+    (hweight : differentialWeightedDegree D Q < m * A) :
+    NonzeroInterpolationMachine.EligibleWithBudget D m (ν + 1) A Q := by
+  exact weightedSupport_witness_eligibleWithBudget Q (by omega) hweight
+
+/-- Legacy executable eligibility specializes the strict cutoff to `2 * m`. -/
+theorem weightedSupport_witness_eligible {D d m A : ℕ}
+    (Q : DifferentialPolynomial F d) (htotal : jetTotalDegree Q < 2 * m)
+    (hweight : differentialWeightedDegree D Q < m * A) :
+    NonzeroInterpolationMachine.Eligible D m A Q := by
+  have h := weightedSupport_witness_eligibleWithBudget Q htotal hweight
+  simpa [NonzeroInterpolationMachine.Eligible,
+    NonzeroInterpolationMachine.EligibleWithBudget,
+    ReceivedInterpolationMatrixMachine.support] using h
 
 /-- The prescribed no-band interpolant is a successful candidate in the decoder's finite
 descending ambient search. The actual agreement input may exceed the canonical threshold. -/

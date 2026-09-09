@@ -127,7 +127,8 @@ theorem source_eligible (D m A : ℕ) (w : ℕ → F) :
   obtain ⟨v, hv, hve⟩ := List.mem_map.mp (combination_support _ w e he)
   rw [← hve, vector_exponent v]
   · exact hv
-  · simpa [InterpolationSupportMachine.parameters] using
+  · simpa [InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using
       InterpolationSupportMachine.supportSpec_width _ hv
 
 /-- Monotonicity of the existing polynomial solver budget in its actual row count. -/
@@ -187,7 +188,8 @@ theorem run_refines (D m A : ℕ) (received : List (F × F)) (Q : DifferentialPo
     Matrix.NonzeroKernelMachine.evaluation_runFuel mat.columns mat.rows hr hz hne
   have hv : ∀ v ∈ vs, v.length = d + 2 := by
     intro v hv
-    simpa [InterpolationSupportMachine.parameters] using
+    simpa [InterpolationSupportMachine.parameters,
+      InterpolationSupportMachine.parametersWithBudget] using
       InterpolationSupportMachine.supportSpec_width _ hv
   have hcs : cs.length = vs.length := hlen.trans hcols
   obtain ⟨ec, hem, helen, hec⟩ := emit_correct (d + 2) vs cs hcs
@@ -207,7 +209,16 @@ theorem run_refines (D m A : ℕ) (received : List (F × F)) (Q : DifferentialPo
     32 + sc + mc + Matrix.NonzeroKernelMachine.totalCost kc + ec,
     ?_, hcs, by simpa only [hlen] using hj, hunit, helen.trans_eq hcs.symm,
     hkeys, hnz, hp, hsn, source_eligible D m A _, hdeg, (hkernel _).mp hsol, ?_⟩
-  · simp only [run, hs, hmat, hcount, hsolve]
+  · have hs' : InterpolationSupportMachine.enumerateWithBudget D d m (2 * m) A =
+        (.done vs, sc) := by
+      simpa [InterpolationSupportMachine.enumerate, vs,
+        ReceivedInterpolationMatrixMachine.support,
+        ReceivedInterpolationMatrixMachine.supportWithBudget,
+        InterpolationSupportMachine.parameters,
+        InterpolationSupportMachine.parametersWithBudget] using hs
+    have hmat' : ReceivedInterpolationMatrixMachine.runWithBudget D d m (2 * m) A received =
+        (some mat, mc) := by simpa [ReceivedInterpolationMatrixMachine.run] using hmat
+    simp only [run, runWithBudget, hs', hmat', hcount, hsolve]
     change ((emit vs cs).1.map (fun ts =>
       (⟨j, cs, ts⟩ : Output F)),
       32 + sc + mc + Matrix.NonzeroKernelMachine.totalCost kc + (emit vs cs).2) = _
@@ -224,6 +235,125 @@ theorem run_refines (D m A : ℕ) (received : List (F × F)) (Q : DifferentialPo
     unfold budget
     change ec ≤ 64 * (d + 4) * (vs.length + 1) at hec
     change mc ≤ ReceivedInterpolationMatrixMachine.budget d m A vs.length received.length at hmc
+    omega
+
+omit [DecidableEq F] in
+/-- A nonzero coefficient in the explicitly budgeted support gives a nonzero source polynomial. -/
+theorem sourceWithBudget_nonzero (D m J A : ℕ) (cs : List F)
+    (j : ℕ) (hj : j < (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length)
+    (hc : cs.getD j 0 ≠ 0) :
+    InterpolationPointBlockMachine.sourceCombination d
+      (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+        (fun i => cs.getD i 0) ≠ 0 := by
+  rw [sourceCombinationWithBudget_eq]
+  apply (combination_ne_zero_iff _ (supportWithBudget_exponents_nodup D m J A) _).mpr
+  exact ⟨j, by simpa using hj, hc⟩
+
+omit [DecidableEq F] in
+/-- Every source output retains the explicit strict support eligibility. -/
+theorem sourceWithBudget_eligible (D m J A : ℕ) (w : ℕ → F) :
+    EligibleWithBudget D m J A (InterpolationPointBlockMachine.sourceCombination d
+      (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A) w) := by
+  intro e he
+  rw [sourceCombinationWithBudget_eq] at he
+  obtain ⟨v, hv, hve⟩ := List.mem_map.mp (combination_support _ w e he)
+  rw [← hve, vector_exponent v]
+  · exact hv
+  · simpa [InterpolationSupportMachine.parametersWithBudget] using
+      InterpolationSupportMachine.supportSpec_width _ hv
+
+/-- Work budget for nonzero interpolation with strict jet cutoff `J`. -/
+def budgetWithBudget (d m J A L n : ℕ) : ℕ :=
+  32 * InterpolationSupportMachine.linearFactor (d + 1) J * (m * A + 1) +
+    ReceivedInterpolationMatrixMachine.budgetWithBudget d m J A L n +
+    Matrix.NonzeroKernelMachine.budget (InterpolationPointBlockMachine.columnSize d m * L * n) L +
+    64 * (d + 4) * (L + 1) + 32
+
+/-- A budget-eligible nonzero witness makes the explicitly budgeted run succeed. -/
+theorem runWithBudget_refines (D m J A : ℕ) (received : List (F × F))
+    (Q : DifferentialPolynomial F d) (he : EligibleWithBudget D m J A Q) (hn : Q ≠ 0)
+    (hlocal : ∀ p ∈ received, localConstraintAt m p.1 p.2 Q = 0) :
+    ∃ out c, runWithBudget D d m J A received = (some out, c) ∧
+      out.coefficients.length =
+        (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length ∧
+      out.chosen < out.coefficients.length ∧ out.coefficients.getD out.chosen 0 = 1 ∧
+      out.terms.length ≤ out.coefficients.length ∧
+      (out.terms.map Prod.snd).Nodup ∧ (∀ t ∈ out.terms, t.1 ≠ 0) ∧
+      MvPolynomial.EvaluationMachine.sparsePolynomial out.terms =
+        rename variableIndex (InterpolationPointBlockMachine.sourceCombination d
+          (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+          (fun i => out.coefficients.getD i 0)) ∧
+      MvPolynomial.EvaluationMachine.sparsePolynomial out.terms ≠ 0 ∧
+      EligibleWithBudget D m J A (InterpolationPointBlockMachine.sourceCombination d
+        (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+        (fun i => out.coefficients.getD i 0)) ∧
+      differentialWeightedDegree D (InterpolationPointBlockMachine.sourceCombination d
+        (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+        (fun i => out.coefficients.getD i 0)) < m * A ∧
+      (∀ p ∈ received, localConstraintAt m p.1 p.2
+        (InterpolationPointBlockMachine.sourceCombination d
+          (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+          (fun i => out.coefficients.getD i 0)) = 0) ∧
+      c ≤ budgetWithBudget d m J A
+        (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length
+        received.length := by
+  let vs := ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A
+  obtain ⟨w, hw, hi⟩ := witnessWithBudget_coordinates D m J A Q he hn
+  obtain ⟨mat, mc, hmat, hcols, _, hcount, _, hshape, hkernel, hrowbound, hmc⟩ :=
+    ReceivedInterpolationMatrixMachine.runWithBudget_refines D d m J A received
+  have hr : Matrix.ForwardEchelonMachine.Rectangular mat.columns mat.rows :=
+    fun r hr => (hshape r hr).1
+  have hz : ∀ r ∈ mat.rows, r.2 = 0 := fun r hr => (hshape r hr).2
+  have hne : ∃ x : ℕ → F, Matrix.PivotSelectionMachine.Satisfies mat.rows x ∧
+      ∃ i < mat.columns, x i ≠ 0 := by
+    refine ⟨w, (hkernel w).mpr ?_, ?_⟩
+    · simpa only [hw] using hlocal
+    · simpa only [hcols] using hi
+  obtain ⟨j, cs, kc, hsolve, hlen, hj, hunit, hsol, hkc⟩ :=
+    Matrix.NonzeroKernelMachine.evaluation_runFuel mat.columns mat.rows hr hz hne
+  have hv : ∀ v ∈ vs, v.length = d + 2 := by
+    intro v hv
+    simpa [InterpolationSupportMachine.parametersWithBudget] using
+      InterpolationSupportMachine.supportSpec_width _ hv
+  have hcs : cs.length = vs.length := hlen.trans hcols
+  obtain ⟨ec, hem, helen, hec⟩ := emit_correct (d + 2) vs cs hcs
+    (fun v hm => (hv v hm).le)
+  obtain ⟨sc, hs, hsc⟩ := InterpolationSupportMachine.enumerateWithBudget_correct D d m J A
+  have hp := emit_polynomial vs cs hcs hv
+  have hpn : InterpolationPointBlockMachine.sourceCombination d vs
+      (fun i => cs.getD i 0) ≠ 0 :=
+    sourceWithBudget_nonzero D m J A cs j (by simpa only [hcols] using hj)
+      (by rw [hunit]; exact one_ne_zero)
+  have hsn : MvPolynomial.EvaluationMachine.sparsePolynomial (emitSpec vs cs) ≠ 0 := by
+    rw [hp]
+    exact fun h => hpn ((rename_eq_zero_iff_of_injective _ variableIndex_injective).mp h)
+  have hkeys := emitSpec_nodup vs cs (InterpolationSupportMachine.supportSpec_nodup _)
+  have hnz : ∀ t ∈ emitSpec vs cs, t.1 ≠ 0 :=
+    fun t ht => (emitSpec_keys vs cs t ht).choose_spec.2.2
+  have hdeg := eligibleWithBudget_weightedDegree D m J A _
+    (sourceWithBudget_eligible D m J A _) hpn
+  refine ⟨⟨j, cs, emitSpec vs cs⟩,
+    32 + sc + mc + Matrix.NonzeroKernelMachine.totalCost kc + ec,
+    ?_, hcs, by simpa only [hlen] using hj, hunit, helen.trans_eq hcs.symm,
+    hkeys, hnz, hp, hsn, sourceWithBudget_eligible D m J A _, hdeg,
+    (hkernel _).mp hsol, ?_⟩
+  · simp only [runWithBudget, hs, hmat, hcount, hsolve]
+    change ((emit vs cs).1.map (fun ts => (⟨j, cs, ts⟩ : Output F)),
+      32 + sc + mc + Matrix.NonzeroKernelMachine.totalCost kc + (emit vs cs).2) = _
+    rw [hem]
+    rfl
+  · have hkbound : Matrix.NonzeroKernelMachine.totalCost kc ≤
+        Matrix.NonzeroKernelMachine.budget
+          (InterpolationPointBlockMachine.columnSize d m * vs.length * received.length)
+          vs.length := by
+      apply hkc.trans
+      rw [hcols]
+      exact kernelBudget_mono _ _ _ (by simpa only [hcount] using hrowbound)
+    change _ ≤ budgetWithBudget d m J A vs.length received.length
+    unfold budgetWithBudget
+    change ec ≤ 64 * (d + 4) * (vs.length + 1) at hec
+    change mc ≤ ReceivedInterpolationMatrixMachine.budgetWithBudget d m J A vs.length
+      received.length at hmc
     omega
 
 end

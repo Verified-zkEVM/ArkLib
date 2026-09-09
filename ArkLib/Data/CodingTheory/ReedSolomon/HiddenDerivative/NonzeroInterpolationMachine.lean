@@ -58,12 +58,13 @@ def emit : List (List ℕ) → List F → Option (List (Term F)) × ℕ
             (some ((c, key.1) :: out), 32 + rest.2 + key.2)
   | _, _ => (none, 32)
 
-/-- Support, matrix, actual homogeneous solver, and sparse conversion form one observed run. -/
-def run (D d m A : ℕ) (received : List (F × F)) : Option (Output F) × ℕ :=
-  let support := InterpolationSupportMachine.enumerate D d m A
+/-- Support at strict jet cutoff `J`, matrix, homogeneous solver, and sparse conversion form one
+observed run. -/
+def runWithBudget (D d m J A : ℕ) (received : List (F × F)) : Option (Output F) × ℕ :=
+  let support := InterpolationSupportMachine.enumerateWithBudget D d m J A
   match support.1 with
   | .done vs =>
-      let matrix := ReceivedInterpolationMatrixMachine.run D d m A received
+      let matrix := ReceivedInterpolationMatrixMachine.runWithBudget D d m J A received
       match matrix.1 with
       | none => (none, 32 + support.2 + matrix.2)
       | some mat =>
@@ -79,6 +80,10 @@ def run (D d m A : ℕ) (received : List (F × F)) : Option (Output F) × ℕ :=
           | _ => (none,
               32 + support.2 + matrix.2 + Matrix.NonzeroKernelMachine.totalCost solved.2)
   | _ => (none, 32 + support.2)
+
+/-- Legacy nonzero interpolation specializes the strict jet cutoff to `2 * m`. -/
+def run (D d m A : ℕ) (received : List (F × F)) : Option (Output F) × ℕ :=
+  runWithBudget D d m (2 * m) A received
 
 /-- Ordered factor layout and exact cell-allocation charge. -/
 theorem factors_correct (j : ℕ) (v : List ℕ) :

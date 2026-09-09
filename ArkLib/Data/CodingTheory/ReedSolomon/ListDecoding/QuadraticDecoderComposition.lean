@@ -94,4 +94,59 @@ theorem run_of_interpolation (k d m A : ℕ) (rows : List (ZMod q × ZMod q))
           decodingCost + 32) := by
   simp only [run, hi, hd]
 
+/-- A full-alphabet trace determines budget-aware prepared execution. -/
+theorem runPreparedWithBudget_full_of_trace (k d m J A : ℕ)
+    (rows : List (ZMod q × ZMod q)) (found : AmbientSearchMachine.Output (ZMod q))
+    (setup : SetupMachine.CertifiedOutput q (m * A))
+    (hfull : ¬2 * (m * A + d - (found.degree + 1)) ≤ q)
+    (steps cost : ℕ) (out : List (List (ZMod q)))
+    (ht : let input : Input (ZMod q) setup.parameter :=
+        ⟨setup.data.alphabet, setup.data.samples, rows, d, found.degree, m * A, k, A⟩
+      SeparateSampleDecoder.Trace input setup.data.samples setup.correct.nonsquare steps
+        (.start found.interpolant.terms) cost (.done (some out)))
+    (hb : steps ≤ decoderFuelWithBudget d m J q 2) :
+    runPreparedWithBudget k d m J A rows found setup = (some out, cost + 72) := by
+  have hr := runCoreWithBudget_of_trace _ _ _ _ m J 2 steps cost out ht hb
+  simp only [runPreparedWithBudget, decide_eq_false hfull, chooseAlphabets,
+    Bool.false_eq_true, if_false, hr]
+  congr 1
+  omega
+
+/-- Restricted traces determine budget-aware prepared execution, including embedding cost. -/
+theorem runPreparedWithBudget_restricted_of_trace (k d m J A : ℕ)
+    (rows : List (ZMod q × ZMod q)) (found : AmbientSearchMachine.Output (ZMod q))
+    (setup : SetupMachine.CertifiedOutput q (m * A))
+    (hbase : 2 * (m * A + d - (found.degree + 1)) ≤ q)
+    (steps cost : ℕ) (out : List (List (ZMod q)))
+    (ht : let W := BaseEmbeddingMachine.embedded (a := setup.parameter) setup.data.base
+      let input : Input (ZMod q) setup.parameter :=
+        ⟨W, setup.data.samples, rows, d, found.degree, m * A, k, A⟩
+      SeparateSampleDecoder.Trace input W setup.correct.nonsquare steps
+        (.start found.interpolant.terms) cost (.done (some out)))
+    (hb : steps ≤ decoderFuelWithBudget d m J q 1) :
+    runPreparedWithBudget k d m J A rows found setup =
+      (some out, 16 * q + cost + 80) := by
+  obtain ⟨_ec, _hembed, _hecost, hchoice⟩ :=
+    chooseAlphabets_restricted (m * A) setup.data setup.correct
+  have hr := runCoreWithBudget_of_trace _ _ _ _ m J 1 steps cost out ht hb
+  simp only [runPreparedWithBudget, decide_eq_true hbase, hchoice, hr]
+  congr 1
+  omega
+
+/-- Budgeted interpolation, setup and prepared decoding compose into one result. -/
+theorem runWithBudget_of_interpolation (k d m J A : ℕ)
+    (rows : List (ZMod q × ZMod q)) (hodd : q ≠ 2) (hL : m * A ≤ q ^ 2)
+    (found : AmbientSearchMachine.Output (ZMod q)) (interpolationCost decodingCost : ℕ)
+    (out : List (List (ZMod q)))
+    (hi : InterpolationDispatch.runWithBudget k d m J A rows =
+      (some found, interpolationCost))
+    (hd : runPreparedWithBudget k d m J A rows found
+      (SetupMachine.certifiedRun (m * A) (Fact.out : q.Prime) hodd hL) =
+        (some out, decodingCost)) :
+    runWithBudget k d m J A rows hodd hL =
+      (some out, interpolationCost +
+        (SetupMachine.certifiedRun (m * A) (Fact.out : q.Prime) hodd hL).cost.total +
+          decodingCost + 32) := by
+  simp only [runWithBudget, hi, hd]
+
 end ReedSolomon.ListDecoding.QuadraticDecoderMachine

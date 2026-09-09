@@ -126,6 +126,68 @@ theorem result_exact :
         exact embedded_jets base hall f x hx j)
     exact ⟨hd, hagree, List.mem_map.mpr ⟨record, hr, hp⟩⟩
 
+omit hcert hQ in
+/-- Restricted collection is exact from an abstract base-root certificate. -/
+theorem result_exact_of_roots (hQne : Q ≠ 0)
+    (hroots : ∀ f : F[X], f.degree < k →
+      A ≤ Code.agree (evalOnPoints domain f) received →
+      differentialSpecialization
+        (MvPolynomial.map (algebraMap F (QuadraticAlgebra F a b)) Q)
+        (f.map (algebraMap F (QuadraticAlgebra F a b))) = 0) :
+    (CanonicalOutputProof.basePolynomials d (D + 1) k A input.alphabet
+      (List.ofFn fun i ↦ (domain i, received i)) records).Nodup ∧
+    ∀ f : F[X], f ∈ CanonicalOutputProof.basePolynomials d (D + 1) k A input.alphabet
+      (List.ofFn fun i ↦ (domain i, received i)) records ↔
+      f.degree < k ∧ A ≤ Code.agree (evalOnPoints domain f) received := by
+  let : Finite (QuadraticAlgebra F a b) :=
+    Finite.of_equiv (F × F) (QuadraticAlgebra.equivProd a b).symm
+  let EQ := MvPolynomial.map (algebraMap F (QuadraticAlgebra F a b)) Q
+  have hq : 0 < input.alphabet.length := by
+    rw [halphabet, List.length_map]
+    exact List.length_pos_of_mem (hall 0)
+  have hnalphabet : input.alphabet.Nodup := by
+    rw [halphabet]
+    exact hn.map (algebraMap F (QuadraticAlgebra F a b)).injective
+  have hcharE : IsBelowCharacteristic D EQ := (isBelowCharacteristic_map_iff Q D).mpr hchar
+  have hweightE : differentialWeightedDegree D EQ < L := by
+    simpa only [EQ, differentialWeightedDegree_map_eq _
+      (algebraMap F (QuadraticAlgebra F a b)).injective Q] using hweight
+  have hwidth : ∀ r ∈ records, r.coefficients.length = D + 1 := fun r hr ↦
+    (CanonicalRootSelection.current_identity input points samples hsamples hq hdepth hchain
+      hcharE.2 hweightE hspec r hr).1
+  have hdup := CanonicalRootSelection.polynomials_nodup_on input points samples input.alphabet
+    hsamples hq hnalphabet hdepth hchain hcharE.2 hweightE hspec
+  refine ⟨CanonicalOutputProof.basePolynomials_nodup d (D + 1) k A input.alphabet records
+    hwidth hk domain received hdup, ?_⟩
+  intro f
+  rw [CanonicalOutputProof.mem_basePolynomials_iff d (D + 1) k A input.alphabet records
+    hwidth hk domain received f]
+  constructor
+  · exact fun h ↦ ⟨h.1, h.2.1⟩
+  · rintro ⟨hd, hagree⟩
+    have hroot : differentialSpecialization EQ
+        (f.map (algebraMap F (QuadraticAlgebra F a b))) = 0 := hroots f hd hagree
+    have hf := CanonicalOutputProof.embedded_natDegree_le (a := a) (b := b) hk f hd
+    have hmem : f.map (algebraMap F (QuadraticAlgebra F a b)) ∈
+        Polynomial.degreeLT (QuadraticAlgebra F a b) (D + 1) := by
+      rw [Polynomial.degreeLT_succ_eq_degreeLE]
+      exact Polynomial.mem_degreeLE.mpr (Polynomial.degree_le_of_natDegree_le hf)
+    let P : BoundedSolution EQ D := ⟨⟨_, hmem⟩, hroot⟩
+    have hne : EQ ≠ 0 := by
+      intro hz
+      apply hQne
+      exact MvPolynomial.map_injective _ (algebraMap F (QuadraticAlgebra F a b)).injective
+        (by simpa [EQ] using hz)
+    have hcard : differentialWeightedDegree D EQ - (D - d) < input.alphabet.length := by
+      rw [halphabet, List.length_map]
+      exact reduced_bound_lt hweightE hdepth le_rfl (List.length_pos_of_mem (hall 0)) hlarge
+    obtain ⟨record, hr, hp⟩ := CanonicalRootSelection.selected_complete_of_jet_mem input points
+      samples hsamples hnalphabet hdepth hchain hne hcharE hweightE hspec P hcard (by
+        intro x hx j
+        rw [halphabet] at hx ⊢
+        exact embedded_jets base hall f x hx j)
+    exact ⟨hd, hagree, List.mem_map.mpr ⟨record, hr, hp⟩⟩
+
 /-- The actual collector run preserves its existing budget and emits precisely the base messages. -/
 theorem run_exact :
     ∃ out c, CanonicalOutputMachine.runFuel d input.alphabet (D + 1) k A

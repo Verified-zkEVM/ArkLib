@@ -65,6 +65,45 @@ theorem certified_embedded_root {E : Type*} [CommSemiring E] (ι : F →+* E)
   rw [← map_differentialSpecialization, certified_root domain received out hc hk f hd ha,
     Polynomial.map_zero]
 
+/-- Explicitly budgeted interpolation constraints force every agreeing message to be a root. -/
+theorem certified_rootWithBudget {D d m J A k n : ℕ} (domain : Fin n ↪ F)
+    (received : Fin n → F) (out : NonzeroInterpolationMachine.Output F)
+    (hc : NonzeroInterpolationMachine.CertifiedWithBudget (d := d) D m J A
+      (List.ofFn fun i ↦ (domain i, received i)) out)
+    (hk : k ≤ D + 1) (f : F[X]) (hd : f.degree < k)
+    (ha : A ≤ Code.agree (evalOnPoints domain f) received) :
+    differentialSpecialization
+      (NonzeroInterpolationMachine.sourceOutputWithBudget (d := d) D m J A out) f = 0 := by
+  obtain ⟨_hl, _hj, _hc, _ht, _hkeys, _hcoeff, _hrep, _hne, _helig, hw, hlocal⟩ := hc
+  have hf : f.natDegree ≤ D := by
+    by_cases hz : f = 0
+    · simp [hz]
+    · have hlt := (natDegree_lt_iff_degree_lt hz).mpr hd
+      omega
+  let indices := Finset.univ.filter fun i ↦ f.eval (domain i) = received i
+  apply differentialSpecialization_eq_zero_of_global_multiplicity domain indices m A _ f
+    domain.injective.injOn ha
+  · intro i hi
+    apply X_sub_C_pow_dvd_differentialSpecialization_of_contact _ f (domain i) (received i)
+      (Finset.mem_filter.mp hi).2
+    exact hlocal (domain i, received i) (List.mem_ofFn.mpr ⟨i, rfl⟩)
+  · exact (natDegree_differentialSpecialization_le _ f hf).trans_lt hw
+
+/-- The explicitly budgeted root identity transports through any coefficient map. -/
+theorem certified_embedded_rootWithBudget {E : Type*} [CommSemiring E] (ι : F →+* E)
+    {D d m J A k n : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
+    (out : NonzeroInterpolationMachine.Output F)
+    (hc : NonzeroInterpolationMachine.CertifiedWithBudget (d := d) D m J A
+      (List.ofFn fun i ↦ (domain i, received i)) out)
+    (hk : k ≤ D + 1) (f : F[X]) (hd : f.degree < k)
+    (ha : A ≤ Code.agree (evalOnPoints domain f) received) :
+    differentialSpecialization
+      (MvPolynomial.map ι
+        (NonzeroInterpolationMachine.sourceOutputWithBudget (d := d) D m J A out))
+      (f.map ι) = 0 := by
+  rw [← map_differentialSpecialization,
+    certified_rootWithBudget domain received out hc hk f hd ha, Polynomial.map_zero]
+
 omit [DecidableEq F] in
 /-- The interpolation and root machines use precisely the same variable encoding. -/
 theorem variableIndex_eq_encodeJet {d : ℕ} :
@@ -82,6 +121,19 @@ theorem embedded_representation {D d m A : ℕ} (rows : List (F × F))
       rename HighestJetTransport.encodeJet
         (MvPolynomial.map (algebraMap F (QuadraticAlgebra F a 0))
           (NonzeroInterpolationMachine.sourceOutput (d := d) D m A out)) := by
+  rw [MvPolynomial.QuadraticInputMachine.sparsePolynomial_embedded,
+    hc.2.2.2.2.2.2.1, variableIndex_eq_encodeJet, MvPolynomial.map_rename]
+
+omit [DecidableEq F] in
+/-- Scalar allocation represents the equation returned at strict jet cutoff `J`. -/
+theorem embedded_representationWithBudget {D d m J A : ℕ} (rows : List (F × F))
+    (out : NonzeroInterpolationMachine.Output F)
+    (hc : NonzeroInterpolationMachine.CertifiedWithBudget (d := d) D m J A rows out) (a : F) :
+    MvPolynomial.EvaluationMachine.sparsePolynomial
+      (MvPolynomial.QuadraticInputMachine.embedded (a := a) out.terms) =
+      rename HighestJetTransport.encodeJet
+        (MvPolynomial.map (algebraMap F (QuadraticAlgebra F a 0))
+          (NonzeroInterpolationMachine.sourceOutputWithBudget (d := d) D m J A out)) := by
   rw [MvPolynomial.QuadraticInputMachine.sparsePolynomial_embedded,
     hc.2.2.2.2.2.2.1, variableIndex_eq_encodeJet, MvPolynomial.map_rename]
 
@@ -126,22 +178,48 @@ theorem attempt_layout (D d m A : ℕ) (rows : List (F × F))
     (out : NonzeroInterpolationMachine.Output F)
     (hr : (NonzeroInterpolationMachine.run D d m A rows).1 = some out) :
     MvPolynomial.DenseNormalizeMachine.DenseLayout (List.range (d + 2)) out.terms := by
-  obtain ⟨c, hs, _hc⟩ := InterpolationSupportMachine.enumerate_correct D d m A
-  simp only [NonzeroInterpolationMachine.run, hs] at hr
+  obtain ⟨c, hs, _hc⟩ :=
+    InterpolationSupportMachine.enumerateWithBudget_correct D d m (2 * m) A
+  change (NonzeroInterpolationMachine.runWithBudget D d m (2 * m) A rows).1 = some out at hr
+  simp only [NonzeroInterpolationMachine.runWithBudget, hs] at hr
   split at hr
   · cases hr
   · split at hr
     · rename_i mat hm j cs hsol
       generalize he : (NonzeroInterpolationMachine.emit
         (InterpolationSupportMachine.supportSpec
-          (InterpolationSupportMachine.parameters D d m A)) cs).1 = result at hr
+          (InterpolationSupportMachine.parametersWithBudget D d m (2 * m) A)) cs).1 = result at hr
       cases result with
       | none => cases hr
       | some ts =>
           cases hr
           apply emit_layout _ cs _ ts he
           intro v hv
-          simpa [InterpolationSupportMachine.parameters] using
+          simpa [InterpolationSupportMachine.parametersWithBudget] using
+            InterpolationSupportMachine.supportSpec_width _ hv
+    · cases hr
+
+/-- A successful interpolation attempt at strict cutoff `J` supplies dense physical layout. -/
+theorem attemptWithBudget_layout (D d m J A : ℕ) (rows : List (F × F))
+    (out : NonzeroInterpolationMachine.Output F)
+    (hr : (NonzeroInterpolationMachine.runWithBudget D d m J A rows).1 = some out) :
+    MvPolynomial.DenseNormalizeMachine.DenseLayout (List.range (d + 2)) out.terms := by
+  obtain ⟨c, hs, _hc⟩ := InterpolationSupportMachine.enumerateWithBudget_correct D d m J A
+  simp only [NonzeroInterpolationMachine.runWithBudget, hs] at hr
+  split at hr
+  · cases hr
+  · split at hr
+    · rename_i mat hm j cs hsol
+      generalize he : (NonzeroInterpolationMachine.emit
+        (InterpolationSupportMachine.supportSpec
+          (InterpolationSupportMachine.parametersWithBudget D d m J A)) cs).1 = result at hr
+      cases result with
+      | none => cases hr
+      | some ts =>
+          cases hr
+          apply emit_layout _ cs _ ts he
+          intro v hv
+          simpa [InterpolationSupportMachine.parametersWithBudget] using
             InterpolationSupportMachine.supportSpec_width _ hv
     · cases hr
 
@@ -150,10 +228,13 @@ theorem search_origin (d m A count D : ℕ) (rows : List (F × F))
     (out : AmbientSearchMachine.Output F)
     (hr : (AmbientSearchMachine.search d m A rows count D).1 = some out) :
     (NonzeroInterpolationMachine.run out.degree d m A rows).1 = some out.interpolant := by
+  change (AmbientSearchMachine.searchWithBudget d m (2 * m) A rows count D).1 = some out at hr
+  change (NonzeroInterpolationMachine.runWithBudget out.degree d m (2 * m) A rows).1 =
+    some out.interpolant
   induction count generalizing D with
-  | zero => simp [AmbientSearchMachine.search] at hr
+  | zero => simp [AmbientSearchMachine.searchWithBudget] at hr
   | succ count ih =>
-      simp only [AmbientSearchMachine.search] at hr
+      simp only [AmbientSearchMachine.searchWithBudget] at hr
       split at hr
       · rename_i interp hi
         cases hr

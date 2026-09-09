@@ -111,6 +111,11 @@ def localHigherJetWeight (d : ℕ) : LocalVariable d → ℕ
   | some (some j) => j
   | _ => 0
 
+/-- Derivative-order weight of visible local jets: `Y_(j+1)` has weight `j+1`. -/
+def localDerivativeJetWeight (d : ℕ) : LocalVariable d → ℕ
+  | some (some j) => j.val + 1
+  | _ => 0
+
 @[simp]
 theorem localHigherJetWeight_T (d : ℕ) : localHigherJetWeight d (localT d) = 0 := rfl
 

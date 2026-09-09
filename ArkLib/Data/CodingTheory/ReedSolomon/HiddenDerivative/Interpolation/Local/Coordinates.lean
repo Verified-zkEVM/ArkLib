@@ -188,12 +188,14 @@ variable {R : Type*} [CommRing R] {d m W : ℕ}
 /-- Total degree in the error and visible jets, omitting `T`. -/
 def reachableLocalJetDegree (e : LocalVariable d →₀ ℕ) : ℕ := Finsupp.degree e.some
 
-private def localWeight (t aux : ℤ) (jets : Fin d → ℤ) : LocalVariable d → ℤ
+/-- Integer weights on the displacement, error, and derivative variables. -/
+def localWeight (t aux : ℤ) (jets : Fin d → ℤ) : LocalVariable d → ℤ
   | none => t
   | some none => aux
   | some (some j) => jets j
 
-private def sourceWeight (x y : ℤ) (jets : Fin d → ℤ) : JetVariable d → ℤ
+/-- Integer weights on the source variable and jets, with `Y₀` separate. -/
+def sourceWeight (x y : ℤ) (jets : Fin d → ℤ) : JetVariable d → ℤ
   | none => x
   | some j => Fin.cases y jets j
 
@@ -245,7 +247,9 @@ private theorem unscaled_generator_weight_le (t aux x y : ℤ) (jets : Fin d →
       simpa [unscaledLocalImage, sourceWeight, localWeight, localY] using
         (support_weight_X_eq (localWeight t aux jets) (localY j) he).le
 
-private theorem unscaled_support_weight_le (t aux x y : ℤ) (jets : Fin d → ℤ)
+/-- Bounds on the images of generators transport an arbitrary integer source-weight cap
+through the backward-Taylor substitution. Negative displacement weights retain cancellations. -/
+theorem unscaled_support_weight_le (t aux x y : ℤ) (jets : Fin d → ℤ)
     (ht : t ≤ x) (hx : 0 ≤ x) (hy : 0 ≤ y) (haux : t + aux ≤ y)
     (hjets : ∀ j : Fin d, (j.val + 1) • t + jets j ≤ y)
     (center received : R) {Q : DifferentialPolynomial R d} {cap : ℤ}
@@ -319,6 +323,38 @@ theorem unscaledLocal_higher_weight_le (center received : R) {Q : DifferentialPo
   have hbalance := unscaledLocal_error_le_t center received Q he
   omega
 
+private theorem weight_source_derivative (u : JetVariable d →₀ ℕ) :
+    Finsupp.weight (sourceWeight 0 0 (fun j : Fin d ↦ (j.val + 1 : ℤ))) u =
+      (fullDerivativeJetWeight u : ℤ) := by
+  simp only [Finsupp.weight_eq_sum, fullDerivativeJetWeight, Fintype.sum_option,
+    sourceWeight, nsmul_eq_mul, mul_zero, zero_add]
+  rw [Fin.sum_univ_succ, Fin.sum_univ_succ]
+  simp
+
+private theorem weight_local_derivative (e : LocalVariable d →₀ ℕ) :
+    Finsupp.weight (localWeight (-1) 1 (fun j : Fin d ↦ (j.val + 1 : ℤ))) e =
+      (Finsupp.weight (localDerivativeJetWeight d) e : ℤ) +
+        e (localE d) - e (localT d) := by
+  simp [Finsupp.weight_eq_sum, Fintype.sum_option, localWeight,
+    localDerivativeJetWeight, localE, localAux, localT, Nat.cast_sum, Nat.cast_mul]
+  ring
+
+/-- Charging every derivative by its order bounds the visible local weight by `W+i-h`.
+The error exponent `h` consumes one of the `T` factors, leaving displacement `i-h`. -/
+theorem unscaledLocal_derivativeJetWeight_le (center received : R)
+    {Q : DifferentialPolynomial R d}
+    (hQ : ∀ u ∈ Q.support, fullDerivativeJetWeight u ≤ W)
+    {e : LocalVariable d →₀ ℕ}
+    (he : e ∈ (unscaledLocalSubstitution d center received Q).support) :
+    Finsupp.weight (localDerivativeJetWeight d) e ≤ W + (e (localT d) - e (localE d)) := by
+  have h := unscaled_support_weight_le (-1) 1 0 0 (fun j : Fin d ↦ (j.val + 1 : ℤ))
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (fun j ↦ by simp) center received (cap := W)
+    (fun u hu ↦ by rw [weight_source_derivative]; exact_mod_cast hQ u hu) he
+  rw [weight_local_derivative] at h
+  have hbalance := unscaledLocal_error_le_t center received Q he
+  omega
+
 /-- A source total-jet degree cap is preserved by the actual local substitution. -/
 theorem unscaledLocal_jet_degree_le (center received : R) {Q : DifferentialPolynomial R d}
     {B : ℕ} (hQ : ∀ u ∈ Q.support, totalJetDegree u ≤ B)
@@ -358,6 +394,19 @@ private theorem mem_support_project {P : LocalPolynomial R d}
   split_ifs at he with h
   · exact ⟨h, MvPolynomial.mem_support_iff.mpr he⟩
   · exact False.elim (he rfl)
+
+/-- The rate-partition support reaches only local coordinates with the prescribed
+derivative-order weight and contact budget. This statement is field independent. -/
+theorem localConstraint_support_of_derivative_weight (center received : R)
+    {Q : DifferentialPolynomial R d}
+    (hweight : ∀ u ∈ Q.support, fullDerivativeJetWeight u ≤ W)
+    {e : LocalVariable d →₀ ℕ} (he : e ∈ (localConstraintAt m center received Q).support) :
+    e (localE d) ≤ e (localT d) ∧
+      Finsupp.weight (localDerivativeJetWeight d) e ≤ W + (e (localT d) - e (localE d)) ∧
+      localContactOrder d e < m := by
+  have hp := mem_support_project he
+  exact ⟨unscaledLocal_error_le_t center received Q hp.2,
+    unscaledLocal_derivativeJetWeight_le center received hweight hp.2, hp.1⟩
 
 /-- Reachable local coordinates preserve higher-jet weight and total jet degree. -/
 theorem localConstraint_support_of_weight_bounds (center received : R)

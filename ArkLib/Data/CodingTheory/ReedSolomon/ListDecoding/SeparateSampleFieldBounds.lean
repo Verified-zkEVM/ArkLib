@@ -43,6 +43,11 @@ def fixedSizeCoefficient (d m : ℕ) : ℕ :=
   d + 4 * m + 4 + m * (2 * m) ^ (d + 1) * (3 * m + 2 * d + 5) +
     m * (2 * m) ^ (d + 1)
 
+/-- Fixed-order size coefficient for independent strict jet cutoff `J`. -/
+def fixedSizeCoefficientWithBudget (d m J : ℕ) : ℕ :=
+  d + 2 * m + J + 4 + m * J ^ (d + 1) * (m + J + 2 * d + 5) +
+    m * J ^ (d + 1)
+
 variable {F : Type*} [Field F] {a : F}
 
 /-- Only original numeric input sizes and actual materialized list lengths occur here. -/
@@ -130,6 +135,61 @@ theorem fixed_interpolation_budget (input : Input F a) (guards : List (Element F
       sizePolynomial (fixedSizeCoefficient input.order m) * q ^ (e * (input.order + 2) + 10) := by
   exact scaled_input_budget input guards out.terms (2 * m) q e _ 2 hq hs.alphabet
     (fixed_interpolation_size input guards out m A n q e hq hs hr)
+
+/-- The sparse emitter bounds all inputs when interpolation uses strict jet cutoff `J`. -/
+theorem fixed_interpolation_sizeWithBudget (input : Input F a)
+    (guards : List (Element F a)) (out : Output F) (m J A n q e : ℕ) (hq : 0 < q)
+    (hs : FieldSizes input guards m A n q e)
+    (hr : (runWithBudget input.degree input.order m J A input.received).1 = some out) :
+    numericalSize input guards out.terms J ≤
+      fixedSizeCoefficientWithBudget input.order m J * q ^ 2 := by
+  obtain ⟨hlen, hmass, _hjet⟩ := runWithBudget_output_bounds _ _ _ _ _ _ out hr
+  let B := J ^ (input.order + 1)
+  let b := 2 * (input.order + 2) + J + 1
+  have hAq : A ≤ q := hs.agreement.trans hs.block
+  have hmq : m * A ≤ m * q := Nat.mul_le_mul_left m hAq
+  have hq2 : q ≤ q ^ 2 := by nlinarith
+  have hq2pos : 1 ≤ q ^ 2 := Nat.one_le_pow _ _ hq
+  have hinner : m * A + b ≤ (m + b) * q := by nlinarith
+  have hm : inputMass out.terms ≤ m * B * (m + b) * q ^ 2 := by
+    calc
+      _ ≤ m * A * B * (m * A + b) := by
+        simpa only [maximumColumnsWithBudget, B, b, Nat.add_assoc, Nat.add_left_comm,
+          Nat.add_comm] using hmass
+      _ ≤ m * q * B * ((m + b) * q) := by gcongr
+      _ = _ := by ring
+  have ht : out.terms.length ≤ m * B * q ^ 2 := by
+    calc
+      _ ≤ m * A * B := hlen
+      _ ≤ m * q ^ 2 * B := by gcongr; exact hAq.trans hq2
+      _ = _ := by ring
+  have hw : input.degree + 1 ≤ 2 * q ^ 2 := by
+    have := hs.degree.trans hs.block
+    omega
+  have hd : input.order ≤ input.order * q ^ 2 := by nlinarith
+  have hL : input.residualLength ≤ m * q ^ 2 := by
+    rw [hs.residual]
+    exact Nat.mul_le_mul_left m (hAq.trans hq2)
+  have hrec : input.samples.length ≤ m * q ^ 2 := by
+    rw [hs.recovery]
+    exact Nat.mul_le_mul_left m (hAq.trans hq2)
+  have hrows : input.received.length ≤ q ^ 2 := (hs.rows.trans hs.block).trans hq2
+  have hJ : J ≤ J * q ^ 2 := by nlinarith
+  have hg := hs.guard
+  unfold numericalSize fixedSizeCoefficientWithBudget
+  dsimp only [B, b] at hm ht
+  nlinarith only [hm, ht, hw, hd, hL, hrec, hrows, hJ, hg]
+
+/-- Fixed order, multiplicity and strict jet cutoff give an absolute field-size exponent. -/
+theorem fixed_interpolation_budgetWithBudget (input : Input F a)
+    (guards : List (Element F a)) (out : Output F) (m J A n q e : ℕ) (hq : 0 < q)
+    (hs : FieldSizes input guards m A n q e)
+    (hr : (runWithBudget input.degree input.order m J A input.received).1 = some out) :
+    fuel input guards out.terms J + workBound input guards out.terms J ≤
+      sizePolynomial (fixedSizeCoefficientWithBudget input.order m J) *
+        q ^ (e * (input.order + 2) + 10) := by
+  exact scaled_input_budget input guards out.terms J q e _ 2 hq hs.alphabet
+    (fixed_interpolation_sizeWithBudget input guards out m J A n q e hq hs hr)
 
 /-- Order-zero physical mass gives a universal size bound even for growing multiplicity. -/
 theorem zero_interpolation_size (input : Input F a) (guards : List (Element F a))

@@ -379,22 +379,37 @@ theorem fuel_le_linear (p : Parameters) : fuel p ≤ linearFactor p.h p.B * (p.T
   unfold fuel linearFactor
   nlinarith [Nat.zero_le ((p.h + 3) * p.B ^ p.h)]
 
-/-- Integer interpolation inputs, with no dependence on a representation of a real gap. -/
+/-- Integer interpolation inputs with an explicit strict total-jet cutoff. -/
+def parametersWithBudget (D d m J A : ℕ) : Parameters := ⟨D, d + 1, J, m * A⟩
+
+/-- Legacy interpolation inputs specialize the strict total-jet cutoff to `2 * m`. -/
 def parameters (D d m A : ℕ) : Parameters := ⟨D, d + 1, 2 * m, m * A⟩
 
-/-- The public executable enumerator exposes both the completed configuration and its charge. -/
-def enumerate (D d m A : ℕ) : Configuration × ℕ :=
-  let p := parameters D d m A
+/-- The executable enumerator with an explicit strict total-jet cutoff. -/
+def enumerateWithBudget (D d m J A : ℕ) : Configuration × ℕ :=
+  let p := parametersWithBudget D d m J A
   runFuel p (fuel p) .start
 
-/-- The public integer program is correct and has linear-in-mA work for fixed d and m. -/
+/-- The legacy executable enumerator uses strict cutoff `2 * m`. -/
+def enumerate (D d m A : ℕ) : Configuration × ℕ :=
+  enumerateWithBudget D d m (2 * m) A
+
+/-- The integer program is correct and has linear-in-`m*A` work for fixed `d` and `J`. -/
+theorem enumerateWithBudget_correct (D d m J A : ℕ) :
+    ∃ c, enumerateWithBudget D d m J A =
+        (.done (supportSpec (parametersWithBudget D d m J A)), c) ∧
+      c ≤ 32 * linearFactor (d + 1) J * (m * A + 1) := by
+  obtain ⟨c, hc, hb⟩ := construction_correct (parametersWithBudget D d m J A)
+  refine ⟨c, hc, ?_⟩
+  have h := Nat.mul_le_mul_left 32 (fuel_le_linear (parametersWithBudget D d m J A))
+  exact hb.trans (by simpa [parametersWithBudget, Nat.mul_assoc] using h)
+
+/-- Correctness of the legacy `2 * m` specialization. -/
 theorem enumerate_correct (D d m A : ℕ) :
     ∃ c, enumerate D d m A = (.done (supportSpec (parameters D d m A)), c) ∧
       c ≤ 32 * linearFactor (d + 1) (2 * m) * (m * A + 1) := by
-  obtain ⟨c, hc, hb⟩ := construction_correct (parameters D d m A)
-  refine ⟨c, hc, ?_⟩
-  have h := Nat.mul_le_mul_left 32 (fuel_le_linear (parameters D d m A))
-  exact hb.trans (by simpa [parameters, Nat.mul_assoc] using h)
+  simpa [enumerate, parameters, parametersWithBudget] using
+    enumerateWithBudget_correct D d m (2 * m) A
 
 
 /-- Membership in the materialized jet box is exactly coordinatewise boundedness and width. -/
@@ -475,7 +490,16 @@ theorem mem_interpolation_columns (D d m A x : ℕ) (b : Fin (d + 1) → ℕ) :
     x :: List.ofFn b ∈ supportSpec (parameters D d m A) ↔
       (∑ j, b j) < 2 * m ∧ x + (∑ j, (D - j.val) * b j) < m * A := by
   rw [mem_supportSpec_iff]
-  simp only [parameters, List.length_ofFn, true_and, List.sum_ofFn, jetWeight_ofFn,
+  simp only [parameters, List.length_ofFn, true_and, List.sum_ofFn,
+    jetWeight_ofFn, Nat.zero_add]
+
+/-- Matrix-facing exact column coverage with an explicit strict total-jet cutoff. -/
+theorem mem_interpolation_columnsWithBudget (D d m J A x : ℕ)
+    (b : Fin (d + 1) → ℕ) :
+    x :: List.ofFn b ∈ supportSpec (parametersWithBudget D d m J A) ↔
+      (∑ j, b j) < J ∧ x + (∑ j, (D - j.val) * b j) < m * A := by
+  rw [mem_supportSpec_iff]
+  simp only [parametersWithBudget, List.length_ofFn, true_and, List.sum_ofFn, jetWeight_ofFn,
     Nat.zero_add]
 
 /-- A zero X bound yields no columns, even when the jet box is nonempty. -/

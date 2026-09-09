@@ -75,7 +75,16 @@ theorem attempt_complete (D m A : ℕ) (received : List (F × F)) :
   · obtain ⟨kc, hsolve, hkc, _⟩ := hf
     obtain ⟨sc, hs, hsc⟩ := InterpolationSupportMachine.enumerate_correct D d m A
     refine ⟨none, 32 + sc + mc + Matrix.NonzeroKernelMachine.totalCost kc, ?_, ?_, by simp⟩
-    · simp only [run, hs, hmat, hcount, hsolve]
+    · have hs' : InterpolationSupportMachine.enumerateWithBudget D d m (2 * m) A =
+          (.done (ReceivedInterpolationMatrixMachine.support D d m A), sc) := by
+        simpa [InterpolationSupportMachine.enumerate,
+          ReceivedInterpolationMatrixMachine.support,
+          ReceivedInterpolationMatrixMachine.supportWithBudget,
+          InterpolationSupportMachine.parameters,
+          InterpolationSupportMachine.parametersWithBudget] using hs
+      have hmat' : ReceivedInterpolationMatrixMachine.runWithBudget D d m (2 * m) A received =
+          (some mat, mc) := by simpa [ReceivedInterpolationMatrixMachine.run] using hmat
+      simp only [run, runWithBudget, hs', hmat', hcount, hsolve]
     · have hb := hkc.trans (kernelBudget_mono mat.columns _
         (InterpolationPointBlockMachine.columnSize d m *
           (ReceivedInterpolationMatrixMachine.support D d m A).length * received.length)
@@ -95,7 +104,9 @@ theorem support_length_le (D d m A : ℕ) :
 theorem budget_mono_columns (d m A L M n : ℕ) (h : L ≤ M) :
     budget d m A L n ≤ budget d m A M n := by
   unfold budget ReceivedInterpolationMatrixMachine.budget
-    InterpolationPointBlockMachine.assemblyBudget Matrix.NonzeroKernelMachine.budget
+    ReceivedInterpolationMatrixMachine.budgetWithBudget
+    InterpolationPointBlockMachine.assemblyBudgetWithBudget
+    Matrix.NonzeroKernelMachine.budget
     Matrix.ForwardEchelonMachine.budget Matrix.ForwardEchelonMachine.stageBudget
   gcongr
 
@@ -130,6 +141,131 @@ theorem run_none_iff (D m A : ℕ) (received : List (F × F)) :
       exfalso
       apply h
       refine ⟨sourceOutput (d := d) D m A out, ?_, hc.2.2.2.2.2.2.2.2.1, hc.2.2.2.2.2.2.2.2.2.2⟩
+      intro hz
+      have hp := hc.2.2.2.2.2.2.1
+      rw [hz, map_zero] at hp
+      exact hc.2.2.2.2.2.2.2.1 hp
+
+/-- Source polynomial reconstructed from a result at strict jet cutoff `J`. -/
+def sourceOutputWithBudget (D m J A : ℕ) (out : Output F) : DifferentialPolynomial F d :=
+  InterpolationPointBlockMachine.sourceCombination d
+    (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+    (fun i => out.coefficients.getD i 0)
+
+/-- Semantic certificate for a successful explicitly budgeted attempt. -/
+def CertifiedWithBudget (D m J A : ℕ) (received : List (F × F)) (out : Output F) : Prop :=
+  out.coefficients.length =
+      (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length ∧
+    out.chosen < out.coefficients.length ∧ out.coefficients.getD out.chosen 0 = 1 ∧
+    out.terms.length ≤ out.coefficients.length ∧ (out.terms.map Prod.snd).Nodup ∧
+    (∀ t ∈ out.terms, t.1 ≠ 0) ∧
+    MvPolynomial.EvaluationMachine.sparsePolynomial out.terms = rename variableIndex
+      (sourceOutputWithBudget (d := d) D m J A out) ∧
+    MvPolynomial.EvaluationMachine.sparsePolynomial out.terms ≠ 0 ∧
+    EligibleWithBudget D m J A (sourceOutputWithBudget (d := d) D m J A out) ∧
+    differentialWeightedDegree D (sourceOutputWithBudget (d := d) D m J A out) < m * A ∧
+    ∀ p ∈ received,
+      localConstraintAt m p.1 p.2 (sourceOutputWithBudget (d := d) D m J A out) = 0
+
+/-- Every explicitly budgeted attempt terminates, and every success is certified. -/
+theorem attemptWithBudget_complete (D m J A : ℕ) (received : List (F × F)) :
+    ∃ result c, runWithBudget D d m J A received = (result, c) ∧
+      c ≤ budgetWithBudget d m J A
+        (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length
+        received.length ∧
+      ∀ out, result = some out → CertifiedWithBudget (d := d) D m J A received out := by
+  by_cases hex : ∃ Q : DifferentialPolynomial F d,
+      Q ≠ 0 ∧ EligibleWithBudget D m J A Q ∧
+        ∀ p ∈ received, localConstraintAt m p.1 p.2 Q = 0
+  · obtain ⟨Q, hn, he, hl⟩ := hex
+    obtain ⟨out, c, hr, hlen, hj, hu, ht, hk, hcoeff, hp, hn', he', hd, hl', hc⟩ :=
+      runWithBudget_refines D m J A received Q he hn hl
+    refine ⟨some out, c, hr, hc, ?_⟩
+    intro out' ho
+    cases ho
+    exact ⟨hlen, hj, hu, ht, hk, hcoeff, hp, hn', he', hd, hl'⟩
+  obtain ⟨mat, mc, hmat, hcols, _, hcount, _, hshape, hkernel, hrowbound, hmc⟩ :=
+    ReceivedInterpolationMatrixMachine.runWithBudget_refines D d m J A received
+  have hr : Matrix.ForwardEchelonMachine.Rectangular mat.columns mat.rows :=
+    fun r hr => (hshape r hr).1
+  have hz : ∀ r ∈ mat.rows, r.2 = 0 := fun r hr => (hshape r hr).2
+  rcases Matrix.NonzeroKernelMachine.completion_runFuel mat.columns mat.rows hr hz with hs | hf
+  · obtain ⟨j, cs, kc, _, hlen, hj, hu, hsol, _⟩ := hs
+    exfalso
+    apply hex
+    refine ⟨InterpolationPointBlockMachine.sourceCombination d
+      (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A)
+        (fun i => cs.getD i 0),
+      sourceWithBudget_nonzero D m J A cs j (by simpa only [hcols] using hj) ?_,
+      sourceWithBudget_eligible D m J A _, (hkernel _).mp hsol⟩
+    rw [hu]
+    exact one_ne_zero
+  · obtain ⟨kc, hsolve, hkc, _⟩ := hf
+    obtain ⟨sc, hs, hsc⟩ :=
+      InterpolationSupportMachine.enumerateWithBudget_correct D d m J A
+    refine ⟨none, 32 + sc + mc + Matrix.NonzeroKernelMachine.totalCost kc, ?_, ?_, by simp⟩
+    · simp only [runWithBudget, hs, hmat, hcount, hsolve]
+    · have hb := hkc.trans (kernelBudget_mono mat.columns _
+        (InterpolationPointBlockMachine.columnSize d m *
+          (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length *
+            received.length)
+        (by simpa only [hcount] using hrowbound))
+      rw [hcols] at hb
+      unfold budgetWithBudget
+      omega
+
+/-- Uniform support-box bound with explicit strict jet cutoff `J`. -/
+def maximumColumnsWithBudget (d m J A : ℕ) : ℕ := m * A * J ^ (d + 1)
+
+theorem supportWithBudget_length_le (D d m J A : ℕ) :
+    (ReceivedInterpolationMatrixMachine.supportWithBudget D d m J A).length ≤
+      maximumColumnsWithBudget d m J A := by
+  exact InterpolationSupportMachine.supportSpec_length_le _
+
+/-- Monotonicity of the explicitly budgeted component bound in its column count. -/
+theorem budgetWithBudget_mono_columns (d m J A L M n : ℕ) (h : L ≤ M) :
+    budgetWithBudget d m J A L n ≤ budgetWithBudget d m J A M n := by
+  unfold budgetWithBudget ReceivedInterpolationMatrixMachine.budgetWithBudget
+    InterpolationPointBlockMachine.assemblyBudgetWithBudget
+    Matrix.NonzeroKernelMachine.budget Matrix.ForwardEchelonMachine.budget
+    Matrix.ForwardEchelonMachine.stageBudget
+  gcongr
+
+/-- A degree-independent budget for every attempt at strict jet cutoff `J`. -/
+def attemptBudgetWithBudget (d m J A n : ℕ) : ℕ :=
+  budgetWithBudget d m J A (maximumColumnsWithBudget d m J A) n
+
+theorem attemptWithBudget_uniform (D m J A : ℕ) (received : List (F × F)) :
+    ∃ result c, runWithBudget D d m J A received = (result, c) ∧
+      c ≤ attemptBudgetWithBudget d m J A received.length ∧
+      ∀ out, result = some out → CertifiedWithBudget (d := d) D m J A received out := by
+  obtain ⟨result, c, hr, hc, hs⟩ := attemptWithBudget_complete D m J A received
+  exact ⟨result, c, hr,
+    hc.trans (budgetWithBudget_mono_columns d m J A _ _ _
+      (supportWithBudget_length_le D d m J A)), hs⟩
+
+/-- Failure is absence of a nonzero interpolant supported by the explicit budget. -/
+theorem runWithBudget_none_iff (D m J A : ℕ) (received : List (F × F)) :
+    (runWithBudget D d m J A received).1 = none ↔
+      ¬∃ Q : DifferentialPolynomial F d,
+        Q ≠ 0 ∧ EligibleWithBudget D m J A Q ∧
+          ∀ p ∈ received, localConstraintAt m p.1 p.2 Q = 0 := by
+  constructor
+  · intro h ⟨Q, hn, he, hl⟩
+    obtain ⟨out, c, hr, _⟩ := runWithBudget_refines D m J A received Q he hn hl
+    rw [hr] at h
+    cases h
+  · intro h
+    obtain ⟨result, c, hr, _, hs⟩ := attemptWithBudget_complete D m J A received
+    rw [hr]
+    cases result with
+    | none => rfl
+    | some out =>
+      have hc := hs out rfl
+      exfalso
+      apply h
+      refine ⟨sourceOutputWithBudget (d := d) D m J A out, ?_,
+        hc.2.2.2.2.2.2.2.2.1, hc.2.2.2.2.2.2.2.2.2.2⟩
       intro hz
       have hp := hc.2.2.2.2.2.2.1
       rw [hz, map_zero] at hp

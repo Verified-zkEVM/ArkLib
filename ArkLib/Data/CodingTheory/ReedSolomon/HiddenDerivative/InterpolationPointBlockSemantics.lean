@@ -185,22 +185,26 @@ theorem makeColumn_refines (m : ℕ) (a y : F) (x b : ℕ) (xs : List ℕ)
 /-- Gap-only bound for emitted terms in any support column. -/
 def columnSize (d m : ℕ) : ℕ := (d + 2) ^ (m + 2) * (m * m)
 
-/-- Uniform column charge over the enumerated support; linear in the X range. -/
-def columnBudget (d m A : ℕ) : ℕ :=
-  288 * (m * A + 2 * m + m + 2) * (m + 1) +
+/-- Uniform column charge over support with strict total-jet cutoff `J`. -/
+def columnBudgetWithBudget (d m J A : ℕ) : ℕ :=
+  288 * (m * A + J + m + 2) * (m + 1) +
     8192 * (m + 2) * (d + 2) ^ (m + 2) * (m * m + 1) + 64
 
+/-- Legacy column charge for strict cutoff `2 * m`. -/
+def columnBudget (d m A : ℕ) : ℕ := columnBudgetWithBudget d m (2 * m) A
+
 /-- Every enumerated support vector gives a successful and correctly interpreted column. -/
-theorem support_column_refines (D m A : ℕ) (a y : F) (v : List ℕ)
+theorem support_column_refinesWithBudget (D m J A : ℕ) (a y : F) (v : List ℕ)
     (hv : v ∈ InterpolationSupportMachine.supportSpec
-      (InterpolationSupportMachine.parameters D d m A)) :
+      (InterpolationSupportMachine.parametersWithBudget D d m J A)) :
     ∃ c, makeColumn d m a y v = (some (columnValue d m a y v), c) ∧
       LocalColumnRewriteMachine.denseRepresented d (columnValue d m a y v) =
         localConstraintAt m a y (sourceValue d v) ∧
       (∀ t ∈ columnValue d m a y v, t.2.length = d + 2) ∧
-      (columnValue d m a y v).length ≤ columnSize d m ∧ c ≤ columnBudget d m A := by
+      (columnValue d m a y v).length ≤ columnSize d m ∧
+        c ≤ columnBudgetWithBudget d m J A := by
   have hw := InterpolationSupportMachine.supportSpec_width _ hv
-  simp only [InterpolationSupportMachine.parameters] at hw
+  simp only [InterpolationSupportMachine.parametersWithBudget] at hw
   obtain ⟨x, b, xs, rfl⟩ : ∃ x b xs, v = x :: b :: xs := by
     cases v with
     | nil => simp at hw
@@ -211,12 +215,24 @@ theorem support_column_refines (D m A : ℕ) (a y : F) (v : List ℕ)
   have hx : xs.length = d := by simpa using hw
   obtain ⟨c, hc, hp, hwidth, hl, hcost⟩ := makeColumn_refines m a y x b xs hx
   obtain ⟨_, hsum, hweight⟩ := (InterpolationSupportMachine.mem_supportSpec_iff _ x (b :: xs)).mp hv
-  simp only [InterpolationSupportMachine.parameters, List.sum_cons] at hsum hweight
+  simp only [InterpolationSupportMachine.parametersWithBudget, List.sum_cons] at hsum hweight
   refine ⟨c, hc, hp, hwidth, hl, ?_⟩
-  unfold columnBudget
-  have hh : x + b + m + 2 ≤ m * A + 2 * m + m + 2 := by omega
+  unfold columnBudgetWithBudget
+  have hh : x + b + m + 2 ≤ m * A + J + m + 2 := by omega
   have hmul := Nat.mul_le_mul_right (m + 1) (Nat.mul_le_mul_left 288 hh)
   exact hcost.trans (Nat.add_le_add_right (Nat.add_le_add_right hmul _) 64)
+
+/-- Legacy column refinement at strict cutoff `2 * m`. -/
+theorem support_column_refines (D m A : ℕ) (a y : F) (v : List ℕ)
+    (hv : v ∈ InterpolationSupportMachine.supportSpec
+      (InterpolationSupportMachine.parameters D d m A)) :
+    ∃ c, makeColumn d m a y v = (some (columnValue d m a y v), c) ∧
+      LocalColumnRewriteMachine.denseRepresented d (columnValue d m a y v) =
+        localConstraintAt m a y (sourceValue d v) ∧
+      (∀ t ∈ columnValue d m a y v, t.2.length = d + 2) ∧
+      (columnValue d m a y v).length ≤ columnSize d m ∧ c ≤ columnBudget d m A := by
+  simpa [InterpolationSupportMachine.parameters, columnBudget] using
+    support_column_refinesWithBudget (d := d) D m (2 * m) A a y v hv
 
 /-- Column interpretation commutes with the ordered linear combination. -/
 theorem combination_localConstraint (m : ℕ) (a y : F) (vs : List (List ℕ))
@@ -233,36 +249,40 @@ theorem combination_localConstraint (m : ℕ) (a y : F) (vs : List (List ℕ))
     simpa [denseCombination, sourceCombination, combine, hh] using
       congrArg (fun p => w 0 • localConstraintAt m a y (sourceValue d v) + p) ht
 
-/-- Closed block budget: polynomial in actual support length, with gap-only coefficients. -/
-def assemblyBudget (d m A L : ℕ) : ℕ :=
-  32 * InterpolationSupportMachine.linearFactor (d + 1) (2 * m) * (m * A + 1) +
-    (columnBudget d m A + 64) * (L + 1) +
+/-- Closed block budget for support with strict total-jet cutoff `J`. -/
+def assemblyBudgetWithBudget (d m J A L : ℕ) : ℕ :=
+  32 * InterpolationSupportMachine.linearFactor (d + 1) J * (m * A + 1) +
+    (columnBudgetWithBudget d m J A + 64) * (L + 1) +
     512 * (d + 4) * (columnSize d m + 1) ^ 2 * (L + 1) ^ 2 + 32
+
+/-- Legacy block budget for strict cutoff `2 * m`. -/
+def assemblyBudget (d m A L : ℕ) : ℕ := assemblyBudgetWithBudget d m (2 * m) A L
 
 /-- Full one-point interpolation assembly succeeds, is solver-compatible, and has exactly the
 local constraint kernel. Across n points the redundant raw row count can be O(n*supportLength).
 The bound is polynomial of absolute degree, with exponential constants only in d,m. -/
-theorem assemble_refines (D m A : ℕ) (a y : F) :
-    ∃ rs c, assemble D d m A a y = (some rs, c) ∧
+theorem assembleWithBudget_refines (D m J A : ℕ) (a y : F) :
+    ∃ rs c, assembleWithBudget D d m J A a y = (some rs, c) ∧
       rs = (block ((InterpolationSupportMachine.supportSpec
-        (InterpolationSupportMachine.parameters D d m A)).map (columnValue d m a y))).1 ∧
+        (InterpolationSupportMachine.parametersWithBudget D d m J A)).map
+          (columnValue d m a y))).1 ∧
       (∀ r ∈ rs, r.1.length =
         (InterpolationSupportMachine.supportSpec
-          (InterpolationSupportMachine.parameters D d m A)).length ∧ r.2 = 0) ∧
+          (InterpolationSupportMachine.parametersWithBudget D d m J A)).length ∧ r.2 = 0) ∧
       (∀ w : ℕ → F, Matrix.PivotSelectionMachine.Satisfies rs w ↔
         localConstraintAt m a y (sourceCombination d
           (InterpolationSupportMachine.supportSpec
-            (InterpolationSupportMachine.parameters D d m A)) w) = 0) ∧
+            (InterpolationSupportMachine.parametersWithBudget D d m J A)) w) = 0) ∧
       rs.length ≤ columnSize d m * (InterpolationSupportMachine.supportSpec
-        (InterpolationSupportMachine.parameters D d m A)).length ∧
-      c ≤ assemblyBudget d m A (InterpolationSupportMachine.supportSpec
-        (InterpolationSupportMachine.parameters D d m A)).length := by
+        (InterpolationSupportMachine.parametersWithBudget D d m J A)).length ∧
+      c ≤ assemblyBudgetWithBudget d m J A (InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parametersWithBudget D d m J A)).length := by
   let vs := InterpolationSupportMachine.supportSpec
-    (InterpolationSupportMachine.parameters D d m A)
+    (InterpolationSupportMachine.parametersWithBudget D d m J A)
   let cs := vs.map (columnValue d m a y)
-  have h (v : List ℕ) (hv : v ∈ vs) := support_column_refines D m A a y v hv
-  obtain ⟨sc, hs, hsc⟩ := InterpolationSupportMachine.enumerate_correct D d m A
-  obtain ⟨cc, hc, hcc⟩ := columns_correct d m (columnBudget d m A) a y vs
+  have h (v : List ℕ) (hv : v ∈ vs) := support_column_refinesWithBudget D m J A a y v hv
+  obtain ⟨sc, hs, hsc⟩ := InterpolationSupportMachine.enumerateWithBudget_correct D d m J A
+  obtain ⟨cc, hc, hcc⟩ := columns_correct d m (columnBudgetWithBudget d m J A) a y vs
     (columnValue d m a y) (by
       intro v hv
       obtain ⟨c, hc, _, _, _, hb⟩ := h v hv
@@ -278,7 +298,7 @@ theorem assemble_refines (D m A : ℕ) (a y : F) :
   obtain ⟨hbl, hbc⟩ := block_bounds (columnSize d m) (d + 2) cs hl
     (fun col hc t ht => (hw col hc t ht).le)
   refine ⟨(block cs).1, 32 + sc + cc + (block cs).2, ?_, rfl, ?_, ?_, ?_, ?_⟩
-  · simp only [assemble, hs]
+  · simp only [assembleWithBudget, hs]
     change (match (columns d m a y vs).1 with
       | none => _
       | some cols => _) = _
@@ -291,11 +311,32 @@ theorem assemble_refines (D m A : ℕ) (a y : F) :
   · simpa only [cs, List.length_map] using hbl
   · have hlen : cs.length = vs.length := List.length_map _
     rw [hlen] at hbc
-    change 32 + sc + cc + (block cs).2 ≤ assemblyBudget d m A vs.length
-    unfold assemblyBudget
+    change 32 + sc + cc + (block cs).2 ≤ assemblyBudgetWithBudget d m J A vs.length
+    unfold assemblyBudgetWithBudget
     change (block cs).2 ≤
       512 * (d + 4) * (columnSize d m + 1) ^ 2 * (vs.length + 1) ^ 2 at hbc
     omega
+
+/-- Legacy one-point assembly refinement at strict cutoff `2 * m`. -/
+theorem assemble_refines (D m A : ℕ) (a y : F) :
+    ∃ rs c, assemble D d m A a y = (some rs, c) ∧
+      rs = (block ((InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parameters D d m A)).map (columnValue d m a y))).1 ∧
+      (∀ r ∈ rs, r.1.length =
+        (InterpolationSupportMachine.supportSpec
+          (InterpolationSupportMachine.parameters D d m A)).length ∧ r.2 = 0) ∧
+      (∀ w : ℕ → F, Matrix.PivotSelectionMachine.Satisfies rs w ↔
+        localConstraintAt m a y (sourceCombination d
+          (InterpolationSupportMachine.supportSpec
+            (InterpolationSupportMachine.parameters D d m A)) w) = 0) ∧
+      rs.length ≤ columnSize d m * (InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parameters D d m A)).length ∧
+      c ≤ assemblyBudget d m A (InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parameters D d m A)).length := by
+  simpa [assemble, InterpolationSupportMachine.enumerate,
+    InterpolationSupportMachine.parameters, InterpolationSupportMachine.parametersWithBudget,
+    assemblyBudget] using
+    assembleWithBudget_refines (d := d) D m (2 * m) A a y
 
 /-- Each materialized row consists of exact polynomial coefficients in column order. -/
 theorem block_entries (cols : List (DenseColumn F))
@@ -317,22 +358,22 @@ theorem block_entries (cols : List (DenseColumn F))
   exact LocalColumnRewriteMachine.coordinate_coeff q hq c (hw c hc)
 
 /-- A row returned by public assembly has the actual localConstraintAt coefficients. -/
-theorem assemble_entries (D m A : ℕ) (a y : F) (rs : List (Row F)) (cost : ℕ)
-    (hs : assemble D d m A a y = (some rs, cost)) (r : Row F) (hr : r ∈ rs) :
+theorem assembleWithBudget_entries (D m J A : ℕ) (a y : F) (rs : List (Row F)) (cost : ℕ)
+    (hs : assembleWithBudget D d m J A a y = (some rs, cost)) (r : Row F) (hr : r ∈ rs) :
     ∃ q : LocalColumnRewriteMachine.Term F, q.jets.length = d ∧
       r = ((InterpolationSupportMachine.supportSpec
-        (InterpolationSupportMachine.parameters D d m A)).map
+        (InterpolationSupportMachine.parametersWithBudget D d m J A)).map
           (fun v => coeff (LocalColumnRewriteMachine.exponent d q)
             (localConstraintAt m a y (sourceValue d v))), 0) := by
-  obtain ⟨out, c, he, hout, _⟩ := assemble_refines D m A a y
+  obtain ⟨out, c, he, hout, _⟩ := assembleWithBudget_refines D m J A a y
   have ho : out = rs := by simpa using congrArg Prod.fst (he.symm.trans hs)
   rw [← ho, hout] at hr
   have hw : ∀ col ∈ (InterpolationSupportMachine.supportSpec
-      (InterpolationSupportMachine.parameters D d m A)).map (columnValue d m a y),
+      (InterpolationSupportMachine.parametersWithBudget D d m J A)).map (columnValue d m a y),
       ∀ t ∈ col, t.2.length = d + 2 := by
     intro col hc
     obtain ⟨v, hv, rfl⟩ := List.mem_map.mp hc
-    exact (support_column_refines D m A a y v hv).choose_spec.2.2.1
+    exact (support_column_refinesWithBudget D m J A a y v hv).choose_spec.2.2.1
   obtain ⟨q, hq, heq⟩ := block_entries _ hw r hr
   refine ⟨q, hq, ?_⟩
   rw [heq, List.map_map]
@@ -340,7 +381,20 @@ theorem assemble_entries (D m A : ℕ) (a y : F) (rs : List (Row F)) (cost : ℕ
   apply List.map_congr_left
   intro v hv
   exact congrArg (coeff (LocalColumnRewriteMachine.exponent d q))
-    (support_column_refines D m A a y v hv).choose_spec.2.1
+    (support_column_refinesWithBudget D m J A a y v hv).choose_spec.2.1
+
+/-- Legacy row-entry theorem at strict cutoff `2 * m`. -/
+theorem assemble_entries (D m A : ℕ) (a y : F) (rs : List (Row F)) (cost : ℕ)
+    (hs : assemble D d m A a y = (some rs, cost)) (r : Row F) (hr : r ∈ rs) :
+    ∃ q : LocalColumnRewriteMachine.Term F, q.jets.length = d ∧
+      r = ((InterpolationSupportMachine.supportSpec
+        (InterpolationSupportMachine.parameters D d m A)).map
+          (fun v => coeff (LocalColumnRewriteMachine.exponent d q)
+            (localConstraintAt m a y (sourceValue d v))), 0) := by
+  simpa [InterpolationSupportMachine.parameters,
+    InterpolationSupportMachine.parametersWithBudget] using
+      assembleWithBudget_entries (d := d) D m (2 * m) A a y rs cost
+        (by simpa [assemble] using hs) r hr
 
 end
 end ReedSolomon.HiddenDerivative.InterpolationPointBlockMachine

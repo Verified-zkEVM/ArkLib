@@ -65,13 +65,13 @@ universe u
 with the exact cap-sensitive polynomial-curve envelope.  This is the pre-descent form: challenge
 values and candidate polynomials live in the algebraically closed target, while the recovered
 tuple still has coefficients in the source field. -/
-theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
+theorem exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
     {F E : Type u} [Field F] [Field E] [DecidableEq E] [IsAlgClosed E]
-    {D A m M mu k h n K L ell : ℕ}
+    {D A m M mu k h n N K L ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
-    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
-    (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
-      firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderCurveCertificate.{u, u} (F := F) D A m M mu k h domain
+      (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
     (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
     (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
     (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
@@ -87,11 +87,6 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
   classical
   let curveWord : Fin n → F[X] := fun i ↦
     powerBatchedCoordinate fun t ↦ values t i
-  have hword : ∀ i, (curveWord i).natDegree ≤ ell := by
-    intro i
-    exact powerBatchedCoordinate_natDegree_le fun t ↦ values t i
-  obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
-    ell hD hbudget hkD domain curveWord hword hheight
   have hcharWeight : ringChar F = 0 ∨ mu < ringChar F :=
     hchar.imp_right fun hpos ↦ (Nat.le_max_right (K - 1) mu).trans_lt hpos
   obtain ⟨stages, terminal, chain⟩ := cert.exists_separant_chain hcharWeight
@@ -260,8 +255,64 @@ theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_expone
     (SymbolicReceivedCurve.eval₂_powerBatchedCoordinate_eq_powerBatchedWord
       values iota z i).symm
 
+/-- The finite shifted-height construction supplies the certificate to the generic consumer. -/
+theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
+    {F E : Type u} [Field F] [Field E] [DecidableEq E] [IsAlgClosed E]
+    {D A m M mu k h n K L ell : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (hD : 0 < D) (hbudget : 0 < m * A) (hkD : k ≤ D + 1)
+    (hheight : firstOrderCurveShiftedRowSlotBound D A m M mu n ell h <
+      firstOrderCurveShiftedHeightSlotCount D A m M mu ell h)
+    (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
+    (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
+    (hτ1 : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
+    (hchar : ringChar F = 0 ∨ max (K - 1) mu < ringChar F) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A mu M ell h
+        (τ := τ) (η := firstOrderCurveDirectRatio n k A) ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
+        A ≤ (polynomialAgreementSet (mappedDomain domain iota)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        HasExactPowerAgreement domain values iota k z P := by
+  obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+    ell hD hbudget hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
+    (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
+  exact exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
+    domain values iota _ cert hK hkK hk hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar
+
 /-- Descending the preceding extension-field exceptional set gives a base-field exceptional set
 with the same exact cap-sensitive envelope. -/
+theorem exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
+    {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
+    {D A m M mu k h n N K L ell : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (columns : Fin N → SourceColumn 1)
+    (cert : FirstOrderCurveCertificate.{u, u} (F := F) D A m M mu k h domain
+      (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
+    (hK : 1 < K) (hkK : k ≤ K) (hk : 0 < k) (hkL : k ≤ L)
+    (hLA : L ≤ A) (hAn : A ≤ n) (hcurve : 0 < ell + h)
+    (τ : ℕ) (hτ0 : TaylorExponentSufficient 0 K τ)
+    (hτ1 : TaylorExponentSufficient 1 K τ) (hτpos : 0 < τ)
+    (hchar : ringChar F = 0 ∨ max (K - 1) mu < ringChar F) :
+    ∃ exceptional : Finset F,
+      (exceptional.card : ℚ) ≤ firstOrderCurveBound n K k L A mu M ell h
+        (τ := τ) (η := firstOrderCurveDirectRatio n k A) ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
+        HasExactPowerAgreement domain values (RingHom.id F) k z P := by
+  classical
+  obtain ⟨extensionExceptional, hcard, hgood⟩ :=
+    exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent
+      domain values iota columns cert hK hkK hk hkL hLA hAn hcurve
+        τ hτ0 hτ1 hτpos hchar
+  obtain ⟨exceptional, hcardBase, hgoodBase⟩ :=
+    exists_exceptional_powerAgreement_descend domain values iota k A extensionExceptional hgood
+  refine ⟨exceptional, ?_, hgoodBase⟩
+  exact (show (exceptional.card : ℚ) ≤ (extensionExceptional.card : ℚ) by
+    exact_mod_cast hcardBase).trans hcard
+
+/-- The finite shifted-height constructor supplies the base-field consumer. -/
 theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
     {F E : Type u} [Field F] [Field E] [DecidableEq F] [IsAlgClosed E]
     {D A m M mu k h n K L ell : ℕ}
@@ -280,16 +331,11 @@ theorem exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) k z P := by
-  classical
-  obtain ⟨extensionExceptional, hcard, hgood⟩ :=
-    exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent
-      domain values iota hD hbudget hkD hheight hK hkK hk hkL hLA hAn hcurve
-        τ hτ0 hτ1 hτpos hchar
-  obtain ⟨exceptional, hcardBase, hgoodBase⟩ :=
-    exists_exceptional_powerAgreement_descend domain values iota k A extensionExceptional hgood
-  refine ⟨exceptional, ?_, hgoodBase⟩
-  exact (show (exceptional.card : ℚ) ≤ (extensionExceptional.card : ℚ) by
-    exact_mod_cast hcardBase).trans hcard
+  obtain ⟨cert⟩ := exists_finite_firstOrder_curve_certificate_of_heightSlotCount
+    ell hD hbudget hkD domain (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
+    (fun i ↦ powerBatchedCoordinate_natDegree_le fun t ↦ values t i) hheight
+  exact exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent
+    domain values iota _ cert hK hkK hk hkL hLA hAn hcurve τ hτ0 hτ1 hτpos hchar
 
 /-- The extension-field form at the tight common exponent `2K - 3`. -/
 theorem exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_tight
