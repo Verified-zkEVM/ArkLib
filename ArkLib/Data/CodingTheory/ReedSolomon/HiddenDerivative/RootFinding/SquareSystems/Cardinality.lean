@@ -36,7 +36,7 @@ theorem card_enumerateSquareSystems_le_pow {P ι : Type*}
     (enumerateSquareSystems r initial pool).card ≤ (Fintype.card ι) ^ r :=
   (card_enumerateSquareSystems_le_choose r initial pool).trans (Nat.choose_le_pow _ _)
 
-local instance (a b : ℕ) : LinearOrder (Fin a ⊕ Fin b) :=
+local instance sumFinOrderForCardinality (a b : ℕ) : LinearOrder (Fin a ⊕ Fin b) :=
   finSumFinEquiv.linearOrder
 
 /-- The full agreement-and-tail pool contains at most 2n labels when K ≤ n. -/
