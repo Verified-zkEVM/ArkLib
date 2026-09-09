@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLibExamples.ReedSolomon.LambdaVM.Certificates
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.BinaryFoldAgreement
-
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.BinaryFoldAgreement
 /-!
 # Backward reconstruction through CPU folds
 

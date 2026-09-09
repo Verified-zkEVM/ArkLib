@@ -4,10 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.BudgetedExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RatePartitionEligibility
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Eligibility
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Adapter
-
 /-!
 # Executed decoding from the rate-partition parameters
 

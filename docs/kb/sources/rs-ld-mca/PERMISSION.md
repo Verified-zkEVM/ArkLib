@@ -73,7 +73,7 @@ the adapted surface at that integration point.
 | Donor material at `9699ee7...` | ArkLib adaptation | Credited contributors |
 |---|---|---|
 | `RSListDecoding/Defs/InterpolationSpace.lean` | [`InterpolationSpace.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Space.lean) | Kai Zhe Zheng |
-| `RSListDecoding/Lemmas/GlobalDimension.lean` | [`GlobalDimension.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/GlobalDimension.lean) | Kai Zhe Zheng |
+| `RSListDecoding/Lemmas/GlobalDimension.lean` | [`GlobalDimension.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Global/Dimension.lean) | Kai Zhe Zheng |
 | `RSListDecoding/Defs/Parameters.lean` and the free-order parameter layer | [`Parameters/Basic.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Basic.lean) | Kai Zhe Zheng and Pratyush Mishra |
 | `RSListDecoding/Lemmas/FreeParameters.lean`, `FreeRankThreshold.lean`, and related free-order estimates | [`Parameters/FreeOrder.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FreeOrder.lean) | Kai Zhe Zheng and Pratyush Mishra |
 | `RSListDecoding/Lemmas/ScopedGlobalDimension.lean` and its free-order analogue | [`ScopedGlobalDimension.lean` in the full development](https://github.com/quangvdao/ArkLib/blob/765ae773/ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/ScopedGlobalDimension.lean) | Kai Zhe Zheng and Pratyush Mishra |
@@ -90,7 +90,7 @@ Subsequent adaptations, from the same pinned donor revision `9699ee7...`, are re
 
 | Donor material | ArkLib adaptation | Integration commit | Credited contributors |
 |---|---|---|---|
-| `RSListDecoding/Lemmas/GlobalBudgets.lean` | [`RootFinding/SpecializationDegree.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/SpecializationDegree.lean) | `14568bfd` | Kai Zhe Zheng and Quang Dao; specialization bounds generalized to commutative semirings |
+| `RSListDecoding/Lemmas/GlobalBudgets.lean` | [`RootFinding/SpecializationDegree.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/DegreeBounds/SpecializationDegree.lean) | `14568bfd` | Kai Zhe Zheng and Quang Dao; specialization bounds generalized to commutative semirings |
 | `RSListDecoding/Lemmas/Contact.lean` | [`LocalContact.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Contact.lean) | `c88abc18` | Kai Zhe Zheng and Quang Dao; monomial divisibility adapted and composed with ArkLib's canonical specialization |
 | Translation-support argument in `RSListDecoding/Lemmas/ConstraintFactorization.lean` | [`LocalIntermediateSpace.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean) | `0004a411`, lint repair `30ce14a6` | Kai Zhe Zheng, Quang Dao, and Justin Thaler; exact finite coordinate and kernel interfaces are new |
 | Signed support-weight helpers, via the preceding `LocalIntermediateSpace.lean` adaptation | [`Local/Coordinates.lean`](../../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Coordinates.lean) (formerly the asymmetric-band local-rank route) | `73b968e4` (source `3ce3fcf2`) | Kai Zhe Zheng credited for the inherited support argument; asymmetric-band inequalities and coordinate rank bound are new |

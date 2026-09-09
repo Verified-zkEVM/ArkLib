@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.NestedPowerAgreement
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.NestedPowerAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
-
 /-!
 # Shared-challenge power agreement for interleaved Reed--Solomon codes
 

@@ -1,6 +1,6 @@
 import ArkLibExamples.ReedSolomon.AppendixCurveMCA
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveProfile
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCertificate
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Profile
 import ArkLibExamples.ReedSolomon.Fields
 import ArkLibExamples.ReedSolomon.LambdaVM
 import ArkLibExamples.ReedSolomon.LambdaVM.AirBounds

@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CoordinateCapacityExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityOutputBounds
-
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCapacityExecution
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityOutputBounds
 /-!
 # Executable Reed-Solomon capacity decoding at every rate
 

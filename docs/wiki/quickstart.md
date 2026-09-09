@@ -97,7 +97,7 @@ Read the generic development in this order:
 6. `PolynomialCurve/SharpRegularEquation` and `SharpTupleCounting`, together with
    `ToMathlib/AlgebraicGeometry/Incidence/SharpExcluded`: mixed-degree geometric counting
    and the sharp incidence bounds.
-7. `CorrelatedAgreement/FirstOrderCurve`: the complete finite curve theorem, from the height
+7. `MutualCorrelatedAgreement/FirstOrderCurve`: the complete finite curve theorem, from the height
    inequality through the actual separant chain to a uniform base-field exceptional set.
 8. `Interleaved/AgreementBounds` and `AffineAgreementBounds`: width-preserving list and MCA
    transfer, followed by the affine-space consequence.

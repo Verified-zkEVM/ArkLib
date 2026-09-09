@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Certificates
-
+import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 /-!
 # Embedding agreeing polynomials into bounded differential solutions
 

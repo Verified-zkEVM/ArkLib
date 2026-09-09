@@ -2,7 +2,7 @@
 
 Historical decoder development record, preserved from commit `765ae773`. Checkpoint statements
 and remaining-work lists below describe that development stage. Current mathematical owners are
-`ListDecodability/Capacity.lean` and `CorrelatedAgreement/Capacity.lean`; the executable endpoint
+`ListDecodability/Capacity.lean` and `MutualCorrelatedAgreement/Capacity.lean`; the executable endpoint
 is `ListDecoding/CapacityDecoder.lean`. The September 6 no-band revision migrates that endpoint
 without adding a whole-decoder bit/RAM complexity claim.
 
@@ -61,7 +61,7 @@ The full capstone is deliberately allowed to import both
 sides; MCA development should import the mathematical owner, not the capstone.
 
 The existing
-[ListDecoding/Specification.lean](../../ArkLib/Data/CodingTheory/ReedSolomon/ListDecoding/Specification.lean)
+[ListDecoding/Specification.lean](../../ArkLib/Data/CodingTheory/ReedSolomon/ListSpecification.lean)
 is already an extensional, cost-free specification. Reuse it where appropriate.
 An extensional decoder certificate alone does not supply an algorithm.
 
@@ -251,8 +251,8 @@ Do not launch these workers merely because this planning document exists.
 
 The MCA orchestrator owns symbolic interpolation, rational Taylor geometry,
 field-independent list mathematics, and the qualitative MCA theorems in
-[`CorrelatedAgreement/Capacity.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/CorrelatedAgreement/Capacity.lean)
-and [`CorrelatedAgreement/Capacity.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/CorrelatedAgreement/Capacity.lean).
+[`MutualCorrelatedAgreement/Capacity.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean)
+and [`ListDecodability/Capacity.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean).
 The qualitative MCA argument is complete; sharper quantitative refinements remain separate.
 It does not wait for the algorithmic machine.
 

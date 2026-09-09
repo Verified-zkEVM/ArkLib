@@ -4,10 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticDecoderLargeGap
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlockDecoderProof
-
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.CapacityDecoderMachine
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderLargeGap
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
 /-!
 # Exact capacity decoding with an observed primitive-work bound
 

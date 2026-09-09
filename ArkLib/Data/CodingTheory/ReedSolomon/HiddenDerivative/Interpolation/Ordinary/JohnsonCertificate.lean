@@ -4,14 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import
-  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.InterpolationBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.OrderZeroLocalImage
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.InterpolationBounds
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.LocalImage
 import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveColumnHeight
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.GlobalMultiplicity
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorHeight
-
 /-!
 # The finite ordinary Johnson interpolation certificate
 

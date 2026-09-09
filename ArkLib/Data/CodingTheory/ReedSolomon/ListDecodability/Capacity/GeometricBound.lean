@@ -5,10 +5,9 @@ Authors: Quang Dao
 -/
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.TaylorCutoff
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.AgreementList
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.TaylorCharZeroSolutions
-
-
+import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions
 /-!
 # The prescribed field-independent all-rate polynomial list bound
 

@@ -5,12 +5,10 @@ Authors: Kai Zhe Zheng, Pratyush Mishra, Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.GlobalDimension
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Dimension
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Positivity
-
-
 /-!
 # Free-order interpolation dimension comparison
 

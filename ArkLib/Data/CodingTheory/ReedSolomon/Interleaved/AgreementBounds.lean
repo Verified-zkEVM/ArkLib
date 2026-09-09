@@ -5,10 +5,9 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.LineToAffine
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
 import Mathlib.FieldTheory.RatFunc.Basic
-
 /-!
 # Agreement bounds for interleaved Reed--Solomon codes
 

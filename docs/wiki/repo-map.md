@@ -64,33 +64,60 @@ home_page/            site assets and assembled website root
 
 ### Reed–Solomon capacity and its mathematical foundations
 
-The public entry points are `ReedSolomon/ListDecodability/Capacity.lean` and
-`ReedSolomon/CorrelatedAgreement/Capacity.lean`. The latter contains the annotated properties,
-theorem statements, and proofs for line, affine-family, and power-batching MCA together.
-Their supporting modules
-are grouped by mathematical role:
+The foundational `ReedSolomon.lean` defines the code and stays independent of the capacity,
+MCA, and decoder developments. Under its sibling directory, the mathematical entry points are:
 
-- `HiddenDerivative/Interpolation/Local` contains contact identities, constraint maps and kernels,
-  and local rank bounds; `Interpolation/WeightedSupport` contains the cubic dimension estimate
-  and the weighted residual-coordinate rank count.
-  Global interpolation and multiplicity arguments live directly under `Interpolation`;
-  `Interpolation/Symbolic` retains the unevaluated challenge.
-- `HiddenDerivative/Parameters/WeightedSupport` assembles the no-band scalar estimates and
-  prescribed surplus, while `Parameters/Lattice` owns
-  the scaled-lattice and shell estimates.
-- `HiddenDerivative/RootFinding/Regular` contains regular Taylor lifting and singular descent.
-  `FiniteField` contains finite-field witness counts and extension transport; `Taylor` constructs
-  rational charts; `Geometry` counts their solution loci; `Symbolic` retains coefficient parameters.
-  The assembled root bounds remain directly under `RootFinding`.
-- `ListDecodability/Capacity/WeightedSupport` assembles the prescribed no-band construction.
-  `RatePartition` retains the more general rate-cover argument.
-  `CorrelatedAgreement/Pairs` packages polynomial pairs and their exceptional sets;
-  `CorrelatedAgreement/Symbolic` connects symbolic equations to agreement certificates.
-  `CorrelatedAgreement/TaylorChart` contains the chart-specific incidence argument.
-- `CorrelatedAgreement/CurveProfile` and `CurveCertificate` are the reusable adapters from finite
-  interpolation parameters to exact agreement. They include degree-one polynomial codes and do
-  not contain application tables. The derivative-degree refinements live beside the Taylor
-  numerator, fixed-fiber incidence, and polynomial-curve arguments that use them.
+| Result | Module under `ReedSolomon/` |
+| --- | --- |
+| Uniform list capacity and retained gap regimes | `ListDecodability/Capacity` |
+| Uniform order `ceil(exp(3/(2δ)))` list bound | `ListDecodability/Capacity/UniformRate` |
+| Automatic first-order complete lists | `ListDecodability/FirstOrder/Bounds` |
+| Exact line, affine-family, and power-batching MCA | `MutualCorrelatedAgreement/Capacity` |
+| Automatic first-order finite list/MCA bounds | `MutualCorrelatedAgreement/FirstOrder/Bounds` |
+| First-order rate-only and finite-probability bounds | `MutualCorrelatedAgreement/FirstOrder/RateBounds` |
+| All-characteristic Johnson MCA | `MutualCorrelatedAgreement/Johnson/Agreement` |
+| Fixed-rate capacity from shared parameters | `MutualCorrelatedAgreement/Capacity/FixedRateCombined` |
+| Exact executed output and primitive-work accounting | `ListDecoding/CapacityDecoder` |
+
+`MutualCorrelatedAgreement` names the mathematical conclusion. Its `Ordinary` subdirectory
+means an equation without hidden derivative variables; it still proves MCA along a received
+line. General `IsMCA` and `mcaError` definitions remain in `ProximityGenerator/Basic`.
+The complete-list, exceptional-set, finite-probability, and executable interfaces retain their
+separate field assumptions and length conditions. A bit-complexity theorem is not implied by
+the existing primitive-work ledger.
+
+The supporting modules are grouped by mathematical role:
+
+- `AgreementList` owns complete polynomial lists and elementary finiteness/incidence facts.
+  `ListSpecification` owns the extensional finite-list decoder specification, without execution
+  machinery. `AgreementThreshold` owns the integral threshold and relative-radius arithmetic.
+- `HiddenDerivative/Interpolation/Local` owns contact identities, constraint maps and kernels,
+  and local rank bounds. `Global` assembles global interpolation and multiplicity.
+  `WeightedSupport`, `PartitionSupport`, `RatePartition`, and `FirstOrder` keep the actual
+  constructions separate. `Symbolic` retains the unevaluated challenge.
+- `HiddenDerivative/Parameters/FirstOrder` owns the automatic recipe, finite surplus,
+  challenge-height bounds, stage charges, and closed/optimized numerical bounds.
+  `Parameters/WeightedSupport/Capacity` retains the earlier harmonic capacity choices.
+  `RatePartition`, `Johnson`, and `Lattice` own their respective parameter arguments.
+- `HiddenDerivative/RootFinding` contains mathematical solution bounds and reconstruction.
+  `Regular`, `Taylor`, `Geometry`, `FiniteField`, `Symbolic`, and `FirstOrder` distinguish
+  regularity, rational charts, counting, field transport, symbolic parameters, and order one.
+  `Geometry/SharpCounting` and `DerivativeCounting` are shared fixed-word counts: neither
+  imports the mutual-agreement assembly layer.
+- `HiddenDerivative/Interpolation/FirstOrder/Profile` owns shared finite interpolation profiles.
+  `ListDecodability/FirstOrder/Profile` supplies their list bound;
+  `MutualCorrelatedAgreement/CurveCertificate` supplies their MCA bound.
+- `MutualCorrelatedAgreement/Pairs`, `TaylorChart`, and `PolynomialCurve` own pair/challenge
+  incidence and exact agreement-set reconstruction. `Ordinary/Factors` and `Ordinary/Frobenius`
+  handle factorization and inseparability; public Johnson results live under `Johnson`.
+- `Computation/Interpolation` and `Computation/RootFinding` own the executable component
+  algorithms, with machines, semantics, refinement, and bounds grouped by operation.
+  Generic machine/cost semantics stay in `Data/Computation`.
+- `ListDecoding/{Prepared,SeparateSample,Coordinate,QuadraticExtension,SmallBlock,Output}`
+  assembles those components into exact decoders. The root execution entry points select the
+  uniform, automatic first-order, or supplied rate parameters and retain their original guards.
+- Test-only boundary examples live in matching `ArkLibTest` directories and run through
+  `lake test`. Production definitions do not import these tests.
 - Shared-level binary folding lives in `ProximityGenerator/BinaryTensorFoldAgreement` and
   `BinaryTensorFoldProbability`; `ReedSolomon/Interleaved/TensorFoldAgreement` supplies the
   width-independent Reed--Solomon bridge. The recursive binary view is proved equal to the
@@ -387,7 +414,7 @@ there are no forwarding modules at the retired paths.
   [coding-theory-conventions.md](coding-theory-conventions.md)).
 - Mathematical capacity list bounds live in `ReedSolomon/ListDecodability/Capacity.lean`;
   field-independent bounds are in its `GeometricBound` and `CodewordBound` modules.
-  Capacity MCA is collected in `ReedSolomon/CorrelatedAgreement/Capacity.lean`, with line,
+  Capacity MCA is collected in `ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`, with line,
   affine-family, and power-batching results available through that single import.
   `ReedSolomon/Agreement.lean` contains the basic agreement sets, without a decoding theorem.
   The decoder specification is in `ReedSolomon/ListDecoding/Specification.lean`.

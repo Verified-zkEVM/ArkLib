@@ -5,12 +5,10 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.AutomaticHybrid
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder
-
-
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 /-!
 # Exact capacity lists at every rate
 
@@ -46,7 +44,7 @@ This extends the low-rate hidden-derivative result of [BCPZZ26]. It is distinct 
 unique decoding (`CodingTheory/BerlekampWelch`) and Johnson-radius interpolation
 (`CodingTheory/GuruswamiSudan`). Those are separate developments, not assumptions here.
 Field-independent geometric list bounds are in `ListDecodability/Capacity/GeometricBound`.
-Mutual correlated agreement at capacity is in `CorrelatedAgreement/Capacity`;
+Mutual correlated agreement at capacity is in `MutualCorrelatedAgreement/Capacity`;
 list cardinality and MCA are different properties.
 
 ## References

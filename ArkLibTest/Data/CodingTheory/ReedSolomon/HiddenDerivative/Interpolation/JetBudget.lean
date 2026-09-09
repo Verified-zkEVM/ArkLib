@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.InterpolationSupportMachine
-
+import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Support.Machine
 /-!
 # Executed support with an independent jet budget
 

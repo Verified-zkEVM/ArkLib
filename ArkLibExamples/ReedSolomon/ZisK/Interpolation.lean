@@ -4,9 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLibExamples.ReedSolomon.ZisK.Parameters
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveCertificate
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCertificate
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
-
 /-!
 # Exact recovery for the compressed final STARK curves
 

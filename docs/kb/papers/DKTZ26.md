@@ -31,8 +31,8 @@ parameters, root bounds, endpoint analysis, and characteristic limitations.
 - `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean`
 - `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/`
 - `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean`
-- `ArkLib/Data/CodingTheory/ReedSolomon/CorrelatedAgreement/Capacity.lean`
-- `ArkLib/Data/CodingTheory/ReedSolomon/CorrelatedAgreement/Capacity/PrescribedLine.lean`
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean`
 
 ## Version Notes
 

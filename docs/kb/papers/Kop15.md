@@ -13,7 +13,7 @@ related_modules:
   - ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean
   - ArkLib/ToMathlib/MvPolynomial/FirstOrderTaylor.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/Lifting.lean
-  - ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLiftingCanary.lean
+  - ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/RegularLiftingCanary.lean
 ---
 
 # Kop15
@@ -74,7 +74,7 @@ characteristic.
   — `existsUnique_regularLiftCoefficient_centered` is the source-facing one-step theorem;
   `existsUnique_regularLiftCoefficient_centered_of_le_of_lt_ringChar` is the all-rate
   below-characteristic specialization.
-- [`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLiftingCanary.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/RegularLiftingCanary.lean)
+- [`ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/RegularLiftingCanary.lean`](../../../ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/RegularLiftingCanary.lean)
   — direct `ZMod 5` sign/multiplier/pivot validation and the sharp `ZMod 2` resonant
   counterexample.
 - `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/` — the downstream differential

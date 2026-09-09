@@ -5,9 +5,9 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Specification
-import Mathlib.Analysis.SpecialFunctions.Exp
-
+import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
 /-!
 # Capacity-gap parameters and list-bound certificates
 
@@ -42,60 +42,6 @@ namespace ReedSolomon
 open ListDecoding
 
 noncomputable section
-
-/-- The absolute agreement threshold used by the all-rate theorem. -/
-def agreementThreshold (delta : ℝ) (blockLength messageDim : ℕ) : ℕ :=
-  messageDim + Nat.ceil (delta * (blockLength : ℝ))
-
-/-- The corresponding real-valued radius in ArkLib's `Code.Lambda` convention. -/
-def capacityRadius (delta : ℝ) (blockLength messageDim : ℕ) : ℝ :=
-  1 - (messageDim : ℝ) / blockLength - delta
-
-/-- The set of all degree-bounded polynomials meeting the absolute agreement threshold. -/
-def agreeingPolynomials {F index : Type*} [Semiring F] [DecidableEq F] [Fintype index]
-    (domain : index ↪ F) (messageDim minAgreement : ℕ) (received : index → F) :
-    Set (MessagePolynomial F messageDim) :=
-  {p | minAgreement ≤ Code.agree (ReedSolomon.evalOnPoints domain p) received}
-
-/-- Raising the required number of agreements can only remove candidate polynomials. -/
-theorem agreeingPolynomials_antitone {F index : Type*} [Semiring F] [DecidableEq F]
-    [Fintype index] (domain : index ↪ F) (messageDim : ℕ) (received : index → F) :
-    Antitone (fun A => agreeingPolynomials domain messageDim A received) := by
-  intro A B hAB p hp
-  exact hAB.trans hp
-
-/-- A finite set of agreeing messages has a duplicate-free polynomial list with the same
-cardinality. The degree condition is explicit and includes the zero polynomial.
-This is classical finite-set extraction, not an algorithm or a complexity estimate. -/
-theorem exists_finset_polynomial_list {F index : Type*} [Semiring F] [DecidableEq F]
-    [Fintype index] (domain : index ↪ F) (k A : ℕ) (received : index → F)
-    (hfinite : (agreeingPolynomials domain k A received).Finite) :
-    ∃ list : Finset (Polynomial F),
-      (∀ P, P ∈ list ↔ P.degree < k ∧
-        A ≤ Code.agree (ReedSolomon.evalOnPoints domain P) received) ∧
-      (list.card : ℕ∞) = (agreeingPolynomials domain k A received).encard := by
-  classical
-  refine ⟨hfinite.toFinset.map (messagePolynomialValue k), ?_, ?_⟩
-  · intro P
-    simp only [Finset.mem_map, Set.Finite.mem_toFinset]
-    constructor
-    · rintro ⟨p, hp, rfl⟩
-      exact ⟨Polynomial.mem_degreeLT.mp p.property, hp⟩
-    · rintro ⟨hdegree, hagree⟩
-      exact ⟨⟨P, Polynomial.mem_degreeLT.mpr hdegree⟩, hagree, rfl⟩
-  · rw [Finset.card_map, hfinite.encard_eq_coe_toFinset_card]
-
-/-- No polynomial can meet an agreement threshold strictly larger than the block length. -/
-theorem agreeingPolynomials_eq_empty_of_card_lt {F index : Type*} [Semiring F]
-    [DecidableEq F] [Fintype index] {domain : index ↪ F}
-    {messageDim minAgreement : ℕ} (hThreshold : Fintype.card index < minAgreement)
-    (received : index → F) :
-    agreeingPolynomials domain messageDim minAgreement received = ∅ := by
-  apply Set.eq_empty_iff_forall_notMem.mpr
-  intro p hp
-  change minAgreement ≤ Code.agree (ReedSolomon.evalOnPoints domain p) received at hp
-  exact (Nat.not_le_of_lt hThreshold)
-    (hp.trans (Code.agree_le_card (u := ReedSolomon.evalOnPoints domain p) (v := received)))
 
 /-- A polynomial list bound. Both the prefactor and exponent may depend on the gap, but neither
 parameter purports to be a derivative order of an algorithm. -/
@@ -199,47 +145,6 @@ theorem UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound
   refine ⟨N, B, E, hB, fun n k q hn hk hkn hq hnq domain received ↦ ?_⟩
   obtain ⟨certificate⟩ := hCertificate n k q hn hk hkn hq hnq domain
   exact certificate.pointwiseListBound received
-
-/-- The prescribed derivative order for uniform prime-field capacity decoding.
-
-The order-zero branch covers every gap at least `1 / 4`. Below that boundary, the constant
-`27 / 10` is the prescribed no-band weighted-support constant. -/
-def capacityDerivativeOrder (delta : ℝ) : ℕ :=
-  if (1 / 4 : ℝ) ≤ delta then 0
-  else Nat.ceil (Real.exp (((27 : ℝ) / 10) / delta))
-
-@[simp]
-theorem capacityDerivativeOrder_eq_zero {delta : ℝ} (hdelta : (1 / 4 : ℝ) ≤ delta) :
-    capacityDerivativeOrder delta = 0 := by
-  rw [capacityDerivativeOrder, if_pos hdelta]
-
-theorem capacityDerivativeOrder_eq_ceil {delta : ℝ} (hdelta : delta < (1 / 4 : ℝ)) :
-    capacityDerivativeOrder delta = Nat.ceil (Real.exp (((27 : ℝ) / 10) / delta)) := by
-  rw [capacityDerivativeOrder, if_neg (not_le_of_gt hdelta)]
-
-/-- The harmonic number `H_r = sum_{i=1}^r 1/i` used by the weighted-support parameters. -/
-def harmonicNumber (r : ℕ) : ℝ :=
-  ∑ i ∈ Finset.range r, (1 : ℝ) / (i + 1)
-
-/-- The weighted-support multiplicity `ceil(100 d^2 H_{d-1})`. This parameter package
-is used only below gap `1 / 4`; the order-zero branch instead uses an instance-dependent
-multiplicity and is deliberately specified separately. -/
-def weightedSupportMultiplicity (delta : ℝ) : ℕ :=
-  let derivOrder := capacityDerivativeOrder delta
-  Nat.ceil (100 * (derivOrder : ℝ) ^ 2 * harmonicNumber (derivOrder - 1))
-
-/-- The ambient dimension in the prescribed weighted-support certificate. -/
-def weightedSupportAmbientDimension (delta : ℝ) (blockLength messageDim : ℕ) : ℕ :=
-  max messageDim ⌊(delta * (blockLength : ℝ)) / 2⌋₊
-
-/-- The larger-field condition under which the weighted-support target improves its root exponent
-from `2d` to `d`. The truncated natural subtraction represents
-`max {0, m * A - K + d}` from the manuscript. -/
-def LargeFieldCondition (delta : ℝ)
-    (blockLength messageDim fieldSize derivOrder multiplicity : ℕ) :
-    Prop :=
-  2 * (multiplicity * agreementThreshold delta blockLength messageDim + derivOrder -
-    weightedSupportAmbientDimension delta blockLength messageDim) ≤ fieldSize
 
 /-- Capacity lists have size at most one for gaps at least one half and strictly less than `4q`
 for gaps between one quarter and one half. This asserts list cardinalities, not an interpolation

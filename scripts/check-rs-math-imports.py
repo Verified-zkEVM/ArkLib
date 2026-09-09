@@ -18,10 +18,16 @@ PREFIX = "ArkLib.Data.CodingTheory.ReedSolomon."
 ENTRY_POINTS = (
     "ListDecodability.Capacity",
     "HiddenDerivative.Interpolation.Symbolic.ReceivedLine",
-    "HiddenDerivative.RootFinding.TaylorAllSolutions",
-    "HiddenDerivative.RootFinding.TaylorCharZeroSolutions",
+    "HiddenDerivative.RootFinding.Counting.TaylorAllSolutions",
+    "HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions",
     "ListDecodability.Capacity.CodewordBound",
-    "CorrelatedAgreement.Capacity",
+    "MutualCorrelatedAgreement.Capacity",
+    "ListDecodability.FirstOrder.Bounds",
+    "ListDecodability.FirstOrder.Uniform",
+    "ListDecodability.FirstOrder.Profile",
+    "MutualCorrelatedAgreement.FirstOrder.Bounds",
+    "MutualCorrelatedAgreement.FirstOrder.RateBounds",
+    "MutualCorrelatedAgreement.Johnson.Agreement",
 )
 GENERIC_ENTRY_POINTS = (
     "ArkLib.Data.Polynomial.Differential.Basic",
@@ -53,6 +59,7 @@ def imports(module):
 
 def execution_module(module):
     return (module.startswith("ArkLib.Data.Computation.") or
+            module.startswith(PREFIX + "Computation.") or
             module in (PREFIX + "Decoding.CapacityDecoder",
                        PREFIX + "ListDecoding.CapacityDecoder")) or any(
         word in module.rsplit(".", 1)[-1]

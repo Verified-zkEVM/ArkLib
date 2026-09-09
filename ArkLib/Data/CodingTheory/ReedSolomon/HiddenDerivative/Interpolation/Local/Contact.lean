@@ -6,8 +6,6 @@ Authors: Kai Zhe Zheng, Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
-
-
 /-!
 # Local contact and root multiplicity
 
@@ -156,5 +154,20 @@ theorem X_sub_C_pow_dvd_differentialSpecialization_of_contact
     ← Polynomial.X_pow_dvd_taylor_iff]
   exact X_pow_dvd_taylor_differentialSpecialization_of_contact
     Q P center received hP hQ
+
+/-- At `d = m = 0`, the low-contact projection is empty and every differential polynomial
+satisfies the local constraints. -/
+theorem order_zero_local_constraints_vacuous_canary
+    {R : Type*} [CommRing R] (Q : DifferentialPolynomial R 0)
+    (P : R[X]) (center received : R) (hP : P.eval center = received) :
+    SatisfiesLocalConstraints 0 center received Q ∧
+      (Polynomial.X - Polynomial.C center) ^ 0 ∣ differentialSpecialization Q P := by
+  have hQ : SatisfiesLocalConstraints 0 center received Q := by
+    rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply,
+      projectLowContact_eq_zero_iff]
+    intro e he
+    omega
+  exact ⟨hQ,
+    X_sub_C_pow_dvd_differentialSpecialization_of_contact Q P center received hP hQ⟩
 
 end ReedSolomon.HiddenDerivative

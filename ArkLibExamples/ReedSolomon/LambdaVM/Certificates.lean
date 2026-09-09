@@ -5,11 +5,10 @@ Authors: Quang Dao
 -/
 
 import ArkLibExamples.ReedSolomon.LambdaVM.Parameters
-import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.CurveCertificate
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
-
 /-!
 # Semantic certificates for the LambdaVM CPU table
 

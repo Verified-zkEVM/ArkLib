@@ -2,7 +2,7 @@
 
 Historical decoder development record, preserved from commit `765ae773`. Checkpoint statements
 and remaining-work lists below describe that development stage. Current mathematical owners are
-`ListDecodability/Capacity.lean` and `CorrelatedAgreement/Capacity.lean`; the executable endpoint
+`ListDecodability/Capacity.lean` and `MutualCorrelatedAgreement/Capacity.lean`; the executable endpoint
 is `ListDecoding/CapacityDecoder.lean`. The September 6 no-band revision migrates that endpoint
 without adding a whole-decoder bit/RAM complexity claim.
 
@@ -15,7 +15,7 @@ the complete decoder's bit complexity, tape-machine complexity or native Lean ru
 ## Current frontier, September 5 sprint
 
 The actual coordinate decoder and both primitive-work regimes are assembled in
-[`CoordinateCapacityExecution.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/ListDecoding/CoordinateCapacityExecution.lean)
+[`CoordinateCapacityExecution.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/ListDecoding/Coordinate/CoordinateCapacityExecution.lean)
 and exposed by the public `Capacity.lean` theorem. This completes coordinate lowering, not its
 binary compilation. The following lower-level components are proved and independently audited:
 

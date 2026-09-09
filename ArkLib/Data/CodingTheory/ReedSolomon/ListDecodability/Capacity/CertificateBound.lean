@@ -5,11 +5,11 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.TaylorCharZeroSolutions
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.AgreementList
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions
+import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveSupportCertificate
-
 /-!
 # List bounds from a finite differential certificate
 
