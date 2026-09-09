@@ -22,8 +22,8 @@ branch is regular at this center. The modulus, modular inverse, lifted coefficie
 output are all computed; none is supplied by a coverage oracle.
 
 Constructing the paper's interpolant and choosing a certified regular center are still separate
-steps. The lifting implementation is sequential, so this file does not claim the paper's
-near-linear Johnson decoder bound. A zero slice produces no representations and lies outside
+steps. Lifting uses Newton precision doubling, but its generic arithmetic backend does not yet
+carry the paper's near-linear cost proof. A zero slice produces no representations and lies outside
 the exactness theorem's hypotheses; it must be handled by the center-selection caller.
 -/
 

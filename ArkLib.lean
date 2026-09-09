@@ -571,6 +571,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareS
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.LinearCapture
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemList
 import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorNumerator
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorTable
@@ -648,6 +649,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AutomaticFirstOrderExec
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ConstantDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceRefinement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCandidateMachine
@@ -668,6 +670,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSe
 import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSeparateSampleRefinement
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
@@ -720,6 +723,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleP
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleRestricted
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SquareSystemDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.UniformRateExecution
 import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
@@ -1183,6 +1187,7 @@ import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.ResultantDegree
 import ArkLib.Data.Polynomial.Rojas.AffineCover
+import ArkLib.Data.Polynomial.Rojas.AffineSolver
 import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
 import ArkLib.Data.Polynomial.Rojas.HyperplaneAvoidance
 import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
@@ -1198,6 +1203,7 @@ import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Polynomial.UnivariateRepresentation.AffineTranslation
 import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
+import ArkLib.Data.Polynomial.UnivariateRepresentation.Point
 import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
 import ArkLib.Data.Polynomial.UniversalHenselNumerator
 import ArkLib.Data.Probability.Combinatorial
@@ -1373,6 +1379,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ToCompPoly.Bivariate.CMv
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
+import ArkLib.ToCompPoly.Multivariate.BaseChange
 import ArkLib.ToCompPoly.Multivariate.ClearedSubstitution
 import ArkLib.ToCompPoly.Multivariate.Eval
 import ArkLib.ToCompPoly.Multivariate.HeadCoefficient

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
+import ArkLib.Data.Polynomial.UnivariateRepresentation.Point
 
 /-!
 # Applying a Taylor chart to a rational univariate jet map
@@ -71,14 +72,6 @@ theorem evaluateAtCoordinates_semantics (ι : E →+* L) (θ : L)
   · funext i
     exact hcoordinates i
 
-omit [Fintype E] [Fact pchar.Prime] [CharP E pchar] in
-/-- The raw map has exactly s jet coordinates, which specialize to the stated point at this root. -/
-def RepresentsPoint (input : MapData (F := E)) (ι : E →+* L) (θ : L) (point : Fin s → L) : Prop :=
-  input.modulus.toPoly.eval₂ ι θ = 0 ∧ input.denominator.toPoly.eval₂ ι θ ≠ 0 ∧
-  input.numerators.length = s ∧
-  ∀ i : Fin s, (input.numerators[i.val]?.getD 0).toPoly.eval₂ ι θ /
-    input.denominator.toPoly.eval₂ ι θ = point i
-
 /-- **Chart-to-message coverage.** A solver-represented jet survives whenever its common chart
 denominator is nonzero and its Taylor ratios describe a degree-`< k` message. -/
 theorem fromJet?_covers (center : E) (k : ℕ) (input : MapData (F := E))
@@ -87,7 +80,7 @@ theorem fromJet?_covers (center : E) (k : ℕ) (input : MapData (F := E))
     (hnonzero : input.modulus ≠ 0) (hwidth : k ≤ numerators.length)
     -- The parameter and jet may live in an extension even when the recovered message is over E.
     (ι : E →+* L) (θ : L) (point : Fin s → L) (P : Polynomial L)
-    (hdegree : P.degree < k) (hpoint : RepresentsPoint input ι θ point)
+    (hdegree : P.degree < k) (hpoint : MapData.RepresentsPoint input ι θ point)
     -- On the regular chart, the numerator/denominator ratios are exactly the Taylor coefficients.
     (hdenominator : MvPolynomial.eval₂ ι point (CPoly.fromCMvPolynomial denominator) ≠ 0)
     (hcoefficients : ∀ i : Fin numerators.length,

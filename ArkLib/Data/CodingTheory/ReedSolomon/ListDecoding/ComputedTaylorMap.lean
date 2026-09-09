@@ -90,7 +90,7 @@ theorem fromEquationJet?_covers (center : E) (Q : CMvPolynomial (r + 2) E)
     (input : MapData (F := E)) (hnonzero : input.modulus ≠ 0)
     (ι : E →+* L) (θ : L) (P : Polynomial E)
     (hdegree : P.degree < k)
-    (hpoint : TaylorChartMap.RepresentsPoint input ι θ
+    (hpoint : MapData.RepresentsPoint input ι θ
       (fun i : Fin (r + 1) => ι (polynomialJet center P i)))
     (hsolution : differentialSpecialization (semanticEquation Q) P = 0)
     (hseparant : jetEvaluation (separant (semanticEquation Q) (Fin.last r)) center
@@ -143,7 +143,7 @@ theorem run_exact_of_jet_cover
       jetEvaluation (separant (semanticEquation Q) (Fin.last r)) center
         (polynomialJet center (P.map base)) ≠ 0 ∧
       ∃ input ∈ inputs, input.modulus ≠ 0 ∧ ∃ θ : L,
-        TaylorChartMap.RepresentsPoint input ι θ
+        MapData.RepresentsPoint input ι θ
           (fun i : Fin (r + 1) => ι (polynomialJet center (P.map base) i))) :
     ExactOutput domain received k A
       (run pchar base domain received center Q K τ k A inputs) := by

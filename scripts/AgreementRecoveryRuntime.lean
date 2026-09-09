@@ -12,6 +12,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ConstantDecoder
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SquareSystemDecoder
 import ArkLib.Data.Polynomial.NonvanishingSearch
 import ArkLib.Data.FiniteField.Candidates
 import
@@ -54,12 +56,34 @@ private def pair (h : CPolynomial (ZMod 5)) (a b : ZMod 5) :
 private def check (label : String) (condition : Bool) : IO Unit := do
   unless condition do throw (IO.userError s!"agreement recovery: {label}")
 
+/-- A two-variable linear fixture backend for testing the composed call path.
+It derives both coordinates from the supplied rows by Cramer's rule. This runtime fixture is
+only used on affine-linear systems and is not the missing general sparse toric solver. -/
+private def linearFixtureBackend :
+    ArkLib.Rojas.AffineSolver.TorusBackend (F := ZMod 5) (s := 2) := fun equations =>
+  match equations with
+  | [first, second] =>
+      let c := CPoly.CMvPolynomial.eval ![0, 0] first
+      let d := CPoly.CMvPolynomial.eval ![0, 0] second
+      let a := CPoly.CMvPolynomial.eval ![1, 0] first - c
+      let b := CPoly.CMvPolynomial.eval ![0, 1] first - c
+      let e := CPoly.CMvPolynomial.eval ![1, 0] second - d
+      let f := CPoly.CMvPolynomial.eval ![0, 1] second - d
+      let determinant := a * f - b * e
+      if determinant == 0 then [] else
+        [⟨CPolynomial.X, 1,
+          [CPolynomial.C ((b * d - c * f) / determinant),
+            CPolynomial.C ((c * e - a * d) / determinant)]⟩]
+  | _ => []
+
 /-- Exercise nonlinear blocks, extension-only roots, repeated images, final filtering,
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
+  check "constant-message balanced frequency map" <|
+    ConstantDecoder.decode compare 3 ([4, 2, 4, 4, 2, 7] : List Nat) == [[4]]
   let x : CPolynomial (ZMod 5) := CPolynomial.X
   check "ordinary interpolation through Newton and recovery" <|
-    OrdinaryInterpolatedDecoder.run 5 domain affine 2 3 ⟨2, 1, 2⟩ 0 == [[1, 1]]
+    OrdinaryInterpolatedDecoder.run 5 (RingHom.id (ZMod 5)) domain affine 2 3 ⟨2, 1, 2⟩ 0 == [[1, 1]]
   let centers := ArkLib.FiniteFieldCandidates.primeFieldPrefix (ZMod 5) 3
   check "batched discriminant candidate search" <|
     CPolynomial.findNonzeroEvaluation? (.subproduct (ZMod 5) .naive .remainderOnly)
@@ -168,6 +192,9 @@ def run : IO Unit := do
   check "computed equation chart through final recovery" <|
     ComputedTaylorMap.run 5 identity domain affine 0 derivativeEquation 3 6 2 3
       [rawAffineJet] == [[1, 1]]
+  check "square enumeration through affine fixture and shared recovery" <|
+    SquareSystemDecoder.run 5 identity domain affine 0 derivativeEquation 3 6 2 3
+      (by decide) linearFixtureBackend [0, 1, 2] == [[1, 1]]
   -- Y' = Y needs several nonzero recurrence steps. At jet (1,1), the fourth coefficient
   -- is 1/4! = 4 in F₅. This checks shared-prefix indexing beyond the first higher slot.
   let exponentialEquation := CPoly.CMvPolynomial.X (2 : Fin 3) (R := ZMod 5) -
