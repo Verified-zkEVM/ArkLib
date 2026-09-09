@@ -40,6 +40,11 @@ Start with [`README.md`](README.md) for project overview.
 - Source-policy exceptions and linter suppressions are not supported. Fix the source or improve the
   linter with a repository-wide, tested policy change.
 - `ArkLib.lean` is generated; do not hand-edit it.
+- Every file under `ArkLib/` uses Lean's module system (issue #795): `module`, `public import`,
+  `@[expose] public section`. A new file must follow the same shape — `lake build` rejects a
+  classic file, since the generated root imports all of them as a module. `ArkLibTest/` stays
+  classic on purpose. The conventions and an error-to-fix table are in
+  [`docs/wiki/module-system.md`](docs/wiki/module-system.md).
 - Edit source, not derived output such as `.lake/`, `blueprint/web/`, `blueprint/print/`,
   `dependency_graphs/`, or `home_page/docs/`.
 - Pre-existing `sorry` blocks exist in active formalizations; distinguish existing gaps from new
