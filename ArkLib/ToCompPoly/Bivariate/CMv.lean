@@ -7,6 +7,7 @@ Authors: Quang Dao
 import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
 import CompPoly.Bivariate.CMvEquiv
 import ArkLib.ToCompPoly.Multivariate.Eval
+import ArkLib.Data.Polynomial.Differential.Basic
 /-!
 # Executable bivariate-to-multivariate conversion
 
@@ -99,5 +100,26 @@ theorem solution_toOrdinaryCMv_iff (Q : CBivariate F) (P : Polynomial F) :
   rw [← CPolynomial.toPoly_eq_zero_iff]
   rw [GuruswamiSudan.composeY_toPoly, CPolynomial.toPoly_mk_toImpl]
   rw [eval₂_fromCMvPolynomial_toOrdinaryCMv]
+
+omit [BEq F] [LawfulBEq F] [DecidableEq F] in
+/-- At differential order zero, the semantic equation specializes to ordinary composition. -/
+theorem differentialSpecialization_orderZero (Q : CPoly.CMvPolynomial 2 F)
+    (P : Polynomial F) :
+    PolynomialDifferential.differentialSpecialization
+        (MvPolynomial.rename (Fin.cases none some) (CPoly.fromCMvPolynomial Q)) P =
+      MvPolynomial.eval₂ Polynomial.C ![Polynomial.X, P]
+        (CPoly.fromCMvPolynomial Q) := by
+  rw [PolynomialDifferential.differentialSpecialization]
+  change MvPolynomial.eval₂ Polynomial.C _
+      (MvPolynomial.rename _ (CPoly.fromCMvPolynomial Q)) = _
+  rw [MvPolynomial.eval₂_rename]
+  congr 1
+  funext index
+  refine Fin.cases ?_ (fun j => ?_) index
+  · rfl
+  · fin_cases j
+    simp only [Function.comp_apply, Fin.cases_succ, Polynomial.hasseDeriv_zero]
+    change P = P
+    rfl
 
 end CompPoly.CBivariate
