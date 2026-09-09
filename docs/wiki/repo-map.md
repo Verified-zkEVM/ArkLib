@@ -485,7 +485,8 @@ there are no forwarding modules at the retired paths.
   Capacity MCA is collected in `ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`, with line,
   affine-family, and power-batching results available through that single import.
   `ReedSolomon/Agreement.lean` contains the basic agreement sets, without a decoding theorem.
-  The decoder specification is in `ReedSolomon/ListSpecification.lean`.
+  Mathematical finite-set specifications live in `ReedSolomon/ListSpecification.lean`;
+  the physical coefficient-list contract is `ListDecoding/ExactOutput.lean`.
   `ListDecoding/CapacityDecoder.lean` and `CapacityDecoderExecution.lean` retain the exhaustive
   initial-jet executor, with exact physical output and an observed primitive-work bound.
   The symbolic route uses `ListDecoding/AgreementRecovery/Decoder.lean` as its shared consumer.

@@ -23,9 +23,10 @@ The capacity gap is fixed before the block length, dimension,
 prime field, evaluation points, and received word. The statement includes both
 field-size regimes and uses ordinary polynomial degree, including the zero polynomial.
 
-This module proves list existence and cardinality. The exact decoder specification is in
-`ReedSolomon/ListSpecification`, and the executable same-output theorem with its
-primitive-work ledger for the retained exhaustive initial-jet executor is in
+This module proves list existence and cardinality. Mathematical finite-set specifications are in
+`ReedSolomon/ListSpecification`; the physical coefficient-list contract is in
+`ReedSolomon/ListDecoding/ExactOutput`. The same-output theorem and primitive-work ledger
+for the retained exhaustive initial-jet executor are in
 `ReedSolomon/ListDecoding/CapacityDecoderExecution`.
 
 ## Decoding procedure and formalization scope

@@ -1377,6 +1377,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.General
 import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ToCompPoly.Bivariate.CMv
+import ArkLib.ToCompPoly.Bivariate.Content
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import ArkLib.ToCompPoly.Multivariate.BaseChange

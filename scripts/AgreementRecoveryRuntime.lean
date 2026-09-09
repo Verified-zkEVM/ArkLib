@@ -14,6 +14,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ConstantDecoder
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SquareSystemDecoder
+import ArkLib.ToCompPoly.Bivariate.Content
 import ArkLib.Data.Polynomial.NonvanishingSearch
 import ArkLib.Data.FiniteField.Candidates
 import
@@ -83,7 +84,12 @@ def run : IO Unit := do
     ConstantDecoder.decode compare 3 ([4, 2, 4, 4, 2, 7] : List Nat) == [[4]]
   let x : CPolynomial (ZMod 5) := CPolynomial.X
   check "ordinary interpolation through Newton and recovery" <|
-    OrdinaryInterpolatedDecoder.run 5 (RingHom.id (ZMod 5)) domain affine 2 3 ⟨2, 1, 2⟩ 0 == [[1, 1]]
+    OrdinaryInterpolatedDecoder.run 5 (RingHom.id (ZMod 5)) domain affine 2 3
+      ⟨2, 1, 2⟩ 0 == [[1, 1]]
+  let withContent : CompPoly.CBivariate (ZMod 5) :=
+    CPolynomial.C (x + 1) * (CPolynomial.X + 2)
+  check "ordinary bivariate content removes common X factor" <|
+    CompPoly.CBivariate.yContent withContent == x + 1
   let centers := ArkLib.FiniteFieldCandidates.primeFieldPrefix (ZMod 5) 3
   check "batched discriminant candidate search" <|
     CPolynomial.findNonzeroEvaluation? (.subproduct (ZMod 5) .naive .remainderOnly)
