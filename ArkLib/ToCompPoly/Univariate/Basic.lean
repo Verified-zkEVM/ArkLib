@@ -338,4 +338,37 @@ theorem monomial_eq_zero (n : ℕ) : (monomial n (0 : R) : CPolynomial R) = 0 :=
 
 end OfFinCoeff
 
+section RingHomBundlings
+
+variable {R : Type*} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
+
+/-- `toPoly` is injective: it is the forward map of the ring equivalence
+`CPolynomial.ringEquiv`. This is what reduces an equation between computable polynomials to one
+between Mathlib polynomials. -/
+theorem toPoly_injective : Function.Injective (CPolynomial.toPoly (R := R)) :=
+  fun _ _ h => CPolynomial.ringEquiv.injective h
+
+/-- `CPolynomial.C` bundled as a ring homomorphism — the coefficient map `CMvPolynomial.eval₂`
+takes as its first argument. Computable: only the four structure fields are proved through
+`toPoly`, and proofs carry no computational content. -/
+def CHom : R →+* CPolynomial R where
+  toFun := CPolynomial.C
+  map_one' := toPoly_injective (by rw [C_toPoly, toPoly_one, Polynomial.C_1])
+  map_mul' _ _ := toPoly_injective (by
+    rw [C_toPoly, toPoly_mul, C_toPoly, C_toPoly, Polynomial.C_mul])
+  map_zero' := toPoly_injective (by rw [C_toPoly, toPoly_zero, Polynomial.C_0])
+  map_add' _ _ := toPoly_injective (by
+    rw [C_toPoly, toPoly_add, C_toPoly, C_toPoly, Polynomial.C_add])
+
+@[simp] theorem CHom_apply (r : R) : CHom r = CPolynomial.C r := rfl
+
+/-- `toPoly` bundled as a ring homomorphism, so that `MvPolynomial.eval₂_comp_left` applies to it.
+Noncomputable (it is `CPolynomial.ringEquiv`), and used in proofs only. -/
+noncomputable def toPolyRingHom : CPolynomial R →+* Polynomial R :=
+  (CPolynomial.ringEquiv (R := R)).toRingHom
+
+@[simp] theorem toPolyRingHom_apply (p : CPolynomial R) : toPolyRingHom p = p.toPoly := rfl
+
+end RingHomBundlings
+
 end CompPoly.CPolynomial

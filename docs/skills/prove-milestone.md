@@ -1,11 +1,10 @@
 # /prove-milestone
 
-Use this workflow to discharge one Hachi milestone named by a row, subprotocol, milestone code, or
-file in
-[`hachi-overview.html`](../../ArkLib/Commitments/Functional/Hachi/hachi-overview.html). The goal is
-not merely to make Lean accept existing statements. First establish that the statements encode the
-intended protocol and theorem; then make every proof obligation tractable; only then fill the proof
-bodies without changing what they mean.
+Use this workflow to discharge one Hachi milestone named by a subprotocol, milestone code, or
+file under [`ArkLib/Commitments/Functional/Hachi/`](../../ArkLib/Commitments/Functional/Hachi/).
+The goal is not merely to make Lean accept existing statements. First establish that the
+statements encode the intended protocol and theorem; then make every proof obligation tractable;
+only then fill the proof bodies without changing what they mean.
 
 This workflow is deliberately stricter than [`discharge-lemmas.md`](discharge-lemmas.md). A Hachi
 milestone is complete only when its paper contract, definitions, public theorem, package, and
@@ -377,16 +376,13 @@ Once the clean-room review is clean:
    repository-wide and exception-free. Run the relevant `ReadLints` checks, add `--docs` when Lean
    docstrings or documentation changed, and run `git diff --check`.
 2. Re-run the target-closure placeholder scan and the complete axiom manifest.
-3. Update `hachi-overview.html` only from verified source facts: file status, exact genuine `sorry`
-   count, milestone description, and “proven” claim. Do not erase a known paper deviation or open
-   gap. Re-run documentation integrity checks after documentation changes.
-4. Update `Composition.lean` provenance, Hachi module docstrings, and `docs/kb/` when their factual
+3. Update `Composition.lean` provenance, Hachi module docstrings, and `docs/kb/` when their factual
    account changed. If the milestone introduces or extends use of a citation key, complete the
    citation workflow (`blueprint/src/references.bib` entry + `docs/kb/papers/` page, per
    `docs/wiki/blueprint-and-citations.md`) — the KB linter in `validate.sh` enforces both. Never
    hand-edit generated `ArkLib.lean` or derived site output (regenerate via
    `./scripts/update-lib.sh` after `git add`-ing new files).
-5. Run the self-improvement pass below before writing the final report.
+4. Run the self-improvement pass below before writing the final report.
 
 ## Self-improvement pass
 

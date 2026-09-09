@@ -51,6 +51,47 @@ structure Hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : Prop where
   dvd_evalX : H ∣ Bivariate.evalX (Polynomial.C x₀) R
   separable_evalX : (Bivariate.evalX (Polynomial.C x₀) R).Separable
 
+/-- The hypotheses needed to construct and bound the cleared Hensel derivative numerator.
+
+Unlike `Hypotheses`, this interface does not require separability over `F[X]`.  The final field
+says only that a cofactor which is constant in `Y` has unit coefficient; this is the precise
+cofactor consequence used by the full-degree branch of the weight proof.  Nonvanishing of `zeta`
+is intentionally kept separate from this record.
+
+This interface follows the weak setup boundary identified in the public BCHKS donor formalization
+at commit `19bc7d3e21b2261257e1961acd720b2c395d87e1`. -/
+structure NumeratorHypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : Prop where
+  dvd_evalX : H ∣ Bivariate.evalX (Polynomial.C x₀) R
+  evalX_ne : Bivariate.evalX (Polynomial.C x₀) R ≠ 0
+  fullDegreeCofactorUnit : ∀ Q : F[X][Y],
+    Bivariate.evalX (Polynomial.C x₀) R = H * Q → Q.natDegree = 0 → IsUnit (Q.coeff 0)
+
+/-- Coefficient-ring separability implies the weaker numerator setup. -/
+theorem Hypotheses.toNumeratorHypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : Hypotheses x₀ R H) : NumeratorHypotheses x₀ R H where
+  dvd_evalX := hHyp.dvd_evalX
+  evalX_ne := hHyp.separable_evalX.ne_zero
+  fullDegreeCofactorUnit Q hQ hQdeg := by
+    let q : F[X] := Q.coeff 0
+    have hQ_C : Q = Polynomial.C q := by
+      exact Polynomial.eq_C_of_natDegree_le_zero (p := Q) (by omega)
+    have hsepHQ : (H * Polynomial.C q).Separable := by
+      rw [← hQ_C, ← hQ]
+      exact hHyp.separable_evalX
+    rw [Polynomial.separable_def'] at hsepHQ
+    rcases hsepHQ with ⟨A, B, hAB⟩
+    have hderiv : (H * Polynomial.C q).derivative = H.derivative * Polynomial.C q := by
+      simp [Polynomial.derivative_mul]
+    have hfactor : (A * H + B * H.derivative) * Polynomial.C q = (1 : F[X][Y]) := by
+      calc
+        (A * H + B * H.derivative) * Polynomial.C q =
+            A * (H * Polynomial.C q) + B * (H.derivative * Polynomial.C q) := by ring
+        _ = A * (H * Polynomial.C q) + B * (H * Polynomial.C q).derivative := by rw [hderiv]
+        _ = 1 := hAB
+    have hCunit : IsUnit (Polynomial.C q : F[X][Y]) := by
+      exact IsUnit.of_mul_eq_one (A * H + B * H.derivative) (by simpa [mul_comm] using hfactor)
+    exact Polynomial.isUnit_C.mp hCunit
+
 private lemma evalX_natDegree_le {K : Type} [CommSemiring K] (x : K) (P : K[X][Y]) :
     (Bivariate.evalX x P).natDegree ≤ P.natDegree := by
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
@@ -64,12 +105,25 @@ lemma evalX_ne_zero_of_hypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
     Bivariate.evalX (Polynomial.C x₀) R ≠ 0 :=
   hHyp.separable_evalX.ne_zero
 
+/-- `R(x₀,·,Z)` is nonzero under the weak numerator setup. -/
+lemma evalX_ne_zero_of_numeratorHypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : NumeratorHypotheses x₀ R H) :
+    Bivariate.evalX (Polynomial.C x₀) R ≠ 0 :=
+  hHyp.evalX_ne
+
 /-- `dH ≤ d`: the factor `H` cannot have larger `Y`-degree than `R`, since it divides
 `R(x₀,·,Z)`. -/
 lemma natDegree_H_le_natDegree_R_of_hypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
     (hHyp : Hypotheses x₀ R H) :
     H.natDegree ≤ R.natDegree :=
   (Polynomial.natDegree_le_of_dvd hHyp.dvd_evalX (evalX_ne_zero_of_hypotheses hHyp)).trans
+    (evalX_natDegree_le (Polynomial.C x₀) R)
+
+/-- `dH ≤ d` under the weak numerator setup. -/
+lemma natDegree_H_le_natDegree_R_of_numeratorHypotheses
+    {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : NumeratorHypotheses x₀ R H) : H.natDegree ≤ R.natDegree :=
+  (Polynomial.natDegree_le_of_dvd hHyp.dvd_evalX hHyp.evalX_ne).trans
     (evalX_natDegree_le (Polynomial.C x₀) R)
 
 /-- Coefficients of the specialized `Y`-derivative: `∂R/∂Y(x₀,·,Z)` has `i`-th coefficient
@@ -104,8 +158,9 @@ lemma natDegree_derivative_evalX_coeff_le (x₀ : F) (R : F[X][X][Y]) {D i : ℕ
         natDegree_coeff_le_of_totalDegree_le (Bivariate.evalX (Polynomial.C x₀) R) hD (i + 1)
 
 /-- The leading coefficient `W` of `H` divides the leading coefficient of `R(x₀,Y,Z)`. -/
-lemma leadingCoeff_dvd_evalX_leadingCoeff {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
-    (hHyp : Hypotheses x₀ R H) :
+lemma leadingCoeff_dvd_evalX_leadingCoeff_of_numeratorHypotheses
+    {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : NumeratorHypotheses x₀ R H) :
     H.leadingCoeff ∣ (Bivariate.evalX (Polynomial.C x₀) R).leadingCoeff := by
   rcases hHyp.dvd_evalX with ⟨q, hq⟩
   refine ⟨q.leadingCoeff, ?_⟩
@@ -113,23 +168,39 @@ lemma leadingCoeff_dvd_evalX_leadingCoeff {x₀ : F} {R : F[X][X][Y]} {H : F[X][
     (Bivariate.evalX (Polynomial.C x₀) R).leadingCoeff = (H * q).leadingCoeff := by rw [hq]
     _ = H.leadingCoeff * q.leadingCoeff := Polynomial.leadingCoeff_mul H q
 
+/-- Backward-compatible wrapper for `leadingCoeff_dvd_evalX_leadingCoeff_of_numeratorHypotheses`. -/
+lemma leadingCoeff_dvd_evalX_leadingCoeff {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : Hypotheses x₀ R H) :
+    H.leadingCoeff ∣ (Bivariate.evalX (Polynomial.C x₀) R).leadingCoeff :=
+  leadingCoeff_dvd_evalX_leadingCoeff_of_numeratorHypotheses hHyp.toNumeratorHypotheses
+
 /-- The leading coefficient `W` of `H` divides the coefficient of `Y ^ R.natDegree` in
 `R(x₀,Y,Z)`. If specialization lowers the `Y`-degree, that coefficient is zero. -/
-lemma leadingCoeff_dvd_evalX_coeff_natDegree {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
-    (hHyp : Hypotheses x₀ R H) :
+lemma leadingCoeff_dvd_evalX_coeff_natDegree_of_numeratorHypotheses
+    {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : NumeratorHypotheses x₀ R H) :
     H.leadingCoeff ∣ (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree := by
   let P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R
   have hdeg : P.natDegree ≤ R.natDegree := evalX_natDegree_le (Polynomial.C x₀) R
   by_cases hEq : P.natDegree = R.natDegree
-  · simpa [P, hEq.symm] using leadingCoeff_dvd_evalX_leadingCoeff hHyp
+  · simpa [P, hEq.symm] using
+      leadingCoeff_dvd_evalX_leadingCoeff_of_numeratorHypotheses hHyp
   · have hlt : P.natDegree < R.natDegree := lt_of_le_of_ne hdeg hEq
     rw [Polynomial.coeff_eq_zero_of_natDegree_lt hlt]
     exact dvd_zero H.leadingCoeff
 
+/-- Backward-compatible wrapper for
+`leadingCoeff_dvd_evalX_coeff_natDegree_of_numeratorHypotheses`. -/
+lemma leadingCoeff_dvd_evalX_coeff_natDegree {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : Hypotheses x₀ R H) :
+    H.leadingCoeff ∣ (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree :=
+  leadingCoeff_dvd_evalX_coeff_natDegree_of_numeratorHypotheses hHyp.toNumeratorHypotheses
+
 /-- The leading coefficient `W` of `H` divides the top possible coefficient of
 `∂R/∂Y(x₀,Y,Z)`. This is the coefficient that remains after multiplying `ζ` by `W^(d-2)`. -/
-lemma leadingCoeff_dvd_evalX_derivative_coeff_pred {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
-    (hHyp : Hypotheses x₀ R H) :
+lemma leadingCoeff_dvd_evalX_derivative_coeff_pred_of_numeratorHypotheses
+    {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : NumeratorHypotheses x₀ R H) :
     H.leadingCoeff ∣
       (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) := by
   by_cases hR : R.natDegree = 0
@@ -155,10 +226,20 @@ lemma leadingCoeff_dvd_evalX_derivative_coeff_pred {x₀ : F} {R : F[X][X][Y]} {
         _ = (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree *
             (R.natDegree : F[X]) := by
           simp [Bivariate.evalX_eq_map, Polynomial.coeff_map]
-    rcases leadingCoeff_dvd_evalX_coeff_natDegree hHyp with ⟨q, hq⟩
+    rcases leadingCoeff_dvd_evalX_coeff_natDegree_of_numeratorHypotheses hHyp with ⟨q, hq⟩
     refine ⟨q * (R.natDegree : F[X]), ?_⟩
     rw [hcoeff, hq]
     ring
+
+/-- Backward-compatible wrapper for
+`leadingCoeff_dvd_evalX_derivative_coeff_pred_of_numeratorHypotheses`. -/
+lemma leadingCoeff_dvd_evalX_derivative_coeff_pred
+    {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
+    (hHyp : Hypotheses x₀ R H) :
+    H.leadingCoeff ∣
+      (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) :=
+  leadingCoeff_dvd_evalX_derivative_coeff_pred_of_numeratorHypotheses
+    hHyp.toNumeratorHypotheses
 
 /-- The derivative value `ζ = ∂R/∂Y(x₀, T/W, Z) ∈ 𝕃 H`.  It is nonzero exactly when `T/W` is a
 *simple* root of `R(x₀,·,Z)` (`zeta_ne_zero_of_hypotheses`), which is what makes each Hensel step
@@ -204,9 +285,10 @@ noncomputable def xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :=
 
 /-- The image of `⟦xiPre⟧` in the function field equals `W^(d-2) · ζ`, i.e. `xiPre` really does
 represent `ξ`. -/
-lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+lemma embeddingOf𝒪Into𝕃_mk_xiPre_of_numeratorHypotheses
+    (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) :
+    (hHyp : NumeratorHypotheses x₀ R H) :
     embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk _ (xiPre x₀ R H) : 𝒪 H) =
       liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H := by
   rw [embeddingOf𝒪Into𝕃_mk]
@@ -232,7 +314,8 @@ lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       have h2 : R.derivative.natDegree ≤ R.natDegree - 1 := Polynomial.natDegree_derivative_le R
       omega
     have hdiv : W_poly ∣ P.coeff (R.natDegree - 2 + 1) := by
-      have h := leadingCoeff_dvd_evalX_derivative_coeff_pred (H := H) hHyp
+      have h := leadingCoeff_dvd_evalX_derivative_coeff_pred_of_numeratorHypotheses
+        (H := H) hHyp
       rwa [hkk] at h
     have hW_poly_ne : W_poly ≠ 0 :=
       Polynomial.leadingCoeff_ne_zero.mpr
@@ -261,19 +344,44 @@ lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     refine Finset.sum_congr rfl (fun i _ => ?_)
     ring
 
+/-- Backward-compatible wrapper for the weak-setup `xiPre` embedding equation. -/
+lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) :
+    embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk _ (xiPre x₀ R H) : 𝒪 H) =
+      liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H :=
+  embeddingOf𝒪Into𝕃_mk_xiPre_of_numeratorHypotheses x₀ R H
+    hHyp.toNumeratorHypotheses
+
 /-- The element `ξ = W(Z)^(d-2) · ζ` is regular, i.e. has a representative in `𝒪 H`.
 
 For `d < 2` the natural-number exponent truncates to zero, so this statement remains true but says
 something weaker than intended; the weight bound is therefore stated separately, with the explicit
 hypothesis `2 ≤ d`. -/
+lemma xi_regular_of_numeratorHypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : NumeratorHypotheses x₀ R H) :
+    ∃ pre : 𝒪 H,
+    let d := R.natDegree
+    let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
+    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H :=
+  ⟨Ideal.Quotient.mk _ (xiPre x₀ R H),
+    by simpa using embeddingOf𝒪Into𝕃_mk_xiPre_of_numeratorHypotheses x₀ R H hHyp⟩
+
+/-- Backward-compatible wrapper for `xi_regular_of_numeratorHypotheses`. -/
 lemma xi_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) :
     ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
     embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H :=
-  ⟨Ideal.Quotient.mk _ (xiPre x₀ R H),
-    by simpa using embeddingOf𝒪Into𝕃_mk_xiPre x₀ R H hHyp⟩
+  xi_regular_of_numeratorHypotheses x₀ R H hHyp.toNumeratorHypotheses
+
+/-- The cleared derivative numerator under `NumeratorHypotheses`. -/
+noncomputable def xiOfNumeratorHypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_φ : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (_hHyp : NumeratorHypotheses x₀ R H) : 𝒪 H :=
+  Ideal.Quotient.mk _ (xiPre x₀ R H)
 
 /-- The regular element `ξ = W(Z)^(d-2) · ζ`.
 
@@ -281,7 +389,16 @@ The `Fact` and `Hypotheses` arguments are kept for API compatibility with downst
 (`α`, `γ`); they are needed for the embedding equation in `embeddingOf𝒪Into𝕃_xi`. -/
 noncomputable def xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [_φ : Fact (Irreducible H)]
     [_H_natDegree_pos : Fact (0 < H.natDegree)] (_hHyp : Hypotheses x₀ R H) : 𝒪 H :=
-  Ideal.Quotient.mk _ (xiPre x₀ R H)
+  xiOfNumeratorHypotheses x₀ R H _hHyp.toNumeratorHypotheses
+
+/-- The defining equation for the weak-setup cleared derivative numerator. -/
+lemma embeddingOf𝒪Into𝕃_xiOfNumeratorHypotheses
+    (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : NumeratorHypotheses x₀ R H) :
+    embeddingOf𝒪Into𝕃 H (xiOfNumeratorHypotheses x₀ R H hHyp) =
+      liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H :=
+  embeddingOf𝒪Into𝕃_mk_xiPre_of_numeratorHypotheses x₀ R H hHyp
 
 /-- The defining equation `embedding ξ = W^(d-2) · ζ`, the specialization of
 `embeddingOf𝒪Into𝕃_mk_xiPre` to `ξ`. -/
@@ -290,7 +407,7 @@ lemma embeddingOf𝒪Into𝕃_xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hHyp : Hypotheses x₀ R H) :
     embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) =
       liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H :=
-  embeddingOf𝒪Into𝕃_mk_xiPre x₀ R H hHyp
+  embeddingOf𝒪Into𝕃_xiOfNumeratorHypotheses x₀ R H hHyp.toNumeratorHypotheses
 
 omit H_irreducible H_natDegree_pos in
 /-- `deg_Z W ≤ D - dH` for `W = H.leadingCoeff`, the paper's bound on `Λ(W)` in A.4. -/
@@ -506,7 +623,8 @@ theorem xiPreLower_coeff_natDegree_le (x₀ : F) {D i : ℕ}
 omit H_irreducible H_natDegree_pos in
 /-- Each monomial of `xiPreLower` has `Λ`-weight at most `(d-1)·(D - dH + 1)`, the bound claimed
 for `ξ`. -/
-theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+theorem xiPreLower_term_weight_le_of_numeratorHypotheses
+    (x₀ : F) (hHyp : NumeratorHypotheses x₀ R H) (hH : 0 < H.natDegree)
     (hRdeg : 2 ≤ R.natDegree)
     {D i : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
@@ -525,7 +643,8 @@ theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 
   rw [WithBot.coe_le_coe]
   rw [show Bivariate.natDegreeY H = H.natDegree from rfl]
   have hcoeff := xiPreLower_coeff_natDegree_le x₀ hD_H hD_Rx0 (D := D) (i := i)
-  have hdH_le_R : H.natDegree ≤ R.natDegree := natDegree_H_le_natDegree_R_of_hypotheses hHyp
+  have hdH_le_R : H.natDegree ≤ R.natDegree :=
+    natDegree_H_le_natDegree_R_of_numeratorHypotheses hHyp
   have hHpos : 0 < H.natDegree := hH
   have hH_ne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hHpos
   have hH_in : H.natDegree ∈ H.support :=
@@ -592,9 +711,27 @@ theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 
         exact Nat.add_le_add hmul hi_le_n1
 
 omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup lower-term weight bound. -/
+theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    (hRdeg : 2 ≤ R.natDegree)
+    {D i : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
+    (hi : i < R.natDegree - 1) :
+    weight
+      (Polynomial.C
+        ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff i *
+          H.leadingCoeff ^ (R.natDegree - 2 - i)) *
+        Polynomial.X ^ i)
+      H D
+      ≤ WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) :=
+  xiPreLower_term_weight_le_of_numeratorHypotheses x₀ hHyp.toNumeratorHypotheses hH
+    hRdeg hD_H hD_Rx0 hi
+
+omit H_irreducible H_natDegree_pos in
 /-- The low-degree part of `ξ` obeys `Λ ≤ (d-1)·(D - dH + 1)`, by taking the max over its
 monomials. -/
-theorem xiPreLower_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+theorem xiPreLower_weight_le_of_numeratorHypotheses
+    (x₀ : F) (hHyp : NumeratorHypotheses x₀ R H) (hH : 0 < H.natDegree)
     (hRdeg : 2 ≤ R.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
@@ -608,7 +745,19 @@ theorem xiPreLower_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H
           (R.natDegree - 2 - i)) * Polynomial.X ^ i) H D) ?_
   apply Finset.sup_le
   intro i hi
-  exact xiPreLower_term_weight_le x₀ hHyp hH hRdeg hD_H hD_Rx0 (Finset.mem_range.mp hi)
+  exact xiPreLower_term_weight_le_of_numeratorHypotheses x₀ hHyp hH hRdeg hD_H hD_Rx0
+    (Finset.mem_range.mp hi)
+
+omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup lower-part weight bound. -/
+theorem xiPreLower_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    (hRdeg : 2 ≤ R.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
+    weight (xiPreLower x₀ R H) H D ≤
+      WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) :=
+  xiPreLower_weight_le_of_numeratorHypotheses x₀ hHyp.toNumeratorHypotheses hH
+    hRdeg hD_H hD_Rx0
 
 /-- The top term of the explicit representative of `ξ`: `(P_{d-1} / W) · T^{d-1}`.  Its `W`-power
 would be negative, so the division is exact by `leadingCoeff_dvd_evalX_derivative_coeff_pred` —
@@ -622,8 +771,8 @@ noncomputable def xiPreTop (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :
 omit H_irreducible H_natDegree_pos in
 /-- When `dH = d` the top coefficient `P_{d-1} / W` is a constant, so the top term contributes no
 `Z`-degree. -/
-theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (hH : 0 < H.natDegree)
-    (hHyp : Hypotheses x₀ R H)
+theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree_of_numeratorHypotheses
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : NumeratorHypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) (heq : H.natDegree = R.natDegree) :
     ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
       H.leadingCoeff).natDegree = 0 := by
@@ -632,7 +781,7 @@ theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (
   rcases hHyp.dvd_evalX with ⟨Q, hQ⟩
   have hP_ne : P ≠ 0 := by
     rw [hP_def]
-    exact evalX_ne_zero_of_hypotheses hHyp
+    exact hHyp.evalX_ne
   have hQ_ne : Q ≠ 0 := by
     intro h0
     apply hP_ne
@@ -650,24 +799,7 @@ theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (
   let q : F[X] := Q.coeff 0
   have hQ_C : Q = Polynomial.C q := by
     exact Polynomial.eq_C_of_natDegree_le_zero (p := Q) (by omega)
-  have hsepHQ : (H * Polynomial.C q).Separable := by
-    rw [← hQ_C]
-    rw [← hQ, ← hP_def]
-    exact hHyp.separable_evalX
-  have hq_unit : IsUnit q := by
-    rw [Polynomial.separable_def'] at hsepHQ
-    rcases hsepHQ with ⟨A, B, hAB⟩
-    have hderiv : (H * Polynomial.C q).derivative = H.derivative * Polynomial.C q := by
-      simp [Polynomial.derivative_mul]
-    have hfactor : (A * H + B * H.derivative) * Polynomial.C q = (1 : F[X][Y]) := by
-      calc
-        (A * H + B * H.derivative) * Polynomial.C q
-            = A * (H * Polynomial.C q) + B * (H.derivative * Polynomial.C q) := by ring
-        _ = A * (H * Polynomial.C q) + B * (H * Polynomial.C q).derivative := by rw [hderiv]
-        _ = 1 := hAB
-    have hCunit : IsUnit (Polynomial.C q : F[X][Y]) := by
-      exact IsUnit.of_mul_eq_one (A * H + B * H.derivative) (by simpa [mul_comm] using hfactor)
-    exact (Polynomial.isUnit_C.mp hCunit)
+  have hq_unit : IsUnit q := hHyp.fullDegreeCofactorUnit Q hQ hQdeg
   have hsucc : R.natDegree - 1 + 1 = R.natDegree := by omega
   have hPtop : (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree = H.leadingCoeff * q := by
     rw [hQ, hQ_C]
@@ -681,7 +813,7 @@ theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (
   have hW_ne : H.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hH_ne
   have hdiv : H.leadingCoeff ∣
       (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) :=
-    leadingCoeff_dvd_evalX_derivative_coeff_pred hHyp
+    leadingCoeff_dvd_evalX_derivative_coeff_pred_of_numeratorHypotheses hHyp
   have hquot :
       (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
           H.leadingCoeff = q * (R.natDegree : F[X]) := by
@@ -700,9 +832,20 @@ theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (
   omega
 
 omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup full-degree top-coefficient bound. -/
+theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ R.natDegree) (heq : H.natDegree = R.natDegree) :
+    ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
+      H.leadingCoeff).natDegree = 0 :=
+  xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree_of_numeratorHypotheses
+    x₀ hH hHyp.toNumeratorHypotheses hRdeg heq
+
+omit H_irreducible H_natDegree_pos in
 /-- When `dH < d` the top term must be reduced modulo `H̃` before weighing, and the reduction obeys
 the bound via `cofactor_top_reduction_weight_le`. -/
-theorem xiPreTop_modByMonic_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+theorem xiPreTop_modByMonic_weight_le_of_numeratorHypotheses
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : NumeratorHypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
@@ -711,7 +854,7 @@ theorem xiPreTop_modByMonic_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : 
       (WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) : WithBot ℕ) := by
   classical
   rcases hHyp.dvd_evalX with ⟨Q, hQ⟩
-  have hPne : Bivariate.evalX (Polynomial.C x₀) R ≠ 0 := evalX_ne_zero_of_hypotheses hHyp
+  have hPne : Bivariate.evalX (Polynomial.C x₀) R ≠ 0 := hHyp.evalX_ne
   have hHne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
   have hWne : H.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hHne
   have hQne : Q ≠ 0 := by
@@ -765,9 +908,22 @@ theorem xiPreTop_modByMonic_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : 
           hlt hQdeg)
 
 omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup reduced-top weight bound. -/
+theorem xiPreTop_modByMonic_weight_le
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
+    (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
+    (hlt : H.natDegree < R.natDegree) :
+    weight (xiPreTop x₀ R H %ₘ monicize H) H D ≤
+      (WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) : WithBot ℕ) :=
+  xiPreTop_modByMonic_weight_le_of_numeratorHypotheses x₀ hH hHyp.toNumeratorHypotheses
+    hRdeg hD_H hD_Rx0 hlt
+
+omit H_irreducible H_natDegree_pos in
 /-- Degree of the top coefficient after the exact division by `W`. -/
-theorem xiPreTop_modByMonic_coeff_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
-    (hHyp : Hypotheses x₀ R H)
+theorem xiPreTop_modByMonic_coeff_natDegree_le_of_numeratorHypotheses
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : NumeratorHypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
@@ -779,7 +935,8 @@ theorem xiPreTop_modByMonic_coeff_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
   let m : ℕ := D - H.natDegree + 1
   have hwt : weight f H D ≤ (WithBot.some ((R.natDegree - 1) * m) : WithBot ℕ) := by
     dsimp [f, m]
-    exact xiPreTop_modByMonic_weight_le x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt
+    exact xiPreTop_modByMonic_weight_le_of_numeratorHypotheses
+      x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt
   have hHne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
   have hHin : H.natDegree ∈ H.support :=
     Polynomial.mem_support_iff.mpr (Polynomial.leadingCoeff_ne_zero.mpr hHne)
@@ -810,11 +967,24 @@ theorem xiPreTop_modByMonic_coeff_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
       exact hsub
     exact hbound
 
+omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup reduced-top coefficient bound. -/
+theorem xiPreTop_modByMonic_coeff_natDegree_le
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
+    (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
+    (hlt : H.natDegree < R.natDegree) (n : ℕ) :
+    ((xiPreTop x₀ R H %ₘ monicize H).coeff n).natDegree ≤
+      (R.natDegree - 1 - n) * (D - H.natDegree + 1) :=
+  xiPreTop_modByMonic_coeff_natDegree_le_of_numeratorHypotheses
+    x₀ hH hHyp.toNumeratorHypotheses hRdeg hD_H hD_Rx0 hlt n
+
 
 omit H_irreducible H_natDegree_pos in
 /-- The `𝒪`-weight of the top term when `dH < d`. -/
-theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (hH : 0 < H.natDegree)
-    (hHyp : Hypotheses x₀ R H)
+theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree_of_numeratorHypotheses
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : NumeratorHypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
@@ -826,7 +996,8 @@ theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (h
   rw [weight_le_iff]
   intro n hn
   have hcoeff_bound :=
-    xiPreTop_modByMonic_coeff_natDegree_le x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt n
+    xiPreTop_modByMonic_coeff_natDegree_le_of_numeratorHypotheses
+      x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt n
   have hbY : Bivariate.natDegreeY H = H.natDegree := rfl
   have hH_ne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
   have hH_in : H.natDegree ∈ H.support :=
@@ -864,8 +1035,23 @@ theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (h
           rw [hsum]
 
 omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup strict-degree top-weight bound. -/
+theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
+    (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D)
+    (hlt : H.natDegree < R.natDegree) :
+    regularWeight hH
+      (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreTop x₀ R H) : 𝒪 H) D
+      ≤ WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) :=
+  xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree_of_numeratorHypotheses
+    x₀ hH hHyp.toNumeratorHypotheses hRdeg hD_H hD_Rx0 hlt
+
+omit H_irreducible H_natDegree_pos in
 /-- The `𝒪`-weight of the top term, covering both `dH = d` and `dH < d`. -/
-theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+theorem xiPreTop_weight_over_𝒪_le_of_numeratorHypotheses
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : NumeratorHypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
@@ -873,9 +1059,11 @@ theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : H
       (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreTop x₀ R H) : 𝒪 H) D
       ≤ WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) := by
   classical
-  have hHleR : H.natDegree ≤ R.natDegree := natDegree_H_le_natDegree_R_of_hypotheses hHyp
+  have hHleR : H.natDegree ≤ R.natDegree :=
+    natDegree_H_le_natDegree_R_of_numeratorHypotheses hHyp
   rcases lt_or_eq_of_le hHleR with hlt | heq
-  · exact xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt
+  · exact xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree_of_numeratorHypotheses
+      x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt
   · have hH_ne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
     have hH_in : H.natDegree ∈ H.support :=
       Polynomial.mem_support_iff.mpr (Polynomial.leadingCoeff_ne_zero.mpr hH_ne)
@@ -890,7 +1078,9 @@ theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : H
     let W : F[X] := H.leadingCoeff
     have hcoeff0 : (P.coeff (d - 1) / W).natDegree = 0 := by
       dsimp [P, d, W]
-      exact xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree x₀ hH hHyp hRdeg heq
+      exact
+        xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree_of_numeratorHypotheses
+          x₀ hH hHyp hRdeg heq
     refine le_trans (regularWeight_mk_le hD_H hH _) ?_
     refine le_trans (weight_C_mul_X_pow_le H D (P.coeff (d - 1) / W) (d - 1)) ?_
     rw [WithBot.coe_le_coe]
@@ -900,6 +1090,19 @@ theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : H
     rw [heq]
     rw [hsub]
     omega
+
+omit H_irreducible H_natDegree_pos in
+/-- Backward-compatible wrapper for the weak-setup top-weight bound. -/
+theorem xiPreTop_weight_over_𝒪_le
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ R.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
+    regularWeight hH
+      (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreTop x₀ R H) : 𝒪 H) D
+      ≤ WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) :=
+  xiPreTop_weight_over_𝒪_le_of_numeratorHypotheses
+    x₀ hH hHyp.toNumeratorHypotheses hRdeg hD_H hD_Rx0
 
 omit H_irreducible H_natDegree_pos in
 /-- The explicit representative of `ξ` splits as low part plus top term; this is how its weight
@@ -913,26 +1116,40 @@ theorem xiPre_eq_lower_add_top (x₀ : F) (hRdeg : 2 ≤ R.natDegree) :
 
 The explicit hypothesis `2 ≤ R.natDegree` is needed because the paper uses `W^(d-2)`, while
 Lean's natural-number exponent would otherwise totalize the low-degree cases by truncation. -/
-lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+lemma xiOfNumeratorHypotheses_weight_le
+    (x₀ : F) (hH : 0 < H.natDegree) (hHyp : NumeratorHypotheses x₀ R H)
     (hRdeg : 2 ≤ Bivariate.natDegreeY R)
     {D : ℕ} (hD_H : D ≥ Bivariate.totalDegree H)
     (hD_Rx0 : D ≥ Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R)) :
-    regularWeight hH (xi x₀ R H hHyp) D ≤
+    regularWeight hH (xiOfNumeratorHypotheses x₀ R H hHyp) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   have hRdeg' : 2 ≤ R.natDegree := by
     simpa [Bivariate.natDegreeY] using hRdeg
   have hD_H' : Bivariate.totalDegree H ≤ D := hD_H
   have hD_Rx0' : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D := hD_Rx0
-  unfold xi
+  unfold xiOfNumeratorHypotheses
   rw [xiPre_eq_lower_add_top x₀ hRdeg']
   refine (regularWeight_add_le hD_H' hH
     (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreLower x₀ R H) : 𝒪 H)
     (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreTop x₀ R H) : 𝒪 H)).trans ?_
   apply max_le
   · exact (regularWeight_mk_le hD_H' hH (xiPreLower x₀ R H)).trans
-      (by simpa [Bivariate.natDegreeY] using xiPreLower_weight_le x₀ hHyp hH hRdeg' hD_H' hD_Rx0')
+      (by simpa [Bivariate.natDegreeY] using
+        xiPreLower_weight_le_of_numeratorHypotheses x₀ hHyp hH hRdeg' hD_H' hD_Rx0')
   · simpa [Bivariate.natDegreeY] using
-      (xiPreTop_weight_over_𝒪_le x₀ hH hHyp hRdeg' hD_H' hD_Rx0')
+      (xiPreTop_weight_over_𝒪_le_of_numeratorHypotheses
+        x₀ hH hHyp hRdeg' hD_H' hD_Rx0')
+
+/-- Backward-compatible wrapper for `xiOfNumeratorHypotheses_weight_le`. -/
+lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R)
+    {D : ℕ} (hD_H : D ≥ Bivariate.totalDegree H)
+    (hD_Rx0 : D ≥ Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R)) :
+    regularWeight hH (xi x₀ R H hHyp) D ≤
+    WithBot.some ((Bivariate.natDegreeY R - 1) *
+      (D - Bivariate.natDegreeY H + 1)) :=
+  xiOfNumeratorHypotheses_weight_le
+    x₀ hH hHyp.toNumeratorHypotheses hRdeg hD_H hD_Rx0
 
 
 end HenselNumerators

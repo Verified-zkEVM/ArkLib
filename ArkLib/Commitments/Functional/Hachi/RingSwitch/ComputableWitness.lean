@@ -114,7 +114,7 @@ Every completeness theorem stated at the spec witness therefore transfers by rew
 is restated or weakened. -/
 theorem honestLiftWitnessC_eq_honestWitness (hd : 0 < Φ.φ.natDegree)
     (s : RlinStatement Φ n μ) (z : ArkLib.Lattices.PolyVec (Rq Φ) μ) :
-    haveI := isPresentation_cyclotomic Φ hd
+    have := isPresentation_cyclotomic Φ hd
     honestLiftWitnessC Φ hd s z
       = Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
           (cyclotomicPresentation_modulus_natDegree Φ) s z := by

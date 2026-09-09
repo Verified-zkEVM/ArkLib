@@ -17,6 +17,7 @@ import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
+import ArkLib.Commitments.Functional.Hachi.Params
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
@@ -175,6 +176,7 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
 import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability
+import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
@@ -1085,6 +1087,7 @@ import ArkLib.Data.MvPolynomial.WeightedDegree
 import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
 import ArkLib.Data.Polynomial.AffinePowerTruncationMachineCanary
 import ArkLib.Data.Polynomial.Bivariate
+import ArkLib.Data.Polynomial.BivariateFactorDegrees
 import ArkLib.Data.Polynomial.ClassicalWronskian
 import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 import ArkLib.Data.Polynomial.CoefficientUpdateMachineCanary
@@ -1096,6 +1099,9 @@ import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 import ArkLib.Data.Polynomial.Differential.Types
 import ArkLib.Data.Polynomial.FoldedWronskian
 import ArkLib.Data.Polynomial.FoldingPolynomial
+import ArkLib.Data.Polynomial.FractionFieldExpand
+import ArkLib.Data.Polynomial.FractionFieldFactorization
+import ArkLib.Data.Polynomial.FractionFieldRoots
 import ArkLib.Data.Polynomial.HornerMachine
 import ArkLib.Data.Polynomial.HornerMachineCanary
 import ArkLib.Data.Polynomial.Indicator
@@ -1111,6 +1117,7 @@ import ArkLib.Data.Polynomial.QuadraticUpdateMachine
 import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
 import ArkLib.Data.Polynomial.RationalFunctions
 import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.FractionField
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
@@ -1118,9 +1125,14 @@ import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
 import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
+import ArkLib.Data.Polynomial.ResultantDegree
 import ArkLib.Data.Polynomial.SampledCoefficients
 import ArkLib.Data.Polynomial.SplitFold
+import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
+import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
+import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
 import ArkLib.Data.Polynomial.Trivariate
+import ArkLib.Data.Polynomial.UniversalHenselNumerator
 import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.DistinctQueries
 import ArkLib.Data.Probability.FiniteFieldBudget
@@ -1148,7 +1160,10 @@ import ArkLib.Data.QuadraticAlgebra.SetupMachineCanary
 import ArkLib.Data.QuadraticAlgebra.SetupRefinement
 import ArkLib.Data.ZMod.EnumerationMachine
 import ArkLib.Data.ZMod.NonsquareSearchMachine
+import ArkLib.Interaction.Oracle.Access
+import ArkLib.Interaction.Oracle.Execution
 import ArkLib.Interaction.Oracle.Protocol
+import ArkLib.Interaction.Oracle.Source
 import ArkLib.Interaction.Oracle.TypeTree
 import ArkLib.Interaction.Oracle.TypeTree.Decoration
 import ArkLib.Interaction.Reduction
@@ -1157,8 +1172,21 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
+import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
+import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
+import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
+import ArkLib.OracleReduction.Composition.Sequential.Append.Security
+import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
+import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
+import ArkLib.OracleReduction.Composition.Sequential.Completeness
 import ArkLib.OracleReduction.Composition.Sequential.General
+import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 import ArkLib.OracleReduction.Composition.Sequential.IsPure
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
@@ -1175,6 +1203,7 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 import ArkLib.OracleReduction.LiftContext.Lens
 import ArkLib.OracleReduction.LiftContext.OracleReduction
+import ArkLib.OracleReduction.LiftContext.Purity
 import ArkLib.OracleReduction.LiftContext.Reduction
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.OracleReduction.Prelude
@@ -1354,6 +1383,7 @@ import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
 import ArkLib.ToMathlib.LinearAlgebra.PrimitivePolynomialKernel
 import ArkLib.ToMathlib.LinearAlgebra.ShiftedDegreeKernel
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Logic.HEq
 import ArkLib.ToMathlib.MeasureTheory.Integral.FiniteCells
 import ArkLib.ToMathlib.MeasureTheory.Integral.NaturalFloorCells
 import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution

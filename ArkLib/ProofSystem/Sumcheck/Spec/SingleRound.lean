@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.LiftContext.OracleReduction
+import ArkLib.OracleReduction.LiftContext.Purity
 import VCVio.OracleComp.SimSemantics.OptionT.Basic
 import ArkLib.ProofSystem.Component.SendClaim
 import ArkLib.ProofSystem.Component.CheckClaim
@@ -309,32 +310,8 @@ open NNReal
 variable [SampleableType R]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-theorem oracleReduction_perfectCompleteness :
-    (oracleReduction R deg oSpec).perfectCompleteness init impl
-      (inputRelation R deg D) (outputRelation R deg) := by
-  simp only [StmtIn, StmtOut, oracleReduction, StmtAfterRandomQuery, Nat.reduceAdd,
-    Nat.add_zero, Fin.vcons_fin_zero, StmtAfterCheckClaim, StmtAfterSendClaim]
-  refine OracleReduction.append_perfectCompleteness
-    (rel₂ := relationAfterRandomQuery R deg)
-    ((((oracleReduction.sendClaim R deg oSpec).append
-        (oracleReduction.checkClaim R deg oSpec)).append
-        (oracleReduction.randomQuery R deg oSpec)))
-    (oracleReduction.reduceClaim R deg oSpec) ?_ ?_
-  · refine OracleReduction.append_perfectCompleteness
-      (rel₂ := relationAfterCheckClaim R deg)
-      ((oracleReduction.sendClaim R deg oSpec).append
-        (oracleReduction.checkClaim R deg oSpec))
-      (oracleReduction.randomQuery R deg oSpec) ?_ ?_
-    · refine OracleReduction.append_perfectCompleteness
-        (rel₂ := relationAfterSendClaim R deg D)
-        (oracleReduction.sendClaim R deg oSpec)
-        (oracleReduction.checkClaim R deg oSpec) ?_ ?_
-      · sorry
-      · sorry
-    · sorry
-  · simp only [StmtAfterRandomQuery, StmtOut, oracleReduction.reduceClaim, id_eq]
-    refine ReduceClaim.oracleReduction_completeness _ _ ?_
-    sorry
+-- Completeness of this experimental decomposition awaits implementations of its component
+-- reductions and their correctness certificates.
 
 theorem oracleVerifier_rbrKnowledgeSoundness [Fintype R] :
     (oracleReduction R deg oSpec).verifier.rbrKnowledgeSoundness init impl
@@ -399,6 +376,10 @@ def prover : OracleProver oSpec (StmtIn R) (OStmtIn R deg) Unit (StmtOut R) (OSt
 
   output := fun ⟨polyLE, chal⟩ => pure (((polyLE.val.eval chal, chal), fun _ => polyLE), ())
 
+/-- The simple round's output computes only polynomial values and performs no oracle query. -/
+instance instOutputIsPureProver : (prover R deg oSpec).OutputIsPure :=
+  ⟨_, fun _ => rfl⟩
+
 variable [DecidableEq R] [SampleableType R]
 
 /-- The verifier for the simple description of a single round of sum-check -/
@@ -409,6 +390,16 @@ def verifier : Verifier oSpec (StmtIn R × (∀ i, OStmtIn R deg i))
     guard (∑ x ∈ (univ.map D), polyLE.val.eval x = target)
     letI chal := transcript 1
     pure ⟨⟨(oStmt ()).val.eval chal, chal⟩, fun _ => oStmt ()⟩
+
+/-- The simple verifier rejects an inconsistent round sum, then computes its next statement. -/
+def verifierGuardedForm : (verifier R deg D oSpec).GuardedForm where
+  check := fun input tr => decide (∑ x ∈ (univ.map D), (tr 0).val.eval x = input.1)
+  out := fun input tr =>
+    (((input.2 ()).val.eval (tr 1), tr 1), fun _ => input.2 ())
+  verify_eq := by
+    intro input tr
+    simp only [verifier, OracleComp.guard_eq]
+    split <;> simp_all
 
 /-- The reduction for the simple description of a single round of sum-check -/
 def reduction : Reduction oSpec (StmtIn R × (∀ i, OStmtIn R deg i)) Unit
@@ -976,6 +967,19 @@ def reduction (i : Fin n) : Reduction oSpec
     ((StatementRound R n i.castSucc) × (∀ i, OracleStatement R n deg i)) Unit
     ((StatementRound R n i.succ) × (∀ i, OracleStatement R n deg i)) Unit (pSpec R deg) :=
   (Simple.reduction R deg D oSpec).liftContext (oCtxLens R n deg D i).toContext
+
+/-- Ordinary context lifting retains pure prover output for a full sum-check round. -/
+instance instOutputIsPureReduction (i : Fin n) :
+    (reduction R n deg D oSpec i).prover.OutputIsPure := by
+  change (Prover.liftContext (oCtxLens R n deg D i).toContext
+    (Simple.prover R deg oSpec)).OutputIsPure
+  infer_instance
+
+/-- The lifted full round retains the simple verifier's rejection guard. -/
+def verifierGuardedForm (i : Fin n) :
+    (reduction R n deg D oSpec i).verifier.GuardedForm :=
+  Verifier.GuardedForm.liftContext (oStmtLens R n deg D i)
+    (Simple.verifier R deg D oSpec) (Simple.verifierGuardedForm R deg D oSpec)
 
 /-- The sum-check oracle reduction for the `i`-th round of the sum-check protocol -/
 def oracleReduction (i : Fin n) : OracleReduction oSpec
