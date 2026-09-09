@@ -3,8 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.AgreementMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldExecution
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 import Mathlib.Data.List.Count
 import Mathlib.Data.List.Nodup
 import Std.Data.TreeMap.Lemmas
@@ -17,6 +16,11 @@ exactly when `c` occurs at least `A` times.  The implementation accumulates
 counts in a balanced tree map and therefore does not enumerate the field or
 perform a quadratic duplicate-elimination scan.  Its comparison requirements
 are explicit so concrete prime-field implementations can supply them.
+
+The exact-output theorem assumes a positive threshold. At threshold zero,
+exactness would require every field constant, including values absent from the
+received word, whereas the frequency map deliberately stores only observed
+values.
 -/
 
 namespace ReedSolomon.ListDecoding.ConstantDecoder
@@ -131,11 +135,15 @@ theorem mem_decode_iff_exists (threshold : ℕ) (received : List F) (output : Li
 section ExactOutput
 
 open Polynomial JetHornerMachine
-open SeparateSampleFieldExecution (ExactOutput)
 
 variable [Field F] [DecidableEq F]
 
-/-- Execute the constant decoder directly on an indexed received word. -/
+/-- Execute the constant decoder directly on an indexed received word.
+
+The evaluation domain is unnecessary at runtime because every dimension-one
+codeword is constant. It appears only in `run_exact`, where agreement is stated
+using the common Reed--Solomon contract.
+-/
 def run {n : ℕ} (threshold : ℕ) (received : Fin n → F) : List (List F) :=
   decode cmp threshold (List.ofFn received)
 
@@ -184,10 +192,18 @@ private theorem count_eq_agree_constant {n : ℕ}
   funext i
   simp [evalOnPoints]
 
-/-- Literal Reed--Solomon exact-output contract for message dimension one. -/
+/-- Literal Reed--Solomon exact-output contract for message dimension one.
+
+This proves all four `ExactOutput` clauses: the decoded polynomials are unique,
+the coefficient lists are unique, polynomial membership is exact, and
+coefficient-list membership is exact. The positive-threshold premise is needed
+because `run` visits observed values rather than enumerating the field.
+-/
 theorem run_exact {n : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
     (threshold : ℕ) (hthreshold : 1 ≤ threshold) :
     ExactOutput domain received 1 threshold (run cmp threshold received) := by
+  -- Singleton vectors stay distinct when interpreted as constant polynomials;
+  -- vector uniqueness itself follows directly from the tree-map decoder.
   refine ⟨?_, decode_nodup cmp threshold (List.ofFn received), ?_, ?_⟩
   · rw [run,
       List.nodup_map_iff_inj_on (decode_nodup cmp threshold (List.ofFn received))]
@@ -198,6 +214,8 @@ theorem run_exact {n : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
       (mem_decode_iff_exists cmp threshold (List.ofFn received) right hthreshold).mp hright
     rw [singleton_polynomial, singleton_polynomial] at hequal
     exact congrArg List.singleton (Polynomial.C_injective hequal)
+  -- Degree-below-one polynomials are constants, so polynomial exactness reduces
+  -- to the frequency characterization of `decode`.
   · intro polynomial
     constructor
     · intro hpolynomial
@@ -217,6 +235,8 @@ theorem run_exact {n : ℕ} (domain : Fin n ↪ F) (received : Fin n → F)
       apply List.mem_map.mpr
       exact ⟨[value], (mem_decode_iff cmp threshold _ value hthreshold).mpr hcount,
         by simpa [singleton_polynomial, value] using hconstant.symm⟩
+  -- A length-one coefficient vector is literally `[value]`; this is the vector
+  -- form of the same frequency equivalence.
   · intro coefficients
     constructor
     · intro hcoefficients
