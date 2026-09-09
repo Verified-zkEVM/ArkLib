@@ -73,6 +73,44 @@ theorem mvPolynomialDifferential_mul (point : ι → F) (p q : MvPolynomial ι F
   intro i _
   ring
 
+omit [DecidableEq ι] in
+@[simp]
+theorem mvPolynomialDifferential_C (point : ι → F) (a : F) :
+    mvPolynomialDifferential point (C a) = 0 := by
+  classical
+  apply LinearMap.ext
+  intro direction
+  simp [mvPolynomialDifferential]
+
+omit [DecidableEq ι] in
+@[simp]
+theorem mvPolynomialDifferential_zero (point : ι → F) :
+    mvPolynomialDifferential point 0 = 0 := by
+  classical
+  apply LinearMap.ext
+  intro direction
+  simp [mvPolynomialDifferential]
+
+omit [DecidableEq ι] in
+@[simp]
+theorem mvPolynomialDifferential_add (point : ι → F) (p q : MvPolynomial ι F) :
+    mvPolynomialDifferential point (p + q) =
+      mvPolynomialDifferential point p + mvPolynomialDifferential point q := by
+  classical
+  apply LinearMap.ext
+  intro direction
+  simp [mvPolynomialDifferential, Finset.sum_add_distrib, mul_add]
+
+omit [DecidableEq ι] in
+@[simp]
+theorem mvPolynomialDifferential_sub (point : ι → F) (p q : MvPolynomial ι F) :
+    mvPolynomialDifferential point (p - q) =
+      mvPolynomialDifferential point p - mvPolynomialDifferential point q := by
+  classical
+  apply LinearMap.ext
+  intro direction
+  simp [mvPolynomialDifferential, Finset.sum_sub_distrib, mul_sub]
+
 /-- Formal quotient rule, defined wherever the denominator value is nonzero. -/
 noncomputable def quotientDifferential (point : ι → F)
     (numerator denominator : MvPolynomial ι F) :
@@ -80,6 +118,70 @@ noncomputable def quotientDifferential (point : ι → F)
   (aeval point denominator) ⁻¹ • mvPolynomialDifferential point numerator -
     (aeval point numerator * ((aeval point denominator) ^ 2) ⁻¹) •
       mvPolynomialDifferential point denominator
+
+omit [DecidableEq ι] in
+@[simp]
+theorem quotientDifferential_add (point : ι → F) (p q denominator : MvPolynomial ι F) :
+    quotientDifferential point (p + q) denominator =
+      quotientDifferential point p denominator + quotientDifferential point q denominator := by
+  apply LinearMap.ext
+  intro direction
+  simp only [quotientDifferential, map_add, mvPolynomialDifferential_add,
+    LinearMap.smul_apply, LinearMap.sub_apply, LinearMap.add_apply, smul_eq_mul]
+  ring
+
+omit [DecidableEq ι] in
+@[simp]
+theorem quotientDifferential_sub (point : ι → F) (p q denominator : MvPolynomial ι F) :
+    quotientDifferential point (p - q) denominator =
+      quotientDifferential point p denominator - quotientDifferential point q denominator := by
+  apply LinearMap.ext
+  intro direction
+  simp only [quotientDifferential, map_sub, mvPolynomialDifferential_sub,
+    LinearMap.smul_apply, LinearMap.sub_apply, smul_eq_mul]
+  ring
+
+omit [DecidableEq ι] in
+theorem quotientDifferential_C_mul (point : ι → F) (a : F)
+    (p denominator : MvPolynomial ι F) :
+    quotientDifferential point (C a * p) denominator =
+      a • quotientDifferential point p denominator := by
+  apply LinearMap.ext
+  intro direction
+  rw [quotientDifferential, quotientDifferential, mvPolynomialDifferential_mul]
+  simp only [map_mul, aeval_C, Algebra.algebraMap_self, RingHom.id_apply,
+    mvPolynomialDifferential_C, LinearMap.add_apply, LinearMap.smul_apply,
+    LinearMap.zero_apply, mul_zero, LinearMap.sub_apply, smul_eq_mul]
+  ring
+
+omit [DecidableEq ι] in
+theorem quotientDifferential_self (point : ι → F) (denominator : MvPolynomial ι F)
+    (hdenominator : aeval point denominator ≠ 0) :
+    quotientDifferential point denominator denominator = 0 := by
+  apply LinearMap.ext
+  intro direction
+  simp only [quotientDifferential, LinearMap.smul_apply, LinearMap.sub_apply,
+    LinearMap.zero_apply, smul_eq_mul]
+  field_simp
+  ring
+
+omit [DecidableEq ι] in
+@[simp]
+theorem quotientDifferential_zero (point : ι → F) (denominator : MvPolynomial ι F) :
+    quotientDifferential point 0 denominator = 0 := by
+  apply LinearMap.ext
+  intro direction
+  simp [quotientDifferential]
+
+omit [DecidableEq ι] in
+theorem quotientDifferential_finsetSum {J : Type*} (point : ι → F)
+    (denominator : MvPolynomial ι F) (s : Finset J) (p : J → MvPolynomial ι F) :
+    quotientDifferential point (∑ j ∈ s, p j) denominator =
+      ∑ j ∈ s, quotientDifferential point (p j) denominator := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert j s hj ih => simp [hj, ih]
 
 /-- The quotient differential of `X_i * denominator` by a nonzero denominator is projection to
 coordinate `i`. -/
@@ -93,6 +195,20 @@ theorem quotientDifferential_X_mul (point : ι → F) (i : ι)
     LinearMap.add_apply, LinearMap.smul_apply, LinearMap.proj_apply, smul_eq_mul]
   field_simp
   ring
+
+omit [DecidableEq ι] in
+/-- At a zero of the numerator, clearing a nonzero denominator scales the quotient differential
+by the denominator value. -/
+theorem mvPolynomialDifferential_eq_smul_quotientDifferential (point : ι → F)
+    (numerator denominator : MvPolynomial ι F)
+    (hdenominator : aeval point denominator ≠ 0) (hnumerator : aeval point numerator = 0) :
+    mvPolynomialDifferential point numerator =
+      aeval point denominator • quotientDifferential point numerator denominator := by
+  apply LinearMap.ext
+  intro direction
+  simp only [quotientDifferential, LinearMap.smul_apply, hnumerator, zero_mul, zero_smul,
+    sub_zero, smul_eq_mul]
+  field_simp
 
 variable {r : ℕ}
 
@@ -126,6 +242,24 @@ noncomputable def rationalTaylorMapDifferential (center : F) (Q : DifferentialPo
   LinearMap.pi fun l ↦
     quotientDifferential jet (commonTaylorNumerator center Q K l (τ := τ))
       (initialJetSeparant center Q ^ τ)
+
+/-- A cleared agreement row has the same quotient differential as evaluation of the rational
+Taylor coefficient differential. -/
+theorem quotientDifferential_taylorAgreementEquation (center : F)
+    (Q : DifferentialPolynomial F r) (K τ : ℕ) (jet : Fin (r + 1) → F)
+    (hseparant : aeval jet (initialJetSeparant center Q) ≠ 0) (x y : F) :
+    quotientDifferential jet (taylorAgreementEquation center Q K x y (τ := τ))
+        (initialJetSeparant center Q ^ τ) =
+      ∑ l : Fin K, (x - center) ^ l.val •
+        quotientDifferential jet (commonTaylorNumerator center Q K l (τ := τ))
+          (initialJetSeparant center Q ^ τ) := by
+  rw [taylorAgreementEquation, quotientDifferential_sub,
+    quotientDifferential_finsetSum]
+  simp_rw [quotientDifferential_C_mul]
+  rw [quotientDifferential_self]
+  · simp
+  · simp only [map_pow]
+    exact pow_ne_zero _ hseparant
 
 /-- The differential of every initial Taylor coefficient is its input-coordinate projection. -/
 theorem rationalTaylorMapDifferential_initial (center : F) (Q : DifferentialPolynomial F r)
