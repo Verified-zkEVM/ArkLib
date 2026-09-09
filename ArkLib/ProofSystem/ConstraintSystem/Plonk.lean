@@ -107,8 +107,12 @@ end Gate
 
 /-- A Plonk constraint system is a vector of `numGates` gates, each parametrized by the underlying
   ring `𝓡` and `numWires`, the number of wires.
+
+  Marked `protected` so that bare `ConstraintSystem` inside `namespace Plonk` refers to the
+  universal `ConstraintSystem` in `ArkLib.ProofSystem.ConstraintSystem.Basic`. Users access
+  this definition as `Plonk.ConstraintSystem`.
 -/
-def ConstraintSystem (𝓡 : Type) (numWires numGates : ℕ) := Fin numGates → Gate 𝓡 numWires
+protected def ConstraintSystem (𝓡 : Type) (numWires numGates : ℕ) := Fin numGates → Gate 𝓡 numWires
 
 variable {𝓡 : Type} [CommRing 𝓡] {numWires numGates : ℕ}
 
@@ -122,7 +126,7 @@ namespace ConstraintSystem
 
 /-- A constraint system accepts an input vector `x` if all of its gates accept `x`. -/
 def accepts (x : Fin numWires → 𝓡)
-    (cs : ConstraintSystem 𝓡 numWires numGates) : Prop :=
+    (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) : Prop :=
   ∀ i : Fin numGates, (cs i).accepts x
 
 /-- The partition induced by a constraint system as defined in the Plonk paper.
@@ -130,7 +134,7 @@ def accepts (x : Fin numWires → 𝓡)
 For `i ∈ [numWires]`, let `T_i ⊆ [3*numGates]` be the set of indices `j` such that `V_j = i`,
 where `V` is the flattened vector of all wire indices `(a,b,c)` from all gates.
 This creates a partition of `[3 * numGates]` based on which gates use each wire index. -/
-def partition (cs : ConstraintSystem 𝓡 numWires numGates) :
+def partition (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) :
     Fin numWires → Finset (Fin (3 * numGates)) :=
   -- We first cast via the equivalence `Fin (3 * numGates) ≃ Fin 3 × Fin numGates`,
   -- then filter by matching on the first coordinate `j.1`, which determines which wire we are
@@ -142,12 +146,13 @@ def partition (cs : ConstraintSystem 𝓡 numWires numGates) :
     (Finset.univ : Finset (Fin 3 × Fin numGates)))
 
 /-- The permutation corresponding to the partition induced by a constraint system. -/
-def perm (cs : ConstraintSystem 𝓡 numWires numGates) : Equiv.Perm (Fin (3 * numGates)) := sorry
+def perm (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) : Equiv.Perm (Fin (3 * numGates)) :=
+  sorry
 
 /-- A constraint system is prepared for `ℓ` public inputs, for some `ℓ ≤ numGates, numWires`,
   if for all `i ∈ [ℓ]`, the `i`-th gate constrains the `i`-th wire to be some public value. -/
 def isPreparedFor (ℓ : ℕ) (hℓ : ℓ ≤ numGates) (hℓ' : ℓ ≤ numWires)
-    (cs : ConstraintSystem 𝓡 numWires numGates) : Prop :=
+    (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) : Prop :=
   ∀ i : Fin ℓ, ∃ c, cs (Fin.castLE hℓ i) = Gate.eq (Fin.castLE hℓ' i) c
 
 end ConstraintSystem
@@ -158,7 +163,7 @@ end ConstraintSystem
 - A natural number `ℓ ≤ m` representing the number of public inputs
 - A subset `ℐ ⊂ [m]` of "public inputs" (assumed to be `{1,...,ℓ}` without loss of generality)
 -/
-def relation (cs : ConstraintSystem 𝓡 numWires numGates) (ℓ : ℕ) (hℓ : ℓ ≤ numWires) :
+def relation (cs : Plonk.ConstraintSystem 𝓡 numWires numGates) (ℓ : ℕ) (hℓ : ℓ ≤ numWires) :
     (publicInputs : Fin ℓ → 𝓡) → (privateWitness : Fin (numWires - ℓ) → 𝓡) → Prop :=
   fun (x : Fin ℓ → 𝓡) (ω : Fin (numWires - ℓ) → 𝓡) =>
     let combined := Fin.append x ω ∘ Fin.cast (by omega)
