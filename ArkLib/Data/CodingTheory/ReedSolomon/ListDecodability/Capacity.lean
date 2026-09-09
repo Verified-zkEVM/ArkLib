@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.AutomaticHybrid
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder

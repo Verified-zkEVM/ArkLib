@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformFirstOrder
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.UniformRate
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.RateBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedLine
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.Capacity.PrescribedCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.ExtensionDescent
@@ -44,6 +45,11 @@ that the integer agreement threshold is at least `k + ceil(δ * n)`.
 Every witness conclusion recovers the candidate polynomial and its **full** agreement set,
 not merely a large common subset. Line and power-batching results allow infinite fields.
 Affine densities and the final probability formulation require finite fields.
+
+For a fixed physical rate, `automaticFirstOrder_list_and_lineMCA` supplies the automatic
+first-order optimized and closed finite bounds under `char = 0` or `char > max(k-1,M)`.
+`automaticFirstOrder_rate_bounds` supplies the cubic list and quintic exception slack bounds;
+`automaticFirstOrder_hybrid_mcaError_le` gives the separate finite-field probability statement.
 
 The small-gap line and curve theorems use the rate-partition construction with derivative
 order `ceil(exp(3/(2δ)))`, the sharper uniform jet cap, and height `150ν`. Their public

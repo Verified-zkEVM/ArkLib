@@ -210,6 +210,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.AutomaticHyb
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.Capacity
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.HybridTransfer
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.OrdinaryTail
+import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrder.RateBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FirstOrderCurve
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FullAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.CorrelatedAgreement.FullDimension
@@ -460,6 +461,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.OrderZeroRewriteBou
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.OrderZeroSmallBlock
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.OrderZeroWitness
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
+import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticRecipe
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 import
@@ -740,6 +742,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSu
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementMachineCanary
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AutomaticFirstOrderExecution
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.BudgetedExecution
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CandidateFilterMachine
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CandidateFilterMachineCanary
