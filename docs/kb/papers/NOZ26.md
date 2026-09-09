@@ -208,10 +208,10 @@ Ring-switching layer:
   proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
   (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
   coordinate-wise special soundness and perfect completeness, and the one-iteration soundness
-  certificate (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free. Composing
-  the completeness side is blocked on the generic `Reduction.append_completeness`, still `sorry`,
-  which every composed statement inherits as a `sorryAx` dependency; the nonrecursive opening
-  (`Hachi/Correctness.lean`) is complete and perfectly correct modulo exactly that.
+  certificate (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free. The
+  nonrecursive completeness chain uses proved pure/guarded composition with state-uniform suffix
+  correctness. Its composed completeness and perfect-correctness theorems
+  (`Hachi/Correctness.lean`) have only standard axiom dependencies.
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.

@@ -35,9 +35,9 @@ and perfect completeness. `Composition.lean` chains the soundness certificates,
 
 Two scope facts a reader should have up front. The recursive opening of [NOZ26] §4.5 —
 `Recursion/` and the `opening` field of `Commitment.lean`'s `hachi` — is outside this
-development; the complete scheme is the nonrecursive `hachiNonrecursive`. And every *composed*
-completeness statement rests on the generic `Reduction.append_completeness`, which this
-repository admits; each link's own completeness does not.
+development; the complete scheme is the nonrecursive `hachiNonrecursive`. Its composed
+completeness and correctness use proved state-aware composition: pure verifier forms for the
+prefix and guarded forms for sumcheck, with suffix completeness from every shared oracle state.
 
 ## Folder structure
 

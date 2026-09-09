@@ -173,6 +173,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.Separation
 import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
@@ -260,7 +261,10 @@ import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.ClassicalWronskian
 import ArkLib.Data.Polynomial.FoldedWronskian
 import ArkLib.Data.Polynomial.FoldingPolynomial
+import ArkLib.Data.Polynomial.FractionFieldExpand
+import ArkLib.Data.Polynomial.FractionFieldFactorization
 import ArkLib.Data.Polynomial.FractionFieldResultant
+import ArkLib.Data.Polynomial.FractionFieldRoots
 import ArkLib.Data.Polynomial.Indicator
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims
@@ -274,6 +278,9 @@ import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.SplitFold
+import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
+import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
+import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
 import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Combinatorial
 import ArkLib.Data.Probability.Instances
@@ -289,8 +296,21 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
+import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
+import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
+import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
+import ArkLib.OracleReduction.Composition.Sequential.Append.Security
+import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
+import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
+import ArkLib.OracleReduction.Composition.Sequential.Completeness
 import ArkLib.OracleReduction.Composition.Sequential.General
+import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 import ArkLib.OracleReduction.Composition.Sequential.IsPure
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
@@ -307,6 +327,7 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.State
 import ArkLib.OracleReduction.LiftContext.Lens
 import ArkLib.OracleReduction.LiftContext.OracleReduction
+import ArkLib.OracleReduction.LiftContext.Purity
 import ArkLib.OracleReduction.LiftContext.Reduction
 import ArkLib.OracleReduction.OracleInterface
 import ArkLib.OracleReduction.Prelude
@@ -420,6 +441,7 @@ import ArkLib.ToMathlib.InformationTheory.Hamming
 import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 import ArkLib.ToMathlib.List.Basic
+import ArkLib.ToMathlib.Logic.HEq
 import ArkLib.ToMathlib.Polynomial.AevalXPow
 import ArkLib.ToMathlib.Polynomial.CompositionDegree
 import ArkLib.ToMathlib.Polynomial.DegreeLT

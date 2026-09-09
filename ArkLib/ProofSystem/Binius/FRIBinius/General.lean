@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
+import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
 import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
@@ -179,7 +181,7 @@ noncomputable def fullOracleProof :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-/-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
+/-- The full FRI-Binius oracle proof is perfectly complete. -/
 theorem fullOracleReduction_perfectCompleteness :
     OracleProof.perfectCompleteness
       (oracleProof := fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
@@ -188,7 +190,7 @@ theorem fullOracleReduction_perfectCompleteness :
         ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
       (init := init)
       (impl := impl) :=
-  OracleReduction.append_perfectCompleteness
+  OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (R₁ := batchingCoreReduction κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l )
     (R₂ := QueryPhase.queryOracleReduction K β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
@@ -206,22 +208,33 @@ theorem fullOracleReduction_perfectCompleteness :
       ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
     (rel₂ := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
+    (V₁ := Verifier.GuardedForm.ofEmpty _ (fun _ =>
+      (⟨⟨0, fun _ => 0, ⟨0, 0⟩⟩, 0⟩, fun _ _ => 0)))
+    (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
+    (hSeam := fun _ => Or.inl inferInstance)
     (h₁ := by
-      apply OracleReduction.append_perfectCompleteness
+      apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers
         (rel₁ := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
           ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
         (rel₂ := RingSwitching.sumcheckRoundRelation κ L K (biniusProfile κ L K β)
         ℓ ℓ' h_l (aOStmtIn := BinaryBasefoldAbstractOStmtIn κ L K β ℓ'
           𝓡 ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) 0)
         (rel₃ := BinaryBasefold.finalSumcheckRelOut K β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+        (V₁ := Verifier.GuardedForm.ofEmpty _ (fun input =>
+          (⟨0, fun _ => 0,
+            ⟨⟨input.1.t_eval_point, input.1.original_claim⟩, 0, 0⟩⟩, input.2)))
+        (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ =>
+          (⟨⟨0, fun _ => 0, ⟨0, 0⟩⟩, 0⟩, fun _ _ => 0)))
+        (hSeam := fun _ => Or.inl inferInstance)
       · apply BatchingPhase.batchingReduction_perfectCompleteness κ L K
           (biniusProfile κ L K β) ℓ ℓ' h_l
           (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
-      · apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
+      · intro s
+        apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
           κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l
     )
-    (h₂ := QueryPhase.queryOracleProof_perfectCompleteness K β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) init impl)
+    (h₂ := fun s => QueryPhase.queryOracleProof_perfectCompleteness K β γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (pure s) impl)
 
 -- TODO: state RBR KS
 
