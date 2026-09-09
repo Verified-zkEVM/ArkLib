@@ -5,6 +5,8 @@ Authors: Quang Dao
 -/
 import ArkLib.Data.Polynomial.Rojas.HyperplaneAvoidance
 import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
+import Mathlib.FieldTheory.IsAlgClosed.Basic
+import Mathlib.FieldTheory.Perfect
 
 /-!
 # Correctness of computed Rojas specialization families
@@ -39,10 +41,13 @@ structure PerturbationFactorization
     (points : Fin M → Fin s → K) where
   leading : (Fin s → F) → K
   leading_ne_zero : ∀ u, leading u ≠ 0
+  multiplicity : Fin M → ℕ
+  multiplicity_pos : ∀ j, 0 < multiplicity j
   factors : ∀ u : Fin s → F,
     (specializePerturbation perturbation u).toPoly.map ι =
       Polynomial.C (leading u) * ∏ j,
-        (Polynomial.X - Polynomial.C (geometricProjection ι u (points j)))
+        (Polynomial.X - Polynomial.C (geometricProjection ι u (points j))) ^
+          multiplicity j
 
 variable (p : ℕ) [Fact p.Prime] [CharP F p]
 
@@ -96,6 +101,7 @@ theorem geometricProjection_momentCurve_plus
 /-- One factorization with distinct projected roots certifies the executable
 squarefree support as nonzero and of exact degree `M`. -/
 theorem squarefreeSupport_degree_eq_of_factorization
+    [IsAlgClosed K]
     (ι : F →+* K) {perturbation : CMvPolynomial (s + 1) F}
     {points : Fin M → Fin s → K}
     (hfactorization : PerturbationFactorization ι perturbation points)
@@ -106,22 +112,14 @@ theorem squarefreeSupport_degree_eq_of_factorization
   classical
   dsimp only
   let eliminant := specializePerturbation perturbation u
-  have hdegreeMap : (eliminant.toPoly.map ι).natDegree = M := by
-    rw [hfactorization.factors u,
-      Polynomial.natDegree_C_mul (hfactorization.leading_ne_zero u),
-      Polynomial.natDegree_finsetProd_X_sub_C_eq_card]
-    simp
-  have hdegree : eliminant.natDegree = M := by
-    rw [natDegree_toPoly, ← Polynomial.natDegree_map_eq_of_injective ι.injective]
-    exact hdegreeMap
   have heliminant : eliminant ≠ 0 := by
     have hmapNe : eliminant.toPoly.map ι ≠ 0 := by
       rw [hfactorization.factors u]
       exact mul_ne_zero (Polynomial.C_ne_zero.mpr (hfactorization.leading_ne_zero u))
         (by
-          simpa using (Polynomial.monic_prod_X_sub_C
-            (fun j ↦ geometricProjection ι u (points j))
-            (Finset.univ : Finset (Fin M))).ne_zero)
+          apply Finset.prod_ne_zero_iff.mpr
+          intro j _
+          exact pow_ne_zero _ (Polynomial.X_sub_C_ne_zero _))
     have htoPoly := (Polynomial.map_ne_zero_iff ι.injective).mp hmapNe
     exact fun hzero ↦ htoPoly ((CPolynomial.toPoly_eq_zero_iff eliminant).mpr hzero)
   have hsupportNe := squarefreeSupport_ne_zero p heliminant
@@ -148,28 +146,68 @@ theorem squarefreeSupport_degree_eq_of_factorization
       right
       change Polynomial.evalRingHom (geometricProjection ι u (points j))
         (∏ j, (Polynomial.X -
-          Polynomial.C (geometricProjection ι u (points j)))) = 0
+          Polynomial.C (geometricProjection ι u (points j))) ^
+            hfactorization.multiplicity j) = 0
       rw [map_prod]
       apply Finset.prod_eq_zero (Finset.mem_univ j)
-      simp
+      simp [Nat.ne_of_gt (hfactorization.multiplicity_pos j)]
     · exact (Polynomial.map_ne_zero_iff ι.injective).mpr
         ((CPolynomial.toPoly_eq_zero_iff _).not.mpr hsupportNe)
-  have hlower : M ≤ (squarefreeSupport p eliminant).natDegree := by
-    rw [← hrootsCard]
-    exact (Finset.card_le_card hrootsSubset).trans <|
-      (Multiset.toFinset_card_le _).trans <|
-        ((Polynomial.card_roots' _).trans_eq
-          (Polynomial.natDegree_map_eq_of_injective ι.injective
-            (squarefreeSupport p eliminant).toPoly)).trans_eq
-              (natDegree_toPoly _).symm
-  have hupper : (squarefreeSupport p eliminant).natDegree ≤ M :=
-    (natDegree_squarefreeSupport_le p heliminant).trans_eq hdegree
-  exact ⟨heliminant, Nat.le_antisymm hupper hlower⟩
+  have hsupportRootsSubset :
+      ((squarefreeSupport p eliminant).toPoly.map ι).roots.toFinset ⊆ roots := by
+    intro root hroot
+    have hsupportMapNe :
+        (squarefreeSupport p eliminant).toPoly.map ι ≠ 0 :=
+      (Polynomial.map_ne_zero_iff ι.injective).mpr
+        ((CPolynomial.toPoly_eq_zero_iff _).not.mpr hsupportNe)
+    have hsupportEval :
+        Polynomial.eval root ((squarefreeSupport p eliminant).toPoly.map ι) = 0 :=
+      (Polynomial.mem_roots hsupportMapNe).mp (Multiset.mem_toFinset.mp hroot)
+    rw [Polynomial.eval_map] at hsupportEval
+    have heliminantEval : Polynomial.eval root (eliminant.toPoly.map ι) = 0 := by
+      rw [Polynomial.eval_map]
+      exact (eval₂_squarefreeSupport_eq_zero_iff p ι root heliminant).mp hsupportEval
+    rw [hfactorization.factors u, Polynomial.eval_mul,
+      Polynomial.eval_C] at heliminantEval
+    rcases mul_eq_zero.mp heliminantEval with hleading | hproduct
+    · exact (hfactorization.leading_ne_zero u hleading).elim
+    · change (Polynomial.evalRingHom root)
+        (∏ j, (Polynomial.X -
+          Polynomial.C (geometricProjection ι u (points j))) ^
+            hfactorization.multiplicity j) = 0 at hproduct
+      rw [map_prod] at hproduct
+      obtain ⟨j, _, hj⟩ := Finset.prod_eq_zero_iff.mp hproduct
+      rw [map_pow] at hj
+      have hjbase := (pow_eq_zero_iff
+        (Nat.ne_of_gt (hfactorization.multiplicity_pos j))).mp hj
+      change Polynomial.eval root
+        (Polynomial.X - Polynomial.C (geometricProjection ι u (points j))) = 0 at hjbase
+      rw [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C] at hjbase
+      exact Finset.mem_image.mpr ⟨j, Finset.mem_univ j, (sub_eq_zero.mp hjbase).symm⟩
+  have hrootsEq :
+      roots = ((squarefreeSupport p eliminant).toPoly.map ι).roots.toFinset :=
+    Finset.Subset.antisymm hrootsSubset hsupportRootsSubset
+  have hseparable :
+      ((squarefreeSupport p eliminant).toPoly.map ι).Separable :=
+    (PerfectField.separable_iff_squarefree.mpr
+      (squarefreeSupport_squarefree p heliminant)).map
+  have hdegreeSupport : (squarefreeSupport p eliminant).natDegree = M := by
+    calc
+      _ = ((squarefreeSupport p eliminant).toPoly.map ι).natDegree := by
+        rw [Polynomial.natDegree_map_eq_of_injective ι.injective, natDegree_toPoly]
+      _ = ((squarefreeSupport p eliminant).toPoly.map ι).roots.card :=
+        (IsAlgClosed.splits _).natDegree_eq_card_roots
+      _ = ((squarefreeSupport p eliminant).toPoly.map ι).roots.toFinset.card :=
+        (Multiset.toFinset_card_of_nodup (Polynomial.nodup_roots hseparable)).symm
+      _ = roots.card := congrArg Finset.card hrootsEq.symm
+      _ = M := hrootsCard
+  exact ⟨heliminant, hdegreeSupport⟩
 
 /-- Simultaneous injectivity of the `2s+1` geometric projections makes the
 actually computed Step 0--3 candidate pass the executable support-degree
 guard. -/
 theorem candidate_hasExpected_of_injectiveProjections
+    [IsAlgClosed K]
     (ι : F →+* K) {perturbation : CMvPolynomial (s + 1) F}
     {points : Fin M → Fin s → K}
     (hfactorization : PerturbationFactorization ι perturbation points)
@@ -208,6 +246,7 @@ theorem candidate_hasExpected_of_injectiveProjections
 parameter list longer than the collision bound makes the actual executable scan
 succeed.  The selected value is one of the candidates computed from that list. -/
 theorem selectParameter?_exists_of_factorization
+    [IsAlgClosed K]
     (ι : F →+* K) {perturbation : CMvPolynomial (s + 1) F}
     {points : Fin M → Fin s → K}
     (hfactorization : PerturbationFactorization ι perturbation points)
