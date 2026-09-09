@@ -80,4 +80,39 @@ theorem fromCMvPolynomial_computableRationalTaylorNumerator {r : ℕ} (center : 
       funext i
       exact ih i.val i.isLt
 
+/-! ### Common-denominator chart coordinates -/
+
+/-- Executable common denominator of the rational Taylor chart. -/
+def computableTaylorDenominator {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (τ : ℕ) :
+    CPoly.CMvPolynomial (r + 1) F :=
+  computableInitialJetSeparant center Q ^ τ
+
+/-- Executable numerator padded to the chart's common separant exponent. -/
+def computableCommonTaylorNumerator {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K : ℕ) (l : Fin K)
+    (τ : ℕ := 2 * K) : CPoly.CMvPolynomial (r + 1) F :=
+  computableRationalTaylorNumerator center Q l.val *
+    computableTaylorDenominator center Q (τ - (2 * (l.val - r) - 1))
+
+/-- The computed denominator is the literal common separant power. -/
+theorem fromCMvPolynomial_computableTaylorDenominator {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (τ : ℕ) :
+    CPoly.fromCMvPolynomial (computableTaylorDenominator center Q τ) =
+      initialJetSeparant center (semanticEquation Q) ^ τ := by
+  rw [computableTaylorDenominator, CPoly.CMvPolynomial.fromCMvPolynomial_pow,
+    fromCMvPolynomial_computableInitialJetSeparant]
+
+/-- Every computed padded numerator denotes the corresponding symbolic chart coordinate. -/
+theorem fromCMvPolynomial_computableCommonTaylorNumerator {r : ℕ} (center : F)
+    (Q : CPoly.CMvPolynomial (r + 2) F) (K : ℕ) (l : Fin K)
+    (τ : ℕ := 2 * K) :
+    CPoly.fromCMvPolynomial
+        (computableCommonTaylorNumerator center Q K l (τ := τ)) =
+      commonTaylorNumerator center (semanticEquation Q) K l (τ := τ) := by
+  rw [computableCommonTaylorNumerator, commonTaylorNumerator,
+    CPoly.CMvPolynomial.fromCMvPolynomial_mul',
+    fromCMvPolynomial_computableRationalTaylorNumerator,
+    fromCMvPolynomial_computableTaylorDenominator]
+
 end ReedSolomon.HiddenDerivative.SquareSystems
