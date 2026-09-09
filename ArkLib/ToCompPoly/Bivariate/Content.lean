@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import CompPoly.Bivariate.Basic
+import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
 import CompPoly.Univariate.Roots.Correctness
 
 /-!
@@ -135,5 +135,32 @@ theorem C_yContent_mul_primitivePartY {Q : CBivariate F} (hQ : Q ≠ 0) :
     have hcoefficient : CPolynomial.coeff Q index = 0 :=
       CPolynomial.coeff_eq_zero_of_size_le Q hle
     rw [hprimitive, hcoefficient, mul_zero]
+
+/-- Removing `Y`-content preserves the univariate polynomials that solve the
+bivariate root equation. -/
+theorem composeY_primitivePartY_eq_zero_iff {Q : CBivariate F} (hQ : Q ≠ 0)
+    (P : CPolynomial F) :
+    composeY (primitivePartY Q) P = 0 ↔ composeY Q P = 0 := by
+  let : DecidableEq F := instDecidableEqOfLawfulBEq
+  have hfactor :
+      (composeY Q P).toPoly =
+        (yContent Q).toPoly * (composeY (primitivePartY Q) P).toPoly := by
+    calc
+      _ = (composeY
+          ((CPolynomial.C (yContent Q) : CPolynomial (CPolynomial F)) *
+            primitivePartY Q) P).toPoly :=
+        congrArg (fun equation => (composeY equation P).toPoly)
+          (C_yContent_mul_primitivePartY hQ).symm
+      _ = _ := by
+        rw [GuruswamiSudan.composeY_toPoly, CBivariate.toPoly_mul,
+          Polynomial.eval_mul, GuruswamiSudan.composeY_toPoly]
+        congr 1
+        rw [CBivariate.toPoly_eq_map, CPolynomial.C_toPoly,
+          Polynomial.map_C, Polynomial.eval_C]
+        exact CPolynomial.ringEquiv_apply (yContent Q)
+  have hcontent : (yContent Q).toPoly ≠ 0 :=
+    (CPolynomial.toPoly_eq_zero_iff (yContent Q)).not.mpr (yContent_ne_zero hQ)
+  rw [← CPolynomial.toPoly_eq_zero_iff, ← CPolynomial.toPoly_eq_zero_iff,
+    hfactor, mul_eq_zero, or_iff_right hcontent]
 
 end CompPoly.CBivariate
