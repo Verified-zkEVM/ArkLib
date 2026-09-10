@@ -304,7 +304,8 @@ structure JohnsonSymbolicCertificate {n : ℕ} (D A m μ k h Xc : ℕ)
           differentialSpecialization
             (MvPolynomial.map (Polynomial.eval₂RingHom ι z) Q) P = 0
 
-private theorem coeff_johnsonInterpolant_natDegree_le {Xc D μ h : ℕ}
+/-- Uniform coefficient bounds on the canonical Johnson interpolant. -/
+theorem coeff_johnsonInterpolant_natDegree_le {Xc D μ h : ℕ}
     (v : Fin (Fintype.card (JohnsonColumnIndex Xc D μ)) → F[X])
     (hv : ∀ j, (v j).natDegree ≤ h) :
     ∀ u, (MvPolynomial.coeff u (interpolant (johnsonColumns Xc D μ) v)).natDegree ≤ h := by
@@ -325,7 +326,8 @@ private theorem coeff_johnsonInterpolant_natDegree_le {Xc D μ h : ℕ}
       · rfl
     simp [hcoeff]
 
-private theorem support_johnsonInterpolant_subset_range {Xc D μ : ℕ}
+/-- Every supported exponent of the canonical interpolant comes from a source column. -/
+theorem support_johnsonInterpolant_subset_range {Xc D μ : ℕ}
     (v : Fin (Fintype.card (JohnsonColumnIndex Xc D μ)) → F[X])
     {u : JetVariable 0 →₀ ℕ}
     (hu : u ∈ (interpolant (johnsonColumns Xc D μ) v).support) :
@@ -343,7 +345,8 @@ private theorem support_johnsonInterpolant_subset_range {Xc D μ : ℕ}
     · rfl
   exact MvPolynomial.mem_support_iff.mp hu hcoeff
 
-private theorem johnsonColumns_weightedSupportEligible {Xc D μ : ℕ}
+/-- Every strict Johnson source column satisfies the weighted-support predicate. -/
+theorem johnsonColumns_weightedSupportEligible {Xc D μ : ℕ}
     (j : Fin (Fintype.card (JohnsonColumnIndex Xc D μ))) :
     WeightedSupportEligible D 0 0 (Xc : ℝ) (johnsonColumns Xc D μ j).exponent := by
   let q := (Fintype.equivFin (JohnsonColumnIndex Xc D μ)).symm j
@@ -354,7 +357,8 @@ private theorem johnsonColumns_weightedSupportEligible {Xc D μ : ℕ}
   · norm_cast
     simpa [q, johnsonColumns, SourceColumn.totalJetDegree_exponent] using hstrict
 
-private theorem interpolant_mem_johnsonWeightedSupport {Xc D μ : ℕ} (hD : 0 < D)
+/-- A canonical Johnson interpolant belongs to its strict weighted-support space. -/
+theorem interpolant_mem_johnsonWeightedSupport {Xc D μ : ℕ} (hD : 0 < D)
     (v : Fin (Fintype.card (JohnsonColumnIndex Xc D μ)) → F[X]) :
     interpolant (johnsonColumns Xc D μ) v ∈
       weightedSupportSpace F[X] D 0 0 (Xc : ℝ) hD := by
@@ -368,7 +372,8 @@ private theorem interpolant_mem_johnsonWeightedSupport {Xc D μ : ℕ} (hD : 0 <
   subst u
   exact johnsonColumns_weightedSupportEligible j
 
-private theorem johnsonInterpolant_jetDegree_le {Xc D μ : ℕ}
+/-- The canonical Johnson interpolant has jet degree at most its slice cutoff. -/
+theorem johnsonInterpolant_jetDegree_le {Xc D μ : ℕ}
     (v : Fin (Fintype.card (JohnsonColumnIndex Xc D μ)) → F[X]) :
     jetDegree (interpolant (johnsonColumns Xc D μ) v) (0 : Fin 1) ≤ μ := by
   apply MvPolynomial.degreeOf_le_iff.mpr
