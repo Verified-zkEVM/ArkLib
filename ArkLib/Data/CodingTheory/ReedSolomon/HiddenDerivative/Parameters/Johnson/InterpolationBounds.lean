@@ -6,6 +6,8 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.FiniteBounds
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.WeightedCertificate
 public import Mathlib.Algebra.BigOperators.Intervals
 
 /-!

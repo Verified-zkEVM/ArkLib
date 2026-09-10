@@ -562,6 +562,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.J
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.InterpolationBounds
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.WeightedCertificate
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.RoundedScaledShell
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
 public import
