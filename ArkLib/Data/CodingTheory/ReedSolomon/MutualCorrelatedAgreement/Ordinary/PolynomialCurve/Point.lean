@@ -42,7 +42,10 @@ theorem exists_frobeniusPowerGraph_polynomials_of_sample
         (∀ i ∈ sample,
           Q.eval (roots i) = ∑ t, z ^ (p ^ e * t.val) * ι (values t i)) →
         Q = expand E (p ^ e)
-          (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) := by
+            (powerBatchedPolynomial (fun t ↦ (P t).map ι) (z ^ (p ^ e))) ∧
+          Q.eval center =
+            (powerBatchedPolynomial (fun t ↦ (P t).map ι)
+              (z ^ (p ^ e))).eval (center ^ (p ^ e)) := by
   obtain ⟨P, hPdegree, hPsample, hrecognize⟩ :=
     exists_polynomialGraph_of_sample domain values k sample hsample
   refine ⟨P, hPdegree, hPsample, ?_⟩
@@ -58,7 +61,9 @@ theorem exists_frobeniusPowerGraph_polynomials_of_sample
     simpa only [mappedDomain, Function.Embedding.trans_apply,
       Function.Embedding.coeFn_mk, pow_mul] using hiAgree
   have hRidentity := hrecognize ι (z ^ (p ^ e)) R hRdegree hRagree
-  rw [← hRQ, hRidentity]
+  constructor
+  · rw [← hRQ, hRidentity]
+  · rw [← hRQ, expand_eval, hRidentity]
 
 open Classical in
 /-- A retained sample supplies the common agreements needed by the exact accidental-challenge
