@@ -3,16 +3,24 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsSemantics
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsSemantics
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.OrderedChainRegularWitness
+
+-- The completeness witness reduces `ringEquiv.symm` back to its polynomial semantics.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 /-!
 # Semantic certificates for context-tagged stage roots
 
 Every returned candidate solves its actual current stage equation at its recorded center.
 Completeness is attached to concrete center executions at actual chain positions.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.StageRootsMachine
 

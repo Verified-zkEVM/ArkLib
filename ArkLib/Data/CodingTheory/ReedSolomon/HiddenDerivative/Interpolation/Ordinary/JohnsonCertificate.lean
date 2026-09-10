@@ -3,13 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.InterpolationBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.LocalImage
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.InterpolationBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.LocalImage
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveColumnHeight
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorHeight
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorHeight
 /-!
 # The finite ordinary Johnson interpolation certificate
 
@@ -17,6 +22,8 @@ This module realizes the exact BCHKS source and row counts as one primitive orde
 for a symbolic received line. Its source support is the strict lattice
 `x + D*y < ceil(t*n*sqrt(D/n))`, and its coefficient degree is bounded by the printed `h`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 open scoped BigOperators Matrix

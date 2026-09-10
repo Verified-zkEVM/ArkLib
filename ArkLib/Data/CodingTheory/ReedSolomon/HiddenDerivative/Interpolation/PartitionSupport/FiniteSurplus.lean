@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.RankBound
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 
 /-!
 # Finite partition source-to-rank surplus
@@ -17,6 +19,8 @@ The exact finite ratio combines the whole-simplex source moment with the local
 rank envelope. The normalization keeps both the triangular enlargement and the
 contact ceiling correction.
 -/
+
+@[expose] public section
 
 noncomputable section
 

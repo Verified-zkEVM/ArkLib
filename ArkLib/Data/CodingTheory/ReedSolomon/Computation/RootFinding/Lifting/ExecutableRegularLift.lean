@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.ExecutableRegularIteration
-import CompPoly.Univariate.ToPoly.Degree
+public import CompPoly.Univariate.ToPoly.Degree
 /-!
 # Executable primitives for regular differential lifting
 
@@ -19,6 +20,8 @@ filter. `RegularLiftCompleteness` proves its exact bounded-solution/initial-jet
 specification and regular per-stage uniqueness by explicit representation bridges. Those results
 do not yet give a closed operational implementation or a runtime bound for the lifting scan.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

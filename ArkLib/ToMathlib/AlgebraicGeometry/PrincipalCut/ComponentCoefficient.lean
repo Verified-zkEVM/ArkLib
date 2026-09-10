@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.RadicalDegree
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PrimeFamilyCoefficient
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Dimension
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.RadicalDegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PrimeFamilyCoefficient
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Dimension
 
 /-!
 # Component coefficient bounds for a principal cut
@@ -15,6 +17,8 @@ The actual minimal primes of a principal cut contribute, at the top possible
 cut degree, at most the coefficient supplied by the principal-cut Hilbert
 polynomial estimate. Components of smaller dimension contribute zero.
 -/
+
+@[expose] public section
 
 noncomputable section
 

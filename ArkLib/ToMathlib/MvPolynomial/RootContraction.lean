@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Algebra.MvPolynomial.PDeriv
-import Mathlib.Algebra.Polynomial.Expand
-import Mathlib.Algebra.CharP.Algebra
+
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.Algebra.Polynomial.Expand
+public import Mathlib.Algebra.CharP.Algebra
 
 /-!
 # Contracting one multivariate root coordinate
@@ -15,6 +17,8 @@ import Mathlib.Algebra.CharP.Algebra
 View `none` as the polynomial variable and the other coordinates as coefficients.
 Contraction selects coefficients and therefore cannot increase any other coordinate degree.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

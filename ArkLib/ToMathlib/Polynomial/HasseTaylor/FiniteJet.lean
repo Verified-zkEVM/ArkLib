@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.Polynomial.DegreeLT
+
+public import Mathlib.RingTheory.Polynomial.DegreeLT
 
 /-!
 # Finite Hasse jets of univariate polynomials
@@ -21,6 +23,8 @@ The main declarations are:
 * `Polynomial.hasseJetEquiv`: over a commutative ring, finite jets give coordinates on
   polynomials of degree strictly less than `m`.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

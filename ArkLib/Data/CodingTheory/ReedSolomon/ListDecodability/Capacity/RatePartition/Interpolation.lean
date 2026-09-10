@@ -3,15 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.Cover
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.Cover
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.UniformThresholds
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
 
 /-!
 # Free-order parameters on the finite rate cover
@@ -27,6 +28,8 @@ The imported source estimates are adapted from Kai Zhe Zheng's `rs-ld-mca` forma
 module are proved here for the finite rate cover; they are not attributed to a numbered theorem in
 source development.  No interpolation-existence or root-counting conclusion is asserted here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace RateBinInterpolation

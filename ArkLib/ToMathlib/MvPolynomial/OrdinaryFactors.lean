@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
-import Mathlib.Algebra.MvPolynomial.PDeriv
-import Mathlib.RingTheory.Polynomial.UniqueFactorization
-import Mathlib.RingTheory.UniqueFactorizationDomain.NormalizedFactors
+
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import Mathlib.RingTheory.UniqueFactorizationDomain.NormalizedFactors
 
 /-!
 # Distinct irreducible factors of an ordinary multivariate polynomial
@@ -20,6 +22,8 @@ original polynomial.
 
 This is only factor extraction. It makes no characteristic, separability, or incidence claim.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 
@@ -263,7 +267,7 @@ section Canary
 
 variable (a : F) (ha : a ≠ 0) (j : σ)
 
-private def ordinaryFactorsCanary : MvPolynomial (Option σ) F :=
+def ordinaryFactorsCanary : MvPolynomial (Option σ) F :=
   X (some j) * (C a * X none + 1) ^ 2
 
 private theorem ordinaryFactorsCanary_linear_ne_zero (ha : a ≠ 0) :

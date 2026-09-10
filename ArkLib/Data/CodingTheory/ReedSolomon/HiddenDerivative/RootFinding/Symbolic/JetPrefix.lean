@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.SeparantChain
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.JetPrefix
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.SeparantChain
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.JetPrefix
 
 
 /-!
@@ -16,6 +18,8 @@ rings, before the challenge is evaluated. Injective renaming preserves coefficie
 total jet degree, and every retained individual jet degree. After any coefficient
 specialization to a field, the presentation preserves differential equations and separants.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

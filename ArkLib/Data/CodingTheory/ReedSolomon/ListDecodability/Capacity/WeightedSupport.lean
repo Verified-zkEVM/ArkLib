@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
 
 
 /-!
@@ -15,6 +16,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
 The no-band weighted support supplies the actual hidden-derivative construction and the two
 finite-field root bounds. Both bounds apply to the same canonical exact list.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

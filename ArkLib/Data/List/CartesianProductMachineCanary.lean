@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.List.CartesianProductMachine
+
+public import ArkLib.Data.List.CartesianProductMachine
 
 /-!
 # Cartesian-product machine boundary checks
@@ -12,6 +14,8 @@ import ArkLib.Data.List.CartesianProductMachine
 Distinct axis values expose reversed coordinate order. Duplicates, empty axes, no axes and
 partial execution distinguish the essential branches without raising kernel limits.
 -/
+
+@[expose] public section
 
 namespace List.CartesianProductMachine
 

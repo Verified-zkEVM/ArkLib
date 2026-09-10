@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorTable
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
 
 /-!
@@ -23,6 +24,8 @@ results with the paper equations used by the square-system capture proof. Suffic
 and nonzero-separant hypotheses belong to that capture proof; the polynomial identities below
 hold for every τ.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 open PolynomialDifferential CPoly CPoly.CMvPolynomial

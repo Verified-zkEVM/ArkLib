@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Integral
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Moments
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Integral
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Moments
 
 /-!
 # Normalizing the partition source integral
@@ -14,6 +17,8 @@ This bridge converts a normalized positive-part second moment into a strict
 source-dimension bound. The analytic moment is supplied by the ordered-simplex
 theorem; the bridge is independent of the particular moment constant.
 -/
+
+@[expose] public section
 
 noncomputable section
 

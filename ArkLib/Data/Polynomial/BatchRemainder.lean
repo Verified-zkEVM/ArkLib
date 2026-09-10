@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
-import CompPoly.Univariate.Context
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.Context
 
 /-!
 # Product-tree remainders for arbitrary monic factors
@@ -23,6 +25,8 @@ Multiplication and remainder algorithms are explicit `MulContext` and `ModContex
 This file proves functional correctness and degree accounting; it does not yet assign an
 arithmetic-operation bound to an entire decoder run.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]

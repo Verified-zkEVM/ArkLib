@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Counting
-import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Counting
+public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 
 /-!
 # Quadratic source lower bound
@@ -15,6 +17,8 @@ Their staircase count dominates the corresponding triangular area. Summing over
 the derivative tuples gives the positive-part square needed by the simplex moment,
 without discarding tuples near the specialization boundary.
 -/
+
+@[expose] public section
 
 noncomputable section
 

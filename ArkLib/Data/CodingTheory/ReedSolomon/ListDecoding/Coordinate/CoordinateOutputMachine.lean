@@ -3,15 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceRefinement
 /-!
 # Actual coordinate canonical output collection
 
 Each record creates and pays for its five-field guard input once. The suspended acceptance
 state retains this payload. Accepted base vectors are saved and reversed one list cell at a time.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticCanonicalOutputMachine
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.SquarefreeSupport
-import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
+module
+
+public import ArkLib.Data.Polynomial.SquarefreeSupport
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
 
 /-!
 # Postprocessing a raw finite-field eliminant
@@ -13,6 +15,8 @@ This wrapper first replaces a nonzero, possibly repeated or inseparable
 eliminant by its monic squarefree support, then invokes the rational-univariate
 map postprocessor. The characteristic prime remains explicit runtime data.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UnivariateRepresentation
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardMachine
 /-!
 # Execution and cost of the canonical guard
 
@@ -13,6 +15,8 @@ one actual ordered-witness program. Failure may stop early. No chain correctness
 cost of an evaluator is needed for this execution theorem; polynomial representation and
 chain uniqueness are separate semantic obligations.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalGuardMachine
 

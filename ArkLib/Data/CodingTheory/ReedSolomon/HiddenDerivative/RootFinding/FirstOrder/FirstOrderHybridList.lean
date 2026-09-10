@@ -3,12 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderList
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.HybridDescent
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderList
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.HybridDescent
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.AutomaticCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 /-!
 # Actual-degree hybrid first-order list counting
 
@@ -17,6 +21,8 @@ This file partitions a finite solution list using only the actual `Y₁` descent
 is encoded as a univariate polynomial and receives the characteristic-free root bound directly.
 No differentiation in `Y₀` and no characteristic bound involving `mu` occurs here.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

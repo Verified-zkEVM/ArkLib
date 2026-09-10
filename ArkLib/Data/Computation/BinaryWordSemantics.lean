@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryWordMachine
-import Mathlib.Tactic.SplitIfs
+
+public import ArkLib.Data.Computation.BinaryWordMachine
+public import Mathlib.Tactic.SplitIfs
 
 /-!
 # Binary-word values and actual local-bit executions
@@ -14,6 +16,8 @@ Natural-number operations below are specifications and proof-side bounds. The ex
 is the Boolean/local-cell controller in `BinaryWordMachine`. Inputs may contain high zero padding;
 addition produces canonical output with at most one extra bit and includes carry-in explicitly.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryWordMachine
 

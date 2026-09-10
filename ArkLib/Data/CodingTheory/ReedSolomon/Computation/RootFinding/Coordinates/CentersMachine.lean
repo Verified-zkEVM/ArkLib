@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootsMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootsMachine
 /-!
 # Coordinate root enumeration across centers
 
@@ -13,6 +15,8 @@ Each supplied center runs the actual coordinate all-jet machine with a retained 
 Candidate records and their outer cells are allocated separately. Explicit reversal preserves
 center and jet order, including duplicates. All payload and child instruction costs are retained.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticCenterRootsMachine
 

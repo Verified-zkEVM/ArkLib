@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticPivotSolveRefinement
+
+public import ArkLib.Data.Matrix.QuadraticPivotSolveRefinement
 
 /-!
 # Kernel checks for coordinate pivot correction
@@ -14,6 +16,8 @@ Nontrivial RHS and norm arithmetic preserve other coordinates through indexed re
 Zero/unequal/missing cases and partial dot/save phases carry literal ledgers. A deliberately
 different retained inverse operand checks that arithmetic input is never reconstructed.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticPivotSolveMachine
 

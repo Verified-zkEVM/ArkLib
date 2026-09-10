@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticRowMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.Matrix.QuadraticRowMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Same-execution refinement of coordinate row operations
@@ -14,6 +16,8 @@ Proof-only maps relate all source phases to their coordinate representations. Ev
 step lowers to actual arithmetic instructions and list transitions, including rejection and
 reversal. The decoded row result is the original ordered add-multiple result.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticRowMachine
 

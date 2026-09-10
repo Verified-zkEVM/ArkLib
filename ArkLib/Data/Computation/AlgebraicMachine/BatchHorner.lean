@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AlgebraicMachine.Horner
+
+public import ArkLib.Data.Computation.AlgebraicMachine.Horner
 
 /-!
 # Materialized batch Horner evaluation
@@ -14,6 +16,8 @@ on the saved coefficient list. Each result is allocated at the head of an output
 Thus the output order is explicitly the reverse of the input point order; no reversal
 is performed for free. Coefficients are supplied in descending order.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine.BatchHorner
 

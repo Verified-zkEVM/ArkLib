@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 /-!
 # Exact agreement sets from mutual correlated agreement
 
@@ -19,6 +20,8 @@ projection API to the exact-set conclusion for affine families in [DKTZ26].
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26]
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

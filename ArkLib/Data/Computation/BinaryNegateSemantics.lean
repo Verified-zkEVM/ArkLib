@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryNegateMachine
-import ArkLib.Data.Computation.BinarySubtractSemantics
+
+public import ArkLib.Data.Computation.BinaryNegateMachine
+public import ArkLib.Data.Computation.BinarySubtractSemantics
 
 /-!
 # Same-run modular negation
@@ -13,6 +15,8 @@ import ArkLib.Data.Computation.BinarySubtractSemantics
 All zero testing, operand restoration and clearing are included in the same transition count.
 Numeric values and the modulus operation occur only in the specification and proofs.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryNegateMachine
 

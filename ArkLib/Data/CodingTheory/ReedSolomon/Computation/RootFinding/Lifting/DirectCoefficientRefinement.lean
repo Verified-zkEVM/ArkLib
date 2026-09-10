@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientMachine
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientMachine
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.DirectRegularCoefficient
 /-!
 # Same-run refinement of direct coefficient computation
@@ -15,6 +17,8 @@ zero/one affine evaluations. The actual indexed update supplies the second repre
 requested coefficient is obtained through the machine's cursor, and the cost bound covers that
 same execution. Positive lift order is required only for the final affine soundness consequence.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.DirectCoefficientMachine
 

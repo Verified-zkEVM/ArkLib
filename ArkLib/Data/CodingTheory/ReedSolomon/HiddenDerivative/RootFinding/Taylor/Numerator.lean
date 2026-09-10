@@ -3,14 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Denominator
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Denominator
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
-import Mathlib.Tactic.LinearCombination
-import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.SupportEvaluation
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Iteration
+public import Mathlib.Tactic.LinearCombination
+public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.SupportEvaluation
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Iteration
 /-!
 # Explicit rational Taylor numerators
 
@@ -26,6 +28,8 @@ so the comparison applies in any field through every invertible pivot.
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26], Appendix A.3, Lemma A.5.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

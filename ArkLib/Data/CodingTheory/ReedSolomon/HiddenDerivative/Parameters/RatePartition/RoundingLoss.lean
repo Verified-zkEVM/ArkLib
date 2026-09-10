@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Convergence
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Convergence
 
 /-!
 # Quantitative loss for the closed partition multiplicity
@@ -12,6 +14,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePart
 The floor error, simplex enlargement, and rounded contact factor together cost
 less than one thousandth in the logarithm of the dimension/rank ratio.
 -/
+
+@[expose] public section
 
 noncomputable section
 

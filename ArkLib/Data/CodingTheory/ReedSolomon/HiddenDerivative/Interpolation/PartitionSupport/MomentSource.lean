@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
 
 /-!
@@ -13,6 +14,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSup
 This layer isolates the deterministic rescaling from the ordered-simplex moment.
 The source comparison uses the entire simplex and preserves the factor `1/2`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

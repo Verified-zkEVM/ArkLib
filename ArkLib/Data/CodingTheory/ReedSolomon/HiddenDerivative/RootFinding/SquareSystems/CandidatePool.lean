@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ChartDifferential
 /-!
 # Literal agreement-and-tail equation pool
@@ -13,6 +14,8 @@ The square-system pool contains the cleared agreement equation for each of `k` s
 positions and every common Taylor numerator from message degree `k` through ambient degree `K-1`.
 Every equation in this pool vanishes at the chart point of a degree-`< k` regular solution.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

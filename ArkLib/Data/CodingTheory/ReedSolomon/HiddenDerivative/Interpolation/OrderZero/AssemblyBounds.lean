@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.RewriteBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Semantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.RewriteBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Semantics
 /-!
 # Polynomial matrix-block assembly cost at derivative order zero
 
@@ -13,6 +15,8 @@ The actual support enumeration and column program are unchanged. The order-zero 
 is at most m², so the materialized row count and assembly charge remain polynomial even when
 m grows with the input. Exact kernel semantics are inherited from the same point-block program.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.InterpolationPointBlockMachine
 

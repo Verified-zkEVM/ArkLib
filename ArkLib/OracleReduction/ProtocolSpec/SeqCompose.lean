@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Fin.Sigma
-import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.Data.Fin.Sigma
+public import ArkLib.OracleReduction.ProtocolSpec.Cast
 
 /-! # Sequential Composition of Protocol Specifications
 
 This file collects all definitions and theorems about sequentially composing `ProtocolSpec`s and
 their associated data. -/
+
+@[expose] public section
 
 universe u v
 

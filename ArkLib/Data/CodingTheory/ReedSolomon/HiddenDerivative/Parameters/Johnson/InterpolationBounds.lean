@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.FiniteBounds
-import Mathlib.Algebra.BigOperators.Intervals
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.FiniteBounds
+public import Mathlib.Algebra.BigOperators.Intervals
 
 /-!
 # Exact Johnson interpolation counts
@@ -15,6 +16,8 @@ ceilings are retained literally: source columns satisfy `i + D*j < ceil X₀`, a
 `Y`-degree `j` has `ceil Z₀ - j` challenge coefficients. Local multiplicity rows of jet grade
 `b` have `ceil Z₀ - b` coefficients.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

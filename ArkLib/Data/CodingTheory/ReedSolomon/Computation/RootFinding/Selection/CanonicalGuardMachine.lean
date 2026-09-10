@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualWitnessSemantics
 /-!
 # Closed canonical-stage and center guard
@@ -16,6 +17,8 @@ callee advances one instruction per driver step. Scalar comparison, cursor opera
 nested costs and final Boolean emission are charged. The equation chain, candidate, sample
 list and their representations are supplied; constructing them belongs to the outer decoder.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalGuardMachine
 

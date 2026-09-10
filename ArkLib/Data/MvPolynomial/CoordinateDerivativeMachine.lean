@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
-import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
+
+public import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
+public import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
 
 /-!
 # Coordinate sparse differentiation
@@ -14,6 +16,8 @@ The factor cursor and repeated-addition counter are explicit. Actual base additi
 coefficient; actual pair equality detects characteristic cancellation. Prefix restoration and
 term emission retain source order. Literal zeros, operands and every child instruction are charged.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticDerivativeMachine
 

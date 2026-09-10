@@ -3,12 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.CoordinateChainMachine
-import ArkLib.Data.MvPolynomial.CoordinateHighestRefinement
-import ArkLib.Data.MvPolynomial.CoordinateDerivativeRefinement
+
+public import ArkLib.Data.MvPolynomial.CoordinateChainMachine
+public import ArkLib.Data.MvPolynomial.CoordinateHighestRefinement
+public import ArkLib.Data.MvPolynomial.CoordinateDerivativeRefinement
 
 /-! # Same-execution coordinate separant chain with retained stage order -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticChainMachine
 

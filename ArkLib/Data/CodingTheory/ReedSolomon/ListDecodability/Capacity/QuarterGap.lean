@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
-import Mathlib.Algebra.Field.ZMod
+public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Reed-Solomon list bounds at gaps of at least one quarter
@@ -34,6 +35,8 @@ interpolation algorithm or running-time claim.
   The elementary counting proof here differs from the order-zero interpolation route of
   Theorem 3.5.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

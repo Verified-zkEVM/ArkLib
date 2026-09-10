@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderComposition
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldExecution
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldExecution
 /-!
 # Exact output of the executed quadratic decoder
 
@@ -16,6 +18,8 @@ The integer-parameter fuel bound applies to that same exact-output execution, in
 with multiplicity growing with block length. This theorem accounts for primitive work only;
 source-parameter existence and the bit-cost refinement are separate obligations.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticDecoderMachine
 

@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryMulMachine
-import ArkLib.Data.Computation.BinaryModAddSemantics
-import ArkLib.Data.Computation.BinarySubtractSemantics
-import ArkLib.Data.Computation.BinaryWordBounds
+
+public import ArkLib.Data.Computation.BinaryMulMachine
+public import ArkLib.Data.Computation.BinaryModAddSemantics
+public import ArkLib.Data.Computation.BinarySubtractSemantics
+public import ArkLib.Data.Computation.BinaryWordBounds
 
 /-!
 # Literal multiplication round traces
@@ -16,6 +18,8 @@ Each round holds the accumulator, transfers and decrements its binary counter, r
 counter, copies the retained multiplicand, restores the accumulator, and calls modular addition.
 All eleven physical tapes retain their identity and every transfer phase contributes to the bound.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryMulMachine
 

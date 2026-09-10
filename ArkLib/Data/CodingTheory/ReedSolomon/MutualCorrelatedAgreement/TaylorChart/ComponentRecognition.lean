@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.GraphPullback
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.GraphPullback
 /-!
 # Recognizing prime components of the symbolic source chart
 
@@ -14,6 +16,8 @@ regular prime component containing high-coefficient cuts and a common sample lie
 actual base-field pair graph. Restriction to that graph preserves every ideal equation
 and keeps the separant nonzero.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

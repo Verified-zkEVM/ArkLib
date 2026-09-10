@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinarySubtractSemantics
+
+public import ArkLib.Data.Computation.BinarySubtractSemantics
 
 /-!
 # Literal subtraction boundary checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinarySubtractSemantics
 Long borrow chains, underflow with a nonempty discarded result, unequal widths and zero padding
 exercise actual successors. The underflow boundary checks require the final clearing transition.
 -/
+
+@[expose] public section
 
 namespace Computation.BinarySubtractMachine
 

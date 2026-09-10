@@ -3,14 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsSemantics
 /-!
 # A single alphabet exponent for all active stages
 
 Each stage contributes its existing polynomial per-jet budget. The maximum original derivative
 order bounds all alphabet exponents, and summing the stage polynomials introduces no new exponent.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.StageRootsMachine
 

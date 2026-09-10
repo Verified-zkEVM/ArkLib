@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ForwardEchelonMachine
-import ArkLib.Data.Matrix.QuadraticSelectionMachine
-import ArkLib.Data.Matrix.QuadraticAugmentMachine
+
+public import ArkLib.Data.Matrix.ForwardEchelonMachine
+public import ArkLib.Data.Matrix.QuadraticSelectionMachine
+public import ArkLib.Data.Matrix.QuadraticAugmentMachine
 
 /-!
 # Coordinate forward-echelon execution
@@ -17,6 +19,8 @@ reversal and output remain explicit. Residual rows retain their RHS values, and 
 failed child returns reject. Extra indexed-pair/cell writes supplement the source ledger.
 Input preparation, host fuel, reclamation and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticForwardEchelonMachine
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
-import Mathlib.Algebra.MvPolynomial.Degrees
-import Mathlib.Algebra.MvPolynomial.PDeriv
+
+public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
+public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Algebra.MvPolynomial.PDeriv
 
 /-!
 # Coordinate degrees and derivatives under the inverse Frobenius twist
@@ -17,6 +19,8 @@ derivative.  This file specializes those facts to the inverse Frobenius coeffici
 
 No contraction, geometric reconstruction, or agreement bound is proved here.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

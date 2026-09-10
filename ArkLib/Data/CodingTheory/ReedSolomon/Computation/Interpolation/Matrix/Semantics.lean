@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.PointSpec
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.PointSpec
 /-!
 # Exact kernel and dimensions of the full received matrix
 
@@ -17,6 +18,8 @@ exponential constants confined to the gap parameters d,m. Ambient-parameter sear
 nonzero kernel solver are subsequent consumers. This generic budget does not assert polynomial
 dependence on growing m; the order-zero, growing-m route needs its separate tighter bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ReceivedInterpolationMatrixMachine
 

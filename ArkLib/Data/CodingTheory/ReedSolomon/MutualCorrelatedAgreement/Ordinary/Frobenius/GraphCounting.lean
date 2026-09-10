@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.GraphAdmissibility
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.OneJetGraphCounting
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.OneJetGraphCounting
 /-!
 # Counting retained Frobenius pairs
 
@@ -14,6 +15,8 @@ Reconstruction injects admissible base-field pairs into polynomial graphs on the
 source equation. The number of pairs is bounded by its root degree without an inseparability
 factor.
 -/
+
+@[expose] public section
 
 noncomputable section
 

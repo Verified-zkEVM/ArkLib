@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveWeightedSupport
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.SupportCertificate
 
 /-!
@@ -26,6 +27,8 @@ curve-transfer theorem itself.
   up to Capacity*][DKTZ26], Section 5.6 (Theorem 5.14), symbolic interpolation for polynomial
   curves.
 -/
+
+@[expose] public section
 
 noncomputable section
 

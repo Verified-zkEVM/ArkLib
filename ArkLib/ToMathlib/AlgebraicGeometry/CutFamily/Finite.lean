@@ -3,11 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Bezout
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Cuts
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Bezout
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Cuts
 
 /-! # Finite prime families under successive principal-open cuts -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,9 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AlgebraicMachine.Horner
-import ArkLib.Data.Polynomial.HornerMachine
+
+public import ArkLib.Data.Computation.AlgebraicMachine.Horner
+public import ArkLib.Data.Polynomial.HornerMachine
+-- The polynomial refinement intentionally reduces CompPoly's array representation.
+import all CompPoly.Univariate.Basic
 
 /-!
 # Algebraic-machine refinement of polynomial evaluation
@@ -15,6 +19,8 @@ is a precondition, not an uncharged conversion performed by the program. The sam
 program works for every list length and field. Its output agrees with the existing Horner
 reference machine; the two machines have different, separately proved cost models.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine.Horner
 

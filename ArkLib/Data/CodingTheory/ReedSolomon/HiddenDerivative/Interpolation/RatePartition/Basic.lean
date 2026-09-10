@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
 
 /-!
 # The derivative-order partition support
@@ -17,6 +19,8 @@ This is a restriction of the existing weighted support, which charges `Y_j` by
 allows specialization and executable support-containment proofs to be reused;
 the smaller support requires its own dimension and local-rank estimates.
 -/
+
+@[expose] public section
 
 noncomputable section
 

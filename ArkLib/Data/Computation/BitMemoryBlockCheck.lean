@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitMemoryBlock
+
+public import ArkLib.Data.Computation.BitMemoryBlock
 
 /-!
 # Kernel checks for actual bit-memory word writes
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BitMemoryBlock
 The controller preserves another equal-width pointer block, stores zero as well as one bits,
 returns only after all address resets, and retains tapes on malformed-child failure.
 -/
+
+@[expose] public section
 
 namespace Computation.BitMemoryBlock
 

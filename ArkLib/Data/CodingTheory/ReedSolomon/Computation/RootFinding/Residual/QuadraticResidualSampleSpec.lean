@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticResidualSample
-import ArkLib.Data.Polynomial.QuadraticJetHornerRefinement
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticResidualSample
+public import ArkLib.Data.Polynomial.QuadraticJetHornerRefinement
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSampleRefinement
 /-!
 # Same-execution residual-sample lowering
@@ -16,6 +18,8 @@ The pointwise input/state relations are proof-only. Every source rule lowers to 
 instructions and charged handoffs; composition preserves the original scalar endpoint. The
 polynomial-facing corollary retains explicit coefficient and sparse-term representation premises.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualSample
 

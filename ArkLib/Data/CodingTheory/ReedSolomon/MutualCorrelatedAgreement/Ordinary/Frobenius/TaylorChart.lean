@@ -3,16 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.PointRecognition
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FrobeniusCuts
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FrobeniusCuts
 /-!
 # Recognizing sparse ordinary Taylor charts
 
 Actual cleared numerator equations impose sparse reconstruction. Agreement cuts at the
 pulled domain positions then identify a base-field pair from the original sample size.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

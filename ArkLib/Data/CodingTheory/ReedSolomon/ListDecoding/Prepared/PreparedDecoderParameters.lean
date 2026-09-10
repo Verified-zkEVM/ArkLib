@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderProof
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderProof
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 /-!
 # Small-gap parameters for the actual returned interpolant
 
@@ -14,6 +15,8 @@ multiplicity. Search bounds the actual ambient degree by the block length. These
 the characteristic contract at every prime field size at least the original block length.
 The integer sample count `m*A` fits the quadratic extension under the original `8*m ≤ n` bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.PreparedDecoderParameters
 

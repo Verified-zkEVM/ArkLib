@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
 
 /-!
 # Agreement incidence outside an excluded locus
@@ -14,6 +16,8 @@ on many agreement cuts lie in an excluded set. The exclusion condition is impose
 prime extension of the starting ideal, so it persists through retained principal cuts.
 The excluded set need not be algebraic and contributes no additional degree factor.
 -/
+
+@[expose] public section
 
 noncomputable section
 

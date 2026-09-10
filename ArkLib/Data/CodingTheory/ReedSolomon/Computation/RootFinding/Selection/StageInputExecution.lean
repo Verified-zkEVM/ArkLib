@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputBounds
 /-!
 # Initial-input fuel for the actual stage-root machine
 
@@ -12,6 +14,8 @@ The caller supplies only initial instance sizes. Every visited equation is bound
 ordered-chain invariant; summing its uniform stage polynomial adds the initial degree budget
 as a factor. Surplus fuel preserves the identical completed execution and primitive ledger.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.StageRootsMachine
 

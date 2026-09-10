@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Semantics
-import Mathlib.Algebra.MvPolynomial.Coeff
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Semantics
+public import Mathlib.Algebra.MvPolynomial.Coeff
 /-!
 # Ordered interpolation-support coefficient basis
 
@@ -13,6 +14,8 @@ These proof-only maps relate the materialized support vectors to genuine source 
 strict total-jet and differential-weight caps are unchanged. Coefficients of an existing supported
 polynomial provide a kernel witness; they are not an oracle used by the executable solver.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine
 

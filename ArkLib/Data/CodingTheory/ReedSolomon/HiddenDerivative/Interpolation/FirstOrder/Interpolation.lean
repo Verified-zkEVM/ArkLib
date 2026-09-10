@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Contact
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Rank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Contact
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Rank
 
 
 /-!
@@ -55,6 +56,8 @@ for symbolic interpolation of an entire received line is a further construction.
   Agreement up to Capacity*][DKTZ26], Section 6.1.3, Proposition 6.3 (finite first-order
   certificate).
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

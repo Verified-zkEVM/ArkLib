@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticSelectionRefinement
+
+public import ArkLib.Data.Matrix.QuadraticSelectionRefinement
 
 /-!
 # Kernel checks for coordinate first-pivot selection
@@ -13,6 +15,8 @@ Distinct zero rows precede an imaginary-only pivot. Duplicates and a malformed u
 check first-pivot selection, row order and no speculative validation. Exact ledgers also cover
 all-zero restoration, empty/zero-width/missing inputs, and retained partial child states.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticSelectionMachine
 

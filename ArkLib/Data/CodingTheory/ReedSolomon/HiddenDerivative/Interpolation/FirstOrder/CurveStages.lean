@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveSymbolic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.JetPrefix
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveSymbolic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.JetPrefix
 
 /-!
 # Regular-stage coverage for finite first-order curve certificates
@@ -26,6 +28,8 @@ over the supplied extension field. Outside it, every sufficiently agreeing candi
 a regular root of one of the actual stages. Counting the regular roots and recovering
 correlated tuples are the subsequent geometric steps.
 -/
+
+@[expose] public section
 
 noncomputable section
 

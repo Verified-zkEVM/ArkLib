@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.ZMod.NonsquareSearchMachine
-import Mathlib.Data.List.OfFn
+
+public import ArkLib.Data.ZMod.NonsquareSearchMachine
+public import Mathlib.Data.List.OfFn
 
 /-!
 # Charged materialized sample prefixes
@@ -13,6 +15,8 @@ import Mathlib.Data.List.OfFn
 A natural counter selects the first requested number of list entries. Cell allocation, counter
 updates and output-order restoration are explicit steps. `take` and `ofFn` occur only in proofs.
 -/
+
+@[expose] public section
 
 namespace List.PrefixMachine
 

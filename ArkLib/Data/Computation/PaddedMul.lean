@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryMulField
-import ArkLib.Data.Computation.ScalarWordPadding
+
+public import ArkLib.Data.Computation.BinaryMulField
+public import ArkLib.Data.Computation.ScalarWordPadding
 
 /-!
 # Multiplication of fixed-width scalar words
@@ -18,6 +20,8 @@ their original tapes. Leading-zero operands, including nonempty zero words, are 
 Inputs are already materialized reduced scalar words. The theorem bounds this explicit
 local-bit program, not native Lean execution or a complete decoder compiler.
 -/
+
+@[expose] public section
 
 namespace Computation.PaddedMul
 

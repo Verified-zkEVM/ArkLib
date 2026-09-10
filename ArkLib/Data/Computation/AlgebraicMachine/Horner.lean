@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AlgebraicMachine.Command
-import ArkLib.Data.Computation.AlgebraicMachine.Representation
-import Lean.Elab.Tactic.Omega
+
+public import ArkLib.Data.Computation.AlgebraicMachine.Command
+public import ArkLib.Data.Computation.AlgebraicMachine.Representation
+public import Lean.Elab.Tactic.Omega
 
 /-!
 # Horner evaluation by a materialized list traversal
@@ -16,6 +18,8 @@ list cursor, evaluation point, accumulator, coefficient scratch, and loop test.
 Registers five through seven are available to callers. The point and caller registers
 are preserved, and no heap cell is allocated or changed.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine.Horner
 

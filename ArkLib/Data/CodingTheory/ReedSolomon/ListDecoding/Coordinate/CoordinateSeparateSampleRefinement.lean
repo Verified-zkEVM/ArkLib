@@ -3,16 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSeparateSampleMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleDecoder
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSeparateSampleMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleDecoder
 /-!
 # Same-execution lowering with separate sample grids
 
 Root recovery retains its raw residual samples. Only the actual collector reads guard samples.
 The fixed factor includes source primitive work and applies once over the whole execution.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticSeparateSampleDecoder
 

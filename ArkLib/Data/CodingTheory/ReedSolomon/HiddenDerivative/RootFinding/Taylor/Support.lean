@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MvPolynomial.SupportWeight
-import ArkLib.Data.MvPolynomial.WeightedDegree
-import Mathlib.RingTheory.MvPolynomial.Homogeneous
-import Mathlib.Algebra.Polynomial.HasseDeriv
+public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
+public import ArkLib.Data.MvPolynomial.WeightedDegree
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+public import Mathlib.Algebra.Polynomial.HasseDeriv
 
 /-!
 # Taylor-weight support of differential residuals
@@ -23,6 +24,8 @@ The polynomials here are literal universal Hasse jets, with binomial coefficient
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26], Appendix A.3, Lemma A.5.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

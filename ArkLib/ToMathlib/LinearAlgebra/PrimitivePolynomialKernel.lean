@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
-import Mathlib.Algebra.GCDMonoid.Finset
-import Mathlib.RingTheory.PrincipalIdealDomain
+
+public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
+public import Mathlib.Algebra.GCDMonoid.Finset
+public import Mathlib.RingTheory.PrincipalIdealDomain
 
 /-!
 # Primitive polynomial kernel vectors
@@ -16,6 +18,8 @@ coordinates. The normalized vector remains in the same kernel, its coordinate de
 increase, and its coordinates generate the unit ideal. Consequently, after any field extension,
 the coordinates cannot vanish simultaneously at any point.
 -/
+
+@[expose] public section
 
 open Polynomial
 

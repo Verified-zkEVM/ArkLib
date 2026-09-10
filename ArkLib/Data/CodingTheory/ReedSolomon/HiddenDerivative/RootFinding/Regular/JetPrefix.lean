@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Lifting
-import Mathlib.Algebra.MvPolynomial.Variables
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Lifting
+public import Mathlib.Algebra.MvPolynomial.Variables
 
 
 /-!
@@ -26,6 +27,8 @@ jet variables affect the lift.
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.4 and the `SOLVE`
   recursion in the proof of Theorem 4.3.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

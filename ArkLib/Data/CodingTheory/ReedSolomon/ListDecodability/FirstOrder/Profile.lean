@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Profile
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Profile
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
 /-!
 # Finite list bounds from first-order interpolation profiles
 
@@ -13,6 +15,8 @@ A verified profile supplies the scalar differential equation. The derivative-cap
 list theorem then bounds every finite family of qualifying candidates. This interface
 uses the shared profile without importing mutual correlated agreement.
 -/
+
+@[expose] public section
 
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
 

@@ -3,12 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Cuts
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Finite
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Cuts
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Finite
 
 
 /-! # Agreement-cut geometry on the regular rational Taylor chart -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

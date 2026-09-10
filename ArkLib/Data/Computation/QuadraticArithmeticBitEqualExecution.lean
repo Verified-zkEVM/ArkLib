@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitEqual
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitEqual
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Actual scalar-register equality and physical flag write
@@ -15,6 +17,8 @@ the selected flag tape by two actual transitions. The final flag view and the ex
 EQUAL successor agree on the same bounded run. All scalar words, five inputs and RAM are retained.
 The configuration's `flags` field is the finite input frame; `resultFlags` reads the final bank.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitEqual
 

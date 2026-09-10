@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Counting
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Counting
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.RegularJetCounting
 
 
@@ -17,6 +18,8 @@ bound in `RegularJetCounting`.  The only solution-specific input is injectivity 
 jet on the regular roots at each witness point.  The differential equation itself is supplied by
 `BoundedSolution.equation`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

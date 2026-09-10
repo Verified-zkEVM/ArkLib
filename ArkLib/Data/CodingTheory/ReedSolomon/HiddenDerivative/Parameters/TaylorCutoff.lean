@@ -3,14 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import
+module
+
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.SupportCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Block
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Harmonic
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Block
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Harmonic
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
 /-! # Prescribed weighted-support parameters for the geometric list count -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

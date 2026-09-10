@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatch
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatch
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticResidualSampleSpec
 /-!
 # Same-execution coordinate batch refinement
@@ -14,6 +15,8 @@ Pointwise input and output maps express representation only. Actual execution re
 constructed payload and samples every point, preserving order and duplicates through allocated
 pair/list cells. The source trace is lowered without any assumed child-cost callback.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualBatch
 

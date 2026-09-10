@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ColumnEliminationMachine
+
+public import ArkLib.Data.Matrix.ColumnEliminationMachine
 
 /-!
 # Concrete checks for full-column elimination
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.ColumnEliminationMachine
 Kernel reduction checks multirow order, unchanged head, explicit outer reversal and emission,
 head validation with no targets, and rejection without a partial matrix.
 -/
+
+@[expose] public section
 
 namespace Matrix.ColumnEliminationMachine
 

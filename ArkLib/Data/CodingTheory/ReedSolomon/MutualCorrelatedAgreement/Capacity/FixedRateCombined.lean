@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.RatePartition
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Gate
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.RatePartition
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Gate
 /-!
 # Fixed-rate list capacity and exact mutual correlated agreement
 
@@ -27,6 +28,8 @@ of the full agreement set, not merely a lower bound on the recovered pair's agre
 This is an eventual small-gap theorem: `epsilon > 0` and the existential `deltaZero` are part of
 the guarantee. The general-order characteristic guard remains characteristic zero or `p ≥ n`.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial HiddenDerivative

@@ -3,8 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Justin Thaler
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 /-!
 # A nonzero global hidden-derivative interpolant
 
@@ -17,6 +20,8 @@ The global constraint map has finite-dimensional domain but an infinite-dimensio
 codomain.  Accordingly, the proof uses rank-nullity with the map's finite-dimensional range and
 does not assume that the codomain is finite-dimensional.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

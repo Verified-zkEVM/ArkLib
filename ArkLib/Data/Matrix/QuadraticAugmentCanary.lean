@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticAugmentRefinement
+
+public import ArkLib.Data.Matrix.QuadraticAugmentRefinement
 
 /-!
 # Kernel checks for augmented coordinate column execution
@@ -13,6 +15,8 @@ Distinct RHS values on repeated coefficient rows test pairing, physical column j
 Literal ledgers include packing, all child work, unpacking and both outer reversals. Empty,
 zero-width, zero-pivot and malformed partial states reject without dropping their charges.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticAugmentMachine
 

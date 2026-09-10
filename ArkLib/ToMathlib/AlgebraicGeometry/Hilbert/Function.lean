@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.RingTheory.Ideal.Quotient.Basic
-import Mathlib.RingTheory.Ideal.Quotient.Operations
-import Mathlib.RingTheory.MvPolynomial.Basic
-import Mathlib.RingTheory.Polynomial.Basic
+
+public import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+public import Mathlib.RingTheory.Ideal.Quotient.Basic
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
+public import Mathlib.RingTheory.MvPolynomial.Basic
+public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Filtered Hilbert functions of affine quotients
@@ -19,6 +21,8 @@ in an ideal quotient. Multiplication by an equation outside a prime ideal is inj
 together with the quotient map this gives the principal-cut Hilbert-function inequality.
 This is finite-dimensional filtered algebra, without assuming a geometric degree theory.
 -/
+
+@[expose] public section
 
 noncomputable section
 

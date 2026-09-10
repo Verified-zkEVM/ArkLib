@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.HighestJetMachine
+
+public import ArkLib.Data.MvPolynomial.HighestJetMachine
 
 /-!
 # Charged ordered separant-chain execution
@@ -14,6 +16,8 @@ its selection, then executes the sparse partial derivative when a jet is active.
 selection is stored before explicitly reversing the stage list. Every nested instruction pays
 one wrapper control operation and two wrapper data operations on top of its child's charges.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.SeparantChainMachine
 

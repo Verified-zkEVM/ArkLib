@@ -3,16 +3,19 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.TranslateSpec
-import Mathlib.Algebra.Ring.Parity
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.TranslateSpec
+public import Mathlib.Algebra.Ring.Parity
 /-!
 # Exact local rewrite and projection semantics
 
 Dense visible-jet coordinates denote the canonical finite local variables. The executed branch
 expansion multiplies by E+localJetSum, and the executed contact filter is projectLowContact.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.LocalColumnRewriteMachine
 

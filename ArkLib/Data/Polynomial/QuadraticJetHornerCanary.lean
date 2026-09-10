@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.QuadraticJetHornerRefinement
+
+public import ArkLib.Data.Polynomial.QuadraticJetHornerRefinement
 
 /-!
 # Kernel checks for quadratic jet Horner lowering
@@ -13,6 +15,8 @@ The linear polynomial checks coordinate arithmetic, old-predecessor carry and ou
 The empty polynomial checks explicit zero initialization; zero requested entries exercise the
 control-only path. Literal ledgers retain every base program, wrapper, allocation and output.
 -/
+
+@[expose] public section
 
 namespace Polynomial.QuadraticJetHornerMachine
 

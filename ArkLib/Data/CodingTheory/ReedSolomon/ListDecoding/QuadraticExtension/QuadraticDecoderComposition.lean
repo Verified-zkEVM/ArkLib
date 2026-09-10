@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
 /-!
 # Same-run composition of the quadratic decoder
 
@@ -13,6 +15,8 @@ the actual embedding charge in the restricted branch. Setup integrity supplies t
 alphabet counts. No independent mathematical decoder output is substituted into the program.
 The full interpolation/parameter existence proofs and bit-cost refinement remain separate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticDecoderMachine
 

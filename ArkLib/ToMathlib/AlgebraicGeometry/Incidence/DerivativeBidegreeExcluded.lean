@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegreePoints
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegreePoints
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
 
 /-!
 # Joint incidence with a separate derivative-degree bound
@@ -15,6 +17,8 @@ retains both total jet degree and degree in the derivative variable. The strict 
 triangle and full-triangle boundary are treated separately, then exposed through one theorem.
 The coefficient-space dimensions are checked on the original source components.
 -/
+
+@[expose] public section
 
 noncomputable section
 

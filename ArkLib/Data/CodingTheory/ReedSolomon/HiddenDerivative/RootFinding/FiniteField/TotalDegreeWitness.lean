@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.RecursiveCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.RegularCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.RegularCounting
 
 
 /-!
@@ -22,6 +24,8 @@ stages, not just within one regular branch. No normalization or root-count assum
   up to Capacity*][DKTZ26], first-nonzero separant witnesses in the differential root-counting
   proof.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

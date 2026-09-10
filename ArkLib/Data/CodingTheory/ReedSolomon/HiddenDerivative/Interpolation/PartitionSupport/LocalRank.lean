@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Basic
 
 /-!
 # Local rank for derivative-order partition support
@@ -14,6 +16,8 @@ After backward Taylor substitution a reachable monomial `T^i E^h Y^b` satisfies
 `Σ s<m, ceil((m-s)/(d+1)) * p_d(W+s)` possible coordinates.
 This is an upper bound on the actual linear-map rank, not an independence claim.
 -/
+
+@[expose] public section
 
 noncomputable section
 

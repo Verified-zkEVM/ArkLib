@@ -3,11 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.SupportGuards
-import Mathlib.Analysis.Complex.ExponentialBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.SupportGuards
+public import Mathlib.Analysis.Complex.ExponentialBounds
 
 /-! # Explicit integer parameters for the uniform three-halves exponent -/
+
+@[expose] public section
 
 noncomputable section
 

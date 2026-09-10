@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ExceptionalChallenges
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorWitnessEmbedding
 /-!
 # One exceptional set for a regular symbolic equation
@@ -15,6 +16,8 @@ Each finite family of bad challenges admits a common regular Taylor center. The 
 bound is independent of that center and of the chosen witnesses, so it bounds the entire
 bad set. The final exceptional set is chosen before all polynomial witnesses.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

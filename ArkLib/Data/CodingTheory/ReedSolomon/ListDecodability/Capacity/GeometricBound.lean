@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.TaylorCutoff
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
-import
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.TaylorCutoff
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions
 /-!
 # The prescribed field-independent all-rate polynomial list bound
@@ -20,6 +22,8 @@ estimate is Theorem A.6. No decoding-time claim is made here.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], Theorem A.6 and Corollary A.7.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

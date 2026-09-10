@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.RestrictedStageRoots
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.SeparateSampleSelection
 /-!
 # Canonical restricted-alphabet witnesses for actual stage roots
@@ -15,6 +16,8 @@ A reduced separant degree bound finds regular centers within the enumeration alp
 Recovery still uses its independent full interpolation samples. Guard-grid vanishing is never
 used to infer a global identity; the actual solution supplies the globally solved prefix.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalRootSelection
 

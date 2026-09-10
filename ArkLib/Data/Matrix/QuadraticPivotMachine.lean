@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotEliminationMachine
-import ArkLib.Data.Matrix.QuadraticRowMachine
+
+public import ArkLib.Data.Matrix.PivotEliminationMachine
+public import ArkLib.Data.Matrix.QuadraticRowMachine
 
 /-!
 # Coordinate pivot elimination
@@ -19,6 +21,8 @@ Every child step retains its ledger and pays a wrapper dispatch and two root acc
 comparison allocates its two-coordinate literal explicitly. Costs include returns and output;
 input preparation, host fuel, reclamation and compiled/bit time remain outside this model.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticPivotMachine
 

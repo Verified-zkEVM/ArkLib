@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Coeff
-import Mathlib.Data.List.Basic
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Linarith
+
+public import Mathlib.Algebra.Polynomial.Coeff
+public import Mathlib.Data.List.Basic
+public import Mathlib.Tactic.Ring
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Charged truncated affine powers
@@ -29,6 +31,8 @@ and of `(received+Z)^b₀`, where substituting Z=TU gives the diagonal T/U coeff
 these factors, rewriting U and projecting contact order `i+d*b<m` remain separate assembly steps.
 In particular, these coefficients do not assert vanishing of the full local substitution.
 -/
+
+@[expose] public section
 
 namespace Polynomial.AffinePowerTruncationMachine
 

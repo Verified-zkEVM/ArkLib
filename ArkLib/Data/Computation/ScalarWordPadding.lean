@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FixedWidthWordMachine
-import ArkLib.Data.Computation.BinaryWordBounds
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Tactic.FinCases
+
+public import ArkLib.Data.Computation.FixedWidthWordMachine
+public import ArkLib.Data.Computation.BinaryWordBounds
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Physical scalar padding with its own width-tape construction
@@ -21,6 +23,8 @@ The initial reference and operand are already materialized. Numeric interpretati
 input-width comparison are proof-side contracts, not runtime instructions. The RAM lift retains
 the same memory. The exact count describes this stated bit machine, not native Lean execution.
 -/
+
+@[expose] public section
 
 namespace Computation.ScalarWordPadding
 

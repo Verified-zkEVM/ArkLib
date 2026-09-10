@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualZeroMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualZeroMachine
 /-!
 # The first nonzero sampled residual
 
@@ -16,6 +18,8 @@ to choose one regular center per candidate without pairwise comparison of candid
 All batch categories, scalar comparisons, cursor operations and tagged emission are counted.
 Point enumeration, input construction and scalar bit costs remain separate obligations.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualWitnessMachine
 

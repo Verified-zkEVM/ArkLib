@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
-import Mathlib.Algebra.Polynomial.Div
-import Mathlib.Algebra.Polynomial.Taylor
-import Mathlib.Data.Nat.Choose.Sum
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
+public import Mathlib.Algebra.Polynomial.Div
+public import Mathlib.Algebra.Polynomial.Taylor
+public import Mathlib.Data.Nat.Choose.Sum
 
 /-!
 # Hasse--Taylor shifts and backward residuals
@@ -37,6 +39,8 @@ moving point `a + X`. The numerator is divisible by `X ^ (d + 1)` and its normal
   *Algorithmic List Decoding of Reed--Solomon Codes up to Capacity in the Low-Rate Regime*,
   [ECCC TR26-164](https://eccc.weizmann.ac.il/report/2026/164/), 2026.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

@@ -3,16 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Dimension
-import Mathlib.RingTheory.NoetherNormalization
-import Mathlib.RingTheory.IntegralClosure.GoingDown
-import Mathlib.RingTheory.Ideal.GoingUp
-import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
-import Mathlib.RingTheory.Ideal.UFD
-import Mathlib.RingTheory.Finiteness.Quotient
-import Mathlib.RingTheory.Ideal.Quotient.PowTransition
-import Mathlib.RingTheory.Polynomial.IsIntegral
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Dimension
+public import Mathlib.RingTheory.NoetherNormalization
+public import Mathlib.RingTheory.IntegralClosure.GoingDown
+public import Mathlib.RingTheory.Ideal.GoingUp
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+public import Mathlib.RingTheory.Ideal.UFD
+public import Mathlib.RingTheory.Finiteness.Quotient
+public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
+public import Mathlib.RingTheory.Polynomial.IsIntegral
 
 /-!
 # Height-one primes under Noether normalization
@@ -22,6 +24,8 @@ height-one prime contracts to a nonzero principal height-one prime.  The induced
 prime quotients remains finite and injective.  This is the commutative-algebra seam needed to
 compare their concrete Hilbert growth.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -37,8 +41,10 @@ structure NormalizationHeightOneData {d : ℕ} (g : MvPolynomial (Fin d) F →�
   contraction_ne_bot : Q.comap g ≠ ⊥
   contraction_height : (Q.comap g).height = 1
   contraction_isPrincipal : (Q.comap g).IsPrincipal
-  quotientMap_injective : Function.Injective (Ideal.quotientMap Q g.toRingHom (by rfl))
-  quotientMap_finite : (Ideal.quotientMap Q g.toRingHom (by rfl)).Finite
+  quotientMap_injective : Function.Injective
+    (Ideal.quotientMap (I := Q.comap g) Q g.toRingHom le_rfl)
+  quotientMap_finite :
+    (Ideal.quotientMap (I := Q.comap g) Q g.toRingHom le_rfl).Finite
 
 /-- Regard a normalization map as a map from the coordinate quotient by the zero ideal. -/
 def normalizationBotMap {d : ℕ} (g : MvPolynomial (Fin d) F →ₐ[F] A) :

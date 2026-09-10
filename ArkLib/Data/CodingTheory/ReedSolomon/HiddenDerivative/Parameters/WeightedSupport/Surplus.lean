@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.EndpointComparison
 /-!
 # Cancelling the common dimension and rank scales
@@ -13,6 +14,8 @@ The rank estimate uses a real power of the derivative order. The endpoint compar
 an exponential. These identities connect the two expressions exactly and preserve both the
 cubic baseline and the centered-variance contribution.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters
 

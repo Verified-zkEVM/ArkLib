@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.PaddedModAdd
+
+public import ArkLib.Data.Computation.PaddedModAdd
 
 /-!
 # Fixed-width modular-add execution checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.PaddedModAdd
 The actual combined controller handles wraparound, padded zero, and leading-zero operands.
 The modulus is retained exactly, including its padding, and the output has its physical width.
 -/
+
+@[expose] public section
 
 namespace Computation.PaddedModAdd
 

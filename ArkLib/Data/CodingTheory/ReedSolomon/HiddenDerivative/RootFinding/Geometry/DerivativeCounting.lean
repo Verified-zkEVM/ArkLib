@@ -3,12 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SharpCounting
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SharpCounting
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorDerivativeDegree
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.TwoJet
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.TwoJet
 /-!
 # Derivative-capped counting on the first-order Taylor chart
 
@@ -18,6 +21,8 @@ At source total degree `j` and first-derivative degree `r`, write
 two-jet presentation turns every fixed high cut and agreement cut into a linear equation.
 Its curve degree is therefore `j*c + r*(b-c)`, including the full-triangle boundary `c=b`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

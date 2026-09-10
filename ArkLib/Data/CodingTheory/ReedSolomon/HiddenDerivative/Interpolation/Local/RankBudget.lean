@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
-import Mathlib.Algebra.BigOperators.Field
-import Mathlib.Analysis.SpecificLimits.Normed
-import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
+public import Mathlib.Algebra.BigOperators.Field
+public import Mathlib.Analysis.SpecificLimits.Normed
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 
 
 /-!
@@ -23,6 +24,8 @@ retained through the finite sum; no concentration or asymptotic premise is assum
 * [Dao, Q., Kominers, S. D., Thaler, J., and Zheng, K. Z.,
   *Reed--Solomon List Decoding and Mutual Correlated Agreement up to Capacity*][DKTZ26]
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

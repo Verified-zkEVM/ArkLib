@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ColumnEliminationMachine
-import ArkLib.Data.Matrix.PivotSelectionMachine
-import Mathlib.Tactic.Linarith
+
+public import ArkLib.Data.Matrix.ColumnEliminationMachine
+public import ArkLib.Data.Matrix.PivotSelectionMachine
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Closed augmented-column elimination
@@ -19,6 +21,8 @@ Input materialization, reclamation, literals, interpreter bookkeeping and scalar
 outside the abstract model. Tail lists are shared. This is one supplied-pivot column operation,
 not a solver, pivot selector, consistency checker or forward-echelon recursion.
 -/
+
+@[expose] public section
 
 namespace Matrix.AugmentedColumnMachine
 

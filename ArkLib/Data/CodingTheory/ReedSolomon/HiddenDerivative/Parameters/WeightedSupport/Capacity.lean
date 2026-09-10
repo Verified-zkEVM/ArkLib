@@ -3,15 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
-import Mathlib.Analysis.SpecialFunctions.Exp
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
+public import Mathlib.Analysis.SpecialFunctions.Exp
 /-!
 # Weighted-support capacity parameters
 
 These numerical choices precede the field, evaluation points, and received word.
 They retain the existing weighted-support order and its order-zero branch.
 -/
+
+@[expose] public section
 
 noncomputable section
 

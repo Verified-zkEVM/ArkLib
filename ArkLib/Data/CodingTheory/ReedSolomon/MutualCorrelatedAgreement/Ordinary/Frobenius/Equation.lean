@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorHeight
-import ArkLib.ToMathlib.MvPolynomial.FrobeniusFactor
+public import ArkLib.Data.Polynomial.Differential.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorHeight
+public import ArkLib.ToMathlib.MvPolynomial.FrobeniusFactor
 /-!
 # Frobenius pullback for ordinary differential equations
 
@@ -21,6 +23,8 @@ and independent-degree bounds, and transports specialized polynomial roots under
 This is an algebraic transport theorem; it does not prove incidence or agreement bounds.
 -/
 
+@[expose] public section
+
 open PolynomialDifferential
 open Polynomial
 open MvPolynomial
@@ -29,7 +33,7 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-private def flatVariableEquiv : (JetVariable 0 ⊕ Unit) ≃ Option (Fin 2) where
+def flatVariableEquiv : (JetVariable 0 ⊕ Unit) ≃ Option (Fin 2) where
   toFun
     | Sum.inl none => some 0
     | Sum.inl (some _) => none
@@ -50,7 +54,7 @@ private def flatVariableEquiv : (JetVariable 0 ⊕ Unit) ≃ Option (Fin 2) wher
     · rfl
     · fin_cases i <;> rfl
 
-private def rootFirstEquiv : JetVariable 0 ≃ Option Unit where
+def rootFirstEquiv : JetVariable 0 ≃ Option Unit where
   toFun
     | none => some ()
     | some _ => none
@@ -68,7 +72,7 @@ private def rootFirstEquiv : JetVariable 0 ≃ Option Unit where
     · rcases i with ⟨⟩
       rfl
 
-private def baseVariableEquiv : (Unit ⊕ Unit) ≃ Fin 2 where
+def baseVariableEquiv : (Unit ⊕ Unit) ≃ Fin 2 where
   toFun
     | Sum.inl _ => 0
     | Sum.inr _ => 1
@@ -80,7 +84,7 @@ private def baseVariableEquiv : (Unit ⊕ Unit) ≃ Fin 2 where
     · fin_cases j
       rfl
 
-private def baseFlatten (E : Type*) [CommSemiring E] :
+def baseFlatten (E : Type*) [CommSemiring E] :
     MvPolynomial Unit E[X] ≃ₐ[E] MvPolynomial (Fin 2) E :=
   (MvPolynomial.mapAlgEquiv Unit
       (MvPolynomial.uniqueAlgEquiv E Unit).symm).trans
@@ -116,17 +120,17 @@ variable {E : Type*} [Field E]
       MvPolynomial.X (some 1) := by
   simp [ordinaryFlatten, flatVariableEquiv]
 
-private theorem ordinaryFlatCases_one {R : Type*} (t z : R) :
+theorem ordinaryFlatCases_one {R : Type*} (t z : R) :
     Fin.cases t (fun _ : Fin 1 ↦ z) (1 : Fin 2) = z := rfl
 
-private theorem ordinaryFlatten_C_monomial (n : ℕ) (a : E) :
+theorem ordinaryFlatten_C_monomial (n : ℕ) (a : E) :
     ordinaryFlatten E
         (MvPolynomial.C (Polynomial.monomial n a) : DifferentialPolynomial E[X] 0) =
       MvPolynomial.C a * MvPolynomial.X (some 1) ^ n := by
   rw [← Polynomial.C_mul_X_pow_eq_monomial]
   simp only [map_mul, map_pow, ordinaryFlatten_C, ordinaryFlatten_coeff_X]
 
-private theorem ordinaryFlatten_pderiv_C (r : E[X]) :
+theorem ordinaryFlatten_pderiv_C (r : E[X]) :
     MvPolynomial.pderiv none
       (ordinaryFlatten E (MvPolynomial.C r : DifferentialPolynomial E[X] 0)) = 0 := by
   induction r using Polynomial.induction_on' with
@@ -134,7 +138,7 @@ private theorem ordinaryFlatten_pderiv_C (r : E[X]) :
   | monomial n a =>
       simp [ordinaryFlatten, flatVariableEquiv]
 
-private theorem eval_ordinaryFlatten (Q : DifferentialPolynomial E[X] 0) (t y z : E) :
+theorem eval_ordinaryFlatten (Q : DifferentialPolynomial E[X] 0) (t y z : E) :
     MvPolynomial.eval
         (fun o => o.elim y (fun i => Fin.cases t (fun _ => z) i))
         (ordinaryFlatten E Q) =
@@ -190,7 +194,7 @@ def ordinaryUnflatten (E : Type*) [CommSemiring E] :
     MvPolynomial (Option (Fin 2)) E ≃ₐ[E] DifferentialPolynomial E[X] 0 :=
   (ordinaryFlatten E).symm
 
-private theorem eval_ordinaryUnflatten
+theorem eval_ordinaryUnflatten
     (H : MvPolynomial (Option (Fin 2)) E) (t y z : E) :
     MvPolynomial.eval₂ (Polynomial.evalRingHom z)
         (fun o : JetVariable 0 => o.elim t (fun _ => y))
@@ -233,7 +237,7 @@ theorem ordinaryUnflatten_pderiv_root
   rw [ordinaryFlatten_pderiv_root]
   simp [ordinaryUnflatten]
 
-private theorem rootPolynomial_ordinaryFlatten
+theorem rootPolynomial_ordinaryFlatten
     (Q : DifferentialPolynomial E[X] 0) :
     optionEquivLeft E (Fin 2) (ordinaryFlatten E Q) =
       Polynomial.map (baseFlatten E).toRingEquiv.toRingHom
@@ -270,7 +274,7 @@ theorem degreeOf_none_ordinaryFlatten
   simpa [rootFirstEquiv] using
     degreeOf_rename_of_injective rootFirstEquiv.injective (some 0) (p := Q)
 
-private theorem ordinaryUnflatten_monomial
+theorem ordinaryUnflatten_monomial
     (m : Option (Fin 2) →₀ ℕ) (c : E) :
     ordinaryUnflatten E (MvPolynomial.monomial m c) =
       MvPolynomial.C (Polynomial.C c * Polynomial.X ^ m (some 1)) *
@@ -284,7 +288,7 @@ private theorem ordinaryUnflatten_monomial
     Finsupp.prod_fintype]
   ring
 
-private theorem challengeHeightLE_ordinaryUnflatten_monomial
+theorem challengeHeightLE_ordinaryUnflatten_monomial
     (m : Option (Fin 2) →₀ ℕ) (c : E) :
     ChallengeHeightLE (ordinaryUnflatten E (MvPolynomial.monomial m c)) (m (some 1)) := by
   classical
@@ -319,7 +323,7 @@ theorem challengeHeightLE_ordinaryUnflatten_of_degreeOf_le
     (MvPolynomial.coeff m H) d).trans
       ((MvPolynomial.monomial_le_degreeOf (some 1) hm).trans hdegree)
 
-private theorem degreeOf_challenge_ordinaryFlatten_C_le (c : E[X]) :
+theorem degreeOf_challenge_ordinaryFlatten_C_le (c : E[X]) :
     (ordinaryFlatten E
       (MvPolynomial.C c : DifferentialPolynomial E[X] 0)).degreeOf (some 1) ≤
         c.natDegree := by
@@ -345,7 +349,7 @@ private theorem degreeOf_challenge_ordinaryFlatten_C_le (c : E[X]) :
         (Polynomial.le_natDegree_of_ne_zero
           (n := n) (p := c) (Polynomial.mem_support_iff.mp hn)))
 
-private theorem ordinaryFlatten_monomial
+theorem ordinaryFlatten_monomial
     (m : JetVariable 0 →₀ ℕ) (c : E[X]) :
     ordinaryFlatten E (MvPolynomial.monomial m c) =
       ordinaryFlatten E
@@ -402,7 +406,7 @@ theorem degreeOf_challenge_ordinaryFlatten_le
       degreeOf_challenge_ordinaryFlatten_C_le (MvPolynomial.coeff m Q)
     _ ≤ h := hQ m
 
-private theorem degreeOf_independent_ordinaryFlatten_C
+theorem degreeOf_independent_ordinaryFlatten_C
     (c : E[X]) :
     (ordinaryFlatten E
       (MvPolynomial.C c : DifferentialPolynomial E[X] 0)).degreeOf (some 0) = 0 := by
@@ -428,7 +432,7 @@ private theorem degreeOf_independent_ordinaryFlatten_C
       (MvPolynomial.X (some 1) ^ n) (some 0) (c.coeff n)).trans
         ((MvPolynomial.degreeOf_X_pow_of_ne n (by simp)).le))
 
-private theorem degreeOf_independent_ordinaryFlatten_le
+theorem degreeOf_independent_ordinaryFlatten_le
     (Q : DifferentialPolynomial E[X] 0) :
     (ordinaryFlatten E Q).degreeOf (some 0) ≤ Q.degreeOf none := by
   classical
@@ -476,7 +480,7 @@ private theorem degreeOf_independent_ordinaryFlatten_le
       omega
     _ ≤ Q.degreeOf none := MvPolynomial.monomial_le_degreeOf none hm
 
-private theorem degreeOf_independent_ordinaryUnflatten_le
+theorem degreeOf_independent_ordinaryUnflatten_le
     (H : MvPolynomial (Option (Fin 2)) E) :
     (ordinaryUnflatten E H).degreeOf none ≤ H.degreeOf (some 0) := by
   classical
@@ -551,7 +555,7 @@ theorem differentialSpecialization_map_eq_eval₂_flatten
         simp [differentialSpecializationHom, ordinaryFlatten, flatVariableEquiv]
   exact DFunLike.congr_fun hhom Q
 
-private theorem eval_differentialSpecialization_map_eq_flatten
+theorem eval_differentialSpecialization_map_eq_flatten
     (Q : DifferentialPolynomial E[X] 0) (P : E[X]) (z x : E) :
     (differentialSpecialization (MvPolynomial.map (Polynomial.evalRingHom z) Q) P).eval x =
       MvPolynomial.eval
@@ -566,7 +570,7 @@ private theorem eval_differentialSpecialization_map_eq_flatten
   · fin_cases i
     simp [polynomialJet, Polynomial.hasseJet]
 
-private theorem map_rootExpansion
+theorem map_rootExpansion
     {R S ι : Type*} [CommRing R] [CommRing S]
     (f : R →+* S) (s : ℕ) (G : MvPolynomial (Option ι) R) :
     MvPolynomial.map f (rootExpansion s G) =
@@ -575,7 +579,7 @@ private theorem map_rootExpansion
   rw [← map_optionEquivLeft]
   simp [rootExpansion, Polynomial.map_expand, map_optionEquivLeft]
 
-private theorem eval₂_rootExpansion
+theorem eval₂_rootExpansion
     {R S ι : Type*} [CommRing R] [CommRing S]
     (f : R →+* S) (s : ℕ) (G : MvPolynomial (Option ι) R)
     (x : ι → S) (y : S) :
@@ -584,7 +588,7 @@ private theorem eval₂_rootExpansion
   rw [MvPolynomial.eval₂_eq_eval_map, map_rootExpansion,
     eval_rootExpansion, ← MvPolynomial.eval₂_eq_eval_map]
 
-private theorem expand_differentialSpecialization_map_eq_eval₂_flatten
+theorem expand_differentialSpecialization_map_eq_eval₂_flatten
     (Q : DifferentialPolynomial E[X] 0) (P : E[X]) (z : E) (s : ℕ) :
     Polynomial.expand E s
         (differentialSpecialization (MvPolynomial.map (Polynomial.evalRingHom z) Q) P) =

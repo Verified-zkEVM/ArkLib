@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderParameters
-import ArkLib.Data.QuadraticAlgebra.SetupRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderParameters
+public import ArkLib.Data.QuadraticAlgebra.SetupRefinement
 /-!
 # Actual quadratic setup and prepared decoding at the small-gap parameters
 
@@ -17,6 +18,8 @@ outer branch. No combined driver or global cost bound is introduced here.
 The reduced-separant larger-field condition does not itself provide `m*A` base-field samples.
 A runtime proof for that improved regime remains separate; this theorem uses quadratic setup.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.PreparedDecoderParameters
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.PointMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteSpec
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.PointMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteSpec
 /-!
 # Exact semantics of a materialized interpolation point block
 
@@ -13,6 +14,8 @@ The row frame is collected from actual dense columns. Consequently its coefficie
 are equivalent to polynomial vanishing, including cancellations and redundant zero rows.
 The polynomial remains the full low-contact local constraint, not full substitution.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.InterpolationPointBlockMachine
 

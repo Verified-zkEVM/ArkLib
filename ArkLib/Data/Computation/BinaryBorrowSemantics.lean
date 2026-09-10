@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryBorrowMachine
-import ArkLib.Data.Computation.BinarySubtractSemantics
+
+public import ArkLib.Data.Computation.BinaryBorrowMachine
+public import ArkLib.Data.Computation.BinarySubtractSemantics
 
 /-!
 # Same-trace final-borrow semantics
@@ -13,6 +15,8 @@ import ArkLib.Data.Computation.BinarySubtractSemantics
 The wrapper records the actual scan's final Boolean borrow at the very transition that selects
 normalization or clearing. Correctness and cost refer to that same wrapped execution.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryBorrowMachine
 

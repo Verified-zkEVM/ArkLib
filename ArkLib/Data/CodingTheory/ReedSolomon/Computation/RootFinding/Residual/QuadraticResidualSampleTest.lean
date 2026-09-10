@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticResidualSampleSpec
 /-!
 # Kernel checks for complete coordinate residual samples
@@ -13,6 +14,8 @@ The nontrivial sample computes X*Y0+Y1 from a linear jet, with nonzero center tr
 The intermediate handoff checks point and jet order before packing. The empty sample checks
 initialization, zero accumulation and all child/outer emissions with literal cost vectors.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualSample
 

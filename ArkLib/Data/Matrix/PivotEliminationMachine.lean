@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.RowReductionMachine
+
+public import ArkLib.Data.Matrix.RowReductionMachine
 
 /-!
 # Composed elimination of one target entry
@@ -22,6 +24,8 @@ machine charges its own dispatch; lifting its rule does not introduce a second u
 Costs count internal row-return and external result events separately. Host fuel bookkeeping and
 field bit costs remain outside this abstract primitive model.
 -/
+
+@[expose] public section
 
 namespace Matrix.PivotEliminationMachine
 

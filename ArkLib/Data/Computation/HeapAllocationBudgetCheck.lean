@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.HeapAllocationBudget
+
+public import ArkLib.Data.Computation.HeapAllocationBudget
 
 /-! # Kernel checks of the last permitted allocation and reserved successor -/
+
+@[expose] public section
 
 namespace Computation.HeapAllocationBudget
 

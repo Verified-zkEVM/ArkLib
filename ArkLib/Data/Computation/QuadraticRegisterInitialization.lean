@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FieldLiteralMachine
-import ArkLib.Data.Computation.WordCopyMachine
-import Mathlib.Data.Fintype.Sum
+
+public import ArkLib.Data.Computation.FieldLiteralMachine
+public import ArkLib.Data.Computation.WordCopyMachine
+public import Mathlib.Data.Fintype.Sum
 
 /-!
 # Physical initialization of the quadratic arithmetic register bank
@@ -18,6 +20,8 @@ false flags are pushed. A bounded `Fin 8` cursor is control, not an unbounded in
 The five immutable input words and the RAM are retained. This is initialization, not a complete
 arithmetic-program or decoder bit-complexity theorem.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticRegisterInitialization
 

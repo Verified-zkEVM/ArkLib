@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
 /-!
 # Weighted interpolation support without degree bands
@@ -19,6 +20,8 @@ The parameter `L` measures the coarse specialization budget `x + D * totalJetDeg
 In the capacity construction it is `m * D * (1 + g)`. Positive `D` bounds ordinary degree
 by this budget, giving finite coefficient coordinates over any field.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryEqualSemantics
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Computation.BinaryEqualSemantics
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Actual equality guards for reduced scalars
@@ -13,6 +15,8 @@ import Mathlib.Data.ZMod.Basic
 Reduced words have equal natural values exactly when their residue-ring scalars are equal. This
 links the Boolean produced by the same five-tape run to scalar equality without normalization.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryEqualMachine
 

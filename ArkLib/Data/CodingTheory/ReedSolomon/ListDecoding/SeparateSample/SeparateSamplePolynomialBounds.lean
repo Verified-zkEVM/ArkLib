@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Bounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Bounds
 /-!
 # One alphabet power bounds the separate-sample budgets
 
@@ -15,20 +17,22 @@ power fixed by the original derivative order. The collector remains linear in th
 Physical mass enters through the actual scalar emitter's factor-preservation theorem.
 -/
 
+@[expose] public section
+
 namespace ReedSolomon.ListDecoding.SeparateSampleDecoder
 
 open HiddenDerivative MvPolynomial
 open PreparedDecoderMachine (Input Element Term rootInput)
 open PartialDerivativeMachine (inputMass)
 
-private def collectorFuelDiagonal (S : ℕ) : ℕ :=
+def collectorFuelDiagonal (S : ℕ) : ℕ :=
   (CanonicalOutputMachine.acceptanceFuelBound S S S S S (S + 1) + 4) * (S + 1) + 4
 
-private def collectorWorkDiagonal (S : ℕ) : ℕ :=
+def collectorWorkDiagonal (S : ℕ) : ℕ :=
   (CanonicalOutputMachine.acceptanceWorkBound S S S S S (S + 1) +
     3 * CanonicalOutputMachine.acceptanceFuelBound S S S S S (S + 1) + 30) * (S + 1) + 16
 
-private def fuelDiagonal (S : ℕ) : ℕ :=
+def fuelDiagonal (S : ℕ) : ℕ :=
   2 * S + 8 + StageRootsMachine.instancePolynomial (7 * S) + collectorFuelDiagonal S
 
 /-- Absolute-degree polynomial for fuel plus primitive work; coefficients are universal. -/

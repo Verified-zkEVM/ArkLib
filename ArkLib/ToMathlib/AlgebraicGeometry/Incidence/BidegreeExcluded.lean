@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.BidegreePoints
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpCutFamily
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.BidegreePoints
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpCutFamily
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
 
 /-!
 # Sharp excluded incidence through the bidegree presentation
@@ -16,6 +18,8 @@ the affine bidegree presentation. Terminal positive-dimensional components are r
 after mapping their presentation primes back to source-coordinate primes. Thus the statement
 uses the actual source equations and does not require global point uniqueness.
 -/
+
+@[expose] public section
 
 noncomputable section
 

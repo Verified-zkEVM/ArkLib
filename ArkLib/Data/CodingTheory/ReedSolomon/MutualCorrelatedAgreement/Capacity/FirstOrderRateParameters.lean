@@ -3,16 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.RateParameters
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.RateParameters
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
 /-!
 # Scalar first-order exceptional-set constants
 
 The separant schedule charges every total degree at most once. The full square
 sum therefore bounds both the joint images and the generic fibers.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

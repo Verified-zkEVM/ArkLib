@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Probability.UniformQueryBoundary
+module
+
+public import ArkLib.Data.Probability.UniformQueryBoundary
 
 /-!
 # Distinct positions among independent uniform queries
@@ -12,6 +14,8 @@ Repeated queries need only one response per distinct position. The query draws t
 remain unchanged. This expectation counts responses after deduplication without replacing
 sampling with replacement by a different query distribution.
 -/
+
+@[expose] public section
 namespace ArkLib.UniformQueryBoundary
 noncomputable section
 

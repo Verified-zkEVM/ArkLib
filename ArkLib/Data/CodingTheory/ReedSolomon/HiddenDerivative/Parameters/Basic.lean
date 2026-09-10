@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra
 -/
+module
 
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
 # Free-order parameters for hidden-derivative interpolation
@@ -37,6 +38,8 @@ not imported.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], manuscript.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace HiddenDerivative

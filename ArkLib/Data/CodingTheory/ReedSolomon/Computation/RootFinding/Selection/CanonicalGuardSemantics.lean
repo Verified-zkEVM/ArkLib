@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Completeness
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Completeness
 /-!
 # Exact canonical-guard acceptance
 
@@ -15,6 +17,8 @@ This result includes the actual terminating execution and its work bound. It doe
 or prove that the supplied equations form a separant chain: chain generation and the resulting
 unique-stage theorem are separate consumers.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalGuardMachine
 

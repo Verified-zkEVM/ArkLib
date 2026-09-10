@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.Types
-import ArkLib.Data.MvPolynomial.WeightedDegree
-import ArkLib.ToMathlib.MvPolynomial.PDeriv
-import ArkLib.ToMathlib.Polynomial.HasseTaylor
+
+public import ArkLib.Data.Polynomial.Differential.Types
+public import ArkLib.Data.MvPolynomial.WeightedDegree
+public import ArkLib.ToMathlib.MvPolynomial.PDeriv
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor
 
 /-!
 # Polynomial differential equations in finite Hasse jets
@@ -30,6 +32,8 @@ not increase the characteristic.
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15]
 -/
+
+@[expose] public section
 
 namespace PolynomialDifferential
 

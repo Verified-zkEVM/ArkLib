@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderCertificate
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputExecution
 /-!
 # Exact prepared decoding after actual successful interpolation
 
@@ -14,6 +16,8 @@ The certificate supplies agreement-to-root completeness. The scalar allocator, r
 collector execute their actual programs, and their completed traces compose in the existing
 prepared driver. No semantic output or agreement-to-output callback is assumed.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.PreparedDecoderProof
 

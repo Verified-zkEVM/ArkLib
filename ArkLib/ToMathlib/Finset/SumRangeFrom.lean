@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 /-!
 # Finite sums over shifted natural-number ranges
@@ -13,6 +15,8 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 `start`. The splitting and substitution lemmas let large executable calculations be checked in
 bounded modules and then assembled without unfolding the already checked chunks.
 -/
+
+@[expose] public section
 
 namespace Finset
 

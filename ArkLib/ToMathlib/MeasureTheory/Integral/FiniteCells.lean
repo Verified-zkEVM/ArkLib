@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.MeasureTheory.Integral.Bochner.Set
-import Mathlib.Tactic.Positivity
+
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
+public import Mathlib.Tactic.Positivity
 /-!
 # Integrating finite cellwise bounds
 
@@ -14,6 +16,8 @@ measure at most one, integrating a pointwise bound on each cell cannot overcount
 sum. Applications may intersect unit flooring cells with a simplex; the intersections only
 reduce their measure.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

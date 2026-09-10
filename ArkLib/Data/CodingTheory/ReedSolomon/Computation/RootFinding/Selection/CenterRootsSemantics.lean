@@ -3,14 +3,22 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsMachine
+
+-- The completeness witness reduces `ringEquiv.symm` back to its polynomial semantics.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 /-!
 # Ordered center collection and its charged bounds
 
 The specification projects explicit records to global polynomials. Pair and list allocation,
 callee dispatch, and final reversal are included in the same execution bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CenterRootsMachine
 

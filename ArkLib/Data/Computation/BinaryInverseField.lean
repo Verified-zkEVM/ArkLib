@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryInverseSemantics
-import Mathlib.Algebra.Field.ZMod
+
+public import ArkLib.Data.Computation.BinaryInverseSemantics
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Literal inverse search refines prime-field inversion
@@ -14,6 +16,8 @@ Prime-field inverse existence supplies a proof-side search bound. It supplies no
 answer, or fuel. The actual thirteen-tape program includes the zero case, and its same execution
 witness computes the `ZMod` inverse with an absolute quadratic field-size overhead.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryInverseMachine
 

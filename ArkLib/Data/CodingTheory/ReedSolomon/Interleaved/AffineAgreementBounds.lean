@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 
 /-!
 # Affine-space MCA bounds for interleaved Reed--Solomon codes
@@ -33,6 +34,8 @@ family or exceptional set is assumed by the conclusion. The result is a coding-t
 probability over uniform field seeds; it does not model transcript generation, Fiat--Shamir
 sampling, or commitment authentication.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

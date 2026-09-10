@@ -3,15 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitAddExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitMulExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitNegExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitInvExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitEqualExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitLoad
-import ArkLib.Data.Computation.QuadraticArithmeticBitBoolean
-import ArkLib.Data.Computation.QuadraticRegisterInitialization
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitAddExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitMulExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitNegExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitInvExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitEqualExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitLoad
+public import ArkLib.Data.Computation.QuadraticArithmeticBitBoolean
+public import ArkLib.Data.Computation.QuadraticRegisterInitialization
 
 /-!
 # One physical controller for the literal quadratic arithmetic programs
@@ -25,6 +27,8 @@ This module proves physical handoffs and child trace lifting. A whole-program se
 and a uniform total transition bound are separate obligations; individual instruction bounds must
 not be treated as an already composed program theorem. Head-observation adequacy is also separate.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitProgram
 

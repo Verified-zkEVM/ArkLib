@@ -3,14 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatchSpec
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatchSpec
 /-!
 # Kernel checks for coordinate residual batches
 
 Distinct and repeated points check both output order and duplicate retention. Entry checks the
 retained sample payload and its charged construction. Empty input emits only the empty list.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualBatch
 

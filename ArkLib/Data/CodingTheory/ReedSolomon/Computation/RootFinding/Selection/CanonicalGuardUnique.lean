@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardSemantics
 /-!+# Exclusivity of canonical residual witnesses
 
@@ -15,6 +16,8 @@ The current-equation case uses the root solver's zero certificate; it must not b
 the strictly earlier prefix. These results are independent of interpolation degree hypotheses.
 The stage driver supplies adjacency and the common coefficient representation.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalGuardMachine
 

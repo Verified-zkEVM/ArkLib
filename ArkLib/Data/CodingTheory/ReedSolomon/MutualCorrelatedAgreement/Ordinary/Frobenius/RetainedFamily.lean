@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.GraphCounting
 /-!
 # The finite family of retained Frobenius pairs
@@ -12,6 +13,8 @@ import
 The retained family consists of actual sample interpolants satisfying the chart identities.
 Its accidental-agreement set is counted in the original challenge coordinate.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Basic
 
 /-!
 # Counting local coordinates for the rate-partition support
@@ -15,6 +17,8 @@ derivative weight at most `W+i-h`. Writing `s=i-h`, the contact condition is
 and `p_d(W+s)` derivative tuples. Counting these coordinates bounds the local
 rank without assuming they are linearly independent.
 -/
+
+@[expose] public section
 
 noncomputable section
 

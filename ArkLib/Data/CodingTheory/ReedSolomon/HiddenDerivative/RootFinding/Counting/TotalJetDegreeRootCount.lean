@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.TotalDegreeWitness
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 /-!
 # Total-jet-degree differential root count
 
@@ -20,6 +22,8 @@ charges the original total jet degree once, with no individual-degree or chain-l
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], total-jet-degree witness counting for the `4m` list prefactor.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

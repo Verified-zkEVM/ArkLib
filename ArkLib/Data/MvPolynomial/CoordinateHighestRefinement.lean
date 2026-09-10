@@ -3,11 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.CoordinateHighestMachine
-import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
+
+public import ArkLib.Data.MvPolynomial.CoordinateHighestMachine
+public import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
 
 /-! # Same-execution highest-jet selection after coordinate normalization -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticHighestMachine
 

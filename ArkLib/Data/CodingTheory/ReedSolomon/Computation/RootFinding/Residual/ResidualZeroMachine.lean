@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualBatchMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualBatchMachine
 /-!
 # Closed residual-zero checking
 
@@ -18,6 +20,8 @@ zero is a literal in the inherited model. Host fuel, input preparation, point en
 bit costs and solving remain outside this subroutine. The full-residual refinement requires
 explicit degree and distinct-sample hypotheses; this machine does not check prefix degree.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualZeroMachine
 

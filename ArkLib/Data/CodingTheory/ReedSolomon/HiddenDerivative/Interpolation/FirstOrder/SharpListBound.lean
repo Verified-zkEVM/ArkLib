@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.FiniteCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderList
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderList
 /-!
 # Cap-sensitive list bounds from finite first-order certificates
 
@@ -45,6 +47,8 @@ polynomial-curve exceptional count, or connect a concrete LambdaVM table to its 
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated
   Agreement up to Capacity*][DKTZ26], Section 6.1.2, Lemma 6.2 (cap-sensitive first-order transfer).
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 

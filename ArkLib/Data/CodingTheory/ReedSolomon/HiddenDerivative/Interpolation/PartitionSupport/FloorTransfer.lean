@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Dimension
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
-import ArkLib.ToMathlib.Analysis.Simplex.Moments
+public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 
 /-!
 # Flooring the rate partition simplex
@@ -17,6 +18,8 @@ Coordinatewise flooring keeps the derivative-order budget and can only increase 
 remaining specialization degree. Integrating over the whole weighted simplex therefore
 gives a lower bound on the finite source count. No subset or tail of the simplex is dropped.
 -/
+
+@[expose] public section
 
 noncomputable section
 

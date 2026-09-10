@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import Mathlib.Algebra.CharP.Basic
-import Mathlib.Data.List.Nodup
-import Mathlib.Data.Nat.Digits.Lemmas
-import Mathlib.FieldTheory.Finite.Basic
+module
+
+public import Mathlib.Algebra.CharP.Basic
+public import Mathlib.Data.List.Nodup
+public import Mathlib.Data.Nat.Digits.Lemmas
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Explicit finite-field candidate prefixes
@@ -20,6 +22,8 @@ For an extension field, `RadixBasis` packages an explicitly supplied basis
 list together with the exact injectivity property needed of its base-`p`
 digit expansions.  This module does not claim to construct such a basis.
 -/
+
+@[expose] public section
 
 namespace ArkLib.FiniteFieldCandidates
 

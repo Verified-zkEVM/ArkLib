@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.DirectRegularCoefficient
 /-!
 # Deterministic direct regular lifting
@@ -21,6 +22,8 @@ where no lift runs and the final degree check can reject the supplied prefix. Ou
 This is functional refinement only. Residual evaluation and polynomial operations still lack the
 closed operational cost adequacy required for a lifting runtime theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

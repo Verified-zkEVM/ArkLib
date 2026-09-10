@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.EvaluationMachine
+
+public import ArkLib.Data.MvPolynomial.EvaluationMachine
 
 /-!
 # Closed sparse partial differentiation
@@ -20,6 +22,8 @@ allocations and register writes. Natural comparisons and predecessors, scalar ad
 tests, and outputs are separate. Literal zero/one and retained immutable handles are free.
 Input preparation, reclamation, interpreter fuel and bit costs are separate obligations.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.PartialDerivativeMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Incidence
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
 /-!
 # Finite bad challenges for one symbolic chart
 
@@ -13,6 +14,8 @@ Outside the simultaneous accidental-agreement set, a bad witness cannot lie on a
 admissible pair graph. Its challenge coordinate embeds the remaining challenges into the
 off-graph incidence problem. The bound combines that incidence count with the pair count.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

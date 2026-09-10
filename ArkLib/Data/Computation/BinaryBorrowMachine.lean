@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinarySubtractMachine
+
+public import ArkLib.Data.Computation.BinarySubtractMachine
 
 /-!
 # Literal observation of the subtraction borrow
@@ -13,6 +15,8 @@ A single Boolean control flag records the final borrow when the underlying scan 
 empty-input phase. Every step executes exactly one subtraction successor, with identical tapes.
 This distinguishes equality from underflow without repeating arithmetic or inspecting values.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryBorrowMachine
 

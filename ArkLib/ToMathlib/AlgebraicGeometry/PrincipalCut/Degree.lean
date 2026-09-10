@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
-import Mathlib.Algebra.Polynomial.Taylor
-import Mathlib.Analysis.Polynomial.Basic
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
+public import Mathlib.Algebra.Polynomial.Taylor
+public import Mathlib.Analysis.Polynomial.Basic
 
 /-!
 # Principal cuts and eventual Hilbert polynomial bounds
@@ -15,6 +17,8 @@ Eventual comparison on natural inputs compares polynomial degrees and leading
 coefficients. Applied to the actual prime-cut filtration inequality, a backward
 finite difference bounds the cut polynomial degree and its top possible coefficient.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListHornerMachine
+
+public import ArkLib.Data.Computation.SharedListHornerMachine
 
 /-!
 # Same-run correctness of the physical shared-list Horner loop
@@ -14,6 +16,8 @@ multiplication, addition and all handoffs. The coefficient heap is unchanged. Th
 specifies the output of this one physical run; no abstract list or arithmetic callback executes
 inside the controller. The entry accumulator and evaluation point are materialized reduced words.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListHornerMachine
 

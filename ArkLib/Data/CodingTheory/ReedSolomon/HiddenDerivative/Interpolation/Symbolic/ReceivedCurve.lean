@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedLine
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.GradedRank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedLine
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.GradedRank
 
 /-!
 # Primitive symbolic interpolation for received polynomial curves
@@ -24,6 +26,8 @@ The rank bound is an explicit hypothesis here; this module does not assert a cap
   up to Capacity*][DKTZ26], Section 5.6 (Theorem 5.14), symbolic interpolation for polynomial
   curves.
 -/
+
+@[expose] public section
 
 noncomputable section
 

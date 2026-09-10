@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.HornerMachine
-import ArkLib.Data.CodingTheory.ReedSolomon
-import CompPoly.Univariate.ToPoly.Impl
+public import ArkLib.Data.Polynomial.HornerMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import CompPoly.Univariate.ToPoly.Impl
+-- The representation theorem intentionally reduces CompPoly's coefficient array and evaluator.
+import all CompPoly.Univariate.Basic
 /-!
 # Closed agreement counting with an integer threshold
 
@@ -27,6 +30,8 @@ dispatch is the machine dispatch. Output counts include each Horner return value
 components of the final count/acceptance result. This file certifies one polynomial's acceptance,
 not degree checking, candidate enumeration, or a complete decoder.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.AgreementMachine
 

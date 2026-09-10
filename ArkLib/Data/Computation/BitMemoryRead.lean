@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitMemoryBlock
+
+public import ArkLib.Data.Computation.BitMemoryBlock
 
 /-!
 # Bit-by-bit reads from prefix-addressed memory blocks
@@ -15,6 +17,8 @@ copying/restoration, address access/reset, and output reversal all use literal b
 No transition decodes a length or loads an entire word. The starting length tape and pointer
 must be constructed by the caller; this module does not charge their construction for free.
 -/
+
+@[expose] public section
 
 namespace Computation.BitMemoryRead
 

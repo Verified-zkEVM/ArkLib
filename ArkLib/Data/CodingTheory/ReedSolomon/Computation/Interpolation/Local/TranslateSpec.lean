@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.Translate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
-import Mathlib.Algebra.Polynomial.Inductions
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.Translate
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
+public import Mathlib.Algebra.Polynomial.Inductions
 /-!
 # Polynomial meaning of the truncated translation stage
 
@@ -15,6 +17,8 @@ The represented list is the existing translated local truncation, before rewriti
 projecting low contact. The final localConstraintAt bridge retains that pending enlarged map.
 All polynomial expressions below are proof-only representations of materialized scalar terms.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.LocalColumnTranslationMachine
 

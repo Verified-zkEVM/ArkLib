@@ -3,18 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.GraphAdmissibility
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpRegularEquation
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
 /-!
 # Incidence for sparse Frobenius charts
 
 The actual numerator and agreement cuts satisfy the mixed bidegree estimate. Prime
 components with an original-size common sample are excluded by their recognized graphs.
 -/
+
+@[expose] public section
 
 noncomputable section
 

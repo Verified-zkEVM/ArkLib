@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToCompPoly.Multivariate.Substitution
-import ArkLib.ToCompPoly.Multivariate.Eval
-import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+
+public import ArkLib.ToCompPoly.Multivariate.Substitution
+public import ArkLib.ToCompPoly.Multivariate.Eval
+public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 /-!
 # Computable denominator-cleared substitution
 
@@ -15,6 +17,8 @@ monomials once, substitutes supplied computable numerators, and inserts the rema
 denominator power. Natural subtraction gives a total executable function; the semantic Taylor
 support theorem separately ensures that the chosen denominator budget is sufficient.
 -/
+
+@[expose] public section
 
 namespace CPoly.CMvPolynomial
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCandidateMachine
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCandidateMachine
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticCandidateMachine
 /-!
 # Exact-cost raw-coordinate candidate refinement
@@ -13,6 +15,8 @@ import
 Representation changes only the coefficient cells. Every source instruction is one actual
 raw-coordinate instruction with the identical charge, including early rejection.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CoordinateCandidateMachine
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.FactorBounds
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Algebra.BigOperators.Ring.Finset
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.FactorBounds
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Algebra.BigOperators.Ring.Finset
 /-!
 # Aggregating ordinary factor charges
 
@@ -14,6 +16,8 @@ Distinct factors spend their coordinate degrees additively. This calculation inc
 root-independent content and controls the sum of height-times-root-degree products by the
 original total degree budgets.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

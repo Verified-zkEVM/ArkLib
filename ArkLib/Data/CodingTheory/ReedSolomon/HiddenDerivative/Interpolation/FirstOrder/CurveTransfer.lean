@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveStages
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageSum
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveStages
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageSum
 /-!
 # Composing the regular stages of a finite curve certificate
 
@@ -18,6 +20,8 @@ The predicate `conclusion z P` names the conclusion supplied by the geometric st
 for MCA it is exact agreement with a correlated polynomial tuple. The stage hypothesis is
 explicit: this composition lemma does not replace the required regular-stage geometry.
 -/
+
+@[expose] public section
 
 noncomputable section
 

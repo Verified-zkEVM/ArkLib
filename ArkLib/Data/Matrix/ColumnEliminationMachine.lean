@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotEliminationMachine
-import Mathlib.Data.List.GetD
+
+public import ArkLib.Data.Matrix.PivotEliminationMachine
+public import Mathlib.Data.List.GetD
 
 /-!
 # Closed column elimination with a supplied head pivot
@@ -22,6 +24,8 @@ allocated row-list cell. An output event is a tagged matrix handle, not a hidden
 materialization and memory reclamation are outside the model. Pivot selection/permutation, matrix
 extraction/writeback, echelon recursion and back substitution remain separate stages.
 -/
+
+@[expose] public section
 
 namespace Matrix.ColumnEliminationMachine
 

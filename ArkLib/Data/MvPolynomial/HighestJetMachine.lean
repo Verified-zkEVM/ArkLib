@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.DenseNormalizeRefinement
+
+public import ArkLib.Data.MvPolynomial.DenseNormalizeRefinement
 
 /-!
 # Charged highest-jet selection
@@ -16,6 +18,8 @@ polynomial degree, support, coefficient, maximum-list or polynomial-zero operati
 Every delegated normalization step also pays one control operation and two data operations
 for its wrapper.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.HighestJetMachine
 

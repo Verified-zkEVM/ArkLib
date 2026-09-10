@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitInv
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitInv
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Actual INV instruction refinement with all register aliases
@@ -15,6 +17,8 @@ includes loading the operand, overwriting the old destination, and clearing the 
 The five immutable inputs, two flags and RAM are retained. Register initialization and the other
 instruction forms remain separate obligations. This is one proved instruction.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitInv
 

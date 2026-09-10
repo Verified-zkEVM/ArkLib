@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.Bivariate.CMvEquiv
-import ArkLib.ToCompPoly.Multivariate.Eval
-import ArkLib.Data.Polynomial.Differential.Basic
+
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.Bivariate.CMvEquiv
+public import ArkLib.ToCompPoly.Multivariate.Eval
+public import ArkLib.Data.Polynomial.Differential.Basic
 /-!
 # Executable bivariate-to-multivariate conversion
 
@@ -15,6 +17,8 @@ import ArkLib.Data.Polynomial.Differential.Basic
 root-finding code expects a `CMvPolynomial 2` with `X` at index zero and `Y` at index one. The
 constructor below traverses the two computable supports and records exactly that ordering.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CBivariate
 

@@ -3,16 +3,22 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.CentersMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootsRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.CentersMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootsRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsBounds
 /-!
 # Same-execution coordinate center enumeration
 
 Every center, candidate record, duplicate and failure tag is retained. The fixed factor applies
 once to the source trace; it is independent of the number of centers and candidates.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticCenterRootsMachine
 

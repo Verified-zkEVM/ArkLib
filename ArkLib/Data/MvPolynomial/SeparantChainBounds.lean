@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.SeparantChainMachine
-import ArkLib.Data.MvPolynomial.HighestJetRefinement
+
+public import ArkLib.Data.MvPolynomial.SeparantChainMachine
+public import ArkLib.Data.MvPolynomial.HighestJetRefinement
 
 /-!
 # Separant-chain representation and execution bounds
@@ -13,6 +15,8 @@ import ArkLib.Data.MvPolynomial.HighestJetRefinement
 Differentiation preserves the dense layout and cannot increase either the number of terms or
 the full numerical exponent mass. Nested traces retain exact wrapper charges at each level.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.SeparantChainMachine
 

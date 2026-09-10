@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AlgebraicMachine.BatchHorner
-import Mathlib.Algebra.Field.ZMod
+
+public import ArkLib.Data.Computation.AlgebraicMachine.BatchHorner
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Kernel-checked algebraic execution boundary checks
@@ -15,6 +17,8 @@ theorems. The literal input heap represents descending coefficients `[2, 3, 5]` 
 `[1, 4]` over the field of seventeen elements. Reading the final registers/cells is a test
 observation, not an extra machine instruction or an asserted free output conversion.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine
 

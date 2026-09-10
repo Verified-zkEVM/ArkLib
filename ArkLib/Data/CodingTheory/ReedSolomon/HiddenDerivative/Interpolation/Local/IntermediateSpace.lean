@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Quang Dao, Justin Thaler
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintKernel
-import Mathlib.Algebra.BigOperators.Finsupp.Fin
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintKernel
+public import Mathlib.Algebra.BigOperators.Finsupp.Fin
 
 
 /-!
@@ -35,6 +37,8 @@ kernel interfaces are new.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], exact finite interpolation analysis.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 /-!
 # Exact capacity lists at every rate
 
@@ -58,6 +59,8 @@ list cardinality and MCA are different properties.
 * [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed-Solomon
   Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], hidden-derivative interpolation.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

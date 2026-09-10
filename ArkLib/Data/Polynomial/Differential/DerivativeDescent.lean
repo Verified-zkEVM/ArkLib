@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.Basic
+
+public import ArkLib.Data.Polynomial.Differential.Basic
 
 /-!
 # Characteristic-safe descent in the highest jet variable
@@ -23,6 +25,8 @@ characteristic `p`.
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15]
 -/
+
+@[expose] public section
 
 namespace PolynomialDifferential
 

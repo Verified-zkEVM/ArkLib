@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.GraphAdmissibility
 /-!
 # Counting retained polynomial graphs
@@ -13,6 +14,8 @@ A generic retained challenge separates a finite tuple family and avoids all rest
 separants.  The actual reconstruction identities then inject the tuple family into the
 ordinary regular high-cut jets, where the sharp chart bound applies.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.Cardinality
 /-!
 # Sizes of the computed square-system family
@@ -16,6 +17,8 @@ solver. These bounds apply to the literal family returned by squareSystemsFromEq
 The initial row has degree at most μ; agreement and tail rows inherit the common Taylor numerator
 bound. These are degree/cardinality bounds, not an arithmetic-cost theorem for solving the systems.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 open PolynomialDifferential CPoly CPoly.CMvPolynomial

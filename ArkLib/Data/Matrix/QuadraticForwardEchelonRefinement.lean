@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticForwardEchelonMachine
-import ArkLib.Data.Matrix.QuadraticSelectionRefinement
-import ArkLib.Data.Matrix.QuadraticAugmentRefinement
+
+public import ArkLib.Data.Matrix.QuadraticForwardEchelonMachine
+public import ArkLib.Data.Matrix.QuadraticSelectionRefinement
+public import ArkLib.Data.Matrix.QuadraticAugmentRefinement
 
 /-!
 # Same-execution coordinate forward-echelon refinement
@@ -16,6 +18,8 @@ all base work charged. Rectangular input yields the same ordered pivots, residua
 solution set, with an input-only polynomial bound. Nonsquareness is used for the source field
 and the inverse refinement inside augmented elimination; runtime dispatch takes no proof oracle.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticForwardEchelonMachine
 

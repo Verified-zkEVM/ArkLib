@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.SharpEquation
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Ordinary.JohnsonCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 /-!
 # Sharp finite Johnson correlated agreement
 
@@ -17,6 +18,8 @@ finite guard `johnsonMu n D eta ≤ D`, the sharp arbitrary-equation transfer gi
 `ESharp` exceptional bound. Uniform finite-field challenge sampling then divides this raw bound
 by the field cardinality, retaining the trivial cap of one.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

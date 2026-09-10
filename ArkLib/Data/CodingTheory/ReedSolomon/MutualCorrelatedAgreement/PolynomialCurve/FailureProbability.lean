@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 /-!
 # The probability controlled by an exact power-agreement exceptional set
 
@@ -17,6 +19,8 @@ therefore bounds the failure probability under one uniform field challenge.
 This is a local coding-theoretic probability. It does not assume independence from another
 protocol phase or combine Fiat--Shamir and commitment errors.
 -/
+
+@[expose] public section
 
 noncomputable section
 

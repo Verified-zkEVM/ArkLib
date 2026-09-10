@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Support
-import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Support
+public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 
 /-!
 # Coefficient-index weight in a Taylor residual
@@ -16,6 +17,8 @@ excesses. For a first-order equation, the excess of a source monomial is precise
 degree in the derivative variable. This is the additional support bound that keeps that
 degree separate in the rational Taylor lift.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

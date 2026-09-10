@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterSemantics
-import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterSemantics
+public import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
 /-!
 # Closed base-field acceptance of a quadratic-field candidate
 
@@ -15,6 +16,8 @@ are globally centered, materialized coefficients and received rows. Root enumera
 local Taylor coordinates, duplicate removal and bit-cost lowering are separate consumers or
 preparation steps. No whole-run callback or bulk conversion is an executable instruction.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticCandidateMachine
 

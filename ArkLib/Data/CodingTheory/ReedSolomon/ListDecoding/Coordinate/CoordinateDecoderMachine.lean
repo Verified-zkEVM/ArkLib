@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderCore
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderProof
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderCore
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderProof
 /-!
 # Executed interpolation, setup and coordinate decoding
 
@@ -15,6 +17,8 @@ of all three supplied alphabets. Both center regimes use the same recovery grid.
 and primitive work concern this literal composition; the global bit-cost refinement is not
 assumed and remains a separate theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CoordinateDecoderMachine
 

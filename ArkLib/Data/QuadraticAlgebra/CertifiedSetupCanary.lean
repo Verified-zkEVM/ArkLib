@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.CertifiedSetup
+
+public import ArkLib.Data.QuadraticAlgebra.CertifiedSetup
 
 /-!
 # Observed setup values survive proof-erased certification
@@ -12,6 +14,8 @@ import ArkLib.Data.QuadraticAlgebra.CertifiedSetup
 The wrapper retains the actual nonsquare, base alphabet, crossing sample prefix and full ledger.
 The large correctness proof does not alter any runtime value or select a replacement witness.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.SetupMachine
 

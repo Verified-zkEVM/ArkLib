@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteRatio
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.Basic
 
 /-!
 # Finite block-length guards for the Gamma construction
@@ -13,6 +16,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Parti
 The threshold keeps ambient degree, jet budget, and quadratic-extension work
 conditions strictly below the block length while allowing field size equal to it.
 -/
+
+@[expose] public section
 
 noncomputable section
 

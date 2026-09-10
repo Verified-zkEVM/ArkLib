@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.SeparantChainBounds
-import Mathlib.Algebra.Field.ZMod
+
+public import ArkLib.Data.MvPolynomial.SeparantChainBounds
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Ordered separant-chain execution regressions
@@ -13,6 +15,8 @@ import Mathlib.Algebra.Field.ZMod
 Literal kernel computations retain original stage equations and exact metadata, including a
 drop in highest active jet. Costs include both nested wrapper levels and stage-list reversal.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.SeparantChainMachine
 

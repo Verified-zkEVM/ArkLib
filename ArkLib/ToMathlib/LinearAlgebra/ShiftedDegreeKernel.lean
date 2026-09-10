@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.LinearAlgebra.PrimitivePolynomialKernel
+
+public import ArkLib.ToMathlib.LinearAlgebra.PrimitivePolynomialKernel
 
 /-!
 # Polynomial kernel vectors with shifted row and column degrees
@@ -21,6 +23,8 @@ zero to a forbidden entry would incorrectly treat a nonzero constant as admissib
 normalization preserves every individual coordinate bound and makes specialization nonzero over
 all field extensions.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped BigOperators

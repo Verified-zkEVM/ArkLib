@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.WordCopyMachine
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.WordCopyMachine
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Actual loads from the five immutable scalar inputs
@@ -16,6 +18,8 @@ clears the old destination, copies the source and restores it. The active source
 removed from their inactive frames and represented only by the child's tapes. All other words,
 RAM, modulus and both flags stay on the same fixed bank. All five source selectors are finite.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitLoad
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Nat.Log
-import Mathlib.FieldTheory.Finite.Extension
+
+public import Mathlib.Data.Nat.Log
+public import Mathlib.FieldTheory.Finite.Extension
 
 /-!
 # Sufficiently large extensions of finite fields
@@ -15,6 +17,8 @@ Mathlib provides `FiniteField.Extension k p n`, a chosen degree-`n` extension of
 than a prescribed number of elements. The construction changes cardinality but preserves
 characteristic; this distinction matters in characteristic-sensitive root-counting arguments.
 -/
+
+@[expose] public section
 
 namespace FiniteField
 

@@ -3,14 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsSemantics
 /-!
 # Per-center root uniqueness
 
 Preservation of every initial jet coordinate makes successful tuples injective in their global
 polynomial. A duplicate-free alphabet therefore yields duplicate-free per-center polynomials.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.JetRootsMachine
 

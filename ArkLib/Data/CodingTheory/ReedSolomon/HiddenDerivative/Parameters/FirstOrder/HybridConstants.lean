@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
-import Mathlib.Algebra.BigOperators.Intervals
-import Mathlib.Algebra.Order.Floor.Ring
-import Mathlib.Tactic.FieldSimp
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
+public import Mathlib.Algebra.BigOperators.Intervals
+public import Mathlib.Algebra.Order.Floor.Ring
+public import Mathlib.Tactic.FieldSimp
 /-!
 # Closed constants for the hybrid first-order argument
 
@@ -36,6 +38,8 @@ budget, `E₁ = (24D²h+8D)theta²T` is the joint-family regular-stage budget, a
 rounding, so a later theorem may compare a coerced cardinality with the real bound without
 confusing it with its natural ceiling.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

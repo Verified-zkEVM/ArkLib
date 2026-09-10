@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
 /-!
 # Extending dimension-sensitive products
 
@@ -13,6 +15,8 @@ its untruncated form. Below the coefficient dimension they agree exactly; after 
 the actual dimension there, monotonicity extends the untruncated product to any requested
 upper bound. In particular, no lower bound on the code dimension is needed.
 -/
+
+@[expose] public section
 
 namespace AffineHilbert
 

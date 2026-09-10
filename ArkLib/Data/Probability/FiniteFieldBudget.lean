@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Probability.UniformQueryBoundary
+
+public import ArkLib.Data.Probability.UniformQueryBoundary
 
 /-!
 # Exact finite-field error and payload budgets
@@ -18,6 +20,8 @@ bound for an unordered pair from a list after repeated independent extension-fie
 The tensor predicate combines a height-dependent exceptional-set term with two polynomial-identity
 terms. The remaining definitions give raw byte accounting for uniformly sampled Merkle leaves.
 -/
+
+@[expose] public section
 
 namespace ArkLib.FiniteFieldBudget
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Nat.Choose.Cast
-import Mathlib.RingTheory.Polynomial.Basic
+
+public import Mathlib.Data.Nat.Choose.Cast
+public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # Leading coefficients of low-dimensional rectangle differences
@@ -15,6 +17,8 @@ bounds when the second projective factor has dimension one or two. Their evaluat
 identify them with the corresponding natural-number dimension differences once the shifted
 bidegrees are nonnegative.
 -/
+
+@[expose] public section
 
 open Polynomial
 

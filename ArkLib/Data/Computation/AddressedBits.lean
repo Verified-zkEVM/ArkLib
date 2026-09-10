@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.List.Basic
+
+public import Mathlib.Data.List.Basic
 
 /-!
 # Address transfer in a bit RAM
@@ -24,6 +26,8 @@ Input paths are already materialized on the local input tape. Starting writes th
 one. List head/tail operations model single local tape-cell operations, not random heap-list
 operations. Shared heap representations and scalar arithmetic are separate future refinements.
 -/
+
+@[expose] public section
 
 namespace Computation.AddressedBits
 

@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageComparison
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FirstOrderStageSum
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageComparison
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.FirstOrderStageSum
 /-!
 # Summing first-order polynomial-curve stage charges
 
@@ -22,6 +25,8 @@ whose initial equation has total jet degree at most `μ` and first-derivative de
 the terminal height charge plus all regular-stage charges is bounded by the displayed curve
 envelope. No exceptional-set or root-counting premise is assumed here.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.FiniteWitness
-import ArkLib.Data.ZMod.EnumerationMachine
-import ArkLib.Data.ZMod.NonsquareSearchMachine
-import Mathlib.Data.List.ProdSigma
-import Mathlib.Data.List.Nodup
+
+public import ArkLib.Data.QuadraticAlgebra.FiniteWitness
+public import ArkLib.Data.ZMod.EnumerationMachine
+public import ArkLib.Data.ZMod.NonsquareSearchMachine
+public import Mathlib.Data.List.ProdSigma
+public import Mathlib.Data.List.Nodup
 
 /-!
 # Explicit quadratic coordinate enumeration
@@ -24,6 +26,8 @@ integer/field bit costs are outside the model. Decoding coordinates is a semanti
 bulk conversion primitive. Nonsquare search and pair enumeration retain separate actual costs;
 this component does not lower extension arithmetic or claim a composed setup runtime.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.EnumerationMachine
 

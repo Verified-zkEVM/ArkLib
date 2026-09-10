@@ -3,13 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthAffine
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthAffine
 
 /-!
 # Hilbert-polynomial degree under finite injective affine algebra maps
 -/
+
+@[expose] public section
 
 noncomputable section
 

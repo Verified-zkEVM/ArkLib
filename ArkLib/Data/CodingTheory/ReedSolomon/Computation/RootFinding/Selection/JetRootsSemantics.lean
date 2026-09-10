@@ -3,14 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsBounds
+-- The completeness witness is constructed through `ringEquiv.symm`; expose the defining
+-- implementation modules so its forward image reduces to `toPoly`.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 /-!
 # All-jet root collection semantics
 
 The mathematical filter-map describes the ordered output of actual preparation and root calls.
 Every tuple and padding cell is already materialized by the operational pipeline.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.JetRootsMachine
 

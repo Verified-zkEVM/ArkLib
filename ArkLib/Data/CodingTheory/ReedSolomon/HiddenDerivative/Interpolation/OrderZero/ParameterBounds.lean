@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
 /-!
 # Characteristic-compatible order-zero parameter margins
 
@@ -12,6 +13,8 @@ For n≥3, multiplicity floor(n/2) leaves strict jet degree below n while retain
 surplus needed by ordinary bivariate multiplicity interpolation. These are parameter lemmas,
 not an interpolation witness or a decoder. The separate n=1,2 cases remain open here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

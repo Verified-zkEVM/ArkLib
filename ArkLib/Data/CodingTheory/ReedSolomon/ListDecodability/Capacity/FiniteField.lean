@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
 
 
 /-!
@@ -15,6 +16,8 @@ This module assembles the field-dependent list bounds and the large-gap cases.
 The central property and the combined field-independent theorem are in
 `ReedSolomon/ListDecodability/Capacity`.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial

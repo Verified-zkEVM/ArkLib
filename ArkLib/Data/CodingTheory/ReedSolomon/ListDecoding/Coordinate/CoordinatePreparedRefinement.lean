@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.StagesRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateOutputRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.StagesRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateOutputRefinement
 /-!
 # Same-execution lowering of the complete prepared driver
 
@@ -15,6 +18,8 @@ Every original instruction is refined by actual coordinate instructions. The tot
 both source instructions and source work, retaining the existing base-field collector arithmetic.
 No execution callback, chosen output, or runtime bulk conversion is assumed.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticPreparedDecoderMachine
 

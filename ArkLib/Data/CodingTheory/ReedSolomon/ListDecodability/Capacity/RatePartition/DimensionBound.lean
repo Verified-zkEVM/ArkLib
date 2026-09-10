@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.Interpolation
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FreeOrderDimension
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.RoundedScaledShell
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.Interpolation
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FreeOrderDimension
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.RoundedScaledShell
 
 
 /-!
@@ -24,6 +27,8 @@ Zheng's `rs-ld-mca` formalization at commit
 PR 1 by Pratyush Mishra; its source commit records Codex as author and Pratyush Mishra as committer.
 The finite mesh, exact interpolation index, and uniform parameter choice here are ArkLib-specific.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

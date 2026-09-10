@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.SetupRefinement
+
+public import ArkLib.Data.QuadraticAlgebra.SetupRefinement
 
 /-!
 # Quadratic preparation kernel canaries
@@ -12,6 +14,8 @@ import ArkLib.Data.QuadraticAlgebra.SetupRefinement
 Literal outputs exercise zero samples, a row-crossing prefix, exhausted input and characteristic
 two. Complete ledger literals include child dispatch wrappers and quadratic allocations.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.SetupMachine
 

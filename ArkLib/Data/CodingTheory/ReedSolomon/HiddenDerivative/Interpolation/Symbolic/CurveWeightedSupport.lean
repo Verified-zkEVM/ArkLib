@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Soundness
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Soundness
 
 /-!
 # Weighted-support rank bounds for received polynomial curves
@@ -16,6 +19,8 @@ rational-function field each local block is a column restriction of the canonica
 Thus the same dimension surplus used for lines constructs a primitive curve interpolant;
 only the coefficient-height estimate acquires the batching-degree factor.
 -/
+
+@[expose] public section
 
 noncomputable section
 

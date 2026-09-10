@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
 /-!
 # Same-run nonzero interpolation and sparse-polynomial correctness
 
@@ -14,6 +15,8 @@ polynomial. Sparse emission has the canonical EvaluationMachine meaning over nat
 indices, related by an injective rename to [X,Y0,...,Yd]. Parameter search and the strict-cap
 eligibility of its chosen witness remain explicit external obligations.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine
 

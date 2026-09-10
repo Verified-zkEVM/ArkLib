@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticHybridProbability
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 /-!
 # Exact first-order correlated agreement along a received line
 
@@ -26,6 +27,8 @@ One exceptional set works simultaneously for every qualifying polynomial. The re
 depend on the challenge and polynomial, and its conclusion identifies the entire agreement set.
 The field is arbitrary here; finite-field probability is derived in `FirstOrder.RateBounds`.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial HiddenDerivative

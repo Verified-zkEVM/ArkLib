@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.ComponentCoefficient
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.ComponentCoefficient
 
 /-!
 # Degree from the actual affine Hilbert polynomial
@@ -14,6 +16,8 @@ Degree is the factorial-normalized leading coefficient of the unique polynomial
 of actual filtration dimensions. Its elementary bounds and terminal point counts
 are proved here; no geometric degree laws are postulated.
 -/
+
+@[expose] public section
 
 noncomputable section
 

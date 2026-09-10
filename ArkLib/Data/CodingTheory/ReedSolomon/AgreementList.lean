@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
-import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.Data.Finset.Powerset
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.Data.Finset.Powerset
 /-!
 # Finiteness and an incidence bound for Reed--Solomon agreement lists
 
@@ -19,6 +20,8 @@ word in at least `A ≥ k` positions form a finite set.  Double-counting their
 This is a supporting field-independent incidence estimate, not the all-rate list
 size bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

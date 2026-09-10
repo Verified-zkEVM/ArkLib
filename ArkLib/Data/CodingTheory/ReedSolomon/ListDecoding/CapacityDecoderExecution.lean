@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.CapacityDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderLargeGap
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.CapacityDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderLargeGap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
 /-!
 # Exact capacity decoding with an observed primitive-work bound
 
@@ -20,6 +23,8 @@ primitive-work theorem for this same execution, not the unfinished bit-RAM compl
 * [Dao, Kominers, Thaler, and Zheng, *Reed-Solomon List Decoding up to Capacity at Every
   Rate*][DKTZ26], uniform capacity decoding and its reduced larger-field condition.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CapacityDecoderMachine
 

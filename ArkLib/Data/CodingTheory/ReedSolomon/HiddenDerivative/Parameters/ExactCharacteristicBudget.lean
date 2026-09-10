@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
 /-!
 # Characteristic budgets for exact hidden-derivative interpolation
 
@@ -24,6 +25,8 @@ The coefficient-facing endpoints apply directly to `exactInterpolationPolynomial
 vector in exact interpolation coordinates can be passed to the root-finding interface without
 repackaging its support certificate.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

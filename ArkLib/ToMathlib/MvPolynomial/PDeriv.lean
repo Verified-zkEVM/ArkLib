@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.PDeriv
+
+public import Mathlib.Algebra.MvPolynomial.PDeriv
 
 /-!
 # Individual degree under multivariate partial differentiation
@@ -21,6 +23,8 @@ The main results are:
 * `MvPolynomial.iteratePDeriv_ne_zero_of_lt_ringChar`, nonvanishing throughout the corresponding
   derivative chain.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

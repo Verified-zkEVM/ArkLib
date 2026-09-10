@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Combinatorics.DiscreteSimplex.Basic
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Tactic.Ring
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
-import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
+
+public import ArkLib.ToMathlib.Combinatorics.DiscreteSimplex.Basic
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Tactic.Ring
+public import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 
 /-!
 # Exact finite moments of an ordinary simplex
@@ -24,6 +26,8 @@ These are the core moments for a later weighted variance calculation. They do no
 continuous-volume approximation or that its finite-size correction meets an optimized constant.
 -/
 
+@[expose] public section
+
 namespace DiscreteSimplex
 
 noncomputable section
@@ -36,7 +40,7 @@ private theorem sum_update_add_coordinate {r : ℕ} (u : Fin r → ℕ) (i : Fin
   have h := Finset.sum_erase_add Finset.univ u (Finset.mem_univ i)
   omega
 
-private def splitCoordinate {r S : ℕ} (i : Fin r)
+def splitCoordinate {r S : ℕ} (i : Fin r)
     (p : Σ u : OrdinarySimplex r (S + 1), Fin (u.1 i)) : OrdinarySimplex (r + 1) S :=
   ⟨Fin.lastCases p.2.val (Function.update p.1.1 i (p.1.1 i - (p.2.val + 1))), by
     rw [Fin.sum_univ_castSucc]
@@ -46,7 +50,7 @@ private def splitCoordinate {r S : ℕ} (i : Fin r)
     have hlt := p.2.isLt
     omega⟩
 
-private def mergeCoordinate {r S : ℕ} (i : Fin r)
+def mergeCoordinate {r S : ℕ} (i : Fin r)
     (v : OrdinarySimplex (r + 1) S) : Σ u : OrdinarySimplex r (S + 1), Fin (u.1 i) :=
   ⟨⟨Function.update (fun j ↦ v.1 j.castSucc) i
       (v.1 i.castSucc + v.1 (Fin.last r) + 1), by

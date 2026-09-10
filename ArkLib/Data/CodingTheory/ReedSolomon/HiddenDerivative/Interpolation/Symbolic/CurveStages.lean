@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveSupportCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.JetPrefix
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.JetPrefix
 
 /-!
 # Actual separant stages of a symbolic curve certificate
@@ -16,6 +17,8 @@ set. The stage list retains actual derivative orders and individual jet-degree c
 Batching increases only the challenge-height budget; the characteristic condition concerns
 the jet cap, not the batching degree.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CertificateRootBound
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 
 
 /-!
@@ -28,6 +29,8 @@ available to alternative uniform families of interpolation witnesses.
   up to Capacity*][DKTZ26], Section 7.1, Proposition 7.1
   (all-rate transfer from the low-rate certificate).
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleExactness
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.RestrictedCollectorProof
-import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleExactness
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.RestrictedCollectorProof
+public import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingSemantics
 /-!
 # Restricted-alphabet exactness for the same bounded decoder run
 
@@ -15,6 +17,8 @@ recovery uses the independent extension sample list. Exactness and primitive wor
 one execution returned by the initial-input theorem. The embedding cost is retained separately;
 this theorem does not claim that its instructions are part of the separate-sample driver.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SeparateSampleRestricted
 

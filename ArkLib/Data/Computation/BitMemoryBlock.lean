@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AddressedBitsSemantics
-import ArkLib.Data.Computation.BitLocalActions
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Tactic.FinCases
-import Mathlib.Tactic.Ring
+
+public import ArkLib.Data.Computation.AddressedBitsSemantics
+public import ArkLib.Data.Computation.BitLocalActions
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Tactic.FinCases
+public import Mathlib.Tactic.Ring
 
 /-!
 # Bit-by-bit writes to prefix-addressed memory blocks
@@ -19,6 +21,8 @@ the pointer and index is explicit, and the access/reset is the actual addressed-
 Input pointer and payload bits are already materialized; allocation and serialization are not
 asserted here. This is a fixed bit-RAM controller, not a host running-time theorem.
 -/
+
+@[expose] public section
 
 namespace Computation.BitMemoryBlock
 

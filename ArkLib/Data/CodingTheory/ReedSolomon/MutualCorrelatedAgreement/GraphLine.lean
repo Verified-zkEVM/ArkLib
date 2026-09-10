@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.Algebra.Polynomial.BigOperators
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.Algebra.Polynomial.BigOperators
 /-!
 # Recognizing graph lines from a common agreement sample
 
@@ -17,6 +18,8 @@ the affine combination of those two polynomials.  For a fixed pair of polynomial
 at most one challenge per position can create an agreement which is not common to
 the pair.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

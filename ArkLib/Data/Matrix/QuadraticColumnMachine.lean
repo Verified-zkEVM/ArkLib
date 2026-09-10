@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ColumnEliminationMachine
-import ArkLib.Data.Matrix.QuadraticPivotMachine
+
+public import ArkLib.Data.Matrix.ColumnEliminationMachine
+public import ArkLib.Data.Matrix.QuadraticPivotMachine
 
 /-!
 # Coordinate column elimination
@@ -16,6 +18,8 @@ reversal are explicit. Partial and rejected children remain observable. Wrapper 
 cell-slot/root charges supplement source administrative costs; input materialization, host
 fuel, reclamation and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticColumnMachine
 

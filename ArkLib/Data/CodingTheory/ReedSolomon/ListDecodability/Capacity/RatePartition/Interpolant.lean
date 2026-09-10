@@ -3,12 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Certificates
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.DimensionBound
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.ExactCharacteristicBudget
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Interpolation
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Rank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Certificates
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition.DimensionBound
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.ExactCharacteristicBudget
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Interpolation
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Rank
 /-!
 # Uniform hidden-derivative interpolants from rate-bin bounds
 
@@ -30,6 +34,8 @@ provenance records in `RateBinDimensionBound.lean`.
   up to Capacity*][DKTZ26], global
   interpolation principle and uniform all-rate construction.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

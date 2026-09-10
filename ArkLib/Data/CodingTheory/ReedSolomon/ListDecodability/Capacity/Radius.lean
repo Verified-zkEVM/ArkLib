@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
-import Mathlib.Algebra.Order.Floor.Semiring
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
+public import Mathlib.Algebra.Order.Floor.Semiring
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
 /-!
 # Agreement thresholds and the capacity-gap radius
 
@@ -23,6 +24,8 @@ It then identifies each Reed-Solomon point list with the image, under evaluation
 agreeing message polynomials. The image formulation does not require injectivity of evaluation and
 therefore isolates the cardinality argument from the separate `messageDim ≤ blockLength` condition.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.LiftMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ZeroMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ShiftMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.LiftMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ZeroMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ShiftMachine
 /-!
 # Accepted coordinate regular candidate
 
@@ -15,6 +17,8 @@ The actual lift emits a local candidate. Only the actual residual-zero Boolean p
 translation and final emission. Retained child inputs are constructed and charged at each launch;
 every instruction keeps its full child ledger and outer wrapper. Failure tags propagate exactly.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticRegularRootMachine
 

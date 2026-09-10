@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorDerivativeDegree
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
 
 /-!
 # The three degree bounds on first-order Taylor cuts
@@ -16,6 +17,8 @@ simultaneously for the same literal polynomials. Their intersection removes the 
 corner of the monomial triangle. These membership results are the interface to the
 refined image-degree argument.
 -/
+
+@[expose] public section
 
 namespace AffineHilbert
 

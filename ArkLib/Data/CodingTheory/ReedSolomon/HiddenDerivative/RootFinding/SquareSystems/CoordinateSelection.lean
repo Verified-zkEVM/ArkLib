@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
-import Mathlib.LinearAlgebra.Dual.Lemmas
+public import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+public import Mathlib.LinearAlgebra.Dual.Lemmas
 /-!
 # Selecting a square set of coordinate rows
 
@@ -13,6 +14,8 @@ An injective map from an `r`-dimensional vector space into any coordinate space 
 coordinate rows that remain injective. This selects rows from the given pool itself; it does not
 replace them by generic linear combinations. The empty selection handles dimension zero.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

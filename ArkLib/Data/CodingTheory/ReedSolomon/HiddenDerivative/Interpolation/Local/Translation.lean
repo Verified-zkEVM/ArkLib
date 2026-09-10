@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
-import Mathlib.LinearAlgebra.Matrix.Rank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
+public import Mathlib.LinearAlgebra.Matrix.Rank
 
 /-!
 # Translation and base change of interpolation constraints
@@ -15,6 +16,8 @@ generator weights are nonnegative there. Opposite translation is its inverse. Lo
 at a received point therefore factors through the zero-point map. These facts are independent
 of the interpolation support used by an application.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 open scoped BigOperators Pointwise

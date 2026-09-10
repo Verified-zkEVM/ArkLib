@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Basic
 
 /-!
 # Exact source count for the derivative-order partition support
@@ -14,6 +16,8 @@ X exponents number `(L-D*(u+|b|))₊`. Summing these fibers gives the exact sour
 dimension. The finite outer cutoff on u is redundant for every nonempty fiber
 when D is positive, so this is also the infinite-sum formula in the paper.
 -/
+
+@[expose] public section
 
 noncomputable section
 

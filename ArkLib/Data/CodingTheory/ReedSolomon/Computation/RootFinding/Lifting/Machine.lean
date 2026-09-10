@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientRefinement
 /-!
 # Closed regular lifting loop
@@ -14,6 +15,8 @@ counters, update-index arithmetic, callee wrappers, failures and the final outpu
 The fixed-width initial coefficient vector and shared sample list are materialized inputs.
 The emitted candidate still needs a full residual identity check before acceptance as a root.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.RegularLiftMachine
 

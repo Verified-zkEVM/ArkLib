@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ForwardEchelonSemantics
+
+public import ArkLib.Data.Matrix.ForwardEchelonSemantics
 
 /-!
 # Closed forward-echelon execution
@@ -19,6 +21,8 @@ Costs retain callee charges and add wrapper dispatch/root accesses. Row and tail
 shared; cell/pair allocation and index updates are charged. Input preparation, reclamation,
 constants, interpreter bookkeeping and scalar bit costs are outside the abstract model.
 -/
+
+@[expose] public section
 
 namespace Matrix.ForwardEchelonMachine
 

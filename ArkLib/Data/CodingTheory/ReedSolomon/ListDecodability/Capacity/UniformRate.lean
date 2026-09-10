@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CurveCertificate
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CurveCertificate
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.UniformRateCertificate
 
 /-!
@@ -32,6 +33,8 @@ The proof constructs the uniform partition certificate, converts its integer gua
 characteristic condition required by the root theorem, and applies the complete-list bound. This
 is a mathematical list-size statement and makes no decoder-runtime or bit-complexity claim.
 -/
+
+@[expose] public section
 
 noncomputable section
 

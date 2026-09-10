@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Data.Finset.Prod
+module
+
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Data.Finset.Prod
 
 /-!
 # Avoiding finitely many polynomial root sets
@@ -13,6 +15,8 @@ A nonzero degree-d polynomial has at most d roots, even in an extension field. C
 a sufficiently long distinct list of base-field candidates contains a point avoiding an entire
 finite family. The root sets occur only in the proof; no executable root enumeration is required.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

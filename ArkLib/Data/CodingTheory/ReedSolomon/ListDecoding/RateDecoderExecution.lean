@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Eligibility
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Adapter
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Eligibility
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Adapter
 /-!
 # Executed decoding from the rate-partition parameters
 
@@ -14,6 +17,8 @@ The finite rate choice supplies a candidate to the existing descending ambient s
 program uses integer inputs and strict jet budget `ν+1`; its actual returned coefficient list is
 exact. The bound records primitive work in that execution.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CapacityDecoderMachine
 

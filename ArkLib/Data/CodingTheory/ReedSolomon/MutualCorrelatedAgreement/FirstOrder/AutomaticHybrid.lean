@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.AutomaticCertificate
-import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 /-!
 # Automatic first-order hybrid transfer
 
@@ -18,6 +19,8 @@ then constructs that equation from the automatic interpolation recipe.  The base
 uses an algebraic closure only inside its proof and descends both the equation-restricted result
 and its exceptional set.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 

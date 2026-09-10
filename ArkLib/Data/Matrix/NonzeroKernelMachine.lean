@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ForwardEchelonMachine
-import ArkLib.Data.Matrix.BackSubstitutionMachine
+
+public import ArkLib.Data.Matrix.ForwardEchelonMachine
+public import ArkLib.Data.Matrix.BackSubstitutionMachine
 
 /-!
 # Closed nonzero homogeneous kernel extraction
@@ -20,6 +22,8 @@ Costs use shared immutable list handles. Each driver dispatch pays one control o
 Callee delegation adds one dispatch and two data operations to every callee step. Input
 materialization, memory reclamation, fuel administration and field bit costs are separate.
 -/
+
+@[expose] public section
 
 namespace Matrix.NonzeroKernelMachine
 

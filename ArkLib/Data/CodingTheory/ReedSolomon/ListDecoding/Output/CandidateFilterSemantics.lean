@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterMachine
 /-!
 # Exact polynomial acceptance by the executable candidate filter
 
@@ -13,6 +14,8 @@ accepts exactly the polynomials of degree below the message dimension with the r
 number of agreements. Its accepted output represents the same polynomial in the requested
 width. Input preparation, base-field descent and duplicate removal are not part of this filter.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.AgreementMachine
 

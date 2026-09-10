@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Composition.Sequential.General
+module
+
+public import ArkLib.OracleReduction.Composition.Sequential.General
 
 /-!
 # Purity under sequential composition
@@ -12,6 +14,8 @@ Identity, binary, and finite sequential composition preserve deterministic verif
 pure prover outputs. `Verifier.PureForm.append` also composes explicit deterministic verdict data.
 The binary prover-output result is defined beside the append operation in `Append/Basic.lean`.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

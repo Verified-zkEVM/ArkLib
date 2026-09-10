@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotEliminationMachine
+
+public import ArkLib.Data.Matrix.PivotEliminationMachine
 
 /-!
 # Concrete checks for composed pivot elimination
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.PivotEliminationMachine
 These runs fix indexed lookup, signed factor arithmetic, delegated row/reversal costs and the
 outer return event. All three rejection mechanisms are exercised separately.
 -/
+
+@[expose] public section
 
 namespace Matrix.PivotEliminationMachine
 

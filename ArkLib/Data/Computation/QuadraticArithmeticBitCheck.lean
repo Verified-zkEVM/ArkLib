@@ -3,14 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitAddExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitMulExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitNegExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitInvExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitEqualExecution
-import ArkLib.Data.Computation.QuadraticArithmeticBitLoad
-import ArkLib.Data.Computation.QuadraticArithmeticBitBoolean
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitAddExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitMulExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitNegExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitInvExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitEqualExecution
+public import ArkLib.Data.Computation.QuadraticArithmeticBitLoad
+public import ArkLib.Data.Computation.QuadraticArithmeticBitBoolean
 
 /-!
 # Independent full-bank scalar instruction replay
@@ -21,6 +23,8 @@ flag tapes. Thus the same replay checks output width, reduced value, unmodified 
 retained modulus and inputs, and blank temporary tapes. All five binary-register alias patterns
 are covered, as are unary destination aliases and physical zero words.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitCheck
 

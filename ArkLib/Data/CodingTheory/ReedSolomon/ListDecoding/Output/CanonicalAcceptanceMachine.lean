@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardBounds
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardBounds
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticCandidateSemantics
 /-!
 # Closed canonical base-field candidate acceptance
@@ -20,6 +22,8 @@ The scalar ledger counts base and extension field operations as unit operations 
 Replacing extension operations by their proved base-field implementations is a separate lowering
 obligation. This component neither generates candidates nor proves uniqueness of the whole list.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalAcceptanceMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.WordCopyMachine
-import ArkLib.Data.Computation.BinaryEqualField
+
+public import ArkLib.Data.Computation.WordCopyMachine
+public import ArkLib.Data.Computation.BinaryEqualField
 
 /-!
 # A literal alias-safe scalar-register EQUAL instruction
@@ -20,6 +22,8 @@ The flag frame records the input flags; the final selected flag is observed thro
 control's finite result. No scalar encoding or whole-word assignment executes. This module lowers
 one equality instruction, not register initialization or a whole arithmetic program.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitEqual
 

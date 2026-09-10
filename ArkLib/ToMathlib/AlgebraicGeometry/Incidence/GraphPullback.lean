@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Finite
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Finite
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
 
 /-! # Polynomial identities along polynomial graphs
 
@@ -15,6 +17,8 @@ infinitely many parameter values. Consequently every polynomial vanishing on the
 vanishes identically after restriction to that graph. This avoids constructing image
 closures when recognizing one-parameter families of polynomial solutions.
 -/
+
+@[expose] public section
 
 noncomputable section
 

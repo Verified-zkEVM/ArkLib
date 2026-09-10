@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateRounding
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.FiniteCertificate
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveWeightedSupport
 
 /-!
@@ -24,6 +25,8 @@ the block length.
 This field-generic certificate has no prime-field execution guards.  The executable decoder
 adapter adds those guards separately when it instantiates its interpolation search.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 open scoped BigOperators

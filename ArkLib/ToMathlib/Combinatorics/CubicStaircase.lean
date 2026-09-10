@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
+
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
 
 /-!
 # A cubic lower bound for staircase coefficient counts
@@ -19,6 +21,8 @@ At total degree `s` in two variables there are `s+1` exponent pairs. Each pair l
 therefore gives a cubic staircase count. The exact finite sum proves the cubic lower bound
 without an asymptotic error term, including nonintegral and nonpositive cutoffs.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

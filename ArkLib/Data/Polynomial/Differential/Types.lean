@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.MvPolynomial.Basic
+
+public import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
 # Finite-jet polynomial relations
@@ -14,6 +16,8 @@ The representation is shared by polynomial differential equations and interpolat
 Adapted with permission from `kz99/rs-ld-mca`, revision
 `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`; see the repository permission record.
 -/
+
+@[expose] public section
 
 namespace PolynomialDifferential
 

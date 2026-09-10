@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
 
 /-!
 # Polynomial degree comparison with affine rescaling
@@ -12,6 +14,8 @@ import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
 A positive scalar multiplier and an affine change of the natural input preserve
 the degree comparison needed for finite-module filtration growth bounds.
 -/
+
+@[expose] public section
 
 noncomputable section
 

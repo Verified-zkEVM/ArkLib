@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Symbolic.RegularEquation
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Symbolic.RegularEquation
 /-!
 # Descending correlated agreement from an extension field
 
@@ -12,6 +14,8 @@ An extension-field exceptional set restricts to at most as many base-field chall
 The constituent pair already lives in the base field, so injectivity of the field map
 descends both the polynomial identity and equality of the full agreement sets.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

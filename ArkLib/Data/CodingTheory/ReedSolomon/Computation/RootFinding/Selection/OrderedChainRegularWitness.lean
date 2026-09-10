@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.ActiveOrderAdapter
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.ActiveOrderAdapter
 /-!
 # Regular witnesses at actual ordered chain records
 
@@ -12,6 +14,8 @@ First-nonzero separant witnesses align with the exact sparse records emitted by 
 Under the specialization-degree field-size condition, every bounded root has a regular record
 at some center, and solves every earlier record. No root enumeration or executable oracle is added.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.OrderedChainRegularWitness
 

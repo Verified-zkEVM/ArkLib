@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Substitution
-import ArkLib.Data.Polynomial.Differential.Basic
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
-import Mathlib.Data.ZMod.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Substitution
+public import ArkLib.Data.Polynomial.Differential.Basic
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import Mathlib.Data.ZMod.Basic
 
 
 /-!
@@ -28,6 +29,8 @@ before local coefficient constraints can imply multiplicity.
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Equations (13)--(16).
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

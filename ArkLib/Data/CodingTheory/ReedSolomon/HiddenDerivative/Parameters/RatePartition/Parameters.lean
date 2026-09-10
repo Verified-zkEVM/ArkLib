@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Algebra.Order.Floor.Ring
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Algebra.Order.Floor.Ring
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # Finite parameters for the rate-dependent partition gate
@@ -24,6 +25,8 @@ multiplicity is justified only after the stronger uniform margin is proved.
 All executed inputs are natural numbers. Real parameters here select and certify
 those inputs; they are not representations of executable real-number arithmetic.
 -/
+
+@[expose] public section
 
 noncomputable section
 

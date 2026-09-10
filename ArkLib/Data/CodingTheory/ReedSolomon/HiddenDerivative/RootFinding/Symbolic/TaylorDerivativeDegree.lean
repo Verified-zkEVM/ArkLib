@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorBidegree
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.IndexWeight
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorBidegree
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.IndexWeight
 
 /-!
 # Derivative-variable degree of the first-order Taylor lift
@@ -15,6 +17,8 @@ For a first-order equation of derivative degree `v`, the cleared numerator of co
 coefficient-index bound on the actual universal residual; no choice of a different rational
 representation is made. Padding to a common denominator exponent gives `τ*(v-1)+l`.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

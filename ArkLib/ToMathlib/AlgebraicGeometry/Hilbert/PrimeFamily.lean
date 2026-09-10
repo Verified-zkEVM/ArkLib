@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
 
 /-!
 # Filtered separator injections for finite families of prime components
@@ -12,6 +14,8 @@ import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
 A separator for each component embeds the product of shifted filtered
 component quotients into the quotient by the intersection.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -21,7 +25,7 @@ namespace AffineHilbert
 
 variable {F σ ι : Type*} [Field F] [Finite σ] [Fintype ι]
 
-private def familySeparatorLift (S K : Ideal (MvPolynomial σ F))
+def familySeparatorLift (S K : Ideal (MvPolynomial σ F))
     (f : MvPolynomial σ F) (hmul : ∀ p ∈ S, f * p ∈ K) :
     MvPolynomial σ F ⧸ S →ₗ[F] MvPolynomial σ F ⧸ K :=
   (S.restrictScalars F).liftQ
@@ -54,7 +58,7 @@ private lemma factor_familySeparatorLift_eq_zero
   rw [Ideal.Quotient.factor_mk, Ideal.Quotient.eq_zero_iff_mem]
   exact T.mul_mem_right _ hfT
 
-private def filteredFamilySeparatorLift (S K : Ideal (MvPolynomial σ F))
+def filteredFamilySeparatorLift (S K : Ideal (MvPolynomial σ F))
     (f : MvPolynomial σ F) (hmul : ∀ p ∈ S, f * p ∈ K) {b N : ℕ}
     (hfdeg : f.totalDegree ≤ b) (hbN : b ≤ N) :
     quotientDegreeLE S (N - b) →ₗ[F] quotientDegreeLE K N :=
@@ -72,7 +76,7 @@ private def filteredFamilySeparatorLift (S K : Ideal (MvPolynomial σ F))
         rw [← hpx]
         rfl)
 
-private def separatorFamilyMap (P : ι → Ideal (MvPolynomial σ F))
+def separatorFamilyMap (P : ι → Ideal (MvPolynomial σ F))
     (s : ι → MvPolynomial σ F) (b : ι → ℕ) {N : ℕ}
     (hsOther : ∀ i j, i ≠ j → s i ∈ P j)
     (hsdeg : ∀ i, (s i).totalDegree ≤ b i) (hbN : ∀ i, b i ≤ N) :

@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.Equation
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.Equation
 /-!
 # The actual ordinary tail of the first-order descent
 
@@ -14,6 +17,8 @@ equation supplied by `FirstOrderHybridDescent` has root degree at most the resid
 When that budget is positive, the ordinary equation theorem applies.  When it is zero, the
 content-exception theorem rules out every specialized root away from at most `h` challenges.
 -/
+
+@[expose] public section
 
 open Polynomial
 

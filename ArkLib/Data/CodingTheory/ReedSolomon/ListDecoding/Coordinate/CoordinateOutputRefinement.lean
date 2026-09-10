@@ -3,15 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateOutputMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateOutputMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputMachine
 /-!
 # Same-execution coordinate output collection
 
 Every source collection edge lowers to actual coordinate acceptance or a bounded list-cell
 operation. The represented endpoint preserves accepted order, multiplicity and all early exits.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticCanonicalOutputMachine
 

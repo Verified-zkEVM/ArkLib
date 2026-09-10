@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSampleMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Residual.SampledResidual
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSampleMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Residual.SampledResidual
 /-!
 # Concrete residual refinement for the closed sample machine
 
@@ -14,6 +17,8 @@ explicit equalities to their concrete polynomial interpretations. Finite variabl
 the arity bound. No noncomputable list construction is used by the machine, and input preparation
 remains outside its stated costs.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualSampleMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Algebra.BigOperators.Ring.Finset
 
 /-!
 # Scaling the finite interpolation-height certificate for polynomial curves
@@ -21,6 +22,8 @@ This is the arithmetic height transfer, not construction of a symbolic interpola
   up to Capacity*][DKTZ26], Section 5.6 (Theorem 5.14), the finite-height comparison for
   polynomial curves.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

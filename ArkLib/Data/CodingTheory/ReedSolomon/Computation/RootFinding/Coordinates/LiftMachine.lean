@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.DirectMachine
-import ArkLib.Data.Polynomial.QuadraticUpdateMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.DirectMachine
+public import ArkLib.Data.Polynomial.QuadraticUpdateMachine
 /-!
 # Coordinate regular lifting loop
 
@@ -16,6 +17,8 @@ persist across stages. Every child instruction retains its ledger plus outer dis
 input construction and successful option allocation are explicit. The initial vector and samples
 are supplied. Full residual acceptance, input preparation, interpreter and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticRegularLiftMachine
 

@@ -3,11 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, scaraven
 -/
+module
 
-import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
-import ArkLib.ToMathlib.Logic.HEq
-import ArkLib.OracleReduction.Security.RoundByRound
-import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
+public import ArkLib.ToMathlib.Logic.HEq
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
 # Sequential composition of provers and verifiers
@@ -19,6 +20,8 @@ challenge-sampling transport and oracle-verifier conversion equalities.
 Protocol specifications and transcript operations are defined in `ProtocolSpec/SeqCompose.lean`.
 `Composition/Sequential/Append.lean` exports execution and security results.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec
 
@@ -43,6 +46,12 @@ private theorem simulateQ_queryAlongHEq {A B : Type}
   cases eq_of_heq hab
   exact hImpl q
 
+/-- Arity bookkeeping for `Prover.append`'s state family. Stated as a standalone lemma
+rather than an inline `by omega`: under the module system a tactic proof inside a public
+definition is elaborated lazily, which would leave a metavariable in the type of
+`sendMessage`'s `state`. -/
+theorem Prover.append_state_arity (m n : ℕ) : m + n + 1 = m + 1 + n := by omega
+
 /-- Compose two provers by feeding the first prover's output into the second prover's input.
 The first prover's final state is retained until the second protocol's first round; for an empty
 second protocol, the transfer occurs during output. -/
@@ -52,7 +61,8 @@ def Prover.append (P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁)
 
   /- The combined prover's states are the concatenation of the first prover's states and the second
   prover's states (except the first one). -/
-  PrvState := Fin.append (m := m + 1) P₁.PrvState (Fin.tail P₂.PrvState) ∘ Fin.cast (by omega)
+  PrvState := Fin.append (m := m + 1) P₁.PrvState (Fin.tail P₂.PrvState) ∘
+    Fin.cast (Prover.append_state_arity m n)
 
   /- The combined prover always starts with the first prover's input function, including when the
   first protocol is empty. The second prover is initialized when the seam is processed. -/
@@ -351,7 +361,7 @@ variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   {ιₛ₂ : Type} {OStmt₂ : ιₛ₂ → Type} [Oₛ₂ : ∀ i, OracleInterface (OStmt₂ i)]
   {ιₛ₃ : Type} {OStmt₃ : ιₛ₃ → Type} [Oₛ₃ : ∀ i, OracleInterface (OStmt₃ i)]
 
-private theorem message_interface_inl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
+theorem message_interface_inl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
     (inferInstance : OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i))) := by
   rcases i with ⟨i, hi⟩
   let u : (i : Fin m) →
@@ -380,7 +390,7 @@ private theorem message_interface_inl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i
     (congrArg OracleInterface (Fin.vappend_left pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 
-private theorem message_interface_inr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i)
+theorem message_interface_inr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i)
     (inferInstance : OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i))) := by
   rcases i with ⟨i, hi⟩
   let u : (i : Fin m) →
@@ -409,10 +419,10 @@ private theorem message_interface_inr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i
     (congrArg OracleInterface (Fin.vappend_right pSpec₁.«Type» pSpec₂.«Type» i).symm)
     hf.symm ha
 
-private abbrev AppendSpec :=
+abbrev AppendSpec :=
   oSpec + ([OStmt₁]ₒ + [(pSpec₁ ++ₚ pSpec₂).Message]ₒ)
 
-private def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
+def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
     (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
   fun q => by
     rcases q with ⟨i, q⟩
@@ -423,7 +433,7 @@ private def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
         (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
           ⟨MessageIdx.inl i, t⟩) q
 
-private def messageQueryInr : QueryImpl [pSpec₂.Message]ₒ (OracleComp
+def messageQueryInr : QueryImpl [pSpec₂.Message]ₒ (OracleComp
     (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
   fun q => by
     rcases q with ⟨i, q⟩
@@ -478,7 +488,7 @@ private theorem simulateQ_messageQueryInr
     (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)) ?_
   rfl
 
-private def firstQueryImpl : QueryImpl (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))
+def firstQueryImpl : QueryImpl (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))
     (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
       (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
   ((QueryImpl.id' oSpec).liftTarget (OracleComp
@@ -524,7 +534,7 @@ private theorem simulateQ_simulateQ_firstQueryImpl_optionT
   apply OptionT.ext
   exact simulateQ_simulateQ_firstQueryImpl oStmt messages oa.run
 
-private def secondQueryImpl
+def secondQueryImpl
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (challenges : pSpec₁.Challenges) :
     QueryImpl (oSpec + ([OStmt₂]ₒ + [pSpec₂.Message]ₒ))
@@ -588,7 +598,7 @@ private theorem simulateQ_simulateQ_secondQueryImpl_optionT
   apply OptionT.ext
   exact simulateQ_simulateQ_secondQueryImpl V₁ challenges oStmt messages oa.run
 
-private def appendOutputSimulation
+def appendOutputSimulation
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂) :
     OracleOutputSimulation oSpec OStmt₁ OStmt₃ (pSpec₁ ++ₚ pSpec₂) where

@@ -3,10 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionExtension
+module
+
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionExtension
 
 
 /-! # A cardinality-preserving embedding of regular solutions into the Taylor chart -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

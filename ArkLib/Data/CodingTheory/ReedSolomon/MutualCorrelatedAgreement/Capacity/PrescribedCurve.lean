@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Certificate
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Certificate
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductCounting
 /-!
 # Prescribed mutual correlated agreement on extension-field polynomial curves
 
@@ -15,6 +18,8 @@ order and jet cap depend only on the capacity gap.  Its actual separant stages f
 polynomial-curve incidence theorem before any stage-order uniformization.  The chunked power lift
 then gives the sharp batching-linear scalar envelope with the paper's `n^(d+1)` exponent.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

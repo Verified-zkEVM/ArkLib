@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.SupportCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.JetPrefix
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.JetPrefix
 
 
 /-!
@@ -16,6 +17,8 @@ The existing interpolation certificate supplies the concrete nonzero symbolic eq
 height bound, and differential identities needed by separant descent. Its stage list
 retains actual derivative orders and individual exponent budgets.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Monad
-import Mathlib.LinearAlgebra.FiniteDimensional.Defs
-import Mathlib.RingTheory.MvPolynomial.Homogeneous
+
+public import Mathlib.Algebra.MvPolynomial.Monad
+public import Mathlib.LinearAlgebra.FiniteDimensional.Defs
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Weighted-degree bounds for multivariate polynomials
@@ -34,6 +36,8 @@ variables must add separate degree caps before using a finite-dimensional count.
   coefficient projections.
 * `finrank_restrictWeightedDegree`: the finite positive-weight dimension formula.
 -/
+
+@[expose] public section
 
 noncomputable section
 

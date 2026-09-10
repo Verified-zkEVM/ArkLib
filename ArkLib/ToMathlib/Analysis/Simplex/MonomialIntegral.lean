@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
-import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+
+public import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
+public import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # Monomial integrals over a simplex
@@ -19,6 +21,8 @@ factorial formula, with an arbitrary exponent on the slack coordinate as well. T
 ordinary real interval integrals; identifying the repeated integral with a multivariate set
 integral is a separate Fubini step for applications that use a volume measure.
 -/
+
+@[expose] public section
 
 open MeasureTheory
 

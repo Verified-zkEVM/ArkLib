@@ -3,14 +3,15 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.RingSwitching.Packing.Spec
-import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
-import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Composition.Sequential.Append
-import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
-import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+public import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Composition.Sequential.Append
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 
 /-!
 # The composed interactive packing reduction
@@ -41,6 +42,8 @@ instantiated by `ProofSystem/Binius/FRIBinius/`.
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
   Binary Towers." Cryptology ePrint Archive (2024).
 -/
+
+@[expose] public section
 
 namespace RingSwitching.FullRingSwitching
 noncomputable section

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.JetHornerMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+
+public import ArkLib.Data.Polynomial.JetHornerMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 
 /-!
 # Quadratic jet Horner evaluation by base instructions
@@ -20,6 +22,8 @@ its complete base ledger plus a dispatch/root wrapper. Launch reads operands/par
 the three input registers; return reads and installs the pair. Retained list roots are shared.
 The model counts primitive operations, not compiled execution, interpreter fuel or bit complexity.
 -/
+
+@[expose] public section
 
 namespace Polynomial.QuadraticJetHornerMachine
 

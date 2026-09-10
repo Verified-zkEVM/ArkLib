@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualCoefficientMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticSystemMachine
-import ArkLib.Data.Matrix.QuadraticBackSubstitutionMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticSystemMachine
+public import ArkLib.Data.Matrix.QuadraticBackSubstitutionMachine
 /-!
 # Coordinate residual coefficient recovery
 
@@ -18,6 +20,8 @@ additional writes allocate coordinate slots and a second literal completes the p
 Successful return pays the extra option/root slot. No bulk conversion or zero-vector operation
 runs. Input preparation, interpreter administration and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualCoefficientMachine
 

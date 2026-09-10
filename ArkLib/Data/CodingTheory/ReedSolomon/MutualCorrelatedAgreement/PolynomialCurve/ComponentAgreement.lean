@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ComponentRecognition
 /-!
 # Common agreements of polynomial-graph components
@@ -20,6 +21,8 @@ restriction on the characteristic relative to the batching degree.
   up to Capacity*][DKTZ26], Section 5.6 (Theorem 5.14), common and accidental agreements
   on polynomial graphs.
 -/
+
+@[expose] public section
 
 noncomputable section
 

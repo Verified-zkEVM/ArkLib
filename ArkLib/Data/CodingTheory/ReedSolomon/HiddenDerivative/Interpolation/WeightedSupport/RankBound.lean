@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
 
 /-!
 # The weighted positive-part local rank count
@@ -15,6 +17,8 @@ For each contact residual, the first-derivative slot count depends on the remain
 of its higher-jet tuple. Rounding costs one per tuple. Keeping this dependence is what permits
 the mean/variance bound on the enlarged simplex to replace the old uniform degree cap.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 namespace ReedSolomon.HiddenDerivative

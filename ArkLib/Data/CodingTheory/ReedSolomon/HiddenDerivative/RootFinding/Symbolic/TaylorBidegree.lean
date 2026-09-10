@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCutDegree
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Bidegree
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCutDegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Bidegree
 
 /-!
 # Bidegrees of symbolic Taylor cuts
@@ -19,6 +21,8 @@ degree at most `ell` lies in `(ell + τ*h, 1 + τ*(v-1))`.
 The conclusions are stated as membership in `AffineHilbert.restrictBidegree`, so the cuts can
 be passed directly to `AffineHilbert.bidegreeLift`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

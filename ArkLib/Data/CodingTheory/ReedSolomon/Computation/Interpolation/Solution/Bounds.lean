@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Attempts
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Attempts
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
-import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
-import ArkLib.Data.MvPolynomial.QuadraticInputMachine
+public import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
+public import ArkLib.Data.MvPolynomial.QuadraticInputMachine
 /-!
 # Numerical bounds for actual sparse interpolation outputs
 
@@ -17,6 +18,8 @@ large exponents or factor lists. The generic bound is quadratic in `m*A`, with c
 controlled only by the derivative order and multiplicity. Its order-zero specialization remains
 polynomial when multiplicity grows. Scalar embedding shares factors and preserves these measures.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine
 

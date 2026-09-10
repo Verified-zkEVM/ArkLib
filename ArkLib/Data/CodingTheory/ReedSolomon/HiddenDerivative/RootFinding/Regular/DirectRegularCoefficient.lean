@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Completeness
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Completeness
 /-!
 # Direct regular coefficient solving
 
@@ -17,6 +18,8 @@ This is a functional optimization of the exhaustive scan. The concrete residual 
 use polynomial operations whose closed operational cost adequacy is open. No runtime or total
 field-operation bound is claimed here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

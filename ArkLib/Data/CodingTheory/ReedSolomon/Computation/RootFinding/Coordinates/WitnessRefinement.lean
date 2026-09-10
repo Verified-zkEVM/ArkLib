@@ -3,15 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.WitnessMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatchSpec
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.WitnessMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatchSpec
 /-!
 # Same-execution first-nonzero coordinate witness
 
 The emitted optional point is exactly the source ordered witness. Each source edge lowers with
 one absolute factor, independent of sample count; every delegated base instruction is charged.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualWitnessMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticPivotSolveMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.Matrix.QuadraticPivotSolveMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Same-execution coordinate pivot correction
@@ -14,6 +16,8 @@ Every source dot, scalar and indexed-update phase lowers to actual retained base
 The source additive correction is preserved even for a nonzero initial pivot value. Proof-only
 maps relate all partial states. Only inverse semantics require a certified nonsquare parameter.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticPivotSolveMachine
 

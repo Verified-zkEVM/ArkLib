@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Recognition
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Recognition
 /-!
 # Admissible Frobenius graphs
 
@@ -12,6 +14,8 @@ A retained pair satisfies actual polynomial identities along its initial-value g
 These identities include a common original-size sample, so every regular specialization
 reconstructs the same base-field pair.
 -/
+
+@[expose] public section
 
 noncomputable section
 

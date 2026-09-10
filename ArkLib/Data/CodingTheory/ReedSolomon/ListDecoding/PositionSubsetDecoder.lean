@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SampleInterpolation
-import Mathlib.Data.Finset.Powerset
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SampleInterpolation
+public import Mathlib.Data.Finset.Powerset
 /-!
 # Reference decoder from agreeing position subsets
 
@@ -14,6 +15,8 @@ polynomial through each subset, checks its full agreement, and removes duplicate
 vectors. It never enumerates field elements. The construction is exponential in the block length
 and is intended as a correctness reference and as the bounded-length branch of faster decoders.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.PositionSubsetDecoder
 

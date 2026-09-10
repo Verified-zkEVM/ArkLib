@@ -3,15 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentAgreement
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentAgreement
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorWitnessEmbedding
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.EvaluationDimension
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
-import Mathlib.RingTheory.Localization.FractionRing
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.EvaluationDimension
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
+public import Mathlib.RingTheory.Localization.FractionRing
 /-!
 # Dimensions of retained Taylor-chart components
 
@@ -34,6 +36,8 @@ the coefficient-space threshold, while dimension one uses the existing excluded-
 The older fixed-threshold first-order theorem remains as a compatibility result.
 -/
 
+@[expose] public section
+
 open PolynomialDifferential
 
 noncomputable section
@@ -44,10 +48,10 @@ open Polynomial MvPolynomial HiddenDerivative AffineHilbert
 
 variable {F E : Type*} [Field F] [Field E] {n k K r : ℕ}
 
-private abbrev ChartRing (r : ℕ) (E : Type*) [Field E] :=
+abbrev ChartRing (r : ℕ) (E : Type*) [Field E] :=
   MvPolynomial (Fin (r + 1)) E
 
-private abbrev ChartAway {r : ℕ} {E : Type*} [Field E]
+abbrev ChartAway {r : ℕ} {E : Type*} [Field E]
     (P : Ideal (ChartRing r E)) (s : ChartRing r E) :=
   Localization.Away (Ideal.Quotient.mk P s)
 
@@ -481,10 +485,10 @@ theorem chart_dimensionSensitive_component_of_exponent
     rw [hcard] at hle
     omega
 
-private abbrev SourceRing (r : ℕ) (E : Type*) [Field E] :=
+abbrev SourceRing (r : ℕ) (E : Type*) [Field E] :=
   MvPolynomial (Option (Fin (r + 1))) E
 
-private abbrev SourceAway {r : ℕ} {E : Type*} [Field E]
+abbrev SourceAway {r : ℕ} {E : Type*} [Field E]
     (P : Ideal (SourceRing r E)) (s : SourceRing r E) :=
   Localization.Away (Ideal.Quotient.mk P s)
 

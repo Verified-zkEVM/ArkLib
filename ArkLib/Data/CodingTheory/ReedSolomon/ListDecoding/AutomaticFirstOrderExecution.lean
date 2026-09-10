@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateEligibility
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateEligibility
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.AutomaticCertificate
 /-!
 # Executing the automatic first-order certificate
@@ -17,6 +19,8 @@ length threshold discharges the decoder's stronger size guards whenever the prim
 at least the block length. The result records the existing primitive-work ledger; it introduces
 no new cost model.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CapacityDecoderMachine
 

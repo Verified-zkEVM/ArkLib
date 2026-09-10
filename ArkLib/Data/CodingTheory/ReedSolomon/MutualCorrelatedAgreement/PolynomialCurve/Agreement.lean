@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
-import ArkLib.ToMathlib.Polynomial.SimultaneousRoots
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.ToMathlib.Polynomial.SimultaneousRoots
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.LinearAlgebra.Lagrange
 /-!
 # Agreement on polynomial curves of received words
 
@@ -22,6 +23,8 @@ has at least `L` common agreements. No characteristic bound involving `ℓ` is r
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], Section 5.6 (Theorem 5.14), polynomial graphs and accidental agreements.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.CanonicalProof
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.CanonicalProof
 /-!
 # Canonical uniqueness with separate recovery and guard samples
 
@@ -12,6 +14,8 @@ Actual recovery uses its distinct sample grid and strict degree bound. Guard tes
 other list, including a restricted base alphabet. Global current identities imply these tests;
 vanishing on the guard grid is never used to infer a global polynomial identity.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalRootSelection
 

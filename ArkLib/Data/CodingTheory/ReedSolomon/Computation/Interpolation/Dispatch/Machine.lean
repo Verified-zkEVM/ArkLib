@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Proofs
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Bounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.ZeroBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Proofs
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Bounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.ZeroBounds
 /-!
 # Direct order-zero and descending positive-order interpolation
 
@@ -15,6 +16,8 @@ order uses descending ambient search. Every returned interpolant is tied to the 
 direct attempt that produced it. The fixed dispatch charge is added to the executed child's
 ledger, including all failed attempts in the positive-order branch.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.AmbientSearchMachine
 

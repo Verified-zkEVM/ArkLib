@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.MvPolynomial.IsolatedRoot
-import ArkLib.Data.Polynomial.Rojas.AffineCover
-import ArkLib.Data.Polynomial.UnivariateRepresentation.AffineTranslation
-import ArkLib.Data.Polynomial.UnivariateRepresentation.Point
+module
+
+public import ArkLib.Data.MvPolynomial.IsolatedRoot
+public import ArkLib.Data.Polynomial.Rojas.AffineCover
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.AffineTranslation
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.Point
 
 /-!
 # Affine wrapper around a torus univariate-representation backend
@@ -16,6 +18,8 @@ scalar chart, calls a supplied torus backend, undoes each chart in the returned
 rational maps, and concatenates the results.  The backend remains an explicit
 argument: this file does not construct a toric resultant solver.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas.AffineSolver
 

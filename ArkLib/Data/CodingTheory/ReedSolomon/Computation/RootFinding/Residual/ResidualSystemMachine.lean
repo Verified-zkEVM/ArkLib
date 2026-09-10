@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualBatchMachine
-import ArkLib.Data.Matrix.VandermondeMachine
-import ArkLib.Data.Matrix.ForwardEchelonMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualBatchMachine
+public import ArkLib.Data.Matrix.VandermondeMachine
+public import ArkLib.Data.Matrix.ForwardEchelonMachine
 /-!
 # From residual samples to materialized echelon equations
 
@@ -21,6 +23,8 @@ output consists of indexed pivots and residual rows, not a solved coefficient ve
 preparation, point enumeration, back-substitution, scalar bit costs, and interpreter bookkeeping
 are separate obligations. The semantic row specifications are used only in proofs.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualSystemMachine
 

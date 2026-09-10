@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryEqualField
+
+public import ArkLib.Data.Computation.BinaryEqualField
 
 /-!
 # Literal scalar equality execution checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryEqualField
 Arbitrary zero padding affects physical cost but not the Boolean result. The comparison's
 ordering and final Boolean result occupy distinct charged control states.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryEqualMachine
 

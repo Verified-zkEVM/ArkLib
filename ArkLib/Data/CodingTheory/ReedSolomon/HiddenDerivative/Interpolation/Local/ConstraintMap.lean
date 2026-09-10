@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Quang Dao, Justin Thaler
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
-import Mathlib.Data.Finsupp.SMul
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
+public import Mathlib.Data.Finsupp.SMul
 
 
 /-!
@@ -38,6 +39,8 @@ formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`, files
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26].
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

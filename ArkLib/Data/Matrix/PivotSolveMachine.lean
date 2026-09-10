@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ForwardEchelonSemantics
+
+public import ArkLib.Data.Matrix.ForwardEchelonSemantics
 
 /-!
 # Closed correction of one pivot coordinate
@@ -24,6 +26,8 @@ old value and correction, allocates and writes the output (5). Emission reads an
 handle (2). Index tests/decrements, field operations, equalities and outputs are separate fields.
 Immutable list handles are shared; reclamation and interpreter fuel are outside this model.
 -/
+
+@[expose] public section
 
 namespace Matrix.PivotSolveMachine
 

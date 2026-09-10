@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
-import Mathlib.Data.List.Sublists
-import Mathlib.Data.Nat.Choose.Bounds
+public import Mathlib.Data.List.Sublists
+public import Mathlib.Data.Nat.Choose.Bounds
 
 /-!
 # Executable lists of square systems
@@ -19,6 +20,8 @@ chart equation as its first row and adds `r` rows from the agreement-and-tail po
 square in the `r+1` jet coordinates. Coincident polynomial rows may produce duplicate systems,
 which is harmless before the solver's final candidate deduplication.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

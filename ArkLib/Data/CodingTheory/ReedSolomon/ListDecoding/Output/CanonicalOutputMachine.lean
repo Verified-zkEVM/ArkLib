@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalAcceptanceSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalAcceptanceSemantics
 /-!
 # Closed canonical collection of base-field root candidates
 
@@ -15,6 +17,8 @@ and allocates only accepted base-output cells. Explicit reversal preserves enume
 There is no duplicate search, set conversion, bulk filter, or uncharged acceptance callback.
 Duplicate freedom follows separately from the generated records' canonical-witness properties.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalOutputMachine
 

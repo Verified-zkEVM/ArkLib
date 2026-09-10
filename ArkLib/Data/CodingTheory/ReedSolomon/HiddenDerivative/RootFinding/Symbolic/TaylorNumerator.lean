@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Numerator
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Numerator
 
 
 /-!
@@ -14,6 +15,8 @@ The recurrence retains polynomial parameters in the coefficient ring. Its only i
 the binomial scalar inverse in the base field; it never inverts a coefficient-ring separant.
 Coefficient specialization is therefore meaningful even where the separant vanishes.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

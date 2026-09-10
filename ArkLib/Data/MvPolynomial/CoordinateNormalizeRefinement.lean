@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Same-execution coordinate normalization
@@ -13,6 +15,8 @@ import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 All insertion cursors, key comparisons and cancellation outcomes are retained. Each source edge
 lowers to actual base instructions with an absolute factor and the identical emitted term list.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticNormalizeMachine
 

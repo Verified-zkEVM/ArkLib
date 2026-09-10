@@ -3,12 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionGeometry
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
-import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+module
+
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionGeometry
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 
 /-! # Faithful extension transport for regular solution geometry -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

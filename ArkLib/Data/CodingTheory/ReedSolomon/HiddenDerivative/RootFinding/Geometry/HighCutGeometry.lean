@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.InitialGeometry
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.AgreementGeometry
-import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.InitialGeometry
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.AgreementGeometry
+public import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
 
 
 /-!
@@ -16,6 +19,8 @@ The finitely many high Taylor numerators cut the initial hypersurface into retai
 components.  These components cover every regular high-cut solution, contain the entire high-cut
 ideal, and retain the sharp initial Bezout potential.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

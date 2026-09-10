@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderMachine
 /-!
 # Prepared decoding with distinct recovery and guard sample lists
 
@@ -13,6 +14,8 @@ separate materialized guard grid. Root recovery continues to use the original re
 This permits base-field centers and jets without requiring the entire residual polynomial to
 be determined by base-field samples. Every delegated instruction and handoff remains charged.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SeparateSampleDecoder
 

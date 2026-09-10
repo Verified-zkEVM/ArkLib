@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.CellPayloadMachine
-import ArkLib.Data.Computation.SharedListHeapExecution
+
+public import ArkLib.Data.Computation.CellPayloadMachine
+public import ArkLib.Data.Computation.SharedListHeapExecution
 
 /-!
 # Literal payload construction and shared-list cell writing
@@ -20,6 +22,8 @@ scalar encoding, reads, and a full decoder bit-cost refinement are separate obli
 transition count includes payload construction, the literal handoff, and every writer transition.
 It is a count in the stated bit-RAM model, not native Lean execution time.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListCellMachine
 

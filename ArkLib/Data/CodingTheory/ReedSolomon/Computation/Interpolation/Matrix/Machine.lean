@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.PointMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.PointMachine
 /-!
 # Materialized received-point interpolation matrices
 
@@ -19,6 +20,8 @@ scalar-input reads, natural counter updates, cursor/register accesses, and resul
 List tails are shared immutably. Bit costs, garbage collection and host fuel are outside this
 unit-operation model. The initial support enumeration is additional to each point's enumeration.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ReceivedInterpolationMatrixMachine
 

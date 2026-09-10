@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.VandermondeMachine
+
+public import ArkLib.Data.Matrix.VandermondeMachine
 
 /-!
 # Augmented Vandermonde construction canaries
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.VandermondeMachine
 Distinct points and RHS entries expose ordering mistakes. Boundary runs check empty coefficient
 rows, empty samples and the separately charged final output.
 -/
+
+@[expose] public section
 
 namespace Matrix.VandermondeMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
 /-!
 # Weighted-support witnesses in the executable interpolation search
 
@@ -13,6 +15,8 @@ The mathematical weighted-support constructor returns the two strict bounds that
 finite support enumerated by the decoder. This module converts those bounds into the executable
 `Eligible` predicate and places the prescribed ambient degree inside the descending search range.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

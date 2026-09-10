@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetPreparationMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetPreparationMachine
 /-!
 # Closed change of center
 
@@ -19,6 +21,8 @@ free list-length scan. Bulk polynomial operations and list specifications occur 
 The inherited primitive models share retained registers and treat host fuel bookkeeping and
 scalar bit costs separately. This subroutine makes no base-field descent or full-decoder claim.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CenterShiftMachine
 

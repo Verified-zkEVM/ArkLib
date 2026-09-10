@@ -3,14 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.FieldTheory.RatFunc.Basic
-import Mathlib.LinearAlgebra.Basis.VectorSpace
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.LinearAlgebra.Matrix.Rank
-import Mathlib.LinearAlgebra.Matrix.ToLin
-import Mathlib.RingTheory.Polynomial.DegreeLT
+
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.FieldTheory.RatFunc.Basic
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+public import Mathlib.LinearAlgebra.Matrix.Rank
+public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.RingTheory.Polynomial.DegreeLT
 
 /-!
 # Polynomial kernel vectors of bounded degree
@@ -28,6 +30,8 @@ The intrinsic rank version proves the polynomial-kernel height lemma of [DKTZ26]
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26], Section 5.1, Lemma 5.1.
 -/
+
+@[expose] public section
 
 open Polynomial
 

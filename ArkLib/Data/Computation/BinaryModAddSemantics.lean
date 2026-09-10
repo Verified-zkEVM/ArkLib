@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryModAddMachine
-import ArkLib.Data.Computation.BinaryBorrowSemantics
+
+public import ArkLib.Data.Computation.BinaryModAddMachine
+public import ArkLib.Data.Computation.BinaryBorrowSemantics
 
 /-!
 # Modular addition correctness with charged storage
@@ -14,6 +16,8 @@ The same trace includes addition, two physical copies, the recorded-borrow subtr
 backup recovery or clearing. The modulus is retained exactly and all scratch tapes are empty
 at the final state. Numeric modulus and width arithmetic occur only in specifications.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryModAddMachine
 

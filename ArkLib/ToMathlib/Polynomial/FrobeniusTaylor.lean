@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Expand
-import Mathlib.Algebra.Polynomial.Taylor
+
+public import Mathlib.Algebra.Polynomial.Expand
+public import Mathlib.Algebra.Polynomial.Taylor
 
 /-!
 # Sparse Taylor coefficients after Frobenius pullback
@@ -14,6 +16,8 @@ Pulling a polynomial back by `X ↦ X ^ (p ^ e)` and expanding at `t` retains pr
 Taylor coefficients of the original polynomial at `t ^ (p ^ e)`, at indices divisible by
 `p ^ e`. This is the coefficient projection used by the ordinary Frobenius chart.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

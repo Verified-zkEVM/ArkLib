@@ -3,15 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
-import
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.FirstOrderRateParameters
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrderCurve
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PowerToLine
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrderCurve
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PowerToLine
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateLimits
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateLimits
 /-!
 # First-order rate-dependent correlated agreement
 
@@ -19,6 +21,8 @@ A finite rate certificate constructs one symbolic equation for an entire receive
 curve consumer chooses one exceptional set before the challenge and candidate polynomial, and
 outside it recovers equality of the complete agreement set.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
-import Mathlib.FieldTheory.RatFunc.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
+public import Mathlib.FieldTheory.RatFunc.Basic
 /-!
 # Agreement bounds for interleaved Reed--Solomon codes
 
@@ -30,6 +31,8 @@ and gives the *same* list bound, independent of the interleaving width.  These a
 statements: they quantify over every received interleaved word and make no transcript or
 whole-protocol claim.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

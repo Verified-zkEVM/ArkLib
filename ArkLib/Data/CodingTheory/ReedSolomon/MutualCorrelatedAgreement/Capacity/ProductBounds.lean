@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
-import Mathlib.Analysis.SpecialFunctions.Exp
-import Mathlib.Analysis.Complex.ExponentialBounds
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DimensionSensitive
+public import Mathlib.Analysis.SpecialFunctions.Exp
+public import Mathlib.Analysis.Complex.ExponentialBounds
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 /-!
 # Dimension-sensitive product estimates
 
@@ -19,6 +20,8 @@ At the original agreement threshold, each factor costs at most `1 / δ`. At the
 intermediate cutoff, the entire fiber product costs less than `3 / δ ^ r`.
 The one remaining joint factor costs at most `(d + 1) / δ`.
 -/
+
+@[expose] public section
 
 open AffineHilbert
 namespace ReedSolomon

@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
-import Mathlib.Algebra.Field.ZMod
-import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
+public import Mathlib.Algebra.Field.ZMod
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 /-!
 # Hidden-derivative interpolation witnesses
 
@@ -28,6 +31,8 @@ additionally requires a decoder with proved output refinement and bit complexity
 * [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed-Solomon
   Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], hidden-derivative interpolation.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryRetainedNegateMachine
-import ArkLib.Data.Computation.BinaryNegateSemantics
-import ArkLib.Data.Computation.BinaryWordBounds
+
+public import ArkLib.Data.Computation.BinaryRetainedNegateMachine
+public import ArkLib.Data.Computation.BinaryNegateSemantics
+public import ArkLib.Data.Computation.BinaryWordBounds
 
 /-!
 # Same-run retained-modulus negation
@@ -14,6 +16,8 @@ import ArkLib.Data.Computation.BinaryWordBounds
 The arithmetic modulus copy is constructed by the trace itself. Correctness, canonical output,
 modulus retention and width bounds all refer to the same literal execution.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryRetainedNegateMachine
 

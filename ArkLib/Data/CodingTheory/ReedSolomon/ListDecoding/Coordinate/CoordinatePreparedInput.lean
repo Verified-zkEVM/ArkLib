@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticInputMachine
-import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
+public import ArkLib.Data.MvPolynomial.QuadraticInputMachine
+public import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
 /-!
 # Literal pair input preparation
 
@@ -13,6 +14,8 @@ Each base-field coefficient allocates its actual zero imaginary coordinate, coef
 term and outer cell. Factor tails are shared. Reversal retains input order and duplicates.
 The executable state contains only base-field values and pairs, never quadratic-algebra values.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticPreparedInputMachine
 

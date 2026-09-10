@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Recognition
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Recognition
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorWitnessEmbedding
 /-!
 # Actual solutions in sparse Frobenius charts
@@ -13,6 +15,8 @@ import
 Order-zero recurrence pivots are all one. Thus every regular pulled polynomial solution
 satisfies the actual sparse and agreement equations in every characteristic.
 -/
+
+@[expose] public section
 
 noncomputable section
 

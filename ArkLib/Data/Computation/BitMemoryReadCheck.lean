@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListRead
-import ArkLib.Data.Computation.SharedListCellMachine
-import ArkLib.Data.Computation.SharedListCellReadMachine
+
+public import ArkLib.Data.Computation.SharedListRead
+public import ArkLib.Data.Computation.SharedListCellMachine
+public import ArkLib.Data.Computation.SharedListCellReadMachine
 
 /-!
 # Kernel checks for literal block and cell reads
@@ -15,6 +17,8 @@ The tests observe actual traces at their final-step boundaries. Nonzero bit indi
 stored bits, mixed-valued length markers, dirty memory, and read-after-actual-write are covered.
 The arbitrary suspended-child test prevents a false claim that every possible state is read-only.
 -/
+
+@[expose] public section
 
 namespace Computation.BitMemoryRead
 

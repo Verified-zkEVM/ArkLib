@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.Canonical
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.Canonical
 /-!
 # Sound and complete canonical root selection
 
 Completeness first fixes a globally first nonzero separant stage. It then chooses the first
 nonzero supplied sample at that stage, and uses prescribed-center retention in the actual driver.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalRootSelection
 

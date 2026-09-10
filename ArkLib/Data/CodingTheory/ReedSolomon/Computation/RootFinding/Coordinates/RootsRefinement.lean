@@ -3,12 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootRefinement
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootsMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootRefinement
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsSemantics
 /-!
 # Same-execution coordinate candidate enumeration
 
@@ -16,6 +19,8 @@ Pointwise representation preserves the entire ordered enumeration and output, in
 jets, skipped roots and preparation failures. Actual child instructions compose with one constant
 factor over total source steps, never a factor compounded by the number of candidates.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticJetRootsMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.DerivativeDescent
-import Mathlib.Algebra.MvPolynomial.Equiv
+public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
+public import Mathlib.Algebra.MvPolynomial.Equiv
 
 
 /-!
@@ -36,6 +37,8 @@ claimed here.
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.3 and Section 4.2.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

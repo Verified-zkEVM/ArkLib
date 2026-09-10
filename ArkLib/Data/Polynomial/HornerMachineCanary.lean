@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.HornerMachine
+
+public import ArkLib.Data.Polynomial.HornerMachine
 
 /-!
 # Closed Horner-machine boundary and mutation checks
@@ -16,6 +18,8 @@ input and zero coefficients check termination overhead and work independent of c
 The final mutant interchanges addition and multiplication while retaining the same instruction
 count; its different result detects the wrong arithmetic order.
 -/
+
+@[expose] public section
 
 namespace Polynomial.HornerMachine
 

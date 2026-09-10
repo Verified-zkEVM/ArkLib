@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticColumnRefinement
+
+public import ArkLib.Data.Matrix.QuadraticColumnRefinement
 
 /-!
 # Kernel checks for coordinate column elimination
@@ -13,6 +15,8 @@ Repeated target rows remain in order after the unchanged pivot. Exact ledgers in
 pivot instruction and outer allocation. Empty/zero pivots reject; a saved equality payload
 whose operand differs from the pivot head checks that child inputs remain authoritative.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticColumnMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Kai Zhe Zheng
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.WitnessCounting
-import Mathlib.Algebra.Polynomial.BigOperators
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.WitnessCounting
+public import Mathlib.Algebra.Polynomial.BigOperators
 /-!
 # Degree bounds for differential specialization
 
@@ -19,6 +21,8 @@ The proof is the coefficient-field-general form of the argument in the authorize
 provenance record.  It is included here from first principles rather than relying on the source's
 prime-field-specific statement.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.AugmentedColumnMachine
+
+public import ArkLib.Data.Matrix.AugmentedColumnMachine
 
 /-!
 # Augmented column regression checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.AugmentedColumnMachine
 Nonzero RHS values distinguish physical column `j+1` from the prepended RHS and exercise its
 arithmetic update. Exact costs include both serialization passes and inner/outer dispatches.
 -/
+
+@[expose] public section
 
 namespace Matrix.AugmentedColumnMachine
 

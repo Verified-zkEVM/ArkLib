@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.SmallBlock
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.SmallBlock
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 /-!
 # Exact exceptional-block decoding
 
@@ -15,6 +17,8 @@ Oversized thresholds give an empty result at any block length. For two coordinat
 quarter-gap integer threshold leaves only dimension one and agreement two when feasible.
 The charged leaf therefore works over every field, including characteristic two, without setup.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SmallBlockDecoderProof
 

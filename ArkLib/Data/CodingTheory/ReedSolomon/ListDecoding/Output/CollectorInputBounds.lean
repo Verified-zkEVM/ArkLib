@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.GuardInputBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.GuardInputBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputSemantics
 /-!
 # Canonical collector budgets from numerical input bounds
 
@@ -14,6 +16,8 @@ allocation charges. Uniform width, equation mass, prefix length and record-count
 polynomial majorants without squaring the number of candidates. Applying these size premises to
 the actual generated chain and bounding the outer decoder are separate composition steps.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalOutputMachine
 

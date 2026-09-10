@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
-import Mathlib.Data.Nat.Size
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
+public import Mathlib.Data.Nat.Size
 /-!
 # Binary widths of original-parameter decoder scalars
 
@@ -17,6 +18,8 @@ No work ledger is treated as a bound on arbitrary live data. Each backend state 
 its own magnitude invariant, and evaluating these expressions still needs charged arithmetic.
 These are numerical width facts, not a bit-cost or host-interpreter refinement.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.DecoderScalarWidths
 

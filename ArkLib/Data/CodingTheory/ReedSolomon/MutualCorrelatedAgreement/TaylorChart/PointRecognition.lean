@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCuts
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCuts
 /-!
 # Graph recognition at actual symbolic Taylor points
 
@@ -15,6 +16,8 @@ reconstructs the affine combination of that same pair. Its retained initial jet 
 cleared Taylor coefficients therefore satisfy the corresponding affine graph identities.
 Neither a differential-solution premise nor an assumed graph-recognition law is required.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

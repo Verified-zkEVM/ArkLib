@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
-import ArkLib.ToMathlib.Combinatorics.CubicStaircase
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
+public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 
 /-!
 # Counting coefficients in the no-band support
@@ -15,6 +17,8 @@ Fixing the higher-derivative exponents leaves a strict degree budget for `X`, `Y
 The cubic staircase slots give distinct actual monomials within that budget. Summing over the
 eligible higher tuples yields the weighted dimension count used by the integral comparison.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

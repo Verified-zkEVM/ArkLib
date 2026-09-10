@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AddressedBits
+
+public import ArkLib.Data.Computation.AddressedBits
 
 /-!
 # Structural shared lists in addressed bit memory
@@ -18,6 +20,8 @@ represented list, without requiring unused bits elsewhere in that pointer block 
 The finite write folds below are semantic specifications only. No allocation, lookup, or bit-cost
 claim is made until a literal addressed-bit controller is proved to realize these observations.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListHeap
 

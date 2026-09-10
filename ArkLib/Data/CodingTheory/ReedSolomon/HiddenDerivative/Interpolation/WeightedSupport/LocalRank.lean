@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
 
 /-!
 # Local rank for the no-band weighted support
@@ -14,6 +16,8 @@ Local substitution preserves higher-jet weight and contact order. The remaining 
 jet degree bounds each first-derivative exponent separately for its higher-jet tuple.
 Counting these residual coordinates bounds the actual image in every characteristic.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.AugmentedColumnMachine
-import ArkLib.Data.Matrix.QuadraticColumnMachine
+
+public import ArkLib.Data.Matrix.AugmentedColumnMachine
+public import ArkLib.Data.Matrix.QuadraticColumnMachine
 
 /-!
 # Coordinate augmented-column execution
@@ -16,6 +18,8 @@ allocates coefficient/RHS pairs and outer cells; final reversal and output are e
 slot/root writes supplement the source ledger. Child work and wrapper costs are retained.
 Input preparation, host fuel, reclamation and bit time are outside this primitive model.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticAugmentMachine
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSystemMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSystemMachine
 /-!
 # Coefficient meaning of the executed residual system
 
@@ -14,6 +16,8 @@ degree bound, and distinct materialized sample points are explicit hypotheses. N
 solver is assumed: the conclusion characterizes the equations returned by actual execution.
 Back-substitution is the remaining step needed to return their unique coefficient vector.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualSystemMachine
 

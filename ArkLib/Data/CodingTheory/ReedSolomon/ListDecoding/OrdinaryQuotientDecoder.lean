@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.Slice
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
-import ArkLib.Data.Polynomial.SquarefreeSupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.Slice
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
+public import ArkLib.Data.Polynomial.SquarefreeSupport
 
 /-!
 # Ordinary decoding from a supplied interpolant and regular center
@@ -26,6 +27,8 @@ steps. Lifting uses Newton precision doubling, but its generic arithmetic backen
 carry the paper's near-linear cost proof. A zero slice produces no representations and lies outside
 the exactness theorem's hypotheses; it must be handled by the center-selection caller.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 open CompPoly Polynomial ReedSolomon.HiddenDerivative.Ordinary.QuotientLift

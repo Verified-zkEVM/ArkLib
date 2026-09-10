@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.NonzeroKernelSemantics
+
+public import ArkLib.Data.Matrix.NonzeroKernelSemantics
 
 /-!
 # Total completion of the actual homogeneous kernel solver
@@ -13,6 +15,8 @@ On rectangular homogeneous input the existing fuel either emits a certified nonz
 or reports full pivot coverage. Both alternatives carry observed primitive bounds. Fuel
 exhaustion is not identified with no kernel. This supports finite search over failing candidates.
 -/
+
+@[expose] public section
 
 namespace Matrix.NonzeroKernelMachine
 

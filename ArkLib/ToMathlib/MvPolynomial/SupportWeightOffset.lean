@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MvPolynomial.SupportWeight
-import ArkLib.Data.MvPolynomial.WeightedDegree
+
+public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
+public import ArkLib.Data.MvPolynomial.WeightedDegree
 
 /-!
 # Support weights with an additive allowance
@@ -14,6 +16,8 @@ Taylor substitution preserves the difference between coefficient index and Taylo
 The allowance below records the source jet index. Allowances add under multiplication,
 so substitution charges a monomial exactly its weighted source degree.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Parameters
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Parameters
 
 /-!
 # The fixed-rate exponent of the partition gate
@@ -13,6 +15,8 @@ The logarithmic gate isolates the leading constant
 `R log(40/(9R))`. Every positive addition to that exponent eventually
 gives a strict gate as the gap decreases to zero.
 -/
+
+@[expose] public section
 
 noncomputable section
 

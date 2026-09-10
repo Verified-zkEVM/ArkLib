@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Proofs
-import ArkLib.Data.Matrix.NonzeroKernelCompletion
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Proofs
+public import ArkLib.Data.Matrix.NonzeroKernelCompletion
 /-!
 # Unconditional interpolation attempt completion
 
@@ -13,6 +14,8 @@ Every validly assembled homogeneous matrix terminates at the existing solver fue
 attempts have the full sparse interpolation meaning; failed attempts are bounded independently
 of any supplied witness. This is the total interface required by descending ambient search.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine
 

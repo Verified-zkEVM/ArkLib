@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
-import Mathlib.Data.Fin.Tuple.Sort
-import Mathlib.Data.Fintype.Perm
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
+public import Mathlib.Data.Fin.Tuple.Sort
+public import Mathlib.Data.Fintype.Perm
 
 
 /-!
@@ -31,6 +32,8 @@ The remaining loss is controlled by an elementary union bound: an ordinary
 tuple outside the coordinate cap has a distinguished coordinate at least
 `S + 1`; subtracting that amount embeds it into a smaller simplex.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 
@@ -232,7 +235,7 @@ private theorem partitionMultiplicity_injective_of_antitone {r : ℕ}
 /-! ## Sorting capped ordinary tuples -/
 
 /-- Ordinary simplex points whose every coordinate is at most `S`. -/
-private abbrev CappedOrdinarySimplex (r W S : ℕ) :=
+abbrev CappedOrdinarySimplex (r W S : ℕ) :=
   {a : OrdinarySimplex r W // ∀ i, a.1 i ≤ S}
 
 /-- The permutation putting a tuple in decreasing order. -/
@@ -299,7 +302,7 @@ private theorem cappedOrdinaryToGoodWithPerm_injective (d W S : ℕ) :
   have hi := congrFun hy ((descendingSortPerm a.1.1).symm i)
   simpa [hperm] using hi
 
-private noncomputable instance cappedOrdinarySimplexFintype
+noncomputable instance cappedOrdinarySimplexFintype
     (r W S : ℕ) : Fintype (CappedOrdinarySimplex r W S) :=
   Fintype.ofFinite _
 

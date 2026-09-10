@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.Basic
-import ArkLib.ToMathlib.FieldTheory.FiniteExtension
+public import ArkLib.Data.Polynomial.Differential.Basic
+public import ArkLib.ToMathlib.FieldTheory.FiniteExtension
 
 
 /-!
@@ -19,6 +20,8 @@ intentionally absent: an equation can acquire new solutions after extending the 
 The characteristic contract is transported separately. A larger extension has more elements, but
 has exactly the same characteristic as its base field.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 
@@ -235,6 +238,11 @@ example :
         (MvPolynomial.map (algebraMap (ZMod 2) E₂) 0 : DifferentialPolynomial E₂ 0) 0) := by
   dsimp only
   have hlog : Nat.log 2 2 = 1 := Nat.log_eq_of_pow_le_of_lt_pow (by decide) (by decide)
+  have hmapZero :
+      MvPolynomial.map (algebraMap (ZMod 2) (FiniteField.ExtensionAbove (ZMod 2) 2 2))
+          (0 : DifferentialPolynomial (ZMod 2) 0) = 0 :=
+    map_zero _
+  rw [hmapZero]
   change Nat.card (BoundedSolution (0 : DifferentialPolynomial (ZMod 2) 0) 0) <
     Nat.card (BoundedSolution
       (0 : DifferentialPolynomial (FiniteField.ExtensionAbove (ZMod 2) 2 2) 0) 0)

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpTupleCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.DerivativeCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.DerivativeCounting
 /-!
 # The derivative-degree bound for persistent polynomial tuples
 
@@ -22,6 +24,8 @@ Writing `b = 1 + τ(v-1)` and `c = min(b, τ(u-1)+K-1)`, the degree contribution
 This is the persistent-tuple contribution to MCA; the joint source image controls the
 separate contribution from candidates outside those tuples.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

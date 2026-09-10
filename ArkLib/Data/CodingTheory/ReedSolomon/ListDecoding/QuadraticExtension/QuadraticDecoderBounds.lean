@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Dispatch.Bounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Dispatch.Bounds
 /-!
 # Numerical total budgets for quadratic decoding
 
@@ -15,6 +17,8 @@ primitive-work majorants. Attaching this sum to a whole execution and lowering i
 to bit cost remain separate obligations. The field-size exponents are independent of growing
 multiplicity at order zero, and all fixed-order parameter dependence is in the coefficient.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticDecoderMachine
 

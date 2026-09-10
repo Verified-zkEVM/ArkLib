@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.VariableHeight
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.VariableHeight
 
 /-!
 # Primitive symbolic certificates on the rate partition support
@@ -17,6 +19,8 @@ at most `n * partitionLocalRankBound d m W` over the rational-function field.
 The primitive kernel construction then supplies extension-stable nonvanishing and
 the exact integer height, without confusing this support with the older free-`Y₁` support.
 -/
+
+@[expose] public section
 
 noncomputable section
 

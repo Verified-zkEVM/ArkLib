@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Multivariate.Operations
-import Mathlib.Algebra.MvPolynomial.PDeriv
+
+public import CompPoly.Multivariate.Operations
+public import Mathlib.Algebra.MvPolynomial.PDeriv
 /-!
 # Computable partial derivatives of multivariate polynomials
 
@@ -14,6 +16,8 @@ it agrees with `MvPolynomial.pderiv` under CompPoly's semantic conversion. It is
 for constructing executable Jacobians and Taylor-chart equations without using the noncomputable
 `toCMvPolynomial` conversion.
 -/
+
+@[expose] public section
 
 namespace CPoly.CMvPolynomial
 

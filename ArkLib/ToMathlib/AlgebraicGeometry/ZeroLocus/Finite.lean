@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
 
 /-!
 # Finite zero loci and finite reduced coordinate quotients
@@ -13,6 +15,8 @@ Over an algebraically closed base, evaluation embeds a reduced coordinate quotie
 into the functions on its zero locus. A finite zero locus therefore forces the
 actual quotient to be finite-dimensional and its Hilbert polynomial to be constant.
 -/
+
+@[expose] public section
 
 noncomputable section
 

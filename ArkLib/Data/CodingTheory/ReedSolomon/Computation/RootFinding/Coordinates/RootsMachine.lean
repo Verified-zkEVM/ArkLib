@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationMachine
 /-!
 # Coordinate candidate enumeration and acceptance
 
@@ -15,6 +17,8 @@ Every jet is prepared by the coordinate padding machine and tested by the full c
 machine. Candidates are saved and reversed explicitly, preserving order and duplicates. Each
 root payload is retained with charged allocation; all child instructions and output are charged.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticJetRootsMachine
 

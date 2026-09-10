@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootSemantics
-import ArkLib.Data.List.PrefixAxesMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootSemantics
+public import ArkLib.Data.List.PrefixAxesMachine
 /-!
 # Closed enumeration and execution of all initial jets at one center
 
@@ -14,6 +16,8 @@ prefix-axis and Cartesian machines enumerate the tuples. Each tuple enters actua
 and actual accepted-root execution. Successes allocate output cells; explicit reversal preserves
 tuple order. There is no callback, bulk conversion or implicit field enumeration in dispatch.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.JetRootsMachine
 

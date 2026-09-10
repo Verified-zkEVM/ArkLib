@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleDecoder
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorStageBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleDecoder
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorStageBounds
 /-!
 # Initial-input execution bounds for the separate-sample decoder
 
@@ -14,6 +15,8 @@ coefficient conversion, root enumeration and collection traces compose into one 
 including every parent dispatch. No visited-stage or candidate-list size is used to choose
 the budget. The bounds are primitive work, not yet a base-field or bit-cost refinement.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SeparateSampleDecoder
 

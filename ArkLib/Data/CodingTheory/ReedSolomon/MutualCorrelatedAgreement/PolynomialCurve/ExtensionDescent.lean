@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
 /-!
 # Descending exact power-batching agreement
 
@@ -12,6 +14,8 @@ Restrict an extension-field exceptional set along the field embedding. Its size 
 increase. Since the constituent tuple is already over the base field, both the polynomial
 identity and equality of the entire agreement sets descend by injectivity.
 -/
+
+@[expose] public section
 
 noncomputable section
 

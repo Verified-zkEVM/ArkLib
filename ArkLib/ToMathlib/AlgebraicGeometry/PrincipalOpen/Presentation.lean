@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Filtration
-import Mathlib.Data.Finsupp.Option
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Filtration
+public import Mathlib.Data.Finsupp.Option
 
 /-!
 # A finite-type presentation of a principal localization
@@ -15,6 +17,8 @@ element.  Its ordinary total-degree filtration is compared in both directions wi
 bounded numerator-and-denominator filtration.  Passing through the kernel quotient identifies
 this presentation filtration with an actual affine Hilbert function.
 -/
+
+@[expose] public section
 
 noncomputable section
 

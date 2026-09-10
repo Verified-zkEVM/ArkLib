@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryRetainedNegateSemantics
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Computation.BinaryRetainedNegateSemantics
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Scalar negation retaining the modulus
@@ -13,6 +15,8 @@ import Mathlib.Data.ZMod.Basic
 The same six-tape execution refines residue-ring negation and retains its exact input modulus.
 The arithmetic modulus copy is supplied by the literal copy/restore preparation, not by the caller.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryRetainedNegateMachine
 

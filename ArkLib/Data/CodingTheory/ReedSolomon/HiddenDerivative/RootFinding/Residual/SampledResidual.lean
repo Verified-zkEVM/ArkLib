@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.SampledCoefficients
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
-import
+public import ArkLib.Data.Polynomial.SampledCoefficients
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
 /-!
 # Scalar-sample refinement of the concrete residual
@@ -20,6 +21,8 @@ This connects the existing concrete residual to the proposed scalar-evaluation i
 sampling, coefficient preparation, and matrix solving still need executable costed consumers.
 No regularity, characteristic, or rate assumption is hidden in these algebraic identities.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 
@@ -83,7 +86,7 @@ theorem effectiveResidual_eq_zero_iff_samples (Q : CPoly.CMvPolynomial (r + 2) F
     simp [h, CPolynomial.toPoly_zero]
   · intro h
     apply CPolynomial.ringEquiv.injective
-    change (effectiveResidual Q center P).toPoly = (0 : CPolynomial F).toPoly
+    rw [CPolynomial.ringEquiv_apply, CPolynomial.ringEquiv_apply]
     rw [CPolynomial.toPoly_zero]
     exact hs.mpr h
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
+
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Simultaneous specialization of polynomial equations
@@ -15,6 +17,8 @@ exactly where its members are identically zero. For powers batching, each member
 the discrepancy at one evaluation coordinate; identically zero discrepancies are
 precisely the common agreements. No restriction on characteristic is needed.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

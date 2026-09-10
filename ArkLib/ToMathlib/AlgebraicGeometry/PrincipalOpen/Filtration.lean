@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
-import Mathlib.RingTheory.Localization.Away.Basic
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
+public import Mathlib.RingTheory.Localization.Away.Basic
 
 /-!
 # Degree growth in a principal localization
@@ -14,6 +16,8 @@ The actual finite filtration consists of bounded-degree numerators divided by
 bounded powers of the localized element. Clearing denominators gives a controlled
 numerator and bounds its dimension between two original Hilbert-function values.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -24,10 +28,10 @@ namespace AffineHilbert
 
 variable {F σ : Type*} [Field F] [Finite σ]
 
-private abbrev CoordinateRing (I : Ideal (MvPolynomial σ F)) :=
+abbrev CoordinateRing (I : Ideal (MvPolynomial σ F)) :=
   MvPolynomial σ F ⧸ I
 
-private abbrev AwayRing (I : Ideal (MvPolynomial σ F)) (s : MvPolynomial σ F) :=
+abbrev AwayRing (I : Ideal (MvPolynomial σ F)) (s : MvPolynomial σ F) :=
   Localization.Away (Ideal.Quotient.mk I s)
 
 /-- Numerators of degree at most `N`, embedded in the principal localization. -/

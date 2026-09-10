@@ -4,16 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
 
 /-!
 # ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

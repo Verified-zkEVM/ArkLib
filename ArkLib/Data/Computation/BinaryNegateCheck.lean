@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryNegateField
+
+public import ArkLib.Data.Computation.BinaryNegateField
 
 /-!
 # Modular negation execution checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryNegateField
 The scan must restore its operand on the same physical tape before subtraction. A padded zero
 must select explicit input clearing rather than return a nonreduced modulus.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryNegateMachine
 

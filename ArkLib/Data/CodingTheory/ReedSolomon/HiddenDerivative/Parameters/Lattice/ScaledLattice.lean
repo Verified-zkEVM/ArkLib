@@ -3,17 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Counting
-import ArkLib.ToMathlib.Combinatorics.DiscreteSimplex.Basic
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Algebra.BigOperators.Intervals
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Data.Finsupp.Multiset
-import Mathlib.Data.Nat.Factorial.BigOperators
-import Mathlib.Data.Sym.Card
-import Mathlib.Logic.Equiv.Fin.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Counting
+public import ArkLib.ToMathlib.Combinatorics.DiscreteSimplex.Basic
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.BigOperators.Intervals
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Data.Finsupp.Multiset
+public import Mathlib.Data.Nat.Factorial.BigOperators
+public import Mathlib.Data.Sym.Card
+public import Mathlib.Logic.Equiv.Fin.Basic
 
 
 /-!
@@ -30,6 +31,8 @@ contributed through PR 1 by Pratyush Mishra at commit
 author and Pratyush Mishra as committer. The project-owner permission
 attestation is recorded in `docs/kb/sources/rs-ld-mca/PERMISSION.md`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

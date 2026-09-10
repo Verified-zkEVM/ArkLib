@@ -3,12 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Interpolation
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.GradedRank
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Interpolation
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SymbolicRank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.GradedRank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 
 /-!
 # First-order rank bounds for polynomial received curves
@@ -23,6 +28,8 @@ Applying the aggregate theorem over `F(Z)` still controls polynomial received cu
 received polynomials may have any degree: batching degree affects coefficient heights, while
 the base-field graded images determine how many projected rows are needed at each degree.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 open scoped BigOperators Matrix
@@ -87,7 +94,7 @@ private def firstOrderSourceSliceWeight : JetVariable 1 → ℕ
   | none => 1
   | some j => if j.val = 0 then 1 else 0
 
-private def firstOrderLocalSliceWeight : LocalVariable 1 → ℕ
+def firstOrderLocalSliceWeight : LocalVariable 1 → ℕ
   | none => 1
   | some _ => 0
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.CellPayloadMachine
-import ArkLib.Data.Computation.FixedWidthWordMachine
-import ArkLib.Data.Computation.SharedListCellReadMachine
+
+public import ArkLib.Data.Computation.CellPayloadMachine
+public import ArkLib.Data.Computation.FixedWidthWordMachine
+public import ArkLib.Data.Computation.SharedListCellReadMachine
 
 /-!
 # Shared-list cell reads with physically constructed width markers
@@ -21,6 +23,8 @@ instruction: this entry reads a cell and does not interpret the all-zero pointer
 list. A malformed tag remains the child's retained rejection state. No validity check or
 list-level operation is assumed free. Costs count this explicit bit-RAM program only.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListPreparedRead
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.HighestJetMachine
+
+public import ArkLib.Data.MvPolynomial.HighestJetMachine
 
 /-!
 # Highest-jet execution, degree correctness and cost
@@ -12,6 +14,8 @@ import ArkLib.Data.MvPolynomial.HighestJetMachine
 The scan invariant is a lexicographic maximum over positive variable/exponent pairs. Its
 mathematical interpretation uses normalization's exact nonzero-coefficient characterization.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.HighestJetMachine
 

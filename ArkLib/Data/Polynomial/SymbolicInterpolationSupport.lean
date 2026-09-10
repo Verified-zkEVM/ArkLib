@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Finset.Sigma
-import Mathlib.Data.Finset.Prod
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
+public import Mathlib.Data.Finset.Sigma
+public import Mathlib.Data.Finset.Prod
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Ring
 
 /-!
 # Support counts for symbolic interpolation
@@ -27,6 +28,8 @@ surplus or construct an interpolating polynomial.
   On Proximity Gaps for Reed--Solomon Codes. Cryptology ePrint Archive, Paper 2025/2055,
   Lemma 3.1. https://eprint.iacr.org/2025/2055
 -/
+
+@[expose] public section
 
 namespace Polynomial.SymbolicInterpolation
 

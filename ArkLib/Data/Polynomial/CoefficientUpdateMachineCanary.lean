@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.CoefficientUpdateMachine
+
+public import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 
 /-!
 # Descending coefficient update canaries
@@ -12,6 +14,8 @@ import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 Kernel computations distinguish prefix restoration, suffix preservation, exact emission, zero
 increments with leading zeros, and rejection at and beyond the available input.
 -/
+
+@[expose] public section
 
 open Polynomial.CoefficientUpdateMachine
 

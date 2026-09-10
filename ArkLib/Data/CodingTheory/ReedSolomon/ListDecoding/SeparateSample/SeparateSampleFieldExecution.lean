@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleRestricted
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleRestricted
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 /-!
 # Exact separate-sample executions with field-size primitive bounds
 
@@ -16,6 +19,8 @@ field sizes use the input's actual agreement parameter. These are primitive deco
 interpolation and setup work are outside this driver, and restricted base embedding is reported
 separately. No outer-decoder or bit-complexity conclusion is asserted.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SeparateSampleFieldExecution
 

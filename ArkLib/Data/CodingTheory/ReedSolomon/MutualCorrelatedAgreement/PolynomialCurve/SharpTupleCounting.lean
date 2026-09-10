@@ -3,11 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.GraphCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.SharpPairCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentDimension
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.ProductBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.GraphCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.SharpPairCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentDimension
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.ProductBounds
 /-!
 # Sharp counting of admissible polynomial tuples
 
@@ -20,6 +24,8 @@ prod_{j<r} (n-k+j+1) / (L-k+j+1),
 
 while the Taylor cut degree is charged once through the high-cut component potential.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

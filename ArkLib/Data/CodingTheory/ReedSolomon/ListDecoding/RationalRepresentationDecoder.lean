@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
-import
+module
+
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
 
 /-!
@@ -26,6 +28,8 @@ must cover every wanted message. It does not assume that represented parameter r
 the coefficient field, or that every represented specialization is wanted. Constructing the
 Rojas eliminants and their Taylor-coordinate maps is a separate producer obligation.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.RationalRepresentationDecoder
 open CompPoly CompPoly.CPolynomial

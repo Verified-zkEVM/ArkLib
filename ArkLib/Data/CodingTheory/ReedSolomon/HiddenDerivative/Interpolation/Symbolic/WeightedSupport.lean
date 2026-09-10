@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.LocalRank
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedLine
-import Mathlib.Data.Nat.Cast.Order.Field
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.LocalRank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedLine
+public import Mathlib.Data.Nat.Cast.Order.Field
 
 
 
@@ -17,6 +19,8 @@ This file identifies symbolic received-line columns with columns of the canonica
 local matrix, sums the ranks of the point blocks, and applies the primitive polynomial-kernel
 theorem to the full support basis.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

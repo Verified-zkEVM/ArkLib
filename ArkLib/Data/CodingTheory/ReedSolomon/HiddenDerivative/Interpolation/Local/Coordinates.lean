@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.IntermediateSpace
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.IntermediateSpace
 
 
 /-!
@@ -20,6 +22,8 @@ The displacement and error exponents satisfy `h ≤ i` and `i + d*h < m`. Writin
 gives the contact-slot count with denominator `d+1`. The remaining visible first-derivative
 exponent is bounded using total degree minus the actual higher-jet degree.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

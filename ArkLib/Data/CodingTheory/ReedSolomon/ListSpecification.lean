@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.ReedSolomon
-import Mathlib.Data.Finset.Preimage
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import Mathlib.Data.Finset.Preimage
 /-!
 # Exact Reed-Solomon list-decoder specifications
 
@@ -23,6 +24,8 @@ finding may use `designDim`, while the requested Reed-Solomon code still uses `m
 The interface deliberately contains no running-time assertion. A later executable decoder must
 separately refine this specification in an explicit cost model.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace ListDecoding

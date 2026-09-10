@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Kernel checks for actual quadratic evaluation lowering
@@ -13,6 +15,8 @@ A nontrivial quadratic power exercises two multiplication calls and an addition.
 checks explicit zero allocation. The short run must suspend before executing the selected child.
 The literal ledgers include initialization, base instructions, wrappers and final emission.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticEvaluationMachine
 

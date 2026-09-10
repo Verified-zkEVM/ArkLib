@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinarySubtractMachine
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.BinarySubtractMachine
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Saturating subtraction correctness and literal execution bounds
@@ -13,6 +15,8 @@ import ArkLib.Data.Computation.BinaryWordSemantics
 Proof-side bit lists describe the scan only. The actual machine uses finite Boolean borrow
 control and explicit local-cell clearing and normalization, including on underflow.
 -/
+
+@[expose] public section
 
 namespace Computation.BinarySubtractMachine
 

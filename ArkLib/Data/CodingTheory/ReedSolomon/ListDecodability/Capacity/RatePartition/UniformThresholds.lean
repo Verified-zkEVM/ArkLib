@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Finset.Lattice.Fold
-import Mathlib.Data.Fintype.EquivFin
+public import Mathlib.Data.Finset.Lattice.Fold
+public import Mathlib.Data.Fintype.EquivFin
 
 /-!
 # Uniform thresholds for a finite family of rate bins
@@ -35,6 +36,8 @@ before evaluating the per-bin block-length thresholds at that shared order.
 No interpolation, root-counting, or list-decoding conclusion is asserted here.  Those conclusions
 remain explicit parameters of downstream theorems.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace UniformThresholds

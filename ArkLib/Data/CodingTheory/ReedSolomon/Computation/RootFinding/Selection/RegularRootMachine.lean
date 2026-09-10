@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Semantics
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualZeroMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterShiftMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Semantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualZeroMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterShiftMachine
 /-!
 # Closed acceptance and translation of one regular lift
 
@@ -15,6 +18,8 @@ accepted local candidates enter the actual change-of-center machine. All nested 
 constants, equality tests, center negation, wrappers and final output are retained in the cost.
 Initial jet materialization, sample preparation, enumeration and scalar bit costs are separate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.RegularRootMachine
 

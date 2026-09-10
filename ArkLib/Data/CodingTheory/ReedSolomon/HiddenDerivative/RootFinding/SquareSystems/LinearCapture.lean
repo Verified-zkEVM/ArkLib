@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CodimensionOne
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.EvaluationTail
 /-!
 # Linear core of evaluation-and-tail square capture
@@ -16,6 +17,8 @@ differential on the hypersurface tangent space. Coordinate selection then choose
 evaluation or tail rows which, together with the hypersurface normal, form an invertible square
 linear system. This includes `k <= r`, since tail rows remain in the selectable pool.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

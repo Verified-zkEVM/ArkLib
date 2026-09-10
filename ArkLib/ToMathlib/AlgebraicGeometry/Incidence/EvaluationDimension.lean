@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Dimension
-import Mathlib.LinearAlgebra.Vandermonde
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Dimension
+public import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
 # Dimension from partial polynomial evaluations
@@ -16,6 +18,8 @@ quotient using one challenge generator and `k - c` remaining coefficient generat
 does the application localize at a pulled-back separant; the explicit away presentation shows
 that adjoining its constrained inverse does not increase dimension.
 -/
+
+@[expose] public section
 
 noncomputable section
 

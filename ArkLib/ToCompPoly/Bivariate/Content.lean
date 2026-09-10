@@ -3,9 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
-import CompPoly.Univariate.Roots.Correctness
+
+public import CompPoly.Bivariate.GuruswamiSudan.Root.Common.Lemmas
+public import CompPoly.Univariate.Roots.Correctness
+-- These coefficient-array proofs reduce the implementation representation of both
+-- `CBivariate` and its underlying computable univariate polynomials.
+import all CompPoly.Bivariate.Basic
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
+import all CompPoly.Univariate.ToPoly.Core
 
 /-!
 # Executable content of a bivariate polynomial
@@ -16,6 +24,8 @@ Reed--Solomon decoder.  The construction below folds the executable monic gcd
 over the stored coefficient array and proves that the result divides every
 coefficient of `Q`.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CBivariate
 

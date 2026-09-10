@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.PaddedMul
+
+public import ArkLib.Data.Computation.PaddedMul
 
 /-!
 # Fixed-width multiplication execution checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.PaddedMul
 The same controller normalizes padded operands, multiplies, then pads its output. Tests cover
 nonempty representations of zero, modular wraparound, retained padding and dirty RAM.
 -/
+
+@[expose] public section
 
 namespace Computation.PaddedMul
 

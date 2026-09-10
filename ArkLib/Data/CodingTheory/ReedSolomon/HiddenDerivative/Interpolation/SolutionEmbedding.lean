@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Certificates
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Certificates
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 /-!
 # Embedding agreeing polynomials into bounded differential solutions
 
@@ -14,6 +15,8 @@ differential interpolant. This module packages that polynomial, unchanged, as a 
 at the certificate's ambient degree. The construction is independent of how the interpolation
 support was chosen, so both qualitative and weighted-support list bounds use the same embedding.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 
@@ -32,7 +35,7 @@ private theorem exists_boundedSolution_of_polynomial {F : Type*} [CommSemiring F
   ⟨⟨⟨P, hP⟩, hQ⟩, rfl⟩
 
 /-- An agreeing message has a bounded-solution representative with the same polynomial. -/
-private theorem HiddenDerivativeInterpolationCertificate.exists_solution
+theorem HiddenDerivativeInterpolationCertificate.exists_solution
     {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
     {received : Fin n → ZMod q}
     (construction : HiddenDerivativeInterpolationCertificate (k := k) (A := A) d m domain received)

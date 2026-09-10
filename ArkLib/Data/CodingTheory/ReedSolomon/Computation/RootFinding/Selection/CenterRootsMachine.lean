@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsSemantics
 /-!
 # Closed root enumeration across all supplied centers
 
@@ -13,6 +15,8 @@ Successful global vectors are paired with their center and stored by separate pa
 transitions. An explicit reversal preserves center and jet order. Duplicates across centers remain
 for a subsequent canonical guard; field/sample preparation and outer stage loops are separate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CenterRootsMachine
 

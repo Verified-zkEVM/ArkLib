@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.CubeTransfer
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
 
 /-!
 # Enlarged-simplex bound for the partition rank
@@ -17,6 +18,8 @@ The `d` derivative coordinates have weights `1,...,d`. Their disjoint unit
 cubes fit in the simplex enlarged by `d*(d+1)/2`; integrating the constant
 function gives the lattice bound without any asymptotic error term.
 -/
+
+@[expose] public section
 
 noncomputable section
 

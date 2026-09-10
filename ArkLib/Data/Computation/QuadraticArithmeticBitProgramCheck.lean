@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitProgram
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitProgram
 
 /-!
 # Kernel replay of composed arithmetic dispatch and halting
@@ -13,6 +15,8 @@ These closed checks execute the physical controller directly. They preserve the 
 checked ADD and EQUAL programs, equality-flag adoption by Boolean emission, and empty/rejected
 handoffs. They are regression checks, not a generic whole-program refinement or cost theorem.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitProgramCheck
 

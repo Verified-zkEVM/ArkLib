@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Justin Thaler
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Counting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Counting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
 
 
 /-!
@@ -34,6 +36,8 @@ constraint rank, not an assertion that the exhibited kernel is the entire kernel
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26].
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

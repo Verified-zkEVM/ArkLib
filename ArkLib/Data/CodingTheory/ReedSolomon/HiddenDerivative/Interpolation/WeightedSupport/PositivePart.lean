@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.NormNum
+public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.NormNum
 
 /-!
 # A positive-part bound from the mean and variance
@@ -16,6 +17,8 @@ The local coordinate count retains the remaining first-derivative exponent. Its 
 positive part is bounded by a quadratic majorant centered at the mean. Integrating this
 pointwise inequality needs only a probability measure and a finite second moment.
 -/
+
+@[expose] public section
 
 open MeasureTheory
 

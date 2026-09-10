@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullbackDerivative
-import ArkLib.ToMathlib.MvPolynomial.RootContraction
-import ArkLib.ToMathlib.Polynomial.FrobeniusContractionFractionRing
+
+public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullbackDerivative
+public import ArkLib.ToMathlib.MvPolynomial.RootContraction
+public import ArkLib.ToMathlib.Polynomial.FrobeniusContractionFractionRing
 
 /-!
 # Frobenius factorization in one multivariate coordinate
@@ -21,6 +23,8 @@ over the fraction field of the coefficient ring.
 This file proves only this algebraic factorization.  It does not provide geometric reconstruction
 or an agreement bound.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

@@ -3,16 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.Equation
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
-import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.Equation
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 /-!
 # Base-field ordinary equation transfer
 
 Algebraic closure is an internal construction. Both polynomial identities and equality of
 full agreement sets descend along the injective scalar map, with no characteristic guard.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative

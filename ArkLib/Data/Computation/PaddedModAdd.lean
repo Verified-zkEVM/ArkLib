@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryModAddField
-import ArkLib.Data.Computation.ScalarWordPadding
+
+public import ArkLib.Data.Computation.BinaryModAddField
+public import ArkLib.Data.Computation.ScalarWordPadding
 
 /-!
 # Fixed-width scalar addition on one physical tape bank
@@ -18,6 +20,8 @@ This instruction consumes its two already materialized operands and returns a re
 of exactly the modulus's physical width. It is not a complete decoder compiler or a claim
 about native Lean execution time.
 -/
+
+@[expose] public section
 
 namespace Computation.PaddedModAdd
 

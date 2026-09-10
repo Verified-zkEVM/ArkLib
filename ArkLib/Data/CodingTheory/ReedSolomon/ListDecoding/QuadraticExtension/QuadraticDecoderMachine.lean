@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Dispatch.Machine
-import ArkLib.Data.QuadraticAlgebra.CertifiedSetup
-import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Dispatch.Machine
+public import ArkLib.Data.QuadraticAlgebra.CertifiedSetup
+public import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingSemantics
 /-!
 # Interpolation, quadratic setup and executable decoding
 
@@ -21,6 +23,8 @@ or visited stages. Every child returns its actual primitive ledger. Fixed-size b
 handoffs are charged here; computing the scalar fuel expression and lowering the resulting
 program to a bit-cost model are separate obligations. This is not yet a bit-complexity theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticDecoderMachine
 

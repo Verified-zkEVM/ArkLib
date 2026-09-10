@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputableChart
-import ArkLib.ToCompPoly.Multivariate.ClearedSubstitution
+public import ArkLib.ToCompPoly.Multivariate.ClearedSubstitution
 /-!
 # Computable rational Taylor numerators
 
@@ -15,6 +16,8 @@ polynomials. The recurrence uses executable head-coefficient extraction and deno
 substitution, while its denotation theorem identifies every computed numerator with the symbolic
 one used by the Taylor chart.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.List.Basic
+public import Mathlib.Data.List.Basic
 /-!
 # Charged constant and empty decoder leaf
 
@@ -16,6 +17,8 @@ field equality, dispatch, reads, writes and allocations each have unit charge. I
 model. No field arithmetic, field enumeration or quadratic setup occurs. Malformed nonoversized
 row lists return empty; correctness uses the explicit two-row shape.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SmallBlockDecoderMachine
 

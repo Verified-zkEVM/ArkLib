@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterShiftMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationMachine
-import ArkLib.Data.Polynomial.QuadraticJetHornerMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterShiftMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationMachine
+public import ArkLib.Data.Polynomial.QuadraticJetHornerMachine
 /-!
 # Coordinate change of center
 
@@ -15,6 +18,8 @@ then executes at that point, and coordinate preparation reverses its full jet. P
 every delegated instruction, option handling and final emission are charged. Inputs are supplied
 as materialized coefficient, center and degree registers; no polynomial translation executes.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticCenterShiftMachine
 

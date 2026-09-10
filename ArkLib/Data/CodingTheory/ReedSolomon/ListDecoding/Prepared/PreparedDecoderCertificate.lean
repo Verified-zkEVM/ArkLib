@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Proofs
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Proofs
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.TotalDegreeExtension
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputProofRoots
-import ArkLib.Data.MvPolynomial.QuadraticInputSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputProofRoots
+public import ArkLib.Data.MvPolynomial.QuadraticInputSemantics
 /-!
 # From actual interpolation certificates to base roots and physical extension inputs
 
@@ -17,6 +19,8 @@ The base-field local constraints imply the differential identity at every qualif
 Scalar naturality then transports that identity. Physical dense layout is proved from the
 actual interpolation emitter and successful search, independently of polynomial equality.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.PreparedDecoderCertificate
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Expand
+
+public import Mathlib.Algebra.Polynomial.Expand
 
 /-!
 # Frobenius contraction over an integral coefficient ring
@@ -17,6 +19,8 @@ This file proves only coefficient-preserving contraction, its exact degree ident
 resulting irreducibility and maximality facts.  It does not assert separability over an arbitrary
 coefficient ring, or any geometric or agreement bound.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

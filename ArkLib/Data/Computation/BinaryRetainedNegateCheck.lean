@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryRetainedNegateField
+
+public import ArkLib.Data.Computation.BinaryRetainedNegateField
 
 /-!
 # Retained-modulus negation checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryRetainedNegateField
 Zero, nonzero and padded operands use actual copy/restore and negation successors. A boundary
 check verifies that two physical modulus copies have been constructed before arithmetic starts.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryRetainedNegateMachine
 

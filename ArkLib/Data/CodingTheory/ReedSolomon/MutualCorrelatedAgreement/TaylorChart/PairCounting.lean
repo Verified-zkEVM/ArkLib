@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentRecognition
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
 /-!
 # Counting admissible correlated pairs in a Taylor chart
 
@@ -15,6 +17,8 @@ An admissible pair carries literal identities along its affine initial-jet graph
 every reconstructed Taylor coefficient. One ordinary extension-field scalar retains all
 separants and separates a finite pair family, so the existing high-cut jet bound applies.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

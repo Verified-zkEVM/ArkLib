@@ -3,10 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import VCVio.OracleComp.SimSemantics.Append
-import ArkLib.Data.GroupTheory.PrimeOrder
-import ArkLib.Data.Classes.Serde
+public import VCVio.OracleComp.SimSemantics.Append
+public import ArkLib.Data.GroupTheory.PrimeOrder
+public import ArkLib.Data.Classes.Serde
 
 /-! # The Algebraic Group Model (With Oblivious Sampling)
 
@@ -20,6 +21,8 @@ We attempt to define the algebraic group model. Our mechanization follows recent
 * [Lipmaa, H., Parisella, R., and Siim, J., *On Knowledge-Soundness of Plonk in ROM from
     Falsifiable Assumptions*][LPS24]
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec
 

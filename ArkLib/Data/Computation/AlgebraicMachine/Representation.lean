@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AlgebraicMachine.Basic
+
+public import ArkLib.Data.Computation.AlgebraicMachine.Basic
 
 /-!
 # Heap extension and materialized lists
@@ -13,6 +15,8 @@ List representations are proof relations over pair cells, not executable convers
 Allocation preserves existing cells in a well-formed heap. Consequently a list already
 represented in a well-formed heap remains represented after an extension.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine
 

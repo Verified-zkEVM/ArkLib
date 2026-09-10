@@ -3,15 +3,19 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Rounding
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RankRounding
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Rounding
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RankRounding
 /-!
 # Prescribed inputs to the dimension estimate
 
 The rounded multiplicity and radius are positive. Their floor inequalities supply the mean,
 normalized radius, and squared-radius retention used by the actual support-dimension theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters
 

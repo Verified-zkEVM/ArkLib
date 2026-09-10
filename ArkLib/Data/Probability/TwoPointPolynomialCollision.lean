@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Data.Finset.Powerset
-import Mathlib.Tactic.Ring
+
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Data.Finset.Powerset
+public import Mathlib.Tactic.Ring
 
 /-!
 # Two-point collisions in a finite polynomial family
@@ -21,6 +23,8 @@ outside an evaluation domain, and requiring the two samples to be distinct, can 
 set.  The application layer supplies the corresponding sample-space denominator.
 -/
 
+@[expose] public section
+
 namespace ArkLib.TwoPointPolynomialCollision
 
 open Polynomial
@@ -31,39 +35,39 @@ noncomputable section
 abbrev CandidatePair {beta : Type*} [DecidableEq beta] (candidates : Finset beta) :=
   {pair : Finset beta // pair ∈ candidates.powersetCard 2}
 
-private theorem candidatePair_card {beta : Type*} [DecidableEq beta]
+theorem candidatePair_card {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) : pair.1.card = 2 :=
   (Finset.mem_powersetCard.mp pair.2).2
 
-private noncomputable def pairLeft {beta : Type*} [DecidableEq beta]
+noncomputable def pairLeft {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) : beta :=
   (Finset.card_eq_two.mp (candidatePair_card pair)).choose
 
-private noncomputable def pairRight {beta : Type*} [DecidableEq beta]
+noncomputable def pairRight {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) : beta :=
   (Finset.card_eq_two.mp (candidatePair_card pair)).choose_spec.choose
 
-private theorem pairLeft_ne_pairRight {beta : Type*} [DecidableEq beta]
+theorem pairLeft_ne_pairRight {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) :
     pairLeft pair ≠ pairRight pair :=
   (Finset.card_eq_two.mp (candidatePair_card pair)).choose_spec.choose_spec.1
 
-private theorem pair_eq_insert {beta : Type*} [DecidableEq beta]
+theorem pair_eq_insert {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) :
     pair.1 = {pairLeft pair, pairRight pair} :=
   (Finset.card_eq_two.mp (candidatePair_card pair)).choose_spec.choose_spec.2
 
-private theorem pairLeft_mem {beta : Type*} [DecidableEq beta]
+theorem pairLeft_mem {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) :
     pairLeft pair ∈ candidates := by
   exact (Finset.mem_powersetCard.mp pair.2).1 <| by simp [pair_eq_insert pair]
 
-private theorem pairRight_mem {beta : Type*} [DecidableEq beta]
+theorem pairRight_mem {beta : Type*} [DecidableEq beta]
     {candidates : Finset beta} (pair : CandidatePair candidates) :
     pairRight pair ∈ candidates := by
   exact (Finset.mem_powersetCard.mp pair.2).1 <| by simp [pair_eq_insert pair]
 
-private noncomputable def separatingCoordinate {F : Type*} [Field F]
+noncomputable def separatingCoordinate {F : Type*} [Field F]
     {width : ℕ} [DecidableEq (Fin width → F[X])]
     {candidates : Finset (Fin width → F[X])}
     (pair : CandidatePair candidates) : Fin width := by

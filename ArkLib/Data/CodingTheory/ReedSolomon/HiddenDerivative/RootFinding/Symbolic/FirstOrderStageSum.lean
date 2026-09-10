@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.SeparantChain
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.SeparantChain
 
 /-!
 # Cap-sensitive sums along first-order separant chains
@@ -25,6 +27,8 @@ schedule with `c₁ j (j - (μ - min M μ))` on the largest `min M μ` degrees a
 The result is purely an aggregation theorem. Concrete joint and fiber degree formulas are supplied
 by later geometry modules.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,13 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Surplus
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Estimate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Surplus
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Estimate
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.NormalizedRank
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.DimensionInputs
 /-!
 # Strict surplus for the actual weighted support
@@ -18,6 +22,8 @@ The actual support dimension and actual local-map rank are compared after cancel
 common positive simplex volume and multiplicity cube. The resulting margin is multiplicative:
 it includes zero local rank and never divides by that rank.
 -/
+
+@[expose] public section
 
 open SimplexIntegration
 namespace ReedSolomon.HiddenDerivative

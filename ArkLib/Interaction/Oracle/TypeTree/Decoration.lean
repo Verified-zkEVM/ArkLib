@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.TypeTree
-import ArkLib.OracleReduction.OracleInterface
-import PolyFun.Interaction.TwoParty.Decoration
-import PolyFun.PFunctor.Free.Displayed.Cursor
+module
+
+public import ArkLib.Interaction.Oracle.TypeTree
+public import ArkLib.OracleReduction.OracleInterface
+public import PolyFun.Interaction.TwoParty.Decoration
+public import PolyFun.PFunctor.Free.Displayed.Cursor
 
 /-!
 # Decorations on oracle interaction type trees
@@ -20,6 +22,8 @@ decorations in this file attach only the data appropriate to that position:
 Both are specializations of PolyFun's generic node decoration, so they inherit structural maps and
 cursor restriction. Oracle nodes project to sender-owned runtime nodes.
 -/
+
+@[expose] public section
 
 universe u v
 

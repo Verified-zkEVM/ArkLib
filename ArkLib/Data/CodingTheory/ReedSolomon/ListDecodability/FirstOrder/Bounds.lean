@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderHybridList
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
-import ArkLib.ToMathlib.Set.Finite
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import ArkLib.ToMathlib.Set.Finite
 /-!
 # Complete first-order lists above the rate curve
 
@@ -24,6 +25,8 @@ projection displays
 `T = ∑_{r=1}^M r(2(μ-M)+r)`. The same bound applies to every finite subset of close
 polynomials, which proves that the complete list is finite even over an infinite field.
 -/
+
+@[expose] public section
 
 open Polynomial
 

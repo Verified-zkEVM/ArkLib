@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveHeightCounting
 /-!
 # The uniform first-order certificate at gap 6/25
@@ -18,6 +19,8 @@ finite certificate calculation and a strict source-slot surplus under
 The numerical lemmas are kept separate from the semantic correlated-agreement theorem so the
 actual constructor can be checked without any supplied rank or matrix premise.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

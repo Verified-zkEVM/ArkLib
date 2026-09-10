@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
+public import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
 /-!
 # Materialized truncated local translation
 
@@ -19,6 +20,8 @@ register/cell access, allocation and emission. Nested affine instructions retain
 plus four wrapper units. Host fuel, reclamation and arithmetic bit costs are excluded.
 U-to-E rewriting and the final contact projection are not implemented by this translation stage.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.LocalColumnTranslationMachine
 

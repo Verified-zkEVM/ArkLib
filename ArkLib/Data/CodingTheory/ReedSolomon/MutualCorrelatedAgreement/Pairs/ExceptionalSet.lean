@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
 /-! # Simultaneous accidental-agreement bounds for correlated pairs
 
 A finite family of polynomial pairs with at least `L` common agreements has one
 exceptional set, of size at most the family size times `n - L`, outside which
 every pair has exactly its common agreement set. The threshold is arbitrary.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

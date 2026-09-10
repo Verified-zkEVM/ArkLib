@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitPair
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitPair
 
 /-!
 # Literal Boolean conjunction and one-bit emission
@@ -13,6 +15,8 @@ The two physical flag bits select a finite Boolean conjunction. One successor pu
 onto initially empty output tape zero. All eight scalar registers, five immutable inputs, the
 modulus, both flags and RAM are retained. This is a closed finite-bit output instruction.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitBoolean
 

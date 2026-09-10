@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.PDeriv
-import Mathlib.RingTheory.Ideal.Operations
+
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.RingTheory.Ideal.Operations
 
 /-!
 # First-order Taylor congruences for multivariate polynomials
@@ -25,6 +27,8 @@ solution-counting result of [Kop15, Corollary 4.5].
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15]
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

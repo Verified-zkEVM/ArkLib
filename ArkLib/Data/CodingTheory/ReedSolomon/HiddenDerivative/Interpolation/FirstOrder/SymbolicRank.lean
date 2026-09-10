@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Interpolation
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Soundness
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Interpolation
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Soundness
 
 /-!
 # The actual symbolic matrix rank for first-order support
@@ -26,6 +28,8 @@ independent for the rank bound. `1 < D` is the existing exact-support hypothesis
 The conclusion uses the envelope rank `certifiedEnlargedRankBound 1 m M 0` and
 holds uniformly over received words and evaluation points, in every characteristic.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 open scoped BigOperators

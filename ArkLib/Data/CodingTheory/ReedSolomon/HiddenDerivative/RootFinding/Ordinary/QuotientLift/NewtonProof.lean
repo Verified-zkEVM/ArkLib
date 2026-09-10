@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import
+module
+
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Semantics
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Newton
 
 /-!
@@ -21,6 +23,8 @@ truncate a run prematurely. `newtonLift_specializes` then identifies the compute
 any polynomial solution of degree below `k`. No enumeration or base-field assumption on the
 parameter root is used.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.Ordinary.QuotientLift
 open CompPoly CompPoly.CPolynomial

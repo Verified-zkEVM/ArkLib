@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
 /-!
 # Specialization degree of exact interpolation polynomials
@@ -22,6 +23,8 @@ authorized `kz99/rs-ld-mca` source argument in
 `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`.  The two integration theorems below are
 ArkLib-specific adapters, not a further source port.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

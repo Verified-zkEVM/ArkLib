@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedInput
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.StagesMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateOutputMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedInput
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.StagesMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateOutputMachine
 /-!
 # Prepared decoder over literal base-field coordinate pairs
 
@@ -14,6 +15,8 @@ The three actual children allocate input pairs, enumerate stage roots, and colle
 All extension values in runtime states are literal pairs. Parent steps preserve each complete
 child cost and add their own dispatch charge. Only already materialized samples are supplied.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticPreparedDecoderMachine
 

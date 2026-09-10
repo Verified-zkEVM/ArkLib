@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticAugmentMachine
-import ArkLib.Data.Matrix.QuadraticColumnRefinement
+
+public import ArkLib.Data.Matrix.QuadraticAugmentMachine
+public import ArkLib.Data.Matrix.QuadraticColumnRefinement
 
 /-!
 # Same-execution augmented coordinate refinement
@@ -14,6 +16,8 @@ Representation maps are proof-only. Every physical RHS/column alignment, seriali
 child step is preserved by an actual trace. Full execution retains ordered rows and physical
 row count with a polynomial bound depending only on input dimensions and column index.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticAugmentMachine
 

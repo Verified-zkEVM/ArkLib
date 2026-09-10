@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
 
 /-!
 # The clean first-order rate threshold
@@ -26,6 +27,8 @@ a₁(R) = (3 * R + 2 * sqrt (R * (5 - R) * (2 - R))) / (8 - R).
 The curve is a globally sufficient threshold for this support family.  No optimality claim is
 made: the cubic rank envelope deliberately discards part of the sharper piecewise rank formula.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

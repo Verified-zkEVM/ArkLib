@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Uniform
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Uniform
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
 /-!
 # Uniform first-order lists at capacity gap 6/25
 
@@ -15,6 +17,8 @@ with at most `13623 n` candidates. The `k = 1` branch uses elementary agreement
 incidence and requires no characteristic condition. The other branch retains its
 original characteristic guard. Mutual correlated agreement is proved separately.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

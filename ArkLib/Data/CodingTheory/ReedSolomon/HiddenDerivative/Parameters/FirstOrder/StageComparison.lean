@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Ring
 /-!
 # Comparing the two regular-stage charges
 
@@ -23,6 +25,8 @@ ratios. The parameter `c` is the common factor `ell * (n - L)` for accidental ag
 This module proves only algebraic comparisons of those charges; the geometric cardinality
 theorem supplies them.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
 /-!
 # Executable eligibility for first-order rate certificates
 
@@ -14,6 +15,8 @@ This file connects the field-generic symbolic rate certificate to the executable
 machine. Keeping this adapter separate prevents the mathematical certificate constructor from
 depending on machine semantics.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 

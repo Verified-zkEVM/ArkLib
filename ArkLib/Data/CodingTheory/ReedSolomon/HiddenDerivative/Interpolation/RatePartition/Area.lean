@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Dimension
-import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Dimension
+public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 
 /-!
 # A quadratic lower bound for the partition source dimension
@@ -13,6 +15,8 @@ import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 Fixing all positive-order derivative exponents leaves two exponents, X and Y₀.
 Their exact staircase count dominates the positive-part triangular area.
 -/
+
+@[expose] public section
 
 noncomputable section
 

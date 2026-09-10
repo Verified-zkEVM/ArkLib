@@ -3,12 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
-import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterSemantics
-import ArkLib.Data.Polynomial.CoefficientList
-import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterSemantics
+public import ArkLib.Data.Polynomial.CoefficientList
+public import ArkLib.ToCompPoly.Univariate.Lagrange
+
+-- The executable coefficient bridge intentionally reduces the canonical and raw arrays.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
 /-!
 # Interpolation and checking for a sample of received positions
 
@@ -16,6 +21,8 @@ This file contains the reusable, executable operation that interpolates a polyno
 sample of received positions, materializes its fixed-width coefficient vector, and checks its
 degree and full received-word agreement. It is independent of how a decoder obtains its samples.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SampleInterpolation
 

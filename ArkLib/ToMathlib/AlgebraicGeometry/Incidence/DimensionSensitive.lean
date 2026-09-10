@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.EvaluationDimension
-import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
-import ArkLib.ToMathlib.Set.Finite
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.EvaluationDimension
+public import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
+public import ArkLib.ToMathlib.Set.Finite
 
 /-!
 # Dimension-sensitive agreement incidence
@@ -22,6 +24,8 @@ This module isolates the generic induction.  Applications must prove the heredit
 hypothesis on their actual retained source locus; the theorem does not assume a target dimension
 bound merely from pointwise uniqueness.
 -/
+
+@[expose] public section
 
 noncomputable section
 

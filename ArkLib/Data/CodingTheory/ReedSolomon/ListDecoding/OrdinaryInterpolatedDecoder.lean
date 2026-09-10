@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
 
 /-!
 # Ordinary interpolation followed by quotient lifting
@@ -24,6 +25,8 @@ center, and every wanted message must be regular there. Selecting such a center 
 squarefree normalization over F(X)) is a separate producer step. The generic interpolation
 backend and Newton quotient lift do not yet carry the paper's near-linear runtime proof.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
 open CompPoly CompPoly.GuruswamiSudan Polynomial FieldTransport

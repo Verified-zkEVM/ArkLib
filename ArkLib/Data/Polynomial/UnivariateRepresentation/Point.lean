@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
+module
+
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
 
 /-!
 # Point semantics for raw rational univariate maps
@@ -12,6 +14,8 @@ This neutral predicate records the exact root, denominator, width, and rational
 coordinate equations supplied by a raw map.  Solver frontends and downstream
 chart consumers can share it without depending on Reed--Solomon code.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UnivariateRepresentation.MapData
 

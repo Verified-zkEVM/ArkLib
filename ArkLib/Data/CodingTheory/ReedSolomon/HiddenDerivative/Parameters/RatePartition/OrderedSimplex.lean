@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Analysis.Simplex.Moments
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.Fin.Tuple.Sort
-import Mathlib.LinearAlgebra.Matrix.Block
-import Mathlib.MeasureTheory.Integral.Bochner.Set
-import Mathlib.Probability.IdentDistrib
+public import ArkLib.ToMathlib.Analysis.Simplex.Moments
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.Fin.Tuple.Sort
+public import Mathlib.LinearAlgebra.Matrix.Block
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
+public import Mathlib.Probability.IdentDistrib
 
 /-!
 # Ordered coordinates for the rate-partition simplex
@@ -26,6 +27,8 @@ and sends the unweighted radius `∑ i, u i` to the first ordered coordinate.  T
 source-integral-facing form of the ordered-simplex change of variables; in particular, it does
 not use the legacy hidden-derivative convention in which the first higher jet has weight zero.
 -/
+
+@[expose] public section
 
 open MeasureTheory Set
 open scoped BigOperators

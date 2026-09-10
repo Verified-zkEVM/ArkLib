@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.Avoidance
-import CompPoly.Univariate.BatchEval.Context
+module
+
+public import ArkLib.Data.Polynomial.Avoidance
+public import CompPoly.Univariate.BatchEval.Context
 /-!
 # Executable nonvanishing search with a batch-evaluation backend
 
@@ -16,6 +18,8 @@ assume pointwise Horner evaluation or enumerate the polynomial's roots.
 This is the search stage only: constructing and proving nonzero the ordinary discriminant, and
 constructing enough distinct candidates in a suitable field, remain separate obligations.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]

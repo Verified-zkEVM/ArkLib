@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryNegateMachine
+
+public import ArkLib.Data.Computation.BinaryNegateMachine
 
 /-!
 # Literal negation retaining its modulus
@@ -13,6 +15,8 @@ The input modulus initially occurs only on its retained tape. Two charged bit pa
 that tape and write a separate arithmetic copy. The original literal negation then consumes
 its copy and operand; a final dispatch retains the exact original modulus and canonical output.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryRetainedNegateMachine
 

@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.TaylorCutoff
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionExtension
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.TaylorCutoff
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.SolutionExtension
 /-!
 # Prescribed inputs for correlated-agreement charts
 
@@ -14,6 +17,8 @@ bounds
 needed with Taylor cap `K = n`. The characteristic contract supplies every stage's pivots,
 including after extension of the ground field. No correlated-agreement conclusion is assumed.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

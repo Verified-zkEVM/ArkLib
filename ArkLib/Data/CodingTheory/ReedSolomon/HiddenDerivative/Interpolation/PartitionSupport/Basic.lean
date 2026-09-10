@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 
 /-!
 # The rate-dependent partition support
@@ -15,6 +17,8 @@ Both use the same differential-polynomial representation and coarse specializati
 The inclusion proved here permits reuse of the existing soundness and executable adapters,
 but does not identify their source dimensions or local ranks.
 -/
+
+@[expose] public section
 
 noncomputable section
 

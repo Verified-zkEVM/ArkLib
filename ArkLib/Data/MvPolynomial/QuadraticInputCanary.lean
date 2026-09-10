@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticInputSemantics
+
+public import ArkLib.Data.MvPolynomial.QuadraticInputSemantics
 
 /-!
 # Literal coordinate-allocation checks
@@ -13,6 +15,8 @@ Distinct coefficients and factor vectors detect reversal or coordinate swaps. Ze
 terms must remain present. A short run retains its exact suspended output rather than emitting
 early. These are kernel evaluations of the program, not uses of its correctness theorem.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticInputMachine
 

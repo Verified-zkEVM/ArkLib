@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.List.CartesianProductMachine
+
+public import ArkLib.Data.List.CartesianProductMachine
 
 /-!
 # Materialized prefix axes from a shared universe
@@ -20,6 +22,8 @@ outside this model. No take, map or reverse primitive occurs in dispatch. The in
 constructs anisotropic grid axes from a base-field or quadratic-field enumeration before the
 Cartesian-product machine. This component neither evaluates points nor chooses grid lengths.
 -/
+
+@[expose] public section
 
 namespace List.PrefixAxesMachine
 

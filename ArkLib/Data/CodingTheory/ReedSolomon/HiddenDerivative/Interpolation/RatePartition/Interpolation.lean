@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Rank
-import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Rank
+public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 
 /-!
 # Interpolation from the finite partition surplus
@@ -14,6 +15,8 @@ The rank bound applies to the actual local constraint maps. A surplus therefore
 produces a nonzero polynomial retaining both its support and every local equation.
 These equations are the witness needed by executable interpolation search.
 -/
+
+@[expose] public section
 
 noncomputable section
 

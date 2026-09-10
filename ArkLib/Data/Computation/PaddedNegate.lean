@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryRetainedNegateField
-import ArkLib.Data.Computation.ScalarWordPadding
+
+public import ArkLib.Data.Computation.BinaryRetainedNegateField
+public import ArkLib.Data.Computation.ScalarWordPadding
 
 /-!
 # Fixed-width scalar negation
@@ -15,6 +17,8 @@ and padding. Both children use the same six tapes; their handoff changes no tape
 The exact modulus word is retained, while the input operand is consumed. This is a local-bit
 instruction on materialized words, not a whole-decoder bit-time theorem.
 -/
+
+@[expose] public section
 
 namespace Computation.PaddedNegate
 

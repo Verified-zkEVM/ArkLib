@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticColumnMachine
-import ArkLib.Data.Matrix.QuadraticPivotRefinement
+
+public import ArkLib.Data.Matrix.QuadraticColumnMachine
+public import ArkLib.Data.Matrix.QuadraticPivotRefinement
 
 /-!
 # Same-execution coordinate column refinement
@@ -13,6 +15,8 @@ import ArkLib.Data.Matrix.QuadraticPivotRefinement
 Proof-only maps preserve all row order and suspended pivot states. Concrete traces retain
 validation and child work. Full-column execution has a bound depending only on input dimensions.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticColumnMachine
 

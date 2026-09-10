@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.RowReductionMachine
+
+public import ArkLib.Data.Matrix.RowReductionMachine
 
 /-!
 # Concrete row-operation machine checks
@@ -13,6 +15,8 @@ Asymmetric signed rows fix arithmetic orientation and reversal order. The remain
 distinguish exhaustion, both length-mismatch directions, and successful empty rows with no
 field arithmetic.
 -/
+
+@[expose] public section
 
 namespace Matrix.RowReductionMachine
 

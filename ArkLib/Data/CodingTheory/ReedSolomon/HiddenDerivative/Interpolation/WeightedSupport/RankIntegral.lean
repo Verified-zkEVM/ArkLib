@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.CubeTransfer
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Moments
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Moments
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.PositivePart
 
 /-!
@@ -18,6 +20,8 @@ simplex enlarged by `choose d 2`.  We normalize that integral to the uniform pro
 and apply the mean-variance positive-part estimate.  The variance bound is an explicit input so
 that its exact evaluation remains in the shared centered-moments module.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 open MeasureTheory SimplexIntegration

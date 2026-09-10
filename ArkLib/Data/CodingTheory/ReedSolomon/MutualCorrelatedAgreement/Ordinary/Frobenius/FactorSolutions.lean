@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.SeparableSolutions
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.AggregationBounds
 /-!
 # The original-coordinate charge of one Frobenius factor
@@ -15,6 +16,8 @@ This interface chooses the coordinate roots internally and takes the image of th
 exceptional set in the original challenge coordinate. Its bound spends the original root
 degree `p^e*b`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

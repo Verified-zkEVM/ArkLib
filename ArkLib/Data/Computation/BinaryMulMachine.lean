@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryModAddMachine
+
+public import ArkLib.Data.Computation.BinaryModAddMachine
 
 /-!
 # Literal repeated-addition scalar multiplication
@@ -14,6 +16,8 @@ multiplicand, a shuttle, and a held accumulator. Countdown decrements and every 
 transfer and restoration execute literal local-bit loops. The modulus and multiplicand remain
 on their original tapes at completion. Empty canonical countdown is the sole loop exit test.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryMulMachine
 

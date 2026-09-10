@@ -3,15 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
-import ArkLib.Data.Polynomial.GCDSplit
-import CompPoly.Univariate.Deriv
-import CompPoly.Univariate.EuclideanAlgorithm
-import Mathlib.Algebra.CharP.CharAndCard
-import Mathlib.Algebra.Polynomial.Expand
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.FieldTheory.Perfect
-import Mathlib.RingTheory.Polynomial.Radical
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import ArkLib.Data.Polynomial.GCDSplit
+public import CompPoly.Univariate.Deriv
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import Mathlib.Algebra.CharP.CharAndCard
+public import Mathlib.Algebra.Polynomial.Expand
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Perfect
+public import Mathlib.RingTheory.Polynomial.Radical
 
 /-!
 # Executable squarefree support of a finite-field polynomial
@@ -32,6 +34,8 @@ materialize the field enumeration, especially for extension fields. A fast decod
 this metadata lookup with an explicit field size and its erased correctness proof. This module
 proves exact squarefree support; its generic kernel does not establish a polynomial-bit bound.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 

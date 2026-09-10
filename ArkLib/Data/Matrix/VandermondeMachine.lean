@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotSelectionMachine
-import Mathlib.LinearAlgebra.Vandermonde
+
+public import ArkLib.Data.Matrix.PivotSelectionMachine
+public import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
 # Materialized augmented Vandermonde rows
@@ -20,6 +22,8 @@ registers are shared. Pair allocation writes both slots. Constants, input materi
 fuel and scalar bit costs are outside this model. Sample evaluation and solving are separate
 components. Specification and matrix representation maps below are mathematical interfaces only.
 -/
+
+@[expose] public section
 
 namespace Matrix.VandermondeMachine
 

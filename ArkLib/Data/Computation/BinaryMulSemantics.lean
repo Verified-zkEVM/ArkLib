@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryMulRound
+
+public import ArkLib.Data.Computation.BinaryMulRound
 
 /-!
 # Same-run multiplication by a physical binary countdown
@@ -13,6 +15,8 @@ The proof inducts on the value of the actual canonical countdown tape. Each none
 executes a complete literal decrement/copy/modular-add round. The cost is linear in the counter
 value and physical widths, hence has absolute polynomial degree in the field size.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryMulMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.AgreementMachine
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.AgreementMachine
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 /-!
 # Closed degree and agreement filtering of one candidate
 
@@ -17,6 +18,8 @@ accesses. Thus this is a unit-cost primitive bound, not a bit-complexity asserti
 Inputs are materialized descending coefficients and point/value pairs. Base-field descent,
 candidate enumeration, deduplication, input preparation and scalar bit costs are separate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CandidateFilterMachine
 

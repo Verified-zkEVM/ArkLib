@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FieldLiteralFiniteControl
+
+public import ArkLib.Data.Computation.FieldLiteralFiniteControl
 
 /-! # Kernel checks of finite-head literal construction and suspended child phases -/
+
+@[expose] public section
 
 namespace Computation.FieldLiteralFiniteControl
 

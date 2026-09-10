@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.FactorSolutions
 /-!
 # Sharper ordinary factor charges
@@ -13,6 +14,8 @@ When each separable factor degree is at most `D`, the exact mixed-degree compari
 an improved finite charge. The aggregate estimate applies in particular when the original
 root-degree cap is at most `D`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

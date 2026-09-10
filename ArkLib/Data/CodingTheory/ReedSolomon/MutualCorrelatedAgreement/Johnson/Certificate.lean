@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.BaseEquation
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Ordinary.JohnsonCertificate
 /-!
 # Finite Johnson correlated agreement in every characteristic
@@ -15,6 +16,8 @@ The literal Johnson recipe constructs a primitive ordinary equation. Its roots i
 polynomials above the agreement threshold, and the all-characteristic ordinary transfer
 produces one exceptional set with the finite `E0` charge.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.ScalarWordPadding
+
+public import ArkLib.Data.Computation.ScalarWordPadding
 
 /-!
 # Kernel checks for physically constructed fixed-width scalars
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.ScalarWordPadding
 These runs cover padded zero, marker-bit irrelevance, excess-width rejection with saved input,
 literal reference restoration, and the precise construction-to-padding handoff.
 -/
+
+@[expose] public section
 
 namespace Computation.FixedWidthWordMachine
 

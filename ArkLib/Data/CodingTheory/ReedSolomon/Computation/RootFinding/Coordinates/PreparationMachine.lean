@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetPreparationMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetPreparationMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 /-!
 # Coordinate jet preparation
 
@@ -13,6 +15,8 @@ The cursor reverses the supplied jet and pads each missing entry with an explici
 pair of base zeros. Both zero literals and pair slots are charged. Capacity failure and tagged
 output remain executable branches; no length, reversal or padding specification runs here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticJetPreparationMachine
 

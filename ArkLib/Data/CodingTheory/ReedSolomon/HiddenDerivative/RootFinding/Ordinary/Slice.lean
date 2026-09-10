@@ -3,12 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Materialize
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.NewtonProof
-import ArkLib.Data.Polynomial.GCDSplit
+public import ArkLib.Data.Polynomial.GCDSplit
+
+-- The specialization bridge reduces the computable-polynomial semantic conversion.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 
 /-!
 # Initial slices of an ordinary bivariate equation
@@ -18,6 +23,8 @@ a polynomial solution `Q(X,p(X))=0`. The slice is computed from the supplied spa
 The accompanying identities relate its roots and the centered lifting equation to the original
 polynomial substitution, so a constructor can establish coverage from its actual data.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.Ordinary.QuotientLift
 open CompPoly CompPoly.CPolynomial

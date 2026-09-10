@@ -3,11 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Lifting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.ConcreteEquation
-import CompPoly.Multivariate.MvPolyEquiv.Eval
-import CompPoly.Univariate.ToPoly.Impl
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Lifting
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.ConcreteEquation
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
+public import CompPoly.Univariate.ToPoly.Impl
+-- The executable bridge reduces CompPoly coefficient and semantic-conversion definitions.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 /-!
 # Executable regular coefficient lifting
 
@@ -20,6 +26,8 @@ residual coefficient vanishes.
 The semantic bridge maps the concrete representations to the shifted-jet presentation used by
 `RegularLifting`. No polynomial equality or divisibility test occurs in the executable kernel.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 
@@ -62,7 +70,7 @@ noncomputable def cPolynomialToPolyHom : CompPoly.CPolynomial F →+* F[X] :=
 @[simp]
 theorem cPolynomialToPolyHom_apply (P : CompPoly.CPolynomial F) :
     cPolynomialToPolyHom P = P.toPoly :=
-  rfl
+  CompPoly.CPolynomial.ringEquiv_apply P
 
 /-- Hasse derivative on a centered coefficient array. Keeping the source array length makes the
 coefficient formula direct; `ofArray` removes the trailing zero coefficients. -/

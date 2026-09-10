@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSystemRefinement
-import ArkLib.Data.Matrix.BackSubstitutionMachine
+public import ArkLib.Data.Matrix.BackSubstitutionMachine
 /-!
 # Closed residual coefficient recovery
 
@@ -21,6 +22,8 @@ bit costs are separate. The consistency hypothesis in the generic theorem is dis
 concrete residual sampling in the refinement, rather than by an assumed solver or output vector.
 No requested-coordinate lookup, point enumeration, or complete-decoder cost is asserted here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualCoefficientMachine
 

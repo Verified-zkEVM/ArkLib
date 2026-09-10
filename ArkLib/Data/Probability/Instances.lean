@@ -4,14 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
          Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Probability.ProbabilityMassFunction.Monad
-import ArkLib.Data.Probability.Notation
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
-import CompPoly.Data.Fin.BigOperators
-import CompPoly.Data.Nat.Bitwise
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.Probability.ProbabilityMassFunction.Monad
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import CompPoly.Data.Fin.BigOperators
+public import CompPoly.Data.Nat.Bitwise
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 
 /-! # Probability Instances
 
@@ -23,6 +24,8 @@ the Schwartz-Zippel bound in probability form, and collision bounds for linear f
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
 Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 
 open ProbabilityTheory Filter NNReal Finset Function Real

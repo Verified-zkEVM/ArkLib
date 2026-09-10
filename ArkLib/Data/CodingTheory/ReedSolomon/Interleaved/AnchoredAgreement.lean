@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
-import ArkLib.Data.Probability.TwoPointPolynomialCollision
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
+public import ArkLib.Data.Probability.TwoPointPolynomialCollision
 
 /-!
 # Binding an interleaved Reed--Solomon candidate with two anchors
@@ -28,6 +29,8 @@ choice of OOD point and any auxiliary or lookup randomness encoded by that type,
 candidate.  Reducing coordinatewise modulo `X ^ T - 1` therefore fixes the trace while preserving
 all trace-domain evaluations.
 -/
+
+@[expose] public section
 
 noncomputable section
 

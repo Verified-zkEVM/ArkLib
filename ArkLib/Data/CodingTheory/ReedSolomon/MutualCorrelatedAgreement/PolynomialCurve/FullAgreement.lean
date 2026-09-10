@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Agreement
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 /-!
 # Exact correlated agreement for power batching
 
@@ -13,6 +15,8 @@ The constituent polynomials live over the received-word field, even when the cha
 is selected in an extension field. Exactness means equality of the entire agreement set,
 not merely existence of a common subset of a prescribed size.
 -/
+
+@[expose] public section
 
 noncomputable section
 

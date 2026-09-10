@@ -3,8 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootMachine
+-- The completeness witness is constructed through `ringEquiv.symm`; expose the defining
+-- implementation modules so its forward image reduces to `toPoly`.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 /-!
 # Accepted global root semantics
 
@@ -12,6 +18,8 @@ The actual local residual test determines acceptance before actual translation. 
 refinement includes failure, soundness and completeness for a regular compatible initial jet.
 Input jet padding and sample construction remain explicit representation obligations.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.RegularRootMachine
 

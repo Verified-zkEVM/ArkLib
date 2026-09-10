@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 
 /-!
 # Simulation of sequential composition
@@ -12,6 +13,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 The explicit left and right challenge inclusions preserve simulation exactly. These identities
 include any oracle state: no reset or assumption that the oracle is stateless is needed.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

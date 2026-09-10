@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticCandidateMachine
 /-!
 # Exactness of base-field candidate acceptance
@@ -14,6 +15,8 @@ base-field vector satisfying both the degree and agreement conditions. The outpu
 same polynomial under the base embedding. These statements and the work bound concern the
 same closed execution; coefficient preparation and enumeration remain separate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticCandidateMachine
 

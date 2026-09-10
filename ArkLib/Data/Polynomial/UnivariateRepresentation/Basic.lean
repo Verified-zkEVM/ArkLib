@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
 
 /-!
 # Finite rational univariate representation data
@@ -14,6 +16,8 @@ equations, and produces reduced polynomial coordinates; `FromRaw` first normaliz
 repeated or inseparable eliminant. Keeping these containers here lets solver construction depend
 only on their representation, independently of the postprocessor proofs.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UnivariateRepresentation
 open CompPoly

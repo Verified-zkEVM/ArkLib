@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Analysis.Simplex.AffinePushforward
-import ArkLib.ToMathlib.MeasureTheory.Integral.NaturalFloorCells
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
+public import ArkLib.ToMathlib.Analysis.Simplex.AffinePushforward
+public import ArkLib.ToMathlib.MeasureTheory.Integral.NaturalFloorCells
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Coordinates
 /-!
 # Enlarged cubes for the remaining-degree rank count
 
@@ -14,6 +15,8 @@ Unlike the dimension comparison, this comparison integrates full unit cubes abov
 points. Their weighted radii increase by `choose d 2`, and their ordinary degree increases by
 at most `d - 1`. Thus the original residual is bounded by a positive part on the enlarged simplex.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 open MeasureTheory SimplexIntegration

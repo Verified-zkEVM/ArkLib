@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.CoordinateDerivativeMachine
-import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
+
+public import ArkLib.Data.MvPolynomial.CoordinateDerivativeMachine
+public import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
 
 /-!
 # Same-execution coordinate sparse derivative
@@ -13,6 +15,8 @@ import ArkLib.Data.MvPolynomial.CoordinateNormalizeRefinement
 Each repeated-addition and zero-test edge is implemented by retained base instructions. Factor
 cursors, exponents, restoration order and characteristic cancellation match the original machine.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticDerivativeMachine
 

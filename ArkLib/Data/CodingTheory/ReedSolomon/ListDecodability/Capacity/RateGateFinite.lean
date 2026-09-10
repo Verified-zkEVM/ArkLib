@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CertificateBound
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CertificateBound
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.RateGateCertificate
 
 /-!
@@ -15,6 +16,8 @@ The finite analytic inputs are isolated here before the general Gamma gate choos
 them. All ambient, field-characteristic, and integer agreement guards are derived
 from the explicit block threshold.
 -/
+
+@[expose] public section
 
 noncomputable section
 

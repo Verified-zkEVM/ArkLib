@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
-import ArkLib.Data.MvPolynomial.WeightedDegree
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
+public import ArkLib.Data.MvPolynomial.WeightedDegree
 
 
 /-!
@@ -33,6 +34,8 @@ commits `3feac154` or `07cf41c1` is used.
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

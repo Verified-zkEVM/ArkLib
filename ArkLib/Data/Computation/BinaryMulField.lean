@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryMulSemantics
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Computation.BinaryMulSemantics
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Literal multiplication refines scalar multiplication
@@ -14,6 +16,8 @@ The repeated-addition trace implements multiplication in the input modulus's res
 including prime-field multiplication. Its countdown input is canonical; the multiplicand and
 modulus may carry padding, which is included in the physical-width bound and retained exactly.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryMulMachine
 

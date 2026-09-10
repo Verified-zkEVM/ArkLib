@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorTable
 /-!
 # Applying a computed differential Taylor chart
@@ -18,6 +19,8 @@ The coverage theorem discharges the chart identities using the differential equa
 by the message. The only solver premise is that its raw map represents the initial jet; this
 module does not construct that map or assert the still-missing toric solver theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.ComputedTaylorMap
 open PolynomialDifferential ReedSolomon.HiddenDerivative ReedSolomon.HiddenDerivative.SquareSystems

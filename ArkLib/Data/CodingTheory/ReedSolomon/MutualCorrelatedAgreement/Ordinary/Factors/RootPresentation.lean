@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorWitnessEmbedding
-import ArkLib.ToMathlib.Polynomial.SeparableResultant
-import Mathlib.Algebra.Polynomial.Bivariate
-import ArkLib.ToMathlib.MvPolynomial.RootContraction
+public import ArkLib.ToMathlib.Polynomial.SeparableResultant
+public import Mathlib.Algebra.Polynomial.Bivariate
+public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 /-!
 # Presenting an ordinary symbolic equation as a polynomial in its root
 
@@ -16,6 +17,8 @@ The coefficient variables are ordered as the independent coordinate, then challe
 The outer variable is the root, so the resultant is a polynomial in the challenge with
 polynomial coefficients in the independent coordinate.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 /-!
 # Base-instruction execution of the direct coefficient arithmetic tail
 
@@ -20,6 +21,8 @@ base ledger and a parent wrapper. Pair return charges one dispatch and five acce
 return charges two dispatches and six accesses for branch selection and retained operands.
 Immutable operands are shared. Host fuel, input preparation and bit costs remain outside scope.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.DirectArithmeticMachine
 

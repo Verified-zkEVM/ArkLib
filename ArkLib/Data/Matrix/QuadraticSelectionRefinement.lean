@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticSelectionMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.Matrix.QuadraticSelectionMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Same-execution coordinate pivot-selection refinement
@@ -15,6 +17,8 @@ source steps lower to retained equality instructions and list transitions. Succe
 all-zero outcomes preserve the original first-pivot and row-order semantics. Equality requires
 no nonsquare parameter; input-only bounds count all lowered primitive work.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticSelectionMachine
 

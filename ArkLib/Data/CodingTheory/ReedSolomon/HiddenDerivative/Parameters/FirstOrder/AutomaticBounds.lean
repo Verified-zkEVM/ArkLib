@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticRecipe
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticRecipe
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 
 /-!
@@ -14,6 +16,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Hybr
 This file turns the literal finite recipe into elementary bounds in the slack above the
 first-order rate curve.  Every constant below depends only on the fixed physical rate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

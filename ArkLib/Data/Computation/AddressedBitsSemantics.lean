@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AddressedBits
+
+public import ArkLib.Data.Computation.AddressedBits
 
 /-!
 # Same-run address-controller correctness
@@ -14,6 +16,8 @@ their phase changes, one architectural access, and complete bus reset. The initi
 materialized. The observer's Lean fuel recursion is not a measured host runtime. Both correctness
 and frame properties refer to the actual memory returned by that same literal controller run.
 -/
+
+@[expose] public section
 
 namespace Computation.AddressedBits
 

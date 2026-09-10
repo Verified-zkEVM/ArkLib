@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.CoefficientDescentMachine
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+
+public import ArkLib.Data.QuadraticAlgebra.CoefficientDescentMachine
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 
 /-!
 # Exact base-coordinate descent and polynomial preservation
@@ -14,6 +16,8 @@ Successful descent means exactly that the original vector is the coefficientwise
 of the returned base vector. There is no promise that every extension-field candidate descends.
 The polynomial statement uses descending Horner coefficients, matching the candidate filter.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.CoefficientDescentMachine
 

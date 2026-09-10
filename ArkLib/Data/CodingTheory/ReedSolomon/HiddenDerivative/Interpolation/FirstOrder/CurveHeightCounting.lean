@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.HeightCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveRank
-import ArkLib.ToMathlib.Finset.SumRangeFrom
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveRank
+public import ArkLib.ToMathlib.Finset.SumRangeFrom
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveColumnHeight
 
 
@@ -23,6 +25,8 @@ columns through natural-number truncated subtraction. The shifted construction b
 both sides by total jet degree. A degree-`t` source column then has weight `ℓ*t`, while the
 actual degree-`t` local image contributes `r_t` rows of that same weight.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 

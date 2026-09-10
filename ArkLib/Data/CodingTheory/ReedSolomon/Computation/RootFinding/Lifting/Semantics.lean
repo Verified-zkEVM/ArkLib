@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Machine
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Machine
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.DirectRegularIteration
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 /-!
 # Whole-candidate refinement of the regular lifting loop
 
@@ -16,6 +17,8 @@ functional direct lifting on the complete represented polynomial, including earl
 Regularity identifies its result with the exhaustive prefix interface. Full residual acceptance
 is deliberately separate: a completed prefix is not yet certified as a differential root.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.RegularLiftMachine
 

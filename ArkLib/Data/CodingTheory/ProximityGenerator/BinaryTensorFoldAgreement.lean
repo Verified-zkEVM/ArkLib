@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
-import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 
 /-!
 # Full agreement through shared-level binary tensor folds
@@ -14,6 +15,8 @@ This file gives a levelwise binary-fold interface whose exceptional set controls
 one shared challenge level.  The induction preserves the complete common agreement set while it
 opens all parents simultaneously, yielding one exceptional event per level.
 -/
+
+@[expose] public section
 
 namespace TensorMCA
 
@@ -358,7 +361,7 @@ private theorem levelFoldBound_succ (q exceptionalCount h : ℕ) :
       exact le_rfl
 
 /-- Bad challenge vectors for an arbitrary current family. -/
-private noncomputable def tensorFoldFamilyBad [Fintype F] [DecidableEq A]
+noncomputable def tensorFoldFamilyBad [Fintype F] [DecidableEq A]
     {C : ModuleCode ι F A} {agreement exceptionalCount h : ℕ}
     (hlevel : FullSetLevelWitness C agreement exceptionalCount)
     {β : Type} [Fintype β] [Nonempty β]

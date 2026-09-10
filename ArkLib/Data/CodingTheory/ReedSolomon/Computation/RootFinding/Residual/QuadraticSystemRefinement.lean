@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticSystemMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatchSpec
-import ArkLib.Data.Matrix.QuadraticVandermondeRefinement
-import ArkLib.Data.Matrix.QuadraticForwardEchelonRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticSystemMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatchSpec
+public import ArkLib.Data.Matrix.QuadraticVandermondeRefinement
+public import ArkLib.Data.Matrix.QuadraticForwardEchelonRefinement
 /-!
 # Same-execution coordinate residual-system refinement
 
@@ -16,6 +19,8 @@ endpoint. Complete raw-coordinate execution produces the same echelon equations,
 solution set as sampling and Vandermonde construction. The work bound uses only source structural
 fuel from the supplied input and dimensions. Representation maps are proof-only.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualSystemMachine
 

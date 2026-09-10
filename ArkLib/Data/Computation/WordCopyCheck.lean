@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.WordCopyMachine
+
+public import ArkLib.Data.Computation.WordCopyMachine
 
 /-! # Kernel replay of destination clearing, retained source order and exact handoffs -/
+
+@[expose] public section
 
 namespace Computation.WordCopyMachine
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.List.PrefixAxesMachine
+
+public import ArkLib.Data.List.PrefixAxesMachine
 
 /-!
 # Prefix-axis materialization boundary checks
@@ -12,6 +14,8 @@ import ArkLib.Data.List.PrefixAxesMachine
 Different prefix lengths expose both reversal orders. Zero lengths, an empty request list and
 oversized requests distinguish success from rejection without returning partial axes.
 -/
+
+@[expose] public section
 
 namespace List.PrefixAxesMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.RankBudget
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Rounding estimates for interpolation rank parameters
@@ -14,6 +15,8 @@ The weighted radius is rounded down and the multiplicity is rounded up. These es
 both errors explicit and control the normalized rank parameter `κ`. They depend on the scalar
 radius parameter `a`, independently of how a particular interpolation support chooses it.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.InterpolationRounding
 

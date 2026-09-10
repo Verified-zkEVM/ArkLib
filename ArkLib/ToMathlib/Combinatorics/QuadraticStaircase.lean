@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Combinatorics.CubicStaircase
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
+
+public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
 
 /-!
 # A quadratic lower bound for staircase counts
@@ -18,6 +20,8 @@ Choosing a nonnegative exponent `u<L` leaves `D*(L-u)` possible values of anothe
 integer exponent. The strict cutoff rounds upward. Summing these slots dominates
 the triangular area `D*(max L 0)^2/2`, with no limiting argument or error term.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorNumerator
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorNumerator
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
 
 
 /-!
@@ -15,6 +17,8 @@ Evaluating a retained polynomial parameter gives exactly the existing field-valu
 The identities hold at singular separants and zero binomial pivots as well. Regularity and
 invertible pivots enter only when the resulting rational chart is compared with a solution.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.PDeriv
-import Mathlib.LinearAlgebra.Matrix.Nondegenerate
-import Mathlib.RingTheory.Ideal.Operations
+
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.LinearAlgebra.Matrix.Nondegenerate
+public import Mathlib.RingTheory.Ideal.Operations
 
 /-!
 # Isolating a nonsingular zero by a polynomial neighborhood
@@ -18,6 +20,8 @@ open g(v)≠0 satisfies A(v)(v-u)=0 and hence v=u. The same argument works after
 This elementary certificate is the isolation conclusion needed by the sparse root solver. Other
 roots and positive-dimensional components may remain outside this neighborhood.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 open scoped BigOperators

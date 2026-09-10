@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSamplePolynomialBounds
 /-!
 # Field-size majorants from actual interpolation output
@@ -14,6 +15,8 @@ No completeness property of that alphabet is needed for these primitive-budget i
 The fixed-order bound has coefficients depending only on order and multiplicity. The order-zero
 bound permits growing multiplicity and retains a universal coefficient and absolute exponent.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SeparateSampleDecoder
 

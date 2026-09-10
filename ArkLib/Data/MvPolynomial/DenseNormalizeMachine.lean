@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
+
+public import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
 
 /-!
 # Charged aggregation of sparse terms with explicit keys
@@ -19,6 +21,8 @@ from scalar equality; a pair comparison is conservatively charged two natural te
 List-constructor tests are dispatches; unchanged immutable handles are
 retained. Input construction, reclamation, host fuel and bit costs are separate obligations.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.DenseNormalizeMachine
 

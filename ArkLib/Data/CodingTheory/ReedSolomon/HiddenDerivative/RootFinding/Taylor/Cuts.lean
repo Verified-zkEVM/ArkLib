@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
-import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
+public import Mathlib.LinearAlgebra.Lagrange
 
 
 /-!
@@ -16,6 +17,8 @@ distinct points determines at most one jet on the regular chart. All equations h
 the literal common-denominator polynomials; the argument does not assume geometric degree
 or Bezout infrastructure.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveStages
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveStages
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpGeneralEquation
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 /-!
 # Symbolic polynomial-curve certificate correlated agreement
@@ -17,6 +19,8 @@ close polynomial witnesses.  Each regular-stage budget retains the stage's actua
 order.  The certified height is charged only
 linearly by the lifted-power incidence bound and never occurs beneath the geometric exponent.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

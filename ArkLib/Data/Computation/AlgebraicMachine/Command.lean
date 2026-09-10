@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AlgebraicMachine.Basic
+
+public import ArkLib.Data.Computation.AlgebraicMachine.Basic
 
 /-!
 # Structured algebraic programs and charged execution
@@ -18,6 +20,8 @@ call entry, and return. A failed primitive or a non-Boolean test is stuck, not a
 termination. The compositional execution judgment below is connected to these transitions,
 so its cost is not an independently assigned annotation on a mathematical function.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine
 

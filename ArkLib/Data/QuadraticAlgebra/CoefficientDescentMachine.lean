@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Checked descent of quadratic coefficient vectors
@@ -15,6 +17,8 @@ physical width. Each scalar equality, coordinate read, allocation, reversal and 
 charged. The field structure and the input vector are supplied; host fuel and bit costs remain
 outside the primitive model. No bulk projection or algebra-map conversion occurs in dispatch.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.CoefficientDescentMachine
 

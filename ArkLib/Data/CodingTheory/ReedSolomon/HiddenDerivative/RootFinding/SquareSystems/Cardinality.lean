@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemEnumeration
-import Mathlib.Data.Nat.Choose.Bounds
+public import Mathlib.Data.Nat.Choose.Bounds
 
 /-!
 # Number of emitted square systems
@@ -16,6 +17,8 @@ Coincident rows may produce the same system, so the executable family has at mos
 number of selections. When K ≤ n this is at most (2n)^r. This counts systems only; it does not
 assert an arithmetic cost for constructing or solving them.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

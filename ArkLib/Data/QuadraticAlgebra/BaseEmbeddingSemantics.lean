@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingMachine
+
+public import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingMachine
 
 /-!
 # Exact base-alphabet representation
@@ -12,6 +14,8 @@ import ArkLib.Data.QuadraticAlgebra.BaseEmbeddingMachine
 The actual embedding program returns the ordered algebra-map image. Cardinality and membership
 therefore remain those of the supplied base alphabet; no full extension-field coverage is claimed.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.BaseEmbeddingMachine
 

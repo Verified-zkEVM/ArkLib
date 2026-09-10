@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateSeparateSampleRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
-import ArkLib.Data.QuadraticAlgebra.CoordinateAlphabetMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
+public import ArkLib.Data.QuadraticAlgebra.CoordinateAlphabetMachine
 /-!
 # Coordinate root-recovery core with executed alphabet materialization
 
@@ -18,6 +20,8 @@ witness is used to choose runtime fuel. The result and primitive-work bound conc
 executed composition. Bit lowering, scalar fuel arithmetic, and physical serialization remain
 separate obligations; this module does not assert the full bit-time theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CoordinateDecoderCore
 

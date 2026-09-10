@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactors
-import
+public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactors
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.AggregationBounds
 /-!
 # Combining ordinary factor exceptional sets
@@ -14,6 +15,8 @@ The zero locus of the original polynomial is recovered from its distinct normali
 This lemma unions their exceptional challenges with the root-independent content exceptions
 and charges the union to the original coordinate-degree budgets.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 open MvPolynomial

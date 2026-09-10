@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.SeparantChainMachine
-import ArkLib.Data.MvPolynomial.CoordinateHighestMachine
-import ArkLib.Data.MvPolynomial.CoordinateDerivativeMachine
+
+public import ArkLib.Data.MvPolynomial.SeparantChainMachine
+public import ArkLib.Data.MvPolynomial.CoordinateHighestMachine
+public import ArkLib.Data.MvPolynomial.CoordinateDerivativeMachine
 
 /-!
 # Coordinate separant stages
@@ -15,6 +17,8 @@ The actual coordinate highest-jet selector and sparse derivative run one instruc
 Each stage retains its original equation, chosen index/exponent and ordered context. Record and
 reversal cells keep the source charges; every actual child instruction pays the outer wrapper.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticChainMachine
 

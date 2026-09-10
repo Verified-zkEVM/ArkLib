@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.RegularEquation
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpTupleCounting
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentDimension
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorBidegree
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentDimension
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorBidegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.BidegreeExcluded
 /-!
 # Sharp regular polynomial-curve bounds in orders zero and one
 
@@ -52,6 +55,8 @@ here.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated
   Agreement up to Capacity*][DKTZ26], Section 5.6, Theorem 5.14 and Corollary 5.15.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

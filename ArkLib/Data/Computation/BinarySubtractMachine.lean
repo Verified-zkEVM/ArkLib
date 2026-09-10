@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryWordMachine
+
+public import ArkLib.Data.Computation.BinaryWordMachine
 
 /-!
 # Literal saturating binary subtraction
@@ -14,6 +16,8 @@ bit from each nonempty input and pushes one result bit. Final underflow clears t
 tape one cell at a time. Otherwise the existing literal normalization controller restores a
 canonical result. Borrow-in implements decrement without constructing a numeric constant.
 -/
+
+@[expose] public section
 
 namespace Computation.BinarySubtractMachine
 

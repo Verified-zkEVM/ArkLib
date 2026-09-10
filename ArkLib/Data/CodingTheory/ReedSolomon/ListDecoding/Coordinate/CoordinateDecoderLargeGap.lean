@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderParameters
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderBounds
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderParameters
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderBounds
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.DecoderCertificate
 /-!
 # Executed coordinate decoding for gaps at least one quarter
@@ -21,6 +23,8 @@ decoding. This result does not assert the unfinished bit-RAM refinement.
 * [Dao, Kominers, Thaler, and Zheng, *Reed-Solomon List Decoding up to Capacity at Every
   Rate*][DKTZ26], the large-gap branch of uniform capacity decoding.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CoordinateDecoderMachine
 

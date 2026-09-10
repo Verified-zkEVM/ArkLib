@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListUncons
-import ArkLib.Data.Computation.PaddedMul
-import ArkLib.Data.Computation.PaddedModAdd
+
+public import ArkLib.Data.Computation.SharedListUncons
+public import ArkLib.Data.Computation.PaddedMul
+public import ArkLib.Data.Computation.PaddedModAdd
 
 /-!
 # A physical shared-list Horner loop
@@ -20,6 +22,8 @@ The loop-header entry takes an already materialized accumulator, point, modulus 
 pointer. Initial accumulator reset is outside this entry. Only the existing local-bit RAM model
 is claimed; the interpreter's native running time is not the transition cost.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListHornerMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
-import ArkLib.ToMathlib.Polynomial.SparseContraction
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import ArkLib.ToMathlib.Polynomial.SparseContraction
 /-!
 # Recognizing a sparse Frobenius-pulled polynomial from a sample
 
@@ -13,6 +14,8 @@ A sample of the original dimension suffices after sparse Taylor reconstruction. 
 base-field pair is fixed before the extension, prime power, challenge, and candidate.
 This point-level result does not assert that a rational chart supplies the sparse cutoffs.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

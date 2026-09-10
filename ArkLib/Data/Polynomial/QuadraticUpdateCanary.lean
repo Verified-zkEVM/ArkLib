@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
+
+public import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
 
 /-!
 # Kernel checks for coordinate indexed updates
@@ -13,6 +15,8 @@ Middle and final updates preserve ordered prefixes and untouched suffixes. Empty
 a retained operand different from the supplied increment exposes accidental reconstruction.
 The separate save carries an exact allocation ledger.
 -/
+
+@[expose] public section
 
 namespace Polynomial.QuadraticUpdateMachine
 

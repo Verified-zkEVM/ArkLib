@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.SeparantChainBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.HighestJetTransport
-import
+public import ArkLib.Data.MvPolynomial.SeparantChainBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.HighestJetTransport
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
 /-!
 # Closed ordered separant chains
@@ -15,6 +17,8 @@ The actual selector and derivative machines construct a finite ordered chain. Ev
 record is followed by its precise separant equation, even when the next highest jet drops.
 Total jet degree bounds the number of active records; the terminal record has no active jet.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SeparantChainRefinement
 

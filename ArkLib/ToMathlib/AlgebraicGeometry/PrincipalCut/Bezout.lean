@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Degree
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Purity
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Degree
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Purity
 
 /-!
 # Refined principal-cut degree bound for actual affine components
@@ -14,6 +16,8 @@ The degree of every component is defined from its actual coordinate quotient.
 Noether normalization proves purity, and finite-prime separator injections compare
 leading coefficients. Together these prove the principal-cut degree sum.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Parameters
-import Mathlib.Analysis.SpecificLimits.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Parameters
+public import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
 # Choosing multiplicity from a strict rate margin
@@ -15,6 +17,8 @@ strict margin below that gate is attained at a finite positive multiplicity.
 This permits an arbitrarily small strict gate margin without imposing a fixed
 rounding loss.
 -/
+
+@[expose] public section
 
 noncomputable section
 

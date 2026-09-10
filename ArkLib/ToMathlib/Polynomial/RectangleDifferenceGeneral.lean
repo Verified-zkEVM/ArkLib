@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.Polynomial.HilbertPoly
-import Mathlib.Algebra.Polynomial.Taylor
+
+public import Mathlib.RingTheory.Polynomial.HilbertPoly
+public import Mathlib.Algebra.Polynomial.Taylor
 
 /-!
 # Rectangle-difference polynomials in arbitrary dimension
@@ -13,6 +15,8 @@ import Mathlib.Algebra.Polynomial.Taylor
 This file packages the polynomial identity underlying mixed bidegree bounds in an
 arbitrary number of jet variables.
 -/
+
+@[expose] public section
 
 open Polynomial
 

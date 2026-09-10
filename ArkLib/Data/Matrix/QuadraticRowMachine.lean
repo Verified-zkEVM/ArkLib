@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.RowReductionMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+
+public import ArkLib.Data.Matrix.RowReductionMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 
 /-!
 # Coordinate row-add-multiple execution
@@ -19,6 +21,8 @@ The ledger charges administrative accesses, call setup, each child instruction a
 returns, cell slots/root writes and output. Unchanged registers and lists are shared. Input
 preparation, reclamation, host fuel and compiled/bit time are outside this primitive model.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticRowMachine
 

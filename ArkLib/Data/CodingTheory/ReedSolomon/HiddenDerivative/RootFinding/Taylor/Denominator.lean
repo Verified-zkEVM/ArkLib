@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Support
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Support
 
 /-!
 # Common denominator budget for rational Taylor lifting
@@ -12,6 +13,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.
 The Taylor-order support bound implies that a residual of order `h`, before adding
 coefficient `c_(r+h)`, uses at most `2h-2` powers of the separant denominator.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

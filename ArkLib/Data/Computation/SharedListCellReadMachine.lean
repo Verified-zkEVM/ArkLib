@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListRead
+
+public import ArkLib.Data.Computation.SharedListRead
 
 /-!
 # Literal cell reads with physical head and tail extraction
@@ -19,6 +21,8 @@ Both length tapes and the pointer are caller-provided physical inputs. A represe
 returns its exact head/tail and unchanged memory. Nil-pointer testing and construction of the
 length tapes are separate obligations; malformed tag/short payload rejection retains the tapes.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListCellRead
 

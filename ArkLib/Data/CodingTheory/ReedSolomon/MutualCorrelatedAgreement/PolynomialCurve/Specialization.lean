@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Agreement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Agreement
 /-!
 # Simultaneous specialization of polynomial tuples
 
@@ -13,6 +15,8 @@ a finite family therefore specializes injectively at one challenge, simultaneous
 the zeros of finitely many nonzero auxiliary polynomials. This is the specialization step
 used to count retained graphs by a generic fiber.
 -/
+
+@[expose] public section
 
 noncomputable section
 

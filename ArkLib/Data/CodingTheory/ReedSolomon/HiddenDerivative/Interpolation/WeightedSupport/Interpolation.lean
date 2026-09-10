@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 
 
 /-!
@@ -19,6 +21,8 @@ The numerical dimension inequality is supplied by weighted simplex counting. No 
 independence premise is hidden in the local budget: its bound is proved from reachable
 coordinates over every field.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

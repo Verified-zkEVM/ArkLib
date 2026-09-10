@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ExceptionalChallenges
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorWitnessEmbedding
 /-!
 # One exceptional set for a regular symbolic polynomial-curve equation
@@ -16,6 +17,8 @@ lifted-power chart bound is independent of that center and of the selected witne
 bounds the entire bad set. The characteristic budget depends on the derivative order and Taylor
 cutoff, but not on the batching degree.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

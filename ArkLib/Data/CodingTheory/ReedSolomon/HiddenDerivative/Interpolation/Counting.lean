@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Justin Thaler
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
-import Mathlib.Algebra.Order.Floor.Div
-import Mathlib.Data.Fintype.BigOperators
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
+public import Mathlib.Algebra.Order.Floor.Div
+public import Mathlib.Data.Fintype.BigOperators
 
 
 /-!
@@ -29,6 +30,8 @@ The executable representatives use ordinary tuples.  The equivalence
 * [Dao, Q., Kominers, S. D., Thaler, J., and Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26]
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

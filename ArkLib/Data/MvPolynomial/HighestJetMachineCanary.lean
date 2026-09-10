@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.HighestJetRefinement
-import Mathlib.Algebra.Field.ZMod
+
+public import ArkLib.Data.MvPolynomial.HighestJetRefinement
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Highest-jet execution regressions
@@ -13,6 +15,8 @@ import Mathlib.Algebra.Field.ZMod
 Kernel computations include normalization, cancellation, index-zero exclusion, zero exponents,
 lexicographic register updates and final output. Literal charges cover both machine phases.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.HighestJetMachine
 

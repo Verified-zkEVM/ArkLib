@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Series
-import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
+public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
+-- The specialization homomorphism reduces the implementation of `toPoly` and `ringEquiv`.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 
 /-!
 # Specializing quotient-series coefficients at a geometric root
@@ -20,6 +24,8 @@ The first-order Taylor identity identifies the computed initial slope with `Q_Y(
 `residual_congr` says that matching branch coefficients give matching residual coefficients;
 Newton uses it when moving the derivative inverse to the updated branch.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.Ordinary.QuotientLift
 

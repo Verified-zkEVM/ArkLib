@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 /-!
 # Exact output specification for Reed--Solomon decoders
 
@@ -13,6 +14,8 @@ This module owns the backend-independent contract for executable list decoders. 
 repository's fixed-width descending coefficient convention. Exactness includes duplicate freedom
 both before and after interpreting those vectors as polynomials.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding
 

@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.Equation
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Equations.Equation
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.SharpFactorSolutions
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
-import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 /-!
 # Sharp exceptional bound for arbitrary ordinary equations
 
@@ -16,6 +18,8 @@ When the original root degree is at most `mu ≤ D`, every separable Frobenius p
 has degree at most `D`.  Thus the exact sharp factor comparison applies factor by factor, and
 the distinct-factor degree and height sums recover the sharp charge of the original equation.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

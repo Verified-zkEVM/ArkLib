@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PointRecognition
 /-!
 # Exceptional challenges for a finite polynomial-tuple family
@@ -14,6 +16,8 @@ Each retained tuple contributes at most `ℓ(n-L)` accidental challenges. Their 
 chosen before the challenge and before selecting any tuple from the family. Outside it,
 all tuple specializations have exact correlated agreement, over every extension field.
 -/
+
+@[expose] public section
 
 noncomputable section
 

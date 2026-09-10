@@ -3,8 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Univariate.Basic
+
+public import CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Basic
 
 /-!
 # A closed machine for Horner evaluation
@@ -27,6 +30,8 @@ interpreter's allocation, fuel bookkeeping, or wall-clock time. Refinement to a 
 representation and its bit costs is a separate obligation. Natural casts, field enumeration,
 extension construction, and arbitrary polynomial operations are not primitives of this language.
 -/
+
+@[expose] public section
 
 namespace Polynomial.HornerMachine
 

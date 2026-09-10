@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Dimension
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Positivity
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Dimension
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Positivity
 /-!
 # Free-order interpolation dimension comparison
 
@@ -21,6 +22,8 @@ The scalar comparison is adapted, with permission, from Kai Zhe Zheng's `rs-ld-m
 formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`.  The free-order extension
 was contributed through PR 1 by Pratyush Mishra.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

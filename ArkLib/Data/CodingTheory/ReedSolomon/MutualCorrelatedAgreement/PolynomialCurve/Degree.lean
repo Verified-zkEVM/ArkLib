@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ComponentRecognition
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCutDegree
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCutDegree
 /-!
 # Joint degree of polynomial-curve agreement cuts
 
@@ -15,6 +17,8 @@ total degree of a Taylor agreement cut.  The separate challenge/jet bidegree est
 also support the coefficient-linearized power lift used for polynomial-curve incidence:
 the batching degree is charged in the degree of the moment base, not at every geometric cut.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

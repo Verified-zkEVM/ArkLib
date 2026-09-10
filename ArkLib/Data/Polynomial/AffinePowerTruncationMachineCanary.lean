@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Affine-power execution canaries
@@ -13,6 +15,8 @@ import Mathlib.Data.ZMod.Basic
 The examples distinguish coefficient order, strict truncation, zero-padding, zero exponent and
 small-characteristic cancellation. No division or factorial inversion is used by the program.
 -/
+
+@[expose] public section
 
 namespace Polynomial.AffinePowerTruncationMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PrimeFamily
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PrimeFamily
 
 /-!
 # Coefficient comparison for shifted Hilbert polynomials
@@ -13,6 +15,8 @@ import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PrimeFamily
 Eventual inequalities between degree-bounded rational polynomials compare the
 coefficient at the common degree bound, including when either polynomial is zero.
 -/
+
+@[expose] public section
 
 noncomputable section
 

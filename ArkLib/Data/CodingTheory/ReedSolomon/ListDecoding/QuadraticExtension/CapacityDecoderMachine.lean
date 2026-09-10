@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderMachine
 /-!
 # Integer-input capacity decoder
 
@@ -19,6 +21,8 @@ Every executed child retains its ledger, including failure. The constant outer a
 primitive scalar checks and fixed-size handoffs; it does not price arbitrary-precision arithmetic,
 input/output serialization, or scalar-fuel computation. Those require the bit-RAM refinement.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CapacityDecoderMachine
 

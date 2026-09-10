@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
-import ArkLib.Data.Polynomial.SplitFold
-import Mathlib.Tactic.FinCases
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.FullAgreement
+public import ArkLib.Data.Polynomial.SplitFold
+public import Mathlib.Tactic.FinCases
 /-!
 # Exact binary-fold agreement on square-paired domains
 
@@ -30,6 +32,8 @@ fold.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated
   Agreement up to Capacity*][DKTZ26], LambdaVM application and Appendix D.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

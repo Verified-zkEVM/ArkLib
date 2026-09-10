@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.DecoderCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 
 /-!
 # Explicit length-one and length-two order-zero branches
@@ -16,6 +17,8 @@ has strict finite column surplus and the actual direct attempt succeeds. These a
 certificates for the outer driver, not an implementation of that driver's runtime branching.
 The public N=1 convention is unchanged, and characteristic premises remain explicit.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.OrderZeroDecoderCertificate
 

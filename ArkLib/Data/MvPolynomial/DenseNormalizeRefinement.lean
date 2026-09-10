@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.DenseNormalizeMachine
-import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
+
+public import ArkLib.Data.MvPolynomial.DenseNormalizeMachine
+public import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
 
 /-!
 # Sparse aggregation correctness and cost
@@ -15,6 +17,8 @@ distinct variables makes these keys injective as monomial exponent vectors, incl
 exponents. This is the representation contract needed before selecting mathematically active
 variables in the presence of coefficient cancellation.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.DenseNormalizeMachine
 

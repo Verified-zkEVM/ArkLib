@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.AssemblyBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Attempts
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.AssemblyBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Attempts
 /-!
 # Polynomial observed cost of order-zero interpolation attempts
 
@@ -17,6 +19,8 @@ The missing witness route also needs triangular image/rank counting and the D=0 
 Multiplicity n+1 would not ensure below-characteristic jet degree under q≥n; any large-gap
 construction must resolve that requirement without changing the field or block-length regime.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine
 

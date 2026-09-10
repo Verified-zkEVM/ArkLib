@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticPivotMachine
-import ArkLib.Data.Matrix.QuadraticRowRefinement
+
+public import ArkLib.Data.Matrix.QuadraticPivotMachine
+public import ArkLib.Data.Matrix.QuadraticRowRefinement
 
 /-!
 # Same-execution coordinate pivot refinement
@@ -14,6 +16,8 @@ All source lookup, branch and scalar phases are represented explicitly. Source r
 to the actual coordinate row child. Nonsquareness certifies source field inversion; executable
 dispatch itself takes only the parameter and materialized coordinate registers.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticPivotMachine
 

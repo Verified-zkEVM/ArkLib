@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveFinite
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveFinite
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.FiniteCertificate
 /-!
 # Shared finite first-order certificate profiles
@@ -18,6 +20,8 @@ polynomial curve's batching degree.
 The structures only certify interpolation.  Exceptional-set and security conclusions require
 the separate geometric and probability theorems used by each application.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotSelectionMachine
+
+public import ArkLib.Data.Matrix.PivotSelectionMachine
 
 /-!
 # Pivot selection regression checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.PivotSelectionMachine
 Distinct RHS values track row pairing through movement. Checks cover restoration order, output
 boundaries, already-selected pivots, all-zero columns, empty matrices and malformed rows.
 -/
+
+@[expose] public section
 
 namespace Matrix.PivotSelectionMachine
 

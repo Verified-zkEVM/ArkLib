@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.AugmentedColumnMachine
+
+public import ArkLib.Data.Matrix.AugmentedColumnMachine
 
 /-!
 # Materialized forward-echelon output invariants
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.AugmentedColumnMachine
 Completed rows retain their logical pivot indices. Residual rows retain their RHS values even
 when every coefficient is zero; deciding consistency and back substitution are separate stages.
 -/
+
+@[expose] public section
 
 namespace Matrix.ForwardEchelonMachine
 

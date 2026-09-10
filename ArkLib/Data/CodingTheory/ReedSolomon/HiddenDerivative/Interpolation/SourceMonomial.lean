@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
 
 
 /-!
@@ -13,6 +14,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
 A source monomial has independent exponents for X, Y₀, and the remaining jets.
 This mathematical definition does not depend on an executable representation or cost model.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

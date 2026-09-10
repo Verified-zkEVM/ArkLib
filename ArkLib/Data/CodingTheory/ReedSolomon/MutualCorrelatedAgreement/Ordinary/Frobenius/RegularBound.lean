@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Incidence
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Incidence
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.RetainedFamily
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.WitnessEmbedding
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Symbolic.RegularEquation
-import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Symbolic.RegularEquation
+public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 /-!
 # The regular ordinary Frobenius incidence bound
 
@@ -18,6 +21,8 @@ Actual regular solutions give source points. Retained pairs account for at most 
 accidental challenges each in the original coordinate, and the remaining witnesses obey
 the mixed source incidence bound.
 -/
+
+@[expose] public section
 
 noncomputable section
 

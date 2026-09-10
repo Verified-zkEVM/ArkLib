@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
-import ArkLib.ToCompPoly.Multivariate.Substitution
+module
+
+public import ArkLib.Data.Polynomial.Rojas.DeterministicSpecialization
+public import ArkLib.ToCompPoly.Multivariate.Substitution
 
 /-!
 # Executable Rojas Step 0--3 specialization families
@@ -20,6 +22,8 @@ a generic `ε`, and the characteristic-dependent construction of `α` remain
 separate obligations.  In characteristic two the paper requires
 `α * (α + 1) = 1`; otherwise it takes `α = 1`.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.HighestJetMachine
-import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
+
+public import ArkLib.Data.MvPolynomial.HighestJetMachine
+public import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
 
 /-!
 # Coordinate highest-jet selection
@@ -13,6 +15,8 @@ import ArkLib.Data.MvPolynomial.CoordinateNormalizeMachine
 Actual coordinate normalization precedes the unchanged natural-index scan. Every normalization
 instruction keeps its full charge plus the parent wrapper; factor comparisons remain scalar-free.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticHighestMachine
 

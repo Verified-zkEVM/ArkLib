@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryInverseMachine
-import ArkLib.Data.Computation.BinaryMulSemantics
-import ArkLib.Data.Computation.BinaryNegateSemantics
+
+public import ArkLib.Data.Computation.BinaryInverseMachine
+public import ArkLib.Data.Computation.BinaryMulSemantics
+public import ArkLib.Data.Computation.BinaryNegateSemantics
 
 /-!
 # Literal inverse-search preparation and round traces
@@ -14,6 +16,8 @@ import ArkLib.Data.Computation.BinaryNegateSemantics
 The input zero test restores its original tape. Candidate copies, increments, product checks
 and output recovery use actual physical transitions, with explicit phase and bit counts.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryInverseMachine
 

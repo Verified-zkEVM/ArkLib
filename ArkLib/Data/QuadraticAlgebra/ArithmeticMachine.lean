@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.FiniteWitness
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.QuadraticAlgebra.FiniteWitness
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Quadratic arithmetic by base-field instructions
@@ -20,6 +22,8 @@ part of this field-operation model. Input pairs and the parameter are already ma
 Decoding is a semantic representation map, not a bulk conversion instruction. No extension-field
 operation occurs in dispatch. Only the inverse refinement requires a nonsquare parameter.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.ArithmeticMachine
 

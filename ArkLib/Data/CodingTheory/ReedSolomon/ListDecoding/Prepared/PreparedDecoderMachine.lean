@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticInputSemantics
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputMachine
+public import ArkLib.Data.MvPolynomial.QuadraticInputSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputMachine
 /-!
 # Root enumeration and output collection over a prepared quadratic field
 
@@ -16,6 +18,8 @@ one child instruction at a time. Every child ledger and caller dispatch is retai
 and interpolation search precede this driver; their costs are not supplied by callbacks here.
 Extension arithmetic lowering and whole-instance bounds are separate refinement obligations.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.PreparedDecoderMachine
 

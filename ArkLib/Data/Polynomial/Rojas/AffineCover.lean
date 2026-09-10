@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Multivariate.PartialDerivative
-import ArkLib.ToCompPoly.Multivariate.Substitution
-import Mathlib.Algebra.MvPolynomial.Monad
+module
+
+public import ArkLib.ToCompPoly.Multivariate.PartialDerivative
+public import ArkLib.ToCompPoly.Multivariate.Substitution
+public import Mathlib.Algebra.MvPolynomial.Monad
 
 /-!
 # Affine cover by simultaneous scalar translations
@@ -19,6 +21,8 @@ The list of shifts is runtime input.  A caller over a small base field may
 construct it in a sufficiently large explicit extension; this module does not
 enumerate a field or assume an oracle producing distinct elements.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas.AffineCover
 

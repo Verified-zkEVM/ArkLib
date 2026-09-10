@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 
 /-!
@@ -15,6 +16,8 @@ rounding errors separate: a two-thousandth lower centering loss, a one-thousandt
 centering loss, and a one-thousandth radius enlargement.  Their only joint use is the exact
 `448 / 625` mean-variance constant.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters
 

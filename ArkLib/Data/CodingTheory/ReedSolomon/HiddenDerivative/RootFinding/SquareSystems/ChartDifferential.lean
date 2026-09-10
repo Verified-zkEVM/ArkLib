@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.LinearCapture
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.LinearCapture
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
 /-!
 # Algebraic differentials of the regular Taylor chart
 
@@ -14,6 +16,8 @@ the quotient differential used by the rational Taylor chart. Initial Taylor coor
 input jet coordinates, so their quotient differentials are literal coordinate projections. The
 initial hypersurface differential is nonzero at every point where the separant is nonzero.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

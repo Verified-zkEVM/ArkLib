@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitLocalActions
+
+public import ArkLib.Data.Computation.BitLocalActions
 
 /-!
 # Literal fixed-width pointer increment
@@ -18,6 +20,8 @@ proof-side numerical labels are supplied separately and are not architectural ad
 This is the next-pointer operation, not a complete allocator. Freshness, heap writes, and the
 same-bank composition with a writer are separate contracts. RAM is unchanged by this controller.
 -/
+
+@[expose] public section
 
 namespace Computation.HeapPointerMachine
 

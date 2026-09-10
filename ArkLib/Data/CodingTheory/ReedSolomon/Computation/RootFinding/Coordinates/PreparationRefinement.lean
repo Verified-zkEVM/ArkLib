@@ -3,15 +3,19 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.PreparationMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 /-!
 # Coordinate preparation refinement
 
 Every source transition lowers to the same cursor, failure tag and output list. The constant
 factor applies once to the complete source trace and includes coordinate zero construction.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticJetPreparationMachine
 

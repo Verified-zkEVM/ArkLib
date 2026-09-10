@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorInputBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorInputBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputExecution
 /-!+# Collector budgets for the actual ordered root records
 
 The emitted context is a literal prefix and successor of the computed separant chain.
@@ -14,6 +16,8 @@ chain-length bound. Combining these facts with the actual record width and count
 visited records from the collector's numerical fuel and work bounds. The guard grid may differ
 from the recovery grid; no algebraic inference from guard-grid vanishing is used here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalOutputMachine
 

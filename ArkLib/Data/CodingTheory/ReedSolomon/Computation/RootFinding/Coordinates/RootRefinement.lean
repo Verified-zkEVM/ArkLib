@@ -3,18 +3,25 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.LiftRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ZeroRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ShiftRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.RootMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.LiftRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ZeroRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ShiftRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.RegularRootSemantics
 /-!
 # Same-execution accepted coordinate candidate
 
 The whole lift, residual filter and translation lower to the same emitted option. Every child
 instruction and retained payload is charged with a factor independent of degree and stage count.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticRegularRootMachine
 

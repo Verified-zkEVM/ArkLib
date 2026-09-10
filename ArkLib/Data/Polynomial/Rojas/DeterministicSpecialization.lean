@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
-import ArkLib.Data.Polynomial.SquarefreeSupport
+module
+
+public import ArkLib.Data.Polynomial.Rojas.PerturbationCoefficient
+public import ArkLib.Data.Polynomial.SquarefreeSupport
 
 /-!
 # Deterministic specialization scan for Rojas Steps 0--3
@@ -21,6 +23,8 @@ containing a passing value. Rojas's hyperplane-avoidance argument, the explicit
 extension-field candidate construction, and the sparse resultant producer are
 still required to prove that condition for actual polynomial systems.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas
 

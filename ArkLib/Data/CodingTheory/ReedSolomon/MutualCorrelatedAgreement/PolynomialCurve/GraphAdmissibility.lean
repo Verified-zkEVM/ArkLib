@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ComponentAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Specialization
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Specialization
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
 /-!
 # Admissible polynomial graphs in the symbolic Taylor chart
 
@@ -15,6 +18,8 @@ An admissible tuple carries literal polynomial identities along its whole retain
 graph.  The reconstruction identities ensure that every regular specialization is the actual
 power-batched message polynomial, not merely a jet with the same initial coordinates.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

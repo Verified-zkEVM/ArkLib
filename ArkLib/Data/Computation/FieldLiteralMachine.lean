@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FixedWidthWordMachine
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Tactic.FinCases
+
+public import ArkLib.Data.Computation.FixedWidthWordMachine
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Physically materialized scalar zero and one
@@ -16,6 +18,8 @@ per reference bit. The one entry then pops the low zero and pushes a true bit in
 transitions. A zero-width one request rejects. No arbitrary-length literal is an instruction.
 The six physical tapes keep output at zero and reference at four through every handoff.
 -/
+
+@[expose] public section
 
 namespace Computation.FieldLiteralMachine
 

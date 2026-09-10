@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.NumberTheory.Harmonic.EulerMascheroni
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Linarith
+
+public import Mathlib.NumberTheory.Harmonic.EulerMascheroni
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Explicit harmonic estimates
@@ -18,6 +20,8 @@ Finite rational sums and telescoping midpoint tails bound harmonic power sums un
 endpoint. The logarithmic estimate is extracted from the monotone Euler–Mascheroni sequence.
 These estimates are independent of any coding-theory support or concentration argument.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

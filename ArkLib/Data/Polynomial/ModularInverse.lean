@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
-import CompPoly.Univariate.EuclideanAlgorithm
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.RingTheory.Ideal.Quotient.Operations
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 /-!
 # Executable inversion in a polynomial quotient
@@ -15,6 +17,8 @@ This file uses `CompPoly.CPolynomial.normXgcd` to compute an inverse behind a
 coprimality guard, proves its modular multiplication contract, and interprets
 the result in the proof-facing quotient `F[X] / (modulus)`.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 
@@ -136,7 +140,8 @@ noncomputable def quotientHom (modulus : CPolynomial F) :
     (CPolynomial.ringEquiv : CPolynomial F ≃+* Polynomial F).toRingHom
 
 @[simp] theorem quotientHom_apply (modulus p : CPolynomial F) :
-    quotientHom modulus p = Ideal.Quotient.mk (modIdeal modulus) p.toPoly := rfl
+    quotientHom modulus p = Ideal.Quotient.mk (modIdeal modulus) p.toPoly := by
+  simp [quotientHom, CPolynomial.ringEquiv_apply]
 
 /-- Executable monic reduction preserves the represented quotient element. -/
 @[simp] theorem quotientHom_reduce {modulus : CPolynomial F} (hmodulus : modulus.monic)
@@ -151,8 +156,9 @@ noncomputable def quotientHom (modulus : CPolynomial F) :
   exact neg_mem (Ideal.mul_mem_right _ _ (Ideal.mem_span_singleton_self _))
 
 @[simp] theorem quotientHom_modulus (modulus : CPolynomial F) :
-    quotientHom modulus modulus = 0 :=
-  Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+    quotientHom modulus modulus = 0 := by
+  rw [quotientHom_apply, Ideal.Quotient.eq_zero_iff_mem, modIdeal]
+  exact Ideal.mem_span_singleton_self _
 
 /-- `inverseMod?` success is interpreted as a unit equation in the quotient. -/
 theorem quotientHom_mul_inverseMod?_eq_one {a modulus inverse : CPolynomial F}

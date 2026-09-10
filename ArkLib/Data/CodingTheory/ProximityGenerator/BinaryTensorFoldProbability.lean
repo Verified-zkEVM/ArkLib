@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
+public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
 
 /-!
 # Probability of exceptional shared-level tensor challenges
@@ -13,6 +14,8 @@ The count theorem divides by `|F|^h`, since each of the `h` levels receives one 
 uniform field challenge. All parents at one level are controlled by the same packed event.
 At height three this gives `3E/|F|`, with the same full-set decomposition outside the bad set.
 -/
+
+@[expose] public section
 
 namespace TensorMCA
 

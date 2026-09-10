@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.CoefficientUpdateMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+
+public import ArkLib.Data.Polynomial.CoefficientUpdateMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 
 /-!
 # Coordinate indexed coefficient updates
@@ -15,6 +17,8 @@ The selected addition runs actual base instructions with a retained operand reco
 its emitted pair separately. Gamma is supplied materialized by the caller; input preparation,
 gamma construction, interpreter administration and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace Polynomial.QuadraticUpdateMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Proofs
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Proofs
 /-!
 # Executed exact output from an independently budgeted interpolation candidate
 
@@ -13,6 +14,8 @@ A concrete nonzero candidate proves that the existing search succeeds. The actua
 interpolant, reconstruction, filtering, duplicate removal, and physical coefficient list then
 satisfy the existing exact-output contract with the displayed primitive-work bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CapacityDecoderMachine
 

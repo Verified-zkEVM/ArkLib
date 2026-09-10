@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
 /-!
 # Exact line agreement at full message dimension
 
@@ -13,6 +14,8 @@ of the two received words gives one pair that explains every qualifying candidat
 challenge. This handles the finite endpoint separately from ordinary transfer theorems whose
 degree parameter is at most `n - 2`. No characteristic restriction is needed.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

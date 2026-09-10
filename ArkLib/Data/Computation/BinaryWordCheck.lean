@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Literal local-bit arithmetic execution checks
@@ -13,6 +15,8 @@ Carry propagation crosses a full input word, unequal widths require zero extensi
 is physically removed. Comparison must let a higher differing bit override an earlier decision.
 The checks execute the actual successor observer, including final emission, and retain RAM memory.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryWordMachine
 

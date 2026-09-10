@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Interpolation
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Interpolation
 
 
 /-!
@@ -33,6 +35,8 @@ first-order constraint map.  Combined with `exists_nonzero_firstOrder_interpolan
 finite inequality between this sum and the certified local rank a kernel-checked interpolation
 certificate.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

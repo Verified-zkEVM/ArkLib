@@ -3,9 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
-import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+module
+
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 /-! # The capacity contract's harmonic parameter -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

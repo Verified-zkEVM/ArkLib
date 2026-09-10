@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
-import ArkLib.Data.Polynomial.BatchRemainder
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
+public import ArkLib.Data.Polynomial.BatchRemainder
 
 /-!
 # Batch refinement of shared agreement recovery
@@ -24,6 +26,8 @@ The total wrapper falls back to the specification for nonmonic input; every well
 representation uses the batch branch. Backend correctness is explicit, while whole-decoder
 arithmetic complexity remains a separate obligation.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.AgreementRecovery.Batched
 open CompPoly CompPoly.CPolynomial

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Literal fixed-width words and physical width markers
@@ -14,6 +16,8 @@ the result. Excess input is rejected without clearing any remaining tape. A sepa
 constructs a marker tape from an existing reference word, preserving that word by copying and
 restoring every bit. Neither entry decodes an integer length or performs a whole-list operation.
 -/
+
+@[expose] public section
 
 namespace Computation.FixedWidthWordMachine
 

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Degree
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.Degree
 /-!
 # Chunked coefficient lifts for polynomial curves
 
@@ -12,6 +13,8 @@ A coefficient monomial `Z^e` of degree at most `M*D` is represented using the de
 moment coordinates as `X_D^(e / D) * X_(e % D)`.  Thus its lifted degree is at most `M+1`,
 while evaluation through the moment map is still exactly `Z^e`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

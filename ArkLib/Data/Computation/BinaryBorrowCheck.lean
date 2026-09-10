@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryBorrowSemantics
+
+public import ArkLib.Data.Computation.BinaryBorrowSemantics
 
 /-!
 # Actual final-borrow checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryBorrowSemantics
 Equality and underflow both return a zero word; their finite-control flags must differ.
 The exhausted-input scan transition overwrites any stale flag before normalization or clearing.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryBorrowMachine
 

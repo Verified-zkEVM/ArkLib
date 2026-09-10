@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Rank
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
-import ArkLib.ToMathlib.Analysis.ExponentialStaircase
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Rank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledLattice
+public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 
 /-!
 # Finite lattice estimates for the partition rank
@@ -14,6 +15,8 @@ import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 The integer simplex sandwich bounds the actual derivative tuple count.
 The shift is the sum of all d positive derivative weights.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.SetupMachine
+
+public import ArkLib.Data.QuadraticAlgebra.SetupMachine
 
 /-!
 # Same-run quadratic setup correctness
@@ -13,6 +15,8 @@ Every base, search, coordinate-enumeration and prefix instruction retains its pa
 charge. Quadratic values are allocated individually. Field certification and sample embeddings
 are derived from the actual returned parameter and materialized output.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.SetupMachine
 

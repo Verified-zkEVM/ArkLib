@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
+public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 
 /-!
 # Shared-level tensor-fold agreement for interleaved Reed--Solomon codes
@@ -14,6 +15,8 @@ This file lifts an exact scalar line certificate to a full-agreement level witne
 finite family over a nonempty row-wise interleaving, without a factor depending on either width.
 It then specializes the generic binary tensor-fold theorem at height three.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

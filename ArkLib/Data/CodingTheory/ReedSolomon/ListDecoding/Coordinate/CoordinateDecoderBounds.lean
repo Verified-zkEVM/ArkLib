@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateDecoderMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderBounds
 /-!
 # Order-dependent bounds for the same executed coordinate decoder
 
@@ -14,6 +16,8 @@ coefficients. The powers of the field size are unchanged. At order zero the coef
 universal even for growing multiplicity; at positive order it depends only on order and
 multiplicity. These bounds concern primitive work of the literal coordinate run, not bit cost.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CoordinateDecoderMachine
 

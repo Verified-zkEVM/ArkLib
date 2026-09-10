@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpRegularEquation
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorDerivativeSupport
 /-!
 # Derivative-degree support of the polynomial-curve incidence cuts
@@ -16,6 +17,8 @@ three-degree filtration: the initial equation, the excluded separant, the high T
 coefficients, and the received-curve agreement cuts. These statements concern the actual
 cuts, so the refined geometry changes only their degree estimates.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

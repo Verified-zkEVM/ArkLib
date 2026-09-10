@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.IsolatedRoot
-import
+public import ArkLib.Data.MvPolynomial.IsolatedRoot
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.ComputablePool
 /-!
 # The computed family captures simple isolated roots
@@ -15,6 +16,8 @@ Its nonzero Jacobian determinant supplies simplicity. The elementary polynomial-
 criterion then proves isolation over arbitrary field extensions. Thus the literal computed
 family has exactly the isolated-root coverage needed by the sparse solver's input contract.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 open PolynomialDifferential CPoly CPoly.CMvPolynomial

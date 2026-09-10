@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
-import Mathlib.FieldTheory.Separable
-import Mathlib.RingTheory.Polynomial.GaussLemma
+
+public import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
+public import Mathlib.FieldTheory.Separable
+public import Mathlib.RingTheory.Polynomial.GaussLemma
 
 /-!
 # Resultants detecting regular specializations
@@ -20,6 +22,8 @@ degree in the challenge variable.
 The fixed degree parameters are retained under specialization.  Consequently the regularity
 implication below remains valid even when specialization lowers one of the outer degrees.
 -/
+
+@[expose] public section
 
 open Polynomial.Bivariate
 

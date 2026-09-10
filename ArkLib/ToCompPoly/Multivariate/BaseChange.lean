@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToCompPoly.Multivariate.Eval
-import ArkLib.ToCompPoly.Multivariate.PartialDerivative
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+
+public import ArkLib.ToCompPoly.Multivariate.Eval
+public import ArkLib.ToCompPoly.Multivariate.PartialDerivative
+public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
 /-!
 # Base change for concrete multivariate systems
@@ -16,6 +18,8 @@ Jacobian that is nonsingular over the coefficient field remains nonsingular afte
 scalars and mapping its evaluation point. These lemmas let executable polynomial systems stay
 over their construction field while root solvers and coverage theorems work over an extension.
 -/
+
+@[expose] public section
 
 namespace CPoly.CMvPolynomial
 

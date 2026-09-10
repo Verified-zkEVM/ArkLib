@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 /-!
 # Scalar envelopes for the first-order constants
 
@@ -12,6 +14,8 @@ The physical rate bounds the agreement ratio independently of block length. Unif
 on the recipe parameters then give the cubic list and quintic exception slack exponents.
 The automatic recipe estimates are supplied by separate arithmetic theorems.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

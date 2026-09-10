@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Analysis.Convex.Mul
-import Mathlib.MeasureTheory.Integral.Bochner.Basic
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Analysis.Convex.Mul
+public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 /-!
 # Cubic expectation bounds on the whole simplex
 
@@ -16,6 +17,8 @@ The positive-part cube is convex. Its supporting tangent at the mean gives the J
 baseline, and its ordinary cubic expansion gives the stronger variance correction. Only
 moments through order three enter either argument; no event is removed from the support.
 -/
+
+@[expose] public section
 
 open MeasureTheory
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters

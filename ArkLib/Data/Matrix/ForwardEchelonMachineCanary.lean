@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.ForwardEchelonMachine
+
+public import ArkLib.Data.Matrix.ForwardEchelonMachine
 
 /-!
 # Forward-echelon driver regression checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.ForwardEchelonMachine
 These kernel computations exercise skipped columns, row movement, increasing pivot indices,
 nontrivial RHS elimination, retained zero-coefficient rows and the final output boundary.
 -/
+
+@[expose] public section
 
 namespace Matrix.ForwardEchelonMachine
 

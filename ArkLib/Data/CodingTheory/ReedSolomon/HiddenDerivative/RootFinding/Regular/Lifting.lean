@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
-import ArkLib.Data.Polynomial.Differential.Basic
-import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
+public import ArkLib.Data.Polynomial.Differential.Basic
+public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 
 
 /-!
@@ -42,6 +43,8 @@ active jet prefix.
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15]
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

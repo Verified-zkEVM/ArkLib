@@ -3,17 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import Mathlib.Algebra.Order.Floor.Semiring
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import Mathlib.Algebra.Order.Floor.Semiring
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
 /-!
 # Integral agreement thresholds and relative capacity gaps
 
 The threshold is `k + ⌈δn⌉`; its real form is `k + δn ≤ A`.
 These definitions and rounding lemmas do not choose an interpolation construction.
 -/
+
+@[expose] public section
 
 noncomputable section
 

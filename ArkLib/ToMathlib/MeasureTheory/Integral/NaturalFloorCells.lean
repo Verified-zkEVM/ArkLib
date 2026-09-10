@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MeasureTheory.Integral.FiniteCells
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Linarith
+
+public import ArkLib.ToMathlib.MeasureTheory.Integral.FiniteCells
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Linarith
 /-!
 # Finite natural flooring cells
 
@@ -17,6 +19,8 @@ A bounded nonnegative region is the union of its intersections with finitely man
 Integrating cellwise bounds therefore gives a finite sum without counting any cell more than
 once. This is the geometric comparison used by weighted lattice counts.
 -/
+
+@[expose] public section
 
 open Set
 

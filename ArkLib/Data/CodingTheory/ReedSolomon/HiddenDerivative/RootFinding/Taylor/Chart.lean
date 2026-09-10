@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Numerator
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Numerator
 
 
 /-!
@@ -18,6 +19,8 @@ sharper `τ = 2K - 3` is sufficient at every order; finite first-order clients u
 uniformly for their order-zero and order-one stages. The chart retains the initial coordinates
 and contains all regular solutions with invertible binomial pivots.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

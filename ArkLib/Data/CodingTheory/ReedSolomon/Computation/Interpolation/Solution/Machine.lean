@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Machine
-import ArkLib.Data.Matrix.NonzeroKernelSemantics
-import ArkLib.Data.MvPolynomial.EvaluationMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Matrix.Machine
+public import ArkLib.Data.Matrix.NonzeroKernelSemantics
+public import ArkLib.Data.MvPolynomial.EvaluationMachine
 /-!
 # Actual nonzero interpolation solver and sparse emission
 
@@ -22,6 +23,8 @@ callee charge. This includes field equality, natural index updates, data accesse
 The scalar-field input, arithmetic bit costs, and inherited host-fuel administration remain
 outside this unit-operation model.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.NonzeroInterpolationMachine
 

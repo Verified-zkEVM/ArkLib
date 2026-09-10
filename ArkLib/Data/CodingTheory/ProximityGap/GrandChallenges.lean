@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability
 
 /-!
 # Proximity grand challenges
@@ -24,6 +25,8 @@ The mutual-correlated-agreement challenge uses `CoreDefinitions.mcaError` with
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and Correlated
   Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

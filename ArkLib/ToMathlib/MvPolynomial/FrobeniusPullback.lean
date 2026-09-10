@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.FieldTheory.Perfect
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.RingTheory.MvPolynomial.Expand
+
+public import Mathlib.FieldTheory.Perfect
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.RingTheory.MvPolynomial.Expand
 
 /-!
 # Frobenius pullback for multivariate polynomials
@@ -19,6 +21,8 @@ The split identity assumes an already supplied equation
 `F = rootPowerSubstitution (p ^ e) G`.  This file does not extract a maximal Frobenius factor,
 prove separability of `G`, or establish the geometric image and agreement bounds needed for MCA.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

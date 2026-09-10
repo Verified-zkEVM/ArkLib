@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorSpecialization
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Cuts
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Cuts
 
 
 /-!
@@ -17,6 +18,8 @@ literal field-valued cuts, and their regular points reconstruct actual degree-bo
 polynomials. The common numerator identities cover every reconstructed coefficient, without
 assuming that the reconstructed polynomial is a differential solution.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotSelectionMachine
-import ArkLib.Data.Matrix.QuadraticPivotMachine
+
+public import ArkLib.Data.Matrix.PivotSelectionMachine
+public import ArkLib.Data.Matrix.QuadraticPivotMachine
 
 /-!
 # Coordinate first-pivot selection
@@ -16,6 +18,8 @@ RHS values are shared. Missing entries reject only when scanned. All output cell
 option, zero literals and child wrappers are charged explicitly. Input preparation, host fuel,
 reclamation and bit time are outside this primitive ledger.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticSelectionMachine
 

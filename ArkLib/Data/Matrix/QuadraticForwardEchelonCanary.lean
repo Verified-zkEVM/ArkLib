@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticForwardEchelonRefinement
+
+public import ArkLib.Data.Matrix.QuadraticForwardEchelonRefinement
 
 /-!
 # Kernel checks for coordinate forward-echelon execution
@@ -13,6 +15,8 @@ Full runs exercise a skipped column, nontrivial RHS elimination, pivot movement 
 multiple pivots. Empty/zero-width input retains residual RHS values. Malformed returns and
 partial child/store states expose rejection, wrappers, indices and allocation charges.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticForwardEchelonMachine
 

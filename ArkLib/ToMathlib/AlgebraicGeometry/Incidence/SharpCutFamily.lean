@@ -3,12 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpExcluded
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpExcluded
 
 /-! # Sharp incidence summation after retained linear cuts -/
+
+@[expose] public section
 
 noncomputable section
 open MvPolynomial

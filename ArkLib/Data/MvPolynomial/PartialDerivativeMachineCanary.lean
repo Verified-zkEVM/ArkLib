@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
-import Mathlib.Algebra.Field.ZMod
+
+public import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Sparse differentiation execution regressions
@@ -13,6 +15,8 @@ import Mathlib.Algebra.Field.ZMod
 Literal kernel computations cover factor order, restoration, duplicate terms, absent variables,
 zero exponents, zero coefficients, characteristic cancellation and the final output boundary.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.PartialDerivativeMachine
 

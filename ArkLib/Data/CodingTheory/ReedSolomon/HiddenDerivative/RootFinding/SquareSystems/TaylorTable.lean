@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.TaylorNumerator
 /-!
 # Bottom-up computation of rational Taylor numerators
@@ -14,6 +15,8 @@ Evaluating that definition independently for each coordinate repeats the same re
 module instead builds one array from low to high order. At step `l`, the already-computed prefix
 supplies exactly the `Fin l` numerator family in the paper's denominator-cleared recurrence.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

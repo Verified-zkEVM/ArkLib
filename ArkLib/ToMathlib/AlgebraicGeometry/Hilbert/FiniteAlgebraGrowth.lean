@@ -3,13 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
 
 /-!
 # Filtration growth under finite injective affine algebra maps
 -/
+
+@[expose] public section
 
 noncomputable section
 

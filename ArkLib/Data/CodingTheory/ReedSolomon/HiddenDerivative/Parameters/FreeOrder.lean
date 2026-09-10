@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
-import Mathlib.Algebra.Order.Floor.Semifield
-import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
-import Mathlib.Tactic.Positivity
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
+public import Mathlib.Algebra.Order.Floor.Semifield
+public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+public import Mathlib.Tactic.Positivity
 
 /-!
 # Rounded estimates at a free derivative order
@@ -21,6 +22,8 @@ The proofs are adapted, with permission, from `rs-ld-mca` commit
 non-executable cost wrapper. The rank-threshold theorem at the end is pointwise in
 `(epsilon, theta)`; it is not, by itself, the desired rate-uniform `d(delta)` theorem.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace HiddenDerivative

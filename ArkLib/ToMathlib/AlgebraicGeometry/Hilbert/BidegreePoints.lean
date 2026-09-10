@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Bidegree
-import Mathlib.RingTheory.Nullstellensatz
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Bidegree
+public import Mathlib.RingTheory.Nullstellensatz
 
 /-!
 # Points of the affine bidegree presentation
@@ -14,6 +16,8 @@ The affine Segre--Veronese presentation sends a source point to the values of it
 monomials. Polynomial evaluation commutes with `bidegreeMap`, so source hypersurfaces and
 bidegree-bounded cuts may be transported to the presentation coordinates.
 -/
+
+@[expose] public section
 
 noncomputable section
 

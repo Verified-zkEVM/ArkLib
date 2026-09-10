@@ -3,16 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
-import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
-import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
-import CompPoly.Univariate.BatchEval.Context
-import CompPoly.Univariate.ToPoly
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
-import ArkLib.ToCompPoly.Bivariate.CMv
-import ArkLib.ToCompPoly.Bivariate.Content
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.Dense.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.Interpolation.LeeOSullivan.Correctness
+public import CompPoly.Bivariate.GuruswamiSudan.CoreCorrectness
+public import CompPoly.LinearAlgebra.PolynomialMatrix.MuldersStorjohannCorrectness.Fast
+public import CompPoly.Univariate.BatchEval.Context
+public import CompPoly.Univariate.ToPoly
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+public import ArkLib.ToCompPoly.Bivariate.CMv
+public import ArkLib.ToCompPoly.Bivariate.Content
 
 /-!
 # Executable ordinary Reed--Solomon interpolation
@@ -27,6 +28,8 @@ succeed.
 The final theorem connects the interpolation inequality to `Code.agree`. It claims no specific
 bit or quasi-linear running time for the generic backend.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.OrdinaryInterpolation
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Degree.Operations
-import Mathlib.Algebra.Polynomial.Div
+public import Mathlib.Algebra.Polynomial.Degree.Operations
+public import Mathlib.Algebra.Polynomial.Div
 
 /-!
 # Reconstructing a message from a cubic anchored quotient
@@ -20,6 +21,8 @@ distinctness is needed to construct the interpolant, while reconstruction only u
 and values. The agreement lemma connects a received quotient equation to the recovered message
 at any evaluation position without dividing by a possibly zero field element.
 -/
+
+@[expose] public section
 
 noncomputable section
 

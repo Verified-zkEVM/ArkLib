@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryNegateSemantics
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Computation.BinaryNegateSemantics
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Modular negation refines scalar negation
@@ -14,6 +16,8 @@ The word machine computes the same additive inverse as `ZMod`. This applies to e
 modulus and hence, in particular, to prime-field scalars. The theorem uses the actual literal
 execution witness; no algebraic operation is added to the machine's runtime instruction set.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryNegateMachine
 

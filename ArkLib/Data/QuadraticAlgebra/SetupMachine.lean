@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.EnumerationMachine
-import ArkLib.Data.List.PrefixMachine
+
+public import ArkLib.Data.QuadraticAlgebra.EnumerationMachine
+public import ArkLib.Data.List.PrefixMachine
 
 /-!
 # Closed quadratic-field and sample preparation
@@ -14,6 +16,8 @@ The runtime enumerates residues, searches for a nonsquare, enumerates coordinate
 quadratic values individually, restores their order, and traverses a sample prefix. The returned
 parameter indexes the actual quadratic-value lists; field certification is entirely proof-only.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.SetupMachine
 

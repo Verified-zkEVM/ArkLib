@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryInverseField
-import ArkLib.Data.Computation.ScalarWordPadding
+
+public import ArkLib.Data.Computation.BinaryInverseField
+public import ArkLib.Data.Computation.ScalarWordPadding
 
 /-!
 # Fixed-width prime-field inversion
@@ -17,6 +19,8 @@ tape contents; both phases execute on one thirteen-tape bank. Zero and padded in
 The stated cost concerns this local-bit program on already materialized inputs, not native Lean
 execution, heap loading, or an assumed whole-decoder backend.
 -/
+
+@[expose] public section
 
 namespace Computation.PaddedInverse
 

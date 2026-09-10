@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityOutputBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCapacityExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityOutputBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCapacityExecution
 /-!
 # Field-independent size of the executed capacity list
 
@@ -24,6 +26,8 @@ still obeys its previously proved field-dependent estimate. Full bit complexity 
 * [Dao, Kominers, Thaler, and Zheng, *Reed-Solomon List Decoding up to Capacity at Every
   Rate*][DKTZ26], field-independent list bound and uniform capacity decoding.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.GeometricOutputBounds
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.Differential.Types
-import CompPoly.Multivariate.MvPolyEquiv.Eval
+module
+
+public import ArkLib.Data.Polynomial.Differential.Types
+public import CompPoly.Multivariate.MvPolyEquiv.Eval
 
 /-!
 # Concrete coordinates for a differential equation
@@ -14,6 +16,8 @@ The mathematical presentation uses `none` for X and `some i` for Yᵢ. This modu
 that coordinate correspondence and its polynomial interpretation, so new symbolic constructors
 can use the representation without importing any particular lifting algorithm.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 open PolynomialDifferential

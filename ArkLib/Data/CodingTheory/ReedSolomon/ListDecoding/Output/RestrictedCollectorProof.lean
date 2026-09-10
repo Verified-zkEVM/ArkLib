@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.RestrictedRootSelection
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderCertificate
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderCertificate
 /-!
 # Exact base outputs with restricted enumeration and separate recovery samples
 
@@ -15,6 +16,8 @@ The same list supplies guard witnesses; independent extension samples supply roo
 Output soundness comes directly from degree and agreement acceptance. Completeness uses the
 actual interpolation certificate and a canonical regular base center, not guard-grid soundness.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.RestrictedCollectorProof
 
@@ -232,15 +235,15 @@ omit hall hn halphabet hsamples hdepth hcert hQ hchain hchar hweight hspec hk hl
 
 section Checks
 
-private abbrev Base := ZMod 3
-private abbrev Extension := QuadraticAlgebra Base 2 0
+abbrev Base := ZMod 3
+abbrev Extension := QuadraticAlgebra Base 2 0
 
 local instance : Fact (∀ r : Base, r ^ 2 ≠ 2 + 0 * r) := ⟨by decide +kernel⟩
 
-private def baseWitnesses : List Extension := [0, 1, 2]
-private def recoverySamples : List Extension := [0, ⟨0, 1⟩]
+def baseWitnesses : List Extension := [0, 1, 2]
+def recoverySamples : List Extension := [0, ⟨0, 1⟩]
 
-private def restrictedFixture : Option (List (List Base)) :=
+def restrictedFixture : Option (List (List Base)) :=
   let input : StageRootsMachine.Input Extension :=
     ⟨baseWitnesses, [(1, [(0, 1), (1, 1)])], 0⟩
   match (StageRootsMachine.runFuel input 0 2 50000 (.start recoverySamples)).1 with

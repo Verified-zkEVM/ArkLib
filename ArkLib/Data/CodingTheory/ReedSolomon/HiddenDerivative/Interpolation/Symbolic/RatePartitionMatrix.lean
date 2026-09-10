@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.RankCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Rank
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.RankCertificate
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Rank
 
 /-!
 # Symbolic matrices for the derivative-order partition support
@@ -15,6 +17,8 @@ the base field. Every polynomial-curve block therefore has rank at most the same
 integer `r₀`, and stacking n blocks costs at most `n*r₀`. No comparison to the
 larger legacy weighted-support rank is needed.
 -/
+
+@[expose] public section
 
 noncomputable section
 

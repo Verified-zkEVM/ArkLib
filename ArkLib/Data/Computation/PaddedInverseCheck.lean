@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.PaddedInverse
+
+public import ArkLib.Data.Computation.PaddedInverse
 
 /-! # Kernel checks for inverse search followed by actual fixed-width padding -/
+
+@[expose] public section
 
 namespace Computation.PaddedInverse
 

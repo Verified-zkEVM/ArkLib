@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteSpec
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteSpec
 /-!
 # Polynomial local-rewrite cost at derivative order zero
 
@@ -14,6 +15,8 @@ the exponent rather than exponential. These bounds apply to the existing executa
 including growing multiplicity. They remove the spurious exponential constant from the local
 part of the large-gap interpolation route; matrix and solver cost composition are separate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.LocalColumnRewriteMachine
 

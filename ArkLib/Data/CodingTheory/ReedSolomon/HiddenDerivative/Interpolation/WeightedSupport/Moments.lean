@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Analysis.Simplex.Moments
-import
+public import ArkLib.ToMathlib.Analysis.Simplex.Moments
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 /-!
 # Centered moments of the actual weighted-simplex distribution
@@ -14,6 +15,8 @@ The generic simplex integrals provide the first three raw radius moments. Here t
 centered at their exact mean and scaled by the gap-times-multiplicity parameter. All
 integrability premises are discharged for the actual normalized Lebesgue restriction.
 -/
+
+@[expose] public section
 
 open MeasureTheory SimplexIntegration
 open scoped BigOperators

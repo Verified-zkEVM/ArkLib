@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.StandardMonomials
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.MonomialCounting
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Degree
-import ArkLib.ToMathlib.AlgebraicGeometry.ZeroLocus.ZeroDimensional
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Order.Interval.Set.Infinite
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.StandardMonomials
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.MonomialCounting
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Degree
+public import ArkLib.ToMathlib.AlgebraicGeometry.ZeroLocus.ZeroDimensional
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Order.Interval.Set.Infinite
 
 /-!
 # Canonical Hilbert polynomials of affine quotients
@@ -20,6 +22,8 @@ of the finite ordering chosen in its existence proof. Finite-dimensional quotien
 have constant polynomial equal to their dimension. The principal-cut inequality then
 applies to these canonical polynomials without any eventual-polynomial premises.
 -/
+
+@[expose] public section
 
 noncomputable section
 

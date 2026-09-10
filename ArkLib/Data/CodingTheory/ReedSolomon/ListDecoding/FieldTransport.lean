@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 
 /-!
 # Received words under a field embedding
@@ -13,6 +14,8 @@ Decoder arithmetic may take place in an auxiliary extension. Injectivity of the 
 preserves the evaluation domain and exactly the positions of agreement, so the decoding threshold
 can be transported without changing which base-field messages qualify.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.FieldTransport
 open Polynomial

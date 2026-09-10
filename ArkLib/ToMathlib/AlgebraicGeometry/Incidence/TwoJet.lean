@@ -3,12 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.TwoJetPoints
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpCutFamily
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpPrimeFamily
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.TwoJetPoints
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpCutFamily
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpPrimeFamily
 
 /-! # Sharp incidence in the capped two-jet presentation -/
+
+@[expose] public section
 
 noncomputable section
 

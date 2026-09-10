@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorAllSolutions
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorAllSolutions
 /-!
 # Agreement-sensitive differential root counting in characteristic zero
 
@@ -12,6 +14,8 @@ In characteristic zero every active separant is nonzero.  Direct strong inductio
 degree therefore gives the same square-total-degree count without the positive-characteristic
 contract used by the general singular-step relation.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

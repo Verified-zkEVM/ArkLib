@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryInverseRound
+
+public import ArkLib.Data.Computation.BinaryInverseRound
 
 /-!
 # Same-run bounded inverse search
@@ -13,6 +15,8 @@ An inverse candidate bounds the actual incrementing search in the proof only. Th
 appears in runtime state or dispatch. Every candidate below it is multiplied and tested by the
 same literal controller; failed candidates are physically incremented and copied for the next run.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryInverseMachine
 

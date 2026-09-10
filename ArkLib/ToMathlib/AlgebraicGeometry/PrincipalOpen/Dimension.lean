@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Presentation
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Presentation
 
 /-!
 # Dimension comparison for principal localizations
@@ -16,6 +18,8 @@ ring bounds the dimension of the original prime by the number of source variable
 of the localized element is accounted for by the explicit away presentation; it is not counted as
 a freely adjoined generator.
 -/
+
+@[expose] public section
 
 noncomputable section
 

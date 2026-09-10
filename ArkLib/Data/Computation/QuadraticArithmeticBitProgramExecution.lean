@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.QuadraticArithmeticBitProgram
+
+public import ArkLib.Data.Computation.QuadraticArithmeticBitProgram
 
 /-!
 # Bounded instruction execution inside the unified controller
@@ -13,6 +15,8 @@ These theorems include the actual dispatch and return transitions around each sc
 They preserve fixed widths and reduced register values and identify the decoded destination.
 They do not prove the induction over a whole literal program or its total execution bound.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitProgram
 

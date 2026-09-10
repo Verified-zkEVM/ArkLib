@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualCoefficientMachine
 /-!
 # Executed residual coefficient recovery
@@ -13,6 +14,8 @@ Strict degree, distinct samples and concrete input representations discharge con
 identify every coefficient emitted by the actual sampling/elimination/back-substitution machine.
 The same execution includes charged zero-seed allocation and satisfies the primitive work bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualCoefficientMachine
 

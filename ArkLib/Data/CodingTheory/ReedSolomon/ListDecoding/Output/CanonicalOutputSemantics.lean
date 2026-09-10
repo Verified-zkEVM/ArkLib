@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputMachine
 /-!
 # Exact accepted subsequences and linear collection overhead
 
@@ -14,6 +15,8 @@ and embeds to its originating candidate. Work is linear in the number of input r
 the proved per-record acceptance budget, not quadratic in candidate count. Completeness and
 duplicate freedom for all solutions require the generated stage records' additional contracts.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalOutputMachine
 

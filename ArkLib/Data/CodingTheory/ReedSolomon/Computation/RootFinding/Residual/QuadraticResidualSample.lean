@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.QuadraticJetHornerMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSampleMachine
+public import ArkLib.Data.Polynomial.QuadraticJetHornerMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSampleMachine
 /-!
 # Residual sampling by actual base-field programs
 
@@ -17,6 +19,8 @@ value-list head and the two-coordinate zero accumulator. No whole-list conversio
 operation or callback executes. Each delegated instruction retains its ledger and an additional
 outer wrapper. Input preparation, host fuel administration and bit costs remain outside scope.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualSample
 

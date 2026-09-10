@@ -3,14 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Asymptotics
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Moment
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Asymptotics
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Moment
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.UniformParameters
-import Mathlib.Analysis.Convex.Deriv
-import Mathlib.Analysis.Convex.Jensen
-import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
+public import Mathlib.Analysis.Convex.Deriv
+public import Mathlib.Analysis.Convex.Jensen
+public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 
 /-!
 # A rate-uniform margin for the partition Gamma factor
@@ -19,6 +21,8 @@ This file certifies the two scalar branches of Appendix H.  For
 `d = ceil (exp (3 / (2 * δ)))`, the limiting partition ratio retains enough margin after the
 closed multiplicity loss `exp (-1/1000)` to exceed `151/150`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

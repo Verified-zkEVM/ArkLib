@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Data.MvPolynomial.NestedEvaluationTree
-import ArkLib.ToCompPoly.Multilinear.Basic
+module
+
+public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
+public import ArkLib.ToCompPoly.Multilinear.Basic
 
 /-!
   # The nested-tree zero test for computable multilinear polynomials
@@ -24,6 +26,8 @@ import ArkLib.ToCompPoly.Multilinear.Basic
   does not let a tree mix a `k = 2` round with a higher-degree round of the same protocol ([NOZ26]
   Lemma 9's `2 * d`, Lemma 11's `deg H + 1`); that would need per-level arity.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CMlPolynomialEval
 

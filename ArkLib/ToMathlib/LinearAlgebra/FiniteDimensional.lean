@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.LinearAlgebra.Projection
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+public import Mathlib.LinearAlgebra.Projection
 
 /-!
 # Additional finite-dimensional linear-algebra lemmas
@@ -19,6 +20,8 @@ import Mathlib.LinearAlgebra.Projection
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 
@@ -64,7 +67,6 @@ theorem LinearMap.exists_ne_zero_of_sum_finrank_range_lt {F V ι : Type*} [Field
     simp at hpos
   obtain ⟨v, hvker, hv0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
   exact ⟨v, hv0, fun i ↦ congrFun (LinearMap.mem_ker.mp hvker) i⟩
-
 /-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A`
 have the same dimension. -/
 lemma LinearMap.finrank_eq_of_map_eq {F M N : Type*} [Field F]

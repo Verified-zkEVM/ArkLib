@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Semantics
-import ArkLib.Data.Polynomial.CoefficientUpdateMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Semantics
+public import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 /-!
 # Closed direct coefficient computation
 
@@ -15,6 +16,8 @@ the intercept, add to form the slope, test zero, invert and multiply. All callee
 embedding, including seed constants and outputs. Shared input roots and materialized samples
 are supplied; host fuel and scalar bit costs are outside the primitive model.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.DirectCoefficientMachine
 

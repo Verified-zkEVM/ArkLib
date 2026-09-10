@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.RecursiveCounting
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.RegularCounting
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.RegularCounting
 /-!
 # Rational counting through the singular separant recursion
 
@@ -17,6 +19,8 @@ the canonical singular recursion.  Using total jet degree as the decreasing pote
 one factor of the initial total jet degree, which is the form needed by the agreement-sensitive
 Taylor count.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

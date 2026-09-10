@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 
 /-!
 # Ascending coefficients and fixed-width descending vectors
@@ -14,6 +16,8 @@ order and retain leading zeros to make every vector have the same width. `padRev
 this conversion without changing the represented polynomial. Its width guarantee assumes that
 the input fits; overlong inputs are preserved, so callers cannot silently lose coefficients.
 -/
+
+@[expose] public section
 
 namespace Polynomial.CoefficientList
 

@@ -3,16 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Tactic.FinCases
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Canaries for finite Hasse jets and local divisibility
 
 These examples exercise the boundary order and a small-characteristic double-contact case.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

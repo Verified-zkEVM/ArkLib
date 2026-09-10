@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryModAddSemantics
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Computation.BinaryModAddSemantics
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Modular addition refines scalar addition
@@ -13,6 +15,8 @@ import Mathlib.Data.ZMod.Basic
 The literal seven-tape run computes addition in the input modulus's residue ring, including
 prime-field scalar addition. The modulus word is retained exactly by that same execution.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryModAddMachine
 

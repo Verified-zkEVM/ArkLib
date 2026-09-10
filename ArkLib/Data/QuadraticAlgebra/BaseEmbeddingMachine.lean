@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Materialized base-field alphabets in a quadratic algebra
@@ -14,6 +16,8 @@ restores the input order. The algebra map occurs only in the semantic specificat
 an uncharged runtime traversal. Input roots are shared; each newly materialized coordinate and
 list cell is charged. This supplies the restricted center/jet alphabet used by the decoder.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.BaseEmbeddingMachine
 

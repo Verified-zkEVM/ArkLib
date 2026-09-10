@@ -3,10 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
-import ArkLib.Data.Polynomial.ResultantDegree
-import Mathlib.Algebra.Polynomial.OfFn
+public import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
+public import ArkLib.Data.Polynomial.ResultantDegree
+public import Mathlib.Algebra.Polynomial.OfFn
 
 /-!
 # Resultants and Sylvester matrices for Polishchuk-Spielman
@@ -27,6 +28,8 @@ of bivariate polynomials, used in the Polishchuk-Spielman lemma [BCIKS20].
     for Reed-Solomon Codes*][BCIKS20]
 
 -/
+
+@[expose] public section
 
 open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators

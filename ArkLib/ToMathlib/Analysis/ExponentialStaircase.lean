@@ -3,14 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Analysis.SpecialFunctions.Exp
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+
+public import Mathlib.Analysis.SpecialFunctions.Exp
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # An exponential bound for a descending staircase
@@ -18,6 +20,8 @@ import Mathlib.Tactic.Ring
 A discrete antiderivative bounds the sum with the same constants as integrating
 the upper envelope. The proof uses only `1+t ≤ exp t` and telescoping.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

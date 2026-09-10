@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderProof
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderParameters
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.QuadraticExtension.QuadraticDecoderProof
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderParameters
 /-!
 # Small-gap exact execution at the prescribed capacity parameters
 
@@ -20,6 +22,8 @@ These are primitive-work bounds, not the unfinished bit-cost refinement.
 * [Dao, Kominers, Thaler, and Zheng, *Reed-Solomon List Decoding up to Capacity at Every
   Rate*][DKTZ26], uniform capacity decoding and the reduced separant field-size condition.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticDecoderMachine
 

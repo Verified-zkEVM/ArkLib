@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Translation
-import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Translation
+public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
 # The graded image of the local constraint map
@@ -21,6 +22,8 @@ Translation in the global `X` and `Y₀` coordinates is triangular for this grad
 total jet degree but cannot raise it. The final theorem exposes that support fact independently
 of the older asymmetric-band predicates.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

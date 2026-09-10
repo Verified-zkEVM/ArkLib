@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateBound
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Counting
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateBound
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Counting
 
 /-!
 # Finite first-order rate parameters
@@ -20,6 +22,8 @@ The distinction between real and executable data is explicit.  Arbitrary real in
 existence theorem, while `FirstOrderRationalFiniteTest` is a decidable finite check for rational
 instances.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

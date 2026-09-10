@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.MeasureTheory.Integral.NaturalFloorCells
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Dimension
+public import ArkLib.ToMathlib.MeasureTheory.Integral.NaturalFloorCells
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 
 /-!
 # Transferring the whole weighted simplex to the support
@@ -14,6 +16,8 @@ Coordinatewise flooring preserves the weighted upper cutoff and increases the re
 three-exponent degree budget. Disjoint unit cells transfer the positive-part cubic integral
 over the whole simplex to the actual finite support. No event or lower cutoff is discarded.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 open MeasureTheory

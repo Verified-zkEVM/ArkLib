@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorNumerator
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorNumerator
 
 
 /-!
@@ -13,6 +15,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symboli
 Taylor substitution at a constant center does not increase the degree of the symbolic
 challenge in any coefficient. This separates challenge height from Taylor and jet degrees.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

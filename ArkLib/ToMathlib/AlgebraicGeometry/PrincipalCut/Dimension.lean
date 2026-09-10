@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Cuts
-import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalOpen.Cuts
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 
 /-!
 # Relative codimension of principal-cut components
@@ -15,6 +17,8 @@ minimal-prime component of a proper principal cut has relative height exactly on
 unconditional codimension-one statement available without a catenary or equidimensional
 dimension formula.
 -/
+
+@[expose] public section
 
 noncomputable section
 

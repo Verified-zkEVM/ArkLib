@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListAllocator
+
+public import ArkLib.Data.Computation.SharedListAllocator
 
 /-!
 # Remaining capacity for actual shared-list allocations
@@ -15,6 +17,8 @@ allocation budget. Each successful execution preserves every old represented lis
 that budget by one. It does not assert that a whole decoder stays within a particular budget;
 that requires the decoder's separate lifetime-allocation bound and input initialization proof.
 -/
+
+@[expose] public section
 
 namespace Computation.HeapAllocationBudget
 

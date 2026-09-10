@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.LinearAlgebra.Matrix.RowCol
-import Mathlib.LinearAlgebra.Matrix.Transvection
+
+public import Mathlib.LinearAlgebra.Matrix.RowCol
+public import Mathlib.LinearAlgebra.Matrix.Transvection
 
 /-!
 # Closed row-add-multiple machine
@@ -22,6 +24,8 @@ handle (or rejection); all returned cells have already been constructed and char
 materialization, host fuel bookkeeping, memory reclamation, and field bit costs are separate.
 The matrix bridge is mathematical; this subroutine does not implement row extraction or a solver.
 -/
+
+@[expose] public section
 
 namespace Matrix.RowReductionMachine
 

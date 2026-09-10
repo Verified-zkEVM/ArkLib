@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
-import CompPoly.Univariate.DivisionCorrectness
-import CompPoly.Univariate.ToPoly.Equiv
-import Mathlib.Algebra.Squarefree.Basic
-import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+public import CompPoly.Univariate.DivisionCorrectness
+public import CompPoly.Univariate.ToPoly.Equiv
+public import Mathlib.Algebra.Squarefree.Basic
+public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # Finite representations of candidate message polynomials
@@ -29,6 +30,8 @@ specializations that agree at a received position. This is the equation used by 
 The coefficient list has the same descending convention as the decoder's physical output.
 Consequently its length bounds the message degree even when leading coefficients vanish.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding
 

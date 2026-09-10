@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryInverseField
+
+public import ArkLib.Data.Computation.BinaryInverseField
 
 /-!
 # Literal prime-field inverse execution checks
@@ -13,6 +15,8 @@ The candidate search must perform real failed multiplications before finding the
 and padded inputs exercise full restoration; product tests and candidate increments expose the
 physical phase boundaries independently of the final arithmetic value.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryInverseMachine
 

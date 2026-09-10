@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.EvaluationMachine
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.MvPolynomial.EvaluationMachine
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Sparse evaluation lowered to quadratic coordinate programs
@@ -20,6 +22,8 @@ writes the continuation. A missing variable explicitly allocates the two-coordin
 The semantic encoding/decoding of whole inputs is not an executable conversion. Input preparation,
 host fuel bookkeeping and bit complexity remain outside this primitive-operation model.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticEvaluationMachine
 

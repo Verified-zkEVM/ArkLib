@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListAllocator
-import ArkLib.Data.Computation.ScalarWordPadding
+
+public import ArkLib.Data.Computation.SharedListAllocator
+public import ArkLib.Data.Computation.ScalarWordPadding
 
 /-!
 # Literal reduced-scalar allocation into a shared list
@@ -20,6 +22,8 @@ interpretation is proof-side only. Initial words and the heap invariant remain c
 This lowers scalar cons allocation, not arithmetic or a complete decoder. Already fixed-width
 operands can use `SharedListAllocator` directly without executing this padding entry again.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListScalarAllocate
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.SetupRefinement
+
+public import ArkLib.Data.QuadraticAlgebra.SetupRefinement
 
 /-!
 # Proof-erased certification of the executed field setup
@@ -14,6 +16,8 @@ setup run. Its proofs certify those observed values and are erased; they do not 
 compute a root or enumerate a list. This interface lets a surrounding executable use the
 computable quadratic-field dictionary without an additional nonsquare decision procedure.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.SetupMachine
 

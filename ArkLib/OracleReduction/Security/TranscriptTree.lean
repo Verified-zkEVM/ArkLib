@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.TranscriptTree.Basic
-import ArkLib.OracleReduction.Security.TranscriptTree.Composition
+public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
+public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
 
 /-!
   # Trees of transcripts
@@ -80,3 +81,5 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
     branching is not supported.
 
 -/
+
+@[expose] public section

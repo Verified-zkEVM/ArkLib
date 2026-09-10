@@ -3,15 +3,19 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputSemantics
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.CanonicalProof
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Selection.CanonicalProof
 /-!
 # Exact polynomial membership through the actual base-output collector
 
 Physical descent is derived from polynomial embedding, including all zero padding. The existing
 acceptance and collector results are reused directly, without a new filtering program.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalOutputProof
 

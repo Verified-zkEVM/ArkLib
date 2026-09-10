@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListHeap
-import ArkLib.Data.Computation.BitMemoryBlock
+
+public import ArkLib.Data.Computation.SharedListHeap
+public import ArkLib.Data.Computation.BitMemoryBlock
 
 /-!
 # Literal shared-list cell writes
@@ -20,6 +22,8 @@ represented lists, and unchanged observations on every disjoint equal-width poin
 The exact transition count is the block controller's count, not native Lean time. No read/lookup
 controller, allocator, or full decoder bit-complexity claim is asserted here.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListHeapExecution
 

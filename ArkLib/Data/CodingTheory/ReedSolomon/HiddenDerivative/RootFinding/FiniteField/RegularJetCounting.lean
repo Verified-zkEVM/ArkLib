@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.Basic
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Data.Fintype.BigOperators
+public import ArkLib.Data.Polynomial.Differential.Basic
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Data.Fintype.BigOperators
 
 
 /-!
@@ -18,6 +19,8 @@ After fixing every assignment coordinate except the selected active jet variable
 inject into the roots of a nonzero univariate specialization. The number of remaining-coordinate
 assignments is the field size to the power `d + 1`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

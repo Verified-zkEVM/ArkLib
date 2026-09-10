@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Batched
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SampleInterpolation
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Batched
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SampleInterpolation
 
 /-!
 # Recovering base-field messages from finite representations
@@ -21,6 +22,8 @@ The final check is exactly degree and full received-word agreement. It does not 
 differential equation or enumerate roots of the representation modulus. Constructor coverage
 is a proof hypothesis; it is never passed to the executable program.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.AgreementRecovery
 

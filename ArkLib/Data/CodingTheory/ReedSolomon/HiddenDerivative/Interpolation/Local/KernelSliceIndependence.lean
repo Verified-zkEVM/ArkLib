@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Justin Thaler
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.IntermediateSpace
-import Mathlib.Algebra.MvPolynomial.Equiv
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.IntermediateSpace
+public import Mathlib.Algebra.MvPolynomial.Equiv
 
 
 /-!
@@ -20,6 +22,8 @@ has lowest `T`-coefficient `(U - Y₁)^h * G`, which is nonzero over a field.
 Only the exhibited subspace of the kernel is counted here. No reverse kernel inclusion or rank
 equality is asserted.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

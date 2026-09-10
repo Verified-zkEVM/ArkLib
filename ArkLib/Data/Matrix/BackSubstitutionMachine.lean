@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotSolveMachine
+
+public import ArkLib.Data.Matrix.PivotSolveMachine
 
 /-!
 # Closed back substitution with supplied free coordinates
@@ -23,6 +25,8 @@ Each delegated transition additionally reads and writes its inner configuration 
 and pays a driver dispatch; all callee costs remain charged. Equality and emitted results are
 counted separately. Configuration handles are shared immutable pointers in this abstract model.
 -/
+
+@[expose] public section
 
 namespace Matrix.BackSubstitutionMachine
 

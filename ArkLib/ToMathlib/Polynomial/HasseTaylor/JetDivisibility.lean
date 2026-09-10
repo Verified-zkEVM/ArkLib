@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 
 /-!
 # Finite Hasse jets and polynomial divisibility
@@ -14,6 +16,8 @@ This file joins the finite-vector interface `hasseJet` with the scalar Hasse-van
 divisibility results from `HasseTaylor.Shift`.  It lets downstream constraint maps use equality in
 `Fin m → R` directly, while retaining the characteristic-independent meaning of the coordinates.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

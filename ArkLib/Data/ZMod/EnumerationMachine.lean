@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Data.List.Range
+
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Data.List.Range
 
 /-!
 # Closed enumeration machine for `ZMod`
@@ -23,6 +25,8 @@ Input materialization, host fuel bookkeeping, memory reclamation, and integer/fi
 are excluded.
 Completeness needs `q > 0`; no primality is needed for enumeration of the residue ring itself.
 -/
+
+@[expose] public section
 
 namespace ZMod.EnumerationMachine
 

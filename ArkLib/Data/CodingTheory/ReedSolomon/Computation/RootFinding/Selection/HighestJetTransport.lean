@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.HighestJetRefinement
-import ArkLib.Data.Polynomial.Differential.Basic
+public import ArkLib.Data.MvPolynomial.HighestJetRefinement
+public import ArkLib.Data.Polynomial.Differential.Basic
 /-!
 # Highest-jet machine transport to finite differential variables
 
@@ -13,6 +14,8 @@ The representation equality uses the injective encoding `X ↦ 0`, `Y_j ↦ j+1`
 the fixed dense layout, it transports the charged selector to the existing `highestActiveJet`
 and `jetDegree`, including cancellation and the no-active-jet case.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.HighestJetTransport
 

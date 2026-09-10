@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticInputMachine
-import ArkLib.Data.MvPolynomial.DenseNormalizeRefinement
+
+public import ArkLib.Data.MvPolynomial.QuadraticInputMachine
+public import ArkLib.Data.MvPolynomial.DenseNormalizeRefinement
 
 /-!
 # Exact polynomial meaning of materialized quadratic inputs
@@ -14,6 +16,8 @@ The actual coefficient-conversion program implements the canonical scalar embedd
 represented sparse polynomial. It preserves the factor layout, ordering and term count needed
 by root enumeration. Sparse coefficients are not supplied by a specification oracle.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.EvaluationMachine
 

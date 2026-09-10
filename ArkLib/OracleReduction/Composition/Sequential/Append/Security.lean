@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, scaraven
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
 
 /-!
 # Admitted soundness composition contracts
@@ -16,6 +17,8 @@ For proved completeness interfaces, use `Append/Completeness.lean` and
 `Sequential/GuardedCompleteness.lean`. The proved soundness interface in `Append/RoundByRound.lean`
 requires fixed-prefix component bounds and a pure first verifier.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec
 

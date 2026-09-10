@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.ProductBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
-import
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.ProductBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Midpoint
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpGeneralEquation
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.Parameters
 /-!
 # Midpoint scalar budgets for the quarter-gap specialization
 
@@ -16,6 +17,8 @@ This file bounds the dimension-sensitive stage products by midpoint ratios for t
 quarter-gap specialization. It keeps the actual stage order until finite-stage aggregation.
 The prescribed small-gap theorem uses the sharper cutoff and coefficient in `ProductCounting`.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

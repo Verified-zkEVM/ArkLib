@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.RatePartitionMatrix
 
 /-!
@@ -16,6 +17,8 @@ is `n*r₀*(ℓ*ν)/(N-n*r₀)`, with natural division. The finite ratio estimat
 parameters satisfying this test before the field and received curve are supplied.
 No characteristic assumption is needed for interpolation itself.
 -/
+
+@[expose] public section
 
 noncomputable section
 

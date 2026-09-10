@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
-import Mathlib.MeasureTheory.Integral.Bochner.Set
+
+public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
 
 /-!
 # The weighted-simplex diagonal change of variables
@@ -14,6 +16,8 @@ The map `u_i ↦ (i+1)u_i` identifies the weighted simplex with the ordinary sim
 This file records its determinant and the resulting set-integral Jacobian.  It is the shared
 change-of-variables route for both weighted volumes and moments.
 -/
+
+@[expose] public section
 
 open MeasureTheory Set
 open scoped BigOperators

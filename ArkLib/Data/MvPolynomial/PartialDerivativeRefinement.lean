@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
-import Mathlib.Algebra.MvPolynomial.PDeriv
+
+public import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
+public import Mathlib.Algebra.MvPolynomial.PDeriv
 
 /-!
 # Sparse derivative execution and refinement
@@ -15,6 +17,8 @@ polynomial interpretation is the partial derivative when each term has distinct 
 indices; this invariant is preserved. Runtime counts repeated additions against the numerical
 exponent sum and does not claim polynomial time in binary exponent length alone.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.PartialDerivativeMachine
 

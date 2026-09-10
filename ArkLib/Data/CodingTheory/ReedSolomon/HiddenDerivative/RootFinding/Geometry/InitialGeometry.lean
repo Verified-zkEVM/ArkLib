@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
 
 
 /-!
@@ -15,6 +16,8 @@ The regular part of the initial differential equation is covered by finitely man
 components.  Every component has the expected Hilbert-polynomial dimension, and their total
 Bezout potential is bounded by the total jet degree of the differential equation.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

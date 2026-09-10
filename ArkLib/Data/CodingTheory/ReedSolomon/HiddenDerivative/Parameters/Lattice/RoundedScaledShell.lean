@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledShellDiscrete
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
-import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Lattice.ScaledShellDiscrete
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Basic
+public import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 
 
 /-!
@@ -33,6 +35,8 @@ the subsequent interpolation/rank comparison. A smaller exponent printed in
 the source snapshot's draft is not valid throughout `0 < θ < 1`; this note
 does not describe the normative current all-rate paper.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

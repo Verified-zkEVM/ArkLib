@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.FrobeniusContraction
-import Mathlib.FieldTheory.Separable
-import Mathlib.RingTheory.Polynomial.GaussLemma
+
+public import ArkLib.ToMathlib.Polynomial.FrobeniusContraction
+public import Mathlib.FieldTheory.Separable
+public import Mathlib.RingTheory.Polynomial.GaussLemma
 
 /-!
 # Frobenius contraction and passage to a fraction field
@@ -19,6 +21,8 @@ injective fraction-field map, so the mapped polynomial is separable.
 This file only connects contraction over a GCD domain to the corresponding fraction-field
 polynomial.  It does not prove a geometric reconstruction or an agreement bound.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

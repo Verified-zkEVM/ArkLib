@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.List.CartesianProductMachine
-import Mathlib.Data.List.Range
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.List.OfFn
+public import ArkLib.Data.List.CartesianProductMachine
+public import Mathlib.Data.List.Range
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.List.OfFn
 /-!
 # Materialized interpolation column exponents
 
@@ -28,6 +29,8 @@ charge includes computing `m*A`, `2*m` and `d+1` from the public integer inputs.
 The direct consumer is interpolation-matrix column construction: coordinate zero denotes X and
 coordinate j+1 denotes Y_j. This component emits exponents, not matrix entries or a kernel vector.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.InterpolationSupportMachine
 

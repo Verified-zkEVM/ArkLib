@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Area
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Area
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 
 /-!
@@ -15,6 +16,8 @@ Flooring coordinates preserves the derivative-weight bound and increases the
 remaining X,Y₀ degree budget. Unit cells transfer the whole simplex integral;
 no lower cutoff or favorable event is discarded.
 -/
+
+@[expose] public section
 
 noncomputable section
 

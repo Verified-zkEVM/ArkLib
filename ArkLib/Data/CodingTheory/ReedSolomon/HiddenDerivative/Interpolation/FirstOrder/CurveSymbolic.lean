@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Symbolic
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Symbolic
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.ReceivedCurve
 
 /-!
@@ -20,6 +22,8 @@ after every extension-field challenge. The shifted graded constructor in `CurveF
 this data from an executable source/row surplus. Geometric exceptional-set counting is a separate
 transfer.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 open scoped BigOperators

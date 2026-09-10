@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.Nullstellensatz
-import Mathlib.RingTheory.Jacobson.Artinian
-import Mathlib.RingTheory.Ideal.Quotient.Operations
-import Mathlib.LinearAlgebra.FreeModule.Finite.Matrix
+
+public import Mathlib.RingTheory.Nullstellensatz
+public import Mathlib.RingTheory.Jacobson.Artinian
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
+public import Mathlib.LinearAlgebra.FreeModule.Finite.Matrix
 
 /-!
 # Point counts for zero-dimensional affine quotients
@@ -17,6 +19,8 @@ zeros give distinct homomorphisms. Linear independence of algebra homomorphisms 
 bounds the number of points by the quotient's vector-space dimension, over every extension
 field. Krull dimension zero supplies finiteness of the coordinate algebra in finite variables.
 -/
+
+@[expose] public section
 
 noncomputable section
 

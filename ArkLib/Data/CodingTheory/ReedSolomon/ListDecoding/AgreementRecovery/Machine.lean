@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.GCDSplit
+public import ArkLib.Data.Polynomial.GCDSplit
 
 /-!
 # Agreement splitting without extracting parameter roots
@@ -22,6 +23,8 @@ Positions are recorded in reverse traversal order. This order does not affect in
 but retaining their indices rather than just their values is essential: repeated received
 values do not constitute repeated positions.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.AgreementRecovery
 

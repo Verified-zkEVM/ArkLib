@@ -3,15 +3,19 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalAcceptanceMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateAcceptanceMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalAcceptanceMachine
 /-!
 # Same-execution coordinate acceptance
 
 Actual coordinate guard traces and exact-cost base candidate traces compose with their caller
 charges. A single absolute factor bounds the whole original trace's count and work.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticCanonicalAcceptanceMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitMemoryRead
-import ArkLib.Data.Computation.SharedListHeap
+
+public import ArkLib.Data.Computation.BitMemoryRead
+public import ArkLib.Data.Computation.SharedListHeap
 
 /-!
 # Literal reads of represented shared-list cells
@@ -15,6 +17,8 @@ Here an actual block read recovers exactly those tag/head/tail bits, preserving 
 memory and hence every shared tail. The length tape is an explicit already-materialized input.
 Separating the returned payload into scalar/pointer registers is not asserted as a free step.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListRead
 

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.DimensionBridge
 
 
 /-!
@@ -54,6 +55,8 @@ alone does not bound a decoding list or an exceptional challenge set.
   Agreement up to Capacity*][DKTZ26], Section 6.1.3, Proposition 6.3 (finite first-order
   certificate).
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

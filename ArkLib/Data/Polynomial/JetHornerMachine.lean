@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Taylor
+
+public import Mathlib.Algebra.Polynomial.Taylor
 
 /-!
 # Closed simultaneous Hasse-jet Horner evaluation
@@ -22,6 +24,8 @@ scalar outputs. A cell read retrieves its head and tail together. Retained regis
 not copied; literals are free. Input preparation, interpreter bookkeeping, and scalar bit costs
 are separate obligations. The semantic specification applies in every characteristic.
 -/
+
+@[expose] public section
 
 namespace Polynomial.JetHornerMachine
 

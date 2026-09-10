@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
 # Finite witness counting for differential roots
@@ -19,6 +20,8 @@ The root-finding specialization retains truncated natural subtraction in the fac
 Consequently it does not need an assumption `H ≤ S`: when there are more exceptional points than
 witness points, the lower bound degenerates safely to zero.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace HiddenDerivative

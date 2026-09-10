@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ListDecodability
 
 /-!
 # Exact counting bounds from pairwise agreement
@@ -21,6 +22,8 @@ continues to give useful integral bounds at its boundary cases.
 The proof reuses `Code.sq_sum_agree_le` and follows the finite double-counting structure already
 used by `Code.card_le_of_pairwise_agree_le`.
 -/
+
+@[expose] public section
 
 namespace Code
 

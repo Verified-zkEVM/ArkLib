@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
-import Mathlib.NumberTheory.Harmonic.Bounds
-import Mathlib.Analysis.Complex.ExponentialBounds
-import Mathlib.Analysis.SpecialFunctions.Log.Monotone
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+public import Mathlib.NumberTheory.Harmonic.Bounds
+public import Mathlib.Analysis.Complex.ExponentialBounds
+public import Mathlib.Analysis.SpecialFunctions.Log.Monotone
 
 /-!
 # Scalar prerequisites for the no-band weighted support
@@ -17,6 +18,8 @@ order uses `ξ = 27 / 10`. Its size makes the finite simplex estimates available
 harmonic lower bound and the clipped rate parameter imply `g * H ≥ ξ`. These statements are
 kept separate from the later simplex distribution and rank comparison.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters
 

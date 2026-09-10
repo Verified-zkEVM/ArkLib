@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveSupportCertificate
 
 /-!
@@ -19,6 +20,8 @@ This constructor separates the algebraic certificate from the analytic rate gate
 the rate estimates supply the finite surplus, while the same certificate serves
 list decoding and exact correlated agreement over arbitrary fields.
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.CoordinateHighestRefinement
+
+public import ArkLib.Data.MvPolynomial.CoordinateHighestRefinement
 
 /-! # Kernel checks for selection after actual coordinate cancellation -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticHighestMachine
 

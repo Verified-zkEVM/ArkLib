@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.DegreeTruncationSemantics
+
+public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
 
 /-!
 # Degree truncation boundaries
@@ -13,6 +15,8 @@ The vectors distinguish checked zero removal from unconditional truncation, and 
 charges distinguish final emission from merely reaching its payload. Dimension zero accepts
 the zero polynomial as an empty coefficient vector.
 -/
+
+@[expose] public section
 
 namespace Polynomial.DegreeTruncationMachine
 

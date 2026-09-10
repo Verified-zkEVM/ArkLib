@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
-import Mathlib.Data.Nat.Choose.Dvd
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import Mathlib.Data.Nat.Choose.Dvd
 
 /-!
 # Hasse--Taylor coefficient lifting
@@ -44,6 +46,8 @@ for this interface: at degree equal to the characteristic, a binomial multiplier
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15]
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

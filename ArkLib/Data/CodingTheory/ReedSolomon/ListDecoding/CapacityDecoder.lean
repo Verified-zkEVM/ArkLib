@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCapacityExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityOutputBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCapacityExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityOutputBounds
 /-!
 # Executable Reed-Solomon capacity decoding at every rate
 
@@ -41,6 +43,8 @@ Lean running time is claimed by the primitive ledger below.
 * [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed-Solomon
   Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], hidden-derivative interpolation.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

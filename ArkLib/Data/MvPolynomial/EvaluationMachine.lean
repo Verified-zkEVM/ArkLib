@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Eval
+
+public import Mathlib.Algebra.MvPolynomial.Eval
 
 /-!
 # Closed evaluation of materialized sparse polynomial terms
@@ -23,6 +25,8 @@ are free. Dispatch includes list-constructor tests and phase changes. The cost t
 all remaining register/list accesses. Input construction, host interpreter fuel bookkeeping, field
 bit costs and conversion from another polynomial representation are separate obligations.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.EvaluationMachine
 

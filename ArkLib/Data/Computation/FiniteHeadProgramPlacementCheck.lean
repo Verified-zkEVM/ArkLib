@@ -3,12 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FiniteHeadProgramPlacement
-import ArkLib.Data.Computation.WordCopyFiniteControl
-import ArkLib.Data.Computation.FieldLiteralFiniteControl
+
+public import ArkLib.Data.Computation.FiniteHeadProgramPlacement
+public import ArkLib.Data.Computation.WordCopyFiniteControl
+public import ArkLib.Data.Computation.FieldLiteralFiniteControl
 
 /-! # Kernel checks of noncontiguous and twenty-eight-tape physical placement -/
+
+@[expose] public section
 
 namespace Computation.FiniteHeadProgramPlacement
 

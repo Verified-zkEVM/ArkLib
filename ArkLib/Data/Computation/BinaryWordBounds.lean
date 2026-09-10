@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Canonical binary word bounds
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryWordSemantics
 These proof-side lemmas relate physical width to numeric value for canonical words. They do not
 pad, normalize, construct shape tapes, or perform any runtime conversion.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryWordMachine
 

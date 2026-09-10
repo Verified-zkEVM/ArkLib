@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.RootPresentation
 /-!
 # Exceptional challenges of ordinary content
@@ -13,6 +14,8 @@ An equation independent of its root variable can vanish identically only at a nu
 challenges bounded by its coefficient height. This supplies the zero-degree ordinary tail
 and the content charge in factor aggregation.
 -/
+
+@[expose] public section
 
 noncomputable section
 

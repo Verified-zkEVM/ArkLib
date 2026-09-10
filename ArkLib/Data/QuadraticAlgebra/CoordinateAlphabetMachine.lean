@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Explicit materialization of a quadratic alphabet's coordinate pairs
@@ -14,6 +16,8 @@ scalar fields and allocates raw pairs and list cells individually, then reverses
 Its logical specification uses a list map; dispatch does not. The same trace counts all record,
 cell and cursor operations in the field-level data-access model, not in a bit-time model.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.CoordinateAlphabetMachine
 

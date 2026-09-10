@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
-import CompPoly.Univariate.EuclideanAlgorithm
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Algebra.Squarefree.Basic
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.EuclideanAlgorithm
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Algebra.Squarefree.Basic
 
 /-!
 # Executable gcd splitting for computable polynomials
@@ -16,6 +18,8 @@ factor split used by symbolic decoding.  The executable definitions stay in
 `CPolynomial`; their specifications are stated through `toPoly`, so downstream
 proofs can use Mathlib's polynomial API directly.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 

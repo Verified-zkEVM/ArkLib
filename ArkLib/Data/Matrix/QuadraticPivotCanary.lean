@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticPivotRefinement
+
+public import ArkLib.Data.Matrix.QuadraticPivotRefinement
 
 /-!
 # Kernel checks for coordinate pivot elimination
@@ -14,6 +16,8 @@ and update that RHS. Literal ledgers include equality, norm inversion, factor an
 instruction. Zero, imaginary-only and missing pivots test branch behavior. Mismatched rows
 propagate the child rejection. Stored inverse payloads remain authoritative, including zero.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticPivotMachine
 

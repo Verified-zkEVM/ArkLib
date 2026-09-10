@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.QuadraticAlgebra.Basic
-import Mathlib.FieldTheory.Finite.Basic
+
+public import Mathlib.Algebra.QuadraticAlgebra.Basic
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Concrete quadratic witness fields
@@ -19,6 +21,8 @@ No algorithm for finding the nonsquare or enumerating the extension is asserted 
 particular the finite-field existence lemma is mathematical, not a free setup operation.
 The coordinate refinements do not by themselves constitute a closed execution-cost theorem.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra
 

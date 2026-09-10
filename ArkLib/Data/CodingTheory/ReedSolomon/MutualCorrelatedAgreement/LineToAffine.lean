@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
+public import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
 /-!
 # Exact line agreement implies affine mutual correlated agreement
 
@@ -15,6 +16,8 @@ bad event. The existing affine-space reduction loses only the factor `|F| / (|F|
 independently of affine dimension. Integer thresholds use the ceiling of the real threshold.
 Here `radius` is the relative-distance radius, not the gap to capacity.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

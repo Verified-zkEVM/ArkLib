@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryModAddField
+
+public import ArkLib.Data.Computation.BinaryModAddField
 
 /-!
 # Modular addition execution boundaries
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryModAddField
 Below-modulus, exact-modulus and carry-across-width sums distinguish backup recovery, zero
 reduction and positive reduction. The original modulus word, including padding, is retained.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryModAddMachine
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.BlockLength
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.BlockLength
 
 /-!
 # The strict-margin finite parameter recipe
@@ -13,6 +15,8 @@ Search multiplicities in increasing order until the positive derivative budget
 and exact finite Gamma gate pass. Convergence proves termination for every strict
 limiting gate, without assuming the stronger margin of the uniform construction.
 -/
+
+@[expose] public section
 
 noncomputable section
 

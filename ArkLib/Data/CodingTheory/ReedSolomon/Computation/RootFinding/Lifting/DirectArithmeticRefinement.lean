@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectArithmeticMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectArithmeticMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 /-!
 # Exact direct-coefficient local-phase lowering
 
@@ -15,6 +18,8 @@ an embedded local phase belongs to that graph. Concrete arithmetic traces preser
 and endpoints. Certification of inverse uses the supplied nonsquare parameter only in proofs.
 No residual recovery, coefficient-update, lookup or input-materialization execution is claimed.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.DirectArithmeticMachine
 

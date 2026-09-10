@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.CoefficientList
+public import ArkLib.Data.Polynomial.CoefficientList
 /-!
 # Closed initial-jet preparation
 
@@ -18,6 +19,8 @@ list allocation, cursor access, capacity test/decrement, and the initial success
 Cell reads retrieve head and tail together; retained registers are shared. Input materialization,
 host fuel bookkeeping and scalar bit costs remain outside the model.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.JetPreparationMachine
 

@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitLocalActions
-import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.Fintype.Option
-import Mathlib.Data.Fintype.Prod
-import Mathlib.Data.Fintype.Sum
-import Mathlib.Tactic.DeriveFintype
+
+public import ArkLib.Data.Computation.BitLocalActions
+public import Mathlib.Data.Fintype.Pi
+public import Mathlib.Data.Fintype.Option
+public import Mathlib.Data.Fintype.Prod
+public import Mathlib.Data.Fintype.Sum
+public import Mathlib.Tactic.DeriveFintype
 
 /-!
 # Finite control with head-only observations of a fixed bit-tape bank
@@ -20,6 +22,8 @@ that interface. All updates read the old bank simultaneously. Popping an empty t
 empty. This strengthens locality with an explicit restriction on how instructions are selected;
 it is not a global RAM compiler or a bound on address, heap or scalar arithmetic.
 -/
+
+@[expose] public section
 
 namespace Computation.FiniteHeadProgram
 

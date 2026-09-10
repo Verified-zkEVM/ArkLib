@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.Avoidance
-import Mathlib.Data.Fintype.Card
-import Mathlib.Data.Fintype.Sum
+module
+
+public import ArkLib.Data.Polynomial.Avoidance
+public import Mathlib.Data.Fintype.Card
+public import Mathlib.Data.Fintype.Sum
 
 /-!
 # Deterministic avoidance for Rojas projection parameters
@@ -16,6 +18,8 @@ roots: any explicit list longer than the stated bound contains a good value.
 The Mathlib collision polynomials and root finsets below are proof-only;
 runtime selection remains the executable candidate scan.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas
 

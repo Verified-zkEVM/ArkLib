@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
+
+public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 
 /-!
 # Recovering a polynomial from sparse coefficients
@@ -13,6 +15,8 @@ Contraction recovers the lower-degree polynomial when all coefficients outside m
 of a positive integer vanish. This is the coefficient-level reconstruction used after a
 Frobenius pullback; it requires no characteristic assumption.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

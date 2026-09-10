@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 
 /-!
@@ -15,6 +16,8 @@ The proof-facing ambient dimension is `K = max k floor(delta*n/2)` and its polyn
 agreement cutoff directly from the explicit formulas.  It has no dependency on the retired band
 support or on the capacity capstone.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters
 

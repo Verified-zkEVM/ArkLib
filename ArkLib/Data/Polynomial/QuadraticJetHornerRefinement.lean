@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.QuadraticJetHornerMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.Polynomial.QuadraticJetHornerMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Same-execution coordinate lowering for Hasse-jet evaluation
@@ -14,6 +16,8 @@ Every original source transition is simulated by an actual base-program trace. T
 an update share the retained old head; their emitted sum is explicitly saved into the new list.
 The representation maps are proof-only relations on already materialized inputs and states.
 -/
+
+@[expose] public section
 
 namespace Polynomial.QuadraticJetHornerMachine
 

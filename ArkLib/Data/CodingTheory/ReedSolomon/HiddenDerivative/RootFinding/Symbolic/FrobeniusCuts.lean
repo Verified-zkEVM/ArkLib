@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCuts
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCuts
 
 /-!
 # Sparse reconstruction from symbolic Taylor cuts
@@ -12,6 +13,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symboli
 Vanishing common numerators outside multiples of `s` forces the corresponding Taylor
 coefficients to vanish on the regular chart. The finite prefix supplies all remaining zeros.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

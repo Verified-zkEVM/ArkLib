@@ -3,14 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsSemantics
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CenterRootsSemantics
 /-!
 # One exponential factor for all centers and jets
 
 The outer alphabet scan multiplies the existing jet count by exactly one alphabet factor.
 The remaining terms are the polynomial per-jet budgets of the underlying machines.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CenterRootsMachine
 

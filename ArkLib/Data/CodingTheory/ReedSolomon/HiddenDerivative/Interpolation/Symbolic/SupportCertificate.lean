@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Block
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Harmonic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Soundness
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Margin
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Block
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Harmonic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Soundness
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Margin
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.WeightedSupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
 /-!
 # The prescribed symbolic weighted-support certificate
@@ -25,6 +28,8 @@ Reed--Solomon polynomial. No matrix-rank or coefficient-height assumption remain
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26], Section 5.1, Corollary 5.3.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
-import Mathlib.RingTheory.Finiteness.Ideal
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Polynomial
+public import Mathlib.RingTheory.Finiteness.Ideal
 
 /-!
 # Hilbert polynomial degree is unchanged by taking radicals
@@ -13,6 +15,8 @@ import Mathlib.RingTheory.Finiteness.Ideal
 A uniform nilpotence exponent bounds standard-monomial counts through coordinatewise
 Euclidean division. This controls actual filtration growth without a multiplicity theory.
 -/
+
+@[expose] public section
 
 noncomputable section
 

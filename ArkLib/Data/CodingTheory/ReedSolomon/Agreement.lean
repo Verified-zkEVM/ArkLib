@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Eval.Defs
-import Mathlib.Data.Finset.Filter
+public import Mathlib.Algebra.Polynomial.Eval.Defs
+public import Mathlib.Data.Finset.Filter
 
 /-!
 # Polynomial agreement sets
@@ -13,6 +14,8 @@ import Mathlib.Data.Finset.Filter
 The full coordinate sets on which one polynomial, or a pair of polynomials,
 agrees with received words. No decoding-radius or correlated-agreement theorem is required.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

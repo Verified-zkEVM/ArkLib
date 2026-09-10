@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryEqualMachine
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.BinaryEqualMachine
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Same-run Boolean equality guard
@@ -13,6 +15,8 @@ import ArkLib.Data.Computation.BinaryWordSemantics
 Equality compares decoded natural values, allowing any physical zero padding. Both comparison
 and the final Boolean branch occur on the same actual trace; the original modulus is retained.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryEqualMachine
 

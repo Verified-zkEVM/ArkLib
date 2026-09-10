@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
-import ArkLib.Data.Polynomial.GCDSplit
-import ArkLib.Data.Polynomial.ModularInverse
+module
+
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.Basic
+public import ArkLib.Data.Polynomial.GCDSplit
+public import ArkLib.Data.Polynomial.ModularInverse
 
 /-!
 # Postprocessing rational univariate maps
@@ -19,6 +21,8 @@ Constructing the input univariate map, including the deterministic Rojas
 perturbation/resultant algorithm and its isolated-root coverage proof, remains
 outside this module.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UnivariateRepresentation
 

@@ -3,7 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
+-- The coefficient-array proofs below intentionally reduce these implementation definitions.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
 
 /-!
 # Lowest-degree coefficient of a toric generalized characteristic polynomial
@@ -14,6 +19,8 @@ characteristic polynomial `H(u; s)`. This file supplies exactly that
 extraction step once an upstream sparse resultant producer has computed `H`.
 It does not construct the toric resultant matrix or prove its root coverage.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas
 

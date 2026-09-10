@@ -3,15 +3,16 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
-import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
-import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
-import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
-import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
-import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
-import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
-import ArkLib.OracleReduction.Composition.Sequential.Append.Security
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
+public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Execution
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+public import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
+public import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
 /-!
   # Sequential Composition of Two (Oracle) Reductions
@@ -32,3 +33,5 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Security
   * `Append.RoundByRound` — soundness from fixed-prefix bounds under a pure first verifier.
   * `Append.Security` — legacy admitted soundness claims and their inherited wrappers.
 -/
+
+@[expose] public section

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryMulField
+
+public import ArkLib.Data.Computation.BinaryMulField
 
 /-!
 # Literal multiplication countdown checks
@@ -12,6 +14,8 @@ import ArkLib.Data.Computation.BinaryMulField
 The checks exercise zero iterations, multiple actual decrements, modular wraparound, and padded
 retained operands. Boundary states require the physical accumulator/counter transfer passes.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryMulMachine
 

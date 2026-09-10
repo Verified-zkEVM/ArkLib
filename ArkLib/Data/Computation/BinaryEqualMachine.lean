@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryWordMachine
+
+public import ArkLib.Data.Computation.BinaryWordMachine
 
 /-!
 # Literal equality guard retaining its modulus
@@ -13,6 +15,8 @@ The actual binary comparison consumes both supplied words. One finite-control tr
 its resulting ordering to a Boolean guard. The modulus stays on a fifth physical tape throughout.
 There is no extra entry transition: the initial state contains the original comparison entry.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryEqualMachine
 

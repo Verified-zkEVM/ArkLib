@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
 
 /-!
 # Completeness and finite size of agreement splitting
@@ -18,6 +19,8 @@ nonconstant stopped factor spends at least one degree, and an exact gcd split pr
 of the two child degrees. Repeated representations may still yield the same message, so final
 coefficient-vector deduplication remains necessary.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.AgreementRecovery
 

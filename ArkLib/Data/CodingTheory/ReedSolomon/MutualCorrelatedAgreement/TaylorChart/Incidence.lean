@@ -3,11 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
-import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Hypersurface
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCutDegree
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentAgreement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PairCounting
+public import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Hypersurface
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorCutDegree
 /-!
 # Incidence away from admissible source-chart pairs
 
@@ -16,6 +20,8 @@ discharges the terminal condition of hypersurface incidence for every prime cont
 initial and high-coefficient equations. Degree bounds here refer to literal joint source
 polynomials, so the exponent counts the challenge coordinate as well as the initial jets.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

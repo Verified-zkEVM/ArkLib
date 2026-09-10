@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Support.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteMachine
-import ArkLib.Data.Matrix.PivotSelectionMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Support.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.RewriteMachine
+public import ArkLib.Data.Matrix.PivotSelectionMachine
 /-!
 # Materialized interpolation rows for one received point
 
@@ -20,6 +21,8 @@ natural tests, scalar constants, and allocations, plus every executed callee cha
 vectors are shared immutable tails; copying an outer list cell is charged. Bit costs, garbage
 collection and host fuel administration are outside this unit-operation model.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.InterpolationPointBlockMachine
 

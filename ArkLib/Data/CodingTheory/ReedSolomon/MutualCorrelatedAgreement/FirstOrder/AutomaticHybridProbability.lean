@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticHybrid
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.AutomaticHybrid
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 /-!
 # Finite-field probability for the automatic first-order hybrid transfer
 
@@ -13,6 +15,8 @@ The physical agreement threshold is rounded once as `ceil (a*n)`.  The automatic
 its algebraic closure remain internal.  Uniform challenge sampling turns each exceptional-set
 bound into the canonical probability bound `min 1 (E / |F|)`.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

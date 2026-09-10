@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FiniteHeadProgram
-import ArkLib.Data.Computation.FieldLiteralMachine
+
+public import ArkLib.Data.Computation.FiniteHeadProgram
+public import ArkLib.Data.Computation.FieldLiteralMachine
 
 /-!
 # Finite-head control for physical field literals
@@ -16,6 +18,8 @@ scratch tape two, reference tape four and the padding child's spare output tape 
 branch inspects only current heads. Every original transition and all fuel prefixes are matched
 exactly, including a zero-width one request and halted or rejected child entries.
 -/
+
+@[expose] public section
 
 namespace Computation.FieldLiteralFiniteControl
 

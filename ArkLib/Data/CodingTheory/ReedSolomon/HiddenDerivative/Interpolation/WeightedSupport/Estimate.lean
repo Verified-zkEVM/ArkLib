@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Moments
-import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Cubic
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Moments
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.Cubic
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 
 /-!
@@ -17,6 +20,8 @@ First the exact centered moments bound the positive cubic residual in expectatio
 The floor transfer then converts this probability estimate to the dimension of the
 actual polynomial support, including every point of the weighted simplex.
 -/
+
+@[expose] public section
 
 open MeasureTheory SimplexIntegration
 open scoped BigOperators

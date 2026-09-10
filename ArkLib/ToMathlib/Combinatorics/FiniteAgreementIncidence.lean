@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Combinatorics.Enumerative.DoubleCounting
-import Mathlib.Tactic.Tauto
+
+public import Mathlib.Combinatorics.Enumerative.DoubleCounting
+public import Mathlib.Tactic.Tauto
 
 /-!
 # Double counting after discarding fewer than k agreement positions
@@ -13,6 +15,8 @@ import Mathlib.Tactic.Tauto
 Every candidate retains at least A-k+1 incidences when fewer than k positions are
 removed. Double counting expresses this as a sum of the remaining fiber sizes.
 -/
+
+@[expose] public section
 
 namespace AffineHilbert
 

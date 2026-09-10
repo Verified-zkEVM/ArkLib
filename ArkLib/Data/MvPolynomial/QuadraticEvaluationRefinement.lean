@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 
 /-!
 # Same-execution lowering of sparse evaluation
@@ -14,6 +16,8 @@ simulated by actual lowered steps; arithmetic blocks reuse the existing literal 
 The bound follows from those concrete blocks and their launch/wrapper/return charges. It does not
 certify input conversion, enclosing residual/decoder drivers, host execution or bit complexity.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticEvaluationMachine
 

@@ -2,8 +2,9 @@
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+module
 
-import VCVio.OracleComp.Coercions.SubSpec
+public import VCVio.OracleComp.Coercions.SubSpec
 
 /-! Compatibility import for additions that now live in VCVio.
 

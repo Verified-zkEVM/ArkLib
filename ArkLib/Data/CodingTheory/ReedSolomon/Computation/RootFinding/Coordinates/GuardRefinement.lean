@@ -3,16 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.GuardMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ZeroRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.WitnessRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.GuardMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.ZeroRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.WitnessRefinement
 /-!
 # Same-execution coordinate canonical guard
 
 Each original guard edge lowers to actual residual and equality programs with one absolute
 factor. The final Boolean is exactly the source guard's result, including all early exits.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticCanonicalGuardMachine
 

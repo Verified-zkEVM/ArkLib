@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.DimensionCount
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.LocalImage
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.DimensionCount
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.LocalImage
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Basis
 /-!
 # Actual order-zero interpolation witnesses from finite rank-nullity
 
@@ -15,6 +18,8 @@ actual local constraint map and only restricts its codomain to its proved triang
 The resulting kernel element is an actual nonzero polynomial, not a list-cardinality argument.
 The quarter-gap endpoint covers n≥3; the separate n=1,2 decoder cases remain outside this file.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

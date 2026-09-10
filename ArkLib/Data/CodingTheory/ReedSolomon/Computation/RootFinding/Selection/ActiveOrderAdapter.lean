@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.SeparantChainRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.JetPrefix
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.JetPrefix
 /-!
 # Proof-only active-order presentations of unchanged sparse equations
 
@@ -16,6 +17,8 @@ representation contract concerns the represented polynomial, so cancelled terms 
 zero-exponent factors need no runtime trimming. This adapter restricts the semantic equation to
 its active prefix and supplies a concrete presentation at that order without executing a conversion.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ActiveOrderAdapter
 

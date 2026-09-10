@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.ExecutableRegularLift
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Iteration
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.ExecutableRegularLift
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Iteration
 /-!
 # Completeness of the executable regular lifting scan
 
@@ -15,6 +17,8 @@ characteristic bound ensure that each surviving prefix has exactly one next coef
 full residual and degree checks remain necessary, including when the requested degree is below the
 initial jet order. Predicate-call counters are not interpreted as runtime bounds here.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

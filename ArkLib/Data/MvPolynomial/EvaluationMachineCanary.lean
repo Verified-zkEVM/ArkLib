@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.EvaluationMachine
+
+public import ArkLib.Data.MvPolynomial.EvaluationMachine
 
 /-!
 # Concrete sparse-evaluation machine checks
@@ -13,6 +15,8 @@ The mixed case independently fixes the scalar result and every cost component. I
 indices, a constant term, and missing variables with positive and zero exponents. The remaining
 checks distinguish exhausted fuel from emission and exercise both empty input lists.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.EvaluationMachine
 

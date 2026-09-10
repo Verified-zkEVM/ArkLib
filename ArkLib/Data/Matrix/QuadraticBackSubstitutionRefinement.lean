@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticBackSubstitutionMachine
-import ArkLib.Data.Matrix.QuadraticPivotSolveRefinement
-import ArkLib.Data.Matrix.QuadraticForwardEchelonRefinement
+
+public import ArkLib.Data.Matrix.QuadraticBackSubstitutionMachine
+public import ArkLib.Data.Matrix.QuadraticPivotSolveRefinement
+public import ArkLib.Data.Matrix.QuadraticForwardEchelonRefinement
 
 /-!
 # Same-execution coordinate back substitution
@@ -16,6 +18,8 @@ row states. The actual execution solves all echelon equations and preserves supp
 coordinates; contradictory residuals are detected by base equality instructions. Bounds depend
 only on input dimensions. Nonsquareness certifies inverse semantics, never runtime dispatch.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticBackSubstitutionMachine
 

@@ -3,15 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterSemantics
-import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CandidateFilterSemantics
+public import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
 /-!
 # Raw-coordinate candidate descent and filtering
 
 The descent cursor tests each imaginary coordinate and builds the base coefficient list one
 cell at a time. The existing base-field filter then runs unchanged, with all child charges.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CoordinateCandidateMachine
 

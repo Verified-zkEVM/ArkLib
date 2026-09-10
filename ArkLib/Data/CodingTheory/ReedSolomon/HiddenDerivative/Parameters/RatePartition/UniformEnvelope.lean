@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.ClosedRatio
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.UniformGamma
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.ClosedRatio
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.UniformGamma
 
 /-!
 # A uniform interpolation envelope for each actual code rate
@@ -15,6 +18,8 @@ The high-rate branch keeps the actual message ambient degree. The low-rate branc
 certificates and executable search witnesses use this same choice and retain the actual `k,A`
 in their agreement gap.
 -/
+
+@[expose] public section
 
 noncomputable section
 

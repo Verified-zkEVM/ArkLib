@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
+
+public import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
 
 /-!
 # Coordinate descent execution regressions
@@ -12,6 +14,8 @@ import ArkLib.Data.QuadraticAlgebra.CoefficientDescentSemantics
 The tests retain leading zeros, reject an interior non-base coefficient and distinguish output
 preparation from final emission. They use kernel reduction, not a trusted native computation.
 -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.CoefficientDescentMachine
 

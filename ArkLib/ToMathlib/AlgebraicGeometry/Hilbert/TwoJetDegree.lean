@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
 
 /-!
 # Degree of a curve in the two-jet monomial presentation
@@ -15,6 +17,8 @@ Their number is the truncated-triangle count `S(b,c)`. On a source curve of tota
 leaves linear growth with coefficient `j*c+r*(b-c)`. This is the fiber-degree counterpart
 of the joint challenge/jet degree bound.
 -/
+
+@[expose] public section
 
 noncomputable section
 

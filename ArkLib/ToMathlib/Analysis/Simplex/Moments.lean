@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Analysis.Simplex.AffinePushforward
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
-import Mathlib.NumberTheory.Harmonic.Defs
+
+public import ArkLib.ToMathlib.Analysis.Simplex.AffinePushforward
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
+public import Mathlib.NumberTheory.Harmonic.Defs
 
 /-!
 # First three moments on weighted simplices
@@ -16,6 +18,8 @@ We compute moments of `R(u) = Σ_i u_i` by transporting to the ordinary simplex.
 `t_i = (i+1)u_i`, the normalized variable `R/W` is the harmonic linear form
 `Σ_i t_i/(i+1)`.
 -/
+
+@[expose] public section
 
 open MeasureTheory Set
 open scoped BigOperators

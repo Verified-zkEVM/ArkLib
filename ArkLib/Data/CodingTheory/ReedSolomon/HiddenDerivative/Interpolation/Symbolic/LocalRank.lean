@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Translation
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Translation
 
 
 /-!
@@ -15,6 +17,8 @@ Translation in the global `X` and `Y₀` variables preserves the weighted suppor
 constraint at an arbitrary point is therefore the zero-point constraint precomposed with a
 linear automorphism of the support, so its actual rank is independent of the point.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

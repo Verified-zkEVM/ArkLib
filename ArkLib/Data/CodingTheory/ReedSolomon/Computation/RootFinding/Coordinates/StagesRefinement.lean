@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.StagesMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.CentersRefinement
-import ArkLib.Data.MvPolynomial.CoordinateChainRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.StagesMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.CentersRefinement
+public import ArkLib.Data.MvPolynomial.CoordinateChainRefinement
 /-!
 # Same-execution coordinate stage records
 
@@ -14,6 +16,8 @@ All original equations, selected indices, previous-equation order, separants, ce
 coefficient lists remain in the emitted records. The constant factor bounds the entire source
 execution, including all invalid-stage and child failure paths, without compounding by stages.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticStageRootsMachine
 

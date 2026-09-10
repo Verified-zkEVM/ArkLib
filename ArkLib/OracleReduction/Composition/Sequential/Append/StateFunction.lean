@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, scaraven
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
 
 /-!
   # Sequential Composition: Extractors and State Functions
@@ -17,6 +18,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Basic
   the adversary already won the first half, or is winning the second. A losing composed state
   therefore retains the first-half premise needed to start the second state function.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec
 
@@ -45,7 +48,7 @@ def Straightline.append (E₁ : Extractor.Straightline oSpec Stmt₁ Wit₁ Wit�
 
 /-- The composed round-by-round witness motive of `Extractor.RoundByRound.append`, evaluated at an
 index lying in the first protocol's range, is the first extractor's witness type. -/
-private lemma wit_mid_append_left {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
+lemma wit_mid_append_left {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
     (i : Fin (m + n + 1)) (j : Fin (m + 1)) (hij : i.val = j.val) :
     (Fin.append (m := m + 1) WitMid₁ (Fin.tail WitMid₂) ∘ Fin.cast (by omega)) i = WitMid₁ j := by
   have hcast : Fin.cast (show m + n + 1 = m + 1 + n by omega) i = Fin.castAdd n j := by
@@ -54,7 +57,7 @@ private lemma wit_mid_append_left {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ 
 
 /-- The composed round-by-round witness motive of `Extractor.RoundByRound.append`, evaluated at an
 index lying in the second protocol's range, is the second extractor's witness type. -/
-private lemma wit_mid_append_right {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
+lemma wit_mid_append_right {WitMid₁ : Fin (m + 1) → Type} {WitMid₂ : Fin (n + 1) → Type}
     (i : Fin (m + n + 1)) (j : Fin (n + 1)) (hij : i.val = m + j.val) (hj : 0 < j.val) :
     (Fin.append (m := m + 1) WitMid₁ (Fin.tail WitMid₂) ∘ Fin.cast (by omega)) i = WitMid₂ j := by
   have hjn := j.isLt

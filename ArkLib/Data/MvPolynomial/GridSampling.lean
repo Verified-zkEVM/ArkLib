@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-import Mathlib.Algebra.MvPolynomial.CommRing
-import Mathlib.LinearAlgebra.Matrix.ToLin
+
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.Algebra.MvPolynomial.CommRing
+public import Mathlib.LinearAlgebra.Matrix.ToLin
 
 /-!
 # Anisotropic grid sampling
@@ -19,6 +21,8 @@ These are algebraic refinement interfaces for recovering interpolation-constrain
 They do not implement grid enumeration or matrix solving and make no computational cost claim.
 The proof uses Mathlib's degree-sensitive Schwartz--Zippel theorem.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

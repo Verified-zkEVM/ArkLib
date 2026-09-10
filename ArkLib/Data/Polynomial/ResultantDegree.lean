@@ -3,10 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph, Quang Dao
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 
 /-!
 # Coefficient-variable degree bounds for resultants
@@ -28,6 +29,8 @@ No donor compatibility modules are imported.
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
   *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Section 3.2.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Attempts
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Eligibility
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Search.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.Attempts
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Eligibility
 /-!
 # Total search, bounded failed attempts, and prescribed weighted-support success
 
@@ -16,6 +18,8 @@ Descending
 order ensures the returned degree is at least the prescribed successful degree, preserving
 the separant field-size slack rather than weakening it at an earlier ambient candidate.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.AmbientSearchMachine
 

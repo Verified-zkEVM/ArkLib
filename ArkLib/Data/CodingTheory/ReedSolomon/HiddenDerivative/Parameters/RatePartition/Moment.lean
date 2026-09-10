@@ -3,13 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.OrderedSimplex
-import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
-import Mathlib.MeasureTheory.Integral.Layercake
-import Mathlib.MeasureTheory.Integral.Gamma
-import Mathlib.MeasureTheory.Group.MeasurableEquiv
-import Mathlib.Analysis.Calculus.Deriv.MeanValue
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.OrderedSimplex
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+public import Mathlib.MeasureTheory.Integral.Layercake
+public import Mathlib.MeasureTheory.Integral.Gamma
+public import Mathlib.MeasureTheory.Group.MeasurableEquiv
+public import Mathlib.Analysis.Calculus.Deriv.MeanValue
 
 /-!
 # Maximum-coordinate moments for the rate-partition simplex
@@ -19,6 +21,8 @@ coordinate is deliberately excluded.  Sorting the genuine coordinates decomposes
 simplex into `d!` chambers, and the determinant-one cumulative map identifies one chamber with
 the weighted simplex having weights `1, ..., d`.
 -/
+
+@[expose] public section
 
 open MeasureTheory Set
 open scoped BigOperators ENNReal

@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveSupportCertificate
 /-!
 # List bounds from a finite differential certificate
@@ -21,6 +22,8 @@ is exactly `ν² * (2ν/δ)^d`, without tying the jet budget to multiplicity.
 The numerical rate constructions consume this theorem after constructing their
 equation and verifying the ambient dimension and characteristic guards.
 -/
+
+@[expose] public section
 
 noncomputable section
 

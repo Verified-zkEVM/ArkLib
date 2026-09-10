@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FiniteHeadProgram
+
+public import ArkLib.Data.Computation.FiniteHeadProgram
 
 /-!
 # Static physical placement of a finite-head program
@@ -15,6 +17,8 @@ There is one runtime bank. Projection and framing are proof-side descriptions of
 never instructions that copy, mirror or rename whole words. Placement preserves the exact count
 of simultaneous finite-head transitions; it is not a serial bit-RAM or heap compiler.
 -/
+
+@[expose] public section
 
 namespace Computation.FiniteHeadProgramPlacement
 

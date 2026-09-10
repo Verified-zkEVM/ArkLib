@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
-import Mathlib.Tactic.LinearCombination
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import Mathlib.Tactic.LinearCombination
 /-!
 # Finite common-agreement pairs and simultaneous specialization
 
@@ -14,6 +15,8 @@ each pair is the pair of interpolants on some `k`-sample. A finite family of dis
 pairs specializes injectively at some challenge in every infinite extension field,
 even after excluding an arbitrary finite set of auxiliary challenges.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

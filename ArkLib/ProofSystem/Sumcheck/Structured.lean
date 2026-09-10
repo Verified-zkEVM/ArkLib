@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.RestrictDegree
-import ArkLib.ProofSystem.Sumcheck.Domain
+public import ArkLib.Data.MvPolynomial.RestrictDegree
+public import ArkLib.ProofSystem.Sumcheck.Domain
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Types and Helpers
@@ -44,6 +45,8 @@ modes carry independent proofs.
 - `SumcheckWitness` — per-round witness `(t', H)` (the committed multilinear + projected
   round polynomial).
 -/
+
+@[expose] public section
 
 noncomputable section
 

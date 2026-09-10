@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.VandermondeMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+
+public import ArkLib.Data.Matrix.VandermondeMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 
 /-!
 # Vandermonde construction by quadratic coordinate instructions
@@ -20,6 +22,8 @@ The ledger preserves source administrative fields, charges seed slots/constants,
 every base instruction and wrapper, and return. Outer save adds the root write beyond its two
 reads and two cell-slot writes. Input preparation, host fuel and compiled/bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticVandermondeMachine
 

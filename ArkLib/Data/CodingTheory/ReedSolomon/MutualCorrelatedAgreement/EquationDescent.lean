@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
 /-!
 # Descending equation-restricted correlated agreement
 
@@ -13,6 +15,8 @@ Mapping coefficients commutes with challenge and differential specialization. Co
 an exceptional set over an extension descends even when its transfer theorem applies only
 to polynomial roots of a symbolic equation.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 namespace ReedSolomon.HiddenDerivative

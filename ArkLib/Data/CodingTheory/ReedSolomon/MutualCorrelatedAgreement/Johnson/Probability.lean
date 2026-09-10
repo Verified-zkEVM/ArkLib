@@ -3,15 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Certificate
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Certificate
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 /-!
 # Finite-field Johnson MCA probability
 
 The characteristic-free exact-agreement theorem bounds the canonical affine-line bad event.
 Uniform challenge sampling divides its real exceptional-cardinality bound by the field size.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial HiddenDerivative CoreDefinitions LinearCode

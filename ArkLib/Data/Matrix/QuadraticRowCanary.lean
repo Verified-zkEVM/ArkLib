@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticRowRefinement
+
+public import ArkLib.Data.Matrix.QuadraticRowRefinement
 
 /-!
 # Kernel checks for coordinate row-add-multiple
@@ -13,6 +15,8 @@ Nontrivial coordinate products, ordered entries and literal ledgers test both ar
 and explicit output allocation. Empty and mismatched rows test terminal paths. A deliberately
 different saved payload checks that suspended calls do not reconstruct their inputs.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticRowMachine
 

@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
-import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
-import Mathlib.LinearAlgebra.FreeModule.StrongRankCondition
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Space
+public import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+public import Mathlib.LinearAlgebra.FreeModule.StrongRankCondition
 /-!
 # A rectangular lower bound on global interpolation dimension
 
@@ -19,6 +20,8 @@ All rounding loss is exposed in the natural-number hypotheses `H ≤ m`, `C + 2H
 `rs-ld-mca` formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`. The adaptation
 repairs the Lean 4.33 `Finsupp.embDomain` API change and makes the coefficient field generic.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

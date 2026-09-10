@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListPreparedRead
+
+public import ArkLib.Data.Computation.SharedListPreparedRead
 
 /-!
 # Literal uncons of a represented shared list
@@ -19,6 +21,8 @@ bounded run returns either empty or its exact first word and a pointer represent
 For unrepresented nonzero pointers the actual reader may reject or return arbitrary heap data;
 no successful list semantics are asserted. The empty branch depends only on pointer bits.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListUncons
 

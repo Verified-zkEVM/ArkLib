@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.QuadraticAlgebra.CoordinateAlphabetMachine
+
+public import ArkLib.Data.QuadraticAlgebra.CoordinateAlphabetMachine
 
 /-! # Kernel checks of explicit coordinate materialization and its allocation ledger -/
+
+@[expose] public section
 
 namespace QuadraticAlgebra.CoordinateAlphabetMachine
 

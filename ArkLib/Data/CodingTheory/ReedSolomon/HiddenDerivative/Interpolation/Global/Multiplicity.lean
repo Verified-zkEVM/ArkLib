@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SpecializationDegree
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Contact
-import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SpecializationDegree
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Contact
+public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 /-!
 # Global multiplicity for hidden-derivative specialization
 
@@ -19,6 +21,8 @@ The local-contact and specialization-degree layers supply the two polynomial hyp
 final interpolation theorem. Keeping their composition separate here leaves the root-counting
 argument independent of the definitions used to obtain local contact and the degree budget.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

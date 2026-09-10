@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Excluded
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Excluded
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
 
 /-!
 # Sharp agreement incidence outside an excluded locus
@@ -17,6 +19,8 @@ The excluded set need not be algebraic and contributes no additional degree fact
 Keeping the actual number of identically vanishing cuts in both incidence counts gives
 the ratio `(n-L+1)/(A-L+1)` throughout the recursive argument.
 -/
+
+@[expose] public section
 
 noncomputable section
 

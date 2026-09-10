@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.DenseNormalizeMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
+
+public import ArkLib.Data.MvPolynomial.DenseNormalizeMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationMachine
 
 /-!
 # Coordinate sparse normalization
@@ -14,6 +16,8 @@ The original insertion and factor-key cursors are retained. Coefficient addition
 execute the actual base arithmetic programs, with retained operands, zero literals and costs.
 Cancellation drops the same term; duplicate keys and input order receive no bulk processing.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticNormalizeMachine
 

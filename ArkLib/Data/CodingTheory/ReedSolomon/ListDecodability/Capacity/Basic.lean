@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.Capacity
 /-!
 # Capacity-gap parameters and list-bound certificates
 
@@ -36,6 +38,8 @@ specifications.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], manuscript.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

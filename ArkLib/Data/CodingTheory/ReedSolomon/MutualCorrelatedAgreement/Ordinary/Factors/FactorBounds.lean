@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
-import Mathlib.Tactic.Zify
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Ring
+public import Mathlib.Tactic.Zify
 /-!
 # Degree arithmetic for an ordinary Frobenius factor
 
@@ -15,6 +16,8 @@ These arithmetic bounds account for the pulled reconstruction degree and the sma
 separable fiber degree together. They do not assert existence of the rational chart or its
 image-degree bound; those geometric inputs must be proved separately.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

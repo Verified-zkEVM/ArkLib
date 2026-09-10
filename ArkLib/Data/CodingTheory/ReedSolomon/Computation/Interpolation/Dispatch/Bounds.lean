@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Dispatch.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Dispatch.Machine
 /-!
 # Field-size bounds for the actual interpolation dispatch budget
 
@@ -13,6 +14,8 @@ five in q with every order/multiplicity dependence confined to the coefficient. 
 the tighter public matrix budget, so growing multiplicity has an absolute polynomial exponent.
 All bounds include failed attempts and empty search intervals; no success premise is required.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.InterpolationDispatch
 

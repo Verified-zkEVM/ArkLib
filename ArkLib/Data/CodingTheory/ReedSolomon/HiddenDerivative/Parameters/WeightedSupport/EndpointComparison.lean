@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
-import Mathlib.Analysis.SpecialFunctions.Exp
-import Mathlib.Tactic.GCongr
+public import Mathlib.Analysis.SpecialFunctions.Exp
+public import Mathlib.Tactic.GCongr
 
 /-!
 # Exact endpoint comparison for the no-band support
@@ -17,6 +18,8 @@ The dimension lower bound has two useful terms. At high rates the cubic baseline
 the final comparison cannot silently discard either contribution. At low rates the cubic baseline
 alone has ample room; an eighth-degree Taylor polynomial certifies that branch.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.WeightedSupportParameters
 

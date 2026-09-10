@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.WordCopyMachine
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
-import ArkLib.Data.Computation.BinaryWordSemantics
+
+public import ArkLib.Data.Computation.WordCopyMachine
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+public import ArkLib.Data.Computation.BinaryWordSemantics
 
 /-!
 # Actual pair-coordinate emission from scalar registers
@@ -16,6 +18,8 @@ register, all five input words, the modulus and flags. Source indices may coinci
 words are restored through actual copy instructions. Output tapes are blank at entry. The final
 pair is the pair of actual emitted words; there is no host pair-allocation or encoding primitive.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitPair
 

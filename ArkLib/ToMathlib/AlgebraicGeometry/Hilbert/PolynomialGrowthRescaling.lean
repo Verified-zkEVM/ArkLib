@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Degree
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Degree
 
 /-!
 # Polynomial growth under linear rescaling
@@ -13,6 +15,8 @@ Comparison on a tail of the natural numbers preserves polynomial degree under a
 positive linear rescaling. This supplies the growth-exponent step for filtrations
 related by a fixed multiplicative change of their degree bound.
 -/
+
+@[expose] public section
 
 noncomputable section
 

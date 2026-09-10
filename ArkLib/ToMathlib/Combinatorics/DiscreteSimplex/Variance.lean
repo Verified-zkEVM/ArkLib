@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Combinatorics.DiscreteSimplex.Moments
-import Mathlib.Data.Real.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
+
+public import ArkLib.ToMathlib.Combinatorics.DiscreteSimplex.Moments
+public import Mathlib.Data.Real.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Weighted moments and variance of a finite simplex
@@ -17,6 +19,8 @@ arbitrary real numbers. The exact variance retains `S * (S + d)`, where `d = r +
 this factor by `S²` would discard the finite-size correction. No continuous-volume or optimized
 parameter claim is made here.
 -/
+
+@[expose] public section
 
 namespace DiscreteSimplex
 

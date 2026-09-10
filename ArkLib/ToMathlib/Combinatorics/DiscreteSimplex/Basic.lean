@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng, Pratyush Mishra, Quang Dao
 -/
+module
 
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Data.Sym.Card
-import Mathlib.Data.Finsupp.Multiset
+
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Data.Sym.Card
+public import Mathlib.Data.Finsupp.Multiset
 
 /-!
 # Finite discrete simplices
@@ -16,6 +18,8 @@ by adjoining a slack coordinate. These results are independent of polynomial int
 Adapted with permission from `kz99/rs-ld-mca`, revision
 `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`; see the repository permission record.
 -/
+
+@[expose] public section
 
 namespace DiscreteSimplex
 open scoped BigOperators
@@ -27,17 +31,17 @@ def OrdinarySimplex (r z : ℕ) :=
 
 /-! ## Stars and bars for the ordinary comparison simplex -/
 
-private def ExactSimplex (r z : ℕ) :=
+def ExactSimplex (r z : ℕ) :=
   {a : Fin (r + 1) → ℕ // ∑ i, a i = z}
 
-private def ordinaryToExact (r z : ℕ) (a : OrdinarySimplex r z) :
+def ordinaryToExact (r z : ℕ) (a : OrdinarySimplex r z) :
     ExactSimplex r z :=
   ⟨Fin.lastCases (z - ∑ i, a.1 i) a.1, by
     rw [Fin.sum_univ_castSucc]
     simp only [Fin.lastCases_castSucc, Fin.lastCases_last]
     exact Nat.add_sub_of_le a.2⟩
 
-private def exactToOrdinary (r z : ℕ) (a : ExactSimplex r z) :
+def exactToOrdinary (r z : ℕ) (a : ExactSimplex r z) :
     OrdinarySimplex r z :=
   ⟨fun (i : Fin r) ↦ a.1 i.castSucc, by
     change (∑ i : Fin r, a.1 i.castSucc) ≤ z

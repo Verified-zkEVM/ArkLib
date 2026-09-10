@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Global.Multiplicity
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.ExtensionRootCount
 /-!
 # Pointwise list bounds from a hidden-derivative interpolant
@@ -21,6 +23,8 @@ The cardinality adapters then compare the canonical point list directly with the
 type.  The final theorem applies the unconditional differential root count.  It makes no claim
 about computing the list or the running time of a decoder.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

@@ -3,8 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
-import ArkLib.Data.Polynomial.UnivariateRepresentation.Point
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.RationalRepresentationDecoder
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.Point
+
+-- The chart-evaluation bridge reduces the computable-polynomial semantic conversion.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 
 /-!
 # Applying a Taylor chart to a rational univariate jet map
@@ -24,6 +30,8 @@ translation belongs BEFORE this operation: translating every higher Taylor coeff
 be incorrect. The `center` here is the message's Taylor expansion center, distinct from any
 scalar used to translate the square system into a torus chart.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.TaylorChartMap
 open CompPoly CompPoly.CPolynomial

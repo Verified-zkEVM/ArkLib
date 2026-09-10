@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
+
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
 # Polynomial support satisfying a weight inequality
@@ -14,6 +16,8 @@ A comparison of two additive monomial weights is closed under addition and multi
 The resulting subalgebra tracks Taylor order: give later coefficient variables their first
 possible Taylor order, and compare their total weight with the exponent of the Taylor variable.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

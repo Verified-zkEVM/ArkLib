@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.SharpRegularEquation
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.ProductBounds
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.ProductBounds
 /-!
 # Sharp regular polynomial-curve bounds at arbitrary derivative order
 
@@ -30,6 +31,8 @@ dimension-sensitive source recurrence after the terminal graph factor. The secon
 exact `ell*(n-L)` accidental-root count for each admissible tuple, combined with the fixed-chart
 coefficient-space recurrence.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

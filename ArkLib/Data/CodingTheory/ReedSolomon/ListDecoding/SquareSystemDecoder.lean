@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ComputedTaylorMap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.SystemList
-import ArkLib.Data.Polynomial.Rojas.AffineSolver
-import ArkLib.ToCompPoly.Multivariate.BaseChange
+public import ArkLib.Data.Polynomial.Rojas.AffineSolver
+public import ArkLib.ToCompPoly.Multivariate.BaseChange
 
 /-!
 # Square-system decoding with an explicit torus backend
@@ -24,6 +25,8 @@ remaining sparse-elimination obligation; the wrapper does not manufacture a resu
 or a runtime theorem. Extra roots need no differential-equation filter: the final agreement test
 is exactly the acceptance condition in the paper.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.SquareSystemDecoder
 open PolynomialDifferential ReedSolomon.HiddenDerivative ReedSolomon.HiddenDerivative.SquareSystems

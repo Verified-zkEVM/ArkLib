@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Semantics
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
-import ArkLib.Data.Polynomial.CoefficientList
-import CompPoly.Univariate.Deriv
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
+public import ArkLib.Data.Polynomial.CoefficientList
+public import CompPoly.Univariate.Deriv
 
 /-!
 # Materializing a quotient lift for agreement recovery
@@ -21,6 +22,8 @@ Reduction includes the constant coefficient. This matters even for linear moduli
 initial parameter polynomial `U` is not itself reduced. Specialization at a root of `h` is
 unchanged by every reduction, so the resulting finite representation still covers the message.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.Ordinary.QuotientLift
 open CompPoly CompPoly.CPolynomial

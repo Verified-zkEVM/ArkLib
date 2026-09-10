@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotEliminationMachine
-import Mathlib.Tactic.Ring
+
+public import ArkLib.Data.Matrix.PivotEliminationMachine
+public import Mathlib.Tactic.Ring
 
 /-!
 # Charged pivot selection on augmented rows
@@ -21,6 +23,8 @@ cell allocation and tagged output. Row handles and untouched tails are shared. A
 returns head and tail together; constants, input materialization, reclamation, interpreter
 bookkeeping and scalar bit costs are outside this model. No bulk list operation is dispatched.
 -/
+
+@[expose] public section
 
 namespace Matrix.PivotSelectionMachine
 

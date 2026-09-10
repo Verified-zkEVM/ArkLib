@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 /-!
 # Evaluation-and-tail coordinates for square-system capture
 
@@ -15,6 +16,8 @@ Vandermonde-plus-tail input to the Reed--Solomon square-subsystem argument. The 
 the ambient chart precision `K` separate from the actual message dimension `k`, including
 `K = k` where the tail is empty.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

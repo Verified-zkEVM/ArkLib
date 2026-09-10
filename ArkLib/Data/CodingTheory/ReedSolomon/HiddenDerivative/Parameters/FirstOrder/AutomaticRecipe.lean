@@ -3,16 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Order.Floor.Ring
-import Mathlib.Analysis.SpecialFunctions.Sqrt
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Lean.Elab.Tactic.Omega
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Algebra.Order.Floor.Ring
+public import Mathlib.Analysis.SpecialFunctions.Sqrt
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Lean.Elab.Tactic.Omega
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # Automatic finite parameters for first-order interpolation
@@ -39,6 +40,8 @@ the finite source-minus-rank surplus remains positive after rounding, and that `
 scaled kernel quotient. The coding-theoretic certificate and characteristic transfer remain in
 their owner modules.
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

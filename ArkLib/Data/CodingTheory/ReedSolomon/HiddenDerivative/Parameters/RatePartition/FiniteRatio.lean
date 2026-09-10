@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Gate
-import Mathlib.Analysis.SpecificLimits.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Gate
+public import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
 # Finite partition ratio and its strict-margin search
@@ -19,6 +20,8 @@ As multiplicity increases this ratio tends to `rateGamma R a d`. Thus every stri
 limiting gate permits a finite multiplicity, even when its margin is smaller than
 the fixed `exp(-1/1000)` loss used by the uniform construction.
 -/
+
+@[expose] public section
 
 noncomputable section
 

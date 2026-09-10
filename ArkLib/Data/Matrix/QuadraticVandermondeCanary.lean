@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticVandermondeRefinement
+
+public import ArkLib.Data.Matrix.QuadraticVandermondeRefinement
 
 /-!
 # Kernel checks for coordinate Vandermonde construction
@@ -13,6 +15,8 @@ Repeated points with distinct values test row order and pairing. Empty and zero-
 check allocation and output charges. The final unused power still executes, and arithmetic
 calls use their retained payload rather than reconstructing it from the surrounding frame.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticVandermondeMachine
 

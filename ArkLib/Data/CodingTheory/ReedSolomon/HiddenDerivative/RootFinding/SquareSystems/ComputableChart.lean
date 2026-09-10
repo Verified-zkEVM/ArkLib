@@ -3,15 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.ConcreteEquation
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Chart
-import ArkLib.ToCompPoly.Multivariate.PartialDerivative
-import ArkLib.ToCompPoly.Multivariate.Substitution
-import ArkLib.ToCompPoly.Multivariate.HeadCoefficient
-import ArkLib.ToCompPoly.Multivariate.Eval
+public import ArkLib.ToCompPoly.Multivariate.PartialDerivative
+public import ArkLib.ToCompPoly.Multivariate.Substitution
+public import ArkLib.ToCompPoly.Multivariate.HeadCoefficient
+public import ArkLib.ToCompPoly.Multivariate.Eval
 /-!
 # Computable initial Taylor-chart equations
 
@@ -20,6 +21,8 @@ keeping the initial jet variables symbolic. The denominator is obtained by diffe
 concrete equation in its highest jet variable before specialization. Their semantic theorems make
 the resulting `CMvPolynomial`s usable with the existing rational Taylor chart.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.SquareSystems
 

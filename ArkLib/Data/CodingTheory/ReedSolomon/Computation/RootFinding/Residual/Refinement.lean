@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Semantics
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Semantics
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticSystemRefinement
-import ArkLib.Data.Matrix.QuadraticBackSubstitutionRefinement
+public import ArkLib.Data.Matrix.QuadraticBackSubstitutionRefinement
 /-!
 # Same-execution coordinate coefficient recovery
 
@@ -16,6 +17,8 @@ Source phases lower to actual system and back-substitution instructions with cha
 allocation. Raw input representations, degree bounds and distinct supplied samples identify
 every emitted coefficient. The same execution satisfies a bound from original input structure.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualCoefficientMachine
 

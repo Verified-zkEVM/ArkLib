@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kai Zhe Zheng
 -/
+module
 
-import ArkLib.Data.Polynomial.Differential.Types
-import Mathlib.Data.Finsupp.Weight
-import Mathlib.RingTheory.MvPolynomial.Basic
+public import ArkLib.Data.Polynomial.Differential.Types
+public import Mathlib.Data.Finsupp.Weight
+public import Mathlib.RingTheory.MvPolynomial.Basic
 
 
 /-!
@@ -27,6 +28,8 @@ generic here; the source stated the space over `ZMod q`.
 `JetVariable d` is definitionally `Option (Fin (d + 1))`. The constructor `none` denotes `X`,
 and `some j` denotes `Y_j`. Downstream differential-polynomial code should reuse this type.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

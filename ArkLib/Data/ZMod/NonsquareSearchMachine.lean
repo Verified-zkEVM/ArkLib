@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.FieldTheory.Finite.Basic
+
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Closed nonsquare search
@@ -17,6 +19,8 @@ performed: odd primality guarantees success, while returned values are sound for
 Costs are abstract scalar/register operations, excluding input materialization, host fuel,
 reclamation and integer/field bit costs. This does not construct an extension field.
 -/
+
+@[expose] public section
 
 namespace ZMod.NonsquareSearchMachine
 

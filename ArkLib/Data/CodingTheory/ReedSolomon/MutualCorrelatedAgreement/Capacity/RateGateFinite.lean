@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.RateGateCertificate
 /-!
 # Exact finite rate-gate curve agreement
@@ -14,6 +16,8 @@ The actual variable-margin certificate chooses its exceptional set before the
 challenge and candidate. The final conclusion is exact power agreement, with
 the literal product-counting scalar and no replacement list-size assumption.
 -/
+
+@[expose] public section
 
 noncomputable section
 

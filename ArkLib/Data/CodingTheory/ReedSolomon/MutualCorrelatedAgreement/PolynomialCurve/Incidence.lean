@@ -3,16 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ChunkedPowerLift
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.GraphAdmissibility
-import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Hypersurface
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
-import ArkLib.Data.MvPolynomial.WeightedDegree
-import Mathlib.SetTheory.Cardinal.NatCard
+public import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Hypersurface
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteAlgebraGrowth
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
+public import ArkLib.Data.MvPolynomial.WeightedDegree
+public import Mathlib.SetTheory.Cardinal.NatCard
 /-!
 # Incidence away from admissible polynomial graphs
 
@@ -24,6 +25,8 @@ The power-moment lift charges the batching degree once in the affine degree of i
 Its source-level incidence theorem retains stage order `r`, has overall linear batching-degree
 dependence, and raises only the batching-independent lifted cut degree to `r + 1`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

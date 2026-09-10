@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldExecution
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SeparateSample.SeparateSampleFieldExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 
 /-!
 # Capacity list bounds for the actual physical decoder output
@@ -17,6 +19,8 @@ bounds therefore apply to this same output, including zero. No new output is sel
 executable instruction or cost claim is added. This module uses the underlying list-bound owner
 results without importing the capacity capstone, which can import this bridge in turn.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CapacityOutputBounds
 

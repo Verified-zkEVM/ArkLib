@@ -3,10 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.CentersMachine
-import ArkLib.Data.MvPolynomial.CoordinateChainMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.CentersMachine
+public import ArkLib.Data.MvPolynomial.CoordinateChainMachine
 /-!
 # Coordinate stage-root generation
 
@@ -15,6 +18,8 @@ loop with a retained input record. Contexts, pending records, outer cells and ou
 explicit. Invalid or missing stages and child failures retain the source failure tags. All child
 instructions, initialization roots and input payloads are charged.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticStageRootsMachine
 

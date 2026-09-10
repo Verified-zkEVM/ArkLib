@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
-import Mathlib.Data.Finsupp.PWO
-import Mathlib.RingTheory.MvPolynomial.Groebner
-import Mathlib.RingTheory.MvPolynomial.MonomialOrder.DegLex
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Function
+public import Mathlib.Data.Finsupp.PWO
+public import Mathlib.RingTheory.MvPolynomial.Groebner
+public import Mathlib.RingTheory.MvPolynomial.MonomialOrder.DegLex
 
 /-!
 # Standard monomials for actual affine quotient filtrations
@@ -17,6 +19,8 @@ increasing total degree. Standard representatives are unique, because a nonzero 
 of the ideal cannot have a standard leading monomial. This constructs the actual normal
 space used to reduce affine Hilbert functions to monomial counting.
 -/
+
+@[expose] public section
 
 noncomputable section
 

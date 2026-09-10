@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.PaddedNegate
+
+public import ArkLib.Data.Computation.PaddedNegate
 
 /-! # Kernel checks for retained-modulus negation and fixed-width output -/
+
+@[expose] public section
 
 namespace Computation.PaddedNegate
 

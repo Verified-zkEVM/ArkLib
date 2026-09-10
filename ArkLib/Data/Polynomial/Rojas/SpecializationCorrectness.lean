@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.Rojas.HyperplaneAvoidance
-import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
-import Mathlib.FieldTheory.IsAlgClosed.Basic
-import Mathlib.FieldTheory.Perfect
+module
+
+public import ArkLib.Data.Polynomial.Rojas.HyperplaneAvoidance
+public import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
+public import Mathlib.FieldTheory.IsAlgClosed.Basic
+public import Mathlib.FieldTheory.Perfect
 
 /-!
 # Correctness of computed Rojas specialization families
@@ -16,6 +18,8 @@ factorization supplied by the toric perturbation theorem.  The factorization
 is an explicit premise: this module neither constructs a toric resultant nor
 assumes that an arbitrary polynomial has the required factors.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Rojas
 

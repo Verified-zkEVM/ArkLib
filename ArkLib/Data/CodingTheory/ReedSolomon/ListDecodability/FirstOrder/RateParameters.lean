@@ -3,12 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.RateCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateLimits
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateLimits
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 /-!
 # First-order rate-dependent list bounds
 
@@ -16,6 +18,8 @@ The finite parameter certificate is selected before the block length and receive
 word. Its equation explains the entire close list. Summing the successive jet
 degrees gives the advertised square-sum constant.
 -/
+
+@[expose] public section
 
 noncomputable section
 

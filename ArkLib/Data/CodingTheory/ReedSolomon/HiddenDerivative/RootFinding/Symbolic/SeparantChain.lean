@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.SingularRecursion
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.SingularRecursion
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
 /-!
 # Symbolic separant chains with actual active orders
@@ -15,6 +17,8 @@ highest active jet, and its successor is the corresponding formal partial deriva
 Total jet degree bounds the chain length; each individual jet degree bounds the number
 of times that jet can be selected. Thus a first-derivative cap survives the construction.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

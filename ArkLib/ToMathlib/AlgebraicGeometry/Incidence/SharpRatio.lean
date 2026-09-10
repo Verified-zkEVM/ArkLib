@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
 
 /-!
 # The coupled good-cut incidence ratio
@@ -12,6 +14,8 @@ import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
 Keeping the number of identically vanishing cuts in both numerator and denominator
 gives the sharp ratio used by the finite agreement incidence induction.
 -/
+
+@[expose] public section
 
 namespace AffineHilbert
 

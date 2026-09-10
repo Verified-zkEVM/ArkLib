@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
-import Mathlib.Algebra.BigOperators.Intervals
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import Mathlib.Algebra.BigOperators.Intervals
 /-!
 # The exact order-zero local image is triangular
 
@@ -14,6 +16,8 @@ has E exponent at most T exponent. The actual contact projection retains T expon
 so the full local map, even on its infinite-dimensional domain, has triangular finite rank.
 This local result alone is not a global interpolation witness or a small-block decoder.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

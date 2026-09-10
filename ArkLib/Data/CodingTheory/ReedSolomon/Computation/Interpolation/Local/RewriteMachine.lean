@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.Translate
-import Mathlib.Data.List.OfFn
-import Mathlib.Data.List.Range
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Local.Translate
+public import Mathlib.Data.List.OfFn
+public import Mathlib.Data.List.Range
 /-!
 # Charged local U expansion and contact projection
 
@@ -21,6 +22,8 @@ Garbage collection and arithmetic bit costs are outside this unit-operation mode
 Final dense terms have layout [T,E,Y1,...,Yd]. Duplicate exponent vectors and zero coefficients
 are retained. Full-vector equality and duplicate-aware lookup are separately charged.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.LocalColumnRewriteMachine
 

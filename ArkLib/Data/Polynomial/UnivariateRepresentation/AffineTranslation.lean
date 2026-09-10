@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
+module
+
+public import ArkLib.Data.Polynomial.UnivariateRepresentation.Postprocess
 
 /-!
 # Undoing an affine chart in a rational univariate map
@@ -13,6 +15,8 @@ If translated coordinates satisfy `yᵢ = Nᵢ / B` and the affine chart was
 `xᵢ = (Nᵢ + c B) / B`.  This file performs that numerator update without
 changing the eliminant or denominator.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UnivariateRepresentation
 

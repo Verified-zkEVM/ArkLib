@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSampleRefinement
 /-!
 # Closed batches of residual samples
@@ -19,6 +20,8 @@ head and tail together; retained registers are shared and literals are free, as 
 machine. Host fuel, input preparation, point enumeration, scalar bit costs, and linear solving
 remain outside this contract. Duplicates are allowed; distinctness is a consumer requirement.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualBatchMachine
 

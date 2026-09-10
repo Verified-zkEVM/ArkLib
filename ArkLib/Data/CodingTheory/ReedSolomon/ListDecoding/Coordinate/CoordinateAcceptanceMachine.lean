@@ -3,15 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.GuardRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCandidateRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.GuardRefinement
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCandidateRefinement
 /-!
 # Actual coordinate canonical acceptance
 
 The guard executes raw-coordinate arithmetic instructions, followed by the raw-coordinate
 descent cursor and base-field candidate filter. Every child ledger and wrapper is retained.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticCanonicalAcceptanceMachine
 

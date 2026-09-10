@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.Nullstellensatz
-import Mathlib.RingTheory.Ideal.MinimalPrime.Noetherian
-import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
-import Mathlib.RingTheory.MvPolynomial.Basic
+
+public import Mathlib.RingTheory.Nullstellensatz
+public import Mathlib.RingTheory.Ideal.MinimalPrime.Noetherian
+public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
+public import Mathlib.RingTheory.MvPolynomial.Basic
 
 /-!
 # Finite prime covers of principal-open affine cuts
@@ -17,6 +19,8 @@ the denominator preserves every point of its principal open. Proper cuts strictl
 the parent prime and decrease the actual quotient Krull dimension by at least one.
 No multiplicity or geometric degree law is assumed here.
 -/
+
+@[expose] public section
 
 noncomputable section
 

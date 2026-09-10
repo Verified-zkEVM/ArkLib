@@ -3,15 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.Rat.Cast.Order
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
+public import Mathlib.Data.Rat.Cast.Order
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.DerivativeBidegree
 /-!
 # The finite first-order curve envelope
 
@@ -29,6 +30,8 @@ order-one joint count also uses the independent ratio from `k` directly to `A`.
 These definitions record the rational expression to be evaluated in concrete examples.
 This module alone makes no assertion about the cardinality of an exceptional set.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

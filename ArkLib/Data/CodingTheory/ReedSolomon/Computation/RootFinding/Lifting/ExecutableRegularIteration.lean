@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Step
 /-!
 # Executable iteration of regular coefficient lifting
 
@@ -18,6 +19,8 @@ public solution list additionally checks the final residual and degree bound.  T
 needed when `D < r`, where no lift stage runs and the supplied prefix need not itself have degree at
 most `D`.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 

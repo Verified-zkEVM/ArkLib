@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.LinearAlgebra.Vandermonde
+
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
 # Recovering bounded polynomial coefficients from scalar samples
@@ -18,6 +20,8 @@ These are mathematical refinement interfaces for a future costed sampling implem
 The theorems do not implement sampling, matrix construction, or linear-system solving, and
 attach no cost bound to an abstract solver.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

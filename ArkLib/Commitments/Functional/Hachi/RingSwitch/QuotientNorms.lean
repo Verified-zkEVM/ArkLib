@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
-import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
+module
+
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
+public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 
 /-!
 # Centered coefficient bounds for the honest lift quotient
@@ -52,6 +54,8 @@ representative bounds it. `valMinAbs_natAbs_mul_le` and `valMinAbs_natAbs_sum_le
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FiniteHeadProgram
-import ArkLib.Data.Computation.WordCopyMachine
+
+public import ArkLib.Data.Computation.FiniteHeadProgram
+public import ArkLib.Data.Computation.WordCopyMachine
 
 /-!
 # Literal finite-head implementation of retained word copying
@@ -15,6 +17,8 @@ source or scratch head is inspected in its respective phase. The three physical 
 source zero, scratch one and destination two. Every original word-copy transition, including
 arbitrary suspended entries and halt, is exactly one step of this finite-head program.
 -/
+
+@[expose] public section
 
 namespace Computation.WordCopyFiniteControl
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 
 /-!
 # Finite forward Hasse--Taylor truncations
@@ -17,6 +19,8 @@ need a finite jet plus a remainder divisible by `X ^ m`.
 Construction and coefficient lemmas require only a semiring.  Subtraction, the remainder, and its
 canonical quotient by the monic polynomial `X ^ m` are isolated in the `Ring` section.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 
@@ -45,7 +49,7 @@ theorem coeff_forwardTaylorTruncation (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
 
 /-- Forward Taylor truncation as an ambient-polynomial linear map, before restricting its
 codomain to `degreeLT`. -/
-private def forwardTaylorTruncationToPolynomial (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] where
+def forwardTaylorTruncationToPolynomial (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] where
   toFun := forwardTaylorTruncation m a
   map_add' p q := by
     ext i

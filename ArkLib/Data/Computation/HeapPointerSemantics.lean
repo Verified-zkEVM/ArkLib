@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.HeapPointerMachine
-import ArkLib.Data.Computation.BinaryWordSemantics
-import ArkLib.Data.Computation.SharedListCellMachine
-import Mathlib.Tactic.Linarith
+
+public import ArkLib.Data.Computation.HeapPointerMachine
+public import ArkLib.Data.Computation.BinaryWordSemantics
+public import ArkLib.Data.Computation.SharedListCellMachine
+public import Mathlib.Tactic.Linarith
 
 /-!
 # Fixed-width pointer labels and bump freshness
@@ -22,6 +24,8 @@ invariant at its successful successor, including when the cell is written by the
 Pointer increment and cell writing have separate traces here; no combined allocator handoff or
 allocation cost certificate is assumed. Nil is reserved independently of overflow behavior.
 -/
+
+@[expose] public section
 
 namespace Computation.HeapPointerSemantics
 

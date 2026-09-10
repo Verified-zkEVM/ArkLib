@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.BackSubstitutionMachine
+
+public import ArkLib.Data.Matrix.BackSubstitutionMachine
 
 /-!
 # Back-substitution execution regressions
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.BackSubstitutionMachine
 Kernel computations check literal results and independently counted costs, including nonzero
 supplied free coordinates, reverse pivot order, residual contradictions and output boundaries.
 -/
+
+@[expose] public section
 
 namespace Matrix.BackSubstitutionMachine
 

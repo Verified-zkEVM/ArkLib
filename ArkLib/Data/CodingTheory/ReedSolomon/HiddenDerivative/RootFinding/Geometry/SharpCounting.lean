@@ -3,15 +3,19 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpPrimeFamily
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Geometry.HighCutGeometry
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpPrimeFamily
 /-!
 # Sharp counting of regular Taylor-chart solutions
 
 Agreement at `A` positions gives the incidence ratio `(n-k+1)/(A-k+1)`.
 This fixed-word count is shared by list bounds and mutual correlated agreement.
 -/
+
+@[expose] public section
 
 noncomputable section
 

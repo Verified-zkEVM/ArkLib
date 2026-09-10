@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Field.Defs
-import Mathlib.Logic.Function.Basic
+
+public import Mathlib.Algebra.Field.Defs
+public import Mathlib.Logic.Function.Basic
 
 /-!
 # Atomic values and closed algebraic primitives
@@ -19,6 +21,8 @@ arithmetic, and pointer access have unit cost in this model; this is not a bit-c
 bounded-word model. Field inversion and natural division use their total Lean operations,
 including their zero-divisor conventions. Ill-typed operands and dangling reads fail.
 -/
+
+@[expose] public section
 
 namespace AlgebraicMachine
 

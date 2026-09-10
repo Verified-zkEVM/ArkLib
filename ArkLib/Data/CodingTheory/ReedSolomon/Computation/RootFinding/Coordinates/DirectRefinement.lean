@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.DirectMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Refinement
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.DirectMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Refinement
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectArithmeticRefinement
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientRefinement
-import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
+public import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
 /-!
 # Same-execution coordinate direct coefficient refinement
 
@@ -19,6 +20,8 @@ source endpoints and failure branches. The absolute lowering factor applies once
 fuel; it is not multiplied per lifting iteration. Raw polynomial representations and original
 degree/index/sample hypotheses identify the exact direct regular coefficient result.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticDirectCoefficientMachine
 

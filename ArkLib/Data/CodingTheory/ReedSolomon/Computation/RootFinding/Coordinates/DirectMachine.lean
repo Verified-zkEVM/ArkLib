@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Machine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectArithmeticMachine
-import ArkLib.Data.Polynomial.QuadraticUpdateMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectCoefficientMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.Machine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.DirectArithmeticMachine
+public import ArkLib.Data.Polynomial.QuadraticUpdateMachine
 /-!
 # Coordinate direct coefficient execution
 
@@ -17,6 +20,8 @@ suffix uses the retained DirectArithmetic machine. Every child instruction retai
 ledger plus a wrapper. Input records, one coordinates, option payload and final handoff writes
 are charged. Input preparation, interpreter administration and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticDirectCoefficientMachine
 

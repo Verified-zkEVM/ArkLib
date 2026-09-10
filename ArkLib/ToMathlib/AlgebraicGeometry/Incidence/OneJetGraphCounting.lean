@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.GraphPullback
-import Mathlib.Algebra.Polynomial.Roots
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.GraphPullback
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
 # Counting polynomial graphs on a plane hypersurface
@@ -14,6 +16,8 @@ Distinct polynomial graphs lying on a nonzero plane equation are bounded by its 
 in the graph coordinate. This includes inseparable parameterizations without a degree
 factor for the retained parameter.
 -/
+
+@[expose] public section
 
 noncomputable section
 

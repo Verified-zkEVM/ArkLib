@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Data.List.Nodup
-import Mathlib.Data.List.Forall2
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Ring
+
+public import Mathlib.Data.List.Nodup
+public import Mathlib.Data.List.Forall2
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Ring
 
 /-!
 # Materialized finite Cartesian products
@@ -24,6 +26,8 @@ the model. No scalar operation or arbitrary callback is used. Bulk list operatio
 in specifications and proofs. Consumers are anisotropic sampling grids and exponent-coordinate
 boxes; neither evaluation of grid points nor filtering of exponent boxes is performed here.
 -/
+
+@[expose] public section
 
 namespace List.CartesianProductMachine
 

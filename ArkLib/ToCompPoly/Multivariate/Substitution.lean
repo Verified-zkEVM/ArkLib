@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Multivariate.Operations
+
+public import CompPoly.Multivariate.Operations
 /-!
 # Semantic correctness of computable multivariate substitution
 
@@ -12,6 +14,8 @@ CompPoly provides the executable `CMvPolynomial.bind₁`. This file proves that 
 result agrees with `MvPolynomial.aeval`, so symbolic chart constructors may remain computable
 while reusing the existing semantic Taylor theorems.
 -/
+
+@[expose] public section
 
 namespace CPoly.CMvPolynomial
 

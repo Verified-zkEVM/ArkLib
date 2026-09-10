@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.JetHornerMachine
+
+public import ArkLib.Data.Polynomial.JetHornerMachine
 
 /-!
 # Checked truncation of descending coefficient vectors
@@ -18,6 +20,8 @@ The closed machine charges every scalar equality, natural operation, cursor acce
 and output handle. It does not charge input materialization, host fuel, or scalar bit costs.
 The intended consumer is the final degree filter of a polynomial list decoder.
 -/
+
+@[expose] public section
 
 namespace Polynomial.DegreeTruncationMachine
 

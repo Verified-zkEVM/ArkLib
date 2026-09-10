@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # A finite rate cover for uniform additive-gap decoding
@@ -25,6 +26,8 @@ The identity `(1 - theta) * epsilon = a` is proved below.  The canonical bin for
 the predecessor of `ceil (r / (delta / 2))`; at rate zero it is the first bin.  Truncating only the
 last endpoint at `1 - delta` makes the same selection cover both boundary cases.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace RateCover

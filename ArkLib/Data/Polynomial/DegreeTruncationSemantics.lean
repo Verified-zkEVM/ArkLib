@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.DegreeTruncationMachine
+
+public import ArkLib.Data.Polynomial.DegreeTruncationMachine
 
 /-!
 # Polynomial meaning of checked coefficient truncation
@@ -14,6 +16,8 @@ dimension, including zero. Its output denotes the same polynomial and has the re
 width when the input ambient width is at least the dimension. No normalization assumption on
 leading coefficients is used.
 -/
+
+@[expose] public section
 
 namespace Polynomial.JetHornerMachine
 

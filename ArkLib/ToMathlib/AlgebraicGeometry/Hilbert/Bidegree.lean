@@ -3,15 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.WeightedDegree
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Degree
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteExtensionDegree
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Purity
-import ArkLib.ToMathlib.Polynomial.RectangleDifference
-import ArkLib.ToMathlib.Polynomial.RectangleDifferenceGeneral
-import Mathlib.Data.Finsupp.Option
+
+public import ArkLib.Data.MvPolynomial.WeightedDegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Degree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteExtensionDegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.PolynomialGrowthRescaling
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Purity
+public import ArkLib.ToMathlib.Polynomial.RectangleDifference
+public import ArkLib.ToMathlib.Polynomial.RectangleDifferenceGeneral
+public import Mathlib.Data.Finsupp.Option
 
 /-!
 # A challenge/jet bidegree filtration
@@ -28,6 +30,8 @@ the algebraic input behind the mixed hypersurface degree
 h * b^(r+1) + (r+1) * v * a * b^r.
 ```
 -/
+
+@[expose] public section
 
 noncomputable section
 

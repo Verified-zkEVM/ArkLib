@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import
+module
+
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Ordinary.QuotientLift.Series
-import ArkLib.ToCompPoly.Multivariate.PartialDerivative
+public import ArkLib.ToCompPoly.Multivariate.PartialDerivative
 /-!
 # Newton lifting over a materialized quotient algebra
 
@@ -21,6 +23,8 @@ that precision. Its fuel is only a termination bound: the `k ≤ m` guard stops 
 This is an executable precision-doubling algorithm. Correctness is proved in `NewtonProof`;
 a near-linear arithmetic bound still requires costed evaluation and polynomial backends.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.Ordinary.QuotientLift
 open CompPoly CompPoly.CPolynomial

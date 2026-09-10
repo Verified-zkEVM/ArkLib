@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Agreement
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
 
 /-!
 # Sharp agreement incidence for an initial prime family
@@ -13,6 +15,8 @@ import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.SharpRatio
 This version keeps the actual number of cuts vanishing identically on a component
 in both sides of the incidence ratio.  Consequently its numerator is `n-k+1`.
 -/
+
+@[expose] public section
 
 noncomputable section
 

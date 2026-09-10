@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
-import ArkLib.ToMathlib.LinearAlgebra.PrimitivePolynomialKernel
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.ToMathlib.LinearAlgebra.PrimitivePolynomialKernel
 
 
 /-!
@@ -17,6 +19,8 @@ Finite support reduction handles its infinite row index without assuming a finit
 contact space. An actual rank bound gives a primitive polynomial kernel, whose assembled
 interpolant remains nonzero after every field-extension and challenge specialization.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

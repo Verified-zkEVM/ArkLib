@@ -3,14 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.BigOperators.Field
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Data.Finset.SDiff
-import Mathlib.Data.Rat.Defs
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+
+public import Mathlib.Algebra.BigOperators.Field
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Data.Finset.SDiff
+public import Mathlib.Data.Rat.Defs
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # Expected authentication boundaries under uniform queries
@@ -25,6 +27,8 @@ tree is obtained by taking one node for every subtree at every non-root level.  
 only on the cardinalities of a subtree and its union with its sibling, so a later numerical model
 can use the usual sizes `2^j` and `2^(j+1)` without formalizing a deployed Merkle serializer.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UniformQueryBoundary
 

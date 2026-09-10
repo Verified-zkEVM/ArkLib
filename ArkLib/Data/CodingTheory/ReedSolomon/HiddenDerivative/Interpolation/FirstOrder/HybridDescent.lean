@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.CurveStages
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.SeparantChain
-import ArkLib.Data.Polynomial.Differential.DerivativeDescent
+public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 
 /-!
 # First-order descent through the actual `Y₁` degree
@@ -19,6 +20,8 @@ larger than the characteristic. The last derivative is nonzero and independent o
 has an order-zero presentation in `X,Y₀`. Every root either reaches that ordinary tail or is
 regular at one of the preceding `Y₁` stages.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 

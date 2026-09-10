@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinatePreparedMachine
 /-!
 # Coordinate decoding with separate recovery and guard grids
 
 Only collection reads the guard grid. Root recovery retains the supplied residual samples.
 Both modes execute the same coordinate children and retain every nested charge.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.QuadraticSeparateSampleDecoder
 

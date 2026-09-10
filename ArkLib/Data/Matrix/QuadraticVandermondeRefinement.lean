@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticVandermondeMachine
-import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
+
+public import ArkLib.Data.Matrix.QuadraticVandermondeMachine
+public import ArkLib.Data.MvPolynomial.QuadraticEvaluationRefinement
 
 /-!
 # Same-execution coordinate Vandermonde refinement
@@ -14,6 +16,8 @@ The maps are proof-only relations on materialized points, rows and states. Every
 has a concrete lowered trace, including its final unused multiplication. The construction theorem
 preserves row/column order, duplicates, physical row count and width, with a base-operation bound.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticVandermondeMachine
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Canaries for finite forward Hasse--Taylor truncation
@@ -14,6 +16,8 @@ The characteristic-two example is decisive: shifting `X²` forward by one gives 
 the order-two truncation is `1`; the generic remainder theorem then makes the discarded part
 divisible by `X²`.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

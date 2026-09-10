@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AddressedBitsSemantics
+
+public import ArkLib.Data.Computation.AddressedBitsSemantics
 
 /-!
 # Address-controller execution canary
@@ -14,6 +16,8 @@ wrong wire order, failure to update, and failure to preserve other cells. The em
 root address. Raw malformed wire words are rejected. One transition before the public bound the
 bus is empty but the controller has not yet returned. All checks use kernel reduction.
 -/
+
+@[expose] public section
 
 namespace Computation.AddressedBits
 

@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Probability.DistinctQueries
-import ArkLib.Data.Probability.FiniteFieldBudget
+
+public import ArkLib.Data.Probability.DistinctQueries
+public import ArkLib.Data.Probability.FiniteFieldBudget
 
 /-!
 # Authentication paths for queries at a power-of-two stride
@@ -19,6 +21,8 @@ We first prove this identity for each finite set of queried leaves, by removing 
 level at a time. Taking the uniform expectation then uses the existing occupancy theorem.
 This concerns the binary authentication boundary; it makes no claim about a serializer.
 -/
+
+@[expose] public section
 
 namespace ArkLib.UniformQueryBoundary
 

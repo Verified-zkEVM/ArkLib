@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.EvaluationMachine
-import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
+
+public import ArkLib.Data.MvPolynomial.EvaluationMachine
+public import ArkLib.Data.QuadraticAlgebra.ArithmeticMachine
 
 /-!
 # Materializing base-field sparse polynomials in a quadratic algebra
@@ -16,6 +18,8 @@ The output order is restored by a charged reversal. There is no runtime map call
 algebra-map conversion. Only the correctness statement uses the canonical scalar embedding.
 The parameter a is supplied by field setup; no field operation is needed for this conversion.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.QuadraticInputMachine
 

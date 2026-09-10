@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSystemMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatch
-import ArkLib.Data.Matrix.QuadraticVandermondeMachine
-import ArkLib.Data.Matrix.QuadraticForwardEchelonMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.ResidualSystemMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Residual.QuadraticBatch
+public import ArkLib.Data.Matrix.QuadraticVandermondeMachine
+public import ArkLib.Data.Matrix.QuadraticForwardEchelonMachine
 /-!
 # Coordinate residual systems with retained children
 
@@ -17,6 +19,8 @@ Returned sample and row roots pass directly to the next child without conversion
 charges and outputs remain counted, with an outer dispatch and two root accesses per instruction.
 Input preparation, coefficient solving, interpreter administration and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticResidualSystemMachine
 

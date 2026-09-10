@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Equation
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Equation
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.FactorSolutions
 /-!
 # Irreducible ordinary equations in every characteristic
@@ -13,6 +15,8 @@ import
 The Frobenius exponent, separable pulled equation, and coordinate roots are constructed
 internally. Their finite exception bound is charged in the original root degree.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 open MvPolynomial PolynomialDifferential

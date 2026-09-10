@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.DenseNormalizeRefinement
-import Mathlib.Algebra.Field.ZMod
+
+public import ArkLib.Data.MvPolynomial.DenseNormalizeRefinement
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Aggregation execution regressions
@@ -13,6 +15,8 @@ import Mathlib.Algebra.Field.ZMod
 Literal kernel computations cover cancellation, exponent and variable comparisons, unequal
 key lengths, prefix restoration and the output boundary. Cost literals count each primitive.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial.DenseNormalizeMachine
 

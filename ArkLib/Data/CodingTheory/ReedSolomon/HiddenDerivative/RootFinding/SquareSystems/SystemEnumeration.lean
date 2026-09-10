@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.SquareSystems.CandidatePool
-import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
+public import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 /-!
 # Executable square-row enumeration and the full candidate pool
 
@@ -16,6 +17,8 @@ forms the resulting `(r+1)`-row square systems in the ambient label order. The s
 Reed--Solomon pool has one
 agreement row for every received position and every coefficient-tail row from `k` through `K-1`.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

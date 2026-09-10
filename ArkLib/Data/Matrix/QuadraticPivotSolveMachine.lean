@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.PivotSolveMachine
-import ArkLib.Data.Matrix.QuadraticPivotMachine
+
+public import ArkLib.Data.Matrix.PivotSolveMachine
+public import ArkLib.Data.Matrix.QuadraticPivotMachine
 
 /-!
 # Coordinate correction of one pivot value
@@ -16,6 +18,8 @@ Indexed traversal and restoration preserve every other supplied coordinate. Scal
 and output-cell allocation are explicit. The caller supplies the initial dot accumulator;
 its initialization, input materialization, host fuel and bit time are outside this ledger.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticPivotSolveMachine
 

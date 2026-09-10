@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.JetHornerMachine
-import Mathlib.Data.ZMod.Basic
+
+public import ArkLib.Data.Polynomial.JetHornerMachine
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Jet Horner machine regression checks
@@ -13,6 +15,8 @@ import Mathlib.Data.ZMod.Basic
 The quadratic checks the old-predecessor carry, high zero entries, every cost component, and the
 final return boundary. Characteristic two distinguishes Hasse jets from ordinary derivatives.
 -/
+
+@[expose] public section
 
 namespace Polynomial.JetHornerMachine
 

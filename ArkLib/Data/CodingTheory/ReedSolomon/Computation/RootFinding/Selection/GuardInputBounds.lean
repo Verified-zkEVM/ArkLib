@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageInputBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.CanonicalGuardBounds
 /-!
 # Canonical-guard budgets from coefficient width and equation mass
 
@@ -13,6 +16,8 @@ These bounds replace the visited-equation sums by polynomial expressions in coef
 derivative order, exponent mass, sample count and prefix length. They bound the existing guard
 program's budgets, not a new oracle. Concrete base-field lowering remains a separate refinement.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.CanonicalGuardMachine
 

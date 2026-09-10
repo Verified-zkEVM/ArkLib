@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
-import Mathlib.Data.List.Count
-import Mathlib.Data.List.Nodup
-import Std.Data.TreeMap.Lemmas
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
+public import Mathlib.Data.List.Count
+public import Mathlib.Data.List.Nodup
+public import Std.Data.TreeMap.Lemmas
 
 /-!
 # Executable decoder for constant Reed--Solomon messages
@@ -22,6 +24,8 @@ exactness would require every field constant, including values absent from the
 received word, whereas the frequency map deliberately stores only observed
 values.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.ConstantDecoder
 

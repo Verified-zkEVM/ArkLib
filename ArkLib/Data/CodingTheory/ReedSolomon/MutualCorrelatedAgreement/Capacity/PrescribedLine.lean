@@ -3,9 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedCurve
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PowerToLine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.PrescribedCurve
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PowerToLine
 /-!
 # Prescribed mutual correlated agreement on extension-field lines
 
@@ -13,6 +16,8 @@ A line is a power-batched curve of degree one. Specializing the sharp curve theo
 the same gap-only constant for lines, without a separate geometric or scalar estimate.
 The conclusion preserves equality of the entire agreement sets.
 -/
+
+@[expose] public section
 
 noncomputable section
 

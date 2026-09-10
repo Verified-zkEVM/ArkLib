@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.QuadraticBackSubstitutionRefinement
+
+public import ArkLib.Data.Matrix.QuadraticBackSubstitutionRefinement
 
 /-!
 # Kernel checks for coordinate back substitution
@@ -13,6 +15,8 @@ Two ordered pivots change nonzero initial pivot values while retaining a nonzero
 Residual checks inspect both coordinates before solving. Literal ledgers expose caller input
 and zero initialization, reversal allocation, child dispatch and retained suspended payloads.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticBackSubstitutionMachine
 

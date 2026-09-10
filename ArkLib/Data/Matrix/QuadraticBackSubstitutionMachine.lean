@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.BackSubstitutionMachine
-import ArkLib.Data.Matrix.QuadraticPivotSolveMachine
+
+public import ArkLib.Data.Matrix.BackSubstitutionMachine
+public import ArkLib.Data.Matrix.QuadraticPivotSolveMachine
 
 /-!
 # Coordinate back substitution
@@ -16,6 +18,8 @@ The call pays four input-record writes and two initial dot-zero writes/constants
 to source dispatch. Every child instruction retains its ledger and pays a driver wrapper.
 Reversal pays the extra cell slot. Input preparation, host fuel and bit time are excluded.
 -/
+
+@[expose] public section
 
 namespace Matrix.QuadraticBackSubstitutionMachine
 

@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.Witness
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.ZeroBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.OrderZero.Witness
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.Interpolation.Solution.ZeroBounds
 /-!
 # Certified actual order-zero interpolation output
 
@@ -15,6 +16,8 @@ actual returned coefficient vector. The existence witness is used only to force 
 execution. The outer prepared decoder must consume this direct attempt instead of ambient search,
 whose lower endpoint excludes D=0; its root solver need not be duplicated.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.OrderZeroDecoderCertificate
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.NonzeroKernelSemantics
+
+public import ArkLib.Data.Matrix.NonzeroKernelSemantics
 
 /-!
 # Nonzero kernel execution regressions
@@ -12,6 +14,8 @@ import ArkLib.Data.Matrix.NonzeroKernelSemantics
 Literal results and charges exercise redundant rows, free-column positions, exact emission,
 full rank, empty input, and both malformed-width directions. All computations use the kernel.
 -/
+
+@[expose] public section
 
 namespace Matrix.NonzeroKernelMachine
 

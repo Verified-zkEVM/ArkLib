@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputProof
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalOutputProof
 /-!
 # Exact base outputs from the actual ordered root scan
 
@@ -12,6 +13,8 @@ The existing collector enumerates each base polynomial satisfying the initial di
 identity, target degree, and exact agreement threshold once. Its existing fuel and work bound
 are preserved. The implication from interpolation constraints to the identity is a separate join.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalOutputProof
 

@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
-import Mathlib.Algebra.MvPolynomial.Eval
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Ring
+
+public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
+public import Mathlib.Algebra.MvPolynomial.Eval
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Ring
 
 /-!
 # Clearing a common-power denominator in multivariate substitution
@@ -16,6 +18,8 @@ This construction is a literal finite polynomial sum. If the source monomials us
 `H` powers of a common denominator, it represents that denominator to power `H` times
 the rational substitution. It is used for the rational Taylor numerator recurrence.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

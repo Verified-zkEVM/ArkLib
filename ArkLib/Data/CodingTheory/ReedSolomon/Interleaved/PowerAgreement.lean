@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.NestedPowerAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.NestedPowerAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 /-!
 # Shared-challenge power agreement for interleaved Reed--Solomon codes
 
@@ -18,6 +19,8 @@ The resulting certificate recovers all row polynomials and the complete simultan
 set.  It retains the scalar curve bound, without an additional factor for the row width or the
 number of coefficients.
 -/
+
+@[expose] public section
 
 noncomputable section
 

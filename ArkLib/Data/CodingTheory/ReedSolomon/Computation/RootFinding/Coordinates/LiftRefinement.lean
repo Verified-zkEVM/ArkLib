@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.LiftMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.DirectRefinement
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Semantics
-import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.LiftMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Coordinates.DirectRefinement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Lifting.Semantics
+public import ArkLib.Data.Polynomial.QuadraticUpdateRefinement
 /-!
 # Same-execution coordinate lifting loop
 
@@ -16,6 +18,8 @@ source trace, including failures; it never compounds by iteration. Raw input rep
 identify the whole emitted polynomial and its physical width. Regular-jet hypotheses transfer
 the unique exhaustive-prefix candidate, without claiming full residual acceptance.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.QuadraticRegularLiftMachine
 

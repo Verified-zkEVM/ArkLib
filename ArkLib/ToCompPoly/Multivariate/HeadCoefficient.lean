@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Multivariate.Operations
-import Mathlib.Algebra.MvPolynomial.Equiv
+
+public import CompPoly.Multivariate.Operations
+public import Mathlib.Algebra.MvPolynomial.Equiv
 /-!
 # Coefficients in the first computable multivariate variable
 
@@ -13,6 +15,8 @@ The first variable of a `CMvPolynomial (n + 1) R` can be viewed as the outer var
 univariate polynomial whose coefficients are `CMvPolynomial n R`. This file implements extraction
 of one such coefficient without crossing through the noncomputable representation equivalence.
 -/
+
+@[expose] public section
 
 namespace CPoly.CMvPolynomial
 

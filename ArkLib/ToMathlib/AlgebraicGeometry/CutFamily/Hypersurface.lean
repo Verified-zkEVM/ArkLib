@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Excluded
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.CutFamily.Iteration
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.Excluded
 
 /-!
 # Retained cuts of an affine hypersurface
@@ -14,6 +16,8 @@ Starting from one nonzero equation, impose finitely many additional equations wh
 retaining only components meeting a prescribed principal open. The resulting family
 has the original hypersurface's degree potential, including in joint challenge/jet space.
 -/
+
+@[expose] public section
 
 noncomputable section
 

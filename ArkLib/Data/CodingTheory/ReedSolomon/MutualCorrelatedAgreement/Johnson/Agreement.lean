@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
 /-!
 # Exact Johnson mutual correlated agreement in every characteristic
 
@@ -25,6 +26,8 @@ rational images, and accidental agreements on persistent graph lines, respective
 The first theorem accepts an integer threshold `A`; the second sets `A = ceil(a*n)` exactly.
 Only the final theorem assumes a finite field and divides the exceptional count by its size.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

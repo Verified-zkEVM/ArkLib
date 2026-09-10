@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsBounds
 /-!
 # Uniform stage polynomials from initial sizes
 
@@ -13,6 +15,8 @@ interpreter is bounded without inspecting the visited equation or its values. Th
 bounds below use only addition, multiplication and fixed-degree matrix budgets; their degree
 is independent of the derivative order. In particular no additional alphabet power occurs.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.StageRootsMachine
 

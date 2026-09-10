@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitLocalActions
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Tactic.FinCases
+
+public import ArkLib.Data.Computation.BitLocalActions
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Retained bit-word copying with physical destination clearing
@@ -16,6 +18,8 @@ a time, then two passes restore the source and produce an identical destination.
 assignment executes. The count includes the old destination's length, so overwriting a register
 cannot hide its cleanup. Source and destination are distinct physical tape positions.
 -/
+
+@[expose] public section
 
 namespace Computation.WordCopyMachine
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Bidegree
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.Bidegree
 
 /-!
 # A challenge/jet filtration with a capped derivative coordinate
@@ -25,6 +27,8 @@ h(2bc-c²) + 2a(jc+r(b-c)),    jc+r(b-c).
 These bounds retain the actual derivative degree `r` instead of charging every source-jet
 factor at the total jet degree `j`.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -266,17 +270,17 @@ abbrev DerivativeBidegreeIndex (a b c : ℕ) :=
     m.weight (challengeWeight (σ := Fin 2)) ≤ a ∧
       m.weight (jetWeight (σ := Fin 2)) ≤ b ∧ m.weight derivativeWeight ≤ c}
 
-private theorem challengeWeight_eq_none (m : Option (Fin 2) →₀ ℕ) :
+theorem challengeWeight_eq_none (m : Option (Fin 2) →₀ ℕ) :
     m.weight (challengeWeight (σ := Fin 2)) = m none := by
   rw [Finsupp.weight_eq_sum, Fintype.sum_option]
   simp [challengeWeight]
 
-private theorem jetWeight_eq_some_degree (m : Option (Fin 2) →₀ ℕ) :
+theorem jetWeight_eq_some_degree (m : Option (Fin 2) →₀ ℕ) :
     m.weight (jetWeight (σ := Fin 2)) = m.some.degree := by
   rw [Finsupp.weight_eq_sum, Fintype.sum_option, Finsupp.degree_eq_sum]
   simp [jetWeight]
 
-private theorem derivativeWeight_eq_one (m : Option (Fin 2) →₀ ℕ) :
+theorem derivativeWeight_eq_one (m : Option (Fin 2) →₀ ℕ) :
     m.weight derivativeWeight = m (some 1) := by
   rw [Finsupp.weight_eq_sum, Fintype.sum_option]
   simp [derivativeWeight]
@@ -311,7 +315,7 @@ instance (a b c : ℕ) :
   change Module.Finite F (restrictSupport F S)
   exact Module.Finite.of_basis basis
 
-private def derivativeBidegreeIndexEquiv (a b c : ℕ) :
+def derivativeBidegreeIndexEquiv (a b c : ℕ) :
     DerivativeBidegreeIndex a b c ≃ Fin (a + 1) × CappedTwoJetIndex b c where
   toFun m :=
     (⟨m.val none, by
@@ -748,16 +752,16 @@ theorem derivativeBidegreeHypersurface_hilbertFunction_le_rectangleDifference
 
 /-! ## The capped rectangle-difference polynomial -/
 
-private def cappedRectangleDifferenceTwoCoeffTwo (a b c h j r : ℚ) : ℚ :=
+def cappedRectangleDifferenceTwoCoeffTwo (a b c h j r : ℚ) : ℚ :=
   let q₂ := b * c - c ^ 2 / 2
   h * q₂ + a * (b * r + c * j - c * r)
 
-private def cappedRectangleDifferenceTwoCoeffOne (a b c h j r : ℚ) : ℚ :=
+def cappedRectangleDifferenceTwoCoeffOne (a b c h j r : ℚ) : ℚ :=
   let q₁ := -b * r - c * j + b + c / 2 + c * r
   let q₀ := j * r - j - r / 2 + 1 - r ^ 2 / 2
   a * (1 - q₀) + (b + c / 2) - q₁ + h * q₁
 
-private def cappedRectangleDifferenceTwoCoeffZero (_a _b _c h j r : ℚ) : ℚ :=
+def cappedRectangleDifferenceTwoCoeffZero (_a _b _c h j r : ℚ) : ℚ :=
   let q₀ := j * r - j - r / 2 + 1 - r ^ 2 / 2
   1 - (1 - h) * q₀
 

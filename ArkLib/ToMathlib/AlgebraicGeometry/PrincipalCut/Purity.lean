@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.NoetherNormalizationHeightOne
-import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteExtensionDegree
-import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
+
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.NoetherNormalizationHeightOne
+public import ArkLib.ToMathlib.AlgebraicGeometry.Hilbert.FiniteExtensionDegree
+public import ArkLib.ToMathlib.AlgebraicGeometry.PrincipalCut.Polynomial
 
 /-!
 # Hilbert-polynomial purity of principal cuts
@@ -15,6 +17,8 @@ A minimal prime over a proper principal cut of an affine prime has Hilbert-polyn
 exactly one below that of the parent prime.  The proof uses Noether normalization and preservation
 of Hilbert-polynomial degree under finite injective affine algebra maps.
 -/
+
+@[expose] public section
 
 noncomputable section
 

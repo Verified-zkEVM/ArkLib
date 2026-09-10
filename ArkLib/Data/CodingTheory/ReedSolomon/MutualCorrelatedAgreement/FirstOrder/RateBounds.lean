@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Bounds
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Bounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 /-!
 # First-order rate, slack, and finite-field probability bounds
 
@@ -22,6 +24,8 @@ The final theorem specializes to a finite field and a uniform affine-line challe
 exception count by `|F|` and capping at one gives the displayed MCA failure probability. The
 complete-list and exact-agreement statements themselves remain valid over arbitrary fields.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial HiddenDerivative CoreDefinitions LinearCode

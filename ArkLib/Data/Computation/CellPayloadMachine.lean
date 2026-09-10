@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BitLocalActions
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Tactic.FinCases
+
+public import ArkLib.Data.Computation.BitLocalActions
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Literal cell payload materialization
@@ -20,6 +22,8 @@ The input words are already materialized. Their interpretation as scalar values 
 address prefixes is outside this controller. The exact local transition count does not include
 pointer selection, heap writes, a handoff to another controller, or native Lean evaluation.
 -/
+
+@[expose] public section
 
 namespace Computation.CellPayloadMachine
 

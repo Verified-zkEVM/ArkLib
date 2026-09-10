@@ -3,9 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.FieldLiteralMachine
-import ArkLib.Data.Computation.SharedListHornerRefinement
+
+public import ArkLib.Data.Computation.FieldLiteralMachine
+public import ArkLib.Data.Computation.SharedListHornerRefinement
+
+-- The physical-output refinement reduces the executable Horner fold.
+import all CompPoly.Univariate.Basic
 
 /-!
 # Complete physical Horner entry with charged scalar reset
@@ -15,6 +20,8 @@ on tape four. The point and list pointer stay on eight and twelve. One control h
 the actual shared-list Horner loop, on the same twenty-one tapes and RAM. Initial coefficient
 and point representations remain explicit inputs; no supplied zero accumulator is required.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListHornerProgram
 

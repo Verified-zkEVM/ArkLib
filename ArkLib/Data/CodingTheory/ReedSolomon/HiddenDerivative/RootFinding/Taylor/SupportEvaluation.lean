@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Support
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Taylor.Support
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Identity
 
 
 /-!
@@ -15,6 +16,8 @@ Specializing universal coefficient variables to the Taylor coefficients of an ac
 polynomial recovers the canonical shifted differential residual. This connects the
 universal support bounds to the existing differential-equation semantics.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

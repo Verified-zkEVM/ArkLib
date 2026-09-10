@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.TaylorChart
-import
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.TaylorChart
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.ComponentRecognition
 /-!
 # Prime components of sparse ordinary Taylor charts
@@ -13,6 +15,8 @@ import
 Sparse numerator cuts and an original-size common sample force a prime component onto
 one Frobenius graph. Every component equation then vanishes identically on that graph.
 -/
+
+@[expose] public section
 
 noncomputable section
 

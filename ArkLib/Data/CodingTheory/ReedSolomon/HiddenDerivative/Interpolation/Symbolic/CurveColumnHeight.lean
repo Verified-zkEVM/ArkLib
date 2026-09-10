@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.LinearAlgebra.ColumnDegreeKernel
-import ArkLib.ToMathlib.LinearAlgebra.ShiftedDegreeKernel
-import
+public import ArkLib.ToMathlib.LinearAlgebra.ColumnDegreeKernel
+public import ArkLib.ToMathlib.LinearAlgebra.ShiftedDegreeKernel
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveWeightedSupport
 
 /-!
@@ -26,6 +27,8 @@ The second constructor accepts the projected graded matrix. Its row and column w
 separate, and its kernel-equivalence premise states that the selected base-field coordinates
 detect the complete local constraint system.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential Polynomial
 open scoped BigOperators Matrix

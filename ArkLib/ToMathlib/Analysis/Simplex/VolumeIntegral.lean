@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
-import Mathlib.MeasureTheory.Constructions.Pi
-import Mathlib.MeasureTheory.Integral.Prod
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
+
+public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
+public import Mathlib.MeasureTheory.Constructions.Pi
+public import Mathlib.MeasureTheory.Integral.Prod
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 
 /-!
 # Lebesgue integrals on the standard simplex
@@ -15,6 +17,8 @@ import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 This file identifies the repeated beta integral with the actual Lebesgue set integral on
 `{x : Fin n → ℝ | 0 ≤ x ∧ ∑ i, x i ≤ L}`.  The slack coordinate is `L - ∑ i, x i`.
 -/
+
+@[expose] public section
 
 open MeasureTheory Set
 open scoped BigOperators

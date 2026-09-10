@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinarySubtractMachine
+
+public import ArkLib.Data.Computation.BinarySubtractMachine
 
 /-!
 # Literal modular negation controller
@@ -14,6 +16,8 @@ then restored one bit per step before subtraction. Zero operands, including padd
 both inputs explicitly. Nonzero operands call the literal subtraction controller. No numeric
 value test, free copy, or free restoration runs in dispatch.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryNegateMachine
 

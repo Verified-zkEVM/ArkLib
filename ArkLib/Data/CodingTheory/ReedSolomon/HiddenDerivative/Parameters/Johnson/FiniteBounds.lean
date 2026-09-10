@@ -3,16 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.Order.Floor.Ring
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Analysis.SpecialFunctions.Sqrt
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.GCongr
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.NormNum
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Algebra.Order.Floor.Ring
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Analysis.SpecialFunctions.Sqrt
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.GCongr
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.NormNum
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # Finite Johnson parameters and their closed numerical bounds
@@ -22,6 +23,8 @@ ordinary-agreement theorem.  It records the exact rounded parameter recipe and c
 exception expression with the printed closed bound.  The coding-theoretic transfer is kept in its
 owner modules.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative
 
@@ -664,6 +667,25 @@ theorem johnsonBCHKS_leading_lt {n D : ℕ} {eta : ℝ}
       have : 0 < tB / x := div_pos htB hx
       linarith
 
+/-- The printed BCHKS comparison bound is positive throughout the Johnson range. -/
+theorem johnsonBCHKS_pos {n D : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2)
+    (ha : johnsonAgreement n D eta ≤ 1) :
+    0 < johnsonBCHKS n D eta := by
+  let rho := johnsonRhoMinus n D
+  let x := √rho
+  let tB := johnsonBCHKS_T n D eta
+  have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+  have hrho : 0 < rho := johnsonRhoMinus_pos hD hDn
+  have hx : 0 < x := Real.sqrt_pos.2 hrho
+  have htB : 0 < tB := by
+    unfold tB johnsonBCHKS_T
+    have hm : (3 : ℝ) ≤ johnsonBCHKS_M n D eta := by
+      exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
+    linarith
+  have hleading0 : 0 < (2 * tB ^ 5 / (3 * x ^ 3)) * n := by positivity
+  exact lt_trans hleading0 (johnsonBCHKS_leading_lt hD hDn ha)
+
 /-- For the exact finite recipe, the ordinary bound is less than `16/49` of BCHKS. -/
 theorem johnsonE0_div_BCHKS_lt {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
@@ -720,14 +742,35 @@ theorem johnsonE0_div_BCHKS_lt {n D A : ℕ} {eta : ℝ}
         norm_num
   have hE := johnsonE0_lt_closed hD hDn heta ha hthreshold hAn
   have hleading := johnsonBCHKS_leading_lt hD hDn ha
-  have hleading0 : 0 < (2 * tB ^ 5 / (3 * x ^ 3)) * n := by positivity
-  have hB : 0 < johnsonBCHKS n D eta := lt_trans hleading0 hleading
+  have hB : 0 < johnsonBCHKS n D eta := johnsonBCHKS_pos hD hDn ha
   apply (div_lt_iff₀ hB).2
   calc
     johnsonE0 n D A eta < (8 / 3 : ℝ) * n * t ^ 3 / rho := hE
     _ < (16 / 49 : ℝ) * ((2 * tB ^ 5 / (3 * x ^ 3)) * n) := hclosedCompare
     _ < (16 / 49 : ℝ) * johnsonBCHKS n D eta := by
       exact mul_lt_mul_of_pos_left hleading (by norm_num)
+
+/-- The exact finite ordinary bound is strictly stronger than the printed BCHKS bound. -/
+theorem johnsonE0_lt_BCHKS {n D A : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (ha : johnsonAgreement n D eta ≤ 1)
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) (hAn : A ≤ n) :
+    johnsonE0 n D A eta < johnsonBCHKS n D eta := by
+  have hB : 0 < johnsonBCHKS n D eta := johnsonBCHKS_pos hD hDn ha
+  calc
+    johnsonE0 n D A eta < (16 / 49 : ℝ) * johnsonBCHKS n D eta :=
+      (div_lt_iff₀ hB).mp (johnsonE0_div_BCHKS_lt hD hDn heta ha hthreshold hAn)
+    _ < 1 * johnsonBCHKS n D eta := by
+      exact mul_lt_mul_of_pos_right (by norm_num) hB
+    _ = johnsonBCHKS n D eta := one_mul _
+
+/-- Non-strict compatibility form of `johnsonE0_lt_BCHKS`. -/
+theorem johnsonE0_le_BCHKS {n D A : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (ha : johnsonAgreement n D eta ≤ 1)
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) (hAn : A ≤ n) :
+    johnsonE0 n D A eta ≤ johnsonBCHKS n D eta :=
+  (johnsonE0_lt_BCHKS hD hDn heta ha hthreshold hAn).le
 
 end
 

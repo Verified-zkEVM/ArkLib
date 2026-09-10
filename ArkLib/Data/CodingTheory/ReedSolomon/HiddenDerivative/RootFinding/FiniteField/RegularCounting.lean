@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Iteration
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Regular.Iteration
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
 /-!
 # Counting regular branches using unique Hasse jets
@@ -18,6 +19,8 @@ with only explicit degree, characteristic, and nonvanishing hypotheses.
 
 Singular solutions require the separate separant recursion before this theorem applies.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

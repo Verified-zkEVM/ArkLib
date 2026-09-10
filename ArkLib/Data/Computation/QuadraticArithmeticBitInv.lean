@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.WordCopyMachine
-import ArkLib.Data.Computation.PaddedInverse
+
+public import ArkLib.Data.Computation.WordCopyMachine
+public import ArkLib.Data.Computation.PaddedInverse
 
 /-!
 # A literal alias-safe scalar-register INV instruction
@@ -20,6 +22,8 @@ form one fixed bank. A register owned by a copy child is blanked in the inactive
 only through that child's corresponding tape. No hidden old word is retained for restoration.
 This module lowers one INV instruction; it does not initialize registers or compile a full program.
 -/
+
+@[expose] public section
 
 namespace Computation.QuadraticArithmeticBitInv
 

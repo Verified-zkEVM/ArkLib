@@ -3,15 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.ActiveOrderAdapter
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsMachine
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.ActiveOrderAdapter
 /-!
 # Ordered stage contexts and charged collection bounds
 
 The specification projects explicit records to global polynomials. Pair and list allocation,
 callee dispatch, and final reversal are included in the same execution bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.StageRootsMachine
 

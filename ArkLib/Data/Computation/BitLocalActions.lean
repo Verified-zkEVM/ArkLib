@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.AddressedBits
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Tactic.SplitIfs
+
+public import ArkLib.Data.Computation.AddressedBits
+public import Mathlib.Data.Fintype.Basic
+public import Mathlib.Tactic.SplitIfs
 
 /-!
 # Shared local bit-tape interface
@@ -20,6 +22,8 @@ The address controller inhabits exactly this interface: restoration reads the fo
 and writes the former input tape. No phase change copies or exchanges a whole list. The separate
 architectural random-access operation remains precisely the one documented by `AddressedBits`.
 -/
+
+@[expose] public section
 
 namespace Computation.BitLocalActions
 

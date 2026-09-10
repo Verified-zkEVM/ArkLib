@@ -3,7 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.OracleReduction.LiftContext.OracleReduction
+module
+
+public import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 /-!
 # Simple Oracle Reduction: Random Query
@@ -19,6 +21,8 @@ of the same type. The relation is `a = b`.
    - The output relation is that `a` and `b` are equal at that query.
    - We also support a variant where it's `a.query q = r` where `r` is the response, discarding `b`.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec
 
@@ -197,10 +201,9 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
     (relIn OStatement).language (relOut OStatement).language where
   toFun
   | 0 => fun ⟨_, oracles⟩ _ => oracles 0 = oracles 1
-  | 1 => fun ⟨_, oracles⟩ chal => by
-    let q := chal ⟨0, by aesop⟩
-    change Query OStatement at q
-    exact answer (oracles 0) q = answer (oracles 1) q
+  | 1 => fun ⟨_, oracles⟩ chal =>
+    let q : Query OStatement := chal ⟨0, Nat.one_pos⟩
+    answer (oracles 0) q = answer (oracles 1) q
   toFun_empty := fun stmt => by simp
   toFun_next | 0 => fun hDir ⟨stmt, oStmt⟩ tr h => by simp_all
   toFun_full := fun ⟨stmt, oStmt⟩ tr h => by

@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 
 /-!
 # The rate-dependent partition gate
@@ -20,6 +21,8 @@ Its logarithm isolates the derivative order from the fixed-rate coefficient
 `c(R)=R*log(40/(9R))`. Every positive epsilon gives an eventual strict gate at
 order `ceil(exp((c(R)+epsilon)/delta))`; this does not assert a fixed finite-loss margin.
 -/
+
+@[expose] public section
 
 noncomputable section
 

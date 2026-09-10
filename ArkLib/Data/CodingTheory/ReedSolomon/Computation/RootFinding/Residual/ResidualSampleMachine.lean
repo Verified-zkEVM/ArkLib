@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.JetHornerMachine
-import ArkLib.Data.MvPolynomial.EvaluationMachine
-import Mathlib.Algebra.MvPolynomial.Variables
+public import ArkLib.Data.Polynomial.JetHornerMachine
+public import ArkLib.Data.MvPolynomial.EvaluationMachine
+public import Mathlib.Algebra.MvPolynomial.Variables
 /-!
 # Closed composition for one scalar residual sample
 
@@ -20,6 +21,8 @@ The inputs are materialized lists. Polynomial-facing correctness requires explic
 and sparse-term representation equalities and an explicit variable-arity bound. Preparing those
 inputs, bit costs and a complete root-finding runtime are outside this subroutine's contract.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.ResidualSampleMachine
 

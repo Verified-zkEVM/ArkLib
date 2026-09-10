@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.HeapPointerSemantics
+
+public import ArkLib.Data.Computation.HeapPointerSemantics
 
 /-!
 # Literal fixed-width bump allocation
@@ -20,6 +22,8 @@ The total successor function is not a validator for malformed inputs outside tho
 Numerical pointer labels are proof-side codeword labels, not architectural addresses. Input-word
 materialization, heap initialization, and a complete decoder refinement remain separate.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListAllocator
 

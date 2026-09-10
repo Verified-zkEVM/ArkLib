@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.NonzeroKernelMachine
+
+public import ArkLib.Data.Matrix.NonzeroKernelMachine
 
 /-!
 # Correctness and polynomial cost of nonzero kernel extraction
@@ -13,6 +15,8 @@ A nonzero homogeneous solution forces a free echelon column: its largest nonzero
 cannot be a pivot when every later coordinate is zero. The unit seed at a free column then
 survives back substitution, whose solved equations transfer to the original input.
 -/
+
+@[expose] public section
 
 namespace Matrix.NonzeroKernelMachine
 

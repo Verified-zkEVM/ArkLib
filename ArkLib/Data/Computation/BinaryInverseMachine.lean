@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.BinaryMulMachine
+
+public import ArkLib.Data.Computation.BinaryMulMachine
 
 /-!
 # Literal prime-field inverse search
@@ -15,6 +17,8 @@ candidates starting at one. Multiplication, product-one testing, candidate incre
 copy/restore operations are literal local-bit phases. No inverse, numeric target, or decoded
 counter runs in dispatch. The proof of prime-field inverse existence bounds this actual search.
 -/
+
+@[expose] public section
 
 namespace Computation.BinaryInverseMachine
 

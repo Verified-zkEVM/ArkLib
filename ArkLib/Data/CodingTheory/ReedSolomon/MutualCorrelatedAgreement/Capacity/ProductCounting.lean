@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductBounds
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
 /-!
 # Uniformizing the dimension-sensitive MCA budget
 
@@ -13,6 +15,8 @@ The source and fiber contributions retain their incidence products until their s
 estimates are applied. Only then do we replace each actual stage order by the maximum
 order and sum over the separant stages. This gives the prescribed gap-only constant.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open AffineHilbert

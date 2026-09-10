@@ -3,13 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.DerivativeSupport
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.DerivativeTupleCounting
-import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DerivativeBidegreeExcluded
+public import ArkLib.ToMathlib.AlgebraicGeometry.Incidence.DerivativeBidegreeExcluded
 /-! Derivative-capped regular first-order source incidence. -/
+
+@[expose] public section
 
 open PolynomialDifferential
 

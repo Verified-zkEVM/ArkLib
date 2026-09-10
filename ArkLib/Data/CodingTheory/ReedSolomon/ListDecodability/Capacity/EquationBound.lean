@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.GeometricCounting
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TaylorCharZeroSolutions
-import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 /-!
 # List bounds from a differential equation and the actual agreement gap
 
@@ -20,6 +21,8 @@ to support interpolation and Taylor reconstruction.
 This common consumer has no multiplicity or rate-specific parameter recipe. The
 rate constructors prove its equation hypotheses, including characteristic zero.
 -/
+
+@[expose] public section
 
 noncomputable section
 

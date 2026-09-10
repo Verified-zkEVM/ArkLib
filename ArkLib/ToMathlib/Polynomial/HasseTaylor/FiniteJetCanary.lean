@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Tactic.NormNum
+
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Tactic.NormNum
 
 /-!
 # Canaries for finite Hasse jets
@@ -15,6 +17,8 @@ These examples are intentionally concrete.  In characteristic two the ordinary d
 `X²` vanishes, while its second Hasse derivative is one; this catches accidental replacement of
 Hasse derivatives by iterated ordinary derivatives.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

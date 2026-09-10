@@ -3,14 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsSound
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.StageRootsSound
+
+-- The prescribed-center witness reduces `ringEquiv.symm` to polynomial semantics.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 /-!
 # Prescribed-center completeness for a restricted enumeration alphabet
 
 Only the desired center and its initial jets must be enumerated. Root recovery still uses the
 separate supplied residual samples and the existing actual center program.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.StageRootsMachine
 

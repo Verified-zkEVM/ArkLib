@@ -3,9 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Computation.SharedListHornerExecution
-import ArkLib.Data.Polynomial.HornerMachine
+
+public import ArkLib.Data.Computation.SharedListHornerExecution
+public import ArkLib.Data.Polynomial.HornerMachine
+-- The polynomial refinement intentionally reduces CompPoly's array representation.
+import all CompPoly.Univariate.Basic
 
 /-!
 # Refinement of the existing Horner source loop to shared-list bit RAM
@@ -15,6 +19,8 @@ Their stated costs are separate counts of their actual traces. The polynomial co
 an explicit coefficient representation and a physically supplied zero accumulator. Neither
 coefficient encoding nor accumulator initialization is hidden in this loop-header refinement.
 -/
+
+@[expose] public section
 
 namespace Computation.SharedListHornerMachine
 

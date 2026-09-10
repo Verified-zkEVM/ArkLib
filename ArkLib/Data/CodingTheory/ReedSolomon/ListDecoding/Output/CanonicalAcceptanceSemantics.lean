@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalAcceptanceMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CanonicalAcceptanceMachine
 /-!
 # Exact output of canonical base-field acceptance
 
@@ -13,6 +14,8 @@ message degree and the integer agreement threshold. An accepted output represent
 extension polynomial under the base embedding. The guard's equation-chain interpretation and
 whole-list uniqueness are supplied by the root-stage consumer, not assumed by execution.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.ListDecoding.CanonicalAcceptanceMachine
 

@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsMachine
+public import ArkLib.Data.CodingTheory.ReedSolomon.Computation.RootFinding.Selection.JetRootsMachine
 /-!
 # Enumeration bounds without an augmented alphabet exponent
 
 Repeated nonempty axes admit a bound in the ordinary alphabet-size power. This avoids applying
 the generic Cartesian augmented-size bound, whose base would be one larger than the alphabet.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon.HiddenDerivative.JetRootsMachine
 

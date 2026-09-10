@@ -3,18 +3,22 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import Mathlib.Algebra.Order.Floor.Semiring
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.Positivity
-import Mathlib.Tactic.Ring
+module
+
+public import Mathlib.Algebra.Order.Floor.Semiring
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.Positivity
+public import Mathlib.Tactic.Ring
 /-! # Midpoint thresholds for correlated agreement
 
 The midpoint threshold supplies two positive agreement gaps, retaining half the capacity
 margin on each side despite integer rounding.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

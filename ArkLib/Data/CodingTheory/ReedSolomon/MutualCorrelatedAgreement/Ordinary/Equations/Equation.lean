@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.IrreducibleEquation
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.FactorAssembly
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.ContentExceptions
 /-!
 # Ordinary equations in every characteristic
@@ -17,6 +18,8 @@ Factor the actual nonzero equation into distinct irreducible factors and root-in
 content. Each factor uses its own Frobenius pullback. Their coordinate-degree budgets add,
 so one finite exceptional set covers all polynomial roots with the original ordinary bound.
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative

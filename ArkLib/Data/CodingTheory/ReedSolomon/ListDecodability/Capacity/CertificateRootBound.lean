@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
-import
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SolutionEmbedding
-import
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.ExtensionRootCount
 
 /-!
@@ -18,6 +19,8 @@ polynomial-list bound.  It depends only on the certificate contract, its solutio
 the generic extension-field root count.  In particular, it does not depend on how the certificate's
 monomial support was constructed.
 -/
+
+@[expose] public section
 
 open PolynomialDifferential
 
