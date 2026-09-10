@@ -582,6 +582,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.F
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Gate
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.MathematicalRounding
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Moment
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.OrderedSimplex
