@@ -11,11 +11,14 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonRsMca
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ReedSolomon
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 public import ArkLib.Data.CodingTheory.Basic.Entropy
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.SubspaceDesign
@@ -194,12 +197,15 @@ The reduced rate `(k-1)/n` accounts for ArkLib's degree-`< k` convention.
 
 The multiplicity `m` is the source's printed, deliberately loose choice; the source's own proof
 (its §3.2 derivation of `D_X ≤ (1-δ)·m·n`) supports the tighter `m = ⌈√ρ/(2·(1-√ρ-δ))⌉`, a factor
-`2` smaller and hence `2⁵` smaller in the leading term. The admit stays pinned to the printed
-statement; a proof may establish the tighter constant as a separate result.
+`2` smaller and hence `2⁵` smaller in the leading term. The public compatibility theorem remains
+pinned to the printed statement, while `rs_mcaError_le_johnsonE0` exposes the tighter finite count
+directly. The comparison theorem proves that count is strictly less than `16/49` of the printed
+BCHKS expression under the non-full-code guards.
 
-This is the only theorem standing under every Johnson-range `McaLowerWitness` constructor
-(`McaLowerWitness.ofJohnsonRangeBound`); until it is proved, every Johnson-range Grand-MCA
-witness in the tree is admit-backed. -/
+Every Johnson-range `McaLowerWitness` constructor (`McaLowerWitness.ofJohnsonRangeBound`) consumes
+this theorem. Its proof uses the stronger arbitrary-characteristic recovery result when `k < n`
+and the exact zero-error full-code boundary when `k = n`; these consumers no longer inherit an
+admission from the Johnson catalogue entry. -/
 theorem rs_mcaError_le_in_johnson_range
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
     (_hk : 1 < k) (_hδ_pos : 0 < δ)
@@ -216,7 +222,33 @@ theorem rs_mcaError_le_in_johnson_range
             / (3 * ρ ^ ((3 : ℝ) / 2)) * n
           + (m + 1/2) / ρ ^ ((1 : ℝ) / 2))
            / (Fintype.card F : ℝ)) := by
-  sorry -- ABF26-T4.12; external admit [BCHKS25 Thm 4.6].
+  classical
+  let n := Fintype.card ι
+  let D := k - 1
+  let rho : ℝ := (D : ℝ) / n
+  have hn : 0 < n := by
+    simpa only [n] using Fintype.card_pos
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  have hdeltaR : 0 < (δ : ℝ) := by exact_mod_cast _hδ_pos
+  have hrhoNonneg : 0 ≤ rho := by
+    dsimp only [rho]
+    positivity
+  have hdeltaSqrt : (δ : ℝ) < 1 - √rho := by
+    simpa only [rho, D, n, Real.sqrt_eq_rpow] using _hδ
+  have hsqrtLt : √rho < 1 := by linarith
+  have hrhoLt : rho < 1 := by
+    have hsquare : √rho ^ 2 = rho := Real.sq_sqrt hrhoNonneg
+    nlinarith [Real.sqrt_nonneg rho]
+  have hDltR : (D : ℝ) < n := by
+    exact (div_lt_one hnR).mp (by simpa only [rho] using hrhoLt)
+  have hDlt : D < n := by exact_mod_cast hDltR
+  have hkLeN : k ≤ n := by
+    dsimp only [D] at hDlt
+    omega
+  rcases lt_or_eq_of_le hkLeN with hklt | hkeq
+  · exact rs_mcaError_le_bchks_of_lt_card domain k δ _hk hklt _hδ
+  · rw [hkeq, ReedSolomon.mcaError_affineLine_fullRate_eq_zero domain δ]
+    exact bot_le
 
 /-- For every `c > 0` and `ρ ∈ (0,1/2)`, there are arbitrarily large smooth Reed--Solomon
 codes over prime fields whose rate is within `O(1/log n)` of `ρ` and for which
