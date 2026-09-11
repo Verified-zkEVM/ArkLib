@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
@@ -262,13 +263,14 @@ theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) (hδ_one : δ < 1) :
 
 /-- Length threshold for the uniform three-halves capacity construction. -/
 def rateCapacityLengthThreshold (δ : ℝ) : ℕ :=
-  if (6 / 25 : ℝ) ≤ δ then 23 else HiddenDerivative.uniformRatePartitionLength δ
+  if (6 / 25 : ℝ) ≤ δ then 23 else
+    HiddenDerivative.uniformRatePartitionMathematicalLength δ
 
 /-- Uniform three-halves list bound, spliced with the certified first-order large-gap bound. -/
 def rateCapacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
   if (6 / 25 : ℝ) ≤ δ then 307 * n else
-    (HiddenDerivative.uniformRatePartitionJetBound δ : ℝ) ^ 2 *
-      (2 * HiddenDerivative.uniformRatePartitionJetBound δ / δ) ^
+    (HiddenDerivative.uniformRatePartitionMathematicalJetBound δ : ℝ) ^ 2 *
+      (2 * HiddenDerivative.uniformRatePartitionMathematicalJetBound δ / δ) ^
         HiddenDerivative.uniformRatePartitionOrder δ *
       n ^ HiddenDerivative.uniformRatePartitionOrder δ
 
@@ -287,9 +289,10 @@ theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
   · intro n k q A hn hk _hkn hq hnq hgap _hAupper domain received
     let _ : Fact q.Prime := ⟨hq⟩
     by_cases hAn : A ≤ n
-    · have hn' : HiddenDerivative.uniformRatePartitionLength δ ≤ n := by
+    · have hn' : HiddenDerivative.uniformRatePartitionMathematicalLength δ ≤ n := by
         simpa only [rateCapacityLengthThreshold, if_neg hlarge] using hn
-      obtain ⟨hf, hb⟩ := uniformRatePartition_close_list_bound hδ (lt_of_not_ge hlarge)
+      obtain ⟨hf, hb⟩ := mathematicalUniformRatePartition_close_list_bound
+        hδ (lt_of_not_ge hlarge)
         hn' hk hgap hAn domain received (Or.inr (by
           simpa only [ringChar.eq (ZMod q) q] using hnq))
       refine ⟨hf.toFinset, ?_, ?_, ?_⟩
