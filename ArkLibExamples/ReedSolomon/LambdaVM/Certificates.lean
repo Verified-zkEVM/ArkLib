@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLibExamples.ReedSolomon.LambdaVM.Parameters
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCertificate
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Sharp
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -31,6 +32,7 @@ open ReedSolomon ReedSolomon.ListDecoding ReedSolomon.HiddenDerivative
 namespace ArkLibExamples.ReedSolomon.LambdaVM.CPU
 
 open ConcreteFields _root_.ReedSolomon.CurveProfile
+open _root_.ReedSolomon.CurveCertificate
 
 noncomputable section
 
@@ -44,12 +46,14 @@ theorem splits_admissible (i : Fin 9) :
 
 /-- The sharp rational geometric expressions lie below the generated integer ceilings. -/
 theorem envelopes_le (i : Fin 9) :
-    _root_.ReedSolomon.CurveCertificate.envelope (profiles i) (splits i) ≤ exceptionalCounts i := by
+    _root_.ReedSolomon.CurveCertificate.squarefreeSharpCurveEnvelope
+      (profiles i) (splits i) ≤ exceptionalCounts i := by
   fin_cases i <;> decide +kernel
 
-/-- Goldilocks characteristic exceeds each curve's candidate degree and jet cap. -/
+/-- Goldilocks characteristic exceeds each curve's candidate degree and derivative cap. -/
 theorem curve_characteristic_admissible (i : Fin 9) :
-    max ((profiles i).k - 1) (profiles i).totalJetCap < ringChar GoldilocksCubic := by
+    max ((profiles i).k - 1) (profiles i).firstDerivativeCap <
+      ringChar GoldilocksCubic := by
   rw [goldilocksCubic_ringChar]
   fin_cases i <;> norm_num [profiles, Goldilocks.fieldSize]
 
@@ -67,10 +71,12 @@ theorem exists_exceptional (i : Fin 9)
         HasExactPowerAgreement domain values (RingHom.id GoldilocksCubic)
           (profiles i).k z P := by
   obtain ⟨exceptional, hcard, hgood⟩ :=
-    _root_.ReedSolomon.CurveCertificate.exists_exceptional_exact_powerAgreement
+    exists_exceptional_exact_powerAgreement_squarefree_sharp_le
       (profiles_verified i)
       (splits i) (exceptionalCounts i) (splits_admissible i)
-      (by fin_cases i <;> decide) (envelopes_le i) domain values
+      (by fin_cases i <;> decide) (by fin_cases i <;> decide)
+      (by fin_cases i <;> decide) (by fin_cases i <;> decide)
+      (envelopes_le i) domain values
       (algebraMap GoldilocksCubic (AlgebraicClosure GoldilocksCubic))
       (Or.inr (curve_characteristic_admissible i))
   exact ⟨exceptional, by exact_mod_cast hcard, hgood⟩

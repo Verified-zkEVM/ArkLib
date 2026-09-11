@@ -1,8 +1,18 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Sharp
 import ArkLibExamples.ReedSolomon.LambdaVM.Parameters
 import ArkLibExamples.ReedSolomon.ProveKit.Certificates
 import ArkLibExamples.ReedSolomon.ZisK.Parameters
+/-!
+# Sharp squarefree curve certificate checks
+
+Exact arithmetic checks for the retained application profiles.
+-/
 
 open ReedSolomon.CurveCertificate
 
