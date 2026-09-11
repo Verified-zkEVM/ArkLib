@@ -80,7 +80,7 @@ theorem ratePartition_mathematical_length_guards {R a : ℝ} {d m n k A : ℕ}
     (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) :
     let D := ⌊R * n⌋₊
     d + 1 ≤ D ∧ R * n / 2 ≤ D ∧ k ≤ D ∧ D + 1 ≤ n ∧
-      ratePartitionJetBound R m < n ∧ 2 * m ≤ n ∧
+      ratePartitionJetBound R m < n ∧ 2 * m < n ∧
       ⌈a * n⌉₊ ≤ A ∧ 2 ≤ n := by
   have hnR : (ratePartitionMathematicalLength R d m : ℝ) ≤ n := by exact_mod_cast hn
   have hb := (Nat.le_ceil (max (((d : ℝ) + 1) / R)
@@ -111,7 +111,7 @@ theorem ratePartition_mathematical_length_guards {R a : ℝ} {d m n k A : ℕ}
   · exact_mod_cast (show (ratePartitionJetBound R m : ℝ) < n by linarith)
   · have hcap : (2 : ℝ) * m / R ≤ ratePartitionJetBound R m :=
       Nat.le_ceil (2 * (m : ℝ) / R)
-    have htwom : (2 : ℝ) * m ≤ n := by
+    have htwom : (2 : ℝ) * m < n := by
       have hRle : R ≤ 1 := hRone.le
       have hmnonneg : (0 : ℝ) ≤ 2 * m := by positivity
       have : (2 : ℝ) * m ≤ 2 * m / R := by
