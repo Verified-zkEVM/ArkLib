@@ -11,6 +11,7 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorization
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderList
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 
 /-!
 # Semantic presentations of the squarefree first-order split
@@ -55,6 +56,11 @@ theorem fromRootFirst_rootFirst (Q : DifferentialPolynomial F 1) :
     fromRootFirst (rootFirst Q) = Q := by
   simp [rootFirst, fromRootFirst]
 
+@[simp]
+theorem fromRootFirst_mul (R S : MvPolynomial (Option (Fin 2)) F) :
+    fromRootFirst (R * S) = fromRootFirst R * fromRootFirst S := by
+  simp [fromRootFirst]
+
 theorem contentEquation_ne_zero (Q : DifferentialPolynomial F 1) :
     contentEquation Q ≠ 0 := by
   intro hzero
@@ -71,6 +77,37 @@ theorem positiveEquation_ne_zero (Q : DifferentialPolynomial F 1) :
   rw [positiveEquation, rootFirst_fromRootFirst] at this
   simpa [rootFirst] using this
 
+/-- The transported squarefree positive-`Y₁` product divides the original equation. -/
+theorem positiveEquation_dvd (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0) :
+    positiveEquation Q ∣ Q := by
+  have hroot : positiveRootProduct Q ∣ rootFirst Q := by
+    change ordinaryRootProduct (rootFirst Q) ∣ rootFirst Q
+    apply dvd_trans (show positiveRootProduct Q ∣ content Q * positiveRootProduct Q from
+      ⟨content Q, by ac_rfl⟩)
+    change ordinaryContent (rootFirst Q) * ordinaryRootProduct (rootFirst Q) ∣ rootFirst Q
+    rw [ordinary_split_product]
+    exact ordinarySquarefreeProduct_dvd (rootFirst Q) (rootFirst_ne_zero_iff Q |>.mpr hQ)
+  obtain ⟨R, hR⟩ := hroot
+  refine ⟨fromRootFirst R, ?_⟩
+  have hmapped := congrArg fromRootFirst hR
+  simpa only [positiveEquation, fromRootFirst_rootFirst, fromRootFirst_mul] using hmapped
+
+/-- The retained content times the transported positive product divides the original equation. -/
+theorem contentEquation_mul_positiveEquation_dvd
+    (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0) :
+    contentEquation Q * positiveEquation Q ∣ Q := by
+  have hsquare := ordinarySquarefreeProduct_dvd
+    (rootFirst Q) (rootFirst_ne_zero_iff Q |>.mpr hQ)
+  obtain ⟨R, hR⟩ := hsquare
+  refine ⟨fromRootFirst R, ?_⟩
+  calc
+    Q = fromRootFirst (rootFirst Q) := (fromRootFirst_rootFirst Q).symm
+    _ = fromRootFirst (ordinarySquarefreeProduct (rootFirst Q) * R) :=
+      congrArg fromRootFirst hR
+    _ = contentEquation Q * positiveEquation Q * fromRootFirst R := by
+      rw [← ordinary_split_product, fromRootFirst_mul, fromRootFirst_mul]
+      rfl
+
 theorem contentEquation_yOneDegree (Q : DifferentialPolynomial F 1) :
     jetDegree (contentEquation Q) (1 : Fin 2) = 0 := by
   change degreeOf (some (1 : Fin 2)) (contentEquation Q) = 0
@@ -86,6 +123,31 @@ theorem positiveEquation_totalDegree_le
     _ = (rootFirst (positiveEquation Q)).totalDegree := (totalDegree_rootFirst _).symm
     _ = (positiveRootProduct Q).totalDegree := by rw [positiveEquation, rootFirst_fromRootFirst]
     _ ≤ Q.totalDegree := positiveRootProduct_totalDegree_le Q hQ
+
+/-- Retained content and the distinct positive factors share the original total jet-degree
+budget.  The independent variable has weight zero, so its potentially large degree does not
+weaken this bound. -/
+theorem contentEquation_jetTotalDegree_add_positiveEquation_le
+    (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0) :
+    jetTotalDegree (contentEquation Q) + jetTotalDegree (positiveEquation Q) ≤
+      jetTotalDegree Q := by
+  have hcontent := contentEquation_ne_zero Q
+  have hpositive := positiveEquation_ne_zero Q
+  have hproduct : contentEquation Q * positiveEquation Q ≠ 0 := mul_ne_zero hcontent hpositive
+  have hle := weightedTotalDegree_option_zero_one_le_of_dvd
+    (contentEquation Q * positiveEquation Q) Q hproduct hQ
+      (contentEquation_mul_positiveEquation_dvd Q hQ)
+  rw [weightedTotalDegree_option_zero_one_mul
+    (contentEquation Q) (positiveEquation Q) hcontent hpositive] at hle
+  simpa only [jetTotalDegree_eq_weightedTotalDegree_elim] using hle
+
+/-- The squarefree positive factor product alone stays within the source total jet-degree
+budget. -/
+theorem positiveEquation_jetTotalDegree_le
+    (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0) :
+    jetTotalDegree (positiveEquation Q) ≤ jetTotalDegree Q :=
+  (Nat.le_add_left _ _).trans
+    (contentEquation_jetTotalDegree_add_positiveEquation_le Q hQ)
 
 theorem positiveEquation_yOneDegree_le
     (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0) :
