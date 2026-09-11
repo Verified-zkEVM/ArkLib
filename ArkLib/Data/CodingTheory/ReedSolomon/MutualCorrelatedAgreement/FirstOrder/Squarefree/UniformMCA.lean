@@ -7,6 +7,8 @@ module
 
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Uniform
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 /-!
 # The height-276 first-order MCA certificate
 
@@ -224,5 +226,110 @@ theorem uniformFirstOrderMCA_parameters (n k A : ℕ)
   dsimp only
   refine ⟨by omega, by omega, by omega, ?_⟩
   exact uniformFirstOrderMCA_heightSlotCount n k A hk hAn hgap
+
+/-! ## Exact regular-stage arithmetic -/
+
+set_option maxHeartbeats 2000000 in
+-- Expanding the four exact cap-sensitive stages needs more than the default budget.
+/-- Exact generic-fiber degree of the four regular stages. -/
+theorem uniformFirstOrderMCA_hybridB1_four (D : ℕ) (hD : 1 ≤ D) :
+    hybridB1 D 23 4 = 724 * D - 314 := by
+  norm_num [hybridB1, Finset.sum_range_succ, hybridTau,
+    firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
+    firstOrderTaylorDerivativeCap,
+    AffineHilbert.fixedFiberDerivativeImageDegree]
+  omega
+
+/-- Exact joint-family degree of the four regular stages. -/
+theorem uniformFirstOrderMCA_hybridJ1_four (D : ℕ) (hD : 1 ≤ D) :
+    hybridJ1 D 276 23 4 =
+      1149264 * D ^ 2 - 1045144 * D + 236180 := by
+  obtain ⟨d, rfl⟩ : ∃ d, D = d + 1 := ⟨D - 1, by omega⟩
+  have hrhs :
+      1149264 * (d + 1) ^ 2 - 1045144 * (d + 1) =
+        1149264 * d ^ 2 + 1253384 * d + 104120 := by
+    have hid :
+        1149264 * (d + 1) ^ 2 =
+          (1149264 * d ^ 2 + 1253384 * d + 104120) +
+            1045144 * (d + 1) := by ring
+    have hle : 1045144 * (d + 1) ≤ 1149264 * (d + 1) ^ 2 := by
+      rw [hid]
+      omega
+    exact (Nat.sub_eq_iff_eq_add hle).2 hid
+  rw [hrhs]
+  norm_num [hybridJ1, Finset.sum_range_succ,
+    firstOrderCurveJointStageOne, firstOrderTaylorTotalCap,
+    firstOrderTaylorDerivativeCap, firstOrderCurveFiberStageOne,
+    hybridTau, AffineHilbert.mixedDerivativeImageDegree,
+    AffineHilbert.fixedFiberDerivativeImageDegree]
+  have hτ : 2 * (d + 1) - 1 = 2 * d + 1 := by omega
+  simp only [hτ]
+  have hm1 : d + 1 ≤ 1 + (2 * d + 1) * 19 := by omega
+  have hm2 : 2 * d + 1 + (d + 1) ≤ 1 + (2 * d + 1) * 20 := by omega
+  have hm3 : (2 * d + 1) * 2 + (d + 1) ≤ 1 + (2 * d + 1) * 21 := by omega
+  have hm4 : (2 * d + 1) * 3 + (d + 1) ≤ 1 + (2 * d + 1) * 22 := by omega
+  simp only [min_eq_right hm1, min_eq_right hm2, min_eq_right hm3,
+    min_eq_right hm4]
+  have hs1 : 1 + (2 * d + 1) * 19 - (d + 1) = 19 + 37 * d := by omega
+  have hs2 : 1 + (2 * d + 1) * 20 - (2 * d + 1 + (d + 1)) =
+      19 + 37 * d := by omega
+  have hs3 : 1 + (2 * d + 1) * 21 - ((2 * d + 1) * 2 + (d + 1)) =
+      19 + 37 * d := by omega
+  have hs4 : 1 + (2 * d + 1) * 22 - ((2 * d + 1) * 3 + (d + 1)) =
+      19 + 37 * d := by omega
+  simp only [hs1, hs2, hs3, hs4]
+  ring_nf
+  have ha1 : 40 + d * 116 + d ^ 2 * 76 - (1 + d * 2 + d ^ 2) =
+      39 + 114 * d + 75 * d ^ 2 := by omega
+  have ha2 : 84 + d * 286 + d ^ 2 * 240 - (4 + d * 12 + d ^ 2 * 9) =
+      80 + 274 * d + 231 * d ^ 2 := by omega
+  have ha3 : 132 + d * 472 + d ^ 2 * 420 - (9 + d * 30 + d ^ 2 * 25) =
+      123 + 442 * d + 395 * d ^ 2 := by omega
+  have ha4 : 184 + d * 674 + d ^ 2 * 616 - (16 + d * 56 + d ^ 2 * 49) =
+      168 + 618 * d + 567 * d ^ 2 := by omega
+  simp only [ha1, ha2, ha3, ha4]
+  ring
+
+/-- The exact regular fiber sum is monotone in the actual derivative degree. -/
+theorem hybridB1_mono {D μ e M : ℕ} (hD : 1 ≤ D)
+    (heM : e ≤ M) (hMμ : M ≤ μ) : hybridB1 D μ e ≤ hybridB1 D μ M := by
+  induction M generalizing e with
+  | zero =>
+      have : e = 0 := by omega
+      subst e
+      exact le_rfl
+  | succ M ih =>
+      by_cases heq : e = M + 1
+      · subst e
+        exact le_rfl
+      · exact (ih (by omega) (by omega)).trans
+          ((hybridB1_add_one_le_succ hD (by omega)).trans' (Nat.le_add_right _ _))
+
+/-- The exact regular joint sum is monotone in the actual derivative degree. -/
+theorem hybridJ1_mono {D h μ e M : ℕ} (heM : e ≤ M) (hMμ : M ≤ μ) :
+    hybridJ1 D h μ e ≤ hybridJ1 D h μ M := by
+  induction M generalizing e with
+  | zero =>
+      have : e = 0 := by omega
+      subst e
+      exact le_rfl
+  | succ M ih =>
+      by_cases heq : e = M + 1
+      · subst e
+        exact le_rfl
+      · apply (ih (by omega) (by omega)).trans
+        unfold hybridJ1
+        rw [Finset.sum_range_succ]
+        have hsum :
+            (∑ i ∈ Finset.range M,
+              firstOrderCurveJointStageOne (D + 1) 1 h (μ - i) (M - i)
+                (hybridTau D)) ≤
+              ∑ i ∈ Finset.range M,
+                firstOrderCurveJointStageOne (D + 1) 1 h (μ - i) (M + 1 - i)
+                  (hybridTau D) := by
+          apply Finset.sum_le_sum
+          intro i hi
+          exact firstOrderCurveJointStageOne_mono_derivative (by omega) (by omega)
+        exact hsum.trans (Nat.le_add_right _ _)
 
 end ReedSolomon
