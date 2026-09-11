@@ -550,6 +550,530 @@ theorem finiteLengthJetDegree_le_inv_slack
         _ ≤ (2 * cm / rho + 1) / s := by gcongr
         _ = finiteLengthJetBoundConstant rho / s := by rfl
 
+/-! ## Exact finite count gap
+
+The automatic-rounding API uses the same rate both to select `beta` and to count source
+monomials.  The finite-length selector intentionally uses `rho` for the former and
+`rho - 1/n` for the latter.  The private models below record the two rounding estimates in the
+needed parametric form. -/
+
+private def finiteLengthRankRoundingModel (u v : ℝ) : ℝ :=
+  (u + v) * ((1 - v) / 2 + v) -
+    (2 * ((1 - v) * (2 - v) / 6 -
+        (1 - u) * (1 - u - v) * (2 * (1 - u) - v) / 6) +
+      (2 * u + 3 * v - 3) *
+        ((1 - v) / 2 - (1 - u) * (1 - u - v) / 2) +
+      u * (v - 1) * (u + v - 1))
+
+private theorem finiteLengthRankRoundingModel_le
+    {u v beta : ℝ} (hu0 : 0 ≤ u) (hub : u ≤ beta) (hbu : beta ≤ u + v)
+    (hv0 : 0 ≤ v) (hv1 : v ≤ 1) (hb1 : beta ≤ 3 / 4) :
+    finiteLengthRankRoundingModel u v ≤
+      beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 + 3 * v := by
+  unfold finiteLengthRankRoundingModel
+  have hu34 : u ≤ 3 / 4 := hub.trans hb1
+  have hq : 0 ≤ 1 / 2 - (beta + u) / 2 +
+      (beta ^ 2 + beta * u + u ^ 2) / 3 := by
+    nlinarith [sq_nonneg (beta - u), sq_nonneg (beta + u - 1)]
+  have hP : u / 2 - u ^ 2 / 2 + u ^ 3 / 3 ≤
+      beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 := by
+    have hdiff :
+      (beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3) -
+          (u / 2 - u ^ 2 / 2 + u ^ 3 / 3) =
+        (beta - u) * (1 / 2 - (beta + u) / 2 +
+          (beta ^ 2 + beta * u + u ^ 2) / 3) := by ring
+    nlinarith [mul_nonneg (sub_nonneg.mpr hub) hq]
+  have hvSq : v ^ 2 ≤ v := by
+    nlinarith [mul_nonneg hv0 (sub_nonneg.mpr hv1)]
+  have huSq : u ^ 2 ≤ (9 / 16 : ℝ) := by
+    have hprod := mul_nonneg (sub_nonneg.mpr hu34)
+      (add_nonneg hu0 (by norm_num : (0 : ℝ) ≤ 3 / 4))
+    nlinarith
+  have huSqV : u ^ 2 * v ≤ (9 / 16 : ℝ) * v :=
+    mul_le_mul_of_nonneg_right huSq hv0
+  have huVSq : u * v ^ 2 ≤ (3 / 4 : ℝ) * v := by
+    calc
+      u * v ^ 2 ≤ (3 / 4 : ℝ) * v ^ 2 :=
+        mul_le_mul_of_nonneg_right hu34 (sq_nonneg v)
+      _ ≤ (3 / 4 : ℝ) * v := mul_le_mul_of_nonneg_left hvSq (by norm_num)
+  ring_nf at ⊢
+  nlinarith
+
+private def finiteLengthLinearSum (x : ℝ) : ℝ := x * (x - 1) / 2
+
+private def finiteLengthSquareSum (x : ℝ) : ℝ := x * (x - 1) * (2 * x - 1) / 6
+
+private theorem finiteLength_sum_range_cast (n : ℕ) :
+    (∑ i ∈ Finset.range n, (i : ℝ)) = finiteLengthLinearSum n := by
+  induction n with
+  | zero => simp [finiteLengthLinearSum]
+  | succ n ih =>
+      rw [Finset.sum_range_succ, ih]
+      simp only [finiteLengthLinearSum]
+      push_cast
+      ring
+
+private theorem finiteLength_sum_range_sq_cast (n : ℕ) :
+    (∑ i ∈ Finset.range n, (i : ℝ) ^ 2) = finiteLengthSquareSum n := by
+  induction n with
+  | zero => simp [finiteLengthSquareSum]
+  | succ n ih =>
+      rw [Finset.sum_range_succ, ih]
+      simp only [finiteLengthSquareSum]
+      push_cast
+      ring
+
+private theorem finiteLengthRankCubicUpperCount_normalized_eq_model {m M : ℕ}
+    (hm : 0 < m) (hM : M ≤ m) :
+    firstOrderRankCubicUpperCount m M / (m : ℝ) ^ 3 =
+      finiteLengthRankRoundingModel ((M : ℝ) / m) ((m : ℝ)⁻¹) := by
+  have hamb (q : ℕ) :
+      (∑ s ∈ Finset.range q, ((s + 1 : ℕ) : ℝ) * (M + 1)) =
+        (M + 1) * (finiteLengthLinearSum q + q) := by
+    calc
+      _ = (M + 1 : ℝ) * ((∑ s ∈ Finset.range q, (s : ℝ)) + q) := by
+        push_cast
+        ring_nf
+        simp only [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range,
+          nsmul_eq_mul]
+        rw [← Finset.sum_mul]
+        ring
+      _ = _ := by rw [finiteLength_sum_range_cast]
+  have hcorrection (q : ℕ) :
+      (∑ s ∈ Finset.range q,
+        (((2 * s + 1 : ℕ) : ℝ) - m) * (((s + M + 1 : ℕ) : ℝ) - m)) =
+        2 * finiteLengthSquareSum q +
+          (2 * M + 3 - 3 * m) * finiteLengthLinearSum q +
+          q * (1 - m) * (M + 1 - m) := by
+    calc
+      _ = ∑ s ∈ Finset.range q,
+          (2 * (s : ℝ) ^ 2 + (2 * M + 3 - 3 * m) * s +
+            (1 - m) * (M + 1 - m)) := by
+        apply Finset.sum_congr rfl
+        intro s _
+        push_cast
+        ring
+      _ = _ := by
+        rw [Finset.sum_add_distrib, Finset.sum_add_distrib,
+          ← Finset.mul_sum, ← Finset.mul_sum, finiteLength_sum_range_cast,
+          finiteLength_sum_range_sq_cast]
+        simp only [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+        ring
+  rw [firstOrderRankCubicUpperCount,
+    Finset.sum_Ico_eq_sub _ (Nat.sub_le m M), hamb, hcorrection, hcorrection]
+  rw [Nat.cast_sub hM]
+  simp only [finiteLengthLinearSum, finiteLengthSquareSum, finiteLengthRankRoundingModel]
+  field_simp [ne_of_gt (Nat.cast_pos.mpr hm)]
+  ring
+
+/-- The exact finite-length local rank loses at most `3m²` against the cubic density. -/
+theorem finiteLengthRankCount_le_density_add_three_mul_sq
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n)
+    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
+    (finiteLengthRankCount rho eta n : ℝ) ≤
+      (finiteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+          firstOrderRankDensity (finiteLengthDerivativeRatio rho eta) +
+        3 * (finiteLengthMultiplicity rho eta n : ℝ) ^ 2 := by
+  let m := finiteLengthMultiplicity rho eta n
+  let beta := finiteLengthDerivativeRatio rho eta
+  let M := finiteLengthDerivativeCap rho eta n
+  let u : ℝ := M / m
+  let v : ℝ := (m : ℝ)⁻¹
+  have hmNat : 0 < m := finiteLengthMultiplicity_pos
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hm : (0 : ℝ) < m := Nat.cast_pos.mpr hmNat
+  have hb0 : 0 ≤ beta := by
+    dsimp only [beta]
+    exact (automaticBeta_pos hrho hrhoOne (by linarith) haOne).le
+  have hMReal : (M : ℝ) ≤ beta * m := by
+    dsimp only [M, beta, m]
+    unfold finiteLengthDerivativeCap
+    exact Nat.floor_le (mul_nonneg hb0 (Nat.cast_nonneg _))
+  have hMlt : beta * m < (M : ℝ) + 1 := by
+    dsimp only [M, beta, m]
+    unfold finiteLengthDerivativeCap
+    exact Nat.lt_floor_add_one _
+  have hMNat : M ≤ m := by
+    dsimp only [M, m]
+    exact finiteLengthDerivativeCap_le_multiplicity
+      hrho hrhoOne heta haOne hn hbetaHalf
+  have hu0 : 0 ≤ u := by unfold u; positivity
+  have hub : u ≤ beta := by
+    unfold u
+    exact (div_le_iff₀ hm).2 (by simpa [mul_comm] using hMReal)
+  have hbu : beta ≤ u + v := by
+    unfold u v
+    rw [show (M : ℝ) / m + (m : ℝ)⁻¹ = ((M : ℝ) + 1) / m by
+      field_simp [ne_of_gt hm]]
+    exact (le_div_iff₀ hm).2 (by linarith)
+  have hv0 : 0 ≤ v := by unfold v; positivity
+  have hv1 : v ≤ 1 := by
+    unfold v
+    rw [inv_le_one₀ hm]
+    exact_mod_cast hmNat
+  have hmodel := finiteLengthRankRoundingModel_le hu0 hub hbu hv0 hv1
+    (hbetaHalf.trans (by norm_num : (1 / 2 : ℝ) ≤ 3 / 4))
+  have hrankDensity : firstOrderRankDensity beta =
+      beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 := by
+    rw [firstOrderRankDensity, if_pos hbetaHalf]
+  have hnormalized : firstOrderRankCubicUpperCount m M / (m : ℝ) ^ 3 ≤
+      firstOrderRankDensity beta + 3 / m := by
+    rw [finiteLengthRankCubicUpperCount_normalized_eq_model hmNat hMNat,
+      hrankDensity]
+    dsimp only [u, v] at hmodel ⊢
+    simpa [div_eq_mul_inv] using hmodel
+  have hmCube : 0 < (m : ℝ) ^ 3 := pow_pos hm 3
+  have hupper : firstOrderRankCubicUpperCount m M ≤
+      (m : ℝ) ^ 3 * (firstOrderRankDensity beta + 3 / m) := by
+    simpa [mul_comm] using (div_le_iff₀ hmCube).mp hnormalized
+  have hscale : (m : ℝ) ^ 3 * (firstOrderRankDensity beta + 3 / m) =
+      (m : ℝ) ^ 3 * firstOrderRankDensity beta + 3 * (m : ℝ) ^ 2 := by
+    field_simp [ne_of_gt hm]
+  unfold finiteLengthRankCount
+  calc
+    (firstOrderRateRankCount m M : ℝ) ≤ firstOrderRankCubicUpperCount m M :=
+      firstOrderRateRankCount_le_cubicUpperCount m M
+    _ ≤ (m : ℝ) ^ 3 * (firstOrderRankDensity beta + 3 / m) := hupper
+    _ = _ := hscale
+
+private def finiteLengthSourceRoundingModel (z u c v : ℝ) : ℝ :=
+  (z + v) * u * (u - v) / 2 - u * (u - v) * (2 * u - v) / 6 +
+    u * ((z + v) * (c - u) - (c * (c - v) - u * (u - v)) / 2)
+
+private theorem finiteLengthSourceRoundingModel_ge
+    {z u c v beta : ℝ}
+    (hz1 : 1 ≤ z) (hbz : beta ≤ z) (hbu : beta ≤ u) (hub : u ≤ beta + v)
+    (hu0 : 0 ≤ u) (hv0 : 0 ≤ v) (hv1 : v ≤ 1)
+    (hzc : z + v ≤ c) (hcz : c ≤ z + 2 * v) :
+    beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6 ≤
+      finiteLengthSourceRoundingModel z u c v := by
+  have hconcave : finiteLengthSourceRoundingModel z u (z + v) v ≤
+      finiteLengthSourceRoundingModel z u c v := by
+    have hid : finiteLengthSourceRoundingModel z u c v -
+        finiteLengthSourceRoundingModel z u (z + v) v =
+          u / 2 * (c - (z + v)) * (z + 2 * v - c) := by
+      unfold finiteLengthSourceRoundingModel
+      ring
+    rw [← sub_nonneg, hid]
+    positivity
+  have hleft : beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6 ≤
+      finiteLengthSourceRoundingModel z u (z + v) v := by
+    have hquad : 0 ≤
+        (u - z) ^ 2 + (u - z) * (beta - z) + (beta - z) ^ 2 := by
+      nlinarith [sq_nonneg ((u - z) + (beta - z)), sq_nonneg (u - z),
+        sq_nonneg (beta - z)]
+    have hbase : beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6 ≤
+        u * z ^ 2 / 2 - z * u ^ 2 / 2 + u ^ 3 / 6 := by
+      have hid :
+          (u * z ^ 2 / 2 - z * u ^ 2 / 2 + u ^ 3 / 6) -
+              (beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6) =
+            (u - beta) / 6 *
+              ((u - z) ^ 2 + (u - z) * (beta - z) + (beta - z) ^ 2) := by ring
+      have hfac : 0 ≤ (u - beta) / 6 :=
+        div_nonneg (sub_nonneg.mpr hbu) (by norm_num)
+      nlinarith [mul_nonneg hfac hquad]
+    have huz : u ≤ z + v := hub.trans (by
+      simpa only [add_comm] using add_le_add_right hbz v)
+    have hbracket : 0 ≤ z - u / 2 + v / 3 := by nlinarith
+    have hround : 0 ≤ v * u * (z - u / 2 + v / 3) := by positivity
+    have hid : finiteLengthSourceRoundingModel z u (z + v) v =
+        (u * z ^ 2 / 2 - z * u ^ 2 / 2 + u ^ 3 / 6) +
+          v * u * (z - u / 2 + v / 3) := by
+      unfold finiteLengthSourceRoundingModel
+      ring
+    rw [hid]
+    linarith
+  exact hleft.trans hconcave
+
+private def finiteLengthSourceLowerCount (R a : ℝ) (m M L : ℕ) : ℝ :=
+  ∑ t ∈ Finset.range L, (min t M : ℕ) * (m * a - R * t)
+
+private theorem finiteLengthSourceLowerCount_normalized_eq_model
+    {R z : ℝ} {m M L : ℕ} (hm : 0 < m) (hML : M ≤ L) :
+    finiteLengthSourceLowerCount R (R * (z + (m : ℝ)⁻¹)) m M L / (m : ℝ) ^ 3 =
+      R * finiteLengthSourceRoundingModel z ((M : ℝ) / m) ((L : ℝ) / m)
+        ((m : ℝ)⁻¹) := by
+  have hsplit :
+      finiteLengthSourceLowerCount R (R * (z + (m : ℝ)⁻¹)) m M L =
+        (R * (z + (m : ℝ)⁻¹)) * m * finiteLengthLinearSum M -
+          R * finiteLengthSquareSum M +
+          M * ((R * (z + (m : ℝ)⁻¹)) * m * (L - M) -
+            R * (finiteLengthLinearSum L - finiteLengthLinearSum M)) := by
+    rw [finiteLengthSourceLowerCount, ← Finset.sum_range_add_sum_Ico _ hML]
+    have hfirst :
+        (∑ t ∈ Finset.range M,
+            (min t M : ℕ) * (m * (R * (z + (m : ℝ)⁻¹)) - R * t)) =
+          (R * (z + (m : ℝ)⁻¹)) * m * finiteLengthLinearSum M -
+            R * finiteLengthSquareSum M := by
+      calc
+        _ = ∑ t ∈ Finset.range M,
+            ((t : ℝ) * (m * (R * (z + (m : ℝ)⁻¹)) - R * t)) := by
+          apply Finset.sum_congr rfl
+          intro t ht
+          rw [min_eq_left (Finset.mem_range.mp ht).le]
+        _ = ∑ t ∈ Finset.range M,
+            ((R * (z + (m : ℝ)⁻¹)) * m * (t : ℝ) - R * (t : ℝ) ^ 2) := by
+          apply Finset.sum_congr rfl
+          intro t _
+          ring
+        _ = _ := by
+          rw [Finset.sum_sub_distrib, ← Finset.mul_sum, ← Finset.mul_sum,
+            finiteLength_sum_range_cast, finiteLength_sum_range_sq_cast]
+    have htail :
+        (∑ t ∈ Finset.Ico M L,
+            (min t M : ℕ) * (m * (R * (z + (m : ℝ)⁻¹)) - R * t)) =
+          M * ((R * (z + (m : ℝ)⁻¹)) * m * (L - M) -
+            R * (finiteLengthLinearSum L - finiteLengthLinearSum M)) := by
+      calc
+        _ = ∑ t ∈ Finset.Ico M L,
+            ((M : ℝ) * (m * (R * (z + (m : ℝ)⁻¹)) - R * t)) := by
+          apply Finset.sum_congr rfl
+          intro t ht
+          rw [min_eq_right (Finset.mem_Ico.mp ht).1]
+        _ = _ := by
+          have hsum (q : ℕ) :
+              (∑ t ∈ Finset.range q,
+                ((m : ℝ) * (R * (z + (m : ℝ)⁻¹)) - R * t)) =
+                q * (m * (R * (z + (m : ℝ)⁻¹))) -
+                  R * finiteLengthLinearSum q := by
+            induction q with
+            | zero => simp [finiteLengthLinearSum]
+            | succ q ih =>
+                rw [Finset.sum_range_succ, ih]
+                simp only [finiteLengthLinearSum]
+                push_cast
+                ring
+          rw [← Finset.mul_sum, Finset.sum_Ico_eq_sub _ hML, hsum, hsum]
+          ring
+    exact congrArg₂ (fun x y : ℝ ↦ x + y) hfirst htail
+  rw [hsplit]
+  simp only [finiteLengthLinearSum, finiteLengthSquareSum, finiteLengthSourceRoundingModel]
+  field_simp [ne_of_gt (Nat.cast_pos.mpr hm)]
+
+private theorem finiteLength_shiftedSourceLowerCount_eq
+    {R a : ℝ} {m M L : ℕ} (hm : 0 < m) :
+    finiteLengthSourceLowerCount R (a + R / m) m (M + 1) (L + 2) =
+      ∑ t ∈ Finset.range (L + 1),
+        (min t M + 1 : ℕ) * (m * a - R * t) := by
+  rw [finiteLengthSourceLowerCount, Finset.sum_range_succ']
+  rw [show min 0 (M + 1) = 0 by omega]
+  simp only [Nat.cast_zero, zero_mul, add_zero, Nat.cast_add, Nat.cast_one]
+  apply Finset.sum_congr rfl
+  intro t _
+  rw [show min (t + 1) (M + 1) = min t M + 1 by omega]
+  push_cast
+  field_simp [ne_of_gt (Nat.cast_pos.mpr hm)]
+  ring
+
+/-- The rounded finite-length source count dominates its exact continuous density. -/
+theorem finiteLengthSourceDensity_mul_cube_le_sourceCount
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n)
+    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
+    (finiteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+        firstOrderSourceDensity (finiteLengthRate rho n)
+          (finiteLengthCertifiedAgreement rho eta) (finiteLengthDerivativeRatio rho eta) ≤
+      finiteLengthSourceCount rho eta n := by
+  let R := finiteLengthRate rho n
+  let a := finiteLengthCertifiedAgreement rho eta
+  let beta := finiteLengthDerivativeRatio rho eta
+  let m := finiteLengthMultiplicity rho eta n
+  let M := finiteLengthDerivativeCap rho eta n
+  let mu := finiteLengthJetDegree rho eta n
+  let L := ⌊m * a / R⌋₊
+  let z := a / R
+  let u : ℝ := (M + 1 : ℕ) / m
+  let c : ℝ := (L + 2 : ℕ) / m
+  let v : ℝ := (m : ℝ)⁻¹
+  let Q : ℝ := ∑ t ∈ Finset.range (L + 1),
+    (min t M + 1 : ℕ) * (m * a - R * t)
+  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hmNat : 0 < m := finiteLengthMultiplicity_pos
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hm : (0 : ℝ) < m := Nat.cast_pos.mpr hmNat
+  have hmCube : 0 < (m : ℝ) ^ 3 := pow_pos hm 3
+  have ha0 : 0 < a := hrho.trans
+    (rho_lt_automaticAgreement hrho hrhoOne (by linarith))
+  have hb0 : 0 ≤ beta := by
+    dsimp only [beta]
+    exact (automaticBeta_pos hrho hrhoOne (by linarith) haOne).le
+  have hbetaCutFixed : beta < a / rho := by
+    dsimp only [beta, a]
+    exact automaticBeta_lt_agreement_div_rate hrho hrhoOne (by linarith) haOne
+  have hRlt : R < rho := by
+    dsimp only [R]
+    exact finiteLengthRate_lt_rate (length_pos_of_two_le_rate_mul_length hn)
+  have hbz : beta < z := hbetaCutFixed.trans_le
+    (div_le_div_of_nonneg_left ha0.le hR hRlt.le)
+  have hMReal : (M : ℝ) ≤ beta * m := by
+    dsimp only [M, beta, m]
+    unfold finiteLengthDerivativeCap
+    exact Nat.floor_le (mul_nonneg hb0 (Nat.cast_nonneg _))
+  have hMlt : beta * m < (M : ℝ) + 1 := by
+    dsimp only [M, beta, m]
+    unfold finiteLengthDerivativeCap
+    exact Nat.lt_floor_add_one _
+  have hmulCutoff : beta * m ≤ m * a / R := by
+    have := mul_le_mul_of_nonneg_right hbz.le (Nat.cast_nonneg m)
+    dsimp only [z] at this
+    calc
+      beta * (m : ℝ) ≤ (a / R) * m := this
+      _ = (m : ℝ) * a / R := by ring
+  have hML : M ≤ L := by
+    dsimp only [M, L]
+    unfold finiteLengthDerivativeCap
+    exact Nat.floor_le_floor hmulCutoff
+  have hcutoff0 : 0 ≤ (m : ℝ) * a / R := by positivity
+  have hLReal : (L : ℝ) ≤ m * a / R := by
+    unfold L
+    exact Nat.floor_le hcutoff0
+  have hLlt : (m : ℝ) * a / R < (L : ℝ) + 1 := by
+    unfold L
+    exact Nat.lt_floor_add_one _
+  have hLmu : L ≤ mu := by
+    dsimp only [mu, L, m, a, R]
+    unfold finiteLengthJetDegree
+    exact_mod_cast hLReal.trans (Nat.le_ceil _)
+  have hQle : Q ≤ finiteLengthSourceCount rho eta n := by
+    unfold finiteLengthSourceCount
+    change Q ≤ ∑ t ∈ Finset.range (mu + 1),
+      (min t M + 1 : ℕ) * max (m * a - R * t) 0
+    dsimp only [Q]
+    calc
+      (∑ t ∈ Finset.range (L + 1),
+          (min t M + 1 : ℕ) * (m * a - R * t)) =
+          ∑ t ∈ Finset.range (L + 1),
+            (min t M + 1 : ℕ) * max (m * a - R * t) 0 := by
+        apply Finset.sum_congr rfl
+        intro t ht
+        rw [max_eq_left]
+        have htL : (t : ℝ) ≤ L := by
+          have htNat : t < L + 1 := Finset.mem_range.mp ht
+          have : t ≤ L := by omega
+          exact_mod_cast this
+        have htCutoff := htL.trans hLReal
+        have := mul_le_mul_of_nonneg_left htCutoff hR.le
+        field_simp [ne_of_gt hR] at this ⊢
+        nlinarith
+      _ ≤ ∑ t ∈ Finset.range (mu + 1),
+            (min t M + 1 : ℕ) * max (m * a - R * t) 0 := by
+        apply Finset.sum_le_sum_of_subset_of_nonneg
+        · exact Finset.range_mono (Nat.add_le_add_right hLmu 1)
+        · intro t _ _
+          positivity
+  have hshift : finiteLengthSourceLowerCount R (a + R / m) m (M + 1) (L + 2) = Q :=
+    finiteLength_shiftedSourceLowerCount_eq hmNat
+  have harg : R * (z + (m : ℝ)⁻¹) = a + R / m := by
+    dsimp only [z]
+    field_simp [ne_of_gt hR, ne_of_gt hm]
+  have hnormalized : Q / (m : ℝ) ^ 3 =
+      R * finiteLengthSourceRoundingModel z u c v := by
+    have h := finiteLengthSourceLowerCount_normalized_eq_model
+      (R := R) (z := z) (m := m) (M := M + 1) (L := L + 2) hmNat (by omega)
+    rw [harg, hshift] at h
+    exact h
+  have hz1 : 1 ≤ z := by
+    dsimp only [z]
+    apply (le_div_iff₀ hR).2
+    have hfixed : rho < a := by
+      dsimp only [a, finiteLengthCertifiedAgreement]
+      exact rho_lt_automaticAgreement hrho hrhoOne (by linarith)
+    simpa only [one_mul] using (hRlt.trans hfixed).le
+  have hbu : beta ≤ u := by
+    dsimp only [u]
+    exact (le_div_iff₀ hm).2 (by norm_num at hMlt ⊢; linarith)
+  have hub : u ≤ beta + v := by
+    dsimp only [u, v]
+    rw [show beta + (m : ℝ)⁻¹ = (beta * m + 1) / m by
+      field_simp [ne_of_gt hm]]
+    exact (div_le_div_iff_of_pos_right hm).2 (by norm_num; linarith)
+  have hu0 : 0 ≤ u := by dsimp only [u]; positivity
+  have hv0 : 0 ≤ v := by dsimp only [v]; positivity
+  have hv1 : v ≤ 1 := by
+    dsimp only [v]
+    rw [inv_le_one₀ hm]
+    exact_mod_cast hmNat
+  have hzc : z + v ≤ c := by
+    dsimp only [z, v, c]
+    apply (le_div_iff₀ hm).2
+    have : (m : ℝ) * (a / R + (m : ℝ)⁻¹) = m * a / R + 1 := by
+      field_simp [ne_of_gt hm]
+    rw [mul_comm, this]
+    push_cast
+    linarith
+  have hcz : c ≤ z + 2 * v := by
+    dsimp only [z, v, c]
+    apply (div_le_iff₀ hm).2
+    have : (m : ℝ) * (a / R + 2 * (m : ℝ)⁻¹) = m * a / R + 2 := by
+      field_simp [ne_of_gt hm]
+    rw [mul_comm, this]
+    push_cast
+    linarith
+  have hmodel := finiteLengthSourceRoundingModel_ge hz1 hbz.le hbu hub hu0 hv0 hv1 hzc hcz
+  have hdensity : firstOrderSourceDensity R a beta =
+      R * (beta * z ^ 2 / 2 - z * beta ^ 2 / 2 + beta ^ 3 / 6) := by
+    unfold firstOrderSourceDensity
+    dsimp only [z]
+    field_simp [ne_of_gt hR]
+  have hdensityNorm : firstOrderSourceDensity R a beta ≤ Q / (m : ℝ) ^ 3 := by
+    rw [hdensity, hnormalized]
+    exact mul_le_mul_of_nonneg_left hmodel hR.le
+  have hdensityQ : (m : ℝ) ^ 3 * firstOrderSourceDensity R a beta ≤ Q := by
+    have := (le_div_iff₀ hmCube).mp hdensityNorm
+    nlinarith
+  exact hdensityQ.trans hQle
+
+/-- The literal ceiling choice absorbs the exact rank-rounding loss. -/
+theorem finiteLength_count_gap
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n)
+    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
+    3 * (finiteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+        finiteLengthDensityMargin rho eta n / 4 ≤
+      finiteLengthSourceCount rho eta n - finiteLengthRankCount rho eta n := by
+  let m := finiteLengthMultiplicity rho eta n
+  let delta := finiteLengthDensityMargin rho eta n
+  let crank := finiteLengthRankRoundingConstant rho eta
+  let beta := finiteLengthDerivativeRatio rho eta
+  have hmNat : 0 < m := finiteLengthMultiplicity_pos
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hm : (0 : ℝ) < m := Nat.cast_pos.mpr hmNat
+  have hdelta : 0 < delta := finiteLengthDensityMargin_pos
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hceil : 4 * crank / delta ≤ (m : ℝ) := by
+    dsimp only [m, crank, delta]
+    unfold finiteLengthMultiplicity
+    exact Nat.le_ceil _
+  have hcrank3 : 3 ≤ crank := by
+    have hb : 0 ≤ finiteLengthDerivativeRatio rho eta := by
+      unfold finiteLengthDerivativeRatio
+      exact (automaticBeta_pos hrho hrhoOne (by linarith) haOne).le
+    change 3 ≤ 2 * finiteLengthDerivativeRatio rho eta + 3
+    linarith
+  have habsorb : 4 * crank ≤ (m : ℝ) * delta := by
+    exact (div_le_iff₀ hdelta).mp (by simpa [mul_comm] using hceil)
+  have hround : crank * (m : ℝ) ^ 2 ≤
+      (m : ℝ) ^ 3 * delta / 4 := by
+    nlinarith [mul_nonneg (sq_nonneg (m : ℝ))
+      (sub_nonneg.mpr habsorb)]
+  have hsource := finiteLengthSourceDensity_mul_cube_le_sourceCount
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hrank := finiteLengthRankCount_le_density_add_three_mul_sq
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hrank' : (finiteLengthRankCount rho eta n : ℝ) ≤
+      (m : ℝ) ^ 3 * firstOrderRankDensity beta + crank * (m : ℝ) ^ 2 := by
+    dsimp only [m, beta] at hrank ⊢
+    exact hrank.trans (by gcongr)
+  dsimp only [delta, finiteLengthDensityMargin, m, beta] at hround hsource hrank' ⊢
+  nlinarith
+
 /-- A coarse bound on the exact local-rank count, sufficient for the height estimate. -/
 theorem finiteLengthRankCount_le_two_mul_cube
     {rho eta : ℝ} {n : ℕ}
@@ -574,9 +1098,7 @@ theorem finiteLengthRankCount_le_two_mul_cube
     _ ≤ m * (m * (2 * m)) := by gcongr
     _ = 2 * m ^ 3 := by ring
 
-/-- Once the paper's exact finite count-gap estimate is available, the literal floor quotient
-has inverse-square finite-length-slack size.  Thus the sole missing input for `H` is the displayed
-source/rank rounding estimate, not an additional asymptotic or positivity assumption. -/
+/-- Compatibility form of the height bound with an explicit finite count-gap premise. -/
 theorem finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     {rho eta : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
@@ -699,7 +1221,7 @@ theorem finiteLength_multiplicity_derivativeCap_jetDegree_bounds
     (finiteLengthJetDegree_le_inv_slack
       hrho hrhoOne heta haOne hn hbetaHalf).trans hcBDiv⟩
 
-/-- The same common constant dominates `H` once the paper's exact count-gap lemma is supplied. -/
+/-- Compatibility form of the common height bound with an explicit finite count-gap premise. -/
 theorem finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap
     {rho eta : ℝ} {n : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
@@ -719,6 +1241,33 @@ theorem finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap
   exact (finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
     hrho hrhoOne heta haOne hn hbetaHalf hgap).trans
       (div_le_div_of_nonneg_right hcH hsSq)
+
+/-- The literal challenge height has inverse-square finite-length-slack size, with the exact
+floor quotient and `max 1` endpoint. -/
+theorem finiteLengthChallengeHeight_le_inv_slack_sq
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n)
+    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
+    (finiteLengthChallengeHeight rho eta n : ℝ) ≤
+      finiteLengthHeightBoundConstant rho / finiteLengthSlack eta n ^ 2 := by
+  exact finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap
+    hrho hrhoOne heta haOne hn hbetaHalf
+      (finiteLength_count_gap hrho hrhoOne heta haOne hn hbetaHalf)
+
+/-- The common finite-length parameter constant also dominates the exact challenge height. -/
+theorem finiteLengthChallengeHeight_le_common_inv_slack_sq
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n)
+    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2) :
+    (finiteLengthChallengeHeight rho eta n : ℝ) ≤
+      finiteLengthParameterBoundConstant rho / finiteLengthSlack eta n ^ 2 := by
+  exact finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap
+    hrho hrhoOne heta haOne hn hbetaHalf
+      (finiteLength_count_gap hrho hrhoOne heta haOne hn hbetaHalf)
 
 end
 
