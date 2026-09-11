@@ -36,7 +36,7 @@ def traceRows : ℕ := 32768
 def length : ℕ := 65536
 
 /-- Required agreement on the initial evaluation domain. -/
-def agreement : ℕ := 45810
+def agreement : ℕ := 45690
 
 /-- Dimension of the initial polynomial before adding the two anchor degrees. -/
 def initialDimension : ℕ := 32768
@@ -49,52 +49,52 @@ def powersDegree : ℕ := 50
 
 /-- Initial powers profile followed by the eight binary-fold profiles. -/
 def profiles : Fin 9 → LineProfile := ![
-  { n := 65536, k := 32768, agreement := 45810, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 50,
-    supportDimension := 92023540, localRank := 1400,
-    columnY₀Weight := 829800580, height := 42164, heightSlots := 3879342763520 },
-  { n := 32768, k := 16384, agreement := 22905, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 46013660, localRank := 1400,
-    columnY₀Weight := 414932140, height := 832, heightSlots := 37914446640 },
-  { n := 16384, k := 8192, agreement := 11453, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 23010876, localRank := 1400,
-    columnY₀Weight := 207527180, height := 787, heightSlots := 17925043108 },
-  { n := 8192, k := 4096, agreement := 5727, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 11509484, localRank := 1400,
-    columnY₀Weight := 103824700, height := 710, heightSlots := 8079418424 },
-  { n := 4096, k := 2048, agreement := 2864, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 5758788, localRank := 1400,
-    columnY₀Weight := 51973460, height := 595, heightSlots := 3380264188 },
-  { n := 2048, k := 1024, agreement := 1432, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 2881284, localRank := 1400,
-    columnY₀Weight := 26018580, height := 518, heightSlots := 1469367816 },
-  { n := 1024, k := 512, agreement := 716, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 1442532, localRank := 1400,
-    columnY₀Weight := 13041140, height := 413, heightSlots := 584167108 },
-  { n := 512, k := 256, agreement := 358, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 723156, localRank := 1400,
-    columnY₀Weight := 6552420, height := 296, heightSlots := 208224912 },
-  { n := 256, k := 128, agreement := 179, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 363468, localRank := 1400,
-    columnY₀Weight := 3308060, height := 193, heightSlots := 67204732 }
+  { n := 65536, k := 32768, agreement := 45690, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 50,
+    supportDimension := 271682880, localRank := 4125,
+    columnY₀Weight := 3580444920, height := 36670, heightSlots := 9959302447560 },
+  { n := 32768, k := 16384, agreement := 22845, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 135847200, localRank := 4125,
+    columnY₀Weight := 1790363640, height := 727, heightSlots := 97106397960 },
+  { n := 16384, k := 8192, agreement := 11423, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 67935840, localRank := 4125,
+    columnY₀Weight := 895451640, height := 703, heightSlots := 46931379720 },
+  { n := 8192, k := 4096, agreement := 5712, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 33980160, localRank := 4125,
+    columnY₀Weight := 447995640, height := 659, heightSlots := 21978909960 },
+  { n := 4096, k := 2048, agreement := 2856, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 16995840, localRank := 4125,
+    columnY₀Weight := 224139000, height := 622, heightSlots := 10364269320 },
+  { n := 2048, k := 1024, agreement := 1428, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 8503680, localRank := 4125,
+    columnY₀Weight := 112210680, height := 561, heightSlots := 4666857480 },
+  { n := 1024, k := 512, agreement := 714, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 4257600, localRank := 4125,
+    columnY₀Weight := 56246520, height := 470, heightSlots := 1949083080 },
+  { n := 512, k := 256, agreement := 357, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 2134560, localRank := 4125,
+    columnY₀Weight := 28264440, height := 357, heightSlots := 735908040 },
+  { n := 256, k := 128, agreement := 179, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 1079520, localRank := 4125,
+    columnY₀Weight := 14402040, height := 185, heightSlots := 186388680 }
 ]
 
 /-- Splits minimizing the exact exceptional-fiber estimates for the nine curves. -/
-def splits : Fin 9 → ℕ := ![32917, 16458, 8230, 4115, 2058, 1029, 514, 257, 128]
+def splits : Fin 9 → ℕ := ![32923, 16462, 8231, 4116, 2058, 1029, 514, 257, 128]
 
 /-- Integer ceilings for the actual exceptional sets constructed from the nine profiles. -/
 def exceptionalCounts : Fin 9 → ℕ := ![
-  3395110257406885729, 16746255074995314, 3958679485474707,
-  892165202095663, 186608919184478, 40516184299310,
-  8035980474225, 1424226698158, 227108936244
+  2083866315591056321, 10327375567345557, 2495641113148010,
+  584404316685816, 137780487841264, 31012724900600,
+  6471554467790, 1219691220099, 153308775293
 ]
 
 /-- Sum of the eight fold exceptional ceilings. -/
@@ -103,28 +103,28 @@ def foldExceptionalCount : ℕ :=
     exceptionalCounts 5 + exceptionalCounts 6 + exceptionalCounts 7 + exceptionalCounts 8
 
 /-- The generated fold ceilings sum to the paper artifact's fold numerator. -/
-theorem foldExceptionalCount_eq : foldExceptionalCount = 21833912182158099 := by
+theorem foldExceptionalCount_eq : foldExceptionalCount = 13584058764384429 := by
   decide
 
 /-- Initial powers ceiling plus all eight fold ceilings. -/
 def totalExceptionalCount : ℕ := exceptionalCounts 0 + foldExceptionalCount
 
 /-- Exact total of the initial and folding exceptional ceilings. -/
-theorem totalExceptionalCount_eq : totalExceptionalCount = 3416944169589043828 := by
+theorem totalExceptionalCount_eq : totalExceptionalCount = 2097450374355440750 := by
   decide
 
 /-- Finite profile used for the two-anchor CPU candidate list. -/
 def listProfile : LineProfile :=
-  { n := 65536, k := 32771, agreement := 45810, multiplicity := 22,
-    firstDerivativeCap := 6, totalJetCap := 30, batchingDegree := 1,
-    supportDimension := 92013880, localRank := 1400,
-    columnY₀Weight := 829631110, height := 873, heightSlots := 79590500010 }
+  { n := 65536, k := 32771, agreement := 45690, multiplicity := 32,
+    firstDerivativeCap := 9, totalJetCap := 44, batchingDegree := 1,
+    supportDimension := 271653540, localRank := 4125,
+    columnY₀Weight := 3579696480, height := 749, heightSlots := 200160458520 }
 
 /-- Split minimizing the exact scalar list expression. -/
-def listSplit : ℕ := 32917
+def listSplit : ℕ := 32925
 
 /-- Integer ceiling for every finite list at the two-anchor CPU parameters. -/
-def listBound : ℕ := 165670441
+def listBound : ℕ := 113772416
 
 /-- Cardinality of the cubic Goldilocks challenge field. -/
 def fieldSize : ℕ := 6277101731002175853884774869567645561244584131361410908161

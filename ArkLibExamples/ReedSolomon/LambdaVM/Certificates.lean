@@ -6,7 +6,7 @@ Authors: Quang Dao
 
 import ArkLibExamples.ReedSolomon.LambdaVM.Parameters
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCertificate
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 /-!
@@ -144,14 +144,14 @@ theorem listProfile_admissible :
       listProfile.k ≤ listProfile.agreement ∧ listProfile.agreement ≤ listProfile.n := by
   decide
 
-/-- The sharp scalar list expression is at most the generated list ceiling. -/
+/-- The squarefree scalar list expression is at most the generated list ceiling. -/
 theorem list_envelope_le :
-    firstOrderTightListWeight listProfile.n listProfile.agreement listProfile.k listProfile.k
-      (2 * listProfile.k - 3) listProfile.totalJetCap listProfile.firstDerivativeCap ≤
-        listBound := by
-  norm_num [listProfile, listBound, firstOrderTightListWeight,
-    firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
-    firstOrderTaylorDerivativeCap, AffineHilbert.fixedFiberDerivativeImageDegree]
+    _root_.ReedSolomon.CurveCertificate.squarefreeListEnvelope listProfile ≤ listBound := by
+  norm_num [_root_.ReedSolomon.CurveCertificate.squarefreeListEnvelope,
+    listProfile, listBound, firstOrderCurveFiberStageOne,
+    firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap,
+    FirstOrder.Squarefree.ordinaryDegreeEnvelope,
+    AffineHilbert.fixedFiberDerivativeImageDegree]
 
 /-- Every finite scalar list satisfying the CPU agreement predicate has the stated size bound.
 
@@ -159,19 +159,20 @@ The field, domain, received word, and finite candidate family are arbitrary. The
 condition and agreement predicate are the only hypotheses on them. -/
 theorem finite_list_bound {F : Type*} [Field F]
     (domain : Fin listProfile.n ↪ F) (received : Fin listProfile.n → F)
-    (hchar : ringChar F = 0 ∨ max (listProfile.k - 1) listProfile.totalJetCap < ringChar F)
+    (hchar : ringChar F = 0 ∨
+      max (listProfile.k - 1) listProfile.firstDerivativeCap < ringChar F)
     (S : Finset F[X])
     (hS : ∀ P ∈ S, IsAgreementSolution domain received listProfile.k
       listProfile.agreement P) :
     (S.card : ℚ) ≤ listBound := by
-  obtain ⟨hk, hkn, hka, han⟩ := listProfile_admissible
-  have hb := finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight
-    listProfile_verified.D_pos listProfile_verified.budget_pos
-    listProfile_verified.degree_le domain received listProfile_verified.heightSurplus
-    hk le_rfl hkn (by omega) hka han hchar S hS
-  exact hb.trans list_envelope_le
+  obtain ⟨_, hkn, hka, han⟩ := listProfile_admissible
+  have hb := _root_.ReedSolomon.CurveCertificate.finiteSquarefreeListBound_of_profile
+    (by decide +kernel : listProfile.CurveVerification) (by decide) hkn hka han
+      (by decide) (by decide)
+      domain received hchar S hS
+  exact_mod_cast hb.trans list_envelope_le
 
-/-- Additive capacity gap corresponding exactly to CPU agreement `45810`. -/
+/-- Additive capacity gap corresponding exactly to CPU agreement `45690`. -/
 noncomputable def gap : ℝ :=
   (((listProfile.agreement - listProfile.k : ℕ) : ℝ) / listProfile.n)
 
@@ -181,8 +182,8 @@ theorem gap_admissible : 0 ≤ gap ∧ 0 < listProfile.n := by
 
 /-- Capacity-gap notation reproduces the integer CPU agreement threshold. -/
 theorem threshold_eq :
-    agreementThreshold gap listProfile.n listProfile.k = listProfile.agreement := by
-  norm_num [agreementThreshold, gap, listProfile]
+    ReedSolomon.agreementThreshold gap listProfile.n listProfile.k = listProfile.agreement := by
+  norm_num [ReedSolomon.agreementThreshold, gap, listProfile]
 
 /-- The CPU capacity radius is one minus its exact relative agreement. -/
 theorem radius_eq :
@@ -193,7 +194,8 @@ theorem radius_eq :
 /-- Every interleaving width inherits the scalar CPU list ceiling without a width factor. -/
 theorem lambda_le {F : Type*} [Field F] (width : ℕ)
     (domain : Fin listProfile.n ↪ F)
-    (hchar : ringChar F = 0 ∨ max (listProfile.k - 1) listProfile.totalJetCap < ringChar F) :
+    (hchar : ringChar F = 0 ∨
+      max (listProfile.k - 1) listProfile.firstDerivativeCap < ringChar F) :
     Lambda
         (Code.interleavedCodeSet (κ := Fin width)
           (ReedSolomon.code domain listProfile.k : Set (Fin listProfile.n → F)))
@@ -202,7 +204,7 @@ theorem lambda_le {F : Type*} [Field F] (width : ℕ)
     gap gap_admissible.1 gap_admissible.2 domain
   intro received S hS
   have hcharRat : ringChar (RatFunc F) = 0 ∨
-      max (listProfile.k - 1) listProfile.totalJetCap < ringChar (RatFunc F) := by
+      max (listProfile.k - 1) listProfile.firstDerivativeCap < ringChar (RatFunc F) := by
     simpa only [ReedSolomon.ringChar_ratFunc] using hchar
   have hS' : ∀ P ∈ S,
       IsAgreementSolution
