@@ -28,10 +28,12 @@ theorem fixedRatePartitionOrder_list_bound_selected {R δ : ℝ}
     (hR : 0 < R) (hδ : 0 < δ) (haone : R + δ < 1) :
     let p := fixedRatePartitionFiniteParameters hR hδ
     ∀ (F : Type u) [Field F] (n k A : ℕ),
-      ratePartitionLength R (fixedRatePartitionOrder R δ) p.multiplicity ≤ n → 0 < k →
+      ratePartitionMathematicalLength R (fixedRatePartitionOrder R δ) p.multiplicity ≤ n →
+      0 < k →
       (k : ℝ) ≤ R * n → (R + δ) * n ≤ A → A ≤ n →
       ∀ (domain : Fin n ↪ F) (received : Fin n → F),
-      (ringChar F = 0 ∨ n ≤ ringChar F) →
+      (ringChar F = 0 ∨ max (max (k - 1) (fixedRatePartitionOrder R δ))
+        (ratePartitionJetBound R p.multiplicity) < ringChar F) →
       (closePolynomialSet domain received k A).Finite ∧
         ((closePolynomialSet domain received k A).ncard : ℝ) ≤
           (ratePartitionJetBound R p.multiplicity : ℝ) ^ 2 *
@@ -52,10 +54,12 @@ theorem fixedRatePartitionOrder_list_bound {R δ : ℝ}
     (hR : 0 < R) (hδ : 0 < δ) (haone : R + δ < 1) :
     ∃ p : RatePartitionFiniteParameters R (R + δ) (fixedRatePartitionOrder R δ),
       ∀ (F : Type u) [Field F] (n k A : ℕ),
-      ratePartitionLength R (fixedRatePartitionOrder R δ) p.multiplicity ≤ n → 0 < k →
+      ratePartitionMathematicalLength R (fixedRatePartitionOrder R δ) p.multiplicity ≤ n →
+      0 < k →
       (k : ℝ) ≤ R * n → (R + δ) * n ≤ A → A ≤ n →
       ∀ (domain : Fin n ↪ F) (received : Fin n → F),
-      (ringChar F = 0 ∨ n ≤ ringChar F) →
+      (ringChar F = 0 ∨ max (max (k - 1) (fixedRatePartitionOrder R δ))
+        (ratePartitionJetBound R p.multiplicity) < ringChar F) →
       (closePolynomialSet domain received k A).Finite ∧
         ((closePolynomialSet domain received k A).ncard : ℝ) ≤
           (ratePartitionJetBound R p.multiplicity : ℝ) ^ 2 *

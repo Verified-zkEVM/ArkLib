@@ -55,6 +55,13 @@ def ratePartitionClosedMultiplicity (d : ℕ) : ℕ :=
 /-- A safe weak total-jet-degree bound for the general rate envelope. -/
 def ratePartitionJetBound (R : ℝ) (m : ℕ) : ℕ := ⌈2 * (m : ℝ) / R⌉₊
 
+/-- The exact mathematical block threshold in the rate-dependent theorem.  Interpolation uses
+`floor (R * n)`, while reconstruction only needs `max k (d + 1)`.  The executable selector keeps
+the more conservative `ratePartitionLength` below. -/
+def ratePartitionMathematicalLength (R : ℝ) (d m : ℕ) : ℕ :=
+  ⌈max (((d : ℝ) + 1) / R)
+    (max ((ratePartitionJetBound R m : ℝ) + 1) (1 / (1 - R)))⌉₊
+
 /-- The explicit block threshold for the general rate construction. -/
 def ratePartitionLength (R : ℝ) (d m : ℕ) : ℕ :=
   ⌈max (2 * ((d : ℝ) + 2) / R)
@@ -63,6 +70,56 @@ def ratePartitionLength (R : ℝ) (d m : ℕ) : ℕ :=
 
 /-- A symbolic height chosen from any certified real ratio above one. -/
 def ratePartitionHeight (ν : ℕ) (γ : ℝ) : ℕ := max 1 ⌈(ν : ℝ) / (γ - 1)⌉₊
+
+/-- The mathematical threshold gives the exact ambient, reconstruction, jet, and agreement
+guards printed in the rate-dependent theorem.  In particular, the strict jet cutoff alone
+implies `2m <= n`; no separate doubled block-length hypothesis is needed. -/
+theorem ratePartition_mathematical_length_guards {R a : ℝ} {d m n k A : ℕ}
+    (hR : 0 < R) (hRone : R < 1) (hd : 0 < d)
+    (hn : ratePartitionMathematicalLength R d m ≤ n)
+    (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) :
+    let D := ⌊R * n⌋₊
+    d + 1 ≤ D ∧ R * n / 2 ≤ D ∧ k ≤ D ∧ D + 1 ≤ n ∧
+      ratePartitionJetBound R m < n ∧ 2 * m ≤ n ∧
+      ⌈a * n⌉₊ ≤ A ∧ 2 ≤ n := by
+  have hnR : (ratePartitionMathematicalLength R d m : ℝ) ≤ n := by exact_mod_cast hn
+  have hb := (Nat.le_ceil (max (((d : ℝ) + 1) / R)
+    (max ((ratePartitionJetBound R m : ℝ) + 1) (1 / (1 - R))))).trans hnR
+  have hdR : ((d : ℝ) + 1) / R ≤ n := (le_max_left _ _).trans hb
+  have hjet : (ratePartitionJetBound R m : ℝ) + 1 ≤ n :=
+    (le_max_left _ _).trans ((le_max_right _ _).trans hb)
+  have hgap : 1 / (1 - R) ≤ n :=
+    (le_max_right _ _).trans ((le_max_right _ _).trans hb)
+  have hRn : 0 ≤ R * (n : ℝ) := by positivity
+  have hdScaled : (d : ℝ) + 1 ≤ R * n := by
+    simpa [mul_comm] using (div_le_iff₀ hR).mp hdR
+  have hfloorLower := Nat.lt_floor_add_one (R * (n : ℝ))
+  have hfloorUpper := Nat.floor_le hRn
+  have hspace : 1 ≤ (1 - R) * (n : ℝ) := by
+    simpa [mul_comm] using (div_le_iff₀ (sub_pos.mpr hRone)).mp hgap
+  have htwoReal : (2 : ℝ) ≤ n := by
+    have : (2 : ℝ) ≤ d + 1 := by exact_mod_cast (show 2 ≤ d + 1 by omega)
+    exact this.trans (hdScaled.trans (by nlinarith [Nat.cast_nonneg n (α := ℝ)]))
+  refine ⟨?_, ?_, Nat.le_floor hkR, ?_, ?_, ?_, Nat.ceil_le.mpr haA, ?_⟩
+  · exact (Nat.le_floor_iff hRn).mpr (by simpa using hdScaled)
+  · have hRnTwo : (2 : ℝ) ≤ R * n := by
+      have : (2 : ℝ) ≤ d + 1 := by exact_mod_cast (show 2 ≤ d + 1 by omega)
+      exact this.trans hdScaled
+    linarith
+  · have : (⌊R * n⌋₊ : ℝ) + 1 ≤ n := by linarith
+    exact_mod_cast this
+  · exact_mod_cast (show (ratePartitionJetBound R m : ℝ) < n by linarith)
+  · have hcap : (2 : ℝ) * m / R ≤ ratePartitionJetBound R m :=
+      Nat.le_ceil (2 * (m : ℝ) / R)
+    have htwom : (2 : ℝ) * m ≤ n := by
+      have hRle : R ≤ 1 := hRone.le
+      have hmnonneg : (0 : ℝ) ≤ 2 * m := by positivity
+      have : (2 : ℝ) * m ≤ 2 * m / R := by
+        rw [le_div_iff₀ hR]
+        nlinarith
+      linarith
+    exact_mod_cast htwom
+  · exact_mod_cast htwoReal
 
 /-- The factor 27/20 is exactly half the positive-part second-moment constant. -/
 theorem ratePartition_moment_normalization : (27 / 10 : ℝ) / 2 = 27 / 20 := by

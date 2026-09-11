@@ -29,10 +29,11 @@ theorem fixedRate_list_bound {R ε : ℝ}
       let d := ⌈Real.exp ((ratePartitionExponent R + ε) / δ)⌉₊
       ∃ p : RatePartitionFiniteParameters R (R + δ) d,
         ∀ (F : Type u) [Field F] (n k A : ℕ),
-        ratePartitionLength R d p.multiplicity ≤ n → 0 < k →
+        ratePartitionMathematicalLength R d p.multiplicity ≤ n → 0 < k →
         (k : ℝ) ≤ R * n → (R + δ) * n ≤ A → A ≤ n →
         ∀ (domain : Fin n ↪ F) (received : Fin n → F),
-        (ringChar F = 0 ∨ n ≤ ringChar F) →
+        (ringChar F = 0 ∨
+          max (max (k - 1) d) (ratePartitionJetBound R p.multiplicity) < ringChar F) →
         (closePolynomialSet domain received k A).Finite ∧
           ((closePolynomialSet domain received k A).ncard : ℝ) ≤
             (ratePartitionJetBound R p.multiplicity : ℝ) ^ 2 *

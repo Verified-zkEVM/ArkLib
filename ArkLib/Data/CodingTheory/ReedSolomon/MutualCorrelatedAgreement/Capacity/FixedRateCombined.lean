@@ -26,7 +26,8 @@ same choice feeds the list bound and the symbolic curve MCA bound. The latter re
 of the full agreement set, not merely a lower bound on the recovered pair's agreements.
 
 This is an eventual small-gap theorem: `epsilon > 0` and the existential `deltaZero` are part of
-the guarantee. The general-order characteristic guard remains characteristic zero or `p ≥ n`.
+the guarantee. Reconstruction uses `max k (d + 1)`, so the characteristic guard is the exact
+maximum of message degree, derivative order, and jet cap rather than the interpolation dimension.
 -/
 
 @[expose] public section
@@ -72,7 +73,7 @@ theorem exists_fixedRate_capacity_bounds {R epsilon : ℝ}
       -/
       ∃ p : RatePartitionFiniteParameters R (R + delta) d,
         ∀ (F : Type u) [Field F] (n k A : ℕ),
-        ratePartitionLength R d p.multiplicity ≤ n →
+        ratePartitionMathematicalLength R d p.multiplicity ≤ n →
         0 < k →
         (k : ℝ) ≤ R * n →
         (R + delta) * n ≤ A →
@@ -82,7 +83,8 @@ theorem exists_fixedRate_capacity_bounds {R epsilon : ℝ}
         Distinct evaluation points turn agreement into a count of distinct polynomial roots.
         -/
         ∀ (domain : Fin n ↪ F),
-        (ringChar F = 0 ∨ n ≤ ringChar F) →
+        (ringChar F = 0 ∨
+          max (max (k - 1) d) (ratePartitionJetBound R p.multiplicity) < ringChar F) →
         /-
 
         With ν = ratePartitionJetBound R p.multiplicity, degree and incidence

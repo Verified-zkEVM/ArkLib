@@ -80,4 +80,24 @@ theorem exists_ratePartitionRate_certificate {F : Type u} [Field F]
     domain w hw (fun _ hu ↦ ratePartition_totalJetDegree_le hD hR hDlower hAn hu)
     p.ratio_gt_one le_rfl
 
+/-- The mathematical rate threshold constructs the same certificate without changing the
+conservative length recipe used by the executable decoder. -/
+theorem exists_ratePartitionMathematical_certificate {F : Type u} [Field F]
+    {R a : ℝ} {d n k A ℓ : ℕ} (p : RatePartitionFiniteParameters R a d)
+    (hR : 0 < R) (hRone : R < 1) (ha : 0 < a) (hd : 500 ≤ d)
+    (hn : ratePartitionMathematicalLength R d p.multiplicity ≤ n)
+    (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
+    (domain : Fin n ↪ F) (w : Fin n → F[X]) (hw : ∀ i, (w i).natDegree ≤ ℓ) :
+    Nonempty (SymbolicReceivedCurve.Certificate.{u, u} F A k ℓ
+      (ratePartitionJetBound R p.multiplicity) d
+      (ℓ * ratePartitionHeight (ratePartitionJetBound R p.multiplicity)
+        (ratePartitionFiniteRatio R a d p.multiplicity)) domain w) := by
+  obtain ⟨hdD, hDlower, hkD, hDn, hνn, hmn, hceil, hn2⟩ :=
+    ratePartition_mathematical_length_guards hR hRone (by omega) hn hkR haA
+  have hD : 0 < ⌊R * n⌋₊ := by omega
+  exact exists_ratePartitionFinite_certificate hD hd p.multiplicity_pos (by omega)
+    hR ha p.weight_pos (hkD.trans (Nat.le_succ _)) (Nat.floor_le (by positivity)) haA
+    domain w hw (fun _ hu ↦ ratePartition_totalJetDegree_le hD hR hDlower hAn hu)
+    p.ratio_gt_one le_rfl
+
 end ReedSolomon.HiddenDerivative

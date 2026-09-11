@@ -26,15 +26,17 @@ open Polynomial HiddenDerivative
 
 universe u
 
-/-- One exceptional set controls all close polynomials on the received curve. -/
+/-- One exceptional set controls all close polynomials on the received curve. Reconstruction uses
+`max k (d + 1)`, independently of the larger interpolation dimension `floor (R * n) + 1`. -/
 theorem exists_ratePartition_curveMCA {F E : Type u} [Field F] [Field E]
     [DecidableEq E] [IsAlgClosed E]
     {R a : ℝ} {d n k A ℓ : ℕ} (p : RatePartitionFiniteParameters R a d)
     (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
-    (hn : ratePartitionLength R d p.multiplicity ≤ n)
+    (hn : ratePartitionMathematicalLength R d p.multiplicity ≤ n)
     (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
     (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
-    (iota : F →+* E) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (iota : F →+* E) (hchar : ringChar F = 0 ∨
+      max (max (k - 1) d) (ratePartitionJetBound R p.multiplicity) < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductMCAConstant (a - R)
         (ratePartitionJetBound R p.multiplicity)
@@ -45,11 +47,18 @@ theorem exists_ratePartition_curveMCA {F E : Type u} [Field F] [Field E]
           (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
         HasExactPowerAgreement domain values iota k z P := by
   obtain ⟨hdD, hDlower, hkD, hDn, hνn, hmn, hceil, hn2⟩ :=
-    ratePartition_length_guards hR (hRa.trans haone) hn hkR haA
-  obtain ⟨cert⟩ := exists_ratePartitionRate_certificate p hR (hRa.trans haone)
+    ratePartition_mathematical_length_guards hR (hRa.trans haone) (by omega) hn hkR haA
+  obtain ⟨cert⟩ := exists_ratePartitionMathematical_certificate p hR (hRa.trans haone)
     (hR.trans hRa) hd hn hkR haA hAn domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
     (fun _ ↦ powerBatchedCoordinate_natDegree_le _)
+  let K := max k (d + 1)
+  have hkK : k ≤ K := Nat.le_max_left _ _
+  have hdK : d < K := lt_of_lt_of_le (Nat.lt_succ_self d) (Nat.le_max_right _ _)
+  have hKn : K ≤ n := by
+    apply max_le
+    · exact hkD.trans (by omega)
+    · omega
   have hkA : k ≤ A := by
     have h : (k : ℝ) ≤ A := hkR.trans
       ((mul_le_mul_of_nonneg_right hRa.le (Nat.cast_nonneg n)).trans haA)
@@ -61,13 +70,19 @@ theorem exists_ratePartition_curveMCA {F E : Type u} [Field F] [Field E]
   have hh : 0 < ratePartitionHeight (ratePartitionJetBound R p.multiplicity)
       (ratePartitionFiniteRatio R a d p.multiplicity) := lt_of_lt_of_le Nat.zero_lt_one
         (le_max_left _ _)
+  have hKsub : K - 1 ≤ max (k - 1) d := by
+    rcases le_total k (d + 1) with hkd | hdk
+    · rw [show K = d + 1 by simp [K, max_eq_right hkd]]
+      exact Nat.le_max_right _ _
+    · rw [show K = k by simp [K, max_eq_left hdk]]
+      exact Nat.le_max_left _ _
   have hchar' : ringChar F = 0 ∨
-      max (⌊R * n⌋₊ + 1 - 1) (ratePartitionJetBound R p.multiplicity) < ringChar F := by
+      max (K - 1) (ratePartitionJetBound R p.multiplicity) < ringChar F := by
     apply hchar.imp_right
     intro hc
-    exact (max_lt (by omega) hνn).trans_le hc
+    exact (max_le_max hKsub le_rfl).trans_lt hc
   apply exists_curveMCA_of_certificate_of_jetCharacteristic domain values iota cert hk
-    (hkD.trans (Nat.le_succ _)) (by omega) (by omega) hDn hkA hAn hν hh hℓ
+    hkK (by omega) hdK hKn hkA hAn hν hh hℓ
     le_rfl (sub_pos.mpr hRa) (by linarith) ?_ hchar'
   nlinarith
 open Classical in
@@ -75,10 +90,11 @@ open Classical in
 theorem exists_ratePartition_baseCurveMCA {F : Type u} [Field F]
     {R a : ℝ} {d n k A ℓ : ℕ} (p : RatePartitionFiniteParameters R a d)
     (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
-    (hn : ratePartitionLength R d p.multiplicity ≤ n)
+    (hn : ratePartitionMathematicalLength R d p.multiplicity ≤ n)
     (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
     (hℓ : 0 < ℓ) (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
-    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hchar : ringChar F = 0 ∨
+      max (max (k - 1) d) (ratePartitionJetBound R p.multiplicity) < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductMCAConstant (a - R)
         (ratePartitionJetBound R p.multiplicity)
@@ -99,10 +115,11 @@ open Classical in
 theorem exists_ratePartition_lineMCA {F : Type u} [Field F]
     {R a : ℝ} {d n k A : ℕ} (p : RatePartitionFiniteParameters R a d)
     (hR : 0 < R) (hRa : R < a) (haone : a < 1) (hd : 500 ≤ d)
-    (hn : ratePartitionLength R d p.multiplicity ≤ n)
+    (hn : ratePartitionMathematicalLength R d p.multiplicity ≤ n)
     (hk : 0 < k) (hkR : (k : ℝ) ≤ R * n) (haA : a * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (f g : Fin n → F)
-    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hchar : ringChar F = 0 ∨
+      max (max (k - 1) d) (ratePartitionJetBound R p.multiplicity) < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ polynomialCurveProductMCAConstant (a - R)
         (ratePartitionJetBound R p.multiplicity)
@@ -127,10 +144,11 @@ theorem exists_ratePartition_lineMCA_parameters {R a : ℝ} {d : ℕ}
     (hgate : 1 < ratePartitionGamma R a d) :
     ∃ p : RatePartitionFiniteParameters R a d,
       ∀ (F : Type u) [Field F] (n k A : ℕ),
-      ratePartitionLength R d p.multiplicity ≤ n → 0 < k →
+      ratePartitionMathematicalLength R d p.multiplicity ≤ n → 0 < k →
       (k : ℝ) ≤ R * n → a * n ≤ A → A ≤ n →
       ∀ (domain : Fin n ↪ F) (f g : Fin n → F),
-      (ringChar F = 0 ∨ n ≤ ringChar F) →
+      (ringChar F = 0 ∨
+        max (max (k - 1) d) (ratePartitionJetBound R p.multiplicity) < ringChar F) →
       ∃ exceptional : Finset F,
         (exceptional.card : ℝ) ≤ polynomialCurveProductMCAConstant (a - R)
           (ratePartitionJetBound R p.multiplicity)
