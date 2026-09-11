@@ -12,10 +12,10 @@ public import
 public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 
 /-!
-# Guarded `1.489` uniform rate-partition parameters
+# Archived guarded `1.489` uniform rate-partition parameters
 
-The readable three-halves recipe remains the mathematical headline.  This module records the
-appendix refinement
+The readable three-halves recipe remains the mathematical headline. This module retains, as a
+library-only comparison, the optional refinement removed from the canonical manuscript:
 
 `min (ceil (exp (1.5/δ))) (max 1000 (ceil (exp (1.489/δ))))`.
 
@@ -418,7 +418,7 @@ private theorem sharpRatePartitionGamma_low_base_gt
   rw [← Real.exp_log hgammapos]
   exact Real.exp_lt_exp.mpr hlower
 
-/-- Guarded appendix derivative order. -/
+/-- Guarded derivative order for the archived comparison. -/
 def guardedRatePartitionOrder (δ : ℝ) : ℕ :=
   min (uniformRatePartitionOrder δ)
     (max 1000 ⌈Real.exp ((1489 / 1000 : ℝ) / δ)⌉₊)
@@ -587,7 +587,7 @@ theorem guardedRatePartition_high_ratio_gt {R δ : ℝ}
         (Real.exp_pos (-(1677 / 1000000 : ℝ)))).trans (by
           simpa only [guardedRatePartitionMultiplicity] using hfinite)
 
-/-- A rate-uniform envelope for the guarded appendix order. -/
+/-- A rate-uniform envelope for the archived guarded order. -/
 structure GuardedRatePartitionEnvelope (δ : ℝ) (n k A : ℕ) where
   ambientDegree : ℕ
   rate : ℝ

@@ -11,11 +11,12 @@ public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.GuardedUniform
 
 /-!
-# Guarded `1.489` uniform Reed--Solomon list bound
+# Archived guarded `1.489` uniform Reed--Solomon list bound
 
-This appendix refinement replaces the headline derivative order by the minimum of the headline
-`1.5` order and the guarded `1.489` order.  It retains the mathematical 300-based multiplicity
-and makes no claim about the separately retained executable selector.
+This library-only comparison replaces the headline derivative order by the minimum of the
+headline `1.5` order and the guarded `1.489` order. The canonical manuscript no longer includes
+this optional refinement. It retains the mathematical 300-based multiplicity and makes no claim
+about the separately retained executable selector.
 -/
 
 @[expose] public section
@@ -29,7 +30,7 @@ open HiddenDerivative
 universe u
 
 open Classical in
-/-- The guarded appendix parameters bound the complete close-polynomial set over any field whose
+/-- The archived guarded parameters bound the complete close-polynomial set over any field whose
 positive characteristic is at least the block length. -/
 theorem guardedUniformRatePartition_close_list_bound {F : Type u} [Field F]
     {δ : ℝ} {n k A : ℕ}
@@ -70,7 +71,7 @@ theorem guardedUniformRatePartition_close_list_bound {F : Type u} [Field F]
     hν hδ hgap hchar'
 
 open Classical in
-/-- **Guarded appendix refinement of the uniform capacity list bound.**
+/-- **Archived guarded refinement of the uniform capacity list bound.**
 
 For `d = min (ceil(exp(1.5/delta))) (max 1000 (ceil(exp(1.489/delta))))`, the complete
 degree-`< k` list has size at most `C*n^d`, where the displayed `C` depends only on `delta`.

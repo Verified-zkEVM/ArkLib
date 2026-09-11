@@ -14,7 +14,8 @@ public import
 The ordinary rate-partition estimate uses a strict `27/10` lower bound for the normalized
 positive-part second moment.  Once the derivative order is at least `1000`, the same exact
 mean--variance argument yields `273/100`.  This is the analytic input for the guarded `1.489`
-appendix refinement.
+comparison retained in the library. The canonical manuscript no longer includes that optional
+refinement.
 -/
 
 @[expose] public section

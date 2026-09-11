@@ -12,7 +12,7 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.GuardedUniform
 
-/-! # Interpolation for the guarded `1.489` appendix selector -/
+/-! # Interpolation for the archived guarded `1.489` selector -/
 
 @[expose] public section
 
@@ -26,7 +26,7 @@ universe u
 
 /-- The guarded envelope yields a nonvanishing curve equation over every field.  The proof uses
 the headline `27/20` source estimate on the headline-order branch and the sharpened `273/200`
-estimate on the appendix branch. -/
+estimate on the archived comparison branch. -/
 theorem GuardedRatePartitionEnvelope.exists_curve_certificate
     {F : Type u} [Field F]
     {δ : ℝ} {n k A ℓ : ℕ} (e : GuardedRatePartitionEnvelope δ n k A)
