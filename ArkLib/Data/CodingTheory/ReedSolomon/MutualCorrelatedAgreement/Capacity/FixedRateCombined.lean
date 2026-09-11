@@ -28,6 +28,16 @@ of the full agreement set, not merely a lower bound on the recovered pair's agre
 This is an eventual small-gap theorem: `epsilon > 0` and the existential `deltaZero` are part of
 the guarantee. Reconstruction uses `max k (d + 1)`, so the characteristic guard is the exact
 maximum of message degree, derivative order, and jet cap rather than the interpolation dimension.
+
+For the paper's fixed-`R`, fixed-`a`, fixed-`d` row under the literal gate
+`1 < ratePartitionGamma R a d`, use `exists_ratePartition_list_bound` and
+`exists_ratePartition_lineMCA_parameters`. The theorem here is their derived eventual-small-gap
+specialization with a positive exponent slack.
+
+## References
+
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], fixed-order and fixed-rate bounds.
 -/
 
 @[expose] public section

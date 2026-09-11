@@ -9,10 +9,13 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Coordinate.CoordinateCapacityExecution
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityOutputBounds
 /-!
-# Executable Reed-Solomon capacity decoding at every rate
+# Retained reference coordinate decoder at every rate
 
-The purely mathematical list-existence theorem lives separately in `Capacity.lean`.
-This module states the executable decoder's exact-output and primitive-work theorem.
+This module states the retained coordinate decoder's exact-output and primitive-work theorem. It is
+a correctness reference for the capacity specification, not the paper's integrated norm and
+square-system decoder. The purely mathematical list-existence theorem lives separately in
+`ListDecodability/Capacity.lean`; the status of the paper algorithms is indexed in
+`ListDecoding/PaperAlgorithms.lean`.
 The integer agreement threshold `A` is an instance parameter;
 the real gap `delta` is fixed before any block length, rate, field, or received word is chosen.
 
@@ -38,8 +41,9 @@ Lean running time is claimed by the primitive ledger below.
 
 ## References
 
-* [Dao, Kominers, Thaler, and Zheng, *Reed-Solomon List Decoding up to Capacity at Every
-  Rate*][DKTZ26], Theorem 1.1 (Uniform capacity decoding), integer-threshold formulation.
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], capacity specification and Lean
+  reference-decoder appendix.
 * [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed-Solomon
   Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], hidden-derivative interpolation.
 -/

@@ -10,7 +10,37 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.LowRat
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthRateBounds
 
-/-! # Branchwise finite-length first-order rate bounds -/
+/-!
+# Branchwise finite-length first-order rate bounds
+
+This module is the paper-facing first-derivative result. It chooses between two independently
+proved interpolation recipes at the stationary cutoff `firstOrderRateSwitch`:
+
+* below the cutoff, `firstOrderLowRateThreshold` and the low-rate derivative cap are used;
+* at or above the cutoff, `automaticFirstOrderThreshold` and the clean finite-length cap are used.
+
+The selector `firstOrderBranchThreshold` makes that choice once. The derivative cap and the
+rate-only MCA constant below use the same branch, so the list bound, exceptional-set bound, and
+characteristic guard cannot silently mix parameters from different recipes.
+
+`firstOrderBranch_finiteLength_finiteSlack_bounds` is the sharp finite-length statement and the
+direct counterpart of the paper's first-derivative row. With
+`s = finiteLengthSlack eta n = eta + 1/n`, it gives a complete list bound proportional to
+`n/s^2` and an exceptional line-challenge bound proportional to `n^2/s^4`.
+`firstOrderBranch_finiteLength_rate_bounds` replaces `s` by the coarser lower bound `eta`.
+`firstOrderBranch_finiteLength_mcaError_le` is the separate finite-field probability corollary.
+
+All three results use ordinary polynomial degree, so the zero polynomial is included. The
+characteristic hypothesis has an explicit constant-code escape hatch: either `k = 1`, the
+characteristic is zero, or it exceeds both `k-1` and the branch-selected derivative cap. For MCA,
+one exceptional set is chosen before the challenge and candidate, and recovery identifies the
+complete agreement set through `HasExactCorrelatedPair`.
+
+## References
+
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], first-derivative list and MCA bounds.
+-/
 
 @[expose] public section
 
@@ -91,6 +121,7 @@ def firstOrderBranchFiniteLengthMCAConstant (rho : ℝ) : ℝ :=
   if rho < firstOrderRateSwitch then lowRateFiniteLengthMCAParameterConstant rho
   else finiteLengthMCAParameterConstant rho
 
+/-- The rate-only branch constant is positive enough to absorb the uniform numeric factors. -/
 theorem one_le_firstOrderBranchFiniteLengthMCAConstant (rho : ℝ) :
     1 ≤ firstOrderBranchFiniteLengthMCAConstant rho := by
   by_cases hlow : rho < firstOrderRateSwitch
@@ -100,17 +131,27 @@ theorem one_le_firstOrderBranchFiniteLengthMCAConstant (rho : ℝ) :
     exact one_le_finiteLengthMCAParameterConstant rho
 
 open Classical in
-/-- All-rate finite-length first-order list/MCA semantics.  The selector branch, its agreement
-threshold, its rate-only constant, and its exact derivative cap are chosen together. -/
+/-- **Sharp finite-length first-order list and MCA bounds.**
+
+The selector branch, its agreement threshold, its rate-only constant, and its exact derivative
+cap are chosen together. Both conclusions use `finiteLengthSlack eta n = eta + 1/n`: the complete
+list has inverse-square slack dependence, while the exceptional set has inverse-fourth dependence.
+The exceptional set is uniform over the challenge and candidate, and the conclusion recovers the
+candidate together with equality of its full agreement set. -/
 theorem firstOrderBranch_finiteLength_finiteSlack_bounds
+    -- Fix the physical rate bound, positive gap, block length, dimension, and threshold.
     (rho eta : ℝ) (n k A : ℕ)
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    -- The branch-selected target agreement stays below one.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    -- The evaluation embedding supplies `n` distinct points over an arbitrary field.
     {F : Type*} [Field F] (domain : Fin n ↪ F)
+    -- Constant codes are characteristic-free; otherwise the selected derivative cap is strict.
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F) :
+    -- Both conclusions use the same branch choice and the complete candidate family.
     (∀ received : Fin n → F,
       (closePolynomialSet domain received k A).Finite ∧
         ((closePolynomialSet domain received k A).ncard : ℝ) ≤
@@ -155,14 +196,20 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
           hAClean hAn domain hcharClean)
 
 open Classical in
-/-- Eta-only consequence of the all-rate semantic family, derived from the exact
-`eta + 1/n` bounds. -/
+/-- **Eta-only corollary of the first-order list and MCA bounds.**
+
+This derived consequence of the sharp finite-length theorem gives
+`O_rho(n/eta^2)` complete-list and `O_rho(n^2/eta^4)` exceptional-set dependences. It preserves
+the same branch selection, characteristic guard, quantifier order, and full-agreement recovery. -/
 theorem firstOrderBranch_finiteLength_rate_bounds
+    -- Fix the physical rate bound, positive gap, block length, dimension, and threshold.
     (rho eta : ℝ) (n k A : ℕ)
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    -- Agreement is above the selected first-order threshold by `eta`.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
     (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    -- The same arbitrary-field and branch-selected characteristic scope as the sharp theorem.
     {F : Type*} [Field F] (domain : Fin n ↪ F)
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F) :
@@ -205,12 +252,19 @@ theorem firstOrderBranch_finiteLength_rate_bounds
         (sq_nonneg (n : ℝ))) heta hnPos
 
 open Classical in
-/-- Separate finite-field probability consequence of the all-rate semantic facade. -/
+/-- **Finite-field probability form of the first-order MCA bound.**
+
+The line generator samples one challenge uniformly from `F`. Dividing the exceptional-set bound
+by `|F|` therefore gives the MCA error, capped by one. This theorem is a corollary of the exact
+agreement statement above; it does not replace the complete-list conclusion or change the
+characteristic guard. -/
 theorem firstOrderBranch_finiteLength_mcaError_le
+    -- Fix rate, gap, block length, and dimension before choosing the finite field.
     (rho eta : ℝ) (n k : ℕ)
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderBranchThreshold rho + eta < 1)
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
+    -- Probability enters only here, through the finite field and affine-line generator.
     {F : Type} [Field F] [Fintype F] (domain : Fin n ↪ F)
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F) :

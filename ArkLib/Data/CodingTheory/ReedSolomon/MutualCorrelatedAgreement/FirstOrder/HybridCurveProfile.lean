@@ -17,6 +17,15 @@ A curve-verified `LineProfile` directly supplies the literal shifted-height prem
 optimized hybrid theorem.  The profile retains the squarefree theorem as an independent semantic
 alternative.  Taking the smaller of their two proved bounds therefore gives another actual
 recovery theorem, rather than merely a numerical comparison.
+
+This is the semantic profile form of the optimized hybrid and factorwise-squarefree alternatives
+in [DKTZ26, `lem:first-order-hybrid` and `lem:first-order-factorwise`]. The declarations return an
+exceptional set and exact power agreement; they are not only envelope inequalities.
+
+## References
+
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], first-order curve tuning.
 -/
 
 @[expose] public section
@@ -94,8 +103,11 @@ theorem exists_exceptional_exact_powerAgreement_hybrid_optimized
     simpa only [hDk] using hresult
 
 open Classical in
-/-- The minimum of the two independently proved profile envelopes still has an actual semantic
-recovery theorem.  The chosen exceptional set comes from whichever theorem attains the minimum. -/
+/-- **Best certified first-order curve envelope with semantic recovery.**
+
+The minimum of the independently proved optimized-hybrid and factorwise-squarefree envelopes still
+has an actual recovery theorem. The chosen exceptional set comes from whichever theorem attains the
+minimum, and every good challenge recovers exact power agreement with the complete agreement set. -/
 theorem exists_exceptional_exact_powerAgreement_best
     {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
     {p : LineProfile} (hp : p.CurveVerification)

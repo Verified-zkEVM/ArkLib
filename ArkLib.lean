@@ -935,6 +935,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.Geometric
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.ImprovedListBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.MathematicalCapacity
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.RestrictedCollectorProof
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PaperAlgorithms
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PositionSubsetDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.PreparedDecoderCertificate
@@ -1282,6 +1283,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.Point
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.SharpPairCounting
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.UniformPowerAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.PaperGuide
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Computation.AddressedBits
 public import ArkLib.Data.Computation.AddressedBitsCheck

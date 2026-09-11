@@ -14,13 +14,29 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.U
 /-!
 # Exact capacity lists at every rate
 
-`exists_rateCapacity_list` uses the uniform three-halves construction and its explicit
-`rateCapacityLengthThreshold`. The earlier `exists_capacity_list` interface and its
-finite-field, quarter-gap, and half-gap refinements remain available with their own thresholds.
+For the paper's all-rate capacity theorem, use `exists_rateCapacity_list`. It dispatches between
+the certified first-order theorem at gaps at least `6/25` and the revised 300-based mathematical
+construction at smaller gaps. Its explicit length and list bounds are
+`rateCapacityLengthThreshold` and `rateCapacityListBound`.
 
-This module assembles all mathematical list bounds accompanying [DKTZ26, Theorem 1.1].
+## Which theorem should I use?
+
+* `exists_rateCapacity_list` is the all-rate paper facade over prime fields with `q >= n`.
+* `uniform_capacity_list_bound_300` exposes the revised small-gap parameters and the sharper
+  arbitrary-field characteristic guard directly.
+* `FirstOrder.firstOrderBranch_finiteLength_finiteSlack_bounds` and
+  `FirstOrder.firstOrderBranch_finiteLength_rate_bounds` are the sharp first-derivative results;
+  they live in `MutualCorrelatedAgreement/FirstOrder/Branchwise` because the same theorem proves
+  both the complete-list and line-MCA bounds.
+* `exists_capacity_list`, `capacityLengthThreshold`, and `CapacityListBounds` retain the earlier
+  parameter family and its finite-field, quarter-gap, and half-gap refinements.
+
+For the complete map from the paper's four quantitative regimes to their owner declarations, start
+at `ReedSolomon/PaperGuide`.
+
+This module assembles mathematical capacity list bounds for [DKTZ26].
 `HasCapacityLists` spells out the common exact-list property. `CapacityListBounds` collects
-the quantitative conclusions, led by the field-independent bound of Corollary A.7.
+the retained quantitative conclusions, led by a field-independent bound.
 The capacity gap is fixed before the block length, dimension,
 prime field, evaluation points, and received word. The statement includes both
 field-size regimes and uses ordinary polynomial degree, including the zero polynomial.
@@ -55,8 +71,8 @@ list cardinality and MCA are different properties.
 
 ## References
 
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Theorem 1.1.
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], capacity list theorem.
 * [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed-Solomon
   Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], hidden-derivative interpolation.
 -/
@@ -116,7 +132,7 @@ def HasCapacityLists (δ : ℝ) (N : ℕ)
     q.Prime → n ≤ q →
     --
     -- Agreement A ≥ k + δn is the capacity-gap decoding condition.
-    -- As in Theorem 1.1, thresholds up to 2n are allowed, even if impossible.
+    -- The retained interface allows thresholds up to 2n, even when impossible.
     (k : ℝ) + δ * n ≤ A → A ≤ 2 * n →
     --
     -- `↪` asserts distinct evaluation points; the received word is arbitrary.
@@ -145,7 +161,7 @@ theorem HasCapacityLists.mono {δ : ℝ} {N : ℕ}
   obtain ⟨list, hexact, hempty, hb⟩ := h n k q A hn hk hkn hq hnq hA hAn α y
   exact ⟨list, hexact, hempty, hbound n k q A list.card hb⟩
 
-/-- The simultaneous list bounds accompanying [DKTZ26, Theorem 1.1].
+/-- The simultaneous list bounds for the retained parameter family.
 The field-independent estimate leads; field-dependent estimates remain useful when
 their constants give a smaller value. All bounds refer to the same cardinality `ℓ`. -/
 structure CapacityListBounds (δ : ℝ) (n k q A ℓ : ℕ) : Prop where
@@ -220,7 +236,7 @@ on that gap. `HasCapacityLists` gives the exact agreement list for every admissi
 and received word; `CapacityListBounds` gives the field-independent bound and both
 finite-field refinements, together with the quarter-gap and half-gap conclusions.
 
-This is the mathematical list portion of [DKTZ26, Theorem 1.1], including Corollary A.7.
+This retains the earlier parameter family; use `exists_rateCapacity_list` for the current paper.
 It does not certify the separate decoder or running-time assertion. -/
 theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) (hδ_one : δ < 1) :
     HasCapacityLists δ (capacityLengthThreshold δ) (CapacityListBounds δ) := by
@@ -274,8 +290,17 @@ def rateCapacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
         HiddenDerivative.uniformRatePartitionOrder δ *
       n ^ HiddenDerivative.uniformRatePartitionOrder δ
 
-/-- Exact capacity lists using the uniform three-halves derivative order. The gap fixes all
-parameters before the field and code; impossible agreement thresholds return the empty list. -/
+/-- **All-rate exact capacity lists for the paper's revised parameter family.**
+
+The gap fixes the length threshold and list-bound function before the block length, message
+dimension, prime field, evaluation domain, and received word. At gaps at least `6/25`, the theorem
+uses the certified first-order bound `307*n`. At smaller gaps it uses
+`d = ceil(exp(3/(2*delta)))` and the revised 300-based multiplicity through
+`uniformRatePartitionMathematicalJetBound`; the bound is `C(delta)*n^d`.
+
+The returned finset is the complete family of degree-`< k` polynomials meeting the integer
+agreement threshold, including the zero polynomial. Impossible thresholds return the empty list.
+This is a mathematical exact-list theorem; it does not claim an implementation or bit complexity. -/
 theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
     HasCapacityLists δ (rateCapacityLengthThreshold δ)
       (fun n _ _ _ card => (card : ℝ) ≤ rateCapacityListBound δ n) := by

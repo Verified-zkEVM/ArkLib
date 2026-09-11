@@ -140,6 +140,10 @@ The supporting modules are grouped by mathematical role:
   application theorems, and expected raw payload. Generic finite-field budgets and the
   strided-query authentication identity remain in `ArkLib/Data/Probability`. Measured compressed
   proof sizes and deployed serializer correctness are not Lean theorems.
+- Readers matching the quantitative Reed--Solomon paper to Lean should start with
+  `ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean`. Its concrete table and protocol
+  instantiations are indexed separately in `ArkLibExamples/ReedSolomon/PaperGuide.lean`, preserving
+  the examples-to-library dependency direction.
 - The reusable `ToMathlib/AlgebraicGeometry` development is organized into `Hilbert`,
   `PrincipalCut`, `PrincipalOpen`, `CutFamily`, `ZeroLocus`, and `Incidence`.
   These modules do not belong to Reed–Solomon coding theory.

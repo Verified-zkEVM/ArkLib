@@ -13,9 +13,34 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.Mat
 /-!
 # Uniform correlated agreement for the revised 300-based mathematical recipe
 
-These theorems expose the stronger mathematical parameter choice without changing the retained
-1000-based reference executor. The exceptional set is fixed before the challenge and candidate,
-and the conclusion recovers the complete agreement set.
+For a capacity gap `delta < 6/25`, this module uses the same revised mathematical parameters as
+`ListDecodability/Capacity/MathematicalUniformRate`:
+
+* `d = ceil(exp(3/(2*delta)))`, the derivative order;
+* `m = ceil(300*d^2*log(6*d))`, the interpolation multiplicity;
+* `nu = ceil(m/delta^2)-1`, the total jet-degree bound; and
+* `Ndelta = nu+1`, the sufficient block-length threshold.
+
+The polynomial-curve theorem gives at most
+`ell * C(delta) * n^(d+1)` exceptional challenges, where
+`C(delta) = polynomialCurveProductMCAConstant delta nu (150*nu) d`. One exceptional set is fixed
+before the challenge and candidate. Outside it, `HasExactPowerAgreement` recovers the constituent
+messages and identifies the complete agreement set. The line theorem is the case `ell = 1`.
+
+The characteristic guard is the sharp mathematical condition: characteristic zero, or
+`max (k-1) nu < ringChar F`. The extension-field theorem constructs the exceptional set over an
+algebraically closed target; the base-field theorem descends it back to `F`. These declarations do
+not assemble the large-gap first-order and constant-code endpoints; the paper-facing all-gap wrapper
+is `sharpCapacity_lineAgreement` in `MutualCorrelatedAgreement/Capacity`.
+
+This 300-based family is independent of the retained 1000-based reference executor imported from
+`Capacity/UniformRate`. It proves mathematical MCA bounds and makes no decoder-runtime or
+bit-complexity claim.
+
+## References
+
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], uniform small-gap MCA bound.
 -/
 
 @[expose] public section
@@ -28,14 +53,22 @@ open Polynomial HiddenDerivative
 
 universe u
 
-/-- One exceptional set explains every close polynomial on a received polynomial curve, using
-the revised 300-based mathematical multiplicity. -/
+/-- **Extension-field polynomial-curve MCA for the revised 300-based recipe.**
+
+For `ell+1` received words, one exceptional subset of the algebraically closed target field works
+for every challenge and every close degree-`< k` candidate. Its size is linear in `ell` and at most
+`ell * C(delta) * n^(d+1)`. The exact power-agreement conclusion includes equality of the complete
+agreement set, rather than only agreements on a supplied subset. -/
 theorem exists_mathematicalUniformRatePartition_curveMCA
+    -- The small capacity gap fixes all interpolation parameters.
     {F E : Type u} [Field F] [Field E] [DecidableEq E] [IsAlgClosed E]
     {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
+    -- Length, dimension, threshold, and batching degree are fixed before the field data.
     (hn : uniformRatePartitionMathematicalLength δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
+    -- The embedding moves the base evaluation set and received curve into the target field.
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    -- Positive characteristic must exceed message degree and the revised jet bound.
     (hchar : ringChar F = 0 ∨
       max (k - 1) (uniformRatePartitionMathematicalJetBound δ) < ringChar F) :
     ∃ exceptional : Finset E,
@@ -84,7 +117,12 @@ theorem exists_mathematicalUniformRatePartition_curveMCA
     (by positivity) hℓ le_rfl hδ hδone.le hgap hchar'
 
 open Classical in
-/-- The revised base-field curve theorem includes the prime-field boundary `q = n`. -/
+/-- **Base-field polynomial-curve MCA for the revised parameters.**
+
+Algebraic-closure recovery is descended back to `F`, including the exceptional set and all
+constituent messages. The explicit length bound places the revised jet cap below `n`, so the sharp
+characteristic premise includes the prime-field boundary `q = n` whenever the remaining message
+degree guard holds. -/
 theorem exists_mathematicalUniformRatePartition_baseCurveMCA
     {F : Type u} [Field F] {δ : ℝ} {n k A ℓ : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
@@ -110,7 +148,12 @@ theorem exists_mathematicalUniformRatePartition_baseCurveMCA
   exact ⟨ex', (Nat.cast_le.mpr hc').trans hc, hg'⟩
 
 open Classical in
-/-- Exact line MCA for the revised parameters, with the actual message-rate gap. -/
+/-- **Exact line MCA for the revised 300-based parameters.**
+
+This is the `ell = 1` specialization of the base-field curve theorem. The threshold uses the actual
+message dimension through `k + delta*n <= A`; one exceptional set works for every challenge and
+candidate, and `HasExactCorrelatedPair` records full-set recovery. This is the small-gap line
+theorem used by `sharpCapacity_lineAgreement`. -/
 theorem exists_mathematicalUniformRatePartition_lineMCA
     {F : Type u} [Field F] {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)

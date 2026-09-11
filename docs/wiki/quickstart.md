@@ -58,7 +58,9 @@ Place durable, concrete applications under `ArkLibExamples/` and add them to the
 stable `ArkLib` owner modules; `ArkLib` must not import `ArkLibExamples`.
 
 The Reed–Solomon examples connect finite interpolation certificates to list bounds, mutual
-correlated agreement (MCA), and query/payload arithmetic. Start with the application you need:
+correlated agreement (MCA), and query/payload arithmetic. Paper readers should start with the
+reusable theorem map in `ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean` and the separate
+application index in `ArkLibExamples/ReedSolomon/PaperGuide.lean`. Then choose the application:
 
 - `ProveKitAffine` gives width-eight MCA bounds for both the 109-query and 108-query profiles,
   over any positive-dimensional affine space. Its canonical BN254 corollaries discharge the
@@ -70,8 +72,8 @@ correlated agreement (MCA), and query/payload arithmetic. Start with the applica
   affine denominator `q - 1`. `ProveKitExpectedPayload` proves exact intervals for the
   expected authentication-payload savings, using the finite uniform-query counting theorem
   in `Data/Probability/UniformQueryBoundary`.
-- `LambdaVM/CPU` is the CPU-table endpoint at 32768 trace rows: 212 queries,
-  two early evaluations of 38 main columns, and 34968 net field-and-hash bytes
+- `LambdaVM/CPU` is the CPU-table endpoint at 32768 trace rows: 208 queries,
+  two early evaluations of 38 main columns, and 55992 nominal field-and-hash bytes
   saved. `Parameters` and `Certificates` derive the degree-50 powers and eight
   fold bounds, plus the separate dimension-`T + 3` candidate list.
   `Reconstruction` connects all 51 DEEP terms to the main columns; `Folding`
@@ -83,12 +85,13 @@ correlated agreement (MCA), and query/payload arithmetic. Start with the applica
   the deduplicated-response expectation proved in `Data/Probability/DistinctQueries`.
 - `CurveCertificate` turns a checked finite profile into a uniform exceptional set.
   `ZisK/Parameters`, `ZisK/Interpolation`, and `ZisK/FinalStark` use it for the
-  compressed final STARK: nested powers batching, three folds, and 53 queries with
+  compressed final STARK: nested powers batching, three folds, and 51 queries with
   the existing 22-bit query grinding. Each phase meets its own 128-bit target;
-  the payload model saves 3920 bytes. `NestedPowerAgreement` supplies the generic
+  the payload model saves 11760 bytes. `NestedPowerAgreement` supplies the generic
   composition theorem, including singleton groups with no exceptions.
-- `ConcreteCurveBounds` and `ConcreteCurveMCA` supply the ProveKit specializations.
-  `AppendixCurveMCA` covers the two published 512-word BN254 bounds.
+- `CurveMigration` supplies optimized-hybrid-or-squarefree semantic recovery for all 15 ProveKit,
+  eight ZisK, and nine LambdaVM application curves. `AppendixCurveMCA` retains two artifact-only
+  512-word BN254 certificates whose exact parameters are absent from the current paper sources.
 - `Fields` supplies canonical mathematical models and proved cardinalities/characteristics
   for BN254 and cubic Goldilocks.
 

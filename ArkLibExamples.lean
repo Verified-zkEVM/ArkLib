@@ -31,3 +31,4 @@ import ArkLibExamples.ReedSolomon.ZisK
 import ArkLibExamples.ReedSolomon.ZisK.FinalStark
 import ArkLibExamples.ReedSolomon.ZisK.Interpolation
 import ArkLibExamples.ReedSolomon.ZisK.Parameters
+import ArkLibExamples.ReedSolomon.PaperGuide

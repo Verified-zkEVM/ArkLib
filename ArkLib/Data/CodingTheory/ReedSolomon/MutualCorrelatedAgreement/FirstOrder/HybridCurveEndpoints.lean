@@ -15,6 +15,15 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.C
 
 Constant messages and the full code need neither an interpolation inequality nor a characteristic
 guard. Only the nontrivial branch constructs a finite-support equation.
+
+This dispatch supplies the endpoint cases used by the first-order capacity theorem in [DKTZ26]. It
+keeps the constant-code result characteristic-free and gives the full code an empty exceptional
+set before invoking the optimized hybrid theorem on the remaining branch.
+
+## References
+
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], first-order endpoints and capacity MCA.
 -/
 
 @[expose] public section
@@ -26,8 +35,11 @@ open Polynomial HiddenDerivative
 noncomputable section
 
 open Classical in
-/-- The every-subset finite-support theorem, including constant messages and the full code.
-The empty exceptional set takes priority when the constant code is also the full code. -/
+/-- **Endpoint-complete optimized first-order curve recovery.**
+
+The theorem covers every supplied agreeing subset, including constant messages and the full code.
+The empty exceptional set takes priority when the constant code is also the full code. Only the
+nontrivial branch consumes the finite-support height premise and positive-characteristic guard. -/
 theorem exists_baseExceptional_firstOrderCurve_optimized_with_endpoints
     {F : Type*} [Field F] {n D A m M mu h ell : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F)

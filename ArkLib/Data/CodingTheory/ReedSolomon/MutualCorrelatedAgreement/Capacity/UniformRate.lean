@@ -14,7 +14,32 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.P
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.UniformRateCertificate
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
-/-! # Uniform exact correlated agreement with the three-halves exponent -/
+/-!
+# Retained 1000-based correlated agreement near capacity
+
+This module is the compatibility MCA companion to the retained 1000-based list construction in
+`ListDecodability/Capacity/UniformRate`. For a small gap `delta`, it uses
+
+* `d = ceil(exp(3/(2*delta)))`;
+* `m = ceil(1000*d^2*log(6*d))`;
+* `nu = ceil(m/delta^2)-1`; and
+* the sufficient length threshold `ceil(2*m/delta^2)`.
+
+One exceptional set is chosen before the challenge and candidate. Outside it, the curve theorem
+recovers exact constituent messages and equality of the complete agreement set. The exceptional
+bound is linear in the batching degree and proportional to `n^(d+1)`.
+
+The positive-characteristic premise `n <= ringChar F` is intentionally stronger than the paper's
+current sharp guard. For the revised 300-based mathematical theorem, use
+`Capacity/MathematicalUniformRate`; for the all-gap paper facade, use `sharpCapacity_lineAgreement`
+in `MutualCorrelatedAgreement/Capacity`. This module remains useful for the retained coordinate
+reference executor and callers of its established interface. It makes no bit-complexity claim.
+
+## References
+
+* [Dao, Kominers, and Thaler, *Quantitative Reed--Solomon List Decoding and Mutual
+  Correlated Agreement: From Johnson to Capacity*][DKTZ26], retained parameter route.
+-/
 
 @[expose] public section
 
@@ -26,7 +51,11 @@ open Polynomial HiddenDerivative
 
 universe u
 
-/-- One exceptional set explains every close polynomial on the received polynomial curve. -/
+/-- **Extension-field curve MCA for the retained 1000-based parameters.**
+
+One exceptional set in the algebraically closed target works for every challenge and close
+candidate. The exact power-agreement conclusion identifies the complete agreement set. The
+characteristic-at-least-length premise is the compatibility guard of this retained route. -/
 theorem exists_uniformRatePartition_curveMCA {F E : Type u} [Field F] [Field E]
     [DecidableEq E] [IsAlgClosed E]
     {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
@@ -65,7 +94,11 @@ theorem exists_uniformRatePartition_curveMCA {F E : Type u} [Field F] [Field E]
     (by positivity) hℓ le_rfl hδ hδone.le hgap hchar'
 
 open Classical in
-/-- The base-field uniform curve theorem includes the prime-field boundary `q = n`. -/
+/-- **Base-field curve MCA for the retained parameters.**
+
+The extension-field exceptional set and recovered constituents descend to `F`. The premise
+`n <= ringChar F` includes the prime-field boundary `q = n`; use the revised mathematical module
+when the sharper message-degree and jet-bound guard matters. -/
 theorem exists_uniformRatePartition_baseCurveMCA {F : Type u} [Field F]
     {δ : ℝ} {n k A ℓ : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformRatePartitionLength δ ≤ n) (hk : 0 < k)
@@ -87,7 +120,11 @@ theorem exists_uniformRatePartition_baseCurveMCA {F : Type u} [Field F]
   exact ⟨ex', (Nat.cast_le.mpr hc').trans hc, hg'⟩
 
 open Classical in
-/-- Exact line MCA for the uniform parameters, with the actual message-rate gap. -/
+/-- **Line MCA for the retained 1000-based parameters.**
+
+This is the batching-degree-one specialization. The threshold uses the actual message dimension,
+and `HasExactCorrelatedPair` records recovery of both constituents and the complete agreement
+set. -/
 theorem exists_uniformRatePartition_lineMCA {F : Type u} [Field F]
     {δ : ℝ} {n k A : ℕ} (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hn : uniformRatePartitionLength δ ≤ n) (hk : 0 < k)

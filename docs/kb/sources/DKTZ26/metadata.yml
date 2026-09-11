@@ -1,7 +1,7 @@
 bibkey: DKTZ26
 source_kind: private-manuscript
 canonical_url: null
-source_repository: quangvdao/all-rate-rs-list-decoding
-source_commit: 9e4d6488ead94be47cca69e5be915b5667143b66
+source_repository: quangvdao/rs-capacity-and-correlated-agreement
+source_commit: 980d875a04f6472339e3b4147f3d90ae09dff57b
 committed_artifacts: []
-notes: "Normative source snapshot for the all-rate strengthening and quantitative refinement plan."
+notes: "Current correspondence target; the earlier 9e4d6488 snapshot is retained in the paper-page version notes."

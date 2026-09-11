@@ -29,6 +29,8 @@ Their published theorem specializes the method to the low-rate regime.
 - `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/`
 - `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean`
 - `ArkLib/Data/CodingTheory/ReedSolomon/ListDecoding/CapacityDecoder.lean`
+- `ArkLib/Data/CodingTheory/ReedSolomon/PaperGuide.lean` for the later all-rate theorem map
+- `ArkLib/Data/CodingTheory/ReedSolomon/ListDecoding/PaperAlgorithms.lean` for decoder boundaries
 
 ## Known Divergences From ArkLib
 
@@ -38,11 +40,13 @@ capacity gap.
 
 ## Open Formalization Gaps
 
-`ListDecodability/Capacity.lean` gives the mathematical exact-list theorem. `CapacityDecoder.lean`
-connects the executable decoder's output and primitive-work ledger. Restricted-machine
-execution and its cost bound remain under development in the
-[algebraic-machine plan](../../design/rs-algebraic-machine-plan.md); these claims should not
-be conflated with the list-size bound or a bit-time theorem.
+`ListDecodability/Capacity.lean` gives the later all-rate mathematical exact-list theorem.
+`CapacityDecoder.lean` connects the retained coordinate decoder's output to that specification and
+records an observed primitive-work ledger; it is a correctness reference, not the integrated norm
+and square-system decoder. The current component and backend boundaries are maintained in
+`ListDecoding/PaperAlgorithms.lean`. Historical restricted-machine work is recorded in the
+[algebraic-machine plan](../../design/rs-algebraic-machine-plan.md). None of these narrower results
+is a whole-decoder bit-time theorem.
 
 ## Source Access
 
