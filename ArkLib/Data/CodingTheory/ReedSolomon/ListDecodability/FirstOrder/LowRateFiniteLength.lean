@@ -8,6 +8,10 @@ module
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AllMRankRounding
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AllMSourceRounding
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
 
 /-!
@@ -257,6 +261,159 @@ theorem lowRateFiniteLengthSlope_mul_slack_le_margin
     _ = firstOrderSourceDensity (finiteLengthRate rho n)
           (lowRateFiniteLengthCertifiedAgreement rho eta) (firstOrderLowRateBeta rho) -
         firstOrderRankDensity (firstOrderLowRateBeta rho) := by ring
+
+/-! ## Literal low-rate selectors and exact finite count gap -/
+
+/-- The manuscript rank-rounding coefficient on the low branch. -/
+def lowRateFiniteLengthRankRoundingConstant (rho : ℝ) : ℝ :=
+  2 * firstOrderLowRateBeta rho + 3
+
+/-- Literal low-rate multiplicity selector. -/
+def lowRateFiniteLengthMultiplicity (rho eta : ℝ) (n : ℕ) : ℕ :=
+  ⌈4 * lowRateFiniteLengthRankRoundingConstant rho /
+    lowRateFiniteLengthDensityMargin rho eta n⌉₊
+
+/-- Literal low-rate derivative cap, retaining the `M = 0` endpoint. -/
+def lowRateFiniteLengthDerivativeCap (rho eta : ℝ) (n : ℕ) : ℕ :=
+  ⌊firstOrderLowRateBeta rho * lowRateFiniteLengthMultiplicity rho eta n⌋₊
+
+/-- Literal low-rate total jet degree. -/
+def lowRateFiniteLengthJetDegree (rho eta : ℝ) (n : ℕ) : ℕ :=
+  ⌈lowRateFiniteLengthMultiplicity rho eta n *
+    lowRateFiniteLengthCertifiedAgreement rho eta / finiteLengthRate rho n⌉₊
+
+/-- Exact finite source count for the low-rate selectors. -/
+def lowRateFiniteLengthSourceCount (rho eta : ℝ) (n : ℕ) : ℝ :=
+  firstOrderRateSourceCount (finiteLengthRate rho n)
+    (lowRateFiniteLengthCertifiedAgreement rho eta)
+    (lowRateFiniteLengthMultiplicity rho eta n)
+    (lowRateFiniteLengthDerivativeCap rho eta n)
+    (lowRateFiniteLengthJetDegree rho eta n)
+
+/-- Exact all-`M` local-rank count for the low-rate selectors. -/
+def lowRateFiniteLengthRankCount (rho eta : ℝ) (n : ℕ) : ℕ :=
+  firstOrderRateRankCount (lowRateFiniteLengthMultiplicity rho eta n)
+    (lowRateFiniteLengthDerivativeCap rho eta n)
+
+theorem lowRateFiniteLengthDensityMargin_pos
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (hlow : rho < firstOrderRateSwitch)
+    (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n) :
+    0 < lowRateFiniteLengthDensityMargin rho eta n := by
+  have hc := lowRateFiniteLengthSlope_pos hrho hrhoOne hlow
+  have hs := finiteLengthSlack_pos heta (length_pos_of_two_le_rate_mul_length hn)
+  exact (mul_pos hc hs).trans_le
+    (lowRateFiniteLengthSlope_mul_slack_le_margin hrho hrhoOne hlow heta haOne hn)
+
+theorem lowRateFiniteLengthMultiplicity_pos
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (hlow : rho < firstOrderRateSwitch)
+    (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n) :
+    0 < lowRateFiniteLengthMultiplicity rho eta n := by
+  unfold lowRateFiniteLengthMultiplicity
+  apply Nat.ceil_pos.mpr
+  have hmargin := lowRateFiniteLengthDensityMargin_pos
+    hrho hrhoOne hlow heta haOne hn
+  have hbeta := firstOrderLowRateBeta_pos hrho
+  unfold lowRateFiniteLengthRankRoundingConstant
+  positivity
+
+theorem lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (hlow : rho < firstOrderRateSwitch)
+    (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n) :
+    (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+        firstOrderSourceDensity (finiteLengthRate rho n)
+          (lowRateFiniteLengthCertifiedAgreement rho eta) (firstOrderLowRateBeta rho) ≤
+      lowRateFiniteLengthSourceCount rho eta n := by
+  let R := finiteLengthRate rho n
+  let a := lowRateFiniteLengthCertifiedAgreement rho eta
+  let beta := firstOrderLowRateBeta rho
+  let m := lowRateFiniteLengthMultiplicity rho eta n
+  have hregime : FirstOrderLowRateRegime rho :=
+    (firstOrderLowRateRegime_iff_lt_rateSwitch hrho.le).2 hlow
+  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hRrho : R < rho := finiteLengthRate_lt_rate
+    (length_pos_of_two_le_rate_mul_length hn)
+  have hTa : firstOrderLowRateThreshold rho ≤ a := by
+    have h := lowRateFiniteLengthCertifiedAgreement_ge_half_slack
+      (rho := rho) heta.le haOne.le
+    dsimp only [a] at h ⊢
+    linarith
+  have hRa : R ≤ a := (hRrho.trans
+    ((rate_lt_firstOrderLowRateThreshold hrho hrhoOne hregime).trans_le hTa)).le
+  have hb0 : 0 ≤ beta := by
+    dsimp only [beta]
+    exact (firstOrderLowRateBeta_pos hrho).le
+  have hbcut : beta < a / R := by
+    have hfixed : beta < firstOrderLowRateThreshold rho / rho := by
+      dsimp only [beta]
+      exact firstOrderLowRateBeta_lt_threshold_div_rate hrho
+    have hfirst : firstOrderLowRateThreshold rho / rho ≤ a / rho :=
+      div_le_div_of_nonneg_right hTa hrho.le
+    have hsecond : a / rho ≤ a / R := by
+      exact div_le_div_of_nonneg_left
+        (lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le).le hR hRrho.le
+    exact hfixed.trans_le (hfirst.trans hsecond)
+  have hm : 0 < m := by
+    dsimp only [m]
+    exact lowRateFiniteLengthMultiplicity_pos hrho hrhoOne hlow heta haOne hn
+  have hsource := firstOrderSourceDensity_mul_cube_le_rateSourceCount
+    hR hRa hb0 hbcut hm
+  dsimp only [R, a, beta, m] at hsource ⊢
+  simpa only [lowRateFiniteLengthSourceCount, lowRateFiniteLengthDerivativeCap,
+    lowRateFiniteLengthJetDegree] using hsource
+
+theorem lowRateFiniteLengthRankCount_le_density_add_rounding
+    {rho eta : ℝ} {n : ℕ} (hrho : 0 < rho) :
+    (lowRateFiniteLengthRankCount rho eta n : ℝ) ≤
+      (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+          firstOrderRankDensity (firstOrderLowRateBeta rho) +
+        lowRateFiniteLengthRankRoundingConstant rho *
+          (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 2 := by
+  have h := firstOrderRateRankCount_floor_le_density_add_rounding
+    (firstOrderLowRateBeta_pos hrho).le (lowRateFiniteLengthMultiplicity rho eta n)
+  simpa only [lowRateFiniteLengthRankCount, lowRateFiniteLengthDerivativeCap,
+    lowRateFiniteLengthRankRoundingConstant] using h
+
+/-- The literal low-rate ceiling absorbs the exact all-`M` rank rounding loss. -/
+theorem lowRateFiniteLength_count_gap
+    {rho eta : ℝ} {n : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (hlow : rho < firstOrderRateSwitch)
+    (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n) :
+    3 * (lowRateFiniteLengthMultiplicity rho eta n : ℝ) ^ 3 *
+        lowRateFiniteLengthDensityMargin rho eta n / 4 ≤
+      lowRateFiniteLengthSourceCount rho eta n - lowRateFiniteLengthRankCount rho eta n := by
+  let m := lowRateFiniteLengthMultiplicity rho eta n
+  let delta := lowRateFiniteLengthDensityMargin rho eta n
+  let crank := lowRateFiniteLengthRankRoundingConstant rho
+  let beta := firstOrderLowRateBeta rho
+  have hmNat : 0 < m := lowRateFiniteLengthMultiplicity_pos
+    hrho hrhoOne hlow heta haOne hn
+  have hdelta : 0 < delta := lowRateFiniteLengthDensityMargin_pos
+    hrho hrhoOne hlow heta haOne hn
+  have hceil : 4 * crank / delta ≤ (m : ℝ) := by
+    dsimp only [m, crank, delta]
+    unfold lowRateFiniteLengthMultiplicity
+    exact Nat.le_ceil _
+  have hcrank0 : 0 ≤ crank := by
+    dsimp only [crank, lowRateFiniteLengthRankRoundingConstant]
+    have := firstOrderLowRateBeta_pos hrho
+    positivity
+  have habsorb : 4 * crank ≤ (m : ℝ) * delta := by
+    exact (div_le_iff₀ hdelta).mp (by simpa [mul_comm] using hceil)
+  have hround : crank * (m : ℝ) ^ 2 ≤ (m : ℝ) ^ 3 * delta / 4 := by
+    nlinarith [mul_nonneg (sq_nonneg (m : ℝ)) (sub_nonneg.mpr habsorb)]
+  have hsource := lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount
+    hrho hrhoOne hlow heta haOne hn
+  have hrank := lowRateFiniteLengthRankCount_le_density_add_rounding
+    (rho := rho) (eta := eta) (n := n) hrho
+  dsimp only [delta, lowRateFiniteLengthDensityMargin, m, beta, crank] at hround hsource hrank ⊢
+  nlinarith
 
 end
 
