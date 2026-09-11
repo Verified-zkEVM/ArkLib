@@ -20,4 +20,14 @@ example {F : Type*} [Field F] [DecidableEq F]
       list.card ≤ 1 := by
   simpa using exists_constantCode_list domain w z 2 (by norm_num)
 
+example {F : Type*} [Field F] [DecidableEq F]
+    (domain : Fin 3 ↪ F) (w : Fin 2 → Fin 3 → F) :
+    UniformExactPowerAgreement domain w 1 2 3 := by
+  simpa using uniformExactPowerAgreement_constantCode_of_two_le domain w 2 (by norm_num)
+
+example {F : Type*} [Field F] [DecidableEq F]
+    (domain : Fin 3 ↪ F) (w : Fin 3 → Fin 3 → F) :
+    UniformExactPowerAgreement domain w 1 1 6 := by
+  simpa using uniformExactPowerAgreement_constantCode_one domain w
+
 end ReedSolomon
