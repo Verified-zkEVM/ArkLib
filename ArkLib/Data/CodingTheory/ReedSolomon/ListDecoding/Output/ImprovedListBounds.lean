@@ -10,6 +10,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.WeightedCertificate
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthRateBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Branchwise
 
 /-!
 # Improved list bounds for any retained exact output
@@ -76,6 +78,25 @@ theorem automaticFirstOrder_finiteSlack_length_le
   rw [length_eq_closePolynomialSet_ncard domain received out he]
   exact ((automaticFirstOrder_finiteLength_finiteSlack_bounds rho eta n k A
     hrho hrhoOne heta haOne hbetaHalf hk hkRate hA hAn domain hchar).1 received).2
+
+open Classical in
+/-- The all-rate branchwise finite-slack bound applies to the same exact physical output.
+The branch condition and its derivative cap are selected internally. -/
+theorem firstOrderBranch_finiteSlack_length_le
+    {F : Type*} [Field F] (rho eta : ℝ) (n k A : ℕ)
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : firstOrderBranchThreshold rho + eta < 1)
+    (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    (domain : Fin n ↪ F) (received : Fin n → F) (out : List (List F))
+    (hchar : k = 1 ∨ ringChar F = 0 ∨
+      max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F)
+    (he : ExactOutput domain received k A out) :
+    (out.length : ℝ) ≤
+      7 * firstOrderBranchFiniteLengthMCAConstant rho ^ 3 * n / finiteLengthSlack eta n ^ 2 := by
+  rw [length_eq_closePolynomialSet_ncard domain received out he]
+  exact ((firstOrderBranch_finiteLength_finiteSlack_bounds rho eta n k A
+    hrho hrhoOne heta haOne hk hkRate hA hAn domain hchar).1 received).2
 
 end
 
