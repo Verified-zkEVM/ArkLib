@@ -873,6 +873,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.BranchwiseQuotient
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.CanonicalFiber
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.CoefficientCRT
@@ -884,7 +886,11 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDe
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.LeadingCoefficient
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.RadicalTower
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.RemainderStep
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.SeparantTower
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.TerminalCoprime
 public import
