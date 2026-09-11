@@ -868,6 +868,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.MultiplicitySupport
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.ProductFilter
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryQuotientDecoder
