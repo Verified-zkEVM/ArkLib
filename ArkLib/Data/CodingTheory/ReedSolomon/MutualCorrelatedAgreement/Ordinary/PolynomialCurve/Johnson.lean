@@ -9,6 +9,7 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Certificate
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Index
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.UnifiedCurve
 /-! # Johnson correlated agreement for polynomial challenge curves -/
 
 @[expose] public section
@@ -21,25 +22,82 @@ open scoped ProbabilityTheory ENNReal
 
 /-- The exact finite ordinary Johnson charge for a degree-`ℓ` challenge curve. -/
 noncomputable def johnsonPowerE0 (n D A ℓ : ℕ) (eta : ℝ) : ℝ :=
-  (ordinaryPowerFactorRaw
+  (ordinaryUnifiedPowerFactorRaw
     (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ℓ
       (johnsonMu n D eta) (johnsonPowerHeight ℓ (johnsonH n D eta)) : ℚ)
+
+/-- The unified polynomial-curve charge is at most `ℓ` copies of its degree-one charge whenever
+its coefficient height is at most `ℓ` times the line height. -/
+theorem ordinaryUnifiedPowerFactorRaw_le_mul_lineCharge
+    (theta : ℚ) (n D ℓ B h H : ℕ)
+    (htheta : 0 ≤ theta) (hh : h ≤ ℓ * H) :
+    ordinaryUnifiedPowerFactorRaw theta n D ℓ B h ≤
+      ℓ * ordinaryUnifiedPowerFactorRaw theta n D 1 B H := by
+  have hfirst : (2 * B - 1) * h ≤ (2 * B - 1) * (ℓ * H) :=
+    Nat.mul_le_mul_left _ hh
+  have hmixed : ℓ * B + h * ordinaryPsi D B ≤
+      ℓ * (B + H * ordinaryPsi D B) := by
+    calc
+      ℓ * B + h * ordinaryPsi D B ≤ ℓ * B + (ℓ * H) * ordinaryPsi D B := by
+        gcongr
+      _ = ℓ * (B + H * ordinaryPsi D B) := by ring
+  have hrhs : ℓ * ordinaryUnifiedPowerFactorRaw theta n D 1 B H =
+      (((2 * B - 1) * (ℓ * H) : ℕ) : ℚ) +
+        theta * ((ℓ * (B + H * ordinaryPsi D B) : ℕ) : ℚ) +
+        ((ℓ * ((n - D - 1) * B) : ℕ) : ℚ) := by
+    unfold ordinaryUnifiedPowerFactorRaw
+    push_cast
+    ring
+  rw [hrhs]
+  unfold ordinaryUnifiedPowerFactorRaw
+  exact add_le_add
+    (add_le_add (by exact_mod_cast hfirst)
+      (mul_le_mul_of_nonneg_left (by exact_mod_cast hmixed) htheta)) le_rfl
 
 /-- The exact finite curve charge is linear in the curve degree, against the ordinary line
 charge with the one-slot height allowance used by the scaled interpolation certificate. -/
 theorem johnsonPowerE0_le_mul_lineCharge (n D A ℓ : ℕ) (eta : ℝ) :
     johnsonPowerE0 n D A ℓ eta ≤
       (ℓ : ℝ) *
-        (ordinaryFactorRaw
+        (ordinaryUnifiedPowerFactorRaw
           (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D
-            (johnsonMu n D eta) (johnsonH n D eta + 1) : ℚ) := by
+            1 (johnsonMu n D eta) (johnsonH n D eta + 1) : ℚ) := by
   unfold johnsonPowerE0
   norm_cast
-  exact ordinaryPowerFactorRaw_le_mul
+  exact ordinaryUnifiedPowerFactorRaw_le_mul_lineCharge
     (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ℓ
       (johnsonMu n D eta) (johnsonPowerHeight ℓ (johnsonH n D eta))
       (johnsonH n D eta + 1) (by positivity)
       (johnsonPowerHeight_le ℓ (johnsonH n D eta))
+
+/-- In the Johnson parameter range, the unified degree-one charge is bounded by the former
+ordinary line charge.  This keeps the old line-envelope comparison available to downstream
+asymptotic estimates without using it in the recovery theorem. -/
+theorem johnsonPowerE0_le_mul_legacyLineCharge
+    {n D A ℓ : ℕ} {eta : ℝ} (hD : 1 ≤ D) (hDn : D ≤ n - 2) :
+    johnsonPowerE0 n D A ℓ eta ≤
+      (ℓ : ℝ) *
+        (ordinaryFactorRaw
+          (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D
+            (johnsonMu n D eta) (johnsonH n D eta + 1) : ℚ) := by
+  let theta : ℚ := ((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)
+  let B := johnsonMu n D eta
+  let H := johnsonH n D eta + 1
+  have hB : 1 ≤ B := johnsonMu_pos hD hDn
+  have hpsi : ordinaryPsi D B ≤ 4 * D * B := ordinaryPsi_le_four_mul hD hB
+  have hline : ordinaryUnifiedPowerFactorRaw theta n D 1 B H ≤
+      ordinaryFactorRaw theta n D B H := by
+    unfold ordinaryUnifiedPowerFactorRaw ordinaryFactorRaw
+    have htheta : 0 ≤ theta := by positivity
+    have hmixed : B + H * ordinaryPsi D B ≤ H + B + 4 * D * B * H := by
+      nlinarith [Nat.zero_le H]
+    exact add_le_add
+      (add_le_add le_rfl
+        (mul_le_mul_of_nonneg_left (by
+          exact_mod_cast (show 1 * B + H * ordinaryPsi D B ≤
+            H + B + 4 * D * B * H by simpa using hmixed)) htheta)) (by simp)
+  exact (johnsonPowerE0_le_mul_lineCharge n D A ℓ eta).trans
+    (mul_le_mul_of_nonneg_left (by exact_mod_cast hline) (Nat.cast_nonneg ℓ))
 
 open Classical in
 /-- Characteristic-free finite Johnson recovery for a polynomial received curve. The exceptional
@@ -64,14 +122,14 @@ theorem exists_exceptional_johnsonPowerMCA
     have hspec := (cert.specialization_sound (RingHom.id F) 0).1
     apply hspec
     rw [hz, map_zero]
-  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation_base
+  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation_base_unified
     domain values cert.Q D (johnsonPowerHeight ℓ (johnsonH n D eta))
       (johnsonMu n D eta) A hQ (by omega) hℓ
       (johnsonMu_pos hD hDn)
       (johnson_degree_succ_le_agreement hD hDn heta hthreshold)
       hAn cert.challengeDegree_le cert.jetDegree_le
   have hcardReal : (ex.card : ℝ) ≤
-      (ordinaryPowerFactorRaw
+      (ordinaryUnifiedPowerFactorRaw
         (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ℓ
           (johnsonMu n D eta) (johnsonPowerHeight ℓ (johnsonH n D eta)) : ℚ) := by
     exact_mod_cast hcard
