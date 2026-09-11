@@ -10,7 +10,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Square
 public import ArkLib.ToMathlib.Polynomial.PaddedDerivativeResultantCommonRoot
 
 /-!
-# The fixed-word squarefree singular tail
+# The fixed-word squarefree singular-tail bound
 
 This file constructs the ordinary equation required by factorwise first-order list counting.
 It multiplies the retained root-independent content by the derivative resultant of the distinct

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.RingTheory.Norm.Basic
+public import Mathlib.RingTheory.Norm.Basic
 
 /-!
 # Norm vanishing detected by a geometric point
@@ -13,6 +14,8 @@ This file records the finite-free algebra fact used by the Reed--Solomon norm fi
 source algebra need not be a domain or reduced: if an element vanishes under an algebra map
 to a nontrivial algebra, then its multiplication determinant vanishes over the base field.
 -/
+
+@[expose] public section
 
 open Module
 
