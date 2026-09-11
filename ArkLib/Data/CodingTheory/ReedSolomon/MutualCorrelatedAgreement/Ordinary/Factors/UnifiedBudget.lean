@@ -96,11 +96,106 @@ theorem ordinaryFrobeniusMixedDegree_le_unified {D s b : ℕ} (h : ℕ)
   have hcoefficient := ordinaryFrobenius_unified_factor hD hs hb
   nlinarith
 
-/-- The unified all-characteristic ordinary MCA budget for a received curve of degree `ell`.
-This is the integral form of the manuscript's `E_ord^(ell)`. -/
+/-- The free-retention all-characteristic ordinary MCA budget at a supplied incidence ratio.
+The retention threshold `L` affects the joint-incidence ratio upstream and appears here in the
+exact accidental-agreement term. -/
+def ordinaryUnifiedPowerFactorRawAt
+    (theta : ℚ) (n D ell B H L : ℕ) : ℚ :=
+  ((2 * B - 1) * H : ℕ) + theta * (ell * B + H * ordinaryPsi D B : ℕ) +
+    (ell * ((n - L) * B) : ℕ)
+
+/-- The manuscript's free-retention ordinary polynomial-curve budget. -/
+def ordinaryUnifiedPowerFactorAt (n D ell B H A L : ℕ) : ℚ :=
+  ordinaryUnifiedPowerFactorRawAt
+    (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) n D ell B H L
+
+/-- The former fixed-split budget is the free-retention budget at `L = D + 1`. -/
+theorem ordinaryUnifiedPowerFactorRawAt_succ_eq
+    (theta : ℚ) (n D ell B H : ℕ) :
+    ordinaryUnifiedPowerFactorRawAt theta n D ell B H (D + 1) =
+      ((2 * B - 1) * H : ℕ) + theta * (ell * B + H * ordinaryPsi D B : ℕ) +
+        (ell * ((n - D - 1) * B) : ℕ) := by
+  unfold ordinaryUnifiedPowerFactorRawAt
+  have hn : n - (D + 1) = n - D - 1 := by omega
+  rw [hn]
+
+/-- The unified all-characteristic ordinary MCA budget for the compatibility threshold
+`L = D + 1`. This is the original integral form of the manuscript's `E_ord^(ell)`. -/
 def ordinaryUnifiedPowerFactorRaw (theta : ℚ) (n D ell B H : ℕ) : ℚ :=
   ((2 * B - 1) * H : ℕ) + theta * (ell * B + H * ordinaryPsi D B : ℕ) +
     (ell * ((n - D - 1) * B) : ℕ)
+
+/-- Named compatibility of the free-retention formula with the former fixed split. -/
+theorem ordinaryUnifiedPowerFactorAt_succ_eq
+    (n D ell B H A : ℕ) (hDA : D + 1 ≤ A) (hAn : A ≤ n) :
+    ordinaryUnifiedPowerFactorAt n D ell B H A (D + 1) =
+      ordinaryUnifiedPowerFactorRaw
+        (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ell B H := by
+  have hn : n - (D + 1) + 1 = n - D := by omega
+  have hA : A - (D + 1) + 1 = A - D := by omega
+  unfold ordinaryUnifiedPowerFactorAt
+  rw [hn, hA, ordinaryUnifiedPowerFactorRawAt_succ_eq]
+  rfl
+
+/-- Content plus all distinct positive-root factors fits the free-retention curve budget. -/
+theorem ordinaryUnifiedPowerFactorRawAt_sum_le {I : Type*} (S : Finset I)
+    (degree height : I → ℕ) (theta : ℚ) (n D ell B H L contentHeight : ℕ)
+    (htheta : 0 ≤ theta) (hB : 1 ≤ B)
+    (hdegree : ∑ i ∈ S, degree i ≤ B)
+    (hheight : contentHeight + ∑ i ∈ S, height i ≤ H) :
+    (contentHeight : ℚ) +
+        ∑ i ∈ S, ordinaryUnifiedPowerFactorRawAt theta n D ell
+          (degree i) (height i) L ≤
+      ordinaryUnifiedPowerFactorRawAt theta n D ell B H L := by
+  let c : ℚ := (2 * B - 1 : ℕ) + theta * ordinaryPsi D B
+  let e : ℚ := theta * ell + ell * (n - L : ℕ)
+  have hc : 1 ≤ c := by
+    have hnat : 1 ≤ 2 * B - 1 := by omega
+    have hcast : (1 : ℚ) ≤ (2 * B - 1 : ℕ) := by exact_mod_cast hnat
+    exact hcast.trans (le_add_of_nonneg_right (mul_nonneg htheta (by positivity)))
+  have hc0 : 0 ≤ c := zero_le_one.trans hc
+  have he0 : 0 ≤ e := by dsimp [e]; positivity
+  have hterm (i : I) (hi : i ∈ S) :
+      ordinaryUnifiedPowerFactorRawAt theta n D ell (degree i) (height i) L ≤
+        c * height i + e * degree i := by
+    have hiB : degree i ≤ B :=
+      (Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) hi).trans hdegree
+    have hlinear : 2 * degree i - 1 ≤ 2 * B - 1 :=
+      Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 hiB) 1
+    have hpsi := ordinaryPsi_mono D hiB
+    have hfirstQ : (((2 * degree i - 1) * height i : ℕ) : ℚ) ≤
+        (2 * B - 1 : ℕ) * height i := by
+      exact_mod_cast Nat.mul_le_mul_right (height i) hlinear
+    have hpsiQ : ((height i * ordinaryPsi D (degree i) : ℕ) : ℚ) ≤
+        height i * ordinaryPsi D B := by
+      exact_mod_cast Nat.mul_le_mul_left (height i) hpsi
+    unfold ordinaryUnifiedPowerFactorRawAt
+    dsimp [c, e]
+    push_cast
+    push_cast at hfirstQ hpsiQ
+    nlinarith [mul_nonneg htheta (sub_nonneg.mpr hpsiQ)]
+  have hsum := Finset.sum_le_sum hterm
+  have hcontent : (contentHeight : ℚ) ≤ c * contentHeight := by
+    simpa only [one_mul] using mul_le_mul_of_nonneg_right hc (Nat.cast_nonneg contentHeight)
+  have hheightQ : (contentHeight : ℚ) + ∑ i ∈ S, (height i : ℚ) ≤ H := by
+    exact_mod_cast hheight
+  have hdegreeQ : (∑ i ∈ S, (degree i : ℚ)) ≤ B := by exact_mod_cast hdegree
+  calc
+    (contentHeight : ℚ) +
+        ∑ i ∈ S, ordinaryUnifiedPowerFactorRawAt theta n D ell
+          (degree i) (height i) L ≤
+      c * contentHeight + ∑ i ∈ S, (c * height i + e * degree i) :=
+        add_le_add hcontent hsum
+    _ = c * ((contentHeight : ℚ) + ∑ i ∈ S, (height i : ℚ)) +
+        e * ∑ i ∈ S, (degree i : ℚ) := by
+      rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+      ring
+    _ ≤ c * H + e * B := add_le_add (mul_le_mul_of_nonneg_left hheightQ hc0)
+      (mul_le_mul_of_nonneg_left hdegreeQ he0)
+    _ = ordinaryUnifiedPowerFactorRawAt theta n D ell B H L := by
+      dsimp [c, e, ordinaryUnifiedPowerFactorRawAt]
+      push_cast
+      ring
 
 /-- Content plus all distinct positive-root factors fits the unified curve budget. The proof uses
 only additive root degrees and heights, so this is shared by the Johnson and first-order tails. -/

@@ -14,6 +14,8 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ExtensionDescent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.GeometricTransfer
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
@@ -33,6 +35,92 @@ namespace ReedSolomon
 open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative
 
 variable {F E : Type*} [Field F] [Field E] {n ell : ℕ}
+
+open Classical in
+/-- Free-retention semantic ordinary transfer from explicit geometric certificates.
+
+This is the common boundary needed by the all-characteristic ordinary construction. `offGraph`
+is the actual finite projection of high-agreement points outside persistent graphs, while
+`retained` is the actual family of base-field graph tuples surviving the reduced generic fiber.
+The hypotheses keep those two counts separate. No characteristic restriction involving `ell` is
+introduced, and the conclusion identifies the full agreement set through
+`HasExactPowerAgreement`.
+
+The Frobenius incidence layer now constructs the free-`L` off-graph certificate; an unconditional
+free-`L` ordinary theorem additionally requires routing that certificate through the regular,
+separable, and factor-assembly layers. -/
+theorem exists_exceptional_ordinaryPowerEquation_freeRetention_of_certificates [IsAlgClosed E]
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (Q : DifferentialPolynomial E[X] 0) (D H B L A : ℕ)
+    (hD : 0 < D) (hell : 0 < ell) (_hB : 0 < B)
+    (hDL : D < L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (preliminary offGraph : Finset E)
+    (retained : Finset (Fin (ell + 1) → F[X]))
+    (hpreliminary : (preliminary.card : ℚ) ≤ ((2 * B - 1) * H : ℕ))
+    (hoffGraph : (offGraph.card : ℚ) ≤
+      (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+        (ell * B + H * ordinaryPsi D B : ℕ))
+    (hretained : (retained.card : ℚ) ≤ B)
+    (hdegree : ∀ P ∈ retained, ∀ t, (P t).degree < D + 1)
+    (hcommon : ∀ P ∈ retained, L ≤ (commonCurveAgreementSet domain values P).card)
+    (hcoverage : ∀ (z : E) (P : E[X]), P.degree < D + 1 →
+      differentialSpecialization (challengeSpecialization Q z) P = 0 →
+      A ≤ (polynomialAgreementSet (mappedDomain domain iota)
+        (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+      z ∉ preliminary →
+      z ∈ offGraph ∨ ∃ tuple ∈ retained,
+        P = powerBatchedPolynomial (fun t ↦ (tuple t).map iota) z) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤ ordinaryUnifiedPowerFactorAt n D ell B H A L ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
+        differentialSpecialization (challengeSpecialization Q z) P = 0 →
+        A ≤ (polynomialAgreementSet (mappedDomain domain iota)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        HasExactPowerAgreement domain values iota (D + 1) z P := by
+  classical
+  let Candidate : E → E[X] → Prop := fun z P ↦
+    differentialSpecialization (challengeSpecialization Q z) P = 0
+  let r : Unit → ℕ := fun _ ↦ 0
+  let J : Unit → ℕ := fun _ ↦ ell * B + H * ordinaryPsi D B
+  let fiberDegree : Unit → ℕ := fun _ ↦ B
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_geometricTransfer_exceptional
+    (n := n) (k := D + 1) (ℓ := ell) (L := L) (A := A) (ν := Unit)
+    (domain := domain) (w := values) (iota := iota) Candidate preliminary
+    r J fiberDegree (fun _ ↦ offGraph) (fun _ ↦ retained)
+    (by omega) (by omega) hLA hAn hell
+    (fun s ↦ by simpa [r, J, geometricTransferIncidenceProduct] using hoffGraph)
+    (fun s ↦ by simpa [r, fiberDegree, geometricTransferIncidenceProduct] using hretained)
+    (fun _ P hP ↦ hdegree P hP) (fun _ P hP ↦ hcommon P hP)
+    (fun z P _hCandidate hP hA hz ↦ by
+      rcases hcoverage z P hP _hCandidate hA hz with hoff | ⟨tuple, ht, heq⟩
+      · exact Or.inl ⟨(), hoff⟩
+      · exact Or.inr ⟨(), tuple, ht, heq⟩)
+  refine ⟨exceptional, ?_, ?_⟩
+  · apply hcard.trans
+    have htransferBudget :
+        geometricTransferBound preliminary.card n (D + 1) ell L A r J fiberDegree =
+          (preliminary.card : ℚ) +
+            (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+              (ell * B + H * ordinaryPsi D B : ℕ) +
+            ((ell * (n - L) : ℕ) : ℚ) * B := by
+      unfold geometricTransferBound
+      simp only [r, J, fiberDegree, geometricTransferIncidenceProduct_zero,
+        Fintype.sum_unique, one_mul]
+    rw [htransferBudget]
+    unfold ordinaryUnifiedPowerFactorAt ordinaryUnifiedPowerFactorRawAt
+    calc
+      (preliminary.card : ℚ) +
+            (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+              (ell * B + H * ordinaryPsi D B : ℕ) +
+            ((ell * (n - L) : ℕ) : ℚ) * B ≤
+          (((2 * B - 1) * H : ℕ) : ℚ) +
+            (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+              (ell * B + H * ordinaryPsi D B : ℕ) +
+            ((ell * (n - L) : ℕ) : ℚ) * B :=
+        add_le_add (add_le_add hpreliminary le_rfl) le_rfl
+      _ = _ := by push_cast; ring
+  · intro z hz P hP hroot hA
+    exact hgood z hz P hroot hP hA
 
 /-- The polynomial-curve mixed degree satisfies the unified bound for every separable factor
 degree, with no comparison between `b` and `D`. -/
@@ -324,6 +412,30 @@ theorem exists_exceptional_ordinaryPowerEquation_unified [IsAlgClosed E]
   simpa only [flat, ordinaryUnflatten, AlgEquiv.symm_apply_apply] using hroot
 
 open Classical in
+/-- Compatibility presentation of the existing all-characteristic ordinary transfer at the
+historical retention threshold `L = D + 1`.  This is the route used by the base-field consumer,
+so existing certificates keep their literal budget while the public arithmetic now exposes the
+free threshold. -/
+theorem exists_exceptional_ordinaryPowerEquation_unifiedAt_succ [IsAlgClosed E]
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (Q : DifferentialPolynomial E[X] 0) (D h B A : ℕ)
+    (hQ : Q ≠ 0) (hD : 0 < D) (hell : 0 < ell) (hB : 1 ≤ B)
+    (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hheight : ChallengeHeightLE Q h) (hdegree : Q.degreeOf (some 0) ≤ B) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℚ) ≤ ordinaryUnifiedPowerFactorAt n D ell B h A (D + 1) ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
+        differentialSpecialization (challengeSpecialization Q z) P = 0 →
+        A ≤ (polynomialAgreementSet (mappedDomain domain iota)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        HasExactPowerAgreement domain values iota (D + 1) z P := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_exceptional_ordinaryPowerEquation_unified
+    domain values iota Q D h B A hQ hD hell hB hDA hAn hheight hdegree
+  refine ⟨exceptional, ?_, hgood⟩
+  rw [ordinaryUnifiedPowerFactorAt_succ_eq n D ell B h A hDA hAn]
+  exact hcard
+
+open Classical in
 /-- Base-field form of the unified ordinary polynomial-curve transfer. Algebraic closure and
 Frobenius choices are internal; recovered constituents and the full agreement set descend to the
 original field. -/
@@ -356,8 +468,12 @@ theorem exists_exceptional_ordinaryPowerEquation_base_unified
     intro u hu
     exact (MvPolynomial.monomial_le_degreeOf (some 0)
       (MvPolynomial.support_map_subset _ _ hu)).trans hdegree
-  obtain ⟨ex, hexCard, hex⟩ := exists_exceptional_ordinaryPowerEquation_unified
+  obtain ⟨ex, hexCardAt, hex⟩ := exists_exceptional_ordinaryPowerEquation_unifiedAt_succ
     domain values iota QE D h B A hQE hD hell hB hDA hAn hQheight hQdegree
+  have hexCard : (ex.card : ℚ) ≤ ordinaryUnifiedPowerFactorRaw
+      (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D ell B h := by
+    rw [← ordinaryUnifiedPowerFactorAt_succ_eq n D ell B h A hDA hAn]
+    exact hexCardAt
   let baseEx := ex.preimage iota iota.injective.injOn
   refine ⟨baseEx, ?_, ?_⟩
   · apply (show (baseEx.card : ℚ) ≤ ex.card by
