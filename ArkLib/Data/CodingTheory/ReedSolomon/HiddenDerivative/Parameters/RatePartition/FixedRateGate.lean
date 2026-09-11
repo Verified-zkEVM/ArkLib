@@ -7,6 +7,8 @@ module
 
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteParameters
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Recipe
 
 /-!
 # The exact fixed-rate partition gate
@@ -36,15 +38,14 @@ theorem ratePartitionGamma_factorization {R a : ℝ} {d : ℕ}
   field_simp [hbase.ne', hd'.ne']
   ring
 
-/-- A factor-six order is sufficient for the strict limiting partition gate. -/
-theorem ratePartitionGamma_gt_one_of_factor_six
+/-- A factor-six order makes the main factor at least one, retaining the exact successor
+factor in the limiting partition ratio. -/
+theorem ratePartitionGamma_ge_one_add_inv_of_factor_six
     {R a : ℝ} {d : ℕ} (hR : 0 < R) (hRa : R < a) (hd : 0 < d)
     (horder : (1 / 6 : ℝ) * (40 / (9 * R)) ^ (a / (a - R)) ≤ d) :
-    1 < ratePartitionGamma R a d := by
+    1 + 1 / (d : ℝ) ≤ ratePartitionGamma R a d := by
   have ha : 0 < a := hR.trans hRa
-  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
   have hgap : 0 < a - R := sub_pos.mpr hRa
-  have hC : 0 < 40 / (9 * R) := by positivity
   have hexponent : 0 < (a - R) / a := by positivity
   have hreciprocal : a / (a - R) * ((a - R) / a) = 1 := by field_simp
   have hbase : 40 / (9 * R) ≤ (6 * d : ℝ) ^ ((a - R) / a) := by
@@ -60,11 +61,18 @@ theorem ratePartitionGamma_gt_one_of_factor_six
   have hmain : 1 ≤ (9 * R / 40) * (6 * d : ℝ) ^ ((a - R) / a) := by
     rw [← hfactor]
     exact mul_le_mul_of_nonneg_left hbase (by positivity)
-  have hlast : (1 : ℝ) < 1 + 1 / d := by
-    have : (0 : ℝ) < 1 / d := one_div_pos.mpr hd'
-    linarith
-  nlinarith [mul_lt_mul_of_pos_left hlast (show (0 : ℝ) < 1 by norm_num),
-    mul_le_mul_of_nonneg_right hmain (by positivity : (0 : ℝ) ≤ 1 + 1 / d)]
+  calc
+    1 + 1 / (d : ℝ) = 1 * (1 + 1 / (d : ℝ)) := by ring
+    _ ≤ _ := mul_le_mul_of_nonneg_right hmain (by positivity)
+
+/-- The retained successor factor makes the factor-six limiting gate strict. -/
+theorem ratePartitionGamma_gt_one_of_factor_six
+    {R a : ℝ} {d : ℕ} (hR : 0 < R) (hRa : R < a) (hd : 0 < d)
+    (horder : (1 / 6 : ℝ) * (40 / (9 * R)) ^ (a / (a - R)) ≤ d) :
+    1 < ratePartitionGamma R a d := by
+  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
+  exact (lt_add_of_pos_right 1 (one_div_pos.mpr hd')).trans_le
+    (ratePartitionGamma_ge_one_add_inv_of_factor_six hR hRa hd horder)
 
 /-- The manuscript's explicit fixed-rate ceiling, with the factor six already simplified. -/
 def fixedRatePartitionOrder (R δ : ℝ) : ℕ :=
@@ -96,14 +104,56 @@ theorem fixedRatePartitionGamma_gt_one {R δ : ℝ}
   rw [fixedRatePartition_cutoff_eq hR hδ]
   exact (le_max_right (500 : ℝ) _).trans (Nat.le_ceil _)
 
+/-- The older and newer presentations of the limiting ratio are definitionally equal. -/
+theorem ratePartitionGamma_eq_rateGamma (R a : ℝ) (d : ℕ) :
+    ratePartitionGamma R a d = RatePartition.rateGamma R a d := rfl
+
+/-- The terminating recipe uses the same integer derivative-weight budget. -/
+theorem ratePartitionWeight_eq_partitionWeightBudget (R a : ℝ) (d m : ℕ) :
+    ratePartitionWeight R a d m = RatePartition.partitionWeightBudget R a d m := rfl
+
+/-- The terminating recipe's finite ratio is exactly the rate-partition finite ratio. -/
+theorem ratePartitionFiniteRatio_eq_finiteGamma (R a : ℝ) (d m : ℕ) :
+    ratePartitionFiniteRatio R a d m = RatePartition.finiteGamma R a d m := by
+  unfold RatePartition.finiteGamma RatePartition.partitionLambda
+    RatePartition.partitionWeightBudget ratePartitionFiniteRatio ratePartitionWeight
+  ring_nf
+
+/-- The concrete multiplicity returned by the terminating least-witness search. -/
+def fixedRatePartitionMultiplicity {R δ : ℝ} (hR : 0 < R) (hδ : 0 < δ) : ℕ :=
+  RatePartition.rateMultiplicity (rate := R) (agreement := R + δ)
+    (order := fixedRatePartitionOrder R δ) hR (hR.trans (lt_add_of_pos_right R hδ))
+    (lt_of_lt_of_le (by norm_num) (fixedRatePartitionOrder_ge_500 R δ))
+    (by simpa only [← ratePartitionGamma_eq_rateGamma] using
+      fixedRatePartitionGamma_gt_one hR hδ)
+
+/-- The selected least multiplicity satisfies all exact finite acceptance checks. -/
+theorem fixedRatePartitionMultiplicity_spec {R δ : ℝ} (hR : 0 < R) (hδ : 0 < δ) :
+    let m := fixedRatePartitionMultiplicity hR hδ
+    0 < m ∧ 0 < ratePartitionWeight R (R + δ) (fixedRatePartitionOrder R δ) m ∧
+      1 < ratePartitionFiniteRatio R (R + δ) (fixedRatePartitionOrder R δ) m := by
+  simpa only [fixedRatePartitionMultiplicity,
+    ratePartitionWeight_eq_partitionWeightBudget, ratePartitionFiniteRatio_eq_finiteGamma] using
+    RatePartition.rateMultiplicity_spec (rate := R) (agreement := R + δ)
+      (order := fixedRatePartitionOrder R δ) hR (hR.trans (lt_add_of_pos_right R hδ))
+      (lt_of_lt_of_le (by norm_num) (fixedRatePartitionOrder_ge_500 R δ))
+      (by simpa only [← ratePartitionGamma_eq_rateGamma] using
+        fixedRatePartitionGamma_gt_one hR hδ)
+
+/-- Finite parameters built from the terminating least-witness multiplicity. -/
+def fixedRatePartitionFiniteParameters {R δ : ℝ} (hR : 0 < R) (hδ : 0 < δ) :
+    RatePartitionFiniteParameters R (R + δ) (fixedRatePartitionOrder R δ) where
+  multiplicity := fixedRatePartitionMultiplicity hR hδ
+  multiplicity_pos := (fixedRatePartitionMultiplicity_spec hR hδ).1
+  weight_pos := (fixedRatePartitionMultiplicity_spec hR hδ).2.1
+  ratio_gt_one := (fixedRatePartitionMultiplicity_spec hR hδ).2.2
+
 /-- Thin fixed-rate margins use the terminating finite-multiplicity search.  No particular
 closed multiplicity is claimed at the minimal derivative cutoff. -/
 theorem exists_fixedRatePartitionFiniteParameters {R δ : ℝ}
     (hR : 0 < R) (hδ : 0 < δ) :
     Nonempty (RatePartitionFiniteParameters R (R + δ)
       (fixedRatePartitionOrder R δ)) := by
-  exact exists_ratePartitionFiniteParameters hR (by linarith)
-    (by have := fixedRatePartitionOrder_ge_500 R δ; omega)
-    (fixedRatePartitionGamma_gt_one hR hδ)
+  exact ⟨fixedRatePartitionFiniteParameters hR hδ⟩
 
 end ReedSolomon.HiddenDerivative
