@@ -148,12 +148,12 @@ private theorem uniformRatePartitionOrder_log_lower {δ : ℝ} (hδ : 0 < δ) :
     exact Nat.le_ceil _
   simpa only [Real.log_exp] using Real.log_le_log hexp hceil
 
-/-- The low-rate ambient choice `R = 2δ²`, `a = δ` retains the closed finite-ratio margin. -/
-theorem uniformRatePartitionGamma_low_gt {δ : ℝ}
+/-- The low-rate ambient choice has the uniform limiting-ratio lower bound used before
+any finite-multiplicity loss is charged. -/
+theorem uniformRatePartitionGamma_low_base_gt {δ : ℝ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
-    (151 / 150 : ℝ) <
-      ratePartitionGamma (2 * δ ^ 2) δ (uniformRatePartitionOrder δ) *
-        Real.exp (-1 / 1000) := by
+    Real.exp (3 / 2 - Real.log (40 / 9)) <
+      ratePartitionGamma (2 * δ ^ 2) δ (uniformRatePartitionOrder δ) := by
   let d := uniformRatePartitionOrder δ
   have hd500 : 500 ≤ d := uniformRatePartitionOrder_ge_500 hδ hδmax
   have hd : 0 < d := by omega
@@ -205,8 +205,17 @@ theorem uniformRatePartitionGamma_low_gt {δ : ℝ}
       ratePartitionGamma (2 * δ ^ 2) δ d := by
     rw [← Real.exp_log hgammapos]
     exact Real.exp_lt_exp.mpr hlower
-  exact uniform_margin_numeric.trans
-    (mul_lt_mul_of_pos_right hexp (Real.exp_pos (-1 / 1000)))
+  exact hexp
+
+/-- The low-rate ambient choice `R = 2δ²`, `a = δ` retains the legacy closed
+finite-ratio margin. -/
+theorem uniformRatePartitionGamma_low_gt {δ : ℝ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
+    (151 / 150 : ℝ) <
+      ratePartitionGamma (2 * δ ^ 2) δ (uniformRatePartitionOrder δ) *
+        Real.exp (-1 / 1000) := by
+  exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
+    (uniformRatePartitionGamma_low_base_gt hδ hδmax) (Real.exp_pos (-1 / 1000)))
 
 /-- The logarithmic constants in the high-rate penalty match. -/
 private theorem log_six_sub_log_factor :
@@ -397,14 +406,13 @@ private theorem highRatePenalty_lt {R δ : ℝ}
   · exact (highRatePenalty_le_endpoint hδ hδquarter hδR hRtop).trans_lt
       (highRatePenalty_endpoint_lt hδ hδquarter)
 
-/-- The high-rate choice `a = R + δ` retains the same closed finite-ratio margin uniformly for
-all `δ² ≤ R ≤ 1 - δ`. -/
-theorem uniformRatePartitionGamma_high_gt {R δ : ℝ}
+/-- The high-rate choice has the same uniform limiting-ratio lower bound before
+finite-multiplicity loss, for every `δ² ≤ R ≤ 1 - δ`. -/
+theorem uniformRatePartitionGamma_high_base_gt {R δ : ℝ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25)
     (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
-    (151 / 150 : ℝ) <
-      ratePartitionGamma R (R + δ) (uniformRatePartitionOrder δ) *
-        Real.exp (-1 / 1000) := by
+    Real.exp (3 / 2 - Real.log (40 / 9)) <
+      ratePartitionGamma R (R + δ) (uniformRatePartitionOrder δ) := by
   let d := uniformRatePartitionOrder δ
   have hd500 : 500 ≤ d := uniformRatePartitionOrder_ge_500 hδ hδmax
   have hd : 0 < d := by omega
@@ -472,7 +480,18 @@ theorem uniformRatePartitionGamma_high_gt {R δ : ℝ}
       ratePartitionGamma R (R + δ) d := by
     rw [← Real.exp_log hgammapos]
     exact Real.exp_lt_exp.mpr hloglower
-  exact uniform_margin_numeric.trans
-    (mul_lt_mul_of_pos_right hexp (Real.exp_pos (-1 / 1000)))
+  exact hexp
+
+/-- The high-rate choice `a = R + δ` retains the legacy closed finite-ratio margin uniformly for
+all `δ² ≤ R ≤ 1 - δ`. -/
+theorem uniformRatePartitionGamma_high_gt {R δ : ℝ}
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25)
+    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
+    (151 / 150 : ℝ) <
+      ratePartitionGamma R (R + δ) (uniformRatePartitionOrder δ) *
+        Real.exp (-1 / 1000) := by
+  exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
+    (uniformRatePartitionGamma_high_base_gt hδ hδmax hRlow hRtop)
+    (Real.exp_pos (-1 / 1000)))
 
 end ReedSolomon.HiddenDerivative
