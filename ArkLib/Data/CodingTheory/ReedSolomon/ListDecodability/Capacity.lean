@@ -291,7 +291,7 @@ theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
     by_cases hAn : A ≤ n
     · have hn' : HiddenDerivative.uniformRatePartitionMathematicalLength δ ≤ n := by
         simpa only [rateCapacityLengthThreshold, if_neg hlarge] using hn
-      obtain ⟨hf, hb⟩ := mathematicalUniformRatePartition_close_list_bound
+      obtain ⟨hf, hb⟩ := mathematicalUniformRatePartition_close_list_bound_of_length_characteristic
         hδ (lt_of_not_ge hlarge)
         hn' hk hgap hAn domain received (Or.inr (by
           simpa only [ringChar.eq (ZMod q) q] using hnq))

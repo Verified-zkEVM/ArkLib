@@ -84,6 +84,29 @@ theorem ratePartitionMathematicalMultiplicity_ge_order {d : ℕ} (hd : 519 ≤ d
   have h : (d : ℝ) + 2 ≤ ratePartitionMathematicalMultiplicity d := by nlinarith
   exact_mod_cast h
 
+/-- The uniform jet bound dominates the reconstruction order. -/
+theorem uniformRatePartitionOrder_le_mathematicalJetBound {δ : ℝ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) :
+    uniformRatePartitionOrder δ ≤ uniformRatePartitionMathematicalJetBound δ := by
+  have hd := uniformRatePartitionOrder_ge_519 hδ hδsmall
+  have hδone : δ < 1 := by linarith
+  have hdm := ratePartitionMathematicalMultiplicity_ge_order hd
+  have hceil := Nat.le_ceil
+    ((uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2)
+  have hmceil : uniformRatePartitionMathematicalMultiplicity δ ≤
+      ⌈(uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2⌉₊ := by
+    have hδsq : δ ^ 2 ≤ 1 := by nlinarith
+    have hle : (uniformRatePartitionMathematicalMultiplicity δ : ℝ) ≤
+        (uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2 :=
+      (le_div_iff₀ (sq_pos_of_pos hδ)).2
+        (mul_le_of_le_one_right (Nat.cast_nonneg _) hδsq)
+    exact_mod_cast hle.trans hceil
+  change uniformRatePartitionOrder δ ≤
+    ⌈(uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2⌉₊ - 1
+  change uniformRatePartitionOrder δ + 2 ≤
+    uniformRatePartitionMathematicalMultiplicity δ at hdm
+  omega
+
 /-- Revised length gives the finite multiplicity and characteristic guards. -/
 theorem uniformRatePartitionMathematical_integer_guards {δ : ℝ} {n : ℕ}
     (hδ : 0 < δ) (hδone : δ < 1)

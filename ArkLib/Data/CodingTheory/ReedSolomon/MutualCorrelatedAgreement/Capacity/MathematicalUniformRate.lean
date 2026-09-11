@@ -36,7 +36,8 @@ theorem exists_mathematicalUniformRatePartition_curveMCA
     (hn : uniformRatePartitionMathematicalLength δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
-    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hchar : ringChar F = 0 ∨
+      max (k - 1) (uniformRatePartitionMathematicalJetBound δ) < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductMCAConstant δ
         (uniformRatePartitionMathematicalJetBound δ)
@@ -51,7 +52,7 @@ theorem exists_mathematicalUniformRatePartition_curveMCA
   have hδone : δ < 1 := by linarith
   have hm : 0 < uniformRatePartitionMathematicalMultiplicity δ :=
     lt_of_lt_of_le (by omega) (ratePartitionMathematicalMultiplicity_ge_order hd)
-  obtain ⟨_hsize, _hmn, hν, hνn⟩ :=
+  obtain ⟨_hsize, _hmn, hν, _hνn⟩ :=
     uniformRatePartitionMathematical_integer_guards hδ hδone hm hn
   obtain ⟨cert⟩ := e.exists_curve_certificate hδ hδone hd hn hAn domain
     (fun i ↦ powerBatchedCoordinate fun t ↦ values t i)
@@ -59,15 +60,27 @@ theorem exists_mathematicalUniformRatePartition_curveMCA
   have hkA : k ≤ A := by
     have h : (k : ℝ) ≤ A := by nlinarith [Nat.cast_nonneg n (α := ℝ)]
     exact_mod_cast h
+  let K := max k (uniformRatePartitionOrder δ + 1)
+  have hKk : k ≤ K := Nat.le_max_left _ _
+  have hdK : uniformRatePartitionOrder δ < K :=
+    lt_of_lt_of_le (Nat.lt_succ_self _) (Nat.le_max_right _ _)
+  have hKn : K ≤ n := by
+    apply max_le (hkA.trans hAn)
+    have := e.order_le
+    have := e.ambient_le
+    omega
+  have hdν := uniformRatePartitionOrder_le_mathematicalJetBound hδ hδsmall
   have hchar' : ringChar F = 0 ∨
-      max (e.ambientDegree + 1 - 1)
+      max (K - 1)
         (uniformRatePartitionMathematicalJetBound δ) < ringChar F := by
     apply hchar.imp_right
     intro hc
-    have hD := e.ambient_le
-    exact (max_lt (by omega) hνn).trans_le hc
+    have hkchar := (Nat.le_max_left _ _).trans_lt hc
+    have hνchar := (Nat.le_max_right _ _).trans_lt hc
+    dsimp [K]
+    omega
   exact exists_curveMCA_of_certificate_of_jetCharacteristic domain values iota cert hk
-    e.message_le (by omega) (by have := e.order_le; omega) e.ambient_le hkA hAn hν
+    hKk (by omega) hdK hKn hkA hAn hν
     (by positivity) hℓ le_rfl hδ hδone.le hgap hchar'
 
 open Classical in
@@ -78,7 +91,8 @@ theorem exists_mathematicalUniformRatePartition_baseCurveMCA
     (hn : uniformRatePartitionMathematicalLength δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) (hℓ : 0 < ℓ)
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
-    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hchar : ringChar F = 0 ∨
+      max (k - 1) (uniformRatePartitionMathematicalJetBound δ) < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductMCAConstant δ
         (uniformRatePartitionMathematicalJetBound δ)
@@ -103,7 +117,8 @@ theorem exists_mathematicalUniformRatePartition_lineMCA
     (hn : uniformRatePartitionMathematicalLength δ ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (domain : Fin n ↪ F) (f g : Fin n → F)
-    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    (hchar : ringChar F = 0 ∨
+      max (k - 1) (uniformRatePartitionMathematicalJetBound δ) < ringChar F) :
     ∃ exceptional : Finset F,
       (exceptional.card : ℝ) ≤ polynomialCurveProductMCAConstant δ
         (uniformRatePartitionMathematicalJetBound δ)

@@ -33,7 +33,8 @@ theorem uniform_capacity_length_le_300
     (domain : Fin n ↪ F) (received : Fin n → F) (out : List (List F))
     (hn : HiddenDerivative.uniformRatePartitionMathematicalLength δ ≤ n)
     (hk : 0 < k) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ n ≤ ringChar F)
+    (hchar : ringChar F = 0 ∨
+      max (k - 1) (HiddenDerivative.uniformRatePartitionMathematicalJetBound δ) < ringChar F)
     (he : ExactOutput domain received k A out) :
     (out.length : ℝ) ≤
       (HiddenDerivative.uniformRatePartitionMathematicalJetBound δ : ℝ) ^ 2 *
