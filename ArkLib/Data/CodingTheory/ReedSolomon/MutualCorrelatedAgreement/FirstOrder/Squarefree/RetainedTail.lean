@@ -11,6 +11,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.TailBound
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.Equation
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.TaylorWitnessEmbedding
 
 /-!
 # Retained-challenge singular tail
@@ -501,6 +503,267 @@ theorem flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot
           (by rw [natDegree_ordinaryRootPolynomial]; rfl)
           f u hroot hderivative
       rw [hresultant, mul_zero]
+
+/-- Evaluate `(X,Y₀,Z)` at `(X,P,z)`. -/
+def retainedSpecializationHom (z : F) (P : F[X]) :
+    MvPolynomial (JetVariable 1) F →+* F[X] :=
+  eval₂Hom Polynomial.C fun v ↦
+    v.elim Polynomial.X fun i ↦ Fin.cases P (fun _ ↦ Polynomial.C z) i
+
+/-- Evaluate root-first `(Y₁;X,Y₀,Z)` coordinates on the first jet of `P`. -/
+def retainedRootSpecializationHom (z : F) (P : F[X]) :
+    MvPolynomial (Option (JetVariable 1)) F →+* F[X] :=
+  eval₂Hom Polynomial.C fun v ↦
+    v.elim (P.hasseDeriv 1) fun i ↦ retainedSpecializationHom z P (X i)
+
+theorem retainedRootSpecializationHom_eq_eval_rootPolynomial
+    (R : MvPolynomial (Option (JetVariable 1)) F) (z : F) (P : F[X]) :
+    retainedRootSpecializationHom z P R =
+      ((optionEquivLeft F (JetVariable 1) R).map
+        (retainedSpecializationHom z P)).eval (P.hasseDeriv 1) := by
+  let lhs : MvPolynomial (Option (JetVariable 1)) F →+* F[X] :=
+    retainedRootSpecializationHom z P
+  let rhs : MvPolynomial (Option (JetVariable 1)) F →+* F[X] :=
+    (Polynomial.evalRingHom (P.hasseDeriv 1)).comp
+      ((Polynomial.mapRingHom (retainedSpecializationHom z P)).comp
+        (optionEquivLeft F (JetVariable 1)).toRingHom)
+  change lhs R = rhs R
+  congr 1
+  apply MvPolynomial.ringHom_ext
+  · intro r
+    simp [lhs, rhs, retainedRootSpecializationHom, retainedSpecializationHom]
+  · intro v
+    rcases v with _ | i
+    · simp [lhs, rhs, retainedRootSpecializationHom]
+    · simp [lhs, rhs, retainedRootSpecializationHom,
+        retainedSpecializationHom]
+
+theorem retainedRootSpecializationHom_flattenedContent
+    (Q : DifferentialPolynomial F[X] 1) (z : F) (P : F[X]) :
+    retainedRootSpecializationHom z P (flattenedContent Q) =
+      retainedSpecializationHom z P (flattenedContentCoefficient Q) := by
+  rw [retainedRootSpecializationHom_eq_eval_rootPolynomial]
+  have hdegree : (optionEquivLeft F (JetVariable 1)
+      (flattenedContent Q)).natDegree = 0 := by
+    rw [natDegree_optionEquivLeft, flattenedContent_rootDegree]
+  rw [Polynomial.eq_C_of_natDegree_eq_zero hdegree, Polynomial.map_C,
+    Polynomial.eval_C]
+  rfl
+
+@[simp]
+theorem flattenedRootFirst_positiveCurveEquation
+    (Q : DifferentialPolynomial F[X] 1) :
+    flattenedRootFirst (positiveCurveEquation Q) =
+      flattenedPositiveRootProduct Q := by
+  rw [flattenedRootFirst, flattenFirstOrderChallenge, positiveCurveEquation,
+    flattenChallenge_fromFlattenedRootFirst]
+  change (renameEquiv F flattenedRootFirstEquiv)
+    ((renameEquiv F flattenedRootFirstEquiv).symm
+      (flattenedPositiveRootProduct Q)) = _
+  exact (renameEquiv F flattenedRootFirstEquiv).apply_symm_apply _
+
+private theorem flattenChallenge_pderiv
+    (Q : DifferentialPolynomial F[X] 1) (i : JetVariable 1) :
+    flattenChallenge (MvPolynomial.pderiv i Q) =
+      MvPolynomial.pderiv (some i) (flattenChallenge Q) := by
+  induction Q using MvPolynomial.induction_on with
+  | C p =>
+      simp [flattenChallenge_C]
+  | add P R hP hR =>
+      simp [hP, hR]
+  | mul_X P j hP =>
+      by_cases hji : j = i
+      · subst j
+        simp [hP]
+      · simp [hP, hji]
+
+theorem flattenedRootFirst_separant_positiveCurveEquation
+    (Q : DifferentialPolynomial F[X] 1) :
+    flattenedRootFirst
+        (separant (positiveCurveEquation Q) (1 : Fin 2)) =
+      MvPolynomial.pderiv none (flattenedPositiveRootProduct Q) := by
+  rw [flattenedRootFirst, flattenFirstOrderChallenge, separant,
+    flattenChallenge_pderiv, positiveCurveEquation,
+    flattenChallenge_fromFlattenedRootFirst]
+  simp only [renameEquiv_apply]
+  rw [show some (some (1 : Fin 2)) = flattenedRootFirstEquiv.symm none by rfl,
+    MvPolynomial.pderiv_rename flattenedRootFirstEquiv.symm.injective]
+  change (renameEquiv F flattenedRootFirstEquiv)
+    ((renameEquiv F flattenedRootFirstEquiv).symm
+      (MvPolynomial.pderiv none (flattenedPositiveRootProduct Q))) = _
+  exact (renameEquiv F flattenedRootFirstEquiv).apply_symm_apply _
+
+private theorem flattenChallenge_specialization
+    (Q : DifferentialPolynomial F[X] 1) (z : F) (P : F[X]) :
+    eval₂Hom Polynomial.C
+        (fun v ↦ v.elim (Polynomial.C z)
+          (fun i ↦ i.elim Polynomial.X fun j ↦ P.hasseDeriv j))
+        (flattenChallenge Q) =
+      differentialSpecialization (challengeSpecialization Q z) P := by
+  let lhs : DifferentialPolynomial F[X] 1 →+* F[X] :=
+    (eval₂Hom Polynomial.C
+      (fun v ↦ v.elim (Polynomial.C z)
+        (fun i ↦ i.elim Polynomial.X fun j ↦ P.hasseDeriv j))).comp
+      flattenChallenge.toRingHom
+  let rhs : DifferentialPolynomial F[X] 1 →+* F[X] :=
+    (differentialSpecializationHom P).toRingHom.comp
+      (MvPolynomial.map (Polynomial.aeval z).toRingHom)
+  change lhs Q = rhs Q
+  congr 1
+  apply MvPolynomial.ringHom_ext
+  · intro p
+    induction p using Polynomial.induction_on' with
+    | add p q hp hq => simp only [map_add, hp, hq]
+    | monomial n a =>
+        rw [← Polynomial.C_mul_X_pow_eq_monomial]
+        simp [lhs, rhs, flattenChallenge_C]
+  · intro i
+    rcases i with _ | j
+    · simp [lhs, rhs, flattenChallenge_X, differentialSpecializationHom]
+    · simp [lhs, rhs, flattenChallenge_X, differentialSpecializationHom]
+
+theorem retainedRootSpecializationHom_flattenedRootFirst
+    (Q : DifferentialPolynomial F[X] 1) (z : F) (P : F[X]) :
+    retainedRootSpecializationHom z P (flattenedRootFirst Q) =
+      differentialSpecialization (challengeSpecialization Q z) P := by
+  rw [retainedRootSpecializationHom, flattenedRootFirst, renameEquiv_apply,
+    eval₂Hom_rename]
+  rw [← flattenChallenge_specialization Q z P]
+  apply eval₂Hom_congr
+  · rfl
+  · funext v
+    simp only [Function.comp_apply]
+    rcases v with _ | (_ | i)
+    · change retainedSpecializationHom z P (X (some (1 : Fin 2))) =
+        Polynomial.C z
+      rw [retainedSpecializationHom, eval₂Hom_X']
+      rw [show (1 : Fin 2) = Fin.succ 0 by decide]
+      rfl
+    · simp [flattenedRootFirstEquiv, Equiv.swap_apply_def, retainedSpecializationHom]
+    · fin_cases i <;>
+        simp [flattenedRootFirstEquiv, Equiv.swap_apply_def, retainedSpecializationHom]
+  · rfl
+
+theorem positiveCurveEquation_specialization_eq
+    (Q : DifferentialPolynomial F[X] 1) (z : F) (P : F[X]) :
+    differentialSpecialization (challengeSpecialization
+        (positiveCurveEquation Q) z) P =
+      ((ordinaryRootPolynomial (flattenedRootFirst Q)).map
+        (retainedSpecializationHom z P)).eval (P.hasseDeriv 1) := by
+  rw [← retainedRootSpecializationHom_flattenedRootFirst]
+  rw [flattenedRootFirst_positiveCurveEquation]
+  exact retainedRootSpecializationHom_eq_eval_rootPolynomial
+    (flattenedPositiveRootProduct Q) z P
+
+theorem positiveCurveSeparant_specialization_eq
+    (Q : DifferentialPolynomial F[X] 1) (z : F) (P : F[X]) :
+    differentialSpecialization (challengeSpecialization
+        (separant (positiveCurveEquation Q) (1 : Fin 2)) z) P =
+      ((ordinaryRootPolynomial (flattenedRootFirst Q)).map
+        (retainedSpecializationHom z P)).derivative.eval (P.hasseDeriv 1) := by
+  rw [← retainedRootSpecializationHom_flattenedRootFirst]
+  rw [flattenedRootFirst_separant_positiveCurveEquation]
+  rw [retainedRootSpecializationHom_eq_eval_rootPolynomial]
+  rw [optionEquivLeft_pderiv_none, Polynomial.derivative_map]
+  rfl
+
+private theorem retainedSpecializationHom_ordinaryUnflatten
+    (R : MvPolynomial (JetVariable 1) F) (z : F) (P : F[X]) :
+    retainedSpecializationHom z P R = differentialSpecialization
+      (challengeSpecialization
+        (ordinaryUnflatten F (renameEquiv F singularCoordinateEquiv R)) z) P := by
+  let H := renameEquiv F singularCoordinateEquiv R
+  have h := eval₂_ordinaryUnflatten Polynomial.C H
+    Polynomial.X P (Polynomial.C z)
+  have heval : Polynomial.eval₂RingHom Polynomial.C (Polynomial.C z) =
+      Polynomial.C.comp (Polynomial.evalRingHom z) := by
+    ext
+    · simp
+    · simp
+  rw [heval] at h
+  have hdiff : differentialSpecialization
+      (challengeSpecialization (ordinaryUnflatten F H) z) P =
+        eval₂ Polynomial.C
+          (fun o ↦ o.elim P (fun i ↦ Fin.cases Polynomial.X
+            (fun _ ↦ Polynomial.C z) i)) H := by
+    rw [differentialSpecialization, challengeSpecialization,
+      MvPolynomial.eval₂Hom_map_hom]
+    have haeval : (Polynomial.aeval z).toRingHom = Polynomial.evalRingHom z := by
+      ext <;> simp
+    rw [haeval]
+    rw [MvPolynomial.coe_eval₂Hom]
+    rw [← h]
+    apply MvPolynomial.eval₂_congr
+    intro i _ _ _
+    rcases i with _ | j
+    · rfl
+    · fin_cases j
+      simp
+  change retainedSpecializationHom z P R =
+    differentialSpecialization (challengeSpecialization (ordinaryUnflatten F H) z) P
+  rw [hdiff]
+  dsimp only [H]
+  rw [renameEquiv_apply, eval₂_rename]
+  apply MvPolynomial.eval₂_congr
+  intro i _ _ _
+  rcases i with _ | j
+  · simp [singularCoordinateEquiv]
+  · fin_cases j
+    · simp [singularCoordinateEquiv]
+    · simp only [Nat.reduceAdd, Fin.mk_one, Fin.isValue, Option.elim_some,
+        Function.comp_apply]
+      rw [show (1 : Fin 2) = Fin.succ 0 by decide]
+      rfl
+
+theorem retainedSpecializationHom_flattenedSingularPolynomial
+    (Q : DifferentialPolynomial F[X] 1) (z : F) (P : F[X]) :
+    retainedSpecializationHom z P (flattenedSingularPolynomial Q) =
+      differentialSpecialization
+        (challengeSpecialization (singularCurveEquation Q) z) P := by
+  exact retainedSpecializationHom_ordinaryUnflatten
+    (flattenedSingularPolynomial Q) z P
+
+/-- Every solution outside the retained positive-product regular locus solves the single
+content-times-resultant tail equation at the same challenge. -/
+theorem singularCurveEquation_routes_nonregular
+    (Q : DifferentialPolynomial F[X] 1) (hQ : Q ≠ 0) (z : F) (P : F[X])
+    (hroot : differentialSpecialization (challengeSpecialization Q z) P = 0)
+    (hnonregular : differentialSpecialization (challengeSpecialization
+        (positiveCurveEquation Q) z) P ≠ 0 ∨
+      differentialSpecialization (challengeSpecialization
+        (separant (positiveCurveEquation Q) (1 : Fin 2)) z) P = 0) :
+    differentialSpecialization
+      (challengeSpecialization (singularCurveEquation Q) z) P = 0 := by
+  have hsplit := (flattened_split_zero_iff Q hQ
+    (retainedRootSpecializationHom z P)).mpr
+      (by simpa only [retainedRootSpecializationHom_flattenedRootFirst] using hroot)
+  rw [map_mul] at hsplit
+  rw [← retainedSpecializationHom_flattenedSingularPolynomial]
+  apply flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot
+    Q (retainedSpecializationHom z P) (P.hasseDeriv 1)
+  rcases mul_eq_zero.mp hsplit with hcontent | hpositive
+  · left
+    rw [← retainedRootSpecializationHom_flattenedContent]
+    exact hcontent
+  · have hpositive' :
+        ((ordinaryRootPolynomial (flattenedRootFirst Q)).map
+          (retainedSpecializationHom z P)).eval (P.hasseDeriv 1) = 0 := by
+      calc
+        _ = retainedRootSpecializationHom z P
+            (flattenedPositiveRootProduct Q) := by
+          simpa only [ordinaryRootPolynomial, flattenedPositiveRootProduct] using
+            (retainedRootSpecializationHom_eq_eval_rootPolynomial
+              (flattenedPositiveRootProduct Q) z P).symm
+        _ = 0 := hpositive
+    rcases hnonregular with hnot | hseparant
+    · exact (hnot (by
+        rw [positiveCurveEquation_specialization_eq]
+        exact hpositive')).elim
+    · right
+      constructor
+      · exact hpositive'
+      · rw [← positiveCurveSeparant_specialization_eq]
+        exact hseparant
 
 end
 
