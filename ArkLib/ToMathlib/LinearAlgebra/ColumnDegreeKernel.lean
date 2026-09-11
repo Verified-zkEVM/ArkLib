@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 
-public import ArkLib.ToMathlib.LinearAlgebra.PrimitivePolynomialKernel
+public import ArkLib.ToMathlib.LinearAlgebra.ShiftedDegreeKernel
 
 /-!
 # Polynomial kernel vectors with individual column-degree budgets
@@ -60,73 +60,12 @@ theorem exists_ne_zero_mulVec_eq_zero_column_degreeLT {rows cols : ℕ}
     (hsurplus : rows * (h + 1) < ∑ j, (h + 1 - weight j)) :
     ∃ v : Fin cols → F[X], v ≠ 0 ∧ M *ᵥ v = 0 ∧
       ∀ j, v j ∈ Polynomial.degreeLT F (h + 1 - weight j) := by
-  classical
-  let slots := fun j ↦ h + 1 - weight j
-  let decode (j : Fin cols) : (Fin (slots j) → F) →ₗ[F] F[X] :=
-    (Polynomial.degreeLT F (slots j)).subtype ∘ₗ
-      (Polynomial.degreeLTEquiv F (slots j)).symm.toLinearMap
-  let decodeVec : (∀ j, Fin (slots j) → F) →ₗ[F] (Fin cols → F[X]) :=
-    LinearMap.pi fun j ↦ decode j ∘ₗ LinearMap.proj j
-  let takeCoeffs : (Fin rows → F[X]) →ₗ[F] (Fin rows → Fin (h + 1) → F) :=
-    LinearMap.pi fun i ↦ LinearMap.pi fun k ↦
-      Polynomial.lcoeff F k ∘ₗ LinearMap.proj i
-  let coefficientMap : (∀ j, Fin (slots j) → F) →ₗ[F]
-      (Fin rows → Fin (h + 1) → F) :=
-    takeCoeffs ∘ₗ (M.mulVecLin.restrictScalars F) ∘ₗ decodeVec
-  have hdim : Module.finrank F (Fin rows → Fin (h + 1) → F) <
-      Module.finrank F (∀ j, Fin (slots j) → F) := by
-    simpa [Module.finrank_pi_fintype, slots] using hsurplus
-  obtain ⟨c, hc, hcne⟩ := (LinearMap.ker coefficientMap).ne_bot_iff.mp
-    (coefficientMap.ker_ne_bot_of_finrank_lt hdim)
-  let v : Fin cols → F[X] := fun j ↦ decode j (c j)
-  have hvdeg (j : Fin cols) : v j ∈ Polynomial.degreeLT F (slots j) :=
-    ((Polynomial.degreeLTEquiv F (slots j)).symm (c j)).property
-  have hproduct (i : Fin rows) (j : Fin cols) : (M i j * v j).natDegree ≤ h := by
-    by_cases hj : weight j ≤ h
-    · have hs : slots j = (h - weight j) + 1 := by dsimp [slots]; omega
-      have hv : (v j).natDegree ≤ h - weight j := by
-        have hv' := hvdeg j
-        rw [hs, Polynomial.degreeLT_succ_eq_degreeLE] at hv'
-        exact Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp hv')
-      exact (Polynomial.natDegree_mul_le_of_le (hdeg i j) hv).trans
-        (by omega)
-    · have hs : slots j = 0 := by dsimp [slots]; omega
-      have hv := hvdeg j
-      rw [hs] at hv
-      have hz : v j = 0 := by
-        apply Polynomial.ext
-        intro k
-        exact (Polynomial.degree_lt_iff_coeff_zero _ 0).mp
-          (Polynomial.mem_degreeLT.mp hv) k (Nat.zero_le _)
-      simp [hz]
-  have hmulVec_degree (i : Fin rows) : ((M *ᵥ v) i).natDegree ≤ h :=
-    Polynomial.natDegree_sum_le_of_forall_le Finset.univ _ fun j _ ↦ hproduct i j
-  have hmulVec : M *ᵥ v = 0 := by
-    funext i
-    apply Polynomial.ext
-    intro k
-    by_cases hk : k < h + 1
-    · let k' : Fin (h + 1) := ⟨k, hk⟩
-      have hzero := congrFun (congrFun (LinearMap.mem_ker.mp hc) i) k'
-      have hdecodeVec : decodeVec c = v := by ext j; rfl
-      simp only [coefficientMap, LinearMap.comp_apply] at hzero
-      rw [hdecodeVec] at hzero
-      simpa [takeCoeffs, k'] using hzero
-    · simp only [Pi.zero_apply, coeff_zero]
-      exact Polynomial.coeff_eq_zero_of_natDegree_lt
-        (lt_of_le_of_lt (hmulVec_degree i) (by omega))
-  have hvne : v ≠ 0 := by
-    intro hv
-    apply hcne
-    have hdecode (j : Fin cols) : Function.Injective (decode j) := by
-      intro x y hxy
-      apply (Polynomial.degreeLTEquiv F (slots j)).symm.injective
-      apply Subtype.ext
-      exact hxy
-    funext j
-    apply hdecode j
-    simpa [v] using congrFun hv j
-  exact ⟨v, hvne, hmulVec, hvdeg⟩
+  have hshifted : Finset.univ.sum (fun _i : Fin rows ↦ h + 1 - 0) <
+      Finset.univ.sum (fun j : Fin cols ↦ h + 1 - weight j) := by
+    simpa using hsurplus
+  exact exists_ne_zero_mulVec_eq_zero_shifted_degreeLT M (fun _ ↦ 0) weight h
+    (fun i j _ ↦ by simpa using hdeg i j)
+    (fun _i _j hnegative ↦ by omega) hshifted
 
 /-- The column-sensitive height test needs only the rank over `F(X)`, not the number of
 original rows. Selecting a basis of original rows preserves their column-degree bounds. -/
