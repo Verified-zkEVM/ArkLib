@@ -24,8 +24,9 @@ open CompPoly Polynomial
 
 variable {F : Type*} [Field F] [BEq F] [LawfulBEq F]
 
-local instance : DecidableEq F := instDecidableEqOfLawfulBEq
-local instance : DecidableEq (CPolynomial F) := instDecidableEqOfLawfulBEq
+local instance terminalCoprimeDecidableEqF : DecidableEq F := instDecidableEqOfLawfulBEq
+local instance terminalCoprimeDecidableEqCPolynomial : DecidableEq (CPolynomial F) :=
+  instDecidableEqOfLawfulBEq
 
 /-- A squarefree product has pairwise relatively prime factors.  The statement includes the empty
 and singleton lists. -/
