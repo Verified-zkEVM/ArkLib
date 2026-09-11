@@ -7,6 +7,8 @@ module
 
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.FactorBounds
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Algebra.BigOperators.Ring.Finset
 
 /-!
 # One characteristic-free ordinary transfer budget
@@ -20,6 +22,8 @@ through root degree `2 * D + 1` and remains valid for every Frobenius factor.
 
 namespace ReedSolomon
 
+open scoped BigOperators
+
 /-- The unified coefficient of challenge height in the ordinary joint-image degree. -/
 def ordinaryPsi (D B : ℕ) : ℕ :=
   1 + (2 * D - 1) * (2 * B - 1) + 2 * (B - 2 * D - 1)
@@ -29,6 +33,16 @@ theorem ordinaryPsi_eq_sharp {D B : ℕ} (hB : B ≤ 2 * D + 1) :
     ordinaryPsi D B = 1 + (2 * D - 1) * (2 * B - 1) := by
   unfold ordinaryPsi
   omega
+
+/-- The unified coefficient is monotone in the original root-degree budget. -/
+theorem ordinaryPsi_mono (D : ℕ) {B C : ℕ} (hBC : B ≤ C) :
+    ordinaryPsi D B ≤ ordinaryPsi D C := by
+  unfold ordinaryPsi
+  apply Nat.add_le_add
+  · exact Nat.add_le_add_left (Nat.mul_le_mul_left (2 * D - 1)
+      (Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 hBC) 1)) 1
+  · exact Nat.mul_le_mul_left 2
+      (Nat.sub_le_sub_right (Nat.sub_le_sub_right hBC (2 * D)) 1)
 
 /-- The positive-part correction absorbs the degree loss of every inseparable pullback, including
 the case where the separable factor degree exceeds `D`. -/
@@ -73,5 +87,64 @@ This is the integral form of the manuscript's `E_ord^(ell)`. -/
 def ordinaryUnifiedPowerFactorRaw (theta : ℚ) (n D ell B H : ℕ) : ℚ :=
   ((2 * B - 1) * H : ℕ) + theta * (ell * B + H * ordinaryPsi D B : ℕ) +
     (ell * ((n - D - 1) * B) : ℕ)
+
+/-- Content plus all distinct positive-root factors fits the unified curve budget. The proof uses
+only additive root degrees and heights, so this is shared by the Johnson and first-order tails. -/
+theorem ordinaryUnifiedPowerFactorRaw_sum_le {I : Type*} (S : Finset I)
+    (degree height : I → ℕ) (theta : ℚ) (n D ell B H contentHeight : ℕ)
+    (htheta : 0 ≤ theta) (hB : 1 ≤ B)
+    (hdegree : ∑ i ∈ S, degree i ≤ B)
+    (hheight : contentHeight + ∑ i ∈ S, height i ≤ H) :
+    (contentHeight : ℚ) +
+        ∑ i ∈ S, ordinaryUnifiedPowerFactorRaw theta n D ell (degree i) (height i) ≤
+      ordinaryUnifiedPowerFactorRaw theta n D ell B H := by
+  let c : ℚ := (2 * B - 1 : ℕ) + theta * ordinaryPsi D B
+  let e : ℚ := theta * ell + ell * (n - D - 1 : ℕ)
+  have hc : 1 ≤ c := by
+    have hnat : 1 ≤ 2 * B - 1 := by omega
+    have hcast : (1 : ℚ) ≤ (2 * B - 1 : ℕ) := by exact_mod_cast hnat
+    exact hcast.trans (le_add_of_nonneg_right (mul_nonneg htheta (by positivity)))
+  have hc0 : 0 ≤ c := zero_le_one.trans hc
+  have he0 : 0 ≤ e := by dsimp [e]; positivity
+  have hterm (i : I) (hi : i ∈ S) :
+      ordinaryUnifiedPowerFactorRaw theta n D ell (degree i) (height i) ≤
+        c * height i + e * degree i := by
+    have hiB : degree i ≤ B :=
+      (Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) hi).trans hdegree
+    have hlinear : 2 * degree i - 1 ≤ 2 * B - 1 :=
+      Nat.sub_le_sub_right (Nat.mul_le_mul_left 2 hiB) 1
+    have hpsi := ordinaryPsi_mono D hiB
+    have hfirstQ : (((2 * degree i - 1) * height i : ℕ) : ℚ) ≤
+        (2 * B - 1 : ℕ) * height i := by
+      exact_mod_cast Nat.mul_le_mul_right (height i) hlinear
+    have hpsiQ : ((height i * ordinaryPsi D (degree i) : ℕ) : ℚ) ≤
+        height i * ordinaryPsi D B := by
+      exact_mod_cast Nat.mul_le_mul_left (height i) hpsi
+    unfold ordinaryUnifiedPowerFactorRaw
+    dsimp [c, e]
+    push_cast
+    push_cast at hfirstQ hpsiQ
+    nlinarith [mul_nonneg htheta (sub_nonneg.mpr hpsiQ)]
+  have hsum := Finset.sum_le_sum hterm
+  have hcontent : (contentHeight : ℚ) ≤ c * contentHeight := by
+    simpa only [one_mul] using mul_le_mul_of_nonneg_right hc (Nat.cast_nonneg contentHeight)
+  have hheightQ : (contentHeight : ℚ) + ∑ i ∈ S, (height i : ℚ) ≤ H := by
+    exact_mod_cast hheight
+  have hdegreeQ : (∑ i ∈ S, (degree i : ℚ)) ≤ B := by exact_mod_cast hdegree
+  calc
+    (contentHeight : ℚ) +
+        ∑ i ∈ S, ordinaryUnifiedPowerFactorRaw theta n D ell (degree i) (height i) ≤
+      c * contentHeight + ∑ i ∈ S, (c * height i + e * degree i) :=
+        add_le_add hcontent hsum
+    _ = c * ((contentHeight : ℚ) + ∑ i ∈ S, (height i : ℚ)) +
+        e * ∑ i ∈ S, (degree i : ℚ) := by
+      rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum]
+      ring
+    _ ≤ c * H + e * B := add_le_add (mul_le_mul_of_nonneg_left hheightQ hc0)
+      (mul_le_mul_of_nonneg_left hdegreeQ he0)
+    _ = ordinaryUnifiedPowerFactorRaw theta n D ell B H := by
+      dsimp [c, e, ordinaryUnifiedPowerFactorRaw]
+      push_cast
+      ring
 
 end ReedSolomon
