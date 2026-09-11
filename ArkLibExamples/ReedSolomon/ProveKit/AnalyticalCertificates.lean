@@ -14,11 +14,9 @@ This file recomputes the exact sharp squarefree expressions selected by the manu
 It records the interpolation dimensions, local-rank upper bounds, shifted heights, characteristic
 guards, exact rational estimates, and their integer ceilings.
 
-The reusable squarefree library currently proves the content/product/resultant degree machinery,
-but does not yet expose a complete finite-list or MCA facade with these sharp formulas.  Therefore
-the declarations here are deliberately arithmetic certificates, not semantic list-decoding or
-agreement theorems.  They can be connected to those facades without changing the configurations
-once the owner-layer endpoints are available.
+The declarations here are deliberately arithmetic certificates, not semantic list-decoding or
+agreement theorems. The separate `AnalyticalSemantics` module connects the unchanged configurations
+to the reusable squarefree list and MCA theorems, preserving the independent list/MCA supports.
 -/
 
 namespace ArkLibExamples.ReedSolomon.ProveKit

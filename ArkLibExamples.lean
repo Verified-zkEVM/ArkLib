@@ -15,6 +15,7 @@ import ArkLibExamples.ReedSolomon.LambdaVM.Payload
 import ArkLibExamples.ReedSolomon.LambdaVM.Reconstruction
 import ArkLibExamples.ReedSolomon.ProveKit
 import ArkLibExamples.ReedSolomon.ProveKit.Analytical
+import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalSemantics
 import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalBudgets
 import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalCertificates
 import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalExpectedPayload
