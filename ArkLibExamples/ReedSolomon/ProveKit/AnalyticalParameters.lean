@@ -89,9 +89,9 @@ def goldilocksLookupAnalyticalListSupport : Fin 4 → FirstOrderSupport := ![
   (goldilocksLookupWitness.row 3).firstOrderSupport
 ]
 
-/-- The further analytical Goldilocks lookup schedule.  It retains the measured query counts and
-changes only the first row's list size and OOD count.  Its stored support remains the MCA
-support. -/
+/-- The further analytical Goldilocks lookup schedule. It retains the measured query counts and
+changes the first row's list size, exceptional count, and OOD count. Its stored support remains
+the MCA support. -/
 def goldilocksLookupAnalytical : Schedule 4 where
   row := ![
     codeRound 4096 1024 1933 96 42 174 127 109 1 18786624067678312

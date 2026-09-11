@@ -11,9 +11,9 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.Multip
 # All-fiber norm product filter
 
 The decoder's first filter multiplies the nonuniversal norm polynomials from every interpolation
-fiber.  A candidate retained with threshold `T` is therefore a root of at least `T` individual
-norm factors, counted with multiplicity.  This module supplies the executable product-and-filter
-operation and its exact extension-field semantics.
+fiber. A candidate retained with threshold `T` therefore has total root multiplicity at least
+`T` across the norm factors. This module supplies the executable product-and-filter operation
+and its exact extension-field semantics.
 
 The construction is deliberately independent of how each norm factor is obtained.  In
 particular, it does not package the separate base-change obligation that connects a concrete
