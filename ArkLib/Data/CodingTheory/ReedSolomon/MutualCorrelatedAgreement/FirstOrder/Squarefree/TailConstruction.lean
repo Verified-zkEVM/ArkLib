@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.FactorwiseList
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.FactorwiseList
 public import ArkLib.ToMathlib.Polynomial.PaddedDerivativeResultantCommonRoot
 
 /-!
