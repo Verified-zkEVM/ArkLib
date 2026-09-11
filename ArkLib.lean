@@ -543,6 +543,10 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.B
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.ExactCharacteristicBudget
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AllMRankRounding
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AllMSourceRounding
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticRecipe
@@ -800,6 +804,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.Endpoints
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreementArbitrary
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity
@@ -839,6 +844,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLength
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLengthBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.RateParameters
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
@@ -925,6 +932,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityO
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorInputBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorStageBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.GeometricOutputBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.ImprovedListBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.MathematicalCapacity
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.RestrictedCollectorProof
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PositionSubsetDecoder
@@ -1023,13 +1031,23 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Finite
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveBase
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveCertificate
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveComparison
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveDominance
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveEndpoints
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveProfile
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.LowRateSemantics
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.RateBounds
 public import

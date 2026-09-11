@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreementArbitrary
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ConstantCode
 public import
@@ -14,7 +14,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.F
 /-!
 # Interleaved constant-code and full-code endpoints
 
-The finite-field scalar projection argument preserves the sharp constant-code collision count.
+The arbitrary-field scalar projection argument preserves the sharp constant-code collision count.
 The full-code endpoint is direct, over arbitrary fields, including zero block length and width.
 -/
 
@@ -29,15 +29,15 @@ noncomputable section
 set_option autoImplicit false
 
 open Classical in
-/-- Finite-field interleaving preserves the scalar constant-code exceptional count without
+/-- Arbitrary-field interleaving preserves the scalar constant-code exceptional count without
 a width factor, including the separate agreement-one fallback. -/
 theorem uniformExactInterleavedPowerAgreement_constantCode
-    {F : Type} [Field F] [Finite F] {n ell width A : ℕ}
+    {F : Type} [Field F] {n ell width A : ℕ}
     (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → Fin width → F)
     (hwidth : 0 < width) (hA : 0 < A) :
     UniformExactInterleavedPowerAgreement domain values 1 A
       (if A = 1 then ell * n.choose 2 else ell * n.choose 2 / (A - 1)) := by
-  exact uniformExactInterleavedPowerAgreement_of_scalar domain
+  exact uniformExactInterleavedPowerAgreement_of_scalar_arbitrary domain
     (fun scalarValues ↦ uniformExactPowerAgreement_constantCode domain scalarValues A hA)
     hwidth hA values
 

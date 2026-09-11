@@ -3,6 +3,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCerti
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Profile
 import ArkLibExamples.ReedSolomon.Fields
 import ArkLibExamples.ReedSolomon.JohnsonTable
+import ArkLibExamples.ReedSolomon.LegacyCurveSnapshots
 import ArkLibExamples.ReedSolomon.LambdaVM
 import ArkLibExamples.ReedSolomon.LambdaVM.AirBounds
 import ArkLibExamples.ReedSolomon.LambdaVM.Budget
@@ -24,6 +25,7 @@ import ArkLibExamples.ReedSolomon.ProveKit.ExpectedPayload
 import ArkLibExamples.ReedSolomon.ProveKit.GoldilocksLookup
 import ArkLibExamples.ReedSolomon.ProveKit.Passport
 import ArkLibExamples.ReedSolomon.ProveKit.Parameters
+import ArkLibExamples.ReedSolomon.CurveMigration
 import ArkLibExamples.ReedSolomon.ZisK
 import ArkLibExamples.ReedSolomon.ZisK.FinalStark
 import ArkLibExamples.ReedSolomon.ZisK.Interpolation
