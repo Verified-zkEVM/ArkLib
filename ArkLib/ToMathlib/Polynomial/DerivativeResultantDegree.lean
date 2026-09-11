@@ -34,12 +34,12 @@ variable {R S : Type*} [CommRing R]
 /-- The sharp total-degree bound for the derivative resultant, written without truncated
 subtraction.  The coefficient premise is the homogeneous-triangle condition
 `i + deg_X(aᵢ) ≤ j`; exact outer degree supplies `b ≤ j` and handles zero determinant terms. -/
-theorem natDegree_separableResultant_add_sq_le
+theorem natDegree_separableResultant_add_sq_le_of_le
     (A : R[X][X]) {b j : ℕ} (hb : 0 < b) (_hdegree : A.natDegree = b)
-    (hcoeff : ∀ i, i + (A.coeff i).natDegree ≤ j) :
+    (hcoeff : ∀ i, i ≤ b → i + (A.coeff i).natDegree ≤ j) :
     (separableResultant A b).natDegree + b ^ 2 ≤ (2 * b - 1) * j := by
   classical
-  have hbj : b ≤ j := (Nat.le_add_right b _).trans (hcoeff b)
+  have hbj : b ≤ j := (Nat.le_add_right b _).trans (hcoeff b le_rfl)
   have hsq : b ^ 2 ≤ (2 * b - 1) * j := by
     calc
       b ^ 2 = b * b := by simp [pow_two]
@@ -101,6 +101,11 @@ theorem natDegree_separableResultant_add_sq_le
     have hleft (c : Fin m) : lidx c + ldeg c ≤ j := by
       dsimp [lidx, ldeg]
       have hc := hleft_Icc c
+      have hcLower : (c : ℕ) ≤ ((σ (Fin.castAdd b c) : Fin (m + b)) : ℕ) := hc.1
+      have hcUpper : ((σ (Fin.castAdd b c) : Fin (m + b)) : ℕ) ≤ (c : ℕ) + b := hc.2
+      have hidx :
+          ((σ (Fin.castAdd b c) : Fin (m + b)) : ℕ) - (c : ℕ) ≤ b := by
+        omega
       have hentry :
           M (σ (Fin.castAdd b c)) (Fin.castAdd b c) =
             if ((σ (Fin.castAdd b c) : Fin (m + b)) : ℕ) ∈
@@ -109,10 +114,16 @@ theorem natDegree_separableResultant_add_sq_le
             else 0 := by
         simp [M, sylvester]
       rw [hentry, if_pos hc]
-      exact hcoeff _
+      exact hcoeff _ hidx
     have hright (c : Fin b) : ridx c + 1 + rdeg c ≤ j := by
       dsimp [ridx, rdeg]
       have hc := hright_Icc c
+      have hcLower : (c : ℕ) ≤ ((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) := hc.1
+      have hcUpper : ((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) ≤ (c : ℕ) + m := hc.2
+      have hidx :
+          ((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) - (c : ℕ) + 1 ≤ b := by
+        dsimp only [m] at hcUpper ⊢
+        omega
       have hentry :
           M (σ (Fin.natAdd m c)) (Fin.natAdd m c) =
             if ((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) ∈
@@ -125,7 +136,7 @@ theorem natDegree_separableResultant_add_sq_le
       have hd := coeff_derivative_natDegree_le A
         (((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) - (c : ℕ))
       have hs := hcoeff
-        ((((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) - (c : ℕ)) + 1)
+        ((((σ (Fin.natAdd m c) : Fin (m + b)) : ℕ) - (c : ℕ)) + 1) hidx
       omega
     have hleft_sum :
         (∑ c : Fin m, (lidx c + ldeg c)) ≤ m * j := by
@@ -227,13 +238,29 @@ theorem natDegree_separableResultant_add_sq_le
         rw [hsplit]
       _ ≤ (2 * b - 1) * j := hdeg
 
+/-- Compatibility form with the coefficient triangle stated at every natural index. -/
+theorem natDegree_separableResultant_add_sq_le
+    (A : R[X][X]) {b j : ℕ} (hb : 0 < b) (hdegree : A.natDegree = b)
+    (hcoeff : ∀ i, i + (A.coeff i).natDegree ≤ j) :
+    (separableResultant A b).natDegree + b ^ 2 ≤ (2 * b - 1) * j := by
+  exact natDegree_separableResultant_add_sq_le_of_le A hb hdegree
+    (fun i _ ↦ hcoeff i)
+
 /-- Sharp derivative-resultant degree with the manuscript's exact truncated subtraction. -/
+theorem natDegree_separableResultant_le_totalDegree_of_le
+    (A : R[X][X]) {b j : ℕ} (hb : 0 < b) (hdegree : A.natDegree = b)
+    (hcoeff : ∀ i, i ≤ b → i + (A.coeff i).natDegree ≤ j) :
+    (separableResultant A b).natDegree ≤ (2 * b - 1) * j - b ^ 2 := by
+  apply Nat.le_sub_of_add_le
+  exact natDegree_separableResultant_add_sq_le_of_le A hb hdegree hcoeff
+
+/-- Compatibility form with the coefficient triangle stated at every natural index. -/
 theorem natDegree_separableResultant_le_totalDegree
     (A : R[X][X]) {b j : ℕ} (hb : 0 < b) (hdegree : A.natDegree = b)
     (hcoeff : ∀ i, i + (A.coeff i).natDegree ≤ j) :
     (separableResultant A b).natDegree ≤ (2 * b - 1) * j - b ^ 2 := by
-  apply Nat.le_sub_of_add_le
-  exact natDegree_separableResultant_add_sq_le A hb hdegree hcoeff
+  exact natDegree_separableResultant_le_totalDegree_of_le A hb hdegree
+    (fun i _ ↦ hcoeff i)
 
 /-- A common root of a specialization of `A` and `A'` kills the original-size padded
 Sylvester resultant.  No preservation of either specialized degree is assumed. -/

@@ -38,9 +38,9 @@ theorem natDegree_singularTail_le
     (hr : 0 < r) (hrj : r ≤ j) (hrM : r ≤ M) (hMB : M ≤ B)
     (hcontent : U.natDegree ≤ bU) (hbudget : bU + j ≤ B)
     (hdegree : A.natDegree = r)
-    (hcoeff : ∀ i, i + (A.coeff i).natDegree ≤ j) :
+    (hcoeff : ∀ i, i ≤ r → i + (A.coeff i).natDegree ≤ j) :
     (singularTail U A r).natDegree ≤ ordinaryDegreeEnvelope B M := by
-  have hresultant := natDegree_separableResultant_add_sq_le A hr hdegree hcoeff
+  have hresultant := natDegree_separableResultant_add_sq_le_of_le A hr hdegree hcoeff
   have htail := content_add_resultantDegree_le
     (B := B) (M := M) (bU := bU) (j := j) (r := r)
     (d := (separableResultant A r).natDegree)
