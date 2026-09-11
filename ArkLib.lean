@@ -831,6 +831,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecover
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.RepresentedExact
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AutomaticFirstOrderExecution
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
