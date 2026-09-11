@@ -55,6 +55,14 @@ def firstOrderStageCap (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (μ M :
     ∑ t ∈ Finset.Ico (μ - min M μ) μ,
       c₁ (t + 1) (t + 1 - (μ - min M μ))
 
+/-- When the initial polynomial has derivative degree zero, the schedule contains only ordinary
+stages.  This boundary is kept separate from the positive derivative-degree recurrence. -/
+@[simp]
+theorem firstOrderStageCap_derivativeDegree_zero
+    (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (μ : ℕ) :
+    firstOrderStageCap c₀ c₁ μ 0 = ∑ t ∈ Finset.range μ, c₀ (t + 1) := by
+  simp [firstOrderStageCap]
+
 @[simp]
 private theorem firstOrderStageCap_zero (c₀ : ℕ → ℚ) (c₁ : ℕ → ℕ → ℚ) (M : ℕ) :
     firstOrderStageCap c₀ c₁ 0 M = 0 := by
