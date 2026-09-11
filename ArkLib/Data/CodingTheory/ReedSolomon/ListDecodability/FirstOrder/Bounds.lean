@@ -8,6 +8,10 @@ module
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FirstOrder.FirstOrderHybridList
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.AutomaticBounds
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CertificateList
 public import ArkLib.ToMathlib.Set.Finite
 /-!
 # Complete first-order lists above the rate curve
@@ -33,6 +37,8 @@ open Polynomial
 namespace ReedSolomon
 
 open HiddenDerivative
+open HiddenDerivative.SymbolicReceivedInterpolation
+open HiddenDerivative.SymbolicWeightedSupportInterpolation
 
 noncomputable section
 
@@ -291,6 +297,116 @@ theorem automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le
       _ = n := one_mul _
   exact automaticFirstOrder_closePolynomialSet_finite_and_card_le
     hrho hrhoOne ha haOne hn rfl hk hkRate hA hAn domain received hchar
+
+open Classical in
+/-- The squarefree product/resultant argument improves the automatic complete-list dependence
+from cubic to quadratic in the positive slack.  The `M = 0` endpoint is discharged by the
+ordinary branch of the retained hybrid theorem; no positive-derivative hypothesis is exposed. -/
+theorem automatic_first_order_squarefree_list_bound_of_slack
+    (rho eta : ℝ)
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (n k A : ℕ) (hn : 0 < n) (hk : 2 ≤ k)
+    (hkRate : (k : ℝ) ≤ rho * n)
+    (hA : (automaticFirstOrderThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    {F : Type*} [Field F] (domain : Fin n ↪ F) (received : Fin n → F)
+    (hchar : ringChar F = 0 ∨ max (k - 1)
+      (automaticDerivativeCap rho (automaticFirstOrderThreshold rho + eta)) < ringChar F) :
+    (closePolynomialSet domain received k A).Finite ∧
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤
+        FirstOrder.Squarefree.automaticSquarefreeListBoundConstant rho * n / eta ^ 2 := by
+  let a := automaticFirstOrderThreshold rho + eta
+  let D := k - 1
+  let M := automaticDerivativeCap rho a
+  let B := automaticJetDegree rho a
+  have ha : automaticFirstOrderThreshold rho < a := by dsimp only [a]; linarith
+  have hOld := automaticFirstOrder_closePolynomialSet_finite_and_card_le
+    hrho hrhoOne ha haOne hn (show D = k - 1 from rfl) hk hkRate hA hAn
+      domain received hchar
+  refine ⟨hOld.1, ?_⟩
+  have hkA : k ≤ A := by
+    have hrhok := (rho_lt_automaticFirstOrderThreshold hrho hrhoOne).trans ha
+    have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+    exact_mod_cast (hkRate.trans (mul_le_mul_of_nonneg_right hrhok.le hnR.le) |>.trans hA)
+  have hkn : k ≤ n := hkA.trans hAn
+  have hD : 1 ≤ D := by dsimp only [D]; omega
+  have hDn : D ≤ n := by dsimp only [D]; omega
+  have hDA : D < A := by dsimp only [D]; omega
+  have hDrate : (D : ℝ) ≤ rho * n := by
+    exact (show (D : ℝ) ≤ k by exact_mod_cast (show D ≤ k by dsimp [D]; omega)).trans hkRate
+  by_cases hMzero : M = 0
+  · have hcard : ((closePolynomialSet domain received k A).ncard : ℝ) ≤ B := by
+      have hclosed := hOld.2.2.2
+      simpa only [D, M, B, hMzero, hybridLambdaClosed, hybridT, Nat.cast_zero,
+        mul_zero, zero_mul, zero_div, zero_add, add_zero, Nat.sub_zero] using hclosed
+    let C := automaticHybridEnvelopeConstant rho
+    let q := 1 / eta
+    have hC : 1 ≤ C := one_le_automaticHybridEnvelopeConstant rho
+    have hetaOne : eta ≤ 1 := by
+      have hgap := automatic_eta_lt_rateGap hrho hrhoOne heta haOne
+      have hthresholdPos := (rho_lt_automaticFirstOrderThreshold hrho hrhoOne).trans' hrho
+      unfold automaticRateGap at hgap
+      linarith
+    have hq : 1 ≤ q := (one_le_div heta).2 hetaOne
+    have hB : (B : ℝ) ≤ C * q := by
+      calc
+        (B : ℝ) ≤ automaticJetBoundConstant rho / eta :=
+          automaticJetDegree_le_inv_eta hrho hrhoOne heta haOne
+        _ = automaticJetBoundConstant rho * q := by dsimp only [q]; ring
+        _ ≤ C * q := by
+          gcongr
+          exact automaticJetBoundConstant_le_envelope rho
+    have hN : (1 : ℝ) ≤ n := by exact_mod_cast hn
+    have hC0 : 0 ≤ C := zero_le_one.trans hC
+    have hq0 : 0 ≤ q := zero_le_one.trans hq
+    have hx : 1 ≤ C * q := by
+      nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hq)]
+    have hCN : 1 ≤ C * (n : ℝ) := by
+      nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hN)]
+    have hsquare : C * q ≤ (C * q) ^ 2 := by
+      nlinarith [mul_nonneg (mul_nonneg hC0 hq0) (sub_nonneg.mpr hx)]
+    have hlarge : (C * q) ^ 2 ≤ C ^ 3 * n * q ^ 2 := by
+      have hnonneg : 0 ≤ (C * q) ^ 2 := sq_nonneg _
+      have := mul_nonneg hnonneg (sub_nonneg.mpr hCN)
+      nlinarith
+    calc
+      ((closePolynomialSet domain received k A).ncard : ℝ) ≤ B := hcard
+      _ ≤ C * q := hB
+      _ ≤ C ^ 3 * n * q ^ 2 := hsquare.trans hlarge
+      _ ≤ FirstOrder.Squarefree.automaticSquarefreeListBoundConstant rho * n /
+          eta ^ 2 := by
+        dsimp only [C, q]
+        unfold FirstOrder.Squarefree.automaticSquarefreeListBoundConstant
+        field_simp [ne_of_gt heta]
+        have hnonneg : 0 ≤ automaticHybridEnvelopeConstant rho ^ 3 * (n : ℝ) := by
+          positivity
+        nlinarith
+  · have hM : 1 ≤ M := Nat.one_le_iff_ne_zero.mpr hMzero
+    have hMB : M ≤ B := by
+      dsimp only [M, B]
+      unfold automaticDerivativeCap
+      exact min_le_right _ _
+    obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
+      hrho hrhoOne ha haOne hn (show D = k - 1 from rfl) hk hkRate hA
+        domain received (fun _ ↦ 0)
+    let list := hOld.1.toFinset
+    have hsolutions : ∀ P ∈ list, IsAgreementSolution domain received k A P := by
+      intro P hP
+      exact (mem_closePolynomialSet_iff_isAgreementSolution domain received P).mp
+        (hOld.1.mem_toFinset.mp hP)
+    have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
+      domain received
+        (firstOrderColumns (D := D) (A := A) (m := automaticMultiplicity rho a)
+          (M := M) (μ := B)) cert hk hkn hkA hAn hM hMB hchar list hsolutions
+    have hbound := FirstOrder.Squarefree.automaticSquarefreeListExpression_le
+      hrho hrhoOne heta haOne (show 1 ≤ n by omega) hD hDn hDA hDrate hA hM
+    have hncard := Set.ncard_eq_toFinset_card _ hOld.1
+    rw [hncard]
+    exact hcard.trans (by simpa only [D, M, B, a, hybridTheta, mul_div_assoc,
+      (show k - 1 + 1 = k by omega),
+      (show 2 * (k - 1) - 1 = 2 * k - 3 by omega),
+      (show n - k + 1 = n - (k - 1) by omega),
+      (show A - k + 1 = A - (k - 1) by omega)] using hbound)
 
 end
 
