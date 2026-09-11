@@ -459,6 +459,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartitio
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.Ratio
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.SharpRatio
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.RatePartition.SourceEstimate
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SolutionEmbedding
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.SourceMonomial
@@ -477,6 +479,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveSupportCertificate
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveWeightedSupport
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.GuardedUniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.MathematicalUniform
@@ -586,7 +590,11 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteParameters
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Gate
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.GuardedUniform
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.MathematicalUniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Moment
@@ -599,6 +607,10 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.Rounding300
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.RoundingLoss
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.SharpMoment
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.SharpRatio
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.RatePartition.SupportGuards
 public import
@@ -788,8 +800,10 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Cur
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.EquationBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FixedRate
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FixedRateExplicitGate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FreeOrderBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GuardedUniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
