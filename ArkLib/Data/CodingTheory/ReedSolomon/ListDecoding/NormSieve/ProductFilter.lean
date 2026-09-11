@@ -114,6 +114,16 @@ theorem eval₂_retainedNormProduct_eq_zero_iff_sum_rootMultiplicity
       p T phi x (normProduct_ne_zero hnorms) hT,
     rootMultiplicity_normProduct_map norms hnorms phi x]
 
+/-- The all-fiber threshold output has degree at most the product degree divided by `T` (stated
+without natural-number division, so no rounding is hidden). -/
+theorem threshold_mul_natDegree_retainedNormProduct_le
+    (p T : ℕ) [Fact p.Prime] [CharP F p]
+    {n : ℕ} (norms : Fin n → CompPoly.CPolynomial F) (hnorms : ∀ i, norms i ≠ 0)
+    (hT : 0 < T) :
+    T * (retainedNormProduct p T norms).natDegree ≤ (normProduct norms).natDegree := by
+  exact threshold_mul_natDegree_retainedMultiplicitySupport_le
+    p T (normProduct_ne_zero hnorms) hT
+
 /-- Every candidate annihilating at least `T` individual nonzero norm factors survives the
 all-fiber product filter. -/
 theorem eval₂_retainedNormProduct_eq_zero_of_threshold_le_card

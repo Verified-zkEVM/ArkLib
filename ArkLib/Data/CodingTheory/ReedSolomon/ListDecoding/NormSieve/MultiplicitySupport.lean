@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.Polynomial.SquarefreeSupport
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
 # Characteristic-safe retained multiplicity support
@@ -175,5 +176,62 @@ theorem eval₂_retainedMultiplicitySupport_eq_zero_iff_le_rootMultiplicity
       simpa only [hasseDeriv_zero, LinearMap.id_coe, id_eq] using hzero
     · simpa only [cHasseDerivative_toPoly, ← Polynomial.eval_map phi x,
         Polynomial.map_hasseDeriv] using hall j hj
+
+/-- The retained squarefree support pays `T` units of input degree for every unit of output
+degree.  This is the exact degree compression used by the norm sieve. -/
+theorem threshold_mul_natDegree_retainedMultiplicitySupport_le
+    (p T : ℕ) [Fact p.Prime] [CharP F p]
+    {f : CompPoly.CPolynomial F} (hf : f ≠ 0) (hT : 0 < T) :
+    T * (retainedMultiplicitySupport p T f).natDegree ≤ f.natDegree := by
+  classical
+  let K := AlgebraicClosure F
+  let phi : F →+* K := algebraMap F K
+  let G := (retainedMultiplicitySupport p T f).toPoly.map phi
+  let P := f.toPoly.map phi
+  have hphi : Function.Injective phi := FaithfulSMul.algebraMap_injective F K
+  have hG0 : G ≠ 0 := by
+    exact (Polynomial.map_ne_zero_iff hphi).2
+      ((CompPoly.CPolynomial.toPoly_eq_zero_iff _).not.mpr
+        (retainedMultiplicitySupport_ne_zero p T hf))
+  have hP0 : P ≠ 0 := by
+    exact (Polynomial.map_ne_zero_iff hphi).2
+      ((CompPoly.CPolynomial.toPoly_eq_zero_iff _).not.mpr hf)
+  have hGfree : G.Separable := by
+    exact ((PerfectField.separable_iff_squarefree).2
+      (retainedMultiplicitySupport_squarefree p T hf)).map
+  have hGnodup : G.roots.Nodup := Polynomial.nodup_roots hGfree
+  have hrootsG : G.roots.card = (retainedMultiplicitySupport p T f).natDegree := by
+    rw [IsAlgClosed.card_roots_eq_natDegree, Polynomial.natDegree_map]
+    exact (CompPoly.CPolynomial.natDegree_toPoly _).symm
+  have hrootsP : P.roots.card = f.natDegree := by
+    rw [IsAlgClosed.card_roots_eq_natDegree, Polynomial.natDegree_map]
+    exact (CompPoly.CPolynomial.natDegree_toPoly _).symm
+  have hsubset : G.roots.toFinset ⊆ P.roots.toFinset := by
+    intro x hx
+    have hGroot : G.eval x = 0 := by
+      exact (Polynomial.mem_roots hG0).mp (Multiset.mem_toFinset.mp hx)
+    have hmult : T ≤ P.rootMultiplicity x := by
+      exact (eval₂_retainedMultiplicitySupport_eq_zero_iff_le_rootMultiplicity
+        p T phi x hf hT).mp (by simpa [G, Polynomial.eval_map] using hGroot)
+    have hProot : P.IsRoot x :=
+      (Polynomial.rootMultiplicity_pos hP0).mp (hT.trans_le hmult)
+    exact Multiset.mem_toFinset.mpr ((Polynomial.mem_roots hP0).mpr hProot)
+  calc
+    T * (retainedMultiplicitySupport p T f).natDegree = T * G.roots.card := by
+      rw [hrootsG]
+    _ = T * G.roots.toFinset.card := by
+      rw [Multiset.toFinset_card_of_nodup hGnodup]
+    _ = ∑ _x ∈ G.roots.toFinset, T := by simp [Nat.mul_comm]
+    _ ≤ ∑ x ∈ G.roots.toFinset, P.rootMultiplicity x := by
+      exact Finset.sum_le_sum fun x hx ↦ by
+        have hGroot : G.eval x = 0 :=
+          (Polynomial.mem_roots hG0).mp (Multiset.mem_toFinset.mp hx)
+        exact (eval₂_retainedMultiplicitySupport_eq_zero_iff_le_rootMultiplicity
+          p T phi x hf hT).mp (by simpa [G, P, Polynomial.eval_map] using hGroot)
+    _ ≤ ∑ x ∈ P.roots.toFinset, P.rootMultiplicity x := by
+      exact Finset.sum_le_sum_of_subset hsubset
+    _ = P.roots.card := by
+      simpa only [Polynomial.count_roots] using Multiset.toFinset_sum_count_eq P.roots
+    _ = f.natDegree := hrootsP
 
 end ReedSolomon.ListDecoding.NormSieve
