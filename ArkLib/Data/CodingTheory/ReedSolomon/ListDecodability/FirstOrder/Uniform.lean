@@ -8,12 +8,12 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.SharpListBound
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CertificateList
 /-!
 # Uniform first-order lists at capacity gap 6/25
 
 The fixed support `(m,M,μ) = (12,4,22)` and height `851` give an exact list
-with at most `13623 n` candidates. The `k = 1` branch uses elementary agreement
+with at most `307 n` candidates. The `k = 1` branch uses elementary agreement
 incidence and requires no characteristic condition. The other branch retains its
 original characteristic guard. Mutual correlated agreement is proved separately.
 -/
@@ -24,6 +24,8 @@ namespace ReedSolomon
 
 open Polynomial HiddenDerivative
 open scoped BigOperators
+open HiddenDerivative.SymbolicReceivedInterpolation
+open HiddenDerivative.SymbolicWeightedSupportInterpolation
 
 universe u
 
@@ -48,35 +50,46 @@ private theorem mem_closePolynomialSet_iff_isAgreementSolution
     ext i
     simp [polynomialAgreementSet]
 
-private theorem uniformFirstOrder_listWeight_eq (k : ℕ) :
-    firstOrderListWeight k 22 4 = 3208 * k + 253 := by
-  norm_num [firstOrderListWeight]
-  ring
+private theorem uniformFirstOrder_squarefreeStage_eq (k : ℕ) (hk : 2 ≤ k) :
+    firstOrderCurveFiberStageOne k 22 4 (2 * k - 3) = 294 * k - 428 := by
+  simp only [firstOrderCurveFiberStageOne, firstOrderTaylorTotalCap,
+    firstOrderTaylorDerivativeCap, AffineHilbert.fixedFiberDerivativeImageDegree]
+  rw [min_eq_right (by omega)]
+  omega
+
+private theorem uniformFirstOrder_ordinaryEnvelope_eq :
+    FirstOrder.Squarefree.ordinaryDegreeEnvelope 22 4 = 138 := by decide
 
 private theorem uniformFirstOrder_listRatio_le (n k A : ℕ)
-    (hn : 2 ≤ n) (_hk : 2 ≤ k) (hAn : A ≤ n)
+    (hn : 2 ≤ n) (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A) :
-    ((n * firstOrderListWeight k 22 4 : ℕ) : ℚ) / (A - k + 1 : ℕ) ≤
-      13623 * n := by
+    (firstOrderCurveFiberStageOne k 22 4 (2 * k - 3) : ℝ) *
+          ((n - k + 1 : ℕ) : ℝ) / (A - k + 1 : ℕ) +
+        FirstOrder.Squarefree.ordinaryDegreeEnvelope 22 4 ≤ 307 * n := by
   have hkA : k ≤ A := by exact_mod_cast (show (k : ℝ) ≤ A by linarith)
-  have hden : (0 : ℚ) < (A - k + 1 : ℕ) := by positivity
-  apply (div_le_iff₀ hden).2
-  rw [uniformFirstOrder_listWeight_eq]
-  push_cast [Nat.cast_sub hkA]
   have hkn : k ≤ n := hkA.trans hAn
-  have hrate : (25 : ℚ) * k ≤ 19 * n := by
-    have hAnR : (A : ℝ) ≤ n := by exact_mod_cast hAn
-    exact_mod_cast (show (25 : ℝ) * k ≤ 19 * n by nlinarith)
-  have hgapQ : (6 : ℚ) * n ≤ 25 * ((A : ℚ) - k) := by
-    exact_mod_cast (show (6 : ℝ) * n ≤ 25 * ((A : ℝ) - k) by nlinarith)
-  have hnQ : (2 : ℚ) ≤ n := by exact_mod_cast hn
-  have hnposQ : (0 : ℚ) < n := by positivity
-  calc
-    (n : ℚ) * (3208 * k + 253) ≤
-        n * (13623 * ((A : ℚ) - k + 1)) := by
-          apply mul_le_mul_of_nonneg_left _ hnposQ.le
-          nlinarith
-    _ = 13623 * n * ((A : ℚ) - k + 1) := by ring
+  have hden : (0 : ℝ) < (A - k + 1 : ℕ) := by positivity
+  rw [uniformFirstOrder_squarefreeStage_eq k hk, uniformFirstOrder_ordinaryEnvelope_eq]
+  have hgap' : (6 : ℝ) * n ≤ 25 * (A - k) := by nlinarith
+  have hsquare : 4 * ((k : ℝ) - 1) * (n - (k - 1)) ≤ (n : ℝ) ^ 2 := by
+    nlinarith [sq_nonneg ((n : ℝ) - 2 * (k - 1))]
+  have hA : (A : ℝ) ≤ n := by exact_mod_cast hAn
+  have hn' : (2 : ℝ) ≤ n := by exact_mod_cast hn
+  have hdenGap : (6 : ℝ) * n + 25 ≤ 25 * (A - k + 1) := by nlinarith
+  have hmul := mul_le_mul_of_nonneg_left hdenGap
+    (show (0 : ℝ) ≤ 307 * n - 4 by nlinarith)
+  have hmain : (294 * k - 428 : ℕ) * ((n - k + 1 : ℕ) : ℝ) /
+      (A - k + 1 : ℕ) ≤ 307 * n - 138 := by
+    apply (div_le_iff₀ hden).2
+    rw [Nat.cast_sub (by omega : 428 ≤ 294 * k)]
+    push_cast [Nat.cast_sub hkA, Nat.cast_sub hkn]
+    have hreduce :
+        (294 * (k : ℝ) - 428) * (n - k + 1) + 138 * (A - k + 1) ≤
+          294 * (k - 1) * (n - k + 1) + 4 * (A - k + 1) := by
+      nlinarith
+    nlinarith
+  norm_num only [Nat.cast_ofNat]
+  linarith
 
 /-- The actual height-851 shifted certificate bounds the complete close-polynomial list for
 every message dimension `k >= 2`.  The returned finite set is extensionally exact. -/
@@ -85,10 +98,10 @@ private theorem exists_uniformFirstOrder_list_of_two_le
     (n k A : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
     (hn : 2 ≤ n) (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
+    (hchar : ringChar F = 0 ∨ max (k - 1) 4 < ringChar F) :
     ∃ list : Finset F[X],
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
-      list.card ≤ 13623 * n := by
+      list.card ≤ 307 * n := by
   classical
   let D := max (k - 1) 2
   have hgapNat : 25 * k + 6 * n ≤ 25 * A := by
@@ -105,23 +118,29 @@ private theorem exists_uniformFirstOrder_list_of_two_le
     intro P hP
     exact (mem_closePolynomialSet_iff_isAgreementSolution domain received P).mp
       (hfin.mem_toFinset.mp hP)
-  have hcard := finite_firstOrder_list_bound_of_heightSlotCount_sharp
-    (F := F) (by omega) hbudget hkD domain received hheight (by omega) (le_refl k)
-      (hkA.trans hAn) (by omega) hkA hAn hchar list hsolutions
+  have hcert : Nonempty (FirstOrderSymbolicCertificate.{u, u} (F := F)
+      D A 12 4 22 k 851 domain received (fun _ ↦ 0)
+        (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22))) :=
+    exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
+      (F := F) (by omega) hbudget hkD domain received (fun _ ↦ 0) hheight
+  obtain ⟨cert⟩ := hcert
+  have hcard := FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
+    domain received (firstOrderColumns (D := D) (A := A) (m := 12) (M := 4) (μ := 22)) cert
+      hk (hkA.trans hAn) hkA hAn (by norm_num) (by norm_num) hchar list hsolutions
   refine ⟨list, hlist, ?_⟩
   exact_mod_cast hcard.trans (uniformFirstOrder_listRatio_le n k A hn hk hAn hgap)
 
 /-- The complete close-polynomial set at gap `6/25` is represented by an exact finite list of
-cardinality at most `13623 n`, including the constant-message edge case. -/
+cardinality at most `307 n`, including the constant-message edge case. -/
 theorem exists_uniformFirstOrder_list
     {F : Type u} [Field F] [DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (received : Fin n → F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 4 < ringChar F) :
     ∃ list : Finset F[X],
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
-      list.card ≤ 13623 * n := by
+      list.card ≤ 307 * n := by
   by_cases hkTwo : 2 ≤ k
   · exact exists_uniformFirstOrder_list_of_two_le n k A domain received
       hn hkTwo hAn hgap (hchar hkTwo)
@@ -135,6 +154,6 @@ theorem exists_uniformFirstOrder_list
     calc
       list.card ≤ list.card * A := Nat.le_mul_of_pos_right _ (by omega)
       _ ≤ n := hincidence
-      _ ≤ 13623 * n := by omega
+      _ ≤ 307 * n := by omega
 
 end ReedSolomon
