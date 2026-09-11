@@ -873,6 +873,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.Coeff
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.LeadingCoefficient
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.RemainderStep
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.FiberPreprocess
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.MultiplicitySupport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.ProductFilter
