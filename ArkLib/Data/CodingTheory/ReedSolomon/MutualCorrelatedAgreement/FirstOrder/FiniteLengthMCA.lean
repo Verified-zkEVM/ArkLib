@@ -36,6 +36,7 @@ namespace ReedSolomon.FirstOrder
 open HiddenDerivative
 open HiddenDerivative.SymbolicSeparantChain
 open HiddenDerivative.SymbolicReceivedInterpolation
+open HiddenDerivative.SymbolicWeightedSupportInterpolation
 open MvPolynomial
 
 noncomputable section
@@ -132,6 +133,178 @@ private theorem finiteLengthJetDegree_pos
     hrho.trans (rho_lt_automaticAgreement hrho hrhoOne (by linarith))
   have hrate := finiteLengthRate_pos hrho hn
   positivity
+
+open Classical in
+/-- The exact finite-length selectors construct their symbolic line certificate internally.
+Unlike the fixed-rate constructor, the source rate here is `rho - 1/n`, while the derivative
+ratio remains selected at `rho`; the proof therefore uses the literal finite source and rank
+counts rather than coercing them into `FirstOrderFiniteRateParameters`. -/
+theorem exists_finiteLengthFirstOrder_symbolicCertificate
+    {F : Type u} [Field F] {rho eta : ℝ} {n k A : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : automaticFirstOrderThreshold rho + eta < 1)
+    (hn : (2 : ℝ) ≤ rho * n)
+    (hbetaHalf : finiteLengthDerivativeRatio rho eta ≤ 1 / 2)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hA : (automaticFirstOrderThreshold rho + eta) * n ≤ A)
+    (centers : Fin n ↪ F) (f g : Fin n → F) :
+    Nonempty (FirstOrderSymbolicCertificate (F := F) (k - 1) A
+      (finiteLengthMultiplicity rho eta n)
+      (finiteLengthDerivativeCap rho eta n)
+      (finiteLengthJetDegree rho eta n) k
+      (finiteLengthChallengeHeight rho eta n) centers f g
+      (firstOrderColumns (D := k - 1) (A := A)
+        (m := finiteLengthMultiplicity rho eta n)
+        (M := finiteLengthDerivativeCap rho eta n)
+        (μ := finiteLengthJetDegree rho eta n))) := by
+  let R := finiteLengthRate rho n
+  let a := finiteLengthCertifiedAgreement rho eta
+  let D := k - 1
+  let m := finiteLengthMultiplicity rho eta n
+  let M := finiteLengthDerivativeCap rho eta n
+  let mu := finiteLengthJetDegree rho eta n
+  let h := finiteLengthChallengeHeight rho eta n
+  let rlocal := finiteLengthRankCount rho eta n
+  let Nzero := finiteLengthSourceCount rho eta n
+  let N := (firstOrderExponents D A m M mu).card
+  let r := n * rlocal
+  let columns := firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := mu)
+  let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
+  have hnPos : 0 < n := length_pos_of_two_le_rate_mul_length hn
+  have hmPos : 0 < m := finiteLengthMultiplicity_pos
+    hrho hrhoOne heta haOne hn hbetaHalf
+  have hDPos : 0 < D := by dsimp only [D]; omega
+  have hN : N = firstOrderDimensionCount D A m M mu :=
+    card_firstOrderExponents_eq_dimensionCount hDPos
+  have hDrate : (D : ℝ) ≤ R * n := by
+    have hshift : (k : ℝ) - 1 ≤ rho * n - 1 := sub_le_sub_right hkRate 1
+    rw [finiteLengthRate_eq hnPos]
+    dsimp only [D]
+    rw [Nat.cast_sub (by omega : 1 ≤ k), Nat.cast_one]
+    exact hshift
+  have hArate : a * n ≤ A := by
+    apply (mul_le_mul_of_nonneg_right
+      (automaticAgreement_le (rho := rho) (a := automaticFirstOrderThreshold rho + eta))
+      (Nat.cast_nonneg n)).trans
+    exact hA
+  have hsourceLower : (n : ℝ) * Nzero ≤
+      firstOrderDimensionCount D A m M mu := by
+    have hlower := firstOrderRateSourceCount_le_dimensionCount
+      (R := R) (a := a) (n := n) (D := D) (A := A) (m := m) (M := M) (mu := mu)
+      hDrate hArate
+    simpa only [R, a, m, M, mu, Nzero, finiteLengthSourceCount] using hlower
+  have hsurplus : (rlocal : ℝ) < Nzero := by
+    have hdelta := finiteLengthDensityMargin_pos
+      hrho hrhoOne heta haOne hn hbetaHalf
+    have hgap := finiteLength_count_gap hrho hrhoOne heta haOne hn hbetaHalf
+    have hpositive : 0 < 3 * (m : ℝ) ^ 3 * finiteLengthDensityMargin rho eta n / 4 := by
+      positivity
+    dsimp only [m, rlocal, Nzero]
+    linarith
+  have hrN : r < N := by
+    rw [hN]
+    have hnReal : (0 : ℝ) < n := by exact_mod_cast hnPos
+    exact_mod_cast (calc
+      (r : ℝ) = (n : ℝ) * rlocal := by simp [r]
+      _ < (n : ℝ) * Nzero := mul_lt_mul_of_pos_left hsurplus hnReal
+      _ ≤ firstOrderDimensionCount D A m M mu := hsourceLower)
+  have hy₀ : ∀ j, (columns j).y₀ ≤ mu := by
+    intro j
+    rw [← SourceColumn.exponent_zero]
+    exact firstOrder_y₀_le_μ (firstOrderColumns_eligible
+      (D := D) (A := A) (m := m) (M := M) (μ := mu) j)
+  have hw : ∀ i, (w i).natDegree ≤ 1 := fun i ↦ receivedLine_natDegree_le (f i) (g i)
+  have hrank : ((SymbolicReceivedCurve.finiteConstraintMatrix m
+      (fun i ↦ centers i) w columns).map
+      (algebraMap F[X] (RatFunc F))).rank ≤ r := by
+    calc
+      _ ≤ ((SymbolicReceivedCurve.constraintMatrix m
+          (fun i ↦ centers i) w columns).map
+          (algebraMap F[X] (RatFunc F))).rank :=
+        SymbolicReceivedCurve.finiteConstraintMatrix_rank_le m
+          (fun i ↦ centers i) w columns
+      _ ≤ n * certifiedEnlargedRankBound 1 m M 0 :=
+        HiddenDerivative.firstOrder_rate_curve_matrix_rank_le hmPos
+          (fun i ↦ centers i) w columns
+          (fun j ↦ firstOrderColumns_eligible
+            (D := D) (A := A) (m := m) (M := M) (μ := mu) j)
+      _ = r := by
+        rw [certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount]
+        rfl
+  have hrN' : r < Fintype.card ↑(firstOrderExponents D A m M mu) := by
+    simpa [N] using hrN
+  obtain ⟨v, _hv, hvdegree, hprimitive, hnonzero, hconstraints⟩ :=
+    SymbolicReceivedCurve.exists_primitive_interpolant_of_rank_le
+      m 1 mu r (fun i ↦ centers i) w hw columns firstOrderColumns_injective hy₀ hrank hrN'
+  let Q : DifferentialPolynomial F[X] 1 := interpolant columns v
+  have hheight : r * mu / (N - r) ≤ h := by
+    rw [hN]
+    have hkernel := scaledKernelHeight_le_rateChallengeDegree
+      (n := n) (N := firstOrderDimensionCount D A m M mu)
+      (r := rlocal) (mu := mu) (N₀ := Nzero) hnPos hsurplus hsourceLower
+    simpa only [r, h, mu, rlocal, Nzero, finiteLengthChallengeHeight] using hkernel
+  have hvheight : ∀ j, (v j).natDegree ≤ h := by
+    intro j
+    apply (hvdegree j).trans
+    simpa [N] using hheight
+  have hQsupport : Q ∈ firstOrderSpace F[X] D A m M mu :=
+    interpolant_mem_firstOrderSpace columns firstOrderColumns_eligible v
+  have hfirstJet : ∀ exponent ∈ Q.support, firstJetExponent exponent ≤ M := by
+    intro exponent hexponent
+    exact (mem_firstOrderExponents.mp
+      (mem_firstOrderSpace_iff.mp hQsupport exponent hexponent)).1
+  have htotalJet : ∀ exponent ∈ Q.support, totalJetDegree exponent ≤ mu := by
+    intro exponent hexponent
+    exact (mem_firstOrderExponents.mp
+      (mem_firstOrderSpace_iff.mp hQsupport exponent hexponent)).2.1
+  refine ⟨⟨v, Q, rfl, hprimitive, coeff_interpolant_natDegree_le columns
+    firstOrderColumns_injective v hvheight, hQsupport, hfirstJet, htotalJet,
+    hconstraints, ?_⟩⟩
+  intro E _ iota z
+  refine ⟨hnonzero iota z, ?_⟩
+  intro indices P hPdegree hcard hagreements
+  let phi := Polynomial.eval₂RingHom iota z
+  have hQmapped : MvPolynomial.map phi Q ∈ firstOrderSpace E D A m M mu := by
+    rw [mem_firstOrderSpace_iff]
+    intro exponent hexponent
+    have hexponentQ : exponent ∈ Q.support :=
+      MvPolynomial.support_map_subset phi Q hexponent
+    exact mem_firstOrderSpace_iff.mp hQsupport exponent hexponentQ
+  have hconstraintsE : ∀ i, SatisfiesLocalConstraints m (iota (centers i))
+      ((w i).eval₂ iota z) (MvPolynomial.map phi Q) := by
+    intro i
+    have hi := SatisfiesLocalConstraints.map phi m (Polynomial.C (centers i))
+      (w i) Q (hconstraints i)
+    change SatisfiesLocalConstraints m
+      (Polynomial.eval₂ iota z (Polynomial.C (centers i)))
+      ((w i).eval₂ iota z) (MvPolynomial.map phi Q) at hi
+    simpa only [Polynomial.eval₂_C] using hi
+  have hPnat : P.natDegree ≤ D := by
+    by_cases hPzero : P = 0
+    · simp [hPzero]
+    · have hlt : P.natDegree < k :=
+        (Polynomial.natDegree_lt_iff_degree_lt hPzero).mpr hPdegree
+      dsimp only [D]
+      omega
+  have hcenters : Set.InjOn (fun i ↦ iota (centers i)) (indices : Set (Fin n)) := by
+    intro i _ j _ hij
+    exact centers.injective (iota.injective hij)
+  apply differentialSpecialization_eq_zero_of_global_multiplicity
+    (fun i ↦ iota (centers i)) indices m A (MvPolynomial.map phi Q) P hcenters hcard
+  · intro i hi
+    apply X_sub_C_pow_dvd_differentialSpecialization_of_contact
+      _ P (iota (centers i)) ((w i).eval₂ iota z) _ (hconstraintsE i)
+    rw [hagreements i hi]
+    simp only [w, receivedLine, Polynomial.eval₂_add, Polynomial.eval₂_C,
+      Polynomial.eval₂_mul, Polynomial.eval₂_X]
+  · exact (natDegree_differentialSpecialization_le _ P hPnat).trans_lt
+      (differentialWeightedDegree_lt_of_mem_firstOrderSpace
+        (Nat.mul_pos hmPos (by
+          have haPos : 0 < automaticFirstOrderThreshold rho + eta :=
+            (hrho.trans (rho_lt_automaticFirstOrderThreshold hrho hrhoOne)).trans
+              (lt_add_of_pos_right _ heta)
+          exact_mod_cast (mul_pos haPos (by exact_mod_cast hnPos) |>.trans_le hA)))
+        hQmapped)
 
 open Classical in
 /-- The ordinary endpoint adapter for a literal selector certificate whose derivative cap is zero.
