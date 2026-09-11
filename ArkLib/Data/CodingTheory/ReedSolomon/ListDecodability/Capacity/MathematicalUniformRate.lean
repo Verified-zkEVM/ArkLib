@@ -18,7 +18,7 @@ For a capacity gap `delta`, this mathematical construction chooses
 * `d = ceil(exp(3/(2*delta)))`, the derivative order;
 * `m = ceil(300*d²*log(6*d))`, the interpolation multiplicity;
 * `nu = ceil(m/delta²)-1`, the total jet-degree bound; and
-* `Ndelta = ceil(2*m/delta²)`, a sufficient block-length threshold.
+* `Ndelta = nu+1 = ceil(m/delta²)`, a sufficient block-length threshold.
 
 The complete list has size at most `C*n^d`, where
 `C = nu²*(2*nu/delta)^d`. The retained complete reference executor deliberately continues to use

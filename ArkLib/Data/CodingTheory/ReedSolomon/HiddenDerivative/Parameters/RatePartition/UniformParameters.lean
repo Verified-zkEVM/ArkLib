@@ -112,10 +112,12 @@ theorem ratePartitionHeight_uniform {ν : ℕ} (hν : 0 < ν) :
   rw [h, Nat.ceil_natCast]
   omega
 
-/-- The high-rate branch uses the actual message degree as its interpolation ambient degree. -/
-theorem uniformRatePartition_high_ambient {δ : ℝ} {d m n k A : ℕ}
+/-- The high-rate branch uses the actual message degree as its interpolation ambient degree.
+Only one multiplicity-sized unit of quadratic-rate room is needed: reconstruction uses its
+separate dimension and does not force an additional copy of this budget. -/
+theorem uniformRatePartition_high_ambient_of_m_le {δ : ℝ} {d m n k A : ℕ}
     (hδ : 0 < δ) (hδone : δ < 1) (hm : d + 2 ≤ m)
-    (hsize : 2 * (m : ℝ) ≤ δ ^ 2 * n)
+    (hsize : (m : ℝ) ≤ δ ^ 2 * n)
     (hhigh : δ ^ 2 * n ≤ k) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     d + 1 ≤ k ∧ k + 1 ≤ n := by
   have hm' : (d : ℝ) + 2 ≤ m := by exact_mod_cast hm
@@ -129,10 +131,11 @@ theorem uniformRatePartition_high_ambient {δ : ℝ} {d m n k A : ℕ}
   · have : (k : ℝ) + 1 ≤ n := by nlinarith [Nat.cast_nonneg d (α := ℝ)]
     exact_mod_cast this
 
-/-- Low-rate padding stays inside the block and retains the quadratic-rate lower ambient bound. -/
-theorem uniformRatePartition_low_ambient {δ : ℝ} {d m n : ℕ}
+/-- Low-rate padding stays inside the block and retains the quadratic-rate lower ambient bound
+from one multiplicity-sized unit of quadratic-rate room. -/
+theorem uniformRatePartition_low_ambient_of_m_le {δ : ℝ} {d m n : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hm : d + 2 ≤ m)
-    (hsize : 2 * (m : ℝ) ≤ δ ^ 2 * n) :
+    (hsize : (m : ℝ) ≤ δ ^ 2 * n) :
     let D := ⌊2 * δ ^ 2 * n⌋₊
     d + 1 ≤ D ∧ δ ^ 2 * n ≤ D ∧ D + 1 ≤ n := by
   let D := ⌊2 * δ ^ 2 * n⌋₊
@@ -152,5 +155,22 @@ theorem uniformRatePartition_low_ambient {δ : ℝ} {d m n : ℕ}
   · have h := mul_le_mul_of_nonneg_right hδ2.le hn'
     have : (D : ℝ) + 1 ≤ n := by nlinarith
     exact_mod_cast this
+
+/-- Compatibility wrapper for the retained executor's stronger two-copy length guard. -/
+theorem uniformRatePartition_high_ambient {δ : ℝ} {d m n k A : ℕ}
+    (hδ : 0 < δ) (hδone : δ < 1) (hm : d + 2 ≤ m)
+    (hsize : 2 * (m : ℝ) ≤ δ ^ 2 * n)
+    (hhigh : δ ^ 2 * n ≤ k) (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
+    d + 1 ≤ k ∧ k + 1 ≤ n := by
+  exact uniformRatePartition_high_ambient_of_m_le hδ hδone hm (by nlinarith)
+    hhigh hgap hAn
+
+/-- Compatibility wrapper for the retained executor's stronger two-copy length guard. -/
+theorem uniformRatePartition_low_ambient {δ : ℝ} {d m n : ℕ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hm : d + 2 ≤ m)
+    (hsize : 2 * (m : ℝ) ≤ δ ^ 2 * n) :
+    let D := ⌊2 * δ ^ 2 * n⌋₊
+    d + 1 ≤ D ∧ δ ^ 2 * n ≤ D ∧ D + 1 ≤ n := by
+  exact uniformRatePartition_low_ambient_of_m_le hδ hδsmall hm (by nlinarith)
 
 end ReedSolomon.HiddenDerivative

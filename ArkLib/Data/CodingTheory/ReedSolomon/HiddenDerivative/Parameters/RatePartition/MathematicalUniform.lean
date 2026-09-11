@@ -30,13 +30,28 @@ open PolynomialDifferential
 def uniformRatePartitionMathematicalMultiplicity (δ : ℝ) : ℕ :=
   ratePartitionMathematicalMultiplicity (uniformRatePartitionOrder δ)
 
-/-- Revised mathematical block threshold. -/
-def uniformRatePartitionMathematicalLength (δ : ℝ) : ℕ :=
-  ⌈2 * (uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2⌉₊
-
 /-- Revised strict total-jet cap. -/
 def uniformRatePartitionMathematicalJetBound (δ : ℝ) : ℕ :=
   ⌈(uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2⌉₊ - 1
+
+/-- Revised mathematical block threshold: exactly one more than the strict jet cap. -/
+def uniformRatePartitionMathematicalLength (δ : ℝ) : ℕ :=
+  uniformRatePartitionMathematicalJetBound δ + 1
+
+/-- On the admissible branch, the manuscript's `Bjet + 1` threshold is exactly the rounded
+multiplicity-to-gap ratio. -/
+theorem uniformRatePartitionMathematicalLength_eq_ceil {δ : ℝ}
+    (hδ : 0 < δ) (hm : 0 < uniformRatePartitionMathematicalMultiplicity δ) :
+    uniformRatePartitionMathematicalLength δ =
+      ⌈(uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2⌉₊ := by
+  have hceil : 0 <
+      ⌈(uniformRatePartitionMathematicalMultiplicity δ : ℝ) / δ ^ 2⌉₊ := by
+    apply Nat.lt_ceil.mpr
+    simpa only [Nat.cast_zero] using
+      (div_pos (by exact_mod_cast hm :
+        (0 : ℝ) < uniformRatePartitionMathematicalMultiplicity δ) (sq_pos_of_pos hδ))
+  unfold uniformRatePartitionMathematicalLength uniformRatePartitionMathematicalJetBound
+  omega
 
 /-- The three-halves order is at least `519` throughout the small-gap branch. -/
 theorem uniformRatePartitionOrder_ge_519 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
@@ -76,29 +91,30 @@ theorem uniformRatePartitionMathematical_integer_guards {δ : ℝ} {n : ℕ}
     (hn : uniformRatePartitionMathematicalLength δ ≤ n) :
     let m := uniformRatePartitionMathematicalMultiplicity δ
     let ν := uniformRatePartitionMathematicalJetBound δ
-    2 * (m : ℝ) ≤ δ ^ 2 * n ∧ m ≤ n ∧ 0 < ν ∧ ν < n := by
+    (m : ℝ) ≤ δ ^ 2 * n ∧ m ≤ n ∧ 0 < ν ∧ ν < n := by
   let m := uniformRatePartitionMathematicalMultiplicity δ
   let c := ⌈(m : ℝ) / δ ^ 2⌉₊
   have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
   have hδ2one : δ ^ 2 < 1 := by nlinarith
   have hm' : (0 : ℝ) < m := by exact_mod_cast hm
-  have hbound : 2 * (m : ℝ) / δ ^ 2 ≤ n :=
-    (Nat.le_ceil _).trans (Nat.cast_le.mpr hn)
-  have hsize : 2 * (m : ℝ) ≤ δ ^ 2 * n := by
-    simpa only [mul_comm] using (div_le_iff₀ hδ2).mp hbound
-  have hn' : (0 : ℝ) ≤ n := Nat.cast_nonneg _
-  have hmn : m ≤ n := by
-    have : (m : ℝ) ≤ n := by nlinarith
-    exact_mod_cast this
   have hcpos : 1 < c := by
     apply Nat.lt_ceil.mpr
     have hmone : (1 : ℝ) ≤ m := by exact_mod_cast hm
     apply (lt_div_iff₀ hδ2).mpr
     norm_num
     linarith
-  have hcn : c ≤ n := by
-    apply Nat.ceil_le.mpr
-    exact (div_le_iff₀ hδ2).mpr (by nlinarith)
+  have hlength : uniformRatePartitionMathematicalLength δ = c := by
+    change c - 1 + 1 = c
+    omega
+  have hcn : c ≤ n := by simpa only [hlength] using hn
+  have hbound : (m : ℝ) / δ ^ 2 ≤ n :=
+    (Nat.le_ceil _).trans (Nat.cast_le.mpr hcn)
+  have hsize : (m : ℝ) ≤ δ ^ 2 * n := by
+    simpa only [mul_comm] using (div_le_iff₀ hδ2).mp hbound
+  have hn' : (0 : ℝ) ≤ n := Nat.cast_nonneg _
+  have hmn : m ≤ n := by
+    have : (m : ℝ) ≤ n := by nlinarith
+    exact_mod_cast this
   exact ⟨hsize, hmn, by change 0 < c - 1; omega, by change c - 1 < n; omega⟩
 
 /-- Both rate branches give the revised total-jet cap. -/
@@ -263,7 +279,7 @@ theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
       apply (div_le_iff₀ hnR).2
       have hAn' : (A : ℝ) ≤ n := by exact_mod_cast hAn
       nlinarith
-    obtain ⟨horder, hambient⟩ := uniformRatePartition_high_ambient
+    obtain ⟨horder, hambient⟩ := uniformRatePartition_high_ambient_of_m_le
       hδ hδone hmorder hsize hhigh hgap hAn
     have hrateUpper : (k : ℝ) ≤ R * n := by
       dsimp [R]
@@ -283,7 +299,7 @@ theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     let a : ℝ := δ
     have hRpos : 0 < R := by dsimp [R]; positivity
     have hRa : R < a := by dsimp [R, a]; nlinarith
-    obtain ⟨horder, hDlower, hambient⟩ := uniformRatePartition_low_ambient
+    obtain ⟨horder, hDlower, hambient⟩ := uniformRatePartition_low_ambient_of_m_le
       hδ hδsmall hmorder hsize
     have hkDreal : (k : ℝ) ≤ D := by
       have hklt : (k : ℝ) < δ ^ 2 * n := lt_of_not_ge hhigh
