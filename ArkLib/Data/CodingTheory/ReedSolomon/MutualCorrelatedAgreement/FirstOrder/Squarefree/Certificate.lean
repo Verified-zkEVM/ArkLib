@@ -10,12 +10,12 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.C
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedCurveMCA
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CurveMCA
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ExtensionDescent
 
 /-!
-# Retained squarefree MCA from finite first-order curve certificates
+# Certificate bridge for retained squarefree MCA
 
 This module connects the retained squarefree geometric count to the actual finite interpolation
 certificate.  The interpolation degree `Dcert` remains separate from the recovery degree `k - 1`.
