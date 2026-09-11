@@ -7,7 +7,7 @@ import ArkLibExamples.ReedSolomon.ZisK.Interpolation
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 
 /-!
-# The compressed final STARK: 52 queries with the existing grinding hook
+# The compressed final STARK: 51 queries with the existing grinding hook
 
 The batching, individual folds, and query checks each meet a 128-bit bound.
 These separate phase bounds do not assert a 128-bit bound on their union.
@@ -24,7 +24,7 @@ open ConcreteFields
 noncomputable section
 
 /-- One degree-103 shared-inner bound plus the degree-four outer bound. -/
-def batchingCount : ℕ := 2321310860278182970
+def batchingCount : ℕ := 4073324287379922825
 
 /-- The shared inner curve is paid once, independently of the five group widths. -/
 theorem batchingCount_eq :
@@ -39,20 +39,20 @@ theorem exists_nested_exceptional
     ∃ exceptional : Finset (GoldilocksCubic × GoldilocksCubic),
       exceptional.card ≤ fieldSize * batchingCount ∧
       ∀ u v, (u, v) ∉ exceptional → ∀ P : GoldilocksCubic[X], P.degree < 32768 →
-        127623 ≤ (polynomialAgreementSet domain
+        124136 ≤ (polynomialAgreementSet domain
           (powerBatchedWord (fun g ↦ powerBatchedWord (values g) u) v) P).card →
         HasExactNestedPowerAgreement domain innerDegree values 32768 u v P := by
   have hdegree (g : Fin 5) : innerDegree g ≤ 103 := by
     fin_cases g <;> decide
   have hscalar (scalarValues : Fin (103 + 1) → Fin 524288 → GoldilocksCubic) :
-      UniformExactPowerAgreement domain scalarValues 32768 127623 (exceptionalCounts 2) :=
+      UniformExactPowerAgreement domain scalarValues 32768 124136 (exceptionalCounts 2) :=
     exists_exceptional 2 domain scalarValues
   have hi : UniformExactInterleavedPowerAgreement domain
-      (paddedPowerValues innerDegree hdegree values) 32768 127623 (exceptionalCounts 2) :=
+      (paddedPowerValues innerDegree hdegree values) 32768 124136 (exceptionalCounts 2) :=
     uniformExactInterleavedPowerAgreement_of_scalar domain hscalar (by decide) (by decide)
       (paddedPowerValues innerDegree hdegree values)
   have ho (u : GoldilocksCubic) : UniformExactPowerAgreement domain
-      (fun g ↦ powerBatchedWord (values g) u) 32768 127623 (exceptionalCounts 4) :=
+      (fun g ↦ powerBatchedWord (values g) u) 32768 124136 (exceptionalCounts 4) :=
     exists_exceptional 4 domain (fun g ↦ powerBatchedWord (values g) u)
   obtain ⟨bad, hcard, hgood⟩ := nestedPowerAgreement_sharedInner domain innerDegree hdegree values
     (by decide) hi ho
@@ -102,9 +102,13 @@ theorem exists_fold_at_target (i : Fin 3)
   apply div_le_div_of_nonneg_right _ (by positivity)
   exact_mod_cast hcard
 
-/-- The exact finite agreement threshold permits 52 queries at the existing 22-bit hook. -/
+/-- The exact finite agreement threshold permits 51 queries at the existing 22-bit hook. -/
 theorem queries_at_target :
-    (127623 / 524288 : ℚ) ^ 52 / 2 ^ 22 ≤ 1 / 2 ^ 128 := by decide +kernel
+    (124136 / 524288 : ℚ) ^ 51 / 2 ^ 22 ≤ 1 / 2 ^ 128 := by decide +kernel
+
+/-- One fewer query misses the target for this exact agreement threshold and grinding hook. -/
+theorem fifty_queries_fail :
+    (1 / 2 ^ 128 : ℚ) < (124136 / 524288 : ℚ) ^ 50 / 2 ^ 22 := by decide +kernel
 
 /-- The exact squared finite-Johnson comparison underlying the query-only floor. -/
 theorem johnson_squared_queries_fail :
@@ -123,11 +127,11 @@ theorem johnson_queries_fail (a : ℚ) (ha : 0 ≤ a)
     (1 / 2 ^ 128 : ℚ) < (249 / 1000 : ℚ) ^ 52 / 2 ^ 22)
     (div_lt_div_of_pos_right hp (by norm_num))
 
-/-- With all fixed payload retained, removing two responses saves exactly 7840 bytes. -/
+/-- With all fixed payload retained, removing three responses saves exactly 11760 bytes. -/
 theorem proof_size :
     54 * 3920 + 42352 = (254032 : ℕ) ∧
-    52 * 3920 + 42352 = (246192 : ℕ) ∧
-    254032 - 246192 = (7840 : ℕ) := by decide
+    51 * 3920 + 42352 = (242272 : ℕ) ∧
+    254032 - 242272 = (11760 : ℕ) := by decide
 
 end
 end ArkLibExamples.ReedSolomon.ZisK
