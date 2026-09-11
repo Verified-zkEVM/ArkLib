@@ -12,6 +12,8 @@ open Module
 
 namespace Algebra
 
+section Point
+
 variable {K A B : Type*} [Field K] [Ring A] [Algebra K A] [FiniteDimensional K A]
   [Semiring B] [Nontrivial B] [Algebra K B]
 
@@ -30,5 +32,29 @@ theorem norm_eq_zero_of_algHom_eq_zero (φ : A →ₐ[K] B) {x : A} (hx : φ x =
   have h := congrArg φ hy
   rw [map_mul, hx, zero_mul, map_one] at h
   exact zero_ne_one h
+
+end Point
+
+section Specialization
+
+variable {R K A A' B ι : Type*} [CommRing R] [Field K] [Ring A] [Ring A']
+  [Semiring B] [Nontrivial B] [Algebra R A] [Algebra K A'] [Algebra K B]
+  [FiniteDimensional K A'] [Fintype ι] [DecidableEq ι]
+
+/-- A multiplication determinant still detects a vanishing geometric point after arbitrary
+specialization of the base ring.  The matrix equality is the concrete base-change obligation:
+once the specialized multiplication matrix is identified, no reducedness hypothesis on the
+fiber algebra `A'` is needed.
+-/
+theorem map_det_leftMulMatrix_eq_zero_of_algHom_eq_zero
+    (σ : R →+* K) (b : Basis ι R A) (b' : Basis ι K A')
+    (x : A) (x' : A')
+    (hspecialize : σ.mapMatrix (Algebra.leftMulMatrix b x) = Algebra.leftMulMatrix b' x')
+    (φ : A' →ₐ[K] B) (hx : φ x' = 0) :
+    σ (Matrix.det (Algebra.leftMulMatrix b x)) = 0 := by
+  rw [RingHom.map_det, hspecialize, ← Algebra.norm_eq_matrix_det b' x']
+  exact norm_eq_zero_of_algHom_eq_zero φ hx
+
+end Specialization
 
 end Algebra
