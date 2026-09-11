@@ -547,9 +547,13 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Auto
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.AutomaticRecipe
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridConstants
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.LowRateStationary
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateBound
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.RateEligibility
@@ -560,6 +564,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageCharges
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageComparison
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageMonotonicity
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.StageSum
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FreeOrder
@@ -792,6 +798,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AffineAgreementBo
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.Endpoints
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
@@ -831,6 +838,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.F
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthParameters
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.FiniteLengthSelectors
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.LowRateFiniteLength
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Profile
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.RateParameters
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
@@ -1011,7 +1019,13 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Fir
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthMCA
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.FiniteLengthRateBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveBase
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveDominance
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveRecovery
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
 public import
@@ -1075,6 +1089,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Joh
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.SharpBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.WeightedCertificate
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.NestedPowerAgreement
 public import

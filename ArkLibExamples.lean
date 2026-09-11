@@ -2,6 +2,7 @@ import ArkLibExamples.ReedSolomon.AppendixCurveMCA
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.CurveCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.Profile
 import ArkLibExamples.ReedSolomon.Fields
+import ArkLibExamples.ReedSolomon.JohnsonTable
 import ArkLibExamples.ReedSolomon.LambdaVM
 import ArkLibExamples.ReedSolomon.LambdaVM.AirBounds
 import ArkLibExamples.ReedSolomon.LambdaVM.Budget

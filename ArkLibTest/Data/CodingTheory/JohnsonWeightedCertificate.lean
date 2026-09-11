@@ -6,6 +6,8 @@ Authors: Quang Dao
 
 import ArkLibExamples.ReedSolomon.JohnsonTable
 
+/-! Import and axiom-cone canary for the weighted Johnson table's semantic endpoints. -/
+
 namespace ReedSolomon
 
 #print axioms closePolynomialSet_finite_and_ncard_le_johnsonPairwise

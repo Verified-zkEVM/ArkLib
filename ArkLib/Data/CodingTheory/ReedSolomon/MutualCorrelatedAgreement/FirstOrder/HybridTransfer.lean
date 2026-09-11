@@ -144,7 +144,8 @@ theorem exists_exceptional_firstOrder_regularStages
         HasExactPowerAgreement domain ![f, g] iota (D + 1) z P := by
   simpa only [hybridCurveJ1, HiddenDerivative.hybridJ1, Nat.cast_one, one_mul] using
     exists_exceptional_firstOrder_regularCurveStages domain ![f, g] iota Q descent
-      (by decide : 0 < 1) hD hDL hLA hAn hchar
+      (by decide : 0 < 1) hD hDL hLA hAn
+        (hchar.imp_right (fun h ↦ (le_max_left D M).trans_lt h))
 
 /-- Degree-one power batching of `![f,g]` is the correlated line word, after scalar
 extension. -/

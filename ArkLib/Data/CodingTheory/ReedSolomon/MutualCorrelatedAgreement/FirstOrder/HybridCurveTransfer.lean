@@ -150,7 +150,7 @@ theorem exists_exceptional_firstOrder_regularCurveStages
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M h)
     (hell : 0 < ell) (hD : 1 ≤ D) (hDL : D < L) (hLA : L ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max D M < ringChar F) :
+    (hchar : ringChar F = 0 ∨ D < ringChar F) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
         HiddenDerivative.hybridLambdaOne n A L *
@@ -179,7 +179,7 @@ theorem exists_exceptional_firstOrder_regularCurveStages
       simpa only [HiddenDerivative.firstOrderDerivativeStage_zero, Nat.sub_zero] using
         hle.trans hweight
     exact descent.actualDegree_eq.trans_le hjet
-  have hcharE : ringChar E = 0 ∨ max D M < ringChar E := by
+  have hcharE : ringChar E = 0 ∨ D < ringChar E := by
     have heq : ringChar E = ringChar F := by
       let _ : CharP E (ringChar F) := charP_of_injective_ringHom iota.injective (ringChar F)
       exact ringChar.eq E (ringChar F)
@@ -187,7 +187,7 @@ theorem exists_exceptional_firstOrder_regularCurveStages
   have hbin : ∀ i, 1 < i → i < D + 1 → (i.choose 1 : E) ≠ 0 := by
     intro i hi hiK
     rw [Nat.choose_one_right]
-    exact natCast_ne_zero_of_max_char_guard hcharE (by omega) (by omega)
+    exact natCast_ne_zero_of_max_char_guard (M := 0) (by simpa using hcharE) (by omega) (by omega)
   have hτ : TaylorExponentSufficient 1 (D + 1) (HiddenDerivative.hybridTau D) := by
     convert taylorExponentSufficient_two_mul_sub_three 1 (K := D + 1) (by omega) using 1
     unfold HiddenDerivative.hybridTau
@@ -298,7 +298,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_of_tail
     (iota : F →+* E) (Q : DifferentialPolynomial E[X] 1)
     (descent : HiddenDerivative.FirstOrderHybridDescent Q mu M h)
     (hell : 0 < ell) (hD : 1 ≤ D) (hDL : D < L) (hLA : L ≤ A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max D M < ringChar F)
+    (hchar : ringChar F = 0 ∨ D < ringChar F)
     (tailBound : ℝ)
     (htail : ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤ tailBound ∧
@@ -362,7 +362,7 @@ theorem exists_exceptional_firstOrder_hybridCurve_optimized_of_tail
     (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
     (Q : DifferentialPolynomial E[X] 1) (descent : FirstOrderHybridDescent Q mu M h)
     (hell : 0 < ell) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
-    (hchar : ringChar F = 0 ∨ max D M < ringChar F)
+    (hchar : ringChar F = 0 ∨ D < ringChar F)
     (htail : ∀ L₀, D < L₀ → L₀ ≤ A → ∃ exceptional : Finset E,
       (exceptional.card : ℝ) ≤
         hybridCurveTail n D ell (mu - descent.actualDegree) h A L₀ ∧
