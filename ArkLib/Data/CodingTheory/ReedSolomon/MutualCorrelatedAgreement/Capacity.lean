@@ -497,24 +497,67 @@ family and its convenient `n ≤ ringChar F` hypothesis.  The interfaces below a
 manuscript's sharper mathematical statements.  They use the revised 300-based rate-partition
 parameters at small gaps, the first-order support cap `4` at gaps at least `6/25`, and the
 characteristic-free constant-code endpoint.
+
+Fixing the real agreement gap `δ` fixes four quantities used by the line and affine theorems:
+
+* `sharpCapacityDerivativeOrder δ` is the derivative order `d(δ)`.  The exceptional-count
+  exponent is `d(δ) + 1`.
+* `sharpCapacityJetBound δ` is the paper's auxiliary bound `bδ` in the characteristic guard.
+* `sharpCapacityLengthThreshold δ` is the eventual block-length threshold `Nδ ≥ 4`.
+* `sharpCapacityLineConstant δ` is the coefficient `Cδ` in
+  `Eδ(n) = Cδ * n ^ (d(δ) + 1)`.
+
+Concretely, on the small-gap branch set
+`d = ceil(exp(3 / (2δ)))`, `m = ceil(300 d² log(6d))`, and
+`Bjet(δ) = ceil(m / δ²) - 1`.  These are natural-number ceilings.  The sharp line theorem uses
+`d` as its derivative order, `Bjet(δ)` as its jet and characteristic bound, and
+`Bjet(δ) + 1` as the underlying mathematical length threshold before normalization by `4`.
+
+All four depend only on `δ`: they do not depend on the block length `n`, message dimension `k`,
+field, evaluation points, received words, affine dimension, challenge, or candidate polynomial.
+The powers-batching theorem below deliberately uses a second family of parameters evaluated at
+the auxiliary gap `min δ (1/8)`; its jet bound must not be identified with the piecewise line
+bound `sharpCapacityJetBound δ`.
 -/
 
-/-- Derivative order in the sharp mathematical line-MCA capacity theorem. -/
+/-- Derivative order `d(δ)` in the sharp line and affine capacity theorems.
+
+For `δ < 6/25` this is the order supplied by the revised mathematical rate partition.  At gaps
+`δ ≥ 6/25`, the first-order argument sets it to `1`, so the exceptional count is quadratic in
+`n`.  On the small-gap branch its explicit value is `ceil(exp(3 / (2δ)))`.  This order depends
+only on `δ`; `d + 1` is the exponent in the stated bound. -/
 def sharpCapacityDerivativeOrder (δ : ℝ) : ℕ :=
   if δ < (6 / 25 : ℝ) then HiddenDerivative.uniformRatePartitionOrder δ else 1
 
-/-- The paper's characteristic threshold `bδ`: revised `Bjet(δ)` below `6/25`, and `4` above. -/
+/-- The paper's characteristic threshold `bδ`.
+
+It is the revised jet bound `Bjet(δ)` when `δ < 6/25` and the first-order support cap `4` when
+`δ ≥ 6/25`.  For a nonconstant code (`k ≠ 1`), the sharp theorems require characteristic zero
+or positive characteristic strictly greater than `max (k - 1) bδ`.  This definition itself is
+independent of `k` and of the field.  Explicitly, the small-gap branch sets
+`d = ceil(exp(3 / (2δ)))`, then `m = ceil(300 d² log(6d))`, and finally
+`Bjet(δ) = ceil(m / δ²) - 1`. -/
 def sharpCapacityJetBound (δ : ℝ) : ℕ :=
   if δ < (6 / 25 : ℝ) then
     HiddenDerivative.uniformRatePartitionMathematicalJetBound δ
   else 4
 
-/-- Length threshold for the sharp line/affine theorem, normalized to be at least four. -/
+/-- Eventual block-length threshold `Nδ` for the sharp line and affine theorems.
+
+The outer maximum records the paper's normalization `Nδ ≥ 4`. The small-gap branch uses the
+length supplied by the revised rate-partition theorem, namely `Bjet(δ) + 1` for
+`Bjet(δ) = ceil(m / δ²) - 1`; this facade chooses `23` on the first-order branch.
+These are sufficient thresholds depending only on `δ`; no minimality is asserted. -/
 def sharpCapacityLengthThreshold (δ : ℝ) : ℕ :=
   max 4 (if δ < (6 / 25 : ℝ) then
     HiddenDerivative.uniformRatePartitionMathematicalLength δ else 23)
 
-/-- Gap-only leading constant for the sharp line/affine exceptional-set bound. -/
+/-- Gap-only coefficient `Cδ` in the sharp line and affine exceptional-count bound.
+
+Below `6/25`, the coefficient is the revised polynomial-curve product constant with jet bound
+`Bjet(δ)`, height parameter `150 * Bjet(δ)`, and derivative order `d(δ)`, plus one.  At and above
+`6/25`, it is the explicit first-order coefficient `1325775`.  The added one on the small-gap
+branch makes positivity immediate without changing the polynomial dependence on `n`. -/
 def sharpCapacityLineConstant (δ : ℝ) : ℝ :=
   if δ < (6 / 25 : ℝ) then
     polynomialCurveProductMCAConstant δ
@@ -584,25 +627,78 @@ private theorem constantCurveExceptionalBound_le_power
       _ = (n : ℝ) ^ ((1 + e) + 1) := by ring
   exact hrawReal.trans (mul_le_mul_of_nonneg_left hpow (Nat.cast_nonneg ell))
 
-/-- Paper-facing line agreement with the exact piecewise characteristic guard.
+/-- Paper-facing exact correlated agreement for received lines at gap `δ`.
 
-At `k=1` there is no characteristic restriction.  Otherwise the positive characteristic must
-exceed `max (k-1) bδ`.  The exceptional set is fixed before the challenge and candidate and the
-conclusion identifies the complete agreement set.  Agreement thresholds above `n` are supported
-and make the conclusion vacuous via an empty exceptional set. -/
+The parameters `δ`, length threshold `N`, and error function `E` are fixed first.  The predicate
+then quantifies, in order, over:
+
+* a block length `n`, message dimension `k`, and integer agreement threshold `A`, subject to
+  `N ≤ n`, `1 ≤ k ≤ n`, and the real inequality `k + δ * n ≤ A`;
+* a possibly infinite field `F`, with decidable equality, satisfying the sharp characteristic
+  guard;
+* an injection `domain : Fin n ↪ F`, which names the `n` distinct evaluation points, and two
+  received words `f g : Fin n → F`.
+
+For these fixed data, one finite exceptional set is chosen before both the challenge `z` and the
+candidate polynomial `P`.  Its cardinality is at most `E n`.  Every `z` outside that set and every
+degree-`< k` polynomial `P` agreeing with the received line `f + z g` in at least `A` coordinates
+satisfies `HasExactCorrelatedPair`.  Unfolding that conclusion gives polynomials `F₀,G₀` over
+`F`, each of degree `< k`, such that
+
+`P = F₀ + z G₀`
+
+and the entire agreement set is exactly
+
+`{i | P(domain i) = f i + z * g i} =
+  {i | F₀(domain i) = f i ∧ G₀(domain i) = g i}`.
+
+Thus the conclusion rules out accidental agreements outside a merely selected common subset.
+The witnesses `F₀,G₀` may depend on `z` and `P`; the exceptional set may not.
+
+The characteristic disjunction is exact: when `k = 1` there is no characteristic restriction.
+Otherwise `F` must have characteristic zero or characteristic strictly greater than
+`max (k - 1) (sharpCapacityJetBound δ)`.  Thresholds `A > n` are admitted by the interface and
+make the candidate premise impossible. -/
 def HasSharpCapacityLineAgreement (δ : ℝ) (N : ℕ) (E : ℕ → ℝ) : Prop :=
+  -- The code parameters and agreement threshold are chosen after the gap-only data.
   ∀ (n k A : ℕ),
     N ≤ n → 0 < k → k ≤ n → (k : ℝ) + δ * n ≤ A →
+    -- Constant codes need no characteristic hypothesis; nonconstant codes use `bδ`.
     ∀ (F : Type u) [Field F] [DecidableEq F],
       (k = 1 ∨ ringChar F = 0 ∨ max (k - 1) (sharpCapacityJetBound δ) < ringChar F) →
       ∀ (domain : Fin n ↪ F) (f g : Fin n → F),
+        -- This set is uniform over every subsequent challenge and close polynomial.
         ∃ exceptional : Finset F, (exceptional.card : ℝ) ≤ E n ∧
           ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
             A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+            -- Exactness includes the polynomial identity and equality of full agreement sets.
             HasExactCorrelatedPair domain f g (RingHom.id F) k z P
 
 open Classical in
-/-- Sharp all-rate line MCA with the manuscript's explicit order, support, and length threshold. -/
+/-- **Sharp line agreement up to capacity.**
+
+For every fixed positive gap `δ`, this theorem instantiates `HasSharpCapacityLineAgreement` with
+this facade's concrete sufficient parameter choices for the paper's capacity result:
+
+* `Nδ = sharpCapacityLengthThreshold δ`, with `Nδ ≥ 4`;
+* `dδ = sharpCapacityDerivativeOrder δ`;
+* `bδ = sharpCapacityJetBound δ` in the characteristic guard; and
+* `Eδ(n) = sharpCapacityLineConstant δ * n ^ (dδ + 1)`.
+
+When `δ < 6/25`, these are the revised mathematical rate-partition parameters.  When
+`δ ≥ 6/25`, the theorem uses the first-order result at gap `6/25`, so `dδ = 1`, `bδ = 4`, and
+the explicit coefficient is `1325775`.  The `k = 1` branch is proved separately and requires no
+characteristic hypothesis.  In every branch, the conclusion is the exact polynomial
+decomposition and equality of the complete agreement sets described by
+`HasSharpCapacityLineAgreement`, for one exceptional set fixed before `z` and `P`.
+
+On the small-gap branch, the definitions expand to
+`dδ = ceil(exp(3 / (2δ)))`, `mδ = ceil(300 dδ² log(6dδ))`, and
+`bδ = ceil(mδ / δ²) - 1`.  Thus the displayed characteristic guard and the exponent in
+`Eδ(n)` can be read directly from this theorem without consulting the parameter modules.
+
+This is an algebraic agreement theorem over arbitrary fields; finiteness is needed only by the
+probability and affine-space corollaries below. -/
 theorem sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
     HasSharpCapacityLineAgreement δ (sharpCapacityLengthThreshold δ)
       (fun n ↦ sharpCapacityLineConstant δ *
@@ -614,8 +710,10 @@ theorem sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
     have hkReal : (0 : ℝ) < k := by exact_mod_cast hk
     have hδn : 0 ≤ δ * (n : ℝ) := mul_nonneg hδ.le (Nat.cast_nonneg n)
     exact_mod_cast (show (0 : ℝ) < A by linarith)
+  -- The paper assumes `A ≤ n`; retaining `A > n` makes the public predicate compositional.
   by_cases hAn : A ≤ n
-  · by_cases hkOne : k = 1
+  · -- Constant messages use the characteristic-free exact power-curve endpoint.
+    by_cases hkOne : k = 1
     · subst k
       obtain ⟨exceptional, hcard, hgood⟩ :=
         uniformExactPowerAgreement_constantCode domain ![f, g] A hApos
@@ -641,12 +739,14 @@ theorem sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
         have hp := hgood z hz P hP (by rwa [hw])
         simpa using exactCorrelatedPair_of_powerAgreement_one domain ![f, g]
           (RingHom.id F) z P hp
-    · have hkTwo : 2 ≤ k := by omega
+    · -- Only the nonconstant branch consumes the characteristic premise.
+      have hkTwo : 2 ≤ k := by omega
       have hchar' : ringChar F = 0 ∨
           max (k - 1) (sharpCapacityJetBound δ) < ringChar F :=
         hchar.resolve_left hkOne
       by_cases hsmall : δ < (6 / 25 : ℝ)
-      · have hnMath : HiddenDerivative.uniformRatePartitionMathematicalLength δ ≤ n := by
+      · -- Small gaps use the revised 300-based rate-partition theorem at the given `δ`.
+        have hnMath : HiddenDerivative.uniformRatePartitionMathematicalLength δ ≤ n := by
           simp only [sharpCapacityLengthThreshold, if_pos hsmall] at hn
           omega
         have hcharMath : ringChar F = 0 ∨
@@ -663,7 +763,8 @@ theorem sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
         simp only [sharpCapacityLineConstant, sharpCapacityDerivativeOrder, if_pos hsmall]
         gcongr
         linarith
-      · have hlarge : (6 / 25 : ℝ) ≤ δ := le_of_not_gt hsmall
+      · -- Larger gaps inherit the uniform first-order theorem at the boundary gap `6/25`.
+        have hlarge : (6 / 25 : ℝ) ≤ δ := le_of_not_gt hsmall
         have hn23 : 23 ≤ n := by
           simp only [sharpCapacityLengthThreshold, if_neg hsmall] at hn
           omega
@@ -676,7 +777,8 @@ theorem sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
           n k A domain f g (by omega) hk hAn hgapLarge (fun _ ↦ hcharLarge)
         refine ⟨exceptional, ?_, hgood⟩
         simpa [sharpCapacityLineConstant, sharpCapacityDerivativeOrder, hsmall] using hcard
-  · refine ⟨∅, ?_, ?_⟩
+  · -- More than `n` agreements are impossible, so the empty exceptional set suffices.
+    refine ⟨∅, ?_, ?_⟩
     · simp only [Finset.card_empty, Nat.cast_zero]
       exact mul_nonneg (sharpCapacityLineConstant_pos hδ).le
         (pow_nonneg (Nat.cast_nonneg n) _)
@@ -685,7 +787,16 @@ theorem sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
       (Finset.card_filter_le _ _).trans_eq (by simp)
     exact (hAn (hagree.trans hc)).elim
 
-/-- Existential form of the sharp headline theorem, explicitly retaining `N ≥ 4`. -/
+/-- **Existential sharp line theorem.**
+
+After fixing `δ > 0`, choose `N`, `d`, and a positive real `C`, all before the code and field,
+such that `N ≥ 4` and the exceptional count is `C * n ^ (d + 1)`.  The nested predicate retains
+the remaining quantifier order: `n,k,A`, then the field and its characteristic guard, then the
+evaluation points and received words, then one exceptional set, and finally `z` and `P`.
+
+The concrete witnesses are `sharpCapacityLengthThreshold δ`,
+`sharpCapacityDerivativeOrder δ`, and `sharpCapacityLineConstant δ`.  The conclusion is exact
+full-agreement-set equality, not only the existence of common witnesses on `A` positions. -/
 theorem exists_sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
       HasSharpCapacityLineAgreement δ N (fun n ↦ C * (n : ℝ) ^ (d + 1)) :=
@@ -694,7 +805,12 @@ theorem exists_sharpCapacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
     sharpCapacityLineConstant_pos hδ, sharpCapacity_lineAgreement δ hδ⟩
 
 open Classical in
-/-- Finite-field adapter for the sharp line theorem. -/
+/-- Finite-field adapter from the sharp headline theorem to `LineExactAgreementBound`.
+
+It preserves the same threshold, characteristic disjunction, exceptional count, polynomial
+identity, and complete agreement-set equality.  The additional `Fintype F` instance supplies the
+finite-field interface consumed by the line-to-affine and MCA-error reductions; it does not
+strengthen the mathematical line conclusion. -/
 theorem lineExactAgreementBound_sharpCapacity
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {δ : ℝ} (hδ : 0 < δ) (n k A : ℕ)
@@ -713,16 +829,44 @@ theorem lineExactAgreementBound_sharpCapacity
   exact ⟨pair.1, pair.2, hp₀, hp₁, by simpa [correlatedPairSpecialization] using heq,
     by simpa [mappedDomain] using hsets⟩
 
-/-! ### Sharp affine and probability interfaces -/
+/-! ### Sharp affine and probability interfaces
 
-/-- Affine-family agreement under the same sharp line characteristic condition. -/
+The affine result samples `s` coefficients independently.  It is obtained from the sharp line
+bound and therefore uses exactly the same `Nδ`, `dδ`, `bδ`, and `Cδ`.  The line-to-affine
+transfer changes an exceptional probability `Eδ(n) / |F|` into `Eδ(n) / (|F| - 1)`, with no
+factor in the affine dimension `s`.  This independent-parameter theorem is different from the
+powers-batching result below, where a single challenge appears through the correlated tuple
+`(1, z, z², ..., z^ell)`.
+-/
+
+/-- Exact agreement for finite-field affine families under the sharp line hypotheses.
+
+After `δ`, `N`, and `E` are fixed, choose `n`, `k`, a finite field `F`, and distinct evaluation
+points `domain`.  The same characteristic disjunction as for lines applies, including no
+restriction when `k = 1`.  Next choose any positive affine dimension `s`, an offset word `a`, and
+direction words `u`.  These data determine the independently parameterized received family
+
+`a + sum_j t_j u_j`, for `t : Fin s → F`.
+
+One exceptional subset of the `|F|^s` parameter vectors is then fixed before `t` and `P`.  Its
+size is at most `E(n) * |F|^s / (|F| - 1)`, so its density is at most
+`E(n) / (|F| - 1)`, independently of `s`.  Outside it, any degree-`< k` candidate with at least
+`k + δ n` agreements has degree-`< k` constituents `F₀,G₁,...,G_s` satisfying the polynomial
+identity `P = F₀ + sum_j t_j G_j`.
+
+The final biconditional is pointwise equality of the complete sets: a coordinate agrees with the
+affine received word if and only if `F₀` agrees with `a` there and every `G_j` agrees with `u_j`
+there.  Thus it excludes accidental agreements as well as producing constituent witnesses. -/
 def HasSharpCapacityAffineAgreement (δ : ℝ) (N : ℕ) (E : ℕ → ℝ) : Prop :=
+  -- The line parameters and characteristic guard remain unchanged.
   ∀ n k : ℕ, N ≤ n → 0 < k → k ≤ n →
     ∀ (F : Type) [Field F] [Fintype F] [DecidableEq F],
       (k = 1 ∨ ringChar F = 0 ∨ max (k - 1) (sharpCapacityJetBound δ) < ringChar F) →
+      -- The affine dimension and all received words are fixed before the exceptional set.
       ∀ domain : Fin n ↪ F, ∀ s : ℕ, 1 ≤ s →
         ∀ (a : Fin n → F) (u : Fin s → Fin n → F),
           ∃ exceptional : Finset (Fin s → F),
+            -- Dividing by the parameter-space size `|F|^s` removes all dependence on `s`.
             (exceptional.card : ℝ) ≤ E n * (Fintype.card F : ℝ) ^ s /
               ((Fintype.card F : ℝ) - 1) ∧
             ∀ t ∉ exceptional, ∀ P : F[X], P.degree < k →
@@ -731,12 +875,25 @@ def HasSharpCapacityAffineAgreement (δ : ℝ) (N : ℕ) (E : ℕ → ℝ) : Pro
               ∃ (F₀ : F[X]) (G : Fin s → F[X]),
                 F₀.degree < k ∧ (∀ j, (G j).degree < k) ∧
                 P = F₀ + ∑ j, t j • G j ∧
+                -- This `↔` identifies every coordinate of the two full agreement sets.
                 ∀ i, (P.eval (domain i) = a i + ∑ j, t j * u j i) ↔
                   F₀.eval (domain i) = a i ∧ ∀ j, (G j).eval (domain i) = u j i
 
 open Classical in
-/-- One sharp line theorem supplies line error, dimension-independent affine error, and exact
-affine witnesses with the same gap-only constants. -/
+/-- Joint sharp line-error, affine-error, and exact affine-agreement theorem.
+
+For the Reed--Solomon code of degree-`< k` polynomials evaluated on `domain`, set the relative
+distance radius to `1 - k/n - δ`.  The line MCA error is at most
+`Eδ(n) / |F|`.  For every `s ≥ 1`, the affine-space MCA error is at most
+`Eδ(n) / (|F| - 1)`, independently of `s`.  Here
+
+`Eδ(n) = sharpCapacityLineConstant δ * n ^ (sharpCapacityDerivativeOrder δ + 1)`.
+
+The last conjunct gives the stronger witness-level statement for every indexed affine family
+`U`: one exceptional set has the corresponding cardinality bound, every constituent has degree
+`< k`, the candidate is their exact affine combination, and the displayed pointwise
+biconditional identifies the complete agreement set.  All conclusions use the same piecewise
+jet bound and the same characteristic exception at `k = 1` as the line theorem. -/
 theorem sharpCapacity_affineAgreement_and_mcaError (δ : ℝ) (hδ : 0 < δ) :
     ∀ n k : ℕ, sharpCapacityLengthThreshold δ ≤ n → 0 < k → k ≤ n →
     ∀ (F : Type) [Field F] [Fintype F] [DecidableEq F],
@@ -768,6 +925,7 @@ theorem sharpCapacity_affineAgreement_and_mcaError (δ : ℝ) (hδ : 0 < δ) :
                     ∀ j, (P₀ j).eval (domain i) = U j i := by
   intro n k hn hk hkn F _ _ _ hchar domain
   have hnpos : (0 : ℝ) < n := by exact_mod_cast hk.trans_le hkn
+  -- Convert the relative radius into the integral threshold expected by the line theorem.
   let radius : ℝ := 1 - (k : ℝ) / n - δ
   let A : ℕ := ⌈(n : ℝ) * (1 - radius)⌉₊
   have hthreshold : (n : ℝ) * (1 - radius) = k + δ * n := by
@@ -777,6 +935,7 @@ theorem sharpCapacity_affineAgreement_and_mcaError (δ : ℝ) (hδ : 0 < δ) :
   have hgap : (k : ℝ) + δ * n ≤ A := by
     rw [← hthreshold]
     exact Nat.le_ceil _
+  -- One exact line bound drives both probability estimates and the affine witnesses.
   have hexact := lineExactAgreementBound_sharpCapacity hδ n k A hn hk hkn hgap domain hchar
   have hkthreshold : (k : ℝ) ≤ n * (1 - radius) := by
     rw [hthreshold]
@@ -790,7 +949,13 @@ theorem sharpCapacity_affineAgreement_and_mcaError (δ : ℝ) (hδ : 0 < δ) :
       (le_refl A) hkthreshold U
 
 open Classical in
-/-- Sharp affine-family agreement with the concrete piecewise capacity parameters. -/
+/-- **Sharp affine-family agreement up to capacity.**
+
+This specializes `HasSharpCapacityAffineAgreement` to the same gap-only choices `Nδ`, `dδ`,
+`bδ`, and `Cδ` as `sharpCapacity_lineAgreement`.  For every finite field, every positive affine
+dimension, and every offset and collection of direction words, it bounds the exceptional density
+by `Cδ * n ^ (dδ + 1) / (|F| - 1)` and recovers the candidate polynomial together with equality
+of its entire agreement set. -/
 theorem sharpCapacity_affineAgreement (δ : ℝ) (hδ : 0 < δ) :
     HasSharpCapacityAffineAgreement δ (sharpCapacityLengthThreshold δ)
       (fun n ↦ sharpCapacityLineConstant δ *
@@ -812,7 +977,12 @@ theorem sharpCapacity_affineAgreement (δ : ℝ) (hδ : 0 < δ) :
   · intro i
     simpa [AffineSpaceGenerator, Fin.sum_univ_succ, Fin.forall_fin_succ] using hsets i
 
-/-- Existential sharp affine-family theorem with a normalized length threshold `N ≥ 4`. -/
+/-- Existential sharp affine theorem with all gap-only constants chosen first.
+
+For each `δ > 0`, there are `N ≥ 4`, an exponent parameter `d`, and `C > 0` such that every
+subsequent finite field, Reed--Solomon code, and affine dimension satisfies exact affine agreement
+with exceptional count at most `C * n ^ (d + 1) * |F|^s / (|F| - 1)`.  Equivalently, the
+exceptional density is at most `C * n ^ (d + 1) / (|F| - 1)`, independently of `s`. -/
 theorem exists_sharpCapacity_affineAgreement (δ : ℝ) (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
       HasSharpCapacityAffineAgreement δ N (fun n ↦ C * (n : ℝ) ^ (d + 1)) :=
@@ -820,7 +990,13 @@ theorem exists_sharpCapacity_affineAgreement (δ : ℝ) (hδ : 0 < δ) :
     sharpCapacityLineConstant δ, sharpCapacityLengthThreshold_ge_four δ,
     sharpCapacityLineConstant_pos hδ, sharpCapacity_affineAgreement δ hδ⟩
 
-/-- Paper-facing line and affine-space MCA error bounds under the sharp characteristic guard. -/
+/-- Paper-facing MCA error bounds under the sharp characteristic guard.
+
+At relative radius `1 - k/n - δ`, the line error has denominator `|F|`, while every positive
+dimensional affine-space error has denominator `|F| - 1`.  Both numerators are the same concrete
+`Eδ(n)`, and the affine estimate has no dependence on `s`.  The guard again disappears when
+`k = 1`; otherwise it is characteristic zero or characteristic greater than
+`max (k - 1) (sharpCapacityJetBound δ)`. -/
 theorem sharpCapacity_mcaError (δ : ℝ) (hδ : 0 < δ) :
     ∀ n k : ℕ, sharpCapacityLengthThreshold δ ≤ n → 0 < k → k ≤ n →
     ∀ (F : Type) [Field F] [Fintype F],
@@ -841,7 +1017,11 @@ theorem sharpCapacity_mcaError (δ : ℝ) (hδ : 0 < δ) :
     fun s hs ↦
       ((sharpCapacity_affineAgreement_and_mcaError δ hδ n k hn hk hkn F hchar domain).2 s hs).1⟩
 
-/-- Existential sharp finite-field error theorem with the same line and affine constants. -/
+/-- Existential finite-field error form of the sharp line and affine theorem.
+
+The quantifier order is significant: `δ` first determines `N ≥ 4`, `d`, and `C > 0`; only then
+are `n`, `k`, the finite field, evaluation points, and affine dimension chosen.  The resulting
+line and affine error bounds share the numerator `C * n ^ (d + 1)`. -/
 theorem exists_sharpCapacity_mcaError (δ : ℝ) (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
       ∀ n k : ℕ, N ≤ n → 0 < k → k ≤ n →
@@ -858,25 +1038,51 @@ theorem exists_sharpCapacity_mcaError (δ : ℝ) (hδ : 0 < δ) :
     sharpCapacityLineConstant δ, sharpCapacityLengthThreshold_ge_four δ,
     sharpCapacityLineConstant_pos hδ, sharpCapacity_mcaError δ hδ⟩
 
-/-! ### Sharp powers-batching interface -/
+/-! ### Sharp powers-batching interface
 
-/-- Auxiliary gap used for uniform powers batching; it stays below `6/25` and below `δ`. -/
+Powers batching combines `ell + 1` received rows with the correlated coefficients
+`1,z,z²,...,z^ell` of one challenge.  It is not an instance of the independently parameterized
+affine theorem: an affine exceptional set may contain the whole power curve.  The proof therefore
+uses the polynomial-curve theorem and a separate auxiliary gap.  Its exceptional count grows
+linearly with `ell`, while its characteristic cutoff does not depend on `ell`.
+-/
+
+/-- Auxiliary gap `epsilon = min δ (1/8)` used only for powers batching.
+
+For `δ > 0`, this gap is positive, no larger than `δ`, and strictly below `6/25`.  Hence a theorem
+proved at `epsilon` applies to the requested threshold `k + δ n`, while always staying in the
+revised rate-partition regime.  The line and affine theorems do not use this truncation. -/
 def sharpCapacityPowerGap (δ : ℝ) : ℝ := min δ (1 / 8)
 
-/-- Derivative order for powers batching, evaluated at the auxiliary gap `min δ (1/8)`. -/
+/-- Powers-batching derivative order, evaluated at the auxiliary gap `min δ (1/8)`.
+
+Its successor is the exponent of `n` in the powers exceptional-count bound.  Even when `δ` is in
+the first-order line regime, this value comes from the revised rate-partition construction at the
+smaller auxiliary gap. -/
 def sharpCapacityPowerDerivativeOrder (δ : ℝ) : ℕ :=
   HiddenDerivative.uniformRatePartitionOrder (sharpCapacityPowerGap δ)
 
 /-- Revised 300-based jet cap for powers batching at the auxiliary gap `min δ (1/8)`.
-This generally differs from the piecewise line threshold `sharpCapacityJetBound δ`. -/
+
+This is the auxiliary bound in the powers characteristic guard.  It generally differs from the
+piecewise line bound `sharpCapacityJetBound δ`, and it remains independent of the batching degree
+`ell`. -/
 def sharpCapacityPowerJetBound (δ : ℝ) : ℕ :=
   HiddenDerivative.uniformRatePartitionMathematicalJetBound (sharpCapacityPowerGap δ)
 
-/-- Powers-batching length threshold, normalized to be at least four. -/
+/-- Powers-batching length threshold at the auxiliary gap, normalized to be at least four.
+
+This is a separate threshold from `sharpCapacityLengthThreshold δ`, even though both depend only
+on the requested gap `δ` and satisfy the paper's normalization `N ≥ 4`. -/
 def sharpCapacityPowerLengthThreshold (δ : ℝ) : ℕ :=
   max 4 (HiddenDerivative.uniformRatePartitionMathematicalLength (sharpCapacityPowerGap δ))
 
-/-- Gap-only powers-batching constant from the revised mathematical rate-partition theorem. -/
+/-- Gap-only coefficient in the powers-batching exceptional-count bound.
+
+It evaluates the polynomial-curve product constant at `min δ (1/8)`, with the corresponding jet
+bound, height parameter `150 * sharpCapacityPowerJetBound δ`, and derivative order, then adds one
+for positivity.  The full bound is
+`ell * sharpCapacityPowerConstant δ * n ^ (sharpCapacityPowerDerivativeOrder δ + 1)`. -/
 def sharpCapacityPowerConstant (δ : ℝ) : ℝ :=
   polynomialCurveProductMCAConstant (sharpCapacityPowerGap δ)
     (sharpCapacityPowerJetBound δ) (150 * sharpCapacityPowerJetBound δ)
@@ -904,26 +1110,57 @@ theorem sharpCapacityPowerConstant_pos {δ : ℝ} (hδ : 0 < δ) :
     0 < sharpCapacityPowerConstant δ :=
   lt_of_lt_of_le zero_lt_one (one_le_sharpCapacityPowerConstant hδ)
 
-/-- Powers batching with the sharp characteristic guard for the revised mathematical selector.
-The guard is independent of the batching degree, and disappears for constant codes. -/
+/-- Exact correlated agreement for powers of one challenge.
+
+The gap `δ`, threshold `N`, and two-variable error function `E` are fixed before all code data.
+Then `ell` is the positive batching degree, `n` is the block length, `k` is the message dimension,
+and `A` is an integer satisfying the real threshold `k + δ n ≤ A`.  The tuple
+`w : Fin (ell + 1) → Fin n → F` supplies one received row for every power from `z^0` through
+`z^ell`; `powerBatchedWord w z` is their weighted sum.
+
+For fixed `domain` and `w`, one exceptional subset of `F` is chosen before the challenge `z` and
+candidate `Q`, with size at most `E ell n`.  Outside it, every degree-`< k` polynomial with at
+least `A` agreements satisfies `HasExactPowerAgreement`.  Unfolding that conclusion gives
+`ell + 1` degree-`< k` constituent polynomials whose power combination is exactly `Q`, and says
+that the complete agreement set of `Q` is exactly the set where every constituent agrees with
+its corresponding row.
+
+When `k = 1`, there is no characteristic restriction.  Otherwise the field must have
+characteristic zero or characteristic strictly greater than
+`max (k - 1) (sharpCapacityPowerJetBound δ)`.  In particular, this guard is independent of
+`ell`.  It uses the powers jet bound at `min δ (1/8)`, not the line theorem's piecewise `bδ`. -/
 def HasSharpCapacityPowerBatchingAgreement
     (δ : ℝ) (N : ℕ) (E : ℕ → ℕ → ℝ) : Prop :=
+  -- The batching degree remains arbitrary after the gap-only constants have been chosen.
   ∀ (ell n k A : ℕ), 0 < ell → N ≤ n → 0 < k → k ≤ n →
     (k : ℝ) + δ * n ≤ A →
     ∀ (F : Type u) [Field F] [DecidableEq F],
+      -- No characteristic bound depends on `ell`; constant codes have no restriction.
       (k = 1 ∨ ringChar F = 0 ∨
         max (k - 1) (sharpCapacityPowerJetBound δ) < ringChar F) →
       ∀ (domain : Fin n ↪ F) (w : Fin (ell + 1) → Fin n → F),
+        -- This one set is uniform over every subsequent challenge and close candidate.
         ∃ exceptional : Finset F, (exceptional.card : ℝ) ≤ E ell n ∧
           ∀ z ∉ exceptional, ∀ Q : F[X], Q.degree < k →
             A ≤ (polynomialAgreementSet domain (powerBatchedWord w z) Q).card →
+            -- Exactness includes the power identity and equality of complete agreement sets.
             HasExactPowerAgreement domain w (RingHom.id F) k z Q
 
 open Classical in
-/-- Revised-300 all-rate powers batching using the auxiliary gap `min δ (1/8)`.
+/-- **Sharp powers-batching agreement up to capacity.**
 
-This theorem does not claim the line theorem's piecewise `bδ` above `1/8`: its separate jet bound
-is `sharpCapacityPowerJetBound δ`. The characteristic guard remains independent of `ell`. -/
+For every fixed `δ > 0`, take the separate powers parameters at
+`epsilon = min δ (1/8)`.  For every positive batching degree `ell`, the exceptional count is at
+most
+
+`ell * sharpCapacityPowerConstant δ *
+  n ^ (sharpCapacityPowerDerivativeOrder δ + 1)`.
+
+The theorem supplies exact constituent polynomials and equality of the full agreement sets, as
+specified by `HasSharpCapacityPowerBatchingAgreement`.  The linear dependence on `ell` appears in
+the exceptional count only: the length threshold, exponent, constant, and characteristic cutoff
+all depend solely on `δ`.  This theorem deliberately does not claim the line theorem's piecewise
+`bδ` for powers batching. -/
 theorem sharpCapacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
     HasSharpCapacityPowerBatchingAgreement δ (sharpCapacityPowerLengthThreshold δ)
       (fun ell n ↦ (ell : ℝ) * sharpCapacityPowerConstant δ *
@@ -944,8 +1181,10 @@ theorem sharpCapacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
     have hkReal : (0 : ℝ) < k := by exact_mod_cast hk
     have hδn : 0 ≤ δ * (n : ℝ) := mul_nonneg hδ.le (Nat.cast_nonneg n)
     exact_mod_cast (show (0 : ℝ) < A by linarith)
+  -- As for lines, the public predicate also covers the vacuous threshold range `A > n`.
   by_cases hAn : A ≤ n
-  · by_cases hkOne : k = 1
+  · -- Constant messages use a characteristic-free exact power-curve theorem.
+    by_cases hkOne : k = 1
     · subst k
       obtain ⟨exceptional, hcard, hgood⟩ :=
         uniformExactPowerAgreement_constantCode domain w A hApos
@@ -965,7 +1204,8 @@ theorem sharpCapacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
                 _ = (ell : ℝ) * 1 *
                     (n : ℝ) ^ (sharpCapacityPowerDerivativeOrder δ + 1) := by ring
                 _ ≤ _ := by gcongr
-    · have hchar' : ringChar F = 0 ∨
+    · -- The general polynomial-curve theorem uses the auxiliary-gap jet bound.
+      have hchar' : ringChar F = 0 ∨
           max (k - 1) (sharpCapacityPowerJetBound δ) < ringChar F :=
         hchar.resolve_left hkOne
       have hnMath : HiddenDerivative.uniformRatePartitionMathematicalLength epsilon ≤ n := by
@@ -986,7 +1226,8 @@ theorem sharpCapacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
         sharpCapacityPowerDerivativeOrder, epsilon]
       gcongr
       linarith
-  · refine ⟨∅, ?_, ?_⟩
+  · -- No polynomial can agree in more than all `n` coordinates.
+    refine ⟨∅, ?_, ?_⟩
     · simp only [Finset.card_empty, Nat.cast_zero]
       exact mul_nonneg
         (mul_nonneg (Nat.cast_nonneg ell) (sharpCapacityPowerConstant_pos hδ).le)
@@ -996,7 +1237,13 @@ theorem sharpCapacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
       (Finset.card_filter_le _ _).trans_eq (by simp)
     exact (hAn (hagree.trans hc)).elim
 
-/-- Existential form of revised-300 powers batching with `N ≥ 4` and an `ell`-linear bound. -/
+/-- Existential sharp powers-batching theorem with all gap-only parameters chosen first.
+
+For each `δ > 0`, there are `N ≥ 4`, `d`, and `C > 0`, depending only on `δ`, such that every
+later choice of positive `ell`, code, field, received rows, challenge, and candidate satisfies the
+exact powers-batching conclusion outside at most `ell * C * n ^ (d + 1)` challenges.  The
+characteristic cutoff is independent of `ell`, and the conclusion identifies the complete
+agreement set. -/
 theorem exists_sharpCapacity_powerBatchingAgreement (δ : ℝ) (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
       HasSharpCapacityPowerBatchingAgreement δ N

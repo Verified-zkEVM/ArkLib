@@ -52,6 +52,22 @@ candidate polynomial. Outside that set, `ReedSolomon.HasExactCorrelatedPair` or
 recovers the constituent messages and equality of the complete agreement set. Finite-field
 `mcaError` theorems are probability corollaries of these semantic statements.
 
+## Reading a theorem against the paper
+
+The principal declarations linked below explain their hypotheses and conclusions inline. Start
+with the declaration itself: its docstring states the mathematical bound and identifies the
+paper's parameters; comments inside the statement explain each group of binders and conclusions.
+For the capacity facades, also read `ReedSolomon.HasCapacityLists` or
+`ReedSolomon.HasSharpCapacityLineAgreement`, which expand the quantified property being proved.
+
+For example, `k ≤ rho * n` permits any code rate at most `rho`; it does not identify `rho`
+with `k/n`. A hypothesis `(threshold + eta) * n ≤ A` imposes the paper's real agreement
+fraction on the integer threshold `A`. In a list conclusion, `Set.Finite` is substantive:
+Lean's `Set.ncard` alone would not establish finiteness over an infinite field. In an MCA
+conclusion, the exceptional set precedes both `z` and `P`, so one set works for every candidate
+at every remaining challenge. The recovered polynomials may depend on those two choices.
+Equality of the full agreement sets also rules out accidental agreements outside their common set.
+
 ## Zeroth order: the Johnson regime
 
 * `ReedSolomon.closePolynomialSet_finite_and_ncard_le_johnsonPairwise` is the complete integral

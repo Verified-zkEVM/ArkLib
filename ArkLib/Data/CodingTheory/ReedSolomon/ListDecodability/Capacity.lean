@@ -93,8 +93,9 @@ noncomputable section
 
 The property below separates the meaning of an exact capacity list from the numerical
 bound one proves for it. Its bound argument can express several simultaneous estimates.
-The final theorem instantiates it with `CapacityListBounds`, so every estimate applies
-to the same exact list, not to separately chosen candidate families.
+The current paper theorem `exists_rateCapacity_list` supplies the revised scalar bound.
+The retained `exists_capacity_list` supplies `CapacityListBounds`, whose simultaneous estimates
+apply to the same exact list, not to separately chosen candidate families.
 -/
 
 /-- Minimum block length: one at gaps at least `1/4`, and `8m` for smaller gaps.
@@ -116,8 +117,14 @@ def capacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
 
 /-- Exact list decodability at a fixed gap, uniformly over prime fields and code rates.
 
+In the paper's notation, `n` is the block length, `k` the message dimension, `q` the prime
+alphabet size, and `A` the number of required agreements. Thus `A ≥ k + δn` means agreement
+fraction at least `k/n + δ`, or relative error at most `1 - k/n - δ`. The lower bound `N`
+and cardinality rule are chosen before all four code parameters and the received word.
+
 `bounds n k q A ℓ` is a property of the list cardinality `ℓ`; it is not an assumption
 on the received word. Supplying a different bound does not change the exact-list contract.
+The biconditional below specifies the entire list, including zero whenever it qualifies.
 This is a mathematical property, with no executable algorithm or cost model. -/
 def HasCapacityLists (δ : ℝ) (N : ℕ)
     (bounds : ℕ → ℕ → ℕ → ℕ → ℕ → Prop) : Prop :=
@@ -277,14 +284,29 @@ theorem exists_capacity_list (δ : ℝ) (hδ : 0 < δ) (hδ_one : δ < 1) :
   · intro hs
     exact (hsmall hs).2
 
-/-- Length threshold for the uniform three-halves capacity construction. -/
+/-- A sufficient all-rate block threshold `N(δ)` for the paper's capacity result.
+
+For `δ ≥ 6/25`, this facade selects `n ≥ 23`; no minimality is asserted.
+For `0 < δ < 6/25`, put
+`d = ⌈exp(3/(2δ))⌉`, `m = ⌈300 d² log(6d)⌉`, and `ν = ⌈m/δ²⌉ - 1 = Bjet(δ)`.
+The threshold is then `ν + 1 = ⌈m/δ²⌉`. In particular, `n ≥ N(δ)` and prime `q ≥ n`
+give `ν < q`, the jet-degree part of the small-gap characteristic guard.
+These parameters depend only on `δ`, uniformly over all code rates. -/
 def rateCapacityLengthThreshold (δ : ℝ) : ℕ :=
+  -- The large-gap certificate uses only the first derivative.
   if (6 / 25 : ℝ) ≤ δ then 23 else
+    -- The strict total-jet cap Bjet(δ) plus one in the higher-order branch.
     HiddenDerivative.uniformRatePartitionMathematicalLength δ
 
-/-- Uniform three-halves list bound, spliced with the certified first-order large-gap bound. -/
+/-- The paper's complete-list bound `L_δ(n)`, independent of the alphabet size.
+
+For `δ ≥ 6/25`, this is `307 n`. For `0 < δ < 6/25`, it is `ν² (2ν/δ)^d n^d`, with
+`d = ⌈exp(3/(2δ))⌉` and `ν = Bjet(δ)` as in `rateCapacityLengthThreshold`. Thus the
+small-gap coefficient and exponent depend only on the gap; neither depends on `k` or `q`.
+This is a cardinality bound, separate from the cost of producing the list. -/
 def rateCapacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
   if (6 / 25 : ℝ) ≤ δ then 307 * n else
+    -- Squarefree differential-root counting contributes ν² and the d-th power.
     (HiddenDerivative.uniformRatePartitionMathematicalJetBound δ : ℝ) ^ 2 *
       (2 * HiddenDerivative.uniformRatePartitionMathematicalJetBound δ / δ) ^
         HiddenDerivative.uniformRatePartitionOrder δ *
@@ -292,17 +314,35 @@ def rateCapacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
 
 /-- **All-rate exact capacity lists for the paper's revised parameter family.**
 
-The gap fixes the length threshold and list-bound function before the block length, message
-dimension, prime field, evaluation domain, and received word. At gaps at least `6/25`, the theorem
-uses the certified first-order bound `307*n`. At smaller gaps it uses
-`d = ceil(exp(3/(2*delta)))` and the revised 300-based multiplicity through
-`uniformRatePartitionMathematicalJetBound`; the bound is `C(delta)*n^d`.
+This is the list-decoding part of the paper's gap-from-capacity result. Fix `δ > 0` first.
+For every `n ≥ N(δ)`, `1 ≤ k ≤ n`, prime `q ≥ n`, injective evaluation map into `𝔽_q`, and
+received word, the complete list at agreement threshold `A ≥ k + δn` has at most `L_δ(n)`
+members. There is no randomness or genericity assumption on the evaluation set.
 
-The returned finset is the complete family of degree-`< k` polynomials meeting the integer
-agreement threshold, including the zero polynomial. Impossible thresholds return the empty list.
-This is a mathematical exact-list theorem; it does not claim an implementation or bit complexity. -/
-theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
+The two parameter regimes, spelled out in `rateCapacityLengthThreshold` and
+`rateCapacityListBound`, are:
+
+* `δ ≥ 6/25`: `N(δ) = 23` and `L_δ(n) = 307 n` (the first-order certificate).
+* `0 < δ < 6/25`: `d = ⌈exp(3/(2δ))⌉`, `m = ⌈300 d² log(6d)⌉`,
+  `ν = ⌈m/δ²⌉ - 1`, `N(δ) = ν + 1`, and `L_δ(n) = ν² (2ν/δ)^d n^d`.
+
+All these choices precede `n, k, q, A` and the received word. The prime-field assumption and
+length cutoff supply the characteristic conditions internally. For the stronger arbitrary-field
+small-gap statement with an explicit characteristic premise, use
+`uniform_capacity_list_bound_300`.
+
+Expand `HasCapacityLists` to read the exact membership biconditional: degree strictly below `k`
+and at least `A` agreements, including zero. Its interface allows `A ≤ 2n`; when `A > n`,
+the list is empty. No upper bound on `δ` is needed, since impossible agreement requirements are
+handled this way. This theorem proves existence and size; executable decoder correctness and
+runtime are separate claims. -/
+theorem exists_rateCapacity_list
+    -- Fix the capacity gap before choosing any code or received word.
+    (δ : ℝ) (hδ : 0 < δ) :
+    -- The property below universally quantifies n, k, prime q ≥ n, A, domain, and word.
+    -- It returns a finset with exact membership, not merely a containing candidate list.
     HasCapacityLists δ (rateCapacityLengthThreshold δ)
+      -- The ignored arguments are k, q, A: the bound depends only on δ and n.
       (fun n _ _ _ card => (card : ℝ) ≤ rateCapacityListBound δ n) := by
   classical
   by_cases hlarge : (6 / 25 : ℝ) ≤ δ

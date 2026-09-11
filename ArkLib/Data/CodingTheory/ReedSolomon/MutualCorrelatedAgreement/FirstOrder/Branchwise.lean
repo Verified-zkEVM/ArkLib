@@ -133,37 +133,72 @@ theorem one_le_firstOrderBranchFiniteLengthMCAConstant (rho : ℝ) :
 open Classical in
 /-- **Sharp finite-length first-order list and MCA bounds.**
 
-The selector branch, its agreement threshold, its rate-only constant, and its exact derivative
-cap are chosen together. Both conclusions use `finiteLengthSlack eta n = eta + 1/n`: the complete
-list has inverse-square slack dependence, while the exceptional set has inverse-fourth dependence.
-The exceptional set is uniform over the challenge and candidate, and the conclusion recovers the
-candidate together with equality of its full agreement set. -/
+This is the finite form of the paper's first-derivative list and line-MCA row. The symbols are:
+
+* `rho` is the rate envelope `ρ`, `eta` is the positive gap above the first-order curve,
+  `n` is the block length, `k` the message dimension, and `A` the agreement threshold;
+* `firstOrderRateSwitch = 11 - 3 * sqrt 13` is the stationary branch cutoff;
+* below the cutoff, `firstOrderBranchThreshold rho` is the low-rate stationary value
+  `sqrt(rho/2) * (1+u_rho)`, where `u_rho > 0` solves
+  `u_rho^2 * (u_rho+3) = sqrt(rho/2)`;
+* at or above the cutoff, the threshold is
+  `(3rho + 2*sqrt(rho*(5-rho)*(2-rho))) / (8-rho)`;
+* `s = finiteLengthSlack eta n = eta + 1/n` is the paper's finite gap, and
+  `C = firstOrderBranchFiniteLengthMCAConstant rho` is the rate-only envelope selected on
+  the same branch as the threshold and derivative cap.
+
+The assumptions realize `0 < rho < 1`, `a = firstOrderBranchThreshold rho + eta < 1`,
+`1 ≤ k ≤ rho*n`, and `a*n ≤ A ≤ n`. The characteristic clause is the exact first-order guard:
+constant codes (`k=1`) are unrestricted, while otherwise the characteristic is zero or exceeds
+both `k-1` and the branch-selected derivative cap.
+
+The two exact conclusions are
+
+`|List(received,A)| ≤ 7*C^3*n/s^2`
+
+and one line-exceptional set of size at most `140*C^6*n^2/s^4`. The set is selected after the
+line `(f,g)` but before `z` and `P`. `HasExactCorrelatedPair` returns degree-`< k` witnesses
+`P₀,P₁`, proves `P=P₀+zP₁`, and equates the complete agreement set of `P` with their common
+agreement set. The result is mathematical and field-uniform; it makes no decoder-runtime claim.
+-/
 theorem firstOrderBranch_finiteLength_finiteSlack_bounds
-    -- Fix the physical rate bound, positive gap, block length, dimension, and threshold.
+    -- Fix the rate envelope, curve gap, block length, message dimension, and threshold.
     (rho eta : ℝ) (n k A : ℕ)
+    -- The rate and gap are positive and the rate is strictly below one.
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    -- The branch-selected target agreement stays below one.
+    -- The actual agreement fraction `a = firstOrderBranchThreshold rho + eta` is feasible.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
+    -- Messages have positive dimension and realized rate at most `rho`.
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
+    -- The integral threshold realizes agreement fraction `a` and cannot exceed the block length.
     (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    -- The evaluation embedding supplies `n` distinct points over an arbitrary field.
+    -- The evaluation embedding supplies `n` distinct points over an arbitrary field `F`.
     {F : Type*} [Field F] (domain : Fin n ↪ F)
-    -- Constant codes are characteristic-free; otherwise the selected derivative cap is strict.
+    -- Constant codes are unrestricted; otherwise reconstruction and separation clear their caps.
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F) :
-    -- Both conclusions use the same branch choice and the complete candidate family.
+    -- First, every received word has a finite complete agreement list.
     (∀ received : Fin n → F,
       (closePolynomialSet domain received k A).Finite ∧
+        -- Its exact finite-gap bound is `7*C^3*n/s^2` in the notation above.
         ((closePolynomialSet domain received k A).ncard : ℝ) ≤
           7 * firstOrderBranchFiniteLengthMCAConstant rho ^ 3 * n /
             finiteLengthSlack eta n ^ 2) ∧
+      -- Second, the same branch parameters control every affine line of received words.
       ∀ f g : Fin n → F,
+        -- One exceptional set is chosen from `(f,g)` before challenge and candidate.
         ∃ exceptional : Finset F,
+          -- Its exact finite-gap bound is `140*C^6*n^2/s^4`.
           (exceptional.card : ℝ) ≤
             140 * firstOrderBranchFiniteLengthMCAConstant rho ^ 6 * n ^ 2 /
               finiteLengthSlack eta n ^ 4 ∧
-          ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+          -- Every nonexceptional challenge works simultaneously for every candidate.
+          ∀ z ∉ exceptional,
+            -- Candidate messages have ordinary polynomial degree below `k`.
+            ∀ P : F[X], P.degree < k →
+            -- At least `A` agreements trigger the exact-witness conclusion.
             A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+            -- Witnesses reproduce `P` and exactly its entire agreement set.
             HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   by_cases hlow : rho < firstOrderRateSwitch
   · have haOneLow : firstOrderLowRateThreshold rho + eta < 1 := by
@@ -198,31 +233,62 @@ theorem firstOrderBranch_finiteLength_finiteSlack_bounds
 open Classical in
 /-- **Eta-only corollary of the first-order list and MCA bounds.**
 
-This derived consequence of the sharp finite-length theorem gives
-`O_rho(n/eta^2)` complete-list and `O_rho(n^2/eta^4)` exceptional-set dependences. It preserves
-the same branch selection, characteristic guard, quantifier order, and full-agreement recovery. -/
+This theorem replaces the exact finite slack `s = eta + 1/n` by its lower bound `eta`. Retain
+the notation and hypotheses of `firstOrderBranch_finiteLength_finiteSlack_bounds`, and put
+`C = firstOrderBranchFiniteLengthMCAConstant rho`. The resulting exact estimates are
+
+`|List(received,A)| ≤ 7*C^3*n/eta^2`
+
+and
+
+`|exceptional| ≤ 140*C^6*n^2/eta^4`.
+
+Thus the theorem gives the paper's `O_rho(n/eta^2)` complete-list and
+`O_rho(n^2/eta^4)` line-exceptional dependences. It preserves the piecewise threshold at
+`11-3*sqrt 13`, the constant-code characteristic escape, and the quantifier order in which one
+exceptional set precedes every challenge and candidate. Its `HasExactCorrelatedPair` endpoint
+still asserts equality of the full agreement sets.
+
+This is the paper's rate-dependent first-order row. The uniform gap-`6/25` capacity branch
+uses the separate finite uniform certificate `ReedSolomon.exists_uniformFirstOrder_lineMCA`.
+The all-gap capacity theorem also needs the higher-order rate-partition branch.
+-/
 theorem firstOrderBranch_finiteLength_rate_bounds
-    -- Fix the physical rate bound, positive gap, block length, dimension, and threshold.
+    -- Fix the rate envelope, curve gap, block length, message dimension, and threshold.
     (rho eta : ℝ) (n k A : ℕ)
+    -- Work at positive rate and gap, with rate strictly below one.
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
-    -- Agreement is above the selected first-order threshold by `eta`.
+    -- Agreement is above the selected first-order threshold by `eta` and remains below one.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
+    -- Messages have positive dimension and rate at most `rho`.
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
+    -- The integer agreement threshold realizes that fraction and lies within the block.
     (hA : (firstOrderBranchThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
-    -- The same arbitrary-field and branch-selected characteristic scope as the sharp theorem.
+    -- The theorem is uniform over arbitrary fields and `n` distinct evaluation points.
     {F : Type*} [Field F] (domain : Fin n ↪ F)
+    -- Constant codes need no restriction; other codes clear the reconstruction/derivative caps.
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F) :
+    -- Every received word has a finite complete agreement list.
     (∀ received : Fin n → F,
       (closePolynomialSet domain received k A).Finite ∧
+        -- The coarser eta-only cardinality bound is exactly `7*C^3*n/eta^2`.
         ((closePolynomialSet domain received k A).ncard : ℝ) ≤
           7 * firstOrderBranchFiniteLengthMCAConstant rho ^ 3 * n / eta ^ 2) ∧
+      -- For every affine received line, one common exceptional set exists.
       ∀ f g : Fin n → F,
+        -- This set is fixed before both the challenge and the candidate.
         ∃ exceptional : Finset F,
+          -- Its eta-only size bound is exactly `140*C^6*n^2/eta^4`.
           (exceptional.card : ℝ) ≤
             140 * firstOrderBranchFiniteLengthMCAConstant rho ^ 6 * n ^ 2 / eta ^ 4 ∧
-          ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+          -- Every challenge outside the set works for every later candidate.
+          ∀ z ∉ exceptional,
+            -- Candidate polynomials use ordinary degree strictly below `k`.
+            ∀ P : F[X], P.degree < k →
+            -- A candidate with at least `A` agreements enters exact recovery.
             A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
+            -- The witnesses reproduce the candidate and its complete agreement set.
             HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   obtain ⟨hlist, hmca⟩ := firstOrderBranch_finiteLength_finiteSlack_bounds
     rho eta n k A hrho hrhoOne heta haOne hk hkRate hA hAn domain hchar
@@ -254,22 +320,39 @@ theorem firstOrderBranch_finiteLength_rate_bounds
 open Classical in
 /-- **Finite-field probability form of the first-order MCA bound.**
 
-The line generator samples one challenge uniformly from `F`. Dividing the exceptional-set bound
-by `|F|` therefore gives the MCA error, capped by one. This theorem is a corollary of the exact
-agreement statement above; it does not replace the complete-list conclusion or change the
-characteristic guard. -/
+Let `a = firstOrderBranchThreshold rho + eta`. The canonical affine-line generator samples one
+challenge uniformly from the finite field `F`, and the Reed--Solomon code has relative radius
+`1-a`. The proof uses the integral threshold `A = ceil(a*n)`, applies the eta-only line theorem,
+and divides its exceptional-count bound by `|F|`.
+
+With `C = firstOrderBranchFiniteLengthMCAConstant rho`, the exact conclusion is
+
+`mcaError ≤ min 1 (ofReal ((140*C^6*n^2/eta^4) / |F|))`.
+
+The minimum records that an error probability never exceeds one. The rate/gap data, block length,
+dimension, branch-selected derivative cap, and evaluation domain are fixed before the affine-line
+generator ranges over received pairs and samples its challenge. The full-agreement theorem is the
+input to this probability corollary: good challenges recover witnesses and equality of entire
+agreement sets, not only a common subset. This declaration adds no decoder or runtime assertion.
+-/
 theorem firstOrderBranch_finiteLength_mcaError_le
-    -- Fix rate, gap, block length, and dimension before choosing the finite field.
+    -- Fix rate, first-order gap, block length, and message dimension.
     (rho eta : ℝ) (n k : ℕ)
+    -- The rate and gap are positive and the rate is strictly below one.
     (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    -- The induced agreement fraction `a` is feasible.
     (haOne : firstOrderBranchThreshold rho + eta < 1)
+    -- The message space is nonempty and has rate at most `rho`.
     (hk : 0 < k) (hkRate : (k : ℝ) ≤ rho * n)
-    -- Probability enters only here, through the finite field and affine-line generator.
+    -- Probability enters through the finite field; `domain` gives `n` distinct evaluations.
     {F : Type} [Field F] [Fintype F] (domain : Fin n ↪ F)
+    -- The same constant-code escape and branch-selected characteristic cap remain in force.
     (hchar : k = 1 ∨ ringChar F = 0 ∨
       max (k - 1) (firstOrderBranchFiniteLengthDerivativeCap rho eta n) < ringChar F) :
+    -- The left side is MCA error for radius `1-a` under a uniformly sampled line challenge.
     mcaError (AffineLineGenerator F) (code domain k)
         (1 - (firstOrderBranchThreshold rho + eta)) ≤
+      -- The right side is the exceptional count divided by `|F|`, capped by probability one.
       min 1 (ENNReal.ofReal
         ((140 * firstOrderBranchFiniteLengthMCAConstant rho ^ 6 * n ^ 2 / eta ^ 4) /
           (Fintype.card F : ℝ))) := by
