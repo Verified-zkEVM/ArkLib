@@ -32,7 +32,7 @@ variable {F E : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 
 /-- A received power-curve coordinate in the Frobenius-pulled challenge. -/
 def frobeniusPowerCoordinate (s : ℕ) (values : Fin (ℓ + 1) → E) : E[X] :=
-  ∑ t, Polynomial.X ^ (s * t.val) * Polynomial.C (values t)
+  ∑ t, Polynomial.monomial (s * t.val) (values t)
 
 theorem frobeniusPowerCoordinate_eval (s : ℕ) (values : Fin (ℓ + 1) → E) (z : E) :
     (frobeniusPowerCoordinate s values).eval z =
@@ -40,7 +40,16 @@ theorem frobeniusPowerCoordinate_eval (s : ℕ) (values : Fin (ℓ + 1) → E) (
   rw [frobeniusPowerCoordinate, Polynomial.eval_finsetSum]
   apply Finset.sum_congr rfl
   intro t _
-  simp only [Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C]
+  simp only [Polynomial.eval_monomial]
+  rw [mul_comm]
+
+theorem frobeniusPowerCoordinate_natDegree_le
+    (s : ℕ) (values : Fin (ℓ + 1) → E) :
+    (frobeniusPowerCoordinate s values).natDegree ≤ s * ℓ := by
+  apply Polynomial.natDegree_sum_le_of_forall_le
+  intro t _
+  exact (Polynomial.natDegree_monomial_le _).trans
+    (Nat.mul_le_mul_left s (Fin.is_le t))
 
 /-- The received-curve agreement cut in the pulled challenge coordinate. -/
 def symbolicSourceFrobeniusPowerAgreement (center : E)
