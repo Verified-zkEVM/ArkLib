@@ -12,6 +12,11 @@ import ArkLibExamples.ReedSolomon.LambdaVM.Parameters
 import ArkLibExamples.ReedSolomon.LambdaVM.Payload
 import ArkLibExamples.ReedSolomon.LambdaVM.Reconstruction
 import ArkLibExamples.ReedSolomon.ProveKit
+import ArkLibExamples.ReedSolomon.ProveKit.Analytical
+import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalBudgets
+import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalCertificates
+import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalExpectedPayload
+import ArkLibExamples.ReedSolomon.ProveKit.AnalyticalParameters
 import ArkLibExamples.ReedSolomon.ProveKit.Budgets
 import ArkLibExamples.ReedSolomon.ProveKit.Certificates
 import ArkLibExamples.ReedSolomon.ProveKit.ExpectedPayload
