@@ -73,7 +73,7 @@ def ratePartitionHeight (ν : ℕ) (γ : ℝ) : ℕ := max 1 ⌈(ν : ℝ) / (γ
 
 /-- The mathematical threshold gives the exact ambient, reconstruction, jet, and agreement
 guards printed in the rate-dependent theorem.  In particular, the strict jet cutoff alone
-implies `2m <= n`; no separate doubled block-length hypothesis is needed. -/
+implies `2 * m < n`; no separate doubled block-length hypothesis is needed. -/
 theorem ratePartition_mathematical_length_guards {R a : ℝ} {d m n k A : ℕ}
     (hR : 0 < R) (hRone : R < 1) (hd : 0 < d)
     (hn : ratePartitionMathematicalLength R d m ≤ n)
