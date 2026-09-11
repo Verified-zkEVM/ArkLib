@@ -58,9 +58,9 @@ The small-gap line and curve theorems use the rate-partition construction with d
 order `ceil(exp(3/(2δ)))`, the sharper uniform jet cap, and height `150ν`. Their public
 quantitative statements retain the exact product-counting constant. The existential wrappers
 below enlarge that constant by one to make positivity immediate.
-For lines and affine consequences, gaps from `6/25` to one half use the fixed height-851
+For lines and affine consequences, gaps from `6/25` to one half use the fixed height-276
 first-order certificate: from length `23`, the exceptional set has size at most
-`571487759 * n²`. The half-gap line theorem retains the sharper `2 * n` bound over every field.
+`1325775 * n²`. The half-gap line theorem retains the sharper `2 * n` bound over every field.
 Power batching uses the general rate-partition parameters at gap `min(δ,1/8)`.
 
 ## References
@@ -189,13 +189,13 @@ theorem halfGap_capacity_lineAgreement (δ : ℝ) (hδ : (1 / 2 : ℝ) ≤ δ) :
   · simpa only [Polynomial.smul_eq_C_mul] using hgood
 
 /-- **Uniform first-order line agreement.** For `6/25 ≤ δ`, every block length `n ≥ 23`
-inherits the fixed-gap height-851 theorem.  One exceptional set of at most
-`571487759 * n²` challenges works for every close polynomial and preserves the complete
+inherits the fixed-gap height-276 theorem.  One exceptional set of at most
+`1325775 * n²` challenges works for every close polynomial and preserves the complete
 agreement set. -/
 theorem uniformFirstOrder_capacity_lineAgreement (δ : ℝ)
     (huniform : (6 / 25 : ℝ) ≤ δ) :
     HasCapacityLineAgreement δ 23
-      (fun n ↦ 571487759 * (n : ℝ) ^ 2) := by
+      (fun n ↦ 1325775 * (n : ℝ) ^ 2) := by
   classical
   intro n k A hn hk hkn hgap F _ _ hchar domain f g
   by_cases hAn : A ≤ n
@@ -204,11 +204,11 @@ theorem uniformFirstOrder_capacity_lineAgreement (δ : ℝ)
       have hmul := mul_le_mul_of_nonneg_right huniform hnnonneg
       linarith
     have hcharUniform : 2 ≤ k →
-        ringChar F = 0 ∨ max (k - 1) 22 < ringChar F := by
+        ringChar F = 0 ∨ max (k - 1) 4 < ringChar F := by
       intro hkTwo
       apply hchar.imp_right
       intro hnchar
-      have hmax : max (k - 1) 22 < n := by omega
+      have hmax : max (k - 1) 4 < n := by omega
       exact hmax.trans_le hnchar
     obtain ⟨exceptional, hcard, hgood⟩ := exists_uniformFirstOrder_lineMCA
       n k A domain f g (by omega) hk hAn hgapUniform hcharUniform
@@ -237,7 +237,7 @@ theorem exists_capacity_lineAgreement (δ : ℝ) (hδ : 0 < δ) :
   · refine ⟨0, 0, 2, by norm_num, ?_⟩
     simpa using halfGap_capacity_lineAgreement δ hhalf
   by_cases huniform : (6 / 25 : ℝ) ≤ δ
-  · refine ⟨23, 1, 571487759, by norm_num, ?_⟩
+  · refine ⟨23, 1, 1325775, by norm_num, ?_⟩
     simpa using uniformFirstOrder_capacity_lineAgreement δ huniform
   have hδuniform : δ < 6 / 25 := lt_of_not_ge huniform
   let d := HiddenDerivative.uniformRatePartitionOrder δ

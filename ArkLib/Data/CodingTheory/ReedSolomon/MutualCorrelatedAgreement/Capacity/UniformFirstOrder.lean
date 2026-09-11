@@ -8,6 +8,8 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrderCurve
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.UniformLineMCA
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.SharpCountingBound
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PowerToLine
@@ -15,9 +17,9 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Lin
 /-!
 # Uniform first-order mutual correlated agreement at gap 6/25
 
-The fixed shifted certificate with support `(12, 4, 22)` and height `851` gives one
+The squarefree fixed certificate with MCA support `(12, 4, 23)` and height `276` gives one
 exceptional set, chosen before the challenge and candidate polynomial, of size at most
-`571487759 n^2`; outside the set the complete agreement set is the common agreement set of two
+`1325775 n^2`; outside the set the complete agreement set is the common agreement set of two
 degree-`< k` constituents.
 
 All interpolation and graded-rank inputs are constructed in this module.  The hypotheses contain
@@ -337,7 +339,7 @@ private theorem exists_uniformFirstOrder_lineMCA_one
     (n A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
     (hA : 0 < A) :
     ∃ exceptional : Finset F,
-      (exceptional.card : ℝ) ≤ 571487759 * (n : ℝ) ^ 2 ∧
+      (exceptional.card : ℝ) ≤ 1325775 * (n : ℝ) ^ 2 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < 1 →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) 1 z P := by
@@ -408,21 +410,21 @@ private theorem exists_uniformFirstOrder_lineMCA_one
         rw [hconstant, Polynomial.eval_C, hiEq, hfj', hgj']
         simp
 
-/-- At gap `6/25`, one exceptional set of at most `571487759 n^2` challenges works for every
+/-- At gap `6/25`, one exceptional set of at most `1325775 n^2` challenges works for every
 degree-`< k` candidate and preserves equality of the complete agreement set. -/
 theorem exists_uniformFirstOrder_lineMCA
     {F : Type u} [Field F] [DecidableEq F]
     (n k A : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 4 < ringChar F) :
     ∃ exceptional : Finset F,
-      (exceptional.card : ℝ) ≤ 571487759 * (n : ℝ) ^ 2 ∧
+      (exceptional.card : ℝ) ≤ 1325775 * (n : ℝ) ^ 2 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   by_cases hkTwo : 2 ≤ k
-  · exact exists_uniformFirstOrder_lineMCA_of_two_le n k A domain f g
+  · exact exists_uniformFirstOrder_squarefree_lineMCA_of_two_le n k A domain f g
       hn hkTwo hAn hgap (hchar hkTwo)
   · have hkOne : k = 1 := by omega
     subst k
@@ -435,8 +437,8 @@ theorem lineExactAgreementBound_uniformFirstOrder
     (n k A : ℕ) (domain : Fin n ↪ F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F) :
-    LineExactAgreementBound domain k A (571487759 * (n : ℝ) ^ 2) := by
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 4 < ringChar F) :
+    LineExactAgreementBound domain k A (1325775 * (n : ℝ) ^ 2) := by
   intro f g
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_uniformFirstOrder_lineMCA n k A domain f g hn hk hAn hgap hchar
@@ -454,11 +456,11 @@ theorem mcaError_affineLine_uniformFirstOrder_le
     (n k A : ℕ) (domain : Fin n ↪ F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F)
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 4 < ringChar F)
     (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineLineGenerator F) (code domain k) radius ≤
       ENNReal.ofReal
-        (571487759 * (n : ℝ) ^ 2 / (Fintype.card F : ℝ)) := by
+        (1325775 * (n : ℝ) ^ 2 / (Fintype.card F : ℝ)) := by
   exact mcaError_affineLine_le_of_exactAgreement domain _
     (lineExactAgreementBound_uniformFirstOrder n k A domain hn hk hAn hgap hchar)
       radius hthreshold
@@ -471,11 +473,11 @@ theorem mcaError_affineSpace_uniformFirstOrder_le
     (n k A s : ℕ) (domain : Fin n ↪ F)
     (hn : 2 ≤ n) (hk : 0 < k) (hAn : A ≤ n)
     (hgap : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A)
-    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F)
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 4 < ringChar F)
     (hs : 1 ≤ s) (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineSpaceGenerator F s) (code domain k) radius ≤
       ENNReal.ofReal
-        (571487759 * (n : ℝ) ^ 2 / ((Fintype.card F : ℝ) - 1)) := by
+        (1325775 * (n : ℝ) ^ 2 / ((Fintype.card F : ℝ) - 1)) := by
   exact mcaError_affineSpace_le_of_exactAgreement domain _
     (lineExactAgreementBound_uniformFirstOrder n k A domain hn hk hAn hgap hchar)
       hs radius hthreshold
