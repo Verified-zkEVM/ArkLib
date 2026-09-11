@@ -166,15 +166,15 @@ structure CapacityListBounds (δ : ℝ) (n k q A ℓ : ℕ) : Prop where
       max k ⌊δ * (n : ℝ) / 2⌋₊) ≤ q →
     ℓ ≤ 4 * weightedSupportMultiplicity δ * q ^ capacityDerivativeOrder δ
 
-/-- **Uniform first-order capacity lists from gap `6/25`.**  The fixed height-851
-certificate represents the exact list by at most `13623 n` polynomials.  The threshold
+/-- **Uniform first-order capacity lists from gap `6/25`.**  The squarefree-product
+certificate represents the exact list by at most `307 n` polynomials.  The threshold
 `n ≥ 23`, together with `n ≤ q`, supplies precisely the positive-characteristic condition
-`max (k - 1) 22 < q` when `k ≥ 2`; the elementary `k = 1` branch is characteristic-free.
+`max (k - 1) 4 < q` when `k ≥ 2`; the elementary `k = 1` branch is characteristic-free.
 
 This is a mathematical list theorem.  It does not change the derivative order, multiplicity,
 or runtime regimes of the executable capacity decoder. -/
 theorem uniformFirstOrder_capacity_list (δ : ℝ) (hδ : (6 / 25 : ℝ) ≤ δ) :
-    HasCapacityLists δ 23 (fun n _k _q _A ℓ ↦ ℓ ≤ 13623 * n) := by
+    HasCapacityLists δ 23 (fun n _k _q _A ℓ ↦ ℓ ≤ 307 * n) := by
   classical
   intro n k q A hn hk hkn hq hnq hgap _hAupper domain received
   by_cases hAn : A ≤ n
@@ -184,7 +184,7 @@ theorem uniformFirstOrder_capacity_list (δ : ℝ) (hδ : (6 / 25 : ℝ) ≤ δ)
       have hmul := mul_le_mul_of_nonneg_right hδ hnnonneg
       linarith
     have hchar : 2 ≤ k →
-        ringChar (ZMod q) = 0 ∨ max (k - 1) 22 < ringChar (ZMod q) := by
+        ringChar (ZMod q) = 0 ∨ max (k - 1) 4 < ringChar (ZMod q) := by
       intro hkTwo
       right
       rw [ringChar.eq (ZMod q) q]
@@ -266,7 +266,7 @@ def rateCapacityLengthThreshold (δ : ℝ) : ℕ :=
 
 /-- Uniform three-halves list bound, spliced with the certified first-order large-gap bound. -/
 def rateCapacityListBound (δ : ℝ) (n : ℕ) : ℝ :=
-  if (6 / 25 : ℝ) ≤ δ then 13623 * n else
+  if (6 / 25 : ℝ) ≤ δ then 307 * n else
     (HiddenDerivative.uniformRatePartitionJetBound δ : ℝ) ^ 2 *
       (2 * HiddenDerivative.uniformRatePartitionJetBound δ / δ) ^
         HiddenDerivative.uniformRatePartitionOrder δ *
@@ -283,7 +283,7 @@ theorem exists_rateCapacity_list (δ : ℝ) (hδ : 0 < δ) :
     simpa only [rateCapacityLengthThreshold, if_pos hlarge] using h.mono
       (fun n _ _ _ card hb ↦ by
         simpa only [rateCapacityListBound, if_pos hlarge, Nat.cast_mul, Nat.cast_ofNat] using
-          (show (card : ℝ) ≤ 13623 * n by exact_mod_cast hb))
+          (show (card : ℝ) ≤ 307 * n by exact_mod_cast hb))
   · intro n k q A hn hk _hkn hq hnq hgap _hAupper domain received
     let _ : Fact q.Prime := ⟨hq⟩
     by_cases hAn : A ≤ n

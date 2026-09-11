@@ -868,6 +868,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.CoefficientSplit
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.FiberPreprocess
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.MultiplicitySupport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.ProductFilter
@@ -992,6 +994,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.FactorwiseList
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Flattening
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.NumericalBounds
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.PositiveProduct
 public import

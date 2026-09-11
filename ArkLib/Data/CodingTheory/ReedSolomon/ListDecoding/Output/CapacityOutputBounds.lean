@@ -73,9 +73,9 @@ theorem uniformFirstOrder_length_le (delta : ℝ) (hdelta : (6 / 25 : ℝ) ≤ d
     (domain : Fin n ↪ F) (received : Fin n → F) (out : List (List F))
     (hn : 23 ≤ n) (hk : 0 < k)
     (hgap : (k : ℝ) + delta * n ≤ A)
-    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 22 < ringChar F)
+    (hchar : 2 ≤ k → ringChar F = 0 ∨ max (k - 1) 4 < ringChar F)
     (he : ExactOutput domain received k A out) :
-    out.length ≤ 13623 * n := by
+    out.length ≤ 307 * n := by
   by_cases hAn : A ≤ n
   · have hgapUniform : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A := by
       have hnnonneg : (0 : ℝ) ≤ n := by positivity
@@ -94,7 +94,7 @@ theorem uniformFirstOrder_length_le (delta : ℝ) (hdelta : (6 / 25 : ℝ) ≤ d
       _ = (out.map coefficientPolynomial).toFinset.card :=
         (List.toFinset_card_of_nodup he.1).symm
       _ = list.card := congrArg Finset.card hsame
-      _ ≤ 13623 * n := hcard
+      _ ≤ 307 * n := hcard
   · rw [oversized_empty domain received out he (lt_of_not_ge hAn)]
     simp
 
