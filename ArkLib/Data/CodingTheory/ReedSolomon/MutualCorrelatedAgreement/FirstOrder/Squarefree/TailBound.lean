@@ -274,10 +274,7 @@ theorem degreeOf_coeff_optionEquivLeft_add_le_rootJetWeight
         have h := le_weightedTotalDegree rootJetWeight hu
         have hnone : u none ≤ u.weight rootJetWeight := by
           rw [Finsupp.weight_eq_sum]
-          have hsum := Finset.single_le_sum
-            (s := Finset.univ) (f := fun o ↦ u o * rootJetWeight o)
-            (fun o _ ↦ Nat.zero_le _) (Finset.mem_univ none)
-          simpa [rootJetWeight] using hsum
+          simp [rootJetWeight]
         simpa [rootJetWeight] using hnone.trans h
   have hdeg : degreeOf (0 : Fin 2) ((optionEquivLeft F (Fin 2) V).coeff i) ≤
       V.weightedTotalDegree rootJetWeight - i := by

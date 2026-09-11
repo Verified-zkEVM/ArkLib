@@ -117,10 +117,7 @@ theorem degreeOf_coeff_add_le_retainedRootJetWeight
         have h := le_weightedTotalDegree retainedRootJetWeight hu
         have hnone : u none ≤ u.weight retainedRootJetWeight := by
           rw [Finsupp.weight_eq_sum]
-          have hsum := Finset.single_le_sum
-            (s := Finset.univ) (f := fun o ↦ u o * retainedRootJetWeight o)
-            (fun o _ ↦ Nat.zero_le _) (Finset.mem_univ none)
-          simpa [retainedRootJetWeight] using hsum
+          simp [retainedRootJetWeight]
         exact hnone.trans h
   have hdeg : degreeOf (some (0 : Fin 2))
       ((optionEquivLeft F (JetVariable 1) V).coeff i) ≤
@@ -227,10 +224,7 @@ theorem retainedContent_yZeroDegree_le (Q : DifferentialPolynomial F[X] 1) :
   have hcoord : u (some (0 : Fin 2)) ≤
       (u.embDomain .some).weight flattenedRootJetWeight := by
     rw [Finsupp.weight_eq_sum]
-    have hsum := Finset.single_le_sum
-      (s := Finset.univ) (f := fun o ↦ (u.embDomain .some) o * flattenedRootJetWeight o)
-      (fun o _ ↦ Nat.zero_le _) (Finset.mem_univ (some (some (0 : Fin 2))))
-    simpa [flattenedRootJetWeight] using hsum
+    simp [flattenedRootJetWeight]
   exact hcoord.trans hle
 
 theorem retainedPositive_yZeroCoefficientTriangle
@@ -294,10 +288,7 @@ theorem flattenedSingularPolynomial_yZeroDegree_le
       have hle := le_weightedTotalDegree flattenedRootJetWeight hu
       have hnone : u none ≤ u.weight flattenedRootJetWeight := by
         rw [Finsupp.weight_eq_sum]
-        have hsum := Finset.single_le_sum
-          (s := Finset.univ) (f := fun o ↦ u o * flattenedRootJetWeight o)
-          (fun o _ ↦ Nat.zero_le _) (Finset.mem_univ none)
-        simpa [flattenedRootJetWeight] using hsum
+        simp [flattenedRootJetWeight]
       exact hnone.trans hle
     have hrM : r ≤ M := by
       exact (positiveCurveEquation_yOneDegree Q).ge.trans

@@ -6,6 +6,9 @@ Authors: Quang Dao
 module
 
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridCurveTransfer
+
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.DerivativeImage
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.PowerToLine
@@ -111,17 +114,6 @@ theorem ringChar_eq_of_injective_fieldHom
   let _ : CharP E (ringChar F) := charP_of_injective_ringHom iota.injective (ringChar F)
   exact ringChar.eq E (ringChar F)
 
-private theorem natCast_ne_zero_of_max_char_guard
-    {E : Type*} [Field E] {D M i : ℕ}
-    (hchar : ringChar E = 0 ∨ max D M < ringChar E) (hi : 0 < i) (hiD : i ≤ D) :
-    (i : E) ≠ 0 := by
-  intro hz
-  have hdiv := (ringChar.spec E i).mp hz
-  rcases hchar with hzero | hpos
-  · rw [hzero, zero_dvd_iff] at hdiv
-    omega
-  · exact Nat.not_dvd_of_pos_of_lt hi
-      ((hiD.trans (Nat.le_max_left D M)).trans_lt hpos) hdiv
 
 /-- The exact regular-stage exceptional sets for an actual-degree descent, unioned into one
 set.  This is the regular half of the hybrid transfer and carries the exact raw stage sum. -/
@@ -150,121 +142,9 @@ theorem exists_exceptional_firstOrder_regularStages
               (challengeSpecialization (HiddenDerivative.firstOrderDerivativeStage Q j) z)
               (1 : Fin 2)) P ≠ 0 →
         HasExactPowerAgreement domain ![f, g] iota (D + 1) z P := by
-  classical
-  let e := descent.actualDegree
-  have heμ : e ≤ mu := by
-    have hdegree := descent.stage_degree 0 (Nat.zero_le e)
-    have hweight := descent.stage_jetWeight_le 0 (Nat.zero_le e)
-    have hle := jetDegree_le_jetWeight Q (1 : Fin 2)
-    have hjet : jetDegree Q (1 : Fin 2) ≤ mu := by
-      simpa only [HiddenDerivative.firstOrderDerivativeStage_zero, Nat.sub_zero] using
-        hle.trans hweight
-    exact descent.actualDegree_eq.trans_le hjet
-  have hcharE : ringChar E = 0 ∨ max D M < ringChar E := by
-    rwa [ringChar_eq_of_injective_fieldHom iota]
-  have hbin : ∀ i, 1 < i → i < D + 1 → (i.choose 1 : E) ≠ 0 := by
-    intro i hi hiK
-    rw [Nat.choose_one_right]
-    exact natCast_ne_zero_of_max_char_guard hcharE (by omega) (by omega)
-  have hτ : TaylorExponentSufficient 1 (D + 1) (HiddenDerivative.hybridTau D) := by
-    convert taylorExponentSufficient_two_mul_sub_three 1 (K := D + 1) (by omega) using 1
-    unfold HiddenDerivative.hybridTau
-    omega
-  have hstage (j : Fin e) : ∃ exceptional : Finset E,
-      (exceptional.card : ℝ) ≤
-        HiddenDerivative.hybridLambdaOne n A L *
-            HiddenDerivative.hybridTheta n D A *
-              HiddenDerivative.firstOrderCurveJointStageOne
-                (D + 1) 1 h (mu - j) (e - j) (HiddenDerivative.hybridTau D) +
-          (n - L : ℕ) * HiddenDerivative.hybridLambdaTwo n D L *
-            HiddenDerivative.firstOrderCurveFiberStageOne
-              (D + 1) (mu - j) (e - j) (HiddenDerivative.hybridTau D) ∧
-      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < D + 1 →
-        A ≤ (polynomialAgreementSet (mappedDomain domain iota)
-          (powerBatchedWord (fun t i ↦ iota (![f, g] t i)) z) P).card →
-        differentialSpecialization
-            (challengeSpecialization (HiddenDerivative.firstOrderDerivativeStage Q j) z) P = 0 →
-        differentialSpecialization
-            (separant
-              (challengeSpecialization (HiddenDerivative.firstOrderDerivativeStage Q j) z)
-              (1 : Fin 2)) P ≠ 0 →
-        HasExactPowerAgreement domain ![f, g] iota (D + 1) z P := by
-    have hj : j.val < e := j.isLt
-    have hv : 0 < mu - j := by omega
-    have hu : 0 < e - j := by omega
-    have huv : e - j ≤ mu - j := Nat.sub_le_sub_right heμ j
-    obtain ⟨exceptional, hcard, hgood⟩ :=
-      exists_exceptional_regularSymbolicCurveMCA_derivativeCapped_of_exponent
-        domain ![f, g] iota
-        (HiddenDerivative.firstOrderDerivativeStage Q j) (D + 1) (D + 1) L A
-        (mu - j) (e - j) h (HiddenDerivative.hybridTau D) hτ (by
-          unfold HiddenDerivative.hybridTau
-          omega) (by omega) le_rfl (by omega) (by omega) hLA hAn (by omega) hv hu huv
-        (descent.stage_jetWeight_le j (Nat.le_of_lt hj))
-        (descent.stage_challengeHeight_le j)
-        ((descent.stage_degree j (Nat.le_of_lt hj)).le)
-        hbin
-    refine ⟨exceptional, ?_, ?_⟩
-    · rw [← regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_stage hDL hLA hAn]
-      exact_mod_cast hcard
-    · intro z hz P hdegree hagree hroot hsep
-      apply hgood z hz P hdegree hagree hroot
-      simpa only [show (Fin.last 1 : Fin 2) = 1 by decide] using hsep
-  let stageExceptional : Fin e → Finset E := fun j ↦ Classical.choose (hstage j)
-  let exceptional := Finset.univ.biUnion stageExceptional
-  refine ⟨exceptional, ?_, ?_⟩
-  · have hcardNat : exceptional.card ≤ ∑ j, (stageExceptional j).card := by
-      exact Finset.card_biUnion_le
-    have hcardReal : (exceptional.card : ℝ) ≤
-        ∑ j, ((stageExceptional j).card : ℝ) := by exact_mod_cast hcardNat
-    have hsum : (∑ j, ((stageExceptional j).card : ℝ)) ≤
-        ∑ j : Fin e,
-          (HiddenDerivative.hybridLambdaOne n A L *
-              HiddenDerivative.hybridTheta n D A *
-                HiddenDerivative.firstOrderCurveJointStageOne
-                  (D + 1) 1 h (mu - j) (e - j) (HiddenDerivative.hybridTau D) +
-            (n - L : ℕ) * HiddenDerivative.hybridLambdaTwo n D L *
-              HiddenDerivative.firstOrderCurveFiberStageOne
-                (D + 1) (mu - j) (e - j) (HiddenDerivative.hybridTau D)) := by
-      apply Finset.sum_le_sum
-      intro j _
-      exact (Classical.choose_spec (hstage j)).1
-    apply hcardReal.trans (hsum.trans_eq ?_)
-    have hfin : (∑ j : Fin e,
-          (HiddenDerivative.hybridLambdaOne n A L *
-              HiddenDerivative.hybridTheta n D A *
-                HiddenDerivative.firstOrderCurveJointStageOne
-                  (D + 1) 1 h (mu - j) (e - j) (HiddenDerivative.hybridTau D) +
-            (n - L : ℕ) * HiddenDerivative.hybridLambdaTwo n D L *
-              HiddenDerivative.firstOrderCurveFiberStageOne
-                (D + 1) (mu - j) (e - j) (HiddenDerivative.hybridTau D))) =
-        ∑ j ∈ Finset.range e,
-          (HiddenDerivative.hybridLambdaOne n A L *
-              HiddenDerivative.hybridTheta n D A *
-                HiddenDerivative.firstOrderCurveJointStageOne
-                  (D + 1) 1 h (mu - j) (e - j) (HiddenDerivative.hybridTau D) +
-            (n - L : ℕ) * HiddenDerivative.hybridLambdaTwo n D L *
-              HiddenDerivative.firstOrderCurveFiberStageOne
-                (D + 1) (mu - j) (e - j) (HiddenDerivative.hybridTau D)) := by
-      exact Fin.sum_univ_eq_sum_range (α := ℝ) (fun j : ℕ ↦
-        (HiddenDerivative.hybridLambdaOne n A L *
-            HiddenDerivative.hybridTheta n D A *
-              HiddenDerivative.firstOrderCurveJointStageOne
-                (D + 1) 1 h (mu - j) (e - j) (HiddenDerivative.hybridTau D) +
-          (n - L : ℕ) * HiddenDerivative.hybridLambdaTwo n D L *
-            HiddenDerivative.firstOrderCurveFiberStageOne
-              (D + 1) (mu - j) (e - j) (HiddenDerivative.hybridTau D))) e
-    rw [hfin]
-    simp only [HiddenDerivative.hybridJ1, HiddenDerivative.hybridB1, e,
-      Nat.cast_sum]
-    rw [Finset.sum_add_distrib]
-    rw [Finset.mul_sum, Finset.mul_sum]
-  · intro z hz j hj P hdegree hagree hroot hsep
-    have hzj : z ∉ stageExceptional ⟨j, hj⟩ := by
-      intro hmem
-      apply hz
-      exact Finset.mem_biUnion.mpr ⟨⟨j, hj⟩, Finset.mem_univ _, hmem⟩
-    exact (Classical.choose_spec (hstage ⟨j, hj⟩)).2 z hzj P hdegree hagree hroot hsep
+  simpa only [hybridCurveJ1, HiddenDerivative.hybridJ1, Nat.cast_one, one_mul] using
+    exists_exceptional_firstOrder_regularCurveStages domain ![f, g] iota Q descent
+      (by decide : 0 < 1) hD hDL hLA hAn hchar
 
 /-- Degree-one power batching of `![f,g]` is the correlated line word, after scalar
 extension. -/
