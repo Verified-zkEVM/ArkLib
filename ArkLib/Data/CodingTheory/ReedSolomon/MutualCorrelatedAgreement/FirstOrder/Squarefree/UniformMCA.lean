@@ -441,7 +441,7 @@ theorem uniformFirstOrderMCASplit_lambdaTwo_le {n D A : ℕ}
 
 /-- The direct agreement ratio is at most `25/6` in the gap-`6/25` regime. -/
 theorem uniformFirstOrderMCA_theta_le {n D A : ℕ} (hDA : D < A)
-    (_hAn : A ≤ n) (hgap : 25 * (D + 1) + 6 * n ≤ 25 * A) :
+    (_hAn : A ≤ n) (hgap : 25 * D + 6 * n ≤ 25 * A) :
     hybridTheta n D A ≤ 25 / 6 := by
   have hden : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast (show 0 < A - D by omega)
   unfold hybridTheta
@@ -454,7 +454,7 @@ theorem uniformFirstOrderMCA_theta_le {n D A : ℕ} (hDA : D < A)
 
 /-- The degree-weighted agreement ratio is at most `25n/24`. -/
 theorem uniformFirstOrderMCA_D_mul_theta_le {n D A : ℕ} (hDA : D < A)
-    (hAn : A ≤ n) (hgap : 25 * (D + 1) + 6 * n ≤ 25 * A) :
+    (hAn : A ≤ n) (hgap : 25 * D + 6 * n ≤ 25 * A) :
     D * hybridTheta n D A ≤ (25 / 24 : ℝ) * n := by
   have hDn : D ≤ n := hDA.le.trans hAn
   have hden : (0 : ℝ) < (A - D : ℕ) := by exact_mod_cast (show 0 < A - D by omega)
@@ -476,7 +476,7 @@ raw exceptional charge at most `1304562211/984 * n²`.  The rational coefficient
 below the public integral ceiling `1325775`. -/
 theorem uniformFirstOrderMCA_hybridERaw_le
     {n D A e : ℕ} (hn : 2 ≤ n) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
-    (hgap : 25 * (D + 1) + 6 * n ≤ 25 * A) (he : e ≤ 4) :
+    (hgap : 25 * D + 6 * n ≤ 25 * A) (he : e ≤ 4) :
     hybridERaw (hybridTheta n D A) n D A 276 23 e
         (uniformFirstOrderMCASplit D A) ≤
       (1304562211 / 984 : ℝ) * (n : ℝ) ^ 2 := by
@@ -589,12 +589,36 @@ theorem uniformFirstOrderMCA_hybridERaw_le
 line-MCA facade. -/
 theorem uniformFirstOrderMCA_hybridERaw_le_ceiling
     {n D A e : ℕ} (hn : 2 ≤ n) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
-    (hgap : 25 * (D + 1) + 6 * n ≤ 25 * A) (he : e ≤ 4) :
+    (hgap : 25 * D + 6 * n ≤ 25 * A) (he : e ≤ 4) :
     hybridERaw (hybridTheta n D A) n D A 276 23 e
         (uniformFirstOrderMCASplit D A) ≤
       1325775 * (n : ℝ) ^ 2 := by
   apply (uniformFirstOrderMCA_hybridERaw_le hn hD hDA hAn hgap he).trans
   gcongr
   norm_num
+
+/-- The optimized max/min exceptional charge inherits the same integral ceiling.  This is the
+numerical interface consumed by the squarefree semantic transfer. -/
+theorem uniformFirstOrderMCA_hybridEOptimizedRaw_le_ceiling
+    {n D A : ℕ} (hn : 2 ≤ n) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
+    (hgap : 25 * D + 6 * n ≤ 25 * A) :
+    hybridEOptimizedRaw (hybridTheta n D A) n D A 276 23 4 ≤
+      1325775 * (n : ℝ) ^ 2 := by
+  classical
+  unfold hybridEOptimizedRaw
+  apply Finset.max'_le
+  intro x hx
+  obtain ⟨e, he, rfl⟩ := Finset.mem_image.mp hx
+  have heFour : e ≤ 4 := by
+    simpa only [Finset.mem_range, Nat.lt_add_one_iff] using he
+  apply le_trans ?_ (uniformFirstOrderMCA_hybridERaw_le_ceiling
+    hn hD hDA hAn hgap heFour)
+  simp only [hybridERawAtDegree, hDA, ↓reduceDIte]
+  apply Finset.min'_le
+  apply Finset.mem_image.mpr
+  refine ⟨uniformFirstOrderMCASplit D A, ?_, rfl⟩
+  obtain ⟨hDL, hLA⟩ := uniformFirstOrderMCASplit_bounds hDA
+  simp only [Finset.mem_Icc]
+  exact ⟨by omega, hLA⟩
 
 end ReedSolomon
