@@ -10,7 +10,7 @@ ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.FirstOrder.C
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Symbolic.CoefficientExtension
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CurveMCA
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.CurveUnified
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PolynomialCurve.ExtensionDescent
 
@@ -155,6 +155,91 @@ theorem exists_baseExceptional_retainedSquarefreeCurveMCA_of_certificate_of_tail
   refine ⟨exceptional, ?_, hgoodBase⟩
   exact (show (exceptional.card : ℝ) ≤ (extensionExceptional.card : ℝ) by
     exact_mod_cast hcardBase).trans hcard
+
+open Classical in
+/-- The all-characteristic ordinary theorem closes the retained tail of an actual curve
+certificate, leaving no assumed recovery interface in the public result. -/
+theorem exists_extensionExceptional_retainedSquarefreeCurveMCA_of_certificate
+    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {n N Dcert A m M B k H ell L : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (columns : Fin N → SourceColumn 1)
+    (cert : HiddenDerivative.FirstOrderCurveCertificate.{u, u}
+      Dcert A m M B k H domain
+        (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
+    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℝ) ≤ retainedSquarefreeCurveMCARaw
+        (HiddenDerivative.hybridTheta n (k - 1) A) n (k - 1) ell L A B M H ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
+        A ≤ (polynomialAgreementSet (mappedDomain domain iota)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        HasExactPowerAgreement domain values iota k z P := by
+  classical
+  let Q := extendSymbolicCoefficients iota cert.Q
+  have hQ : Q ≠ 0 := by
+    intro hzero
+    have hspecial := (cert.specialization_sound iota 0).1
+    rw [← specialize_extendSymbolicCoefficients,
+      show extendSymbolicCoefficients iota cert.Q = 0 from hzero, map_zero] at hspecial
+    exact hspecial rfl
+  have hjet : HiddenDerivative.SymbolicSeparantChain.jetWeight Q ≤ B :=
+    (jetWeight_extendSymbolicCoefficients_le iota cert.Q).trans cert.jetWeight_le
+  have hderiv : Q.degreeOf (some 1) ≤ M :=
+    (degreeOf_extendSymbolicCoefficients_le iota cert.Q 1).trans cert.jetDegree_one_le
+  have hheight : HiddenDerivative.ChallengeHeightLE Q H :=
+    challengeHeightLE_extendSymbolicCoefficients iota cert.Q cert.challengeDegree_le
+  have htail : HasRetainedOrdinaryCurveTransfer (D := k - 1) (A := A)
+      (B := B) (M := M) (H := H) domain values iota (singularCurveEquation Q) :=
+    hasRetainedOrdinaryCurveTransfer_of_unified domain values iota Q hQ
+      (by omega) hell (by omega) hAn hM hMB hjet hderiv hheight hchar
+  exact exists_extensionExceptional_retainedSquarefreeCurveMCA_of_certificate_of_tail
+    domain values iota columns cert hk hkL hLA hAn (by omega) hM hMB hchar
+      (by simpa only [Q] using htail)
+
+open Classical in
+/-- Base-field form of the completed retained squarefree certificate theorem. Recovered power
+constituents and the candidate's complete agreement set descend to the original field. -/
+theorem exists_baseExceptional_retainedSquarefreeCurveMCA_of_certificate
+    {F E : Type u} [Field F] [Field E] [IsAlgClosed E]
+    {n N Dcert A m M B k H ell L : ℕ}
+    (domain : Fin n ↪ F) (values : Fin (ell + 1) → Fin n → F) (iota : F →+* E)
+    (columns : Fin N → SourceColumn 1)
+    (cert : HiddenDerivative.FirstOrderCurveCertificate.{u, u}
+      Dcert A m M B k H domain
+        (fun i ↦ powerBatchedCoordinate fun t ↦ values t i) columns)
+    (hk : 2 ≤ k) (hkL : k ≤ L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (hell : 0 < ell) (hM : 1 ≤ M) (hMB : M ≤ B)
+    (hchar : ringChar F = 0 ∨ max (k - 1) M < ringChar F) :
+    ∃ exceptional : Finset F,
+      (exceptional.card : ℝ) ≤ retainedSquarefreeCurveMCARaw
+        (HiddenDerivative.hybridTheta n (k - 1) A) n (k - 1) ell L A B M H ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
+        A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
+        HasExactPowerAgreement domain values (RingHom.id F) k z P := by
+  classical
+  let Q := extendSymbolicCoefficients iota cert.Q
+  have hQ : Q ≠ 0 := by
+    intro hzero
+    have hspecial := (cert.specialization_sound iota 0).1
+    rw [← specialize_extendSymbolicCoefficients,
+      show extendSymbolicCoefficients iota cert.Q = 0 from hzero, map_zero] at hspecial
+    exact hspecial rfl
+  have hjet : HiddenDerivative.SymbolicSeparantChain.jetWeight Q ≤ B :=
+    (jetWeight_extendSymbolicCoefficients_le iota cert.Q).trans cert.jetWeight_le
+  have hderiv : Q.degreeOf (some 1) ≤ M :=
+    (degreeOf_extendSymbolicCoefficients_le iota cert.Q 1).trans cert.jetDegree_one_le
+  have hheight : HiddenDerivative.ChallengeHeightLE Q H :=
+    challengeHeightLE_extendSymbolicCoefficients iota cert.Q cert.challengeDegree_le
+  have htail : HasRetainedOrdinaryCurveTransfer (D := k - 1) (A := A)
+      (B := B) (M := M) (H := H) domain values iota (singularCurveEquation Q) :=
+    hasRetainedOrdinaryCurveTransfer_of_unified domain values iota Q hQ
+      (by omega) hell (by omega) hAn hM hMB hjet hderiv hheight hchar
+  exact exists_baseExceptional_retainedSquarefreeCurveMCA_of_certificate_of_tail
+    domain values iota columns cert hk hkL hLA hAn (by omega) hM hMB hchar
+      (by simpa only [Q] using htail)
 
 end
 
