@@ -478,6 +478,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.CurveWeightedSupport
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.LocalRank
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.MathematicalUniform
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.PartitionCertificate
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Symbolic.RankCertificate
@@ -787,6 +789,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Fin
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FixedRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FreeOrderBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.QuarterGap
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Radius
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RateGateFinite
@@ -865,6 +868,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CapacityO
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorInputBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.CollectorStageBounds
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.GeometricOutputBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.MathematicalCapacity
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Output.RestrictedCollectorProof
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.PositionSubsetDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.Prepared.BudgetedExecution
@@ -955,6 +959,16 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.HybridTransfer
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.OrdinaryTail
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.RateBounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Bounds
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Factorization
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Flattening
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.PositiveProduct
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SingularTail
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrderCurve
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullDimension
@@ -1016,6 +1030,12 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.TaylorChart
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Frobenius.WitnessEmbedding
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.ArbitraryIndex
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.FrobeniusPointRecognition
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Recovery
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
 public import
@@ -1690,6 +1710,8 @@ public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusFactor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullbackDerivative
+public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactorDegrees
+public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactorSeparable
 public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactors
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
@@ -1699,6 +1721,7 @@ public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
+public import ArkLib.ToMathlib.Polynomial.DerivativeResultantDegree
 public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 public import ArkLib.ToMathlib.Polynomial.FrobeniusContraction
@@ -1715,6 +1738,7 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.ShiftCanary
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
+public import ArkLib.ToMathlib.Polynomial.PaddedDerivativeResultant
 public import ArkLib.ToMathlib.Polynomial.RectangleDifference
 public import ArkLib.ToMathlib.Polynomial.RectangleDifferenceGeneral
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
