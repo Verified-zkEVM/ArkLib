@@ -48,6 +48,15 @@ theorem normProduct_ne_zero {n : ℕ}
   exact (Finset.prod_ne_zero_iff.mpr fun i _ ↦
     (CompPoly.CPolynomial.toPoly_eq_zero_iff (norms i)).not.mpr (hnorms i)) hpoly
 
+/-- The degree of the product is exactly the sum of the individual norm degrees. -/
+theorem natDegree_normProduct_eq_sum {n : ℕ}
+    (norms : Fin n → CompPoly.CPolynomial F) (hnorms : ∀ i, norms i ≠ 0) :
+    (normProduct norms).natDegree = ∑ i, (norms i).natDegree := by
+  rw [CompPoly.CPolynomial.natDegree_toPoly, normProduct_toPoly,
+    Polynomial.natDegree_prod Finset.univ _ (fun i _ ↦
+      (CompPoly.CPolynomial.toPoly_eq_zero_iff (norms i)).not.mpr (hnorms i))]
+  simp only [CompPoly.CPolynomial.natDegree_toPoly]
+
 /-- Root multiplicity in the all-fiber product is the sum of the individual multiplicities.
 The equality holds after every coefficient-field extension. -/
 theorem rootMultiplicity_normProduct_map {n : ℕ}
@@ -123,6 +132,15 @@ theorem threshold_mul_natDegree_retainedNormProduct_le
     T * (retainedNormProduct p T norms).natDegree ≤ (normProduct norms).natDegree := by
   exact threshold_mul_natDegree_retainedMultiplicitySupport_le
     p T (normProduct_ne_zero hnorms) hT
+
+/-- Expanded form of the degree compression, exposing the sum of the individual norm degrees. -/
+theorem threshold_mul_natDegree_retainedNormProduct_le_sum
+    (p T : ℕ) [Fact p.Prime] [CharP F p]
+    {n : ℕ} (norms : Fin n → CompPoly.CPolynomial F) (hnorms : ∀ i, norms i ≠ 0)
+    (hT : 0 < T) :
+    T * (retainedNormProduct p T norms).natDegree ≤ ∑ i, (norms i).natDegree := by
+  rw [← natDegree_normProduct_eq_sum norms hnorms]
+  exact threshold_mul_natDegree_retainedNormProduct_le p T norms hnorms hT
 
 /-- Every candidate annihilating at least `T` individual nonzero norm factors survives the
 all-fiber product filter. -/
