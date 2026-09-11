@@ -109,6 +109,21 @@ def ordinaryUnifiedPowerFactorAt (n D ell B H A L : ℕ) : ℚ :=
   ordinaryUnifiedPowerFactorRawAt
     (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) n D ell B H L
 
+/-- Exact ordinary free-retention budget including the separate root-degree-zero height branch. -/
+def ordinaryUnifiedPowerFactorAtOrHeight (n D ell B H A L : ℕ) : ℚ :=
+  if B = 0 then H else ordinaryUnifiedPowerFactorAt n D ell B H A L
+
+@[simp]
+theorem ordinaryUnifiedPowerFactorAtOrHeight_zero (n D ell H A L : ℕ) :
+    ordinaryUnifiedPowerFactorAtOrHeight n D ell 0 H A L = H := by
+  simp [ordinaryUnifiedPowerFactorAtOrHeight]
+
+theorem ordinaryUnifiedPowerFactorAtOrHeight_of_pos
+    (n D ell B H A L : ℕ) (hB : 0 < B) :
+    ordinaryUnifiedPowerFactorAtOrHeight n D ell B H A L =
+      ordinaryUnifiedPowerFactorAt n D ell B H A L := by
+  simp [ordinaryUnifiedPowerFactorAtOrHeight, Nat.ne_of_gt hB]
+
 /-- The former fixed-split budget is the free-retention budget at `L = D + 1`. -/
 theorem ordinaryUnifiedPowerFactorRawAt_succ_eq
     (theta : ℚ) (n D ell B H : ℕ) :

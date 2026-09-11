@@ -29,6 +29,10 @@ example : ordinaryUnifiedPowerFactorAt 20 3 2 4 5 12 (3 + 1) =
       (((20 - 3 : ℕ) : ℚ) / ((12 - 3 : ℕ) : ℚ)) 20 3 2 4 5 := by
   exact ordinaryUnifiedPowerFactorAt_succ_eq 20 3 2 4 5 12 (by omega) (by omega)
 
+/-- Root-degree zero is the separate height-only branch. -/
+example : ordinaryUnifiedPowerFactorAtOrHeight 20 3 2 0 5 12 7 = 5 := by
+  simp
+
 #check exists_geometricTransfer_exceptional
 #check exists_geometricTransfer_baseField_semantic
 #check exists_exceptional_ordinaryPowerEquation_freeRetention_of_certificates
@@ -36,5 +40,11 @@ example : ordinaryUnifiedPowerFactorAt 20 3 2 4 5 12 (3 + 1) =
 #check commonAgreement_of_frobeniusPowerCut_mem_prime
 #check principalOpen_subset_sourceFrobeniusPowerGraphLocusAt
 #check finite_sourceFrobeniusPower_points_off_graphs_card_le_at
+#check finite_frobeniusPowerRegularBadWitnesses_card_le_at
+#check exists_exceptional_frobeniusPowerSeparableSolutions_at
+#check exists_exceptional_ordinaryPowerEquation_freeRetention
+#check exists_exceptional_ordinaryPowerEquation_base_freeRetention
+#check exists_exceptional_ordinaryPowerEquation_base_zeroDegree
+#check exists_exceptional_ordinaryPowerEquation_base_freeRetention_allDegrees
 
 end ReedSolomon
