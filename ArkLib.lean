@@ -869,6 +869,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ExactOutput
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FieldTransport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FiniteRepresentation
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.CanonicalFiber
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.CoefficientSplit
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.LeadingCoefficient
