@@ -58,6 +58,14 @@ def radicalState (g : CPolynomial F) (hg : g ≠ 0) (hgmonic : g.monic)
     dividend := h
     divisor := derivativeFiber h }
 
+@[simp] theorem radicalState_modulus (g : CPolynomial F) (hg : g ≠ 0)
+    (hgmonic : g.monic) (hgfree : Squarefree g.toPoly) (h : FiberPolynomial (F := F)) :
+    (radicalState g hg hgmonic hgfree h).modulus = g := rfl
+
+@[simp] theorem radicalState_dividend (g : CPolynomial F) (hg : g ≠ 0)
+    (hgmonic : g.monic) (hgfree : Squarefree g.toPoly) (h : FiberPolynomial (F := F)) :
+    (radicalState g hg hgmonic hgfree h).dividend = h := rfl
+
 /-- Execute derivative-gcd removal independently on every terminal base factor. -/
 def radicalTower (g : CPolynomial F) (hg : g ≠ 0) (hgmonic : g.monic)
     (hgfree : Squarefree g.toPoly) (h : FiberPolynomial (F := F)) :
