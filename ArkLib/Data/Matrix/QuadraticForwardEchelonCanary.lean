@@ -61,7 +61,10 @@ private def malformed := runFuel (2 : ZMod 3) 4 (.ready (.loop 0 1 [([], (1, 2))
 example : (rejected malformed.1, malformed.2) =
     (true, ⟨⟨0, 0, 0, 0, 0, 6, 18, 0, 2⟩, 2⟩) := by decide +kernel
 
-example : rejected (runFuel (2 : ZMod 3) 1 (.select 0 0 [] (.ready (.done true [])))).1 =
+theorem malformed_selection_return_is_rejected :
+    (match (runFuel (2 : ZMod 3) 1 (.select 0 0 [] (.ready (.done true [])))).1 with
+    | .ready .rejected => true
+    | _ => false) =
     true := by decide +kernel
 
 example : rejected (runFuel (2 : ZMod 3) 1 (.eliminate 0 0 [] (.ready (.done [])))).1 =

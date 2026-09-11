@@ -61,6 +61,10 @@ private def initial (op : QuadraticAlgebra.ArithmeticMachine.Operation) : Contro
 -- Literal programs execute through initialization, dispatch, scalar children, and output.
 example : output (runFuel 416 (initial .add)) =
     some (.pair ([false, false, true], [true, false, false])) := by decide +kernel
-example : output (runFuel 228 (initial .equal)) = some (.boolean false) := by decide +kernel
+theorem literal_equal_program_emits_boolean :
+    let validInput : Inputs := ![[true, true, false], [false, false, true],
+      [true, false, false], [false, true, false], [false, false, false]]
+    output (runFuel 228 (.initializing (literalCode .equal) validInput
+      (.literal (.start [true, false, true] false)))) = some (.boolean false) := by decide +kernel
 
 end Computation.QuadraticArithmeticBitProgramCheck

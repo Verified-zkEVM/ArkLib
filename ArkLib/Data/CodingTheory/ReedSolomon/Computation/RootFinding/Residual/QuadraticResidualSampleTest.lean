@@ -44,7 +44,13 @@ example : (observe empty.1, empty.2) =
     (some (0, 0), ⟨⟨2, 0, 0, 0, 0, 35, 116, 14, 4⟩, 4⟩) := by decide +kernel
 
 -- The retained payload, rather than reconstructed external inputs, drives the actual child.
-example : packed (runFuel (2 : ZMod 3) input 9
-    (.adding [] ⟨2, (0, 0), (1, 0)⟩ (.start .add))).1 = some ((1, 0), []) := by decide +kernel
+theorem retained_payload_drives_sample_child :
+    let input : Input (ZMod 3) :=
+      ⟨[(1, 1), (1, 1)], [((1, 0), [(0, 1), (1, 1)]), ((1, 0), [(2, 1)])],
+        (2, 0), (2, 1), 1⟩
+    (match (runFuel (2 : ZMod 3) input 9
+      (.adding [] ⟨2, (0, 0), (1, 0)⟩ (.start .add))).1 with
+    | .pack js p => some (p, js)
+    | _ => none) = some ((1, 0), []) := by decide +kernel
 
 end ReedSolomon.HiddenDerivative.QuadraticResidualSample

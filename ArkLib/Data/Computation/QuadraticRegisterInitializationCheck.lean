@@ -27,7 +27,8 @@ example : ([[], [true], [false, true], [true, false, true], [false, false, false
     (fun q ↦ decide (observe (runFuel (19 * q.length + 40) (.literal (.start q false))) =
       expected q)) = true := by decide +kernel
 
-example : flagWords (runFuel 96 (.literal (.start [true, false, true] false))) 0 = [] ∧
+theorem final_flag_transition_boundary :
+    flagWords (runFuel 96 (.literal (.start [true, false, true] false))) 0 = [] ∧
     flagWords (runFuel 97 (.literal (.start [true, false, true] false))) 0 = [false] := by
   decide +kernel
 

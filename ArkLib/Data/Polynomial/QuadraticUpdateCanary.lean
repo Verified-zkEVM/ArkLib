@@ -39,7 +39,11 @@ example : (observe lastCell.1, lastCell.2) =
     (some (some [(1, 1), (2, 1), (2, 2)]),
       ⟨⟨2, 0, 0, 0, 0, 27, 117, 10, 2⟩, 5⟩) := by decide +kernel
 
-example : (observe empty.1, empty.2) =
+theorem empty_coefficients_return_none :
+    let result := runFuel (2 : ZMod 3) (2, 1) 3 (.ready (.start [] 20))
+    ((match result.1 with
+      | .ready (.done out) => some out
+      | _ => none), result.2) =
     (some none, ⟨⟨0, 0, 0, 0, 0, 3, 9, 0, 1⟩, 0⟩) := by decide +kernel
 
 private def pending : Configuration (ZMod 3) → Option (Pair (ZMod 3))

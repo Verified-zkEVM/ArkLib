@@ -19,7 +19,8 @@ namespace Polynomial
 noncomputable section
 
 /-- Detects wrong sign, fixed-basepoint derivatives, and confusion with the increment quotient. -/
-example : normalizedBackwardTaylorError (1 : ℤ) (X ^ 2) 1 = -X := by
+theorem normalizedBackwardTaylorError_X_sq_one :
+    normalizedBackwardTaylorError (1 : ℤ) (X ^ 2) 1 = -X := by
   have hderiv : hasseDeriv 1 (X ^ 2 : ℤ[X]) = C 2 * X := by
     rw [X_pow_eq_monomial, hasseDeriv_monomial]
     norm_num

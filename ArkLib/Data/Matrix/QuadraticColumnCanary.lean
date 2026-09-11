@@ -51,8 +51,11 @@ private def scanning : Configuration (ZMod 3) → Option (List (List (Pair (ZMod
   | .ready (.scan _ _ rev) => some rev
   | _ => none
 
-example : scanning (runFuel (2 : ZMod 3) 0 9
-    (.checking [(0, 0)] [] ⟨2, (0, 1), (0, 0)⟩ (.start .equal))).1 =
+theorem retained_equality_payload_resumes_scan :
+    (match (runFuel (2 : ZMod 3) 0 9
+      (.checking [(0, 0)] [] ⟨2, (0, 1), (0, 0)⟩ (.start .equal))).1 with
+    | .ready (.scan _ _ rev) => some rev
+    | _ => none) =
       some [[(0, 0)]] := by decide +kernel
 
 private def pendingRejection : Configuration (ZMod 3) → Bool

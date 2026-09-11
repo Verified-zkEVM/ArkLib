@@ -60,7 +60,9 @@ example : (run 123 ⟨batchState, [.execute BatchHorner.program]⟩).bind
     (fun s => s.heap.cells 5) = some (.field 10, .null) := by decide
 
 /-- A type-invalid Boolean branch is stuck, not accepted as halted. -/
-example : (run 10 (⟨State.empty, [.execute (.branch 0 .skip .skip)]⟩ :
+theorem type_invalid_boolean_branch_is_stuck :
+    let _ : Fact (Nat.Prime 17) := ⟨by decide⟩
+    (run 10 (⟨State.empty, [.execute (.branch 0 .skip .skip)]⟩ :
     Configuration (ZMod 17) 8)).isNone = true := by decide
 
 end AlgebraicMachine

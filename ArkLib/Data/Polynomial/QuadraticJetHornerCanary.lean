@@ -37,7 +37,12 @@ example : (observe empty.1, empty.2) =
 
 private def noJet := runFuel (2 : ZMod 3) (1, 2) 6 (.ready (.initialize [(1, 1)] 0 []))
 
-example : (observe noJet.1, noJet.2) =
+theorem zero_requested_jets_emit_empty_output :
+    let result := runFuel (2 : ZMod 3) (1, 2) 6
+      (.ready (.initialize [(1, 1)] 0 []))
+    ((match result.1 with
+      | .ready (.done js) => some js
+      | _ => none), result.2) =
     (some [], ⟨⟨0, 0, 0, 0, 0, 6, 17, 0, 0⟩, 1⟩) := by decide +kernel
 
 end Polynomial.QuadraticJetHornerMachine

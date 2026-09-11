@@ -27,7 +27,10 @@ example : output (run 63 (.normalizing (.ready (.terms ts [])))).1 = some (some 
 example : (run 63 (.normalizing (.ready (.terms ts [])))).2 =
     ⟨{ additions := 2, equalities := 8, control := 165, data := 512,
        constants := 58, output := 7 }, 7⟩ := by decide +kernel
-example : (run 1 (.normalizing (.ready (.terms [] [])))).2.base.control = 2 := by decide +kernel
+theorem normalization_wrapper_charges_control :
+    let _ : Fact (Nat.Prime 5) := ⟨by decide⟩
+    (runFuel (2 : ZMod 5) 1 (.normalizing (.ready (.terms [] [])))).2.base.control = 2 := by
+  decide +kernel
 example : (run 1 (.factors [(2, 3)] [] none)).2.natural = 5 := by decide +kernel
 example : output (run 3 (.factors [(0, 7)] [] none)).1 = some none := by decide +kernel
 example : output (run 3 (.factors [(2, 0)] [] none)).1 = some none := by decide +kernel

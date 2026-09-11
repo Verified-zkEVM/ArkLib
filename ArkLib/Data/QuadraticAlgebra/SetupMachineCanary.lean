@@ -31,7 +31,8 @@ example : runFuel 4 163 (.base (.start : ZMod.EnumerationMachine.Configuration 3
     (.done (some ⟨2, ⟨[0, 1, 2], alphabetThree, [⟨0, 0⟩, ⟨0, 1⟩, ⟨0, 2⟩, ⟨1, 0⟩],
       3, 9, 4⟩⟩), ⟨26, 9, 21, 84, 46, 293, 846, 5⟩) := by decide +kernel
 
-example : runFuel 10 163 (.base (.start : ZMod.EnumerationMachine.Configuration 3)) =
+theorem exhausted_setup_input_returns_none :
+    runFuel 10 163 (.base (.start : ZMod.EnumerationMachine.Configuration 3)) =
     (.done none, ⟨26, 9, 21, 99, 46, 293, 844, 5⟩) := by decide +kernel
 
 example : runFuel 0 39 (.base (.start : ZMod.EnumerationMachine.Configuration 2)) =

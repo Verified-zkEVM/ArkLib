@@ -107,7 +107,13 @@ example : equality 0 0 1 = expectedFlags [[true], [true]] := by decide +kernel
 example : firstFlag 28 = [true] := by decide +kernel
 example : firstFlag 29 = [] := by decide +kernel
 example : firstFlag 30 = [false] := by decide +kernel
-example : List.ofFn (QuadraticArithmeticBitEqual.resultFlags flags (equalityState 30 0 1 0)) =
+theorem equality_updates_only_selected_flag :
+    List.ofFn (QuadraticArithmeticBitEqual.resultFlags ![true, false]
+      (QuadraticArithmeticBitEqual.runFuel 30
+        (.start [true, false, true] 0 1 0 ![
+          [true, true, false], [false, false, true], [true, false, false],
+          [false, true, false], [false, false, false], [true, true, false],
+          [false, false, true], [true, false, false]]))) =
     [false, false] := by decide +kernel
 
 private def loadState (n : ℕ) (source : QuadraticAlgebra.ArithmeticMachine.Source)

@@ -32,7 +32,10 @@ example : (run 130 (initial ts)).2 =
        constants := 94, output := 25 }, 29⟩ := by decide +kernel
 example : index (run 1 (.record ts (some (3, 2)) [])).1 = some 3 := by decide +kernel
 example : (run 1 (initial ts)).2.base.control = 3 := by decide +kernel
-example : (run 1 (.derivingAt 1 [] (.ready (.terms [] [])))).2.base.control = 2 := by decide +kernel
+theorem deriving_stage_charges_wrapped_control :
+    let _ : Fact (Nat.Prime 5) := ⟨by decide⟩
+    (runFuel (2 : ZMod 5) 1 (.derivingAt 1 [] (.ready (.terms [] [])))).2.base.control = 2 := by
+  decide +kernel
 example : output (run 3 (.record ts none [])).1 = some [⟨ts, none⟩] := by decide +kernel
 example : output (run 3 (.reverse [⟨ts, some (1, 2)⟩, ⟨[], none⟩] [])).1 =
     some [⟨[], none⟩, ⟨ts, some (1, 2)⟩] := by decide +kernel

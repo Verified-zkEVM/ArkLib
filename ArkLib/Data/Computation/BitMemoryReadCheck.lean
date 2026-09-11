@@ -79,7 +79,14 @@ private def malformed := runFuel 3
 private def retainedWrite := runFuel 10
   ⟨initial, .reading base [] [] [] (.access (.write true) [true, false])⟩
 
-example : malformed =
+theorem malformed_child_and_retained_write_are_observed :
+    let base : List Bool := [false, true]
+    let initial : Memory := Memory.empty.write (slot [true, false] []) true
+    let malformed := runFuel 3
+      ⟨initial, .reading base [true] [false] [true, false] (.access .read [])⟩
+    let retainedWrite := runFuel 10
+      ⟨initial, .reading base [] [] [] (.access (.write true) [true, false])⟩
+    malformed =
       ⟨initial, .failed base [true] [false] [true, false] (.done none)⟩ ∧
     retainedWrite.memory.lookup [false] = true ∧
     retainedWrite.control = .done base [true] [true] := by

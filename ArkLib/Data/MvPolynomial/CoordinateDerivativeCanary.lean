@@ -34,7 +34,10 @@ example : (run 100 (.ready (.terms ts []))).2 =
 example : state (run 1 (.ready (.scan (1, 2) [(1, 2)] [] [] []))).1 =
     some (.scale (1, 2) 2 (0, 0) [(1, 1)] [] [] []) := by
   decide +kernel
-example : (run 1 (.ready (.scan (1, 2) [(1, 2)] [] [] []))).2.base.constants = 2 := by
+theorem scan_charges_coordinate_constant :
+    let _ : Fact (Nat.Prime 5) := ⟨by decide⟩
+    (runFuel (2 : ZMod 5) 1 1
+      (.ready (.scan (1, 2) [(1, 2)] [] [] []))).2.base.constants = 2 := by
   decide +kernel
 example : (run 1 (.ready (.scan (1, 2) [(1, 2)] [] [] []))).2.base.data = 9 := by
   decide +kernel

@@ -36,7 +36,7 @@ example : view (runFuel program 2 initial) = (0, source, [], []) ∧
   decide +kernel
 
 /-- Identical heads hide arbitrarily different tails from the dispatch table. -/
-example :
+theorem dispatch_uses_only_visible_heads :
     decision program ⟨2, ![[true], [false, true, true], [false, false]]⟩ =
       decision program ⟨2, ![[true, false, true], [false], [false, true, true]]⟩ ∧
     step program ⟨3, ![[true], [false], [true, false]]⟩ = none := by decide +kernel

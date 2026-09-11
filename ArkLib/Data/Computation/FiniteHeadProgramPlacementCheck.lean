@@ -59,12 +59,12 @@ example :
   decide +kernel
 
 /-- The placed zero-width rejection preserves every physical word, including nonempty outsiders. -/
-example :
+theorem placed_zero_width_rejection_preserves_every_word :
     let initial : Configuration 24 28 :=
       ⟨1, fun j ↦ if 9 ≤ j.val ∧ j.val < 15 then [] else [true, false, true]⟩
-    (runFuel (placeProgram literalWiring FieldLiteralFiniteControl.program)
+    (runFuel (placeProgram (offset 6 9 13) FieldLiteralFiniteControl.program)
       6 initial).control = 23 ∧
-    ∀ j : Fin 28, (runFuel (placeProgram literalWiring FieldLiteralFiniteControl.program)
+    ∀ j : Fin 28, (runFuel (placeProgram (offset 6 9 13) FieldLiteralFiniteControl.program)
       6 initial).bank j = initial.bank j := by decide +kernel
 
 end Computation.FiniteHeadProgramPlacement

@@ -35,8 +35,11 @@ example : written.control = .done base [true, true, true] ∧
 example : (runFuel 75 ⟨initial, .next base [] [true, false, true]⟩).control =
     .next base [true, true, true] [] := by decide +kernel
 
-example : runFuel 1 ⟨initial, .next base [true] []⟩ =
-    ⟨initial, .done base [true]⟩ := by decide +kernel
+theorem empty_source_finishes_without_writing :
+    let base : List Bool := [false, true]
+    let initial : Memory := Memory.empty.write (slot [true, false] []) true
+    runFuel 1 ⟨initial, .next base [true] []⟩ =
+      ⟨initial, .done base [true]⟩ := by decide +kernel
 
 private def malformed := runFuel 3
   ⟨initial, .writing base [true] [false, true] (.access (.write true) [])⟩

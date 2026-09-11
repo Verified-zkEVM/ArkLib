@@ -25,7 +25,9 @@ example : (prepared.parameter, prepared.data.base, prepared.data.baseCount,
     prepared.data.extensionCount, prepared.data.sampleCount, prepared.cost) =
       (2, [0, 1, 2], 3, 9, 4, ⟨26, 9, 21, 84, 46, 293, 846, 5⟩) := by decide +kernel
 
-example : (prepared.data.samples.map fun x ↦ (x.re, x.im)) =
+theorem certified_setup_preserves_sample_prefix :
+    let prepared := certifiedRun (q := 3) 4 (by decide) (by decide) (by decide)
+    (prepared.data.samples.map fun x ↦ (x.re, x.im)) =
     [(0, 0), (0, 1), (0, 2), (1, 0)] := by decide +kernel
 
 end QuadraticAlgebra.SetupMachine

@@ -50,7 +50,10 @@ private def zeroPivot := runFuel (2 : ZMod 3) 0 18 (.ready (.pack [([(0, 0)], (1
 example : (rejected zeroPivot.1, zeroPivot.2) =
     (true, ⟨⟨0, 0, 0, 0, 2, 41, 131, 12, 3⟩, 4⟩) := by decide +kernel
 
-example : rejected (runFuel (2 : ZMod 3) 0 1 (.ready (.unpack [[]] []))).1 = true := by
+theorem malformed_unpack_is_rejected :
+    (match (runFuel (2 : ZMod 3) 0 1 (.ready (.unpack [[]] []))).1 with
+    | .ready .rejected => true
+    | _ => false) = true := by
   decide +kernel
 
 private def pendingRows : Configuration (ZMod 3) → Option (List (Row (ZMod 3)))

@@ -34,7 +34,8 @@ example : runFuel 9 (.scan terms [] : Configuration (ZMod 3) 2) =
 example : runFuel 8 (.scan terms [] : Configuration (ZMod 3) 2) =
     (.emit expected, { control := 8, data := 50, constants := 3 }) := by decide +kernel
 
-example : runFuel 3 (.scan [] [] : Configuration (ZMod 3) 2) =
+theorem empty_input_emits_empty_coordinates :
+    runFuel 3 (.scan [] [] : Configuration (ZMod 3) 2) =
     (.done [], { control := 3, data := 7, output := 1 }) := by decide +kernel
 
 end MvPolynomial.QuadraticInputMachine

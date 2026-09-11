@@ -64,8 +64,13 @@ private def inverse : Configuration (ZMod 3) → Option (Pair (ZMod 3))
   | .ready (.negate inv _) => some inv
   | _ => none
 
-example : inverse (runFuel input 15
-    (.arithmetic (.inverse (0, 0)) ⟨2, (1, 1), (2, 0)⟩ (.start .inv))).1 =
+theorem retained_inverse_operand_is_authoritative :
+    let input : Input (ZMod 3) :=
+      ⟨2, ([(1, 1), (0, 1), (2, 0)], (2, 1)), 1, [(1, 0), (2, 1), (0, 1)]⟩
+    (match (runFuel input 15
+      (.arithmetic (.inverse (0, 0)) ⟨2, (1, 1), (2, 0)⟩ (.start .inv))).1 with
+    | .ready (.negate inv _) => some inv
+    | _ => none) =
       some (2, 1) := by decide +kernel
 
 private def pendingDot : Configuration (ZMod 3) → Option (Pair (ZMod 3) × Pair (ZMod 3))

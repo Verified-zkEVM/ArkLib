@@ -36,7 +36,12 @@ private def entered : Configuration (ZMod 3) → Option (Pair (ZMod 3) × Pair (
 
 private def entry := runFuel (2 : ZMod 3) input 3 (.start [(0, 1)])
 
-example : (entered entry.1, entry.2) =
+theorem entry_handoff_retains_payload :
+    let input : Input (ZMod 3) := ⟨[], [((1, 0), [(0, 1)])], (1, 1), 0⟩
+    let entry := runFuel (2 : ZMod 3) input 3 (.start [(0, 1)])
+    ((match entry.1 with
+      | .call _ _ _ payload .start => some (payload.center, payload.sample, payload.order)
+      | _ => none), entry.2) =
     (some ((1, 1), (0, 1), 0), ⟨⟨0, 0, 0, 0, 0, 3, 18, 0, 0⟩, 0⟩) := by decide +kernel
 
 private def empty := runFuel (2 : ZMod 3) input 3 (.start [])

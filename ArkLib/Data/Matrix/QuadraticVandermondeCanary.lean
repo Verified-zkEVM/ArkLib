@@ -48,8 +48,11 @@ private def powerValue : Configuration (ZMod 3) → Option (ℕ × Pair (ZMod 3)
   | _ => none
 
 -- The one emitted coefficient is 1, but the next power must still be computed.
-example : powerValue (runFuel (2 : ZMod 3) 1 19
-    (.ready (.start [((1, 1), (2, 1))]))).1 = some (0, (1, 1)) := by decide +kernel
+theorem final_unused_power_is_computed :
+    (match (runFuel (2 : ZMod 3) 1 19
+      (.ready (.start [((1, 1), (2, 1))]))).1 with
+    | .ready (.power _ _ _ _ n p _) => some (n, p)
+    | _ => none) = some (0, (1, 1)) := by decide +kernel
 
 -- The saved payload deliberately differs from the external parameter and frame's point.
 example : powerValue (runFuel (0 : ZMod 3) 1 15

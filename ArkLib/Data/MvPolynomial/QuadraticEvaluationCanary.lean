@@ -44,7 +44,12 @@ private def waitingMultiply : Configuration (ZMod 3) → Bool
   | .call (.multiply _ _ _ _ _) _ (.start .mul) => true
   | _ => false
 
-example : (waitingMultiply shortRun.1, shortRun.2) =
+theorem short_run_suspends_before_multiplication :
+    let result := runFuel (2 : ZMod 3) [(1, 2)] 4
+      (.ready (.terms [((1, 1), [(0, 2)])] (0, 0)))
+    ((match result.1 with
+      | .call (.multiply _ _ _ _ _) _ (.start .mul) => true
+      | _ => false), result.2) =
     (true, ⟨⟨0, 0, 0, 0, 0, 5, 24, 0, 0⟩, 3⟩) := by decide +kernel
 
 end MvPolynomial.QuadraticEvaluationMachine

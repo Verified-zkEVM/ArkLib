@@ -44,7 +44,9 @@ example :
   decide +kernel
 
 /-- Full reset is necessary; malformed raw addresses cannot alias the valid root address. -/
-example :
+theorem malformed_addresses_do_not_alias_root :
+    let store := fun (mem : Memory) (address : Address) (value : Bool) ↦
+      runFuel (fuel address) ⟨mem, .start (.write value) address⟩
     let mem := (store .empty [] true).memory
     runFuel 7 ⟨mem, .start .read []⟩ = ⟨mem, .reset (some true) []⟩ ∧
     runFuel 8 ⟨mem, .start .read []⟩ = ⟨mem, .done (some true)⟩ ∧

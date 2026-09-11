@@ -97,8 +97,13 @@ example : (observe solved.1, solved.2) =
 example : (inconsistent contradiction.1, contradiction.2) =
     (true, ⟨⟨0, 0, 0, 0, 4, 40, 142, 24, 3⟩, 0⟩) := by decide +kernel
 
-example : (observe empty.1, empty.2) =
-    (some values, ⟨⟨0, 0, 0, 0, 0, 3, 7, 0, 1⟩, 0⟩) := by decide +kernel
+theorem empty_pivot_list_preserves_values :
+    let values : List (Pair (ZMod 3)) := [(1, 0), (2, 1), (0, 1)]
+    let result := runFuel (2 : ZMod 3) 3 (.ready (.check [] [] values))
+    ((match result.1 with
+      | .ready (.done v) => some v
+      | _ => none), result.2) =
+      (some values, ⟨⟨0, 0, 0, 0, 0, 3, 7, 0, 1⟩, 0⟩) := by decide +kernel
 
 example : (rejected malformed.1, malformed.2) =
     (true, ⟨⟨0, 0, 0, 0, 0, 6, 26, 2, 2⟩, 0⟩) := by decide +kernel

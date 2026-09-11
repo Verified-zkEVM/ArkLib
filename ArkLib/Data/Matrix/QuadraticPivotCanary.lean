@@ -60,8 +60,11 @@ private def checked : Configuration (ZMod 3) → Option (Pair (ZMod 3))
   | .ready (.inverse _ _ x _) => some x
   | _ => none
 
-example : checked (runFuel (2 : ZMod 3) 10
-    (.ready (.check [] [] (0, 1) (1, 1)))).1 = some (0, 1) := by decide +kernel
+theorem imaginary_pivot_reaches_inverse_phase :
+    (match (runFuel (2 : ZMod 3) 10
+      (.ready (.check [] [] (0, 1) (1, 1)))).1 with
+    | .ready (.inverse _ _ x _) => some x
+    | _ => none) = some (0, 1) := by decide +kernel
 
 private def inverse : Configuration (ZMod 3) → Option (Pair (ZMod 3))
   | .ready (.negate _ _ _ inv) => some inv

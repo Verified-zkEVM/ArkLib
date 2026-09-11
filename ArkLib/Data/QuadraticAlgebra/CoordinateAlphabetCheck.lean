@@ -21,7 +21,8 @@ example : runFuel 8 (.scan xs []) = (.done [(1, 2), (3, 4), (1, 2)], 53) := by
   decide +kernel
 
 /-- This nonpalindromic case detects an omitted or duplicated output reversal. -/
-example : runFuel 6 (.scan [⟨1, 2⟩, ⟨3, 4⟩] [] : Configuration (ZMod 5) 2 0) =
+theorem nonpalindromic_coordinates_preserve_order :
+    runFuel 6 (.scan [⟨1, 2⟩, ⟨3, 4⟩] [] : Configuration (ZMod 5) 2 0) =
     (.done [(1, 2), (3, 4)], 38) := by
   decide +kernel
 

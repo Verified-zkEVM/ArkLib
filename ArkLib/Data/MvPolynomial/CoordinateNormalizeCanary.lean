@@ -40,7 +40,10 @@ example : state (run 10 (.ready (.sum (0, 1) [] [((1, 0), [])] [] []))).1 =
     some (.restore [] [((0, 1), []), ((1, 0), [])] []) := by decide +kernel
 example : state (run 10 (.ready (.compare (1, 2) [] ((3, 4), []) [] [] [] [] []))).1 =
     some (.sum (4, 1) [] [] [] []) := by decide +kernel
-example : (run 1 (.ready (.terms [((0, 1), [])] []))).2.base.constants = 2 := by decide +kernel
+theorem nonzero_term_charges_coordinate_constant :
+    let _ : Fact (Nat.Prime 5) := ⟨by decide⟩
+    (runFuel (2 : ZMod 5) 1
+      (.ready (.terms [((0, 1), [])] []))).2.base.constants = 2 := by decide +kernel
 example : (run 1 (.ready (.terms [((0, 1), [])] []))).2.base.data = 8 := by decide +kernel
 example : (run 1 (.call (.term (0, 1) [] [] []) ⟨2, (0, 1), (0, 0)⟩ (.start .equal))).2 =
     ⟨{ control := 2, data := 13, constants := 10 }, 0⟩ := by decide +kernel

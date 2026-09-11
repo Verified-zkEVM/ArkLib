@@ -43,7 +43,9 @@ example :
   decide +kernel
 
 /-- Arbitrary padding entries preserve their separate spare-output tape and rejected input. -/
-example :
+theorem padding_preserves_spare_output_and_rejected_input :
+    let view := fun (s : Configuration 24 6) ↦
+      (s.control, [s.bank 0, s.bank 1, s.bank 2, s.bank 3, s.bank 4, s.bank 5])
     view (runFuel program 20 (represent
       (.shaping false (.start [true, false] [false, true, false])))) =
         (5, [[], [], [], [], [], [true, false, false]]) ∧

@@ -45,8 +45,11 @@ private def mismatch := runFuel (2 : ZMod 3) (1, 1) 29
 example : (rejected mismatch.1, mismatch.2) =
     (true, ⟨⟨4, 5, 0, 0, 0, 52, 193, 20, 3⟩, 0⟩) := by decide +kernel
 
-example : rejected (runFuel (2 : ZMod 3) (1, 1) 1
-    (.ready (.scan [] [(1, 1)] []))).1 = true := by decide +kernel
+theorem mismatched_empty_row_is_rejected :
+    (match (runFuel (2 : ZMod 3) (1, 1) 1
+      (.ready (.scan [] [(1, 1)] []))).1 with
+    | .ready .rejected => true
+    | _ => false) = true := by decide +kernel
 
 private def product : Configuration (ZMod 3) → Option (Pair (ZMod 3))
   | .ready (.add _ _ _ _ p) => some p

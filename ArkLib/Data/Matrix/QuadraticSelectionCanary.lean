@@ -49,7 +49,11 @@ example : (observe allZero.1, allZero.2) =
 
 private def empty := runFuel (2 : ZMod 3) 0 3 (.ready (.scan [] []))
 
-example : (observe empty.1, empty.2) =
+theorem empty_rows_return_no_pivot :
+    let result := runFuel (2 : ZMod 3) 0 3 (.ready (.scan [] []))
+    ((match result.1 with
+      | .ready (.done b rows) => some (b, rows)
+      | _ => none), result.2) =
     (some (false, []), ⟨⟨0, 0, 0, 0, 0, 3, 5, 0, 1⟩, 0⟩) := by decide +kernel
 
 private def noColumns := runFuel (2 : ZMod 3) 0 2 (.ready (.scan [bad] []))
