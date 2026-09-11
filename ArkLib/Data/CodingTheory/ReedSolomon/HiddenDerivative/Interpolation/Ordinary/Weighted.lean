@@ -7,6 +7,8 @@ module
 
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Ordinary.JohnsonCertificate
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Parameters.Johnson.WeightedCertificate
 
 /-!
 # The optimized finite ordinary Johnson interpolation certificate
@@ -267,6 +269,22 @@ theorem exists_weighted_johnson_symbolic_certificate
     (fun i ↦ centers i) f g columns
     (fun j ↦ johnsonColumns_weightedSupportEligible j) v hconstraints ι z indices P
     hPdegree centers.injective.injOn hcard hagreements
+
+/-- A checked arithmetic certificate instantiates the complete symbolic interpolation theorem.
+
+This is the downstream bridge from the finite `N,W,R,T,H` certificate to the primitive
+interpolant. It keeps the public arithmetic record independent of the field and received words. -/
+theorem IsJohnsonWeightedCertificate.exists_symbolic
+    {F : Type*} [Field F] {n D A m B k H : ℕ}
+    (hcert : IsJohnsonWeightedCertificate n D A m B H)
+    (hD : 1 ≤ D) (hkD : k ≤ D + 1)
+    (centers : Fin n ↪ F) (f g : Fin n → F) :
+    Nonempty (JohnsonSymbolicCertificate (F := F) D A m B k H (m * A)
+      centers f g) := by
+  apply exists_weighted_johnson_symbolic_certificate hD hcert.2.2.1 hkD
+  simpa only [johnsonWeightedRowSlots, johnsonWeightedU,
+    johnsonWeightedSourceSlots, johnsonSourceSlotCount] using
+      hcert.rowSlots_lt_sourceSlots
 
 end
 end ReedSolomon.HiddenDerivative
