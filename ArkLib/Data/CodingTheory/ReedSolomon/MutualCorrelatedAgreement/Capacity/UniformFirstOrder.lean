@@ -290,7 +290,7 @@ private theorem exists_uniformFirstOrder_lineMCA_of_two_le
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
-  let D := max (k - 1) 2
+  let D := k - 1
   let L := correlatedMidpoint (6 / 25 : ℝ) n k
   let values : Fin 2 → Fin n → F := ![f, g]
   let E := AlgebraicClosure F

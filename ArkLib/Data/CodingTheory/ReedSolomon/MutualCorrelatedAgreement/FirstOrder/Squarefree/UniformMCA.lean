@@ -95,11 +95,11 @@ set_option maxHeartbeats 10000000 in
 theorem uniformFirstOrderMCA_heightSlotCount (n k A : ℕ)
     (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : 25 * k + 6 * n ≤ 25 * A) :
-    let D := max (k - 1) 2
+    let D := k - 1
     firstOrderCurveShiftedRowSlotBound D A 12 4 23 n 1 276 <
       firstOrderCurveShiftedHeightSlotCount D A 12 4 23 1 276 := by
   dsimp only
-  let D := max (k - 1) 2
+  let D := k - 1
   have hrow := firstOrderCurveShiftedRowSlotBound_le_of_rankBound
     D A 12 4 23 n 1 276 uniformFirstOrderGradedRankProfile
       (firstOrderGradedRankBound_le_uniformFirstOrderProfile D A)
@@ -219,8 +219,8 @@ message-degree, and shifted-slot hypotheses used by the semantic curve construct
 theorem uniformFirstOrderMCA_parameters (n k A : ℕ)
     (hk : 2 ≤ k) (hAn : A ≤ n)
     (hgap : 25 * k + 6 * n ≤ 25 * A) :
-    let D := max (k - 1) 2
-    1 < D ∧ 0 < 12 * A ∧ k ≤ D + 1 ∧
+    let D := k - 1
+    0 < D ∧ 0 < 12 * A ∧ k ≤ D + 1 ∧
       firstOrderCurveShiftedRowSlotBound D A 12 4 23 n 1 276 <
         firstOrderCurveShiftedHeightSlotCount D A 12 4 23 1 276 := by
   dsimp only

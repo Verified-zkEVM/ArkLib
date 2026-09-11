@@ -56,7 +56,7 @@ theorem exists_uniformFirstOrder_squarefree_lineMCA_of_two_le
         A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
         HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   classical
-  let interpolationD := max (k - 1) 2
+  let interpolationD := k - 1
   let recoveryD := k - 1
   have hgapNat : 25 * k + 6 * n ≤ 25 * A := by
     exact_mod_cast (show (25 : ℝ) * k + 6 * n ≤ 25 * A by nlinarith)

@@ -12,7 +12,7 @@ public import
 
 This file verifies the finite shifted interpolation arithmetic for the fixed support
 `(m, M, mu) = (12, 4, 22)` and challenge height `851`.  For every message dimension at least
-two, the ambient degree `max (k - 1) 2` gives the exact unrestricted graded-rank profile from the
+two, the ambient degree `k - 1` gives the exact unrestricted graded-rank profile from the
 finite certificate calculation and a strict source-slot surplus under
 `25 * k + 6 * n <= 25 * A`.
 
@@ -122,13 +122,13 @@ message-degree, and shifted slot hypotheses used by the public finite constructo
 theorem uniformFirstOrder_parameters (n k A : ℕ)
     (hn : 2 ≤ n) (hk : 2 ≤ k) (_hAn : A ≤ n)
     (hgap : 25 * k + 6 * n ≤ 25 * A) :
-    let D := max (k - 1) 2
-    1 < D ∧ 0 < 12 * A ∧ k ≤ D + 1 ∧
+    let D := k - 1
+    0 < D ∧ 0 < 12 * A ∧ k ≤ D + 1 ∧
       firstOrderCurveShiftedRowSlotBound D A 12 4 22 n 1 851 <
         firstOrderCurveShiftedHeightSlotCount D A 12 4 22 1 851 := by
   dsimp only
-  let D := max (k - 1) 2
-  have hD : 1 < D := by dsimp only [D]; omega
+  let D := k - 1
+  have hD : 0 < D := by dsimp only [D]; omega
   have hkD : k ≤ D + 1 := by dsimp only [D]; omega
   have hDk : D ≤ k := by dsimp only [D]; omega
   have hA : 0 < A := by omega

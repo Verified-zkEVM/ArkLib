@@ -103,7 +103,7 @@ private theorem exists_uniformFirstOrder_list_of_two_le
       (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received k A) ∧
       list.card ≤ 307 * n := by
   classical
-  let D := max (k - 1) 2
+  let D := k - 1
   have hgapNat : 25 * k + 6 * n ≤ 25 * A := by
     exact_mod_cast (show (25 : ℝ) * k + 6 * n ≤ 25 * A by nlinarith)
   obtain ⟨hD, hbudget, hkD, hheight⟩ :=
