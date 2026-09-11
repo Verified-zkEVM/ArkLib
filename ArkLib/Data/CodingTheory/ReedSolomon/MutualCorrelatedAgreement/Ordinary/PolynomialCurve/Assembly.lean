@@ -8,8 +8,8 @@ module
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.FactorAssembly
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.FactorSolutions
-/-! # Combining polynomial-curve ordinary factor exceptional sets -/
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Solutions
+/-! # Assembly of polynomial-curve ordinary factor exceptional sets -/
 
 @[expose] public section
 
@@ -85,7 +85,8 @@ theorem exists_exceptional_ordinaryPowerFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v (ordinaryContent Q) ≠ 0)
     (hfactors : ∀ a ∈ ordinaryRootFactorClasses Q, ∃ ex : Finset W,
       (ex.card : ℚ) ≤ ordinaryPowerFactorRaw theta n D ℓ
-        (degreeOf none (ordinaryFactorRepresentative a)) (height (ordinaryFactorRepresentative a)) ∧
+        (degreeOf none (ordinaryFactorRepresentative a))
+        (height (ordinaryFactorRepresentative a)) ∧
       ∀ w ∉ ex, ∀ v, ev w v (ordinaryFactorRepresentative a) = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryPowerFactorRaw theta n D ℓ mu H ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by

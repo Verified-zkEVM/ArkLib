@@ -6,9 +6,9 @@ Authors: Quang Dao
 module
 
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.JohnsonCertificate
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Certificate
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.ArbitraryIndex
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Index
 /-! # Johnson correlated agreement for polynomial challenge curves -/
 
 @[expose] public section

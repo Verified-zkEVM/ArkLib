@@ -7,7 +7,7 @@ module
 
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.RegularChart
-/-! # A uniform exceptional set for regular polynomial-curve solutions -/
+/-! # Uniform exceptional set for regular polynomial-curve solutions -/
 
 @[expose] public section
 

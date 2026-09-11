@@ -9,7 +9,7 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Ordinary.JohnsonCertificate
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.BaseEquation
-/-! # Ordinary Johnson interpolation for polynomial received curves -/
+/-! # Johnson interpolation certificate for polynomial received curves -/
 
 @[expose] public section
 

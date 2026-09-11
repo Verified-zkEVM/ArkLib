@@ -6,10 +6,10 @@ Authors: Quang Dao
 module
 
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.SeparableSolutions
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Separable
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.AggregationBounds
-/-! # The original-coordinate charge of one polynomial-curve Frobenius factor -/
+/-! # Original-coordinate charge of one polynomial-curve Frobenius factor -/
 
 @[expose] public section
 

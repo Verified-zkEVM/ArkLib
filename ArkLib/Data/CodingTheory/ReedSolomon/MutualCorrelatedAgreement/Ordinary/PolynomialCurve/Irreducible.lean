@@ -8,8 +8,8 @@ module
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.IrreducibleEquation
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.FactorSolutions
-/-! # Irreducible ordinary equations along a polynomial challenge curve -/
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Solutions
+/-! # Irreducible ordinary equations on a polynomial challenge curve -/
 
 @[expose] public section
 

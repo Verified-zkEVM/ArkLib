@@ -6,10 +6,10 @@ Authors: Quang Dao
 module
 
 public import
-ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.RegularSolutions
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Regular
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.Factors.RootPresentation
-/-! # Separable ordinary solutions along a polynomial curve -/
+/-! # Separable ordinary solutions on a polynomial curve -/
 
 @[expose] public section
 

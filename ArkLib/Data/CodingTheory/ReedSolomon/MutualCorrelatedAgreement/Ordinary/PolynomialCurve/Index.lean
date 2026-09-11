@@ -11,7 +11,7 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.PolynomialCurve.Recovery
 /-!
-# Polynomial-curve MCA on arbitrary finite coordinate types
+# Polynomial-curve MCA over arbitrary finite coordinate types
 
 The exact polynomial-curve recovery theorems are naturally indexed by `Fin n`.  This file
 transfers their semantic conclusion to the public Reed--Solomon code interface on an arbitrary
