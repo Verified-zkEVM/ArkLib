@@ -1018,7 +1018,15 @@ ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Square
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.PositiveProduct
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedCurve
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedCurveMCA
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.RetainedTail
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.Semantic
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SharpOrdinaryCurve
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FirstOrder.Squarefree.SingularTail
 public import
@@ -1809,6 +1817,7 @@ public import ArkLib.ToMathlib.MvPolynomial.FrobeniusFactor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullbackDerivative
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegreeGeneral
 public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactorDegrees
 public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactorSeparable
 public import ArkLib.ToMathlib.MvPolynomial.OrdinaryFactors
