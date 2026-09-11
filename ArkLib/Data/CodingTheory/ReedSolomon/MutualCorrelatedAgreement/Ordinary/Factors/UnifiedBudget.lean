@@ -44,6 +44,20 @@ theorem ordinaryPsi_mono (D : ℕ) {B C : ℕ} (hBC : B ≤ C) :
   · exact Nat.mul_le_mul_left 2
       (Nat.sub_le_sub_right (Nat.sub_le_sub_right hBC (2 * D)) 1)
 
+/-- The unified coefficient retains the earlier coarse `4DB` envelope. -/
+theorem ordinaryPsi_le_four_mul {D B : ℕ} (hD : 1 ≤ D) (hB : 1 ≤ B) :
+    ordinaryPsi D B ≤ 4 * D * B := by
+  unfold ordinaryPsi
+  have hDsub : 2 * D - 1 + 1 = 2 * D := Nat.sub_add_cancel (by omega)
+  have hBsub : 2 * B - 1 + 1 = 2 * B := Nat.sub_add_cancel (by omega)
+  by_cases hsmall : B ≤ 2 * D + 1
+  · have hzero : B - 2 * D - 1 = 0 := by omega
+    rw [hzero]
+    nlinarith
+  · have hlarge : 2 * D + 1 < B := Nat.lt_of_not_ge hsmall
+    have hsub : B - 2 * D - 1 + (2 * D + 1) = B := by omega
+    nlinarith
+
 /-- The positive-part correction absorbs the degree loss of every inseparable pullback, including
 the case where the separable factor degree exceeds `D`. -/
 theorem ordinaryFrobenius_unified_factor {D s b : ℕ}

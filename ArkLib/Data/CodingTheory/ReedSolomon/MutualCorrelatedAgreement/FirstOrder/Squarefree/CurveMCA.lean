@@ -80,7 +80,7 @@ private theorem natCast_ne_zero_of_retained_char_guard
 open Classical in
 /-- A retained squarefree first-order equation and one ordinary-tail transfer give a single
 exceptional set.  Outside it, every qualifying root of the original equation has exact
-degree-one power agreement. -/
+polynomial-curve power agreement. -/
 theorem exists_exceptional_retainedSquarefreeCurveMCA_of_tail
     {F E : Type*} [Field F] [Field E] [DecidableEq F] [DecidableEq E]
     [IsAlgClosed E] {n D ell L A B M H : ℕ}
