@@ -3,14 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.LineDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.LineDecoding
 
 /-!
 # Pinning induction for the folded Reed--Solomon capacity bound
 
 Internal pinning and rank-drop infrastructure used by the public FRS capacity theorem.
 -/
+
+@[expose] public section
 
 namespace CodingTheory.FrsInternal
 

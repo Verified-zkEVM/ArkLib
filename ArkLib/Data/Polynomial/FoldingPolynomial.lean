@@ -3,13 +3,14 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Bivariate
 
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombinationPrime
-import CompPoly.Univariate.ToPoly.Impl
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.LinearCombinationPrime
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   Proof of Proposition 6.3 from [BS08].
@@ -54,6 +55,8 @@ import CompPoly.Univariate.ToPoly.Impl
   *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
 
 -/
+
+@[expose] public section
 
 namespace Polynomial.FoldingPolynomial
 

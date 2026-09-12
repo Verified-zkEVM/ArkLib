@@ -3,11 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
-import ArkLib.ToCompPoly.Multivariate.Eval
-import CompPoly.Multivariate.Operations
+module
+
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
+public import ArkLib.ToCompPoly.Multivariate.Eval
+public import CompPoly.Multivariate.Operations
 
 /-!
   # Constraint encoding — Hachi Eqs. (21)–(23)
@@ -70,6 +72,8 @@ import CompPoly.Multivariate.Operations
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

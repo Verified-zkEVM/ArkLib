@@ -3,22 +3,23 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.Basic.Entropy
+public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import ArkLib.Data.CodingTheory.SubspaceDesign
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Capacity-regime bounds for CA and MCA
@@ -93,6 +94,8 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
   (`subfield_epsCa_lower_bound`, `CapacityBounds/Subfield.lean`).
 - [DG25dist] Theorem 2.5, source of Lemma 4.19.
 -/
+
+@[expose] public section
 
 -- Pre-existing external admits below (not touched by this diff) have statements carrying
 -- unused `Fintype`/`DecidableEq` hypotheses; scoped narrowly once those admits are resolved.

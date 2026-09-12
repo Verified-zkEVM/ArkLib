@@ -4,16 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
-import Mathlib.LinearAlgebra.Dimension.Free
-import ArkLib.Data.CodingTheory.GuruswamiSudan
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.DivergenceOfSets
-import ArkLib.Data.Polynomial.RationalFunctions
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Polynomial.Trivariate
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
+public import Mathlib.LinearAlgebra.Dimension.Free
+public import ArkLib.Data.CodingTheory.GuruswamiSudan
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.DivergenceOfSets
+public import ArkLib.Data.Polynomial.RationalFunctions
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Polynomial.Trivariate
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 
 /-!
 # Foundations for affine-space proximity bounds
@@ -23,6 +24,8 @@ affine spaces, scaling invariance, and the theorem that upgrades random-line pro
 proximity of every element in the affine space. Bucketing and the core result remain in
 `BCIKS20.AffineSpaces`.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

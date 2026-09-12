@@ -3,15 +3,16 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
-import ArkLib.Data.Polynomial.RationalFunctions.Weight
-import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
-import ArkLib.Data.Polynomial.RationalFunctions.Lifts
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
+public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+public import ArkLib.Data.Polynomial.RationalFunctions.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
+public import ArkLib.Data.Polynomial.RationalFunctions.Lifts
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
 
 /-!
 # Appendix A of [BCIKS20]: Function Fields, Weights, and Hensel Lifts
@@ -84,3 +85,5 @@ Everything in this package is proved: no `sorry`, and no axioms beyond `propext`
   Computer Science (FOCS), 2020. Full paper: https://eprint.iacr.org/2020/654,
   version 20210703:203025.
 -/
+
+@[expose] public section
