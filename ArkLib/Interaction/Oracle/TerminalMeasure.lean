@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Terminal
-import VCVio.EvalDist.WithFailure
+module
+
+public import ArkLib.Interaction.Oracle.Terminal
+public import VCVio.EvalDist.WithFailure
 
 /-!
 # Terminal observations with explicit runtime faults
@@ -15,6 +17,8 @@ mass; the new fault may coincide with a returned model fault, in which case thei
 -/
 
 universe u v
+
+@[expose] public section
 
 namespace Interaction.Oracle.Terminal
 

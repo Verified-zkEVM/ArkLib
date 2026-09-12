@@ -131,6 +131,8 @@ We begin by defining how to compose protocol specifications and their associated
         \item Using this intermediate context as input to $P_2$
         \item Outputting the final context from $P_2$
     \end{itemize}
+    Equality with two separate prover runs requires an execution condition such as the one in
+    Theorem~\ref{thm:completeness_append}; output queries can otherwise cross an opening challenge.
     \lean{Prover.append}
     \uses{def:prover, def:protocol_spec_append}
 \end{definition}
@@ -192,65 +194,92 @@ For composing an arbitrary number of reductions, we provide a general compositio
 
 \subsubsection{Security Properties of Sequential Composition}
 
-The key insight is that security properties are preserved under sequential composition.
+Completeness composition requires control of the prover execution order and of the shared
+oracle state. Fix one stateful oracle implementation on a state space $\Sigma$ and an initial
+state distribution $\mu$. The second component receives the state left by the first component.
+A guarantee for the second component initialized separately from $\mu$ does not cover this state.
+
+The completeness theorems below are proved under their stated hypotheses. The generic soundness,
+knowledge-soundness, and round-by-round contracts listed afterwards remain admitted in Lean;
+execution factorization alone does not establish them.
 
 \begin{theorem}[Completeness Preservation under Append]
     \label{thm:completeness_append}
-    If reductions $R_1$ and $R_2$ satisfy completeness with compatible relations and respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition $R_1.\append\ R_2$ satisfies completeness with error $\epsilon_1 + \epsilon_2$.
-    \lean{Reduction.append_completeness}
+    Let $R_1$ and $R_2$ have compatible input, intermediate, and output relations.
+    Assume both verifiers are pure and total: each returns a deterministic function of its input
+    statement and transcript, without oracle queries or rejection. Assume also that at least one
+    of the following execution conditions holds:
+    \begin{itemize}
+        \item the first prover's output is a pure function of its final internal state;
+        \item the second protocol is empty;
+        \item the second protocol starts with a prover message.
+    \end{itemize}
+    Suppose $R_1$ is complete with error $\epsilon_1$ from $\mu$, and for every $s \in \Sigma$,
+    $R_2$ is complete with error $\epsilon_2$ when initialized deterministically at $s$.
+    Then $R_1.\append\ R_2$ is complete from $\mu$ with error $\epsilon_1 + \epsilon_2$.
+    \lean{Reduction.append_completeness_of_pure_verifiers}
     \uses{def:completeness, def:reduction_append}
 \end{theorem}
 
 \begin{theorem}[Perfect Completeness Preservation under Append]
     \label{thm:perfect_completeness_append}
-    If reductions $R_1$ and $R_2$ satisfy perfect completeness with compatible relations, then their sequential composition also satisfies perfect completeness.
-    \lean{Reduction.append_perfectCompleteness}
-    \uses{def:perfect_completeness, def:reduction_append}
+    Under the pure-verifier and execution hypotheses of
+    Theorem~\ref{thm:completeness_append}, suppose $R_1$ is perfectly complete from $\mu$ and
+    $R_2$ is perfectly complete from every deterministic shared state.
+    Then $R_1.\append\ R_2$ is perfectly complete from $\mu$.
+    \lean{Reduction.append_perfectCompleteness_of_pure_verifiers}
+    \uses{def:perfect_completeness, def:reduction_append, thm:completeness_append}
 \end{theorem}
 
-\begin{theorem}[Soundness Preservation under Append]
+\begin{theorem}[Soundness Preservation under Append (Admitted)]
     \label{thm:soundness_append}
     If verifiers $V_1$ and $V_2$ satisfy soundness with respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition satisfies soundness with error $\epsilon_1 + \epsilon_2$.
     \lean{Verifier.append_soundness}
     \uses{def:soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Knowledge Soundness Preservation under Append]
+\begin{theorem}[Knowledge Soundness Preservation under Append (Admitted)]
     \label{thm:knowledge_soundness_append}
     If verifiers $V_1$ and $V_2$ satisfy knowledge soundness with respective errors $\epsilon_1$ and $\epsilon_2$, then their sequential composition satisfies knowledge soundness with error $\epsilon_1 + \epsilon_2$.
     \lean{Verifier.append_knowledgeSoundness}
     \uses{def:knowledge_soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Round-by-Round Soundness Preservation under Append]
+\begin{theorem}[Round-by-Round Soundness Preservation under Append (Admitted)]
     \label{thm:rbr_soundness_append}
     If verifiers $V_1$ and $V_2$ satisfy round-by-round soundness, then their sequential composition also satisfies round-by-round soundness.
     \lean{Verifier.append_rbrSoundness}
     \uses{def:round_by_round_soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Round-by-Round Knowledge Soundness Preservation under Append]
+\begin{theorem}[Round-by-Round Knowledge Soundness Preservation under Append (Admitted)]
     \label{thm:rbr_knowledge_soundness_append}
     If verifiers $V_1$ and $V_2$ satisfy round-by-round knowledge soundness, then their sequential composition also satisfies round-by-round knowledge soundness.
     \lean{Verifier.append_rbrKnowledgeSoundness}
     \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
 \end{theorem}
 
-Similar preservation theorems hold for the general composition of multiple reductions:
+Finite-chain completeness likewise requires guarantees from every shared state.
+The generic finite-chain soundness and knowledge-soundness contracts below remain admitted.
 
 \begin{theorem}[General Completeness Preservation]
     \label{thm:completeness_compose}
-    \lean{Reduction.seqCompose_completeness}
-    \uses{def:completeness, def:reduction_compose}
+    Let $R_0, \ldots, R_{k-1}$ be a finite chain with compatible consecutive relations.
+    Every prover has pure output and every verifier is pure and total.
+    For each $i$ and each $s \in \Sigma$, assume $R_i$ is complete with error $\epsilon_i$
+    from the deterministic initial state $s$. Then the chain is complete from any initial
+    distribution $\mu$, with error $\sum_{i=0}^{k-1} \epsilon_i$.
+    \lean{Reduction.seqCompose_completeness_of_pure}
+    \uses{def:completeness, def:reduction_compose, thm:completeness_append}
 \end{theorem}
 
-\begin{theorem}[General Soundness Preservation]
+\begin{theorem}[General Soundness Preservation (Admitted)]
     \label{thm:soundness_compose}
     \lean{Verifier.seqCompose_soundness}
     \uses{def:soundness, def:verifier_compose}
 \end{theorem}
 
-\begin{theorem}[General Knowledge Soundness Preservation]
+\begin{theorem}[General Knowledge Soundness Preservation (Admitted)]
     \label{thm:knowledge_soundness_compose}
     \lean{Verifier.seqCompose_knowledgeSoundness}
     \uses{def:knowledge_soundness, def:verifier_compose}

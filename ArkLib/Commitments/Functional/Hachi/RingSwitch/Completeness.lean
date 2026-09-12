@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
+module
+
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
 
 /-!
   # `RingSwitch` — completeness (Hachi §4.3 entry: the `R^lin` adapter and the HMZ25 lift)
@@ -46,6 +48,8 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

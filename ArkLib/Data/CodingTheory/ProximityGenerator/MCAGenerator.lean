@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
-import ArkLib.Data.Matrix.Basic
-import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.Matrix.Basic
+public import ArkLib.Data.Probability.Instances
 
 /-!
 # Preserving mutual correlated agreement under linear maps on the output
@@ -38,6 +39,8 @@ The correspondence to [BCGM25]'s numbered statements is in
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
     with Mutual Correlated Agreement*][BCGM25]
 -/
+
+@[expose] public section
 
 namespace LinearTransformations
 

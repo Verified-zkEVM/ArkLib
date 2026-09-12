@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Protocol
-import VCVio.OracleComp.SimSemantics.Append
+module
+
+public import ArkLib.Interaction.Oracle.Protocol
+public import VCVio.OracleComp.SimSemantics.Append
 
 /-!
 # Accumulated oracle access
@@ -19,6 +21,8 @@ Execution must use the canonical construction rather than trust an arbitrary dec
 structural cursor likewise describes a syntactic prefix, not evidence that a strategy reached it.
 Concrete handlers, reachability, resource identity, and verifier execution are separate concerns.
 -/
+
+@[expose] public section
 
 universe u v
 

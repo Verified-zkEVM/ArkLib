@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.LoggedExecution
-import ArkLib.Interaction.Oracle.Terminal
+module
+
+public import ArkLib.Interaction.Oracle.LoggedExecution
+public import ArkLib.Interaction.Oracle.Terminal
 
 /-!
 # Execution with explicit returned outcomes
@@ -17,6 +19,8 @@ return is outside this open-program boundary.
 
 universe u v w
 
+@[expose] public section
+
 namespace Interaction.Oracle
 
 open OracleComp OracleSpec
@@ -28,7 +32,7 @@ abbrev TerminalOutcome (protocol : Oracle.Protocol.{u}) (initial : PFunctor.{u, 
     {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
     (Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path))
     (Fault : Type u) (path : protocol.tree.BranchPath) :=
-  Terminal (OracleClaim
+  Terminal (OpenClaim
     (OracleSpec.ofPFunctor (TypeTree.accessAfter protocol.tree protocol.oracles initial path))
     (Stmt path) (Out path)) Fault
 
@@ -59,7 +63,8 @@ variable {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
 /-- Forget logging and input packaging, retaining the actual returned terminal outcome. -/
 def erase (run : TerminalRun protocol initial Stmt Out OutP Fault) := run.result.erase
 
-/-- Close accepted claims using this run's resources, preserving rejection and returned faults. -/
+/-- Close accepted claims using this run's available context, preserving rejection and
+returned faults. -/
 def closed (run : TerminalRun protocol initial Stmt Out OutP Fault) :
     Terminal (ClosedClaim (Stmt run.result.path.toBranchPath)
       (Out run.result.path.toBranchPath)) Fault :=
@@ -68,7 +73,7 @@ def closed (run : TerminalRun protocol initial Stmt Out OutP Fault) :
 
 /-- Acceptance closes the actual claim with the same input and concrete messages. -/
 theorem closed_of_accept (run : TerminalRun protocol initial Stmt Out OutP Fault)
-    (claim : OracleClaim
+    (claim : OpenClaim
       (OracleSpec.ofPFunctor (TypeTree.accessAfter protocol.tree protocol.oracles initial
         run.result.path.toBranchPath))
       (Stmt run.result.path.toBranchPath) (Out run.result.path.toBranchPath))
@@ -107,13 +112,14 @@ def verifierLocalView (run : TerminalRun protocol initial Stmt Out OutP Fault) :
       QueryLog (OracleSpec.ofPFunctor
         (TypeTree.accessAfter protocol.tree protocol.oracles initial path)) ×
       TerminalOutcome protocol initial Stmt Out Fault path :=
-  ⟨run.result.path.toBranchPath, run.result.deltaTrace, run.result.verifierOut⟩
+  ⟨run.result.path.toBranchPath, run.result.sourceLog, run.result.verifierOut⟩
 
 end TerminalRun
 
 /-- Execute setup and the ordinary logged strategy runner once, retaining returned faults as data.
 The fault type shares the runner's result universe; public statement and witness universes remain
 independent. -/
+@[no_expose]
 def executeTerminal {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {StatementIn : Type v} {WitnessIn : Type w}

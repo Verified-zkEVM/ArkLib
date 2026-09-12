@@ -3,11 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.ModuleSIS
-import Mathlib.Data.Nat.Digits.Lemmas
-import Mathlib.Data.ZMod.Basic
-import Mathlib.Data.ZMod.ValMinAbs
-import Mathlib.Algebra.Field.ZMod
+module
+
+public import ArkLib.Data.Lattices.ModuleSIS
+public import Mathlib.Data.Nat.Digits.Lemmas
+public import Mathlib.Data.ZMod.Basic
+public import Mathlib.Data.ZMod.ValMinAbs
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Ajtai Gadget Matrix Core
@@ -69,6 +71,8 @@ digits `⌈-b/2⌉ ≤ dᵢ ≤ ⌈b/2⌉ - 1`, built by shifting the unsigned d
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 

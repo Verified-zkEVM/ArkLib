@@ -40,4 +40,32 @@ example (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
           (ToyProblem.SimplifiedIOR.outputSimulation (ι := ι) (F := F) (A := A))
           challenges q) := rfl
 
+/-- A scalar interface whose only query reveals its natural-number realization. -/
+def scalarFamily : OracleFamily Unit (fun _ => Nat) :=
+  ⟨fun _ => OracleInterface.instDefault⟩
+
+/-- Both source queries matter, with different coefficients. -/
+def weightedQueries : VirtualOracle (Bool →ₒ Nat) scalarFamily where
+  query _ := do
+    let x : Nat ← liftM ((Bool →ₒ Nat).query false)
+    let y : Nat ← liftM ((Bool →ₒ Nat).query true)
+    return 2 * x + y
+
+/-- The downstream program consumes the derived scalar and a separate suffix source. -/
+def withSuffix : VirtualOracle (scalarFamily.spec + (Unit →ₒ Nat)) scalarFamily where
+  query _ := do
+    let x : Nat ← liftM ((scalarFamily.spec + (Unit →ₒ Nat)).query (.inl ⟨(), ()⟩))
+    let y : Nat ← liftM ((scalarFamily.spec + (Unit →ₒ Nat)).query (.inr ()))
+    return 10 * x + y
+
+/-- Substitution preserves both upstream query routes and the distinct suffix answer. -/
+example : (weightedQueries.substWithSuffix (Unit →ₒ Nat) withSuffix).eval
+    (QueryImpl.add (fun bit => if bit then 7 else 3) (fun _ => 5)) ⟨(), ()⟩ = (135 : Nat) := rfl
+
+/-- Reindexing interface types does not identify independently supplied realizations. -/
+example :
+    let repeated := scalarFamily.reindex (fun _ : Bool => ())
+    let behavior := repeated.behaviorOfRealizations (fun bit => (if bit then 7 else 3 : Nat))
+    (behavior ⟨false, ()⟩, behavior ⟨true, ()⟩) = ((3 : Nat), (7 : Nat)) := rfl
+
 end Interaction.Oracle.VirtualTest
