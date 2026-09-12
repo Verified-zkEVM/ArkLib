@@ -39,7 +39,7 @@ def twist : SourceHom dependent dependent where
       toFunB := fun q => match q with
         | false => fun value => Bool.not (show Bool from value)
         | true => fun value => (show Fin 3 from value) + 1 }
-  onEnv := fun env => (!env.1, env.2 + 1)
+  pullEnv := fun env => (!env.1, env.2 + 1)
   commutes := fun _ q => by cases q <;> rfl
 
 /-- Both dependent backward maps are observable, including `Fin` wraparound. -/
@@ -66,13 +66,13 @@ def numbers := SourceCtx.ofSpec (Bool →ₒ Nat)
 /-- Flip the primitive query and then add three to its answer. -/
 def shift : SourceHom numbers numbers where
   route := ⟨Bool.not, fun _ (answer : Nat) => (answer + 3 : Nat)⟩
-  onEnv := fun (env : Bool → Nat) q => (env (!q) + 3 : Nat)
+  pullEnv := fun (env : Bool → Nat) q => (env (!q) + 3 : Nat)
   commutes := fun _ _ => rfl
 
 /-- Double an answer without changing its query. -/
 def double : SourceHom numbers numbers where
   route := ⟨fun q => q, fun _ (answer : Nat) => (answer * 2 : Nat)⟩
-  onEnv := fun (env : Bool → Nat) q => (env q * 2 : Nat)
+  pullEnv := fun (env : Bool → Nat) q => (env q * 2 : Nat)
   commutes := fun _ _ => rfl
 
 /-- Distinct primitive answers reject a route that always chooses one branch. -/
@@ -87,22 +87,22 @@ def twoQueries : OracleComp numbers.spec (Nat × Nat) := do
 example : numbers.eval answers ((double.comp shift).mapProgram twoQueries) = (13, 7) := rfl
 example : numbers.eval answers ((shift.comp double).mapProgram twoQueries) = (16, 10) := rfl
 
-/-- Tensor weakening must choose the matching environment, not a same-typed sibling. -/
-example : (numbers.tensor numbers).eval (answers, fun _ => 29)
+/-- Sum weakening must choose the matching environment, not a same-typed sibling. -/
+example : (numbers.sum numbers).eval (answers, fun _ => 29)
     ((SourceHom.inr numbers numbers).mapProgram twoQueries) = (29, 29) := rfl
 
-example : (numbers.tensor numbers).eval (answers, fun _ => 29)
+example : (numbers.sum numbers).eval (answers, fun _ => 29)
     ((SourceHom.inl numbers numbers).mapProgram twoQueries) = (2, 5) := rfl
 
 /-- Reindexing can explicitly give two names to the same primitive query. -/
 example : (numbers.reindex (fun _ : Bool => true)).handler answers false = (5 : Nat) := rfl
 
-/-- Parallel queries return both answers, not a sum response. -/
-example : (dependent.parallel numbers).handler ((true, ⟨2, by decide⟩), answers)
+/-- Tensor queries return both answers, not a sum response. -/
+example : (dependent.tensor numbers).handler ((true, ⟨2, by decide⟩), answers)
     (true, false) = ((⟨2, by decide⟩ : Fin 3), (2 : Nat)) := rfl
 
 /-- Family selection retains the index in the backing environment. -/
-example : (SourceCtx.family (fun _ : Bool => numbers)).handler
+example : (SourceCtx.sigma (fun _ : Bool => numbers)).handler
     (fun | false => answers | true => fun _ => 29) ⟨true, false⟩ = (29 : Nat) := rfl
 
 section Universes
@@ -111,10 +111,10 @@ variable {I : Type u} {E : Type w} {J : Type u'} {F : Type w'}
 
 -- Elaboration contracts, not substitutes for the discriminating examples above.
 example (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v, w'} J F) :
-    SourceCtx.{max u u', v, max w w'} (I ⊕ J) (E × F) := S.tensor T
+    SourceCtx.{max u u', v, max w w'} (I ⊕ J) (E × F) := S.sum T
 
 example (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v', w'} J F) :
-    SourceCtx.{max u u', max v v', max w w'} (I × J) (E × F) := S.parallel T
+    SourceCtx.{max u u', max v v', max w w'} (I × J) (E × F) := S.tensor T
 
 example (S : SourceCtx.{u, v, w} I E) : SourceCtx.{u, max v v', w} I E :=
   S.liftResponse

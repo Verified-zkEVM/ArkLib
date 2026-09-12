@@ -21,7 +21,7 @@ A `SourceHom S T` routes queries by an upstream polynomial lens, pulls environme
 proves that these two actions agree. This layer contains no identity, provenance, promise, cost,
 probability, or execution history. Extensional equality is not trace equality.
 
-`tensor` uses the common response universe required by `OracleSpec` addition. `liftResponse`
+`sum` uses the common response universe required by `OracleSpec` addition. `liftResponse`
 explicitly raises that universe when needed. The pure routing API has no such restriction;
 only the program adapter uses `OracleComp`'s homogeneous result universe.
 -/
@@ -70,23 +70,23 @@ def comapEnv (S : SourceCtx.{u, v, w} I E) (f : F → E) : SourceCtx I F where
 /-- Disjoint query alternatives, realized by a pair of environments.
 
 This is signature addition, not a resource-sharing operation. Resource-level disjointness is an
-additional obligation of the resource-schema layer. -/
-def tensor (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v, w'} J F) :
+additional obligation of the named-context layer. -/
+def sum (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v, w'} J F) :
     SourceCtx (I ⊕ J) (E × F) where
   spec := S.spec + T.spec
   impl := fun q env => QueryImpl.add (S.handler env.1) (T.handler env.2) q
 
 /-- A pair of queries answered by a pair of responses, with all universes independent.
 
-Unlike `tensor`, one primitive query observes both components. It is the polynomial tensor,
+Unlike `sum`, one primitive query observes both components. It is the polynomial tensor,
 not the polynomial product (whose responses would instead form a sum). -/
-def parallel (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v', w'} J F) :
+def tensor (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v', w'} J F) :
     SourceCtx (I × J) (E × F) where
   spec := OracleSpec.ofPFunctor (PFunctor.tensor S.spec.toPFunctor T.spec.toPFunctor)
   impl := fun q env => (S.handler env.1 q.1, T.handler env.2 q.2)
 
 /-- An indexed family of query alternatives, with one environment per component. -/
-def family {A : Type k} {Q : A → Type u} {Env : A → Type w}
+def sigma {A : Type k} {Q : A → Type u} {Env : A → Type w}
     (S : (a : A) → SourceCtx.{u, v, w} (Q a) (Env a)) :
     SourceCtx (Sigma Q) ((a : A) → Env a) where
   spec := OracleSpec.sigma (fun a => (S a).spec)
@@ -98,25 +98,25 @@ def liftResponse (S : SourceCtx.{u, v, w} I E) : SourceCtx.{u, max v v', w} I E 
   impl := fun q env => ⟨S.handler env q⟩
 
 @[simp]
-theorem tensor_handler_inl (S : SourceCtx.{u, v, w} I E)
+theorem sum_handler_inl (S : SourceCtx.{u, v, w} I E)
     (T : SourceCtx.{u', v, w'} J F) (env : E × F) (q : I) :
-    (S.tensor T).handler env (.inl q) = S.handler env.1 q := rfl
+    (S.sum T).handler env (.inl q) = S.handler env.1 q := rfl
 
 @[simp]
-theorem tensor_handler_inr (S : SourceCtx.{u, v, w} I E)
+theorem sum_handler_inr (S : SourceCtx.{u, v, w} I E)
     (T : SourceCtx.{u', v, w'} J F) (env : E × F) (q : J) :
-    (S.tensor T).handler env (.inr q) = T.handler env.2 q := rfl
+    (S.sum T).handler env (.inr q) = T.handler env.2 q := rfl
 
 @[simp]
-theorem parallel_handler (S : SourceCtx.{u, v, w} I E)
+theorem tensor_handler (S : SourceCtx.{u, v, w} I E)
     (T : SourceCtx.{u', v', w'} J F) (env : E × F) (q : I × J) :
-    (S.parallel T).handler env q = (S.handler env.1 q.1, T.handler env.2 q.2) := rfl
+    (S.tensor T).handler env q = (S.handler env.1 q.1, T.handler env.2 q.2) := rfl
 
 @[simp]
-theorem family_handler {A : Type k} {Q : A → Type u} {Env : A → Type w}
+theorem sigma_handler {A : Type k} {Q : A → Type u} {Env : A → Type w}
     (S : (a : A) → SourceCtx.{u, v, w} (Q a) (Env a))
     (env : (a : A) → Env a) (a : A) (q : Q a) :
-    (family S).handler env ⟨a, q⟩ = (S a).handler (env a) q := rfl
+    (sigma S).handler env ⟨a, q⟩ = (S a).handler (env a) q := rfl
 
 /-- Interpret a program using precisely the answers of the supplied environment. -/
 def eval (S : SourceCtx.{u, v, w} I E) (env : E) {α : Type v}
@@ -151,10 +151,10 @@ structure SourceHom (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v', w'} J 
   /-- Send queries forward and pull responses back. -/
   route : PFunctor.Lens S.spec.toPFunctor T.spec.toPFunctor
   /-- Realize the source backing data from target backing data. -/
-  onEnv : F → E
+  pullEnv : F → E
   /-- Routing and backing-data interpretation give the same answer. -/
   commutes : ∀ (env : F) (q : I),
-    S.handler (onEnv env) q = route.toFunB q (T.handler env (route.toFunA q))
+    S.handler (pullEnv env) q = route.toFunB q (T.handler env (route.toFunA q))
 
 namespace SourceHom
 
@@ -168,7 +168,7 @@ def pull (f : SourceHom S T) (impl : QueryImpl T.spec Id) : QueryImpl S.spec Id 
 /-- The two data fields determine a source morphism; the coherence proof is irrelevant. -/
 @[ext]
 theorem ext {f g : SourceHom S T} (hroute : f.route = g.route)
-    (henv : f.onEnv = g.onEnv) : f = g := by
+    (henv : f.pullEnv = g.pullEnv) : f = g := by
   cases f
   cases g
   cases hroute
@@ -178,15 +178,15 @@ theorem ext {f g : SourceHom S T} (hroute : f.route = g.route)
 /-- Identity routing and identity backing-data map. -/
 def id (S : SourceCtx.{u, v, w} I E) : SourceHom S S where
   route := PFunctor.Lens.id S.spec.toPFunctor
-  onEnv := fun env => env
+  pullEnv := fun env => env
   commutes := fun _ _ => rfl
 
 /-- Compose routes in function order; environment maps compose in the reverse direction. -/
 def comp (g : SourceHom T U) (f : SourceHom S T) : SourceHom S U where
   route := PFunctor.Lens.comp g.route f.route
-  onEnv := f.onEnv ∘ g.onEnv
+  pullEnv := f.pullEnv ∘ g.pullEnv
   commutes := fun env q => by
-    change S.handler (f.onEnv (g.onEnv env)) q =
+    change S.handler (f.pullEnv (g.pullEnv env)) q =
       f.route.toFunB q (g.route.toFunB (f.route.toFunA q)
         (U.handler env (g.route.toFunA (f.route.toFunA q))))
     rw [f.commutes, g.commutes]
@@ -201,7 +201,7 @@ theorem pull_comp (g : SourceHom T U) (f : SourceHom S T)
 /-- Naturality of source interpretation, as an equality of complete handlers. -/
 @[simp]
 theorem pull_handler (f : SourceHom S T) (env : F) :
-    f.pull (T.handler env) = S.handler (f.onEnv env) := by
+    f.pull (T.handler env) = S.handler (f.pullEnv env) := by
   funext q
   exact (f.commutes env q).symm
 
@@ -222,51 +222,51 @@ theorem comp_assoc (h : SourceHom U V) (g : SourceHom T U) (f : SourceHom S T) :
 def fromReindex (S : SourceCtx.{u, v, w} I E) (f : J → I) :
     SourceHom (S.reindex f) S where
   route := ⟨f, fun _ answer => answer⟩
-  onEnv := fun env => env
+  pullEnv := fun env => env
   commutes := fun _ _ => rfl
 
 /-- The unchanged signature is realized by the new backing-data presentation. -/
 def toComapEnv (S : SourceCtx.{u, v, w} I E) (f : F → E) :
     SourceHom S (S.comapEnv f) where
   route := PFunctor.Lens.id S.spec.toPFunctor
-  onEnv := f
+  pullEnv := f
   commutes := fun _ _ => rfl
 
 /-- Left weakening ignores the additional right environment. -/
 def inl (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v, w'} J F) :
-    SourceHom S (S.tensor T) where
+    SourceHom S (S.sum T) where
   route := PFunctor.Lens.inl (P := S.spec.toPFunctor) (Q := T.spec.toPFunctor)
-  onEnv := Prod.fst
+  pullEnv := Prod.fst
   commutes := fun _ _ => rfl
 
 /-- Right weakening ignores the additional left environment. -/
 def inr (S : SourceCtx.{u, v, w} I E) (T : SourceCtx.{u', v, w'} J F) :
-    SourceHom T (S.tensor T) where
+    SourceHom T (S.sum T) where
   route := ⟨Sum.inr, fun _ answer => answer⟩
-  onEnv := Prod.snd
+  pullEnv := Prod.snd
   commutes := fun _ _ => rfl
 
 /-- Combine componentwise coherent routes, allowing a noninjective index map. -/
-def familyMap {A : Type k} {B : Type k'}
+def sigmaMap {A : Type k} {B : Type k'}
     {QA : A → Type u} {EA : A → Type w} {QB : B → Type u'} {EB : B → Type w'}
     (S : (a : A) → SourceCtx.{u, v, w} (QA a) (EA a))
     (T : (b : B) → SourceCtx.{u', v', w'} (QB b) (EB b))
     (index : A → B) (f : (a : A) → SourceHom (S a) (T (index a))) :
-    SourceHom (SourceCtx.family S) (SourceCtx.family T) where
+    SourceHom (SourceCtx.sigma S) (SourceCtx.sigma T) where
   route :=
     ⟨fun q => ⟨index q.1, (f q.1).route.toFunA q.2⟩,
       fun q answer => (f q.1).route.toFunB q.2 answer⟩
-  onEnv := fun env a => (f a).onEnv (env (index a))
+  pullEnv := fun env a => (f a).pullEnv (env (index a))
   commutes := fun env q => (f q.1).commutes (env (index q.1)) q.2
 
 /-- Componentwise identity routing is identity routing of the complete family. -/
 @[simp]
-theorem familyMap_id {A : Type k} {Q : A → Type u} {Env : A → Type w}
+theorem sigmaMap_id {A : Type k} {Q : A → Type u} {Env : A → Type w}
     (S : (a : A) → SourceCtx.{u, v, w} (Q a) (Env a)) :
-    familyMap S S (fun a => a) (fun a => id (S a)) = id (SourceCtx.family S) := rfl
+    sigmaMap S S (fun a => a) (fun a => id (S a)) = id (SourceCtx.sigma S) := rfl
 
 /-- Family routing preserves composition, including contravariant backing-data maps. -/
-theorem familyMap_comp {A : Type k} {B : Type k'} {C : Type k''}
+theorem sigmaMap_comp {A : Type k} {B : Type k'} {C : Type k''}
     {QA : A → Type u} {EA : A → Type w} {QB : B → Type u'} {EB : B → Type w'}
     {QC : C → Type u''} {EC : C → Type w''}
     (S : (a : A) → SourceCtx.{u, v, w} (QA a) (EA a))
@@ -275,15 +275,15 @@ theorem familyMap_comp {A : Type k} {B : Type k'} {C : Type k''}
     (index : A → B) (next : B → C)
     (f : (a : A) → SourceHom (S a) (T (index a)))
     (g : (b : B) → SourceHom (T b) (U (next b))) :
-    (familyMap T U next g).comp (familyMap S T index f) =
-      familyMap S U (next ∘ index) (fun a => (g (index a)).comp (f a)) := rfl
+    (sigmaMap T U next g).comp (sigmaMap S T index f) =
+      sigmaMap S U (next ∘ index) (fun a => (g (index a)).comp (f a)) := rfl
 
 /-- Select one component of an indexed source family. -/
-def inFamily {A : Type k} {Q : A → Type u} {Env : A → Type w}
+def sigmaInj {A : Type k} {Q : A → Type u} {Env : A → Type w}
     (S : (a : A) → SourceCtx.{u, v, w} (Q a) (Env a)) (a : A) :
-    SourceHom (S a) (SourceCtx.family S) where
+    SourceHom (S a) (SourceCtx.sigma S) where
   route := ⟨fun q => ⟨a, q⟩, fun _ answer => answer⟩
-  onEnv := fun env => env a
+  pullEnv := fun env => env a
   commutes := fun _ _ => rfl
 
 /-- A family-index equality transports queries and backing data together. -/
@@ -310,14 +310,14 @@ theorem congrFamily_trans {A : Type k} {Q : A → Type u} {Env : A → Type w}
 def toLiftResponse (S : SourceCtx.{u, v, w} I E) :
     SourceHom S (S.liftResponse.{u, v, w, v'}) where
   route := ⟨fun q => q, fun _ answer => answer.down⟩
-  onEnv := fun env => env
+  pullEnv := fun env => env
   commutes := fun _ _ => rfl
 
 /-- Route out of explicitly lifted responses and rewrap the answer. -/
 def fromLiftResponse (S : SourceCtx.{u, v, w} I E) :
     SourceHom (S.liftResponse.{u, v, w, v'}) S where
   route := ⟨fun q => q, fun _ answer => ⟨answer⟩⟩
-  onEnv := fun env => env
+  pullEnv := fun env => env
   commutes := fun _ _ => rfl
 
 section Programs
@@ -346,8 +346,8 @@ def mapProgram (f : SourceHom A B) {α : Type v} (program : OracleComp A.spec α
 /-- Program routing commutes with interpretation by the matching backing environment. -/
 theorem eval_mapProgram (f : SourceHom A B) (env : F) {α : Type v}
     (program : OracleComp A.spec α) :
-    B.eval env (f.mapProgram program) = A.eval (f.onEnv env) program := by
-  have h : QueryImpl.compose (B.handler env) f.toQueryImpl = A.handler (f.onEnv env) := by
+    B.eval env (f.mapProgram program) = A.eval (f.pullEnv env) program := by
+  have h : QueryImpl.compose (B.handler env) f.toQueryImpl = A.handler (f.pullEnv env) := by
     funext q
     exact (simulateQ_toQueryImpl f (B.handler env) q).trans (f.commutes env q).symm
   change simulateQ (B.handler env) (simulateQ f.toQueryImpl program) = _

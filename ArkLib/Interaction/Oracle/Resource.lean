@@ -8,24 +8,21 @@ module
 public import ArkLib.Interaction.Oracle.Source
 
 /-!
-# Resource identity and ideal guarantees
+# Interpreted oracle models and named contexts
 
-`ResourceCatalog` assigns typed oracle objects and metadata to stable resource identities. Its
-selected reified guarantees come with an interpretation on actual backing objects and a proof that
-those objects satisfy the interpretation. An unselected descriptor grants no guarantee.
+`OracleModel` interprets a named family of oracle interfaces and admissible realizations. It also
+assigns protocol metadata and reified property symbols to each name. Every promised property comes
+with evidence that all admissible realizations satisfy its interpretation.
 
-`ResourceSchema` allocates distinct identities: its slot-to-identity map is injective. By contrast,
-a `ResourceView` exposes handles that may alias the same allocated slot. Its environment still has
-one object per allocation, never one independent object per handle. Tensor requires disjoint
-identities; it neither manufactures fresh identities nor silently treats overlap as sharing.
+`NamedContext` represents a subcontext by an injective family of names. A
+`NamedContext.Inclusion` preserves those names exactly. A `NamedContext.View` is an indexed family
+of references into one named context; several view indices may refer to the same context index.
+Combining contexts with `disjointUnion` requires their names to be disjoint, whereas `View.share`
+combines indexed views of the same context and permits aliases.
 
-`SchemaHom` preserves stable identities. Forgetting its metadata yields a coherent `SourceHom`,
-including transport of dependent query and object types. The catalog is fixed along this map, so
-owner, origin, and the meaning of a selected guarantee cannot be changed by renaming a handle.
-
-This is an ideal resource boundary, not a memory allocator, a cryptographic commitment, a cost
-model, or a proof of knowledge. Descriptors have no assumed decidable equality. A later compiler
-must use their specified meaning rather than compare uninterpreted labels.
+Forgetting names and metadata yields coherent `SourceCtx` and `SourceHom` values, including the
+dependent transport of query and realization types. Property symbols are reified syntax with no
+assumed decidable equality; their semantics comes only from `OracleModel.satisfies`.
 -/
 
 @[expose] public section
@@ -34,143 +31,144 @@ universe i q a e o p d s h t j k
 
 namespace Interaction.Oracle
 
-/-- A fixed interpretation of stable resource identities, interfaces, and reified guarantees.
+/-- An interpretation of named oracle interfaces, realizations, metadata, and reified properties.
 
-A refined backing type can express a guarantee such as a degree bound without storing a polynomial
-in the query interface. The selected-descriptor predicate may be empty, so unused descriptor
-languages need not be inhabited. -/
-structure ResourceCatalog (Id : Type i) (Query : Id → Type q) (Object : Id → Type a)
-    (Owner : Type o) (Origin : Type p) (Descriptor : Id → Type d) where
-  /-- Extensional access to one resource's backing object. -/
-  source : (r : Id) → SourceCtx.{q, e, a} (Query r) (Object r)
-  /-- Who is responsible for this resource; not inferred from its query signature. -/
+A refined realization type can express a guarantee such as a degree bound without placing the
+polynomial in the query interface. The promised-property predicate may be empty, so a property
+language need not be inhabited when no property is promised. -/
+structure OracleModel (Id : Type i) (Query : Id → Type q) (Realization : Id → Type a)
+    (Owner : Type o) (Origin : Type p) (PropertySymbol : Id → Type d) where
+  /-- The interpreted source for one oracle name. -/
+  source : (r : Id) → SourceCtx.{q, e, a} (Query r) (Realization r)
+  /-- Who is responsible for this oracle; not inferred from its query signature. -/
   owner : Id → Owner
-  /-- The resource's origin, in a client-supplied provenance language. -/
+  /-- The oracle's origin, in a client-supplied provenance language. -/
   origin : Id → Origin
-  /-- The semantic interpretation of a descriptor on the actual backing object. -/
-  meaning : (r : Id) → Descriptor r → Object r → Prop
-  /-- The reified ideal guarantees selected for each identity. -/
-  required : (r : Id) → Descriptor r → Prop
-  /-- Every admissible object realizes every selected ideal guarantee. -/
-  valid : ∀ (r : Id) (d : Descriptor r), required r d → ∀ obj, meaning r d obj
+  /-- The semantic interpretation of a property symbol on an admissible realization. -/
+  satisfies : (r : Id) → PropertySymbol r → Realization r → Prop
+  /-- The reified properties promised for each oracle name. -/
+  promised : (r : Id) → PropertySymbol r → Prop
+  /-- Every admissible realization satisfies every promised property. -/
+  satisfies_promises : ∀ (r : Id) (d : PropertySymbol r), promised r d → ∀ obj, satisfies r d obj
 
-namespace ResourceCatalog
+namespace OracleModel
 
-variable {Id : Type i} {Query : Id → Type q} {Object : Id → Type a}
-  {Owner : Type o} {Origin : Type p} {Descriptor : Id → Type d}
+variable {Id : Type i} {Query : Id → Type q} {Realization : Id → Type a}
+  {Owner : Type o} {Origin : Type p} {PropertySymbol : Id → Type d}
 
-/-- A selected guarantee carries its descriptor and the evidence that it is required. -/
+/-- A selected guarantee carries its property symbol and evidence that it is promised. -/
 abbrev Guarantee
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (r : Id) := {d : Descriptor r // C.required r d}
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (r : Id) := {d : PropertySymbol r // C.promised r d}
 
-/-- A selected descriptor holds of every admissible object for its resource identity. -/
-theorem realizes
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (r : Id) (guarantee : C.Guarantee r) (obj : Object r) :
-    C.meaning r guarantee.val obj :=
-  C.valid r guarantee.val guarantee.property obj
+/-- A promised property holds of every admissible realization for its oracle name. -/
+theorem satisfies_guarantee
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (r : Id) (guarantee : C.Guarantee r) (obj : Realization r) :
+    C.satisfies r guarantee.val obj :=
+  C.satisfies_promises r guarantee.val guarantee.property obj
 
-end ResourceCatalog
+end OracleModel
 
-/-- A set of allocated resource slots with distinct stable identities. -/
-structure ResourceSchema (Id : Type i) where
-  /-- Allocated slots; this need not include every identity in the catalog. -/
-  Slot : Type s
-  /-- Allocation never gives two independently realized slots the same identity. -/
-  key : Slot ↪ Id
+/-- A represented subcontext whose indices have distinct names. -/
+structure NamedContext (Id : Type i) where
+  /-- Indices for the represented names; these need not cover the entire model. -/
+  Index : Type s
+  /-- The injective assignment of a name to each context index. -/
+  name : Index ↪ Id
 
-namespace ResourceSchema
+namespace NamedContext
 
 variable {Id : Type i}
 
-/-- No resources are allocated. -/
-def empty : ResourceSchema.{i, s} Id where
-  Slot := PEmpty
-  key := ⟨PEmpty.elim, fun x => PEmpty.elim x⟩
+/-- The empty named context. -/
+def empty : NamedContext.{i, s} Id where
+  Index := PEmpty
+  name := ⟨PEmpty.elim, fun x => PEmpty.elim x⟩
 
-/-- Allocate exactly one resource. Multiple handles to it belong in a `ResourceView`. -/
-def single (r : Id) : ResourceSchema.{i, 0} Id where
-  Slot := PUnit
-  key := ⟨fun _ => r, fun _ _ _ => Subsingleton.elim _ _⟩
+/-- The context containing exactly one name. Repeated references belong in a `NamedContext.View`. -/
+def single (r : Id) : NamedContext.{i, 0} Id where
+  Index := PUnit
+  name := ⟨fun _ => r, fun _ _ _ => Subsingleton.elim _ _⟩
 
-/-- Restrict or rename allocated slots without duplicating them. -/
-def reindex (S : ResourceSchema.{i, s} Id) {A : Type t} (f : A ↪ S.Slot) :
-    ResourceSchema.{i, t} Id where
-  Slot := A
-  key := ⟨fun a => S.key (f a), fun _ _ h => f.injective (S.key.injective h)⟩
+/-- Reindex a named context along an injection. -/
+def reindex (S : NamedContext.{i, s} Id) {A : Type t} (f : A ↪ S.Index) :
+    NamedContext.{i, t} Id where
+  Index := A
+  name := ⟨fun a => S.name (f a), fun _ _ h => f.injective (S.name.injective h)⟩
 
-/-- Two allocations have no stable identity in common. -/
-def Disjoint (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id) : Prop :=
-  ∀ (x : S.Slot) (y : T.Slot), S.key x ≠ T.key y
+/-- Two named contexts have no name in common. -/
+def Disjoint (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id) : Prop :=
+  ∀ (x : S.Index) (y : T.Index), S.name x ≠ T.name y
 
-theorem Disjoint.symm {S : ResourceSchema.{i, s} Id} {T : ResourceSchema.{i, t} Id}
+theorem Disjoint.symm {S : NamedContext.{i, s} Id} {T : NamedContext.{i, t} Id}
     (h : S.Disjoint T) : T.Disjoint S :=
   fun y x eq => h x y eq.symm
 
-/-- A nonempty allocation cannot be tensored with itself as a disjoint allocation. -/
-theorem not_disjoint_self (S : ResourceSchema.{i, s} Id) (x : S.Slot) :
+/-- A nonempty named context is not disjoint from itself. -/
+theorem not_disjoint_self (S : NamedContext.{i, s} Id) (x : S.Index) :
     ¬ S.Disjoint S :=
   fun h => h x x rfl
 
-/-- Combine disjoint allocations without changing either side's stable identities. -/
-def tensor (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id)
-    (h : S.Disjoint T) : ResourceSchema.{i, max s t} Id where
-  Slot := S.Slot ⊕ T.Slot
-  key :=
-    ⟨Sum.elim S.key T.key, by
+/-- Combine two name-disjoint contexts. -/
+def disjointUnion (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id)
+    (h : S.Disjoint T) : NamedContext.{i, max s t} Id where
+  Index := S.Index ⊕ T.Index
+  name :=
+    ⟨Sum.elim S.name T.name, by
       intro x y eq
       cases x with
       | inl x =>
         cases y with
-        | inl y => exact congrArg Sum.inl (S.key.injective eq)
+        | inl y => exact congrArg Sum.inl (S.name.injective eq)
         | inr y => exact (h x y eq).elim
       | inr x =>
         cases y with
         | inl y => exact (h y x eq.symm).elim
-        | inr y => exact congrArg Sum.inr (T.key.injective eq)⟩
+        | inr y => exact congrArg Sum.inr (T.name.injective eq)⟩
 
 @[simp]
-theorem tensor_key_inl (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id)
-    (h : S.Disjoint T) (x : S.Slot) : (S.tensor T h).key (.inl x) = S.key x := rfl
+theorem disjointUnion_name_inl (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id)
+    (h : S.Disjoint T) (x : S.Index) : (S.disjointUnion T h).name (.inl x) = S.name x := rfl
 
 @[simp]
-theorem tensor_key_inr (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id)
-    (h : S.Disjoint T) (y : T.Slot) : (S.tensor T h).key (.inr y) = T.key y := rfl
+theorem disjointUnion_name_inr (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id)
+    (h : S.Disjoint T) (y : T.Index) : (S.disjointUnion T h).name (.inr y) = T.name y := rfl
 
-variable {Query : Id → Type q} {Object : Id → Type a}
-  {Owner : Type o} {Origin : Type p} {Descriptor : Id → Type d}
+variable {Query : Id → Type q} {Realization : Id → Type a}
+  {Owner : Type o} {Origin : Type p} {PropertySymbol : Id → Type d}
 
-/-- Forget metadata, interpreting exactly the allocated objects and no unused catalog entries. -/
-def asSource (S : ResourceSchema.{i, s} Id)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
+/-- Interpret the indexed oracle family named by this context. -/
+def asSource (S : NamedContext.{i, s} Id)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
     SourceCtx.{max s q, e, max s a}
-      ((x : S.Slot) × Query (S.key x)) ((x : S.Slot) → Object (S.key x)) :=
-  SourceCtx.family (fun x => C.source (S.key x))
+      ((x : S.Index) × Query (S.name x)) ((x : S.Index) → Realization (S.name x)) :=
+  SourceCtx.sigma (fun x => C.source (S.name x))
 
-/-- A selected guarantee holds for the object answering this allocated resource's queries. -/
-theorem asSource_guarantee (S : ResourceSchema.{i, s} Id)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (env : (x : S.Slot) → Object (S.key x)) (x : S.Slot)
-    (guarantee : C.Guarantee (S.key x)) :
-    C.meaning (S.key x) guarantee.val (env x) :=
-  C.realizes (S.key x) guarantee (env x)
+/-- A promised guarantee holds for the realization interpreting this context index. -/
+theorem asSource_guarantee (S : NamedContext.{i, s} Id)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (env : (x : S.Index) → Realization (S.name x)) (x : S.Index)
+    (guarantee : C.Guarantee (S.name x)) :
+    C.satisfies (S.name x) guarantee.val (env x) :=
+  C.satisfies_guarantee (S.name x) guarantee (env x)
 
 @[simp]
-theorem asSource_handler (S : ResourceSchema.{i, s} Id)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (env : (x : S.Slot) → Object (S.key x)) (x : S.Slot) (q : Query (S.key x)) :
-    (S.asSource C).handler env ⟨x, q⟩ = (C.source (S.key x)).handler (env x) q := rfl
+theorem asSource_handler (S : NamedContext.{i, s} Id)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (env : (x : S.Index) → Realization (S.name x)) (x : S.Index) (q : Query (S.name x)) :
+    (S.asSource C).handler env ⟨x, q⟩ = (C.source (S.name x)).handler (env x) q := rfl
 
 
-/-- Forgetting a disjoint allocation tensor agrees with tensoring its extensional sources.
+/-- Interpreting a disjoint union agrees with summing the interpreted sources.
 
-The explicit equivalence accounts for the dependent sum of slots and the product presentation of
-backing environments. Both round trips preserve query routing and the complete backing data. -/
-def tensorSourceEquiv (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id)
+The query maps distribute dependent query families over the sum of context indices; the
+environment maps split and combine their realization families. Both round trips preserve query
+routing and every realization. -/
+def disjointUnionSourceEquiv (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id)
     (h : S.Disjoint T)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
-    SourceEquiv ((S.tensor T h).asSource C) ((S.asSource C).tensor (T.asSource C)) where
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
+    SourceEquiv ((S.disjointUnion T h).asSource C) ((S.asSource C).sum (T.asSource C)) where
   toHom :=
     { route :=
         { toFunA := fun
@@ -179,7 +177,7 @@ def tensorSourceEquiv (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} 
           toFunB := by
             rintro ⟨x, query⟩ answer
             cases x <;> exact answer }
-      onEnv := fun env x => match x with
+      pullEnv := fun env x => match x with
         | .inl x => env.1 x
         | .inr x => env.2 x
       commutes := by
@@ -193,7 +191,7 @@ def tensorSourceEquiv (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} 
           toFunB := by
             intro query answer
             cases query <;> exact answer }
-      onEnv := fun env => (fun x => env (.inl x), fun x => env (.inr x))
+      pullEnv := fun env => (fun x => env (.inl x), fun x => env (.inr x))
       commutes := by
         intro env query
         cases query <;> rfl }
@@ -211,208 +209,211 @@ def tensorSourceEquiv (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} 
       cases query <;> rfl
     · rfl
 
-end ResourceSchema
+end NamedContext
 
 variable {Id : Type i}
 
-/-- An allocation map preserving stable identities, not just extensionally equal answers. -/
-structure SchemaHom (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id) where
-  /-- Target allocation serving each source slot. -/
-  map : S.Slot → T.Slot
-  /-- Stable identity is unchanged. This also fixes its catalog entry and object type. -/
-  key_eq : ∀ x, T.key (map x) = S.key x
+/-- A name-preserving inclusion between represented named contexts. -/
+structure NamedContext.Inclusion (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id) where
+  /-- The target context index for each source context index. -/
+  map : S.Index → T.Index
+  /-- The oracle name is preserved exactly. -/
+  name_eq : ∀ x, T.name (map x) = S.name x
 
-namespace SchemaHom
+namespace NamedContext.Inclusion
 
-variable {S : ResourceSchema.{i, s} Id} {T : ResourceSchema.{i, t} Id}
-  {U : ResourceSchema.{i, j} Id} {V : ResourceSchema.{i, k} Id}
+variable {S : NamedContext.{i, s} Id} {T : NamedContext.{i, t} Id}
+  {U : NamedContext.{i, j} Id} {V : NamedContext.{i, k} Id}
 
-/-- A coherent allocation map cannot merge distinct resources. -/
-theorem injective (f : SchemaHom S T) : Function.Injective f.map := by
+/-- A name-preserving inclusion is injective. -/
+theorem injective (f : NamedContext.Inclusion S T) : Function.Injective f.map := by
   intro x y h
-  apply S.key.injective
-  exact (f.key_eq x).symm.trans ((congrArg T.key h).trans (f.key_eq y))
+  apply S.name.injective
+  exact (f.name_eq x).symm.trans ((congrArg T.name h).trans (f.name_eq y))
 
-/-- Extensionality of allocation maps. -/
+/-- Extensionality of context inclusions. -/
 @[ext]
-theorem ext {f g : SchemaHom S T} (h : f.map = g.map) : f = g := by
+theorem ext {f g : NamedContext.Inclusion S T} (h : f.map = g.map) : f = g := by
   cases f
   cases g
   cases h
   rfl
 
-/-- Identity allocation map. -/
-def id (S : ResourceSchema.{i, s} Id) : SchemaHom S S :=
+/-- The identity context inclusion. -/
+def id (S : NamedContext.{i, s} Id) : NamedContext.Inclusion S S :=
   ⟨fun x => x, fun _ => rfl⟩
 
-/-- Compose allocation maps in function order. -/
-def comp (g : SchemaHom T U) (f : SchemaHom S T) : SchemaHom S U :=
-  ⟨g.map ∘ f.map, fun x => (g.key_eq (f.map x)).trans (f.key_eq x)⟩
+/-- Compose context inclusions in function order. -/
+def comp (g : NamedContext.Inclusion T U) (f : NamedContext.Inclusion S T) :
+    NamedContext.Inclusion S U :=
+  ⟨g.map ∘ f.map, fun x => (g.name_eq (f.map x)).trans (f.name_eq x)⟩
 
 @[simp]
-theorem id_comp (f : SchemaHom S T) : (id T).comp f = f := by cases f; rfl
+theorem id_comp (f : NamedContext.Inclusion S T) : (id T).comp f = f := by cases f; rfl
 
 @[simp]
-theorem comp_id (f : SchemaHom S T) : f.comp (id S) = f := by cases f; rfl
+theorem comp_id (f : NamedContext.Inclusion S T) : f.comp (id S) = f := by cases f; rfl
 
-theorem comp_assoc (h : SchemaHom U V) (g : SchemaHom T U) (f : SchemaHom S T) :
+theorem comp_assoc (h : NamedContext.Inclusion U V) (g : NamedContext.Inclusion T U)
+    (f : NamedContext.Inclusion S T) :
     (h.comp g).comp f = h.comp (g.comp f) := rfl
 
-/-- Inclusion of an injectively reindexed allocation. -/
-def fromReindex (S : ResourceSchema.{i, s} Id) {A : Type t} (f : A ↪ S.Slot) :
-    SchemaHom (S.reindex f) S :=
+/-- Include an injectively reindexed context in its original context. -/
+def fromReindex (S : NamedContext.{i, s} Id) {A : Type t} (f : A ↪ S.Index) :
+    NamedContext.Inclusion (S.reindex f) S :=
   ⟨f, fun _ => rfl⟩
 
-/-- Left allocation inclusion for a disjoint tensor. -/
-def inl (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id)
-    (h : S.Disjoint T) : SchemaHom S (S.tensor T h) :=
+/-- Include the left context in a disjoint union. -/
+def inl (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id)
+    (h : S.Disjoint T) : NamedContext.Inclusion S (S.disjointUnion T h) :=
   ⟨Sum.inl, fun _ => rfl⟩
 
-/-- Right allocation inclusion for a disjoint tensor. -/
-def inr (S : ResourceSchema.{i, s} Id) (T : ResourceSchema.{i, t} Id)
-    (h : S.Disjoint T) : SchemaHom T (S.tensor T h) :=
+/-- Include the right context in a disjoint union. -/
+def inr (S : NamedContext.{i, s} Id) (T : NamedContext.{i, t} Id)
+    (h : S.Disjoint T) : NamedContext.Inclusion T (S.disjointUnion T h) :=
   ⟨Sum.inr, fun _ => rfl⟩
 
-variable {Query : Id → Type q} {Object : Id → Type a}
-  {Owner : Type o} {Origin : Type p} {Descriptor : Id → Type d}
+variable {Query : Id → Type q} {Realization : Id → Type a}
+  {Owner : Type o} {Origin : Type p} {PropertySymbol : Id → Type d}
 
-/-- Forget resource metadata while retaining the matching dependent backing-data transport. -/
-def toSourceHom (f : SchemaHom S T)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
+/-- Interpret a context inclusion as a source morphism. -/
+def toSourceHom (f : NamedContext.Inclusion S T)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
     SourceHom (S.asSource C) (T.asSource C) :=
-  SourceHom.familyMap (fun x => C.source (S.key x)) (fun y => C.source (T.key y))
-    f.map (fun x => SourceHom.congrFamily C.source (f.key_eq x).symm)
+  SourceHom.sigmaMap (fun x => C.source (S.name x)) (fun y => C.source (T.name y))
+    f.map (fun x => SourceHom.congrFamily C.source (f.name_eq x).symm)
 
-/-- Forgetting allocation identity preserves identity routing, including backing data. -/
+/-- Interpreting the identity inclusion yields the identity source morphism. -/
 @[simp]
-theorem toSourceHom_id (S : ResourceSchema.{i, s} Id)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
+theorem toSourceHom_id (S : NamedContext.{i, s} Id)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
     (id S).toSourceHom C = SourceHom.id (S.asSource C) := rfl
 
-/-- Forgetting allocation identity preserves composition, not merely query labels. -/
-theorem toSourceHom_comp (g : SchemaHom T U) (f : SchemaHom S T)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
+/-- Interpreting context inclusions preserves composition. -/
+theorem toSourceHom_comp (g : NamedContext.Inclusion T U) (f : NamedContext.Inclusion S T)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
     (g.comp f).toSourceHom C = (g.toSourceHom C).comp (f.toSourceHom C) := by
-  dsimp only [toSourceHom, ResourceSchema.asSource, comp]
-  rw [SourceHom.familyMap_comp]
+  dsimp only [toSourceHom, NamedContext.asSource, comp]
+  rw [SourceHom.sigmaMap_comp]
   congr 1
   funext x
-  exact (SourceHom.congrFamily_trans C.source (f.key_eq x).symm
-    (g.key_eq (f.map x)).symm).symm
+  exact (SourceHom.congrFamily_trans C.source (f.name_eq x).symm
+    (g.name_eq (f.map x)).symm).symm
 
-/-- Owner metadata is preserved independently of the extensional handler. -/
-theorem owner_eq (f : SchemaHom S T)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (x : S.Slot) : C.owner (T.key (f.map x)) = C.owner (S.key x) :=
-  congrArg C.owner (f.key_eq x)
+/-- Owner metadata agrees along a context inclusion. -/
+theorem owner_eq (f : NamedContext.Inclusion S T)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (x : S.Index) : C.owner (T.name (f.map x)) = C.owner (S.name x) :=
+  congrArg C.owner (f.name_eq x)
 
-/-- Origin metadata is preserved independently of the extensional handler. -/
-theorem origin_eq (f : SchemaHom S T)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (x : S.Slot) : C.origin (T.key (f.map x)) = C.origin (S.key x) :=
-  congrArg C.origin (f.key_eq x)
+/-- Origin metadata agrees along a context inclusion. -/
+theorem origin_eq (f : NamedContext.Inclusion S T)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (x : S.Index) : C.origin (T.name (f.map x)) = C.origin (S.name x) :=
+  congrArg C.origin (f.name_eq x)
 
-/-- The routed environment satisfies each selected guarantee about the routed object. -/
-theorem pulled_guarantee (f : SchemaHom S T)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (env : (y : T.Slot) → Object (T.key y)) (x : S.Slot)
-    (guarantee : C.Guarantee (S.key x)) :
-    C.meaning (S.key x) guarantee.val ((f.toSourceHom C).onEnv env x) :=
-  C.realizes (S.key x) guarantee ((f.toSourceHom C).onEnv env x)
+/-- A pulled realization satisfies every guarantee promised at its preserved name. -/
+theorem pulled_guarantee (f : NamedContext.Inclusion S T)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (env : (y : T.Index) → Realization (T.name y)) (x : S.Index)
+    (guarantee : C.Guarantee (S.name x)) :
+    C.satisfies (S.name x) guarantee.val ((f.toSourceHom C).pullEnv env x) :=
+  C.satisfies_guarantee (S.name x) guarantee ((f.toSourceHom C).pullEnv env x)
 
-end SchemaHom
+end NamedContext.Inclusion
 
-/-- Handles exposing an allocation. Unlike the allocation's key, resolution may be many-to-one. -/
-structure ResourceView (S : ResourceSchema.{i, s} Id) where
-  /-- Public handles, possibly with aliases. -/
-  Handle : Type h
-  /-- Aliases resolve to one allocated object rather than two asserted-equal copies. -/
-  resolve : Handle → S.Slot
+/-- An indexed family of references into a named context. -/
+structure NamedContext.View (S : NamedContext.{i, s} Id) where
+  /-- Indices of the view, possibly containing aliases. -/
+  Index : Type h
+  /-- The referenced context index; this map may be many-to-one. -/
+  toIndex : Index → S.Index
 
-namespace ResourceView
+namespace NamedContext.View
 
-variable {S : ResourceSchema.{i, s} Id} {T : ResourceSchema.{i, t} Id}
+variable {S : NamedContext.{i, s} Id} {T : NamedContext.{i, t} Id}
 
-/-- Expose each allocated slot under its own handle. -/
-def full (S : ResourceSchema.{i, s} Id) : ResourceView.{i, s, s} S :=
-  ⟨S.Slot, fun x => x⟩
+/-- The full view containing one view index for each context index. -/
+def full (S : NamedContext.{i, s} Id) : NamedContext.View.{i, s, s} S :=
+  ⟨S.Index, fun x => x⟩
 
-/-- Reindex exposed handles; noninjective maps introduce sharing without allocating anything. -/
-def reindex (view : ResourceView.{i, s, h} S) {A : Type j} (f : A → view.Handle) :
-    ResourceView.{i, s, j} S :=
-  ⟨A, view.resolve ∘ f⟩
+/-- Reindex a view; a noninjective map introduces aliases. -/
+def reindex (view : NamedContext.View.{i, s, h} S) {A : Type j} (f : A → view.Index) :
+    NamedContext.View.{i, s, j} S :=
+  ⟨A, view.toIndex ∘ f⟩
 
-/-- Handle reindexing preserves identity. -/
+/-- Reindexing by the identity function preserves the view. -/
 @[simp]
-theorem reindex_id (view : ResourceView.{i, s, h} S) :
+theorem reindex_id (view : NamedContext.View.{i, s, h} S) :
     view.reindex (fun x => x) = view := by cases view; rfl
 
-/-- Handle reindexing preserves composition without changing the allocation. -/
-theorem reindex_comp (view : ResourceView.{i, s, h} S) {A : Type j} {B : Type k}
-    (f : A → view.Handle) (g : B → A) :
+/-- Successive view reindexings compose. -/
+theorem reindex_comp (view : NamedContext.View.{i, s, h} S) {A : Type j} {B : Type k}
+    (f : A → view.Index) (g : B → A) :
     (view.reindex f).reindex g = view.reindex (f ∘ g) := rfl
 
-/-- Combine two views of the same allocation with explicit sharing, not a disjoint tensor. -/
-def share (left : ResourceView.{i, s, h} S) (right : ResourceView.{i, s, j} S) :
-    ResourceView S :=
-  ⟨left.Handle ⊕ right.Handle, Sum.elim left.resolve right.resolve⟩
+/-- Combine two indexed views of the same named context. -/
+def share (left : NamedContext.View.{i, s, h} S) (right : NamedContext.View.{i, s, j} S) :
+    NamedContext.View S :=
+  ⟨left.Index ⊕ right.Index, Sum.elim left.toIndex right.toIndex⟩
 
 @[simp]
-theorem share_resolve_inl (left : ResourceView.{i, s, h} S)
-    (right : ResourceView.{i, s, j} S) (x : left.Handle) :
-    (left.share right).resolve (.inl x) = left.resolve x := rfl
+theorem share_toIndex_inl (left : NamedContext.View.{i, s, h} S)
+    (right : NamedContext.View.{i, s, j} S) (x : left.Index) :
+    (left.share right).toIndex (.inl x) = left.toIndex x := rfl
 
 @[simp]
-theorem share_resolve_inr (left : ResourceView.{i, s, h} S)
-    (right : ResourceView.{i, s, j} S) (x : right.Handle) :
-    (left.share right).resolve (.inr x) = right.resolve x := rfl
+theorem share_toIndex_inr (left : NamedContext.View.{i, s, h} S)
+    (right : NamedContext.View.{i, s, j} S) (x : right.Index) :
+    (left.share right).toIndex (.inr x) = right.toIndex x := rfl
 
-/-- The stable identity of the allocation serving a handle. -/
-def key (view : ResourceView.{i, s, h} S) (x : view.Handle) : Id :=
-  S.key (view.resolve x)
+/-- The oracle name referenced by a view index. -/
+def name (view : NamedContext.View.{i, s, h} S) (x : view.Index) : Id :=
+  S.name (view.toIndex x)
 
-/-- Aliasing is equality of physical slots, equivalently equality of their stable identities. -/
-theorem key_eq_iff (view : ResourceView.{i, s, h} S) (x y : view.Handle) :
-    view.key x = view.key y ↔ view.resolve x = view.resolve y :=
-  S.key.injective.eq_iff
+/-- Two view indices alias exactly when they reference the same named-context index. -/
+theorem name_eq_iff (view : NamedContext.View.{i, s, h} S) (x y : view.Index) :
+    view.name x = view.name y ↔ view.toIndex x = view.toIndex y :=
+  S.name.injective.eq_iff
 
-/-- Combine exposed handles only after checking the underlying allocations are disjoint. -/
-def tensor (left : ResourceView.{i, s, h} S) (right : ResourceView.{i, t, j} T)
-    (h : S.Disjoint T) : ResourceView (S.tensor T h) :=
-  ⟨left.Handle ⊕ right.Handle, Sum.map left.resolve right.resolve⟩
+/-- Combine views whose underlying named contexts are disjoint. -/
+def disjointUnion (left : NamedContext.View.{i, s, h} S)
+    (right : NamedContext.View.{i, t, j} T) (h : S.Disjoint T) :
+    NamedContext.View (S.disjointUnion T h) :=
+  ⟨left.Index ⊕ right.Index, Sum.map left.toIndex right.toIndex⟩
 
-variable {Query : Id → Type q} {Object : Id → Type a}
-  {Owner : Type o} {Origin : Type p} {Descriptor : Id → Type d}
+variable {Query : Id → Type q} {Realization : Id → Type a}
+  {Owner : Type o} {Origin : Type p} {PropertySymbol : Id → Type d}
 
-/-- Forget handle metadata but retain the original, allocation-indexed backing environment. -/
-def asSource (view : ResourceView.{i, s, h} S)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
+/-- Interpret a view using the realization family indexed by its named context. -/
+def asSource (view : NamedContext.View.{i, s, h} S)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
     SourceCtx.{max h q, e, max s a}
-      ((x : view.Handle) × Query (view.key x)) ((x : S.Slot) → Object (S.key x)) :=
-  (S.asSource C).reindex (fun query => ⟨view.resolve query.1, query.2⟩)
+      ((x : view.Index) × Query (view.name x)) ((x : S.Index) → Realization (S.name x)) :=
+  (S.asSource C).reindex (fun query => ⟨view.toIndex query.1, query.2⟩)
 
-/-- Exposing handles is pure reindexing over the same backing objects. -/
-def toSourceHom (view : ResourceView.{i, s, h} S)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor) :
+/-- Interpret a view as reindexing over the same realization family. -/
+def toSourceHom (view : NamedContext.View.{i, s, h} S)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol) :
     SourceHom (view.asSource C) (S.asSource C) :=
   SourceHom.fromReindex (S.asSource C)
-    (fun query : (x : view.Handle) × Query (view.key x) => ⟨view.resolve query.1, query.2⟩)
+    (fun query : (x : view.Index) × Query (view.name x) => ⟨view.toIndex query.1, query.2⟩)
 
 @[simp]
-theorem asSource_handler (view : ResourceView.{i, s, h} S)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (env : (x : S.Slot) → Object (S.key x)) (x : view.Handle) (q : Query (view.key x)) :
+theorem asSource_handler (view : NamedContext.View.{i, s, h} S)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (env : (x : S.Index) → Realization (S.name x)) (x : view.Index) (q : Query (view.name x)) :
     (view.asSource C).handler env ⟨x, q⟩ =
-      (C.source (view.key x)).handler (env (view.resolve x)) q := rfl
+      (C.source (view.name x)).handler (env (view.toIndex x)) q := rfl
 
-/-- Every alias inherits each selected guarantee of the single object it observes. -/
-theorem asSource_guarantee (view : ResourceView.{i, s, h} S)
-    (C : ResourceCatalog.{i, q, a, e, o, p, d} Id Query Object Owner Origin Descriptor)
-    (env : (x : S.Slot) → Object (S.key x)) (x : view.Handle)
-    (guarantee : C.Guarantee (view.key x)) :
-    C.meaning (view.key x) guarantee.val (env (view.resolve x)) :=
-  C.realizes (view.key x) guarantee (env (view.resolve x))
+/-- Every alias inherits each guarantee promised for the realization it references. -/
+theorem asSource_guarantee (view : NamedContext.View.{i, s, h} S)
+    (C : OracleModel.{i, q, a, e, o, p, d} Id Query Realization Owner Origin PropertySymbol)
+    (env : (x : S.Index) → Realization (S.name x)) (x : view.Index)
+    (guarantee : C.Guarantee (view.name x)) :
+    C.satisfies (view.name x) guarantee.val (env (view.toIndex x)) :=
+  C.satisfies_guarantee (view.name x) guarantee (env (view.toIndex x))
 
-end ResourceView
+end NamedContext.View
 
 end Interaction.Oracle
