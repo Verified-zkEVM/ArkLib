@@ -40,12 +40,29 @@ import ArkLibTest.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Fas
 import
 ArkLibTest.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.Geometry.Projection
 import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.ZerothOrderDecoder.CenterSearch
+import
+ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.HigherOrderProducer.DirectSelection
+import ArkLibTest.Data.Graph.GabberGalilConstruction.Basic
+import ArkLibTest.Data.Polynomial.Rojas.Producer.Linear
+import ArkLibTest.Data.Polynomial.Rojas.Producer.Univariate
+import ArkLibTest.Data.FiniteField.ExplicitConstruction.Quotient
+import ArkLibTest.Data.FiniteField.ExplicitConstruction.Centers
+import ArkLibTest.Data.Polynomial.FunctionFieldAlgorithms.StoredFraction
+import ArkLibTest.Data.Polynomial.FunctionFieldAlgorithms.Euclidean
+import ArkLibTest.Data.Polynomial.FullSquarefreeDecomposition.Residues
+import ArkLibTest.Data.Polynomial.FullSquarefreeDecomposition.Frobenius
+import ArkLibTest.Data.Polynomial.FullSquarefreeDecomposition.TreeRefinement
+import ArkLibTest.Data.Polynomial.NormProducts.MultiplicationMatrix
+import
+ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormProducer.UniversalAgreements
 import Mathlib.Algebra.Field.ZMod
 
 /-!
-# Compiled finite-representation recovery checks
+# Compiled decoder algebra, producer and recovery checks
 
-Run with `lake exe agreement-recovery-runtime`. These checks execute polynomial gcd splitting,
+Run with `lake exe agreement-recovery-runtime`. These checks exercise stored function-field
+arithmetic, decomposition stages, norms, universal scans, field construction slices, resultants,
+graph/direct selection, Taylor algebra and polynomial gcd splitting,
 base-field interpolation, agreement filtering, and deduplication. In particular, an irreducible
 quadratic modulus must work even though it has no root in the base field. The kernel proofs of
 coverage and exactness are separate from these concrete runtime checks.
@@ -96,6 +113,19 @@ private def linearFixtureBackend :
 /-- Exercise nonlinear blocks, extension-only roots, repeated images, final filtering,
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
+  FunctionFieldAlgorithmsTests.run
+  FunctionFieldEuclidTests.run
+  FullSquarefreeResidueTests.run
+  FullSquarefreeFrobeniusTests.run
+  FullSquarefreeTreeTests.run
+  NormProductsTests.run
+  UniversalAgreementTests.run
+  ArkLibTest.DirectSelection.run
+  GabberGalilTest.run
+  RojasLinearProducerTests.run
+  RojasUnivariateProducerTests.run
+  ExplicitQuotientTests.run
+  ExplicitCenterTests.run
   ArkLibTest.TowerFoundations.run
   ArkLibTest.BatchedTower.run
   ArkLibTest.PreprocessAccounting.run

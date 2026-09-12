@@ -40,21 +40,23 @@ while the paper defines the mathematical target.
 ## Current task board
 
 Personal 4 coordinates integration and owns G03–G05 and G10. Personal 1 owns G01/G02/G06.
-G07–G09 remain deferred under this coordinator’s current assignment. Branches listed below
-record this coordinator’s assignments, not automatic launches.
+Personal 3 owns G07–G09; the user confirmed all three teams are active. Personal 2 is unavailable.
+The [Personal 1 checkpoint](personal-1-checkpoint.md) records seven algebra/decomposition/norm
+slices. The [Personal 3 checkpoint](personal-3-checkpoint.md) records the six collected slices and their
+remaining obligations. Personal 4 remains the sole core integration owner.
 
 | ID | Work | State | First action |
 | --- | --- | --- | --- |
 | I0 | Shared Lean interface freeze | Personal 4; payload slice implemented | Full geometry/local/global validity contracts remain open |
-| G01 | Function-field algebra and multivariate gcd | Personal 1; initial slice assigned | Arithmetic, multivariate gcd, exact division and descent |
-| G02 | Full squarefree decomposition | Personal 1; initial slice assigned | Labelled decomposition over a certified computational field |
+| G01 | Function-field algebra and multivariate gcd | Personal 1; field/Euclid slices collected | Canonical extraction, multivariate gcd, normalization and descent |
+| G02 | Full squarefree decomposition | Personal 1; residue/Frobenius/tree slices collected | Full labelled recursive driver and threshold bridge |
 | G03 | Taylor geometry | Personal 4; projection leaf implemented | Grid selection, monic coefficient bounds and good-fiber producer |
 | G04 | Taylor local algebra and lifting | Personal 4; nilpotence/arithmetic slice | Lift the constant-fiber inverse and implement differential Newton |
 | G05 | Taylor reconstruction | Personal 4; shift recovery implemented | Weighted reduction, clearing and global coverage |
-| G06 | First-order norms | Personal 1; norm slice assigned | Polynomial multiplication matrix and actual norm |
-| G07 | Explicit fields | Deferred in current assignment | Center-field adapter and general-extension construction interfaces |
-| G08 | Rojas producer | Deferred in current assignment | System-to-perturbation construction tied to its input |
-| G09 | Higher-order selection | Deferred in current assignment | Direct chart system and separate expander foundation |
+| G06 | First-order norms | Personal 1; norm/universal-scan slices collected | Chart count, multiplicity product and candidate coverage |
+| G07 | Explicit fields | Personal 3; quotient/center slices collected | General-extension constructor and field/prefix adapter |
+| G08 | Rojas producer | Personal 3; linear/resultant slices collected | General input-dependent perturbation and isolated-root coverage |
+| G09 | Higher-order selection | Personal 3; graph/direct slices collected | Chart differential adapter, spectral certificate and powering |
 | G10 | Dedicated zeroth-order decoder | Personal 4; single-center conditional slice | Batched obstruction, normalization and interpolation correspondence |
 | I1 | Integration and independent review | Personal 4 | Accept compiled slices; maintain this board and obligation ledger |
 

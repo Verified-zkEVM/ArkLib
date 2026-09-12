@@ -7,6 +7,11 @@ boundary is `FastTaylor.ChartData`; its tested producer/consumer clients fix coo
 Taylor-coefficient conventions, but do not freeze full validity or coverage records. Do not independently
 create competing versions of these records in several workstreams.
 
+The payload dependency is commit `21310026e27b9c13ea64999c095b7770cda22bad`.
+Teams should record adoption of this exact checkpoint; it does not freeze full chart validity
+or coverage. Local numerator indices are ascending Taylor powers; final `ExactOutput`
+vectors retain the descending fixed-width convention.
+
 ## Freeze procedure
 
 1. Inventory existing types and reuse their source owners.

@@ -258,7 +258,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
 | `regular-lift-runtime` | `scripts/RegularLiftRuntime.lean` | concrete regular-lifting acceptance, rejection, and partial-counter vectors; not a complexity theorem |
-| `agreement-recovery-runtime` | `scripts/AgreementRecoveryRuntime.lean` | finite-representation gcd recovery, extension-only roots, filtering, and comparison with position-subset decoding |
+| `agreement-recovery-runtime` | `scripts/AgreementRecoveryRuntime.lean` | decoder algebra and producer slices, Taylor arithmetic, finite-representation recovery, extension-only roots, filtering, and position-subset comparison |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
 library root, so a `#eval` in one is paid on every build by everyone; and `#eval` runs in the
