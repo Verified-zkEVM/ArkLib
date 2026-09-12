@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
-import VCVio.OracleComp.SimSemantics.Append
+public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
+public import VCVio.OracleComp.SimSemantics.Append
 
 /-!
 # Interactive (Oracle) Reductions
@@ -76,6 +77,8 @@ earlier types (i.e. `WitIn`, `StmtOut`, or `pSpec` may depend on `StmtIn`; thoug
 say, `StmtOut` or `pSpec` to depend on the witness types, as that is not available to the (oracle)
 verifier).
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
 

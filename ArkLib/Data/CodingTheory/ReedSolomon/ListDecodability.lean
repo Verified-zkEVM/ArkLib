@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
+public import ArkLib.Data.CodingTheory.ReedSolomon
 
 /-!
 # The Johnson-type list-decoding bound for Reed–Solomon codes
@@ -23,6 +24,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon
       with Super-Fast Verification*][ACFY24]
 
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

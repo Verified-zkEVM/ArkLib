@@ -4,19 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.Fin.Basic
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Algebra.Order.Floor.Semifield
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.Data.ENat.Lattice
-import Mathlib.InformationTheory.Hamming
-import Mathlib.Tactic.Qify
-import Mathlib.Topology.MetricSpace.Infsep
-import Mathlib.Data.Real.ENatENNReal
-import Mathlib.Algebra.Order.Chebyshev
-import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Order.Floor.Semifield
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Data.ENat.Lattice
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Tactic.Qify
+public import Mathlib.Topology.MetricSpace.Infsep
+public import Mathlib.Data.Real.ENatENNReal
+public import Mathlib.Algebra.Order.Chebyshev
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
   # Basics of Coding Theory
@@ -118,6 +119,8 @@ import CompPoly.Data.Nat.Bitwise
 - Implement `ENNRat (ℚ≥0∞)`, for usage in `relDistFromCode` and `relDistFromCode'`,
   as counterpart of `ENat (ℕ∞)` in `distFromCode` and `distFromCode'`.
 -/
+
+@[expose] public section
 
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]

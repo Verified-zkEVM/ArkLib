@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 
 /-!
 # Guarded completeness for sequential oracle reductions
@@ -12,6 +13,8 @@ import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 Oracle reductions use the proved execution commutation with their ordinary reductions. All
 suffix correctness premises refer to the actual shared state passed by the preceding component.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

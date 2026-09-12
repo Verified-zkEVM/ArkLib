@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ListDecodability
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
 # List-size bounds for interleaved codes
@@ -20,6 +21,8 @@ This file bounds the list size of row-wise interleavings in terms of the base co
 * [Gopalan, P., Guruswami, V., Raghavendra, P., *List Decoding Tensor Products and
   Interleaved Codes*][GGR11]
 -/
+
+@[expose] public section
 
 namespace InterleavedCode
 

@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
-import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
+public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 
 /-!
 # The Sum-check Protocol
@@ -102,6 +103,8 @@ There are some generalizations that we could consider later:
     [BBS24]
 
 -/
+
+@[expose] public section
 
 namespace Sumcheck
 

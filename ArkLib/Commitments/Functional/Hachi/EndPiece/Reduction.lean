@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martin
 -/
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # The end-piece — closing the Hachi evaluation
@@ -76,6 +78,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

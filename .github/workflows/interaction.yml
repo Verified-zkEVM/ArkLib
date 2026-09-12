@@ -5,6 +5,8 @@ on:
     paths:
       - 'ArkLib/Interaction/**'
       - 'ArkLibTest/Interaction/**'
+      - 'ArkLib/ProofSystem/Sumcheck/Interaction/**'
+      - 'ArkLibTest/ProofSystem/Sumcheck/Interaction/**'
       - 'lakefile.toml'
       - 'lake-manifest.json'
       - 'lean-toolchain'
@@ -61,7 +63,9 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t modules < <(
-            git ls-files -- 'ArkLib/Interaction/*.lean' 'ArkLibTest/Interaction/*.lean' |
+            git ls-files -- 'ArkLib/Interaction/*.lean' 'ArkLibTest/Interaction/*.lean' \
+              'ArkLib/ProofSystem/Sumcheck/Interaction/*.lean' \
+              'ArkLibTest/ProofSystem/Sumcheck/Interaction/*.lean' |
               LC_ALL=C sort | sed 's/\.lean$//;s,/,.,g'
           )
           if (( ${#modules[@]} == 0 )); then
@@ -78,3 +82,7 @@ jobs:
             --path-prefix ArkLib/Interaction/ --label 'Interaction warnings (including admissions)'
           python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
             --path-prefix ArkLibTest/Interaction/ --label 'Interaction acceptance warnings'
+          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+            --path-prefix ArkLib/ProofSystem/Sumcheck/Interaction/ --label 'Typed Sumcheck warnings'
+          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+            --path-prefix ArkLibTest/ProofSystem/Sumcheck/Interaction/ --label 'Typed Sumcheck acceptance warnings'

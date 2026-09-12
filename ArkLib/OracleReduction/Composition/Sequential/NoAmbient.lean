@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
 # Composition certificates when the ambient oracle specification is empty
@@ -13,6 +14,8 @@ An oracle computation with no possible query has a pure result. A verifier can s
 its guarded form uses an input-dependent fallback only to define the unused rejecting verdict.
 No global inhabitation assumption on the output statement or oracle family is needed.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

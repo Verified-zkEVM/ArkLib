@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import Mathlib.Analysis.SpecialFunctions.Stirling
-import Mathlib.FieldTheory.PrimitiveElement
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import Mathlib.Analysis.SpecialFunctions.Stirling
+public import Mathlib.FieldTheory.PrimitiveElement
 
 /-!
 # Algebraic setup for the Reed--Solomon subfield lower bound
@@ -19,6 +20,8 @@ and collision-divisor algebra, and establishes the first-moment identities used 
 
 - [CS25] Crites--Stewart, Theorem 3.
 -/
+
+@[expose] public section
 
 -- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
 set_option backward.isDefEq.respectTransparency false
@@ -248,7 +251,7 @@ noncomputable def subfield_ca_pair_event_fiber
     subfield_ca_event B domainB k a S z.1 z.2 ∧
       subfield_ca_event B domainB k a T z.1 z.2)
 
-private noncomputable def subfield_ca_pair_fiber_to_witness
+noncomputable def subfield_ca_pair_fiber_to_witness
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
     ↥(subfield_ca_pair_event_fiber B domainB k a S T) →
@@ -1063,7 +1066,7 @@ private theorem subfield_ca_minpoly_coprime_linear_prod
 
 open scoped BigOperators in
 omit [Nonempty ι] [Fintype F] [DecidableEq F] in
-private theorem subfield_ca_collision_divisor_dvd_sub [Finite F]
+theorem subfield_ca_collision_divisor_dvd_sub [Finite F]
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (y : ι → B) (α : F)
     (p q : Polynomial B)

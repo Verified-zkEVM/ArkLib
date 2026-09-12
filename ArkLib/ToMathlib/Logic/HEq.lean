@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, scaraven
 -/
+module
 
-import Mathlib.Logic.Basic
-import CompPoly.Data.Classes.DCast
+public import Mathlib.Logic.Basic
+public import CompPoly.Data.Classes.DCast
 
 /-!
 # Congruence lemmas for heterogeneous equality
@@ -13,6 +14,8 @@ import CompPoly.Data.Classes.DCast
 Transport, function application, dependent functions, products, and monadic operations preserve
 heterogeneous equality when the corresponding types are equal.
 -/
+
+@[expose] public section
 
 universe u v
 

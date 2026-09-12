@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
-import ArkLib.ToCompPoly.Multilinear.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
+public import ArkLib.ToCompPoly.Multilinear.Basic
 
 /-!
   # Zero-check — completeness (Hachi Figure 5)
@@ -70,6 +72,8 @@ import ArkLib.ToCompPoly.Multilinear.Basic
   `hZero_eq_zero_imp_liftShort`, which is what the arithmetic hypotheses `hd`, `hμn`, `hbound`,
   the digit-base admissibility pay for.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

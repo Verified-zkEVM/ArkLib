@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
-import ArkLib.OracleReduction.LiftContext.Reduction
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+public import ArkLib.OracleReduction.LiftContext.Reduction
 
 /-!
 # Purity and guardedness under context lifting
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.LiftContext.Reduction
 Context lenses map input and output values without oracle effects. Pure prover output and guarded
 verifier forms therefore survive lifting without any new assumptions about the oracle state.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

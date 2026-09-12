@@ -3,9 +3,10 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Aristotle (Harmonic), Elias Judin, Stefano Rocca
 -/
+module
 
-import CompPoly.Data.MvPolynomial.Notation
-import ArkLib.Data.MvPolynomial.Interpolation
+public import CompPoly.Data.MvPolynomial.Notation
+public import ArkLib.Data.MvPolynomial.Interpolation
 
 /-!
   # Multilinear Polynomials
@@ -22,6 +23,8 @@ import ArkLib.Data.MvPolynomial.Interpolation
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -77,8 +77,9 @@ Four nearby path-like objects serve different purposes:
 3. `DynSystem.Prefix sys st n` is a finite operational orbit of fixed length.
 4. `Interaction.Concurrent.Front S` is a currently enabled concurrent event and residual.
 
-ArkLib's later `FullPrefixAt` combines a cursor with protocol decorations, concrete message data,
-and reachability. It does not replace any of these generic objects.
+ArkLib's `ExecutionPrefix` combines a cursor with concrete oracle-message values and restricts
+protocol decorations to the selected residual. It witnesses structural traversal, not strategy or
+runtime reachability. It does not replace any of these generic objects.
 
 ### 2.3 Remaining PolyFun gaps
 

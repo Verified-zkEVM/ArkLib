@@ -3,9 +3,10 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Commitments.Functional.Basic
-import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.OracleReduction.Composition.Sequential.General
 
 /-!
   # The BCS Transformation
@@ -41,6 +42,8 @@ import ArkLib.OracleReduction.Composition.Sequential.General
   - We can ``batch'' many opening arguments together (using homomorphic properties of the commitment
     scheme, or via another round of interaction, or via specialized techniques like Merkle capping).
 -/
+
+@[expose] public section
 
 variable {n : ℕ}
 

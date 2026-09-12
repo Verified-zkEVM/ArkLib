@@ -3,21 +3,22 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.InformationTheory.Hamming
-import Mathlib.LinearAlgebra.Basis.Flag
-import Mathlib.Data.Fin.SuccPred
-import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
-import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
-import Mathlib.LinearAlgebra.Span.Basic
-import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Basic
-import Mathlib.Algebra.Group.Pointwise.Set.Scalar
-import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
-import Mathlib.LinearAlgebra.AffineSpace.Independent
-import Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.LinearAlgebra.AffineSpace.AffineMap
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.SubspaceDesign
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.LinearAlgebra.Basis.Flag
+public import Mathlib.Data.Fin.SuccPred
+public import Mathlib.LinearAlgebra.AffineSpace.FiniteDimensional
+public import Mathlib.LinearAlgebra.Dimension.StrongRankCondition
+public import Mathlib.LinearAlgebra.Span.Basic
+public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Basic
+public import Mathlib.Algebra.Group.Pointwise.Set.Scalar
+public import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
+public import Mathlib.LinearAlgebra.AffineSpace.Independent
+public import Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.LinearAlgebra.AffineSpace.AffineMap
 
 /-!
 # The geometric agreement hypergraph behind [CZ25]'s subspace-design bound
@@ -46,6 +47,8 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 The keys cited here — [CZ25] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

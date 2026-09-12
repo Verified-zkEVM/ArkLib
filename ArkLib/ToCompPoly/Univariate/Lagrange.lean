@@ -3,11 +3,18 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import CompPoly.Univariate.Lagrange
+module
+
+public import CompPoly.Univariate.Lagrange
+-- Definitional reduction of CompPoly's unexposed `toPoly`/`ringEquiv`.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
 
 /-!
   # Additions to `CompPoly.Univariate.Lagrange` not yet upstreamed to CompPoly.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial.CLagrange
 

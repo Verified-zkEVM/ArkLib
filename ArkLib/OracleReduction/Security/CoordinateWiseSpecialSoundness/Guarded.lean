@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
   # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`)
@@ -66,6 +68,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 
 open OracleComp OracleSpec ProtocolSpec
