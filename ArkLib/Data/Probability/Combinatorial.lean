@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Algebra.Order.Chebyshev
-import ArkLib.Data.Probability.Notation
+public import Mathlib.Probability.ProbabilityMassFunction.Basic
+public import Mathlib.Algebra.Order.Chebyshev
+public import ArkLib.Data.Probability.Notation
 
 /-!
 # Probabilistic combinatorics
@@ -27,6 +28,8 @@ image.
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace Probability
 

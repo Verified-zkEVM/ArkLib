@@ -3,10 +3,11 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Fin.Tuple.Lemmas
-import ArkLib.OracleReduction.Prelude
-import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Data.Fin.Tuple.Lemmas
+public import ArkLib.OracleReduction.Prelude
+public import ArkLib.OracleReduction.OracleInterface
 
 /-!
 # Protocol Specifications for (Oracle) Reductions
@@ -14,6 +15,8 @@ import ArkLib.OracleReduction.OracleInterface
 This file defines the `ProtocolSpec` type, which is used to specify the protocol between the prover
 and the verifier.
 -/
+
+@[expose] public section
 
 universe u v
 

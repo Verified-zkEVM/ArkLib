@@ -4,12 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin,
   Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.LinearAlgebra.Quotient.Card
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.LinearAlgebra.Quotient.Card
 
 /-!
 ## Main Definitions
@@ -22,6 +23,8 @@ import Mathlib.LinearAlgebra.Quotient.Card
     arguments without a trusted setup*][AHIV22]
       * NB we use version 20221118:030830
 -/
+
+@[expose] public section
 
 noncomputable section
 

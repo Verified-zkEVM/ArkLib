@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.IsPure
-import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
+public import ArkLib.OracleReduction.Composition.Sequential.IsPure
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 
 /-!
 # State-aware completeness of a sequence of reductions
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 This module composes the proved binary completeness theorem. Every component is complete from
 all deterministic shared oracle states, so each tail can receive its predecessor's final state.
 -/
+
+@[expose] public section
 
 open ProtocolSpec OracleComp
 open scoped NNReal

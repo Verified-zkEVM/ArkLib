@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
-import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
-import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+module
+
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
+public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
 
 /-!
 # Correctness of the Inner-Outer Ajtai Commitment
@@ -46,6 +48,8 @@ Perfect correctness of the bundled `commitmentScheme`, over `R = ZMod q` (where 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp CommitmentScheme CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
   ArkLib.Lattices.Ajtai

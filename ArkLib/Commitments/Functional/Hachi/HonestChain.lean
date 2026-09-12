@@ -3,12 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.Commitment
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
-import ArkLib.OracleReduction.Composition.Sequential.Append
-import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Commitment
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
+public import ArkLib.OracleReduction.Composition.Sequential.Append
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
 # The honest Hachi chain: parameters and per-seam corollaries
@@ -69,6 +71,8 @@ presentational convenience of the paper rather than its protocol.
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26] -/
+
+@[expose] public section
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift

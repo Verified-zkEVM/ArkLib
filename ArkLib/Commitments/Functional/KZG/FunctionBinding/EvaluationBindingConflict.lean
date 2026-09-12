@@ -3,8 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
 
 /-!
 # Evaluation-Binding Conflict Branch for KZG Function Binding
@@ -23,6 +24,8 @@ different responses, following the ARSDH reduction in [CGKY25].
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 

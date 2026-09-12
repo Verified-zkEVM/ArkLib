@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.MicciancioYoung
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LyubashevskySeiler
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.MicciancioYoung
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LyubashevskySeiler
 
 /-!
 # Norm-Growth Bounds And Short-Element Invertibility For `Rq Φ`
@@ -36,3 +38,5 @@ relies on:
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

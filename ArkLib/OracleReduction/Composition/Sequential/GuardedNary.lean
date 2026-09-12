@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
-import ArkLib.OracleReduction.Composition.Sequential.IsPure
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+public import ArkLib.OracleReduction.Composition.Sequential.IsPure
 
 /-!
 # Guarded completeness of finite sequential composition
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.Composition.Sequential.IsPure
 Each component has pure prover output and a deterministic verifier that can reject. The suffix
 receives its predecessor's actual oracle state; component completeness holds from every state.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

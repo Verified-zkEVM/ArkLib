@@ -3,12 +3,13 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
-import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
-import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
-import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
-import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
+public import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
+public import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 
 /-!
 # FRI-Binius IOPCS
@@ -26,6 +27,8 @@ The FRI-Binius IOPCS consists of the following phases:
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
   Towers." Cryptology ePrint Archive (2024).
 -/
+
+@[expose] public section
 
 namespace Binius.FRIBinius.FullFRIBinius
 noncomputable section

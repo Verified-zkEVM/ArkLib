@@ -3,10 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
-import Mathlib.Data.FinEnum
+module
+
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+public import Mathlib.Data.FinEnum
 
 /-!
 # Simple Oracle Reduction - SendWitness
@@ -35,6 +37,8 @@ witness off the tree's unique transcript (`fun _ tree _ => some (tree.onlyPath.f
 These results are `sorryAx`-free. The indexed-family oracle variant (`section OracleReduction`) is
 deferred; see the note there.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp OracleQuery ProtocolSpec Function Equiv
 
