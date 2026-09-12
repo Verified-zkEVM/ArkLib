@@ -3,13 +3,15 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
-import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
+public import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
 # Hachi — the composed opening certificate
@@ -83,6 +85,8 @@ not composed here; see `Recursion/Basic.lean`.
 * [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements in Partially Splitting
     Cyclotomic Rings and Applications to Lattice-Based Zero-Knowledge Proofs*][LS18]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

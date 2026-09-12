@@ -3,9 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
-import Mathlib.Algebra.Ring.InjSurj
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
+public import Mathlib.Algebra.Ring.InjSurj
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+-- `⇑ringEquiv` must reduce to `toPoly`; CompPoly does not expose the body.
+import all CompPoly.Univariate.ToPoly.Equiv
 
 /-!
 # `Rq Φ` — the Cyclotomic Ring as a Computable `CommRing`
@@ -27,6 +31,8 @@ along the injective ring map `a ↦ quotientHom a.val`.
 * `CommRing (Φ.Rq)` — transported, computable; `+`/`*` are reduce-after-CPolynomial-op.
 * `CyclotomicModulus.Rq.equivQuotient` — the ring iso `Φ.Rq ≃+* Φ.CyclotomicRing`.
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial
 

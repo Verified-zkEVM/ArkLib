@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
+module
+
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 
 /-!
 # Perfect completeness of arbitrary sampled Sumcheck rounds
@@ -12,6 +14,8 @@ The common ordered executor propagates a relation invariant through the actual c
 Challenge programs may depend on each reached statement. Explicit losslessness hypotheses rule
 out missing probability mass; verifier rejection and failed challenge computations remain distinct.
 -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.MultivariateRound
 
@@ -24,7 +28,7 @@ noncomputable section
 variable (R : Type) [CommSemiring R] (n deg : ℕ)
 
 /-- Lossless history-dependent receiver programs give perfect honest completeness. -/
-theorem executeRoundsSampled_perfect_completeness [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
+theorem executeRoundsSampled_perfectCompleteness [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (p : Spec.OracleStatement R n deg ())
@@ -33,13 +37,14 @@ theorem executeRoundsSampled_perfect_completeness [DecidableEq R] {m : ℕ} (D :
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
     Pr[fun result => result.map (closedRelation R n deg D ⟨start + count, by omega⟩) =
       some True | executeRoundsSampled R n deg unifSpec start count bound
-        (Finset.univ.map D).toList ⟨stmt, (family R n deg).answerData (fun _ => p)⟩
+        (Finset.univ.map D).toList
+        ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
         (honestMessages R n deg D p) challenges] = 1 := by
   let I := roundInterfaces R n deg start count bound
   let stages := roundStages R n deg unifSpec start count bound (Finset.univ.map D).toList
     (honestMessages R n deg D p) challenges
   let Inv : (j : Fin (count + 1)) → (I j).State → Prop := fun _ state =>
-    state.1.oracles = (family R n deg).answerData (fun _ => p) ∧
+    state.1.oracles = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) ∧
       ((state.1.stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _
   have preserves : ∀ (j : Fin count) (input : (I j.castSucc).State), Inv j.castSucc input →
       Pr[fun result => ∃ output, result = some output ∧ Inv j.succ output |
@@ -60,7 +65,7 @@ theorem executeRoundsSampled_perfect_completeness [DecidableEq R] {m : ℕ} (D :
       refine ⟨_, rfl, himpl, ?_⟩
       exact relationRound_projected_output R n deg D ⟨start + j, by omega⟩ input.1.stmt p r
   have hrun := OrderedExecution.run_preserves_prob count I stages Inv preserves
-    (⟨stmt, (family R n deg).answerData (fun _ => p)⟩, ()) ⟨rfl, h⟩
+    (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩
   obtain ⟨hfailure, hsupport⟩ := probEvent_eq_one_iff.mp hrun
   apply probEvent_eq_one_iff.mpr
   constructor
@@ -81,12 +86,12 @@ theorem executeRoundsSampled_perfect_completeness [DecidableEq R] {m : ℕ} (D :
       trivial
     · intro _
       rcases output with ⟨⟨last, impl⟩, payload⟩
-      change impl = (family R n deg).answerData (fun _ => p) at horacles
+      change impl = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) at horacles
       subst impl
       exact hrelation
 
 /-- Measure-valued perfect completeness for the actual arbitrary-round sampled executor. -/
-theorem executeRoundsSampled_measure_complete [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
+theorem executeRoundsSampled_measureCompleteness [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (p : Spec.OracleStatement R n deg ())
@@ -94,7 +99,8 @@ theorem executeRoundsSampled_measure_complete [DecidableEq R] {m : ℕ} (D : Fin
     (lossless : ∀ i current, discreteEvalDist (challenges i current) Set.univ = 1)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
     discreteEvalDist (executeRoundsSampled R n deg unifSpec start count bound
-      (Finset.univ.map D).toList ⟨stmt, (family R n deg).answerData (fun _ => p)⟩
+      (Finset.univ.map D).toList
+      ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
       (honestMessages R n deg D p) challenges)
       {result | result.map (closedRelation R n deg D ⟨start + count, by omega⟩) = some True} =
         1 := by
@@ -107,24 +113,25 @@ theorem executeRoundsSampled_measure_complete [DecidableEq R] {m : ℕ} (D : Fin
     exact (probEvent_eq_one_iff.mp hmass).1
   let : MeasurableSpace
       (Option (ClosedClaim (Spec.StatementRound R n ⟨start + count, by omega⟩)
-        (family R n deg))) := ⊤
-  have hprob := executeRoundsSampled_perfect_completeness R n deg D start count bound stmt p
+        (polynomialFamily R n deg))) := ⊤
+  have hprob := executeRoundsSampled_perfectCompleteness R n deg D start count bound stmt p
     challenges hfailure h
   rw [probEvent_eq_evalSPMF_toMeasure] at hprob
   exact hprob
 
 /-- Independent uniform receiver challenges satisfy the lossless measure contract. -/
-theorem executeRounds_uniform_measure_complete [DecidableEq R] [SampleableType R]
+theorem executeRounds_uniform_measureCompleteness [DecidableEq R] [SampleableType R]
     {m : ℕ} (D : Fin m ↪ R) (start count : ℕ) (bound : start + count ≤ n)
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (p : Spec.OracleStatement R n deg ())
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
     discreteEvalDist (executeRoundsSampled R n deg unifSpec start count bound
-      (Finset.univ.map D).toList ⟨stmt, (family R n deg).answerData (fun _ => p)⟩
+      (Finset.univ.map D).toList
+      ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
       (honestMessages R n deg D p) (fun _ _ => $ᵗ R))
       {result | result.map (closedRelation R n deg D ⟨start + count, by omega⟩) = some True} =
         1 := by
-  apply executeRoundsSampled_measure_complete R n deg D start count bound stmt p _ _ h
+  apply executeRoundsSampled_measureCompleteness R n deg D start count bound stmt p _ _ h
   intro i current
   let : MeasurableSpace R := ⊤
   have hmass : Pr[fun _ => True | $ᵗ R] = 1 :=

@@ -53,7 +53,7 @@ def addEleven : VirtualOracle naturals.spec naturals := ⟨fun q => do
 
 /-- A terminal first-stage verifier that can explicitly reject. -/
 def firstVerifier (accept : Bool) :
-    OracleComp (ambient + naturals.spec) (Option (OracleClaim naturals.spec Bool naturals)) := do
+    OracleComp (ambient + naturals.spec) (Option (OpenClaim naturals.spec Bool naturals)) := do
   let _ ← liftM ((ambient + naturals.spec).query (.inl 1))
   let old : Nat ← liftM ((ambient + naturals.spec).query (.inr ⟨(), ()⟩))
   return if accept then some ⟨old % 2 == 0, addEleven⟩ else none
@@ -80,7 +80,7 @@ def isEven : VirtualOracle naturals.spec booleans := ⟨fun _ => do
 
 /-- Terminal verifier computation, after either heterogeneous branch. -/
 def secondTerminal (message : Nat) :
-    OracleComp (ambient + naturals.spec) (Option (OracleClaim naturals.spec Nat booleans)) := do
+    OracleComp (ambient + naturals.spec) (Option (OpenClaim naturals.spec Nat booleans)) := do
   let _ ← liftM ((ambient + naturals.spec).query (.inl 3))
   let value : Nat ← liftM ((ambient + naturals.spec).query (.inr ⟨(), ()⟩))
   return some ⟨message + value, isEven⟩
@@ -232,7 +232,8 @@ example : (observed true 7 40).1.map (fun output => output.1.oracles ⟨(), ()�
   rfl
 
 /-- Changing the initial behavior reaches the other branch and changes the final oracle. -/
-example : (observed true 20 40).1.map (fun output => output.1.oracles ⟨(), ()⟩) = some false := by
+example :
+    (observed true 20 40).1.map (fun output => output.1.oracles ⟨(), ()⟩) = some false := by
   rw [observed_true]
   rfl
 
@@ -248,6 +249,7 @@ example : observed false 7 40 = (none, [0, 1]) := rfl
 example (hidden : Nat) :
     ((simulateQ CoreRunExample.logger
       (executeClosed (CoreRunExample.reduction true) (fun _ => 7) () (11, hidden))).run []).1.map
-        (fun output => (output.2.1.oracles ⟨(), ()⟩, output.2.2)) = some ((18 : Nat), hidden) := rfl
+        (fun output => (output.2.1.oracles ⟨(), ()⟩, output.2.2)) =
+      some ((18 : Nat), hidden) := rfl
 
 end Interaction.Oracle.CompositionExample

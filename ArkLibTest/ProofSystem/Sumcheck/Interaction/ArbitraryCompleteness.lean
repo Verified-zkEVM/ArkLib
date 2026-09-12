@@ -9,9 +9,9 @@ import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
 
 namespace Sumcheck.Interaction.MultivariateRound
 
-#print axioms executeRoundsSampled_perfect_completeness
-#print axioms executeRoundsSampled_measure_complete
-#print axioms executeRounds_uniform_measure_complete
+#print axioms executeRoundsSampled_perfectCompleteness
+#print axioms executeRoundsSampled_measureCompleteness
+#print axioms executeRounds_uniform_measureCompleteness
 #print axioms executeRounds_evaluation
 
 end Sumcheck.Interaction.MultivariateRound

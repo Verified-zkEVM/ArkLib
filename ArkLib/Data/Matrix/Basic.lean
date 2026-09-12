@@ -3,14 +3,17 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova
 -/
+module
 
-import Mathlib.LinearAlgebra.Matrix.Hadamard
-import ArkLib.Data.Fin.Tuple.Defs
-import ArkLib.Data.MvPolynomial.Multilinear
+public import Mathlib.LinearAlgebra.Matrix.Hadamard
+public import ArkLib.Data.Fin.Tuple.Defs
+public import ArkLib.Data.MvPolynomial.Multilinear
 
 /-!
   # Auxiliary definitions and lemmas for matrices
 -/
+
+@[expose] public section
 
 namespace Matrix
 

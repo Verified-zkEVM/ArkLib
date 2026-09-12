@@ -21,7 +21,7 @@ def affine (a b : ZMod 17) : SingleRound.Message (ZMod 17) 1 :=
     (degree_add_le_of_degree_le (degree_C_mul_X_le a) (degree_C_le.trans zero_le_one))⟩
 
 /-- The retained behavior evaluates an asymmetric three-variable polynomial. -/
-def original : (family (ZMod 17) 3 1).Behavior :=
+def original : (polynomialFamily (ZMod 17) 3 1).Behavior :=
   fun q => q.2 0 + 2 * q.2 1 + 4 * q.2 2
 
 /-- Messages for challenges three, five, seven, obtained from successive partial sums. -/
@@ -43,7 +43,7 @@ def record : QueryImpl events (StateM (List (Fin 3))) :=
   fun i => modify (fun seen => seen ++ [i])
 
 /-- The initial Boolean-cube sum of `x₀ + 2x₁ + 4x₂` is twenty-eight, hence eleven. -/
-def initial : ClosedClaim (Spec.StatementRound (ZMod 17) 3 0) (family (ZMod 17) 3 1) :=
+def initial : ClosedClaim (Spec.StatementRound (ZMod 17) 3 0) (polynomialFamily (ZMod 17) 3 1) :=
   ⟨⟨11, Fin.elim0⟩, original⟩
 
 /-- Zero remaining rounds does not invoke messages or challenge programs. -/
@@ -59,7 +59,7 @@ theorem three_rounds :
         let _ ← liftM (events.query 1)
         let _ ← liftM (events.query 2)
         return some (⟨⟨7, ![3, 5, 7]⟩, original⟩ :
-          ClosedClaim (Spec.StatementRound (ZMod 17) 3 3) (family (ZMod 17) 3 1))) := by
+          ClosedClaim (Spec.StatementRound (ZMod 17) 3 3) (polynomialFamily (ZMod 17) 3 1))) := by
   simp only [executeRoundsSampled, OrderedExecution.run, roundStages_run, challenge,
     map_eq_bind_pure_comp,
     bind_assoc, pure_bind]

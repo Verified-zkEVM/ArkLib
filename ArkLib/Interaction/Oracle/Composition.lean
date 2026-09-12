@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.CoreRun
-import VCVio.OracleComp.EvalDist
-import VCVio.EvalDist.PFunctorMeasure
+module
+
+public import ArkLib.Interaction.Oracle.CoreRun
+public import VCVio.OracleComp.EvalDist
+public import VCVio.EvalDist.PFunctorMeasure
 
 /-!
 # Ordered execution of oracle reductions
@@ -21,6 +23,8 @@ concatenation remains owned by PolyFun's `TypeTree.Chain.then`. No equality with
 strategy execution, commutative-monad assumption, provenance assertion, or security theorem is
 claimed here.
 -/
+
+@[expose] public section
 
 universe u v w
 
@@ -66,17 +70,17 @@ def executeClosed {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 structure ExecutionInterface where
   /-- Public statement type. -/
   Stmt : Type u
-  /-- Indices of exported oracle objects. -/
-  Idx : Type u
-  /-- Concrete object types whose interfaces declare the exported queries. -/
-  Obj : Idx → Type u
+  /-- Indices of exported oracle realizations. -/
+  Index : Type u
+  /-- Concrete realization types whose interfaces declare the exported queries. -/
+  Realization : Index → Type u
   /-- Exported observable oracle interface. -/
-  Out : OracleFamily Idx Obj
+  oracles : OracleFamily Index Realization
   /-- Private prover state passed between stages. -/
   Private : Type u
 
 /-- Declared closed statement and oracle behavior at an execution boundary. -/
-abbrev ExecutionInterface.Claim (I : ExecutionInterface.{u}) := ClosedClaim I.Stmt I.Out
+abbrev ExecutionInterface.Claim (I : ExecutionInterface.{u}) := ClosedClaim I.Stmt I.oracles
 
 /-- The public interface and the separate private state required to execute the next stage. -/
 abbrev ExecutionInterface.State (I : ExecutionInterface.{u}) := I.Claim × I.Private
@@ -100,9 +104,10 @@ structure ClosedStage {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (path : (protocol stmt).tree.ExecutionPath) → OutP stmt path → J.Private
   /-- The actual reduction, whose input resource is exactly the declared middle interface. -/
   reduction : (stmt : I.Stmt) →
-    Reduction ambient (protocol stmt) I.Out.spec.toPFunctor I.Stmt (Witness stmt)
+    Reduction ambient (protocol stmt) I.oracles.spec.toPFunctor I.Stmt (Witness stmt)
       (OutP stmt)
-      (TerminalClaim (protocol stmt) I.Out.spec.toPFunctor (fun _ => J.Stmt) (fun _ => J.Out))
+      (TerminalClaim (protocol stmt) I.oracles.spec.toPFunctor
+        (fun _ => J.Stmt) (fun _ => J.oracles))
 
 namespace ClosedStage
 
@@ -281,7 +286,7 @@ theorem run_append (m n : Nat) (I : Fin (n + m + 1) → ExecutionInterface.{u})
     intro I stages input
     simp only [run_zero, pure_bind, Option.elim_some]
     rw [eq_cast_iff_heq]
-    congr! 3 <;> simp_all only [Nat.zero_add, Fin.ext_iff]
+    congr! 3 <;> simp_all only [Nat.zero_add, Fin.ext_iff, heq_iff_eq]
   | succ m ih =>
     intro I stages input
     erw [run_succ (n + m)]
@@ -301,7 +306,8 @@ theorem run_append (m n : Nat) (I : Fin (n + m + 1) → ExecutionInterface.{u})
         simp only [Option.elim_some]
         apply eq_of_heq
         simp only [cast_heq_iff_heq, heq_cast_iff_heq]
-        congr! 3 <;> simp_all only [Fin.ext_iff, Fin.val_succ, Nat.add_right_comm m 1]
+        congr! 3 <;>
+          simp_all only [Fin.ext_iff, Fin.val_succ, Nat.add_right_comm m 1, heq_iff_eq]
 
 end OrderedExecution
 

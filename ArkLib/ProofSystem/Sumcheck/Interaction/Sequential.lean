@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
+module
+
+public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
 
 /-!
 # Ordered execution of two Sumcheck rounds
@@ -12,6 +14,8 @@ This executor binds two actual `executeCore` computations. The first run closes 
 output, and the second receives precisely that statement and oracle behavior. Rejection
 short-circuits the suffix. This is sequential execution, not a flattened dependent protocol.
 -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.MultivariateRound
 
@@ -26,11 +30,11 @@ variable (R : Type) [CommSemiring R] (n deg : ℕ) {ι : Type} (ambient : Oracle
 /-- Execute consecutive rounds, passing the actual closed middle claim to the suffix. -/
 def executeTwo [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (r₁ r₂ : R) :
     OracleComp ambient (Option (ClosedClaim
-      (Spec.StatementRound R (n + 2) i.succ.succ) (family R (n + 2) deg))) := do
+      (Spec.StatementRound R (n + 2) i.succ.succ) (polynomialFamily R (n + 2) deg))) := do
   let run ← executeCore (reduction R (n + 2) deg ambient i.castSucc domain r₁) impl stmt first
   match run.closed with
   | none => return none
@@ -42,7 +46,7 @@ def executeTwo [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
 /-- Accepting rounds preserve the full input behavior while extending the challenges in order. -/
 theorem executeTwo_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (r₁ r₂ : R)
     (h₁ : (domain.map (fun x => first.val.eval x)).sum = stmt.target)
@@ -52,7 +56,8 @@ theorem executeTwo_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     executeTwo R n deg ambient i domain stmt impl first second r₁ r₂ =
       pure (some (⟨⟨(second ⟨first.val.eval r₁, Fin.snoc stmt.challenges r₁⟩).val.eval r₂,
         Fin.snoc (Fin.snoc stmt.challenges r₁) r₂⟩, impl⟩ :
-          ClosedClaim (Spec.StatementRound R (n + 2) i.succ.succ) (family R (n + 2) deg))) := by
+          ClosedClaim (Spec.StatementRound R (n + 2) i.succ.succ)
+            (polynomialFamily R (n + 2) deg))) := by
   rw [executeTwo, executeCore_accepted R (n + 2) deg ambient i.castSucc stmt impl first
     domain r₁ h₁]
   simp only [pure_bind, acceptedRun_closed]
@@ -61,7 +66,7 @@ theorem executeTwo_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
 /-- An incorrect first sum rejects without executing a suffix round. -/
 theorem executeTwo_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (r₁ r₂ : R)
     (h : (domain.map (fun x => first.val.eval x)).sum ≠ stmt.target) :
@@ -72,7 +77,7 @@ theorem executeTwo_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
 /-- A successful prefix cannot turn a rejecting suffix into an accepted final claim. -/
 theorem executeTwo_second_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (r₁ r₂ : R)
     (h₁ : (domain.map (fun x => first.val.eval x)).sum = stmt.target)
@@ -89,12 +94,12 @@ theorem executeTwo_second_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : L
 /-- Two actual sampled stages; the suffix challenge runs only after successful prefix closing. -/
 def executeTwoSampled [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (challenge₁ : OracleComp ambient R)
     (challenge₂ : Spec.StatementRound R (n + 2) i.castSucc.succ → OracleComp ambient R) :
     OracleComp ambient (Option (ClosedClaim
-      (Spec.StatementRound R (n + 2) i.succ.succ) (family R (n + 2) deg))) := do
+      (Spec.StatementRound R (n + 2) i.succ.succ) (polynomialFamily R (n + 2) deg))) := do
   let run ← executeCore (sampledReduction R (n + 2) deg ambient i.castSucc domain challenge₁)
     impl stmt first
   match run.closed with
@@ -107,7 +112,7 @@ def executeTwoSampled [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
 /-- Accepted sampled stages execute prefix and suffix challenge programs in that order. -/
 theorem executeTwoSampled_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (challenge₁ : OracleComp ambient R)
     (challenge₂ : Spec.StatementRound R (n + 2) i.castSucc.succ → OracleComp ambient R)
@@ -124,7 +129,7 @@ theorem executeTwoSampled_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : L
         return some (⟨⟨(second middle).val.eval r₂,
           Fin.snoc middle.challenges r₂⟩, impl⟩ :
             ClosedClaim (Spec.StatementRound R (n + 2) i.succ.succ)
-              (family R (n + 2) deg))) := by
+              (polynomialFamily R (n + 2) deg))) := by
   simp only [executeTwoSampled, executeCore_sampled_eq, bind_assoc]
   congr 1
   funext r₁
@@ -137,7 +142,7 @@ theorem executeTwoSampled_accepted [DecidableEq R] (i : Fin (n + 1)) (domain : L
 /-- Prefix rejection retains its challenge effect and never executes the suffix challenge. -/
 theorem executeTwoSampled_rejected [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (stmt : Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-    (impl : (family R (n + 2) deg).Behavior) (first : Message R deg)
+    (impl : (polynomialFamily R (n + 2) deg).Behavior) (first : Message R deg)
     (second : Spec.StatementRound R (n + 2) i.castSucc.succ → Message R deg)
     (challenge₁ : OracleComp ambient R)
     (challenge₂ : Spec.StatementRound R (n + 2) i.castSucc.succ → OracleComp ambient R)
@@ -157,15 +162,15 @@ theorem executeTwo_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin (
     (p : Spec.OracleStatement R (n + 2) deg ()) (r₁ r₂ : R)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R (n + 2) deg D i.castSucc.castSucc) :
     executeTwo R n deg ambient i (Finset.univ.map D).toList stmt
-      ((family R (n + 2) deg).answerData (fun _ => p))
+      ((polynomialFamily R (n + 2) deg).behaviorOfRealizations (fun _ => p))
       (Spec.SingleRound.projectedRoundPolynomial R (n + 2) deg D i.castSucc stmt.challenges p)
       (fun middle => Spec.SingleRound.projectedRoundPolynomial R (n + 2) deg D i.succ
         middle.challenges p) r₁ r₂ =
       pure (some (⟨honestNext R (n + 2) deg D i.succ
         (honestNext R (n + 2) deg D i.castSucc stmt p r₁) p r₂,
-          (family R (n + 2) deg).answerData (fun _ => p)⟩ :
+          (polynomialFamily R (n + 2) deg).behaviorOfRealizations (fun _ => p)⟩ :
             ClosedClaim (Spec.StatementRound R (n + 2) i.succ.succ)
-              (family R (n + 2) deg))) := by
+              (polynomialFamily R (n + 2) deg))) := by
   apply executeTwo_accepted
   · exact projected_sum_of_relationRound R (n + 2) deg D i.castSucc stmt p h
   · exact projected_sum_of_relationRound R (n + 2) deg D i.succ _ p
@@ -178,7 +183,7 @@ theorem executeTwo_complete [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R (n + 2) deg D i.castSucc.castSucc) :
     Option.map (closedRelation R (n + 2) deg D i.succ.succ) <$>
       executeTwo R n deg ambient i (Finset.univ.map D).toList stmt
-        ((family R (n + 2) deg).answerData (fun _ => p))
+        ((polynomialFamily R (n + 2) deg).behaviorOfRealizations (fun _ => p))
         (Spec.SingleRound.projectedRoundPolynomial R (n + 2) deg D i.castSucc stmt.challenges p)
         (fun middle => Spec.SingleRound.projectedRoundPolynomial R (n + 2) deg D i.succ
           middle.challenges p) r₁ r₂ = pure (some True) := by

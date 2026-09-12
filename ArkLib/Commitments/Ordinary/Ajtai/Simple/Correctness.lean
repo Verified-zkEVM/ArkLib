@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
+module
+
+public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
 
 /-!
 # Correctness of the Simple Ajtai Commitment
@@ -12,6 +14,8 @@ An honest commitment to a message accepted by `isShort` always verifies. The sho
 side condition is intrinsic to the scheme's `verify`, so unconditional `PerfectlyCorrect`
 does not hold once `isShort` rejects some messages.
 -/
+
+@[expose] public section
 
 open OracleComp CommitmentScheme CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 

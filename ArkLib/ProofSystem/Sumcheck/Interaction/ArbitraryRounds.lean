@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Composition
-import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
+module
+
+public import ArkLib.Interaction.Oracle.Composition
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
 
 /-!
 # Arbitrary consecutive Sumcheck rounds
@@ -14,6 +16,8 @@ claim produced by the previous actual execution. Message selection uses the curr
 challenge programs run inside the receiver strategy and may use its complete challenge prefix.
 The polynomial witness used for honest messages never replaces a closed oracle at a seam.
 -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.MultivariateRound
 
@@ -29,9 +33,9 @@ variable (R : Type) [CommSemiring R] (n deg : ℕ)
 abbrev roundInterfaces (start count : ℕ) (bound : start + count ≤ n)
     (j : Fin (count + 1)) : ExecutionInterface where
   Stmt := Spec.StatementRound R n ⟨start + j, by omega⟩
-  Idx := Unit
-  Obj := Spec.OracleStatement R n deg
-  Out := family R n deg
+  Index := Unit
+  Realization := Spec.OracleStatement R n deg
+  oracles := polynomialFamily R n deg
   Private := Unit
 
 variable {ι : Type} (ambient : OracleSpec ι)
@@ -78,22 +82,24 @@ theorem roundStages_run [DecidableEq R] (start count : ℕ) (bound : start + cou
 /-- Execute any valid interval using the common ordered reduction executor. -/
 def executeRoundsSampled [DecidableEq R] (start count : ℕ) (bound : start + count ≤ n)
     (domain : List R)
-    (input : ClosedClaim (Spec.StatementRound R n ⟨start, by omega⟩) (family R n deg))
+    (input : ClosedClaim (Spec.StatementRound R n ⟨start, by omega⟩) (polynomialFamily R n deg))
     (messages : (i : Fin n) → Spec.StatementRound R n i.castSucc → Message R deg)
     (challenges : (i : Fin n) → Spec.StatementRound R n i.castSucc → OracleComp ambient R) :
     OracleComp ambient (Option
-      (ClosedClaim (Spec.StatementRound R n ⟨start + count, by omega⟩) (family R n deg))) :=
+      (ClosedClaim (Spec.StatementRound R n ⟨start + count, by omega⟩)
+        (polynomialFamily R n deg))) :=
   Option.map Prod.fst <$> OrderedExecution.run count (roundInterfaces R n deg start count bound)
     (roundStages R n deg ambient start count bound domain messages challenges) (input, ())
 
 /-- Fixed challenges are the pure receiver-program instance of arbitrary-round execution. -/
 def executeRounds [DecidableEq R] (start count : ℕ) (bound : start + count ≤ n)
     (domain : List R)
-    (input : ClosedClaim (Spec.StatementRound R n ⟨start, by omega⟩) (family R n deg))
+    (input : ClosedClaim (Spec.StatementRound R n ⟨start, by omega⟩) (polynomialFamily R n deg))
     (messages : (i : Fin n) → Spec.StatementRound R n i.castSucc → Message R deg)
     (challenges : (i : Fin n) → Spec.StatementRound R n i.castSucc → R) :
     OracleComp ambient (Option
-      (ClosedClaim (Spec.StatementRound R n ⟨start + count, by omega⟩) (family R n deg))) :=
+      (ClosedClaim (Spec.StatementRound R n ⟨start + count, by omega⟩)
+        (polynomialFamily R n deg))) :=
   executeRoundsSampled R n deg ambient start count bound domain input messages
     (fun i stmt => pure (challenges i stmt))
 
@@ -101,7 +107,7 @@ def executeRounds [DecidableEq R] (start count : ℕ) (bound : start + count ≤
 @[simp]
 theorem executeRoundsSampled_zero [DecidableEq R] (start : ℕ) (bound : start + 0 ≤ n)
     (domain : List R)
-    (input : ClosedClaim (Spec.StatementRound R n ⟨start, by omega⟩) (family R n deg))
+    (input : ClosedClaim (Spec.StatementRound R n ⟨start, by omega⟩) (polynomialFamily R n deg))
     (messages : (i : Fin n) → Spec.StatementRound R n i.castSucc → Message R deg)
     (challenges : (i : Fin n) → Spec.StatementRound R n i.castSucc → OracleComp ambient R) :
     executeRoundsSampled R n deg ambient start 0 bound domain input messages challenges =
@@ -110,7 +116,7 @@ theorem executeRoundsSampled_zero [DecidableEq R] (start : ℕ) (bound : start +
 
 /-- A one-round interval is exactly the existing actual sampled single-round execution. -/
 theorem executeRoundsSampled_one [DecidableEq R] (i : Fin n) (domain : List R)
-    (input : ClosedClaim (Spec.StatementRound R n i.castSucc) (family R n deg))
+    (input : ClosedClaim (Spec.StatementRound R n i.castSucc) (polynomialFamily R n deg))
     (messages : (j : Fin n) → Spec.StatementRound R n j.castSucc → Message R deg)
     (challenges : (j : Fin n) → Spec.StatementRound R n j.castSucc → OracleComp ambient R) :
     executeRoundsSampled R n deg ambient i 1 (by omega) domain input messages challenges =
@@ -127,7 +133,7 @@ theorem executeRoundsSampled_one [DecidableEq R] (i : Fin n) (domain : List R)
 /-- The common arbitrary-round executor agrees with the existing two-stage sampled client. -/
 theorem executeRoundsSampled_two [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (input : ClosedClaim (Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-      (family R (n + 2) deg))
+      (polynomialFamily R (n + 2) deg))
     (messages : (j : Fin (n + 2)) → Spec.StatementRound R (n + 2) j.castSucc → Message R deg)
     (challenges : (j : Fin (n + 2)) →
       Spec.StatementRound R (n + 2) j.castSucc → OracleComp ambient R) :
@@ -151,7 +157,7 @@ theorem executeRoundsSampled_two [DecidableEq R] (i : Fin (n + 1)) (domain : Lis
 /-- Pure challenge programs recover the existing fixed two-round executor exactly. -/
 theorem executeRounds_two [DecidableEq R] (i : Fin (n + 1)) (domain : List R)
     (input : ClosedClaim (Spec.StatementRound R (n + 2) i.castSucc.castSucc)
-      (family R (n + 2) deg))
+      (polynomialFamily R (n + 2) deg))
     (messages : (j : Fin (n + 2)) → Spec.StatementRound R (n + 2) j.castSucc → Message R deg)
     (challenges : (j : Fin (n + 2)) → Spec.StatementRound R (n + 2) j.castSucc → R) :
     executeRounds R (n + 2) deg ambient i 2 (by omega) domain input messages challenges =
@@ -203,15 +209,15 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
     ∃ output,
       executeRounds R n deg ambient start count bound (Finset.univ.map D).toList
-        ⟨stmt, (family R n deg).answerData (fun _ => p)⟩
+        ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
         (honestMessages R n deg D p) challenges = pure (some output) ∧
-      output.oracles = (family R n deg).answerData (fun _ => p) ∧
+      output.oracles = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) ∧
       closedRelation R n deg D ⟨start + count, by omega⟩ output := by
   let I := roundInterfaces R n deg start count bound
   let stages := roundStages R n deg ambient start count bound (Finset.univ.map D).toList
     (honestMessages R n deg D p) (fun i stmt => pure (challenges i stmt))
   let Inv : (j : Fin (count + 1)) → (I j).State → Prop := fun j state =>
-    state.1.oracles = (family R n deg).answerData (fun _ => p) ∧
+    state.1.oracles = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) ∧
       ((state.1.stmt, fun _ => p), ()) ∈
         Spec.relationRound R n deg D _
   have preserves : ∀ (j : Fin count) (input : (I j.castSucc).State),
@@ -220,17 +226,17 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     intro j input hin
     rcases input with ⟨⟨current, impl⟩, payload⟩
     rcases hin with ⟨himpl, hcurrent⟩
-    change impl = (family R n deg).answerData (fun _ => p) at himpl
+    change impl = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) at himpl
     subst impl
     let i : Fin n := ⟨start + j, by omega⟩
     let r := challenges i current
     refine ⟨(⟨honestNext R n deg D i current p r,
-      (family R n deg).answerData (fun _ => p)⟩, ()), ?_, rfl, ?_⟩
+      (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()), ?_, rfl, ?_⟩
     · rw [ClosedStage.run_eq_executeCore]
       change (do
         let result ← executeCore (sampledReduction R n deg ambient i
           (Finset.univ.map D).toList (pure r))
-          ((family R n deg).answerData (fun _ => p)) current
+          ((polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)) current
           (honestMessages R n deg D p i current)
         return result.closed.map (fun claim => (claim, ()))) = _
       erw [executeCore_sampled_eq]
@@ -241,19 +247,19 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     · exact relationRound_projected_output R n deg D i current p r
   obtain ⟨output, hex, horacles, hrelation⟩ :=
     OrderedExecution.run_preserves count I stages Inv preserves
-      (⟨stmt, (family R n deg).answerData (fun _ => p)⟩, ()) ⟨rfl, h⟩
+      (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩
   refine ⟨output.1, ?_, horacles, ?_⟩
   · change Option.map Prod.fst <$> OrderedExecution.run count I stages _ = _
     erw [hex]
     rfl
   · rcases output with ⟨⟨last, impl⟩, payload⟩
-    change impl = (family R n deg).answerData (fun _ => p) at horacles
+    change impl = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) at horacles
     subst impl
     exact hrelation
 
 /-- The final closed round is precisely evaluation at the full challenge vector. -/
 theorem closedRelation_last_iff {m : ℕ} (D : Fin m ↪ R)
-    (claim : ClosedClaim (Spec.StatementRound R n (Fin.last n)) (family R n deg)) :
+    (claim : ClosedClaim (Spec.StatementRound R n (Fin.last n)) (polynomialFamily R n deg)) :
     closedRelation R n deg D (Fin.last n) claim ↔
       claim.oracles ⟨(), claim.stmt.challenges⟩ = claim.stmt.target := by
   unfold closedRelation
@@ -282,7 +288,7 @@ theorem executeRounds_evaluation [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
     ∃ output,
       executeRounds R n deg ambient start count finish.le (Finset.univ.map D).toList
-        ⟨stmt, (family R n deg).answerData (fun _ => p)⟩
+        ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
         (honestMessages R n deg D p) challenges = pure (some output) ∧
       p.val.eval (output.stmt.challenges ∘ Fin.cast finish.symm) = output.stmt.target := by
   subst n
