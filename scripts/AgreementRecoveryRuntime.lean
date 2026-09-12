@@ -24,6 +24,7 @@ import ArkLib.Data.Polynomial.BatchRemainder
 import ArkLib.Data.Polynomial.Rojas.AffineCover
 import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.TowerFoundations
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -80,6 +81,7 @@ private def linearFixtureBackend :
 /-- Exercise nonlinear blocks, extension-only roots, repeated images, final filtering,
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
+  ArkLibTest.TowerFoundations.run
   check "constant-message balanced frequency map" <|
     ConstantDecoder.decode compare 3 ([4, 2, 4, 4, 2, 7] : List Nat) == [[4]]
   let x : CPolynomial (ZMod 5) := CPolynomial.X

@@ -851,10 +851,16 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.R
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Batched
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.ComponentScan
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Machine
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.RepresentedExact
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Tower
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.TowerBatch
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.TowerCorrectness
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.TowerEmbedding
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.TowerEvaluation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AutomaticFirstOrderExecution
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.CapacityDecoderExecution
@@ -914,6 +920,12 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.TerminalCoprime
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.FiberPreprocess
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Correctness
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Explainer
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Explainer.Support
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Input
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Run
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.MultiplicitySupport
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.NormSieve.ProductFilter
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.OrdinaryInterpolatedDecoder
@@ -984,6 +996,10 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.Small
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SquareSystemDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.Normalization
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.PreprocessFiber
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.SplitZeroUnit
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerRepresentation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.UniformRateExecution
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
