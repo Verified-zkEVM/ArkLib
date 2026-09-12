@@ -151,7 +151,9 @@ python3 scripts/check-rs-math-imports.py
 
 This is a dependency regression check, not a proof of semantic purity. The
 [repository map](repo-map.md) describes current ownership; the
-[RS separation record](../design/rs-algebraic-machine-plan.md) preserves its development history.
+[decoder plan](../design/decoder-plan/README.md) tracks the current executable construction.
+The [historical RS separation record](https://github.com/quangvdao/ArkLib/blob/3c67cb3fa669985b2add6c5d080a3060c4728789/docs/design/rs-algebraic-machine-plan.md)
+remains available in Git history.
 
 ### Filling a `sorry`, or work that must stay axiom-clean
 

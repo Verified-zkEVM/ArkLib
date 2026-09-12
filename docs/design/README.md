@@ -14,6 +14,9 @@ This suite describes the replacement: reductions over typed interactions, source
 oracles, claims that close only through the run that produced them, and an oracle-elimination
 compiler that turns ideal guarantees into explicit cryptographic obligations.
 
+For Reed–Solomon paper decoder implementation and parallel assignments, use the separate
+[current decoder plan](decoder-plan/README.md).
+
 ## How to use this suite
 
 Start with [`00-current-status.md`](00-current-status.md). It is the operational source of truth for

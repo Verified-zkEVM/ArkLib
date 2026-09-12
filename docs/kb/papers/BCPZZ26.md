@@ -45,8 +45,11 @@ capacity gap.
 records an observed primitive-work ledger; it is a correctness reference, not the integrated norm
 and square-system decoder. The current component and backend boundaries are maintained in
 `ListDecoding/PaperAlgorithms.lean`. Historical restricted-machine work is recorded in the
-[algebraic-machine plan](../../design/rs-algebraic-machine-plan.md). None of these narrower results
+[algebraic-machine plan](https://github.com/quangvdao/ArkLib/blob/3c67cb3fa669985b2add6c5d080a3060c4728789/docs/design/rs-algebraic-machine-plan.md). None of these narrower results
 is a whole-decoder bit-time theorem.
+
+Current decoder implementation status and assignments are maintained in the
+[decoder coordination plan](../../design/decoder-plan/README.md).
 
 ## Source Access
 

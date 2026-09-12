@@ -66,10 +66,13 @@ from supplied finite representations is proved, and square-system recovery is co
 torus-backend coverage contract. The first-order norm components do not yet form a top-level
 constructor with coverage and `ExactOutput`, and no whole-decoder bit/RAM bound is formalized.
 Historical decoder development is recorded in the
-[algebraic-machine plan](../../design/rs-algebraic-machine-plan.md).
+[algebraic-machine plan](https://github.com/quangvdao/ArkLib/blob/3c67cb3fa669985b2add6c5d080a3060c4728789/docs/design/rs-algebraic-machine-plan.md).
 
 Concrete Johnson-table, BN254 curve, ProveKit, ZisK, and LambdaVM instantiations are indexed outside
 the reusable library graph in `ArkLibExamples/ReedSolomon/PaperGuide.lean`.
+
+Current decoder implementation status and assignments are maintained in the
+[decoder coordination plan](../../design/decoder-plan/README.md).
 
 ## Source Access
 

@@ -43,6 +43,8 @@ home_page/            site assets and assembled website root
 ## Where To Start By Task
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
+- Continuing the paper decoder: use the [decoder plan](../design/decoder-plan/README.md) for
+  current status, shared interfaces, workstream ownership and acceptance gates.
 - Generic operational machines and their representation/refinement lemmas live in
   `ArkLib/Data/Computation/`. Reed–Solomon execution consumers stay under `ListDecoding/`;
   mathematical capacity entry points remain independent of that machinery. The retained lower-level
@@ -493,7 +495,10 @@ there are no forwarding modules at the retired paths.
   the physical coefficient-list contract is `ListDecoding/ExactOutput.lean`.
   `ListDecoding/CapacityDecoder.lean` and `CapacityDecoderExecution.lean` retain the exhaustive
   initial-jet executor, with exact physical output and an observed primitive-work bound.
-  The symbolic route uses `ListDecoding/AgreementRecovery/Decoder.lean` as its shared consumer.
+  The paper route has `TowerRepresentation` and the proved
+  `ListDecoding/AgreementRecovery/BatchedTower` consumer, with zero/unit splitting, preprocessing
+  and elimination-based materialization under `ListDecoding/TowerAlgebra`.
+  `HiddenDerivativeDecoder` executes input checks and easy branches; its symbolic branch is open.
   `OrdinaryInterpolatedDecoder.lean` composes computed interpolation and Newton lifting under
   regular-center premises; `SquareSystemDecoder.lean` composes computed square systems and
   Taylor charts with an explicit isolated-root-complete torus backend. These conditional

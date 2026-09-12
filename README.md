@@ -39,6 +39,9 @@ The library is currently in development. Alongside general development of the li
 
 [VCV-io](https://github.com/dtumad/VCV-io), ArkLib's main dependency alongside [mathlib](https://github.com/leanprover-community/mathlib4) is also being developed in parallel. We are also starting work on the [Bluebell](https://arxiv.org/pdf/2402.18708) probabilistic program logic in (our fork of) [iris-lean](https://github.com/Verified-zkEVM/iris-lean).
 
+The [paper decoder plan](docs/design/decoder-plan/README.md) records the verified Reed–Solomon
+implementation boundary and current parallel work assignments.
+
 ## Roadmap & Contributing
 
 We welcome outside contributions to the library! Please see [CONTRIBUTING](./CONTRIBUTING.md) and, the list of issues for immediate tasks, and the [ROADMAP](./ROADMAP.md) for a list of desired contributions.

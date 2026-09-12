@@ -26,12 +26,11 @@ separant is nonzero.  All root statements hold after an arbitrary field extensio
 nonempty result for the existing agreement-recovery consumer.  It does not construct the
 coefficients of the Taylor family.
 
-The remaining tower-level step is dynamic evaluation over `E[u]/G`: the current concrete
-polynomial gcd API requires field coefficients.  Completing the full squarefree-base operation
-therefore needs an executable D5 routine that splits `G` whenever a prospective leading
-coefficient is a zero divisor, together with specialization correctness and preservation of the
-sum of `deg G * deg_v h` across all returned blocks.  This module does not postulate that missing
-routine and makes no whole-decoder or runtime claim.
+This file is the retained field-fiber special case. The full squarefree-base operation over
+`E[u]/G` is implemented by `TowerAlgebra.PreprocessFiber` using the D5 owners.
+`TowerAlgebra.PreprocessAccounting` proves disjointness and dimension nonincrease for its outputs.
+The first-order norm candidate producer still needs to construct the base block and Taylor
+coefficients and then compose those tower operations. No whole-decoder or runtime claim follows.
 -/
 
 @[expose] public section
