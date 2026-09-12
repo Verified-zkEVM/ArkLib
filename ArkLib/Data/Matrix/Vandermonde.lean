@@ -3,14 +3,15 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.Polynomial.Interface
-import CompPoly.Data.Polynomial.MonomialBasis
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.RingTheory.Henselian
-import Mathlib.Data.NNReal.Defs
-import Mathlib.Data.NNReal.Basic
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.Polynomial.Interface
+public import CompPoly.Data.Polynomial.MonomialBasis
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.Data.NNReal.Defs
+public import Mathlib.Data.NNReal.Basic
 
 /-!
   # Non-square Vandermonde matrices
@@ -22,6 +23,8 @@ import Mathlib.Data.NNReal.Basic
   (`mulVecLin_coeff_vandermondens_eq_eval_matrixOfPolynomials`). Used by the Reed-Solomon and
   proximity-gap developments.
 -/
+
+@[expose] public section
 
 open Polynomial Matrix Code LinearCode
 

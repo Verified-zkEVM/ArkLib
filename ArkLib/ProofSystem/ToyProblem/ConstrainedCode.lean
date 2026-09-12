@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 
 /-!
 # The toy-protocol soundness experiment is the MCA experiment of the constrained code
@@ -94,6 +95,8 @@ generalization of the current `mcaError` ambient — left as future work.
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

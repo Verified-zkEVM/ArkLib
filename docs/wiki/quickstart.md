@@ -63,6 +63,10 @@ controls, and nonstandard space characters that can conceal source changes. It a
 blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
 rejects source-level linter suppressions in their actual parsed context.
 
+The header policy understands the Lean module system, so `module`, `public import`, `meta import`
+and `import all` all parse, and it pins the canonical header order every file under `ArkLib/`
+follows. See [`module-system.md`](module-system.md).
+
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 

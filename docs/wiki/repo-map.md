@@ -247,9 +247,9 @@ home_page/            site assets and assembled website root
     `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
     re-exports the folder and records why this round layer is *not* built on the generic
     `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
-    extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
-    side: every *folded* completeness statement inherits `sorryAx` from the generic
-    `Reduction.append_completeness`, which this repository admits.
+    extraction, and neither carries a soundness certificate to inherit). The folded honest
+    completeness statements use proved guarded composition and suffix completeness from every
+    shared oracle state; their axiom dependencies are standard only.
   - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
     reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
     (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
@@ -305,18 +305,13 @@ home_page/            site assets and assembled website root
     `HonestRangeParams.ofPinnedDigitBase` at `γ = b − 1`, `bZero = b`, which also meets the
     pull-back orientation and so realizes the two-sided regime), one named corollary per seam,
     and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
-    zero-check protocol, whose completeness is proved **modulo the sorried generic
-    `Reduction.append_completeness`** (so it is `sorryAx`-tainted, by
-    design and recorded in the baseline; the per-link theorems it composes are not). What the
-    non-short honest lift quotient *used to* cost was a zero-check range base of at least
-    `q/2 + 1`, and — with the pull-back orientations — the collapse `γ = q/2 = bZero − 1`. Since
-    `ZeroCheck/Constraints`'s `w̃` carries the quotient's base-`bZero` **digits** (NOZ26 §4.3's
-    hidden gadget decomposition, `rhoDigits`), which are `⌊bZero/2⌋`-bounded for every quotient,
-    that cost is gone: honest completeness of the batching bridge needs only
-    `bound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
-    `γ` stays free. Adding the pull-back's reverse orientation pins the parameters, and
-    `HonestRangeParams.pinned_of_soundness_orientations` now lands at the **healthy** point
-    `γ = bZero − 1 < q/2`.
+    zero-check protocol. Its completeness uses proved pure-verifier composition, and the
+    extension through sumcheck uses guarded composition. Each suffix is complete from every
+    shared oracle state, so both composed results have standard-only axiom dependencies.
+    `ZeroCheck/Constraints` represents the quotient by base-`bZero` digits (`rhoDigits`),
+    each bounded by `⌊bZero/2⌋`. The batching bridge requires `bound ≤ bZero − 1`;
+    `HonestRangeParams.pinned_of_soundness_orientations` gives `γ = bZero − 1 < q/2`
+    when both pull-back orientations hold.
   - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
     chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
     reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole
@@ -332,10 +327,10 @@ home_page/            site assets and assembled website root
     `commit` as the scheme `hachiNonrecursive`, and
     `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
     bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
-    (`Commitments/Functional/Basic.lean`, axiom-clean, on the new
-    `OptionT.probEvent_eq_one_bind`). The three composed theorems inherit `sorryAx` from the
-    admitted generic `Reduction.append_completeness` only (recorded in the baseline); every link,
-    the adapter, the terminal step, and the bridge are individually axiom-clean. Recursion
+    (`Commitments/Functional/Basic.lean`, axiom-clean, using
+    `OptionT.probEvent_eq_one_bind`). The composed opening/correctness theorems use proved
+    guarded composition and have standard-only axiom dependencies, as do their individual links,
+    adapter, terminal step, and correctness bridge. Recursion
     (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
     **`τ` is an independent parameter here.** `hachiNonrecursiveOpening` / `hachiNonrecursive` /
     their correctness theorems take the folded-witness digit count `τ` and its bound `zBound` as
@@ -622,10 +617,45 @@ home_page/            site assets and assembled website root
   removed rather than renamed: downstream code should compose
   `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
   `BatchedFri.Spec.batchedFRIreduction` does.
+- Binary sequential composition lives in `OracleReduction/Composition/Sequential/Append/`,
+  exported by `Composition/Sequential/Append.lean`:
+  - `Append/Basic.lean` — the `append` operations on provers, verifiers, and reductions, their
+    oracle-protocol counterparts, and challenge-sampling transport across `++ₚ`.
+  - `Append/StateFunction.lean` — composition of straightline and round-by-round extractors, and
+    of verifier state functions. After the seam the composed state function uses `S₁ ∨ S₂`.
+  - `Append/Execution.lean` — running appended provers / verifiers. `Prover.append_run_of_seam`
+    permits effectful left output when the suffix is empty or opens with a message;
+    `Prover.append_run` specializes it to pure left output for arbitrary suffix protocols.
+  - `Append/Simulation.lean` — exact simulation of both explicitly routed challenge inclusions
+    and appended prover execution, including the final shared oracle state.
+  - `Append/Completeness.lean` — quantitative completeness from exact simulated factorization,
+    with seam and purity corollaries and state-uniform suffix correctness.
+  - `Append/OneMessage.lean` — the one-message specialization with effectful prover outputs.
+  - `Append/RoundByRound.lean` — composition from fixed-prefix bounds under a pure first verifier.
+  - `Append/Security.lean` — admitted soundness and knowledge-soundness composition claims.
+
+  `Sequential/Completeness.lean` adds finite-chain completeness for pure outputs/verdicts;
+  `Sequential/GuardedCompleteness.lean` handles deterministic rejecting verifiers.
+  `Sequential/GuardedNary.lean` extends guarded completeness to finite chains;
+  `Sequential/OracleCompleteness.lean` supplies binary and finite-chain oracle-reduction wrappers.
+  `Sequential/NoAmbient.lean` proves output purity for empty ambient oracles and constructs guarded
+  forms from explicit fallback maps. `LiftContext/Purity.lean` transports output purity and guarded
+  forms through context lifting.
+  See [sequential composition](sequential-composition.md) for theorem selection and hypotheses.
+  `ArkLibTest/OracleReduction/Composition/Sequential/` contains acceptance examples, query-order
+  and shared-state counterexamples, and axiom assertions, built by `lake test`.
+
+  These proofs run on `HEq` transport, since transcripts and prover states are families indexed by
+  the round number. The generic congruence lemmas for that (`heq_apply`, `heq_funext`, `heq_pi`,
+  `heq_bind`, …) live in `ToMathlib/Logic/HEq.lean`, and the `ℕ`-indexed `HEq` computation rules for
+  `Transcript.concat` next to `concat` itself in `ProtocolSpec/Basic.lean` — put new ones there
+  rather than re-deriving them privately per module.
 - Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
   not close the inherited generic append-security boundary: the unrestricted `StateT`
-  completeness/soundness composition theorems in `Composition/Sequential/Append.lean` remain
-  admitted and must not anchor a standalone security claim.
+  soundness and knowledge-soundness composition theorems in
+  `Composition/Sequential/Append/Security.lean` remain admitted and must not anchor a standalone
+  security claim. Completeness composition uses the proved interfaces with explicit shared-state
+  hypotheses.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
   `Packing/` is the small→large packing family: `Profile.lean` holds the shared

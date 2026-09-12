@@ -3,7 +3,9 @@ Copyright (c) 2025-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao, Tobias Rothmann
 -/
-import ArkLib.Data.MvPolynomial.Degrees
+module
+
+public import ArkLib.Data.MvPolynomial.Degrees
 
 /-!
 # Degree-bounded coefficient transport through a ring embedding
@@ -28,6 +30,8 @@ sibling file `Eval.lean`. In this folder, `Packing`
 (`RingSwitching/Packing/`) consumes the multilinear case `d = 1` to embed the packed
 polynomial into its pack/trace carrier.
 -/
+
+@[expose] public section
 
 open MvPolynomial
 

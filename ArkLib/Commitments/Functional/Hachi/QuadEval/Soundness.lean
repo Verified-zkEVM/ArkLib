@@ -3,11 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
-import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
-import ArkLib.Data.Lattices.CyclotomicRing.Inverse
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+public import ArkLib.Data.Lattices.CyclotomicRing.Inverse
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — coordinate-wise special soundness
@@ -78,6 +80,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   * [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements in Partially Splitting
       Cyclotomic Rings and Applications to Lattice-Based Zero-Knowledge Proofs*][LS18]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

@@ -3,9 +3,10 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Execution
-import ArkLib.OracleReduction.Cast
+public import ArkLib.OracleReduction.Execution
+public import ArkLib.OracleReduction.Cast
 
 /-!
   # Adding Salt to an (Oracle) Reduction
@@ -22,6 +23,8 @@ import ArkLib.OracleReduction.Cast
   state-restoration security for that same (oracle) reduction with any (finite, non-empty) salt type
   added.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec
 
@@ -184,7 +187,7 @@ def Verifier.addSalt (V : Verifier oSpec StmtIn StmtOut pSpec) :
     Verifier oSpec StmtIn StmtOut (pSpec.addSalt Salt) where
   verify := fun stmtIn transcript => V.verify stmtIn transcript.removeSalt
 
-private def addSaltQueryImpl :
+def addSaltQueryImpl :
     QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))
       (OracleComp (oSpec + ([OStmtIn]ₒ + [(pSpec.addSalt Salt).Message]ₒ))) :=
   fun q => liftM <| OracleSpec.query
@@ -231,7 +234,7 @@ private theorem simulateAddSaltQueryImplComp
   apply QueryImpl.ext
   exact simulateAddSaltQueryImpl (Salt := Salt) oStmt messages
 
-private def addSaltOutputSimulation
+def addSaltOutputSimulation
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     OracleOutputSimulation oSpec OStmtIn OStmtOut (pSpec.addSalt Salt) where
   materializeOutput := fun challenges oStmt messages =>
