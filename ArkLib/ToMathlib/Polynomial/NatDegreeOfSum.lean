@@ -3,14 +3,17 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov
 -/
+module
 
-import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.BigOperators
 
 /-!
 # ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

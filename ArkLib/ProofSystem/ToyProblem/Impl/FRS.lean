@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Folded
-import CompPoly.Fields.KoalaBear.Ext6
-import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
+public import CompPoly.Fields.KoalaBear.Ext6
+public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 
 /-!
 # Folded Reed--Solomon reference implementations for the toy problem
@@ -22,6 +23,8 @@ Application-specific parameter policy is intentionally outside this module.
   Correlated Agreement*][ABF26], §6.4 (the folded-RS instantiation whose
   parameter shape these reference points mirror).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

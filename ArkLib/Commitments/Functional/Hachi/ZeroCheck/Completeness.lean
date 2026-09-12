@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
-import ArkLib.ToCompPoly.Multilinear.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
+public import ArkLib.ToCompPoly.Multilinear.Basic
 
 /-!
   # Zero-check — completeness (Hachi Figure 5)
@@ -43,10 +45,9 @@ import ArkLib.ToCompPoly.Multilinear.Basic
 
   The preceding link is closed here too. `batchReduction` / `batchReduction_perfectCompleteness`
   (bottom of this file) is the batching bridge as a protocol object and its perfect completeness,
-  so the honest side reaches `relBatched` from `relLift` and the two links meet. What is *not*
-  here is the composition of the two: appending completeness needs the generic
-  `Reduction.append_completeness`, which this repository admits (the appended statements live in
-  `HonestChain.lean` and carry the resulting `sorryAx`).
+  so the honest side reaches `relBatched` from `relLift` and the two links meet. Their composition
+  lives in `HonestChain.lean`, using the proved pure-verifier append theorem and completeness of
+  each suffix from every shared oracle state.
 
   ## Why the two directions are so unequal in difficulty
 
@@ -71,6 +72,8 @@ import ArkLib.ToCompPoly.Multilinear.Basic
   `hZero_eq_zero_imp_liftShort`, which is what the arithmetic hypotheses `hd`, `hμn`, `hbound`,
   the digit-base admissibility pay for.
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

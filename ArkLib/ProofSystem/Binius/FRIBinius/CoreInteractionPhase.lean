@@ -3,9 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
-import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
+public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 
 /-!
 # Core Interaction Phase of FRI-Binius IOPCS
@@ -28,6 +31,15 @@ This phase combines sumcheck and FRI folding using shared challenges r'ᵢ:
   `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eqTilde(u_0, ..., u_{κ-1},`
                                   `r''_0, ..., r''_{κ-1}) * e_u) * c`.
 -/
+
+@[expose] public section
+
+/- These composed protocol bundles are `def`s whose *inferred* type embeds the inline `Fin` bounds
+proofs written in their bodies, so the module system's default elaboration either delays every `by`
+until the still-unknown result type is solved, or abstracts the proof into a private auxiliary
+theorem a public signature may not mention. `backward.proofsInPublic` restores the classic
+elaboration these definitions were written against. See docs/wiki/module-system.md. -/
+set_option backward.proofsInPublic true
 
 namespace Binius.FRIBinius.CoreInteractionPhase
 noncomputable section
@@ -812,13 +824,17 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
       (init := init)
       (impl := impl) := by
   unfold coreInteractionOracleReduction pSpecCoreInteraction
-  apply OracleReduction.append_perfectCompleteness
-  · -- Perfect completeness of sumcheckFoldOracleReduction
-    exact sumcheckFoldOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
+  apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨⟨0, input.1.challenges, ⟨0, 0⟩⟩, 0⟩, input.2)))
+    (fun _ => Or.inl inferInstance)
+  · exact sumcheckFoldOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (init := init) (impl := impl)
-  · -- Perfect completeness of finalSumcheckOracleReduction
+  · intro s
     exact finalSumcheckOracleReduction_perfectCompleteness κ L K β ℓ ℓ' 𝓡 ϑ
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l init impl
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l (pure s) impl
 
 def coreInteractionOracleRbrKnowledgeError (j : (BinaryBasefold.pSpecCoreInteraction K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=

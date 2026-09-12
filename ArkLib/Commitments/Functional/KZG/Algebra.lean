@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Data.GroupTheory.PrimeOrder
-import Mathlib.Algebra.Field.ZMod
+public import ArkLib.Data.GroupTheory.PrimeOrder
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Algebraic Support for KZG-Style SRSes
@@ -22,6 +23,8 @@ KZG, t-SDH, and ARSDH reductions.
 
 This file contains general algebraic support lemmas and does not cite an external paper directly.
 -/
+
+@[expose] public section
 
 namespace Groups
 

@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Execution
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+module
+
+public import ArkLib.Interaction.Oracle.Execution
+public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 /-!
 # Typed single-round Sumcheck strategies
@@ -14,6 +16,8 @@ new target from the sent polynomial. The output claim retains the input oracle, 
 at the fresh challenge is a substantive condition even for a dishonest message.
 Challenges are explicit open programs; this module makes no soundness or sampling claim.
 -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.SingleRound
 
@@ -90,7 +94,7 @@ def inputImpl (p : Message R deg) : QueryImpl (inputSpec R) Id := fun x => (p.va
 
 /-- Reading a list of sent evaluations computes exactly their mathematical sum. -/
 theorem simulate_sumQueries (p q : Message R deg) (domain : List R) :
-    simulateQ (Verifier.readImpl ambient (access R deg)
+    simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
         (inputImpl R deg p) q)) (sumQueries R deg ambient domain) =
       pure (domain.map (fun x => q.val.eval x)).sum := by
@@ -99,7 +103,7 @@ theorem simulate_sumQueries (p q : Message R deg) (domain : List R) :
   | cons x xs ih =>
       simp only [sumQueries, simulateQ_bind, simulateQ_pure]
       change (pure (q.val.eval x) >>= fun y =>
-        simulateQ (Verifier.readImpl ambient (access R deg)
+        simulateQ (Verifier.liftAccessImpl ambient (access R deg)
           (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
             (inputImpl R deg p) q)) (sumQueries R deg ambient xs) >>= fun ys =>
           pure (y + ys)) = _
@@ -109,7 +113,7 @@ theorem simulate_sumQueries (p q : Message R deg) (domain : List R) :
 /-- The terminal program checks and evaluates the sent polynomial. -/
 theorem simulate_terminal [DecidableEq R] (p q : Message R deg)
     (domain : List R) (target r : R) :
-    simulateQ (Verifier.readImpl ambient (access R deg)
+    simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
         (inputImpl R deg p) q)) (terminal R deg ambient domain target r) =
       pure (if (domain.map (fun x => q.val.eval x)).sum = target then
@@ -133,7 +137,7 @@ theorem executeAt_eq [DecidableEq R] (p q : Message R deg)
       pure ⟨⟨q, r, PUnit.unit⟩, (q.val.eval r, r),
         if (domain.map (fun x => q.val.eval x)).sum = target then
           some (q.val.eval r, r) else none⟩ := by
-  change (simulateQ (Verifier.readImpl ambient (access R deg)
+  change (simulateQ (Verifier.liftAccessImpl ambient (access R deg)
     (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
       (inputImpl R deg p) q)) (terminal R deg ambient domain target r) >>= fun out =>
         pure (⟨⟨q, r, PUnit.unit⟩, (q.val.eval r, r), out⟩ :

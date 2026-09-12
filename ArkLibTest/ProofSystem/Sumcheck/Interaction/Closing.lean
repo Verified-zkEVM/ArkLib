@@ -13,14 +13,14 @@ namespace Sumcheck.Interaction.SingleRound.Test
 open OracleComp
 open _root_.Interaction.Oracle
 
-/-- The selected ideal guarantee certifies the actual nonconstant sent object. -/
+/-- The selected ideal guarantee certifies the actual nonconstant sent realization. -/
 example : polynomial.val.degree ≤ (1 : ℕ) := message_degree (ZMod 17) 1 polynomial
 
 /-- Closing the actual finite-field execution exports the original polynomial's behavior. -/
 example :
     CoreRun.closed <$> executeCore (claimReduction (ZMod 17) 1 ambient [0, 1] 5)
         (inputImpl (ZMod 17) 1 polynomial) 1 polynomial =
-      pure (some (honestData (ZMod 17) 1 polynomial 5).toClosed) := by
+      pure (some (honestClaim (ZMod 17) 1 polynomial 5).toClosed) := by
   apply executeCore_closed
   simp [polynomial]
 
@@ -36,7 +36,7 @@ example :
 example :
     discreteEvalDist (executeSampled (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial [0, 1] 1)
       {run | run.closed.map (closedOutputRelation (ZMod 17) 1) = some True} = 1 := by
-  apply executeSampled_measure_complete
+  apply executeSampled_measureCompleteness
   · let : MeasurableSpace (ZMod 17) := ⊤
     have h : Pr[fun _ => True | ($ᵗ (ZMod 17))] = 1 := by simp
     rw [probEvent_eq_evalSPMF_toMeasure] at h
@@ -56,7 +56,7 @@ example (r : ZMod 17) :
         outcome := some (outputClaim (ZMod 17) 0 (1, r)) } := by
     simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
       pure_bind]
-    change ((simulateQ (Verifier.readImpl ambient (access (ZMod 17) 0)
+    change ((simulateQ (Verifier.liftAccessImpl ambient (access (ZMod 17) 0)
         (Access.extendImpl (inputSpec (ZMod 17)).toPFunctor (polynomialInterface (ZMod 17) 0)
           (inputImpl (ZMod 17) 0 zeroMessage) oneMessage))
         (Option.map (outputClaim (ZMod 17) 0) <$>
@@ -83,6 +83,6 @@ example (r : ZMod 17) :
 #print axioms executeCore_closed
 #print axioms executeCore_degree_complete
 #print axioms executeSampled_eq
-#print axioms executeSampled_measure_complete
+#print axioms executeSampled_measureCompleteness
 
 end Sumcheck.Interaction.SingleRound.Test

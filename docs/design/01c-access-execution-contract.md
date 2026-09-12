@@ -33,7 +33,7 @@ a non-faithful interface must not silently become a projection to its underlying
 
 Signature extension uses disjoint query slots. Equal query/response types do not make two
 resources identical. Stable identity, sharing, aliasing, and ideal guarantees remain AR-4B;
-AR-3A's sum tags are routing, not a replacement resource schema.
+AR-3A's sum tags route queries; AR-4B's `NamedContext` and `OracleModel` track names and promises.
 
 ### Required AR-3A tests
 
