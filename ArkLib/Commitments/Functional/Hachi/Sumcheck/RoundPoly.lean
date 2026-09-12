@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
-import ArkLib.ToCompPoly.Univariate.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
+public import ArkLib.ToCompPoly.Univariate.Basic
 
 /-!
   # The round-polynomial layer of the Hachi sumcheck
@@ -56,6 +58,8 @@ import ArkLib.ToCompPoly.Univariate.Basic
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

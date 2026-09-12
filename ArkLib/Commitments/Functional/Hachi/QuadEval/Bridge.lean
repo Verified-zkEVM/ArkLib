@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
-import ArkLib.Commitments.Functional.Hachi.EvalSplit
-import ArkLib.ProofSystem.Component.ReduceClaim
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+public import ArkLib.Commitments.Functional.Hachi.EvalSplit
+public import ArkLib.ProofSystem.Component.ReduceClaim
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 
 /-!
   # Polynomial-level bridge into Hachi's `QuadEval` reduction
@@ -84,6 +86,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

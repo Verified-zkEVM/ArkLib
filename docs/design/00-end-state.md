@@ -137,10 +137,10 @@ The design deliberately tracks both layers.
 - Compilation transforms real resources and transfers virtual guarantees into cryptographic
   obligations. It does not erase the distinction.
 
-This is why `SourceCtx` should remain an extensional handler presentation while resource identity,
-origin, aliasing, and guarantees live in a separate `ResourceSchema`. Combining these prematurely
-would make semantic substitution depend on compiler metadata; omitting the schema would make trace
-and guarantee claims unverifiable.
+This is why `SourceCtx` remains an extensional handler presentation. `OracleModel` interprets
+stable names and their promises; `NamedContext` selects distinct names, and its `View` expresses
+aliasing. Keeping this information separate lets semantic substitution remain independent of
+compiler metadata while retaining explicit provenance and guarantee obligations.
 
 ## 6. Refinement obligations at the executable boundary
 
@@ -165,7 +165,7 @@ Fixed design principles:
 1. closed relations consume extensional oracle behavior;
 2. virtual derivations are source-scoped and compose by handler substitution;
 3. security games derive real/virtual closing from one runner-produced artifact rather than accepting split parts;
-4. resource aliasing is explicit and disjoint tensor does not duplicate persistent resources;
+4. resource aliasing is explicit and disjoint union does not duplicate persistent resources;
 5. security notions expose quantifier order, views, budgets, and losses;
 6. compiler passes expose guarantee-transport and security-transfer obligations;
 7. existing PolyFun/VCVio semantics are extended, not shadowed by ArkLib-private copies.
@@ -173,7 +173,7 @@ Fixed design principles:
 Still provisional until Lean clients elaborate:
 
 - exact universes and field layouts of `OracleFamily`, `SourceCtx`, `ClaimWith`, and `RunCore`;
-- the final `ResourceSchema` and stable-resource-identity representation;
+- the final `NamedContext` and stable-name representation;
 - compiler plan and backend capability field names;
 - whether existing `TypeTree.Chain` is sufficient for n-ary reduction presentation.
 

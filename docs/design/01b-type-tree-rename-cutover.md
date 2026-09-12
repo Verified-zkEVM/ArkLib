@@ -113,7 +113,7 @@ The broad prototype predates the generic rename. Ported ArkLib declarations use 
 | `Oracle.Spec.RoleDeco` | `Oracle.TypeTree.RoleDecoration` |
 | `Oracle.Spec.OracleDeco` | `Oracle.TypeTree.OracleDecoration` |
 | `Oracle.Spec.toSpecRoles` | `Oracle.TypeTree.RoleDecoration.toTypeTreeRoles` |
-| `Oracle.Spec.toRuntimeRoles` | `Oracle.TypeTree.RoleDecoration.toRuntimeRoles` |
+| `Oracle.Spec.toRuntimeRoles` | `Oracle.TypeTree.RoleDecoration.toExplicitRoles` |
 | `FullTranscript.toInteractionTranscript` | `ExecutionPath.toTypeTreePath` |
 | `projectPublicFull` | `ExecutionPath.toBranchPath` |
 | `PublicTranscript.*` | `BranchPath.*` |

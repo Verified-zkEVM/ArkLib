@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Packing
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Packing
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 
 /-!
 # The Trace Formula `Tr_H(ψ(a)·σ_{-1}(ψ(b))) = (d/k)·⟨a,b⟩` (Hachi §3, Theorem 2)
@@ -31,6 +33,8 @@ survive (giving `Tr_H(X^0) = d/k`), all others vanish, yielding `(d/k)·Σ_i a_i
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 

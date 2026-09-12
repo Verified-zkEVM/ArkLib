@@ -3,11 +3,13 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.RhoDigits
-import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
-import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
-import CompPoly.Univariate.ToPoly.Impl
+module
+
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.RhoDigits
+public import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
+public import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Hachi's `Lift` instance (Figure 4 / Lemma 9)
@@ -86,6 +88,8 @@ import CompPoly.Univariate.ToPoly.Impl
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

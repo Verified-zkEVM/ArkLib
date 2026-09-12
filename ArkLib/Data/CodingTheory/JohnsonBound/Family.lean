@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.JohnsonBound.Basic
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ReedSolomon.Folded
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
-import ArkLib.ToMathlib.InformationTheory.Hamming
+public import ArkLib.Data.CodingTheory.JohnsonBound.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
+public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # Johnson list-size bounds for codes and code families
@@ -48,6 +49,8 @@ negative — handled by the `q`-ary Plotkin bound `plotkin_card_le_ell`.
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace JohnsonBound
 

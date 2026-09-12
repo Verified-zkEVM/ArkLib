@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Eval.Degree
-import Mathlib.Algebra.Polynomial.Degree.Lemmas
+public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.Algebra.Polynomial.Degree.Lemmas
 
 /-!
 # Additional polynomial composition-degree lemmas
@@ -17,6 +18,8 @@ import Mathlib.Algebra.Polynomial.Degree.Lemmas
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 
