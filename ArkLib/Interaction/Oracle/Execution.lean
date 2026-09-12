@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Access
-import ArkLib.Interaction.Reduction
+module
+
+public import ArkLib.Interaction.Oracle.Access
+public import ArkLib.Interaction.Reduction
 
 /-!
 # Oracle strategies and single-run execution
@@ -25,6 +27,8 @@ prover-owned move, before emitting a verifier-owned move, and at termination. Th
 arbitrary reschedulable local program, a logged view, a resumable artifact, or a security theorem.
 See `docs/design/01c-access-execution-contract.md`.
 -/
+
+@[expose] public section
 
 universe u v w
 

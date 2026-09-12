@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import PolyFun.Interaction.TwoParty.Compose
+module
+
+public import PolyFun.Interaction.TwoParty.Compose
 
 /-!
 # Plain dependent reductions
@@ -32,6 +34,8 @@ ArkLib's prover setup is effectful in general, so `Reduction.execute_comp` delib
 the second boundary. Stateful clients without commutative effects must thread state explicitly
 rather than use this factorization theorem.
 -/
+
+@[expose] public section
 
 universe u v w x
 

@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import CompPoly.Multivariate.CMvPolynomialEvalLemmas
-import CompPoly.Multivariate.Operations
+module
+
+public import CompPoly.Multivariate.CMvPolynomialEvalLemmas
+public import CompPoly.Multivariate.Operations
 
 /-!
   # Evaluation of computable multivariate polynomials, bundled and over `Finset`s
@@ -26,6 +28,8 @@ import CompPoly.Multivariate.Operations
   built as a sum over the Boolean cube of a coefficient times a product of linear factors, so
   every evaluation argument crosses both a `Finset.sum` and a `Finset.prod`.
 -/
+
+@[expose] public section
 
 namespace CPoly.CMvPolynomial
 

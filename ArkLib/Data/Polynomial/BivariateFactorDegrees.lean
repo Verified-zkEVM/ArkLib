@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Jieyi Long, Quang Dao
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
-import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import CompPoly.ToMathlib.Polynomial.BivariateDegree
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
 # Degree sums for bivariate factors
@@ -28,6 +29,8 @@ Changes: use the existing CompPoly degree API, generalize finite products to ind
 weaken field assumptions to domain and factorization assumptions, and generalize the
 positive-degree filter to an arbitrary subset. No donor `LocalMathlib` modules are copied.
 -/
+
+@[expose] public section
 
 open Polynomial
 open scoped Polynomial.Bivariate

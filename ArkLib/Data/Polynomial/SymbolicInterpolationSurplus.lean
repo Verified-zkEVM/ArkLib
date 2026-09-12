@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
-import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
-import Mathlib.Algebra.Order.Floor.Ring
-import Mathlib.Algebra.Order.Archimedean.Real.Basic
+public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
+public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
+public import Mathlib.Algebra.Order.Floor.Ring
+public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 
 /-!
 # Rounded support counts for symbolic interpolation
@@ -20,6 +21,8 @@ Its lower bound below isolates the rounding step in [BCHKS25, Lemma 3.1].
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
     *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Section 3.1.
 -/
+
+@[expose] public section
 
 namespace Polynomial.SymbolicInterpolation
 

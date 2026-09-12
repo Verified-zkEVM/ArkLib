@@ -3,16 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Polynomial.Basic
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
-import ArkLib.Data.CodingTheory.BerlekampWelch.Existence
-import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Existence
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 
 /-!
   # Berlekamp-Welch decoder algorithm for Reed-Solomon codes.
@@ -20,6 +22,8 @@ import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
   Given a codeword `f : F [X], deg f ≤ n`, Berlekamp-Welch decoder
   allows to correct up to `(n - k - 1) / 2` errors and obtain a unique source message.
 -/
+
+@[expose] public section
 
 namespace BerlekampWelch
 

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Interaction.Oracle.Source
+public import ArkLib.Interaction.Oracle.Source
 
 /-!
 # Resource identity and ideal guarantees
@@ -26,6 +27,8 @@ This is an ideal resource boundary, not a memory allocator, a cryptographic comm
 model, or a proof of knowledge. Descriptors have no assumed decidable equality. A later compiler
 must use their specified meaning rather than compare uninterpreted labels.
 -/
+
+@[expose] public section
 
 universe i q a e o p d s h t j k
 

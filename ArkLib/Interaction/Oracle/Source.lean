@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import VCVio.OracleComp.OracleContext
-import PolyFun.PFunctor.Lens.Basic
+public import VCVio.OracleComp.OracleContext
+public import PolyFun.PFunctor.Lens.Basic
 
 /-!
 # Extensional oracle sources
@@ -24,6 +25,8 @@ probability, or execution history. Extensional equality is not trace equality.
 explicitly raises that universe when needed. The pure routing API has no such restriction;
 only the program adapter uses `OracleComp`'s homogeneous result universe.
 -/
+
+@[expose] public section
 
 universe u v w u' v' w' u'' v'' w'' u''' v''' w''' k k' k''
 

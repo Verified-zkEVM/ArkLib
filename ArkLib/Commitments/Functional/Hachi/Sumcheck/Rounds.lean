@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
-import CompPoly.Univariate.Linear
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import CompPoly.Univariate.Linear
 
 /-!
   # Paired sumcheck rounds
@@ -48,6 +50,8 @@ import CompPoly.Univariate.Linear
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

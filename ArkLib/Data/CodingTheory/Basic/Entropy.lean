@@ -3,9 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
+public import Mathlib.Analysis.SpecialFunctions.Log.Base
+public import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
+-- `rw [Real.qaryEntropy, Real.binEntropy]` unfolds definitions mathlib does not expose.
+-- `import all` must name the module that *defines* the declaration, not an umbrella.
+import all Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 
 /-!
 # `q`-ary entropy function
@@ -43,6 +47,8 @@ monotonicity, concavity — transfers through a single division by the positive 
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

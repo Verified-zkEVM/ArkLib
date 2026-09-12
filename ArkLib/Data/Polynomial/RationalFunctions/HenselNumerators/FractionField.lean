@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov, Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
+public import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 
 /-!
 # Fraction-field-separable Hensel lifts
@@ -14,6 +15,8 @@ from `Hensel.lean`. It replaces coefficient-ring separability only at the lift-e
 boundary, using an explicit embedding of any coefficient fraction field into the function field.
 Existing `Hypotheses` and numerator/weight interfaces remain unchanged.
 -/
+
+@[expose] public section
 
 open Polynomial Polynomial.Bivariate
 namespace RationalFunctions.HenselNumerators

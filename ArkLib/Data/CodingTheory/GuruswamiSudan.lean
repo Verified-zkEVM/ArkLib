@@ -1,1 +1,3 @@
-import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
+module
+
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan

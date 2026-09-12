@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces.Basic
 
 /-!
 # Bucketing and core affine-space proximity results
@@ -14,6 +15,8 @@ The Section 6 averaging lemmas, finite affine-space bridge, scaling invariance, 
 all-elements-close theorem live in `AffineSpaces.Basic`. This module contains the bucketing
 argument and the main BCIKS20 affine-space correlated-agreement results.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, scaraven
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
+public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 
 /-!
   # Sequential Composition: Execution
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
   which decomposes `(P₁.append P₂).run` into the two component runs; it is supported by the
   transport ladder in the `AppendRunHelpers` section below.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec
 

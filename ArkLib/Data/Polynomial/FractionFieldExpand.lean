@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Polynomial.FractionFieldRoots
+public import ArkLib.Data.Polynomial.FractionFieldRoots
 
 /-!
 # Frobenius expansion over a coefficient domain
@@ -19,6 +20,8 @@ It does not factor content or provide bounds for specialization exceptions.
 * [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., Saraf, S.,
   *On Proximity Gaps for Reed--Solomon Codes*][BCHKS25], Section 3.2.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 
