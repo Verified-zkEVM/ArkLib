@@ -25,6 +25,14 @@ import ArkLib.Data.Polynomial.Rojas.AffineCover
 import ArkLib.Data.Polynomial.Rojas.SpecializationFamily
 import ArkLib.Data.Polynomial.UnivariateRepresentation.FromRaw
 import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.TowerFoundations
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.BatchedTower
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.PreprocessAccounting
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.EquationChecks
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebraInverse
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebraInverseElimination
+import ArkLibTest.Data.MvPolynomial.BoxTruncation
+import ArkLibTest.Data.MvPolynomial.BoxAlgebra
+import ArkLibTest.Data.Polynomial.NilpotentInverse
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -82,6 +90,14 @@ private def linearFixtureBackend :
 corrupted received values, and the zero-width reference branch. -/
 def run : IO Unit := do
   ArkLibTest.TowerFoundations.run
+  ArkLibTest.BatchedTower.run
+  ArkLibTest.PreprocessAccounting.run
+  ArkLibTest.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.run
+  ArkLibTest.TowerAlgebraInverse.run
+  ArkLibTest.TowerAlgebraInverseElimination.run
+  BoxTruncationTests.run
+  BoxAlgebraTests.run
+  NilpotentInverseTests.run
   check "constant-message balanced frequency map" <|
     ConstantDecoder.decode compare 3 ([4, 2, 4, 4, 2, 7] : List Nat) == [[4]]
   let x : CPolynomial (ZMod 5) := CPolynomial.X

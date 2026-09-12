@@ -79,6 +79,34 @@ theorem dispatch_eq_symbolic_iff {n : Nat} (input : Input F n) (opts : Options)
       exact ⟨hlarge, horder, not_not.mpr hguards⟩
     simp [dispatch, Nat.not_lt.mpr hA, hk, hfallback]
 
+/-- Characteristic two is a bounded instance, so the dispatcher cannot reach Taylor or Rojas. -/
+theorem dispatch_ne_symbolic_of_characteristic_two {n : Nat}
+    (input : Input F n) (opts : Options) (hinput : ValidInput input)
+    (hchar : input.characteristic = 2) : dispatch input opts ≠ .symbolic := by
+  have hn : n ≤ 2 := by simpa [hchar] using hinput.2.2.2.1
+  have hthreshold : 3 ≤ boundedThreshold opts := le_max_left _ _
+  have hfallback : fallbackRequired F input opts := Or.inl (by omega)
+  by_cases hA : n < input.agreement <;> by_cases hk : input.k = 1 <;>
+    simp [dispatch, hA, hk, hfallback]
+
+/-- The paper options contract makes the supplied characteristic the actual base-field size.
+The equality is a proof-level promise; runtime dispatch does not enumerate the finite field. -/
+theorem characteristic_eq_card_of_valid {n : Nat} (input : Input F n) (opts : Options)
+    (hinput : ValidInput input) (hopts : ValidOptions input opts) :
+    input.characteristic = Fintype.card F :=
+  hinput.2.2.2.2.trans hopts.2.2.2.2.1.symm
+
+/-- On supported prime-field inputs, symbolic dispatch tests the actual finite-field cardinality
+in the grid and quadratic-center guards. Generic extension fields are outside `ValidOptions`. -/
+theorem dispatch_eq_symbolic_iff_card {n : Nat} (input : Input F n) (opts : Options)
+    (hinput : ValidInput input) (hopts : ValidOptions input opts)
+    (hA : input.agreement ≤ n) (hk : input.k ≠ 1) :
+    dispatch (F := F) input opts = .symbolic ↔
+      boundedThreshold opts ≤ n ∧ ¬ input.k ≤ opts.order ∧
+        prescribedGuardsPass input.characteristic (Fintype.card F) n input.k opts := by
+  rw [dispatch_eq_symbolic_iff input opts hA hk,
+    characteristic_eq_card_of_valid input opts hinput hopts]
+
 /-- Valid large options satisfy every prescribed arithmetic guard. -/
 theorem prescribedGuardsPass_of_valid_of_large {n : Nat} (input : Input F n)
     (opts : Options) (hinput : ValidInput input) (hopts : ValidOptions input opts)

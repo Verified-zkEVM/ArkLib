@@ -101,8 +101,8 @@ def boundedThreshold (opts : Options) : Nat :=
 
 /-- Checkable validity of the finite decoding input.
 
-The final clause records the paper's prime-field size promise in the generic field interface:
-the characteristic is at least the block length.  For `ZMod q` with prime `q`, this is `n <= q`.
+These arithmetic promises make sense over a generic field. The paper's prime-field restriction
+is enforced separately by `ValidOptions`; for `ZMod q` with prime `q`, the size bound is `n <= q`.
 -/
 def ValidInput {F : Type*} [Field F] {n : Nat} (input : Input F n) : Prop :=
   1 ≤ input.k ∧ input.k ≤ n ∧ input.k ≤ input.agreement ∧
@@ -112,7 +112,8 @@ def ValidInput {F : Type*} [Field F] {n : Nat} (input : Input F n) : Prop :=
 
 Placing every fixed guard strictly below `N_*` makes all prescribed guards automatic in the large
 branch from `n <= char(F)` and `n <= |F|`.  The threshold is normalized to at least three, as in
-the formalization plan.
+the formalization plan. The explicit cardinality-characteristic equality restricts the paper
+contract to prime fields; generic extension-field inputs are outside this options contract.
 -/
 def ValidOptions {F : Type*} [Field F] [Fintype F] {n : Nat} (_input : Input F n)
     (opts : Options) : Prop :=
@@ -120,6 +121,7 @@ def ValidOptions {F : Type*} [Field F] [Fintype F] {n : Nat} (_input : Input F n
     0 < opts.jetDegree ∧
     0 < opts.xDegreeFactor ∧
     n ≤ Fintype.card F ∧
+    Fintype.card F = ringChar F ∧
     match opts.selection with
     | .allSubsets => True
     | .fixedGap numerator denominator =>
@@ -128,9 +130,9 @@ def ValidOptions {F : Type*} [Field F] [Fintype F] {n : Nat} (_input : Input F n
 /-- The arithmetic guards checked before entering the symbolic branch.
 
 These are the paper's characteristic, finite-grid, and quadratic center-field size checks.
-The supplied prime characteristic is also the paper base-field size; reading it does not
-enumerate the field. A
-failure belongs to the authorized bounded-position fallback branch.
+Under `ValidInput` and `ValidOptions`, the supplied characteristic equals the prime base-field
+size. Reading that supplied integer does not enumerate the field. Generic extension fields do
+not satisfy the paper options contract. Failure selects the bounded-position fallback branch.
 -/
 @[reducible] def prescribedGuardsPass (characteristic fieldCard n k : Nat)
     (opts : Options) : Prop :=

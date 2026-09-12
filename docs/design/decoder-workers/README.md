@@ -1,13 +1,17 @@
 # Continue the paper decoder with parallel workers
 
-This checkpoint provides tower representations, executable zero/unit splitting, fiber
+See the [current task queue](QUEUE.md) before starting a worker. The assignments below were
+issued from the frozen foundation checkpoint; returned work is tracked in the
+[integration record](integration-2026-09-11.md).
+
+The frozen assignment checkpoint provides tower representations, executable zero/unit splitting, fiber
 preprocessing, exact tower agreement recovery, support-based equation construction, and
 easy-branch dispatch. It does **not** complete Milestone 1 or the paper decoder.
 
 The symbolic branch in `HiddenDerivativeDecoder/Run.lean` returns
-`symbolicBackendUnavailable`. `TowerBatch.restrictBases` is proved but is not yet called by
-tower recovery. Inversion, materialization, partition accounting, and equation-check
-certification remain open. No running-time theorem is claimed.
+`symbolicBackendUnavailable`. At the frozen base, batching was not yet called by tower recovery,
+and inversion, materialization, accounting, and equation certification remained open.
+The current queue records their integration and validation. No running-time theorem is claimed.
 
 The target specification is the paper repository’s
 [decoder formalization plan](https://github.com/quangvdao/rs-capacity-and-correlated-agreement/blob/156f14b4cf4b5231c6218c695c45cb86ee32ca8b/docs/decoder-formalization-plan-2026-09-11.md).

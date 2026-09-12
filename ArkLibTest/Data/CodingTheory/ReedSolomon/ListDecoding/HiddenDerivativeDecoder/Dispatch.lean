@@ -106,4 +106,42 @@ example : runCertified cmpZMod23 input ({ options with order := 2 }) malformedCe
 example : runCertified cmpZMod23 input options malformedCertificate =
     .error .certificateFailure := by decide
 
+/- These unchecked inputs isolate each arithmetic rejection. ValidInput makes those guards
+automatic above the structural threshold, so isolated failures need not satisfy ValidInput. -/
+
+/-- The structural threshold alone forces fallback while the arithmetic guards pass. -/
+example : prescribedGuardsPass 23 23 10 2 { options with jetDegree := 3 } ∧
+    dispatch input { options with jetDegree := 3 } = .boundedFallback := by decide
+
+/-- Only the characteristic inequality fails; the finite-grid and center guards pass. -/
+example : ¬ max (25 - 1) options.jetDegree < 23 ∧
+    coordinateGridGuard options < 23 ∧ centerLinearGuard options * 10 < 23 ^ 2 ∧
+    dispatch { input with k := 25 } options = .boundedFallback := by decide
+
+/-- Only the finite-grid inequality fails. -/
+example : max (2 - 1) options.jetDegree < 7 ∧
+    ¬ coordinateGridGuard options < 7 ∧ centerLinearGuard options * 10 < 7 ^ 2 ∧
+    dispatch { input with characteristic := 7 } options = .boundedFallback := by decide
+
+/-- Only the quadratic center-size inequality fails. -/
+example : let opts := { options with jetDegree := 1, xDegreeFactor := 2 }
+    max (2 - 1) opts.jetDegree < 5 ∧ coordinateGridGuard opts < 5 ∧
+    ¬ centerLinearGuard opts * 10 < 5 ^ 2 ∧
+    dispatch { input with characteristic := 5 } opts = .boundedFallback := by decide
+
+/-- Impossible agreement takes priority even when all arithmetic guards fail together. -/
+example : ¬ prescribedGuardsPass 0 0 10 2 options ∧
+    dispatch { input with agreement := 11, characteristic := 0 } options =
+      .impossibleAgreement := by decide
+
+private def binaryInput : Input (ZMod 2) 2 where
+  domain := ⟨fun i => i.val, by decide⟩
+  received := fun _ => 0
+  k := 2
+  agreement := 2
+  characteristic := 2
+
+/-- A genuine binary-field input takes the bounded fallback before symbolic algorithms. -/
+example : dispatch binaryInput options = .boundedFallback := by decide
+
 end ArkLibTest.ReedSolomon.ListDecoding.HiddenDerivativeDecoder

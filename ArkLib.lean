@@ -851,6 +851,9 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.R
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Uniform
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.HiddenDerivativeBound
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Batched
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.BatchedTower
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.BatchedTowerCorrectness
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.ComponentScan
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Correctness
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.AgreementRecovery.Decoder
@@ -921,6 +924,8 @@ ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.D5.Termi
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormDecoder.FiberPreprocess
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Correctness
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.EquationChecks
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Explainer
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.HiddenDerivativeDecoder.Explainer.Support
@@ -996,8 +1001,15 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.Small
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SmallBlock.SmallBlockDecoderProof
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.SquareSystemDecoder
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TaylorChartMap
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.GeometricSeparation
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.Inverse
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.InverseElimination
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.Materialize
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.Normalization
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.PartitionAccounting
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.PreprocessAccounting
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.PreprocessFiber
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.ReductionAlgebra
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.SplitZeroUnit
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerRepresentation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.UniformRateExecution
@@ -1524,10 +1536,13 @@ public import ArkLib.Data.Matrix.QuadraticVandermondeRefinement
 public import ArkLib.Data.Matrix.RowReductionMachine
 public import ArkLib.Data.Matrix.RowReductionMachineCanary
 public import ArkLib.Data.Matrix.Sparse
+public import ArkLib.Data.Matrix.SquareSolve
 public import ArkLib.Data.Matrix.Vandermonde
 public import ArkLib.Data.Matrix.VandermondeMachine
 public import ArkLib.Data.Matrix.VandermondeMachineCanary
 public import ArkLib.Data.Misc.Basic
+public import ArkLib.Data.MvPolynomial.BoxAlgebra
+public import ArkLib.Data.MvPolynomial.BoxTruncation
 public import ArkLib.Data.MvPolynomial.CoordinateChainCanary
 public import ArkLib.Data.MvPolynomial.CoordinateChainMachine
 public import ArkLib.Data.MvPolynomial.CoordinateChainRefinement
@@ -1601,6 +1616,7 @@ public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.JetHornerMachine
 public import ArkLib.Data.Polynomial.JetHornerMachineCanary
 public import ArkLib.Data.Polynomial.ModularInverse
+public import ArkLib.Data.Polynomial.NilpotentInverse
 public import ArkLib.Data.Polynomial.NonvanishingSearch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.QuadraticJetHornerCanary

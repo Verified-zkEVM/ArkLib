@@ -46,6 +46,13 @@ structure Support where
   multiplicity : ℕ
   deriving DecidableEq, Repr
 
+/-- Allocate one homogeneous row for each distinct exponent emitted by the local columns. -/
+def compactBlock {F : Type*} [CommRing F]
+    (columns : List (InterpolationPointBlockMachine.DenseColumn F)) :
+    List (Row F) :=
+  (InterpolationPointBlockMachine.rows columns
+    (InterpolationPointBlockMachine.frame columns).1.dedup).1
+
 /-- Execute all local interpolation columns for one received point and allocate the resulting
 homogeneous row block. Invalid exponent-vector widths make column execution fail. -/
 def pointRows {F : Type*} [CommRing F] (d : ℕ) (support : Support) (point : F × F) :
@@ -53,7 +60,7 @@ def pointRows {F : Type*} [CommRing F] (d : ℕ) (support : Support) (point : F 
   match (InterpolationPointBlockMachine.columns d support.multiplicity
       point.1 point.2 support.vectors).1 with
   | none => none
-  | some columns => some (InterpolationPointBlockMachine.block columns).1
+  | some columns => some (compactBlock columns)
 
 /-- Execute and concatenate the actual local row blocks for all received points. -/
 def matrixRows {F : Type*} [CommRing F] (d : ℕ) (support : Support) :
@@ -231,6 +238,19 @@ private theorem columns_refines_vectors (multiplicity : ℕ) (vectors : List (Li
         · exact htailTerms column hc term ht
 
 omit [DecidableEq F] in
+/-- Removing duplicate row labels preserves the homogeneous system represented by a point
+block. -/
+private theorem compactBlock_satisfies_iff
+    (columns : List (InterpolationPointBlockMachine.DenseColumn F))
+    (coefficients : ℕ → F) :
+    Matrix.PivotSelectionMachine.Satisfies (compactBlock columns) coefficients ↔
+      Matrix.PivotSelectionMachine.Satisfies
+        (InterpolationPointBlockMachine.block columns).1 coefficients := by
+  simp only [compactBlock, InterpolationPointBlockMachine.rows_result,
+    InterpolationPointBlockMachine.block, Matrix.PivotSelectionMachine.Satisfies,
+    List.forall_mem_map, List.mem_dedup]
+
+omit [DecidableEq F] in
 /-- Valid support widths make every local block execute, with exact homogeneous semantics. -/
 theorem pointRows_refines (support : Support) (point : F × F)
     (hwidth : ∀ v ∈ support.vectors, v.length = d + 2) :
@@ -246,12 +266,15 @@ theorem pointRows_refines (support : Support) (point : F × F)
     columns_refines_vectors support.multiplicity support.vectors point hwidth
   let columns := support.vectors.map
     (InterpolationPointBlockMachine.columnValue d support.multiplicity point.1 point.2)
-  refine ⟨(InterpolationPointBlockMachine.block columns).1, ?_, ?_, ?_⟩
+  refine ⟨compactBlock columns, ?_, ?_, ?_⟩
   · simp [pointRows, hcolumns, columns]
-  · simpa only [columns, List.length_map] using
-      InterpolationPointBlockMachine.block_shape columns
+  · intro row hrow
+    rw [compactBlock, InterpolationPointBlockMachine.rows_result] at hrow
+    obtain ⟨q, _hq, rfl⟩ := List.mem_map.mp hrow
+    simp [columns]
   · intro coefficients
-    rw [InterpolationPointBlockMachine.block_satisfies_iff columns hterms coefficients]
+    rw [compactBlock_satisfies_iff,
+      InterpolationPointBlockMachine.block_satisfies_iff columns hterms coefficients]
     rw [InterpolationPointBlockMachine.combination_localConstraint
       support.multiplicity point.1 point.2 support.vectors hsem coefficients]
 
