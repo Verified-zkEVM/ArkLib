@@ -1,10 +1,9 @@
 \section{The Subfield \texorpdfstring{$R_q^H \cong \F_{q^k}$}{R\_q\^{}H ≅ F\_(q\^{}k)} (Hachi Lemma 5)}\label{sec:hachi_subfield}
 
-This section is a blueprint for the one missing piece of Hachi~\cite{NOZ26} \S3, Lemma~5:
-that the fixed subring $R_q^H$ is a \emph{field} and is isomorphic to $\F_{q^k}$.
-The packing map $\psi$ and the trace formula of Theorem~2 (the rest of \S3) are already
-formalized; what remains is to upgrade $R_q^H$ from ``a \texttt{Subring} of cardinality $q^k$''
-to ``a field $\cong \F_{q^k}$''.
+This section records the completed Hachi~\cite{NOZ26} \S3, Lemma~5 formalization:
+the fixed subring $R_q^H$ is a \emph{field} and is isomorphic to $\F_{q^k}$.
+The packing map $\psi$ and the trace formula of Theorem~2 (the rest of \S3) are formalized as
+well, so the full subfield chain is now covered.
 
 Throughout, $d = 2^\alpha$, $R_q = \Z_q[X]/(X^{d}+1)$ with $q$ an odd prime, $k = 2^\kappa$ a
 divisor of $d/2$ (i.e.\ $2k \mid d$), and $H = \langle \sigma_{-1}, \sigma_{4k+1}\rangle$.
@@ -172,11 +171,11 @@ $(\mathrm{mk}\,p^{\mathrm{rev}})$. Proved from Mathlib's
 \end{lemma}
 
 \begin{lemma}[No self-reciprocal factor]\label{lem:no_selfReciprocal}
-\lean{ArkLib.Lattices.CyclotomicModulus.no_selfReciprocal_factor}
+\lean{ArkLib.Lattices.CyclotomicModulus.no_selfReciprocal_factor}\leanok
 \uses{lem:neg_one_notMem}
 For $q \equiv 5 \pmod 8$, reversal swaps the two factors: if $X^{2^\alpha}+1 = p_1 p_2$ then
-$p_1^{\mathrm{rev}}$ is associated to $p_2$. \emph{(Left as \texttt{sorry}; carries the entire
-$-1 \notin \langle q\rangle$ content.)} The root set of $p_1$ is a single Frobenius orbit $=$ a
+$p_1^{\mathrm{rev}}$ is associated to $p_2$. This is the step carrying the
+$-1 \notin \langle q\rangle$ root-orbit content. The root set of $p_1$ is a single Frobenius orbit $=$ a
 coset of $\langle q\rangle$; were $p_1^{\mathrm{rev}} \sim p_1$ it would be closed under $\zeta
 \mapsto \zeta^{-1}$, i.e.\ $-1 \in \langle q\rangle$, contradicting Lemma~\ref{lem:neg_one_notMem};
 as reversal permutes the two factors of the self-reciprocal $X^{2^\alpha}+1$, it sends $p_1$ to $p_2$.
@@ -221,9 +220,7 @@ $a a^{-1} = 1$ and cancel the unit), so it lies in $R_q^{\sigma_{-1}}$.
 
 \subsection{Status and dependency summary}
 
-\textbf{Everything below is formalized and compiles, with the single exception of
-\ref{lem:no_selfReciprocal}}, which is left as \texttt{sorry} and carries the entire
-$-1 \notin \langle q\rangle$ content of the swap.
+\textbf{Everything below is formalized and compiles.}
 
 \begin{itemize}
   \item \textbf{Reused, done:} \ref{def:fixedSubring}, \ref{thm:card_fixedSubring},
@@ -240,7 +237,7 @@ $-1 \notin \langle q\rangle$ content of the swap.
   \item \textbf{Phase 2 --- factorization:} \ref{lem:two_factors} (count via
         \texttt{normalizedFactors\_cyclotomic\_card}), \ref{lem:factorization}.
   \item \textbf{Phase 4 --- the swap:} \ref{lem:conj_reverse} (the reverse identity, via
-        \texttt{eval₂\_reverse\_mul\_pow}) and $\boxed{\ref{lem:no_selfReciprocal}\ (\texttt{sorry})}$.
+        \texttt{eval₂\_reverse\_mul\_pow}) and \ref{lem:no_selfReciprocal}.
   \item \textbf{Phase 5 --- payoff:} \ref{thm:core_unit}, \ref{thm:conjFixedSubring_isField}.
 \end{itemize}
 
@@ -250,5 +247,4 @@ $-1 \notin \langle q\rangle$ content of the swap.
 assembly); the $\sigma_{-1}$-fixed subring helper \ref{def:conjFixedSubring} sits in
 \texttt{Galois/FixedSubring.lean}. The implementation works directly in $S$ via the reverse
 identity and a divisibility argument, rather than constructing the explicit CRT product
-$R_q \cong K\times K$ (which is therefore not needed). The sole remaining \texttt{sorry} is
-\ref{lem:no_selfReciprocal}.
+$R_q \cong K\times K$ (which is therefore not needed).
