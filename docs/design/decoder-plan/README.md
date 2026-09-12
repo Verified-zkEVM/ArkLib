@@ -48,14 +48,14 @@ record this coordinator’s assignments, not automatic launches.
 | I0 | Shared Lean interface freeze | Personal 4; payload slice implemented | Full geometry/local/global validity contracts remain open |
 | G01 | Function-field algebra and multivariate gcd | Personal 1; initial slice assigned | Arithmetic, multivariate gcd, exact division and descent |
 | G02 | Full squarefree decomposition | Personal 1; initial slice assigned | Labelled decomposition over a certified computational field |
-| G03 | Taylor geometry | Personal 4; projection leaf implemented | Grid selection, monic coefficient bounds and good-fiber producer |
-| G04 | Taylor local algebra and lifting | Personal 4; nilpotence/arithmetic slice | Lift the constant-fiber inverse and implement differential Newton |
+| G03 | Taylor geometry | Personal 4; grid and inverse matrices implemented | Direction, monic coefficient bounds and good-fiber producer |
+| G04 | Taylor local algebra and lifting | Personal 4; computed quotient inverse | Implement differential Newton and fundamental matrices |
 | G05 | Taylor reconstruction | Personal 4; shift recovery implemented | Weighted reduction, clearing and global coverage |
 | G06 | First-order norms | Personal 1; norm slice assigned | Polynomial multiplication matrix and actual norm |
 | G07 | Explicit fields | Deferred in current assignment | Center-field adapter and general-extension construction interfaces |
 | G08 | Rojas producer | Deferred in current assignment | System-to-perturbation construction tied to its input |
 | G09 | Higher-order selection | Deferred in current assignment | Direct chart system and separate expander foundation |
-| G10 | Dedicated zeroth-order decoder | Personal 4; single-center conditional slice | Batched obstruction, normalization and interpolation correspondence |
+| G10 | Dedicated zeroth-order decoder | Personal 4; batched-center conditional slice | Obstruction construction, normalization and interpolation correspondence |
 | I1 | Integration and independent review | Personal 4 | Accept compiled slices; maintain this board and obligation ledger |
 
 At each launch record the lead, exact branch/base, owned files, first deliverable and acceptance

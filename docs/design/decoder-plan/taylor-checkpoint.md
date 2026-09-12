@@ -1,4 +1,4 @@
-# Taylor foundations and one-center decoding checkpoint
+# Taylor algebra, projection and one-center decoding checkpoint
 
 Personal 4 remains the integration owner and owns G03–G05 and G10. These are bounded
 implementation slices, not completed Taylor or zeroth-order decoder groups. The shared
@@ -12,11 +12,11 @@ Every worker started at `24c3e183ecdac020973c1446400e42db3b62b2ed`, with unchang
 
 | Work | Branch | Owned source and test module |
 | --- | --- | --- |
-| G03 projection leaf | `quang/decoder-taylor-geometry` | `FastTaylor/Geometry/Projection` |
-| G04 local arithmetic | `quang/decoder-taylor-local` | `MvPolynomial/BoxAlgebraNilpotence`, `Polynomial/ConfluentAlgebra/MonicArithmetic` |
-| G05 shifts | `quang/decoder-taylor-shifts` | `MvPolynomial/TaylorReconstruction/AffineShift` |
-| I0 chart payload | Core integration branch | `FastTaylor/ChartData` |
-| G10 center search | Core integration branch | `ListDecoding/ZerothOrderDecoder/CenterSearch` |
+| G03 geometry | Geometry and shifts workers | `FastTaylor/Geometry/{Projection,Matrix}`, `MvPolynomial/NonvanishingGrid` |
+| G04 local arithmetic | `quang/decoder-taylor-local` | `MvPolynomial/BoxAlgebraNilpotence`, `Polynomial/ConfluentAlgebra/{MonicArithmetic,Structure,ParameterKernel,Inverse}` |
+| G04/G05 generic operations | Shifts and geometry workers | `Polynomial/NewtonInverse`, `MvPolynomial/TaylorReconstruction/{AffineShift,UnivariateView}` |
+| I0 chart and equation adapter | Core integration branch | `FastTaylor/ChartData`, `MvPolynomial/TaylorReconstruction/LocalEquation` |
+| G10 center search | Core integration branch | `ListDecoding/ZerothOrderDecoder/{CenterSearch,BatchedCenter}` |
 
 `FastTaylor` paths are under `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/`.
 `ListDecoding` is under `ArkLib/Data/CodingTheory/ReedSolomon/`; generic paths are under
@@ -27,7 +27,8 @@ Astra low agents with private source worktrees and private dependency/build copi
 
 - Linear substitution computes matrix-coordinate polynomials, preserves polynomial semantics,
   does not increase total degree, and preserves the regular locus through a supplied matrix
-  inverse. It does not compute the matrix or the retained component.
+  inverse. The explicit matrix constructor now selects the first nonzero pivot of a supplied direction
+  and computes both inverse matrices. Constructing the direction and retained component remains open.
 - The parameter ideal and the entire zero-constant-specialization kernel have nilpotence
   exponent `r*(N-1)+1` for positive precision. The bound applies to mixed products.
 - Monic quotient arithmetic uses stored canonical representatives over a nontrivial commutative
@@ -45,12 +46,27 @@ Astra low agents with private source worktrees and private dependency/build copi
   quotient Newton and recovery at that center. Its exactness theorem proves successful exact
   output assuming a good center exists in the supplied prefix and the supplied equation
   vanishes on wanted messages. It does not assume regularity separately: the executed inverse
-  check supplies it. This sequential search does not yet implement batched obstruction evaluation.
+  check supplies it. The separate `BatchedCenter` entrypoint uses actual subproduct-tree evaluation to select the
+  first nonzero obstruction value, then executes the regularity checks at that single center.
+  It still requires an obstruction polynomial and its validity certificate.
+
+## Additional integrated producers
+
+- `ConfluentAlgebra/Structure` supplies the executable representative ring and coefficient maps.
+  `ParameterKernel` proves that the whole specialization kernel in the quotient is nilpotent.
+- `ConfluentAlgebra/Inverse` computes a constant-fiber Bézout coefficient, lifts stored constants,
+  and executes `NewtonInverse` doubling. Success is equivalent to an inverse existing in the
+  original quotient, including unit modulus. No approximate inverse is supplied by the caller.
+- `NonvanishingGrid` executes Cartesian enumeration and first-nonzero search, with success from
+  nonzeroness and the distinct-grid degree bound. It does not construct a sufficient field.
+- `UnivariateView` converts exactly between flat last-variable and nested coefficient forms.
+  `LocalEquation` shifts free parameters into the box, preserves supplied monicity, and recovers
+  the exact constant fiber for positive precision, including repeated-root fibers.
 
 ## Acceptance evidence
 
 The integration gate is `./scripts/validate.sh --axioms`, with
-`LAKE_ARTIFACT_CACHE=false LAKE_NO_CACHE=true`. All six runtime clients are registered in
+`LAKE_ARTIFACT_CACHE=false LAKE_NO_CACHE=true`. All fifteen runtime clients are registered in
 `agreement-recovery-runtime`; compiling an unused test entrypoint is not acceptance.
 The coordinator report records the completed gate result and immutable accepted commit.
 
@@ -67,14 +83,14 @@ search exhaustion, and actual selected-center Newton/recovery. The latter has no
 
 ## Next producer obligations
 
-1. G03: computed regular-component reduction from Personal 1, deterministic projection grid,
+1. G03: computed regular-component reduction from Personal 1, homogeneous direction selection from the implemented grid search,
    weighted monic coefficient bounds, separant resultant and good confluent sample.
-2. G04: full executable quotient ring structure, lifted specialization-kernel nilpotence,
-   computed constant-fiber Bézout inverse and residual-doubling Newton/fundamental matrices.
+2. G04: algebraic/differential series Newton and fundamental matrices; scalar quotient inversion
+   and its whole-kernel Newton correction are implemented.
 3. G05: weighted monic reduction, denominator clearing, global coefficient reconstruction and
    all-regular-solution coverage, including ramified projection fibers.
 4. G10: prescribed interpolation algorithm correspondence, Personal 1 global normalization,
-   obstruction polynomial with a batched first-center search, and a sufficient constructed
+   obstruction polynomial construction, and a sufficient constructed
    field/prefix from G07. A supplied normalized equation and good prefix remain conditional.
 5. I0/I1: full geometry/local/global validity and coverage contracts, concrete producer
    composition, global dispatch and public unconditional exactness.
