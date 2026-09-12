@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Hash.DuplexSponge
-import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.Data.Hash.DuplexSponge
+public import ArkLib.OracleReduction.FiatShamir.Basic
 
 /-!
 # Duplex Sponge Fiat-Shamir
@@ -15,6 +16,8 @@ We define the (multi-round) Fiat-Shamir transformation using duplex sponges.
 NOTE: we currently do _not_ define the salt explicitly. The salted version of the transform can be
 obtained via applying the transform to the protocol with the added salt as the first message.
 -/
+
+@[expose] public section
 
 namespace ProtocolSpec
 

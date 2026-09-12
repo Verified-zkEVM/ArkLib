@@ -3,18 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.FieldTheory.RatFunc.Defs
-import Mathlib.RingTheory.Ideal.Quotient.Defs
-import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.Polynomial.GaussLemma
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Prelims
+public import Mathlib.FieldTheory.RatFunc.Defs
+public import Mathlib.RingTheory.Ideal.Quotient.Defs
+public import Mathlib.RingTheory.Ideal.Span
+public import Mathlib.RingTheory.Polynomial.GaussLemma
 
-import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+public import Mathlib.RingTheory.PrincipalIdealDomain
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
 /-!
 # Algebraic Weights
 
@@ -31,6 +32,8 @@ never increases `Λ` (`weight_modByMonic_monicize_le`).
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal

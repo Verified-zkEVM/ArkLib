@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.StateRestoration
-import ArkLib.OracleReduction.Salt
-import ArkLib.OracleReduction.Security.SpecialSoundness
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.StateRestoration
+public import ArkLib.OracleReduction.Salt
+public import ArkLib.OracleReduction.Security.SpecialSoundness
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 
 /-!
 # Implications between security notions
@@ -18,6 +19,8 @@ This file collects the implications between the various security notions.
 For now, we only state the theorems. It's likely that we will split this file into multiple files in
 a single `Implication` folder in the future, each file for the proof of a single implication.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

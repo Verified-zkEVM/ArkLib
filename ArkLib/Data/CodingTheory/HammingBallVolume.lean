@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Data.Nat.Choose.Basic
-import Mathlib.Algebra.Order.Floor.Defs
-import Mathlib.Algebra.Order.Floor.Semiring
-import ArkLib.Data.CodingTheory.ListDecodability
+public import Mathlib.Data.Nat.Choose.Basic
+public import Mathlib.Algebra.Order.Floor.Defs
+public import Mathlib.Algebra.Order.Floor.Semiring
+public import ArkLib.Data.CodingTheory.ListDecodability
 
 /-!
 # Hamming ball volume
@@ -34,6 +35,8 @@ fixed centre:
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

@@ -3,33 +3,34 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import Mathlib.Data.Fintype.Powerset
-import Mathlib.Data.Fintype.Card
-import Mathlib.Data.Fintype.EquivFin
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Data.Finset.Card
-import Mathlib.Data.Finset.Union
-import Mathlib.Data.Finset.Image
-import Mathlib.Data.Nat.Choose.Bounds
-import Mathlib.Data.Set.Card
-import Mathlib.Data.Set.Finite.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Algebra.BigOperators.Field
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Algebra.Order.Floor.Ring
-import Mathlib.Algebra.Order.Archimedean.Basic
-import Mathlib.Algebra.Order.Ring.Pow
-import Mathlib.Algebra.Order.Field.Basic
-import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
-import Mathlib.Analysis.MeanInequalitiesPow
-import Mathlib.Combinatorics.Pigeonhole
-import Mathlib.InformationTheory.Hamming
-import Mathlib.Order.GaloisConnection.Basic
-import Mathlib.Tactic.FieldSimp
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import Mathlib.Data.Fintype.Powerset
+public import Mathlib.Data.Fintype.Card
+public import Mathlib.Data.Fintype.EquivFin
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Data.Finset.Card
+public import Mathlib.Data.Finset.Union
+public import Mathlib.Data.Finset.Image
+public import Mathlib.Data.Nat.Choose.Bounds
+public import Mathlib.Data.Set.Card
+public import Mathlib.Data.Set.Finite.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Algebra.BigOperators.Field
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Algebra.Order.Floor.Ring
+public import Mathlib.Algebra.Order.Archimedean.Basic
+public import Mathlib.Algebra.Order.Ring.Pow
+public import Mathlib.Algebra.Order.Field.Basic
+public import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
+public import Mathlib.Analysis.MeanInequalitiesPow
+public import Mathlib.Combinatorics.Pigeonhole
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Order.GaloisConnection.Basic
+public import Mathlib.Tactic.FieldSimp
 
 /-!
 # Large-alphabet barrier: statements, coordinate blocks, and family counting
@@ -48,6 +49,8 @@ references, and `Bounds/LargeAlphabet.lean` for the two theorems this developmen
 The keys cited here — [AGL23] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

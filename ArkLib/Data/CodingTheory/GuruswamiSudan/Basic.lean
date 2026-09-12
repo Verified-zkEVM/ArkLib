@@ -3,16 +3,18 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Stefano Rocca
 -/
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Analysis.Real.Sqrt
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Polynomial.Bivariate
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Analysis.Real.Sqrt
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Polynomial.Bivariate
 /-! # Guruswami-Sudan Basics
 
 Degree bounds and variable/constraint counting for the Guruswami-Sudan interpolation system, in
@@ -36,6 +38,8 @@ at `n` prescribed points, and it is solvable as soon as it has more variables th
 - [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
   (ePrint 2020/654): Lemma 5.3 for the degree bounds, Appendix B.1 for the first-moment bound.
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate Finsupp Finset

@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
-import ArkLib.Data.Domain.CosetFftDomain.Mem
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
+public import ArkLib.Data.Domain.CosetFftDomain.Mem
 
 /-!
 # Constrained Reed-Solomon codes
@@ -21,6 +22,8 @@ constraint over the Boolean cube (Definitions 4.5 and 4.6 of [ACFY24]).
     with Super-Fast Verification*][ACFY24]
 -/
 
+@[expose] public section
+
 namespace ReedSolomon
 
 open LinearMvExtension Domain
@@ -31,7 +34,7 @@ variable {F : Type} [Field F] [DecidableEq F]
 
 /-- Auxiliary function to assign values to the weight polynomial variables: index `0` ↦ `p.eval b`,
 index `j+1` ↦ `b j`. -/
-private noncomputable def toWeightAssignment
+noncomputable def toWeightAssignment
     (p : MvPolynomial (Fin m) F)
     (b : Fin m → Fin 2) : Fin (m+1) → F :=
   let b' : Fin m → F := fun i => ↑(b i : ℕ)

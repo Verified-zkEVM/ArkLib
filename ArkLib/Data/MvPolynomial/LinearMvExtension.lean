@@ -3,16 +3,19 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Mirco Richter (Least Authority), Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.MvPolynomial.Multilinear
-import Mathlib.Algebra.MvPolynomial.Eval
-import Mathlib.Algebra.Polynomial.Eval.Defs
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import Mathlib.Algebra.MvPolynomial.Eval
+public import Mathlib.Algebra.Polynomial.Eval.Defs
 
 /-!
   # Conversion of Univariate polynomials to Multilinear polynomials
 
   Univariate polynomials of degree < 2ᵐ can be writen as degree wise linear
   m-variate polynomials by `∑ aᵢ Xⁱ → ∑ aᵢ ∏ⱼ Xⱼ^(bitⱼ(i))` -/
+
+@[expose] public section
 
 namespace LinearMvExtension
 

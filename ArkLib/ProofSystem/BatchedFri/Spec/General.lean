@@ -3,17 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-
-import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
-import ArkLib.ProofSystem.Fri.Spec.General
+public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
+public import ArkLib.ProofSystem.Fri.Spec.General
 
 /-!
 # ArkLib.ProofSystem.BatchedFri.Spec.General
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 
 namespace BatchedFri

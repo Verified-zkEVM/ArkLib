@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
-import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
-import ArkLib.Data.Probability.Notation
-import ArkLib.Data.Probability.Instances
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # Mutual correlated agreement for affine space generators
@@ -38,6 +39,8 @@ The correspondence to [BCGM25]'s numbered statements is in
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
     with Mutual Correlated Agreement*][BCGM25]
 -/
+
+@[expose] public section
 
 namespace AffineMCALemmas
 

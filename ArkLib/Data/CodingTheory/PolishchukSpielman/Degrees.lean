@@ -3,11 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import Mathlib.Analysis.Normed.Field.Lemmas
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import ArkLib.Data.Polynomial.Bivariate
+public import Mathlib.Analysis.Normed.Field.Lemmas
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
 # Degree bounds for Polishchuk-Spielman
@@ -31,6 +32,8 @@ lemma [BCIKS20].
     for Reed-Solomon Codes*][BCIKS20]
 
 -/
+
+@[expose] public section
 
 open Polynomial.Bivariate Polynomial Finset
 open scoped BigOperators

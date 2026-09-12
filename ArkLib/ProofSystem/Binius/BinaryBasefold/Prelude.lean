@@ -3,21 +3,24 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
-import ArkLib.Data.CodingTheory.ReedSolomon
-import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.Data.MvPolynomial.RestrictDegree
-import CompPoly.Data.Vector.Basic
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
-import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.Data.MvPolynomial.RestrictDegree
+public import CompPoly.Data.Vector.Basic
+public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 
 /-!
 # ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace Binius.BinaryBasefold
 
@@ -634,9 +637,12 @@ def foldMatrix (i : Fin r) (steps : Fin (ℓ + 1)) (h_i_add_steps : i.val + step
       ⟨↑i + steps, by apply Nat.lt_trans (m := ℓ + 𝓡) (h_i_add_steps) h_ℓ_add_R_rate⟩) :
     Matrix (Fin (2 ^ steps.val)) (Fin (2 ^ steps.val)) L := by
   if h_steps_eq_1 : steps.val = 1 then
+    have h_i : (i : ℕ) + 1 < ℓ + 𝓡 := by rw [← h_steps_eq_1]; omega
+    have y' : sDomain 𝔽q β h_ℓ_add_R_rate
+        ⟨↑i + 1, Nat.lt_trans (m := ℓ + 𝓡) h_i h_ℓ_add_R_rate⟩ := by
+      simp_rw [← h_steps_eq_1]; omega
     rw [h_steps_eq_1, Nat.pow_one]
-    use baseFoldMatrix 𝔽q β i (h_i := by rw [←h_steps_eq_1]; omega)
-      (y := by simp_rw [←h_steps_eq_1]; omega)
+    exact baseFoldMatrix 𝔽q β i h_i y'
   else
     -- TODO : recursive definition of the fold matrix
     sorry

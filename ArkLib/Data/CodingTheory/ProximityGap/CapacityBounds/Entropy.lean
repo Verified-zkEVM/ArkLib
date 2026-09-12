@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy.Counting
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy.Counting
 
 /-!
 # Entropy-regime CA breakdown for Reed--Solomon codes
@@ -16,6 +17,8 @@ correlated-agreement breakdown for Reed--Solomon codes in the entropy-defined ra
 
 - `rs_epsCa_eq_one_of_entropy_rate` — ABF26 Theorem 4.17 [CS25 Cor 1].
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

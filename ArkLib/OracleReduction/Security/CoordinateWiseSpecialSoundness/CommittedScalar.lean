@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
-import VCVio.OracleComp.QueryTracking.ProgrammingOracle
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 
 /-!
   # Committed scalar phase (generic commit-then-challenge CWSS shell)
@@ -75,6 +77,8 @@ import VCVio.OracleComp.QueryTracking.ProgrammingOracle
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace CoordinateWise
 

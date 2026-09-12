@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
-import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
-import ArkLib.Data.Probability.Instances
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
+public import ArkLib.Data.Probability.Instances
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # Numeric proximity-gap and correlated-agreement errors
@@ -36,6 +37,8 @@ comparison theorems used by the grand-challenge API.
 * [Jo, S., *Interleaving Stability for Mutual Correlated Agreement and Curve
   Decodability*][Jo26]
 -/
+
+@[expose] public section
 
 -- Keep the public `WordStack`/`InterleavedWord` Matrix aliases transparent while elaborating the
 -- legacy proximity API under Lean 4.33's stricter backwards-definitional-equality behavior.

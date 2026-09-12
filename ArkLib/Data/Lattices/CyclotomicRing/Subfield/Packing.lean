@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
 
 /-!
 # The Packing Map `ψ : (R_q^H)^{d/k} → R_q` (Hachi §3, Theorem 2, Eq. 8)
@@ -41,6 +43,8 @@ These combine in `Subfield/Bijectivity.lean` (`psi_bijective`, over `R = ZMod q`
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial Finset
 

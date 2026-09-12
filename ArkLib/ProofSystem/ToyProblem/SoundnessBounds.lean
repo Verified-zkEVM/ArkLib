@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.Probability.Combinatorial
-import ArkLib.ProofSystem.ToyProblem.Definitions
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.Probability.Combinatorial
+public import ArkLib.ProofSystem.ToyProblem.Definitions
 
 /-!
 # Fixed-radius soundness bounds for the toy problem
@@ -49,6 +50,8 @@ message pair accounts for at most one affine challenge.
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26], Section 6.
 -/
+
+@[expose] public section
 
 -- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
 set_option backward.isDefEq.respectTransparency false

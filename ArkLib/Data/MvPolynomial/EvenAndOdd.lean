@@ -3,20 +3,23 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Monad
-import Mathlib.Tactic.IntervalCases
-import Mathlib.Algebra.CharP.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
+public import Mathlib.Algebra.MvPolynomial.Monad
+public import Mathlib.Tactic.IntervalCases
+public import Mathlib.Algebra.CharP.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 
-import CompPoly.Data.MvPolynomial.Notation
-import ArkLib.Data.MvPolynomial.LinearMvExtension
+public import CompPoly.Data.MvPolynomial.Notation
+public import ArkLib.Data.MvPolynomial.LinearMvExtension
 
 /-!
 # ArkLib.Data.MvPolynomial.EvenAndOdd
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 
@@ -26,11 +29,11 @@ variable {R : Type} [Field R]
 variable {n : ℕ} [NeZero n]
 variable {p : MvPolynomial (Fin n) R}
 
-private noncomputable def substPlus (p : MvPolynomial (Fin n) R) :
+noncomputable def substPlus (p : MvPolynomial (Fin n) R) :
     MvPolynomial (Fin n) R :=
   p.aeval (fun i ↦ if i = 0 then 1 else (MvPolynomial.X i : MvPolynomial (Fin n) R))
 
-private noncomputable def substMinus (p : MvPolynomial (Fin n) R) :
+noncomputable def substMinus (p : MvPolynomial (Fin n) R) :
     MvPolynomial (Fin n) R :=
   p.aeval (fun i ↦ if i = 0 then -1 else MvPolynomial.X i)
 
@@ -114,13 +117,13 @@ private lemma mul_C_mem_restrictDegree
   convert Submodule.smul_mem _ c hp using 1
   rw [mul_comm, MvPolynomial.C_mul']
 
-private lemma even_mem (p : R⦃≤ 1⦄[X (Fin n)]) :
-  (substPlus p.1 + substMinus p.1) * C (2⁻¹) ∈ restrictDegree (Fin n) R 1 :=
+lemma even_mem (p : R⦃≤ 1⦄[X (Fin n)]) :
+    (substPlus p.1 + substMinus p.1) * C (2⁻¹) ∈ restrictDegree (Fin n) R 1 :=
   mul_C_mem_restrictDegree ((restrictDegree (Fin n) R 1).add_mem
     (substPlus_mem_restrictDegree p.2) (substMinus_mem_restrictDegree p.2)) _
 
-private lemma odd_mem (p : R⦃≤ 1⦄[X (Fin n)]) :
-  (substPlus p.1 - substMinus p.1) * C (2⁻¹) ∈ restrictDegree (Fin n) R 1 :=
+lemma odd_mem (p : R⦃≤ 1⦄[X (Fin n)]) :
+    (substPlus p.1 - substMinus p.1) * C (2⁻¹) ∈ restrictDegree (Fin n) R 1 :=
   mul_C_mem_restrictDegree ((restrictDegree (Fin n) R 1).sub_mem
     (substPlus_mem_restrictDegree p.2) (substMinus_mem_restrictDegree p.2)) _
 

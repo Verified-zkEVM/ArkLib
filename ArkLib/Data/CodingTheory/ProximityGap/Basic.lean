@@ -4,10 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.Probability.Notation
-import Mathlib.Probability.Distributions.Uniform
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Probability.Distributions.Uniform
 
 /-!
 # Proximity gap fundamental definitions
@@ -47,6 +48,8 @@ module codes over (scalar) rings.
   Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056/a0ljbkrz.
 
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

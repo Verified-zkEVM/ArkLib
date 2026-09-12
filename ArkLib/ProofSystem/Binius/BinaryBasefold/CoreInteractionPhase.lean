@@ -3,8 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
 
 /-!
 ## Binary Basefold Core Interaction Phase
@@ -35,6 +38,17 @@ We define `(P, V)` as the following IOP, in which both parties have the common i
 - V verifies: `s_ℓ = eqTilde(r, r') * c`
 => `c` should be equal to `t(r'_0, ..., r'_{ℓ-1})`
 -/
+
+@[expose] public section
+
+/- The composed verifier/reduction bundles below are `def`s whose *inferred* type embeds the
+inline `Fin` bounds proofs written in their bodies. Under the module system's default, such a
+proof is abstracted into a private auxiliary theorem, which a public signature may not mention;
+exposing the bodies instead delays every `by` until the (still unknown) result type is solved.
+`backward.proofsInPublic` restores the classic elaboration these definitions were written
+against. See docs/wiki/module-system.md. -/
+set_option backward.proofsInPublic true
+
 namespace Binius.BinaryBasefold.CoreInteraction
 
 noncomputable section
@@ -54,7 +68,7 @@ variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
-private theorem instOracleStatementBinaryBasefold_heq_of_index_eq
+theorem instOracleStatementBinaryBasefold_heq_of_index_eq
     {i i' : Fin (ℓ + 1)} (h : i = i') :
     HEq
       (instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
@@ -119,10 +133,14 @@ theorem foldRelayOracleReduction_perfectCompleteness
     (oracleReduction := foldRelayOracleReduction (mp := mp) 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR)
     (init := init) (impl := impl) := by
-    unfold foldRelayOracleReduction pSpecFoldRelay
-    exact OracleReduction.append_perfectCompleteness _ _
-      (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
-      (relayOracleReduction_perfectCompleteness 𝔽q β i hNCR)
+  unfold foldRelayOracleReduction pSpecFoldRelay
+  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input => (input.1, fun _ _ => 0)))
+    (fun _ => Or.inl inferInstance)
+    (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
+    (fun s => relayOracleReduction_perfectCompleteness (init := pure s) 𝔽q β i hNCR)
 
 /-- RBR Knowledge Soundness of the non-commitment round verifier via append composition
     of fold-round and transfer-round RBR KS. -/
@@ -209,10 +227,14 @@ theorem foldCommitOracleReduction_perfectCompleteness
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
       (oracleReduction := foldCommitOracleReduction (mp := mp) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR) (init := init) (impl := impl) := by
-    unfold foldCommitOracleReduction pSpecFoldCommit
-    exact OracleReduction.append_perfectCompleteness _ _
-      (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
-      (commitOracleReduction_perfectCompleteness 𝔽q β i hCR)
+  unfold foldCommitOracleReduction pSpecFoldCommit
+  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, input.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input => (input.1, fun _ _ => 0)))
+    (fun _ => Or.inl inferInstance)
+    (foldOracleReduction_perfectCompleteness (mp := mp) 𝔽q β i)
+    (fun s => commitOracleReduction_perfectCompleteness (init := pure s) 𝔽q β i hCR)
 
 /-- RBR KS for Fold+Commitment block by append composition. -/
 theorem foldCommitOracleVerifier_rbrKnowledgeSoundness
@@ -803,13 +825,16 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
       (init := init)
       (impl := impl) := by
   unfold coreInteractionOracleReduction pSpecCoreInteraction
-  apply OracleReduction.append_perfectCompleteness
-  · -- Perfect completeness of sumcheckFoldOracleReduction
-    exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
+  apply OracleReduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨0, fun _ => 0, input.1.ctx⟩, fun _ _ => 0)))
+    (Verifier.GuardedForm.ofEmpty _ (fun input => (⟨input.1, 0⟩, input.2)))
+    (fun _ => Or.inl inferInstance)
+  · exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := BBF_SumcheckMultiplierParam)
       (init := init) (impl := impl)
-  · -- Perfect completeness of finalSumcheckOracleReduction
-    exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) init impl
+  · intro s
+    exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ) (pure s) impl
 
 def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=

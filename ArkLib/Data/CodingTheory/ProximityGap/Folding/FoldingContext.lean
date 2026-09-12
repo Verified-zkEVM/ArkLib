@@ -3,11 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Algebra.Order.Group.Nat
-import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
-import Mathlib.Data.Nat.Cast.Order.Basic
-import Mathlib.Order.Lattice.Nat
+public import Mathlib.Algebra.Order.Group.Nat
+public import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
+public import Mathlib.Data.Nat.Cast.Order.Basic
+public import Mathlib.Order.Lattice.Nat
 
 /-! # The folding context
 
@@ -29,6 +30,8 @@ proofs repeatedly need. Most lemmas are tagged `@[grind]` so that
 * `FoldingContextMiddle k n` — the derived constraints `1 ≤ k` and `k ≤ n`.
 * `FoldingContext k d n` — the full context `1 ≤ k ≤ d ≤ n`.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

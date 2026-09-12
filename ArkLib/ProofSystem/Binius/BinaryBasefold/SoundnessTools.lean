@@ -3,14 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 
 /-!
 # Binary Basefold soundness events
 
 Definitions for compliance and the folding bad event, built on the distance lemmas in the prelude.
 -/
+
+@[expose] public section
 
 namespace Binius.BinaryBasefold
 

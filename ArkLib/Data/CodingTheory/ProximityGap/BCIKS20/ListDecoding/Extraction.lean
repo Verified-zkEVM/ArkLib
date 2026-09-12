@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 
 /-! # Factor extraction for the modified Guruswami-Sudan solution
 
@@ -19,6 +20,8 @@ the list-decoding regime.
 - [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
   (ePrint 2020/654): Equation 5.12 and Claim 5.6.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

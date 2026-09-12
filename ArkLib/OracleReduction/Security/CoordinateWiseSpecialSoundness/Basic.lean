@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.TranscriptTree
+public import ArkLib.OracleReduction.Security.TranscriptTree
 
 /-!
   # Coordinate-Wise Special Soundness (CWSS) — the notion
@@ -52,6 +53,8 @@ import ArkLib.OracleReduction.Security.TranscriptTree
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

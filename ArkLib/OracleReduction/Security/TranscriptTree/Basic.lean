@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.Security.Basic
 
 /-!
   # Trees of transcripts — core definitions
@@ -83,6 +84,8 @@ import ArkLib.OracleReduction.Security.Basic
   The branching arity is fixed by the round index, not the path, so path-dependent branching is not
   supported. This matches the source notions and could be relaxed later.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Sumcheck.Structured
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Structured
+public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Single-Round Primitives
@@ -40,6 +41,8 @@ need the latter use a `failure`-guarded verifier instead — Hachi's §4.3 round
 (`Commitments/Functional/Hachi/Sumcheck/Rounds.lean`) is the worked example, and generalizing it
 here is the natural way to give this layer a CWSS certificate.
 -/
+
+@[expose] public section
 
 namespace Sumcheck.Structured
 

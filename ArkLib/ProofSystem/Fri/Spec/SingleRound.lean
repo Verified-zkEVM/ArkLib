@@ -3,19 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-
-import ArkLib.Data.Domain.CosetFftDomain.Subdomain
-import ArkLib.Data.Domain.CosetFftDomain.ToList
-import ArkLib.Data.Domain.FftDomain.Subdomain
-import ArkLib.OracleReduction.Basic
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.Linear
-import CompPoly.Univariate.ToPoly.Impl
-import CompPoly.Fields.Basic
-import ArkLib.ProofSystem.Fri.RoundConsistency
-import ArkLib.ToMathlib.Finset.Basic
-import Mathlib.Logic.Function.Basic
+public import ArkLib.Data.Domain.CosetFftDomain.Subdomain
+public import ArkLib.Data.Domain.CosetFftDomain.ToList
+public import ArkLib.Data.Domain.FftDomain.Subdomain
+public import ArkLib.OracleReduction.Basic
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.Linear
+public import CompPoly.Univariate.ToPoly.Impl
+public import CompPoly.Fields.Basic
+public import ArkLib.ProofSystem.Fri.RoundConsistency
+public import ArkLib.ToMathlib.Finset.Basic
+public import Mathlib.Logic.Function.Basic
 
 /-!
 # The FRI protocol
@@ -32,6 +32,8 @@ import Mathlib.Logic.Function.Basic
 * [Haböck, U., *A summary on the FRI low degree test*][FRI1216]
 
  -/
+
+@[expose] public section
 
 namespace Fri
 
@@ -109,8 +111,8 @@ def Witness (F : Type) [NonBinaryField F] [DecidableEq F] {k : ℕ}
   CompPoly.CPolynomial.degreeLT (R := F)
       (2 ^ ((∑ j', (s j').1) - (∑ j' ∈ finRangeTo _ i.1, (s j').1)) * d)
 
-private lemma witness_lift {F : Type} [NonBinaryField F] [DecidableEq F]
-  {k : ℕ} {s : Fin (k + 1) → ℕ+} {d : ℕ+} {p : CompPoly.CPolynomial F} {α : F} {i : Fin (k + 1)} :
+lemma witness_lift {F : Type} [NonBinaryField F] [DecidableEq F]
+    {k : ℕ} {s : Fin (k + 1) → ℕ+} {d : ℕ+} {p : CompPoly.CPolynomial F} {α : F} {i : Fin (k + 1)} :
     p ∈ Witness F s d i.castSucc →
       CompPoly.CPolynomial.FoldingPolynomial.cpolyFold p (2 ^ (s i).1) α ∈
         Witness F s d i.succ := by

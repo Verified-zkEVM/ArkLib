@@ -4,14 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Poulami Das (Least Authority), Alexander Hicks, Ilia Vlasov,
          Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Data.Finset.Union
+public import Mathlib.Data.Finset.Union
 
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.Domain.CosetFftDomain.Block
-import ArkLib.Data.Domain.CosetFftDomain.Subdomain
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.Domain.CosetFftDomain.Block
+public import ArkLib.Data.Domain.CosetFftDomain.Subdomain
 
 /-!
 # Block Relative Distance for smooth Reed-Solomon Codes
@@ -27,6 +28,8 @@ as is done in the reference paper, as they are more general.
     with Super-Fast Verification*][ACFY24]
 
 -/
+
+@[expose] public section
 
 namespace BlockRelDistance
 

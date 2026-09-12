@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
+public import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 
 /-!
 # Existence of polynomials for Polishchuk-Spielman
@@ -24,6 +25,8 @@ required by the Polishchuk-Spielman lemma [BCIKS20].
     for Reed-Solomon Codes*][BCIKS20]
 
 -/
+
+@[expose] public section
 
 open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators

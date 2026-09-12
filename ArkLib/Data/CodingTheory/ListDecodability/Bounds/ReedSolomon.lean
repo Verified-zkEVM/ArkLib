@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Analysis.SpecialFunctions.Log.Base
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # List-size bounds specific to Reed-Solomon codes
@@ -30,6 +31,8 @@ The keys cited here — [ABF26], [BKR06], [GHSZ02], [JH01], [AGL24], [BGM23], [G
 resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which
 every file in this directory shares.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

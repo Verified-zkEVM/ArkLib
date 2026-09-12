@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Eval.Degree
-import Mathlib.RingTheory.AdjoinRoot
-import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.FieldTheory.Finiteness
+public import Mathlib.Algebra.Polynomial.Eval.Degree
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.FieldTheory.Finite.Basic
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # A Kummer irreducibility criterion over a finite field
@@ -24,6 +25,8 @@ whenever `ω` generates `Fˣ`, together with the Frobenius identities used to pr
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

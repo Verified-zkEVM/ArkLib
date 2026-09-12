@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
-import Mathlib.RingTheory.IntegralDomain
-import Mathlib.Algebra.Polynomial.Reverse
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
+public import Mathlib.RingTheory.IntegralDomain
+public import Mathlib.Algebra.Polynomial.Reverse
 
 /-!
 # `R_q^H` is a Field Isomorphic to `F_{q^k}` (Hachi §3, Lemma 5)
@@ -41,6 +43,8 @@ else — the reverse identity, factor existence, the core unit lemma, and the wh
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial
 

@@ -3,9 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
-import Mathlib.Algebra.Polynomial.BigOperators
+module
 
-import ArkLib.Data.Polynomial.FoldingPolynomial
+public import Mathlib.Algebra.Polynomial.BigOperators
+
+public import ArkLib.Data.Polynomial.FoldingPolynomial
 
 /-!
 # Generalized polynomial splitting and folding
@@ -28,6 +30,8 @@ coefficients and `splitNth f 2 1` gives the odd coefficients (after appropriate
 reindexing).
 
 -/
+
+@[expose] public section
 
 open Polynomial
 

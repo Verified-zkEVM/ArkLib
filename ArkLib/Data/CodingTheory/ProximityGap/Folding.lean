@@ -3,24 +3,25 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.LinearAlgebra.Lagrange
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.FoldingPolynomial
-import ArkLib.Data.Polynomial.SplitFold
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
-import ArkLib.Data.Finset.PickSubset
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
-import ArkLib.Data.Domain.CosetFftDomain.Block
-import ArkLib.Data.Domain.CosetFftDomain.Subdomain
-import ArkLib.Data.Domain.CosetFftDomain.Log
-import ArkLib.Data.Domain.CosetFftDomain.Pullback
-import ArkLib.Data.Polynomial.Indicator
-import ArkLib.ToMathlib.Polynomial.EvalExt
-import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.FoldingPolynomial
+public import ArkLib.Data.Polynomial.SplitFold
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
+public import ArkLib.Data.Finset.PickSubset
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+public import ArkLib.Data.Domain.CosetFftDomain.Block
+public import ArkLib.Data.Domain.CosetFftDomain.Subdomain
+public import ArkLib.Data.Domain.CosetFftDomain.Log
+public import ArkLib.Data.Domain.CosetFftDomain.Pullback
+public import ArkLib.Data.Polynomial.Indicator
+public import ArkLib.ToMathlib.Polynomial.EvalExt
+public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 
 /-! This file contains all the definition needed to state
   and prove the lemma 4.9 from [ACFY24] as well as the proof of it.
@@ -44,6 +45,8 @@ import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 * [Arnon, G., Chiesa, A., Fenzi, G., Yogev, E.,
   *STIR: Reed–Solomon Proximity Testing with Fewer Queries*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

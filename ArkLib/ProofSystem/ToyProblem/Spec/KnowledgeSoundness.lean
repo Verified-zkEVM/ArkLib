@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Exact-extractor knowledge soundness for the toy protocol
@@ -24,6 +25,8 @@ theorem type.  Concrete implementations may derive the older existential
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26], Section 6.
 -/
+
+@[expose] public section
 
 namespace ToyProblem.Spec
 

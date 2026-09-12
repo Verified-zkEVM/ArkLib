@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
-import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
+public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 
 /-!
 # Affine-line decoding infrastructure for the FRS capacity bound
@@ -19,6 +20,8 @@ capacity theorem live in downstream modules.
 - [GG25] Goyal and Guruswami, *Optimal Proximity Gaps for Subspace-Design Codes and (Random)
   Reed-Solomon Codes*, ePrint 2025/2054. Corollary 4.10.
 -/
+
+@[expose] public section
 
 namespace CodingTheory.FrsInternal
 

@@ -3,18 +3,23 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.RingSwitching.Packing.Spec
-import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.OracleReduction.Composition.Sequential.Append
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.OracleReduction.Composition.Sequential.Append
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
 # ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix
@@ -53,7 +58,7 @@ challenges, which is what the downstream opening can consume.
      and sends P `r'ᵢ`.
 7. `P` computes `s' := t'(r'_0, ..., r'_{ℓ'-1})` and sends `V` `s'`.
 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-    decomposes `e =: Σ_{u ∈ {0,1}^κ} e_u ⊗ β_u` (row coordinates on the left tensor
+    decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u` (row coordinates on the right tensor
     factor).
 9. `V` requires
    `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
@@ -351,7 +356,7 @@ check-then-update one-message verifier (`RingSwitching.messageRoundOracleVerifie
 `RoundVerifiers.lean`): query the final constant `s'` (step 7), then
 
 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-   decomposes `e =: Σ_{u ∈ {0,1}^κ} e_u ⊗ β_u`;
+   decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`;
 9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1})`
    `⋅ e_u) ⋅ s'` (reject to a dummy statement on failure), and hands the accepted claim
    to the downstream opening. -/
@@ -564,18 +569,26 @@ theorem coreInteraction_perfectCompleteness :
     (relOut := aOStmtIn.toRelInput)
     (init := init)
     (impl := impl) := by
-  -- Follows from append_perfectCompleteness of interactionPhase and finalSumcheck
-  apply OracleReduction.append_perfectCompleteness
-  · apply OracleReduction.seqCompose_perfectCompleteness
+  refine OracleReduction.append_perfectCompleteness_of_guarded_verifiers
+    (rel₂ := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn (Fin.last ℓ')) _ _
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt =>
+      (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+    (Verifier.GuardedForm.ofEmpty _ (fun stmt => (⟨fun _ => 0, 0⟩, stmt.2)))
+    (fun _ => Or.inl inferInstance) ?_ ?_
+  · apply OracleReduction.seqCompose_perfectCompleteness_of_guarded_verifiers
       (rel := fun i => sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn i)
       (R := fun i => iteratedSumcheckOracleReduction κ L K P ℓ ℓ' aOStmtIn i)
-      (h := fun i =>
-        iteratedSumcheckOracleReduction_perfectCompleteness (κ:=κ) (L:=L) (K:=K)
-          (P:=P) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (aOStmtIn:=aOStmtIn)
-          (init:=init) (impl:=impl) i
-      )
-  · exact finalSumcheckOracleReduction_perfectCompleteness (κ:=κ) (L:=L) (K:=K)
-      (P:=P) (ℓ:=ℓ) (ℓ':=ℓ') (h_l:=h_l) (aOStmtIn:=aOStmtIn) (init:=init) (impl:=impl)
+      (hP := fun _ => inferInstance)
+      (hV := fun _ => Verifier.GuardedForm.ofEmpty _ (fun stmt =>
+        (⟨0, fun _ => 0, stmt.1.ctx⟩, stmt.2)))
+      (h := fun i s =>
+        iteratedSumcheckOracleReduction_perfectCompleteness (κ := κ) (L := L) (K := K)
+          (P := P) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn)
+          (init := pure s) (impl := impl) i)
+  · intro s
+    exact finalSumcheckOracleReduction_perfectCompleteness (κ := κ) (L := L) (K := K)
+      (P := P) (ℓ := ℓ) (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn)
+      (init := pure s) (impl := impl)
 
 /-- RBR knowledge error for a degree-`d` sumcheck loop, obtained from the `seqCompose`
 challenge-index decomposition. -/

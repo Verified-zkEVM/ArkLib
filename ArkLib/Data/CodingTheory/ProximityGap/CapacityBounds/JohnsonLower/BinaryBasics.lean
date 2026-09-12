@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
-import Mathlib.Algebra.Algebra.ZMod
-import Mathlib.FieldTheory.Finite.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
+public import Mathlib.Algebra.Algebra.ZMod
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Binary foundations for the Reed--Solomon Johnson lower bound
@@ -18,6 +19,8 @@ used by `CapacityBounds.JohnsonLower`.
 
 - [BCHKS25] Corollary 1.7.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

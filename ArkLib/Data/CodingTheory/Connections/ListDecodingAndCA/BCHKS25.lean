@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # BCHKS25 CA-to-list-size bound
@@ -21,6 +22,8 @@ to the field-cardinality list-size bound.
 
 - [BCHKS25] Theorem 1.9.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

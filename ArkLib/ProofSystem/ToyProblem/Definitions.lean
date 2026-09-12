@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Erasure
-import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Erasure
+public import ArkLib.Data.CodingTheory.InterleavedCode
 
 /-!
 # Toy problem definitions
@@ -20,6 +21,8 @@ an existentially chosen map with the same range would change the constrained rel
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

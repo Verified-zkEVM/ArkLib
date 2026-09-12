@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Locally / non-interactively reduce a claim
@@ -32,6 +33,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   except that `mapStmt` is replaced by `mapStmt ⊗ mapOStmt`.
 -/
 
+@[expose] public section
+
 namespace ReduceClaim
 
 variable {ι : Type} (oSpec : OracleSpec ι)
@@ -50,6 +53,10 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun ⟨stmt, wit⟩ => pure (mapStmt stmt, mapWit stmt wit)
+
+/-- The `ReduceClaim` prover has pure output: it applies the two plain maps `mapStmt` /
+`mapWit`, with no oracle query. -/
+instance instOutputIsPure : (prover oSpec mapStmt mapWit).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The verifier for the `ReduceClaim` reduction. -/
 def verifier : Verifier oSpec StmtIn StmtOut !p[] where
@@ -280,6 +287,11 @@ def oracleProver : OracleProver oSpec
   receiveChallenge := fun i => nomatch i
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ =>
     pure ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
+
+/-- The `ReduceClaim` oracle prover has pure output: it applies the plain maps `mapStmt`,
+`mapOStmt`, and `mapWit`, with no oracle query. -/
+instance instOutputIsPureOracle :
+    (oracleProver oSpec mapStmt mapWit embedIdx hEq).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
 def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut !p[] where

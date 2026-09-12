@@ -3,9 +3,10 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import Mathlib.Data.Int.Star
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import Mathlib.Data.Int.Star
 
 /-!
  # Basics of MDS codes and MDS matrices
@@ -18,6 +19,8 @@ matrix is MDS.
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 -/
+
+@[expose] public section
 
 namespace CoreResults
 

@@ -3,27 +3,29 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import CompPoly.Data.Nat.Bitwise
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
-import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
-import ArkLib.Data.Probability.Instances
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.Data.Finset.BooleanAlgebra
-import Mathlib.Data.Real.Basic
-import Mathlib.Analysis.Real.Sqrt
-import Mathlib.Data.Set.Defs
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.RingTheory.Henselian
-import Mathlib.Probability.ProbabilityMassFunction.Constructions
-import Mathlib.Data.ENNReal.Inv
+module
+
+public import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
+public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
+public import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.Algebra.Lie.OfAssociative
+public import Mathlib.Data.Finset.BooleanAlgebra
+public import Mathlib.Data.Real.Basic
+public import Mathlib.Analysis.Real.Sqrt
+public import Mathlib.Data.Set.Defs
+public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.Probability.ProbabilityMassFunction.Constructions
+public import Mathlib.Data.ENNReal.Inv
 
 /-!
 # Proximity Gaps in Interleaved Codes
@@ -58,6 +60,8 @@ Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056
   Randomness. Cryptology ePrint Archive, Paper 2024/1399. 2024. url: https://eprint.iacr.org/2024/1399.
 
 -/
+
+@[expose] public section
 
 noncomputable section
 

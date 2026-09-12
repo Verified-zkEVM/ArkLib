@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
 # Additions to VCV-io's `loggingOracle`
@@ -18,6 +19,8 @@ Both are upstreaming candidates: they mention nothing outside VCV-io, and
 `loggingOracle.fst_map_run_simulateQ` (which is the `h = id` case, and whose `@[simp]` form cannot
 fire on the factored spelling).
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec
 

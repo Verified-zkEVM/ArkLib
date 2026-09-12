@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import CompPoly.Fields.KoalaBear.Ext6
-import VCVio.OracleComp.Constructions.SampleableType
+public import CompPoly.Fields.KoalaBear.Ext6
+public import VCVio.OracleComp.Constructions.SampleableType
 
 /-!
 # Computable sampling for the KoalaBear sextic extension
@@ -15,6 +16,8 @@ six independent base-field limbs and transports that vector through the executab
 representation of the extension field. In particular, it does not enumerate the `q ^ 6` extension
 elements or use `SampleableType.ofFintype`.
 -/
+
+@[expose] public section
 
 open OracleComp
 
@@ -26,10 +29,6 @@ def coeffsEquiv : Vector Field 6 ≃ Ext6 where
   invFun := fun x => CompPoly.Extension.Ext.coeffs (P := ext6Params) x
   left_inv _ := rfl
   right_inv _ := rfl
-
-/-- Boolean equality on `Ext6` agrees with propositional equality coefficientwise. -/
-instance instLawfulBEq : LawfulBEq Ext6 :=
-  inferInstanceAs (LawfulBEq (Vector Field 6))
 
 /-- Sample `Ext6` by sampling its six base-field coefficients independently. -/
 def sample : ProbComp Ext6 :=

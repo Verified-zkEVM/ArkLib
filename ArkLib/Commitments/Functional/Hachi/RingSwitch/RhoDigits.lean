@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
-import ArkLib.ToCompPoly.Univariate.Basic
-import ArkLib.ProofSystem.RingSwitching.Transport.Eval
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
 
 /-!
 # The hidden gadget decomposition of the lift quotient
@@ -48,6 +50,8 @@ new data is its proof-free repackaging `balancedDigit` and the polynomial-level 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching
@@ -102,15 +106,6 @@ theorem balancedDigit_valMinAbs_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q 
     (balancedDigit b digits c e).valMinAbs.natAbs ≤ b / 2 := by
   rw [show e = ((⟨e, he⟩ : Fin digits) : ℕ) from rfl, balancedDigit_eq_digit hb hq]
   exact balancedZmodDigit_natAbs_le hb hq hbq c _
-
-/-- **Core per-digit bound**, two-sided box form: every balanced digit lies in the paper's box
-`S_b = [−⌊b/2⌋, ⌈b/2⌉−1]` ([NOZ26] §2.1), which is the interval Eq. (20)'s range check tests. -/
-theorem balancedDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
-    (hbq : b ≤ q / 2) (c : ZMod q) {e : ℕ} (he : e < digits) :
-    -((b / 2 : ℕ) : ℤ) ≤ (balancedDigit b digits c e).valMinAbs ∧
-      (balancedDigit b digits c e).valMinAbs ≤ (((b + 1) / 2 : ℕ) : ℤ) - 1 := by
-  rw [show e = ((⟨e, he⟩ : Fin digits) : ℕ) from rfl, balancedDigit_eq_digit hb hq]
-  exact balancedZmodDigit_valMinAbs_mem hb hq hbq c _
 
 end BalancedDigit
 

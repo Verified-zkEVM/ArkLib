@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 
 /-!
 # Combinatorial bounds on the maximised list size
@@ -165,3 +166,5 @@ verification.
   2025/2010, 2025. Refines the volume estimate. **Not** ArkLib's existing `DG25`, which is the same
   authors' *Proximity Gaps in Interleaved Codes* — a different paper.
 -/
+
+@[expose] public section

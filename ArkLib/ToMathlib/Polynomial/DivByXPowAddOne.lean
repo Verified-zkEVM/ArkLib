@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import Mathlib.Algebra.Polynomial.Div
-import Mathlib.Algebra.Polynomial.Monic
+module
+
+public import Mathlib.Algebra.Polynomial.Div
+public import Mathlib.Algebra.Polynomial.Monic
 
 /-!
 # Division by `X ^ d + 1` in the low-degree range
@@ -26,6 +28,8 @@ bound on the dividend transfers verbatim to the quotient.
 * `Polynomial.divByMonic_X_pow_add_one`: the quotient in closed form, as the shifted upper half.
 * `Polynomial.coeff_divByMonic_X_pow_add_one`: its coefficientwise form, the one consumers use.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

@@ -12,8 +12,8 @@ import Lean.Parser.Module
 /-!
 # ArkLib's Lean-native source linter
 
-Run `lake exe lint-style`. The default scope is the generated `ArkLib` umbrella and every ArkLib
-module it imports. No linter exception file is read or supported.
+Run `lake exe lint-style`. The scope is the generated `ArkLib` umbrella, every ArkLib module it
+imports, and every tracked `ArkLibTest` module. No linter exception file is read or supported.
 -/
 
 open Lean System System.FilePath
@@ -52,6 +52,12 @@ private def lintImports (path : FilePath) (content : String) : IO (Array Violati
   let mut result : Array Violation := #[]
   for importStx in importsStx do
     if let `(Parser.Module.import| $[public]? $[meta]? import $[all]? $moduleId) := importStx then
+      if (path.toString == "ArkLib.lean" || path.toString.startsWith "ArkLib/") &&
+          moduleId.getId.getRoot == `ArkLibTest then
+        let line := inputCtx.fileMap.toPosition (moduleId.raw.getPos?.getD 0) |>.line
+        result := result.push
+          { code := "ERR_TEST_IMPORT", line := line,
+            message := "Production modules must not import ArkLibTest" }
       if let some (code, message) := importViolation? moduleId.getId then
         let pos := moduleId.raw.getPos?.getD 0
         let line := inputCtx.fileMap.toPosition pos |>.line
@@ -59,6 +65,14 @@ private def lintImports (path : FilePath) (content : String) : IO (Array Violati
   return result
 
 private def runImportPositionSelfTest : IO Unit := do
+  let testImport := "module\npublic meta import all ArkLibTest.Interaction.Example\n"
+  for path in ["ArkLib.lean", "ArkLib/Interaction/Example.lean"] do
+    let violations ← lintImports path testImport
+    unless violations.any fun v => v.code == "ERR_TEST_IMPORT" && v.line == 2 do
+      throw <| IO.userError "lint-style self-test failed: production imported tests"
+  let testViolations ← lintImports "ArkLibTest/Interaction/Example.lean" testImport
+  unless testViolations.isEmpty do
+    throw <| IO.userError "lint-style self-test failed: tests may import other tests"
   let violations ← lintImports "fixture.lean" "/- Mathlib -/\nimport Mathlib\n"
   unless violations.any fun violation => violation.code == "ERR_ROOT_IMPORT" && violation.line == 2 do
     throw <| IO.userError "lint-style self-test failed: import diagnostics must use parser positions"
@@ -97,7 +111,11 @@ private def arkLibPaths : IO (Array FilePath) := do
       (missing.map (s!"tracked but absent from ArkLib.lean closure: {·}")) ++
       (untrackedByUmbrella.map (s!"in ArkLib.lean closure but not tracked: {·}"))
     throw <| IO.userError <| "lint-style scope is incomplete:\n" ++ "\n".intercalate details
-  return #[umbrella] ++ modulePaths
+  let testsOutput ← IO.Process.output { cmd := "git", args := #["ls-files", "--", "ArkLibTest"] }
+  if testsOutput.exitCode != 0 then
+    throw <| IO.userError s!"git ls-files ArkLibTest failed: {testsOutput.stderr}"
+  let tests := testsOutput.stdout.splitOn "\n" |>.filter (·.endsWith ".lean")
+  return #[umbrella] ++ modulePaths ++ tests.toArray.map FilePath.mk
 
 private def repositoryHygiene (github : Bool) : IO Nat := do
   let output ← IO.Process.output { cmd := "git", args := #["ls-files", "--stage"] }

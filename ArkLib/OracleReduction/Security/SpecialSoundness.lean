@@ -3,8 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.TranscriptTree
+public import ArkLib.OracleReduction.Security.TranscriptTree
 
 /-!
   # (Plain) Special Soundness
@@ -32,6 +33,8 @@ import ArkLib.OracleReduction.Security.TranscriptTree
   (the `ℓᵢ = 1` case) is `Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff` in
   `Security.Implications`.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

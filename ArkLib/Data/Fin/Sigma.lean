@@ -3,17 +3,20 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Algebra.BigOperators.Fin
-import ArkLib.Data.Fin.Basic
-import ArkLib.Data.Fin.Fold
-import ArkLib.Data.Fin.Tuple.Lemmas
+public import Mathlib.Algebra.BigOperators.Fin
+public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.Fin.Fold
+public import ArkLib.Data.Fin.Tuple.Lemmas
 
 /-!
 # Fin Sigma Equivalences
 
 We re-define big-operators sum and product over `Fin` to have good definitional equalities.
 -/
+
+@[expose] public section
 
 universe u v w
 

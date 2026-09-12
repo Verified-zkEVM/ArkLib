@@ -4,16 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Prelims
-import ArkLib.Data.CodingTheory.Basic.Distance
-import Mathlib.FieldTheory.Finiteness
-import Mathlib.LinearAlgebra.FreeModule.PID
-import Mathlib.RingTheory.PicardGroup
-import Mathlib.RingTheory.RegularLocalRing.Defs
-import Mathlib.RingTheory.SimpleRing.Principal
-import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import Mathlib.FieldTheory.Finiteness
+public import Mathlib.LinearAlgebra.FreeModule.PID
+public import Mathlib.RingTheory.PicardGroup
+public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import Mathlib.RingTheory.SimpleRing.Principal
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
 # Linear-Code Constructions and Bounds
@@ -30,6 +31,8 @@ Agreement*][ABF26]
 with Mutual Correlated Agreement*][BCGM25]
 
 -/
+
+@[expose] public section
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 

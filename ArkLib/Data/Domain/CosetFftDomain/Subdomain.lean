@@ -3,23 +3,24 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Tactic.CancelDenoms.Core
-import Mathlib.GroupTheory.SpecificGroups.Cyclic
-import Mathlib.Algebra.Group.Fin.Basic
-import Mathlib.Algebra.Group.TypeTags.Basic
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Data.Fintype.Card
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.Field
+public import Mathlib.Tactic.CancelDenoms.Core
+public import Mathlib.GroupTheory.SpecificGroups.Cyclic
+public import Mathlib.Algebra.Group.Fin.Basic
+public import Mathlib.Algebra.Group.TypeTags.Basic
+public import Mathlib.Algebra.Group.Defs
+public import Mathlib.Data.Fintype.Card
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.LinearCombination
+public import Mathlib.Tactic.Field
 
-import ArkLib.Data.Domain.CosetFftDomain.Block
-import ArkLib.Data.Domain.CosetFftDomain.Ops
-import ArkLib.Data.Domain.FftDomain.Ops
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Domain.CosetFftDomain.Block
+public import ArkLib.Data.Domain.CosetFftDomain.Ops
+public import ArkLib.Data.Domain.FftDomain.Ops
+public import ArkLib.Data.CodingTheory.ReedSolomon
 
 /-!
 # Subdomains of smooth coset FFT domains
@@ -52,6 +53,8 @@ a root-finding procedure.
   Correctness of the root-finding algorithm.
 
 -/
+
+@[expose] public section
 
 namespace Domain
 

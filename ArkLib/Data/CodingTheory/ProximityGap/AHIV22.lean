@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin,
   Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
 
 /-!
 ## Main Definitions
@@ -16,6 +17,8 @@ Statements of proximity results for Reed--Solomon codes ([AHIV22], Lemmas 4.3--4
 * [Ames, S., Hazay, C., Ishai, Y., and Venkitasubramaniam, M., *Ligero: Lightweight
     sublinear arguments without a trusted setup*][AHIV22], version 20221118:030830
 -/
+
+@[expose] public section
 
 noncomputable section
 

@@ -3,9 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Devon Tuma
 -/
+module
 
-import ArkLib.OracleReduction.FiatShamir.Basic
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+public import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 
 /-!
 # Lemma 5.1 of the Chiesa-Orrù paper
@@ -16,6 +17,8 @@ that transform the prover and the query-answer traces, respectively.
 
 Using this key lemma, we can easily conclude preservation of (knowledge) soundness.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 

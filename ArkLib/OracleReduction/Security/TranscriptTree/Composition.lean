@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.TranscriptTree.Basic
+public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 
 /-!
   # Trees of transcripts — sequential composition
@@ -85,6 +86,8 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
   Composition is binary and sequential (a single append `pSpec₁ ++ₚ pSpec₂`); `n`-ary composition
   is obtained by iterating.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

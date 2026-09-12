@@ -3,8 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.GroupTheory.SpecificGroups.Cyclic
+public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 
 /-! # Prime Order Groups
 
@@ -12,6 +13,8 @@ This file defines the `PrimeOrder` type class, which asserts that a group has so
 
 We also define the unbundled version, `PrimeOrderWith`, which has the prime order `p` as an explicit
 output parameter. -/
+
+@[expose] public section
 
 /-- Type class for a group with an (implicit) prime order `p`. -/
 class PrimeOrder (G : Type*) [Group G] where

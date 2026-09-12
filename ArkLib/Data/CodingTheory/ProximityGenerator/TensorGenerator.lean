@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.Probability.Instances
 
 /-!
 # Mutual correlated agreement for tensor generators
@@ -48,6 +49,8 @@ vacuous once it reaches `1`.
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
     with Mutual Correlated Agreement*][BCGM25]
 -/
+
+@[expose] public section
 
 namespace TensorMCA
 

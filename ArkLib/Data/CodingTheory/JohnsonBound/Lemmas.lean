@@ -3,8 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
-import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
+module
+
+public import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
 /-! # Johnson Bound Lemmas -/
+
+@[expose] public section
 
 
 namespace JohnsonBound
@@ -27,11 +31,11 @@ variable {n : ℕ} {F : Type*} [Fintype F] [DecidableEq F]
   {B : Finset (Fin n → F)} {i : Fin n}
 
 /-- `Fi B i α` is the subset of codewords in `B` whose `i`-th coordinate equals `α`. -/
-private def Fi (B : Finset (Fin n → F)) (i : Fin n) (α : F) : Finset (Fin n → F) :=
+def Fi (B : Finset (Fin n → F)) (i : Fin n) (α : F) : Finset (Fin n → F) :=
   {x | x ∈ B ∧ x i = α}
 
 /-- `K B i α` is the cardinality of `Fi B i α`. -/
-private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
+abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
@@ -101,7 +105,7 @@ lemma sum_choose_K' [Zero F] (h_card : 2 ≤ card F) :
 
 /-- Total `choose_2` over all coordinates at position `i`. -/
 @[simp, grind]
-private def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
+def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
   ∑ α : F, choose_2 (K B i α)
 
 /-- Lower bound on `sum_choose_K_i` via convexity. -/
@@ -118,7 +122,7 @@ lemma le_sum_choose_K [Zero F] (h_card : 2 ≤ card F) :
   linarith [sum_choose_K' h_card (B := B) (i := i)]
 
 /-- Average number of zero coordinates across positions, normalised by `n`. -/
-private def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
+def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ) / n * ∑ i, K B i 0
 
 omit [Fintype F] in
@@ -171,7 +175,7 @@ lemma k_choose_2 [Zero F] (h_n : n ≠ 0) :
 
 /-- Auxiliary fraction `(|B| - x) / (|F| - 1)`. -/
 @[simp, grind]
-private def aux_frac (B : Finset (Fin n → F)) (x : ℚ) : ℚ :=
+def aux_frac (B : Finset (Fin n → F)) (x : ℚ) : ℚ :=
   (B.card - x) / (card F - 1)
 
 /-- The average of `aux_frac` over coordinates equals `aux_frac` at `k`. -/
@@ -218,7 +222,7 @@ lemma le_sum_sum_choose_K [Zero F] (h_n : 0 < n) (h_card : 2 ≤ card F) :
   nlinarith [show (n : ℚ) ≥ 1 from by exact_mod_cast h_n]
 
 /-- `F2i B i α` is the set of ordered pairs from `B` that agree at position `i` with value `α`. -/
-private def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
+def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
     Finset ((Fin n → F) × (Fin n → F)) :=
   {x | x ∈ B ×ˢ B ∧ x.1 ≠ x.2 ∧ x.1 i = α ∧ x.2 i = α}
 
@@ -242,7 +246,7 @@ lemma F2i_card {α : F} : (F2i B i α).card = K B i α * (K B i α - 1) := by
   · grind
 
 /-- `Bi B i` is the set of distinct ordered pairs from `B` agreeing at position `i`. -/
-private def Bi (B : Finset (Fin n → F)) (i : Fin n) :=
+def Bi (B : Finset (Fin n → F)) (i : Fin n) :=
   {x ∈ B ×ˢ B | x.1 ≠ x.2 ∧ x.1 i = x.2 i}
 
 /-- `Bi` decomposes as a disjoint union of `F2i` over all field elements. -/

@@ -3,15 +3,19 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ListDecodability
-import CompPoly.Data.MvPolynomial.Notation
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-!
 # ArkLib.ProofSystem.Stir.Quotienting
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 open Polynomial NNReal ReedSolomon Code
 

@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 
 /-! # Weighted correlated agreement over curves and affine spaces
 
@@ -19,6 +20,8 @@ parameter via `δ = 1 - α`.
 - [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
   (ePrint 2020/654): Theorems 7.1, 7.3, and 7.4.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

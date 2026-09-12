@@ -3,11 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.Correctness
-import ArkLib.Commitments.Functional.KZG.Algebra
-import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
-import ArkLib.ToVCVio.EvalDist.Defs.Support
+public import ArkLib.Commitments.Functional.KZG.Correctness
+public import ArkLib.Commitments.Functional.KZG.Algebra
+public import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
+public import ArkLib.ToVCVio.EvalDist.Defs.Support
 
 /-!
 # Evaluation Binding for the KZG Polynomial Commitment Scheme
@@ -28,6 +29,8 @@ This proof follows the extended version of the KZG paper, which has all the secu
 
 * [Kate, A., Zaverucha, G. M., and Goldberg, I., *Polynomial Commitments*][KZG10TR]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 

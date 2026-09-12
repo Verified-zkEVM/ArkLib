@@ -3,9 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.OracleReduction.LiftContext.OracleReduction
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 /-!
   # Equivalence / Isomorphism of Oracle Reductions
@@ -49,6 +50,8 @@ import ArkLib.OracleReduction.LiftContext.OracleReduction
     highest coefficients).
 
 -/
+
+@[expose] public section
 
 -- section Relation
 

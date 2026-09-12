@@ -3,10 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26SumSet
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26SumSet
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+-- `Multiset.esymm` and Vieta's formulas used to arrive transitively.
+public import Mathlib.RingTheory.MvPolynomial.Symmetric.Defs
+public import Mathlib.RingTheory.Polynomial.Vieta
 
 /-!
 # Additive-set lower bounds for Reed--Solomon codes
@@ -56,6 +60,8 @@ Reed--Solomon lower bounds.
 - [KKH26] Krachun, Kazanin, Haböck. *Failure of proximity gaps close to capacity*.
   ePrint 2026/782.
 -/
+
+@[expose] public section
 
 open Polynomial Finset Code ProximityGap
 open scoped NNReal BigOperators

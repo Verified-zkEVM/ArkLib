@@ -3,19 +3,22 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.Probability.Instances
-import ArkLib.Data.Probability.Notation
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Data.Fintype.Vector
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Data.Fintype.Basic
+public import Mathlib.Data.Fintype.Vector
 
 /-!
 # ArkLib.ProofSystem.Stir.OutOfDomSmpl
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 open Finset Code NNReal Polynomial ProbabilityTheory ReedSolomon
 open Probability

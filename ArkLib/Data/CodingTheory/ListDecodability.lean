@@ -3,14 +3,15 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Alexander Hicks, Ilia Vlasov
 -/
+module
 
-import Mathlib.InformationTheory.Hamming
-import Mathlib.Analysis.Normed.Field.Lemmas
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.ToMathlib.Set.Finite
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Analysis.Normed.Field.Lemmas
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.ToMathlib.Set.Finite
 /-!
 # List Decodability
 
@@ -62,6 +63,8 @@ this arrangement is recorded in `docs/wiki/coding-theory-conventions.md`.
 * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *STIR: Reed–Solomon Proximity Testing
     with Fewer Queries*][ACFY24stir]
 -/
+
+@[expose] public section
 
 
 namespace Code

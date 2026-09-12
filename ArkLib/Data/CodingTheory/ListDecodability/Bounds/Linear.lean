@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.Probability.Notation
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-import Mathlib.Analysis.SpecialFunctions.Stirling
-import Mathlib.FieldTheory.Finiteness
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.Basic.Entropy
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Analysis.SpecialFunctions.Stirling
+public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # Bounds that hold for every linear code
@@ -30,6 +31,8 @@ The keys cited here — [ABF26], [Eli57], [MS77], [ST20], [AGL23], [BDG24], [GLM
 are resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which
 every file in this directory shares.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

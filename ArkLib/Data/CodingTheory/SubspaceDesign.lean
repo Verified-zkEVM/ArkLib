@@ -3,13 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Folded
-import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
-import ArkLib.Data.Polynomial.ClassicalWronskian
-import ArkLib.Data.Polynomial.FoldedWronskian
-import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
-import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
+public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import ArkLib.Data.Polynomial.ClassicalWronskian
+public import ArkLib.Data.Polynomial.FoldedWronskian
+public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
+public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 
 /-!
 # Subspace designs
@@ -59,6 +60,8 @@ The two code-family results are proved by a Wronskian root count, using
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

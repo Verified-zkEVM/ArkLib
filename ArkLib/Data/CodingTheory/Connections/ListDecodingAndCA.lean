@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.BCHKS25
-import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.CS25
-import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.GCXK25
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.BCHKS25
+public import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.CS25
+public import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.GCXK25
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Connections between list decoding and correlated agreement
@@ -41,6 +42,8 @@ the real-radius `mcaError`; CA statements use the nonnegative-radius `epsCa` int
 - [CS25] Theorem 2.
 - [BenSassonGKS20] Lemma 3.3.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

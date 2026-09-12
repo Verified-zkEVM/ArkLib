@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 
 /-!
 # The Cardinality `|R_q^H| = q^k` of the Fixed Subring (Hachi §3, Eq. 7)
@@ -25,6 +27,8 @@ of `ψ` (`Subfield/Bijectivity.lean`).
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 

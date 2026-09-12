@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.ProtocolSpec.Cast
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # Casting for structures of oracle reductions
@@ -26,6 +27,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are proven. The
   completeness transfer lemmas are commented out entirely and remain future work.
 -/
+
+@[expose] public section
 
 open OracleComp
 

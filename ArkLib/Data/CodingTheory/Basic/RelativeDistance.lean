@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.Distance
 
 /-!
 # Relative Distances for Codes
@@ -18,6 +19,8 @@ finite-range/computable variants used by the coding-theory development.
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
 Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 

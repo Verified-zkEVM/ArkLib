@@ -3,11 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
-import Mathlib.Analysis.Complex.ExponentialBounds
-import Mathlib.Combinatorics.Enumerative.DoubleCounting
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import Mathlib.Analysis.Complex.ExponentialBounds
+public import Mathlib.Combinatorics.Enumerative.DoubleCounting
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+-- `rw [Real.qaryEntropy]` unfolds a definition mathlib does not expose.
+import all Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 
 /-!
 # Internal entropy counting for Reed--Solomon codes
@@ -28,6 +31,8 @@ cross-module API under `CodingTheory.EntropyInternal`.
 - [CS25] Crites–Stewart, *On Reed–Solomon Proximity Gaps Conjectures*, ePrint 2025/2046.
   Corollary 1 = source of Theorem 4.17.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 namespace EntropyInternal

@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.Pinning
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs.Pinning
 
 /-!
 # MCA bound for folded Reed-Solomon codes up to capacity
@@ -23,6 +24,8 @@ capacity regime, via an affine-line collision-counting argument and a subspace-d
 - [GG25] Goyal and Guruswami, *Optimal Proximity Gaps for Subspace-Design Codes and (Random)
   Reed-Solomon Codes*, ePrint 2025/2054. Corollary 4.10.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

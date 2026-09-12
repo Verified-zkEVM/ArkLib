@@ -3,13 +3,14 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import VCVio.OracleComp.OracleContext
-import VCVio.OracleComp.SimSemantics.ReaderT.Basic
-import CompPoly.Data.MvPolynomial.Notation
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import VCVio.OracleComp.OracleContext
+public import VCVio.OracleComp.SimSemantics.ReaderT.Basic
+public import CompPoly.Data.MvPolynomial.Notation
+public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 -- import ArkLib.Data.MlPoly.Basic
 
 /-!
@@ -29,6 +30,8 @@ import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 
   - Vectors. This instance turns vectors into oracles for which one can query specific positions.
 -/
+
+@[expose] public section
 
 universe u v w
 

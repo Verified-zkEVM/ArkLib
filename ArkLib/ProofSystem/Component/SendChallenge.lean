@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+module
+
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 
 /-!
   # Simple Oracle Reduction - SendChallenge (the fold challenge round)
@@ -36,6 +38,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
+@[expose] public section
+
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec Function
 
 namespace SendChallenge
@@ -61,6 +65,11 @@ def oracleProver : OracleProver oSpec
   sendMessage | ⟨0, h⟩ => nomatch h
   receiveChallenge | ⟨0, _⟩ => fun st => pure fun c => (st, c)
   output := fun ⟨⟨stmt, oStmt⟩, c⟩ => pure (((stmt, c), oStmt), ())
+
+/-- The `SendChallenge` oracle prover has pure output: it appends the received challenge to the
+statement, with no oracle query. -/
+instance instOutputIsPure : (oracleProver oSpec Statement OStatement C ℓ).OutputIsPure :=
+  ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier samples the challenge `c` (as the `V_to_P` round), reads it off the
 transcript, and appends it to the output statement — no check. This keeps it pure. -/

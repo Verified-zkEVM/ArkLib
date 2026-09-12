@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.LiftContext.Lens
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.LiftContext.Lens
+public import ArkLib.OracleReduction.Security.RoundByRound
 -- import ArkLib.OracleReduction.Security.StateRestoration
 
 /-!
@@ -48,6 +49,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   All the lens definitions are in `Lens.lean`. This file deals with the lens applied to reductions.
   See `OracleReduction.lean` for the application to oracle reduction.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec
 

@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
 
 /-!
 # Interleaved Reed-Solomon codes
@@ -41,6 +42,8 @@ column-wise, so that the code lives over the alphabet `Fin s → F`.
 * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
       with Super-Fast Verification*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 namespace Interleaved

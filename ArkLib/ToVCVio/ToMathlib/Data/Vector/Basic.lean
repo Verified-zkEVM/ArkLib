@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Cody Gunton, Tobias Rothmann
 -/
+module
 
-import Mathlib.Data.Vector.Basic
-import VCVio.EvalDist.List
+public import Mathlib.Data.Vector.Basic
+public import VCVio.EvalDist.List
 
 /-!
 # Additions to VCV-io's `ToMathlib.Data.Vector.Basic`
@@ -13,6 +14,8 @@ import VCVio.EvalDist.List
 `Vector.support_mapM_index`, formerly proved in this module, now comes from
 `VCVio.EvalDist.List` under the same public name.
 -/
+
+@[expose] public section
 
 /-- `Vector.mapM` commutes with post-composition by a pure map:
     mapping `g` after each monadic action is the same as mapping `g` over the collected vector. -/

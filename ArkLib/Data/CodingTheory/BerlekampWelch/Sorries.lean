@@ -3,14 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Data.Matrix.Mul
+module
+
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Data.Matrix.Mul
 
 /-!
   # All the sorries Berlekamp-Welch decoder relies upon.
 
   The sorries are related to solving linear systems of equations.
 -/
+
+@[expose] public section
 
 variable {α : Type} {F : Type} [Field F]
 variable {n m : ℕ}

@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import Mathlib.Algebra.Polynomial.AlgebraMap
+module
+
+public import Mathlib.Algebra.Polynomial.AlgebraMap
 
 /-!
 # Substituting `X ↦ X^i` in `Polynomial R`
@@ -13,6 +15,8 @@ Small facts about the `R`-algebra endomorphism `aeval (X^i) : R[X] →ₐ[R] R[X
 These are generic `Polynomial` lemmas (no cyclotomic content) used by the Galois-automorphism
 layer of `Data/Lattices/CyclotomicRing/`, and are reasonable upstreaming candidates.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

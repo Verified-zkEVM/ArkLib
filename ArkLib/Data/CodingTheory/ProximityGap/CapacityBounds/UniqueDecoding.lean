@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding.Internal
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding.Internal
 
 /-!
 # Reed--Solomon CA in the unique-decoding range
@@ -22,6 +23,8 @@ calculation and the source-facing theorem.
 
 - [BCHKS25] Theorem 1.3.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
