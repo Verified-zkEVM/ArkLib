@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Execution
-import ArkLib.Interaction.Oracle.RunSources
-import ArkLib.Interaction.Oracle.Claim
+module
+
+public import ArkLib.Interaction.Oracle.Execution
+public import ArkLib.Interaction.Oracle.RunSources
+public import ArkLib.Interaction.Oracle.Claim
 
 /-!
 # Trace-free execution and closing
@@ -19,35 +21,39 @@ The carrier alone does not certify that an execution occurred. Execution theorem
 and security games remain outside this trace-free boundary.
 -/
 
+@[expose] public section
+
 universe u v w
 
 namespace Interaction.Oracle
 
-/-- A terminal claim uses exactly the signature accumulated on its structural branch. -/
+/-- An optional terminal claim over the final branch signature.
+`none` denotes verifier rejection. -/
 abbrev TerminalClaim (protocol : Oracle.Protocol.{u}) (initial : PFunctor.{u, u})
     (Stmt : protocol.tree.BranchPath → Type u)
     {Idx : protocol.tree.BranchPath → Type u}
     {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
     (Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path))
     (path : protocol.tree.BranchPath) :=
-  Option (OracleClaim
+  Option (OpenClaim
     (OracleSpec.ofPFunctor (TypeTree.accessAfter protocol.tree protocol.oracles initial path))
     (Stmt path) (Out path))
 
-/-- Paired data produced by one execution. Provenance comes from the executor, not this carrier. -/
+/-- Data for closing a completed interaction. The carrier is public; executor equations or support
+membership establish that its fields arose together. -/
 structure CoreRun (protocol : Oracle.Protocol.{u}) (initial : PFunctor.{u, u})
     (Stmt : protocol.tree.BranchPath → Type u)
     {Idx : protocol.tree.BranchPath → Type u}
     {Obj : (path : protocol.tree.BranchPath) → Idx path → Type u}
     (Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path))
     (OutP : protocol.tree.ExecutionPath → Type u) where
-  /-- Actual concrete path, including hidden prover messages. -/
+  /-- Concrete path, including hidden prover messages. -/
   path : protocol.tree.ExecutionPath
-  /-- The input behavior supplied to this execution. -/
+  /-- Input behavior used to interpret the final access signature. -/
   inputImpl : QueryImpl (OracleSpec.ofPFunctor initial) Id
   /-- Private prover output may depend on the concrete path. -/
   proverOut : OutP path
-  /-- The verifier's terminal output, including explicit rejection. -/
+  /-- Optional verifier output at the recorded structural branch. -/
   outcome : TerminalClaim protocol initial Stmt Out path.toBranchPath
 
 namespace CoreRun
@@ -67,7 +73,7 @@ def closed (run : CoreRun protocol initial Stmt Out OutP) :
 
 /-- Successful closing uses the paired concrete resources; its statement is left unchanged. -/
 theorem closed_of_some (run : CoreRun protocol initial Stmt Out OutP)
-    (claim : OracleClaim
+    (claim : OpenClaim
       (OracleSpec.ofPFunctor
         (TypeTree.accessAfter protocol.tree protocol.oracles initial run.path.toBranchPath))
       (Stmt run.path.toBranchPath) (Out run.path.toBranchPath))
@@ -81,22 +87,22 @@ theorem closed_eq_none_iff (run : CoreRun protocol initial Stmt Out OutP) :
     run.closed = none ↔ run.outcome = none := by
   simp [closed]
 
-/-- Honest output agreement is derived from statement agreement and query-by-query interpretation
+/-- Concrete output agreement is derived from statement agreement and query-by-query interpretation
 under the resources of this run. It never requires equality of concrete representations. -/
-theorem closed_eq_data_iff (run : CoreRun protocol initial Stmt Out OutP)
-    (claim : OracleClaim
+theorem closed_eq_concrete_iff (run : CoreRun protocol initial Stmt Out OutP)
+    (claim : OpenClaim
       (OracleSpec.ofPFunctor
         (TypeTree.accessAfter protocol.tree protocol.oracles initial run.path.toBranchPath))
       (Stmt run.path.toBranchPath) (Out run.path.toBranchPath))
-    (data : DataClaim (Stmt run.path.toBranchPath) (Out run.path.toBranchPath))
+    (data : ConcreteClaim (Stmt run.path.toBranchPath) (Out run.path.toBranchPath))
     (h : run.outcome = some claim) :
     run.closed = some data.toClosed ↔
       claim.stmt = data.stmt ∧ ∀ query,
         simulateQ (run.path.closingImpl protocol.oracles initial run.inputImpl)
           (claim.oracles.query query) =
-        (Out run.path.toBranchPath).answerData data.oracles query := by
+        (Out run.path.toBranchPath).behaviorOfRealizations data.oracles query := by
   rw [run.closed_of_some claim h]
-  simp only [Option.some.injEq, OracleClaim.closeWith, DataClaim.toClosed, ClaimWith.mk.injEq]
+  simp only [Option.some.injEq, OpenClaim.closeWith, ConcreteClaim.toClosed, ClaimWith.mk.injEq]
   constructor
   · rintro ⟨hs, ho⟩
     exact ⟨hs, fun query => congrFun ho query⟩

@@ -3,11 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
-import ArkLib.Interaction.Oracle.CoreRun
-import ArkLib.Interaction.Oracle.Resource
+module
+
+public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
+public import ArkLib.Interaction.Oracle.CoreRun
+public import ArkLib.Interaction.Oracle.Resource
 
 /-! # Single-round Sumcheck through run-derived closing -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.SingleRound
 
@@ -23,33 +27,33 @@ def outputFamily : OracleFamily Unit (fun _ => Message R deg) :=
   ⟨fun _ => polynomialInterface R deg⟩
 
 /-- The output oracle routes queries to the original input polynomial. -/
-def outputView : VirtualOracle (OracleSpec.ofPFunctor (access R deg)) (outputFamily R deg) where
+def outputOracle : VirtualOracle (OracleSpec.ofPFunctor (access R deg)) (outputFamily R deg) where
   query := fun q => liftM ((OracleSpec.ofPFunctor (access R deg)).query (.inl q.2))
 
-/-- Package a terminal scalar result with the input-oracle passthrough plan. -/
+/-- Package a terminal scalar result with the input-oracle passthrough program. -/
 def outputClaim (stmt : R × R) :
-    OracleClaim (OracleSpec.ofPFunctor (access R deg)) (R × R) (outputFamily R deg) :=
-  ⟨stmt, outputView R deg⟩
+    OpenClaim (OracleSpec.ofPFunctor (access R deg)) (R × R) (outputFamily R deg) :=
+  ⟨stmt, outputOracle R deg⟩
 
-/-- Degree metadata is interpreted on the exact object type sent by the protocol. -/
-def degreeCatalog : ResourceCatalog Unit (fun _ => R) (fun _ => Message R deg)
+/-- Degree metadata is interpreted on the exact realization type sent by the protocol. -/
+def degreeModel : OracleModel Unit (fun _ => R) (fun _ => Message R deg)
     Unit Unit (fun _ => ℕ) where
   source := fun _ => ⟨inputSpec R, fun x p => p.val.eval x⟩
   owner := fun _ => ()
   origin := fun _ => ()
-  meaning := fun _ bound p => p.val.degree ≤ bound
-  required := fun _ bound => bound = deg
-  valid := by
+  satisfies := fun _ bound p => p.val.degree ≤ bound
+  promised := fun _ bound => bound = deg
+  satisfies_promises := by
     intro _ bound h p
     subst bound
     exact Polynomial.mem_degreeLE.mp p.property
 
 /-- The selected degree guarantee is the protocol's actual bound. -/
-def degreeGuarantee : (degreeCatalog R deg).Guarantee () := ⟨deg, rfl⟩
+def degreeGuarantee : (degreeModel R deg).Guarantee () := ⟨deg, rfl⟩
 
-/-- Clients recover the bound through the resource guarantee interpretation. -/
+/-- Clients recover the bound through the model's guarantee interpretation. -/
 theorem message_degree (p : Message R deg) : p.val.degree ≤ deg :=
-  (degreeCatalog R deg).realizes () (degreeGuarantee R deg) p
+  (degreeModel R deg).satisfies_guarantee () (degreeGuarantee R deg) p
 
 variable {ι : Type} (ambient : OracleSpec ι)
 
@@ -62,7 +66,7 @@ def claimVerifier [DecidableEq R] (domain : List R) (target r : R) :
   change OracleComp (ambient + OracleSpec.ofPFunctor (access R deg))
     (OracleComp (ambient + OracleSpec.ofPFunctor (access R deg))
       (Σ _ : R, OracleComp (ambient + OracleSpec.ofPFunctor (access R deg))
-        (Option (OracleClaim (OracleSpec.ofPFunctor (access R deg))
+        (Option (OpenClaim (OracleSpec.ofPFunctor (access R deg))
           (R × R) (outputFamily R deg)))))
   exact pure (pure ⟨r, Option.map (outputClaim R deg) <$>
     terminal R deg ambient domain target r⟩)
@@ -76,7 +80,8 @@ def claimReduction [DecidableEq R] (domain : List R) (r : R) :
   prover := fun _ p => pure (prover R deg ambient p)
   verifier := fun target => claimVerifier R deg ambient domain target r
 
-/-- The accepting paired run for an honest polynomial at a prescribed challenge. -/
+/-- Normal-form data for an accepting honest run at a prescribed challenge.
+The `executeCore_honest` equation below establishes that the executor produces this value. -/
 def honestRun (p : Message R deg) (r : R) :
     CoreRun (protocol R deg) (inputSpec R).toPFunctor (fun _ => R × R)
       (fun _ => outputFamily R deg) (fun _ => R × R) where
@@ -93,7 +98,7 @@ theorem executeCore_honest [DecidableEq R] (p : Message R deg)
       pure (honestRun R deg p r) := by
   simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
     pure_bind]
-  change ((simulateQ (Verifier.readImpl ambient (access R deg)
+  change ((simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
         (inputImpl R deg p) p))
       (Option.map (outputClaim R deg) <$> terminal R deg ambient domain target r) >>= fun out =>
@@ -107,13 +112,13 @@ theorem executeCore_honest [DecidableEq R] (p : Message R deg)
   rw [simulateQ_map, simulate_terminal, if_pos h]
   rfl
 
-/-- The honest data claim used solely to express output realization. -/
-def honestData (p : Message R deg) (r : R) : DataClaim (R × R) (outputFamily R deg) :=
+/-- The honest concrete claim used solely to express output realization. -/
+def honestClaim (p : Message R deg) (r : R) : ConcreteClaim (R × R) (outputFamily R deg) :=
   ⟨(p.val.eval r, r), fun _ => p⟩
 
-/-- Closing derives the output behavior from the run's input and actual message. -/
+/-- Closing the honest normal form derives behavior from its input and message. -/
 theorem honestRun_closed (p : Message R deg) (r : R) :
-    (honestRun R deg p r).closed = some (honestData R deg p r).toClosed := by
+    (honestRun R deg p r).closed = some (honestClaim R deg p r).toClosed := by
   rfl
 
 /-- Programmatic perfect completeness through the new run-derived relation boundary. -/
@@ -122,7 +127,7 @@ theorem executeCore_closed [DecidableEq R] (p : Message R deg)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     CoreRun.closed <$> executeCore (claimReduction R deg ambient domain r)
         (inputImpl R deg p) target p =
-      pure (some (honestData R deg p r).toClosed) := by
+      pure (some (honestClaim R deg p r).toClosed) := by
   rw [executeCore_honest R deg ambient p domain target r h]
   rfl
 
@@ -135,7 +140,7 @@ def closedInputRelation (domain : List R)
     (claim : ClosedClaim R (outputFamily R deg)) : Prop :=
   (domain.map (fun x => claim.oracles ⟨(), x⟩)).sum = claim.stmt
 
-/-- Every accepting honest run satisfies the output relation after run-derived closing. -/
+/-- The honest normal form satisfies the output relation after closing. -/
 theorem honestRun_closed_related (p : Message R deg) (r : R) :
     (honestRun R deg p r).closed.map (closedOutputRelation R deg) = some True := by
   change some (p.val.eval r = p.val.eval r) = some True
@@ -171,7 +176,7 @@ def sampledClaimVerifier [DecidableEq R] (domain : List R) (target : R)
   change OracleComp (ambient + OracleSpec.ofPFunctor (access R deg))
     (OracleComp (ambient + OracleSpec.ofPFunctor (access R deg))
       (Σ _ : R, OracleComp (ambient + OracleSpec.ofPFunctor (access R deg))
-        (Option (OracleClaim (OracleSpec.ofPFunctor (access R deg))
+        (Option (OpenClaim (OracleSpec.ofPFunctor (access R deg))
           (R × R) (outputFamily R deg)))))
   exact pure (do
     let r ← OracleComp.liftComp challenge (ambient + OracleSpec.ofPFunctor (access R deg))
@@ -189,7 +194,7 @@ def sampledClaimReduction [DecidableEq R] (domain : List R)
 
 /-- The source interpreter forwards challenge effects without reordering or interpreting them. -/
 theorem simulate_challenge (p : Message R deg) (challenge : OracleComp ambient R) :
-    simulateQ (Verifier.readImpl ambient (access R deg)
+    simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
         (inputImpl R deg p) p))
       (OracleComp.liftComp challenge (ambient + OracleSpec.ofPFunctor (access R deg))) =
@@ -261,7 +266,7 @@ theorem executeSampled_perfectCompleteness [DecidableEq R] (challenge : ProbComp
 
 /-- Primary measure-valued completeness for the actual randomized verifier.
 The challenge's total successful mass is one; no countability assumption on runs is needed. -/
-theorem executeSampled_measure_complete [DecidableEq R] (challenge : ProbComp R)
+theorem executeSampled_measureCompleteness [DecidableEq R] (challenge : ProbComp R)
     (hchallenge : discreteEvalDist challenge Set.univ = 1) (p : Message R deg)
     (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :

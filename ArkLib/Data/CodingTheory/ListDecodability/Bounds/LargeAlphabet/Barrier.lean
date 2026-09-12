@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
 
 /-!
 # Large-alphabet barrier: sparse large-union families, and the robust minimum-distance barrier
@@ -18,6 +19,8 @@ package, and `robust_minimum_distance_barrier` is the barrier itself, which
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and the
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

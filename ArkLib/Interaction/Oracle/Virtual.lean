@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Interaction.Oracle.Source
-import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Interaction.Oracle.Source
+public import ArkLib.OracleReduction.OracleInterface
 
 /-!
 # Virtual oracle programs
@@ -13,52 +14,58 @@ import ArkLib.OracleReduction.OracleInterface
 Virtual oracles are query implementations in the existing free oracle monad. Their meaning is
 interpretation, with no separately stored denotation or coherence proof. Semantic equivalence
 quantifies over every deterministic handler, not only handlers realized by selected backing data.
-`OracleInterface` fixes responses to its object universe; `OracleComp` further requires the source
-responses and output responses to share a universe. Query indices remain independent.
+`OracleInterface` fixes responses to its realization universe; `OracleComp` further requires
+source responses and output responses to share a universe. Query indices remain independent.
 -/
+
+@[expose] public section
 
 universe u v w u' w' u'' w'' t a b
 
 namespace Interaction.Oracle
 
-/-- An indexed family of objects with explicitly selected interfaces. -/
-structure OracleFamily (ι : Type u) (Obj : ι → Type v) where
+/-- An indexed family of realization types with explicitly selected oracle interfaces. -/
+structure OracleFamily (Index : Type u) (Realization : Index → Type v) where
   /-- Observable interface, supplied as data rather than inferred. -/
-  oracle : ∀ i, OracleInterface.{v, w} (Obj i)
+  interface : ∀ i, OracleInterface.{v, w} (Realization i)
 
 namespace OracleFamily
 
 variable {I : Type u} {Data : I → Type v}
 
-/-- Slot carrier of a family. -/
-abbrev ι (_ : OracleFamily.{u, v, w} I Data) := I
+/-- Index carrier of the interface family. -/
+abbrev Index (_ : OracleFamily.{u, v, w} I Data) := I
 
-/-- Concrete representation carrier of a family. -/
-abbrev Obj (O : OracleFamily.{u, v, w} I Data) : O.ι → Type v := Data
+/-- The admissible realization type at each index. -/
+abbrev Realization (O : OracleFamily.{u, v, w} I Data) : O.Index → Type v := Data
 
 /-- The dependent query signature of the explicit interfaces. -/
-abbrev spec (O : OracleFamily.{u, v, w} I Data) := [O.Obj]ₒ' O.oracle
+abbrev spec (O : OracleFamily.{u, v, w} I Data) := [O.Realization]ₒ' O.interface
 
 /-- Arbitrary deterministic answers, without a representability assumption. -/
 abbrev Behavior (O : OracleFamily.{u, v, w} I Data) := QueryImpl O.spec Id
 
-/-- Interpret concrete data through the declared interfaces. -/
-def answerData (O : OracleFamily.{u, v, w} I Data) (data : ∀ i, O.Obj i) : O.Behavior :=
-  fun q => (O.oracle q.1).answer (data q.1) q.2
+/-- Interpret a family of admissible realizations through its declared interfaces. -/
+def behaviorOfRealizations (O : OracleFamily.{u, v, w} I Data)
+    (data : ∀ i, O.Realization i) : O.Behavior :=
+  fun q => (O.interface q.1).answer (data q.1) q.2
 
-/-- The source whose environments are all behaviors of this family. -/
-def asSource (O : OracleFamily.{u, v, w} I Data) := SourceCtx.ofSpec O.spec
+/-- The source whose environments are arbitrary behaviors, including unrepresentable ones. -/
+def asBehaviorSource (O : OracleFamily.{u, v, w} I Data) := SourceCtx.ofSpec O.spec
 
-/-- Rename or select slots, including repeated selection of the same slot. -/
-def reindex (O : OracleFamily.{u, v, w} I Data) {J : Type u'} (f : J → O.ι) :
-    OracleFamily J (O.Obj ∘ f) := ⟨fun j => O.oracle (f j)⟩
+/-- Pull back the indexed interface family along an arbitrary map.
+
+Repeated indices copy interface types; they do not force independently supplied realizations or
+behaviors to agree. Use a named-context view when aliases must share a realization. -/
+def reindex (O : OracleFamily.{u, v, w} I Data) {J : Type u'} (f : J → O.Index) :
+    OracleFamily J (O.Realization ∘ f) := ⟨fun j => O.interface (f j)⟩
 
 end OracleFamily
 
 /-- A derived oracle is precisely a program for each output query. -/
 structure VirtualOracle {I : Type u} (srcSpec : OracleSpec.{u, v} I)
-    {OutIdx : Type u'} {OutObj : OutIdx → Type v}
-    (Out : OracleFamily.{u', v, w} OutIdx OutObj) where
+    {OutIdx : Type u'} {OutRealization : OutIdx → Type v}
+    (Out : OracleFamily.{u', v, w} OutIdx OutRealization) where
   /-- The query program, interpreted by the upstream interpreter. -/
   query : QueryImpl Out.spec (OracleComp srcSpec)
 
@@ -90,63 +97,63 @@ theorem eval_id (impl : A.Behavior) : (id A).eval impl = impl := by
   simp [eval, id, QueryImpl.compose, QueryImpl.id']
 
 /-- Substitute query programs for every source query. -/
-def mapSource (a : VirtualOracle srcSpec A)
+def substSource (a : VirtualOracle srcSpec A)
     {L : Type t} {targetSpec : OracleSpec.{t, v} L}
     (route : QueryImpl srcSpec (OracleComp targetSpec)) : VirtualOracle targetSpec A :=
   ⟨QueryImpl.compose route a.query⟩
 
 @[simp]
-theorem eval_mapSource (a : VirtualOracle srcSpec A)
+theorem eval_substSource (a : VirtualOracle srcSpec A)
     {L : Type t} {targetSpec : OracleSpec.{t, v} L}
     (route : QueryImpl srcSpec (OracleComp targetSpec)) (impl : QueryImpl targetSpec Id) :
-    (a.mapSource route).eval impl = a.eval (QueryImpl.compose impl route) := by
+    (a.substSource route).eval impl = a.eval (QueryImpl.compose impl route) := by
   funext q
   exact (QueryImpl.simulateQ_compose impl route (a.query q)).symm
 
-/-- Select output slots without changing their query programs. -/
-def reindex (a : VirtualOracle srcSpec A) (f : K → A.ι) :
+/-- Reindex output interfaces by reusing their query programs. -/
+def reindex (a : VirtualOracle srcSpec A) (f : K → A.Index) :
     VirtualOracle srcSpec (A.reindex f) := ⟨fun q => a.query ⟨f q.1, q.2⟩⟩
 
 @[simp]
-theorem eval_reindex (a : VirtualOracle srcSpec A) (f : K → A.ι)
+theorem eval_reindex (a : VirtualOracle srcSpec A) (f : K → A.Index)
     (impl : QueryImpl srcSpec Id) (q : (A.reindex f).spec.Domain) :
     (a.reindex f).eval impl q = a.eval impl ⟨f q.1, q.2⟩ := rfl
 
-/-- Route the backing source using its existing coherent polynomial morphism. -/
-def rebase {E : Type w'} {F : Type w''}
+/-- Map the source along a coherent polynomial source morphism. -/
+def mapSource {E : Type w'} {F : Type w''}
     {S : SourceCtx.{u, v, w'} I E} {T : SourceCtx.{u', v, w''} J F}
     (a : VirtualOracle S.spec A) (f : SourceHom S T) : VirtualOracle T.spec A :=
-  a.mapSource f.toQueryImpl
+  a.substSource f.toQueryImpl
 
 @[simp]
-theorem eval_rebase {E : Type w'} {F : Type w''}
+theorem eval_mapSource {E : Type w'} {F : Type w''}
     {S : SourceCtx.{u, v, w'} I E} {T : SourceCtx.{u', v, w''} J F}
     (a : VirtualOracle S.spec A) (f : SourceHom S T) (impl : QueryImpl T.spec Id) :
-    (a.rebase f).eval impl = a.eval (f.pull impl) := by
-  rw [rebase, eval_mapSource]
+    (a.mapSource f).eval impl = a.eval (f.pull impl) := by
+  rw [mapSource, eval_substSource]
   congr 1
 
 
 /-- Add unused sources on the right. -/
-def tensorWeaken (a : VirtualOracle srcSpec A) {L : Type t} (extra : OracleSpec.{t, v} L) :
+def sumWeaken (a : VirtualOracle srcSpec A) {L : Type t} (extra : OracleSpec.{t, v} L) :
     VirtualOracle (srcSpec + extra) A :=
-  a.mapSource (fun q => liftM ((srcSpec + extra).query (.inl q)))
+  a.substSource (fun q => liftM ((srcSpec + extra).query (.inl q)))
 
 @[simp]
-theorem eval_tensorWeaken (a : VirtualOracle srcSpec A) {L : Type t} (extra : OracleSpec.{t, v} L)
+theorem eval_sumWeaken (a : VirtualOracle srcSpec A) {L : Type t} (extra : OracleSpec.{t, v} L)
     (impl : QueryImpl srcSpec Id) (other : QueryImpl extra Id) :
-    (a.tensorWeaken extra).eval (QueryImpl.add impl other) = a.eval impl := by
-  rw [tensorWeaken, eval_mapSource]
+    (a.sumWeaken extra).eval (QueryImpl.add impl other) = a.eval impl := by
+  rw [sumWeaken, eval_substSource]
   congr 1
 
 /-- Compose a derived interface with a downstream view of that interface. -/
 def subst (a : VirtualOracle srcSpec A) (b : VirtualOracle A.spec B) :
-    VirtualOracle srcSpec B := b.mapSource a.query
+    VirtualOracle srcSpec B := b.substSource a.query
 
 @[simp]
 theorem eval_subst (a : VirtualOracle srcSpec A) (b : VirtualOracle A.spec B)
     (impl : QueryImpl srcSpec Id) : (a.subst b).eval impl = b.eval (a.eval impl) :=
-  eval_mapSource b a.query impl
+  eval_substSource b a.query impl
 
 /-- Substitution preserves observational equality on both sides. -/
 theorem subst_congr {a a' : VirtualOracle srcSpec A} {b b' : VirtualOracle A.spec B}
@@ -156,22 +163,22 @@ theorem subst_congr {a a' : VirtualOracle srcSpec A} {b b' : VirtualOracle A.spe
   exact hb _
 
 /-- Substitution with additional downstream sources kept available. -/
-def substWith (a : VirtualOracle srcSpec A) (extra : OracleSpec.{u'', v} K)
+def substWithSuffix (a : VirtualOracle srcSpec A) (extra : OracleSpec.{u'', v} K)
     (b : VirtualOracle (A.spec + extra) B) : VirtualOracle (srcSpec + extra) B :=
-  b.mapSource (QueryImpl.add (a.tensorWeaken extra).query
+  b.substSource (QueryImpl.add (a.sumWeaken extra).query
     (fun q => liftM ((srcSpec + extra).query (.inr q))))
 
 @[simp]
-theorem eval_substWith (a : VirtualOracle srcSpec A) (extra : OracleSpec.{u'', v} K)
+theorem eval_substWithSuffix (a : VirtualOracle srcSpec A) (extra : OracleSpec.{u'', v} K)
     (b : VirtualOracle (A.spec + extra) B)
     (impl : QueryImpl srcSpec Id) (other : QueryImpl extra Id) :
-    (a.substWith extra b).eval (QueryImpl.add impl other) =
+    (a.substWithSuffix extra b).eval (QueryImpl.add impl other) =
       b.eval (QueryImpl.add (a.eval impl) other) := by
-  rw [substWith, eval_mapSource]
+  rw [substWithSuffix, eval_substSource]
   congr 1
   funext q
   cases q with
-  | inl q => exact congrFun (eval_tensorWeaken a extra impl other) q
+  | inl q => exact congrFun (eval_sumWeaken a extra impl other) q
   | inr q => simp [QueryImpl.compose, QueryImpl.add]
 
 /-- Identity substitution preserves all deterministic behavior. -/

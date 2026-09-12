@@ -8,33 +8,36 @@ Dan Carmon, Yuval Ishai, Swastik Kopparty, and Shubhangi Saraf.
 
 Using {https://eprint.iacr.org/2020/654}, version 20210703:203025.
 -/
+module
 
-import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
+public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.Prelims
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Domain.CosetFftDomain.Defs
-import ArkLib.Data.Probability.Notation
-import ArkLib.ProofSystem.BatchedFri.Spec.General
-import ArkLib.ProofSystem.Fri.Spec.General
-import ArkLib.ProofSystem.Fri.Spec.SingleRound
-import ArkLib.OracleReduction.Security.Basic
-import ToMathlib.Control.OptionT
-import ArkLib.ToMathlib.List.Basic
-import ArkLib.ToMathlib.Finset.Basic
-import Mathlib.Algebra.Ring.NonZeroDivisors
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Domain.CosetFftDomain.Defs
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.ProofSystem.BatchedFri.Spec.General
+public import ArkLib.ProofSystem.Fri.Spec.General
+public import ArkLib.ProofSystem.Fri.Spec.SingleRound
+public import ArkLib.OracleReduction.Security.Basic
+public import ToMathlib.Control.OptionT
+public import ArkLib.ToMathlib.List.Basic
+public import ArkLib.ToMathlib.Finset.Basic
+public import Mathlib.Algebra.Ring.NonZeroDivisors
 
 /-!
 # ArkLib.ProofSystem.BatchedFri.Security
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace Fri
 section Fri
@@ -319,7 +322,7 @@ noncomputable def oracleImpl
                 ([Spec.FinalOracleStatement s (ω := ω)]ₒ +
                   [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ)).Range
               (Sum.inr (Sum.inr ⟨i, t⟩))))
-          (by rfl)
+          rfl
           (query (spec := [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) ⟨i, t⟩)
 
 instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabited where
@@ -350,7 +353,7 @@ noncomputable def εC
         / ((2 * ρ_sqrt ^ 3) * (Fintype.card 𝔽))
       + (∑ i, 2 ^ (s i).1) * (2 * m + 1) * (2 ^ n + 1) / (Fintype.card 𝔽 * ρ_sqrt)
 
-private abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain n 𝔽) :=
+abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain n 𝔽) :=
   (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
     (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
       Spec.QueryRound.pSpec l (ω := ω))

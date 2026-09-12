@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
 
 /-!
 # Reed--Solomon lower bound at the Johnson radius
@@ -23,6 +24,8 @@ this module develops the separator construction and the public Reed--Solomon low
 
 - [BCHKS25] Corollary 1.7.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

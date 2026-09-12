@@ -4,12 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.Probability.Notation
 
 /-! # BCIKS20 Reed-Solomon Proximity Gaps -/
+
+@[expose] public section
 
 namespace ProximityGap
 

@@ -3,9 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
+module
 
-/-! # Two-way single-round legacy relation correspondence -/
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
+
+/-!
+# Single-round legacy relation and honest-execution correspondence
+
+The input and output relation theorems are bidirectional for arbitrary concrete claims. The
+verifier-execution theorem is restricted to the honest case: the legacy verifier reads the original
+input polynomial for the next target, while the typed verifier reads the polynomial actually sent.
+They agree when the same polynomial supplies both roles.
+-/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.SingleRound
 
@@ -23,14 +34,16 @@ local instance : ∀ i, OracleInterface ((Spec.SingleRound.pSpec R deg).Challeng
 theorem legacy_output_iff (p : Message R deg) (stmt : R × R) :
     ((stmt, (fun _ : Unit => p)), ()) ∈ Spec.SingleRound.Simple.outputRelation R deg ↔
       closedOutputRelation R deg
-        (DataClaim.toClosed (⟨stmt, fun _ => p⟩ : DataClaim (R × R) (outputFamily R deg))) :=
+        (ConcreteClaim.toClosed
+          (⟨stmt, fun _ => p⟩ : ConcreteClaim (R × R) (outputFamily R deg))) :=
   Iff.rfl
 
 /-- Both directions of the legacy input relation agree, using the same finite domain. -/
 theorem legacy_input_iff {m : ℕ} (D : Fin m ↪ R) (p : Message R deg) (target : R) :
     ((target, (fun _ : Unit => p)), ()) ∈ Spec.SingleRound.Simple.inputRelation R deg D ↔
       closedInputRelation R deg (Finset.univ.map D).toList
-        (DataClaim.toClosed (⟨target, fun _ => p⟩ : DataClaim R (outputFamily R deg))) := by
+        (ConcreteClaim.toClosed
+          (⟨target, fun _ => p⟩ : ConcreteClaim R (outputFamily R deg))) := by
   change (∑ x ∈ Finset.univ.map D, p.val.eval x) = target ↔
     ((Finset.univ.map D).toList.map (fun x => p.val.eval x)).sum = target
   rw [Finset.sum_map_toList]
@@ -92,7 +105,7 @@ theorem legacy_prover_run {ι : Type} (ambient : OracleSpec ι)
   erw [ht]
 
 /-- Honest legacy verifier execution agrees with the typed executor's scalar output. -/
-theorem legacy_verifier_correspondence [DecidableEq R] [SampleableType R]
+theorem legacy_honest_verifier_correspondence [DecidableEq R] [SampleableType R]
     {ι : Type} (ambient : OracleSpec ι) {m : ℕ} (D : Fin m ↪ R)
     (p : Message R deg) (target r : R)
     (h : ((target, (fun _ : Unit => p)), ()) ∈

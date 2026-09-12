@@ -3,10 +3,11 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.Data.Fin.Fold
-import ArkLib.ToVCVio.EvalDist.Instances.OptionT
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.Data.Fin.Fold
+public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
 
 /-!
   # Functional Commitment Schemes (with Oracle Openings)
@@ -38,6 +39,8 @@ import ArkLib.ToVCVio.EvalDist.Instances.OptionT
   * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z., *On the Fiat-Shamir Security of
       Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 namespace Commitment
 
