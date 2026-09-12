@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # GCXK25 list-decoding-to-MCA bound
@@ -22,6 +23,8 @@ finite-family incidence estimate.
 
 - [GCXK25] Theorem 3.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

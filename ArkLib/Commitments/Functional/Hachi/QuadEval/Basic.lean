@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
 
 /-!
 # Hachi Polynomial-Evaluation Reduction `QuadEval`
@@ -74,3 +76,5 @@ sibling `Composition.lean`.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

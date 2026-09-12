@@ -9,7 +9,7 @@ new object, an adapter, or a theorem repair.
 
 ## 1. Worlds
 
-`Γ` is a VCVio **oracle runtime** (V1), optionally interpreted through a traced artifact (V2) and resumed as a session (V5): a thin package over `QueryImpl.Stateful` with a setup computation and persistent state. Public observation and query-log instrumentation are orthogonal adapters, not fields of every runtime. Δ (claim resources, `02` §3.2) is read-only and per-reduction; Γ is persistent, shared by all parties and phases, threaded in execution order — never duplicated by claim-context tensor and never closed into a claim. No product-state runtime or independence theorem is assumed without explicit joint initialization and base semantics.
+`Γ` is a VCVio **oracle runtime** (V1), optionally interpreted through a traced artifact (V2) and resumed as a session (V5): a thin package over `QueryImpl.Stateful` with a setup computation and persistent state. Public observation and query-log instrumentation are orthogonal adapters, not fields of every runtime. Δ (claim resources, `02` §3.2) is read-only and per-reduction; Γ is persistent, shared by all parties and phases, threaded in execution order — never duplicated by source sums or disjoint unions of named contexts and never closed into a claim. No product-state runtime or independence theorem is assumed without explicit joint initialization and base semantics.
 
 - ROM = the lazy-function world; CY's oracle distributions `O(λ, N)` = one **joint** world presenting an indexed family of logical oracles (2r ROs for BCS), sampled jointly; independence/domain-separation are theorems.
 - AGM = adversary-class restriction + instrumented trace (basis ownership and extension rules specified per theorem); not a resource.
@@ -31,14 +31,14 @@ structure CoreRun (path : Oracle.TypeTree.BranchPath (Context shared)) where
   msgs       : Oracle.TypeTree.OracleMessagesAt (Context shared) path
     -- prover oracle payloads
   inputEnv   : InputImpl shared                             -- the game's input behavior
-  outcome    : Terminal (OracleClaim (srcSpecAt shared path) (Stmt path) (Out path)) Fault
+  outcome    : Terminal (OpenClaim (srcSpecAt shared path) (Stmt path) (Out path)) Fault
   proverOut  : ProverPayload path
 
 def executeCore … : OracleComp Γ.Surface ((path : _) × CoreRun path)
 
 structure LoggedRun (path : _) where
   core       : CoreRun path
-  deltaTrace : QueryLog (srcSpecAt shared path)
+  sourceLog : QueryLog (srcSpecAt shared path)
 
 def executeLogged … : OracleComp Γ.Surface ((path : _) × LoggedRun path)
 
@@ -53,10 +53,10 @@ abbrev ExecutionArtifact := RuntimeArtifact Γ ((path : _) × LoggedRun path)
 security-game experiment belong to AR-9A. Pairing prevents accidental split-part use in supported
 games; it is not a nominal run identifier or a proof of sampling provenance.
 
-Derived projections: `closingEnv` (from one `CoreRun`'s `inputEnv`+`msgs`), `closed`, and `VerifierLocalView` — defined **from the enclosing `LoggedRun.deltaTrace`** (Δ-queries are not in the Γ trace; recovering the view by replay would need a determinism theorem, so it is logged, not asserted), extractor views, RBR prefixes, compiler traces. Probability is the evaluation distribution of the VCVio runtime runner. Missing `SPMF` mass retains VCVio's existing failure/nontermination meaning; explicit protocol `fault` is a returned value. Terminal decoding either proves `NeverFail` or invokes the one named VCVio outcome materialization.
+Derived projections: `closingEnv` (from one `CoreRun`'s `inputEnv`+`msgs`), `closed`, and `VerifierLocalView` — defined **from the enclosing `LoggedRun.sourceLog`** (Δ-queries are not in the Γ trace; recovering the view by replay would need a determinism theorem, so it is logged, not asserted), extractor views, RBR prefixes, compiler traces. Probability is the evaluation distribution of the VCVio runtime runner. Missing `SPMF` mass retains VCVio's existing failure/nontermination meaning; explicit protocol `fault` is a returned value. Terminal decoding either proves `NeverFail` or invokes the one named VCVio outcome materialization.
 
 Define `WorldTrace Γ` only as the named view/alias of `QueryLog Γ.Surface` equipped with ArkLib
-resource-schema routing; it is not a parallel carrier. **Four execution records, never
+named-context routing; it is not a parallel carrier. **Four execution records, never
 conflated:** `ExecutionPath` / `VerifierLocalView` / `WorldTrace` / `SRMoveTrace`. “Full transcript”
 in legacy code means `ExecutionPath`; compiled extractors consume `WorldTrace`.
 

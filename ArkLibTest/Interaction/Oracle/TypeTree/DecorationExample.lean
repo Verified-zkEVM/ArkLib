@@ -126,7 +126,7 @@ example : RoleDecoration.restrict trueFutureCursor mixedRoles =
   rfl
 
 /-- Runtime roles make the implicit sender ownership of an oracle node explicit. -/
-example : ((RoleDecoration.toRuntimeRoles mixedRoles).2 false).1 = Role.sender :=
+example : ((RoleDecoration.toExplicitRoles mixedRoles).2 false).1 = Role.sender :=
   rfl
 
 /-- Erasing to a generic runtime tree preserves the implicit sender ownership. -/

@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.TypeTree.Decoration
+module
+
+public import ArkLib.Interaction.Oracle.TypeTree.Decoration
 
 /-!
 # Decorated oracle protocols
@@ -14,6 +16,8 @@ and query data; the underlying `OracleDecoration` remains independently universe
 smart constructors preserve by construction that public nodes carry roles while oracle nodes are
 sender-owned and carry an interface.
 -/
+
+@[expose] public section
 
 universe u
 

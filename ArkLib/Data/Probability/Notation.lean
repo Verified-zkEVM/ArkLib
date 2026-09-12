@@ -3,9 +3,10 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši
 -/
+module
 
-import Mathlib.Probability.Notation
-import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.Probability.Notation
+public import Mathlib.Probability.Distributions.Uniform
 
 /-!
   # Notation for probability sampling statements
@@ -29,6 +30,8 @@ import Mathlib.Probability.Distributions.Uniform
   We should also allow for non-uniform distributions, e.g.
   `Pr_{ let e ← discreteGaussian (ZMod p) }[ e = 0 ]`.
 -/
+
+@[expose] public section
 
 open scoped ProbabilityTheory NNReal ENNReal
 

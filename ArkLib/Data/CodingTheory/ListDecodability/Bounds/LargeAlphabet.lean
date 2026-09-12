@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Barrier
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Barrier
 
 /-!
 # The large-alphabet barrier
@@ -28,6 +29,8 @@ See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overv
 The keys cited here — [ABF26], [AGL23], [BDG24] — are resolved in the reference list of
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

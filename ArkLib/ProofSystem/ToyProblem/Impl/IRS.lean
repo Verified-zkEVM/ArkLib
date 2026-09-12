@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
-import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
-import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
+public import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
+public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 
 /-!
 # Executable interleaved Reed--Solomon implementation for the toy problem
@@ -65,6 +66,8 @@ into the launch cone.
   Correlated Agreement*][ABF26], §6 (the interleaved-RS instantiation and the
   Appendix A.1 erasure-decoding extractor realized executably here).
 -/
+
+@[expose] public section
 
 namespace ToyProblem.Impl.IRS
 

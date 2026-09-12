@@ -3,13 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+module
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 
 /-!
 # ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 namespace Binius.BinaryBasefold
 

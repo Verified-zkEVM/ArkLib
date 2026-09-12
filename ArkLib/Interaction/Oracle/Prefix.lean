@@ -3,20 +3,25 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.RunSources
-import ArkLib.Interaction.Oracle.Resource
-import PolyFun.PFunctor.Free.Cursor.Append
+module
+
+public import ArkLib.Interaction.Oracle.RunSources
+public import ArkLib.Interaction.Oracle.Resource
+public import PolyFun.PFunctor.Free.Cursor.Append
 
 /-!
-# Full structural prefixes
+# Concrete execution prefixes
 
-A `FullPrefix` pairs a structural cursor with exactly its concrete oracle messages. This witnesses
-finite structural reachability, including sends of possibly empty message types; it does not assert
-reachability under any strategy or oracle world. Residual decorations are inherited from the tree.
-Resource identities below are structural occurrences scoped to the original tree, separate from
-user-supplied input identities. Allocation requires a witnessed crossed oracle edge, never merely
-an inhabited backing type. Runtime trace alignment belongs to the logged-execution layer.
+An `ExecutionPrefix` pairs a structural cursor with exactly the concrete oracle realizations along
+that prefix. Crossing a send supplies its realization, without assuming future send types are
+inhabited. This is structural traversal, not strategy reachability or runtime support. Residual
+decorations are inherited from the tree. Available oracle names are crossed structural occurrences
+scoped to
+the original tree and disjoint from user-supplied input names. Runtime trace alignment belongs to
+the logged-execution layer.
 -/
+
+@[expose] public section
 
 universe u v i
 
@@ -26,13 +31,13 @@ open PFunctor.FreeM
 
 namespace PrefixMessages
 
-/-- Concrete payloads for precisely the oracle edges crossed by a structural spine. -/
+/-- Concrete realizations for precisely the oracle edges crossed by a structural spine. -/
 def Along : {tree residual : Oracle.TypeTree.{u}} → Cursor.Spine tree residual → Type u
   | _, _, .root _ => PUnit
   | _, _, .down (a := Position.public _) _ tail => Along tail
   | _, _, .down (a := Position.oracle Messages) _ tail => Messages × Along tail
 
-/-- Concatenate payloads in the same order as structural cursor composition. -/
+/-- Concatenate realizations in the same order as structural cursor composition. -/
 def comp : {tree middle residual : Oracle.TypeTree.{u}} →
     (first : Cursor.Spine tree middle) → (second : Cursor.Spine middle residual) →
     Along first → Along second → Along (first.comp second)
@@ -73,34 +78,34 @@ theorem project_plug {tree residual : Oracle.TypeTree.{u}}
 
 end PrefixMessages
 
-/-- A finite structural prefix with all actual messages sent along it. -/
-structure FullPrefix (tree : Oracle.TypeTree.{u}) where
+/-- A concrete prefix containing the oracle realizations sent along its structural cursor. -/
+structure ExecutionPrefix (tree : Oracle.TypeTree.{u}) where
   /-- Public choices and the exact stopping point. -/
   cursor : Cursor tree
-  /-- Concrete oracle payloads, only at crossed edges. -/
+  /-- Concrete oracle realizations, only at crossed edges. -/
   messages : PrefixMessages.Along cursor.spine
 
-namespace FullPrefix
+namespace ExecutionPrefix
 
 variable {tree : Oracle.TypeTree.{u}}
 
-/-- The empty prefix is reachable even if a later message type is empty. -/
-def root (tree : Oracle.TypeTree.{u}) : FullPrefix tree :=
+/-- The empty prefix exists even if a later oracle realization type is empty. -/
+def root (tree : Oracle.TypeTree.{u}) : ExecutionPrefix tree :=
   ⟨Cursor.root tree, PUnit.unit⟩
 
 /-- Continue with a concrete prefix of the selected residual. -/
-def comp (first : FullPrefix tree) (second : FullPrefix first.cursor.residual) :
-    FullPrefix tree :=
+def comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual) :
+    ExecutionPrefix tree :=
   ⟨first.cursor.comp second.cursor,
     PrefixMessages.comp first.cursor.spine second.cursor.spine first.messages second.messages⟩
 
 @[simp]
-theorem root_comp (pfx : FullPrefix tree) : (root tree).comp pfx = pfx := by
+theorem root_comp (pfx : ExecutionPrefix tree) : (root tree).comp pfx = pfx := by
   cases pfx
   rfl
 
 @[simp]
-theorem comp_root (pfx : FullPrefix tree) : pfx.comp (root pfx.cursor.residual) = pfx := by
+theorem comp_root (pfx : ExecutionPrefix tree) : pfx.comp (root pfx.cursor.residual) = pfx := by
   rcases pfx with ⟨⟨residual, spine⟩, messages⟩
   induction spine with
   | root => cases messages; rfl
@@ -108,15 +113,16 @@ theorem comp_root (pfx : FullPrefix tree) : pfx.comp (root pfx.cursor.residual) 
     cases position with
     | «public» =>
       change PrefixMessages.Along tail at messages
-      exact congrArg (fun p : FullPrefix (next answer) =>
-        FullPrefix.mk (Cursor.down answer p.cursor) p.messages) (ih messages)
+      exact congrArg (fun p : ExecutionPrefix (next answer) =>
+        ExecutionPrefix.mk (Cursor.down answer p.cursor) p.messages) (ih messages)
     | «oracle» =>
-      exact congrArg (fun p : FullPrefix (next answer) =>
-        FullPrefix.mk (Cursor.down answer p.cursor) ⟨messages.1, p.messages⟩) (ih messages.2)
+      exact congrArg (fun p : ExecutionPrefix (next answer) =>
+        ExecutionPrefix.mk (Cursor.down answer p.cursor) ⟨messages.1, p.messages⟩)
+        (ih messages.2)
 
 /-- Ordered concrete prefix composition is associative. -/
-theorem comp_assoc (first : FullPrefix tree) (second : FullPrefix first.cursor.residual)
-    (third : FullPrefix second.cursor.residual) :
+theorem comp_assoc (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
+    (third : ExecutionPrefix second.cursor.residual) :
     (first.comp second).comp third = first.comp (second.comp third) := by
   rcases first with ⟨⟨residual, spine⟩, messages⟩
   induction spine with
@@ -125,14 +131,14 @@ theorem comp_assoc (first : FullPrefix tree) (second : FullPrefix first.cursor.r
     cases position with
     | «public» =>
       change PrefixMessages.Along tail at messages
-      exact congrArg (fun p : FullPrefix (next answer) =>
-        FullPrefix.mk (Cursor.down answer p.cursor) p.messages) (ih messages second third)
+      exact congrArg (fun p : ExecutionPrefix (next answer) =>
+        ExecutionPrefix.mk (Cursor.down answer p.cursor) p.messages) (ih messages second third)
     | «oracle» =>
-      exact congrArg (fun p : FullPrefix (next answer) =>
-        FullPrefix.mk (Cursor.down answer p.cursor) ⟨messages.1, p.messages⟩)
+      exact congrArg (fun p : ExecutionPrefix (next answer) =>
+        ExecutionPrefix.mk (Cursor.down answer p.cursor) ⟨messages.1, p.messages⟩)
         (ih messages.2 second third)
 
-/-- Concrete prefix continuation preserves the order of full execution paths. -/
+/-- Concrete prefix continuation preserves the order of complete execution paths. -/
 theorem PrefixMessages_plug_comp {middle residual : Oracle.TypeTree.{u}}
     (first : Cursor.Spine tree middle) (second : Cursor.Spine middle residual)
     (left : PrefixMessages.Along first) (right : PrefixMessages.Along second)
@@ -154,8 +160,8 @@ theorem PrefixMessages_plug_comp {middle residual : Oracle.TypeTree.{u}}
       congr 1
       exact ih second left.2 right
 
-/-- Complete execution paths supply a full terminal prefix without any inhabitance assumption. -/
-def ofExecutionPath : {tree : Oracle.TypeTree.{u}} → tree.ExecutionPath → FullPrefix tree
+/-- Concrete execution paths supply terminal prefixes without an inhabitance assumption. -/
+def ofExecutionPath : {tree : Oracle.TypeTree.{u}} → tree.ExecutionPath → ExecutionPrefix tree
   | .done, _ => root .done
   | .public _ _, path =>
       let tail := ofExecutionPath path.2
@@ -184,74 +190,74 @@ theorem cursor_ofExecutionPath : {tree : Oracle.TypeTree.{u}} →
       rw [cursor_ofExecutionPath]
 
 /-- Roles restricted to the exact residual selected by this prefix. -/
-def roles (pfx : FullPrefix tree) (decoration : tree.RoleDecoration) :
+def roles (pfx : ExecutionPrefix tree) (decoration : tree.RoleDecoration) :
     RoleDecoration pfx.cursor.residual :=
   Displayed.Decoration.restrict pfx.cursor decoration
 
 /-- Oracle interfaces restricted to the selected residual, preserving branch dependence. -/
-def oracles (pfx : FullPrefix tree) (decoration : tree.OracleDecoration.{u, v}) :
+def oracles (pfx : ExecutionPrefix tree) (decoration : tree.OracleDecoration.{u, v}) :
     OracleDecoration.{u, v} pfx.cursor.residual :=
   Displayed.Decoration.restrict pfx.cursor decoration
 
 /-- Restriction commutes with witnessed continuation. -/
-theorem roles_comp (first : FullPrefix tree) (second : FullPrefix first.cursor.residual)
+theorem roles_comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
     (decoration : tree.RoleDecoration) :
     (first.comp second).roles decoration = second.roles (first.roles decoration) :=
   Displayed.Decoration.restrict_comp first.cursor second.cursor decoration
 
 /-- Interface restriction commutes with witnessed continuation. -/
-theorem oracles_comp (first : FullPrefix tree) (second : FullPrefix first.cursor.residual)
+theorem oracles_comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
     (decoration : tree.OracleDecoration.{u, v}) :
     (first.comp second).oracles decoration = second.oracles (first.oracles decoration) :=
   Displayed.Decoration.restrict_comp first.cursor second.cursor decoration
 
 /-- Complete a prefix using the concrete residual path, without choosing future messages. -/
-def plug (pfx : FullPrefix tree) (path : ExecutionPath pfx.cursor.residual) :
+def plug (pfx : ExecutionPrefix tree) (path : ExecutionPath pfx.cursor.residual) :
     tree.ExecutionPath :=
   PrefixMessages.plug pfx.cursor.spine pfx.messages path
 
 /-- Completing two consecutive prefixes agrees with their single ordered composition. -/
-theorem plug_comp (first : FullPrefix tree) (second : FullPrefix first.cursor.residual)
+theorem plug_comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
     (path : ExecutionPath second.cursor.residual) :
     (first.comp second).plug path = first.plug (second.plug path) :=
   PrefixMessages_plug_comp first.cursor.spine second.cursor.spine first.messages second.messages
     path
 
 /-- Public projection of a completed prefix agrees with PolyFun cursor completion. -/
-theorem project_plug (pfx : FullPrefix tree) (path : ExecutionPath pfx.cursor.residual) :
+theorem project_plug (pfx : ExecutionPrefix tree) (path : ExecutionPath pfx.cursor.residual) :
     (pfx.plug path).toBranchPath = pfx.cursor.plug path.toBranchPath :=
   PrefixMessages.project_plug pfx.cursor.spine pfx.messages path
 
-/-- Extension retains the earlier concrete messages as well as its public choices. -/
-structure Extends (earlier later : FullPrefix tree) where
+/-- Extension retains earlier concrete realizations as well as its public choices. -/
+structure Extends (earlier later : ExecutionPrefix tree) where
   /-- Concrete continuation of the earlier prefix. -/
-  continuation : FullPrefix earlier.cursor.residual
-  /-- Both structural choices and hidden messages agree. -/
+  continuation : ExecutionPrefix earlier.cursor.residual
+  /-- Both structural choices and hidden realizations agree. -/
   comp_eq : earlier.comp continuation = later
 
-/-- Every full prefix extends itself. -/
-def Extends.refl (pfx : FullPrefix tree) : Extends pfx pfx :=
+/-- Every execution prefix extends itself. -/
+def Extends.refl (pfx : ExecutionPrefix tree) : Extends pfx pfx :=
   ⟨root pfx.cursor.residual, comp_root pfx⟩
 
-/-- Full extension is transitive, preserving both public and hidden messages. -/
-def Extends.trans {first second third : FullPrefix tree}
+/-- Execution-prefix extension is transitive, preserving public choices and hidden realizations. -/
+def Extends.trans {first second third : ExecutionPrefix tree}
     (left : Extends first second) (right : Extends second third) : Extends first third := by
   rcases left with ⟨middle, rfl⟩
   rcases right with ⟨last, rfl⟩
   exact ⟨middle.comp last, (comp_assoc first middle last).symm⟩
 
-/-- Forget only the hidden-message agreement of a full extension witness. -/
-def Extends.toCursor {earlier later : FullPrefix tree} (extension : Extends earlier later) :
+/-- Forget only hidden-realization agreement from an execution-prefix extension witness. -/
+def Extends.toCursor {earlier later : ExecutionPrefix tree} (extension : Extends earlier later) :
     Cursor.Extends earlier.cursor later.cursor :=
-  ⟨extension.continuation.cursor, congrArg FullPrefix.cursor extension.comp_eq⟩
+  ⟨extension.continuation.cursor, congrArg ExecutionPrefix.cursor extension.comp_eq⟩
 
 /-- The canonical access signature at the stopping boundary. -/
-def access (pfx : FullPrefix tree) (decoration : tree.OracleDecoration.{u, v})
+def access (pfx : ExecutionPrefix tree) (decoration : tree.OracleDecoration.{u, v})
     (initial : PFunctor.{v, u}) : PFunctor.{v, u} :=
   accessAt pfx.cursor decoration initial
 
 /-- Access accumulation decomposes in exactly the same order as concrete prefixes. -/
-theorem access_comp (first : FullPrefix tree) (second : FullPrefix first.cursor.residual)
+theorem access_comp (first : ExecutionPrefix tree) (second : ExecutionPrefix first.cursor.residual)
     (decoration : tree.OracleDecoration.{u, v}) (initial : PFunctor.{v, u}) :
     (first.comp second).access decoration initial =
       second.access (first.oracles decoration) (first.access decoration initial) :=
@@ -262,30 +268,30 @@ asserting that a prefix reaches the suffix when it stops inside the left protoco
 abbrev AppendView (tree : Oracle.TypeTree.{u}) (suffix : tree.BranchPath → Oracle.TypeTree.{u}) :=
   (view : Cursor.AppendView tree suffix) × PrefixMessages.Along view.join.spine
 
-/-- Reassemble a classified full prefix without forgetting its payloads. -/
+/-- Reassemble a classified execution prefix without forgetting its realizations. -/
 def joinAppend {suffix : tree.BranchPath → Oracle.TypeTree.{u}}
-    (view : AppendView tree suffix) : FullPrefix (PFunctor.FreeM.append tree suffix) :=
+    (view : AppendView tree suffix) : ExecutionPrefix (PFunctor.FreeM.append tree suffix) :=
   ⟨view.1.join, view.2⟩
 
 /-- Classify the stopping boundary of a dependent append using PolyFun's canonical split. -/
 def splitAppend {suffix : tree.BranchPath → Oracle.TypeTree.{u}}
-    (pfx : FullPrefix (PFunctor.FreeM.append tree suffix)) : AppendView tree suffix :=
+    (pfx : ExecutionPrefix (PFunctor.FreeM.append tree suffix)) : AppendView tree suffix :=
   ⟨Cursor.split tree suffix pfx.cursor,
     (Cursor.join_split tree suffix pfx.cursor).symm ▸ pfx.messages⟩
 
-/-- Append decomposition preserves the full prefix, including hidden payloads. -/
+/-- Append decomposition preserves the execution prefix, including hidden realizations. -/
 theorem join_splitAppend {suffix : tree.BranchPath → Oracle.TypeTree.{u}}
-    (pfx : FullPrefix (PFunctor.FreeM.append tree suffix)) :
+    (pfx : ExecutionPrefix (PFunctor.FreeM.append tree suffix)) :
     joinAppend pfx.splitAppend = pfx := by
   have transport : ∀ (left right : Cursor (append tree suffix))
       (h : left = right) (messages : PrefixMessages.Along right.spine),
-      (FullPrefix.mk left (h.symm ▸ messages)) = FullPrefix.mk right messages := by
+      (ExecutionPrefix.mk left (h.symm ▸ messages)) = ExecutionPrefix.mk right messages := by
     intro left right h messages
     cases h
     rfl
   exact transport _ _ (Cursor.join_split tree suffix pfx.cursor) pfx.messages
 
-/-- Classifying a reassembled append view recovers its boundary and concrete payloads. -/
+/-- Classifying a reassembled append view recovers its boundary and concrete realizations. -/
 theorem split_joinAppend {suffix : tree.BranchPath → Oracle.TypeTree.{u}}
     (view : AppendView tree suffix) : (joinAppend view).splitAppend = view := by
   apply Sigma.ext (Cursor.split_join view.1)
@@ -303,38 +309,39 @@ def IsOracleOccurrence (occurrence : Cursor tree) : Prop :=
         (next := rest) PUnit.unit
       (Cursor.root (rest PUnit.unit)))
 
-/-- Available message allocations have crossed an oracle edge on this same structural history. -/
-def Available (pfx : FullPrefix tree) (occurrence : Cursor tree) : Prop :=
+/-- An oracle occurrence is structurally available only after its edge has been crossed. -/
+def Available (pfx : ExecutionPrefix tree) (occurrence : Cursor tree) : Prop :=
   IsOracleOccurrence occurrence ∧ Nonempty (Cursor.Extends occurrence pfx.cursor)
 
-/-- Stable input identities and tree-scoped oracle occurrences form disjoint identity spaces. -/
-def resources (pfx : FullPrefix tree) (InputId : Type i) :
-    ResourceSchema (InputId ⊕ Cursor tree) where
-  Slot := InputId ⊕ {occurrence : Cursor tree // pfx.Available occurrence}
-  key := ⟨Sum.map id Subtype.val, by
+/-- Input names and available tree-scoped oracle occurrences form disjoint name spaces. -/
+def availableContext (pfx : ExecutionPrefix tree) (InputId : Type i) :
+    NamedContext (InputId ⊕ Cursor tree) where
+  Index := InputId ⊕ {occurrence : Cursor tree // pfx.Available occurrence}
+  name := ⟨Sum.map id Subtype.val, by
     intro x y h
     cases x <;> cases y <;> simp_all only [Sum.map_inl, Sum.map_inr,
       Sum.inl.injEq, Sum.inr.injEq, Sum.inl_ne_inr, Sum.inr_ne_inl, id_eq]
     exact Subtype.ext h⟩
 
 /-- Availability never exposes an oracle occurrence beyond the stopping boundary. -/
-theorem no_future (pfx : FullPrefix tree) (occurrence : Cursor tree)
+theorem available_length_le (pfx : ExecutionPrefix tree) (occurrence : Cursor tree)
     (h : pfx.Available occurrence) : occurrence.length ≤ pfx.cursor.length :=
   h.2.some.length_le
 
-/-- Witnessed extension preserves all previously allocated oracle occurrences. -/
-theorem available_mono {earlier later : FullPrefix tree}
+/-- Witnessed extension preserves every previously available oracle occurrence. -/
+theorem available_mono {earlier later : ExecutionPrefix tree}
     (extension : Cursor.Extends earlier.cursor later.cursor) (occurrence : Cursor tree)
     (h : earlier.Available occurrence) : later.Available occurrence :=
   ⟨h.1, ⟨h.2.some.trans extension⟩⟩
 
-/-- Structural extension includes old slots without changing resource identities. It does not
-assert equality of hidden payloads; use `Extends.toCursor` for a full extension witness. -/
-def resourceInclusion {earlier later : FullPrefix tree}
+/-- Structural extension includes previously available context indices without changing their
+names. It does not assert equality of hidden realizations; use `Extends.toCursor` for an
+execution-prefix extension witness. -/
+def contextInclusion {earlier later : ExecutionPrefix tree}
     (extension : Cursor.Extends earlier.cursor later.cursor) (InputId : Type i) :
-    SchemaHom (earlier.resources InputId) (later.resources InputId) where
+    NamedContext.Inclusion (earlier.availableContext InputId) (later.availableContext InputId) where
   map := Sum.map id (fun occurrence => ⟨occurrence.1, available_mono extension _ occurrence.2⟩)
-  key_eq := by intro x; cases x <;> rfl
+  name_eq := by intro x; cases x <;> rfl
 
-end FullPrefix
+end ExecutionPrefix
 end Interaction.Oracle.TypeTree

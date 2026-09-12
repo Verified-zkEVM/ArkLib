@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Nishimwe Prince
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # [BCIKS20] correlated agreement on the `epsCa` carrier
@@ -44,6 +45,8 @@ sharper and still admitted.
 - [BCHKS25] Ben-Sasson, Carmon, Haböck, Kopparty, Saraf. *On Proximity Gaps for Reed-Solomon
   Codes*. Cryptology ePrint Archive, Paper 2025/2055. Theorem 1.3 and Table 1.
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

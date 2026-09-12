@@ -3,12 +3,15 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši
 -/
+module
 
-import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.Fin.Basic
 
 /-!
   # Lifting of `Fin`-indexed vectors
 -/
+
+@[expose] public section
 
 namespace Fin
 
