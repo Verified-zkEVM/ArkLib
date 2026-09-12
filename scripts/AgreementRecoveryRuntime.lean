@@ -33,6 +33,13 @@ import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebraInverse
 import ArkLibTest.Data.MvPolynomial.BoxTruncation
 import ArkLibTest.Data.MvPolynomial.BoxAlgebra
 import ArkLibTest.Data.Polynomial.NilpotentInverse
+import ArkLibTest.Data.MvPolynomial.BoxAlgebraNilpotence
+import ArkLibTest.Data.MvPolynomial.TaylorReconstruction.AffineShift
+import ArkLibTest.Data.Polynomial.ConfluentAlgebra.MonicArithmetic
+import ArkLibTest.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.ChartData
+import
+ArkLibTest.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.Geometry.Projection
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.ZerothOrderDecoder.CenterSearch
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -98,6 +105,12 @@ def run : IO Unit := do
   BoxTruncationTests.run
   BoxAlgebraTests.run
   NilpotentInverseTests.run
+  BoxAlgebraNilpotenceTests.run
+  ConfluentMonicArithmeticTests.run
+  TaylorReconstructionTests.run
+  FastTaylorChartDataTests.run
+  FastTaylorLinearSubstitutionTests.run
+  ZerothOrderCenterSearchTests.run
   check "constant-message balanced frequency map" <|
     ConstantDecoder.decode compare 3 ([4, 2, 4, 4, 2, 7] : List Nat) == [[4]]
   let x : CPolynomial (ZMod 5) := CPolynomial.X

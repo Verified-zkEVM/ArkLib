@@ -656,6 +656,9 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.Counting.TotalJetDegreeRootCount
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.ChartData
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.Geometry.Projection
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Counting
 public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Extension
@@ -1013,6 +1016,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.Red
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.SplitZeroUnit
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerRepresentation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.UniformRateExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ZerothOrderDecoder.CenterSearch
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
@@ -1542,6 +1546,7 @@ public import ArkLib.Data.Matrix.VandermondeMachine
 public import ArkLib.Data.Matrix.VandermondeMachineCanary
 public import ArkLib.Data.Misc.Basic
 public import ArkLib.Data.MvPolynomial.BoxAlgebra
+public import ArkLib.Data.MvPolynomial.BoxAlgebraNilpotence
 public import ArkLib.Data.MvPolynomial.BoxTruncation
 public import ArkLib.Data.MvPolynomial.CoordinateChainCanary
 public import ArkLib.Data.MvPolynomial.CoordinateChainMachine
@@ -1586,6 +1591,7 @@ public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.SeparantChainBounds
 public import ArkLib.Data.MvPolynomial.SeparantChainMachine
 public import ArkLib.Data.MvPolynomial.SeparantChainMachineCanary
+public import ArkLib.Data.MvPolynomial.TaylorReconstruction.AffineShift
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
 public import ArkLib.Data.Polynomial.AffinePowerTruncationMachineCanary
@@ -1597,6 +1603,7 @@ public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.CoefficientList
 public import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 public import ArkLib.Data.Polynomial.CoefficientUpdateMachineCanary
+public import ArkLib.Data.Polynomial.ConfluentAlgebra.MonicArithmetic
 public import ArkLib.Data.Polynomial.DegreeTruncationMachine
 public import ArkLib.Data.Polynomial.DegreeTruncationMachineCanary
 public import ArkLib.Data.Polynomial.DegreeTruncationSemantics

@@ -2,7 +2,9 @@
 
 These are semantic requirements for the [parallel workstreams](workstreams.md).
 The existing tower and recovery interfaces are implemented. New chart, field and producer record
-layouts are proposals until coordinator task I0 lands compiled clients. Do not independently
+layouts are proposals until coordinator task I0 lands compiled clients. The first payload-only
+boundary is `FastTaylor.ChartData`; its tested producer/consumer clients fix coordinate order and
+Taylor-coefficient conventions, but do not freeze full validity or coverage records. Do not independently
 create competing versions of these records in several workstreams.
 
 ## Freeze procedure
@@ -123,3 +125,18 @@ Prove branch equations against the paper procedures as well as output exactness.
 symbolic work never activates exhaustive fallback. List-size corollaries reuse the existing
 mathematical counting results. Paper citation and literal-excerpt migration follow a verified
 complete capstone and separate publication authorization.
+
+## First stored chart payload
+
+`HiddenDerivative/RootFinding/FastTaylor/ChartData.lean` owns `FastTaylor.ChartData E r k`.
+Its sparse polynomials have `r+1` variables ordered `[t₀,…,tᵣ₋₁,z]`. The two stored matrices
+map chart coordinates to the original Hasse jet and back; inverse identities are semantic
+obligations, not constructor fields. `numerators : Fin k → CMvPolynomial (r+1) E` prevents
+width ambiguity. Numerator index `j` refers to `Z^j` at `center+Z`.
+
+The agreement consumer computes `sum_j N_j*(alpha-center)^j-received*B₀`. Its evaluation
+identity holds after every coefficient ring homomorphism. No sampled-fiber or projection
+discriminant guard occurs in this identity. The payload does not certify monicity, degree
+bounds, `B₀=s^(2*k) mod h`, initial-jet retention or wanted-solution coverage. Those are still
+required from concrete producers. Exact accepted interface commit replies are recorded in the
+coordinator handoff when the checkpoint is published.
