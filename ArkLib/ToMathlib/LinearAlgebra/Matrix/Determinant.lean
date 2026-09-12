@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
 /-!
 # Additional determinant lemmas
@@ -16,6 +17,8 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
+
+@[expose] public section
 
 namespace Matrix
 

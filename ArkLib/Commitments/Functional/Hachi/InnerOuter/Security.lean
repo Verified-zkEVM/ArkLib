@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Arithmetic
-import VCVio.EvalDist.Monad.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Arithmetic
+public import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Weak-Binding Security of the Inner-Outer Ajtai Commitment
@@ -60,6 +62,8 @@ hypotheses: `q ≡ 5 (mod 8)` and `κ² < q`.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp CommitmentScheme CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
   ArkLib.Lattices.Ajtai

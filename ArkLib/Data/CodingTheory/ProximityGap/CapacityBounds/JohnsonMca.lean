@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 
 /-!
 # Gao--Kopparty--Lovett affine-line MCA bound
@@ -20,6 +21,8 @@ MCA theorem.
 
 - [GaoKL24] Theorem 3.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

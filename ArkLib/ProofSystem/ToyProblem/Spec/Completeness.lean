@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Honest completeness of the toy-problem IORs (ABF26 Constructions 6.2 and 6.9)
@@ -24,6 +25,8 @@ alphabet `A` (an `F`-module): `A = F` is the scalar specialization, while
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6, Constructions 6.2 and 6.9).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import PolyFun.Interaction.TwoParty.Compose
+module
+
+public import PolyFun.Interaction.TwoParty.Compose
 
 /-!
 # Plain dependent reductions
@@ -19,7 +21,7 @@ input. `Reduction.execute` is only a transparent wrapper around `TwoParty.run`.
 
 ## Sequential composition
 
-`Reduction.comp` appends a second reduction whose tree and roles may depend on the complete first
+`Reduction.then` appends a second reduction whose tree and roles may depend on the complete first
 path. The first prover and verifier outputs become the second reduction's inputs.
 
 There are two distinct execution laws in PolyFun:
@@ -28,10 +30,12 @@ There are two distinct execution laws in PolyFun:
 * `TwoParty.run_comp_append` factors a general effectful suffix constructor under
   `TwoParty.LawfulCommMonad`.
 
-ArkLib's prover setup is effectful in general, so `Reduction.execute_comp` deliberately exposes
+ArkLib's prover setup is effectful in general, so `Reduction.execute_then` deliberately exposes
 the second boundary. Stateful clients without commutative effects must thread state explicitly
 rather than use this factorization theorem.
 -/
+
+@[expose] public section
 
 universe u v w x
 
@@ -104,83 +108,83 @@ end HonestProverOutput
 /-- A prover performs monadic setup and returns the focal strategy for the selected input. -/
 abbrev Prover (m : Type u → Type u)
     (SharedIn : Type v)
-    (Context : SharedIn → TypeTree)
-    (Roles : (i : SharedIn) → RoleDecoration (Context i))
+    (Tree : SharedIn → TypeTree)
+    (Roles : (i : SharedIn) → RoleDecoration (Tree i))
     (StatementIn : SharedIn → Type w)
     (WitnessIn : SharedIn → Type x)
-    (StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Context i) → Type u) :=
+    (StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Tree i) → Type u) :=
   (i : SharedIn) → StatementIn i → WitnessIn i →
     m (StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
-      (Context i) (Roles i)
+      (Tree i) (Roles i)
       (fun tr => HonestProverOutput (StatementOut i tr) (WitnessOut i tr)))
 
 /-- A verifier returns the counterpart strategy for the selected input and public statement. -/
 abbrev Verifier (m : Type u → Type u)
     (SharedIn : Type v)
-    (Context : SharedIn → TypeTree)
-    (Roles : (i : SharedIn) → RoleDecoration (Context i))
+    (Tree : SharedIn → TypeTree)
+    (Roles : (i : SharedIn) → RoleDecoration (Tree i))
     (StatementIn : SharedIn → Type w)
-    (StatementOut : (i : SharedIn) → TypeTree.Path (Context i) → Type u) :=
+    (StatementOut : (i : SharedIn) → TypeTree.Path (Tree i) → Type u) :=
   (i : SharedIn) → StatementIn i →
     StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.counterpart
-      (Context i) (Roles i) (StatementOut i)
+      (Tree i) (Roles i) (StatementOut i)
 
 /-- A plain dependent reduction pairs a prover and verifier for one typed interaction. -/
 structure Reduction (m : Type u → Type u)
     (SharedIn : Type v)
-    (Context : SharedIn → TypeTree)
-    (Roles : (i : SharedIn) → RoleDecoration (Context i))
+    (Tree : SharedIn → TypeTree)
+    (Roles : (i : SharedIn) → RoleDecoration (Tree i))
     (StatementIn : SharedIn → Type w)
     (WitnessIn : SharedIn → Type x)
-    (StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Context i) → Type u) where
-  prover : Prover m SharedIn Context Roles StatementIn WitnessIn StatementOut WitnessOut
-  verifier : Verifier m SharedIn Context Roles StatementIn StatementOut
+    (StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Tree i) → Type u) where
+  prover : Prover m SharedIn Tree Roles StatementIn WitnessIn StatementOut WitnessOut
+  verifier : Verifier m SharedIn Tree Roles StatementIn StatementOut
 
 /-! ## Execution -/
 
 /-- Execute a reduction with PolyFun's canonical two-party runner. -/
 def Reduction.execute {m : Type u → Type u} [Monad m]
     {SharedIn : Type v}
-    {Context : SharedIn → TypeTree}
-    {Roles : (i : SharedIn) → RoleDecoration (Context i)}
+    {Tree : SharedIn → TypeTree}
+    {Roles : (i : SharedIn) → RoleDecoration (Tree i)}
     {StatementIn : SharedIn → Type w}
     {WitnessIn : SharedIn → Type x}
-    {StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Context i) → Type u}
-    (reduction : Reduction m SharedIn Context Roles StatementIn WitnessIn StatementOut WitnessOut)
+    {StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Tree i) → Type u}
+    (reduction : Reduction m SharedIn Tree Roles StatementIn WitnessIn StatementOut WitnessOut)
     (i : SharedIn) (stmt : StatementIn i) (wit : WitnessIn i) :
-    m ((tr : TypeTree.Path (Context i)) ×
+    m ((tr : TypeTree.Path (Tree i)) ×
       HonestProverOutput (StatementOut i tr) (WitnessOut i tr) × StatementOut i tr) := do
   let strategy ← reduction.prover i stmt wit
-  TwoParty.run (Context i) (Roles i) strategy (reduction.verifier i stmt)
+  TwoParty.run (Tree i) (Roles i) strategy (reduction.verifier i stmt)
 
 /-- Honest execution is definitionally PolyFun's two-party runner after prover setup. -/
 theorem Reduction.execute_eq_run {m : Type u → Type u} [Monad m]
     {SharedIn : Type v}
-    {Context : SharedIn → TypeTree}
-    {Roles : (i : SharedIn) → RoleDecoration (Context i)}
+    {Tree : SharedIn → TypeTree}
+    {Roles : (i : SharedIn) → RoleDecoration (Tree i)}
     {StatementIn : SharedIn → Type w}
     {WitnessIn : SharedIn → Type x}
-    {StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Context i) → Type u}
-    (reduction : Reduction m SharedIn Context Roles StatementIn WitnessIn StatementOut WitnessOut)
+    {StatementOut WitnessOut : (i : SharedIn) → TypeTree.Path (Tree i) → Type u}
+    (reduction : Reduction m SharedIn Tree Roles StatementIn WitnessIn StatementOut WitnessOut)
     (i : SharedIn) (stmt : StatementIn i) (wit : WitnessIn i) :
     reduction.execute i stmt wit = (do
       let strategy ← reduction.prover i stmt wit
-      TwoParty.run (Context i) (Roles i) strategy (reduction.verifier i stmt)) := rfl
+      TwoParty.run (Tree i) (Roles i) strategy (reduction.verifier i stmt)) := rfl
 
 /-- Run a focal strategy against an input-indexed verifier. -/
 def Verifier.run {m : Type u → Type u} [Monad m]
     {SharedIn : Type v}
-    {Context : SharedIn → TypeTree}
-    {Roles : (i : SharedIn) → RoleDecoration (Context i)}
+    {Tree : SharedIn → TypeTree}
+    {Roles : (i : SharedIn) → RoleDecoration (Tree i)}
     {StatementIn : SharedIn → Type w}
-    {StatementOut : (i : SharedIn) → TypeTree.Path (Context i) → Type u}
-    (verifier : Verifier m SharedIn Context Roles StatementIn StatementOut)
+    {StatementOut : (i : SharedIn) → TypeTree.Path (Tree i) → Type u}
+    (verifier : Verifier m SharedIn Tree Roles StatementIn StatementOut)
     (i : SharedIn) (stmt : StatementIn i)
-    {OutputP : TypeTree.Path (Context i) → Type u}
+    {OutputP : TypeTree.Path (Tree i) → Type u}
     (prover : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
-      (Context i) (Roles i) OutputP) :
-    m ((tr : TypeTree.Path (Context i)) × OutputP tr × StatementOut i tr) :=
-  TwoParty.run (Context i) (Roles i) prover (verifier i stmt)
+      (Tree i) (Roles i) OutputP) :
+    m ((tr : TypeTree.Path (Tree i)) × OutputP tr × StatementOut i tr) :=
+  TwoParty.run (Tree i) (Roles i) prover (verifier i stmt)
 
 /-! ## Sequential composition -/
 
@@ -189,7 +193,7 @@ def Verifier.run {m : Type u → Type u} [Monad m]
 The second shared input remembers the original public statement as well as the realized prefix.
 Its statement and witness inputs are exactly the first reduction's outputs. The combined terminal
 families use `PFunctor.FreeM.Path.liftAppend`, preserving their dependence on both paths. -/
-def Reduction.comp {m : Type u → Type u} [Monad m]
+def Reduction.then {m : Type u → Type u} [Monad m]
     {SharedIn : Type v}
     {StatementIn : SharedIn → Type w}
     {WitnessIn : SharedIn → Type x}
@@ -233,7 +237,7 @@ ArkLib's separately lifted statement and witness outputs. All interaction effect
 executions inside the mapped computation. General effectful suffix construction requires
 `TwoParty.LawfulCommMonad`; use PolyFun's `TwoParty.run_compFlat_appendFlat_pure` when the suffix
 constructor is pure and only `LawfulMonad` is available. -/
-theorem Reduction.execute_comp
+theorem Reduction.execute_then
     {m : Type u → Type u} [Monad m] [TwoParty.LawfulCommMonad m]
     {SharedIn : Type v}
     {StatementIn : SharedIn → Type w}
@@ -256,7 +260,7 @@ theorem Reduction.execute_comp
       (fun shared tr₂ => StmtOut shared.1 shared.2.2 tr₂)
       (fun shared tr₂ => WitOut shared.1 shared.2.2 tr₂))
     (i : SharedIn) (stmt : StatementIn i) (wit : WitnessIn i) :
-    (Reduction.comp reduction₁ reduction₂).execute i stmt wit =
+    (Reduction.then reduction₁ reduction₂).execute i stmt wit =
       HonestProverOutput.splitLiftAppendRun
         (ctx₁ i) (ctx₂ i) (StmtOut i) (WitOut i) <$> (do
         let ⟨tr₁, midOut, stmtMid⟩ ← reduction₁.execute i stmt wit
@@ -270,7 +274,7 @@ theorem Reduction.execute_comp
             tr₁ tr₂ out,
           PFunctor.FreeM.Path.packAppend (ctx₁ i) (ctx₂ i) (fun tr₁ tr₂ => StmtOut i tr₁ tr₂)
             tr₁ tr₂ stmtOut⟩) := by
-  simp only [execute, comp, bind_assoc, pure_bind, map_bind, map_pure]
+  simp only [execute, Reduction.then, bind_assoc, pure_bind, map_bind, map_pure]
   refine congrArg (fun k => reduction₁.prover i stmt wit >>= k) ?_
   funext strategy₁
   let mapOut := HonestProverOutput.splitLiftAppend

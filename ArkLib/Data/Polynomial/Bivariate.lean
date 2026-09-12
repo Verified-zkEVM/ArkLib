@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
-import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
+public import CompPoly.ToMathlib.Polynomial.BivariateWeightedDegree
+public import CompPoly.ToMathlib.Polynomial.BivariateMultiplicity
 
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 /-!
 # ArkLib-Specific Bivariate Polynomial Extensions
 
@@ -20,6 +21,8 @@ by CompPoly (`CompPoly.ToMathlib.Polynomial.BivariateDegree`, `BivariateWeighted
 - Quotient (divisibility) predicates and degree bounds
 - Linear-map monomial constructors (`monomialY`, `monomialXY`) and their algebra
 -/
+
+@[expose] public section
 
 open Polynomial
 open Polynomial.Bivariate

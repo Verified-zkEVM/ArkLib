@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import PolyFun.Interaction.Basic.TypeTree
+module
+
+public import PolyFun.Interaction.Basic.TypeTree
 
 /-!
 # Oracle interaction type trees
@@ -19,6 +21,8 @@ The runtime lens turns both positions into ordinary PolyFun move nodes. Conseque
 message. This module contains shape and path data only; roles and oracle interfaces belong to the
 next layer.
 -/
+
+@[expose] public section
 
 universe u v
 

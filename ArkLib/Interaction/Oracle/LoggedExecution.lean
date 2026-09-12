@@ -3,16 +3,20 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.CoreRun
-import VCVio.OracleComp.QueryTracking.LoggingOracle
+module
+
+public import ArkLib.Interaction.Oracle.CoreRun
+public import VCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
-# Ordered claim-resource logging
+# Ordered source logging
 
 The restricted verifier's source queries are recorded as they execute. Earlier entries are
 routed through each later signature extension, retaining their order and multiplicity.
 Erasure is an equality of open ambient programs, before any world interpreter is chosen.
 -/
+
+@[expose] public section
 
 universe u v w
 
@@ -54,21 +58,21 @@ end TypeTree
 namespace Verifier
 
 /-- Interpret ambient queries unchanged and record source responses immediately after answering. -/
-def loggedReadImpl {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+def loggedLiftAccessImpl {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (access : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor access) Id) :
     QueryImpl (ambient + OracleSpec.ofPFunctor access)
       (WriterT (QueryLog (OracleSpec.ofPFunctor access)) (OracleComp ambient)) :=
-  (readImpl ambient access impl).withTraceAppend (fun q answer =>
+  (liftAccessImpl ambient access impl).withTraceAppend (fun q answer =>
     match q with
     | .inl _ => []
     | .inr query => [⟨query, answer⟩])
 
 /-- Erasing one instrumented local action gives the original read interpreter. -/
-theorem loggedReadImpl_erase {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+theorem loggedLiftAccessImpl_erase {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (access : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor access) Id)
     {α : Type u} (program : OracleComp (ambient + OracleSpec.ofPFunctor access) α) :
-    Prod.fst <$> (simulateQ (loggedReadImpl ambient access impl) program).run =
-      simulateQ (readImpl ambient access impl) program :=
+    Prod.fst <$> (simulateQ (loggedLiftAccessImpl ambient access impl) program).run =
+      simulateQ (liftAccessImpl ambient access impl) program :=
   QueryImpl.fst_map_run_withTraceAppend ..
 
 end Verifier
@@ -85,7 +89,7 @@ structure LoggedResult (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecora
   /-- Verifier terminal output. -/
   verifierOut : OutV path.toBranchPath
   /-- Source queries in execution order, routed to final access. -/
-  deltaTrace : QueryLog
+  sourceLog : QueryLog
     (OracleSpec.ofPFunctor (TypeTree.accessAfter tree oracles initial path.toBranchPath))
 
 /-- Forget instrumentation without changing path or either participant's output. -/
@@ -97,6 +101,7 @@ def LoggedResult.erase {tree : Oracle.TypeTree.{u}} {oracles : tree.OracleDecora
 
 /-- Execute restricted strategies in the paired runner's ownership order, logging each verifier
 local action once. Oracle receives extend behavior before executing the verifier action. -/
+@[no_expose]
 def executeStrategiesLogged {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
     (tree : Oracle.TypeTree.{u}) → (roles : tree.RoleDecoration) →
     (oracles : tree.OracleDecoration) → (initial : PFunctor.{u, u}) →
@@ -106,37 +111,40 @@ def executeStrategiesLogged {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
     Verifier.Strategy ambient tree roles oracles initial OutV →
     OracleComp ambient (LoggedResult tree oracles initial OutP OutV)
   | .done, _, _, initial, impl, _, _, prover, verifier => do
-      let result ← (simulateQ (Verifier.loggedReadImpl ambient initial impl) verifier).run
+      let result ← (simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl) verifier).run
       return ⟨⟨⟩, prover, result.1, result.2⟩
   | .public _ rest, ⟨.sender, roles⟩, oracles, initial, impl, OutP, OutV, prover, verifier => do
       let ⟨move, nextP⟩ ← prover
-      let nextV ← (simulateQ (Verifier.loggedReadImpl ambient initial impl) (verifier move)).run
+      let nextV ←
+        (simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl) (verifier move)).run
       let result ← executeStrategiesLogged ambient (rest move) (roles move) (oracles.2 move)
         initial impl (OutP := fun path => OutP ⟨move, path⟩)
         (OutV := fun path => OutV ⟨move, path⟩) nextP nextV.1
       return ⟨⟨move, result.path⟩, result.proverOut, result.verifierOut,
         TypeTree.routeLog (rest move) (oracles.2 move) initial result.path.toBranchPath nextV.2 ++
-          result.deltaTrace⟩
-  | .public _ rest, ⟨.receiver, roles⟩, oracles, initial, impl, OutP, OutV, prover, verifier => do
-      let nextV ← (simulateQ (Verifier.loggedReadImpl ambient initial impl) verifier).run
+          result.sourceLog⟩
+  | .public _ rest, ⟨.receiver, roles⟩, oracles, initial, impl, OutP, OutV, prover,
+      verifier => do
+      let nextV ← (simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl) verifier).run
       let nextP ← prover nextV.1.1
       let result ← executeStrategiesLogged ambient (rest nextV.1.1) (roles nextV.1.1)
         (oracles.2 nextV.1.1) initial impl (OutP := fun path => OutP ⟨nextV.1.1, path⟩)
         (OutV := fun path => OutV ⟨nextV.1.1, path⟩) nextP nextV.1.2
       return ⟨⟨nextV.1.1, result.path⟩, result.proverOut, result.verifierOut,
         TypeTree.routeLog (rest nextV.1.1) (oracles.2 nextV.1.1) initial
-          result.path.toBranchPath nextV.2 ++ result.deltaTrace⟩
+          result.path.toBranchPath nextV.2 ++ result.sourceLog⟩
   | .oracle _ rest, roles, oracles, initial, impl, OutP, OutV, prover, verifier => do
       let ⟨message, nextP⟩ ← prover
       let extended := Access.extend initial oracles.1
       let extendedImpl := Access.extendImpl initial oracles.1 impl message
-      let nextV ← (simulateQ (Verifier.loggedReadImpl ambient extended extendedImpl) verifier).run
+      let nextV ←
+        (simulateQ (Verifier.loggedLiftAccessImpl ambient extended extendedImpl) verifier).run
       let result ← executeStrategiesLogged ambient (rest PUnit.unit) (roles.2 PUnit.unit)
         (oracles.2 PUnit.unit) extended extendedImpl (OutP := fun path => OutP ⟨message, path⟩)
         (OutV := fun path => OutV ⟨PUnit.unit, path⟩) nextP nextV.1
       return ⟨⟨message, result.path⟩, result.proverOut, result.verifierOut,
         TypeTree.routeLog (rest PUnit.unit) (oracles.2 PUnit.unit) extended
-          result.path.toBranchPath nextV.2 ++ result.deltaTrace⟩
+          result.path.toBranchPath nextV.2 ++ result.sourceLog⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Instrumentation preserves the complete open execution program after log erasure. -/
@@ -156,12 +164,13 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
         TypeTree.toTypeTree_done, TypeTree.RoleDecoration.toTypeTreeRoles_done, TwoParty.run_done,
         pure_bind, map_bind, map_pure, LoggedResult.erase]
       simp only [bind_pure_comp]
-      change (fun a : OutV ⟨⟩ × QueryLog (OracleSpec.ofPFunctor initial) => ⟨⟨⟩, prover, a.1⟩)
-        <$> (simulateQ (Verifier.loggedReadImpl ambient initial impl) verifier).run =
+      change (fun a : OutV ⟨⟩ × QueryLog (OracleSpec.ofPFunctor initial) =>
+        ⟨⟨⟩, prover, a.1⟩)
+        <$> (simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl) verifier).run =
           (fun out => (⟨⟨⟩, prover, out⟩ :
             (path : TypeTree.ExecutionPath .done) × OutP path × OutV path.toBranchPath))
-            <$> simulateQ (Verifier.readImpl ambient initial impl) verifier
-      rw [← Verifier.loggedReadImpl_erase ambient initial impl verifier, Functor.map_map]
+            <$> simulateQ (Verifier.liftAccessImpl ambient initial impl) verifier
+      rw [← Verifier.loggedLiftAccessImpl_erase ambient initial impl verifier, Functor.map_map]
   | «public» Moves rest ih =>
       rcases roles with ⟨role, roles⟩
       cases role <;>
@@ -172,7 +181,7 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
         simp only [bind_assoc, pure_bind]
         congr 1
         funext nextP
-        rw [← Verifier.loggedReadImpl_erase ambient initial impl (verifier nextP.1)]
+        rw [← Verifier.loggedLiftAccessImpl_erase ambient initial impl (verifier nextP.1)]
         simp only [bind_map_left]
         congr 1
         funext nextV
@@ -191,7 +200,7 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
         exact lifted
       · erw [TwoParty.run_receiver]
         simp only [bind_assoc, pure_bind]
-        rw [← Verifier.loggedReadImpl_erase ambient initial impl verifier]
+        rw [← Verifier.loggedLiftAccessImpl_erase ambient initial impl verifier]
         simp only [bind_map_left]
         congr 1
         funext nextV
@@ -218,7 +227,7 @@ theorem executeStrategiesLogged_erase {ι : Type u} (ambient : OracleSpec.{u, u}
       simp only [bind_assoc, pure_bind]
       congr 1
       funext nextP
-      rw [← Verifier.loggedReadImpl_erase ambient (Access.extend initial oracles.1)
+      rw [← Verifier.loggedLiftAccessImpl_erase ambient (Access.extend initial oracles.1)
         (Access.extendImpl initial oracles.1 impl nextP.1) verifier]
       simp only [bind_map_left]
       congr 1

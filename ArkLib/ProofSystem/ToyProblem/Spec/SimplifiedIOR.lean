@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.ProofSystem.ToyProblem.Spec.General
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.ProofSystem.ToyProblem.Spec.General
+public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 
 /-!
 # Simplified toy-problem IOR (ABF26 Construction 6.9)
@@ -58,6 +59,8 @@ scalar; the combined output oracle is `f₁ + γ • f₂` over `A`.
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6.4, Construction 6.9, Lemma 6.10).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

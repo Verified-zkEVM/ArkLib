@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.Data.MvPolynomial.LinearMvExtension
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.Data.MvPolynomial.LinearMvExtension
 
 /-! This module provides an equivalent representation
   of RS-codes in terms of multilinear polynomials
@@ -17,6 +18,8 @@ import ArkLib.Data.MvPolynomial.LinearMvExtension
   * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
       with Super-Fast Verification*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 

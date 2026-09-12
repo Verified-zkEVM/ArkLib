@@ -61,7 +61,7 @@ def sourceObserved :=
     logProtocol.oracles inputSpec.toPFunctor inputImpl logProver logVerifier)).run []
 
 /-- Routing keeps old slots and answers; repeated queries survive in order. -/
-example : sourceObserved.1.deltaTrace =
+example : sourceObserved.1.sourceLog =
     ([⟨Sum.inl (Sum.inr ()), (11 : Nat)⟩, ⟨Sum.inl (Sum.inl ()), (7 : Nat)⟩,
       ⟨Sum.inr (), (19 : Nat)⟩, ⟨Sum.inr (), (19 : Nat)⟩] :
       QueryLog (OracleSpec.ofPFunctor finalAccess)) := rfl
@@ -71,9 +71,9 @@ def claimObserved (accept : Bool) (message hidden : Nat) :=
   (simulateQ CoreRunExample.logger
     (executeLogged (CoreRunExample.reduction accept) (fun _ => 7) () (message, hidden))).run []
 
-/-- The terminal query is logged, while the deferred virtual output plan is not replayed. -/
+/-- The terminal query is logged, while the deferred virtual output program is not replayed. -/
 example (hidden : Nat) :
-    (claimObserved true 11 hidden).1.deltaTrace = [⟨Sum.inr (), (11 : Nat)⟩] := rfl
+    (claimObserved true 11 hidden).1.sourceLog = [⟨Sum.inr (), (11 : Nat)⟩] := rfl
 
 /-- Closing later uses the same paired message and input behavior. -/
 example (hidden : Nat) :

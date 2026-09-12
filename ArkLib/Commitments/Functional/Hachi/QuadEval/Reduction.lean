@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Gadgets
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Gadgets
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — statement, relations, protocol
@@ -49,6 +51,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

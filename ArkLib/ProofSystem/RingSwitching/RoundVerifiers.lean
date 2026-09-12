@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Basic
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
+module
+
+public import ArkLib.OracleReduction.Basic
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 
 /-!
 # Check-then-update round verifiers
@@ -47,6 +49,8 @@ check-then-update shape is what the ring-switching constructions share on the wi
 * [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
   Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec CoordinateWise.ScalarRound
 
