@@ -40,16 +40,22 @@ name = "ArkLibLintPlugin"
 srcDir = "scripts"
 roots = ["ArkLibLintPlugin"]
 
+# Every file in the production library is a `module` (issue #795). Lake enforces that here so a
+# reverted or hand-written header fails the build rather than silently dropping a file back to
+# classic elaboration; see docs/wiki/module-system.md.
 [[lean_lib]]
 name = "ArkLib"
 plugins = ["ArkLibLintPlugin:shared"]
+requiresModuleSystem = true
 
-# Compile-time acceptance clients, kept out of the production import graph.
+# Compile-time acceptance clients, kept out of the production import graph. These stay classic on
+# purpose: `#print axioms` needs to see proof bodies, which a module importer never loads.
 [[lean_lib]]
 name = "ArkLibTest"
 roots = []
 globs = ["ArkLibTest.+"]
 plugins = ["ArkLibLintPlugin:shared"]
+allowNonModules = true
 
 # Kernel-level axiom / sorry accounting; see scripts/AxiomSweep.lean.
 # Runtime-imports the built ArkLib oleans, so run it after `lake build`.
@@ -59,17 +65,21 @@ srcDir = "scripts"
 root = "AxiomSweep"
 supportInterpreter = true
 
-# Compiled code-generation and execution checks for the toy-problem launch cone.
+# Compiled code-generation and execution checks for the toy-problem launch cone. Classic, like
+# ArkLibTest: compiling the honest path needs definition bodies a module importer never loads.
 [[lean_exe]]
 name = "toyproblem-runtime"
 srcDir = "scripts"
 root = "ToyProblemRuntime"
+allowNonModules = true
 
-# Compiled code-generation and execution checks for the nonrecursive Hachi opening chain.
+# Compiled code-generation and execution checks for the nonrecursive Hachi opening chain. Classic
+# for the same reason as the toy-problem runtime above.
 [[lean_exe]]
 name = "hachi-runtime"
 srcDir = "scripts"
 root = "HachiRuntime"
+allowNonModules = true
 
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link
 # Lake explicitly; keeping it out of the default target avoids adding linter-only dependencies to

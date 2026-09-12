@@ -4,17 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Authority),
   Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Tactic.FieldSimp
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.FieldSimp
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.LinearCombinationPrime
 
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
-import ArkLib.ProofSystem.Stir.ProximityBound
-import ArkLib.ToMathlib.Polynomial.EvalExt
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.ProofSystem.Stir.ProximityBound
+public import ArkLib.ToMathlib.Polynomial.EvalExt
 
 
 /-! Section 4.5 from STIR [ACFY24stir]
@@ -24,6 +25,8 @@ import ArkLib.ToMathlib.Polynomial.EvalExt
 * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *STIR: Reed-Solomon proximity testing
     with fewer queries*][ACFY24stir]
 -/
+
+@[expose] public section
 
 open BigOperators Finset NNReal Code
 
@@ -99,7 +102,7 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
 open Finset
 open BigOperators
 
-private def block_size (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) := dstar - degs i + 1
+def block_size (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) := dstar - degs i + 1
 private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i

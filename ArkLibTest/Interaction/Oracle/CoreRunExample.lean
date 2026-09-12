@@ -35,24 +35,24 @@ abbrev finalSpec := OracleSpec.ofPFunctor (Access.extend input.toPFunctor interf
 def output : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- A derived output query adds an input answer to the sent message's answer. -/
-def plan : VirtualOracle finalSpec output := ⟨fun _ => do
+def outputOracle : VirtualOracle finalSpec output := ⟨fun _ => do
   let old : Nat ← liftM (finalSpec.query (.inl ()))
   let sent : Nat ← liftM (finalSpec.query (.inr ()))
   return old + sent⟩
 
-/-- Terminal computations produce the statement while leaving the output oracle as a plan. -/
+/-- Terminal computations produce the statement while leaving the output oracle as a program. -/
 def terminal (accept : Bool) :
-    OracleComp (ambient + finalSpec) (Option (OracleClaim finalSpec Nat output)) := do
+    OracleComp (ambient + finalSpec) (Option (OpenClaim finalSpec Nat output)) := do
   let _ ← liftM ((ambient + finalSpec).query (.inl 2))
   let sent : Nat ← liftM ((ambient + finalSpec).query (.inr (.inr ())))
-  return if accept then some ⟨sent, plan⟩ else none
+  return if accept then some ⟨sent, outputOracle⟩ else none
 
 /-- The verifier can query after receipt without obtaining the concrete pair. -/
 def verifier (accept : Bool) : Verifier.Strategy ambient protocol.tree protocol.roles
     protocol.oracles input.toPFunctor
     (TerminalClaim protocol input.toPFunctor (fun _ => Nat) (fun _ => output)) := by
   change OracleComp (ambient + finalSpec)
-    (OracleComp (ambient + finalSpec) (Option (OracleClaim finalSpec Nat output)))
+    (OracleComp (ambient + finalSpec) (Option (OpenClaim finalSpec Nat output)))
   exact do
     let _ ← liftM ((ambient + finalSpec).query (.inl 1))
     return terminal accept

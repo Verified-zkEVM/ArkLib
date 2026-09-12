@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Galois.FixedSubring
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Galois.FixedSubring
 
 /-!
 # Monomials and the `Z_q`-Basis of the Fixed Subring `R_q^H` (Hachi §3, Eq. 7)
@@ -29,6 +31,8 @@ injection `(ZMod q)^k ↪ R_q^H` and the cardinality `|R_q^H| = q^k` follow (see
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial Finset
 

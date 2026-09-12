@@ -3,8 +3,9 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
+public import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 
 /-!
 # DG25 Main Interleaved-Code Results
@@ -12,6 +13,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 This module contains the main interleaved and tensor proximity-gap lemmas from the DG25
 formalization, up to the generic tensor-gap lifting theorem.
 -/
+
+@[expose] public section
 
 -- Keep the public `WordStack`/`InterleavedWord` Matrix aliases transparent while elaborating the
 -- legacy proximity API under Lean 4.33's stricter backwards-definitional-equality behavior.

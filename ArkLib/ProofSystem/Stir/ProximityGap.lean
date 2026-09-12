@@ -3,20 +3,23 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
-import ArkLib.ProofSystem.Stir.ProximityBound
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.ProofSystem.Stir.ProximityBound
 
 /-!
 # ArkLib.ProofSystem.Stir.ProximityGap
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 open NNReal ProbabilityTheory ReedSolomon
 

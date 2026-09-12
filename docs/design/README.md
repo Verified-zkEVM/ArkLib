@@ -99,5 +99,5 @@ every ideal oracle guarantee becomes an explicit commit, open, or link obligatio
 
 Stable today are the architectural invariants: extensional closed claims, source-scoped virtual
 programs, run-derived closing, explicit aliasing, guarantee transport, and the three-library
-dependency direction. Lean record layouts such as `ClaimWith`, `SourceCtx`, `ResourceSchema`,
+dependency direction. Lean record layouts such as `ClaimWith`, `SourceCtx`, `NamedContext`,
 `CoreRun`, and the later execution artifact remain provisional until their acceptance clients land.
