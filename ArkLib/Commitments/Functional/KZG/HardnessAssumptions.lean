@@ -3,17 +3,18 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.Algebra
-import ArkLib.Commitments.Functional.KZG.Sampling
-import ArkLib.Data.GroupTheory.PrimeOrder
-import ArkLib.Data.Classes.Serde
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import Mathlib.Algebra.Field.ZMod
-import Mathlib.Algebra.Order.Star.Basic
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Commitments.Functional.KZG.Algebra
+public import ArkLib.Commitments.Functional.KZG.Sampling
+public import ArkLib.Data.GroupTheory.PrimeOrder
+public import ArkLib.Data.Classes.Serde
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import Mathlib.Algebra.Field.ZMod
+public import Mathlib.Algebra.Order.Star.Basic
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # Hardness Assumptions
@@ -32,6 +33,8 @@ This file defines hardness assumptions used in security reductions for commitmen
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp SubSpec
 open CompPoly.CPolynomial

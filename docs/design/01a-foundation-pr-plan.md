@@ -37,7 +37,7 @@ supported PolyFun + VCVio pins
                                                    │
 AR-1 + AR-2B + AR-3A → AR-3B execution          │
 AR-4A → AR-5 virtual substitution              ├─ AR-6A claims
-AR-4A → AR-4B resource schemas ─────────────────┘      │
+AR-4A → AR-4B named contexts ─────────────────┘      │
                                                          └─ AR-6B core run
                                                               → AR-7 Sumcheck
                                                               → AR-8 legacy bridge
@@ -146,18 +146,19 @@ routing and erases to the plain runner.
 ### AR-4A — extensional sources and routing
 
 **Goal.** Add universe-polymorphic source families and extensional handlers, plus identity,
-renaming, weakening, sum/product routing, and composition.
+renaming, weakening, sum/tensor routing, and composition.
 
 **Acceptance.** Heterogeneous source types remain in independent universes. Extensionally equal
 handlers cannot be distinguished by a virtual query program.
 
-### AR-4B — resource identity and guarantee schemas
+### AR-4B — named oracle contexts and interpreted promises
 
-**Goal.** Record stable resource identity, origin, ownership, aliasing, and reified ideal
-guarantees without polluting extensional source semantics.
+**Goal.** Interpret stable oracle names, origin, ownership, and reified ideal promises in an
+`OracleModel`; represent distinct names in a `NamedContext` and aliasing through its `View`,
+separately from extensional source semantics.
 
-**Acceptance.** Two resources with the same query signature remain distinct; explicit aliasing can
-identify them; accidental duplication through tensor is unconstructible.
+**Acceptance.** Two oracles with the same query signature may retain distinct names. Multiple view
+indices can reference one name and realization; `disjointUnion` rejects overlapping names.
 
 ### AR-5 — virtual-oracle substitution
 
@@ -172,19 +173,21 @@ query behavior.
 
 ### AR-6A — open and closed claims
 
-**Goal.** Define open claims carrying virtual plans and closed claims carrying extensional behavior.
-Closing interprets every plan with one supplied handler. Relations consume only closed claims.
+**Goal.** Define open claims carrying virtual programs and closed claims carrying extensional behavior.
+Closing interprets every program with one supplied handler. Relations consume only closed claims.
 
 **Acceptance.** A relation cannot inspect derivation history, and closing commutes with virtual
 substitution.
 
 ### AR-6B — core execution and run-derived closing
 
-**Goal.** Define the smallest trace-free `CoreRun` that pairs one execution's concrete resources
-with its virtual output claim. Its constructor remains controlled by execution.
+**Goal.** Define the smallest trace-free `CoreRun` that stores the path, input behavior, private
+output, and virtual output claim used by closing. The carrier is public; `executeCore` packages its
+own returned values, and executor equations or interpreted support establish their common origin.
 
-**Acceptance.** The public API cannot close one run's claim with another run's handler. Existing
-oracle-output agreement is recovered as a derived theorem.
+**Acceptance.** `CoreRun.closed` accepts no replacement handler. Arbitrary records are not evidence
+of execution, reachability, or probability. Concrete-output agreement is recovered as a derived
+interpretation theorem; security experiments use the executor's distribution.
 
 ### AR-7 — one-round Sumcheck through closing
 
@@ -219,7 +222,7 @@ proves `NeverFail` or explicitly names the fault used to materialize missing mas
 ### AR-10A — structural full prefixes
 
 **Goal.** Combine a PolyFun cursor with concrete message-prefix data, reachability, restricted
-decorations, and the resource schema available at that point.
+decorations, and the named context available at that point.
 
 **Required laws.** No future resources; monotonicity under witnessed cursor extension; decomposition
 through append; compatibility with execution-path projection.
@@ -234,7 +237,7 @@ resource profile. Preserve order, multiplicity, and stable resource identity.
 
 ### AR-11 — Merkle backend adapter
 
-**Prerequisite.** Resource schemas, world-backed execution, terminal outcomes, and the supported
+**Prerequisite.** Named oracle contexts, world-backed execution, terminal outcomes, and the supported
 VCVio shared-ROM Merkle extraction theorem.
 
 **Goal.** Expose the smallest compiler-facing Merkle capability by adapting the VCVio theorem. Do

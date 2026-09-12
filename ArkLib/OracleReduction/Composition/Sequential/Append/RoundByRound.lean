@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
+public import ArkLib.OracleReduction.Composition.Sequential.Append.StateFunction
 
 /-!
 # Worst-case round-by-round soundness of sequential composition
@@ -14,6 +15,8 @@ component. A pure first verifier determines the intermediate statement at the se
 function rules out an intermediate statement in the second language whenever a bad transition
 can occur in the second component.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

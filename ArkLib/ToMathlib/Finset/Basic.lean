@@ -3,18 +3,22 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 -/
-import Mathlib.Algebra.Order.Ring.Nat
-import Mathlib.Algebra.Ring.Regular
-import Mathlib.Data.Finset.Image
-import Mathlib.Algebra.BigOperators.Group.Finset.Defs
-import ArkLib.ToMathlib.List.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Data.PNat.Notation
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
+module
+
+public import Mathlib.Algebra.Order.Ring.Nat
+public import Mathlib.Algebra.Ring.Regular
+public import Mathlib.Data.Finset.Image
+public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+public import ArkLib.ToMathlib.List.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Data.PNat.Notation
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
   # Definitions and lemmas related to `Finset`.
 -/
+
+@[expose] public section
 
 def erase_odd (s : Finset ℕ) : Finset ℕ := s.filter Even
 def erase_even (s : Finset ℕ) : Finset ℕ := s.filter Odd

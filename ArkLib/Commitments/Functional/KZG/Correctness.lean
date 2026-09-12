@@ -3,9 +3,13 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.Basic
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import ArkLib.Commitments.Functional.KZG.Basic
+public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+-- `simp [coeff]` and `Raw.coeff`/`Raw.mk` need CompPoly's unexposed bodies.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
 
 /-!
 # Correctness of the KZG Polynomial Commitment Scheme
@@ -23,6 +27,8 @@ The main algebraic theorem is `KZG.correctness`; the interface-level theorem is
 
 This file proves correctness from the definitions.
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 

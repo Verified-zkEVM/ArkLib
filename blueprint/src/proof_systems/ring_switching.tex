@@ -49,17 +49,18 @@ packing, the honest folded element, and the batched multiplier. In a nontrivial 
 exclude an identically zero coordinate map; they do not by themselves establish a valid protocol
 instance or non-vacuous security theorem.
 
-\begin{definition}[Binius instance]
-  \lean{RingSwitching.binaryTowerProfile}
-  \uses{def:ring_switching_profile, def:binary_tower_field}
-  \label{def:binary_tower_profile}
-  For binary-tower fields $B = K$, $L$ a degree-$2^\kappa$ extension, the profile takes the
+\begin{definition}[Tensor-product profile]
+  \lean{RingSwitching.tensorProductProfile}
+  \uses{def:ring_switching_profile}
+  \label{def:tensor_product_profile}
+  For any fields $B = K$ and $L$ with a chosen degree-$2^\kappa$ extension basis, the profile takes the
   \emph{tensor carrier} $A := L \otimes_K L$, with $\varphi_0(\alpha) = \alpha \otimes 1$,
   $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
   for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
   $L$-module structures on $A$, giving columns and rows respectively. Thus
   $z = \sum_v z_v \otimes \beta_v = \sum_u \beta_u \otimes z_u$. Laws \eqref{eq:rs-rows}--\eqref{eq:rs-cols} hold by
-  \texttt{Basis.sum\_repr} on these bases and are proven in ArkLib.
+  \texttt{Basis.sum\_repr} on these bases and are proven in ArkLib. Binius uses this constructor
+  with its binary-tower basis.
 \end{definition}
 
 The Hachi construction \cite{NOZ26} is the intended second instance: $L = R_q$ a cyclotomic ring,

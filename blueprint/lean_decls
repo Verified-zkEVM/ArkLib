@@ -115,7 +115,7 @@ CheckClaim.reduction
 CheckClaim.reduction_completeness
 CheckClaim.oracleReduction
 RingSwitching.RingSwitchingProfile
-RingSwitching.binaryTowerProfile
+RingSwitching.tensorProductProfile
 RingSwitching.packMLE
 RingSwitching.BatchingPhase.batchingOracleReduction
 RingSwitching.SumcheckPhase.coreInteractionOracleReduction

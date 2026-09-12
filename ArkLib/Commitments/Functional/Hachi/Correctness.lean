@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.HonestChain
-import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
-import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+module
+
+public import ArkLib.Commitments.Functional.Hachi.HonestChain
+public import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
 # Nonrecursive Hachi: the terminal reveal-and-check and perfect correctness
@@ -66,6 +68,8 @@ and using each suffix's completeness from every shared oracle state.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

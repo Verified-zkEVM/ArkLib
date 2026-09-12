@@ -3,10 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
-import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps
 
 /-!
 ## Binary Basefold Core Interaction Phase
@@ -37,6 +38,17 @@ We define `(P, V)` as the following IOP, in which both parties have the common i
 - V verifies: `s_ℓ = eqTilde(r, r') * c`
 => `c` should be equal to `t(r'_0, ..., r'_{ℓ-1})`
 -/
+
+@[expose] public section
+
+/- The composed verifier/reduction bundles below are `def`s whose *inferred* type embeds the
+inline `Fin` bounds proofs written in their bodies. Under the module system's default, such a
+proof is abstracted into a private auxiliary theorem, which a public signature may not mention;
+exposing the bodies instead delays every `by` until the (still unknown) result type is solved.
+`backward.proofsInPublic` restores the classic elaboration these definitions were written
+against. See docs/wiki/module-system.md. -/
+set_option backward.proofsInPublic true
+
 namespace Binius.BinaryBasefold.CoreInteraction
 
 noncomputable section
@@ -56,7 +68,7 @@ variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
-private theorem instOracleStatementBinaryBasefold_heq_of_index_eq
+theorem instOracleStatementBinaryBasefold_heq_of_index_eq
     {i i' : Fin (ℓ + 1)} (h : i = i') :
     HEq
       (instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)

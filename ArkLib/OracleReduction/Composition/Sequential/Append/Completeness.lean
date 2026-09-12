@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Richard Goodman, ArkLib Contributors
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
+public import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
 
 /-!
 # Completeness of sequential composition under explicit state assumptions
@@ -18,6 +19,8 @@ sufficient execution hypotheses.
 
 * [Richard Goodman, completeness](https://github.com/Verified-zkEVM/ArkLib/pull/635).
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal ENNReal

@@ -3,11 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
-import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
-import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
-import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
+public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 
 /-!
 # Core Interaction Phase of FRI-Binius IOPCS
@@ -31,6 +32,15 @@ This phase combines sumcheck and FRI folding using shared challenges r'ᵢ:
                                   `r''_0, ..., r''_{κ-1}) * e_u) * c`.
 -/
 
+@[expose] public section
+
+/- These composed protocol bundles are `def`s whose *inferred* type embeds the inline `Fin` bounds
+proofs written in their bodies, so the module system's default elaboration either delays every `by`
+until the still-unknown result type is solved, or abstracts the proof into a private auxiliary
+theorem a public signature may not mention. `backward.proofsInPublic` restores the classic
+elaboration these definitions were written against. See docs/wiki/module-system.md. -/
+set_option backward.proofsInPublic true
+
 namespace Binius.FRIBinius.CoreInteractionPhase
 noncomputable section
 
@@ -53,10 +63,10 @@ variable (h_l : ℓ = ℓ' + κ)
 variable [hdiv : Fact (ϑ ∣ ℓ')]
 
 /-- The Binius ring-switching profile, built from the boolean-hypercube basis derived from `β`.
-Kept defeq to `binaryTowerProfile … (booleanHypercubeBasis …)` so all downstream RingSwitching
+Kept defeq to `tensorProductProfile … (booleanHypercubeBasis …)` so all downstream RingSwitching
 semantics and axioms are preserved. -/
 def biniusProfile : RingSwitching.RingSwitchingProfile K L κ :=
-  RingSwitching.binaryTowerProfile κ K L (booleanHypercubeBasis κ L K β)
+  RingSwitching.tensorProductProfile κ K L (booleanHypercubeBasis κ L K β)
 
 section SumcheckFold
 

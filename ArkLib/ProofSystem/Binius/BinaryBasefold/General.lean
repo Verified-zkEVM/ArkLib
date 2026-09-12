@@ -3,11 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
-import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
-import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
-import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 
 /-!
 ## Full Binary Basefold Protocol
@@ -20,6 +21,8 @@ Sequential composition of:
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
 -/
+
+@[expose] public section
 
 open AdditiveNTT Polynomial
 

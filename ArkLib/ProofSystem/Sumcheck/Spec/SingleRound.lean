@@ -3,17 +3,20 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.OracleReduction.LiftContext.OracleReduction
-import ArkLib.OracleReduction.LiftContext.Purity
-import VCVio.OracleComp.SimSemantics.OptionT.Basic
-import ArkLib.ProofSystem.Component.SendClaim
-import ArkLib.ProofSystem.Component.CheckClaim
-import ArkLib.ProofSystem.Component.RandomQuery
-import ArkLib.ProofSystem.Component.ReduceClaim
-import ArkLib.Data.Fin.Basic
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.OracleReduction.LiftContext.OracleReduction
+public import ArkLib.OracleReduction.LiftContext.Purity
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import ArkLib.ProofSystem.Component.SendClaim
+public import ArkLib.ProofSystem.Component.CheckClaim
+public import ArkLib.ProofSystem.Component.RandomQuery
+public import ArkLib.ProofSystem.Component.ReduceClaim
+public import ArkLib.Data.Fin.Basic
+-- `Vector.finRange` is unfolded by `rw` below; its body is not exposed by default.
+import all Init.Data.Vector.FinRange
 
 /-!
 # Single round of the Sum-check Protocol
@@ -101,6 +104,8 @@ The virtual aspect is because of the substitution: `d = d' = s_i(X)`, where reca
 The predicate is that `∑ y ∈ D, s_i(y) = claim_i`.
 
 -/
+
+@[expose] public section
 
 namespace Sumcheck
 

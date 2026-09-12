@@ -3,12 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
-import Mathlib.Algebra.Order.Floor.Div
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
+public import Mathlib.Algebra.Order.Floor.Div
+-- `simp` must reduce `Polynomial.instAdd`, whose body mathlib does not expose.
+import all Mathlib.Algebra.Polynomial.Basic
 
 /-! Internal BCHKS25 interpolation and collision-counting machinery. -/
+
+@[expose] public section
 
 -- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
 set_option backward.isDefEq.respectTransparency false

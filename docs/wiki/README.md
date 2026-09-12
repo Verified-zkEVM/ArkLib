@@ -11,8 +11,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`quickstart.md`](quickstart.md) - canonical agent command and validation playbook.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of truth.
-- [`module-system.md`](module-system.md) - where ArkLib stands relative to Lean's module system,
-  and what a migration would have to solve.
+- [`module-system.md`](module-system.md) - Lean's module system: the canonical file shape, the
+  error-to-fix table, the measured payoff, and what tightening is still on the table.
 - [`blueprint-and-citations.md`](blueprint-and-citations.md) - blueprint workflow, paper
   references, and citation keys.
 - [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
@@ -24,6 +24,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   and trivariate polynomial representations.
 - [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
+- [`interaction-naming.md`](interaction-naming.md) - intrinsic meanings and migration of typed
+  interaction sources, named oracle contexts, and sequential composition.
 - [`sequential-composition.md`](sequential-composition.md) - theorem selection for shared-state
   execution, completeness, and round-by-round soundness.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
@@ -40,13 +42,14 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `quickstart.md` for commands, validation, and when to run which checks.
   - `repo-map.md` for repo structure and main work areas.
   - `generated-files.md` for derived outputs and source-of-truth rules.
-  - `module-system.md` for ArkLib's position on Lean's module system and the migration blockers.
+  - `module-system.md` for the module-system conventions every file under `ArkLib/` follows.
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
   - `coding-theory-conventions.md` for notation, types and local conventions in `CodingTheory/`.
   - `polynomial-conventions.md` for nested polynomial axes and semantic evaluation/degree APIs.
   - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
     notions in `CodingTheory/ProximityGap/`.
+  - `interaction-naming.md` for typed interaction API meanings and name migrations.
   - `sequential-composition.md` for composition APIs and their hypotheses.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.

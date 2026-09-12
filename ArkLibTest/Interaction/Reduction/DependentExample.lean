@@ -8,7 +8,7 @@ import ArkLib.Interaction.Reduction
 /-!
 # A genuinely dependent composed reduction
 
-This executable acceptance client prevents `Reduction.comp` from collapsing to a fixed suffix.
+This executable acceptance client prevents `Reduction.then` from collapsing to a fixed suffix.
 The prefix sends a `Bool`. A `false` prefix selects a `Bool` suffix message, while a `true` prefix
 selects a `Fin 3` suffix message. Both branches execute through the same composed reduction.
 -/
@@ -95,8 +95,8 @@ def suffixReduction : Reduction Id SuffixShared
     | ⟨(), (), ⟨false, ⟨⟩⟩⟩ => fun (bit : Bool) => (if bit then 1 else 0 : Nat)
     | ⟨(), (), ⟨true, ⟨⟩⟩⟩ => fun (value : Fin 3) => value.val
 
-/-- The dependent two-stage reduction produced by `Reduction.comp`. -/
-def composed := Reduction.comp
+/-- The dependent two-stage reduction produced by `Reduction.then`. -/
+def composed := Reduction.then
   (ctx₂ := fun _ => suffixTree)
   (roles₂ := fun _ => suffixRoles)
   (StmtOut := fun _ _ _ => Nat)
@@ -149,7 +149,7 @@ def observingSuffix : Reduction Id SuffixShared
   verifier _ stmt := stmt
 
 /-- The suffix sees the prover's `true`, the verifier's `false`, and the private witness `7`. -/
-example : (Reduction.comp
+example : (Reduction.then
     (ctx₂ := fun _ _ => TypeTree.done) (roles₂ := fun _ _ => ⟨⟩)
     (StmtOut := fun _ _ _ => Bool) (WitOut := fun _ _ _ => Nat)
     disagreeingPrefix observingSuffix).execute () () false =

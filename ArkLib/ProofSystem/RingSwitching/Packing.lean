@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.ProofSystem.RingSwitching.Packing.Profile
-import ArkLib.ProofSystem.RingSwitching.Packing.General
+module
+
+public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
+public import ArkLib.ProofSystem.RingSwitching.Packing.General
 
 /-!
 # `Packing`: packing small-ring coordinates into large-ring elements
@@ -48,8 +50,8 @@ The *opposite-direction* `Lift` construction—from a large quotient ring down i
   embeddings, coordinate maps, reconstruction laws).
 * `Prelude.lean` — the packing algebra and protocol vocabulary: `packMLE`/`unpackMLE`, the
   carrier operations, the verifier's coordinate subroutine `eqWeightedCoordSum`, statement/
-  witness types, the `MLIOPCS` downstream-opening interface, and the binary-tower instance
-  `binaryTowerProfile`. Its component-wise carrier embedding is the `d = 1` case of the
+  witness types, the `MLIOPCS` downstream-opening interface, and the tensor-product constructor
+  `tensorProductProfile`. Its component-wise carrier embedding is the `d = 1` case of the
   family-shared coefficient transport (`../Transport/Coeffs.lean`).
 * `Spec.lean` — the transcript shape: the batching round (message then scalar challenge),
   the sumcheck loop, and the final one-message round (the family-shared wire
@@ -79,3 +81,5 @@ The *opposite-direction* `Lift` construction—from a large quotient ring down i
 * [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
   Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
 -/
+
+@[expose] public section

@@ -3,11 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.LinearAlgebra.Basis.Defs
-import Mathlib.Algebra.Algebra.Defs
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Data.Fintype.Pi
+public import Mathlib.LinearAlgebra.Basis.Defs
+public import Mathlib.Algebra.Algebra.Defs
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Data.Fintype.Pi
 
 /-!
 # The packing profile — data layer of `Packing`
@@ -41,8 +42,8 @@ to `packMLE`, the honest folded element, and the instance's own algebraic identi
   The `Field`-only steps (Schwartz–Zippel over `|L|`) stay at the soundness use-sites, not
   here.
 * This file holds only the abstract structure, so the sibling `Prelude.lean` can import it
-  and parameterize the interactive protocol over it; the binary-tower instance
-  `binaryTowerProfile` lives in `Prelude.lean`, after the tensor-algebra definitions it is
+  and parameterize the interactive protocol over it; the tensor-product constructor
+  `tensorProductProfile` lives in `Prelude.lean`, after the tensor-algebra definitions it is
   built from.
 
 ## Instantiations
@@ -55,7 +56,7 @@ to `packMLE`, the honest folded element, and the instance's own algebraic identi
 | `φ₀`, `φ₁` | `α ↦ α ⊗ 1`, `α ↦ 1 ⊗ α` | `id`, the automorphism `σ₋₁` |
 | `decomposeRows`/`Columns` | `L`-coords of `ŝ` in `L ⊗_K L` | coords of `Y ∈ R_q` via `ψ` |
 
-The implemented profile is `binaryTowerProfile`; the Hachi column records a proposed adapter,
+The implemented profile is `tensorProductProfile`; the Hachi column records a proposed adapter,
 whose reconstruction and protocol identities remain to be proved. The tensor profile discharges
 both reconstruction laws by `Basis.sum_repr` for the corresponding base-changed basis.
 The `Lift` construction
@@ -73,6 +74,8 @@ statements.
 * [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based Multilinear
   Polynomial Commitments over Extension Fields."
 -/
+
+@[expose] public section
 
 namespace RingSwitching
 

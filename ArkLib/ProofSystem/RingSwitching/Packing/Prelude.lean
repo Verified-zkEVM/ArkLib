@@ -3,16 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.OracleReduction.Basic
-import ArkLib.OracleReduction.Security.RoundByRound
-import CompPoly.LinearAlgebra.TensorProduct.Basis
-import ArkLib.ProofSystem.RingSwitching.Packing.Profile
-import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
-import ArkLib.ProofSystem.Sumcheck.Structured
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Data.Matrix.Basic
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.OracleReduction.Basic
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import CompPoly.LinearAlgebra.TensorProduct.Basis
+public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
+public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
+public import ArkLib.ProofSystem.Sumcheck.Structured
+public import Mathlib.Data.Fintype.Basic
+public import Mathlib.Data.Matrix.Basic
 
 /-!
 # Packing algebra and protocol vocabulary
@@ -29,7 +30,7 @@ message flow.
    claim-preserving change of ring that the protocol then has to make checkable.
 2. **Carrier operations** — the tensor-algebra carrier `L ⊗[K] L` with its two embeddings
    `φ₀ = · ⊗ 1`, `φ₁ = 1 ⊗ ·` and its row/column coordinate maps: the concrete data behind
-   the binary-tower profile instance `binaryTowerProfile` (defined at the end of this file).
+   the tensor-product profile `tensorProductProfile` (defined at the end of this file).
 3. **Protocol subroutines** — `embedded_MLP_eval`, the honest folded carrier element
    (the packed polynomial, coefficients embedded via `φ₁`, evaluated at the `φ₀`-image of
    the point's tail); `eqWeightedCoordSum`, the verifier's coordinate-reconstruction
@@ -47,6 +48,8 @@ message flow.
 * [Diamond, B. E., and Posen, J., *Polylogarithmic Proofs for Multilinears over
   Binary Towers*][DP24], §2.5.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -70,7 +73,7 @@ section TensorAlgebraOps
 /-!
 ## The tensor-algebra carrier
 
-The concrete carrier of the binary-tower instance: `A = L ⊗[K] L`, its two embeddings
+The tensor-product carrier: `A = L ⊗[K] L`, its two embeddings
 `φ₀ = · ⊗ 1` and `φ₁ = 1 ⊗ ·`, and the row/column coordinate maps with respect to a
 `K`-basis `β` of `L`.
 -/
@@ -471,7 +474,7 @@ open Module in
 
 The two ring homomorphisms send `x` to `x ⊗ 1` and `1 ⊗ x`. Row coordinates use the
 right-factor scalar action, and column coordinates use the left-factor scalar action. -/
-@[reducible] def binaryTowerProfile (κ : ℕ) [NeZero κ] (K L : Type)
+@[reducible] def tensorProductProfile (κ : ℕ) [NeZero κ] (K L : Type)
     [Field K] [Field L] [Algebra K L] (β : Module.Basis (Fin κ → Fin 2) K L) :
     RingSwitchingProfile K L κ where
   basis := β

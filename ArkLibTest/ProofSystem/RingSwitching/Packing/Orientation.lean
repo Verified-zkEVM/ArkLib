@@ -27,7 +27,7 @@ private abbrev L := ConcreteBTField 1
 local instance : Algebra K L := ConcreteBTFieldAlgebra (h_le := by decide)
 private def beta : Basis (Fin 1 → Fin 2) K L :=
   (basisSucc 0).reindex (Equiv.funUnique (Fin 1) (Fin 2)).symm
-private def p : RingSwitchingProfile K L 1 := binaryTowerProfile 1 K L beta
+private def p : RingSwitchingProfile K L 1 := tensorProductProfile 1 K L beta
 private def t : MultilinearPoly K 2 :=
   ⟨X 0, by
     rw [mem_restrictDegree_iff_degreeOf_le]

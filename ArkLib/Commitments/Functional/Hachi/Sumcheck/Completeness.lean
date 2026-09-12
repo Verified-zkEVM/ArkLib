@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
-import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
   # The honest side of the Hachi sumcheck (§4.3)
@@ -47,6 +49,8 @@ import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

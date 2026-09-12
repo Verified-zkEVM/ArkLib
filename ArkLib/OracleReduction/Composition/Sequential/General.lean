@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Composition.Sequential.Append
+public import ArkLib.OracleReduction.Composition.Sequential.Append
 
 /-!
   # Sequential Composition of Many Oracle Reductions
@@ -17,6 +18,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   live in `Sequential/Completeness.lean`, `Sequential/GuardedNary.lean`, and
   `Sequential/OracleCompleteness.lean`, with explicit shared-state hypotheses.
 -/
+
+@[expose] public section
 
 open ProtocolSpec OracleComp
 

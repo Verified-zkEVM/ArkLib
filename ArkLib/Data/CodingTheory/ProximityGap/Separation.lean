@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
-import ArkLib.Data.CodingTheory.InterleavedCode
-import Mathlib.FieldTheory.Finite.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Mutual correlated agreement is strictly stronger than correlated agreement
@@ -50,6 +51,8 @@ and no correlated-agreement definition appears in any statement below. The quant
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace MCASeparation
 
