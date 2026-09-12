@@ -3,15 +3,16 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, Ilia Vlasov
 -/
+module
 
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Bivariate
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Eval.Irreducible
-import Mathlib.FieldTheory.RatFunc.Basic
-import Mathlib.FieldTheory.Separable
-import Mathlib.RingTheory.Ideal.Span
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Algebra.Polynomial.Bivariate
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Algebra.Polynomial.Eval.Irreducible
+public import Mathlib.FieldTheory.RatFunc.Basic
+public import Mathlib.FieldTheory.Separable
+public import Mathlib.RingTheory.Ideal.Span
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 
 /-!
   # Preliminary Definitions and Theorems on polynomials and rings of rational functions.
@@ -34,6 +35,8 @@ import Mathlib.RingTheory.Polynomial.Resultant.Basic
   TODO: if / when this file gets too large, we need to split it into smaller files (esp. since the
   definitions are distinct)
 -/
+
+@[expose] public section
 
 open Polynomial
 open Polynomial.Bivariate

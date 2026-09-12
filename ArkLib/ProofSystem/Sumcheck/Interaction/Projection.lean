@@ -3,9 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
+module
+
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
 
 /-! # Virtual multivariate projection feeds the actual single-round executor -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.SingleRound
 
@@ -17,15 +21,15 @@ noncomputable section
 
 variable (R : Type) [CommSemiring R] (n deg : ℕ) {m : ℕ} (D : Fin m ↪ R)
 
-/-- The existing executable round projection, packaged as a derived oracle plan. -/
-def projectionView (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc) :
+/-- The existing executable round projection, packaged as a derived oracle program. -/
+def projectionOracle (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc) :
     VirtualOracle [Spec.OracleStatement R n deg]ₒ (outputFamily R deg) where
   query := simulateProjectedRoundPolynomial R n deg D i stmt
 
 /-- Interpreting the virtual projection agrees with the honest projected polynomial. -/
-theorem projectionView_eval (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
+theorem projectionOracle_eval (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (p : Spec.OracleStatement R n deg ()) (x : R) :
-    (projectionView R n deg D i stmt).eval
+    (projectionOracle R n deg D i stmt).eval
       (OracleInterface.simOracle0 (Spec.OracleStatement R n deg) (fun _ => p)) ⟨(), x⟩ =
       (projectedRoundPolynomial R n deg D i stmt.challenges p).val.eval x := by
   exact simulateProjectedRoundPolynomial_eq R n deg D i stmt (fun _ => p) ⟨(), x⟩
@@ -33,16 +37,16 @@ theorem projectionView_eval (i : Fin n) (stmt : Spec.StatementRound R n i.castSu
 /-- Adapt the derived family to the single input evaluation signature without materializing it. -/
 def projectedInput (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (p : Spec.OracleStatement R n deg ()) : QueryImpl (inputSpec R) Id :=
-  fun x => (projectionView R n deg D i stmt).eval
+  fun x => (projectionOracle R n deg D i stmt).eval
     (OracleInterface.simOracle0 (Spec.OracleStatement R n deg) (fun _ => p)) ⟨(), x⟩
 
-/-- Equality of behavior is a theorem, not a replacement of the operational projection plan. -/
+/-- Equality of behavior is a theorem, not a replacement of the operational projection program. -/
 theorem projectedInput_eq (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (p : Spec.OracleStatement R n deg ()) :
     projectedInput R n deg D i stmt p =
       inputImpl R deg (projectedRoundPolynomial R n deg D i stmt.challenges p) := by
   funext x
-  exact projectionView_eval R n deg D i stmt p x
+  exact projectionOracle_eval R n deg D i stmt p x
 
 /-- The executor closes its own output to the honest projected polynomial's behavior. -/
 theorem executeCore_projected_closed [DecidableEq R] {ι : Type} (ambient : OracleSpec ι)
@@ -54,7 +58,7 @@ theorem executeCore_projected_closed [DecidableEq R] {ι : Type} (ambient : Orac
       executeCore (claimReduction R deg ambient (Finset.univ.map D).toList r)
         (projectedInput R n deg D i stmt p) stmt.target
         (projectedRoundPolynomial R n deg D i stmt.challenges p) =
-      pure (some (honestData R deg
+      pure (some (honestClaim R deg
         (projectedRoundPolynomial R n deg D i stmt.challenges p) r).toClosed) := by
   rw [projectedInput_eq]
   exact executeCore_closed R deg ambient _ _ _ _ h

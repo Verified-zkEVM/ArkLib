@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.Concrete
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
-import Mathlib.Tactic.NormNum.Prime
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Concrete
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
+public import Mathlib.Tactic.NormNum.Prime
 
 /-!
 # The `ℓ = 30` Hachi parameters, at `τ = 5`
@@ -87,6 +89,8 @@ what `BoundedDigitDecomposition` (`Gadget/Core.lean`) is for.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter.HachiParams
 
