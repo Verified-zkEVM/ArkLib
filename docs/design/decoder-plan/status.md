@@ -3,7 +3,8 @@
 Source checkpoint: `3c67cb3fa669985b2add6c5d080a3060c4728789`, validated on 2026-09-11.
 Use the [current task board](README.md#current-task-board) for subsequent assignments and revisions.
 The [Taylor checkpoint](taylor-checkpoint.md) records the newer bounded projection, nilpotence,
-monic arithmetic, shift, chart-payload and single-center slices. The foundation inventory below
+computed quotient inversion, exact local-equation conversion, shift, chart-payload and batched-center
+slices. The foundation inventory below
 describes the pinned source checkpoint, not completion of the remaining producers.
 All source paths below are relative to `ArkLib/Data/CodingTheory/ReedSolomon/` unless stated otherwise.
 

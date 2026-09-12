@@ -42,8 +42,8 @@ G06 still needs descent through every projection fiber, the chart-derived univer
 bound, multiplicity of the actual norm product, and candidate assembly/coverage. Generic root
 coverage from a product identity is not yet this chart-dependent candidate theorem.
 
-Personal 1 continues to own G01/G02/G06. Personal 3 is active on G07/G08/G09, including the
-constructed-field dependency; it is not deferred. Personal 4 owns shared chart validity and
+Personal 1 continues to own G01/G02/G06. Personal 3 owns G07/G08/G09, including the
+constructed-field dependency; those groups have returned checkpoints and are not deferred. Personal 4 owns shared chart validity and
 coverage, Taylor construction, zeroth-order composition and integration. The payload is already
 available at `21310026e...`; full chart validity/coverage remains a separate contract.
 

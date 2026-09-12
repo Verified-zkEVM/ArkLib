@@ -55,6 +55,16 @@ import ArkLibTest.Data.Polynomial.FullSquarefreeDecomposition.TreeRefinement
 import ArkLibTest.Data.Polynomial.NormProducts.MultiplicationMatrix
 import
 ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.FirstOrderNormProducer.UniversalAgreements
+import ArkLibTest.Data.Polynomial.ConfluentAlgebra.Inverse
+import
+  ArkLibTest.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.Geometry.Matrix
+import ArkLibTest.Data.MvPolynomial.TaylorReconstruction.LocalEquation
+import ArkLibTest.Data.Polynomial.NewtonInverse
+import ArkLibTest.Data.Polynomial.ConfluentAlgebra.Structure
+import ArkLibTest.Data.MvPolynomial.NonvanishingGrid
+import ArkLibTest.Data.CodingTheory.ReedSolomon.ListDecoding.ZerothOrderDecoder.BatchedCenter
+import ArkLibTest.Data.Polynomial.ConfluentAlgebra.ParameterKernel
+import ArkLibTest.Data.MvPolynomial.TaylorReconstruction.UnivariateView
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -141,6 +151,15 @@ def run : IO Unit := do
   FastTaylorChartDataTests.run
   FastTaylorLinearSubstitutionTests.run
   ZerothOrderCenterSearchTests.run
+  ConfluentInverseTests.run
+  ProjectionMatrixTests.run
+  LocalEquationTests.run
+  NewtonInverseTests.run
+  ConfluentStructureTests.run
+  ConfluentParameterKernelTests.run
+  NonvanishingGridTests.run
+  UnivariateViewTests.run
+  ZerothOrderBatchedCenterTests.run
   check "constant-message balanced frequency map" <|
     ConstantDecoder.decode compare 3 ([4, 2, 4, 4, 2, 7] : List Nat) == [[4]]
   let x : CPolynomial (ZMod 5) := CPolynomial.X

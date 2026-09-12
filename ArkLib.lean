@@ -658,6 +658,8 @@ public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.DegreeBounds.SpecializationDegree
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.ChartData
 public import
+ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.Geometry.Matrix
+public import
 ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FastTaylor.Geometry.Projection
 public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.RootFinding.FiniteField.Counting
 public import
@@ -1019,6 +1021,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.Red
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerAlgebra.SplitZeroUnit
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.TowerRepresentation
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.UniformRateExecution
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ZerothOrderDecoder.BatchedCenter
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecoding.ZerothOrderDecoder.CenterSearch
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
@@ -1582,6 +1585,7 @@ public import ArkLib.Data.MvPolynomial.IsolatedRoot
 public import ArkLib.Data.MvPolynomial.LinearMvExtension
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
+public import ArkLib.Data.MvPolynomial.NonvanishingGrid
 public import ArkLib.Data.MvPolynomial.PartialDerivativeMachine
 public import ArkLib.Data.MvPolynomial.PartialDerivativeMachineCanary
 public import ArkLib.Data.MvPolynomial.PartialDerivativeRefinement
@@ -1598,6 +1602,8 @@ public import ArkLib.Data.MvPolynomial.SeparantChainBounds
 public import ArkLib.Data.MvPolynomial.SeparantChainMachine
 public import ArkLib.Data.MvPolynomial.SeparantChainMachineCanary
 public import ArkLib.Data.MvPolynomial.TaylorReconstruction.AffineShift
+public import ArkLib.Data.MvPolynomial.TaylorReconstruction.LocalEquation
+public import ArkLib.Data.MvPolynomial.TaylorReconstruction.UnivariateView
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.Polynomial.AffinePowerTruncationMachine
 public import ArkLib.Data.Polynomial.AffinePowerTruncationMachineCanary
@@ -1609,7 +1615,10 @@ public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.CoefficientList
 public import ArkLib.Data.Polynomial.CoefficientUpdateMachine
 public import ArkLib.Data.Polynomial.CoefficientUpdateMachineCanary
+public import ArkLib.Data.Polynomial.ConfluentAlgebra.Inverse
 public import ArkLib.Data.Polynomial.ConfluentAlgebra.MonicArithmetic
+public import ArkLib.Data.Polynomial.ConfluentAlgebra.ParameterKernel
+public import ArkLib.Data.Polynomial.ConfluentAlgebra.Structure
 public import ArkLib.Data.Polynomial.DegreeTruncationMachine
 public import ArkLib.Data.Polynomial.DegreeTruncationMachineCanary
 public import ArkLib.Data.Polynomial.DegreeTruncationSemantics
@@ -1635,6 +1644,7 @@ public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.JetHornerMachine
 public import ArkLib.Data.Polynomial.JetHornerMachineCanary
 public import ArkLib.Data.Polynomial.ModularInverse
+public import ArkLib.Data.Polynomial.NewtonInverse
 public import ArkLib.Data.Polynomial.NilpotentInverse
 public import ArkLib.Data.Polynomial.NonvanishingSearch
 public import ArkLib.Data.Polynomial.NormProducts.MultiplicationMatrix
