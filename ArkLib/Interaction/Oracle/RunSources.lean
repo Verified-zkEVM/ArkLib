@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Access
-import ArkLib.Interaction.Oracle.Source
+module
+
+public import ArkLib.Interaction.Oracle.Access
+public import ArkLib.Interaction.Oracle.Source
 
 /-!
 # Sources of a completed oracle execution
@@ -13,6 +15,8 @@ A structural path determines the types of messages, while a concrete execution s
 values. Together with arbitrary input behavior these values realize exactly the final accumulated
 access signature. No inhabitance or reachability of arbitrary structural paths is assumed.
 -/
+
+@[expose] public section
 
 universe u v
 
@@ -45,7 +49,7 @@ def answerAfter : (tree : Oracle.TypeTree.{u}) → (oracles : tree.OracleDecorat
 
 /-- The canonical extensional source behind final access; its environment contains input behavior
 and the messages of this structural branch, never objects for unvisited branches. -/
-def sourcesAfter (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration.{u, v})
+def sourceAfter (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration.{u, v})
     (initial : PFunctor.{v, u}) (path : tree.BranchPath) :
     SourceCtx (accessAfter tree oracles initial path).A
       (QueryImpl (OracleSpec.ofPFunctor initial) Id × OracleMessagesAt tree path) where
@@ -53,10 +57,10 @@ def sourcesAfter (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration.{
   impl := fun query env => answerAfter tree oracles initial path env.1 env.2 query
 
 /-- Final source interpretation uses the execution-order handler extension. -/
-theorem sourcesAfter_handler (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration.{u, v})
+theorem sourceAfter_handler (tree : Oracle.TypeTree.{u}) (oracles : tree.OracleDecoration.{u, v})
     (initial : PFunctor.{v, u}) (path : tree.BranchPath)
     (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (messages : OracleMessagesAt tree path) :
-    (sourcesAfter tree oracles initial path).handler (impl, messages) =
+    (sourceAfter tree oracles initial path).handler (impl, messages) =
       answerAfter tree oracles initial path impl messages := rfl
 
 /-- Final source behavior canonically extracted from one concrete path and its input behavior. -/

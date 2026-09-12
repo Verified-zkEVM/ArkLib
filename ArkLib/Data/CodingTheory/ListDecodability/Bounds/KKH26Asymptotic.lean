@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
-import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Mathlib.Analysis.SpecificLimits.Normed
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import Mathlib.Analysis.SpecialFunctions.Log.Base
+public import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
 # Asymptotic Reed--Solomon list-size lower bound
@@ -46,6 +47,8 @@ Its main components are:
 - [ABF26] Arnon, Boneh, Fenzi. *Open Problems in List Decoding and Correlated Agreement*. 2026.
 - [KKH26] Krachun, Kazanin, Haböck. *Failure of proximity gaps close to capacity*. ePrint 2026/782.
 -/
+
+@[expose] public section
 
 
 open Polynomial Finset Code ProximityGap Real Filter Topology

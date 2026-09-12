@@ -3,15 +3,17 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Packing
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Bijectivity
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Field
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.NormBound
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Packing
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Bijectivity
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Factorization
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Field
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.NormBound
 
 /-!
 # Hachi §3 in Lean: the Subfield Layer of `R_q` (Lemma 5, Theorem 2, Lemma 6)
@@ -127,3 +129,5 @@ The Section 3 results:
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

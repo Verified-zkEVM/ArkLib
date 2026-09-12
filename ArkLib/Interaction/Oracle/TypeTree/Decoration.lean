@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.TypeTree
-import ArkLib.OracleReduction.OracleInterface
-import PolyFun.Interaction.TwoParty.Decoration
-import PolyFun.PFunctor.Free.Displayed.Cursor
+module
+
+public import ArkLib.Interaction.Oracle.TypeTree
+public import ArkLib.OracleReduction.OracleInterface
+public import PolyFun.Interaction.TwoParty.Decoration
+public import PolyFun.PFunctor.Free.Displayed.Cursor
 
 /-!
 # Decorations on oracle interaction type trees
@@ -20,6 +22,8 @@ decorations in this file attach only the data appropriate to that position:
 Both are specializations of PolyFun's generic node decoration, so they inherit structural maps and
 cursor restriction. Oracle nodes project to sender-owned runtime nodes.
 -/
+
+@[expose] public section
 
 universe u v
 
@@ -98,36 +102,36 @@ theorem restrict_comp {tree : Oracle.TypeTree.{u}} (first : PFunctor.FreeM.Curso
   Decoration.restrict_comp first second roles
 
 /-- Make the implicit sender role at oracle nodes explicit for lens-native runtime clients. -/
-def toRuntimeRoles {tree : Oracle.TypeTree.{u}} (roles : RoleDecoration tree) :
+def toExplicitRoles {tree : Oracle.TypeTree.{u}} (roles : RoleDecoration tree) :
     TwoParty.RoleDecorationOver (P := basePFunctor) tree :=
   Decoration.map (P := basePFunctor) (α := PUnit.{u + 1})
     RoleContext.toRuntime tree roles
 
 @[simp]
-theorem toRuntimeRoles_done (roles : RoleDecoration (Oracle.TypeTree.done : Oracle.TypeTree.{u})) :
-    toRuntimeRoles roles = ⟨⟩ :=
+theorem toExplicitRoles_done (roles : RoleDecoration (Oracle.TypeTree.done : Oracle.TypeTree.{u})) :
+    toExplicitRoles roles = ⟨⟩ :=
   rfl
 
 @[simp]
-theorem toRuntimeRoles_public (Moves : Type u) (rest : Moves → Oracle.TypeTree.{u})
+theorem toExplicitRoles_public (Moves : Type u) (rest : Moves → Oracle.TypeTree.{u})
     (roles : RoleDecoration (Oracle.TypeTree.public Moves rest)) :
-    toRuntimeRoles roles = ⟨roles.1, fun move => toRuntimeRoles (roles.2 move)⟩ :=
+    toExplicitRoles roles = ⟨roles.1, fun move => toExplicitRoles (roles.2 move)⟩ :=
   rfl
 
 @[simp]
-theorem toRuntimeRoles_oracle (Messages : Type u)
+theorem toExplicitRoles_oracle (Messages : Type u)
     (rest : PUnit.{u + 1} → Oracle.TypeTree.{u})
     (roles : RoleDecoration (Oracle.TypeTree.oracle Messages rest)) :
-    toRuntimeRoles roles =
-      ⟨.sender, fun _ => toRuntimeRoles (roles.2 PUnit.unit)⟩ :=
+    toExplicitRoles roles =
+      ⟨.sender, fun _ => toExplicitRoles (roles.2 PUnit.unit)⟩ :=
   rfl
 
 /-- Making oracle sender ownership explicit commutes with cursor restriction. -/
-theorem toRuntimeRoles_restrict {tree : Oracle.TypeTree.{u}}
+theorem toExplicitRoles_restrict {tree : Oracle.TypeTree.{u}}
     (cursor : PFunctor.FreeM.Cursor tree) (roles : RoleDecoration tree) :
-    toRuntimeRoles (restrict cursor roles) =
-      Decoration.restrict cursor (toRuntimeRoles roles) :=
-  by simpa only [toRuntimeRoles] using
+    toExplicitRoles (restrict cursor roles) =
+      Decoration.restrict cursor (toExplicitRoles roles) :=
+  by simpa only [toExplicitRoles] using
     (Decoration.restrict_map RoleContext.toRuntime cursor roles).symm
 
 /-- Project roles to the erased generic runtime type tree. -/

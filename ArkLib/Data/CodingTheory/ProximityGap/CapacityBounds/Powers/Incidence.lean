@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import Mathlib.Combinatorics.Enumerative.DoubleCounting
-import Mathlib.LinearAlgebra.Matrix.Module
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import Mathlib.Combinatorics.Enumerative.DoubleCounting
+public import Mathlib.LinearAlgebra.Matrix.Module
 
 /-!
 # Incidence estimates for the univariate-powers MCA bound
@@ -18,6 +19,8 @@ interpolation, and initial incidence estimates consumed by `CapacityBounds.Power
 
 - [BCGM25] Bafna, Choudhary, Guruswami, and Mardia. Theorem 8.2 and Definition 8.1.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -93,7 +96,7 @@ def powers_bad_seed_embedding
   ⟨Subtype.val, Subtype.val_injective⟩
 
 open scoped BigOperators in
-private noncomputable def powers_bad_witness_of_is_mca
+noncomputable def powers_bad_witness_of_is_mca
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     {A : Type} [AddCommMonoid A] [Module F A]

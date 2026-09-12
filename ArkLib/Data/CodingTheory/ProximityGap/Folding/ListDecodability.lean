@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
-import ArkLib.Data.CodingTheory.ProximityGap.Folding
-import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
-import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
-import ArkLib.Data.Domain.CosetFftDomain.Pullback
+public import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.Domain.CosetFftDomain.Pullback
 
 /-!
 # Folding preserves list decoding (WHIR Theorem 4.20)
@@ -30,6 +31,8 @@ of the folded word, except with probability at most the sum of the per-round MCA
 * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
     with Super-Fast Verification*][ACFY24]
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -125,11 +128,11 @@ theorem folding_preserves_block_balls {d : ℕ} [FoldingContext k d n] {α : F} 
 
 open Domain Pullback
 
-private def foldingBlockAgreementAux
-  (k : ℕ)
-  (ω : SmoothCosetFftDomain n F)
-  (α : F) (u0 u1 v : Word F (Fin (2 ^ (n - 1)))) :
-  Finset ((Fin (2 ^ (n - 1))) × (Fin (2 ^ (n - k)))) :=
+def foldingBlockAgreementAux
+    (k : ℕ)
+    (ω : SmoothCosetFftDomain n F)
+    (α : F) (u0 u1 v : Word F (Fin (2 ^ (n - 1)))) :
+    Finset ((Fin (2 ^ (n - 1))) × (Fin (2 ^ (n - k)))) :=
   pullback ω 1 k <|
     complDisagreementSet (k - 1) (ω.subdomain 1) (u0 + α • u1) v
 
@@ -160,11 +163,11 @@ lemma card_foldingBlockAgreementAux_eq''
                card_complDisagreementSet,
                FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k])
 
-private def foldingBlockAgreement
-  (k : ℕ) (ω : SmoothCosetFftDomain n F)
-  (α : F) (u0 u1 v : Word F (Fin (2 ^ (n - 1)))) :
-  Finset (Fin (2 ^ (n - 1))) :=
-  pullback₁ ω 1 k <|
+def foldingBlockAgreement
+    (k : ℕ) (ω : SmoothCosetFftDomain n F)
+    (α : F) (u0 u1 v : Word F (Fin (2 ^ (n - 1)))) :
+    Finset (Fin (2 ^ (n - 1))) :=
+    pullback₁ ω 1 k <|
     complDisagreementSet (k - 1) (ω.subdomain 1) (u0 + α • u1) v
 
 lemma card_foldingBlockAgreement

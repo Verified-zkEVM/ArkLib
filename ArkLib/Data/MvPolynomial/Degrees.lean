@@ -3,12 +3,13 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Degrees
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Algebra.Group.Action.Pointwise.Finset
-import CompPoly.Data.MvPolynomial.Notation
+public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Group.Action.Pointwise.Finset
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-!
   # Lemmas about degrees of multivariate polynomials
@@ -18,6 +19,8 @@ import CompPoly.Data.MvPolynomial.Notation
 
   (will need to prove by hand first before knowing how to write the tactic)
 -/
+
+@[expose] public section
 
 noncomputable section
 

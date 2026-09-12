@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Execution
+public import ArkLib.OracleReduction.Execution
 
 /-!
   # Security Definitions for (Oracle) Reductions
@@ -23,6 +24,8 @@ import ArkLib.OracleReduction.Execution
   See other files in the same directory for more refined soundness notions (i.e. state-restoration,
   round-by-round, rewinding, etc.)
 -/
+
+@[expose] public section
 
 noncomputable section
 

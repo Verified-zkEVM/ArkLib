@@ -51,7 +51,7 @@ Land AR-1 through AR-6B in the order described in `01a`:
 1. plain dependent reductions;
 2. oracle type trees, path projections, and decorations;
 3. accumulated oracle access and execution;
-4. extensional sources and resource schemas;
+4. extensional sources, named oracle contexts, and their models;
 5. virtual substitution;
 6. open/closed claims and run-derived closing.
 

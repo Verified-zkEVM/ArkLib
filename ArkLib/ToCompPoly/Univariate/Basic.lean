@@ -3,13 +3,22 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import Mathlib.Algebra.Polynomial.Div
+module
+
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import Mathlib.Algebra.Polynomial.Div
+-- `change`/`rfl` below reduce CompPoly definitions whose bodies CompPoly does not expose.
+-- `import all` must name the module that *defines* the declaration, not an umbrella.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
+import all CompPoly.Univariate.Basic
 
 /-!
   # Additions to `CompPoly.Univariate.Basic` not yet upstreamed to CompPoly.
 -/
+
+@[expose] public section
 
 namespace CompPoly.CPolynomial
 
@@ -367,7 +376,8 @@ Noncomputable (it is `CPolynomial.ringEquiv`), and used in proofs only. -/
 noncomputable def toPolyRingHom : CPolynomial R →+* Polynomial R :=
   (CPolynomial.ringEquiv (R := R)).toRingHom
 
-@[simp] theorem toPolyRingHom_apply (p : CPolynomial R) : toPolyRingHom p = p.toPoly := rfl
+@[simp] theorem toPolyRingHom_apply (p : CPolynomial R) : toPolyRingHom p = p.toPoly := by
+  simp [toPolyRingHom]
 
 end RingHomBundlings
 

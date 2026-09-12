@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, Aristotle
 -/
+module
 
-import ArkLib.Data.Probability.Notation
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-import Mathlib.Data.Rat.Star
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.RingTheory.SimpleRing.Principal
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.Data.Rat.Star
+public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.RingTheory.SimpleRing.Principal
 
 /-! ## Schwartz-Zippel derived bound
 
@@ -17,6 +18,8 @@ finitely many variables over a (possibly inifinite) field `F`.
 
 The lemma is derived from mathlib's version `MvPolynomial.schwartz_zippel_sup_sum`.
 -/
+
+@[expose] public section
 
 open NNReal ENNReal unitInterval
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
