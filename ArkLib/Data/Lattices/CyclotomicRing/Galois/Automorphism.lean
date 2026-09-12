@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
-import ArkLib.ToMathlib.Polynomial.AevalXPow
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
+public import ArkLib.ToMathlib.Polynomial.AevalXPow
 
 /-!
 # Galois Automorphisms `σ_i : X ↦ X^i` of the Cyclotomic Ring
@@ -41,6 +43,8 @@ Following the project's two-layer discipline (cf. `CyclotomicRing/Core/Basic.lea
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial Finset
 

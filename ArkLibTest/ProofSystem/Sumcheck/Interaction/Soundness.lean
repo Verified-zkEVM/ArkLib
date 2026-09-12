@@ -52,8 +52,8 @@ example : (committedRun (ZMod 17) 1 polynomial cheating [0] 2 1).closed = none :
 #print axioms executeCommitted_eq
 #print axioms executeCommitted_soundness
 #print axioms executeRandomCommitment_soundness
-#print axioms executeCommitted_measure_soundness
-#print axioms executeRandomCommitment_measure_soundness
+#print axioms executeCommitted_measureSoundness
+#print axioms executeRandomCommitment_measureSoundness
 
 end
 end Sumcheck.Interaction.SingleRound.Test

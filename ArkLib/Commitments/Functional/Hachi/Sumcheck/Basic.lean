@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
 
 /-!
 # Hachi Sumcheck Loop
@@ -53,15 +55,15 @@ sumcheck in `ProofSystem/Sumcheck/`:
   the evaluation claim `mle[w̃](a) = y′`. Soundness is
   `finalEval_coordinateWiseSpecialSoundWith`, with its computable `finalEvalExtractor` reading
   the unique leaf opening directly; the honest half (`honestComputeY`,
-  `finalEvalReduction_perfectCompleteness`) lives there too. This is the first Hachi link whose
-  verifier can actually reject, so "the honest run cannot fail" is proved from the guard lemma
+  `finalEvalReduction_perfectCompleteness`) lives there too. Its verifier can reject, so
+  "the honest run cannot fail" is proved from the guard lemma
   rather than holding by construction.
 * `Sumcheck/Completeness.lean` — the honest side of the loop: the computable round message
   `honestComputeG` (the summand evaluated in `CPolynomial F` itself, with `X` in the free
   coordinate and constants elsewhere, summed over the remaining cube), one round's perfect
   completeness, the `m₀`-fold honest chain `roundsReduction`, and `sumcheckReduction` = bridge
-  ▷ rounds ▷ final evaluation. The `m₀`-fold and composed statements depend on the admitted
-  `Reduction.append_completeness`; the per-round ones are axiom-clean.
+  ▷ rounds ▷ final evaluation. The per-round and composed statements are axiom-clean, using
+  guarded composition and suffix completeness from every shared oracle state.
 
 This umbrella re-exports the folder (`Completeness` transitively imports `FinalEval`,
 `Rounds`, `RoundPoly` and `Bridge`). The output relation `relWEvalClaim` is the seam after an
@@ -80,3 +82,5 @@ does not have for any protocol.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

@@ -31,10 +31,11 @@ theorem second_eval (middle : Spec.StatementRound (ZMod 17) 2 1) (x : ZMod 17) :
 /-- Challenges three then five produce final target fourteen and preserve the original oracle. -/
 example :
     executeTwo (ZMod 17) 0 1 ambient 0 (univ.map domain).toList statement
-      ((family (ZMod 17) 2 1).answerData (fun _ => polynomial)) projected second 3 5 =
+      ((polynomialFamily (ZMod 17) 2 1).behaviorOfRealizations (fun _ => polynomial))
+      projected second 3 5 =
       pure (some (⟨⟨14, ![3, 5]⟩,
-        (family (ZMod 17) 2 1).answerData (fun _ => polynomial)⟩ :
-          ClosedClaim (Spec.StatementRound (ZMod 17) 2 2) (family (ZMod 17) 2 1))) := by
+        (polynomialFamily (ZMod 17) 2 1).behaviorOfRealizations (fun _ => polynomial)⟩ :
+          ClosedClaim (Spec.StatementRound (ZMod 17) 2 2) (polynomialFamily (ZMod 17) 2 1))) := by
   have h₂ : (((univ.map domain).toList).map (fun x =>
       (second ⟨projected.val.eval 3, Fin.snoc statement.challenges 3⟩).val.eval x)).sum =
       projected.val.eval 3 := by
@@ -74,7 +75,8 @@ def record : QueryImpl events (StateM (List Bool)) :=
 example :
     (simulateQ record (Option.isSome <$>
       executeTwoSampled (ZMod 17) 0 1 events 0 (univ.map domain).toList statement
-        ((family (ZMod 17) 2 1).answerData (fun _ => polynomial)) projected second
+        ((polynomialFamily (ZMod 17) 2 1).behaviorOfRealizations (fun _ => polynomial))
+        projected second
         (challengeEvent false 3) (fun _ => challengeEvent true 5))).run [] =
       (true, [false, true]) := by
   rw [executeTwoSampled_accepted (ZMod 17) 0 1 events 0 _ statement _ projected second
@@ -87,7 +89,8 @@ example :
     (simulateQ record (Option.isSome <$>
       executeTwoSampled (ZMod 17) 0 1 events 0 (univ.map domain).toList
         { statement with target := 2 }
-        ((family (ZMod 17) 2 1).answerData (fun _ => polynomial)) projected second
+        ((polynomialFamily (ZMod 17) 2 1).behaviorOfRealizations (fun _ => polynomial))
+        projected second
         (challengeEvent false 3) (fun _ => challengeEvent true 5))).run [] =
       (false, [false]) := by
   have h : (((univ.map domain).toList).map (fun x => projected.val.eval x)).sum ≠

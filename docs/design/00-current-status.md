@@ -109,8 +109,8 @@ The current source audit preserves the central model:
 4. Closing is run-derived; callers cannot close a claim with an unrelated handler.
 5. Relations consume closed claims, not derivation histories.
 6. Composition is typed-tree append plus handler substitution and explicit context morphisms.
-7. `SourceCtx` is extensional; `ResourceSchema` separately records identity, origin, aliasing, and
-   guarantees.
+7. `SourceCtx` is extensional; `OracleModel` assigns meaning and promises to stable names,
+   `NamedContext` selects distinct names, and `NamedContext.View` expresses aliasing.
 8. Semantic equivalence and operational trace/resource equivalence remain distinct.
 9. Ordinary soundness composition requires output admissibility and a history-dependent suffix
    theorem.

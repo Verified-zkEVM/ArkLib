@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Gadget.Core
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Core
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 
 /-!
 # Centered Norm Bounds for the Gadget Decomposition `G⁻¹` and Recomposition `G·ẑ`
@@ -66,6 +68,8 @@ This file bridges the gadget algebra (`Hachi.Gadget.Core`) and the centered norm
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 

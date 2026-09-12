@@ -120,8 +120,8 @@ theorem execute_closed :
     CoreRun.closed <$> executeCore
       (claimReduction (ZMod 17) 1 ambient (Finset.univ.map domain).toList 3)
       derived 1 projected =
-      pure (some (DataClaim.toClosed
-        (⟨(12, 3), fun _ => projected⟩ : DataClaim ((ZMod 17) × ZMod 17)
+      pure (some (ConcreteClaim.toClosed
+        (⟨(12, 3), fun _ => projected⟩ : ConcreteClaim ((ZMod 17) × ZMod 17)
           (outputFamily (ZMod 17) 1)))) := by
   rw [derived, projectedInput_eq]
   change CoreRun.closed <$> executeCore
@@ -129,7 +129,7 @@ theorem execute_closed :
     (inputImpl (ZMod 17) 1 projected) 1 projected = _
   rw [executeCore_closed (ZMod 17) 1 ambient projected _ 1 3 projected_sum]
   congr 2
-  unfold honestData
+  unfold honestClaim
   rw [projected_eval]
   norm_num
   have h : (29 : ZMod 17) = 12 := by decide

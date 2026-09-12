@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Fields.KoalaBear
-import CompPoly.Data.Vector.Basic
+public import CompPoly.Fields.KoalaBear
+public import CompPoly.Data.Vector.Basic
 
 /-!
   # Poseidon2 Reference Implementation
@@ -22,6 +23,8 @@ import CompPoly.Data.Vector.Basic
   * See also the Lean Ethereum spec
     <https://github.com/leanEthereum/leanSpec/blob/main/src/lean_spec/subspecs/poseidon2/>
 -/
+
+@[expose] public section
 
 open Vector
 
@@ -611,7 +614,7 @@ def partialRound (state : Vector KoalaBear.Field params.width) (roundConstant : 
   -- 3. Apply internal linear layer
   internalLinearLayer params stateAfterSbox
 
-private lemma firstHalfRoundConstants_extract_length (params : Params)
+lemma firstHalfRoundConstants_extract_length (params : Params)
     (rc_idx : Fin params.halfNumFullRounds) :
     min (↑rc_idx + params.width) (params.numFullRounds * params.width + params.numPartialRounds) -
       ↑rc_idx = params.width := by
@@ -626,7 +629,7 @@ private lemma firstHalfRoundConstants_extract_length (params : Params)
   rw [Nat.min_eq_left (by omega)]
   omega
 
-private lemma partialRoundConstant_index_lt (params : Params)
+lemma partialRoundConstant_index_lt (params : Params)
     (rc_idx : Fin params.numPartialRounds) :
     ↑rc_idx < params.numFullRounds * params.width + params.numPartialRounds -
       params.halfNumFullRounds * params.width := by
@@ -634,7 +637,7 @@ private lemma partialRoundConstant_index_lt (params : Params)
   have := Nat.mul_le_mul_right params.width (Nat.div_le_self params.numFullRounds 2)
   omega
 
-private lemma secondHalfRoundConstants_extract_length (params : Params)
+lemma secondHalfRoundConstants_extract_length (params : Params)
     (rc_idx : Fin params.halfNumFullRounds) :
     min (↑rc_idx + params.width)
         (params.numFullRounds * params.width + params.numPartialRounds -

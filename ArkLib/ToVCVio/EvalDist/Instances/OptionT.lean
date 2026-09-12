@@ -3,13 +3,16 @@ Copyright (c) 2025-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
+module
 
-import VCVio.EvalDist.Instances.OptionT
-import VCVio.OracleComp.EvalDist
-import VCVio.OracleComp.ProbComp
+public import VCVio.EvalDist.Instances.OptionT
+public import VCVio.OracleComp.EvalDist
+public import VCVio.OracleComp.ProbComp
 /-! # Additions to VCV-io's `EvalDist.Instances.OptionT`
 
 (Also a compatibility import for earlier additions that now live in VCVio.) -/
+
+@[expose] public section
 
 open OracleComp
 

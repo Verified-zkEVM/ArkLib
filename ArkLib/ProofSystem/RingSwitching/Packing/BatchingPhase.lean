@@ -3,17 +3,20 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.RingSwitching.Packing.Spec
-import ArkLib.OracleReduction.Basic
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.OracleReduction.Basic
+public import CompPoly.Fields.Binary.Tower.TensorAlgebra
 
 /-!
 # ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 
 Definitions and results for this component of ArkLib.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix

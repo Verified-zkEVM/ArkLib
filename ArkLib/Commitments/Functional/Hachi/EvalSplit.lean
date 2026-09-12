@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.Vectors
-import CompPoly.Multilinear.Basic
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Logic.Equiv.Fin.Basic
+module
+
+public import ArkLib.Data.Lattices.Vectors
+public import CompPoly.Multilinear.Basic
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # Multilinear Evaluation as a Matrix–Vector Product
@@ -58,6 +60,8 @@ and the high `nh` bits (`x`) carry the last `nh` variables (the matrix **column*
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly
 

@@ -3,16 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.OracleReduction.Basic
-import ArkLib.OracleReduction.Security.RoundByRound
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
-import ArkLib.ProofSystem.RingSwitching.Packing.Profile
-import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
-import ArkLib.ProofSystem.Sumcheck.Structured
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Data.Matrix.Basic
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.OracleReduction.Basic
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import CompPoly.Fields.Binary.Tower.TensorAlgebra
+public import ArkLib.ProofSystem.RingSwitching.Packing.Profile
+public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
+public import ArkLib.ProofSystem.Sumcheck.Structured
+public import Mathlib.Data.Fintype.Basic
+public import Mathlib.Data.Matrix.Basic
 
 /-!
 # Packing algebra and protocol vocabulary
@@ -47,6 +48,8 @@ message flow.
 * [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
   Binary Towers." Cryptology ePrint Archive (2024).
 -/
+
+@[expose] public section
 
 noncomputable section
 

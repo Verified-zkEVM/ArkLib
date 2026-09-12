@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Impl.FRS
-import ArkLib.ProofSystem.ToyProblem.Impl.IRS
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.Impl.FRS
+public import ArkLib.ProofSystem.ToyProblem.Impl.IRS
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Neutral fixed-radius reference interface for the toy problem
@@ -25,6 +26,8 @@ parameter point; obtaining a numeral additionally requires the MCA/CA capacity b
 which are deliberately outside this file's import cone (see the "Verified vs. admitted"
 section of `Spec/General.lean` and the numeric-route notes in `Impl/IRS.lean`).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

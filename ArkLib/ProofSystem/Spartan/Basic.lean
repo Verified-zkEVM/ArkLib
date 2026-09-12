@@ -3,14 +3,15 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.ConstraintSystem.R1CS
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.ProofSystem.Sumcheck.Spec.General
-import ArkLib.ProofSystem.Component.SendWitness
-import ArkLib.ProofSystem.Component.RandomQuery
-import ArkLib.ProofSystem.Component.SendClaim
-import ArkLib.ProofSystem.Component.CheckClaim
+public import ArkLib.ProofSystem.ConstraintSystem.R1CS
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.Component.RandomQuery
+public import ArkLib.ProofSystem.Component.SendClaim
+public import ArkLib.ProofSystem.Component.CheckClaim
 
 /-!
   # The Spartan PIOP (Polynomial Interactive Oracle Proof)
@@ -95,6 +96,8 @@ import ArkLib.ProofSystem.Component.CheckClaim
     - `e_y = (r_A * v_1 + r_B * v_2 + r_C * v_3) * v_𝕫`.
 
 -/
+
+@[expose] public section
 
 open MvPolynomial Matrix OracleComp ProtocolSpec
 

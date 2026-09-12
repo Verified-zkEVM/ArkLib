@@ -3,15 +3,23 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
-import Mathlib.Algebra.Polynomial.Roots
+module
+
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-! # One-round soundness for the actual closed Sumcheck execution
 
 The prover commits to an arbitrary degree-bounded polynomial before the verifier samples
 its fresh challenge. The original input polynomial remains the closed output oracle.
 Rejection and ambient failure contribute no mass to the successful true-output event.
+
+Here “committed” means that the prover's message is chosen before the challenge; this module
+does not model a cryptographic commitment scheme. `committedRun` is a normal-form result value,
+and `executeCommitted_eq` establishes that the executor produces its challenge-indexed instances.
 -/
+
+@[expose] public section
 
 namespace Sumcheck.Interaction.SingleRound
 
@@ -22,7 +30,8 @@ noncomputable section
 
 variable (F : Type) [Field F] (deg : ℕ)
 
-/-- The run of a committed message, including explicit sum-check rejection. -/
+/-- Normal-form result for a committed message, including explicit sum-check rejection.
+This value alone does not establish execution provenance. -/
 def committedRun [DecidableEq F] (p q : Message F deg) (domain : List F) (target r : F) :
     CoreRun (protocol F deg) (inputSpec F).toPFunctor (fun _ => F × F)
       (fun _ => outputFamily F deg) (fun _ => F × F) where
@@ -62,7 +71,7 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     _root_.Interaction.InteractionOver.TwoParty.paired,
     _root_.Interaction.TwoParty.participantProfile,
     _root_.Interaction.TwoParty.collectParticipantOutputs]
-  have hc : simulateQ (Verifier.readImpl unifSpec (access F deg)
+  have hc : simulateQ (Verifier.liftAccessImpl unifSpec (access F deg)
       (Access.extendImpl (inputSpec F).toPFunctor (polynomialInterface F deg)
         (inputImpl F deg p) q))
       (OracleComp.liftComp challenge (unifSpec + OracleSpec.ofPFunctor (access F deg))) =
@@ -152,7 +161,7 @@ theorem executeRandomCommitment_soundness (messages : ProbComp (Message F deg))
 
 /-- Primary measure-valued soundness on the actual executor's closed output.
 No countability assumption on the dependent run type is required. -/
-theorem executeCommitted_measure_soundness (p q : Message F deg)
+theorem executeCommitted_measureSoundness (p q : Message F deg)
     (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
     discreteEvalDist (executeCommitted F deg ($ᵗ F) p q domain target)
@@ -166,7 +175,7 @@ theorem executeCommitted_measure_soundness (p q : Message F deg)
   exact h
 
 /-- Primary measure bound for any possibly failing randomized commitment made first. -/
-theorem executeRandomCommitment_measure_soundness (messages : ProbComp (Message F deg))
+theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F deg))
     (p : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
     discreteEvalDist

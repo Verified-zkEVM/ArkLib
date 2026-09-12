@@ -173,6 +173,16 @@ When translating theorem statements into names, we use standard mappings for sym
   -/
   ```
 * **Imports**: Group imports at the top of the file.
+* **Module system**: every file under `ArkLib/` uses Lean's module system (issue #795), so a new
+  one must too. The shape is `module` after the copyright block, `public import` for every import,
+  then the module docstring, then `@[expose] public section`. Mark metaprograms — delaborators,
+  unexpanders, elaborator helpers — `meta`, and use `public meta import` for their `Lean.*` and
+  `Qq` dependencies. When a proof needs to unfold a definition a dependency did not expose, add
+  `import all M` naming the module that *declares* it. Do not write a per-declaration `@[expose]`
+  while the blanket section is present, and do not reach for `backward.privateInPublic`. Files
+  under `ArkLibTest/` stay classic on purpose. The error-to-fix table in
+  [`docs/wiki/module-system.md`](docs/wiki/module-system.md) covers every failure the port
+  produced.
 * **Operators**: Put spaces on both sides of `:`, `:=`, and infix operators. Place them before a line break rather than at the start of the next line.
 * **Hypotheses**: Prefer placing hypotheses to the left of the colon (e.g., `(h : P) : Q`) rather than using arrows (`: P → Q`) when the proof introduces them.
 * **Functions**: Prefer `fun x ↦ ...` over `λ x, ...`.

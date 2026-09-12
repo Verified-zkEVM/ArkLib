@@ -3,19 +3,21 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Commitment
-import ArkLib.Commitments.Functional.Hachi.Composition
-import ArkLib.Commitments.Functional.Hachi.HonestChain
-import ArkLib.Commitments.Functional.Hachi.Correctness
-import ArkLib.Commitments.Functional.Hachi.Concrete
-import ArkLib.Commitments.Functional.Hachi.Params
-import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
-import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Commitment
+public import ArkLib.Commitments.Functional.Hachi.Composition
+public import ArkLib.Commitments.Functional.Hachi.HonestChain
+public import ArkLib.Commitments.Functional.Hachi.Correctness
+public import ArkLib.Commitments.Functional.Hachi.Concrete
+public import ArkLib.Commitments.Functional.Hachi.Params
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
+public import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
 # Hachi: a Lattice-Based Multilinear Polynomial Commitment
@@ -35,9 +37,9 @@ and perfect completeness. `Composition.lean` chains the soundness certificates,
 
 Two scope facts a reader should have up front. The recursive opening of [NOZ26] §4.5 —
 `Recursion/` and the `opening` field of `Commitment.lean`'s `hachi` — is outside this
-development; the complete scheme is the nonrecursive `hachiNonrecursive`. And every *composed*
-completeness statement rests on the generic `Reduction.append_completeness`, which this
-repository admits; each link's own completeness does not.
+development; the complete scheme is the nonrecursive `hachiNonrecursive`. Its composed
+completeness and correctness use proved state-aware composition: pure verifier forms for the
+prefix and guarded forms for sumcheck, with suffix completeness from every shared oracle state.
 
 ## Folder structure
 
@@ -100,3 +102,5 @@ Generic infrastructure this builds on: the CWSS notion and its composition in
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
