@@ -3,8 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.Access
-import ArkLib.Interaction.Reduction
+module
+
+public import ArkLib.Interaction.Oracle.Access
+public import ArkLib.Interaction.Reduction
 
 /-!
 # Oracle strategies and single-run execution
@@ -25,6 +27,8 @@ prover-owned move, before emitting a verifier-owned move, and at termination. Th
 arbitrary reschedulable local program, a logged view, a resumable artifact, or a security theorem.
 See `docs/design/01c-access-execution-contract.md`.
 -/
+
+@[expose] public section
 
 universe u v w
 
@@ -107,7 +111,7 @@ abbrev Strategy {ι : Type u} (ambient : OracleSpec.{u, u} ι)
       (ambient + OracleSpec.ofPFunctor (TypeTree.accessAfter tree oracles initial path)) (Out path))
 
 /-- Supply arbitrary input/earlier-message behavior while leaving ambient effects uninterpreted. -/
-def readImpl {ι : Type u} (ambient : OracleSpec.{u, u} ι) (access : PFunctor.{u, u})
+def liftAccessImpl {ι : Type u} (ambient : OracleSpec.{u, u} ι) (access : PFunctor.{u, u})
     (impl : QueryImpl (OracleSpec.ofPFunctor access) Id) :
     QueryImpl (ambient + OracleSpec.ofPFunctor access) (OracleComp ambient) :=
   QueryImpl.add (QueryImpl.id' ambient)
@@ -115,17 +119,17 @@ def readImpl {ι : Type u} (ambient : OracleSpec.{u, u} ι) (access : PFunctor.{
       fun q => pure (impl q))
 
 @[simp]
-theorem readImpl_ambient {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+theorem liftAccessImpl_ambient {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (access : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor access) Id)
     (q : ambient.Domain) :
-    readImpl ambient access impl (.inl q) = QueryImpl.id' ambient q :=
+    liftAccessImpl ambient access impl (.inl q) = QueryImpl.id' ambient q :=
   rfl
 
 @[simp]
-theorem readImpl_source {ι : Type u} (ambient : OracleSpec.{u, u} ι)
+theorem liftAccessImpl_source {ι : Type u} (ambient : OracleSpec.{u, u} ι)
     (access : PFunctor.{u, u}) (impl : QueryImpl (OracleSpec.ofPFunctor access) Id)
     (q : access.A) :
-    readImpl ambient access impl (.inr q) = pure (impl q) :=
+    liftAccessImpl ambient access impl (.inr q) = pure (impl q) :=
   rfl
 
 /-- Interpret a safe oracle verifier as a runtime counterpart. The counterpart's leaf is still a
@@ -140,21 +144,21 @@ def toCounterpart {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
       (fun path => OracleComp ambient
         (Out (TypeTree.ExecutionPath.ofTypeTreePath path).toBranchPath))
   | .done, _, _, initial, impl, _, verifier =>
-      simulateQ (readImpl ambient initial impl) verifier
+      simulateQ (liftAccessImpl ambient initial impl) verifier
   | .public _ rest, ⟨.sender, roles⟩, oracles, initial, impl, Out, verifier =>
       fun move => do
-        let next ← simulateQ (readImpl ambient initial impl) (verifier move)
+        let next ← simulateQ (liftAccessImpl ambient initial impl) (verifier move)
         return toCounterpart ambient (rest move) (roles move) (oracles.2 move) initial impl
           (fun path => Out ⟨move, path⟩) next
   | .public _ rest, ⟨.receiver, roles⟩, oracles, initial, impl, Out, verifier => do
-      let ⟨move, next⟩ ← simulateQ (readImpl ambient initial impl) verifier
+      let ⟨move, next⟩ ← simulateQ (liftAccessImpl ambient initial impl) verifier
       return ⟨move, toCounterpart ambient (rest move) (roles move) (oracles.2 move)
         initial impl (fun path => Out ⟨move, path⟩) next⟩
   | .oracle _ rest, roles, oracles, initial, impl, Out, verifier =>
       fun message => do
         let extended := Access.extend initial oracles.1
         let extendedImpl := Access.extendImpl initial oracles.1 impl message
-        let next ← simulateQ (readImpl ambient extended extendedImpl) verifier
+        let next ← simulateQ (liftAccessImpl ambient extended extendedImpl) verifier
         return toCounterpart ambient (rest PUnit.unit) (roles.2 PUnit.unit) (oracles.2 PUnit.unit)
           extended extendedImpl (fun path => Out ⟨PUnit.unit, path⟩) next
 

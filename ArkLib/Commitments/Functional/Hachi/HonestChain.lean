@@ -3,11 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.Commitment
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
-import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
-import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
-import ArkLib.OracleReduction.Composition.Sequential.Append
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Commitment
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
+public import ArkLib.OracleReduction.Composition.Sequential.Append
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 
 /-!
 # The honest Hachi chain: parameters and per-seam corollaries
@@ -32,16 +35,14 @@ batching bridge       relLift γ bZero → relBatched bZero (γ ≤ bZero − 1)
 
 ## The composed reductions, and what they cost
 
-The seam corollaries above are **per-link theorems at compatible relations**: they establish that
-the relation interfaces match, with no reference to composition. Two composed statements are also
-here — `completePrefixReduction_perfectCompleteness` (through the nested zero-check) and
-`completeThroughSumcheckReduction_perfectCompleteness` (through the sumcheck, to
-`relWEvalClaim`). Both depend on `Reduction.append_completeness`
-(`OracleReduction/Composition/Sequential/Append.lean`), which this repository admits, and on
-nothing else: the chain is assembled so that every link is stated at the relations its neighbour
-produces, so no link has to be context-lifted. Every per-link input is axiom-clean.
-`Composition.lean` composes the *soundness* certificates; beyond `relWEvalClaim` the run is closed
-by the terminal reveal-and-check in `Correctness.lean`.
+The seam corollaries above establish that each link's relation matches its neighbour's.
+`completePrefixReduction_perfectCompleteness`, through the nested zero-check, composes the
+axiom-clean inputs with `Reduction.append_perfectCompleteness_of_pure_verifiers`.
+`completeThroughSumcheckReduction_perfectCompleteness`, through sumcheck to `relWEvalClaim`, uses
+`Reduction.append_perfectCompleteness_of_guarded_verifiers` to retain the sumcheck runtime checks.
+Every suffix's completeness holds from every shared oracle state, so both composed theorems are
+axiom-clean. No context lifting is needed. `Composition.lean` composes the soundness certificates;
+beyond `relWEvalClaim` the run is closed by the terminal reveal-and-check in `Correctness.lean`.
 
 ## Why the quotient is committed as digits
 
@@ -70,6 +71,8 @@ presentational convenience of the paper rather than its protocol.
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26] -/
+
+@[expose] public section
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift
@@ -161,9 +164,7 @@ theorem pinned_of_soundness_orientations (hγ' : P.bZero - 1 ≤ P.γ) :
   have h3 := P.hbZeroq
   exact ⟨by omega, by omega⟩
 
-/-- **The zero-check range base is nontrivial**, as a named projection. Needed wherever the digit
-encoding appears: the balanced base-`bZero` decomposition of the quotient is a decomposition only
-for `1 < bZero` ([NOZ26] §2.1, `rhoDigits_reconstruct`). -/
+/-- The zero-check digit base is greater than one. -/
 theorem one_lt_bZero : 1 < P.bZero := P.hbZero
 
 /-- The quotient's digit base is admissible at the chain's own norm bound `γ` — the bundled form
@@ -313,14 +314,33 @@ def completePrefixReduction (P : HonestRangeParams q)
       (nestedZeroCheckReduction (oSpec := oSpec) (TCom := K.TCom)
         (Wit := LiftedWitness Φ μ₀ n₀) Φ m₀ m₁)))))
 
-omit [DecidableEq F] in
-/-- **Perfect completeness of the Hachi prefix**, from the polynomial-level evaluation relation
-through `relNestedZeroCheck`.
+/-- The honest prefix's verifier is a total deterministic verdict on its transcript. -/
+def completePrefixReductionPureForm (P : HonestRangeParams q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
+    (hd : 0 < Φ.φ.natDegree) :
+    (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := m₀) (m₁ := m₁)
+      Φ P pp hqm hcap K hd).verifier.PureForm :=
+  ⟨_, fun _ _ => rfl⟩
 
-The reverse range hypothesis is needed only by the last link, as explained above. Together with
-`P.hγZero` it pins `γ = P.bZero − 1` (`HonestRangeParams.pinned_of_soundness_orientations`); this
-theorem does not conceal that. All individual links have error zero, so the composed prefix has
-error zero as well. -/
+omit [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F] in
+/-- The honest prefix prover returns its output without oracle queries. -/
+theorem completePrefixReduction_outputIsPure (P : HonestRangeParams q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
+    (hd : 0 < Φ.φ.natDegree) :
+    (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := m₀) (m₁ := m₁)
+      Φ P pp hqm hcap K hd).prover.OutputIsPure := by
+  repeat' apply Prover.OutputIsPure.append
+  all_goals exact ⟨_, fun _ => rfl⟩
+
+omit [DecidableEq F] in
+/-- The honest Hachi prefix is perfectly complete from the short-message evaluation relation
+to the nested zero-check relation. -/
 theorem completePrefixReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -340,24 +360,28 @@ theorem completePrefixReduction_perfectCompleteness
       Φ P pp hqm hcap K hd).perfectCompleteness init impl
       (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       (relNestedZeroCheck Φ m₀ m₁ P.γ P.bZero K φF P.bZero) := by
-  have hBridge :=
-    bridgeReduction_perfectCompleteness_msgShort Φ init impl pp (P.b : ZMod q) βSq P.γ κ
+  have hBridge (start : ProbComp σ) :=
+    bridgeReduction_perfectCompleteness_msgShort Φ start impl pp (P.b : ZMod q) βSq P.γ κ
       (P.b / 2)
-  have hQuad := quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
+  have hQuad (start : ProbComp σ) :=
+    quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (βSq := βSq) (γ := P.γ) (κ := κ) (msgBound := P.b / 2)
-      Φ init impl pp (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
+      Φ start impl pp (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
       (boundedBalancedZmodDigitDecomposition P.b zDigits zBound P.hb hcap)
       hmul hmd hτ hd hzb
       (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqm P.hbq x e) P.hbγ)
       (fun x e => le_trans (boundedBalancedZmodDigit_natAbs_le P.hb P.hbq x e) P.hbγ)
-  have hRlin := rlinReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
-    Φ P init impl pp (P.b : ZMod q)
-  have hLift := liftReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
-    Φ P K φF init impl hd pp (P.b : ZMod q)
-  have hBatch := batchReduction_perfectCompleteness_params (m₀ := m₀) (m₁ := m₁)
-    Φ P init impl K φF hd
-  have hZero := nestedZeroCheckReduction_perfectCompleteness
-    Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
+  have hRlin (start : ProbComp σ) :=
+    rlinReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
+    Φ P start impl pp (P.b : ZMod q)
+  have hLift (start : ProbComp σ) :=
+    liftReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
+    Φ P K φF start impl hd pp (P.b : ZMod q)
+  have hBatch (start : ProbComp σ) :=
+    batchReduction_perfectCompleteness_params (m₀ := m₀) (m₁ := m₁)
+    Φ P start impl K φF hd
+  have hZero (start : ProbComp σ) := nestedZeroCheckReduction_perfectCompleteness
+    Φ m₀ m₁ P.γ P.bZero start impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
   let sampleEmptyNested : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
@@ -385,12 +409,21 @@ theorem completePrefixReduction_perfectCompleteness
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := by infer_instance)
       (h₂ := sampleEmptyScalarTail)
-  have hBatchZero := Reduction.append_perfectCompleteness _ _ hBatch hZero
-  have hLiftZero := Reduction.append_perfectCompleteness _ _ hLift hBatchZero
-  have hRlinZero := Reduction.append_perfectCompleteness _ _ hRlin hLiftZero
-  have hQuadZero := Reduction.append_perfectCompleteness _ _ hQuad hRlinZero
-  have hPrefix := Reduction.append_perfectCompleteness _ _ hBridge hQuadZero
-  exact hPrefix
+  have hBatchZero (start : ProbComp σ) := Reduction.append_perfectCompleteness_of_pure_verifiers
+    _ _ ⟨_, fun _ _ => rfl⟩ ⟨_, fun _ _ => rfl⟩
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩) (hBatch start) (fun s => hZero (pure s))
+  have hLiftZero (start : ProbComp σ) := Reduction.append_perfectCompleteness_of_pure_verifiers
+    _ _ ⟨_, fun _ _ => rfl⟩ ⟨_, fun _ _ => rfl⟩
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩) (hLift start) (fun s => hBatchZero (pure s))
+  have hRlinZero (start : ProbComp σ) := Reduction.append_perfectCompleteness_of_pure_verifiers
+    _ _ ⟨_, fun _ _ => rfl⟩ ⟨_, fun _ _ => rfl⟩
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩) (hRlin start) (fun s => hLiftZero (pure s))
+  have hQuadZero (start : ProbComp σ) := Reduction.append_perfectCompleteness_of_pure_verifiers
+    _ _ ⟨_, fun _ _ => rfl⟩ ⟨_, fun _ _ => rfl⟩
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩) (hQuad start) (fun s => hRlinZero (pure s))
+  exact Reduction.append_perfectCompleteness_of_pure_verifiers
+    _ _ ⟨_, fun _ _ => rfl⟩ ⟨_, fun _ _ => rfl⟩
+    (fun _ => Or.inl ⟨_, fun _ => rfl⟩) (hBridge init) (fun s => hQuadZero (pure s))
 
 end CompletePrefix
 
@@ -439,6 +472,18 @@ def completeThroughSumcheckReduction (P : HonestRangeParams q)
       Φ P pp hqm hcap K hd).append
     (sumcheckReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ P.γ P.bZero hbZero φF)
 
+/-- The through-sumcheck verifier is deterministic and may reject a failed round check. -/
+def completeThroughSumcheckReductionGuardedForm (P : HonestRangeParams q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hcap : zBound ≤ balancedDigitCapacity P.b zDigits)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
+    (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) :
+    (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
+      Φ P pp hqm hcap K hd hbZero φF).verifier.GuardedForm :=
+  (completePrefixReductionPureForm Φ P pp hqm hcap K hd).toGuardedForm.append
+    (sumcheckReductionGuardedForm Φ m₁ P.γ P.bZero P.bZero K hbZero φF)
+
 /-- Sampleability of the through-sumcheck wire format: the prefix's own instance appended to the
 sumcheck's, assembled explicitly for the same reason `completePrefixSpecSampleable` is — the
 generic append instance does not fire reliably through a deeply nested `ProtocolSpec`. -/
@@ -457,17 +502,8 @@ generic append instance does not fire reliably through a deeply nested `Protocol
     (h₁ := completePrefixSpecSampleable Φ) (h₂ := sumcheckSpecSampleable bZero (M + 1))
 
 omit [DecidableEq F] in
-/-- **Perfect completeness of the honest Hachi chain through the sumcheck**, from `relPolyEval` to
-the evaluation claim `relWEvalClaim`, error `0`.
-
-Hypotheses are the prefix's (`completePrefixReduction_perfectCompleteness`, including the two
-reverse range orientations the nested zero-check's honest seam needs) plus the sumcheck's
-`0 < bZero` and `(μ₀ + n₀)·deg φ ≤ 2^{m₀}`. The seam itself needs nothing: the prefix's output
-relation `relNestedZeroCheck` *is* the sumcheck's input relation, at the same parameters.
-
-Depends on the admitted `Reduction.append_completeness` through the appends (the sumcheck factor
-is itself an internal append, so it carries the same dependency); the prefix links are axiom-clean
-on their own. -/
+/-- The honest chain through sumcheck is perfectly complete from the short-message evaluation
+relation to the witness-evaluation claim. -/
 theorem completeThroughSumcheckReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -488,12 +524,15 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
       Φ P pp hqm hcap K hd hbZero φF).perfectCompleteness init impl
       (relPolyEvalMsgShort Φ pp (P.b : ZMod q) βSq P.γ κ (P.b / 2))
       (relWEvalClaim Φ (M + 1) P.γ P.bZero P.bZero K φF) :=
-  Reduction.append_perfectCompleteness _ _
+  Reduction.append_perfectCompleteness_of_guarded_verifiers _ _
+    (completePrefixReductionPureForm Φ P pp hqm hcap K hd).toGuardedForm
+    (sumcheckReductionGuardedForm Φ m₁ P.γ P.bZero P.bZero K hbZero φF)
+    (fun _ => Or.inl (completePrefixReduction_outputIsPure Φ P pp hqm hcap K hd))
     (completePrefixReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (m₀ := M + 1) (m₁ := m₁) (βSq := βSq) (κ := κ)
       Φ P init impl pp hqm hcap hmul hzb hmd hτ hd K φF hμn hZeroγ)
-    (sumcheckReduction_perfectCompleteness Φ m₁ P.γ P.bZero P.bZero init impl K hbZero
-      P.one_lt_bZero φF hd hμn)
+    (fun s => sumcheckReduction_perfectCompleteness Φ m₁ P.γ P.bZero P.bZero
+      (pure s) impl K hbZero P.one_lt_bZero φF hd hμn)
 
 end ThroughSumcheck
 

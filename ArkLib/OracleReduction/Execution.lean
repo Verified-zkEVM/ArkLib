@@ -3,14 +3,15 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Alexander Hicks, Devon Tuma, Pietro Monticone, Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Basic
-import ArkLib.Data.Fin.Basic
-import ArkLib.ToMathlib.Control.MonadLift
-import ArkLib.ToVCVio.OracleComp.EvalDist
+public import ArkLib.OracleReduction.Basic
+public import ArkLib.Data.Fin.Basic
+public import ArkLib.ToMathlib.Control.MonadLift
+public import ArkLib.ToVCVio.OracleComp.EvalDist
 -- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
-import VCVio.OracleComp.Constructions.Replicate
-import VCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.Constructions.Replicate
+public import VCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
@@ -18,6 +19,8 @@ import VCVio.OracleComp.QueryTracking.LoggingOracle
   We define what it means to execute an interactive oracle reduction, and prove some basic
   properties.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
 
@@ -590,7 +593,7 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       prover.runToRound 1 stmt wit = (do
         let state := prover.input (stmt, wit)
-        let ⟨msg, state⟩ ← liftComp (prover.sendMessage ⟨0, by simp⟩ state) _
+        let ⟨msg, state⟩ ← liftComp (prover.sendMessage ⟨0, prover_first pSpec⟩ state) _
         return (fun i => match i with | ⟨0, _⟩ => msg, state)) := by
   have hDir : pSpec.dir 0 = .P_to_V := by simp
   change prover.runToRound (Fin.succ (0 : Fin 1)) stmt wit = _
@@ -651,7 +654,7 @@ theorem Prover.run_of_prover_first [ProverOnly pSpec] (stmt : StmtIn) (wit : Wit
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       prover.run stmt wit = (do
         let state := prover.input (stmt, wit)
-        let ⟨msg, state⟩ ← liftComp (prover.sendMessage ⟨0, by simp⟩ state) _
+        let ⟨msg, state⟩ ← liftComp (prover.sendMessage ⟨0, prover_first pSpec⟩ state) _
         let ctxOut ← prover.output state
         return ((fun i => match i with | ⟨0, _⟩ => msg), ctxOut)) := by
   simp [Prover.run]; rfl
@@ -661,7 +664,7 @@ theorem Reduction.run_of_prover_first [ProverOnly pSpec] (stmt : StmtIn) (wit : 
     (reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       reduction.run stmt wit = (do
         let state := reduction.prover.input (stmt, wit)
-        let ⟨msg, state⟩ ← (reduction.prover.sendMessage ⟨0, by simp⟩ state)
+        let ⟨msg, state⟩ ← (reduction.prover.sendMessage ⟨0, prover_first pSpec⟩ state)
         let ctxOut ← reduction.prover.output state
         let transcript : pSpec.FullTranscript := fun i => match i with | ⟨0, _⟩ => msg
         let stmtOut ← (reduction.verifier.verify stmt transcript).run

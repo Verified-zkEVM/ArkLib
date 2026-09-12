@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
 
 /-!
 # Mutual correlated agreement information-set lower bound
@@ -17,6 +18,8 @@ This file proves a lower bound on affine-line mutual correlated agreement for li
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and Correlated
   Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 

@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
-import ArkLib.ProofSystem.Component.ReduceClaim
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+public import ArkLib.ProofSystem.Component.ReduceClaim
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
 
 /-!
   # Eq. (20) → `R^lin` adapter (Hachi §4.3 entry)
@@ -54,6 +56,8 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 

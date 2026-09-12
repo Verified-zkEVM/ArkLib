@@ -3,6 +3,7 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
 /-!
 # Generic Slice Type Classes
@@ -36,6 +37,8 @@ instances for:
 - **Array**: With `True` validity (no proof obligations needed)
 - **List**: With `True` validity (no proof obligations needed)
 -/
+
+@[expose] public section
 
 universe u v v' w
 
@@ -119,19 +122,19 @@ and error messages, providing a better user experience.
 
 /-- Unexpander for `SliceLT.sliceLT` to display as `v⟦:stop⟧` -/
 @[app_unexpander SliceLT.sliceLT]
-def sliceLTUnexpander : Lean.PrettyPrinter.Unexpander
+meta def sliceLTUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $v $stop $_) => `($v⟦: $stop⟧)
   | _ => throw ()
 
 /-- Unexpander for `SliceGE.sliceGE` to display as `v⟦start:⟧` -/
 @[app_unexpander SliceGE.sliceGE]
-def sliceGEUnexpander : Lean.PrettyPrinter.Unexpander
+meta def sliceGEUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $v $start $_) => `($v⟦$start :⟧)
   | _ => throw ()
 
 /-- Unexpander for `Slice.slice` to display as `v⟦start:stop⟧` -/
 @[app_unexpander Slice.slice]
-def sliceUnexpander : Lean.PrettyPrinter.Unexpander
+meta def sliceUnexpander : Lean.PrettyPrinter.Unexpander
   | `($_ $v $start $stop $_) => `($v⟦$start : $stop⟧)
   | _ => throw ()
 

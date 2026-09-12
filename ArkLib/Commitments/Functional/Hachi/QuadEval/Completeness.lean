@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
-import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
-import VCVio.OracleComp.QueryTracking.ProgrammingOracle
+module
+
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+public import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — completeness (Hachi §4.2, Figure 3)
@@ -55,6 +57,8 @@ import VCVio.OracleComp.QueryTracking.ProgrammingOracle
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
@@ -318,7 +322,7 @@ theorem mem_paperRelOut_of_relIn
 
 /-- Abbreviation for this reduction's two-round `ProtocolSpec`, kept local so the round-unfolding
 lemmas below stay readable. -/
-private abbrev qePSpec (Φ : CyclotomicModulus (ZMod q)) (dRows ω r : ℕ) : ProtocolSpec 2 :=
+abbrev qePSpec (Φ : CyclotomicModulus (ZMod q)) (dRows ω r : ℕ) : ProtocolSpec 2 :=
   pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r
 
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies

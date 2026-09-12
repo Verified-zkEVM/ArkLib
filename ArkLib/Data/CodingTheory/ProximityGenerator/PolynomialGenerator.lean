@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
-import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 
 /-!
 # Mutual correlated agreement for polynomial generators
@@ -42,6 +43,8 @@ Theorem 9.2); the per-declaration correspondence is catalogued in
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
   with Mutual Correlated Agreement*][BCGM25]. https://eprint.iacr.org/2025/2051
 -/
+
+@[expose] public section
 
 namespace PolynomialGenIsMCA
 

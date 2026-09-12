@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Check if a predicate / claim on a statement is satisfied
@@ -41,6 +42,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   `OracleComp`), this oracle reduction is a special case of `ReduceClaim` (identity maps).
 -/
 
+@[expose] public section
+
 open OracleComp OracleInterface ProtocolSpec Function
 
 namespace CheckClaim
@@ -57,6 +60,10 @@ def prover : Prover oSpec Statement Unit Statement Unit !p[] where
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
+
+/-- The `CheckClaim` prover has pure output: it reads its statement off the state, with no
+oracle query. -/
+instance instOutputIsPure : (prover oSpec Statement).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 variable (pred : Statement → Prop) [DecidablePred pred]
 
@@ -195,6 +202,11 @@ def oracleProver : OracleProver oSpec
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
+
+/-- The `CheckClaim` oracle prover has pure output: it forwards the statement and oracle
+statements with no oracle query. -/
+instance instOutputIsPureOracle : (oracleProver oSpec Statement OStatement).OutputIsPure :=
+  ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier for the `CheckClaim` oracle reduction is a **pure pass-through**: it
 returns the statement and all oracle statements unchanged. The predicate

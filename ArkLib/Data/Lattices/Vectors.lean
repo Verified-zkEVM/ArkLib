@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import Mathlib.LinearAlgebra.Matrix.Defs
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Algebra.BigOperators.Pi
-import Mathlib.Tactic.Ring
+module
+
+public import Mathlib.LinearAlgebra.Matrix.Defs
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.BigOperators.Pi
+public import Mathlib.Tactic.Ring
 
 /-!
 # Vectors And Matrices For The Lattice Layer
@@ -34,6 +36,8 @@ relate `dot` to `Finset.sum`.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 
