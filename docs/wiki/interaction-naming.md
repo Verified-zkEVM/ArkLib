@@ -103,10 +103,72 @@ return. `CoreRun.closed` interprets only with its stored input behavior and path
 no separate handler. `closed_eq_concrete_iff` characterizes agreement with a concrete claim by
 statement and observable-answer equality, without asserting honesty or relation membership.
 
+## Ordered execution interfaces
+
+`ExecutionInterface` names a stage boundary by its public statement type, exported oracle
+`Index` and `Realization` types, `oracles`, and separate private state. A `ClosedStage` selects its
+protocol and reduction from the current public statement, derives its witness from the private
+state, and computes the next private state from the actual execution path and accepted output.
+`OrderedExecution` runs these stages in order and stops on rejection.
+
+The invariant theorems require preservation at every stage. Their probabilistic forms require
+almost-sure acceptance and invariant preservation; the measure bridge additionally assumes the
+stated discrete response spaces and agreement between the query measures and their probability
+mass functions. These interfaces and theorems do not by themselves assert execution provenance,
+noninterference of values captured when constructing a stage, or a security composition theorem.
+
 `TypeTree.sourceAfter` is one source context for the final accumulated access signature. Its
 environment contains the initial handler and the messages along that branch. It does not choose
 messages for unvisited branches or assert that arbitrary structural paths are inhabited.
 
+## Sumcheck oracle roles
+
+The single-round verifier checks the sent polynomial and evaluates it for the next target. Its
+`outputOracle` instead retains the input oracle. This distinction allows a dishonest message to
+pass the local sum check while the closed output relation fails; it is essential for soundness.
+`degreeModel` interprets the degree guarantee already carried by the refined message type, and
+`honestClaim` gives the corresponding concrete claim. `projectionOracle` answers univariate round
+queries by the existing multivariate projection program.
+
+`honestRun` is an algebraic normal form; `executeCore_honest` proves the actual executor returns it
+under the input sum premise. Sampled perfect completeness additionally requires a lossless
+challenge program. These completeness theorems do not establish adversarial soundness.
+
+In the one-round soundness API, `committedRun` is the normal form for a message fixed before the
+challenge. `executeCommitted_eq` relates it to actual execution. Here commitment means choosing
+the message first, not using a cryptographic commitment scheme. `executeCommitted_soundness`
+bounds accepted true outputs for a false input sum under a fresh uniform finite-field challenge;
+`executeRandomCommitment_soundness` also permits randomized, possibly failing message selection
+before that challenge. Neither theorem states multi-round or knowledge soundness.
+
+`legacy_input_iff` and `legacy_output_iff` give both directions of relation correspondence for
+arbitrary concrete claims. `legacy_honest_verifier_correspondence` is narrower: it compares honest
+executions. The legacy verifier reads the input polynomial for its next target, while the typed
+verifier reads the sent polynomial. Their arbitrary-message executions are not identified.
+
+## Consecutive multivariate rounds
+
+`MultivariateRound.polynomialFamily` declares the persistent multivariate evaluation interface.
+Its `outputOracle` retains the supplied input behavior, while each round's newly sent univariate
+polynomial supplies the sum check and next target. The two-round executor passes the first actual
+closed claim to the second and skips the second after rejection. Sampled equations preserve the
+first-then-second challenge order. Completeness transports the multivariate relation through both
+rounds; it does not compose the one-round soundness error.
+
+## Arbitrary multivariate rounds
+
+`MultivariateRound.roundStages` packages any finite interval of multivariate Sumcheck rounds as an
+`OrderedExecution`. Each challenge program receives the current public round statement; the
+accepted closed claim, including its oracle behavior, becomes the next stage's input. Rejection
+stops later challenge programs. `executeRoundsSampled` removes only the unit private state from the
+ordered executor's result.
+
+The honest-execution theorem transports one fixed polynomial relation through every selected
+round. Its evaluation corollary additionally requires the interval to finish all variables. The
+perfect-completeness theorem permits history-dependent challenge programs but assumes zero failure
+probability for every round and public history; the measure and uniform theorems specialize that
+assumption. These results do not establish arbitrary-round soundness, extraction, transcript
+privacy, or independence for the general sampled challenges.
 ## Concrete prefixes and available contexts
 
 `ExecutionPrefix` pairs a structural cursor with exactly the concrete oracle messages already
@@ -122,6 +184,7 @@ Availability alone carries no strategy, probability, cryptographic promise, or r
 Prefix `comp` follows PolyFun cursor composition: first the left prefix, then its continuation.
 It preserves concrete message order, and `plug` completes the prefix with a residual execution path.
 These operations neither reorder effects nor select messages for unvisited branches.
+
 
 ## Other interaction names
 
@@ -172,6 +235,15 @@ unchanged. For named contexts and their views, replace old `tensor` uses by `dis
 | `OracleClaim`, `DataClaim` | `OpenClaim`, `ConcreteClaim` |
 | `TypeTree.sourcesAfter`, `sourcesAfter_handler` | `sourceAfter`, `sourceAfter_handler` |
 | `CoreRun.closed_eq_data_iff` | `CoreRun.closed_eq_concrete_iff` |
+| Single-round `degreeCatalog`, `honestData` | `degreeModel`, `honestClaim` |
+| Single-round `outputView`, `projectionView` | `outputOracle`, `projectionOracle` |
+| Multivariate-round `family`, `outputView` | `polynomialFamily`, `outputOracle` |
+| `executeSampled_measure_complete` | `executeSampled_measureCompleteness` |
+| `executeRoundsSampled_perfect_completeness` | `executeRoundsSampled_perfectCompleteness` |
+| `executeRoundsSampled_measure_complete` | `executeRoundsSampled_measureCompleteness` |
+| `executeRounds_uniform_measure_complete` | `executeRounds_uniform_measureCompleteness` |
+| Soundness `*_measure_soundness` | `*_measureSoundness` |
+| `legacy_verifier_correspondence` | `legacy_honest_verifier_correspondence` |
 | `TypeTree.FullPrefix` | `TypeTree.ExecutionPrefix` |
 | Prefix `resources`, `resourceInclusion` | `availableContext`, `contextInclusion` |
 | Prefix `no_future` | `available_length_le` |
@@ -179,6 +251,8 @@ unchanged. For named contexts and their views, replace old `tensor` uses by `dis
 | `ClaimSchema`, `ClaimSchema.oracle` | `ClaimFamily`, `ClaimFamily.closedOracle` |
 | Claim `rebase`, `closeWith_rebase` | `mapSource`, `closeWith_mapSource` |
 | Claim `substWith`, `closeWith_substWith` | `substWithSuffix`, `closeWith_substWithSuffix` |
+| `ExecutionInterface.Idx`, `ExecutionInterface.Obj` | `ExecutionInterface.Index`, `ExecutionInterface.Realization` |
+| `ExecutionInterface.Out` | `ExecutionInterface.oracles` |
 
 For virtual oracles, rename old `mapSource` uses to `substSource` before renaming `rebase` to
 `mapSource`. Apply the same substitutions to associated theorem names and explicit `Tree` named arguments

@@ -293,6 +293,7 @@ public import ArkLib.Data.Probability.KoalaBear
 public import ArkLib.Data.Probability.Notation
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
+public import ArkLib.Interaction.Oracle.Composition
 public import ArkLib.Interaction.Oracle.CoreRun
 public import ArkLib.Interaction.Oracle.Execution
 public import ArkLib.Interaction.Oracle.Prefix
@@ -423,6 +424,16 @@ public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
+public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Projection
+public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
+public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
