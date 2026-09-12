@@ -37,7 +37,7 @@ supported PolyFun + VCVio pins
                                                    │
 AR-1 + AR-2B + AR-3A → AR-3B execution          │
 AR-4A → AR-5 virtual substitution              ├─ AR-6A claims
-AR-4A → AR-4B resource schemas ─────────────────┘      │
+AR-4A → AR-4B named contexts ─────────────────┘      │
                                                          └─ AR-6B core run
                                                               → AR-7 Sumcheck
                                                               → AR-8 legacy bridge
@@ -146,18 +146,19 @@ routing and erases to the plain runner.
 ### AR-4A — extensional sources and routing
 
 **Goal.** Add universe-polymorphic source families and extensional handlers, plus identity,
-renaming, weakening, sum/product routing, and composition.
+renaming, weakening, sum/tensor routing, and composition.
 
 **Acceptance.** Heterogeneous source types remain in independent universes. Extensionally equal
 handlers cannot be distinguished by a virtual query program.
 
-### AR-4B — resource identity and guarantee schemas
+### AR-4B — named oracle contexts and interpreted promises
 
-**Goal.** Record stable resource identity, origin, ownership, aliasing, and reified ideal
-guarantees without polluting extensional source semantics.
+**Goal.** Interpret stable oracle names, origin, ownership, and reified ideal promises in an
+`OracleModel`; represent distinct names in a `NamedContext` and aliasing through its `View`,
+separately from extensional source semantics.
 
-**Acceptance.** Two resources with the same query signature remain distinct; explicit aliasing can
-identify them; accidental duplication through tensor is unconstructible.
+**Acceptance.** Two oracles with the same query signature may retain distinct names. Multiple view
+indices can reference one name and realization; `disjointUnion` rejects overlapping names.
 
 ### AR-5 — virtual-oracle substitution
 
@@ -219,7 +220,7 @@ proves `NeverFail` or explicitly names the fault used to materialize missing mas
 ### AR-10A — structural full prefixes
 
 **Goal.** Combine a PolyFun cursor with concrete message-prefix data, reachability, restricted
-decorations, and the resource schema available at that point.
+decorations, and the named context available at that point.
 
 **Required laws.** No future resources; monotonicity under witnessed cursor extension; decomposition
 through append; compatibility with execution-path projection.
@@ -234,7 +235,7 @@ resource profile. Preserve order, multiplicity, and stable resource identity.
 
 ### AR-11 — Merkle backend adapter
 
-**Prerequisite.** Resource schemas, world-backed execution, terminal outcomes, and the supported
+**Prerequisite.** Named oracle contexts, world-backed execution, terminal outcomes, and the supported
 VCVio shared-ROM Merkle extraction theorem.
 
 **Goal.** Expose the smallest compiler-facing Merkle capability by adapting the VCVio theorem. Do

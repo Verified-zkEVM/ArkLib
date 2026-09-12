@@ -36,26 +36,25 @@ structure ClaimWith (Rep : OracleFamily → Type) (Stmt : Type) (Out : OracleFam
 
 abbrev OracleClaim (srcSpec) Stmt Out := ClaimWith (VirtualOracle srcSpec) Stmt Out  -- open
 abbrev ClosedClaim Stmt Out          := ClaimWith OracleFamily.Behavior Stmt Out    -- closed
-abbrev DataClaim Stmt Out            := ClaimWith (fun O => ∀ i, O.Obj i) Stmt Out  -- honest data
+abbrev DataClaim Stmt Out            := ClaimWith (fun O => ∀ i, O.Realization i) Stmt Out  -- honest data
 -- HonestProverOutput = DataClaim × Witness
 ```
 
-Representation morphisms into behavior: `eval` (open → closed, per handler) and `answerData` (data → closed). `ProverOutputRealizes` is the statement that the honest prover's `DataClaim` and the verifier's closed claim map to the same point — naturality, not a bespoke condition. `stmt` is produced by the verifier's own (possibly query-dependent) terminal computation; scalar outputs computed from oracle queries (sumcheck's `Tᵢ := sᵢ(rᵢ)`, STIR shift values) live in `stmt`, never in the oracle component. `stmt` is *run*-determined, not env-determined — the joint execution artifact (`03` §2) ties them; there is no theorem "`ClosedClaim` is a function of `Env`" and none should be attempted.
+Representation morphisms into behavior: `eval` (open → closed, per handler) and `OracleFamily.behaviorOfRealizations` (realizations → behavior). `ProverOutputRealizes` is the statement that the honest prover's `DataClaim` and the verifier's closed claim map to the same point — naturality, not a bespoke condition. `stmt` is produced by the verifier's own (possibly query-dependent) terminal computation; scalar outputs computed from oracle queries (sumcheck's `Tᵢ := sᵢ(rᵢ)`, STIR shift values) live in `stmt`, never in the oracle component. `stmt` is *run*-determined, not env-determined — the joint execution artifact (`03` §2) ties them; there is no theorem "`ClosedClaim` is a function of `Env`" and none should be attempted.
 
 ## 3. Core objects
 
 ### 3.1 Families and behavior
 
 ```lean
-structure OracleFamily where
-  ι      : Type
-  Obj    : ι → Type
-  oracle : ∀ i, OracleInterface (Obj i)
+structure OracleFamily (Index : Type u) (Realization : Index → Type v) where
+  interface : (i : Index) → OracleInterface.{v, w} (Realization i)
 
-abbrev OracleFamily.Behavior (Out : OracleFamily) := QueryImpl ([Out.Obj]ₒ' Out.oracle) Id
+abbrev OracleFamily.Behavior {I : Type u} {Data : I → Type v}
+    (Out : OracleFamily.{u, v, w} I Data) := QueryImpl ([Data]ₒ' Out.interface) Id
 ```
 
-(Repair C5: interface instances are explicit structure data; use ArkLib's explicit-instance spec notation `[…]ₒ'` throughout — a structure field is not a typeclass instance.)
+(Repair C5: interfaces are explicit structure data; use ArkLib's explicit-instance spec notation `[…]ₒ'` throughout — a structure field is not a typeclass instance.)
 
 Structured semantics is an optional presentation (`SemanticPresentation`: `Sem`, `behavior : Sem → Behavior`), with injectivity (`FaithfulPresentation`) opt-in. Relations authored on a presentation owe behavioral invariance.
 
@@ -70,20 +69,21 @@ structure SourceCtx where
 ```
 
 `SourceCtx` is deliberately extensional. Pure `SourceHom` routes handlers and is the only morphism
-needed by semantic substitution. A separate `ResourceSchema` records stable identity, origin,
-aliasing/sharing, and reified ideal guarantees; each guarantee has a witness connecting its
-descriptor to the actual slot object/refined type. `SchemaHom` lies over a `SourceHom` and proves
-schema coherence. A later `BackendAssignment` is indexed by the schema. This keeps semantic
-substitution independent of compiler metadata without leaving provenance prose-only.
+needed by semantic substitution. An `OracleModel` assigns realizations, interfaces, provenance,
+and interpreted property symbols to stable names. A `NamedContext` selects distinct names from that model; its `Inclusion` preserves
+names, while a `View` may alias them. Promised properties hold for every admissible realization.
+An inclusion induces a `SourceHom` on interpreted sources. A later `BackendAssignment` is
+indexed by the named context. This keeps semantic substitution independent of compiler metadata
+without leaving provenance prose-only.
 
 For a reduction at ambient `shared` and branch path `path`, the source context has **three** parts:
 
 ```lean
 def sourcesAt (shared) (path) : SourceCtx :=
-  (setupSources shared).tensor ((inputSources shared).tensor (messageSources shared path))
+  (setupSources shared).sum ((inputSources shared).sum (messageSources shared path))
 ```
 
-- **Setup part:** preprocessing/indexer oracles, CRS handles, correlated public parameters. Each setup source is classified in the companion `ResourceSchema` as public data (in `shared`), read-only Δ behavior (here), or a persistent Γ runtime (`03` §1). Systems without setup take this part empty.
+- **Setup part:** preprocessing/indexer oracles, CRS handles, correlated public parameters. Each setup source is classified in the companion `OracleModel` as public data (in `shared`), read-only Δ behavior (here), or a persistent Γ runtime (`03` §1). Systems without setup take this part empty.
 - **Input part:** `InputImpl` — arbitrary deterministic behavior for the input-oracle interfaces. Soundness quantification is unchanged and unweakened.
 - **Execution-path part:** the structural hidden-message fiber
 
@@ -114,7 +114,7 @@ Prover-sent oracle message types **may be refined**: sumcheck's round message is
 
 ```lean
 structure VirtualOracle (srcSpec : OracleSpec ι) (Out : OracleFamily) where
-  query : QueryImpl ([Out.Obj]ₒ' Out.oracle) (OracleComp srcSpec)
+  query : QueryImpl ([Out.Realization]ₒ' Out.interface) (OracleComp srcSpec)
 
 def VirtualOracle.eval (v) (ρ : QueryImpl srcSpec Id) : Out.Behavior :=
   fun q => simulateQ ρ (v.query q)
@@ -133,25 +133,26 @@ def OracleClaim.closeWith (c) (ρ : QueryImpl srcSpec Id) : ClosedClaim Stmt Out
 
 ## 4. Constructors
 
-Minimal set: `id`/passthrough, `reindex`, `tensorWeaken`, `rebase`, `subst`, and the escape hatch `ofQuery`. Algebraic constructors (`linComb`, `fold`, `quotient` with its validity predicate in the relation) land when a protocol port first needs them, each with its `eval` lemma and, where applicable, a `Materialization`. Boundaries ("lenses", historically): projection direction = a virtual view + `subst`; reverse direction = materialization/witness transport with its own coherence — call them dependent refinement boundaries unless lens laws are actually proved.
+Minimal set: `id`/passthrough, `reindex`, `sumWeaken`, `mapSource`, `substSource`, `subst`, and the escape hatch `ofQuery`. Algebraic constructors (`linComb`, `fold`, `quotient` with its validity predicate in the relation) land when a protocol port first needs them, each with its `eval` lemma and, where applicable, a `Materialization`. Boundaries ("lenses", historically): projection direction = a virtual view + `subst`; reverse direction = materialization/witness transport with its own coherence — call them dependent refinement boundaries unless lens laws are actually proved.
 
 ## 5. Composition
 
 Handler substitution with explicit interfaces:
 
 ```lean
-def SourceCtx.tensor (S T : SourceCtx) : SourceCtx          -- disjoint sources
-def OracleFamily.asSource (A : OracleFamily) : SourceCtx    -- Env := A.Behavior, impl := id
+def SourceCtx.sum (S T : SourceCtx) : SourceCtx          -- alternative queries; paired environments
+def OracleFamily.asBehaviorSource (A : OracleFamily) : SourceCtx    -- Env := A.Behavior, impl := id
 
-def VirtualOracle.subst
-    (v : VirtualOracle S.spec A)
-    (w : VirtualOracle (A.asSource.tensor T).spec B) :
-    VirtualOracle (S.tensor T).spec B
+def VirtualOracle.substWithSuffix
+    (v : VirtualOracle S.spec A) (extra : OracleSpec J)
+    (w : VirtualOracle (A.spec + extra) B) : VirtualOracle (S.spec + extra) B
 
-theorem eval_subst : (subst v w).eval (ρS + ρT) = w.eval (v.eval ρS + ρT)
+-- For extra := T.spec, the interpreted suffix remains unchanged:
+-- (v.substWithSuffix T.spec w).eval (QueryImpl.add ρS ρT)
+--   = w.eval (QueryImpl.add (v.eval ρS) ρT)
 ```
 
-Stage two sees the *declared middle interface* (`A.asSource` — behavior only) plus its own suffix resources; never stage one's hidden environment. Sharing/renaming/weakening are explicit context morphisms; duplicating a handle is contraction along a resource identity, not tensoring. Laws (`subst_assoc`, identities) are stated up to `SourceEquiv` (spec iso + env equiv + naturality), under **two named equivalences**: `≈sem` (same behavior under every handler) and `≈op` (typed trace equivalence preserving order/multiplicity/cost). Semantic laws need `≈sem`; compiler theorems need `≈op`, witnessed through VCVio runtime artifacts and resource transport. **Reduction-level operational associativity is not promised.** A three-stage client first uses PolyFun's existing `TypeTree.Chain.then`, path equivalence, and `reassoc` laws. Only a concrete failure of that API justifies a smaller upstream extension; a new presentation datatype remains the last fallback.
+Stage two sees the *declared middle interface* (`A.asBehaviorSource` — behavior only) plus its own suffix resources; never stage one's hidden environment. Sharing/renaming/weakening are explicit context morphisms; duplicating a handle is contraction along a resource identity, not forming a disjoint union. The implemented ordinary-substitution laws (`subst_assoc`, identities) use `VirtualOracle.SemEquiv`: the same answers under every deterministic handler. Suffix substitution currently exposes its evaluation equation. Source presentation changes use `SourceEquiv`, which includes inverse environment maps and is a separate notion. Compiler theorems will require an operational relation preserving typed traces, order, multiplicity, and cost; no such relation or law is supplied by the virtual-oracle API. **Reduction-level operational associativity is not promised.** A three-stage client first uses PolyFun's existing `TypeTree.Chain.then`, path equivalence, and `reassoc` laws. Only a concrete failure of that API justifies a smaller upstream extension; a new presentation datatype remains the last fallback.
 
 What `subst` does *not* subsume: interactive-phase monad retargeting (`retargetMonads` / `retargetAmbientWithRoute`) remains — it rewrites receiver-node access during interaction, not terminal claims. Sequential execution decomposition must be proved order-preserving (no generic commutativity for `OracleComp` worlds); the commutative-monad proof from the plain layer is scoped to the pure stateless case.
 

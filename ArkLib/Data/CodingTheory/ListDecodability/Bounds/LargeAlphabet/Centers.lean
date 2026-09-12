@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Basic
 
 /-!
 # Large-alphabet barrier: separated subcodes, centres, and incidence counting
@@ -18,6 +19,8 @@ the core of the rounded-barrier codeword bound.
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and the
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

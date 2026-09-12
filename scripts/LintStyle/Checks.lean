@@ -163,9 +163,26 @@ private def sanitizeLines (lines : Array String) : Array String :=
 private def leadingSpaces (s : String) : Nat :=
   (s.toList.takeWhile (· == ' ')).length
 
+/-- Declaration modifiers stripped before recognising a `def`, `lemma`, or `theorem` opener.
+
+The module system adds `public` and `meta`, so a declaration carrying a visibility modifier must
+still be seen by the continuation-indent check once sources are modulized.
+
+`private` and `noncomputable` are deliberately absent. They have never been stripped here, so
+`ERR_IND` has never applied to declarations carrying them; adding them surfaces 160 pre-existing
+violations across 36 files, which is a reindentation change for its own PR rather than a silent
+rider on this one. -/
+private def declarationModifiers : List String :=
+  ["public ", "protected ", "meta "]
+
+/-- Strip any leading declaration modifiers, in any order. -/
+private partial def stripDeclarationModifiers (line : String) : String :=
+  match declarationModifiers.find? (fun modifier => line.startsWith modifier) with
+  | some modifier => stripDeclarationModifiers (line.drop modifier.length).toString
+  | none => line
+
 private def startsDeclaration (line : String) : Bool :=
-  let line := line.trimAsciiStart.toString
-  let line := if line.startsWith "protected " then (line.drop 10).toString else line
+  let line := stripDeclarationModifiers line.trimAsciiStart.toString
   (line.startsWith "def " || line.startsWith "lemma " || line.startsWith "theorem ") &&
     !line.contains ":="
 
@@ -646,6 +663,18 @@ def runSelfTests : IO Unit := do
   assertSelfTest (hasCode "ERR_MOD" (validHeader ++ #["/- outer comment", "/-! nested fake -/",
     "-/", "def x := 1"]))
     "a module-doc opener nested in an ordinary comment must not satisfy the header policy"
+  assertSelfTest (!hasCode "ERR_MOD" (validHeader ++ #["module", "",
+    "public import ArkLib.Data.Fin.Basic", "", "/-! Module docstring. -/", "",
+    "@[expose] public section", "", "theorem t : True := trivial"]))
+    "the migration's canonical file shape must satisfy the header policy"
+  assertSelfTest (hasCode "ERR_MOD" (validHeader ++ #["module", "",
+    "public import ArkLib.Data.Fin.Basic", "", "@[expose] public section", "",
+    "/-! Module docstring. -/", "theorem t : True := trivial"]))
+    "a public section placed before the module docstring must be rejected"
+  assertSelfTest (hasCode "ERR_IND" #["public theorem t :", "  True := trivial"])
+    "a `public` declaration opener must still be covered by the continuation-indent check"
+  assertSelfTest (hasCode "ERR_IND" #["meta def f :", "  Nat := 1"])
+    "a `meta` declaration opener must still be covered by the continuation-indent check"
   assertSelfTest (violationExitCode 0 == 0 && violationExitCode 1 == 1 &&
     violationExitCode 125 == 125 && violationExitCode 126 == 125)
     "violations must map to a portable nonzero process exit code"
