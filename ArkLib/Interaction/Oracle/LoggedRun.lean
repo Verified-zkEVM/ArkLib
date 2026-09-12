@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.LoggedExecution
+module
+
+public import ArkLib.Interaction.Oracle.LoggedExecution
 
 /-!
 # Paired logged executions
@@ -12,6 +14,8 @@ import ArkLib.Interaction.Oracle.LoggedExecution
 The supported constructor accepts a reduction and its inputs, never separately supplied outputs
 and traces. Membership in a runner distribution remains the provenance criterion.
 -/
+
+@[expose] public section
 
 universe u v w
 
@@ -30,7 +34,7 @@ structure LoggedRun (protocol : Oracle.Protocol.{u}) (initial : PFunctor.{u, u})
   /-- The actual path, resources, private output, and verifier claim. -/
   core : CoreRun protocol initial Stmt Out OutP
   /-- The verifier's source queries and responses, in execution order. -/
-  deltaTrace : QueryLog (OracleSpec.ofPFunctor
+  sourceLog : QueryLog (OracleSpec.ofPFunctor
     (TypeTree.accessAfter protocol.tree protocol.oracles initial core.path.toBranchPath))
 
 namespace LoggedRun
@@ -50,7 +54,7 @@ def verifierLocalView (run : LoggedRun protocol initial Stmt Out OutP) :
       QueryLog (OracleSpec.ofPFunctor
         (TypeTree.accessAfter protocol.tree protocol.oracles initial path)) ×
       TerminalClaim protocol initial Stmt Out path :=
-  ⟨run.core.path.toBranchPath, run.deltaTrace, run.core.outcome⟩
+  ⟨run.core.path.toBranchPath, run.sourceLog, run.core.outcome⟩
 
 /-- Closing uses the core's own resources; the trace is observational evidence, not a handler. -/
 def closed (run : LoggedRun protocol initial Stmt Out OutP) := run.core.closed
@@ -58,6 +62,7 @@ def closed (run : LoggedRun protocol initial Stmt Out OutP) := run.core.closed
 end LoggedRun
 
 /-- Run the prover setup and both strategies once, pairing the core result with its source log. -/
+@[no_expose]
 def executeLogged {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {StatementIn : Type v} {WitnessIn : Type w}
@@ -73,7 +78,7 @@ def executeLogged {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   let prover ← reduction.prover stmt wit
   let result ← executeStrategiesLogged ambient protocol.tree protocol.roles protocol.oracles
     initial impl prover (reduction.verifier stmt)
-  return ⟨⟨result.path, impl, result.proverOut, result.verifierOut⟩, result.deltaTrace⟩
+  return ⟨⟨result.path, impl, result.proverOut, result.verifierOut⟩, result.sourceLog⟩
 
 /-- Erasing the log recovers the existing trace-free core executor as an open ambient program. -/
 theorem executeLogged_erase {ι : Type u} {ambient : OracleSpec.{u, u} ι}

@@ -20,21 +20,21 @@ open OracleComp OracleSpec CoreRunExample
 
 /-- The terminal action has effects before deciding its returned outcome. -/
 def terminal (mode : Nat) :
-    OracleComp (ambient + finalSpec) (Terminal (OracleClaim finalSpec Nat output) Nat) := do
+    OracleComp (ambient + finalSpec) (Terminal (OpenClaim finalSpec Nat output) Nat) := do
   let _ ← liftM ((ambient + finalSpec).query (.inl 2))
   let sent : Nat ← liftM ((ambient + finalSpec).query (.inr (.inr ())))
   return match mode with
     | 0 => .reject
     | 1 => .fault 17
     | 2 => .fault 23
-    | _ => .accept ⟨sent, plan⟩
+    | _ => .accept ⟨sent, outputOracle⟩
 
 /-- Query access is still extended only after the oracle receive. -/
 def verifier (mode : Nat) : Verifier.Strategy ambient protocol.tree protocol.roles
     protocol.oracles input.toPFunctor
     (TerminalOutcome protocol input.toPFunctor (fun _ => Nat) (fun _ => output) Nat) := by
   change OracleComp (ambient + finalSpec)
-    (OracleComp (ambient + finalSpec) (Terminal (OracleClaim finalSpec Nat output) Nat))
+    (OracleComp (ambient + finalSpec) (Terminal (OpenClaim finalSpec Nat output) Nat))
   exact do
     let _ ← liftM ((ambient + finalSpec).query (.inl 1))
     return terminal mode
@@ -59,7 +59,7 @@ example (hidden : Nat) : (observed 1 7 11 hidden).2 = [9, 0, 1, 2] := rfl
 /-- A returned fault retains the terminal source observation and private output. -/
 example (hidden : Nat) :
     ((observed 1 7 11 hidden).1.result.proverOut,
-      (observed 1 7 11 hidden).1.result.deltaTrace) =
+      (observed 1 7 11 hidden).1.result.sourceLog) =
       (hidden, [⟨Sum.inr (), (11 : Nat)⟩]) := rfl
 
 /-- Fault labels survive closing separately. -/

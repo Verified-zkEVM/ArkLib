@@ -3,19 +3,20 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Quang Dao
 -/
+module
 
-import ArkLib.Commitments.Functional.Basic
-import ArkLib.Commitments.Functional.KZG.Algebra
-import ArkLib.Commitments.Functional.KZG.Sampling
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import CompPoly.Univariate.Lagrange
-import ArkLib.ToCompPoly.Univariate.Basic
-import Mathlib.Algebra.Field.ZMod
-import Mathlib.Algebra.Order.Star.Basic
-import Mathlib.Algebra.Polynomial.FieldDivision
-import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions
-import VCVio.OracleComp.QueryTracking.CachingOracle
+public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.KZG.Algebra
+public import ArkLib.Commitments.Functional.KZG.Sampling
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import CompPoly.Univariate.Lagrange
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import Mathlib.Algebra.Field.ZMod
+public import Mathlib.Algebra.Order.Star.Basic
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions
+public import VCVio.OracleComp.QueryTracking.CachingOracle
 
 /-!
 # The KZG Polynomial Commitment Scheme
@@ -33,6 +34,8 @@ functional commitment scheme. Correctness and security proofs live in sibling fi
 * [Kate, A., Zaverucha, G. M., and Goldberg, I.,
   *Constant-Size Commitments to Polynomials and Their Applications*][KZG10]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 

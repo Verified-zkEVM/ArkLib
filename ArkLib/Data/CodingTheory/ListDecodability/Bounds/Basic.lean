@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Counting identities shared by the list-size bounds
@@ -21,6 +22,8 @@ bound family, which is why they live here rather than in any one of the sibling 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

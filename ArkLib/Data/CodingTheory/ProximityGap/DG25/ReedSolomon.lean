@@ -3,8 +3,9 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
+public import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 
 /-!
 # DG25 Reed-Solomon Corollaries
@@ -12,6 +13,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 This module specializes the DG25 proximity-gap framework to Reed-Solomon codes and proves
 the resulting affine-line and tensor-gap corollaries.
 -/
+
+@[expose] public section
 
 -- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
 set_option backward.isDefEq.respectTransparency false

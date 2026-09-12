@@ -3,16 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.LoggedExecution
-import ArkLib.Interaction.Oracle.WorldSegments
+module
+
+public import ArkLib.Interaction.Oracle.LoggedExecution
+import all ArkLib.Interaction.Oracle.LoggedExecution
+public import ArkLib.Interaction.Oracle.WorldSegments
 
 /-!
 # Executions with local world-query segments
 
-The runner logs each participant's actual local action, after interpreting claim-resource reads.
+The runner logs each participant's actual local action, after interpreting source/access reads.
 The paired observation theorem compares this same execution with the source-logged runner and
 its complete ambient query log. No trace replay or independently supplied phase evidence is used.
 -/
+
+@[expose] public section
 
 namespace Interaction.Oracle
 
@@ -30,12 +35,13 @@ def LoggedResult.observe {tree : Oracle.TypeTree} {oracles : tree.OracleDecorati
     {initial : PFunctor} {OutP : tree.ExecutionPath → Type} {OutV : tree.BranchPath → Type}
     (result : LoggedResult tree oracles initial OutP OutV) :
     LoggedObservation tree oracles initial OutP OutV :=
-  ⟨result.path, result.proverOut, result.verifierOut, result.deltaTrace⟩
+  ⟨result.path, result.proverOut, result.verifierOut, result.sourceLog⟩
 
 /-- One runner's outputs, source log, and concrete-path-indexed local world segments. -/
 structure PhasedResult {ι : Type} (ambient : OracleSpec ι)
     (tree : Oracle.TypeTree) (roles : tree.RoleDecoration) (oracles : tree.OracleDecoration)
-    (initial : PFunctor) (OutP : tree.ExecutionPath → Type) (OutV : tree.BranchPath → Type) where
+    (initial : PFunctor) (OutP : tree.ExecutionPath → Type)
+    (OutV : tree.BranchPath → Type) where
   private mk ::
   /-- Actual concrete path. -/
   path : tree.ExecutionPath
@@ -43,8 +49,8 @@ structure PhasedResult {ι : Type} (ambient : OracleSpec ι)
   proverOut : OutP path
   /-- Verifier terminal output. -/
   verifierOut : OutV path.toBranchPath
-  /-- Ordered claim-resource observations, routed to final access. -/
-  deltaTrace : QueryLog
+  /-- Ordered source observations, routed to final access. -/
+  sourceLog : QueryLog
     (OracleSpec.ofPFunctor (TypeTree.accessAfter tree oracles initial path.toBranchPath))
   /-- Actual local-action world logs, with boundaries determined by `path`. -/
   world : WorldSegments ambient tree path
@@ -57,7 +63,7 @@ def observe {ι : Type} {ambient : OracleSpec ι} {tree : Oracle.TypeTree}
     {OutP : tree.ExecutionPath → Type} {OutV : tree.BranchPath → Type}
     (result : PhasedResult ambient tree roles oracles initial OutP OutV) :
     LoggedObservation tree oracles initial OutP OutV :=
-  ⟨result.path, result.proverOut, result.verifierOut, result.deltaTrace⟩
+  ⟨result.path, result.proverOut, result.verifierOut, result.sourceLog⟩
 
 /-- Keep the complete chronological world log paired with the source-run observations. -/
 def logView {ι : Type} {ambient : OracleSpec ι} {tree : Oracle.TypeTree}
@@ -70,6 +76,7 @@ end PhasedResult
 
 /-- Execute restricted strategies in the paired runner's ownership order, logging each verifier
 local action once. Oracle receives extend behavior before executing the verifier action. -/
+@[no_expose]
 def executeStrategiesPhased {ι : Type} (ambient : OracleSpec ι) :
     (tree : Oracle.TypeTree) → (roles : tree.RoleDecoration) →
     (oracles : tree.OracleDecoration) → (initial : PFunctor) →
@@ -79,43 +86,46 @@ def executeStrategiesPhased {ι : Type} (ambient : OracleSpec ι) :
     Verifier.Strategy ambient tree roles oracles initial OutV →
     OracleComp ambient (PhasedResult ambient tree roles oracles initial OutP OutV)
   | .done, _, _, initial, impl, _, _, prover, verifier => do
-      let ⟨result, world⟩ ← ((simulateQ (Verifier.loggedReadImpl ambient initial impl)
+      let ⟨result, world⟩ ← ((simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl)
         verifier).run).withQueryLog
       return ⟨⟨⟩, prover, result.1, result.2, world⟩
   | .public _ rest, ⟨.sender, roles⟩, oracles, initial, impl, OutP, OutV, prover, verifier => do
       let ⟨⟨move, nextP⟩, worldP⟩ ← prover.withQueryLog
       let ⟨nextV, worldV⟩ ←
-        ((simulateQ (Verifier.loggedReadImpl ambient initial impl) (verifier
+        ((simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl) (verifier
           move)).run).withQueryLog
       let result ← executeStrategiesPhased ambient (rest move) (roles move) (oracles.2 move)
         initial impl (OutP := fun path => OutP ⟨move, path⟩)
         (OutV := fun path => OutV ⟨move, path⟩) nextP nextV.1
       return ⟨⟨move, result.path⟩, result.proverOut, result.verifierOut,
         TypeTree.routeLog (rest move) (oracles.2 move) initial result.path.toBranchPath nextV.2 ++
-          result.deltaTrace, ⟨worldP, worldV, result.world⟩⟩
-  | .public _ rest, ⟨.receiver, roles⟩, oracles, initial, impl, OutP, OutV, prover, verifier => do
+          result.sourceLog, ⟨worldP, worldV, result.world⟩⟩
+  | .public _ rest, ⟨.receiver, roles⟩, oracles, initial, impl, OutP, OutV, prover,
+      verifier => do
       let ⟨nextV, worldV⟩ ←
-        ((simulateQ (Verifier.loggedReadImpl ambient initial impl) verifier).run).withQueryLog
+        ((simulateQ (Verifier.loggedLiftAccessImpl ambient initial impl) verifier).run).withQueryLog
       let ⟨nextP, worldP⟩ ← (prover nextV.1.1).withQueryLog
       let result ← executeStrategiesPhased ambient (rest nextV.1.1) (roles nextV.1.1)
         (oracles.2 nextV.1.1) initial impl (OutP := fun path => OutP ⟨nextV.1.1, path⟩)
         (OutV := fun path => OutV ⟨nextV.1.1, path⟩) nextP nextV.1.2
       return ⟨⟨nextV.1.1, result.path⟩, result.proverOut, result.verifierOut,
         TypeTree.routeLog (rest nextV.1.1) (oracles.2 nextV.1.1) initial
-          result.path.toBranchPath nextV.2 ++ result.deltaTrace, ⟨worldV, worldP, result.world⟩⟩
+          result.path.toBranchPath nextV.2 ++ result.sourceLog,
+            ⟨worldV, worldP, result.world⟩⟩
   | .oracle _ rest, roles, oracles, initial, impl, OutP, OutV, prover, verifier => do
       let ⟨⟨message, nextP⟩, worldP⟩ ← prover.withQueryLog
       let extended := Access.extend initial oracles.1
       let extendedImpl := Access.extendImpl initial oracles.1 impl message
       let ⟨nextV, worldV⟩ ←
-        ((simulateQ (Verifier.loggedReadImpl ambient extended extendedImpl)
+        ((simulateQ (Verifier.loggedLiftAccessImpl ambient extended extendedImpl)
           verifier).run).withQueryLog
       let result ← executeStrategiesPhased ambient (rest PUnit.unit) (roles.2 PUnit.unit)
         (oracles.2 PUnit.unit) extended extendedImpl (OutP := fun path => OutP ⟨message, path⟩)
         (OutV := fun path => OutV ⟨PUnit.unit, path⟩) nextP nextV.1
       return ⟨⟨message, result.path⟩, result.proverOut, result.verifierOut,
         TypeTree.routeLog (rest PUnit.unit) (oracles.2 PUnit.unit) extended
-          result.path.toBranchPath nextV.2 ++ result.deltaTrace, ⟨worldP, worldV, result.world⟩⟩
+          result.path.toBranchPath nextV.2 ++ result.sourceLog,
+            ⟨worldP, worldV, result.world⟩⟩
 
 
 set_option backward.isDefEq.respectTransparency false in

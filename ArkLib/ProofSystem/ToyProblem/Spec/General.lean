@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.ProofSystem.ToyProblem.Definitions
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-import ArkLib.OracleReduction.Security.RbrGame
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.ProofSystem.ToyProblem.Definitions
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import ArkLib.OracleReduction.Security.RbrGame
 
 /-!
 # Toy problem oracle reduction (ABF26 Construction 6.2)
@@ -145,6 +146,8 @@ separately).
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 

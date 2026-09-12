@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # Line decoding
@@ -31,6 +32,8 @@ counterexample are recorded in the
   2026. §4.4.
 - [GG25] Goyal-Guruswami. Definition 3.1 / Theorem 3.5 (original source).
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 

@@ -3,7 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.CoreRun
+module
+
+public import ArkLib.Interaction.Oracle.CoreRun
 
 /-!
 # Explicit protocol outcomes
@@ -14,6 +16,8 @@ model's named failure. These values do not account for missing runtime probabili
 -/
 
 universe u v w
+
+@[expose] public section
 
 namespace Interaction.Oracle
 
@@ -143,12 +147,12 @@ variable {protocol : Oracle.Protocol.{u}} {initial : PFunctor.{u, u}}
     {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
     {OutP : protocol.tree.ExecutionPath → Type u}
 
-/-- The optional outcome decoded after closing with this run's own resources. -/
+/-- The optional outcome decoded after closing with this run's own availableContext. -/
 def terminalClosed (Fault : Type v) (run : CoreRun protocol initial Stmt Out OutP) :
     Terminal (ClosedClaim (Stmt run.path.toBranchPath) (Out run.path.toBranchPath)) Fault :=
   Terminal.ofOption run.closed
 
-/-- Closing a decoded core outcome uses exactly the resources paired by the core executor. -/
+/-- Closing a decoded core outcome uses exactly the availableContext paired by the core executor. -/
 theorem terminalClosed_eq (Fault : Type v) (run : CoreRun protocol initial Stmt Out OutP) :
     run.terminalClosed Fault = (Terminal.ofOption run.outcome).map
       (fun claim => claim.closeWith

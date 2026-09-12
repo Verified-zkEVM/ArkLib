@@ -3,17 +3,21 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.LoggedRun
-import VCVio.OracleComp.Runtime
+module
+
+public import ArkLib.Interaction.Oracle.LoggedRun
+public import VCVio.OracleComp.Runtime
 
 /-!
 # Executing reductions in a persistent runtime
 
 The runtime runs one source-logged reduction and returns its output, final state, and ordered
-ambient query log together. Source queries stay in `LoggedRun.deltaTrace`; ambient queries stay
+ambient query log together. Source queries stay in `LoggedRun.sourceLog`; ambient queries stay
 in the runtime's query log. Closing is derived from the returned core's own resources.
 A run-result value alone carries no assertion that it was sampled by this computation.
 -/
+
+@[expose] public section
 
 namespace Interaction.Oracle
 

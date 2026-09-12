@@ -3,25 +3,29 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
-import Init.Data.List.FinRange
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Degree.Defs
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Data.Finset.Insert
-import Mathlib.Data.Fintype.Card
-import Mathlib.Data.Matrix.Mul
-import Mathlib.Data.Matrix.Reflection
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.Polynomial.Interface
-import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
-import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
+public import Init.Data.List.FinRange
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Algebra.Polynomial.Degree.Defs
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Data.Finset.Insert
+public import Mathlib.Data.Fintype.Card
+public import Mathlib.Data.Matrix.Mul
+public import Mathlib.Data.Matrix.Reflection
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 
 /-! # Berlekamp-Welch Conditions -/
+
+@[expose] public section
 
 namespace BerlekampWelch
 

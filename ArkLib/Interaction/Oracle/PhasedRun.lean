@@ -3,17 +3,25 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Oracle.PhasedExecution
-import ArkLib.Interaction.Oracle.Runtime
+module
+
+public import ArkLib.Interaction.Oracle.PhasedExecution
+public import ArkLib.Interaction.Oracle.Runtime
+public import ArkLib.Interaction.Oracle.TerminalRun
+import all ArkLib.Interaction.Oracle.WorldSegments
+import all ArkLib.Interaction.Oracle.LoggedRun
+import all ArkLib.Interaction.Oracle.TerminalRun
 
 /-!
 # Complete protocol executions with world phases
 
 The prover setup and every subsequent local action are instrumented in one open computation.
 An oracle runtime interprets that computation with one initialized persistent state. Boundary
-labels and resource schemas come from the returned concrete path; world-query profiles use an
-explicit fixed resource classification.
+labels and available contexts come from the returned concrete path; world-query profiles use an
+explicit fixed query classification.
 -/
+
+@[expose] public section
 
 namespace Interaction.Oracle
 
@@ -26,6 +34,8 @@ structure PhasedRun {ι : Type} (ambient : OracleSpec ι) (tree : Oracle.TypeTre
   private mk ::
   /-- World queries made by the prover setup, before the first protocol move. -/
   setupTrace : QueryLog ambient
+  /-- The input behavior supplied to this same execution. -/
+  inputImpl : QueryImpl (OracleSpec.ofPFunctor initial) Id
   /-- The actual protocol execution and its node-local query regions. -/
   execution : PhasedResult ambient tree roles oracles initial OutP OutV
 
@@ -57,35 +67,36 @@ theorem phases_flatten (run : PhasedRun ambient tree roles oracles initial OutP 
 theorem phases_reached (run : PhasedRun ambient tree roles oracles initial OutP OutV)
     (phase : WorldPhase ambient tree)
     (member : phase ∈ run.phases) :
-    Nonempty (TypeTree.FullPrefix.Extends phase.prefix
-      (TypeTree.FullPrefix.ofExecutionPath run.execution.path)) := by
+    Nonempty (TypeTree.ExecutionPrefix.Extends phase.prefix
+      (TypeTree.ExecutionPrefix.ofExecutionPath run.execution.path)) := by
   simp only [phases, WorldSegments.phasesWithSetup, List.mem_cons] at member
   rcases member with rfl | member
-  · exact ⟨⟨TypeTree.FullPrefix.ofExecutionPath run.execution.path,
-      TypeTree.FullPrefix.root_comp _⟩⟩
+  · exact ⟨⟨TypeTree.ExecutionPrefix.ofExecutionPath run.execution.path,
+      TypeTree.ExecutionPrefix.root_comp _⟩⟩
   · exact WorldSegments.phases_reached roles run.execution.world phase member
 
-/-- Boundary resources embed into final resources with unchanged stable identities. -/
-noncomputable def resourceInclusion (run : PhasedRun ambient tree roles oracles initial OutP OutV)
+/-- A boundary's available context embeds into the final context with unchanged stable names. -/
+noncomputable def contextInclusion (run : PhasedRun ambient tree roles oracles initial OutP OutV)
     (phase : WorldPhase ambient tree)
     (member : phase ∈ run.phases) (InputId : Type) :
-    SchemaHom (phase.resources InputId)
-      ((TypeTree.FullPrefix.ofExecutionPath run.execution.path).resources InputId) :=
-  TypeTree.FullPrefix.resourceInclusion (run.phases_reached phase member).some.toCursor
+    NamedContext.Inclusion (phase.availableContext InputId)
+      ((TypeTree.ExecutionPrefix.ofExecutionPath run.execution.path).availableContext InputId) :=
+  TypeTree.ExecutionPrefix.contextInclusion (run.phases_reached phase member).some.toCursor
     InputId
 
 /-- The sum of action profiles counts precisely the complete world log, with one fixed identity
 classification throughout. Repeated queries contribute repeatedly. -/
-theorem profiles_sum {κ : Type} (run : PhasedRun ambient tree roles oracles initial OutP OutV)
+theorem queryProfiles_sum {κ : Type} (run : PhasedRun ambient tree roles oracles initial OutP OutV)
     (classify : ambient.Domain → κ) :
-    ((run.phases).map (fun phase => phase.profile classify)).sum =
+    ((run.phases).map (fun phase => phase.queryProfile classify)).sum =
       (run.worldTrace.map
         (fun entry => ResourceProfile.single (ω := ℕ) (classify entry.1))).sum := by
-  rw [WorldPhase.profile_sum, run.phases_flatten]
+  rw [WorldPhase.queryProfile_sum, run.phases_flatten]
 
 end PhasedRun
 
 /-- Run setup and both strategies once, instrumenting every actual local action. -/
+@[no_expose]
 def executePhases {ι : Type} (ambient : OracleSpec ι)
     (tree : Oracle.TypeTree) (roles : tree.RoleDecoration)
     (oracles : tree.OracleDecoration) (initial : PFunctor)
@@ -96,7 +107,7 @@ def executePhases {ι : Type} (ambient : OracleSpec ι)
     OracleComp ambient (PhasedRun ambient tree roles oracles initial OutP OutV) := do
   let ⟨prover, setupTrace⟩ ← setup.withQueryLog
   let result ← executeStrategiesPhased ambient tree roles oracles initial impl prover verifier
-  return ⟨setupTrace, result⟩
+  return ⟨setupTrace, impl, result⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Including setup preserves the complete paired world/source observation of the logged run. -/
@@ -173,11 +184,36 @@ variable {ι : Type} {ambient : OracleSpec ι} {protocol : Oracle.Protocol}
 def LoggedRun.observation (run : LoggedRun protocol initial Stmt Out OutP) :
     LoggedObservation protocol.tree protocol.oracles initial OutP
       (TerminalClaim protocol initial Stmt Out) :=
-  ⟨run.core.path, run.core.proverOut, run.core.outcome, run.deltaTrace⟩
+  ⟨run.core.path, run.core.proverOut, run.core.outcome, run.sourceLog⟩
+
+/-- Close an optional claim with the input behavior and concrete messages stored by this run. -/
+def PhasedRun.closed
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalClaim protocol initial Stmt Out)) :
+    Option (ClosedClaim (Stmt run.execution.path.toBranchPath)
+      (Out run.execution.path.toBranchPath)) :=
+  run.execution.verifierOut.map fun claim =>
+    claim.closeWith
+      (run.execution.path.closingImpl protocol.oracles initial run.inputImpl)
+
+/-- Package the structural branch together with its closed optional outcome. -/
+def PhasedRun.closedResult
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalClaim protocol initial Stmt Out)) :
+    (path : protocol.tree.BranchPath) × Option (ClosedClaim (Stmt path) (Out path)) :=
+  ⟨run.execution.path.toBranchPath, run.closed⟩
+
+/-- Closing cannot turn verifier rejection into a successful claim. -/
+@[simp]
+theorem PhasedRun.closed_eq_none_iff
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalClaim protocol initial Stmt Out)) :
+    run.closed = none ↔ run.execution.verifierOut = none := by
+  simp [PhasedRun.closed]
 
 /-- The claim-bearing phased runner agrees with `executeLogged`, including the complete world
-log and the same path-dependent output claim. Input behavior remains the supplied impl;
-this phase observation does not replace the existing logged run's closing operation. -/
+log and the same path-dependent output claim. The phased artifact separately retains the same
+input behavior for its closing operation. -/
 theorem executePhased_logView {StatementIn WitnessIn : Type}
     (reduction : Reduction ambient protocol initial StatementIn WitnessIn OutP
       (TerminalClaim protocol initial Stmt Out))
@@ -189,7 +225,121 @@ theorem executePhased_logView {StatementIn WitnessIn : Type}
   simp [executeLogged, OracleComp.withQueryLog_bind, LoggedRun.observation, LoggedResult.observe,
     monad_norm]
 
+/-- Closing the phased artifact agrees with closing the trace-free artifact produced by the
+same reduction execution. -/
+theorem executePhased_closed {StatementIn WitnessIn : Type}
+    (reduction : Reduction ambient protocol initial StatementIn WitnessIn OutP
+      (TerminalClaim protocol initial Stmt Out))
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
+    PhasedRun.closedResult <$> executePhased reduction impl stmt wit =
+      (fun run => ⟨run.path.toBranchPath, run.closed⟩) <$>
+        executeCore reduction impl stmt wit := by
+  simp only [executePhased, executePhases, executeCore, Reduction.execute, map_bind, map_pure]
+  conv_rhs => rw [← loggingOracle.fst_map_run_simulateQ (reduction.prover stmt wit)]
+  simp only [bind_map_left, bind_assoc]
+  apply bind_congr
+  intro setupResult
+  have observed := executeStrategiesPhased_erase ambient protocol.tree protocol.roles
+    protocol.oracles initial impl setupResult.1 (reduction.verifier stmt)
+  have projected := congrArg (fun program =>
+    (fun observation : LoggedObservation protocol.tree protocol.oracles initial OutP
+        (TerminalClaim protocol initial Stmt Out) =>
+      (⟨observation.1.toBranchPath,
+        observation.2.2.1.map fun claim => claim.closeWith
+          (observation.1.closingImpl protocol.oracles initial impl)⟩ :
+        (path : protocol.tree.BranchPath) ×
+          Option (ClosedClaim (Stmt path) (Out path)))) <$> program) observed
+  simp only [Functor.map_map, PhasedResult.observe, LoggedResult.observe] at projected
+  have erased := executeStrategiesLogged_erase ambient protocol.tree protocol.roles
+    protocol.oracles initial impl setupResult.1 (reduction.verifier stmt)
+  have closed := congrArg (fun program =>
+    (fun result =>
+      (⟨result.1.toBranchPath,
+        result.2.2.map fun claim => claim.closeWith
+          (result.1.closingImpl protocol.oracles initial impl)⟩ :
+        (path : protocol.tree.BranchPath) ×
+          Option (ClosedClaim (Stmt path) (Out path)))) <$> program) erased
+  simp only [Functor.map_map, LoggedResult.erase] at closed
+  simpa [PhasedRun.closedResult, PhasedRun.closed, CoreRun.closed] using projected.trans closed
+
 end Claims
+
+section TerminalClaims
+
+variable {ι : Type} {ambient : OracleSpec ι} {protocol : Oracle.Protocol}
+    {initial : PFunctor} {Stmt : protocol.tree.BranchPath → Type}
+    {Idx : protocol.tree.BranchPath → Type}
+    {Obj : (path : protocol.tree.BranchPath) → Idx path → Type}
+    {Out : (path : protocol.tree.BranchPath) → OracleFamily (Idx path) (Obj path)}
+    {OutP : protocol.tree.ExecutionPath → Type} {Fault : Type}
+
+/-- Close an explicit returned outcome with this phased run's stored input and messages.
+Rejection and returned faults remain distinct. -/
+def PhasedRun.terminalClosed
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalOutcome protocol initial Stmt Out Fault)) :
+    Terminal (ClosedClaim (Stmt run.execution.path.toBranchPath)
+      (Out run.execution.path.toBranchPath)) Fault :=
+  run.execution.verifierOut.map fun claim =>
+    claim.closeWith
+      (run.execution.path.closingImpl protocol.oracles initial run.inputImpl)
+
+/-- Package the structural branch together with its closed explicit outcome. -/
+def PhasedRun.terminalClosedResult
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalOutcome protocol initial Stmt Out Fault)) :
+    (path : protocol.tree.BranchPath) ×
+      Terminal (ClosedClaim (Stmt path) (Out path)) Fault :=
+  ⟨run.execution.path.toBranchPath, run.terminalClosed⟩
+
+/-- Closing cannot create or erase verifier rejection. -/
+@[simp]
+theorem PhasedRun.terminalClosed_eq_reject_iff
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalOutcome protocol initial Stmt Out Fault)) :
+    run.terminalClosed = .reject ↔ run.execution.verifierOut = .reject := by
+  unfold PhasedRun.terminalClosed
+  cases run.execution.verifierOut <;> simp [Terminal.map]
+
+/-- Closing preserves the exact returned fault. -/
+@[simp]
+theorem PhasedRun.terminalClosed_eq_fault_iff
+    (run : PhasedRun ambient protocol.tree protocol.roles protocol.oracles initial OutP
+      (TerminalOutcome protocol initial Stmt Out Fault)) (fault : Fault) :
+    run.terminalClosed = .fault fault ↔ run.execution.verifierOut = .fault fault := by
+  unfold PhasedRun.terminalClosed
+  cases run.execution.verifierOut <;> simp [Terminal.map]
+
+/-- Closing a phased explicit outcome agrees with closing the terminal artifact produced by the
+same reduction execution. The comparison erases phase instrumentation; it does not replay the
+protocol or construct a replacement terminal run. -/
+theorem executePhased_terminalClosed {StatementIn WitnessIn : Type}
+    (reduction : Reduction ambient protocol initial StatementIn WitnessIn OutP
+      (TerminalOutcome protocol initial Stmt Out Fault))
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) (stmt : StatementIn) (wit : WitnessIn) :
+    PhasedRun.terminalClosedResult <$> executePhased reduction impl stmt wit =
+      (fun run => ⟨run.result.path.toBranchPath, run.closed⟩) <$>
+        executeTerminal reduction impl stmt wit := by
+  simp only [executePhased, executePhases, executeTerminal, map_bind, map_pure]
+  conv_rhs => rw [← loggingOracle.fst_map_run_simulateQ (reduction.prover stmt wit)]
+  simp only [bind_map_left]
+  apply bind_congr
+  intro setupResult
+  have observed := executeStrategiesPhased_erase ambient protocol.tree protocol.roles
+    protocol.oracles initial impl setupResult.1 (reduction.verifier stmt)
+  have projected := congrArg (fun program =>
+    (fun observation : LoggedObservation protocol.tree protocol.oracles initial OutP
+        (TerminalOutcome protocol initial Stmt Out Fault) =>
+      (⟨observation.1.toBranchPath,
+        observation.2.2.1.map fun claim => claim.closeWith
+          (observation.1.closingImpl protocol.oracles initial impl)⟩ :
+        (path : protocol.tree.BranchPath) ×
+          Terminal (ClosedClaim (Stmt path) (Out path)) Fault)) <$> program) observed
+  simpa [PhasedRun.terminalClosedResult, PhasedRun.terminalClosed,
+    PhasedResult.observe, LoggedResult.observe, executeTerminal, TerminalRun.closed,
+    Functor.map_map] using projected
+
+end TerminalClaims
 
 /-- Initialize the world once and execute setup and every protocol action in that shared state. -/
 def executePhasedWithRuntime {ι κ : Type} {Import : OracleSpec ι} {Surface : OracleSpec κ}

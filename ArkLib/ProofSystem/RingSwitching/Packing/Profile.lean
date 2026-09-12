@@ -3,11 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.LinearAlgebra.Basis.Defs
-import Mathlib.Algebra.Algebra.Defs
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Data.Fintype.Pi
+public import Mathlib.LinearAlgebra.Basis.Defs
+public import Mathlib.Algebra.Algebra.Defs
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Data.Fintype.Pi
 
 /-!
 # The packing profile — data layer of `Packing`
@@ -76,6 +77,8 @@ statements.
 * [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based Multilinear
   Polynomial Commitments over Extension Fields."
 -/
+
+@[expose] public section
 
 namespace RingSwitching
 

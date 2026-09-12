@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.Interaction.Oracle.PhasedRun
+import ArkLibTest.Interaction.Oracle.CoreRunExample
 
 /-!
 # Concrete phase and runtime correspondence
@@ -110,14 +111,92 @@ def observed := simulateQ (fun _ => (pure () : Id Unit))
   (executePhased reduction Empty.elim () ())
 
 /-- Repeated setup queries contribute twice under one fixed resource classification. -/
-example : ((observed.phases[0]'(by decide)).profile id).usage 9 = 2 := by
+example : ((observed.phases[0]'(by decide)).queryProfile id).usage 9 = 2 := by
   classical
   change (ResourceProfile.single (ω := ℕ) 9 +
     (ResourceProfile.single (ω := ℕ) 9 + 0)).usage 9 = 2
   simp [ResourceProfile.single, ResourceProfile.ofUsage]
 
 /-- The final prefix retains the concrete hidden payload. -/
-example : (TypeTree.FullPrefix.ofExecutionPath observed.execution.path).messages.1 = 17 := by
+example : (TypeTree.ExecutionPrefix.ofExecutionPath observed.execution.path).messages.1 = 17 := by
   rfl
+
+namespace Closing
+
+open CoreRunExample
+
+/-- The terminal action queries the sent oracle before returning any explicit outcome. -/
+def terminal (mode : Nat) :
+    OracleComp (CoreRunExample.ambient + CoreRunExample.finalSpec)
+      (Terminal (OpenClaim CoreRunExample.finalSpec Nat CoreRunExample.output) Nat) := do
+  let _ ← liftM ((CoreRunExample.ambient + CoreRunExample.finalSpec).query (.inl 2))
+  let sent : Nat ←
+    liftM ((CoreRunExample.ambient + CoreRunExample.finalSpec).query (.inr (.inr ())))
+  return match mode with
+    | 0 => .reject
+    | 1 => .fault 17
+    | _ => .accept ⟨sent, CoreRunExample.outputOracle⟩
+
+/-- Reception and the terminal action remain separate verifier phases. -/
+def verifier (mode : Nat) : Verifier.Strategy CoreRunExample.ambient
+    CoreRunExample.protocol.tree CoreRunExample.protocol.roles CoreRunExample.protocol.oracles
+    CoreRunExample.input.toPFunctor
+    (TerminalOutcome CoreRunExample.protocol CoreRunExample.input.toPFunctor
+      (fun _ => Nat) (fun _ => CoreRunExample.output) Nat) := by
+  change OracleComp (CoreRunExample.ambient + CoreRunExample.finalSpec)
+    (OracleComp (CoreRunExample.ambient + CoreRunExample.finalSpec)
+      (Terminal (OpenClaim CoreRunExample.finalSpec Nat CoreRunExample.output) Nat))
+  exact do
+    let _ ← liftM ((CoreRunExample.ambient + CoreRunExample.finalSpec).query (.inl 1))
+    return terminal mode
+
+/-- Setup, one oracle send, reception, and the terminal action all emit distinguishable events. -/
+def reduction (mode : Nat) : Reduction CoreRunExample.ambient CoreRunExample.protocol
+    CoreRunExample.input.toPFunctor Unit (Nat × Nat) (fun _ => Nat)
+    (TerminalOutcome CoreRunExample.protocol CoreRunExample.input.toPFunctor
+      (fun _ => Nat) (fun _ => CoreRunExample.output) Nat) where
+  prover := fun _ witness => do
+    let _ ← liftM (CoreRunExample.ambient.query 9)
+    return CoreRunExample.prover witness.1 witness.2
+  verifier := fun _ => verifier mode
+
+/-- Run the phase producer under the noncommutative ambient logger. -/
+def observed (mode old message hidden : Nat) :=
+  (simulateQ CoreRunExample.logger
+    (executePhased (reduction mode) (fun _ => old) () (message, hidden))).run []
+
+/-- Read the ordered world regions directly from one completed phased artifact. -/
+def worldTags (run : PhasedRun CoreRunExample.ambient CoreRunExample.protocol.tree
+    CoreRunExample.protocol.roles CoreRunExample.protocol.oracles
+    CoreRunExample.input.toPFunctor (fun _ => Nat)
+    (TerminalOutcome CoreRunExample.protocol CoreRunExample.input.toPFunctor
+      (fun _ => Nat) (fun _ => CoreRunExample.output) Nat)) :=
+  run.phases.map fun phase => phase.queries.map (fun entry => entry.1)
+
+/-- One artifact retains an input answer distinct from the sent answer, closes with both,
+records the sent source observation, and keeps setup/send/receive/terminal world phases ordered. -/
+example (hidden : Nat) :
+    let result := observed 2 7 11 hidden
+    let run := result.1
+    (run.inputImpl (),
+      run.terminalClosed.map fun claim => (claim.oracles ⟨(), ()⟩ : Nat),
+      run.execution.sourceLog,
+      worldTags run,
+      result.2) =
+    (7, .accept 18, [⟨Sum.inr (), (11 : Nat)⟩], [[9], [0], [1], [2]], [9, 0, 1, 2]) := by
+  rfl
+
+/-- Rejection remains explicit on a phased artifact. -/
+example (hidden : Nat) : (observed 0 7 11 hidden).1.terminalClosed = .reject := by
+  rfl
+
+/-- A returned fault remains distinct from rejection on a phased artifact. -/
+example (hidden : Nat) : (observed 1 7 11 hidden).1.terminalClosed = .fault 17 := by
+  rfl
+
+#print axioms executePhased_closed
+#print axioms executePhased_terminalClosed
+
+end Closing
 
 end Interaction.Oracle.PhasedRunTest

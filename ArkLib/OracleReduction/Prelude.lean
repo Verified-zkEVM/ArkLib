@@ -3,15 +3,18 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Batteries.Data.Vector.Lemmas
-import VCVio.OracleComp.Constructions.SampleableType
+public import Batteries.Data.Vector.Lemmas
+public import VCVio.OracleComp.Constructions.SampleableType
 
 /-!
   # Prelude for Interactive (Oracle) Reductions
 
   This file contains preliminary definitions and instances that is used in defining I(O)Rs.
 -/
+
+@[expose] public section
 
 open OracleComp
 

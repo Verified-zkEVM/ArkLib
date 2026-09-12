@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import ArkLib.Data.Lattices.Vectors
-import Mathlib.Algebra.Field.ZMod
-import Mathlib.Data.ZMod.ValMinAbs
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Rq
+public import ArkLib.Data.Lattices.Vectors
+public import Mathlib.Algebra.Field.ZMod
+public import Mathlib.Data.ZMod.ValMinAbs
 
 /-!
 # Centered Norms And Norm-Growth Bounds on `Rq Φ` (Common Layer)
@@ -31,6 +33,8 @@ There are two more complicated norm-lemmas in sibling files:
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

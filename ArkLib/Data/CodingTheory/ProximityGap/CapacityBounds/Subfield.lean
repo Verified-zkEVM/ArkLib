@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield.Moments
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield.Moments
 
 /-!
 # Subfield lower bound for Reed--Solomon correlated agreement
@@ -20,6 +21,8 @@ the algebraic and moment bounds in `Subfield.Algebra` and `Subfield.Moments`.
 
 - [CS25] Crites--Stewart, Theorem 3.
 -/
+
+@[expose] public section
 
 -- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
 set_option backward.isDefEq.respectTransparency false
