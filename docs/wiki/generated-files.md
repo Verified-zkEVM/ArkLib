@@ -21,6 +21,12 @@ Edit the source of truth, not the output.
 
 - `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files, and fails fast if
   untracked Lean files would be skipped. `git add` new paths before running validation.
+- After merging `main` into a branch that adds Lean files, rerun `./scripts/update-lib.sh` and
+  stage `ArkLib.lean`. Resolving the umbrella conflict with only one side can omit the branch's
+  modules. Branches predating the module-system migration also need the
+  [current file headers](module-system.md#the-canonical-file-shape) before validation.
+  Keep compile-time canaries in the mirrored `ArkLibTest/` path, where `lake test` checks them
+  without exporting test helpers through the production umbrella.
 - Do not commit `docs/kb/_generated/**` changes from ordinary feature PRs. They are proposed by
   the single rolling generated-files PR maintained by `.github/workflows/kb-generated.yml`.
 - The KB refresh runs nightly, on manual dispatch, and immediately after bibliography or KB source
