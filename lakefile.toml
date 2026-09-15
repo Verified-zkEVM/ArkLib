@@ -48,6 +48,14 @@ name = "ArkLib"
 plugins = ["ArkLibLintPlugin:shared"]
 requiresModuleSystem = true
 
+# The blueprint also references abstract dependency declarations outside ArkLib's import graph.
+# Build this nondefault root explicitly before checking the blueprint or generating its API docs.
+[[lean_lib]]
+name = "ArkLibBlueprint"
+srcDir = "blueprint"
+roots = ["ArkLibBlueprint"]
+requiresModuleSystem = true
+
 # Compile-time acceptance clients, kept out of the production import graph. These stay classic on
 # purpose: `#print axioms` needs to see proof bodies, which a module importer never loads.
 [[lean_lib]]
