@@ -33,7 +33,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "10cf26348962c8fdee51a341d7abed6445442540"
+rev = "1e470b46df33b5b6e361e31e3d463010d4c2c03c"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -46,6 +46,14 @@ roots = ["ArkLibLintPlugin"]
 [[lean_lib]]
 name = "ArkLib"
 plugins = ["ArkLibLintPlugin:shared"]
+requiresModuleSystem = true
+
+# The blueprint also references abstract dependency declarations outside ArkLib's import graph.
+# Build this nondefault root explicitly before checking the blueprint or generating its API docs.
+[[lean_lib]]
+name = "ArkLibBlueprint"
+srcDir = "blueprint"
+roots = ["ArkLibBlueprint"]
 requiresModuleSystem = true
 
 # Compile-time acceptance clients, kept out of the production import graph. These stay classic on
