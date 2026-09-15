@@ -3,11 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
-import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 
 /-!
 # Characteristic-safe Hasse--Taylor infrastructure
@@ -27,6 +28,6 @@ The API has four layers, listed in dependency order where one layer builds on an
 * `HasseTaylor.JetDivisibility` packages the scalar divisibility bridges as zero- and equal-jet
   characterizations for downstream finite-coordinate consumers.
 
-Concrete convention and small-characteristic tests live in the sibling `*Canary` modules so this
-umbrella does not import test-only arithmetic dependencies.
+Concrete convention and small-characteristic tests live under
+`ArkLibTest/ToMathlib/Polynomial/HasseTaylor/` and run with `lake test`.
 -/
