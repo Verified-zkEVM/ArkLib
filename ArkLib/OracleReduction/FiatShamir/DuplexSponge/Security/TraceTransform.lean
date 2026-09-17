@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen, Michele Orrù
 -/
 module
 
@@ -272,7 +272,7 @@ noncomputable def stdTraceHandleBacktrackTuple
 
 /-- StdTrace Item 4(a) — process one forward `p` entry using BackTrack and LookAhead.
 
-Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]`; the `tr_∇` value flows into `backTrack`
+Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]`; the `tr_∇` value flows into `backTrackFwd`
 (which is itself polymorphic in `T_H T_P`) and `dsTrΔ.p` flows into `lookAhead`. -/
 noncomputable def stdTraceHandlePQuery
     {T_H T_P : Type}
@@ -287,7 +287,7 @@ noncomputable def stdTraceHandlePQuery
       (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   -- Item 4(a)i-ii — call `BackTrack(tr, tr_∇, s_in)` to recover `(i, 𝕩, α̂_{<i}, τ̂)` ∈ Σ★.
   match
-      backTrack (δ := δ)
+      backTrackFwd (δ := δ)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         dsTrace dsTrΔ h_trΔ stateIn depthBound with
   | .err =>

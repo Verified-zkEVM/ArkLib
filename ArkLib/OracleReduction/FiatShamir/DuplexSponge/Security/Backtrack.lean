@@ -423,10 +423,13 @@ section S_BT_BacktrackComputation
 /- Design note (CO25 §5.2): we deliberately provide **no executable enumeration** of the full
 backtrack-sequence family `S_BT(tr, s)` (Definition 5.3). The executable `backTrack` below uses
 the single-chain linear scan with scan-time fork detection — CO25's own "look for at most one
-element" optimization (line 1056): under `¬E_fork` (Lemma 5.14) the maximal family has at most
-one element, and any scan-time fork is subsumed by the bad events `E_fork,p ∪ E_fork,h,p`.
-Downstream proofs (`BadEvents`, `AbortAnalysis`) quantify over `S_BT` as an explicit structure
-hypothesis and never need to compute the family. -/
+element" optimization (line 1056). Downstream proofs (`BadEvents`, `AbortAnalysis`) quantify
+over `S_BT` as an explicit structure hypothesis and never need to compute the family.
+
+The raw bidirectional `tr_∇.p` may contain an inverse-query-rooted decoy predecessor that
+branches the linear scan without defining a valid hash-anchored sequence. Because the scan
+returns `err` immediately on a capacity fork, the simulator must use `backTrackFwd`, which
+restricts candidates to mappings whose first raw occurrence was a forward `p` query. -/
 
 /-- Paper §5.2 partial-cap-segment matching for `BackTrack`: enumerate all distinct
 `(stateIn, stateOut)` pairs in `tr_∇.p` whose output capacity matches the next input capacity.
@@ -449,8 +452,8 @@ def predecessorCandidates
 
 The paper's Algorithm 1 enumerates all maximal sequences then post-filters. CO25 line 1056 notes
 the procedure can equivalently `look for at most one element` — i.e. abort on scan-time forks.
-The refinement proof must connect a lookup conflict to the canonical complete `S_BT` family and
-therefore to `E_fork,p`/`E_fork,h,p`; this remains an explicit obligation of Claim 5.19. -/
+This is faithful only once the candidate source is restricted to mappings from which a
+hash-anchored chain can be built; use `backTrackFwd` when modelling the simulator. -/
 
 /-- Three-way classification of lookup results, used to detect scan-time forks. -/
 inductive LookupResult (α : Type _) where
@@ -1093,8 +1096,10 @@ And returns one of the following:
 Implementation: delegates to `linearBackTrack` (CO25 §5.2 line 1056 optimization). Downstream
 proofs (BadEvents, AbortAnalysis) quantify over the family structure `S_BT` as an explicit
 hypothesis — no family enumeration is computed (see the design note in
-`section S_BT_BacktrackComputation`); the linear scan's scan-time fork is a strict
-over-approximation under the bad-event analysis. -/
+`section S_BT_BacktrackComputation`).
+
+This is the unrestricted scan. It can branch on inverse-query-rooted decoy predecessors that
+CO25's hash-anchored family never contains; the simulator and StdTrace use `backTrackFwd`. -/
 def backTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
@@ -1103,6 +1108,99 @@ def backTrack
     (depthBound : Nat := trace.length + 1) :
     ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   linearBackTrack (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound
+
+/-! ## FIX-BT — `BackTrack` over forward-first permutation pairs
+
+**The defect this repairs.**  `tr_∇.p` is bidirectional: an inverse query `p⁻¹(t) = s'` records
+the normalized pair `(s', t)` (`ProverTransform.d2sHandleInversePermQuery`).  A three-query
+prover can therefore manufacture a *decoy* predecessor for free:
+
+1. `p(a₀) → cur`  — records `(a₀, cur)`;
+2. `p⁻¹(t) → s'` with `t ≠ cur` but `t.capacitySegment = cur.capacitySegment` — records `(s', t)`;
+3. `p(cur)`.
+
+At step 3, `predecessorCandidates tr_∇ cur.capacitySegment` returns both `(a₀, cur)` and
+`(s', t)`; the scan classifies a fork and `backTrack` returns `err`, so `D2SQuery` aborts with
+probability 1.  The paper's `BackTrack` does not: its chain family `S_BT` (CO25 Def. 5.3)
+requires a **hash anchor** — condition (b), `(h, 𝕩, s_{in,0}.capacitySegment) ∈ tr` — and the
+`p⁻¹`-rooted chain through `(s', t)` has none, so it is not a member of the family and never
+reaches the `Outs` post-filter.  Def. 5.7's event `E` cannot absorb the difference either:
+`isDuplicatedPriorCapacity` charges the *answer* capacity of every query, whereas `t` — the
+**input** of the `p⁻¹` query — is adversary-chosen; strengthening `E` to charge it would
+falsify the proved `BadEventDS.lemma_5_8` bound.
+
+**The repair.**  Restrict Step 2(b) to the mappings whose first raw occurrence is a forward `p`
+query (`DSTraceStorage.buildForwardPermutationIndex`).  Those are exactly the mappings a
+hash-anchored chain built from the simulator's own forward queries can consist of, so the
+executable single-chain scan now branches only where the paper's family does.  The unrestricted
+`backTrack` is deliberately left intact: it is the object the audit counterexample is stated
+about, and it remains the right notion for a caller whose trace is `p⁻¹`-free — see
+`backTrackFwd_eq_backTrack_of_forwardOnly`.
+
+**Implementation staging.**  The current code reconstructs the forward-first index from the
+completed trace, keeping the corrected semantics explicit and proof-friendly.  Once the
+correctness proofs stabilize, we plan to maintain the equivalent index incrementally as trace
+entries arrive.  This will recover the paper's runtime without changing the `backTrackFwd`
+interface or its candidate set. -/
+
+section ForwardFirstBackTrack
+
+/-- CO25 §5.2 `BackTrack`, run against the **forward-first** sub-index of `tr_∇.p`.
+
+This is what `D2SQuery` (`ProverTransform.d2sHandleForwardPermQuery`) and StdTrace
+(`TraceTransform.stdTraceHandlePQuery`) call.  On a `p⁻¹`-free trace it agrees with `backTrack`
+definitionally-after-rewriting (`backTrackFwd_eq_backTrack_of_hasNoInversePermQuery`). -/
+def backTrackFwd
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
+    (state : CanonicalSpongeState U)
+    (depthBound : Nat := trace.length + 1) :
+    ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
+  backTrack (δ := δ) (pSpec := pSpec) trace
+    { trΔ with p := buildForwardPermutationIndex trace trΔ.p }
+    h_trΔ.forwardIndex state depthBound
+
+/-- `backTrack` reads `tr_∇` only through `entries`, and the provenance argument only through
+`Prop`-valued fields of the reconstructed sequence, so equal tables give equal results. -/
+lemma backTrack_congr_trΔ
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {trΔ₁ trΔ₂ : TraceNabla T_H T_P StmtIn U}
+    (h₁ : trΔ₁.IsSubsetOfQueryLog trace) (h₂ : trΔ₂.IsSubsetOfQueryLog trace)
+    (hEq : trΔ₁ = trΔ₂) (state : CanonicalSpongeState U) (depthBound : Nat) :
+    backTrack (δ := δ) (pSpec := pSpec) trace trΔ₁ h₁ state depthBound
+      = backTrack (δ := δ) (pSpec := pSpec) trace trΔ₂ h₂ state depthBound := by
+  subst hEq
+  rfl
+
+/-- **FIX-BT bridge.**  When every mapping stored in `tr_∇.p` is forward-first in `trace`, the
+forward-first restriction drops nothing and `backTrackFwd` *is* `backTrack`. -/
+theorem backTrackFwd_eq_backTrack_of_forwardOnly
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
+    (state : CanonicalSpongeState U) (depthBound : Nat)
+    (hfwd : ∀ pair ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p,
+      PermutationForwardFirst trace pair.1 pair.2) :
+    backTrackFwd (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound
+      = backTrack (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound := by
+  unfold backTrackFwd
+  exact backTrack_congr_trΔ _ _ (by rw [buildForwardPermutationIndex_eq_self hfwd]) _ _
+
+/-- The form the consumers use: on a trace with no `p⁻¹` occurrence at all — the honest verifier
+walk and every rate-only simulator walk — `backTrackFwd` and `backTrack` coincide. -/
+theorem backTrackFwd_eq_backTrack_of_hasNoInversePermQuery
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
+    (state : CanonicalSpongeState U) (depthBound : Nat)
+    (hno : HasNoInversePermQuery (StmtIn := StmtIn) trace) :
+    backTrackFwd (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound
+      = backTrack (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound :=
+  backTrackFwd_eq_backTrack_of_forwardOnly (δ := δ) (pSpec := pSpec) h_trΔ state depthBound
+    (TraceNabla.forwardFirst_entries_of_hasNoInversePermQuery hno h_trΔ)
+
+end ForwardFirstBackTrack
 
 end BacktrackProcedure
 

@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen, Michele Orrù
 -/
 module
 
@@ -70,7 +70,7 @@ structure D2SQueryState where
     ⟨TraceTableOps.empty, TraceTableOps.empty⟩
   -- Invariant: every entry in `trΔ` appears in `trace`. Maintained by construction:
   -- each step that appends to `trace` either leaves `trΔ` unchanged or adds an entry
-  -- that matches the new trace element. Required by `backTrack` (CO25 §5.2).
+  -- that matches the new trace element. Required by `backTrackFwd` (CO25 §5.2).
   h_inv : trΔ.IsSubsetOfQueryLog trace
   -- Phantom: auto-binds `δ` and `pSpec` as implicit struct params (matches the original
   -- shape pre-`gMemo`-deletion, so `set { st with … }` resolves `MonadStateOf` cleanly).
@@ -587,7 +587,7 @@ def d2sHandleBacktrackSome
 
 /-- CO25 §5.4 Item 4 — forward-permutation (`p`) branch of `D2SQuery`.
 
-Calls `BackTrack(tr, tr_∇, s_in)` (Item 4(a)) and dispatches:
+Calls the forward-first `BackTrack(tr, tr_∇, s_in)` (Item 4(a)) and dispatches:
 - `.err` → abort (Item 4(b));
 - `.noResult` → cache / `inlu` / sample fallback (Item 4(c));
 - `.some backtrackOut` → codec-image dispatch (Items 4(d)/4(e)). -/
@@ -601,7 +601,7 @@ def d2sHandleForwardPermQuery
       (CanonicalSpongeState U) := do
   let st ← get
   match
-      backTrack
+      backTrackFwd
         (δ := δ)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
         st.trace st.trΔ st.h_inv stateIn (st.trace.length + 1) with

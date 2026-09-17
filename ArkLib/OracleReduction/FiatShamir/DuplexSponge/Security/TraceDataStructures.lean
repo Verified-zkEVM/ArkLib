@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen
+Authors: Chung Thai Nguyen, Michele Orrù
 -/
 module
 
@@ -199,6 +199,59 @@ lemma TraceTableOps.insert_idem
   apply TraceTableOps.insert_eq_self_of_mem
   exact (TraceTableOps.mem_entries_insert_iff t k v (k, v)).mpr (Or.inl rfl)
 
+/-! ### Bulk insertion and the entry/multiset dictionary -/
+
+/-- Insert every pair of `l` into `t`, left to right. -/
+def TraceTableOps.addAll {T K V : Type} [TraceTableOps T K V] (t : T) (l : List (K × V)) : T :=
+  l.foldl (fun acc pair => TraceTableOps.add acc pair.1 pair.2) t
+
+/-- Public enumeration and the abstract multiset model agree on membership. -/
+lemma TraceTableOps.mem_entries_iff_mem_toMultiSet
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) (pair : K × V) :
+    pair ∈ TraceTableOps.entries t ↔ pair ∈ LawfulTraceTable.toMultiSet t := by
+  rw [← LawfulTraceTable.toMultiSet_ofEntries]
+  exact Multiset.mem_coe.symm
+
+/-- The empty table has no public entries. -/
+lemma TraceTableOps.not_mem_entries_empty
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (pair : K × V) :
+    pair ∉ TraceTableOps.entries (TraceTableOps.empty : T) := by
+  rw [TraceTableOps.mem_entries_iff_mem_toMultiSet, LawfulTraceTable.toMultiSet_empty]
+  simp
+
+/-- Public enumeration and the abstract multiset model agree on duplicate-freeness. -/
+lemma TraceTableOps.entries_nodup_iff
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V] (t : T) :
+    (TraceTableOps.entries t).Nodup ↔ (LawfulTraceTable.toMultiSet t).Nodup := by
+  rw [← LawfulTraceTable.toMultiSet_ofEntries]
+  exact Multiset.coe_nodup.symm
+
+/-- Bulk insertion adds exactly the inserted multiset. -/
+lemma TraceTableOps.toMultiSet_addAll
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (l : List (K × V)) (t : T) :
+    LawfulTraceTable.toMultiSet (TraceTableOps.addAll t l)
+      = (l : Multiset (K × V)) + LawfulTraceTable.toMultiSet t := by
+  induction l generalizing t with
+  | nil => simp [TraceTableOps.addAll]
+  | cons a l ih =>
+      have hstep : TraceTableOps.addAll t (a :: l)
+          = TraceTableOps.addAll (TraceTableOps.add t a.1 a.2) l := rfl
+      rw [hstep, ih, LawfulTraceTable.toMultiSet_add, Prod.mk.eta,
+        ← Multiset.cons_coe, Multiset.cons_add, Multiset.add_cons]
+
+/-- Membership after bulk insertion. -/
+lemma TraceTableOps.mem_entries_addAll
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (l : List (K × V)) (t : T) (pair : K × V) :
+    pair ∈ TraceTableOps.entries (TraceTableOps.addAll t l)
+      ↔ pair ∈ l ∨ pair ∈ TraceTableOps.entries t := by
+  rw [TraceTableOps.mem_entries_iff_mem_toMultiSet, TraceTableOps.toMultiSet_addAll,
+    Multiset.mem_add, Multiset.mem_coe, TraceTableOps.mem_entries_iff_mem_toMultiSet]
+
+
 class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
     [DecidableEq StmtIn] [DecidableEq U] where
   /-- lawful trace data structure implementation for the hash queries -/
@@ -307,6 +360,406 @@ def TraceNabla.IsSubsetOfQueryLog
   (∀ stmt cap, (stmt, cap) ∈ TraceTableOps.entries trΔ.h → ⟨.inl stmt, cap⟩ ∈ trace) ∧
   (∀ s_in s_out, (s_in, s_out) ∈ TraceTableOps.entries trΔ.p →
     ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace)
+
+/-! ### Forward-first permutation pairs (`BackTrack` Step 2(b) restriction)
+
+CO25's backtracking sequences (Def. 5.3) are *hash-anchored*: condition (b) requires the first
+input state of a chain to carry the capacity returned by an `h`-query.  The normalized table
+`tr_∇.p` deliberately forgets whether a mapping first entered the raw trace through `p` or
+through `p⁻¹`, so a chain rooted at an adversarially chosen `p⁻¹` **input** looks, inside
+`tr_∇.p`, exactly like a genuine forward chain — even though it can never satisfy Def. 5.3(b).
+
+The executable single-chain scan in `Backtrack.lean` aborts at the first branching, so such a
+decoy would make it abort on traces the paper's `BackTrack` handles without complaint.  The
+notions below let the scan restrict its Step 2(b) candidate set to the mappings whose **first**
+raw occurrence is a forward `p` query, which is exactly the set of mappings that can occur on a
+hash-anchored chain built by the simulator's own forward queries. -/
+
+/-- Normalize one raw trace entry to a permutation pair, if it is a permutation entry at all.
+Both query directions normalize to the same `(sIn, sOut)` orientation. -/
+def normalizedPermutationPair?
+    (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
+    Option (CanonicalSpongeState U × CanonicalSpongeState U) :=
+  match entry with
+  | ⟨.inl _, _⟩ => none
+  | ⟨.inr (.inl sIn), sOut⟩ => some (sIn, sOut)
+  | ⟨.inr (.inr sOut), sIn⟩ => some (sIn, sOut)
+
+/-- The permutation occurrences of a raw trace, normalized to `(sIn, sOut)` orientation and
+listed in occurrence order.  Both query directions contribute the same normalized pair. -/
+def normalizedPermutationPairs (trace : DuplexSpongeTrace StmtIn U) :
+    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
+  trace.filterMap normalizedPermutationPair?
+
+/-- `PermutationForwardFirst trace sIn sOut` — the *first* occurrence of the normalized pair
+`(sIn, sOut)` in the raw trace is the forward one `⟨p, sIn, sOut⟩`.
+
+Stated in decomposition form: the trace splits as `pre ++ ⟨p, sIn, sOut⟩ :: suffix` with the pair
+absent — in **either** direction — from `pre`.  This is the induction-friendly equivalent of
+`trace.idxOf ⟨p, sIn, sOut⟩ < trace.idxOf ⟨p⁻¹, sOut, sIn⟩`. -/
+def PermutationForwardFirst
+    (trace : DuplexSpongeTrace StmtIn U)
+    (sIn sOut : CanonicalSpongeState U) : Prop :=
+  ∃ pre suffix,
+    trace = pre ++
+      (⟨.inr (.inl sIn), sOut⟩ : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :: suffix ∧
+    (sIn, sOut) ∉ normalizedPermutationPairs pre
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+@[simp] lemma normalizedPermutationPairs_cons
+    (e : duplexSpongeTraceEntry (StartType := StmtIn) (U := U))
+    (l : DuplexSpongeTrace StmtIn U) :
+    normalizedPermutationPairs (e :: l)
+      = (normalizedPermutationPair? e).toList ++ normalizedPermutationPairs l := by
+  simp only [normalizedPermutationPairs, List.filterMap_cons]
+  cases normalizedPermutationPair? e <;> simp
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- A forward-first witness is stable when more raw queries are appended. -/
+lemma PermutationForwardFirst.append
+    {trace : DuplexSpongeTrace StmtIn U} {sIn sOut : CanonicalSpongeState U}
+    (h : PermutationForwardFirst trace sIn sOut) (tail : DuplexSpongeTrace StmtIn U) :
+    PermutationForwardFirst (trace ++ tail) sIn sOut := by
+  rcases h with ⟨pre, suffix, hTrace, hFresh⟩
+  refine ⟨pre, suffix ++ tail, ?_, hFresh⟩
+  rw [hTrace]
+  simp only [List.append_assoc, List.cons_append]
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- The head occurrence of a forward query is forward-first. -/
+lemma PermutationForwardFirst.cons_head
+    {sIn sOut : CanonicalSpongeState U} (rest : DuplexSpongeTrace StmtIn U) :
+    PermutationForwardFirst
+      ((⟨.inr (.inl sIn), sOut⟩ :
+        duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :: rest) sIn sOut :=
+  ⟨[], rest, rfl, by simp [normalizedPermutationPairs]⟩
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- An entry that does not normalize to `(sIn, sOut)` is transparent for forward-firstness. -/
+lemma PermutationForwardFirst.cons_of_ne
+    {sIn sOut : CanonicalSpongeState U}
+    {e : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)}
+    (he : normalizedPermutationPair? e ≠ some (sIn, sOut))
+    (rest : DuplexSpongeTrace StmtIn U) :
+    PermutationForwardFirst (e :: rest) sIn sOut ↔ PermutationForwardFirst rest sIn sOut := by
+  constructor
+  · rintro ⟨pre, suffix, hTrace, hFresh⟩
+    cases pre with
+    | nil =>
+        exact absurd (by
+          have : e = (⟨.inr (.inl sIn), sOut⟩ :
+              duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) := by
+            simpa using (List.cons.inj hTrace).1
+          rw [this]; rfl) he
+    | cons e' pre' =>
+        rw [List.cons_append] at hTrace
+        refine ⟨pre', suffix, (List.cons.inj hTrace).2, ?_⟩
+        intro hmem
+        exact hFresh (by
+          have he' : e' = e := ((List.cons.inj hTrace).1).symm
+          subst he'
+          rw [normalizedPermutationPairs_cons]
+          exact List.mem_append_right _ hmem)
+  · rintro ⟨pre, suffix, hTrace, hFresh⟩
+    refine ⟨e :: pre, suffix, by rw [hTrace]; rfl, ?_⟩
+    rw [normalizedPermutationPairs_cons]
+    intro hmem
+    rcases List.mem_append.mp hmem with hhead | htail
+    · refine absurd ?_ he
+      cases hnp : normalizedPermutationPair? e with
+      | none => rw [hnp] at hhead; simp at hhead
+      | some pr =>
+          rw [hnp] at hhead
+          simp only [Option.toList_some, List.mem_singleton] at hhead
+          exact congrArg some hhead.symm
+    · exact hFresh htail
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- A leading inverse occurrence blocks forward-firstness for that pair. -/
+lemma PermutationForwardFirst.not_cons_inv
+    {sIn sOut : CanonicalSpongeState U} (rest : DuplexSpongeTrace StmtIn U) :
+    ¬ PermutationForwardFirst
+      ((⟨.inr (.inr sOut), sIn⟩ :
+        duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :: rest) sIn sOut := by
+  rintro ⟨pre, suffix, hTrace, hFresh⟩
+  cases pre with
+  | nil => exact absurd (List.cons.inj hTrace).1 (by simp)
+  | cons e' pre' =>
+      rw [List.cons_append] at hTrace
+      have he' : e' = (⟨.inr (.inr sOut), sIn⟩ :
+          duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) := ((List.cons.inj hTrace).1).symm
+      subst he'
+      exact hFresh (by
+        rw [normalizedPermutationPairs_cons]
+        exact List.mem_append_left _ (by simp [normalizedPermutationPair?]))
+
+/-- Decomposition-form forward-first implies the paper's `idxOf` comparison. -/
+lemma PermutationForwardFirst.idxOf_lt
+    {trace : DuplexSpongeTrace StmtIn U} {sIn sOut : CanonicalSpongeState U}
+    (h : PermutationForwardFirst trace sIn sOut) :
+    trace.idxOf
+        (⟨.inr (.inl sIn), sOut⟩ :
+          duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) <
+      trace.idxOf
+        (⟨.inr (.inr sOut), sIn⟩ :
+          duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) := by
+  classical
+  let fwd : duplexSpongeTraceEntry (StartType := StmtIn) (U := U) := ⟨.inr (.inl sIn), sOut⟩
+  let inv : duplexSpongeTraceEntry (StartType := StmtIn) (U := U) := ⟨.inr (.inr sOut), sIn⟩
+  rcases h with ⟨pre, suffix, hTrace, hFresh⟩
+  change trace = pre ++ fwd :: suffix at hTrace
+  have hFwdNot : fwd ∉ pre := by
+    intro hMem
+    exact hFresh (List.mem_filterMap.mpr ⟨fwd, hMem, by simp [fwd, normalizedPermutationPair?]⟩)
+  have hInvNot : inv ∉ pre := by
+    intro hMem
+    exact hFresh (List.mem_filterMap.mpr ⟨inv, hMem, by simp [inv, normalizedPermutationPair?]⟩)
+  have hNe : fwd ≠ inv := by simp [fwd, inv]
+  change trace.idxOf fwd < trace.idxOf inv
+  rw [hTrace, List.idxOf_append_of_notMem hFwdNot, List.idxOf_append_of_notMem hInvNot]
+  simp [hNe]
+
+/-- Executable form of `PermutationForwardFirst`: find the first raw occurrence of the normalized
+pair `(sIn, sOut)` and check that it is the forward one. -/
+def isPermutationForwardFirst
+    (trace : DuplexSpongeTrace StmtIn U) (sIn sOut : CanonicalSpongeState U) : Bool :=
+  match trace with
+  | [] => false
+  | e :: rest =>
+      if normalizedPermutationPair? e = some (sIn, sOut) then
+        decide (e = (⟨.inr (.inl sIn), sOut⟩ :
+          duplexSpongeTraceEntry (StartType := StmtIn) (U := U)))
+      else
+        isPermutationForwardFirst rest sIn sOut
+
+/-- The executable check decides the paper-facing predicate. -/
+lemma isPermutationForwardFirst_eq_true_iff
+    (trace : DuplexSpongeTrace StmtIn U) (sIn sOut : CanonicalSpongeState U) :
+    isPermutationForwardFirst trace sIn sOut = true
+      ↔ PermutationForwardFirst trace sIn sOut := by
+  induction trace with
+  | nil =>
+      simp only [isPermutationForwardFirst, Bool.false_eq_true, false_iff]
+      rintro ⟨pre, suffix, hTrace, -⟩
+      exact absurd hTrace.symm (List.append_ne_nil_of_right_ne_nil pre (by simp))
+  | cons e rest ih =>
+      rw [isPermutationForwardFirst]
+      by_cases hnp : normalizedPermutationPair? e = some (sIn, sOut)
+      · rw [if_pos hnp]
+        rcases e with ⟨q, answer⟩
+        rcases q with stmt | a | b
+        · simp [normalizedPermutationPair?] at hnp
+        · have ha : a = sIn ∧ answer = sOut := by
+            simpa [normalizedPermutationPair?, Prod.ext_iff] using hnp
+          obtain ⟨ha1, ha2⟩ := ha
+          subst ha1; subst ha2
+          simpa using PermutationForwardFirst.cons_head (StmtIn := StmtIn) rest
+        · have hb : answer = sIn ∧ b = sOut := by
+            simpa [normalizedPermutationPair?, Prod.ext_iff] using hnp
+          obtain ⟨hb1, hb2⟩ := hb
+          subst hb1; subst hb2
+          have hne : (⟨.inr (.inr b), answer⟩ :
+              duplexSpongeTraceEntry (StartType := StmtIn) (U := U))
+              ≠ ⟨.inr (.inl answer), b⟩ := by simp
+          rw [decide_eq_false hne]
+          simp only [Bool.false_eq_true, false_iff]
+          exact PermutationForwardFirst.not_cons_inv (StmtIn := StmtIn) rest
+      · rw [if_neg hnp, ih, PermutationForwardFirst.cons_of_ne hnp]
+
+instance PermutationForwardFirst.decidable
+    (trace : DuplexSpongeTrace StmtIn U) (sIn sOut : CanonicalSpongeState U) :
+    Decidable (PermutationForwardFirst trace sIn sOut) :=
+  decidable_of_iff (isPermutationForwardFirst trace sIn sOut = true)
+    (isPermutationForwardFirst_eq_true_iff trace sIn sOut)
+
+/-- `trace` records no `p⁻¹` occurrence at all.  This is the typical way a consumer discharges
+the forward-first side condition: the honest verifier walk and the rate-only simulator walks
+never issue an inverse permutation query. -/
+def HasNoInversePermQuery (trace : DuplexSpongeTrace StmtIn U) : Prop :=
+  ∀ sOut sIn : CanonicalSpongeState U,
+    (⟨.inr (.inr sOut), sIn⟩ : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) ∉ trace
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- The empty trace has no inverse occurrence. -/
+lemma HasNoInversePermQuery.nil :
+    HasNoInversePermQuery (StmtIn := StmtIn) (U := U) [] := by
+  intro _ _ h
+  exact absurd h (by simp)
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- Appending a non-inverse occurrence preserves inverse-freeness. -/
+lemma HasNoInversePermQuery.append_of_ne
+    {trace : DuplexSpongeTrace StmtIn U} (h : HasNoInversePermQuery (StmtIn := StmtIn) trace)
+    {e : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)}
+    (he : ∀ sOut sIn, e ≠ (⟨.inr (.inr sOut), sIn⟩ :
+      duplexSpongeTraceEntry (StartType := StmtIn) (U := U))) :
+    HasNoInversePermQuery (StmtIn := StmtIn) (trace ++ [e]) := by
+  intro sOut sIn hmem
+  rcases List.mem_append.mp hmem with hold | hnew
+  · exact h sOut sIn hold
+  · exact he sOut sIn (List.mem_singleton.mp hnew).symm
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- Appending a hash occurrence preserves inverse-freeness. -/
+lemma HasNoInversePermQuery.append_hash
+    {trace : DuplexSpongeTrace StmtIn U} (h : HasNoInversePermQuery (StmtIn := StmtIn) trace)
+    (stmt : StmtIn) (cap : Vector U SpongeSize.C) :
+    HasNoInversePermQuery (StmtIn := StmtIn)
+      (trace ++ [(⟨.inl stmt, cap⟩ : duplexSpongeTraceEntry (StartType := StmtIn) (U := U))]) :=
+  h.append_of_ne (by intro _ _ hc; exact absurd hc (by simp))
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- Appending a forward permutation occurrence preserves inverse-freeness. -/
+lemma HasNoInversePermQuery.append_perm
+    {trace : DuplexSpongeTrace StmtIn U} (h : HasNoInversePermQuery (StmtIn := StmtIn) trace)
+    (sIn sOut : CanonicalSpongeState U) :
+    HasNoInversePermQuery (StmtIn := StmtIn)
+      (trace ++ [(⟨.inr (.inl sIn), sOut⟩ :
+        duplexSpongeTraceEntry (StartType := StmtIn) (U := U))]) :=
+  h.append_of_ne (by intro _ _ hc; exact absurd hc (by simp))
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- On an inverse-free trace every recorded forward occurrence is forward-first. -/
+lemma PermutationForwardFirst.of_hasNoInversePermQuery
+    {trace : DuplexSpongeTrace StmtIn U} (hno : HasNoInversePermQuery (StmtIn := StmtIn) trace)
+    {sIn sOut : CanonicalSpongeState U}
+    (hmem : (⟨.inr (.inl sIn), sOut⟩ :
+      duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) ∈ trace) :
+    PermutationForwardFirst trace sIn sOut := by
+  induction trace with
+  | nil => exact absurd hmem (by simp)
+  | cons e rest ih =>
+      by_cases hnp : normalizedPermutationPair? e = some (sIn, sOut)
+      · rcases e with ⟨q, answer⟩
+        rcases q with stmt | a | b
+        · simp [normalizedPermutationPair?] at hnp
+        · obtain ⟨rfl, rfl⟩ : a = sIn ∧ answer = sOut := by
+            simpa [normalizedPermutationPair?, Prod.ext_iff] using hnp
+          exact PermutationForwardFirst.cons_head (StmtIn := StmtIn) rest
+        · exact absurd (List.mem_cons_self ..) (hno b answer)
+      · rw [PermutationForwardFirst.cons_of_ne hnp]
+        refine ih (fun a b hb => hno a b (List.mem_cons_of_mem _ hb)) ?_
+        rcases List.mem_cons.mp hmem with h | h
+        · exact absurd (by rw [← h]; rfl) hnp
+        · exact h
+
+/-! ### The forward-first sub-index of `tr_∇.p` -/
+
+section ForwardPermutationSubindex
+
+variable {T : Type}
+  [LawfulTraceTable T (CanonicalSpongeState U) (CanonicalSpongeState U)]
+
+/-- Rebuild `p` keeping only the mappings whose first raw occurrence in `trace` is a forward
+`p` query.  When nothing has to be dropped the caller's table is returned verbatim, which is
+what makes the wrapper a no-op on inverse-free traces (`buildForwardPermutationIndex_eq_self`).
+
+This is `BackTrack`'s Step 2(b) candidate source after FIX-BT: the bidirectional `tr_∇.p` also
+records the `(s_in, s_out)` pair created by an adversarially chosen `p⁻¹` query, and such a pair
+can never sit on a hash-anchored chain (CO25 Def. 5.3(b)), yet it does branch the executable
+single-chain scan. -/
+def buildForwardPermutationIndex
+    (trace : DuplexSpongeTrace StmtIn U) (p : T) : T :=
+  if (TraceTableOps.entries (V := CanonicalSpongeState U) p).all
+      (fun pair => isPermutationForwardFirst trace pair.1 pair.2) then
+    p
+  else
+    TraceTableOps.addAll (TraceTableOps.empty : T)
+      ((TraceTableOps.entries (V := CanonicalSpongeState U) p).filter
+        (fun pair => isPermutationForwardFirst trace pair.1 pair.2))
+
+/-- Characterization of the forward-first sub-index: it keeps exactly the forward-first pairs. -/
+lemma mem_entries_buildForwardPermutationIndex
+    (trace : DuplexSpongeTrace StmtIn U) (p : T)
+    (pair : CanonicalSpongeState U × CanonicalSpongeState U) :
+    pair ∈ TraceTableOps.entries (V := CanonicalSpongeState U)
+        (buildForwardPermutationIndex (T := T) trace p)
+      ↔ pair ∈ TraceTableOps.entries (V := CanonicalSpongeState U) p ∧
+          PermutationForwardFirst trace pair.1 pair.2 := by
+  unfold buildForwardPermutationIndex
+  split
+  · next hall =>
+      rw [List.all_eq_true] at hall
+      constructor
+      · exact fun h => ⟨h, (isPermutationForwardFirst_eq_true_iff _ _ _).mp (hall _ h)⟩
+      · exact fun h => h.1
+  · rw [TraceTableOps.mem_entries_addAll, List.mem_filter]
+    simp only [TraceTableOps.not_mem_entries_empty, or_false]
+    exact and_congr_right fun _ => isPermutationForwardFirst_eq_true_iff _ _ _
+
+/-- On a table all of whose pairs are forward-first, the sub-index is the table itself. -/
+lemma buildForwardPermutationIndex_eq_self
+    {trace : DuplexSpongeTrace StmtIn U} {p : T}
+    (hfwd : ∀ pair ∈ TraceTableOps.entries (V := CanonicalSpongeState U) p,
+      PermutationForwardFirst trace pair.1 pair.2) :
+    buildForwardPermutationIndex (T := T) trace p = p := by
+  unfold buildForwardPermutationIndex
+  rw [if_pos]
+  rw [List.all_eq_true]
+  exact fun pair hmem => (isPermutationForwardFirst_eq_true_iff _ _ _).mpr (hfwd pair hmem)
+
+/-- The sub-index inherits duplicate-freeness. -/
+lemma buildForwardPermutationIndex_nodup
+    (trace : DuplexSpongeTrace StmtIn U) {p : T}
+    (hnodup : (TraceTableOps.entries (V := CanonicalSpongeState U) p).Nodup) :
+    (TraceTableOps.entries (V := CanonicalSpongeState U)
+      (buildForwardPermutationIndex (T := T) trace p)).Nodup := by
+  unfold buildForwardPermutationIndex
+  split
+  · exact hnodup
+  · rw [TraceTableOps.entries_nodup_iff, TraceTableOps.toMultiSet_addAll,
+      LawfulTraceTable.toMultiSet_empty, add_zero, Multiset.coe_nodup]
+    exact hnodup.filter _
+
+end ForwardPermutationSubindex
+
+/-- Every pair of a provenance-correct `tr_∇.p` is forward-first when the trace has no `p⁻¹`
+occurrence at all. -/
+lemma TraceNabla.forwardFirst_entries_of_hasNoInversePermQuery
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hno : HasNoInversePermQuery (StmtIn := StmtIn) trace)
+    (hsub : trΔ.IsSubsetOfQueryLog trace) :
+    ∀ pair ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p,
+      PermutationForwardFirst trace pair.1 pair.2 := by
+  intro pair hmem
+  rcases hsub.2 pair.1 pair.2 (by simpa using hmem) with hfwd | hinv
+  · exact PermutationForwardFirst.of_hasNoInversePermQuery hno hfwd
+  · exact absurd hinv (hno _ _)
+
+/-- Replacing `tr_∇.p` by its forward-first sub-index preserves provenance. -/
+lemma TraceNabla.IsSubsetOfQueryLog.forwardIndex
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (h : trΔ.IsSubsetOfQueryLog trace) :
+    ({ trΔ with p := buildForwardPermutationIndex trace trΔ.p } :
+      TraceNabla T_H T_P StmtIn U).IsSubsetOfQueryLog trace :=
+  ⟨h.1, fun s_in s_out hmem =>
+    h.2 s_in s_out
+      ((mem_entries_buildForwardPermutationIndex trace trΔ.p (s_in, s_out)).mp hmem).1⟩
+
+/-- The operational trace-index invariant needed by `BackTrack` and `LookAhead`.
+
+Unlike an exact index, this predicate deliberately does not require every raw trace entry to be
+represented in `trΔ`: `D2SQuery`'s live table omits cache-pop realizations, while StdTrace's table
+omits inverse-only entries.  What the executable searches need is exactly
+
+* provenance: every stored pair really occurs in the source trace; and
+* normalization: an identical stored pair occurs at most once, so multiplicity alone cannot turn
+  a lookup into a spurious conflict. -/
+structure TraceNabla.IsNormalizedSubindex
+    (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop where
+  isSubset : trΔ.IsSubsetOfQueryLog trace
+  hash_nodup : (TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h).Nodup
+  permutation_nodup : (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p).Nodup
+
+/-- The forward-first sub-index preserves the operational trace-index invariant. -/
+lemma TraceNabla.IsNormalizedSubindex.forwardIndex
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (h : trΔ.IsNormalizedSubindex trace) :
+    ({ trΔ with p := buildForwardPermutationIndex trace trΔ.p } :
+      TraceNabla T_H T_P StmtIn U).IsNormalizedSubindex trace :=
+  ⟨h.isSubset.forwardIndex, h.hash_nodup,
+    buildForwardPermutationIndex_nodup trace h.permutation_nodup⟩
+
 
 /-- The fold step from `TraceNabla.ofQueryLog`, factored out for reuse in proofs. -/
 private def ofQueryLogStep
