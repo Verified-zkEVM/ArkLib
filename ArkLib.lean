@@ -347,6 +347,7 @@ public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents.Core
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KnowledgeSoundness
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Soundness
@@ -362,6 +363,7 @@ public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.OracleReduction.ProtocolSpec.DeriveTranscript
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.Basic
@@ -500,5 +502,7 @@ public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
 public import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 public import ArkLib.ToVCVio.OracleComp.EvalDist
 public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
+public import ArkLib.ToVCVio.OracleComp.QueryTracking.QueryLog
 public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import ArkLib.ToVCVio.Tactic.VCVNorm
 public import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic
