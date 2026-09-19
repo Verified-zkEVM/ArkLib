@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.BadBlocks
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.FoldDistance
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.BadBlocks
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.FoldDistance
 
 /-!
 ## Binary Basefold Soundness Query Phase Theorems
@@ -22,6 +24,11 @@ This file packages:
   Statement numbering follows the archived revision of [DP24].
 -/
 
+@[expose] public section
+
+
+
+
 namespace Binius.BinaryBasefold
 
 -- The terminal query-phase probability proof exceeds Lean's default heartbeat budget.
@@ -32,6 +39,7 @@ open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomi
 open scoped NNReal
 open ReedSolomon Code BerlekampWelch Function
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
+open Probability
 open ProbabilityTheory
 
 variable {r : ℕ} [NeZero r]
@@ -123,7 +131,8 @@ lemma no_foldingBadEvent_of_no_bad_global
     exact oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ)
       (i := Fin.last ℓ) (j := j)
   have h_bad' := h_bad
-  simp only [foldingBadEventAtBlock, h_branch] at h_bad' ⊢
+  set_option backward.isDefEq.respectTransparency false in
+    simp only [foldingBadEventAtBlock, h_branch] at h_bad' ⊢
   exact h_bad'
 
 lemma goodBlock_intermediate_isCompliant
@@ -1038,18 +1047,23 @@ theorem lemma_4_26_reject_if_suffix_in_disagreement
                   ¬ badBlockProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn oStmtIn
                     j_cur := by
                 exact h_good_of_ge j_cur h_cur_ge
+              have h_cur_eq : j_cur = ⟨j_prev.val + 1, h_prev_succ⟩ := by
+                apply Fin.ext
+                dsimp [j_cur, j_prev]
+                omega
               have h_step :=
                 goodBlock_point_disagreement_step (𝔽q := 𝔽q) (β := β)
                   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                   (stmtIn := stmtIn) (oStmtIn := oStmtIn)
                   (j := j_prev) (hj := h_prev_succ)
                   (h_good := h_prev_good) (h_next_good := by
-                    simpa [j_cur, j_prev] using h_cur_good)
+                    simpa only [h_cur_eq] using h_cur_good)
                   (h_no_bad_global := h_no_bad_global)
                   (v := v) (h_accept := h_accept)
                   (h_point_ne := by
                     simpa [j_prev] using h_prev_point_ne)
-              simpa [j_cur, j_prev] using h_step
+              subst j_cur
+              exact h_step
         let j_end : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j_first.val + (j_last.val - j_first.val), by
           have h_le : j_first.val + (j_last.val - j_first.val) ≤ j_last.val := by
             rw [Nat.add_sub_of_le h_jfirst_le_jlast]
@@ -1471,7 +1485,9 @@ theorem prop_4_24_singleRepetition_proximityCheck_bound
       simp only [Fin.val_last,
         (oracle_index_add_steps_le_ℓ (ℓ := ℓ) (ϑ := ϑ) (i := Fin.last ℓ) (j := j_star))]
     have h_bad' := h_bad
-    simp only [foldingBadEventAtBlock, h_branch, r_challenges, i_star, destIdx] at h_bad' ⊢
+    unfold foldingBadEventAtBlock
+    set_option backward.isDefEq.respectTransparency false in
+      simp only [h_branch, r_challenges, i_star, destIdx] at h_bad' ⊢
     exact h_bad'
   -- Choose `f_next` and extract compliance/UDR-close facts.
   have h_choose :
@@ -1688,8 +1704,7 @@ theorem prop_4_24_singleRepetition_proximityCheck_bound
         extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∉ D
       ] := by
-    apply prob_mono
-    exact h_accept_subset
+    exact Pr_le_Pr_of_implies ($ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0)) _ _ h_accept_subset
   -- Evaluate the suffix probability for the complement set.
   have h_prob_suffix_not :
       Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[

@@ -60,13 +60,13 @@ ProtocolSpec.seqCompose
 Prover.seqCompose
 Verifier.seqCompose
 Reduction.seqCompose
-Reduction.append_completeness
-Reduction.append_perfectCompleteness
+Reduction.append_completeness_of_pure_verifiers
+Reduction.append_perfectCompleteness_of_pure_verifiers
 Verifier.append_soundness
 Verifier.append_knowledgeSoundness
 Verifier.append_rbrSoundness
 Verifier.append_rbrKnowledgeSoundness
-Reduction.seqCompose_completeness
+Reduction.seqCompose_completeness_of_pure
 Verifier.seqCompose_soundness
 Verifier.seqCompose_knowledgeSoundness
 Statement.Lens
@@ -115,7 +115,7 @@ CheckClaim.reduction
 CheckClaim.reduction_completeness
 CheckClaim.oracleReduction
 RingSwitching.RingSwitchingProfile
-RingSwitching.binaryTowerProfile
+RingSwitching.tensorProductProfile
 RingSwitching.packMLE
 RingSwitching.BatchingPhase.batchingOracleReduction
 RingSwitching.SumcheckPhase.coreInteractionOracleReduction
@@ -155,7 +155,8 @@ LinearCode.byCheckMatrix
 LinearCode
 Code.interleavedCodeSet
 ReedSolomon.code
-ReedSolomon.smoothCode
+ReedSolomon.code
+Domain.SmoothCosetFftDomain
 ReedSolomon.constrainedCode
 ReedSolomon.multiConstrainedCode
 ProximityGap.proximityMeasure

@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.DG25
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
-import CompPoly.Fields.Binary.Tower.Prelude
+
+public import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
+public import CompPoly.Fields.Binary.Tower.Prelude
 
 /-!
 ## Binary Basefold Soundness Incremental Argument
@@ -23,6 +25,11 @@ This file packages:
 3. fold-to-affine-line bridges used by the incremental bad-event analysis
 -/
 
+@[expose] public section
+
+
+
+
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -31,6 +38,7 @@ open scoped NNReal
 open ReedSolomon Code BerlekampWelch Function
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
 open ProbabilityTheory
+open Probability
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
@@ -71,7 +79,7 @@ lemma not_jointProximityNat_of_not_jointProximityNat_split
   exact fun h_close => h_far (CA_split_rowwise_implies_CA C U e h_close)
 
 open Classical in
-omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [SampleableType L] in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] in
 /-- **Affine proximity gap bound for RS interleaved codes (contrapositive form).**
 If the pair `(u₀, u₁)` is NOT `e`-close to the interleaved code, then the
 affine line `(1-r)·u₀ + r·u₁` is `e`-close to `C` for at most `|S|` values
@@ -752,14 +760,15 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
   apply h_far
   unfold jointProximityNat₂ jointProximityNat at h_close
   simp only at h_close
-  rw [Code.closeToCode_iff_closeToCodeword_of_minDist] at h_close
+  erw [Code.closeToCode_iff_closeToCodeword_of_minDist] at h_close
   rcases h_close with ⟨vSplit, hvSplit_mem, hvSplit_dist_le_e⟩
-  rw [closeToWord_iff_exists_possibleDisagreeCols] at hvSplit_dist_le_e
+  erw [closeToWord_iff_exists_possibleDisagreeCols] at hvSplit_dist_le_e
   rcases hvSplit_dist_le_e with ⟨D, hD_card_le_e, h_agree_outside_D⟩
   unfold jointProximityNat
   rw [Code.closeToCode_iff_closeToCodeword_of_minDist
     (u := ⋈|U) (e := e) (C := interleavedCodeSet (κ := Fin (2 ^ (s + 1))) C)]
-  simp_rw [closeToWord_iff_exists_possibleDisagreeCols]
+  set_option backward.isDefEq.respectTransparency false in
+    simp_rw [closeToWord_iff_exists_possibleDisagreeCols]
   let VSplit_rowwise := Matrix.transpose vSplit
   let VSplit_even_rowwise := Matrix.transpose (VSplit_rowwise 0)
   let VSplit_odd_rowwise := Matrix.transpose (VSplit_rowwise 1)
@@ -825,10 +834,9 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
           exact h_row_val.symm
         have hRes₀ := congrFun hRes0 ⟨rowIdx.val / 2, by omega⟩
         dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₀
-        simp [v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise]
-        have hRes₀' := hRes₀
-        simp only [h_row_eq] at hRes₀' ⊢
-        exact hRes₀'
+        change U rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
+        simpa [v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise,
+          Matrix.transpose, h_row_eq] using hRes₀
       · have h_row_val : rowIdx.val = 2 * (rowIdx.val / 2) + 1 := by
           have h_divmod := Nat.mod_add_div rowIdx.val 2
           omega
@@ -838,10 +846,9 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
           exact h_row_val.symm
         have hRes₁ := congrFun hRes1 ⟨rowIdx.val / 2, by omega⟩
         dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₁
-        simp [v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise]
-        have hRes₁' := hRes₁
-        simp only [h_row_eq] at hRes₁' ⊢
-        exact hRes₁'
+        change U rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
+        simpa [v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise,
+          Matrix.transpose, h_row_eq] using hRes₁
 
 /-- **One fold step on preTensorCombine = affine line evaluation on even/odd split.**
 Given `f_i : S^i → L` and its preTensorCombine WordStack `U` of height `2^(steps+1)`,
@@ -1107,8 +1114,9 @@ lemma fiberwiseClose_fold_implies_affineLineEval_close
           (0 : Fin (2 ^ 0))) =
         multilinearCombine (F := L) U (fun (_ : Fin 1) => r_new) := by
       ext y
-      simp [U_even, U_odd, splitEvenOddRowWiseInterleavedWords, affineLineEvaluation,
-        interleaveWordStack, multilinearCombine, multilinearWeight, smul_eq_mul]
+      set_option backward.isDefEq.respectTransparency false in
+        simp [U_even, U_odd, splitEvenOddRowWiseInterleavedWords, affineLineEvaluation,
+          interleaveWordStack, multilinearCombine, multilinearWeight, smul_eq_mul]
     have h_fn_eq : (fun y => affineLineEvaluation
         (interleaveWordStack U_even) (interleaveWordStack U_odd) r_new y
         (0 : Fin (2 ^ 0))) = fold_1_f := by
@@ -1203,7 +1211,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
   · apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ _ (fun r_new h => h.1))
     have : Pr_{ let r_new ← $ᵖ L }[¬Ek_close] = 0 := by
       rw [prob_uniform_eq_card_filter_div_card]
-      simp only [not_not.mpr h_Ek_close, filter_False, card_empty, CharP.cast_eq_zero,
+      simp only [not_not.mpr h_Ek_close, Finset.filter_false, card_empty, CharP.cast_eq_zero,
         ENNReal.coe_zero, ENNReal.coe_natCast, ENNReal.zero_div]
     rw [this]; exact bot_le
   · apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ _ (fun r_new h => h.2))
@@ -1251,7 +1259,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
             (C_dest ^⋈ (Fin (2^s)))) ≤ e_prox]
         ≤ (Fintype.card S_dest : ℝ≥0) / (Fintype.card L) :=
       affineProximityGap_RS_interleaved_contrapositive
-        𝔽q β (hm := Nat.one_le_two_pow) (h_destIdx_le := h_destIdx_le)
+        𝔽q β Nat.one_le_two_pow h_destIdx_le
         (e := e_prox) (he := le_refl _) (h_far := h_pair_far)
     apply le_trans _ h_affine_bound
     apply Pr_le_Pr_of_implies ($ᵖ L) _ _
@@ -1272,7 +1280,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
           (h_destIdx_le := by omega)
           f_block_start (Fin.snoc r_prefix r_new)] at h_fw_close
         simp only [Fin.init_snoc, Fin.snoc_last] at h_fw_close
-        convert h_fw_close using 1)
+        convert h_fw_close using 1 <;> omega)
 
 /-- **Proposition 4.21.2** (Incremental bad-event probability bound).
 This is the formalization-specific refinement of Proposition 4.21 for prefix-by-prefix folding

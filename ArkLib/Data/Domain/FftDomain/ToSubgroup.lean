@@ -3,17 +3,18 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.GroupTheory.SpecificGroups.Cyclic
-import Mathlib.Algebra.Group.Fin.Basic
-import Mathlib.Algebra.Group.TypeTags.Basic
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.Field
+public import Mathlib.GroupTheory.SpecificGroups.Cyclic
+public import Mathlib.Algebra.Group.Fin.Basic
+public import Mathlib.Algebra.Group.TypeTags.Basic
+public import Mathlib.Algebra.Group.Defs
+public import Mathlib.Tactic.Cases
+public import Mathlib.Tactic.Linarith
+public import Mathlib.Tactic.LinearCombination
+public import Mathlib.Tactic.Field
 
-import ArkLib.Data.Domain.FftDomain.Mem
+public import ArkLib.Data.Domain.FftDomain.Mem
 
 /-!
 # FFT domains as subgroups
@@ -33,6 +34,8 @@ This file associates a multiplicative subgroup of `Fˣ` to an FFT domain.
   Membership in the subgroup is equivalent to membership in the FFT domain.
 
 -/
+
+@[expose] public section
 
 namespace Domain
 
@@ -62,7 +65,10 @@ def toSubgroup (ω : D) : Subgroup Fˣ where
   one_mem' := by {
     simp only [Finset.coe_image, CosetFftDomainClass.mkSubgroupUnit]
     exists 0
-    aesop
+    refine ⟨Finset.mem_univ 0, ?_⟩
+    apply Units.ext
+    simp only [CosetFftDomainClass.mkSubgroupUnit, FftDomainClass.generator_eq_one,
+      inv_one, one_mul, Units.val_one]
   }
   inv_mem' {x} hx := by {
     simp_all only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range]
@@ -75,7 +81,7 @@ def toSubgroup (ω : D) : Subgroup Fˣ where
 /-- A unit belongs to the subgroup associated to an FFT domain iff
   its value belongs to the finset of elements of the domain. -/
 lemma mem_subgroup_iff_mem_finset {x : Fˣ} :
-  x ∈ toSubgroup ω ↔ x.val ∈ CosetFftDomainClass.toFinset ω := by
+    x ∈ toSubgroup ω ↔ x.val ∈ CosetFftDomainClass.toFinset ω := by
   aesop
     (add simp [toSubgroup, CosetFftDomainClass.toFinset,
                 CosetFftDomainClass.mkSubgroupUnit, generator_eq_one])
@@ -84,7 +90,7 @@ lemma mem_subgroup_iff_mem_finset {x : Fˣ} :
   its value belongs to the FFT domain. -/
 @[simp]
 lemma mem_subgroup_iff_mem_domain {ω : D} {x : Fˣ} :
-  x ∈ toSubgroup ω ↔ x.val ∈ ω := by simp [mem_subgroup_iff_mem_finset]
+    x ∈ toSubgroup ω ↔ x.val ∈ ω := by simp [mem_subgroup_iff_mem_finset]
 
 end FftDomainClass
 

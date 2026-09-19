@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
-import VCVio.EvalDist.Monad.Basic
+module
+
+public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
+public import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Binding Security of the Simple Ajtai Commitment
@@ -25,6 +27,8 @@ an abstract shortness predicate with an explicit closure hypothesis is kept as
 
 * [Ajtai, M., *Generating Hard Instances of Lattice Problems*][Ajt96]
 -/
+
+@[expose] public section
 
 open OracleComp CommitmentScheme CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 

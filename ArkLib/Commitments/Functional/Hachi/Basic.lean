@@ -3,9 +3,21 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Commitment
-import ArkLib.Commitments.Functional.Hachi.Composition
-import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Commitment
+public import ArkLib.Commitments.Functional.Hachi.Composition
+public import ArkLib.Commitments.Functional.Hachi.HonestChain
+public import ArkLib.Commitments.Functional.Hachi.Correctness
+public import ArkLib.Commitments.Functional.Hachi.Concrete
+public import ArkLib.Commitments.Functional.Hachi.Params
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
+public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
+public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
+public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
+public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
+public import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
 # Hachi: a Lattice-Based Multilinear Polynomial Commitment
@@ -14,61 +26,75 @@ Formalization of the Hachi [NOZ26] functional commitment — a lattice-based com
 multilinear polynomials with evaluation-opening proofs, built on the Greyhound [NS24]
 inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^{2^α} + 1)`.
 
-**This development is in progress.** Finished and `sorry`-free — axiom-clean down to the
-Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
-which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
-and the weak-binding reduction to Module-SIS, the polynomial-evaluation reduction
-(§4.2, Lemma 8) with its polynomial-level bridge, and **the whole §4.3 opening chain** — the
-`R^lin` adapter, the HMZ25 lift (Lemma 9), the batching bridge, the corrected zero-check
-(Lemma 10), the sumcheck bridge, the paired sumcheck rounds (Lemma 11) and the final evaluation —
-together with their composite, the one-iteration certificate
-`hachi_iteration_coordinateWiseSpecialSoundWithEscape`, and the closing `endPiece` (`EndPiece/`)
-that consumes that iteration's evaluation claim — `sorry`-free and axiom-clean, as is the
-composite `evaluation`. What is still open: the
-completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`) — and the
-§4.5 `Recursion/` adapters, separate future work with their own sorries and a documented soundness
-gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.lean` and
-`Commitment.lean`.
+An opening is a chain of nine reductions carrying a polynomial-evaluation claim `f(x) = y` down
+to a single evaluation claim on the committed table, closed by an end-piece that reveals that
+table. Each link is certified in both security directions: coordinate-wise special soundness
+(CWSS) — a witness is extracted from a structured tree of accepting transcripts, with the
+cryptographic failure modes of extraction appearing as *escape events* rather than as witnesses —
+and perfect completeness. `Composition.lean` chains the soundness certificates,
+`HonestChain.lean` the honest provers, and `Correctness.lean` packages the result as a
+`Commitment.Scheme` with perfect correctness.
+
+Two scope facts a reader should have up front. The recursive opening of [NOZ26] §4.5 —
+`Recursion/` and the `opening` field of `Commitment.lean`'s `hachi` — is outside this
+development; the complete scheme is the nonrecursive `hachiNonrecursive`. Its composed
+completeness and correctness use proved state-aware composition: pure verifier forms for the
+prefix and guarded forms for sumcheck, with suffix completeness from every shared oracle state.
 
 ## Folder structure
 
-The folder `Hachi/` is organized by paper section. Each subfolder carries a `Basic.lean`
-umbrella re-export inside the folder, and this file is that umbrella for the whole Hachi
-development:
+The folder is organized by paper section; each subfolder carries a `Basic.lean` umbrella
+re-export, and this file is the umbrella for the whole development.
 
 * `Gadget/` (§2.1) — the base-`b` Ajtai gadget matrix `G` and its digit-decomposition inverse
-  `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).
+  `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`). `Core`
+  carries **two** decompositions, deliberately: the full-width `DigitDecomposition` for arbitrary
+  residues (message and inner digits, `δ = ⌈log_b q⌉`) and the short-input
+  `BoundedDigitDecomposition` for the folded witness `z`, whose digit count `τ` is set by the
+  deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at the `ℓ = 30`
+  parameters — see `Params.lean`).
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
-  `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`; kept top-level because the future §3 packing head reuses
-  it over the subfield.
+  `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings
   (`Scheme`), perfect correctness (`Correctness`), the weak-binding reduction to Module-SIS
   (`Security`), and the pinned power-of-two ring (`Arithmetic`).
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
-  (`Gadgets`), protocol data and relations (`Reduction`), Hachi Lemma 8 coordinate-wise special
-  soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
-* `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain.
+  (`Gadgets`), protocol data and relations (`Reduction`), Lemma 8 special soundness
+  (`Soundness`), completeness (`Completeness`), and the zero-round polynomial-level bridge
+  (`Bridge`).
+* `RingSwitch/`, `ZeroCheck/`, `Sumcheck/` (§4.3) — the HMZ25 lift, the zero-check, and the
+  sumcheck loop, each with its own `Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
-  guarded verifier checks the evaluation claim against it directly. Escape-free, `sorry`-free and
-  axiom-clean (`Reduction`, re-exported by `Basic`).
-* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that would
-  close one iteration at the next ring's plain `QuadEval.relIn` relation (future recursion work;
-  not yet composed in `Composition.lean`).
-* `Composition.lean` — the CWSS composition home: the `iteration` (the chained subprotocols,
-  rows 1–9), the imported `endPiece`, and the complete
-  `evaluation` = iteration ⧺ end-piece. Every package exposes the ordinary
-  `relIn` / `relOut` flow; the cryptographic failure modes of extraction (`QuadEval`'s Module-SIS
-  break, the weak-binding collisions of Figures 4–6) are **escape events** on the transcript tree,
-  entering each certificate as a disjunct of its conclusion.
-* `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and
-  the honest `keygen` / `commit` (the opening `Proof` is a documented `sorry` pending the
-  remaining subprotocols).
+  guarded verifier checks the evaluation claim against it directly.
+* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters of the
+  recursive opening. Outside the completed development; see `Recursion/Basic.lean`.
+* `Composition.lean` — the composed soundness certificate: the `iteration` (the nine chained
+  subprotocols) and `evaluation` = iteration ⧺ end-piece.
+* `Commitment.lean` — the `Commitment.Scheme` interface: the multilinear eval oracle, honest
+  `keygen` / `commit`, and the honest-committer facts feeding `QuadEval`'s input relation.
+* `HonestChain.lean` — the honest side's parameter bookkeeping (`HonestRangeParams`) and the
+  composed honest chain from the polynomial-evaluation claim through the sumcheck.
+* `Correctness.lean` — the complete nonrecursive opening: the terminal reveal-and-check, the
+  commitment-input adapter, the scheme `hachiNonrecursive`, and its perfect correctness.
+* `Concrete.lean` — the same scheme at the concrete Ajtai lift commitment `D · (z ‖ ρ)`, where
+  the whole honest run is computable; `scripts/HachiRuntime.lean` runs it.
+* `Params.lean` — the [NOZ26] Figure 9 `ℓ = 30` parameters (`q = 4294967197`, `b = 16`,
+  `δ = 8`, `r = m = 10`, `ω = 16`, `α = 10`) **at `τ = 5`** rather than Figure 9's tabulated
+  `τ = 4`, plus the arithmetic facts the chain consumes at them: `16⁵ < q` — five balanced digits
+  cannot cover all residues — and `honestZBound ≤ balancedDigitCapacity 16 5`. `τ = 5` is what
+  §4.4's own rule ("the smallest `τ` with `b^τ > β`") yields here, under both §4.4's
+  `β = 2ʳ·ω·b = 262144` and the sharper `131072` proved in this development, for which `5` digits
+  are minimal (`tau_minimal`). Figure 9's tabulated `z = 30583` is exactly four digits' balanced
+  capacity; the paper does not derive that entry as a deterministic bound on `z`. See the
+  `Params.lean` module docstring and `docs/kb/papers/NOZ26.md`.
 
-Generic infrastructure the development builds on: the coordinate-wise-special-soundness notion
-and its composition live in `OracleReduction/Security/CoordinateWiseSpecialSoundness/`, the
-cyclotomic-ring norm theory in `Data/Lattices/CyclotomicRing/`, and the simple Ajtai commitment
-in `Commitments/Ordinary/Ajtai/Simple/`.
+Importing this file brings in the whole development. A new file joins its folder umbrella; the
+umbrella chain carries it here.
+
+Generic infrastructure this builds on: the CWSS notion and its composition in
+`OracleReduction/Security/CoordinateWiseSpecialSoundness/`, the cyclotomic-ring norm theory in
+`Data/Lattices/CyclotomicRing/`, and the simple Ajtai commitment in
+`Commitments/Ordinary/Ajtai/Simple/`.
 
 ## References
 
@@ -76,3 +102,5 @@ in `Commitments/Ordinary/Ajtai/Simple/`.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

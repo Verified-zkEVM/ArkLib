@@ -3,8 +3,9 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
+public import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 
 /-!
 # DG25 Reed-Solomon Corollaries
@@ -12,6 +13,11 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 This module specializes the DG25 proximity-gap framework to Reed-Solomon codes and proves
 the resulting affine-line and tensor-gap corollaries.
 -/
+
+@[expose] public section
+
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 
@@ -108,7 +114,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
   -- we have jointProximity₂ (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) at h_u₀_and_u₁_sub_u₀_CA
   have h_jointProximity₂ : jointProximity₂ (C := CRS) (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) := by
     exact h_u₀_and_u₁_sub_u₀_CA
-  letI : Nontrivial (CRS) := by infer_instance
+  let : Nontrivial (CRS) := by infer_instance
   let jointProximity₂_u₀_u₁ := jointProximity₂_affineShift_implies_jointProximity₂ (ι := ι)
     (MC := CRS) (u₀ := u₀) (u₁ := u₁) (δ := δ) (h_jointProximity₂)
   unfold jointProximity₂ jointProximity at jointProximity₂_u₀_u₁
@@ -192,7 +198,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
   simp_rw [h_δᵣ_close_iff_Δ₀_close] at h_prob_u_close_gt
   simp only [ENNReal.coe_natCast, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
     not_false_eq_true, ENNReal.coe_div, mul_div] at h_prob_u_close_gt
-  letI : Nontrivial (ReedSolomon.code α k) := by infer_instance
+  let : Nontrivial (ReedSolomon.code α k) := by infer_instance
   have hCA_Nat_if_then := reedSolomon_multilinearCorrelatedAgreement_Nat (A := A) (ι := ι) (α := α)
     (ϑ := ϑ) (hϑ_gt_0 := hϑ_gt_0) (hk := hk) (e := e) (he := by
     rw [dist_le_UDR_iff_relDist_le_relUDR]

@@ -3,15 +3,18 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
-import ArkLib.ProofSystem.RingSwitching.BBFSmallFieldIOPCS
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+public import ArkLib.ProofSystem.RingSwitching.Packing.BBFSmallFieldIOPCS
 
 /-!
 # FRI-Binius IOPCS Prelude
 This module contains the preliminary definitions for the FRI-Binius IOPCS.
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -36,7 +39,7 @@ variable [hdiv : Fact (ϑ ∣ ℓ')]
 
 omit [NeZero κ] in
 lemma card_bool_hypercube_eq :
-  Fintype.card (Fin κ → Fin 2) = 2 ^ κ := by
+    Fintype.card (Fin κ → Fin 2) = 2 ^ κ := by
   simp only [Fintype.card_pi, Fintype.card_fin, prod_const, card_univ]
 
 def hypercubeEquivFin : (Fin κ → Fin 2) ≃ Fin (2 ^ κ) :=
@@ -49,18 +52,23 @@ instance linearIndependentBooleanHypercubeBasis : Fact (LinearIndependent K ⇑�
   constructor
   exact β.linearIndependent
 
-def BinaryBasefoldAbstractOStmtIn : (RingSwitching.AbstractOStmtIn (L := L) (ℓ' := ℓ')) :=
-  Binius.RingSwitching.BBFSmallFieldIOPCS.bbfAbstractOStmtIn (𝔽q := K) (β := β)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
+def BinaryBasefoldAbstractOStmtIn : (RingSwitching.AbstractOStmtIn (L := L) (ℓ' := ℓ')) where
+  ιₛᵢ := Fin (BinaryBasefold.toOutCodewordsCount ℓ' ϑ (i := 0))
+  OStmtIn := BinaryBasefold.OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0
+  Oₛᵢ := Binius.BinaryBasefold.instOracleStatementBinaryBasefold K β
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := 0)
+  initialCompatibility := fun ⟨t, oStmt⟩ =>
+    Binius.BinaryBasefold.firstOracleWitnessConsistencyProp K β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t (f₀ := Binius.BinaryBasefold.getFirstOracle K β oStmt)
 
 /-- Non-reducible profile wrapper for the FRI-Binius prelude, mirroring the
 `BBFSmallFieldIOPCS.bbfProfile` pattern: kept as a plain (non-`@[reducible]`) `def` so that the
 abstract projection `P.A` is used as the discrimination-tree key for instance synthesis, instead
-of eagerly unfolding `binaryTowerProfile` to `L ⊗[K] L`. -/
+of eagerly unfolding `tensorProductProfile` to `L ⊗[K] L`. -/
 def bbfSumcheckProfile (κ : ℕ) [NeZero κ] (L : Type) [Field L]
     (K : Type) [Field K] [Algebra K L] (β : Basis (Fin κ → Fin 2) K L) :
     RingSwitching.RingSwitchingProfile K L κ :=
-  RingSwitching.binaryTowerProfile κ K L β
+  RingSwitching.tensorProductProfile κ K L β
 
 /-- The `BinaryBasefold.SumcheckMultiplierParam` corresponding to the Ring-Switching
 sumcheck multiplier parameter. `BinaryBasefold.SumcheckMultiplierParam` only carries the

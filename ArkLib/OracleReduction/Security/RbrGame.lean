@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.OracleReduction.ProtocolSpec.Basic
-import ArkLib.Data.Probability.Instances
-import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
+public import ArkLib.OracleReduction.ProtocolSpec.Basic
+public import ArkLib.Data.Probability.Instances
+public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
 # `ProtocolSpec` glue for the round-by-round (knowledge) soundness games
@@ -62,6 +63,8 @@ generic `loggingOracle` lemmas used by later reductions live separately in
 `ArkLib/ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean`, from where they can move upstream
 without importing ArkLib core.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory
 open scoped ENNReal

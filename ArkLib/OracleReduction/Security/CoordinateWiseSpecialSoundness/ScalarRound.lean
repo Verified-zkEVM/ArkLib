@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
   # Scalar single-challenge-round CWSS assembly (generic building block)
@@ -49,6 +51,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
@@ -236,7 +240,10 @@ theorem branch_challenge (v : Msg)
     (branchTr v challenges j).challenges ⟨1, rfl⟩ = challenges j := by
   simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
     FullTranscript.challenges, Transcript.concat]
-  simp [Fin.snoc]
+  simp only [Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Fin.snoc,
+    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.mod_succ, lt_self_iff_false,
+    ↓reduceDIte, Fin.succ_one_eq_two, Fin.reduceLast, take_Type]
+  exact eq_of_heq (cast_heq _ _)
 
 /-- Branch `j`'s transcript carries the shared message `v` at round 0. -/
 theorem branch_pre (v : Msg)
@@ -245,7 +252,13 @@ theorem branch_pre (v : Msg)
     (branchTr v challenges j).messages ⟨0, rfl⟩ = v := by
   simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
     FullTranscript.messages, Transcript.concat]
-  simp [Fin.snoc]
+  simp only [Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Fin.snoc,
+    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.zero_mod, Nat.mod_succ,
+    Order.lt_one_iff, ↓reduceDIte, Fin.succ_one_eq_two, Fin.reduceLast,
+    zero_ne_one, not_false_eq_true, Fin.castLT_eq_castPred, Fin.castPred_zero,
+    Fin.castSucc_zero, take_Type, lt_self_iff_false,
+    Fin.succ_zero_eq_one]
+  exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
 
 /-- Branch `j`'s transcript is one of the star tree's leaf transcripts. -/
 theorem branch_mem (v : Msg)
@@ -356,7 +369,7 @@ theorem branch_relOut_language (init : ProbComp σ)
     (j : Fin (arity ⟨1, rfl⟩)) :
     (stmtIn, v, challenges j) ∈ relOut.language :=
   Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j) relOut.language
-    (stmtIn, v, challenges j) (by rw [hpure]; rw [branch_pre, branch_challenge]; rfl)
+    (stmtIn, v, challenges j) (by rw [hpure]; rw [branch_pre, branch_challenge])
     (hAcc _ (branch_mem v challenges j))
 
 end Bridge

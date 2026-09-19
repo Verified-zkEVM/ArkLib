@@ -3,11 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.RingSwitching.General
-import ArkLib.ProofSystem.Binius.BinaryBasefold.General
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness
-import ArkLib.OracleReduction.LiftContext.OracleReduction
+
+public import ArkLib.ProofSystem.RingSwitching.Packing.General
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.General
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness
+public import ArkLib.OracleReduction.LiftContext.OracleReduction
 
 /-!
 # BBF Small-Field IOPCS: Ring-Switching + Binary Basefold Composition
@@ -40,6 +42,11 @@ in contrast to `FRIBinius/CoreInteractionPhase.lean` which fuses the sumcheck-fo
   Towers." Cryptology ePrint Archive (2024).
   Statement numbering follows the archived revision of [DP24].
 -/
+
+@[expose] public section
+
+
+
 
 
 namespace Binius.RingSwitching.BBFSmallFieldIOPCS

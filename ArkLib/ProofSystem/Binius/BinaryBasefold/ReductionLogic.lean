@@ -3,13 +3,13 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
-import ArkLib.ToVCVio.Oracle
-import ArkLib.ToVCVio.Simulation
-import ArkLib.OracleReduction.Completeness
-import ArkLib.Data.Misc.Basic
+module
 
-namespace Binius.BinaryBasefold
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+public import ArkLib.ToVCVio.Simulation
+public import ArkLib.OracleReduction.Completeness
+public import ArkLib.Data.Misc.Basic
+
 /-!
 ## Binary Basefold single steps
 - **Fold step** :
@@ -28,6 +28,12 @@ namespace Binius.BinaryBasefold
   - V verifies : `s_ℓ = eqTilde(r, r') * c`
   => `c` should be equal to `t(r'_0, ..., r'_{ℓ-1})`
 -/
+
+@[expose] public section
+
+
+namespace Binius.BinaryBasefold
+
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
@@ -56,6 +62,63 @@ def hEq {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type}
     | Sum.inl j => OracleIn j
     | Sum.inr j => pSpec.Message j
 
+/-- The extensional output selected by an embedding, for use in pure relation-level logic. -/
+def materializeOutputByEmbedding
+    {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type} {OracleOut : ιₒₒ → Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx)
+    (hTypeEq : hEq (OracleIn := OracleIn) (OracleOut := OracleOut) (pSpec := pSpec) embed)
+  (oStmt : ∀ i, OracleIn i) (transcript : FullTranscript pSpec) : ∀ i, OracleOut i :=
+  fun i => match h : embed i with
+    | Sum.inl j => by
+      have hType : OracleOut i = OracleIn j := by simpa only [h] using hTypeEq i
+      exact cast hType.symm (oStmt j)
+    | Sum.inr j => by
+      have hType : OracleOut i = pSpec.Message j := by simpa only [h] using hTypeEq i
+      exact cast hType.symm (transcript.messages j)
+
+@[simp]
+theorem materializeOutputByEmbedding_inl
+    {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type} {OracleOut : ιₒₒ → Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx)
+    (hTypeEq : hEq (OracleIn := OracleIn) (OracleOut := OracleOut) (pSpec := pSpec) embed)
+    (oStmt : ∀ i, OracleIn i) (transcript : FullTranscript pSpec)
+    (i : ιₒₒ) (j : ιₒᵢ) (h : embed i = Sum.inl j) :
+    materializeOutputByEmbedding embed hTypeEq oStmt transcript i =
+      cast (by simpa only [h] using (hTypeEq i).symm) (oStmt j) := by
+  unfold materializeOutputByEmbedding
+  split
+  · rename_i h'
+    rw [h] at h'
+    simp only [Sum.inl.injEq] at h'
+    subst h'
+    rfl
+  · rename_i h'
+    rw [h] at h'
+    cases h'
+
+@[simp]
+theorem materializeOutputByEmbedding_inr
+    {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type} {OracleOut : ιₒₒ → Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx)
+    (hTypeEq : hEq (OracleIn := OracleIn) (OracleOut := OracleOut) (pSpec := pSpec) embed)
+    (oStmt : ∀ i, OracleIn i) (transcript : FullTranscript pSpec)
+    (i : ιₒₒ) (j : pSpec.MessageIdx) (h : embed i = Sum.inr j) :
+    materializeOutputByEmbedding embed hTypeEq oStmt transcript i =
+      cast (by simpa only [h] using (hTypeEq i).symm) (transcript.messages j) := by
+  unfold materializeOutputByEmbedding
+  split
+  · rename_i h'
+    rw [h] at h'
+    cases h'
+  · rename_i h'
+    rw [h] at h'
+    simp only [Sum.inr.injEq] at h'
+    subst h'
+    rfl
+
 /-- The Pure Logic of an interactive reduction step.
 Parametrized by a 'Challenges' type that aggregates all verifier randomness. -/
 structure ReductionLogicStep
@@ -70,7 +133,7 @@ structure ReductionLogicStep
   -- 2. The Verifier (Pure Logic)
   verifierCheck : StmtIn → FullTranscript pSpec → Prop
   verifierOut   : StmtIn → FullTranscript pSpec → StmtOut
-  -- 2b. Oracle Embedding (like OracleVerifier)
+  -- 2b. Extensional output selection used only by this pure relation-level logic.
   embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx
   hEq : hEq (OracleIn := OracleIn) (OracleOut := OracleOut) (ιₒᵢ := ιₒᵢ) (ιₒₒ := ιₒₒ)
     (pSpec := pSpec) (embed := embed)
@@ -80,6 +143,17 @@ structure ReductionLogicStep
   -- 4. The Prover's Output State
   proverOut : StmtIn → WitIn → (∀ i, OracleIn i) → FullTranscript pSpec →
     ((StmtOut × (∀ i, OracleOut i)) × WitOut)
+
+/-- Materialize the extensional output required by the pure relation-facing logic.
+This does not implement VCV query semantics; those are carried by `OracleVerifier.outputOracle`. -/
+abbrev ReductionLogicStep.materializeOutput
+    {StmtIn WitIn : Type}
+    {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type} {OracleOut : ιₒₒ → Type}
+    {StmtOut WitOut : Type}
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (step : ReductionLogicStep StmtIn WitIn OracleIn OracleOut StmtOut WitOut pSpec)
+    (oStmtIn : ∀ i, OracleIn i) (transcript : FullTranscript pSpec) : ∀ i, OracleOut i :=
+  materializeOutputByEmbedding step.embed step.hEq oStmtIn transcript
 
 /-- Strong Completeness:
   "For ANY set of challenges, the honest transcript passes the check
@@ -100,9 +174,7 @@ def ReductionLogicStep.IsStronglyComplete
     step.verifierCheck stmtIn transcript ∧
     -- 3. The output MUST be valid and consistent
     let verifierStmtOut := step.verifierOut stmtIn transcript
-    -- Compute verifier oracle output via embedding (like OracleVerifier.toVerifier)
-    let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-      oStmtIn transcript
+    let verifierOStmtOut := materializeOutputByEmbedding step.embed step.hEq oStmtIn transcript
     let ((proverStmtOut, proverOStmtOut), proverWitOut) :=
       step.proverOut stmtIn witIn oStmtIn transcript
     -- Conclusion A: The Prover's output satisfies the next relation (Soundness/Completeness)
@@ -141,7 +213,7 @@ structure OracleAwareReductionLogicStep
     OptionT (OracleComp (oSpec + ([OracleIn]ₒ + [pSpec.Message]ₒ))) StmtOut
   -- Output computation remains pure/deterministic
   verifierOut   : StmtIn → FullTranscript pSpec → StmtOut
-  -- 2b. Oracle Embedding (same as ReductionLogicStep)
+  -- 2b. Extensional output selection used only by this pure relation-level logic.
   embed : ιₒₒ ↪ ιₒᵢ ⊕ pSpec.MessageIdx
   hEq : hEq (OracleIn := OracleIn) (OracleOut := OracleOut) (ιₒᵢ := ιₒᵢ) (ιₒₒ := ιₒₒ)
     (pSpec := pSpec) (embed := embed)
@@ -193,9 +265,13 @@ def OracleAwareReductionLogicStep.IsStronglyCompleteUnderSimulation
     Pr[⊥ | OptionT.mk (simulateQ so (step.verifierCheck stmtIn transcript))] = 0 ∧
     -- 4. The output MUST be valid and consistent
     let verifierStmtOut := step.verifierOut stmtIn transcript
-    -- Compute verifier oracle output via embedding (like OracleVerifier.toVerifier)
-    let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-      oStmtIn transcript
+    let verifierOStmtOut := fun i => match h : step.embed i with
+      | Sum.inl j => by
+        have hType : OracleOut i = OracleIn j := by simpa only [h] using step.hEq i
+        exact cast hType.symm (oStmtIn j)
+      | Sum.inr j => by
+        have hType : OracleOut i = pSpec.Message j := by simpa only [h] using step.hEq i
+        exact cast hType.symm (transcript.messages j)
     let ((proverStmtOut, proverOStmtOut), proverWitOut) :=
       step.proverOut stmtIn witIn oStmtIn transcript
     -- Conclusion A: The Prover's output satisfies the next relation
@@ -236,11 +312,10 @@ def foldStepLogic (i : Fin ℓ) :
     foldVerifierCheck i s (𝓑 := 𝓑) (t.messages ⟨0, rfl⟩)
   verifierOut := fun s t =>
     foldVerifierStmtOut i s (t.messages ⟨0, rfl⟩) (t.challenges ⟨1, rfl⟩)
-  -- 2b. Oracle Embedding (must match foldOracleVerifier)
   embed := ⟨fun j => by
     if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
       exact Sum.inl ⟨j.val, by omega⟩
-    else omega -- never happens
+    else omega
   , by
     intro a b h_ab_eq
     simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
@@ -276,6 +351,7 @@ interaction correctly computes the sumcheck polynomial and updates the witness t
   (e.g., `witnessStructuralInvariant_succ_preserved`) otherwise.
 - Agreement: Prover and verifier agree on output statements and oracles. -/
 omit [SampleableType L] in
+set_option backward.isDefEq.respectTransparency false in
 lemma foldStep_is_logic_complete (i : Fin ℓ) :
     (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (mp := mp) i).IsStronglyComplete := by
@@ -283,8 +359,7 @@ lemma foldStep_is_logic_complete (i : Fin ℓ) :
   let step := (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i)
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
-  let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-    oStmtIn transcript
+  let verifierOStmtOut := step.materializeOutput oStmtIn transcript
   let proverOutput := step.proverOut stmtIn witIn oStmtIn transcript
   let proverStmtOut := proverOutput.1.1
   let proverOStmtOut := proverOutput.1.2
@@ -303,22 +378,24 @@ lemma foldStep_is_logic_complete (i : Fin ℓ) :
   have hStmtOut_eq : proverStmtOut = verifierStmtOut := by
     -- Fact 3: Prover and verifier statements agree
     change (step.proverOut stmtIn witIn oStmtIn transcript).1.1 = step.verifierOut stmtIn transcript
-    simp only [step, foldStepLogic]; simp only [Fin.mk_one, Fin.isValue, Fin.zero_eta, Fin.val_succ]
+    simp only [step, foldStepLogic]
+    simp only [Fin.mk_one, Fin.isValue, Fin.zero_eta, Fin.val_succ]
   have hOStmtOut_eq : proverOStmtOut = verifierOStmtOut := by
     change (step.proverOut stmtIn witIn oStmtIn transcript).1.2
-      = OracleVerifier.mkVerifierOStmtOut step.embed step.hEq oStmtIn transcript
+      = step.materializeOutput oStmtIn transcript
     simp only [step, foldStepLogic]
     -- Fact 4: Prover and verifier oracle statements agree
     funext j
     have hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc := j.isLt
-    simp only [OracleVerifier.mkVerifierOStmtOut, Function.Embedding.coeFn_mk, Fin.eta]
+    simp only [ReductionLogicStep.materializeOutput, materializeOutputByEmbedding,
+      Function.Embedding.coeFn_mk, Fin.eta]
     split
     · rename_i j' heq
       -- heq : (if hj : ↑j < ... then Sum.inl j else ...) = Sum.inl j'
       -- Since hj holds, we have Sum.inl j = Sum.inl j', so j = j'
       simp only [hj, ↓reduceDIte] at heq
       cases heq
-      rfl
+      simp [foldStepLogic]
     · rename_i heq
       -- This case is impossible: the if-then-else evaluates to Sum.inl j when hj holds
       -- So we have Sum.inl j = Sum.inr j✝, which is a contradiction
@@ -362,10 +439,10 @@ lemma foldStep_is_logic_complete (i : Fin ℓ) :
             rw [h_H_In]
             rw [←projectToMidSumcheckPoly_succ]
           rfl
-        · conv_lhs =>
-            rw [h_f_In]
-            rw [←getMidCodewords_succ]
-          rfl
+        · rw [h_f_In]
+          exact (getMidCodewords_succ 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witIn.t i stmtIn.challenges
+            (transcript.challenges ⟨1, by rfl⟩)).symm
       · -- Component 2: strictOracleFoldingConsistencyProp
         have h_oracleIdx_eq : (OracleFrontierIndex.mkFromStmtIdx i.castSucc).val
           = (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i).val := by rfl
@@ -472,9 +549,8 @@ def commitStepLogic (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   verifierCheck := fun _ _ => True
   -- Statement doesn't change
   verifierOut := fun stmt _ => stmt
-  -- Oracle embedding: new oracle index maps to the message
   embed := commitStepLogic_embed 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR
-  hEq := (commitStepHEq 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
+  hEq := commitStepHEq 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR
   -- No challenges in 1-message protocol, so transcript is just the message
   honestProverTranscript := fun _stmt wit _oStmt _challenges =>
     fun ⟨0, _⟩ => wit.f
@@ -483,16 +559,12 @@ def commitStepLogic (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     let oStmtOut :=
     snoc_oracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl) oStmtIn (newOracleFn := wit.f)
-      -- OracleVerifier.mkVerifierOStmtOut
-      -- (embed := (commitStepLogic_embed 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR))
-      -- (hEq := (commitStepHEq 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR))
-      -- oStmtIn transcript
     ((stmt, oStmtOut), wit)
 
-/-! Helper lemma: snoc_oracle matches mkVerifierOStmtOut for commit steps.
+/-! Helper lemma: `snoc_oracle` matches the pure output materialization for commit steps.
 
 This proves that when we add a new oracle via `snoc_oracle`, the result matches what the verifier
-computes using `OracleVerifier.mkVerifierOStmtOut` with the commit step's embedding.
+uses in its relation-level output materialization.
 
 The key insight:
 - For indices `j < toOutCodewordsCount ℓ ϑ i.castSucc`: embed maps to `Sum.inl j` (old oracle)
@@ -500,7 +572,7 @@ The key insight:
   message)
 -/
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
-lemma snoc_oracle_eq_mkVerifierOStmtOut_commitStep
+lemma snoc_oracle_eq_materializeOutput_commitStep
     (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc),
       OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
@@ -511,10 +583,14 @@ lemma snoc_oracle_eq_mkVerifierOStmtOut_commitStep
     :
     snoc_oracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl) oStmtIn newOracle =
-    OracleVerifier.mkVerifierOStmtOut (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+    (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).materializeOutput
+        oStmtIn transcript := by
+  change _ = materializeOutputByEmbedding
+    (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed
-      (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (𝓑 := 𝓑) i hCR).hEq oStmtIn transcript := by
+    (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).hEq oStmtIn transcript
   funext j
   dsimp only [snoc_oracle]
   simp only [hCR, ↓reduceDIte]
@@ -523,26 +599,41 @@ lemma snoc_oracle_eq_mkVerifierOStmtOut_commitStep
   by_cases hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc
   · -- Old oracle case: embed j = Sum.inl
     have h_embed : (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed j = Sum.inl ⟨j.val, hj⟩ := by
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed j =
+        Sum.inl ⟨j.val, hj⟩ := by
       simp only [commitStepLogic, commitStepLogic_embed, Function.Embedding.coeFn_mk,
         commitStepLogic_embedFn, hj, dif_pos]
-    rw [OracleVerifier.mkVerifierOStmtOut_inl _ _ _ _ _ _ h_embed]
+    rw [materializeOutputByEmbedding_inl
+      (embed := (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed)
+      (hTypeEq := (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).hEq)
+      (oStmt := oStmtIn) (transcript := transcript) (i := j)
+      (j := ⟨j.val, hj⟩) (h := h_embed)]
     simp only [hj, dif_pos]
     rfl
   · -- New oracle case: embed j = Sum.inr 0
     have h_embed : (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed j = Sum.inr ⟨0, rfl⟩ := by
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed j =
+        Sum.inr ⟨0, rfl⟩ := by
       simp only [commitStepLogic, commitStepLogic_embed, Function.Embedding.coeFn_mk,
         commitStepLogic_embedFn, hj, dif_neg, not_false_eq_true]
       rfl
-    rw [OracleVerifier.mkVerifierOStmtOut_inr _ _ _ _ _ _ h_embed]
+    rw [materializeOutputByEmbedding_inr
+      (embed := (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed)
+      (hTypeEq := (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).hEq)
+      (oStmt := oStmtIn) (transcript := transcript) (i := j)
+      (j := ⟨0, rfl⟩) (h := h_embed)]
     simp only [hj, dif_neg, not_false_eq_true]
     rw [← h_transcript_eq]
     funext x
     have h_msg0: transcript.messages ⟨0, rfl⟩ = transcript 0 := by rfl
     rw [h_msg0]
     -- ⊢ transcript 0 (cast ⋯ x) = cast ⋯ (transcript 0) x
-    rw [cast_fun_eq_fun_cast_arg]
+    symm
+    apply congrFun (cast_fun_eq_fun_cast_arg _ (transcript 0))
     have h_j_eq : j.val = toOutCodewordsCount ℓ ϑ i.castSucc := by
       have h_lt := j.isLt
       conv_rhs at h_lt => rw [h_count_succ]
@@ -580,7 +671,7 @@ lemma getFirstOracle_snoc_oracle
 /-- Oracle folding consistency is preserved when adding a new oracle in a commit step.
 
 This lemma shows that if `oStmtIn` satisfies `oracleFoldingConsistencyProp` at round `i.castSucc`,
-then `oStmtOut` (constructed via `mkVerifierOStmtOut` with commit step's embed/hEq) satisfies it at
+then `oStmtOut` (constructed by the commit step's output materialization) satisfies it at
 `i.succ`.
 
 **Key insight**: In a commit step:
@@ -627,8 +718,7 @@ lemma strictOracleFoldingConsistency_commitStep
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) i (hCR := hCR))
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     let verifierStmtOut := step.verifierOut stmtIn transcript
-    let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-      oStmtIn transcript
+    let verifierOStmtOut := step.materializeOutput oStmtIn transcript
     strictOracleFoldingConsistencyProp 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := i.succ)
       (challenges := Fin.take (m := i.val + 1)
@@ -660,7 +750,7 @@ lemma strictOracleFoldingConsistency_commitStep
   have h_OStmtOut_eq : verifierOStmtOut = snoc_oracle 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (destIdx := ⟨i.val + 1, by omega⟩) (h_destIdx := by rfl)
       oStmtIn (newOracleFn := witIn.f) := by
-    rw [snoc_oracle_eq_mkVerifierOStmtOut_commitStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    rw [snoc_oracle_eq_materializeOutput_commitStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i hCR oStmtIn witIn.f transcript]
     · rfl
   -- Also establish that transcript message equals witIn.f
@@ -722,7 +812,7 @@ lemma strictOracleFoldingConsistency_commitStep
       (f := f₀) (r_challenges := stmtIn.challenges)
     dsimp only [f₀, P₀] at h_cast_elim
     unfold polyToOracleFunc at h_cast_elim
-    simp only [←h_cast_elim]
+    erw [← h_cast_elim]
     unfold getFoldingChallenges
     -- simp only [Fin.val_succ, zero_add, Fin.take_apply, Fin.castLE_refl]
     rw [←h_challenges_eq]
@@ -748,7 +838,7 @@ lemma strictOracleFoldingConsistency_commitStep
         simp only [zero_add, Fin.val_succ]; rw [h_domain_idx_eq.symm]; exact cIdx.isLt⟩) := by
       funext cId
       simp only [Fin.val_succ, zero_add]
-    rw [h_challenges_eq_take]
+    exact h_challenges_eq_take
 
 /-! Commit step logic is strongly complete.
 The key insight is that the commit step just extends the oracle without changing the statement,
@@ -762,8 +852,7 @@ lemma commitStep_is_logic_complete (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ
     (𝓑 := 𝓑) (mp := mp) i (hCR := hCR))
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
-  let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-    oStmtIn transcript
+  let verifierOStmtOut := step.materializeOutput oStmtIn transcript
   let proverOutput := step.proverOut stmtIn witIn oStmtIn transcript
   let proverStmtOut := proverOutput.1.1
   let proverOStmtOut := proverOutput.1.2
@@ -783,10 +872,10 @@ lemma commitStep_is_logic_complete (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ
   have hOStmtOut_eq : proverOStmtOut = verifierOStmtOut := by
     -- clear_value h_VCheck_passed
     change (step.proverOut stmtIn witIn oStmtIn transcript).1.2
-      = OracleVerifier.mkVerifierOStmtOut step.embed step.hEq oStmtIn transcript
+      = step.materializeOutput oStmtIn transcript
     conv_lhs => dsimp only [step, commitStepLogic]
     dsimp only [transcript, step]
-    rw [snoc_oracle_eq_mkVerifierOStmtOut_commitStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)]; rfl
+    rw [snoc_oracle_eq_materializeOutput_commitStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)]; rfl
   have h_first_oracle_eq : (getFirstOracle 𝔽q β verifierOStmtOut)
     = (getFirstOracle 𝔽q β oStmtIn) := by
     rw [← hOStmtOut_eq]
@@ -899,7 +988,7 @@ def finalSumcheckStepLogic :
     simp only [MessageIdx, Fin.eta, Sum.inl.injEq] at h_ab_eq
     exact h_ab_eq
   ⟩
-  hEq := fun oracleIdx => by simp only [Fin.eta]
+  hEq := fun oracleIdx => by simp only [Function.Embedding.coeFn_mk, Fin.eta]
 
 omit [SampleableType L] in
 /-! **Strict version**: When folding the last oracle to level `ℓ` (final sumcheck),
@@ -921,7 +1010,7 @@ lemma iterated_fold_to_const_strict
     let step := finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
     let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
     let verifierStmtOut := step.verifierOut stmtIn transcript
-    let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq oStmtIn transcript
+    let verifierOStmtOut := step.materializeOutput oStmtIn transcript
     let lastDomainIdx := getLastOracleDomainIndex ℓ ϑ (Fin.last ℓ)
     -- have h_eq := getLastOracleDomainIndex_last (ℓ := ℓ) (ϑ := ϑ)
     let k := lastDomainIdx.val
@@ -1132,7 +1221,7 @@ lemma iterated_fold_to_const_strict
           zero_add])
       (h_destIdx_le := by simp only [Fin.val_last, le_refl])
       (f := f₀) (r_challenges := stmtIn.challenges)
-    rw [←h_cast_elim4]
+    erw [← h_cast_elim4]
     set f_ℓ := iterated_fold 𝔽q β 0 ℓ (destIdx := ⟨Fin.last ℓ, by omega⟩)
       (h_destIdx := by simp only [Fin.val_last, Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add])
       (h_destIdx_le := by simp only [Fin.val_last, le_refl]) (f := f₀)
@@ -1246,8 +1335,7 @@ lemma finalSumcheckStep_is_logic_complete :
     (𝓑 := 𝓑))
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
-  let verifierOStmtOut := OracleVerifier.mkVerifierOStmtOut step.embed step.hEq
-    oStmtIn transcript
+  let verifierOStmtOut := step.materializeOutput oStmtIn transcript
   let proverOutput := step.proverOut stmtIn witIn oStmtIn transcript
   let proverStmtOut := proverOutput.1.1
   let proverOStmtOut := proverOutput.1.2
@@ -1300,7 +1388,8 @@ lemma finalSumcheckStep_is_logic_complete :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (stmtIn := stmtIn) (witIn := witIn)
         (oStmtIn := oStmtIn) (challenges := challenges)
         (h_strictOracleWitConsistency_In := h_strictOracleWitConsistency_In)
-      rw [res]; rfl
+      erw [res]
+      rfl
   -- Prove the four required facts
   refine ⟨?_, ?_, ?_, ?_⟩
   · exact h_VCheck_passed

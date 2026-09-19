@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Honest completeness of the toy-problem IORs (ABF26 Constructions 6.2 and 6.9)
@@ -24,6 +25,8 @@ alphabet `A` (an `F`-module): `A = F` is the scalar specialization, while
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6, Constructions 6.2 and 6.9).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 
@@ -84,6 +87,9 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     simp [Pi.add_apply, Pi.smul_apply]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
+-- `convert hacc using 1` leaves a goal that `(cast_eq _ _).symm` closes only when the cast's
+-- motive reduces; v4.33 respects transparency there and the term stops typechecking.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Honest completeness of the three-round toy protocol** (protocol-level form).
 
 The honest oracle reduction is perfectly complete from `inputRelationFor encode`
@@ -215,7 +221,11 @@ theorem oracleReduction_perfectCompleteness
   · rename_i hreject
     exfalso
     apply hreject
-    convert hacc using 1 <;> congr 1
+    convert hacc using 1
+    · exact (cast_eq _ _).symm
+    · funext j
+      apply congrArg (fun x : F => witIn 0 j + x * witIn 1 j)
+      exact (cast_eq _ _).symm
 
 /-! ### Regression guards: both decision checks are load-bearing
 

@@ -3,8 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 
 /-!
 ## Binary Basefold Compliance
@@ -15,6 +17,11 @@ This file packages:
 2. fold-error containment and its UDR-close consequence
 3. the full and incremental bad-event predicates used by the soundness development
 -/
+
+@[expose] public section
+
+
+
 
 namespace Binius.BinaryBasefold
 

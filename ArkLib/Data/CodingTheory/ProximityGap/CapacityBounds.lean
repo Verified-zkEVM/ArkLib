@@ -3,22 +3,23 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.Basic.Entropy
+public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import ArkLib.Data.CodingTheory.SubspaceDesign
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Capacity-regime bounds for CA and MCA
@@ -94,11 +95,10 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - [DG25dist] Theorem 2.5, source of Lemma 4.19.
 -/
 
+@[expose] public section
+
 -- Pre-existing external admits below (not touched by this diff) have statements carrying
 -- unused `Fintype`/`DecidableEq` hypotheses; scoped narrowly once those admits are resolved.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
 
 namespace CodingTheory
 
@@ -110,6 +110,7 @@ section ReedSolomon
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
+omit [DecidableEq ι] in
 /-- A small-proximity-loss corollary of `rs_epsCa_le_in_unique_decoding_range`. If shifting the
 interleaved radius by `γ/n` does not cross a Hamming-distance grid level, then
 
@@ -134,6 +135,7 @@ theorem rs_epsCa_le_of_no_radius_level_crossing
           ((n * δ_fld + γ) / (γ * Fintype.card F))
     epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ_fld δ_fld ≤
       ENNReal.ofReal bound := by
+  classical
   intro n ρ bound
   -- `n = |ι| > 0`.
   have hn_pos : 0 < Fintype.card ι := Fintype.card_pos
@@ -177,6 +179,7 @@ theorem rs_epsCa_le_of_no_radius_level_crossing
   have hγ_ne0R : (γ : ℝ) ≠ 0 := by exact_mod_cast _hγ_pos.ne'
   field_simp
 
+omit [DecidableEq ι] [DecidableEq F] in
 /-- An affine-line MCA bound for a Reed--Solomon code in the Johnson range. Set the reduced rate
 to `ρ := (k-1)/n` and, for `0 < δ < 1-√ρ`, let
 
@@ -261,8 +264,8 @@ section SubspaceDesignFRS
 
 The cubic term is the affine specialization of the source's general generator bound. -/
 theorem subspace_design_mcaError_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (_h : IsSubspaceDesign s τ C)
     (t : ℕ) (_ht : 0 < t) :

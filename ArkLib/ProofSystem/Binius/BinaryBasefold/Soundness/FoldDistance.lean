@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
 
 /-!
 ## Binary Basefold Soundness Fold Distance
@@ -21,6 +23,11 @@ This file packages:
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
   Statement numbering follows the archived revision of [DP24].
 -/
+
+@[expose] public section
+
+
+
 
 namespace Binius.BinaryBasefold
 
@@ -63,23 +70,29 @@ lemma fold_agreement_of_fiber_agreement (i : Fin ℓ) (steps : ℕ)
     (iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i, by omega⟩ steps h_destIdx h_destIdx_le g (r_challenges := r_challenges) (y := y))) := by
   intro h_fiber_agree
   -- Expand to matrix form: fold(y) = Tensor(r) * M_y * fiber_vals
-  rw [iterated_fold_eq_matrix_form 𝔽q β (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)]
-  rw [iterated_fold_eq_matrix_form 𝔽q β (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)]
+  rw [iterated_fold_eq_matrix_form 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := f)
+    (r_challenges := r_challenges)]
+  rw [iterated_fold_eq_matrix_form 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f := g)
+    (r_challenges := r_challenges)]
   -- ⊢ localized_fold_matrix_form 𝔽q β i steps h_destIdx h_destIdx_le f r y =
   -- localized_fold_matrix_form 𝔽q β i steps h_destIdx h_destIdx_le g r y
   unfold localized_fold_matrix_form single_point_localized_fold_matrix_form
   simp only
   congr 2
-  let left := fiberEvaluations 𝔽q β (i := ⟨i, by omega⟩) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) f y
-  let right := fiberEvaluations 𝔽q β (i := ⟨i, by omega⟩) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) g y
-  have h_fiber_eval_eq : left = right := by
-    unfold left right fiberEvaluations
+  let fiberValsF := fiberEvaluations 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) f y
+  let fiberValsG := fiberEvaluations 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
+    (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) g y
+  have h_fiber_eval_eq : fiberValsF = fiberValsG := by
+    unfold fiberValsF fiberValsG fiberEvaluations
     ext idx
     let x := qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) y idx
     have h_x_folds_to_y := generates_quotient_point_if_is_fiber_of_y 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
           (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (x := x) (y := y) (hx_is_fiber := by use idx)
     exact h_fiber_agree x h_x_folds_to_y.symm
-  unfold left right at h_fiber_eval_eq
+  unfold fiberValsF fiberValsG at h_fiber_eval_eq
   rw [h_fiber_eval_eq]
 
 omit [CharP L 2] [DecidableEq 𝔽q] hF₂ in

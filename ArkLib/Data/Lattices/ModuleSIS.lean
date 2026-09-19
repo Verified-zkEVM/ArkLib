@@ -3,9 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import VCVio.OracleComp.Constructions.SampleableType
-import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import ArkLib.Data.Lattices.Vectors
+module
+
+public import VCVio.OracleComp.Constructions.SampleableType
+public import ArkLib.Data.Lattices.CyclotomicRing.Rq
+public import ArkLib.Data.Lattices.Vectors
 
 /-!
 # Module Short Integer Solution (Module-SIS) over the Cyclotomic Ring
@@ -33,6 +35,8 @@ the module form used by Greyhound [NS24] and Hachi [NOZ26].
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp CompPoly ArkLib.Lattices
 open scoped ENNReal

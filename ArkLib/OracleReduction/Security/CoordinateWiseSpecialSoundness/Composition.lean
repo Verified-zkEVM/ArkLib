@@ -3,9 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
-import ArkLib.OracleReduction.Composition.Sequential.Append
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+public import ArkLib.OracleReduction.Composition.Sequential.Append
 
 /-!
   # Composition for Coordinate-Wise Special Soundness
@@ -36,6 +37,8 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   verifier's reachable outputs with the right verifier's, which is what transfers leaf-witnessing
   validity. Guarded left factors are handled in `Guarded.lean` at the same skeleton.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal

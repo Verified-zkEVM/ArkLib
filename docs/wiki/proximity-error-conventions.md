@@ -9,10 +9,10 @@ correlated agreement. For code carriers and distance types, see
 
 | Module | Contents |
 | --- | --- |
-| `ProximityGap/ProximityGenerators.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
+| `ProximityGenerator/Basic.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
 | `ProximityGap/Errors.lean` | `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
-| `ProximityGap/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
+| `ProximityGenerator/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
 | `ProximityGap/GrandChallenges.lean` | Integer-grid challenge predicates, answer types, witnesses, and Reed--Solomon prize specializations |
 | `ProximityGap/CapacityBounds.lean` | Source-audited §4 upper/lower bounds on `epsCa` and canonical `mcaError` |
 | `ProximityGap/LineDecoding.lean` | Natural-cardinality line decodability and its MCA consequence |

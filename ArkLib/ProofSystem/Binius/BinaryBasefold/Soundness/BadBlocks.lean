@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.QueryPhasePrelims
-import ArkLib.Data.Probability.Instances
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.QueryPhasePrelims
+public import ArkLib.Data.Probability.Instances
 
 /-!
 ## Binary Basefold Soundness Bad Blocks
@@ -22,6 +24,11 @@ This file packages:
   Statement numbering below follows the archived revision of [DP24].
 -/
 
+@[expose] public section
+
+
+
+
 namespace Binius.BinaryBasefold
 
 -- The terminal bad-block bookkeeping proof exceeds Lean's default heartbeat budget.
@@ -32,6 +39,7 @@ open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomi
 open scoped NNReal
 open ReedSolomon Code BerlekampWelch Function
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
+open Probability
 open ProbabilityTheory
 
 variable {r : ℕ} [NeZero r]

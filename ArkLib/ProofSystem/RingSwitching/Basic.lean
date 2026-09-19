@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.ProofSystem.RingSwitching.Transport
-import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
-import ArkLib.ProofSystem.RingSwitching.Packing
-import ArkLib.ProofSystem.RingSwitching.Lift
+module
+
+public import ArkLib.ProofSystem.RingSwitching.Transport
+public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
+public import ArkLib.ProofSystem.RingSwitching.Packing
+public import ArkLib.ProofSystem.RingSwitching.Lift
 
 /-!
 # Ring Switching — a family of constructions, not one protocol
@@ -102,3 +104,5 @@ structure would carry a lemma either side's proofs consume.
 
 See also the KB concept page `docs/kb/concepts/ring-switching.md`.
 -/
+
+@[expose] public section

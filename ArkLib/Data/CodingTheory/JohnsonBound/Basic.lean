@@ -3,8 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
-import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
+module
+
+public import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
 /-! # Johnson Bound Basics -/
+
+@[expose] public section
 
 
 namespace JohnsonBound
@@ -186,7 +190,8 @@ lemma johnson_condition_weak_implies_strong
           sqrt_le_sqrt ineq3'
         have ineq5 :
             (1 - √(1 - ↑frac * ↑d_weak / ↑n)) ≤ (1 - √(1 - ↑frac * ↑d / ↑n)) := by linarith
-        simp_all
+        exact mul_le_mul_of_nonneg_left ineq5
+          (inv_nonneg.mpr (by exact_mod_cast h_frac_pos.le))
       have h_J_cond_weak' : ↑e / ↑n < 1 / (↑frac) * (1 - √(1 - frac * (d_weak / ↑n))) := by
         unfold frac
         unfold q

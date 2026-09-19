@@ -32,14 +32,14 @@ def parse_imports(file_path: str) -> List[str]:
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Find import statements
-        import_pattern = r'^import\s+([^\s]+)'
+        # Find import statements. Under the module system an import may carry
+        # `public` and/or `meta` modifiers and an `all` qualifier, so match the
+        # full grammar rather than a bare `import` prefix.
+        import_pattern = r'^(?:public\s+)?(?:meta\s+)?import\s+(?:all\s+)?([^\s]+)'
         for line in content.split('\n'):
-            line = line.strip()
-            if line.startswith('import'):
-                match = re.match(import_pattern, line)
-                if match:
-                    imports.append(match.group(1))
+            match = re.match(import_pattern, line.strip())
+            if match:
+                imports.append(match.group(1))
     except Exception as e:
         print(f"Warning: Could not read {file_path}: {e}")
 

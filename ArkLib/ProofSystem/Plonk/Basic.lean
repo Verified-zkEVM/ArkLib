@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.ProofSystem.ConstraintSystem.Plonk
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.ProofSystem.ConstraintSystem.Plonk
 
 /-!
 
@@ -24,6 +25,8 @@ the PIOP level), integration with lookup arguments (i.e. logup), high-degree con
     for oecumenical noninteractive arguments of knowledge*][GWZC19]
 
 -/
+
+@[expose] public section
 
 namespace Plonk
 

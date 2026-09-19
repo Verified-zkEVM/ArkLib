@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Cardinality
 
 /-!
 # `ψ` is a Bijection (Hachi §3, Theorem 2)
@@ -22,6 +24,8 @@ An injective endo-map of finite sets of equal cardinality is bijective
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 

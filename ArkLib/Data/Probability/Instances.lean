@@ -1,16 +1,18 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova
+Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
+         Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Probability.ProbabilityMassFunction.Monad
-import ArkLib.Data.Probability.Notation
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
-import CompPoly.Data.Fin.BigOperators
-import CompPoly.Data.Nat.Bitwise
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.Probability.ProbabilityMassFunction.Monad
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import CompPoly.Data.Fin.BigOperators
+public import CompPoly.Data.Nat.Bitwise
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 
 /-! # Probability Instances
 
@@ -23,13 +25,13 @@ the Schwartz-Zippel bound in probability form, and collision bounds for linear f
 Agreement*][ABF26]
 -/
 
+@[expose] public section
+
 
 open ProbabilityTheory Filter NNReal Finset Function Real
 open scoped BigOperators ProbabilityTheory
 
 
--- Several probability lemmas below use long `Pr_{ … }[ … ]` calc steps that read best unwrapped.
-set_option linter.style.longLine false
 
 -- TODO(dtumad): Move most of the stuff in this file to VCV and generalize as possible
 
@@ -165,8 +167,7 @@ theorem prob_split_uniform_sampling_of_prod {γ δ : Type}
     -- Fintype & Nonempty assumptions for all types
     [Fintype γ] [Fintype δ] [Nonempty γ] [Nonempty δ]
     -- The predicate on the original (combined) type
-    (P : γ × δ → Prop)
-    :
+    (P : γ × δ → Prop) :
     -- LHS: Probability over the combined space
     Pr_{ let r ← $ᵖ (γ × δ) }[ P r ] =
     -- RHS: Probability over the sequential, split spaces
@@ -262,8 +263,7 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
     -- The equivalence that splits α into γ × δ
     (e : α ≃ γ × δ)
     -- The predicate on the original (combined) type
-    (P : α → Prop)
-    :
+    (P : α → Prop) :
     -- LHS: Probability over the combined space
     Pr_{ let r ← $ᵖ α }[ P r ] =
     -- RHS: Probability over the sequential, split spaces
@@ -319,8 +319,7 @@ theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
 probability, sampling `r_last` *first*, then `r_init`.
 -/
 theorem prob_split_last_uniform_sampling_of_finFun {ϑ : ℕ} {F : Type} [Fintype F] [Nonempty F]
-    (P : F → (Fin ϑ → F) → Prop)
-    :
+    (P : F → (Fin ϑ → F) → Prop) :
     Pr_{ let r ← $ᵖ (Fin (ϑ + 1) → F) }[ P (r (Fin.last ϑ)) (fun i ↦ r i.castSucc) ] =
     Pr_{ let r_last ← $ᵖ F; let r_init ← $ᵖ (Fin ϑ → F) }[ P r_last r_init ] := by
   classical
@@ -361,6 +360,62 @@ theorem prob_marginalization_first_of_prod {α β : Type} [Fintype α] [Fintype 
   unfold D_rest
   -- ⊢ (D_rest x) True = if P x then 1 else 0
   simp only [Bind.bind, pure, PMF.bind_const, PMF.pure_apply, eq_iff_iff, true_iff]
+
+/-- A probability is at most one. -/
+lemma prob_le_one {α : Type} (D : PMF α) (P : α → Prop) :
+    Pr_{ let a ← D }[P a] ≤ 1 := by
+  classical
+  rw [ProbabilityTheory.Pr_eq_tsum_indicator]
+  calc ∑' a, D a * (if P a then (1 : ENNReal) else 0)
+      ≤ ∑' a, D a * 1 := by gcongr with a
+                            split <;> simp
+    _ = 1 := by simp [D.tsum_coe]
+
+/-- An impossible event has probability zero. -/
+lemma prob_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop) (h : ∀ a, ¬ P a) :
+    Pr_{ let a ← D }[P a] = 0 := by
+  classical
+  rw [ProbabilityTheory.Pr_eq_tsum_indicator]
+  simp [h]
+
+/-- Sampling `Fin (k + 1) → F` uniformly is sampling the first `k` coordinates and the last
+  coordinate independently: the probability decomposes as a `tsum` over the first `k`
+  coordinates of the conditional probability over the last one. -/
+lemma prob_fin_succ_split {F : Type} [Fintype F] [Nonempty F] {k : ℕ}
+    (P : (Fin (k + 1) → F) → Prop) :
+    Pr_{ let α ←$ᵖ (Fin (k + 1) → F) }[P α] =
+      ∑' y : (Fin k → F), (PMF.uniformOfFintype (Fin k → F)) y *
+        Pr_{ let x ←$ᵖ F }[P (Fin.snoc y x)] := by
+  classical
+  let e : ((Fin k → F) × F) ≃ (Fin (k + 1) → F) :=
+    { toFun := fun r => Fin.snoc r.1 r.2
+      invFun := fun α => (Fin.init α, α (Fin.last k))
+      left_inv := by
+        rintro ⟨y, x⟩
+        simp [Fin.init_snoc]
+      right_inv := by
+        intro α
+        simp [Fin.snoc_init_self] }
+  rw [←ProbabilityTheory.Pr_uniform_equiv e P,
+      Probability.prob_split_uniform_sampling_of_prod (P := fun r ↦ P (e r))]
+  exact Probability.prob_tsum_form_split_first _ _
+
+open scoped Classical in
+/-- The union bound step: if for every value of the first block of randomness the conditional
+  probability `g` is at most `1` when the bad event `Q` holds and at most `c` otherwise, then
+  the total probability is at most `Pr[Q] + c`. -/
+lemma tsum_prob_le_add {α : Type} (D : PMF α) (g : α → ENNReal) (Q : α → Prop) (c : ENNReal)
+    (h : ∀ a, g a ≤ (if Q a then 1 else 0) + c) :
+    ∑' a, D a * g a ≤ Pr_{ let a ← D }[Q a] + c := by
+  have h1 : ∑' a, D a * g a ≤ ∑' a, (D a * (if Q a then 1 else 0) + D a * c) := by
+    refine ENNReal.tsum_le_tsum fun a ↦ ?_
+    rw [←mul_add]
+    exact mul_le_mul_right (h a) _
+  have h2 : ∑' a, (D a * (if Q a then 1 else 0) + D a * c) = Pr_{ let a ← D }[Q a] + c := by
+    rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, D.tsum_coe, one_mul,
+      ProbabilityTheory.Pr_eq_tsum_indicator]
+  exact h2 ▸ h1
+
 /--
 **Monotonicity of Probability**
 
@@ -530,6 +585,10 @@ theorem Pr_exists_le {α ι : Type} [Fintype ι] (D : PMF α) (f : ι → α →
         _ = ∑ i ∈ insert a s, Pr_{ let r ← D }[ f i r ] := by rw [Finset.sum_insert ha]
   simpa using key Finset.univ
 
+section ProbabilityPower
+
+variable {A : Type} [Fintype A] [Nonempty A]
+
 /-- Independent uniform samples all satisfy `P` with the product of their one-sample
 probabilities. This is the key lemma for showing that independent repetitions multiply their
 error rates. -/
@@ -540,9 +599,12 @@ theorem prob_pow_of_forall_finFun
   classical
   induction n with
   | zero =>
-    simp only [IsEmpty.forall_iff, PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const,
-      PMF.pure_apply, ↓reduceIte, PMF.bind_apply, PMF.uniformOfFintype_apply, eq_iff_iff, true_iff,
-      mul_ite, mul_one, mul_zero, pow_zero]
+    simp only [IsEmpty.forall_iff, pow_zero]
+    change ((fun _ : Fin 0 → A => True) <$> $ᵖ (Fin 0 → A)) True = 1
+    rw [PMF.monad_map_eq_map]
+    change (PMF.map (Function.const (Fin 0 → A) True) ($ᵖ (Fin 0 → A))) True = 1
+    rw [PMF.map_const]
+    simp
   | succ n ih =>
     -- Shorter equivalence proof
     have h_eqv (f : Fin (n + 1) → A) : (∀ i, P (f i)) ↔ P (f (Fin.last n)) ∧ ∀ (i : Fin n), P (f i.castSucc) := by
@@ -613,6 +675,8 @@ theorem prob_pow_bound_of_forall
       apply pow_le_pow_left'
       · exact h_bound
 
+end ProbabilityPower
+
 /--
 **Marginal Bound for Sequential Sampling**
 
@@ -648,7 +712,7 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
       (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
   classical
-  letI : Field R := Fintype.fieldOfDomain R
+  let : Field R := Fintype.fieldOfDomain R
   exact prob_eval_zero_univ_le_div P h_nonzero h_deg
 
 /-- **Schwartz-Zippel**, in probability form at the degree bound `n`: the `d := n`

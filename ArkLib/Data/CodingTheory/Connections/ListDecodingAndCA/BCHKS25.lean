@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # BCHKS25 CA-to-list-size bound
@@ -21,6 +22,8 @@ to the field-cardinality list-size bound.
 
 - [BCHKS25] Theorem 1.9.
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -192,11 +195,15 @@ theorem rs_Lambda_le_card_of_epsCa_lt
       have hbadR : (2 * n * (imageAt a).card : ℝ) < q := by exact_mod_cast hbad
       have hNpos : (0 : ℝ) < N a := by
         have hMpos : (0 : ℝ) < L0.card := by rw [hL0card]; positivity
-        nlinarith [hCS a]
+        nlinarith only [hCS a, hMpos]
       have hmul := mul_lt_mul_of_pos_right hbadR hNpos
       have hscale := mul_le_mul_of_nonneg_left (hCS a)
         (show (0 : ℝ) ≤ 2 * n by positivity)
-      nlinarith
+      calc
+        2 * n * (L0.card : ℝ) ^ 2 ≤
+            2 * n * ((imageAt a).card * (N a : ℝ)) := hscale
+        _ = (2 * n * (imageAt a).card : ℝ) * N a := by ring
+        _ < (q : ℝ) * N a := hmul
     have hsum :
         ∑ _a : F, (2 * n * (L0.card : ℝ) ^ 2) <
           ∑ a : F, (q : ℝ) * N a :=
@@ -222,7 +229,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     have hL0R : (L0.card : ℝ) = q + 1 := by exact_mod_cast hL0card
     have hnR : (0 : ℝ) < n := by exact_mod_cast hn
     rw [hL0R] at hcomb
-    nlinarith
+    nlinarith only [hcomb, hnR]
   obtain ⟨α, hspreadα⟩ := hspread
   let Z : Finset F := imageAt α
   let f : ι → F := fun x => c x / (domain x - α)

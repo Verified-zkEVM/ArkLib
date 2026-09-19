@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # A classification of all (oracle) reductions with no interaction between the prover and verifier
@@ -13,6 +14,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   prover and verifier. In this setting, there are many specializations, and we can use these to
   derive simpler conditions for completeness & soundness.
 -/
+
+@[expose] public section
 
 open OracleComp OracleInterface ProtocolSpec Function NNReal ENNReal
 
@@ -47,6 +50,9 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   receiveChallenge := fun i => nomatch i
   output := combineMap mapStmt mapWit
 
+/- Output executes the supplied `mapStmt` and `mapWit` computations. Purity requires an
+additional condition on those computations. -/
+
 /-- The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a
   function `mapStmt : StmtIn → OracleComp oSpec StmtOut` -/
 @[reducible]
@@ -66,14 +72,19 @@ def reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut !p[] where
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
 
-theorem reduction_completeness {ε : ℝ≥0} [DecidablePred (· ∈ relOut)]
-    [DecidableEq StmtOut]
+theorem reduction_completeness {ε : ℝ≥0}
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
-      Pr[fun ⟨stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut | do
+      Pr[ fun ⟨stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut | do
         (simulateQ impl <| combineMap mapStmt mapWit ⟨stmtIn, witIn⟩).run' (← init)] ≥ 1 - ε) :
     Reduction.completeness init impl relIn relOut (reduction mapStmt mapWit) ε := by
-  simp [Reduction.completeness, Reduction.run, Verifier.run, prover, Prover.run,
-    - tsub_le_iff_right]
+  classical
+  simp only [Reduction.completeness, ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, Reduction.run, Prover.run, Fin.reduceLast, prover,
+    Nat.reduceAdd, Fin.isValue, MessageIdx, Message, Prover.runToRound_zero_of_prover_first,
+    id_eq, liftM_bind, bind_pure_comp, liftM_map, map_bind, Functor.map_map, pure_bind,
+    monadLift_liftM_OptionT, Verifier.run, OptionT.run_monadLift, monadLift_self,
+    bind_map_left, Option.getM_some, map_pure, bind_assoc, OptionT.run_bind,
+    OptionT.run_map, StateT.run'_eq, OptionT.mk_bind, ge_iff_le]
   intro stmtIn witIn hStmtIn
   refine ge_trans ?_ (hRel stmtIn witIn hStmtIn)
   sorry

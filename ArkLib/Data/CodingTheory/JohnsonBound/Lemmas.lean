@@ -3,8 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
-import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
+module
+
+public import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
 /-! # Johnson Bound Lemmas -/
+
+@[expose] public section
 
 
 namespace JohnsonBound
@@ -27,22 +31,30 @@ variable {n : ℕ} {F : Type*} [Fintype F] [DecidableEq F]
   {B : Finset (Fin n → F)} {i : Fin n}
 
 /-- `Fi B i α` is the subset of codewords in `B` whose `i`-th coordinate equals `α`. -/
-private def Fi (B : Finset (Fin n → F)) (i : Fin n) (α : F) : Finset (Fin n → F) :=
+def Fi (B : Finset (Fin n → F)) (i : Fin n) (α : F) : Finset (Fin n → F) :=
   {x | x ∈ B ∧ x i = α}
 
 /-- `K B i α` is the cardinality of `Fi B i α`. -/
-private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
+abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
-lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by aesop (add simp [Fi])
+lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by
+  ext x
+  simp only [Finset.mem_biUnion, Finset.mem_univ, true_and, Fi, Finset.mem_filter]
+  constructor
+  · exact fun hx ↦ ⟨x i, hx, rfl⟩
+  · exact fun ⟨_, hx, _⟩ ↦ hx
 
 /-- The sets `Fi B i α` are pairwise disjoint. -/
 @[simp]
 lemma Fis_pairwise_disjoint : Set.PairwiseDisjoint Set.univ (Fi B i) := by
-  unfold Fi
-  rintro x - y - h₁ _ h₂ h₃ _ contra
-  specialize h₂ contra; specialize h₃ contra; aesop
+  intro a _ b _ hab
+  change Disjoint (Fi B i a) (Fi B i b)
+  rw [Finset.disjoint_left]
+  intro x hxa hxb
+  simp only [Fi, Finset.mem_filter, Finset.mem_univ, true_and] at hxa hxb
+  exact hab (hxa.2.symm.trans hxb.2)
 
 /-- The cardinalities `K B i α` sum to `|B|`. -/
 @[simp]
@@ -93,7 +105,7 @@ lemma sum_choose_K' [Zero F] (h_card : 2 ≤ card F) :
 
 /-- Total `choose_2` over all coordinates at position `i`. -/
 @[simp, grind]
-private def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
+def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
   ∑ α : F, choose_2 (K B i α)
 
 /-- Lower bound on `sum_choose_K_i` via convexity. -/
@@ -110,7 +122,7 @@ lemma le_sum_choose_K [Zero F] (h_card : 2 ≤ card F) :
   linarith [sum_choose_K' h_card (B := B) (i := i)]
 
 /-- Average number of zero coordinates across positions, normalised by `n`. -/
-private def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
+def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ) / n * ∑ i, K B i 0
 
 omit [Fintype F] in
@@ -163,7 +175,7 @@ lemma k_choose_2 [Zero F] (h_n : n ≠ 0) :
 
 /-- Auxiliary fraction `(|B| - x) / (|F| - 1)`. -/
 @[simp, grind]
-private def aux_frac (B : Finset (Fin n → F)) (x : ℚ) : ℚ :=
+def aux_frac (B : Finset (Fin n → F)) (x : ℚ) : ℚ :=
   (B.card - x) / (card F - 1)
 
 /-- The average of `aux_frac` over coordinates equals `aux_frac` at `k`. -/
@@ -210,7 +222,7 @@ lemma le_sum_sum_choose_K [Zero F] (h_n : 0 < n) (h_card : 2 ≤ card F) :
   nlinarith [show (n : ℚ) ≥ 1 from by exact_mod_cast h_n]
 
 /-- `F2i B i α` is the set of ordered pairs from `B` that agree at position `i` with value `α`. -/
-private def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
+def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
     Finset ((Fin n → F) × (Fin n → F)) :=
   {x | x ∈ B ×ˢ B ∧ x.1 ≠ x.2 ∧ x.1 i = α ∧ x.2 i = α}
 
@@ -218,7 +230,10 @@ private def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
 lemma F2i_disjoint : Set.PairwiseDisjoint Set.univ (F2i B i) := by
   intros a _ b _ hab
   simp only [disjoint_left, Prod.forall]
-  unfold F2i; aesop
+  intro x y hxa hxb
+  simp only [F2i, Finset.mem_filter, Finset.mem_univ, true_and,
+    Finset.mem_product] at hxa hxb
+  exact hab (hxa.2.2.1.symm.trans hxb.2.2.1)
 
 /-- `|F2i B i α| = K(α) · (K(α) - 1)`. -/
 lemma F2i_card {α : F} : (F2i B i α).card = K B i α * (K B i α - 1) := by
@@ -231,11 +246,19 @@ lemma F2i_card {α : F} : (F2i B i α).card = K B i α * (K B i α - 1) := by
   · grind
 
 /-- `Bi B i` is the set of distinct ordered pairs from `B` agreeing at position `i`. -/
-private def Bi (B : Finset (Fin n → F)) (i : Fin n) :=
+def Bi (B : Finset (Fin n → F)) (i : Fin n) :=
   {x ∈ B ×ˢ B | x.1 ≠ x.2 ∧ x.1 i = x.2 i}
 
 /-- `Bi` decomposes as a disjoint union of `F2i` over all field elements. -/
-lemma Bi_biUnion_F2i : Bi B i = univ.biUnion (F2i B i) := by unfold Bi F2i; ext; aesop
+lemma Bi_biUnion_F2i : Bi B i = univ.biUnion (F2i B i) := by
+  ext x
+  simp only [Bi, F2i, Finset.mem_filter, Finset.mem_product, Finset.mem_biUnion,
+    Finset.mem_univ, true_and]
+  constructor
+  · rintro ⟨hmem, hne, heq⟩
+    exact ⟨x.1 i, hmem, hne, rfl, heq.symm⟩
+  · rintro ⟨a, hmem, hne, hxa, hya⟩
+    exact ⟨hmem, hne, hxa.trans hya.symm⟩
 
 /-- `|Bi B i| = ∑ α, K(α) · (K(α) - 1)`. -/
 lemma Bi_card : (Bi B i).card = ∑ α : F, K B i α * (K B i α - 1) := by
@@ -342,7 +365,9 @@ lemma almost_johnson_lhs_div_B_card [Zero F] (h_n : 0 < n) (h_B : 2 ≤ B.card) 
     (1 - e B 0 / n) ^ 2 * B.card + B.card * (e B 0) ^ 2 / ((card F - 1) * n ^ 2) - 1 := by
   set E := (n - e B 0) / n
   generalize eqrhs : (_ + _ - 1 : ℚ) = rhs
-  have eqE : E = k B / B.card := by grind only [= k_and_e']
+  have eqE : E = k B / B.card := by
+    simpa only [E] using
+      (k_and_e' (B := B) h_n.ne' (by omega)).symm
   suffices (B.card * E - 1) * E +
       ((B.card - B.card * E) / (card F - 1) - 1) * (1 - E) = rhs by
     rw [eqE, mul_div_cancel₀ _ (by simp only [ne_eq, Rat.natCast_eq_zero_iff]; omega)] at this
@@ -403,9 +428,17 @@ lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
   have n₂ : c1 ≠ 0 := by simp [c1, c, sub_eq_zero]; grind only
   suffices c / c1 * (d B / n - 2 * e B 0 / n + c / c1 * e B 0 ^ 2 / n ^ 2) =
       (1 - c / c1 * (e B 0 / n)) ^ 2 - (1 - c / c1 * (d B / n)) by
-    rw [← this]; have : c / c1 = 1 + 1 / c1 := by grind only
-    grind only [= e.eq_1]
-  grind only
+    rw [← this]
+    have : c / c1 = 1 + 1 / c1 := by
+      calc
+        c / c1 = (c1 + 1) / c1 := by
+          congr 1
+          simp only [c1]
+          ring
+        _ = 1 + 1 / c1 := by rw [add_div, div_self n₂]
+    rw [this]
+    ring_nf
+  ring_nf
 
 /-- Johnson bound in squared-deviation form, at the zero vector. -/
 lemma johnson_bound₀ [Zero F]
@@ -427,7 +460,7 @@ protected lemma johnson_bound_lemma {v : Fin n → F}
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  haveI : NeZero (card F) := ⟨by omega⟩
+  have : NeZero (card F) := ⟨by omega⟩
   set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
   set σ : Fin n → (F ≃ Fin (card F)) :=
     fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ
@@ -487,8 +520,7 @@ lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
   set frac := q / (q - 1)
   have h_frac_pos : 1 < frac := by rw [lt_div_iff₀] <;> linarith
   have h_sqrt_eq : 1 - √(1 - δ) = (1 / frac) * (1 - √(1 - frac * δ)) := by
-    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from
-      by
+    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from by
         dsimp [δ] at h_muln h_J_bound h_eq ⊢
         norm_cast at h_muln h_J_bound h_eq ⊢
         exact le_antisymm (h_J_bound.trans_eq h_eq.symm) h_muln]
@@ -531,6 +563,14 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
       (JohnsonBound.d B / n - 2 * JohnsonBound.e B v / n +
       frac * (JohnsonBound.e B v / n) ^ 2) ≤
     (d / n) / (d / n - 2 * e / n + frac * (e / n) ^ 2) := by
+  have h_e_le_d : (e : ℚ) ≤ d := by
+    exact_mod_cast (by
+      nlinarith [h, show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)),
+        mul_self_sqrt (show 0 ≤ (n : ℝ) * (n - d) by
+          nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
+  have h_e_div_le_d_div : (e / n : ℚ) ≤ d / n := by gcongr
+  have h_frac_e_div_le_one : frac * (e / n : ℚ) ≤ 1 :=
+    (mul_le_mul_of_nonneg_left h_e_div_le_d_div (by positivity)).trans h_d_close_n
   have h_frac_ineq : (JohnsonBound.d B / n : ℚ) * (d / n - 2 * (e / n) +
       frac * (e / n) ^ 2) ≤ (d / n) * (JohnsonBound.d B / n - 2 *
         (JohnsonBound.e B v / n) + frac * (JohnsonBound.e B v / n) ^ 2) := by
@@ -540,31 +580,12 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
           (2 - frac * (e / n + JohnsonBound.e B v / n)) ≥ 0 := by
       refine ⟨mul_nonneg ?_ ?_, mul_nonneg ?_ ?_⟩
       · exact sub_nonneg_of_le (by gcongr)
-      · have h_frac_le_one : frac * (e / n : ℚ) ≤ 1 := by
-          have h_e_le_d : (e / n : ℚ) ≤ (d / n : ℚ) := by
-            have h_e_le_d : (e : ℝ) ≤ n - √(n * (n - d)) := by grind
-            have h_e_le_d : (e : ℚ) ≤ d := by
-              exact_mod_cast (by nlinarith [
-                show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)), mul_self_sqrt (
-                  show 0 ≤ (n : ℝ) * (n - d) by
-                  nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
-            gcongr
-          exact le_trans (mul_le_mul_of_nonneg_left h_e_le_d (by positivity)) h_d_close_n
-        nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
+      · nlinarith [show 0 ≤ (e : ℚ) / n by positivity]
       · exact sub_nonneg_of_le (by gcongr)
-      · have h_frac_e_n_le_1 : frac * (e / n : ℚ) ≤ 1 := by
-          refine le_trans (mul_le_mul_of_nonneg_left (show (e : ℚ) / n ≤ d / n from ?_)
-            (by positivity)) h_d_close_n
-          have h_e_le_d : (e : ℚ) ≤ d := by
-            exact_mod_cast (by nlinarith [
-              show (d : ℝ) ≤ n by norm_cast, sqrt_nonneg (n * (n - d)), mul_self_sqrt (
-                show 0 ≤ (n : ℝ) * (n - d) by
-                nlinarith [show (d : ℝ) ≤ n by norm_cast])] : (e : ℝ) ≤ d)
-          gcongr
-        have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
+      · have h_frac_e_B_v_n_le_1 : frac * (JohnsonBound.e B v / n : ℚ) ≤ 1 :=
           le_trans (mul_le_mul_of_nonneg_left
             (div_le_div_of_nonneg_right (show (JohnsonBound.e B v : ℚ) ≤ e by
-              exact_mod_cast e_ineq) (Nat.cast_nonneg _)) (by positivity)) h_frac_e_n_le_1
+              exact_mod_cast e_ineq) (Nat.cast_nonneg _)) (by positivity)) h_frac_e_div_le_one
         linarith
     nlinarith [show (0 : ℚ) < n from hn_pos,
       mul_div_cancel₀ (e : ℚ) (by positivity : (n : ℚ) ≠ 0),

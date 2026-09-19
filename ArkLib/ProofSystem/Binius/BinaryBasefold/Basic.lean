@@ -3,10 +3,18 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Sumcheck.Structured
 
-/- ## Fundamental OracleReduction-related defintions for protocol specifications -/
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 noncomputable section
 namespace Binius.BinaryBasefold
@@ -39,9 +47,7 @@ def isCommitmentRound (i : Fin ℓ) : Prop :=
 omit [NeZero ϑ] hdiv in
 lemma toOutCodewordsCountOf0 : toOutCodewordsCount ℓ ϑ 0 = 1 := by
   unfold toOutCodewordsCount
-  simp only [Fin.coe_ofNat_eq_mod, zero_mod, Nat.zero_div, zero_add, ite_eq_left_iff, not_lt,
-    nonpos_iff_eq_zero, zero_ne_one, imp_false]
-  exact NeZero.ne ℓ
+  simp [Nat.pos_of_ne_zero (NeZero.ne ℓ)]
 
 @[simp]
 instance instNeZeroNatToOutCodewordsCount : ∀ i, NeZero (toOutCodewordsCount ℓ ϑ i) := by
@@ -59,7 +65,7 @@ instance instNeZeroNatToOutCodewordsCount : ∀ i, NeZero (toOutCodewordsCount �
 
 omit [NeZero ϑ] [NeZero ℓ] hdiv in
 lemma toCodewordsCount_mul_ϑ_le_i (i : Fin (ℓ + 1)) :
-  ∀ j: Fin (toOutCodewordsCount ℓ ϑ i), j.val * ϑ ≤
+    ∀ j: Fin (toOutCodewordsCount ℓ ϑ i), j.val * ϑ ≤
     (if i.val < ℓ then i.val else ℓ - ϑ) := by
   intro j
   split_ifs with h_il
@@ -247,7 +253,7 @@ lemma toOutCodewordsCount_succ_eq_add_one_iff (i : Fin ℓ) :
 
 open Classical in
 lemma toOutCodewordsCount_succ_eq (i : Fin ℓ) :
-  (toOutCodewordsCount ℓ ϑ i.succ) =
+    (toOutCodewordsCount ℓ ϑ i.succ) =
     if isCommitmentRound ℓ ϑ i then (toOutCodewordsCount ℓ ϑ i.castSucc) + 1
     else (toOutCodewordsCount ℓ ϑ i.castSucc) := by
   have h_succ_val: i.succ.val = i.val + 1 := rfl
@@ -284,7 +290,7 @@ lemma toOutCodewordsCount_succ_eq (i : Fin ℓ) :
         exact False.elim (hv_div_succ (hdiv.out))
 
 lemma toOutCodewordsCount_i_le_of_succ (i : Fin ℓ) :
-  toOutCodewordsCount ℓ ϑ i.castSucc ≤ toOutCodewordsCount ℓ ϑ i.succ := by
+    toOutCodewordsCount ℓ ϑ i.castSucc ≤ toOutCodewordsCount ℓ ϑ i.succ := by
   rw [toOutCodewordsCount_succ_eq ℓ ϑ]
   split_ifs
   · omega
@@ -303,7 +309,7 @@ equals the current round number `i + 1`.
 TODO: double check why this is still correct when replacing `hCR` with `ϑ | i + 1`
 -/
 lemma toOutCodewordsCount_mul_ϑ_eq_i_succ (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
-  (toOutCodewordsCount ℓ ϑ i.castSucc) * ϑ = i.val + 1 := by
+    (toOutCodewordsCount ℓ ϑ i.castSucc) * ϑ = i.val + 1 := by
   unfold toOutCodewordsCount
   simp only [Fin.val_castSucc, i.isLt, ↓reduceIte]
   have h_mod : i.val % ϑ = ϑ - 1 := by
@@ -325,7 +331,7 @@ lemma toOutCodewordsCount_mul_ϑ_eq_i_succ (i : Fin ℓ) (hCR : isCommitmentRoun
   omega
 
 lemma toCodewordsCount_mul_ϑ_lt_ℓ (ℓ ϑ : ℕ) [NeZero ϑ] [NeZero ℓ] (i : Fin (ℓ + 1)) :
-  ∀ j: Fin (toOutCodewordsCount ℓ ϑ i), j.val * ϑ < ℓ := by
+    ∀ j: Fin (toOutCodewordsCount ℓ ϑ i), j.val * ϑ < ℓ := by
   intro j
   unfold toOutCodewordsCount
   have h_j_lt : j.val < i.val / ϑ + if i.val < ℓ then 1 else 0 := j.2
@@ -456,7 +462,8 @@ lemma mkLastOracleIndex_eq_getLastOraclePositionIndex (i : Fin (ℓ + 1)) :
     unfold toOutCodewordsCount
     simp only [hi, eq_mpr_eq_cast, cast_eq, ↓reduceIte, add_zero];
     have h_eq: i.val = ℓ := by omega
-    rw [h_eq]
+    set_option backward.isDefEq.respectTransparency false in
+      simp [h_eq]
 
 lemma getLastOraclePositionIndex_last : getLastOraclePositionIndex ℓ ϑ (Fin.last ℓ)
   = ⟨ℓ / ϑ - 1, by
@@ -564,8 +571,8 @@ lemma bIdx_mul_ϑ_add_i_lt_ℓ_succ {m : ℕ} (bIdx : Fin (ℓ / ϑ - 1)) (i : F
     _ ≤ ℓ + m := by omega
 
 @[simp]
-lemma bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ (bIdx : Fin (ℓ / ϑ - 1)) (i : Fin (ϑ - 1 + 1))
-    : ↑bIdx * ϑ + i < ℓ + 1 := by
+lemma bIdx_mul_ϑ_add_i_cast_lt_ℓ_succ (bIdx : Fin (ℓ / ϑ - 1)) (i : Fin (ϑ - 1 + 1)) :
+    ↑bIdx * ϑ + i < ℓ + 1 := by
   calc
     ↑bIdx * ϑ + i ≤ ℓ - ϑ := by apply bIdx_mul_ϑ_add_x_lt_ℓ_sub_ϑ bIdx (x:=i.val) (hx:=by omega)
     _ < ℓ + 1 := by omega
@@ -578,8 +585,8 @@ lemma bIdx_mul_ϑ_add_x_lt_ℓ_succ (bIdx : Fin (ℓ / ϑ - 1)) (x : ℕ) {hx : 
     _ < ℓ + 1 := by omega
 
 @[simp]
-lemma bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ (bIdx : Fin (ℓ / ϑ - 1)) (i : Fin (ϑ - 1))
-    : ↑bIdx * ϑ + ↑i < ℓ := by
+lemma bIdx_mul_ϑ_add_i_fin_ℓ_pred_lt_ℓ (bIdx : Fin (ℓ / ϑ - 1)) (i : Fin (ϑ - 1)) :
+    ↑bIdx * ϑ + ↑i < ℓ := by
   calc
     _ ≤ ℓ - ϑ := by apply bIdx_mul_ϑ_add_x_lt_ℓ_sub_ϑ bIdx i.val (hx:=by omega)
     _ < ℓ := by exact rounds_sub_steps_lt
@@ -730,7 +737,15 @@ lemma projectToNextSumcheckPoly_eval_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly
       have hk_eq : ⟨j.val - 1, by omega⟩ = k := by
         apply Fin.ext
         simp [hj_val]
-      simp [hj_not_lt, hk, hk_eq]
+      simp only [hj_not_lt, ↓reduceDIte, Function.comp_apply]
+      rw [hk]
+      change x ⟨j.val - 1, by omega⟩ = x k
+      rw [hk_eq]
+  change (MvPolynomial.eval x)
+    (fixFirstVariablesOfMQP (ℓ - i) ⟨1, by omega⟩ Hᵢ.val (fun _ => rᵢ)) =
+      (MvPolynomial.eval (fun j =>
+        if hj : j.val < 1 then (fun _ : Fin 1 => rᵢ) ⟨j.val, hj⟩
+        else x ⟨j.val - 1, by omega⟩)) Hᵢ.val at h_eval
   rw [h_fun] at h_eval
   exact h_eval
 
@@ -753,7 +768,6 @@ lemma projectToNextSumcheckPoly_sum_eq (i : Fin ℓ) (Hᵢ : MultiquadraticPoly 
   refine Finset.sum_congr rfl ?_
   intro x hx
   rw [projectToNextSumcheckPoly_eval_eq]
-  rfl
 
 set_option maxHeartbeats 200000 in
 -- Bound elaboration for the explicit `bind₁` normalization proof.
@@ -780,7 +794,7 @@ lemma fixFirstVariablesOfMQP_eq_bind₁ (v : Fin (ℓ + 1)) (poly : MvPolynomial
     rw [MvPolynomial.rename_X]
     change
       (MvPolynomial.map (MvPolynomial.eval challenges))
-        ((sumToIter L (Fin (ℓ - v)) (Fin v))
+        ((MvPolynomial.sumAlgEquiv L (Fin (ℓ - v)) (Fin v))
           (MvPolynomial.X (if hj : j.val < v.val then
             Sum.inr ⟨j.val, hj⟩
           else
@@ -790,12 +804,12 @@ lemma fixFirstVariablesOfMQP_eq_bind₁ (v : Fin (ℓ + 1)) (poly : MvPolynomial
       else
         MvPolynomial.X (⟨j.val - v, by omega⟩ : Fin (ℓ - v)))
     by_cases hj : j.val < v.val
-    · simp [hj, MvPolynomial.sumToIter_Xr]
-    · simp [hj, MvPolynomial.sumToIter_Xl]
+    · simp [hj, MvPolynomial.sumAlgEquiv_X_inr]
+    · simp [hj, MvPolynomial.sumAlgEquiv_X_inl]
   induction poly using MvPolynomial.induction_on with
   | C a =>
       unfold fixFirstVariablesOfMQP
-      simp only [MvPolynomial.rename_C, MvPolynomial.sumAlgEquiv_apply, MvPolynomial.sumToIter_C,
+      simp only [MvPolynomial.rename_C, MvPolynomial.sumAlgEquiv_C_inl,
         MvPolynomial.map_C, MvPolynomial.eval_C, bind₁_C_right]
   | add p q hp hq =>
       calc
@@ -872,7 +886,8 @@ lemma projectToMidSumcheckPoly_succ (t : MultilinearPoly L ℓ) (m : Multilinear
   conv_rhs => rw [bind₁_bind₁]
   let lhsSubst : Fin ℓ → MvPolynomial (Fin (ℓ - i.succ)) L := fun j =>
     if hj : j.val < i.succ.val then
-      C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨j.val, hj⟩)
+      C ((Fin.snoc challenges r_i' : Fin (i.val + 1) → L)
+        ⟨j.val, by simpa only [Fin.val_succ] using hj⟩)
     else
       X (⟨j.val - i.succ, by
         have hj_ge : i.succ.val ≤ j.val := Nat.le_of_not_gt hj
@@ -900,15 +915,9 @@ lemma projectToMidSumcheckPoly_succ (t : MultilinearPoly L ℓ) (m : Multilinear
     · have hsucc : j.val < i.succ.val := by
         rw [Fin.val_succ]
         omega
-      have hcast :
-          (⟨j.val, hsucc⟩ : Fin i.succ) =
-            (⟨j.val, by
-              rw [Fin.val_castSucc]
-              exact hj⟩ : Fin i.castSucc).castSucc := by
-        apply Fin.ext
-        rfl
       have hleft :
-          lhsSubst j = MvPolynomial.C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨j.val, hsucc⟩) := by
+          lhsSubst j = MvPolynomial.C
+            ((Fin.snoc challenges r_i' : Fin (i.val + 1) → L) ⟨j.val, by omega⟩) := by
         dsimp [lhsSubst]
         split_ifs with h
         · rfl
@@ -921,7 +930,15 @@ lemma projectToMidSumcheckPoly_succ (t : MultilinearPoly L ℓ) (m : Multilinear
         dsimp [oldSubst]
         simp [Fin.val_castSucc, hj]
       rw [hleft, hold, bind₁_C_right]
-      rw [hcast, Fin.snoc_castSucc]
+      let k : Fin i.castSucc := ⟨j.val, by
+        rw [Fin.val_castSucc]
+        exact hj⟩
+      have hsnoc_idx : (⟨j.val, by omega⟩ : Fin (i.val + 1)) = k.castSucc := by
+        apply Fin.ext
+        rfl
+      rw [hsnoc_idx]
+      simp [Fin.snoc, k.isLt]
+      congr 1
     · by_cases hji : j = i
       · subst j
         have hsucc : i.val < i.succ.val := by
@@ -938,7 +955,8 @@ lemma projectToMidSumcheckPoly_succ (t : MultilinearPoly L ℓ) (m : Multilinear
           dsimp
           omega
         have hleft :
-            lhsSubst i = MvPolynomial.C ((Fin.snoc challenges r_i' : Fin i.succ → L) ⟨i.val, hsucc⟩) := by
+            lhsSubst i = MvPolynomial.C
+              ((Fin.snoc challenges r_i' : Fin (i.val + 1) → L) ⟨i.val, by omega⟩) := by
           dsimp [lhsSubst]
           split_ifs with h
           · rfl
@@ -951,7 +969,7 @@ lemma projectToMidSumcheckPoly_succ (t : MultilinearPoly L ℓ) (m : Multilinear
           rw [hold, bind₁_X_right]
           dsimp [oneSubst]
         rw [hleft, hright]
-        have hlast : (⟨i.val, hsucc⟩ : Fin i.succ) = Fin.last i.val := by
+        have hlast : (⟨i.val, by omega⟩ : Fin (i.val + 1)) = Fin.last i.val := by
           apply Fin.ext
           simp [Fin.val_last]
         rw [hlast, Fin.snoc_last]
@@ -1084,9 +1102,11 @@ lemma projectToMidSumcheckPoly_at_last_eq
   rw [MvPolynomial.eq_C_of_isEmpty
       (projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t) (m := m)
         (i := Fin.last ℓ) (challenges := challenges)).val]
-  simp only [Fin.val_last, ← constantCoeff_eq]
-  rw [←projectToMidSumcheckPoly_at_last_eval (x := 0)]
-  simp only [Fin.val_last, MvPolynomial.eval_zero]
+  rw [← congrFun MvPolynomial.constantCoeff_eq]
+  rw [← MvPolynomial.eval_zero]
+  exact congrArg MvPolynomial.C
+    (projectToMidSumcheckPoly_at_last_eval (L := L) (ℓ := ℓ) (t := t) (m := m)
+      (challenges := challenges) (x := (0 : Fin (ℓ - (Fin.last ℓ).val) → L)))
 
 end SumcheckOperations
 
@@ -1299,7 +1319,10 @@ private lemma monomialToINovelCoeffs_zero_eq_monomialToNovelCoeffs
       (Xⱼ 𝔽q β ℓ (by omega) j).coeff k.val
     rw [AdditiveNTT.base_intermediateNovelBasisX
       (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (j := j)]
-  simp [AdditiveNTT.monomialToINovelCoeffs, AdditiveNTT.monomialToNovelCoeffs, hA]
+  simp only [AdditiveNTT.monomialToINovelCoeffs, AdditiveNTT.monomialToNovelCoeffs, hA]
+  rw [Matrix.invOf_eq_nonsing_inv]
+  rw [hA]
+  rfl
 
 private lemma polynomialFromNovelCoeffs_eq_self_of_monomialToNovelCoeffs
     [NeZero 𝓡] (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
@@ -1469,6 +1492,7 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
         (P := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
           (fun ω => tpoly.val.eval (bitsOfIndex ω)))) := by
   classical
+  change (sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r) → L) at f
   constructor
   · intro h_extract
     unfold extractMLP at h_extract
@@ -1502,10 +1526,17 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
           · have h_natDegree_lt_iff := Polynomial.natDegree_lt_iff_degree_lt
                 (p := P) (n := 2 ^ ℓ) (hp := hP_zero)
             exact h_natDegree_lt_iff.mp h_natdeg_lt
-        subst tpoly
-        dsimp only [polynomialFromNovelCoeffsF₂]
-        rw [extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
-          (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) h_deg_lt]
+        have htpoly := h_extract
+        have h_mle := congrArg Subtype.val htpoly
+        have h_poly :
+            (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
+              (fun ω =>
+                MvPolynomial.eval (bitsOfIndex ω) tpoly.val)) : L[X]) = P := by
+          rw [← h_mle]
+          change polynomialFromNovelCoeffs 𝔽q β ℓ (by omega) _ = P
+          exact extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) h_deg_lt
+        rw [h_poly]
         exact h_closeP
   · intro h_close
     unfold extractMLP
@@ -1595,6 +1626,7 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
             (fun a => Polynomial.eval a (↑P₀ : L[X])) ∘ ωs = g₀ ∘ domain_to_fin.symm := by
           ext j
           simp only [Function.comp_apply, ωs, g₀, polyToOracleFunc]
+          rfl
         rw [h_functions_eq]
         calc
           hammingDist f_vals (g₀ ∘ domain_to_fin.symm)
@@ -1689,12 +1721,9 @@ lemma extractMLP_some_of_isCompliant_at_zero
         (f_i := f_i) (f_i_plus_steps := f_next) (challenges := challenges)) :
     ∃ tpoly : MultilinearPoly L ℓ,
       extractMLP 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0
-        (fun x => f_i (cast (by
-          simp only [Fin.coe_ofNat_eq_mod, zero_mod, Fin.mk_zero'];
-          have h_eq := sDomain_eq_of_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
-            (j := zero_Idx) (h := by apply Fin.eq_of_val_eq; simp only [Fin.coe_ofNat_eq_mod,
-              zero_mod, h_zero_Idx])
-          rw [h_eq]) x)) = some tpoly := by
+        (fun x => f_i (cast
+          (congrArg (fun idx => ↥(sDomain 𝔽q β h_ℓ_add_R_rate (i := idx)))
+            (Fin.ext (by simpa using h_zero_Idx.symm))) x)) = some tpoly := by
   classical
   -- From compliance we get fiberwise-closeness of `f_i` to the appropriate codeword,
   -- which implies UDR-closeness, and therefore decoder success via
@@ -1703,10 +1732,9 @@ lemma extractMLP_some_of_isCompliant_at_zero
     apply Fin.eq_of_val_eq
     exact h_zero_Idx
   let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :=
-    fun x => f_i (cast (by
-      have h_eq := sDomain_eq_of_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := (0 : Fin r)) (j := zero_Idx) (h := h_zero_eq.symm)
-      rw [h_eq]) x)
+    fun x => f_i (cast
+      (congrArg (fun idx => ↥(sDomain 𝔽q β h_ℓ_add_R_rate (i := idx)))
+        h_zero_eq.symm) x)
   have h_fw_close_zeroIdx :
       fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := zero_Idx) (steps := steps)

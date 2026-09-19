@@ -22,6 +22,21 @@ Prefer landing general statements **upstream in VCV-io**, under the same name an
 At the next VCVio bump, delete the local declaration and let references resolve upstream. Keep an
 import-only compatibility shell only while downstream modules still use the old ArkLib path.
 
+Treat the dependency module boundary as part of the API:
+
+- Use ordinary imports of VCVio and PolyFun public modules. Do not use `import all` to recover a
+  dependency implementation detail; request or stage the smallest application, extensionality, or
+  characterization law that makes the proof semantic.
+- Put domain-independent polynomial-functor, free-monad, handler, trace, and machine laws in
+  PolyFun. Put oracle notation, probability semantics, query accounting, and cryptographic
+  specializations in VCVio. ArkLib should add only protocol-specific structure above that split.
+- Keep staged declarations universe-polymorphic (`Type*` or explicit universe parameters) and add
+  a nonzero-universe consumer when the result acts on `OracleComp` or `QueryImpl`. A theorem that
+  works only for `Type 0` is not a reusable replacement for an ArkLib adapter.
+- Prefer opaque definitions with public equations. Expose a body only when dependent elaboration
+  genuinely needs its definitional reduction, and expose the smallest individual declaration
+  possible.
+
 Two things to know when doing that cleanup:
 
 - **Upstream versions are often more general** (`ProbComp` → generic monad, `StateT σ ProbComp` →

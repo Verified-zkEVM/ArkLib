@@ -1,4 +1,11 @@
-import Mathlib.RingTheory.Polynomial.Basic
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alexander Hicks
+-/
+module
+
+public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
 # `Polynomial.degreeLT` boundary facts
@@ -10,6 +17,8 @@ These are reusable for any construction that maps `degreeLT` through a linear ma
 Reed-Solomon codes (`ReedSolomon.code α n = (degreeLT F n).map (evalOnPoints α)`), folded
 RS codes, and similar code families. Candidate for upstream PR to Mathlib.
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

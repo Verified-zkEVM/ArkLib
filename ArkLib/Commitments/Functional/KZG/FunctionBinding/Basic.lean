@@ -3,10 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
 
 /-!
 # Function Binding for the KZG Polynomial Commitment Scheme
@@ -26,6 +27,8 @@ binding and interpolation branches used in the paper proof.
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 
@@ -642,13 +645,13 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
     Commitment.functionBinding (L := L) (init := pure ∅) (impl := randomOracle)
       (hn := rfl)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) arsdhError := by
-  letI := Classical.decEq G₁
-  letI scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+  let := Classical.decEq G₁
+  let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.functionBinding]
   intro AuxState adversary
-  letI game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
+  let game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
     (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
-  letI game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
+  let game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
   change Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) | game]
     ≤ arsdhError
   exact

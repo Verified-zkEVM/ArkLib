@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import VCVio.CryptoFoundations.CommitmentScheme
+public import VCVio.CryptoFoundations.CommitmentScheme
 
 /-!
   # Ordinary (Non-Interactive) Commitment Schemes
@@ -30,3 +31,5 @@ import VCVio.CryptoFoundations.CommitmentScheme
   For commitment schemes with *oracle openings* (functional commitments such as KZG), see
   `ArkLib.Commitments.Functional.Basic` instead.
 -/
+
+@[expose] public section

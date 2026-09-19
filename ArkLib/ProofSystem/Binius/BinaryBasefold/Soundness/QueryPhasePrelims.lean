@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.Misc.Basic
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+
+public import ArkLib.Data.Misc.Basic
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 /-!
 ## Binary Basefold Soundness Query Phase Preliminaries
@@ -21,6 +23,11 @@ This file packages:
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
   Statement numbering below follows the archived revision of [DP24].
 -/
+
+@[expose] public section
+
+
+
 
 namespace Binius.BinaryBasefold
 
@@ -114,7 +121,8 @@ lemma polyToOracleFunc_eq_getFirstOracle
       (h_steps_eq_steps' := by simp only [zero_mul])]
     rw [iterated_fold_zero_steps 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)
       (h_destIdx := by simp only [Nat.zero_mod, zero_mul, Fin.coe_ofNat_eq_mod])]
-  conv_rhs => simp only [cast_cast, cast_eq]; simp only [←fun_eta_expansion]
+  congr 1
+  exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _)).symm
 
 /-- Decompose challenge v at position i into (fiberIndex, suffix).
     This is the inverse of `Nat.joinBits` in some sense.
@@ -557,6 +565,7 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
       dsimp [extractMiddleFinMask, pointFinIdx]
       rw [Nat.getBit_of_middleBits]
       simp only [h_j, ↓reduceIte]
+      congr 1
     rw [← h_middle_bit]
     by_cases h_bit :
         Nat.getBit (k := j) (n := extractMiddleFinMask 𝔽q β
@@ -883,7 +892,7 @@ lemma queryBlockSourceSuffix_maps_to_destSuffix
       (i := queryBlockSourceIdx
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j)
       (steps := ϑ), ?_⟩
-    rw [getFiberPoint_eq_qMap_total_fiber]
+    erw [getFiberPoint_eq_qMap_total_fiber]
   exact h_generates.symm
 
 set_option maxHeartbeats 10000 in

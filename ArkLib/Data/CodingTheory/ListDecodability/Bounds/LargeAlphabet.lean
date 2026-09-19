@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Barrier
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Barrier
 
 /-!
 # The large-alphabet barrier
@@ -29,12 +30,7 @@ The keys cited here — [ABF26], [AGL23], [BDG24] — are resolved in the refere
 `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
--- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
--- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
--- corresponding linters each report.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 

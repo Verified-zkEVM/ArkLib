@@ -3,10 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.DG25
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
+
+public import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
 
 /-!
 ## Binary Basefold Soundness Proposition 4.21
@@ -28,6 +30,11 @@ also developed incremental variants Definition 4.20.2 and Proposition 4.21.2 in
   Statement numbering follows the archived revision of [DP24].
 -/
 
+@[expose] public section
+
+
+
+
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -36,6 +43,7 @@ open scoped NNReal
 open ReedSolomon Code BerlekampWelch Function
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
 open ProbabilityTheory
+open Probability
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]

@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ListDecodability
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
 /-!
 # List-size bounds for interleaved codes
@@ -20,6 +21,8 @@ This file bounds the list size of row-wise interleavings in terms of the base co
 * [Gopalan, P., Guruswami, V., Raghavendra, P., *List Decoding Tensor Products and
   Interleaved Codes*][GGR11]
 -/
+
+@[expose] public section
 
 namespace InterleavedCode
 
@@ -625,7 +628,7 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     Lambda (interleavedCodeSet (κ := Fin m) C) δ ≤
       ((b + r).choose r : ℕ∞) * (Lambda C δ) ^ r := by
   classical
-  letI : Fintype A := Fintype.ofFinite A
+  let : Fintype A := Fintype.ofFinite A
   let n := Fintype.card ι
   let D := Code.minDist C
   let e := Nat.floor (δ * n)
@@ -638,8 +641,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     have hn0 : n = 0 := Nat.eq_zero_of_not_pos hn
     simp [n, hn0] at hδ_ub hδ_lb
     linarith
-  letI : Nonempty ι := Fintype.card_pos_iff.mp (by simpa [n] using hn)
-  letI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp (by omega)
+  let : Nonempty ι := Fintype.card_pos_iff.mp (by simpa [n] using hn)
+  let : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp (by omega)
   have heR : (e : ℝ) ≤ δ * n := by
     exact_mod_cast Nat.floor_le (mul_nonneg hδ_lb (Nat.cast_nonneg n))
   have hde : e < D := by
@@ -655,7 +658,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
         simp [Code.relHammingDist, hδ_lb]
       exact (Set.one_le_encard_iff_nonempty.mpr ⟨c₀, hcclose⟩).trans
         (encard_closeCodewordsRel_le_Lambda C δ c₀)
-    rw [Lambda_le_iff_forall_encard_le]
+    set_option backward.isDefEq.respectTransparency false in
+      rw [Lambda_le_iff_forall_encard_le]
     intro U
     have hcloseFinite : (closeCodewordsRel (interleavedCodeSet (κ := Fin m) C) U δ).Finite :=
       Set.toFinite _
@@ -785,7 +789,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
       · exact red_count_le_ceil hn (by simpa [D, n] using hδ_ub) heR hnat.2
   · have hCempty : C = ∅ := Set.not_nonempty_iff_eq_empty.mp hC
     subst C
-    rw [Lambda_le_iff_forall_encard_le]
+    set_option backward.isDefEq.respectTransparency false in
+      rw [Lambda_le_iff_forall_encard_le]
     intro U
     have hpoint : closeCodewordsRel
         (interleavedCodeSet (κ := Fin m) (∅ : Set (ι → A))) U δ = ∅ := by

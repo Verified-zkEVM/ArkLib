@@ -128,8 +128,8 @@ Work through these in order. Do not stop until every item is complete.
     comments where helpful.
   - **Normal forms, transparency, deprecation**: respect the standard-form, `def`/`abbrev`/
     `irreducible`, and `@[deprecated ...]` policies when relevant to the diff.
-- Verify with `./scripts/validate.sh` (add `--lint` for style linting and `--docs` for docstring
-  checks). Fix anything it flags.
+- Verify with `./scripts/validate.sh` (add `--docs` for doc generation). Source style and
+  repository-wide non-`sorry` warnings are enforced by default. Fix anything it flags.
   - If you added or removed `ArkLib/**.lean` files, run `./scripts/update-lib.sh` **and then
     `git add ArkLib.lean`**: the import check (`check-imports.sh`) uses `git diff --quiet`
     (working tree vs index), so a regenerated-but-unstaged `ArkLib.lean` still reports
@@ -140,21 +140,15 @@ Work through these in order. Do not stop until every item is complete.
     verify those directly (every decl has a `/-- … -/`; citation keys resolve in
     `references.bib`; the `kb` regeneration below is consistent) and note the `--docs` limitation
     rather than churning on it.
-  - `--lint` (`lint-style.sh`) reports **repo-wide pre-existing** style debt — hundreds of
-    `ERR_*` lines in files you did not touch. Do **not** try to clear all of it; scope style
-    fixes to your changed files (lint them individually with
-    `python3 scripts/lint-style.py <your-files>`). **Line length is codepoints, not bytes**: these
-    files are dense with multi-byte Unicode math (`ℓ₂²`, `∑`, `·ᵥ`, `c̄ⱼ`), so `awk length` / naive
-    byte counts over-report by 2–3× and can invent dozens of phantom "over-100" lines. Trust
-    `lint-style.py` and the Lean `linter.style.longLine` (both count codepoints); if in doubt verify
-    with Python `len(line)`, never `awk`/`wc -c`. Otherwise treat the **default** `validate.sh`
-    (build + Data warning budget + `check-imports` + `check-docs-integrity` + `kb/lint`) as the
-    real gate. Capture its true exit with `rc=$?` on its own line — a trailing
+  - `lake exe lint-style` is the same exception-free source-policy gate used by default validation.
+    Line length counts Unicode codepoints, not UTF-8 bytes; `awk length` and `wc -c` can over-report
+    lines containing mathematical notation. Capture `validate.sh`'s true exit with `rc=$?` on its
+    own line — a trailing
     `… ; echo "EXIT $?"` reports the `echo`'s exit (always 0) and masks a failing validate. Piping
     has the same trap: `./scripts/validate.sh | tail -40` reports `tail`'s exit and truncates the
     failure detail (kb lint errors print near the end). Run it as
     `./scripts/validate.sh > validate.log 2>&1` with `rc=$?` on the next line, then grep the log.
-  - The **Data warning budget** fails on any non-`sorry` warning under `ArkLib/Data/`. A
+  - The **ArkLib warning budget** fails on any non-`sorry` warning under `ArkLib/`. A
     toolchain/Mathlib bump commonly introduces **deprecation** warnings (e.g.
     `X has been deprecated: Use Y instead`) — fix these by switching to the suggested name.
 - Confirm the eventual PR title/description will follow the
@@ -493,7 +487,7 @@ another stale path.
 
 Only consider the PR ready when:
 
-1. `./scripts/validate.sh` (with `--lint` / `--docs` as appropriate) succeeds.
+1. `./scripts/validate.sh` (with `--docs` when appropriate) succeeds.
 2. `ReadLints` is clean for every changed `.lean` file.
 3. Citation metadata is consistent, and `docs/kb/_generated/` matches the PR base exactly (step 3
    — it is checked locally, never committed).

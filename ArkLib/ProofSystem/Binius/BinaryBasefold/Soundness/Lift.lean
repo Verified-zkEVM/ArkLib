@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
+
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Code
 
 /-!
 ## Binary Basefold Soundness Lift
@@ -23,6 +25,11 @@ This file packages:
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
   Statement numbering below follows the archived revision of [DP24].
 -/
+
+@[expose] public section
+
+
+
 
 namespace Binius.BinaryBasefold
 
@@ -675,7 +682,8 @@ lemma preTensorCombine_jointProximityNat_of_fiberwiseClose (i : Fin ℓ) (steps 
       ⟨g.val, g.property⟩
   have h_dist_eq : Δ₀(⋈|U, ⋈|V) =
       pair_fiberwiseDistance 𝔽q β (i := ⟨i, by omega⟩) steps h_destIdx h_destIdx_le f_i g := by
-    unfold hammingDist pair_fiberwiseDistance fiberwiseDisagreementSet
+    set_option backward.isDefEq.respectTransparency false in
+      unfold hammingDist pair_fiberwiseDistance fiberwiseDisagreementSet
     congr 1; ext y
     simp only [Finset.mem_filter, Finset.mem_univ, true_and]
     have h_iso := fiberwise_disagreement_isomorphism 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -784,7 +792,8 @@ lemma lemma_4_22_interleaved_word_UDR_far (i : Fin ℓ) (steps : ℕ) [NeZero st
   have h_dist_eq : Δ₀(U_interleaved, V_codeword.val) ≥
       (fiberwiseDisagreementSet 𝔽q β (i := ⟨i, by omega⟩) steps h_destIdx h_destIdx_le f_i g).card := by
     apply le_of_eq
-    unfold hammingDist
+    set_option backward.isDefEq.respectTransparency false in
+      unfold hammingDist
     unfold fiberwiseDisagreementSet
     congr 1
     ext y

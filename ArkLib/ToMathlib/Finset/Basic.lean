@@ -3,18 +3,22 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Julian Sutherland, Ilia Vlasov
 -/
-import Mathlib.Algebra.Order.Ring.Nat
-import Mathlib.Algebra.Ring.Regular
-import Mathlib.Data.Finset.Image
-import Mathlib.Algebra.BigOperators.Group.Finset.Defs
-import ArkLib.ToMathlib.List.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Data.PNat.Notation
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
+module
+
+public import Mathlib.Algebra.Order.Ring.Nat
+public import Mathlib.Algebra.Ring.Regular
+public import Mathlib.Data.Finset.Image
+public import Mathlib.Algebra.BigOperators.Group.Finset.Defs
+public import ArkLib.ToMathlib.List.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Data.PNat.Notation
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 
 /-!
   # Definitions and lemmas related to `Finset`.
 -/
+
+@[expose] public section
 
 def erase_odd (s : Finset ℕ) : Finset ℕ := s.filter Even
 def erase_even (s : Finset ℕ) : Finset ℕ := s.filter Odd
@@ -51,24 +55,26 @@ lemma shift_left_def {s : Finset ℕ} :
       | 0 => .none
       | n + 1 => .some n
       )
-    (by aesop)
- := rfl
+    (by aesop) := rfl
+
+/-- The embedding of natural numbers given by multiplication by two. -/
+def mulByTwoEmbedding : ℕ ↪ ℕ :=
+  ⟨fun n => 2 * n, by
+    intro a b
+    simp⟩
+
+@[simp]
+lemma mulByTwoEmbedding_apply (n : ℕ) : mulByTwoEmbedding n = 2 * n := rfl
 
 def mul_by_2 (s : Finset ℕ) : Finset ℕ :=
-  s.map ⟨fun n => 2 * n, by {
-    intro a b
-    simp
-  }⟩
+  s.map mulByTwoEmbedding
 
 @[simp]
 lemma mul_by_empty :
     mul_by_2 ∅ = ∅ := rfl
 
 lemma mul_by_2_def {s : Finset ℕ} :
-    mul_by_2 s = s.map ⟨fun n => 2 * n, by {
-      intro a b
-      simp
-    }⟩  := rfl
+    mul_by_2 s = s.map mulByTwoEmbedding := rfl
 
 def divide_by_2 (s : Finset ℕ) : Finset ℕ :=
   (erase_odd s).image (fun n => n / 2)
@@ -82,24 +88,22 @@ lemma divide_by_2_def {s : Finset ℕ} :
 
 @[simp]
 theorem erase_odd_mem
-  {s : Finset ℕ}
-  {n : ℕ}
-  : n ∈ (erase_odd s) ↔ Even n ∧ n ∈ s := by aesop (add simp erase_odd)
+    {s : Finset ℕ}
+  {n : ℕ} : n ∈ (erase_odd s) ↔ Even n ∧ n ∈ s := by aesop (add simp erase_odd)
 
 @[simp]
 theorem erase_even_mem
-  {s : Finset ℕ}
-  {n : ℕ}
-  : n ∈ (erase_even s) ↔ Odd n ∧ n ∈ s := by aesop (add simp erase_even)
+    {s : Finset ℕ}
+  {n : ℕ} : n ∈ (erase_even s) ↔ Odd n ∧ n ∈ s := by aesop (add simp erase_even)
 
 @[simp]
 theorem mul_by_2_mem {s : Finset ℕ} {d : ℕ} :
     d ∈ mul_by_2 s ↔ Even d ∧ (d / 2) ∈ s := by
-  aesop (add simp [mul_by_2, Nat.even_iff], safe (by omega))
+  aesop (add simp [mul_by_2, mulByTwoEmbedding_apply, Nat.even_iff], safe (by omega))
 
 @[simp]
 theorem divide_by_2_mem {s : Finset ℕ} {d : ℕ} :
-  d ∈ divide_by_2 s ↔ 2 * d ∈ s := by
+    d ∈ divide_by_2 s ↔ 2 * d ∈ s := by
   simp only [divide_by_2, Finset.mem_image, erase_odd_mem]
   exact ⟨
     fun _ ↦ by aesop (add simp [Nat.even_iff, Nat.mul_div_cancel', Nat.dvd_iff_mod_eq_zero]),
@@ -116,7 +120,7 @@ def finRangeTo (k : ℕ) (i : ℕ) : Finset (Fin k) :=
 
 @[simp]
 lemma sum_finRangeTo_add_one {n} {i : Fin (n + 1)} {f : Fin (n + 1) → ℕ} :
-  ∑ j' ∈ finRangeTo (n + 1) (i + 1), f j' = (∑ j' ∈ finRangeTo (n + 1) i, f j') + f i := by
+    ∑ j' ∈ finRangeTo (n + 1) (i + 1), f j' = (∑ j' ∈ finRangeTo (n + 1) i, f j') + f i := by
   unfold finRangeTo
   suffices ∑ x ∈ insert i (List.take i (List.finRange (n + 1))).toFinset, f x =
            ∑ x ∈ (List.take i (List.finRange (n + 1))).toFinset, f x + f i by
@@ -126,7 +130,7 @@ lemma sum_finRangeTo_add_one {n} {i : Fin (n + 1)} {f : Fin (n + 1) → ℕ} :
   simp +arith [Finset.sum_insert this]
 
 lemma sum_finRangeTo_le_sub_of_le {n k : ℕ} {s : Fin (k + 1) → ℕ+} {i : Fin (k + 1)}
-  (k_le_n : ∑ j', (s j' : ℕ) ≤ n) :
+    (k_le_n : ∑ j', (s j' : ℕ) ≤ n) :
   ∑ j' ∈ finRangeTo (k + 1) i, (s j' : ℕ) ≤ n - (s i : ℕ) := by
     apply Nat.le_sub_of_add_le
     rw [←sum_finRangeTo_add_one]

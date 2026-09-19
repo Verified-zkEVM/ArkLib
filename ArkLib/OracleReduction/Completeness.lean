@@ -3,10 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.ToVCVio.Simulation
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.ToVCVio.Lemmas
+module
+
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.ToVCVio.Simulation
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
 # Completeness Proof Patterns for Oracle Reductions
@@ -39,6 +40,11 @@ on proving the pure logical properties of your protocol.
 The parameter `n` in `ProtocolSpec n` represents the number of messages/steps in the protocol,
 where each step can be either a prover message (P→V) or a verifier challenge (V→P).
 -/
+
+@[expose] public section
+
+
+
 
 namespace OracleReduction
 
@@ -89,10 +95,29 @@ theorem forall_eq_lift_mem_2 {α β γ} {S : Set α} {T : α → Set β}
   · intro h a ha b hb; exact h (f a b) a ha b hb rfl
   · intro h c a ha b hb heq; rw [heq]; exact h a ha b hb
 
+/-- Mapping an `Option` result before explicitly simulating an oracle computation maps
+the successful event and leaves failure untouched. -/
+theorem probEvent_simulateQ_option_map
+    {ι σ α β : Type} {spec : OracleSpec ι}
+    (init : ProbComp σ) (impl : QueryImpl spec (StateT σ ProbComp))
+    (computation : OracleComp spec (Option α)) (f : α → β) (P : β → Prop)
+    [DecidablePred P] [DecidablePred (P ∘ f)] :
+    probEvent (OptionT.mk do
+      let s ← init
+      (simulateQ impl (Option.map f <$> computation)).run' s) P =
+    probEvent (OptionT.mk do
+      let s ← init
+      (simulateQ impl computation).run' s) (P ∘ f) := by
+  apply OptionT.probEvent_eq_of_run_map_eq _ _ f P
+  simp only [OptionT.run, OptionT.mk, simulateQ_map, StateT.run'_eq, map_bind,
+    Functor.map_map]
+  simp only [StateT.run_map, Functor.map_map]
+
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
   [∀ i, OracleInterface (OStmtIn i)]
+  [∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
@@ -124,9 +149,14 @@ theorem unroll_n_message_reduction_perfectCompleteness
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-        | ((do
+      probEvent
+        (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
             let ⟨transcript, state⟩ ←
               liftM (reduction.prover.runToRound (Fin.last n) (stmtIn, oStmtIn) witIn)
             let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp
@@ -136,10 +166,168 @@ theorem unroll_n_message_reduction_perfectCompleteness
               (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
               (oSpec + [pSpec.Challenge]ₒ)
             pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
-          ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
-              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
-                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
-        ] = 1 := by
+          (simulateQ pImpl computation.run).run' s)
+        (fun ⟨(prvStmt, prvOStmt), (verStmt, verOStmt), witOut⟩ =>
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
+  classical
+  rw [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness_eq_prob_one]
+  constructor
+  · intro h stmtIn oStmtIn witIn hmem
+    specialize h (stmtIn, oStmtIn) witIn hmem
+    let native := reduction.toReduction.run (stmtIn, oStmtIn) witIn
+    let P : ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+        (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) → Prop :=
+      fun ⟨(prvStmt, prvOStmt), (verStmt, verOStmt), witOut⟩ =>
+        ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
+    letI : DecidablePred P := Classical.decPred _
+    let f :
+        ((pSpec.FullTranscript ×
+          ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut)) ×
+          (StmtOut × ((i : ιₛₒ) → OStmtOut i))) →
+          ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+            (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) :=
+      fun ⟨⟨_, ⟨prvStmt, prvOStmt⟩, witOut⟩, ⟨verStmt, verOStmt⟩⟩ =>
+      ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut)
+    letI : DecidablePred (P ∘ f) := Classical.decPred _
+    let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+        ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+          (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
+      let ⟨transcript, state⟩ ←
+        liftM (reduction.prover.runToRound (Fin.last n) (stmtIn, oStmtIn) witIn)
+      let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ←
+        liftComp (reduction.prover.output state) (oSpec + [pSpec.Challenge]ₒ)
+      let verifierStmtOut ←
+        liftComp (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
+          (oSpec + [pSpec.Challenge]ₒ)
+      pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+    have hcomp : computation = f <$> native := by
+      dsimp [computation, f, native]
+      simp only [Reduction_run_def, Prover.run]
+      simp only [liftM_bind, liftM_map, map_bind, bind_assoc,
+        bind_map_left, bind_pure_comp, Functor.map_map]
+      rfl
+    have hbridge :
+        probEvent (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          (simulateQ pImpl computation.run).run' s)
+          P =
+        probEvent (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          (simulateQ pImpl native.run).run' s)
+          (P ∘ f) := by
+      have hrun : computation.run = Option.map f <$> native.run := by
+        rw [hcomp, OptionT.run_map]
+      rw [hrun]
+      exact probEvent_simulateQ_option_map init (QueryImpl.addLift impl challengeQueryImpl)
+        native.run f P
+    have hP :
+        P ∘ f =
+          fun ⟨⟨_, ⟨prvOut, witOut⟩⟩, verifierOut⟩ =>
+            (verifierOut, witOut) ∈ relOut ∧ prvOut = verifierOut := by
+      funext x
+      rcases x with ⟨⟨transcript, prvOut⟩, verifierOut⟩
+      rcases prvOut with ⟨prvOut, witOut⟩
+      rcases prvOut with ⟨prvStmt, prvOStmt⟩
+      rcases verifierOut with ⟨verStmt, verOStmt⟩
+      simp only [Function.comp_apply, P, f]
+      apply propext
+      constructor
+      · rintro ⟨hRel, hStmt, hOStmt⟩
+        exact ⟨hRel, Prod.ext hStmt hOStmt⟩
+      · rintro ⟨hRel, hEq⟩
+        cases hEq
+        exact ⟨hRel, rfl, rfl⟩
+    rw [hP] at hbridge
+    change probEvent (OptionT.mk do
+      let s ← init
+      let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+        QueryImpl.addLift impl challengeQueryImpl
+      (simulateQ pImpl native.run).run' s)
+      _ = 1 at h
+    exact hbridge.trans h
+  · intro h stmtIn witIn hmem
+    rcases stmtIn with ⟨stmtIn, oStmtIn⟩
+    specialize h stmtIn oStmtIn witIn hmem
+    let native := reduction.toReduction.run (stmtIn, oStmtIn) witIn
+    let P : ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+        (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) → Prop :=
+      fun ⟨(prvStmt, prvOStmt), (verStmt, verOStmt), witOut⟩ =>
+        ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
+    letI : DecidablePred P := Classical.decPred _
+    let f :
+        ((pSpec.FullTranscript ×
+          ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut)) ×
+          (StmtOut × ((i : ιₛₒ) → OStmtOut i))) →
+          ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+            (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) :=
+      fun ⟨⟨_, ⟨prvStmt, prvOStmt⟩, witOut⟩, ⟨verStmt, verOStmt⟩⟩ =>
+      ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut)
+    letI : DecidablePred (P ∘ f) := Classical.decPred _
+    let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+        ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+          (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
+      let ⟨transcript, state⟩ ←
+        liftM (reduction.prover.runToRound (Fin.last n) (stmtIn, oStmtIn) witIn)
+      let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ←
+        liftComp (reduction.prover.output state) (oSpec + [pSpec.Challenge]ₒ)
+      let verifierStmtOut ←
+        liftComp (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
+          (oSpec + [pSpec.Challenge]ₒ)
+      pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+    have hcomp : computation = f <$> native := by
+      dsimp [computation, f, native]
+      simp only [Reduction_run_def, Prover.run]
+      simp only [liftM_bind, liftM_map, map_bind, bind_assoc,
+        bind_map_left, bind_pure_comp, Functor.map_map]
+      rfl
+    have hbridge :
+        probEvent (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          (simulateQ pImpl computation.run).run' s)
+          P =
+        probEvent (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          (simulateQ pImpl native.run).run' s)
+          (P ∘ f) := by
+      have hrun : computation.run = Option.map f <$> native.run := by
+        rw [hcomp, OptionT.run_map]
+      rw [hrun]
+      exact probEvent_simulateQ_option_map init (QueryImpl.addLift impl challengeQueryImpl)
+        native.run f P
+    have hP :
+        P ∘ f =
+          fun ⟨⟨_, ⟨prvOut, witOut⟩⟩, verifierOut⟩ =>
+            (verifierOut, witOut) ∈ relOut ∧ prvOut = verifierOut := by
+      funext x
+      rcases x with ⟨⟨transcript, prvOut⟩, verifierOut⟩
+      rcases prvOut with ⟨prvOut, witOut⟩
+      rcases prvOut with ⟨prvStmt, prvOStmt⟩
+      rcases verifierOut with ⟨verStmt, verOStmt⟩
+      simp only [Function.comp_apply, P, f]
+      apply propext
+      constructor
+      · rintro ⟨hRel, hStmt, hOStmt⟩
+        exact ⟨hRel, Prod.ext hStmt hOStmt⟩
+      · rintro ⟨hRel, hEq⟩
+        cases hEq
+        exact ⟨hRel, rfl, rfl⟩
+    rw [hP] at hbridge
+    change probEvent (OptionT.mk do
+      let s ← init
+      let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+        QueryImpl.addLift impl challengeQueryImpl
+      (simulateQ pImpl native.run).run' s)
+      _ = 1
+    exact hbridge.symm.trans h
+  /-
   unfold OracleReduction.perfectCompleteness
   simp only [Reduction.perfectCompleteness_eq_prob_one]
   simp only [probEvent_eq_one_iff]
@@ -314,19 +502,20 @@ theorem unroll_n_message_reduction_perfectCompleteness
               Prod.mk.injEq] at h_pure
             rcases h_pure with ⟨⟨rfl, ⟨rfl, rfl⟩, rfl⟩, rfl, rfl⟩
             exact (hRight pStmtOut pOstmtOut vStmtOut vOstmtOut pWitOut tr h_ver b h_prv h_out)
-
+  -/
 
 end GenericProtocol
 
 section ZeroMessageProtocol
 
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
-{StmtIn WitIn StmtOut WitOut : Type}
-{ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-[∀ i, OracleInterface (OStmtIn i)]
-{pSpec : ProtocolSpec 0} [∀ i, SampleableType (pSpec.Challenge i)]
-[[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
-[∀ i, OracleInterface (pSpec.Message i)]
+  {StmtIn WitIn StmtOut WitOut : Type}
+  {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
+  [∀ i, OracleInterface (OStmtIn i)]
+  [∀ i, OracleInterface (OStmtOut i)]
+  {pSpec : ProtocolSpec 0} [∀ i, SampleableType (pSpec.Challenge i)]
+  [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
+  [∀ i, OracleInterface (pSpec.Message i)]
 
 /-- **Derive 0-message version from generic n-message theorem**
 
@@ -344,21 +533,25 @@ theorem unroll_0_message_reduction_perfectCompleteness
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-        | ((do
-          let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ←
-            liftComp
-              (reduction.prover.output (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
+      probEvent
+        (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
+            let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ←
+              liftComp
+                (reduction.prover.output (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
+                (oSpec + [pSpec.Challenge]ₒ)
+            let verifierStmtOut ← liftComp
+              (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) default)
               (oSpec + [pSpec.Challenge]ₒ)
-          let verifierStmtOut ← liftComp
-            (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) default)
-            (oSpec + [pSpec.Challenge]ₒ)
-          pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
-        ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
-            ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
-              (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
-      ] = 1 := by
+            pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+          (simulateQ pImpl computation.run).run' s)
+        (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   rw [unroll_n_message_reduction_perfectCompleteness (n := 0) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
   apply forall_congr'; intro stmtIn
@@ -371,18 +564,20 @@ theorem unroll_0_message_reduction_perfectCompleteness
   simp only [Fin.induction_zero]
   dsimp only [ChallengeIdx, Challenge, Fin.isValue, Fin.reduceLast, liftComp_eq_liftM]
   simp only [liftM_pure, bind_pure_comp, pure_bind, Prod.mk.eta]
+  rfl
 
 end ZeroMessageProtocol
 
 section OneMessageProtocol
 
 variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
-{StmtIn WitIn StmtOut WitOut : Type}
-{ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-[∀ i, OracleInterface (OStmtIn i)]
-{pSpec : ProtocolSpec 1} [∀ i, SampleableType (pSpec.Challenge i)]
-[[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
-[∀ i, OracleInterface (pSpec.Message i)]
+  {StmtIn WitIn StmtOut WitOut : Type}
+  {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
+  [∀ i, OracleInterface (OStmtIn i)]
+  [∀ i, OracleInterface (OStmtOut i)]
+  {pSpec : ProtocolSpec 1} [∀ i, SampleableType (pSpec.Challenge i)]
+  [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
+  [∀ i, OracleInterface (pSpec.Message i)]
 
 /-- **Derive 1-message version from generic n-message theorem**
 
@@ -406,23 +601,28 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
   OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
   ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-        | ((do
-        let ⟨msg0, state1⟩ ← liftComp
-          (reduction.prover.sendMessage ⟨0, hDir0⟩
-            (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
-          (oSpec + [pSpec.Challenge]ₒ)
-        let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp (reduction.prover.output state1)
-          (oSpec + [pSpec.Challenge]ₒ)
-        let transcript : pSpec.FullTranscript := ProtocolSpec.FullTranscript.mk1 msg0
-        let verifierStmtOut ← liftComp
-          (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
-          (oSpec + [pSpec.Challenge]ₒ)
-        pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
-      ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
-          ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
-    ] = 1 := by
+      probEvent
+        (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
+            let ⟨msg0, state1⟩ ← liftComp
+              (reduction.prover.sendMessage ⟨0, hDir0⟩
+                (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
+              (oSpec + [pSpec.Challenge]ₒ)
+            let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp (reduction.prover.output state1)
+              (oSpec + [pSpec.Challenge]ₒ)
+            let transcript : pSpec.FullTranscript := ProtocolSpec.FullTranscript.mk1 msg0
+            let verifierStmtOut ← liftComp
+              (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
+              (oSpec + [pSpec.Challenge]ₒ)
+            pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+          (simulateQ pImpl computation.run).run' s)
+        (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   rw [unroll_n_message_reduction_perfectCompleteness (n := 1) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
   apply forall_congr'; intro stmtIn
@@ -442,6 +642,8 @@ theorem unroll_1_message_reduction_perfectCompleteness_P_to_V
     bind_map_left]
   congr!
   rename_i _ prvState1 prvOut
+  all_goals
+    try rw [← ProtocolSpec.FullTranscript.mk1_eq_snoc]
   all_goals
     funext i
     fin_cases i <;> rfl
@@ -467,25 +669,30 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-        | ((do
-          let challenge ← liftComp (pSpec.getChallenge ⟨0, hDir0⟩) (oSpec + [pSpec.Challenge]ₒ)
-          let receiveChallengeFn ← liftComp
-            (reduction.prover.receiveChallenge ⟨0, hDir0⟩
-              (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
-            (oSpec + [pSpec.Challenge]ₒ)
-          let state1 := receiveChallengeFn challenge
-          let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp (reduction.prover.output state1)
-            (oSpec + [pSpec.Challenge]ₒ)
-          let transcript : pSpec.FullTranscript := ProtocolSpec.FullTranscript.mk1 challenge
-          let verifierStmtOut ← liftComp
-            (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
-            (oSpec + [pSpec.Challenge]ₒ)
-          pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
-        ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
-            ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
-      ] = 1 := by
+      probEvent
+        (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
+            let challenge ← liftComp (pSpec.getChallenge ⟨0, hDir0⟩) (oSpec + [pSpec.Challenge]ₒ)
+            let receiveChallengeFn ← liftComp
+              (reduction.prover.receiveChallenge ⟨0, hDir0⟩
+                (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
+              (oSpec + [pSpec.Challenge]ₒ)
+            let state1 := receiveChallengeFn challenge
+            let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp (reduction.prover.output state1)
+              (oSpec + [pSpec.Challenge]ₒ)
+            let transcript : pSpec.FullTranscript := ProtocolSpec.FullTranscript.mk1 challenge
+            let verifierStmtOut ← liftComp
+              (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
+              (oSpec + [pSpec.Challenge]ₒ)
+            pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+          (simulateQ pImpl computation.run).run' s)
+        (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   -- 1. Apply the generic theorem for n = 1
   rw [unroll_n_message_reduction_perfectCompleteness (n := 1) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
@@ -510,6 +717,8 @@ theorem unroll_1_message_reduction_perfectCompleteness_V_to_P
     bind_map_left]
   congr!
   all_goals
+  · try rw [← ProtocolSpec.FullTranscript.mk1_eq_snoc]
+  all_goals
   · funext i
     fin_cases i
     · rfl
@@ -522,6 +731,7 @@ variable {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited]
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
   [∀ i, OracleInterface (OStmtIn i)]
+  [∀ i, OracleInterface (OStmtOut i)]
   {pSpec : ProtocolSpec 2} [∀ i, SampleableType (pSpec.Challenge i)]
   [[pSpec.Challenge]ₒ.Fintype] [[pSpec.Challenge]ₒ.Inhabited]
   [∀ i, OracleInterface (pSpec.Message i)]
@@ -548,27 +758,32 @@ theorem unroll_2_message_reduction_perfectCompleteness
     OracleReduction.perfectCompleteness init impl relIn relOut reduction ↔
     ∀ (stmtIn : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (witIn : WitIn),
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
-      Pr[fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
-          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt
-        | ((do
-          let ⟨msg0, state1⟩ ← liftComp
-            (reduction.prover.sendMessage ⟨0, hDir0⟩
-              (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
-            (oSpec + [pSpec.Challenge]ₒ)
-          let r1 ← liftComp (pSpec.getChallenge ⟨1, hDir1⟩) (oSpec + [pSpec.Challenge]ₒ)
-          let receiveChallengeFn ← liftComp (reduction.prover.receiveChallenge ⟨1, hDir1⟩ state1)
-            (oSpec + [pSpec.Challenge]ₒ)
-          let state2 := receiveChallengeFn r1
-          let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp (reduction.prover.output state2)
-            (oSpec + [pSpec.Challenge]ₒ)
-          let transcript := ProtocolSpec.FullTranscript.mk2 msg0 r1
-          let verifierStmtOut ← liftComp
-            (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
-            (oSpec + [pSpec.Challenge]ₒ)
-          pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
-        ) : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
-            ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) × (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut))
-      ] = 1 := by
+      probEvent
+        (OptionT.mk do
+          let s ← init
+          let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+            QueryImpl.addLift impl challengeQueryImpl
+          let computation : OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ))
+              ((StmtOut × ((i : ιₛₒ) → OStmtOut i)) ×
+                (StmtOut × ((i : ιₛₒ) → OStmtOut i)) × WitOut) := do
+            let ⟨msg0, state1⟩ ← liftComp
+              (reduction.prover.sendMessage ⟨0, hDir0⟩
+                (reduction.prover.input ((stmtIn, oStmtIn), witIn)))
+              (oSpec + [pSpec.Challenge]ₒ)
+            let r1 ← liftComp (pSpec.getChallenge ⟨1, hDir1⟩) (oSpec + [pSpec.Challenge]ₒ)
+            let receiveChallengeFn ← liftComp (reduction.prover.receiveChallenge ⟨1, hDir1⟩ state1)
+              (oSpec + [pSpec.Challenge]ₒ)
+            let state2 := receiveChallengeFn r1
+            let ⟨⟨prvStmtOut, prvOStmtOut⟩, witOut⟩ ← liftComp (reduction.prover.output state2)
+              (oSpec + [pSpec.Challenge]ₒ)
+            let transcript := ProtocolSpec.FullTranscript.mk2 msg0 r1
+            let verifierStmtOut ← liftComp
+              (reduction.verifier.toVerifier.verify (stmtIn, oStmtIn) transcript)
+              (oSpec + [pSpec.Challenge]ₒ)
+            pure ((prvStmtOut, prvOStmtOut), verifierStmtOut, witOut)
+          (simulateQ pImpl computation.run).run' s)
+        (fun ((prvStmt, prvOStmt), (verStmt, verOStmt), witOut) =>
+          ((verStmt, verOStmt), witOut) ∈ relOut ∧ prvStmt = verStmt ∧ prvOStmt = verOStmt) = 1 := by
   rw [unroll_n_message_reduction_perfectCompleteness (n := 2) (reduction := reduction)
     relIn relOut init impl hInit hImplSupp]
   apply forall_congr'; intro stmtIn
@@ -590,6 +805,8 @@ theorem unroll_2_message_reduction_perfectCompleteness
     Prod.mk.eta, bind_assoc]
   congr!
   all_goals
+  · try rw [← ProtocolSpec.FullTranscript.mk2_eq_snoc_snoc]
+  all_goals
   · funext i
     fin_cases i
     · rfl
@@ -597,6 +814,7 @@ theorem unroll_2_message_reduction_perfectCompleteness
 
 end TwoMessageProtocol
 
+/-
 /-! ## Round-by-Round Knowledge Soundness Unroll Lemmas
 
 This section provides unroll lemmas for `rbrKnowledgeSoundness` that mirror the structure
@@ -634,15 +852,15 @@ lemma tsum_mul_le_of_le_of_sum_le_one_nnreal {α : Type*}
   -- 2. Establish that the target series (f x * g x) is summable by comparison
   have h_fg_summable : Summable (fun x ↦ f x * g x) := by
     refine NNReal.summable_of_le (fun x ↦ ?_) h_mul_summable
-    exact mul_le_mul_of_nonneg_left (hg x) (zero_le (f x))
+    exact mul_le_mul_of_nonneg_left (hg x) (by positivity)
   -- 3. The calculation
   calc ∑' x, f x * g x
     _ ≤ ∑' x, f x * ε := by
       apply Summable.tsum_le_tsum _ h_fg_summable h_mul_summable
       intro x
-      exact mul_le_mul_of_nonneg_left (hg x) (zero_le _)
+      exact mul_le_mul_of_nonneg_left (hg x) (by positivity)
     _ = (∑' x, f x) * ε := tsum_mul_right f ε
-    _ ≤ 1 * ε := mul_le_mul_of_nonneg_right hf (zero_le _)
+    _ ≤ 1 * ε := mul_le_mul_of_nonneg_right hf (by positivity)
     _ = ε := one_mul ε
 
 lemma ENNReal.tsum_mul_le_of_le_of_sum_le_one {α : Type*} {f g : α → ℝ≥0∞} {ε : ℝ≥0∞}
@@ -774,29 +992,7 @@ theorem probEvent_simulateQ_run_ignore_state {α : Type}
   simp only [StateT.run'_eq, probEvent_map]
   congr 1
 
-/-! ### Lemma 2: Query Log Elimination
-
-When the predicate ignores the query log from `runWithLogToRound`, we can
-eliminate the logging layer entirely using `runToRound`. -/
-
-omit [oSpec.Fintype] [(i : pSpec.ChallengeIdx) → SampleableType (pSpec.Challenge i)] in
-/-- When the predicate ignores the query log, `runWithLogToRound` can be replaced
-    with `runToRound`. This is the fundamental query log elimination lemma. -/
-theorem probEvent_runWithLogToRound_ignore_log
-    [(oSpec + [pSpec.Challenge]ₒ).Fintype]
-    [(oSpec + [pSpec.Challenge]ₒ).Inhabited]
-    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (i : Fin (n + 1)) (stmt : StmtIn) (wit : WitIn)
-    (P : pSpec.Transcript i × prover.PrvState i → Prop)
-    [DecidablePred P]
-    [DecidablePred (fun x : (pSpec.Transcript i × prover.PrvState i) ×
-        QueryLog (oSpec + [pSpec.Challenge]ₒ) => P x.1)] :
-    Pr[fun x => P x.1 | prover.runWithLogToRound i stmt wit] =
-    Pr[P | prover.runToRound i stmt wit] := by
-  rw [← Prover.runWithLogToRound_discard_log_eq_runToRound, probEvent_map]
-  congr 1
-
-/-! ### Lemma 3: Combined Transcript-Challenge Pattern
+/-! ### Lemma 2: Combined Transcript-Challenge Pattern
 
 These lemmas handle the common pattern in soundness proofs where we compute
 `(transcript, challenge, queryLog)` but only care about `(transcript, challenge)`. -/
@@ -1057,117 +1253,6 @@ theorem soundness_unroll_runToRound_2_pSpec_2
 
 end SoundnessUnrolling
 
-section ProbEventToPrNotation
-
-open ProbabilityTheory
-open scoped ProbabilityTheory
-
-/-- **Convert probEvent notation to Pr notation for PMF**
-
-Converts `[P | pmf]` (where `pmf : PMF α`) to `Pr_{ let x ← pmf }[P x]`.
-
-This bridges VCVio's `probEvent` notation with ArkLib's `Pr_` notation,
-enabling the use of probability tools like Schwartz-Zippel.
-
-**Note**: `[P | pmf]` where `pmf : PMF α` is interpreted as `pmf.toOuterMeasure {x | P x}`.
--/
-theorem probEvent_PMF_eq_Pr {α : Type} (pmf : PMF α) (P : α → Prop) [DecidablePred P] :
-    (pmf.toOuterMeasure {x | P x}) = Pr_{ let x ← pmf }[P x] := by
-  -- Both sides compute the probability that P holds
-  -- LHS: pmf.toOuterMeasure {x | P x} = ∑' x, if P x then pmf x else 0
-  -- RHS: Pr_{ let x ← pmf }[P x] = (do let x ← pmf; return P x).val True
-  --     = ∑' x, pmf x * (if P x then 1 else 0)
-  simp only [PMF.toOuterMeasure_apply]
-  rw [prob_tsum_form_singleton]
-  congr 1
-  funext x
-  simp only [Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero]
-
-/-- **Convert probOutput on OracleComp to PMF value**
-
-If `evalDist oa = OptionT.lift pmf` for some `pmf : PMF α`, then `[= x | oa] = pmf x`.
-
-This is useful when an `OracleComp` evaluates to a pure `PMF` (no failure probability).
--/
-theorem probOutput_eq_PMF_apply
-    {ι : Type} {spec : OracleSpec ι} [spec.Fintype] [spec.Inhabited]
-    {α : Type} (oa : OracleComp spec α) (pmf : PMF α) (x : α)
-    (h : evalDist oa = OptionT.lift pmf) :
-    Pr[= x | oa] = pmf x := by
-  have h' : evalDist oa = liftM pmf := by
-    exact (show evalDist oa = liftM pmf from by
-      simpa [OptionT.liftM_def] using h)
-  exact (evalDist_eq_liftM_iff (mx := oa) (p := pmf)).1 h' x
-
-open Classical in
-/-- **Convert probOutput on uniform OracleComp to Pr_ notation**
-
-If an `OracleComp` evaluates to uniform sampling from a finite type `L`,
-then `[= x | oa]` equals the uniform probability `1/|L|` for any `x : L`.
-
-This can be converted to `Pr_` notation: `[= x | oa] = Pr_{ let y ← $ᵖ L }[y = x]`.
--/
-theorem probOutput_uniform_eq_Pr
-    {ι : Type} {spec : OracleSpec ι} [spec.Fintype] [spec.Inhabited]
-    {L : Type} [Fintype L] [Nonempty L] [DecidableEq L]
-    (oa : OracleComp spec L) (x : L)
-    (h : evalDist oa = OptionT.lift (PMF.uniformOfFintype L)) :
-    Pr[= x | oa] = Pr_{ let y ← $ᵖ L }[y = x] := by
-  classical
-  rw [probOutput_eq_PMF_apply oa (PMF.uniformOfFintype L) x h]
-  simp
-
-/-- **Convert probOutput on uniform OracleComp to Pr_ notation (using $ᵗ notation)**
-
-If `oa = $ᵗ L` (uniform sampling from a finite type `L`),
-then `[= x | oa]` equals the uniform probability `1/|L|` for any `x : L`.
-
-This can be converted to `Pr_` notation: `[= x | $ᵗ L] = Pr_{ let y ← $ᵖ L }[y = x]`.
-
-This version uses the existing `evalDist_uniformOfFintype` lemma to derive the hypothesis.
-
-**Note**: The `[Inhabited L]` requirement is necessary because `evalDist_uniformOfFintype` requires it.
-For field types `L`, this is automatically satisfied since `Field L` implies `Inhabited L` (via `Zero`).
--/
-theorem probOutput_uniformOfFintype_eq_Pr
-    {L : Type} [Fintype L] [Nonempty L] [DecidableEq L] [SampleableType L] [Inhabited L]
-    (x : L) :
-    Pr[= x | $ᵗ L] = Pr_{ let y ← $ᵖ L }[y = x] := by
-  refine probOutput_uniform_eq_Pr ($ᵗ L) x ?_
-  simpa [OptionT.liftM_def] using (evalDist_uniformSample (α := L))
-
-open Classical in
-/-- **Convert sum of uniform probabilities back to Pr_ notation**
-
-If we have a sum over `x` where each term is `Pr_{ let y ← $ᵖ L }[y = x]` when `P x` holds,
-this equals `Pr_{ let y ← $ᵖ L }[P y]`.
-
-This is the inverse of expanding `Pr_` notation into a sum.
--/
-theorem tsum_uniform_Pr_eq_Pr
-    {L : Type} [Fintype L] [Nonempty L] [DecidableEq L]
-    (P : L → Prop) [DecidablePred P] :
-    (∑' x : L, if P x then Pr_{ let y ← $ᵖ L }[y = x] else 0) = Pr_{ let y ← $ᵖ L }[P y] := by
-  classical
-  simp
-
-/-- **Convert probEvent on StateT.run' to tsum form**
-
-Converts `[P | (comp : StateT σ ProbComp α).run' s]` to a sum form using `probEvent_eq_tsum_ite`.
-
-**Note**: `ProbComp = OracleComp unifSpec`. The `probEvent` notation measures `Option.some '' {x | P x}`
-in `PMF (Option α)`, which is equivalent to summing `[= x | comp.run' s]` over `α` where `P x` holds.
-
-This is useful for further manipulation, e.g., applying probability bounds. Note that we cannot
-directly convert to `Pr_` notation because `evalDist` returns `PMF (Option α)`, not `PMF α`.
--/
-theorem probEvent_StateT_run'_eq_tsum
-    {σ α : Type} (comp : StateT σ ProbComp α) (s : σ) (P : α → Prop) [DecidablePred P] :
-    Pr[P | comp.run' s] = ∑' x : α, if P x then Pr[= x | comp.run' s] else 0 := by
-  simpa using (probEvent_eq_tsum_ite (mx := comp.run' s) (p := P))
-
-end ProbEventToPrNotation
-
 /-! ## Round-by-round knowledge soundness reducers (per protocol shape)
 
 These package the repetitive `unroll_rbrKnowledgeSoundness` + `soundness_unroll_runToRound_*` +
@@ -1275,14 +1360,8 @@ theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
     conv_lhs => change (∑' (x_1 : pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)), _)
     simp only [id_eq, Function.comp_def]
-    conv =>
-      enter [1, 1, x_1, 2]
-      rw [probEvent_eq_eq_probOutput]
-      change Pr[=x_1 | $ᵗ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx))]
-      rw [probOutput_uniformOfFintype_eq_Pr (L := _) (x := x_1)]
-    erw [tsum_uniform_Pr_eq_Pr
-      (L := pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx))
-      (P := fun x_1 => P (FullTranscript.mk1 x.1.1) (q.cont x_1))]
+    rw [← probEvent_eq_tsum_ite]
+    rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
     change Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
       P (FullTranscript.mk1 x.1.1) y ] ≤ rbrKnowledgeError ⟨1, hDir1⟩
     exact hbound stmtIn x.1.1
@@ -1370,18 +1449,94 @@ theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
     simp_rw [OracleQuery.input_query, OracleQuery.snd_query]
     conv_lhs => change (∑' (x_1 : pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)), _)
     simp only [id_eq, Function.comp_def]
-    conv =>
-      enter [1, 1, x_1, 2]
-      rw [probEvent_eq_eq_probOutput]
-      change Pr[=x_1 | $ᵗ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx))]
-      rw [probOutput_uniformOfFintype_eq_Pr (L := _) (x := x_1)]
-    erw [tsum_uniform_Pr_eq_Pr
-      (L := pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx))
-      (P := fun x_1 => P x.1.1 (q.cont x_1))]
+    rw [← probEvent_eq_tsum_ite]
+    rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
     change Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
       P x.1.1 y ] ≤ rbrKnowledgeError ⟨0, hDir0⟩
     exact hbound stmtIn x.1.1
   · apply tsum_probOutput_le_one
+
+end RbrKSReducers
+-/
+
+/-! ## Round-by-round knowledge-soundness reducers
+
+These compatibility theorems retain the PR's protocol-shape API while delegating the
+mixture argument to the maintained worst-case round-by-round interface. -/
+section RbrKSReducers
+
+open ProbabilityTheory
+open scoped ProbabilityTheory NNReal
+
+variable {ι : Type} {oSpec : OracleSpec ι}
+  {StmtIn WitIn StmtOut WitOut : Type} {σ : Type}
+
+theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
+    {pSpec : ProtocolSpec 2} [oSpec.Fintype]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
+    [IsUniformSpec (oSpec + [pSpec.Challenge]ₒ)]
+    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (WitMid : Fin 3 → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn) (msg₀ : pSpec.Message ⟨0, hDir0⟩),
+      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨1, hDir1⟩ : pSpec.ChallengeIdx)) }[
+        rbrExtractionFailureEvent kSF extractor (⟨1, hDir1⟩ : pSpec.ChallengeIdx) stmtIn
+          (FullTranscript.mk1 msg₀) y] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
+  classical
+  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+  refine ⟨WitMid, extractor, kSF, ?_⟩
+  intro stmtIn j transcript
+  have h_j_eq_1 : j = ⟨1, hDir1⟩ := by
+    obtain ⟨i, hj⟩ := j
+    fin_cases i
+    · exact absurd (hDir0.symm.trans hj) (by decide)
+    · rfl
+  subst j
+  have htr : transcript = FullTranscript.mk1 (transcript ⟨0, by change 0 < 1; omega⟩) := by
+    funext k
+    fin_cases k
+    rfl
+  rw [htr]
+  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
+  exact hbound stmtIn _
+
+theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
+    {pSpec : ProtocolSpec 1} [oSpec.Fintype]
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Inhabited (pSpec.Challenge i)]
+    [IsUniformSpec (oSpec + [pSpec.Challenge]ₒ)]
+    {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+    (hDir0 : pSpec.dir 0 = .V_to_P)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0)
+    (WitMid : Fin 2 → Type)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor)
+    (hbound : ∀ (stmtIn : StmtIn)
+        (transcript : pSpec.Transcript (⟨0, hDir0⟩ : pSpec.ChallengeIdx).1.castSucc),
+      Pr_{ let y ← $ᵖ (pSpec.Challenge (⟨0, hDir0⟩ : pSpec.ChallengeIdx)) }[
+        rbrExtractionFailureEvent kSF extractor (⟨0, hDir0⟩ : pSpec.ChallengeIdx) stmtIn
+          transcript y] ≤ rbrKnowledgeError ⟨0, hDir0⟩) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
+  classical
+  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+  refine ⟨WitMid, extractor, kSF, ?_⟩
+  intro stmtIn j transcript
+  have h_j_eq_0 : j = ⟨0, hDir0⟩ := by
+    obtain ⟨i, hj⟩ := j
+    fin_cases i
+    rfl
+  subst j
+  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
+  exact hbound stmtIn transcript
 
 end RbrKSReducers
 

@@ -3,8 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
+-- `change`/`rfl` below reduce CompPoly definitions whose bodies are not exposed.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.Basic
 
 /-!
 # Degree-Conflict Branch for KZG Function Binding
@@ -23,6 +27,8 @@ degree-`n` interpolant, following the ARSDH reduction in [CGKY25].
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 
@@ -715,7 +721,7 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
       -- 1/(Z_{S \ {α}}(α))
     let h₂ : G₁ := ∏ i ∈ S, (proofs i) ^ (d (query i)).val
     h₂ = h₁ ^ (1 / Zₛ.eval τ).val := by
-    letI := Classical.decEq G₁
+    let := Classical.decEq G₁
     intro Zₛ c' h₁ d h₂
     unfold h₁ h₂
     -- rewrite the equation to g₁^{*equation*} (expose the field values)

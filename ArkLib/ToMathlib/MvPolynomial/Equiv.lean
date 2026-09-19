@@ -1,5 +1,19 @@
-import CompPoly.ToMathlib.MvPolynomial.Equiv
-import CompPoly.ToMathlib.Finsupp.Fin
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ArkLib Contributors
+-/
+module
+
+public import CompPoly.ToMathlib.MvPolynomial.Equiv
+public import CompPoly.ToMathlib.Finsupp.Fin
+
+/-!
+# Polynomial and Multivariate Polynomial Equivalences
+-/
+
+@[expose] public section
+
 
 section ToMvPolynomial
 

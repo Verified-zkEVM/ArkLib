@@ -3,14 +3,23 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Mirco Richter, Poulami Das (Least Authority)
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Probability.Notation
-import ArkLib.ProofSystem.Stir.ProximityBound
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Probability.Notation
+public import ArkLib.ProofSystem.Stir.ProximityBound
+
+/-!
+# ArkLib.ProofSystem.Stir.ProximityGap
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 open NNReal ProbabilityTheory ReedSolomon
 
@@ -32,7 +41,7 @@ namespace STIR
   then ∃ S ⊆ ι, |S| ≥ (1 - δ) * |ι| and
   ∀ i : m, ∃ u : C, u(S) = fᵢ(S) -/
 lemma proximity_gap
-  {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
   {ι : Type} [Fintype ι] [Nonempty ι] {φ : ι ↪ F}
   {degree m : ℕ} {δ : ℝ≥0} {f : Fin m → ι → F} {GenFun : F → Fin m → F}
   (hδPos : 0 < δ)
@@ -42,8 +51,7 @@ lemma proximity_gap
       ENNReal.ofReal (proximityError F degree (LinearCode.rate (code φ degree)) δ m)) :
   ∃ S : Finset ι,
     S.card ≥ (1 - δ) * (Fintype.card ι) ∧
-    ∀ i : Fin m, ∃ u : ι → F, u ∈ (code φ degree) ∧ ∀ x ∈ S, f i x = u x
-:= by
+    ∀ i : Fin m, ∃ u : ι → F, u ∈ (code φ degree) ∧ ∀ x ∈ S, f i x = u x := by
   sorry
 
 end STIR

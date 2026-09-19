@@ -4,10 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
+public import ArkLib.Data.CodingTheory.ReedSolomon
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -526,7 +535,7 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
               (Matrix.vandermonde (fun i : Fin n => (Polynomial.C (domain (rB i)) : F[X]))) := by
       simp [hD, Matrix.det_neg]
     refine hdetD'.symm ▸ (hunitNeg.mul hdetV)
-  letI : Invertible D := Matrix.invertibleOfIsUnitDet D hdetD
+  let : Invertible D := Matrix.invertibleOfIsUnitDet D hdetD
   let K0 : Matrix ι (Fin m) F[X] := L - R * (⅟D * A21)
   have hdetK0 : ∀ rA : Fin m → ι, Matrix.det (K0.submatrix rA id) = 0 := by
     intro rA

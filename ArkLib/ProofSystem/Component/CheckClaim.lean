@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Check if a predicate / claim on a statement is satisfied
@@ -41,6 +42,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   `OracleComp`), this oracle reduction is a special case of `ReduceClaim` (identity maps).
 -/
 
+@[expose] public section
+
 open OracleComp OracleInterface ProtocolSpec Function
 
 namespace CheckClaim
@@ -57,6 +60,10 @@ def prover : Prover oSpec Statement Unit Statement Unit !p[] where
   sendMessage := fun i => nomatch i
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
+
+/-- The `CheckClaim` prover has pure output: it reads its statement off the state, with no
+oracle query. -/
+instance instOutputIsPure : (prover oSpec Statement).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 variable (pred : Statement → Prop) [DecidablePred pred]
 
@@ -82,12 +89,13 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
+theorem reduction_completeness [Nonempty σ] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
+  classical
   simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro stmt () valid
-  simp only [relIn, Set.mem_setOf_eq] at valid
+  simp only [relIn, Set.mem_ofPred_eq] at valid
   -- valid : pred stmt
   -- First simplify the reduction run
   have hrun : (reduction oSpec Statement pred).run stmt () =
@@ -126,8 +134,9 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
       (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, stmt, ()), stmt) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     simp [relOut]
 
 /-- The knowledge state function for the `CheckClaim` reduction, mirroring the trivial-verifier
@@ -194,6 +203,11 @@ def oracleProver : OracleProver oSpec
   receiveChallenge := fun i => nomatch i
   output := fun stmt => pure (stmt, ())
 
+/-- The `CheckClaim` oracle prover has pure output: it forwards the statement and oracle
+statements with no oracle query. -/
+instance instOutputIsPureOracle : (oracleProver oSpec Statement OStatement).OutputIsPure :=
+  ⟨_, fun _ => rfl⟩
+
 /-- The oracle verifier for the `CheckClaim` oracle reduction is a **pure pass-through**: it
 returns the statement and all oracle statements unchanged. The predicate
 being checked is *not* run as an effectful `guard`/oracle computation here; instead it lives in the
@@ -247,7 +261,8 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
   simp only [Verifier.run, OracleVerifier.toVerifier]
   rw [oracleVerifier_materializeOutput]
   simp only [oracleVerifier]
-  simp [OptionT.run_pure, simulateQ_pure]
+  simp only [MessageIdx, Message, OptionT.run_pure, simulateQ_pure, map_pure,
+    Option.map_some]
   apply OptionT.ext
   rfl
 
@@ -319,8 +334,9 @@ theorem oracleReduction_completeness
       (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
+    have hx' : some x = some ((default, ((stmt, oStmt), ())), (stmt, oStmt)) := by
+      simpa [map_pure, support_pure] using hx
+    cases hx'
     exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
 
 /-- **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure

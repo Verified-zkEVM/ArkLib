@@ -4,10 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.Probability.Notation
-import Mathlib.Probability.Distributions.Uniform
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Probability.Distributions.Uniform
 
 /-!
 # Proximity gap fundamental definitions
@@ -47,6 +48,8 @@ module codes over (scalar) rings.
   Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056/a0ljbkrz.
 
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -126,7 +129,7 @@ with respect to the proximity parameter `δ` and the error bound `ε`, folding d
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
   exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
 def δ_ε_multilinearCorrelatedAgreement [Module F A]
-  (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
+    (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
       δᵣ(r |⨂| u, C) ≤ δ

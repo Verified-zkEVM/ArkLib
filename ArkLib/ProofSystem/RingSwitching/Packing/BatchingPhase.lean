@@ -3,11 +3,19 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.RingSwitching.Packing.Spec
-import ArkLib.OracleReduction.Basic
-import CompPoly.Fields.Binary.Tower.TensorAlgebra
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+public import ArkLib.OracleReduction.Basic
+
+/-!
+# ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix
@@ -43,7 +51,7 @@ Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover add
 `t(X_0, ..., X_{ℓ-1}) ∈ K[X_0, ..., X_{ℓ-1}]^⪯1`.
 
 1. `P` computes `ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))` and sends `V` the A-element `ŝ`.
-2. `V` decomposes `ŝ =: Σ_{v ∈ {0,1}^κ} β_v ⊗ ŝ_v` (column coordinates on the right
+2. `V` decomposes `ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v` (column coordinates on the left
   tensor factor, per the profile's reconstruction laws).
   `V` requires `s ?= Σ_{v ∈ {0,1}^κ} eq̃(v_0, ..., v_{κ-1}, r_0, ..., r_{κ-1}) ⋅ ŝ_v`.
 3. `V` samples batching scalars `(r''_0, ..., r''_{κ-1}) ← L^κ` and sends them to `P`.
@@ -54,7 +62,7 @@ Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover add
     `A: w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
     on `{0,1}^{ℓ'}` and writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension.
   `P` defines `h(X_0, ..., X_{ℓ'-1}) := A(X_0, ..., X_{ℓ'-1}) ⋅ t'(X_0, ..., X_{ℓ'-1})`.
-5. `V` decomposes `ŝ =: Σ_{u ∈ {0,1}^κ} ŝ_u ⊗ β_u` (row coordinates on the left tensor
+5. `V` decomposes `ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u` (row coordinates on the right tensor
   factor), and
   sets `s_0 := Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ ŝ_u`.
 
@@ -90,7 +98,7 @@ and other logic required by the protocol.
 
 /-- A dummy state returned by the verifier upon failure of Check 1. -/
 def failureState (stmt : BatchingStmtIn L ℓ) (s_hat : P.A) :
-  Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 := {
+    Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 := {
     ctx := {
       t_eval_point := stmt.t_eval_point,
       original_claim := stmt.original_claim
@@ -209,7 +217,7 @@ def batchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
 /-- Input relation: the witness `t` and `t'` are consistent,
 and `t` satisfies the original claim. -/
 def batchingInputRelation :
-  Set ((BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)) × BatchingWitIn L K ℓ ℓ') :=
+    Set ((BatchingStmtIn L ℓ × (∀ j, aOStmtIn.OStmtIn j)) × BatchingWitIn L K ℓ ℓ') :=
   {⟨⟨stmt, oStmt⟩, wit⟩ | batchingInputRelationProp κ L K P ℓ ℓ' h_l aOStmtIn stmt oStmt wit }
 
 /-- Intermediate witness types for RBR knowledge soundness. -/
@@ -273,7 +281,6 @@ def batchingKStateProp {m : Fin (2 + 1)}
     let i_msg2 : ((pSpecBatching (κ:=κ) (L:=L) (K:=K) (P:=P)).take 2 (by omega)).ChallengeIdx :=
       ⟨⟨1, Nat.lt_of_succ_le (by omega)⟩, by simp [pSpecBatching]; rfl⟩
     let batching_challenges: Fin κ → L := chalsUpTo i_msg2
-
     let ctx : RingSwitchingBaseContext κ L K ℓ P := {
       t_eval_point := stmt.t_eval_point,
       original_claim := stmt.original_claim,
@@ -311,7 +318,7 @@ noncomputable def batchingKnowledgeStateFunction :
     | ⟨0, _⟩ => by -- from accumulative KState
       intro hSuccTrue
       simp only [batchingKStateProp, Fin.zero_eta, Fin.isValue, Fin.succ_zero_eq_one,
-        Equiv.toFun_as_coe, Transcript.equivMessagesChallenges_apply, Fin.castSucc_zero,
+        Transcript.equivMessagesChallenges_apply, Fin.castSucc_zero,
         batchingRbrExtractor, Fin.mk_one, Fin.succ_one_eq_two,
         batchingInputRelationProp] at ⊢ hSuccTrue
       rw [hSuccTrue.1]
@@ -324,26 +331,31 @@ noncomputable def batchingKnowledgeStateFunction :
 
 /-! ## Security Properties -/
 
+omit [Fintype L] [Fintype K] [DecidableEq K] in
 /-- Perfect completeness for the batching phase oracle reduction. -/
 theorem batchingReduction_perfectCompleteness :
-  OracleReduction.perfectCompleteness
+    OracleReduction.perfectCompleteness
     (oracleReduction := batchingOracleReduction κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
     (relIn := batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
     (init := init) (impl := impl) := by
+  classical
   -- The honest prover's computations are deterministic. If the input relation holds,
   -- the prover correctly computes ŝ, h, and s₀, so the output relation will also hold.
   unfold OracleReduction.perfectCompleteness
   sorry
 
+omit [Fintype K] [DecidableEq K] in
 /-- RBR knowledge soundness for the batching phase oracle verifier. -/
-theorem batchingOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
-  OracleVerifier.rbrKnowledgeSoundness
+theorem batchingOracleVerifier_rbrKnowledgeSoundness [NoZeroDivisors L] :
+    OracleVerifier.rbrKnowledgeSoundness
     (verifier := oracleVerifier κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn))
     (init := init) (impl := impl)
     (relIn := batchingInputRelation κ L K P ℓ ℓ' h_l aOStmtIn)
     (relOut := sumcheckRoundRelation κ L K P ℓ ℓ' h_l aOStmtIn 0)
     (rbrKnowledgeError := batchingRBRKnowledgeError (κ:=κ) (L:=L) (K:=K) (P:=P)) := by
+  let _ : IsDomain L := NoZeroDivisors.to_isDomain L
+  classical
   -- Proof follows by constructing the extractor and knowledge state function.
   use batchingWitMid L K ℓ ℓ'
   use batchingRbrExtractor κ L K P ℓ ℓ' h_l (aOStmtIn:=aOStmtIn)

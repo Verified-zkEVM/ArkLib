@@ -3,7 +3,19 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
+module
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
+
+/-!
+# Binary Basefold Relay Step
+-/
+
+@[expose] public section
+
+local instance relayEmptySpecInhabited : OracleSpec.Inhabited []ₒ where
+  inhabitedB j := PEmpty.elim j
+
 
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
@@ -57,18 +69,18 @@ noncomputable def relayOracleProver (i : Fin ℓ) (hNCR : ¬ isCommitmentRound �
       i hNCR oStmt⟩, wit⟩
 
 lemma h_oracle_size_eq_relay (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
-  toOutCodewordsCount ℓ ϑ i.castSucc =
+    toOutCodewordsCount ℓ ϑ i.castSucc =
       toOutCodewordsCount ℓ ϑ i.succ := by
   simp only [toOutCodewordsCount_succ_eq, hNCR, ↓reduceIte]
 
 def relayOracleVerifier_embed (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
-  Fin (toOutCodewordsCount ℓ ϑ i.succ) →
-    Fin (toOutCodewordsCount ℓ ϑ i.castSucc) ⊕ pSpecRelay.MessageIdx
-  := fun j => Sum.inl ⟨j.val, by rw [h_oracle_size_eq_relay i hNCR]; omega⟩
+    Fin (toOutCodewordsCount ℓ ϑ i.succ) →
+      Fin (toOutCodewordsCount ℓ ϑ i.castSucc) ⊕ pSpecRelay.MessageIdx :=
+  fun j => Sum.inl ⟨j.val, by rw [h_oracle_size_eq_relay i hNCR]; omega⟩
 
 /-! The oracle verifier for the `i`-th round of Binary relayfold. -/
 noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
-  OracleVerifier.{0, 0}
+  OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -79,13 +91,18 @@ noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecRelay) where
   verify := fun stmtIn _ => pure stmtIn
-  embed := ⟨relayOracleVerifier_embed (r := r) (𝓡 := 𝓡) i hNCR, by
-    intro a b h_ab_eq
-    simp only [relayOracleVerifier_embed, MessageIdx, Sum.inl.injEq, Fin.mk.injEq] at h_ab_eq
-    exact Fin.ext h_ab_eq
-  ⟩
-  hEq := fun oracleIdx => by simp only [MessageIdx, Function.Embedding.coeFn_mk,
-    relayOracleVerifier_embed]
+  outputOracle := .inl {
+    embed := ⟨relayOracleVerifier_embed (r := r) (𝓡 := 𝓡) i hNCR, by
+      intro a b h_ab_eq
+      simp only [relayOracleVerifier_embed, MessageIdx, Sum.inl.injEq, Fin.mk.injEq] at h_ab_eq
+      exact Fin.ext h_ab_eq
+    ⟩
+    hEq := fun oracleIdx => by simp only [MessageIdx, Function.Embedding.coeFn_mk,
+      relayOracleVerifier_embed]
+    outputInterface_heq := by
+      intro oracleIdx
+      simp only [relayOracleVerifier_embed, Function.Embedding.coeFn_mk]
+      rfl }
 
 /-! The oracle reduction that is the `i`-th round of Binary relayfold. -/
 noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
@@ -120,7 +137,7 @@ lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
       ∈ strictRoundRelation (mp := mp) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑) i.succ := by
   dsimp only [strictRoundRelation, strictRoundRelationProp,
-    strictFoldStepRelOut, strictFoldStepRelOutProp, Fin.val_succ, Set.mem_setOf_eq] at ⊢ h_relIn
+    strictFoldStepRelOut, strictFoldStepRelOutProp, Fin.val_succ, Set.mem_ofPred_eq] at ⊢ h_relIn
   dsimp only [strictOracleWitnessConsistency, strictOracleFoldingConsistencyProp] at h_relIn ⊢
   constructor
   · exact h_relIn.1
@@ -147,98 +164,32 @@ theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : F
       (init := init)
       (impl := impl) := by
   -- must use `ProtocolSpec.challengeOracleInterface`
+  let : (j : pSpecRelay.ChallengeIdx) → OracleInterface (pSpecRelay.Challenge j) :=
+    ProtocolSpec.challengeOracleInterface
+  let : OracleSpec.Fintype [pSpecRelay.Challenge]ₒ :=
+    { fintypeB := fun j => j.1.1.elim0 }
+  let : OracleSpec.Inhabited [pSpecRelay.Challenge]ₒ :=
+    { inhabitedB := fun j => j.1.1.elim0 }
   rw [OracleReduction.unroll_0_message_reduction_perfectCompleteness (oSpec := []ₒ)
     (pSpec := pSpecRelay) (init := init) (impl := impl) (hInit := hInit)
     (hImplSupp := by simp only [Set.fmap_eq_image,
       IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
-  -- Step 2: Convert probability 1 to universal quantification over support
-  rw [probEvent_eq_one_iff]
-  -- Step 3: Unfold protocol definitions
+  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  intro output h_output
   dsimp only [relayOracleReduction, relayOracleProver, relayOracleVerifier,
-    OracleVerifier.toVerifier, FullTranscript.mk2]
-  -- Step 4: Split into safety and correctness goals
-  refine ⟨?_, ?_⟩
-  -- GOAL 1: SAFETY - Prove the verifier never crashes ([⊥|...] = 0)
-  · -- Peel off monadic layers to reach the core verifier logic
-    simp only [probFailure_bind_eq_zero_iff]
-    conv_lhs =>
-      simp only [liftComp_eq_liftM, liftM_pure, probFailure_eq_zero]
-    rw [true_and]
-    intro inputState hInputState_mem_support
-    simp only [ChallengeIdx,
-      Challenge, liftComp_eq_liftM, liftM_pure, support_pure,
-      Set.mem_singleton_iff] at hInputState_mem_support
-    conv_lhs =>
-      simp only [liftM, monadLift, MonadLift.monadLift]
-      simp only [ChallengeIdx, Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_zero,
-        liftComp_eq_liftM, OptionT.probFailure_lift, probFailure_eq_zero]
-    erw [simulateQ_pure];
-    -- erw [OptionT.probFailure_mk]
-    simp only [ liftComp_eq_liftM, ChallengeIdx, Challenge,
-      OptionT.mem_support_iff, toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run,
-      Prod.mk.eta, probFailure_eq_zero, implies_true, and_true]
-    dsimp only [liftM, monadLift, MonadLift.monadLift]
-    rw [OptionT.probFailure_liftComp_of_OracleComp_Option]
-    conv_lhs =>
-      enter [1]
-      simp only [MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero, Fin.succ_zero_eq_one,
-        id_eq, bind_pure_comp, OptionT.run_map, probFailure_eq_zero]
-    rw [zero_add]
-    simp only [probOutput_eq_zero_iff]
-    rw [OptionT.support_run_eq]
-    simp only [←probOutput_eq_zero_iff]
-    change Pr[= none | OptionT.run (m := (OracleComp []ₒ)) (x := (OptionT.bind _ _)) ] = 0
-    rw [OptionT.probOutput_none_bind_eq_zero_iff]
-    conv =>
-      enter [x]
-      rw [OptionT.support_run]
-    intro vStmtOut h_vStmtOut_mem_support
-    conv at h_vStmtOut_mem_support =>
-      simp only [support_pure, Set.mem_singleton_iff]
-    rw [h_vStmtOut_mem_support]
-    simp only [MessageIdx, OptionT.run_pure, probOutput_eq_zero_iff, support_pure,
-      Set.mem_singleton_iff, reduceCtorEq, not_false_eq_true]
-  · -- GOAL 2: CORRECTNESS - Prove all outputs in support satisfy the relation
-    intro x hx_mem_support
-    rcases x with ⟨⟨prvStmtOut, prvOStmtOut⟩, ⟨verStmtOut, verOStmtOut⟩, witOut⟩
-    simp only
-    -- Step 2a: Simplify the support membership to extract the challenge
-    simp only [ support_bind, support_pure,
-      Set.mem_iUnion, Set.mem_singleton_iff, exists_prop, Prod.exists
-    ] at hx_mem_support
-    conv at hx_mem_support =>
-      erw [OptionT.support_mk, support_pure]
-      simp only [
-        Set.mem_singleton_iff, Option.some.injEq, Set.setOf_eq_eq_singleton, Prod.mk.injEq,
-        OptionT.mem_support_iff,
-        OptionT.run_monadLift, support_map, Set.mem_image, exists_eq_right, Fin.succ_one_eq_two,
-        id_eq, guard_eq, bind_pure_comp,
-        toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, ↓existsAndEq, and_true, true_and,
-        exists_eq_right_right', liftM_pure, support_pure, exists_eq_left]
-      dsimp only [monadLift, MonadLift.monadLift]
-    simp only [Challenge,ChallengeIdx,
-      liftComp_eq_liftM, MessageIdx, Message] at hx_mem_support
-    obtain ⟨h_verOut_mem_support, h_prvOut_mem_support⟩ := hx_mem_support
-    -- Step 2c: Simplify the verifier computation
-    conv at h_verOut_mem_support =>
-      dsimp only [liftM, monadLift, MonadLift.monadLift]
-      rw [support_liftComp]
-      erw [simulateQ_pure]
-      -- dsimp only [Functor.map]
-      erw [support_bind]
-      simp only [support_pure, Set.mem_singleton_iff, Function.comp_apply,
-        Set.iUnion_iUnion_eq_left, OptionT.support_OptionT_pure_run, Option.some.injEq,
-        Prod.mk.injEq]
-    rcases h_verOut_mem_support with ⟨verStmtOut_eq, verOStmtOut_eq⟩
-    obtain ⟨⟨prvStmtOut_eq, prvOStmtOut_eq⟩, prvWitOut_eq⟩ := h_prvOut_mem_support
-    constructor
-    · rw [prvWitOut_eq, verStmtOut_eq, verOStmtOut_eq];
-      exact (strictRoundRelation_relay_preserved (i := i) (hNCR := hNCR) (stmtIn := stmtIn)
-    (oStmtIn := oStmtIn) (witIn := witIn) (h_relIn := h_relIn))
-    · constructor
-      · rw [verStmtOut_eq, prvStmtOut_eq];
-      · rw [verOStmtOut_eq, prvOStmtOut_eq]; rfl
+    OracleVerifier.toVerifier] at h_output
+  simp only [liftComp_pure, liftM_pure, pure_bind, OptionT.run_bind,
+    OptionT.run_pure, Option.elimM, map_pure, simulateQ_pure] at h_output
+  refine ⟨_, h_output, ?_⟩
+  have h_preserved := strictRoundRelation_relay_preserved
+    (i := i) (hNCR := hNCR) (stmtIn := stmtIn)
+    (oStmtIn := oStmtIn) (witIn := witIn) (h_relIn := h_relIn)
+  refine ⟨?_, rfl, ?_⟩
+  · simpa [OracleVerifier.materializeOutput, OracleVerifier.materializeOutputOracle,
+      relayOracleVerifier, relayOracleVerifier_embed] using h_preserved
+  · funext j
+    rfl
 
 def relayKnowledgeError (m : pSpecRelay.ChallengeIdx) : ℝ≥0 :=
   match m with
@@ -260,10 +211,10 @@ noncomputable def relayRbrExtractor (i : Fin ℓ) :
   extractOut := fun _ _ witOut => witOut
 
 def relayKStateProp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
-  (stmtIn : Statement (L := L) Context i.succ)
-  (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
-  (oStmtIn : (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
-  : Prop :=
+    (stmtIn : Statement (L := L) Context i.succ)
+    (witMid : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
+    (oStmtIn : (∀ j, OracleStatement 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)) : Prop :=
   -- Relay step inherits sumcheckConsistency from foldStepRelOut (relIn) and preserves it
   let sumCheckConsistency: Prop := sumcheckConsistencyProp (𝓑 := 𝓑) stmtIn.sumcheck_target witMid.H
   masterKStateProp (mp := mp) (ϑ := ϑ) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) -- (𝓑 := 𝓑)
@@ -272,19 +223,20 @@ def relayKStateProp (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
       𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn)
     (localChecks := sumCheckConsistency)
 
-/-! The relay step oracle transformation equals mkVerifierOStmtOut.
+/-! The relay step oracle transformation equals the verifier's materialized output.
 This shows that mapOStmtOutRelayStep is exactly what the verifier produces. -/
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
-lemma mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
+lemma mapOStmtOut_eq_materializeOutput_relayStep
     (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
     (transcript : FullTranscript pSpecRelay) :
     let v := relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
     mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn =
-    OracleVerifier.mkVerifierOStmtOut v.embed v.hEq oStmtIn transcript := by
+    OracleVerifier.materializeOutput v transcript.challenges oStmtIn transcript.messages := by
   intro v
   funext j
-  simp only [mapOStmtOutRelayStep, OracleVerifier.mkVerifierOStmtOut, relayOracleVerifier, v]
+  simp only [mapOStmtOutRelayStep, OracleVerifier.materializeOutput,
+    OracleVerifier.materializeOutputOracle, relayOracleVerifier, v]
   simp [relayOracleVerifier_embed]
 
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] in
@@ -298,6 +250,7 @@ lemma getFirstOracle_mapOStmtOutRelayStep_eq (i : Fin ℓ)
   simp only [getFirstOracle, mapOStmtOutRelayStep]
 
 /-! Knowledge state function (KState) for single round -/
+set_option backward.isDefEq.respectTransparency false in
 def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         i hNCR).KnowledgeStateFunction init impl
@@ -307,11 +260,11 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)  i.succ)
       (extractor := relayRbrExtractor 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) where
   toFun := fun m ⟨stmtIn, oStmtIn⟩ tr witMid =>
-    relayKStateProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp:=mp) -- (𝓑 := 𝓑)
+    relayKStateProp 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (mp := mp) (𝓑 := 𝓑)
       i hNCR stmtIn witMid oStmtIn
   toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn => by
     rw [cast_eq]
-    simp only [foldStepRelOut, foldStepRelOutProp, Set.mem_setOf_eq, relayKStateProp]
+    simp only [foldStepRelOut, foldStepRelOutProp, Set.mem_ofPred_eq, relayKStateProp]
     unfold masterKStateProp
     simp only [Fin.val_succ]
     constructor <;> intro h
@@ -372,62 +325,35 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
             Prod.fst <$>
               (simulateQ impl
                 (Verifier.run (stmtIn, oStmtIn) tr
-                  (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    i hNCR).toVerifier)).run s) := by
+                  (OracleVerifier.toVerifier (pSpec := pSpecRelay)
+                    (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                      i hNCR)))).run s) := by
       exact (OptionT.mem_support_iff
         (mx := OptionT.mk (do
           let s ← init
           Prod.fst <$>
             (simulateQ impl
               (Verifier.run (stmtIn, oStmtIn) tr
-                (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                  i hNCR).toVerifier)).run s))
+                (OracleVerifier.toVerifier (pSpec := pSpecRelay)
+                  (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                    i hNCR)))).run s))
         (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
     simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
     rcases h_output_mem_V_run_support' with ⟨s, hs_init, h_output_mem_V_run_support⟩
-    conv at h_output_mem_V_run_support =>
-      simp only [Verifier.run, OracleVerifier.toVerifier]
-      -- Now unfold the foldOracleVerifier's `verify()` method
-      simp only [relayOracleVerifier]
-      simp only [support_bind, Set.mem_iUnion]
-      dsimp only [StateT.run]
-      simp only [simulateQ_pure, pure_bind, Function.comp_apply]
-      dsimp only [ProbComp] -- unfold ProbComp back to OracleComp
-      simp only [MessageIdx, support_pure, Set.mem_singleton_iff, Prod.mk.injEq, exists_eq_right,
-        exists_and_right]
-      ---
-      erw [simulateQ_bind]
-      erw [simulateQ_pure, support_pure]
-      simp only [Set.mem_singleton_iff, Option.some.injEq, Prod.mk.injEq]
-    rcases h_output_mem_V_run_support with ⟨h_stmtOut_eq, h_oStmtOut_eq⟩
-    simp only [Nat.reduceAdd]
-    let v := relayOracleVerifier (Context := Context) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR
-    -- Now h_relOut : ((stmtIn, oStmtOut), witOut) ∈ roundRelation 𝔽q β i.succ
-    -- where oStmtOut = OracleVerifier.mkVerifierOStmtOut ...
-    simp only [roundRelation, roundRelationProp, Set.mem_setOf_eq] at h_relOut
-    unfold masterKStateProp at h_relOut
-    -- The goal is relayKStateProp, which expands to masterKStateProp with sumcheckConsistency
-    simp only [relayKStateProp]
-    unfold masterKStateProp
-    -- relayRbrExtractor.extractOut is identity
-    rw [h_stmtOut_eq] at h_relOut
-    -- Rewrite verifier-produced oracle statement to the relay map and conclude directly.
-    have h_oStmt_eq_map : oStmtOut =
-      mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn := by
-      calc
-        oStmtOut = OracleVerifier.mkVerifierOStmtOut v.embed v.hEq oStmtIn tr := h_oStmtOut_eq
-        _ = mapOStmtOutRelayStep 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hNCR oStmtIn := by
-          have h_map :=
-            mapOStmtOut_eq_mkVerifierOStmtOut_relayStep
-              (Context := Context) (i := i) (hNCR := hNCR) (oStmtIn := oStmtIn)
-              (transcript := tr)
-          dsimp only [v] at h_map
-          exact h_map.symm
-    rw [h_oStmt_eq_map] at h_relOut
-    dsimp only [relayRbrExtractor] at h_relOut ⊢
-    exact h_relOut
+    have h_output_mem_V_run_support :=
+      OracleComp.support_simulateQ_run'_subset impl _ s h_output_mem_V_run_support
+    dsimp only [Verifier.run, OracleVerifier.toVerifier, relayOracleVerifier]
+      at h_output_mem_V_run_support
+    simp only [OptionT.run_pure] at h_output_mem_V_run_support
+    cases h_output_mem_V_run_support
+    simp only [roundRelation, roundRelationProp, Set.mem_ofPred_eq, relayKStateProp,
+      relayRbrExtractor,
+      OracleVerifier.materializeOutput, OracleVerifier.materializeOutputOracle] at h_relOut ⊢
+    convert h_relOut using 1
+    rfl
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
+omit [SampleableType L] in
 theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     (relayOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

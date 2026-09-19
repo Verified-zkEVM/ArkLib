@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.OracleReduction.ProtocolSpec.Cast
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
   # Casting for structures of oracle reductions
@@ -26,6 +27,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are proven. The
   completeness transfer lemmas are commented out entirely and remain future work.
 -/
+
+@[expose] public section
 
 open OracleComp NNReal
 
@@ -57,9 +60,16 @@ protected def cast (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁) :
 @[simp]
 theorem cast_id :
     Prover.cast rfl rfl = (id : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁ → _) := by
-  funext; simp [Prover.cast]; ext <;> simp
-  · funext _ _; simp [MessageIdx.cast, bind_pure]
-  · funext _ _; simp [ChallengeIdx.cast]
+  funext
+  unfold Prover.cast
+  simp only [ProtocolSpec.cast_id, id_eq]
+  ext <;> simp only [MessageIdx, Function.comp_apply, Fin.cast_eq_self, Message,
+    ChallengeIdx, Challenge, cast_eq, bind_pure_comp, heq_eq_eq]
+  · funext _ _
+    simp [MessageIdx.cast]
+  · apply heq_of_eq
+    funext _ _
+    simp [ChallengeIdx.cast]
   · rfl
 
 instance instDCast₂ : DCast₂ Nat ProtocolSpec
@@ -78,6 +88,7 @@ protected def cast (P : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut
     OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec₂ :=
   Prover.cast hn hSpec P
 
+omit Oₛᵢ Oₛₒ in
 @[simp]
 theorem cast_id :
     OracleProver.cast rfl rfl =
@@ -127,11 +138,20 @@ protected def cast
     (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
     OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ := by
-  subst hn
-  subst hSpec
+  cases hn
+  rw [show pSpec₁.cast rfl = pSpec₁ from rfl] at hSpec
+  cases hSpec
+  have hs : hSpec = rfl := Subsingleton.elim _ _
+  cases hs
   have hInterfaces : Oₘ₁ = Oₘ₂ := by
     funext i
-    simpa [MessageIdx.cast, dcast_eq_root_cast] using hOₘ i
+    have hi : i.cast rfl rfl = i := by
+      apply Subtype.ext
+      rfl
+    have h := hOₘ i
+    cases hi
+    simpa [MessageIdx.cast, Message.cast_idx, ProtocolSpec.cast_Type_idx,
+      dcast_eq_root_cast, ProtocolSpec.cast] using h
   subst hInterfaces
   exact V
 
@@ -152,11 +172,20 @@ variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.
 @[simp]
 theorem cast_toVerifier (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
     (OracleVerifier.cast hn hSpec hOₘ V).toVerifier = Verifier.cast hn hSpec V.toVerifier := by
-  subst hn
-  subst hSpec
+  cases hn
+  rw [show pSpec₁.cast rfl = pSpec₁ from rfl] at hSpec
+  cases hSpec
+  have hs : hSpec = rfl := Subsingleton.elim _ _
+  cases hs
   have hInterfaces : Oₘ₁ = Oₘ₂ := by
     funext i
-    simpa [MessageIdx.cast, dcast_eq_root_cast] using hOₘ i
+    have hi : i.cast rfl rfl = i := by
+      apply Subtype.ext
+      rfl
+    have h := hOₘ i
+    cases hi
+    simpa [MessageIdx.cast, Message.cast_idx, ProtocolSpec.cast_Type_idx,
+      dcast_eq_root_cast, ProtocolSpec.cast] using h
   subst hInterfaces
   rfl
 
@@ -235,6 +264,8 @@ def castInOut
     -- 2. Output Types
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     -- 3. Reduction
     (R : OracleReduction oSpec StmtIn₁ OStmtIn₁ WitIn₁ StmtOut₁ OStmtOut₁ WitOut₁ pSpec)
@@ -248,31 +279,33 @@ def castInOut
     (h_ostmtIn : HEq OStmtIn₁ OStmtIn₂)     -- Heterogeneous equality
     (h_ostmtOut : HEq OStmtOut₁ OStmtOut₂)  -- Heterogeneous equality
     -- 5. Instance Compatibility
-    (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂) :               -- Heterogeneous equality
+    (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂) :
     -- Return type uses destination types 2
     @OracleReduction ι oSpec StmtIn₂ ιₛᵢ₂ OStmtIn₂ WitIn₂ StmtOut₂ ιₛₒ₂ OStmtOut₂ WitOut₂ n pSpec
-      (by exact Oₛᵢ₂) -- Use destination instance
-      Oₘ := by
+      (by exact Oₛᵢ₂) Oₘ (by exact Oₛₒ₂) := by
   -- 1. Unify Indices
   subst h_idxIn h_idxOut
   -- 2. Convert HEq to Eq for statements & instances
   simp only [heq_iff_eq] at h_ostmtIn h_ostmtOut
   -- 3. Unify Statements & Witnesses
   subst h_stmtIn h_stmtOut h_ostmtIn h_ostmtOut h_witIn h_witOut
-  simp only [heq_iff_eq] at h_Oₛᵢ
+  simp only [heq_iff_eq] at h_Oₛᵢ h_Oₛₒ
   -- 4. Unify Instances
   have h_inst : Oₛᵢ₂ = Oₛᵢ₁ := h_Oₛᵢ.symm
   subst h_inst
+  have h_out_inst : Oₛₒ₂ = Oₛₒ₁ := h_Oₛₒ.symm
+  subst h_out_inst
   exact R
 
 @[simp]
 theorem castInOut_id
     {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
     {WitIn : Type}
-    {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+    {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
     {WitOut : Type}
     (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec) :
-    R.castInOut rfl rfl rfl rfl rfl rfl (HEq.rfl) (HEq.rfl) (HEq.rfl) = R := rfl
+    R.castInOut rfl rfl rfl rfl rfl rfl (HEq.rfl) (HEq.rfl) (HEq.rfl) (HEq.rfl) = R := rfl
 
 /-- Cast only the output types of an OracleReduction, keeping the protocol spec and input types
     unchanged. This is useful when you need to transport outputs through type equalities without
@@ -285,28 +318,30 @@ def castOutSimple
     {WitIn : Type}
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ : Type} {OStmtOut₁ OStmtOut₂ : ιₛₒ → Type}
-    [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
     (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut₁ OStmtOut₁ WitOut₁ pSpec)
     (h_stmt : StmtOut₁ = StmtOut₂)
     (h_ostmt : OStmtOut₁ = OStmtOut₂)
-    (h_wit : WitOut₁ = WitOut₂) :
+    (h_wit : WitOut₁ = WitOut₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂) :
     OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut₂ OStmtOut₂ WitOut₂ pSpec :=
   -- Call castInOut directly with rfl for indices and inputs
   castInOut (R := R) (h_stmtIn := rfl) (h_stmtOut := h_stmt) (h_witIn := rfl) (h_witOut := h_wit)
     (h_idxIn := rfl) (h_idxOut := rfl) (h_ostmtIn := HEq.rfl) (h_ostmtOut := heq_iff_eq.mpr h_ostmt)
-    (h_Oₛᵢ := HEq.rfl)
+    (h_Oₛᵢ := HEq.rfl) (h_Oₛₒ := h_Oₛₒ)
 
 @[simp]
 theorem castOutSimple_id {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
     {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
     {WitIn : Type}
-    {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
+    {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
     {WitOut : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
     (R : OracleReduction oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec) :
-    R.castOutSimple rfl rfl rfl = R := rfl
+    R.castOutSimple rfl rfl rfl HEq.rfl = R := rfl
 
 @[simp]
 theorem castOutSimple_perfectCompleteness
@@ -315,7 +350,8 @@ theorem castOutSimple_perfectCompleteness
     {WitIn : Type}
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ : Type} {OStmtOut₁ OStmtOut₂ : ιₛₒ → Type}
-    [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -327,9 +363,10 @@ theorem castOutSimple_perfectCompleteness
     (h_stmt : StmtOut₁ = StmtOut₂)
     (h_ostmt : OStmtOut₁ = OStmtOut₂)
     (h_wit : WitOut₁ = WitOut₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     (h_rel : relOut₁ = cast (by subst_vars; rfl) relOut₂)
     (hPC : R.perfectCompleteness init impl relIn relOut₁) :
-    (R.castOutSimple h_stmt h_ostmt h_wit).perfectCompleteness init impl relIn relOut₂ := by
+    (R.castOutSimple h_stmt h_ostmt h_wit h_Oₛₒ).perfectCompleteness init impl relIn relOut₂ := by
   subst_vars
   exact hPC
 
@@ -340,7 +377,8 @@ theorem castOutSimple_completeness
     {WitIn : Type}
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ : Type} {OStmtOut₁ OStmtOut₂ : ιₛₒ → Type}
-    [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -352,10 +390,11 @@ theorem castOutSimple_completeness
     (h_stmt : StmtOut₁ = StmtOut₂)
     (h_ostmt : OStmtOut₁ = OStmtOut₂)
     (h_wit : WitOut₁ = WitOut₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     (ε : ℝ≥0)
     (h_rel : relOut₁ = cast (by subst_vars; rfl) relOut₂)
     (hC : R.completeness init impl relIn relOut₁ ε) :
-    (R.castOutSimple h_stmt h_ostmt h_wit).completeness init impl relIn relOut₂ ε := by
+    (R.castOutSimple h_stmt h_ostmt h_wit h_Oₛₒ).completeness init impl relIn relOut₂ ε := by
   subst_vars
   exact hC
 
@@ -372,6 +411,8 @@ theorem castInOut_perfectCompleteness
     -- 2. Generalized Outputs
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     -- 3. Context
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -391,6 +432,7 @@ theorem castInOut_perfectCompleteness
     (h_ostmtIn : HEq OStmtIn₁ OStmtIn₂)
     (h_ostmtOut : HEq OStmtOut₁ OStmtOut₂)
     (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     -- 5. Relation HEqs (Must be HEq because OStmt types change)
     (h_relIn : HEq relIn₁ relIn₂)
     (h_relOut : HEq relOut₁ relOut₂)
@@ -401,7 +443,7 @@ theorem castInOut_perfectCompleteness
       (OStmtOut := OStmtOut₂) (WitOut := WitOut₂) (n := n) (pSpec := pSpec)
       (Oₛᵢ := Oₛᵢ₂) (init := init) (impl := impl) (relIn := relIn₂) (relOut := relOut₂)
       (R.castInOut h_stmtIn h_stmtOut h_witIn h_witOut h_idxIn h_idxOut h_ostmtIn
-        h_ostmtOut h_Oₛᵢ) := by
+        h_ostmtOut h_Oₛᵢ h_Oₛₒ) := by
   subst_vars
   exact hPC
 
@@ -418,6 +460,8 @@ theorem castInOut_completeness
     -- 2. Generalized Outputs
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     -- 3. Context
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -437,6 +481,7 @@ theorem castInOut_completeness
     (h_ostmtIn : HEq OStmtIn₁ OStmtIn₂)
     (h_ostmtOut : HEq OStmtOut₁ OStmtOut₂)
     (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     (ε : ℝ≥0)
     (h_relIn : HEq relIn₁ relIn₂)
     (h_relOut : HEq relOut₁ relOut₂)
@@ -446,7 +491,7 @@ theorem castInOut_completeness
       (OStmtOut := OStmtOut₂) (WitOut := WitOut₂) (n := n) (pSpec := pSpec) (Oₛᵢ := Oₛᵢ₂)
       (init := init) (impl := impl) (relIn := relIn₂) (relOut := relOut₂) (completenessError := ε)
       (R.castInOut h_stmtIn h_stmtOut h_witIn h_witOut h_idxIn h_idxOut h_ostmtIn
-        h_ostmtOut h_Oₛᵢ) := by
+        h_ostmtOut h_Oₛᵢ h_Oₛₒ) := by
   subst_vars
   exact hC
 
@@ -471,6 +516,8 @@ def castInOut
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ₁ ιₛₒ₂ : Type}
     {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     -- 3. The Verifier (using source types 1)
     (V : OracleVerifier oSpec StmtIn₁ OStmtIn₁ StmtOut₁ OStmtOut₁ pSpec)
     -- 4. Equalities
@@ -481,22 +528,24 @@ def castInOut
     (h_ostmtIn : HEq OStmtIn₁ OStmtIn₂)   -- HEq required due to type change
     (h_ostmtOut : HEq OStmtOut₁ OStmtOut₂) -- HEq required due to type change
     -- 5. Instance Compatibility
-    (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂) :             -- HEq required due to type change
+    (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂) :
     -- Return type uses destination types 2
     @OracleVerifier ι oSpec StmtIn₂ ιₛᵢ₂ OStmtIn₂ StmtOut₂ ιₛₒ₂ OStmtOut₂ n pSpec
-      (by exact Oₛᵢ₂) -- Use destination instance
-      Oₘ := by
+      (by exact Oₛᵢ₂) Oₘ (by exact Oₛₒ₂) := by
   -- 1. Unify Index Types
   subst h_idxIn h_idxOut
   -- 2. Convert HEq to Eq (now that types are unified)
   simp only [heq_iff_eq] at h_ostmtIn h_ostmtOut
   -- 3. Unify Statements
   subst h_stmtIn h_stmtOut h_ostmtIn h_ostmtOut
-  simp only [heq_iff_eq] at h_Oₛᵢ
+  simp only [heq_iff_eq] at h_Oₛᵢ h_Oₛₒ
   -- 4. Unify Instances
   -- h_Oₛᵢ is now `Oₛᵢ₁ = Oₛᵢ₂`
   have h_inst : Oₛᵢ₂ = Oₛᵢ₁ := h_Oₛᵢ.symm
   subst h_inst
+  have h_out_inst : Oₛₒ₂ = Oₛₒ₁ := h_Oₛₒ.symm
+  subst h_out_inst
   exact V
 
 theorem castInOut_rbrKnowledgeSoundness
@@ -511,6 +560,8 @@ theorem castInOut_rbrKnowledgeSoundness
     -- 2. Generalized Outputs
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ₁ ιₛₒ₂ : Type} {OStmtOut₁ : ιₛₒ₁ → Type} {OStmtOut₂ : ιₛₒ₂ → Type}
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     -- 3. Context
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -530,6 +581,7 @@ theorem castInOut_rbrKnowledgeSoundness
     (h_witIn : WitIn₁ = WitIn₂)
     (h_witOut : WitOut₁ = WitOut₂)
     (h_Oₛᵢ : HEq Oₛᵢ₁ Oₛᵢ₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     -- 5. Relation HEqs (Must be HEq because OStmt types change)
     (h_relIn : HEq relIn₁ relIn₂)
@@ -541,7 +593,7 @@ theorem castInOut_rbrKnowledgeSoundness
       (OStmtOut := OStmtOut₂) (n := n) (pSpec := pSpec) (WitIn := WitIn₂) (WitOut := WitOut₂)
       (Oₛᵢ := Oₛᵢ₂) (init := init) (impl := impl) (relIn := relIn₂) (relOut := relOut₂)
       (rbrKnowledgeError := ε)
-      (V.castInOut h_stmtIn h_stmtOut h_idxIn h_idxOut h_ostmtIn h_ostmtOut h_Oₛᵢ) := by
+      (V.castInOut h_stmtIn h_stmtOut h_idxIn h_idxOut h_ostmtIn h_ostmtOut h_Oₛᵢ h_Oₛₒ) := by
   subst_vars
   exact hRbrKs
 
@@ -551,14 +603,17 @@ def castOutSimple
     {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ : Type} {OStmtOut₁ OStmtOut₂ : ιₛₒ → Type}
-    [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     [∀ i, OracleInterface (pSpec.Message i)]
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut₁ OStmtOut₁ pSpec)
     (h_stmt : StmtOut₁ = StmtOut₂)
-    (h_ostmt : OStmtOut₁ = OStmtOut₂) :
-    OracleVerifier oSpec StmtIn OStmtIn StmtOut₂ OStmtOut₂ pSpec := by
-  subst h_stmt h_ostmt
-  exact V
+    (h_ostmt : OStmtOut₁ = OStmtOut₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂) :
+    OracleVerifier oSpec StmtIn OStmtIn StmtOut₂ OStmtOut₂ pSpec :=
+  castInOut (V := V) (h_stmtIn := rfl) (h_stmtOut := h_stmt) (h_idxIn := rfl)
+    (h_idxOut := rfl) (h_ostmtIn := HEq.rfl) (h_ostmtOut := heq_iff_eq.mpr h_ostmt)
+    (h_Oₛᵢ := HEq.rfl) (h_Oₛₒ := h_Oₛₒ)
 
 @[simp]
 theorem castOutSimple_id
@@ -567,7 +622,7 @@ theorem castOutSimple_id
     {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
     [∀ i, OracleInterface (pSpec.Message i)]
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-    V.castOutSimple rfl rfl = V := rfl
+    V.castOutSimple rfl rfl HEq.rfl = V := rfl
 
 theorem castOutSimple_rbrKnowledgeSoundness
     {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
@@ -575,7 +630,8 @@ theorem castOutSimple_rbrKnowledgeSoundness
     {WitIn : Type}
     {StmtOut₁ StmtOut₂ : Type}
     {ιₛₒ : Type} {OStmtOut₁ OStmtOut₂ : ιₛₒ → Type}
-    [∀ i, OracleInterface (OStmtOut₁ i)] [∀ i, OracleInterface (OStmtOut₂ i)]
+    [Oₛₒ₁ : ∀ i, OracleInterface (OStmtOut₁ i)]
+    [Oₛₒ₂ : ∀ i, OracleInterface (OStmtOut₂ i)]
     {WitOut₁ WitOut₂ : Type}
     [∀ i, OracleInterface (pSpec.Message i)]
     [∀ i, SampleableType (pSpec.Challenge i)]
@@ -587,10 +643,11 @@ theorem castOutSimple_rbrKnowledgeSoundness
     (h_stmt : StmtOut₁ = StmtOut₂)
     (h_ostmt : OStmtOut₁ = OStmtOut₂)
     (h_wit : WitOut₁ = WitOut₂)
+    (h_Oₛₒ : HEq Oₛₒ₁ Oₛₒ₂)
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     (h_rel : relOut₁ = cast (by subst_vars; rfl) relOut₂)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut₁ ε) :
-    (V.castOutSimple h_stmt h_ostmt).rbrKnowledgeSoundness init impl relIn relOut₂ ε := by
+    (V.castOutSimple h_stmt h_ostmt h_Oₛₒ).rbrKnowledgeSoundness init impl relIn relOut₂ ε := by
   subst_vars
   exact hRbrKs
 
@@ -614,9 +671,16 @@ theorem cast_processRound (j : Fin n₁)
       cast (by subst_vars; simp [Prover.cast]; rfl)
         ((P.cast hn hSpec).processRound (Fin.cast hn j)
           (cast (by subst_vars; simp [Prover.cast]; rfl) currentResult)) := by
-  subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
-  · funext _ _; simp [MessageIdx.cast, bind_pure]
-  · funext _ _; simp [ChallengeIdx.cast]
+  subst hn; subst hSpec; congr 1
+  unfold Prover.cast
+  ext <;> simp only [MessageIdx, Function.comp_apply, Fin.cast_eq_self, Message,
+    ChallengeIdx, Challenge, cast_eq, bind_pure_comp, heq_eq_eq]
+  · apply heq_of_eq
+    funext _ _
+    simp [MessageIdx.cast]
+  · apply heq_of_eq
+    funext _ _
+    simp [ChallengeIdx.cast]
   · rfl
 
 theorem cast_runToRound (j : Fin (n₁ + 1)) (stmt : StmtIn) (wit : WitIn)
@@ -624,9 +688,16 @@ theorem cast_runToRound (j : Fin (n₁ + 1)) (stmt : StmtIn) (wit : WitIn)
     P.runToRound j stmt wit =
       cast (by subst_vars; simp [Prover.cast]; rfl)
         ((P.cast hn hSpec).runToRound (Fin.cast (congrArg (· + 1) hn) j) stmt wit) := by
-  subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
-  · funext _ _; simp [MessageIdx.cast, bind_pure]
-  · funext _ _; simp [ChallengeIdx.cast]
+  subst hn; subst hSpec; congr 1
+  unfold Prover.cast
+  ext <;> simp only [MessageIdx, Function.comp_apply, Fin.cast_eq_self, Message,
+    ChallengeIdx, Challenge, cast_eq, bind_pure_comp, heq_eq_eq]
+  · apply heq_of_eq
+    funext _ _
+    simp [MessageIdx.cast]
+  · apply heq_of_eq
+    funext _ _
+    simp [ChallengeIdx.cast]
   · rfl
 
 theorem cast_run (stmt : StmtIn) (wit : WitIn)
@@ -645,9 +716,9 @@ variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 @[simp]
 theorem cast_run (stmt : StmtIn) (transcript : FullTranscript pSpec₁) :
     V.run stmt transcript = (V.cast hn hSpec).run stmt (transcript.cast hn hSpec) := by
-  simp only [Verifier.run, Verifier.cast, FullTranscript.cast, dcast₂]
-  unfold Transcript.cast
-  simp
+  cases hn
+  cases hSpec
+  rfl
 
 end Verifier
 
@@ -706,15 +777,16 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
   -- After `subst`, the cast is definitionally trivial and the only residual difference is the
   -- `Finite` instance on each challenge type; `uniformSample`'s distribution is
-  -- instance-irrelevant, so the two games have equal `evalDist` and the bound transports.
+  -- instance-irrelevant, so the two games have equal `evalSPMF` and the bound transports.
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
-  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ init impl relIn relOut V ε
+  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ
+    init impl relIn relOut V ε
   have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
-      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+      𝒮[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] =
-      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+      𝒮[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] := by
     intro t s
     cases t with
@@ -723,30 +795,30 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
       rcases t with ⟨i, q⟩
       cases q
       have huni :
-          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₁ i)] =
-          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₂ i)] := by
-        letI : Fintype (pSpec₁.Challenge i) := Fintype.ofFinite _
-        apply evalDist_ext
+          𝒮[@uniformSample (pSpec₁.Challenge i) (inst₁ i)] =
+          𝒮[@uniformSample (pSpec₁.Challenge i) (inst₂ i)] := by
+        let : Fintype (pSpec₁.Challenge i) := Fintype.ofFinite _
+        apply evalSPMF_ext
         intro x
         exact (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₁ i) this x).trans
           (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₂ i) this x).symm
       change
-        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
+        𝒮[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
             StateT σ ProbComp (pSpec₁.Challenge i)).run s] =
-        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
+        𝒮[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
             StateT σ ProbComp (pSpec₁.Challenge i)).run s]
       rw [OracleComp.liftM_run_StateT, OracleComp.liftM_run_StateT]
-      rw [evalDist_bind, evalDist_bind]
+      rw [evalSPMF_bind, evalSPMF_bind]
       exact congrArg
         (fun d : SPMF (pSpec₁.Challenge i) =>
-          d >>= fun x => 𝒟[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
+          d >>= fun x => 𝒮[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
   have hsim : ∀ {α : Type} (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) (s : σ),
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] =
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] := by
     intro α oa s
-    exact evalDist_simulateQ_run_congr _ _ hhandler oa s
+    exact evalSPMF_simulateQ_run_congr _ _ hhandler oa s
   unfold rbrKnowledgeSoundness at hRbrKs ⊢
   obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
   refine ⟨WitMid, extractor, kSF, ?_⟩
@@ -756,22 +828,22 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     let challenge ← (pSpec₁.getChallenge i).liftComp (oSpec + [pSpec₁.Challenge]ₒ)
     return (transcript, challenge, proveQueryLog)
   have hrun (s : σ) :
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] =
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] := by
-    simp only [StateT.run'_eq, evalDist_map]
+    simp only [StateT.run'_eq, evalSPMF_map]
     exact congrArg (Functor.map Prod.fst) (hsim game s)
   have heval :
-      𝒟[(do
+      𝒮[(do
         let s ← init
         (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] =
-      𝒟[(do
+      𝒮[(do
         let s ← init
         (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] := by
-    rw [evalDist_bind, evalDist_bind]
+    rw [evalSPMF_bind, evalSPMF_bind]
     apply bind_congr
     intro s
     exact (hrun s).symm

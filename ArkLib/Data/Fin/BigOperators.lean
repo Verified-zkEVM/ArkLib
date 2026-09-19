@@ -3,10 +3,11 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 
-section FinHelpers
+public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+
 /-!
 
 # More lemmas about Fin and big operators
@@ -16,6 +17,12 @@ section FinHelpers
   + `Matrix.det_fromBlocks_of_commute`:
     given `Commute C D`, `(Matrix.fromBlocks A B C D).det = (A * D - B * C).det`
 -/
+
+@[expose] public section
+
+
+section FinHelpers
+
 
 @[simp]
 def Fin.reindex {R n m : Type*} [Fintype n] [Fintype m] (e : n ≃ m) (v : n → R)
@@ -387,15 +394,6 @@ lemma Matrix.det_map_ringHom {n : Type*} [Fintype n] [DecidableEq n] {R S : Type
   -- The determinant is a sum of products. Homomorphisms preserve sums and products.
   simp only [det_apply', map_apply, map_sum, map_mul, map_intCast, map_prod]
 
-/-- Mapping a Ring Homomorphism over a negated matrix is the negation of the mapped matrix. -/
-lemma Matrix.map_neg {m n : Type*} {R S : Type*} [Ring R] [Ring S]
-    (M : Matrix m n R) (f : R →+* S) :
-    (-M).map f = -(M.map f) := by
-  ext i j
-  -- definition of matrix negation and map
-  simp only [Matrix.map_apply, Matrix.neg_apply]
-  simp only [_root_.map_neg]
-
 /-- The determinant of a 2x2 block matrix [A B; C D] where C and D commute is det(AD - BC).
     General version: Does NOT assume Invertible D. -/
 lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [CommRing R]
@@ -463,8 +461,8 @@ lemma Matrix.det_fromBlocks_of_squareSubblocks_commute {n : ℕ} {R : Type*} [Co
       unfold D_poly
       congr
       · -- ⊢ D' = -(-D).map ⇑Polynomial.C
-        rw [Matrix.map_neg (M := D) (f := Polynomial.C)]
-        simp only [neg_neg]; rfl
+        simpa only [RingHom.mapMatrix_apply, neg_neg] using
+          (Polynomial.C.mapMatrix).map_neg (-D)
       · rw [Matrix.smul_one_eq_diagonal]
     -- 2. Substitute and apply the standard theorem
     rw [h_eq]

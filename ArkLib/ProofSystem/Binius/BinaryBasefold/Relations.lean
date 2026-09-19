@@ -3,10 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
 
 /-! ## Binary Basefold relations and bad-event layer -/
+
+@[expose] public section
+
+
+
 
 noncomputable section
 namespace Binius.BinaryBasefold
@@ -164,7 +171,6 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
     (i := ⟨i, by omega⟩) (steps := 1) (destIdx := ⟨i.succ, by omega⟩)
     (h_destIdx := by simp only [Fin.val_succ]) (h_destIdx_le := by simp only; omega)
     f_i challenges
-  simp only at fᵢ_succ
   let witOut : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.succ := by
     let projectedH := projectToNextSumcheckPoly (L := L) (ℓ := ℓ)
       (i := i) (Hᵢ := witIn.H) (rᵢ := r_i')

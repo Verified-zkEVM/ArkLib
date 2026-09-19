@@ -3,10 +3,15 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
-import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
-import Mathlib.Data.Nat.Prime.Basic
-import Mathlib.NumberTheory.LegendreSymbol.Basic
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
+public import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
+public import Mathlib.Data.Nat.Prime.Basic
+public import Mathlib.NumberTheory.LegendreSymbol.Basic
+-- `change` reduces through `toPoly`, whose body CompPoly does not expose.
+import all CompPoly.Univariate.ToPoly.Core
+import all Mathlib.Algebra.Polynomial.Basic
 
 /-!
 # Lyubashevsky–Seiler: Short Elements Are Invertible
@@ -61,6 +66,8 @@ coefficient kernel `dvd_sq_add_sq`); the splitting and `√-1` existence are
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 
@@ -133,8 +140,6 @@ theorem isUnit_mk_of_isCoprime {a f : (ZMod q)[X]} (h : IsCoprime a f) :
   rw [map_add, map_mul, map_mul, hf, mul_zero, add_zero, map_one] at hkey
   rw [mul_comm]; exact hkey
 
-set_option maxHeartbeats 1600000 in
--- This combined assembly proof exceeds the default heartbeat budget.
 omit [NeZero q] in
 open Polynomial in
 /-- **Algebraic core.** If `c : Rq Φ` over `q ≡ 5 (mod 8)` is *not* a unit,
@@ -155,8 +160,8 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
     have hirr : Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly) := by
       rw [hφ, show (X + 1 : (ZMod q)[X]) = X - C (-1) by rw [C_neg, C_1, sub_neg_eq_add]]
       exact irreducible_X_sub_C (-1)
-    haveI hfact : Fact (Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly)) := ⟨hirr⟩
-    haveI hmax : ((powTwoCyclotomic (R := ZMod q) 0).modIdeal).IsMaximal := by
+    have hfact : Fact (Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly)) := ⟨hirr⟩
+    have hmax : ((powTwoCyclotomic (R := ZMod q) 0).modIdeal).IsMaximal := by
       rw [modIdeal]; exact PrincipalIdealRing.isMaximal_of_irreducible hirr
     have hisfield : IsField ((powTwoCyclotomic (R := ZMod q) 0).CyclotomicRing) :=
       (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmax
@@ -200,10 +205,10 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
         (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) ct) := by
       have hh := Rq.not_isUnit_toQuotientHom_of_not_isUnit
         (powTwoCyclotomic (R := ZMod q) α) hc
-      rw [Rq.toQuotientHom] at hh
-      change ¬ IsUnit (Ideal.Quotient.mk
-        (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) c.1.toPoly) at hh
-      simpa only [hct] using hh
+      simp only [Rq.toQuotientHom, RingHom.coe_mk, MonoidHom.coe_mk, OneHom.coe_mk,
+        Rq.toQuotient, quotientHom_apply, CyclotomicModulus.modIdeal] at hh
+      rw [hct]
+      exact hh
     have hdvd : g1 ∣ ct ∨ g2 ∣ ct := by
       by_contra hcon
       rw [not_or] at hcon
@@ -217,7 +222,7 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
         Irreducible g → g = X ^ (2 ^ (α - 1)) - C s → s ^ 2 = -1 → g ∣ ct →
         (q : ℤ) ∣ (Rq.l2NormSq Φ c : ℤ) := by
       intro g s hirr hgeq hs hdvdg
-      haveI : Fact (Irreducible g) := ⟨hirr⟩
+      have : Fact (Irreducible g) := ⟨hirr⟩
       have hgmonic : g.Monic := by rw [hgeq]; exact monic_X_pow_sub_C s (by positivity)
       have hgnd : g.natDegree = 2 ^ (α - 1) := by rw [hgeq, natDegree_X_pow_sub_C]
       let F := AdjoinRoot g

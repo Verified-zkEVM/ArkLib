@@ -3,8 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.ToCompPoly.Univariate.Basic
-import Mathlib.RingTheory.Polynomial.Cyclotomic.Basic
+module
+
+public import ArkLib.ToCompPoly.Univariate.Basic
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Basic
+-- `unfold toPoly` needs CompPoly's unexposed body.
+import all CompPoly.Univariate.ToPoly.Core
 
 /-!
 # Cyclotomic Moduli over `CPolynomial`
@@ -46,6 +50,8 @@ and the proofs are kept in **separate** structures:
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial
 

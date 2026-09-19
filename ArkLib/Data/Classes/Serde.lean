@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Init
-import Mathlib.Logic.Embedding.Basic
-import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.Init
+public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Probability.Distributions.Uniform
 
 /-!
   # Serialization and Deserialization
@@ -14,6 +15,8 @@ import Mathlib.Probability.Distributions.Uniform
   This file contains simple APIs for serialization and deserialization of types in terms of other
   types.
 -/
+
+@[expose] public section
 
 universe u v
 

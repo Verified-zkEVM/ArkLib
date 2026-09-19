@@ -3,8 +3,9 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.ProofSystem.Sumcheck.Structured
+public import ArkLib.ProofSystem.Sumcheck.Structured
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Prismalinear specialization
@@ -33,6 +34,8 @@ The polynomial-shape primitives `MultilinearPoly` and `PrismalinearPoly` live at
 namespace `Sumcheck.Structured` — they're shape primitives, not sumcheck-specific concepts, so
 they're shared across the multilinear and prismalinear specializations.
 -/
+
+@[expose] public section
 
 noncomputable section
 

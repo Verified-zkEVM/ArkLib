@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.RestrictDegreeVar
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 
 /-!
 # Operations preserving `MvPolynomial.restrictDegree`
@@ -19,6 +20,8 @@ that the structured (witness-mode) sumcheck — see
 `ArkLib.ProofSystem.Sumcheck.Structured` — and any future ring-switching protocol can
 import them without depending on `Binius.BinaryBasefold.*`.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 
@@ -51,15 +54,17 @@ noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
 
+-- The zero-length Fin equivalences need the pre-4.33 transparency behavior in this proof.
+set_option backward.isDefEq.respectTransparency false in
 /-- Fixing the first `0` variables (with the empty challenge vector) is the identity. -/
 theorem fixFirstVariablesOfMQP_zero_eq (H : MvPolynomial (Fin ℓ) L) :
     fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) H (challenges := Fin.elim0) = H := by
   induction H using MvPolynomial.induction_on with
   | C a =>
       unfold fixFirstVariablesOfMQP
-      simp only [MvPolynomial.rename_C, MvPolynomial.sumAlgEquiv_apply, MvPolynomial.sumToIter_C,
-        MvPolynomial.map_C, MvPolynomial.eval_C]
-      rfl
+      simp only [MvPolynomial.rename_C, MvPolynomial.sumAlgEquiv_C_inl, MvPolynomial.map_C,
+        MvPolynomial.eval_C]
+      simp
   | add p q hp hq =>
       have hadd : ∀ x y : MvPolynomial (Fin ℓ) L,
           fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) (x + y) (challenges := Fin.elim0) =
@@ -67,7 +72,6 @@ theorem fixFirstVariablesOfMQP_zero_eq (H : MvPolynomial (Fin ℓ) L) :
               fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) y (challenges := Fin.elim0) := by
         intro x y; unfold fixFirstVariablesOfMQP; simp only [map_add]
       rw [hadd, hp, hq]
-      rfl
   | mul_X p j hp =>
       have hmul : ∀ (x : MvPolynomial (Fin ℓ) L) (i : Fin ℓ),
           fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) (x * X i) (challenges := Fin.elim0) =
@@ -84,8 +88,8 @@ theorem fixFirstVariablesOfMQP_zero_eq (H : MvPolynomial (Fin ℓ) L) :
               simp)).trans
             (finSumFinEquiv.symm.trans (Equiv.sumComm _ _))) j) =
               Sum.inl (Fin.cast (by simp) j) := by
-        simp [Equiv.sumComm, finCongr, finSumFinEquiv, Fin.addCases]; rfl
-      rw [hj, MvPolynomial.sumAlgEquiv_apply, MvPolynomial.sumToIter_Xl, MvPolynomial.map_X]
+        simp [Equiv.trans_apply, Equiv.sumComm, finCongr, finSumFinEquiv, Fin.addCases]
+      rw [hj, MvPolynomial.sumAlgEquiv_X_inl, MvPolynomial.map_X]
       congr 1
 /-- The per-variable / prismalinear degree-survival lemma: if a polynomial respects a per-variable
 degree bound `b : Fin ℓ → ℕ`, then fixing the first `v` variables to scalars produces a polynomial

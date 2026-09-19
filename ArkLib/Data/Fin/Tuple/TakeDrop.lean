@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Fin.Tuple.Notation
-import Mathlib.Data.List.DropRight
+public import ArkLib.Data.Fin.Tuple.Notation
+public import Mathlib.Data.List.DropRight
 
 /-!
 # Lemmas for Take and Drop for `Fin` tuples
@@ -13,6 +14,8 @@ import Mathlib.Data.List.DropRight
 This file contains some properties of `Fin.{r}take` and `Fin.{r}drop`, which are already defined in
 `ArkLib.Data.Fin.Tuple.Defs` (except `Fin.take` which is already in mathlib).
 -/
+
+@[expose] public section
 
 universe u v
 
@@ -134,15 +137,19 @@ theorem ofFn_rtake_get {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length)
 /-- `Fin.rtake` intertwines with `List.rtake` via `List.get`. -/
 theorem get_rtake_eq_rtake_get_comp_cast {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length) :
     (l.rtake m).get = rtake m h l.get ∘ Fin.cast (by simp [List.rtake]; omega) := by
-  ext i
-  simp [List.rtake, natAdd, Fin.cast]
+  rw! (castMode := .all) [← ofFn_rtake_get l h]
+  funext i
+  rw [List.get_ofFn]
+  rfl
 
 /-- Alternative version with `v : Fin n → α` instead of `l : List α`. -/
 theorem get_rtake_ofFn_eq_rtake_comp_cast {α : Type*} {m : ℕ} (v : Fin n → α) (h : m ≤ n) :
     ((List.ofFn v).rtake m).get =
       rtake m h v ∘ Fin.cast (by simp [List.rtake]; omega) := by
-  ext i
-  simp [List.rtake, natAdd, Fin.cast]
+  rw! (castMode := .all) [← ofFn_rtake_eq_rtake_ofFn h v]
+  funext i
+  rw [List.get_ofFn]
+  rfl
 
 /-
 * `Fin.drop`: Given `h : m ≤ n`, `Fin.drop m h v` for a `n`-tuple `v = (v 0, ..., v (n - 1))` is the

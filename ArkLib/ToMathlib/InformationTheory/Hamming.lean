@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.InformationTheory.Hamming
+public import Mathlib.InformationTheory.Hamming
 
 /-!
 # Hamming distance under coordinate reindexing
@@ -16,6 +17,8 @@ isometry.
 Intended as a candidate for upstreaming to `Mathlib.InformationTheory.Hamming`, next to
 `hammingDist_comp`.
 -/
+
+@[expose] public section
 
 /-- Reindexing the coordinates by an equivalence preserves Hamming distance. -/
 theorem hammingDist_comp_equiv {ι ι' α : Type*} [Fintype ι] [Fintype ι'] [DecidableEq α]

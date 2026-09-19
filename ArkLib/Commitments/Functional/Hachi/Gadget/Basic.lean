@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Gadget.Core
-import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+module
+
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Core
+public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
 
 /-!
 # Ajtai Gadget Matrices
@@ -21,9 +23,10 @@ through `G`.
 
 * `Gadget/Core.lean` — the algebra: the gadget matrix `G` (`gadgetMatrix` / `gadgetMul`), lawful
   decompositions (`IsLawfulGadgetDecomposition`, i.e. `G · G⁻¹(x) = x`), the abstract
-  per-coefficient digit map (`DigitDecomposition`) with its concrete `ZMod q` instance
-  (`zmodDigitDecomposition`), and the induced gadget inverse `gadgetDecompose` with its
-  lawfulness proof.
+  per-coefficient digit map (`DigitDecomposition`) with its concrete `ZMod q` instance — the
+  paper's **balanced** digits `balancedZmodDigitDecomposition`, shifted from the naive unsigned
+  `zmodDigitDecomposition` — and the induced gadget inverse `gadgetDecompose` with its lawfulness
+  proof.
 * `Gadget/Norms.lean` — the analysis: centered `ℓ∞` / `ℓ₂²` shortness of the honest
   decomposition `G⁻¹(x)` (feeding perfect correctness in `InnerOuter/Correctness.lean`), and
   controlled norm growth of the recomposition `G·ẑ` for any range-checked `ẑ` (feeding Lemma 8
@@ -35,3 +38,5 @@ through `G`.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

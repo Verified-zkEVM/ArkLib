@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, Aristotle
 -/
+module
 
-import ArkLib.Data.Probability.Notation
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-import Mathlib.Data.Rat.Star
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.RingTheory.SimpleRing.Principal
+public import ArkLib.Data.Probability.Notation
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+public import Mathlib.Data.Rat.Star
+public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.RingTheory.SimpleRing.Principal
 
 /-! ## Schwartz-Zippel derived bound
 
@@ -17,6 +18,8 @@ finitely many variables over a (possibly inifinite) field `F`.
 
 The lemma is derived from mathlib's version `MvPolynomial.schwartz_zippel_sup_sum`.
 -/
+
+@[expose] public section
 
 open NNReal ENNReal unitInterval
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
@@ -126,14 +129,14 @@ of each factor. This bridges `schwartz_zippel_counting` with the probability for
 
 `prob_eval_zero_univ_le_div` below specializes it to full finite carriers. -/
 lemma prob_eval_zero_le_div
-  {F : Type} [Field F]
+    {F : Type} [Field F]
   {s : ℕ}
   {S : Fin s → Set F} [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
   (f : MvPolynomial (Fin s) F) (hf : f ≠ 0)
   (d m : ℕ) (hd : f.totalDegree ≤ d) (hm_pos : 0 < m)
   (hm : ∀ i, m ≤ (S i).toFinset.card) :
-  Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤ (d : ℝ≥0∞) / m :=
-  by
+  Pr_{let x ←$ᵖ (∀ i, ↥(S i))}[MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0] ≤
+    (d : ℝ≥0∞) / m := by
   classical
   convert ENNReal.div_le_div_of_mul_le hm_pos _ _ using 1
   · convert uniform_prob_eq_card_div _

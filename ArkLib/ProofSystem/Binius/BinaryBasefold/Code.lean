@@ -3,10 +3,19 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
+
+/-!
+# Binary Basefold Code and Decoding
+-/
+
+@[expose] public section
+
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -103,8 +112,8 @@ lemma BBF_CodeDistance_eq (i : Fin r) (h_i : i ≤ ℓ) :
     ⟨fun x => x.val, fun x y h => by exact Subtype.ext h⟩
   -- Create α : Fin m → L by composing with an equivalence
   let m := Fintype.card ((sDomain 𝔽q β h_ℓ_add_R_rate) i)
-  have h_dist_RS := ReedSolomonCode.dist_eq' (F := L) (ι := (sDomain 𝔽q β h_ℓ_add_R_rate)
-    (i := i)) (α := domain) (n := 2^(ℓ - i.val)) (h := by
+  have h_dist_RS := ReedSolomon.dist_eq_of_le (F := L) (ι := (sDomain 𝔽q β h_ℓ_add_R_rate)
+    (i := i)) (α := domain) (n := 2^(ℓ - i.val)) (by
       rw [sDomain_card 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := Sdomain_bound (by omega))]
       rw [hF₂.out];
       apply Nat.pow_le_pow_right (hx := by omega); omega
@@ -301,7 +310,9 @@ lemma fiberwiseClose_congr_sourceDomain_index (sourceIdx₁ sourceIdx₂ : Fin r
   (f : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) sourceIdx₁) :
   -- have h_sourceIdx_eq : sourceIdx₁ = sourceIdx₂ := Fin.ext h_sourceIdx_eq_sourceIdx₂
   let Δ_fiber₁ := fiberwiseClose 𝔽q β sourceIdx₁ steps h_destIdx h_destIdx_le f
-  let Δ_fiber₂ := fiberwiseClose 𝔽q β sourceIdx₂ steps (by omega) h_destIdx_le (fun x => f (cast (by subst h_sourceIdx_eq; rfl) x))
+  let Δ_fiber₂ := fiberwiseClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    sourceIdx₂ steps (by omega) h_destIdx_le
+    (fun x => f (cast (by subst h_sourceIdx_eq; rfl) x))
   Δ_fiber₁ = Δ_fiber₂ := by
   subst h_sourceIdx_eq
   rfl
@@ -351,7 +362,7 @@ lemma UDRClose_iff_within_UDR_radius (i : Fin r) (h_i : i ≤ ℓ)
   let card_Sᵢ := sDomain_card 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := Sdomain_bound (by omega))
   conv_rhs =>
     unfold BBF_Code;
-    rw [ReedSolomonCode.uniqueDecodingRadius_RS_eq' (h := by
+    rw [ReedSolomon.uniqueDecodingRadius_RS_eq (h := by
       rw [card_Sᵢ, hF₂.out]; apply Nat.pow_le_pow_right (hx := by omega); omega
     )];
   simp_rw [card_Sᵢ, hF₂.out,
@@ -593,7 +604,7 @@ def extractUDRCodeword
       simp only [Fin.eta, BBF_Code, code, evalOnPoints, Function.Embedding.coeFn_mk,
         Submodule.mem_map, LinearMap.coe_mk, AddHom.coe_mk, C_i] at hg_mem
       rcases hg_mem with ⟨p_witness, hp_prop, hp_eq⟩
-      use p_witness
+      exact ⟨p_witness, hp_prop, hp_eq⟩
     have natDeg_p_lt_k : p.natDegree < k := by
       simp only [mem_degreeLT] at hp_deg_lt
       by_cases hi : i = ℓ
@@ -687,7 +698,6 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
     rw [h_dist_eq_card]
     -- Y_bad is the set of quotient points y that THERE EXISTS a bad fiber point x
     set Y_bad := fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g
-    simp only at * -- simplify domain indices everywhere
     -- ⊢ #ΔH ≤ Y_bad.ncard * 2 ^ steps
     have hFinType_Y_bad : Fintype Y_bad := by exact Fintype.ofFinite ↑Y_bad
     -- Every point of disagreement `x` must belong to a fiber over some `y` in `Y_bad`,
@@ -705,26 +715,10 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
       let y_of_x := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := steps) h_destIdx h_destIdx_le x
       apply Finset.mem_biUnion.mpr; use y_of_x
       -- ⊢ y_of_x ∈ Y_bad.toFinset ∧ x ∈ qMap_total_fiber(y_of_x)
-      have h_elemenet_Y_bad :  y_of_x ∈ Y_bad := by
-        -- ⊢ y ∈ Y_bad
-        simp only [fiberwiseDisagreementSet, iteratedQuotientMap, ne_eq, Subtype.exists, mem_filter,
-          mem_univ, true_and, Y_bad]
-        -- one bad fiber point of y_of_x is x itself
-        let XX := x.val
-        have h_XX_in_source : XX ∈ sDomain 𝔽q β h_ℓ_add_R_rate (i := i) := by
-          exact Submodule.coe_mem x
-        use XX
-        use h_XX_in_source
-        -- ⊢ Ŵ_steps⁽ⁱ⁾(XX) = y (iterated quotient map) ∧ ¬f ⟨XX, ⋯⟩ = g ⟨XX, ⋯⟩
-        have h_forward_iterated_qmap : Polynomial.eval XX
-            (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate i
-              (k := steps) (h_k := by omega)) = y_of_x := by
-          simp only [iteratedQuotientMap, XX, y_of_x];
-        have h_eval_diff : f ⟨XX, by omega⟩ ≠ g ⟨XX, by omega⟩ := by
-          unfold XX
-          simp only [Subtype.coe_eta, ne_eq, hx_in_ΔH, not_false_eq_true]
-        simp only [h_forward_iterated_qmap, Subtype.coe_eta, h_eval_diff,
-          not_false_eq_true, and_self]
+      have h_elemenet_Y_bad : y_of_x ∈ Y_bad := by
+        set_option backward.isDefEq.respectTransparency false in
+          simp only [Y_bad, fiberwiseDisagreementSet, Finset.mem_filter, Finset.mem_univ, true_and]
+        exact ⟨x, rfl, hx_in_ΔH.2⟩
       simp only [h_elemenet_Y_bad, true_and]
       set qMapFiber := qMap_total_fiber 𝔽q β (i := i) (steps := steps)
         h_destIdx h_destIdx_le (y := y_of_x)
@@ -1055,7 +1049,8 @@ lemma fold_preserves_BBF_Code_membership (i : Fin r) {destIdx : Fin r}
     -- ⊢ Polynomial.eval (↑y) P_i_plus_1 = fold 𝔽q β ⟨↑i, ⋯⟩ h_i_succ_lt (↑f) r_chal y
     unfold polyToOracleFunc at fold_advances_evaluation_poly_res
     let lhs_eq := congrFun fold_advances_evaluation_poly_res y
-    conv_lhs => rw [←lhs_eq]
+    dsimp only [P_i_plus_1]
+    conv_lhs => erw [←lhs_eq]
     -- simp only [Subtype.coe_eta]
     congr 1
     funext (x : (sDomain 𝔽q β h_ℓ_add_R_rate) i)

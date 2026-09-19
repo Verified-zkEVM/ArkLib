@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.Vectors
-import CompPoly.Multilinear.Basic
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Logic.Equiv.Fin.Basic
+module
+
+public import ArkLib.Data.Lattices.Vectors
+public import CompPoly.Multilinear.Basic
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
 # Multilinear Evaluation as a Matrix–Vector Product
@@ -43,8 +45,7 @@ coefficient vector along `splitEquiv`, with round-trip lemmas `toMatrix_toPolyno
 the bilinear form `splitForm M u v = u ⬝ᵥ (M *ᵥ v)` of *any* matrix `M` against the two monomial
 bases as the polynomial-level evaluation `eval (toPolynomial M) (xl ++ xh)`; the Hachi evaluation
 bridge (`QuadEval/Bridge.lean`) consumes it to turn its matrix-shaped consistency claim into a
-`CMlPolynomial` evaluation claim. `evalSplit` itself is linear in the coefficient vector
-(`evalSplit_add` / `evalSplit_smul`), as needed for random-linear-combination / batching steps.
+`CMlPolynomial` evaluation claim.
 
 ## Index convention
 
@@ -59,6 +60,8 @@ and the high `nh` bits (`x`) carry the last `nh` variables (the matrix **column*
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly
 
@@ -233,40 +236,6 @@ theorem splitForm_monomialBasis_eq_eval (M : PolyMatrix R (2 ^ nl) (2 ^ nh))
       = CMlPolynomial.eval (toPolynomial M) (xl ++ xh) := by
   rw [← evalSplit_eq_eval (toPolynomial M) xl xh]
   simp only [evalSplit, toMatrix_toPolynomial]
-
-/-- Coefficientwise additivity of `CMlPolynomial` (the `+` is `Vector.zipWith (·+·)`). -/
-private theorem coeff_add (p q : CMlPolynomial R (nl + nh)) (k : Fin (2 ^ (nl + nh))) :
-    (p + q).get k = p.get k + q.get k := by
-  change (Vector.zipWith (· + ·) p q).get k = p.get k + q.get k
-  simp only [Vector.get_eq_getElem, Vector.getElem_zipWith]
-
-/-- Coefficientwise scalar multiplication of `CMlPolynomial` (the `•` is `Vector.map (r * ·)`). -/
-private theorem coeff_smul (r : R) (p : CMlPolynomial R (nl + nh)) (k : Fin (2 ^ (nl + nh))) :
-    (r • p).get k = r * p.get k := by
-  change (Vector.map (fun a => r * a) p).get k = r * p.get k
-  simp only [Vector.get_eq_getElem, Vector.getElem_map]
-
-/-- The reshape `toMatrix` is additive in the coefficient vector. -/
-theorem toMatrix_add (p q : CMlPolynomial R (nl + nh)) :
-    toMatrix (p + q) = toMatrix p + toMatrix q := by
-  funext i j; simp only [toMatrix, Matrix.add_apply]; exact coeff_add p q _
-
-/-- The reshape `toMatrix` pulls out a scalar from the coefficient vector. -/
-theorem toMatrix_smul (r : R) (p : CMlPolynomial R (nl + nh)) :
-    toMatrix (r • p) = r • toMatrix p := by
-  funext i j; simp only [toMatrix, Matrix.smul_apply, smul_eq_mul]; exact coeff_smul r p _
-
-/-- **Coefficient `R`-linearity (additive).** A corollary of `splitForm_matrix_add` and
-`toMatrix_add`: useful for the random-linear-combination/batching steps. -/
-theorem evalSplit_add (p q : CMlPolynomial R (nl + nh)) (xl : Vector R nl) (xh : Vector R nh) :
-    evalSplit (p + q) xl xh = evalSplit p xl xh + evalSplit q xl xh := by
-  simp only [evalSplit, toMatrix_add, splitForm_matrix_add]
-
-/-- **Coefficient `R`-linearity (scalar).** A corollary of `splitForm_matrix_smul` and
-`toMatrix_smul`. -/
-theorem evalSplit_smul (r : R) (p : CMlPolynomial R (nl + nh)) (xl : Vector R nl)
-    (xh : Vector R nh) : evalSplit (r • p) xl xh = r * evalSplit p xl xh := by
-  simp only [evalSplit, toMatrix_smul, splitForm_matrix_smul]
 
 end Monomial
 

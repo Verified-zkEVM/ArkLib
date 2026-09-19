@@ -3,15 +3,26 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.Prelims
-import ArkLib.Data.FieldTheory.AdditiveNTT.AdditiveNTT
-import ArkLib.Data.Fin.BigOperators
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.Data.Fin.BigOperators
+public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.Data.MvPolynomial.RestrictDegree
+public import CompPoly.Data.Vector.Basic
+public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+public import ArkLib.ToMathlib.InformationTheory.Hamming
+public import Mathlib.Data.Finsupp.Defs
+public import Mathlib.LinearAlgebra.LinearIndependent.Defs
+public import Mathlib.RingTheory.Polynomial.DegreeLT
+public import Mathlib.Tactic
 
 /-!
-## Binary Basefold Prelude
+# Binary Basefold Prelude
 
 Core folding definitions and evaluation lemmas for Binary Basefold.
 
@@ -21,10 +32,12 @@ Core folding definitions and evaluation lemmas for Binary Basefold.
   Lemma numbering in this file follows the archived revision of [DP24].
 -/
 
+@[expose] public section
+
 namespace Binius.BinaryBasefold
 
 open OracleSpec ProtocolSpec Polynomial MvPolynomial Binius.BinaryBasefold
-open scoped NNReal
+open scoped NNReal Polynomial
 open Finset AdditiveNTT Nat Matrix
 
 /-
@@ -40,9 +53,10 @@ section Preliminaries
 NOTE : we can prove strict equality given `g` being an equivalence instead of injection.
 -/
 theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι₁] [Fintype ι₂]
-    {β : ι₂ → Type*} [∀ i, DecidableEq (β i)] [DecidableEq ι₂]
+    {β : ι₂ → Type*} [∀ i, DecidableEq (β i)]
     (x y : ∀ i, β i) (g : ι₁ → ι₂) (hg : Function.Injective g) :
     hammingDist (fun i => x (g i)) (fun i => y (g i)) ≤ hammingDist x y := by
+  classical
   -- Let D₂ be the set of disagreeing indices for x and y.
   let D₂ := Finset.filter (fun i₂ => x i₂ ≠ y i₂) Finset.univ
   -- The Hamming distance of the composed functions is the card of the preimage of D₂.
@@ -60,27 +74,8 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
     simp only [ne_eq, mem_filter, mem_univ, true_and, mem_preimage, D₂]
   -- Now, rewrite the goal using `preimage`.
   rw [h_preimage]
-  set D₁ := D₂.preimage g (by exact hg.injOn)
-  -- ⊢ #D₁ ≤ #D₂
-  -- Step 1 : The size of a set is at most the size of its image under an injective function.
-  have h_card_le_image : D₁.card ≤ (D₁.image g).card := by
-    -- This follows directly from the fact that `g` is injective on the set D₁.
-    apply Finset.card_le_card_of_injOn (f := g)
-    · -- Goal 1 : Prove that `g` maps `D₁` to `D₁.image g`. This is true by definition of image.
-      have res := Set.mapsTo_image (f := g) (s := D₁)
-      convert res
-      simp only [coe_image]
-      --  (D₁.image g : Set ι₂)
-    · -- Goal 2 : Prove that `g` is injective on the set `D₁`.
-      -- This is true because our main hypothesis `hg` states that `g` is injective everywhere.
-      exact Function.Injective.injOn hg
-  -- Step 2 : The image of the preimage of a set is always a subset of the original set.
-  have h_image_subset : D₁.image g ⊆ D₂ := by
-    simp [D₁, Finset.image_preimage]
-  -- Step 3 : By combining these two facts, we get our result.
-  -- |D₁| ≤ |image g(D₁)|  (from Step 1)
-  -- and |image g(D₁)| ≤ |D₂| (since it's a subset)
-  exact h_card_le_image.trans (Finset.card_le_card h_image_subset)
+  rw [Finset.card_preimage]
+  exact Finset.card_filter_le _ _
 
 variable {L : Type*}
 
@@ -126,10 +121,10 @@ lemma challengeTensorExpansionMatrix_mulVec_F₂_eq_Fin_merge_PO2 [CommRing L] (
     let C_n_finmap := challengeTensorExpansion (n := n) (r := r)
     let C_n : Matrix (Fin (1)) (Fin (2 ^ n)) L :=
       Matrix.of (fun _rowIdx colIdx => C_n_finmap colIdx)
-    (mergeFinMap_PO2_left_right (L := L) (n := 0) (left := ((C_n *ᵥ v_top) : (Fin 1) → L))
-      (right := ((C_n *ᵥ v_bot) : (Fin 1) → L)) : (Fin 2) → L)
+    (mergeFinMap_PO2_left_right (L := L) (n := 0) ((C_n *ᵥ v_top) : (Fin 1) → L)
+      ((C_n *ᵥ v_bot) : (Fin 1) → L) : (Fin 2) → L)
     = (challengeTensorExpansionMatrix (n := n) (r := r)) *ᵥ
-      mergeFinMap_PO2_left_right (n := n) (left := v_top) (right := v_bot) := by
+      mergeFinMap_PO2_left_right (n := n) v_top v_bot := by
   dsimp only [challengeTensorExpansionMatrix]
   conv_rhs =>
     -- Move reindexing from Matrix to Vector
@@ -138,7 +133,7 @@ lemma challengeTensorExpansionMatrix_mulVec_F₂_eq_Fin_merge_PO2 [CommRing L] (
   unfold mergeFinMap_PO2_left_right
   unfold Matrix.from4Blocks Fin.reindex Matrix.mulVec dotProduct
   -- Now unfold everything
-  simp only [zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
+  simp only [Matrix.zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
     sum_dite_irrel, Fin.val_cast]
   simp_rw [Fin.sum_univ_add]
   simp_rw [←Finset.sum_add_distrib]
@@ -161,13 +156,13 @@ lemma challengeTensorExpansion_decompose_succ [CommRing L] (n : ℕ) (r : Fin (n
   unfold Matrix.from4Blocks
   by_cases h_colIdx_lt_2_pow_n : colIdx.val < 2 ^ n
   · simp only [reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod, zero_lt_one, ↓reduceDIte,
-    Fin.val_cast, h_colIdx_lt_2_pow_n, Fin.zero_eta, of_apply, mod_succ, lt_self_iff_false,
-    zero_apply, mul_zero, add_zero]
+    Fin.val_cast, Fin.coe_cast, finCongr_apply_coe, h_colIdx_lt_2_pow_n, Fin.zero_eta, of_apply, mod_succ, lt_self_iff_false,
+    Matrix.zero_apply, mul_zero, add_zero]
     rw [multilinearWeight_succ_lower_half (r := r) (i := colIdx)
       (h_lt := h_colIdx_lt_2_pow_n), mul_comm]
   · have h_ne_lt_2_pow_n : ¬(colIdx.val < 2 ^ n) := by exact h_colIdx_lt_2_pow_n
     simp only [reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod, zero_lt_one, ↓reduceDIte,
-      Fin.val_cast, h_ne_lt_2_pow_n, zero_apply, mul_zero, mod_succ, lt_self_iff_false, tsub_self,
+      Fin.val_cast, Fin.coe_cast, finCongr_apply_coe, h_ne_lt_2_pow_n, Matrix.zero_apply, mul_zero, mod_succ, lt_self_iff_false, tsub_self,
       Fin.zero_eta, of_apply, zero_add]
     let u : Fin (2 ^ n) := ⟨colIdx.val - (2 ^ n), by omega⟩
     have h_eq: colIdx.val = u.val + (2 ^ n) := by dsimp only [u]; omega
@@ -177,24 +172,24 @@ lemma challengeTensorExpansion_decompose_succ [CommRing L] (n : ℕ) (r : Fin (n
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ]
 variable (𝓑 : Fin 2 ↪ L)
 
-abbrev MultilinearPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 1⦄[X Fin ℓ]
-abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 2⦄[X Fin ℓ]
+noncomputable abbrev MultilinearPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 1⦄[X Fin ℓ]
+noncomputable abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 2⦄[X Fin ℓ]
 
 /-- Fixes the first `v` variables of a `ℓ`-variate multivariate polynomial.
 `t` -> `H_i` derivation
 -/
-private def splitFirstVariables (v : Fin (ℓ + 1)) : Fin ℓ → Fin (ℓ - v) ⊕ Fin v :=
+def splitFirstVariables (v : Fin (ℓ + 1)) : Fin ℓ → Fin (ℓ - v) ⊕ Fin v :=
   fun j =>
     if hj : j.val < v.val then
       Sum.inr ⟨j.val, hj⟩
     else
       Sum.inl ⟨j.val - v, by omega⟩
 
-private def mergeFirstVariables (v : Fin (ℓ + 1)) : Fin (ℓ - v) ⊕ Fin v → Fin ℓ
+def mergeFirstVariables (v : Fin (ℓ + 1)) : Fin (ℓ - v) ⊕ Fin v → Fin ℓ
   | Sum.inl j => ⟨j.val + v, by omega⟩
   | Sum.inr j => ⟨j.val, by omega⟩
 
-private def splitFirstVariablesEquiv (v : Fin (ℓ + 1)) : Fin ℓ ≃ Fin (ℓ - v) ⊕ Fin v where
+def splitFirstVariablesEquiv (v : Fin (ℓ + 1)) : Fin ℓ ≃ Fin (ℓ - v) ⊕ Fin v where
   toFun := splitFirstVariables (ℓ := ℓ) v
   invFun := mergeFirstVariables (ℓ := ℓ) v
   left_inv := by
@@ -229,69 +224,27 @@ noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
 
-private lemma sumToIter_monomial_aux {R : Type*} [CommSemiring R]
-    {S₁ S₂ : Type*}
-    (m : (S₁ ⊕ S₂) →₀ ℕ) (c : R) :
-    MvPolynomial.sumToIter R S₁ S₂ (MvPolynomial.monomial m c) =
-      MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
-        (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
-  simp only [sumToIter, eval₂Hom_monomial]
-  simp only [RingHom.coe_comp, Function.comp_apply, Finsupp.prod, Finsupp.comapDomain, preimage_inl,
-    preimage_inr]
-  convert congr_arg₂ (· * ·) rfl ?_ using 1
-  rotate_left
-  exact ∏ x ∈ m.support,
-    Sum.rec (fun a => MvPolynomial.X a)
-      (fun b => MvPolynomial.C (MvPolynomial.X b)) x ^ m x
-  · rfl
-  · simp only [monomial_eq, MvPolynomial.C_mul]
-    simp only [Finsupp.prod, Finsupp.coe_mk, map_prod, MvPolynomial.C_pow, mul_assoc]
-    rw [← Finset.prod_filter_mul_prod_filter_not m.support (fun x => x.isRight)]
-    congr! 2
-    · exact Finset.prod_bij (fun x hx => Sum.inr x) (by aesop) (by aesop)
-        (by aesop) (by aesop)
-    · exact Finset.prod_bij (fun x hx => Sum.inl x) (by aesop) (by aesop)
-        (by aesop) (by aesop)
-
 private lemma sumAlgEquiv_mem_restrictDegree {R : Type*} [CommSemiring R]
     {S₁ S₂ : Type*}
     (p : MvPolynomial (S₁ ⊕ S₂) R) (n : ℕ)
     (hp : p ∈ MvPolynomial.restrictDegree (S₁ ⊕ S₂) R n) :
     (MvPolynomial.sumAlgEquiv R S₁ S₂) p ∈
       MvPolynomial.restrictDegree S₁ (MvPolynomial S₂ R) n := by
-  intro s hs
-  obtain ⟨m, hm⟩ : ∃ m : (S₁ ⊕ S₂) →₀ ℕ,
-      m ∈ p.support ∧ s = m.comapDomain Sum.inl Sum.inl_injective.injOn := by
-    have h_sum : (MvPolynomial.sumAlgEquiv R S₁ S₂) p =
-        ∑ m ∈ p.support,
-          (MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn))
-            (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn)
-              (p.coeff m)) := by
-      conv_lhs => rw [p.as_sum]
-      rw [map_sum]
-      exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
-    contrapose! hs
-    simp only [h_sum, SetLike.mem_coe, Finsupp.mem_support_iff, ne_eq, not_not]
-    rw [Finsupp.finset_sum_apply]
-    refine Finset.sum_eq_zero fun x hx => ?_
-    erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
-  aesop
+  change (MvPolynomial.sumAlgEquiv R S₁ S₂) p ∈
+    MvPolynomial.restrictDegreeVar S₁ (MvPolynomial S₂ R)
+      ((fun _ : S₁ ⊕ S₂ => n) ∘ (Sum.inl : S₁ → S₁ ⊕ S₂))
+  change p ∈ MvPolynomial.restrictDegreeVar (S₁ ⊕ S₂) R (fun _ => n) at hp
+  exact MvPolynomial.sumAlgEquiv_mem_restrictDegreeVar (p := p) (b := fun _ => n) hp
 
 private lemma rename_equiv_mem_restrictDegree {R : Type*} [CommSemiring R]
     {σ τ : Type*}
     (e : σ ≃ τ) (p : MvPolynomial σ R) (n : ℕ)
     (hp : p ∈ MvPolynomial.restrictDegree σ R n) :
     (MvPolynomial.rename e p) ∈ MvPolynomial.restrictDegree τ R n := by
-  intro m hm
-  obtain ⟨n', hn', hm_eq⟩ : ∃ n' ∈ p.support, m = n'.mapDomain e := by
-    simp +zetaDelta at *
-    rw [MvPolynomial.rename_eq] at hm
-    contrapose! hm
-    rw [Finsupp.mapDomain]
-    rw [Finsupp.sum, Finsupp.finset_sum_apply]
-    exact Finset.sum_eq_zero fun x hx =>
-      Finsupp.single_eq_of_ne (hm x (by aesop))
-  aesop
+  change (MvPolynomial.rename e p) ∈ MvPolynomial.restrictDegreeVar τ R
+    ((fun _ : σ => n) ∘ e.symm)
+  change p ∈ MvPolynomial.restrictDegreeVar σ R (fun _ => n) at hp
+  exact MvPolynomial.rename_equiv_mem_restrictDegreeVar e p (b := fun _ => n) hp
 
 private lemma eval_map_sumAlgEquiv {R : Type*} [CommSemiring R]
     {S₁ S₂ : Type*} (x : S₁ → R) (y : S₂ → R) :
@@ -299,12 +252,27 @@ private lemma eval_map_sumAlgEquiv {R : Type*} [CommSemiring R]
       ((MvPolynomial.map (MvPolynomial.eval y)).comp
         ((MvPolynomial.sumAlgEquiv R S₁ S₂).toRingHom))) =
       (MvPolynomial.eval (Sum.elim x y) : MvPolynomial (S₁ ⊕ S₂) R →+* R) := by
-  ext
-  · simp [MvPolynomial.sumAlgEquiv, MvPolynomial.sumRingEquiv,
-      MvPolynomial.mvPolynomialEquivMvPolynomial]
-  · case hX i =>
-      cases i <;> simp [MvPolynomial.sumAlgEquiv, MvPolynomial.sumRingEquiv,
-        MvPolynomial.mvPolynomialEquivMvPolynomial]
+  apply MvPolynomial.ringHom_ext
+  · intro r
+    simp only [RingHom.comp_apply, MvPolynomial.eval_C]
+    rw [show ((MvPolynomial.sumAlgEquiv R S₁ S₂).toRingEquiv.toRingHom) (MvPolynomial.C r) =
+      MvPolynomial.C (MvPolynomial.C r) by
+        exact MvPolynomial.sumAlgEquiv_C_inl R S₁ S₂ r]
+    simp
+  · intro i
+    cases i with
+    | inl i =>
+        simp only [RingHom.comp_apply, MvPolynomial.eval_X, Sum.elim_inl]
+        rw [show ((MvPolynomial.sumAlgEquiv R S₁ S₂).toRingEquiv.toRingHom)
+          (MvPolynomial.X (.inl i)) = MvPolynomial.X i by
+            exact MvPolynomial.sumAlgEquiv_X_inl R S₁ S₂ i]
+        simp
+    | inr i =>
+        simp only [RingHom.comp_apply, MvPolynomial.eval_X, Sum.elim_inr]
+        rw [show ((MvPolynomial.sumAlgEquiv R S₁ S₂).toRingEquiv.toRingHom)
+          (MvPolynomial.X (.inr i)) = MvPolynomial.C (MvPolynomial.X i) by
+            exact MvPolynomial.sumAlgEquiv_X_inr R S₁ S₂ i]
+        simp
 
 lemma fixFirstVariablesOfMQP_eval_eq (v : Fin (ℓ + 1)) {challenges : Fin v → L}
     {poly : L[X Fin ℓ]} (x : Fin (ℓ - v) → L) :
@@ -333,8 +301,7 @@ lemma fixFirstVariablesOfMQP_eval_eq (v : Fin (ℓ + 1)) {challenges : Fin v →
   unfold fixFirstVariablesOfMQP
   dsimp
   exact h_eval.trans (by
-    rw [MvPolynomial.eval_rename]
-    rw [h_fun])
+    rw [MvPolynomial.eval_rename, h_fun])
 
 omit [NeZero ℓ] in
 /-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
@@ -444,7 +411,11 @@ lemma getSumcheckRoundPoly_eval_eq (i : Fin ℓ) (h_poly : ↥L⦃≤ 2⦄[X Fin
     have h_eval_append :
         MvPolynomial.eval (Fin.append (fun j : Fin 0 => j.elim0) x ∘
           Fin.cast (Nat.zero_add _).symm) = MvPolynomial.eval x := by
-      ext j <;> simp [Fin.elim0_append]
+      ext j
+      · simp only [RingHom.comp_apply, Fin.elim0_append, MvPolynomial.eval_C]
+      · simp only [RingHom.comp_apply, Fin.elim0_append, MvPolynomial.eval_X,
+          Function.comp_apply, Fin.cast_cast]
+        rfl
     rw [h_eval_append]
     simp only [Polynomial.eval_map]
     have h_cast_eq : cast (congrArg (fun k => L[X Fin k]) h_eq_nat) h_poly.val = h_val' := by
@@ -599,16 +570,13 @@ lemma fin_ℓ_lt_ℓ_add_one (i : Fin ℓ) : i < ℓ + 1 :=
   Nat.lt_of_lt_of_le i.isLt (Nat.le_succ ℓ)
 
 omit [NeZero ℓ] [NeZero r] [NeZero 𝓡] in
-lemma fin_ℓ_lt_ℓ_add_R (i : Fin ℓ)
-    : i.val < ℓ + 𝓡 := by omega
+lemma fin_ℓ_lt_ℓ_add_R (i : Fin ℓ) : i.val < ℓ + 𝓡 := by omega
 
 omit [NeZero ℓ] [NeZero r] [NeZero 𝓡] in
-lemma fin_ℓ_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin ℓ)
-    : i.val < r := by omega
+lemma fin_ℓ_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin ℓ) : i.val < r := by omega
 
 omit [NeZero ℓ] [NeZero r] [NeZero 𝓡] in
-lemma fin_ℓ_add_one_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin (ℓ + 1))
-    : i.val < r := by omega
+lemma fin_ℓ_add_one_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin (ℓ + 1)) : i.val < r := by omega
 
 omit [NeZero ℓ] in
 lemma fin_ℓ_steps_lt_ℓ_add_one (i : Fin ℓ) (steps : ℕ)
@@ -616,8 +584,8 @@ lemma fin_ℓ_steps_lt_ℓ_add_one (i : Fin ℓ) (steps : ℕ)
   Nat.lt_of_le_of_lt h (Nat.lt_succ_self ℓ)
 
 omit [NeZero ℓ] in
-lemma fin_ℓ_steps_lt_ℓ_add_R (i : Fin ℓ) (steps : ℕ) (h : i.val + steps ≤ ℓ)
-    : i.val + steps < ℓ + 𝓡 := by
+lemma fin_ℓ_steps_lt_ℓ_add_R (i : Fin ℓ) (steps : ℕ) (h : i.val + steps ≤ ℓ) :
+    i.val + steps < ℓ + 𝓡 := by
   apply Nat.lt_add_of_pos_right_of_le; omega
 
 omit [NeZero ℓ] [NeZero r] [NeZero 𝓡] in
@@ -627,12 +595,11 @@ lemma fin_ℓ_steps_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin ℓ) (step
     (by exact lt_of_add_right_lt h_ℓ_add_R_rate)
 
 omit [NeZero ℓ] [NeZero r] [NeZero 𝓡] in
-lemma ℓ_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r}
-    : ℓ < r := by omega
+lemma ℓ_lt_r {h_ℓ_add_R_rate : ℓ + 𝓡 < r} : ℓ < r := by omega
 
 omit [NeZero ℓ] [NeZero r] [NeZero 𝓡] in
-lemma fin_r_succ_bound {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin r) (h_i : i + 1 < ℓ + 𝓡)
-    : i + 1 < r := by omega
+lemma fin_r_succ_bound {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (i : Fin r)
+    (h_i : i + 1 < ℓ + 𝓡) : i + 1 < r := by omega
 
 /-- Helper: Bound proof for the indices -/
 lemma index_bound_check {ℓ i steps : ℕ} (j m : ℕ)
@@ -909,10 +876,9 @@ theorem generates_quotient_point_if_is_fiber_of_y
     rw [getSDomainBasisCoeff_of_iteratedQuotientMap]
   have h_repr_x := qMap_total_fiber_repr_coeff 𝔽q β i (steps := steps)
     h_destIdx h_destIdx_le (y := y) (k := k) (j := ⟨j + steps, by omega⟩)
-  simp only at h_repr_x
   rw [←hx_eq] at h_repr_x
-  simp only [fiber_coeff, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
-    Fin.eta] at h_repr_x
+  simp only [fiber_coeff, add_lt_iff_neg_right, _root_.not_lt_zero, ↓reduceDIte,
+    add_tsub_cancel_right, Fin.eta] at h_repr_x
   exact h_repr_x.symm
 
 omit [CharP L 2] in
@@ -943,7 +909,6 @@ theorem is_fiber_iff_generates_quotient_point (i : Fin r) {destIdx : Fin r} (ste
       (steps := steps) h_destIdx h_destIdx_le (y := y) k)
     have h_repr_of_reConstructedX := qMap_total_fiber_repr_coeff 𝔽q β i (steps := steps)
       h_destIdx h_destIdx_le (y := y) (k := k) (j := j)
-    simp only at h_repr_of_reConstructedX
     -- ⊢ repr of reConstructedX at j = repr of x at j
     rw [h_repr_of_reConstructedX]; dsimp [k, pointToIterateQuotientIndex, fiber_coeff];
     rw [getBit_of_binaryFinMapToNat]; simp only [Fin.eta, dite_eq_right_iff, ite_eq_left_iff,
@@ -1222,7 +1187,7 @@ lemma fiberEvaluations_eq_merge_fiberEvaluations_of_one_step_fiber
         (i := i) (destIdx := midIdx) (h_destIdx := h_midIdx) (h_destIdx_le := by omega) (f := f) z₁
     (fiberEvaluations 𝔽q β (steps := steps + 1) (i := i)
       h_destIdx h_destIdx_le f y) =
-    mergeFinMap_PO2_left_right (left := fiber_eval_z₀) (right := fiber_eval_z₁) := by
+    mergeFinMap_PO2_left_right (n := steps) fiber_eval_z₀ fiber_eval_z₁ := by
   -- 1. Unfold definitions to expose `qMap_total_fiber`
   unfold fiberEvaluations mergeFinMap_PO2_left_right
   simp only
@@ -1389,19 +1354,11 @@ lemma butterflyMatrix_zero_apply (z₀ z₁ : L) :
   simp only [reduceAdd, reducePow, reindexSquareMatrix, Nat.pow_zero, finCongr_refl, neg_smul,
     one_smul, reindex_apply, Equiv.refl_symm, Equiv.coe_refl, submatrix_id_id]
   unfold Matrix.from4Blocks
-  simp only [reduceAdd, lt_one_iff, Fin.val_eq_zero_iff, Fin.isValue, smul_apply, smul_eq_mul,
-    neg_apply]
+  simp only [reduceAdd, lt_one_iff, Fin.val_eq_zero_iff, Fin.isValue, Matrix.smul_apply,
+    smul_eq_mul, Matrix.neg_apply]
   funext i j
   fin_cases i <;> fin_cases j
-  · simp only [Fin.zero_eta, Fin.isValue, ↓reduceDIte, one_apply_eq, mul_one, of_apply, cons_val',
-    cons_val_zero, cons_val_fin_one] -- 0, 0 (Top Left)
-  · -- 0, 1 (Top Right)
-    simp only [Fin.zero_eta, Fin.isValue, ↓reduceDIte, Fin.mk_one, one_ne_zero, of_apply,
-    cons_val', cons_val_one, cons_val_fin_one, cons_val_zero, neg_inj];
-    rw [Matrix.one_apply]
-    simp only [Fin.zero_eta, Fin.isValue, tsub_self, ↓reduceIte, mul_one]
-  · rfl -- 1, 0 (Bottom Left)
-  · rfl -- 1, 1 (Bottom Right)
+  all_goals simp [Matrix.one_apply]
 
 omit [NeZero r] [Fintype L] [DecidableEq L] [CharP L 2] [NeZero ℓ] [NeZero 𝓡] in
 lemma butterflyMatrix_det_ne_zero (n : ℕ) (z₀ z₁ : L) (h_ne : z₀ ≠ z₁) :
@@ -1450,9 +1407,9 @@ Proof similar to challengeTensorExpansionMatrix_mulVec_F₂_eq_Fin_merge_PO2.
 lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
     (A B : Matrix (Fin (2 ^ n)) (Fin (2 ^ n)) L)
     (v_top : Fin (2 ^ n) → L) (v_bot : Fin (2 ^ n) → L) :
-    mergeFinMap_PO2_left_right (left := A *ᵥ v_top) (right := B *ᵥ v_bot)
+    mergeFinMap_PO2_left_right (n := n) (A *ᵥ v_top) (B *ᵥ v_bot)
     = blockDiagMatrix (r := r) (ℓ := ℓ) (𝓡 := 𝓡) (n := n) (Mz₀ := A) (Mz₁ := B)
-      *ᵥ mergeFinMap_PO2_left_right (left := v_top) (right := v_bot) := by
+      *ᵥ mergeFinMap_PO2_left_right (n := n) v_top v_bot := by
   dsimp only [blockDiagMatrix]
   conv_rhs => -- Move reindexing from Matrix to Vector
     rw [Matrix.reindex_mulVec]
@@ -1460,7 +1417,7 @@ lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
   unfold mergeFinMap_PO2_left_right
   unfold Matrix.from4Blocks Fin.reindex Matrix.mulVec dotProduct
   -- Now unfold everything
-  simp only [zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
+  simp only [Matrix.zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
     sum_dite_irrel, Fin.val_cast]
   simp_rw [Fin.sum_univ_add]
   simp_rw [←Finset.sum_add_distrib]
@@ -1610,9 +1567,11 @@ lemma iterated_fold_zero_steps (i : Fin r) {destIdx : Fin r}
     (r_challenges : Fin 0 → L) :
     iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i) (steps := 0)
       (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (f := f)
-      (r_challenges := r_challenges) = fun y ↦ f (cast (by rw [sDomain_eq_of_eq]; omega) y) := by
+      (r_challenges := r_challenges) = fun y ↦ f (cast
+        (congrArg (fun idx => ↥(sDomain 𝔽q β h_ℓ_add_R_rate (i := idx)))
+          (Fin.ext h_destIdx)) y) := by
   have h_eq : destIdx = i := by omega
-  subst h_eq;
+  subst destIdx
   dsimp only [iterated_fold]
   simp only [reduceAdd, Fin.val_castSucc, Fin.val_succ, id_eq, Fin.reduceLast, Fin.coe_ofNat_eq_mod,
     Subtype.coe_eta, Fin.dfoldl_zero, cast_eq]
@@ -1638,7 +1597,7 @@ lemma iterated_fold_last (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
   simp only
   conv_lhs => unfold iterated_fold
   simp only
-  rw [Fin.dfoldl_succ_last]
+  erw [Fin.dfoldl_succ_last]
   simp only [Fin.succ_last, succ_eq_add_one, Fin.val_last, Function.comp_apply, Fin.val_castSucc,
     Fin.val_succ, id_eq]
   rfl
@@ -2425,21 +2384,23 @@ theorem fold_advances_evaluation_poly
       · omega
       · omega
     ⟩)
-  have h_eval_qMap_x₀ : (AdditiveNTT.qMap 𝔽q β i).eval x₀.val = y := by
+  have h_eval_qMap_x₀ : (AdditiveNTT.qMap 𝔽q β i (by omega)).eval x₀.val = y := by
     have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate i h_destIdx h_destIdx_le x₀
-    simp only [Subtype.eq_iff] at h
-    rw [h.symm]
+    have h_val := congrArg Subtype.val h
+    simp only at h_val
+    rw [← h_val]
     have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) h_destIdx h_destIdx_le
       (x := x₀) (y := y).mpr (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
-    rw [h_res]
+    exact congrArg Subtype.val h_res.symm
     -- exact qMap_eval_fiber_eq_self ⟦L⟧ ⟨i + 1, by omega⟩ (by simp only; omega) h_i_succ_lt y 0
-  have h_eval_qMap_x₁ : (AdditiveNTT.qMap 𝔽q β i).eval x₁.val = y := by
+  have h_eval_qMap_x₁ : (AdditiveNTT.qMap 𝔽q β i (by omega)).eval x₁.val = y := by
     have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate i h_destIdx h_destIdx_le x₁
-    simp only [Subtype.eq_iff] at h
-    rw [h.symm]
+    have h_val := congrArg Subtype.val h
+    simp only at h_val
+    rw [← h_val]
     have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) h_destIdx h_destIdx_le
       (x := x₁) (y := y).mpr (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
-    rw [h_res]
+    exact congrArg Subtype.val h_res.symm
   have hx₀ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)
     h_destIdx h_destIdx_le y 0
   have hx₁ := qMap_total_fiber_basis_sum_repr 𝔽q β i (steps := 1)
@@ -2448,7 +2409,7 @@ theorem fold_advances_evaluation_poly
   have h_fiber_diff : x₁.val - x₀.val = 1 := by
     simp only [Fin.isValue, x₁, x₀, fiberMap]
     rw [hx₁, hx₀]
-    simp only [Fin.isValue, AddSubmonoidClass.coe_finset_sum, SetLike.val_smul]
+    simp only [Fin.isValue, AddSubmonoidClass.coe_finsetSum, SetLike.val_smul]
     have h_index : ℓ + 𝓡 - i = (ℓ + 𝓡 - destIdx) + 1 := by omega
     rw! (castMode := .all) [h_index]
     rw [Fin.sum_univ_succ, Fin.sum_univ_succ] -- (free_term + y_repr) - (free_term + y_repr) = 1
@@ -2478,7 +2439,7 @@ theorem fold_advances_evaluation_poly
     rw [add_right_inj (a := 1)]
     rw [sub_eq_zero]
     apply Finset.sum_congr (h := by rfl)
-    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero, one_ne_zero, and_false,
+    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero_iff, one_ne_zero, and_false,
       ↓reduceDIte, add_tsub_cancel_right, Fin.eta, imp_self, implies_true]
   set P_i_plus_1 :=
     intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := destIdx) (h_i := by omega) new_coeffs
