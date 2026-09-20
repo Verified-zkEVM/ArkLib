@@ -1,10 +1,13 @@
 # Reed–Solomon first-tranche port ledger
 
 This ledger records the six review units tracked by
-[issue #907](https://github.com/Verified-zkEVM/ArkLib/issues/907). The immutable mathematical
-source is commit `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. Existing pull-request heads are donor evidence
-for the three refreshed units; they are not merge bases. Final acceptance targets the main branch
-after the Lean 4.34 migration in pull request #903.
+[issue #907](https://github.com/Verified-zkEVM/ArkLib/issues/907). Commit
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d` is the immutable overarching paper-port snapshot and
+the direct source for the weighted-support, exact-list, agreement-list, and pairwise-Johnson units.
+The fraction-field resultant and exact weighted-product units are sourced from their immutable
+pull-request donor heads below; those theorem families are not present in `a5aa2677`. Donor heads
+are source evidence, not merge bases. Final acceptance targets the main branch after the Lean 4.34
+migration in pull request #903.
 
 The immutable donor heads for the refreshed pull requests are `f37f25ba3d0d6701f054c00cb53a7b73d363c0d0`
 (#857), `8b1698ab6f73d89bcc36b7936a8ce87cd20bc9d4` (#877), and
