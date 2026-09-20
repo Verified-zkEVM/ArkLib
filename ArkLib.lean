@@ -181,11 +181,13 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
+public import ArkLib.Data.CodingTheory.ReedSolomon.Counterexamples.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
 public import ArkLib.Data.Domain.CosetFftDomain.Defs
@@ -259,6 +261,8 @@ public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ArkLib.Data.Polynomial.BinaryTrace
+public import ArkLib.Data.Polynomial.BinaryTraceWitness
 public import ArkLib.Data.Polynomial.Bivariate
 public import ArkLib.Data.Polynomial.BivariateFactorDegrees
 public import ArkLib.Data.Polynomial.ClassicalWronskian
