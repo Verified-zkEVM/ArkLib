@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 /-!
 # Polynomial witnesses for full mutual correlated agreement
@@ -46,12 +46,9 @@ namespace ReedSolomon
 open Polynomial CoreDefinitions LinearCode
 open scoped BigOperators
 
-variable {F ι ℓ S : Type} [Field F] [Fintype ι] [Fintype ℓ]
-  [Fintype S] [Nonempty S]
-
-omit [Fintype ι] in
 /-- Projecting a Reed–Solomon codeword is precisely interpolation on the chosen positions. -/
 theorem projectedWord_mem_code_iff_exists_polynomial
+    {F ι : Type*} [Semiring F]
     (domain : ι ↪ F) (k : ℕ) (w : ι → F) (T : Finset ι) :
     projectedWord w T ∈ projectedCodeSubmod (code domain k) T ↔
       ∃ p : F[X], p.degree < k ∧ ∀ i ∈ T, p.eval (domain i) = w i := by
@@ -68,6 +65,9 @@ theorem projectedWord_mem_code_iff_exists_polynomial
     funext i
     exact (heval i i.property).symm
 
+variable {F ι ℓ S : Type} [Field F] [Fintype ι] [Fintype ℓ]
+  [Fintype S] [Nonempty S]
+
 open Classical in
 /-- Absence of the MCA bad event supplies constituent polynomials and equality of full
 agreement sets. The threshold is large enough for polynomial uniqueness; witnesses may
@@ -77,28 +77,26 @@ theorem exists_polynomials_full_agreement_of_not_isMCA
     (U : ℓ → ι → F) (δ : ℝ) (hk : (k : ℝ) ≤ Fintype.card ι * (1 - δ))
     (hgood : ¬ IsMCA G (code domain k) x U δ)
     (p : F[X]) (hp : p.degree < k)
-    (hclose : ((Finset.univ.filter fun i ↦
-      p.eval (domain i) = ∑ j, G x j * U j i).card : ℝ) ≥
-        Fintype.card ι * (1 - δ)) :
+    (hclose : Fintype.card ι * (1 - δ) ≤
+      ((polynomialAgreementSet domain (fun i ↦ ∑ j, G x j * U j i) p).card : ℝ)) :
     ∃ P : ℓ → F[X], (∀ j, (P j).degree < k) ∧ p = ∑ j, G x j • P j ∧
-      ∀ i, (p.eval (domain i) = ∑ j, G x j * U j i) ↔
-        ∀ j, (P j).eval (domain i) = U j i := by
+      ∀ i, i ∈ polynomialAgreementSet domain (fun i ↦ ∑ j, G x j * U j i) p ↔
+        ∀ j, i ∈ polynomialAgreementSet domain (U j) (P j) := by
   classical
   -- Work on the entire agreement set of the given polynomial.
-  let T := Finset.univ.filter fun i ↦ p.eval (domain i) = ∑ j, G x j * U j i
+  let T := polynomialAgreementSet domain (fun i ↦ ∑ j, G x j * U j i) p
   have hmem : projectedWord (fun i ↦ ∑ j, G x j • U j i) T ∈
       projectedCodeSubmod (code domain k) T := by
     apply (projectedWord_mem_code_iff_exists_polynomial domain k _ T).mpr
     refine ⟨p, hp, fun i hi ↦ ?_⟩
-    simpa only [smul_eq_mul] using (Finset.mem_filter.mp hi).2
+    simpa only [smul_eq_mul] using (mem_polynomialAgreementSet _ _ _ _).mp hi
   --
   -- A good challenge forces every constituent word to have a codeword on this set.
-  have hall : ∀ j, projectedWord (U j) T ∈ projectedCodeSubmod (code domain k) T := by
-    intro j
-    by_contra hj
-    exact hgood ⟨T, hclose, hmem, j, hj⟩
-  choose P hP hPeval using fun j ↦
-    (projectedWord_mem_code_iff_exists_polynomial domain k (U j) T).mp (hall j)
+  obtain ⟨c, hc⟩ :=
+    (not_isMCA_iff_forall_exists_codewords G (code domain k) x U δ).mp hgood T hclose hmem
+  choose P hP hPeval using fun j ↦ mem_code_iff_eval.mp (c j).property
+  have hPevalT : ∀ j i, i ∈ T → (P j).eval (domain i) = U j i :=
+    fun j i hi ↦ (hPeval j i).trans (hc j i hi)
   --
   -- Enough common evaluations identify the polynomial linear combination uniquely.
   have hkT : k ≤ T.card := by exact_mod_cast hk.trans hclose
@@ -109,14 +107,18 @@ theorem exists_polynomials_full_agreement_of_not_isMCA
     apply Polynomial.eq_of_degrees_lt_of_eval_index_eq (s := T) domain.injective.injOn
       (hp.trans_le (by exact_mod_cast hkT)) (hsum.trans_le (by exact_mod_cast hkT))
     intro i hi
-    rw [(Finset.mem_filter.mp hi).2]
+    rw [(mem_polynomialAgreementSet _ _ _ _).mp hi]
     simp only [eval_finsetSum, eval_smul, smul_eq_mul]
-    exact Finset.sum_congr rfl fun j _ ↦ congrArg (G x j * ·) (hPeval j i hi).symm
+    exact Finset.sum_congr rfl fun j _ ↦ congrArg (G x j * ·) (hPevalT j i hi).symm
   --
   -- Recover equality of the full sets, not merely inclusion of a selected subset.
-  refine ⟨P, hP, heq, fun i ↦ ⟨fun hi j ↦ hPeval j i ?_, fun hi ↦ ?_⟩⟩
-  · exact Finset.mem_filter.mpr ⟨Finset.mem_univ i, hi⟩
-  · rw [heq]
+  refine ⟨P, hP, heq, fun i ↦ ?_⟩
+  simp only [mem_polynomialAgreementSet]
+  constructor
+  · intro hi j
+    exact hPevalT j i ((mem_polynomialAgreementSet _ _ _ _).mpr hi)
+  · intro hi
+    rw [heq]
     simp only [eval_finsetSum, eval_smul, smul_eq_mul, hi]
 
 end ReedSolomon
