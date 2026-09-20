@@ -135,7 +135,6 @@ lemma isUnit_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq 
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     {xs : ℓ → S} (hxs : Function.Injective xs) :
     IsUnit (Matrix.of fun k j => G (xs k) j) := by
-  -- a nonzero kernel vector would be orthogonal to the `|ℓ|` distinct rows `G (xs k)`
   refine Matrix.mulVec_injective_iff_isUnit.mp
     ((injective_iff_map_eq_zero (Matrix.mulVecLin _)).mpr fun v hv => by_contra fun hne => ?_)
   have hle := card_filter_dotProduct_eq_zero_le_of_isMDSGenerator G hG hdim hne
@@ -157,7 +156,7 @@ lemma sum_smul_sum_smul_eq_of_mul_eq_one [DecidableEq ℓ] {N M : Matrix ℓ ℓ
 `∑ j, G x j • v j = ∑ j, G x j • w j` for at most `|ℓ| - 1` seeds `x`, since any `|ℓ|` seeds give an
 invertible matrix through which `v` and `w` are recovered from the combinations.
 
-This is the module for of Lemma 3.13 [BCGM25]. -/
+This is the module form of Lemma 3.13 [BCGM25]. -/
 lemma card_filter_sum_smul_eq_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
     [DecidableEq F] [DecidableEq A] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
@@ -325,12 +324,10 @@ lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [Decidab
   rw [Nat.cast_mul, Nat.cast_add, Nat.cast_one, Nat.cast_pred (by omega), mul_div_assoc,
     mul_comm (γ : ℝ)]
 
-/-- **Theorem 6.1 [BCGM25]**. Every MDS generator whose code has full dimension `ℓ ≥ 2` has MCA
-for every module code `MC`, with error `mdsMCAError MC ℓ |S| η`, for every slack `0 < η < 1`. The
-generator-matrix hypotheses constrain `G` over the base field only; the tested code's alphabet is
-any `F`-module.
-
-The unique-decoding regime `γ < δ_C / (ℓ + 1)` is `mcaError_le_mdsMCAError_of_lt`. -/
+/-- Every MDS generator whose code has full dimension `ℓ ≥ 2` has MCA for every module code `MC`,
+with error `mdsMCAError MC ℓ |S| η`, for every slack `0 < η < 1`. The generator-matrix hypotheses
+constrain `G` over the base field only; the tested code's alphabet is any `F`-module.
+Theorem 6.1 [BCGM25]. -/
 theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
     [DecidableEq A] [Nonempty ι]
     (G : Generator S ℓ F)
