@@ -1,0 +1,72 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import Mathlib.Algebra.Polynomial.Eval.Defs
+public import Mathlib.Data.Finset.Filter
+
+/-!
+# Polynomial agreement sets
+
+These definitions record all coordinates where polynomial explanations match received words.
+They use an arbitrary finite coordinate type, so a domain indexed by `Fin n`, a finite subtype,
+or a chosen basis enumeration uses the same API. Neither definition imposes a degree bound:
+Reed–Solomon statements must supply their strict message-degree hypotheses separately.
+
+## Main definitions
+
+* `polynomialAgreementSet` records agreement with one polynomial.
+* `commonPolynomialAgreementSet` records simultaneous agreement with two polynomials on the
+  same coordinates. Its cardinality for fixed witnesses is not the maximum common agreement.
+
+The intersection identity below connects the two notions. They are exact finite sets, with
+no decoding threshold, probability convention, or mutual-correlated-agreement hypothesis.
+-/
+
+@[expose] public section
+
+namespace ReedSolomon
+
+noncomputable section
+
+open Polynomial
+
+/-- The full set of positions where `P` agrees with a received word. -/
+def polynomialAgreementSet {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
+    (domain : ι ↪ F) (received : ι → F) (P : F[X]) : Finset ι :=
+  Finset.univ.filter fun i ↦ P.eval (domain i) = received i
+
+/-- The positions where two message polynomials simultaneously agree with two received words. -/
+def commonPolynomialAgreementSet {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
+    (domain : ι ↪ F) (f g : ι → F) (F₀ G₀ : F[X]) : Finset ι :=
+  Finset.univ.filter fun i ↦ F₀.eval (domain i) = f i ∧ G₀.eval (domain i) = g i
+
+/-- Membership in the agreement set is exactly the evaluation equality. -/
+@[simp] theorem mem_polynomialAgreementSet
+    {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι]
+    (domain : ι ↪ F) (received : ι → F) (P : F[X]) (i : ι) :
+    i ∈ polynomialAgreementSet domain received P ↔ P.eval (domain i) = received i := by
+  simp [polynomialAgreementSet]
+
+/-- Common agreement keeps both equalities at the same coordinate. -/
+@[simp] theorem mem_commonPolynomialAgreementSet
+    {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι]
+    (domain : ι ↪ F) (f g : ι → F) (P Q : F[X]) (i : ι) :
+    i ∈ commonPolynomialAgreementSet domain f g P Q ↔
+      P.eval (domain i) = f i ∧ Q.eval (domain i) = g i := by
+  simp [commonPolynomialAgreementSet]
+
+/-- The common set is the intersection of the two individual agreement sets. -/
+theorem commonPolynomialAgreementSet_eq_inter
+    {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι]
+    (domain : ι ↪ F) (f g : ι → F) (P Q : F[X]) :
+    commonPolynomialAgreementSet domain f g P Q =
+      polynomialAgreementSet domain f P ∩ polynomialAgreementSet domain g Q := by
+  ext i
+  simp
+
+end
+end ReedSolomon

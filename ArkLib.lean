@@ -180,12 +180,14 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
 public import ArkLib.Data.Domain.CosetFftDomain.Defs
