@@ -66,6 +66,7 @@ theorem observe_namedFault (missingFault : Fault) (program : m (Terminal Claim F
 theorem observe_isProbabilityMeasure (missingFault : Fault) (program : m (Terminal Claim Fault)) :
     IsProbabilityMeasure (observe missingFault program) := by
   let _ := evalDistWithFailure_isProbabilityMeasure program
-  exact Measure.isProbabilityMeasure_map Measurable.of_discrete.aemeasurable
+  unfold observe
+  infer_instance
 
 end Interaction.Oracle.Terminal

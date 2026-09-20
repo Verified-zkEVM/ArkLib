@@ -299,10 +299,11 @@ private lemma aeval_shift_monomial_nonzero_case
     map_prod, map_pow, bind₁_X_right, dite_pow, pow_zero, mem_support_iff, coeff_C_mul, ne_eq,
     mul_eq_zero, not_or, not_and, not_not]
   have h_coeff :
-    coeff s (∏ x : Fin n,
+    (∏ x : Fin n,
       if h : x = 0
       then 1
-      else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ m x) = 0 := by
+      else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ m x).coeff s
+      = 0 := by
     have h_coeff :
       ∀ (t : Fin n → ℕ),
         (∏ x : Fin n,

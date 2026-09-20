@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.Execution
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
 
 /-!
   # Security Definitions for (Oracle) Reductions

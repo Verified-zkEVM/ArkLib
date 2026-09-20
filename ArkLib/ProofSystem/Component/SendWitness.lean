@@ -121,12 +121,12 @@ theorem reduction_completeness :
     apply probOutput_eq_zero_of_not_mem_support
     simp only [support_bind, Set.mem_iUnion, not_exists]
     intro s _
-    change none ∈ _root_.support (StateT.run' (simulateQ _
+    change none ∈ MonadAttach.support (StateT.run' (simulateQ _
       (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
           (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
         (stmtIn, witIn))) : OracleComp _ _)) s) → False
     rw [simulateQ_pure]
-    change none ∈ _root_.support (Prod.fst <$>
+    change none ∈ MonadAttach.support (Prod.fst <$>
       (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
           (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
         (stmtIn, witIn))) : StateT _ ProbComp _).run s) → False
@@ -137,12 +137,12 @@ theorem reduction_completeness :
     rw [OptionT.mem_support_iff] at hx
     simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ _root_.support (StateT.run' (simulateQ _
+    change some x ∈ MonadAttach.support (StateT.run' (simulateQ _
       (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
           (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
         (stmtIn, witIn))) : OracleComp _ _)) s) at hx
     rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support (Prod.fst <$>
+    change some x ∈ MonadAttach.support (Prod.fst <$>
       (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
           (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
         (stmtIn, witIn))) : StateT _ ProbComp _).run s) at hx

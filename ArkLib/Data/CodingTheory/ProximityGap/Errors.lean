@@ -645,8 +645,9 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
       _ ≤ ⨆ w : WordStack F (Fin 2) ι,
           if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
           else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
-        @le_iSup ENNReal (WordStack F (Fin 2) ι)
-          ENNReal.instCompleteLinearOrder.toCompleteLattice _ v
+        le_iSup (fun w : WordStack F (Fin 2) ι =>
+          if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
+          else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ]) v
   by_cases hjp : jointProximity (C := (C : Set (ι → F))) (u := u) δ
   · obtain ⟨c, hc, hE⟩ :=
       (jointProximity_iff_exists_pairErrors_le C u δ).mp hjp

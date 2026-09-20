@@ -165,19 +165,6 @@ def extractor (mapWitInv : StmtIn → WitOut → WitIn) :
 
 variable {mapWitInv : StmtIn → WitOut → WitIn}
 
-
-@[simp]
-lemma support_liftM (m : Type _ → Type _) [Monad m]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
-    {α} (mx : m α) : support (liftM mx : OptionT m α) = support mx := by
-  simp
-
-@[simp]
-lemma support_mk (m : Type _ → Type _) [Monad m] [MonadLiftT m SetM]
-    {α} (mx : m (Option α)) :
-    support (OptionT.mk mx) = {x | some x ∈ support mx} := by
-  rfl
-
 /-- The knowledge state function for the `ReduceClaim` reduction. -/
 def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :

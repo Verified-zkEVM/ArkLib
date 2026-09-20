@@ -63,7 +63,7 @@ theorem bindingAdvantage_le_moduleSIS_of_shortClosure {rows cols : Nat}
     SIS.advantage SIS.experiment ModuleSIS.problem bindingAdvToModuleSIS
     commitmentScheme ModuleSIS.relation
   simp only [bind_assoc, pure_bind]
-  refine probOutput_bind_mono fun A _ => ?_
+  refine probOutput_bind_mono (m := ProbComp) fun A _ => ?_
   refine probOutput_bind_mono (mx := adv A) (y := true) (z := true) fun
     (x : Commitment Φ rows × Message Φ cols × Opening × Message Φ cols × Opening) _ => ?_
   rcases x with ⟨c, s₁, o₁, s₂, o₂⟩

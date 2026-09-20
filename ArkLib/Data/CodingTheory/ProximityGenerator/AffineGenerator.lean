@@ -219,11 +219,15 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
       aesop
     have h_sum : ∑ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x) ∈
                   projectedCodeSubmod MC (T x))).card ≤ m * (Fintype.card F) ^ (s - 1) := by
-      convert Finset.sum_le_sum h_per_seed_le using 1
-      · rfl
-      · rw [Finset.sum_comm, Finset.sum_congr rfl]
-        aesop
-      · simp +zetaDelta
+      calc ∑ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x) ∈
+                  projectedCodeSubmod MC (T x))).card
+          = ∑ lam : Fin s → F, ∑ x ∈ Bset, (if projectedWord (linComb U lam) (T x) ∈
+                  projectedCodeSubmod MC (T x) then 1 else 0) := by
+            simp only [Finset.card_filter]
+        _ = ∑ x ∈ Bset, ∑ lam : Fin s → F, (if projectedWord (linComb U lam) (T x) ∈
+                  projectedCodeSubmod MC (T x) then 1 else 0) := Finset.sum_comm
+        _ ≤ ∑ _x ∈ Bset, (Fintype.card F) ^ (s - 1) := Finset.sum_le_sum h_per_seed_le
+        _ = m * (Fintype.card F) ^ (s - 1) := by simp [m]
     have havg := exists_avg_le hs (fun lam : Fin s → F =>
       (Bset.filter (fun x => projectedWord (linComb U lam) (T x) ∈
         projectedCodeSubmod MC (T x)) |> Finset.card)) m ?_

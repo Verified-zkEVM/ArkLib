@@ -5,7 +5,7 @@ Authors: Quang Dao, scaraven
 -/
 module
 
-public import Mathlib.Logic.Basic
+public import Mathlib.Basic.Logic.Basic
 public import CompPoly.Data.Classes.DCast
 
 /-!

@@ -113,11 +113,11 @@ theorem reduction_completeness [Nonempty σ] :
     simp only [support_bind, Set.mem_iUnion, not_exists]
     intro s _ hmem
     -- Unfold OptionT.run on pure, then simulateQ_pure, then StateT
-    change none ∈ _root_.support
+    change none ∈ MonadAttach.support
       (StateT.run' (simulateQ _ (pure (some ((default, stmt, ()), stmt)) :
         OracleComp _ _)) s) at hmem
     rw [simulateQ_pure] at hmem
-    change none ∈ _root_.support
+    change none ∈ MonadAttach.support
       (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
         StateT σ ProbComp _).run s) at hmem
     rw [StateT.run_pure] at hmem
@@ -126,11 +126,11 @@ theorem reduction_completeness [Nonempty σ] :
     rw [OptionT.mem_support_iff] at hx
     simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ _root_.support
+    change some x ∈ MonadAttach.support
       (StateT.run' (simulateQ _ (pure (some ((default, stmt, ()), stmt)) :
         OracleComp _ _)) s) at hx
     rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support
+    change some x ∈ MonadAttach.support
       (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
@@ -173,7 +173,7 @@ def knowledgeStateFunction :
     rw [show ((OptionT.mk (pure none) : OptionT (OracleComp oSpec) Statement)) =
         ((pure none : OracleComp oSpec (Option Statement)) : _) from rfl] at hx
     rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support
+    change some x ∈ MonadAttach.support
       (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
     simp [map_pure, support_pure] at hx
@@ -313,11 +313,11 @@ theorem oracleReduction_completeness
     apply probOutput_eq_zero_of_not_mem_support
     simp only [support_bind, Set.mem_iUnion, not_exists]
     intro s _ hmem
-    change none ∈ _root_.support
+    change none ∈ MonadAttach.support
       (StateT.run' (simulateQ _ (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         OracleComp _ _)) s) at hmem
     rw [simulateQ_pure] at hmem
-    change none ∈ _root_.support
+    change none ∈ MonadAttach.support
       (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         StateT σ ProbComp _).run s) at hmem
     rw [StateT.run_pure] at hmem
@@ -326,11 +326,11 @@ theorem oracleReduction_completeness
     rw [OptionT.mem_support_iff] at hx
     simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ _root_.support
+    change some x ∈ MonadAttach.support
       (StateT.run' (simulateQ _ (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         OracleComp _ _)) s) at hx
     rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support
+    change some x ∈ MonadAttach.support
       (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
         StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx

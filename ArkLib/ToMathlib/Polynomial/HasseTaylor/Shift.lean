@@ -332,7 +332,7 @@ theorem map_movingHasseSum {S : Type*} [CommRing S] (f : R →+* S)
   rw [movingHasseSum, movingHasseSum, Polynomial.map_sum f]
   apply Finset.sum_congr rfl
   intro j _
-  simp [map_hasseDeriv, map_taylor]
+  simp [map_taylor]
 
 /-- Successive changes of origin add their centers in the moving-Hasse correction sum. -/
 theorem movingHasseSum_taylor (a b : R) (p : R[X]) (d : ℕ) :
