@@ -3,6 +3,17 @@
 This page is the recommended agent playbook for commands and validation.
 Use it as the main guide for routine local checks.
 
+## Dependency versions
+
+The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
+`lakefile.toml` pins CompPoly and VCVio to exact commits; `lake-manifest.json` records
+the complete resolved dependency set, including the PolyFun revision selected by VCVio.
+Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
+validated against VCVio before ArkLib can adopt it.
+Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
+The September 4 baseline in `docs/design/00-current-status.md` records the original typed
+interaction implementation train, not the current package versions.
+
 ## Recommended Validation
 
 For a convenient routine check, run:
