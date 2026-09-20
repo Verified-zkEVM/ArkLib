@@ -90,11 +90,11 @@ lemma combine_eq_cases {F ι : Type*} [Field F] [DecidableEq F]
   funext x
   simp only [combine]
   split_ifs with hq
-  · simp_rw [geom_sum_cases, if_pos hq]
+  · simp_rw [geom_sum_cases, ite_eq_left hq]
     apply Finset.sum_congr rfl
     intro i _
     ring
-  · simp_rw [geom_sum_cases, if_neg hq]
+  · simp_rw [geom_sum_cases, ite_eq_right hq]
     apply Finset.sum_congr rfl
     intro i _
     rw [Nat.cast_add, Nat.cast_sub (hdegs i), Nat.cast_one]

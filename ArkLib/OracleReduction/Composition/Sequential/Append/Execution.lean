@@ -69,7 +69,7 @@ private theorem append_sendMessage_left (i : Fin (m + n)) (hi : i.val < m)
         (P₁.sendMessage ⟨⟨i.val, hi⟩, hDir₁⟩ state₁) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_pos hi]
+  rw [dite_eq_left hi]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((cast_heq _ _).trans hst)
@@ -85,7 +85,7 @@ private theorem append_receiveChallenge_left (i : Fin (m + n)) (hi : i.val < m)
         (P₁.receiveChallenge ⟨⟨i.val, hi⟩, hDir₁⟩ state₁) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_pos hi]
+  rw [dite_eq_left hi]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((cast_heq _ _).trans hst)
@@ -337,7 +337,7 @@ private theorem append_sendMessage_seam (i : Fin (m + n)) (him : i.val = m) (hn 
         (P₁.output state₁ >>= fun ctx => P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input ctx)) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_left him]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   exact congrArg (fun z => P₁.output z >>= fun ctx =>
     P₂.sendMessage ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input ctx))
@@ -356,7 +356,7 @@ private theorem append_receiveChallenge_seam (i : Fin (m + n)) (him : i.val = m)
         (P₂.receiveChallenge ⟨⟨0, hn⟩, hDir₂⟩ (P₂.input (outputFn state₁))) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_pos him]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_left him]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   rw [hOutput]
   simp only [pure_bind]
@@ -373,7 +373,7 @@ private theorem append_sendMessage_right (i : Fin (m + n)) (hi : m < i.val) (hik
         (P₂.sendMessage ⟨⟨i.val - m, hik⟩, hDir₂⟩ state₂) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_neg (by omega : ¬ i.val = m)]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_right (by omega : ¬ i.val = m)]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst))
@@ -389,7 +389,7 @@ private theorem append_receiveChallenge_right (i : Fin (m + n)) (hi : m < i.val)
         (P₂.receiveChallenge ⟨⟨i.val - m, hik⟩, hDir₂⟩ state₂) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg (by omega : ¬ i.val < m), dif_neg (by omega : ¬ i.val = m)]
+  rw [dite_eq_right (by omega : ¬ i.val < m), dite_eq_right (by omega : ¬ i.val = m)]
   refine (cast_heq _ _).trans (heq_of_eq ?_)
   congr 1
   exact eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst))
@@ -456,7 +456,7 @@ private theorem concatLR_apply_lt {k : Fin (m + n + 1)} {l : Fin (n + 1)} (hkl :
     (i : Fin k.val) (h : i.val < m) :
     HEq (concatLR hkl tr₁ tr₂ i) (tr₁ ⟨i.val, h⟩) := by
   unfold concatLR
-  rw [dif_pos h]
+  rw [dite_eq_left h]
   exact cast_heq _ _
 
 /-- Past the seam, `concatLR` reads from its right (partial) transcript. -/
@@ -465,7 +465,7 @@ private theorem concatLR_apply_ge {k : Fin (m + n + 1)} {l : Fin (n + 1)} (hkl :
     (i : Fin k.val) (h : ¬ i.val < m) (h2 : i.val - m < l.val) :
     HEq (concatLR hkl tr₁ tr₂ i) (tr₂ ⟨i.val - m, h2⟩) := by
   unfold concatLR
-  rw [dif_neg h]
+  rw [dite_eq_right h]
   exact cast_heq _ _
 
 /-- The empty transcript at round `0` of a non-empty protocol. -/

@@ -96,14 +96,14 @@ lemma find_conflict_successful {L : ℕ} (query : Fin L → ZMod p) (response : 
   obtain ⟨_, i', _, _, h_inner, _⟩ := List.findSome?_eq_some_iff.mp hfc
   obtain ⟨_, j', _, _, h_cond, _⟩ := List.findSome?_eq_some_iff.mp h_inner
   by_cases hif : (query i' == query j' && response i' != response j') = true
-  · rw [if_pos hif] at h_cond
+  · rw [ite_eq_left hif] at h_cond
     simp only [Option.some.injEq, Prod.mk.injEq] at h_cond
     obtain ⟨hi, hj⟩ := h_cond
     simp only [Bool.and_eq_true, beq_iff_eq, bne_iff_ne] at hif
     subst i
     subst j
     exact hif
-  · rw [if_neg hif] at h_cond
+  · rw [ite_eq_right hif] at h_cond
     exact absurd h_cond (by simp)
 
 omit [Fact (Nat.Prime p)] [DecidableEq G₁] [Group G₁] in

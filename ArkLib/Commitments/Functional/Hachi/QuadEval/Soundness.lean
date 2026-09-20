@@ -502,7 +502,7 @@ theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
       obtain ⟨-, hu₂, -, -, -, -, hγ₂, -⟩ := hrel (central fam)
       exact msis_of_commit_eq 𝓜(q, α) pp.outerMatrix hu₁ hu₂ hγ₁ hγ₂ (Fin.find_spec hB)
     · unfold buildWitness
-      rw [dif_pos hB]
+      rw [dite_eq_left hB]
   · by_cases hD : ∃ j, (resp j).carrierDec ≠ (resp (central fam)).carrierDec
     · -- Case (B): shared `t̂` but some carrier decomposition differs → `D`-kernel MSIS solution
       -- (the shared round-0 message `v` is what makes both branches commit to the same `v`).
@@ -512,11 +512,11 @@ theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
         obtain ⟨hv₂, -, -, -, -, hγ₂, -, -⟩ := hrel (central fam)
         exact msis_of_commit_eq 𝓜(q, α) pp.dMatrix hv₁ hv₂ hγ₁ hγ₂ (Fin.find_spec hD)
       · unfold buildWitness
-        rw [dif_neg hB, dif_pos hD]
+        rw [dite_eq_right hB, dite_eq_left hD]
     · -- Case (C): shared `t̂` and `ŵ` → the subtract-and-divide weak opening.
       refine Or.inr ⟨extractedOpening 𝓜(q, α) (b : ZMod q) fam resp, ?_, ?_⟩
       · unfold buildWitness
-        rw [dif_neg hB, dif_neg hD]
+        rw [dite_eq_right hB, dite_eq_right hD]
       · push Not at hB hD
         have ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec :=
           fun j => funext fun i => PolyVec.block_eq_of_flattenBlocks_eq (hB j) i

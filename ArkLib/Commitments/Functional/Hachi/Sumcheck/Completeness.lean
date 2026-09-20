@@ -288,7 +288,7 @@ lemma roundReduction_run_support
   rw [mem_support_pure_iff] at hpr
   subst hpr
   refine ⟨a, ?_⟩
-  simp only [Option.elim_some, roundReduction, roundVerifier, Verifier.run, hg, if_true] at hx
+  simp only [Option.elim_some, roundReduction, roundVerifier, Verifier.run, hg, ite_true] at hx
   simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
     Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
   exact hx

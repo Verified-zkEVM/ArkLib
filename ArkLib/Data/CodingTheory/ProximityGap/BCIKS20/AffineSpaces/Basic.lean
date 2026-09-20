@@ -846,7 +846,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
           obtain ⟨d₂, hd₂, hx₂_eq⟩ := haff_decomp x₂ hx₂_mem
           by_cases hc₁ : c₁ = 0 <;> by_cases hc₂ : c₂ = 0
           · -- c₁ = 0, c₂ = 0
-            simp only [dif_pos hc₁, dif_pos hc₂] at heq
+            simp only [dite_eq_left hc₁, dite_eq_left hc₂] at heq
             have heq' : x₁ - u 0 = x₂ - u 0 :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             have hx_eq : x₁ = x₂ := sub_left_injective heq'
@@ -854,7 +854,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
               (Subtype.ext (Subtype.ext hx_eq))
           · -- c₁ = 0, c₂ ≠ 0
             exfalso; apply hu0_in
-            simp only [dif_pos hc₁, dif_neg hc₂] at heq
+            simp only [dite_eq_left hc₁, dite_eq_right hc₂] at heq
             have heq' : x₁ - u 0 = c₂ • x₂ :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             rw [hx₁_eq, add_sub_cancel_left, hx₂_eq, smul_add] at heq'
@@ -864,7 +864,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             exact U'_sub.smul_mem c₂⁻¹ (U'_sub.sub_mem hd₁ (U'_sub.smul_mem _ hd₂))
           · -- c₁ ≠ 0, c₂ = 0
             exfalso; apply hu0_in
-            simp only [dif_neg hc₁, dif_pos hc₂] at heq
+            simp only [dite_eq_right hc₁, dite_eq_left hc₂] at heq
             have heq' : c₁ • x₁ = x₂ - u 0 :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             rw [hx₂_eq, add_sub_cancel_left, hx₁_eq, smul_add] at heq'
@@ -873,7 +873,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
               rw [smul_smul, inv_mul_cancel₀ hc₁, one_smul], hc₁u₀]
             exact U'_sub.smul_mem c₁⁻¹ (U'_sub.sub_mem hd₂ (U'_sub.smul_mem _ hd₁))
           · -- c₁ ≠ 0, c₂ ≠ 0
-            simp only [dif_neg hc₁, dif_neg hc₂] at heq
+            simp only [dite_eq_right hc₁, dite_eq_right hc₂] at heq
             have heq' : c₁ • x₁ = c₂ • x₂ :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             rw [hx₁_eq, hx₂_eq, smul_add, smul_add] at heq'

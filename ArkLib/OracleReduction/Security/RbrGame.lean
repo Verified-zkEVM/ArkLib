@@ -8,6 +8,8 @@ module
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.EvalDist.Monad.Branch
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
 /-!
 # `ProtocolSpec` glue for the round-by-round (knowledge) soundness games
@@ -17,33 +19,33 @@ ArkLib's round-by-round soundness games (`Verifier.rbrSoundness`,
 compute, per challenge round `i`, a probability of the shape
 
 ```
-Pr[ event | do
+Pr{let x ← do
   (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
     (do
       let tr ← proverRun                                -- adversarial, arbitrary
       let challenge ← liftComp (pSpec.getChallenge i) _
-      return (… tr … challenge …))).run' (← init)]
+      return (… tr … challenge …))).run' (← init)}[event x]
 ```
 
 This file provides the generic ArkLib-local glue to bound such probabilities from
-per-fixed-transcript bounds `∀ tr, Pr[ event tr · | $ᵗ (pSpec.Challenge i)] ≤ ε`:
+per-fixed-transcript bounds `∀ tr, Pr{let c ← $ᵗ (pSpec.Challenge i)}[event tr c] ≤ ε`:
 
 * `ProtocolSpec.simulateQ_addLift_challengeQueryImpl_getChallenge` resolves the simulated
   challenge query into an explicit uniform draw `liftM ($ᵗ (pSpec.Challenge i))`;
-* `ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le` is the master mixture bound
-  for the full game shape (built on VCV-io's `probEvent_bind_le_of_forall_le`);
-* `probEvent_uniformSample_eq_prob_uniformOfFintype` bridges VCV-io's `$ᵗ` (the
+* `ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le` is the master mixture bound
+  for the full game shape (built on VCVio's `prEvent_bind_le_of_forall_le`);
+* `prEvent_uniformSample_eq_prob_uniformOfFintype` bridges VCVio's `$ᵗ` (the
   `SampleableType` uniform sampler used by `challengeQueryImpl`) to the PMF-level
   `Pr_{ let x ←$ᵖ α }[…]` notation in which per-transcript bounds are usually proven.
 
 These statements are `ProtocolSpec`-specific and so live in ArkLib core, but their *content* is
 not: `challengeQueryImpl` is only `fun q => $ᵗ _`, i.e. "answer each query with a uniform sample of
 its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of protocol, transcript or
-round enters any proof below — they are `probEvent_bind_le_of_forall_le` plus a `simulateQ`
+round enters any proof below — they are `prEvent_bind_le_of_forall_le` plus a `simulateQ`
 normalisation. Generalising the challenge oracle to an arbitrary uniform-answer `QueryImpl` would
 let the mixture bounds move upstream, leaving thin specialisations here. The `loggingOracle` lemmas
 they build on already sit in `ArkLib/ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean` for
-exactly that reason; `probEvent_uniformSample_eq_prob_uniformOfFintype` stays here only because it
+exactly that reason; `prEvent_uniformSample_eq_prob_uniformOfFintype` stays here only because it
 mentions ArkLib's `Pr_{…}` notation.
 
 Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its generic
@@ -56,7 +58,7 @@ transfer. Its source-shaped `ExtractionCondition` is a *different* notion from A
 query log to the extractor.
 
 Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
-bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`). Those serve the *plain* (non-rbr)
+bounds (`ProtocolSpec.prEvent_optionT_simulateQ_addLift_*`). Those serve the *plain* (non-rbr)
 knowledge-soundness game, whose computation is `Option`-valued and draws its challenge first;
 see the section header preceding them for why the rbr master bound does not apply there. The two
 generic `loggingOracle` lemmas used by later reductions live separately in
@@ -105,19 +107,25 @@ obtained via `liftComp (pSpec.getChallenge i) _` — is at most `ε`.
 `rbrKnowledgeSoundness`); when applying this lemma to a game whose `do`-block destructures
 the prover output, pass `f` explicitly and use `exact` (the match-lambdas agree only up to
 definitional structure eta). -/
-theorem probEvent_simulateQ_addLift_getChallenge_bind_le
+theorem prEvent_simulateQ_addLift_getChallenge_bind_le
     {T β : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) T) (i : pSpec.ChallengeIdx)
     (f : T → pSpec.Challenge i → β) (E : β → Prop) {ε : ℝ≥0∞}
-    (h : ∀ tr : T, Pr[ fun c ↦ E (f tr c) | $ᵗ (pSpec.Challenge i)] ≤ ε) :
-    Pr[ E | do
+    (h : ∀ tr : T, Pr{let c ← $ᵗ (pSpec.Challenge i)}[E (f tr c)] ≤ ε) :
+    Pr{let x ← do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let tr ← oa
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return f tr challenge)).run' (← init)] ≤ ε := by
-  refine probEvent_bind_le_of_forall_le fun s _ ↦ ?_
+          return f tr challenge)).run' (← init)}[E x] ≤ ε := by
+  rw [← bind_assoc]
+  refine prEvent_bind_le_of_forall_le init (fun s ↦
+    (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+      (do
+        let tr ← oa
+        let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
+        return f tr challenge)).run' s) E fun s ↦ ?_
   have hbody : (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
       (do
         let tr ← oa
@@ -131,8 +139,8 @@ theorem probEvent_simulateQ_addLift_getChallenge_bind_le
     simp only [simulateQ_pure, StateT.run_monadLift, StateT.run_pure, bind_pure_comp,
       Functor.map_map, monadLift_self]
   rw [hbody]
-  refine probEvent_bind_le_of_forall_le fun x _ ↦ ?_
-  rw [probEvent_map]
+  refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
+  rw [prEvent_map]
   exact h x.1
 
 end ProtocolSpec
@@ -141,12 +149,12 @@ end ProtocolSpec
 sampler `$ᵗ α` (the `SampleableType.selectElem` used by `challengeQueryImpl`) coincides with
 the PMF-level probability `Pr_{ let x ←$ᵖ α }[…]` under `PMF.uniformOfFintype`. Use it to
 discharge the per-transcript hypothesis of
-`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le` from a PMF-level bound. -/
-lemma probEvent_uniformSample_eq_prob_uniformOfFintype {α : Type} [SampleableType α]
+`ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le` from a PMF-level bound. -/
+lemma prEvent_uniformSample_eq_prob_uniformOfFintype {α : Type} [SampleableType α]
     [Fintype α] [Nonempty α] (p : α → Prop) :
-    Pr[ p | $ᵗ α] = Pr_{ let x ←$ᵖ α }[ p x ] := by
+    Pr{let x ← $ᵗ α}[p x] = Pr_{ let x ←$ᵖ α }[ p x ] := by
   classical
-  rw [probEvent_uniformSample, prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample, prob_uniform_eq_card_filter_div_card]
   simp only [ENNReal.coe_natCast]
 
 section ExecutableDocumentation
@@ -164,14 +172,14 @@ example {T₁ T₂ L : Type}
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) ((T₁ × T₂) × L)) (i : pSpec.ChallengeIdx)
     (E : T₁ × pSpec.Challenge i × L → Prop) {ε : ℝ≥0∞}
     (h : ∀ (t₁ : T₁) (log : L),
-      Pr[ fun c ↦ E (t₁, c, log) | $ᵗ (pSpec.Challenge i)] ≤ ε) :
-    Pr[ E | do
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[E (t₁, c, log)] ≤ ε) :
+    Pr{let x ← do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         (do
           let ⟨⟨t₁, _⟩, log⟩ ← oa
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (t₁, challenge, log))).run' (← init)] ≤ ε :=
-  probEvent_simulateQ_addLift_getChallenge_bind_le init impl oa i
+          return (t₁, challenge, log))).run' (← init)}[E x] ≤ ε :=
+  prEvent_simulateQ_addLift_getChallenge_bind_le init impl oa i
     (fun x c ↦ (x.1.1, c, x.2)) E (fun x ↦ h x.1.1 x.2)
 
 end ExecutableDocumentation
@@ -189,14 +197,14 @@ make the master lemma above inapplicable:
   inside the same computation.
 
 The underlying probabilistic steps — the "zero off the challenge event" monotonicity step and
-its additive and convex prefix-split sharpenings (`probEvent_bind_le_probEvent`,
-`probEvent_bind_le_probEvent_add`, `probEvent_bind_le_probEvent_convex`) — live upstream in
+its additive and convex prefix-split sharpenings (`prEvent_bind_le_prEvent_of_forall_eq_zero`,
+`prEvent_bind_le_prEvent_add`, `prEvent_bind_le_prEvent_add_mul_prEvent_not`) — live upstream in
 VCVio (`VCVio/EvalDist/Monad/Basic.lean`). What follows is the ArkLib-specific `ProtocolSpec`
 glue built on top of them.
 
 The master bound for this shape is
-`ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. It consumes a
-challenge-only probability bound `Pr[fun c ↦ ∃ t, E (f c t) | $ᵗ _] ≤ ε`, where the `∃ t`
+`ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. It consumes a
+challenge-only probability bound `Pr{let c ← $ᵗ _}[∃ t, E (f c t)] ≤ ε`, where the `∃ t`
 ranges over *all* possible tail outputs — the worst-case form in which per-round soundness
 bounds are normally stated, so no reasoning about the tail's distribution is needed. -/
 namespace ProtocolSpec
@@ -215,7 +223,7 @@ uniform challenge.
 conclusion) so that applying the lemma to a concrete game by `refine` assigns `oa` to the
 game's computation by *definitional* unification; the caller then proves `hoa` by genuine
 rewriting (log-discarding, prover-run unfolding) without having to respell the game term. -/
-theorem probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
+theorem prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     {T β : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option β)) (i : pSpec.ChallengeIdx)
@@ -224,10 +232,10 @@ theorem probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     (hoa : oa = do
       let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
       (fun t ↦ some (f c t)) <$> tail c)
-    (h : Pr[ fun c ↦ ∃ t, E (f c t) | $ᵗ (pSpec.Challenge i)] ≤ ε) :
-    Pr[ E | OptionT.mk (do
+    (h : Pr{let c ← $ᵗ (pSpec.Challenge i)}[∃ t, E (f c t)] ≤ ε) :
+    Pr{let x ← OptionT.mk (do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        oa).run' (← init))] ≤ ε := by
+        oa).run' (← init))}[E x] ≤ ε := by
   subst hoa
   -- Resolve the simulated challenge query into a top-level uniform draw, per initial state.
   have hbody : ∀ s : σ,
@@ -244,18 +252,20 @@ theorem probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
       StateT.run'_bind']
     simp only [StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
   rw [OptionT.mk_bind]
-  refine probEvent_bind_le_of_forall_le fun s _ ↦ ?_
+  refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
   rw [hbody s, OptionT.mk_bind]
-  refine le_trans (probEvent_bind_le_probEvent (p := fun c ↦ ∃ t, E (f c t)) ?_)
-    (le_trans (le_of_eq (OptionT.probEvent_liftM _ _)) h)
-  intro c _ hc
-  refine probEvent_eq_zero fun z hz hE ↦ hc ?_
-  rw [OptionT.mem_support_iff, OptionT.run_mk, support_map, Set.mem_image] at hz
-  obtain ⟨t, _, ht⟩ := hz
-  exact ⟨t, by rw [Option.some_inj] at ht; rw [ht]; exact hE⟩
+  refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E ?_).trans ?_
+  · intro c _ hc
+    rw [OptionT.prEvent_mk_eq_zero_iff]
+    intro z hz hE
+    rw [support_map, Set.mem_image] at hz
+    obtain ⟨t, _, ht⟩ := hz
+    exact hc ⟨t, by rw [Option.some_inj] at ht; rw [ht]; exact hE⟩
+  · change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[∃ t, E (f c t)] ≤ ε
+    simpa only [OptionT.prEvent_lift] using h
 
 /-- **Prefix-extended, `Option`-valued master mixture bound for the knowledge-soundness game
-shape.** Generalizes `probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` in two
+shape.** Generalizes `prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` in two
 directions needed by multi-round games: an arbitrary (adversarial) prefix `mid` runs *before*
 the challenge draw, and the post-challenge value `f pre c t` is `Option`-valued (the verifier
 may reject, producing `none`). The challenge-only hypothesis accordingly asks for the
@@ -267,12 +277,12 @@ game's computation by *definitional* unification; the caller then proves `hoa` b
 rewriting without having to respell the game term. The conclusion fixes the oracle state `s`
 (rather than sampling it from an `init`) because the intended use is *inside* an outer game
 bound (e.g. the tail hypothesis of
-`probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`), where the state has
-already been fixed; recover the `init`-sampled form with `probEvent_bind_le_of_forall_le`.
+`prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`), where the state has
+already been fixed; recover the `init`-sampled form with `prEvent_bind_le_of_forall_le`.
 
 (Intended outer bound: the tail hypothesis of
-`probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`.) -/
-theorem probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
+`prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`.) -/
+theorem prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
     {P T β : Type}
     (s : σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option β)) (i : pSpec.ChallengeIdx)
@@ -284,10 +294,10 @@ theorem probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
       (f pre c) <$> tail pre c)
     (h : ∀ pre : P,
-      Pr[ fun c ↦ ∃ t b, f pre c t = some b ∧ E b | $ᵗ (pSpec.Challenge i)] ≤ ε) :
-    Pr[ E | OptionT.mk
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[∃ t b, f pre c t = some b ∧ E b] ≤ ε) :
+    Pr{let x ← (OptionT.mk
       ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        oa).run' s)] ≤ ε := by
+        oa).run' s))}[E x] ≤ ε := by
   subst hoa
   -- Split off the simulated prefix, then resolve the challenge query, per initial state.
   have hbody : ∀ s : σ,
@@ -323,20 +333,24 @@ theorem probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       simp only [StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
     exact hx x.1 x.2
   rw [hbody s, OptionT.mk_bind]
-  refine probEvent_bind_le_of_forall_le fun x _ ↦ ?_
+  refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
   rw [OptionT.mk_bind]
-  refine le_trans (probEvent_bind_le_probEvent
-    (p := fun c ↦ ∃ t b, f x.1 c t = some b ∧ E b) ?_)
-    (le_trans (le_of_eq (OptionT.probEvent_liftM _ _)) (h x.1))
-  intro c _ hc
-  refine probEvent_eq_zero fun z hz hE ↦ hc ?_
-  rw [OptionT.mem_support_iff, OptionT.run_mk, support_map, Set.mem_image] at hz
-  obtain ⟨t, _, htz⟩ := hz
-  exact ⟨t, z, htz, hE⟩
+  refine (prEvent_bind_le_prEvent_of_support _ _
+    (fun c ↦ ∃ t b, f x.1 c t = some b ∧ E b) E ?_).trans ?_
+  · intro c _ hc
+    rw [OptionT.prEvent_mk_eq_zero_iff]
+    intro z hz hE
+    rw [support_map, Set.mem_image] at hz
+    obtain ⟨t, _, htz⟩ := hz
+    exact hc ⟨t, z, htz, hE⟩
+  · change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[
+      ∃ t b, f x.1 c t = some b ∧ E b] ≤ ε
+    simpa only [OptionT.prEvent_lift] using h x.1
 
 /-- The two algebraically-equal spellings of a convex combination `λ·1 + (1−λ)·ε` in `ℝ≥0∞`,
 for `λ, ε ≤ 1`. Used to turn the `λ + (1−λ)·ε` shape produced by
-`probEvent_bind_le_probEvent_convex` into the monotone-in-`λ` shape `ε + λ·(1−ε)`. -/
+`prEvent_bind_le_prEvent_add_mul_prEvent_not` into the monotone-in-`λ` shape
+`ε + λ·(1−ε)`. -/
 private lemma enn_convex_symm (a ε : ℝ≥0∞) (ha : a ≤ 1) (hε : ε ≤ 1) :
     a + (1 - a) * ε = ε + a * (1 - ε) := by
   have ha' : a ≠ ⊤ := ne_top_of_le_ne_top ENNReal.one_ne_top ha
@@ -361,7 +375,7 @@ tail game on every challenge *off* `p` — the off-prefix tail bound `ε₂` is 
 mass, and the prefix bound `ε₁` only on the remaining `(1 − ε₂)` fraction. Requires `ε₂ ≤ 1`.
 Dropping the `(1 − ε₂) ≤ 1` factor recovers the additive bound `ε₂ + ε₁`, so this is sharper
 by exactly `ε₁·ε₂`. Engine of *convex-form* knowledge-soundness errors. -/
-theorem probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
+theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     {β : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option β)) (i : pSpec.ChallengeIdx)
@@ -371,14 +385,14 @@ theorem probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     (hoa : oa = do
       let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
       tail c)
-    (h₁ : Pr[ p | $ᵗ (pSpec.Challenge i)] ≤ ε₁)
+    (h₁ : Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] ≤ ε₁)
     (h₂ : ∀ c, ¬ p c → ∀ s : σ,
-      Pr[ E | OptionT.mk
+      Pr{let x ← (OptionT.mk
         ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (tail c)).run' s)] ≤ ε₂) :
-    Pr[ E | OptionT.mk (do
+          (tail c)).run' s))}[E x] ≤ ε₂) :
+    Pr{let x ← OptionT.mk (do
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        oa).run' (← init))] ≤ ε₂ + ε₁ * (1 - ε₂) := by
+        oa).run' (← init))}[E x] ≤ ε₂ + ε₁ * (1 - ε₂) := by
   subst hoa
   have hbody : ∀ s : σ,
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
@@ -393,12 +407,23 @@ theorem probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
       StateT.run'_bind']
     simp only [StateT.run_liftM, bind_assoc, pure_bind]
   rw [OptionT.mk_bind]
-  refine probEvent_bind_le_of_forall_le fun s _ ↦ ?_
+  refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
   rw [hbody s, OptionT.mk_bind]
-  -- Convex per-challenge split, then bound `Pr[p]` by `ε₁` inside the monotone-in-`Pr[p]` shape.
-  refine le_trans (probEvent_bind_le_probEvent_convex (p := p) fun c _ hc ↦ h₂ c hc s) ?_
-  rw [enn_convex_symm _ _ probEvent_le_one hε₂]
-  exact add_le_add le_rfl (mul_le_mul' (le_trans (le_of_eq (OptionT.probEvent_liftM _ _)) h₁)
-    le_rfl)
+  refine (prEvent_bind_le_prEvent_add_mul_prEvent_not _ _ p E fun c hc ↦ h₂ c hc s).trans ?_
+  change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[p c] + ε₂ *
+      Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[¬ p c] ≤ ε₂ + ε₁ * (1 - ε₂)
+  simp only [OptionT.prEvent_lift]
+  have hsum : Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] +
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] = 1 := by
+    simpa using prEvent_add_prEvent_not ($ᵗ (pSpec.Challenge i)) p
+  have hsum' : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] +
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] = 1 := by
+    rw [add_comm]
+    exact hsum
+  have hnot : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] =
+      1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] :=
+    ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top hsum'
+  rw [hnot, mul_comm ε₂, enn_convex_symm _ _ (prEvent_le_one _ _) hε₂]
+  exact add_le_add le_rfl (mul_le_mul' h₁ le_rfl)
 
 end ProtocolSpec

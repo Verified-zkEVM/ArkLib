@@ -486,7 +486,7 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
     1 = Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
     _ = (if Code.jointProximity C (u := u) δ then 0
         else Pr_{let γ ← $ᵖ F}[
-          Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (if_neg hjoint).symm
+          Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (ite_eq_right hjoint).symm
     _ ≤ epsCa (F := F) (A := F) C δ δ := by
       unfold epsCa
       exact le_iSup (fun w : Code.WordStack F (Fin 2) ι =>

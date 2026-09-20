@@ -74,8 +74,9 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 
 theorem reduction_completeness {ε : ℝ≥0}
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
-      Pr[ fun ⟨stmtOut, witOut⟩ => (stmtOut, witOut) ∈ relOut | do
-        (simulateQ impl <| combineMap mapStmt mapWit ⟨stmtIn, witIn⟩).run' (← init)] ≥ 1 - ε) :
+      Pr{let ⟨stmtOut, witOut⟩ ← do
+        (simulateQ impl <| combineMap mapStmt mapWit ⟨stmtIn, witIn⟩).run' (← init)}[(stmtOut,
+          witOut) ∈ relOut] ≥ 1 - ε) :
     Reduction.completeness init impl relIn relOut (reduction mapStmt mapWit) ε := by
   classical
   simp only [Reduction.completeness, ChallengeIdx, Challenge, QueryImpl.addLift_def,

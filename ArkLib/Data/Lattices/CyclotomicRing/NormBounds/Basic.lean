@@ -185,12 +185,12 @@ theorem Rq.l1Norm_one (h : 1 ≤ Φ.φ.natDegree) : ‖(1 : Rq Φ)‖₁ = 1 := 
   have hq2 : 2 ≤ q := (Fact.out (p := Nat.Prime q)).two_le
   unfold Rq.l1Norm
   rw [Finset.sum_eq_single (0 : ℕ)]
-  · rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, if_pos rfl,
+  · rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, ite_eq_left rfl,
       show (1 : ZMod q) = ((1 : ℕ) : ZMod q) by norm_cast,
       ZMod.valMinAbs_natCast_of_le_half (by omega)]
     norm_num
   · intro k _ hk
-    rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, if_neg hk]
+    rw [Rq.one_val Φ h, CompPoly.CPolynomial.coeff_one, ite_eq_right hk]
     simp
   · intro h0
     exact absurd (Finset.mem_range.mpr (by omega)) h0

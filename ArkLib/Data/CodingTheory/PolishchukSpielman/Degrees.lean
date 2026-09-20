@@ -146,8 +146,8 @@ private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f 
   have h_swap_coeff_nonzero : ((swap f).coeff n).coeff N ≠ 0 := by
     rw [ps_swap_coeff f N n]
     exact hn.2
-  have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 :=
-    (ne_of_apply_ne Polynomial.coeff fun a ↦ h_swap_coeff_nonzero (congrFun a.symm N)).symm
+  have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 := fun h ↦
+    h_swap_coeff_nonzero (by rw [h, Polynomial.coeff_zero])
   have h_swap_coeff_nonzero_natDegree_le : Nat.max (((swap f).coeff n).natDegree)
       (Nat.max (((swap f).coeff n).natDegree) N) ≤ degreeX (swap f) := by
     refine le_trans ?_ (Finset.le_sup <| show n ∈ ((swap f).support) from ?_) <;>
@@ -213,7 +213,7 @@ lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
       eq_zero_of_degree_lt_of_eval_finset_eq_zero P_x
         (degree_le_natDegree.trans_lt (by exact_mod_cast h_p_ne_zero))
         h_contra
-    exact absurd h_poly_zero (leadingCoeffY_ne_zero _ |>.2 hB)
+    exact absurd h_poly_zero (Polynomial.leadingCoeff_ne_zero.mpr hB)
   refine ⟨x, hx.1, le_antisymm ?_ ?_⟩
   · rw [evalX]
     simp only [natDegree_le_iff_degree_le, degree_le_iff_coeff_zero, Nat.cast_lt,
@@ -316,7 +316,9 @@ lemma ps_degX_bound {F : Type} [Field F]
       have h_filter_card : (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > b_y - natDegreeY A := by
         apply_rules [ps_filter_nonzero_card_y]
         all_goals linarith
-      grind +qlia
+      have h_mul : natDegreeY B = natDegreeY P + natDegreeY A := by
+        simpa [natDegreeY, hBA] using Polynomial.natDegree_mul hP hA
+      omega
     have := ps_exists_y_preserve_degree_x P hP (P_y.filter (fun y ↦ evalY y A ≠ 0)) ?_ <;> aesop
   -- Since $B = P * A$, we have $evalY y B = evalY y P * evalY y A$.
   have h_eval_Y_B : evalY y B = evalY y P * evalY y A := by unfold evalY; aesop

@@ -791,8 +791,8 @@ lemma R_star_star_lower_bound
       have h_inner :
           ∀ x, ((if Uᵣ x = Vᵣ x then 1 else 0) + if Uᵣ x = Vᵣ x then 0 else 1) = 1 := fun x => by
         by_cases h : Uᵣ x = Vᵣ x
-        · simp only [h, if_true]
-        · simp only [h, if_false]
+        · simp only [h, ite_true]
+        · simp only [h, ite_false]
       simp_rw [h_inner]
       simp only [sum_const, card_univ, smul_eq_mul, mul_one]
     rw [h_sum_eq_agreeing_cols]

@@ -104,7 +104,7 @@ private theorem basisProd_split [CommSemiring R] (g : Bool → R → R)
       simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin,
         Fin.val_castAdd, splitEquiv_val]
       rw [Nat.add_comm y.val (2 ^ nl * x.val), Nat.testBit_two_pow_mul_add x.val y.isLt,
-        if_pos j.isLt]
+        ite_eq_left j.isLt]
     have hval : (xl ++ xh).get (Fin.castAdd nh j) = xl.get j := by
       simp only [Vector.get_eq_getElem, Fin.val_castAdd]
       rw [Vector.getElem_append_left j.isLt]
@@ -118,7 +118,7 @@ private theorem basisProd_split [CommSemiring R] (g : Bool → R → R)
       simp only [BitVec.getLsb_eq_getElem, Fin.getElem_fin, BitVec.getElem_ofFin,
         Fin.val_natAdd, splitEquiv_val]
       rw [Nat.add_comm y.val (2 ^ nl * x.val), Nat.testBit_two_pow_mul_add x.val y.isLt,
-        if_neg (by omega), Nat.add_sub_cancel_left]
+        ite_eq_right (by omega), Nat.add_sub_cancel_left]
     have hval : (xl ++ xh).get (Fin.natAdd nl k) = xh.get k := by
       simp only [Vector.get_eq_getElem, Fin.val_natAdd]
       rw [Vector.getElem_append_right (by omega) (Nat.le_add_right nl k.val)]

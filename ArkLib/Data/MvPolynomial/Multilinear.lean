@@ -135,7 +135,7 @@ theorem eqPolynomial_eval_zeroOne (r x : σ → Fin 2) :
     have (i : Fin 2) : (1 - (i : R)) * (1 - (i : R)) + i * i = 1 := by
       fin_cases i <;> ring_nf <;> simp
     simp [this]
-  · rw [if_neg h]
+  · rw [ite_eq_right h]
     have : ∃ i : σ, x i ≠ r i := Function.ne_iff.mp h
     obtain ⟨i, hi⟩ := this
     refine Finset.prod_eq_zero (Finset.mem_univ i) ?_

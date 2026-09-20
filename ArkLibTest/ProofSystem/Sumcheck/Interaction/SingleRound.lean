@@ -38,7 +38,7 @@ example :
   simp only [polynomial, List.map_cons, List.map_nil, List.sum_cons, List.sum_nil, eval_X,
     add_zero, zero_add]
   have h : (1 : ZMod 17) ≠ 2 := by decide
-  rw [if_neg h]
+  rw [ite_eq_right h]
 
 /-- The false input polynomial in the degree-zero soundness regression. -/
 noncomputable def zeroMessage : Message (ZMod 17) 0 :=

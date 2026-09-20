@@ -84,7 +84,7 @@ abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
 noncomputable def tSdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[tSdhCondition (g₁ := g₁) | tSdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
+  Pr{let result ← (tSdhGame (g₁ := g₁) (g₂ := g₂) D adversary)}[(tSdhCondition (g₁ := g₁)) result]
 
 /-- The `t`-SDH assumption bounds every adversary's success probability by `error`. -/
 def tSdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
@@ -120,7 +120,7 @@ abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
 noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[arsdhCondition D | arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
+  Pr{let result ← (arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary)}[(arsdhCondition D) result]
 
 /-- The adaptive rational strong Diffie–Hellman (ARSDH) assumption.
 Taken from Definition 9.6 in [CGKY25]. -/

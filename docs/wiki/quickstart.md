@@ -6,10 +6,14 @@ Use it as the main guide for routine local checks.
 ## Dependency versions
 
 The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
-`lakefile.toml` pins CompPoly and VCVio to exact commits; `lake-manifest.json` records
+`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
 the complete resolved dependency set, including the PolyFun revision selected by VCVio.
 Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
 validated against VCVio before ArkLib can adopt it.
+The VCVio pin includes the native probability prerequisites and
+[the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
+reviewable revision rather than a moving branch. Independent Mathlib-PMF code is deferred as
+described in the [migration ledger](../design/native-measure-ledger.md).
 Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
 The September 4 baseline in `docs/design/00-current-status.md` records the original typed
 interaction implementation train, not the current package versions.

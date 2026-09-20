@@ -314,12 +314,14 @@ omit [DecidableEq G₁] in
 /-- Transition 1: extending the binding game output preserves the event. -/
 lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) |
-      Commitment.bindingGame (init := pure ∅) (impl := randomOracle) (AuxState := AuxState)
+    Pr{let result ← (Commitment.bindingGame (init := pure ∅)
+      (impl := randomOracle) (AuxState := AuxState)
         (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
-        (adversary := adversary)]
-    = Pr[bindingCondExt (p := p) (n := n) | bindingGameExt (g₁ := g₁) (g₂ := g₂)
-      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
+        (adversary := adversary))}[
+          (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p)) result]
+    = Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
+      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+        (bindingCondExt (p := p) (n := n)) result] := by
   let proj : BindingExtOutput (p := p) n G₁ G₂ → BindingOutput (p := p) n :=
     fun ⟨_, _, _, query, resp₁, resp₂, accept₁, accept₂, _, _⟩ =>
       ⟨query, resp₁, resp₂, accept₁, accept₂⟩
@@ -329,142 +331,149 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
     funext x
     rcases x with ⟨_, _, _, _, _, _, _, _, _, _⟩
     rfl
-  rw [hcond_eq]
-  apply OptionT.probEvent_eq_of_run_map_eq _ _ proj
-    (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p))
-  simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk]
-  rw [pure_bind]
-  have hsample :
-      (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
-        Groups.sampleNonzeroZMod (p := p) :=
-    Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
-  have hkeygen :
-      (simulateQ randomOracle (do
-        let a ← Groups.sampleNonzeroZMod (p := p)
-        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
-        =
-      (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-        Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-          <$> Groups.sampleNonzeroZMod (p := p) := by
-    calc
-      (simulateQ randomOracle (do
-        let a ← Groups.sampleNonzeroZMod (p := p)
-        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
-          = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-              <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-            rw [← StateT.run'_map', ← simulateQ_map]
-            simp only [map_eq_bind_pure_comp]
-            congr 1
-      _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-              <$> Groups.sampleNonzeroZMod (p := p) := by
-            rw [hsample]
-  let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
-  let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
-    QueryImpl.addLift
-      (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
-      (challengeQueryImpl (pSpec := pSpec'))
-  let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
-  let bodyBase : ZMod p → OracleComp _ (Option (BindingOutput (p := p) n)) := fun τ => do
-    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
-    let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
-    let reduction := Reduction.mk (adversary.prover srs)
-      ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-        (srs, srs)).verifier
-    let accept₁ := (← (reduction.verdict
-      (cm, (⟨query, resp₁⟩ :
-        (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
-          OracleInterface.Response q)) st₁).run).getD false
-    let accept₂ := (← (reduction.verdict
-      (cm, (⟨query, resp₂⟩ :
-        (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
-          OracleInterface.Response q)) st₂).run).getD false
-    pure (some (⟨query, resp₁, resp₂, accept₁, accept₂⟩ : BindingOutput (p := p) n))
-  let bodyExt : ZMod p → OracleComp _ (Option (BindingExtOutput (p := p) n G₁ G₂)) :=
-    fun τ => do
+  have hgame :
+      Commitment.bindingGame (init := pure ∅) (impl := randomOracle)
+        (AuxState := AuxState)
+        (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
+        (adversary := adversary) =
+      proj <$> bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
+    apply OptionT.ext
+    simp only [OptionT.run_map]
+    simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk]
+    rw [pure_bind]
+    have hsample :
+        (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
+          Groups.sampleNonzeroZMod (p := p) :=
+      Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
+    have hkeygen :
+        (simulateQ randomOracle (do
+          let a ← Groups.sampleNonzeroZMod (p := p)
+          pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+            Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+          =
+        (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+            <$> Groups.sampleNonzeroZMod (p := p) := by
+      calc
+        (simulateQ randomOracle (do
+          let a ← Groups.sampleNonzeroZMod (p := p)
+          pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+            Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+            = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+                Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+                <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
+              rw [← StateT.run'_map', ← simulateQ_map]
+              simp only [map_eq_bind_pure_comp]
+              congr 1
+        _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+                Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+                <$> Groups.sampleNonzeroZMod (p := p) := by
+              rw [hsample]
+    let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
+    let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
+      QueryImpl.addLift
+        (randomOracle : QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
+        (challengeQueryImpl (pSpec := pSpec'))
+    let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
+    let bodyBase : ZMod p → OracleComp _ (Option (BindingOutput (p := p) n)) := fun τ => do
       let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
       let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
       let reduction := Reduction.mk (adversary.prover srs)
         ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
           (srs, srs)).verifier
-      let result₁ ← (reduction.run
+      let accept₁ := (← (reduction.verdict
         (cm, (⟨query, resp₁⟩ :
-          (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) × OracleInterface.Response q))
-        st₁).run
-      let result₂ ← (reduction.run
+          (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+            OracleInterface.Response q)) st₁).run).getD false
+      let accept₂ := (← (reduction.verdict
         (cm, (⟨query, resp₂⟩ :
-          (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) × OracleInterface.Response q))
-        st₂).run
-      let accept₁ := result₁.map (fun result => result.2) |>.getD false
-      let accept₂ := result₂.map (fun result => result.2) |>.getD false
-      let proof₁ : G₁ := result₁.map (fun result => result.1.1 0) |>.getD (1 : G₁)
-      let proof₂ : G₁ := result₂.map (fun result => result.1.1 0) |>.getD (1 : G₁)
-      pure (some (τ, srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂))
-  rw [hkeygen]
-  simp only [map_eq_bind_pure_comp]
-  simp only [bind_assoc, pure_bind, Function.comp_apply]
-  change (OptionT.mk (do
-    let τ ← sample
-    (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))).run =
-      (Option.map proj <$> do
-        let τ ← sample
-        (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache))
-  rw [map_eq_bind_pure_comp]
-  conv_rhs => rw [bind_assoc]
-  simpa only [OptionT.run, OptionT.mk, Function.comp_def, id_map] using
-    congrArg OptionT.run
-      (OptionT.map_mk_bind_eq_of_body
-        (sample := sample)
-        (body₁ := fun τ => (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))
-        (body₂ := fun τ => (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache))
-        (f := id) (post := fun _ => proj)
-        (hBody := by
-          intro τ
-          rw [← StateT.run'_map' (f := Option.map id),
-            ← StateT.run'_map' (f := Option.map proj)]
-          apply congrArg (fun mx : StateT unifSpec.QueryCache ProbComp
-            (Option (BindingOutput (p := p) n)) => mx.run' ∅)
-          dsimp only [bodyBase, bodyExt]
-          rw [← simulateQ_map, ← simulateQ_map]
-          apply congrArg (simulateQ impl)
-          simp only [map_eq_bind_pure_comp, bind_assoc]
-          congr 1
-          funext claim
-          rcases claim with ⟨cm, query, resp₁, resp₂, st₁, st₂⟩
-          rw [Reduction.verdict_run_eq_map_run, Reduction.verdict_run_eq_map_run]
-          exact bind_two_option_project_get_d
-            (mx := ((Reduction.mk
-              (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
-              ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-                (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
-                  Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
-              (cm, (⟨query, resp₁⟩ :
-                (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
-                  OracleInterface.Response q)) st₁).run)
-            (my := ((Reduction.mk
-              (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
-              ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
-                (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
-                  Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
-              (cm, (⟨query, resp₂⟩ :
-                (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
-                  OracleInterface.Response q)) st₂).run)
-            (fa := fun result : (FullTranscript pSpec' × Bool × Unit) × Bool => result.2)
-            (fb := fun result : (FullTranscript pSpec' × Bool × Unit) × Bool => result.2)
-            (da := false) (db := false)
-            (mkBase := fun accept₁ accept₂ =>
-              (⟨query, resp₁, resp₂, accept₁, accept₂⟩ : BindingOutput (p := p) n))
-            (mkExt := fun result₁ result₂ =>
-              (τ, Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ, cm, query,
-                resp₁, resp₂,
-                (Option.map (fun result => result.2) result₁).getD false,
-                (Option.map (fun result => result.2) result₂).getD false,
-                (Option.map (fun result => result.1.1 0) result₁).getD (1 : G₁),
-                (Option.map (fun result => result.1.1 0) result₂).getD (1 : G₁)))
-            (proj := proj) (by intro result₁ result₂; rfl)))
+          (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+            OracleInterface.Response q)) st₂).run).getD false
+      pure (some (⟨query, resp₁, resp₂, accept₁, accept₂⟩ : BindingOutput (p := p) n))
+    let bodyExt : ZMod p → OracleComp _ (Option (BindingExtOutput (p := p) n G₁ G₂)) :=
+      fun τ => do
+        let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ
+        let ⟨cm, query, resp₁, resp₂, st₁, st₂⟩ ← liftComp (adversary.claim srs) _
+        let reduction := Reduction.mk (adversary.prover srs)
+          ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
+            (srs, srs)).verifier
+        let result₁ ← (reduction.run
+          (cm, (⟨query, resp₁⟩ :
+            (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) × OracleInterface.Response q))
+          st₁).run
+        let result₂ ← (reduction.run
+          (cm, (⟨query, resp₂⟩ :
+            (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) × OracleInterface.Response q))
+          st₂).run
+        let accept₁ := result₁.map (fun result => result.2) |>.getD false
+        let accept₂ := result₂.map (fun result => result.2) |>.getD false
+        let proof₁ : G₁ := result₁.map (fun result => result.1.1 0) |>.getD (1 : G₁)
+        let proof₂ : G₁ := result₂.map (fun result => result.1.1 0) |>.getD (1 : G₁)
+        pure (some (τ, srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂))
+    rw [hkeygen]
+    simp only [map_eq_bind_pure_comp]
+    simp only [bind_assoc, pure_bind, Function.comp_apply]
+    change (OptionT.mk (do
+      let τ ← sample
+      (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))).run =
+        (Option.map proj <$> do
+          let τ ← sample
+          (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache))
+    rw [map_eq_bind_pure_comp]
+    conv_rhs => rw [bind_assoc]
+    simpa only [OptionT.run, OptionT.mk, Function.comp_def, id_map] using
+      congrArg OptionT.run
+        (OptionT.map_mk_bind_eq_of_body
+          (sample := sample)
+          (body₁ := fun τ => (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))
+          (body₂ := fun τ => (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache))
+          (f := id) (post := fun _ => proj)
+          (hBody := by
+            intro τ
+            rw [← StateT.run'_map' (f := Option.map id),
+              ← StateT.run'_map' (f := Option.map proj)]
+            apply congrArg (fun mx : StateT unifSpec.QueryCache ProbComp
+              (Option (BindingOutput (p := p) n)) => mx.run' ∅)
+            dsimp only [bodyBase, bodyExt]
+            rw [← simulateQ_map, ← simulateQ_map]
+            apply congrArg (simulateQ impl)
+            simp only [map_eq_bind_pure_comp, bind_assoc]
+            congr 1
+            funext claim
+            rcases claim with ⟨cm, query, resp₁, resp₂, st₁, st₂⟩
+            rw [Reduction.verdict_run_eq_map_run, Reduction.verdict_run_eq_map_run]
+            exact bind_two_option_project_get_d
+              (mx := ((Reduction.mk
+                (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
+                ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
+                  (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+                    Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
+                (cm, (⟨query, resp₁⟩ :
+                  (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+                    OracleInterface.Response q)) st₁).run)
+              (my := ((Reduction.mk
+                (adversary.prover (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ))
+                ((kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)).opening
+                  (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ,
+                    Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)).verifier).run
+                (cm, (⟨query, resp₂⟩ :
+                  (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
+                    OracleInterface.Response q)) st₂).run)
+              (fa := fun result : (FullTranscript pSpec' × Bool × Unit) × Bool => result.2)
+              (fb := fun result : (FullTranscript pSpec' × Bool × Unit) × Bool => result.2)
+              (da := false) (db := false)
+              (mkBase := fun accept₁ accept₂ =>
+                (⟨query, resp₁, resp₂, accept₁, accept₂⟩ : BindingOutput (p := p) n))
+              (mkExt := fun result₁ result₂ =>
+                (τ, Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ, cm, query,
+                  resp₁, resp₂,
+                  (Option.map (fun result => result.2) result₁).getD false,
+                  (Option.map (fun result => result.2) result₂).getD false,
+                  (Option.map (fun result => result.1.1 0) result₁).getD (1 : G₁),
+                  (Option.map (fun result => result.1.1 0) result₂).getD (1 : G₁)))
+              (proj := proj) (by intro result₁ result₂; rfl)))
+  simp only [hcond_eq, hgame, prEvent_map, Function.comp_apply]
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
@@ -472,12 +481,13 @@ include g₁ g₂ pairing in
 lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr[bindingCondExt (p := p) (n := n) | bindingGameExt (g₁ := g₁) (g₂ := g₂)
-      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
-    ≤ Pr[(Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
-        (n := n) |
-      bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
+    Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
+      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+        (bindingCondExt (p := p) (n := n)) result]
+    ≤ Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
+        (n := n)) result] := by
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
@@ -529,13 +539,13 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   let Q : BindingExtOutput (p := p) n G₁ G₂ → Prop :=
     (Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p) (n := n)
   have hmono :
-      Pr[P | OptionT.mk (do
+      Pr{let result ← (OptionT.mk (do
         let τ ← sample
-        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
-      ≤ Pr[Q | OptionT.mk (do
+        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(P) result]
+      ≤ Pr{let result ← (OptionT.mk (do
         let τ ← sample
-        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))] := by
-    apply probEvent_mono
+        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result] := by
+    apply prEvent_mono_of_support
     intro y hy hP
     obtain ⟨τ, _, hy⟩ := OptionT.mem_support_bind_mk _ _ hy
     refine OptionT.aux_mem_support_simulateQ_run' impl (gameComp τ)
@@ -637,12 +647,12 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
       hverify₁ hverify₂
   change
-    Pr[P | OptionT.mk (do
+    Pr{let result ← (OptionT.mk (do
       let τ ← sample
-      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
-    ≤ Pr[Q | OptionT.mk (do
+      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(P) result]
+    ≤ Pr{let result ← (OptionT.mk (do
       let τ ← sample
-      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
+      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result]
   exact hmono
 
 omit [DecidableEq G₁] [Module (ZMod p) (Additive G₁)]
@@ -653,29 +663,30 @@ lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
       ⟨!v[.P_to_V], !v[G₁]⟩) :
-    Pr[(Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
-        (n := n) |
-      bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme]
-    = Pr[Groups.tSdhCondition (p := p) (g₁ := g₁) |
-      mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
-        AuxState adversary scheme] := by
-  exact probEvent_comp _ _ _
+    Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
+      ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
+        (n := n)) result]
+    = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
+        AuxState adversary scheme)}[(Groups.tSdhCondition (p := p) (g₁ := g₁)) result] := by
+  simp only [prEvent_map, Function.comp_apply]
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Transition 4: the mapped extended binding game is the t-SDH experiment. -/
 lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr[Groups.tSdhCondition (p := p) (g₁ := g₁) |
-      mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
+    Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          (Groups.tSdhCondition (p := p) (g₁ := g₁)) result]
     = Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState
         adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.tSdhExperiment, Groups.tSdhGame]
-  congr 1
+  simp only [prEvent_eq_evalDist_map]
+  apply congrArg (fun mx : OptionT ProbComp (ZMod p × ZMod p × G₁) =>
+    𝒟[Groups.tSdhCondition (g₁ := g₁) <$> mx] {True})
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
@@ -758,16 +769,19 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
   let game := Commitment.bindingGame (init := pure ∅) (impl := randomOracle)
     (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
   let game_ext := bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
-  change Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game] ≤ tSdhError
+  change Pr{let result ← (game)}[
+    (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p)) result] ≤ tSdhError
   exact
-    calc Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game]
-    _ = Pr[bindingCondExt (p := p) (n := n) | game_ext] :=
+    calc Pr{let result ← (game)}[
+      (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p)) result]
+    _ = Pr{let result ← (game_ext)}[(bindingCondExt (p := p) (n := n)) result] :=
       binding_game_ext_eq_binding_game (pairing := pairing) adversary
-    _ ≤ Pr[(Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
-        (n := n) | game_ext] :=
+    _ ≤ Pr{let result ← (game_ext)}[
+      ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
+        (n := n)) result] :=
       binding_cond_le_t_sdh_cond (pairing := pairing) hg₁ hpair adversary
-    _ = Pr[Groups.tSdhCondition (p := p) (g₁ := g₁) |
-        mapBindingToTsdh (p := p) (n := n) <$> game_ext] :=
+    _ = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> game_ext)}[
+      (Groups.tSdhCondition (p := p) (g₁ := g₁)) result] :=
       map_binding_instance_drag adversary scheme
     _ = Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState adversary) :=

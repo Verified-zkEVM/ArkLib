@@ -215,7 +215,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
         rw [prob_uniform_eq_card_filter_div_card] at hcase_code
         rw [prob_uniform_eq_card_filter_div_card
           (F := ↥(Affine.affineSubspaceAtOrigin (F := F) (u' 0) (Fin.tail u')))]
-        let e := Equiv.setCongr hcarrier_eq
+        let e := Set.equivOfEq hcarrier_eq
         have hcard : Fintype.card ↥(Affine.affineSubspaceAtOrigin (F := F)
             (u' 0) (Fin.tail u')) = Fintype.card ↥S :=
           Fintype.card_of_bijective e.bijective
@@ -227,13 +227,13 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
           Finset.card_bij (fun a _ => e a)
             (fun a ha => by
               simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
-              simpa only [e, Equiv.setCongr_apply] using ha)
+              simpa only [e, Set.equivOfEq_apply] using ha)
             (fun a₁ _ a₂ _ h => e.injective h)
             (fun b hb => ⟨e.symm b, by
               simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb ⊢
               have hval : (e.symm b).1 = b.1 := by
                 have h := congrArg Subtype.val (e.apply_symm_apply b)
-                simpa only [e, Equiv.setCongr_apply] using h
+                simpa only [e, Set.equivOfEq_apply] using h
               rw [hval]
               exact hb,
               e.apply_symm_apply b⟩)
@@ -260,7 +260,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
           intro col hcol
           have hv'j := (Finset.mem_filter.mp ((hv' j).2 hcol)).2
           have hv'0 := (Finset.mem_filter.mp ((hv' 0).2 hcol)).2
-          have hu'0 : u' 0 = C i 0 := if_pos rfl
+          have hu'0 : u' 0 = C i 0 := ite_eq_left rfl
           rw [hu'0] at hv'0
           simp only [u', hj0, ite_false, Pi.sub_apply] at hv'j
           rw [Finset.mem_filter]

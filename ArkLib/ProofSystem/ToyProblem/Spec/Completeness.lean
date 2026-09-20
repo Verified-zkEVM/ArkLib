@@ -70,7 +70,7 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     have h1 : ∑ j, M 1 j * stmt.1 j = stmt.2.2 := by
       have := hM 1
       have hne : (1 : Fin 2) ≠ 0 := by decide
-      simpa [if_neg hne] using this
+      simpa [ite_eq_right hne] using this
     calc ∑ j, (M 0 j + γ * M 1 j) * stmt.1 j
         = ∑ j, (M 0 j * stmt.1 j + γ * (M 1 j * stmt.1 j)) := by
           apply Finset.sum_congr rfl; intros j _; ring
@@ -100,9 +100,9 @@ verifier's `OptionT` guards never fail.
 
 Proof shape: unfold `OracleReduction.perfectCompleteness` through
 `toReduction`, expand the three-round prover via `Fin.induction_three` and the
-per-direction `processRound` unfolds, and reduce the `Pr[…] = 1` goal to a
+per-direction `processRound` unfolds, and reduce the native event-probability-one goal to a
 support-membership obligation via
-`OptionT.probEvent_eq_one_of_simulateQ_support_bind`. That obligation splits
+`OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support`. That obligation splits
 into (1) the monadic core — the verifier body simulated against `simOracle2`
 collapses to `pure (some ())`, packaged as
 `oracleVerifier_verify_simulateQ_eq_pure` above — and (2) support plumbing,
@@ -142,10 +142,10 @@ theorem oracleReduction_perfectCompleteness
     Prover.processRound_of_dir_eq_V_to_P 0 h0, Prover.processRound_of_dir_eq_P_to_V 1 h1,
     Prover.processRound_of_dir_eq_V_to_P 2 h2,
     Verifier.run, pSpec, bind_pure_comp]
-  -- Reduce `Pr[…] = 1` to a support-membership obligation on the (pre-simulation)
+  -- Reduce probability one to a support-membership obligation on the (pre-simulation)
   -- `OracleComp` body via the toolkit lemma, which peels the `(← init)` bind, the
   -- `simulateQ`/`StateT.run'` layers, and the `OptionT.mk` failure bookkeeping.
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro x hx
   -- The output relation is trivial: `OutputStatement = OutputWitness = Unit`, so both
   -- conjuncts (`(a.2, a.1.2.2) ∈ Set.univ` and `a.1.2.1 = a.2`) hold for *every* `a`
@@ -208,7 +208,7 @@ theorem oracleReduction_perfectCompleteness
     Fin.val_zero, Fin.val_one, Fin.val_two, lt_self_iff_false, Fin.val_castLT,
     Fin.castSucc_castLT, show (0 : ℕ) < 2 from by norm_num,
     show (0 : ℕ) < 1 from by norm_num, show (1 : ℕ) < 2 from by norm_num,
-    show ¬ ((2 : ℕ) < 0) from by norm_num, dif_pos, cast_eq, dite_false] at hx
+    show ¬ ((2 : ℕ) < 0) from by norm_num, dite_eq_left, cast_eq, dite_false] at hx
   split at hx
   · -- The verifier computation cannot fail. Peel its output map and the trailing reduction bind.
     rcases OptionT.mem_support_run_bind _ _ hx with ⟨hverNone, _⟩ | ⟨stmtOut, hSO, hx⟩
@@ -346,7 +346,7 @@ theorem oracleReduction_perfectCompleteness {k : ℕ}
   simp only [OracleReduction.toReduction, Reduction.run, oracleReduction,
     oracleProver, Prover.run, Prover.runToRound, Fin.induction_one,
     Prover.processRound_of_dir_eq_V_to_P 0 h0, prover]
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro x hx
   obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
   rw [show (monadLift : OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _ →

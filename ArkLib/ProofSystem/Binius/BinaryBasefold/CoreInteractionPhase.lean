@@ -444,10 +444,7 @@ def sumcheckFoldOracleVerifier :=
     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_mul, Fin.zero_eta, stmt, oStmt] at res
     unfold pSpecSumcheckFold pSpecNonLastBlocks
     convert res
-    all_goals simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_mul, Message]
-    all_goals first
-      | exact HEq.rfl
-      | (apply OracleInterface.ext <;> rfl)
+    all_goals simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_mul]
   sumcheckFoldOV
 
 end composedOracleVerifiers
@@ -657,10 +654,7 @@ def sumcheckFoldOracleReduction :=
     simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_mul, Fin.zero_eta, stmt, oStmt, wit] at res
     unfold pSpecSumcheckFold pSpecNonLastBlocks
     convert res
-    all_goals simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_mul, Message]
-    all_goals first
-      | exact HEq.rfl
-      | (apply OracleInterface.ext <;> rfl)
+    all_goals simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_mul]
   coreInteractionOracleReduction
 
 end composedOracleRedutions

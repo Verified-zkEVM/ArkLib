@@ -110,10 +110,6 @@ theorem hachiNonrecursiveConcrete_perfectCorrectness
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
     (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp))
-    (hInit : NeverFail init)
-    (hKeygen : ∀ s : σ, NeverFail ((simulateQ impl
-      (keygen (q := q) (α := α) (innerRows := innerRows) (outerRows := outerRows)
-        (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
     (D : Simple.PublicParams 𝓜(q, α) dRows ((μ₀ P) + n₀ * rhoDigitCount q P.bZero))
     (hcap : zBound ≤ balancedDigitCapacity P.b τ)
@@ -125,7 +121,7 @@ theorem hachiNonrecursiveConcrete_perfectCorrectness
       (hachiNonrecursiveConcrete (F := F) (ω := ω) (M := M) (m₁ := m₁)
         P D hcap hd hbZero φF) :=
   hachiNonrecursive_perfectCorrectness (F := F) (ω := ω) (M := M) (m₁ := m₁)
-    P init impl hInit hKeygen hcap hzb hτ hclog hd hbZero
+    P init impl hcap hzb hτ hclog hd hbZero
     (nonrecursiveLiftCom (α := α) P D) φF hμn hZeroγ
 
 end Concrete

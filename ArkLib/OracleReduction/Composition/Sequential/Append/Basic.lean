@@ -190,7 +190,7 @@ theorem append_output_pos (hn : n ≠ 0)
     (P₁.append P₂).output state = P₂.output state₂ := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_neg hn]
+  rw [dite_eq_right hn]
   exact congrArg P₂.output
     (eq_of_heq ((heq_dcast _ _).trans ((cast_heq _ _).trans hst)))
 
@@ -204,7 +204,7 @@ theorem append_output_zero (hn : n = 0)
             P₂.output (dcast (by simp [hn]) (P₂.input ctx))) := by
   conv_lhs => unfold Prover.append
   dsimp only
-  rw [dif_pos hn]
+  rw [dite_eq_left hn]
   congr 1
   exact congrArg P₁.output (eq_of_heq ((cast_heq _ _).trans hst))
 

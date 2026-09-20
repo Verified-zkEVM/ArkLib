@@ -379,7 +379,7 @@ lemma hasLeftPseudoInverse_coeffMatrix {s : ℕ} {ℓ : Type} [Fintype ℓ] [Dec
         MvPolynomial.coeff_sum, MvPolynomial.coeff_smul, mul_comm] using hve
     have hQ0 : Q = 0 := by
       ext mo
-      rw [MvPolynomial.coeff_zero]
+      rw [AddMonoidAlgebra.coeff_zero]
       by_cases hmem : ∀ i, mo i ≤ d i
       · obtain ⟨e, he⟩ := exists_exponentFinsupp_eq hmem
         exact he ▸ hcoeff e

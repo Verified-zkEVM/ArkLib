@@ -34,14 +34,10 @@ example :
 
 /-- A real uniform challenge remains perfectly complete at the measure boundary. -/
 example :
-    discreteEvalDist (executeSampled (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial [0, 1] 1)
-      {run | run.closed.map (closedOutputRelation (ZMod 17) 1) = some True} = 1 := by
-  apply executeSampled_measureCompleteness
-  · let : MeasurableSpace (ZMod 17) := ⊤
-    have h : Pr[fun _ => True | ($ᵗ (ZMod 17))] = 1 := by simp
-    rw [probEvent_eq_evalSPMF_toMeasure] at h
-    exact h
-  · simp [polynomial]
+    Pr{let run ← executeSampled (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial [0, 1] 1}[
+      run.closed.map (closedOutputRelation (ZMod 17) 1) = some True] = 1 := by
+  apply executeSampled_perfectCompleteness
+  simp [polynomial]
 
 /-- Actual closing retains the input oracle, so a dishonest accepted message has a false output. -/
 example (r : ZMod 17) :
@@ -83,6 +79,6 @@ example (r : ZMod 17) :
 #print axioms executeCore_closed
 #print axioms executeCore_degree_complete
 #print axioms executeSampled_eq
-#print axioms executeSampled_measureCompleteness
+#print axioms executeSampled_perfectCompleteness
 
 end Sumcheck.Interaction.SingleRound.Test

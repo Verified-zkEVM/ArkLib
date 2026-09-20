@@ -92,7 +92,7 @@ theorem gadgetDecomposeFun_coeff {rows digits : ℕ} (digit : ZMod q → Fin dig
   rw [show gadgetDecomposeFun Φ digit x j =
       Rq.ofFinCoeff Φ Φ.φ.natDegree (fun k =>
         digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
-    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, ite_eq_left hk]
 
 omit [NeZero q] in
 /-- The `k`-th coefficient (`k < deg φ`) of a gadget-decomposition block is exactly the

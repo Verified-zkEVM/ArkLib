@@ -126,7 +126,7 @@ theorem rhoDigitsShortCheck_eq_true_iff (ρ : Fin n → CPolynomial (ZMod q)) :
   · intro h i u k
     by_cases hk : k < Φ.φ.natDegree
     · exact h i u u.isLt k hk
-    · rw [rhoDigits_coeff, if_neg hk]
+    · rw [rhoDigits_coeff, ite_eq_right hk]
       simp
   · exact fun h i u hu k _ => h i ⟨u, hu⟩ k
 
@@ -329,7 +329,7 @@ lemma endPieceReduction_run_support
     endPieceProver_run_support (oSpec := oSpec) (TCom := K.TCom) Φ m₀ stmt w pr hpr
   refine ⟨pr.1, ?_⟩
   simp only [Option.elim_some, endPieceReduction, endPieceVerifier, Verifier.run, hmsg, hg,
-    if_true] at hx
+    ite_true] at hx
   simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
     Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
   have hpr : pr = (pr.1, (), ()) := Prod.ext rfl hout

@@ -697,9 +697,9 @@ theorem exactGammaFailure_sample_le [SampleableType F] [Nonempty ι]
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
     (stmtIn : Spec.Statement (F := F) k ×
       (∀ i, Spec.OracleStatement ι (Fin s → F) i)) :
-    Pr[ ExactGammaFailure k s hdvd domain δ stmtIn | $ᵗ F] ≤
+    Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal) := by
-  rw [probEvent_uniformSample_eq_prob_uniformOfFintype,
+  rw [prEvent_uniformSample_eq_prob_uniformOfFintype,
     coe_certifiedGammaError]
   exact exactGammaFailure_prob_le k s hdvd domain hfull δ hδ stmtIn
 
@@ -807,7 +807,7 @@ theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, _hdir⟩ := i
   rcases iv with _ | iv
-  · change Pr[ ExactGammaFailure k s hdvd domain δ stmtIn | $ᵗ F] ≤
+  · change Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal)
     exact exactGammaFailure_sample_le
       k s hdvd domain hfull δ hδ stmtIn
@@ -958,12 +958,12 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, hdir⟩ := i
   rcases iv with _ | _ | _ | iv
-  · change Pr[ ExactGammaFailure k s hdvd domain δ stmtIn | $ᵗ F] ≤
+  · change Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal)
     exact exactGammaFailure_sample_le
       k s hdvd domain hfull δ hδ stmtIn
   · exact absurd hdir (fun h ↦ Direction.noConfusion h)
-  · change Pr[ fun xs : Fin t → ι ↦ ∃ _w : PUnit,
+  · change Pr{let xs ← $ᵗ (Fin t → ι)}[∃ _w : PUnit,
         ¬ Spec.GammaState k (encoder k s hdvd domain) δ
           stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
           (stmtIn.2 0) (stmtIn.2 1)
@@ -973,7 +973,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
           stmtIn.1 stmtIn.2
           (transcript ⟨0, Nat.zero_lt_succ _⟩)
           (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩) xs
-      | $ᵗ (Fin t → ι)] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal)
+      ] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal)
     exact Spec.spotcheck_round_game_bound k t
       (encode := encoder k s hdvd domain) δ stmtIn
       (transcript ⟨0, Nat.zero_lt_succ _⟩)

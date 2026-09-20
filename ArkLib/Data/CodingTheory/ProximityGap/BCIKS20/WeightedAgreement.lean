@@ -253,7 +253,7 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
       rw [Finset.sum_eq_single i] at hcoeff
       · simpa using hcoeff
       · intro j _ hji
-        simp only [if_neg (fun hval => hji (Fin.ext hval))]
+        simp only [ite_eq_right (fun hval => hji (Fin.ext hval))]
       · simp
     exact sub_eq_zero.mp this
   have agreementPoints_card {x : ι} (hx : x ∉ common) :

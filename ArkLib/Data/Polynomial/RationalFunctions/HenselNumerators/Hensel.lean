@@ -427,7 +427,7 @@ theorem bSeq_succ_def (x₀ : F) (R : F[X][X][Y]) (N : ℕ) :
 /-- A step does not disturb the coefficients already computed. -/
 theorem bSeq_succ_eq_below (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i < N + 1) :
     bSeq x₀ R H (N+1) i = bSeq x₀ R H N i := by
-  rw [bSeq_succ_def, Function.update_apply, if_neg (by omega)]
+  rw [bSeq_succ_def, Function.update_apply, ite_eq_right (by omega)]
 
 -- value 0 is T/W for all N
 /-- Every approximation starts at `α₀ = T/W`. -/
@@ -472,7 +472,7 @@ theorem bSeq_eq_zero_of_gt (x₀ : F) (R : F[X][X][Y]) (N j : ℕ) (hj : N < j) 
       have : j ≠ 0 := by omega
       simp [bSeq, this]
   | succ N ih =>
-      rw [bSeq_succ_def, Function.update_apply, if_neg (by omega)]
+      rw [bSeq_succ_def, Function.update_apply, ite_eq_right (by omega)]
       exact ih j (by omega)
 
 -- δ helper: mk (bSeq (N+1)) = mk (bSeq N) + δ with δ low order N+1
@@ -857,16 +857,16 @@ theorem henselCoeffResidual_eq_trunc (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     intro i hi
     rw [hδ_def, map_sub, PowerSeries.coeff_mk, PowerSeries.coeff_mk, hαtrunc]
     simp only []
-    rw [if_pos (by omega)]; ring
+    rw [ite_eq_left (by omega)]; ring
   have hδtop : PowerSeries.coeff (t + 1) δ = αseq (t + 1) := by
     rw [hδ_def, map_sub, PowerSeries.coeff_mk, PowerSeries.coeff_mk, hαtrunc]
     simp only []
-    rw [if_neg (by omega)]; ring
+    rw [ite_eq_right (by omega)]; ring
   have hΓ0 : PowerSeries.constantCoeff (PowerSeries.mk αtrunc) =
       functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff := by
     rw [← PowerSeries.coeff_zero_eq_constantCoeff_apply, PowerSeries.coeff_mk, hαtrunc]
     simp only []
-    rw [if_pos (by omega), hα0]
+    rw [ite_eq_left (by omega), hα0]
   rw [hsum, coeff_evalR_split x₀ R (t + 1) (by omega) (PowerSeries.mk αtrunc) δ hδlow hΓ0,
     hδtop]
   ring
@@ -917,12 +917,12 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hnumReg : ∀ i, i ≤ t →
       αtrunc i * (W ^ (i + 1) * eta ^ henselDenominatorExponent i) ∈ regularElementsSet H := by
     intro i hi
-    rw [hshape i, dif_pos hi, hWdef, hetadef,
+    rw [hshape i, dite_eq_left hi, hWdef, hetadef,
       div_mul_cancel₀ _ (mul_ne_zero (pow_ne_zero _ hWne) (pow_ne_zero _ hetane))]
     exact ⟨βprev ⟨i, by omega⟩, rfl⟩
   -- `αtrunc` vanishes above the truncation point
   have hαzero : ∀ i, t < i → αtrunc i = 0 := by
-    intro i hi; rw [hshape i, dif_neg (by omega)]
+    intro i hi; rw [hshape i, dite_eq_right (by omega)]
   -- Step: distribute `coeff_mul` and `coeff_pow`, reduce to a single composition `l`.
   rw [PowerSeries.coeff_mul, Finset.sum_mul]
   apply regularElementsSet_sum
@@ -1114,12 +1114,12 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
       else 0 := by
     intro i
     by_cases h : i ≤ t
-    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [if_pos h]
-      rw [hval, dif_pos h]
+    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [ite_eq_left h]
+      rw [hval, dite_eq_left h]
       have := hprev ⟨i, by omega⟩
       simpa using this.symm
-    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [if_neg h]
-      rw [hval, dif_neg h]
+    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [ite_eq_right h]
+      rw [hval, dite_eq_right h]
   change PowerSeries.coeff (t + 1)
       (evalRAtPowerSeries x₀ H R (PowerSeries.mk αtrunc)) * Ddiv ∈ regularElementsSet H
   unfold evalRAtPowerSeries

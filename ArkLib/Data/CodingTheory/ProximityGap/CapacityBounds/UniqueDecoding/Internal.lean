@@ -133,7 +133,7 @@ private theorem bchks_good_polynomial_spec {ι K : Type} [Fintype ι] [Nonempty 
       hammingDist (u 0 + z • u 1)
           ((bchks_good_polynomial (k := k) domain u δ z).eval ∘ domain) ≤
         Nat.floor (δ * Fintype.card ι) := by
-  simpa only [bchks_good_polynomial, dif_pos hz] using
+  simpa only [bchks_good_polynomial, dite_eq_left hz] using
     Classical.choose_spec
       (ProximityGap.RS_exists_Pz_of_mem_goodCoeffs
         (deg := k) (domain := domain) (δ := δ) u (z := z) hz)

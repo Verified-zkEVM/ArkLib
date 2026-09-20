@@ -82,9 +82,9 @@ theorem fixedBasisMap_injective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hκ : �
     intro d
     rw [fixedBasisMap, map_sum]
     rw [Finset.sum_eq_single s (fun j _ hjs => by
-        rw [map_nsmul, hDvElt, if_neg (fun h => hjs h.symm), smul_zero])
+        rw [map_nsmul, hDvElt, ite_eq_right (fun h => hjs h.symm), smul_zero])
       (fun h => absurd (Finset.mem_univ s) h)]
-    rw [map_nsmul, hDvElt, if_pos rfl]
+    rw [map_nsmul, hDvElt, ite_eq_left rfl]
   have e1 : (c s).val • w = (c' s).val • w := by rw [← key c, ← key c', hcc]
   rw [nsmul_eq_mul, nsmul_eq_mul] at e1
   have hwne : w ≠ 0 := by rw [hw_def]; by_cases hs0 : (s : ℕ) = 0 <;> simp [hs0, h2]

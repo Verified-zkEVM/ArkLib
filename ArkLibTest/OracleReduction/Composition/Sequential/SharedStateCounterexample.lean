@@ -87,16 +87,35 @@ theorem first_perfectCompleteness :
     first.perfectCompleteness (pure false) impl Set.univ Set.univ := by
   classical
   intro stmt wit h
-  simp [first, Reduction.run, Prover.run, Prover.runToRound, Prover.processRound,
-    Verifier.run, monadLift_liftM_OptionT, OptionT.probFailure_eq]
+  simp only [ChallengeIdx, Fin.vcons_of_one, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, StateT.run'_eq, pure_bind, Set.mem_univ, true_and,
+    bind_pure_comp, ENNReal.coe_zero, tsub_zero, ge_iff_le]
+  change 1 ≤ Pr{let a ← OptionT.mk (pure (some _) :
+      ProbComp (Option ((pSpec.FullTranscript × Bool × Unit) × Bool)))}[
+    (fun a : ((pSpec.FullTranscript × Bool × Unit) × Bool) => a.1.2.1 = a.2) a]
+  apply le_of_eq
+  symm
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff]
+  simp only [support_pure, Set.mem_singleton_iff, forall_eq, Option.some.injEq]
+  refine ⟨_, rfl, ?_⟩
+  rfl
 
 /-- The second reduction is perfectly complete when separately initialized at `false`. -/
 theorem second_perfectCompleteness :
     second.perfectCompleteness (pure false) impl Set.univ Set.univ := by
   classical
   intro stmt wit h
-  simp [second, Reduction.run, Prover.run, Prover.runToRound, Verifier.run, impl,
-    monadLift_liftM_OptionT, OptionT.probFailure_eq]
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def, PFunctor.Handler.liftTarget_self,
+    StateT.run'_eq, pure_bind, Set.mem_univ, true_and, bind_pure_comp, ENNReal.coe_zero,
+    tsub_zero, ge_iff_le]
+  change 1 ≤ Pr{let a ← OptionT.mk (pure (some _) :
+      ProbComp (Option (((!p[]).FullTranscript × Bool × Unit) × Bool)))}[
+    (fun a : ((!p[]).FullTranscript × Bool × Unit) × Bool => a.1.2.1 = a.2) a]
+  apply le_of_eq
+  symm
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff]
+  simp only [support_pure, Set.mem_singleton_iff, forall_eq, Option.some.injEq]
+  exact ⟨((default, false, ()), false), rfl, rfl⟩
 
 /-- Fixed-initial-state component completeness does not imply appended completeness,
 even with pure left prover output and pure verifiers. -/
@@ -122,30 +141,21 @@ theorem not_append_perfectCompleteness :
     monadLift_liftM_OptionT, Verifier.run, Verifier.append, map_pure, OptionT.run_pure,
     liftM_pure, Option.getM_some, map_bind, OptionT.run_bind, run_lift, OptionT.run_map,
     Option.map_some, Option.elimM_map, Option.elim_some, simulateQ_bind, simulateQ_map,
-    simulate_query, impl, ↓reduceIte, StateT.run'_eq, StateT.run_bind,
-    StateT.run_map, StateT.run_get, Set.mem_univ, true_and, ENNReal.coe_zero, tsub_zero,
-    ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff', OptionT.probFailure_eq,
-    OptionT.run_mk, probFailure_of_liftM_PMF, probOutput_eq_zero_iff', finSupport_map,
-    Finset.mem_image, reduceCtorEq, and_false, exists_false, not_false_eq_true,
-    OptionT.mem_finSupport_iff, Option.some.injEq, Prod.exists, Bool.exists_bool,
-    forall_exists_index, Prod.forall, Prod.mk.injEq, Bool.false_eq, Bool.forall_bool, and_true,
-    Bool.true_eq_false, or_self, IsEmpty.forall_iff, implies_true, Subsingleton.forall₂_iff,
-    imp_false, not_or, not_and] at hbad
+    simulate_query, impl, StateT.run'_eq, StateT.run_bind,
+    StateT.run_map, Set.mem_univ, true_and, ENNReal.coe_zero, tsub_zero,
+    ge_iff_le] at hbad
   simp only [Fin.isValue, Fin.append, Fin.addCases, Nat.add_zero, Fin.coe_ofNat_eq_mod,
     Nat.mod_succ, Order.lt_two_iff, Std.le_refl, ↓dreduceDIte, Fin.reduceCastLT,
     Fin.castAdd_zero, Fin.cast_eq_self, id_eq, liftM_map, simulateQ_map, simulate_query, impl,
-    ↓reduceIte, LawfulMonadStateOf.set_bind_get, bind_pure_comp, Functor.map_map, StateT.run_map,
-    StateT.run_set, map_pure, Subsingleton.forall₂_iff] at hbad
-  let tr : (pSpec ++ₚ !p[]).FullTranscript := fun ⟨0, _⟩ => ()
-  apply (hbad tr ()).2
-  · change (((), ()), true) ∈
-      finSupport (pure (((), ()), true) : ProbComp ((Unit × Unit) × Bool))
-    simp
-  · apply Prod.ext
-    · funext i
-      fin_cases i
-      rfl
-    · rfl
+    Bool.false_eq_true, ↓reduceIte, LawfulMonadStateOf.set_bind_get, bind_pure_comp,
+    Functor.map_map, StateT.run_map, StateT.run_set, StateT.run_get, map_pure] at hbad
+  rw [map_eq_bind_pure_comp] at hbad
+  simp only [Function.comp_def] at hbad
+  have hone := le_antisymm (prEvent_le_one _ _) hbad
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at hone
+  simp only [support_pure, Set.mem_singleton_iff, forall_eq, Option.some.injEq] at hone
+  obtain ⟨x, rfl, hfalse⟩ := hone
+  exact Bool.noConfusion hfalse
 
 end AppendStateCounterexample
 

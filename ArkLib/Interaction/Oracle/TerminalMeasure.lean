@@ -62,10 +62,12 @@ theorem observe_namedFault (missingFault : Fault) (program : m (Terminal Claim F
   rw [preimage, measure_union (by simp) (measurableSet_singleton _),
     evalDistWithFailure_some, evalDistWithFailure_none]
 
+omit [DiscreteMeasurableSpace (Terminal Claim Fault)] in
 /-- The named-fault observation has total mass one. -/
 theorem observe_isProbabilityMeasure (missingFault : Fault) (program : m (Terminal Claim Fault)) :
     IsProbabilityMeasure (observe missingFault program) := by
   let _ := evalDistWithFailure_isProbabilityMeasure program
-  exact Measure.isProbabilityMeasure_map Measurable.of_discrete.aemeasurable
+  unfold observe
+  infer_instance
 
 end Interaction.Oracle.Terminal

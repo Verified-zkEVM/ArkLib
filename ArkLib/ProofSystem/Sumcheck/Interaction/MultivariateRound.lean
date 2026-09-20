@@ -163,7 +163,7 @@ theorem executeCore_accepted [DecidableEq R] (i : Fin n)
     (h : (domain.map (fun x => q.val.eval x)).sum = stmt.target) :
     executeCore (reduction R n deg ambient i domain r) impl stmt q =
       pure (acceptedRun R n deg i stmt impl q r) := by
-  rw [executeCore_eq, if_pos h]
+  rw [executeCore_eq, ite_eq_left h]
 
 /-- Closing exports exactly the supplied input behavior and the new verifier statement. -/
 theorem acceptedRun_closed (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
@@ -244,7 +244,7 @@ theorem executeCore_sampled_eq [DecidableEq R] (i : Fin n)
     _root_.Interaction.InteractionOver.TwoParty.paired,
     _root_.Interaction.TwoParty.participantProfile,
     _root_.Interaction.TwoParty.collectParticipantOutputs]
-  simp only [id_eq, simulateQ_bind, simulateQ_pure, simulate_challenge, bind_assoc, pure_bind]
+  simp only [simulateQ_bind, simulateQ_pure, simulate_challenge, bind_assoc, pure_bind]
 
 /-- A closed round relation observes the retained multivariate behavior only. -/
 def closedRelation {m : ℕ} (D : Fin m ↪ R) (i : Fin (n + 1))

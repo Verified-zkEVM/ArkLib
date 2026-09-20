@@ -62,12 +62,12 @@ def forwardTaylorTruncationToPolynomial (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] 
 /-- Below the truncation order, the finite polynomial agrees coefficientwise with `p(X + a)`. -/
 theorem coeff_forwardTaylorTruncation_of_lt (m : ℕ) (a : R) (p : R[X]) {i : ℕ}
     (hi : i < m) : (forwardTaylorTruncation m a p).coeff i = (taylor a p).coeff i := by
-  rw [coeff_forwardTaylorTruncation, if_pos hi, hasseCoeffAt_apply, taylor_coeff]
+  rw [coeff_forwardTaylorTruncation, ite_eq_left hi, hasseCoeffAt_apply, taylor_coeff]
 
 /-- At and above the truncation order, the finite forward Taylor truncation has zero coefficient. -/
 theorem coeff_forwardTaylorTruncation_of_le (m : ℕ) (a : R) (p : R[X]) {i : ℕ}
     (hi : m ≤ i) : (forwardTaylorTruncation m a p).coeff i = 0 := by
-  rw [coeff_forwardTaylorTruncation, if_neg (not_lt_of_ge hi)]
+  rw [coeff_forwardTaylorTruncation, ite_eq_right (not_lt_of_ge hi)]
 
 /-- The forward Taylor truncation has degree strictly less than its truncation order. -/
 theorem forwardTaylorTruncation_mem_degreeLT (m : ℕ) (a : R) (p : R[X]) :
@@ -91,7 +91,7 @@ theorem forwardTaylorTruncationLinearMap_coordinates (m : ℕ) (a : R) (p : R[X]
     degreeLTEquiv R m (forwardTaylorTruncationLinearMap m a p) = hasseJet m a p := by
   ext i
   change (forwardTaylorTruncation m a p).coeff i = hasseJet m a p i
-  rw [coeff_forwardTaylorTruncation, if_pos i.isLt]
+  rw [coeff_forwardTaylorTruncation, ite_eq_left i.isLt]
   rfl
 
 /-- The degree-bounded forward truncation map is obtained by decoding Hasse-jet coordinates. -/
@@ -113,9 +113,9 @@ theorem map_forwardTaylorTruncation {S : Type*} [Semiring S] (f : R →+* S)
   ext i
   simp only [coeff_map, coeff_forwardTaylorTruncation]
   by_cases hi : i < m
-  · rw [if_pos hi, if_pos hi]
+  · rw [ite_eq_left hi, ite_eq_left hi]
     exact map_hasseCoeffAt f a i p
-  · rw [if_neg hi, if_neg hi, map_zero]
+  · rw [ite_eq_right hi, ite_eq_right hi, map_zero]
 
 /-- Once `m` is a strict degree bound for `p`, its finite forward truncation is the full Taylor
 shift.  Stating the hypothesis with `degreeLT` includes the zero polynomial even at `m = 0`. -/
@@ -151,12 +151,12 @@ theorem forwardTaylorTruncation_X_pow (m n : ℕ) :
   by_cases hin : i = n
   · subst i
     by_cases hn : n < m
-    · rw [if_pos hn, if_pos hn, coeff_X_pow_self]
-    · rw [if_neg hn, if_neg hn, coeff_zero]
+    · rw [ite_eq_left hn, ite_eq_left hn, coeff_X_pow_self]
+    · rw [ite_eq_right hn, ite_eq_right hn, coeff_zero]
   · by_cases hn : n < m
-    · rw [if_pos hn, coeff_X_pow, if_neg hin]
+    · rw [ite_eq_left hn, coeff_X_pow, ite_eq_right hin]
       simp
-    · rw [if_neg hn, coeff_zero]
+    · rw [ite_eq_right hn, coeff_zero]
       simp [hin]
 
 /-- Re-truncating the coefficient polynomial at zero composes the two bounds by `min`. -/
@@ -197,8 +197,8 @@ theorem forwardTaylorTruncation_taylor_comp_C_mul_X
   rw [coeff_forwardTaylorTruncation, comp_C_mul_X_coeff,
     coeff_forwardTaylorTruncation]
   by_cases hi : i < m
-  · rw [if_pos hi, if_pos hi, hasseCoeffAt_taylor_comp_C_mul_X]
-  · rw [if_neg hi, if_neg hi, zero_mul]
+  · rw [ite_eq_left hi, ite_eq_left hi, hasseCoeffAt_taylor_comp_C_mul_X]
+  · rw [ite_eq_right hi, ite_eq_right hi, zero_mul]
 
 end CommSemiring
 

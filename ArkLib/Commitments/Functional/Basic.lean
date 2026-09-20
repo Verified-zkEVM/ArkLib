@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.Data.Fin.Fold
-public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
+public import VCVio.EvalDist.Monad.Option
 
 /-!
   # Functional Commitment Schemes (with Oracle Openings)
@@ -94,9 +94,7 @@ def correctness (correctnessError : ℝ≥0) : Prop :=
   ∀ query : O.Query,
   let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
     QueryImpl.addLift impl challengeQueryImpl
-  Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ ↦
-    (stmtOut, witOut) ∈ acceptRejectRel ∧ prvStmtOut = stmtOut
-  | OptionT.mk do
+  Pr{let result ← (OptionT.mk do
       (simulateQ pImpl (do
         let (ck, vk) ← liftComp scheme.keygen _
         let (cm, decomm) ← liftComp (scheme.commit ck data) _
@@ -105,7 +103,8 @@ def correctness (correctnessError : ℝ≥0) : Prop :=
           (cm, ⟨query, O.answer data query⟩)
         let wit : Data × Decommitment := (data, decomm)
         (proof.run stmt wit).run
-      )).run' (← init)] ≥ 1 - correctnessError
+      )).run' (← init))}[let ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ := result
+        (stmtOut, witOut) ∈ acceptRejectRel ∧ prvStmtOut = stmtOut] ≥ 1 - correctnessError
 
 /-- A commitment scheme satisfies **perfect correctness** if it satisfies correctness with no error.
 -/
@@ -114,8 +113,8 @@ def perfectCorrectness : Prop :=
 
 omit [DecidableEq ι] [oSpec.Fintype] [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
   [(i : pSpec.ChallengeIdx) → VCVCompatible (pSpec.Challenge i)] in
-/-- **Perfect correctness from perfect completeness of the opening.** If the honest keygen and
-commit phases never fail under the ambient implementation, every honest key/commitment pair puts
+/-- **Perfect correctness from perfect completeness of the opening.**
+If every honest key/commitment pair puts
 the claimed opening statement into a relation `rel`, and the opening protocol is perfectly
 complete for `rel` **from every post-setup state** (hence the `pure s` initialization — the
 opening runs in whatever oracle state key generation and commitment left behind), then the
@@ -123,14 +122,11 @@ scheme is perfectly correct.
 
 This is the generic bridge between the reduction-level completeness theory and the
 commitment-level correctness game: the game's setup prefix is peeled off support-element by
-support-element (`OptionT.probEvent_eq_one_bind`), and each leaf is exactly the completeness
+support-element (`OptionT.prEvent_mk_bind_eq_one_of_support`), and each leaf is the completeness
 game of the opening at the honest input. -/
 theorem perfectCorrectness_of_opening_perfectCompleteness
     (rel : ComKey → VerifKey →
       Set ((Commitment × (q : O.Query) × O.Response q) × (Data × Decommitment)))
-    (hInit : NeverFail init)
-    (hKeygen : ∀ s, NeverFail ((simulateQ impl scheme.keygen).run s))
-    (hCommit : ∀ data ck s, NeverFail ((simulateQ impl (scheme.commit ck data)).run s))
     (hRel : ∀ data query ck vk cm dc, (ck, vk) ∈ support scheme.keygen →
       (cm, dc) ∈ support (scheme.commit ck data) →
       ((cm, ⟨query, O.answer data query⟩), (data, dc)) ∈ rel ck vk)
@@ -139,17 +135,18 @@ theorem perfectCorrectness_of_opening_perfectCompleteness
     perfectCorrectness init impl scheme := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  rw [ge_iff_le, one_le_probEvent_iff]
+  apply le_of_eq
+  symm
   -- Normalize the game into nested `ProbComp` binds.
   simp only [simulateQ_bind, StateT.run'_eq, StateT.run_bind, QueryImpl.addLift_def,
     QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, map_bind]
   -- Peel off the setup prefix, support-element by support-element.
-  refine OptionT.probEvent_eq_one_bind hInit (fun s _ => ?_)
-  refine OptionT.probEvent_eq_one_bind (hKeygen s) (fun p hp => ?_)
+  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun s _ => ?_)
+  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun p hp => ?_)
   have hkg : p.1 ∈ support scheme.keygen :=
     support_simulateQ_run'_subset impl _ s
       (by rw [StateT.run'_eq, support_map]; exact ⟨p, hp, rfl⟩)
-  refine OptionT.probEvent_eq_one_bind (hCommit data p.1.1 p.2) (fun p₁ hp₁ => ?_)
+  refine OptionT.prEvent_mk_bind_eq_one_of_support _ (prEvent_true_eq_one _) _ _ (fun p₁ hp₁ => ?_)
   have hcm : p₁.1 ∈ support (scheme.commit p.1.1 data) :=
     support_simulateQ_run'_subset impl _ p.2
       (by rw [StateT.run'_eq, support_map]; exact ⟨p₁, hp₁, rfl⟩)
@@ -203,7 +200,8 @@ abbrev bindingGame (AuxState : Type)
 /-- The probability of breaking evaluation binding for a specific adversary. -/
 def bindingExperiment (AuxState : Type)
     (adversary : BindingAdversary oSpec Data Commitment AuxState pSpec ComKey) : ℝ≥0∞ :=
-  Pr[bindingCondition (Data := Data) | bindingGame init impl scheme AuxState adversary]
+  Pr{let result ← bindingGame init impl scheme AuxState adversary}[
+    bindingCondition (Data := Data) result]
 
 /-- A commitment scheme satisfies **(evaluation) binding** with error `bindingError` if for all
     adversaries that output a commitment `cm`, query `q`, two responses `resp₁, resp₂`, and
@@ -327,8 +325,8 @@ def functionBindingExperiment {L : ℕ} (hn : n = 1)
     (adversary :
       FunctionBindingAdversary oSpec Data Commitment AuxState L (hn ▸ pSpec)
         ComKey) : ℝ≥0∞ :=
-    Pr[functionBindingCondition (Data := Data) |
-      functionBindingGame init impl hn AuxState scheme adversary]
+    Pr{let result ← functionBindingGame init impl hn AuxState scheme adversary}[
+      functionBindingCondition (Data := Data) result]
 
 /-- A commitment scheme satisfies **function binding** with error `functionBindingError` if for all
 adversaries that output a commitment `cm`, and a vector of length `L` of queries `q_i`, claimed

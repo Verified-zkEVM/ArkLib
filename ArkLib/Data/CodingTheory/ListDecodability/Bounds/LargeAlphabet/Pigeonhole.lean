@@ -469,7 +469,7 @@ theorem good_base_word
       alt S ∈ code ∧ alt S ≠ c₀ ∧ ∀ i ∈ S, alt S i = c₀ i := by
     intro S hS
     dsimp only [alt]
-    rw [dif_pos hS]
+    rw [dite_eq_left hS]
     exact Classical.choose_spec (haltExists S hS)
   refine ⟨c₀, ?_, good, hgoodsub, hgoodcard, alt, ?_⟩
   · rw [← hC.coe_toFinset]

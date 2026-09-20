@@ -478,7 +478,7 @@ theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q
         _ = D - Bivariate.totalDegree H := by omega
     have htilde : monicize H = Polynomial.X ^ m + lower := by
       dsimp [lower, W, m]
-      rw [monicize, if_neg (Nat.ne_of_gt hH)]
+      rw [monicize, ite_eq_right (Nat.ne_of_gt hH)]
       rw [← Polynomial.coeff_natDegree (p := H)]
     have hmod :
         p %ₘ monicize H = (-(Polynomial.C c * Polynomial.X ^ (s - 1) * lower)) %ₘ monicize H := by
@@ -1112,7 +1112,7 @@ omit H_irreducible H_natDegree_pos in
 bound is assembled. -/
 theorem xiPre_eq_lower_add_top (x₀ : F) (hRdeg : 2 ≤ R.natDegree) :
     xiPre x₀ R H = xiPreLower x₀ R H + xiPreTop x₀ R H := by
-  simp only [xiPre, xiPreLower, xiPreTop, hRdeg, if_pos]
+  simp only [xiPre, xiPreLower, xiPreTop, hRdeg, ite_eq_left]
 
 
 /-- The weight bound `Λ(ξ) ≤ (dY - 1)·(D - dH + 1)`.

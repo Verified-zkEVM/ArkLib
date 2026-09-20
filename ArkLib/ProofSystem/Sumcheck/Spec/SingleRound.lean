@@ -560,16 +560,18 @@ theorem reduction_perfectCompleteness :
     OracleComp.liftComp_pure, pure_bind, map_pure,
     bind_pure_comp, Transcript.concat,
     guard, optionT_lift_eq_map, OptionT.mk]
-  -- 5. After full simplification, the computation should be OptionT-free
-  -- Prove Pr[event | comp] ≥ 1
-  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
+  -- 5. Reduce probability one to a support invariant of the underlying optional computation.
+  apply ge_of_eq
+  rw [← prEvent_eq_evalDist_map]
+  change Pr{let x ← OptionT.mk _}[_] = 1
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff]
+  intro o ho
+  simp only [support_bind, Set.mem_iUnion] at ho
+  obtain ⟨s, _, ho⟩ := ho
+  rcases o with _ | x
   · -- No failure
-    rw [OptionT.probFailure_eq]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [OptionT.run, support_bind, Set.mem_iUnion, not_exists]
-    intro s _ hmem
+    exfalso
+    have hmem := ho
     simp only [StateT.run'_eq, support_map, Set.mem_image] at hmem
     obtain ⟨⟨_, s'⟩, hmem, rfl⟩ := hmem
     -- The computation always returns some (guard passes by hValid, output by construction).
@@ -631,20 +633,18 @@ theorem reduction_perfectCompleteness :
       norm_num at hval2
       rw [Finset.sum_map] at hValid
       simp only [apply_ite] at hval2
-      erw [if_pos hValid] at hval2
+      erw [ite_eq_left hValid] at hval2
       erw [simulateQ_pure] at hval2
-      simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hval2
+      simp only [StateT.run_pure] at hval2
       simp at hval2
     · -- val2 = some out: getM succeeds, final map wraps in some, contradicts none
       simp only [Option.getM] at hs
       erw [simulateQ_pure] at hs
       simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hs
       exact absurd (congr_arg Prod.fst hs) (by simp)
-  · -- All outputs satisfy the event
-    intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
+  · -- All successful outputs satisfy the event
+    refine ⟨x, rfl, ?_⟩
+    have hx := ho
     simp only [StateT.run'_eq, support_map, Set.mem_image] at hx
     obtain ⟨⟨_, s'⟩, hx, rfl⟩ := hx
     -- Same decomposition as sorry 1: peel outer OptionT bind
@@ -709,9 +709,9 @@ theorem reduction_perfectCompleteness :
       norm_num at hval2
       rw [Finset.sum_map] at hValid
       simp only [apply_ite] at hval2
-      erw [if_pos hValid] at hval2
+      erw [ite_eq_left hValid] at hval2
       erw [simulateQ_pure] at hval2
-      simp only [StateT.run_pure, support_pure, Set.mem_singleton_iff] at hval2
+      simp only [StateT.run_pure] at hval2
       obtain ⟨_, ⟨_, rfl⟩, _, rfl⟩ := hval2
       simp only [Set.mem_ofPred_eq, outputRelation]
       constructor <;> simp

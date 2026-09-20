@@ -122,7 +122,7 @@ theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A]
         = if c ∈ C then hammingBallVolume (Fintype.card A) δ (Fintype.card ι) else 0 := by
     intro c
     by_cases hc : c ∈ C
-    · simp only [hc, true_and, if_true]
+    · simp only [hc, true_and, ite_true]
       rw [← Finset.card_filter]
       exact card_filter_hammingDist_le_eq_hammingBallVolume c δ
     · simp [hc]

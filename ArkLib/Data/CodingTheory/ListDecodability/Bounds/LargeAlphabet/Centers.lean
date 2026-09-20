@@ -167,7 +167,7 @@ theorem hamming_center_from_disjoint_blocks
     intro j i hij
     have hiU : i ∈ U := by
       exact Finset.mem_biUnion.mpr ⟨j, Finset.mem_univ _, hij⟩
-    rw [show y i = v (owner ⟨i, hiU⟩) i by simp only [y, dif_pos hiU]]
+    rw [show y i = v (owner ⟨i, hiU⟩) i by simp only [y, dite_eq_left hiU]]
     rw [howner_eq ⟨i, hiU⟩ j hij]
   have hpair :
       ((Finset.univ : Finset (Fin ℓ)) : Set (Fin ℓ)).PairwiseDisjoint blocks := by
@@ -184,7 +184,7 @@ theorem hamming_center_from_disjoint_blocks
       intro i hi
       have hneq := (Finset.mem_filter.mp hi).2
       by_contra hiU
-      have hyc : y i = c i := by simp only [y, dif_neg hiU]
+      have hyc : y i = c i := by simp only [y, dite_eq_right hiU]
       exact hneq hyc.symm
     exact (Finset.card_le_card hsub).trans (hUcard ▸ hcenter)
   · intro j
@@ -203,7 +203,7 @@ theorem hamming_center_from_disjoint_blocks
         by_cases hiU : i ∈ U
         · exact (hcommon i (hblocks_sub (owner ⟨i, hiU⟩)
             (howner_mem ⟨i, hiU⟩)) j).symm
-        · have hyc : y i = c i := by simp only [y, dif_neg hiU]
+        · have hyc : y i = c i := by simp only [y, dite_eq_right hiU]
           exact fun heq => hneq (heq.trans hyc.symm)
       · intro hij
         exact hneq (hy_block j hij).symm
@@ -387,7 +387,7 @@ theorem barrier_center_from_blocks
     else if hiU : i ∈ U then u (owner ⟨i, hiU⟩) i else c₀ i
   have hyzero : ∀ (j : Fin ℓ) {i : ι}, i ∈ blocks.zero → y i = u j i := by
     intro j i hi
-    rw [show y i = common ⟨i, hi⟩ by simp only [y, dif_pos hi]]
+    rw [show y i = common ⟨i, hi⟩ by simp only [y, dite_eq_left hi]]
     exact (hzero j i hi).symm
   have hyother : ∀ (j : Fin ℓ) {i : ι},
       i ∈ blocks.other j → y i = u j i := by
@@ -398,7 +398,7 @@ theorem barrier_center_from_blocks
     have hiU : i ∈ U :=
       Finset.mem_biUnion.mpr ⟨j, Finset.mem_univ _, hi⟩
     rw [show y i = u (owner ⟨i, hiU⟩) i by
-      simp only [y, dif_neg hi0, dif_pos hiU]]
+      simp only [y, dite_eq_right hi0, dite_eq_left hiU]]
     rw [howner_eq ⟨i, hiU⟩ j hi]
   have hpair :
       ((Finset.univ : Finset (Fin ℓ)) : Set (Fin ℓ)).PairwiseDisjoint
@@ -428,7 +428,7 @@ theorem barrier_center_from_blocks
         hnot (Finset.mem_union_left U h)
       have hiU : i ∉ U := fun h =>
         hnot (Finset.mem_union_right blocks.zero h)
-      have hy : y i = c₀ i := by simp only [y, dif_neg hi0, dif_neg hiU]
+      have hy : y i = c₀ i := by simp only [y, dite_eq_right hi0, dite_eq_right hiU]
       exact hne hy.symm
     exact (Finset.card_le_card hsub).trans_eq husedCard
   · intro j
@@ -459,7 +459,7 @@ theorem barrier_center_from_blocks
           intro hi
           rcases Finset.mem_biUnion.mp hi with ⟨k, hk, hik⟩
           exact (Finset.disjoint_left.mp ((hdisjoint j).2 k)) hchosen hik
-        have hy : y i = c₀ i := by simp only [y, dif_neg hi0, dif_neg hiU]
+        have hy : y i = c₀ i := by simp only [y, dite_eq_right hi0, dite_eq_right hiU]
         exact (hagree j i hchosen).trans hy.symm
     have hd := hamming_dist_le_card_compl_of_agree (u j) y E hagreeE
     rw [hn, hEcard] at hd
@@ -710,7 +710,7 @@ theorem large_union_family_resize :
       A ⊆ extend A ∧ (extend A).card = a₁ := by
     intro A hA
     dsimp only [extend]
-    rw [dif_pos hA]
+    rw [dite_eq_left hA]
     exact Classical.choose_spec (hext A hA)
   let targetSets : Finset (Finset ι) := source.sets.image extend
   have hcard_each : ∀ E ∈ targetSets, E.card = a₁ := by
@@ -754,7 +754,7 @@ theorem large_union_family_resize :
         pre E ∈ source.sets ∧ extend (pre E) = E := by
       intro E hE
       dsimp only [pre]
-      rw [dif_pos hE]
+      rw [dite_eq_left hE]
       exact Classical.choose_spec (hpre E hE)
     let U : Finset (Finset ι) := T.image pre
     have hUsub : U ⊆ source.sets := by

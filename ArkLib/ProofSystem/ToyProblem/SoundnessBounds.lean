@@ -1052,9 +1052,9 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι] [Fini
         else Pr_{let γ ← $ᵖ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u
   have hjp : ¬ jointProximity C u δ := by
     intro h
-    rw [h_eps, if_pos h] at hca
+    rw [h_eps, ite_eq_left h] at hca
     exact lt_irrefl _ hca
-  rw [if_neg hjp] at h_eps
+  rw [ite_eq_right hjp] at h_eps
   refine ⟨0, 0, 0, u 0, u 1, ?_, ?_⟩
   · intro hrel
     apply hjp

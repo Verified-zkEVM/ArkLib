@@ -141,14 +141,17 @@ private theorem fold_density_le_eps_ca_of_not_joint_proximity
         else (do
           let γ ← PMF.uniformOfFintype F
           pure (Code.relDistFromCode (u 0 + γ • u 1) C ≤ δ_fld)) True) :=
-      (if_neg hnot).symm
+      (ite_eq_right hnot).symm
     _ ≤ ⨆ w : Fin 2 → ι → F,
         if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
         else (do
           let γ ← PMF.uniformOfFintype F
           pure (Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld)) True :=
-      @le_iSup ENNReal (Fin 2 → ι → F)
-        ENNReal.instCompleteLinearOrder.toCompleteLattice _ u
+      le_iSup (fun w : Fin 2 → ι → F =>
+        if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
+        else (do
+          let γ ← PMF.uniformOfFintype F
+          pure (Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld)) True) u
 
 open scoped BigOperators in
 noncomputable def subfield_ca_bessel_partial (x : ℝ) (m : ℕ) : ℝ :=
@@ -415,7 +418,7 @@ theorem subfield_ca_good_scalars_subset_fold_close
             α * subfield_ca_reciprocal_stack domain B a y 1 i =
           q.eval (domain i)
         unfold subfield_ca_reciprocal_stack
-        rw [if_pos rfl, if_neg (by decide : (1 : Fin 2) ≠ 0)]
+        rw [ite_eq_left rfl, ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
         rw [hqeval i hiS]
         field_simp [hden i]
         ring
@@ -473,7 +476,7 @@ theorem subfield_ca_reciprocal_stack_not_joint
     rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
       Polynomial.eval_X, Polynomial.eval_C, hpagree i hi, Polynomial.eval_one]
     dsimp only [u, subfield_ca_reciprocal_stack]
-    rw [if_neg (by decide : (1 : Fin 2) ≠ 0)]
+    rw [ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
     field_simp [hden i]
     ring
   have hXne : (Polynomial.X - Polynomial.C a : Polynomial F) ≠ 0 := by
@@ -584,7 +587,7 @@ private theorem subfield_ca_bessel_partial_le_exp
 theorem subfield_ca_bessel_partial_le_factor_small
     (x : ℝ) (m : ℕ) (hx : 0 ≤ x) (hxle : x ≤ 3 / 2) :
     subfield_ca_bessel_partial x m ≤ subfieldCaFactor x := by
-  rw [subfieldCaFactor, if_pos hxle]
+  rw [subfieldCaFactor, ite_eq_left hxle]
   exact subfield_ca_bessel_partial_le_exp x m hx
 
 omit [DecidableEq F] in

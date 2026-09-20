@@ -604,7 +604,7 @@ private theorem aligned_affineLine_global_close
           ((b : ℝ) - 1) * (if i ∈ D then 1 else 0) ≤ (b : ℝ) := by
     intro i
     by_cases hi : i ∈ D
-    · rw [if_pos hi]
+    · rw [ite_eq_left hi]
       have hne : f₀ i + γ • f₁ i ≠ u₀ i + γ • u₁ i := by
         simpa only [D, Code.mem_disagreementCols, Pi.add_apply, Pi.smul_apply] using hi
       have hone := lineAgreementSeeds_card_le_one_of_ne_at
@@ -615,7 +615,7 @@ private theorem aligned_affineLine_global_close
             exact_mod_cast hone)
       have hbR : (1 : ℝ) ≤ b := by exact_mod_cast (le_of_lt hb)
       nlinarith
-    · rw [if_neg hi]
+    · rw [ite_eq_right hi]
       have hcardNat : (lineAgreementSeeds f₀ f₁ U T i).card ≤ T.card :=
         Finset.card_filter_le _ _
       have hcardR : ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ) ≤ b := by
@@ -893,7 +893,7 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
   have hval : sharpSubspaceProfile (ι := ι) s R (2 * t) =
       ((s : ℝ) * R - 1 / Fintype.card ι) /
         ((s : ℝ) - 2 * t + 1) := by
-    simp only [sharpSubspaceProfile, hmem, if_true]
+    simp only [sharpSubspaceProfile, hmem, ite_true]
     congr 1
     push_cast
     ring

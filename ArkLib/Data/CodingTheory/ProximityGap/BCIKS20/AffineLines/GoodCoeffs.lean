@@ -409,7 +409,7 @@ theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q
         (hf := fun b => by
           simp only [Finset.mem_filter, Finset.mem_univ, true_and]
           intro hb
-          simp only [hb, if_false])
+          simp only [hb, ite_false])
     ]
     -- Evaluate the resulting finite sum
     rw [Finset.sum_ite]

@@ -617,9 +617,9 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
             ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
           Set.image (fun u ↦ iteratedFoldWord ω u k y)
             (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))
-        · rw [if_pos hy]
+        · rw [ite_eq_left hy]
           exact le_trans (Probability.prob_le_one _ _) le_self_add
-        · rw [if_neg hy, zero_add]
+        · rw [ite_eq_right hy, zero_add]
           rw [not_not] at hy
           refine le_trans (Probability.Pr_le_Pr_of_implies _ _ _ ?_)
             (hlast (iteratedFoldWord ω f k y))

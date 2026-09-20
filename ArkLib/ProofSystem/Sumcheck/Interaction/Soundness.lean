@@ -93,7 +93,7 @@ theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
         some True ↔
       (domain.map (fun x => q.val.eval x)).sum = target ∧ p.val.eval r = q.val.eval r := by
   by_cases h : (domain.map (fun x => q.val.eval x)).sum = target
-  · simp only [committedRun, h, if_pos]
+  · simp only [committedRun, h, ite_eq_left]
     change some (p.val.eval r = q.val.eval r) = some True ↔ _
     simp
   · simp [committedRun, h, CoreRun.closed]
@@ -101,8 +101,9 @@ theorem committedRun_true_iff [DecidableEq F] (p q : Message F deg)
 /-- Ambient failure is preserved; rejection is instead an explicit completed run. -/
 theorem executeCommitted_failure [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
-    Pr[⊥ | executeCommitted F deg challenge p q domain target] = Pr[⊥ | challenge] := by
-  rw [executeCommitted_eq, probFailure_map]
+    Pr{let _ ← executeCommitted F deg challenge p q domain target}[True] =
+      Pr{let _ ← challenge}[True] := by
+  rw [executeCommitted_eq, prEvent_map]
 
 /-- A failed sum check cannot produce any closed output claim. -/
 theorem committedRun_rejects [DecidableEq F] (p q : Message F deg)
@@ -116,11 +117,10 @@ variable [Fintype F] [DecidableEq F] [SampleableType F]
 /-- Soundness against every polynomial fixed before the fresh uniform challenge. -/
 theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    Pr[fun run => run.closed.map (closedOutputRelation F deg) = some True |
-      executeCommitted F deg ($ᵗ F) p q domain target] ≤
+    Pr{let run ← executeCommitted F deg ($ᵗ F) p q domain target}[
+      run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
-  rw [executeCommitted_eq, probEvent_map]
-  simp only [Function.comp_def]
+  rw [executeCommitted_eq, prEvent_map]
   by_cases hsum : (domain.map (fun x => q.val.eval x)).sum = target
   · have hne : p.val - q.val ≠ 0 := by
       intro h
@@ -137,7 +137,8 @@ theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (targ
         (closedOutputRelation F deg) = some True) = (fun r => p.val.eval r = q.val.eval r) := by
       funext r
       exact propext ((committedRun_true_iff F deg p q domain target r).trans (and_iff_right hsum))
-    rw [hevent, probEvent_uniformSample]
+    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r)),
+      SampleableType.prEvent_uniformSample]
     gcongr
   · have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun _ => False) := by
@@ -145,7 +146,7 @@ theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (targ
       apply propext
       rw [committedRun_true_iff]
       simp [hsum]
-    rw [hevent]
+    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r))]
     simp
 
 /-- Arbitrary randomized commitment, possibly failing, followed by a fresh verifier sample.
@@ -153,41 +154,32 @@ The commitment distribution may depend on `p`, the domain and target, but is sam
 theorem executeRandomCommitment_soundness (messages : ProbComp (Message F deg))
     (p : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    Pr[fun run => run.closed.map (closedOutputRelation F deg) = some True |
-      messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target] ≤
+    Pr{let run ← messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target}[
+      run.closed.map (closedOutputRelation F deg) = some True] ≤
         (deg : ENNReal) / Fintype.card F := by
-  exact probEvent_bind_le_of_forall_le
-    (fun q _ => executeCommitted_soundness F deg p q domain target hfalse)
+  exact prEvent_bind_le_of_forall_le _ _ _
+    (fun q => executeCommitted_soundness F deg p q domain target hfalse)
 
 /-- Primary measure-valued soundness on the actual executor's closed output.
 No countability assumption on the dependent run type is required. -/
 theorem executeCommitted_measureSoundness (p q : Message F deg)
     (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    discreteEvalDist (executeCommitted F deg ($ᵗ F) p q domain target)
-      {run | run.closed.map (closedOutputRelation F deg) = some True} ≤
+    𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
+        executeCommitted F deg ($ᵗ F) p q domain target] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  let : MeasurableSpace
-      (CoreRun (protocol F deg) (inputSpec F).toPFunctor (fun _ => F × F)
-        (fun _ => outputFamily F deg) (fun _ => F × F)) := ⊤
-  have h := executeCommitted_soundness F deg p q domain target hfalse
-  rw [probEvent_eq_evalSPMF_toMeasure] at h
-  exact h
+  rw [← prEvent_eq_evalDist_map]
+  exact executeCommitted_soundness F deg p q domain target hfalse
 
 /-- Primary measure bound for any possibly failing randomized commitment made first. -/
 theorem executeRandomCommitment_measureSoundness (messages : ProbComp (Message F deg))
     (p : Message F deg) (domain : List F) (target : F)
     (hfalse : (domain.map (fun x => p.val.eval x)).sum ≠ target) :
-    discreteEvalDist
-      (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)
-      {run | run.closed.map (closedOutputRelation F deg) = some True} ≤
+    𝒟[(fun run => run.closed.map (closedOutputRelation F deg) = some True) <$>
+        (messages >>= fun q => executeCommitted F deg ($ᵗ F) p q domain target)] {True} ≤
         (deg : ENNReal) / Fintype.card F := by
-  let : MeasurableSpace
-      (CoreRun (protocol F deg) (inputSpec F).toPFunctor (fun _ => F × F)
-        (fun _ => outputFamily F deg) (fun _ => F × F)) := ⊤
-  have h := executeRandomCommitment_soundness F deg messages p domain target hfalse
-  rw [probEvent_eq_evalSPMF_toMeasure] at h
-  exact h
+  rw [← prEvent_eq_evalDist_map]
+  exact executeRandomCommitment_soundness F deg messages p domain target hfalse
 
 end
 end Sumcheck.Interaction.SingleRound

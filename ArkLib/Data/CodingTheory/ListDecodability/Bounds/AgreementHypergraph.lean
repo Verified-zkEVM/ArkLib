@@ -449,10 +449,10 @@ theorem geometricEdgeWeight_partition_decomposition
     intro a
     unfold geometricEdgeWeight
     by_cases hne : (e ∩ P.blocks a).Nonempty
-    · rw [if_pos hne]
+    · rw [ite_eq_left hne]
       have hpos := Finset.card_pos.mpr hne
       omega
-    · rw [if_neg hne]
+    · rw [ite_eq_right hne]
       have hz : (e ∩ P.blocks a).card = 0 :=
         Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp hne)
       omega
@@ -805,7 +805,7 @@ theorem affineIndependent_of_selectedGeometricFlagPart_transversal
     intro i
     have h := hpPart i
     unfold selectedGeometricFlagPart at h
-    rw [dif_pos (hpS i)] at h
+    rw [dite_eq_left (hpS i)] at h
     exact h
   have hqAI : AffineIndependent F q :=
     affineIndependent_of_basisFlagLevels B.basis q hqLevel
@@ -828,7 +828,7 @@ theorem selectedGeometricFlagPart_base
     (B : SelectedGeometricFlagBasis (F := F) S) :
     selectedGeometricFlagPart B B.base = 0 := by
   unfold selectedGeometricFlagPart
-  rw [dif_pos B.base_mem]
+  rw [dite_eq_left B.base_mem]
   rw [basisFlagLevel_eq_zero_iff]
   apply Subtype.ext
   simp only [sub_self, Submodule.coe_zero]
@@ -840,7 +840,7 @@ theorem selectedGeometricFlagPart_witness
     (i : Fin (geometricAffineRank (F := F) S)) :
     selectedGeometricFlagPart B (B.witness i) = i.succ := by
   unfold selectedGeometricFlagPart
-  rw [dif_pos (B.witness_mem i)]
+  rw [dite_eq_left (B.witness_mem i)]
   have heq :
       (⟨B.witness i - B.base,
         vsub_mem_vectorSpan F (B.witness_mem i) B.base_mem⟩ :
@@ -899,16 +899,16 @@ theorem selectedGeometricFlagPart_image_card_le
   have hpS : ∀ j, p j ∈ S := by
     intro j
     by_cases hj : j ∈ J
-    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dif_pos hj]]
+    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dite_eq_left hj]]
       exact hES (hpickE ⟨j, hj⟩)
-    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dif_neg hj]]
+    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dite_eq_right hj]]
       exact selectedGeometricFlagRep_mem B j
   have hpPart : ∀ j, selectedGeometricFlagPart B (p j) = j := by
     intro j
     by_cases hj : j ∈ J
-    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dif_pos hj]]
+    · rw [show p j = pick ⟨j, hj⟩ by simp only [p, dite_eq_left hj]]
       exact hpickPart ⟨j, hj⟩
-    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dif_neg hj]]
+    · rw [show p j = selectedGeometricFlagRep B j by simp only [p, dite_eq_right hj]]
       exact selectedGeometricFlagPart_rep B j
   have hpAI : AffineIndependent F p :=
     affineIndependent_of_selectedGeometricFlagPart_transversal B p hpS hpPart
@@ -919,7 +919,7 @@ theorem selectedGeometricFlagPart_image_card_le
     have hj : j.1 ∈ J := j.2
     have hval : p j.1 = pick j := by
       dsimp [p]
-      rw [if_pos hj]
+      rw [ite_eq_left hj]
     exact hval.symm
   have hcard := hpickAI.card_le_finrank_succ
   have hrange : Set.range pick ⊆ (E : Set V) := by
@@ -1205,7 +1205,7 @@ theorem agreementWeight_lt_of_subspaceDesign_rate
         s * R / ((s : ℝ) - d + 1) := by
     intro r hrpos hrle
     have hrs : r ≤ s := hrle.trans hds
-    rw [if_pos (Finset.mem_Icc.mpr ⟨hrpos, hrs⟩)]
+    rw [ite_eq_left (Finset.mem_Icc.mpr ⟨hrpos, hrs⟩)]
     have hdenr : (0 : ℝ) < (s : ℝ) - r + 1 := by
       exact_mod_cast (show 0 < s - r + 1 by omega)
     have hdend : (0 : ℝ) < (s : ℝ) - d + 1 := by

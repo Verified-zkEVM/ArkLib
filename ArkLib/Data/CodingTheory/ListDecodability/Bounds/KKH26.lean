@@ -471,7 +471,7 @@ theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
     rw [hu]; simp [Matrix.cons_val_zero]
   have hu1 : u 1 = -(ReedSolomon.evalOnPoints domain (X ^ ((khat - 1) * d))) := by
     rw [hu]; simp [Matrix.cons_val_one]
-  -- Step 3: reduce `epsCa` to its `u`-summand, with the `if_neg` branch.
+  -- Step 3: reduce `epsCa` to its `u`-summand, with the `ite_eq_right` branch.
   rw [epsCa]
   refine le_iSup_of_le u ?_
   -- Step 4: the pair `u` is NOT jointly `δ`-close, so we take the `Pr` branch.
@@ -536,7 +536,7 @@ theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
     -- Contradiction: `khat * d ≤ T.card ≤ natDegree Q ≤ (khat - 1) * d < khat * d`.
     have hlt : (khat - 1) * d < khat * d := (Nat.mul_lt_mul_right hd0).mpr (by omega)
     omega
-  rw [if_neg hnj]
+  rw [ite_eq_right hnj]
   have : DecidablePred (fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0)) :=
     Classical.decPred _
   -- Step 6: every `γ ∈ Λ_𝒮` makes the fold `u 0 + γ • u 1` `δ`-close to `C`.
@@ -592,7 +592,7 @@ theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
       simp only [leadingPart, Finset.sum_range_succ, Finset.sum_range_zero, zero_add, hlam,
         pow_zero, pow_one, Nat.sub_zero, Polynomial.eval_comp, Polynomial.eval_add,
         Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C,
-        if_true, if_neg (by norm_num : (1 : ℕ) ≠ 0)]
+        ite_true, ite_eq_right (by norm_num : (1 : ℕ) ≠ 0)]
       rw [← pow_mul, ← pow_mul, Nat.mul_comm d khat, Nat.mul_comm d (khat - 1)]
       ring
     have hsub_eq : ∀ i, (u 0 + (∑ α ∈ S, α) • u 1) i - w i
@@ -921,8 +921,8 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) [Finite F] {d h k
     obtain ⟨T, hT, rfl⟩ := hS
     refine ⟨hΨsub T hT, hΨcard T hT, fun i hi => ?_⟩
     interval_cases i
-    · simp [esymm_zero_eq_one]
-    · simp only [Nat.one_ne_zero, if_false]
+    · simp
+    · simp only [Nat.one_ne_zero, ite_false]
       rw [esymm_one_eq_sum, hΨsum T hT]
   -- Apply the general template.
   obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU h1lt
@@ -992,8 +992,8 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
     have hb₀P : b₀ ∈ P := by
       rw [hb₀]
       by_cases h : a₀ ∈ P
-      · rwa [if_pos h]
-      · rw [if_neg h]
+      · rwa [ite_eq_left h]
+      · rw [ite_eq_right h]
         have := (hPiff (-a₀) hna₀).mpr (by rwa [neg_neg])
         exact this
     -- `a₀ ∉ P.erase b₀`.
@@ -1004,7 +1004,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
       rw [hP'def, Finset.mem_erase]
       rintro ⟨hne, ha₀P⟩
       -- If `a₀ ∈ P`, then `b₀ = a₀`, contradicting `a₀ ≠ b₀`.
-      rw [hb₀, if_pos ha₀P] at hne
+      rw [hb₀, ite_eq_left ha₀P] at hne
       exact hne rfl
     -- The family: `insert a₀ (T ∪ -T)` for `t`-subsets `T` of `P'`.
     set Ψ : Finset F → Finset F := fun T => insert a₀ (T ∪ T.image (fun y => -y)) with hΨ
@@ -1047,7 +1047,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
           have : -a₀ ∉ P := (hPiff a₀ ha₀).mp ha₀P
           rw [← hzeq] at this
           exact this hzP
-        have hb₀eq : b₀ = z := by rw [hb₀, if_neg ha₀nP, hzeq]
+        have hb₀eq : b₀ = z := by rw [hb₀, ite_eq_right ha₀nP, hzeq]
         rw [hP'def, Finset.mem_erase] at hzP'
         exact hzP'.1 hb₀eq.symm
     -- `Ψ T` has card `k̂`, sits in `H`, sums to `a₀`.
@@ -1107,8 +1107,8 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h kh
       obtain ⟨T, hT, rfl⟩ := hS
       refine ⟨hΨsub T hT, hΨcard T hT, fun i hi => ?_⟩
       interval_cases i
-      · simp [esymm_zero_eq_one]
-      · simp only [Nat.one_ne_zero, if_false]
+      · simp
+      · simp only [Nat.one_ne_zero, ite_false]
         rw [esymm_one_eq_sum, hΨsum T hT]
     obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU h1lt
       (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1)

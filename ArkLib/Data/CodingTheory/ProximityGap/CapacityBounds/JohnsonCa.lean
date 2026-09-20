@@ -73,14 +73,14 @@ private theorem joint_proximity_of_many_affine_agreements
       ((Finset.univ.filter fun x : ↥A => i ∈ S x).card : ℝ) ≤
         (if i ∈ T then (A.card : ℝ) else 1) := by
     by_cases hiT : i ∈ T
-    · rw [if_pos hiT]
+    · rw [ite_eq_left hiT]
       have hnat :
           (Finset.univ.filter fun x : ↥A => i ∈ S x).card ≤ A.card := by
         simpa using
           (Finset.card_le_card
             (Finset.filter_subset (fun x : ↥A => i ∈ S x) Finset.univ))
       exact_mod_cast hnat
-    · rw [if_neg hiT]
+    · rw [ite_eq_right hiT]
       exact_mod_cast Finset.card_le_one.mpr (by
         intro x hx y hy
         have hxeq := hagree x i (Finset.mem_filter.mp hx).2
@@ -858,7 +858,7 @@ private theorem linear_bgks_dense_triples_card_gt
       (((S p.1 ∩ S p.2.1 ∩ S p.2.2).card : ℝ)) ≤
         ((n - d : ℕ) : ℝ) + if p ∈ D then (n : ℝ) else 0 := by
     by_cases hp : p ∈ D
-    · rw [if_pos hp]
+    · rw [ite_eq_left hp]
       have hcard : (S p.1 ∩ S p.2.1 ∩ S p.2.2).card ≤ n := by
         dsimp [n]
         simpa using
@@ -870,7 +870,7 @@ private theorem linear_bgks_dense_triples_card_gt
       have hsubnonneg : 0 ≤ ((n - d : ℕ) : ℝ) := by
         exact_mod_cast Nat.zero_le (n - d)
       linarith
-    · rw [if_neg hp, add_zero]
+    · rw [ite_eq_right hp, add_zero]
       have hp' : ¬ n - d < (S p.1 ∩ S p.2.1 ∩ S p.2.2).card := by
         intro hdense
         apply hp
@@ -1306,9 +1306,9 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
   unfold epsCa
   refine iSup_le fun u => ?_
   by_cases hjp : Code.jointProximity (C : Set (ι → F)) u (δ_src + η)
-  · rw [if_pos hjp]
+  · rw [ite_eq_left hjp]
     exact zero_le
-  · rw [if_neg hjp]
+  · rw [ite_eq_right hjp]
     apply le_of_not_gt
     intro hgt
     have hstrict :

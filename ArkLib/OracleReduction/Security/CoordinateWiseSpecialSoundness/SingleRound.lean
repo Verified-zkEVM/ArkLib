@@ -363,8 +363,8 @@ theorem sib_coordEq [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin �
     [Inhabited (Fin K)] (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) :
     CoordEq i (challenges (central challenges)) (challenges (sib challenges i)) := by
   have hc : StarAt challenges (central challenges) := by
-    unfold central; rw [dif_pos hstar]; exact Fin.find_spec hstar
-  unfold sib; rw [dif_pos (hc i)]; exact Fin.find_spec (hc i)
+    unfold central; rw [dite_eq_left hstar]; exact Fin.find_spec hstar
+  unfold sib; rw [dite_eq_left (hc i)]; exact Fin.find_spec (hc i)
 
 /-- `CoordEq` is symmetric (orientation bridge: `sib_coordEq` is oriented center-first, the
 extraction's difference challenge `c̄ᵢ := c_{sib,i} − c_{central,i}` is oriented sibling-first). -/
@@ -416,7 +416,7 @@ theorem collect_eq_some {K : ℕ} {W : Type} {f : Fin K → Option W} {w : Fin K
     (h : ∀ j, f j = some (w j)) : collect f = some w := by
   have hs : ∀ j, (f j).isSome := fun j => by rw [h j]; rfl
   unfold collect
-  rw [dif_pos hs]
+  rw [dite_eq_left hs]
   exact congrArg some (funext fun j =>
     Option.some.inj ((Option.some_get (hs j)).trans (h j)))
 

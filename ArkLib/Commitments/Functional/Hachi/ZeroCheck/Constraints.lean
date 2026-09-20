@@ -199,7 +199,7 @@ theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement
         - cEvalAt φF α Φ.φ * ∑ u : Fin (rhoDigitCount q b),
             φF ((b : ZMod q) ^ (u : ℕ))
               * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly := by
-  simp only [hAlphaEvals, rowPoint, Equiv.apply_symm_apply, Fin.eta, i.isLt, dif_pos]
+  simp only [hAlphaEvals, rowPoint, Equiv.apply_symm_apply, Fin.eta, i.isLt, dite_eq_left]
 
 /-! ## The batched constraint polynomials -/
 
@@ -389,7 +389,7 @@ theorem wTable_zRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
   have hmod : (Φ.φ.natDegree * (i : ℕ) + k) % Φ.φ.natDegree = k := by
     have h := Nat.div_add_mod (Φ.φ.natDegree * (i : ℕ) + k) Φ.φ.natDegree
     rw [hdiv] at h; omega
-  simp only [wTable, Equiv.apply_symm_apply, Fin.val_mk, hdiv, hmod, i.isLt, dif_pos, Fin.eta]
+  simp only [wTable, Equiv.apply_symm_apply, Fin.val_mk, hdiv, hmod, i.isLt, dite_eq_left, Fin.eta]
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The table value at the cube point encoding the quotient-block coordinate `(i, u, k)` — row
@@ -421,8 +421,8 @@ theorem wTable_rRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
       _ = ((i : ℕ) + 1) * δ := by ring
       _ ≤ n * δ := Nat.mul_le_mul_right _ (by omega)
   simp only [wTable, Equiv.apply_symm_apply, Fin.val_mk, hrow, hcol, ← hδ]
-  rw [dif_neg (by omega : ¬ μ + ((i : ℕ) * δ + u) < μ),
-    dif_pos (by omega : μ + ((i : ℕ) * δ + u) - μ < n * δ)]
+  rw [dite_eq_right (by omega : ¬ μ + ((i : ℕ) * δ + u) < μ),
+    dite_eq_left (by omega : μ + ((i : ℕ) * δ + u) - μ < n * δ)]
   simp only [Nat.add_sub_cancel_left, hdivδ, hmodδ, Fin.eta]
 
 omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
@@ -484,7 +484,7 @@ theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound : ℕ)
       rw [wTable_rRow Φ m₀ φF b w hd i u.isLt hkd hlt] at hval
       exact le_trans (valMinAbs_natAbs_le_of_rangeProduct_eq_zero φF hval) hbound
     · -- `k ≥ deg φ`: `rhoDigits` truncates there, so the coefficient is zero
-      rw [rhoDigits_coeff, if_neg hkd]
+      rw [rhoDigits_coeff, ite_eq_right hkd]
       simp
 
 /-! ## Eq. (22) in the paper's table form: the `M̃_α`/`w̃`/`α̃` contraction
@@ -664,7 +664,7 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : Rl
         ((Fin.castAdd (n * rhoDigitCount q b) j : Fin (μ + n * rhoDigitCount q b)) : ℕ)
         = cEvalAt φF α (s.M i j).1 := by
       unfold mAlphaTilde
-      exact dif_pos j.isLt
+      exact dite_eq_left j.isLt
     rw [hzcol j, Finset.mul_sum]
     exact Finset.sum_congr rfl fun ℓ _ => by
       simp only [hM, wTable_wTablePoint_z Φ m₀ φF b w hd hμn hjv ℓ, alphaTilde, mul_assoc]
@@ -709,8 +709,8 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : Rl
           ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ)
           = -cEvalAt φF α Φ.φ * φF ((b : ZMod q) ^ (p.2 : ℕ)) := by
         unfold mAlphaTilde
-        rw [dif_neg hlow, if_pos ⟨by rw [hUv]; omega, by rw [hUv, hdiv, hpi]⟩, hUv, hmod]
-      rw [if_pos hpi, hrcol i (p.2 : ℕ), Finset.mul_sum, Finset.mul_sum,
+        rw [dite_eq_right hlow, ite_eq_left ⟨by rw [hUv]; omega, by rw [hUv, hdiv, hpi]⟩, hUv, hmod]
+      rw [ite_eq_left hpi, hrcol i (p.2 : ℕ), Finset.mul_sum, Finset.mul_sum,
         ← Finset.sum_neg_distrib]
       refine Finset.sum_congr rfl fun ℓ _ => ?_
       rw [hM, wTable_wTablePoint_r Φ m₀ φF b w hd hμn hu (by rw [hUv, hpi]) ℓ]
@@ -719,11 +719,11 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : Rl
     · have hM : mAlphaTilde Φ φF b s α i
           ((Fin.natAdd μ (finProdFinEquiv p) : Fin (μ + n * rhoDigitCount q b)) : ℕ) = 0 := by
         unfold mAlphaTilde
-        rw [dif_neg hlow, if_neg ?_]
+        rw [dite_eq_right hlow, ite_eq_right ?_]
         rintro ⟨-, hc⟩
         rw [hUv, hdiv] at hc
         exact hpi (Fin.ext hc)
-      rw [if_neg hpi]
+      rw [ite_eq_right hpi]
       exact Finset.sum_eq_zero fun ℓ _ => by rw [hM, zero_mul, zero_mul]
   have hzsum : (∑ j : Fin μ, ∑ ℓ : Fin Φ.φ.natDegree,
       mAlphaTilde Φ φF b s α i
@@ -754,8 +754,8 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : Rl
           else 0 := by
       intro i'
       by_cases hc : i' = i
-      · rw [if_pos hc, Finset.mul_sum, ← Finset.sum_neg_distrib]
-        exact Finset.sum_congr rfl fun u _ => by rw [if_pos hc]
+      · rw [ite_eq_left hc, Finset.mul_sum, ← Finset.sum_neg_distrib]
+        exact Finset.sum_congr rfl fun u _ => by rw [ite_eq_left hc]
       · simp [hc]
     rw [show (∑ i' : Fin n, ∑ u : Fin (rhoDigitCount q b), _) = _ from
       Finset.sum_congr rfl fun i' _ => (Finset.sum_congr rfl fun u _ => hr (i', u)).trans
@@ -763,7 +763,7 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s : Rl
     rw [Finset.sum_ite_eq' Finset.univ i (fun _ =>
       -(cEvalAt φF α Φ.φ * ∑ u : Fin (rhoDigitCount q b),
         φF ((b : ZMod q) ^ (u : ℕ))
-          * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly)), if_pos (Finset.mem_univ i),
+          * evalAt φF α (rhoDigits Φ b (w.ρ i) (u : ℕ)).toPoly)), ite_eq_left (Finset.mem_univ i),
       ← rhoDigits_evalAt Φ φF α hb hd (w.ρ i) (w.hρ i)]
   simp only [alphaDefect, alphaContract, Fin.sum_univ_add]
   rw [hzsum, hrsum]
@@ -780,11 +780,11 @@ theorem hAlphaEvals_eq_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b)
         alphaDefect Φ m₀ φF b s α hμn (wTable Φ m₀ φF b w) ⟨_, h⟩
       else 0 := by
   by_cases h : ((finFunctionFinEquiv x : Fin (2 ^ m₁)) : ℕ) < n
-  · rw [dif_pos h, alphaDefect_wTable Φ m₀ φF b hb s α w hd hμn ⟨_, h⟩,
+  · rw [dite_eq_left h, alphaDefect_wTable Φ m₀ φF b hb s α w hd hμn ⟨_, h⟩,
       rhoDigits_evalAt Φ φF α hb hd (w.ρ ⟨_, h⟩) (w.hρ _)]
-    simp only [hAlphaEvals, dif_pos h]
-  · rw [dif_neg h]
-    simp only [hAlphaEvals, dif_neg h]
+    simp only [hAlphaEvals, dite_eq_left h]
+  · rw [dite_eq_right h]
+    simp only [hAlphaEvals, dite_eq_right h]
 
 omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- **`relBatched`'s `α`-conjunct is exactly Eq. (22)'s row constraints.** `H_α ≡ 0` — the identity
@@ -805,15 +805,15 @@ theorem hAlpha_eq_zero_iff_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (hb : 1 
       simp only [rowPoint, Equiv.apply_symm_apply]
       exact i.isLt
     have hx := h (rowPoint m₁ hn i)
-    rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b hb s α w hd hμn, dif_pos hlt] at hx
+    rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b hb s α w hd hμn, dite_eq_left hlt] at hx
     have hidx : (⟨((finFunctionFinEquiv (rowPoint m₁ hn i) : Fin (2 ^ m₁)) : ℕ), hlt⟩ : Fin n)
         = i := Fin.ext (by simp [rowPoint])
     rwa [hidx] at hx
   · intro h x
     rw [hAlphaEvals_eq_alphaDefect Φ m₀ m₁ φF b hb s α w hd hμn]
     by_cases hx : ((finFunctionFinEquiv x : Fin (2 ^ m₁)) : ℕ) < n
-    · rw [dif_pos hx]; exact h _
-    · rw [dif_neg hx]
+    · rw [dite_eq_left hx]; exact h _
+    · rw [dite_eq_right hx]
 
 /-! ## The sumcheck summands -/
 
@@ -910,7 +910,7 @@ theorem hypercubeSum_of_le (H : CMvPolynomial m₀ F) {i : ℕ} (hi : m₀ ≤ i
   congr 1
   funext j
   simp only [hypercubePoint]
-  exact dif_pos (lt_of_lt_of_le j.isLt hi)
+  exact dite_eq_left (lt_of_lt_of_le j.isLt hi)
 
 
 /-! ### Evaluating the computable summands
@@ -934,9 +934,9 @@ theorem eval_eqPolynomial_boolean (x : Fin m₀ → Fin 2) (τ : Fin m₀ → F)
   simp only [_root_.map_add, _root_.map_mul, _root_.map_sub, _root_.map_one,
     MvPolynomial.eval_C, MvPolynomial.eval_X]
   by_cases h : x i = 1
-  · rw [if_pos h, h]; norm_num
+  · rw [ite_eq_left h, h]; norm_num
   · have h0 : x i = 0 := by fin_omega
-    rw [if_neg h, h0]; norm_num
+    rw [ite_eq_right h, h0]; norm_num
 
 omit [BEq F] [LawfulBEq F] in
 /-- **A multilinear extension evaluates to the `eq̃`-weighted cube sum of its table.** The
@@ -965,7 +965,7 @@ theorem cMultilinearExtension_eval (evals : (Fin m₀ → Fin 2) → F) (τ : Fi
     (cMultilinearExtension m₀ evals).eval τ = MvPolynomial.eval τ (MLE evals) := by
   rw [cMultilinearExtension, CMvPolynomial.eval_sum, eval_MLE_eq_sum]
   exact Finset.sum_congr rfl fun x _ => by
-    rw [CPoly.eval_mul, CPoly.eval_C, cBooleanEqPolynomial_eval]
+    rw [CMvPolynomial.eval_mul, CMvPolynomial.eval_C, cBooleanEqPolynomial_eval]
 
 /-- At a Boolean point the computable multilinear extension returns the table entry. -/
 theorem cMultilinearExtension_eval_boolean (evals : (Fin m₀ → Fin 2) → F)
@@ -984,7 +984,7 @@ theorem cEqualityPolynomial_eval_boolean (τ : Fin m₀ → F) (y : Fin m₀ →
 applying `rangeProduct` to the evaluation. -/
 theorem cRangeProduct_eval (b : ℕ) (p : CMvPolynomial m₀ F) (τ : Fin m₀ → F) :
     (cRangeProduct m₀ b p).eval τ = rangeProduct b (p.eval τ) := by
-  rw [cRangeProduct, rangeProduct, CPoly.eval_mul, CMvPolynomial.eval_prod]
+  rw [cRangeProduct, rangeProduct, CMvPolynomial.eval_mul, CMvPolynomial.eval_prod]
   exact congrArg _ (Finset.prod_congr rfl fun j _ => by simp)
 
 /-! ### Per-variable degrees of the summands
@@ -1003,9 +1003,9 @@ theorem fromCMvPolynomial_cBooleanEqPolynomial (x : Fin m₀ → Fin 2) :
   rw [cBooleanEqPolynomial, CMvPolynomial.fromCMvPolynomial_prod, eqPolynomial_zeroOne]
   refine Finset.prod_congr rfl fun i _ => ?_
   by_cases h : x i = 1
-  · rw [if_pos h, if_neg (by rw [h]; decide), CMvPolynomial.fromCMvPolynomial_X]
+  · rw [ite_eq_left h, ite_eq_right (by rw [h]; decide), CMvPolynomial.fromCMvPolynomial_X]
   · have h0 : x i = 0 := by fin_omega
-    rw [if_neg h, if_pos h0, CMvPolynomial.fromCMvPolynomial_sub',
+    rw [ite_eq_right h, ite_eq_left h0, CMvPolynomial.fromCMvPolynomial_sub',
       CMvPolynomial.fromCMvPolynomial_one', CMvPolynomial.fromCMvPolynomial_X]
 
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -1142,8 +1142,8 @@ theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ 
   rw [hypercubeSum_zero]
   simp only [hZeroML, eval_MLE_eq_sum]
   refine Finset.sum_congr rfl fun x _ => ?_
-  rw [sumcheckPolyZero, CPoly.eval_mul, cEqualityPolynomial_eval_boolean, cRangeProduct_eval,
-    cMultilinearExtension_eval_boolean, mul_comm]
+  rw [sumcheckPolyZero, CMvPolynomial.eval_mul, cEqualityPolynomial_eval_boolean,
+    cRangeProduct_eval, cMultilinearExtension_eval_boolean, mul_comm]
 
 /-! ### The `α`-summand's table contraction
 
@@ -1161,7 +1161,7 @@ theorem mAlphaTilde_eq_zero_of_ge (φF : ZMod q →+* F) (b : ℕ) (s : RlinStat
     (i : Fin n) {u : ℕ} (hu : μ + n * rhoDigitCount q b ≤ u) :
     mAlphaTilde Φ φF b s α i u = 0 := by
   have hi := i.isLt
-  rw [mAlphaTilde, dif_neg (by omega), if_neg (by omega)]
+  rw [mAlphaTilde, dite_eq_right (by omega), ite_eq_right (by omega)]
 
 /-- The flat `m₀`-cube index of table entry `(u, ℓ)`, namely `d·u + ℓ` — the index `wTablePoint`
 decodes and the index `alphaPublicEvals` reads back through `/ d` and `% d`. -/
@@ -1289,12 +1289,12 @@ theorem sum_cube_rowIndexed (τ₁ : Fin m₁ → F) (f : Fin n → F) :
         (Finset.univ.filter (fun k : Fin (2 ^ m₁) => (k : ℕ) < n)))
       (fun k _ hk => by
         simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hk
-        rw [dif_neg hk, zero_mul]),
+        rw [dite_eq_right hk, zero_mul]),
     ← Finset.sum_subset (Finset.subset_univ
         (Finset.univ.filter (fun i : Fin n => (i : ℕ) < 2 ^ m₁)))
       (fun i _ hi => by
         simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi
-        rw [dif_neg hi])]
+        rw [dite_eq_right hi])]
   refine Finset.sum_bij'
     (fun k hk => (⟨(k : ℕ), by simpa using hk⟩ : Fin n))
     (fun i hi => (⟨(i : ℕ), by simpa using hi⟩ : Fin (2 ^ m₁)))
@@ -1302,7 +1302,7 @@ theorem sum_cube_rowIndexed (τ₁ : Fin m₁ → F) (f : Fin n → F) :
     (fun _ _ => rfl) (fun _ _ => rfl) ?_
   intro k hk
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hk
-  rw [dif_pos hk, dif_pos k.isLt, mul_comm]
+  rw [dite_eq_left hk, dite_eq_left k.isLt, mul_comm]
 
 omit [NeZero q] in
 /-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
@@ -1340,15 +1340,15 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s :
                         (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree)
                 else 0)) := by
       intro y
-      rw [sumcheckPolyAlpha, CPoly.eval_mul, cMultilinearExtension_eval_boolean,
+      rw [sumcheckPolyAlpha, CMvPolynomial.eval_mul, cMultilinearExtension_eval_boolean,
         cMultilinearExtension_eval_boolean, alphaPublicEvals, Finset.mul_sum, Finset.mul_sum]
     rw [Finset.sum_congr rfl fun y _ => hpt y, Finset.sum_comm]
     refine Finset.sum_congr rfl fun i _ => ?_
     by_cases hi : (i : ℕ) < 2 ^ m₁
-    · rw [dif_pos hi, ← sum_cube_alphaPublic Φ m₀ φF b s α w hd hμn i, Finset.mul_sum]
-      exact Finset.sum_congr rfl fun y _ => by rw [dif_pos hi]; ring
-    · rw [dif_neg hi]
-      exact Finset.sum_eq_zero fun y _ => by rw [dif_neg hi]; ring
+    · rw [dite_eq_left hi, ← sum_cube_alphaPublic Φ m₀ φF b s α w hd hμn i, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun y _ => by rw [dite_eq_left hi]; ring
+    · rw [dite_eq_right hi]
+      exact Finset.sum_eq_zero fun y _ => by rw [dite_eq_right hi]; ring
   -- The right side: the `H_α` cube sum and `zcTargetAlpha` are two row-indexed sums, and the
   -- row-level defect plus `yᵢ(α)` is exactly Eq. (22)'s contraction — now with the quotient term
   -- in its digit-recombined form.
@@ -1361,12 +1361,12 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (s :
     ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   by_cases hi : (i : ℕ) < 2 ^ m₁
-  · rw [dif_pos hi, dif_pos hi, dif_pos hi, ← mul_add]
+  · rw [dite_eq_left hi, dite_eq_left hi, dite_eq_left hi, ← mul_add]
     congr 1
     have hdef := alphaDefect_wTable Φ m₀ φF b hb s α w hd hμn i
     rw [alphaDefect, rhoDigits_evalAt Φ φF α hb hd (w.ρ i) (w.hρ i)] at hdef
     linear_combination hdef
-  · rw [dif_neg hi, dif_neg hi, dif_neg hi, add_zero]
+  · rw [dite_eq_right hi, dite_eq_right hi, dite_eq_right hi, add_zero]
 
 /-! ### Evaluation at a point: the final-evaluation factorizations
 
@@ -1387,7 +1387,7 @@ theorem eval_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀
     (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
     (sumcheckPolyZero Φ m₀ φF b τ₀ w).eval a =
       (cEqualityPolynomial m₀ τ₀).eval a * rangeProduct b (wTableMleEval Φ m₀ φF b w a) := by
-  rw [sumcheckPolyZero, CPoly.eval_mul, cRangeProduct_eval, cMultilinearExtension_eval,
+  rw [sumcheckPolyZero, CMvPolynomial.eval_mul, cRangeProduct_eval, cMultilinearExtension_eval,
     wTableMleEval_eq]
 
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -1400,7 +1400,7 @@ theorem eval_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStateme
     (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w).eval a =
       wTableMleEval Φ m₀ φF b w a *
         (cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF b s α τ₁)).eval a := by
-  rw [sumcheckPolyAlpha, CPoly.eval_mul, wTableMleEval_eq, cMultilinearExtension_eval]
+  rw [sumcheckPolyAlpha, CMvPolynomial.eval_mul, wTableMleEval_eq, cMultilinearExtension_eval]
 
 /-! ## Statement types of the zero-check and sumcheck stages -/
 

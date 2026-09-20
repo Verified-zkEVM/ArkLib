@@ -598,7 +598,7 @@ def finalFoldProver :
             obtain ⟨val, property⟩ := p
             exact val
           else
-          rw [if_neg h]
+          rw [ite_eq_right h]
           exact o ⟨j.1, Nat.lt_of_le_of_ne (Fin.is_le j) h⟩
       ⟩,
       p

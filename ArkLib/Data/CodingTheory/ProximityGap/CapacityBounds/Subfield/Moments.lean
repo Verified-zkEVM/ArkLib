@@ -397,9 +397,9 @@ private theorem subfield_ca_pair_indicator_sum_eq_fiber_card
   unfold subfield_ca_event_indicator
   by_cases hS : subfield_ca_event B domainB k a S z.1 z.2
   · by_cases hT : subfield_ca_event B domainB k a T z.1 z.2
-    · simp only [hS, hT, if_true, mul_one, and_self]
-    · simp only [hS, hT, if_true, if_false, mul_zero, and_false]
-  · simp only [hS, if_false, zero_mul, false_and]
+    · simp only [hS, hT, ite_true, mul_one, and_self]
+    · simp only [hS, hT, ite_true, ite_false, mul_zero, and_false]
+  · simp only [hS, ite_false, zero_mul, false_and]
 
 omit [Nonempty ι] [Fintype F] [DecidableEq F] in
 private theorem subfield_ca_pair_parameters_card_le [Finite F]
@@ -791,7 +791,7 @@ private theorem subfield_ca_bessel_partial_le_factor_large
     subfield_ca_bessel_partial x m ≤ subfieldCaFactor x := by
   obtain ⟨hx0, _ht, hrpos, hrle, htlt, hsq⟩ :=
     subfield_ca_sqrt_floor_facts x hx
-  rw [subfieldCaFactor, if_neg (not_le.mpr hx)]
+  rw [subfieldCaFactor, ite_eq_right (not_le.mpr hx)]
   unfold subfield_ca_bessel_partial
   let t : ℝ := Real.sqrt x
   let r : ℕ := ⌊Real.sqrt x⌋₊

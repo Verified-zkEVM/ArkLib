@@ -18,7 +18,7 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "bd227bb406e191657a47bf364d17c9b53810d34f"
+rev = "7a4d7ee254165f2fcf3282c7d2e6f204056e5121"
 
 [[require]]
 name = "«doc-gen4»"
@@ -33,11 +33,6 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "7e3683ba72f61c1f3c2deda85953ce26392f0771"
-
-[[require]]
-name = "mathlib"
-scope = "leanprover-community"
 rev = "v4.34.0"
 
 [[lean_lib]]
@@ -76,6 +71,14 @@ allowNonModules = true
 name = "axiomsweep"
 srcDir = "scripts"
 root = "AxiomSweep"
+supportInterpreter = true
+
+# Native-measure conversion ledger: declarations still using VCVio's retiring scalar
+# probability surface or Mathlib's `PMF`; see scripts/RetiredProbabilitySweep.lean.
+[[lean_exe]]
+name = "retiredsweep"
+srcDir = "scripts"
+root = "RetiredProbabilitySweep"
 supportInterpreter = true
 
 # Compiled code-generation and execution checks for the toy-problem launch cone. Classic, like
