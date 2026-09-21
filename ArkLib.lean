@@ -497,6 +497,7 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
@@ -516,6 +517,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
+public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
