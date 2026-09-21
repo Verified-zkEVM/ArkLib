@@ -16,6 +16,11 @@ extension field. Over `ZMod 2` the zero ideal in one variable has two zeros whil
 Hilbert polynomial `X + 1` has constant coefficient `1`, so the finite-dimensional hypothesis is
 needed. The source statement, with Krull dimension zero, and the form with a Hilbert polynomial of
 natural degree zero are derived from the general one.
+
+The same root count follows from the affine degree: `span {f}` has affine degree
+`totalDegree f`. The zero ideal over `ZMod 2` has affine degree `1` and two zeros, so the
+finite-dimensional hypothesis of `ncard_zeroLocus_le_affineDegree` is needed. The source's
+`finite_zeroLocus_and_ncard_le_affineDegree` is checked in its original form.
 -/
 
 open MvPolynomial Polynomial
@@ -83,5 +88,33 @@ example {F E σ : Type*} [Field F] [Finite σ] [Field E] [Algebra F E] (I : Idea
     ((zeroLocus E I).ncard : ℚ) ≤ (affineHilbertPolynomial I).coeff 0 :=
   have := natDegree_affineHilbertPolynomial_eq_zero_iff.mp hdeg
   ncard_zeroLocus_le_coeff_zero_affineHilbertPolynomial I
+
+/-- A nonzero polynomial of positive total degree `d` in one variable over `ℚ` has at most `d`
+zeros in every extension field, by the affine-degree bound: `span {f}` has affine degree `d`. -/
+example {K : Type*} [Field K] [Algebra ℚ K] {f : MvPolynomial (Fin 1) ℚ} (hf : f ≠ 0)
+    (hd : 0 < f.totalDegree) :
+    (zeroLocus K (Ideal.span {f})).Finite ∧
+      (zeroLocus K (Ideal.span {f})).ncard ≤ f.totalDegree := by
+  have h := finite_zeroLocus_and_ncard_le_affineDegree (K := K) (Ideal.span {f})
+    (affineHilbertPolynomial_span_singleton_fin_one hf hd).1
+  rw [affineDegree_span_singleton hf] at h
+  exact ⟨h.1, by exact_mod_cast h.2⟩
+
+/-- The finite-dimensional hypothesis of `ncard_zeroLocus_le_affineDegree` is needed: over
+`ZMod 2`, the zero ideal in one variable has two zeros and affine degree `1`. -/
+example : (zeroLocus (ZMod 2) (⊥ : Ideal (MvPolynomial (Fin 1) (ZMod 2)))).ncard = 2 ∧
+    affineDegree (⊥ : Ideal (MvPolynomial (Fin 1) (ZMod 2))) = 1 := by
+  refine ⟨?_, affineDegree_bot⟩
+  have huniv : zeroLocus (ZMod 2) (⊥ : Ideal (MvPolynomial (Fin 1) (ZMod 2))) = Set.univ := by
+    ext x
+    simp
+  rw [huniv, Set.ncard_univ, Nat.card_eq_fintype_card]
+  rfl
+
+/-- The source statement `finite_zeroLocus_and_ncard_le_affineDegree`. -/
+example {F E σ : Type*} [Field F] [Finite σ] [Field E] [Algebra F E] (I : Ideal (MvPolynomial σ F))
+    (hdeg : (affineHilbertPolynomial I).natDegree = 0) :
+    (zeroLocus E I).Finite ∧ ((zeroLocus E I).ncard : ℚ) ≤ affineDegree I :=
+  finite_zeroLocus_and_ncard_le_affineDegree I hdeg
 
 end ZeroLocusAffineHilbertPolynomialTest
