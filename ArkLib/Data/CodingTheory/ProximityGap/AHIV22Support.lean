@@ -8,7 +8,7 @@ module
 
 public import ArkLib.Data.CodingTheory.InterleavedCode
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.LinearAlgebra.Quotient.Card
 
@@ -30,7 +30,7 @@ noncomputable section
 
 open Code ProbabilityTheory
 
--- `Pr_{...}[...]` notation is universe-restricted (requires `F : Type`).
+-- `Pr{...}[...]` notation is universe-restricted (requires `F : Type`).
 variable {F : Type} [Field F] [Finite F] [DecidableEq F]
          {κ : Type*} [Fintype κ]
          {ι : Type} [Fintype ι]

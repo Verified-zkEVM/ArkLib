@@ -21,7 +21,7 @@ public import ArkLib.Data.CodingTheory.Prelims
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Domain.CosetFftDomain.Defs
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.ProofSystem.BatchedFri.Spec.General
 public import ArkLib.ProofSystem.Fri.Spec.General
 public import ArkLib.ProofSystem.Fri.Spec.SingleRound
@@ -44,6 +44,7 @@ section Fri
 
 open OracleComp OracleSpec ProtocolSpec ReedSolomon Domain
 open NNReal Finset Function ProbabilityTheory
+open scoped ProbabilityTheory
 
 variable {𝔽 : Type} [NonBinaryField 𝔽] [Fintype 𝔽] [DecidableEq 𝔽]
 variable (n : ℕ)
@@ -647,6 +648,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/
 lemma fri_query_soundness
+    [SampleableType 𝔽]
     {t : ℕ}
   {α : ℝ}
   (f : Fin t.succ → (ω.subdomain 0 → 𝔽))
@@ -664,7 +666,7 @@ lemma fri_query_soundness
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
     let εQ  (x : Fin t → 𝔽)
             (z : Fin (k + 1) → 𝔽) :=
-      Pr_{let samp ←$ᵖ (ω.subdomain 0)}[Pr{let _ ←
+      Pr{let samp ← $ᵗ (ω.subdomain 0)}[Pr{let _ ←
             (do
               simulateQ
                 (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
@@ -694,7 +696,8 @@ lemma fri_query_soundness
             )}[True]
         = 1
       ]
-    Pr_{let x ←$ᵖ (Fin t → 𝔽); let z ←$ᵖ (Fin (k + 1) → 𝔽)}[ εQ x z > α0 ] ≤ εC 𝔽 n s m ρ_sqrt := by
+    Pr{let x ← $ᵗ (Fin t → 𝔽); let z ← $ᵗ (Fin (k + 1) → 𝔽)}[εQ x z > α0] ≤
+      εC 𝔽 n s m ρ_sqrt := by
   sorry
 
 -- set_option diagnostics true

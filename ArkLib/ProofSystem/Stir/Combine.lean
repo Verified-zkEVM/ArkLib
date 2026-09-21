@@ -13,7 +13,7 @@ public import Mathlib.Tactic.LinearCombinationPrime
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import ArkLib.Data.Probability.Notation
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 
@@ -426,7 +426,7 @@ private lemma even_more_glorious_lemma
  ring
 
 omit [DecidableEq F] [Fintype F] in
-open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
+open LinearCode ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
     [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
@@ -442,6 +442,7 @@ lemma master_lemma
   (i : Fin m)
   (j : Fin (block_size dstar degs i)) :
   (v i j).degree < degs i + j := by
+  let _ : DecidableEq F := Classical.decEq F
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
     aesop
@@ -522,15 +523,15 @@ open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
   Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,
   `0 < degs₁,...,degs_{m-1} < dstar` be degrees and
   `δ ∈ (0, min{(1-BStar(ρ)), (1-ρ-1/|ι|)})` be a distance parameter, then
-      Pr_{r ← F} [δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
+      Pr{r ← F}[δᵣ(Combine(dstar,r,(f₁,degs₁),...,(fₘ,degsₘ)))]
                    > err' (dstar, ρ, δ, m * (dstar + 1) - ∑ i degsᵢ) -/
 theorem combine_theorem
-    {φ : ι ↪ F} {dstar m : ℕ}
+    [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
   (δ : ℝ≥0) (hδPos : δ > 0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
-  (hProb : Pr_{ let r ← $ᵖ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
+  (hProb : Pr{let r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
     (m * (dstar + 1) - ∑ i, degs i - 1) * ProximityGap.errorBound δ dstar φ) :
     ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : Fin m → ι → F, ∀ i,
@@ -557,7 +558,7 @@ theorem combine_theorem
           (add safe (by exists Finset.univ))
       · aesop (add simp [total_terms, block_size])
     · have proximity_gap :=
-        @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _
+        @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
           (total_terms dstar degs - 1) dstar φ δ hδPos (by
             aesop (add simp [lt_min_iff, ReedSolomon.sqrtRate]))
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
@@ -570,21 +571,6 @@ theorem combine_theorem
               fs i x * (φ x) ^ k
           ))
           (by {
-            simp only [bind_pure_comp, Functor.map, PMF.bind_apply,
-              PMF.uniformOfFintype_apply,
-              tsum_fintype, Function.comp_apply, PMF.pure_apply,
-              eq_iff_iff, true_iff, mul_ite, mul_one,
-              mul_zero, gt_iff_lt] at hProb
-            conv at hProb =>
-              rhs
-              rhs
-              ext x
-              rw [combine_eq_flat_final φ dstar x]
-            simp only [bind_pure_comp, Functor.map, PMF.bind_apply,
-              PMF.uniformOfFintype_apply,
-              tsum_fintype, Function.comp_apply, PMF.pure_apply,
-              eq_iff_iff, true_iff, mul_ite, mul_one,
-              mul_zero, gt_iff_lt]
             apply lt_of_le_of_lt
               (b := ((↑m : ENNReal) * (↑dstar + 1) - ↑(∑ i, degs i) - 1) *
                       ↑(ProximityGap.errorBound δ dstar φ))
@@ -611,13 +597,13 @@ theorem combine_theorem
               rw [show ∑ x, (dstar - degs x + 1) = total + 1 by
                 simpa only [total_terms, block_size] using htotal]
               simp
-            · exact lt_of_lt_of_le hProb <| le_of_eq <| by
-                congr
-                ext x
-                congr <;> try (rw [htotal]; omega)
-                refine (Fin.heq_fun_iff ?_).mpr ?_
-                · aesop (add safe (by omega))
-                · aesop
+            · exact lt_of_lt_of_le hProb <| le_of_eq <|
+                prEvent_congr ($ᵗ F) _ _ fun x => by
+                  rw [combine_eq_flat_final φ dstar x]
+                  have hn : total_terms dstar degs - 1 + 1 = total_terms dstar degs := by
+                    rw [htotal]
+                    omega
+                  rw [hn]
       })
       simp only [jointAgreement, ge_iff_le, SetLike.mem_coe] at proximity_gap
       have proximity_gap :

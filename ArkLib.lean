@@ -93,8 +93,13 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.KernelSliceIndependence
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
@@ -127,6 +132,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
+public import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
 public import ArkLib.Data.CodingTheory.PolishchukSpielman
 public import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 public import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
@@ -186,6 +192,8 @@ public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.Separation
 public import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
+public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
@@ -200,7 +208,10 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
@@ -290,6 +301,7 @@ public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedOrder
@@ -300,7 +312,10 @@ public import ArkLib.Data.Polynomial.BivariateFactorDegrees
 public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.JetDegree
+public import ArkLib.Data.Polynomial.Differential.RationalTaylor
+public import ArkLib.Data.Polynomial.Differential.TaylorResidual
 public import ArkLib.Data.Polynomial.Differential.Types
+public import ArkLib.Data.Polynomial.DivisorReconstruction
 public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
@@ -333,7 +348,7 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition
@@ -508,6 +523,7 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
@@ -525,11 +541,15 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
+public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
+public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
+public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
+public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
@@ -547,10 +567,3 @@ public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.Set.Finite
-public import ArkLib.ToVCVio.EvalDist.Defs.Support
-public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
-public import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
-public import ArkLib.ToVCVio.OracleComp.EvalDist
-public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-public import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic

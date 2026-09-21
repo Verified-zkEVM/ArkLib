@@ -16,7 +16,7 @@ arbitrary real radii. Taking every seed as exceptional gives the universal proba
 open CoreDefinitions LinearCode
 
 example {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
-    [Nonempty S] [Fintype S] [AddCommMonoid A] [Module F A]
+    [SampleableType S] [Fintype S] [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (δ : ℝ) :
     mcaError G (⊤ : ModuleCode ι F A) δ = 0 := by
   apply le_antisymm _ bot_le
@@ -27,7 +27,7 @@ example {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
     exact ⟨fun j => ⟨U j, Submodule.mem_top⟩, fun _ _ _ => rfl⟩
 
 example {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
-    [Nonempty S] [Fintype S] [AddCommMonoid A] [Module F A]
+    [SampleableType S] [Fintype S] [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) :
     mcaError G MC δ ≤ 1 := by
   classical

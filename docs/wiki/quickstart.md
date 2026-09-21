@@ -12,8 +12,9 @@ Keep that PolyFun pin when updating this stack: a newer PolyFun revision must al
 validated against VCVio before ArkLib can adopt it.
 The VCVio pin includes the native probability prerequisites and
 [the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
-reviewable revision rather than a moving branch. Independent Mathlib-PMF code is deferred as
-described in the [migration ledger](../design/native-measure-ledger.md).
+reviewable revision rather than a moving branch. ArkLib uses native measures throughout its
+probability statements; the [migration ledger](../design/native-measure-ledger.md) records the
+conversion and upstream API map.
 Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
 The September 4 baseline in `docs/design/00-current-status.md` records the original typed
 interaction implementation train, not the current package versions.
@@ -32,6 +33,11 @@ On a cold clone, fetch precompiled dependencies first:
 lake exe cache get
 ./scripts/validate.sh
 ```
+
+Validation also runs the native-probability retirement fixtures and
+`lake exe retiredsweep --require-empty`. This gate rejects direct retired API references in
+ArkLib declaration types and bodies, without a baseline exception. See
+[probability conventions](probability-conventions.md) when porting an older branch.
 
 ## Validation By Change Type
 

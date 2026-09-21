@@ -27,7 +27,7 @@ open Code
 section CoreResults
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 
 omit [DecidableEq ι] in
@@ -53,7 +53,7 @@ end CoreResults
 
 section BCIKS20ProximityGapSection6
 
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 variable {n : ℕ} [NeZero n]
 
 /-- The parameters for which the curve points are `δ`-close to a set `V`
@@ -64,6 +64,7 @@ noncomputable def coeffs_of_close_proximity_curve {l : ℕ}
     infer_instance
   @Set.toFinset _ { z | δᵣ(Curve.polynomialCurveEval (F := F) (A := F) u z, V) ≤ δ } this
 
+omit [SampleableType F] in
 /-- The degree-one case of Theorem 6.1 in [BCIKS20].
 
 This bridges the polynomial-curve presentation to the existing kernel-checked affine-line

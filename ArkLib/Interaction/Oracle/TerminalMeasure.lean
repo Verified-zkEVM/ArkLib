@@ -67,7 +67,6 @@ omit [DiscreteMeasurableSpace (Terminal Claim Fault)] in
 theorem observe_isProbabilityMeasure (missingFault : Fault) (program : m (Terminal Claim Fault)) :
     IsProbabilityMeasure (observe missingFault program) := by
   let _ := evalDistWithFailure_isProbabilityMeasure program
-  unfold observe
-  infer_instance
+  exact inferInstanceAs (IsProbabilityMeasure ((evalDistWithFailure program).map _))
 
 end Interaction.Oracle.Terminal
