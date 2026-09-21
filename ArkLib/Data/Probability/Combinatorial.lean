@@ -5,9 +5,10 @@ Authors: Alexander Hicks
 -/
 module
 
-public import Mathlib.Probability.ProbabilityMassFunction.Basic
 public import Mathlib.Algebra.Order.Chebyshev
-public import ArkLib.Data.Probability.Notation
+public import Mathlib.MeasureTheory.Integral.Lebesgue.Markov
+public import Mathlib.MeasureTheory.Measure.Typeclasses.Probability
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
 /-!
 # Probabilistic combinatorics
@@ -18,10 +19,8 @@ image.
 ## Main statements
 
 * `Probability.exists_large_image_of_pairwise_collision_bound` — if every pair of distinct
-  points of a finite `S` collides with probability at most `ε` under `Φ : PMF (S → T)`, then
-  some `φ` in the support of `Φ` has `|image φ| ≥ |S| / (1 + (|S| - 1) * ε)`.
-* `Probability.exists_large_image_of_pairwise_collision_bound_of_Pr` — the same, stated with
-  `Pr_` notation, which forces `S` and `T` into `Type`.
+  points of a finite `S` collides with probability at most `ε` under a probability measure on
+  functions, then some positive-mass function in its countable carrier has large image.
 
 ## References
 
@@ -33,7 +32,7 @@ image.
 
 namespace Probability
 
-open Finset NNReal ENNReal ProbabilityTheory
+open Finset NNReal ENNReal MeasureTheory
 
 /-! ## Colliding-pair helpers
 
@@ -162,41 +161,38 @@ private lemma cauchy_schwarz_fiber (φ : S → T) :
 end CollidingPairs
 
 open Classical in
-/-- If every pair of distinct points of a finite type `S` collides with probability at most
-`ε` under a distribution `Φ` on functions `S → T`, i.e.
-
-  `∀ x ≠ y, ∑' φ, Φ φ * 1[φ x = φ y] ≤ ε` ,
-
-then some `φ` in the support of `Φ` has image of cardinality at least
+/-- Let `μ` be a probability measure on functions `S → T`, concentrated on the countable set
+`A`. If every pair of distinct points of the finite type `S` collides with probability at most
+`ε`, then some positive-mass function in `A` has image of cardinality at least
 `|S| / (1 + (|S| - 1) * ε)`.
 
-The hypothesis is stated as a raw indicator sum rather than with `Pr_` notation, which binds
-a `Prop` and would force `S` and `T` into `Type`; see
-`exists_large_image_of_pairwise_collision_bound_of_Pr` for that form.
+The explicit countable carrier is the measure-native analogue of the support of a probability mass
+function. It preserves the positive-atom conclusion while allowing `S` and `T` in arbitrary
+universes.
 
-Writing `N = |S|`, the proof runs by contradiction, using linearity of expectation in place
-of a convexity argument.
+Writing `N = |S|`, the proof uses linearity of the Lebesgue integral and a strict averaging
+argument.
 
-* Pointwise, `cauchy_schwarz_fiber` gives `N ^ 2 ≤ |image φ| * (N + numCollsOrdered φ)` for
-  every `φ`.
-* On average, `numCollsOrdered φ` is a sum of collision indicators over ordered off-diagonal
-  pairs, so the hypothesis gives `∑' φ, Φ φ * numCollsOrdered φ ≤ N * (N - 1) * ε`.
-* If every `φ` in the support had `|image φ| < N / (1 + (N - 1) * ε)`, the first item would
-  force `numCollsOrdered φ > N * (N - 1) * ε` for each of them, and strict averaging over the
-  support would contradict the second. -/
+* Pointwise, `cauchy_schwarz_fiber` gives `N ^ 2 ≤ |image φ| * (N + numCollsOrdered φ)`.
+* The expected number of ordered collisions is at most `N * (N - 1) * ε`.
+* If every positive-mass `φ` in `A` had smaller image, the first item would force its collision
+  count strictly above that expectation bound. Since `A` is countable and has full mass, this
+  strict inequality holds almost everywhere, a contradiction. -/
 theorem exists_large_image_of_pairwise_collision_bound
     {S T : Type*} [Fintype S]
-    (Φ : PMF (S → T)) (ε : ENNReal)
-    (hΦ : ∀ x y : S, x ≠ y →
-        ∑' φ : S → T, Φ φ * (if φ x = φ y then (1 : ENNReal) else 0) ≤ ε) :
-    ∃ φ ∈ Φ.support,
+    [MeasurableSpace (S → T)] [DiscreteMeasurableSpace (S → T)]
+    (μ : Measure (S → T)) [IsProbabilityMeasure μ]
+    (A : Set (S → T)) (hA_countable : A.Countable) (hμA : μ A = 1)
+    (ε : ENNReal)
+    (hμ : ∀ x y : S, x ≠ y → μ {φ | φ x = φ y} ≤ ε) :
+    ∃ φ ∈ A, 0 < μ {φ} ∧
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
-        ((Finset.univ.image φ).card : ENNReal) := by
+        ((@Finset.image S T (Classical.decEq T) φ Finset.univ).card : ENNReal) := by
   classical
+  let _ : DecidableEq S := Classical.decEq S
+  let _ : DecidableEq T := Classical.decEq T
   set N : ℕ := Fintype.card S with hN_def
-  -- Pairs of distinct elements.
   set P : Finset (S × S) := Finset.univ.filter (fun p : S × S ↦ p.1 ≠ p.2) with hP_def
-  -- `|P| = N · (N - 1)` (Finset count of off-diagonal pairs).
   have hP_card : P.card = N * (N - 1) := by
     have h_eq : P = Finset.offDiag (Finset.univ : Finset S) := by
       rw [hP_def]
@@ -204,157 +200,154 @@ theorem exists_large_image_of_pairwise_collision_bound
       simp [Finset.mem_offDiag]
     rw [h_eq, Finset.offDiag_card]
     simp [hN_def, Nat.mul_sub_one]
-  -- ## Step A — Pointwise Cauchy-Schwarz, in ENNReal.
-  -- For every `φ : S → T`,  `N² ≤ |image φ| · (N + numCollsOrdered φ)` in ENNReal.
   have hCS_E : ∀ φ : S → T,
       (N : ENNReal)^2 ≤ ((Finset.univ.image φ).card : ENNReal) *
         ((N : ENNReal) + (numCollsOrdered φ : ENNReal)) := by
     intro φ
-    have h := cauchy_schwarz_fiber φ
-    -- h : N^2 ≤ #image · (N + numColls) in ℕ; cast to ENNReal.
-    exact_mod_cast h
-  -- ## Step B — Linearity of expectation.
-  -- `∑' φ, Φ φ * (numCollsOrdered φ : ENNReal) ≤ N · (N - 1) · ε`.
-  -- numCollsOrdered φ = #{(x, y) ∈ P : φ x = φ y}; unfold as a sum of indicators,
-  -- swap with the outer tsum, and apply hΦ pointwise.
-  have h_lin : ∑' φ : S → T, Φ φ * (numCollsOrdered φ : ENNReal) ≤
+    exact_mod_cast cauchy_schwarz_fiber φ
+  have h_numCard : ∀ φ : S → T,
+      (numCollsOrdered φ : ENNReal) =
+        ∑ p ∈ P, (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) := by
+    intro φ
+    rw [show numCollsOrdered φ =
+        (P.filter (fun p : S × S ↦ φ p.1 = φ p.2)).card by
+      unfold numCollsOrdered
+      rw [hP_def]
+      congr 1
+      ext ⟨x, y⟩
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]]
+    rw [Finset.card_filter]
+    push_cast
+    rfl
+  have h_lin : ∫⁻ φ, (numCollsOrdered φ : ENNReal) ∂μ ≤
       ((N * (N - 1) : ℕ) : ENNReal) * ε := by
-    -- Step B.1: numCollsOrdered φ = ∑ p ∈ P, (if φ p.1 = φ p.2 then 1 else 0).
-    have h_numCard : ∀ φ : S → T,
-        (numCollsOrdered φ : ENNReal) =
-          ∑ p ∈ P, (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) := by
-      intro φ
-      rw [show numCollsOrdered φ =
-          (P.filter (fun p : S × S ↦ φ p.1 = φ p.2)).card by
-        unfold numCollsOrdered
-        rw [hP_def]
-        congr 1
-        ext ⟨x, y⟩
-        simp only [Finset.mem_filter, Finset.mem_univ, true_and]]
-      rw [Finset.card_filter]
-      push_cast
-      rfl
-    -- Step B.2: ∑' φ, Φ φ * (Σ p, indicator) = Σ p, ∑' φ, Φ φ * indicator.
-    simp_rw [h_numCard, Finset.mul_sum]
-    rw [Summable.tsum_finsetSum (fun _ _ ↦ ENNReal.summable)]
-    -- Goal: ∑ p ∈ P, ∑' φ, Φ φ * (if φ p.1 = φ p.2 then 1 else 0) ≤ N(N-1) · ε.
-    -- Step B.3: each inner sum is `Pr_{φ←Φ}[φ p.1 = φ p.2] ≤ ε`.
+    simp_rw [h_numCard]
+    rw [lintegral_finsetSum P (fun _ _ ↦ Measurable.of_discrete)]
     have h_inner : ∀ p ∈ P,
-        ∑' φ : S → T, Φ φ * (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) ≤ ε := by
+        (∫⁻ φ, (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) ∂μ) ≤ ε := by
       intro p hp
       simp only [hP_def, Finset.mem_filter, Finset.mem_univ, true_and] at hp
-      exact hΦ p.1 p.2 hp
-    -- Step B.4: bound termwise.
-    calc ∑ p ∈ P, ∑' φ : S → T, Φ φ * (if φ p.1 = φ p.2 then (1 : ENNReal) else 0)
-        ≤ ∑ _p ∈ P, ε := Finset.sum_le_sum h_inner
+      calc
+        (∫⁻ φ, (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) ∂μ) =
+            μ {φ | φ p.1 = φ p.2} := by
+              rw [← lintegral_indicator_one MeasurableSet.of_discrete]
+              congr 1
+        _ ≤ ε := hμ p.1 p.2 hp
+    calc
+      ∑ p ∈ P, ∫⁻ φ, (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) ∂μ
+          ≤ ∑ _p ∈ P, ε := Finset.sum_le_sum h_inner
       _ = (P.card : ENNReal) * ε := by rw [Finset.sum_const, nsmul_eq_mul]
       _ = ((N * (N - 1) : ℕ) : ENNReal) * ε := by rw [hP_card]
-  -- ## Step C — Contradiction route.
-  -- Assume `∀ φ ∈ supp Φ, |image φ| < K = N / (1 + (N-1) ε)`.
-  -- Then for each such φ:  numCollsOrdered φ > N(N-1) ε  (via Cauchy-Schwarz + algebra).
-  -- Averaging: `∑' φ, Φ φ * numColls φ > N(N-1) ε`, contradicting h_lin.
   by_contra h_neg
   push Not at h_neg
-  -- h_neg : ∀ φ ∈ Φ.support, ((|image φ|) : ENNReal) < K
-  -- Derive a strict per-φ lower bound on numCollsOrdered φ for φ ∈ supp.
-  have h_pointwise :
-      ∀ φ ∈ Φ.support,
-        ((N * (N - 1) : ℕ) : ENNReal) * ε <
-          (numCollsOrdered φ : ENNReal) := by
-    intro φ hφ
-    set A : ENNReal := ((Finset.univ.image φ).card : ENNReal) with hA_def
+  have h_pointwise : ∀ φ ∈ A, 0 < μ {φ} →
+      ((N * (N - 1) : ℕ) : ENNReal) * ε <
+        (numCollsOrdered φ : ENNReal) := by
+    intro φ hφA hφ_pos
+    set B : ENNReal := ((Finset.univ.image φ).card : ENNReal) with hB_def
     set C : ENNReal := (numCollsOrdered φ : ENNReal) with hC_def
     set δ : ENNReal := 1 + ((N : ENNReal) - 1) * ε with hδ_def
-    -- From `h_neg φ hφ`.
-    have hA_lt_K : A < (N : ENNReal) / δ := h_neg φ hφ
-    -- A < K = N/δ ⇒ K > 0 ⇒ N ≠ 0 ∧ δ ≠ ⊤.
+    have hB_lt_K : B < (N : ENNReal) / δ := h_neg φ hφA hφ_pos
     have hK_pos : (0 : ENNReal) < (N : ENNReal) / δ :=
-      lt_of_le_of_lt (zero_le) hA_lt_K
+      lt_of_le_of_lt zero_le hB_lt_K
     obtain ⟨hN_ne, _hδ_ne_top⟩ := ENNReal.div_pos_iff.mp hK_pos
     have hN_ne_top : (N : ENNReal) ≠ ⊤ := ENNReal.natCast_ne_top _
-    -- A · δ < N (from A < N/δ).
-    have hAδ : A * δ < (N : ENNReal) := mul_lt_of_lt_div hA_lt_K
-    have hCS : (N : ENNReal) ^ 2 ≤ A * ((N : ENNReal) + C) := hCS_E φ
+    have hBδ : B * δ < (N : ENNReal) := mul_lt_of_lt_div hB_lt_K
+    have hCS : (N : ENNReal) ^ 2 ≤ B * ((N : ENNReal) + C) := hCS_E φ
     rw [sq] at hCS
-    -- Helper: ℕ-cast vs ENNReal arithmetic on `N(N-1)`.
     have hN_sub_cast : ((N - 1 : ℕ) : ENNReal) = (N : ENNReal) - 1 := by
-      rw [ENNReal.natCast_sub]; simp
+      rw [ENNReal.natCast_sub]
+      simp
     have h_NC_cast : ((N * (N - 1) : ℕ) : ENNReal) =
         (N : ENNReal) * ((N : ENNReal) - 1) := by
       rw [Nat.cast_mul, hN_sub_cast]
-    -- By contradiction: assume C ≤ N(N-1)·ε.
     by_contra h_not
     push Not at h_not
-    -- h_not : C ≤ ((N * (N - 1) : ℕ) : ENNReal) * ε
-    -- Show N + C ≤ N · δ.
     have h_NC_le : (N : ENNReal) + C ≤ (N : ENNReal) * δ := by
-      have h_arith : (N : ENNReal) + ((N * (N - 1) : ℕ) : ENNReal) * ε
-          = (N : ENNReal) * δ := by
-        rw [hδ_def, mul_add, mul_one, h_NC_cast]; ring
-      calc (N : ENNReal) + C
-          ≤ (N : ENNReal) + ((N * (N - 1) : ℕ) : ENNReal) * ε := by gcongr
+      have h_arith : (N : ENNReal) + ((N * (N - 1) : ℕ) : ENNReal) * ε =
+          (N : ENNReal) * δ := by
+        rw [hδ_def, mul_add, mul_one, h_NC_cast]
+        ring
+      calc
+        (N : ENNReal) + C
+            ≤ (N : ENNReal) + ((N * (N - 1) : ℕ) : ENNReal) * ε := by gcongr
         _ = (N : ENNReal) * δ := h_arith
-    -- A · (N + C) ≤ A · N · δ = (A · δ) · N.
-    have h_step : A * ((N : ENNReal) + C) ≤ A * δ * (N : ENNReal) := by
-      calc A * ((N : ENNReal) + C)
-          ≤ A * ((N : ENNReal) * δ) := by gcongr
-        _ = A * δ * (N : ENNReal) := by ring
-    -- (A · δ) · N < N · N = N² (since A · δ < N and N ≠ 0, N ≠ ⊤).
-    have h_strict_lt : A * δ * (N : ENNReal) < (N : ENNReal) * (N : ENNReal) :=
-      ENNReal.mul_lt_mul_left hN_ne hN_ne_top hAδ
-    -- Chain: N² ≤ A·(N+C) ≤ (A·δ)·N < N². Contradiction.
+    have h_step : B * ((N : ENNReal) + C) ≤ B * δ * (N : ENNReal) := by
+      calc
+        B * ((N : ENNReal) + C) ≤ B * ((N : ENNReal) * δ) := by gcongr
+        _ = B * δ * (N : ENNReal) := by ring
+    have h_strict_lt : B * δ * (N : ENNReal) < (N : ENNReal) * (N : ENNReal) :=
+      ENNReal.mul_lt_mul_left hN_ne hN_ne_top hBδ
     exact absurd (hCS.trans h_step) (not_le_of_gt h_strict_lt)
-  -- Sum to contradict h_lin.
-  have h_strict :
-      ((N * (N - 1) : ℕ) : ENNReal) * ε <
-        ∑' φ : S → T, Φ φ * (numCollsOrdered φ : ENNReal) := by
-    obtain ⟨φ₀, hφ₀⟩ := Φ.support_nonempty
-    -- We need ∑' g > c where c := N(N-1)ε. Reformulate c as ∑' (Φ * c).
-    -- This requires `tsum f ≠ ⊤`, which forces a case-split on `c = ⊤`.
-    set c : ENNReal := ((N * (N - 1) : ℕ) : ENNReal) * ε with hc_def
-    by_cases h_top : c = ⊤
-    · -- c = ⊤: h_pointwise gives ⊤ < numCollsOrdered φ₀, but numCollsOrdered is finite.
-      exfalso
-      have h_pt := h_pointwise φ₀ hφ₀
-      rw [h_top] at h_pt
-      exact absurd h_pt (not_lt.mpr le_top)
-    -- Express c as ∑' φ, Φ φ * c.
-    have h_eq : ∑' φ : S → T, Φ φ * c = c := by
-      rw [ENNReal.tsum_mul_right, Φ.tsum_coe, one_mul]
-    rw [show c = ∑' φ : S → T, Φ φ * c from h_eq.symm]
-    -- Apply tsum_lt_tsum.
-    apply ENNReal.tsum_lt_tsum (i := φ₀)
-    · rw [h_eq]; exact h_top
-    · -- Pointwise: Φ φ * c ≤ Φ φ * numCollsOrdered φ.
-      intro φ
-      by_cases hφ_supp : φ ∈ Φ.support
-      · gcongr
-        exact (h_pointwise φ hφ_supp).le
-      · -- Outside support, Φ φ = 0.
-        have : Φ φ = 0 := by
-          rwa [Φ.mem_support_iff, not_not] at hφ_supp
-        simp [this]
-    · -- Strict at φ₀: Φ φ₀ > 0 and (numCollsOrdered φ₀ > c).
-      have hΦ_pos : (0 : ENNReal) < Φ φ₀ := (Φ.apply_pos_iff _).mpr hφ₀
-      have hΦ_ne_top : Φ φ₀ ≠ ⊤ := PMF.apply_ne_top Φ φ₀
-      exact ENNReal.mul_lt_mul_right (ne_of_gt hΦ_pos) hΦ_ne_top
-        (h_pointwise φ₀ hφ₀)
-  exact absurd (h_strict.trans_le h_lin) (lt_irrefl _)
+  let Z : Set (S → T) := {φ | φ ∈ A ∧ μ {φ} = 0}
+  have hZ_countable : Z.Countable := hA_countable.mono fun _ hφ ↦ hφ.1
+  have hμZ : μ Z = 0 := by
+    rw [← Z.biUnion_of_singleton, measure_biUnion_null_iff hZ_countable]
+    intro φ hφ
+    exact hφ.2
+  have h_positive_atom : ∃ φ ∈ A, 0 < μ {φ} := by
+    by_contra h
+    push Not at h
+    have hAZ : A ⊆ Z := by
+      intro φ hφA
+      exact ⟨hφA, bot_unique (h φ hφA)⟩
+    have hA_zero : μ A = 0 := measure_mono_null hAZ hμZ
+    rw [hμA] at hA_zero
+    simp at hA_zero
+  have h_ae_strict : ∀ᵐ φ ∂μ,
+      ((N * (N - 1) : ℕ) : ENNReal) * ε < (numCollsOrdered φ : ENNReal) := by
+    have h_ae_A : ∀ᵐ φ ∂μ, φ ∈ A :=
+      (mem_ae_iff_prob_eq_one hA_countable.measurableSet).2 hμA
+    have h_ae_not_Z : ∀ᵐ φ ∂μ, φ ∉ Z := measure_eq_zero_iff_ae_notMem.mp hμZ
+    filter_upwards [h_ae_A, h_ae_not_Z] with φ hφA hφZ
+    apply h_pointwise φ hφA
+    exact pos_iff_ne_zero.mpr fun hzero ↦ hφZ ⟨hφA, hzero⟩
+  have h_strict : ((N * (N - 1) : ℕ) : ENNReal) * ε <
+      ∫⁻ φ, (numCollsOrdered φ : ENNReal) ∂μ := by
+    have h_const_ne_top :
+        (∫⁻ _φ : S → T, ((N * (N - 1) : ℕ) : ENNReal) * ε ∂μ) ≠ ⊤ := by
+      rw [lintegral_const, measure_univ, mul_one]
+      by_cases hε : ε = ⊤
+      · obtain ⟨φ, hφA, hφ_pos⟩ := h_positive_atom
+        have hzero : N * (N - 1) = 0 := by
+          by_contra hNprod
+          have hcast : ((N * (N - 1) : ℕ) : ENNReal) ≠ 0 := by exact_mod_cast hNprod
+          have htop : ((N * (N - 1) : ℕ) : ENNReal) * ε = ⊤ := by
+            rw [hε]
+            exact ENNReal.mul_top hcast
+          have hbad := h_pointwise φ hφA hφ_pos
+          rw [htop] at hbad
+          exact (not_lt_of_ge le_top) hbad
+        simp [hzero]
+      · exact ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hε
+    have hμ_ne_zero : μ ≠ 0 := IsProbabilityMeasure.ne_zero μ
+    have hlt := lintegral_strict_mono hμ_ne_zero Measurable.of_discrete.aemeasurable
+      h_const_ne_top h_ae_strict
+    simpa [lintegral_const, measure_univ] using hlt
+  exact (not_lt_of_ge h_lin) h_strict
 
 open Classical in
-/-- `exists_large_image_of_pairwise_collision_bound` stated with `Pr_` notation, which binds
-a `Prop` and so restricts `S` and `T` to `Type`. -/
-theorem exists_large_image_of_pairwise_collision_bound_of_Pr
+/-- `exists_large_image_of_pairwise_collision_bound` for a probabilistic computation.  The
+positive singleton supplied by the measure theorem is exactly an operationally reachable output
+under the uniform oracle semantics of `ProbComp`. -/
+theorem exists_large_image_of_pairwise_collision_bound_of_probComp
     {S T : Type} [Fintype S]
-    (Φ : PMF (S → T)) (ε : ENNReal)
-    (hΦ : ∀ x y : S, x ≠ y →
-        Pr_{ let φ ← Φ }[φ x = φ y] ≤ ε) :
-    ∃ φ ∈ Φ.support,
+    (Φ : ProbComp (S → T)) (ε : ENNReal)
+    (hΦ : ∀ x y : S, x ≠ y → Pr{let φ ← Φ}[φ x = φ y] ≤ ε) :
+    ∃ φ ∈ MonadAttach.support Φ,
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
-        ((Finset.univ.image φ).card : ENNReal) := by
-  apply exists_large_image_of_pairwise_collision_bound Φ ε
-  intro x y hxy
-  have h := hΦ x y hxy
-  rwa [Pr_eq_tsum_indicator] at h
+        ((@Finset.image S T (Classical.decEq T) φ Finset.univ).card : ENNReal) := by
+  let : MeasurableSpace (S → T) := ⊤
+  obtain ⟨φ, hφ, _, hcard⟩ := exists_large_image_of_pairwise_collision_bound
+    𝒟[Φ] (MonadAttach.support Φ)
+      (@OracleComp.support_finite _ unifSpec _
+        OracleSpec.IsUniformMeasureSpec.unifSpec.fintype Φ).countable
+      (by
+        change 𝒟[Φ] {x | x ∈ MonadAttach.support Φ} = 1
+        rw [OracleComp.evalDist_apply_setOf_eq_one_iff_forall_mem_support]
+        simp)
+      ε fun x y hxy => by
+      simpa only [prEvent_eq_evalDist_of_discrete] using hΦ x y hxy
+  exact ⟨φ, hφ, hcard⟩
 
 end Probability

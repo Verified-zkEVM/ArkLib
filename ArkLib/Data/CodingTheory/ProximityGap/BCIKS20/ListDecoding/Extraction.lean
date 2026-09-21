@@ -508,8 +508,7 @@ theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k �
     Polynomial.natDegree_eq_natDegree (p := s.prod) (q := Q) hdeg_assoc
   have hnatY_assoc : Trivariate.degreeInY s.prod = Trivariate.degreeInY Q := by
     simp [Trivariate.degreeInY, Bivariate.natDegreeY, hnat_assoc]
-  rw [← hnatY_assoc]
-  simpa [hs] using hleft_le_prod
+  simpa [hs, ← hnatY_assoc] using hleft_le_prod
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
