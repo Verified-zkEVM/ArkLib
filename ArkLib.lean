@@ -493,6 +493,9 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
+public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
+public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Control.MonadLift
