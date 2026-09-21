@@ -31,15 +31,9 @@ rank-nullity supplies a nonzero vector in its kernel.
 
 The theorem family is extracted and generalized from
 `ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight` at immutable source revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. It is the row-count form of the polynomial
-kernel-height lemma in [DKTZ26, Section 5.1, Lemma 5.1]. The intrinsic rank, primitive,
-column-budget, and shifted-budget forms are intentionally deferred to later polynomial-kernel
-slices.
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The intrinsic-rank, primitive,
+column-budget, and shifted-budget forms remain separate results to port.
 
-## References
-
-* [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
-  Correlated Agreement up to Capacity*][DKTZ26]
 -/
 
 @[expose] public section
