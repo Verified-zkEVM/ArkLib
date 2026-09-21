@@ -9,7 +9,6 @@ public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-public import ArkLib.Data.CodingTheory.ReedSolomon
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import Mathlib.Order.CompletePartialOrder
 public import Mathlib.Probability.Distributions.Uniform

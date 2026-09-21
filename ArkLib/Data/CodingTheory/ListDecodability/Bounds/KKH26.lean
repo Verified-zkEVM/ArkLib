@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26SumSet
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
