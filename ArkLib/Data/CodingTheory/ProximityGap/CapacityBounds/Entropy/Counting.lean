@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
