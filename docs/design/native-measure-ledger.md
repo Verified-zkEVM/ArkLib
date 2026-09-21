@@ -43,8 +43,9 @@ regression-test, or axiom checks for this upgrade.
 
 ## Upstream prerequisites
 
-Developed on VCVio branch `codex/arklib-native-prereqs` (stacked on
-`codex/measure-disagreement-prf-reader`, i.e. on top of #758/#763/#764).
+Developed on VCVio branch `codex/arklib-native-prereqs` and landed on VCVio `main` through the
+integration PR [#771](https://github.com/Verified-zkEVM/VCVio/pull/771) (which also carries the
+content of #758/#763/#764); ArkLib pins `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`.
 
 | Family | Upstream home | Contents | Retires in ArkLib |
 |---|---|---|---|
@@ -114,10 +115,10 @@ Proof-body counts use the same physical-line method as the phase-2 review below:
 containing the declaration's final `:= by`, preserve blank and comment lines inside the proof, and
 stop before the next top-level docstring or declaration. Statement-only lines and trailing blank
 lines are excluded; renamed declarations are matched manually. The following are the material
-probability-facing increases. A row marked **open** is not excused by R1–R4; under issue #904's
-acceptance rule it requires a shorter proof or an admissible explanation. Source inspection of the
-pinned APIs identifies call-site refactors first; a missing upstream law should only be claimed
-if those existing interfaces cannot discharge the intended proof.
+probability-facing increases at #903 and their size now. Every row was resolved by an ArkLib
+call-site refactor that uses existing pinned APIs. The one exception is `run_preserves_measure`,
+which needed the generic AE bind-event law that VCVio #771 added. No other new upstream law was
+needed.
 
 This proof-only convention differs from a coarse declaration-span count that stops only at the
 next declaration and therefore charges the next theorem's docstring and separators to the prior
@@ -125,55 +126,46 @@ proof. For example, the latter reports `run_preserves_measure` as 16 → 26, whi
 count is 13 → 23; the regression is +10 under either convention. The phase-1 and phase-2 tables
 both use the proof-only count.
 
-| File / declaration | Before | #903 | Δ | Accounting |
+| File / declaration | Before #903 | #903 | Now | Accounting |
 |---|---:|---:|---:|---|
-| `OracleReduction/Security/RoundByRound.rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness` | 31 | 67 | +36 | **Open:** the proof repeats the common game. After bind reassociation, applying existing `prEvent_mono` should let the goal infer the computation and predicates; that call-site refactor remains to be validated. |
-| `OracleReduction/Composition/Sequential/Append/Completeness.completeness_iff_of_pure_verifier` | 14 | 32 | +18 | **Open:** the native proof duplicates both directions after exposing `OptionT.lift` and `map`; existing `OptionT.prEvent_lift` and `prEvent_map` should be tried with the local lift normalization before adding any upstream API. |
-| `OracleReduction/Composition/Sequential/Append/Completeness.append_completeness_of_prover_factorization` | 32 | 46 | +14 | **Open:** the proof restates both programs and events. Applying existing `mul_le_prEvent_bind_of_forall` should infer these from the goal and first-stage hypothesis; that refactor remains to be validated. |
-| `OracleReduction/Composition/Sequential/GuardedCompleteness.append_completeness_of_guarded_prover_factorization` | 27 | 41 | +14 | **Open:** same unperformed bind-lower-bound call-site refactor as the pure-verifier theorem. |
-| `OracleReduction/Composition/Sequential/GuardedCompleteness.probEvent_guarded_map` → `prEvent_guarded_map` | 6 | 20 | +14 | **Open:** existing `OptionT.prEvent_bind_guard` already supplies the event law; the local if-to-guard normalization and application need simplification. |
-| `OracleReduction/Security/RbrGame.probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` → `prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` | 22 | 33 | +11 | **R1:** the native subprobability statement exposes the complementary challenge event and reconstructs its mass from sampler losslessness. |
-| `Interaction/Oracle/Composition.run_preserves_measure` | 13 | 23 | +10 | At #903 this rederived the bind event by an AE induction because the public generic AE bind-event law was missing. The current campaign adds that law upstream and returns this body to 13 lines; the updated consumer compiles without stronger assumptions. |
-| `ArkLibTest/.../SharedStateCounterexample.first_perfectCompleteness` | 5 | 15 | +10 | **Open:** a scalar `simp` proof became an explicit `OptionT` event/support witness; the existing native lift/map simplification interfaces should be tried first. |
-| `ArkLibTest/.../SharedStateCounterexample.second_perfectCompleteness` | 5 | 14 | +9 | **Open:** same pending pure-OptionT proof simplification. |
-| `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_iff_of_guarded_verifier` | 24 | 32 | +8 | **Open:** the proof duplicates both directions across the guarded OptionT normal form; simplification with existing guard/event laws remains to be attempted. |
-| `Commitments/Functional/KZG/Binding.binding_game_ext_eq_binding_game` | 146 | 153 | +7 | **Open:** the proof first establishes program equality and then applies `prEvent_map`; reducing this normalization overhead remains follow-up work, not an established missing upstream theorem. |
-| `OracleReduction/Composition/Sequential/Append/Completeness.completeness_of_pure_states` | 11 | 17 | +6 | **Open:** the proof supplies all programs and events explicitly; the existing bind lower bound should instead be applied with goal inference. |
-| `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_of_guarded_states` | 11 | 17 | +6 | **Open:** same pending bind-lower-bound call-site refactor. |
-| `OracleReduction/Security/RbrGame.probEvent_simulateQ_addLift_getChallenge_bind_le` → `prEvent_simulateQ_addLift_getChallenge_bind_le` | 18 | 24 | +6 | **Open:** the proof repeats the computation and event when applying native bind-event monotonicity; inspect inferred arguments before adding a new law. |
-| `OracleReduction/Security/Implications.rbrKnowledgeSoundness_implies_rbrSoundness` | 128 | 133 | +5 | **Open:** the proof repeats bind reassociation and state-function unfolding; the source normalization remains to be shortened. |
+| `OracleReduction/Security/RoundByRound.rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness` | 31 | 67 | 31 | Resolved: bind reassociation once, then goal-inferred `prEvent_mono`. |
+| `OracleReduction/Composition/Sequential/Append/Completeness.completeness_iff_of_pure_verifier` | 14 | 32 | 14 | Resolved: `OptionT.lift` normal form, then `OptionT.prEvent_lift`/`prEvent_map` in one `simp only`. |
+| `OracleReduction/Composition/Sequential/Append/Completeness.append_completeness_of_prover_factorization` | 32 | 46 | 28 | Resolved: goal-inferred `mul_le_prEvent_bind_of_forall`; the `q₁.2 → stage 2 → q₂.2` state handoff is unchanged. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.append_completeness_of_guarded_prover_factorization` | 27 | 41 | 23 | Resolved: same call-site refactor. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.prEvent_guarded_map` | 6 | 20 | 4 | Resolved: `OptionT.prEvent_bind_guard`. |
+| `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` | 22 | 33 | 29 | **R1** (+5): `prEvent_bind_le_prEvent_add_mul_prEvent_not` is the honest subprobability form and leaves `Pr{¬p}`; `1 - Pr{p}` is recovered from `prEvent_add_prEvent_not` and uniform-sampler losslessness under a proof-local discrete space (R4). **R2** (+2): a `change` exposes the `OptionT.lift` prefix so `OptionT.prEvent_lift` applies. |
+| `Interaction/Oracle/Composition.run_preserves_measure` | 13 | 23 | 13 | Resolved by the upstream generic AE bind-event law (VCVio #771). |
+| `ArkLibTest/.../SharedStateCounterexample.first_perfectCompleteness` | 5 | 15 | 4 | Resolved: native lift/map simplification. |
+| `ArkLibTest/.../SharedStateCounterexample.second_perfectCompleteness` | 5 | 14 | 4 | Resolved: same. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_iff_of_guarded_verifier` | 24 | 32 | 24 | Resolved: one normal form instead of duplicated directions. |
+| `Commitments/Functional/KZG/Binding.binding_game_ext_eq_binding_game` | 146 | 153 | 146 | Resolved: reverse `prEvent_map` on the projected condition, then `OptionT.ext` on the game; no separate program-equality statement. |
+| `OracleReduction/Composition/Sequential/Append/Completeness.completeness_of_pure_states` | 9 | 15 | 6 | Resolved: goal-inferred bind lower bound. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_of_guarded_states` | 9 | 15 | 6 | Resolved: same. |
+| `OracleReduction/Security/RbrGame.prEvent_simulateQ_addLift_getChallenge_bind_le` | 18 | 24 | 9 | Resolved: inferred arguments to bind-event monotonicity. |
+| `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le` | 46 | 49 | 13 | Resolved. |
+| `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` | 26 | 28 | 13 | Resolved. |
+| `OracleReduction/Security/Implications.rbrKnowledgeSoundness_implies_rbrSoundness` | 128 | 133 | 98 | Resolved: reassociation and state unfolding performed once. |
 
-The remaining small increases separate into ordinary bump work and formatting. The +4-line
-`ProximityGenerator/AffineGenerator.exists_line_bound`, +4-line
-`Data/Polynomial/Bivariate.degreeY_le_degreeY_sub_degreeY`, and +3-line
-`ProximityGap/CapacityBounds/Subfield/Algebra.fold_density_le_eps_ca_of_not_joint_proximity`
-are Mathlib/tactic API repairs, not probability conversions. Expanded `Pr{let …}[…]` layout accounts
-for the small KZG top-level `calc` growth without adding proof steps. Conversely, the +4-line
-`ArkLibTest/.../Completeness.rejecting_not_perfect` and +3-line RbrGame prefix bound are native
-proof growth and remain part of the same OptionT/bind-normalization gaps; their size does not make
-them an R1–R4 exception.
+Counts are proof-body lines from the final `:= by` line, as defined above. The Lean 4.34
+repairs that #903 made outside probability proofs are also back at or below their pre-#903 size:
+`AffineGenerator.exists_line_bound` (71 → 75 → 69), `Bivariate.degreeY_le_degreeY_sub_degreeY`
+(1 → 5 → 2; the remaining line is the `simp` call that replaces `grind`, which no longer closes the
+goal), `PolishchukSpielman/Degrees.ps_degX_bound` (restored with `grind +qlia [natDegreeY,
+Polynomial.natDegree_mul]`), `BCIKS20/ListDecoding/Extraction.pg_sum_natDegreeY_Rset_le_natDegreeY_Q`,
+`Errors.mcaError_le_epsCa_of_pos_of_two_mul_lt_dist`, and
+`Subfield/Algebra.fold_density_le_eps_ca_of_not_joint_proximity` (23 → 26 → 12). The test
+`ArkLibTest/.../Completeness.rejecting_not_perfect` is back to 5 lines. Smaller probability-facing
+rows (KZG `binding`, `t_sdh_game_eq`, FunctionBinding, `Security/Basic.completeness_relOut_mono`,
+`Functional/Basic`, `KZG/Correctness`, `TerminalMeasure`, `TranscriptTree`, the Ajtai binding
+reduction, and the sequential-composition tests) are at or below their pre-#903 size.
 
-The security statements and games in these rows retain their mathematical content. In particular,
-sequential composition passes the first stage's final state `q₁.2` to stage two, returns the second
-stage's final state `q₂.2`, and derives the same additive error from the same multiplicative lower
-bound. This semantic preservation does not excuse the source growth: the open rows still fail the
-campaign's independent proof-length criterion.
-
-The phase also exposed a separate upstream universe restriction: OracleComp support/evaluation
-characterizations were fixed to `OracleSpec.{u, 0}`. VCVio #771 generalizes those declarations to
-`OracleSpec.{u, v}`. That generalization does not by itself prove
-`run_preserves_measure`, whose hypothesis is an arbitrary `IsMeasureSpec`; the generic AE
-bind-event law above is the proof-shortening fix for that theorem.
-
-Checkpoint A6's promised Sumcheck simplification is also outstanding even though it is not a
-line-count regression. `ProofSystem/Sumcheck/Spec/SingleRound.reduction_perfectCompleteness` is
-182 proof-body lines before and after #903 and contains the same 35 `erw` calls (the whole
-declaration is lines 534–717, or 184 lines including its statement). The issue planned to replace
-this simulation-peeling proof with an operational support argument. The theorem is the
-non-oracle `Reduction` result, so the documented handler-dependent exception does not apply;
-`Reduction.perfectCompleteness_of_run_support` already removes the `init`/`impl` simulation layer.
-Completing A6 therefore requires the ArkLib refactor first, followed by upstream operational
-support normal forms only if the unsimulated support proof still repeats generic plumbing.
+Checkpoint A6 is done. `ProofSystem/Sumcheck/Spec/SingleRound.reduction_perfectCompleteness`
+now applies `Reduction.perfectCompleteness_of_run_support`. A local closed form for
+`runToRound (Fin.last 2)` is built from `Prover.runToRound_succ`, `Prover.processRound_of_dir_eq_P_to_V`,
+`Prover.processRound_of_dir_eq_V_to_P` and `FullTranscript.mk2_eq_snoc_snoc`, and the verifier guard
+comes from the input relation. The proof body is 26 lines, including that closed form, down from
+182 with 35 `erw` calls. It adds no assumption, helper declaration, admission or import, and it
+removes the `backward.isDefEq.respectTransparency false` override that the old proof needed.
 
 ### Phase 2: independent PMF retirement (#904 follow-up)
 
@@ -200,9 +192,84 @@ No retired-probability baseline is introduced, and no warning exclusions are add
 
 #### Phase 2 proof-size review
 
-The generator family's remaining source increase is sampler declarations, signatures, and
-explicit instance arguments, not longer mathematical arguments. The focused proof-body counts
-below exclude theorem statements and docstrings and compare to #903:
+This is a complete sweep of every theorem and lemma whose proof body is longer than at merge base
+`8b03d40a56ec827d223b78ccca0ce164a9231f6c`. Proof bodies are counted from the final `:= by`
+line. The sweep started with 42 grown rows. Two are now at or below their merge-base size:
+`BCHKS25.rs_Lambda_le_card_of_epsCa_lt` (431 → 424), whose bounds are now stated on
+`Pr{let z ← $ᵗ F}[Pevent z]` through `prEvent_uniformSample_eq_ofReal`; and the RbrGame convex
+bound, covered in phase 1. `DG25/MainResults.interleaved_affine_gaps_imply_tensor_gaps` drops from
++9 to +2 because `Fin.snocEquiv` supplies the bijectivity proof.
+
+None of the 40 remaining rows is a probability argument that got longer. Each grows by one to
+three lines, and they have three causes, none of which is R1–R4.
+
+**D1: instance search after the native sampler import (26 rows).** Converting `$ᵖ` to `$ᵗ` makes
+these files import `VCVio.OracleComp.OracleSpec`. Its instances
+`DecidableEq spec.Domain`/`DecidableEq (spec.Range t)` (`OracleSpec.lean:77–79`) combine with the
+reducible `OracleSpec.ofFn` instance (`OracleSpec.lean:91`) to match every `DecidableEq α` goal.
+This sends synthesis around the cycle `DecidableEq F → (ofFn ?).DecidableEq → DecidableEq F`
+before it reaches `Classical.propDecidable`. The minimal reproducer
+`import Mathlib.Algebra.Field.Basic` plus `example [Field F] (x y : F) : Decidable (x = y) := by
+classical; infer_instance` succeeds. Adding `import VCVio.OracleComp.OracleSpec` makes it fail to
+synthesize. The affected proofs therefore use explicit `let _ : DecidableEq α := Classical.decEq α`,
+and in some cases explicit `@` instance arguments. The two `AffineSpaces/Basic` rows use `change`
+in place of `simpa` because `simpa` reports a mismatch between types that print identically; a
+hidden `Decidable` instance difference is inferred, not verified. Replacing the lets with `classical` was tried in all nine
+multi-let files, and every one fails with a 20000-heartbeat typeclass timeout. The rows are:
+`Frs/LineDecoding.exists_seed_pairwise_distinct_affine_lines` (+3),
+`SchwartzZippelCounting.prob_eval_zero_le_div` (+3),
+`BCIKS20/AffineSpaces/Basic.all_affine_elements_close` (+3) and
+`average_proximity_implies_proximity_of_linear_subspace` (+2),
+`Entropy/Counting.rsCode_disjoint_supported_of_small`, `JohnsonLower.rs_monomial_agreement_card_le_two_mul`,
+`Powers/Incidence.powers_coefficients_eq_of_agree_on_distinct_seeds`,
+`Subfield/Algebra.subfield_ca_interpolant_unique`,
+`UniqueDecoding/Internal.rs_exists_oversized_bivariate_ab(_of_dimension)`,
+`Errors.exists_forall_notMem_of_card_le`, `LineDecoding.affine_collision_injective`,
+`LineDecoding.exists_outside_finite_union_submodules`,
+`PolynomialGenerator.isMCAGenerator_of_isPolynomialGeneratorOf` (+2 each), and
+`Frs.frs_mcaError_le_proof`, `JohnsonLower.is_binary_linearized_sub`,
+`JohnsonLower.mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card`,
+`Subfield.subfield_ca_exists_good_center_nat`, `Subfield/Algebra.subfield_ca_generator_adjoin_eq_top`,
+`GrandChallenges.lambda_eq_of_floor_eq`, `KKH26.exists_neg_transversal`,
+`ReedSolomon.rs_codimension_one_list_size`, `BCIKS20/AffineSpaces.exists_large_of_finset_cover(')`,
+`PolynomialGenerator.isMCAGenerator_of_isPolynomialGeneratorOfFull`, `Stir/Combine.master_lemma`
+(+1 each). `exists_large_of_finset_cover'` shows the effect directly: it already begins with
+`classical` and still needs the explicit `Classical.decEq α`.
+
+**D2: statement and elaboration shape (9 rows, +1 or +2 each).**
+- Two statements are generalized from `Fintype` to `Finite`, so the proof builds its own `Fintype`:
+  `Entropy/Counting.epsCa_eq_one_of_all_folds_close_not_joint` and the private
+  `GCXK25.linear_mca_relevant_pairs_card_le`.
+- `Folding.dist_from_code_bound_of_correlated_agreement` replaces an `aesop` call that no longer
+  closes the goal under the `Finite` hypothesis.
+- `DG25/ReedSolomon.ReedSolomon_ProximityGapAffineLines_UniqueDecoding` uses
+  `simpa only [bind_pure_comp, …]` because native `Pr{…}` elaborates to `do …; pure …` while the
+  hypothesis is in `<$>` form.
+- `InformationSetLowerBound.linear_mcaError_ge_information_set` adds `← ENNReal.coe_natCast` because
+  the native counting lemma returns `ℝ≥0∞` casts, not `ℝ≥0` casts.
+- `DG25/MainResults.interleaved_affine_gaps_imply_tensor_gaps` (+2) states its `Fin 1 → F`
+  transport explicitly.
+- `AffineSpaces/Basic.prob_uniform_shift_invariant`,
+  `PolynomialGenerator.isMCAGenerator_univariatePowersGeneratorOn` and
+  `ToyProblem/SoundnessBounds.exists_winningSetFor_ncard_ge_of_lambda_lt_card` grow only because of
+  line wrapping around longer native lemma names or a new sampler binder.
+
+**D3: retirement-gate explicit terms (5 rows, +1 each).** `Verifier.id_rbrSoundness` keeps
+`intro …; exact Fin.elim0 i.1` rather than `simp [Verifier.id]`, and the four
+`OracleComp.support_nonempty` applications (`TranscriptTree/Basic.not_isAccepting_of_no_outputs`,
+`support_init_nonempty_of_prob_one`, `not_accepting_of_failure`, and
+`CoordinateWiseSpecialSoundness/Composition.mem_of_pure_accepting`) pass
+`OracleSpec.IsUniformMeasureSpec.inhabited` explicitly. The shorter forms elaborate, but the
+default instance paths go through the retired `OracleSpec.IsUniformSpec.inhabited`,
+`IsUniformSpec.toIsProbabilitySpec`, `PMF`/`SPMF` and `probOutput`, and `retiredsweep` rejects
+them (verified). These rows go away when VCVio removes those instances under #532.
+
+D1 has a single upstream fix: VCVio should stop `OracleSpec`'s `DecidableEq` instances from
+matching arbitrary types, for example by lowering their priority or keying them on a
+non-reducible head. After ArkLib pins that fix, the 26 D1 proofs can go back to `classical`. That
+change belongs in a separate VCVio PR and is not part of this one.
+
+The earlier phase-2 generator audit still holds:
 
 | File / declaration | Before | After | Accounting |
 |---|---:|---:|---|
@@ -213,15 +280,6 @@ below exclude theorem statements and docstrings and compare to #903:
 | `PolynomialGenerator.isMCAGenerator_tensorGeneratorPi_tight` | 57 | 57 | Same dependent-product setup and zero-event argument. |
 | `ToyProblem/SoundnessBounds.exists_dotProduct_image_card_le` | 42 | 42 | Native mathematical corollary supplies the operational witness. |
 | `ToyProblem/SoundnessBounds.exists_affine_image_card_le` | 39 | 39 | Native cardinality threshold avoids expanded ENNReal arithmetic. |
-
-`RbrGame.prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` grows by four
-proof lines (R1/R4): it explicitly proves that a uniform sampler's event and complement have
-mass one, using a proof-local discrete measurable space. This avoids a simplifier-selected
-retired probability instance. The four `support_nonempty` applications in transcript-tree and
-coordinate-wise proofs explicitly select the native instance; their extra physical lines only
-wrap that argument. The identity verifier proof eliminates an impossible challenge index.
-The already-admitted lift-context theorem retains its admission and drops its unused preliminary
-simplification. No new admission or baseline allowance is introduced.
 
 The mathematical collision-image theorem now takes a probability measure and an explicit
 countable full-mass carrier. Its witness still has positive singleton mass. ToyProblem converts
@@ -237,11 +295,15 @@ migration; the axiom regression baseline must remain unchanged.
 ### Closure scope and scanner boundary
 
 Issue #904 covers both phases: #903's VCVio scalar conversion and the follow-up retirement of
-ArkLib's independent PMF surface. It remains open while the non-R1–R4 phase-1 proof expansions
-listed above remain unresolved. Its integration condition is now satisfied: the prerequisite stack
-landed on VCVio `main` in [#771](https://github.com/Verified-zkEVM/VCVio/pull/771), ArkLib pins
-that main commit `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`, and the exact pinned tree passes the
-required validation. The proof-size rows are what keep #904 open, not the dependency pin.
+ArkLib's independent PMF surface. Its integration condition is met: the prerequisite stack landed
+on VCVio `main` in [#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pins that
+main commit, `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`. All phase-1 probability proofs are at or
+below their pre-#903 size or carry an R1/R2/R4 reason, and checkpoint A6 is done. What remains
+against #904's literal acceptance rule are the 40 phase-2 rows above: 26 grew because of the D1
+instance-search defect in VCVio, 9 because of D2 statement or elaboration changes, and 5 because
+of D3 explicit terms that keep retired VCVio instances out of the proofs. None of them
+is R1–R4. Whether #904 closes with these rows documented, or stays open until the VCVio `OracleSpec`
+instance fix is pinned and D1 is reverted, is a decision for the maintainers.
 
 VCVio issue #532 has a broader repository-wide retirement scope. Landing the ArkLib prerequisite
 slice and closing #904 will not close #532; VCVio must account for its other scalar/PMF consumers

@@ -1264,14 +1264,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
           Δ₀(multilinearCombine (u:=u) (r:=Fin.snoc r_init r_last), MC) ≤ e
         have hP_split_r_last := (SampleableType.prEvent_uniformSample_pair_of_bijective
           (g := fun (x : F) (w : Fin (ϑ_sub_2 + 1) → F) => Fin.snoc w x)
-          (by
-            constructor
-            · intro a b hab
-              apply Prod.ext
-              · simpa [Function.uncurry] using congrArg (fun v => v (Fin.last (ϑ_sub_2 + 1))) hab
-              · simpa [Function.uncurry] using congrArg Fin.init hab
-            · intro v
-              exact ⟨(v (Fin.last (ϑ_sub_2 + 1)), Fin.init v), Fin.snoc_init_self v⟩)
+          (by exact (Fin.snocEquiv fun _ => F).bijective)
           (fun r => Δ₀(multilinearCombine (u := u) (r := r), MC) ≤ e)).symm
         rw [hP_split_r_last] at hP_multilinearCombine_close_gt
         -- Now we have two randomness sampling in hP_multilinearCombine_close_gt :

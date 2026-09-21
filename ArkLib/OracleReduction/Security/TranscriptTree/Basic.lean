@@ -414,8 +414,7 @@ theorem mem_language_of_mem_outputs {init : ProbComp σ}
     out ∈ relOut.language := by
   have h := hacc p.fullTranscript p.mem_fullTranscripts
   rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at h
-  obtain ⟨out', houtEq, hout'⟩ := h (some out) hout
-  exact Option.some_injective _ houtEq ▸ hout'
+  simpa using h (some out) hout
 
 /-- A leaf at which the verifier can output *nothing* refutes acceptance: acceptance with
   probability one rules out certain failure. -/

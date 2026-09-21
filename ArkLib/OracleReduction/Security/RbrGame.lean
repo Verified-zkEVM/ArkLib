@@ -114,28 +114,13 @@ theorem prEvent_simulateQ_addLift_getChallenge_bind_le
           let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
           return f tr challenge)).run' (← init)}[E x] ≤ ε := by
   rw [← bind_assoc]
-  refine prEvent_bind_le_of_forall_le init (fun s ↦
-    (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-      (do
-        let tr ← oa
-        let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-        return f tr challenge)).run' s) E fun s ↦ ?_
-  have hbody : (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-      (do
-        let tr ← oa
-        let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-        return f tr challenge)).run' s
-      = (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp)) oa).run s
-          >>= fun x ↦ f x.1 <$> ($ᵗ (pSpec.Challenge i)) := by
-    rw [simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind]
-    refine bind_congr fun x ↦ ?_
-    rw [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run_bind]
-    simp only [simulateQ_pure, StateT.run_monadLift, StateT.run_pure, bind_pure_comp,
-      Functor.map_map, monadLift_self]
-  rw [hbody]
+  refine prEvent_bind_le_of_forall_le init _ E fun s ↦ ?_
+  rw [simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind]
   refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
-  rw [prEvent_map]
-  exact h x.1
+  rw [prEvent_map, simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
+    StateT.run_bind]
+  simpa only [simulateQ_pure, StateT.run_monadLift, StateT.run_pure, bind_pure_comp,
+    Functor.map_map, monadLift_self] using h x.1
 
 end ProtocolSpec
 
@@ -219,32 +204,17 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
       (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         oa).run' (← init))}[E x] ≤ ε := by
   subst hoa
-  -- Resolve the simulated challenge query into a top-level uniform draw, per initial state.
-  have hbody : ∀ s : σ,
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          (fun t ↦ some (f c t)) <$> tail c)).run' s
-      = ($ᵗ (pSpec.Challenge i)) >>= fun c ↦
-          (fun t ↦ some (f c t)) <$>
-            ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-              (tail c)).run' s) := by
-    intro s
-    rw [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
-      StateT.run'_bind']
-    simp only [StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
   rw [OptionT.mk_bind]
   refine prEvent_bind_le_of_forall_le _ _ E fun s ↦ ?_
-  rw [hbody s, OptionT.mk_bind]
-  refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E ?_).trans ?_
-  · intro c _ hc
-    rw [OptionT.prEvent_mk_eq_zero_iff]
-    intro z hz hE
-    rw [support_map, Set.mem_image] at hz
-    obtain ⟨t, _, ht⟩ := hz
-    exact hc ⟨t, by rw [Option.some_inj] at ht; rw [ht]; exact hE⟩
-  · change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[∃ t, E (f c t)] ≤ ε
-    simpa only [OptionT.prEvent_lift] using h
+  simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
+    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
+  rw [OptionT.mk_bind]
+  refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t, E (f c t)) E fun c _ hc ↦ ?_).trans
+    ((OptionT.prEvent_lift _ _).trans_le h)
+  rw [OptionT.prEvent_mk_eq_zero_iff]
+  simp only [support_map, Set.mem_image, Option.some_inj]
+  rintro _ ⟨t, _, rfl⟩ hE
+  exact hc ⟨t, hE⟩
 
 /-- **Prefix-extended, `Option`-valued master mixture bound for the knowledge-soundness game
 shape.** Generalizes `prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` in two
@@ -281,53 +251,17 @@ theorem prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
         oa).run' s))}[E x] ≤ ε := by
   subst hoa
-  -- Split off the simulated prefix, then resolve the challenge query, per initial state.
-  have hbody : ∀ s : σ,
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let pre ← mid
-          let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          (f pre c) <$> tail pre c)).run' s
-      = (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          mid).run s >>= fun x ↦
-          ($ᵗ (pSpec.Challenge i)) >>= fun c ↦
-            (f x.1 c) <$>
-              ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-                (tail x.1 c)).run' x.2) := by
-    intro s
-    rw [simulateQ_bind, StateT.run'_bind']
-    refine bind_congr fun x ↦ ?_
-    -- The per-prefix equality, with the prefix value and state as plain variables (the
-    -- `StateT.run'_bind'` match-lambda is defeq to its projection spelling but not
-    -- `rw`-matchable; `exact … x.1 x.2` bridges by definitional unification).
-    have hx : ∀ (pre : P) (s' : σ),
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-            (f pre c) <$> tail pre c)).run' s'
-        = ($ᵗ (pSpec.Challenge i)) >>= fun c ↦
-            (f pre c) <$>
-              ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-                (tail pre c)).run' s') := by
-      intro pre s'
-      rw [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
-        StateT.run'_bind']
-      simp only [StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
-    exact hx x.1 x.2
-  rw [hbody s, OptionT.mk_bind]
-  refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
+  rw [simulateQ_bind, StateT.run'_bind', OptionT.mk_bind]
+  refine prEvent_bind_le_of_forall_le _ _ E fun ⟨pre, s'⟩ ↦ ?_
+  simp only [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge, StateT.run'_bind',
+    StateT.run_liftM, bind_assoc, pure_bind, simulateQ_map, StateT.run'_map']
   rw [OptionT.mk_bind]
-  refine (prEvent_bind_le_prEvent_of_support _ _
-    (fun c ↦ ∃ t b, f x.1 c t = some b ∧ E b) E ?_).trans ?_
-  · intro c _ hc
-    rw [OptionT.prEvent_mk_eq_zero_iff]
-    intro z hz hE
-    rw [support_map, Set.mem_image] at hz
-    obtain ⟨t, _, htz⟩ := hz
-    exact hc ⟨t, z, htz, hE⟩
-  · change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[
-      ∃ t b, f x.1 c t = some b ∧ E b] ≤ ε
-    simpa only [OptionT.prEvent_lift] using h x.1
+  refine (prEvent_bind_le_prEvent_of_support _ _ (fun c ↦ ∃ t b, f pre c t = some b ∧ E b) E
+    fun c _ hc ↦ ?_).trans ((OptionT.prEvent_lift _ _).trans_le (h pre))
+  rw [OptionT.prEvent_mk_eq_zero_iff]
+  simp only [support_map, Set.mem_image]
+  rintro z ⟨t, _, htz⟩ hE
+  exact hc ⟨t, z, htz, hE⟩
 
 /-- The two algebraically-equal spellings of a convex combination `λ·1 + (1−λ)·ε` in `ℝ≥0∞`,
 for `λ, ε ≤ 1`. Used to turn the `λ + (1−λ)·ε` shape produced by
@@ -395,20 +329,12 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
   change Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[p c] + ε₂ *
       Pr{let c ← OptionT.lift ($ᵗ (pSpec.Challenge i))}[¬ p c] ≤ ε₂ + ε₁ * (1 - ε₂)
   simp only [OptionT.prEvent_lift]
-  have hsum : Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] +
-      Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] = 1 := by
-    let _ : MeasurableSpace (pSpec.Challenge i) := ⊤
-    have h := prEvent_add_prEvent_not ($ᵗ (pSpec.Challenge i)) p
-    rw [evalDist_map_apply_univ _ Measurable.of_discrete,
-      SampleableType.evalDist_uniformSample, MeasureTheory.measure_univ] at h
-    exact h
-  have hsum' : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] +
-      Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] = 1 := by
-    rw [add_comm]
-    exact hsum
   have hnot : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] =
-      1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] :=
-    ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top hsum'
+      1 - Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] := by
+    let _ : MeasurableSpace (pSpec.Challenge i) := ⊤
+    refine ENNReal.eq_sub_of_add_eq' ENNReal.one_ne_top ((add_comm _ _).trans ?_)
+    rw [prEvent_add_prEvent_not, evalDist_map_apply_univ _ Measurable.of_discrete,
+      SampleableType.evalDist_uniformSample, MeasureTheory.measure_univ]
   rw [hnot, mul_comm ε₂, enn_convex_symm _ _ (prEvent_le_one _ _) hε₂]
   exact add_le_add le_rfl (mul_le_mul' h₁ le_rfl)
 

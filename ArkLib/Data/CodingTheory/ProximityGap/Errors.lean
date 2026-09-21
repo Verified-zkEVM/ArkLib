@@ -637,17 +637,7 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
       Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] ≤
         epsCa (F := F) (C : Set (ι → F)) δ δ := by
     unfold epsCa
-    calc
-      Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] =
-          (if jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
-          else Pr{let x ← $ᵗ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ]) :=
-        (ite_eq_right hv).symm
-      _ ≤ ⨆ w : WordStack F (Fin 2) ι,
-          if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
-          else Pr{let x ← $ᵗ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
-        le_iSup (fun w : WordStack F (Fin 2) ι =>
-          if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
-          else Pr{let x ← $ᵗ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ]) v
+    exact le_iSup_of_le v (ite_eq_right hv).symm.le
   by_cases hjp : jointProximity (C := (C : Set (ι → F))) (u := u) δ
   · obtain ⟨c, hc, hE⟩ :=
       (jointProximity_iff_exists_pairErrors_le C u δ).mp hjp

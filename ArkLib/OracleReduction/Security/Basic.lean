@@ -155,8 +155,7 @@ theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOu
       completeness init impl relIn relOut reduction ε →
         completeness init impl relIn relOut' reduction ε := by
   intro h stmtIn witIn hIn
-  exact ge_trans (prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩)
-    (h stmtIn witIn hIn)
+  exact ge_trans (prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩) (h _ _ hIn)
 
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/

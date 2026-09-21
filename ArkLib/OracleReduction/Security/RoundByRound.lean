@@ -664,71 +664,35 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     (h : verifier.rbrKnowledgeSoundnessOneShot init impl relIn relOut rbrKnowledgeError) :
     verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError := by
   unfold rbrKnowledgeSoundness
-  unfold rbrKnowledgeSoundnessOneShot at h
   obtain ⟨stF, oneShotE, h⟩ := h
   refine ⟨_, oneShotE.toRoundByRoundOfRel relIn,
     stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
-  intro stmtIn witIn prover i
   -- Both notions score the *same* game, so it suffices to compare the two bad events pointwise.
-  have hmono :
-      Pr{let ⟨transcript, challenge, _proveQueryLog⟩ ← do
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
-              prover.runWithLogToRound i.1.castSucc stmtIn witIn
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge, proveQueryLog))).run' (← init)}[
-        ∃ witMid,
-          ¬ (stF.toKnowledgeStateFunction init impl oneShotE) i.1.castSucc stmtIn transcript
-            (((oneShotE.toRoundByRoundOfRel (WitOut := WitOut) relIn)).extractMid i.1 stmtIn
-              (transcript.concat challenge) witMid) ∧
-          (stF.toKnowledgeStateFunction init impl oneShotE) i.1.succ stmtIn
-            (transcript.concat challenge) witMid] ≤
-      Pr{let ⟨transcript, challenge, proveQueryLog⟩ ← do
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
-              prover.runWithLogToRound i.1.castSucc stmtIn witIn
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge, proveQueryLog))).run' (← init)}[
-        letI extractedWitIn := oneShotE i.1.castSucc stmtIn transcript proveQueryLog.fst
-        (stmtIn, extractedWitIn) ∉ relIn ∧
-          ¬ stF i.1.castSucc stmtIn transcript ∧
-            stF i.1.succ stmtIn (transcript.concat challenge)] := by
-    conv_lhs => rw [← bind_assoc]
-    conv_rhs => rw [← bind_assoc]
-    refine prEvent_mono
-      (do
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
-              prover.runWithLogToRound i.1.castSucc stmtIn witIn
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge, proveQueryLog))).run' (← init)) _ _ ?_
-    rintro ⟨transcript, challenge, proveQueryLog⟩ ⟨witMid, hcast, hsucc⟩
-    simp only [KnowledgeStateFunctionOneShot.toKnowledgeStateFunction,
-      Extractor.RoundByRoundOneShot.toRoundByRoundOfRel,
-      ite_eq_right (Fin.succ_ne_zero _)] at hcast hsucc
-    -- The crux: the general bad event forces `relIn` to have *no* witness for `stmtIn` at all.
-    -- That is what bridges the gap to the one-shot event, whose extractor sees the prover's query
-    -- log while `extractMid` cannot.
-    have hnex : ¬ ∃ v, (stmtIn, v) ∈ relIn := by
-      intro hex
-      by_cases hz : i.1.castSucc = 0
-      · -- Round-0 branch: `extractMid` would have selected a valid witness.
-        rw [ite_eq_left hz] at hcast
-        exact hcast (by simpa [hex] using hex.choose_spec)
-      · rw [ite_eq_right hz] at hcast
-        exact hcast (Or.inr hex)
-    refine ⟨fun hmem => hnex ⟨_, hmem⟩, ?_, hsucc.resolve_right hnex⟩
-    -- `¬ stF.toFun i.castSucc`: at a nonzero index it is the left half of `hcast`; at index `0`
-    -- it is the one-shot state function's empty-transcript axiom, transported along `hz`.
+  refine fun stmtIn witIn prover i ↦ le_trans ?_ (h stmtIn witIn prover i)
+  rw [← bind_assoc, ← bind_assoc]
+  refine prEvent_mono _ _ _ ?_
+  rintro ⟨transcript, challenge, proveQueryLog⟩ ⟨witMid, hcast, hsucc⟩
+  simp only [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, ite_eq_right (Fin.succ_ne_zero _),
+    KnowledgeStateFunctionOneShot.toKnowledgeStateFunction] at hcast hsucc
+  -- The crux: the general bad event forces `relIn` to have *no* witness for `stmtIn` at all.
+  -- That is what bridges the gap to the one-shot event, whose extractor sees the prover's query
+  -- log while `extractMid` cannot.
+  have hnex : ¬ ∃ v, (stmtIn, v) ∈ relIn := by
+    intro hex
     by_cases hz : i.1.castSucc = 0
-    · exact stF.toFun_empty_of_eq_zero (stmtIn := stmtIn) (m := i.1.castSucc)
-        (hm := hz) (tr := transcript)
+    · -- Round-0 branch: `extractMid` would have selected a valid witness.
+      rw [ite_eq_left hz] at hcast
+      exact hcast (by simpa [hex] using hex.choose_spec)
     · rw [ite_eq_right hz] at hcast
-      exact fun hstF => hcast (Or.inl hstF)
-  exact hmono.trans (h stmtIn witIn prover i)
+      exact hcast (Or.inr hex)
+  refine ⟨fun hmem => hnex ⟨_, hmem⟩, ?_, hsucc.resolve_right hnex⟩
+  -- `¬ stF.toFun i.castSucc`: at a nonzero index it is the left half of `hcast`; at index `0`
+  -- it is the one-shot state function's empty-transcript axiom, transported along `hz`.
+  by_cases hz : i.1.castSucc = 0
+  · exact stF.toFun_empty_of_eq_zero (stmtIn := stmtIn) (m := i.1.castSucc)
+      (hm := hz) (tr := transcript)
+  · rw [ite_eq_right hz] at hcast
+    exact fun hstF => hcast (Or.inl hstF)
 
 end RoundByRound
 

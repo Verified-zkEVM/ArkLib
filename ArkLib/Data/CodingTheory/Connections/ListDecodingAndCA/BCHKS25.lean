@@ -462,31 +462,17 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     rw [mul_comm]
     exact_mod_cast hspread'
   have hlowerprob :
-      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤
-        ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) := by
-    rw [ENNReal.ofReal_eq_coe_nnreal (by positivity)]
-    exact_mod_cast hratioR
+      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤ Pr{let z ← $ᵗ F}[Pevent z] := by
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+    exact ENNReal.ofReal_le_ofReal hratioR
   have hratio_le :
-      ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) ≤
+      Pr{let z ← $ᵗ F}[Pevent z] ≤
         epsCa (F := F) (A := F)
           (ReedSolomon.code domain k : Set (ι → F))
           ((δ + 2 / Fintype.card ι).toNNReal) δ_int := by
-    have hqne : (Fintype.card F : NNReal) ≠ 0 := by
-      exact_mod_cast (Fintype.card_pos (α := F)).ne'
-    calc
-      ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) =
-          Pr{let z ← $ᵗ F}[Pevent z] := by
-        rw [SampleableType.prEvent_uniformSample]
-        rw [← ENNReal.coe_natCast (Finset.univ.filter Pevent).card,
-          ← ENNReal.coe_natCast (Fintype.card F)]
-        exact ENNReal.coe_div hqne
-      _ ≤ _ := by
-        dsimp only [Pevent]
-        unfold epsCa
-        exact le_iSup_of_le u (by rw [ite_eq_right hnotjoint])
+    dsimp only [Pevent]
+    unfold epsCa
+    exact le_iSup_of_le u (by rw [ite_eq_right hnotjoint])
   exact (not_lt_of_ge (hlowerprob.trans hratio_le)) _hε_ca
 
 end CAImpliesList
