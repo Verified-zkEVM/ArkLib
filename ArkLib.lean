@@ -181,6 +181,7 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ReedSolomon

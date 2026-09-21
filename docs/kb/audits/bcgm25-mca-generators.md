@@ -24,8 +24,8 @@ by number, so re-check them against the version in hand before relying on a row.
 | Def 3.14 (MCA event and error) | `CoreDefinitions.IsMCA`, `CoreDefinitions.mcaError`, `CoreDefinitions.IsMCAGenerator` | Event and value are separate; the predicate is the value's bound |
 | Def 3.19 (polynomial generator) | `CoreDefinitions.IsPolynomialGenerator`, `CoreDefinitions.IsPolynomialGeneratorOf`, `CoreDefinitions.IsPolynomialGeneratorOfFull` | The `Of` forms carry the polynomial family as data; `Full` fixes each seed set to `F` |
 | Def 4.3 (tensor generator) | `CoreDefinitions.TensorGenerator`, `CoreDefinitions.TensorGenerator_Explicit` | Agree under `tensorProductPiFunEquiv`; the `s`-fold iteration is `PolynomialGenIsMCA.tensorGeneratorPi` |
-| Error of Thm 6.1 | `LinearTransformations.mdsMCAError` | Reads the code only through `n` and `δᵣ` (`mdsMCAError_congr`) |
-| Def 8.1 (`ξ`, univariate-powers error) | `PolynomialGenIsMCA.powersMCAError` | `mdsMCAError` at output size `d + 1` (`mdsMCAError_eq_powersMCAError`, proved) |
+| Error of Thm 6.1 | `mdsMCAError` | Reads the code only through `n` and `δᵣ` (`mdsMCAError_congr`). Its unique-decoding regime is `(⌊n·γ⌋ + 1)·(ℓ - 1) / |S|`, not the printed `max{n·γ, 1}·(ℓ - 1) / |S|`, which is false — see below |
+| Def 8.1 (`ξ`, univariate-powers error) | `PolynomialGenIsMCA.powersMCAError` | `mdsMCAError` at output size `d + 1` (`mdsMCAError_eq_powersMCAError`, proved), so it carries the same unique-decoding correction |
 | Def 9.1 (`ϵMCA,RS`, Reed–Solomon error) | `RSCode.reedSolomonMCAError` | Free `n` of the paper is `Fintype.card ι`; `[NeZero k]` excludes the `ρ = 0` degeneracy |
 
 The paper types `ϵMCA : [0,1] → [0,1]`; ArkLib types the bound `I → ℝ≥0`. The codomain is widened
@@ -36,6 +36,8 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 
 | Paper | Lean | Status |
 |---|---|---|
+| Lemma 3.6 (any `k` rows of an MDS generator matrix are independent), one direction | `isUnit_of_isMDSGenerator` | proved, for `k = ℓ` the full dimension of `C_G`: any `ℓ` distinct rows of `M_G` form an invertible matrix |
+| Lemma 3.13 (an MDS generator is zero-evading with error `(ℓ - 1) / |S|`) | `card_filter_dotProduct_eq_zero_le_of_isMDSGenerator` (field alphabet), `card_filter_sum_smul_eq_le_of_isMDSGenerator` (module alphabet, two families) | proved as seed counts: at most `ℓ - 1` seeds, rather than as an `IsZeroEvadingGenerator` bound |
 | Lemma 3.16 (monotone in the distance) | `CoreDefinitions.mcaError_mono` | proved |
 | Lemma 4.1 (right multiplication by a matrix with a left pseudoinverse) | `LinearTransformations.mcaError_generatorByRightMul_le`, `LinearTransformations.pseudoinverseGen` | proved |
 | Cor 4.2 (projection onto a subset of outputs) | `LinearTransformations.mcaError_projectedGenerator_le`, `LinearTransformations.generatorSubset` | proved |
@@ -45,11 +47,42 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Remark 3.20 (polynomial ⇒ zero-evading) | `PolynomialGenerator.poly_gen_is_zero_evading` | proved, total-degree variant |
 | Lemma 3.22 (MCA implies CA) | — | not formalized; this is what licenses reading an `mcaError` bound as a correlated-agreement threshold statement |
 | Lemma 7.1 (affine lines to affine spaces) | `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` | proved over module alphabets, at `ℓ ≥ 1` where the paper states `s ≥ 2`. At `ℓ = 1` the affine space generator *is* the affine line generator and the conclusion is immediate, since the scaled error `(1 - 1/|F|)⁻¹ · ϵMCA` only exceeds `ϵMCA`; the proof covers that case uniformly |
-| Thm 6.1 (MCA for **MDS** generators) | `LinearTransformations.isMCAGenerator_of_isMDSGenerator` | **sorried**. Stated over module codes, matching the paper's `Σ`-generality; the error depends on the code only through `n` and `δᵣ`, which is what lets it discharge the interleaved hypotheses of the tight tensor induction. The restricted-seed univariate instance is `PolynomialGenIsMCA.isMCAGenerator_univariatePowersGeneratorOn` |
+| Thm 6.1 (MCA for **MDS** generators) | `isMCAGenerator_of_isMDSGenerator` | **sorried in the list-decoding regime**; the proof splits on the regime and closes the unique-decoding one by Lemma 6.2 below, at the corrected error. Stated over module codes, matching the paper's `Σ`-generality; the error depends on the code only through `n` and `δᵣ`, which is what lets it discharge the interleaved hypotheses of the tight tensor induction. The restricted-seed univariate instance is `PolynomialGenIsMCA.isMCAGenerator_univariatePowersGeneratorOn` |
+| Lemma 6.2 (Thm 6.1, unique-decoding regime) | `mcaError_le_mdsMCAError_of_lt`, seed count `card_filter_isMCA_le_of_isMDSGenerator` | proved, at error `(⌊n·γ⌋ + 1)·(ℓ - 1) / |S|`, stated pointwise at every radius below `δ_C / (ℓ + 1)` as the paper does. The printed error `max{n·γ, 1}·(ℓ - 1) / |S|` is false and the paper's own argument gives the corrected one — see below |
 | Thm 8.2 (polynomial generators, arbitrary linear codes) | `PolynomialGenIsMCA.isMCAGenerator_of_isPolynomialGeneratorOf` | proved **assuming only Thm 6.1**: the tensor stage is the sorry-free `isMCAGenerator_tensorGeneratorPi_tight`, so the open Lemma 4.4 is not on its path. Strengthenings over the paper: no `ℓ ≥ 2` hypothesis, and the `d = 0` factor case (skipped by the paper's proof) is proved via the vacuous-event argument |
 | Lemma 9.3 (`G_d` for Reed–Solomon) | `RSCode.isMCAGenerator_univariatePowersGenerator` | **sorried**; needs the Guruswami–Sudan machinery |
 | Thm 9.2 (polynomial generators, Reed–Solomon up to Johnson) | `RSCode.isMCAGenerator_of_isPolynomialGeneratorOfFull` | proved assuming Lemma 9.3 **and** the open printed Lemma 4.4 — the latter dependence mirrors a gap in the paper's own proof, see below |
 | Lemma 10.1 (`ϵMCA(C^k) ≤ k · ϵMCA(C)`) | — | not formalized |
+
+## Lemma 6.2: the printed unique-decoding error is off by one
+
+Lemma 6.2 (and so the first regime of Thm 6.1) prints the error `max{n·γ, 1}·(ℓ - 1) / |S|` for
+`γ < δ_C / (ℓ + 1)`. Write `e := ⌊n·γ⌋`. The bound holds for `e = 0`, where it is the
+zero-evading error `(ℓ - 1) / |S|` of Lemma 3.13, and fails for every `e ≥ 1`:
+
+Take the affine line generator `G(x) = (1, x)` over `F` (so `ℓ = 2`, `S = F`, `C_G = RS[F, F, 2]`
+is MDS of dimension `2`), any linear code `C` with `(ℓ + 1)·e < d_C`, a set `E` of `e + 1`
+positions, and words `u₁ := η₁`, `u₂ := η₂` supported on `E` with pairwise distinct ratios
+`η₁[i] / η₂[i]`, `i ∈ E`. For `x_i := -η₁[i] / η₂[i]` the combination `u₁ + x_i·u₂` vanishes at
+`i` and is supported on `E \ {i}`, so it agrees with the codeword `0` on `T := [n] \ (E \ {i})`,
+`|T| = n - e ≥ n·(1 - γ)`. But `u₁|_T ∉ C|_T`: a codeword agreeing with `u₁` on `T` would be a
+nonzero codeword supported on `E`, of weight `e + 1 < d_C`. So all `e + 1` seeds `x_i` witness
+the MCA event, whereas the printed bound allows `n·γ·(ℓ - 1) = e` of them when `n·γ` is an
+integer. Concretely, `F = 𝔽₇`, `C = RS[𝔽₇, 𝔽₇, 2]` (`n = 7`, `d_C = 6`), `γ = 1/7`: two bad
+seeds against a printed bound of one. A brute-force check of this family at `p ∈ {7, 11}`,
+`e ∈ {1, 2}` finds exactly `e + 1` bad seeds each time.
+
+The slip is in the sentence "By Lemma 5.3 and its proof, this implies that the correlated
+agreement set `T̃` has size `|T̃| > n·(1 - γ)`". The double counting behind Lemma 5.3 gives
+`(n - |T̃|)·(|B| - (ℓ - 1)) ≤ |B|·e`, which under the standing assumption `|B| > (e + 1)(ℓ - 1)`
+yields only `n - |T̃| ≤ e`, not `n - |T̃| < n·γ`. Feeding that into the final count
+`|B| ≤ (n - |T̃|)·(ℓ - 1)` gives `|B| ≤ e·(ℓ - 1)`, contradicting `|B| > (e + 1)(ℓ - 1)`; so the
+argument proves `|B| ≤ (e + 1)·(ℓ - 1)` and no more. The example above attains it, so
+`(⌊n·γ⌋ + 1)·(ℓ - 1) / |S|` is the tight unique-decoding error of this argument, and it is what
+`mdsMCAError` and (through `mdsMCAError_eq_powersMCAError`) `powersMCAError` carry. Below `1/n` it coincides with the printed value. The formal proof in
+`ArkLib/Data/CodingTheory/ProximityGenerator/MDSGenerator.lean` follows the paper's argument
+with this correction: it is the seed count `card_filter_isMCA_le_of_isMDSGenerator`, converted to
+an `mcaError` bound by `CoreDefinitions.mcaError_le_of_exists_exceptional_set`.
 
 ## Lemma 4.4: the printed statement is open
 
