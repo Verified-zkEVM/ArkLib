@@ -913,7 +913,7 @@ open scoped ProbabilityTheory in
 open scoped BigOperators in
 private theorem rs_epsCa_eq_one_of_entropy_rate_impl
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
     (_hn_le_q : Fintype.card ι ≤ Fintype.card F)
@@ -980,6 +980,7 @@ omit [DecidableEq ι] in
 The radius is the integer grid point `f/n`; the entropy hypothesis is not extended to arbitrary
 real radii. -/
 theorem rs_epsCa_eq_one_of_entropy_rate
+    [SampleableType F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
     (_hn_le_q : Fintype.card ι ≤ Fintype.card F)

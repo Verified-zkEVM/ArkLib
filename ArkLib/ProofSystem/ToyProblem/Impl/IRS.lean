@@ -534,14 +534,14 @@ def ExactGammaFailure (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
 combination-round error.  Unlike `gamma_transition_prob_le`, this statement does
 not assume that the input has no valid witness: it bounds failure of the specific
 witness computed from each transcript. -/
-theorem exactGammaFailure_prob_le [Nonempty ι]
+theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
     (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
     (stmtIn : Spec.Statement (F := F) k ×
       (∀ i, Spec.OracleStatement ι (Fin s → F) i)) :
-    Pr_{let γ ← $ᵖ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
+    Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       mcaError (AffineLineGenerator F)
           (ReedSolomon.Interleaved.irsCode domain k s) (δ : ℝ) +
         ((Code.Lambda
@@ -640,7 +640,7 @@ theorem exactGammaFailure_prob_le [Nonempty ι]
             affine_solution_card_le_one (Finset.mem_filter.mp hp).2.2
       _ = Smsg.card := by rw [Finset.sum_const, smul_eq_mul, mul_one]
       _ ≤ (Code.Lambda Cint (δ : ℝ)).toNat := hSmsg_le
-  refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
+  refine le_trans (prEvent_mono ($ᵗ F) _
       (fun γ ↦ IsMCA (AffineLineGenerator F) C γ
           ![stmtIn.2 0, stmtIn.2 1] (δ : ℝ) ∨
         (ExactGammaFailure k s hdvd domain δ stmtIn γ ∧
@@ -651,25 +651,25 @@ theorem exactGammaFailure_prob_le [Nonempty ι]
             ![stmtIn.2 0, stmtIn.2 1] (δ : ℝ)
         · exact Or.inl hm
         · exact Or.inr ⟨h, hm⟩))
-    (le_trans (Probability.Pr_or_le ($ᵖ F) _ _) (add_le_add ?_ ?_))
+    (le_trans (prEvent_or_le ($ᵗ F) _ _) (add_le_add ?_ ?_))
   · exact le_iSup
       (fun U : Fin 2 → (ι → Fin s → F) ↦
-        Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
       ![stmtIn.2 0, stmtIn.2 1]
-  · rw [prob_uniform_eq_card_filter_div_card]
+  · rw [SampleableType.prEvent_uniformSample]
     exact ENNReal.div_le_div_right (by exact_mod_cast hcards) _
 
 /-- The certified combination-round error for the executable interleaved-RS
 extractor.  This is the finite `ℝ≥0` reflection of the canonical MCA-plus-list
 `ENNReal` expression. -/
-noncomputable def certifiedGammaError (k s : ℕ) (domain : ι ↪ F)
+noncomputable def certifiedGammaError [SampleableType F] (k s : ℕ) (domain : ι ↪ F)
     (δ : ℝ≥0) : ℝ≥0 :=
   ToyProblem.certifiedGammaError (ReedSolomon.Interleaved.irsCode domain k s) δ
 
 omit [DecidableEq ι] [DecidableEq F] [BEq F] [LawfulBEq F] in
 /-- The certified combination-round error coerces back to its defining
 MCA-plus-list expression. -/
-theorem coe_certifiedGammaError (k s : ℕ) (domain : ι ↪ F)
+theorem coe_certifiedGammaError [SampleableType F] (k s : ℕ) (domain : ι ↪ F)
     (δ : ℝ≥0) :
     (certifiedGammaError k s domain δ : ENNReal) =
       mcaError (AffineLineGenerator F)
@@ -684,7 +684,7 @@ theorem coe_certifiedGammaError (k s : ℕ) (domain : ι ↪ F)
 
 /-- Full extractor-certified error: the spot-check failure probability combined
 sharply with the executable transition extractor's combination-round error. -/
-noncomputable def certifiedExtractorError (k s t : ℕ)
+noncomputable def certifiedExtractorError [SampleableType F] (k s t : ℕ)
     (domain : ι ↪ F) (δ : ℝ≥0) : ℝ≥0 :=
   ToyProblem.certifiedExtractorError (ReedSolomon.Interleaved.irsCode domain k s) δ t
 
@@ -699,8 +699,7 @@ theorem exactGammaFailure_sample_le [SampleableType F] [Nonempty ι]
       (∀ i, Spec.OracleStatement ι (Fin s → F) i)) :
     Pr{let γ ← $ᵗ F}[ExactGammaFailure k s hdvd domain δ stmtIn γ] ≤
       (certifiedGammaError k s domain δ : ENNReal) := by
-  rw [prEvent_uniformSample_eq_prob_uniformOfFintype,
-    coe_certifiedGammaError]
+  rw [coe_certifiedGammaError]
   exact exactGammaFailure_prob_le k s hdvd domain hfull δ hδ stmtIn
 
 /-- Public exact-extractor game theorem for C6.9 over executable interleaved

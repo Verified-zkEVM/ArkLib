@@ -35,7 +35,7 @@ open UniqueDecoding.Internal
 section ReedSolomon
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 open scoped NNReal ProbabilityTheory in
 omit [DecidableEq ι] in
@@ -49,7 +49,7 @@ private theorem rs_fold_probability_le_bound_of_not_joint_proximity
     (u : Fin 2 → ι → F)
     (hjoint : ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int) :
-    Pr_{let z ← $ᵖ F}[
+    Pr{let z ← $ᵗ F}[
       δᵣ(u 0 + z • u 1, ReedSolomon.code domain k) ≤ δ_fld] ≤
       ENNReal.ofReal
         (max
@@ -71,7 +71,7 @@ private theorem rs_fold_probability_le_bound_of_not_joint_proximity
       rs_good_coeffs_card_le_max_threshold_of_not_joint_proximity
         domain k δ_fld δ_int u h_ud h_dmin h_lt hjoint
   have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   change (good.card : ℝ) / Fintype.card F ≤
     max

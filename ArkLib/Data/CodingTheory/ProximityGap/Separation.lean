@@ -114,10 +114,10 @@ theorem mcaError_repetitionCode_pos :
     0 < mcaError (AffineLineGenerator (ZMod 2)) repetitionCode (1/2 : ℝ) := by
   classical
   have hle := le_iSup
-    (fun U => Pr_{let x ←$ᵖ (ZMod 2)}[IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x U
+    (fun U => Pr{let x ←$ᵗ (ZMod 2)}[IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x U
       (1/2 : ℝ)]) separatingFamily
   refine lt_of_lt_of_le ?_ hle
-  rw [prob_uniform_eq_ofReal, ENNReal.ofReal_pos]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal, ENNReal.ofReal_pos]
   have hcard : 0 < (Finset.univ.filter (fun x =>
       IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x separatingFamily (1/2 : ℝ))).card :=
     Finset.card_pos.mpr ⟨0, Finset.mem_filter.mpr ⟨Finset.mem_univ _, isMCA_repetitionCode⟩⟩

@@ -6,7 +6,9 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.Commitments.Functional.KZG.Basic
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
 -- `simp [coeff]` and `Raw.coeff`/`Raw.mk` need CompPoly's unexposed bodies.
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core
@@ -170,8 +172,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  apply le_of_eq
-  symm
+  refine ge_of_eq ?_
   refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_
   intro x hx
   simp only [kzg] at hx
