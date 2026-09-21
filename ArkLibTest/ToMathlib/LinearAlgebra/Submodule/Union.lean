@@ -10,9 +10,10 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Acceptance tests for finite-submodule avoidance
 
-The example below exercises the sharp equality case through an ordinary import. The two
+The examples below exercise the sharp equality case through an ordinary import. The two
 coordinate hyperplanes in `(Fin 2 → ZMod 2)` form a family whose size equals the field size, so
-Mathlib's strict-cardinality union theorem cannot supply the witness.
+Mathlib's strict-cardinality union theorem cannot supply the witness. The second example checks
+that no finite-dimensionality instance is required of the ambient module.
 -/
 
 namespace Submodule
@@ -33,5 +34,12 @@ example : ∃ x : Fin 2 → ZMod 2, ∀ i, x i ≠ 0 := by
       (show (Finset.univ : Finset (Fin 2)).card ≤ Fintype.card (ZMod 2) by decide)
   obtain ⟨x, hx⟩ := exists_forall_notMem_of_card_le Finset.univ p hp hcard
   exact ⟨x, fun i ↦ by simpa [p] using hx i (Finset.mem_univ i)⟩
+
+/-- Two proper submodules of the infinite-dimensional space `ℕ → ZMod 2` do not cover it. -/
+example (p : Fin 2 → Submodule (ZMod 2) (ℕ → ZMod 2)) (hp : ∀ i, p i ≠ ⊤) :
+    ∃ x : ℕ → ZMod 2, ∀ i, x ∉ p i := by
+  let _ : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  obtain ⟨x, hx⟩ := exists_forall_notMem_of_card_le Finset.univ p (fun i _ ↦ hp i) (by simp)
+  exact ⟨x, fun i ↦ hx i (Finset.mem_univ i)⟩
 
 end Submodule

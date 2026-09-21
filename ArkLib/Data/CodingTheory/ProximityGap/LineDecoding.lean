@@ -6,7 +6,6 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
-public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 
 /-!
 # Line decoding
@@ -262,25 +261,14 @@ private theorem decoded_challenge_exists_collision_mismatch
   · exact curated_outside_exists_collision_mismatch C δ γ u J hvanish hZcard
       (U γ) c₀ c₁ hclose halign (hUavoid γ hγ hclose)
 
-private theorem exists_outside_finite_union_submodules
-    {α K M : Type} [Field K] [Fintype K] [AddCommGroup M] [Module K M]
-    [Finite M] [Nontrivial M]
-    (s : Finset α) (p : α → Submodule K M)
-    (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
-    ∃ x : M, ∀ i ∈ s, x ∉ p i := by
-  exact Submodule.exists_forall_notMem_of_card_le s p hp
-    (by simpa only [Nat.card_eq_fintype_card] using hs)
-
 omit [Nonempty ι] [Fintype ι] [DecidableEq ι] [DecidableEq F] [Fintype A]
     [DecidableEq A] in
 private theorem exists_codeword_nonzero_on_active
-    [Finite ι] [Finite A] (C : ModuleCode ι F A) [Nontrivial C] (J : Finset ι)
+    (C : ModuleCode ι F A) (J : Finset ι)
     (hactive : ∀ i ∈ J, ∃ c : C, c.1 i ≠ 0)
     (hJcard : J.card < Fintype.card F) :
     ∃ d : C, ∀ i ∈ J, d.1 i ≠ 0 := by
   classical
-  let _ := Fintype.ofFinite ι
-  let _ := Fintype.ofFinite A
   let p (j : {i : ι // i ∈ J}) : Submodule F C :=
     { carrier := {c | c.1 j.1 = 0}
       zero_mem' := by simp
@@ -300,10 +288,10 @@ private theorem exists_codeword_nonzero_on_active
       rw [htop]
       exact Submodule.mem_top
     exact hc (by simpa [p] using hcTop)
-  have hcard : (Finset.univ : Finset {i : ι // i ∈ J}).card ≤ Fintype.card F := by
-    rw [Finset.card_univ, Fintype.card_coe]
+  have hcard : (Finset.univ : Finset {i : ι // i ∈ J}).card ≤ Nat.card F := by
+    rw [Finset.card_univ, Fintype.card_coe, Nat.card_eq_fintype_card]
     exact hJcard.le
-  obtain ⟨d, hd⟩ := exists_outside_finite_union_submodules
+  obtain ⟨d, hd⟩ := Submodule.exists_forall_notMem_of_card_le
     (s := (Finset.univ : Finset {i : ι // i ∈ J})) p hp hcard
   refine ⟨d, ?_⟩
   intro i hi hdi
