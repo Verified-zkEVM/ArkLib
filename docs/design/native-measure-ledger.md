@@ -65,12 +65,117 @@ The earlier plan listed structural uniform instances (U8) and transformer lossle
 `OptionT.isProbabilityMeasure_mk_iff` and the sequencing lemmas above.
 The final proof-length audit identified dependent-product sampling and conditional uniform-event
 conveniences. [VCVio #770](https://github.com/Verified-zkEVM/VCVio/pull/770) supplies them;
-ArkLib pins the squash merge `93cee8a1f25135436d96cab6bd89a0e5a4cf7660`, whose tree is
-identical to the validated PR head `c2ca892ec693bca9403a98111cc6f8f738b8c029`.
-VCVio #769 merged into the prerequisites branch, not VCVio `main`;
-consolidating that upstream stack is separate from retiring ArkLib's own probability surface.
+ArkLib pins VCVio `main` at `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`, the squash merge of
+[VCVio #771](https://github.com/Verified-zkEVM/VCVio/pull/771). That merge consolidated the whole
+native-measure prerequisite stack onto `main`: #769 and #770, which had previously merged only into
+the prerequisites branch, together with the `OracleSpec.{u, v}` generalizations and the AE
+bind-event law found during this review. The prerequisite work was developed and validated on that
+branch at `93cee8a1f25135436d96cab6bd89a0e5a4cf7660`, tree-identical to the validated #770 head
+`c2ca892ec693bca9403a98111cc6f8f738b8c029`, before consolidation.
 
 ## Checkpoints
+
+### Phase 1: Lean 4.34 and VCVio scalar probabilities (#903)
+
+The first phase is the merge commit
+`fa14552d40e793f2ea26e65c440306aae0c08a26`. Its actual first parent is
+`68726031f01e0b79759dce718fce77ac81fb317a` (#906); using the earlier PR review base would
+incorrectly charge already-merged work to #903. The comparison contains 179 changed files in all
+and 174 changed Lean files. The source counts below cover every changed Lean file, including
+comments and signatures, rather than only changed diff lines or proof bodies.
+
+| Family | Changed files | Lines before | After | Δ | Primary kind of change |
+|---|---:|---:|---:|---:|---|
+| Commitments | 24 | 10857 | 10869 | +12 | VCVio scalar probability conversion, plus bump fixes |
+| Coding theory | 54 | 41640 | 41650 | +10 | Lean/Mathlib compatibility; independent PMF surface deferred |
+| Other algebra and data | 26 | 11786 | 11790 | +4 | Lean/Mathlib compatibility |
+| Probability infrastructure | 2 | 899 | 899 | 0 | VCVio sampler/evaluation API conversion |
+| Interaction | 2 | 385 | 386 | +1 | Native measure conversion |
+| Oracle reductions | 21 | 12915 | 12986 | +71 | Native security games and sequential composition |
+| Proof systems | 24 | 13538 | 13301 | -237 | Native protocol consumers plus bump fixes |
+| ToCompPoly compatibility | 2 | 489 | 353 | -136 | Declarations absorbed upstream |
+| ToMathlib compatibility | 7 | 1834 | 1827 | -7 | Lean/Mathlib compatibility |
+| ToVCVio compatibility | 3 | 140 | 55 | -85 | Helpers moved upstream; import shells retained in this phase |
+| Tests | 7 | 906 | 923 | +17 | Native probability acceptance and state-handoff regressions |
+| Scripts | 2 | 175 | 399 | +224 | 225-line retirement inventory; linter adaptation -1 |
+| **Total** | **174** | **95564** | **95438** | **-126** | |
+
+At family granularity, the probability-facing paths (commitments, probability infrastructure,
+interaction, oracle reductions, proof systems, ToVCVio, and their tests) total 83 files and
+39640 → 39419 lines (-221). Compatibility-dominated coding/algebra/ToCompPoly/ToMathlib paths
+total 89 files and 55749 → 55620 lines (-129). The scripts add 224 lines, almost entirely the
+new inventory tool. These categories are an accounting aid: the mixed families also contain
+ordinary Lean 4.34 repairs, so their raw source delta is not evidence that probability proofs
+became shorter.
+
+#### Phase 1 proof-size review
+
+Proof-body counts use the same physical-line method as the phase-2 review below: include the line
+containing the declaration's final `:= by`, preserve blank and comment lines inside the proof, and
+stop before the next top-level docstring or declaration. Statement-only lines and trailing blank
+lines are excluded; renamed declarations are matched manually. The following are the material
+probability-facing increases. A row marked **open** is not excused by R1–R4; under issue #904's
+acceptance rule it requires a shorter proof or an admissible explanation. Source inspection of the
+pinned APIs identifies call-site refactors first; a missing upstream law should only be claimed
+if those existing interfaces cannot discharge the intended proof.
+
+This proof-only convention differs from a coarse declaration-span count that stops only at the
+next declaration and therefore charges the next theorem's docstring and separators to the prior
+proof. For example, the latter reports `run_preserves_measure` as 16 → 26, while the proof-only
+count is 13 → 23; the regression is +10 under either convention. The phase-1 and phase-2 tables
+both use the proof-only count.
+
+| File / declaration | Before | #903 | Δ | Accounting |
+|---|---:|---:|---:|---|
+| `OracleReduction/Security/RoundByRound.rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness` | 31 | 67 | +36 | **Open:** the proof repeats the common game. After bind reassociation, applying existing `prEvent_mono` should let the goal infer the computation and predicates; that call-site refactor remains to be validated. |
+| `OracleReduction/Composition/Sequential/Append/Completeness.completeness_iff_of_pure_verifier` | 14 | 32 | +18 | **Open:** the native proof duplicates both directions after exposing `OptionT.lift` and `map`; existing `OptionT.prEvent_lift` and `prEvent_map` should be tried with the local lift normalization before adding any upstream API. |
+| `OracleReduction/Composition/Sequential/Append/Completeness.append_completeness_of_prover_factorization` | 32 | 46 | +14 | **Open:** the proof restates both programs and events. Applying existing `mul_le_prEvent_bind_of_forall` should infer these from the goal and first-stage hypothesis; that refactor remains to be validated. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.append_completeness_of_guarded_prover_factorization` | 27 | 41 | +14 | **Open:** same unperformed bind-lower-bound call-site refactor as the pure-verifier theorem. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.probEvent_guarded_map` → `prEvent_guarded_map` | 6 | 20 | +14 | **Open:** existing `OptionT.prEvent_bind_guard` already supplies the event law; the local if-to-guard normalization and application need simplification. |
+| `OracleReduction/Security/RbrGame.probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` → `prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` | 22 | 33 | +11 | **R1:** the native subprobability statement exposes the complementary challenge event and reconstructs its mass from sampler losslessness. |
+| `Interaction/Oracle/Composition.run_preserves_measure` | 13 | 23 | +10 | At #903 this rederived the bind event by an AE induction because the public generic AE bind-event law was missing. The current campaign adds that law upstream and returns this body to 13 lines; the updated consumer compiles without stronger assumptions. |
+| `ArkLibTest/.../SharedStateCounterexample.first_perfectCompleteness` | 5 | 15 | +10 | **Open:** a scalar `simp` proof became an explicit `OptionT` event/support witness; the existing native lift/map simplification interfaces should be tried first. |
+| `ArkLibTest/.../SharedStateCounterexample.second_perfectCompleteness` | 5 | 14 | +9 | **Open:** same pending pure-OptionT proof simplification. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_iff_of_guarded_verifier` | 24 | 32 | +8 | **Open:** the proof duplicates both directions across the guarded OptionT normal form; simplification with existing guard/event laws remains to be attempted. |
+| `Commitments/Functional/KZG/Binding.binding_game_ext_eq_binding_game` | 146 | 153 | +7 | **Open:** the proof first establishes program equality and then applies `prEvent_map`; reducing this normalization overhead remains follow-up work, not an established missing upstream theorem. |
+| `OracleReduction/Composition/Sequential/Append/Completeness.completeness_of_pure_states` | 11 | 17 | +6 | **Open:** the proof supplies all programs and events explicitly; the existing bind lower bound should instead be applied with goal inference. |
+| `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_of_guarded_states` | 11 | 17 | +6 | **Open:** same pending bind-lower-bound call-site refactor. |
+| `OracleReduction/Security/RbrGame.probEvent_simulateQ_addLift_getChallenge_bind_le` → `prEvent_simulateQ_addLift_getChallenge_bind_le` | 18 | 24 | +6 | **Open:** the proof repeats the computation and event when applying native bind-event monotonicity; inspect inferred arguments before adding a new law. |
+| `OracleReduction/Security/Implications.rbrKnowledgeSoundness_implies_rbrSoundness` | 128 | 133 | +5 | **Open:** the proof repeats bind reassociation and state-function unfolding; the source normalization remains to be shortened. |
+
+The remaining small increases separate into ordinary bump work and formatting. The +4-line
+`ProximityGenerator/AffineGenerator.exists_line_bound`, +4-line
+`Data/Polynomial/Bivariate.degreeY_le_degreeY_sub_degreeY`, and +3-line
+`ProximityGap/CapacityBounds/Subfield/Algebra.fold_density_le_eps_ca_of_not_joint_proximity`
+are Mathlib/tactic API repairs, not probability conversions. Expanded `Pr{let …}[…]` layout accounts
+for the small KZG top-level `calc` growth without adding proof steps. Conversely, the +4-line
+`ArkLibTest/.../Completeness.rejecting_not_perfect` and +3-line RbrGame prefix bound are native
+proof growth and remain part of the same OptionT/bind-normalization gaps; their size does not make
+them an R1–R4 exception.
+
+The security statements and games in these rows retain their mathematical content. In particular,
+sequential composition passes the first stage's final state `q₁.2` to stage two, returns the second
+stage's final state `q₂.2`, and derives the same additive error from the same multiplicative lower
+bound. This semantic preservation does not excuse the source growth: the open rows still fail the
+campaign's independent proof-length criterion.
+
+The phase also exposed a separate upstream universe restriction: OracleComp support/evaluation
+characterizations were fixed to `OracleSpec.{u, 0}`. VCVio #771 generalizes those declarations to
+`OracleSpec.{u, v}`. That generalization does not by itself prove
+`run_preserves_measure`, whose hypothesis is an arbitrary `IsMeasureSpec`; the generic AE
+bind-event law above is the proof-shortening fix for that theorem.
+
+Checkpoint A6's promised Sumcheck simplification is also outstanding even though it is not a
+line-count regression. `ProofSystem/Sumcheck/Spec/SingleRound.reduction_perfectCompleteness` is
+182 proof-body lines before and after #903 and contains the same 35 `erw` calls (the whole
+declaration is lines 534–717, or 184 lines including its statement). The issue planned to replace
+this simulation-peeling proof with an operational support argument. The theorem is the
+non-oracle `Reduction` result, so the documented handler-dependent exception does not apply;
+`Reduction.perfectCompleteness_of_run_support` already removes the `init`/`impl` simulation layer.
+Completing A6 therefore requires the ArkLib refactor first, followed by upstream operational
+support normal forms only if the unsimulated support proof still repeats generic plumbing.
+
+### Phase 2: independent PMF retirement (#904 follow-up)
 
 The conversion starts from `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903) and includes
 `main` through `8b03d40a56ec827d223b78ccca0ce164a9231f6c` (#857 and #877).
@@ -93,7 +198,7 @@ The compatibility tree also loses its 64-line README. The root import file is re
 The retirement inventory shrank from 186 declarations to zero across the final 499-module root.
 No retired-probability baseline is introduced, and no warning exclusions are added.
 
-### Proof-size review
+#### Phase 2 proof-size review
 
 The generator family's remaining source increase is sampler declarations, signatures, and
 explicit instance arguments, not longer mathematical arguments. The focused proof-body counts
@@ -129,11 +234,34 @@ private declarations, and attempts to bypass the strict gate with a covering bas
 strings and comments remain allowed. Existing admissions are retained, not discharged by this
 migration; the axiom regression baseline must remain unchanged.
 
+### Closure scope and scanner boundary
+
+Issue #904 covers both phases: #903's VCVio scalar conversion and the follow-up retirement of
+ArkLib's independent PMF surface. It remains open while the non-R1–R4 phase-1 proof expansions
+listed above remain unresolved. Its integration condition is now satisfied: the prerequisite stack
+landed on VCVio `main` in [#771](https://github.com/Verified-zkEVM/VCVio/pull/771), ArkLib pins
+that main commit `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`, and the exact pinned tree passes the
+required validation. The proof-size rows are what keep #904 open, not the dependency pin.
+
+VCVio issue #532 has a broader repository-wide retirement scope. Landing the ArkLib prerequisite
+slice and closing #904 will not close #532; VCVio must account for its other scalar/PMF consumers
+and its own final retirement gates separately.
+
+The scanner's claim is deliberately direct. `retiredsweep` imports the `ArkLib` root and reports
+retired constants that occur directly in reportable `ArkLib.*` declaration types or bodies. It
+does not report transitive retired dependencies, `ArkLibTest` declarations under its default root,
+command-only references that elaborate no declaration, or compiler/macro-scoped auxiliary
+declarations excluded by `isReportable`. The build-time syntax plugin independently rejects the
+four retired notation token forms (`$ᵖ`, `Pr_{`, `Pr[`, and `𝒮[`), including locally defined
+macros, but it is not a general identifier scan. The empty environment inventory, syntax fixtures,
+source inspection, build, tests, warning gate, and axiom gate therefore establish complementary
+claims; no one scanner is described as a complete transitive/source proof.
+
 ## Upstream gaps found during conversion
 
 Native Boolean implication and union bounds, event monotonicity on support, a conditional product
-lower bound, and the support-indexed additive bind bound,
-are supplied by [VCVio #769](https://github.com/Verified-zkEVM/VCVio/pull/769)
-for the Ajtai/Hachi reductions and KZG event comparisons. The pin includes the prerequisite
-branch above. The Lean 4.34 bump (#903) deferred independent PMF retirement; the follow-up
-now enforces an empty retirement inventory.
+lower bound, and the support-indexed additive bind bound are supplied by
+[VCVio #769](https://github.com/Verified-zkEVM/VCVio/pull/769) for the Ajtai/Hachi reductions and
+KZG event comparisons. Those lemmas reached `main` with #771, so the pin is an ordinary `main`
+commit rather than a prerequisite branch. The Lean 4.34 bump (#903) deferred independent PMF
+retirement; the follow-up now enforces an empty retirement inventory.
