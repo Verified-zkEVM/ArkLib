@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import ArkLib.Data.CodingTheory.GuruswamiSudan.Executable
-import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Executable
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 
 /-!
 # Executable Guruswami-Sudan Correctness
@@ -13,6 +14,8 @@ import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 Correctness statements connecting the executable CompPoly-backed
 Guruswami-Sudan decoder with the ArkLib Reed-Solomon specification.
 -/
+
+@[expose] public section
 
 namespace GuruswamiSudan
 
@@ -53,8 +56,7 @@ theorem paramsPassIntegerChecks_iff
 
 /-- A concrete, fully discharged `GSParamCert` with message degree `k = 2` (so the
 interpolation step is genuinely non-degenerate): length `n = 5`, decoding radius
-`e = 1`, multiplicity `1`, and weighted-degree bound `3`. The whole certificate —
-including the interpolation-witness existence — is settled by `decide`. -/
+`e = 1`, multiplicity `1`, and weighted-degree bound `3`. -/
 example : GSParamCert 2 5 1 (execParamsOfMultiplicityAndDegree 2 1 1 3) :=
   (paramsPassIntegerChecks_iff 2 5 1 _).mp (by decide)
 
@@ -75,18 +77,13 @@ theorem searchParamsUpTo_sound {maxM maxW k n e : Nat} {params : GSExecParams}
       exact (List.find?_eq_some_iff_getElem.mp hfind).1
   · next => exact absurd hf (by simp)
 
-/-- The bounded integer search as a `GSParamSelector`, with soundness supplied by
-`searchParamsUpTo_sound`. The completeness obligation is passed explicitly: it holds
-when the search bounds are large enough to contain valid parameters (see
-`searchParamsUpTo_complete`); the required multiplicity grows without bound as the
-decoding radius approaches the Johnson bound. -/
-def boundedSearchParamSelector {maxM maxW : Nat}
-    (complete : ∀ {k n e}, JohnsonSpecCondition k n e →
-        ∃ params, searchParamsUpTo maxM maxW k n e = some params ∧ GSParamCert k n e params) :
-    GSParamSelector where
+/-- The bounded integer search as an executable certified selector.
+
+Soundness is unconditional. Its per-input completeness follows from
+`boundedSearchParamSelector_complete_at` when the supplied search box contains valid parameters. -/
+def boundedSearchParamSelector (maxM maxW : Nat) : GSParamSelector where
   toCompPolySelector := { choose := searchParamsUpTo maxM maxW }
   sound := fun h => searchParamsUpTo_sound h
-  complete := complete
 
 open CompPoly.GuruswamiSudan in
 /-- Completeness of the bounded search relative to its box: if some parameter pair
@@ -119,6 +116,58 @@ theorem searchParamsUpTo_complete {maxM maxW k n e : Nat}
     | some wdb => intro h; simp at h
   obtain ⟨params, hsome⟩ := Option.isSome_iff_exists.mp hisSome
   exact ⟨params, hsome, searchParamsUpTo_sound hsome⟩
+
+/-- The bounded selector is complete at an input whenever its search box contains a valid
+parameter pair. -/
+theorem boundedSearchParamSelector_complete_at {maxM maxW k n e : Nat}
+    (hex : ∃ m D, 0 < m ∧ m ≤ maxM ∧ D ≤ maxW ∧
+      paramsPassIntegerChecks k n e (execParamsOfMultiplicityAndDegree k e m D) = true) :
+    (boundedSearchParamSelector maxM maxW).CompleteAt k n e :=
+  searchParamsUpTo_complete hex
+
+/-- The Johnson-radius condition admits a positive multiplicity whose agreement requirement lies
+strictly inside `proximity_gap_johnson`. -/
+lemma exists_multiplicity_of_johnson {k n e : Nat}
+    (he : (e : ℝ) < n - Real.sqrt ((k + 1) * n)) :
+    ∃ m : Nat, 0 < m ∧ (e : ℝ) / n < proximity_gap_johnson k n m := by
+  have heNonneg : (0 : ℝ) ≤ e := Nat.cast_nonneg e
+  have hsqrtNonneg := Real.sqrt_nonneg ((k + 1) * (n : ℝ))
+  have hnPos : (0 : ℝ) < n := by linarith
+  set sqrtRho : ℝ := Real.sqrt (↑((k + 1 : ℚ) / (n : ℚ)))
+  have hρCast : (↑((k + 1 : ℚ) / (n : ℚ)) : ℝ) = (k + 1) / n := by
+    push_cast
+    ring
+  have hρNonneg : (0 : ℝ) ≤ ↑((k + 1 : ℚ) / (n : ℚ)) := by
+    rw [hρCast]
+    positivity
+  have hsqrtRhoNonneg : 0 ≤ sqrtRho := Real.sqrt_nonneg _
+  have hsqrtRel : sqrtRho * n = Real.sqrt ((k + 1) * n) := by
+    conv_rhs =>
+      rw [show (k + 1 : ℝ) * n =
+        ↑((k + 1 : ℚ) / n) * (n * n) from by
+        rw [hρCast]
+        field_simp]
+    rw [Real.sqrt_mul hρNonneg, Real.sqrt_mul_self hnPos.le]
+  have hGap : (e : ℝ) / n < 1 - sqrtRho := by
+    rw [div_lt_iff₀ hnPos]
+    nlinarith [hsqrtRel]
+  set gap := 1 - sqrtRho - (e : ℝ) / n
+  have hgapPos : 0 < gap := by linarith
+  obtain ⟨m, hm⟩ := exists_nat_gt (sqrtRho / (2 * gap))
+  have hmPos : 0 < m := by
+    rcases Nat.eq_zero_or_pos m with rfl | h
+    · simp at hm
+      linarith [div_nonneg hsqrtRhoNonneg (by positivity : (0 : ℝ) ≤ 2 * gap)]
+    · exact h
+  have hmPosReal : (0 : ℝ) < m := Nat.cast_pos.mpr hmPos
+  have hmBound : sqrtRho / (2 * m) < gap := by
+    rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 2 * m)]
+    have hm' : sqrtRho / (2 * gap) < (m : ℝ) := hm
+    rw [div_lt_iff₀ (by positivity : (0 : ℝ) < 2 * gap)] at hm'
+    nlinarith
+  exact ⟨m, hmPos, by
+    simp only [proximity_gap_johnson]
+    linarith⟩
 
 /-- **Johnson-bound parameter existence.** Within the Johnson radius there exist valid
 Guruswami–Sudan parameters: a multiplicity `m > 0` whose canonical degree bound yields
@@ -163,11 +212,7 @@ theorem paramsCert_of_johnson {k n e : Nat} (hjohnson : JohnsonSpecCondition k n
 
 open Classical in
 /-- A noncomputable `GSParamSelector` that returns a valid certificate exactly when one
-exists: soundness is immediate and completeness follows from `paramsCert_of_johnson`. It
-inhabits the `GSParamSelector` abstraction with both soundness and unconditional
-completeness, so the selector-backed decode theorems (`decode_sound`, `decode_complete`,
-`mem_decode_iff_spec`) are not vacuous. `boundedSearchParamSelector` is the computable
-variant, with completeness conditional on the search bounds. -/
+exists. `boundedSearchParamSelector` is the executable variant. -/
 noncomputable def johnsonParamSelector : GSParamSelector where
   toCompPolySelector :=
     { choose := fun k n e =>
@@ -178,12 +223,16 @@ noncomputable def johnsonParamSelector : GSParamSelector where
     split at h
     · next hex => obtain rfl := Option.some.inj h; exact hex.choose_spec
     · next => simp at h
-  complete := by
-    intro k n e hjohnson
-    have hcert : ∃ params, GSParamCert k n e params := by
-      obtain ⟨m, _, hm⟩ := paramsCert_of_johnson hjohnson
-      exact ⟨_, hm⟩
-    exact ⟨hcert.choose, dif_pos hcert, hcert.choose_spec⟩
+
+open Classical in
+/-- The choice-based Johnson selector is complete at every input inside the Johnson radius. -/
+theorem johnsonParamSelector_complete_at {k n e : Nat}
+    (hjohnson : JohnsonSpecCondition k n e) :
+    johnsonParamSelector.CompleteAt k n e := by
+  have hcert : ∃ params, GSParamCert k n e params := by
+    obtain ⟨m, _, hm⟩ := paramsCert_of_johnson hjohnson
+    exact ⟨_, hm⟩
+  exact ⟨hcert.choose, dite_eq_left hcert, hcert.choose_spec⟩
 
 /-! ### Backend-agnostic interpolation-witness existence
 
@@ -216,7 +265,7 @@ theorem interpolationMonomials_size (params : GSInterpParams) :
             (params.messageDegree - 1) * mm.yDegree ≤ params.weightedDegreeBound)).length := by
     simp [interpolationMonomials, monomialsWeightedDegreeLE, yWeight]
   rw [hsize, ← List.toFinset_card_of_nodup ((monomialGrid_nodup _).filter _),
-    numVars, weigthBoundIndices]
+    numVars, weightBoundIndices]
   have einj : Function.Injective (fun mm : Monomial => (mm.xDegree, mm.yDegree)) := by
     intro a b h; cases a; cases b; simpa using h
   rw [← Finset.card_image_of_injective _ einj]
@@ -393,8 +442,8 @@ private def cPolynomialOfPoly (p : F[X]) : CompPoly.CPolynomial F :=
 omit [BEq F] [LawfulBEq F] [DecidableEq F] in
 private theorem cPolynomialOfPoly_toPoly (p : F[X]) :
     (cPolynomialOfPoly p).toPoly = p := by
-  change p.toImpl.toPoly = p
-  exact CompPoly.CPolynomial.Raw.toPoly_toImpl
+  unfold cPolynomialOfPoly
+  exact CompPoly.CPolynomial.toPoly_mk_toImpl p
 
 omit [DecidableEq F] in
 private theorem degreeLt_cPolynomialOfPoly_of_degree_lt {p : F[X]}
@@ -574,38 +623,48 @@ theorem mem_decodeWithParams_iff_spec
     (mem_decodeWithParams_iff_degree_and_distance
       (ctx := ctx) (params := params) (hparams := hparams) (hrep := hrep) (p := p))
 
-/-- Set-membership characterization for the selector-backed decoder. -/
+/-- Every output of a certified selector-backed decoder satisfies the semantic specification. -/
+theorem mem_decode_imp_spec
+    (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
+    (selector : GSParamSelector)
+    (hrep : RepresentsArkInput w ωs f)
+    {p : F[X]} :
+    (∃ cp,
+      cp ∈ (CompPoly.GuruswamiSudan.decode ctx selector.toCompPolySelector k e w).toList ∧
+        cp.toPoly = p) →
+      p ∈ GSSpecSet k e ωs f := by
+  intro hp
+  unfold CompPoly.GuruswamiSudan.decode at hp
+  cases hchoose : selector.toCompPolySelector.choose k w.length e with
+  | none => simp [hchoose] at hp
+  | some params =>
+      have hparamsLen := selector.sound hchoose
+      have hlen := length_of_represents hrep
+      have hparams : GSParamCert k n e params := by simpa [hlen] using hparamsLen
+      have hp' :
+          ∃ cp,
+            cp ∈ (CompPoly.GuruswamiSudan.decodeWithParams ctx params w).toList ∧
+              cp.toPoly = p := by
+        simpa [hchoose] using hp
+      exact (mem_decodeWithParams_iff_spec
+        (ctx := ctx) (params := params) (hparams := hparams)
+        (hrep := hrep) (p := p)).1 hp'
+
+/-- Set-membership characterization for a selector complete at the concrete decoder input. -/
 theorem mem_decode_iff_spec
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
     (selector : GSParamSelector)
     (hrep : RepresentsArkInput w ωs f)
-    (hjohnson : JohnsonSpecCondition k n e)
+    (hcomplete : selector.CompleteAt k n e)
     {p : F[X]} :
     (∃ cp,
       cp ∈ (CompPoly.GuruswamiSudan.decode ctx selector.toCompPolySelector k e w).toList ∧
         cp.toPoly = p) ↔
       p ∈ GSSpecSet k e ωs f := by
   constructor
+  · exact mem_decode_imp_spec ctx selector hrep
   · intro hp
-    unfold CompPoly.GuruswamiSudan.decode at hp
-    cases hchoose : selector.toCompPolySelector.choose k w.length e with
-    | none =>
-        simp [hchoose] at hp
-    | some params =>
-        have hparamsLen := selector.sound hchoose
-        have hlen := length_of_represents hrep
-        have hparams : GSParamCert k n e params := by
-          simpa [hlen] using hparamsLen
-        have hp' :
-            ∃ cp,
-              cp ∈ (CompPoly.GuruswamiSudan.decodeWithParams ctx params w).toList ∧
-                cp.toPoly = p := by
-          simpa [hchoose] using hp
-        exact (mem_decodeWithParams_iff_spec
-          (ctx := ctx) (params := params) (hparams := hparams)
-          (hrep := hrep) (p := p)).1 hp'
-  · intro hp
-    rcases selector.complete hjohnson with ⟨params, hchoose, hparams⟩
+    rcases hcomplete with ⟨params, hchoose, hparams⟩
     have hlen := length_of_represents hrep
     have hp' := (mem_decodeWithParams_iff_spec
       (ctx := ctx) (params := params) (hparams := hparams)
@@ -641,19 +700,16 @@ theorem decodeWithParams_complete
     (ctx := ctx) (params := params) (hparams := hparams) (hrep := hrep)
     (p := p)).2 hp
 
-/-- Soundness corollary for the selector-backed executable decoder under selector completeness. -/
+/-- Soundness corollary for the selector-backed executable decoder. -/
 theorem decode_sound
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
     (selector : GSParamSelector)
     (hrep : RepresentsArkInput w ωs f)
-    (hjohnson : JohnsonSpecCondition k n e)
     {cp : CompPoly.CPolynomial F}
     (hcp : cp ∈ (CompPoly.GuruswamiSudan.decode ctx selector.toCompPolySelector k e w).toList) :
     cp.toPoly.degree < (k : WithBot Nat) ∧
       Δ₀(f, cp.toPoly.eval ∘ ωs) ≤ e := by
-  have hp := (mem_decode_iff_spec
-    (ctx := ctx) (selector := selector) (hrep := hrep) (hjohnson := hjohnson)
-    (p := cp.toPoly)).1 ⟨cp, hcp, rfl⟩
+  have hp := mem_decode_imp_spec ctx selector hrep ⟨cp, hcp, rfl⟩
   simpa [GSSpecSet] using hp
 
 /-- Completeness corollary for the selector-backed executable decoder under
@@ -662,14 +718,14 @@ theorem decode_complete
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
     (selector : GSParamSelector)
     (hrep : RepresentsArkInput w ωs f)
-    (hjohnson : JohnsonSpecCondition k n e)
+    (hcomplete : selector.CompleteAt k n e)
     {p : F[X]}
     (hp : p ∈ GSSpecSet k e ωs f) :
     ∃ cp,
       cp ∈ (CompPoly.GuruswamiSudan.decode ctx selector.toCompPolySelector k e w).toList ∧
         cp.toPoly = p :=
   (mem_decode_iff_spec
-    (ctx := ctx) (selector := selector) (hrep := hrep) (hjohnson := hjohnson)
+    (ctx := ctx) (selector := selector) (hrep := hrep) (hcomplete := hcomplete)
     (p := p)).2 hp
 
 /--
@@ -714,6 +770,7 @@ theorem mem_decode_iff_mem_decoder_of_degree_lt
     (ctx : CompPoly.GuruswamiSudan.GSFilteredCoreContext F)
     (selector : GSParamSelector)
     (hrep : RepresentsArkInput w ωs f)
+    (hcomplete : selector.CompleteAt k n e)
     (he : (e : ℝ) < (n : ℝ) - Real.sqrt (((k : ℝ) + 1) * (n : ℝ)))
     {p : F[X]}
     (hdeg : p.natDegree < k) :
@@ -721,12 +778,10 @@ theorem mem_decode_iff_mem_decoder_of_degree_lt
       cp ∈ (CompPoly.GuruswamiSudan.decode ctx selector.toCompPolySelector k e w).toList ∧
         cp.toPoly = p) ↔
       p ∈ decoder k r D e ωs f := by
-  have hjohnson : JohnsonSpecCondition k n e := by
-    simpa [JohnsonSpecCondition] using he
   constructor
   · intro hp
     have hspec := (mem_decode_iff_spec
-      (ctx := ctx) (selector := selector) (hrep := hrep) (hjohnson := hjohnson)
+      (ctx := ctx) (selector := selector) (hrep := hrep) (hcomplete := hcomplete)
       (p := p)).1 hp
     exact mem_decoder_of_dist (n := n) (k := k) (r := r) (D := D) (e := e)
       he hdeg hspec.2
@@ -736,7 +791,7 @@ theorem mem_decode_iff_mem_decoder_of_degree_lt
     have hpdegree : p.degree < (k : WithBot Nat) :=
       lt_of_le_of_lt degree_le_natDegree (by exact_mod_cast hdeg)
     exact (mem_decode_iff_spec
-      (ctx := ctx) (selector := selector) (hrep := hrep) (hjohnson := hjohnson)
+      (ctx := ctx) (selector := selector) (hrep := hrep) (hcomplete := hcomplete)
       (p := p)).2 ⟨hpdegree, hdist⟩
 
 end GuruswamiSudan

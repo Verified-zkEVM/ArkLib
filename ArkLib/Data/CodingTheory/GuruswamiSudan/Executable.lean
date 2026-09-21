@@ -3,12 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Valerii Huhnin
 -/
+module
 
-import Mathlib.Analysis.Real.Sqrt
+public import Mathlib.Analysis.Real.Sqrt
 
-import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 
-import CompPoly.Bivariate.GuruswamiSudan
+public import CompPoly.Bivariate.GuruswamiSudan
 
 /-!
 # Executable Guruswami-Sudan Decoder
@@ -18,6 +19,8 @@ ArkLib-specific parameter certificates and selectors wrap CompPoly's packed
 point-array API; correctness statements are collected in
 `ArkLib.Data.CodingTheory.GuruswamiSudan.Correctness`.
 -/
+
+@[expose] public section
 
 namespace GuruswamiSudan
 
@@ -76,18 +79,22 @@ def searchParamsUpTo
         some (execParamsOfMultiplicityAndDegree k e multiplicity weightedDegreeBound)
     | none => none
 
-/-- ArkLib-certified view of a CompPoly parameter selector. -/
+/-- ArkLib-certified view of a CompPoly parameter selector.
+
+The structure records the property needed for decoder soundness. Completeness is deliberately
+stated separately for a concrete input through `GSParamSelector.CompleteAt`: a bounded executable
+search need not be complete uniformly over every possible block length. -/
 structure GSParamSelector where
   toCompPolySelector : CompPoly.GuruswamiSudan.GSParamSelector
   sound :
     ∀ {k n e params},
       toCompPolySelector.choose k n e = some params →
         GSParamCert k n e params
-  complete :
-    ∀ {k n e},
-      JohnsonSpecCondition k n e →
-        ∃ params,
-          toCompPolySelector.choose k n e = some params ∧
-            GSParamCert k n e params
+
+/-- A certified selector succeeds for the concrete decoding parameters `(k, n, e)`. -/
+def GSParamSelector.CompleteAt (selector : GSParamSelector) (k n e : Nat) : Prop :=
+  ∃ params,
+    selector.toCompPolySelector.choose k n e = some params ∧
+      GSParamCert k n e params
 
 end GuruswamiSudan
