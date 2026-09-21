@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.Finset.WeightedSimplex
+import Mathlib.Basic.Real.Basic
 
 /-!
 # Acceptance cases for weighted discrete simplices

@@ -10,7 +10,7 @@ public import Mathlib.Data.Finsupp.Multiset
 public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.Data.Nat.Choose.Basic
 public import Mathlib.Data.Nat.Factorial.BigOperators
-public import Mathlib.Basic.Real.Basic
+public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Logic.Equiv.Fin.Basic
 
 /-!
