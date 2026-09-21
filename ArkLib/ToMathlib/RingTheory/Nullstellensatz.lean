@@ -59,9 +59,10 @@ inline; here it is the public lemma `MvPolynomial.mem_zeroLocus_sup_span_singlet
 from `MvPolynomial.zeroLocus_sup`. The prime-ideal step is the generic
 `Ideal.exists_mem_retainedMinimalPrimes_le`.
 
-Deferred: the Krull-dimension drop of the same source file, the finite zero-dimensional
-results of `ArkLib/ToMathlib/AlgebraicGeometry/ZeroLocus/ZeroDimensional.lean`, and every result
-that needs algebraic closedness or the affine Hilbert polynomial.
+Finite-quotient point counts are in
+`ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient`. Deferred: the Krull-dimension drop of
+the same source file and every result that needs algebraic closedness or the affine Hilbert
+polynomial.
 -/
 
 @[expose] public section

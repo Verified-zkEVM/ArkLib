@@ -71,9 +71,11 @@ the rings involved. The statements here hold over any commutative rings and for 
 degrees.
 
 Not ported in this file: the total-degree bounds `natDegree_separableResultant_add_sq_le*` and
-`natDegree_separableResultant_le_totalDegree*` of `DerivativeResultantDegree.lean`; the entry
-point `separableResultant_ne_zero_of_irreducible` from irreducibility over the fraction field; and
-the consumers `Ordinary/Factors/RootPresentation.lean` and `ContentExceptions.lean`.
+`natDegree_separableResultant_le_totalDegree*` of `DerivativeResultantDegree.lean`, which are in
+`ArkLib.Data.Polynomial.ResultantDegree`; the entry point
+`separableResultant_ne_zero_of_irreducible`, which is
+`resultant_derivative_ne_zero_of_irreducible` in `ArkLib.Data.Polynomial.FractionFieldResultant`;
+and the consumers `Ordinary/Factors/RootPresentation.lean` and `ContentExceptions.lean`.
 -/
 
 @[expose] public section
