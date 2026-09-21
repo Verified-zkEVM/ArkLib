@@ -57,9 +57,8 @@ the retained family is a filter of `Ideal.minimalPrimesFinset`, so a single repr
 both, and `Ideal.retainedMinimalPrimes_subset` relates them. The source membership law took
 `I P s` as explicit arguments; here they are implicit and the law is a `simp` lemma.
 
-Deferred: the principal-cut Krull-dimension drop from the same source file
-(`Ideal.lt_of_mem_minimalPrimes_sup_span`, `Ideal.ringKrullDim_quotient_succ_le_of_lt`,
-`Ideal.retained_cut_krullDim_succ_le`).
+The principal-cut Krull-dimension consequences of this finite family are in
+`ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut`.
 -/
 
 @[expose] public section
