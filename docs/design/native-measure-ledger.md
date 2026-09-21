@@ -171,7 +171,7 @@ removes the `backward.isDefEq.respectTransparency false` override that the old p
 
 The conversion starts from `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903) and includes
 `main` through `8b03d40a56ec827d223b78ccca0ce164a9231f6c` (#857 and #877). Later merges of `main`
-through `7097ba9ee939a7576dddb29cbdbee1949e6c2e07` (#923) are integrated too; the one migration
+through `17adcc01a91ba1dbf0c980da50b1371821819939` (#928) are integrated too; the one migration
 change they need is in `ProximityGenerator/Interleaving.lean` (#918), whose three sampling
 theorems take `[SampleableType S]` and use `Pr{let x ← $ᵗ S}` and `prEvent_mono`. Its
 row-functional avoidance lemma stays sampler-free. That file postdates the counts below.
