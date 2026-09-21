@@ -120,6 +120,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
+public import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
 public import ArkLib.Data.CodingTheory.PolishchukSpielman
 public import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 public import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
@@ -180,6 +181,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Separation
 public import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
+public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
@@ -194,6 +196,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
@@ -292,6 +296,7 @@ public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.Types
+public import ArkLib.Data.Polynomial.DivisorReconstruction
 public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
