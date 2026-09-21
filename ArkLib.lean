@@ -275,6 +275,7 @@ public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
 public import ArkLib.Data.Polynomial.FractionFieldFactorization
+public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
