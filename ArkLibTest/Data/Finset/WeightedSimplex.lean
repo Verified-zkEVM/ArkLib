@@ -11,7 +11,8 @@ import Mathlib.Basic.Real.Basic
 # Acceptance cases for weighted discrete simplices
 
 These small computations check the finite box, weighted count, ordinary stars and bars,
-degenerate index set, zero weights, and a finite index other than `Fin`.
+exact-simplex and `Finsupp` bridges, shell decomposition, degenerate index set, zero weights, and a
+finite index other than `Fin`.
 -/
 
 open Finset
@@ -21,6 +22,41 @@ example : (natWeightedSimplex (fun i : Fin 2 ↦ i.val + 1) 3).card = 6 := by
 
 example : (natWeightedSimplex (fun _ : Fin 3 ↦ 1) 2).card = 10 := by
   decide
+
+/-- The slack-coordinate exact-simplex equivalence is executable through the ordinary public
+import, including at an index type other than `Fin`. The unused unit of budget becomes the `none`
+coordinate. -/
+example :
+    ((natWeightedSimplexOneEquivExact (σ := Bool) 2)
+      ⟨fun b ↦ if b then 1 else 0, by decide⟩).1 none = 1 := by
+  decide
+
+/-- The inverse exact-simplex map discards the slack coordinate and recovers the original tuple. -/
+example :
+    ((natWeightedSimplexOneEquivExact (σ := Bool) 2).symm
+      ⟨fun i ↦ i.elim 1 (fun b ↦ if b then 1 else 0), by decide⟩).1 true = 1 := by
+  decide
+
+/-- The bounded canonical `Finsupp` representation has the same count as the executable tuple
+simplex. -/
+example : Nat.card
+    {c : Bool →₀ ℕ // c.weight (fun b ↦ if b then 2 else 1) ≤ 3} = 6 := by
+  rw [card_finsupp_weight_le_eq_card_natWeightedSimplex _ (by decide)]
+  decide
+
+/-- The exact shell of weight three for weights `(2, 1)` consists of `(1, 1)` and `(0, 3)`. -/
+example : (natWeightedSimplexShell (fun b : Bool ↦ if b then 2 else 1) 3).card = 2 := by
+  decide
+
+example : Nat.card
+    {c : Bool →₀ ℕ // c.weight (fun b ↦ if b then 2 else 1) = 3} = 2 := by
+  rw [card_finsupp_weight_eq_card_natWeightedSimplexShell _ (by decide)]
+  decide
+
+/-- The weighted simplex count is the sum of its exact shells. -/
+example : (natWeightedSimplex (fun b : Bool ↦ if b then 2 else 1) 3).card =
+    ∑ t ∈ range 4, (natWeightedSimplexShell (fun b : Bool ↦ if b then 2 else 1) t).card := by
+  exact card_natWeightedSimplex_eq_sum_card_shell _ (by decide) 3
 
 /-- Unit-weight stars and bars at `n = 3`, `W = 2`, checked against the enumeration. -/
 example : (natWeightedSimplex (fun _ : Fin 3 ↦ 1) 2).card = 10 := by
@@ -49,6 +85,12 @@ example : 16 ≤ 2 * 2 * (natWeightedSimplex (fun b : Bool ↦ if b then 2 else 
 `0 ≤ 2` but lies outside the box, so `mem_natWeightedSimplex` needs positive weights. -/
 example : (∑ i : Fin 1, 0 * (fun _ : Fin 1 ↦ 3) i) ≤ 2 ∧
     (fun _ : Fin 1 ↦ 3) ∉ natWeightedSimplex (fun _ : Fin 1 ↦ 0) 2 := by
+  decide
+
+/-- The same zero-weight boundary is visible for shells: the exact weighted-sum equation holds,
+but the executable shell at weight zero deliberately keeps only the coordinate-box value zero. -/
+example : (∑ i : Fin 1, 0 * (fun _ : Fin 1 ↦ 1) i) = 0 ∧
+    (fun _ : Fin 1 ↦ 1) ∉ natWeightedSimplexShell (fun _ : Fin 1 ↦ 0) 0 := by
   decide
 
 example : (natWeightedSimplex (fun _ : Fin 0 ↦ 1) 0).card = 1 := by
