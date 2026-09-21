@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.PointCollision
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
@@ -202,11 +203,11 @@ This is `Polynomial.prob_not_injOn_evalTuple_le_of_encard_le` with the bound
 `encard_candidateSet_le_Lambda`; a coordinate of degree below `K` has natural degree at most
 `K - 1`. -/
 theorem prob_not_injOn_candidateSet_le {ι' : Type*} [Fintype ι'] {Ω : Type} [Fintype Ω]
-    [Nonempty Ω] {pt : Ω → ι' → F} (hpt : Function.Injective pt) (domain : ι ↪ F)
+    [SampleableType Ω] {pt : Ω → ι' → F} (hpt : Function.Injective pt) (domain : ι ↪ F)
     (received : ι → κ → F) {K a L : ℕ} (hK : K ≤ Fintype.card ι)
     (hΛ : Lambda (interleavedCodeSet (κ := κ) (code domain K : Set (ι → F)))
       (1 - (a : ℝ) / Fintype.card ι) ≤ L) :
-    Pr_{let ω ←$ᵖ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (candidateSet domain received K a)] ≤
+    Pr{let ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (candidateSet domain received K a)] ≤
       ENNReal.ofReal ((L.choose 2 * (K - 1) ^ Fintype.card ι' : ℕ) / (Fintype.card Ω : ℝ)) := by
   refine prob_not_injOn_evalTuple_le_of_encard_le hpt
     ((encard_candidateSet_le_Lambda domain received hK a).trans hΛ) fun Q hQ j ↦ ?_
@@ -344,7 +345,7 @@ theorem prob_not_injOn_candidateSet_offDiag_le (domain : ι ↪ F) (received : �
     (hΛ : Lambda (interleavedCodeSet (κ := κ) (code domain K : Set (ι → F)))
       (1 - (a : ℝ) / Fintype.card ι) ≤ L)
     [Nonempty ((Finset.univ.map domain)ᶜ.offDiag)] :
-    Pr_{let p ←$ᵖ ((Finset.univ.map domain)ᶜ.offDiag)}[
+    Pr{let p ← $ᵗ ((Finset.univ.map domain)ᶜ.offDiag)}[
         ¬ Set.InjOn (evalTuple ![p.1.1, p.1.2]) (candidateSet domain received K a)] ≤
       ENNReal.ofReal ((L.choose 2 * (K - 1) ^ 2 : ℕ) /
         ((Fintype.card F - Fintype.card ι) * (Fintype.card F - Fintype.card ι - 1) : ℕ)) := by

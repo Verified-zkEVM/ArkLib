@@ -91,7 +91,7 @@ theorem natDegree_pairX0 : ∀ f ∈ pairX0, ∀ j, (f j).natDegree ≤ 1 := by
 
 open scoped ProbabilityTheory in
 -- A uniform point of `ZMod 5` separates `X` and `0` except with probability `1 / 5`.
-example : Pr_{let ω ←$ᵖ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ ω)
+example : Pr{let ω ← $ᵗ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ ω)
     (↑pairX0 : Set (Fin 1 → (ZMod 5)[X]))] ≤ ENNReal.ofReal (1 / 5) := by
   have h := prob_not_injOn_evalTuple_le (Ω := ZMod 5) (pt := fun ω _ ↦ ω)
     (fun _ _ h ↦ congrFun h ()) pairX0 natDegree_pairX0
@@ -101,7 +101,7 @@ example : Pr_{let ω ←$ᵖ (ZMod 5)}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ 
 open scoped ProbabilityTheory in
 -- Injectivity of the sampling map is needed: the constant point `0` never separates `X` and `0`,
 -- so the failure probability is `1`, above the bound `1 / 2` for `|Ω| = 2`.
-example : ¬ Pr_{let _ω ←$ᵖ Bool}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ (0 : ZMod 5))
+example : ¬ Pr{let _ω ← $ᵗ Bool}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ (0 : ZMod 5))
     (↑pairX0 : Set (Fin 1 → (ZMod 5)[X]))] ≤
       ENNReal.ofReal (((Nat.choose 2 2 * 1 ^ 1 : ℕ) : ℝ) / 2) := by
   classical
@@ -113,7 +113,7 @@ example : ¬ Pr_{let _ω ←$ᵖ Bool}[¬ Set.InjOn (evalTuple fun _ : Unit ↦ 
     have := congrArg (eval 1) (congrFun this 0)
     simp only [Fin.isValue, Matrix.cons_val_fin_one, eval_X, eval_zero] at this
     exact absurd this (by decide)
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   simp only [hevent, not_false_eq_true, Finset.filter_true,
     Finset.card_univ, Fintype.card_bool]
   rw [ENNReal.ofReal_le_ofReal_iff (by norm_num)]

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.Probability.Instances
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
@@ -64,6 +64,12 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
   complement of the domain; that specialization, with the source's denominator, is
   `ReedSolomon.AnchoredAgreement.prob_not_injOn_candidateSet_offDiag_le`.
 -/
+
+-- VCVio's `OracleSpec.instDecidableEqDomainOfDecidableEq` matches every `DecidableEq` goal,
+-- since `OracleSpec.Domain` is reducible. Classical decidability of equality of polynomial tuples
+-- and point arrays then times out before falling back to `Classical.propDecidable`, so this file
+-- does not use the instance.
+attribute [-instance] OracleSpec.instDecidableEqDomainOfDecidableEq
 
 @[expose] public section
 
@@ -185,13 +191,13 @@ probability at most `choose |S| 2 * d ^ |ι| / |Ω|`.
 
 Injectivity of `pt` is needed to count sample points by point tuples: a constant `pt` at a
 colliding point tuple fails with probability `1`. -/
-theorem prob_not_injOn_evalTuple_le {Ω : Type} [Fintype Ω] [Nonempty Ω] {pt : Ω → ι → R}
+theorem prob_not_injOn_evalTuple_le {Ω : Type} [Fintype Ω] [SampleableType Ω] {pt : Ω → ι → R}
     (hpt : Function.Injective pt) (S : Finset (κ → R[X])) {d : ℕ}
     (hdeg : ∀ f ∈ S, ∀ j, (f j).natDegree ≤ d) :
-    Pr_{let ω ←$ᵖ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (S : Set (κ → R[X]))] ≤
+    Pr{let ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) (S : Set (κ → R[X]))] ≤
       ENNReal.ofReal ((S.card.choose 2 * d ^ Fintype.card ι : ℕ) / (Fintype.card Ω : ℝ)) := by
   classical
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   refine ENNReal.ofReal_le_ofReal (div_le_div_of_nonneg_right ?_ (by positivity))
   let bad := Finset.univ.filter fun ω : Ω ↦ ¬ Set.InjOn (evalTuple (pt ω)) (S : Set (κ → R[X]))
   have hcard := card_le_of_not_injOn_evalTuple S hdeg (bad.image pt) fun x hx ↦ by
@@ -203,10 +209,10 @@ theorem prob_not_injOn_evalTuple_le {Ω : Type} [Fintype Ω] [Nonempty Ω] {pt :
 /-- **Probability of not separating a set of bounded size.** The form of
 `prob_not_injOn_evalTuple_le` for a set `S` with `S.encard ≤ L`, as supplied by a list-size bound
 such as `Code.Lambda`. The bound is `choose L 2 * d ^ |ι| / |Ω|`. -/
-theorem prob_not_injOn_evalTuple_le_of_encard_le {Ω : Type} [Fintype Ω] [Nonempty Ω]
+theorem prob_not_injOn_evalTuple_le_of_encard_le {Ω : Type} [Fintype Ω] [SampleableType Ω]
     {pt : Ω → ι → R} (hpt : Function.Injective pt) {S : Set (κ → R[X])} {L d : ℕ}
     (hS : S.encard ≤ L) (hdeg : ∀ f ∈ S, ∀ j, (f j).natDegree ≤ d) :
-    Pr_{let ω ←$ᵖ Ω}[¬ Set.InjOn (evalTuple (pt ω)) S] ≤
+    Pr{let ω ← $ᵗ Ω}[¬ Set.InjOn (evalTuple (pt ω)) S] ≤
       ENNReal.ofReal ((L.choose 2 * d ^ Fintype.card ι : ℕ) / (Fintype.card Ω : ℝ)) := by
   have hfin : S.Finite := Set.finite_of_encard_le_coe hS
   have hcard : hfin.toFinset.card ≤ L := by

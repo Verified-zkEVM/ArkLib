@@ -87,9 +87,9 @@ example {F ι : Type} [Field F] [Fintype F] [Fintype ι] [DecidableEq F]
 open scoped ProbabilityTheory in
 -- The probability form, for one group holding one word: both guarantees have no exceptional
 -- challenge, so exact nested agreement fails with probability `0`.
-example {F ι : Type} [Field F] [Fintype F] [Fintype ι] [DecidableEq F] (domain : ι ↪ F)
-    {k L : ℕ} (hk : k ≤ L) (values : (g : Fin (0 + 1)) → Fin (0 + 1) → ι → F) :
-    Pr_{let p ←$ᵖ (F × F)}[∃ Q : F[X], Q.degree < k ∧
+example {F ι : Type} [Field F] [Fintype F] [SampleableType F] [Fintype ι] [DecidableEq F]
+    (domain : ι ↪ F) {k L : ℕ} (hk : k ≤ L) (values : (g : Fin (0 + 1)) → Fin (0 + 1) → ι → F) :
+    Pr{let p ← $ᵗ (F × F)}[∃ Q : F[X], Q.degree < k ∧
         L ≤ (polynomialAgreementSet domain
           (powerBatchedWord (fun g ↦ powerBatchedWord (values g) p.1) p.2) Q).card ∧
         ¬ HasExactNestedPowerAgreement domain (fun _ ↦ 0) values k p.1 p.2 Q] = 0 := by

@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
-public import ArkLib.Data.Probability.Instances
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
 /-!
 # Exact power agreement for interleaved Reed–Solomon codes
@@ -80,7 +80,7 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
   `HasExactNestedPowerAgreement`, with `Fin n` generalized to `ι`. The arithmetic lemma
   `nestedPowerAgreement_probability_bound` (a set of at most `|F| * E` pairs has rational density
   at most `E / |F|` in `F × F`) is replaced by `nestedPowerAgreement_probability_le`, which bounds
-  the probability of the failure event itself in the `Pr_` notation.
+  the probability of the failure event itself as a native event `Pr{let p ← $ᵗ (F × F)}[…]`.
 
 Deferred: the shared-level fold and tensor-tight statements of
 `ReedSolomon/Interleaved/TensorFoldAgreement.lean` and the concrete Reed–Solomon
@@ -395,14 +395,15 @@ coordinates without having exact nested power agreement is at most `(innerE + ou
 
 This is the count `|F| · (innerE + outerE)` of `nestedPowerAgreement_sharedInner` divided by
 `|F|²`. -/
-theorem nestedPowerAgreement_probability_le [Fintype F] {m maxDegree k L innerE outerE : ℕ}
+theorem nestedPowerAgreement_probability_le [Fintype F] [SampleableType F]
+    {m maxDegree k L innerE outerE : ℕ}
     (domain : ι ↪ F) (degree : Fin (m + 1) → ℕ) (hdegree : ∀ g, degree g ≤ maxDegree)
     (values : (g : Fin (m + 1)) → Fin (degree g + 1) → ι → F) (hk : k ≤ L)
     (hinner : UniformExactInterleavedPowerAgreement domain
       (paddedPowerValues degree hdegree values) k L innerE)
     (houter : ∀ u, UniformExactPowerAgreement domain
       (fun g ↦ powerBatchedWord (values g) u) k L outerE) :
-    Pr_{let p ←$ᵖ (F × F)}[∃ Q : F[X], Q.degree < k ∧
+    Pr{let p ← $ᵗ (F × F)}[∃ Q : F[X], Q.degree < k ∧
         L ≤ (polynomialAgreementSet domain
           (powerBatchedWord (fun g ↦ powerBatchedWord (values g) p.1) p.2) Q).card ∧
         ¬ HasExactNestedPowerAgreement domain degree values k p.1 p.2 Q] ≤
@@ -410,11 +411,11 @@ theorem nestedPowerAgreement_probability_le [Fintype F] {m maxDegree k L innerE 
   classical
   obtain ⟨bad, hcard, hgood⟩ :=
     nestedPowerAgreement_sharedInner domain degree hdegree values hk hinner houter
-  refine (Probability.Pr_le_Pr_of_implies _ _ (fun p ↦ p ∈ bad) fun p hp ↦ ?_).trans ?_
+  refine (prEvent_mono _ _ (fun p ↦ p ∈ bad) fun p hp ↦ ?_).trans ?_
   · by_contra hp'
     obtain ⟨Q, hQ, hclose, hnot⟩ := hp
     exact hnot (hgood p.1 p.2 hp' Q hQ hclose)
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   simp only [Finset.filter_mem_eq_inter, Finset.univ_inter, Fintype.card_prod]
   apply ENNReal.ofReal_le_ofReal
   have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos

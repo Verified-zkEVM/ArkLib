@@ -89,7 +89,7 @@ theorem source_badAnchorRate_le {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (hLambda : Lambda (interleavedCodeSet (κ := Fin w) (code domain (T + 3) : Set (Fin n → F)))
       (1 - ((T + 3 : ℕ) : ℝ) / n - delta) ≤ L)
     (hSpace : n + 1 < Fintype.card F) [Nonempty ((Finset.univ.map domain)ᶜ.offDiag)] :
-    Pr_{let p ←$ᵖ ((Finset.univ.map domain)ᶜ.offDiag)}[
+    Pr{let p ← $ᵗ ((Finset.univ.map domain)ᶜ.offDiag)}[
         ¬ Set.InjOn (evalTuple ![p.1.1, p.1.2]) (candidateSet domain received (T + 3) A)] ≤
       ENNReal.ofReal ((L.choose 2 : ℝ) *
         (((T + 2 : ℕ) : ℝ) / ((Fintype.card F - n - 1 : ℕ) : ℝ)) ^ 2) := by
