@@ -25,6 +25,20 @@ an ordered-field upper bound.
 The empty index type has one vector, including when `W = 0`. A zero weight does not constrain its
 coordinate, so the finite box matters and the lower estimate requires positive weights.
 
+## Main statements
+
+* `mem_natWeightedSimplex`: for positive weights, membership is the weighted budget alone.
+* `card_natWeightedSimplex_one`: bounded stars and bars,
+  `#(natWeightedSimplex 1 W) = (W + n).choose n` for `n = Fintype.card σ`.
+* `choose_le_card_natWeightedSimplex_mul_prod` and
+  `card_natWeightedSimplex_mul_prod_le_choose`: the binomial comparisons obtained from the
+  quotient/remainder injections.
+* `succ_pow_le_factorial_mul_prod_mul_card_natWeightedSimplex` and
+  `factorial_mul_prod_mul_card_natWeightedSimplex_le`:
+  `(W + 1) ^ n ≤ n! * (∏ i, w i) * # ≤ (W + ∑ i, w i) ^ n`, the upper bound for all weights.
+* `card_natWeightedSimplex_le`: the upper bound divided out over an ordered field.
+* `natWeightedSimplex_succ_sandwich`: weights `1, …, n`, with `n! ^ 2` and `(n + 1).choose 2`.
+
 ## References
 
 Generalizes `ordinaryToExact`, `ordinarySimplexEquivSym`, and `card_ordinarySimplex` from
