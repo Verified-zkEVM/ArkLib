@@ -112,11 +112,11 @@ That the printed error is *unreachable* from the printed hypothesis is not claim
 known — no separation at equal error is exhibited here or in the paper. What is established is that
 the paper's own argument does not reach it.
 
-Closing the gap needs `ϵMCA(C^ℓ) ≤ ϵMCA(C)`, that interleaving costs nothing. Lemma 10.1 gives only
-the factor `k`, and `ABF26` states the improvement as open immediately after its Lemma 4.7
-(`ε_mca(C^≡t, δ) ≤ t · ε_mca(C, δ)`): *"It is an open question whether this bound is tight or can be
-improved."* So a proof of Lemma 4.4 at the printed hypothesis and the printed error, by this route,
-would resolve a stated open problem.
+Closing the gap by this route needs `ϵMCA(C^ℓ) ≤ ϵMCA(C)`. The exact transfer
+`CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le` supplies it when the inner
+generator's seed space has at most `|F|` elements. The printed Lemma 4.4 has no such seed-size
+condition, so its full stated hypothesis still needs a stronger interleaving bound or another
+argument.
 
 ### Where the two headline theorems stand relative to the open lemma
 

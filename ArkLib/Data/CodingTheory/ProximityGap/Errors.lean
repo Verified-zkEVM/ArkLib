@@ -7,10 +7,9 @@ module
 
 public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.Probability.Instances
-public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
-public import Mathlib.FieldTheory.Finiteness
 
 /-!
 # Numeric proximity-gap and correlated-agreement errors
@@ -69,26 +68,19 @@ variable {ι : Type} [Fintype ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
-/-- Affine-line MCA of a code is at most that of any nonempty row-wise interleaving. -/
+/-- Affine-line MCA of a code is at most that of any nonempty row-wise interleaving.
+
+The radius bound is retained for compatibility; `mcaError_le_mcaError_moduleInterleavedCode`
+holds at every real radius. -/
 theorem mcaError_le_moduleInterleavedCode
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
     (ht : 0 < t) (hδ_le : δ ≤ 1) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
-      mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) := by
+      mcaError (AffineLineGenerator F) (C^⋈(Fin t)) (δ : ℝ) := by
   let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
-  let ε : I → ℝ≥0 := fun γ =>
-    ENNReal.toNNReal (mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))
-  have hInterleaved : IsMCAGenerator (AffineLineGenerator F) ε (C ^⋈ (Fin t)) := by
-    intro γ
-    dsimp [ε]
-    rw [ENNReal.coe_toNNReal
-      (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))]
-  have hBase := TensorMCA.isMCAGenerator_of_moduleInterleavedCode
-    (ℓ := Fin t) (AffineLineGenerator F) ε C hInterleaved
-  let δI : I :=
-    ⟨(δ : ℝ), ⟨NNReal.coe_nonneg δ, by exact_mod_cast hδ_le⟩⟩
-  simpa [δI, ε, ENNReal.coe_toNNReal
-    (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ))] using hBase δI
+  let δI : I := ⟨(δ : ℝ), ⟨NNReal.coe_nonneg δ, by exact_mod_cast hδ_le⟩⟩
+  simpa [δI] using
+    (mcaError_le_mcaError_moduleInterleavedCode (AffineLineGenerator F) C (δI : ℝ))
 
 end McaStructuralInterleaving
 
@@ -922,104 +914,18 @@ variable {ι : Type} [Fintype ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
-/-- A nonempty row-wise interleaving does not increase affine-line MCA at radii in `(0, 1)`. -/
+/-- A row-wise interleaving does not increase affine-line MCA.
+
+The positive width and open-radius bounds are retained for compatibility;
+`mcaError_moduleInterleavedCode_le_of_card_le` needs none of them. -/
 theorem mcaError_interleaved_le
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
     (ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
-    mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) ≤
+    mcaError (AffineLineGenerator F) (C^⋈(Fin t)) (δ : ℝ) ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) := by
-  classical
   let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
-  unfold mcaError
-  refine iSup_le fun U => ?_
-  let isBad (x : F) := IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)
-  let B := Finset.univ.filter isBad
-  obtain ⟨T, hT⟩ : ∃ T : F → Finset ι, ∀ x, isBad x →
-      (T x).card ≥ (Fintype.card ι : ℝ) * (1 - (δ : ℝ)) ∧
-      projectedWord (fun k => ∑ j, AffineLineGenerator F x j • U j k) (T x) ∈
-        projectedCodeSubmod (C ^⋈ (Fin t)) (T x) ∧
-      ∃ j, projectedWord (U j) (T x) ∉ projectedCodeSubmod (C ^⋈ (Fin t)) (T x) := by
-    choose! T hT using fun x (hx : isBad x) => hx
-    exact ⟨T, hT⟩
-  let rowComb (l : Fin t → F) (j : Fin 2) : ι → A :=
-    fun k => ∑ i, l i • U j k i
-  let K (x : F) : Submodule F (Fin t → F) :=
-    { carrier := {l | ∀ j, projectedWord (rowComb l j) (T x) ∈ projectedCodeSubmod C (T x)}
-      zero_mem' := by
-        intro j
-        have hz : projectedWord (rowComb 0 j) (T x) = 0 := by
-          ext k
-          simp [projectedWord, rowComb]
-        rw [hz]
-        exact (projectedCodeSubmod C (T x)).zero_mem
-      add_mem' := by
-        intro l l' hl hl' j
-        have hadd : projectedWord (rowComb (l + l') j) (T x) =
-            projectedWord (rowComb l j) (T x) + projectedWord (rowComb l' j) (T x) := by
-          ext k
-          simp [projectedWord, rowComb, add_smul, Finset.sum_add_distrib]
-        rw [hadd]
-        exact (projectedCodeSubmod C (T x)).add_mem (hl j) (hl' j)
-      smul_mem' := by
-        intro a l hl j
-        have hsmul : projectedWord (rowComb (a • l) j) (T x) =
-            a • projectedWord (rowComb l j) (T x) := by
-          ext k
-          simp [projectedWord, rowComb, Finset.smul_sum, mul_smul]
-        rw [hsmul]
-        exact (projectedCodeSubmod C (T x)).smul_mem a (hl j) }
-  have hK (x : F) (hx : x ∈ B) : K x ≠ ⊤ := by
-    obtain ⟨j, hj⟩ := (hT x (Finset.mem_filter.mp hx).2).2.2
-    have hj' : ¬ ∀ i : Fin t,
-        projectedWord (fun k => U j k i) (T x) ∈ projectedCodeSubmod C (T x) := by
-      intro hall
-      apply hj
-      exact (projectedCodeSubmod_moduleInterleavedCode_iff
-        F A (Fin t) ι C (U j) (T x)).mpr hall
-    push Not at hj'
-    obtain ⟨i, hi⟩ := hj'
-    intro htop
-    have he : Pi.single i (1 : F) ∈ K x := by rw [htop]; exact Submodule.mem_top
-    apply hi
-    simpa [K, rowComb] using he j
-  have hBcard : B.card ≤ Nat.card F := by
-    simpa [B, Nat.card_eq_fintype_card] using Finset.card_filter_le Finset.univ isBad
-  obtain ⟨l, hl⟩ := Submodule.exists_forall_notMem_of_card_le B K hK hBcard
-  let V : Fin 2 → (ι → A) := rowComb l
-  have himp : ∀ x : F, isBad x → IsMCA (AffineLineGenerator F) C x V (δ : ℝ) := by
-    intro x hx
-    have hxB : x ∈ B := Finset.mem_filter.mpr ⟨Finset.mem_univ _, hx⟩
-    have hdata := hT x hx
-    refine ⟨T x, hdata.1, ?_, ?_⟩
-    · have hrows : ∀ i : Fin t,
-          projectedWord (fun k => ∑ j, AffineLineGenerator F x j • U j k i) (T x) ∈
-            projectedCodeSubmod C (T x) :=
-        (projectedCodeSubmod_moduleInterleavedCode_iff F A (Fin t) ι C
-          (fun k => ∑ j, AffineLineGenerator F x j • U j k) (T x)).mp hdata.2.1
-      rw [mem_projectedCodeSubmod_iff]
-      convert projectedCode_linearCombination C (T x)
-        (fun i k => ∑ j, AffineLineGenerator F x j • U j k i) l
-        (fun i => (mem_projectedCodeSubmod_iff C (T x) _).mp (hrows i)) using 1
-      ext k
-      simp only [projectedWord, Set.domRestrict_apply, V, rowComb, Finset.smul_sum, smul_smul]
-      rw [Finset.sum_comm]
-      apply Finset.sum_congr rfl
-      intro i _
-      apply Finset.sum_congr rfl
-      intro j _
-      rw [mul_comm]
-    · have hnot := hl x hxB
-      change ¬ ∀ j, projectedWord (rowComb l j) (T x) ∈ projectedCodeSubmod C (T x) at hnot
-      push Not at hnot
-      simpa [V] using hnot
-  calc
-    Pr{let x ← $ᵗ F}[IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)]
-        ≤ Pr{let x ← $ᵗ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)] :=
-      prEvent_mono _ _ _ himp
-    _ ≤ ⨆ V : Fin 2 → (ι → A),
-        Pr{let x ← $ᵗ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)] :=
-      le_iSup (fun V : Fin 2 → (ι → A) =>
-        Pr{let x ← $ᵗ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)]) V
+  exact mcaError_moduleInterleavedCode_le_of_card_le (AffineLineGenerator F) C (δ : ℝ)
+    le_rfl
 
 /-- Affine-line MCA is invariant under nonempty row-wise interleaving at radii in `(0, 1)`. -/
 theorem mcaError_interleaved_eq

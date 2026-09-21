@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
 public import Mathlib.LinearAlgebra.Matrix.Module
