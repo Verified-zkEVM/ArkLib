@@ -66,10 +66,12 @@ equal to `U`.
 * ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` proves this row-projection argument
   three times, as private declarations under `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`:
   `interleaved_powerProjectionBad_card_le` in `PowerAgreement.lean` (univariate powers over a
-  finite field), `powerProjectionBadArbitrary` in `PowerAgreementArbitrary.lean` (univariate powers
-  over an arbitrary field) and `interleaved_lineProjectionBad_card_le` in
-  `TensorFoldAgreement.lean` (the binary line fold). Each is an instance of
-  `exists_rowFunctional_forall_notMem` for one generator.
+  finite field), `interleaved_powerProjectionBadArbitrary_finset_card_le` in
+  `PowerAgreementArbitrary.lean` (univariate powers over an arbitrary field), and
+  `interleaved_lineProjectionBad_card_le` in
+  `TensorFoldAgreement.lean` (the binary line fold). Their shared row-functional avoidance step
+  is supplied by `Code.exists_rowFunctional_forall_notMem`; their scalar exceptional-set counting
+  and exact-agreement conclusions are deferred.
 
 Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
 field, and exact-agreement statements.

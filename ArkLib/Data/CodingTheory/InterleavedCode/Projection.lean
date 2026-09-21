@@ -23,8 +23,8 @@ them. The first two facts hold over a semiring; the avoidance step uses a field.
   Decodability*][Jo26], Corollary 4.5.
 * ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` uses this row-functional
   argument in the private declarations `interleaved_powerProjectionBad_card_le`,
-  `powerProjectionBadArbitrary`, and `interleaved_lineProjectionBad_card_le` under
-  `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`.
+  `interleaved_powerProjectionBadArbitrary_finset_card_le`, and
+  `interleaved_lineProjectionBad_card_le` under `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`.
 -/
 
 @[expose] public section
