@@ -67,11 +67,10 @@ ideal `(X₀)` contributes at most `H(⊥, 1) - H(⊥, 0)`. -/
 example :
     affineHilbertFunction ((⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) ⊔ Ideal.span {X 0}) 1 +
         affineHilbertFunction (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) 0 ≤
-      affineHilbertFunction (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) 1 :=
-  by
-    simpa using principalCut_affineHilbertFunction_add_le_of_isPrime (σ := Fin 1) (k := ℚ)
-      (b := 1) (N := 1) Ideal.isPrime_bot (f := X 0)
-      (by rw [Ideal.mem_bot]; exact X_ne_zero 0) (by simp) le_rfl
+      affineHilbertFunction (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) 1 := by
+  simpa using principalCut_affineHilbertFunction_add_le_of_isPrime (σ := Fin 1) (k := ℚ)
+    (b := 1) (N := 1) Ideal.isPrime_bot (f := X 0)
+    (by rw [Ideal.mem_bot]; exact X_ne_zero 0) (by simp) le_rfl
 
 /-- A finite-dimensional quotient has eventually constant Hilbert function equal to its
 dimension. -/
