@@ -116,6 +116,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pig
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
+public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.PolishchukSpielman
 public import ArkLib.Data.CodingTheory.PolishchukSpielman.Degrees
 public import ArkLib.Data.CodingTheory.PolishchukSpielman.Existence
@@ -181,6 +182,7 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
@@ -217,6 +219,7 @@ public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
 public import ArkLib.Data.Finset.PickSubset
+public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.DomainSep
 public import ArkLib.Data.Hash.DuplexSponge
