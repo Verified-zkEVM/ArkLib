@@ -20,10 +20,22 @@ The proof applies `Module.Basis.ofSpan` to the rows regarded as elements of thei
 reindexes the resulting basis by `Fin A.rank`. Polynomial kernel-height arguments use this result
 to replace a matrix by a full-row-rank submatrix without changing its row space.
 
-The theorem is extracted and generalized from
+`Matrix.exists_rows_submatrix_mulVec_eq_zero_iff` transfers the selection to a matrix `M` over a
+ring `R` that embeds into a field `K` by an injective ring homomorphism `φ`. It selects
+`(M.map φ).rank` rows of `M` whose right kernel over `R` equals the right kernel of `M`. The proof
+maps a vector `v` to `φ ∘ v`, which reduces both kernel conditions to kernel conditions over `K`.
+Over `K`, the vectors orthogonal to `φ ∘ v` form a subspace, so if they contain the selected rows
+they contain their span, which is the full row space.
+
+## References
+
+The row selector is extracted and generalized from
 `ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight` at immutable source revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, where it was named
-`Matrix.exists_rows_fin_rank` and specialized both index types to `Fin`.
+`Matrix.exists_rows_fin_rank` and specialized both index types to `Fin`. The kernel transfer
+replaces the span-induction argument inside
+`Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
+specialized to polynomial matrices, `Fin` indices, and the rational function field.
 -/
 
 @[expose] public section
@@ -87,5 +99,45 @@ theorem exists_rows_linearIndependent_span_eq {m n : Type*} [Finite m] [Fintype 
     change Submodule.span K (Set.range (W.subtype ∘ basisW)) = W
     rw [Set.range_comp, ← Submodule.map_span, basisW.span_eq, Submodule.map_top,
       Submodule.range_subtype]
+
+/-- A matrix over a ring that embeds into a field has a rank-sized set of rows with the same
+right kernel.
+
+Let `φ : R →+* K` be an injective ring homomorphism into a field and let `r` be the rank of
+`M.map φ` over `K`. There are row indices `rows : Fin r → m` such that, for every vector `v` over
+`R`, the selected rows annihilate `v` exactly when every row of `M` does. The selector is indexed
+by `Fin r`, so the submatrix `M.submatrix rows id` has exactly `r` rows. A kernel bound that
+depends on the number of rows can therefore be applied with the rank in place of the row count.
+
+The injectivity of `φ` is what lets a kernel condition over `R` be checked over `K`: an entry of
+`M *ᵥ v` vanishes exactly when its image under `φ` does. The rank is measured over `K` because
+the row selection uses a basis of the row space, which requires a field. With `φ := RingHom.id K`
+this is the field case, with `A.rank` selected rows. If the rank is zero, the selected submatrix
+has no rows, so the theorem says that `M *ᵥ v = 0` for every `v`. -/
+theorem exists_rows_submatrix_mulVec_eq_zero_iff {R m n : Type*} [Semiring R] [Finite m]
+    [Fintype n] (M : Matrix m n R) (φ : R →+* K) (hφ : Function.Injective φ) :
+    ∃ rows : Fin (M.map φ).rank → m,
+      ∀ v : n → R, M.submatrix rows id *ᵥ v = 0 ↔ M *ᵥ v = 0 := by
+  obtain ⟨rows, -, hspan⟩ := (M.map φ).exists_rows_linearIndependent_span_eq
+  refine ⟨rows, fun v ↦ ?_⟩
+  have hselected :
+      M.submatrix rows id *ᵥ v = 0 ↔ (M.map φ).submatrix rows id *ᵥ (φ ∘ v) = 0 := by
+    simp only [funext_iff, Pi.zero_apply, submatrix_map, ← RingHom.map_mulVec,
+      map_eq_zero_iff φ hφ]
+  have hall : M *ᵥ v = 0 ↔ M.map φ *ᵥ (φ ∘ v) = 0 := by
+    simp only [funext_iff, Pi.zero_apply, ← RingHom.map_mulVec, map_eq_zero_iff φ hφ]
+  rw [hselected, hall]
+  constructor
+  · intro h
+    have hrowSpace : Submodule.span K (Set.range (M.map φ).row) ≤
+        LinearMap.ker ((dotProductBilin K K).flip (φ ∘ v)) := by
+      rw [← hspan, Submodule.span_le]
+      rintro _ ⟨i, rfl⟩
+      exact congrFun h i
+    funext i
+    exact hrowSpace (Submodule.subset_span ⟨i, rfl⟩)
+  · intro h
+    funext i
+    exact congrFun h (rows i)
 
 end Matrix
