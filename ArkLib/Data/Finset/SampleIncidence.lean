@@ -19,8 +19,9 @@ the pairs `(x, sample)` gives
 
 `|T| * A.choose k ≤ (Fintype.card ι).choose k`.
 
-The set-level theorem derives finiteness from the same bound rather than assuming the family or
-ambient indexing type is finite. This is the generic incidence argument behind finite agreement
+When `k ≤ A`, the set-level theorem derives finiteness from the same bound rather than assuming
+the family or ambient indexing type is finite. This is the generic incidence argument behind finite
+agreement
 lists; it has no coding-theory, field, or polynomial hypotheses.
 -/
 
