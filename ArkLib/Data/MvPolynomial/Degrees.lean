@@ -60,7 +60,7 @@ theorem support_mul_C_le (p : MvPolynomial σ R) (r : R) : (p * C r).support ⊆
   exact support_C_mul_le p r
 
 theorem support_eval [DecidableEq σ] {τ : Type*} {f : τ → R} {p : R[X σ][X τ]} :
-    (eval (C ∘ f) p).support ⊆ p.support.biUnion (fun c => (coeff c p).support) := by
+    (eval (C ∘ f) p).support ⊆ p.support.biUnion (fun c => (p.coeff c).support) := by
   classical
   rw [eval_eq]
   refine subset_trans support_sum (Finset.biUnion_mono (fun c _ => ?_))
@@ -98,7 +98,7 @@ theorem degrees_mul_C_le (p : MvPolynomial σ R) (c : R) : (p * C c).degrees ≤
   exact degrees_C_mul_le p c
 
 theorem degrees_eval [DecidableEq σ] {τ : Type*} {f : τ → R} {p : R[X σ][X τ]} :
-    (eval (C ∘ f) p).degrees ≤ p.support.sup (fun c => (coeff c p).degrees)  := by
+    (eval (C ∘ f) p).degrees ≤ p.support.sup (fun c => (p.coeff c).degrees)  := by
   classical
   rw [eval_eq]
   refine le_trans (degrees_sum_le _ _) (Finset.sup_mono_fun (fun b _ => ?_))

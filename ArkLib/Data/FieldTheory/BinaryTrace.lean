@@ -68,7 +68,7 @@ end Polynomial
 
 namespace FiniteField
 
-open Polynomial
+open _root_.Polynomial
 
 section CharacteristicTwo
 

@@ -125,9 +125,9 @@ theorem rs_epsCa_le_in_unique_decoding_range
   refine iSup_le fun u => ?_
   by_cases hj : Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F))) (u := u) δ_int
-  · rw [if_pos hj]
+  · rw [ite_eq_left hj]
     exact zero_le
-  · rw [if_neg hj]
+  · rw [ite_eq_right hj]
     exact rs_fold_probability_le_bound_of_not_joint_proximity
       domain k δ_fld δ_int _h_ud _h_dmin _h_lt u hj
 

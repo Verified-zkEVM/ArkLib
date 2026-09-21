@@ -82,7 +82,7 @@ lemma indicator_ne_zero_of_pos_nonempty {pos neg : Finset F}
   intro hzero
   obtain ⟨x, hx⟩ := h
   have heval := indicator_eval_of_mem_union (neg := neg) (Finset.mem_union_left neg hx)
-  rw [if_pos hx, hzero, eval_zero] at heval
+  rw [ite_eq_left hx, hzero, eval_zero] at heval
   exact zero_ne_one heval
 
 /-- Indicator evaluated on an element of `pos` is equal to 1. -/

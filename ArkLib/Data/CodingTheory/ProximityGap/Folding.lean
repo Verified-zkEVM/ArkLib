@@ -818,7 +818,7 @@ private lemma dist_from_code_bound_of_correlated_agreement
     obtain ⟨f', h_f'_deg, hdist⟩ :=
       correlated_agreement_implies_contradictory_hamm_dist h_s h_u (by {
     exact le_trans (b := 2 ^ n) (by grind) <| by
-      convert card_toFinset_le_fintype_card (ω := domain) <;> aesop
+      convert card_toFinset_le_fintype_card (ω := domain); aesop
   }) h_u_deg
     simp only [Set.mem_ofPred_eq, Nat.cast_le]
     aesop (add safe [evalOnPoints_mem_code_of_natDegree_lt])
@@ -835,7 +835,7 @@ lemma folded_rate_eq {d : ℕ} [FoldingContext k d n] :
     Nat.pow_le_pow_right (by omega) (Nat.sub_le_sub_right FoldingContextRight.d_le_n k)
   have hdn : 2 ^ d ≤ 2 ^ n :=
     Nat.pow_le_pow_right (by omega) FoldingContextRight.d_le_n
-  rw [if_pos hdk, if_pos hdn]
+  rw [ite_eq_left hdk, ite_eq_left hdn]
   field_simp
   norm_cast
   rw [← pow_add]

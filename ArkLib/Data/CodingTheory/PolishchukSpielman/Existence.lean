@@ -192,11 +192,11 @@ lemma ps_exists_p_nonzero {F : Type} [Field F]
   have hdegX_A : degreeX A = g_x + degreeX A1 := by
     rw [hA]; simpa [g_x] using degreeX_mul G A1 hG0 hA1
   have hdegY_A : natDegreeY A = g_y + natDegreeY A1 := by
-    rw [hA]; simpa [g_y] using degreeY_mul G A1 hG0 hA1
+    rw [hA]; simpa [g_y, natDegreeY] using Polynomial.natDegree_mul hG0 hA1
   have hdegX_B : degreeX B = g_x + degreeX B1 := by
     rw [hB]; simpa [g_x] using degreeX_mul G B1 hG0 hB1
   have hdegY_B : natDegreeY B = g_y + natDegreeY B1 := by
-    rw [hB]; simpa [g_y] using degreeY_mul G B1 hG0 hB1
+    rw [hB]; simpa [g_y, natDegreeY] using Polynomial.natDegree_mul hG0 hB1
   have hbxltnx := ps_bx_lt_nx h_le_1
   have hbyltny := ps_by_lt_ny h_le_1
   have hgx_le_ax : g_x ≤ a_x := le_trans (by simp [hdegX_A]) h_f_degX

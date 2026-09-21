@@ -13,7 +13,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import Mathlib.Order.CompletePartialOrder
 public import Mathlib.Probability.Distributions.Uniform
-public import Mathlib.Data.Real.Basic
+public import Mathlib.Basic.Real.Basic
 public import Mathlib.Analysis.Real.Sqrt
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.CodingTheory.Prelims
@@ -23,7 +23,7 @@ public import Mathlib.Data.ENat.Lattice
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.Tactic.Qify
 public import Mathlib.Topology.MetricSpace.Infsep
-public import Mathlib.Data.NNReal.Defs
+public import Mathlib.Basic.NNReal.Defs
 
 /-!
 ## Main definitions

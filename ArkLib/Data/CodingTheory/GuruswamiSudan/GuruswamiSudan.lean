@@ -213,7 +213,7 @@ theorem mem_decoder_of_dist
       linarith⟩
   -- Unfold the decoder and enter the if-branch
   simp only [decoder]
-  rw [dif_pos hExists]
+  rw [dite_eq_left hExists]
   simp only [List.mem_filter, decide_eq_true_eq]
   refine ⟨?_, hdist⟩
   -- Show p is a root of Q = polySol k n m ωs f via

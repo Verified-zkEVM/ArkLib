@@ -43,7 +43,7 @@ def reciprocalWord (a : F) (x : F) : F := if x = 0 then a else x⁻¹
 /-- Agreement with a reciprocal is detected by the roots of `X * P - 1`. -/
 theorem reciprocalWord_eq_eval_iff {a x : F} (hx : x ≠ 0) (P : F[X]) :
     reciprocalWord a x = P.eval x ↔ (X * P - 1).eval x = 0 := by
-  simp only [reciprocalWord, if_neg hx, eval_sub, eval_mul, eval_X, eval_one, sub_eq_zero]
+  simp only [reciprocalWord, ite_eq_right hx, eval_sub, eval_mul, eval_X, eval_one, sub_eq_zero]
   constructor
   · intro h
     rw [← h, mul_inv_cancel₀ hx]

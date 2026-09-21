@@ -341,8 +341,16 @@ instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype
     have h := this ▸ i.1.2
     simp at h
 
-noncomputable instance {l : ℕ} : IsUniformSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
-  IsUniformSpec.ofFintypeInhabited _
+local instance {l : ℕ} : ∀ q,
+    MeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) := fun _ => ⊤
+
+local instance {l : ℕ} : ∀ q,
+    DiscreteMeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) :=
+  fun _ => inferInstance
+
+noncomputable instance {l : ℕ} :
+    IsUniformMeasureSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
+  IsUniformMeasureSpec.ofFintypeInhabited _
 
 omit [Fintype 𝔽] in
 open ENNReal in
@@ -588,6 +596,23 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
                     Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
+local instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} : ∀ q,
+    MeasurableSpace
+      (([]ₒ +
+        [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+            (Spec.pSpecFold (ω := ω) k s ++ₚ
+              Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+                Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q) := fun _ => ⊤
+
+local instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} : ∀ q,
+    DiscreteMeasurableSpace
+      (([]ₒ +
+        [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+            (Spec.pSpecFold (ω := ω) k s ++ₚ
+              Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+                Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q) :=
+  fun _ => inferInstance
+
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
@@ -611,13 +636,13 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
                       Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    IsUniformSpec
+    IsUniformMeasureSpec
       ([]ₒ +
         [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
             (Spec.pSpecFold (ω := ω) k s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                 Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ) :=
-  IsUniformSpec.ofFintypeInhabited _
+  IsUniformMeasureSpec.ofFintypeInhabited _
 
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/
@@ -639,10 +664,7 @@ lemma fri_query_soundness
     let α0 : ℝ≥0∞ := ENNReal.ofReal (max α (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0)))))
     let εQ  (x : Fin t → 𝔽)
             (z : Fin (k + 1) → 𝔽) :=
-      Pr_{let samp ←$ᵖ (ω.subdomain 0)}[
-        Pr[
-          fun _ => True |
-          (
+      Pr_{let samp ←$ᵖ (ω.subdomain 0)}[Pr{let _ ←
             (do
               simulateQ
                 (oracleImpl n (ω := ω) s 1 z (fun v ↦ f 0 v + ∑ i, x i * f i.succ v))
@@ -669,8 +691,7 @@ lemma fri_query_soundness
                           ] using fun _ => samp
                     )
                 )
-            )
-          )]
+            )}[True]
         = 1
       ]
     Pr_{let x ←$ᵖ (Fin t → 𝔽); let z ←$ᵖ (Fin (k + 1) → 𝔽)}[ εQ x z > α0 ] ≤ εC 𝔽 n s m ρ_sqrt := by
@@ -751,14 +772,12 @@ lemma fri_soundness
         (⟨fun x => x, by simp⟩ : ω ↪ 𝔽)
     let α : ℝ≥0 := (ρ_sqrt * (1 + 1 / (2 * (m : ℝ≥0))))
     (∃ prov : OracleProver (WitOut := Unit) ..,
-        Pr[fun _ => True |
-          OracleReduction.run () f ()
+        Pr{let _ ← OracleReduction.run () f ()
             ⟨
               prov,
               (BatchedFri.Spec.batchedFRIreduction
                 (ω := ω) (n := n) k s d domain_size_cond l t).verifier
-            ⟩
-        ] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
+            ⟩}[True] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
       Code.jointAgreement
         (F := 𝔽)
         (κ := Fin t.succ)

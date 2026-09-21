@@ -93,7 +93,7 @@ theorem linear_mcaError_ge_information_set
   have hchal_mem : ∀ {j : ι} (hj : j ∈ D), chal j = φ ⟨j, hj⟩ := by
     intro j hj
     simp only [hchal]
-    rw [dif_pos hj]
+    rw [dite_eq_left hj]
   have hchal_injOn : Set.InjOn chal (D : Set ι) := by
     intro a ha b hb hab
     rw [Finset.mem_coe] at ha hb
@@ -104,19 +104,19 @@ theorem linear_mcaError_ge_information_set
   have hf₂_mem : ∀ {j : ι}, j ∈ D → f₂ j = 1 := by
     intro j hj
     simp only [hf₂]
-    rw [if_pos hj]
+    rw [ite_eq_left hj]
   have hf₂_not : ∀ {j : ι}, j ∉ D → f₂ j = 0 := by
     intro j hj
     simp only [hf₂]
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
   have hf₁_mem : ∀ {j : ι}, j ∈ D → f₁ j = -(chal j) := by
     intro j hj
     simp only [hf₁]
-    rw [if_pos hj]
+    rw [ite_eq_left hj]
   have hf₁_not : ∀ {j : ι}, j ∉ D → f₁ j = 0 := by
     intro j hj
     simp only [hf₁]
-    rw [if_neg hj]
+    rw [ite_eq_right hj]
   set G : Finset F := D.image chal with hG
   have hGcard : G.card = r := by
     rw [hG, Finset.card_image_of_injOn hchal_injOn, hDcard]

@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 import Lake.CLI.Main
-import ImportGraph.Imports.FromSource
 import LintStyle.Checks
 import Lean.Parser.Module
 
@@ -94,8 +93,8 @@ private def modulePath (name : Name) : FilePath :=
 
 private def arkLibPaths : IO (Array FilePath) := do
   let umbrella : FilePath := "ArkLib.lean"
-  let imports ← findImportsFromSource umbrella
-  let modules := imports.filter (·.getRoot == `ArkLib)
+  let header ← Lean.parseImports' (← IO.FS.readFile umbrella) umbrella.toString
+  let modules := header.imports.map (·.module) |>.filter (·.getRoot == `ArkLib)
   if modules.isEmpty then
     throw <| IO.userError "lint-style: ArkLib.lean yielded no ArkLib modules"
   let modulePaths := modules.map modulePath

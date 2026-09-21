@@ -223,13 +223,13 @@ theorem subspaceDesign_tau_lower_of_ne_bot
           Submodule F (ι → Fin s → F))) = if a i = 0 then 1 else 0 := by
     intro i
     by_cases hai : a i = 0
-    · rw [if_pos hai]
+    · rw [ite_eq_left hai]
       have hle : A ≤ LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i) := by
         rw [hA, Submodule.span_le, Set.singleton_subset_iff]
         simpa [LinearMap.mem_ker] using hai
       rw [inf_eq_left.mpr hle]
       exact hA1
-    · rw [if_neg hai]
+    · rw [ite_eq_right hai]
       have hbot : A ⊓ LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i)
           = ⊥ := by
         rw [eq_bot_iff]
@@ -597,7 +597,7 @@ theorem isSubspaceDesign_frsCode_sub_one
   -- Outside `[1, s]` the profile is `1`, which `hsum_le` already discharges.
   by_cases hrmem : r ∈ Finset.Icc 1 s
   case neg =>
-    rw [hτdef r, if_neg hrmem]
+    rw [hτdef r, ite_eq_right hrmem]
     simpa using hsum_le
   obtain ⟨hr1, hrs⟩ := Finset.mem_Icc.mp hrmem
   have hs_pos : (0 : ℝ) < s := by
@@ -639,7 +639,7 @@ theorem isSubspaceDesign_frsCode_sub_one
       ((s : ℝ) * (LinearCode.alphabetRate (ReedSolomon.Folded.frsCode domain k s ω) : ℝ)
           - 1 / Fintype.card ι) /
         ((s : ℝ) - r + 1) := by
-    rw [hτdef r, if_pos hrmem]
+    rw [hτdef r, ite_eq_left hrmem]
   have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
     have : (r : ℝ) ≤ s := by exact_mod_cast hrs
     linarith only [this]
@@ -918,7 +918,7 @@ theorem isSubspaceDesign_frsCode
   refine (isSubspaceDesign_frsCode_sub_one domain k s ω hFn hω_adm hω_gen).mono_tau fun r => ?_
   rw [hτdef r]
   by_cases hr : r ∈ Finset.Icc 1 s
-  · simp only [hr, if_true]
+  · simp only [hr, ite_true]
     have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
       have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
       linarith only [this]
@@ -996,7 +996,7 @@ theorem isSubspaceDesign_umCode_sub_one
   -- Outside `[1, s]` the profile is `1`, which `hsum_le` already discharges.
   by_cases hrmem : r ∈ Finset.Icc 1 s
   case neg =>
-    rw [hτdef r, if_neg hrmem]
+    rw [hτdef r, ite_eq_right hrmem]
     simpa using hsum_le
   obtain ⟨hr1, hrs⟩ := Finset.mem_Icc.mp hrmem
   have hs_pos : (0 : ℝ) < s := by
@@ -1036,7 +1036,7 @@ theorem isSubspaceDesign_umCode_sub_one
       ((s : ℝ) * (LinearCode.alphabetRate
         (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) - 1 / Fintype.card ι) /
         ((s : ℝ) - r + 1) := by
-    rw [hτdef r, if_pos hrmem]
+    rw [hτdef r, ite_eq_left hrmem]
   have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
     have : (r : ℝ) ≤ s := by exact_mod_cast hrs
     linarith only [this]
@@ -1257,7 +1257,7 @@ theorem isSubspaceDesign_umCode
   refine (isSubspaceDesign_umCode_sub_one domain k s hchar).mono_tau fun r => ?_
   rw [hτdef r]
   by_cases hr : r ∈ Finset.Icc 1 s
-  · simp only [hr, if_true]
+  · simp only [hr, ite_true]
     have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
       have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
       linarith only [this]

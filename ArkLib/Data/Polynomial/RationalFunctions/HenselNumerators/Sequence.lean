@@ -165,12 +165,12 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         refine ⟨fun i => if hlt : i.val < n + 1 then βpref ⟨i.val, hlt⟩ else βnext, ?_⟩
         intro i
         by_cases hlt : i.val < n + 1
-        · simp only [dif_pos hlt]
+        · simp only [dite_eq_left hlt]
           exact hβpref ⟨i.val, hlt⟩
         · have hval : i.val = n + 1 := by
             have hi_lt : i.val < n + 1 + 1 := i.isLt
             omega
-          simp only [dif_neg hlt]
+          simp only [dite_eq_right hlt]
           rw [hval]
           exact hβnext
   let βseq : ℕ → 𝒪 H := fun t => (Classical.choose (hprefix t)) ⟨t, Nat.lt_succ_self t⟩

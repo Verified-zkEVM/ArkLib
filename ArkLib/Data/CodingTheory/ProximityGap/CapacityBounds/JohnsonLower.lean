@@ -371,9 +371,9 @@ private theorem binary_matrix_configuration_separator_left_ne_zero (b : ℕ) :
   rw [Finset.prod_ne_zero_iff]
   intro w hw
   by_cases hzero : w = 0
-  · rw [if_pos hzero]
+  · rw [ite_eq_left hzero]
     exact one_ne_zero
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     exact binary_product_linear_form_mv_ne_zero w hzero
 
 open scoped BigOperators in
@@ -389,9 +389,9 @@ private theorem binary_matrix_direct_configuration_separator_ne_zero_of_injectiv
     rw [Finset.prod_ne_zero_iff]
     intro N hN
     by_cases hMN : M = N
-    · rw [if_pos hMN]
+    · rw [ite_eq_left hMN]
       exact one_ne_zero
-    · rw [if_neg hMN]
+    · rw [ite_eq_right hMN]
       exact sub_ne_zero.mpr (hinj.ne hMN)
 
 open scoped BigOperators in
@@ -438,9 +438,9 @@ private theorem binary_matrix_configuration_separator_ne_zero_of_lambda (b : ℕ
     rw [Finset.prod_ne_zero_iff]
     intro N hN
     by_cases hMN : M = N
-    · rw [if_pos hMN]
+    · rw [ite_eq_left hMN]
       exact one_ne_zero
-    · rw [if_neg hMN]
+    · rw [ite_eq_right hMN]
       exact sub_ne_zero.mpr (hlambda M N hMN)
 
 private noncomputable def binary_product_subspace_lambda_on_tuple {K : Type} [Field K] [CharP K 2]
@@ -553,7 +553,7 @@ private theorem binary_matrix_generic_tuple_of_separator_eval_ne_zero
     by_contra hne
     have hsub : x - y ≠ 0 := sub_ne_zero.mpr hne
     have hfactor := hleft (x - y) (Finset.mem_univ _)
-    rw [if_neg hsub, binary_product_linear_form_mv_eval₂] at hfactor
+    rw [ite_eq_right hsub, binary_product_linear_form_mv_eval₂] at hfactor
     apply hfactor
     rw [LinearMap.map_sub, hxy, sub_self]
   · intro M N hMNval
@@ -561,7 +561,7 @@ private theorem binary_matrix_generic_tuple_of_separator_eval_ne_zero
     have hinner := hright M (Finset.mem_univ _)
     rw [Finset.prod_ne_zero_iff] at hinner
     have hfactor := hinner N (Finset.mem_univ _)
-    rw [if_neg hMN] at hfactor
+    rw [ite_eq_right hMN] at hfactor
     apply hfactor
     rw [MvPolynomial.eval₂_sub]
     exact sub_eq_zero.mpr hMNval
@@ -857,7 +857,7 @@ private theorem eps_ca_lower_of_finset_witness
   let _ := Fintype.ofFinite A
   unfold ProximityGap.epsCa
   refine le_trans ?_ (le_iSup _ u)
-  rw [if_neg hnot]
+  rw [ite_eq_right hnot]
   rw [Probability.prob_uniform_eq_card_filter_div_card]
   apply ENNReal.div_le_div_right
   exact_mod_cast Finset.card_le_card (by
@@ -918,7 +918,7 @@ private theorem is_binary_linearized_sq
   rw [← Polynomial.map_frobenius_expand 2 P, Polynomial.coeff_map,
     Polynomial.coeff_expand (by omega) P n] at hncoeff
   by_cases hd : 2 ∣ n
-  · rw [if_pos hd] at hncoeff
+  · rw [ite_eq_left hd] at hncoeff
     have hpcoeff : P.coeff (n / 2) ≠ 0 := by
       intro hp0
       apply hncoeff
@@ -930,7 +930,7 @@ private theorem is_binary_linearized_sq
       n = 2 * (n / 2) := (Nat.two_mul_div_two_of_even heven).symm
       _ = 2 * 2 ^ i := by rw [hi]
       _ = 2 ^ (i + 1) := by rw [pow_succ]; omega
-  · rw [if_neg hd, map_zero] at hncoeff
+  · rw [ite_eq_right hd, map_zero] at hncoeff
     exact False.elim (hncoeff rfl)
 
 private theorem is_binary_linearized_sub
@@ -1129,14 +1129,14 @@ private theorem binary_span_polynomial_top_gap_add_two
       dsimp only [R]
       rw [Polynomial.coeff_sub, Polynomial.coeff_sub,
         Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-        Polynomial.coeff_X_pow, hlead, if_pos rfl,
-        if_neg (ne_of_gt hMN), mul_zero, sub_zero, sub_self]
+        Polynomial.coeff_X_pow, hlead, ite_eq_left rfl,
+        ite_eq_right (ne_of_gt hMN), mul_zero, sub_zero, sub_self]
     · by_cases hnM : n = M
       · subst n
         dsimp only [R]
         rw [Polynomial.coeff_sub, Polynomial.coeff_sub,
           Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-          Polynomial.coeff_X_pow, if_neg (ne_of_lt hMN), if_pos rfl]
+          Polynomial.coeff_X_pow, ite_eq_right (ne_of_lt hMN), ite_eq_left rfl]
         ring
       · have hpzero : P.coeff n = 0 := by
           by_contra hp
@@ -1160,7 +1160,7 @@ private theorem binary_span_polynomial_top_gap_add_two
         dsimp only [R]
         rw [Polynomial.coeff_sub, Polynomial.coeff_sub,
           Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-          Polynomial.coeff_X_pow, hpzero, if_neg hnN, if_neg hnM]
+          Polynomial.coeff_X_pow, hpzero, ite_eq_right hnN, ite_eq_right hnM]
         ring
 
 open scoped BigOperators in

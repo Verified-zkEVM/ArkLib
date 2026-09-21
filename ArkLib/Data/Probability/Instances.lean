@@ -108,7 +108,7 @@ theorem prob_uniform_eq_card_filter_div_card {F : Type} [Fintype F] [Nonempty F]
     (s := Finset.filter P Finset.univ) (hf := fun b => by
     simp only [Finset.mem_filter, Finset.mem_univ, true_and]
     intro hb
-    simp only [hb, if_false]
+    simp only [hb, ite_false]
   )] -- rewrite the infinite sum as a sum
   -- ⊢ (∑ b with P b, if P b then (↑(Fintype.card F))⁻¹ else 0) = ↑(#(filter P univ)) / ↑q
   rw [Finset.sum_ite] -- simplify the if-then-else inside the sum
@@ -515,11 +515,11 @@ theorem prob_const_and_prop_eq_ite {α : Type} (D : PMF α)
   classical
   by_cases h_P_out : P_out
   · -- Case 1: P_out is True
-    simp only [h_P_out, if_true, true_and]
+    simp only [h_P_out, ite_true, true_and]
   · -- Case 2: P_out is False
-    simp only [h_P_out, if_false, false_and]
+    simp only [h_P_out, ite_false, false_and]
     rw [prob_tsum_form_singleton]
-    simp only [if_false, mul_zero, tsum_zero]
+    simp only [ite_false, mul_zero, tsum_zero]
 
 /-- Congruence lemma for Probability: If P(x) ↔ Q(x) for all x, then Pr[P] = Pr[Q]. -/
 lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
@@ -682,7 +682,7 @@ theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
       Finset.sum_const, nsmul_eq_mul]
   by_cases hb : b ∈ Finset.univ.image f
   · -- b ∈ image: filter (b = f ·) has card k.
-    rw [if_pos hb]
+    rw [ite_eq_left hb]
     have h_filter_card : (Finset.univ.filter (fun a => b = f a)).card = k := by
       have h_swap :
           Finset.univ.filter (fun a => b = f a) =
@@ -697,7 +697,7 @@ theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
     rw [ENNReal.mul_inv (Or.inl h_k_ne) (Or.inl h_k_lt_top),
         ← mul_assoc, ENNReal.mul_inv_cancel h_k_ne h_k_lt_top, one_mul]
   · -- b ∉ image: filter is empty.
-    rw [if_neg hb]
+    rw [ite_eq_right hb]
     have h_empty : Finset.univ.filter (fun a => b = f a) = ∅ := by
       ext a
       simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.notMem_empty,

@@ -85,7 +85,7 @@ theorem linear_close_probability_le_epsCa
             by_cases hr : r = 0
             · subst r
               simp [hz]
-            · rw [if_neg hr]
+            · rw [ite_eq_right hr]
               rw [← Finset.card_filter]
               exact hfiber r hr
       _ = (Fintype.card F - 1) * G.card := by
@@ -138,7 +138,7 @@ theorem linear_close_probability_le_epsCa
     refine le_trans (le_of_eq ?_) (le_iSup (fun v : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
       else Pr_{let r ← $ᵖ F}[δᵣ(v 0 + r • v 1, (C : Set (ι → F))) ≤ δ]) u)
-    rw [if_neg hnotjoint]
+    rw [ite_eq_right hnotjoint]
     simp [u, Good]
   simpa [Good] using havg.trans hline
 

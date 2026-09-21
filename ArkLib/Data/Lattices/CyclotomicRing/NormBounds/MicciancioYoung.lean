@@ -79,9 +79,9 @@ private lemma coeff_modByMonic_X_pow_add_one {R : Type*} [CommRing R] [Nontrivia
     rw [coeff_add, coeff_add, coeff_mul_X_pow']
   have hk' : ¬ n ≤ k := by omega
   have hPk := hcoeff k
-  rw [if_neg hk'] at hPk
+  rw [ite_eq_right hk'] at hPk
   have hPnk := hcoeff (n + k)
-  rw [if_pos (Nat.le_add_right n k)] at hPnk
+  rw [ite_eq_left (Nat.le_add_right n k)] at hPnk
   have hRr0 : (P %ₘ g).coeff (n + k) = 0 :=
     coeff_eq_zero_of_degree_lt (lt_of_lt_of_le hRrlt (by exact_mod_cast Nat.le_add_right n k))
   have hQ0 : Q.coeff (n + k) = 0 :=

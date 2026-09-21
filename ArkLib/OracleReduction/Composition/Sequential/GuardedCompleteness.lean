@@ -19,19 +19,33 @@ reduction to be complete from every shared state and the prover execution to fac
 @[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal ENNReal
+open scoped NNReal ENNReal ProbabilityTheory
 
-private theorem probEvent_guarded_map {α β : Type} (oa : ProbComp α)
+private theorem prEvent_guarded_map {α β : Type} (oa : ProbComp α)
     (check : α → Bool) (f : α → β) (p : β → Prop) :
-    Pr[p | (do
+    Pr{let b ← (do
       let a ← (liftM oa : OptionT ProbComp α)
-      if check a then pure (f a) else failure)] =
-      Pr[fun a => check a = true ∧ p (f a) | oa] := by
+      if check a then pure (f a) else failure)}[p b] =
+      Pr{let a ← oa}[check a = true ∧ p (f a)] := by
   classical
-  rw [probEvent_bind_eq_tsum, probEvent_eq_tsum_ite]
-  apply tsum_congr
-  intro a
-  by_cases hc : check a = true <;> simp [hc]
+  have hcomp : (do
+      let a ← (liftM oa : OptionT ProbComp α)
+      if check a then pure (f a) else failure) =
+    (do
+      let a ← (liftM oa : OptionT ProbComp α)
+      (guard (check a = true) : OptionT ProbComp Unit)
+      (pure (f a) : OptionT ProbComp β)) := by
+    apply OptionT.ext
+    simp only [OptionT.run_bind, Option.elimM, OptionT.run_monadLift, monadLift_self]
+    refine bind_congr fun o => ?_
+    cases o with
+    | none => simp
+    | some a =>
+      by_cases h : check a = true <;> simp [h]
+  rw [hcomp]
+  simp only [bind_assoc, pure_bind]
+  change Pr{let a ← OptionT.lift oa; guard (check a = true)}[p (f a)] = _
+  exact OptionT.prEvent_bind_guard oa (fun a => check a = true) (fun a => p (f a))
 
 namespace Reduction
 
@@ -68,10 +82,10 @@ theorem completeness_iff_of_guarded_verifier
     (rel₁ : Set (Stmt₁ × Wit₁)) (rel₂ : Set (Stmt₂ × Wit₂)) (ε : ℝ≥0) :
     R.completeness init impl rel₁ rel₂ ε ↔
       ∀ stmt wit, (stmt, wit) ∈ rel₁ →
-        1 - (ε : ℝ≥0∞) ≤ Pr[fun q => G.check stmt q.1.1 = true ∧
-          (G.out stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = G.out stmt q.1.1 | do
+        1 - (ε : ℝ≥0∞) ≤ Pr{let q ← do
           (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (R.prover.run stmt wit)).run (← init)] := by
+            (R.prover.run stmt wit)).run (← init)}[G.check stmt q.1.1 = true ∧
+          (G.out stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = G.out stmt q.1.1] := by
   unfold completeness
   simp only [run_eq_of_guarded_verifier R G]
   have hrun (stmt : Stmt₁) (wit : Wit₁) :
@@ -94,7 +108,15 @@ theorem completeness_iff_of_guarded_verifier
     refine bind_congr fun s => ?_
     refine bind_congr fun q => ?_
     by_cases hc : G.check stmt q.1.1 = true <;> simp [hc]
-  simp only [hrun, probEvent_guarded_map]
+  constructor
+  · intro h stmt wit hRel
+    have h' := h stmt wit hRel
+    rw [hrun, prEvent_guarded_map] at h'
+    simpa only [bind_assoc, Prod.fst, Prod.snd] using h'
+  · intro h stmt wit hRel
+    have h' := h stmt wit hRel
+    rw [hrun, prEvent_guarded_map]
+    simpa only [bind_assoc, Prod.fst, Prod.snd] using h'
 
 /-- Completeness from every deterministic oracle state implies completeness from any initial
 state distribution. The verifier is guarded, so initialization is the only outer mixture. -/
@@ -108,10 +130,16 @@ theorem completeness_of_guarded_states
   intro stmt wit hRel
   have hstate (s : σ) :=
     (completeness_iff_of_guarded_verifier R V rel₁ rel₂ ε).mp (h s) stmt wit hRel
-  have hbound := mul_le_probEvent_bind (p := fun _ : σ => True)
-    (r := 1) (r' := 1 - (ε : ℝ≥0∞)) (mx := init)
-    (by simp) (fun s _ _ => by simpa only [pure_bind] using hstate s)
-  simpa only [one_mul] using hbound
+  have hbound := mul_le_prEvent_bind_of_forall init
+    (fun s =>
+      (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (R.prover.run stmt wit)).run s)
+    (fun _ : σ => True)
+    (fun q => V.check stmt q.1.1 = true ∧
+      (V.out stmt q.1.1, q.1.2.2) ∈ rel₂ ∧ q.1.2.1 = V.out stmt q.1.1)
+    (r := 1) (r' := 1 - (ε : ℝ≥0∞)) (by simp)
+    (fun s _ => by simpa only [pure_bind] using hstate s)
+  simpa only [one_mul, bind_assoc] using hbound
 
 variable [∀ i, SampleableType (pSpec₂.Challenge i)]
 
@@ -143,16 +171,30 @@ theorem append_completeness_of_guarded_prover_factorization
   dsimp only [Reduction.append]
   simp only [hFactor stmt wit,
     StateT.run_bind, StateT.run_pure]
-  rw [← bind_assoc]
-  refine mul_le_probEvent_bind hfirst ?_
-  intro q₁ _ hGood
-  have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
-    rw [hGood.2.2]
-    exact hGood.2.1)
-  rw [bind_pure_comp]
-  simpa only [pure_bind, probEvent_map, Function.comp_def, VA,
-    Verifier.GuardedForm.append, FullTranscript.append_fst, FullTranscript.append_snd,
-    hGood.1, Bool.true_and, ← hGood.2.2] using hnext
+  have hbound := mul_le_prEvent_bind_of_forall
+    (do
+      let s ← init
+      (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (R₁.prover.run stmt wit)).run s)
+    (fun q₁ =>
+      do
+        let q₂ ←
+          (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+            (R₂.prover.run q₁.1.2.1 q₁.1.2.2)).run q₁.2
+        return ((q₁.1.1 ++ₜ q₂.1.1, q₂.1.2), q₂.2))
+    (fun q₁ => V₁.check stmt q₁.1.1 = true ∧
+      (V₁.out stmt q₁.1.1, q₁.1.2.2) ∈ rel₂ ∧ q₁.1.2.1 = V₁.out stmt q₁.1.1)
+    (fun q => VA.check stmt q.1.1 = true ∧
+      (VA.out stmt q.1.1, q.1.2.2) ∈ rel₃ ∧ q.1.2.1 = VA.out stmt q.1.1)
+    (by simpa only [bind_assoc] using hfirst) (by
+      intro q₁ hGood
+      have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
+        rw [hGood.2.2]
+        exact hGood.2.1)
+      simpa only [bind_assoc, pure_bind, Function.comp_def, VA,
+        Verifier.GuardedForm.append, FullTranscript.append_fst, FullTranscript.append_snd,
+        hGood.1, Bool.true_and, ← hGood.2.2] using hnext)
+  simpa only [bind_assoc] using hbound
 
 /-- Sequential composition preserves completeness for guarded verifiers when the prover execution
 factors at the seam and stage two is complete from every shared oracle state. Its error is at most

@@ -141,55 +141,25 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 theorem oracleReduction_completeness :
     (oracleReduction oSpec OStatement).perfectCompleteness
       init impl (relIn OStatement) (relOut OStatement) := by
-  simp only [OracleReduction.perfectCompleteness, oracleReduction, relIn, relOut]
-  simp only [Reduction.perfectCompleteness_eq_prob_one]
-  intro ⟨stmt, oStmt⟩ wit hOStmt
+  apply Reduction.perfectCompleteness_of_run_support
+  rintro ⟨stmt, oStmt⟩ wit hOStmt x hx
   have hEq : oStmt 0 = oStmt 1 := hOStmt
-  simp only [OracleReduction.toReduction, Reduction.run,
+  simp only [OracleReduction.toReduction, oracleReduction, Reduction.run,
     Prover.run_of_verifier_first, oracleProver, oracleVerifier,
-    OracleVerifier.toVerifier, Verifier.run]
-  simp_rw [show (pure : _ → OptionT (OracleComp _) _) = fun x => (pure (some x) :
-    OracleComp _ _) from rfl]
-  simp only [OracleComp.liftComp_pure, ← OracleComp.liftComp_eq_liftM, pure_bind]
-  erw [simulateQ_bind]
-  erw [simulateQ_bind]
-  simp only [QueryImpl.addLift_def, monadLift_bind, monadLift_pure, simulateQ_pure,
-    bind_assoc, pure_bind]
-  erw [simulateQ_bind]
-  simp only [Challenge, ChallengeIdx, simulateQ_pure, OptionT.run,
-    FullTranscript.challenges, map_pure, Option.getM, bind_assoc, pure_bind]
-  erw [simulateQ_query]
-  simp only [StmtOut, OStmtOut, WitOut, Fin.isValue, Fin.vcons_of_one, ChallengeIdx,
-    Challenge, ofPFunctor_toPFunctor, QueryImpl.liftTarget_self, MessageIdx,
-    Message, bind_map_left, StateT.run'_eq, StateT.run_bind, map_bind, OptionT.mk_bind,
-    Set.mem_ofPred_eq, probEvent_eq_one_iff, probFailure_bind_eq_zero_iff,
-    OptionT.probFailure_liftM, probFailure_eq_zero, OptionT.support_liftM,
-    Prod.forall, true_and, support_bind, Set.mem_iUnion, OptionT.mem_support_iff,
-    OptionT.run_mk, support_map, Set.mem_image, Prod.exists, exists_and_right,
-    exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.mk.injEq]
-  constructor <;> intro <;> intro <;> intro <;> intro
-  all_goals try erw [simulateQ_bind]
-  all_goals simp only [monadLift, MonadLift.monadLift, liftM]
-  all_goals simp only [OptionT.run]
-  all_goals try erw [simulateQ_pure]
-  all_goals try simp_all only [pure_bind, OptionT.probFailure_eq, OptionT.run,
-    probFailure_eq_zero]
-  · rw [show OptionT.mk = id from rfl]
-    simp only [ChallengeIdx, Fin.vcons_of_one, Challenge, Fin.isValue, input_query,
-      cont_query, id_eq, zero_add, probOutput_eq_zero_iff, support_map,
-      Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, not_exists]
-    intro
-    erw [simulateQ_pure]
-    simp only [Fin.isValue, StmtIn, StateT.run_pure, support_pure,
-      Set.mem_singleton_iff, Prod.mk.injEq, reduceCtorEq, false_and,
-      not_false_eq_true, implies_true]
-  · intro a b x hx x_1 hx1 x_2 x_3
-    erw [simulateQ_bind]
-    simp only [OptionT.lift]
-    erw [simulateQ_pure]
-    simp only [StateT.run, pure_bind]
-    rintro ⟨⟨rfl, rfl⟩, rfl⟩
-    refine ⟨?_, rfl, ?_⟩ <;> congr 1
+    OracleVerifier.toVerifier, Verifier.run] at hx
+  simp_rw [show (pure : _ → OptionT (OracleComp _) _) = fun y =>
+    (pure (some y) : OracleComp _ _) from rfl] at hx
+  simp only [OracleComp.liftComp_pure, ← OracleComp.liftComp_eq_liftM, pure_bind,
+    OptionT.run_mk] at hx
+  obtain ⟨qSupport, hqSupport, hx⟩ := hx
+  obtain ⟨q, rfl⟩ := hqSupport
+  simp only [Challenge, ChallengeIdx, FullTranscript.challenges, Option.getM,
+    Fin.isValue, Fin.vcons_of_one, StmtOut, OStmtOut, WitOut, MessageIdx, Message] at hx
+  subst x
+  refine ⟨_, rfl, ?_, rfl⟩
+  simp only [relOut, Set.mem_ofPred_eq]
+  change answer (oStmt 0) _ = answer (oStmt 1) _
+  rw [hEq]
 
 -- def langIn : Set (Unit × (∀ _ : Fin 2, OStatement)) := setOf fun ⟨(), oracles⟩ =>
 --   oracles 0 = oracles 1
@@ -210,11 +180,10 @@ def stateFunction [Inhabited OStatement] : (oracleVerifier oSpec OStatement).Sta
     -- The verifier deterministically returns `(tr 0, oStmt)`. The output is in `relOut.language`
     -- iff `answer (oStmt 0) (tr 0) = answer (oStmt 1) (tr 0)`, but the hypothesis `h` says exactly
     -- the opposite for the last-round state function `toFun 1`.
-    rw [probEvent_eq_zero_iff]
+    rw [OracleComp.OptionT.prEvent_mk_eq_zero_iff]
     intro x hx
-    rw [OptionT.mem_support_iff] at hx
     -- Unfold the verifier-run inside `hx`.
-    simp only [Verifier.run, OracleVerifier.toVerifier, OptionT.run_mk,
+    simp only [Verifier.run, OracleVerifier.toVerifier,
       support_bind, Set.mem_iUnion] at hx
     rw [oracleVerifier_materializeOutput] at hx
     simp only [oracleVerifier] at hx
@@ -260,10 +229,9 @@ def knowledgeStateFunction :
     -- witness `witOut : Unit`, then `answer (oStmt 0) (tr 0) = answer (oStmt 1) (tr 0)`, exactly
     -- what `toFun 1 _ tr ()` asserts.
     intro h
-    rw [gt_iff_lt, probEvent_pos_iff] at h
+    rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
     obtain ⟨x, hx, hRel⟩ := h
-    rw [OptionT.mem_support_iff] at hx
-    simp only [Verifier.run, OracleVerifier.toVerifier, OptionT.run_mk,
+    simp only [Verifier.run, OracleVerifier.toVerifier,
       support_bind, Set.mem_iUnion] at hx
     rw [oracleVerifier_materializeOutput] at hx
     simp only [oracleVerifier] at hx
@@ -320,17 +288,8 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
           (fun j : Fin 0 => Fin.elim0 j) (0 : Fin 1) = challenge := by
       exact ProtocolSpec.Transcript.concat_zero (pSpec := pSpec OStatement) challenge
         (fun j : Fin 0 => Fin.elim0 j)
-    have hpred :
-        (fun challenge : Query OStatement =>
-          answer (oracles 0) (@ProtocolSpec.Transcript.concat 1 (pSpec OStatement)
-            (0 : Fin 1) challenge (fun j : Fin 0 => Fin.elim0 j) (0 : Fin 1)) =
-          answer (oracles 1) (@ProtocolSpec.Transcript.concat 1 (pSpec OStatement)
-            (0 : Fin 1) challenge (fun j : Fin 0 => Fin.elim0 j) (0 : Fin 1))) =
-        fun q => answer (oracles 0) q = answer (oracles 1) q := by
-      funext challenge
-      rw [hconcat]
-    rw [hpred]
-    rw [@probEvent_uniformSample (Query OStatement) inst _ _ decPred]
+    rw [prEvent_congr ($ᵗ Query OStatement) _ _ fun challenge => by rw [hconcat]]
+    rw [@SampleableType.prEvent_uniformSample (Query OStatement) inst _ _ decPred]
     have hfilter : Finset.univ.filter (fun q =>
         answer (oracles 0) q = answer (oracles 1) q) =
         O.agreementQueries (oracles 0) (oracles 1) := by

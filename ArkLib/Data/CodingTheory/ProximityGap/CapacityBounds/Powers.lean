@@ -465,14 +465,14 @@ private theorem powers_compatible_tuple_card_lower
               ((powers_tuple_intersection (k + 2) T xs).card : ℝ) ≤
                 (Fintype.card ι : ℝ) := by exact_mod_cast hcard
           have hsub : 0 ≤ ((Fintype.card ι - D : ℕ) : ℝ) := by positivity
-          simp only [if_pos hgood]
+          simp only [ite_eq_left hgood]
           linarith
         · have hnot : ¬ (powers_tuple_intersection (k + 2) T xs).card >
               Fintype.card ι - D := by
             simpa only [Good, Finset.mem_filter, Finset.mem_univ, true_and] using hgood
           have hcard : (powers_tuple_intersection (k + 2) T xs).card ≤
               Fintype.card ι - D := Nat.le_of_not_lt hnot
-          simp only [if_neg hgood, add_zero]
+          simp only [ite_eq_right hgood, add_zero]
           exact_mod_cast hcard
       _ = (Fintype.card S : ℝ) ^ (k + 2) *
             ((Fintype.card ι - D : ℕ) : ℝ) +

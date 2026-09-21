@@ -158,8 +158,8 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     apply Finset.sum_congr rfl
     intro a ha
     by_cases heq : w H' a = w H a
-    · rw [if_pos heq, if_pos heq.symm]
-    · rw [if_neg heq, if_neg (Ne.symm heq)]
+    · rw [ite_eq_left heq, ite_eq_left heq.symm]
+    · rw [ite_eq_right heq, ite_eq_right (Ne.symm heq)]
   have hrow (H) (hH : H ∈ L0) :
       ∑ H' ∈ L0, Code.agree (w H) (w H') ≤ q + q * k := by
     rw [← Finset.sum_erase_add L0 (fun H' => Code.agree (w H) (w H')) hH]
@@ -479,7 +479,7 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     rw [← Probability.prob_uniform_eq_card_filter_div_card Pevent]
     dsimp only [Pevent]
     unfold epsCa
-    exact le_iSup_of_le u (by rw [if_neg hnotjoint])
+    exact le_iSup_of_le u (by rw [ite_eq_right hnotjoint])
   exact (not_lt_of_ge (hlowerprob.trans hratio_le)) _hε_ca
 
 end CAImpliesList

@@ -584,7 +584,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       have hi0 := Finset.sum_eq_zero_iff.mp hsum0 i hi
       by_cases hli : l i = 0
       · omega
-      · rw [if_neg hli] at hi0; omega
+      · rw [ite_eq_right hli] at hi0; omega
     -- so the parts never consume more correction than the `t` available at `t+1`
     have hPc_le : Pc ≤ t := by
       rcases Nat.eq_zero_or_pos S1 with hS0 | hS1pos
@@ -891,13 +891,13 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       else 0 := by
     intro i
     by_cases h : i ≤ t
-    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [if_pos h]
-      rw [hval, dif_pos h]
+    · have hval : αtrunc i = αseq i := by rw [hαtrunc]; simp only [ite_eq_left h]
+      rw [hval, dite_eq_left h]
       have := hshape i
       unfold alphaOfNumerators at this
       rw [← this]
-    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [if_neg h]
-      rw [hval, dif_neg h]
+    · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [ite_eq_right h]
+      rw [hval, dite_eq_right h]
   -- ihNum: clearing each αtrunc
   have ihNum : ∀ i, i ≤ t →
       RegularWeightLe hH
@@ -910,11 +910,11 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     have hetane : embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ≠ 0 := by
       rw [embeddingOf𝒪Into𝕃_xi]
       exact mul_ne_zero (pow_ne_zero _ hW) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
-    rw [hshapeT i, dif_pos hi,
+    rw [hshapeT i, dite_eq_left hi,
       div_mul_cancel₀ _ (mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ hetane))]
     exact ihAll i hi
   have hαzero : ∀ i, t < i → αtrunc i = 0 := by
-    intro i hi; simp only [hαtrunc, if_neg (show ¬ i ≤ t by omega)]
+    intro i hi; simp only [hαtrunc, ite_eq_right (show ¬ i ≤ t by omega)]
   -- expand evalRAtPowerSeries
   unfold evalRAtPowerSeries
   rw [Polynomial.eval₂_eq_sum_range, map_sum, Finset.sum_mul]

@@ -175,7 +175,7 @@ theorem binary_functional_lambda_zero (b : ℕ) (hb : 0 < b) :
   rw [Polynomial.coeff_X_pow]
   have hsub : b - 1 < b := by omega
   have hpow : 2 ^ (b - 1) < 2 ^ b := pow_right_strictMono₀ (by omega) hsub
-  rw [if_neg (ne_of_lt hpow)]
+  rw [ite_eq_right (ne_of_lt hpow)]
 
 def binary_graph_embedding_prod {b : ℕ}
     (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :

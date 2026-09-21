@@ -185,7 +185,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
       have hc := hleft_Icc j
       have hcoeff_ne : q.coeff (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ)) ≠ 0 := by
         have hne' := hne (Fin.castAdd d j)
-        rwa [hentry, if_pos hc] at hne'
+        rwa [hentry, ite_eq_left hc] at hne'
       have hsup : (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ)) ∈ q.support :=
         Polynomial.mem_support_iff.mpr hcoeff_ne
       have hbound := natDegree_coeff_monicize_le_of_totalDegree_le (F := F) (H := H) (D := D) hD
@@ -201,7 +201,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
       have hc := hright_Icc j
       have hcoeff_ne : p.coeff (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ)) ≠ 0 := by
         have hne' := hne (Fin.natAdd e j)
-        rwa [hentry, if_pos hc] at hne'
+        rwa [hentry, ite_eq_left hc] at hne'
       have hsup : (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ)) ∈ p.support :=
         Polynomial.mem_support_iff.mpr hcoeff_ne
       have hbound := canonicalRep_coeff_natDegree_le_of_weight_bound (F := F) (H := H) hH β hβw

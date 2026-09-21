@@ -74,7 +74,7 @@ private theorem rs_fold_probability_le_eps_ca_of_not_joint
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
       else Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
-  rw [if_neg hnot] at hle
+  rw [ite_eq_right hnot] at hle
   exact hle
 
 omit [DecidableEq ι] in
@@ -362,7 +362,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
         (((do
           let x ← PMF.uniformOfFintype F
           return δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)) True) : ENNReal)) v)
-    rw [if_neg hvnot, Probability.prob_uniform_eq_card_filter_div_card]
+    rw [ite_eq_right hvnot, Probability.prob_uniform_eq_card_filter_div_card]
   have hGoodR : (Good.card : ℝ) ≤ ε * q := by
     have htr := ENNReal.toReal_mono (rs_eps_ca_ne_top Ck _ _) hprob
     have hdiv : (Good.card : ℝ) / q ≤

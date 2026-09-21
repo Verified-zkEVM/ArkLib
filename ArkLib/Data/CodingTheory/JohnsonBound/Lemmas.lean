@@ -390,8 +390,7 @@ lemma johnson_unrefined [Zero F]
     have this := almost_johnson_choose_2_elimed h_n h_B h_card
     rw [div_le_iff₀ (by positivity)]
     convert this using 1
-    · rfl
-    · field_simp [h_n.ne']
+    field_simp [h_n.ne']
   convert h_rewrite using 1
   convert almost_johnson_lhs_div_B_card h_n h_B |> Eq.symm using 1
 

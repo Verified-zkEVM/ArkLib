@@ -503,12 +503,12 @@ private theorem powers_module_zero_set_card_le
       Polynomial.C (φ (v b)) * Polynomial.X ^ (b : ℕ)).coeff (j0 : ℕ) = _
     rw [Polynomial.finsetSum_coeff]
     rw [Finset.sum_eq_single j0]
-    · rw [Polynomial.coeff_C_mul_X_pow, if_pos rfl]
+    · rw [Polynomial.coeff_C_mul_X_pow, ite_eq_left rfl]
     · intro b _ hb
       have hne : (j0 : ℕ) ≠ (b : ℕ) := by
         intro h
         exact hb (Fin.ext h.symm)
-      rw [Polynomial.coeff_C_mul_X_pow, if_neg hne]
+      rw [Polynomial.coeff_C_mul_X_pow, ite_eq_right hne]
     · simp
   have hp : p ≠ 0 := by
     intro hp0

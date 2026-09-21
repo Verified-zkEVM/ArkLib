@@ -299,10 +299,11 @@ private lemma aeval_shift_monomial_nonzero_case
     map_prod, map_pow, bind₁_X_right, dite_pow, pow_zero, mem_support_iff, coeff_C_mul, ne_eq,
     mul_eq_zero, not_or, not_and, not_not]
   have h_coeff :
-    coeff s (∏ x : Fin n,
+    (∏ x : Fin n,
       if h : x = 0
       then 1
-      else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ m x) = 0 := by
+      else (MvPolynomial.X ⟨↑x - 1, by omega⟩ : MvPolynomial (Fin (n - 1)) R) ^ m x).coeff s
+      = 0 := by
     have h_coeff :
       ∀ (t : Fin n → ℕ),
         (∏ x : Fin n,
@@ -315,7 +316,7 @@ private lemma aeval_shift_monomial_nonzero_case
       intro t
       induction (Finset.univ : Finset (Fin n)) using Finset.induction
         <;> aesop
-              (add simp [Finset.prod_insert, MvPolynomial.monomial_mul,
+              (add simp [Finset.prod_insert, MvPolynomial.monomial_mul_monomial,
                           MvPolynomial.X_pow_eq_monomial])
     simp_all only [coeff_monomial, ite_eq_right_iff, one_ne_zero, imp_false, ne_eq]
     intro h

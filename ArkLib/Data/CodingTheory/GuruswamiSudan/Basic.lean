@@ -558,7 +558,7 @@ lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
     simp only [linearCombination_apply, Finsupp.sum, finsetSum_coeff, coeff_smul, smul_eq_mul]
     rw [Finset.sum_eq_single (i, j)] <;> simp +contextual only [Finsupp.mem_support_iff, ne_eq,
       mul_eq_zero, false_or, Prod.forall, Prod.mk.injEq, not_and]
-    · erw [coeff_monomial, if_pos rfl]; aesop
+    · erw [coeff_monomial, ite_eq_left rfl]; aesop
     · intro a b
       rw [monomial]
       by_cases ha : a = i <;> by_cases hb : b = j <;> simp_all [coeff_monomial]
@@ -762,7 +762,7 @@ lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : 
       rotate_left
       · exact p.1 + p.2
       · rw [List.mem_filterMap]
-        exact ⟨p, hp.1, by simp only [if_neg hp.2.2, hp.2.1]⟩
+        exact ⟨p, hp.1, by simp only [ite_eq_right hp.2.2, hp.2.1]⟩
       · cases h : List.min? (List.filterMap (fun p ↦ if Bivariate.coeff g p.1 p.2 = 0
           then Option.none else Option.some (p.1 + p.2)) (List.product (List.range
             (natWeightedDegree g 1 1 + 1)) (List.range (natWeightedDegree g 1 1 + 1)))) <;> aesop

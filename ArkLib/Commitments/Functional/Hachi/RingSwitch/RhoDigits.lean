@@ -145,7 +145,7 @@ object, and `Rq.ofFinCoeff` reads it back into `Rq Φ` losslessly. -/
 theorem rhoDigits_natDegree_le (b : ℕ) (ρ : CPolynomial (ZMod q)) (u : ℕ) :
     (rhoDigits Φ b ρ u).toPoly.natDegree ≤ Φ.φ.natDegree - 1 := by
   refine Polynomial.natDegree_le_iff_coeff_eq_zero.mpr fun k hk => ?_
-  rw [← CPolynomial.coeff_toPoly, rhoDigits_coeff, if_neg (by omega)]
+  rw [← CPolynomial.coeff_toPoly, rhoDigits_coeff, ite_eq_right (by omega)]
 
 omit [NeZero q] in
 /-- Every digit coefficient of every quotient row is `⌊b/2⌋`-bounded, unconditionally.
@@ -181,10 +181,10 @@ theorem rhoDigits_reconstruct {b : ℕ} (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
   rw [Polynomial.finsetSum_coeff]
   simp only [Polynomial.coeff_C_mul, hcoe]
   by_cases hk : k < Φ.φ.natDegree
-  · simp only [if_pos hk]
+  · simp only [ite_eq_left hk]
     rw [balancedDigit_reconstruct hb (Nat.le_pow_clog hb q) (ρ.coeff k),
       ← CPolynomial.coeff_toPoly]
-  · simp only [if_neg hk, mul_zero, Finset.sum_const_zero]
+  · simp only [ite_eq_right hk, mul_zero, Finset.sum_const_zero]
     exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
 
 omit [NeZero q] in

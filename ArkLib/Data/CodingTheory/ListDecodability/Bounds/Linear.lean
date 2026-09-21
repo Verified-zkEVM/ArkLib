@@ -795,7 +795,7 @@ theorem linear_card_le_generalized_singleton
     have howner : ∀ (i : Fin (ℓ + 1)) (j : Fin d), owner (g (i, j) : ι) = i := by
       intro i j
       dsimp [owner]
-      rw [dif_pos ⟨(i, j), rfl⟩]
+      rw [dite_eq_left ⟨(i, j), rfl⟩]
       let hex : ∃ z : Fin (ℓ + 1) × Fin d, (g z : ι) = (g (i, j) : ι) := ⟨(i, j), rfl⟩
       have heq : Classical.choose hex = (i, j) :=
         g.injective (Subtype.ext (Classical.choose_spec hex))
@@ -859,10 +859,10 @@ theorem linear_card_le_generalized_singleton
       apply Set.le_ncard_of_inj_on_range
         (fun r : ℕ => if hr : r < ℓ + 1 then (c ⟨r, hr⟩ : ι → F) else 0)
       · intro r hr
-        rw [dif_pos hr]
+        rw [dite_eq_left hr]
         exact hclose ⟨r, hr⟩
       · intro r hr s hs hrs
-        simp only [dif_pos hr, dif_pos hs] at hrs
+        simp only [dite_eq_left hr, dite_eq_left hs] at hrs
         have hij : (⟨r, hr⟩ : Fin (ℓ + 1)) = ⟨s, hs⟩ := by
           apply hc_inj
           apply Subtype.ext

@@ -197,73 +197,72 @@ theorem run_preserves (n : Nat) (I : Fin (n + 1) → ExecutionInterface.{u})
     simpa only [pure_bind] using hout
 
 
-/-- Almost-sure stage acceptance and preservation imply almost-sure final acceptance and
-preservation, starting from one initial invariant. The event excludes explicit rejection. -/
-theorem run_preserves_prob [OracleSpec.IsUniformSpec ambient]
-    (n : Nat) (I : Fin (n + 1) → ExecutionInterface.{u})
+/-- Operational form of ordered completeness: every possible output of the execution is an
+accepted output satisfying the final invariant, provided every possible output of each stage
+does so from an input satisfying its invariant. No probability interpretation is involved. -/
+theorem run_preserves_support (n : Nat) (I : Fin (n + 1) → ExecutionInterface.{u})
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (Inv : (i : Fin (n + 1)) → (I i).State → Prop)
     (preserves : ∀ (i : Fin n) (input : (I i.castSucc).State), Inv i.castSucc input →
-      probEvent ((stages i).run input)
-        (fun result => ∃ output, result = some output ∧ Inv i.succ output) = 1)
+      ∀ result ∈ support ((stages i).run input),
+        ∃ output, result = some output ∧ Inv i.succ output)
     (input : (I ⟨0, Nat.zero_lt_succ _⟩).State)
     (hinput : Inv ⟨0, Nat.zero_lt_succ _⟩ input) :
-    probEvent (run n I stages input)
-      (fun result => ∃ output, result = some output ∧ Inv (Fin.last n) output) = 1 := by
-  classical
+    ∀ result ∈ support (run n I stages input),
+      ∃ output, result = some output ∧ Inv (Fin.last n) output := by
   induction n with
   | zero =>
-    rw [run_zero, probEvent_pure]
-    exact if_pos ⟨input, rfl, hinput⟩
+    intro result hresult
+    rw [run_zero, support_pure, Set.mem_singleton_iff] at hresult
+    exact ⟨input, hresult, hinput⟩
   | succ n ih =>
-    have hfirst := probEvent_eq_one_iff.mp
-      (preserves ⟨0, Nat.zero_lt_succ _⟩ input hinput)
-    rw [run_succ]
-    have hcont : ∀ mid ∈ support ((stages ⟨0, Nat.zero_lt_succ _⟩).run input),
-        probEvent (match mid with
-          | none => pure none
-          | some value => run n (fun i => I i.succ) (fun i => stages i.succ) value)
-          (fun result => ∃ output, result = some output ∧ Inv (Fin.last (n + 1)) output) = 1 := by
-      intro mid hmid
-      obtain ⟨value, rfl, hvalue⟩ := hfirst.2 mid hmid
-      exact ih (fun i => I i.succ) (fun i => stages i.succ)
-        (fun i => Inv i.succ) (fun i => preserves i.succ) value hvalue
-    calc
-      _ = (1 - probFailure ((stages ⟨0, Nat.zero_lt_succ _⟩).run input)) * 1 :=
-        probEvent_bind_of_const _ hcont
-      _ = 1 := by rw [hfirst.1]; simp
+    intro result hresult
+    rw [run_succ, mem_support_bind_iff] at hresult
+    obtain ⟨mid, hmid, hresult⟩ := hresult
+    obtain ⟨value, rfl, hvalue⟩ := preserves ⟨0, Nat.zero_lt_succ _⟩ input hinput mid hmid
+    exact ih (fun i => I i.succ) (fun i => stages i.succ) (fun i => Inv i.succ)
+      (fun i => preserves i.succ) value hvalue result hresult
 
-/-- Native discrete measure formulation of ordered perfect completeness. The explicit query
-compatibility hypothesis relates the measure specification to the probability specification;
-closing and stage execution themselves do not depend on either interpretation. -/
-theorem run_preserves_measure [OracleSpec.IsUniformSpec ambient]
-    [∀ q, MeasurableSpace (ambient q)]
-    [ambient.toPFunctor.IsMeasureSpec]
-    [∀ q, DiscreteMeasurableSpace (ambient q)] [∀ q, Countable (ambient q)]
-    (hmeasure : ∀ q, PFunctor.IsMeasureSpec.toMeasure (P := ambient.toPFunctor) q =
-      (PFunctor.IsProbabilitySpec.toPMF (P := ambient.toPFunctor) q).toMeasure)
+/-- Native measure formulation of ordered perfect completeness: almost-sure stage acceptance and
+preservation imply almost-sure final acceptance and preservation. The argument is measure
+theoretic — each stage's event has full mass, so the continuation's event integrates to full
+mass — and needs only the measure interpretation of the ambient oracles, not uniform sampling. -/
+theorem run_preserves_measure
+    [∀ q, MeasurableSpace (ambient q)] [∀ q, DiscreteMeasurableSpace (ambient q)]
+    [ambient.IsMeasureSpec]
     (n : Nat) (I : Fin (n + 1) → ExecutionInterface.{u})
+    [∀ i, MeasurableSpace (I i).State] [∀ i, DiscreteMeasurableSpace (I i).State]
     (stages : (i : Fin n) → ClosedStage ambient (I i.castSucc) (I i.succ))
     (Inv : (i : Fin (n + 1)) → (I i).State → Prop)
     (preserves : ∀ (i : Fin n) (input : (I i.castSucc).State), Inv i.castSucc input →
-      discreteEvalDist ((stages i).run input)
+      𝒟[(stages i).run input]
         {result | ∃ output, result = some output ∧ Inv i.succ output} = 1)
     (input : (I ⟨0, Nat.zero_lt_succ _⟩).State)
     (hinput : Inv ⟨0, Nat.zero_lt_succ _⟩ input) :
-    discreteEvalDist (run n I stages input)
+    𝒟[run n I stages input]
       {result | ∃ output, result = some output ∧ Inv (Fin.last n) output} = 1 := by
-  have bridge : ∀ {α : Type u} (program : OracleComp ambient α) (event : α → Prop),
-      discreteEvalDist program {result | event result} = probEvent program event := by
-    intro α program event
-    let : MeasurableSpace α := ⊤
-    exact PFunctor.FreeM.evalDist_apply_setOf hmeasure program event
-      MeasurableSet.of_discrete
-  rw [bridge]
-  apply run_preserves_prob n I stages Inv
-  · intro i state hstate
-    rw [← bridge]
-    exact preserves i state hstate
-  · exact hinput
+  induction n with
+  | zero =>
+    rw [run_zero, evalDist_pure, MeasureTheory.Measure.dirac_apply_of_mem]
+    exact ⟨input, rfl, hinput⟩
+  | succ n ih =>
+    rw [run_succ, evalDist_bind_of_discrete,
+      MeasureTheory.Measure.bind_apply MeasurableSet.of_discrete
+        Measurable.of_discrete.aemeasurable]
+    have hfirst := (MeasureTheory.ae_iff_prob_eq_one Measurable.of_discrete).mpr
+      (preserves ⟨0, Nat.zero_lt_succ _⟩ input hinput)
+    have hcont : ∀ᵐ mid ∂𝒟[(stages ⟨0, Nat.zero_lt_succ _⟩).run input],
+        𝒟[match mid with
+          | none => pure none
+          | some value => run n (fun i => I i.succ) (fun i => stages i.succ) value]
+          {result | ∃ output, result = some output ∧ Inv (Fin.last (n + 1)) output} = 1 := by
+      filter_upwards [hfirst] with mid hmid
+      obtain ⟨value, rfl, hvalue⟩ := hmid
+      exact ih (fun i => I i.succ) (fun i => stages i.succ)
+        (fun i => Inv i.succ) (fun i => preserves i.succ) value hvalue
+    refine (MeasureTheory.lintegral_congr_ae hcont).trans ?_
+    rw [MeasureTheory.lintegral_const, one_mul]
+    exact OracleComp.evalDist_apply_univ_eq_one _
 
 /-- Splitting the ordered execution at any middle interface preserves its exact effect order.
 The suffix starts with the accepted claim and private state returned by the prefix. -/

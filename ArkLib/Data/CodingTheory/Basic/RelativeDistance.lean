@@ -613,7 +613,7 @@ lemma minRelHammingDistCode_of_empty
     (h : ¬ (possibleRelHammingDists C).Nonempty) :
     minRelHammingDistCode C = 0 := by
   unfold minRelHammingDistCode
-  rw [dif_neg h]
+  rw [dite_eq_right h]
 
 /-- The minimum is attained: `δᵣ C` is the relative distance between some pair of distinct
 codewords. -/
@@ -622,7 +622,7 @@ lemma minRelHammingDistCode_mem
     (h : (possibleRelHammingDists C).Nonempty) :
     minRelHammingDistCode C ∈ possibleRelHammingDists C := by
   unfold minRelHammingDistCode
-  rw [dif_pos h]
+  rw [dite_eq_left h]
   have := Finset.min'_mem finite_possibleRelHammingDists.toFinset
     ((Set.Finite.toFinset_nonempty (hs := finite_possibleRelHammingDists)).mpr h)
   rwa [Set.Finite.mem_toFinset] at this
@@ -634,7 +634,7 @@ lemma minRelHammingDistCode_le
     {q : ℚ≥0} (hq : q ∈ possibleRelHammingDists C) : minRelHammingDistCode C ≤ q := by
   have h_ne : (possibleRelHammingDists C).Nonempty := ⟨q, hq⟩
   unfold minRelHammingDistCode
-  rw [dif_pos h_ne]
+  rw [dite_eq_left h_ne]
   exact Finset.min'_le _ _ ((Set.Finite.mem_toFinset (hs := finite_possibleRelHammingDists)).mpr hq)
 
 /-- The minimum relative Hamming distance is at most `1`; the lower bound `0 ≤ δᵣ C` is

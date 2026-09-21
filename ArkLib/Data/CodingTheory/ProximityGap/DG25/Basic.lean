@@ -19,13 +19,13 @@ public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.CodingTheory.Prelims
 public import Mathlib.Algebra.Lie.OfAssociative
 public import Mathlib.Data.Finset.BooleanAlgebra
-public import Mathlib.Data.Real.Basic
+public import Mathlib.Basic.Real.Basic
 public import Mathlib.Analysis.Real.Sqrt
 public import Mathlib.Data.Set.Defs
 public import Mathlib.Probability.Distributions.Uniform
 public import Mathlib.RingTheory.Henselian
 public import Mathlib.Probability.ProbabilityMassFunction.Constructions
-public import Mathlib.Data.ENNReal.Inv
+public import Mathlib.Basic.ENNReal.Inv
 
 /-!
 # Proximity Gaps in Interleaved Codes

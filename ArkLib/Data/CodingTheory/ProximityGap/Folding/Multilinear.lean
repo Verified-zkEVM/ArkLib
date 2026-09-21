@@ -88,9 +88,9 @@ private lemma aeval_substFun_comp {k : ℕ} [NeZero (n - k)] (γ : Fin (k + 1) �
   funext i
   unfold substFun
   by_cases h1 : i.val < k
-  · rw [dif_pos h1, dif_pos (show i.val < k + 1 by omega)]
+  · rw [dite_eq_left h1, dite_eq_left (show i.val < k + 1 by omega)]
     simp
-  · rw [dif_neg h1]
+  · rw [dite_eq_right h1]
     by_cases h2 : i.val = k
       <;> aesop (add safe (by grind))
 

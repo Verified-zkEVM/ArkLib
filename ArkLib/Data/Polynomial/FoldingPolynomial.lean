@@ -234,7 +234,7 @@ private lemma folding_polynomial_def_ind_case {q f : F[X]}
             exact absurd h₁ (not_le_of_gt (lt_of_le_of_lt (Polynomial.degree_C_le) h₂))
           | succ deg ih =>
             rw [foldingPolynomialAux]
-            rw [if_neg h₂.not_ge, if_neg (not_lt_of_ge h₁)]
+            rw [ite_eq_right h₂.not_ge, ite_eq_right (not_lt_of_ge h₁)]
             rfl
         convert h_fold hdeg using 1
         · exact folding_polynomial_aux_natDegree_fuel_is_enough hdeg
@@ -917,7 +917,7 @@ private lemma X_pow_div_mod_decomp (f : F[X]) (k : ℕ) :
     · intros b _ hbn; simp [Ne.symm hbn]
     · intro h; exact absurd (Finset.mem_range.mpr hnk) h
   · have hnk : k ≤ n := not_lt.mp hnk
-    rw [Finset.sum_eq_zero, zero_add, if_pos hnk]
+    rw [Finset.sum_eq_zero, zero_add, ite_eq_left hnk]
     · congr 1; omega
     intros i hi
     rw [Finset.mem_range] at hi
@@ -1076,7 +1076,7 @@ private lemma cpolyFoldAux_toPoly (p : CompPoly.CPolynomial F) (k : ℕ) (r : F)
         have hk_pos : 0 < k := Nat.pos_of_ne_zero hk
         have h_not_lt : ¬ p.natDegree < k := not_lt.mpr hsmall
         simp only [cpolyFoldAux]
-        rw [if_neg hk, if_neg h_not_lt]
+        rw [ite_eq_right hk, ite_eq_right h_not_lt]
         have h_step : (CompPoly.CPolynomial.divX^[k] p).natDegree ≤ fuel := by
           refine le_trans (natDegree_iterate_divX_le p k) ?_
           omega

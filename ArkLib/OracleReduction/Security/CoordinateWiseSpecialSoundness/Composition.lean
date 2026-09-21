@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 public import ArkLib.OracleReduction.Composition.Sequential.Append
+public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!
   # Composition for Coordinate-Wise Special Soundness
@@ -41,7 +42,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append
 @[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal
+open scoped NNReal ProbabilityTheory
 
 universe u v
 
@@ -277,38 +278,13 @@ theorem pure_accepting_of_mem
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
     (hV : V.verify stmt tr = pure out) (hout : out ∈ lang) :
-      Pr[(· ∈ lang) |
-        OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1 := by
-  simp only [Verifier.run, hV]
-  rw [probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
-  · rw [OptionT.probFailure_eq, OptionT.run_mk]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [support_bind, Set.mem_iUnion, not_exists]
-    intro s _
-    change none ∈ support
-      (StateT.run' (simulateQ (r := StateT σ ProbComp) impl
-        (pure (some out) : OracleComp oSpec (Option Stmt₂))) s) → False
-    rw [simulateQ_pure]
-    change none ∈ support
-      (Prod.fst <$> (pure (some out) : StateT σ ProbComp (Option Stmt₂)).run s) → False
-    rw [StateT.run_pure]
-    simp [map_pure]
-  · intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ support
-      (StateT.run' (simulateQ (r := StateT σ ProbComp) impl
-        (pure (some out) : OracleComp oSpec (Option Stmt₂))) s) at hx
-    rw [simulateQ_pure] at hx
-    change some x ∈ support
-      (Prod.fst <$> (pure (some out) : StateT σ ProbComp (Option Stmt₂)).run s) at hx
-    rw [StateT.run_pure] at hx
-    simp only [map_pure, support_pure, Set.mem_singleton_iff, Option.some.injEq] at hx
-    subst x
-    exact hout
+      Pr{let stmtOut ← OptionT.mk do
+        (simulateQ impl (V.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1 := by
+  refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support init impl _ _ ?_
+  intro o ho
+  simp only [Verifier.run, hV] at ho
+  subst o
+  exact ⟨out, rfl, hout⟩
 
 /-- Converse of `pure_accepting_of_mem`: if a verifier deterministically outputs `out` on
 `(stmt, tr)` and its run is accepted into `lang` with probability one, then `out ∈ lang`. -/
@@ -318,33 +294,20 @@ theorem mem_of_pure_accepting
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
     (hV : V.verify stmt tr = pure out)
-    (hAcc : Pr[ (· ∈ lang) |
-      OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1) :
+    (hAcc : Pr{let stmtOut ← OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1) :
       out ∈ lang := by
-  rw [probEvent_eq_one_iff] at hAcc
-  obtain ⟨hFail, hmem⟩ := hAcc
   -- The underlying probabilistic computation is `init >>= fun _ => pure (some out)`.
   have hrun : (do (simulateQ impl (V.run stmt tr)).run' (← init) :
       ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some out)) := by
     simp only [Verifier.run, hV]
     congr 1
-  refine hmem out ?_
-  -- `init` has nonempty support, else the whole computation would fail with probability one.
-  have hne : (support init).Nonempty := by
-    by_contra hempty
-    rw [Set.not_nonempty_iff_eq_empty] at hempty
-    have hcfail : Pr[⊥ |
-        (init >>= fun _ => pure (some out) : ProbComp (Option Stmt₂))] = 0 := by
-      have h2 := hFail
-      rw [OptionT.probFailure_eq, OptionT.run_mk, hrun] at h2
-      exact (add_eq_zero.mp h2).1
-    have hcsupp :
-        support (init >>= fun _ => pure (some out) : ProbComp (Option Stmt₂)) = ∅ := by
-      rw [support_bind_const, support_pure]; simp [hempty]
-    rw [probFailure_eq_one hcsupp] at hcfail
-    exact one_ne_zero hcfail
-  rw [OptionT.mem_support_iff, OptionT.run_mk, hrun, support_bind_const, support_pure]
-  exact ⟨Set.mem_singleton _, hne⟩
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff, hrun] at hAcc
+  have hs : some out ∈ support (init >>= fun _ => pure (some out)) := by
+    rw [support_bind_const, support_pure]
+    exact ⟨Set.mem_singleton _, OracleComp.support_nonempty init⟩
+  obtain ⟨out', hout', hmem⟩ := hAcc (some out) hs
+  exact Option.some_injective _ hout' ▸ hmem
 
 /-! ## Composition of tree-based certificates
 

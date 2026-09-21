@@ -378,7 +378,7 @@ lemma finalEvalReduction_run_support
       stmt w pr hpr
   refine ⟨pr.1, ?_⟩
   simp only [Option.elim_some, finalEvalReduction, finalEvalVerifier, Verifier.run, hmsg, hg,
-    if_true] at hx
+    ite_true] at hx
   simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
     Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
   -- the prover result's own components, re-assembled from `hout`

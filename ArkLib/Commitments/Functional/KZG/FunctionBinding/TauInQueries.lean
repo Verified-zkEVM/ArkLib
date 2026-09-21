@@ -73,11 +73,11 @@ lemma find_query_with_srs_power_success {L : ℕ} (hn : 1 ≤ n)
     srs.1[0] ^ α.val = srs.1[1]'(Nat.lt_add_of_pos_left hn) := by
   obtain ⟨_, i, _, _, hbody, _⟩ := List.findSome?_eq_some_iff.mp hfs
   by_cases hif : srs.1[0] ^ (queryOf i).val = srs.1[1]'(Nat.lt_add_of_pos_left hn)
-  · rw [if_pos hif] at hbody
+  · rw [ite_eq_left hif] at hbody
     simp only [Option.some.injEq] at hbody
     rw [← hbody]
     exact hif
-  · rw [if_neg hif] at hbody
+  · rw [ite_eq_right hif] at hbody
     exact absurd hbody (by simp)
 
 omit [DecidableEq G₁] [PrimeOrderWith G₂ p]
@@ -143,12 +143,12 @@ lemma choose_s_middle_card (hp : p ≥ n + 2) (α : ZMod p) :
   set base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
     with hbase_def
   by_cases hα : α ∈ base
-  · rw [if_pos hα, Finset.card_erase_of_mem hα]
+  · rw [ite_eq_left hα, Finset.card_erase_of_mem hα]
     have hbase : base.card = n + 2 := by
       rw [hbase_def]
       exact nat_cast_range_card_zmod_of_le (k := n + 2) hp
     omega
-  · rw [if_neg hα]
+  · rw [ite_eq_right hα]
     exact nat_cast_range_card_zmod hp
 
 /-- The avoided point is not in the set returned by `chooseSMiddle`. -/
@@ -158,7 +158,7 @@ lemma choose_s_middle_not_mem (α : ZMod p) :
   set base : Finset (ZMod p) := (Finset.range (n + 2)).image ((↑) : ℕ → ZMod p)
   by_cases hα : α ∈ base
   · simp [hα]
-  · rw [if_neg hα]
+  · rw [ite_eq_right hα]
     intro hmem
     apply hα
     simp only [base, Finset.mem_image, Finset.mem_range] at hmem ⊢

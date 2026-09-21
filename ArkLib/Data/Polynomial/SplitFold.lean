@@ -114,7 +114,7 @@ private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m
       intro k hk
       have hdm : n * (k / n) + k % n = k := Nat.div_add_mod k n
       by_cases h : k % n = i.1
-      · simp only [h, if_true]
+      · simp only [h, ite_true]
         rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
         by_cases hm : m = k / n <;> grind
       · aesop
@@ -214,7 +214,7 @@ lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (
   · intro j _ hj
     rw [coeff_X_pow_mul']
     by_cases hle : (j : ℕ) ≤ e * n + i
-    · rw [if_pos hle, ←expand_eq_comp_X_pow, coeff_expand hn, if_neg]
+    · rw [ite_eq_left hle, ←expand_eq_comp_X_pow, coeff_expand hn, ite_eq_right]
       intro hdvd
       have hmod := (Nat.modEq_iff_dvd' hle).mpr hdvd
       aesop

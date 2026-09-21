@@ -659,7 +659,7 @@ def hachiNonrecursive (P : HonestRangeParams q)
 
 omit [DecidableEq F] in
 /-- The nonrecursive Hachi commitment scheme is perfectly correct under the stated parameter
-bounds, provided initialization and simulated key generation never fail. -/
+bounds. -/
 theorem hachiNonrecursive_perfectCorrectness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -670,10 +670,6 @@ theorem hachiNonrecursive_perfectCorrectness
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]
     [SampleableType (Simple.PublicParams 𝓜(q, α) dRows ((2 ^ r) * Nat.clog P.b q))]
     (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ ProbComp))
-    (hInit : NeverFail init)
-    (hKeygen : ∀ s : σ, NeverFail ((simulateQ impl
-      (keygen (q := q) (α := α) (innerRows := innerRows) (outerRows := outerRows)
-        (dRows := dRows) (m := m) (r := r) P.b)).run s))
     (hcap : zBound ≤ balancedDigitCapacity P.b τ)
     (hzb : 2 ^ r * ω * (P.b / 2) ≤ zBound) (hτ : 0 < τ)
     (hclog : 0 < Nat.clog P.b q) (hd : 0 < 𝓜(q, α).φ.natDegree) (hbZero : 0 < P.bZero)
@@ -685,10 +681,7 @@ theorem hachiNonrecursive_perfectCorrectness
     Commitment.perfectCorrectness init impl
       (hachiNonrecursive (F := F) (ω := ω) (M := M) (m₁ := m₁) P hcap K hd hbZero φF) := by
   refine Commitment.perfectCorrectness_of_opening_perfectCompleteness init impl _
-    (fun ck _vk => relCommitInput P.b P.hb ck) hInit hKeygen ?_ ?_ ?_
-  · -- The committer is deterministic (`pure`), so its simulation never fails.
-    intro data ck s
-    exact ⟨by simp [hachiNonrecursive]⟩
+    (fun ck _vk => relCommitInput P.b P.hb ck) ?_ ?_
   · -- The honest keygen/commit outputs satisfy the input relation.
     intro data query ck vk cm dc _hkg hcm
     simp only [hachiNonrecursive, support_pure, Set.mem_singleton_iff] at hcm

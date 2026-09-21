@@ -146,8 +146,8 @@ theorem epsCa_mono_left
   apply iSup_mono
   intro u
   by_cases hjp : jointProximity (C := C) (u := u) δ_int
-  · rw [if_pos hjp, if_pos hjp]
-  · rw [if_neg hjp, if_neg hjp]
+  · rw [ite_eq_left hjp, ite_eq_left hjp]
+  · rw [ite_eq_right hjp, ite_eq_right hjp]
     apply Pr_le_Pr_of_implies
     intro _ hclose
     exact le_trans hclose (by exact_mod_cast h)
@@ -165,10 +165,10 @@ theorem epsCa_antitone_right
       jointProximity (C := C) (u := u) δ_int' :=
     fun hjp => le_trans hjp (by exact_mod_cast h)
   by_cases hjp' : jointProximity (C := C) (u := u) δ_int'
-  · rw [if_pos hjp']
+  · rw [ite_eq_left hjp']
     exact zero_le
   · have hjp : ¬ jointProximity (C := C) (u := u) δ_int := fun h0 => hjp' (hjp_mono h0)
-    rw [if_neg hjp', if_neg hjp]
+    rw [ite_eq_right hjp', ite_eq_right hjp]
 
 /-! ## Endpoint behavior -/
 
@@ -195,7 +195,7 @@ theorem epsPg_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty) {δ : ℝ
   refine iSup_le fun u => ?_
   have hguard : ∀ γ : F, δᵣ(u 0 + γ • u 1, C) ≤ (δ : ENNReal) :=
     fun γ => relDistFromCode_le_of_one_le hC _ hδ
-  rw [if_pos hguard]
+  rw [ite_eq_left hguard]
 
 omit [DecidableEq ι] [Fintype A] [AddCommGroup A] in
 /-- Every two-word stack is jointly close once the radius is at least one. -/
@@ -220,7 +220,7 @@ theorem epsCa_eq_zero_of_one_le_right {C : Set (ι → A)} (hC : C.Nonempty)
   classical
   refine le_antisymm ?_ zero_le
   unfold epsCa
-  exact iSup_le fun u => by rw [if_pos (jointProximity_of_one_le hC u hδ)]
+  exact iSup_le fun u => by rw [ite_eq_left (jointProximity_of_one_le hC u hδ)]
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsCa'` is zero at every radius at least one. -/
@@ -283,7 +283,7 @@ theorem epsPg_singleton_zero_pos :
     _ ≤ epsPg (F := F) ({0} : Set (ι → F)) 0 := by
       unfold epsPg
       refine le_trans (le_of_eq ?_) (le_iSup _ u)
-      rw [if_neg hguard]
+      rw [ite_eq_right hguard]
 
 /-! ## Comparison and predicate bridges -/
 
@@ -323,11 +323,11 @@ theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
   by_cases hjp : jointProximity (C := (MC : Set (ι → A))) (u := u) δ
   · have hall : ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ :=
       line_close_of_jointProximity MC u δ hjp
-    rw [if_pos hall, if_pos hjp]
+    rw [ite_eq_left hall, ite_eq_left hjp]
   · by_cases hall : ∀ γ : F, δᵣ(u 0 + γ • u 1, (MC : Set (ι → A))) ≤ δ
-    · rw [if_pos hall, if_neg hjp]
+    · rw [ite_eq_left hall, ite_eq_right hjp]
       exact zero_le
-    · rw [if_neg hall, if_neg hjp]
+    · rw [ite_eq_right hall, ite_eq_right hjp]
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- A line-close event outside joint proximity satisfies affine-line `IsMCA`. -/
@@ -381,9 +381,9 @@ theorem epsCa_le_mcaError_affineLine (MC : ModuleCode ι F A) (δ : ℝ≥0) :
   apply iSup_mono
   intro u
   by_cases hjp : jointProximity (C := (MC : Set (ι → A))) (u := u) δ
-  · rw [if_pos hjp]
+  · rw [ite_eq_left hjp]
     exact zero_le
-  · rw [if_neg hjp]
+  · rw [ite_eq_right hjp]
     apply Pr_le_Pr_of_implies
     intro γ hline
     exact isMCA_affineLine_of_line_close_of_not_jointProximity MC u δ γ hjp hline
@@ -417,8 +417,8 @@ theorem epsCa_eq_of_floors_eq (C : Set (ι → A))
     intro γ
     rw [relDistFromCode_le_iff_distFromCode_le, relDistFromCode_le_iff_distFromCode_le, hfld]
   by_cases hjp : jointProximity (C := C) (u := u) δ_int
-  · rw [if_pos hjp, if_pos (hiff.mp hjp)]
-  · rw [if_neg hjp, if_neg (mt hiff.mpr hjp)]
+  · rw [ite_eq_left hjp, ite_eq_left (hiff.mp hjp)]
+  · rw [ite_eq_right hjp, ite_eq_right (mt hiff.mpr hjp)]
     exact Pr_congr hclose
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
@@ -439,9 +439,9 @@ theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
   · intro hpred
     refine iSup_le fun u => ?_
     by_cases hjp : jointProximity (C := C) (u := u) δ
-    · rw [if_pos hjp]
+    · rw [ite_eq_left hjp]
       exact zero_le
-    · rw [if_neg hjp]
+    · rw [ite_eq_right hjp]
       have hnja : ¬ jointAgreement (C := C) (W := u) δ := by
         rw [jointAgreement_iff_jointProximity]
         exact hjp
@@ -454,7 +454,7 @@ theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
     by_cases hjp : jointProximity (C := C) (u := u) δ
     · rw [jointAgreement_iff_jointProximity]
       exact hjp
-    · rw [if_neg hjp] at hterm
+    · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
 omit [DecidableEq ι] [DecidableEq F] in
@@ -468,9 +468,9 @@ theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
   · intro hpred
     refine iSup_le fun u => ?_
     by_cases hjp : jointProximity (C := C) (u := u) δ
-    · rw [if_pos hjp]
+    · rw [ite_eq_left hjp]
       exact zero_le
-    · rw [if_neg hjp]
+    · rw [ite_eq_right hjp]
       have hnja : ¬ jointAgreement (C := C) (W := u) δ := by
         rw [jointAgreement_iff_jointProximity]
         exact hjp
@@ -483,7 +483,7 @@ theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
     by_cases hjp : jointProximity (C := C) (u := u) δ
     · rw [jointAgreement_iff_jointProximity]
       exact hjp
-    · rw [if_neg hjp] at hterm
+    · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
 omit [Fintype F] [DecidableEq F] in
@@ -497,9 +497,9 @@ theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
   · intro hpred
     refine iSup_le fun u => ?_
     by_cases hjp : jointProximity (C := C) (u := u) δ
-    · rw [if_pos hjp]
+    · rw [ite_eq_left hjp]
       exact zero_le
-    · rw [if_neg hjp]
+    · rw [ite_eq_right hjp]
       have hnja : ¬ jointAgreement (C := C) (W := u) δ := by
         rw [jointAgreement_iff_jointProximity]
         exact hjp
@@ -512,7 +512,7 @@ theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
     by_cases hjp : jointProximity (C := C) (u := u) δ
     · rw [jointAgreement_iff_jointProximity]
       exact hjp
-    · rw [if_neg hjp] at hterm
+    · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
 /-! ## Unique decoding and interleaving -/
@@ -641,12 +641,13 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
       Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] =
           (if jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
           else Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ]) :=
-        (if_neg hv).symm
+        (ite_eq_right hv).symm
       _ ≤ ⨆ w : WordStack F (Fin 2) ι,
           if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
           else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
-        @le_iSup ENNReal (WordStack F (Fin 2) ι)
-          ENNReal.instCompleteLinearOrder.toCompleteLattice _ v
+        le_iSup (fun w : WordStack F (Fin 2) ι =>
+          if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
+          else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ]) v
   by_cases hjp : jointProximity (C := (C : Set (ι → F))) (u := u) δ
   · obtain ⟨c, hc, hE⟩ :=
       (jointProximity_iff_exists_pairErrors_le C u δ).mp hjp
