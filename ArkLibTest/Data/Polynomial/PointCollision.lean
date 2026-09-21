@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.Polynomial.PointCollision
+import ArkLib.Data.Polynomial.PointCollisionProbability
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.ComputeDegree
 import Mathlib.Tactic.NormNum

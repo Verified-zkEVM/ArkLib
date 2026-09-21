@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.Polynomial.PointCollision
+public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
