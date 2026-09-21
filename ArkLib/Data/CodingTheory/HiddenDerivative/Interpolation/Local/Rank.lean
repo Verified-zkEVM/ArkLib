@@ -5,7 +5,7 @@ Authors: Quang Dao, Justin Thaler
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 
 /-!

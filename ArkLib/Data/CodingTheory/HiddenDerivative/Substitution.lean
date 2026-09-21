@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Variables
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
 public import ArkLib.Data.Polynomial.Differential.Types
 public import Mathlib.Algebra.MvPolynomial.Monad
 

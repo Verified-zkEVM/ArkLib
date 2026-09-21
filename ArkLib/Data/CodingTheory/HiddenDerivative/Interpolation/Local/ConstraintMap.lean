@@ -5,8 +5,8 @@ Authors: Kai Zhe Zheng, Quang Dao, Justin Thaler
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
-public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Substitution
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 
 /-!

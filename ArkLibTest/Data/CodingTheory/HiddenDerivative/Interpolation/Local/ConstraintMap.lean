@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 
 /-!
 # Local constraint map acceptance tests

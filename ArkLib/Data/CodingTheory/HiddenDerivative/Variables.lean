@@ -31,7 +31,7 @@ Variables.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `Lo
 `localContactOrder`, and `localTWeight`, with their evaluation lemmas. The source also defined
 higher-jet and derivative-order local weights, the global weight `jetHigherWeight`, and the
 substitution caps `localSubstitutionSourceWeight`; the global weight moves to
-`ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index`, and the others are
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index`, and the others are
 deferred to the slices that use them.
 
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
