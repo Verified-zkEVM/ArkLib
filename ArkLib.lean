@@ -265,6 +265,7 @@ public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
@@ -274,6 +275,7 @@ public import ArkLib.Data.Polynomial.FoldedWronskian
 public import ArkLib.Data.Polynomial.FoldingPolynomial
 public import ArkLib.Data.Polynomial.FractionFieldExpand
 public import ArkLib.Data.Polynomial.FractionFieldFactorization
+public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface

@@ -72,7 +72,10 @@ consolidating that upstream stack is separate from retiring ArkLib's own probabi
 
 ## Checkpoints
 
-The follow-up is based on `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903).
+The conversion starts from `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903) and includes
+`main` through `8b03d40a56ec827d223b78ccca0ce164a9231f6c` (#857 and #877).
+The size comparison isolates migration files against #903; the unrelated additions on `main`
+are not counted as migration changes.
 Counts below cover complete changed Lean files in each family, including comments and signatures;
 they are not counts of changed proof lines. Deleted files count as zero after conversion.
 
@@ -87,7 +90,7 @@ they are not counts of changed proof lines. Deleted files count as zero after co
 | Deleted ToVCVio Lean modules | 7 | 200 | 0 | -200 |
 
 The compatibility tree also loses its 64-line README. The root import file is regenerated.
-The retirement inventory shrank from 186 declarations to zero across the final 497-module root.
+The retirement inventory shrank from 186 declarations to zero across the final 499-module root.
 No retired-probability baseline is introduced, and no warning exclusions are added.
 
 ### Proof-size review
