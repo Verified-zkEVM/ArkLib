@@ -303,13 +303,12 @@ theorem powers_bad_seed_final_arithmetic
 
 open scoped ProbabilityTheory in
 private theorem powers_bad_seed_probability_le_card
-    {S : Type} [Fintype S] [Nonempty S]
+    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
     (P : S → Prop) (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
-    (PMF.uniformOfFintype S).map P True ≤ ENNReal.ofReal (B / Fintype.card S) := by
+    Pr{let x ←$ᵗ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S) := by
   classical
-  change Pr_{let x ← $ᵖ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S)
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   have hset : {x : S | P x} = (Finset.filter P Finset.univ : Set S) := by
     ext x
@@ -565,6 +564,8 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
         ∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • cstar j i) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
   classical
+  let _ : DecidableEq F := Classical.decEq F
+  let _ : DecidableEq A := Classical.decEq A
   let := Fintype.ofFinite F
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
   have hvzero : v = 0 := by

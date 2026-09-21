@@ -54,13 +54,6 @@ def transitionStraightlineExtractor {k t : ℕ}
       (tr ⟨0, Nat.zero_lt_succ _⟩)
       (tr ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
 
-/-- A predicate false at every point has probability zero. -/
-private theorem Pr_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop)
-    (h : ∀ x, ¬ P x) : Pr_{let x ← D}[P x] = 0 := by
-  classical
-  rw [prob_tsum_form_singleton]
-  simp [h]
-
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 private theorem verifier_run_loggingOracle_eq
     {k t : ℕ} (encode : (Fin k → F) → (ι → A))
@@ -328,11 +321,10 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
             (stmtIn.2 0) (stmtIn.2 1) γ g
       ] ≤ (winningSetDensity encode δ : ENNReal) := by
   classical
-  rw [prEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ outputRelationFor k
         (encode : (Fin k → F) → (ι → A)) δ
-  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
+  · refine (prEvent_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
     intro γ hbad
     obtain ⟨g, hnot, _⟩ := hbad
     exact hnot (chooseRelaxedWitness_mem k hw)
@@ -379,15 +371,15 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
         exact ⟨fun _ ↦ encode m,
           ⟨fun _ ↦ m, fun _ ↦ rfl, fun _ ↦ by simpa using hlin⟩,
           S, hScard, fun i j hj ↦ by simpa using hagree j hj⟩
-    refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
+    refine le_trans (prEvent_mono ($ᵗ F) _
       (GammaEvent encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
         (stmtIn.2 0) (stmtIn.2 1))
       (fun γ h ↦ Eq.mp (congrFun hbad γ) h)) ?_
     calc
-      Pr_{let γ ← $ᵖ F}[GammaEvent encode δ stmtIn.1.1
+      Pr{let γ ← $ᵗ F}[GammaEvent encode δ stmtIn.1.1
           stmtIn.1.2.1 stmtIn.1.2.2 (stmtIn.2 0) (stmtIn.2 1) γ] =
           (winningSetRatio x : ENNReal) := by
-        rw [prob_uniform_eq_card_filter_div_card, winningSetRatio, hWin,
+        rw [SampleableType.prEvent_uniformSample, winningSetRatio, hWin,
           Set.ncard_eq_toFinset_card',
         Set.toFinset_ofPred,
         ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),

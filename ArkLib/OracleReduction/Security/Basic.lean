@@ -46,8 +46,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 TODO: the "right" factoring for the security definitions are the following:
 
 - We have a two-layer interpretation approach: first, interpret the oracle queries into some monad
-  `m` which admits a monad morphism into `PMF` (i.e. `HasEvalDist`); then we interpret the resulting
-  monad into `PMF`.
+  `m` with native distribution semantics; then interpret the resulting computation
+  as its measure `𝒟[·]`.
 
   This does not preclude `m` from being the same oracle computation type, but more interesting
   possibilities are possible, such as `m = ReaderT ρ` for lazy sampling of the shared oracle.
@@ -155,8 +155,7 @@ theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOu
       completeness init impl relIn relOut reduction ε →
         completeness init impl relIn relOut' reduction ε := by
   intro h stmtIn witIn hIn
-  exact ge_trans (prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩)
-    (h stmtIn witIn hIn)
+  exact ge_trans (prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩) (h _ _ hIn)
 
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/

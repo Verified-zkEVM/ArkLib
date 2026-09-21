@@ -171,10 +171,7 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 @[grind .]
 lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
     natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by
-  have hq : q ≠ 0 := quotient_nezero (f := f) (q := q) hg
-  have hmul : natDegreeY (q * f) = natDegreeY q + natDegreeY f := by
-    simpa [natDegreeY] using Polynomial.natDegree_mul hq hf
-  omega
+  simp [natDegreeY, Polynomial.natDegree_mul (quotient_nezero hg) hf]
 
 /-- Each coefficient's total-degree contribution is bounded by `totalDegree` when in support. -/
 theorem coeff_totalDegree_le (f : F[X][Y]) {n : ℕ} (hn : n ∈ f.support) :
