@@ -647,7 +647,10 @@ theorem sepLens_not_isComplete :
     IsComplete (Set.univ : Set Bool) ({true} : Set Bool) sepLens → False := by
   intro h
   have hf := h.proj_complete false (Set.mem_univ false)
-  simp [sepLens, Statement.Lens.proj] at hf
+  -- `hf : sepLens.proj false ∈ ({true} : Set Bool)`, which is definitionally `false = true`.
+  -- Spelled as a defeq ascription rather than `simp`, so it does not depend on `id` being
+  -- unfolded by whichever simp set is in scope.
+  exact Bool.false_ne_true (hf : (false : Bool) = true)
 
 /-- **`IsSound` does not imply `IsComplete`.**  Without this the new class would be redundant
 scaffolding: every `IsSound` lens would already satisfy it. -/
