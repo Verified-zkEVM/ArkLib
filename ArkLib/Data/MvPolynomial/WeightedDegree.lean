@@ -7,6 +7,8 @@ module
 
 
 public import Mathlib.Algebra.MvPolynomial.Monad
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.Algebra.Polynomial.BigOperators
 public import Mathlib.LinearAlgebra.FiniteDimensional.Defs
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 
@@ -32,9 +34,29 @@ variables must add separate degree caps before using a finite-dimensional count.
 * `weightedTotalDegree_bind₁_le` and `weightedTotalDegree_aeval_le`: substitution bounds with
   induced source weights.
 * `bind₁_mem_restrictWeightedDegree`: preservation under prescribed-weight substitution.
+* `weightedTotalDegree_pderiv_le_sub`: a partial derivative in `X i` lowers the weighted total
+  degree by at least `w i`, in every characteristic.
+* `natDegree_aeval_le_weightedTotalDegree` and `natDegree_aeval_le_weightedTotalDegree_of_le`:
+  substituting univariate polynomials gives a univariate polynomial whose `natDegree` is at most
+  the weighted total degree, with the weight of `i` being (a bound on) `natDegree (f i)`.
 * `basisRestrictWeightedDegree` and `restrictWeightedDegreeCoeff`: its monomial basis and
   coefficient projections.
 * `finrank_restrictWeightedDegree`: the finite positive-weight dimension formula.
+
+## References
+
+The partial-derivative and univariate-substitution bounds are extracted from
+`HiddenDerivative/RootFinding/DegreeBounds/SpecializationDegree.lean`, under
+`ArkLib/Data/CodingTheory/ReedSolomon/`, at ArkLib revision
+a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source theorems
+`ReedSolomon.HiddenDerivative.weightedTotalDegree_pderiv_le_sub` and
+`ReedSolomon.HiddenDerivative.weightedTotalDegree_pderiv_le` were stated for differential
+polynomials, whose variables are jet variables; here they hold for an arbitrary variable type.
+The source theorem `ReedSolomon.HiddenDerivative.natDegree_differentialSpecialization_le` is the
+special case of `natDegree_aeval_le_weightedTotalDegree_of_le` in which the substituted
+polynomials are `X` and the Hasse derivatives of one bounded polynomial. That jet-specific
+statement, the separant corollaries, and the root-counting wrapper stay with their consumers and
+are not ported here.
 -/
 
 @[expose] public section
@@ -280,6 +302,73 @@ theorem bind₁_comp_mem_restrictWeightedDegree {τ υ : Type*}
     bind₁ (fun i => bind₁ g (f i)) p ∈ restrictWeightedDegree (R := R) u d := by
   rw [← bind₁_bind₁]
   exact bind₁_mem_restrictWeightedDegree hg (bind₁_mem_restrictWeightedDegree hf hp)
+
+/-! ### Partial derivatives -/
+
+/-- A partial derivative in `X i` lowers the `w`-weighted total degree by at least `w i`.
+
+Every monomial of `pderiv i p` comes from a monomial of `p` with one more factor `X i`, which
+carries weight `w i`. This holds in every characteristic. Truncated subtraction covers the cases
+`pderiv i p = 0` and `w i > weightedTotalDegree w p`; in the second case `p` has no monomial
+containing `X i` and the derivative is zero. -/
+theorem weightedTotalDegree_pderiv_le_sub (w : σ → ℕ) (i : σ) (p : MvPolynomial σ R) :
+    weightedTotalDegree w (pderiv i p) ≤ weightedTotalDegree w p - w i := by
+  rw [weightedTotalDegree, Finset.sup_le_iff]
+  intro m hm
+  have horig : p.coeff (m + Finsupp.single i 1) ≠ 0 := by
+    intro hzero
+    rw [mem_support_iff, coeff_pderiv, hzero, zero_mul] at hm
+    exact hm rfl
+  have h := le_weightedTotalDegree w (mem_support_iff.mpr horig)
+  rw [map_add, weight_single, one_smul] at h
+  omega
+
+/-- Partial differentiation does not increase a weighted total degree. -/
+theorem weightedTotalDegree_pderiv_le (w : σ → ℕ) (i : σ) (p : MvPolynomial σ R) :
+    weightedTotalDegree w (pderiv i p) ≤ weightedTotalDegree w p :=
+  (weightedTotalDegree_pderiv_le_sub w i p).trans (Nat.sub_le _ _)
+
+/-- A partial derivative in `X i` maps the bound-`d` piece into the bound-`d - w i` piece. -/
+theorem pderiv_mem_restrictWeightedDegree {w : σ → ℕ} {d : ℕ} {p : MvPolynomial σ R} (i : σ)
+    (hp : p ∈ restrictWeightedDegree (R := R) w d) :
+    pderiv i p ∈ restrictWeightedDegree (R := R) w (d - w i) := by
+  rw [mem_restrictWeightedDegree_iff_weightedTotalDegree_le] at hp ⊢
+  exact (weightedTotalDegree_pderiv_le_sub w i p).trans (Nat.sub_le_sub_right hp _)
+
+/-! ### Substitution of univariate polynomials -/
+
+/-- Substituting univariate polynomials `f i` for the variables gives a univariate polynomial of
+`natDegree` at most the weighted total degree of `p` for the weights `natDegree (f i)`.
+
+This is the univariate-target analogue of `weightedTotalDegree_aeval_le`. It has no nonzero or
+positivity hypotheses: constant substitutions receive weight zero, and `p = 0` has weighted total
+degree zero. The inequality can be strict because leading coefficients can cancel. -/
+theorem natDegree_aeval_le_weightedTotalDegree (f : σ → Polynomial R) (p : MvPolynomial σ R) :
+    (aeval f p).natDegree ≤ weightedTotalDegree (fun i => (f i).natDegree) p := by
+  classical
+  conv_lhs => rw [p.as_sum, map_sum]
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun m hm => ?_
+  rw [aeval_monomial, Polynomial.algebraMap_eq]
+  refine (Polynomial.natDegree_C_mul_le _ _).trans ?_
+  refine (Polynomial.natDegree_prod_le _ _).trans ?_
+  refine le_trans ?_ (le_weightedTotalDegree _ hm)
+  rw [weight_apply, Finsupp.sum]
+  exact Finset.sum_le_sum fun i _ => by
+    rw [smul_eq_mul]
+    exact Polynomial.natDegree_pow_le
+
+/-- If each substituted univariate polynomial satisfies `natDegree (f i) ≤ w i`, then
+`natDegree (aeval f p)` is at most the `w`-weighted total degree of `p`.
+
+This is the univariate-target analogue of `weightedTotalDegree_aeval_le_of_le`. Zero weights are
+allowed; they force the corresponding `f i` to be constant. -/
+theorem natDegree_aeval_le_weightedTotalDegree_of_le (w : σ → ℕ) (f : σ → Polynomial R)
+    (p : MvPolynomial σ R) (hf : ∀ i, (f i).natDegree ≤ w i) :
+    (aeval f p).natDegree ≤ weightedTotalDegree w p := by
+  refine (natDegree_aeval_le_weightedTotalDegree f p).trans ?_
+  unfold weightedTotalDegree
+  exact Finset.sup_mono_fun fun m _ => Finsupp.sum_le_sum fun i _ =>
+    Nat.mul_le_mul_left (m i) (hf i)
 
 /-- A zero-weight variable, and every power of it, belongs to the weight-zero piece.  No
 positivity hypothesis belongs in the generic bounded-degree API. -/
