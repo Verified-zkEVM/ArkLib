@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
+import Mathlib.RingTheory.Int.Basic
 
 /-!
 # Acceptance tests for principal-cut dimension drop
@@ -48,5 +49,18 @@ rather than a hidden global nonemptiness assumption, is the properness witness i
 example {R : Type*} [CommRing R] (P : Ideal R) :
     (P ⊔ span {1}).minimalPrimes = ∅ := by
   simp [minimalPrimes_eq_empty_iff]
+
+/-- A concrete cut in `ℤ`: cutting the prime `(0)` by `2` has the minimal prime `(2)`, which
+strictly contains `(0)`, and the quotient dimension drops. -/
+example : (⊥ : Ideal ℤ) < span {2} ∧
+    ringKrullDim (ℤ ⧸ span {(2 : ℤ)}) + 1 ≤ ringKrullDim (ℤ ⧸ (⊥ : Ideal ℤ)) := by
+  have hprime : (span {(2 : ℤ)}).IsPrime :=
+    (span_singleton_prime (by norm_num)).mpr (Int.prime_iff_natAbs_prime.mpr Nat.prime_two)
+  have hJ : span {(2 : ℤ)} ∈ ((⊥ : Ideal ℤ) ⊔ span {2}).minimalPrimes := by
+    rw [bot_sup_eq, minimalPrimes_eq_subsingleton_self]
+    rfl
+  have h2 : (2 : ℤ) ∉ (⊥ : Ideal ℤ) := by simp
+  exact ⟨lt_of_mem_minimalPrimes_sup_span h2 hJ,
+    ringKrullDim_quotient_succ_le_of_lt (lt_of_mem_minimalPrimes_sup_span h2 hJ)⟩
 
 end Ideal
