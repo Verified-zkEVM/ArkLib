@@ -5,7 +5,7 @@ Authors: Katerina Hristova
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 
 /-!
@@ -60,8 +60,10 @@ noncomputable def maxDegreeOf {s : ℕ} {ℓ : Type} [Fintype ℓ] (P : ℓ → 
 
 /-- The MCA error function of the univariate powers generator of degree `d` with `m` seeds,
 for a linear code `LC`, at slack parameter `η`. As a function of the proximity parameter `γ` it
-is a step function with three regimes: a unique-decoding bound below `δ_C / (d + 2)`, a
-list-decoding bound up to `1 - (ρ_C + η) ^ (1 / (d + 2))`, and the trivial bound `1` beyond.
+is a step function with three regimes: a unique-decoding bound `(⌊n·γ⌋ + 1)·d / m` below
+`δ_C / (d + 2)`, a list-decoding bound up to `1 - (ρ_C + η) ^ (1 / (d + 2))`, and the trivial
+bound `1` beyond. The unique-decoding regime is `mdsMCAError`'s, which corrects the paper's
+`max{n·γ, 1}` to `⌊n·γ⌋ + 1`; see `ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator`.
 
 The slack hypothesis `0 < η < 1` is not needed to define the function, so it is omitted here
 and required only by the statements that consume it. Valued in `ℝ≥0` to match `IsMCAGenerator`,
@@ -76,7 +78,7 @@ noncomputable def powersMCAError [DecidableEq F] (LC : LinearCode ι F) (d m : �
   fun γ =>
     Real.toNNReal <|
       if γ < (δ_C / (d + 2) : ℝ) then
-        letI m' : ℝ := max (n * γ) 1
+        letI m' : ℝ := ⌊n * γ⌋₊ + 1
         m' * (d / m : ℝ)
       else
         if γ ≤ 1 - (ρ_C + η) ^ (1 / (d + 2) : ℝ) then
@@ -91,9 +93,9 @@ noncomputable def powersMCAError [DecidableEq F] (LC : LinearCode ι F) (d m : �
 degree `d`, whose code has dimension `d + 1`) coincides with the univariate-powers error
 `powersMCAError` of degree `d`. -/
 lemma mdsMCAError_eq_powersMCAError [DecidableEq F] (LC : LinearCode ι F) (d m : ℕ) (η : ℝ) :
-    LinearTransformations.mdsMCAError LC (d + 1) m η = powersMCAError LC d m η := by
+    mdsMCAError LC (d + 1) m η = powersMCAError LC d m η := by
   funext γ
-  simp only [LinearTransformations.mdsMCAError, powersMCAError, Nat.cast_add, Nat.cast_one]
+  simp only [mdsMCAError, powersMCAError, Nat.cast_add, Nat.cast_one]
   rw [show (↑d + 1 + 1 : ℝ) = ↑d + 2 from by ring,
     show (↑d + 1 - 1 : ℝ) = ↑d from by ring]
 
