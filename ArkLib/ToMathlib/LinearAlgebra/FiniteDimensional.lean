@@ -17,6 +17,17 @@ public import Mathlib.LinearAlgebra.Projection
   makes the two submodules equidimensional.
 * `Submodule.exists_adapted_basis` — a finite-dimensional space has a basis whose initial
   segment is a basis of a prescribed subspace.
+* `LinearMap.finrank_range_le_sub_of_injective_ker` — rank–nullity when only part of the kernel
+  is exhibited, as the image of an injective map.
+* `LinearMap.finrank_range_comp_le_left` — the `finrank` form of `LinearMap.rank_comp_le_left`.
+
+The last two are the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker`
+and `finrank_range_comp_le_outer` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean` at ArkLib
+revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source assumed a field, a
+finite-dimensional exhibited space, and a finite-dimensional middle space; here the scalars form
+a division ring, the exhibited space is arbitrary, and only the range of the outer map must be
+finite-dimensional.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
@@ -64,3 +75,26 @@ lemma Submodule.exists_adapted_basis {F M : Type*} [Field F] [AddCommGroup M]
   simp only [ZeroMemClass.coe_zero, add_zero]
   rw [Module.Basis.prod_apply_inl_fst]
   exact ((Module.finBasis F N) ⟨(j : ℕ), hj⟩).2
+
+/-- Rank–nullity with an exhibited part of the kernel. If `K` maps injectively into `ker f`, then
+`f` loses at least `finrank K` dimensions. The injection need not span the kernel, so the result
+is an upper bound on the rank of `f`, not an equality. Finite-dimensionality of `V` is needed:
+otherwise `finrank` of the range may be positive while `finrank V = 0`. -/
+theorem LinearMap.finrank_range_le_sub_of_injective_ker {K V V₂ W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [FiniteDimensional K V] [AddCommGroup V₂] [Module K V₂]
+    [AddCommGroup W] [Module K W] (f : V →ₗ[K] V₂) (g : W →ₗ[K] LinearMap.ker f)
+    (hg : Function.Injective g) :
+    Module.finrank K (LinearMap.range f) ≤ Module.finrank K V - Module.finrank K W := by
+  have hker := LinearMap.finrank_le_finrank_of_injective hg
+  have hrankNullity := f.finrank_range_add_finrank_ker
+  omega
+
+/-- Precomposition cannot enlarge the range: `finrank (range (g ∘ f)) ≤ finrank (range g)`.
+The range of `g` must be finite-dimensional, since `finrank` of an infinite-dimensional space is
+zero. -/
+theorem LinearMap.finrank_range_comp_le_left {K V V₂ V₃ : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup V₂] [Module K V₂]
+    [AddCommGroup V₃] [Module K V₃] (g : V₂ →ₗ[K] V₃) (f : V →ₗ[K] V₂)
+    [FiniteDimensional K (LinearMap.range g)] :
+    Module.finrank K (LinearMap.range (g ∘ₗ f)) ≤ Module.finrank K (LinearMap.range g) :=
+  Submodule.finrank_mono (LinearMap.range_comp_le_range f g)
