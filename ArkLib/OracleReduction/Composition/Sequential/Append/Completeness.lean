@@ -70,30 +70,12 @@ theorem completeness_iff_of_pure_verifier
         (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
           (R.prover.run stmt wit >>= fun r => pure (some (r, V.verify stmt r.1)))).run'
             (← init)) =
-      (liftM ((fun q => (q.1, V.verify stmt q.1.1)) <$> (do
+      (OptionT.lift ((fun q => (q.1, V.verify stmt q.1.1)) <$> (do
         (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
           (R.prover.run stmt wit)).run (← init))) : OptionT ProbComp _) := by
     apply OptionT.ext
     simp [StateT.run'_eq]
-  have liftM_eq_lift {α : Type} (mx : ProbComp α) :
-      (liftM mx : OptionT ProbComp α) = OptionT.lift mx := rfl
-  constructor
-  · intro h stmt wit hRel
-    have h' := h stmt wit hRel
-    rw [hrun, liftM_eq_lift] at h'
-    change 1 - (ε : ℝ≥0∞) ≤ Pr{let x :
-        (pSpec₁.FullTranscript × Stmt₂ × Wit₂) × Stmt₂ ← OptionT.lift _}[
-      (x.2, x.1.2.2) ∈ rel₂ ∧ x.1.2.1 = x.2] at h'
-    rw [OptionT.prEvent_lift, prEvent_map] at h'
-    simpa only [bind_assoc, Prod.fst, Prod.snd] using h'
-  · intro h stmt wit hRel
-    have h' := h stmt wit hRel
-    rw [hrun, liftM_eq_lift]
-    change 1 - (ε : ℝ≥0∞) ≤ Pr{let x :
-        (pSpec₁.FullTranscript × Stmt₂ × Wit₂) × Stmt₂ ← OptionT.lift _}[
-      (x.2, x.1.2.2) ∈ rel₂ ∧ x.1.2.1 = x.2]
-    rw [OptionT.prEvent_lift, prEvent_map]
-    simpa only [bind_assoc, Prod.fst, Prod.snd] using h'
+  simp only [hrun, OptionT.prEvent_lift, prEvent_map, bind_assoc]
 
 /-- Completeness from every deterministic oracle state implies completeness from any initial
 state distribution. The verifier is pure, so initialization is the only outer mixture. -/
@@ -105,18 +87,9 @@ theorem completeness_of_pure_states
     R.completeness init impl rel₁ rel₂ ε := by
   rw [completeness_iff_of_pure_verifier R V]
   intro stmt wit hRel
-  have hstate (s : σ) :=
-    (completeness_iff_of_pure_verifier R V rel₁ rel₂ ε).mp (h s) stmt wit hRel
-  have hbound := mul_le_prEvent_bind_of_forall init
-    (fun s =>
-      (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (R.prover.run stmt wit)).run s)
-    (fun _ : σ => True)
-    (fun q => (V.verify stmt q.1.1, q.1.2.2) ∈ rel₂ ∧
-      q.1.2.1 = V.verify stmt q.1.1)
-    (r := 1) (r' := 1 - (ε : ℝ≥0∞)) (by simp)
-    (fun s _ => by simpa only [pure_bind] using hstate s)
-  simpa only [one_mul, bind_assoc] using hbound
+  simpa only [one_mul, pure_bind, bind_assoc] using
+    mul_le_prEvent_bind_of_forall init _ (fun _ => True) _ (r := 1) (by simp) fun s _ =>
+      (completeness_iff_of_pure_verifier R V rel₁ rel₂ ε).mp (h s) stmt wit hRel
 
 variable [∀ i, SampleableType (pSpec₂.Challenge i)]
 
@@ -152,31 +125,13 @@ theorem append_completeness_of_prover_factorization
     exact tsub_le_tsub_left (mul_le_of_le_one_left zero_le tsub_le_self) _
   refine herr.trans ?_
   dsimp only [Reduction.append]
-  simp only [hFactor stmt wit,
-    StateT.run_bind, StateT.run_pure]
-  have hbound := mul_le_prEvent_bind_of_forall
-    (do
-      let s ← init
-      (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (R₁.prover.run stmt wit)).run s)
-    (fun q₁ =>
-      do
-        let q₂ ←
-          (simulateQ (QueryImpl.addLift impl challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (R₂.prover.run q₁.1.2.1 q₁.1.2.2)).run q₁.2
-        return ((q₁.1.1 ++ₜ q₂.1.1, q₂.1.2), q₂.2))
-    (fun q₁ => (V₁.verify stmt q₁.1.1, q₁.1.2.2) ∈ rel₂ ∧
-      q₁.1.2.1 = V₁.verify stmt q₁.1.1)
-    (fun q => (VA.verify stmt q.1.1, q.1.2.2) ∈ rel₃ ∧
-      q.1.2.1 = VA.verify stmt q.1.1)
-    (by simpa only [bind_assoc] using hfirst) (by
-      intro q₁ hGood
-      have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
-        rw [hGood.2]
-        exact hGood.1)
-      simpa only [bind_assoc, pure_bind, Function.comp_def, VA,
-        FullTranscript.append_fst, FullTranscript.append_snd, ← hGood.2] using hnext)
-  simpa only [bind_assoc] using hbound
+  simp only [hFactor stmt wit, StateT.run_bind, StateT.run_pure, ← bind_assoc] at hfirst ⊢
+  refine mul_le_prEvent_bind_of_forall _ _ _ _ hfirst fun q₁ hGood => ?_
+  have hnext := hsecond q₁.2 q₁.1.2.1 q₁.1.2.2 (by
+    rw [hGood.2]
+    exact hGood.1)
+  simpa only [bind_assoc, pure_bind, Function.comp_def, VA,
+    FullTranscript.append_fst, FullTranscript.append_snd, ← hGood.2] using hnext
 
 /-- Sequential composition preserves completeness for pure verifiers when the prover execution
 factors at the seam and stage two is complete from every shared oracle state. Its error is at most

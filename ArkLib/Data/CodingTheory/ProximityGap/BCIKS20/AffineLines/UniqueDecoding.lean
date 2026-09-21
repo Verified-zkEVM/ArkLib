@@ -27,7 +27,7 @@ universe u v w k l
 
 section CoreResults
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+         {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
@@ -38,7 +38,7 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : ℕ} {dom
   unfold δ_ε_correlatedAgreementAffineLines
   intro u hprob
   have hprob' :
-      Pr_{let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
+      Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
         > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
     simpa [errorBound_eq_n_div_q_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hδ] using
       hprob

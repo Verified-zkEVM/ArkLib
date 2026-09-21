@@ -135,8 +135,7 @@ theorem perfectCorrectness_of_opening_perfectCompleteness
     perfectCorrectness init impl scheme := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  apply le_of_eq
-  symm
+  refine ge_of_eq ?_
   -- Normalize the game into nested `ProbComp` binds.
   simp only [simulateQ_bind, StateT.run'_eq, StateT.run_bind, QueryImpl.addLift_def,
     QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, map_bind]

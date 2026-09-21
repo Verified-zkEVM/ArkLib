@@ -7,7 +7,6 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.Basic.Entropy
-public import ArkLib.Data.Probability.Notation
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Analysis.SpecialFunctions.Stirling
 public import Mathlib.FieldTheory.Finiteness

@@ -203,31 +203,28 @@ private noncomputable def binary_matrix_direct_configuration_separator (b : ℕ)
       if M = N then 1 else binary_matrix_lambda_mv M - binary_matrix_lambda_mv N)
 
 private noncomputable def binary_matrix_good_coefficients
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K) : Finset K := by
-  classical
   exact Finset.univ.image (fun M : Fin 2 → Fin b → ZMod 2 =>
     MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))
 
 private theorem binary_matrix_good_coefficients_card
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (hinj : Function.Injective (fun M : Fin 2 → Fin b → ZMod 2 =>
       MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))) :
-    (binary_matrix_good_coefficients t).card = 2 ^ (2 * b) := by
-  classical
+    (binary_matrix_good_coefficients (K := K) (b := b) t).card = 2 ^ (2 * b) := by
   unfold binary_matrix_good_coefficients
   rw [Finset.card_image_of_injective Finset.univ hinj,
     Finset.card_univ, binary_matrix_parameter_card]
 
 private theorem binary_matrix_good_coefficients_mem
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K) (γ : K) :
-    γ ∈ binary_matrix_good_coefficients t ↔
+    γ ∈ binary_matrix_good_coefficients (K := K) (b := b) t ↔
       ∃ M : Fin 2 → Fin b → ZMod 2,
         MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
           (binary_matrix_lambda_mv M) = γ := by
-  classical
   unfold binary_matrix_good_coefficients
   simp only [Finset.mem_image, Finset.mem_univ, true_and]
 
@@ -845,7 +842,7 @@ private noncomputable def binary_tuple_linear_map {K : Type} [Field K] [CharP K 
 open scoped NNReal ProbabilityTheory in
 private theorem eps_ca_lower_of_finset_witness
     {ι F A : Type} [Fintype ι] [Nonempty ι]
-    [Field F] [Fintype F]
+    [Field F] [Fintype F] [SampleableType F]
     [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0)
     (u : Code.WordStack A (Fin 2) ι) (S : Finset F)
@@ -858,7 +855,7 @@ private theorem eps_ca_lower_of_finset_witness
   unfold ProximityGap.epsCa
   refine le_trans ?_ (le_iSup _ u)
   rw [ite_eq_right hnot]
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   apply ENNReal.div_le_div_right
   exact_mod_cast Finset.card_le_card (by
     intro γ hγ
@@ -937,6 +934,7 @@ private theorem is_binary_linearized_sub
     {K : Type} [Field K] (P Q : Polynomial K)
     (hP : IsBinaryLinearized P) (hQ : IsBinaryLinearized Q) :
     IsBinaryLinearized (P - Q) := by
+  let _ : DecidableEq K := Classical.decEq K
   unfold IsBinaryLinearized
   intro n hn
   rw [Polynomial.mem_support_iff] at hn
@@ -1015,6 +1013,7 @@ private theorem mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card
     (hdeg : p.totalDegree < Fintype.card K) :
     ∃ t : Fin n → K, MvPolynomial.eval t p ≠ 0 := by
   classical
+  let _ : DecidableEq K := Classical.decEq K
   by_contra hall
   push Not at hall
   have hsz := MvPolynomial.schwartz_zippel_totalDegree hp (Finset.univ : Finset K)
@@ -1245,7 +1244,7 @@ private theorem binary_matrix_johnson_raw
   let domain : ιC ↪ FC :=
     ⟨binary_product_tuple_linear_map t, htinj⟩
   let d : ℕ := 2 ^ r
-  let G : Finset FC := binary_matrix_good_coefficients t
+  let G : Finset FC := binary_matrix_good_coefficients (K := FC) (b := r + 2) t
   refine ⟨ιC, inferInstance, inferInstance, inferInstance, domain, d, G,
     ?_, ?_, ?_, ?_⟩
   · dsimp only [d]
@@ -1254,10 +1253,10 @@ private theorem binary_matrix_johnson_raw
     exact binary_product_index_card_add_two r
   · dsimp only [ιC, G]
     rw [binary_product_index_card_add_two,
-      binary_matrix_good_coefficients_card t hcoeffinj]
+      binary_matrix_good_coefficients_card (K := FC) (b := r + 2) t hcoeffinj]
     exact hrpow
   · intro γ hγ
-    have hγ' : γ ∈ binary_matrix_good_coefficients t := by
+    have hγ' : γ ∈ binary_matrix_good_coefficients (K := FC) (b := r + 2) t := by
       simpa only [G] using hγ
     obtain ⟨M, hM⟩ :=
       (binary_matrix_good_coefficients_mem t γ).mp hγ'
@@ -1340,6 +1339,8 @@ private theorem rs_monomial_agreement_card_le_two_mul
     (hagree : ∀ i ∈ S, v i = domain i ^ (2 * d)) :
     S.card ≤ 2 * d := by
   classical
+  let _ : DecidableEq ι := Classical.decEq ι
+  let _ : DecidableEq F := Classical.decEq F
   let _ := Fintype.ofFinite ι
   let _ := Fintype.ofFinite F
   let : NeZero (d + 1) := ⟨by omega⟩
@@ -1425,7 +1426,7 @@ of relative minimum distance `15 / 16` with large CA error at field radius `3 / 
 theorem exists_rs_epsCa_large_at_johnson_radius
     (ε : ℝ≥0) (_hε : 0 < ε) (_hε_lt : (ε : ℝ) < 1) :
     ∃ q₀ : ℕ,
-    ∀ {FC : Type} [Field FC] [Fintype FC] [DecidableEq FC] [CharP FC 2],
+    ∀ {FC : Type} [Field FC] [Fintype FC] [SampleableType FC] [DecidableEq FC] [CharP FC 2],
       q₀ ≤ Fintype.card FC →
       ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
         (domain : ιC ↪ FC) (k : ℕ),
@@ -1439,7 +1440,7 @@ theorem exists_rs_epsCa_large_at_johnson_radius
   classical
   obtain ⟨q₀, hraw⟩ := binary_matrix_johnson_raw ε _hε
   refine ⟨q₀, ?_⟩
-  intro FC _ _ _ _ hFC
+  intro FC _ _ _ _ _ hFC
   obtain ⟨ιC, instι, neι, decι, domain, d, G,
     hd, hcard, hG, hagree⟩ := hraw hFC
   let : Fintype ιC := instι

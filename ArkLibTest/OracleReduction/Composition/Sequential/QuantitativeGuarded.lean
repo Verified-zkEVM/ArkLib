@@ -104,10 +104,8 @@ theorem stage_completeness (s : σ) :
   rw [Reduction.completeness_iff_of_guarded_verifier stage guardedForm]
   intro stmt wit _
   cases wit
-  simp only [pure_bind, simulated_run, bind_pure_comp, Functor.map_map,
-    guardedForm, Set.mem_univ, true_and, and_true, bne_iff_ne]
-  rw [map_eq_bind_pure_comp]
-  simp only [Function.comp_def]
+  simp only [pure_bind, simulated_run, bind_assoc, guardedForm, Set.mem_univ, true_and,
+    and_true, bne_iff_ne]
   rw [nonzero_probability]
   have hratio : (3 / 4 : ℝ≥0∞) = ((3 / 4 : ℝ≥0) : ℝ≥0∞) := by
     rw [ENNReal.coe_div (by norm_num : (4 : ℝ≥0) ≠ 0)]
