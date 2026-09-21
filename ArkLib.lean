@@ -300,6 +300,8 @@ public import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 public import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 public import ArkLib.Data.Polynomial.RationalFunctions.Weight
 public import ArkLib.Data.Polynomial.ResultantDegree
+public import ArkLib.Data.Polynomial.ResultantSpecialization
+public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.Data.Polynomial.SplitFold
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
