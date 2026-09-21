@@ -170,7 +170,11 @@ removes the `backward.isDefEq.respectTransparency false` override that the old p
 ### Phase 2: independent PMF retirement (#904 follow-up)
 
 The conversion starts from `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903) and includes
-`main` through `8b03d40a56ec827d223b78ccca0ce164a9231f6c` (#857 and #877).
+`main` through `8b03d40a56ec827d223b78ccca0ce164a9231f6c` (#857 and #877). Later merges of `main`
+through `b068906773616d739c2e894a1305680dc258f01f` (#922) are integrated too; the one migration
+change they need is in `ProximityGenerator/Interleaving.lean` (#918), whose three sampling
+theorems take `[SampleableType S]` and use `Pr{let x ← $ᵗ S}` and `prEvent_mono`. Its
+row-functional avoidance lemma stays sampler-free. That file postdates the counts below.
 The size comparison isolates migration files against #903; the unrelated additions on `main`
 are not counted as migration changes.
 Counts below cover complete changed Lean files in each family, including comments and signatures;
@@ -187,7 +191,7 @@ they are not counts of changed proof lines. Deleted files count as zero after co
 | Deleted ToVCVio Lean modules | 7 | 200 | 0 | -200 |
 
 The compatibility tree also loses its 64-line README. The root import file is regenerated.
-The retirement inventory shrank from 186 declarations to zero across the final 499-module root.
+The retirement inventory shrank from 186 declarations to zero across the final 523-module root.
 No retired-probability baseline is introduced, and no warning exclusions are added.
 
 #### Phase 2 proof-size review
@@ -204,11 +208,13 @@ None of the 40 remaining rows is a probability argument that got longer. Each gr
 three lines, and they have three causes, none of which is R1–R4.
 
 **D1: instance search after the native sampler import (26 rows).** Converting `$ᵖ` to `$ᵗ` makes
-these files import `VCVio.OracleComp.OracleSpec`. Its instances
-`DecidableEq spec.Domain`/`DecidableEq (spec.Range t)` (`OracleSpec.lean:77–79`) combine with the
-reducible `OracleSpec.ofFn` instance (`OracleSpec.lean:91`) to match every `DecidableEq α` goal.
-This sends synthesis around the cycle `DecidableEq F → (ofFn ?).DecidableEq → DecidableEq F`
-before it reaches `Classical.propDecidable`. The minimal reproducer
+these files import `VCVio.OracleComp.OracleSpec`. Because `Domain` is reducible, its instance
+`[spec.DecidableEq] → DecidableEq spec.Domain` (`OracleSpec.lean:77`) is indexed as
+`DecidableEq ι` with `spec` undetermined, so it matches every `DecidableEq α` goal. With the
+reducible `OracleSpec.ofFn` instance (`OracleSpec.lean:91`) this sends synthesis around the cycle
+`DecidableEq F → (ofFn ?).DecidableEq → DecidableEq F` before it reaches
+`Classical.propDecidable`. The range, `Fintype` and `Inhabited` projections are not involved: their
+keys fail unification against an unrelated goal without opening a subgoal (verified by trace). The minimal reproducer
 `import Mathlib.Algebra.Field.Basic` plus `example [Field F] (x y : F) : Decidable (x = y) := by
 classical; infer_instance` succeeds. Adding `import VCVio.OracleComp.OracleSpec` makes it fail to
 synthesize. The affected proofs therefore use explicit `let _ : DecidableEq α := Classical.decEq α`,
@@ -264,10 +270,12 @@ default instance paths go through the retired `OracleSpec.IsUniformSpec.inhabite
 `IsUniformSpec.toIsProbabilitySpec`, `PMF`/`SPMF` and `probOutput`, and `retiredsweep` rejects
 them (verified). These rows go away when VCVio removes those instances under #532.
 
-D1 has a single upstream fix: VCVio should stop `OracleSpec`'s `DecidableEq` instances from
-matching arbitrary types, for example by lowering their priority or keying them on a
-non-reducible head. After ArkLib pins that fix, the 26 D1 proofs can go back to `classical`. That
-change belongs in a separate VCVio PR and is not part of this one.
+D1 has a single upstream fix, tracked as [VCVio #772](https://github.com/Verified-zkEVM/VCVio/issues/772)
+and implemented in [VCVio #773](https://github.com/Verified-zkEVM/VCVio/pull/773): the domain
+projection instance is removed and generic VCVio code that compares indices assumes
+`[DecidableEq ι]`. After ArkLib pins a VCVio `main` containing that fix, the D1 lets can go back to
+`classical`, with `retiredsweep` re-run after each removal. That repin is a follow-up, not part of
+this PR.
 
 The earlier phase-2 generator audit still holds:
 
@@ -295,15 +303,16 @@ migration; the axiom regression baseline must remain unchanged.
 ### Closure scope and scanner boundary
 
 Issue #904 covers both phases: #903's VCVio scalar conversion and the follow-up retirement of
-ArkLib's independent PMF surface. Its integration condition is met: the prerequisite stack landed
-on VCVio `main` in [#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pins that
-main commit, `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`. All phase-1 probability proofs are at or
-below their pre-#903 size or carry an R1/R2/R4 reason, and checkpoint A6 is done. What remains
-against #904's literal acceptance rule are the 40 phase-2 rows above: 26 grew because of the D1
-instance-search defect in VCVio, 9 because of D2 statement or elaboration changes, and 5 because
-of D3 explicit terms that keep retired VCVio instances out of the proofs. None of them
-is R1–R4. Whether #904 closes with these rows documented, or stays open until the VCVio `OracleSpec`
-instance fix is pinned and D1 is reverted, is a decision for the maintainers.
+ArkLib's independent PMF surface. The prerequisite stack landed on VCVio `main` in
+[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pins that main commit,
+`210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`. Closure is judged by these gates, all checked on the
+final head: current `main` is integrated; the probability API used by `ArkLib` is native; the
+strict `retiredsweep` inventory is empty; `./scripts/validate.sh --axioms` passes with no new
+warning, axiom, `sorry` or trust debt; and each repeated ergonomic defect is fixed upstream or
+tracked by a focused upstream issue. Proof length is diagnostic. All phase-1 probability proofs
+are at or below their pre-#903 size or carry an R1/R2/R4 reason, and checkpoint A6 is done. The
+40 phase-2 rows above have recorded causes: D1 is VCVio #772 (fixed by VCVio #773), D2 is statement or
+elaboration change, and D3 goes away when VCVio removes its retired instances under #532.
 
 VCVio issue #532 has a broader repository-wide retirement scope. Landing the ArkLib prerequisite
 slice and closing #904 will not close #532; VCVio must account for its other scalar/PMF consumers
