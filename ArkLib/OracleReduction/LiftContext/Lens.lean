@@ -508,6 +508,234 @@ def OracleStatement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmt
                                     OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :=
   Statement.Lens.IsSound outerLangIn outerLangOut innerLangIn innerLangOut compatStmt lens
 
+section StatementLensCompleteness
+
+/-! ### Language-level completeness for a statement lens
+
+`Statement.Lens.IsSound.proj_sound` says `outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉
+innerLangIn`, which is the containment `lens.proj ⁻¹' innerLangIn ⊆ outerLangIn`.  The converse
+containment `outerLangIn ⊆ lens.proj ⁻¹' innerLangIn` is not available anywhere in the API at the
+*language* level: `Context.Lens.IsComplete.proj_complete` has the right shape but is stated at the
+*relation* level (`Set (Stmt × Wit)`), so it cannot discharge a `Set Stmt` obligation.
+
+The class below supplies exactly that missing containment.  Taken together the two conditions say
+
+  `outerLangIn = lens.proj ⁻¹' innerLangIn`
+
+(`Statement.Lens.eq_preimage_of_projSound_of_isComplete`): the outer language is the *pullback* of
+the inner language along `proj`.  That is why `Verifier.StateFunction.liftContext`'s `toFun_empty`
+— a biconditional — needs both classes: it is that set equation read pointwise
+(`Statement.Lens.mem_iff_proj_mem`).
+
+The two classes are *independent*: neither implies the other
+(`Statement.Lens.isSound_not_implies_isComplete`, `Statement.Lens.isComplete_not_implies_isSound`).
+-/
+
+/-- Conditions for the statement lens to preserve language membership under projection.
+
+This is the language-level analogue of `Context.Lens.IsComplete.proj_complete` (which is stated at
+the relation level), and the converse direction to `Statement.Lens.IsSound.proj_sound`. -/
+class Statement.Lens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+    (outerLangIn : Set OuterStmtIn) (innerLangIn : Set InnerStmtIn)
+    (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut) where
+
+  proj_complete : ∀ outerStmtIn,
+    outerStmtIn ∈ outerLangIn → lens.proj outerStmtIn ∈ innerLangIn
+
+namespace Statement.Lens
+
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+    {outerLangIn : Set OuterStmtIn} {innerLangIn : Set InnerStmtIn}
+    {lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut}
+
+/-- Completeness restated as a containment: the outer language sits inside the preimage. -/
+theorem IsComplete.subset_preimage [h : IsComplete outerLangIn innerLangIn lens] :
+    outerLangIn ⊆ lens.proj ⁻¹' innerLangIn :=
+  fun s hs => h.proj_complete s hs
+
+/-- Completeness built from the containment. -/
+def IsComplete.ofSubsetPreimage (h : outerLangIn ⊆ lens.proj ⁻¹' innerLangIn) :
+    IsComplete outerLangIn innerLangIn lens :=
+  ⟨fun s hs => h hs⟩
+
+/-- **The single classical step in the lifting layer.**  `proj_sound` is stated in negated form
+(`∉ → ∉`), because soundness is naturally about statements *outside* the language.  Recovering the
+positive containment `lens.proj ⁻¹' innerLangIn ⊆ outerLangIn` from it is a contraposition, which
+constructively yields only `¬¬(· ∈ outerLangIn)`; the elimination needs classical logic (or
+decidability of `outerLangIn`).
+
+Isolating it in this one lemma keeps the classical content of `Verifier.StateFunction.liftContext`
+auditable: every other lemma here is choice-free. -/
+theorem preimage_subset_of_projSound
+    (hSound : ∀ outerStmtIn, outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn) :
+    lens.proj ⁻¹' innerLangIn ⊆ outerLangIn := by
+  intro s hs
+  by_contra hc
+  exact hSound s hc hs
+
+/-- **Soundness and completeness are one equation.**  Together, `proj_sound` and `proj_complete`
+say precisely that the outer input language is the preimage of the inner input language along
+`proj` — i.e. the language pair is a pullback square over the lens. -/
+theorem eq_preimage_of_projSound_of_isComplete
+    (hSound : ∀ outerStmtIn, outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn)
+    [IsComplete outerLangIn innerLangIn lens] :
+    outerLangIn = lens.proj ⁻¹' innerLangIn :=
+  Set.Subset.antisymm IsComplete.subset_preimage (preimage_subset_of_projSound hSound)
+
+/-- Conversely, the pullback equation supplies both conditions.  With the previous lemma this is a
+complete characterisation: `proj_sound ∧ proj_complete ↔ outerLangIn = lens.proj ⁻¹' innerLangIn`. -/
+theorem projSound_and_isComplete_of_eq_preimage
+    (h : outerLangIn = lens.proj ⁻¹' innerLangIn) :
+    (∀ outerStmtIn, outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn) ∧
+      IsComplete outerLangIn innerLangIn lens :=
+  ⟨fun s hs hmem => hs (h ▸ hmem), IsComplete.ofSubsetPreimage (h ▸ subset_rfl)⟩
+
+/-- The pointwise form of the pullback equation.  This is exactly the shape consumed by
+`Verifier.StateFunction.liftContext`'s `toFun_empty`, which is a biconditional. -/
+theorem mem_iff_proj_mem
+    (hSound : ∀ outerStmtIn, outerStmtIn ∉ outerLangIn → lens.proj outerStmtIn ∉ innerLangIn)
+    [hC : IsComplete outerLangIn innerLangIn lens] (outerStmtIn : OuterStmtIn) :
+    outerStmtIn ∈ outerLangIn ↔ lens.proj outerStmtIn ∈ innerLangIn :=
+  ⟨hC.proj_complete outerStmtIn, fun h => preimage_subset_of_projSound hSound h⟩
+
+/-- Failure of completeness is exactly failure of the containment. -/
+theorem not_isComplete_iff_not_subset_preimage :
+    (IsComplete outerLangIn innerLangIn lens → False) ↔
+      ¬ (outerLangIn ⊆ lens.proj ⁻¹' innerLangIn) :=
+  ⟨fun hNo hSub => hNo (IsComplete.ofSubsetPreimage hSub),
+   fun hNo hC => hNo (@IsComplete.subset_preimage _ _ _ _ _ _ _ hC)⟩
+
+/-! #### Instances -/
+
+/-- **The universal instance.**  Every statement lens is complete when the outer language is taken
+to be the preimage of the inner one.  By `IsComplete.subset_preimage` every other complete pair
+factors through this one, so the preimage language is the *largest* outer language for which the
+lens is complete — the terminal object among completeness data over a fixed `innerLangIn`. -/
+instance instIsCompletePreimage
+    (lens : Statement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut)
+    (innerLangIn : Set InnerStmtIn) :
+    IsComplete (lens.proj ⁻¹' innerLangIn) innerLangIn lens :=
+  ⟨fun _ h => h⟩
+
+/-- Completeness is functorial: it composes along lens composition.  (Stated as a `def` rather than
+an `instance` because the intermediate language cannot be inferred by unification.) -/
+def IsComplete.comp {MidStmtIn MidStmtOut : Type} {midLangIn : Set MidStmtIn}
+    (L : Statement.Lens OuterStmtIn OuterStmtOut MidStmtIn MidStmtOut)
+    (M : Statement.Lens MidStmtIn MidStmtOut InnerStmtIn InnerStmtOut)
+    (hL : IsComplete outerLangIn midLangIn L)
+    (hM : IsComplete midLangIn innerLangIn M) :
+    IsComplete outerLangIn innerLangIn (M ∘ₗ L) :=
+  ⟨fun s hs => hM.proj_complete _ (hL.proj_complete s hs)⟩
+
+/-! #### Independence of `IsSound` and `IsComplete`
+
+The two classes are logically independent.  Both witnesses use the *identity* lens on `Bool`, which
+makes the point sharply: the gap is in the **language pair**, not in any exotic lens geometry. -/
+
+/-- Separating data: the identity lens on `Bool`. -/
+def sepLens : Statement.Lens Bool Unit Bool Unit := ⟨id, fun _ _ => ()⟩
+
+/-- With `outerLangIn = univ`, `proj_sound` holds vacuously (nothing is outside `univ`). -/
+instance sepLens_isSound :
+    IsSound (Set.univ : Set Bool) (Set.univ : Set Unit) ({true} : Set Bool)
+      (Set.univ : Set Unit) (fun _ _ => True) sepLens where
+  proj_sound := fun s hs => absurd (Set.mem_univ s) hs
+  lift_sound := fun _ i _ hi => absurd (Set.mem_univ i) hi
+
+/-- …but `proj_complete` fails on `false`, which is in `univ` and not in `{true}`. -/
+theorem sepLens_not_isComplete :
+    IsComplete (Set.univ : Set Bool) ({true} : Set Bool) sepLens → False := by
+  intro h
+  have hf := h.proj_complete false (Set.mem_univ false)
+  simp [sepLens, Statement.Lens.proj] at hf
+
+/-- **`IsSound` does not imply `IsComplete`.**  Without this the new class would be redundant
+scaffolding: every `IsSound` lens would already satisfy it. -/
+theorem isSound_not_implies_isComplete :
+    ∃ (L : Statement.Lens Bool Unit Bool Unit)
+      (oIn : Set Bool) (oOut : Set Unit) (iIn : Set Bool) (iOut : Set Unit)
+      (compatStmt : Bool → Unit → Prop),
+      IsSound oIn oOut iIn iOut compatStmt L ∧ ¬ Nonempty (IsComplete oIn iIn L) :=
+  ⟨sepLens, Set.univ, Set.univ, {true}, Set.univ, fun _ _ => True,
+    sepLens_isSound, fun h => sepLens_not_isComplete h.some⟩
+
+/-- The mirror witness: `outerLangIn = {true}` inside `innerLangIn = univ`. -/
+instance sepLens'_isComplete :
+    IsComplete ({true} : Set Bool) (Set.univ : Set Bool) sepLens :=
+  ⟨fun _ _ => Set.mem_univ _⟩
+
+/-! #### A non-vacuous separation
+
+`sepLens_isSound` above satisfies `proj_sound` *vacuously*: with `outerLangIn = univ` there is no
+statement outside the outer language, so the quantifier is empty.  That is enough to refute
+`IsSound → IsComplete`, but a reader may reasonably object that it separates the two classes only at
+a degenerate point.  The witness below removes that objection: soundness is checked against a
+statement that really is outside the outer language, and completeness still fails. -/
+
+/-- The constant-`false` lens. -/
+def sepLensNV : Statement.Lens Bool Unit Bool Unit := ⟨fun _ => false, fun _ _ => ()⟩
+
+/-- Soundness here is **not** vacuous: `true` really is outside `outerLangIn = {false}`, so
+`proj_sound` has a live instance to discharge rather than an empty quantifier. -/
+theorem sepLensNV_soundness_is_nonvacuous : ∃ s : Bool, s ∉ ({false} : Set Bool) :=
+  ⟨true, by simp⟩
+
+instance sepLensNV_isSound :
+    IsSound ({false} : Set Bool) (∅ : Set Unit) ({true} : Set Bool) (∅ : Set Unit)
+      (fun _ _ => True) sepLensNV where
+  proj_sound := fun _ _ => by simp [sepLensNV, Statement.Lens.proj]
+  lift_sound := fun _ _ _ _ => by simp
+
+theorem sepLensNV_not_isComplete :
+    IsComplete ({false} : Set Bool) ({true} : Set Bool) sepLensNV → False := by
+  intro h
+  have hf := h.proj_complete false (by simp)
+  simp [sepLensNV, Statement.Lens.proj] at hf
+
+/-- **`IsSound` does not imply `IsComplete`, and not merely vacuously.**  Strengthens
+`isSound_not_implies_isComplete`: here `outerLangIn = {false} ≠ univ`, so soundness is discharged
+against a genuine out-of-language statement (`sepLensNV_soundness_is_nonvacuous`). -/
+theorem isSound_not_implies_isComplete_nonvacuously :
+    ∃ (L : Statement.Lens Bool Unit Bool Unit)
+      (oIn : Set Bool) (oOut : Set Unit) (iIn : Set Bool) (iOut : Set Unit)
+      (compatStmt : Bool → Unit → Prop),
+      IsSound oIn oOut iIn iOut compatStmt L ∧ ¬ Nonempty (IsComplete oIn iIn L)
+        ∧ oIn ≠ Set.univ :=
+  ⟨sepLensNV, {false}, ∅, {true}, ∅, fun _ _ => True,
+    sepLensNV_isSound, fun h => sepLensNV_not_isComplete h.some, by
+      intro hc
+      have : (true : Bool) ∈ ({false} : Set Bool) := hc ▸ Set.mem_univ true
+      simp at this⟩
+
+/-- **`IsComplete` does not imply `IsSound` either.**  `proj_sound` fails on `false`, which is
+outside `{true}` but inside `univ`.  With `isSound_not_implies_isComplete` this makes the two
+classes genuinely independent, not merely distinct in presentation. -/
+theorem isComplete_not_implies_isSound :
+    ∃ (L : Statement.Lens Bool Unit Bool Unit) (oIn iIn : Set Bool),
+      Nonempty (IsComplete oIn iIn L) ∧
+        ¬ (∀ outerStmtIn, outerStmtIn ∉ oIn → L.proj outerStmtIn ∉ iIn) := by
+  refine ⟨sepLens, {true}, Set.univ, ⟨sepLens'_isComplete⟩, ?_⟩
+  intro h
+  exact h false (by simp) (Set.mem_univ _)
+
+end Statement.Lens
+
+/-- The completeness condition for the oracle statement lens is just the one for the underlying
+  statement lens -/
+@[reducible, simp]
+def OracleStatement.Lens.IsComplete {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
+    (outerLangIn : Set (OuterStmtIn × (∀ i, OuterOStmtIn i)))
+    (innerLangIn : Set (InnerStmtIn × (∀ i, InnerOStmtIn i)))
+    (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+                                    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :=
+  Statement.Lens.IsComplete outerLangIn innerLangIn lens
+
+end StatementLensCompleteness
+
 /-- Conditions for the extractor lens to preserve knowledge soundness -/
 class Extractor.Lens.IsKnowledgeSound
     {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
@@ -615,6 +843,14 @@ protected def id :
 
 alias trivial := Statement.Lens.id
 
+/-- The identity lens is complete for any language against itself.  (Stated here rather than beside
+`Statement.Lens.IsComplete` because `Statement.Lens.id` is introduced in this section.) -/
+instance instIsCompleteId {OuterStmtIn OuterStmtOut : Type} (L : Set OuterStmtIn) :
+    Statement.Lens.IsComplete L L
+      (Statement.Lens.id :
+        Statement.Lens OuterStmtIn OuterStmtOut OuterStmtIn OuterStmtOut) :=
+  ⟨fun _ h => h⟩
+
 /-- Lens for the statement which keeps the output the same, and hence only requires a
   projection on the input. -/
 @[inline]
@@ -628,6 +864,23 @@ def ofInputOnly (projStmt : OuterStmtIn → InnerStmtIn) :
 def ofOutputOnly (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) :
     Statement.Lens OuterStmtIn OuterStmtOut OuterStmtIn InnerStmtOut :=
   ⟨id, liftStmt⟩
+
+/-- **Every output-only lens is complete, for every language.**  Its projection is the identity,
+so membership is preserved on the nose.  This covers the whole `ofOutputOnly` family at once
+rather than one bespoke protocol lens. -/
+instance instIsCompleteOfOutputOnly {OuterStmtIn OuterStmtOut InnerStmtOut : Type}
+    (liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut) (L : Set OuterStmtIn) :
+    Statement.Lens.IsComplete L L (Statement.Lens.ofOutputOnly liftStmt) :=
+  ⟨fun _ h => h⟩
+
+/-- **Every input-only lens is complete for the preimage language.**  Together with
+`Statement.Lens.eq_preimage_of_projSound_of_isComplete` this says the preimage is the *only*
+outer language for which an input-only lens can be both sound and complete. -/
+instance instIsCompleteOfInputOnly {OuterStmtIn OuterStmtOut InnerStmtIn : Type}
+    (projStmt : OuterStmtIn → InnerStmtIn) (innerLangIn : Set InnerStmtIn) :
+    Statement.Lens.IsComplete (projStmt ⁻¹' innerLangIn) innerLangIn
+      (Statement.Lens.ofInputOnly (OuterStmtOut := OuterStmtOut) projStmt) :=
+  ⟨fun _ h => h⟩
 
 end Statement.Lens
 
