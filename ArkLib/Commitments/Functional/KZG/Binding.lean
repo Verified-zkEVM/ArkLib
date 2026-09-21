@@ -8,7 +8,7 @@ module
 public import ArkLib.Commitments.Functional.KZG.Correctness
 public import ArkLib.Commitments.Functional.KZG.Algebra
 public import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
-public import ArkLib.ToVCVio.EvalDist.Defs.Support
+public import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Evaluation Binding for the KZG Polynomial Commitment Scheme

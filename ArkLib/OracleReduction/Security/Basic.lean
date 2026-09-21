@@ -46,8 +46,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 TODO: the "right" factoring for the security definitions are the following:
 
 - We have a two-layer interpretation approach: first, interpret the oracle queries into some monad
-  `m` which admits a monad morphism into `PMF` (i.e. `HasEvalDist`); then we interpret the resulting
-  monad into `PMF`.
+  `m` with native distribution semantics; then interpret the resulting computation
+  as its measure `𝒟[·]`.
 
   This does not preclude `m` from being the same oracle computation type, but more interesting
   possibilities are possible, such as `m = ReaderT ρ` for lazy sampling of the shared oracle.

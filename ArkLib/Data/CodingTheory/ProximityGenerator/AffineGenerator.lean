@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.CodingTheory.Prelims
 public import Mathlib.FieldTheory.Finiteness
@@ -283,7 +283,7 @@ open Probability
 
 
 variable {ι : Type} [Fintype ι]
-         {F : Type} [Field F] [Fintype F]
+         {F : Type} [Field F] [Fintype F] [SampleableType F]
          {A : Type} [AddCommMonoid A] [Module F A]
 
 /-- The affine line generator `F → F²`, `x ↦ (1, x)`, having MCA error `ε_mca` for `MC` implies that
@@ -313,7 +313,7 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
     rw [ha_def, NNReal.coe_sub hinv_le]; push_cast; ring
   have ha : 0 < (a : ℝ) := by
     rw [ha_coe, sub_pos, div_lt_one (by linarith)]; linarith
-  rw [prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   have hcard : (Fintype.card (Fin ℓ → F) : ℝ) = (Fintype.card F : ℝ) ^ ℓ := by
     norm_cast
     rw [Fintype.card_fun, Fintype.card_fin]
@@ -321,7 +321,7 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
   simp only [Pi.smul_apply, smul_eq_mul]
   obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hℓ MC U γ
   have hline := hGMCA.prob_le W γ
-  rw [prob_uniform_eq_ofReal] at hline
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal] at hline
   set sp : ℝ :=
     ((Finset.univ.filter (fun x : Fin ℓ → F =>
         IsMCA (AffineSpaceGenerator F ℓ) MC x U γ)).card : ℝ) with hsp

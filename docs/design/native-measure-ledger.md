@@ -1,16 +1,17 @@
 # Native-measure conversion ledger
 
-The Lean 4.34 upgrade converts consumers of VCVio's retiring scalar probability API
+The merged Lean 4.34 upgrade ([#903](https://github.com/Verified-zkEVM/ArkLib/pull/903))
+converted consumers of VCVio's retiring scalar probability API
 (`Pr[… | …]`, `probEvent`, `probOutput`, `probFailure`, `evalSPMF`/`𝒮[…]`, `NeverFail`,
 and the PMF-based `IsUniformSpec`/`IsProbabilitySpec`) to the native measure API
-`𝒟[…]` and `Pr{…}[…]`. The upgrade must pass `./scripts/validate.sh --axioms` with
+`𝒟[…]` and `Pr{…}[…]`. Both stages require `./scripts/validate.sh --axioms` with
 the existing zero-warning gate and axiom baseline unchanged.
 
-ArkLib's independent Mathlib `PMF` notation `Pr_{ let x ←$ᵖ S }[…]` is a separate,
-deferred conversion. It does not use VCVio's deprecated compatibility layer and remains valid
-on Lean 4.34. The optional `lake exe retiredsweep` inventory includes this broader work; an
-empty inventory is the eventual full-retirement goal, not a prerequisite for this toolchain bump.
-The broader campaign is tracked in [issue #904](https://github.com/Verified-zkEVM/ArkLib/issues/904).
+The follow-up retirement campaign in [issue #904](https://github.com/Verified-zkEVM/ArkLib/issues/904)
+converts ArkLib's independent Mathlib PMF toolkit and its coding-theory/protocol consumers.
+It removes the old notation module and ToVCVio compatibility imports. The mandatory
+`lake exe retiredsweep --require-empty` gate checks direct retired references in declaration types
+and bodies; it cannot be weakened by a baseline.
 
 ## Ground rules
 
@@ -25,8 +26,8 @@ The broader campaign is tracked in [issue #904](https://github.com/Verified-zkEV
 - Protocol statements do not acquire artificial discrete measurable-space assumptions. Proof-local
   discrete spaces are used where the existing discrete sampler semantics require them, including
   sampler transport in `OracleReduction/Cast.lean`.
-- `ArkLib/ToVCVio/` retains compatibility imports needed by current clients. Further removal belongs
-  to the full retirement campaign.
+- Import generic VCVio laws directly from their upstream owners. The former `ArkLib/ToVCVio/`
+  compatibility tree is removed; do not recreate it or add replacement aliases.
 
 ## Admissible regression reasons
 
@@ -58,15 +59,72 @@ Developed on VCVio branch `codex/arklib-native-prereqs` (stacked on
 Regression test: `VCVioTest/EvalDist/EventBounds.lean` (native import guard, an `OptionT ProbComp`
 game simulated from a sampled state, uniform counting thresholds, union bounds, conditioning).
 
-Still to do upstream (from the plan): U8 structural `IsUniformMeasureSpec` instances for
-`spec + spec'` (fallback: local instance triple), U9 `IsProbabilityMeasure` glue for `StateT.run'`
-and `OptionT.mk`.
+The earlier plan listed structural uniform instances (U8) and transformer losslessness glue
+(U9). These are not unresolved blockers for the current conversion: ArkLib uses native
+`IsUniformMeasureSpec` instances where needed, and the pinned dependency supplies
+`OptionT.isProbabilityMeasure_mk_iff` and the sequencing lemmas above.
+The final proof-length audit identified dependent-product sampling and conditional uniform-event
+conveniences. [VCVio #770](https://github.com/Verified-zkEVM/VCVio/pull/770) supplies them;
+ArkLib pins the squash merge `93cee8a1f25135436d96cab6bd89a0e5a4cf7660`, whose tree is
+identical to the validated PR head `c2ca892ec693bca9403a98111cc6f8f738b8c029`.
+VCVio #769 merged into the prerequisites branch, not VCVio `main`;
+consolidating that upstream stack is separate from retiring ArkLib's own probability surface.
 
 ## Checkpoints
 
-| PR | Family | Files | Lines before | After | Δ | Retired refs before → after | Regressions (file:decl, +N, reason) |
-|---|---|---|---|---|---|---|---|
-| A0 | dependency bump | `lean-toolchain`, `lakefile.toml`, `lake-manifest.json`, mechanical fixes | — | — | — | (initial ledger size recorded here) | — |
+The follow-up is based on `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903).
+Counts below cover complete changed Lean files in each family, including comments and signatures;
+they are not counts of changed proof lines. Deleted files count as zero after conversion.
+
+| Family | Changed files | Lines before | After | Δ |
+|---|---:|---:|---:|---:|
+| Probability toolkit | 4 | 1364 | 550 | -814 |
+| Proximity generators | 6 | 2012 | 2035 | +23 |
+| Other coding theory and Schwartz–Zippel | 49 | 32377 | 32278 | -99 |
+| Protocol consumers | 12 | 7728 | 7703 | -25 |
+| Oracle reductions | 7 | 5020 | 5007 | -13 |
+| Serde and KZG | 4 | 1159 | 1163 | +4 |
+| Deleted ToVCVio Lean modules | 7 | 200 | 0 | -200 |
+
+The compatibility tree also loses its 64-line README. The root import file is regenerated.
+The retirement inventory shrank from 186 declarations to zero across the final 497-module root.
+No retired-probability baseline is introduced, and no warning exclusions are added.
+
+### Proof-size review
+
+The generator family's remaining source increase is sampler declarations, signatures, and
+explicit instance arguments, not longer mathematical arguments. The focused proof-body counts
+below exclude theorem statements and docstrings and compare to #903:
+
+| File / declaration | Before | After | Accounting |
+|---|---:|---:|---|
+| `ProximityGenerator/Basic.poly_gen_is_zero_evading` | 21 | 19 | Native event equality removes the PMF-map step. |
+| `TensorGenerator.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` | 72 | 70 | Upstream conditional product bound. |
+| `TensorGenerator.isMCAGenerator_tensorGenerator` | 51 | 47 | Upstream product and finite union bounds. |
+| `PolynomialGenerator.isMCAGenerator_tensorGeneratorPi` | 51 | 51 | Native zero-event proof offsets explicit tail sampler setup. |
+| `PolynomialGenerator.isMCAGenerator_tensorGeneratorPi_tight` | 57 | 57 | Same dependent-product setup and zero-event argument. |
+| `ToyProblem/SoundnessBounds.exists_dotProduct_image_card_le` | 42 | 42 | Native mathematical corollary supplies the operational witness. |
+| `ToyProblem/SoundnessBounds.exists_affine_image_card_le` | 39 | 39 | Native cardinality threshold avoids expanded ENNReal arithmetic. |
+
+`RbrGame.prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex` grows by four
+proof lines (R1/R4): it explicitly proves that a uniform sampler's event and complement have
+mass one, using a proof-local discrete measurable space. This avoids a simplifier-selected
+retired probability instance. The four `support_nonempty` applications in transcript-tree and
+coordinate-wise proofs explicitly select the native instance; their extra physical lines only
+wrap that argument. The identity verifier proof eliminates an impossible challenge index.
+The already-admitted lift-context theorem retains its admission and drops its unused preliminary
+simplification. No new admission or baseline allowance is introduced.
+
+The mathematical collision-image theorem now takes a probability measure and an explicit
+countable full-mass carrier. Its witness still has positive singleton mass. ToyProblem converts
+that fact back to operational support before extracting sampled parameters; replacing it with
+membership in an arbitrary full-measure set would weaken the result. The theorem remains
+universe-polymorphic.
+
+Validation also tests rejection of retired notation, retired declaration types and bodies,
+private declarations, and attempts to bypass the strict gate with a covering baseline. Inert
+strings and comments remain allowed. Existing admissions are retained, not discharged by this
+migration; the axiom regression baseline must remain unchanged.
 
 ## Upstream gaps found during conversion
 
@@ -74,4 +132,5 @@ Native Boolean implication and union bounds, event monotonicity on support, a co
 lower bound, and the support-indexed additive bind bound,
 are supplied by [VCVio #769](https://github.com/Verified-zkEVM/VCVio/pull/769)
 for the Ajtai/Hachi reductions and KZG event comparisons. The pin includes the prerequisite
-branch above; the optional PMF retirement inventory is not a merge gate for this bump.
+branch above. The Lean 4.34 bump (#903) deferred independent PMF retirement; the follow-up
+now enforces an empty retirement inventory.

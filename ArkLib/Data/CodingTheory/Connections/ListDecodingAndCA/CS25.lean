@@ -33,10 +33,10 @@ open Code CoreDefinitions ProximityGap
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 open scoped NNReal in
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
@@ -45,35 +45,37 @@ private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) 
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _ _
 
 private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=
   fun j i => Fin.cases (u i / (domain i - a)) (fun _ => -1 / (domain i - a)) j
 
-omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 private theorem rs_reciprocal_stack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 1 i = -1 / (domain i - a) := by
   rfl
 
-omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 private theorem rs_reciprocal_stack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 0 i = u i / (domain i - a) := by
   rfl
 
 open scoped NNReal ProbabilityTheory in
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_fold_probability_le_eps_ca_of_not_joint
     (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) (v : Code.WordStack F (Fin 2) ι)
     (hnot : ¬ Code.jointProximity C (u := v) δ_int) :
-    Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
+    Pr{let γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
       ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int := by
   classical
   unfold ProximityGap.epsCa
   have hle := le_iSup
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
-      else Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
+      else Pr{let γ ← $ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
   rw [ite_eq_right hnot] at hle
   exact hle
 
@@ -359,10 +361,10 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     unfold epsCa
     refine le_trans ?_ (le_iSup (fun w : WordStack F (Fin 2) ι =>
       if jointProximity (C := Ck) (u := w) ((f : ℝ≥0) / n) then 0 else
-        (((do
-          let x ← PMF.uniformOfFintype F
-          return δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)) True) : ENNReal)) v)
-    rw [ite_eq_right hvnot, Probability.prob_uniform_eq_card_filter_div_card]
+        Pr{let x ←$ᵗ F}[δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)]) v)
+    rw [ite_eq_right hvnot, SampleableType.prEvent_uniformSample]
+    simp only [Good, q]
+    rw [ENNReal.coe_natCast, ENNReal.coe_natCast]
   have hGoodR : (Good.card : ℝ) ≤ ε * q := by
     have htr := ENNReal.toReal_mono (rs_eps_ca_ne_top Ck _ _) hprob
     have hdiv : (Good.card : ℝ) / q ≤

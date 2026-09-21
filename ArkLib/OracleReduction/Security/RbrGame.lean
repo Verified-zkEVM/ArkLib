@@ -7,7 +7,7 @@ module
 
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.Data.Probability.Instances
-public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
+public import VCVio.OracleComp.QueryTracking.LoggingOracle
 public import VCVio.EvalDist.Monad.Branch
 public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
@@ -34,9 +34,6 @@ per-fixed-transcript bounds `∀ tr, Pr{let c ← $ᵗ (pSpec.Challenge i)}[even
   challenge query into an explicit uniform draw `liftM ($ᵗ (pSpec.Challenge i))`;
 * `ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le` is the master mixture bound
   for the full game shape (built on VCVio's `prEvent_bind_le_of_forall_le`);
-* `prEvent_uniformSample_eq_prob_uniformOfFintype` bridges VCVio's `$ᵗ` (the
-  `SampleableType` uniform sampler used by `challengeQueryImpl`) to the PMF-level
-  `Pr_{ let x ←$ᵖ α }[…]` notation in which per-transcript bounds are usually proven.
 
 These statements are `ProtocolSpec`-specific and so live in ArkLib core, but their *content* is
 not: `challengeQueryImpl` is only `fun q => $ᵗ _`, i.e. "answer each query with a uniform sample of
@@ -44,9 +41,7 @@ its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of prot
 round enters any proof below — they are `prEvent_bind_le_of_forall_le` plus a `simulateQ`
 normalisation. Generalising the challenge oracle to an arbitrary uniform-answer `QueryImpl` would
 let the mixture bounds move upstream, leaving thin specialisations here. The `loggingOracle` lemmas
-they build on already sit in `ArkLib/ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean` for
-exactly that reason; `prEvent_uniformSample_eq_prob_uniformOfFintype` stays here only because it
-mentions ArkLib's `Pr_{…}` notation.
+they build on live upstream in `VCVio/OracleComp/QueryTracking/LoggingOracle.lean`.
 
 Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its generic
 `KnowledgeTransitionFamily.IsBounded` packages exactly the inner worst-case obligation of
@@ -57,13 +52,12 @@ transfer. Its source-shaped `ExtractionCondition` is a *different* notion from A
 `rbrKnowledgeSoundnessOneShot`, which samples the prefix by running a prover and feeds the prover's
 query log to the extractor.
 
-Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
+Beyond the two lemmas above, this file also carries the `OptionT` challenge-first master
 bounds (`ProtocolSpec.prEvent_optionT_simulateQ_addLift_*`). Those serve the *plain* (non-rbr)
 knowledge-soundness game, whose computation is `Option`-valued and draws its challenge first;
 see the section header preceding them for why the rbr master bound does not apply there. The two
 generic `loggingOracle` lemmas used by later reductions live separately in
-`ArkLib/ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean`, from where they can move upstream
-without importing ArkLib core.
+`VCVio/OracleComp/QueryTracking/LoggingOracle.lean`, independently of ArkLib core.
 -/
 
 @[expose] public section
@@ -144,18 +138,6 @@ theorem prEvent_simulateQ_addLift_getChallenge_bind_le
   exact h x.1
 
 end ProtocolSpec
-
-/-- **`$ᵗ` ↔ `$ᵖ` bridge.** The probability of an event under VCV-io's canonical uniform
-sampler `$ᵗ α` (the `SampleableType.selectElem` used by `challengeQueryImpl`) coincides with
-the PMF-level probability `Pr_{ let x ←$ᵖ α }[…]` under `PMF.uniformOfFintype`. Use it to
-discharge the per-transcript hypothesis of
-`ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le` from a PMF-level bound. -/
-lemma prEvent_uniformSample_eq_prob_uniformOfFintype {α : Type} [SampleableType α]
-    [Fintype α] [Nonempty α] (p : α → Prop) :
-    Pr{let x ← $ᵗ α}[p x] = Pr_{ let x ←$ᵖ α }[ p x ] := by
-  classical
-  rw [SampleableType.prEvent_uniformSample, prob_uniform_eq_card_filter_div_card]
-  simp only [ENNReal.coe_natCast]
 
 section ExecutableDocumentation
 
@@ -415,7 +397,11 @@ theorem prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
   simp only [OptionT.prEvent_lift]
   have hsum : Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] +
       Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] = 1 := by
-    simpa using prEvent_add_prEvent_not ($ᵗ (pSpec.Challenge i)) p
+    let _ : MeasurableSpace (pSpec.Challenge i) := ⊤
+    have h := prEvent_add_prEvent_not ($ᵗ (pSpec.Challenge i)) p
+    rw [evalDist_map_apply_univ _ Measurable.of_discrete,
+      SampleableType.evalDist_uniformSample, MeasureTheory.measure_univ] at h
+    exact h
   have hsum' : Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ p c] +
       Pr{let c ← $ᵗ (pSpec.Challenge i)}[p c] = 1 := by
     rw [add_comm]

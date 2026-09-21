@@ -7,6 +7,7 @@ Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin
 module
 
 public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+public import ArkLib.Data.Probability.Uniform
 
 /-!
 ## Main Definitions
@@ -23,8 +24,9 @@ Statements of proximity results for Reed--Solomon codes ([AHIV22], Lemmas 4.3--4
 noncomputable section
 
 open Code ProbabilityTheory
+open scoped ProbabilityTheory
 
--- `Pr_{...}[...]` notation is universe-restricted (requires `F : Type`).
+-- `Pr{...}[...]` notation is universe-restricted (requires `F : Type`).
 variable {F : Type} [Field F] [Finite F] [DecidableEq F]
          {κ : Type*} [Fintype κ]
          {ι : Type} [Fintype ι]
@@ -1064,34 +1066,21 @@ random word in the row-span is `e`-close to the code with probability at most
 lemma prob_of_bad_pts
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {U_star : WordStack (A := F) κ ι}
+    [SampleableType (Matrix.rowSpan U_star)]
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
     (hU : e < Δ₀(⋈|U_star, (ReedSolomon.code α deg)^⋈κ)) :
-    (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-        {w_star | Δ₀(w_star, RScodeSet α deg) ≤ e}
+    Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[
+        Δ₀(w_star, RScodeSet α deg) ≤ e]
       ≤ (‖(RScodeSet α deg)‖₀ : ENNReal) / Fintype.card F := by
-  let : Fintype (Matrix.rowSpan U_star) := inferInstance
   classical
   set RS : Set (ι → F) := RScodeSet α deg
   set d : ℕ := ‖RS‖₀
   -- If `d = |F|`, the RHS is `1`, so the bound is trivial.
   by_cases hd : d = Fintype.card F
-  · have h_le_univ :
-        (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-            {w_star | Δ₀(w_star, RS) ≤ e} ≤
-          (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure Set.univ := by
-      exact (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure.mono
-        (by intro _ _; trivial)
-    have h_univ :
-        (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-            (Set.univ : Set (Matrix.rowSpan U_star)) = 1 := by
-      simpa using
-        ((PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure_apply_eq_one_iff
-              (s := (Set.univ : Set (Matrix.rowSpan U_star)))).2
-            (by intro _ _; trivial)
-    have h_triv :
-        (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-            {w_star | Δ₀(w_star, RS) ≤ e} ≤ 1 := by
-      exact h_univ ▸ h_le_univ
+  · have h_triv :
+        Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] ≤ 1 :=
+      prEvent_le_one ($ᵗ (Matrix.rowSpan U_star))
+        (fun w_star ↦ Δ₀(w_star, RS) ≤ e)
     have hF_ne_zero : (Fintype.card F : ENNReal) ≠ 0 := by
       exact_mod_cast (Fintype.card_ne_zero (α := F))
     have hRHS : (d : ENNReal) / Fintype.card F = 1 := by
@@ -1399,16 +1388,11 @@ lemma prob_of_bad_pts
             simp
       simpa [Finset.card_univ, Nat.mul_comm] using this
     exact_mod_cast hbad_nat
-  -- Convert to a probability bound using uniformity.
-  let badSet : Set S := {w | Pbad w}
-  let : Fintype badSet := Fintype.ofFinite badSet
+  -- Convert to a probability bound using native uniformity.
   have hprob :
-      (PMF.uniformOfFintype S).toOuterMeasure badSet = Fintype.card badSet / Fintype.card S := by
-    simpa using (PMF.toOuterMeasure_uniformOfFintype_apply (α := S) (s := badSet))
-  have hcard_badSet : (Fintype.card badSet : ENNReal) = bad.card := by
-    classical
-    -- `Fintype.card` of a decidable subset is the `Finset.filter` card.
-    simp [badSet, Pbad, bad, Fintype.card_subtype]
+      Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] =
+        (bad.card : ENNReal) / Fintype.card S := by
+    rw [SampleableType.prEvent_uniformSample]
   -- Combine the counting bound with the cardinality decomposition `|S| = |V| * |Q|`.
   have hQ_pos : 0 < Fintype.card Q := by
     have : Nonempty Q := ⟨0⟩
@@ -1416,11 +1400,10 @@ lemma prob_of_bad_pts
   have hQ_ne_zero : (Fintype.card Q : ENNReal) ≠ 0 := by
     exact ne_of_gt (by exact_mod_cast hQ_pos)
   have hQ_ne_top : (Fintype.card Q : ENNReal) ≠ ⊤ := ENNReal.natCast_ne_top (Fintype.card Q)
-  -- `Pr[bad] = |badSet|/|S| ≤ (d*|Q|)/(|V|*|Q|) = d/|F|`.
+  -- `Pr[bad] = |bad|/|S| ≤ (d*|Q|)/(|V|*|Q|) = d/|F|`.
   calc
-    (PMF.uniformOfFintype S).toOuterMeasure badSet =
-        (Fintype.card badSet : ENNReal) / Fintype.card S := hprob
-    _ = (bad.card : ENNReal) / Fintype.card S := by rw [hcard_badSet]
+    Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] =
+        (bad.card : ENNReal) / Fintype.card S := hprob
     _ ≤ (d * Fintype.card Q : ENNReal) / Fintype.card S := by
       exact ENNReal.div_le_div_right hbad_card (Fintype.card S)
     _ = (d * Fintype.card Q : ENNReal) / (Fintype.card V * Fintype.card Q : ℕ) := by

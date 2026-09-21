@@ -415,7 +415,7 @@ let `𝒮` be a family of `k̂`-subsets of `H`, and let `(k̂-2)·d < k ≤ (k̂
 The witness pair is `(f₀, -f₁) = (x^{k̂d}, -x^{(k̂-1)d})`: the second row is `> δ`-far
 from `C`, while for every `γ = ∑_{α ∈ S} α ∈ Λ_𝒮` the fold `f₀ - γ·f₁` agrees with the
 codeword `-p_S(x^d)` on the `k̂·d` points `{x : x^d ∈ S}`. -/
-theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
+theorem sumSet_card_div_le_epsCa [SampleableType F] (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
@@ -620,15 +620,8 @@ theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
           norm_cast
       _ ≤ ((δ : ℝ≥0) : ENNReal) := by exact_mod_cast hrnn
   -- Step 5: rewrite the probability as a cardinality fraction and compare.
-  rw [Probability.prob_uniform_eq_card_filter_div_card
-    (P := fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0))]
-  rw [show ((Fintype.card F : ℝ≥0) : ENNReal) = (Fintype.card F : ENNReal) from by
-        rw [ENNReal.coe_natCast],
-    show (((Finset.univ.filter
-        (fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0))).card : ℝ≥0) : ENNReal)
-        = ((Finset.univ.filter
-          (fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0))).card : ENNReal) from by
-        rw [ENNReal.coe_natCast]]
+  rw [SampleableType.prEvent_uniformSample
+    (p := fun γ : F => δᵣ(u 0 + γ • u 1, Cset) ≤ (δ : ℝ≥0))]
   refine ENNReal.div_le_div_right ?_ _
   exact_mod_cast Finset.card_le_card hsubset
 
@@ -737,6 +730,7 @@ lemma exists_neg_transversal {H : Finset F} (hneg : ∀ y ∈ H, -y ∈ H)
     (hnf : ∀ y ∈ H, -y ≠ y) :
     ∃ P : Finset F, P ⊆ H ∧ 2 * P.card = H.card ∧ ∀ y ∈ H, (y ∈ P ↔ -y ∉ P) := by
   classical
+  let : DecidableEq F := Classical.decEq _
   obtain ⟨n, hn⟩ : ∃ n, H.card = n := ⟨_, rfl⟩
   induction n using Nat.strong_induction_on generalizing H with
   | _ n IH =>

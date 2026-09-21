@@ -428,7 +428,8 @@ theorem not_isAccepting_of_no_outputs (init : ProbComp σ)
   intro hacc
   have h := hacc p.fullTranscript p.mem_fullTranscripts
   rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at h
-  obtain ⟨o, ho⟩ := OracleComp.support_nonempty
+  obtain ⟨o, ho⟩ := @OracleComp.support_nonempty _ unifSpec _
+    OracleSpec.IsUniformMeasureSpec.inhabited
     (do (simulateQ impl (V.run stmtIn p.fullTranscript)).run' (← init))
   obtain ⟨out, rfl, _⟩ := h o ho
   have hout : out ∈ Outputs init impl V stmtIn p.fullTranscript := ho
@@ -505,7 +506,8 @@ theorem support_init_nonempty_of_prob_one {init : ProbComp σ}
     (_h : Pr{let out ← OptionT.mk do
       (simulateQ impl (V.run stmt tr)).run' (← init)}[out ∈ lang] = 1) :
     (support init).Nonempty := by
-  exact OracleComp.support_nonempty init
+  exact @OracleComp.support_nonempty _ unifSpec _
+    OracleSpec.IsUniformMeasureSpec.inhabited init
 
 /-- A verifier that **rejects outright** on a transcript cannot accept it with probability one: on
   the `failure` branch the run fails certainly.
@@ -523,7 +525,8 @@ theorem not_accepting_of_failure {init : ProbComp σ}
   have hc : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) StmtOut)).run' (← init) :
       ProbComp (Option StmtOut)) = (init >>= fun _ => pure none) := by congr 1
   rw [hc] at h
-  obtain ⟨s, hs⟩ := OracleComp.support_nonempty init
+  obtain ⟨s, hs⟩ := @OracleComp.support_nonempty _ unifSpec _
+    OracleSpec.IsUniformMeasureSpec.inhabited init
   obtain ⟨out, hout, _⟩ := h none ((mem_support_bind_iff init _ _).2
     ⟨s, hs, (mem_support_pure_iff _ _).2 rfl⟩)
   cases hout

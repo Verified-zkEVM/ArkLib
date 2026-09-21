@@ -298,7 +298,7 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition
@@ -496,10 +496,3 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.Set.Finite
-public import ArkLib.ToVCVio.EvalDist.Defs.Support
-public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
-public import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
-public import ArkLib.ToVCVio.OracleComp.EvalDist
-public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-public import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic

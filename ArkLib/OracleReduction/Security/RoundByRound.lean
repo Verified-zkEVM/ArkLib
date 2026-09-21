@@ -884,7 +884,8 @@ def Verifier.StateFunction.id {lang : Set Statement} :
 lemma Verifier.id_rbrSoundness {lang : Set Statement} :
     (Verifier.id : Verifier oSpec Statement _ _).rbrSoundness init impl lang lang 0 := by
   refine ⟨Verifier.StateFunction.id init impl, ?_⟩
-  simp [Verifier.id]
+  intro _ _ _ _ _ _ i
+  exact Fin.elim0 i.1
 
 /-- The round-by-round extractor for the identity / trivial verifier, which just returns the
   input witness. -/
