@@ -1,9 +1,11 @@
-# Reed–Solomon first-tranche port ledger
+# Reed–Solomon beyond-Johnson port ledger
 
-This ledger records the six review units tracked by
-[issue #907](https://github.com/Verified-zkEVM/ArkLib/issues/907). Commit
+This ledger records the review units of the port tracked by
+[issue #907](https://github.com/Verified-zkEVM/ArkLib/issues/907): the six first-tranche units
+below and the later slices listed after them. Commit
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is the immutable overarching paper-port snapshot and
-the direct source for the weighted-support, exact-list, agreement-list, and pairwise-Johnson units.
+the direct source for the weighted-support, exact-list, agreement-list, and pairwise-Johnson units,
+and for every later slice unless its entry names another source.
 The fraction-field resultant and exact weighted-product units are sourced from their immutable
 pull-request donor heads below; those theorem families are not present in `a5aa2677`. Donor heads
 are source evidence, not merge bases. Final acceptance uses the main branch containing the Lean
@@ -22,12 +24,22 @@ The immutable donor heads for the refreshed pull requests are `f37f25ba3d0d6701f
 | Fraction-field resultant (#877) | `resultant_derivative_ne_zero_of_separable`, `isCoprime_map_of_resultant_ne_zero`, `separable_map_of_resultant_derivative_ne_zero`, `resultant_derivative_ne_zero_of_fractionField_separable`, `resultant_derivative_ne_zero_of_separable_map_fractionField` | `ArkLib.Data.Polynomial.FractionFieldResultant` | Independent. Reuses Mathlib's padded resultant identity and fraction-ring injection. |
 | [Exact-list candidate filtering (#908)](https://github.com/Verified-zkEVM/ArkLib/pull/908), replacing #855 | `MessagePolynomial`, `Decoder`, `IsExactDecoder`, `DecoderCertificate`, `CandidateCertificate`, embeddings and filtered-decoder laws, exactness and oversized-threshold consequences | Generic exact finite-enumeration and candidate-filtering interfaces in `ArkLib.Data.Finset.Enumeration`; Reed–Solomon predicates and adapters in `ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification` | Independent. Replaces admitted hidden-derivative contracts with proved extensional interfaces; makes no running-time claim. |
 | [Agreement-list finiteness and incidence (#909)](https://github.com/Verified-zkEVM/ArkLib/pull/909) | `closePolynomialSet`, `exists_closePolynomial_finset_with_incidence_bound`, `closePolynomialSet_finite` | Generic sample-incidence bounds in `ArkLib.Data.Finset.SampleIncidence`; arbitrary-code adapter in `ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence`; Reed–Solomon specialization in `ArkLib.Data.CodingTheory.ReedSolomon.AgreementList`, including the added direct set corollary `closePolynomialSet_ncard_mul_choose_le` | The generic layers are independent. The Reed–Solomon specialization uses `ReedSolomon.polynomialAgreementSet` from #906. The source declarations `agreeingPolynomials`, `agreeingPolynomials_antitone`, `exists_finset_polynomial_list`, and `agreeingPolynomials_eq_empty_of_card_lt` are deferred until an exact-list consumer needs them. |
-| [Pairwise Johnson counting and code bound (#910)](https://github.com/Verified-zkEVM/ArkLib/pull/910) | source-private `card_mul_johnsonDenominator_le`; `closePolynomialSet_finite_and_ncard_le_johnsonPairwise` | `Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le` in `ArkLib.Data.Finset.PairwiseIntersection`; arbitrary-alphabet finite-family, complete-set, `Lambda`, and `IsListDecodable` results in `ArkLib.Data.CodingTheory.JohnsonBound.Pairwise`; thin Reed–Solomon specializations in `ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson` | The generic Johnson layer does not depend on agreement-list incidence. The PR is stacked on #909 only because its Reed–Solomon polynomial specialization imports `AgreementList`. Keeps the sharp `n * (A - D)` numerator and avoids finite-alphabet, MCA, or geometric hypotheses. |
+| [Pairwise Johnson counting and code bound (#910)](https://github.com/Verified-zkEVM/ArkLib/pull/910) | source-private `card_mul_johnsonDenominator_le`; `closePolynomialSet_finite_and_ncard_le_johnsonPairwise` | `Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le` in `ArkLib.Data.Finset.PairwiseIntersection`; arbitrary-alphabet finite-family, complete-set, `Lambda`, and `IsListDecodable` results in `ArkLib.Data.CodingTheory.JohnsonBound.Pairwise`; thin Reed–Solomon specializations in `ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson` | The generic Johnson layer does not depend on agreement-list incidence. Only the Reed–Solomon polynomial specialization imports `AgreementList`. Keeps the sharp `n * (A - D)` numerator and avoids finite-alphabet, MCA, or geometric hypotheses. |
 | Exact weighted products and divisors (#875) | `weightedTotalDegree_mul`, `weightedTotalDegree_prod`, `weightedTotalDegree_le_of_dvd`, `sum_weightedTotalDegree_le_of_prod_dvd` | `ArkLib.Data.MvPolynomial.WeightedDegree.Products` | Independent main-based module with direct Mathlib imports. Complements #857 without adding the same file. |
 
 Each final head must pass `./scripts/validate.sh --axioms` without new admissions, native trust,
 policy suppressions, or unauthorized dependency-pin changes. Before landing, refresh main, adapt against the merged
 Lean 4.34 dependency APIs, rerun the full gate, and record the reviewed head in the pull request.
+
+## Later slices
+
+Each row is one bounded slice of a work package from issue #907. A package is not complete until
+its remaining units, listed under deferred scope, are ported or explicitly retired.
+
+| Unit | Source declarations | Destination owner | Generalization and deferred scope |
+| --- | --- | --- | --- |
+| [P2 slice 1: row bases and uniform kernel height (#911)](https://github.com/Verified-zkEVM/ArkLib/pull/911) | `Matrix.exists_rows_fin_rank`, `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le` in `ToMathlib/LinearAlgebra/PolynomialKernelHeight.lean` | `Matrix.exists_rows_linearIndependent_span_eq` in `ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis` (no polynomial imports); `Matrix.exists_ne_zero_mulVec_eq_zero_degreeLT` and `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le` in `ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight` | Arbitrary finite row and column index types replace `Fin`. The principal kernel theorem records `Polynomial.degreeLT` membership, which also constrains zero coordinates; the natural-degree theorem recovers the source statement. Deferred: the intrinsic-rank form `exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq`, primitive kernel vectors (`PrimitivePolynomialKernel.lean`), and column and shifted budgets (`ShiftedDegreeKernel.lean`). |
+| [P12a slice 1: finite-submodule avoidance (#912)](https://github.com/Verified-zkEVM/ArkLib/pull/912) | `exists_vector_avoiding_submodules` in `ReedSolomon/Interleaved/PowerAgreement.lean` | `Submodule.exists_forall_notMem_of_card_le` in `ArkLib.ToMathlib.LinearAlgebra.Submodule.Union` | The source assumed a field and a finite nontrivial module. The destination assumes only a finite division ring and an arbitrary module, and keeps the sharp bound of at most `Nat.card K` proper submodules, which Mathlib's strict-cardinality theorem does not cover. It replaces two identical private proofs in `ProximityGap/Errors.lean` and `ProximityGap/LineDecoding.lean`. Deferred: the interleaving projection and the other P12a transfers. |
 
 ## Exact declaration inventory
 
@@ -59,3 +71,8 @@ Its Reed–Solomon adapter owns `MessagePolynomial`, `Decoder`, `IsExactDecoder`
 `CandidateCertificate.toDecoderCertificate`, `DecoderCertificate.agreement_le_of_mem`,
 `DecoderCertificate.mem_of_agreement_le`, `IsExactDecoder.decoder_eq_empty_of_card_lt`, and
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
+
+The row-basis and kernel-height slice owns `Matrix.exists_rows_linearIndependent_span_eq`,
+`Matrix.exists_ne_zero_mulVec_eq_zero_degreeLT`, and
+`Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le`. The submodule-avoidance slice owns
+`Submodule.exists_forall_notMem_of_card_le`.

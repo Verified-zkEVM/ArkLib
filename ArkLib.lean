@@ -494,6 +494,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
+public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
