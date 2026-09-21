@@ -41,7 +41,7 @@ interleaved Reed--Solomon argument.
 namespace Submodule
 
 /-- A family of at most `|K|` proper submodules cannot cover a nontrivial finite vector space
-over the finite field `K`.
+over the finite division ring `K`.
 
 The nontriviality assumption records the positive-dimension condition of the source theorem.
 The weak inequality on `s.card` is the sharp finite-division-ring boundary and is stronger than
