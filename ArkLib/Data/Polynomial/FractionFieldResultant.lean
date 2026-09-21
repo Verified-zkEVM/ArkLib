@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.Data.Polynomial.ResultantSpecialization
 public import Mathlib.FieldTheory.Separable
 public import Mathlib.RingTheory.Localization.FractionRing
 public import Mathlib.RingTheory.Polynomial.Resultant.Basic
@@ -16,7 +17,9 @@ The derivative resultant padded to degrees `d` and `d - 1` is nonzero whenever t
 polynomial becomes separable over its fraction field. The derivative may have degree
 strictly below `d - 1`, as happens for `Y^p - Y` in characteristic `p`.
 The actual-degree resultant also provides a Bezout certificate after arbitrary coefficient
-maps, including maps that lower polynomial degrees.
+maps, including maps that lower polynomial degrees. These two specialization statements are the
+case `m = f.natDegree`, `n = g.natDegree` of the declared-degree statements in
+`ArkLib.Data.Polynomial.ResultantSpecialization`.
 
 This generalizes the large-characteristic argument in Remco Bloemen's BCHKS formalization,
 `ProximityPrize/SubmissionLower/BCHKSConcreteGoodSpecialization.lean`, lines 272–316, at
@@ -53,16 +56,8 @@ variable [Field K]
 field where its value remains nonzero. No preservation of degrees under the map is required. -/
 theorem isCoprime_map_of_resultant_ne_zero (φ : R →+* K) (f g : R[X])
     (hdegree : 0 < f.natDegree + g.natDegree) (hres : φ (resultant f g) ≠ 0) :
-    IsCoprime (f.map φ) (g.map φ) := by
-  obtain ⟨a, b, _, _, hab⟩ :=
-    exists_mul_add_mul_eq_C_resultant f g le_rfl le_rfl (by omega)
-  have hmap := congrArg (Polynomial.map φ) hab
-  simp only [Polynomial.map_add, Polynomial.map_mul, map_C] at hmap
-  refine ⟨C ((φ (resultant f g))⁻¹) * a.map φ,
-    C ((φ (resultant f g))⁻¹) * b.map φ, ?_⟩
-  calc
-    _ = C ((φ (resultant f g))⁻¹) * (f.map φ * a.map φ + g.map φ * b.map φ) := by ring
-    _ = 1 := by rw [hmap]; simp [← C_mul, hres]
+    IsCoprime (f.map φ) (g.map φ) :=
+  isCoprime_map_of_resultant_padded_ne_zero φ f g le_rfl le_rfl (by omega) hres
 
 /-- Nonvanishing of the original derivative resultant after specialization is sufficient for
 separability, including specializations where the outer polynomial degree drops. -/

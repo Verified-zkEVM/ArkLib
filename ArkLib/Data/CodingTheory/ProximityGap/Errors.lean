@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.Probability.Instances
+public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import Mathlib.FieldTheory.Finiteness
 
 /-!
@@ -921,73 +922,6 @@ variable {ι : Type} [Fintype ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
-/-- At most `|K|` proper subspaces cannot cover a nontrivial finite `K`-vector space. -/
-private lemma exists_forall_notMem_of_card_le
-    {α K M : Type} [Field K] [Fintype K] [AddCommGroup M] [Module K M]
-    [Finite M] [Nontrivial M]
-    (s : Finset α) (p : α → Submodule K M)
-    (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
-    ∃ x : M, ∀ i ∈ s, x ∉ p i := by
-  classical
-  let _ : Fintype M := Fintype.ofFinite M
-  let _ : DecidableEq M := Classical.decEq M
-  let _ : DecidableEq α := Classical.decEq α
-  let q := Fintype.card K
-  let d := Module.finrank K M
-  let nz (i : α) := Finset.univ.filter fun x : M => x ∈ p i ∧ x ≠ 0
-  let covered := insert (0 : M) (s.biUnion nz)
-  have hq : 1 < q := Fintype.one_lt_card
-  have hd : 0 < d := Module.finrank_pos
-  have hnz (i : α) (hi : i ∈ s) : (nz i).card ≤ q ^ (d - 1) - 1 := by
-    let allp := Finset.univ.filter fun x : M => x ∈ p i
-    have hzero : (0 : M) ∈ allp := by simp [allp]
-    have hnz_eq : nz i = allp.erase 0 := by
-      ext x
-      simp [nz, allp, and_comm]
-    rw [hnz_eq, Finset.card_erase_of_mem hzero]
-    have hcard : allp.card = Fintype.card (p i) := by
-      symm
-      exact Fintype.card_ofFinset allp (by simp [allp])
-    have hcardpow : Fintype.card (p i) = q ^ Module.finrank K (p i) := by
-      simpa [q] using (Module.card_eq_pow_finrank (K := K) (V := p i))
-    rw [hcard, hcardpow]
-    exact Nat.sub_le_sub_right
-      (Nat.pow_le_pow_right (Nat.zero_lt_of_lt hq)
-        (Nat.le_sub_one_of_lt (Submodule.finrank_lt (hp i hi)))) 1
-  have hcovered : covered.card < Fintype.card M := by
-    have hbi : (s.biUnion nz).card ≤ s.card * (q ^ (d - 1) - 1) := by
-      calc
-        (s.biUnion nz).card ≤ ∑ i ∈ s, (nz i).card := Finset.card_biUnion_le
-        _ ≤ ∑ _i ∈ s, (q ^ (d - 1) - 1) :=
-          Finset.sum_le_sum fun i hi => hnz i hi
-        _ = s.card * (q ^ (d - 1) - 1) := by simp
-    have hmul : s.card * (q ^ (d - 1) - 1) ≤ q * (q ^ (d - 1) - 1) :=
-      Nat.mul_le_mul_right _ hs
-    have hpow : q ^ d = q * q ^ (d - 1) := by
-      conv_lhs => rw [← Nat.succ_pred_eq_of_pos hd]
-      simp [pow_succ, Nat.mul_comm]
-    have hcardM : Fintype.card M = q ^ d := by
-      simpa [q, d] using (Module.card_eq_pow_finrank (K := K) (V := M))
-    rw [hcardM, hpow]
-    calc
-      covered.card ≤ (s.biUnion nz).card + 1 := Finset.card_insert_le _ _
-      _ ≤ s.card * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hbi 1
-      _ ≤ q * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hmul 1
-      _ < q * q ^ (d - 1) := by
-        have hpos : 0 < q ^ (d - 1) := pow_pos (Nat.zero_lt_of_lt hq) _
-        have hqmul : q ≤ q * q ^ (d - 1) := by
-          simpa using Nat.mul_le_mul_left q hpos
-        rw [Nat.mul_sub_left_distrib]
-        simp only [mul_one]
-        omega
-  obtain ⟨x, -, hx⟩ := Finset.exists_mem_notMem_of_card_lt_card
-    (s := covered) (t := Finset.univ) (by simpa using hcovered)
-  refine ⟨x, fun i hi hxi => hx ?_⟩
-  by_cases hx0 : x = 0
-  · simp [covered, hx0]
-  · simp only [covered, Finset.mem_insert]
-    exact Or.inr (Finset.mem_biUnion.mpr ⟨i, hi, by simp [nz, hxi, hx0]⟩)
-
 /-- A nonempty row-wise interleaving does not increase affine-line MCA at radii in `(0, 1)`. -/
 theorem mcaError_interleaved_le
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
@@ -1048,9 +982,9 @@ theorem mcaError_interleaved_le
     have he : Pi.single i (1 : F) ∈ K x := by rw [htop]; exact Submodule.mem_top
     apply hi
     simpa [K, rowComb] using he j
-  have hBcard : B.card ≤ Fintype.card F := by
-    simpa [B] using Finset.card_filter_le Finset.univ isBad
-  obtain ⟨l, hl⟩ := exists_forall_notMem_of_card_le B K hK hBcard
+  have hBcard : B.card ≤ Nat.card F := by
+    simpa [B, Nat.card_eq_fintype_card] using Finset.card_filter_le Finset.univ isBad
+  obtain ⟨l, hl⟩ := Submodule.exists_forall_notMem_of_card_le B K hK hBcard
   let V : Fin 2 → (ι → A) := rowComb l
   have himp : ∀ x : F, isBad x → IsMCA (AffineLineGenerator F) C x V (δ : ℝ) := by
     intro x hx
