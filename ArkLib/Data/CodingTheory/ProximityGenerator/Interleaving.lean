@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.InterleavedCode.Projection
+public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Probability.Instances
 
@@ -30,6 +30,8 @@ The radius `δ` is an arbitrary real number throughout.
 * `Code.exists_rowFunctional_forall_notMem`: given at most `|F|` interleaved projection
   failures, one row functional `l : κ → F` turns every one of them into a failure of a scalar row
   combination.
+* `CoreDefinitions.isMCA_iff_isProjectionBad`: the MCA event at radius `δ` is the integer-threshold
+  event `Code.IsProjectionBad` at threshold `⌈|ι| · (1 - δ)⌉₊`.
 * `CoreDefinitions.exists_forall_isMCA_of_forall_isMCA_interleaved`: at most `|F|` seeds that are
   bad for one family over `C ^⋈ κ` are all bad for one family over `C`.
 * `CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le`: if `|S| ≤ |F|`, then
@@ -70,11 +72,13 @@ equal to `U`.
   `PowerAgreementArbitrary.lean` (univariate powers over an arbitrary field), and
   `interleaved_lineProjectionBad_card_le` in
   `TensorFoldAgreement.lean` (the binary line fold). Their shared row-functional avoidance step
-  is supplied by `Code.exists_rowFunctional_forall_notMem`; their scalar exceptional-set counting
-  and exact-agreement conclusions are deferred.
+  is supplied by `Code.exists_rowFunctional_forall_notMem`. The integer-threshold transfer and
+  the exact-agreement conclusions of the first two are in
+  `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`; the seedwise transfer here is derived
+  from `Code.exists_forall_isProjectionBad_of_interleaved` through `isMCA_iff_isProjectionBad`.
 
 Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
-field, and exact-agreement statements.
+field.
 -/
 
 @[expose] public section
@@ -90,32 +94,32 @@ section Transfer
 variable {ι F A κ ℓ : Type} [Fintype ι] [Field F] [AddCommMonoid A] [Module F A] [Finite κ]
   [Fintype ℓ]
 
+omit [Finite κ] in
+/-- **The MCA event is an integer-threshold event.** The size condition `|T| ≥ |ι| · (1 - δ)` of
+`IsMCA` holds exactly when `⌈|ι| · (1 - δ)⌉₊ ≤ |T|`, so `IsMCA G C x U δ` is
+`Code.IsProjectionBad G C ⌈|ι| · (1 - δ)⌉₊ x U`. For `δ ≥ 1` the threshold is `0`. -/
+theorem isMCA_iff_isProjectionBad {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F)
+    (C : ModuleCode ι F A) (x : S) (U : ℓ → ι → A) (δ : ℝ) :
+    IsMCA G C x U δ ↔ IsProjectionBad G C ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ x U := by
+  simp only [IsMCA, IsProjectionBad, ge_iff_le, Nat.ceil_le]
+
 /-- **Seedwise transfer from an interleaved code to its base code.** If every seed in a set `s`
 of at most `|F|` seeds is bad for the family `U` over `C ^⋈ κ` at radius `δ`, then one family `V`
 over `C` has every seed in `s` bad at the same radius `δ`.
 
-The proof takes `V j := i ↦ ∑ r, l r • U j i r` for the row functional `l` of
-`exists_rowFunctional_forall_notMem`, applied to the witness sets of the seeds in `s`. The bound
-`hs` is the hypothesis of that lemma; it is automatic for infinite `F`. The generator and the
-radius are arbitrary: a seed keeps its witness set `T`, so the size clause of `IsMCA` carries over
-unchanged at every real `δ`. For empty `s`, any `V` works. -/
+This is `Code.exists_forall_isProjectionBad_of_interleaved` at the threshold
+`⌈|ι| · (1 - δ)⌉₊`, through `isMCA_iff_isProjectionBad`. There `V j` is the row combination
+`i ↦ ∑ r, l r • U j i r` for the row functional `l` of `exists_rowFunctional_forall_notMem`,
+applied to the witness sets of the seeds in `s`. The bound `hs` is the hypothesis of that lemma;
+it is automatic for infinite `F`. The generator and the radius are arbitrary: a seed keeps its
+witness set `T`, so the size clause of `IsMCA` carries over unchanged at every real `δ`. For
+empty `s`, any `V` works. -/
 theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type} [Nonempty S] [Fintype S]
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) (U : ℓ → ι → κ → A) (s : Finset S)
     (hs : (s.card : ℕ∞) ≤ ENat.card F) (hbad : ∀ x ∈ s, IsMCA G (C^⋈κ) x U δ) :
     ∃ V : ℓ → ι → A, ∀ x ∈ s, IsMCA G C x V δ := by
-  let : Fintype κ := Fintype.ofFinite κ
-  choose! T hT using hbad
-  obtain ⟨l, hl⟩ := exists_rowFunctional_forall_notMem C U s T hs fun x hx ↦ (hT x hx).2.2
-  refine ⟨fun j i ↦ ∑ r, l r • U j i r, fun x hx ↦ ⟨T x, (hT x hx).1, ?_, hl x hx⟩⟩
-  have hcomb := projectedWord_rowCombination_mem C _ (T x) l (hT x hx).2.1
-  have hfun : (fun i ↦ ∑ r, l r • (∑ j, G x j • U j i) r) =
-      fun i ↦ ∑ j, G x j • ∑ r, l r • U j i r := by
-    funext i
-    simp only [Finset.sum_apply, Pi.smul_apply, Finset.smul_sum]
-    rw [Finset.sum_comm]
-    exact Finset.sum_congr rfl fun j _ ↦ Finset.sum_congr rfl fun r _ ↦ smul_comm _ _ _
-  rw [hfun] at hcomb
-  exact hcomb
+  simp only [isMCA_iff_isProjectionBad] at hbad ⊢
+  exact exists_forall_isProjectionBad_of_interleaved G C _ U s hs hbad
 
 /-- **Interleaving does not increase MCA error when `|S| ≤ |F|`.** For every generator
 `G : Generator S ℓ F` whose seed space has at most as many elements as the field, every module
