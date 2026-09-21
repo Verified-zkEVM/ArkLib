@@ -5,6 +5,7 @@ Authors: Katerina Hristova
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 
