@@ -228,6 +228,7 @@ public import ArkLib.Data.Finset.Enumeration
 public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
+public import ArkLib.Data.Finset.WeightedSimplex
 public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.DomainSep
 public import ArkLib.Data.Hash.DuplexSponge
@@ -303,6 +304,8 @@ public import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 public import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
 public import ArkLib.Data.Polynomial.RationalFunctions.Weight
 public import ArkLib.Data.Polynomial.ResultantDegree
+public import ArkLib.Data.Polynomial.ResultantSpecialization
+public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.Data.Polynomial.SplitFold
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
