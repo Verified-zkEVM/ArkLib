@@ -217,6 +217,7 @@ public import ArkLib.Data.Fin.Tuple.Defs
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
+public import ArkLib.Data.Finset.Enumeration
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.DomainSep
