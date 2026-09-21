@@ -313,6 +313,7 @@ public import ArkLib.Data.Polynomial.SplitFold
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
+public import ArkLib.Data.Polynomial.TaylorPrefix
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
