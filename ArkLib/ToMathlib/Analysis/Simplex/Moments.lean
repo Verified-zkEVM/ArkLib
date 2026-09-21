@@ -35,8 +35,9 @@ With weights `1, …, n` and `c = 1` these are the moments of the coordinate sum
 the harmonic power sums `∑ i, 1 / (i + 1) ^ q`.
 
 The set average `⨍ x in s, f x` is the integral against the conditional measure `volume[|s]`
-(`setAverage_eq_integral_cond`), which is a probability measure on a weighted simplex with a
-positive budget (`isProbabilityMeasure_cond_weightedSimplex`).
+(Mathlib's `setAverage_eq'`, since `μ[|s] = (μ s)⁻¹ • μ.restrict s`). On a weighted simplex
+with a positive budget this is a probability measure
+(`isProbabilityMeasure_cond_weightedSimplex`).
 
 Hypotheses. The integral formulas need `0 ≤ L` (for `L < 0` the simplex is empty) and positive
 weights (otherwise the weighted simplex is unbounded). The averages need `0 < L`: for `L = 0` and
@@ -54,8 +55,7 @@ weights (otherwise the weighted simplex is unbounded). The averages need `0 < L`
   `1`, `2`, `3`.
 * `MeasureTheory.setAverage_weightedSimplex_succ_sum`, `..._sum_sq`, `..._sum_cube`: the moments
   of `∑ i, u i` on the weighted simplex with weights `1, …, n`.
-* `MeasureTheory.setAverage_eq_integral_cond` and
-  `MeasureTheory.isProbabilityMeasure_cond_weightedSimplex`: the uniform probability measure.
+* `MeasureTheory.isProbabilityMeasure_cond_weightedSimplex`: the uniform probability measure.
 
 ## References
 
@@ -80,7 +80,8 @@ Ports the declarations of `ArkLib/ToMathlib/Analysis/Simplex/Moments.lean` at Ar
 * `weightedSimplexFiniteMeasure`, `weightedSimplexProbabilityMeasure`,
   `weightedSimplexFiniteMeasure_ne_zero`, and `weightedSimplexExpectation_eq_integral_probability`
   are replaced by Mathlib's conditional measure `volume[|weightedSimplex w W]`, with
-  `isProbabilityMeasure_cond_weightedSimplex` and `setAverage_eq_integral_cond`.
+  `isProbabilityMeasure_cond_weightedSimplex`; the source's expectation-as-integral lemma is
+  Mathlib's `setAverage_eq'`.
 * `simplexLinearForm`, `coefficientPowerSum`, `harmonicCoefficient`, `harmonicPowerSum`, and
   `weightedRadius` are written out as sums in the statements. `harmonicPowerSum_one` becomes
   Mathlib's `harmonic` in `setAverage_weightedSimplex_succ_sum`, and `harmonicPowerSum_eq_range`
@@ -88,7 +89,7 @@ Ports the declarations of `ArkLib/ToMathlib/Analysis/Simplex/Moments.lean` at Ar
 * `weightedRadius_standardToWeighted`, `continuous_weightedRadius`,
   `Continuous.integrableOn_weightedSimplex_posPart`, and `integrableOn_weightedRadius`, `_sq`,
   `_cube` are not ported. The first is the substitution inside `setIntegral_weightedSimplex`;
-  the others follow from `ContinuousOn.integrableOn_weightedSimplex` and `fun_prop`.
+  the continuity and integrability lemmas are deferred to the slice that consumes them.
 
 Deferred to later slices: centered moments (the variance of the linear form), the discrete
 analogues in `ToMathlib/Combinatorics/DiscreteSimplex/{Moments,Variance}.lean`, and the
@@ -101,19 +102,6 @@ open MeasureTheory Set Finset
 open scoped BigOperators ProbabilityTheory
 
 namespace MeasureTheory
-
-section Cond
-
-variable {α E : Type*} [MeasurableSpace α] [NormedAddCommGroup E] [NormedSpace ℝ E]
-
-/-- The average of `f` over `s` is the integral of `f` against the conditional measure
-`μ[|s] = (μ s)⁻¹ • μ.restrict s`. No hypothesis on `s` is needed; when `μ s` is `0` or `∞`
-both sides are `0`. -/
-theorem setAverage_eq_integral_cond (μ : Measure α) (s : Set α) (f : α → E) :
-    ⨍ x in s, f x ∂μ = ∫ x, f x ∂μ[|s] :=
-  setAverage_eq' μ f s
-
-end Cond
 
 variable {ι : Type*} [Fintype ι]
 

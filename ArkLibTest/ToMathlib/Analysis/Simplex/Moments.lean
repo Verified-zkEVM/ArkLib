@@ -89,7 +89,7 @@ coordinate sum under the uniform probability measure `volume[|weightedSimplex w 
 example (n : ℕ) {W : ℝ} (hW : 0 < W) :
     (∫ u, ∑ i, u i ∂volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W]) =
       W * (harmonic n : ℝ) / (n + 1) := by
-  rw [← setAverage_eq_integral_cond, setAverage_weightedSimplex_succ_sum n hW]
+  rw [ProbabilityTheory.cond, ← setAverage_eq', setAverage_weightedSimplex_succ_sum n hW]
 
 /-- The uniform measure on a weighted simplex with positive budget has total mass `1`. -/
 example (n : ℕ) {W : ℝ} (hW : 0 < W) :
