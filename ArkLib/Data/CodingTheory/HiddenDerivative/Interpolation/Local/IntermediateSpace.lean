@@ -46,29 +46,28 @@ carry the bounds through.
 
 Ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `localFirstJetExponent` (here the
-weight `localFirstJetWeight`), `LocalIntermediateEligibleExponent`, `localIntermediateSpace`,
+at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
+`LocalIntermediateEligibleExponent`, `localIntermediateSpace`,
 `finrank_localIntermediateSpace`, `KernelSliceSourceEligibleExponent`, `kernelSliceSourceSpace`,
 `tDegree_eq_zero_of_mem_kernelSliceSourceSpace`, `finrank_kernelSliceSourceSpace`,
 `translatedLocalTruncation_mem_localIntermediateSpace`,
 `truncate_exhibitedKernelMultiplier_mem_localIntermediateSpace` (here
 `truncateLocalT_exhibitedKernelMultiplier_mem_localIntermediateSpace`), `boundedExhibitedKernelMap`,
 `intermediateConstraintMap`, and `intermediateConstraintMap_boundedExhibitedKernelMap_eq_zero`.
-The global weight `localHigherJetWeight` comes from the source's `Variables.lean`. The source
+The weights `localFirstJetWeight` and `localHigherJetWeight` and the coordinate equivalence
+`localExponentCoordinatesEquiv` are in `HiddenDerivative/Variables.lean`. The source
 defined both spaces by explicit finite exponent sets built from coordinate equivalences, and so
 required `0 < d` in the definitions; here the spaces are defined by their support predicates for
 every `d`, and `0 < d` is assumed only in the dimension formulas. The source's hypothesis `r < m`
 on the exhibited map is dropped, since the truncation alone keeps the product in the space. The
-coordinate equivalences (`localExponentCoordinatesEquiv` and the index equivalences) are private
-here. The source's private signed support-weight lemmas are replaced by
+source's private signed support-weight lemmas are replaced by
 `ArkLib.Data.MvPolynomial.WeightAtMost`. The source's `translatedExactLocalTruncation` and
 `exactLocalConstraintAt_eq_intermediate_comp_translated` are already in
 `Interpolation/Local/Rank.lean`, stated there for an arbitrary space `S`.
 
-Deferred: the public coordinate API of the source (`localExponentCoordinatesEquiv`,
-`LocalIntermediateIndex`, `localIntermediateExponents`, `localIntermediateSpaceBasis`, the
-kernel-slice analogues, and their cardinality lemmas). The dimension formulas here do not need it,
-and no later slice ported so far uses it.
+Not ported: the source's `LocalIntermediateIndex`, `localIntermediateExponents`,
+`localIntermediateSpaceBasis`, and the kernel-slice analogues. The dimension formulas here do not
+need them, and no consumer in the source uses them.
 
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
@@ -86,19 +85,7 @@ open MvPolynomial Finset
 
 variable {d : ℕ}
 
-/-! ### Local jet weights and the two spaces -/
-
-/-- The weight counting the exponent of the visible jet `Y₁ = localY 0`. It is zero on every
-variable when `d = 0`. -/
-def localFirstJetWeight (d : ℕ) : LocalVariable d → ℕ
-  | some (some j) => if j.val = 0 then 1 else 0
-  | _ => 0
-
-/-- The higher-jet weight on local variables: `Y_(j+1) = localY j` has weight `j`, and `T`, `U`,
-and `Y₁` have weight zero. -/
-def localHigherJetWeight (d : ℕ) : LocalVariable d → ℕ
-  | some (some j) => j.val
-  | _ => 0
+/-! ### The two spaces -/
 
 /-- The support condition of the intermediate space: `T`-degree below `m`, `U`-degree at most the
 `T`-degree, `Y₁`-degree at most `M`, and higher-jet weight at most `W` plus the `T`-degree. -/
@@ -143,76 +130,46 @@ theorem tDegree_eq_zero_of_mem_kernelSliceSourceSpace {F : Type*} [CommSemiring 
 
 /-! ### Dimensions -/
 
-/-- For `d = n + 1`, an exponent is its `T`, `U`, and `Y₁` degrees and the degrees of
-`Y₂, ..., Y_(n+1)`. -/
-private def localExponentEquiv (n : ℕ) :
-    (LocalVariable (n + 1) →₀ ℕ) ≃ ℕ × ℕ × ℕ × (Fin n → ℕ) :=
-  Finsupp.equivFunOnFinite.trans <| Equiv.piOptionEquivProd.trans <|
-    Equiv.prodCongr (Equiv.refl ℕ) <| Equiv.piOptionEquivProd.trans <|
-      Equiv.prodCongr (Equiv.refl ℕ) (Fin.consEquiv fun _ => ℕ).symm
-
-private theorem localExponentEquiv_apply (n : ℕ) (e : LocalVariable (n + 1) →₀ ℕ) :
-    localExponentEquiv n e =
-      (e (localT _), e (localU _), e (localY 0), fun i => e (localY i.succ)) :=
-  rfl
-
-private theorem weight_localFirstJetWeight_succ {n : ℕ} (e : LocalVariable (n + 1) →₀ ℕ) :
-    e.weight (localFirstJetWeight (n + 1)) = e (localY 0) := by
-  simp [Finsupp.weight_eq_sum, Fintype.sum_option, localFirstJetWeight, localY]
-
-private theorem weight_localHigherJetWeight_succ {n : ℕ} (e : LocalVariable (n + 1) →₀ ℕ) :
-    e.weight (localHigherJetWeight (n + 1)) = ∑ i : Fin n, (i.val + 1) * e (localY i.succ) := by
-  simp only [Finsupp.weight_eq_sum, Fintype.sum_option, Fin.sum_univ_succ, localHigherJetWeight,
-    smul_eq_mul, Fin.val_zero, Fin.val_succ, mul_zero, zero_add, localY]
-  exact sum_congr rfl fun i _ => mul_comm _ _
-
-/-- The exponent tuples of the intermediate space for `d = n + 1`. -/
-private def intermediateTuples (n m M W : ℕ) : Finset (ℕ × ℕ × ℕ × (Fin n → ℕ)) :=
+/-- The exponent tuples `(t, a, b, c)` of the intermediate space, in the coordinates of
+`localExponentCoordinatesEquiv`. -/
+private def intermediateTuples (d m M W : ℕ) : Finset (ℕ × ℕ × ℕ × (Fin (d - 1) → ℕ)) :=
   ((range m).sigma fun t => range (t + 1) ×ˢ range (M + 1) ×ˢ
-      natWeightedSimplex (fun i : Fin n => i.val + 1) (W + t)).map
-    (Equiv.sigmaEquivProd ℕ (ℕ × ℕ × (Fin n → ℕ))).toEmbedding
+      natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) (W + t)).map
+    (Equiv.sigmaEquivProd ℕ (ℕ × ℕ × (Fin (d - 1) → ℕ))).toEmbedding
 
-private theorem intermediate_set_eq (n m M W : ℕ) :
-    {e | LocalIntermediateExponent (n + 1) m M W e} =
-      ↑((intermediateTuples n m M W).map (localExponentEquiv n).symm.toEmbedding) := by
+private theorem intermediate_set_eq (hd : 0 < d) (m M W : ℕ) :
+    {e | LocalIntermediateExponent d m M W e} =
+      ↑((intermediateTuples d m M W).map (localExponentCoordinatesEquiv hd).symm.toEmbedding) := by
   ext e
-  simp only [Set.mem_ofPred_eq, coe_map, Set.mem_image, mem_coe, Equiv.coe_toEmbedding]
-  rw [show (∃ x ∈ intermediateTuples n m M W, (localExponentEquiv n).symm x = e) ↔
-      localExponentEquiv n e ∈ intermediateTuples n m M W from
-    ⟨fun ⟨x, hx, hxe⟩ => by rwa [← hxe, Equiv.apply_symm_apply],
-      fun h => ⟨_, h, Equiv.symm_apply_apply _ _⟩⟩]
-  simp only [intermediateTuples, mem_map_equiv, Equiv.sigmaEquivProd_symm_apply, mem_sigma,
-    mem_range, mem_product, localExponentEquiv_apply,
-    mem_natWeightedSimplex (fun i : Fin n => Nat.succ_ne_zero i.val), Nat.succ_eq_add_one]
-  rw [LocalIntermediateExponent, weight_localFirstJetWeight_succ,
-    weight_localHigherJetWeight_succ]
+  rw [coe_map, Equiv.coe_toEmbedding, Equiv.image_symm_eq_preimage]
+  simp only [Set.mem_ofPred_eq, Set.mem_preimage, mem_coe, intermediateTuples, mem_map_equiv,
+    Equiv.sigmaEquivProd_symm_apply, mem_sigma, mem_range, mem_product,
+    localExponentCoordinatesEquiv_apply,
+    mem_natWeightedSimplex (fun i : Fin (d - 1) => Nat.add_one_ne_zero i.val)]
+  rw [LocalIntermediateExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight hd]
   omega
 
-/-- The exponent tuples of a bounded kernel slice for `d = n + 1`. -/
-private def kernelSliceTuples (n r M W h : ℕ) : Finset (ℕ × ℕ × ℕ × (Fin n → ℕ)) :=
+/-- The exponent tuples of a bounded kernel slice, in the coordinates of
+`localExponentCoordinatesEquiv`. -/
+private def kernelSliceTuples (d r M W h : ℕ) : Finset (ℕ × ℕ × ℕ × (Fin (d - 1) → ℕ)) :=
   {0} ×ˢ range (r + 1 - h) ×ˢ range (M + 1 - h) ×ˢ
-    natWeightedSimplex (fun i : Fin n => i.val + 1) (W + r)
+    natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) (W + r)
 
-private theorem kernelSlice_set_eq (n r M W h : ℕ) :
-    {e | KernelSliceSourceExponent (n + 1) r M W h e} =
-      ↑((kernelSliceTuples n r M W h).map (localExponentEquiv n).symm.toEmbedding) := by
+private theorem kernelSlice_set_eq (hd : 0 < d) (r M W h : ℕ) :
+    {e | KernelSliceSourceExponent d r M W h e} =
+      ↑((kernelSliceTuples d r M W h).map (localExponentCoordinatesEquiv hd).symm.toEmbedding) := by
   ext e
-  simp only [Set.mem_ofPred_eq, coe_map, Set.mem_image, mem_coe, Equiv.coe_toEmbedding]
-  rw [show (∃ x ∈ kernelSliceTuples n r M W h, (localExponentEquiv n).symm x = e) ↔
-      localExponentEquiv n e ∈ kernelSliceTuples n r M W h from
-    ⟨fun ⟨x, hx, hxe⟩ => by rwa [← hxe, Equiv.apply_symm_apply],
-      fun h => ⟨_, h, Equiv.symm_apply_apply _ _⟩⟩]
-  simp only [kernelSliceTuples, mem_product, mem_singleton, mem_range, localExponentEquiv_apply,
-    mem_natWeightedSimplex (fun i : Fin n => Nat.succ_ne_zero i.val), Nat.succ_eq_add_one]
-  rw [KernelSliceSourceExponent, weight_localFirstJetWeight_succ,
-    weight_localHigherJetWeight_succ]
+  rw [coe_map, Equiv.coe_toEmbedding, Equiv.image_symm_eq_preimage]
+  simp only [Set.mem_ofPred_eq, Set.mem_preimage, mem_coe, kernelSliceTuples, mem_product,
+    mem_singleton, mem_range, localExponentCoordinatesEquiv_apply,
+    mem_natWeightedSimplex (fun i : Fin (d - 1) => Nat.add_one_ne_zero i.val)]
+  rw [KernelSliceSourceExponent, weight_localFirstJetWeight hd, weight_localHigherJetWeight hd]
   omega
 
 /-- For `d > 0` the intermediate space is finite-dimensional. -/
 theorem localIntermediateSpace_finite {F : Type*} [CommSemiring F] (hd : 0 < d) (m M W : ℕ) :
     Module.Finite F (localIntermediateSpace F d m M W) := by
-  obtain ⟨n, rfl⟩ : ∃ n, d = n + 1 := ⟨d - 1, by omega⟩
-  rw [localIntermediateSpace, intermediate_set_eq]
+  rw [localIntermediateSpace, intermediate_set_eq hd]
   exact restrictSupport_finite (Finset.finite_toSet _)
 
 /-- For `d > 0` the intermediate space has dimension
@@ -223,19 +180,17 @@ each point of the weighted simplex. The hypothesis `0 < d` is needed: for `d = 0
 theorem finrank_localIntermediateSpace {F : Type*} [Field F] (hd : 0 < d) (m M W : ℕ) :
     Module.finrank F (localIntermediateSpace F d m M W) =
       ∑ r ∈ range m, weightedHigherJetCount d (W + r) * ambientContactCount r M := by
-  obtain ⟨n, rfl⟩ : ∃ n, d = n + 1 := ⟨d - 1, by omega⟩
-  rw [localIntermediateSpace, intermediate_set_eq, finrank_restrictSupport_finset, card_map,
+  rw [localIntermediateSpace, intermediate_set_eq hd, finrank_restrictSupport_finset, card_map,
     intermediateTuples, card_map, card_sigma]
   refine sum_congr rfl fun r _ => ?_
-  rw [card_product, card_product, card_range, card_range, weightedHigherJetCount_succ,
+  rw [card_product, card_product, card_range, card_range, weightedHigherJetCount,
     ambientContactCount]
   ring
 
 /-- For `d > 0` a bounded kernel slice is finite-dimensional. -/
 theorem kernelSliceSourceSpace_finite {F : Type*} [CommSemiring F] (hd : 0 < d) (r M W h : ℕ) :
     Module.Finite F (kernelSliceSourceSpace F d r M W h) := by
-  obtain ⟨n, rfl⟩ : ∃ n, d = n + 1 := ⟨d - 1, by omega⟩
-  rw [kernelSliceSourceSpace, kernelSlice_set_eq]
+  rw [kernelSliceSourceSpace, kernelSlice_set_eq hd]
   exact restrictSupport_finite (Finset.finite_toSet _)
 
 /-- For `d > 0` a bounded kernel slice has dimension
@@ -243,10 +198,9 @@ theorem kernelSliceSourceSpace_finite {F : Type*} [CommSemiring F] (hd : 0 < d) 
 theorem finrank_kernelSliceSourceSpace {F : Type*} [Field F] (hd : 0 < d) (r M W h : ℕ) :
     Module.finrank F (kernelSliceSourceSpace F d r M W h) =
       weightedHigherJetCount d (W + r) * exhibitedKernelContactCount r M h := by
-  obtain ⟨n, rfl⟩ : ∃ n, d = n + 1 := ⟨d - 1, by omega⟩
-  rw [kernelSliceSourceSpace, kernelSlice_set_eq, finrank_restrictSupport_finset, card_map,
+  rw [kernelSliceSourceSpace, kernelSlice_set_eq hd, finrank_restrictSupport_finset, card_map,
     kernelSliceTuples, card_product, card_product, card_product, card_singleton, card_range,
-    card_range, weightedHigherJetCount_succ, exhibitedKernelContactCount]
+    card_range, weightedHigherJetCount, exhibitedKernelContactCount]
   ring
 
 /-! ### Integer weights -/
