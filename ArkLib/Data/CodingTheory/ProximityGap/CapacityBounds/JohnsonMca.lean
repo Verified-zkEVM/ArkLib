@@ -32,7 +32,7 @@ open CoreDefinitions ProximityGap
 section General
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- Bounds affine-line MCA error below the 1.5-Johnson radius of a linear code. -/

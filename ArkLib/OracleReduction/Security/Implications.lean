@@ -132,7 +132,6 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         rfl
       have hk := hkSF stmtIn (Classical.choice hWin) prover' i
       rw [← bind_assoc]
-      simp only [KnowledgeStateFunction.toStateFunction]
       change Pr{let x ← plainGame}[
         ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
           ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
@@ -160,27 +159,10 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
           (fun tr w => cast extractor.eqIn w)
           (fun m ih tr w =>
             ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
-      let plainGame := do
-        let s ← init
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge))).run' s
       rw [← bind_assoc]
-      simp only [KnowledgeStateFunction.toStateFunction]
-      change Pr{let x ← plainGame}[
-        ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
-      have hz : Pr{let x ← plainGame}[
-          ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-            ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] = 0 := by
-        apply prEvent_eq_zero_of_forall_not
-        intro x hbad
-        obtain ⟨hprev, w, hnext⟩ := hbad
-        exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
-      rw [hz]
-      exact zero_le
+      refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
+      obtain ⟨-, w, hnext⟩ := hbad
+      exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
   · have hLangOut : relOut.language = ∅ := by
       ext stmtOut
       simp only [Set.language, Set.mem_image, Prod.exists, exists_and_right,
@@ -202,26 +184,9 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
     unfold rbrSoundness
     refine ⟨sF, ?_⟩
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    let plainGame := do
-      let s ← init
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
-          let challenge ← liftComp (pSpec.getChallenge i) _
-          return (transcript, challenge))).run' s
     rw [← bind_assoc]
-    simp only [sF]
-    change Pr{let x ← plainGame}[
-      ¬ ((i.1.castSucc = 0) ∧ stmtIn ∈ relIn.language) ∧
-        ((i.1.succ = 0) ∧ stmtIn ∈ relIn.language)] ≤ _
-    have hz : Pr{let x ← plainGame}[
-        ¬ ((i.1.castSucc = 0) ∧ stmtIn ∈ relIn.language) ∧
-          ((i.1.succ = 0) ∧ stmtIn ∈ relIn.language)] = 0 := by
-      apply prEvent_eq_zero_of_forall_not
-      intro x hbad
-      exact Fin.succ_ne_zero i.1 hbad.2.1
-    rw [hz]
-    exact zero_le
+    exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
+      Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
 with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/

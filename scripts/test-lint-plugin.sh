@@ -36,4 +36,13 @@ fi
 grep -Fq 'Forbidden `set_option linter.*`' "$fixture_tmp/guard-rejected.log"
 grep -Fq "\`@[nolint]\` suppressions are forbidden" "$fixture_tmp/guard-rejected.log"
 
+if lake env lean --plugin="$plugin_path" scripts/LintStyleFixtures/PluginProbabilityRejected.lean \
+    >"$fixture_tmp/probability-rejected.log" 2>&1; then
+  echo "ERROR: source-policy plugin accepted retired probability notation" >&2
+  exit 1
+fi
+for token in '$ᵖ' 'Pr_{' 'Pr[' '𝒮['; do
+  grep -Fq "Retired probability notation \`$token\`" "$fixture_tmp/probability-rejected.log"
+done
+
 echo "ArkLib source-policy plugin fixtures passed"

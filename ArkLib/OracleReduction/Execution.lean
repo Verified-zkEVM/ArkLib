@@ -8,7 +8,9 @@ module
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.ToMathlib.Control.MonadLift
-public import ArkLib.ToVCVio.OracleComp.EvalDist
+public import VCVio.OracleComp.EvalDist
+public import VCVio.EvalDist.List
+public import ToMathlib.Data.Vector
 -- Owns `OracleComp.support_ofFn_mapM_index`, used in `Verifier.run_all_eq_bind` below.
 public import VCVio.OracleComp.Constructions.Replicate
 public import VCVio.OracleComp.QueryTracking.LoggingOracle

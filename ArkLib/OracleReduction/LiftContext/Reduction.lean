@@ -551,12 +551,6 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
       (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
-  unfold rbrKnowledgeSoundness at h ⊢
-  obtain ⟨stF, E, h⟩ := h
-  simp at h ⊢
-  -- refine ⟨stF.liftContext (lens := lens.toStatement.Lens)
-  --   (lensSound := lensKnowledgeSound.toSound),
-  --         ?_, ?_⟩
   sorry
 
 end Verifier

@@ -114,9 +114,7 @@ theorem first_complete (start : ProbComp Unit) :
   rw [Reduction.perfectCompleteness,
     Reduction.completeness_iff_of_pure_verifier firstReduction firstVerifierForm]
   intro stmt wit h
-  simp only [ENNReal.coe_zero, tsub_zero, Set.mem_univ, true_and]
-  simp only [← bind_assoc]
-  exact le_of_eq (OracleComp.prEvent_true_eq_one _).symm
+  simp [← bind_assoc, -bind_pure_comp]
 
 /-- The second stage is perfectly complete from every initial-state distribution. -/
 theorem second_complete (start : ProbComp Unit) :
@@ -124,9 +122,7 @@ theorem second_complete (start : ProbComp Unit) :
   rw [Reduction.perfectCompleteness,
     Reduction.completeness_iff_of_pure_verifier secondReduction secondVerifierForm]
   intro stmt wit h
-  simp only [ENNReal.coe_zero, tsub_zero, Set.mem_univ, true_and]
-  simp only [← bind_assoc]
-  exact le_of_eq (OracleComp.prEvent_true_eq_one _).symm
+  simp [← bind_assoc, -bind_pure_comp]
 
 /-- The factorization interface proves completeness outside the structural seam restriction. -/
 theorem beyond_seam_complete (start : ProbComp Unit) :
