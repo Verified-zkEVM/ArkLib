@@ -191,6 +191,11 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Index
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Interpolation.Local.Rank
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Substitution
+public import ArkLib.Data.CodingTheory.ReedSolomon.HiddenDerivative.Variables
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
@@ -279,6 +284,7 @@ public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
+public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
