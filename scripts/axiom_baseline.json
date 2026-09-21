@@ -136,7 +136,6 @@
   "HashStateWithInstructions.new",
   "HashStateWithInstructions.ratchet",
   "HashStateWithInstructions.squeeze",
-  "LinearTransformations.isMCAGenerator_of_isMDSGenerator",
   "LinearTransformations.isMCAGenerator_tensorGenerator_tight",
   "MvPolynomial.basis",
   "NoInteraction.reduction_completeness",
@@ -289,5 +288,6 @@
   "Verifier.srSoundness_implies_soundness",
   "fiatShamir_completeness",
   "instUnitTranscriptFSProverState",
-  "instUnitTranscriptFSVerifierState"],
+  "instUnitTranscriptFSVerifierState",
+  "isMCAGenerator_of_isMDSGenerator"],
  "nonstandard": []}
