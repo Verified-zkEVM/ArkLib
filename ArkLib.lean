@@ -65,10 +65,9 @@ public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Security
 public import ArkLib.Commitments.Ordinary.Basic
 public import ArkLib.Commitments.Ordinary.SimpleRO
+public import ArkLib.Data.Classes.CloseToUniform
 public import ArkLib.Data.Classes.FunEquiv
-public import ArkLib.Data.Classes.HasSize
 public import ArkLib.Data.Classes.Initialize
-public import ArkLib.Data.Classes.Serde
 public import ArkLib.Data.Classes.Slice
 public import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
