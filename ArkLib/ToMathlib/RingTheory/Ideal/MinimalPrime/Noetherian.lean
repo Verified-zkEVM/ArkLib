@@ -15,9 +15,10 @@ In a Noetherian commutative semiring the minimal primes over an ideal form a fin
 so that it can index finite sums and unions, and defines the minimal primes *retained* by an
 element `s`: those that do not contain `s`.
 
-Geometrically, for a polynomial ideal `I`, the retained minimal primes are the irreducible
-components of the zero locus of `I` that meet the principal open set `{s ≠ 0}`. The point-cover
-statements for `MvPolynomial.zeroLocus` are in `ArkLib.ToMathlib.RingTheory.Nullstellensatz`.
+For a polynomial ideal `I`, the retained minimal primes index the algebraic components on which
+`s` is not identically zero. This does not assert that each component has a point over a given
+field extension. The point-cover statements for `MvPolynomial.zeroLocus` are in
+`ArkLib.ToMathlib.RingTheory.Nullstellensatz`.
 
 ## Main definitions
 
@@ -102,8 +103,8 @@ theorem minimalPrimesFinset_of_isPrime (I : Ideal R) [I.IsPrime] :
 
 /-- The minimal primes over `I` retained by `s`: those that do not contain `s`.
 
-For an ideal `I` of polynomials, these are the irreducible components of the zero locus of `I`
-that meet the principal open set `{s ≠ 0}`; the components contained in `{s = 0}` are discarded.
+For an ideal `I` of polynomials, these index the algebraic components on which `s` is not
+identically zero; this does not require a point over any particular field extension.
 The family is defined as a filter of `I.minimalPrimesFinset`. It equals `I.minimalPrimesFinset`
 when `s` is a unit (`retainedMinimalPrimes_of_isUnit`) and is empty exactly when `s` lies in the
 radical of `I` (`retainedMinimalPrimes_eq_empty_iff`). -/

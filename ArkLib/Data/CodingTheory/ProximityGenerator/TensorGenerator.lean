@@ -5,7 +5,7 @@ Authors: ArkLib Contributors
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.InterleavedCode
 public import ArkLib.Data.Probability.Instances
 
@@ -166,29 +166,7 @@ theorem isMCAGenerator_of_moduleInterleavedCode [Nonempty ℓ] (G' : Generator S
     (hG' : IsMCAGenerator G' ε'_mca (ModuleCode.moduleInterleavedCode F A ℓ ι MC)) :
     IsMCAGenerator G' ε'_mca MC := by
   intro δ
-  refine iSup_le fun U => ?_
-  refine le_trans (Pr_le_Pr_of_implies _ _ _ fun x' => ?_) (hG'.prob_le (fun j k _ => U j k) δ)
-  rintro ⟨T, hT, hcomb, j₀, hbad⟩
-  refine ⟨T, hT, ?_, j₀, fun hmem => hbad ?_⟩
-  · set_option backward.isDefEq.respectTransparency false in
-      rw [projectedCodeSubmod_moduleInterleavedCode_iff]
-    intro i
-    have : InterleavedWord.getRowWord (fun k => ∑ j, G' x' j • (fun k _ => U j k : ι → ℓ → A) k) i
-        = fun k => ∑ j, G' x' j • U j k := by
-      set_option backward.isDefEq.respectTransparency false in
-        funext k
-        rw [InterleavedWord.getRowWord_apply]
-        simp
-    rw [this]
-    exact hcomb
-  · obtain ⟨i⟩ := ‹Nonempty ℓ›
-    have h := (projectedCodeSubmod_moduleInterleavedCode_iff
-      F A ℓ ι MC (fun k _ => U j₀ k) T).mp hmem i
-    have hrow : InterleavedWord.getRowWord (fun k (_ : ℓ) => U j₀ k) i = U j₀ := by
-      funext k
-      change U j₀ k = U j₀ k
-      rfl
-    rwa [hrow] at h
+  exact (mcaError_le_mcaError_moduleInterleavedCode G' MC (δ : ℝ)).trans (hG' δ)
 
 /-- If `G` and `G'` both have mutual correlated agreement for `MC` itself, the tensor generator has
 it for `MC` with the inner error scaled by `Fintype.card ℓ`.
