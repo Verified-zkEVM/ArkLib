@@ -94,6 +94,7 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.InterleavedCode.Projection
 public import ArkLib.Data.CodingTheory.JohnsonBound.Basic
 public import ArkLib.Data.CodingTheory.JohnsonBound.Choose2
 public import ArkLib.Data.CodingTheory.JohnsonBound.Expectations
@@ -178,6 +179,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Separation
 public import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
