@@ -171,7 +171,7 @@ removes the `backward.isDefEq.respectTransparency false` override that the old p
 
 The conversion starts from `fa14552d40e793f2ea26e65c440306aae0c08a26` (#903) and includes
 `main` through `8b03d40a56ec827d223b78ccca0ce164a9231f6c` (#857 and #877). Later merges of `main`
-through `17adcc01a91ba1dbf0c980da50b1371821819939` (#928) are integrated too; the one migration
+through `9acc8820a0e973f67d8b2af64ae79afb75bbc82f` (#932) are integrated too; the one migration
 change they need is in `ProximityGenerator/Interleaving.lean` (#918), whose three sampling
 theorems take `[SampleableType S]` and use `Pr{let x ← $ᵗ S}` and `prEvent_mono`. Its
 row-functional avoidance lemma stays sampler-free. That file postdates the counts below.
@@ -191,7 +191,7 @@ they are not counts of changed proof lines. Deleted files count as zero after co
 | Deleted ToVCVio Lean modules | 7 | 200 | 0 | -200 |
 
 The compatibility tree also loses its 64-line README. The root import file is regenerated.
-The retirement inventory shrank from 186 declarations to zero across the final 526-module root.
+The retirement inventory shrank from 186 declarations to zero across the final 533-module root.
 No retired-probability baseline is introduced, and no warning exclusions are added.
 
 #### Phase 2 proof-size review
