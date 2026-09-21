@@ -26,7 +26,8 @@ Modes (run after `lake build`):
 
 ```
 lake exe retiredsweep                     # summary and per-namespace counts
-lake exe retiredsweep --check             # gate against scripts/retired_probability_baseline.json
+lake exe retiredsweep --require-empty     # mandatory gate, no baseline exceptions
+lake exe retiredsweep --check             # historical migration gate against scripts/retired_probability_baseline.json
 lake exe retiredsweep --update-baseline   # rewrite the baseline from the current build
 ```
 
@@ -42,11 +43,10 @@ namespace RetiredProbabilitySweep
 /-- Root modules swept when no `--root` is given. -/
 def defaultRoots : Array Name := #[`ArkLib]
 
-/-- Retired name prefixes. A constant is retired when one of these is a prefix of its name, so
-`OptionT.probFailure_eq` is caught through `probFailure` only if the prefix matches at the head;
-prefix matching is on the full dotted name (`PMF.map`, `SPMF.bind`, `NeverFail.mk`, …). Names
-that merely mention a retired name in a later component (`OptionT.probEvent_liftM`) are matched
-by component. -/
+/-- Retired name prefixes. Prefix matching is on full dotted names (`PMF.map`, `SPMF.bind`,
+`NeverFail.mk`, …); unqualified retired names also match an entire component. A theorem name such
+as `OptionT.probEvent_liftM` is not itself matched by its spelling: the scan checks direct retired
+constants in the declaration's type and body, not transitive dependencies of referenced lemmas. -/
 def retiredNames : List Name :=
   [`PMF, `SPMF, `evalSPMF, `probOutput, `probEvent, `probFailure, `NeverFail,
     `EvalDistCompatible, `DiscreteEvalDistCompatible, `OracleSpec.IsUniformSpec,
@@ -155,12 +155,14 @@ def runUpdate (cur : Baseline) (basePath : String) : IO UInt32 := do
 structure Config where
   roots : Array Name := #[]
   out? : Option String := none
+  requireEmpty : Bool := false
   check : Bool := false
   update : Bool := false
   baseline : String := "scripts/retired_probability_baseline.json"
 
 def parseArgs : List String → Config → Except String Config
   | [], cfg => .ok cfg
+  | "--require-empty" :: rest, cfg => parseArgs rest { cfg with requireEmpty := true }
   | "--check" :: rest, cfg => parseArgs rest { cfg with check := true }
   | "--update-baseline" :: rest, cfg => parseArgs rest { cfg with update := true }
   | "--out" :: path :: rest, cfg => parseArgs rest { cfg with out? := some path }
@@ -168,7 +170,7 @@ def parseArgs : List String → Config → Except String Config
   | "--root" :: mod :: rest, cfg =>
     parseArgs rest { cfg with roots := cfg.roots.push mod.toName }
   | arg :: _, _ => .error s!"retiredsweep: unknown or incomplete argument: {arg}\n\
-      usage: lake exe retiredsweep [--out FILE] [--check] [--update-baseline] \
+      usage: lake exe retiredsweep [--out FILE] [--require-empty] [--check] [--update-baseline] \
       [--baseline FILE] [--root MOD]*"
 
 /-- Per-namespace counts (first component of the declaration name). -/
@@ -185,6 +187,9 @@ unsafe def run (args : List String) : IO UInt32 := do
   let cfg ← match parseArgs args {} with
     | .ok cfg => pure cfg
     | .error e => IO.eprintln e; return 2
+  if cfg.requireEmpty && (cfg.check || cfg.update) then
+    IO.eprintln "retiredsweep: --require-empty cannot be combined with baseline modes"
+    return 2
   if cfg.check && cfg.update then
     IO.eprintln "retiredsweep: --check and --update-baseline are mutually exclusive"
     return 2
@@ -211,6 +216,14 @@ unsafe def run (args : List String) : IO UInt32 := do
       ("declarations", toJson entries)]
     IO.FS.writeFile out (report.pretty ++ "\n")
     IO.println s!"retiredsweep: wrote report to {out}"
+  if cfg.requireEmpty then
+    if entries.isEmpty then
+      IO.println "retiredsweep: native probability retirement complete; no retired uses."
+      return 0
+    for entry in entries do
+      IO.eprintln s!"  {entry.module}: {entry.name}: {entry.retired}"
+    IO.eprintln "retiredsweep: retired probability references are forbidden; no baseline applies."
+    return 1
   if cfg.update then
     return (← runUpdate cur cfg.baseline)
   if cfg.check then

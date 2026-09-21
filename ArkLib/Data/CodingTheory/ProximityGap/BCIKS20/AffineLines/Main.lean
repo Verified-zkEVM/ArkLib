@@ -27,7 +27,7 @@ universe u v w k l
 
 section CoreResults
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+         {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- Theorem 1.4 (Main Theorem — Correlated agreement over lines) in [BCIKS20].

@@ -10,7 +10,9 @@ public import ArkLib.ProofSystem.ToyProblem.Definitions
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
 public import ArkLib.OracleReduction.Security.RbrGame
 
 /-!
@@ -1081,11 +1083,6 @@ while the verifier, checking `ḡ`, rejects — and makes the `(1−δ)^t` trans
 bound false). The acceptance predicate is what the transition analysis actually
 uses. -/
 
-/-- `Pr_{x ← D}[P x] = 0` for a never-satisfied predicate `P`. -/
-private lemma Pr_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop)
-    (h : ∀ x, ¬ P x) : Pr_{let x ← D}[P x] = 0 := by
-  classical rw [prob_tsum_form_singleton]; simp [h]
-
 omit [DecidableEq ι] [Fintype F] [DecidableEq F] in
 /-- The post-`γ` knowledge state of the round-by-round argument: `m`
 satisfies the folded linear constraint at `γ`, and `f₁ + γ·f₂` agrees with
@@ -1276,12 +1273,10 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι] [Finite A]
       ] ≤ (certifiedGammaError C δ : ENNReal) := by
   classical
   let _ := Fintype.ofFinite A
-  rw [prEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ outputRelationFor k
         (encode : (Fin k → F) → (ι → A)) δ
   · refine le_trans (le_of_eq ?_) zero_le
-    rw [prob_tsum_form_singleton]
     have hnot : ∀ γ : F, ¬ (∃ w : Fin k → F,
         (stmtIn, chooseRelaxedWitness k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
             outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
@@ -1289,8 +1284,8 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι] [Finite A]
             stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
             (stmtIn.2 0) (stmtIn.2 1) γ w) :=
       fun _ h ↦ h.choose_spec.1 (chooseRelaxedWitness_mem k hw)
-    simp [hnot]
-  · refine le_trans (Pr_le_Pr_of_implies _ _
+    exact prEvent_eq_zero_of_forall_not _ _ hnot
+  · refine le_trans (prEvent_mono _ _
       (fun γ ↦ ∃ m : Fin k → F,
         (∑ j, m j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
@@ -1320,7 +1315,7 @@ probability at most `(1 - δ)^t`. -/
 lemma spotcheck_round_game_bound [Nonempty ι]
     (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
-    (γ : F) (g : Fin k → F) [SampleableType (Fin t → ι)] :
+    (γ : F) (g : Fin k → F) [SampleableType ι] :
     Pr{let xs ← $ᵗ (Fin t → ι)}[∃ _w : PUnit,
         ¬ GammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
             (stmtIn.2 0) (stmtIn.2 1) γ g ∧
@@ -1328,15 +1323,14 @@ lemma spotcheck_round_game_bound [Nonempty ι]
       ] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal) := by
   classical
   let _ : DecidableEq F := Classical.decEq F
-  rw [prEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hbad : GammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
       (stmtIn.2 0) (stmtIn.2 1) γ g
-  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
+  · refine (prEvent_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
     rintro xs ⟨-, hne, -⟩
     exact hne hbad
   by_cases hlin : ∑ j, g j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2
   swap
-  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
+  · refine (prEvent_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
     rintro xs ⟨-, -, hacc⟩
     exact hlin hacc.1
   let S₀ : Finset ι :=
@@ -1356,7 +1350,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
       (0 : ℝ≥0) < Fintype.card ι), ← NNReal.coe_le_coe]
     push_cast [NNReal.coe_sub hδ1]
     linarith
-  refine le_trans (Pr_le_Pr_of_implies _ _ (fun xs ↦ ∀ j, xs j ∈ S₀) ?_) ?_
+  refine le_trans (prEvent_mono _ _ (fun xs ↦ ∀ j, xs j ∈ S₀) ?_) ?_
   · rintro xs ⟨-, -, hacc⟩ j
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hacc.2 j).symm⟩
   · refine le_trans (prob_uniform_pi_mem_finset_le S₀ t) ?_

@@ -63,13 +63,14 @@ This is the transport skeleton behind every generator-preservation lemma in this
 exactly the event implication, and everything else is this lemma. Stating it once at the *value*
 keeps `ε_mca` out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
 `isMCAGenerator_iff_mcaError_le` and transitivity. -/
-lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] (G : Generator S ℓ F) (G' : Generator S ℓ' F)
+lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] [SampleableType S]
+    (G : Generator S ℓ F) (G' : Generator S ℓ' F)
     (MC : ModuleCode ι F A) (δ : ℝ) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
     (h : ∀ (U : ℓ' → (ι → A)) (x : S), IsMCA G' MC x U δ → IsMCA G MC x (Φ U) δ) :
     mcaError G' MC δ ≤ mcaError G MC δ := by
   unfold mcaError
-  refine iSup_le fun U => le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _ (fun x hx => h U x hx)) ?_
-  exact le_iSup (fun V => Pr_{let x ←$ᵖ S}[IsMCA G MC x V δ]) (Φ U)
+  refine iSup_le fun U => le_trans (prEvent_mono ($ᵗ S) _ _ (fun x hx => h U x hx)) ?_
+  exact le_iSup (fun V => Pr{let x ←$ᵗ S}[IsMCA G MC x V δ]) (Φ U)
 
 /-- Let `G : S → 𝔽^ℓ` be a generator and let `M` be an `ℓ × ℓ'` matrix. Then `G' : S → 𝔽^ℓ'` is a
 generator defined by `x ↦ G(x) · M`. This is the generator whose error is bounded by
@@ -118,7 +119,8 @@ lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Ge
 
 /-- Right multiplication by a matrix with a left pseudoinverse does not increase the MCA error.
 Stated at the error *value*, so no error function appears. -/
-lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
+lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] [SampleableType S]
+    (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) (γ : ℝ) :
     mcaError (generatorByRightMul G M) MC γ ≤ mcaError G MC γ :=
   mcaError_le_of_forall_isMCA_imp G (generatorByRightMul G M) MC γ (matrixMulCodewords M)
@@ -128,7 +130,8 @@ lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] (G : Gener
 with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `M`
 is an MCA generator with the same error `ε_mca` as `G`.
 The `IsMCAGenerator` form of `mcaError_generatorByRightMul_le`. -/
-lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] [SampleableType S]
+    (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
     (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
     IsMCAGenerator (generatorByRightMul G M) ε_mca MC :=
@@ -162,8 +165,8 @@ lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G
 
 /-- Projecting a generator onto a subset of its output coordinates does not increase the MCA
 error. Stated at the error *value*, so no error function appears. -/
-lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : ModuleCode ι F A)
-    (κ : Set ℓ) [Fintype κ] (γ : ℝ) :
+lemma mcaError_projectedGenerator_le [Nonempty S] [SampleableType S]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (κ : Set ℓ) [Fintype κ] (γ : ℝ) :
     mcaError (projectedGenerator G κ) MC γ ≤ mcaError G MC γ :=
   mcaError_le_of_forall_isMCA_imp G (projectedGenerator G κ) MC γ (zeroExtend κ)
     (fun U x h => isMCA_projectedGenerator_of_isMCA MC G κ U γ x h)
@@ -171,7 +174,8 @@ lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a subset of `ℓ`.
 Then the projected generator over `κ` is an MCA generator with the same error as `G`.
 The `IsMCAGenerator` form of `mcaError_projectedGenerator_le`. -/
-lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+lemma generatorSubset [Nonempty S] [SampleableType S]
+    (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A)
     (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
     IsMCAGenerator (projectedGenerator G κ) ε_mca MC :=
@@ -184,7 +188,8 @@ equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products
 Not an instance of `mcaError_le_of_forall_isMCA_imp`: that skeleton keeps the seed space fixed,
 whereas here the seed space is relabelled along `eS`, so the probabilities are compared by
 `Finset.card_equiv` rather than by monotonicity of `Pr`. -/
-lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
+lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [SampleableType S'] [Nonempty S]
+    [SampleableType S]
     (MC : ModuleCode ι F A) (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (hGMCA : IsMCAGenerator G ε_mca MC) (eS : S' ≃ S) (eL : ℓ ≃ ℓ') :
     IsMCAGenerator (fun x' j' => G (eS x') (eL.symm j')) ε_mca MC := by
@@ -206,14 +211,12 @@ lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
       exact ⟨T, hT, by rw [← hvec x']; exact hmem, eL.symm j', by simpa using hj'⟩
     · rintro ⟨T, hT, hmem, j, hj⟩
       exact ⟨T, hT, by rw [hvec x']; exact hmem, eL j, hj⟩
-  have hcard : (Finset.univ.filter fun x' : S' =>
-        IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)).card
-      = (Finset.univ.filter fun x : S => IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)).card :=
-    Finset.card_equiv eS fun x' => by simp
-  calc Pr_{let x' ←$ᵖ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) MC x' U (γ : ℝ)]
-      = Pr_{let x' ←$ᵖ S'}[IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)] := Pr_congr hiff
-    _ = Pr_{let x ←$ᵖ S}[IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)] := by
-        rw [prob_uniform_eq_ofReal, prob_uniform_eq_ofReal, hcard, Fintype.card_congr eS]
+  calc Pr{let x' ←$ᵗ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) MC x' U (γ : ℝ)]
+      = Pr{let x' ←$ᵗ S'}[IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)] :=
+        prEvent_congr _ _ _ hiff
+    _ = Pr{let x ←$ᵗ S}[IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)] := by
+        exact SampleableType.prEvent_uniformSample_equiv eS
+          (fun x : S => IsMCA G MC x (fun j => U (eL j)) (γ : ℝ))
     _ ≤ (ε_mca γ : ENNReal) := hGMCA.prob_le _ γ
 
 end LinearTransformations
