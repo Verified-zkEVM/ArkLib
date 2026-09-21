@@ -1,760 +1,83 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova,
          Ilia Vlasov, Aristotle (Harmonic)
 -/
 module
 
-public import Mathlib.Probability.ProbabilityMassFunction.Monad
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.MvPolynomial.Degrees
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import CompPoly.Data.Fin.BigOperators
-public import CompPoly.Data.Nat.Bitwise
-public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 
-/-! # Probability Instances
+/-! # Probability bounds for finite uniform samples
 
-Basic probability instances and probability computations for `PMF`: uniform sampling,
-the Schwartz-Zippel bound in probability form, and collision bounds for linear forms.
-
-## References
-
-* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-Agreement*][ABF26]
+ArkLib's specialized counting arguments are exposed here over VCVio's native `ProbComp`
+uniform sampler. Generic event algebra, counting formulas, transport along equivalences, and product
+sampling are provided by `SampleableType.NativeMeasure`.
 -/
 
 @[expose] public section
 
-
 open ProbabilityTheory Filter NNReal Finset Function Real
-open scoped BigOperators ProbabilityTheory
-
-
--- TODO(dtumad): Move most of the stuff in this file to VCV and generalize as possible
-
-section
-variable {α : Type*}
-
-instance [IsEmpty α] : IsEmpty (PMF α) := by
-  refine Subtype.isEmpty_of_false ?_
-  intro f h
-  have : Fintype α := Fintype.ofIsEmpty
-  have one_eq_zero := HasSum.unique h (hasSum_fintype f)
-  aesop
-
--- @[simp]
--- theorem PMF.eq_pure_iff_ge_one {α : Type*} {p : PMF α} {a : α} : p = pure a ↔ p a ≥ 1 := by
---   constructor <;> intro h
---   · sorry
---   · ext b
---     simp only [pure, PMF.pure_apply]
---     by_cases hb : b = a
---     · simp [hb]; exact le_antisymm (PMF.coe_le_one p a) h
---     · simp [hb]; sorry
-end
+open scoped BigOperators ProbabilityTheory ENNReal NNReal
 
 namespace Probability
 
-section ProbabilityTools
-
-/-- Unrolls `Pr_{ let x ← D }[P x]` into a sum of the form
-`∑' x, Pr[x] * (if P x then 1 else 0)`. -/
-theorem prob_tsum_form_singleton {α : Type} (D : PMF α) (P : α → Prop) [DecidablePred P] :
-    Pr_{ let x ← D }[P x] = ∑' x, (D x) * (if P x then 1 else 0) :=
-  ProbabilityTheory.Pr_eq_tsum_indicator D P
-
-theorem prob_tsum_form_split_first {α : Type} (D : PMF α) (D_rest : α → PMF Prop) :
-    (do let x ← D; D_rest x) True = ∑' x, (D x) * (D_rest x True) := by
-  -- These are definitionally the same!
-  exact PMF.bind_apply D D_rest True
-
-open Classical in
-/-- Unrolls `Pr_{ let x ← D; let y ← D }[P x y]` into a sum of the form
-`∑' (x × y), (if P x y then 1 else 0)`. -/
-theorem prob_tsum_form_doubleton {α β : Type}
-    (D₁ : PMF α) (D₂ : PMF β)
-    (P : α → β → Prop) [∀ x, DecidablePred (P x)] : -- Need decidability for inner P
-    Pr_{ let x ← D₁; let y ← D₂ }[P x y]
-    =  ∑' xy : α × β, (D₁ xy.1) * (D₂ xy.2) * (if P xy.1 xy.2 then (1 : ENNReal) else 0) := by
-  let D_rest := fun (x : α) => (do
-    let y ← D₂
-    return (P x y)
-  )
-  conv_lhs =>
-    apply prob_tsum_form_split_first (D := D₁) (D_rest := D_rest)
-  simp_rw [D_rest]
-  simp_rw [prob_tsum_form_singleton]
-  conv_lhs => enter [1, x]; rw [←ENNReal.tsum_mul_left]
-  -- ⊢ (∑' (x : α), ... = ∑' (x : γ) (i : δ), ...
-  rw [←ENNReal.tsum_prod]
-  congr 1
-  funext xy
-  rw [←mul_assoc]
-
-theorem prob_uniform_eq_card_filter_div_card {F : Type} [Fintype F] [Nonempty F]
-    (P : F → Prop) [DecidablePred P] :
-  Pr_{ let r ←$ᵖ F }[ P r ] =
-    ((Finset.filter (α := F) P Finset.univ).card : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
-  classical
-  -- Expand Pr_ using the same approach as Notation.lean
-  simp only [Bind.bind, PMF.bind, PMF.uniformOfFintype_apply, pure, PMF.pure_apply, eq_iff_iff,
-    mul_ite, mul_one, mul_zero, ENNReal.coe_natCast]
-  simp only [DFunLike.coe, true_iff]
-  -- ⊢ (∑' (a : F), if P a then (↑(Fintype.card F))⁻¹ else 0)
-    -- = ↑(#(filter P univ)) / ↑(Fintype.card F)
-  rw [tsum_eq_sum (α := ENNReal) (β := F) (f := fun a => if P a then (↑(Fintype.card F))⁻¹ else 0)
-    (s := Finset.filter P Finset.univ) (hf := fun b => by
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-    intro hb
-    simp only [hb, ite_false]
-  )] -- rewrite the infinite sum as a sum
-  -- ⊢ (∑ b with P b, if P b then (↑(Fintype.card F))⁻¹ else 0) = ↑(#(filter P univ)) / ↑q
-  rw [Finset.sum_ite] -- simplify the if-then-else inside the sum
-  simp only [Finset.sum_const_zero, add_zero] -- remove the second sum of 0s
-  rw [Finset.sum_const] -- simplify the left sum of the constants
-  -- Rewrite nsmul (scalar multiplication by ℕ) as standard multiplication using Nat.cast
-  rw [nsmul_eq_mul'] -- Use nsmul_eq_mul' which handles the coercion to ℝ≥0
-  -- ⊢ (↑(Fintype.card F))⁻¹ * ↑(#({x ∈ filter P univ | P x})) = ↑(#(filter P univ)) / ↑q
-  rw [mul_comm]
-  conv_lhs => rw [←div_eq_mul_inv]
-  -- ⊢ ↑(#({x ∈ filter P univ | P x})) / ↑(Fintype.card F) = ↑(#(filter P univ)) / ↑(Fintype.card F)
-  have h_card_eq: {x ∈ filter P univ | P x} = filter P univ := by
-    ext x
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-    -- ⊢ P x ∧ P x ↔ P x
-    rw [and_self_iff]
-  rw [h_card_eq]
-
-lemma _root_.Fintype.card_fun_fin_one_eq {F : Type} [Fintype F] [Nonempty F] :
-    Fintype.card (Fin 1 → F) = Fintype.card F := by
-  rw [Fintype.card_fun]
-  simp only [Fintype.card_unique, pow_one]
-
-theorem prob_uniform_singleton_finFun_eq {F : Type} [Fintype F] [Nonempty F]
-    (P : F → Prop) :
-  Pr_{ let r ← $ᵖ (Fin 1 → F) }[
-    P (r 0) ] = Pr_{ let r ←$ᵖ F }[ P r ] := by
-  classical
--- 1. Unfold both sides using the definition of probability for uniform distributions
-  rw [prob_uniform_eq_card_filter_div_card (F := F)]
-  rw [prob_uniform_eq_card_filter_div_card (F := Fin 1 → F)]
-  -- 2. Handle the denominators: Show card(F) = card(Fin 1 → F)
-  -- Fintype.card_fun_fin_one proves that `Fintype.card (Fin 1 → F) = Fintype.card F`
-  rw [Fintype.card_fun_fin_one_eq]
-  -- 3. Handle the numerators: Show the cardinalities of the two filter sets are equal.
-  congr 1 -- This tells Lean the denominators match, so just prove the numerators are equal
-  -- Define the equivalence `e` that maps `(r : Fin 1 → F)` to `r 0`
-  let e : (Fin 1 → F) ≃ F := Equiv.funUnique (Fin 1) F
-  -- Define the two sets we are comparing
-  let s₁ := Finset.filter (fun (r : Fin 1 → F) => P (r 0)) Finset.univ
-  let s₂ := Finset.filter P Finset.univ
-  -- Show that s₂ is just the image of s₁ under the map `e`
-  have h_map_eq : s₂ = Finset.map e.toEmbedding s₁ := by
-    ext x -- ⊢ x ∈ s₂ ↔ x ∈ Finset.map e.toEmbedding s₁
-    simp only [mem_filter, mem_univ, true_and, Fin.isValue, mem_map_equiv, s₂, s₁]
-    -- ⊢ P x ↔ P (e.symm x 0)
-    rfl
-  simp only [ENNReal.coe_natCast, Fin.isValue, Nat.cast_inj]
-  have h_card_eq : s₂.card = s₁.card := by
-    rw [h_map_eq]
-    rw [Finset.card_map e.toEmbedding]
-  rw [h_card_eq]
-
-theorem prob_split_uniform_sampling_of_prod {γ δ : Type}
-    -- Fintype & Nonempty assumptions for all types
-    [Fintype γ] [Fintype δ] [Nonempty γ] [Nonempty δ]
-    -- The predicate on the original (combined) type
-    (P : γ × δ → Prop) :
-    -- LHS: Probability over the combined space
-    Pr_{ let r ← $ᵖ (γ × δ) }[ P r ] =
-    -- RHS: Probability over the sequential, split spaces
-    Pr_{ let x ← $ᵖ γ; let y ← $ᵖ δ }[ P (x, y) ] := by
-  classical
-  rw [prob_tsum_form_singleton]
-  let D_rest := fun (x : γ) => (do
-    let y ← $ᵖ δ
-    return (P (x, y))
-  )
-  conv_rhs =>
-    apply prob_tsum_form_split_first (D := $ᵖ γ) (D_rest := D_rest)
-  simp_rw [D_rest]
-  simp_rw [prob_tsum_form_singleton]
-  conv_rhs => enter [1, x]; rw [←ENNReal.tsum_mul_left]
-  rw [←ENNReal.tsum_prod]
-  congr
-  funext xy
-  simp only [PMF.uniformOfFintype_apply, Fintype.card_prod, Nat.cast_mul, mul_ite, mul_one,
-    mul_zero, Prod.mk.eta]
-  by_cases hP : P xy
-  · simp only [hP, ↓reduceIte]
-    rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)]
-  · simp only [hP, ↓reduceIte]
-
-/--
-Proves that a `do` block sampling two independent uniform distributions
-is equal to the single uniform distribution over the product type.
--/
-theorem do_two_uniform_sampling_eq_uniform_prod {α β : Type} [Fintype α] [Fintype β]
-    [Nonempty α] [Nonempty β] :
-    (do
-      let x ← $ᵖ α;
-      let y ← $ᵖ β
-      pure (x, y)
-    ) = $ᵖ (α × β) := by
-  apply PMF.ext
-  intro xy
-  rcases xy with ⟨x, y⟩
-  have h_rhs : ($ᵖ (α × β)) (x, y) = (Fintype.card (α × β) : ENNReal)⁻¹ := by
-    rw [PMF.uniformOfFintype_apply]
-  simp only [PMF.uniformOfFintype_apply, Fintype.card_prod, Nat.cast_mul]
-  dsimp only [Bind.bind, PMF.bind_apply]
-  simp only [PMF.uniformOfFintype_apply]
-  rw [ENNReal.tsum_mul_left]
-  rw [←ENNReal.tsum_prod]
-  rw [ENNReal.tsum_mul_left]
-  rw [←mul_assoc]
-  rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)]
-  conv_rhs =>
-    rw [←mul_one (a := ((Fintype.card α : ENNReal) *  (Fintype.card β : ENNReal) : ENNReal)⁻¹)]
-  congr 1
-  simp only [Prod.mk.eta]
-  dsimp only [pure, PMF.pure_apply]
-  -- ⊢ ∑' (i : F × (Fin ϑ → F)), (pure i) (x, y) = 1
-  rw [tsum_eq_single ((x, y) : α × β)]
-  · -- ⊢ (if (x, y) = (x, y) then 1 else 0) = 1
-    simp only [ite_true]
-  · -- Goal 2: Prove all other terms are 0
-    intro i h_ne
-    simp only [ite_eq_right_iff, one_ne_zero, imp_false]
-    exact id (Ne.symm h_ne)
-
-/-- The probability that a property `P` holds for a uniformly random `r : F` equals
-`ENNReal.ofReal` of the real-valued density `|{x : F // P x}| / |F|`. This is the
-`ENNReal.ofReal`-of-a-real-number form of `prob_uniform_eq_card_filter_div_card`, useful when the
-surrounding goal is stated over `ℝ` rather than `ℝ≥0`. -/
-theorem prob_uniform_eq_ofReal {F : Type} [Fintype F] [Nonempty F]
-    (P : F → Prop) [DecidablePred P] :
-    Pr_{let r ←$ᵖ F}[P r] = ENNReal.ofReal
-                    (((Finset.filter (α := F) P Finset.univ).card : ℝ) / (Fintype.card F : ℝ)) := by
-  convert prob_uniform_eq_card_filter_div_card P using 1
-  rw [ENNReal.ofReal_div_of_pos] <;> norm_num
-  exact Fintype.card_pos
-
-
-/--
-**Generic Probability Splitting Lemma (via Equivalence)**
-
-This lemma proves that a single probability statement over a uniform
-distribution on a type `α` can be rewritten as a sequential probability
-statement over two smaller, independent distributions `γ` and `δ`,
-given an equivalence `e : α ≃ γ × δ`.
-
-This is a formal "change of variables" for probabilities, and it's
-the generic version of `prob_split_randomness_apply`.
-It allows us to "split" one `let` into two.
--/
-theorem prob_split_uniform_sampling_of_equiv_prod {α γ δ : Type}
-    -- Fintype & Nonempty assumptions for all types
-    [Fintype α] [Fintype γ] [Fintype δ]
-    [Nonempty α] [Nonempty γ] [Nonempty δ]
-    -- The equivalence that splits α into γ × δ
-    (e : α ≃ γ × δ)
-    -- The predicate on the original (combined) type
-    (P : α → Prop) :
-    -- LHS: Probability over the combined space
-    Pr_{ let r ← $ᵖ α }[ P r ] =
-    -- RHS: Probability over the sequential, split spaces
-    Pr_{ let x ← $ᵖ γ; let y ← $ᵖ δ }[ P (e.symm (x, y)) ] := by
-  classical
-  -- 1. Unroll the LHS (a single `let`) using `prStx_unfold_final`
-  -- LHS = ∑' r, Pr[r] * (if P r then 1 else 0)
-  rw [prob_tsum_form_singleton]
-  let D_rest := fun (x : γ) => (do
-    let y ← $ᵖ δ
-    return (P (e.symm (x, y)))
-  )
-  conv_rhs =>
-    apply prob_tsum_form_split_first (D := $ᵖ γ) (D_rest := D_rest)
-  simp_rw [D_rest]
-  simp only [PMF.uniformOfFintype_apply, mul_ite, mul_one, mul_zero]
-  simp_rw [prob_tsum_form_singleton]
-  -- ⊢ (∑' (x : α), ... = ∑' (x : γ), (↑(Fintype.card γ))⁻¹ * ∑' (x_1 : δ), ...
-  conv_rhs => enter [1, x]; rw [←ENNReal.tsum_mul_left]
-  -- ⊢ (∑' (x : α), ... = ∑' (x : γ) (i : δ), ...
-  rw [←ENNReal.tsum_prod]
-  -- ⊢ (∑' (x : α), ...) = (∑' (p : γ × δ), ...)
-  conv_lhs =>
-    rw [tsum_eq_sum (α := ENNReal) (β := α) (f :=
-      fun x => if P x then (↑(Fintype.card α))⁻¹ else 0) (s := Finset.univ) (hf := fun b => by
-      simp only [mem_univ, not_true_eq_false, ite_eq_right_iff, ENNReal.inv_eq_zero,
-        IsEmpty.forall_iff]
-    )]
-  conv_rhs =>
-    rw [tsum_eq_sum (α := ENNReal) (β := γ × δ) (f := fun x =>
-      (↑(Fintype.card γ))⁻¹ * (($ᵖ δ) x.2 * if P (e.symm x) then 1 else 0)
-    ) (s := Finset.univ) (hf := fun b => by
-      simp only [mem_univ, not_true_eq_false, IsEmpty.forall_iff]
-    )]
-  -- ⊢ (∑ b : α, .. = ..) = (∑ b : γ × δ, ..)
-  have hcard_of_equiv: (Fintype.card α) = (Fintype.card (γ × δ)) := Fintype.card_congr e
-  rw [Finset.sum_equiv (s := Finset.univ (α := α)) (t := Finset.univ (α := γ × δ))
-    (f := fun x => if P x then (↑(Fintype.card α))⁻¹ else 0)
-    (g := fun x => (↑(Fintype.card γ))⁻¹ * (($ᵖ δ) x.2 * if P (e.symm x) then 1 else 0))
-    (e := e) (hst := fun i => by
-    simp only [mem_univ]
-  ) (hfg := fun i => by
-    simp only [mem_univ, PMF.uniformOfFintype_apply, Equiv.symm_apply_apply, mul_ite, mul_one,
-      mul_zero, forall_const]
-    by_cases hP : P i
-    · simp only [hP, ↓reduceIte]
-      rw [hcard_of_equiv]
-      rw [ENNReal.mul_inv_rev_ENNReal (ha := Fintype.card_ne_zero)]
-      rw [Fintype.card_prod]; rw [Nat.cast_mul]
-    · simp only [hP, ↓reduceIte]
-  )]
-/-- Rewrites the probability over the large `r` space as a sequential
-probability, sampling `r_last` *first*, then `r_init`.
--/
-theorem prob_split_last_uniform_sampling_of_finFun {ϑ : ℕ} {F : Type} [Fintype F] [Nonempty F]
-    (P : F → (Fin ϑ → F) → Prop) :
-    Pr_{ let r ← $ᵖ (Fin (ϑ + 1) → F) }[ P (r (Fin.last ϑ)) (fun i ↦ r i.castSucc) ] =
-    Pr_{ let r_last ← $ᵖ F; let r_init ← $ᵖ (Fin ϑ → F) }[ P r_last r_init ] := by
-  classical
-  rw [prob_tsum_form_doubleton]
-  let e : (Fin (ϑ + 1) → F) ≃ F × (Fin ϑ → F) := equivFinFunSplitLast
-  conv_lhs =>
-    rw [prob_split_uniform_sampling_of_equiv_prod (e := e)]
-  rw [prob_tsum_form_doubleton]
-  congr 1
-  funext xy
-  congr 1
-  have hEquiv_r_last : e.symm (xy.1, xy.2) (Fin.last ϑ) = xy.1 := by
-    simp only [equivFinFunSplitLast, Prod.mk.eta, Equiv.coe_fn_symm_mk, Fin.snoc_last, e]
-  have hEquiv_r_init : ∀ i: Fin ϑ, e.symm (xy.1, xy.2) i.castSucc = xy.2 i := by
-    simp only [equivFinFunSplitLast, Prod.mk.eta, Equiv.coe_fn_symm_mk, Fin.snoc_castSucc,
-      implies_true, e]
-  simp_rw [hEquiv_r_last, hEquiv_r_init]
-
-/--
-Helper lemma for probability marginalization.
-`Pr_{ (x, y) ← D₁ × D₂ }[ P x ] = Pr_{ x ← D₁ }[ P x ]`
--/
-theorem prob_marginalization_first_of_prod {α β : Type} [Fintype α] [Fintype β]
-    [Nonempty α] [Nonempty β] (P : α → Prop) :
-  Pr_{let r ← $ᵖ (α × β) }[ P r.1 ] = Pr_{ let x ← $ᵖ α }[ P x ] := by
-  classical
-  rw [prob_split_uniform_sampling_of_prod]
-  let D_rest := fun (x : α) => (do
-    let y ← $ᵖ β
-    pure (P (x, y).1)
-  )
-  conv_lhs =>
-    apply prob_tsum_form_split_first (D := $ᵖ α) (D_rest := D_rest)
-  simp_rw [prob_tsum_form_singleton]
-  congr 1
-  funext x
-  congr 1
-  unfold D_rest
-  -- ⊢ (D_rest x) True = if P x then 1 else 0
-  simp only [Bind.bind, pure, PMF.bind_const, PMF.pure_apply, eq_iff_iff, true_iff]
-
-/-- A probability is at most one. -/
-lemma prob_le_one {α : Type} (D : PMF α) (P : α → Prop) :
-    Pr_{ let a ← D }[P a] ≤ 1 := by
-  classical
-  rw [ProbabilityTheory.Pr_eq_tsum_indicator]
-  calc ∑' a, D a * (if P a then (1 : ENNReal) else 0)
-      ≤ ∑' a, D a * 1 := by gcongr with a
-                            split <;> simp
-    _ = 1 := by simp [D.tsum_coe]
-
-/-- An impossible event has probability zero. -/
-lemma prob_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop) (h : ∀ a, ¬ P a) :
-    Pr_{ let a ← D }[P a] = 0 := by
-  classical
-  rw [ProbabilityTheory.Pr_eq_tsum_indicator]
-  simp [h]
-
-/-- Sampling `Fin (k + 1) → F` uniformly is sampling the first `k` coordinates and the last
-  coordinate independently: the probability decomposes as a `tsum` over the first `k`
-  coordinates of the conditional probability over the last one. -/
-lemma prob_fin_succ_split {F : Type} [Fintype F] [Nonempty F] {k : ℕ}
-    (P : (Fin (k + 1) → F) → Prop) :
-    Pr_{ let α ←$ᵖ (Fin (k + 1) → F) }[P α] =
-      ∑' y : (Fin k → F), (PMF.uniformOfFintype (Fin k → F)) y *
-        Pr_{ let x ←$ᵖ F }[P (Fin.snoc y x)] := by
-  classical
-  let e : ((Fin k → F) × F) ≃ (Fin (k + 1) → F) :=
-    { toFun := fun r => Fin.snoc r.1 r.2
-      invFun := fun α => (Fin.init α, α (Fin.last k))
-      left_inv := by
-        rintro ⟨y, x⟩
-        simp [Fin.init_snoc]
-      right_inv := by
-        intro α
-        simp [Fin.snoc_init_self] }
-  rw [←ProbabilityTheory.Pr_uniform_equiv e P,
-      Probability.prob_split_uniform_sampling_of_prod (P := fun r ↦ P (e r))]
-  exact Probability.prob_tsum_form_split_first _ _
-
-open scoped Classical in
-/-- The union bound step: if for every value of the first block of randomness the conditional
-  probability `g` is at most `1` when the bad event `Q` holds and at most `c` otherwise, then
-  the total probability is at most `Pr[Q] + c`. -/
-lemma tsum_prob_le_add {α : Type} (D : PMF α) (g : α → ENNReal) (Q : α → Prop) (c : ENNReal)
-    (h : ∀ a, g a ≤ (if Q a then 1 else 0) + c) :
-    ∑' a, D a * g a ≤ Pr_{ let a ← D }[Q a] + c := by
-  have h1 : ∑' a, D a * g a ≤ ∑' a, (D a * (if Q a then 1 else 0) + D a * c) := by
-    refine ENNReal.tsum_le_tsum fun a ↦ ?_
-    rw [←mul_add]
-    exact mul_le_mul_right (h a) _
-  have h2 : ∑' a, (D a * (if Q a then 1 else 0) + D a * c) = Pr_{ let a ← D }[Q a] + c := by
-    rw [ENNReal.tsum_add, ENNReal.tsum_mul_right, D.tsum_coe, one_mul,
-      ProbabilityTheory.Pr_eq_tsum_indicator]
-  exact h2 ▸ h1
-
-/--
-**Monotonicity of Probability**
-
-If event `A` (defined by predicate `f`) implies event `B` (defined by
-predicate `g`) for all outcomes `r`, then the probability of `A`
-is less than or equal to the probability of `B`.
--/
-theorem Pr_le_Pr_of_implies {α : Type} (D : PMF α)
-    (f g : α → Prop)
-    (h_imp : ∀ r, f r → g r) :
-    Pr_{ let r ← D }[ f r ] ≤ Pr_{ let r ← D }[ g r ] := by
-  classical
-  -- 1. Unroll both probability statements into their sum forms
-  rw [prob_tsum_form_singleton D f]
-  rw [prob_tsum_form_singleton D g]
-  -- Goal: ⊢ (∑' r, D r * if f r then 1 else 0) ≤ (∑' r, D r * if g r then 1 else 0)
-  -- 2. Apply tsum_le_tsum: We need to show term-wise inequality
-  apply ENNReal.tsum_le_tsum
-  -- 3. Show the term-wise inequality for each r
-  intro r
-  -- Goal: ⊢ D r * (if f r then 1 else 0) ≤ D r * (if g r then 1 else 0)
-  -- Use `mul_le_mul_left'` which requires proving D r ≠ 0 and D r ≠ ∞
-  -- Or simpler: use `mul_le_mul_of_nonneg_left` which only requires D r ≥ 0
-  apply mul_le_mul_of_nonneg_left
-  -- 4. Prove the inequality between the `ite` terms using the implication
-  · by_cases hf : f r
-    · simp only [hf, ↓reduceIte, h_imp, le_refl]
-    · simp only [hf, ↓reduceIte, zero_le]
-  -- 5. Prove the factor `D r` is non-negative
-  · exact zero_le -- Probabilities are always non-negative
-
-theorem Pr_multi_let_equiv_single_let {α β : Type}
-    (D₁ : PMF α) (D₂ : PMF β) -- Assuming D₂ is independent for simplicity
-    (P : α → β → Prop) :
-    -- LHS: Multi-let probability
-    Pr_{ let x ← D₁; let y ← D₂ }[ P x y ]
-    =
-    -- RHS: Single-let probability over the combined distribution
-    let D_combined : PMF (α × β) := do { let x ← D₁; let y ← D₂; pure (x, y) }
-    Pr_{ let r ← D_combined }[ P r.1 r.2 ] := by
-  classical
-  dsimp only [Lean.Elab.WF.paramLet] -- Expose LHS do block
-  simp only [bind_pure_comp, _root_.map_bind, Functor.map_map]
-
-/--
-**Law of Total Probability (Partitioning an Event)**
-The probability of an event `f r` occurring can be calculated by
-summing the probabilities of two disjoint cases:
-1. `f r` occurs AND `g r` occurs.
-2. `f r` occurs AND `g r` does NOT occur.
-Good to be used with `Pr_multi_let_equiv_single_let`
--/
-theorem Pr_add_split_by_complement {α : Type} (D : PMF α)
-    (f g : α → Prop) :
-    Pr_{ let r ← D }[ f r ] =
-    (D >>= (fun r => pure (g r ∧ f r))) True + Pr_{ let r ← D }[ ¬(g r) ∧ f r ] := by
-  classical
-  -- 1. Unroll all three probability statements into their tsum forms
-  rw [prob_tsum_form_singleton D f]
-  rw [prob_tsum_form_singleton D (fun r => g r ∧ f r)]
-  rw [prob_tsum_form_singleton D (fun r => ¬(g r) ∧ f r)]
-  -- 2. Combine the two sums on the RHS using ENNReal.tsum_add
-  -- Need to prove summability for both, which is true in ENNReal
-  rw [← ENNReal.tsum_add]
-  congr 1
-  funext r
-  rw [←mul_add]
-  congr 1
-  by_cases hg : g r
-  · simp only [hg, true_and, not_true_eq_false, false_and, ↓reduceIte, add_zero]
-  · simp only [hg, false_and, ↓reduceIte, not_false_eq_true, true_and, zero_add]
-
-example : -- Pr_split_two_complements
-  let f := fun (x, _) => x = true
-  let g := fun (_, y) => y = true
-  Pr_{ let x ← $ᵖ Bool; let y ← $ᵖ Bool }[ f (x, y) ] =
-  Pr_{ let x ← $ᵖ Bool; let y ← $ᵖ Bool }[ g (x, y) ∧ f (x, y) ] +
-  Pr_{ let x ← $ᵖ Bool; let y ← $ᵖ Bool }[ ¬(g (x, y)) ∧ f (x, y) ] := by
-    let D : PMF (Bool × Bool) := do
-      let x ← $ᵖ Bool
-      let y ← $ᵖ Bool
-      pure (x, y)
-    set f := fun ((x, y) : (Bool × Bool)) => x = true
-    set g := fun ((x, y) : (Bool × Bool)) => y = true
-    simp only
-    rw [Pr_multi_let_equiv_single_let (D₁ := $ᵖ Bool) (D₂ := $ᵖ Bool)]
-    rw [Pr_multi_let_equiv_single_let (D₁ := $ᵖ Bool) (D₂ := $ᵖ Bool)]
-    rw [Pr_multi_let_equiv_single_let (D₁ := $ᵖ Bool) (D₂ := $ᵖ Bool)]
-    rw [Pr_add_split_by_complement (D := D) (f := f) (g := g)]
-
-/--
-`Pr_{r ← D}[ P_out ∧ P(r) ] = (if P_out then Pr_{r ← D}[ P(r) ] else 0)`
--/
-theorem prob_const_and_prop_eq_ite {α : Type} (D : PMF α)
-    (P_out : Prop) [Decidable P_out]
-    (P : α → Prop) :
-    Pr_{ let r ← D }[ P_out ∧ P r ] = if P_out then Pr_{ let r ← D }[ P r ] else 0 := by
-  classical
-  by_cases h_P_out : P_out
-  · -- Case 1: P_out is True
-    simp only [h_P_out, ite_true, true_and]
-  · -- Case 2: P_out is False
-    simp only [h_P_out, ite_false, false_and]
-    rw [prob_tsum_form_singleton]
-    simp only [ite_false, mul_zero, tsum_zero]
-
-/-- Congruence lemma for Probability: If P(x) ↔ Q(x) for all x, then Pr[P] = Pr[Q]. -/
-lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
-    (h : ∀ x, P x ↔ Q x) : Pr_{ let x ← D }[ P x ] = Pr_{ let x ← D }[ Q x ] := by
-  congr 2; funext x;
-  congr 1; exact propext (h x)
-
-/--
-**Union Bound (binary form)**
-
-The probability of a disjunction of two events is at most the sum of their individual
-probabilities.
--/
-theorem Pr_or_le {α : Type} (D : PMF α) (f g : α → Prop) :
-    Pr_{ let r ← D }[ f r ∨ g r ] ≤ Pr_{ let r ← D }[ f r ] + Pr_{ let r ← D }[ g r ] := by
-  classical
-  rw [prob_tsum_form_singleton, prob_tsum_form_singleton, prob_tsum_form_singleton,
-    ← ENNReal.tsum_add]
-  apply ENNReal.tsum_le_tsum
-  intro r
-  rw [← mul_add]
-  refine mul_le_mul_of_nonneg_left ?_ zero_le
-  by_cases hf : f r <;> by_cases hg : g r <;> simp [hf, hg]
-
-/--
-**Union Bound (over a finite index set)**
-
-The probability that `∃ i, f i r` holds is at most the sum, over `i`, of the probabilities that
-`f i r` holds.
--/
-theorem Pr_exists_le {α ι : Type} [Fintype ι] (D : PMF α) (f : ι → α → Prop) :
-    Pr_{ let r ← D }[ ∃ i, f i r ] ≤ ∑ i, Pr_{ let r ← D }[ f i r ] := by
-  classical
-  have key : ∀ (s : Finset ι),
-      Pr_{ let r ← D }[ ∃ i ∈ s, f i r ] ≤ ∑ i ∈ s, Pr_{ let r ← D }[ f i r ] := by
-    intro s
-    induction s using Finset.induction with
-    | empty =>
-      have h0 : Pr_{ let r ← D }[ ∃ i ∈ (∅ : Finset ι), f i r ]
-          = Pr_{ let r ← D }[ (False : Prop) ] :=
-        Pr_congr (fun r => by simp)
-      rw [Finset.sum_empty, h0, prob_tsum_form_singleton]
-      simp
-    | insert a s ha ih =>
-      have hcongr : Pr_{ let r ← D }[ ∃ i ∈ insert a s, f i r ] =
-          Pr_{ let r ← D }[ f a r ∨ ∃ i ∈ s, f i r ] :=
-        Pr_congr (fun r => by
-          constructor
-          · rintro ⟨i, hi, hfi⟩
-            rcases Finset.mem_insert.mp hi with rfl | hi
-            · exact Or.inl hfi
-            · exact Or.inr ⟨i, hi, hfi⟩
-          · rintro (hfa | ⟨i, hi, hfi⟩)
-            · exact ⟨a, Finset.mem_insert_self a s, hfa⟩
-            · exact ⟨i, Finset.mem_insert_of_mem hi, hfi⟩)
-      rw [hcongr]
-      calc Pr_{ let r ← D }[ f a r ∨ ∃ i ∈ s, f i r ]
-          ≤ Pr_{ let r ← D }[ f a r ] + Pr_{ let r ← D }[ ∃ i ∈ s, f i r ] := Pr_or_le D _ _
-        _ ≤ Pr_{ let r ← D }[ f a r ] + ∑ i ∈ s, Pr_{ let r ← D }[ f i r ] := by gcongr
-        _ = ∑ i ∈ insert a s, Pr_{ let r ← D }[ f i r ] := by rw [Finset.sum_insert ha]
-  simpa using key Finset.univ
-
-/--
-**Marginal Bound for Sequential Sampling**
-
-If, for every fixed outcome `b` of the second sample, the probability over the first sample is
-bounded by a constant `c` (not depending on `b`), then the same bound holds for the probability
-over the full sequential sample.
--/
-theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : α → β → Prop)
-    {c : ENNReal} (h : ∀ b, Pr_{ let a ← Da}[Q a b] ≤ c) :
-    Pr_{ let b ← Db; let a ← Da }[ Q a b ] ≤ c := by
-  classical
-  let D_rest : β → PMF Prop := fun b => (do let a ← Da; return (Q a b))
-  calc Pr_{ let b ← Db; let a ← Da }[ Q a b ]
-      = ∑' b, Db b * (D_rest b) True := prob_tsum_form_split_first Db D_rest
-    _ ≤ ∑' b, Db b * c := by
-        apply ENNReal.tsum_le_tsum
-        intro b
-        exact mul_le_mul_of_nonneg_left (h b) zero_le
-    _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
+/-! ## Polynomial identity bounds -/
 
 /-- **Schwartz-Zippel**, in probability form at an arbitrary degree bound: for a nonzero
 `n`-variate polynomial `P` of total degree at most `d` over a finite domain `R`,
 
-  `Pr_{r ←$ᵖ R^n} [eval r P = 0] ≤ d / |R|` .
-
-The full-carrier case of `prob_eval_zero_univ_le_div`; `Fintype.fieldOfDomain` supplies the
-field structure. `MvPolynomial.schwartz_zippel_sum_degreeOf` gives a tighter coordinatewise
-bound where that shape is wanted. -/
+  `Pr{r ← $ᵗ R^n}[eval r P = 0] ≤ d / |R|`.
+-/
 lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
-    {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
     {n d : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ d) :
-    Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
-      (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
-  classical
-  let : Field R := Fintype.fieldOfDomain R
+    Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
+      (d : ℝ≥0∞) / Fintype.card R := open scoped Classical in by
+  let : Field R := @Fintype.fieldOfDomain R _ _ (Classical.decEq R) _
   exact prob_eval_zero_univ_le_div P h_nonzero h_deg
 
-/-- **Schwartz-Zippel**, in probability form at the degree bound `n`: the `d := n`
-specialisation of `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`. -/
-lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+/-- The `d := n` specialization of
+`prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`. -/
+lemma prob_schwartz_zippel_mv_polynomial
+    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
     {n : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ n) :
-    Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
-      (n : ℝ≥0) / (Fintype.card R : ℝ≥0) :=
+    Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
+      (n : ℝ≥0∞) / Fintype.card R :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
 
-/-- The polynomial identity lemma in individual-degree form: for a nonzero `m`-variate
-polynomial `P` of individual degree `< d` in each variable,
-
-  `Pr_{r ←$ᵖ R^m} [eval r P = 0] ≤ m * (d - 1) / |R|` .
-
-Obtained from `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le` and
-`MvPolynomial.totalDegree_le_of_degreeOf_lt`.
-
-At `d = 0` the hypothesis `∀ i, P.degreeOf i < 0` is unsatisfiable for `m ≥ 1`, and for
-`m = 0` it is vacuous with both sides `0`, a nonzero constant never vanishing. -/
-lemma prob_polynomial_identity_le {R : Type} [CommRing R] [IsDomain R] [Fintype R]
+/-- The polynomial identity lemma in individual-degree form. -/
+lemma prob_polynomial_identity_le
+    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
     {m d : ℕ} (P : MvPolynomial (Fin m) R)
     (h_nonzero : P ≠ 0) (h_indiv_deg : ∀ i, P.degreeOf i < d) :
-    Pr_{ let r ←$ᵖ (Fin m → R) }[ MvPolynomial.eval r P = 0 ] ≤
-      ((m * (d - 1) : ℕ) : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
+    Pr{let r ← $ᵗ (Fin m → R)}[MvPolynomial.eval r P = 0] ≤
+      (m * (d - 1) : ℕ) / (Fintype.card R : ℝ≥0∞) := by
   have h_total_deg : P.totalDegree ≤ m * (d - 1) :=
     MvPolynomial.totalDegree_le_of_degreeOf_lt P h_indiv_deg
   exact prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_total_deg
 
-/-- Pushforward of `PMF.uniformOfFintype α` under a map `f : α → β` whose fibers
-over the image all have the same cardinality `k > 0` is the uniform distribution
-on the image of `f`.
+/-! ## Linear collision bounds -/
 
-Useful when `f` is an affine-linear surjection: every fiber is a translate of
-the kernel and hence has constant cardinality. The proximity-gap proofs use this
-to bridge the coefficient-parameterised sampling of an affine span to the
-uniform sampling of the affine-span finset. -/
-theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
-    {α β : Type*} [Fintype α] [Nonempty α] [DecidableEq β]
-    (f : α → β) {k : ℕ} (hk : 0 < k)
-    (hfib : ∀ b ∈ Finset.univ.image f,
-      ((Finset.univ : Finset α).filter (f · = b)).card = k) :
-    (PMF.uniformOfFintype α).map f =
-      PMF.uniformOfFinset (Finset.univ.image f)
-        (Finset.image_nonempty.mpr Finset.univ_nonempty) := by
-  classical
-  -- Total count = k * |image|.
-  have h_card : Fintype.card α = k * (Finset.univ.image f).card := by
-    rw [show Fintype.card α = (Finset.univ : Finset α).card from rfl,
-        Finset.card_eq_sum_card_image f Finset.univ,
-        Finset.sum_const_nat hfib]
-    ring
-  have h_k_ne : (k : ENNReal) ≠ 0 := Nat.cast_ne_zero.mpr hk.ne'
-  have h_k_lt_top : (k : ENNReal) ≠ ⊤ := ENNReal.natCast_ne_top _
-  -- PMF extensionality.
-  ext b
-  rw [PMF.map_apply, PMF.uniformOfFinset_apply]
-  simp_rw [PMF.uniformOfFintype_apply]
-  -- LHS: ∑' a, if b = f a then (Fintype.card α)⁻¹ else 0
-  rw [tsum_fintype, Finset.sum_ite, Finset.sum_const_zero, add_zero,
-      Finset.sum_const, nsmul_eq_mul]
-  by_cases hb : b ∈ Finset.univ.image f
-  · -- b ∈ image: filter (b = f ·) has card k.
-    rw [ite_eq_left hb]
-    have h_filter_card : (Finset.univ.filter (fun a => b = f a)).card = k := by
-      have h_swap :
-          Finset.univ.filter (fun a => b = f a) =
-          Finset.univ.filter (fun a => f a = b) := by
-        ext a
-        simp [eq_comm]
-      rw [h_swap]
-      exact hfib b hb
-    rw [h_filter_card, h_card]
-    -- Goal: ↑k * (↑(k * |image|))⁻¹ = (↑|image|)⁻¹
-    push_cast
-    rw [ENNReal.mul_inv (Or.inl h_k_ne) (Or.inl h_k_lt_top),
-        ← mul_assoc, ENNReal.mul_inv_cancel h_k_ne h_k_lt_top, one_mul]
-  · -- b ∉ image: filter is empty.
-    rw [ite_eq_right hb]
-    have h_empty : Finset.univ.filter (fun a => b = f a) = ∅ := by
-      ext a
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.notMem_empty,
-        iff_false]
-      intro h
-      apply hb
-      exact h ▸ Finset.mem_image_of_mem f (Finset.mem_univ a)
-    rw [h_empty, Finset.card_empty]
-    simp
-
-/-! ## Collision bounds
-
-Bounds of the form `≤ 1/|F|`, of the shape required by the pairwise-collision hypothesis of
-`Probability.exists_large_image_of_pairwise_collision_bound`.
-
-* `Pr_map_eq` — change of variables for a `PMF.map`, reducing a probability over a
-  pushforward distribution to one over the sampling it is pushed forward from.
-* `prob_dotProduct_eq_zero_le` — a nonzero `F`-linear form vanishes with probability
-  `≤ 1/|F|`.
-* `prob_uniform_le_inv_of_card_le_one` — a predicate with at most one satisfying value has
-  uniform-sampling probability `≤ 1/|F|`.
--/
-
-/-- Change of variables: the probability of an event `Q` under a pushforward distribution
-`p.map g` is the probability of the pulled-back event `Q ∘ g` under `p`. -/
-theorem Pr_map_eq {α β : Type} (p : PMF α) (g : α → β) (Q : β → Prop) :
-    Pr_{ let b ← p.map g }[ Q b ] = Pr_{ let a ← p }[ Q (g a) ] := by
-  classical
-  rw [prob_tsum_form_singleton, prob_tsum_form_singleton]
-  rw [PMF.map]
-  simp only [PMF.bind_apply, Function.comp_apply, PMF.pure_apply]
-  rw [show (∑' (x : β), (∑' (a : α), p a * if x = g a then 1 else 0) * if Q x then 1 else 0)
-        = ∑' (x : β) (a : α), (p a * if x = g a then 1 else 0) * if Q x then 1 else 0 from by
-        simp_rw [ENNReal.tsum_mul_right]]
-  rw [ENNReal.tsum_comm]
-  congr 1
-  ext a
-  rw [tsum_eq_single (g a)]
-  · simp [mul_comm]
-  · intro b hb
-    simp [hb]
-
-/-- A nonzero `F`-linear form vanishes with probability exactly `1/|F|`: for nonzero
-`d : Fin k → F`, the form `v ↦ ∑ j, d j * v j` has as kernel a hyperplane of `|F| ^ (k-1)`
-points out of `|F| ^ k`. -/
-theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k : ℕ}
+/-- A nonzero `F`-linear form vanishes with probability exactly `1 / |F|`. -/
+theorem prob_dotProduct_eq_zero_eq_inv_card
+    {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
-    Pr_{ let v ←$ᵖ (Fin k → F) }[ (∑ j, d j * v j = 0) ]
-      = (Fintype.card F : ENNReal)⁻¹ := by
-  classical
-  -- The `F`-linear form `v ↦ ∑ⱼ dⱼ · vⱼ`.
+    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] =
+      (Fintype.card F : ℝ≥0∞)⁻¹ := open scoped Classical in by
+  let p : (Fin k → F) → Prop := fun v ↦ ∑ j, d j * v j = 0
+  let decP : DecidablePred p := fun _ ↦ Classical.propDecidable _
+  change Pr{let v ← $ᵗ (Fin k → F)}[p v] = (Fintype.card F : ℝ≥0∞)⁻¹
   set L : (Fin k → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
   have hLapply : ∀ v, L v = ∑ j, d j * v j := by
     intro v
     simp only [hL, LinearMap.coe_sum, Finset.sum_apply, LinearMap.smul_apply,
       LinearMap.proj_apply, smul_eq_mul]
-  -- `L` is surjective: pick a coordinate `j₀` with `dⱼ₀ ≠ 0`.
   obtain ⟨j₀, hj₀⟩ : ∃ j, d j ≠ 0 := by
     by_contra h
     exact hd (funext fun j ↦ not_not.mp (fun hj ↦ h ⟨j, hj⟩))
@@ -765,83 +88,71 @@ theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k 
     · rw [Pi.single_eq_same, mul_div_cancel₀ _ hj₀]
     · intro b _ hb
       rw [Pi.single_eq_of_ne hb, mul_zero]
-    · intro h; exact absurd (Finset.mem_univ j₀) h
-  -- Rank–nullity (via the first isomorphism theorem) gives the kernel cardinality.
+    · intro h
+      exact absurd (Finset.mem_univ j₀) h
   have hquot : Nat.card ((Fin k → F) ⧸ LinearMap.ker L) = Fintype.card F := by
     rw [Nat.card_congr (L.quotKerEquivOfSurjective hsurj).toEquiv, Nat.card_eq_fintype_card]
-  have hcard : Fintype.card (Fin k → F)
-      = Fintype.card (LinearMap.ker L) * Fintype.card F := by
-    have := Submodule.card_eq_card_quotient_mul_card (LinearMap.ker L)
-    rw [hquot] at this
-    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card]
-    exact this
-  -- The event set `{v | ∑ⱼ dⱼ · vⱼ = 0}` is exactly the kernel of `L`.
-  have hfilter : (Finset.univ.filter (fun v : Fin k → F ↦ ∑ j, d j * v j = 0)).card
-      = Fintype.card (LinearMap.ker L) := by
-    rw [Fintype.card_congr (Equiv.subtypeEquivRight (fun x ↦ by
+  let fintypeKer : Fintype (LinearMap.ker L) := Fintype.ofFinite _
+  have hcard : Fintype.card (Fin k → F) =
+      @Fintype.card (LinearMap.ker L) fintypeKer * Fintype.card F := by
+    have h := Submodule.card_eq_card_quotient_mul_card (LinearMap.ker L)
+    rw [hquot] at h
+    rw [← Nat.card_eq_fintype_card,
+      ← @Nat.card_eq_fintype_card (LinearMap.ker L) fintypeKer]
+    exact h
+  have hfilter :
+      (@Finset.filter (Fin k → F) p decP Finset.univ).card =
+        @Fintype.card (LinearMap.ker L) fintypeKer := by
+    let fintypeP : Fintype {v // p v} := Fintype.ofFinite _
+    rw [@Fintype.card_congr _ _ fintypeKer fintypeP
+      (Equiv.subtypeEquivRight (fun x ↦ by
       rw [LinearMap.mem_ker, hLapply])),
-      Fintype.card_subtype (fun v : Fin k → F ↦ ∑ j, d j * v j = 0)]
-  rw [prob_uniform_eq_card_filter_div_card, hfilter, hcard]
+      @Fintype.card_subtype _ _ p fintypeP decP]
+  rw [@SampleableType.prEvent_uniformSample _ _ _ p decP, hfilter, hcard]
   push_cast
-  have hkne : (Fintype.card (LinearMap.ker L) : ENNReal) ≠ 0 := by
+  have hkne : (@Fintype.card (LinearMap.ker L) fintypeKer : ℝ≥0∞) ≠ 0 := by
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true]
-  have hF : (Fintype.card F : ENNReal) ≠ 0 := by
-    have : Nonempty F := ⟨0⟩
+  have hF : (Fintype.card F : ℝ≥0∞) ≠ 0 := by
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true]
   rw [eq_comm, ← one_div,
     ENNReal.div_eq_div_iff (mul_ne_zero hkne hF)
       (ENNReal.mul_ne_top (by simp) (by simp)) hF (by simp)]
   ring
 
-/-- `≤`-form of `prob_dotProduct_eq_zero_eq_inv_card`: a nonzero `F`-linear form vanishes
-with probability at most `1/|F|` over a uniformly random argument. -/
-theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
+/-- `≤`-form of `prob_dotProduct_eq_zero_eq_inv_card`. -/
+theorem prob_dotProduct_eq_zero_le
+    {F : Type} [Field F] [Fintype F] [SampleableType F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
-    Pr_{ let v ←$ᵖ (Fin k → F) }[ (∑ j, d j * v j = 0) ]
-      ≤ (Fintype.card F : ENNReal)⁻¹ :=
+    Pr{let v ← $ᵗ (Fin k → F)}[(∑ j, d j * v j) = 0] ≤
+      (Fintype.card F : ℝ≥0∞)⁻¹ :=
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
-/-- A predicate with at most one satisfying value holds with probability at most `1/|F|`
-under uniform sampling from `F`. -/
-theorem prob_uniform_le_inv_of_card_le_one {F : Type} [Fintype F] [Nonempty F]
-    (P : F → Prop) [DecidablePred P] (h : (Finset.univ.filter P).card ≤ 1) :
-    Pr_{ let r ←$ᵖ F }[ P r ] ≤ (Fintype.card F : ENNReal)⁻¹ := by
-  rw [prob_uniform_eq_card_filter_div_card]
-  rw [show (Fintype.card F : ENNReal)⁻¹ = (1 : ENNReal) / (Fintype.card F : ENNReal) from
-    (one_div _).symm]
-  push_cast
-  gcongr
-  exact_mod_cast h
+/-! ## Product membership bounds -/
 
-end ProbabilityTools
-
-section UniformProductBound
-
-/-- For a uniformly random `xs : Fin t → ι` into a finite nonempty type, the probability that
-every coordinate lands in a fixed `A : Finset ι` is `(|A| / |ι|) ^ t`: the satisfying
-functions are exactly `Fintype.piFinset (fun _ ↦ A)`, of cardinality `|A| ^ t`. -/
-theorem prob_uniform_pi_mem_finset_eq {ι : Type} [Fintype ι] [Nonempty ι]
-    (A : Finset ι) (t : ℕ) :
-    Pr_{ let xs ←$ᵖ (Fin t → ι) }[ ∀ i, xs i ∈ A ] =
-      ((A.card : ENNReal) / (Fintype.card ι : ENNReal)) ^ t := by
-  classical
-  rw [prob_uniform_eq_card_filter_div_card]
-  have hfilter : Finset.filter (fun xs : Fin t → ι ↦ ∀ i, xs i ∈ A) Finset.univ =
+/-- For a uniformly random `xs : Fin t → ι`, the probability that every coordinate lands in
+`A` is `(|A| / |ι|) ^ t`. -/
+theorem prob_uniform_pi_mem_finset_eq
+    {ι : Type} [Fintype ι] [SampleableType ι] (A : Finset ι) (t : ℕ) :
+    Pr{let xs ← $ᵗ (Fin t → ι)}[∀ i, xs i ∈ A] =
+      ((A.card : ℝ≥0∞) / Fintype.card ι) ^ t := open scoped Classical in by
+  let p : (Fin t → ι) → Prop := fun xs ↦ ∀ i, xs i ∈ A
+  let decP : DecidablePred p := fun _ ↦ Classical.propDecidable _
+  change Pr{let xs ← $ᵗ (Fin t → ι)}[p xs] = _
+  rw [@SampleableType.prEvent_uniformSample _ _ _ p decP]
+  have hfilter : @Finset.filter (Fin t → ι) p decP Finset.univ =
       Fintype.piFinset (fun _ : Fin t ↦ A) := by
     ext xs
-    simp [Fintype.mem_piFinset]
+    simp [p, Fintype.mem_piFinset]
   rw [hfilter, Fintype.card_piFinset]
   simp only [Finset.prod_const, Finset.card_univ, Fintype.card_fin, Fintype.card_fun]
   push_cast
   rw [div_eq_mul_inv, div_eq_mul_inv, mul_pow, ENNReal.inv_pow]
 
 /-- `≤`-form of `prob_uniform_pi_mem_finset_eq`. -/
-theorem prob_uniform_pi_mem_finset_le {ι : Type} [Fintype ι] [Nonempty ι]
-    (A : Finset ι) (t : ℕ) :
-    Pr_{ let xs ←$ᵖ (Fin t → ι) }[ ∀ i, xs i ∈ A ] ≤
-      ((A.card : ENNReal) / (Fintype.card ι : ENNReal)) ^ t :=
+theorem prob_uniform_pi_mem_finset_le
+    {ι : Type} [Fintype ι] [SampleableType ι] (A : Finset ι) (t : ℕ) :
+    Pr{let xs ← $ᵗ (Fin t → ι)}[∀ i, xs i ∈ A] ≤
+      ((A.card : ℝ≥0∞) / Fintype.card ι) ^ t :=
   le_of_eq (prob_uniform_pi_mem_finset_eq A t)
-
-end UniformProductBound
 
 end Probability

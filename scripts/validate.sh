@@ -23,6 +23,7 @@ Default checks:
   - lake exe toyproblem-runtime
   - lake exe hachi-runtime
   - fail on non-`sorry` warnings under ArkLib/
+  - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
   - python3 ./scripts/check-docs-integrity.py
@@ -88,6 +89,11 @@ python3 ./scripts/check-warning-log.py "$build_log" \
   --path-prefix ArkLib/ \
   --exclude-substring 'declaration uses `sorry`' \
   --label 'ArkLib non-sorry warnings'
+
+echo ""
+echo "# Checking native probability retirement"
+./scripts/test-retiredsweep.sh
+lake exe retiredsweep --require-empty
 
 echo ""
 echo "# Running Lean-native source-policy gate"

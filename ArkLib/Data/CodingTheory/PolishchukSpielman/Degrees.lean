@@ -316,9 +316,7 @@ lemma ps_degX_bound {F : Type} [Field F]
       have h_filter_card : (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > b_y - natDegreeY A := by
         apply_rules [ps_filter_nonzero_card_y]
         all_goals linarith
-      have h_mul : natDegreeY B = natDegreeY P + natDegreeY A := by
-        simpa [natDegreeY, hBA] using Polynomial.natDegree_mul hP hA
-      omega
+      grind +qlia [natDegreeY, Polynomial.natDegree_mul]
     have := ps_exists_y_preserve_degree_x P hP (P_y.filter (fun y ↦ evalY y A ≠ 0)) ?_ <;> aesop
   -- Since $B = P * A$, we have $evalY y B = evalY y P * evalY y A$.
   have h_eval_Y_B : evalY y B = evalY y P * evalY y A := by unfold evalY; aesop

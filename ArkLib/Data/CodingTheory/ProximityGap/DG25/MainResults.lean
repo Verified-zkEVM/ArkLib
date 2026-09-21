@@ -32,8 +32,8 @@ variable {κ : Type k} {ι : Type l} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type v} [Semiring F] [Fintype F]
 variable {A : Type w} [Fintype A] [DecidableEq A] [AddCommMonoid A] [Module F A]
 section MainResults
-variable {F : Type} [CommRing F] [Fintype F] [NoZeroDivisors F] [DecidableEq F]
-  -- switch to Type for `Pr_{...}[...]` usage
+variable {F : Type} [CommRing F] [Fintype F] [SampleableType F] [NoZeroDivisors F] [DecidableEq F]
+  -- switch to Type for `Pr{...}[...]` usage
   {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A] [Module.Free F A]
   -- Semiring.toModule (R := A) => Module A A, plus Ring A for `RS code` theorems?
 variable (MC : ModuleCode ι F A) [Nontrivial MC]
@@ -145,7 +145,7 @@ def constructInterleavedCodewordsAndRowWiseCA
       -- which can be derived from hR_star_card
     -- For any row i, R_star_card implies the proximity gap property applies to that row
     have h_P_affineCombineRow:
-      (Pr_{ let r ←$ᵖ F }[ -- Probability notation
+      (Pr{let r ←$ᵗ F }[ -- Probability notation
         (Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e: Prop)
       ] > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0))) := by
       -- Goal: Show probability > ε / q
@@ -178,8 +178,7 @@ def constructInterleavedCodewordsAndRowWiseCA
         lt_of_lt_of_le hR_star_card (Finset.card_le_card R_star_subset)
       -- Convert cardinality to probability: `Pr[P r] = card {r | P r} / card F`
       simp only [ENNReal.coe_natCast]
-      rw [prob_uniform_eq_card_filter_div_card]
-      simp only [ENNReal.coe_natCast]
+      rw [SampleableType.prEvent_uniformSample]
       rw [gt_iff_lt]
       apply ENNReal.div_lt_div_right
       · simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true]
@@ -322,7 +321,7 @@ lemma affineWord_close_to_affineInterleavedCodeword
       -- Assuming d > 0 for non-trivial codes.
       rw [Code.uniqueDecodingRadius] at he
       let res :=  Code.dist_pos_of_Nontrivial (ι := ι) (F := A) (C := MC) (hC := by
-        (expose_names; exact Set.nontrivial_coe_sort.mp inst_8))
+        exact Set.nontrivial_coe_sort.mp inferInstance)
       exact res
     -- We need 2e < d
     have h_2e_lt_d : 2 * e < d := by
@@ -388,6 +387,7 @@ def R_star_star_filter_columns_not_in_D (U₀ U₁ : InterleavedWord A (Fin m) �
   (R_star_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁ V₀.val V₁.val).filter
     (fun p => p.2 ∉ D) in
 omit [Nonempty ι] [NoZeroDivisors F] [Fintype A] [Module.Free F A] [Nontrivial ↥MC] in
+omit [SampleableType F] in
 lemma R_star_star_eq_union (U₀ U₁ : InterleavedWord A (Fin m) ι)
     (V₀ V₁ : MC ^⋈ (Fin m)) (e : ℕ) (D : Finset ι):
   (R_star_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁ V₀.val V₁.val) =
@@ -401,6 +401,7 @@ lemma R_star_star_eq_union (U₀ U₁ : InterleavedWord A (Fin m) ι)
 omit [Nonempty ι] [NoZeroDivisors F] [DecidableEq F] [Fintype A]
   [Module.Free F A] [Nontrivial ↥MC] in
 open Classical in
+omit [SampleableType F] in
 lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : InterleavedWord A (Fin m) ι)
     (V₀ V₁ : MC^⋈(Fin m)) (e : ℕ) (D : Finset ι) :
   Disjoint (R_star_star_filter_columns_in_D MC U₀ U₁ V₀ V₁ (e := e) D)
@@ -491,6 +492,7 @@ lemma D_card_le_e_implies_interleaved_correlatedAgreement₂
 
 omit [Nonempty ι] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
   [Nontrivial ↥MC] in
+omit [SampleableType F] in
 /-- **Lemma 3.3 (Part 1): Bound on agreeing cells outside D**
     The set of agreeing cells `(r, j)` where `j ∉ D` is exactly the
     Cartesian product of `R*` and `Dᶜ` (the columns not in D).
@@ -539,6 +541,7 @@ lemma card_agreeing_cells_notin_D {U₀ U₁ : InterleavedWord A (Fin m) ι} {V�
 
 
 omit [Nonempty ι] [DecidableEq F] [Fintype A] [Nontrivial ↥MC] in
+omit [SampleableType F] in
 /-- **Lemma 3.3 (Part 2): Bound on agreeing cells inside D**
 For any column `j` that *is* in the disagreement set `D`, there is at most one
 parameter `r` in `R*` such that the columns `Uᵣ j` and `Vᵣ j` agree.
@@ -821,12 +824,12 @@ omit [NoZeroDivisors F] [Module.Free F A] [Nonempty ι] [Fintype A] [DecidableEq
   [DecidableEq ι] [Nontrivial ↥MC] in
 lemma probShadedAffineCombInterleavedCodeword_gt_threshold_iff
     (U₀ U₁ : InterleavedWord A (Fin m) ι) :
-  Pr_{ let r ←$ᵖ F }[
+  Pr{let r ←$ᵗ F }[
     Δ₀(affineLineEvaluation (F := F) U₀ U₁ r,
       MC ^⋈ (Fin m)) ≤ e ] > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0))
   ↔ (R_star (A := A) (F := F) (ι := ι) (C := MC) (m := m) (e := e) U₀ U₁).card > ε := by
   conv_lhs =>
-    rw [prob_uniform_eq_card_filter_div_card]
+    rw [SampleableType.prEvent_uniformSample]
     rw [gt_iff_lt]
     simp only [ENNReal.coe_natCast]
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true,
@@ -988,14 +991,14 @@ theorem affine_gaps_lifted_to_interleaved_codes {m : ℕ} {ε : ℕ}
     (m := m) (e := e) (ε := ε) U₀ U₁ hProximityGapAffineLines hR_star_card_gt_ε) (h_D_card_le_e)
 
 /-- For each `r_{ϑ-1} ∈ 𝔽_q`, we abbreviate:
-`p(r_{ϑ-1}) := Pr_{(r_0, ..., r_{ϑ-2}) ∈ 𝔽_q^{ϑ-1}} [`
+`p(r_{ϑ-1}) := Pr{(r_0, ..., r_{ϑ-2}) ∈ 𝔽_q^{ϑ-1}} [`
   `d([⊗_{i=0}^{ϑ-2}(1-r_i, r_i)] · [(1-r_{ϑ-1}) · U₀ + r_{ϑ-1} · U₁], C) ≤ e]`
 We define `R* := {r_{ϑ-1} ∈ 𝔽_q | p(r_{ϑ-1}) > (ϑ-1) · ε/q}`. We note that
 `R*` is precisely the set of parameters `r_{ϑ-1} ∈ 𝔽_q` for which the half-length
 matrix `(1-r_{ϑ-1}) · U₀ + r_{ϑ-1} · U₁` fulfills the inductive hypothesis (that is,
 the hypothesis of Definition 2.3, with respect to the smaller list size parameter) -/
 def R_star_tensor_filter (U₀ U₁ : (Fin (2 ^ m)) → Word A ι) (r_affine_combine : F) : Prop :=
-  (Pr_{let r ← $ᵖ (Fin m → F)}[ -- This syntax only works with (A : Type 0)
+  (Pr{let r ← $ᵗ (Fin m → F)}[ -- This syntax only works with (A : Type 0)
     Δ₀(multilinearCombine_affineLineEvaluation (U₀ := U₀) (U₁ := U₁)
       (r := r) (r_affine_combine := r_affine_combine), MC) ≤ e
   ] > (m * ε: ℝ≥0) / (Fintype.card F : ℝ≥0))
@@ -1023,7 +1026,7 @@ lemma correlatedAgreement_of_mem_R_star_tensor
   -- simp only [Nat.add_one_sub_one, Subtype.forall]
   intro r
   apply ih
-  -- ⊢ Pr_{ r ← Fin (ϑ_pred) → F}[ Δ₀(multilinearCombine Uᵣ (r := r), MC) ≤ e ] > (ϑ_pred * ε) / |𝔽|
+  -- ⊢ Pr{ r ← Fin (ϑ_pred) → F}[ Δ₀(multilinearCombine Uᵣ (r := r), MC) ≤ e ] > (ϑ_pred * ε) / |𝔽|
   -- i.e. these r must satisfy (tensor-folding with the affine random combination)
     -- must be close to individual-row code MC
   set U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ_pred) u).1
@@ -1050,14 +1053,14 @@ lemma prob_R_star_gt_threshold
     {ϑ : ℕ}
   (u : WordStack A (Fin (2 ^ (ϑ + 1))) ι) (e : ℕ)
   (hP_multilinearCombine_affine_close_gt :
-    Pr_{ let r_last ← $ᵖ F;
-         let r_init ← $ᵖ (Fin (ϑ) → F)}[multilinearCombine_affineComb_split_last_close
+    Pr{let r_last ← $ᵗ F;
+         let r_init ← $ᵗ (Fin (ϑ) → F)}[multilinearCombine_affineComb_split_last_close
       (MC := MC) (u := u) (e := e) r_last r_init]
     > (((Nat.cast (R := ℝ≥0) (ϑ + 1)) * ε : ℝ≥0) / ((Fintype.card F : ℝ≥0) : ℝ≥0))) :
     let U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).1
     let U₁ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).2
     let R_star_set := R_star_tensor MC (e := e) (ε := ε) U₀ U₁
-  Pr_{ let r ← $ᵖ F }[ r ∈ R_star_set ] > (↑ε : ENNReal) / (Fintype.card F : ENNReal) := by
+  Pr{let r ← $ᵗ F }[ r ∈ R_star_set ] > (↑ε : ENNReal) / (Fintype.card F : ENNReal) := by
   -- 1. Setup abbreviations for clarity
   set U₀ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).1
   set U₁ := (splitHalfRowWiseInterleavedWords (ϑ := ϑ) u).2
@@ -1076,99 +1079,85 @@ lemma prob_R_star_gt_threshold
   let prev_false_witness_threshold := (((Nat.cast (R := ℝ≥0) ϑ) * ε: ℝ≥0) : ENNReal) / q
   let goal_threshold := (ε_enn / q)
   -- 2. Define the combined distribution and the two predicates
-  let D : PMF (F × (Fin (ϑ) → F)) := do
-    let r_last ← $ᵖ F
-    let r_init ← $ᵖ (Fin (ϑ) → F)
-    pure (r_last, r_init)
+  let D : ProbComp (F × (Fin ϑ → F)) := $ᵗ (F × (Fin ϑ → F))
   set f := fun (r : F × (Fin ϑ → F)) =>
     multilinearCombine_affineComb_split_last_close (MC := MC) (u := u) (e := e) r.1 r.2
   set g := fun (r : F × (Fin ϑ → F)) => r.1 ∈ R_star_set
   -- 3. Rewrite the hypothesis `hP...` using the combined distribution `D`
-  have h_D_eq_prod : D = $ᵖ (F × (Fin ϑ → F)) := by
-    rw [←do_two_uniform_sampling_eq_uniform_prod]
-  rw [Pr_multi_let_equiv_single_let] at hP_multilinearCombine_affine_close_gt
   -- `hP_f_gt` is the hypothesis `Pr[f] > cur_false_witness_threshold`
-  have h_P_f_gt : Pr_{let r ← D}[f r] > cur_false_witness_threshold := by
+  have h_P_f_gt : Pr{let r ← D}[f r] > cur_false_witness_threshold := by
+    rw [show D = $ᵗ (F × (Fin ϑ → F)) from rfl,
+      SampleableType.prEvent_uniformSample_prod]
     exact hP_multilinearCombine_affine_close_gt
   -- 4. Apply the Law of Total Probability: Pr[f] = Pr[f ∧ g] + Pr[f ∧ ¬g]
-  have h_split : Pr_{let r ← D}[f r] =
-    Pr_{let r ← D}[g r ∧ f r] + Pr_{let r ← D}[¬(g r) ∧ f r] := by
-    apply Pr_add_split_by_complement
+  have h_split : Pr{let r ← D}[f r] =
+    Pr{let r ← D}[g r ∧ f r] + Pr{let r ← D}[¬(g r) ∧ f r] := by
+    simpa only [and_comm] using
+      prEvent_eq_prEvent_and_add_prEvent_and_not D f g
   -- 5. Bound the two terms on the RHS
   -- 5a. Pr[f ∧ g] ≤ Pr[g]
-  have h_Pr_f_and_g_le_Pr_g : Pr_{let r ← D}[g r ∧ f r] ≤ Pr_{let r ← D}[g r] := by
-    apply Pr_le_Pr_of_implies
-    intro r h_imp; exact h_imp.1
+  have h_Pr_f_and_g_le_Pr_g : Pr{let r ← D}[g r ∧ f r] ≤ Pr{let r ← D}[g r] := by
+    exact prEvent_mono D _ _ fun _ h => h.1
   -- 5b. Pr[f ∧ ¬g] ≤ prev_false_witness_threshold (i.e., ϑε/q) (This is the "false positive" bound)
-  -- Proof sketch: Pr_{let r ← D}[¬(g r) ∧ f r]
-    -- = (1/q) * ∑' r_last, Pr_{r_init}[ r_last ∉ R_star_set ∧ f (r_init||r_last)]
-  -- (1/q) * ∑' r_last, (if r_last ∉ R* then Pr_{r_init}[f(r_last, r_init)] else 0)
+  -- Proof sketch: Pr{let r ← D}[¬(g r) ∧ f r]
+    -- = (1/q) * ∑' r_last, Pr{r_init}[ r_last ∉ R_star_set ∧ f (r_init||r_last)]
+  -- (1/q) * ∑' r_last, (if r_last ∉ R* then Pr{r_init}[f(r_last, r_init)] else 0)
   -- ≤ (1/q) * ∑' r_last, (if r_last ∉ R* then (ϑ * ε/q) else 0)
   -- ≤ (1/q) * ∑' r_last, (ϑ * ε/q) = (1/q) * (ϑ * ε/q * q) = ϑ*ε/q (Q.E.D)
-  have h_bound_not_g : Pr_{let r ← D}[¬(g r) ∧ f r] ≤ prev_false_witness_threshold := by
-    dsimp only [D]
-    rw [do_two_uniform_sampling_eq_uniform_prod (α := F) (β := (Fin ϑ → F))]
-    rw [prob_split_uniform_sampling_of_prod]
-    -- ⊢ Pr_{ x ← $ᵖ F; y ← $ᵖ (Fin ϑ → F)}[¬g (x, y) ∧ f (x, y)] ≤ prev_false_witness_threshold
-    rw [prob_tsum_form_split_first (D := $ᵖ F) (D_rest :=
-      fun r_last => (do let r_init ← $ᵖ (Fin ϑ → F); pure (¬(r_last ∈ R_star_set)
-        ∧ f (r_last, r_init))))]
-    conv_lhs =>
-      simp only [PMF.uniformOfFintype_apply]; rw [ENNReal.tsum_mul_left]
-      simp only [prob_const_and_prop_eq_ite]
-    -- (1/q) * ∑' r_last, (if r_last ∉ R* then Pr_{r_init}[f(r_last, r_init)] else 0)
-    have h_inner_le : ∀ (i: F), (if i ∉ R_star_set then
-      Pr_{let r_init ← $ᵖ (Fin ϑ → F)}[f (i, r_init)] else 0)
-        ≤ prev_false_witness_threshold := fun i => by
-      by_cases hi_mem: i ∈ R_star_set
-      · simp only [hi_mem, not_true_eq_false, ↓reduceIte, zero_le]
-      · simp only [hi_mem, not_false_eq_true, ↓reduceIte]
-        have h_i_mem_iff := Finset.mem_filter (s := Finset.univ (α := F)) (a := i)
-          (p := fun r_last => R_star_tensor_filter MC (e := e) (ε := ε) U₀ U₁ r_last
-      )
-        simp only [R_star_set] at hi_mem
-        have h_i_ne_mem_and_close := (Iff.not h_i_mem_iff).mp hi_mem
-        have h_i_mem_univ: i ∈ Finset.univ (α := F) := by
-          simp only [mem_univ]
-        simp only [h_i_mem_univ, true_and] at h_i_ne_mem_and_close
-        unfold R_star_tensor_filter at h_i_ne_mem_and_close
-        simp only [gt_iff_lt, not_lt] at h_i_ne_mem_and_close
-        exact h_i_ne_mem_and_close
-    calc
-      _ ≤ (((Fintype.card F): ENNReal)⁻¹ * ∑' (i : F), prev_false_witness_threshold) := by
-        apply ENNReal.mul_le_mul_iff_right (h0 := ENNReal.inv_ne_zero.mpr hq_ne_top)
-          (hinf := ENNReal.inv_ne_top.mpr hq_ne_zero).mpr
-        apply ENNReal.tsum_le_tsum h_inner_le
-      _ ≤ _ := by
-        simp only [ENNReal.tsum_const, ENat.card_eq_coe_fintype_card, ENat.toENNReal_coe]
-        rw [←mul_assoc]
-        simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true,
-          ENNReal.natCast_ne_top, ENNReal.inv_mul_cancel, one_mul, le_refl]
+  have h_bound_not_g : Pr{let r ← D}[¬(g r) ∧ f r] ≤ prev_false_witness_threshold := by
+    rw [show D = $ᵗ (F × (Fin ϑ → F)) from rfl,
+      SampleableType.prEvent_uniformSample_prod]
+    suffices h : ∀ i, Pr{let r ←$ᵗ (Fin ϑ → F)}[¬ g (i, r) ∧ f (i, r)] ≤
+        prev_false_witness_threshold by
+      simpa only [bind_assoc, bind_pure, pure_bind, id_eq] using
+        prEvent_bind_le_of_forall_le ($ᵗ F)
+          (fun i => do let r ← $ᵗ (Fin ϑ → F); return ¬ g (i, r) ∧ f (i, r)) id
+          (fun i => by simpa only [bind_pure, pure_bind, id_eq] using h i)
+    intro i
+    by_cases hi : i ∈ R_star_set
+    · simp [g, hi]
+    · simp only [g, hi, not_false_eq_true, true_and]
+      have h_inner_le : ∀ (i: F), (if i ∉ R_star_set then
+        Pr{let r_init ← $ᵗ (Fin ϑ → F)}[f (i, r_init)] else 0)
+          ≤ prev_false_witness_threshold := fun i => by
+        by_cases hi_mem: i ∈ R_star_set
+        · simp only [hi_mem, not_true_eq_false, ↓reduceIte, zero_le]
+        · simp only [hi_mem, not_false_eq_true, ↓reduceIte]
+          have h_i_mem_iff := Finset.mem_filter (s := Finset.univ (α := F)) (a := i)
+            (p := fun r_last => R_star_tensor_filter MC (e := e) (ε := ε) U₀ U₁ r_last
+        )
+          simp only [R_star_set] at hi_mem
+          have h_i_ne_mem_and_close := (Iff.not h_i_mem_iff).mp hi_mem
+          have h_i_mem_univ: i ∈ Finset.univ (α := F) := by
+            simp only [mem_univ]
+          simp only [h_i_mem_univ, true_and] at h_i_ne_mem_and_close
+          unfold R_star_tensor_filter at h_i_ne_mem_and_close
+          simp only [gt_iff_lt, not_lt] at h_i_ne_mem_and_close
+          exact h_i_ne_mem_and_close
+      simpa only [hi, not_false_eq_true, ↓reduceIte] using h_inner_le i
   -- sorry
   -- 6. Chain the inequalities: `(ϑ+1)ε/q < Pr[f] ≤ Pr[g] + Pr[f ∧ ¬g] ≤ Pr[g] + ϑε/q`
   have h_total_lt_Pr_g_add_term : cur_false_witness_threshold
-    < Pr_{let r ← D}[g r] + prev_false_witness_threshold := by
+    < Pr{let r ← D}[g r] + prev_false_witness_threshold := by
     calc cur_false_witness_threshold
-      < Pr_{let r ← D}[f r] := h_P_f_gt
-      _ = Pr_{let r ← D}[g r ∧ f r] + Pr_{let r ← D}[¬(g r) ∧ f r] := by rw [h_split]
-      _ ≤ Pr_{let r ← D}[g r] + Pr_{let r ← D}[¬(g r) ∧ f r] := by
+      < Pr{let r ← D}[f r] := h_P_f_gt
+      _ = Pr{let r ← D}[g r ∧ f r] + Pr{let r ← D}[¬(g r) ∧ f r] := by rw [h_split]
+      _ ≤ Pr{let r ← D}[g r] + Pr{let r ← D}[¬(g r) ∧ f r] := by
         gcongr
-      _ ≤ Pr_{let r ← D}[g r] + prev_false_witness_threshold := by
+      _ ≤ Pr{let r ← D}[g r] + prev_false_witness_threshold := by
         gcongr
       _ ≤ _ := by simp only [bind_pure_comp, le_refl]
   -- 7. Prove Pr[g] is equal to the goal probability (marginalization)
-  have h_Pr_g_eq : Pr_{let r ← D}[g r] = Pr_{let r ← $ᵖ F}[ r ∈ R_star_set ] := by
-    have h_D_rw : D = (do { let x ← $ᵖ F; let y ← $ᵖ (Fin ϑ → F); pure (x, y)}) := rfl
-    rw [h_D_rw]
-    rw [do_two_uniform_sampling_eq_uniform_prod]
-    rw [prob_marginalization_first_of_prod]
+  have h_Pr_g_eq : Pr{let r ← D}[g r] = Pr{let r ← $ᵗ F}[ r ∈ R_star_set ] := by
+    exact SampleableType.prEvent_uniformSample_fst (α := F)
+      (β := Fin ϑ → F) (fun r => r ∈ R_star_set)
   -- 8. Rearrange to get the final result
   -- We have: cur_false_witness_threshold < Pr[g] + prev_false_witness_threshold
   -- We want: goal_threshold < Pr[g]
   -- This is: cur_false_witness_threshold - prev_false_witness_threshold < Pr[g]
   rw [h_Pr_g_eq] at h_total_lt_Pr_g_add_term
   have h_lt_sub : cur_false_witness_threshold - prev_false_witness_threshold
-    < Pr_{let r ← $ᵖ F}[r ∈ R_star_set] := by
+    < Pr{let r ← $ᵗ F}[r ∈ R_star_set] := by
     rw [ENNReal.sub_lt_iff_lt_right]
     · omega
     · exact h_finite
@@ -1228,10 +1217,13 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         let toAffineLineEval := multilinearCombine₁_eq_affineLineEvaluation (F := F) (u := u)
         intro hprob_gt
         simp_rw [toAffineLineEval] at hprob_gt
-        let prob_eq := prob_uniform_singleton_finFun_eq (F := F)
-          (P := fun r => Δ₀(affineLineEvaluation (u 0) (u 1) r, MC) ≤ e)
-        -- Convert sampling (r ← (Fin 1 → F)) into sampling (r ← F)
-        simp_rw [prob_eq, Nat.cast_one, ENNReal.coe_one, one_mul] at hprob_gt
+        have prob_eq :
+            Pr{let r ←$ᵗ (Fin 1 → F)}[Δ₀(affineLineEvaluation (u 0) (u 1) (r 0), MC) ≤ e] =
+            Pr{let r ←$ᵗ F}[Δ₀(affineLineEvaluation (u 0) (u 1) r, MC) ≤ e] :=
+          SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) F)
+            (fun r => Δ₀(affineLineEvaluation (u 0) (u 1) r, MC) ≤ e)
+        rw [prob_eq] at hprob_gt
+        norm_num only [Nat.cast_one, ENNReal.coe_one, one_mul] at hprob_gt
         have h_correlated_agreement := hC_proximityGapAffineLines (u 0) (u 1) hprob_gt
         simp only [jointProximityNat₂, Fin.isValue] at h_correlated_agreement
         have h_u_eq: u = finMapTwoWords (u 0) (u 1) := by
@@ -1270,28 +1262,28 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
             simp only [isEmpty_Prop, not_le, h_i_lt, IsEmpty.forall_iff]
         let P : F → (Fin (ϑ_sub_2 + 1) → F) → Prop := fun r_last r_init =>
           Δ₀(multilinearCombine (u:=u) (r:=Fin.snoc r_init r_last), MC) ≤ e
-        let hP_split_r_last := prob_split_last_uniform_sampling_of_finFun
-          (ϑ := ϑ_sub_2 + 1) (F := F) (P := P)
-        unfold P at hP_split_r_last
-        simp_rw [h_finsnoc_eq_r] at hP_split_r_last
+        have hP_split_r_last := (SampleableType.prEvent_uniformSample_pair_of_bijective
+          (g := fun (x : F) (w : Fin (ϑ_sub_2 + 1) → F) => Fin.snoc w x)
+          (by exact (Fin.snocEquiv fun _ => F).bijective)
+          (fun r => Δ₀(multilinearCombine (u := u) (r := r), MC) ≤ e)).symm
         rw [hP_split_r_last] at hP_multilinearCombine_close_gt
         -- Now we have two randomness sampling in hP_multilinearCombine_close_gt :
         -- `((ϑ_sub_2 + 1 + 1) * ε) / |𝔽|
-          -- < Pr_{ r_last; r_init }[  Δ₀((Fin.snoc r_init r_last)|⨂|u, ↑MC) ≤ ↑e)) ]` (0)
+          -- < Pr{ r_last; r_init }[  Δ₀((Fin.snoc r_init r_last)|⨂|u, ↑MC) ≤ ↑e)) ]` (0)
         -- We need to achieve the upperbound for hP_multilinearCombine_close_gt probability by:
-        -- i.e. `Pr_{ r_last; r_init }[  Δ₀((Fin.snoc r_init r_last)|⨂|u, ↑MC) ≤ ↑e)) ]`
-        -- `= Pr_{ r_last; r_init }[ Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]`
+        -- i.e. `Pr{ r_last; r_init }[  Δ₀((Fin.snoc r_init r_last)|⨂|u, ↑MC) ≤ ↑e)) ]`
+        -- `= Pr{ r_last; r_init }[ Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]`
         -- `= PR_{ r_last }[ r_init; Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]`
         -- Divide into two cases: r_last ∈ R* and r_last ∉ R*
-        -- `= Pr_{ r_last }[ r_last ∈ R* ∧
-          -- Pr_{ r_init }[ Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]` (1)
-        -- `+ Pr_{ r_last }[ r_last ∉ R* ∧
-          -- Pr_{ r_init }[ Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]` (2)
-        -- `(1) = Pr_{ r_last }[ r_last ∈ R* ]` (3)
+        -- `= Pr{ r_last }[ r_last ∈ R* ∧
+          -- Pr{ r_init }[ Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]` (1)
+        -- `+ Pr{ r_last }[ r_last ∉ R* ∧
+          -- Pr{ r_init }[ Δ₀((r_init)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ]` (2)
+        -- `(1) = Pr{ r_last }[ r_last ∈ R* ]` (3)
         -- `(2): ∀ r ∉ R*, it's trivial that the probability
           -- ≤ ((ϑ_sub_2 + 1) * ε) / |𝔽|, due to definition of membership of R*` (4)
 
-        -- Combine (0), (3), (4): we have `Pr_{ r_last }[ r_last ∈ R* ] > ε/|𝔽|` (5)
+        -- Combine (0), (3), (4): we have `Pr{ r_last }[ r_last ∈ R* ] > ε/|𝔽|` (5)
 
         -- Applying `correlatedAgreement_of_mem_R_star_tensor` to (5), we get
           -- `Δ₀((r_last)|⨂|affineCombine(U₀, U₁, r_last), ↑MC) ≤ ↑e)) ] > ε/|𝔽|` (6)
@@ -1313,20 +1305,19 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         simp_rw [multilinearCombine_snoc_eq_multilinearCombine_affine]
           at hP_multilinearCombine_close_gt
         -- hP_multilinearCombine_close_gt now looks like:
-        -- Pr_{ r_last ← $ᵖ F; r_init ← $ᵖ (Fin ϑ_pred → F) }[ Δ₀(multilinearCombine
+        -- Pr{ r_last ← $ᵗ F; r_init ← $ᵗ (Fin ϑ_pred → F) }[ Δ₀(multilinearCombine
             -- (affineLineEvaluation U₀ U₁ r_last) r_init, ↑MC) ≤ ↑e ] > ↑(↑ϑ * ↑ε) / q
         -- Step 2 & 3: Define R* and apply Law of Total Probability
         let R_star_set := R_star_tensor MC (m:=ϑ_pred) (e:=e) (ε:=ε) U₀ U₁
         -- Step 5: Show Pr[R*] > ε / q
-        have h_prob_Rstar_gt_eps_div_q : Pr_{ let r ← $ᵖ F }[ r ∈ R_star_set ]
+        have h_prob_Rstar_gt_eps_div_q : Pr{let r ← $ᵗ F }[ r ∈ R_star_set ]
           > (↑ε : ENNReal) / (Fintype.card F : ENNReal) := by
           let res := prob_R_star_gt_threshold (MC := MC) (ε := ε) (ϑ := ϑ_sub_2 + 1) (u := u)
             (e := e) (hP_multilinearCombine_close_gt)
           exact res
-        -- Convert Pr_{}[] to cardinality
+        -- Convert Pr{}[] to cardinality
         have h_R_star_card_gt_eps : R_star_set.card > ε := by
-          rw [prob_uniform_eq_card_filter_div_card] at h_prob_Rstar_gt_eps_div_q -- Needs NNReal
-          simp only [ENNReal.coe_natCast] at h_prob_Rstar_gt_eps_div_q
+          rw [SampleableType.prEvent_uniformSample] at h_prob_Rstar_gt_eps_div_q -- Needs NNReal
           rw [gt_iff_lt] at h_prob_Rstar_gt_eps_div_q
           have h_cancel_q_denom := ENNReal.div_lt_div_iff_left
             (a := (ε : ENNReal))
@@ -1348,7 +1339,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
         have h_C_m_gap := h_interleaved_gaps (2^(ϑ_sub_2 + 1)) (Nat.one_le_two_pow)
         -- Need the hypothesis Pr[...] > ε/q for h_C_m_gap
         have h_prob_line_gt_eps_div_q :
-          Pr_{ let r ← $ᵖ F }[
+          Pr{let r ← $ᵗ F }[
             Δ₀(affineLineEvaluation (u₀ := ⋈|(show WordStack A (Fin (2 ^ (ϑ_sub_2 + 1))) ι from U₀))
               (u₁ := ⋈|(show WordStack A (Fin (2 ^ (ϑ_sub_2 + 1))) ι from U₁)) (r := r),
               ((MC ^⋈ (Fin (2 ^ (ϑ_sub_2 + 1)))))) ≤ e
@@ -1364,12 +1355,12 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
               specialize h_line_close_to_C_m ⟨r, hr_in_Rstar⟩
               unfold jointProximityNat at h_line_close_to_C_m
               exact h_line_close_to_C_m
-            let Pr_le := Pr_le_Pr_of_implies (D := $ᵖ F)
-              (g := fun r => Δ₀(affineLineEvaluation
+            let Pr_le := prEvent_mono (mx := $ᵗ F)
+              (q := fun r => Δ₀(affineLineEvaluation
                 (u₀ := ⋈|(show WordStack A (Fin (2 ^ (ϑ_sub_2 + 1))) ι from U₀))
                 (u₁ := ⋈|(show WordStack A (Fin (2 ^ (ϑ_sub_2 + 1))) ι from U₁)) (r := r),
                 ((MC ^⋈ (Fin (2 ^ (ϑ_sub_2 + 1)))))) ≤ e)
-              (f := fun r => r ∈ R_star_set) (h_imp := h_r_implies)
+              (p := fun r => r ∈ R_star_set) (hpq := h_r_implies)
             simp only at Pr_le
             exact Pr_le
         -- Apply the gap property of C^m
@@ -1385,6 +1376,7 @@ theorem interleaved_affine_gaps_imply_tensor_gaps
 
 omit [DecidableEq ι] [Fintype F] [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
   [Nontrivial ↥MC] in
+omit [SampleableType F] in
 lemma jointProximity₂_affineShift_implies_jointProximity₂ (u₀ u₁ : Word A ι) (δ : ℝ≥0) :
     jointProximity₂ (C := MC) (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) →
     jointProximity₂ (C := MC) (u₀ := u₀) (u₁ := u₁) (δ := δ) := by

@@ -246,23 +246,13 @@ theorem run_preserves_measure
     rw [run_zero, evalDist_pure, MeasureTheory.Measure.dirac_apply_of_mem]
     exact ⟨input, rfl, hinput⟩
   | succ n ih =>
-    rw [run_succ, evalDist_bind_of_discrete,
-      MeasureTheory.Measure.bind_apply MeasurableSet.of_discrete
-        Measurable.of_discrete.aemeasurable]
-    have hfirst := (MeasureTheory.ae_iff_prob_eq_one Measurable.of_discrete).mpr
-      (preserves ⟨0, Nat.zero_lt_succ _⟩ input hinput)
-    have hcont : ∀ᵐ mid ∂𝒟[(stages ⟨0, Nat.zero_lt_succ _⟩).run input],
-        𝒟[match mid with
-          | none => pure none
-          | some value => run n (fun i => I i.succ) (fun i => stages i.succ) value]
-          {result | ∃ output, result = some output ∧ Inv (Fin.last (n + 1)) output} = 1 := by
-      filter_upwards [hfirst] with mid hmid
-      obtain ⟨value, rfl, hvalue⟩ := hmid
-      exact ih (fun i => I i.succ) (fun i => stages i.succ)
-        (fun i => Inv i.succ) (fun i => preserves i.succ) value hvalue
-    refine (MeasureTheory.lintegral_congr_ae hcont).trans ?_
-    rw [MeasureTheory.lintegral_const, one_mul]
-    exact OracleComp.evalDist_apply_univ_eq_one _
+    rw [run_succ]
+    refine OracleComp.evalDist_bind_apply_eq_one_of_ae _ _ MeasurableSet.of_discrete ?_
+    filter_upwards [(MeasureTheory.ae_iff_prob_eq_one Measurable.of_discrete).mpr
+      (preserves ⟨0, Nat.zero_lt_succ _⟩ input hinput)] with mid hmid
+    obtain ⟨value, rfl, hvalue⟩ := hmid
+    exact ih (fun i => I i.succ) (fun i => stages i.succ)
+      (fun i => Inv i.succ) (fun i => preserves i.succ) value hvalue
 
 /-- Splitting the ordered execution at any middle interface preserves its exact effect order.
 The suffix starts with the accepted claim and private state returned by the prefix. -/
