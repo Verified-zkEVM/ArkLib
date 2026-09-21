@@ -117,17 +117,18 @@ example {F : Type*} [Field F] {m N : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
   · simp [hzero j hj]
   · exact natDegree_le_of_dvd (dvd_mul_left _ _) hj
 
-/-- Normalization keeps a separate strict degree budget for each coordinate, as in the source's
-shifted-degree primitive statement. -/
+/-- Normalization keeps a separate strict degree budget for each coordinate
+(`Matrix.exists_primitive_kernel_vector_degreeLT`), which recovers the source's shifted-degree
+primitive statement. -/
 example {F : Type*} [Field F] {rows cols : ℕ} (M : Matrix (Fin rows) (Fin cols) F[X])
     (slots : Fin cols → ℕ) (v : Fin cols → F[X]) (hv : v ≠ 0) (hMv : M *ᵥ v = 0)
     (hvdegree : ∀ j, v j ∈ degreeLT F (slots j)) :
     ∃ u : Fin cols → F[X], u ≠ 0 ∧ M *ᵥ u = 0 ∧ (∀ j, u j ∈ degreeLT F (slots j)) ∧
       Ideal.span (Set.range u) = ⊤ ∧
         ∀ {E : Type*} [Field E] (ι : F →+* E) (z : E), (fun j ↦ (u j).eval₂ ι z) ≠ 0 := by
-  classical
-  obtain ⟨g, u, hg, rfl, hu, hMu, hspan⟩ := M.exists_primitive_kernel_vector_eq_smul hv hMv
-  exact ⟨u, hu, hMu, fun j ↦ mem_degreeLT_of_mul_left hg (hvdegree j), hspan, fun ι z ↦
+  obtain ⟨u, hu, hMu, hudegree, hspan⟩ :=
+    exists_primitive_kernel_vector_degreeLT M slots hv hMv hvdegree
+  exact ⟨u, hu, hMu, hudegree, hspan, fun ι z ↦
     Ideal.comp_ne_zero_of_span_range_eq_top hspan (eval₂RingHom ι z)⟩
 
 end Matrix
