@@ -508,6 +508,7 @@ public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
@@ -537,6 +538,8 @@ public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.Set.Finite
