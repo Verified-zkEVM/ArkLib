@@ -79,4 +79,14 @@ example {σ : Type*} [Finite σ] (I : Ideal (MvPolynomial σ ℚ))
     ∃ N₀, ∀ N ≥ N₀, affineHilbertFunction I N = Module.finrank ℚ (MvPolynomial σ ℚ ⧸ I) :=
   exists_affineHilbertFunction_eq_finrank I
 
+/-- Multiplicativity of the filtration: the class of `3 * X₀ * X₁` lies in the piece of degree
+`2`, built from scalars in degree `0` and variables in degree `1`. -/
+example (I : Ideal (MvPolynomial (Fin 2) ℚ)) :
+    algebraMap ℚ _ 3 * Ideal.Quotient.mk I (X 0) * Ideal.Quotient.mk I (X 1) ∈
+      quotientDegreeLE I 2 := by
+  have h01 := mul_mem_quotientDegreeLE (algebraMap_mem_quotientDegreeLE I 3 0)
+    (mk_X_mem_quotientDegreeLE I 0)
+  have h := mul_mem_quotientDegreeLE h01 (mk_X_mem_quotientDegreeLE I 1)
+  simpa using h
+
 end AffineHilbertTest

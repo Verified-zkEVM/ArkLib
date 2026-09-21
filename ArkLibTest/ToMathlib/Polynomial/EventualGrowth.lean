@@ -14,6 +14,11 @@ coefficient vanishes for a nonzero step, and over `ZMod 2` the polynomials `X ^ 
 at every natural number, so characteristic zero is needed in both places. The comparison lemma
 needs the nonnegativity of the smaller polynomial. The source-shaped `ℚ` statements, including
 the disjunction with `Q = 0`, are derived from the general ones.
+
+For the rescaled comparisons, the examples compute the degree of a composite with an affine
+polynomial, show that `c ≠ 0` is needed there and that the lower polynomial must be eventually
+nonnegative in the sandwich, and derive the source's rescaled, affine and sandwich statements,
+with their `≠ 0` and positivity hypotheses, from the general ones.
 -/
 
 open Polynomial Filter
@@ -83,5 +88,63 @@ example {b : ℕ} {P Q : ℚ[X]} (hQ : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N 
     Q = 0 ∨ Q.natDegree ≤ P.natDegree - 1 ∧
       Q.coeff (P.natDegree - 1) ≤ (b : ℚ) * P.natDegree * P.leadingCoeff :=
   Or.inr (natDegree_le_and_coeff_le_of_eventually_eval_natCast_le_backwardDifference hQ hle)
+
+/-- `(X ^ 2).comp (3 X + 1) = 9 X ^ 2 + 6 X + 1` has natural degree `2`. -/
+example : ((X ^ 2 : ℚ[X]).comp (C 3 * X + C 1)).natDegree = 2 := by
+  rw [natDegree_comp_C_mul_X_add_C _ (by norm_num), natDegree_X_pow]
+
+/-- The hypothesis `c ≠ 0` of `natDegree_comp_C_mul_X_add_C` is needed: composing `X ^ 2` with the
+constant `C 0 * X + C 1` gives the constant `1`. -/
+example : ((X ^ 2 : ℚ[X]).comp (C 0 * X + C 1)).natDegree = 0 := by
+  simp
+
+/-- Without positivity of `m`: a polynomial eventually between `0` and `0 * P (c * N + d)` is
+constant. -/
+example {P Q : ℚ[X]} {c d : ℚ} (hQ : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
+    (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ 0 * P.eval (c * N + d)) : Q.natDegree = 0 := by
+  have := natDegree_le_of_eventually_eval_natCast_le_mul_eval_comp (P := P) (m := 0) (S := C 0)
+    hQ (hle.mono fun N hN ↦ by simpa using hN)
+  simpa using this
+
+/-- The nonnegativity of the lower polynomial is needed in the sandwich: `P = -X` lies below
+`Q = 0`, which lies below `-1 * P N`, but the natural degrees are `0` and `1`. -/
+example : (∀ x : ℚ, (-X : ℚ[X]).eval x ≤ (0 : ℚ[X]).eval x ∨ x < 0) ∧
+    (∀ x : ℚ, (0 : ℚ[X]).eval x ≤ -1 * (-X : ℚ[X]).eval (1 * x + 0) ∨ x < 0) ∧
+    (0 : ℚ[X]).natDegree ≠ (-X : ℚ[X]).natDegree := by
+  refine ⟨fun x ↦ ?_, fun x ↦ ?_, by simp⟩ <;>
+  · rcases le_or_gt 0 x with hx | hx
+    · left; simpa using hx
+    · right; exact hx
+
+/-- The source's `natDegree_comp_C_mul_X` over `ℚ`. -/
+example (P : ℚ[X]) {c : ℚ} (hc : c ≠ 0) : (P.comp (C c * X)).natDegree = P.natDegree := by
+  simpa using natDegree_comp_C_mul_X_add_C P hc 0
+
+/-- The source's rescaled comparison, with its hypotheses `Q ≠ 0` and `0 < c`. -/
+example {P Q : ℚ[X]} (_hQ : Q ≠ 0) {c : ℕ} (_hc : 0 < c)
+    (hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
+    (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ P.eval ((c * N : ℕ) : ℚ)) :
+    Q.natDegree ≤ P.natDegree :=
+  natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine (m := 1) (c := c) (d := 0) hQnonneg
+    (hle.mono fun N hN ↦ by simpa using hN)
+
+/-- The source's affine comparison with natural constants `m, c > 0` and `d`. -/
+example {P Q : ℚ[X]} (_hQ : Q ≠ 0) {m c d : ℕ} (_hm : 0 < m) (_hc : 0 < c)
+    (hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
+    (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ (m : ℚ) * P.eval ((c * N + d : ℕ) : ℚ)) :
+    Q.natDegree ≤ P.natDegree :=
+  natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine (m := m) (c := c) (d := d) hQnonneg
+    (hle.mono fun N hN ↦ by simpa using hN)
+
+/-- The source's sandwich, with its redundant hypotheses `P ≠ 0`, `Q ≠ 0`, `0 < c` and eventual
+nonnegativity of `Q`. -/
+example {P Q : ℚ[X]} (_hP : P ≠ 0) (_hQ : Q ≠ 0) {c : ℕ} (_hc : 0 < c)
+    (hPnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ P.eval (N : ℚ))
+    (_hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
+    (hlower : ∀ᶠ N : ℕ in atTop, P.eval (N : ℚ) ≤ Q.eval (N : ℚ))
+    (hupper : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ P.eval ((c * N : ℕ) : ℚ)) :
+    Q.natDegree = P.natDegree :=
+  natDegree_eq_of_eventually_eval_natCast_le_of_le_mul_eval_affine (m := 1) (c := c) (d := 0)
+    hPnonneg hlower (hupper.mono fun N hN ↦ by simpa using hN)
 
 end EventualGrowthTest
