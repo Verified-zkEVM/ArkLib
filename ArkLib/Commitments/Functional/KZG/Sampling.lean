@@ -5,7 +5,9 @@ Authors: Tobias Rothmann
 -/
 module
 
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
 public import Mathlib.Algebra.Field.ZMod
 
 /-!

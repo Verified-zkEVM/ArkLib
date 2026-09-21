@@ -383,51 +383,24 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
 
 omit [Nonempty ι] in
 theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
+    [SampleableType F] {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
     (hprob :
-      Pr_{ let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
+      Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
         > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0)) :
     (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι := by
   classical
   -- predicate defining the good coefficients
   let P : F → Prop := fun z : F =>
     δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ
-  -- uniform probability equals (card of filter) / (card of the field)
+  -- Native uniform probability is the accepted fraction of field elements.
   have hPr :
-      Pr_{ let z ← $ᵖ F }[ P z ] =
-        ((Finset.filter (α := F) P Finset.univ).card : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
-    classical
-    -- Expand the probability mass at `True`
-    simp only [Bind.bind, PMF.bind, PMF.uniformOfFintype_apply, pure, PMF.pure_apply, eq_iff_iff,
-      mul_ite, mul_one, mul_zero, ENNReal.coe_natCast]
-    simp only [DFunLike.coe, true_iff]
-    -- Reduce the infinite sum to the finite support
-    rw [
-      tsum_eq_sum (α := ENNReal) (β := F)
-        (f := fun a => if P a then (↑(Fintype.card F))⁻¹ else 0)
-        (s := Finset.filter P Finset.univ)
-        (hf := fun b => by
-          simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-          intro hb
-          simp only [hb, ite_false])
-    ]
-    -- Evaluate the resulting finite sum
-    rw [Finset.sum_ite]
-    simp only [Finset.sum_const_zero, add_zero]
-    rw [Finset.sum_const]
-    rw [nsmul_eq_mul']
-    rw [mul_comm]
-    conv_lhs =>
-      rw [← div_eq_mul_inv]
-    -- Filtering twice is the same as filtering once
-    have h_card_eq : {x ∈ filter P univ | P x} = filter P univ := by
-      ext x
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-      rw [and_self_iff]
-    rw [h_card_eq]
+      Pr{let z ← $ᵗ F}[P z] =
+        ((Finset.filter (α := F) P Finset.univ).card : ENNReal) /
+          (Fintype.card F : ENNReal) :=
+    SampleableType.prEvent_uniformSample P
   -- restate the hypothesis using `P`
   have hprobP :
-      Pr_{ let z ← $ᵖ F }[ P z ] > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
+      Pr{let z ← $ᵗ F}[ P z ] > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
     simpa [P] using hprob
   -- rewrite the probability lower bound as a ratio comparison
   have hprobQ := hprobP

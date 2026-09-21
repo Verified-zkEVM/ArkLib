@@ -18,7 +18,7 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "7a4d7ee254165f2fcf3282c7d2e6f204056e5121"
+rev = "210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6"
 
 [[require]]
 name = "«doc-gen4»"
@@ -121,3 +121,10 @@ name = "AxiomSweepTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["AxiomSweepTestFixtures.+"]
+
+# Semantic regression fixtures for native probability retirement.
+[[lean_lib]]
+name = "RetiredProbabilityTestFixtures"
+srcDir = "scripts"
+roots = []
+globs = ["RetiredProbabilityTestFixtures.+"]

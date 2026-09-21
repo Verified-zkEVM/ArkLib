@@ -7,7 +7,7 @@ module
 
 public import Mathlib.Init
 public import Mathlib.Logic.Embedding.Basic
-public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.Probability.UniformOn
 
 /-!
   # Serialization and Deserialization
@@ -36,17 +36,17 @@ class Serialize.IsInjective (α : Type u) (β : Type v) [inst : Serialize α β]
 class Deserialize (α : Type u) (β : Type v) where
   deserialize : β → α
 
--- Local instance for now, will need to develop statistical distance a lot more
-instance {α : Type*} [Fintype α] : Dist (PMF α) where
-  dist := fun a b => ∑ x, abs ((a x).toReal - (b x).toReal)
-
-open NNReal in
-/-- Type class for deserialization on two non-empty finite types `α`, `β`, which pushes forward the
-  uniform distribution of `β` to the uniform distribution of `α`, up to some error -/
+open NNReal ProbabilityTheory MeasureTheory in
+/-- Deserialization pushes forward the finite uniform measure within `ε` in the sum of absolute
+singleton-mass differences. This retains the original L1 normalization (twice total variation).
+The discrete measurable spaces make every finite-space deserializer measurable. -/
 class Deserialize.CloseToUniform (α : Type u) (β : Type u)
-    [Fintype α] [Fintype β] [Nonempty α] [Nonempty β] [Deserialize α β] where
+    [Fintype α] [Fintype β] [Nonempty α] [Nonempty β]
+    [MeasurableSpace α] [MeasurableSpace β]
+    [DiscreteMeasurableSpace α] [DiscreteMeasurableSpace β] [Deserialize α β] where
   ε : ℝ≥0
-  ε_close : dist (PMF.uniformOfFintype α) (deserialize <$> PMF.uniformOfFintype β) ≤ ε
+  ε_close : (∑ x : α, |((uniformOn Set.univ : Measure α) {x}).toReal -
+    ((uniformOn Set.univ : Measure β).map deserialize {x}).toReal|) ≤ ε
 
 
 /-- Type class for types that can be deserialized from another type (most often `ByteArray` or
