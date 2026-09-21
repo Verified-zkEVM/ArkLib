@@ -94,6 +94,7 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.Projection
 public import ArkLib.Data.CodingTheory.JohnsonBound.Basic
 public import ArkLib.Data.CodingTheory.JohnsonBound.Choose2
@@ -192,12 +193,14 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
@@ -494,6 +497,9 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
+public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
+public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Control.MonadLift

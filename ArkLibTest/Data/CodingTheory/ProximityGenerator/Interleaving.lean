@@ -10,7 +10,8 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 # Interleaving transfer clients
 
 These clients check the field-size boundary, an empty row type, and the absence of a
-finite-field assumption in the row-functional avoidance lemma.
+finite-field assumption in the row-functional avoidance lemma, and the integer-threshold form
+of the MCA event.
 -/
 
 open CoreDefinitions Code LinearCode
@@ -59,3 +60,10 @@ example {ι F A S ℓ : Type} [Fintype ι] [Field F] [Fintype S] [Nonempty S]
     (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError G C δ ≤ mcaError G (C^⋈ℕ) δ :=
   mcaError_le_mcaError_moduleInterleavedCode G C δ
+
+-- At radius `1` the MCA event is projection-badness at threshold `0`.
+example {ι F A S ℓ : Type} [Fintype ι] [Field F] [Fintype S] [Nonempty S] [Fintype ℓ]
+    [AddCommMonoid A] [Module F A] (G : Generator S ℓ F) (C : ModuleCode ι F A) (x : S)
+    (U : ℓ → ι → A) :
+    IsMCA G C x U 1 ↔ IsProjectionBad G C 0 x U := by
+  simpa using isMCA_iff_isProjectionBad G C x U 1
