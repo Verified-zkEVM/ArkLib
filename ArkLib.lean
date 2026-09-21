@@ -529,6 +529,7 @@ public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 public import ArkLib.ToMathlib.Polynomial.EvalExt
+public import ArkLib.ToMathlib.Polynomial.EventualGrowth
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
@@ -539,6 +540,7 @@ public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
