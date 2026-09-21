@@ -318,7 +318,7 @@ lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [Decidab
         by exact_mod_cast card_filter_isMCA_le_of_isMDSGenerator G hG hdim hℓ MC U γ.2.1 hγ,
         fun x hx h => hx (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)⟩
   refine hbound.trans (le_of_eq ?_)
-  simp only [mdsMCAError, if_pos hγ]
+  simp only [mdsMCAError, ite_eq_left hγ]
   unfold ENNReal.ofReal
   congr 2
   rw [Nat.cast_mul, Nat.cast_add, Nat.cast_one, Nat.cast_pred (by omega), mul_div_assoc,
