@@ -85,8 +85,8 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
   `isProjectionBad_binaryEqualityGenerator_iff`. The Reed–Solomon statements are in
   `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement`.
 
-Deferred: the probability form of the count (`BinaryTensorFoldProbability.lean` at the same
-revision).
+The probability form of the count (`BinaryTensorFoldProbability.lean` at the same revision) is in
+`ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability`.
 -/
 
 @[expose] public section
