@@ -19,6 +19,8 @@ hypothesis on the monomial order cannot be dropped.
 
 open MvPolynomial MonomialOrder Finsupp
 
+namespace StandardMonomialsTest
+
 /-- The source statement for `degLex`, derived from the statement for any graded order. -/
 example {σ k : Type*} [Field k] [LinearOrder σ] [WellFoundedGT σ] [Finite σ]
     (I : Ideal (MvPolynomial σ k)) (N : ℕ) :
@@ -125,3 +127,5 @@ example (e : Fin 2 →₀ ℕ) :
   rw [degLex.mem_standardExponents_span_singleton binomial_ne_zero, degLex_degree_binomial,
     single_le_iff]
   omega
+
+end StandardMonomialsTest

@@ -16,6 +16,8 @@ source-shaped prime-ideal form of the inequality from the regular-element form.
 
 open MvPolynomial
 
+namespace AffineHilbertTest
+
 /-- The variable `X₀` is not a unit: evaluating a relation `a * X₀ = 1` at the origin gives
 `0 = 1`. -/
 theorem not_isUnit_X_zero : ¬IsUnit (X 0 : MvPolynomial (Fin 1) ℚ) := by
@@ -77,3 +79,5 @@ example {σ : Type*} [Finite σ] (I : Ideal (MvPolynomial σ ℚ))
     [Module.Finite ℚ (MvPolynomial σ ℚ ⧸ I)] :
     ∃ N₀, ∀ N ≥ N₀, affineHilbertFunction I N = Module.finrank ℚ (MvPolynomial σ ℚ ⧸ I) :=
   exists_affineHilbertFunction_eq_finrank I
+
+end AffineHilbertTest
