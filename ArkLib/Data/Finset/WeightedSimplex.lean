@@ -202,77 +202,6 @@ private def ordinarySimplex (σ : Type*) [Fintype σ] (W : ℕ) :=
 private def exactSimplex (σ : Type*) [Fintype σ] (W : ℕ) :=
   {c : Option σ → ℕ // ∑ i, c i = W}
 
-private def ordinaryToExact {σ : Type*} [Fintype σ] (W : ℕ)
-    (c : ordinarySimplex σ W) : exactSimplex σ W :=
-  ⟨fun i ↦ i.elim (W - ∑ j, c.1 j) c.1, by
-    rw [Fintype.sum_option]
-    simp only [Option.elim_none, Option.elim_some]
-    exact Nat.sub_add_cancel c.2⟩
-
-private def exactToOrdinary {σ : Type*} [Fintype σ] (W : ℕ)
-    (c : exactSimplex σ W) : ordinarySimplex σ W :=
-  ⟨fun i ↦ c.1 (some i), by
-    have hc := c.2
-    rw [Fintype.sum_option] at hc
-    change c.1 none + (∑ i, c.1 (some i)) = W at hc
-    change (∑ i, c.1 (some i)) ≤ W
-    omega⟩
-
-private def ordinaryEquivExact {σ : Type*} [Fintype σ] (W : ℕ) :
-    ordinarySimplex σ W ≃ exactSimplex σ W where
-  toFun := ordinaryToExact W
-  invFun := exactToOrdinary W
-  left_inv := fun c ↦ by
-    apply Subtype.ext
-    funext i
-    rfl
-  right_inv := fun c ↦ by
-    apply Subtype.ext
-    funext i
-    cases i with
-    | none =>
-        have hc := c.2
-        rw [Fintype.sum_option] at hc
-        change W - (∑ j, c.1 (some j)) = c.1 none
-        omega
-    | some i => rfl
-
-private noncomputable def ordinaryEquivSym {σ : Type*} [Fintype σ] (W : ℕ) :
-    ordinarySimplex σ W ≃ Sym (Option σ) W := by
-  classical
-  exact (ordinaryEquivExact W).trans (Sym.equivNatSumOfFintype _ _).symm
-
-private noncomputable instance ordinarySimplexFintype {σ : Type*} [Fintype σ] (W : ℕ) :
-    Fintype (ordinarySimplex σ W) := by
-  classical
-  exact Fintype.ofEquiv (Sym (Option σ) W) (ordinaryEquivSym W).symm
-
-private theorem card_ordinarySimplex {σ : Type*} [Fintype σ] (W : ℕ) :
-    Fintype.card (ordinarySimplex σ W) =
-      (W + Fintype.card σ).choose (Fintype.card σ) := by
-  classical
-  rw [Fintype.card_congr (ordinaryEquivSym W), Sym.card_sym_eq_choose,
-    Fintype.card_option]
-  have hbase : Fintype.card σ + 1 + W - 1 = W + Fintype.card σ := by omega
-  rw [hbase]
-  exact Nat.choose_symm_add
-
-private theorem card_natWeightedSimplex_one_aux {σ : Type*} [Fintype σ] [DecidableEq σ]
-    (W : ℕ) :
-    (natWeightedSimplex (fun _ : σ ↦ 1) W).card =
-      Fintype.card (ordinarySimplex σ W) := by
-  rw [← Fintype.card_coe]
-  apply Fintype.card_congr
-  exact {
-    toFun := fun c ↦ ⟨c.1, by
-      simpa only [one_mul] using
-        (weightedSum_le_of_mem_natWeightedSimplex c.2)⟩
-    invFun := fun c ↦ ⟨c.1, by
-      exact (mem_natWeightedSimplex (fun _ ↦ one_ne_zero)).mpr
-        (by simpa only [one_mul] using c.2)⟩
-    left_inv := fun _ ↦ rfl
-    right_inv := fun _ ↦ rfl }
-
 /-- Slack-coordinate equivalence between the unit-weight executable simplex and functions on
 `Option σ` whose coordinates sum exactly to `W`. The `none` coordinate stores the unused budget.
 This is the public exact-simplex form of stars and bars. -/
@@ -308,6 +237,48 @@ def natWeightedSimplexOneEquivExact
           omega
       | some i => rfl
   }
+
+/-- The unit-weight executable simplex is the subtype of tuples of total at most `W`. -/
+private def natWeightedSimplexOneEquivOrdinary {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (W : ℕ) : ↑(natWeightedSimplex (fun _ : σ ↦ 1) W) ≃ ordinarySimplex σ W where
+  toFun c := ⟨c.1, by
+    simpa only [one_mul] using weightedSum_le_of_mem_natWeightedSimplex c.2⟩
+  invFun c := ⟨c.1, (mem_natWeightedSimplex (fun _ ↦ one_ne_zero)).mpr
+    (by simpa only [one_mul] using c.2)⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+private noncomputable def ordinaryEquivExact {σ : Type*} [Fintype σ] (W : ℕ) :
+    ordinarySimplex σ W ≃ exactSimplex σ W := by
+  classical
+  exact (natWeightedSimplexOneEquivOrdinary W).symm.trans (natWeightedSimplexOneEquivExact W)
+
+private noncomputable def ordinaryEquivSym {σ : Type*} [Fintype σ] (W : ℕ) :
+    ordinarySimplex σ W ≃ Sym (Option σ) W := by
+  classical
+  exact (ordinaryEquivExact W).trans (Sym.equivNatSumOfFintype _ _).symm
+
+private noncomputable instance ordinarySimplexFintype {σ : Type*} [Fintype σ] (W : ℕ) :
+    Fintype (ordinarySimplex σ W) := by
+  classical
+  exact Fintype.ofEquiv (Sym (Option σ) W) (ordinaryEquivSym W).symm
+
+private theorem card_ordinarySimplex {σ : Type*} [Fintype σ] (W : ℕ) :
+    Fintype.card (ordinarySimplex σ W) =
+      (W + Fintype.card σ).choose (Fintype.card σ) := by
+  classical
+  rw [Fintype.card_congr (ordinaryEquivSym W), Sym.card_sym_eq_choose,
+    Fintype.card_option]
+  have hbase : Fintype.card σ + 1 + W - 1 = W + Fintype.card σ := by omega
+  rw [hbase]
+  exact Nat.choose_symm_add
+
+private theorem card_natWeightedSimplex_one_aux {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (W : ℕ) :
+    (natWeightedSimplex (fun _ : σ ↦ 1) W).card =
+      Fintype.card (ordinarySimplex σ W) := by
+  rw [← Fintype.card_coe]
+  exact Fintype.card_congr (natWeightedSimplexOneEquivOrdinary W)
 
 /-- Bounded stars and bars: with unit weights, the box counts precisely the tuples of total
 degree at most `W`. At an empty index type this equals one, also for `W = 0`. -/
