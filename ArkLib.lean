@@ -191,6 +191,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohnson
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
@@ -220,6 +221,7 @@ public import ArkLib.Data.Fin.Tuple.Defs
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
+public import ArkLib.Data.Finset.Enumeration
 public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
@@ -272,6 +274,7 @@ public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.WeightedDegree
+public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
@@ -489,6 +492,8 @@ public import ArkLib.ToMathlib.Finset.ToListWithProof
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
+public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
