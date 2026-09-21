@@ -53,14 +53,17 @@ in `PrimitivePolynomialKernel.lean`, and `Matrix.exists_primitive_kernel_vector_
 bundles the gcd normalization with coordinate-wise degree, zero-preservation, and specialization
 conclusions. Here the normalization holds over any Bézout ring with a normalized gcd and any row
 index type, and the other conclusions are derived from `v = g • u` and from
-`Ideal.comp_ne_zero_of_span_range_eq_top`.
+`Ideal.comp_ne_zero_of_span_range_eq_top`. The degree-budget form of the normalization is
+`Matrix.exists_primitive_kernel_vector_degreeLT` in
+`ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight`.
 
-The shifted and column families of the same revision remain to be ported:
+The shifted and column families of the same revision,
 `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT` and
 `Matrix.exists_primitive_mulVec_eq_zero_of_shifted_surplus` in `ShiftedDegreeKernel.lean`, and
 `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT`,
 `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank`, and
-`Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` in `ColumnDegreeKernel.lean`.
+`Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` in `ColumnDegreeKernel.lean`, are
+ported in `ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight`.
 -/
 
 @[expose] public section

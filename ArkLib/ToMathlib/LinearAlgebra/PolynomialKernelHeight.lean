@@ -38,6 +38,9 @@ chosen primitive: its coordinates generate the unit ideal of `F[X]`.
   bound `s` on the rank of `M.map φ`, for any injective ring homomorphism `φ` from `F[X]` to a
   field. `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_le` is its natural-degree
   form.
+* `Matrix.exists_primitive_kernel_vector_degreeLT`: dividing a nonzero polynomial kernel vector by
+  the gcd of its coordinates gives a primitive kernel vector that keeps every coordinate in its
+  own `degreeLT` budget.
 * `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le` adds to the rank form the
   conclusion that the coordinates of the kernel vector generate the unit ideal.
 
@@ -51,11 +54,12 @@ dimension, so rank-nullity supplies a nonzero vector in its kernel.
 For the rank form, `Matrix.exists_rows_submatrix_mulVec_eq_zero_iff` selects `rank (M.map φ)`
 rows of `M` with the same right kernel as `M`. The row-count theorem applies to this submatrix,
 and the resulting bound is at most the bound for `s` because `r * b / (c - r)` is monotone in
-`r` for `r < c`. For the primitive form, `Matrix.exists_primitive_kernel_vector_eq_smul` writes
-the kernel vector as `g • u` with `g ≠ 0` and `u` primitive, and
-`Polynomial.mem_degreeLT_of_mul_left` (in `ArkLib.ToMathlib.Polynomial.DegreeLT`) transfers the
-degree bound from `g * u j` to `u j`. The natural-degree forms follow from the `degreeLT` forms
-by `Polynomial.natDegree_le_of_mem_degreeLT_succ`.
+`r` for `r < c`. For the primitive form, `Matrix.exists_primitive_kernel_vector_degreeLT` applies
+`Matrix.exists_primitive_kernel_vector_eq_smul`, which writes the kernel vector as `g • u` with
+`g ≠ 0` and `u` primitive, and `Polynomial.mem_degreeLT_of_mul_left` (in
+`ArkLib.ToMathlib.Polynomial.DegreeLT`) transfers the degree bound from `g * u j` to `u j`.
+The natural-degree forms follow from the `degreeLT` forms by
+`Polynomial.natDegree_le_of_mem_degreeLT_succ`.
 
 ## References
 
@@ -70,13 +74,17 @@ over `RatFunc F`, and use `Fin` indices, so a caller with only `rank ≤ r` had 
 monotonicity of the bound itself. The source's row-count primitive theorem
 `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_natDegree_le` is the primitive rank form with
 `s := Fintype.card rows` and the rank bound `Matrix.rank_le_card_height`.
+`Matrix.exists_primitive_kernel_vector_degreeLT` generalizes the lemma of the same name in
+`ShiftedDegreeKernel.lean` from `Fin` indices to arbitrary index types and drops its
+specialization clause, which follows from `Ideal.comp_ne_zero_of_span_range_eq_top`.
 
-The shifted and column families of the same revision remain to be ported:
+The shifted and column families of the same revision,
 `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT` and
 `Matrix.exists_primitive_mulVec_eq_zero_of_shifted_surplus` in `ShiftedDegreeKernel.lean`, and
 `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT`,
 `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank`, and
-`Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` in `ColumnDegreeKernel.lean`.
+`Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` in `ColumnDegreeKernel.lean`, are
+ported in `ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight`.
 -/
 
 @[expose] public section
@@ -250,6 +258,25 @@ theorem exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_le {rows cols K : Typ
     exists_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le M hdeg φ hφ hrank hs
   exact ⟨v, hv, hMv, fun j ↦ Polynomial.natDegree_le_of_mem_degreeLT_succ (hvdegree j)⟩
 
+/-- Primitive normalization of a polynomial kernel vector preserves per-coordinate degree budgets.
+
+Let `v ≠ 0` satisfy `M *ᵥ v = 0` and `v j ∈ Polynomial.degreeLT F (slots j)` for every `j`. Then
+some `u ≠ 0` with `M *ᵥ u = 0` has `u j ∈ Polynomial.degreeLT F (slots j)` for every `j` and
+`Ideal.span (Set.range u) = ⊤`. The vector `u` is `v` divided by the gcd of its coordinates, so
+each `v j` is a nonzero multiple of `u j` and its degree bound passes to `u j`. The budgets may
+differ between coordinates, and a budget `slots j = 0` (which forces `v j = 0`) also forces
+`u j = 0`. The hypothesis `v ≠ 0` is needed because the zero vector has no primitive multiple.
+The row index type is arbitrary. -/
+theorem exists_primitive_kernel_vector_degreeLT {rows cols : Type*} [Fintype cols]
+    (M : Matrix rows cols F[X]) (slots : cols → ℕ) {v : cols → F[X]} (hv : v ≠ 0)
+    (hMv : M *ᵥ v = 0) (hvdegree : ∀ j, v j ∈ Polynomial.degreeLT F (slots j)) :
+    ∃ u : cols → F[X],
+      u ≠ 0 ∧ M *ᵥ u = 0 ∧ (∀ j, u j ∈ Polynomial.degreeLT F (slots j)) ∧
+        Ideal.span (Set.range u) = ⊤ := by
+  classical
+  obtain ⟨g, u, hg, rfl, hu, hMu, hspan⟩ := M.exists_primitive_kernel_vector_eq_smul hv hMv
+  exact ⟨u, hu, hMu, fun j ↦ Polynomial.mem_degreeLT_of_mul_left hg (hvdegree j), hspan⟩
+
 /-- A polynomial matrix whose rank is below its column count has a primitive right-kernel vector
 of uniformly bounded degree.
 
@@ -276,10 +303,8 @@ theorem exists_primitive_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le {rows cols K
       v ≠ 0 ∧ M *ᵥ v = 0 ∧
         (∀ j, v j ∈ Polynomial.degreeLT F (s * b / (Fintype.card cols - s) + 1)) ∧
           Ideal.span (Set.range v) = ⊤ := by
-  classical
   obtain ⟨v, hv, hMv, hvdegree⟩ :=
     exists_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le M hdeg φ hφ hrank hs
-  obtain ⟨g, u, hg, rfl, hu, hMu, hspan⟩ := M.exists_primitive_kernel_vector_eq_smul hv hMv
-  exact ⟨u, hu, hMu, fun j ↦ Polynomial.mem_degreeLT_of_mul_left hg (hvdegree j), hspan⟩
+  exact exists_primitive_kernel_vector_degreeLT M _ hv hMv hvdegree
 
 end Matrix

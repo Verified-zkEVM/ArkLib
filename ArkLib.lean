@@ -498,6 +498,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
+public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
