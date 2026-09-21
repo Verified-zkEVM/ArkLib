@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
 public import Mathlib.FieldTheory.Finite.Basic
@@ -470,6 +470,7 @@ theorem rs_codimension_one_list_size
       let C := ReedSolomon.code domain j
       (j : ℕ∞) < (closeCodewordsRel ((C : Set (ι → F))) w (1 / (j + 1 : ℝ))).ncard := by
   classical
+  let : DecidableEq ι := Classical.decEq _
   let domain : ι ↪ F := Classical.choice (Function.Embedding.nonempty_of_card_le hcard_le)
   let C : Submodule F (ι → F) := ReedSolomon.code domain j
   have hdimC : Module.finrank F C = j := by
@@ -579,13 +580,13 @@ where the evaluation domain `L` is drawn uniformly from the size-`n` subsets of 
 `C := RS[F, L, k]`, and `ρ := k/n`.
 
 **The random domain is the source's, not a reformulation.** The sample space is literally
-`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵖ`, and the code is
+`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ`, and the code is
 indexed by that subset itself (`↥S → F`), so no ordering is chosen and no push-forward argument is
 needed. An earlier assessment recorded this row as blocked on missing infrastructure for a uniform
 distribution over size-`n` subsets; that gap is closed — `Finset F` is a `Fintype`, so the subtype
-is one too, and `PMF.uniformOfFintype` applies directly.
+is one too, and native uniform sampling applies directly.
 
-`[Nonempty {S : Finset F // S.card = n}]` is what `$ᵖ` needs, and it is implied by the field-size
+`[Nonempty {S : Finset F // S.card = n}]` is what `$ᵗ` needs, and it is implied by the field-size
 hypothesis (which forces `n ≤ |F|`, whence `Finset.exists_subset_card_eq` supplies a witness); it is
 taken as an instance argument only because a statement cannot discharge an instance from one of its
 own hypotheses.
@@ -605,7 +606,7 @@ theorem rs_random_domain_lambda_le
     (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
-      Pr_{ let S ← $ᵖ {S : Finset F // S.card = n} }[
+      Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
         Lambda ((ReedSolomon.code
               (Function.Embedding.subtype (fun x : F => x ∈ (S : Finset F))) k :
             Set (↥(S : Finset F) → F)))

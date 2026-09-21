@@ -441,12 +441,10 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
       (certifiedGammaError C δ : ENNReal) := by
   classical
   let _ := Fintype.ofFinite A
-  rw [prEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ
   · -- The choice extractor succeeds, so the event is empty.
     refine le_trans (le_of_eq ?_) zero_le
-    rw [prob_tsum_form_singleton]
     have hnot : ∀ γ : F, ¬ (
         (stmtIn, Spec.chooseRelaxedWitness k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
             Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
@@ -455,8 +453,8 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
             ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
               ∀ j ∈ S, stmtIn.2 0 j + γ • stmtIn.2 1 j = encode m j) :=
       fun _ h ↦ h.1 (Spec.chooseRelaxedWitness_mem k hw)
-    simp [hnot]
-  · refine le_trans (Pr_le_Pr_of_implies _ _
+    exact prEvent_eq_zero_of_forall_not _ _ hnot
+  · refine le_trans (prEvent_mono _ _
       (fun γ ↦ ∃ m : Fin k → F,
         (∑ j, m j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧

@@ -187,6 +187,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Separation
 public import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
+public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldProbability
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
@@ -338,7 +339,7 @@ public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition
@@ -513,6 +514,7 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
@@ -532,6 +534,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
+public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
@@ -550,10 +553,3 @@ public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.Set.Finite
-public import ArkLib.ToVCVio.EvalDist.Defs.Support
-public import ArkLib.ToVCVio.EvalDist.Instances.OptionT
-public import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
-public import ArkLib.ToVCVio.OracleComp.EvalDist
-public import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
-public import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-public import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic
