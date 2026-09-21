@@ -46,7 +46,7 @@ namespace ProximityGap.GrandChallenges
 open scoped NNReal
 open Code CoreDefinitions
 
-variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι]
 
 /-- Builds a one-sided MCA witness from [BCIKS20]'s unique-decoding-regime bound: at any positive

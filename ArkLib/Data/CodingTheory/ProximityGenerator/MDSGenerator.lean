@@ -305,8 +305,8 @@ radius; above `δ_C / (ℓ + 1)` that is the list-decoding regime of
 `isMCAGenerator_of_isMDSGenerator`. The bound is the seed count
 `card_filter_isMCA_le_of_isMDSGenerator`, converted to a probability by
 `mcaError_le_of_exists_exceptional_set` with the set of bad seeds as the exceptional set. -/
-lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
-    [DecidableEq A] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
+lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+    [DecidableEq F] [DecidableEq A] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (η : ℝ) (γ : I)
     (hγ : (γ : ℝ) < (Code.minRelHammingDistCode MC.carrier : ℝ) / (Fintype.card ℓ + 1)) :
@@ -328,8 +328,8 @@ lemma mcaError_le_mdsMCAError_of_lt {S : Type} [Nonempty S] [Fintype S] [Decidab
 with error `mdsMCAError MC ℓ |S| η`, for every slack `0 < η < 1`. The generator-matrix hypotheses
 constrain `G` over the base field only; the tested code's alphabet is any `F`-module.
 Theorem 6.1 [BCGM25]. -/
-theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
-    [DecidableEq A] [Nonempty ι]
+theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+    [SampleableType S] [DecidableEq F] [DecidableEq A] [Nonempty ι]
     (G : Generator S ℓ F)
     (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)

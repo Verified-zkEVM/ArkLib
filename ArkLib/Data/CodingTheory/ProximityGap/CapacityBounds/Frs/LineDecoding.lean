@@ -128,6 +128,9 @@ private theorem exists_seed_pairwise_distinct_affine_lines
       Set.InjOn (fun p : (ι → A) × (ι → A) => p.1 + γ • p.2)
         (↑P : Set ((ι → A) × (ι → A))) := by
   classical
+  let _ : DecidableEq ι := Classical.decEq ι
+  let _ : DecidableEq F := Classical.decEq F
+  let _ : DecidableEq A := Classical.decEq A
   let _ := Fintype.ofFinite ι
   let _ := Fintype.ofFinite A
   let Q := (P.product P).filter (fun pq => pq.1 ≠ pq.2)
@@ -723,7 +726,7 @@ open _root_.CoreDefinitions in
 open _root_.ProximityGap in
 theorem mcaError_affineLine_zero_le_inv_card
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) :
     mcaError (AffineLineGenerator F) C 0 ≤
@@ -743,7 +746,7 @@ theorem mcaError_affineLine_zero_le_inv_card
     exact hc
   unfold mcaError
   refine iSup_le fun U => ?_
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right
   · exact_mod_cast (show (Finset.univ.filter (fun x : F =>
@@ -804,7 +807,7 @@ theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
-    {S : Type} [Fintype S] [Nonempty S]
+    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (C : ModuleCode ι F A)
     {δ : ℝ} (hδ : δ < 0) :
@@ -813,7 +816,7 @@ theorem mcaError_eq_zero_of_neg_radius
   unfold mcaError
   apply le_antisymm
   · refine iSup_le fun U => ?_
-    rw [Probability.prob_uniform_eq_ofReal]
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
     have hempty : Finset.univ.filter (fun x : S => IsMCA G C x U δ) = ∅ := by
       rw [Finset.filter_eq_empty_iff]
       intro x _ hx
@@ -1014,7 +1017,7 @@ open scoped NNReal in
 open scoped ProbabilityTheory in
 theorem strongLineDecodable_to_isLineDecodable
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
     (hstrong : StrongLineDecodable C δ a b) :
     IsLineDecodable (F := F) C δ a b := by
@@ -1030,7 +1033,7 @@ theorem strongLineDecodable_to_isLineDecodable
     ext γ
     simp only [T, lineCloseSeeds, Finset.mem_filter, Finset.mem_univ, true_and,
       hclose_iff]
-  rw [Probability.prob_uniform_eq_card_filter_div_card, hfilter] at hprob
+  rw [SampleableType.prEvent_uniformSample, hfilter] at hprob
   have hq0 : (Fintype.card F : ENNReal) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   have hqtop : (Fintype.card F : ENNReal) ≠ ⊤ := by simp
@@ -1045,7 +1048,7 @@ theorem strongLineDecodable_to_isLineDecodable
       intro γ hγ
       simpa only [T] using hγ) haT
   refine ⟨u₀, hu₀, u₁, hu₁, ?_⟩
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   apply ENNReal.div_le_div_right
   have hevent :
       (Finset.univ.filter fun γ : F =>
