@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.Analysis.Simplex.MaxCoordinate
-public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Thresholds
 public import Mathlib.Analysis.Calculus.Deriv.MeanValue
 
 /-!

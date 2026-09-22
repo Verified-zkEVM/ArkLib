@@ -594,7 +594,7 @@ public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
-public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Thresholds
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT

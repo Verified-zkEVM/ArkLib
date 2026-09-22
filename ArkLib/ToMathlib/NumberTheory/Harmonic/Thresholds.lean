@@ -9,7 +9,7 @@ public import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 public import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 
 /-!
-# Explicit harmonic estimates
+# Harmonic estimates from explicit thresholds
 
 Numerical bounds on the harmonic numbers and on the partial sums of `∑ 1 / k ^ 2`, uniform in
 the number of terms from an explicit threshold on.
