@@ -40,6 +40,8 @@ All counts use truncated subtraction, so no comparison between `H` and `q` is ne
 * `card_mul_sub_le_of_card_bad_le`: the count with arbitrary exceptional sets.
 * `card_mul_sub_le_of_natDegree_separant_le`: the exceptional sets are the roots of the specialized
   separants.
+* `card_mul_sub_le_of_degree_le`: for solutions of degree at most `D`, the separant degrees are
+  bounded by the weighted degree of `Q`.
 * `natCast_choose_ne_zero_of_ringChar`: the binomial hypothesis from the characteristic guard
   `ringChar F = 0 ∨ D < ringChar F`, over a domain.
 * `card_mul_sub_le_of_isHighestActiveJet` and
@@ -50,7 +52,8 @@ All counts use truncated subtraction, so no comparison between `H` and `q` is ne
 
 Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, files
 `WitnessCounting.lean` and `RegularCounting.lean` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`.
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`, and the counting
+wrapper of `RootFinding/DegreeBounds/SpecializationDegree.lean` in the same directory tree.
 
 * `boundedSolution_counting_pow_le_of_bad` becomes `card_mul_sub_le_of_card_bad_le` and
   `boundedSolution_counting_pow_le` becomes `card_mul_sub_le_of_natDegree_separant_le`. The roots
@@ -71,6 +74,14 @@ Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, files
   `differentialWeightedDegree D Q - (D - s) ≤ H`, the sharper separant degree bound of
   `natDegree_differentialSpecialization_separant_le_sub`.
 * `polynomialJet_injOn_regularWitness` is inlined into `card_mul_sub_le_of_isHighestActiveJet`.
+* `boundedSolution_counting_pow_le_weightedDegree`, from
+  `RootFinding/DegreeBounds/SpecializationDegree.lean`, becomes `card_mul_sub_le_of_degree_le`,
+  with the same changes as `boundedSolution_counting_pow_le`. Its exceptional budget
+  `differentialWeightedDegree D Q` is replaced by any `H` with
+  `differentialWeightedDegree D Q - (D - s) ≤ H`. The source's
+  `BoundedSolution.natDegree_separant_le` and `BoundedSolution.natDegree_separant_lt` are
+  `natDegree_differentialSpecialization_separant_le` applied to `P.polynomial` and are not
+  restated.
 
 Deferred: the singular recursion that reduces every solution to a regular branch, and the root
 counts over field extensions and by total jet degree that consume these theorems.
@@ -144,6 +155,30 @@ theorem card_mul_sub_le_of_natDegree_separant_le [CommRing F] [IsDomain F] [Fini
   · exact (Multiset.toFinset_card_le _).trans ((card_roots' _).trans (hdegree P hP))
   · rwa [Multiset.mem_toFinset, mem_roots (hseparant P hP), IsRoot.def] at ha
 
+/-- **Witness counting for solutions of bounded degree.** Let `roots` be a finite set of
+solutions of `Q = 0` of degree at most `D` whose specialized separants in `Y_s` are nonzero. If
+`differentialWeightedDegree D Q - (D - s) ≤ H` and the Hasse jet at each point is injective on the
+solutions having that point as a regular witness, then
+`#roots * (q - H) ≤ q * (jetDegree Q s * q ^ d)` with `q = Nat.card F`.
+
+This is `card_mul_sub_le_of_natDegree_separant_le` with the separant degree bound supplied by
+`natDegree_differentialSpecialization_separant_le_sub`: substituting a polynomial of degree at most
+`D` into `∂Q/∂Y_s` gives degree at most the weighted degree of `Q` minus the weight `D - s` of
+`Y_s`. The jet-injectivity hypothesis is left open; `card_mul_sub_le_of_isHighestActiveJet`
+discharges it for regular solutions. -/
+theorem card_mul_sub_le_of_degree_le [CommRing F] [IsDomain F] [Finite F]
+    (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) {D H : ℕ} (roots : Finset F[X])
+    (hsolution : ∀ P ∈ roots, differentialSpecialization Q P = 0)
+    (hdegree : ∀ P ∈ roots, P.degree ≤ D)
+    (hweight : differentialWeightedDegree D Q - (D - s.val) ≤ H)
+    (hseparant : ∀ P ∈ roots, differentialSpecialization (separant Q s) P ≠ 0)
+    (hinj : ∀ a, Set.InjOn (polynomialJet (d := d) a)
+      {P | P ∈ roots ∧ (differentialSpecialization (separant Q s) P).eval a ≠ 0}) :
+    roots.card * (Nat.card F - H) ≤ Nat.card F * (jetDegree Q s * Nat.card F ^ d) :=
+  card_mul_sub_le_of_natDegree_separant_le Q s roots H hsolution hseparant
+    (fun P hP ↦ (natDegree_differentialSpecialization_separant_le_sub Q s P
+      (natDegree_le_of_degree_le (hdegree P hP))).trans hweight) hinj
+
 /-- **Binomial coefficients below the characteristic.** Over a domain with
 `ringChar F = 0 ∨ D < ringChar F`, the coefficients `(k + s choose s)` with `0 < k` and
 `k + s ≤ D` are nonzero in `F`. This is the binomial hypothesis of
@@ -182,17 +217,15 @@ theorem card_mul_sub_le_of_isHighestActiveJet [CommRing F] [IsDomain F] [Finite 
     (hweight : differentialWeightedDegree D Q - (D - s.val) ≤ H)
     (hseparant : ∀ P ∈ roots, differentialSpecialization (separant Q s) P ≠ 0) :
     roots.card * (Nat.card F - H) ≤ Nat.card F * (jetDegree Q s * Nat.card F ^ d) := by
-  refine card_mul_sub_le_of_natDegree_separant_le Q s roots H hsolution hseparant
-    (fun P hP ↦ ?_) fun a P hP P' hP' h ↦ ?_
-  · exact (natDegree_differentialSpecialization_separant_le_sub Q s P
-      (natDegree_le_of_degree_le (hdegree P hP))).trans hweight
-  · refine eq_of_polynomialJet_eq_of_isHighestActiveJet Q hs a (hdegree P hP.1)
-      (hdegree P' hP'.1) ((hsolution P hP.1).trans (hsolution P' hP'.1).symm) ?_ ?_
-    · simpa only [restrictJet_polynomialJet] using congrArg (restrictJet s) h
-    · intro k hk hkD
-      apply IsLeftCancelMulZero.mul_left_cancel_of_ne_zero
-      rw [← eval_differentialSpecialization]
-      exact mul_ne_zero (hbinom k hk hkD) hP.2
+  refine card_mul_sub_le_of_degree_le Q s roots hsolution hdegree hweight hseparant
+    fun a P hP P' hP' h ↦ ?_
+  refine eq_of_polynomialJet_eq_of_isHighestActiveJet Q hs a (hdegree P hP.1)
+    (hdegree P' hP'.1) ((hsolution P hP.1).trans (hsolution P' hP'.1).symm) ?_ ?_
+  · simpa only [restrictJet_polynomialJet] using congrArg (restrictJet s) h
+  · intro k hk hkD
+    apply IsLeftCancelMulZero.mul_left_cancel_of_ne_zero
+    rw [← eval_differentialSpecialization]
+    exact mul_ne_zero (hbinom k hk hkD) hP.2
 
 /-- `card_mul_sub_le_of_isHighestActiveJet` for a finite set of bounded solutions of degree at
 most `D`: with the same hypotheses on `Q`, the finite set `roots` of solutions with nonzero
