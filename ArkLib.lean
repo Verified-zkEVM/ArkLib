@@ -337,6 +337,7 @@ public import ArkLib.Data.Polynomial.Bivariate
 public import ArkLib.Data.Polynomial.BivariateFactorDegrees
 public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.BaseChange
+public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.ChainWitness
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
