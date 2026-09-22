@@ -29,20 +29,6 @@ public import Mathlib.LinearAlgebra.Projection
   followed by coordinates on its finite-dimensional range: a map onto `K^(rank f)` with the kernel
   of `f`.
 
-The last two are the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker`
-and `finrank_range_comp_le_outer` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source assumed a field, a
-finite-dimensional exhibited space, and a finite-dimensional middle space; here the scalars form
-a division ring, the exhibited space is arbitrary, and only the range of the outer map must be
-finite-dimensional.
-
-`LinearMap.rangeCoordinates` generalizes `gradedImageCoordinateEquiv` and
-`gradedImageCoordinateMap`, and `LinearMap.rangeCoordinates_eq_zero_iff` generalizes
-`gradedImageCoordinateMap_eq_zero_iff`, in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at the
-same revision, from a field to a division ring.
-
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
