@@ -33,18 +33,6 @@ the nodes, then `P` is `expand E (p ^ e)` of that combination. Only `#s` nodes a
   spanned by two interpolants.
 * `Lagrange.eq_expand_map_interpolate_add_C_mul_of_eval_eq`: the same recognition for a
   Frobenius pullback with sparse Taylor coefficients.
-
-## References
-
-These statements are the polynomial content of
-`ReedSolomon.exists_graphLine_polynomials_of_sample` in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLine.lean` and of
-`ReedSolomon.exists_frobeniusGraphLine_polynomials_of_sample` in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/PointRecognition.lean`
-at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source proved them inline for a
-Reed–Solomon evaluation domain; here the nodes are an arbitrary function injective on `s`, the
-Frobenius root condition is required only on `s`, and the challenge `y` is arbitrary rather than a
-`p ^ e`-th power. `map_basisDivisor`, `map_basis` and `map_interpolate` are new.
 -/
 
 @[expose] public section

@@ -40,35 +40,6 @@ domain points, with the challenge `w ^ p ^ e`.
   one pair.
 * `ReedSolomon.exists_frobeniusGraphLine_polynomials_of_sample`: recognition of a sparse
   Frobenius pullback.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, from
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLine.lean` and
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/PointRecognition.lean`.
-The two source files are merged because a module for the second at its source path would exceed
-the module-name length limit, and both recognize a graph line from one sample. Throughout, the
-coordinate type `Fin n` is generalized to any type `ι` (finite where agreement sets appear), and
-the source's `mappedDomain domain iota` is written out as `domain.trans ⟨φ, φ.injective⟩`, as in
-`ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement`.
-
-* `exists_graphLine_polynomials_of_sample` has the source statement. Its proof is
-  `Lagrange.eq_map_interpolate_add_C_mul_of_eval_eq`.
-* `exists_exceptional_graphLine_challenges` has the source statement. It is derived from the new
-  `exists_exceptional_graphLine_challenges_le_disagreement`, whose bound counts only coordinates
-  where `G₀` disagrees with `g`. Its proof is
-  `Finset.exists_card_le_forall_add_mul_eq_add_mul_iff` instead of the source's product of linear
-  polynomials.
-* `exists_graphLine_polynomials_and_exceptional_challenges` bounds the exceptional set by
-  `Fintype.card ι - k` instead of the source's `n`.
-* `exists_frobeniusGraphLine_polynomials_of_sample` needs the root condition only on the sample
-  instead of on every coordinate. Its proof is
-  `Lagrange.eq_expand_map_interpolate_add_C_mul_of_eval_eq`.
-* `exists_exceptional_graphLine_challenges_of_sample` has the source statement.
-
-The source's private `accidentalFactor` and `accidentalPolynomial` are not ported. Consumers of
-these statements in the source's `Ordinary/Frobenius/`, `TaylorChart/`, `Pairs/` and
-`PolynomialCurve/` directories are not ported here.
 -/
 
 @[expose] public section

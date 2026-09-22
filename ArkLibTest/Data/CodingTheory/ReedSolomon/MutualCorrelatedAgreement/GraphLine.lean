@@ -15,8 +15,8 @@ On the domain `0, 1` in `ℚ`, the received words `f = (1, 2)` and `g = (1, 1)` 
 `f + z • g` at one coordinate for `z = -1` and `z = -2`. Both challenges are exceptional, so the
 bound `Fintype.card ι - #(polynomialAgreementSet domain g G₀) = 2` is attained. When `G₀` agrees
 with `g` everywhere, no challenge is exceptional. The recognition theorem identifies a concrete
-polynomial over `ℚ`. The source statements, over `Fin n` with `mappedDomain`, are derived from the
-general ones.
+polynomial over `ℚ`. The special cases over `Fin n`, with the mapped domain written
+`mappedDomain`, are derived from the general ones.
 -/
 
 open Polynomial Finset
@@ -92,15 +92,15 @@ example : ∃ F₀ G₀ : ℚ[X], ∀ z : ℚ, C 1 + C (1 + z) * X = F₀ + C z 
       ring)
   simpa using h
 
-section Source
+section FinCoordinates
 
 variable {F E : Type*} [Field F] [Field E] {n : ℕ}
 
-/-- The source's `mappedDomain`. -/
+/-- The evaluation domain mapped along the field homomorphism `iota`. -/
 def mappedDomain (domain : Fin n ↪ F) (iota : F →+* E) : Fin n ↪ E :=
   domain.trans ⟨iota, iota.injective⟩
 
-/-- Source statement `exists_graphLine_polynomials_of_sample`. -/
+/-- `exists_graphLine_polynomials_of_sample` over coordinates `Fin n`. -/
 example {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (sample : Finset (Fin n))
     (hsampleCard : sample.card = k) :
     ∃ F₀ G₀ : F[X], F₀.degree < k ∧ G₀.degree < k ∧
@@ -112,7 +112,7 @@ example {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (sample : Finset (F
         P = F₀.map iota + Polynomial.C z * G₀.map iota :=
   exists_graphLine_polynomials_of_sample domain f g sample hsampleCard
 
-/-- Source statement `exists_exceptional_graphLine_challenges`. -/
+/-- `exists_exceptional_graphLine_challenges` over coordinates `Fin n`. -/
 example [DecidableEq F] [DecidableEq E] (domain : Fin n ↪ F) (f g : Fin n → F) (F₀ G₀ : F[X])
     (iota : F →+* E) :
     ∃ exceptional : Finset E,
@@ -124,8 +124,8 @@ example [DecidableEq F] [DecidableEq E] (domain : Fin n ↪ F) (f g : Fin n → 
         commonPolynomialAgreementSet domain f g F₀ G₀ := by
   simpa [mappedDomain] using exists_exceptional_graphLine_challenges domain f g F₀ G₀ iota
 
-/-- Source statement `exists_graphLine_polynomials_and_exceptional_challenges`, with the weaker
-bound `n`. -/
+/-- `exists_graphLine_polynomials_and_exceptional_challenges` over coordinates `Fin n`, with the
+weaker bound `n`. -/
 example [DecidableEq F] {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (sample : Finset (Fin n)) (hsampleCard : sample.card = k) :
     ∃ F₀ G₀ : F[X], F₀.degree < k ∧ G₀.degree < k ∧
@@ -147,8 +147,8 @@ example [DecidableEq F] {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
   obtain ⟨exceptional, hcard, hagree⟩ := hexceptional iota
   exact ⟨exceptional, hcard.trans (by simp), hagree⟩
 
-/-- Source statement `exists_frobeniusGraphLine_polynomials_of_sample`, with the root condition
-on every coordinate. -/
+/-- `exists_frobeniusGraphLine_polynomials_of_sample` over coordinates `Fin n`, with the root
+condition on every coordinate. -/
 example {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (sample : Finset (Fin n))
     (hsample : sample.card = k) :
     ∃ F₀ G₀ : F[X], F₀.degree < ↑k ∧ G₀.degree < ↑k ∧
@@ -167,7 +167,7 @@ example {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F) (sample : Finset (F
   exact ⟨F₀, G₀, hF₀, hG₀, hfg, fun ι p e _ roots center w P hroots ↦
     hrecognize ι p e roots center w P fun i _ ↦ hroots i⟩
 
-/-- Source statement `exists_exceptional_graphLine_challenges_of_sample`. -/
+/-- `exists_exceptional_graphLine_challenges_of_sample` over coordinates `Fin n`. -/
 example [DecidableEq F] [DecidableEq E] {k : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (sample : Finset (Fin n)) (hsample : sample.card = k) (F₀ G₀ : F[X])
     (hfg : ∀ i ∈ sample, F₀.eval (domain i) = f i ∧ G₀.eval (domain i) = g i)
@@ -180,6 +180,6 @@ example [DecidableEq F] [DecidableEq E] {k : ℕ} (domain : Fin n ↪ F) (f g : 
   simpa [mappedDomain] using
     exists_exceptional_graphLine_challenges_of_sample domain f g sample hsample F₀ G₀ hfg ι
 
-end Source
+end FinCoordinates
 
 end ReedSolomon.GraphLineTest
