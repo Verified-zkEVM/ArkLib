@@ -649,7 +649,6 @@ public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
-public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
