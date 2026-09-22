@@ -39,25 +39,6 @@ two zeros `0` and `2`, and its derivative `2` vanishes nowhere.
   with nonzero specialization.
 * `MvPolynomial.card_le_degreeOf_mul_prod_of_eval_pderiv_ne_zero`: the count of zeros at which
   `pderiv i p` does not vanish.
-
-## References
-
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`
-`RegularJetCounting.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* The source's `univariateSpecialization p selected other` took an assignment
-  `other : OtherVariable selected → F` of the variables other than `selected`, together with the
-  helpers `OtherVariable` and `insertVariableValue`. Here the specialization takes a full
-  assignment `x : σ → R` and ignores `x i`, so `insertVariableValue other value` becomes
-  `Function.update x i value` and no subtype of variables appears in statements.
-  `eval_univariateSpecialization`, `natDegree_univariateSpecialization_le`,
-  `derivative_optionEquivLeft` and `derivative_univariateSpecialization` are ported with that
-  change, over a commutative semiring instead of a commutative ring.
-* The source counted regular jets of a differential polynomial over a finite field by injecting
-  them into a sigma type of root sets (`RegularJet.rootEncoding`,
-  `natCard_regularJet_le_degree_mul_pow`). That argument is the counting theorem here, stated for
-  an arbitrary polynomial, an arbitrary finite box and an arbitrary domain. The differential
-  specializations are in `ArkLib.Data.Polynomial.Differential.RegularJetCount`.
 -/
 
 @[expose] public section

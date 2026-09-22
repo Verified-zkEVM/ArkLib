@@ -20,9 +20,9 @@ Let `E₄ = FiniteField.Extension (ZMod 2) 2 2`, the field with four elements.
 * `JetDegreeCastsNeZero` fails for `Y₀ ^ 2` over `ZMod 2` and still fails over `E₄`.
 * The cardinality comparison is strict for the zero equation with `D = 0`: `2` constant solutions
   over `ZMod 2` and `4` over `E₄`.
-* The source statements `natCard_le_extension`, `natCard_le_of_extension_bound` and
-  `finset_card_le_extension` follow from the generalized theorems, and the facts of the source
-  file `ToMathlib/FieldTheory/FiniteExtension.lean` follow from Mathlib.
+* For an algebra map of fields, the comparison with a finite extension, its form with an explicit
+  bound, and its `Finset` form follow from the theorems. Mathlib's `FiniteField.Extension`
+  supplies extensions of every large enough size with the base characteristic.
 -/
 
 open Polynomial PolynomialDifferential
@@ -34,14 +34,14 @@ example : Nat.card E₄ = 4 ∧ ringChar E₄ = 2 := by
   refine ⟨by rw [FiniteField.natCard_extension, Nat.card_zmod]; norm_num, ?_⟩
   rw [← Algebra.ringChar_eq (ZMod 2) E₄, ZMod.ringChar_zmod_n]
 
-/-- Source `extensionDegreeAbove`: for every bound there is a positive degree whose extension has
+/-- For every bound there is a positive degree whose extension has
 more elements than the bound, namely `Nat.log q bound + 1`. -/
 example {k : Type*} [Field k] [Finite k] (p : ℕ) [Fact p.Prime] [CharP k p] (bound : ℕ) :
     bound < Nat.card (FiniteField.Extension k p (Nat.log (Nat.card k) bound + 1)) := by
   rw [FiniteField.natCard_extension]
   exact Nat.lt_pow_succ_log_self Finite.one_lt_card bound
 
-/-- Source `charP_extensionAbove`: an extension keeps the characteristic of its base field. -/
+/-- An extension keeps the characteristic of its base field. -/
 example {k : Type*} [Field k] [Finite k] (p n : ℕ) [Fact p.Prime] [CharP k p] [NeZero n] :
     CharP (FiniteField.Extension k p n) p :=
   charP_of_injective_algebraMap (algebraMap k _).injective p
@@ -126,8 +126,8 @@ example :
 example (Q : DifferentialPolynomial (ZMod 2) 1) : Nonempty (Fintype (BoundedSolution Q 3)) :=
   ⟨Fintype.ofFinite _⟩
 
-/-- Source shapes: `natCard_le_extension` and `natCard_le_of_extension_bound`, for an algebra map
-of finite fields. -/
+/-- For an algebra map of fields with `E` finite, the root count over `F` is at most the root count
+over `E`, and hence at most any bound on the latter. -/
 example {F E : Type*} [Field F] [Field E] [Algebra F E] [Finite E] {d : ℕ}
     (Q : DifferentialPolynomial F d) (D bound : ℕ)
     (hbound : Nat.card (BoundedSolution (MvPolynomial.map (algebraMap F E) Q) D) ≤ bound) :
@@ -137,7 +137,7 @@ example {F E : Type*} [Field F] [Field E] [Algebra F E] [Finite E] {d : ℕ}
   have h := BoundedSolution.natCard_le_natCard_map (algebraMap F E).injective Q D
   ⟨h, h.trans hbound⟩
 
-/-- Source shape: `finset_card_le_extension`, without finiteness of either field. -/
+/-- The `Finset` form of the comparison, without finiteness of either field. -/
 example {F E : Type*} [Field F] [Field E] [Algebra F E] {d : ℕ}
     (Q : DifferentialPolynomial F d) (D : ℕ) (base : Finset (BoundedSolution Q D))
     (extension : Finset (BoundedSolution (MvPolynomial.map (algebraMap F E) Q) D))

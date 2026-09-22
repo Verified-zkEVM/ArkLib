@@ -16,7 +16,7 @@ import Mathlib.Algebra.Field.ZMod
   - domain: over `ZMod 4`, `2 * X` has degree `1 < 1 * 2` and is divisible by `X` and `X - 2`;
   - distinct points: `X` is divisible by `X - 0` at two indices that both map to `0`;
   - strict degree: `X * (X - 1)` has degree `2 = 1 * 2`.
-* The degree form allows `multiplicity = 0`; the source statement over a field is an instance.
+* The degree form allows `multiplicity = 0`, and the statement over a field is an instance.
 -/
 
 open Polynomial
@@ -66,7 +66,7 @@ example (W : ℚ[X]) (hW : W.degree < ((0 * 5 : ℕ) : WithBot ℕ)) : W = 0 :=
   eq_zero_of_degree_lt_mul_of_pow_X_sub_C_dvd_at_injOn (fun _ : Fin 0 ↦ (0 : ℚ)) ∅ 0 0
     (by simp) le_rfl (by simp) (by simpa using hW)
 
-/-- Source shape: `eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn` over a field. -/
+/-- The natural-degree form over a field. -/
 example {ι F : Type*} [Field F] {W : F[X]} (points : ι → F) (indices : Finset ι)
     (multiplicity requiredPoints : ℕ) (hpoints : Set.InjOn points (indices : Set ι))
     (hcard : requiredPoints ≤ indices.card)

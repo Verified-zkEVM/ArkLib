@@ -23,13 +23,6 @@ All three hold over any integral domain. The domain hypothesis is needed: over `
 nonzero polynomial `2 * X` of degree one is divisible by both `X` and `X - 2`.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
-
-## References
-
-The two vanishing theorems are ported from `ArkLib/ToMathlib/Polynomial/RootMultiplicity.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, where they and
-`sum_rootMultiplicity_le_natDegree` are stated over a field; here `[Field F]` becomes
-`[CommRing R] [IsDomain R]`.
 -/
 
 @[expose] public section

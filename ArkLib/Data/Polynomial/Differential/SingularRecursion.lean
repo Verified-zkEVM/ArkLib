@@ -11,7 +11,7 @@ public import Mathlib.Algebra.MvPolynomial.Equiv
 /-!
 # Singular recursion for polynomial differential equations
 
-Kopparty's `SOLVE` procedure splits the solutions `P` of an equation `Q(X, P, P^{(1)}, …) = 0`
+The `SOLVE` procedure of [Kop15] splits the solutions `P` of an equation `Q(X, P, P^{(1)}, …) = 0`
 according to its highest active jet `Y_s`. Either `P` is singular, meaning that it also solves the
 separant equation `∂Q/∂Y_s = 0`, or the separant specialization at `P` is a nonzero univariate
 polynomial. In the singular case the procedure recurses on the separant. This file proves that the
@@ -47,49 +47,6 @@ root-finding layer, does that.
 ## References
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.3 and Section 4.2.
-
-This file ports
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/SingularRecursion.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source stated everything in the
-namespace `ReedSolomon.HiddenDerivative`; nothing in it mentions a Reed–Solomon object, so it is
-stated here in `PolynomialDifferential` over a commutative semiring.
-
-* The one-step lemmas `jetDegree_separant_le`, `jetDegree_separant_eq_sub_one_of_lt_ringChar`,
-  `separant_ne_zero_of_dependsOnJet_of_lt_ringChar` and
-  `separant_ne_zero_of_highestActiveJet_eq_some` are in
-  `ArkLib.Data.Polynomial.Differential.DerivativeDescent`, with cast hypotheses.
-* The source measure `jetDegreeMeasure` (the sum of the individual jet degrees) is replaced by the
-  existing `jetTotalDegree`, which a separant lowers by at least one in every characteristic
-  (`separant_total_le`). The source's `jetDegreeMeasure_separant_lt` and
-  `jetDegreeMeasure_lt_of_singularStep` become `jetTotalDegree_separant_lt` and
-  `jetTotalDegree_lt_of_singularStep`, without characteristic, `NoZeroDivisors` or `Nontrivial`
-  hypotheses.
-* `SingularStep` drops the source's condition `jetDegree current s < ringChar F`. That condition
-  is needed only to keep the next equation nonzero, which `singularStep_preserves` proves from a
-  hypothesis on the current equation. `singularStep_separant` and `singularStep_wellFounded` hold
-  over every commutative semiring.
-* The source predicate `IsBelowCharacteristic D Q`, `D < ringChar F ∧ ∀ j, jetDegree Q j <
-  ringChar F`, is not ported. The recursion uses only its second half, and that half excluded
-  characteristic zero; it is replaced by `∀ j, JetDegreeCastsNeZero Q j`, which
-  `jetDegreeCastsNeZero_of_ringChar` derives from the characteristic guard. So
-  `isBelowCharacteristic_separant` becomes `jetDegreeCastsNeZero_separant` and
-  `singularStep_preserves_contract` becomes `singularStep_preserves`.
-* `SingularBoundedSolution`, `RegularBranchBoundedSolution`, their projections,
-  `boundedSolutionBranch`, `boundedSolutionBranch_forgets`,
-  `RegularBranchBoundedSolution.isRegularJet_of_eval_ne_zero`,
-  `jetDegree_eq_zero_of_highestActiveJet_eq_none`,
-  `exists_toMvPolynomial_eq_of_highestActiveJet_eq_none`,
-  `differentialSpecialization_toMvPolynomial`,
-  `eq_zero_of_boundedSolution_of_highestActiveJet_eq_none`,
-  `isEmpty_boundedSolution_of_highestActiveJet_eq_none` and
-  `RegularRecursionLeaf.isRegularJet_of_eval_ne_zero` keep their statements.
-* `RegularRecursionLeaf` loses its degree parameter `D`, which entered only through
-  `IsBelowCharacteristic D`; its field `belowCharacteristic` becomes `castsNeZero`.
-* `exists_regularRecursionLeaf` takes any polynomial `P` with `differentialSpecialization Q P = 0`
-  instead of a bounded solution, and the cast hypotheses instead of `IsBelowCharacteristic D Q`.
-  `exists_regularRecursionLeaf_of_boundedSolution` is the source-shaped corollary.
-* `eq_zero_of_differentialSpecialization_eq_zero_of_highestActiveJet_eq_none` is new; it is the
-  source's terminal lemma without the degree bound on `P`.
 -/
 
 @[expose] public section

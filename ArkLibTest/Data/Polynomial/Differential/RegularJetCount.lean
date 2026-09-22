@@ -13,8 +13,8 @@ import Mathlib.Algebra.MvPolynomial.CommRing
 
 * For `Y₀ ^ 2 = 1` over `ZMod 3` at depth `0`, the theorem bounds the regular jets at each point
   by `jetDegree = 2`, and the two jets `1` and `2` are regular, so the bound is attained.
-* The source statement `natCard_regularJet_le_degree_mul_pow`, with the exponent `d + 1`, follows
-  from `natCard_regularJet_le`.
+* The bound `jetDegree Q s * q ^ (d + 1)` on all regular point-jet pairs follows from
+  `natCard_regularJet_le`.
 * The zero differential polynomial has no regular jets, as the theorem computes from
   `jetDegree 0 s = 0`.
 * Over `ZMod 4`, the equation `2 Y₀ = 0` has the two regular jets `0` and `2` at every point
@@ -66,8 +66,8 @@ example (a : ZMod 3) :
       · exact isRegularJet_squareEquation a 2 (by decide) (by decide)
     exact (card_le_card hsub).trans_eq' (by decide)
 
-/-- Source shape: `natCard_regularJet_le_degree_mul_pow`, the bound on all regular point-jet
-pairs written with the exponent `d + 1`. -/
+/-- The bound on all regular point-jet pairs over a finite field, written with the exponent
+`d + 1`. -/
 example {F : Type*} [Field F] [Finite F] {d : ℕ} (Q : DifferentialPolynomial F d)
     (s : Fin (d + 1)) :
     Nat.card (RegularJet Q s) ≤ jetDegree Q s * Nat.card F ^ (d + 1) := by
