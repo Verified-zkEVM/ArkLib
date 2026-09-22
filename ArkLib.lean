@@ -98,12 +98,15 @@ public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplicity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
