@@ -18,7 +18,8 @@ polynomial `G` over `R` with nonzero derivative, and `G.natDegree * p ^ e = P.na
 coefficients of `G` are coefficients of `P`: no fraction field is introduced. Irreducibility of
 `P` descends to `G`. A polynomial with nonzero derivative is not the expansion of any polynomial
 by `p`, so the exponent `e` is maximal. In characteristic zero the derivative of a
-positive-degree polynomial is nonzero, and `e = 0`.
+positive-degree polynomial is nonzero, and `e = 0`. The irreducible form also holds in
+exponential characteristic `p`, where `p = 1` in characteristic zero.
 
 Over a GCD domain, an irreducible `G` with nonzero derivative stays irreducible over the
 fraction field by Gauss's lemma, and is separable there.
@@ -28,6 +29,8 @@ fraction field by Gauss's lemma, and is separable there.
 * `Polynomial.exists_frobeniusContraction`: the terminal contraction and its degree identity.
 * `Polynomial.exists_irreducible_frobeniusContraction`: the same for an irreducible polynomial,
   with an irreducible terminal polynomial.
+* `Polynomial.exists_irreducible_frobeniusContraction_expChar`: the irreducible form in
+  exponential characteristic `p`.
 * `Polynomial.exists_frobeniusContraction_fractionRing`: over a GCD domain, the terminal
   polynomial is irreducible and separable over the fraction field.
 * `Polynomial.not_exists_expand_of_derivative_ne_zero`: maximality of the contraction.
@@ -110,6 +113,30 @@ theorem not_exists_expand_of_derivative_ne_zero {G : R[X]} (hG : derivative G �
   rw [derivative_expand, CharP.cast_eq_zero, zero_mul, mul_zero]
 
 end NoZeroDivisors
+
+section ExpChar
+
+variable {R : Type*} [CommRing R] [NoZeroDivisors R] (p : ℕ) [ExpChar R p]
+
+/-- In exponential characteristic `p` without zero divisors, an irreducible positive-degree
+polynomial `P` is the expansion `expand R (p ^ e) G` of an irreducible polynomial `G` over the
+same ring with nonzero derivative and positive degree, and `G.natDegree * p ^ e = P.natDegree`.
+In characteristic zero, `p = 1` and `G = P`. -/
+theorem exists_irreducible_frobeniusContraction_expChar {P : R[X]}
+    (hPpos : 0 < P.natDegree) (hP : Irreducible P) :
+    ∃ e : ℕ, ∃ G : R[X],
+      derivative G ≠ 0 ∧
+      expand R (p ^ e) G = P ∧
+      G.natDegree * p ^ e = P.natDegree ∧
+      0 < G.natDegree ∧
+      Irreducible G := by
+  rcases ‹ExpChar R p› with _ | hp
+  · refine ⟨0, P, ?_, by simp, by simp, hPpos, hP⟩
+    rw [ne_eq, derivative_eq_zero]
+    exact hPpos.ne'
+  · exact exists_irreducible_frobeniusContraction _ hPpos hP
+
+end ExpChar
 
 section FractionRing
 
