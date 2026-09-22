@@ -69,10 +69,10 @@ Throughout, the source's `harmonicPowerSum (d - 1) 1` is `harmonic (d - 1)`, its
   arbitrary, and `1000 ≤ d`, the hypothesis of `prescribed_kappa_bounds`, suffices. The source's
   case is derived in the acceptance tests.
 
-Deferred: the source's `finrank_weightedSupportLocalConstraint_lt_prescribed`, which discharges the
+The source's `finrank_weightedSupportLocalConstraint_lt_prescribed`, which discharges the
 per-fiber inequalities from `WeightedSupportParameters.prescribedFiberMeanVariance_le` of
-`Parameters/WeightedSupport/Rounding.lean` and the scalar parameters `theta` and `xi` of
-`Parameters/WeightedSupport/ScalarParameters.lean`. Neither file is ported yet.
+`Parameters/WeightedSupport/Rounding.lean`, is ported in `Margin.lean` of this directory, so that
+this file does not import the rounding parameters.
 -/
 
 @[expose] public section
