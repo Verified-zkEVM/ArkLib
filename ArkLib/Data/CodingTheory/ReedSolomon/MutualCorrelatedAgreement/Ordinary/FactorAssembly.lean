@@ -30,25 +30,6 @@ to at most `H`.
   `ordinaryFactorRaw`.
 * `ReedSolomon.exists_exceptional_ordinaryUnifiedPowerFactorAssembly`: the combination for the
   free-retention charge `ordinaryUnifiedPowerFactorRawAt`.
-
-## References
-
-`exists_exceptional_ordinaryFactorAssembly` is ported from
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/FactorAssembly.lean` at
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under the same name. The source
-assumed a coefficient field `F`, polynomials in `MvPolynomial (Option σ) F` with root variable
-`none`, and ring homomorphisms into a domain. Here the coefficients form any unique factorization
-domain, the root variable is any `i : σ`, and the evaluations are
-monoid-with-zero homomorphisms into any commutative monoid with zero without zero divisors. The
-source's `ordinaryContent`, `ordinaryRootFactorClasses` and `ordinaryFactorRepresentative` are
-`MvPolynomial.radicalContent i`, `MvPolynomial.positiveDegreeFactorClasses i` and
-`Associates.rep`. The source proof is split into the budget-independent
-`MvPolynomial.exists_exceptional_of_factor_exceptional` and `ordinaryFactorRaw_sum_le`.
-
-`exists_exceptional_ordinaryUnifiedPowerFactorAssembly` is new. The source repeated the same
-union argument inline for the free-retention charge in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean`; that file is
-not ported yet.
 -/
 
 @[expose] public section

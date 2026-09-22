@@ -10,9 +10,9 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffi
 # Acceptance tests for the line-to-affine transfer
 
 Every finite field satisfies `LineExactAgreementBound domain k A (Fintype.card F)` with the whole
-field as exceptional set, and then the affine-line error bound is `1`. The source statements, over
-`Fin n` with the threshold `⌈n * (1 - radius)⌉₊` and the hypothesis `1 ≤ s`, are derived from the
-general ones. The dimension `s = 0` is covered without that hypothesis.
+field as exceptional set, and then the affine-line error bound is `1`. The special cases over
+`Fin n`, with the threshold `⌈n * (1 - radius)⌉₊` and the extra hypothesis `1 ≤ s`, are derived
+from the general ones. The dimension `s = 0` is covered without that hypothesis.
 -/
 
 open Polynomial CoreDefinitions
@@ -44,7 +44,7 @@ example {ι : Type} [Fintype ι] (domain : ι ↪ F) (k A : ℕ) (B : ℝ)
   mcaError_affineSpace_le_of_exactAgreement domain B hline radius hthreshold
 
 open Classical in
-/-- The source statement of `affineLine_bad_set_card_le_of_exactAgreement`, over `Fin n`. -/
+/-- `affineLine_bad_set_card_le_of_exactAgreement` over coordinates `Fin n`. -/
 example {n k A : ℕ} (domain : Fin n ↪ F) (B : ℝ) (hline : LineExactAgreementBound domain k A B)
     (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) (U : Fin 2 → Fin n → F) :
     ((Finset.univ.filter fun z : F ↦
@@ -52,16 +52,16 @@ example {n k A : ℕ} (domain : Fin n ↪ F) (B : ℝ) (hline : LineExactAgreeme
   affineLine_bad_set_card_le_of_exactAgreement domain B hline radius
     (by simpa using hthreshold) U
 
-/-- The source statement of `mcaError_affineSpace_le_of_exactAgreement`, over `Fin n` and with
-the unused hypothesis `1 ≤ s`. -/
+/-- `mcaError_affineSpace_le_of_exactAgreement` over coordinates `Fin n`, with the unused
+hypothesis `1 ≤ s`. -/
 example {n k A s : ℕ} (domain : Fin n ↪ F) (B : ℝ) (hline : LineExactAgreementBound domain k A B)
     (_hs : 1 ≤ s) (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineSpaceGenerator F s) (code domain k) radius ≤
       ENNReal.ofReal (B / ((Fintype.card F : ℝ) - 1)) :=
   mcaError_affineSpace_le_of_exactAgreement domain B hline radius (by simpa using hthreshold)
 
-/-- The source statement of `exists_affine_exceptionalSet_full_agreement_of_exactLine`, over
-`Fin n` and with the unused hypothesis `1 ≤ s`. -/
+/-- `exists_affine_exceptionalSet_full_agreement_of_exactLine` over coordinates `Fin n`, with the
+unused hypothesis `1 ≤ s`. -/
 example {n k A s : ℕ} (domain : Fin n ↪ F) (B : ℝ) (hline : LineExactAgreementBound domain k A B)
     (_hs : 1 ≤ s) (radius : ℝ) (hthreshold : A ≤ ⌈(n : ℝ) * (1 - radius)⌉₊)
     (hkThreshold : (k : ℝ) ≤ n * (1 - radius)) (U : Fin (s + 1) → Fin n → F) :

@@ -25,16 +25,6 @@ over the factorization.
 ## Main statements
 
 * `Finset.add_sum_le_mul_add_mul_of_le`: the aggregated bound in an ordered semiring.
-
-## References
-
-This generalizes the common summation step of `ReedSolomon.ordinaryFactorRaw_sum_le`,
-`ReedSolomon.ordinaryUnifiedPowerFactorRawAt_sum_le`, and
-`ReedSolomon.ordinaryUnifiedPowerFactorRaw_sum_le` in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/{AggregationBounds,
-UnifiedBudget}.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source
-proved the step three times over `ℚ` for three specific charges. Here the charges, shares and
-coefficients are arbitrary elements of an ordered semiring.
 -/
 
 @[expose] public section

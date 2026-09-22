@@ -24,12 +24,6 @@ This is the endpoint that the transfer theorems for message-degree bounds of at 
 
 * `ReedSolomon.exists_exactPair_fullDimension`: one pair explains every full-agreement candidate.
 * `ReedSolomon.exists_exceptional_fullDimension_lineMCA`: the exceptional set is empty.
-
-## References
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FullDimension.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under the same names. The coordinate type
-`Fin n` is generalized to any finite type `ι`, with `n` replaced by `Fintype.card ι`.
 -/
 
 @[expose] public section

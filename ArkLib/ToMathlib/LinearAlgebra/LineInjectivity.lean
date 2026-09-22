@@ -29,19 +29,6 @@ separates the whole family.
   family.
 * `Set.Finite.exists_notMem_injOn_add_smul`: over an infinite domain, a separating parameter
   avoids any finite set.
-
-## References
-
-These statements are the linear-algebra content of
-`ReedSolomon.pair_eq_of_correlatedPairSpecialization_eq_at_two`,
-`ReedSolomon.subsingleton_correlatedPair_collisions`,
-`ReedSolomon.finite_correlatedPair_collision_challenges` and
-`ReedSolomon.exists_correlatedPairSpecialization_injOn_avoiding` in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Pairs/Family.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source proved them for pairs of polynomials over a
-field `F` mapped into a field `E`, coefficient by coefficient. Here the pairs are arbitrary vectors
-in a torsion-free module over a domain, and the family is indexed by any type through two maps
-`a b : α → V`.
 -/
 
 @[expose] public section

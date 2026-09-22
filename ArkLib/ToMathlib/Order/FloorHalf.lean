@@ -19,14 +19,6 @@ rounding, so the conclusion holds also for `x < 2`, where `⌊x / 2⌋₊ = 0`.
 ## Main statements
 
 * `Nat.add_floor_half_bounds`: the four bounds.
-
-## References
-
-This is the content of `ReedSolomon.correlatedMidpoint_bounds` in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Midpoint.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, where `x = δ * n` is real. Here `x` is an arbitrary
-element of an ordered field with a floor, and the bound by the block length `n` is left to the
-caller.
 -/
 
 @[expose] public section

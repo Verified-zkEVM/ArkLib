@@ -47,18 +47,6 @@ The correspondence to [BCGM25]'s numbered statements is in
 
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
     with Mutual Correlated Agreement*][BCGM25]
-* ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-  `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/LineToAffine.lean`: the count-based
-  statements are the code-independent content of
-  `ReedSolomon.affineSpace_bad_density_le_of_exactAgreement` and of the probability steps of
-  `ReedSolomon.mcaError_affineLine_le_of_exactAgreement` and
-  `ReedSolomon.mcaError_affineSpace_le_of_exactAgreement`, for any module code instead of a
-  Reed–Solomon code, and without the source's hypothesis `1 ≤ s`.
-* The same revision,
-  `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/FullCode.lean`: the proof of
-  `ReedSolomon.mcaError_affineLine_fullRate_eq_zero` is `CoreDefinitions.mcaError_top_eq_zero`
-  for the affine line generator, which holds for every generator and every module code equal to
-  `⊤`.
 -/
 
 @[expose] public section
@@ -395,8 +383,8 @@ theorem card_filter_isMCA_affineSpaceGenerator_div_le {s : ℕ}
 
 open Classical in
 /-- **Affine-space MCA error from a uniform line count.** If for every pair of words at most `B`
-seeds are MCA-bad for the affine line generator at radius `δ`, then for every `s ≥ 1` the MCA
-error of the affine space generator at radius `δ` is at most `B / (|F| - 1)`, for every `s`. See
+seeds are MCA-bad for the affine line generator at radius `δ`, then for every `s` the MCA error of
+the affine space generator at radius `δ` is at most `B / (|F| - 1)`. See
 `card_filter_isMCA_affineSpaceGenerator_div_le`. -/
 theorem mcaError_affineSpaceGenerator_le_of_forall_card_le {s : ℕ}
     (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}

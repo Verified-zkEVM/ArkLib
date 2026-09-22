@@ -25,16 +25,6 @@ center recover a unique preimage under the Frobenius pullback.
 * `Polynomial.degree_contract_lt_of_degree_lt`: the degree bound descends.
 * `Polynomial.existsUnique_expand_of_sparse`,
   `Polynomial.existsUnique_expand_of_sparse_taylor`: unique low-degree preimages.
-
-## References
-
-Ported from `ToMathlib/Polynomial/SparseContraction.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under the same names, over commutative semirings
-instead of commutative rings. The source's `expand_contract_of_sparse` is the reverse direction of
-the new `expand_contract_eq_self_iff`; both no longer assume `0 < s`, and neither does
-`degree_contract_lt_of_degree_lt`. `existsUnique_expand_of_sparse` assumes `s ≠ 0` instead of
-`0 < s`. `existsUnique_expand_of_sparse_taylor` is unchanged apart from the renamed
-`taylor_expand_expChar_pow`.
 -/
 
 @[expose] public section

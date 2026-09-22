@@ -14,8 +14,8 @@ For `D = h = 1` and `s = b = 2` the mixed degree is `14`: the unified bound `14`
 while the sharp bound `12` fails, so `b ≤ D` is needed in
 `ordinaryFrobeniusMixedDegree_le_sharp`. Further examples show that `ordinaryPsi_eq_sharp`,
 `ordinaryPsi_le_four_mul`, `ordinaryFrobenius_charge_le` and the summation theorems need their
-hypotheses, aggregate the charges of a two-factor polynomial, and derive the source statements,
-with their extra positivity hypotheses, from the general ones.
+hypotheses, aggregate the charges of a two-factor polynomial, and derive the forms with extra
+positivity hypotheses from the general ones.
 -/
 
 open scoped BigOperators
@@ -104,30 +104,31 @@ example :
       ordinaryUnifiedPowerFactorRaw (9 / 3) 12 3 1 2 5 := by
   simpa using ordinaryUnifiedPowerFactorAt_succ_eq 12 3 1 2 5 6 (by norm_num) (by norm_num)
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with positivity hypotheses -/
 
-/-- The source form of `ordinaryFrobeniusMixedDegree_eq`, with its hypothesis `1 ≤ b`. -/
+/-- `ordinaryFrobeniusMixedDegree_eq` with the extra hypothesis `1 ≤ b`. -/
 example (D h s b : ℕ) (_hb : 1 ≤ b) :
     ordinaryFrobeniusMixedDegree D h s b = h + s * b + (2 * D * s - 1) * h * (2 * b - 1) :=
   ordinaryFrobeniusMixedDegree_eq D h s b
 
-/-- The source form of `ordinaryFrobeniusMixedDegree_le_sharp`. -/
+/-- `ordinaryFrobeniusMixedDegree_le_sharp` with the extra hypotheses `1 ≤ s` and `1 ≤ b`. -/
 example {D s b : ℕ} (h : ℕ) (hD : b ≤ D) (_hs : 1 ≤ s) (_hb : 1 ≤ b) :
     ordinaryFrobeniusMixedDegree D h s b ≤ h + s * b + (2 * D - 1) * h * (2 * (s * b) - 1) :=
   ordinaryFrobeniusMixedDegree_le_sharp h hD
 
-/-- The source form of `ordinaryFrobeniusMixedDegree_le_unified`. -/
+/-- `ordinaryFrobeniusMixedDegree_le_unified` with the extra hypotheses `1 ≤ D`, `1 ≤ s` and
+`1 ≤ b`. -/
 example {D s b : ℕ} (h : ℕ) (_hD : 1 ≤ D) (_hs : 1 ≤ s) (_hb : 1 ≤ b) :
     ordinaryFrobeniusMixedDegree D h s b ≤ s * b + h * ordinaryPsi D (s * b) :=
   ordinaryFrobeniusMixedDegree_le_unified D h s b
 
-/-- The source form of `ordinaryFrobenius_charge_le`. -/
+/-- `ordinaryFrobenius_charge_le` with the extra hypothesis `1 ≤ b`. -/
 example (theta : ℚ) (n D h s b : ℕ) (htheta : 0 ≤ theta) (hs : 1 ≤ s) (_hb : 1 ≤ b) :
     ((2 * b - 1) * h : ℕ) + theta * ordinaryFrobeniusMixedDegree D h s b +
         ((n - D - 1) * b : ℕ) ≤ ordinaryFactorRaw theta n D (s * b) h :=
   ordinaryFrobenius_charge_le theta n D h s b htheta hs
 
-/-- The source form of `ordinaryFrobenius_sharp_difference`, over `ℤ`. -/
+/-- `ordinaryFrobenius_sharp_difference` over `ℤ`. -/
 example (D s b : ℤ) :
     (2 * D - 1) * (2 * (s * b) - 1) - (2 * D * s - 1) * (2 * b - 1) = 2 * (s - 1) * (D - b) :=
   ordinaryFrobenius_sharp_difference D s b

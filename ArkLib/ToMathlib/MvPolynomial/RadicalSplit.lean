@@ -46,38 +46,6 @@ This file makes no characteristic, separability or incidence claim.
   `add_sum_totalDegree_positiveDegreeFactorClasses_le` and
   `sum_degreeOf_positiveDegreeFactorClasses_le`: the degree budgets.
 * `MvPolynomial.exists_exceptional_of_factor_exceptional`: the combination of exceptional sets.
-
-## References
-
-The declarations generalize `ToMathlib/MvPolynomial/OrdinaryFactors.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source worked over a field `F`, with polynomials in
-`MvPolynomial (Option σ) F` and the distinguished variable `none`. Here the coefficients form any
-unique factorization domain and the distinguished variable is any `i : σ`; the source is the case
-`σ := Option σ`, `i := none`. The correspondence is:
-
-* `ordinaryRootFactorClasses Q` is `positiveDegreeFactorClasses none Q`, and
-  `ordinaryRootFactorClasses_spec` is `irreducible_rep_of_mem_positiveDegreeFactorClasses` with
-  `mem_positiveDegreeFactorClasses`.
-* `ordinaryContent Q` and `ordinaryRootProduct Q` are `radicalContent none Q` and
-  `radicalPrimPart none Q`; `ordinarySquarefreeProduct Q` is `radicalRep Q` (see
-  `ArkLib.ToMathlib.RingTheory.Radical.Representative`).
-* `ordinary_split_product`, `ordinaryContent_ne_zero`, `ordinaryRootProduct_ne_zero`,
-  `degreeOf_ordinaryContent_none` and `ordinary_split_zero_iff` are
-  `radicalContent_mul_radicalPrimPart`, `radicalContent_ne_zero`, `radicalPrimPart_ne_zero`,
-  `degreeOf_radicalContent` and `map_radicalContent_mul_radicalPrimPart_eq_zero_iff`. The last
-  now holds for monoid-with-zero homomorphisms into any commutative monoid with zero without zero
-  divisors, and is derived from the new `map_eq_zero_iff_radicalContent_or_exists`.
-* `ordinary_degree_sum_le` and `ordinary_root_degree_sum_le` are
-  `add_sum_degreeOf_positiveDegreeFactorClasses_le` and
-  `sum_degreeOf_positiveDegreeFactorClasses_le`. Both are specializations of
-  `add_sum_positiveDegreeFactorClasses_le`, which also yields the total-degree bound
-  `add_sum_totalDegree_positiveDegreeFactorClasses_le` of the source's
-  `ToMathlib/MvPolynomial/OrdinaryFactorDegrees.lean`. The hypothesis `Q ≠ 0` is dropped.
-* The exceptional-set combination is the budget-independent core of
-  `ReedSolomon.exists_exceptional_ordinaryFactorAssembly` in
-  `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/FactorAssembly.lean`.
-* The source's `Canary` section, a sample polynomial `X j * (C a * X none + 1) ^ 2`, moves to the
-  acceptance tests `ArkLibTest.ToMathlib.MvPolynomial.RadicalSplit`.
 -/
 
 @[expose] public section
@@ -119,6 +87,8 @@ theorem positiveDegreeFactorClasses_zero (i : σ) :
 theorem radicalContent_zero (i : σ) : radicalContent i (0 : MvPolynomial σ R) = 1 := by
   simp [radicalContent, primeFactors_zero]
 
+/-- `c` is a positive-degree factor class of `Q` exactly when it is a prime factor class of `Q`
+whose representative has positive degree in `X i`. -/
 @[simp]
 theorem mem_positiveDegreeFactorClasses {i : σ} {Q : MvPolynomial σ R}
     {c : Associates (MvPolynomial σ R)} :
@@ -223,9 +193,13 @@ theorem exists_exceptional_of_factor_exceptional {W V K Fn α : Type*} [CommMono
 
 variable [IsDomain R]
 
+/-- The content radical is nonzero: it is a factor of `radicalRep Q`
+(`radicalContent_mul_radicalPrimPart`), which is nonzero over a domain, also for `Q = 0`. -/
 theorem radicalContent_ne_zero (i : σ) (Q : MvPolynomial σ R) : radicalContent i Q ≠ 0 :=
   left_ne_zero_of_mul (radicalContent_mul_radicalPrimPart i Q ▸ radicalRep_ne_zero Q)
 
+/-- The primitive-part radical is nonzero: it is a factor of `radicalRep Q`
+(`radicalContent_mul_radicalPrimPart`), which is nonzero over a domain, also for `Q = 0`. -/
 theorem radicalPrimPart_ne_zero (i : σ) (Q : MvPolynomial σ R) : radicalPrimPart i Q ≠ 0 :=
   right_ne_zero_of_mul (radicalContent_mul_radicalPrimPart i Q ▸ radicalRep_ne_zero Q)
 

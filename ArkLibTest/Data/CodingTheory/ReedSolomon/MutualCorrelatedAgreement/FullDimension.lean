@@ -13,8 +13,8 @@ import Mathlib.Data.Fin.VecNotation
 On the domain `0, 1` in `ℚ`, the pair of `exists_exactPair_fullDimension` identifies every
 full-agreement candidate for `f = (1, 2)` and `g = (0, 1)`; a concrete candidate is
 `C 1 + C (1 + z) * X`. The threshold `Fintype.card ι` is needed: with threshold `1`, the candidates
-`0` and `X` for `f = g = 0` cannot both be `F₀ + C z * G₀`. The source statements over `Fin n`
-are derived from the general ones.
+`0` and `X` for `f = g = 0` cannot both be `F₀ + C z * G₀`. The special cases over `Fin n` are
+derived from the general ones.
 -/
 
 open Polynomial Finset
@@ -62,11 +62,11 @@ example : ¬∃ F₀ G₀ : ℚ[X], ∀ z (P : ℚ[X]), P.degree < 2 →
   have hX := h 0 X (by rw [degree_X]; decide) (hone X eval_X)
   exact X_ne_zero (hX.trans h0.symm)
 
-section Source
+section FinCoordinates
 
 variable {F : Type*} [Field F] [DecidableEq F]
 
-/-- Source statement `exists_exactPair_fullDimension`. -/
+/-- `exists_exactPair_fullDimension` over coordinates `Fin n`. -/
 example (n : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F) :
     ∃ F₀ G₀ : F[X], F₀.degree < n ∧ G₀.degree < n ∧
       ∀ z (P : F[X]), P.degree < n →
@@ -76,7 +76,7 @@ example (n : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F) :
             commonPolynomialAgreementSet domain f g F₀ G₀ := by
   simpa using exists_exactPair_fullDimension domain f g
 
-/-- Source statement `exists_exceptional_fullDimension_lineMCA`. -/
+/-- `exists_exceptional_fullDimension_lineMCA` over coordinates `Fin n`. -/
 example (n : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F) :
     ∃ exceptional : Finset F, exceptional.card = 0 ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < n →
@@ -87,6 +87,6 @@ example (n : ℕ) (domain : Fin n ↪ F) (f g : Fin n → F) :
             commonPolynomialAgreementSet domain f g F₀ G₀ := by
   simpa using exists_exceptional_fullDimension_lineMCA domain f g
 
-end Source
+end FinCoordinates
 
 end ReedSolomon.FullDimensionTest
