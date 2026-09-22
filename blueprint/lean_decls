@@ -167,8 +167,6 @@ OracleSpec
 OracleSpec.emptySpec
 coinSpec
 unifSpec
-OracleSpec.DecidableEq
-OracleSpec.Fintype
 OracleQuery
 OracleComp
 QueryImpl

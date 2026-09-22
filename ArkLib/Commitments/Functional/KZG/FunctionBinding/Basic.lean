@@ -526,7 +526,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [Samplea
     ≤ Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] := by
-  apply prEvent_mono_of_support
+  apply _root_.prEvent_mono_of_support
   intro (τ, srs, cm, queryOf, responseOf, accepts, proofs) hgame hFBcond
   exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hg₁ hpair
     adversary hgame hFBcond
