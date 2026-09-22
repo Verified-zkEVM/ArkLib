@@ -47,26 +47,6 @@ optimal, since the cubic envelope discards part of the exact piecewise rank dens
 * `firstOrderCleanExpression_gt_one`: `1 < Q(R, a)` for `a > a₁(R)`.
 * `firstOrderRate_surplus_pos`: the exact rank density is strictly below the source density at
   the chosen `β`, for `a₁(R) < a < 1`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/RateBound.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. All definitions are ported with the
-same formulas. Changes to the theorems:
-
-* The source imported `HiddenDerivative.Parameters.Basic` without using it; this file imports
-  only Mathlib.
-* `firstOrderRateBeta_pos` assumes `R < 2` instead of `R < 1`.
-* `firstOrderRateBeta_lt_three_four` assumes `R < 2` and `R < 2a` instead of `0 < R < a < 1`.
-* `firstOrderRateBeta_lt_agreement_div_rate` assumes `0 < R < 2` and `R ≤ a` instead of
-  `0 < R < a < 1`.
-* `firstOrderCleanExpression_threshold_eq_one` assumes `0 < R < 2` instead of `0 < R < 1`.
-* The private radicand lemma of the source is the public
-  `firstOrderRateThreshold_radicand_pos`, for `0 < R < 2`.
-
-The source-shaped statements with the original hypotheses are derived in the acceptance tests.
-The interpolation construction that consumes this threshold is not ported here.
 -/
 
 @[expose] public section

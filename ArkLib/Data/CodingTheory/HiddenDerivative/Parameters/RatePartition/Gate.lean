@@ -42,22 +42,6 @@ the price to be paid. For every `ε > 0` and every small enough gap `δ`, the or
 * `fixed_rate_log_identity`: the displayed identity for `(R + δ) log Γ`.
 * `fixedRateCoefficient_pos`: `0 < c(R)` for `0 < R < 40/9`.
 * `exists_small_gap_rate_gate`: the eventual strict gate `1 < Γ(R, R + δ, d)` with `500 ≤ d`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Gate.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Both definitions (`rateGamma`,
-`fixedRateCoefficient`) and all theorems are ported with the same statements, except:
-
-* `log_rateGamma` and `complementary_rate_logs` assume `R ≠ 0` instead of `0 < R`; `Real.log`
-  of a negative number is the logarithm of its absolute value, so the identities still hold.
-* `fixed_rate_log_identity` assumes `R ≠ 0` and `R + δ ≠ 0` instead of `0 < R` and `0 < δ`.
-* `fixedRateCoefficient_pos` assumes `R < 40/9` instead of `R < 1`; `40/9` is where
-  `log(40/(9R))` vanishes.
-
-The source-shaped statements with the original hypotheses are derived in the acceptance tests.
-The partition construction that consumes the gate is not ported here.
 -/
 
 @[expose] public section
