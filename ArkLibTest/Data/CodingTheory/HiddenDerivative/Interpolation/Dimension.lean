@@ -10,9 +10,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 # Interpolation dimension acceptance tests
 
 Exact dimensions computed by `finrank_exactInterpolationSpace_eq_exactInterpolationDimensionCount`,
-a case at `d = 0` where the count formula is wrong, the source-shaped rectangular lower bounds
-derived from the general one, a concrete lower bound, and a case at `d = 0` where the
-rectangular bound fails.
+a case at `d = 0` where the count formula is wrong, the cardinality form of the dimension count,
+the rectangular lower bound on the number of eligible exponents with one side length `H`, a
+concrete lower bound, and a case at `d = 0` where the rectangular bound fails.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -40,7 +40,8 @@ example : Module.finrank ℚ (exactInterpolationSpace ℚ 3 3 2 1 1 1 (by norm_n
   rw [finrank_exactInterpolationSpace_eq_exactInterpolationDimensionCount ℚ (by norm_num)]
   decide
 
-/-- The source statement `card_exactInterpolationExponents_eq_exactInterpolationDimensionCount`. -/
+/-- For `0 < d < D` the number of eligible exact exponents is
+`exactInterpolationDimensionCount D A d m M W`. -/
 example {D A d m M W : ℕ} (hd : 0 < d) (hdD : d < D) :
     (exactInterpolationExponents D A d m M W hdD).card =
       exactInterpolationDimensionCount D A d m M W :=
@@ -70,7 +71,8 @@ example : (exactInterpolationExponents 1 1 0 1 1 0 (by norm_num)).card = 1 ∧
 
 /-! ### The rectangular lower bound -/
 
-/-- The source statement `card_globalEligibleExponents_lowerBound`, with one side length `H`. -/
+/-- The rectangular lower bound on the number of globally eligible exponents, with one side
+length `H`. -/
 example {d m A K B W C H : ℕ} (hd : 1 ≤ d) (hH : H ≤ m) (hdegree : C + 2 * H ≤ B)
     (hweighted : (K - 1) * (C + 3 * H) ≤ m * A) :
     (goodHigherExponents d W C).card * (K - 1) * H ^ 3 ≤

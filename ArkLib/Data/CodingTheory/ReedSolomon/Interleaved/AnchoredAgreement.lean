@@ -56,60 +56,6 @@ every later point `z`.
 * `ReedSolomon.AnchoredAgreement.exists_selected_before_reconstruction`: separating anchors fix
   every later reconstruction in advance, for any divisor vanishing at the anchors.
 * `ReedSolomon.AnchoredAgreement.exists_selectedCandidate_before_later`: the cubic-divisor form.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AnchoredAgreement.lean`:
-
-* `tupleEvaluation` is `Polynomial.evalTuple domain`, with `Fin n` and `Fin width` generalized to
-  finite types `ι` and `κ`. `tuple_eq_of_evaluation_eq` and `candidateSet_injective` are
-  `injOn_evalTuple_of_degree_lt`, without the source's `0 < k`.
-* `CandidateSet domain received T A` is `candidateSet domain received (T + 3) A`: the degree
-  bound `K` is a parameter instead of `T + 3`.
-* `candidateSet_finite`, `candidateFamily`, `mem_candidateFamily` and `candidateFamily_card_le`
-  are replaced by `encard_candidateSet_le_Lambda` and `finite_candidateSet_of_Lambda_le`, which
-  bound the set itself instead of a `Finset` built from a finiteness proof. The source's radius
-  `capacityRadius delta n (T + 3)` with the threshold `agreementThreshold delta n (T + 3) ≤ A`
-  is replaced by the radius `1 - A / n`, which is at most the source radius under that
-  threshold; the conversion is `Code.encard_setOf_le_agree_encode_le_Lambda`. The hypotheses
-  `0 ≤ delta` and `0 < n` are not needed.
-* `badAnchorPairs`, `badAnchorRate`, `badAnchorRate_eq`,
-  `not_mem_collisionSet_of_sampled_of_not_mem_badAnchorPairs`, `badAnchorRate_le` and
-  `candidateFamily_badAnchorRate_le` are replaced by the event
-  `¬ Set.InjOn (evalTuple ![s₁, s₂]) (candidateSet …)` and its probability bounds
-  `prob_not_injOn_candidateSet_le` (any finite sample space of anchor tuples) and
-  `prob_not_injOn_candidateSet_offDiag_le` (the source's space of ordered distinct pairs outside
-  the domain, with the source's denominator). The source's rate
-  `choose L 2 * ((T + 2) / (q - n - 1)) ^ 2` is at least the bound here,
-  `choose L 2 * (T + 2) ^ 2 / ((q - n) (q - n - 1))`; the test file derives the source form.
-  `natDegree_le_add_two_of_degree_lt_add_three` is the step `degree < K → natDegree ≤ K - 1`
-  inside `prob_not_injOn_candidateSet_le`.
-* `twoAnchorValues` is `evalTuple ![s₁, s₂]`, and `twoAnchorValues_injOn_of_good` and
-  `eq_of_claimed_twoAnchorValues_of_good` are the separation event itself.
-* `cubicQuotientWord`, `cubicResidualWord` and `cubicReconstructedTuple_agreement` are
-  generalized to any divisor `D` in `agree_evalTuple_mul_add`, which is an equality.
-  `cubicReconstructedTuple` is `fun j ↦ cubicAnchorReconstruct s₁ s₂ z (q j) (I j)`.
-* `LaterCubicReconstruction`, `SuccessfulCubicReconstruction` and
-  `successfulCubicReconstruction_mem_and_values` are replaced by the unbundled hypotheses of
-  `exists_selected_before_reconstruction` and `exists_selectedCandidate_before_later`. The
-  source's conditions `s₁ ≠ s₂`, `z ≠ s₁`, `z ≠ s₂`, the claimed value at `z`, and `0 < T` are
-  not used by the conclusion and are dropped.
-* `exists_selectedCandidate_before_later` is ported with the separation event as hypothesis in
-  place of the sampled-pair and bad-set hypotheses, and with an `↔` characterization of the
-  selected option. Its list-size and threshold hypotheses are not needed, since separation is a
-  hypothesis.
-* `traceRemainderTuple`, `traceRemainderTuple_degree_lt`, `traceRemainderTuple_eval_eq` and
-  `exists_selectedTrace_before_later` are not ported as declarations: the remainder of a tuple is
-  `fun j ↦ Q j %ₘ (X ^ T - C 1)`, its properties are `ReedSolomon.traceRemainder_degree_lt` and
-  `ReedSolomon.traceRemainder_eval_eq` in each coordinate, and the trace statement is
-  `Option.map` applied to `exists_selectedCandidate_before_later`, as the test file shows.
-
-The source file `ArkLib/Data/Probability/TwoPointPolynomialCollision.lean` is covered by
-`ArkLib.Data.Polynomial.PointCollision`.
-
-Deferred: the application-level statements of the source's consumers, which combine these
-results with a concrete list-size bound for `Lambda`.
 -/
 
 @[expose] public section
@@ -131,6 +77,8 @@ columns. A column `i` agrees when `(Q j).eval (domain i) = received i j` for eve
 def candidateSet (domain : ι ↪ F) (received : ι → κ → F) (K a : ℕ) : Set (κ → F[X]) :=
   {Q | (∀ j, (Q j).degree < K) ∧ a ≤ agree (evalTuple domain Q) received}
 
+/-- Membership in `candidateSet domain received K a` is the degree bound `K` on every coordinate
+together with at least `a` agreements of the evaluations with `received`. -/
 @[simp] theorem mem_candidateSet {domain : ι ↪ F} {received : ι → κ → F} {K a : ℕ}
     {Q : κ → F[X]} :
     Q ∈ candidateSet domain received K a ↔

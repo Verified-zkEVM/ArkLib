@@ -10,7 +10,7 @@ import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 # Acceptance cases for the Dirichlet integral on the standard simplex
 
 Concrete Dirichlet integrals and volumes, an index type other than `Fin`, the empty index type,
-the necessity of `0 ≤ L`, and the source-shaped `Fin n` statement derived from the general one.
+the necessity of `0 ≤ L`, and the `Fin n` statements derived from the general ones.
 -/
 
 open MeasureTheory Set
@@ -60,7 +60,7 @@ example : volume.real (standardSimplex (Fin 0) (-1)) = 0 ∧
   rw [standardSimplex_eq_empty (by norm_num)]
   simp
 
-/-- The source-shaped statement on `Fin n`, with the factorial product cast from `ℕ`. -/
+/-- The Dirichlet integral on `Fin n`, with the factorial product cast from `ℕ`. -/
 example (n : ℕ) (a : Fin n → ℕ) (b : ℕ) {L : ℝ} (hL : 0 ≤ L) :
     (∫ x in standardSimplex (Fin n) L, (∏ i, x i ^ a i) * (L - ∑ i, x i) ^ b) =
       L ^ (n + ∑ i, a i + b) *
@@ -70,7 +70,7 @@ example (n : ℕ) (a : Fin n → ℕ) (b : ℕ) {L : ℝ} (hL : 0 ≤ L) :
   push_cast
   rfl
 
-/-- The source-shaped volume on `Fin n`. -/
+/-- The volume of the standard simplex on `Fin n`. -/
 example (n : ℕ) {L : ℝ} (hL : 0 ≤ L) :
     volume.real (standardSimplex (Fin n) L) = L ^ n / n.factorial := by
   rw [volume_real_standardSimplex _ hL, Fintype.card_fin]

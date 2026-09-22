@@ -12,7 +12,7 @@ import Mathlib.Tactic.IntervalCases
 /-!
 # Acceptance tests for fixed-jet uniqueness
 
-* The source statement over a field: two bounded solutions of degree at most `D < p`, in
+* The field form: two bounded solutions of degree at most `D < p`, in
   characteristic `p`, with the same regular jet through the highest active jet variable, are
   equal. It follows from the left-regular form.
 * For `y' = y` at center `0` over `ℚ`, the residual coefficients of `1 + X` and `1 + X + X ^ 2`
@@ -31,7 +31,7 @@ noncomputable section
 
 open MvPolynomial
 
-/-- Source shape: over a field of characteristic `p` with `D < p`, a regular jet through the
+/-- The field form: over a field of characteristic `p` with `D < p`, a regular jet through the
 highest active jet variable determines a bounded solution. -/
 example {F : Type*} [Field F] {p d D : ℕ} [CharP F p] (hp : p.Prime) (hD : D < p)
     {Q : DifferentialPolynomial F d} {s : Fin (d + 1)} (hs : IsHighestActiveJet Q s)
