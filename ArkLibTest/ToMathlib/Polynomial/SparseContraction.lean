@@ -14,7 +14,7 @@ import Mathlib.Data.ZMod.Basic
 The examples contract the sparse polynomial `X ^ 4 + 1` by `2`, show that the sparsity hypothesis
 cannot be dropped (for `X`), check the `s = 0` boundary of `expand_contract_eq_self_iff`, show
 that uniqueness fails for `s = 0`, recover a preimage from sparse Taylor data over `ZMod 2`, and
-derive the source-shaped statements with `0 < s`.
+derive the forms with the extra hypothesis `0 < s`.
 -/
 
 open Polynomial
@@ -83,25 +83,25 @@ example : ∃! Q : (ZMod 2)[X], Q.degree < ↑(2 : ℕ) ∧ expand (ZMod 2) (2 ^
     simp [this]
   · compute_degree!
 
-section Source
+section PositiveStep
 
 variable {R : Type*} [CommRing R]
 
-/-- Source statement `expand_contract_of_sparse`. -/
+/-- `expand_contract_of_sparse` with the extra hypothesis `0 < s`. -/
 example {s : ℕ} (_hs : 0 < s) (P : R[X]) (hP : ∀ i : ℕ, ¬s ∣ i → P.coeff i = 0) :
     expand R s (contract s P) = P :=
   expand_contract_of_sparse s P hP
 
-/-- Source statement `degree_contract_lt_of_degree_lt`. -/
+/-- `degree_contract_lt_of_degree_lt` with the extra hypothesis `0 < s`. -/
 example {s k : ℕ} (_hs : 0 < s) (P : R[X]) (hP : P.degree < ↑(s * k)) :
     (contract s P).degree < ↑k :=
   degree_contract_lt_of_degree_lt P hP
 
-/-- Source statement `existsUnique_expand_of_sparse`. -/
+/-- `existsUnique_expand_of_sparse` with `0 < s` in place of `s ≠ 0`. -/
 example {s k : ℕ} (hs : 0 < s) (P : R[X]) (hsparse : ∀ i : ℕ, ¬s ∣ i → P.coeff i = 0)
     (hdegree : P.degree < ↑(s * k)) : ∃! Q : R[X], Q.degree < ↑k ∧ expand R s Q = P :=
   existsUnique_expand_of_sparse hs.ne' P hsparse hdegree
 
-end Source
+end PositiveStep
 
 end SparseContractionTest

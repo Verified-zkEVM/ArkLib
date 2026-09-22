@@ -22,15 +22,6 @@ exceptional value: there the lines agree for one `z` exactly when they agree for
 ## Main statements
 
 * `Finset.exists_card_le_forall_add_mul_eq_add_mul_iff`: the exceptional set and its size.
-
-## References
-
-This is the counting step of `ReedSolomon.exists_exceptional_graphLine_challenges` in
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLine.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source took the roots of a product of linear
-polynomials, one for each index outside the common agreement set, and bounded their number by
-that set's complement. Here the exceptional values are listed directly, and only indices where
-the slopes differ are counted.
 -/
 
 @[expose] public section

@@ -24,14 +24,6 @@ divisible by `q`, and the coefficient at `q * r` is the `r`-th Hasse derivative 
   expand R (p ^ e) (taylor (t ^ p ^ e) P)`.
 * `Polynomial.coeff_taylor_expand_expChar_pow_mul` and
   `Polynomial.coeff_taylor_expand_expChar_pow_eq_zero`: the Taylor coefficients of a pullback.
-
-## References
-
-Ported from `ToMathlib/Polynomial/FrobeniusTaylor.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source theorems `taylor_expand_primePow`,
-`coeff_taylor_expand_primePow_mul` and `coeff_taylor_expand_primePow_eq_zero` are renamed with
-`expChar_pow` in place of `primePow`, since `p` is an exponential characteristic and may be `1`,
-and hold over every commutative semiring instead of every commutative ring.
 -/
 
 @[expose] public section
