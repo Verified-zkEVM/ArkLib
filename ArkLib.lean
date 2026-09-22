@@ -106,6 +106,9 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Kern
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
@@ -255,6 +258,7 @@ public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.Finset.Staircase
 public import ArkLib.Data.Finset.WeightedSimplex
+public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
 public import ArkLib.Data.GroupTheory.PrimeOrder
@@ -528,6 +532,7 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
 public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
@@ -551,6 +556,8 @@ public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
+public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
+public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
