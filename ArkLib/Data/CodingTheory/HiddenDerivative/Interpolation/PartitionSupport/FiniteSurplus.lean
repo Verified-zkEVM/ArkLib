@@ -38,35 +38,8 @@ local constraint map.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/FiniteSurplus.lean` and `PartitionSupport/RankBound.lean` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `RankBound.lean` mentions the partition support space nowhere. Its `partition_contact_exp_sum_le`,
-  `partition_ceilDiv_le`, `localRank_linear_exp_sum_le`, `localRank_weightedHigherJetCount_le_exp`
-  and `partitionLocalRankBound_le_geometric` are covered by `sum_contactThreshold_mul_exp_le_slots`,
-  `Nat.cast_ceilDiv_le_div_add_one`, `Real.sum_range_linear_mul_exp_neg_pow_succ_le`,
-  `weightedHigherJetCount_le_exp` and `localDerivativeCoordinateBudget_le_geometric` in
-  `Interpolation/Local/RankBudget.lean` and its imports. `partition_count_le_volume` is the upper
-  half of `Finset.natWeightedSimplex_succ_sandwich` divided by `(d!) ^ 2`; the acceptance tests
-  derive it. The new `finrank_partitionSupportLocalConstraint_le_geometric` combines the
-  geometric bound with the rank bound of `PartitionSupport/LocalRank.lean`.
-* `partition_choose_two_real` is Mathlib's `Nat.cast_choose_two` at `d + 1`; the acceptance tests
-  derive it.
-* `partitionSupport_finiteGamma_surplus` is stated for the specific ratio `finiteGamma`, weight
-  budget `partitionWeightBudget`, moment constant `27 / 10` and logarithm `log (6 d)` of the
-  source's `Parameters/RatePartition/FiniteRatio.lean`, which is not yet ported.
-  `partitionSupport_surplus` is the same argument for any `γ ≥ 0` satisfying the envelope
-  inequality, any budget `W`, moment bound `μ` and logarithm; the source hypothesis `0 < m` is not
-  needed, and `0 < n` and `0 < rate` follow from `0 < D ≤ rate * n`.
-
-Deferred to the port of `Parameters/RatePartition/FiniteRatio.lean`: `finiteGamma_mul_rankEnvelope`,
-which shows that `finiteGamma` satisfies the envelope inequality with equality for `μ = 27 / 10`,
-and the source-shaped `partitionSupport_finiteGamma_surplus`, which is then
-`partitionSupport_surplus` with the source's parameters.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, Lemma 6.2, and Appendix D.2, (131)
 -/
 
 @[expose] public section

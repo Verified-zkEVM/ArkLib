@@ -25,33 +25,23 @@ with no tuple discarded near the boundary. For a code of length `n` and an upper
 `D ≤ rate * n`, a level with `level * n ≤ L` gives the rate form
 `n / (2 rate) * ∑_c (max (level - rate ∑_i c_i) 0) ^ 2 ≤ dim`.
 
+Both bounds hold at a real cutoff `L`: the space at `L` is the space at `⌈L⌉₊`
+(`partitionSupportSpace_natCeil`), and each term of the lower bound increases with the cutoff.
+
 ## Main statements
 
 * `finrank_partitionSupportSpace_eq_sum_count`: the dimension as a sum of staircase counts.
 * `partitionSupport_dimension_ge_quadratic_sum`: the positive-part square lower bound.
 * `partition_quadratic_rate_lower`: the comparison of one term with its rate form.
 * `partitionSupport_dimension_ge_rate_sum`: the rate form of the lower bound.
+* `partitionSupport_dimension_ge_quadratic_sum_real` and
+  `partitionSupport_dimension_ge_rate_sum_real`: both bounds at a real cutoff.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/Dimension.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `partition_residual_ceil` and `quadraticStaircase_le_partition_slice` mention no code; they are
-  `QuadraticStaircase.ceil_mul_div_sub_sub` and the equality
-  `QuadraticStaircase.count_div_sub_eq_sum` in `ArkLib.ToMathlib.Combinatorics.QuadraticStaircase`.
-  With the equality, the new `finrank_partitionSupportSpace_eq_sum_count` computes the dimension
-  exactly.
-* `partitionSupport_dimension_ge_quadratic_sum` keeps its statement, with the source's cutoff
-  `m * A` a natural cutoff `L` and `higherJetTupleDegree c` written `∑ i, c i`.
-* `partition_quadratic_rate_lower` and `partitionSupport_dimension_ge_rate_sum` replace the
-  source's `m * agreement` and `m * A` by a real level and a natural cutoff with
-  `level * n ≤ L`; the source's `agreement * n ≤ A` gives this for `level = m * agreement` and
-  `L = m * A`. The hypotheses `0 < n` and `0 < rate` are dropped, since `0 < D ≤ rate * n` implies
-  both. The acceptance tests derive the source statements.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
+  Lemma 6.2
 -/
 
 @[expose] public section
@@ -143,5 +133,36 @@ theorem partitionSupport_dimension_ge_rate_sum (F : Type*) [Field F] {n L : ℕ}
   rw [mul_sum]
   exact (sum_le_sum fun c _ => partition_quadratic_rate_lower hD hupper hlevel).trans
     (partitionSupport_dimension_ge_quadratic_sum F hD L)
+
+/-! ### Real cutoffs -/
+
+/-- The quadratic lower bound on the dimension of the partition support space at a real cutoff
+`L`: for `0 < D`, the sum over the tuples `c` of derivative-order weight at most `W` of
+`D * (max (L / D - ∑_i c_i) 0) ^ 2 / 2` is at most the dimension. It follows from the
+natural-cutoff bound `partitionSupport_dimension_ge_quadratic_sum` at `⌈L⌉₊`, since `L ≤ ⌈L⌉₊`
+and both cutoffs give the same space. -/
+theorem partitionSupport_dimension_ge_quadratic_sum_real (F : Type*) [Field F] (hD : 0 < D)
+    (L : ℝ) :
+    ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,
+        (D : ℝ) * (max (L / D - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2 / 2 ≤
+      (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
+  rw [← partitionSupportSpace_natCeil]
+  refine (sum_le_sum fun c _ => ?_).trans (partitionSupport_dimension_ge_quadratic_sum F hD ⌈L⌉₊)
+  gcongr
+  exact Nat.le_ceil L
+
+/-- The rate form of the quadratic lower bound at a real cutoff: if `0 < D ≤ rate * n` and
+`level * n ≤ L`, then `n / (2 rate) * ∑_c (max (level - rate * ∑_i c_i) 0) ^ 2` is at most the
+dimension of the partition support space at `L`, the sum running over the tuples `c` of
+derivative-order weight at most `W`. The hypothesis `D ≤ rate * n` forces `0 < rate` and `0 < n`,
+so neither is assumed. -/
+theorem partitionSupport_dimension_ge_rate_sum_real (F : Type*) [Field F] {n : ℕ}
+    {rate level L : ℝ} (hD : 0 < D) (hupper : (D : ℝ) ≤ rate * n) (hlevel : level * n ≤ L) :
+    (n : ℝ) / (2 * rate) *
+        ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,
+          (max (level - rate * ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2 ≤
+      (Module.finrank F (partitionSupportSpace F D d W L hD) : ℝ) := by
+  rw [← partitionSupportSpace_natCeil]
+  exact partitionSupport_dimension_ge_rate_sum F hD hupper (hlevel.trans (Nat.le_ceil L))
 
 end ReedSolomon.HiddenDerivative

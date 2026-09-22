@@ -10,7 +10,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 # Acceptance tests for the moment form of the partition dimension bound
 
 The necessity of `0 ≤ rate` in `partition_square_rescale`, the degenerate case of a zero scale,
-the source statement of `partitionSupport_dimension_gt_moment` with moment constant `27 / 10` and
+`partitionSupport_dimension_gt_moment` with moment constant `27 / 10` and
 coefficient `27 / 20`, and the failure of its conclusion at `W = 0`.
 -/
 
@@ -24,15 +24,14 @@ example : (-1 : ℝ) * 1 / 1 * 1 ≤ -1 ∧
   norm_num
 
 /-- At `degree = 0` the scale is zero and the comparison holds for any `logarithm`, `level` and
-`total`, although the source's hypothesis `0 < degree` fails. -/
+`total`, although `0 < degree` fails. -/
 example (level logarithm total : ℝ) (h : 1 * 1 / 0 * logarithm ≤ level) :
     (1 * 1 / 0 : ℝ) ^ 2 * (max (logarithm - 0 * total / 1) 0) ^ 2 ≤
       (max (level - 1 * total) 0) ^ 2 :=
   partition_square_rescale zero_le_one zero_le_one le_rfl h
 
-/-- Source shape `partitionSupport_dimension_gt_moment`: moment constant `27 / 10`, coefficient
-`27 / 20`, level `m * agreement`, cutoff `m * A`, and `agreement * n ≤ A`. The source's `0 < n`
-and `0 < rate` are not used. -/
+/-- The moment bound with moment constant `27 / 10`, coefficient `27 / 20`, level
+`m * agreement`, cutoff `m * A`, and `agreement * n ≤ A`. -/
 example (F : Type*) [Field F] {D d n m A W : ℕ} {rate agreement logarithm : ℝ}
     (hD : 0 < D) (hd : 0 < d) (hW : 0 < W)
     (hupper : (D : ℝ) ≤ rate * n) (hlower : agreement * n ≤ A)

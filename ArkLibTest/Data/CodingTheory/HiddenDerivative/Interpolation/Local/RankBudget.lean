@@ -9,17 +9,17 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
 /-!
 # Local rank budget acceptance tests
 
-The source's linear-geometric and linear-exponential lemmas, which carried the ceiling error as
-`(j + 1) / d + 1`, are derived from the general bounds at `a = 1 / d` and `b = 1`. At `d = 1`
+The linear-geometric and linear-exponential sums with the ceiling error written as
+`(j + 1) / d + 1` are derived from the general bounds at `a = 1 / d` and `b = 1`. At `d = 1`
 the exponential envelope reduces to `N_1(W + r) ≤ 1`. The hypotheses of the budget bound are
 needed: with `d = 1` or `W = 0` the right side is zero while the budget is one, and the ceiling
-lemma fails at `d = 0`. The source's `partition_count_le_volume` is derived from the weighted
+lemma fails at `d = 0`. The volume bound on `weightedHigherJetCount` is derived from the weighted
 simplex sandwich.
 -/
 
 open Finset ReedSolomon.HiddenDerivative
 
-/-- Source shape `localRank_linear_geometric_sum_le`. -/
+/-- The geometric sum with coefficients `(j + 1) / d + 1`. -/
 example (d m : ℕ) (hd : 0 < d) {q : ℝ} (hq0 : 0 ≤ q) (hq1 : q < 1) :
     (∑ j ∈ range m, (((j + 1 : ℕ) : ℝ) / d + 1) * q ^ (j + 1)) ≤
       q / ((d : ℝ) * (1 - q) ^ 2) + q / (1 - q) := by
@@ -28,7 +28,7 @@ example (d m : ℕ) (hd : 0 < d) {q : ℝ} (hq0 : 0 ≤ q) (hq1 : q < 1) :
   simp only [div_mul_eq_mul_div, one_mul, div_div] at h
   rwa [mul_comm ((1 - q) ^ 2)] at h
 
-/-- Source shape `localRank_linear_exp_sum_le`. -/
+/-- The exponential sum with coefficients `(j + 1) / d + 1`. -/
 example (d m : ℕ) (hd : 0 < d) {x : ℝ} (hx : 0 < x) :
     (∑ j ∈ range m, (((j + 1 : ℕ) : ℝ) / d + 1) * Real.exp (-x) ^ (j + 1)) ≤
       1 / ((d : ℝ) * x ^ 2) + 1 / x := by
@@ -37,7 +37,7 @@ example (d m : ℕ) (hd : 0 < d) {x : ℝ} (hx : 0 < x) :
   simp only [one_div_mul_eq_div, div_div] at h
   exact h
 
-/-- Source shape `localRank_contact_exp_sum_le`, with the ceiling written out. -/
+/-- The contact sum, with the ceiling written out. -/
 example (d m : ℕ) (hd : 0 < d) {x B : ℝ} (hx : 0 < x) :
     (∑ r ∈ range m, ((m - r) ⌈/⌉ (d + 1) : ℕ) * Real.exp (x * (r + B))) ≤
       Real.exp (x * (m + B)) * (1 / ((d : ℝ) * x ^ 2) + 1 / x) :=
@@ -88,7 +88,7 @@ example (Be : ℕ) : (localCoordinateBudget 2 1 1 Be : ℝ) ≤
 example : localCoordinateBudget 2 1 1 1 = 2 := by
   decide
 
-/-- Source statement `partition_count_le_volume`: the upper half of
+/-- The volume bound on `weightedHigherJetCount`: the upper half of
 `Finset.natWeightedSimplex_succ_sandwich`, divided by `(d!) ^ 2`. -/
 example (d W : ℕ) : (weightedHigherJetCount (d + 1) W : ℝ) ≤
     ((W : ℝ) + ((d + 1).choose 2 : ℝ)) ^ d / (d.factorial : ℝ) ^ 2 := by

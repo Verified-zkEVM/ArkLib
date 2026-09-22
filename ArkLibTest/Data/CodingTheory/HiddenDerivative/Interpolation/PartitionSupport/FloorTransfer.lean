@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 /-!
 # Acceptance tests for the partition floor transfer
 
-A concrete instance at `d = 1`, `W = 1`, where the lattice simplex is `{0, 1}`, and the source
-statement of `partitionSupport_dimension_ge_rate_integral` at level `m * agreement` and cutoff
+A concrete instance at `d = 1`, `W = 1`, where the lattice simplex is `{0, 1}`, and
+`partitionSupport_dimension_ge_rate_integral` at level `m * agreement` and cutoff
 `m * A`.
 -/
 
@@ -28,8 +28,8 @@ example : ∫ u in Set.weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) ((1 : �
   rw [natWeightedSimplex_one_one, sum_pair (by decide)]
   norm_num
 
-/-- Source shape `partitionSupport_dimension_ge_rate_integral`: level `m * agreement`, cutoff
-`m * A`, and `agreement * n ≤ A`. The source's `0 < n` and `0 < rate` are not used. -/
+/-- The integral lower bound at level `m * agreement`, cutoff `m * A`, and
+`agreement * n ≤ A`. -/
 example (F : Type*) [Field F] {D d n m A W : ℕ} {rate agreement : ℝ} (hD : 0 < D)
     (hupper : (D : ℝ) ≤ rate * n) (hlower : agreement * n ≤ A) :
     (n : ℝ) / (2 * rate) *

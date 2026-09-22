@@ -44,40 +44,9 @@ sides are zero while the budget is positive.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RankBudget.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows equations (39)–(40) of
-[DKTZ26].
-
-* `localRank_ceilDiv_le` is unchanged and is derived from the generic
-  `Nat.cast_ceilDiv_le_div_add_one`.
-* `localRank_geometric_sum_le`, `localRank_weighted_geometric_sum_le`,
-  `localRank_linear_geometric_sum_le`, `localRank_exp_geometric_ratio_le`,
-  `localRank_exp_weighted_geometric_ratio_le` and `localRank_linear_exp_sum_le` contain no coding
-  theory; they are generalized in `ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds`, and
-  the source shape of `localRank_linear_exp_sum_le` is derived in the acceptance tests.
-* `localRank_weightedHigherJetCount_le_exp` is `weightedHigherJetCount_le_exp`, with the same
-  statement. The source used the scaled-lattice lemma
-  `scaledExponentCount_mul_factorial_sq_le_pow`; here the upper half of
-  `Finset.natWeightedSimplex_succ_sandwich` replaces it.
-* `localRank_contact_exp_sum_le` is `sum_contactThreshold_mul_exp_le`, with the ceiling written as
-  `contactThreshold (d + 1) m r` (definitionally `(m - r) ⌈/⌉ (d + 1)`).
-* `localCoordinateBudget_le_geometric`, `localCoordinateBudget_le_kappa` and
-  `localCoordinateBudget_div_volume_mul_cube_le` are unchanged.
-
-From `Interpolation/PartitionSupport/RankBound.lean` at the same revision:
-
-* `partitionLocalRankBound_le_geometric` is `localDerivativeCoordinateBudget_le_geometric`, with
-  the same statement; the source's `partitionLocalRankBound` is `localDerivativeCoordinateBudget`.
-* `partition_contact_exp_sum_le`, stated for `(m - r) ⌈/⌉ s` with `0 < s`, is
-  `sum_contactThreshold_mul_exp_le_slots`, which drops `0 < s`; `sum_contactThreshold_mul_exp_le`
-  is now derived from it. `partition_ceilDiv_le` is `Nat.cast_ceilDiv_le_div_add_one`, which
-  drops `0 < s`.
-* `partition_count_le_volume` is the upper half of `Finset.natWeightedSimplex_succ_sandwich`
-  divided by `(d!)^2`; the acceptance tests derive it.
-
-* [Dao, Q., Kominers, S. D., Thaler, J., and Zheng, K. Z.,
-  *Reed--Solomon List Decoding and Mutual Correlated Agreement up to Capacity*][DKTZ26]
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, (72), and Appendix D.2, (131)
+  in the proof of Lemma 6.2
 -/
 
 @[expose] public section

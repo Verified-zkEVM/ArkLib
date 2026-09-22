@@ -41,35 +41,13 @@ same space as the natural cutoff `⌈L'⌉₊`, since `n < L' ↔ n < ⌈L'⌉�
 * `partitionSupportEligible_partitionSourceExponent_iff`: eligibility in coordinates.
 * `partitionSourceCount`, `card_partitionSupportExponents` and
   `finrank_partitionSupportSpace_eq_partitionSourceCount`: the exact dimension.
+* `finrank_partitionSupportSpace_eq_partitionSourceCount_natCeil`: the exact dimension at a real
+  cutoff `L`, which is the count at `⌈L⌉₊`.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/Counting.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* The source's cutoff `m * A` is a natural cutoff `L`; the source statements are the case
-  `L = m * A` (the acceptance tests derive them). The source's `weightedHigherJetTuples (d + 1) W`
-  is `Finset.natWeightedSimplex (fun i : Fin d ↦ i.val + 1) W`, and its `higherJetTupleWeight` and
-  `higherJetTupleDegree` are written out as `∑ i, (i + 1) * c i` and `∑ i, c i`.
-* `partitionSourceCount` keeps its definition, with the arguments `D d W L` in place of
-  `D d m A W`.
-* The dependent index type `PartitionSourceIndex` and `card_partitionSourceIndex` are replaced by a
-  `Finset.sigma` inside the proof of `card_partitionSupportExponents`.
-* `partitionSourceExponent` takes the coordinates `x b₀ c` directly. Its `_none`, `_zero` and
-  `_succ` lemmas keep their content. `fullDerivativeWeight_partitionSourceExponent` and
-  `totalJetDegree_partitionSourceExponent` are the specializations of
-  `fullDerivativeJetWeight_eq_sum_succ` and `totalJetDegree_eq_zero_add_sum_succ`, which keep the
-  source statements of `fullDerivativeWeight_eq_sum_succ` and
-  `totalJetDegree_eq_zero_add_sum_succ`.
-* `partitionSourceExponent_eligible`, `partitionSourceExponent_injective` and
-  `partitionSourceExponent_covers` become the coordinate characterization
-  `partitionSupportEligible_partitionSourceExponent_iff` and the inverse
-  `partitionSourceExponent_eta`; `partitionSourceCount_le_finrank` and
-  `finrank_partitionSupportSpace_eq_sourceCount` become the equalities
-  `card_partitionSupportExponents` and `finrank_partitionSupportSpace_eq_partitionSourceCount`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 6.1, (70)–(71)
 -/
 
 @[expose] public section
@@ -91,14 +69,17 @@ def partitionSourceExponent (x b₀ : ℕ) (c : Fin d → ℕ) : JetVariable d �
     | none => x
     | some j => Fin.cases b₀ c j
 
+/-- The exponent of `X` is `x`. -/
 @[simp]
 theorem partitionSourceExponent_none (x b₀ : ℕ) (c : Fin d → ℕ) :
     partitionSourceExponent x b₀ c none = x := rfl
 
+/-- The exponent of `Y₀` is `b₀`. -/
 @[simp]
 theorem partitionSourceExponent_zero (x b₀ : ℕ) (c : Fin d → ℕ) :
     partitionSourceExponent x b₀ c (some 0) = b₀ := rfl
 
+/-- The exponent of `Y_(i+1)` is `c i`. -/
 @[simp]
 theorem partitionSourceExponent_succ (x b₀ : ℕ) (c : Fin d → ℕ) (i : Fin d) :
     partitionSourceExponent x b₀ c (some i.succ) = c i := rfl
@@ -187,5 +168,12 @@ theorem finrank_partitionSupportSpace_eq_partitionSourceCount (F : Type*) [Field
     (L : ℕ) :
     Module.finrank F (partitionSupportSpace F D d W (L : ℝ) hD) = partitionSourceCount D d W L := by
   rw [finrank_partitionSupportSpace_eq_card, card_partitionSupportExponents]
+
+/-- For `0 < D`, the dimension of the partition support space at the real cutoff `L` over a field
+is `partitionSourceCount D d W ⌈L⌉₊`. For `L ≤ 0` both sides are zero. -/
+theorem finrank_partitionSupportSpace_eq_partitionSourceCount_natCeil (F : Type*) [Field F]
+    (hD : 0 < D) (L : ℝ) :
+    Module.finrank F (partitionSupportSpace F D d W L hD) = partitionSourceCount D d W ⌈L⌉₊ := by
+  rw [← partitionSupportSpace_natCeil, finrank_partitionSupportSpace_eq_partitionSourceCount]
 
 end ReedSolomon.HiddenDerivative
