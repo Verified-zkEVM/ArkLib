@@ -8,7 +8,9 @@ import ArkLib.Data.Polynomial.SpecializationAvoidance
 import Mathlib.Algebra.Field.ZMod
 
 /-! Root counting through an injective map, avoidance from a finite candidate set over a small
-prime field, sharpness of the candidate bound, and the infinite-domain corollary. -/
+prime field, sharpness of the candidate bound, the infinite-domain corollary, and simultaneous
+non-vanishing of a family: its form for `Fin n` with `L` zero members, and sharpness of the
+count `d * s.card`. -/
 
 open Polynomial
 
@@ -91,5 +93,32 @@ example : ∃ t : ℤ, t ≠ 0 := by
   refine ⟨t, fun ht0 ↦ ?_⟩
   rw [canary_natDegree, ht0] at hdegree
   simp [canary] at hdegree
+
+-- The form for a family indexed by `Fin n` with at least `L` identically zero members: at most
+-- `d * (n - L)` exceptional points.
+example {F : Type*} [Field F] [DecidableEq F] {n L d : ℕ} (p : Fin n → F[X])
+    (hdegree : ∀ i, (p i).natDegree ≤ d)
+    (hzero : L ≤ (Finset.univ.filter fun i ↦ p i = 0).card) :
+    ∃ exceptional : Finset F, exceptional.card ≤ d * (n - L) ∧
+      ∀ z ∉ exceptional, ∀ i, (p i).eval z = 0 ↔ p i = 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_card_le_forall_eval_eq_zero_iff p
+    (Finset.univ.filter fun i ↦ ¬ p i = 0) (fun i _ ↦ hdegree i) (by simp)
+  refine ⟨exceptional, hcard.trans (Nat.mul_le_mul_left _ ?_), hgood⟩
+  have hsplit := Finset.card_filter_add_card_filter_not (s := (Finset.univ : Finset (Fin n)))
+    (p := fun i ↦ p i = 0)
+  rw [Finset.card_univ, Fintype.card_fin] at hsplit
+  omega
+
+-- The count `d * s.card` is attained: the single member `X * (X - 1)` of degree `2` vanishes at
+-- the two points `0` and `1`, which any valid exceptional set must contain.
+example (exceptional : Finset ℚ)
+    (h : ∀ z ∉ exceptional, (X * (X - 1) : ℚ[X]).eval z = 0 ↔ (X * (X - 1) : ℚ[X]) = 0) :
+    2 ≤ exceptional.card := by
+  have hne : (X * (X - 1) : ℚ[X]) ≠ 0 := mul_ne_zero X_ne_zero (X_sub_C_ne_zero 1)
+  have hmem (z : ℚ) (hz : z = 0 ∨ z = 1) : z ∈ exceptional := by
+    by_contra hz'
+    exact hne ((h z hz').mp (by rcases hz with rfl | rfl <;> simp))
+  calc 2 = ({0, 1} : Finset ℚ).card := by decide
+    _ ≤ exceptional.card := Finset.card_le_card fun z hz ↦ hmem z (by simpa using hz)
 
 end SpecializationAvoidanceTest

@@ -25,7 +25,9 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 * `certifiedEnlargedRankBound d m M W` is the sum over `r < m` of the higher-jet count times the
   residual `(r + 1)(M + 1) - (r + 1 - h)(M + 1 - h)`.
 * `localResidualCoordinateBudget d m W B` and `localCoordinateBudget d m W B` count the local
-  coordinates of `Interpolation/Local/Coordinates.lean`, with a jet-degree cutoff `B`.
+  coordinates of `Interpolation/Local/Coordinates.lean`, with a jet-degree cutoff `B`;
+  `localDerivativeCoordinateBudget d m W` counts them under a derivative-order weight bound, with
+  no cutoff.
 * `exactInterpolationDimensionCount D A d m M W` is the dimension of the exact interpolation space
   of `Interpolation/Index.lean`: a sum over the higher-jet exponents `c` of weight at most `W` and
   the `Y₁` exponents `b₁ ≤ M` of the staircase count `Nat.staircaseCount D` at the residual budget
@@ -67,6 +69,13 @@ theorem weightedHigherJetCount_succ (n W : ℕ) :
     weightedHigherJetCount (n + 1) W =
       (natWeightedSimplex (fun i : Fin n => i.val + 1) W).card :=
   rfl
+
+/-- At derivative order at most one there are no higher jets, so the count is `1` at every
+weight. -/
+theorem weightedHigherJetCount_of_le_one {d : ℕ} (hd : d ≤ 1) (W : ℕ) :
+    weightedHigherJetCount d W = 1 := by
+  obtain rfl | rfl : d = 0 ∨ d = 1 := by omega
+  all_goals simp [weightedHigherJetCount, natWeightedSimplex]
 
 /-- The least power of the hidden error that reaches contact order `m` from `T`-degree `r`:
 `⌈(m - r) / d⌉`. It is zero when `r ≥ m`, and also when `d = 0`. -/
@@ -208,6 +217,16 @@ def localResidualCoordinateBudget (d m W B : ℕ) : ℕ :=
 higher-jet exponent. -/
 def localCoordinateBudget (d m W B : ℕ) : ℕ :=
   B * ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount d (W + r)
+
+/-- The derivative-order coordinate budget
+`∑_{r < m} ⌈(m - r)/(d + 1)⌉ · #{c : Fin d → ℕ | ∑_j (j + 1) c_j ≤ W + r}`. The factor
+`⌈(m - r)/(d + 1)⌉` counts the error exponents `h` of contact order `r + (d + 1) h < m`, and the
+second factor counts the exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W + r`.
+It counts the local coordinates of `localDerivativeExponents` in
+`Interpolation/Local/Coordinates.lean`. Unlike `localResidualCoordinateBudget`, it needs no
+jet-degree cutoff, because the derivative-order weight charges `Y₁`. -/
+def localDerivativeCoordinateBudget (d m W : ℕ) : ℕ :=
+  ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount (d + 1) (W + r)
 
 /-- The residual budget is at most the coarse budget, for any cutoffs `B ≤ B'`. -/
 theorem localResidualCoordinateBudget_le_localCoordinateBudget {d m W B B' : ℕ} (hB : B ≤ B') :
