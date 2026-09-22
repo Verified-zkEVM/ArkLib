@@ -13,7 +13,8 @@ For `D = 2`, `d = 1`, `A = 2`, `m = 1`, and `M = W = 0`, the eligible monomials 
 specialization weight below `2` with no `Y₁`: `X` is eligible, while `X²`, `Y₀` (weight `2`), and
 `Y₁` (weight `1` but excluded by `M = 0`) are not. At the boundary `D = d = 0` every power of
 `Y₀` has weight zero, so the eligible set is infinite; this is why the space is indexed by a
-proof of `d < D`.
+proof of `d < D`. The coarse bound `weight_le_add_mul_totalJetDegree` is attained on `Y₀` and
+strict on `Y₁`.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -78,4 +79,19 @@ example :
     (Finsupp.single none 2 + Finsupp.single (some 0) 1 + Finsupp.single (some 1) 3 :
         JetVariable 1 →₀ ℕ).degree = 6 := by
   rw [degree_eq_add_totalJetDegree, totalJetDegree_eq_sum]
+  simp [Fin.sum_univ_two]
+
+/-- The coarse bound `weight_le_add_mul_totalJetDegree` is attained on `Y₀`: at `D = 3` both
+sides equal `3`. -/
+example : Finsupp.weight (differentialWeight 3) (Finsupp.single (some 0) 1 : JetVariable 1 →₀ ℕ) =
+    (Finsupp.single (some 0) 1 : JetVariable 1 →₀ ℕ) none +
+      3 * totalJetDegree (Finsupp.single (some 0) 1 : JetVariable 1 →₀ ℕ) := by
+  rw [weight_differentialWeight_eq, totalJetDegree_eq_sum]
+  simp [Fin.sum_univ_two]
+
+/-- The coarse bound is strict on `Y₁`: at `D = 3` the specialization weight is `2`, below `3`. -/
+example : Finsupp.weight (differentialWeight 3) (Finsupp.single (some 1) 1 : JetVariable 1 →₀ ℕ) <
+    (Finsupp.single (some 1) 1 : JetVariable 1 →₀ ℕ) none +
+      3 * totalJetDegree (Finsupp.single (some 1) 1 : JetVariable 1 →₀ ℕ) := by
+  rw [weight_differentialWeight_eq, totalJetDegree_eq_sum]
   simp [Fin.sum_univ_two]

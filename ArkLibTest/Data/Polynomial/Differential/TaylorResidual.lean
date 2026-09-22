@@ -14,7 +14,8 @@ The examples derive the separant-denominator budget on a chart of length exactly
 `0 < h`, compute the residual of the first-order equation `Q = Y₁` on a chart of length `3`, and
 use it to show that the chart-length hypothesis of
 `denominator_weight_le_of_mem_universalTaylorResidual_coeff` cannot be dropped. They also
-specialize the residual of `Q = Y₀` at an explicit coefficient prefix.
+specialize the residual of `Q = Y₀` at an explicit coefficient prefix, and reduce a residual
+over `ℤ` modulo `2`.
 -/
 
 namespace PolynomialDifferential
@@ -68,6 +69,17 @@ example (center : ℚ) (c : ℕ → ℚ) (K h : ℕ) (hh : h < K) :
       c h := by
   rw [aeval_universalTaylorResidual_coeff, differentialSpecialization_jet]
   simp [Polynomial.coeff_taylor_centeredCoefficientPrefix, hh]
+
+/-- Reducing coefficients modulo `2` commutes with the residual: the residual of `2 Y₁` over `ℤ`
+reduces to the residual of `0`, which is `0`. -/
+example (K : ℕ) :
+    map (Int.castRingHom (ZMod 2))
+        (universalTaylorResidual K 1 (2 * X (some 1) : DifferentialPolynomial ℤ 1)) = 0 := by
+  rw [map_universalTaylorResidual]
+  have h2 : map (Int.castRingHom (ZMod 2)) (2 * X (some 1) : DifferentialPolynomial ℤ 1) = 0 := by
+    rw [map_mul, map_ofNat, map_X, show (2 : DifferentialPolynomial (ZMod 2) 1) = C 2 from rfl,
+      show (2 : ZMod 2) = 0 from rfl, C_0, zero_mul]
+  simp [h2, universalTaylorResidual]
 
 end
 

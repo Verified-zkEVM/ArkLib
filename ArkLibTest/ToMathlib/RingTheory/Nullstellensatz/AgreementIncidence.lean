@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
@@ -131,6 +132,76 @@ example : ¬ ((({0} : Finset (Fin 1 → ℚ)) : Set (Fin 1 → ℚ)) ∩
     Set.ncard_eq_zero ((Finset.finite_toSet _).subset Set.inter_subset_left)]
   exact Set.nonempty_iff_ne_empty.mp ⟨0, by simp⟩
 
+/-! ### Agreement incidence on a hypersurface -/
+
+/-- The cut `y - a` of the plane has total degree at most `1`. -/
+theorem totalDegree_X1_sub_C_le {k : Type*} [Field k] (a : k) :
+    (X 1 - C a : MvPolynomial (Fin 2) k).totalDegree ≤ 1 :=
+  (totalDegree_sub _ _).trans (by simp)
+
+/-- On the hypersurface `x = 0` of the plane over `ℚ`, with points in `K`, at most two points
+agree with both cuts `y` and `y - 1`. A prime containing both cuts contains `1`, so the hypothesis
+of `card_le_of_agreement_off_excluded_of_hypersurface` holds with `L = 2` and `excluded = ∅`, and
+the bound is `1 * (2 * 1 / (2 - 2 + 1)) ^ (2 - 1) = 2`. -/
+example (S : Finset (Fin 2 → K))
+    (hS : ∀ x ∈ S, aeval x (X 0 : MvPolynomial (Fin 2) ℚ) = 0)
+    (hA : ∀ x ∈ S, 2 ≤ {i | aeval x (X 1 - C (![0, 1] i) : MvPolynomial (Fin 2) ℚ) = 0}.ncard) :
+    (S.card : ℚ) ≤ 2 := by
+  have h := card_le_of_agreement_off_excluded_of_hypersurface (X_ne_zero 0) 1 (v := 1)
+    (b := 1) (A := 2) (L := 2) (by rw [totalDegree_X]) [] (by simp)
+    (fun i : Fin 2 ↦ (X 1 - C (![0, 1] i) : MvPolynomial (Fin 2) ℚ))
+    (fun _ ↦ totalDegree_X1_sub_C_le _) le_rfl (by simp) (∅ : Set (Fin 2 → K))
+    (fun J hJ hsJ _ _ _ hL ↦ by
+      have huniv : {i | (X 1 - C (![0, 1] i) : MvPolynomial (Fin 2) ℚ) ∈ J} = Set.univ :=
+        Set.eq_of_subset_of_ncard_le (Set.subset_univ _) (by simpa using hL)
+      have hone := J.sub_mem (Set.eq_univ_iff_forall.mp huniv 0)
+        (Set.eq_univ_iff_forall.mp huniv 1)
+      simp only [Matrix.cons_val_zero, Matrix.cons_val_one, map_zero, sub_zero,
+        sub_sub_cancel, map_one] at hone
+      exact absurd ((Ideal.eq_top_iff_one J).mpr hone) hJ.ne_top)
+    S (fun x hx ↦ ⟨hS x hx, by simp, by simp, id⟩) hA
+  refine h.trans_eq ?_
+  simp
+
+/-- An ideal of `ℚ[x, y]` containing `x` and `y` has dimension `0`: its zero locus over `K` is
+at most the origin, the image of the empty parametrization. -/
+theorem natDegree_affineHilbertPolynomial_eq_zero_of_X_mem {J : Ideal (MvPolynomial (Fin 2) ℚ)}
+    (h0 : X 0 ∈ J) (h1 : X 1 ∈ J) : (affineHilbertPolynomial J).natDegree = 0 := by
+  have hreg : IsLeftRegular (Ideal.Quotient.mk J 1) := by
+    rw [map_one]
+    exact isRegular_one.left
+  have h := natDegree_affineHilbertPolynomial_le_of_principalOpen_subset_range (τ := Empty) hreg
+    (fun _ ↦ 0) fun (x : Fin 2 → K) hx _ ↦ ⟨isEmptyElim, ?_⟩
+  · simpa using h
+  funext i
+  have hi : aeval x (X i : MvPolynomial (Fin 2) ℚ) = 0 :=
+    (mem_zeroLocus_iff.mp hx) _ (by fin_cases i <;> assumption)
+  simpa using hi
+
+/-- The hypothesis `A - L + 1 ≤ Fintype.card ι` is needed in
+`card_le_of_agreement_off_excluded_of_hypersurface`. Take `g = x`, `highCuts = [y]`, `s = 1`, no
+cuts and `A = L = 0`, so `A - L + 1 = 1 > 0`. A prime containing `x` and `y` has dimension `0`, so
+the hypothesis on `excluded = ∅` holds, and the origin satisfies every condition on the points,
+but the bound `1 * (0 * 1 / 1) ^ (2 - 1)` is `0`. -/
+example :
+    (∀ J : Ideal (MvPolynomial (Fin 2) ℚ), J.IsPrime → (1 : MvPolynomial (Fin 2) ℚ) ∉ J →
+      X 0 ∈ J → (∀ f ∈ [(X 1 : MvPolynomial (Fin 2) ℚ)], f ∈ J) →
+      0 < (affineHilbertPolynomial J).natDegree →
+      0 ≤ {i : Fin 0 | (Fin.elim0 i : MvPolynomial (Fin 2) ℚ) ∈ J}.ncard →
+      {x : Fin 2 → ℚ | x ∈ zeroLocus ℚ J ∧ aeval x (1 : MvPolynomial (Fin 2) ℚ) ≠ 0} ⊆ ∅) ∧
+    (∀ x ∈ ({0} : Finset (Fin 2 → ℚ)), aeval x (X 0 : MvPolynomial (Fin 2) ℚ) = 0 ∧
+      aeval x (1 : MvPolynomial (Fin 2) ℚ) ≠ 0 ∧
+      (∀ f ∈ [(X 1 : MvPolynomial (Fin 2) ℚ)], aeval x f = 0) ∧ x ∉ (∅ : Set (Fin 2 → ℚ))) ∧
+    ¬ ((({0} : Finset (Fin 2 → ℚ)).card : ℚ) ≤ (1 : ℕ) *
+      (((Fintype.card (Fin 0) * 1 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) ^ (Nat.card (Fin 2) - 1)) := by
+  refine ⟨fun J _ _ h0 hhigh hd _ ↦ ?_, fun x hx ↦ ?_, ?_⟩
+  · have := natDegree_affineHilbertPolynomial_eq_zero_of_X_mem h0
+      (hhigh _ (List.mem_singleton_self _))
+    omega
+  · rw [Finset.mem_singleton.mp hx]
+    simp
+  · simp
+
 /-! ### Cuts indexed by `Fin n` -/
 
 /-- The cardinality of a filter of `Finset.univ` is the `Set.ncard` of the corresponding set. -/
@@ -224,6 +295,36 @@ theorem card_le_of_agreement_off_excluded_fin {F σ : Type*} [Field F] [Finite �
     (fun Q hPQ hQ hsQ hd hL ↦ hterminal Q hPQ hQ hsQ hd (by rwa [card_filter_univ_eq_ncard]))
     S (fun x hx ↦ ⟨(hS x hx).1.1, (hS x hx).1.2, (hS x hx).2⟩)
     fun x hx ↦ by rw [← card_filter_univ_eq_ncard]; exact hA x hx
+  rwa [Fintype.card_fin] at h
+
+open Classical in
+/-- The incidence bound on a cut hypersurface for cuts indexed by `Fin n`, with the principal open
+subsets and the counts written out. The hypotheses `0 < L` and `A ≤ n` give `A - L + 1 ≤ n`; the
+hypothesis `0 < B` is not used. -/
+theorem card_le_of_agreement_off_excluded_of_hypersurface_fin {F σ : Type*} [Field F] [Finite σ]
+    (g s : MvPolynomial σ F) (hg : g ≠ 0) {v B n A L : ℕ}
+    (hv : g.totalDegree ≤ v) (_hB : 0 < B)
+    (highCuts : List (MvPolynomial σ F))
+    (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ B)
+    (cuts : Fin n → MvPolynomial σ F) (hcuts : ∀ i, (cuts i).totalDegree ≤ B)
+    (hL : 0 < L) (hLA : L ≤ A) (hAn : A ≤ n)
+    (excluded : Set (σ → F))
+    (hterminal : ∀ P : Ideal (MvPolynomial σ F),
+      P.IsPrime → s ∉ P → g ∈ P → (∀ f ∈ highCuts, f ∈ P) →
+      0 < (affineHilbertPolynomial P).natDegree →
+      L ≤ (Finset.univ.filter fun i ↦ cuts i ∈ P).card →
+      {x | x ∈ zeroLocus F P ∧ aeval x s ≠ 0} ⊆ excluded)
+    (S : Finset (σ → F))
+    (hS : ∀ x ∈ S, aeval x g = 0 ∧ aeval x s ≠ 0 ∧
+      (∀ f ∈ highCuts, aeval x f = 0) ∧ x ∉ excluded)
+    (hA : ∀ x ∈ S, A ≤ (Finset.univ.filter fun i ↦ aeval x (cuts i) = 0).card) :
+    (S.card : ℚ) ≤ (v : ℚ) *
+      (((n * B : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^ (Nat.card σ - 1) := by
+  have h := card_le_of_agreement_off_excluded_of_hypersurface hg s hv highCuts hhigh cuts hcuts
+    hLA (by rw [Fintype.card_fin]; omega) excluded
+    (fun J hJ hsJ hgJ hhJ hd hLJ ↦
+      hterminal J hJ hsJ hgJ hhJ hd (by rwa [card_filter_univ_eq_ncard]))
+    S hS fun x hx ↦ by rw [← card_filter_univ_eq_ncard]; exact hA x hx
   rwa [Fintype.card_fin] at h
 
 end AgreementIncidenceTest
