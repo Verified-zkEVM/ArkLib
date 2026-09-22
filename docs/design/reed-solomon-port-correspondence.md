@@ -743,6 +743,67 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with names that describe the
+quantities. Stage sums and the staircase: `hybridTau` is now `regularTaylorExponent`, `hybridB1`
+and `hybridJ1` are now `regularFiberStageSum` and `regularJointStageSum`, `hybridMoment` is now
+`stageStaircaseSum`, and `hybridT` is now `stageStaircase`. `hybridMoment_cast_eq_hybridT` is now
+`cast_stageStaircaseSum`, without `M ≤ μ`; `hybridMoment_eq_stage_sum` is now
+`stageStaircaseSum_eq_sum_stages`; the two `…StageOne_le_hybridEnvelope` lemmas are now
+`firstOrderCurveFiberStageOne_regularTaylorExponent_le` and
+`firstOrderCurveJointStageOne_regularTaylorExponent_le`; `hybridB1_le_moment` and
+`hybridJ1_le_moment` are now `regularFiberStageSum_le` and `regularJointStageSum_le`;
+`hybridB1_add_one_le_succ` is now `regularFiberStageSum_add_one_le_succ`; `hybridT_mono` is now
+`stageStaircase_mono`; and `hybridB1_cast_le_closed` and `hybridJ1_cast_le_closed` are now
+`regularFiberStageSum_cast_le` and `regularJointStageSum_cast_le`.
+
+List constants: `hybridListRaw` is now `firstOrderListCharge`, `hybridLambdaClosed` is now
+`firstOrderListConstant`, `hybridListRaw_le_succ` and `hybridListRaw_mono` are now
+`firstOrderListCharge_le_succ` and `firstOrderListCharge_mono`, and `hybridListRaw_le_closed` and
+`hybridListRaw_le_lambdaClosed` are both `firstOrderListCharge_le_firstOrderListConstant`, which
+holds for any `θ ≥ 1`. The ordinary tail `hybridOrdinaryRaw` is now `ordinaryTailCharge`, and
+`hybridOrdinaryRaw_mono_to_top` is now `ordinaryTailCharge_le`, without `1 ≤ μ`.
+
+Ratios and the balanced split: `hybridTheta` is now `agreementIncidenceRatio`,
+`hybridLambdaOne` and `hybridLambdaTwo` are now `retainedCoordinateRatio` and
+`fixedCoordinateRatio`, and `hybridBalancedL` is now `balancedSplit`. `hybridBalancedL_bounds`
+is now `lt_balancedSplit` and `balancedSplit_le`, the latter needing only `D ≤ A`;
+`hybridBalancedL_eq_add_ceil` is now `balancedSplit_eq_add_ceil`; and
+`hybridBalancedL_retention` is now `retainedCoordinateRatio_balancedSplit_le` (with `D < n` in
+place of `A ≤ n`), `fixedCoordinateRatio_balancedSplit_le` (with no hypotheses) and
+`sub_balancedSplit_le`. `hybridTheta_one_le` is now `one_le_agreementIncidenceRatio`.
+`hybridBalancedL_denominators_pos` is not ported; it follows by `omega` from the split bounds, as
+the test shows.
+
+Exception constants: `hybridERaw` is now `firstOrderExceptionCharge`, `hybridEClosed` is now
+`firstOrderExceptionConstant`, and `hybridERaw_balanced_le_closed` is now
+`firstOrderExceptionCharge_balancedSplit_le`, without `1 ≤ μ`. The optimized constants
+`hybridListOptimizedRaw` and `hybridListOptimizedCeil` are now `maxFirstOrderListCharge` and
+`firstOrderListBound`; `hybridERawAtDegree` is now `minFirstOrderExceptionCharge`; and
+`hybridEOptimizedRaw` and `hybridEOptimizedCeil` are now `maxMinFirstOrderExceptionCharge` and
+`firstOrderExceptionBound`. `hybridListOptimizedRaw_le_closed` and `_le_lambdaClosed` are now
+`maxFirstOrderListCharge_le_firstOrderListConstant`, the private
+`hybridERawAtDegree_le_balanced` is now the public `minFirstOrderExceptionCharge_le`, and
+`hybridEOptimizedRaw_le_closed` is now
+`maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant`, without `1 ≤ μ`. The numerical
+checks of the source are examples in the test.
+
+New, with no source counterpart: `stageStaircase_nonneg`, `firstOrderListCharge_le_max` and
+`minFirstOrderExceptionCharge_le_maxMin`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridRateEnvelope.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/HybridRateEnvelope.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `hybridTheta_le_rate_gap` is now
+`agreementIncidenceRatio_le_one_div_sub`, `hybridLambdaClosed_le_rate_envelope` is now
+`firstOrderListConstant_le_cubic`, and `hybridEClosed_le_rate_envelope` is now
+`firstOrderExceptionConstant_le_quintic`. The two envelope theorems no longer take the
+nonnegativity of the staircase as a hypothesis, since `stageStaircase_nonneg` supplies it.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/RoundedCounts.lean`
 
 Ported from the recipe-independent part of
@@ -764,6 +825,32 @@ range and without `0 < m`. `automatic_source_residual_le_public` is now
 source directory, is now `certifiedEnlargedRankBound_one_eq_firstOrderRankCount` for every `W`.
 The threshold- and `β`-dependent definitions and theorems of `AutomaticRecipe.lean` are not ported
 here.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The `firstOrderCurve*` and
+`firstOrderTaylor*` names are unchanged, except that `firstOrderCurveFiberStageOne_le_full` is now
+`firstOrderCurveFiberStageOne_le_mul_totalCap`. `firstOrderCurveFiberStageOne` and
+`firstOrderCurveJointStageOne` are defined through `cappedDegreeMixedVolume` and
+`cappedBidegreeMixedVolume`, and their monotonicity follows from the mixed-volume lemmas.
+`firstOrderCurveJointZero` drops its unused `K` argument. The `_mono_total` lemmas no longer need
+`r ≤ j`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageComparison.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/StageComparison.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `curveStageZero` and
+`curveStageOne` are now `orderZeroCurveStageCharge` and `orderOneCurveStageCharge`, and
+`orderZeroCurveStageCharge` drops its unused `K` argument. `curveStageZero_nonneg` is now
+`orderZeroCurveStageCharge_nonneg`, `curveStageOne_nonneg_of_factors` is now
+`orderOneCurveStageCharge_nonneg`, `curveStageZero_mono_of_exponent` is now
+`orderZeroCurveStageCharge_mono`, `curveStageOne_mono_total_of_factors` and
+`curveStageOne_mono_derivative_of_factors` are now `orderOneCurveStageCharge_mono_total` (without
+`r ≤ v`) and `orderOneCurveStageCharge_mono_derivative`, and `curveStageZero_le_one_of_factors`
+is now `orderZeroCurveStageCharge_le_orderOne`, with `0 ≤ s` in place of `1 ≤ s`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean`
 
@@ -3064,6 +3151,14 @@ Ported from the index and submodule part of
 `RingHom.ker (monomialMap k (cappedBidegreeExponents σ i a b c))`. `twoJetMonomialCount_mono` is
 not ported.
 
+`mixedDerivativeImageDegree` from
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegree.lean`
+at the same revision is now `cappedBidegreeMixedVolume`, defined as
+`h * cappedDegreeMixedVolume b c b c + 2 * a * cappedDegreeMixedVolume j r b c`, with the source
+formula as `cappedBidegreeMixedVolume_eq` under `c ≤ b`; `mixedDerivativeImageDegree_mono_source`
+is now `cappedBidegreeMixedVolume_mono_left`. New, with no source counterpart:
+`cappedBidegreeMixedVolume_mono_right`.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedDegree.lean`
 
 Ported from the exponent and submodule part of
@@ -3083,6 +3178,27 @@ its lemmas are `monomialLift`, `monomialMap_monomialLift` and `totalDegree_monom
 `quotientTwoJetLE_finrank_add_le` is `Submodule.finrank_map_mkₐ_span_singleton_add_le`.
 `twoJetCutMap` and `twoJetCutMap_surjective` are not ported: the kernel of the composite is the
 comap.
+
+`fixedFiberDerivativeImageDegree` from
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegree.lean`
+at the same revision is now `cappedDegreeMixedVolume`, with `fixedFiberDerivativeImageDegree_eq`,
+`_mono_source` and `_mono_map` now `cappedDegreeMixedVolume_eq`, `_mono_left` and `_mono_right`,
+and `le_fixedFiberDerivativeImageDegree` now `le_cappedDegreeMixedVolume`.
+`cappedTriangleDegree_le` and `b_le_cappedTriangleDegree` are derived in the test from
+`cappedDegreeMixedVolume_self`. New, with no source counterpart: `cappedDegreeMixedVolume_comm`
+and `cappedDegreeMixedVolume_self`.
+
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/TwoJetPoints.lean` at the same revision is the case
+`S = cappedDegreeExponents (Fin 2) 1 b c` of
+`ArkLib/ToMathlib/RingTheory/MvPolynomial/MonomialMap.lean`: `twoJetPoint` is `monomialPoint`,
+`twoJetPoint_injective` is `monomialPoint_injective`, `aeval_twoJetPoint` is
+`aeval_monomialPoint`, `aeval_twoJetLift_iff` and `twoJetLift_linear_cut` follow from
+`aeval_monomialPoint`, `monomialMap_monomialLift` and `totalDegree_monomialLift_le_one`,
+`mem_zeroLocus_twoJetHypersurfaceIdeal_iff` and its `_source` form are
+`monomialPoint_mem_zeroLocus_comap_iff`, and
+`exists_twoJetPoint_of_mem_zeroLocus_twoJetIdeal` is
+`exists_monomialPoint_eq_of_mem_zeroLocus_ker`. The `CappedDegreePoints` section of the test
+exercises this case.
 
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/MonomialMap.lean`
 
