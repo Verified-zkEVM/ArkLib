@@ -9,12 +9,13 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRa
 /-!
 # Certified rank bound acceptance tests
 
-The source-shaped uniform statement, and a concrete numerical instance.
+The bound stated uniformly over all centers and received values, and a concrete numerical
+instance.
 -/
 
 open Module PolynomialDifferential ReedSolomon.HiddenDerivative
 
-/-- Source shape: one bound, uniform over all centers and received values. -/
+/-- One bound, uniform over all centers and received values. -/
 example {F : Type*} [Field F] {d D A m M W : ℕ} (hd : 0 < d) (hdD : d < D) :
     ∀ center received : F,
       finrank F (LinearMap.range

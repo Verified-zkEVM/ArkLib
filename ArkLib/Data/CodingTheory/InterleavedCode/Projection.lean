@@ -21,10 +21,6 @@ them. The first two facts hold over a semiring; the avoidance step uses a field.
 
 * [Jo, S., *Interleaving Stability for Mutual Correlated Agreement and Curve
   Decodability*][Jo26], Corollary 4.5.
-* ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` uses this row-functional
-  argument in the private declarations `interleaved_powerProjectionBad_card_le`,
-  `interleaved_powerProjectionBadArbitrary_finset_card_le`, and
-  `interleaved_lineProjectionBad_card_le` under `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`.
 -/
 
 @[expose] public section
@@ -116,8 +112,8 @@ to project into `C ^⋈ κ` on the coordinate set `T x`. Then a single row funct
 has the following property: for every `x ∈ s`, some row combination `i ↦ ∑ r, l r • U j i r`
 fails to project into `C` on `T x`.
 
-This is the row-projection step of [Jo26] Corollary 4.5, stated without a generator or a seed
-type; `exists_forall_isMCA_of_forall_isMCA_interleaved` instantiates it with the bad seeds of a
+The statement involves no generator or seed type;
+`exists_forall_isMCA_of_forall_isMCA_interleaved` instantiates it with the bad seeds of a
 generator.
 
 For each `x ∈ s`, the failing functionals form the complement of `goodRowFunctionals C U (T x)`,
@@ -129,7 +125,6 @@ single `l` avoid all of them:
 * for infinite `F`, `ENat.card F = ⊤` and `hs` always holds; finitely many proper submodules do
   not cover `κ → F` (`Submodule.exists_forall_notMem_of_forall_ne_top`). This Mathlib theorem
   requires a field in the pinned version, so the unified finite/infinite statement does too.
-  The finite-field avoidance theorem from #912 itself works over a division ring.
 
 Edge cases: for empty `s` every `l` works. For empty `κ`, every word projects into `C ^⋈ κ`,
 so `hbad` forces `s` to be empty. -/

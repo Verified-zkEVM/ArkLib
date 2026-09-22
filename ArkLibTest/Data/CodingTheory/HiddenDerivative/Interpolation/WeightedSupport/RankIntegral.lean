@@ -10,8 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.R
 # Acceptance cases for the hidden-derivative residual sums
 
 A two-coordinate instance evaluated through the discharged bound, the zero-dimensional case, where
-the bound is attained, and the source's `weightedSimplex_centeredRadius_sq_le_harmonic` and
-`volume_weightedSimplex_add_choose_le_exp` in the dimension `d - 1`.
+the bound is attained, and `weightedSimplex_centeredRadius_sq_le_harmonic` and
+`volume_weightedSimplex_add_choose_le_exp` restated in the dimension `d - 1`.
 -/
 
 open MeasureTheory
@@ -57,9 +57,8 @@ example (W : ℕ) {T : ℝ} (hT : 0 < T) :
   · rw [volume_real_weightedSimplex_succ 0 (by positivity)]
     simp
 
-/-- The source's `weightedSimplex_centeredRadius_sq_le_harmonic`, in dimension `d - 1` with the
-mean `W' * harmonic (d - 1) / d` and the denominator `d * (d + 1)`. The source's hypothesis
-`0 < W'` is not needed. -/
+/-- `weightedSimplex_centeredRadius_sq_le_harmonic` in dimension `d - 1`, with the mean
+`W' * harmonic (d - 1) / d` and the denominator `d * (d + 1)`, for every real `W'`. -/
 example (d : ℕ) (hd : 1 ≤ d) (W' : ℝ) :
     ⨍ u in Set.weightedSimplex (fun i : Fin (d - 1) ↦ (i : ℝ) + 1) W',
         (∑ i, u i - W' * harmonic (d - 1) / d) ^ 2 ≤
@@ -73,7 +72,7 @@ example (d : ℕ) (hd : 1 ≤ d) (W' : ℝ) :
   refine h.trans_eq ?_
   ring
 
-/-- The source's `volume_weightedSimplex_add_choose_le_exp`, in dimension `d - 1` with the budget
+/-- `volume_weightedSimplex_add_choose_le_exp` in dimension `d - 1` with the budget
 `W + r + d.choose 2`. It holds for every `d`, including `d = 0`. -/
 example (d W r : ℕ) (hW : 0 < W) :
     volume.real (Set.weightedSimplex (fun i : Fin (d - 1) ↦ (i : ℝ) + 1)

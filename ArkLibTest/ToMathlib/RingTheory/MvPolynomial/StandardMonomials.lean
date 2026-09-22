@@ -9,19 +9,19 @@ import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 /-!
 # Acceptance tests for standard monomials and the affine Hilbert function
 
-The examples derive the source-shaped `degLex` count from the statement for an arbitrary graded
-monomial order, compute the Hilbert function of the zero ideal, and compute both sides of the
-count for the ideal `(X₀ - X₁²)` at degree bound `1`. For `degLex` the leading exponent is `X₁²`,
-all three monomials `1, X₀, X₁` are standard, and the Hilbert function is `3`. For `lex` the
-leading exponent is `X₀`, only `1, X₁` are standard, and the count is `2`. So the graded
-hypothesis on the monomial order cannot be dropped.
+The examples derive the `degLex` count from the statement for an arbitrary graded monomial order,
+compute the Hilbert function of the zero ideal, and compute both sides of the count for the ideal
+`(X₀ - X₁²)` at degree bound `1`. For `degLex` the leading exponent is `X₁²`, all three monomials
+`1, X₀, X₁` are standard, and the Hilbert function is `3`. For `lex` the leading exponent is `X₀`,
+only `1, X₁` are standard, and the count is `2`. So the graded hypothesis on the monomial order
+cannot be dropped.
 -/
 
 open MvPolynomial MonomialOrder Finsupp
 
 namespace StandardMonomialsTest
 
-/-- The source statement for `degLex`, derived from the statement for any graded order. -/
+/-- The `degLex` count, derived from the statement for any graded order. -/
 example {σ k : Type*} [Field k] [LinearOrder σ] [WellFoundedGT σ] [Finite σ]
     (I : Ideal (MvPolynomial σ k)) (N : ℕ) :
     affineHilbertFunction I N =

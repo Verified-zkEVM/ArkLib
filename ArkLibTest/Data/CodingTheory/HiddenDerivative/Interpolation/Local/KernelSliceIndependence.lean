@@ -10,8 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.KernelSlice
 # Kernel slice independence acceptance tests
 
 The lowest `T`-coefficient of the hidden error for `d = 1` and `d = 0`, the need for the
-`T`-freeness hypothesis, injectivity of the family over `ℤ` for `d = 0` (outside the source's
-hypotheses), and a concrete family dimension.
+`T`-freeness hypothesis, injectivity of the family over `ℤ` for `d = 0`, and a concrete family
+dimension.
 -/
 
 open MvPolynomial ReedSolomon.HiddenDerivative
