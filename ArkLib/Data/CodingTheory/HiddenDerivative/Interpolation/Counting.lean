@@ -49,7 +49,7 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
-  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section

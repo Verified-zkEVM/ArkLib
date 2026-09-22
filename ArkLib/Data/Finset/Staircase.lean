@@ -28,16 +28,6 @@ finite: `Finset.staircase 0 L` has `L * L` elements, while the set of all pairs 
 * `Finset.card_staircase`: `#(staircase D L) = staircaseCount D L` for every `D`.
 * `Nat.card_staircasePairs`: for `D > 0` the type of all natural pairs with `x + D * b < L` has
   `staircaseCount D L` elements.
-
-## References
-
-Generalizes `staircaseCount`, `StaircaseIndex`, `card_staircaseIndex`, `staircaseIndexEquiv`, and
-`card_staircasePairs` from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Counting.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source counted a dependent index type
-`Σ b : Fin L, Fin (L - D * b)` and transported it by an explicit equivalence; here the pairs form
-a filtered product `Finset`, its cardinality needs no hypothesis on `D`, and only the comparison
-with the unbounded subtype assumes `D > 0`.
 -/
 
 @[expose] public section

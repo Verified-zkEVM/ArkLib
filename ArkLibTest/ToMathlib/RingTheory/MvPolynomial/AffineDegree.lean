@@ -13,7 +13,8 @@ The examples compute the affine degree of the polynomial ring, the unit ideal, a
 `X₀ ^ 3 = 0` in two variables, and a nonzero constant. Combining the hypersurface formula with the
 finite-dimensional formula computes `finrank ℚ (ℚ[X₀] ⧸ (X₀ ^ 2)) = 2`. They show that `f ≠ 0` is
 needed in `affineDegree_span_singleton` and that the equal-degree hypothesis is needed in
-`affineDegree_le_of_le`, and derive the source-shaped statements.
+`affineDegree_le_of_le`, and derive positivity for proper ideals and the hypersurface formula with
+an extra properness hypothesis.
 -/
 
 open MvPolynomial Polynomial
@@ -77,12 +78,12 @@ example : (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) ≤ spanXSq ∧
   rw [affineDegree_spanXSq, affineDegree_bot]
   exact ⟨bot_le, by norm_num⟩
 
-/-- The source statement of positivity. -/
+/-- A proper ideal has positive affine degree. -/
 example {F σ : Type*} [Field F] [Finite σ] {I : Ideal (MvPolynomial σ F)} (hI : I ≠ ⊤) :
     0 < affineDegree I :=
   affineDegree_pos hI
 
-/-- The source statement for hypersurfaces, which assumed the ideal proper. -/
+/-- The hypersurface formula with the extra hypothesis that `span {f}` is proper. -/
 example {F σ : Type*} [Field F] [Finite σ] {f : MvPolynomial σ F} (hf : f ≠ 0)
     (_hproper : Ideal.span ({f} : Set (MvPolynomial σ F)) ≠ ⊤) :
     affineDegree (Ideal.span {f}) = (f.totalDegree : ℚ) :=

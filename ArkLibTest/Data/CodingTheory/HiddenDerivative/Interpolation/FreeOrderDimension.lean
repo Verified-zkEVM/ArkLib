@@ -10,8 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimensio
 # Free-order dimension comparison acceptance tests
 
 Concrete values of the certified bound against its `4 d⁸` bound, a concrete instance of the
-dimension comparison, the exponent identity failing at `θ = -5`, and the source-shaped statements
-derived from the general ones.
+dimension comparison, the exponent identity failing at `θ = -5`, and the forms with the extra
+hypotheses `0 < θ`, `0 < d`, `0 < n`, or a jet-degree budget `B`, derived from the general ones.
 -/
 
 open Finset
@@ -84,15 +84,16 @@ example : #(goodHigherExponents 1 0 0) * (3 - 1) * 1 ^ 3 ≤
   rw [finrank_exactInterpolationSpace_eq_exactInterpolationDimensionCount ℚ (by norm_num)]
   decide
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with extra hypotheses -/
 
-/-- The source's `certifiedEnlargedRankBound_le_four_mul_d_pow_eight`, with `0 < d`. -/
+/-- The `4 d⁸` bound on the certified bound at `m = M = d³`, with the extra guard `0 < d`. -/
 example {d W : ℕ} (_hd : 0 < d) :
     certifiedEnlargedRankBound d (d ^ 3) (d ^ 3) W ≤
       4 * d ^ 8 * weightedHigherJetCount d (W + d ^ 3) :=
   certifiedEnlargedRankBound_le_four_mul_d_pow_eight d W
 
-/-- The source's `rankShellBound_lt_interpolationBox`, with `0 < θ`, `0 < d`, `0 < n`. -/
+/-- The scalar inequality `n 4 d⁸ R < (K - 1) H³` from the three real estimates, with the extra
+guards `0 < θ`, `0 < d`, `0 < n`. -/
 example {θ : ℝ} {d K H R n : ℕ} (_hθ : 0 < θ) (_hd : 0 < d) (_hn : 0 < n)
     (hH : θ * (d ^ 3 : ℕ) / 32 ≤ (H : ℝ)) (hR : (R : ℝ) ≤ 2 * (d : ℝ) ^ shellExponent θ)
     (hcompare :
@@ -100,8 +101,8 @@ example {θ : ℝ} {d K H R n : ℕ} (_hθ : 0 < θ) (_hd : 0 < d) (_hn : 0 < n)
     n * (4 * d ^ 8 * R) < (K - 1) * H ^ 3 :=
   rankShellBound_lt_interpolationBox hH hR hcompare
 
-/-- The source's `n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace`, with
-`0 < d`, a jet-degree budget `B` with `C + 2H ≤ B`, and an implicit field. -/
+/-- `n` certified bounds lie below the exact dimension, with the extra hypotheses `0 < d` and a
+jet-degree budget `B` with `C + 2H ≤ B`, and an implicit field. -/
 example {F : Type*} [Field F] {d A K B W C H R n : ℕ}
     (_hd : 0 < d) (hdK : d < K - 1) (hH : H ≤ d ^ 3) (_hdegree : C + 2 * H ≤ B)
     (hweighted : (K - 1) * (C + 3 * H) ≤ d ^ 3 * A)
@@ -112,7 +113,7 @@ example {F : Type*} [Field F] {d A K B W C H R n : ℕ}
   n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace F hdK hH hweighted hshell
     harithmetic
 
-/-- The source's `localRankBound_lt_interpolationSpace_of_shell_bounds`, with the parameter
+/-- The comparison from the shell estimate and the three real estimates, with the parameter
 estimates of `Parameters/FreeOrder.lean` supplying the slack conditions: at the free-order
 parameters with `d + 1 < K`, the shell estimate and the three real estimates give the
 comparison. -/

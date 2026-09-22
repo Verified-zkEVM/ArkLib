@@ -934,7 +934,7 @@ private theorem is_binary_linearized_sub
     {K : Type} [Field K] (P Q : Polynomial K)
     (hP : IsBinaryLinearized P) (hQ : IsBinaryLinearized Q) :
     IsBinaryLinearized (P - Q) := by
-  let _ : DecidableEq K := Classical.decEq K
+  classical
   unfold IsBinaryLinearized
   intro n hn
   rw [Polynomial.mem_support_iff] at hn
@@ -1013,7 +1013,6 @@ private theorem mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card
     (hdeg : p.totalDegree < Fintype.card K) :
     ∃ t : Fin n → K, MvPolynomial.eval t p ≠ 0 := by
   classical
-  let _ : DecidableEq K := Classical.decEq K
   by_contra hall
   push Not at hall
   have hsz := MvPolynomial.schwartz_zippel_totalDegree hp (Finset.univ : Finset K)
@@ -1339,8 +1338,6 @@ private theorem rs_monomial_agreement_card_le_two_mul
     (hagree : ∀ i ∈ S, v i = domain i ^ (2 * d)) :
     S.card ≤ 2 * d := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq F := Classical.decEq F
   let _ := Fintype.ofFinite ι
   let _ := Fintype.ofFinite F
   let : NeZero (d + 1) := ⟨by omega⟩
