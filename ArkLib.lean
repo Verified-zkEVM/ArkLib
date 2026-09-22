@@ -414,6 +414,7 @@ public import ArkLib.Data.Polynomial.FractionFieldFactorization
 public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
+public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.PointCollision
