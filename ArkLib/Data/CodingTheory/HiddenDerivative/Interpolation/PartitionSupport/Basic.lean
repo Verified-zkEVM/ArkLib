@@ -28,23 +28,6 @@ the partition support is counted separately in `PartitionSupport/LocalRank.lean`
   `partitionSupportEligible_finite`, `partitionSupportExponents`.
 * `partitionSupportSpace`, `mem_partitionSupportSpace_iff`,
   `finrank_partitionSupportSpace_eq_card`, `partitionSupportSpace_le_weightedSupportSpace`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/Basic.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* The source's `fullDerivativeWeight` is the existing `fullDerivativeJetWeight` of
-  `Interpolation/Space.lean`, and its `fullHigherJetWeight_le_fullDerivativeWeight` is the existing
-  `fullHigherJetWeight_le_fullDerivativeJetWeight`; neither is restated.
-* `PartitionSupportEligible`, `PartitionSupportEligible.toWeightedSupportEligible`,
-  `partitionSupportEligible_finite`, `partitionSupportExponents`,
-  `mem_partitionSupportExponents`, `mem_partitionSupportSpace_iff`,
-  `finrank_partitionSupportSpace_eq_card` and `partitionSupportSpace_le_weightedSupportSpace` keep
-  their statements.
-* The source imports `WeightedSupport/LocalRank.lean`; this file needs only
-  `WeightedSupport/Basic.lean`.
 -/
 
 @[expose] public section
@@ -79,6 +62,8 @@ theorem partitionSupportEligible_finite (hD : 0 < D) :
 def partitionSupportExponents (D d W : ℕ) (L : ℝ) (hD : 0 < D) : Finset (JetVariable d →₀ ℕ) :=
   (partitionSupportEligible_finite (d := d) (W := W) (L := L) hD).toFinset
 
+/-- An exponent lies in `partitionSupportExponents D d W L hD` exactly when it is
+partition-support eligible. -/
 @[simp]
 theorem mem_partitionSupportExponents {hD : 0 < D} {u : JetVariable d →₀ ℕ} :
     u ∈ partitionSupportExponents D d W L hD ↔ PartitionSupportEligible D d W L u := by

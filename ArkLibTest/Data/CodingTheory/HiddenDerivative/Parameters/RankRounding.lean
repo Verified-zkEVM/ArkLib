@@ -10,8 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 # Acceptance cases for the rank rounding estimates
 
 A small instance of `kappa_floor_bounds` where the lower bound is attained, the case showing that
-its hypothesis `1 ≤ R` is needed, and the source's `kappa_interval`, `binomial_error_le`,
-`kappa_exponent_le`, `kappa_multiplicity_error_le` and `kappa_reciprocal_factor_le`, which fixed
+its hypothesis `1 ≤ R` is needed, and `kappa_interval`, `binomial_error_le`,
+`kappa_exponent_le`, `kappa_multiplicity_error_le` and `kappa_reciprocal_factor_le` specialized to
 `C = 100`, `d ≥ 1000` and the constants `999 / 1000`, `1 / 1000` and `101 / 100`.
 -/
 
@@ -47,7 +47,7 @@ example : ¬ ((4 : ℝ) / 1 * (1 - 1 / (2 : ℕ)) ≤
   rw [Nat.floor_eq_zero.mpr (by norm_num)]
   norm_num
 
-/-- The source's `kappa_interval`: for `d ≥ 1000` the lower bound is at least
+/-- `kappa_interval` for `d ≥ 1000`: the lower bound is at least
 `999 / 1000 (H / a)`. -/
 example (a H : ℝ) (d m : ℕ) (ha : 0 < a) (hH : 0 < H) (hd : 1000 ≤ d) (hm : 0 < m)
     (hR : 2 * (d : ℝ) ≤ a * d * m / H) :
@@ -59,7 +59,7 @@ example (a H : ℝ) (d m : ℕ) (ha : 0 < a) (hH : 0 < H) (hd : 1000 ≤ d) (hm 
   refine ⟨le_trans ?_ hlo, hhi⟩
   exact mul_le_mul_of_nonneg_right (by linarith) (by positivity)
 
-/-- The source's `binomial_error_le` and `kappa_exponent_le`, with `C = 100`. -/
+/-- `binomial_error_le` and `kappa_exponent_le` with `C = 100`. -/
 example (κ a H : ℝ) (d m : ℕ) (ha : 1 ≤ a) (hH : 0 < H) (hm : 0 < m) (hκ : 0 ≤ κ)
     (hκa : κ ≤ H / a) (hsize : 100 * (d : ℝ) ^ 2 * H ≤ m) :
     (d.choose 2 : ℝ) / m ≤ 1 / (200 * H) ∧
@@ -68,7 +68,7 @@ example (κ a H : ℝ) (d m : ℕ) (ha : 1 ≤ a) (hH : 0 < H) (hm : 0 < m) (hκ
   have he := kappa_exponent_le 100 κ a H d m (by norm_num) ha hH hm hκ hκa hsize
   refine ⟨by norm_num at hb ⊢; exact hb, by norm_num at he ⊢; linarith⟩
 
-/-- The source's `kappa_multiplicity_error_le`: `C = 100` and `d ≥ 1000` give `1 / 1000`. -/
+/-- `kappa_multiplicity_error_le`: `C = 100` and `d ≥ 1000` give `1 / 1000`. -/
 example (κ H : ℝ) (d m : ℕ) (hd : 1000 ≤ d) (hm : 0 < m) (hκH : κ ≤ H)
     (hsize : 100 * (d : ℝ) ^ 2 * H ≤ m) :
     (d : ℝ) * κ / m ≤ 1 / 1000 := by
@@ -76,7 +76,7 @@ example (κ H : ℝ) (d m : ℕ) (hd : 1000 ≤ d) (hm : 0 < m) (hκH : κ ≤ H
   have hd' : (1000 : ℝ) ≤ d := by exact_mod_cast hd
   exact one_div_le_one_div_of_le (by norm_num) (by nlinarith)
 
-/-- The source's `kappa_reciprocal_factor_le`: `λ = 999 / 1000` and `ε = 1 / 1000` give the
+/-- `kappa_reciprocal_factor_le`: `λ = 999 / 1000` and `ε = 1 / 1000` give the
 factor `(1 + 1 / 1000) / (999 / 1000) ^ 2 ≤ 101 / 100`. -/
 example (κ t d m : ℝ) (hκ : 0 < κ) (ht : 0 < t) (hm : 0 < m) (hd : 0 ≤ d)
     (hlo : 999 / 1000 * t ≤ κ) (herr : d * κ / m ≤ 1 / 1000) :

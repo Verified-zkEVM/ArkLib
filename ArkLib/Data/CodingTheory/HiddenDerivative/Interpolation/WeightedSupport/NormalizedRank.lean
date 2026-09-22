@@ -43,36 +43,6 @@ prescribed multiplicity `m = ⌈100 d ^ 2 H⌉₊` and radius `W = ⌊a d m / H�
 * `finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding` and
   `finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error`: the strict
   normalized rank bound, with general rounding inputs and with the prescribed parameters.
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`NormalizedRank.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-Throughout, the source's `harmonicPowerSum (d - 1) 1` is `harmonic (d - 1)`, its
-`harmonicPowerSum (d - 1) 2` is `∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2`, and its real cutoff
-`T` of `localResidualCoordinateBudget` is the natural cutoff `⌈T⌉₊`, following
-`WeightedSupport/LocalRank.lean`.
-
-* `localResidualCoordinateBudget_le_weighted_integral_geometric`,
-  `localResidualCoordinateBudget_div_volume_mul_cube_le` and
-  `finrank_weightedSupportLocalConstraint_div_volume_mul_cube_le` have the source's statements
-  with these substitutions. The unused hypothesis `0 < m` is dropped from the first.
-* `normalized_rank_lt_of_rounding_bounds` generalizes the source theorem of the same name. The
-  source fixed `c = 448 / 625`, `b = 3 / 5`, `e = 1 / 100`, `ρ = 101 / 100` and `K = 37 / 20`, and
-  took `d` and `m` natural; here they are arbitrary, with `0 < c`, `0 ≤ b`, `exp (b + e) < K`, and
-  `d, m` positive reals. The source's case is `exp_sixtyOne_div_hundred_lt`.
-* `finrank_weightedSupportLocalConstraint_lt_of_harmonic_error_and_rounding` generalizes the source
-  theorem of the same name in the same constants.
-* `finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error` generalizes the
-  source theorem of the same name: the source fixed `a = 1 + 3 g / 8`, `L = m D (1 + g)`,
-  `c = 448 / 625`, `b = 3 / 5`, `K = 37 / 20` and required `48000 ≤ d`. Here `a ≥ 1` and `L` are
-  arbitrary, and `1000 ≤ d`, the hypothesis of `prescribed_kappa_bounds`, suffices. The source's
-  case is derived in the acceptance tests.
-
-Deferred: the source's `finrank_weightedSupportLocalConstraint_lt_prescribed`, which discharges the
-per-fiber inequalities from `WeightedSupportParameters.prescribedFiberMeanVariance_le` of
-`Parameters/WeightedSupport/Rounding.lean` and the scalar parameters `theta` and `xi` of
-`Parameters/WeightedSupport/ScalarParameters.lean`. Neither file is ported yet.
 -/
 
 @[expose] public section

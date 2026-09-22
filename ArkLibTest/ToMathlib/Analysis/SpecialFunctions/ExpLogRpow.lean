@@ -10,10 +10,10 @@ import ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow
 # Acceptance cases for exponentials of logarithmic bounds
 
 A concrete instance with `a = 2`, the case showing that `1 ≤ a` is needed in
-`Real.exp_le_exp_add_mul_rpow_of_le_log_add`, and the source's `exp_le_rpow` and
-`endpoint_exp_upper`; the new constants `exp (54 / 5) > 48000` and `exp (81 / 80) > 11 / 4`;
-instances of `Real.exp_one_mul_le_mul_exp_div`, including its equality case `c = ρ`; and a
-concrete instance of `Real.rpow_one_div_div_self`.
+`Real.exp_le_exp_add_mul_rpow_of_le_log_add`, its case `b = 3 / 5`, `c = 1 / 100`, `x = d`, and
+the bound `exp (3 / 5 + 1 / 100) < 37 / 20`; the constants `exp (54 / 5) > 48000` and
+`exp (81 / 80) > 11 / 4`; instances of `Real.exp_one_mul_le_mul_exp_div`, including its equality
+case `c = ρ`; and a concrete instance of `Real.rpow_one_div_div_self`.
 -/
 
 /-- `a = 2`, `x = 4`, `b = c = 0`, `H = log 4`, `E = log 4 / 2`: `exp (log 4 / 2) ≤ 4 ^ (1 / 2)`,
@@ -35,8 +35,8 @@ example : 1 ≤ Real.log 1 + 1 ∧ (2 : ℝ) ≤ 1 / (1 / 2) + 0 ∧
   rw [Real.one_rpow, mul_one, add_zero, Real.exp_le_exp]
   norm_num
 
-/-- The source's `exp_le_rpow`: `b = 3 / 5`, `c = 1 / 100`, `x = d` natural, and any
-`C ≥ exp (61 / 100)`. -/
+/-- `Real.exp_le_exp_add_mul_rpow_of_le_log_add` at `b = 3 / 5`, `c = 1 / 100`, `x = d` natural,
+and any `C ≥ exp (61 / 100)`. -/
 example (a H E C : ℝ) (d : ℕ) (ha : 1 ≤ a) (hd : 0 < d)
     (hH : H ≤ Real.log d + 3 / 5) (hE : E ≤ H / a + 1 / 100)
     (hC : Real.exp (61 / 100) ≤ C) :
@@ -47,8 +47,8 @@ example (a H E C : ℝ) (d : ℕ) (ha : 1 ≤ a) (hd : 0 < d)
   norm_num at hC ⊢
   exact hC
 
-/-- The source's `WeightedSupportParameters.endpoint_exp_upper`, and the form used by the
-normalized rank bound: `exp (3 / 5 + 1 / 100) < 37 / 20`. -/
+/-- The form of `Real.exp_sixtyOne_div_hundred_lt` used by the normalized rank bound:
+`exp (3 / 5 + 1 / 100) < 37 / 20`. -/
 example : Real.exp (3 / 5 + 1 / 100) < 37 / 20 := by
   norm_num
   exact Real.exp_sixtyOne_div_hundred_lt

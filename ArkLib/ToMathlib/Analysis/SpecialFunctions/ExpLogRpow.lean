@@ -28,30 +28,6 @@ and `11 / 4 < exp (81 / 80)`, from Mathlib's `Real.exp_one_gt_d9`.
 * `Real.exp_one_mul_le_mul_exp_div`, `Real.rpow_one_div_div_self`
 * `Real.exp_sixtyOne_div_hundred_lt`, `Real.fortyEightThousand_lt_exp_fiftyFour_div_five`,
   `Real.elevenFourths_lt_exp_eightyOne_div_eighty`
-
-## References
-
-These generalize declarations of ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `ReedSolomon.HiddenDerivative.InterpolationRounding.exp_le_rpow` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RankRounding.lean` fixed
-  `b = 3 / 5` and `c = 1 / 100` and concluded `exp E ≤ C * d ^ (1 / a)` for every
-  `C ≥ exp (61 / 100)` and natural `d > 0`. That is the case `x = d` of
-  `Real.exp_le_exp_add_mul_rpow_of_le_log_add`.
-* `ReedSolomon.HiddenDerivative.WeightedSupportParameters.endpoint_exp_upper` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/`
-  `EndpointComparison.lean` is `Real.exp_sixtyOne_div_hundred_lt`, with the same proof.
-* `WeightedSupportParameters.exp_reciprocal_product_lower` of the same file assumed `0 < c`;
-  `Real.exp_one_mul_le_mul_exp_div` holds for every real `c`.
-* `WeightedSupportParameters.rankPower_eq_inverse_exp` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/Surplus.lean` fixed
-  `a = 1 + (3 / 8) g` with `0 ≤ g`; `Real.rpow_one_div_div_self` needs only `a ≠ 0`.
-* `WeightedSupportParameters.exp_fifty_four_fifths_gt` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/ScalarParameters.lean`
-  is `Real.fortyEightThousand_lt_exp_fiftyFour_div_five`, with the same proof.
-* `WeightedSupportParameters.exp_eightyOne_eightieth_gt` of `EndpointComparison.lean` is
-  `Real.elevenFourths_lt_exp_eightyOne_div_eighty`, proved from `Real.exp_one_gt_d9` and
-  `exp (1 / 80) ≥ 1 + 1 / 80` instead of a degree-five Taylor polynomial.
 -/
 
 @[expose] public section

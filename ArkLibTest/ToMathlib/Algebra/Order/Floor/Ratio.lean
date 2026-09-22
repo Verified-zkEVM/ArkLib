@@ -12,8 +12,8 @@ import Mathlib.Data.Rat.Floor
 # Acceptance cases for the explicit floor and ceiling errors
 
 Concrete instances over `ℚ`, the cases showing that the additive `1`, the hypothesis `0 < R` and
-the factor `2` cannot be dropped, and the source's `floor_reciprocal_le` and `floor_ratio_bounds`
-(hypothesis `2 ≤ R`, over `ℝ`).
+the factor `2` cannot be dropped, and `Nat.one_div_floor_le` and `Nat.div_floor_bounds` over `ℝ`
+with the hypothesis `2 ≤ R`.
 -/
 
 /-- `⌈5 / 2⌉₊ = 3 ≤ 5 / 2 + 1`. -/
@@ -44,7 +44,7 @@ example : ((⌈(5 / 2 : ℚ)⌉₊ - 1 : ℕ) : ℚ) = 2 ∧ (2 : ℚ) ≤ max (
   norm_num at h ⊢
 
 /-- `R = 3 / 2`: `1 / ⌊3 / 2⌋₊ = 1 ≤ (1 + 4 / 3) / (3 / 2) = 14 / 9`. This is in the range
-`1 ≤ R < 2` excluded by the source's hypothesis `2 ≤ R`. -/
+`1 ≤ R < 2`, which the hypothesis `2 ≤ R` would exclude. -/
 example : (1 : ℚ) ≤ 14 / 9 := by
   have hf : ⌊(3 / 2 : ℚ)⌋₊ = 1 := by
     rw [Nat.floor_eq_iff (by norm_num)]
@@ -78,11 +78,11 @@ example : (2 : ℚ) ≤ 5 / 2 ∧ (5 / 2 : ℚ) ≤ 18 / 5 := by
   rw [hf] at h
   norm_num at h ⊢
 
-/-- The source's `floor_reciprocal_le`. -/
+/-- `Nat.one_div_floor_le` over `ℝ` with `2 ≤ R`. -/
 example (R : ℝ) (hR : 2 ≤ R) : 1 / (Nat.floor R : ℝ) ≤ (1 + 2 / R) / R :=
   Nat.one_div_floor_le (by linarith)
 
-/-- The source's `floor_ratio_bounds`. -/
+/-- `Nat.div_floor_bounds` over `ℝ` with `2 ≤ R`. -/
 example (R N : ℝ) (hR : 2 ≤ R) (hN : 0 ≤ N) :
     N / R ≤ N / (Nat.floor R : ℝ) ∧ N / (Nat.floor R : ℝ) ≤ N / R * (1 + 2 / R) :=
   Nat.div_floor_bounds (by linarith) hN
