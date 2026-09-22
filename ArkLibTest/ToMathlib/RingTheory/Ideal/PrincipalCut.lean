@@ -17,8 +17,8 @@ non-membership and proper-cut boundaries are visible in the statement.
 
 For relative codimension one they compute the relative height `1` of the component `(2)` of the
 cut of `(0)` by `2` in `ℤ`, show that cutting by `0` gives relative height `0`, check that a
-strictly larger ideal has nonzero image without primality, and derive the source-shaped
-statements with their `J.IsPrime` conjunct.
+strictly larger ideal has nonzero image without primality, and derive the forms with primality of
+`P` as an explicit argument and the conjunct `J.IsPrime`.
 -/
 
 namespace Ideal
@@ -104,16 +104,15 @@ example : ∃ J ∈ ((⊥ : Ideal ℤ) ⊔ span {2}).minimalPrimes,
   rw [bot_sup_eq, Ne, span_singleton_eq_top, Int.isUnit_iff]
   norm_num
 
-/-- The source's `principalCut_minimalPrime_relative_codimension_one`, with primality of `P` as an
-explicit argument and the conjunct `J.IsPrime`. -/
+/-- A minimal prime `J` of the cut of a prime `P` by `f ∉ P` is prime, strictly contains `P`, and
+has height one in `R ⧸ P`. -/
 example {R : Type*} [CommRing R] [IsNoetherianRing R] {P J : Ideal R} (hP : P.IsPrime) {f : R}
     (hf : f ∉ P) (hJ : J ∈ (P ⊔ span {f}).minimalPrimes) :
     J.IsPrime ∧ P < J ∧ (J.map (Quotient.mk P)).height = 1 :=
   ⟨hJ.isPrime, lt_of_mem_minimalPrimes_sup_span hf hJ,
     map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span hf hJ⟩
 
-/-- The source's `exists_principalCut_component_relative_codimension_one`, with the conjunct
-`J.IsPrime`. -/
+/-- The existence of a component of relative height one, with the conjunct `J.IsPrime`. -/
 example {R : Type*} [CommRing R] [IsNoetherianRing R] {P : Ideal R} (hP : P.IsPrime) {f : R}
     (hf : f ∉ P) (hcut : P ⊔ span {f} ≠ ⊤) :
     ∃ J : Ideal R, J ∈ (P ⊔ span {f}).minimalPrimes ∧
@@ -140,8 +139,8 @@ example {R : Type*} [CommRing R] [IsNoetherianRing R] {P : Ideal R} {s f : R} (h
   obtain ⟨-, hPQ, -, hsQ⟩ := of_mem_retainedMinimalPrimes_sup_span hQ
   exact hsQ (hPQ hs)
 
-/-- The source's `mem_retainedCutChildren`, for its family `retainedCutChildren P s f`, which is
-`{P}` when `f ∈ P` and the retained minimal primes of `P ⊔ span {f}` otherwise. By
+/-- Membership in the family that is `{P}` when `f ∈ P` and the retained minimal primes of
+`P ⊔ span {f}` otherwise. By
 `retainedMinimalPrimes_sup_span_of_mem` the two cases agree, and the conclusion is
 `of_mem_retainedMinimalPrimes_sup_span`. -/
 example {R : Type*} [CommRing R] [IsNoetherianRing R]

@@ -37,28 +37,6 @@ gives the probability form, which is in
   one tuple for each claimed value array.
 * `Polynomial.evalTuple_mul_add_of_eval_eq_zero`: reconstruction `D * q + I` from a divisor `D`
   vanishing at the points has the same point evaluations as `I`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/Probability/TwoPointPolynomialCollision.lean`:
-
-* `collisionSet` and its separator machinery (`CandidatePair`, `pairLeft`, `pairRight`,
-  `separatingCoordinate`, `separator`, `twoPointRootPairs`) are replaced by the event
-  `¬ Set.InjOn (evalTuple x) S`. The source's set is a superset of this event chosen through a
-  separating coordinate per pair; the event itself needs no choice and is the quantity used by the
-  consumer. `card_twoPointRootPairs_le` and `card_collisionSet_le` are generalized to
-  `card_le_of_evalTuple_eq` and `card_le_of_not_injOn_evalTuple`: any finite index type of points
-  replaces the two points, any domain replaces the field, and any finite set of point tuples
-  replaces the product of root sets. `mem_collisionSet_of_agree` and
-  `eq_of_agree_of_not_mem_collisionSet` are the definition of `Set.InjOn`.
-* `outsideDomain`, `card_outsideDomain`, `orderedDistinctPairs`, `card_orderedDistinctPairs`,
-  `card_orderedDistinctPairs_outsideDomain`, `collisionRate` and `collisionRate_le` are replaced by
-  `prob_not_injOn_evalTuple_le` (in `ArkLib.Data.Polynomial.PointCollisionProbability`), which
-  holds for every finite sample space mapped injectively into point tuples. The ordered distinct
-  outside-domain pairs are Mathlib's `Finset.offDiag` of the complement of the domain; that
-  specialization, with the source's denominator, is
-  `ReedSolomon.AnchoredAgreement.prob_not_injOn_candidateSet_offDiag_le`.
 -/
 
 @[expose] public section
@@ -75,6 +53,7 @@ with `x` a tuple of sampled anchors it is the tuple of anchor values. -/
 def evalTuple (x : ι → R) (f : κ → R[X]) : ι → κ → R :=
   fun i j ↦ (f j).eval (x i)
 
+/-- Entry `(i, j)` of `evalTuple x f` is `f j` evaluated at `x i`. -/
 @[simp] theorem evalTuple_apply (x : ι → R) (f : κ → R[X]) (i : ι) (j : κ) :
     evalTuple x f i j = (f j).eval (x i) := rfl
 

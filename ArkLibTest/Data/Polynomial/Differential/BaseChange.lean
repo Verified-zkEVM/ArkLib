@@ -15,7 +15,8 @@ Let `E₄ = FiniteField.Extension (ZMod 2) 2 2`, the field with four elements.
 
 * Naturality: for `Q = X + Y₀` and `P = X + 1` over `ZMod 2`, both sides of
   `map_differentialSpecialization` are `1`, since `X + (X + 1) = 1` in characteristic two.
-* Injectivity is needed in `jetDegree_map_eq`: `ℤ →+* ZMod 2` sends `2 * Y₀` to `0`.
+* Injectivity is needed in `jetDegree_map_eq` and `jetTotalDegree_map_eq`: `ℤ →+* ZMod 2` sends
+  `2 * Y₀` to `0`.
 * `JetDegreeCastsNeZero` fails for `Y₀ ^ 2` over `ZMod 2` and still fails over `E₄`.
 * The cardinality comparison is strict for the zero equation with `D = 0`: `2` constant solutions
   over `ZMod 2` and `4` over `E₄`.
@@ -70,6 +71,21 @@ example :
   have hmap : MvPolynomial.map (Int.castRingHom (ZMod 2)) Q = 0 := by
     simp [Q, CharTwo.two_eq_zero]
   refine ⟨?_, by rw [hmap]; simp [jetDegree]⟩
+  simp only [Q, jetDegree]
+  rw [show (2 : DifferentialPolynomial ℤ 0) = MvPolynomial.C 2 from rfl,
+    MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
+    MvPolynomial.degreeOf_X_self]
+
+/-- Injectivity is needed in `jetTotalDegree_map_eq`: `2 * Y₀` over `ℤ` has total jet degree at
+least its jet degree `1`, and its image over `ZMod 2` is `0`, of total jet degree `0`. -/
+example :
+    let Q : DifferentialPolynomial ℤ 0 := 2 * MvPolynomial.X (some 0)
+    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧ 1 ≤ jetTotalDegree Q := by
+  intro Q
+  have hmap : MvPolynomial.map (Int.castRingHom (ZMod 2)) Q = 0 := by
+    simp [Q, CharTwo.two_eq_zero]
+  refine ⟨by rw [hmap]; exact Nat.le_zero.mp ((jetTotalDegree_le_iff _ 0).mpr (by simp)), ?_⟩
+  refine le_of_eq_of_le ?_ (jetDegree_le_total Q 0)
   simp only [Q, jetDegree]
   rw [show (2 : DifferentialPolynomial ℤ 0) = MvPolynomial.C 2 from rfl,
     MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),

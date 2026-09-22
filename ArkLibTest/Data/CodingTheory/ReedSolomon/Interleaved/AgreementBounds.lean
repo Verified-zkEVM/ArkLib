@@ -12,9 +12,10 @@ import Mathlib.Algebra.Field.ZMod
 
 These clients compute the packing into `F(Z)` on a pair, separate two tuples with
 `tupleRatFunc_injective`, push a concrete codeword through `comp_mem_code_map`, derive the
-source-shaped transfer of a scalar list bound over `F(Z)`, and show that the injective packing is
-needed: over `ZMod 2` with one evaluation point, degree bound `1` and radius `1`, the two-fold
-interleaved code has a list of four codewords while the scalar code has two codewords in total.
+transfer of a scalar list bound over `F(Z)` to every interleaving, and show that the injective
+packing is needed: over `ZMod 2` with one evaluation point, degree bound `1` and radius `1`, the
+two-fold interleaved code has a list of four codewords while the scalar code has two codewords in
+total.
 -/
 
 open Code ReedSolomon Polynomial
@@ -40,7 +41,7 @@ example (domain : Fin 3 ↪ ZMod 2) {k : ℕ} {w : Fin 3 → ZMod 2} (hw : w ∈
         (algebraMap (ZMod 2) (RatFunc (ZMod 2))).injective⟩) k :=
   comp_mem_code_map domain _ _ hw
 
--- Source shape: a list bound `L` for the scalar code over `F(Z)` bounds every interleaving.
+-- A list bound `L` for the scalar code over `F(Z)` bounds every interleaving.
 example {F : Type} [Field F] {n k t L : ℕ} (domain : Fin n ↪ F) (δ : ℝ)
     (hscalar : Lambda (code (domain.trans ⟨algebraMap F (RatFunc F),
         (algebraMap F (RatFunc F)).injective⟩) k : Set (Fin n → RatFunc F)) δ ≤ L) :

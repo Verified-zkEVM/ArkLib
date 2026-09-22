@@ -25,7 +25,9 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 * `certifiedEnlargedRankBound d m M W` is the sum over `r < m` of the higher-jet count times the
   residual `(r + 1)(M + 1) - (r + 1 - h)(M + 1 - h)`.
 * `localResidualCoordinateBudget d m W B` and `localCoordinateBudget d m W B` count the local
-  coordinates of `Interpolation/Local/Coordinates.lean`, with a jet-degree cutoff `B`.
+  coordinates of `Interpolation/Local/Coordinates.lean`, with a jet-degree cutoff `B`;
+  `localDerivativeCoordinateBudget d m W` counts them under a derivative-order weight bound, with
+  no cutoff.
 * `exactInterpolationDimensionCount D A d m M W` is the dimension of the exact interpolation space
   of `Interpolation/Index.lean`: a sum over the higher-jet exponents `c` of weight at most `W` and
   the `Y₁` exponents `b₁ ≤ M` of the staircase count `Nat.staircaseCount D` at the residual budget
@@ -46,46 +48,8 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Counting.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `weightedHigherJetCount` (the
-source's `weightedHigherJetTuples` filtered the same coordinate box by hand; here it is
-`Finset.natWeightedSimplex`), `contactThreshold`, `multiplicity_le_add_mul_contactThreshold`,
-`add_mul_lt_multiplicity_of_lt_contactThreshold`, `ambientContactCount`,
-`exhibitedKernelContactCount`, `exhibitedKernelResidualCount`,
-`exhibitedKernelContactCount_le_ambientContactCount`, `certifiedContactRankBudget`, and
-`certifiedEnlargedRankBound`. The source assumed `r < m` in both threshold lemmas and `0 < d` in
-the second; neither lemma needs `r < m`, and the second holds for every `d`. The identity
-`ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound` comes from the source's
-`Interpolation/Local/Rank.lean`; it is pure arithmetic and so lives here. The source's
-`localCoordinateBudget` and `localResidualCoordinateBudget` come from
-`Interpolation/Local/Coordinates.lean`; the denominator `(m - r) ⌈/⌉ (d + 1)` is written
-`contactThreshold (d + 1) m r`, and the source's real cutoff `T` with count `⌈T - |z|⌉₊` is a
-natural cutoff `B` with count `B - |z|`. `localResidualCoordinateBudget_le_localCoordinateBudget`
-is new.
-
-From the source's `Interpolation/FreeOrderDimension.lean`: `weightedHigherJetCount_mono` (now
-`Finset.card_le_card` of `Finset.natWeightedSimplex_mono`), and the private
-`rectangleResidual_le`, `contactThreshold_cube_le_sq`, and `certifiedContactRankBudget_cube_le`,
-which fixed `m = M = d³` and `r < d³`. Here they are the public
-`exhibitedKernelResidualCount_le`, `contactThreshold_le_of_le_mul` (any `m ≤ d k`, any `r`, any
-`d`), and `certifiedEnlargedRankBound_le_of_le_mul`; the source's `4 d⁸` bound is its case
-`m = M = d³`, `k = d²`, in `Interpolation/FreeOrderDimension.lean`.
-
-Also from the source's `Counting.lean`: `higherJetTupleSpecializationCost`,
-`exactDimensionResidual`, `exactInterpolationDimensionCount`, and `card_exactDimensionIndex`. The
-source's `staircaseCount` is `Nat.staircaseCount` in `ArkLib.Data.Finset.Staircase`, and its
-dependent index type `ExactDimensionIndex` is the `Finset.sigma` `exactDimensionCoordinates`, so
-`card_exactDimensionIndex` becomes `card_exactDimensionCoordinates`. The source's
-`higherJetSpecializationCost`, the same cost on finitely supported exponents, and
-`higherJetTupleSpecializationCost_equivFunOnFinite` are not ported: the dimension count only uses
-the tuple form.
-
-Deferred to the slices that use them: the shell counts and tuple equivalences with
-`HigherJetExponent`, the bookkeeping type `CertifiedEnlargedRankBudgetIndex`, and
-`ExactFiniteCertificate`.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
@@ -246,6 +210,16 @@ def localResidualCoordinateBudget (d m W B : ℕ) : ℕ :=
 higher-jet exponent. -/
 def localCoordinateBudget (d m W B : ℕ) : ℕ :=
   B * ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount d (W + r)
+
+/-- The derivative-order coordinate budget
+`∑_{r < m} ⌈(m - r)/(d + 1)⌉ · #{c : Fin d → ℕ | ∑_j (j + 1) c_j ≤ W + r}`. The factor
+`⌈(m - r)/(d + 1)⌉` counts the error exponents `h` of contact order `r + (d + 1) h < m`, and the
+second factor counts the exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W + r`.
+It counts the local coordinates of `localDerivativeExponents` in
+`Interpolation/Local/Coordinates.lean`. Unlike `localResidualCoordinateBudget`, it needs no
+jet-degree cutoff, because the derivative-order weight charges `Y₁`. -/
+def localDerivativeCoordinateBudget (d m W : ℕ) : ℕ :=
+  ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount (d + 1) (W + r)
 
 /-- The residual budget is at most the coarse budget, for any cutoffs `B ≤ B'`. -/
 theorem localResidualCoordinateBudget_le_localCoordinateBudget {d m W B B' : ℕ} (hB : B ≤ B') :

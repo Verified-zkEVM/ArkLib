@@ -24,7 +24,7 @@ example : finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) ≤ 1 := by
     (fun _ _ hxy => congrArg Prod.snd (Subtype.ext_iff.mp hxy))
   simpa using h
 
-/-- With an empty exhibited kernel the bound is the dimension of the source. -/
+/-- With an empty exhibited kernel the bound is the dimension of the domain. -/
 example : finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) ≤ 2 := by
   have h := LinearMap.finrank_range_le_sub_of_injective_ker (W := (⊥ : Submodule ℚ ℚ))
     (LinearMap.fst ℚ ℚ ℚ) 0 (fun x y _ => Subsingleton.elim x y)
@@ -94,3 +94,30 @@ example : finrank ℚ (LinearMap.range
     simp at this
   · rw [LinearMap.range_eq_top.mpr fun x => ⟨x, rfl⟩, finrank_top, finrank_self]
     rfl
+
+/-! ### Joint kernels
+
+On `ℚ³`, the first two coordinate projections have rank `1` each, so their ranks sum to
+`2 < 3` and a nonzero vector lies in both kernels. The identity of `ℚ` shows that the surplus must
+be strict. -/
+
+/-- Two coordinate functionals on `ℚ³` have a common nonzero kernel vector. -/
+example : ∃ v : Fin 3 → ℚ, v ≠ 0 ∧ ∀ i : Fin 2, LinearMap.proj (R := ℚ) (φ := fun _ => ℚ)
+    i.castSucc v = 0 := by
+  refine LinearMap.exists_ne_zero_of_sum_finrank_range_lt _ ?_
+  calc ∑ i : Fin 2, finrank ℚ (LinearMap.range
+        (LinearMap.proj (R := ℚ) (φ := fun _ : Fin 3 => ℚ) i.castSucc))
+      ≤ ∑ _i : Fin 2, 1 := Finset.sum_le_sum fun i _ =>
+        (Submodule.finrank_le _).trans_eq (finrank_self ℚ)
+    _ < finrank ℚ (Fin 3 → ℚ) := by simp
+
+/-- Equality is not enough: the identity of `ℚ` has rank `1 = finrank ℚ ℚ` and no nonzero kernel
+vector. -/
+example : ∑ _i : Fin 1, finrank ℚ (LinearMap.range (LinearMap.id (R := ℚ) (M := ℚ))) =
+      finrank ℚ ℚ ∧
+    ¬∃ v : ℚ, v ≠ 0 ∧ ∀ _i : Fin 1, LinearMap.id (R := ℚ) v = 0 := by
+  refine ⟨?_, ?_⟩
+  · rw [LinearMap.range_eq_top.mpr fun x => ⟨x, rfl⟩, finrank_top]
+    simp
+  rintro ⟨v, hv, h⟩
+  exact hv (h 0)
