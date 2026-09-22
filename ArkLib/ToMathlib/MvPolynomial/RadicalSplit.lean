@@ -21,10 +21,11 @@ the content of `Q` with respect to `X i`; the product of the second group,
 `radicalPrimPart i Q`, is the radical of its primitive part. Their product is
 `UniqueFactorizationMonoid.radicalRep Q`.
 
-Under a monoid-with-zero homomorphism into a target without zero divisors, `Q` vanishes exactly
-when the content radical or one of the positive-degree factors vanishes. Every degree function that
-is additive on nonzero products, such as `degreeOf j` and `totalDegree`, gives the content radical
-and the positive-degree factors together at most the degree of `Q`.
+Both products divide `Q`. Under a monoid-with-zero homomorphism into a target without zero
+divisors, `Q` vanishes exactly when the content radical or one of the positive-degree factors
+vanishes. Every degree function that is additive on nonzero products, such as `degreeOf j` and
+`totalDegree`, gives the content radical and the positive-degree factors together at most the
+degree of `Q`, and so gives the primitive-part radical alone at most the degree of `Q`.
 
 These facts combine exceptional sets. If each positive-degree factor `c` fails a property only on
 a set of challenges of size at most `bound c`, and the content radical vanishes only on a set of
@@ -38,6 +39,8 @@ This file makes no characteristic, separability or incidence claim.
 ## Main statements
 
 * `MvPolynomial.radicalContent_mul_radicalPrimPart`: the two products multiply to `radicalRep Q`.
+* `MvPolynomial.radicalContent_mul_radicalPrimPart_dvd_self`, `radicalContent_dvd_self`,
+  `radicalPrimPart_dvd_self`: the two products and their product divide `Q`.
 * `MvPolynomial.degreeOf_radicalContent`: the content radical does not involve `X i`.
 * `MvPolynomial.map_eq_zero_iff_radicalContent_or_exists`,
   `MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff`: the zeros of `Q`.
@@ -45,6 +48,9 @@ This file makes no characteristic, separability or incidence claim.
   `add_sum_degreeOf_positiveDegreeFactorClasses_le`,
   `add_sum_totalDegree_positiveDegreeFactorClasses_le` and
   `sum_degreeOf_positiveDegreeFactorClasses_le`: the degree budgets.
+* `MvPolynomial.map_radicalContent_add_map_radicalPrimPart_le`, `map_radicalPrimPart_le` and
+  their specializations `totalDegree_radicalPrimPart_le` and `degreeOf_radicalPrimPart_le`: the
+  degree budgets for the two products.
 * `MvPolynomial.exists_exceptional_of_factor_exceptional`: the combination of exceptional sets.
 -/
 
@@ -111,6 +117,19 @@ theorem radicalContent_mul_radicalPrimPart (i : σ) (Q : MvPolynomial σ R) :
       (primeFactors (Associates.mk Q)).filter (fun c ↦ ¬degreeOf i c.rep = 0) := by
     simp only [Nat.pos_iff_ne_zero]
   rw [hfilter, Finset.prod_filter_mul_prod_filter_not]
+
+/-- The content radical times the primitive-part radical divides `Q`. -/
+theorem radicalContent_mul_radicalPrimPart_dvd_self (i : σ) (Q : MvPolynomial σ R) :
+    radicalContent i Q * radicalPrimPart i Q ∣ Q :=
+  radicalContent_mul_radicalPrimPart i Q ▸ radicalRep_dvd_self Q
+
+/-- The content radical divides `Q`. -/
+theorem radicalContent_dvd_self (i : σ) (Q : MvPolynomial σ R) : radicalContent i Q ∣ Q :=
+  (dvd_mul_right _ _).trans (radicalContent_mul_radicalPrimPart_dvd_self i Q)
+
+/-- The primitive-part radical divides `Q`. -/
+theorem radicalPrimPart_dvd_self (i : σ) (Q : MvPolynomial σ R) : radicalPrimPart i Q ∣ Q :=
+  (dvd_mul_left _ _).trans (radicalContent_mul_radicalPrimPart_dvd_self i Q)
 
 /-- A monoid-with-zero homomorphism into a nontrivial commutative monoid with zero without zero
 divisors kills a nonzero `Q` exactly when it kills the content radical or the representative of a
@@ -221,6 +240,22 @@ theorem add_sum_positiveDegreeFactorClasses_le {d : MvPolynomial σ R → ℕ}
     radicalContent_mul_radicalPrimPart, map_radicalRep_eq_sum hd]
   exact sum_primeFactors_le hd Q
 
+/-- For `d` additive on products of nonzero polynomials, `d` of the content radical plus `d` of the
+primitive-part radical is at most `d Q`. -/
+theorem map_radicalContent_add_map_radicalPrimPart_le {d : MvPolynomial σ R → ℕ}
+    (hd : ∀ x y, x ≠ 0 → y ≠ 0 → d (x * y) = d x + d y) (i : σ) (Q : MvPolynomial σ R) :
+    d (radicalContent i Q) + d (radicalPrimPart i Q) ≤ d Q := by
+  rw [radicalPrimPart,
+    map_prod_rep_eq_sum (s := positiveDegreeFactorClasses i Q) hd (Finset.filter_subset _ _)]
+  exact add_sum_positiveDegreeFactorClasses_le hd i Q
+
+/-- For `d` additive on products of nonzero polynomials, `d` of the primitive-part radical is at
+most `d Q`. -/
+theorem map_radicalPrimPart_le {d : MvPolynomial σ R → ℕ}
+    (hd : ∀ x y, x ≠ 0 → y ≠ 0 → d (x * y) = d x + d y) (i : σ) (Q : MvPolynomial σ R) :
+    d (radicalPrimPart i Q) ≤ d Q :=
+  (Nat.le_add_left _ _).trans (map_radicalContent_add_map_radicalPrimPart_le hd i Q)
+
 /-- The degree in `X j` of the content radical plus the degrees in `X j` of the positive-degree
 factors is at most the degree of `Q` in `X j`. -/
 theorem add_sum_degreeOf_positiveDegreeFactorClasses_le (i j : σ) (Q : MvPolynomial σ R) :
@@ -234,6 +269,16 @@ theorem add_sum_totalDegree_positiveDegreeFactorClasses_le (i : σ) (Q : MvPolyn
     totalDegree (radicalContent i Q) +
         ∑ c ∈ positiveDegreeFactorClasses i Q, totalDegree c.rep ≤ totalDegree Q :=
   add_sum_positiveDegreeFactorClasses_le (fun _ _ hx hy ↦ totalDegree_mul_of_isDomain hx hy) i Q
+
+/-- The total degree of the primitive-part radical is at most the total degree of `Q`. -/
+theorem totalDegree_radicalPrimPart_le (i : σ) (Q : MvPolynomial σ R) :
+    totalDegree (radicalPrimPart i Q) ≤ totalDegree Q :=
+  map_radicalPrimPart_le (fun _ _ hx hy ↦ totalDegree_mul_of_isDomain hx hy) i Q
+
+/-- The degree in `X j` of the primitive-part radical is at most the degree of `Q` in `X j`. -/
+theorem degreeOf_radicalPrimPart_le (i j : σ) (Q : MvPolynomial σ R) :
+    degreeOf j (radicalPrimPart i Q) ≤ degreeOf j Q :=
+  map_radicalPrimPart_le (fun _ _ hx hy ↦ degreeOf_mul_eq hx hy) i Q
 
 /-- The degrees in `X i` of the positive-degree factors sum to at most the degree of `Q` in
 `X i`. -/
