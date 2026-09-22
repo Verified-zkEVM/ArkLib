@@ -2227,6 +2227,26 @@ and `_le_rectangleDifference` are now
 `mixedDerivativeImageDegree`, `fixedFiberDerivativeImageDegree` and their lemmas are not ported as
 declarations; the bound is written out in the statements.
 
+## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineHilbertCappedDegree.lean`
+
+Ported from the Hilbert-function and affine-degree part of
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/TwoJetDegree.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `twoJetHypersurface_hilbertFunction_le` is now
+`affineHilbertFunction_comap_cappedDegree_span_singleton_add_le`, for any finite `σ` and cap
+coordinate `i`. `twoJetHypersurface_affineDegree_le` is now
+`affineDegree_comap_cappedDegree_span_singleton_le`, without `c ≤ b` or properness, and
+`twoJetHypersurface_affineDegree_le_of_shift` is a private lemma.
+`twoJetHypersurface_sum_minimalPrimes_affineDegree_le_bound` is now
+`sum_affineDegree_minimalPrimes_comap_cappedDegree_span_singleton_le`, without `c ≤ b`,
+properness or the second membership hypothesis.
+`twoJetHypersurface_sum_minimalPrimes_affineDegree_le` is
+`sum_affineDegree_minimalPrimes_comap_span_singleton_le_of_surjective`.
+`twoJetHypersurface_hilbertPolynomial_natDegree` is
+`natDegree_affineHilbertPolynomial_comap_of_surjective`, and
+`twoJetHypersurfaceIdeal_eq_sup` follows from `Ideal.comap_span_singleton_of_surjective` and
+`monomialMap_monomialLift`. `twoJetDifference` and its degree, coefficient and evaluation lemmas
+are not ported as declarations; the bound is written out in the statements.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineHilbertComap.lean`
 
 General statements used by
@@ -2425,6 +2445,26 @@ Ported from the index and submodule part of
 `RingHom.ker (monomialMap k (cappedBidegreeExponents σ i a b c))`. `twoJetMonomialCount_mono`,
 `cappedTriangleDegree_le` and `b_le_cappedTriangleDegree` are not ported.
 
+## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedDegree.lean`
+
+Ported from the exponent and submodule part of
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/TwoJetDegree.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, for any `σ` and cap coordinate `i` in place of
+`Fin 2` and `1`. `restrictTwoJet` is now `restrictCappedDegree`, with `mem_restrictTwoJet`,
+`mul_mem_restrictTwoJet` and `finrank_restrictTwoJet` now `mem_restrictCappedDegree`,
+`mul_mem_restrictCappedDegree` and `finrank_restrictCappedDegree` (the source's closed form
+follows from `Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le`). `twoJetMap` is
+`monomialMap k (cappedDegreeExponents (Fin 2) 1 b c)`, and `twoJetMap_surjective` is now
+`monomialMap_cappedDegreeExponents_surjective`. `twoJetMap_totalDegree_le` and
+`twoJetMap_derivativeDegree_le` are now `monomialMap_mem_restrictCappedDegree`. `twoJetLift` and
+its lemmas are `monomialLift`, `monomialMap_monomialLift` and `totalDegree_monomialLift_le_one`;
+`twoJetIdeal` is `RingHom.ker` of the monomial map, prime by `RingHom.ker_isPrime`, and
+`twoJetIdeal_hilbertPolynomial_natDegree` is `natDegree_affineHilbertPolynomial_ker_of_surjective`.
+`quotientTwoJetLE` is a `Submodule.map` along the quotient map, and
+`quotientTwoJetLE_finrank_add_le` is `Submodule.finrank_map_mkₐ_span_singleton_add_le`.
+`twoJetCutMap` and `twoJetCutMap_surjective` are not ported: the kernel of the composite is the
+comap.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/MonomialMap.lean`
 
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/BidegreePoints.lean` and the lift of
@@ -2439,6 +2479,16 @@ Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/BidegreePoints.lean` and
 `exists_monomialPoint_eq_of_mem_zeroLocus_ker`. `derivativeBidegreeLift` and
 `bidegreeLift_linear_cut` are now `monomialLift`, `monomialMap_monomialLift` and
 `totalDegree_monomialLift_le_one`.
+
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegreePoints.lean` at the same revision is
+the case `S = cappedBidegreeExponents σ i a b c`. `derivativeBidegreePoint` is `monomialPoint`;
+`aeval_derivativeBidegreePoint` and `aeval_derivativeBidegreeLift_iff` follow from
+`aeval_monomialPoint` and `monomialMap_monomialLift`;
+`mem_zeroLocus_derivativeBidegreeHypersurfaceIdeal_iff` is
+`monomialPoint_mem_zeroLocus_comap_iff`;
+`exists_derivativeBidegreePoint_of_mem_zeroLocus_derivativeBidegreeIdeal` is
+`exists_monomialPoint_eq_of_mem_zeroLocus_ker`; and `derivativeBidegreePoint_injective` is
+`monomialPoint_injective`.
 
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/StandardMonomials.lean`
 
