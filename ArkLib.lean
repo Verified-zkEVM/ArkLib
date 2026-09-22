@@ -590,6 +590,7 @@ public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
