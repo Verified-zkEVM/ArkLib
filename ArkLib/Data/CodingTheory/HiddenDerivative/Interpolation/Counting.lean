@@ -5,7 +5,9 @@ Authors: Quang Dao, Justin Thaler
 -/
 module
 
+public import ArkLib.Data.Finset.Staircase
 public import ArkLib.Data.Finset.WeightedSimplex
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
 public import Mathlib.Algebra.Order.Floor.Div
 
 /-!
@@ -24,6 +26,10 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
   residual `(r + 1)(M + 1) - (r + 1 - h)(M + 1 - h)`.
 * `localResidualCoordinateBudget d m W B` and `localCoordinateBudget d m W B` count the local
   coordinates of `Interpolation/Local/Coordinates.lean`, with a jet-degree cutoff `B`.
+* `exactInterpolationDimensionCount D A d m M W` is the dimension of the exact interpolation space
+  of `Interpolation/Index.lean`: a sum over the higher-jet exponents `c` of weight at most `W` and
+  the `Y₁` exponents `b₁ ≤ M` of the staircase count `Nat.staircaseCount D` at the residual budget
+  `m A - ((D - 1) b₁ + ∑_i (D - (i + 2)) c_i)` left for the `X` and `Y₀` exponents.
 
 ## Main statements
 
@@ -32,6 +38,8 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 * `ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound`: the ambient count minus the
   exhibited-kernel count is the certified bound.
 * `localResidualCoordinateBudget_le_localCoordinateBudget`.
+* `card_exactDimensionCoordinates`: `exactInterpolationDimensionCount` is the number of
+  coordinate tuples `(c, b₁, x, b₀)` it counts, for every `D`.
 
 ## References
 
@@ -52,9 +60,18 @@ the second; neither lemma needs `r < m`, and the second holds for every `d`. The
 natural cutoff `B` with count `B - |z|`. `localResidualCoordinateBudget_le_localCoordinateBudget`
 is new.
 
+Also from the source's `Counting.lean`: `higherJetTupleSpecializationCost`,
+`exactDimensionResidual`, `exactInterpolationDimensionCount`, and `card_exactDimensionIndex`. The
+source's `staircaseCount` is `Nat.staircaseCount` in `ArkLib.Data.Finset.Staircase`, and its
+dependent index type `ExactDimensionIndex` is the `Finset.sigma` `exactDimensionCoordinates`, so
+`card_exactDimensionIndex` becomes `card_exactDimensionCoordinates`. The source's
+`higherJetSpecializationCost`, the same cost on finitely supported exponents, and
+`higherJetTupleSpecializationCost_equivFunOnFinite` are not ported: the dimension count only uses
+the tuple form.
+
 Deferred to the slices that use them: the shell counts and tuple equivalences with
-`HigherJetExponent`, the staircase counts and `exactInterpolationDimensionCount`, the
-bookkeeping type `CertifiedEnlargedRankBudgetIndex`, and `ExactFiniteCertificate`.
+`HigherJetExponent`, the bookkeeping type `CertifiedEnlargedRankBudgetIndex`, and
+`ExactFiniteCertificate`.
 
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
@@ -164,5 +181,46 @@ theorem localResidualCoordinateBudget_le_localCoordinateBudget {d m W B B' : ℕ
   refine sum_le_sum fun r _ => ?_
   rw [mul_left_comm, weightedHigherJetCount, mul_comm B', ← smul_eq_mul (#_) B', ← sum_const]
   exact Nat.mul_le_mul_left _ (sum_le_sum fun z _ => (Nat.sub_le _ _).trans hB)
+
+/-! ### The exact interpolation dimension -/
+
+/-- The part `∑_i (D - (i + 2)) c_i` of the specialization weight carried by the higher jets
+`Y₂, ..., Y_d`, whose exponents are `c`: coordinate `i` is the exponent of `Y_(i+2)`, which has
+specialization weight `D - (i + 2)`. -/
+def higherJetTupleSpecializationCost {d : ℕ} (D : ℕ) (c : Fin (d - 1) → ℕ) : ℕ :=
+  ∑ i, (D - (i.val + 2)) * c i
+
+/-- The budget `m A - ((D - 1) b₁ + ∑_i (D - (i + 2)) c_i)` left for `x + D b₀` once the `Y₁`
+exponent `b₁` and the higher-jet exponents `c` are fixed. It is `0` when those exponents already
+use up `m A`. -/
+def exactDimensionResidual {d : ℕ} (D m A b₁ : ℕ) (c : Fin (d - 1) → ℕ) : ℕ :=
+  m * A - ((D - 1) * b₁ + higherJetTupleSpecializationCost D c)
+
+/-- The number of exponents `X^x Y₀^b₀ Y₁^b₁ Y₂^c₀ ⋯ Y_d^c_(d-2)` with `b₁ ≤ M`,
+`∑_i (i + 1) c_i ≤ W`, and specialization weight
+`x + D b₀ + (D - 1) b₁ + ∑_i (D - (i + 2)) c_i < m A`. For each `c` and `b₁` the pairs
+`(x, b₀)` form a staircase of slope `D` and length `exactDimensionResidual D m A b₁ c`.
+
+This counts the exponents of the exact interpolation space when `0 < d < D`; see
+`finrank_exactInterpolationSpace_eq_exactInterpolationDimensionCount`. The expression is defined
+for all parameters. -/
+def exactInterpolationDimensionCount (D A d m M W : ℕ) : ℕ :=
+  ∑ c ∈ natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) W,
+    ∑ b₁ ∈ range (M + 1), Nat.staircaseCount D (exactDimensionResidual D m A b₁ c)
+
+/-- The coordinate tuples `⟨(c, b₁), (x, b₀)⟩` counted by `exactInterpolationDimensionCount`:
+`c` in the higher-jet weighted simplex of weight `W`, `b₁ ≤ M`, and `(x, b₀)` in the staircase
+of slope `D` and length `exactDimensionResidual D m A b₁ c`. -/
+def exactDimensionCoordinates (D A d m M W : ℕ) :
+    Finset (Σ _ : (Fin (d - 1) → ℕ) × ℕ, ℕ × ℕ) :=
+  (natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) W ×ˢ range (M + 1)).sigma
+    fun p => staircase D (exactDimensionResidual D m A p.2 p.1)
+
+/-- `exactInterpolationDimensionCount` is the number of coordinate tuples it describes. No
+hypothesis on the parameters is needed. -/
+theorem card_exactDimensionCoordinates (D A d m M W : ℕ) :
+    #(exactDimensionCoordinates D A d m M W) = exactInterpolationDimensionCount D A d m M W := by
+  rw [exactDimensionCoordinates, card_sigma, sum_product, exactInterpolationDimensionCount]
+  simp only [card_staircase]
 
 end ReedSolomon.HiddenDerivative
