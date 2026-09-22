@@ -9,11 +9,9 @@ import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.F
 /-!
 # Acceptance tests for ordinary factor assembly
 
-The source statement of `exists_exceptional_ordinaryFactorAssembly`, over a field with root
-variable `none` and ring homomorphisms into a domain, is derived from the general one. The
-fixed-split form of the free-retention assembly, which the source's unified curve theorem uses,
-is derived through `ordinaryUnifiedPowerFactorRaw_eq_rawAt`. A two-point instance with no
-positive-degree factor checks that the content exception alone is charged.
+The special case of `exists_exceptional_ordinaryFactorAssembly` over a field with root variable
+`none` and ring homomorphisms into a domain is derived from the general one. The fixed-split form
+of the free-retention assembly is derived through `ordinaryUnifiedPowerFactorRaw_eq_rawAt`.
 -/
 
 open MvPolynomial
@@ -22,9 +20,8 @@ namespace ReedSolomon.FactorAssemblyTest
 
 variable {F τ W V D : Type*} [Field F] [CommRing D] [IsDomain D]
 
-/-- The source statement, with `ordinaryContent`, `ordinaryRootFactorClasses` and
-`ordinaryFactorRepresentative` spelled `radicalContent none`, `positiveDegreeFactorClasses none`
-and `Associates.rep`. -/
+/-- The coarse assembly over a field, with root variable `none` of `Option τ` and ring
+homomorphisms into a domain. -/
 example (Q : MvPolynomial (Option τ) F) (hQ : Q ≠ 0)
     (ev : W → V → MvPolynomial (Option τ) F →+* D)
     (Good : W → V → Prop) (height : MvPolynomial (Option τ) F → ℕ)

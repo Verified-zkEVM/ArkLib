@@ -13,7 +13,7 @@ For `Q = X 1 * X 0 ^ 2` over `ℚ` and the variable `0`, the distinct factor cla
 `X 1` and `X 0`. Only `X 0` has positive degree in `X 0`, and the content radical is associated to
 `X 1`. The degree bound of `sum_degreeOf_positiveDegreeFactorClasses_le` is strict: the factor
 degrees sum to `1`, while `degreeOf 0 Q = 2`. The zero polynomial shows that
-`exists_exceptional_of_factor_exceptional` needs `Q ≠ 0`. The source statements over
+`exists_exceptional_of_factor_exceptional` needs `Q ≠ 0`. The special cases over
 `MvPolynomial (Option σ) F` with root variable `none` are derived at the end.
 -/
 
@@ -107,35 +107,36 @@ example : ¬ ∃ ex : Finset Unit, (ex.card : ℚ) ≤
   have hex : ex = ∅ := by simpa using hcard
   exact hgood () (by simp [hex]) () (map_zero _)
 
-/-! ### Source statements -/
+/-! ### Root variable `none` over a field -/
 
-section Source
+section OptionRoot
 
 variable {F τ D : Type*} [Field F] [CommRing D] [IsDomain D]
 
-/-- The source's `ordinary_split_zero_iff`. -/
+/-- The split product and `Q` have the same zeros under a ring homomorphism into a domain. -/
 example (Q : MvPolynomial (Option τ) F) (hQ : Q ≠ 0) (f : MvPolynomial (Option τ) F →+* D) :
     f (radicalContent none Q * radicalPrimPart none Q) = 0 ↔ f Q = 0 :=
   map_radicalContent_mul_radicalPrimPart_eq_zero_iff f none hQ
 
-/-- The source's `ordinary_degree_sum_le`, without its hypothesis `Q ≠ 0`. -/
+/-- The coordinate-degree budget for the split at `none`. -/
 example (Q : MvPolynomial (Option τ) F) (j : Option τ) :
     degreeOf j (radicalContent none Q) +
         ∑ a ∈ positiveDegreeFactorClasses none Q, degreeOf j a.rep ≤ degreeOf j Q :=
   add_sum_degreeOf_positiveDegreeFactorClasses_le none j Q
 
-/-- The source's `ordinary_root_degree_sum_le`, without its hypothesis `Q ≠ 0`. -/
+/-- The root-degree budget for the split at `none`. -/
 example (Q : MvPolynomial (Option τ) F) :
     ∑ a ∈ positiveDegreeFactorClasses none Q, degreeOf none a.rep ≤ degreeOf none Q :=
   sum_degreeOf_positiveDegreeFactorClasses_le none Q
 
-/-- The source's `ordinaryRootFactorClasses_spec`. -/
+/-- Each positive-degree factor class at `none` has an irreducible representative of positive
+degree in `X none`. -/
 example (Q : MvPolynomial (Option τ) F) {a : Associates (MvPolynomial (Option τ) F)}
     (ha : a ∈ positiveDegreeFactorClasses none Q) :
     Irreducible a.rep ∧ 0 < degreeOf none a.rep :=
   ⟨irreducible_rep_of_mem_positiveDegreeFactorClasses ha,
     (mem_positiveDegreeFactorClasses.mp ha).2⟩
 
-end Source
+end OptionRoot
 
 end RadicalSplitTest
