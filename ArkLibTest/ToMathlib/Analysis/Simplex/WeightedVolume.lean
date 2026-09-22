@@ -11,7 +11,8 @@ import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 
 Concrete weighted volumes and a weighted Dirichlet integral, the consecutive-weight
 specialization cross-checked against the general formula, and the necessity of positive weights
-and a nonnegative budget.
+and a nonnegative budget. The exponential bound for an enlarged budget is evaluated on a segment,
+and its hypothesis `0 < W` is shown to be needed.
 -/
 
 open MeasureTheory Set
@@ -60,3 +61,22 @@ example : volume.real (weightedSimplex (fun _ : Fin 1 ↦ (-1 : ℝ)) 1) ≠
 example : volume.real (weightedSimplex (1 : Fin 0 → ℝ) (-1)) = 0 := by
   rw [weightedSimplex_one, standardSimplex_eq_empty (by norm_num)]
   simp
+
+/-- Enlarging the segment `[0, 1]` to `[0, 2]` doubles its length, and the exponential bound gives
+`2 ≤ exp 1`. -/
+example : (2 : ℝ) ≤ Real.exp 1 := by
+  have h := volume_real_weightedSimplex_add_le_mul_exp (w := fun _ : Fin 1 ↦ (1 : ℝ))
+    (fun _ ↦ one_pos) one_pos 1
+  rw [volume_real_weightedSimplex (fun _ ↦ one_pos) (by norm_num),
+    volume_real_weightedSimplex (fun _ ↦ one_pos) (by norm_num)] at h
+  norm_num at h
+  exact h
+
+/-- `0 < W` is needed in `volume_real_weightedSimplex_add_le_mul_exp`: at `W = 0`, `r = 1` with one
+unit weight the left side is `1`, while the right side is `0 * exp (1 * 1 / 0) = 0`. -/
+example : ¬ (volume.real (weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (0 + 1)) ≤
+    volume.real (weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 0) *
+      Real.exp (Fintype.card (Fin 1) * 1 / 0)) := by
+  rw [volume_real_weightedSimplex (fun _ ↦ one_pos) (by norm_num),
+    volume_real_weightedSimplex (fun _ ↦ one_pos) le_rfl]
+  norm_num
