@@ -278,8 +278,6 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
-public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
-public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceAgreement
