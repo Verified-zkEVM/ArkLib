@@ -44,38 +44,14 @@ determines `P` by the graph-line recognition of
   one pair and at most `2 * Fintype.card ι - k` exceptional challenges.
 * `ReedSolomon.exists_exceptionalSet_exactAgreement_of_halfGapCertificate` and
   `ReedSolomon.exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le`: the
-  source-shaped statements, with the pair chosen after the challenge and at most
-  `2 * Fintype.card ι` exceptional challenges.
+  forms with the pair chosen after the challenge and at most `2 * Fintype.card ι` exceptional
+  challenges.
 
 ## References
 
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 5.4, the half-gap case of Theorem 5.11.
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/HalfGap/Line.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. Throughout, the coordinate type `Fin n` is
-generalized to any finite type `ι`, with `n` replaced by `Fintype.card ι`.
-
-* `HalfGapCertificate` requires `numerator.degree < A` instead of `numerator.natDegree < A`, which
-  also admits the zero numerator at `A = 0`.
-* `exists_exceptionalSet_exactAgreement_of_halfGapCertificate` has the source conclusion. It drops
-  the source's hypotheses `0 < k` and `A ≤ n`: for `A > Fintype.card ι` no polynomial meets the
-  threshold. It is derived from the new `exists_exactPair_of_halfGapCertificate`, which chooses
-  the pair before the challenge and bounds the exceptional set by `k * h + (Fintype.card ι - k)`.
-  The source's guard and accidental-agreement polynomials are replaced by the roots of the guard
-  and `ReedSolomon.exists_exceptional_graphLine_challenges_of_sample`.
-* `exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le` has the source
-  conclusion and drops the source's hypotheses `0 < k` and `A ≤ n`; at `k = 0` it follows from
-  `ReedSolomon.exists_exceptional_graphLine_challenges`. It is derived from the new
-  `exists_exactPair_of_messageDim_add_half_blockLength_le`.
-* The construction of the certificate inside the source's half-gap theorem is the new public
-  `exists_halfGapCertificate`.
-* The source's private `specializeChallenge` is `Polynomial.map (Polynomial.evalRingHom z)`, whose
-  evaluation is Mathlib's `Polynomial.map_evalRingHom_eval`. The source's private
-  `natDegree_eval_C_le_of_coeff_natDegree_le` is `Polynomial.natDegree_eval_C_le` in
-  `ArkLib.ToMathlib.Polynomial.NatDegreeOfSum`.
-
-The rest of the source's `HalfGap/` directory is not ported here.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], the half-gap case of mutual correlated
+  agreement
 -/
 
 @[expose] public section
@@ -225,12 +201,11 @@ theorem exists_exactPair_of_halfGapCertificate
   refine ⟨hPeq, ?_⟩
   simpa [hPeq] using hgraph z hzGraph
 
-/-- **Source form of `exists_exactPair_of_halfGapCertificate`.** If `k * height ≤
+/-- **Mutual correlated agreement from a certificate, one pair per challenge.** If `k * height ≤
 Fintype.card ι`, at most `2 * Fintype.card ι` challenges are exceptional, and at every other
 challenge each close `P` has a pair `F₀ G₀` of degree below `k` with `P = F₀ + C z * G₀` and the
-same agreement set as the common agreement set of the pair. Here the pair is stated after the
-challenge, as in the source; `exists_exactPair_of_halfGapCertificate` gives one pair for all
-challenges. -/
+same agreement set as the common agreement set of the pair. Here the pair is chosen after the
+challenge; `exists_exactPair_of_halfGapCertificate` gives one pair for all challenges. -/
 theorem exists_exceptionalSet_exactAgreement_of_halfGapCertificate
     {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] {k A height : ℕ}
     (domain : ι ↪ F) (f g : ι → F) (hkA : k ≤ A) (hheight : k * height ≤ Fintype.card ι)
@@ -381,11 +356,11 @@ theorem exists_exactPair_of_messageDim_add_half_blockLength_le
     exists_exactPair_of_halfGapCertificate (by omega) certificate
   exact ⟨F₀, G₀, hF₀, hG₀, exceptional, by omega, hpair⟩
 
-/-- **Mutual correlated agreement at a half gap, source form.** If `k + Fintype.card ι / 2 ≤ A`,
-at most `2 * Fintype.card ι` challenges are exceptional, and at every other challenge each close
-`P` has a pair `F₀ G₀` of degree below `k` with `P = F₀ + C z * G₀` and the same agreement set as
-the common agreement set of the pair. `exists_exactPair_of_messageDim_add_half_blockLength_le`
-gives one pair for all challenges. -/
+/-- **Mutual correlated agreement at a half gap, one pair per challenge.** If
+`k + Fintype.card ι / 2 ≤ A`, at most `2 * Fintype.card ι` challenges are exceptional, and at
+every other challenge each close `P` has a pair `F₀ G₀` of degree below `k` with
+`P = F₀ + C z * G₀` and the same agreement set as the common agreement set of the pair.
+`exists_exactPair_of_messageDim_add_half_blockLength_le` gives one pair for all challenges. -/
 theorem exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le
     {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] {k A : ℕ}
     (domain : ι ↪ F) (f g : ι → F) (hhalf : k + Fintype.card ι / 2 ≤ A) :

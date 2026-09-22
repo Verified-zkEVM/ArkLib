@@ -16,16 +16,14 @@ Natural-degree bounds for sums of polynomials.
 * `Polynomial.natDegree_eval_C_le`: a uniform bound on the coefficients of a bivariate polynomial
   bounds its specialization of the outer variable at any constant. It is the challenge-degree
   bound for the specialized denominator in
-  `ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.HalfGap.Line`, extracted from
-  the private `natDegree_eval_C_le_of_coeff_natDegree_le` of
-  `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/HalfGap/Line.lean` at ArkLib revision
-  `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, for any semiring instead of a field.
+  `ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.HalfGap.Line`.
 -/
 
 @[expose] public section
 
 namespace Polynomial
 
+/-- If every summand has natural degree below `n`, with `n ≠ 0`, so does the sum. -/
 theorem natDegree_sum_lt_of_forall_lt.{u_1, w}
     {ι : Type w} (s : Finset ι) {S : Type u_1} [Semiring S]
   {n : ℕ} [inst : NeZero n] (f : ι → Polynomial S) (h : ∀ i ∈ s, (f i).natDegree < n) :

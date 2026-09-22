@@ -24,22 +24,6 @@ mutual correlated agreement error is `0` for every generator at every real radiu
   generator and every radius.
 * `ReedSolomon.mcaError_affineLine_fullRate_eq_zero`: the affine-line generator at
   `k = Fintype.card ι`.
-
-## References
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/FullCode.lean` at
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-
-* `fullRate_code_eq_top` has the source statement. It is derived from the new
-  `code_eq_top_of_card_le`, which allows any degree bound `k ≥ Fintype.card ι`.
-* `mcaError_affineLine_fullRate_eq_zero` adds `[SampleableType F]`, which the current
-  `CoreDefinitions.mcaError` requires of the seed space and the source's `mcaError` did not, and
-  drops the source's `[Nonempty ι]`, which the proof does not use. It is derived from the new
-  `mcaError_eq_zero_of_card_le`, which holds for every generator. The generic step, that the full
-  module code has zero MCA error, is `CoreDefinitions.mcaError_top_eq_zero` in
-  `ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator`.
-
-The rest of the source's `Johnson/` directory is not ported here.
 -/
 
 @[expose] public section

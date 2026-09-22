@@ -14,9 +14,8 @@ import Mathlib.FieldTheory.Finite.Basic
 On the domain `0, 1` in `ℚ`, the word `(5, 7)` is a codeword of every code with degree bound at
 least `2`. The bound `Fintype.card ι ≤ k` is needed: `(0, 1)` is not a codeword of degree bound
 `1`. The MCA error of the full-rate code over `ZMod 3` is `0` for the affine-line generator and
-for the affine-space generator. The source statements, with `[Nonempty ι]`, are derived from the
-general ones; the current `mcaError` takes a `[SampleableType F]` instance that the source's did
-not.
+for the affine-space generator. The forms with `[Nonempty ι]` are derived from the general
+ones.
 -/
 
 open Polynomial CoreDefinitions
@@ -66,16 +65,16 @@ example [SampleableType (Fin 2 → ZMod 3)] :
 
 end Concrete
 
-section Source
+section Specializations
 
 open Classical in
-/-- Source statement `fullRate_code_eq_top`. -/
+/-- The code of degree bound `Fintype.card ι` is the whole space. -/
 example {ι F : Type} [Fintype ι] [Field F] (domain : ι ↪ F) :
     code domain (Fintype.card ι) = ⊤ :=
   fullRate_code_eq_top domain
 
-/-- Source statement `mcaError_affineLine_fullRate_eq_zero`, with the sampling instance that the
-current `mcaError` requires. -/
+/-- The affine-line MCA error of the full-rate code is `0`, with the extra hypothesis
+`[Nonempty ι]`. -/
 example {ι F : Type} [Fintype ι] [Nonempty ι] [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (δ : ℝ) :
     mcaError (AffineLineGenerator F) (code domain (Fintype.card ι)) δ = 0 :=
@@ -87,6 +86,6 @@ example {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ] [Nonempty S] 
     mcaError G (⊤ : ModuleCode ι F A) δ = 0 :=
   mcaError_top_eq_zero G δ
 
-end Source
+end Specializations
 
 end ReedSolomon.FullCodeTest

@@ -15,8 +15,8 @@ theorem gives at most `3` exceptional challenges, and the challenge `1` must be 
 the constant `1` agrees with `f + g` everywhere, but no constant agrees with `f` everywhere. The
 hypothesis `k ≤ A` of the certificate theorem is needed: a certificate with `A = 0 < k = 1`
 exists for `f = g = 0`, and its conclusion fails. The bivariate degree bound is checked on a small
-polynomial. The source statements, over `Fin n` and with the hypotheses `0 < k` and `A ≤ n`, are
-derived from the general ones.
+polynomial. The forms over `Fin n` with the hypotheses `0 < k` and `A ≤ n` are derived from the
+general ones.
 -/
 
 open Polynomial Finset
@@ -91,11 +91,12 @@ example : ((C X * X + C 1 : ℚ[X][X]).eval (C 5)).natDegree ≤ 1 :=
     rw [coeff_add, coeff_C_mul_X, coeff_C]
     split_ifs <;> simp) 5
 
-section Source
+section FinCoordinates
 
 variable {F : Type*} [Field F] [DecidableEq F]
 
-/-- Source statement `exists_exceptionalSet_exactAgreement_of_halfGapCertificate`. -/
+/-- `exists_exceptionalSet_exactAgreement_of_halfGapCertificate` over `Fin n`, with the
+hypotheses `0 < k` and `A ≤ n`. -/
 example {n k A height : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (_hk : 0 < k) (hkA : k ≤ A) (_hAn : A ≤ n) (hheight : k * height ≤ n)
     (certificate : HalfGapCertificate domain f g k A height) :
@@ -109,8 +110,8 @@ example {n k A height : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
   simpa using exists_exceptionalSet_exactAgreement_of_halfGapCertificate domain f g hkA
     (by simpa using hheight) certificate
 
-/-- Source statement `exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le`.
--/
+/-- `exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le` over `Fin n`,
+with the hypotheses `0 < k` and `A ≤ n`. -/
 example {n k A : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
     (_hk : 0 < k) (_hAn : A ≤ n) (hhalf : k + n / 2 ≤ A) :
     ∃ exceptional : Finset F, exceptional.card ≤ 2 * n ∧
@@ -123,6 +124,6 @@ example {n k A : ℕ} (domain : Fin n ↪ F) (f g : Fin n → F)
   simpa using exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le
     domain f g (by simpa using hhalf)
 
-end Source
+end FinCoordinates
 
 end ReedSolomon.HalfGapLineTest
