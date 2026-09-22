@@ -14,8 +14,8 @@ These examples use the public API through an ordinary import. In `ℚ[x, y]` the
 purity that the prime `(x)` has a Hilbert polynomial of natural degree one, bound its affine
 degree by one with the Bézout bound, and evaluate the degree potential of the cut. The boundary
 examples show that the Bézout bound fails without `f ∉ P` and that the normalization degree count
-needs injectivity. The last examples derive the source's purity, Bézout and cut-potential
-statements, the latter for its family `retainedCutChildren`.
+needs injectivity. The last examples derive the purity and Bézout statements with primality of `P`
+as an explicit argument, and the cut-potential bound for the family that is `{P}` when `f ∈ P`.
 -/
 
 open MvPolynomial
@@ -94,7 +94,7 @@ example (P : Ideal R₂) [P.IsPrime] :
 
 /-- Injectivity is needed in `natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective`:
 the quotient map `ℚ[x] → ℚ[x] ⧸ ⊤` is finite, but the natural degree of `H(⊤)` is `0`, not the
-number `1` of variables of the source. -/
+number `1` of variables of the domain. -/
 example : (Ideal.Quotient.mkₐ ℚ (⊤ : Ideal (MvPolynomial (Fin 1) ℚ))).Finite ∧
     (affineHilbertPolynomial (⊤ : Ideal (MvPolynomial (Fin 1) ℚ))).natDegree ≠
       Nat.card (Fin 1) := by
@@ -103,24 +103,21 @@ example : (Ideal.Quotient.mkₐ ℚ (⊤ : Ideal (MvPolynomial (Fin 1) ℚ))).Fi
     Fintype.card_fin]
   norm_num
 
-/-- The source's `principalCut_component_hilbertPolynomial_natDegree_add_one`, with primality of
-`P` as an explicit argument. -/
+/-- Purity of principal cuts, with primality of `P` as an explicit argument. -/
 example {F σ : Type*} [Field F] [Finite σ] {P J : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
     {f : MvPolynomial σ F} (hf : f ∉ P) (hJ : J ∈ (P ⊔ Ideal.span {f}).minimalPrimes) :
     (affineHilbertPolynomial J).natDegree + 1 = (affineHilbertPolynomial P).natDegree :=
   principalCut_natDegree_affineHilbertPolynomial_add_one hf hJ
 
-/-- The source's `principalCut_sum_affineDegree_le`, with primality of `P` as an explicit
-argument. -/
+/-- The Bézout bound, with primality of `P` as an explicit argument. -/
 example {F σ : Type*} [Field F] [Finite σ] {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
     {f : MvPolynomial σ F} (hfP : f ∉ P) {b : ℕ} (hfdeg : f.totalDegree ≤ b) :
     ∑ Q ∈ (P ⊔ Ideal.span {f}).minimalPrimesFinset, affineDegree Q ≤ (b : ℚ) * affineDegree P :=
   principalCut_sum_affineDegree_minimalPrimes_le hfP hfdeg
 
-/-- The source's `sum_retainedCutChildren_affineDegree_mul_pow_le`, for its family
-`retainedCutChildren P s f`, which is `{P}` when `f ∈ P` and the retained minimal primes of
-`P ⊔ span {f}` otherwise. Its hypotheses `s ∉ P` and `1 ≤ b` are used only to identify the two
-families; the bound itself needs neither. -/
+/-- The degree potential does not increase over the family that is `{P}` when `f ∈ P` and the
+retained minimal primes of `P ⊔ span {f}` otherwise. The hypothesis `s ∉ P` identifies the two
+cases; `1 ≤ b` is unused. -/
 example {F σ : Type*} [Field F] [Finite σ] {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
     {s f : MvPolynomial σ F} [Decidable (f ∈ P)] (hs : s ∉ P) {b : ℕ} (_hb : 1 ≤ b)
     (hfdeg : f.totalDegree ≤ b) :

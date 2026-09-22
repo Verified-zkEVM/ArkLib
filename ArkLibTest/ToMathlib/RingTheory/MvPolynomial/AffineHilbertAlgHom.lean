@@ -15,9 +15,9 @@ which gives `H(⊥, N) ≤ H(⊥, N)` across one and two variables, computed at 
 Since the natural degrees are `1 < 2`, the finite-map comparison shows that the inclusion is not
 finite, so injectivity alone does not give equality of degrees. The quotient map to the zero ring
 is finite and surjective with degrees `0 < 1`, so injectivity is needed for equality. A quotient
-map recovers the comparison along inclusions of ideals, and the source-shaped statements
-(`Algebra` instance with `Module.Finite`, the `c * (N + 1)` bound, the surjective form with
-`I ≠ ⊤`) are derived from the general ones.
+map recovers the comparison along inclusions of ideals, and the forms with an `Algebra` instance
+and `Module.Finite`, the `c * (N + 1)` bound, and the comparisons with extra properness hypotheses
+are derived from the general ones.
 -/
 
 open MvPolynomial Filter
@@ -89,7 +89,7 @@ example {k σ : Type*} [Field k] [Finite σ] {I J : Ideal (MvPolynomial σ k)} (
 variable {F σ τ : Type*} [Field F] [Finite σ] [Finite τ]
   {I : Ideal (MvPolynomial σ F)} {J : Ideal (MvPolynomial τ F)}
 
-/-- The source's finite bound `H(I, N) ≤ m * H(J, c * (N + 1))`, from the sharper `c * N` form and
+/-- The finite bound `H(I, N) ≤ m * H(J, c * (N + 1))`, from the sharper `c * N` form and
 monotonicity. -/
 example [Algebra (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)]
     [IsScalarTower F (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)]
@@ -102,7 +102,7 @@ example [Algebra (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)]
   exact ⟨c, hc, m, hm, fun N ↦ (h N).trans (Nat.mul_le_mul_left m
     (affineHilbertFunction_mono J (Nat.mul_le_mul_left c (Nat.le_succ N))))⟩
 
-/-- The source's equality for a finite injective `algebraMap`, with its hypothesis `I ≠ ⊤`. -/
+/-- Equality of degrees for a finite injective `algebraMap`, with the extra hypothesis `I ≠ ⊤`. -/
 example [Algebra (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)]
     [IsScalarTower F (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)]
     [Module.Finite (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)] (_hI : I ≠ ⊤)
@@ -112,13 +112,13 @@ example [Algebra (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I)]
     (IsScalarTower.toAlgHom F (MvPolynomial τ F ⧸ J) (MvPolynomial σ F ⧸ I))
     (RingHom.finite_algebraMap.mpr inferInstance) hg
 
-/-- The source's surjective comparison, with its hypothesis `I ≠ ⊤`. -/
+/-- The surjective comparison with the extra hypothesis `I ≠ ⊤`. -/
 example (g : (MvPolynomial τ F ⧸ J) →ₐ[F] (MvPolynomial σ F ⧸ I)) (hg : Function.Surjective g)
     (_hI : I ≠ ⊤) :
     (affineHilbertPolynomial I).natDegree ≤ (affineHilbertPolynomial J).natDegree :=
   natDegree_affineHilbertPolynomial_le_of_surjective g hg
 
-/-- The source's injective comparison, with its hypothesis `J ≠ ⊤`. -/
+/-- The injective comparison with the extra hypothesis `J ≠ ⊤`. -/
 example (g : (MvPolynomial τ F ⧸ J) →ₐ[F] (MvPolynomial σ F ⧸ I)) (hg : Function.Injective g)
     (_hJ : J ≠ ⊤) :
     (affineHilbertPolynomial J).natDegree ≤ (affineHilbertPolynomial I).natDegree :=
