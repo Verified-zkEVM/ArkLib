@@ -20,6 +20,10 @@ public import Mathlib.LinearAlgebra.Projection
 * `LinearMap.finrank_range_le_sub_of_injective_ker` — rank–nullity when only part of the kernel
   is exhibited, as the image of an injective map.
 * `LinearMap.finrank_range_comp_le_left` — the `finrank` form of `LinearMap.rank_comp_le_left`.
+* `LinearMap.rangeCoordinates`, `LinearMap.rangeCoordinates_eq_zero_iff`,
+  `LinearMap.ker_rangeCoordinates`, `LinearMap.rangeCoordinates_surjective` — a linear map
+  followed by coordinates on its finite-dimensional range: a map onto `K^(rank f)` with the kernel
+  of `f`.
 
 The last two are the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker`
 and `finrank_range_comp_le_outer` in
@@ -28,6 +32,12 @@ revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source assumed a field, a
 finite-dimensional exhibited space, and a finite-dimensional middle space; here the scalars form
 a division ring, the exhibited space is arbitrary, and only the range of the outer map must be
 finite-dimensional.
+
+`LinearMap.rangeCoordinates` generalizes `gradedImageCoordinateEquiv` and
+`gradedImageCoordinateMap`, and `LinearMap.rangeCoordinates_eq_zero_iff` generalizes
+`gradedImageCoordinateMap_eq_zero_iff`, in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at the
+same revision, from a field to a division ring.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
@@ -98,3 +108,41 @@ theorem LinearMap.finrank_range_comp_le_left {K V V₂ V₃ : Type*} [DivisionRi
     [FiniteDimensional K (LinearMap.range g)] :
     Module.finrank K (LinearMap.range (g ∘ₗ f)) ≤ Module.finrank K (LinearMap.range g) :=
   Submodule.finrank_mono (LinearMap.range_comp_le_range f g)
+
+/-! ### Coordinates on the range -/
+
+/-- Coordinates of a linear map on its own finite-dimensional range: `f` followed by the
+coordinates of a chosen basis of `range f`, indexed by `Fin (finrank (range f))`. The target has
+exactly the rank of `f`, and `f v = 0` exactly when these coordinates vanish
+(`LinearMap.rangeCoordinates_eq_zero_iff`). The basis is chosen noncanonically. -/
+noncomputable def LinearMap.rangeCoordinates {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup W] [Module K W] (f : V →ₗ[K] W)
+    [Module.Finite K (LinearMap.range f)] :
+    V →ₗ[K] (Fin (Module.finrank K (LinearMap.range f)) → K) :=
+  ((Module.finBasis K (LinearMap.range f)).equivFun.toLinearMap).comp f.rangeRestrict
+
+/-- Passing to coordinates on the range loses no equation: `rangeCoordinates f v = 0` if and
+only if `f v = 0`. -/
+theorem LinearMap.rangeCoordinates_eq_zero_iff {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup W] [Module K W] (f : V →ₗ[K] W)
+    [Module.Finite K (LinearMap.range f)] (v : V) :
+    f.rangeCoordinates v = 0 ↔ f v = 0 := by
+  rw [rangeCoordinates, LinearMap.comp_apply, LinearEquiv.coe_coe,
+    LinearEquiv.map_eq_zero_iff, ← Subtype.coe_inj]
+  rfl
+
+/-- The coordinate map has the kernel of `f`. -/
+theorem LinearMap.ker_rangeCoordinates {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup W] [Module K W] (f : V →ₗ[K] W)
+    [Module.Finite K (LinearMap.range f)] :
+    LinearMap.ker f.rangeCoordinates = LinearMap.ker f := by
+  ext v
+  exact f.rangeCoordinates_eq_zero_iff v
+
+/-- The coordinate map is onto `K^(finrank (range f))`, so no coordinate is redundant. -/
+theorem LinearMap.rangeCoordinates_surjective {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup W] [Module K W] (f : V →ₗ[K] W)
+    [Module.Finite K (LinearMap.range f)] :
+    Function.Surjective f.rangeCoordinates := by
+  rw [rangeCoordinates, LinearMap.coe_comp]
+  exact (LinearEquiv.surjective _).comp f.surjective_rangeRestrict
