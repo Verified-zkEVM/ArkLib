@@ -32,6 +32,7 @@ coordinate, so the finite box matters and the lower estimate requires positive w
 ## Main statements
 
 * `mem_natWeightedSimplex`: for positive weights, membership is the weighted budget alone.
+* `natWeightedSimplex_mono`: the simplex is monotone in the budget, for all weights.
 * `natWeightedSimplexFinsuppEquiv` and `natWeightedSimplexShellFinsuppEquiv`: bridges from
   canonical finitely supported exponents to the executable tuple simplex and shell.
 * `card_natWeightedSimplex_eq_sum_card_shell`: the simplex is the disjoint union of its shells.
@@ -85,6 +86,15 @@ theorem weightedSum_le_of_mem_natWeightedSimplex {σ : Type*} [Fintype σ] [Deci
     {w : σ → ℕ} {W : ℕ} {c : σ → ℕ} (hc : c ∈ natWeightedSimplex w W) :
     ∑ i, w i * c i ≤ W :=
   (mem_filter.mp hc).2
+
+/-- The simplex grows with the budget. This holds for all weights, including zero weights,
+because the coordinate box `[0, W]` also grows with `W`. -/
+theorem natWeightedSimplex_mono {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) {W W' : ℕ} (hWW' : W ≤ W') :
+    natWeightedSimplex w W ⊆ natWeightedSimplex w W' := by
+  intro c hc
+  simp only [natWeightedSimplex, mem_filter, Fintype.mem_piFinset, mem_range] at hc ⊢
+  exact ⟨fun i => by have := hc.1 i; omega, hc.2.trans hWW'⟩
 
 /-- With every weight positive, the weighted budget itself enforces the finite coordinate box.
 For a zero weight this equivalence fails when that coordinate exceeds `W`. -/
