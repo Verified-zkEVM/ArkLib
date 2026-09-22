@@ -394,6 +394,8 @@ public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.JetPrefix
 public import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
+public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
+public import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.RegularIteration
 public import ArkLib.Data.Polynomial.Differential.RegularJetCount
@@ -663,6 +665,7 @@ public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
+public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel

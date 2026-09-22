@@ -1280,6 +1280,37 @@ revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 `eq_rationalTaylorCoefficient_of_residual`: The source applied this argument only to the Taylor coefficients of an actual solution; the
 statement here isolates the algebra from the solution property.
 
+## `ArkLib/Data/Polynomial/Differential/RationalTaylorAlgebra.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorNumerator.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
+`ReedSolomon.HiddenDerivative`; the new namespace is `PolynomialDifferential`.
+`initialJetSeparantOver` is main's `initialJetSeparant`, and `map_initialJetSeparantOver` is
+`map_initialJetSeparant` in `RationalTaylor.lean`. `map_universalTaylorJet`,
+`map_universalTaylorResidual` and `map_universalTaylorResidual_coeff` are in
+`TaylorResidual.lean`, and `map_optionEquivLeft` is in
+`ToMathlib/MvPolynomial/PolynomialCoefficients.lean`; all of these need only a `CommSemiring`.
+`commonTaylorNumeratorOver` takes the exponent `τ` explicitly, with no default `2K`, and no
+longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
+
+## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
+
+Ported from `Symbolic/TaylorHeight.lean` and `Symbolic/TaylorDegree.lean` under the same source
+directory. The `challengeHeightLE_*` lemmas are now `coeffNatDegreeLE_initialJetSeparant`,
+`coeffNatDegreeLE_universalTaylorJet` and `coeffNatDegreeLE_universalTaylorResidual`, and
+`universalTaylorResidual_coeff_natDegree_le` is now
+`coeffNatDegreeLE_universalTaylorResidual_coeff`. `jointTotalDegree_initialJetSeparantOver_le`
+is now `jointTotalDegree_initialJetSeparant_le`, and `totalDegree_initialJetSeparantOver_le` is main's
+`totalDegree_initialJetSeparant_le`; the first takes the hypothesis `jetTotalDegree Q ≤ v` in
+place of a bound on `Q.weightedTotalDegree (i.elim 0 1)`. The suffixes `_of_coeff_height` and
+`_of_source` are now `_le_of_natDegree_coeff_le` and `_le_of_coeffNatDegreeLE`.
+`jointTotalDegree_commonTaylorNumeratorOver_le_of_exponent` is now
+`jointTotalDegree_commonTaylorNumeratorOver_le`, with hypothesis `2 * (l - r) - 1 ≤ τ`, and
+`_of_source_and_exponent` is now `_le_of_coeffNatDegreeLE`. The hypothesis `0 < v` is dropped.
+The default-exponent corollaries `jointTotalDegree_commonTaylorNumeratorOver_le` (at `2K`) and
+`…_of_source` are derived in the acceptance test through `taylorExponentSufficient_two_mul`.
+
 ## `ArkLib/Data/Polynomial/Differential/RegularIteration.lean`
 
 Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, where the statements were
@@ -2063,6 +2094,16 @@ The weighted-degree bounds for `pderiv` live in `ArkLib.Data.MvPolynomial.Weight
 source's `_of_lt_ringChar` wrappers are not ported; their consumers combine the cast-hypothesis
 theorems with `natCast_ne_zero_of_ringChar_eq_zero_or_lt`.
 
+## `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean`
+
+Ported from the coefficient-height and joint-degree parts of `Symbolic/TaylorHeight.lean` and
+`Symbolic/TaylorDegree.lean`, over a `CommSemiring` instead of a field. `flattenChallenge` is
+`(optionEquivRight R σ).symm`, with the simp lemmas `optionEquivRight_symm_X` and
+`optionEquivRight_symm_C`. `ChallengeHeightLE` is now `CoeffNatDegreeLE`, and its private
+closure lemmas are public. `jointTotalDegree_scalar` is now `jointTotalDegree_C_C`,
+`jointTotalDegree_le_coeff_degree_add` is now `jointTotalDegree_le_of_natDegree_coeff_le`, and
+`jointTotalDegree_clearedSubstitution` is now `jointTotalDegree_clearedSubstitution_le`.
+`jointTotalDegree_affine_le` is derived in the acceptance test.
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
