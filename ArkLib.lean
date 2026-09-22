@@ -151,7 +151,11 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.Finit
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.InterpolationBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.WeightedCertificate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.DimensionInputs
@@ -622,6 +626,7 @@ public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
+public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring
 public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
