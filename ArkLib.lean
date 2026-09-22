@@ -161,6 +161,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
@@ -640,8 +641,10 @@ public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring
 public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
+public import ArkLib.ToMathlib.Analysis.Simplex.MaxCoordinate
 public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
+public import ArkLib.ToMathlib.Analysis.Simplex.OrderedSimplex
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow
@@ -690,6 +693,7 @@ public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 public import ArkLib.ToMathlib.MvPolynomial.UnivariateSpecialization
 public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Thresholds
 public import ArkLib.ToMathlib.Order.FloorHalf
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree

@@ -756,6 +756,19 @@ under its source name, except as follows.
 `exists_orderThreshold_for_boxWidth`: The source stated this
 for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean`
+
+Ported from the moment part of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Moment.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, stated over the weighted simplex with
+weights `i + 1`. `simplexMaximumExpectation_affine_sq` is now
+`setAverage_weightedSimplex_succ_sub_mul_sum_sq`, for general `a`, `b` and `W > 0`;
+`weightedSimplexMoment_gt` is now `setAverage_weightedSimplex_succ_lowerTail_sq_gt`; and the
+Reed–Solomon half of `simplexMaximumExpectation_upperTail_sq_le` is
+`setAverage_weightedSimplex_succ_upperTail_sq_le`, for every `d`. `log_six_gt`,
+`log_five_hundred_lt`, `affineMoment_strict_lower`, `simplexMaximum_lowerTail_sq_gt` and the
+`paperMomentError*` lemmas are private; `simplexMaximumExpectation_lowerTail_eq` is folded into the
+lower-tail proof; the unused `momentErrorPolynomial`/`momentErrorRatio` variant is not ported.
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
 
 Ported from
@@ -1855,6 +1868,21 @@ The source's `integrable_weighted_probability` is `IntegrableOn.integrable_cond`
 arbitrary, and there is no budget hypothesis. The specialization keeps the source name in
 `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral`.
 
+## `ArkLib/ToMathlib/Analysis/Simplex/MaxCoordinate.lean`
+
+Ported from the largest-coordinate part of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Moment.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with `simplexMaximum` written as
+`univ.sup' univ_nonempty x` and `simplexMaximumExpectation` as a set average.
+`volume_standardSimplex_coordinate_ge` is now `volume_real_standardSimplex_inter_le_apply`;
+`volume_centeredSimplexMaximum_gt` is now
+`volume_real_standardSimplex_one_inter_lt_mul_sup'_sub_log_le`, for every `t`;
+`simplexMaximumExpectation_id` and `simplexMaximumExpectation_sq` are now
+`setAverage_standardSimplex_sup'` and `setAverage_standardSimplex_sup'_sq`; and the general half
+of `simplexMaximumExpectation_upperTail_sq_le` is
+`setAverage_standardSimplex_one_max_mul_sup'_sub_log_sub_sq_le`, for every `a`.
+`centeredSimplexMaximum`, `centeredMaximumUpperTail` and its continuity lemma are written out.
+
 ## `ArkLib/ToMathlib/Analysis/Simplex/Moments.lean`
 
 Ports the declarations of `ArkLib/ToMathlib/Analysis/Simplex/Moments.lean` at ArkLib revision
@@ -1913,6 +1941,26 @@ The source's repeated integral `monomialIntegral` and its formula `monomialInteg
 ported: the Fubini recurrence `MeasureTheory.setIntegral_standardSimplex_succ` evaluates the
 Lebesgue integral directly, so the list-indexed intermediate has no remaining use.
 
+## `ArkLib/ToMathlib/Analysis/Simplex/OrderedSimplex.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/OrderedSimplex.lean`
+and the maximum part of `RatePartition/Moment.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `orderedSimplex` and `isCompact_orderedSimplex` keep
+their names. `cumulativeCoordinates_nonnegative_iff` is now `nonneg_antitone_sum_Ici_iff`,
+`sum_cumulativeCoordinates` is now `sum_sum_Ici_eq`, `weightedSimplex_eq_cumulative_preimage` is
+now `weightedSimplex_succ_eq_preimage_orderedSimplex`, and
+`integral_weightedSimplex_comp_cumulative` is now
+`setIntegral_weightedSimplex_succ_comp_suffixSum`. `cumulativeMatrix`, `cumulativeCoordinates`,
+`cumulativeLinearEquiv`, `permuteCoordinates`, `permutationChamber` and their lemmas are private.
+`simplexMaximum_eq_zero_of_antitone` is now `sup'_univ_eq_apply_zero_of_antitone`,
+`simplexMaximum_permute` is now `sup'_univ_comp_perm`, `integral_standardSimplex_maximum` is now
+`setIntegral_standardSimplex_comp_sup'`, `simplexMaximumExpectation_eq_weightedRadius` is now
+`setAverage_standardSimplex_comp_sup'`, and `weightedSimplexExpectation_eq_orderedHead` is now
+`setAverage_weightedSimplex_succ_sum_eq_orderedSimplex`. `continuous_simplexMaximum`,
+`simplexMaximum_le_iff` and `le_simplexMaximum` are `Continuous.finset_sup'_apply`,
+`Finset.sup'_le_iff` and `Finset.le_sup'`.
+
 ## `ArkLib/ToMathlib/Analysis/Simplex/VolumeIntegral.lean`
 
 Ports `SimplexIntegration.standardSimplex`, `isClosed_standardSimplex`,
@@ -1958,6 +2006,12 @@ source's `ReedSolomon.HiddenDerivative.volume_weightedSimplex_add_choose_le_exp`
 the weights `i + 1`. Here the weights are arbitrary positive reals and `r` is any real number.
 
 `volume_real_weightedSimplex_succ`: This is the source's `volume_weightedSimplex`.
+
+`weightedSimplexExpectation_scale` of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Moment.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is replaced by
+`setAverage_weightedSimplex_mul`, with `Set.smul_weightedSimplex`,
+`setIntegral_weightedSimplex_mul` and `volume_real_weightedSimplex_mul`, for arbitrary weights.
 
 ## `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean`
 
@@ -2366,6 +2420,14 @@ supplies closure under products. `Finsupp.weight_two_mul_sub_one_le` generalizes
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Denominator.lean`: the
 index type is arbitrary instead of `Fin (r + h)`, the weight `t` is arbitrary instead of
 `l ↦ l - r`, and the source hypothesis `0 < h` is removed.
+
+## `ArkLib/ToMathlib/NumberTheory/Harmonic/Thresholds.lean`
+
+`harmonic_sub_log_lt` and `harmonicPowerSum_two_gt` of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Moment.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` are `Real.harmonic_sub_log_lt` and
+`Real.lt_sum_fin_one_div_add_one_sq`, from the thresholds `180` and `203` in place of `200` and
+`500`.
 
 ## `ArkLib/ToMathlib/Polynomial/EventualGrowth.lean`
 
