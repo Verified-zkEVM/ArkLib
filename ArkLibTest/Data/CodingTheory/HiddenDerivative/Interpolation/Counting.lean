@@ -19,8 +19,14 @@ open ReedSolomon.HiddenDerivative
 example : weightedHigherJetCount 3 2 = 4 := by decide
 
 /-- With at most one visible jet there are no higher jets, and the count is `1`. -/
-example (W : ℕ) : weightedHigherJetCount 1 W = 1 := by
-  simp [weightedHigherJetCount, Finset.natWeightedSimplex]
+example (W : ℕ) : weightedHigherJetCount 1 W = 1 :=
+  weightedHigherJetCount_of_le_one le_rfl W
+
+/-- The same holds at `d = 0`, where `d - 1` truncates to `0`. -/
+example : weightedHigherJetCount 0 5 = 1 := weightedHigherJetCount_of_le_one (Nat.zero_le 1) 5
+
+/-- The hypothesis `d ≤ 1` is needed: at `d = 2` and weight `1` the exponents `c₂ = 0, 1` count. -/
+example : weightedHigherJetCount 2 1 = 2 := by decide
 
 /-- `⌈5 / 2⌉ = 3`. -/
 example : contactThreshold 2 5 0 = 3 := by decide

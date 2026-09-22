@@ -71,7 +71,7 @@ example :
   · intro i hi
     interval_cases i <;> simp only [coeff_add, coeff_X_pow, coeff_C] <;> simp
 
--- Res_Y(Y^2 - X^2, 2Y) = -4X^2, computed in the source argument order and converted.
+-- Res_Y(Y^2 - X^2, 2Y) = -4X^2, computed with the polynomial first and converted.
 private theorem resultant_derivative_sq_sub_sq :
     resultant (X ^ 2 - C ((X : ℚ[X]) ^ 2)) (X ^ 2 - C ((X : ℚ[X]) ^ 2)).derivative 2 1 =
       -4 * X ^ 2 := by
@@ -105,9 +105,8 @@ example :
   intro i hi
   interval_cases i <;> simp only [coeff_sub, coeff_X_pow, coeff_C] <;> simp
 
--- The source statement: `separableResultant A b = resultant A.derivative A (b - 1) b`, with
--- exact outer degree `b`, `0 < b`, and the coefficient triangle at every index. The exact
--- degree and `0 < b` are not used.
+-- The form `resultant A.derivative A (b - 1) b` with exact outer degree `b`, `0 < b`, and the
+-- coefficient triangle at every index. The exact degree and `0 < b` are not used.
 example (A : Polynomial (Polynomial (ZMod 4))) {b j : ℕ} (_hb : 0 < b)
     (_hdegree : A.natDegree = b) (hcoeff : ∀ i, i + (A.coeff i).natDegree ≤ j) :
     (resultant A.derivative A (b - 1) b).natDegree + b ^ 2 ≤ (2 * b - 1) * j ∧
@@ -122,3 +121,37 @@ example (A : Polynomial (Polynomial ℤ)) :
       (2 * 0 - 1) * (A.coeff 0).natDegree :=
   natDegree_resultant_derivative_padded_add_sq_le A 0 _ fun i hi ↦ by
     rw [Nat.le_zero.mp hi, Nat.zero_add]
+
+-- The inequality can be strict: in characteristic two, `C (X ^ 3) * Y ^ 2` has a coefficient of
+-- `X`-degree `3`, while its derivative is `0`.
+example : Bivariate.degreeX (C ((X : (ZMod 2)[X]) ^ 3) * X ^ 2).derivative = 0 := by
+  have h : ((2 : ℕ) : (ZMod 2)[X]) = 0 := CharP.cast_eq_zero _ 2
+  rw [derivative_C_mul_X_pow, h, mul_zero, C_0, zero_mul]
+  simp [Bivariate.degreeX]
+
+-- The bound with separate budgets for `A` and its derivative, with the derivative first:
+-- `(2 * b - 1) * h`.
+example (A : Polynomial (Polynomial (ZMod 4))) {b h : ℕ} (hA : Bivariate.degreeX A ≤ h)
+    (hA' : Bivariate.degreeX A.derivative ≤ h) :
+    (resultant A.derivative A (b - 1) b).natDegree ≤ (2 * b - 1) * h := by
+  rw [resultant_comm_sub_one]
+  refine (natDegree_resultant_le_degreeX A A.derivative b (b - 1)).trans ?_
+  calc (b - 1) * Bivariate.degreeX A + b * Bivariate.degreeX A.derivative
+      ≤ (b - 1) * h + b * h := Nat.add_le_add (Nat.mul_le_mul_left _ hA) (Nat.mul_le_mul_left _ hA')
+    _ = (2 * b - 1) * h := by
+      rw [← Nat.add_mul]
+      congr 1
+      omega
+
+-- The bound from the height of `A` alone: with `degreeX_derivative_le`, the declared
+-- degree `b` need not be the actual degree.
+example (A : Polynomial (Polynomial (ZMod 4))) {b h : ℕ} (hA : Bivariate.degreeX A ≤ h) :
+    (resultant A A.derivative b (b - 1)).natDegree ≤ (2 * b - 1) * h := by
+  refine (natDegree_resultant_le_degreeX A A.derivative b (b - 1)).trans ?_
+  calc (b - 1) * Bivariate.degreeX A + b * Bivariate.degreeX A.derivative
+      ≤ (b - 1) * h + b * h := Nat.add_le_add (Nat.mul_le_mul_left _ hA)
+        (Nat.mul_le_mul_left _ ((Bivariate.degreeX_derivative_le A).trans hA))
+    _ = (2 * b - 1) * h := by
+      rw [← Nat.add_mul]
+      congr 1
+      omega
