@@ -70,6 +70,14 @@ example : ∑ Q ∈ ((⊥ : Ideal R₂) ⊔ Ideal.span {X 0}).retainedMinimalPri
     (b := 1) (by rw [totalDegree_X])
   rwa [affineDegree_bot, Nat.cast_one, one_pow, mul_one] at h
 
+/-- The Bézout bound for the components of the cut of `⊥` by `x` that avoid `x - 1`: their
+affine degrees sum to at most `1 * affineDegree ⊥ = 1`. -/
+example : ∑ Q ∈ ((⊥ : Ideal R₂) ⊔ Ideal.span {X 0}).retainedMinimalPrimes (X 0 - 1),
+      affineDegree Q ≤ 1 := by
+  have h := principalCut_sum_affineDegree_retainedMinimalPrimes_le (P := (⊥ : Ideal R₂))
+    (X 0 - 1) (f := X 0) (b := 1) X0_notMem_bot (by rw [totalDegree_X])
+  rwa [affineDegree_bot, Nat.cast_one, one_mul] at h
+
 /-- The hypothesis `f ∉ P` is needed for the Bézout bound: for `P = ⊥` and `f = 0 ∈ P` with
 `b = 0`, the only minimal prime of the cut is `⊥`, of affine degree `1`, while the bound would
 be `0`. -/

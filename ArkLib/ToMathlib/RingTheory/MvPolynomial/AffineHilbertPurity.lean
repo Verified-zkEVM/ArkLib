@@ -50,6 +50,8 @@ component of the cut is the point `(1, 0, 0)`, of dimension `0` rather than `1`.
   above an affine prime has Hilbert polynomial of natural degree one less.
 * `MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_add_one`: purity of principal cuts.
 * `MvPolynomial.principalCut_sum_affineDegree_minimalPrimes_le`: the Bézout bound.
+* `MvPolynomial.principalCut_sum_affineDegree_retainedMinimalPrimes_le`: the Bézout bound for the
+  components retained by `s`.
 * `MvPolynomial.sum_affineDegree_mul_pow_retainedMinimalPrimes_le`: the degree potential of the
   retained components of a cut.
 -/
@@ -175,6 +177,21 @@ theorem principalCut_sum_affineDegree_minimalPrimes_le [Finite σ]
         principalCut_sum_factorial_mul_leadingCoeff_minimalPrimes_le hreg hfdeg hpure
     _ = b * affineDegree P := by rw [affineDegree, mul_assoc]
 
+/-- The Bézout bound for the retained components of a principal cut: if `P` is prime, `f ∉ P` and
+`totalDegree f ≤ b`, the affine degrees of the minimal primes of `P ⊔ span {f}` that do not contain
+`s` sum to at most `b * affineDegree P`.
+
+Dropping components only decreases the sum, since affine degrees are nonnegative, so this follows
+from `principalCut_sum_affineDegree_minimalPrimes_le`. No hypothesis on `s` is needed. The
+hypothesis `f ∉ P` is needed for the reason given there. -/
+theorem principalCut_sum_affineDegree_retainedMinimalPrimes_le [Finite σ]
+    {P : Ideal (MvPolynomial σ k)} [P.IsPrime] (s : MvPolynomial σ k) {f : MvPolynomial σ k}
+    (hf : f ∉ P) {b : ℕ} (hfdeg : f.totalDegree ≤ b) :
+    ∑ Q ∈ (P ⊔ Ideal.span {f}).retainedMinimalPrimes s, affineDegree Q ≤ b * affineDegree P :=
+  (Finset.sum_le_sum_of_subset_of_nonneg (Ideal.retainedMinimalPrimes_subset _ s)
+      fun Q _ _ ↦ affineDegree_nonneg Q).trans
+    (principalCut_sum_affineDegree_minimalPrimes_le hf hfdeg)
+
 /-- The degree potential does not increase under a retained principal cut. Let `P` be prime and
 `totalDegree f ≤ b`. Summing `affineDegree Q * b ^ natDegree H(Q)` over the minimal primes `Q` of
 `P ⊔ span {f}` that do not contain `s` gives at most `affineDegree P * b ^ natDegree H(P)`.
@@ -203,11 +220,7 @@ theorem sum_affineDegree_mul_pow_retainedMinimalPrimes_le [Finite σ]
       (affineHilbertPolynomial Q).natDegree + 1 = d := fun Q hQ ↦
     principalCut_natDegree_affineHilbertPolynomial_add_one hf
       (Ideal.mem_retainedMinimalPrimes.mp hQ).1
-  have hsum : ∑ Q ∈ (P ⊔ Ideal.span {f}).retainedMinimalPrimes s, affineDegree Q ≤
-      b * affineDegree P :=
-    (Finset.sum_le_sum_of_subset_of_nonneg (Ideal.retainedMinimalPrimes_subset _ s)
-      fun Q _ _ ↦ affineDegree_nonneg Q).trans
-      (principalCut_sum_affineDegree_minimalPrimes_le hf hfdeg)
+  have hsum := principalCut_sum_affineDegree_retainedMinimalPrimes_le s hf hfdeg
   rcases Nat.eq_zero_or_pos d with hd | hd
   · rw [Finset.sum_eq_zero fun Q hQ ↦ by have := hchild Q hQ; omega]
     exact mul_nonneg (affineDegree_nonneg P) (by positivity)
