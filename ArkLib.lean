@@ -118,9 +118,6 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionS
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.RatePartition.Area
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.RatePartition.Basic
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.RatePartition.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic

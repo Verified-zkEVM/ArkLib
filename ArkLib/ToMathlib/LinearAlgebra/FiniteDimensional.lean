@@ -53,10 +53,6 @@ same revision, from a field to a division ring.
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Global/Interpolation.lean` at
 the same revision. The source used a field and a finite-dimensional source; here the scalars form a
 division ring and neither lemma assumes any space finite-dimensional.
-`LinearMap.finrank_range_pi_le_sum` and `LinearMap.exists_ne_zero_of_sum_finrank_range_lt` are
-also the source's lemmas of the same names in
-`ArkLib/ToMathlib/LinearAlgebra/FiniteDimensional.lean` at the same revision, generalized from a
-field to a division ring and with no finite-dimensionality hypothesis.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/

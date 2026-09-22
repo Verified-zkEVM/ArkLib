@@ -41,6 +41,8 @@ same space as the natural cutoff `⌈L'⌉₊`, since `n < L' ↔ n < ⌈L'⌉�
 * `partitionSupportEligible_partitionSourceExponent_iff`: eligibility in coordinates.
 * `partitionSourceCount`, `card_partitionSupportExponents` and
   `finrank_partitionSupportSpace_eq_partitionSourceCount`: the exact dimension.
+* `finrank_partitionSupportSpace_eq_partitionSourceCount_natCeil`: the exact dimension at a real
+  cutoff `L`, which is the count at `⌈L⌉₊`.
 
 ## References
 
@@ -166,5 +168,12 @@ theorem finrank_partitionSupportSpace_eq_partitionSourceCount (F : Type*) [Field
     (L : ℕ) :
     Module.finrank F (partitionSupportSpace F D d W (L : ℝ) hD) = partitionSourceCount D d W L := by
   rw [finrank_partitionSupportSpace_eq_card, card_partitionSupportExponents]
+
+/-- For `0 < D`, the dimension of the partition support space at the real cutoff `L` over a field
+is `partitionSourceCount D d W ⌈L⌉₊`. For `L ≤ 0` both sides are zero. -/
+theorem finrank_partitionSupportSpace_eq_partitionSourceCount_natCeil (F : Type*) [Field F]
+    (hD : 0 < D) (L : ℝ) :
+    Module.finrank F (partitionSupportSpace F D d W L hD) = partitionSourceCount D d W ⌈L⌉₊ := by
+  rw [← partitionSupportSpace_natCeil, finrank_partitionSupportSpace_eq_partitionSourceCount]
 
 end ReedSolomon.HiddenDerivative
