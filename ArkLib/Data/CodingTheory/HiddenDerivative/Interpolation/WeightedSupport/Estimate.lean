@@ -34,24 +34,8 @@ the moment estimates of `WeightedSupport/Moments.lean` apply.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
-
-* `WeightedSupportParameters.weighted_dimension_integral` (`FloorTransfer.lean`). As in the port of
-  `weighted_floor_integral`, the pointwise hypotheses `hu` and `hW` become
-  `T ⊆ Set.weightedSimplex _ W` and the hypothesis `0 ≤ g * m` is dropped.
-* `weighted_dimension_probability` (`Estimate.lean`). The integral against the source's
-  `weightedSimplexProbabilityMeasure` is the set average over the simplex, following
-  `WeightedSupport/Moments.lean`, and its `harmonicPowerSum (d - 1) 1` is `harmonic (d - 1)`. The
-  hypotheses `0 < W` and `0 < g * m` are dropped: for `g * m = 0` the left side is `0`, and when
-  the simplex has volume zero the product of its volume with the set average is `0`.
-
-Deferred: `weighted_dimension_lower`, which needs the harmonic-number estimates
-`Real.harmonic_pred_le_log_add_three_fifths`, `Real.log_add_three_fifths_le_sqrt_div_ten`,
-`Real.reciprocal_square_sum_gt` and `Real.reciprocal_cube_sum_lt`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the coefficient count (71).
 -/
 
 @[expose] public section

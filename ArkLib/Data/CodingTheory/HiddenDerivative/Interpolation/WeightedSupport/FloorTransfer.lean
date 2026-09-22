@@ -34,30 +34,6 @@ by the dimension and rank estimates.
   `∑ i : Fin n, (i + 1) = (n + 1).choose 2`.
 * `ReedSolomon.HiddenDerivative.weighted_floor_integral`: the dimension-direction transfer.
 * `ReedSolomon.HiddenDerivative.weighted_residual_sum_le_integral`: the rank-direction transfer.
-
-## References
-
-Ports, from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `WeightedSupportParameters.floor_remaining` and `WeightedSupportParameters.floor_cubic`
-  (`FloorTransfer.lean`). The hypothesis `0 ≤ g * m` of `floor_cubic` is dropped, since for
-  `g * m < 0` the left side is nonpositive.
-* `WeightedSupportParameters.weighted_floor_integral` (`FloorTransfer.lean`). The source's
-  `weightedHigherJetTuples d W` is `Finset.natWeightedSimplex (fun i : Fin (d - 1) ↦ i.val + 1) W`
-  and its `higherJetTupleDegree c` is `∑ i, c i`; the dimension `d - 1` is a free `n`. The
-  pointwise hypotheses `hu` and `hW` become `T ⊆ Set.weightedSimplex _ W`, the hypothesis
-  `hgm0 : 0 ≤ g * m` is dropped with that of `floor_cubic`, and the cell argument is
-  `Finset.setIntegral_le_sum_natWeightedSimplex`.
-* `weighted_residual_sum_le_integral` and `residual_le_on_floorCell` (`CubeTransfer.lean`). The
-  integrability hypothesis `hint` is dropped: the integrand is continuous and the enlarged simplex
-  is compact. The cell argument is `Finset.sum_natWeightedSimplex_le_setIntegral`.
-* `coordinateWeight_sum` (`CubeTransfer.lean`) becomes `sum_fin_succ_eq_choose_two`, stated in `ℕ`
-  with `n + 1` in place of `d`.
-
-The source's `WeightedSupportParameters.weighted_dimension_integral`, which combines
-`weighted_floor_integral` with the dimension bound of the support space, is
-`weighted_dimension_integral` in `WeightedSupport/Estimate.lean`.
 -/
 
 @[expose] public section

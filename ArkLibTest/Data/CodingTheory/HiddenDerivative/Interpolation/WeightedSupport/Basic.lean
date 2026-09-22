@@ -12,8 +12,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.B
 These cases check eligibility of concrete monomials at the strict cutoff and at the higher-jet
 budget, show that for `D = 0` the eligible set is infinite (so `0 < D` is needed for
 `weightedSupportEligible_finite`), compute the dimensions `0` and `1` of two small weighted support
-spaces, and derive the source's `Field`-valued decoder bounds and its
-`exactInterpolationMonomialWeight_lt_of_weightedSupportEligible`.
+spaces, and restate the specialization-weight bound and the decoder bounds over a field.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -66,17 +65,16 @@ example : Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 1 one_pos) = 1 := b
     have hdeg : u.degree = 0 := by rw [degree_eq_add_totalJetDegree]; omega
     exact (Finsupp.degree_eq_zero_iff u).mp hdeg
 
-/-! ### Source-shaped statements -/
+/-! ### The specialization-weight and decoder bounds -/
 
-/-- The source's `exactInterpolationMonomialWeight_lt_of_weightedSupportEligible`, whose
-`exactInterpolationMonomialWeight D u` is the specialization weight
-`Finsupp.weight (differentialWeight D) u`. -/
+/-- An eligible exponent has specialization weight `Finsupp.weight (differentialWeight D) u`
+below every natural bound `B ≥ L`. -/
 example {D d W B : ℕ} {L : ℝ} (hL : L ≤ B) {u : JetVariable d →₀ ℕ}
     (hu : WeightedSupportEligible D d W L u) :
     Finsupp.weight (differentialWeight D) u < B :=
   weight_differentialWeight_lt_of_weightedSupportEligible hL hu
 
-/-- The source's `decoder_bounds_of_mem_weightedSupportSpace`, stated over a field. -/
+/-- The decoder bounds over a field: total jet degree below `2 m`, weighted degree below `m A`. -/
 example {F : Type*} [Field F] {D d W m A : ℕ} {L : ℝ} {hD : 0 < D} (hm : 0 < m) (hA : 0 < A)
     (hjet : L ≤ (D : ℝ) * (2 * m)) (hweight : L ≤ (m * A : ℕ))
     {Q : DifferentialPolynomial F d} (hQ : Q ∈ weightedSupportSpace F D d W L hD) :
