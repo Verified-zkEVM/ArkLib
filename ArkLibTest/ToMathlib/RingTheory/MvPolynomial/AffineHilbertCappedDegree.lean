@@ -109,10 +109,8 @@ example : affineHilbertFunction ((Ideal.span {(X 0 : MvPolynomial (Fin 2) ℚ)})
     (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 2 1))) 1 ≤ 2 := by
   have h := affineHilbertFunction_comap_cappedDegree_span_singleton_add_le (N := 1) (b := 2)
     (c := 1) (X_ne_zero _) X_zero_mem_restrictCappedDegree (by norm_num) (Nat.zero_le _)
-  have hT := Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le 2 1 (by norm_num)
-  have hT' := Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le 1 1 le_rfl
-  change 2 * (cappedDegreeExponents (Fin 2) 1 2 1).ncard = _ at hT
-  change 2 * (cappedDegreeExponents (Fin 2) 1 1 1).ncard = _ at hT'
+  have hT := two_mul_ncard_cappedDegreeExponents_fin_two 2 1 (by norm_num)
+  have hT' := two_mul_ncard_cappedDegreeExponents_fin_two 1 1 le_rfl
   norm_num at h
   omega
 
@@ -122,9 +120,8 @@ example {k : Type*} [Field k] {b c j r : ℕ} (hb : 0 < b) (hc : 0 < c) (hcb : c
     {g : MvPolynomial (Fin 2) k} (hg0 : g ≠ 0) (hg : g ∈ restrictCappedDegree (Fin 2) k 1 j r) :
     affineDegree ((Ideal.span {g}).comap (monomialMap k (cappedDegreeExponents (Fin 2) 1 b c))) ≤
       ((j - r) * c + r * b : ℕ) := by
-  refine (affineDegree_comap_cappedDegree_span_singleton_le hb hc hg0 hg).trans_eq ?_
-  push_cast [Nat.cast_sub hrj, Nat.cast_sub hcb]
-  ring
+  exact (affineDegree_comap_cappedDegree_span_singleton_le hb hc hg0 hg).trans_eq
+    (by rw [cappedDegreeMixedVolume_eq hrj hcb])
 
 /-- The minimal primes of the pullback of a curve with bounds `(j, r)` have total affine degree at
 most `j * c + r * (b - c)`. -/
@@ -139,16 +136,17 @@ example {k : Type*} [Field k] {b c j r : ℕ} (hb : 0 < b) (hc : 0 < c)
 `(1, 0)`, and its pullback has affine degree at most `3`. -/
 example : affineDegree ((Ideal.span {(X 0 : MvPolynomial (Fin 2) ℚ)}).comap
       (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 1 3))) ≤ 3 := by
-  simpa using affineDegree_comap_cappedDegree_span_singleton_le (b := 1) (c := 3) (by norm_num)
-    (by norm_num) (X_ne_zero _) X_zero_mem_restrictCappedDegree
+  simpa [cappedDegreeMixedVolume] using affineDegree_comap_cappedDegree_span_singleton_le (b := 1)
+    (c := 3) (by norm_num) (by norm_num) (X_ne_zero _) X_zero_mem_restrictCappedDegree
 
 /-- `affineDegree_comap_cappedDegree_span_singleton_le` needs `g ≠ 0`: `0` has bounds `(0, 0)`,
 but the pullback of `span {0}` is the kernel of the monomial map, a proper ideal of positive affine
 degree. -/
 example : ¬affineDegree ((Ideal.span {(0 : MvPolynomial (Fin 2) ℚ)}).comap
-      (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 1 1))) ≤ (0 * 1 + 0 * (1 - 1) : ℕ) := by
+      (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 1 1))) ≤
+    (cappedDegreeMixedVolume 0 0 1 1 : ℕ) := by
   rw [not_le]
-  refine lt_of_eq_of_lt (by simp) (affineDegree_pos fun htop ↦ ?_)
+  refine lt_of_eq_of_lt (by simp [cappedDegreeMixedVolume]) (affineDegree_pos fun htop ↦ ?_)
   have h1 : (1 : MvPolynomial (cappedDegreeExponents (Fin 2) 1 1 1) ℚ) ∈
       (Ideal.span {(0 : MvPolynomial (Fin 2) ℚ)}).comap
         (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 1 1)) :=
@@ -159,8 +157,10 @@ example : ¬affineDegree ((Ideal.span {(0 : MvPolynomial (Fin 2) ℚ)}).comap
 `X 0 = 0` has bounds `(1, 0)` and the formula gives `0`, but its pullback is proper and has
 positive affine degree. -/
 example : ¬affineDegree ((Ideal.span {(X 0 : MvPolynomial (Fin 2) ℚ)}).comap
-      (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 1 0))) ≤ (1 * 0 + 0 * (1 - 0) : ℕ) := by
+      (monomialMap ℚ (cappedDegreeExponents (Fin 2) 1 1 0))) ≤
+    (cappedDegreeMixedVolume 1 0 1 0 : ℕ) := by
   rw [not_le]
-  exact lt_of_eq_of_lt (by simp) (affineDegree_pos (Ideal.comap_ne_top _ span_X_zero_ne_top))
+  exact lt_of_eq_of_lt (by simp [cappedDegreeMixedVolume])
+    (affineDegree_pos (Ideal.comap_ne_top _ span_X_zero_ne_top))
 
 end AffineHilbertCappedDegreeTest

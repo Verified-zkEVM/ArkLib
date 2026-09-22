@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.Bidegree
-public import ArkLib.ToMathlib.RingTheory.MvPolynomial.MonomialMap
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedDegree
 
 /-!
 # Polynomials of bounded bidegree with a capped variable
@@ -25,9 +25,13 @@ positive `a`, `b` and `c` the exponents `Finsupp.single v 1` are capped exponent
 map is surjective.
 
 Splitting off the `none`-coordinate identifies the capped exponents with pairs of an integer in
-`[0, a]` and an exponent vector `e` on `σ` with `e.degree ≤ b` and `e i ≤ c`. For `σ = Fin 2`,
-`i = 1` and `c ≤ b` there are `(c + 1) * (2 * b + 2 - c) / 2` such vectors `e`: the vectors
-`single 0 x + single 1 v` with `v ≤ c` and `x ≤ b - v`.
+`[0, a]` and a capped exponent in `cappedDegreeExponents σ i b c`. For `σ = Fin 2`, `i = 1` and
+`c ≤ b` their convex hull is the prism `[0, a] × T` over the truncated triangle `T` of
+`cappedDegreeExponents (Fin 2) 1 b c`, and `cappedBidegreeMixedVolume h j r a b c` is the mixed
+volume of one prism for `(h, j, r)` and two prisms for `(a, b, c)`, normalized so that the mixed
+volume of a prism with itself is `3!` times its volume. It bounds the affine degree of the pullback
+of a hypersurface with bounds `(h, j, r)` along the monomial map
+(`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCappedBidegree`).
 
 The bidegree map `bidegreeMap σ R a b` is the monomial map of `bidegreeExponents σ a b`, and the
 exponents `Finsupp.single v 1` are exponents of bidegree at most `(a, b)` for positive `a` and `b`,
@@ -45,9 +49,9 @@ so the statements on points in `ArkLib.ToMathlib.RingTheory.MvPolynomial.Monomia
 * `MvPolynomial.monomialMap_cappedBidegreeExponents_surjective`: the monomial map is surjective
   for positive bounds.
 * `MvPolynomial.ncard_cappedBidegreeExponents`, `MvPolynomial.finrank_restrictCappedBidegree`: the
-  count `(a + 1) * #{e | e.degree ≤ b ∧ e i ≤ c}`.
-* `Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le`: the count of the truncated triangle
-  for `σ = Fin 2`.
+  count `(a + 1) * (cappedDegreeExponents σ i b c).ncard`.
+* `MvPolynomial.cappedBidegreeMixedVolume`: the mixed volume of the prisms, with its
+  monotonicity.
 -/
 
 @[expose] public section
@@ -55,65 +59,6 @@ so the statements on points in `ArkLib.ToMathlib.RingTheory.MvPolynomial.Monomia
 noncomputable section
 
 open scoped Pointwise
-
-namespace Finsupp
-
-private theorem degree_fin_two (e : Fin 2 →₀ ℕ) : e.degree = e 0 + e 1 := by
-  rw [degree_eq_sum, Fin.sum_univ_two]
-
-/-- Splitting off the second coordinate identifies the exponent vectors on `Fin 2` of degree at
-most `b` with second coordinate at most `c ≤ b` with the pairs `(v, x)` with `v ≤ c` and
-`x ≤ b - v`. -/
-private def setOfDegreeLeAndApplyOneLeEquiv (b c : ℕ) (hcb : c ≤ b) :
-    {e : Fin 2 →₀ ℕ | e.degree ≤ b ∧ e 1 ≤ c} ≃ Σ v : Fin (c + 1), Fin (b - v + 1) where
-  toFun e :=
-    ⟨⟨e.1 1, Nat.lt_succ_of_le e.2.2⟩, ⟨e.1 0, by
-      have h := e.2.1
-      rw [degree_fin_two] at h
-      simp only
-      omega⟩⟩
-  invFun p :=
-    ⟨single 0 p.2.val + single 1 p.1.val, by
-      have h1 := p.1.isLt
-      have h2 := p.2.isLt
-      simp only [Set.mem_ofPred_eq, degree_fin_two, coe_add, Pi.add_apply, single_eq_same,
-        ne_eq, zero_ne_one, not_false_eq_true, single_eq_of_ne, add_zero, one_ne_zero, zero_add]
-      omega⟩
-  left_inv e := by
-    apply Subtype.ext
-    ext j
-    fin_cases j <;> simp
-  right_inv p := by
-    rcases p with ⟨⟨v, hv⟩, ⟨x, hx⟩⟩
-    apply Sigma.ext
-    · apply Fin.ext
-      simp
-    · apply (Fin.heq_ext_iff (by simp)).2
-      simp
-
-private theorem two_mul_sum_range_sub_add_one (b c : ℕ) (hcb : c ≤ b) :
-    2 * ∑ v ∈ Finset.range (c + 1), (b - v + 1) = (c + 1) * (2 * b + 2 - c) := by
-  induction c with
-  | zero => simp; ring
-  | succ c ih =>
-    rw [Finset.sum_range_succ, mul_add, ih (by omega)]
-    have h1 : c ≤ 2 * b + 2 := by omega
-    have h2 : c + 1 ≤ b := hcb
-    have h3 : c + 1 ≤ 2 * b + 2 := by omega
-    zify [h1, h2, h3]
-    ring
-
-/-- For `c ≤ b`, there are `(c + 1) * (2 * b + 2 - c) / 2` exponent vectors on `Fin 2` of degree
-at most `b` with second coordinate at most `c`. -/
-theorem two_mul_ncard_setOf_degree_le_and_apply_one_le (b c : ℕ) (hcb : c ≤ b) :
-    2 * {e : Fin 2 →₀ ℕ | e.degree ≤ b ∧ e 1 ≤ c}.ncard = (c + 1) * (2 * b + 2 - c) := by
-  rw [← Nat.card_coe_set_eq, Nat.card_congr (setOfDegreeLeAndApplyOneLeEquiv b c hcb),
-    Nat.card_eq_fintype_card, Fintype.card_sigma]
-  simp only [Fintype.card_fin]
-  rw [Fin.sum_univ_eq_sum_range (fun v ↦ b - v + 1) (c + 1)]
-  exact two_mul_sum_range_sub_add_one b c hcb
-
-end Finsupp
 
 namespace MvPolynomial
 
@@ -204,9 +149,9 @@ theorem nsmul_cappedBidegreeExponents_subset (N : ℕ) :
 
 variable (σ i a b c) in
 /-- Splitting off the `none`-coordinate identifies the capped exponents with pairs of an integer
-at most `a` and an exponent vector `e` on `σ` with `e.degree ≤ b` and `e i ≤ c`. -/
+at most `a` and a capped exponent in `cappedDegreeExponents σ i b c`. -/
 def cappedBidegreeExponentsEquiv :
-    cappedBidegreeExponents σ i a b c ≃ Set.Iic a × {e : σ →₀ ℕ | e.degree ≤ b ∧ e i ≤ c} where
+    cappedBidegreeExponents σ i a b c ≃ Set.Iic a × cappedDegreeExponents σ i b c where
   toFun m := (⟨m.1 none, m.2.1⟩, ⟨m.1.some, m.2.2⟩)
   invFun p := ⟨p.2.1.optionElim p.1.1, by
     rw [mem_cappedBidegreeExponents, Finsupp.optionElim_apply_none, Finsupp.some_optionElim]
@@ -220,11 +165,11 @@ instance cappedBidegreeExponents.finite [Finite σ] :
     Finite (cappedBidegreeExponents σ i a b c) :=
   Finite.Set.subset _ cappedBidegreeExponents_subset_bidegreeExponents
 
-/-- There are `(a + 1)` times as many capped exponents as exponent vectors `e` on `σ` with
-`e.degree ≤ b` and `e i ≤ c`. -/
+/-- There are `(a + 1)` times as many capped exponents as capped exponents in
+`cappedDegreeExponents σ i b c`. -/
 theorem ncard_cappedBidegreeExponents :
     (cappedBidegreeExponents σ i a b c).ncard =
-      (a + 1) * {e : σ →₀ ℕ | e.degree ≤ b ∧ e i ≤ c}.ncard := by
+      (a + 1) * (cappedDegreeExponents σ i b c).ncard := by
   rw [← Nat.card_coe_set_eq, Nat.card_congr (cappedBidegreeExponentsEquiv σ i a b c),
     Nat.card_prod, Nat.card_coe_set_eq, Nat.card_coe_set_eq, Set.ncard_eq_toFinset_card',
     Set.toFinset_Iic, Nat.card_Iic]
@@ -278,15 +223,53 @@ instance restrictCappedBidegree.moduleFinite [Finite σ] :
     Module.Finite R (restrictCappedBidegree σ R i a b c) :=
   restrictSupport_finite (Set.toFinite _)
 
-/-- The capped polynomials form a free module of rank `(a + 1)` times the number of exponent
-vectors `e` on `σ` with `e.degree ≤ b` and `e i ≤ c`. -/
+/-- The capped polynomials form a free module of rank `(a + 1)` times the number of capped
+exponents in `cappedDegreeExponents σ i b c`. -/
 theorem finrank_restrictCappedBidegree {R : Type*} [CommRing R] [StrongRankCondition R]
     [Finite σ] :
     Module.finrank R (restrictCappedBidegree σ R i a b c) =
-      (a + 1) * {e : σ →₀ ℕ | e.degree ≤ b ∧ e i ≤ c}.ncard := by
+      (a + 1) * (cappedDegreeExponents σ i b c).ncard := by
   rw [restrictCappedBidegree, Module.finrank_eq_nat_card_basis (basisRestrictSupport R _),
     Nat.card_coe_set_eq, ncard_cappedBidegreeExponents]
 
 end Submodule
+
+section MixedVolume
+
+/-- For `r ≤ j` and `c ≤ b`, the mixed volume of the prism `[0, h] × T` over the truncated
+triangle `T` for `(j, r)` and two copies of the prism `[0, a] × T'` over the truncated triangle
+`T'` for `(b, c)`, normalized so that the mixed volume of a prism with itself is `3!` times its
+volume. It is `h` times the mixed volume of `T'` with itself plus `2 * a` times the mixed volume
+of `T` and `T'`; for `c ≤ b` the first mixed volume is `c * (2 * b - c)`
+(`cappedDegreeMixedVolume_self`). -/
+def cappedBidegreeMixedVolume (h j r a b c : ℕ) : ℕ :=
+  h * cappedDegreeMixedVolume b c b c + 2 * a * cappedDegreeMixedVolume j r b c
+
+variable {h j r h' j' r' a b c a' b' c' : ℕ}
+
+/-- For `c ≤ b`, the mixed volume is `h * c * (2 * b - c) + 2 * a * (j * c + r * (b - c))`. -/
+theorem cappedBidegreeMixedVolume_eq (hcb : c ≤ b) :
+    cappedBidegreeMixedVolume h j r a b c =
+      h * c * (2 * b - c) + 2 * a * (j * c + r * (b - c)) := by
+  rw [cappedBidegreeMixedVolume, cappedDegreeMixedVolume_self hcb, ← mul_assoc,
+    cappedDegreeMixedVolume]
+
+/-- The mixed volume is monotone in the first prism. -/
+theorem cappedBidegreeMixedVolume_mono_left (hh : h ≤ h') (hj : j ≤ j') (hr : r ≤ r') :
+    cappedBidegreeMixedVolume h j r a b c ≤ cappedBidegreeMixedVolume h' j' r' a b c :=
+  Nat.add_le_add (Nat.mul_le_mul_right _ hh)
+    (Nat.mul_le_mul_left _ (cappedDegreeMixedVolume_mono_left hj hr))
+
+/-- For `r ≤ j`, the mixed volume is monotone in the second prism among prisms over truncated
+triangles with `c ≤ b`. -/
+theorem cappedBidegreeMixedVolume_mono_right (hrj : r ≤ j) (hcb : c ≤ b) (hc'b' : c' ≤ b')
+    (ha : a ≤ a') (hb : b ≤ b') (hc : c ≤ c') :
+    cappedBidegreeMixedVolume h j r a b c ≤ cappedBidegreeMixedVolume h j r a' b' c' := by
+  refine Nat.add_le_add (Nat.mul_le_mul_left h ?_) (Nat.mul_le_mul (by omega)
+    (cappedDegreeMixedVolume_mono_right hrj hcb hc'b' hb hc))
+  exact (cappedDegreeMixedVolume_mono_right hcb hcb hc'b' hb hc).trans
+    (cappedDegreeMixedVolume_mono_left hb hc)
+
+end MixedVolume
 
 end MvPolynomial
