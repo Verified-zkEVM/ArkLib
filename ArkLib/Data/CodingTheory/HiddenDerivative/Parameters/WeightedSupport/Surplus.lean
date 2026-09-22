@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import
-  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.EndpointComparison
+  ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Endpoints
 
 /-!
 # The multiplicative margin from the dimension and rank bounds

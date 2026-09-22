@@ -130,7 +130,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.EndpointComparison
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Endpoints
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Surplus
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution

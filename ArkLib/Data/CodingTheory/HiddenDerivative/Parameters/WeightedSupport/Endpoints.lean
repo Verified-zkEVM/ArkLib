@@ -37,7 +37,8 @@ the low-rate bound for arbitrary endpoints `δ ≤ δ₀` and `c δ ≤ ρ`. Onl
 ## References
 
 Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/`
-`EndpointComparison.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
+`EndpointComparison.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The
+file is named `Endpoints.lean` so that its import line in `ArkLib.lean` fits in 100 characters.
 
 * `rateGap` moved to `ScalarParameters.lean`. `dimensionBaselineFactor`,
   `dimensionVarianceFactor` and `normalizedDimensionRankSurplus` are unchanged, with the source's
