@@ -853,37 +853,6 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
 
 alias fsChallengeOracle := srChallengeOracle
 
--- dtumad: If we keep these they should just move to VCV about `OracleContext`.
-/-- Decidable equality for the state-restoration / (slow) Fiat-Shamir oracle -/
-instance {pSpec : ProtocolSpec n} {Statement : Type}
-    [DecidableEq Statement]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)] :
-    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) := by
-  refine { decidableEqA := ?_, decidableEqB := fun q => ?_ }
-  · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-      challengeOracleInterfaceSR, OracleSpec.toPFunctor,
-      OracleInterface.Query]
-    infer_instance
-  · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-      challengeOracleInterfaceSR, OracleSpec.toPFunctor,
-      OracleInterface.Response]
-    infer_instance
-
-instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (srChallengeOracle Statement pSpec) := by
-  refine { fintypeB := fun q => ?_ }
-  dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
-  infer_instance
-
-instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (fsChallengeOracle Statement pSpec) := by
-  refine { fintypeB := fun q => ?_ }
-  dsimp only [fsChallengeOracle, srChallengeOracle, OracleInterface.toOracleSpec,
-    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
-  infer_instance
-
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
     challenge given messages up to that point) in terms of `ProbComp`.
 

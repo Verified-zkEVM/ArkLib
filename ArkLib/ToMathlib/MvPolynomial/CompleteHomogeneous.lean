@@ -36,16 +36,6 @@ The proofs split off one index at a time with `Finset.piAntidiag_cons`: for `a ‚
 * `MvPolynomial.eval_hsymm_eq_sum_piAntidiag`: the evaluation as a sum over exponent vectors.
 * `MvPolynomial.two_mul_eval_hsymm_two` and `MvPolynomial.six_mul_eval_hsymm_three`: the
   power-sum forms in degrees `2` and `3`.
-
-## References
-
-These identities replace the private index-case computations `sum_pair_multiplicity` and
-`sum_triple_multiplicity` in `ArkLib/ToMathlib/Analysis/Simplex/Moments.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source expanded a squared or cubed linear form
-over pairs and triples of indices and counted coincident indices by hand, over `Fin n` and `‚Ñù`.
-Here the multiplicities are absorbed into Mathlib's `hsymm`, the index type is any `Fintype`, and
-the coefficients lie in any commutative semiring. Higher Newton identities are not needed by the
-simplex moments and are not proved.
 -/
 
 @[expose] public section

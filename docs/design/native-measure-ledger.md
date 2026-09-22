@@ -273,9 +273,33 @@ them (verified). These rows go away when VCVio removes those instances under #53
 D1 has a single upstream fix, tracked as [VCVio #772](https://github.com/Verified-zkEVM/VCVio/issues/772)
 and implemented in [VCVio #773](https://github.com/Verified-zkEVM/VCVio/pull/773): the domain
 projection instance is removed and generic VCVio code that compares indices assumes
-`[DecidableEq ι]`. After ArkLib pins a VCVio `main` containing that fix, the D1 lets can go back to
-`classical`, with `retiredsweep` re-run after each removal. That repin is a follow-up, not part of
-this PR.
+`[DecidableEq ι]`. #773 did not merge; the fix landed through
+[VCVio #777](https://github.com/Verified-zkEVM/VCVio/pull/777), which removes the bundled
+`OracleSpec.DecidableEq`, `OracleSpec.Fintype` and `OracleSpec.Inhabited` classes in favour of
+per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
+[VCVio #778](https://github.com/Verified-zkEVM/VCVio/pull/778), which reduces `SampleableType` to
+`selectElem` and its uniformity law.
+
+**Repin to VCVio `main` at `d7089e46d69e07640fa23b5ae6b1b966f1d4b949`.** This follow-up resolves D1 and D3:
+- All 34 `let _ : DecidableEq α := Classical.decEq α` lines are gone: 30 were redundant after an
+  existing `classical`, and 4 are replaced by `classical`. The dead `change IsMCAGenerator G (…)`
+  steps in `PolynomialGenerator` are removed. The remaining `Classical.decEq` uses are ordinary
+  explicit instance arguments, not search workarounds: `@schwartz_zippel_counting F _
+  (Classical.decEq F)` in `SchwartzZippelCounting`, the local instance in `FullAgreement`, the
+  `Fintype.fieldOfDomain` argument in `Probability/Instances`, and the `Finset.image` instances in
+  the statements of `Probability/Combinatorial`.
+- The four D3 `OracleComp.support_nonempty` sites now use the default instance path;
+  `retiredsweep` accepts it (verified).
+- `GCXK25.linear_mca_relevant_pairs_card_le` is back to `[Fintype F']`, which its statement's
+  `linear_mca_relevant_pairs` requires; the D2 `Finite` generalization of that private lemma is
+  reverted.
+- ArkLib's instances concluding the retired classes are removed: `[v]ₒ.DecidableEq/Fintype/
+  Inhabited` in `OracleInterface`, the `srChallengeOracle`/`fsChallengeOracle` instances in
+  `ProtocolSpec/Basic`, and the bundled QueryRound instances in `BatchedFri/Security`, which now
+  provide per-range `Inhabited`/`Fintype` and build the empty message spec's
+  `IsUniformMeasureSpec` from `queryRoundMessage_domain_false`.
+- Because `SampleableType F` now provides `Finite F` and `Nonempty F`, several theorems no longer
+  use their `[SampleableType F]` section variable; they carry `omit [SampleableType F] in`.
 
 The earlier phase-2 generator audit still holds:
 
@@ -311,8 +335,9 @@ strict `retiredsweep` inventory is empty; `./scripts/validate.sh --axioms` passe
 warning, axiom, `sorry` or trust debt; and each repeated ergonomic defect is fixed upstream or
 tracked by a focused upstream issue. Proof length is diagnostic. All phase-1 probability proofs
 are at or below their pre-#903 size or carry an R1/R2/R4 reason, and checkpoint A6 is done. The
-40 phase-2 rows above have recorded causes: D1 is VCVio #772 (fixed by VCVio #773), D2 is statement or
-elaboration change, and D3 goes away when VCVio removes its retired instances under #532.
+40 phase-2 rows above have recorded causes: D1 is VCVio #772, D2 is statement or
+elaboration change, and D3 is the retired default instance path; the repin to `d7089e46d69e07640fa23b5ae6b1b966f1d4b949`
+resolves D1 and D3.
 
 VCVio issue #532 has a broader repository-wide retirement scope. Landing the ArkLib prerequisite
 slice and closing #904 will not close #532; VCVio must account for its other scalar/PMF consumers
