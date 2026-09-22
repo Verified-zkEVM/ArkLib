@@ -7,6 +7,7 @@ Authors: ArkLib Contributors
 module
 
 public import ArkLib.ProofSystem.Fri.FoldingSoundness
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 
 /-!
 # FRI query soundness
@@ -19,6 +20,9 @@ protocol: it contains no prover strategy or sampling procedure.
 The key induction lifts agreement on any sufficiently large subset of accepting queries.
 In particular, it retains the actual accepting positions, as required by the binding and
 erasure-detection interpretation in the March 27, 2026 revision of [GMW25].
+`FoldTrace.exists_codeword_of_query_probability` gives the algebraic conclusions of
+Corollary 5.6 with separate distance and tradeoff parameters. Interpolation is proved
+for every subset of accepting positions of the required size; no complexity bound is asserted.
 
 ## References
 
@@ -211,8 +215,8 @@ theorem accepting_density_le (tr : FoldTrace domain d) (θ δ : ℝ)
   exact accepting_density_le_of_agreement domain tr.initial tr.accepting θ δ
     (tr.exists_codeword_agree_on θ hsafe hfinal tr.accepting (fun _ h ↦ h)) hdist
 
-/-- The query error from the updated FRI analysis: `(1 - min θ δ)^t`, for an arbitrary
-safe commitment transcript. Repetitions are independent uniform initial-domain positions. -/
+/-- A safe trace accepts independent uniform queries with probability at most
+`(1 - min θ δ)^t`, where `δ` is a lower bound on the initial word's distance to its code. -/
 theorem query_soundness (tr : FoldTrace domain d) (θ δ : ℝ) (t : ℕ)
     (hsafe : tr.Safe θ)
     (hdist : ∀ u ∈ code domain d, δ ≤ (Code.relHammingDist tr.initial u : ℝ)) :
@@ -244,8 +248,8 @@ theorem query_soundness_distance (tr : FoldTrace domain d) (θ : ℝ) (t : ℕ)
   simpa [Code.relHammingDist, ENNReal.coe_NNRat_coe_NNReal] using
     ENNReal.toReal_mono hfinite h
 
-/-- A large accepting set determines one original RS codeword. The second size condition
-is the rate threshold for uniqueness, distinct from the tradeoff threshold for lifting. -/
+/-- On a safe trace with a valid final word, an accepting set meeting the agreement-lifting
+threshold and containing at least `d` positions determines a unique original codeword. -/
 theorem exists_unique_codeword_agree (tr : FoldTrace domain d) (θ : ℝ)
     (hsafe : tr.Safe θ) (hfinal : tr.FinalInCode)
     (hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card)
@@ -264,39 +268,45 @@ theorem exists_unique_codeword_agree (tr : FoldTrace domain d) (θ : ℝ)
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hvagree i hi).trans (hagree i hi).symm⟩
   omega
 
-/-- The updated paper's binding consequence, with its positive-query hypothesis explicit.
-The rate threshold ensures that the accepting set determines a unique original codeword. -/
+/-- For a safe trace with a valid final word, acceptance probability at least `(1 - δ)^t`
+with `t > 0`, `δ ≤ θ`, and `δ ≤ 1 - d / 2^n` determines a unique codeword on accepting positions. -/
 theorem exists_unique_codeword_agree_of_query_probability (tr : FoldTrace domain d)
-    (θ : ℝ) {t : ℕ} (ht : 0 < t) (hsafe : tr.Safe θ) (hfinal : tr.FinalInCode)
-    (hrate : (d : ℝ) ≤ (2 ^ n : ℝ) * (1 - θ))
-    (hprob : ENNReal.ofReal (1 - θ) ^ t ≤ Pr{
+    (θ δ : ℝ) {t : ℕ} (ht : 0 < t) (hsafe : tr.Safe θ) (hfinal : tr.FinalInCode)
+    (hδθ : δ ≤ θ) (hrate : δ ≤ 1 - (d : ℝ) / 2 ^ n)
+    (hprob : ENNReal.ofReal (1 - δ) ^ t ≤ Pr{
       let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
     ∃! u, u ∈ code domain d ∧ ∀ i ∈ tr.accepting, u i = tr.initial i := by
-  have hlarge := tr.accepting_card_ge_of_query_probability θ ht hfinal hprob
+  have hcard := tr.accepting_card_ge_of_query_probability δ ht hfinal hprob
+  have hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card :=
+    (mul_le_mul_of_nonneg_left (sub_le_sub_left hδθ 1) (by positivity)).trans hcard
+  have hdegree : (d : ℝ) ≤ (2 ^ n : ℝ) * (1 - δ) := by
+    have h := (div_le_iff₀ (show (0 : ℝ) < 2 ^ n by positivity)).mp
+      (show (d : ℝ) / 2 ^ n ≤ 1 - δ by linarith)
+    simpa [mul_comm] using h
   apply tr.exists_unique_codeword_agree θ hsafe hfinal hlarge
-  exact_mod_cast hrate.trans hlarge
+  exact_mod_cast hdegree.trans hcard
 
-/-- Interpolation on any `d` selected accepting positions recovers the committed polynomial.
-The subset selection and interpolant reuse existing library operations. This is an algebraic
-extraction theorem; it does not assert a running-time bound. -/
+/-- For a safe trace with a valid final word and accepting density at least `1 - θ`,
+interpolation on any `d` accepting positions has degree less than `d` and agrees with the
+initial word on every accepting position. -/
 theorem interpolate_accepting_agrees (tr : FoldTrace domain d) (θ : ℝ)
     (hsafe : tr.Safe θ) (hfinal : tr.FinalInCode)
     (hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card)
-    (hrate : d ≤ tr.accepting.card) :
-    let p := Lagrange.interpolate (tr.accepting.pickSubset d) domain tr.initial
+    (S : Finset (Fin (2 ^ n))) (hS : S ⊆ tr.accepting) (hcard : S.card = d) :
+    let p := Lagrange.interpolate S domain tr.initial
     p.degree < d ∧ ∀ i ∈ tr.accepting, p.eval (domain i) = tr.initial i := by
   obtain ⟨u, hu, hagree⟩ := tr.exists_codeword_agree_on θ hsafe hfinal
     tr.accepting (fun _ h ↦ h) hlarge
   obtain ⟨p, hp, heval⟩ := ReedSolomon.mem_code_iff_eval.mp hu
-  have heq : p = Lagrange.interpolate (tr.accepting.pickSubset d) domain tr.initial := by
+  have heq : p = Lagrange.interpolate S domain tr.initial := by
     apply Lagrange.eq_interpolate_of_eval_eq _ Domain.CosetFftDomain.injOn
-    · simpa [min_eq_right hrate] using hp
+    · simpa [hcard] using hp
     · intro i hi
-      exact (heval i).trans (hagree i (Finset.pick_subset_subset hi))
+      exact (heval i).trans (hagree i (hS hi))
   rw [← heq]
   exact ⟨hp, fun i hi ↦ (heval i).trans (hagree i hi)⟩
 
-/-- A query at a disagreement position with the committed codeword forces rejection. -/
+/-- A query at a disagreement with a word agreeing on all accepting positions forces rejection. -/
 theorem not_accepts_of_disagreement (tr : FoldTrace domain d)
     {u : Fin (2 ^ n) → F} (hagree : ∀ i ∈ tr.accepting, u i = tr.initial i)
     {t : ℕ} {xs : Fin t → Fin (2 ^ n)}
@@ -304,6 +314,62 @@ theorem not_accepts_of_disagreement (tr : FoldTrace domain d)
   rintro ⟨_, hxs⟩
   obtain ⟨j, hj⟩ := h
   exact hj (hagree _ (hxs j))
+
+/-- If a safe trace has positive degree bound and accepts `t > 0` queries with probability
+at least `(1 - δ)^t`, where `δ ≤ θ` and `δ ≤ 1 - d / 2^n`, its initial word is `δ`-close
+to its code. A unique codeword agrees on all accepting positions, is recovered by interpolation
+on any `d` of those positions, and any query at a disagreement with it forces rejection. -/
+theorem exists_codeword_of_query_probability (tr : FoldTrace domain d)
+    (θ δ : ℝ) (hd : 0 < d) {t : ℕ} (ht : 0 < t) (hsafe : tr.Safe θ)
+    (hδθ : δ ≤ θ) (hrate : δ ≤ 1 - (d : ℝ) / 2 ^ n)
+    (hprob : ENNReal.ofReal (1 - δ) ^ t ≤ Pr{
+      let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
+    Code.relDistFromCode tr.initial
+        (code (domain : Fin (2 ^ n) ↪ F) d : Set (Fin (2 ^ n) → F)) ≤
+        ENNReal.ofReal δ ∧
+      ∃ u, (u ∈ code domain d ∧ ∀ i ∈ tr.accepting, u i = tr.initial i) ∧
+        (∀ v, (v ∈ code domain d ∧ ∀ i ∈ tr.accepting, v i = tr.initial i) → v = u) ∧
+        (Code.relHammingDist tr.initial u : ℝ) ≤ δ ∧
+        (∀ S : Finset (Fin (2 ^ n)), S ⊆ tr.accepting → S.card = d →
+          let p := Lagrange.interpolate S domain tr.initial
+          p.degree < d ∧ evalOnPoints domain p = u) ∧
+        (∀ {m : ℕ} (xs : Fin m → Fin (2 ^ n)),
+          (∃ j, u (xs j) ≠ tr.initial (xs j)) → ¬ tr.Accepts xs) := by
+  have hn : (0 : ℝ) < 2 ^ n := by positivity
+  have hδ : δ < 1 := by
+    have : (0 : ℝ) < (d : ℝ) / 2 ^ n := div_pos (by exact_mod_cast hd) hn
+    linarith
+  have hfinal : tr.FinalInCode := by
+    by_contra h
+    have hzero : Pr{let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] = 0 := by
+      simp only [Accepts, h, false_and]
+      exact prEvent_const_of_not _ not_false
+    have hpos : 0 < ENNReal.ofReal (1 - δ) ^ t :=
+      pos_iff_ne_zero.mpr (pow_ne_zero _ (ne_of_gt (ENNReal.ofReal_pos.mpr (by linarith))))
+    rw [hzero] at hprob
+    exact (not_le_of_gt hpos) hprob
+  obtain ⟨u, hu, huniq⟩ := tr.exists_unique_codeword_agree_of_query_probability
+    θ δ ht hsafe hfinal hδθ hrate hprob
+  have hcard := tr.accepting_card_ge_of_query_probability δ ht hfinal hprob
+  have hlarge : (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card :=
+    (mul_le_mul_of_nonneg_left (sub_le_sub_left hδθ 1) hn.le).trans hcard
+  have hagree : tr.accepting.card ≤ Code.agree u tr.initial := by
+    apply Finset.card_le_card
+    exact fun i hi ↦ Finset.mem_filter.mpr ⟨Finset.mem_univ _, hu.2 i hi⟩
+  have hdist : (Code.relHammingDist tr.initial u : ℝ) ≤ δ := by
+    have h := Code.relHammingDist_le_one_sub_div_of_le_agree hagree
+    simp only [Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat] at h
+    have hden := (le_div_iff₀ hn).mpr (by simpa [mul_comm] using hcard)
+    linarith
+  have hcode := Code.relDistFromCode_le_relDist_to_mem tr.initial u hu.1
+  have hdist' : (Code.relHammingDist tr.initial u : ENNReal) ≤ ENNReal.ofReal δ := by
+    rw [ENNReal.coe_NNRat_coe_NNReal, ← ENNReal.ofReal_coe_nnreal]
+    exact ENNReal.ofReal_le_ofReal hdist
+  refine ⟨hcode.trans hdist', u, hu, huniq, hdist, ?_, ?_⟩
+  · intro S hS hSCard
+    obtain ⟨hp, hagree⟩ := tr.interpolate_accepting_agrees θ hsafe hfinal hlarge S hS hSCard
+    exact ⟨hp, huniq _ ⟨evalOnPoints_mem_code_of_degree_lt hp, hagree⟩⟩
+  · exact fun xs h ↦ tr.not_accepts_of_disagreement hu.2 h
 
 end FoldTrace
 

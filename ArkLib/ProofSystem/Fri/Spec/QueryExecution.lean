@@ -158,8 +158,9 @@ theorem queryVerifier_toVerifier_verify (hs : (∑ j, (s j).val) ≤ n)
   rw [simulate_queryVerifier, map_pure]
   split_ifs <;> rfl
 
-/-- The actual query core, sampled on its subtype-valued domain, satisfies the updated
-query bound. No assumption is made about honesty of the intermediate words. -/
+/-- For a safe history with a valid final polynomial and input distance at least `δ`,
+the executable query core accepts uniform subtype-valued queries with probability at most
+`(1 - min θ δ)^l`. -/
 theorem verifyQueries_soundness (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
     (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
     (θ δ : ℝ) (hsafe : SafeHistory s d o α θ)

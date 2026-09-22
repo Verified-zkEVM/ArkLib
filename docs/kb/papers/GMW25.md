@@ -27,8 +27,9 @@ query positions. ArkLib follows the March 27, 2026 revision of ePrint 2025/1993.
 - The reduction of a folding agreement failure to mutual correlated agreement (Lemma 5.1).
 - The query bound `(1 - min θ δ)^t`, with the tradeoff parameter `θ` independent of input
   distance `δ` (Theorem 5.2).
-- Agreement on accepting positions, uniqueness above the rate threshold, interpolation,
-  and detection of disagreement queries (Corollary 5.6).
+- Proximity, unique agreement on accepting positions, interpolation on any `d` accepting
+  positions, and detection of disagreement queries: the algebraic conclusions of
+  Corollary 5.6, with separate `δ ≤ θ` and `δ ≤ 1 - ρ` hypotheses.
 
 ## Main ArkLib Touchpoints
 
@@ -39,6 +40,11 @@ transcript; the executable protocol remains in `Fri/Spec`. `Fri.Spec.soundness` 
 `Fri.Spec.rbrSoundness` establish its end-to-end adaptive security with the existing
 input/output relations. `Fri.Spec.soundness_proximity` gives the stronger rejection bound
 for every input at distance at least `δ`.
+
+`Fri.FoldTrace.exists_codeword_of_query_probability` packages proximity, binding,
+interpolation, and erasure detection for a safe trace with positive degree bound and query
+count. The rate constraint is on `δ`, not `θ`. Positive acceptance supplies the final
+code-membership premise; it need not be assumed separately.
 
 ## Version Notes
 
@@ -57,8 +63,9 @@ the generalized-Johnson specialization using ArkLib's existing powers-MCA theore
 
 ArkLib's existing domains support folding factors that are powers of two. The paper allows
 more general multiplicative subgroups. Algebraic interpolation is formalized without claiming
-an extraction running-time bound. Zero query repetitions are allowed, yielding the vacuous
-error bound one; the paper's probability-to-binding deduction assumes a positive repetition count.
+the polynomial-time extraction claim of Corollary 5.6. Zero query repetitions are allowed,
+yielding the vacuous error bound one; the paper's probability-to-binding deduction assumes
+a positive repetition count.
 
 ## Open Formalization Gaps
 

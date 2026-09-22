@@ -43,7 +43,7 @@ noncomputable def foldingError [SampleableType F] (θ : ℝ) (i : Fin (k + 1)) :
       (foldingDegree s d i.succ)) θ).toNNReal
 
 omit [Fintype F] in
-/-- Appending the challenge changes its value, but does not change its input word. -/
+/-- The bad event after appending a challenge uses that challenge and the preceding input word. -/
 theorem foldingBad_concat_iff (f : (ω.subdomain 0).toFinset → F) (θ : ℝ)
     (i : Fin (k + 1))
     (tr : (pSpec k (ω := ω) s l).Transcript (foldChallenge (ω := ω) s l i).val.castSucc)

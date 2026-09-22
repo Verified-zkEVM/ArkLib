@@ -95,7 +95,7 @@ def FoldingAgreementFailure (domain : SmoothCosetFftDomain n F)
       ∀ i x, x ∈ T → domain i ^ (2 ^ k) = domain.subdomain k x → u i = f i
 
 /-- The folding bad event is contained in the existing MCA event for the coefficient words. -/
-theorem foldingAgreementFailure_implies_isMCA [Fintype F]
+theorem isMCA_of_foldingAgreementFailure [Fintype F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
     (θ : ℝ) (α : F) (h : FoldingAgreementFailure domain f k d θ α) :
     IsMCA (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ)) (code (domain.subdomain k) d) α
@@ -119,7 +119,7 @@ theorem foldingAgreementFailure_prob_le [Fintype F] [SampleableType F]
       mcaError (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
         (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) θ := by
   apply le_trans (prEvent_mono _ _ _
-    (foldingAgreementFailure_implies_isMCA domain f hd θ))
+    (isMCA_of_foldingAgreementFailure domain f hd θ))
   exact le_iSup (fun U ↦ Pr{let α ←$ᵗ F}[
     IsMCA (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
       (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) α U θ]) _

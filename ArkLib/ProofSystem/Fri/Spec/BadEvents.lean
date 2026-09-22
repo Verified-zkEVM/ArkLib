@@ -54,8 +54,8 @@ theorem queryBad_concat_iff (hs : (∑ j, (s j).val) ≤ n)
     le_rfl, Transcript.restrict_refl,
     Transcript.read_concat_last]
 
-/-- Conditional on the preceding folding challenges being safe, the final bad event has
-the query error from the updated analysis. -/
+/-- For an initial word at distance at least `δ`, safe preceding folding challenges bound
+the final query bad-event probability by `(1 - min θ δ)^l`. -/
 theorem queryBad_prob_le (hs : (∑ j, (s j).val) ≤ n)
     (f : (ω.subdomain 0).toFinset → F) (θ δ : ℝ)
     [SampleableType ((pSpec k (ω := ω) s l).Challenge (queryChallenge s l))]
@@ -119,8 +119,7 @@ theorem badEvent_query (hs : (∑ j, (s j).val) ≤ n) (θ : ℝ)
   · intro hb
     exact Or.inr ⟨rfl, hb⟩
 
-/-- Each folding challenge contributes its MCA error; the last challenge contributes
-the independent-query error from the updated analysis. -/
+/-- Per-challenge error: the folding MCA error, or `(1 - min θ δ)^l` for the query vector. -/
 noncomputable def challengeError [SampleableType F] (θ δ : ℝ)
     (j : (pSpec k (ω := ω) s l).ChallengeIdx) : ℝ≥0 :=
   (∑ i, if j = foldChallenge s l i then foldingError (ω := ω) s d θ i else 0) +

@@ -276,8 +276,8 @@ namespace FoldPhase
 --     let x₀  := stmt j;
 --     roundConsistent cond f f' x₀
 
-/- The FRI non-final folding round input relation, with proximity parameter `δ`, f
-   for the `i`th round. -/
+/-- The latest oracle word before non-final folding round `i` is within relative Hamming
+distance `δ` of the degree-bounded witness polynomial's evaluations on its domain. -/
 def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
     Set
       (
@@ -286,8 +286,8 @@ def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
       ) := {sw | Code.relHammingDist (sw.1.2 (Fin.last i.val))
         (fun x ↦ sw.2.1.eval x.1) ≤ δ}
 
-/- The FRI non-final folding round output relation, with proximity parameter `δ`,
-   for the `i`th round. -/
+/-- The latest oracle word after non-final folding round `i` is within relative Hamming
+distance `δ` of the output degree-bounded witness polynomial's evaluations on its domain. -/
 def outputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
     Set
       (

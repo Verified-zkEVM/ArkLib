@@ -95,7 +95,8 @@ theorem acceptingQueries_density_le
   exact exists_codeword_agree_of_acceptingQueries s d hs o α θ hsafe hdegree
     (acceptingQueries s hs o α) (fun _ h ↦ h)
 
-/-- Independent uniform repetitions of the executable checks have the updated query error. -/
+/-- For a safe history with a valid final polynomial and input distance at least `δ`,
+independent uniform query checks accept with probability at most `(1 - min θ δ)^t`. -/
 theorem queryChecks_soundness
     (hs : (∑ j, (s j).val) ≤ n) (o : ∀ j, FinalOracleStatement s ω j)
     (α : FinalStatement F k) (θ δ : ℝ) (t : ℕ) (hsafe : SafeHistory s d o α θ)

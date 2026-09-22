@@ -62,3 +62,55 @@ info: 'Verifier.soundness_of_rejection_event' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Verifier.soundness_of_rejection_event
+
+/--
+info: 'Fri.FoldTrace.exists_codeword_of_query_probability' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.FoldTrace.exists_codeword_of_query_probability
+
+/--
+info: 'Fri.FoldTrace.exists_unique_codeword_agree_of_query_probability' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.FoldTrace.exists_unique_codeword_agree_of_query_probability
+
+/--
+info: 'Fri.FoldTrace.interpolate_accepting_agrees' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.FoldTrace.interpolate_accepting_agrees
+
+open OracleComp
+
+section SeparateParameters
+
+variable {F : Type} [Field F] [DecidableEq F]
+variable {domain : Domain.SmoothCosetFftDomain 2 F} (tr : Fri.FoldTrace domain 2)
+
+-- At rate 1/2, δ = 1/4 < θ = 3/4 is permitted, although the old threshold on θ fails.
+example : ¬ (2 : ℝ) ≤ 2 ^ 2 * (1 - 3 / 4) := by norm_num
+
+example {t : ℕ} (ht : 0 < t) (hsafe : tr.Safe (3 / 4))
+    (hprob : ENNReal.ofReal (1 - (1 / 4 : ℝ)) ^ t ≤ Pr{
+      let xs ← $ᵗ (Fin t → Fin (2 ^ 2))}[tr.Accepts xs]) :
+    Code.relDistFromCode tr.initial
+      (ReedSolomon.code (domain : Fin (2 ^ 2) ↪ F) 2 : Set (Fin (2 ^ 2) → F)) ≤
+        ENNReal.ofReal (1 / 4) :=
+  (tr.exists_codeword_of_query_probability (3 / 4) (1 / 4) (by decide) ht hsafe
+    (by norm_num) (by norm_num) hprob).1
+
+-- The non-strict rate boundary δ = 1 - ρ is included as well.
+example {t : ℕ} (ht : 0 < t) (hsafe : tr.Safe (3 / 4))
+    (hprob : ENNReal.ofReal (1 - (1 / 2 : ℝ)) ^ t ≤ Pr{
+      let xs ← $ᵗ (Fin t → Fin (2 ^ 2))}[tr.Accepts xs]) :
+    Code.relDistFromCode tr.initial
+      (ReedSolomon.code (domain : Fin (2 ^ 2) ↪ F) 2 : Set (Fin (2 ^ 2) → F)) ≤
+        ENNReal.ofReal (1 / 2) :=
+  (tr.exists_codeword_of_query_probability (3 / 4) (1 / 2) (by decide) ht hsafe
+    (by norm_num) (by norm_num) hprob).1
+
+end SeparateParameters

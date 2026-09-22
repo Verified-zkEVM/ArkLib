@@ -36,9 +36,8 @@ def initialOracle
       List.toFinset_nil, Finset.sum_empty]
     rfl) (stmt.2 0)
 
-/-- Every terminal event implying acceptance of the committed query history has the
-sum of the per-round MCA errors and the updated query error. The terminal implication
-is separated from the probabilistic argument so verifier execution can be audited on its own. -/
+/-- For an input outside the proximity language, any terminal event implying query acceptance
+has probability at most the sum of the folding MCA errors and `(1 - min θ δ)^l`. -/
 theorem terminalEvent_prob_le (hs : (∑ j, (s j).val) ≤ n) (θ δ : ℝ)
     [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ WitIn WitOut StmtOut : Type}

@@ -75,23 +75,26 @@ density to the $t$th power.
 \end{proof}
 
 \begin{theorem}\label{thm:fri-binding}
-\lean{Fri.FoldTrace.exists_unique_codeword_agree_of_query_probability,
+\lean{Fri.FoldTrace.exists_codeword_of_query_probability,
+Fri.FoldTrace.exists_unique_codeword_agree_of_query_probability,
 Fri.FoldTrace.interpolate_accepting_agrees,Fri.FoldTrace.not_accepts_of_disagreement}
 \leanok
 \uses{thm:fri-query-error}
-For a safe trace with a valid final word and $t>0$, acceptance probability at
-least $(1-\theta)^t$ implies agreement of the initial word with a codeword on
-every accepting position. If $(1-\theta)|D|$ is at least the original degree
-bound, this codeword is unique. Interpolation at that many selected accepting
-positions recovers the polynomial, and a query at a disagreement position
-forces rejection.
+For a safe trace with positive degree bound $d$ and $t>0$, suppose
+$\delta\leq\theta$ and $\delta\leq 1-d/|D|$.
+Acceptance probability at least $(1-\delta)^t$ implies that the initial word is
+within relative distance $\delta$ of its code. A unique codeword agrees with it
+on every accepting position. Interpolation on any $d$ accepting positions
+recovers this codeword, and a query at a disagreement position forces rejection.
 \end{theorem}
 \begin{proof}
 \leanok
-Positive $t$ lets us recover the density bound from the probability bound.
-Agreement lifting supplies a codeword; the Reed--Solomon distance theorem gives
-uniqueness. Lagrange interpolation supplies algebraic recovery. No extraction
-running-time bound is asserted.
+The rate condition and $d>0$ give $\delta<1$, so positive acceptance implies a
+valid final word. Positive $t$ gives accepting density at least $1-\delta$.
+Since $\delta\leq\theta$, agreement lifts to an initial codeword within distance
+$\delta$. Since $\delta\leq 1-d/|D|$, the accepting set has at least $d$ positions,
+giving uniqueness. Lagrange interpolation supplies algebraic recovery on any
+$d$ accepting positions. No extraction running-time bound is asserted.
 \end{proof}
 
 \begin{theorem}\label{thm:fri-soundness}
