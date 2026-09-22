@@ -43,32 +43,8 @@ from the order bounds in `Parameters/WeightedSupport/ScalarParameters.lean` and 
 
 ## References
 
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/Capacity.lean`
-and `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Harmonic.lean` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `capacityDerivativeOrder`, `capacityDerivativeOrder_eq_zero` and
-  `capacityDerivativeOrder_eq_ceil` keep their statements, with the source's literal `27 / 10`
-  written as `WeightedSupportParameters.xi`, which is `27 / 10` by definition.
-* The source's `harmonicNumber r = ∑ i ∈ range r, 1 / (i + 1)` in `ℝ` is not defined: it is the
-  real cast of Mathlib's `harmonic r`, which is what the source's `harmonicNumber_eq_harmonic`
-  (the only declaration of `Parameters/Harmonic.lean`) states, and which the earlier
-  weighted-support files already use. That file is therefore not ported; the acceptance test
-  derives the identity from Mathlib's definition.
-* `weightedSupportMultiplicity` takes the order `d` instead of `δ`: the source's
-  `weightedSupportMultiplicity δ` is `weightedSupportMultiplicity (capacityDerivativeOrder δ)`.
-  The formula agrees with the multiplicity written out in `prescribedBlockBounds` and in
-  `Interpolation/WeightedSupport/Margin.lean`.
-* `weightedSupportAmbientDimension` keeps its statement.
-* `LargeFieldCondition` keeps its statement, with the source's
-  `ReedSolomon.agreementThreshold δ n k` written as `k + ⌈δ * n⌉₊`, the form used in
-  `Parameters/WeightedSupport/Block.lean`.
-* `capacityDerivativeOrder_lower`, `weightedSupportMultiplicity_pos_iff`,
-  `le_weightedSupportMultiplicity` and `capacity_block_bounds` are new; they are specializations of
-  `prescribed_order_lower` and `prescribedBlockBounds` to the definitions above.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], weighted-support parameters.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], weighted-support parameters
 -/
 
 @[expose] public section

@@ -29,25 +29,11 @@ construction does not depend on how the interpolant was found.
 
 * `HiddenDerivative.InterpolationCertificate.solutionEmbedding_polynomial`: the embedding keeps
   the polynomial.
-* `HiddenDerivative.InterpolationCertificate.exists_solution`: the source-shaped existence form.
+* `HiddenDerivative.InterpolationCertificate.exists_solution`: every agreeing polynomial is the
+  polynomial of a bounded solution.
 * `HiddenDerivative.InterpolationCertificate.encard_agreeingPolynomials_le`: the list is no larger
   than the set of bounded solutions.
 
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/SolutionEmbedding.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `HiddenDerivativeInterpolationCertificate.exists_solution` and
-  `HiddenDerivativeInterpolationCertificate.solutionEmbedding` are stated for
-  `InterpolationCertificate` over any domain, which a prime-field certificate extends; dot notation
-  on a prime-field certificate finds them through the parent structure. The source defined the
-  embedding by choice from `exists_solution`; here it is defined directly through
-  `toBoundedSolution`, so `solutionEmbedding_polynomial` is a definitional fact.
-* The private source lemma `exists_boundedSolution_of_polynomial` is inlined: a bounded solution
-  is a subtype of `Polynomial.degreeLT`.
-* `encard_agreeingPolynomials_le` is new; it is the cardinality step of the source's
-  `ListDecodability/Capacity/CertificateRootBound.lean`.
 -/
 
 @[expose] public section

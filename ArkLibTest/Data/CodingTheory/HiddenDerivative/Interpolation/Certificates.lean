@@ -14,9 +14,11 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Certificates
   `m = 1`. Over `ℤ`, `specializes_to_zero` says that a polynomial of degree below `2` equal to `r`
   at `0` and `1` is the constant `r`.
 * Over `ZMod 5` the same polynomial is a prime-field certificate, and `below_characteristic` gives
-  the source's guard; `specializes_to_zero` is reached through the parent structure.
+  `ambientDim - 1 < 5` and jet degrees below `5`; `specializes_to_zero` is reached through the
+  parent structure.
 * A certificate with `A = 0` cannot exist: its weighted degree would be below `m * 0 = 0`.
-* The source's `specializes_to_zero` over `ZMod q`, derived from the general statement.
+* `specializes_to_zero` for a general prime-field certificate over `ZMod q`, derived from the
+  general statement, and `below_characteristic` stated with `ringChar (ZMod q)`.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative ListDecoding
@@ -127,8 +129,7 @@ example {ι R : Type*} [Fintype ι] [CommRing R] {k d m : ℕ} {domain : ι ↪ 
   have := c.weighted_degree_lt
   simp at this
 
-/-- Over `ZMod 5` the source's guard holds: `ambientDim - 1 = 1 < 5` and every jet degree is
-below `5`. -/
+/-- Over `ZMod 5`, `ambientDim - 1 = 1 < 5` and every jet degree is below `5`. -/
 example (r : ZMod 5) :
     (zmodCertificate r).ambientDim - 1 < 5 ∧
       ∀ j, jetDegree (zmodCertificate r).interpolant j < 5 :=
@@ -140,7 +141,7 @@ example (r : ZMod 5) (P : MessagePolynomial (ZMod 5) 2)
     differentialSpecialization (zmodCertificate r).interpolant (P : Polynomial (ZMod 5)) = 0 :=
   (zmodCertificate r).specializes_to_zero P hAgreement
 
-/-- Source shape of `HiddenDerivativeInterpolationCertificate.specializes_to_zero`. -/
+/-- `specializes_to_zero` for a prime-field certificate over `ZMod q`. -/
 example {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
     {received : Fin n → ZMod q}
     (construction : HiddenDerivativeInterpolationCertificate (k := k) (A := A) d m domain received)
@@ -149,7 +150,7 @@ example {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
     differentialSpecialization construction.interpolant (P : Polynomial (ZMod q)) = 0 :=
   construction.specializes_to_zero P hAgreement
 
-/-- Source shape of the `IsBelowCharacteristic` field: `D < ringChar (ZMod q)` and every jet degree
+/-- `below_characteristic` with `ringChar (ZMod q)`: `D < ringChar (ZMod q)` and every jet degree
 is below `ringChar (ZMod q)`, with `D = ambientDim - 1`. -/
 example {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
     {received : Fin n → ZMod q}

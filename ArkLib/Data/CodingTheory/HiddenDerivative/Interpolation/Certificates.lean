@@ -48,34 +48,12 @@ certificates. They are existence statements, not algorithms.
 
 ## References
 
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Certificates.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* The source's `HiddenDerivativeInterpolationCertificate` is split. Its fields that describe the
-  interpolation (`ambientDim`, `messageDim_le`, `ambientDim_le`, `order_lt_degree`, `interpolant`,
-  `nonzero`, `weighted_degree_lt`, `local_constraints`) form `InterpolationCertificate`, stated over
-  a commutative ring `R` with an embedding `domain : ι ↪ R` of a finite index type instead of
-  `Fin n ↪ ZMod q`; `ambientDim_le` reads `ambientDim ≤ Fintype.card ι`. The prime-field structure
-  extends it with the other two fields.
-* The source field `below_characteristic : IsBelowCharacteristic (ambientDim - 1) interpolant`
-  becomes `castsNeZero : ∀ j, JetDegreeCastsNeZero interpolant j`, since the port replaced
-  `IsBelowCharacteristic` by `JetDegreeCastsNeZero` (see
-  `ArkLib.Data.Polynomial.Differential.SingularRecursion`). Over `ZMod q` both halves of the source
-  predicate follow: `HiddenDerivativeInterpolationCertificate.below_characteristic` proves
-  `ambientDim - 1 < q ∧ ∀ j, jetDegree interpolant j < q`, where `ambientDim - 1 < q` comes from
-  `ambientDim ≤ n ≤ q`. The source field `contact_budget_le` is unchanged.
-* The source's `specializes_to_zero` is `InterpolationCertificate.specializes_to_zero`, over a
-  domain; `specializes_to_zero_of_natDegree_le` is new and applies to every polynomial of degree at
-  most `ambientDim - 1`.
-* `UniformHiddenDerivativeInterpolation` and `WeightedSupportConstruction` keep their statements,
-  with the source's `agreementThreshold δ n k` written as `k + ⌈δ * n⌉₊` and the source's
-  `weightedSupportMultiplicity δ` written as
-  `weightedSupportMultiplicity (capacityDerivativeOrder δ)`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], weighted-support interpolation and uniform capacity decoding.
-* [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed-Solomon
-  Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], hidden-derivative interpolation.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], weighted-support interpolation and uniform
+  capacity decoding
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26],
+  hidden-derivative interpolation
 -/
 
 @[expose] public section
@@ -182,10 +160,10 @@ namespace HiddenDerivativeInterpolationCertificate
 
 variable {n q k A d m : ℕ} {domain : Fin n ↪ ZMod q} {received : Fin n → ZMod q}
 
-/-- Over `ZMod q` with `q` prime, the ambient degree and every jet degree of the interpolant are
-below `q`, which is `ringChar (ZMod q)`. This is the source's `IsBelowCharacteristic` guard. The
-first half uses `ambientDim ≤ n ≤ q`, where `n ≤ q` holds because `domain` is injective; the second
-half applies the cast hypothesis at `q`, which is `0` in `ZMod q`. -/
+/-- For prime `q`, the ambient degree and every jet degree of the certificate are strictly below
+`q = ringChar (ZMod q)`. The first half uses `ambientDim ≤ n ≤ q`, where `n ≤ q` holds because
+`domain` is injective; the second half applies the cast hypothesis at `q`, which is `0` in
+`ZMod q`. -/
 theorem below_characteristic [Fact q.Prime]
     (c : HiddenDerivativeInterpolationCertificate (k := k) (A := A) d m domain received) :
     c.ambientDim - 1 < q ∧ ∀ j, jetDegree c.interpolant j < q := by

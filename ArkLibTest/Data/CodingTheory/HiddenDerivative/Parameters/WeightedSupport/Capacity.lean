@@ -14,8 +14,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capa
   `capacityDerivativeOrder_lower`.
 * Small values of `weightedSupportMultiplicity`: `0`, `0`, `400`, `1350` at `d = 0, 1, 2, 3`.
 * Concrete ambient dimensions and the larger-field condition at its boundary.
-* The source's definitions derived from the general ones: the literal `27 / 10`, the source's
-  `harmonicNumber` and `harmonicNumber_eq_harmonic`, the source's `weightedSupportMultiplicity δ`.
+* Unfolded forms of the definitions: the order with the literal `27 / 10`, the sum
+  `∑ i ∈ range r, 1 / (i + 1)` as `harmonic r`, and the multiplicity as a function of `δ`.
 -/
 
 open ReedSolomon ReedSolomon.HiddenDerivative.WeightedSupportParameters
@@ -35,15 +35,14 @@ example : ¬ 48000 ≤ capacityDerivativeOrder (1 / 4) := by simp
 example : 48000 ≤ capacityDerivativeOrder (1 / 8) :=
   (capacityDerivativeOrder_lower (by norm_num) (by norm_num)).1
 
-/-- Source shape: the order written with the literal `27 / 10`. -/
+/-- The order written with the literal `27 / 10`. -/
 example {δ : ℝ} (hδ : δ < 1 / 4) :
     capacityDerivativeOrder δ = Nat.ceil (Real.exp (((27 : ℝ) / 10) / δ)) := by
   rw [capacityDerivativeOrder_eq_ceil hδ, xi]
 
 /-! ### The harmonic number -/
 
-/-- Source shape of `harmonicNumber_eq_harmonic`: the source's `harmonicNumber r`,
-`∑ i ∈ range r, 1 / (i + 1)` in `ℝ`, is the real cast of Mathlib's `harmonic r`. -/
+/-- `∑ i ∈ range r, 1 / (i + 1)` in `ℝ` is the real cast of Mathlib's `harmonic r`. -/
 example (r : ℕ) : ∑ i ∈ Finset.range r, (1 : ℝ) / (i + 1) = (harmonic r : ℝ) := by
   simp [harmonic]
 
@@ -70,7 +69,7 @@ example : weightedSupportMultiplicity 3 = 1350 := by
   rw [weightedSupportMultiplicity, show (3 - 1 : ℕ) = 2 from rfl, h]
   norm_num
 
-/-- Source shape of `weightedSupportMultiplicity δ`, with the source's `harmonicNumber`. -/
+/-- The multiplicity at the order `capacityDerivativeOrder δ`, with the harmonic sum written out. -/
 example (δ : ℝ) :
     let d := capacityDerivativeOrder δ
     weightedSupportMultiplicity d =
@@ -103,8 +102,8 @@ example (q : ℕ) : LargeFieldCondition (1 / 4) 48 10 q 0 0 := by
 
 /-! ### Block bounds -/
 
-/-- Source shape: the conclusions of the source's `prescribedBlockBounds` used by the construction
-targets, stated with the capacity definitions. -/
+/-- The conclusions of `prescribedBlockBounds` used by the construction targets, stated with the
+capacity definitions. -/
 example {δ : ℝ} {n k : ℕ} (hδ : 0 < δ) (hδmax : δ < 1 / 4)
     (hblock : 8 * weightedSupportMultiplicity (capacityDerivativeOrder δ) ≤ n)
     (hA : k + ⌈δ * n⌉₊ ≤ n) :

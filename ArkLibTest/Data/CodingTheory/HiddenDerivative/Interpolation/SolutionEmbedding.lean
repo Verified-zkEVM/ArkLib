@@ -17,7 +17,7 @@ import ArkLibTest.Data.CodingTheory.HiddenDerivative.Interpolation.Certificates
   cardinality is `1`; `encard_agreeingPolynomials_le` then says `BoundedSolution` is nonempty.
 * On the prime-field certificate over `ZMod 5`, `solutionEmbedding` and `exists_solution` are
   reached by dot notation through the parent structure.
-* The source-shaped `exists_solution` and `solutionEmbedding` over `ZMod q`.
+* `exists_solution` and `solutionEmbedding` for a general prime-field certificate over `ZMod q`.
 -/
 
 open Polynomial PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative ListDecoding
@@ -64,7 +64,7 @@ example (r : ZMod 5) (p : agreeingPolynomials zmodDomain 2 2 (fun _ ↦ r)) :
     ((zmodCertificate r).solutionEmbedding p).polynomial = (p.1 : (ZMod 5)[X]) := by
   simp
 
-/-- Source shape of `HiddenDerivativeInterpolationCertificate.exists_solution`. -/
+/-- `exists_solution` for a prime-field certificate over `ZMod q`. -/
 example {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
     {received : Fin n → ZMod q}
     (construction :
@@ -74,7 +74,7 @@ example {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
       solution.polynomial = (p.1 : (ZMod q)[X]) :=
   construction.exists_solution p
 
-/-- Source shape of `HiddenDerivativeInterpolationCertificate.solutionEmbedding`. -/
+/-- `solutionEmbedding` for a prime-field certificate over `ZMod q`. -/
 noncomputable example {n q k A d m : ℕ} [Fact q.Prime] {domain : Fin n ↪ ZMod q}
     {received : Fin n → ZMod q}
     (construction :
