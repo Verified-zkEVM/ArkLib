@@ -128,6 +128,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSu
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Estimate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
@@ -138,6 +139,9 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Endpoints
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.ScalarParameters
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Surplus
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
 public import ArkLib.Data.CodingTheory.InterleavedCode

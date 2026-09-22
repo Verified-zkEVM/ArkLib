@@ -5,7 +5,10 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow
 public import Mathlib.Analysis.Complex.ExponentialBounds
+public import Mathlib.Analysis.SpecialFunctions.Log.Monotone
+public import Mathlib.NumberTheory.Harmonic.Bounds
 public import Mathlib.Analysis.Real.Pi.Bounds
 public import Mathlib.NumberTheory.Harmonic.EulerMascheroni
 public import Mathlib.NumberTheory.ZetaValues
@@ -21,7 +24,8 @@ The logarithmic bound comes from the Euler–Mascheroni constant. Mathlib proves
 strictly to `γ`. Evaluating the second sequence at `n = 32`, where `log 32 = 5 * log 2`, gives
 `γ < 3 / 5`, and then `harmonic n < log (n + 1) + 3 / 5` for every `n`. A comparison of
 `log (√x / 100)` with `√x / 100 - 1` turns this into `harmonic n ^ 2 ≤ (n + 1) / 100` for
-`n ≥ 9999`.
+`n ≥ 9999`. The ratio `(log x + b) / √x` decreases for `x ≥ exp 2` and `b ≥ 0`; at `x = 48000`
+this gives `log x + 3 / 5 ≤ (19 / 365) √x`.
 
 The partial sums of `1 / (i + 1) ^ 2` are below `π ^ 2 / 6 < 329 / 200` by Mathlib's
 `hasSum_zeta_two`. For the third power there is no closed form; the partial sums are bounded by
@@ -35,7 +39,11 @@ twelve exact terms plus the telescoping tail bound
   and its shifted form `Real.harmonic_pred_lt_log_add_three_fifths`.
 * `Real.harmonic_lt_log_add_three_fifths`: `harmonic n < log n + 3 / 5` for `n ≥ 32`.
 * `Real.log_add_three_fifths_le_sqrt_div_ten`: `log x + 3 / 5 ≤ √x / 10` for `x ≥ 10000`.
-* `Real.harmonic_sq_le_succ_div_hundred`: `harmonic n ^ 2 ≤ (n + 1) / 100` for `n ≥ 9999`.
+* `Real.harmonic_sq_le_succ_div_hundred`: `harmonic n ^ 2 ≤ (n + 1) / 100` for `n ≥ 9999`, and the
+  form `Real.sq_le_div_hundred_of_le_log_add_three_fifths` for any `H ≤ log x + 3 / 5`.
+* `Real.log_le_harmonic_pred`: `log d ≤ harmonic (d - 1)` for every natural `d`.
+* `Real.log_add_le_mul_sqrt_of_le` and `Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt`:
+  `log x + b ≤ ((log x₀ + b) / √x₀) √x` for `exp 2 ≤ x₀ ≤ x`, and its case `x₀ = 48000`.
 * `Real.sum_range_one_div_succ_sq_lt_pi_sq_div_six`, `Real.reciprocal_square_sum_lt`,
   `Real.reciprocal_square_sum_gt`, `Real.reciprocal_cube_sum_lt`: bounds on the partial sums of
   `1 / (i + 1) ^ 2` and `1 / (i + 1) ^ 3`.
@@ -131,6 +139,54 @@ theorem harmonic_sq_le_succ_div_hundred {n : ℕ} (hn : 9999 ≤ n) :
     exact_mod_cast (sum_nonneg fun i _ ↦ by positivity : (0 : ℚ) ≤ harmonic n)
   have hsq := sq_sqrt (show (0 : ℝ) ≤ n + 1 by positivity)
   nlinarith [sqrt_nonneg ((n : ℝ) + 1)]
+
+/-- For `x ≥ 10000`, `H ≥ 0` and `H ≤ log x + 3 / 5`, `H ^ 2 ≤ x / 100`. This is
+`log_add_three_fifths_le_sqrt_div_ten` squared; `0 ≤ H` is needed to square the inequality. -/
+theorem sq_le_div_hundred_of_le_log_add_three_fifths {x H : ℝ} (hx : 10000 ≤ x) (hH0 : 0 ≤ H)
+    (hH : H ≤ log x + 3 / 5) : H ^ 2 ≤ x / 100 := by
+  have h := hH.trans (log_add_three_fifths_le_sqrt_div_ten hx)
+  have hs := sq_sqrt (show 0 ≤ x by linarith)
+  nlinarith [sqrt_nonneg x]
+
+/-- For every natural `d`, `log d ≤ harmonic (d - 1)`. This is Mathlib's
+`log_add_one_le_harmonic` at `n = d - 1`; for `d = 0` both sides are `0`. -/
+theorem log_le_harmonic_pred (d : ℕ) : log d ≤ (harmonic (d - 1) : ℝ) := by
+  rcases d with _ | d
+  · simp
+  · simpa using log_add_one_le_harmonic d
+
+/-- For `b ≥ 0` and `exp 2 ≤ x₀ ≤ x`, `log x + b ≤ ((log x₀ + b) / √x₀) √x`. Both `log x / √x`
+(Mathlib's `log_div_sqrt_antitoneOn`) and `b / √x` decrease on `[exp 2, ∞)`. The hypothesis
+`exp 2 ≤ x₀` is where `log x / √x` starts to decrease, and `0 ≤ b` makes `b / √x` decrease. -/
+theorem log_add_le_mul_sqrt_of_le {b x₀ x : ℝ} (hb : 0 ≤ b) (h₀ : exp 2 ≤ x₀) (hx : x₀ ≤ x) :
+    log x + b ≤ (log x₀ + b) / √x₀ * √x := by
+  have hx₀ : 0 < x₀ := (exp_pos 2).trans_le h₀
+  have hs₀ : 0 < √x₀ := sqrt_pos.2 hx₀
+  have hs : 0 < √x := sqrt_pos.2 (hx₀.trans_le hx)
+  have hlog : log x / √x ≤ log x₀ / √x₀ := log_div_sqrt_antitoneOn h₀ (h₀.trans hx) hx
+  have hconst : b / √x ≤ b / √x₀ := div_le_div_of_nonneg_left hb hs₀ (sqrt_le_sqrt hx)
+  rw [← div_le_iff₀ hs, add_div, add_div]
+  linarith
+
+/-- For `x ≥ 48000`, `log x + 3 / 5 ≤ (19 / 365) √x`. This is `log_add_le_mul_sqrt_of_le` at
+`x₀ = 48000`, with `log 48000 < 54 / 5` and `√48000 > 219`, since
+`(54 / 5 + 3 / 5) / 219 = 19 / 365`. -/
+theorem log_add_three_fifths_le_nineteen_div_365_mul_sqrt {x : ℝ} (hx : 48000 ≤ x) :
+    log x + 3 / 5 ≤ 19 / 365 * √x := by
+  have hexp2 : exp 2 ≤ (48000 : ℝ) := by
+    rw [show (2 : ℝ) = 1 + 1 by norm_num, exp_add]
+    nlinarith [exp_one_lt_d9, exp_pos 1]
+  have hsqrt : (219 : ℝ) < √48000 := by
+    rw [lt_sqrt (by norm_num)]
+    norm_num
+  have hlog : log 48000 < (54 / 5 : ℝ) :=
+    (log_lt_iff_lt_exp (by norm_num)).mpr fortyEightThousand_lt_exp_fiftyFour_div_five
+  have hlog0 : 0 ≤ log (48000 : ℝ) := log_nonneg (by norm_num)
+  have hratio : (log 48000 + 3 / 5) / √48000 ≤ 19 / 365 := by
+    rw [div_le_iff₀ (by linarith)]
+    nlinarith
+  refine (log_add_le_mul_sqrt_of_le (by norm_num) hexp2 hx).trans ?_
+  gcongr
 
 /-- Every partial sum `∑ i ∈ range n, 1 / (i + 1) ^ 2` is strictly below `π ^ 2 / 6`, the sum of
 the series (Mathlib's `hasSum_zeta_two`). The inequality is strict because the omitted terms are

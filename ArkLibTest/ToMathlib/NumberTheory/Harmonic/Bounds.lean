@@ -11,7 +11,8 @@ import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 
 Non-strict forms with dimension thresholds and summands written as `(1 / (i + 1)) ^ k`, derived
 from the general statements; numerical consequences at small and large indices; and the sharpness
-of the threshold `8 ≤ n` in `Real.reciprocal_square_sum_gt`.
+of the threshold `8 ≤ n` in `Real.reciprocal_square_sum_gt`. For the square-root comparison: its
+value at `x = 48000`, its equality case `x = x₀`, and the case showing that `exp 2 ≤ x₀` is needed.
 -/
 
 open Finset Real
@@ -89,3 +90,22 @@ example : ∑ i ∈ range 0, 1 / ((i : ℝ) + 1) ^ 2 < π ^ 2 / 6 :=
 to about `1.5118 < 38 / 25`. -/
 example : ¬ (38 / 25 : ℝ) < ∑ i ∈ range 7, 1 / ((i : ℝ) + 1) ^ 2 := by
   norm_num [sum_range_succ]
+
+/-! ### The square-root comparison -/
+
+/-- `Real.log_le_harmonic_pred` at `d = 1` is the equality `log 1 = 0 = harmonic 0`. -/
+example : log ((1 : ℕ) : ℝ) = (harmonic (1 - 1) : ℝ) := by simp
+
+/-- At `x = x₀` the square-root comparison is an equality. -/
+example {b x₀ : ℝ} (h₀ : exp 2 ≤ x₀) : (log x₀ + b) / √x₀ * √x₀ = log x₀ + b := by
+  have : 0 < √x₀ := sqrt_pos.2 ((exp_pos 2).trans_le h₀)
+  field_simp
+
+/-- The hypothesis `exp 2 ≤ x₀` is needed in `Real.log_add_le_mul_sqrt_of_le`: at `b = 0`,
+`x₀ = 1`, `x = exp 2` the left side is `2` and the right side is `0`. -/
+example : ¬ (log (exp 2) + 0 ≤ (log 1 + 0) / √1 * √(exp 2)) := by
+  simp
+
+/-- At the threshold `x = 48000`: `log 48000 + 3 / 5 ≤ (19 / 365) √48000`. -/
+example : log 48000 + 3 / 5 ≤ (19 / 365 : ℝ) * √48000 :=
+  log_add_three_fifths_le_nineteen_div_365_mul_sqrt le_rfl
