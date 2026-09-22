@@ -79,8 +79,10 @@ AggregationBounds,UnifiedBudget}.lean` at ArkLib revision
   The fixed-split summation is derived from the free-retention one through the new
   `ordinaryUnifiedPowerFactorRaw_eq_rawAt`, instead of repeating the proof.
 
-The consumers of these budgets (factor assembly, the Frobenius and polynomial-curve incidence
-bounds, and the unified curve theorem) are deferred to later slices.
+The factor assembly that consumes these budgets is in
+`ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorAssembly`. The
+other consumers (the Frobenius and polynomial-curve incidence bounds, and the unified curve
+theorem) are deferred to later slices.
 -/
 
 @[expose] public section

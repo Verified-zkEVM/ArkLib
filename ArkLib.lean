@@ -227,6 +227,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.FullAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorAssembly
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorBudget
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
@@ -567,6 +568,7 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
+public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
@@ -574,6 +576,7 @@ public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 public import ArkLib.ToMathlib.Polynomial.EvalExt
 public import ArkLib.ToMathlib.Polynomial.EventualGrowth
+public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
@@ -581,6 +584,7 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+public import ArkLib.ToMathlib.Polynomial.SparseContraction
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree
@@ -592,4 +596,5 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
+public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
