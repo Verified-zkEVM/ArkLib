@@ -1731,11 +1731,7 @@ differential polynomial over an infinite domain instead of the separant over a f
 
 Deferred: `Geometry/SolutionExtension.lean` and `Geometry/SolutionEmbedding.lean`, which need the
 coefficient-map lemmas for differential specialization.
-Deferred: the Hilbert-degree statements of `Geometry/InitialGeometry.lean`
-(`initialJetPrimeFamily_hilbertPolynomial_natDegree` and the two affine-degree sums), which need
-the hypersurface purity results of P5; `Geometry/HighCutGeometry.lean` apart from the cut degree
-bound, which needs the iterated retained cuts and the agreement incidence bound of P5; and
-`Geometry/SolutionExtension.lean` and `Geometry/SolutionEmbedding.lean`, which need the
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean`
 
 Ported from
