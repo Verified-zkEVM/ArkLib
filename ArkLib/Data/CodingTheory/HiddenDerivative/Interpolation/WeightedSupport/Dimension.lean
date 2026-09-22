@@ -43,26 +43,13 @@ sum_{c ∈ natWeightedSimplex (i + 1) W} CubicStaircase.count D (L / D - ∑ i, 
   the exact staircase sum bounds the number of eligible exponents and the dimension.
 * `weightedSupport_dimension_ge_cubic_sum`: the cubic lower bound on the dimension.
 
+The integral and probability forms of the bound are in `WeightedSupport/Estimate.lean`.
+
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`Dimension.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source's
-coordinates `exactExponentCoordinatesEquiv` are `jetExponentCoordinatesEquiv` of
-`Interpolation/Dimension.lean`, its `weightedHigherJetTuples d W` is
-`Finset.natWeightedSimplex (fun i : Fin (d - 1) ↦ i.val + 1) W` and its `higherJetTupleDegree c`
-is `∑ i, c i`. The source's dependent type `WeightedSupportSlot` and its `Fintype` instance are
-replaced by the `Finset.sigma` of the lattice simplex with the slot types; accordingly
-`weightedSupportSlotExponent` takes the tuple `c` and the slot as separate arguments,
-`weightedSupportSlotExponent_eligible` assumes `c` lies in the simplex, and
-`card_weightedSupportSlot_le` with `card_weightedSupportSlot_eq` become
-`sum_count_le_card_weightedSupportExponents`. The source's
-`weightedSupport_dimension_ge_cubic_sum` keeps its statement. The coordinate lemma
-`weightedSupportEligible_coordinates_iff` and the intermediate
-`sum_count_le_finrank_weightedSupportSpace` are new. The integral and probability forms of the
-bound are in `WeightedSupport/Estimate.lean`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70) and its
+  coefficient count (71).
 -/
 
 @[expose] public section

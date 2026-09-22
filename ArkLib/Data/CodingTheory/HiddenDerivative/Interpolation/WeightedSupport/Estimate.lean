@@ -41,26 +41,8 @@ bounds of `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds` discharge the hypothes
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
-
-* `WeightedSupportParameters.weighted_dimension_integral` (`FloorTransfer.lean`). As in the port of
-  `weighted_floor_integral`, the pointwise hypotheses `hu` and `hW` become
-  `T ⊆ Set.weightedSimplex _ W` and the hypothesis `0 ≤ g * m` is dropped.
-* `weighted_dimension_probability` (`Estimate.lean`). The integral against the source's
-  `weightedSimplexProbabilityMeasure` is the set average over the simplex, following
-  `WeightedSupport/Moments.lean`, and its `harmonicPowerSum (d - 1) 1` is `harmonic (d - 1)`. The
-  hypotheses `0 < W` and `0 < g * m` are dropped: for `g * m = 0` the left side is `0`, and when
-  the simplex has volume zero the product of its volume with the set average is `0`.
-
-* `weighted_dimension_lower` (`Estimate.lean`). The hypothesis `48000 ≤ d` is weakened to
-  `10000 ≤ d`, the threshold of `Real.harmonic_sq_le_succ_div_hundred`; the source needed `48000`
-  only for its version of `normalizedRadius_contribution_lower`, whose port drops it. The
-  hypotheses `0 < W` and `0 < g * m` are dropped: for `W = 0` the volume factor is `0`, and for
-  `g * m ≤ 0` the left side is at most `0`. Its `harmonicPowerSum (d - 1) 1` is `harmonic (d - 1)`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the coefficient count (71).
 -/
 
 @[expose] public section

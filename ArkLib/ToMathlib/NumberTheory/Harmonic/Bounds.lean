@@ -39,30 +39,6 @@ twelve exact terms plus the telescoping tail bound
 * `Real.sum_range_one_div_succ_sq_lt_pi_sq_div_six`, `Real.reciprocal_square_sum_lt`,
   `Real.reciprocal_square_sum_gt`, `Real.reciprocal_cube_sum_lt`: bounds on the partial sums of
   `1 / (i + 1) ^ 2` and `1 / (i + 1) ^ 3`.
-
-## References
-
-Ports declarations of `ArkLib/ToMathlib/NumberTheory/Harmonic/Bounds.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-
-* `Real.harmonic_pred_le_log_add_three_fifths` required `33 ≤ d`. Here it is the strict
-  `harmonic_pred_lt_log_add_three_fifths`, which holds for every `d`, because it is proved through
-  `γ < 3 / 5` and the increasing sequence `harmonic n - log (n + 1)`.
-* `Real.harmonic_le_log_add_three_fifths` becomes the strict `harmonic_lt_log_add_three_fifths`
-  with the same threshold `32 ≤ n`. The threshold is not sharp: the inequality first holds at
-  `n = 22`, but proving that needs a lower bound on `log 22` to about four decimal places.
-* `Real.log_add_three_fifths_le_sqrt_div_ten` is ported unchanged.
-* `harmonic_sq_le_succ_div_hundred` is new; it combines the two previous bounds and generalizes
-  `WeightedSupportParameters.harmonic_square_bound` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/ScalarParameters.lean`
-  in the case `H = harmonic (d - 1)`, where the hypothesis `H ≤ log d + 3 / 5` now always holds.
-* `Real.reciprocal_square_sum_lt` is proved from the new, sharper
-  `sum_range_one_div_succ_sq_lt_pi_sq_div_six` instead of a telescoping tail.
-* `Real.reciprocal_square_sum_gt` and `Real.reciprocal_cube_sum_lt` are ported with the summand
-  written as `1 / (i + 1) ^ k` instead of `(1 / (i + 1)) ^ k`.
-
-Deferred: the source's `Real.reciprocal_fourth_sum_lt`, which has no consumer. It would follow from
-Mathlib's `hasSum_zeta_four` in the same way as the square bound.
 -/
 
 @[expose] public section
