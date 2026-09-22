@@ -32,6 +32,7 @@ nonnegative numerator by `⌊R⌋₊` instead of `R ≥ 1` therefore costs at mo
 
 * `Nat.cast_ceil_le_max_add_one`, `Nat.cast_ceil_sub_le_max_sub_add_one`
 * `Nat.one_div_floor_le`, `Nat.div_floor_bounds`
+* `Nat.one_sub_one_div_mul_lt_floor`: `(1 - 1 / N) R < ⌊R⌋₊` for `0 < N ≤ R`
 -/
 
 @[expose] public section
@@ -99,5 +100,16 @@ theorem div_floor_bounds {R N : K} (hR : 1 ≤ R) (hN : 0 ≤ N) :
   calc N / (⌊R⌋₊ : K) = N * (1 / (⌊R⌋₊ : K)) := by ring
     _ ≤ N * ((1 + 2 / R) / R) := h
     _ = N / R * (1 + 2 / R) := by ring
+
+/-- Once `R ≥ N > 0`, the floor of `R` loses less than the fraction `1 / N` of `R`:
+`(1 - 1 / N) R < ⌊R⌋₊`. The absolute error of the floor is below `1`, and `1 ≤ R / N`. The
+hypothesis `N ≤ R` is needed: at `N = 2`, `R = 1 / 2` the left side is `1 / 4` and the floor is
+`0`. -/
+theorem one_sub_one_div_mul_lt_floor {N R : K} (hN : 0 < N) (hNR : N ≤ R) :
+    (1 - 1 / N) * R < ⌊R⌋₊ := by
+  have h1 : 1 ≤ R / N := (one_le_div hN).mpr hNR
+  have h := Nat.sub_one_lt_floor R
+  have heq : (1 - 1 / N) * R = R - R / N := by ring
+  linarith
 
 end Nat
