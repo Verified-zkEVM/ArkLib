@@ -100,6 +100,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
@@ -328,6 +329,7 @@ public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
+public import ArkLib.Data.Polynomial.Differential.RegularLift
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.TaylorResidual
 public import ArkLib.Data.Polynomial.Differential.Types
@@ -572,6 +574,7 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
@@ -584,14 +587,17 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
+public import ArkLib.ToMathlib.RingTheory.Ideal.Separator
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComponents
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials

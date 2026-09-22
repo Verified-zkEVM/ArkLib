@@ -28,6 +28,8 @@ differential specialization of `Q` at `P`. Every statement holds over a commutat
 * `taylorAlgHom_comp_differentialSpecializationHom`: Taylor translation after differential
   specialization is the shifted-jet substitution.
 * `taylor_differentialSpecialization`: the same identity applied to one polynomial.
+* `coeff_zero_shiftedJetSubstitution`: the constant coefficient is the jet evaluation at the
+  center.
 
 ## References
 
@@ -39,6 +41,11 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `shiftedJetSubstitutio
 source stated them over a commutative ring in the namespace `ReedSolomon.HiddenDerivative`; they
 mention no Reed–Solomon object, so they are stated here over a commutative semiring, next to the
 differential specialization they translate. Nothing is deferred.
+
+`coeff_zero_shiftedJetSubstitution` generalizes the source's
+`eval_zero_shiftedJetSubstitution_separant` in
+`.../HiddenDerivative/RootFinding/Regular/Lifting.lean` from the separant over a field to any
+differential polynomial over a commutative semiring.
 -/
 
 @[expose] public section
@@ -98,6 +105,14 @@ theorem taylor_differentialSpecialization (Q : DifferentialPolynomial R d) (cent
   rw [← taylorAlgHom_comp_differentialSpecializationHom, AlgHom.comp_apply,
     differentialSpecializationHom_apply]
   rfl
+
+/-- The constant coefficient of the shifted-jet substitution is `Q` evaluated at the center and
+the Hasse jet of `P` there. -/
+theorem coeff_zero_shiftedJetSubstitution (Q : DifferentialPolynomial R d) (center : R)
+    (P : R[X]) :
+    (shiftedJetSubstitution center P Q).coeff 0 =
+      jetEvaluation Q center (polynomialJet center P) := by
+  rw [← taylor_differentialSpecialization, taylor_coeff_zero, eval_differentialSpecialization]
 
 end
 
