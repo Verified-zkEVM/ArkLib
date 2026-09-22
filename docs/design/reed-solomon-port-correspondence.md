@@ -2219,13 +2219,14 @@ Ported from the Hilbert-function and affine-degree part of
 and `_le_rectangleDifference` are now
 `affineHilbertFunction_comap_cappedBidegree_span_singleton_add_le`, for any finite `σ`.
 `derivativeBidegreeHypersurface_affineDegree_le_two_of_lt` is now
-`affineDegree_comap_cappedBidegree_span_singleton_le`, without `r ≤ j` or properness and with
-`c ≤ b` in place of `c < b`.
+`affineDegree_comap_cappedBidegree_span_singleton_le`, without `r ≤ j`, properness or `c < b`,
+with the bound `cappedBidegreeMixedVolume h j r a b c`.
 `derivativeBidegreeHypersurface_sum_minimalPrimes_affineDegree_le_two_of_lt` is now
 `sum_affineDegree_minimalPrimes_comap_cappedBidegree_span_singleton_le`.
-`cappedRectangleDifferenceTwo` and its coefficient, evaluation and degree lemmas,
-`mixedDerivativeImageDegree`, `fixedFiberDerivativeImageDegree` and their lemmas are not ported as
-declarations; the bound is written out in the statements.
+`cappedRectangleDifferenceTwo` and its coefficient, evaluation and degree lemmas are not ported
+as declarations. `mixedDerivativeImageDegree` and `fixedFiberDerivativeImageDegree` are
+`cappedBidegreeMixedVolume` and `cappedDegreeMixedVolume` (see the sections for
+`CappedBidegree.lean` and `CappedDegree.lean`).
 
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineHilbertCappedDegree.lean`
 
@@ -2234,7 +2235,8 @@ Ported from the Hilbert-function and affine-degree part of
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `twoJetHypersurface_hilbertFunction_le` is now
 `affineHilbertFunction_comap_cappedDegree_span_singleton_add_le`, for any finite `σ` and cap
 coordinate `i`. `twoJetHypersurface_affineDegree_le` is now
-`affineDegree_comap_cappedDegree_span_singleton_le`, without `c ≤ b` or properness, and
+`affineDegree_comap_cappedDegree_span_singleton_le`, without `c ≤ b` or properness and with the
+bound `cappedDegreeMixedVolume j r b c`, and
 `twoJetHypersurface_affineDegree_le_of_shift` is a private lemma.
 `twoJetHypersurface_sum_minimalPrimes_affineDegree_le_bound` is now
 `sum_affineDegree_minimalPrimes_comap_cappedDegree_span_singleton_le`, without `c ≤ b`,
@@ -2440,10 +2442,11 @@ Ported from the index and submodule part of
 `finrank_restrictCappedBidegree`, and `derivativeBidegreeMap_surjective` is now
 `monomialMap_cappedBidegreeExponents_surjective`. `twoJetMonomialCount`,
 `natCard_cappedTwoJetIndex` and `cast_twoJetMonomialCount` are now
-`Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le`; `CappedTwoJetIndex` and
-`cappedTwoJetEquiv` are a private equivalence. `derivativeBidegreeIdeal` is
-`RingHom.ker (monomialMap k (cappedBidegreeExponents σ i a b c))`. `twoJetMonomialCount_mono`,
-`cappedTriangleDegree_le` and `b_le_cappedTriangleDegree` are not ported.
+`two_mul_ncard_cappedDegreeExponents_fin_two` in `CappedDegree.lean`, and `CappedTwoJetIndex` and
+`cappedTwoJetEquiv` are `cappedDegreeExponents (Fin 2) 1 b c` and
+`cappedDegreeExponentsFinTwoEquiv`. `derivativeBidegreeIdeal` is
+`RingHom.ker (monomialMap k (cappedBidegreeExponents σ i a b c))`. `twoJetMonomialCount_mono` is
+not ported.
 
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedDegree.lean`
 
@@ -2453,7 +2456,7 @@ Ported from the exponent and submodule part of
 `Fin 2` and `1`. `restrictTwoJet` is now `restrictCappedDegree`, with `mem_restrictTwoJet`,
 `mul_mem_restrictTwoJet` and `finrank_restrictTwoJet` now `mem_restrictCappedDegree`,
 `mul_mem_restrictCappedDegree` and `finrank_restrictCappedDegree` (the source's closed form
-follows from `Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le`). `twoJetMap` is
+follows from `two_mul_ncard_cappedDegreeExponents_fin_two`). `twoJetMap` is
 `monomialMap k (cappedDegreeExponents (Fin 2) 1 b c)`, and `twoJetMap_surjective` is now
 `monomialMap_cappedDegreeExponents_surjective`. `twoJetMap_totalDegree_le` and
 `twoJetMap_derivativeDegree_le` are now `monomialMap_mem_restrictCappedDegree`. `twoJetLift` and
