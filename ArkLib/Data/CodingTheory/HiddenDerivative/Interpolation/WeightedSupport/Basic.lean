@@ -34,8 +34,8 @@ budgets directly.
 ## Main statements
 
 * `WeightedSupportEligible`, `weightedSupportExponents`, `weightedSupportSpace` and
-  `weightedSupportSpaceBasis`, with `weightedSupportEligible_finite` and
-  `finrank_weightedSupportSpace_eq_card`.
+  `weightedSupportSpaceBasis`, with `weightedSupportEligible_finite`, the `Module.Finite`
+  instance and `finrank_weightedSupportSpace_eq_card`.
 * `totalJetDegree_lt_of_weightedSupportEligible` and
   `totalJetDegree_le_pred_of_weightedSupportEligible`: the cutoff bounds the total jet degree by
   `L / D`.
@@ -118,6 +118,11 @@ def weightedSupportSpaceBasis (F : Type*) [CommSemiring F] (D d W : ℕ) (L : �
     Module.Basis ↥(weightedSupportExponents D d W L hD) F (weightedSupportSpace F D d W L hD) :=
   MvPolynomial.basisRestrictSupport (R := F)
     (↑(weightedSupportExponents D d W L hD) : Set (JetVariable d →₀ ℕ))
+
+/-- The weighted support space is a finite module: `weightedSupportSpaceBasis` is indexed by the
+finite set `weightedSupportExponents D d W L hD`. -/
+instance [CommSemiring F] (hD : 0 < D) : Module.Finite F (weightedSupportSpace F D d W L hD) :=
+  Module.Finite.of_basis (weightedSupportSpaceBasis F D d W L hD)
 
 /-- Over a field, the dimension of the weighted support space is the number of eligible
 exponents. -/
