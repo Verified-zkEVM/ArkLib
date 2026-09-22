@@ -11,8 +11,8 @@ public import Mathlib.Algebra.BigOperators.Intervals
 /-!
 # Exact Johnson interpolation counts
 
-This file proves the finite counting inequality behind the order-zero BCHKS interpolant with the
-rounded Johnson parameters of `FiniteBounds`. The ceilings are kept literally. With
+This file proves the finite counting inequality behind the order-zero interpolant of [BCHKS25]
+with the rounded Johnson parameters of `FiniteBounds`. The ceilings are kept literally. With
 `X = ⌈t n √ρ₋⌉₊` (`johnsonXCutoff`), the source monomials `x^i y^j z^k` satisfy `i + D j < X`,
 `j ≤ μ` and `k ≤ h`, so a column of `y`-degree `j` contributes `(X - D j)(h + 1 - j)`
 coefficients after the interpolant is reduced along the challenge coordinate
@@ -30,15 +30,8 @@ coefficients after the interpolant is reduced along the challenge coordinate
 
 ## References
 
-Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d,
-`Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Johnson/InterpolationBounds.lean`, which
-has the same declarations. The source range guard `D ≤ n - 2` is weakened to `D < n` everywhere,
-matching the weakened lemmas of `FiniteBounds`. `johnsonXCutoff_le_mul_agreement` no longer assumes
-`1 ≤ D` or `D < n`: the ceiling in `johnsonM` alone gives `√ρ₋ / 2 ≤ m η`. The source import of
-`WeightedCertificate` was unused and is dropped. BCHKS Lemma 3.1 is the informal counterpart of
-`johnson_interpolation_slot_surplus`.
-
-The construction of the interpolant from this surplus is not in this file.
+* [Ben-Sasson, E., Carmon, D., Haböck, U., Kopparty, S., and Saraf, S., *On Proximity Gaps
+  for Reed–Solomon Codes*][BCHKS25], full version, Lemma 3.1
 -/
 @[expose] public section
 
@@ -127,7 +120,7 @@ private theorem rowSlotCount_cast {n m h : ℕ} (hmh : m ≤ h + 1) :
           push_cast
           ring
 
-/-- The candidate cutoff plus one is the literal ceiling `⌈t / √ρ₋⌉₊` used by BCHKS. The guards
+/-- The candidate cutoff plus one is the literal ceiling `⌈t / √ρ₋⌉₊`. The guards
 `1 ≤ D < n` make `ρ₋ > 0`, so the ceiling is at least `1` and the truncated subtraction in
 `johnsonMu` is exact. -/
 theorem johnsonMu_add_one {n D : ℕ} {eta : ℝ}
@@ -234,7 +227,7 @@ theorem johnson_D_mul_mu_lt_XCutoff {n D : ℕ} {eta : ℝ}
   have hcast := hlt.trans_le hceil
   exact_mod_cast hcast
 
-/-- The strict BCHKS source cutoff fits below the multiplicity budget supplied by the
+/-- The strict weighted-degree cutoff `X` fits below the multiplicity budget supplied by the
 agreement threshold: `X ≤ m A` whenever `(√ρ₋ + η) n ≤ A`. This is the rounded form of
 `(m + 1/2) √ρ₋ ≤ m (√ρ₋ + η)`, which holds because the ceiling in `johnsonM` gives
 `√ρ₋ / 2 ≤ m η` for `η > 0`. No range guard on `D` is needed. -/
@@ -262,7 +255,7 @@ theorem johnsonXCutoff_le_mul_agreement {n D A : ℕ} {eta : ℝ}
   unfold johnsonXCutoff
   exact Nat.ceil_le.mpr hreal
 
-private theorem bchks_source_lower {d X dy y z : ℝ}
+private theorem staircase_closed_form_lower {d X dy y z : ℝ}
     (hd : 0 ≤ d) (hdy : 0 ≤ dy) (hdy_y : dy ≤ y) (hy : 0 ≤ y)
     (hy_lt : y < dy + 1) (hyz : y ≤ z) (hdX : d * dy ≤ X) :
     d * (dy * (dy + 1) / 2 * z - (dy ^ 3 - dy) / 6) ≤
@@ -296,9 +289,8 @@ private theorem bchks_source_lower {d X dy y z : ℝ}
           (X - d * dy) * (y * z - y * (y - 1) / 2) := by ring
   nlinarith [hroundId, hxgainId]
 
-/-- The exact rounded Johnson cutoffs have strictly more source coefficients than scalar
-multiplicity equations. This is the finite form of BCHKS Lemma 3.1. The guards `1 ≤ D < n` make
-`ρ₋ ∈ (0, 1)`, which every cutoff comparison above uses. -/
+/-- At the rounded Johnson cutoffs, the source-slot count strictly exceeds the row-slot count
+under the guards `1 ≤ D < n`, which make `ρ₋ ∈ (0, 1)`. -/
 theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D < n) :
     johnsonRowSlotCount n (johnsonM n D eta) (johnsonH n D eta) <
@@ -348,7 +340,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
     rw [heq]
     unfold Xc johnsonXCutoff
     exact Nat.le_ceil _
-  have hsourceLower := bchks_source_lower
+  have hsourceLower := staircase_closed_form_lower
     (d := (D : ℝ)) (X := (Xc : ℝ)) (dy := dy)
     (y := ((μ + 1 : ℕ) : ℝ)) (z := (z : ℝ))
     (by positivity) hdy0 hdy_y (by positivity) hy_lt hyz hX

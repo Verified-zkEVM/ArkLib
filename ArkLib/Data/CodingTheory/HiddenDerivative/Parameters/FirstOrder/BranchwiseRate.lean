@@ -25,13 +25,6 @@ constant on the low branch and depends on the agreement `a` on the upper branch.
 - `firstOrderBranch_surplus_pos`: above the piecewise threshold, the limiting source density
   exceeds the limiting rank density.
 
-## References
-
-Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d,
-`Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/BranchwiseRate.lean`, which
-has the same declarations. Hypotheses were trimmed to what each branch uses:
-`firstOrderBranchBeta_pos` needs `ρ < 2` instead of `ρ < 1` and no threshold hypothesis, and
-`firstOrderBranchBeta_lt_agreement_div_rate` no longer assumes `a < 1`.
 -/
 @[expose] public section
 
@@ -39,13 +32,13 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-/-- The paper's piecewise first-order agreement curve `a₁(rho)`.
+/-- The piecewise first-order agreement curve `a₁(rho)`.
 
 Below `firstOrderRateSwitch = 11 - 3*sqrt 13`, this is the low-rate stationary value
 `sqrt(rho/2) * (1 + u)`, where the positive `u` satisfies
 `u^2 * (u + 3) = sqrt(rho/2)`. At and above the cutoff it is the clean upper-branch formula
 `(3*rho + 2*sqrt(rho*(5-rho)*(2-rho))) / (8-rho)`. Headline theorems require a strictly positive
-gap above this curve; this definition does not encode the removed zero-gap endpoint corollary. -/
+gap above this curve. -/
 def firstOrderBranchThreshold (rho : ℝ) : ℝ :=
   -- The strict comparison assigns the cutoff itself to the upper branch.
   if rho < firstOrderRateSwitch then firstOrderLowRateThreshold rho

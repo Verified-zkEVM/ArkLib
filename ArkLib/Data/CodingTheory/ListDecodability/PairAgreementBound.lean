@@ -26,12 +26,6 @@ Unlike the relative-radius bound `Code.card_le_of_pairwise_agree_le` in `Agreeme
 first bound keeps the exact square, so it still gives integral bounds at boundary parameters. It
 reuses `Code.sq_sum_agree_le`.
 
-## References
-
-Ported without change of statement from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d,
-`Data/CodingTheory/ListDecodability/PairAgreementBound.lean`, declarations
-`Code.card_mul_sq_minAgreement_sub_pairAgreement_le`, `Code.card_le_one_of_pairwise_agree_le` and
-`Code.card_mul_minAgreement_le_of_pairwise_agree_eq_zero`.
 -/
 @[expose] public section
 

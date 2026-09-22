@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Branchwis
 /-!
 # Branchwise first-order rate acceptance tests
 
-The upper branch evaluated at `ρ = 1/2`, the source-shaped statement of
-`firstOrderBranchBeta_pos`, and a case showing that `a < 1` is needed there.
+The upper branch evaluated at `ρ = 1/2`, `firstOrderBranchBeta_pos` under the stronger
+hypotheses `ρ < 1` and a threshold bound, and a case showing that `a < 1` is needed there.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -34,8 +34,8 @@ example : firstOrderBranchBeta (1 / 2) (3 / 4) = 1 / 4 := by
   rw [firstOrderBranchBeta_eq_clean rateSwitch_lt_half.le, firstOrderRateBeta]
   norm_num
 
-/-- Source-shaped statement of `firstOrderBranchBeta_pos`, with the source hypotheses
-`ρ < 1` and a threshold hypothesis that the ported statement no longer needs. -/
+/-- `firstOrderBranchBeta_pos` under the stronger hypotheses `ρ < 1` and a threshold bound,
+neither of which it needs. -/
 example {rho a : ℝ} (hrho : 0 < rho) (hrhoOne : rho < 1)
     (_ha : firstOrderBranchThreshold rho < a) (haOne : a < 1) :
     0 < firstOrderBranchBeta rho a :=

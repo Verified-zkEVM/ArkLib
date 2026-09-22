@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.Interpolatio
 /-!
 # Johnson interpolation count acceptance tests
 
-The instance `n = 4`, `D = 1`, `η = 1` computed in full, the source-shaped statement under the
-source guard `D ≤ n - 2`, and a case showing that `1 ≤ D` is needed in `johnsonMu_add_one`.
+The instance `n = 4`, `D = 1`, `η = 1` computed in full, the slot surplus under the stronger
+guard `D ≤ n - 2`, and a case showing that `1 ≤ D` is needed in `johnsonMu_add_one`.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -67,9 +67,9 @@ example : johnsonXCutoff 4 1 1 ≤ johnsonM 4 1 1 * 6 :=
   johnsonXCutoff_le_mul_agreement one_pos (by
     rw [johnsonAgreement, sqrt_rho_4_1]; norm_num)
 
-/-! ### Source-shaped statement -/
+/-! ### The guard `D ≤ n - 2` -/
 
-/-- The source statement, with guard `D ≤ n - 2`, follows from the weakened guard `D < n`. -/
+/-- The slot surplus under the guard `D ≤ n - 2` follows from the form with `D < n`. -/
 example {n D : ℕ} {eta : ℝ} (hD : 1 ≤ D) (hDn : D ≤ n - 2) :
     johnsonRowSlotCount n (johnsonM n D eta) (johnsonH n D eta) <
       johnsonSourceSlotCount (johnsonXCutoff n D eta) D
