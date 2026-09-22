@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Yoichi Hirai, Pietro Monticone, Aristotle (Harmonic), Alexander Hicks
 -/
 
 module
@@ -21,6 +21,7 @@ We follow the March 27, 2026 revision: the tradeoff parameter is independent of 
 distance, and the size threshold is non-strict. The proof strategy was also informed by
 [zkSecurity's Lean formalization](https://github.com/zksecurity/simple-rbr-fri), credited there
 to Yoichi Hirai and Harmonic's Aristotle, with subsequent work by Pietro Monticone.
+The author list credits that source formalization and Alexander Hicks's ArkLib adaptation.
 We reuse ArkLib's definitions throughout.
 
 ## References

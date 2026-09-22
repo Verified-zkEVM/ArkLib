@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Yoichi Hirai, Pietro Monticone, Aristotle (Harmonic), Alexander Hicks
 -/
 
 module
@@ -30,7 +30,9 @@ for every subset of accepting positions of the required size; no complexity boun
   of FRI*][GMW25]
 
 The proof strategy is also informed by
-[zkSecurity's formalization](https://github.com/zksecurity/simple-rbr-fri).
+[zkSecurity's formalization](https://github.com/zksecurity/simple-rbr-fri), by Yoichi Hirai
+and Harmonic's Aristotle, with subsequent work by Pietro Monticone. The author list credits
+that source formalization and Alexander Hicks's ArkLib adaptation.
 -/
 
 @[expose] public section
