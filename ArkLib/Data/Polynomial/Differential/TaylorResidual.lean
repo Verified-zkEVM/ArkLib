@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.TaylorPrefix
+public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 
@@ -44,6 +45,8 @@ Specializing the coefficient variables to `c : ℕ → R` recovers the Taylor ex
 * `weight_le_of_mem_universalTaylorResidual_coeff`: the Taylor-weight bound.
 * `denominator_weight_le_of_mem_universalTaylorResidual_coeff`: the separant-denominator budget.
 * `totalDegree_universalTaylorResidual_coeff_le`: the total-degree bound.
+* `map_universalTaylorResidual` and `map_universalTaylorResidual_coeff`: coefficient maps commute
+  with the residual and its displacement coefficients.
 * `map_optionEquivLeft_universalTaylorResidual` and `aeval_universalTaylorResidual_coeff`:
   specialization to an explicit centered coefficient prefix.
 
@@ -204,6 +207,41 @@ theorem totalDegree_universalTaylorResidual_coeff_le {r : ℕ} (K : ℕ) (center
   rw [← weightedTotalDegree_one]
   exact (weightedTotalDegree_coeff_optionEquivLeft_le _ _ _).trans
     (weightedTotalDegree_universalTaylorResidual_le K center Q)
+
+/-! ### Coefficient maps -/
+
+section Map
+
+variable {A B : Type*} [CommSemiring A] [CommSemiring B]
+
+/-- The universal jet has natural-number coefficients, so every coefficient map fixes it. -/
+@[simp]
+theorem map_universalTaylorJet (f : A →+* B) (K j : ℕ) :
+    map f (universalTaylorJet (F := A) K j) = universalTaylorJet (F := B) K j := by
+  classical
+  simp [universalTaylorJet]
+
+/-- A coefficient map sends the universal residual of `Q` at `center` to the universal residual
+of the mapped polynomial at the mapped center. -/
+theorem map_universalTaylorResidual {r : ℕ} (f : A →+* B) (K : ℕ) (center : A)
+    (Q : DifferentialPolynomial A r) :
+    map f (universalTaylorResidual K center Q) =
+      universalTaylorResidual K (f center) (map f Q) := by
+  simp only [universalTaylorResidual, aeval_def, algebraMap_eq, map_eval₂]
+  congr 1
+  funext i
+  cases i <;> simp
+
+/-- A coefficient map sends each displacement coefficient of the universal residual to the
+corresponding coefficient of the mapped residual. -/
+theorem map_universalTaylorResidual_coeff {r : ℕ} (f : A →+* B) (K : ℕ) (center : A)
+    (Q : DifferentialPolynomial A r) (h : ℕ) :
+    map f ((optionEquivLeft A (Fin K) (universalTaylorResidual K center Q)).coeff h) =
+      (optionEquivLeft B (Fin K)
+        (universalTaylorResidual K (f center) (map f Q))).coeff h := by
+  rw [← Polynomial.coeff_map, map_optionEquivLeft, map_universalTaylorResidual]
+
+end Map
 
 end CommSemiring
 

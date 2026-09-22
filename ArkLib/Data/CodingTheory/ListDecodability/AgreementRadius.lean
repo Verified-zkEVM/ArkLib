@@ -22,6 +22,8 @@ The Reed–Solomon consumers are in
 
 * `Code.relHammingDist_le_one_sub_div_of_le_agree`: `a ≤ agree c y` gives
   `δᵣ(y, c) ≤ 1 - a / n`.
+* `Code.relHammingDist_le_one_sub_div_iff`: for `0 < n` and real `x`,
+  `δᵣ(y, c) ≤ 1 - x / n ↔ x ≤ agree c y`.
 * `Code.mem_closeCodewordsRel_of_le_agree`: the same statement for point lists.
 * `Code.encard_setOf_le_agree_le_Lambda`: the agreement list is bounded by `Lambda`.
 * `Code.encard_setOf_le_agree_encode_le_Lambda`: the same bound for messages whose encodings
@@ -50,6 +52,21 @@ theorem relHammingDist_le_one_sub_div_of_le_agree {c y : ι → A} {a : ℕ} (h 
   have haR : (a : ℝ) ≤ agree c y := by exact_mod_cast h
   rw [div_le_iff₀ hnR, sub_mul, div_mul_cancel₀ _ hnR.ne']
   linarith
+
+/-- **Relative distance at the radius `1 - x / n`.** For a nonempty coordinate type with `n`
+coordinates and a real `x`, `δᵣ(y, c) ≤ 1 - x / n` holds exactly when `c` agrees with `y` in at
+least `x` coordinates.
+
+The hypothesis `0 < n` is needed: for `n = 0` the left side is `0 ≤ 1` and the right side is
+`x ≤ 0`. -/
+theorem relHammingDist_le_one_sub_div_iff (hn : 0 < Fintype.card ι) {c y : ι → A} {x : ℝ} :
+    (δᵣ(y, c) : ℝ) ≤ 1 - x / Fintype.card ι ↔ x ≤ agree c y := by
+  rw [relHammingDist_coe, hammingDist_comm]
+  have hsum : ((agree c y : ℕ) : ℝ) + (Δ₀(c, y) : ℕ) = Fintype.card ι := by
+    exact_mod_cast agree_add_hammingDist
+  have hnR : (0 : ℝ) < Fintype.card ι := by exact_mod_cast hn
+  rw [div_le_iff₀ hnR, sub_mul, div_mul_cancel₀ _ hnR.ne', one_mul]
+  constructor <;> intro h <;> linarith
 
 /-- **Agreement lists lie in point lists.** A codeword with at least `a` agreements with `y` is in
 the point list of `C` around `y` at relative radius `1 - a / n`. -/

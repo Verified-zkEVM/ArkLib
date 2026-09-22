@@ -14,8 +14,10 @@ These examples use the public API through an ordinary import. In `ℚ[x, y]` the
 purity that the prime `(x)` has a Hilbert polynomial of natural degree one, bound its affine
 degree by one with the Bézout bound, and evaluate the degree potential of the cut. The boundary
 examples show that the Bézout bound fails without `f ∉ P` and that the normalization degree count
-needs injectivity. The last examples derive the purity and Bézout statements with primality of `P`
+needs injectivity. The next examples derive the purity and Bézout statements with primality of `P`
 as an explicit argument, and the cut-potential bound for the family that is `{P}` when `f ∈ P`.
+The final example computes the dimension of `(x)` again, as a minimal prime of the hypersurface
+`x = 0`.
 -/
 
 open MvPolynomial
@@ -139,5 +141,14 @@ example {F σ : Type*} [Field F] [Finite σ] {P : Ideal (MvPolynomial σ F)} (hP
     · rfl
   rw [hfam]
   exact sum_affineDegree_mul_pow_retainedMinimalPrimes_le s hfdeg
+
+/-- `natDegree H((x)) + 1 = 2`: `(x)` is a minimal prime of the hypersurface `x = 0` in the
+plane. -/
+example : (affineHilbertPolynomial (Ideal.span {(X 0 : R₂)})).natDegree + 1 = 2 := by
+  have := isPrime_span_X0
+  have h := natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton
+    (X_ne_zero (0 : Fin 2) : (X 0 : R₂) ≠ 0)
+    (by rw [Ideal.minimalPrimes_eq_subsingleton_self]; rfl)
+  rwa [Nat.card_eq_fintype_card, Fintype.card_fin] at h
 
 end AffineHilbertPurityTest
