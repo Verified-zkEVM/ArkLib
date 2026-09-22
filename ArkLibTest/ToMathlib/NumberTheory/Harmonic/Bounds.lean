@@ -9,39 +9,39 @@ import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 /-!
 # Acceptance cases for the explicit harmonic bounds
 
-The source's statements, with their dimension thresholds and summands `(1 / (i + 1)) ^ k`, derived
-from the general ones; numerical consequences at small and large indices; and the sharpness of the
-threshold `8 ≤ n` in `Real.reciprocal_square_sum_gt`.
+Non-strict forms with dimension thresholds and summands written as `(1 / (i + 1)) ^ k`, derived
+from the general statements; numerical consequences at small and large indices; and the sharpness
+of the threshold `8 ≤ n` in `Real.reciprocal_square_sum_gt`.
 -/
 
 open Finset Real
 
-/-! ### Source-shaped statements -/
+/-! ### Threshold and summand variants -/
 
-/-- The source's `Real.harmonic_pred_le_log_add_three_fifths`, with its unused hypothesis
+/-- The non-strict form of `harmonic_pred_lt_log_add_three_fifths`, with an unused hypothesis
 `33 ≤ d`. -/
 example (d : ℕ) (_hd : 33 ≤ d) : (harmonic (d - 1) : ℝ) ≤ log d + 3 / 5 :=
   (harmonic_pred_lt_log_add_three_fifths d).le
 
-/-- The source's `Real.harmonic_le_log_add_three_fifths`. -/
+/-- The non-strict form of `harmonic_lt_log_add_three_fifths`. -/
 example (n : ℕ) (hn : 32 ≤ n) : (harmonic n : ℝ) ≤ log n + 3 / 5 :=
   (harmonic_lt_log_add_three_fifths hn).le
 
-/-- The source's `WeightedSupportParameters.harmonic_square_bound` at `H = harmonic (d - 1)`: its
-hypothesis `H ≤ log d + 3 / 5` is discharged. -/
+/-- `harmonic (d - 1) ^ 2 ≤ d / 100` for `d ≥ 10000`, from `harmonic_sq_le_succ_div_hundred` at
+`n = d - 1`. -/
 example (d : ℕ) (hd : 10000 ≤ d) : (harmonic (d - 1) : ℝ) ^ 2 ≤ d / 100 := by
   have h := harmonic_sq_le_succ_div_hundred (n := d - 1) (by omega)
   rwa [Nat.cast_sub (by omega : 1 ≤ d), Nat.cast_one, sub_add_cancel] at h
 
-/-- The source's `Real.reciprocal_square_sum_gt`, with summand `(1 / (i + 1)) ^ 2`. -/
+/-- `reciprocal_square_sum_gt` with summand `(1 / (i + 1)) ^ 2`. -/
 example {n : ℕ} (hn : 8 ≤ n) : (38 / 25 : ℝ) < ∑ i ∈ range n, (1 / (i + 1 : ℝ)) ^ 2 := by
   simpa only [div_pow, one_pow] using reciprocal_square_sum_gt hn
 
-/-- The source's `Real.reciprocal_square_sum_lt`, with summand `(1 / (i + 1)) ^ 2`. -/
+/-- `reciprocal_square_sum_lt` with summand `(1 / (i + 1)) ^ 2`. -/
 example (n : ℕ) : (∑ i ∈ range n, (1 / (i + 1 : ℝ)) ^ 2) < 329 / 200 := by
   simpa only [div_pow, one_pow] using reciprocal_square_sum_lt n
 
-/-- The source's `Real.reciprocal_cube_sum_lt`, with summand `(1 / (i + 1)) ^ 3`. -/
+/-- `reciprocal_cube_sum_lt` with summand `(1 / (i + 1)) ^ 3`. -/
 example (n : ℕ) : (∑ i ∈ range n, (1 / (i + 1 : ℝ)) ^ 3) < 12021 / 10000 := by
   simpa only [div_pow, one_pow] using reciprocal_cube_sum_lt n
 

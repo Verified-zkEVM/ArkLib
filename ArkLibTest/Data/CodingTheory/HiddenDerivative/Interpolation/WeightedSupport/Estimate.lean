@@ -47,8 +47,8 @@ example (F : Type*) [Field F] (d D W : ℕ) (hd : 0 < d) (hD : 0 < D) (_hW : 0 <
   rw [ProbabilityTheory.cond, ← setAverage_eq']
   exact weighted_dimension_probability F hd hD g m hμ
 
-/-- The source's `weighted_dimension_lower`, with the stronger hypothesis `48000 ≤ d` and the
-unused hypotheses `0 < W` and `0 < g * m`. -/
+/-- `weighted_dimension_lower` with the stronger hypothesis `48000 ≤ d` and the unused
+hypotheses `0 < W` and `0 < g * m`. -/
 example (F : Type*) [Field F] (d D W : ℕ) (hd : 48000 ≤ d) (hD : 0 < D) (_hW : 0 < W) (g m : ℝ)
     (_ht : 0 < g * m) (hμ : W * (harmonic (d - 1) : ℝ) / d ≤ (1 + 3 * g / 8) * m)
     (hs : W / ((d : ℝ) * (g * m)) ≤ 10 / 27) :

@@ -20,7 +20,11 @@ and harmonic-type sums `H`, `H₂`, `H₃`: the variance factor is `d / (d + 1) 
 and the third-moment factor is
 `2 * (d ^ 2 * H₃ - 3 * d * H * H₂ + 2 * H ^ 3) / ((d + 1) * (d + 2))`. This file proves the real
 inequalities that turn bounds on the harmonic sums into the constants `3 / 2` and `2.41` used by
-the estimate. It does not prove the moment identities themselves.
+the estimate. It does not prove the moment identities themselves: `normalizedRadius` and its
+first three moments are in
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which also
+combines them with these bounds in `normalizedRadius_contribution_lower`. The harmonic-sum bounds
+that supply `H`, `H₂` and `H₃` are in `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds`.
 
 ## Main statements
 
@@ -30,21 +34,6 @@ the estimate. It does not prove the moment identities themselves.
   bounds the third-moment factor by `2 * (H₃ + 2 * H ^ 3 / d ^ 2)`.
 * `ReedSolomon.HiddenDerivative.weightedSupport_third_factor_numeric`: that bound is at most
   `241 / 100` when `1 ≤ d`, `H ^ 2 ≤ d / 100` and `H₃ ≤ 12021 / 10000`.
-
-## References
-
-Ports `weightedSupport_variance_factor_gt`, `weightedSupport_third_factor_le` and
-`weightedSupport_third_factor_numeric` from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`MomentBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The dimension
-hypotheses are weakened to what the arithmetic needs: `10000 ≤ d` becomes `150 < d`, which is sharp,
-and `48000 ≤ d` becomes `1 ≤ d`. The acceptance tests derive the source statements.
-
-The moment identities that produce these factors (`normalizedRadius` and its first three moments)
-are in `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which
-also combines them with these bounds in `normalizedRadius_contribution_lower`. The
-harmonic-sum bounds that supply `H`, `H₂` and `H₃` are in
-`ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds`.
 -/
 
 @[expose] public section
