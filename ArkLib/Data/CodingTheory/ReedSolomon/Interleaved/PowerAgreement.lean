@@ -51,40 +51,6 @@ padding each group by zero to a common size.
   `ReedSolomon.nestedPowerAgreement_sharedInner`: nested power agreement.
 * `ReedSolomon.nestedPowerAgreement_probability_le`: for uniform challenges `(u, v)`, nested
   exact agreement fails with probability at most `(innerE + outerE) / |F|`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `ReedSolomon/Interleaved/PowerAgreement.lean`: the definitions
-  `interleavedPolynomialAgreementSet`, `interleavedCommonPowerAgreementSet`,
-  `interleavedPowerBatchedWord`, `HasExactInterleavedPowerAgreement`,
-  `UniformExactInterleavedPowerAgreement`, `padFin`, `paddedPowerValues`, and the theorems
-  `sum_padFin`, `interleavedPowerBatchedWord_padded_apply`,
-  `exactNestedPowerAgreement_of_interleaved`, and `nestedPowerAgreement_sharedInner` are ported
-  with `Fin n` columns generalized to a finite type `ι` and, in the definitions, `Fin width` rows
-  generalized to a finite type `κ`. The theorem `uniformExactInterleavedPowerAgreement_of_scalar`
-  (hypotheses `[Finite F]`, `0 < width`, `k ≤ agreement`) is generalized to the theorem of the
-  same name here, which has neither `[Finite F]` nor a width hypothesis. The private counting
-  lemmas `scalar_powerProjectionBad_card_le` and `interleaved_powerProjectionBad_card_le`, and the
-  public `interleavedCodeword_eq_of_agree_on`, are replaced by the code-level statements of
-  `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement` and
-  `ReedSolomon.determinedByAgreement_code`.
-* `ReedSolomon/Interleaved/PowerAgreementArbitrary.lean`:
-  `uniformExactInterleavedPowerAgreement_of_scalar_arbitrary` removed the hypothesis
-  `[Finite F]` from the previous theorem by a second, infinite-field proof. Here a single proof
-  covers both cases, so it is the theorem `uniformExactInterleavedPowerAgreement_of_scalar`
-  itself. Its private lemmas are covered as described in
-  `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`.
-* `ReedSolomon/MutualCorrelatedAgreement/NestedPowerAgreement.lean`:
-  `HasExactNestedPowerAgreement`, with `Fin n` generalized to `ι`. The arithmetic lemma
-  `nestedPowerAgreement_probability_bound` (a set of at most `|F| * E` pairs has rational density
-  at most `E / |F|` in `F × F`) is replaced by `nestedPowerAgreement_probability_le`, which bounds
-  the probability of the failure event itself as a native event `Pr{let p ← $ᵗ (F × F)}[…]`.
-
-Deferred: the shared-level fold and tensor-tight statements of
-`ReedSolomon/Interleaved/TensorFoldAgreement.lean` and the concrete Reed–Solomon
-endpoints that supply the scalar guarantee.
 -/
 
 @[expose] public section
@@ -109,12 +75,16 @@ def interleavedCommonPowerAgreementSet (domain : ι ↪ F) (values : Fin (ℓ + 
     (P : Fin (ℓ + 1) → κ → F[X]) : Finset ι :=
   Finset.univ.filter fun i ↦ ∀ t j, (P t j).eval (domain i) = values t i j
 
+/-- Column `i` is in `interleavedPolynomialAgreementSet domain received Q` exactly when every
+`Q j` evaluates to `received i j` at `domain i`. -/
 @[simp] theorem mem_interleavedPolynomialAgreementSet (domain : ι ↪ F) (received : ι → κ → F)
     (Q : κ → F[X]) (i : ι) :
     i ∈ interleavedPolynomialAgreementSet domain received Q ↔
       ∀ j, (Q j).eval (domain i) = received i j := by
   simp [interleavedPolynomialAgreementSet]
 
+/-- Column `i` is in `interleavedCommonPowerAgreementSet domain values P` exactly when every
+`P t j` evaluates to `values t i j` at `domain i`. -/
 @[simp] theorem mem_interleavedCommonPowerAgreementSet (domain : ι ↪ F)
     (values : Fin (ℓ + 1) → ι → κ → F) (P : Fin (ℓ + 1) → κ → F[X]) (i : ι) :
     i ∈ interleavedCommonPowerAgreementSet domain values P ↔

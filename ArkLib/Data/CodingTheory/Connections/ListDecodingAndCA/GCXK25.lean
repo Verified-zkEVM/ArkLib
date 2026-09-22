@@ -537,13 +537,12 @@ private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
 
 private theorem linear_mca_relevant_pairs_card_le
     {ι' : Type} [Fintype ι']
-    {F' : Type} [Field F'] [Finite F'] [SampleableType F'] [DecidableEq F']
+    {F' : Type} [Field F'] [Fintype F'] [SampleableType F'] [DecidableEq F']
     (C : LinearCode ι' F') (L : ℕ) (p : ℝ)
     (hΛ : Lambda ((C : Set (ι' → F'))) p ≤ (L : ℕ∞))
     (u : Fin 2 → ι' → F') :
     (linear_mca_relevant_pairs C u p).card ≤ L ^ 2 := by
   classical
-  let _ : Fintype F' := Fintype.ofFinite F'
   have hlist0 := (Code.Lambda_le_iff_forall_ncard_le.mp hΛ) (u 0)
   have hlist1 := (Code.Lambda_le_iff_forall_ncard_le.mp hΛ) (u 1)
   have hrow0 : (linear_mca_row_list C u p 0).card ≤ L := by

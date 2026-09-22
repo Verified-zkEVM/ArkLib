@@ -9,9 +9,10 @@ import ArkLib.ToMathlib.Analysis.Simplex.Moments
 /-!
 # Acceptance cases for simplex moments
 
-Concrete moments computed by the general theorems, the source-shaped power-sum statements
-derived from the general ones, the source's weighted-radius expectations through the
-conditional probability measure, and the necessity of `0 ≤ L`, `0 < L`, and positive weights.
+Concrete moments computed by the general theorems, the power-sum forms in degrees `2` and `3`
+derived from the general ones, the moments of the coordinate sum for the weights `1, …, n`
+through the conditional probability measure, and the necessity of `0 ≤ L`, `0 < L`, and positive
+weights.
 -/
 
 open MeasureTheory Set Finset MvPolynomial
@@ -32,8 +33,8 @@ example : (∫ x in standardSimplex (Fin 2) 1, (∑ i, (![1, 0] : Fin 2 → ℝ)
   rw [integral_standardSimplex_linearForm_pow _ _ (by norm_num)]
   simp [Fin.sum_univ_two, Nat.factorial]
 
-/-- The source's `integral_standardSimplex_linearForm_sq`, derived from the degree-`k` formula
-and Newton's identity in degree `2`. -/
+/-- The second moment of a linear form on the standard simplex in power-sum form, derived from the
+degree-`k` formula and Newton's identity in degree `2`. -/
 example (n : ℕ) (c : Fin n → ℝ) {L : ℝ} (hL : 0 ≤ L) :
     (∫ x in standardSimplex (Fin n) L, (∑ i, c i * x i) ^ 2) =
       L ^ (n + 2) * ((∑ i, c i) ^ 2 + ∑ i, c i ^ 2) / (n + 2).factorial := by
@@ -42,8 +43,8 @@ example (n : ℕ) (c : Fin n → ℝ) {L : ℝ} (hL : 0 ≤ L) :
   norm_num [Nat.factorial]
   ring
 
-/-- The source's `integral_standardSimplex_linearForm_cube`, from Newton's identity in
-degree `3`. -/
+/-- The third moment of a linear form on the standard simplex in power-sum form, from Newton's
+identity in degree `3`. -/
 example (n : ℕ) (c : Fin n → ℝ) {L : ℝ} (hL : 0 ≤ L) :
     (∫ x in standardSimplex (Fin n) L, (∑ i, c i * x i) ^ 3) =
       L ^ (n + 3) * ((∑ i, c i) ^ 3 + 3 * (∑ i, c i) * (∑ i, c i ^ 2) + 2 * ∑ i, c i ^ 3) /
@@ -53,8 +54,8 @@ example (n : ℕ) (c : Fin n → ℝ) {L : ℝ} (hL : 0 ≤ L) :
   norm_num [Nat.factorial]
   ring
 
-/-- The source's `integral_weightedSimplex_radius`: the Jacobian of the weights `1, …, n` is
-`1 / n!`. -/
+/-- The integral of the coordinate sum on the weighted simplex with weights `1, …, n`: the
+Jacobian of these weights is `1 / n!`. -/
 example (n : ℕ) {W : ℝ} (hW : 0 ≤ W) :
     (∫ u in weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W, ∑ i, u i) =
       (1 / n.factorial) * (W ^ (n + 1) * (∑ i : Fin n, 1 / ((i : ℝ) + 1)) / (n + 1).factorial) := by
@@ -84,8 +85,8 @@ example : ⨍ u in weightedSimplex (fun i : Fin 2 ↦ (i : ℝ) + 1) 6, ∑ i, u
   rw [setAverage_weightedSimplex_succ_sum 2 (by norm_num)]
   norm_num [harmonic, Finset.sum_range_succ]
 
-/-- The source's `weightedSimplexExpectation_radius` in probabilistic form: the mean of the
-coordinate sum under the uniform probability measure `volume[|weightedSimplex w W]`. -/
+/-- The mean of the coordinate sum under the uniform probability measure
+`volume[|weightedSimplex w W]`. -/
 example (n : ℕ) {W : ℝ} (hW : 0 < W) :
     (∫ u, ∑ i, u i ∂volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W]) =
       W * (harmonic n : ℝ) / (n + 1) := by
@@ -98,8 +99,7 @@ example (n : ℕ) {W : ℝ} (hW : 0 < W) :
     (fun i ↦ by positivity) hW
   measure_univ
 
-/-- The source's `weightedSimplexExpectation_radius_sq` for `n = 1`: on `[0, W]` the mean of
-`u²` is `W² / 3`. -/
+/-- The second moment for `n = 1`: on `[0, W]` the mean of `u²` is `W² / 3`. -/
 example {W : ℝ} (hW : 0 < W) :
     ⨍ u in weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) W, (∑ i, u i) ^ 2 = W ^ 2 / 3 := by
   rw [setAverage_weightedSimplex_succ_sum_sq 1 hW]

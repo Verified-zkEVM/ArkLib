@@ -128,9 +128,6 @@ private theorem exists_seed_pairwise_distinct_affine_lines
       Set.InjOn (fun p : (ι → A) × (ι → A) => p.1 + γ • p.2)
         (↑P : Set ((ι → A) × (ι → A))) := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq F := Classical.decEq F
-  let _ : DecidableEq A := Classical.decEq A
   let _ := Fintype.ofFinite ι
   let _ := Fintype.ofFinite A
   let Q := (P.product P).filter (fun pq => pq.1 ≠ pq.2)

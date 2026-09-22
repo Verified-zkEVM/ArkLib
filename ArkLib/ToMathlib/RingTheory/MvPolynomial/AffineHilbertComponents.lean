@@ -37,6 +37,11 @@ the coefficient of `J`. Combined with the principal-cut degree drop, this bounds
 `natDegree P - 1` sum to at most `b * natDegree P * leadingCoeff P`, where `P` is the affine
 Hilbert polynomial of `I`.
 
+The factorial statement assumes that every minimal prime of the cut has natural degree exactly
+`natDegree P - 1`. For a prime `P` and `f ∉ P` this purity is
+`MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_add_one` in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity`.
+
 ## Main statements
 
 * `MvPolynomial.sum_affineHilbertFunction_le_iInf`: the Hilbert-function inequality for a family
@@ -49,50 +54,6 @@ Hilbert polynomial of `I`.
 * `MvPolynomial.principalCut_sum_coeff_affineHilbertPolynomial_minimalPrimes_le`,
   `MvPolynomial.principalCut_sum_factorial_mul_leadingCoeff_minimalPrimes_le`: the components of
   a principal cut.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
-`AffineHilbert`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PrimeFamily.lean`: `familySeparatorLift`,
-`filteredFamilySeparatorLift`, `separatorFamilyMap` and `separatorFamilyMap_injective` were proof
-devices for `sum_shifted_hilbertFunction_le_iInf`; they are private here, and the public result is
-`sum_affineHilbertFunction_le_iInf`. The source assumed that each `I i` is prime and `s i ∉ I i`;
-here it is enough that the class of `s i` is a non-zero-divisor on the quotient by `I i`, which is
-what the injectivity uses. `exists_separators_sum_shifted_hilbertFunction_le_iInf` is
-`exists_sum_affineHilbertFunction_le_iInf`, with the separator construction moved to
-`Ideal.exists_separators_of_pairwise_not_le` in `ArkLib.ToMathlib.RingTheory.Ideal.Separator`, and
-with the source's threshold `N ≥ Finset.univ.sup (totalDegree ∘ s)` written as
-`∀ i, totalDegree (s i) ≤ N`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PrimeFamilyCoefficient.lean`:
-`sum_hilbertPolynomial_coeff_le_iInf` is `sum_coeff_affineHilbertPolynomial_le_iInf`, a corollary
-of `sum_coeff_affineHilbertPolynomial_le_of_separators`. The source's hypothesis that every
-component has natural degree at most `d` is dropped: it follows from the bound for `⨅ i, I i`,
-because the Hilbert polynomial decreases in degree along inclusions. The three `ℚ[X]` lemmas of
-that file are `Polynomial.coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg`,
-`Polynomial.coeff_le_of_natDegree_le_of_eventually_eval_natCast_le` and
-`Polynomial.coeff_taylor_of_natDegree_le` in `ArkLib.ToMathlib.Polynomial.EventualGrowth`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/ComponentCoefficient.lean`:
-`principalCut_sum_minimalPrime_coeff_le` is
-`principalCut_sum_coeff_affineHilbertPolynomial_minimalPrimes_le` and
-`principalCut_sum_minimalPrime_factorial_le` is
-`principalCut_sum_factorial_mul_leadingCoeff_minimalPrimes_le`. The source assumed that `P` is
-prime and `f ∉ P`; here the class of `f` is a non-zero-divisor on the quotient, as in
-`MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_le_and_coeff_le`. The source's case
-split on `P ⊔ span {f} = ⊤` is not needed. The general statement for the minimal primes of any
-ideal, `sum_coeff_affineHilbertPolynomial_minimalPrimes_le`, is new. The source's
-`minimalPrimesFinset` and `mem_minimalPrimesFinset` are `Ideal.minimalPrimesFinset` and
-`Ideal.mem_minimalPrimesFinset`, its private `minimalPrime_pairwise_incomparable` is
-`Ideal.not_le_of_mem_minimalPrimes`, and its private `iInf_minimalPrimes_eq_radical` is
-Mathlib's `Ideal.sInf_minimalPrimes`.
-
-The factorial statement keeps the source's hypothesis that every minimal prime of the cut has
-natural degree exactly `natDegree P - 1`. For polynomial rings over a field this purity holds,
-but its proof needs the equality of the Hilbert-polynomial degree with the Krull dimension, which
-is not formalized here.
 -/
 
 @[expose] public section

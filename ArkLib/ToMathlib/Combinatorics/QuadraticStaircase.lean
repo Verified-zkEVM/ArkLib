@@ -34,18 +34,6 @@ non-asymptotic lower bound `D * (max L 0) ^ 2 / 2 ≤ count D L`, valid for ever
 * `QuadraticStaircase.square_div_two_le_sum` — `L ^ 2 / 2` is below the unrounded sum for
   `L ≥ 0`.
 * `QuadraticStaircase.count_ge_quadratic` — `D * (max L 0) ^ 2 / 2 ≤ count D L`.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/ToMathlib/Combinatorics/QuadraticStaircase.lean`: `QuadraticStaircase.count`,
-`QuadraticStaircase.Slot`, `QuadraticStaircase.card_slot`, `QuadraticStaircase.Slot.exponents`,
-`QuadraticStaircase.Slot.exponents_injective`, `QuadraticStaircase.Slot.weighted_degree_lt`,
-`QuadraticStaircase.two_mul_sum` and `QuadraticStaircase.count_ge_quadratic` are ported with the
-same statements. `QuadraticStaircase.square_div_two_le_sum` weakens the source hypothesis `0 < L`
-to `0 ≤ L`. The source file imported `CubicStaircase` without using it; that import is dropped.
-The source consumers (`RatePartition/Area.lean` and `PartitionSupport/Dimension.lean`) are not yet
-ported.
 -/
 
 @[expose] public section

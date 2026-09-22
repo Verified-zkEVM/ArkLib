@@ -47,16 +47,8 @@ The generic algebra result is already owned by Mathlib:
 zero-locus adapter and does not duplicate that generic API. The passage from Krull dimension zero
 to a finite-dimensional quotient is Mathlib's `Module.finite_iff_krullDimLE_zero` for finite-type
 algebras over a field; it is the only place where finitely many variables are needed.
-Hilbert-polynomial interpretations belong to later geometry layers.
-
-## References
-
-These declarations are ported from ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/ZeroLocus/ZeroDimensional.lean`. Their statements are unchanged
-apart from renaming the fields to `k` and `K` to match `Mathlib.RingTheory.Nullstellensatz`.
-`finite_zeroLocus_and_ncard_le_of_krullDimLE_zero` is from the same file and keeps the source
-statement.
+The Hilbert-polynomial form of the bound is in
+`ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`.
 -/
 
 @[expose] public section
