@@ -146,6 +146,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.ExactCharacte
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.LowRateStationary
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RateBound
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.FiniteBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.InterpolationBounds
@@ -637,6 +638,7 @@ public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow
 public import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 public import ArkLib.ToMathlib.BigOperators.Fin
+public import ArkLib.ToMathlib.BigOperators.Intervals
 public import ArkLib.ToMathlib.BigOperators.LinearBudget
 public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
