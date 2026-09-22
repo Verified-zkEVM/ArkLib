@@ -40,6 +40,9 @@ has infinite volume, so the constant function `1` is not integrable on it, and t
 the counting sandwich fails: for one coordinate of weight zero and budget zero, the lattice simplex
 has one point while the enlarged simplex has infinite volume, whose `volume.real` is zero.
 
+The cubic and residual specializations for the weights `i + 1` are in
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer`.
+
 ## Main statements
 
 * `Finset.natFloor_mem_natWeightedSimplex`: flooring maps the continuous simplex of budget `W`
@@ -50,25 +53,6 @@ has one point while the enlarged simplex has infinite volume, whose `volume.real
   bounded above by lattice sums.
 * `Finset.sum_natWeightedSimplex_le_setIntegral`: lattice sums are bounded above by integrals over
   the enlarged continuous simplex.
-
-## References
-
-Generalizes, from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, the generic parts of
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`:
-
-* `WeightedSupportParameters.floor_higher_mem` (`FloorTransfer.lean`) becomes
-  `natFloor_mem_natWeightedSimplex`, for any finite index type, positive natural weights, and a
-  real budget, instead of `Fin (d - 1)` with weights `i + 1` and a natural budget.
-* The covering and cell argument of `WeightedSupportParameters.weighted_floor_integral`
-  (`FloorTransfer.lean`) becomes `setIntegral_le_sum_natWeightedSimplex`, with an arbitrary
-  integrand and cellwise bound in place of the cubic positive part.
-* `floorCell_subset_weightedSimplex` (`CubeTransfer.lean`) becomes
-  `natFloorCell_subset_weightedSimplex`, and the cell argument of
-  `weighted_residual_sum_le_integral` becomes `sum_natWeightedSimplex_le_setIntegral`, with an
-  arbitrary integrand and cellwise bound in place of the residual.
-
-The source-shaped cubic and residual statements are thin specializations in
-`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer`.
 -/
 
 @[expose] public section

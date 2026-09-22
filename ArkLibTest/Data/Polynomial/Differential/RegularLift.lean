@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum
 /-!
 # Acceptance tests for regular lifting
 
-* The source statement over a field, with the hypotheses `(k + r choose r) ≠ 0` and `S ≠ 0`,
+* The field form, with the hypotheses `(k + r choose r) ≠ 0` and `S ≠ 0`,
   and its variant below a prime characteristic, follow from the unit form.
 * For `y' = y` (`Q = Y₁ - Y₀`) at center `0` over `ℚ`, the residual of `P = 1 + X` is `-X`, and
   the unique lift coefficient of order `2` is `1 / 2`, the next Taylor coefficient of `exp`.
@@ -27,7 +27,7 @@ noncomputable section
 
 open MvPolynomial
 
-/-- Source shape over a field: the two nonvanishing hypotheses give the unit slope. -/
+/-- The field form: the two nonvanishing hypotheses give the unit slope. -/
 example {F : Type*} [Field F] {r k : ℕ} (hk : 0 < k) (Q : DifferentialPolynomial F r)
     (center : F) (P : Polynomial F)
     (hresidual : Polynomial.X ^ k ∣ shiftedJetSubstitution center P Q)

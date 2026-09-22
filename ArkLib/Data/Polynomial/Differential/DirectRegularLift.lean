@@ -40,33 +40,6 @@ iteration only controls the residual below order `D - r + 1`.
 
 ## References
 
-This file ports the semantic content of `RootFinding/Regular/DirectRegularCoefficient.lean` and
-`RootFinding/Regular/DirectRegularIteration.lean` under
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source defined executable versions over a field,
-on `CompPoly` polynomials, and compared them with an exhaustive scan over a finite field. Here the
-definitions are noncomputable, on `Polynomial`, over a commutative ring, and a unit slope replaces
-the nonzero slope:
-
-* `effectiveDirectRegularCoefficient` (`none` for a zero slope, otherwise `-β / σ`) corresponds to
-  `regularLiftCoefficient`, which uses `Ring.inverse` and is correct whenever `σ` is a unit.
-  `effectiveDirectRegularCoefficient_sound_unique` corresponds to
-  `coeff_shiftedJetSubstitution_add_hassePerturbation_eq_iff`.
-* `effectiveResidualCoeff_affine` and `effectiveRegularSlope_eq` are
-  `coeff_shiftedJetSubstitution_add_hassePerturbation` in
-  `ArkLib.Data.Polynomial.Differential.RegularLift`.
-* `directRegularIteration` corresponds to `regularIterate`; its degree bound
-  `directRegularIteration_natDegree_le` to `natDegree_regularIterate_le`.
-* `directRegularSolution_eq_some_iff` corresponds to `solution_iff_eq_regularIterate`, with unit
-  slopes in place of `IsRegularJet` and `D < ringChar F`, and without `Finite F`.
-
-Deferred: the `CompPoly` definitions, the two-evaluation slope recovery, and the comparison with
-the exhaustive coefficient scan (`effectiveRegularCoefficients_eq_singleton_of_direct`,
-`effectiveDirectRegularCoefficient_exists_of_survivor`,
-`directRegularIteration_eq_some_and_candidates`, `directRegularSolution_toFinset_eq`). They
-depend on the executable root-finding layer `ReedSolomon/Computation/RootFinding/Lifting/`, which
-is not ported.
-
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.4 and Corollary 4.5.
 -/
 
@@ -136,11 +109,13 @@ def regularIterate (Q : DifferentialPolynomial R r) (center : R) (P : R[X]) : �
   | 0 => P
   | n + 1 => regularLift Q center (n + 1) (regularIterate Q center P n)
 
+/-- The zeroth iterate is the starting polynomial. -/
 @[simp]
 theorem regularIterate_zero (Q : DifferentialPolynomial R r) (center : R) (P : R[X]) :
     regularIterate Q center P 0 = P :=
   rfl
 
+/-- The `(n + 1)`-st iterate is the regular lift at order `n + 1` of the `n`-th iterate. -/
 theorem regularIterate_succ (Q : DifferentialPolynomial R r) (center : R) (P : R[X]) (n : ℕ) :
     regularIterate Q center P (n + 1) =
       regularLift Q center (n + 1) (regularIterate Q center P n) :=
