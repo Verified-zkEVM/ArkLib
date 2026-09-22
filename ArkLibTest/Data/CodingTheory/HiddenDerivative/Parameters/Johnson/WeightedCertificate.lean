@@ -10,7 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.WeightedCert
 # Weighted Johnson certificate acceptance tests
 
 A small certificate computed in full, one with a negative moment, cases showing that the slope and
-cutoff hypotheses are needed, and the slot inequality read off a reviewed table row.
+cutoff hypotheses are needed, and the three table rows at `n = 2¹⁶`, `η = 1/100` (rates `1/16`,
+`1/4` and `1/2`) with their agreement ceilings and slot inequality.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -76,9 +77,110 @@ example : 0 < 2 * 3 - 2 * 2 := johnsonWeighted_slice_pos (D := 2) (B := 2) le_rf
 example : 2 * 3 < 7 ↔ 3 ≤ (7 - 1) / 2 :=
   johnsonWeighted_cutoff_iff_le_div (m := 7) (A := 1) (by norm_num) (by norm_num)
 
-/-! ### Zero multiplicity and the table rows -/
+/-! ### Zero multiplicity -/
 
 example : johnsonWeightedHeight 10 3 4 0 7 = 7 := johnsonWeightedHeight_zero_m 10 3 4 7
+
+/-! ### Table rows at `n = 2¹⁶`, `η = 1/100` -/
+
+/-- The agreement count of the `k/n = 1/16` table row: `⌈(√(4095/2¹⁶) + 1/100) 2¹⁶⌉ = 17038`. -/
+theorem johnsonWeightedAgreementCeil_rate_one_sixteenth :
+    ⌈(√((4095 : ℝ) / 65536) + 1 / 100) * 65536⌉₊ = 17038 := by
+  let x := √((4095 : ℝ) / 65536)
+  change ⌈(x + 1 / 100) * 65536⌉₊ = 17038
+  rw [Nat.ceil_eq_iff (by norm_num : (17038 : ℕ) ≠ 0)]
+  have hx2 : x ^ 2 = (4095 : ℝ) / 65536 := by
+    exact Real.sq_sqrt (by positivity)
+  have hx0 : 0 ≤ x := Real.sqrt_nonneg _
+  constructor <;> norm_num at ⊢ <;> nlinarith
+
+/-- The agreement count of the `k/n = 1/4` table row: `⌈(√(16383/2¹⁶) + 1/100) 2¹⁶⌉ = 33423`. -/
+theorem johnsonWeightedAgreementCeil_rate_one_fourth :
+    ⌈(√((16383 : ℝ) / 65536) + 1 / 100) * 65536⌉₊ = 33423 := by
+  let x := √((16383 : ℝ) / 65536)
+  change ⌈(x + 1 / 100) * 65536⌉₊ = 33423
+  rw [Nat.ceil_eq_iff (by norm_num : (33423 : ℕ) ≠ 0)]
+  have hx2 : x ^ 2 = (16383 : ℝ) / 65536 := by
+    exact Real.sq_sqrt (by positivity)
+  have hx0 : 0 ≤ x := Real.sqrt_nonneg _
+  constructor <;> norm_num at ⊢ <;> nlinarith
+
+/-- The agreement count of the `k/n = 1/2` table row: `⌈(√(32767/2¹⁶) + 1/100) 2¹⁶⌉ = 46996`. -/
+theorem johnsonWeightedAgreementCeil_rate_one_half :
+    ⌈(√((32767 : ℝ) / 65536) + 1 / 100) * 65536⌉₊ = 46996 := by
+  let x := √((32767 : ℝ) / 65536)
+  change ⌈(x + 1 / 100) * 65536⌉₊ = 46996
+  rw [Nat.ceil_eq_iff (by norm_num : (46996 : ℕ) ≠ 0)]
+  have hx2 : x ^ 2 = (32767 : ℝ) / 65536 := by
+    exact Real.sq_sqrt (by positivity)
+  have hx0 : 0 ≤ x := Real.sqrt_nonneg _
+  constructor <;> norm_num at ⊢ <;> nlinarith
+
+/-- The `k/n = 1/16`, `η = 1/100` table row at `n = 2¹⁶` is a weighted certificate. -/
+theorem johnsonWeightedCertificate_rate_one_sixteenth :
+    IsJohnsonWeightedCertificate 65536 4095 17038 14 57 568 ∧
+      57 ≤ (14 * 17038 - 1) / 4095 ∧ 57 ≤ 4095 ∧
+      johnsonWeightedU 14 57 = 13 ∧
+      johnsonWeightedN 4095 17038 14 57 = 7065821 ∧
+      johnsonWeightedW 4095 17038 14 57 = 134813721 ∧
+      johnsonWeightedR 14 57 = 105 ∧
+      johnsonWeightedT 14 57 = 455 ∧
+      johnsonWeightedSlope 65536 4095 17038 14 57 = 184541 ∧
+      johnsonWeightedMoment 65536 4095 17038 14 57 = 104994841 ∧
+      johnsonWeightedSourceSlots 4095 17038 14 57 568 = 3885638428 ∧
+      johnsonWeightedRowSlots 65536 14 57 568 = 3885629440 ∧
+      johnsonPairwiseListFloor 65536 4095 17038 = 38 ∧
+      johnsonWeightedRefinedExceptionCountFloor 65536 4095 17038 57 568 = 2498629121 := by
+  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
+    johnsonWeightedHeightInt, johnsonWeightedSlope, johnsonWeightedMoment,
+    johnsonWeightedSourceSlots, johnsonWeightedRowSlots, johnsonPairwiseListFloor,
+    johnsonWeightedRefinedExceptionCountFloor,
+    johnsonWeightedRefinedExceptionCount, johnsonWeightedN, johnsonWeightedW, johnsonWeightedR,
+    johnsonWeightedT, johnsonWeightedU, Finset.sum_range_succ, Int.toNat_of_nonneg]
+
+/-- The `k/n = 1/4`, `η = 1/100` table row at `n = 2¹⁶` is a weighted certificate. -/
+theorem johnsonWeightedCertificate_rate_one_fourth :
+    IsJohnsonWeightedCertificate 65536 16383 33423 18 36 504 ∧
+      36 ≤ (18 * 33423 - 1) / 16383 ∧ 36 ≤ 16383 ∧
+      johnsonWeightedU 18 36 = 17 ∧
+      johnsonWeightedN 16383 33423 18 36 = 11348640 ∧
+      johnsonWeightedW 16383 33423 18 36 = 135172026 ∧
+      johnsonWeightedR 18 36 = 171 ∧
+      johnsonWeightedT 18 36 = 969 ∧
+      johnsonWeightedSlope 65536 16383 33423 18 36 = 141984 ∧
+      johnsonWeightedMoment 65536 16383 33423 18 36 = 71667642 ∧
+      johnsonWeightedSourceSlots 16383 33423 18 36 504 = 5595891174 ∧
+      johnsonWeightedRowSlots 65536 18 36 504 = 5595856896 ∧
+      johnsonPairwiseListFloor 65536 16383 33423 = 25 ∧
+      johnsonWeightedRefinedExceptionCountFloor 65536 16383 33423 36 504 = 3383852708 := by
+  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
+    johnsonWeightedHeightInt, johnsonWeightedSlope, johnsonWeightedMoment,
+    johnsonWeightedSourceSlots, johnsonWeightedRowSlots, johnsonPairwiseListFloor,
+    johnsonWeightedRefinedExceptionCountFloor, johnsonWeightedRefinedExceptionCount,
+    johnsonWeightedN, johnsonWeightedW, johnsonWeightedR, johnsonWeightedT, johnsonWeightedU,
+    Finset.sum_range_succ, Int.toNat_of_nonneg]
+
+/-- The `k/n = 1/2`, `η = 1/100` table row at `n = 2¹⁶` is a weighted certificate. -/
+theorem johnsonWeightedCertificate_rate_one_half :
+    IsJohnsonWeightedCertificate 65536 32767 46996 15 21 234 ∧
+      21 ≤ (15 * 46996 - 1) / 32767 ∧ 21 ≤ 32767 ∧
+      johnsonWeightedU 15 21 = 14 ∧
+      johnsonWeightedN 32767 46996 15 21 = 7939503 ∧
+      johnsonWeightedW 32767 46996 15 21 = 54349603 ∧
+      johnsonWeightedR 15 21 = 120 ∧
+      johnsonWeightedT 15 21 = 560 ∧
+      johnsonWeightedSlope 65536 32767 46996 15 21 = 75183 ∧
+      johnsonWeightedMoment 65536 32767 46996 15 21 = 17649443 ∧
+      johnsonWeightedSourceSlots 32767 46996 15 21 234 = 1811433602 ∧
+      johnsonWeightedRowSlots 65536 15 21 234 = 1811415040 ∧
+      johnsonPairwiseListFloor 65536 32767 46996 = 15 ∧
+      johnsonWeightedRefinedExceptionCountFloor 65536 32767 46996 21 234 = 1448631664 := by
+  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
+    johnsonWeightedHeightInt, johnsonWeightedSlope, johnsonWeightedMoment,
+    johnsonWeightedSourceSlots, johnsonWeightedRowSlots, johnsonPairwiseListFloor,
+    johnsonWeightedRefinedExceptionCountFloor, johnsonWeightedRefinedExceptionCount,
+    johnsonWeightedN, johnsonWeightedW, johnsonWeightedR, johnsonWeightedT, johnsonWeightedU,
+    Finset.sum_range_succ, Int.toNat_of_nonneg]
 
 /-- The `k/n = 1/2` row: `1811415040 < 1811433602`. -/
 example : johnsonWeightedRowSlots 65536 15 21 234 <

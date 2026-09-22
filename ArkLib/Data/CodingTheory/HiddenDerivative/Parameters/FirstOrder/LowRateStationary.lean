@@ -35,17 +35,6 @@ which forces `u > t` and hence `β > 1/2`; it is equivalent to `ρ < 11 - 3√13
 * `firstOrderLowRate_margin_eq_zero`, `firstOrderLowRate_margin_factor`,
   `firstOrderLowRate_margin_pos`: the source-minus-rank margin vanishes at the threshold,
   factors as `(β/2)(a - a*)((a + a*)/ρ - β)`, and is positive for `a > a*`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/LowRateStationary.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. All definitions are ported with the
-same formulas, and every theorem with the same statement except two, which drop a hypothesis:
-`firstOrderLowRateRegime_iff_lt_rateSwitch` drops `0 ≤ ρ` (both sides hold for `ρ < 0`), and
-`rate_lt_firstOrderLowRateThreshold` drops `ρ < 1` (the branch condition `t (t + 3) < 1`
-already gives `t < 1`). The source-shaped statement is derived in the acceptance
-tests. The interpolation construction that consumes this threshold is not ported here.
 -/
 
 @[expose] public section

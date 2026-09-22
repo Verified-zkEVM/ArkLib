@@ -10,8 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RateBound
 # First-order rate threshold acceptance tests
 
 The recipe at `R = 1/2`, `a = 3/4` computed in full, the threshold at the boundary `R = 1`, cases
-showing that the kept hypotheses are needed, and the source-shaped statements derived from the
-generalized ones.
+showing that the kept hypotheses are needed, and the forms under `0 < R < a < 1` derived from the
+stated theorems.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -106,7 +106,7 @@ example : firstOrderRateThreshold (1 / 2) < 1 ∧
   refine ⟨test_threshold_lt.trans (by norm_num), ?_⟩
   norm_num [firstOrderRateBeta, firstOrderRankDensity, firstOrderSourceDensity]
 
-/-! ### Source-shaped statements -/
+/-! ### Forms under `0 < R < a < 1` -/
 
 example {R a : ℝ} (ha : a < 1) (hR : R < 1) : 0 < firstOrderRateBeta R a :=
   firstOrderRateBeta_pos ha (by linarith)

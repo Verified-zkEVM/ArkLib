@@ -30,7 +30,7 @@ t  = m + 1/2                                                  (johnsonT)
 μ  = ⌈t / √ρ₋⌉₊ - 1             candidate degree             (johnsonMu)
 h  = ⌈t² / (3ρ₋)⌉₊ - 1          challenge height             (johnsonH)
 θ  = (n - D) / (A - D)          incidence ratio              (johnsonTheta)
-E₀ = (2μ - 1) h + θ (h + μ + 4Dμh) + (n - D - 1) μ          (johnsonE0)
+E₀ = (2μ - 1) h + θ (h + μ + 4Dμh) + (n - D - 1) μ          (johnsonExceptionCount)
 ```
 
 The basic bounds on `ρ₋`, `μ` and `h` need only `1 ≤ D < n`; the closed bounds on `E₀` also need
@@ -43,36 +43,15 @@ The basic bounds on `ρ₋`, `μ` and `h` need only `1 ≤ D < n`; the closed bo
 * `johnson_half_gap`: `√ρ₋ / 2 ≤ m η`.
 * `johnson_degree_succ_le_agreement`, `johnsonTheta_le_sqrt_envelope`: the threshold
   `(√ρ₋ + η) n ≤ A` gives `D + 1 ≤ A` and `θ ≤ (1 + √ρ₋) / √ρ₋`.
-* `johnsonE0_lt_closed`: `E₀ < (8/3) n t³ / ρ₋`.
-* `johnsonE0_div_BCHKS_lt`, `johnsonE0_lt_BCHKS`: `E₀` is below `16/49` of the BCHKS estimate
-  `johnsonBCHKS`.
+* `johnsonExceptionCount_lt_closed`: `E₀ < (8/3) n t³ / ρ₋`.
+* `johnsonExceptionCount_div_comparisonEstimate_lt`,
+  `johnsonExceptionCount_lt_comparisonEstimate`: `E₀` is below `16/49` of the exception estimate
+  `johnsonComparisonEstimate` of [BCPZZ26].
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Johnson/FiniteBounds.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. All definitions are ported with the
-same formulas. Changes to the theorems:
-
-* The guard `D ≤ n - 2` is weakened to `D < n` in every theorem that does not use `n - D ≥ 2`:
-  `johnsonRhoMinus_pos`, `johnsonRhoMinus_lt_one`, `johnsonSqrt_mem_Ioo`,
-  `johnsonRhoMinus_lt_agreement`, `johnson_degree_succ_le_agreement`,
-  `johnsonTheta_denominator_pos`, `johnsonMu_lt`, `johnsonH_lt`, `johnsonMu_pos`, `johnsonH_pos`,
-  `johnsonTheta_le_sqrt_envelope`, `johnsonE0_lt_preEnvelope_scale`, `johnsonBCHKS_leading_lt`,
-  `johnsonBCHKS_pos`.
-* `johnson_sqrt_cube_eq_rpow_three_halves` takes no hypotheses; `johnson_half_gap`,
-  `johnsonM_le_BCHKS_M` and `johnsonT_le_BCHKS_T` keep only `0 < η`.
-* The unused hypothesis `A ≤ n` is dropped from `johnsonE0_lt_preEnvelope_scale`,
-  `johnsonE0_lt_closed`, `johnsonE0_div_BCHKS_lt`, `johnsonE0_lt_BCHKS` and `johnsonE0_le_BCHKS`,
-  and the unused agreement bound `johnsonAgreement n D η ≤ 1` is dropped from
-  `johnsonE0_lt_closed`.
-* The ceiling facts behind `johnsonMu_lt`, `johnsonH_lt`, `johnsonMu_pos`, `johnsonH_pos` are
-  `Nat.cast_ceil_sub_one_lt` and `Nat.one_le_ceil_sub_one` in
-  `ArkLib.ToMathlib.Algebra.Order.Floor.Semiring`.
-
-The BCHKS estimate is from Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List
-Decoding of Reed--Solomon Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164. The coding
-theory that consumes these bounds (the Johnson certificate chain) is not ported here.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed-Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26]
 -/
 
 @[expose] public section
@@ -121,44 +100,43 @@ def johnsonTheta (n D A : ℕ) : ℝ :=
 /-- The raw exception count of the characteristic-free ordinary-agreement argument,
 `(2μ - 1) h + θ (h + μ + 4 D μ h) + (n - D - 1) μ`, with `μ = johnsonMu`, `h = johnsonH`,
 `θ = johnsonTheta` and natural subtraction in `2μ - 1` and `n - D - 1`. Its closed upper bound is
-`johnsonE0_lt_closed`. -/
-def johnsonE0 (n D A : ℕ) (eta : ℝ) : ℝ :=
+`johnsonExceptionCount_lt_closed`. -/
+def johnsonExceptionCount (n D A : ℕ) (eta : ℝ) : ℝ :=
   let μ := johnsonMu n D eta
   let h := johnsonH n D eta
   (2 * μ - 1 : ℕ) * h + johnsonTheta n D A * (h + μ + 4 * D * μ * h) +
     (n - D - 1 : ℕ) * μ
 
 /-- The sharper raw exception count `(2μ - 1) h + θ (h + μ + (2D - 1) h (2μ - 1)) + (n - D - 1) μ`,
-which the ordinary-agreement argument provides when `μ ≤ D`. This file only defines it; its
-comparison with `johnsonE0` belongs with that argument. -/
-def johnsonESharp (n D A : ℕ) (eta : ℝ) : ℝ :=
+which the ordinary-agreement argument provides when `μ ≤ D`. This file only defines it. -/
+def johnsonRefinedExceptionCount (n D A : ℕ) (eta : ℝ) : ℝ :=
   let μ := johnsonMu n D eta
   let h := johnsonH n D eta
   (2 * μ - 1 : ℕ) * h +
     johnsonTheta n D A * (h + μ + (2 * D - 1) * h * (2 * μ - 1)) +
     (n - D - 1 : ℕ) * μ
 
-/-- The multiplicity `max ⌈√ρ₋ / η⌉₊ 3` of the BCHKS Johnson estimate. It differs from
-`johnsonM` only by the factor `2` in the denominator, so it is at least `johnsonM`
-(`johnsonM_le_BCHKS_M`). -/
-def johnsonBCHKS_M (n D : ℕ) (eta : ℝ) : ℕ :=
+/-- The multiplicity `max ⌈√ρ₋ / η⌉₊ 3` of the Johnson exception estimate
+`johnsonComparisonEstimate`. It differs from `johnsonM` only by the factor `2` in the denominator,
+so it is at least `johnsonM` (`johnsonM_le_comparisonMultiplicity`). -/
+def johnsonComparisonMultiplicity (n D : ℕ) (eta : ℝ) : ℕ :=
   max ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
 
-/-- The half-shifted BCHKS multiplicity `t_B = johnsonBCHKS_M + 1/2`. -/
-def johnsonBCHKS_T (n D : ℕ) (eta : ℝ) : ℝ :=
-  johnsonBCHKS_M n D eta + 1 / 2
+/-- The half-shifted comparison multiplicity `t_B = johnsonComparisonMultiplicity + 1/2`. -/
+def johnsonComparisonShift (n D : ℕ) (eta : ℝ) : ℝ :=
+  johnsonComparisonMultiplicity n D eta + 1 / 2
 
-/-- The agreement slack `γ = 1 - (√ρ₋ + η)` appearing in the BCHKS estimate. It is nonnegative
-exactly when the agreement fraction is at most `1`. -/
+/-- The agreement slack `γ = 1 - (√ρ₋ + η)` appearing in `johnsonComparisonEstimate`. It is
+nonnegative exactly when the agreement fraction is at most `1`. -/
 def johnsonGamma (n D : ℕ) (eta : ℝ) : ℝ :=
   1 - johnsonAgreement n D eta
 
-/-- The BCHKS exception estimate
+/-- The Johnson exception estimate
 `((2 t_B⁵ + 3 t_B γ ρ₋) / (3 √ρ₋³)) n + t_B / √ρ₋`, written with `√ρ₋ ^ 3`; the equality
 `√ρ₋ ^ 3 = ρ₋ ^ (3/2)` is `johnson_sqrt_cube_eq_rpow_three_halves`. -/
-def johnsonBCHKS (n D : ℕ) (eta : ℝ) : ℝ :=
+def johnsonComparisonEstimate (n D : ℕ) (eta : ℝ) : ℝ :=
   let rho := johnsonRhoMinus n D
-  let tB := johnsonBCHKS_T n D eta
+  let tB := johnsonComparisonShift n D eta
   ((2 * tB ^ 5 + 3 * tB * johnsonGamma n D eta * rho) / (3 * √rho ^ 3)) * n +
     tB / √rho
 
@@ -391,7 +369,7 @@ def johnsonNormalizedEnvelope (x : ℝ) : ℝ :=
 
 /-- The pre-envelope `4(1 + x)/3 + (2/(3x) + (1 + x)/(3tx) + 1/t²) y + x(1 - x²)/t²`. With
 `x = √ρ₋`, `y = 1 / n` and `t = johnsonT`, the scaled value `(n t³ / ρ₋) · johnsonPreEnvelope x y t`
-bounds `johnsonE0` (`johnsonE0_lt_preEnvelope_scale`). -/
+bounds `johnsonExceptionCount` (`johnsonExceptionCount_lt_preEnvelope_scale`). -/
 def johnsonPreEnvelope (x y t : ℝ) : ℝ :=
   4 * (1 + x) / 3 +
     (2 / (3 * x) + (1 + x) / (3 * t * x) + 1 / t ^ 2) * y +
@@ -448,13 +426,13 @@ theorem johnsonPreEnvelope_le_normalized {x y t : ℝ}
   dsimp only [s] at hmiddle
   linarith
 
-/-- `johnsonE0 < (n t³ / ρ₋) · johnsonPreEnvelope √ρ₋ (1/n) t` under `1 ≤ D < n`, `η > 0` and
-the Johnson threshold `(√ρ₋ + η) n ≤ A`. Each term of `johnsonE0` is bounded using `μ < t / √ρ₋`,
-`h < t² / (3ρ₋)` and `θ ≤ (1 + √ρ₋) / √ρ₋`. -/
-theorem johnsonE0_lt_preEnvelope_scale {n D A : ℕ} {eta : ℝ}
+/-- `E₀ < (n t³ / ρ₋) · johnsonPreEnvelope √ρ₋ (1/n) t`, where `E₀ = johnsonExceptionCount`,
+under `1 ≤ D < n`, `η > 0` and the Johnson threshold `(√ρ₋ + η) n ≤ A`. Each term of `E₀` is
+bounded using `μ < t / √ρ₋`, `h < t² / (3ρ₋)` and `θ ≤ (1 + √ρ₋) / √ρ₋`. -/
+theorem johnsonExceptionCount_lt_preEnvelope_scale {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D < n) (heta : 0 < eta)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    johnsonE0 n D A eta <
+    johnsonExceptionCount n D A eta <
       ((n : ℝ) * johnsonT n D eta ^ 3 / johnsonRhoMinus n D) *
         johnsonPreEnvelope (√(johnsonRhoMinus n D)) (1 / n) (johnsonT n D eta) := by
   let rho := johnsonRhoMinus n D
@@ -536,10 +514,10 @@ theorem johnsonE0_lt_preEnvelope_scale {n D A : ℕ} {eta : ℝ}
       _ = (n : ℝ) * t * (1 - x ^ 2) / x + t / x ^ 2 := by
         field_simp [hxne]
   calc
-    johnsonE0 n D A eta =
+    johnsonExceptionCount n D A eta =
         ((2 * μ - 1 : ℕ) : ℝ) * h + theta * h + theta * (4 * D * μ * h : ℕ) +
           (theta + ((n - D - 1 : ℕ) : ℝ)) * μ := by
-            unfold johnsonE0
+            unfold johnsonExceptionCount
             dsimp only [μ, h, theta]
             push_cast
             ring
@@ -644,12 +622,12 @@ theorem johnsonNormalizedEnvelope_lt {x : ℝ} (hx0 : 0 < x) (hx1 : x < 1) :
     rw [hformula]
     positivity
 
-/-- The closed bound `johnsonE0 < (8/3) n t³ / ρ₋` for `1 ≤ D ≤ n - 2`, `η > 0` and
+/-- The closed bound `johnsonExceptionCount < (8/3) n t³ / ρ₋` for `1 ≤ D ≤ n - 2`, `η > 0` and
 `(√ρ₋ + η) n ≤ A`. The guard `D ≤ n - 2` enters through `johnson_inv_length_le_min`. -/
-theorem johnsonE0_lt_closed {n D A : ℕ} {eta : ℝ}
+theorem johnsonExceptionCount_lt_closed {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    johnsonE0 n D A eta <
+    johnsonExceptionCount n D A eta <
       (8 / 3 : ℝ) * n * johnsonT n D eta ^ 3 / johnsonRhoMinus n D := by
   let rho := johnsonRhoMinus n D
   let x := √rho
@@ -659,13 +637,13 @@ theorem johnsonE0_lt_closed {n D A : ℕ} {eta : ℝ}
   have hx := johnsonSqrt_mem_Ioo (n := n) hD (by omega)
   have ht : 7 / 2 ≤ t := johnsonT_ge_seven_halves n D eta
   have hscale : 0 < (n : ℝ) * t ^ 3 / rho := by positivity
-  have hraw := johnsonE0_lt_preEnvelope_scale hD (by omega) heta hthreshold
+  have hraw := johnsonExceptionCount_lt_preEnvelope_scale hD (by omega) heta hthreshold
   have hpre : johnsonPreEnvelope x (1 / n) t ≤ johnsonNormalizedEnvelope x :=
     johnsonPreEnvelope_le_normalized hx.1 hx.2 ht (johnson_inv_length_le_min hD hDn)
   have hnormalized : johnsonNormalizedEnvelope x < 8 / 3 :=
     johnsonNormalizedEnvelope_lt hx.1 hx.2
   calc
-    johnsonE0 n D A eta <
+    johnsonExceptionCount n D A eta <
         ((n : ℝ) * t ^ 3 / rho) * johnsonPreEnvelope x (1 / n) t := hraw
     _ ≤ ((n : ℝ) * t ^ 3 / rho) * johnsonNormalizedEnvelope x := by
       exact mul_le_mul_of_nonneg_left hpre hscale.le
@@ -673,43 +651,43 @@ theorem johnsonE0_lt_closed {n D A : ℕ} {eta : ℝ}
       exact mul_lt_mul_of_pos_left hnormalized hscale
     _ = (8 / 3 : ℝ) * n * t ^ 3 / rho := by ring
 
-/-- `johnsonM ≤ johnsonBCHKS_M` for `η > 0`. For `η < 0` both ceilings are `0` and the
-statement still holds, but the proof uses `η > 0` to compare the quotients. -/
-theorem johnsonM_le_BCHKS_M (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
-    johnsonM n D eta ≤ johnsonBCHKS_M n D eta := by
+/-- `johnsonM ≤ johnsonComparisonMultiplicity` for `η > 0`. For `η < 0` both ceilings are `0`
+and the statement still holds, but the proof uses `η > 0` to compare the quotients. -/
+theorem johnsonM_le_comparisonMultiplicity (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
+    johnsonM n D eta ≤ johnsonComparisonMultiplicity n D eta := by
   let x := √(johnsonRhoMinus n D)
   have hx : 0 ≤ x := Real.sqrt_nonneg _
   have hfrac : x / (2 * eta) ≤ x / eta := by
     exact div_le_div_of_nonneg_left hx heta (by linarith)
   have hceil : ⌈x / (2 * eta)⌉₊ ≤ ⌈x / eta⌉₊ := Nat.ceil_mono hfrac
-  unfold johnsonM johnsonBCHKS_M
+  unfold johnsonM johnsonComparisonMultiplicity
   exact max_le_max hceil le_rfl
 
-/-- `johnsonT ≤ johnsonBCHKS_T` for `η > 0`. -/
-theorem johnsonT_le_BCHKS_T (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
-    johnsonT n D eta ≤ johnsonBCHKS_T n D eta := by
-  unfold johnsonT johnsonBCHKS_T
-  have hcast : (johnsonM n D eta : ℝ) ≤ johnsonBCHKS_M n D eta := by
-    exact_mod_cast johnsonM_le_BCHKS_M n D heta
+/-- `johnsonT ≤ johnsonComparisonShift` for `η > 0`. -/
+theorem johnsonT_le_comparisonShift (n D : ℕ) {eta : ℝ} (heta : 0 < eta) :
+    johnsonT n D eta ≤ johnsonComparisonShift n D eta := by
+  unfold johnsonT johnsonComparisonShift
+  have hcast : (johnsonM n D eta : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
+    exact_mod_cast johnsonM_le_comparisonMultiplicity n D heta
   linarith
 
-/-- The BCHKS estimate strictly exceeds its leading term `(2 t_B⁵ / (3 √ρ₋³)) n` when
+/-- `johnsonComparisonEstimate` strictly exceeds its leading term `(2 t_B⁵ / (3 √ρ₋³)) n` when
 `1 ≤ D < n` and the agreement fraction is at most `1`; the last hypothesis makes `γ ≥ 0`. -/
-theorem johnsonBCHKS_leading_lt {n D : ℕ} {eta : ℝ}
+theorem johnsonComparisonEstimate_leading_lt {n D : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D < n)
     (ha : johnsonAgreement n D eta ≤ 1) :
-    (2 * johnsonBCHKS_T n D eta ^ 5 /
+    (2 * johnsonComparisonShift n D eta ^ 5 /
           (3 * √(johnsonRhoMinus n D) ^ 3)) * n <
-      johnsonBCHKS n D eta := by
+      johnsonComparisonEstimate n D eta := by
   let rho := johnsonRhoMinus n D
   let x := √rho
-  let tB := johnsonBCHKS_T n D eta
+  let tB := johnsonComparisonShift n D eta
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
   have hrho : 0 < rho := johnsonRhoMinus_pos hD hDn
   have hx : 0 < x := Real.sqrt_pos.2 hrho
   have htB : 0 < tB := by
-    unfold tB johnsonBCHKS_T
-    have : (3 : ℝ) ≤ johnsonBCHKS_M n D eta := by
+    unfold tB johnsonComparisonShift
+    have : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
       exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
     linarith
   have hgamma : 0 ≤ johnsonGamma n D eta := by
@@ -720,7 +698,7 @@ theorem johnsonBCHKS_leading_lt {n D : ℕ} {eta : ℝ}
   have hquot : 2 * tB ^ 5 / (3 * x ^ 3) ≤
       (2 * tB ^ 5 + 3 * tB * johnsonGamma n D eta * rho) / (3 * x ^ 3) := by
     exact (div_le_div_iff_of_pos_right hden).2 (by linarith)
-  unfold johnsonBCHKS
+  unfold johnsonComparisonEstimate
   dsimp only [rho, x, tB]
   calc
     (2 * tB ^ 5 / (3 * x ^ 3)) * n ≤
@@ -731,38 +709,38 @@ theorem johnsonBCHKS_leading_lt {n D : ℕ} {eta : ℝ}
       have : 0 < tB / x := div_pos htB hx
       linarith
 
-/-- The BCHKS estimate is positive when `1 ≤ D < n` and the agreement fraction is at most
+/-- `johnsonComparisonEstimate` is positive when `1 ≤ D < n` and the agreement fraction is at most
 `1`. -/
-theorem johnsonBCHKS_pos {n D : ℕ} {eta : ℝ}
+theorem johnsonComparisonEstimate_pos {n D : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D < n)
     (ha : johnsonAgreement n D eta ≤ 1) :
-    0 < johnsonBCHKS n D eta := by
+    0 < johnsonComparisonEstimate n D eta := by
   let rho := johnsonRhoMinus n D
   let x := √rho
-  let tB := johnsonBCHKS_T n D eta
+  let tB := johnsonComparisonShift n D eta
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
   have hrho : 0 < rho := johnsonRhoMinus_pos hD hDn
   have hx : 0 < x := Real.sqrt_pos.2 hrho
   have htB : 0 < tB := by
-    unfold tB johnsonBCHKS_T
-    have hm : (3 : ℝ) ≤ johnsonBCHKS_M n D eta := by
+    unfold tB johnsonComparisonShift
+    have hm : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
       exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
     linarith
   have hleading0 : 0 < (2 * tB ^ 5 / (3 * x ^ 3)) * n := by positivity
-  exact lt_trans hleading0 (johnsonBCHKS_leading_lt hD hDn ha)
+  exact lt_trans hleading0 (johnsonComparisonEstimate_leading_lt hD hDn ha)
 
-/-- `johnsonE0 / johnsonBCHKS < 16/49` under `1 ≤ D ≤ n - 2`, `η > 0`, agreement fraction at
-most `1`, and `(√ρ₋ + η) n ≤ A`. It combines `johnsonE0_lt_closed` with `t ≤ t_B`, `t_B ≥ 7/2`
-and `√ρ₋ < 1`. -/
-theorem johnsonE0_div_BCHKS_lt {n D A : ℕ} {eta : ℝ}
+/-- `johnsonExceptionCount / johnsonComparisonEstimate < 16/49` under `1 ≤ D ≤ n - 2`, `η > 0`,
+agreement fraction at most `1`, and `(√ρ₋ + η) n ≤ A`. It combines
+`johnsonExceptionCount_lt_closed` with `t ≤ t_B`, `t_B ≥ 7/2` and `√ρ₋ < 1`. -/
+theorem johnsonExceptionCount_div_comparisonEstimate_lt {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (ha : johnsonAgreement n D eta ≤ 1)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    johnsonE0 n D A eta / johnsonBCHKS n D eta < 16 / 49 := by
+    johnsonExceptionCount n D A eta / johnsonComparisonEstimate n D eta < 16 / 49 := by
   let rho := johnsonRhoMinus n D
   let x := √rho
   let t := johnsonT n D eta
-  let tB := johnsonBCHKS_T n D eta
+  let tB := johnsonComparisonShift n D eta
   have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
   have hrho : 0 < rho := johnsonRhoMinus_pos hD (by omega)
   have hx := johnsonSqrt_mem_Ioo (n := n) hD (by omega)
@@ -773,12 +751,12 @@ theorem johnsonE0_div_BCHKS_lt {n D A : ℕ} {eta : ℝ}
   have hx2 : x ^ 2 = rho := Real.sq_sqrt hrho.le
   have ht : 0 < t := lt_of_lt_of_le (by norm_num) (johnsonT_ge_seven_halves n D eta)
   have htBLower : 7 / 2 ≤ tB := by
-    unfold tB johnsonBCHKS_T
-    have hm : (3 : ℝ) ≤ johnsonBCHKS_M n D eta := by
+    unfold tB johnsonComparisonShift
+    have hm : (3 : ℝ) ≤ johnsonComparisonMultiplicity n D eta := by
       exact_mod_cast le_max_right ⌈√(johnsonRhoMinus n D) / eta⌉₊ 3
     linarith
   have htB : 0 < tB := lt_of_lt_of_le (by norm_num) htBLower
-  have httB : t ≤ tB := johnsonT_le_BCHKS_T n D heta
+  have httB : t ≤ tB := johnsonT_le_comparisonShift n D heta
   have htCube : t ^ 3 ≤ tB ^ 3 := by gcongr
   have hxtCube : x * t ^ 3 < tB ^ 3 := by
     calc
@@ -807,37 +785,40 @@ theorem johnsonE0_div_BCHKS_lt {n D A : ℕ} {eta : ℝ}
       _ = (16 / 49 : ℝ) * ((2 * tB ^ 5 / (3 * x ^ 3)) * n) := by
         field_simp [hxne]
         norm_num
-  have hE := johnsonE0_lt_closed hD hDn heta hthreshold
-  have hleading := johnsonBCHKS_leading_lt hD (by omega) ha
-  have hB : 0 < johnsonBCHKS n D eta := johnsonBCHKS_pos hD (by omega) ha
+  have hE := johnsonExceptionCount_lt_closed hD hDn heta hthreshold
+  have hleading := johnsonComparisonEstimate_leading_lt hD (by omega) ha
+  have hB : 0 < johnsonComparisonEstimate n D eta := johnsonComparisonEstimate_pos hD (by omega) ha
   apply (div_lt_iff₀ hB).2
   calc
-    johnsonE0 n D A eta < (8 / 3 : ℝ) * n * t ^ 3 / rho := hE
+    johnsonExceptionCount n D A eta < (8 / 3 : ℝ) * n * t ^ 3 / rho := hE
     _ < (16 / 49 : ℝ) * ((2 * tB ^ 5 / (3 * x ^ 3)) * n) := hclosedCompare
-    _ < (16 / 49 : ℝ) * johnsonBCHKS n D eta := by
+    _ < (16 / 49 : ℝ) * johnsonComparisonEstimate n D eta := by
       exact mul_lt_mul_of_pos_left hleading (by norm_num)
 
-/-- `johnsonE0 < johnsonBCHKS` under the hypotheses of `johnsonE0_div_BCHKS_lt`. -/
-theorem johnsonE0_lt_BCHKS {n D A : ℕ} {eta : ℝ}
+/-- `johnsonExceptionCount < johnsonComparisonEstimate` under the hypotheses of
+`johnsonExceptionCount_div_comparisonEstimate_lt`. -/
+theorem johnsonExceptionCount_lt_comparisonEstimate {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (ha : johnsonAgreement n D eta ≤ 1)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    johnsonE0 n D A eta < johnsonBCHKS n D eta := by
-  have hB : 0 < johnsonBCHKS n D eta := johnsonBCHKS_pos hD (by omega) ha
+    johnsonExceptionCount n D A eta < johnsonComparisonEstimate n D eta := by
+  have hB : 0 < johnsonComparisonEstimate n D eta := johnsonComparisonEstimate_pos hD (by omega) ha
   calc
-    johnsonE0 n D A eta < (16 / 49 : ℝ) * johnsonBCHKS n D eta :=
-      (div_lt_iff₀ hB).mp (johnsonE0_div_BCHKS_lt hD hDn heta ha hthreshold)
-    _ < 1 * johnsonBCHKS n D eta := by
+    johnsonExceptionCount n D A eta < (16 / 49 : ℝ) * johnsonComparisonEstimate n D eta :=
+      (div_lt_iff₀ hB).mp
+        (johnsonExceptionCount_div_comparisonEstimate_lt hD hDn heta ha hthreshold)
+    _ < 1 * johnsonComparisonEstimate n D eta := by
       exact mul_lt_mul_of_pos_right (by norm_num) hB
-    _ = johnsonBCHKS n D eta := one_mul _
+    _ = johnsonComparisonEstimate n D eta := one_mul _
 
-/-- `johnsonE0 ≤ johnsonBCHKS`, the non-strict form of `johnsonE0_lt_BCHKS`. -/
-theorem johnsonE0_le_BCHKS {n D A : ℕ} {eta : ℝ}
+/-- `johnsonExceptionCount ≤ johnsonComparisonEstimate`, the non-strict form of
+`johnsonExceptionCount_lt_comparisonEstimate`. -/
+theorem johnsonExceptionCount_le_comparisonEstimate {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (ha : johnsonAgreement n D eta ≤ 1)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    johnsonE0 n D A eta ≤ johnsonBCHKS n D eta :=
-  (johnsonE0_lt_BCHKS hD hDn heta ha hthreshold).le
+    johnsonExceptionCount n D A eta ≤ johnsonComparisonEstimate n D eta :=
+  (johnsonExceptionCount_lt_comparisonEstimate hD hDn heta ha hthreshold).le
 
 end
 

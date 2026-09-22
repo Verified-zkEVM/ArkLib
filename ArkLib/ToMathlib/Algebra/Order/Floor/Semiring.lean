@@ -18,13 +18,6 @@ strictly below `z` for `0 < z`, and it is at least `1` for `1 < z`.
 
 * `Nat.cast_ceil_sub_one_lt`: `((⌈z⌉₊ - 1 : ℕ) : R) < z` for `0 < z`.
 * `Nat.one_le_ceil_sub_one`: `1 ≤ ⌈z⌉₊ - 1` for `1 < z`.
-
-## References
-
-Both statements are extracted from the proofs of `johnsonMu_lt`, `johnsonH_lt`, `johnsonMu_pos`
-and `johnsonH_pos` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Johnson/FiniteBounds.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, where they were proved inline over `ℝ`.
 -/
 
 @[expose] public section
