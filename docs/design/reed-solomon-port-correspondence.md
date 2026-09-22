@@ -113,6 +113,47 @@ jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
 
 `finrank_interpolationSpace_lowerBound`: /-- The source's rectangular lower bound:
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Dimension.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Counting.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `firstOrder_x_lt_residual_iff` is
+now `firstOrderWeight_lt_iff_lt_residual`, `card_firstOrderExponents_eq_dimensionCount` is now
+`card_firstOrderExponents`, and `finrank_firstOrderSpace_eq_dimensionCount` is now
+`finrank_firstOrderSpace_eq_firstOrderDimensionCount`. `card_firstOrderDimensionIndex` is now
+`card_firstOrderDimensionCoordinates`, over the `Finset` `firstOrderDimensionCoordinates` in
+place of the type `FirstOrderDimensionIndex`. `FirstOrderCoordinatesEligible`,
+`firstOrderEligibleCoordinateEquiv`, `firstOrder_weight_add_firstJet_eq`,
+`FirstOrderDimensionIndex`, `FirstOrderFlatDimensionEligible` and the four `firstOrder…Equiv`
+definitions are not ported; one `Finset.card_nbij'` proof replaces them.
+`exists_nonzero_firstOrder_interpolant_of_dimensionCount` moved to
+`Interpolation/FirstOrder/Interpolant.lean`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Interpolant.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Interpolation.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, together with
+`exists_nonzero_firstOrder_interpolant_of_dimensionCount` from `FirstOrder/Counting.lean`. No
+theorem assumes `1 < D`. `firstOrderGlobalConstraint` is now `firstOrderGlobalConstraintMap`,
+and `finrank_firstOrderGlobalConstraint_le` is now `finrank_firstOrderGlobalConstraintMap_le`.
+`exists_nonzero_firstOrder_interpolant_with_multiplicity` is now
+`exists_nonzero_firstOrder_interpolant_X_sub_C_pow_dvd`: the interpolant is chosen before the
+polynomial `P`, and each divisibility needs agreement only at its own point. The test derives
+the source form. The rank bound and the interpolant use `LinearMap.finrank_range_pi_le_sum` and
+`LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` from P3 slice 10.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Space.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Basic.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the same names.
+`firstOrderSpace_le_exactInterpolationSpace` holds for every higher-jet budget `W`. The embedding
+`firstOrderSpace_le_exactInterpolationSpace_of_le` into an exact space with a larger degree bound
+and agreement threshold is new, as are `monomial_mem_firstOrderSpace`, the `Module.Finite`
+instance, `jetTotalDegree_le_of_mem_firstOrderSpace` and
+`weight_differentialWeight_le_add_mul_totalJetDegree`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FreeOrderDimension.lean`
 
 Ported from
