@@ -71,11 +71,11 @@ Ports declarations of `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Int
   needs, already follows from the harmonic hypotheses, and the third-moment factor needs only
   `1 ≤ n + 1`. The hypothesis `0 < t` is weakened to `0 ≤ t`.
 
-The source's `weighted_dimension_probability` is in `WeightedSupport/Estimate.lean`.
-Deferred: `weighted_dimension_lower` of `Estimate.lean` (it needs the harmonic-number
-estimates), `Margin.lean`, `RankIntegral.lean`, `NormalizedRank.lean`,
-and `positive_cube_tangent`, `positive_cube_jensen`, `positive_cube_convex` of `Cubic.lean`,
-which have no consumer yet.
+The source's `weighted_dimension_probability` and `weighted_dimension_lower` are in
+`WeightedSupport/Estimate.lean`, and `positive_cube_tangent`, `positive_cube_jensen`,
+`positive_cube_convex` of `Cubic.lean` are in
+`ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart`.
+Deferred: `Margin.lean` and `NormalizedRank.lean`.
 -/
 
 @[expose] public section

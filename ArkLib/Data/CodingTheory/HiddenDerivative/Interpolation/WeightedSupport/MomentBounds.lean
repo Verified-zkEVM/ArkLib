@@ -42,8 +42,9 @@ and `48000 ≤ d` becomes `1 ≤ d`. The acceptance tests derive the source stat
 
 The moment identities that produce these factors (`normalizedRadius` and its first three moments)
 are in `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which
-also combines them with these bounds in `normalizedRadius_contribution_lower`. Deferred: the
-harmonic-sum bounds that supply `H`, `H₂` and `H₃`.
+also combines them with these bounds in `normalizedRadius_contribution_lower`. The
+harmonic-sum bounds that supply `H`, `H₂` and `H₃` are in
+`ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds`.
 -/
 
 @[expose] public section
