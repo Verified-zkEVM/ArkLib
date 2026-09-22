@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.QuerySoundness
+module
+
+public import ArkLib.ProofSystem.Fri.QuerySoundness
 
 /-!
 # Agreement lifting along the executable FRI query projections
@@ -13,6 +15,8 @@ The executable specification indexes every domain from the original domain. This
 applies the single-fold agreement theorem to positions projected through an arbitrary
 prefix of folding rounds, keeping the original query set fixed.
 -/
+
+@[expose] public section
 
 namespace Fri
 
@@ -75,7 +79,7 @@ theorem exists_polynomial_agree_on_projection
     by_contra h
     exact hsafe ⟨T, by simpa using hTlarge, hfold, h⟩
   obtain ⟨u, hu, hagree⟩ := hlift
-  letI : NeZero (2 ^ k * d) := ⟨by positivity⟩
+  let : NeZero (2 ^ k * d) := ⟨by positivity⟩
   obtain ⟨q, hq, rfl⟩ := mem_code_iff_exists_polynomial_of_ne_zero.mp hu
   refine ⟨q, hq, fun z hz ↦ ?_⟩
   have h := hagree (sqFoldMapGen (i := a) z)

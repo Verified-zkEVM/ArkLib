@@ -3,10 +3,11 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
-import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
 
 /-!
 # Function Binding for the KZG Polynomial Commitment Scheme
@@ -26,6 +27,8 @@ binding and interpolation branches used in the paper proof.
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 
@@ -192,14 +195,15 @@ omit [DecidableEq G₁] in
 lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState : Type}
     [SampleableType G₁]
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-    Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) |
-      Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
+    Pr{let result ← (Commitment.functionBindingGame (init := pure ∅)
+      (impl := randomOracle) (hn := rfl)
         (AuxState := AuxState)
         (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
-        (adversary := adversary)]
-    = Pr[functionBindingCondExt n L |
-      functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
+        (adversary := adversary))}[
+          (Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p)) result]
+    = Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          (functionBindingCondExt n L) result] := by
   -- Define the projection from the extended output tuple to the basic output tuple.
   let proj : (ZMod p × (Vector G₁ (n + 1) × Vector G₂ 2) × G₁ ×
       (Fin L → ZMod p) × (Fin L → ZMod p) × (Fin L → Bool) × (Fin L → G₁)) →
@@ -213,13 +217,12 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
     funext x
     rcases x with ⟨_, _, _, _, _, _, _⟩
     rfl
-  rw [hcond_eq]
-  -- Apply the OptionT bridge lemma with the run-level equality proved inline.
-  apply OptionT.probEvent_eq_of_run_map_eq _ _ proj
-    (Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p))
+  rw [hcond_eq, Function.comp_def, ← prEvent_map _ proj]
+  congr 3
+  apply OptionT.ext
+  rw [OptionT.run_map]
   simp only [Commitment.functionBindingGame, functionBindingGameExt, kzg, OptionT.run,
-    OptionT.mk]
-  rw [pure_bind]
+    OptionT.mk, pure_bind]
   have hsample :
       (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
         Groups.sampleNonzeroZMod (p := p) :=
@@ -266,8 +269,6 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
   congr 1
   funext resultPairs
   cases resultPairs <;> rfl
-
--- helper lemmas for transition 2
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
@@ -519,13 +520,13 @@ include g₁ g₂ pairing in
 lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-    Pr[functionBindingCondExt n L |
-      functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
-      (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
-    ≤ Pr[(Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn |
-      functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
-  apply probEvent_mono
+    Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+      (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+        (functionBindingCondExt n L) result]
+    ≤ Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] := by
+  apply _root_.prEvent_mono_of_support
   intro (τ, srs, cm, queryOf, responseOf, accepts, proofs) hgame hFBcond
   exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hg₁ hpair
     adversary hgame hFBcond
@@ -537,26 +538,24 @@ lemma map_instance_drag {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
       ⟨!v[.P_to_V], !v[G₁]⟩) :
-    Pr[(Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn |
-      functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme]
-    = Pr[(Groups.arsdhCondition n) |
-      mapFunctionBindingToArsdh hn <$>
-        functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme] := by
-  exact probEvent_comp _ _ _
+    Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
+      ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result]
+    = Pr{let result ← (mapFunctionBindingToArsdh hn <$>
+        functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
+          ((Groups.arsdhCondition n)) result] := by
+  simp only [prEvent_map, Function.comp_apply]
 
 /-- Transition 4: the mapped game equals the ARSDH experiment -/
 lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
     (hn : 1 ≤ n) (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
-  Pr[(Groups.arsdhCondition n) |
-      mapFunctionBindingToArsdh hn <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂)
-        AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
+  Pr{let result ← (mapFunctionBindingToArsdh hn <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂)
+        AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          ((Groups.arsdhCondition n)) result]
     = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.arsdhExperiment, Groups.arsdhGame]
-  unfold Groups.arsdhCondition
-  simp only
-  congr 1
+  congr 3
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
@@ -642,22 +641,19 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
     Commitment.functionBinding (L := L) (init := pure ∅) (impl := randomOracle)
       (hn := rfl)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) arsdhError := by
-  letI := Classical.decEq G₁
-  letI scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+  let := Classical.decEq G₁
+  let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.functionBinding]
   intro AuxState adversary
-  letI game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
-    (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
-  letI game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
-  change Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) | game]
-    ≤ arsdhError
-  exact
-    calc Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) | game]
-    _ = Pr[functionBindingCondExt n L | game_ext] :=
+  let game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
+  calc _
+    _ = Pr{let result ← (game_ext)}[(functionBindingCondExt n L) result] :=
       function_binding_game_ext_eq_function_binding_game (pairing := pairing) adversary
-    _ ≤ Pr[(Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn | game_ext] :=
+    _ ≤ Pr{let result ← (game_ext)}[
+      ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] :=
       function_binding_cond_le_arsdh_cond (pairing := pairing) hn hp hg₁ hpair adversary
-    _ = Pr[(Groups.arsdhCondition n) | mapFunctionBindingToArsdh hn <$> game_ext] :=
+    _ = Pr{let result ← (mapFunctionBindingToArsdh hn <$> game_ext)}[
+      ((Groups.arsdhCondition n)) result] :=
       map_instance_drag hn adversary scheme
     _ = Groups.arsdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) :=

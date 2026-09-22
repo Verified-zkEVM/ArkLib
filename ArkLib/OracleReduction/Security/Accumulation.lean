@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.OracleReduction.Security.BadEvents
+module
+
+public import ArkLib.OracleReduction.Security.BadEvents
 
 /-!
 # Accumulating errors in the actual prover execution
@@ -12,6 +14,8 @@ import ArkLib.OracleReduction.Security.BadEvents
 These bounds use `Prover.runToRound`, including its private state and the shared oracle
 state. The error is charged only when the predicate was false before a round.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped ENNReal
@@ -56,17 +60,17 @@ theorem prob_state_runToRound_le {σ : Type}
     (hzero : ¬ S 0 default)
     (hstep : ∀ (j : Fin n) (tr : pSpec.Transcript j.castSucc)
       (st : prover.PrvState j.castSucc) (os : σ), ¬ S j.castSucc tr →
-      Pr[ fun x ↦ S j.succ x.1.1 |
-        (simulateQ impl (prover.processRound j (pure (tr, st)))).run os] ≤ ε j)
+      Pr{let x ← (simulateQ impl
+        (prover.processRound j (pure (tr, st)))).run os}[S j.succ x.1.1] ≤ ε j)
     (m : Fin (n + 1)) (os : σ) :
-    Pr[ fun x ↦ S m x.1.1 |
-      (simulateQ impl (prover.runToRound m stmt wit)).run os] ≤ errorBudget ε m := by
+    Pr{let x ← (simulateQ impl (prover.runToRound m stmt wit)).run os}[S m x.1.1] ≤
+      errorBudget ε m := by
   induction m using Fin.induction with
   | zero =>
     simp [runToRound_zero_of_prover_first, simulateQ_pure, StateT.run_pure, hzero]
   | succ j ih =>
     rw [runToRound_succ, processRound_bind, simulateQ_bind, StateT.run_bind]
-    refine (probEvent_bind_le_probEvent_add (p := fun x ↦ S j.castSucc x.1.1)
+    refine (prEvent_bind_le_prEvent_add_of_support _ _ _ (p := fun x ↦ S j.castSucc x.1.1)
       (ε := ε j) ?_).trans ?_
     · intro x _ hx
       exact hstep j x.1.1 x.1.2 x.2 hx
@@ -81,11 +85,10 @@ theorem prob_state_processRound_prover_le {σ : Type}
     (S : pSpec.Transcript j.succ → Prop)
     (tr : pSpec.Transcript j.castSucc) (st : prover.PrvState j.castSucc) (os : σ)
     (hS : ∀ msg, ¬ S (tr.concat msg)) :
-    Pr[ fun x ↦ S x.1.1 |
-      (simulateQ impl (prover.processRound j (pure (tr, st)))).run os] ≤ 0 := by
+    Pr{let x ← (simulateQ impl (prover.processRound j (pure (tr, st)))).run os}[S x.1.1] ≤ 0 := by
   rw [processRound_of_dir_eq_P_to_V j hj]
   simp only [pure_bind, simulateQ_bind, StateT.run_bind]
-  apply probEvent_bind_le_of_forall_le
+  apply prEvent_bind_le_of_forall_le_of_support _ _ _
   intro x _
   simp [simulateQ_pure, StateT.run_pure, hS]
 
@@ -97,10 +100,9 @@ theorem prob_state_processRound_challenge_le {σ : Type}
     (j : Fin n) (hj : pSpec.dir j = .V_to_P)
     (S : pSpec.Transcript j.succ → Prop)
     (tr : pSpec.Transcript j.castSucc) (st : prover.PrvState j.castSucc) (os : σ) :
-    Pr[ fun x ↦ S x.1.1 |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (prover.processRound j (pure (tr, st)))).run os] ≤
-      Pr[ fun c ↦ S (tr.concat c) | $ᵗ (pSpec.Challenge ⟨j, hj⟩)] := by
+    Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (prover.processRound j (pure (tr, st)))).run os}[S x.1.1] ≤
+      Pr{let c ← $ᵗ (pSpec.Challenge ⟨j, hj⟩)}[S (tr.concat c)] := by
   rw [processRound_of_dir_eq_V_to_P j hj]
   have hget : simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
       (pSpec.getChallenge ⟨j, hj⟩ : OracleComp (oSpec + [pSpec.Challenge]ₒ) _) =
@@ -109,9 +111,10 @@ theorem prob_state_processRound_challenge_le {σ : Type}
   simp only [pure_bind, simulateQ_bind]
   rw [hget]
   simp only [StateT.run_bind, StateT.run_monadLift, monadLift_self, bind_assoc, pure_bind]
-  apply probEvent_bind_le_probEvent (p := fun c ↦ S (tr.concat c))
+  simp only [← bind_assoc]
+  apply prEvent_bind_le_prEvent_of_support _ _ _ (p := fun c ↦ S (tr.concat c))
   intro c _ hc
-  apply probEvent_eq_zero_iff.mpr
+  apply (prEvent_eq_zero_iff _ _).mpr
   intro x hx
   simp only [simulateQ_pure, StateT.run_pure, support_bind, support_pure,
     Set.mem_iUnion, Set.mem_singleton_iff] at hx
@@ -141,11 +144,11 @@ theorem sum_badEventRoundError (ε : pSpec.ChallengeIdx → ℝ≥0∞) :
     intro j _ hj
     have hd : pSpec.dir j ≠ .V_to_P := by simpa only [t, Finset.mem_filter,
       Finset.mem_univ, true_and] using hj
-    exact dif_neg hd
+    exact dite_eq_right hd
   rw [← hzero, Finset.sum_subtype (p := fun j ↦ pSpec.dir j = .V_to_P) t (by simp [t])]
   apply Finset.sum_congr rfl
   intro i _
-  exact dif_pos i.property
+  exact dite_eq_left i.property
 
 /-- Conditional fresh-event bounds control the probability of having encountered any
 bad event, for every adaptive prover and every initial oracle state. -/
@@ -157,27 +160,26 @@ theorem prob_badEventState_runToRound_le {σ : Type}
     (hbound : ∀ stmt ∉ langIn, ∀ i : pSpec.ChallengeIdx,
       ∀ tr : Transcript i.val.castSucc pSpec,
       ¬ badEventState langIn bad i.val.castSucc stmt tr →
-      Pr[ fun c ↦ bad i stmt (tr.concat c) | $ᵗ (pSpec.Challenge i)] ≤ ε i)
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[bad i stmt (tr.concat c)] ≤ ε i)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (stmt : StmtIn) (hstmt : stmt ∉ langIn) (wit : WitIn)
     (m : Fin (n + 1)) (os : σ) :
-    Pr[ fun x ↦ badEventState langIn bad m stmt x.1.1 |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (prover.runToRound m stmt wit)).run os] ≤
+    Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (prover.runToRound m stmt wit)).run os}[badEventState langIn bad m stmt x.1.1] ≤
       Prover.errorBudget (badEventRoundError ε) m := by
   apply prover.prob_state_runToRound_le
   · simpa only [badEventState_zero] using hstmt
   · intro j tr st os hbefore
     cases hdir : pSpec.dir j with
     | P_to_V =>
-      rw [badEventRoundError, dif_neg (by simp [hdir])]
+      rw [badEventRoundError, dite_eq_right (by simp [hdir])]
       exact prover.prob_state_processRound_prover_le _ j hdir _ tr st os
         (badEventState_prover_next langIn bad j hdir stmt tr hbefore)
     | V_to_P =>
-      rw [badEventRoundError, dif_pos hdir]
+      rw [badEventRoundError, dite_eq_left hdir]
       refine (prover.prob_state_processRound_challenge_le impl j hdir _ tr st os).trans ?_
       refine le_trans ?_ (hbound stmt hstmt ⟨j, hdir⟩ tr hbefore)
-      apply probEvent_mono''
+      apply prEvent_mono _ _ _
       intro c hc
       obtain ⟨_, hb⟩ := badEventState_new langIn bad stmt tr c hbefore hc
       exact hb
@@ -192,23 +194,22 @@ theorem prob_terminal_event_le_of_badEvents {σ : Type}
     (hbound : ∀ stmt ∉ langIn, ∀ i : pSpec.ChallengeIdx,
       ∀ tr : Transcript i.val.castSucc pSpec,
       ¬ badEventState langIn bad i.val.castSucc stmt tr →
-      Pr[ fun c ↦ bad i stmt (tr.concat c) | $ᵗ (pSpec.Challenge i)] ≤ ε i)
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[bad i stmt (tr.concat c)] ≤ ε i)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (stmt : StmtIn) (hstmt : stmt ∉ langIn) (wit : WitIn)
     (E : pSpec.FullTranscript → Prop)
     (hterminal : ∀ tr, E tr → badEventState langIn bad (Fin.last n) stmt tr)
     (os : σ) :
-    Pr[ fun x ↦ E x.1.1 |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (prover.run stmt wit)).run os] ≤ ∑ i, ε i := by
+    Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (prover.run stmt wit)).run os}[E x.1.1] ≤ ∑ i, ε i := by
   rw [Prover.run, simulateQ_bind, StateT.run_bind]
-  refine (probEvent_bind_le_probEvent
+  refine (prEvent_bind_le_prEvent_of_support _ _ _
     (p := fun x ↦ badEventState langIn bad (Fin.last n) stmt x.1.1) ?_).trans ?_
   · intro x _ hx
     have he : ¬ E x.1.1 := fun h ↦ hx (hterminal x.1.1 h)
     simp only [simulateQ_bind, StateT.run_bind]
     apply le_antisymm _ zero_le
-    apply probEvent_bind_le_of_forall_le
+    apply prEvent_bind_le_of_forall_le_of_support _ _ _
     intro y _
     simp [simulateQ_pure, StateT.run_pure, he]
   · simpa only [Prover.errorBudget_last, sum_badEventRoundError] using

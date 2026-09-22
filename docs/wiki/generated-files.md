@@ -21,8 +21,22 @@ Edit the source of truth, not the output.
 
 - `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files, and fails fast if
   untracked Lean files would be skipped. `git add` new paths before running validation.
+- After merging `main` into a branch that adds Lean files, rerun `./scripts/update-lib.sh` and
+  stage `ArkLib.lean`. Resolving the umbrella conflict with only one side can omit the branch's
+  modules. Branches predating the module-system migration also need the
+  [current file headers](module-system.md#the-canonical-file-shape) before validation.
+  Keep compile-time canaries in the mirrored `ArkLibTest/` path, where `lake test` checks them
+  without exporting test helpers through the production umbrella.
 - Do not commit `docs/kb/_generated/**` changes from ordinary feature PRs. They are proposed by
-  generated-files PRs opened from `.github/workflows/kb-generated.yml`.
+  the single rolling generated-files PR maintained by `.github/workflows/kb-generated.yml`.
+- The KB refresh runs nightly, on manual dispatch, and immediately after bibliography or KB source
+  changes. Ordinary Lean merges are batched into the nightly refresh. The workflow updates the
+  stable `automation/kb-generated` branch and explicitly dispatches the fixed CI, import, and docs
+  workflows so bot-authored checks start automatically. The canonical CI validation path includes
+  the Lean-native source-policy gate. The generated-path allowlist and repository human-review gate
+  remain intact.
+- Do not use GitHub's **Update branch** action on the rolling KB PR: a plain base merge does not
+  regenerate its indexes. Dispatch the KB workflow or wait for the next nightly refresh instead.
 - Missing cited-paper stubs under `docs/kb/papers/` and `docs/kb/sources/` are also scaffolded by
   that workflow. Commit paper pages in feature PRs only when they contain real ArkLib-specific
   content.

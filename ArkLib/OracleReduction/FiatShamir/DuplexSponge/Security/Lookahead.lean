@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 
 /-!
 # Lookahead sequence family and procedure
@@ -12,6 +13,8 @@ import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 This file contains the lookahead sequence family and procedure for the analysis of duplex sponge
 Fiat-Shamir, following Section 5.3 in the paper.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 
@@ -101,7 +104,8 @@ one of the following:
 TODO: figure out the best way to encode the two errors (currently we encode `err` as the failure of
 OracleComp, and `none` as `Option.none` inside)
 -/
-noncomputable def lookAhead (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
+noncomputable def lookAhead
+    (fwdPermTrace : QueryLog (forwardPermutationOracle (CanonicalSpongeState U)))
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OptionT (OracleComp (Unit →ₒ U)) (Option (Vector U (challengeSize i))) := do
   /- Actual algorithm:

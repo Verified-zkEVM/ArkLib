@@ -23,6 +23,9 @@ After using a skill, review whether it should be updated:
 
 - [`discharge-lemmas.md`](discharge-lemmas.md) - workflow for triaging, placing, stating, and
   proving `sorry`s and open proof obligations, then summarizing what is proved vs. deferred.
+- [`make-computable.md`](make-computable.md) - workflow for turning `noncomputable` definitions
+  executable: classify each marker as sorried / leaf / architectural, rate it, fix everything below
+  7, and verify at runtime with `#eval`.
 - [`prove-milestone.md`](prove-milestone.md) - four-stage, paper-audited workflow for freezing and
   constructively proving one Hachi milestone, then improving the workflow from run evidence.
   Hachi-specific; the staging discipline generalizes.

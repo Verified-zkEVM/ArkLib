@@ -3,9 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+module
+
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple Oracle Reduction - SendClaim
@@ -45,6 +47,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
+@[expose] public section
+
 open OracleSpec OracleComp OracleQuery OracleInterface ProtocolSpec Function Equiv
 
 namespace SendClaim
@@ -80,6 +84,11 @@ def oracleProver : OracleProver oSpec
   sendMessage | ⟨0, _⟩ => fun ⟨stmt, oStmt⟩ => pure (f stmt oStmt, ⟨stmt, oStmt⟩)
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨stmt, oStmt⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => f stmt oStmt)⟩, ())
+
+/-- The `SendClaim` oracle prover has pure output: it exposes the claim it already computed
+alongside the input oracles, with no oracle query. -/
+instance instOutputIsPure :
+    (oracleProver oSpec Statement OStatement Message f).OutputIsPure := ⟨_, fun _ => rfl⟩
 
 /-- The oracle verifier for `SendClaim` is a **pure pass-through**: it returns the statement and
 exposes the input oracle statements together with the prover's message as the output oracles. The
@@ -170,21 +179,23 @@ membership in `toORelOut.language`; the `P` check is enforced here rather than a
 @[reducible, simp]
 def toORelOut :
     Set ((Statement × (∀ i, (Sum.elim OStatement fun _ : Fin 1 => Message) i)) × Unit) :=
-  setOf (fun ⟨⟨stmt, oStmtAndMsg⟩, _⟩ =>
+  Set.ofPred (fun ⟨⟨stmt, oStmtAndMsg⟩, _⟩ =>
     (⟨⟨stmt, fun i => oStmtAndMsg (Sum.inl i)⟩, ()⟩ ∈ relIn) ∧
       P stmt (fun i => oStmtAndMsg (Sum.inl i)) (oStmtAndMsg (Sum.inr 0)))
 
 /-- **Coordinate-wise special soundness of `SendClaim`, named form.** The verifier is a pure
 pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge) to
-a transcript-level obligation. The named extractor is trivial (`fun _ _ => ()`, there is no
-witness); since the output oracle statements at `inl` are the input oracles unchanged and
-`toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language` forces the input into
-`relIn`. Holds for any `D`. -/
+a transcript-level obligation. The named extractor is trivial (`fun _ _ _ => some ()`, there is no
+witness) and **witnessing-agnostic**; since the output oracle statements at `inl` are the input
+oracles unchanged and `toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language`
+forces the input into `relIn`. Holds for any `D`. -/
 theorem oracleVerifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Message)) :
-    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init impl
+    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init
+      impl
       D relIn (toORelOut relIn P)
-      (fun _ _ => ()) := by
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+      (fun _ _ _ => some ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl
+    D
     (oracleVerifier oSpec Statement OStatement Message) relIn (toORelOut relIn P)
     (fun _ _ => ())
     (fun s tr hAcc => by

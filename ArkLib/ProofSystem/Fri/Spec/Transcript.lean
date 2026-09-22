@@ -4,9 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.General
-import ArkLib.ProofSystem.Fri.Spec.Execution
-import ArkLib.OracleReduction.Security.BadEvents
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.General
+public import ArkLib.ProofSystem.Fri.Spec.Execution
+public import ArkLib.OracleReduction.Security.BadEvents
 
 /-!
 # The chronology of FRI commitments and challenges
@@ -14,6 +16,8 @@ import ArkLib.OracleReduction.Security.BadEvents
 These indices belong to the existing composed protocol, not to a separate execution model.
 In particular each word is fixed strictly before the challenge used to fold it.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 
@@ -144,7 +148,7 @@ theorem challenge_cases (j : (pSpec k (ω := ω) s l).ChallengeIdx) :
           contradiction
       subst j
       refine Or.inl ⟨i.castSucc, ?_⟩
-      simp only [foldChallenge, Fin.val_castSucc, dif_pos i.isLt]
+      simp only [foldChallenge, Fin.val_castSucc, dite_eq_left i.isLt]
       rfl
     · have hj : j = ⟨0, rfl⟩ := by
         rcases j with ⟨j, hj⟩

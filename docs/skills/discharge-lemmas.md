@@ -98,7 +98,7 @@ the rating and placement decisions are what keep the result maintainable.
     [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
 - Run [`fix-lean-warnings.md`](fix-lean-warnings.md) over the changed files so no new lint or style
   warnings ship.
-- Confirm `./scripts/validate.sh` passes (add `--lint`/`--docs` as appropriate).
+- Confirm `./scripts/validate.sh` passes (add `--docs` when appropriate; style is always checked).
 
 ### 6. Summarize for the user and suggest skill improvements
 
@@ -134,3 +134,6 @@ Only consider the task complete when:
   size, not reflexively.
 - Re-rate honestly: if a "sub-6" proof balloons, stop, mark it deferred with the new rating, and
   say so in the summary rather than forcing a brittle proof.
+- A sorried definition is also `noncomputable` (because `sorryAx` is). That marker is a symptom of
+  the gap you are filling here, not separate work — see [`make-computable.md`](make-computable.md)
+  if the task is actually about executability.

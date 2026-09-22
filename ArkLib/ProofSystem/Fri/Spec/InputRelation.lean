@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
-import ArkLib.ToMathlib.InformationTheory.Hamming
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
+public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # The FRI input relation and Reed–Solomon proximity
@@ -13,6 +15,8 @@ import ArkLib.ToMathlib.InformationTheory.Hamming
 This connects the computational polynomial witness in the existing specification with
 the existing Reed–Solomon code. Coordinate reindexing uses the domain's canonical equivalence.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 

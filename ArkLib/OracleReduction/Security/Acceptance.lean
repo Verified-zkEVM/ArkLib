@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.OracleReduction.Security.Accumulation
-import ArkLib.ToVCVio.EvalDist.Instances.OptionT
+module
+
+public import ArkLib.OracleReduction.Security.Accumulation
+public import VCVio.EvalDist.Monad.Option
 
 /-!
 # Soundness from transcript acceptance bounds
@@ -14,6 +16,8 @@ A bound on the actual prover transcript implies ordinary soundness whenever reje
 outside the transcript event is the literal failing verifier computation. This avoids
 assumptions about correlation with a shared oracle state.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
@@ -55,18 +59,17 @@ theorem soundness_of_rejection_event {σ : Type}
     (hbound : ∀ (WitIn WitOut : Type) (wit : WitIn)
       (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
       (stmt : StmtIn), stmt ∉ langIn → ∀ os : σ,
-      Pr[ fun x ↦ E stmt x.1.1 |
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (prover.run stmt wit)).run os] ≤ ε) :
+      Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+          (prover.run stmt wit)).run os}[E stmt x.1.1] ≤ ε) :
     verifier.soundness init impl langIn Set.univ ε := by
   classical
   intro WitIn WitOut wit prover stmt hstmt
   dsimp only
-  rw [OptionT.probEvent_eq_run]
-  apply probEvent_bind_le_of_forall_le
+  rw [OptionT.prEvent_eq_run]
+  apply prEvent_bind_le_of_forall_le_of_support _ _ _
   intro os _
-  rw [StateT.run'_eq, probEvent_map, Reduction.run_run_eq_bind, simulateQ_bind, StateT.run_bind]
-  refine (probEvent_bind_le_probEvent (p := fun x ↦ E stmt x.1.1) ?_).trans
+  rw [StateT.run'_eq, prEvent_map, Reduction.run_run_eq_bind, simulateQ_bind, StateT.run_bind]
+  refine (prEvent_bind_le_prEvent_of_support _ _ _ (p := fun x ↦ E stmt x.1.1) ?_).trans
     (hbound WitIn WitOut wit prover stmt hstmt os)
   intro x _ hx
   have hr := hreject stmt hstmt x.1.1 hx

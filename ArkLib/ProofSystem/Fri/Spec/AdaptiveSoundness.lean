@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.BadEvents
-import ArkLib.OracleReduction.Security.Accumulation
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.BadEvents
+public import ArkLib.OracleReduction.Security.Accumulation
 
 /-!
 # Adaptive FRI transcript bounds
@@ -14,12 +16,14 @@ The probability bound is on ArkLib's actual `Prover.run`, with the existing FRI 
 and input statement. No independence is assumed between successive prover commitments.
 -/
 
+@[expose] public section
+
 namespace Fri.Spec
 
 open Domain OracleComp OracleSpec ProtocolSpec ReedSolomon Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -27,7 +31,10 @@ variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 def initialOracle
     (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j) :
     (ω.subdomain 0).toFinset → F :=
-  cast (by simp [OracleStatement, finRangeTo]; rfl) (stmt.2 0)
+  cast (by
+    simp only [OracleStatement, finRangeTo, Fin.val_zero, List.take_zero,
+      List.toFinset_nil, Finset.sum_empty]
+    rfl) (stmt.2 0)
 
 /-- Every terminal event implying acceptance of the committed query history has the
 sum of the per-round MCA errors and the updated query error. The terminal implication
@@ -46,17 +53,15 @@ theorem terminalEvent_prob_le (hs : (∑ j, (s j).val) ≤ n) (θ δ : ℝ)
       (Transcript.restrict (b := Fin.last _)
         (by simp only [Fin.val_succ, Fin.val_last]; omega) tr))
     (os : σ) :
-    Pr[ fun x ↦ E x.1.1 |
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (prover.run stmt wit)).run os] ≤
+    Pr{let x ← (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (prover.run stmt wit)).run os}[E x.1.1] ≤
       (∑ i, (foldingError (ω := ω) s d θ i : ENNReal)) +
         ENNReal.ofReal (1 - min θ δ) ^ l := by
   let lang := (initialOracle (ω := ω) s) ⁻¹' proximityLanguage s d δ
   let bad := fun j st tr ↦ badEvent (ω := ω) s d l hs θ j (initialOracle s st) tr
   have hb : ∀ st ∉ lang, ∀ j, ∀ tr,
       ¬ Verifier.badEventState lang bad j.val.castSucc st tr →
-      Pr[ fun c ↦ bad j st (tr.concat c) |
-        $ᵗ ((pSpec k (ω := ω) s l).Challenge j)] ≤
+      Pr{let c ← $ᵗ ((pSpec k (ω := ω) s l).Challenge j)}[bad j st (tr.concat c)] ≤
         (challengeError (ω := ω) s d l θ δ j : ENNReal) := by
     intro st hst j tr hbefore
     exact badEvent_prob_le s d l hs θ δ (initialOracle s st) hst j tr hbefore

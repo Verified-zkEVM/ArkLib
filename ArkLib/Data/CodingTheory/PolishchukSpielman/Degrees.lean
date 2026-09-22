@@ -3,11 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import Mathlib.Analysis.Normed.Field.Lemmas
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import ArkLib.Data.Polynomial.Bivariate
+public import Mathlib.Analysis.Normed.Field.Lemmas
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 
 /-!
 # Degree bounds for Polishchuk-Spielman
@@ -31,6 +32,8 @@ lemma [BCIKS20].
     for Reed-Solomon Codes*][BCIKS20]
 
 -/
+
+@[expose] public section
 
 open Polynomial.Bivariate Polynomial Finset
 open scoped BigOperators
@@ -107,24 +110,19 @@ lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]
   grind only [cases Or]
 
 private lemma ps_swap_coeff {F : Type} [CommRing F] (g : F[X][Y]) (i j : ℕ) :
-    Bivariate.coeff (swap g) i j = Bivariate.coeff g j i := by
-  have h_swap_coeff : ∀ (g : F[X][Y]) (i j : ℕ),
-      Bivariate.coeff (swap g) i j = Bivariate.coeff g j i := by
-    unfold Bivariate.coeff
-    -- By definition of swap, we have that swap g = ∑ i, ∑ j, g.coeff j * X^i * Y^j.
-    have h_swap_def : ∀ g : F[X][Y], swap g = ∑ i ∈ g.support,
-        ∑ j ∈ (g.coeff i).support, monomial j (monomial i ((g.coeff i).coeff j)) := by
-      intro g
-      simp [swap, eval_finsetSum, aeval_def, eval₂_eq_sum, sum_def,
-        ← C_mul_X_pow_eq_monomial, Finset.sum_mul _ _ _ ]
-      ac_rfl
-    simp only [h_swap_def, finsetSum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
-    intro g i j
-    rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
-    · split_ifs <;> simp_all
-    · intro b hb hb'; split_ifs <;> simp_all [coeff_monomial]
-    · push Not; intro h; simp [h]
-  exact h_swap_coeff g i j
+    ((swap g).coeff j).coeff i = (g.coeff i).coeff j := by
+  -- By definition of swap, we have that swap g = ∑ i, ∑ j, g.coeff j * X^i * Y^j.
+  have h_swap_def : ∀ g : F[X][Y], swap g = ∑ i ∈ g.support,
+      ∑ j ∈ (g.coeff i).support, monomial j (monomial i ((g.coeff i).coeff j)) := by
+    intro g
+    simp [swap, eval_finsetSum, aeval_def, eval₂_eq_sum, sum_def,
+      ← C_mul_X_pow_eq_monomial, Finset.sum_mul _ _ _ ]
+    ac_rfl
+  simp only [h_swap_def, finsetSum_coeff, coeff_monomial, sum_ite_eq', mem_support_iff, ne_eq]
+  rw [Finset.sum_eq_single i] <;> simp_all only [swap_apply, mem_support_iff, ne_eq]
+  · split_ifs <;> simp_all
+  · intro b hb hb'; split_ifs <;> simp_all [coeff_monomial]
+  · push Not; intro h; simp [h]
 
 private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
     degreeX (swap f) ≤ natDegreeY f := by
@@ -135,7 +133,7 @@ private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
   obtain ⟨m, hm⟩ : ∃ m > f.natDegree, ((swap f).coeff n).coeff m ≠ 0 := by
     exact ⟨((swap f).coeff n).natDegree, hn.2.2.2, by aesop⟩
   have h_coeff_swap : ((swap f).coeff n).coeff m = (f.coeff m).coeff n := by
-    convert ps_swap_coeff f m n using 1 <;> rfl
+    exact ps_swap_coeff f m n
   exact hm.2 (h_coeff_swap.symm ▸ by rw [coeff_eq_zero_of_natDegree_lt hm.1]; aesop)
 
 private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f ≠ 0) :
@@ -146,10 +144,10 @@ private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f 
   obtain ⟨n, hn⟩ : ∃ n, n = (f.coeff N).natDegree ∧ (f.coeff N).coeff n ≠ 0 := by
     contrapose! hN; aesop;
   have h_swap_coeff_nonzero : ((swap f).coeff n).coeff N ≠ 0 := by
-    convert hn.2 using 1;
-    convert ps_swap_coeff f N n using 1 <;> rfl
-  have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 :=
-    (ne_of_apply_ne Polynomial.coeff fun a ↦ h_swap_coeff_nonzero (congrFun a.symm N)).symm
+    rw [ps_swap_coeff f N n]
+    exact hn.2
+  have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 := fun h ↦
+    h_swap_coeff_nonzero (by rw [h, Polynomial.coeff_zero])
   have h_swap_coeff_nonzero_natDegree_le : Nat.max (((swap f).coeff n).natDegree)
       (Nat.max (((swap f).coeff n).natDegree) N) ≤ degreeX (swap f) := by
     refine le_trans ?_ (Finset.le_sup <| show n ∈ ((swap f).support) from ?_) <;>
@@ -193,7 +191,7 @@ lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
 lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     (y : F) (f : F[X][Y]) :
     evalY y f = evalX y (swap f) := by
-  letI : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
+  let : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
   convert aveal_eq_map_swap y f using 1
   · unfold evalY; simp [Polynomial.aeval_def]
   · -- By definition of `evalX`, we have `evalX y (swap f) = (swap f).map (evalRingHom y)`.
@@ -215,7 +213,7 @@ lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
       eq_zero_of_degree_lt_of_eval_finset_eq_zero P_x
         (degree_le_natDegree.trans_lt (by exact_mod_cast h_p_ne_zero))
         h_contra
-    exact absurd h_poly_zero (leadingCoeffY_ne_zero _ |>.2 hB)
+    exact absurd h_poly_zero (Polynomial.leadingCoeff_ne_zero.mpr hB)
   refine ⟨x, hx.1, le_antisymm ?_ ?_⟩
   · rw [evalX]
     simp only [natDegree_le_iff_degree_le, degree_le_iff_coeff_zero, Nat.cast_lt,
@@ -272,7 +270,7 @@ lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     unfold evalY
     simp only [eval_eq_sum, sum_def, finsetSum_coeff]
     refine Finset.sum_congr rfl fun i hi ↦ ?_
-    induction i <;> simp_all [coeff_mul, coeff_C, pow_succ'] ; ring_nf
+    induction i <;> simp_all [coeff_mul, coeff_C, pow_succ']; ring_nf
     rw [sum_eq_single (degreeX B, 0)] <;> simp only [mem_antidiagonal, ne_eq,
       Nat.sum_antidiagonal_eq_sum_range_succ_mk, Nat.succ_eq_add_one, sum_ite_eq', mem_range,
       Order.lt_add_one_iff, zero_le, ↓reduceIte, tsub_zero, mul_eq_zero, Prod.forall, Prod.mk.injEq,
@@ -290,7 +288,7 @@ lemma ps_filter_nonzero_card_y {F : Type} [Field F] [DecidableEq F]
     (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > bound - natDegreeY A := by
   have := ps_card_eval_y_eq_zero_le_nat_degree_y A hA P_y;
   simp_all only [ne_eq, ge_iff_le, gt_iff_lt, Finset.filter_not, Finset.card_sdiff]
-  rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)] ; omega
+  rw [Finset.inter_eq_left.mpr (Finset.filter_subset _ _)]; omega
 
 lemma ps_filter_nonzero_card_x {F : Type} [Field F] [DecidableEq F]
     (A : F[X][Y]) (hA : A ≠ 0) (P_x : Finset F) (bound : ℕ)
@@ -318,7 +316,7 @@ lemma ps_degX_bound {F : Type} [Field F]
       have h_filter_card : (P_y.filter (fun y ↦ evalY y A ≠ 0)).card > b_y - natDegreeY A := by
         apply_rules [ps_filter_nonzero_card_y]
         all_goals linarith
-      grind +qlia
+      grind +qlia [natDegreeY, Polynomial.natDegree_mul]
     have := ps_exists_y_preserve_degree_x P hP (P_y.filter (fun y ↦ evalY y A ≠ 0)) ?_ <;> aesop
   -- Since $B = P * A$, we have $evalY y B = evalY y P * evalY y A$.
   have h_eval_Y_B : evalY y B = evalY y P * evalY y A := by unfold evalY; aesop
@@ -361,7 +359,7 @@ lemma ps_degree_bounds_of_mul {F : Type} [Field F]
     (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) :
     degreeX P ≤ b_x - a_x ∧ natDegreeY P ≤ b_y - a_y := by
   classical
-  letI : DecidableEq F := Classical.decEq F
+  let : DecidableEq F := Classical.decEq F
   by_cases hB0 : B = 0
   · have hP0 : P = 0 := by
       rcases mul_eq_zero.mp (hBA ▸ hB0 : P * A = 0) with h | h

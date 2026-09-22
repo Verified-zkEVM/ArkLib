@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import ArkLib.Data.Lattices.Vectors
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Rq
+public import ArkLib.Data.Lattices.Vectors
 
 /-!
   # Quotient-presentation laws for `Rq Φ` — the cyclotomic HMZ25 lift instance
@@ -35,6 +37,8 @@ import ArkLib.Data.Lattices.Vectors
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly CompPoly.CPolynomial
 

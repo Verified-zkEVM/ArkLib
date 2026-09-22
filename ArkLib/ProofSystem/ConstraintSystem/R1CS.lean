@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Matrix.Basic
-import ArkLib.Data.Fin.Tuple.Lemmas
+public import ArkLib.Data.Matrix.Basic
+public import ArkLib.Data.Fin.Tuple.Lemmas
 
 /-!
 # Rank-1 Constraint System (R1CS)
@@ -16,6 +17,8 @@ This file defines the R1CS (Rank-1 Constraint System) relation
 - We define padding (on the right) for R1CS instances, and show that padding preserves the R1CS
   relation.
 -/
+
+@[expose] public section
 
 namespace R1CS
 
@@ -106,7 +109,7 @@ theorem pad_preserves_relation (sz₁ sz₂ : Size)
             Fin.rightpad_apply_lt _ _ _ _ (show j - sz₂.n_x < sz₁.n_w by omega),
             Fin.append_right_of_not_lt j _ hx]
         exact congrArg wit (Fin.ext (show j - sz₂.n_x = j - sz₁.n_x by omega))
-    · push_neg at hlt; conv_rhs => rw [Fin.rightpad_apply_ge _ _ _ _ hlt]
+    · push Not at hlt; conv_rhs => rw [Fin.rightpad_apply_ge _ _ _ _ hlt]
       simp only [𝕫, Function.comp, Fin.cast_mk]
       rw [Fin.append_right_of_not_lt j _ (by omega : ¬ j < sz₂.n_x),
           Fin.rightpad_apply_ge _ _ _ _ (show sz₁.n_w ≤ j - sz₂.n_x by omega)]

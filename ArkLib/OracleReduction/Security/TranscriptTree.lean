@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.TranscriptTree.Basic
-import ArkLib.OracleReduction.Security.TranscriptTree.Composition
+public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
+public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
 
 /-!
   # Trees of transcripts
@@ -65,8 +66,11 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
 
   - `TranscriptTree.Basic` — the core definitions: `ChallengeTree`, the shape abstraction
     (`ChallengeTreeShape`, `IsStructured`), root-to-leaf paths and the transcripts they read
-    (`LeafPath`, `transcripts` / `fullTranscripts`), the accept condition (`IsAccepting`), and the
-    shared `Extractor.TreeBased` extractor type.
+    (`LeafPath`, `transcripts` / `fullTranscripts`), the accept condition (`IsAccepting`), the
+    verifier's reachable outputs (`Verifier.Outputs`) and leaf witnessings
+    (`ChallengeTree.LeafWitnesses`, `LeafWitnesses.IsValid`), the shared `Extractor.TreeBased`
+    extractor type, and the shape-generic notions `Verifier.treeSpecialSoundWith` and its
+    escape-threaded twin.
   - `TranscriptTree.Composition` — the sequential-composition API (`appendArity`,
     `ChallengeTreeShape.append`, `appendSplit`) and the structure-preservation and recombination
     theorems above.
@@ -77,3 +81,5 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
     branching is not supported.
 
 -/
+
+@[expose] public section

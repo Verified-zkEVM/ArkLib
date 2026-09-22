@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Honest completeness of the toy-problem IORs (ABF26 Constructions 6.2 and 6.9)
@@ -24,6 +25,8 @@ alphabet `A` (an `F`-module): `A = F` is the scalar specialization, while
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
   Correlated Agreement*][ABF26] (§6, Constructions 6.2 and 6.9).
 -/
+
+@[expose] public section
 
 namespace ToyProblem
 
@@ -67,7 +70,7 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     have h1 : ∑ j, M 1 j * stmt.1 j = stmt.2.2 := by
       have := hM 1
       have hne : (1 : Fin 2) ≠ 0 := by decide
-      simpa [if_neg hne] using this
+      simpa [ite_eq_right hne] using this
     calc ∑ j, (M 0 j + γ * M 1 j) * stmt.1 j
         = ∑ j, (M 0 j * stmt.1 j + γ * (M 1 j * stmt.1 j)) := by
           apply Finset.sum_congr rfl; intros j _; ring
@@ -84,6 +87,9 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     simp [Pi.add_apply, Pi.smul_apply]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
+-- `convert hacc using 1` leaves a goal that `(cast_eq _ _).symm` closes only when the cast's
+-- motive reduces; v4.33 respects transparency there and the term stops typechecking.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Honest completeness of the three-round toy protocol** (protocol-level form).
 
 The honest oracle reduction is perfectly complete from `inputRelationFor encode`
@@ -94,15 +100,15 @@ verifier's `OptionT` guards never fail.
 
 Proof shape: unfold `OracleReduction.perfectCompleteness` through
 `toReduction`, expand the three-round prover via `Fin.induction_three` and the
-per-direction `processRound` unfolds, and reduce the `Pr[…] = 1` goal to a
+per-direction `processRound` unfolds, and reduce the native event-probability-one goal to a
 support-membership obligation via
-`OptionT.probEvent_eq_one_of_simulateQ_support_bind`. That obligation splits
+`OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support`. That obligation splits
 into (1) the monadic core — the verifier body simulated against `simOracle2`
 collapses to `pure (some ())`, packaged as
 `oracleVerifier_verify_simulateQ_eq_pure` above — and (2) support plumbing,
 peeling the `Reduction.run` bind chain with the definitional-unification
-helpers of `ArkLib/ToVCVio/OracleComp/SimSemantics/SimulateQ.lean` and closing
-each support element with `accepts_of_mem_inputRelationFor`.
+helpers from VCVio's `OptionT` and `StateT` simulation-semantics modules and
+closing each support element with `accepts_of_mem_inputRelationFor`.
 
 The input relation must be the **fixed-encoding** `inputRelationFor encode`:
 with an existentially quantified encoder this statement is false (the honest
@@ -136,10 +142,10 @@ theorem oracleReduction_perfectCompleteness
     Prover.processRound_of_dir_eq_V_to_P 0 h0, Prover.processRound_of_dir_eq_P_to_V 1 h1,
     Prover.processRound_of_dir_eq_V_to_P 2 h2,
     Verifier.run, pSpec, bind_pure_comp]
-  -- Reduce `Pr[…] = 1` to a support-membership obligation on the (pre-simulation)
+  -- Reduce probability one to a support-membership obligation on the (pre-simulation)
   -- `OracleComp` body via the toolkit lemma, which peels the `(← init)` bind, the
   -- `simulateQ`/`StateT.run'` layers, and the `OptionT.mk` failure bookkeeping.
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro x hx
   -- The output relation is trivial: `OutputStatement = OutputWitness = Unit`, so both
   -- conjuncts (`(a.2, a.1.2.2) ∈ Set.univ` and `a.1.2.1 = a.2`) hold for *every* `a`
@@ -202,7 +208,7 @@ theorem oracleReduction_perfectCompleteness
     Fin.val_zero, Fin.val_one, Fin.val_two, lt_self_iff_false, Fin.val_castLT,
     Fin.castSucc_castLT, show (0 : ℕ) < 2 from by norm_num,
     show (0 : ℕ) < 1 from by norm_num, show (1 : ℕ) < 2 from by norm_num,
-    show ¬ ((2 : ℕ) < 0) from by norm_num, dif_pos, cast_eq, dite_false] at hx
+    show ¬ ((2 : ℕ) < 0) from by norm_num, dite_eq_left, cast_eq, dite_false] at hx
   split at hx
   · -- The verifier computation cannot fail. Peel its output map and the trailing reduction bind.
     rcases OptionT.mem_support_run_bind _ _ hx with ⟨hverNone, _⟩ | ⟨stmtOut, hSO, hx⟩
@@ -215,7 +221,11 @@ theorem oracleReduction_perfectCompleteness
   · rename_i hreject
     exfalso
     apply hreject
-    convert hacc using 1 <;> congr 1
+    convert hacc using 1
+    · exact (cast_eq _ _).symm
+    · funext j
+      apply congrArg (fun x : F => witIn 0 j + x * witIn 1 j)
+      exact (cast_eq _ _).symm
 
 /-! ### Regression guards: both decision checks are load-bearing
 
@@ -336,7 +346,7 @@ theorem oracleReduction_perfectCompleteness {k : ℕ}
   simp only [OracleReduction.toReduction, Reduction.run, oracleReduction,
     oracleProver, Prover.run, Prover.runToRound, Fin.induction_one,
     Prover.processRound_of_dir_eq_V_to_P 0 h0, prover]
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro x hx
   obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
   rw [show (monadLift : OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _ →

@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
 # Vector Interactive Oracle Reductions
@@ -20,6 +21,8 @@ this form, and so we isolate this special case for ease of notation and reasonin
 We also define complexity measures for V-IORs, such as proof length and verifier's query complexity.
 
 -/
+
+@[expose] public section
 
 namespace ProtocolSpec
 

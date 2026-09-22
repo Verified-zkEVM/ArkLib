@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.Execution
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.Execution
 
 /-!
 # Soundness of the executable FRI query checks
@@ -17,6 +19,8 @@ local checks. The tradeoff threshold is independent of the input's distance, as 
 * [Garreta, A., Mohnblatt, N., Wagner, B., *A Simplified Round-by-round Soundness Proof
   of FRI*][GMW25]
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 
@@ -98,7 +102,7 @@ theorem queryChecks_soundness
     (hdegree : (finalPolynomial s o).natDegree < d.val)
     (hdist : ∀ u ∈ code ω (2 ^ (∑ j, (s j).val) * d.val),
       δ ≤ (Code.relHammingDist (initialWord s o) u : ℝ)) :
-    Pr_{let zs ←$ᵖ (Fin t → Fin (2 ^ n))}[
+    Pr{let zs ←$ᵗ (Fin t → Fin (2 ^ n))}[
       ∀ j, zs j ∈ acceptingQueries s hs o α] ≤
       ENNReal.ofReal (1 - min θ δ) ^ t := by
   rw [Probability.prob_uniform_pi_mem_finset_eq]

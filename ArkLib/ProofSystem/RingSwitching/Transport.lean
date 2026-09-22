@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.ProofSystem.RingSwitching.Transport.Eval
-import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
+module
+
+public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
+public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 
 /-!
 # Claim transport through ring embeddings
@@ -41,3 +43,5 @@ degree machinery.
 * `Packing` (`../Packing/`) embeds its packed multilinear into the
   pack/trace carrier via `embedCoeffs` at `d = 1`.
 -/
+
+@[expose] public section

@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Data.MvPolynomial.Multilinear
-import CompPoly.Multilinear.Basic
+module
+
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import CompPoly.Multilinear.Basic
 
 /-!
   # Evaluation semantics of CompPoly's multilinear evaluation tables
@@ -28,9 +30,25 @@ import CompPoly.Multilinear.Basic
   test behind the corrected Lemma 10 reasons in `MvPolynomial`.
 -/
 
+@[expose] public section
+
 namespace CompPoly.CMlPolynomialEval
 
 variable {R : Type*} [CommRing R] {n : ℕ}
+
+/-- The identically-zero evaluation table vanishes at every point.
+
+This is what makes an identity `H ≡ 0` usable at an *arbitrary* challenge point, hence the
+honest-direction step in protocols that reduce a polynomial identity to evaluation claims (the
+Hachi zero-check, `ZeroCheck/Completeness.lean`). -/
+@[simp]
+theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomialEval R n) x = 0 := by
+  change Vector.dotProduct (0 : CMlPolynomialEval R n) (lagrangeBasis x) = 0
+  rw [Vector.dotProduct_eq_root_dotProduct]
+  have hget : (0 : CMlPolynomialEval R n).get = 0 := by
+    funext i
+    simp [Vector.get]
+  rw [hget, zero_dotProduct]
 
 /-- Direct evaluation of a Boolean-value vector agrees with evaluating Mathlib's multilinear
 extension of the same table. This is the boundary used when a computational relation is stated

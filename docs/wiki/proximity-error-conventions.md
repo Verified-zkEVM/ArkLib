@@ -9,10 +9,10 @@ correlated agreement. For code carriers and distance types, see
 
 | Module | Contents |
 | --- | --- |
-| `ProximityGap/ProximityGenerators.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
+| `ProximityGenerator/Basic.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
 | `ProximityGap/Errors.lean` | `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
-| `ProximityGap/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
+| `ProximityGenerator/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
 | `ProximityGap/GrandChallenges.lean` | Integer-grid challenge predicates, answer types, witnesses, and Reed--Solomon prize specializations |
 | `ProximityGap/CapacityBounds.lean` | Source-audited §4 upper/lower bounds on `epsCa` and canonical `mcaError` |
 | `ProximityGap/LineDecoding.lean` | Natural-cardinality line decodability and its MCA consequence |
@@ -98,11 +98,22 @@ The unique-decoding comparison is:
 - `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the MCA-to-CA direction;
 - `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality.
 
-For a positive row-wise interleaving width and a radius in `(0, 1)`:
+For any generator whose finite seed space has at most as many elements as the field,
+`CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le` bounds the error of a finite
+row-wise interleaving by the base-code error. The reverse bound
+`CoreDefinitions.mcaError_le_mcaError_moduleInterleavedCode` needs only a nonempty row type.
+Both hold at every real radius; when the row type is finite and nonempty, their equality is
+`CoreDefinitions.mcaError_moduleInterleavedCode_eq_of_card_le`.
+
+The affine-line compatibility results retain their positive-width and `(0, 1)` radius
+hypotheses:
 
 - `mcaError_le_moduleInterleavedCode` gives the base-to-interleaved inequality;
 - `mcaError_interleaved_le` gives the interleaved-to-base inequality;
 - `mcaError_interleaved_eq` gives equality.
+
+Jo26's field-size-weighted bound for seed spaces larger than the field remains unformalized in
+ArkLib.
 
 The numeric correlated-agreement values are connected to the predicate API by:
 

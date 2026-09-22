@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
-import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 
 /-!
 # Capacity-bound witnesses for the Grand MCA Challenge
@@ -18,13 +19,15 @@ keeping the core grid and witness API independent of external admits.
 - [BCHKS25] Theorem 4.6.
 -/
 
+@[expose] public section
+
 namespace ProximityGap.GrandChallenges
 
 open scoped NNReal
 open CoreDefinitions
 open CodingTheory
 
-variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι]
 
 /-- Builds a one-sided MCA witness from the Reed--Solomon Johnson-range bound whenever its

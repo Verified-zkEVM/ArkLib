@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.Transcript
-import ArkLib.ProofSystem.Fri.Spec.QueryExecution
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.Transcript
+public import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 
 /-!
 # Bad folding challenges in the actual FRI execution
@@ -13,6 +15,8 @@ import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 The challenge is sampled after its input word is fixed. The resulting MCA bound is therefore
 uniform over all partial transcripts, without imposing honesty on the prover's commitments.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 
@@ -32,7 +36,7 @@ def foldingBad (f : (ω.subdomain 0).toFinset → F) (θ : ℝ) (i : Fin (k + 1)
     (s i).val (foldingDegree s d i.succ) θ (readFoldChallenge s l tr i (by simp))
 
 /-- The existing powers-generator MCA error for this folding round. -/
-noncomputable def foldingError (θ : ℝ) (i : Fin (k + 1)) : ℝ≥0 :=
+noncomputable def foldingError [SampleableType F] (θ : ℝ) (i : Fin (k + 1)) : ℝ≥0 :=
   (mcaError (univariatePowersGenerator F (2 ^ (s i).val - 1))
     (code (((ω.subdomain (foldingPrefix s i.castSucc)).subdomain (s i).val) :
       Fin (2 ^ (n - foldingPrefix s i.castSucc - (s i).val)) ↪ F)
@@ -54,21 +58,18 @@ theorem foldingBad_concat_iff (f : (ω.subdomain 0).toFinset → F) (θ : ℝ)
 
 /-- A fresh folding challenge has at most the existing MCA error, for every fixed
 adversarial transcript prefix. -/
-theorem foldingBad_prob_le (f : (ω.subdomain 0).toFinset → F) (θ : ℝ)
+theorem foldingBad_prob_le [SampleableType F] (f : (ω.subdomain 0).toFinset → F) (θ : ℝ)
     (i : Fin (k + 1))
     [SampleableType ((pSpec k (ω := ω) s l).Challenge (foldChallenge s l i))]
     (tr : (pSpec k (ω := ω) s l).Transcript (foldChallenge (ω := ω) s l i).val.castSucc) :
-    Pr[ fun α ↦ foldingBad s d l f θ i (tr.concat α) |
-      $ᵗ ((pSpec k (ω := ω) s l).Challenge (foldChallenge s l i))] ≤
+    Pr{let α ← $ᵗ ((pSpec k (ω := ω) s l).Challenge (foldChallenge s l i))}[
+      foldingBad s d l f θ i (tr.concat α)] ≤
       (foldingError (ω := ω) s d θ i : ENNReal) := by
   classical
-  letI : Fintype ((pSpec k (ω := ω) s l).Challenge (foldChallenge s l i)) :=
-    Fintype.ofEquiv F (Equiv.cast (foldChallenge_type (ω := ω) s l i)).symm
-  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
   simp only [foldingBad_concat_iff]
   let w := fun z ↦ readWord s l f tr i (by simp)
     ⟨ω.subdomain (foldingPrefix s i.castSucc) z, CosetFftDomain.mem_toFinset_self⟩
-  refine (ProbabilityTheory.Pr_uniform_equiv
+  refine (SampleableType.prEvent_uniformSample_equiv
     (Equiv.cast (foldChallenge_type (ω := ω) s l i))
     (FoldingAgreementFailure (ω.subdomain (foldingPrefix s i.castSucc)) w
       (s i).val (foldingDegree s d i.succ) θ)).le.trans ?_

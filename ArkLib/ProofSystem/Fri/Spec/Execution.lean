@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.Agreement
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.Agreement
 
 /-!
 # Execution semantics of FRI queries
@@ -12,6 +14,8 @@ import ArkLib.ProofSystem.Fri.Spec.Agreement
 These lemmas evaluate the existing oracle verifier against arbitrary committed words.
 No honesty or low-degree assumption is imposed on the intermediate oracles.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 
@@ -125,13 +129,14 @@ theorem eval_queryCodeword (o : ∀ j, FinalOracleStatement s ω j) (i : Fin (k 
   dsimp [OracleInterface.simOracle0, OracleInterface.answer, finalOracleStatementInterface]
   unfold finalOracleStatementInterface
   simp only [finRangeTo, show i.val ≠ k + 1 by omega, ReaderT.run, read, readThe,
-    MonadReaderOf.read, ReaderT.read, Lean.Elab.WF.paramLet, ↓reduceDIte, cast_cast,
+    MonadReaderOf.read, ReaderT.read, Lean.Elab.WF.paramLet, ↓reduceDIte,
     bind_pure_comp, committedWord]
   simp only [Functor.map, Pure.pure]
   apply eq_of_heq
   apply HEq.trans (cast_heq _ _)
   apply HEq.trans (cast_heq _ _)
-  exact heq_of_eq (congr_heq ((cast_heq _ _).trans (cast_heq _ _).symm) (cast_heq _ _))
+  exact heq_of_eq (congr_heq ((cast_heq _ _).trans (cast_heq _ _).symm)
+    ((cast_heq _ _).trans (cast_heq _ _)))
 
 @[simp]
 theorem eval_getConst (o : ∀ j, FinalOracleStatement s ω j) :
@@ -161,7 +166,7 @@ theorem eval_queryNext (hs : (∑ j, (s j).val) ≤ n)
     rfl
   unfold queryNext
   split_ifs with hi
-  · rw [eval_queryCodeword]
+  · erw [eval_queryCodeword]
     have hx : x.val ^ (2 ^ foldingPrefix s i.succ) ∈
         (ω.subdomain (foldingPrefix s i.succ)).toFinset :=
       CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
@@ -186,8 +191,18 @@ theorem eval_checkRound (hs : (∑ j, (s j).val) ≤ n)
       ((queryBlock s hs i x).map (fun q ↦ (q.val, committedWord s o i q))).get
       (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
         (queryNext s hs p i x)) := by
-  simp only [checkRound, finRangeTo, bind_pure_comp, simulateQ_bind, simulateQ_list_mapM,
-    simulateQ_map, eval_queryCodeword]
+  simp only [checkRound, bind_pure_comp, simulateQ_bind, simulateQ_list_mapM,
+    simulateQ_map]
+  have hanswers :
+      (fun q : (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).val)).toFinset ↦
+        Prod.mk q.val <$> simulateQ
+          (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
+          (queryCodeword k s q)) =
+      (fun q ↦ (pure (q.val, committedWord s o i q) : Id (F × F))) := by
+    funext q
+    erw [eval_queryCodeword]
+    rfl
+  erw [hanswers]
   change (List.mapM (m := Id) (fun q ↦ (q.val, committedWord s o i q))
     (queryBlock s hs i x) >>= fun pts ↦
       RoundConsistency.roundConsistencyCheck α pts.get _) = _
@@ -221,7 +236,7 @@ theorem eval_checkRound_eq_true_iff (hs : (∑ j, (s j).val) ≤ n)
     (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
       (queryNext s hs p i x))
     (fun j ↦ queryBlock_pow s hs i x (qs.get j) (List.get_mem _ _))
-  rw [RoundConsistency.roundConsistencyCheck_map_get]
+  erw [RoundConsistency.roundConsistencyCheck_map_get]
   exact h
 
 /-- The executable check, expressed in the original-domain coordinates used by the

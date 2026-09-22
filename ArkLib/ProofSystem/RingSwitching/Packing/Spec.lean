@@ -3,10 +3,20 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
-import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
-import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
+module
+
+public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
+public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
+
+/-!
+# ArkLib.ProofSystem.RingSwitching.Packing.Spec
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace RingSwitching
 
@@ -104,11 +114,12 @@ instance : OracleInterface (Fin κ → L) := OracleInterface.instDefault
 -- `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound` along with the spec itself.
 -- Anonymous instances are looked up globally regardless of namespace, so no shim is needed.
 
-instance {d : ℕ} : ∀ j, OracleInterface ((pSpecSumcheckLoopWithDegree (L:=L) ℓ' d).Message j)
-  := instOracleInterfaceMessageSeqCompose
+instance {d : ℕ} : ∀ j,
+    OracleInterface ((pSpecSumcheckLoopWithDegree (L := L) ℓ' d).Message j) :=
+  instOracleInterfaceMessageSeqCompose
 
-instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L:=L) ℓ').Message j)
-  := instOracleInterfaceMessageSeqCompose
+instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L := L) ℓ').Message j) :=
+  instOracleInterfaceMessageSeqCompose
 
 -- The message interface of `pSpecFinalSumcheck` is the canonical in-the-clear instance of
 -- the one-message wire `pSpecMessage` (`RingSwitching/RoundVerifiers.lean`).
@@ -139,11 +150,11 @@ instance : ∀ i, OracleInterface ((fullPspec κ (L:=L) (K:=K) P (ℓ':=ℓ') ml
 -- globally, so no shim is needed.
 
 instance {d : ℕ} : ∀ j,
-    SampleableType ((pSpecSumcheckLoopWithDegree (L:=L) ℓ' d).Challenge j)
-  := instSampleableTypeChallengeSeqCompose
+    SampleableType ((pSpecSumcheckLoopWithDegree (L := L) ℓ' d).Challenge j) :=
+  instSampleableTypeChallengeSeqCompose
 
-instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
-  := instSampleableTypeChallengeSeqCompose
+instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L := L) ℓ').Challenge j) :=
+  instSampleableTypeChallengeSeqCompose
 
 -- `pSpecFinalSumcheck` has no challenges; the empty `SampleableType` instance comes with
 -- `pSpecMessage` (`RingSwitching/RoundVerifiers.lean`).

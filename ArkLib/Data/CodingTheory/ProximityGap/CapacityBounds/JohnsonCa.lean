@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # Ben-Sasson--Guruswami--Kopparty--Sudan CA bound
@@ -21,12 +22,7 @@ extracts dense agreement triples and reconstructs a common affine codeword line.
 - [BenSassonGKS20] Lemma 3.2.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 
@@ -36,8 +32,9 @@ open CoreDefinitions ProximityGap
 section General
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
+omit [DecidableEq ι] [Fintype F] [SampleableType F] in
 open scoped BigOperators in
 private theorem joint_proximity_of_many_affine_agreements
     (C : LinearCode ι F) (u0 u1 v0 v1 : ι → F)
@@ -76,14 +73,14 @@ private theorem joint_proximity_of_many_affine_agreements
       ((Finset.univ.filter fun x : ↥A => i ∈ S x).card : ℝ) ≤
         (if i ∈ T then (A.card : ℝ) else 1) := by
     by_cases hiT : i ∈ T
-    · rw [if_pos hiT]
+    · rw [ite_eq_left hiT]
       have hnat :
           (Finset.univ.filter fun x : ↥A => i ∈ S x).card ≤ A.card := by
         simpa using
           (Finset.card_le_card
             (Finset.filter_subset (fun x : ↥A => i ∈ S x) Finset.univ))
       exact_mod_cast hnat
-    · rw [if_neg hiT]
+    · rw [ite_eq_right hiT]
       exact_mod_cast Finset.card_le_one.mpr (by
         intro x hx y hy
         have hxeq := hagree x i (Finset.mem_filter.mp hx).2
@@ -194,11 +191,12 @@ private noncomputable def linear_bgks_agreement_set
   Finset.univ.filter fun i : ι =>
     u 0 i + x * u 1 i = linear_bgks_closest_codeword C u x i
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 private theorem linear_bgks_closest_codeword_mem
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (x : F) :
     linear_bgks_closest_codeword C u x ∈ C := by
   classical
-  letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
+  let : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   simp [linear_bgks_closest_codeword]
 
 private theorem linear_bgks_collision_numeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3)
@@ -221,6 +219,7 @@ private noncomputable def linear_bgks_good_scalars
   Finset.univ.filter fun x : F =>
     δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < (δ_src : ENNReal)
 
+omit [DecidableEq ι] [SampleableType F] in
 open scoped NNReal in
 private theorem linear_bgks_agreement_set_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
@@ -232,7 +231,7 @@ private theorem linear_bgks_agreement_set_card_gt
   have hxclose :
       δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < (δ_src : ENNReal) :=
     (Finset.mem_filter.mp hx).2
-  letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
+  let : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   rw [Code.relDistFromPickRelClosestCodeword_of_Nonempty_Code] at hxclose
   have hpair :
       ((δᵣ(u 0 + x • u 1, linear_bgks_closest_codeword C u x) : ℚ≥0) : ENNReal) <
@@ -285,18 +284,19 @@ private noncomputable def linear_bgks_distinct_dense_triples
     p.1 ≠ p.2.1 ∧ p.1 ≠ p.2.2 ∧ p.2.1 ≠ p.2.2
 
 open scoped NNReal in
+omit [Nonempty ι] [DecidableEq ι] in
 open scoped ProbabilityTheory in
 private theorem linear_bgks_good_scalars_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src η : ℝ≥0) (hη : 0 < η)
     (hprob : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
-      Pr_{
-        let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
+      Pr{
+        let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
     2 / (η : ℝ) ^ 2 < ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by
   classical
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
   have hq : 0 < (Fintype.card F : ℝ) := by exact_mod_cast Fintype.card_pos
-  rw [Probability.prob_uniform_eq_ofReal] at hprob
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal] at hprob
   have hprob' :
       ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
         ENNReal.ofReal
@@ -324,6 +324,7 @@ private theorem linear_bgks_card_indicator
   simp
 
 open scoped NNReal in
+omit [Nonempty ι] [SampleableType F] in
 private theorem linear_bgks_codewords_affine_of_distinct_dense_triple
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src : ℝ≥0)
@@ -422,11 +423,13 @@ private theorem linear_bgks_codewords_affine_of_distinct_dense_triple
 
 open scoped BigOperators in
 private theorem linear_bgks_filter_card_indicator
-    {α : Type} [Fintype α] [DecidableEq α] (p : α → Prop) [DecidablePred p] :
+    {α : Type} [Fintype α] (p : α → Prop) [DecidablePred p] :
     (((Finset.univ.filter p).card : ℝ)) =
       ∑ x : α, if p x then (1 : ℝ) else 0 := by
+  classical
   simp
 
+omit [DecidableEq ι] [Fintype F] [SampleableType F] in
 open scoped NNReal in
 private theorem linear_bgks_numeric_setup
     (C : LinearCode ι F) (δ_min η δ_src : ℝ≥0)
@@ -453,7 +456,7 @@ private theorem linear_bgks_numeric_setup
   let a : ℝ := 1 - (δ_min : ℝ) + (η : ℝ)
   have ha : 0 < a := by
     dsimp [a]
-    nlinarith
+    exact add_pos_of_nonneg_of_pos (sub_nonneg.mpr hdmin_le) heta
   let r : ℝ := a ^ ((1 : ℝ) / 3)
   have hr0 : 0 ≤ r := by
     exact Real.rpow_nonneg (le_of_lt ha) _
@@ -467,20 +470,21 @@ private theorem linear_bgks_numeric_setup
   have hcube : a < (1 - (δ_src : ℝ)) ^ 3 := by
     rw [← hrpow]
     exact pow_lt_pow_left₀ hr_lt hr0 (by norm_num)
-  have heta_lt_one : (η : ℝ) < 1 := by nlinarith
-  have heta_cube_lt : (η : ℝ) ^ 3 < (η : ℝ) := by
-    nlinarith [sq_pos_of_pos heta]
+  have heta_lt_one : (η : ℝ) < 1 := hη_lt_third.trans (by norm_num)
+  have heta_cube_lt : (η : ℝ) ^ 3 < (η : ℝ) :=
+    pow_lt_self_of_lt_one₀ heta heta_lt_one (by norm_num)
   have heta_le_a : (η : ℝ) ≤ a := by
     dsimp [a]
-    nlinarith
+    exact le_add_of_nonneg_left (sub_nonneg.mpr hdmin_le)
   have heta_lt_r : (η : ℝ) < r := by
     by_contra hnot
     have hr_le : r ≤ (η : ℝ) := le_of_not_gt hnot
     have hpow_le : r ^ 3 ≤ (η : ℝ) ^ 3 :=
       pow_le_pow_left₀ hr0 hr_le 3
-    nlinarith [hrpow, heta_cube_lt, heta_le_a]
+    rw [hrpow] at hpow_le
+    exact (not_lt_of_ge hpow_le) (heta_cube_lt.trans_le heta_le_a)
   refine ⟨hdmin_le, ha, hcube, ?_⟩
-  nlinarith [hr_lt, heta_lt_r]
+  simpa [add_comm] using (lt_sub_iff_add_lt.mp (heta_lt_r.trans hr_lt))
 
 private theorem linear_bgks_repeated_triples_card_le
     {α : Type} [Fintype α] [DecidableEq α] :
@@ -503,11 +507,14 @@ private theorem linear_bgks_repeated_triples_card_le
       simpa [R] using (Finset.mem_filter.mp hp).2
     rcases hrep with hxb | hxg | hbg
     · subst b
-      simp [E01, E02, E12]
+      exact Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inl
+        (Finset.mem_image.mpr ⟨(x, g), Finset.mem_univ _, rfl⟩))))
     · subst g
-      simp [E01, E02, E12]
+      exact Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inr
+        (Finset.mem_image.mpr ⟨(x, b), Finset.mem_univ _, rfl⟩))))
     · subst g
-      simp [E01, E02, E12]
+      exact Finset.mem_union.mpr (Or.inr
+        (Finset.mem_image.mpr ⟨(x, b), Finset.mem_univ _, rfl⟩))
   have hE01 : E01.card ≤ (Fintype.card α) ^ 2 := by
     calc
       E01.card ≤ (Finset.univ : Finset (α × α)).card := by
@@ -631,7 +638,7 @@ private theorem linear_bgks_rich_fiber_of_many_distinct
 
 open scoped BigOperators in
 private theorem linear_bgks_triple_intersection_moment
-    {α : Type} [Fintype α] [Nonempty α] [DecidableEq α]
+    {α : Type} [Fintype α] [Nonempty α]
     {κ : Type} [Fintype κ] [Nonempty κ] [DecidableEq κ]
     (S : α → Finset κ) (r : ℝ)
     (hS : ∀ x : α, r * Fintype.card κ < ((S x).card : ℝ)) :
@@ -793,6 +800,7 @@ private theorem linear_bgks_triple_intersection_moment
 
 open scoped NNReal in
 open scoped BigOperators in
+omit [SampleableType F] in
 private theorem linear_bgks_dense_triples_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
@@ -816,7 +824,7 @@ private theorem linear_bgks_dense_triples_card_gt
   have hMposR : 0 < (good.card : ℝ) :=
     lt_trans (by positivity : 0 < 2 / (η : ℝ) ^ 2) (by simpa [good] using hgood)
   have hMpos : 0 < good.card := by exact_mod_cast hMposR
-  letI : Nonempty α := Finset.nonempty_coe_sort.mpr (Finset.card_pos.mp hMpos)
+  let : Nonempty α := Finset.nonempty_coe_sort.mpr (Finset.card_pos.mp hMpos)
   have hnR : 0 < (n : ℝ) := by
     dsimp [n]
     exact_mod_cast Fintype.card_pos
@@ -851,7 +859,7 @@ private theorem linear_bgks_dense_triples_card_gt
       (((S p.1 ∩ S p.2.1 ∩ S p.2.2).card : ℝ)) ≤
         ((n - d : ℕ) : ℝ) + if p ∈ D then (n : ℝ) else 0 := by
     by_cases hp : p ∈ D
-    · rw [if_pos hp]
+    · rw [ite_eq_left hp]
       have hcard : (S p.1 ∩ S p.2.1 ∩ S p.2.2).card ≤ n := by
         dsimp [n]
         simpa using
@@ -863,7 +871,7 @@ private theorem linear_bgks_dense_triples_card_gt
       have hsubnonneg : 0 ≤ ((n - d : ℕ) : ℝ) := by
         exact_mod_cast Nat.zero_le (n - d)
       linarith
-    · rw [if_neg hp, add_zero]
+    · rw [ite_eq_right hp, add_zero]
       have hp' : ¬ n - d < (S p.1 ∩ S p.2.1 ∩ S p.2.2).card := by
         intro hdense
         apply hp
@@ -961,6 +969,7 @@ private theorem linear_bgks_dense_triples_card_gt
   exact (not_lt_of_ge hupper') hlower
 
 open scoped NNReal in
+omit [SampleableType F] in
 private theorem linear_bgks_distinct_dense_triples_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
@@ -987,7 +996,22 @@ private theorem linear_bgks_distinct_dense_triples_card_gt
   have hneg : D.filter (fun p => ¬ P p) = B := by
     ext p
     simp only [B, P, Finset.mem_filter]
-    tauto
+    constructor
+    · rintro ⟨hp, hnot⟩
+      refine ⟨hp, ?_⟩
+      by_cases h01 : p.1 = p.2.1
+      · exact Or.inl h01
+      by_cases h02 : p.1 = p.2.2
+      · exact Or.inr (Or.inl h02)
+      by_cases h12 : p.2.1 = p.2.2
+      · exact Or.inr (Or.inr h12)
+      exact (hnot ⟨h01, h02, h12⟩).elim
+    · rintro ⟨hp, hrep⟩
+      refine ⟨hp, fun hall => ?_⟩
+      rcases hrep with h01 | h02 | h12
+      · exact hall.1 h01
+      · exact hall.2.1 h02
+      · exact hall.2.2 h12
   have hpartNat : (D.filter P).card + B.card = D.card := by
     rw [← hneg]
     exact Finset.card_filter_add_card_filter_not P
@@ -1002,8 +1026,13 @@ private theorem linear_bgks_distinct_dense_triples_card_gt
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ p, hrep⟩
   have hR :
       (R.card : ℝ) ≤ 3 * (good.card : ℝ) ^ 2 := by
-    have h := linear_bgks_repeated_triples_card_le (α := α)
-    simpa [R, α] using h
+    have h :
+        (R.card : ℝ) ≤ 3 * (Fintype.card α : ℝ) ^ 2 := by
+      change (((Finset.univ.filter fun p : α × α × α =>
+        p.1 = p.2.1 ∨ p.1 = p.2.2 ∨ p.2.1 = p.2.2).card : ℝ)) ≤
+          3 * (Fintype.card α : ℝ) ^ 2
+      exact linear_bgks_repeated_triples_card_le (α := α)
+    simpa [α] using h
   have hB :
       (B.card : ℝ) ≤ 3 * (good.card : ℝ) ^ 2 := by
     have hcardNat : B.card ≤ R.card := Finset.card_le_card hBsub
@@ -1026,6 +1055,7 @@ private theorem linear_bgks_distinct_dense_triples_card_gt
     linarith
   simpa [good, D, P, linear_bgks_distinct_dense_triples] using hresult
 
+omit [DecidableEq ι] [SampleableType F] in
 open scoped NNReal in
 private theorem linear_bgks_rich_affine_line
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
@@ -1210,6 +1240,7 @@ private theorem linear_bgks_rich_affine_line
           simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using congrFun hgline i
         _ = v0 i + (y : F) * v1 i := by rw [hgy]
 
+omit [DecidableEq ι] [SampleableType F] in
 open scoped NNReal in
 private theorem linear_bgks_joint_proximity_of_good_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
@@ -1238,28 +1269,31 @@ private theorem linear_bgks_joint_proximity_of_good_card_gt
   simpa [hu] using hj
 
 open scoped NNReal in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 open scoped ProbabilityTheory in
 private theorem linear_close_probability_le_strict_of_radius_lt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_fld δ_src : ℝ≥0) (hδ : δ_fld < δ_src) :
-    Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
-      Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src] := by
-  apply Probability.Pr_le_Pr_of_implies
+    Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src] := by
+  apply prEvent_mono
   intro x hx
   exact lt_of_le_of_lt hx (by exact_mod_cast hδ)
 
 open scoped NNReal in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 open scoped ProbabilityTheory in
 private theorem linear_close_probability_mono_of_radius_lt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_fld δ_src : ℝ≥0) (hδ : δ_fld < δ_src) :
-    Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
-      Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_src] := by
-  apply Probability.Pr_le_Pr_of_implies
+    Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_src] := by
+  apply prEvent_mono
   intro x hx
   exact le_trans hx (by exact_mod_cast hδ.le)
 
 open scoped NNReal in
+omit [DecidableEq ι] in
 open scoped ProbabilityTheory in
 private theorem linear_eps_ca_le_one_point_five_johnson_aux
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
@@ -1274,14 +1308,14 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
   unfold epsCa
   refine iSup_le fun u => ?_
   by_cases hjp : Code.jointProximity (C : Set (ι → F)) u (δ_src + η)
-  · rw [if_pos hjp]
+  · rw [ite_eq_left hjp]
     exact zero_le
-  · rw [if_neg hjp]
+  · rw [ite_eq_right hjp]
     apply le_of_not_gt
     intro hgt
     have hstrict :
         ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
-          Pr_{let x ← $ᵖ F}[
+          Pr{let x ← $ᵗ F}[
             δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src] :=
       lt_of_lt_of_le hgt
         (linear_close_probability_le_strict_of_radius_lt

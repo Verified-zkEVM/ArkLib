@@ -3,9 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
-import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
+public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
+public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.CoreInteractionPhase
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 
 /-!
 ## Full Binary Basefold Protocol
@@ -18,6 +21,8 @@ Sequential composition of:
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
 -/
+
+@[expose] public section
 
 open AdditiveNTT Polynomial
 
@@ -109,8 +114,8 @@ theorem fullOracleReduction_perfectCompleteness :
       (relation := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (init := init)
-      (impl := impl) := by
-  apply OracleReduction.append_perfectCompleteness
+      (impl := impl) :=
+  OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
@@ -120,14 +125,14 @@ theorem fullOracleReduction_perfectCompleteness :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
     (rel₂ := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₃ := acceptRejectOracleRel)
-    (h₁ := by
-      apply CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ)
-    )
-    (h₂ := by
-      apply QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions (ϑ:=ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) init impl
-    )
+    (V₁ := Verifier.GuardedForm.ofEmpty _ (fun input =>
+      (⟨⟨0, fun _ => 0, input.1.ctx⟩, 0⟩, fun _ _ => 0)))
+    (V₂ := Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
+    (hSeam := fun _ => Or.inl inferInstance)
+    (h₁ := CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ))
+    (h₂ := fun s => QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (pure s) impl)
 
 open scoped NNReal
 

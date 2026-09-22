@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 
 /-!
 # Definition and analysis of bad events
@@ -15,6 +16,8 @@ Fiat-Shamir, following Section 5.6 in the paper.
 
 (TODO: may have to split this into multiple files given the number of lemmas)
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 
@@ -27,7 +30,7 @@ namespace QueryLog
 section
 -- WIP defining more general properties for query log
 
-variable {ι : Type*} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq]
+variable {ι : Type*} [DecidableEq ι] {spec : OracleSpec ι} [∀ t, DecidableEq (spec.Range t)]
 
 /-- A query tuple `(i, q, r)` is redundant in a query log if it appears more than once -/
 def redundantQuery (log : QueryLog spec) (q : spec.Domain) (r : spec.Range q) : Prop :=

@@ -3,11 +3,12 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.Data.Classes.HasSize
-import ArkLib.Data.Classes.Initialize
-import ArkLib.Data.Classes.Serde
-import VCVio
+public import ArkLib.Data.Classes.HasSize
+public import ArkLib.Data.Classes.Initialize
+public import ArkLib.Data.Classes.Serde
+public import VCVio.OracleComp.SimSemantics.Append
 
 /-!
   # Duplex Sponge API (Overwrite Mode)
@@ -21,6 +22,8 @@ import VCVio
 
   The API is subject to change as spongefish changes.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp
 
@@ -140,7 +143,7 @@ class SpongeUnit (α : Type) extends Zero α, Serde α ByteArray, HasSize α UIn
       let units := bytes.mapM deserialize
       if h : units.isSome
         then return units.get h
-        else IO.throwServerError "Failed to read units"
+        else throw <| IO.userError "Failed to read units"
 
 /-- Type class for types that can be used as a duplex sponge, with respect to the sponge unit type
   `U`.

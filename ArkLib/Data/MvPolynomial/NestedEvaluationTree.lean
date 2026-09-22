@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Data.MvPolynomial.Degrees
-import Mathlib.Algebra.Polynomial.Roots
+module
+
+public import ArkLib.Data.MvPolynomial.Degrees
+public import Mathlib.Algebra.Polynomial.Roots
 
 /-!
   # Nested evaluation trees and their polynomial zero test
@@ -47,6 +49,8 @@ import Mathlib.Algebra.Polynomial.Roots
   `MvPolynomial.eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero` and called by both.
   Making the grid version an actual corollary would need per-level arity here.
 -/
+
+@[expose] public section
 
 /-- A complete `k`-ary evaluation tree of depth `n` over `F`.
 

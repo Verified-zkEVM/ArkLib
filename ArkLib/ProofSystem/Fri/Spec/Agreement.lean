@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Projection
-import ArkLib.ProofSystem.Fri.Spec.SingleRound
+module
+
+public import ArkLib.ProofSystem.Fri.Projection
+public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
 /-!
 # Agreement certificates for the indexed FRI specification
@@ -13,6 +15,8 @@ import ArkLib.ProofSystem.Fri.Spec.SingleRound
 The specification records all domains relative to the original domain, rather than as
 nested subdomains. We lift a certificate backwards along that precise folding schedule.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 

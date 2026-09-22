@@ -1,14 +1,16 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Alexander Hicks, Quang Dao, Natasha Klaus, Pietro Monticone, Devon Tuma, Ilia Vlasov
 -/
 
-import Mathlib.LinearAlgebra.Lagrange
-import ArkLib.Data.Polynomial.SplitFold
-import ArkLib.Data.CodingTheory.ProximityGap.Folding
-import CompPoly.Univariate.Lagrange
-import CompPoly.Univariate.ToPoly.Impl
+module
+
+public import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Data.Polynomial.SplitFold
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding
+public import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # FRI Round Consistency
@@ -20,6 +22,8 @@ fold at the challenge point.
 For soundness, `roundConsistencyCheck_eq_foldValue` identifies the executable check with
 ArkLib's word-folding operation on an arbitrary oracle word, without an honesty assumption.
 -/
+
+@[expose] public section
 
 open Polynomial
 

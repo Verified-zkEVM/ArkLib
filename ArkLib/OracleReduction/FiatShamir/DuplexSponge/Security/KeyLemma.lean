@@ -1,5 +1,12 @@
-import ArkLib.OracleReduction.FiatShamir.Basic
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao, Devon Tuma
+-/
+module
+
+public import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 
 /-!
 # Lemma 5.1 of the Chiesa-Orrù paper
@@ -10,6 +17,8 @@ that transform the prover and the query-answer traces, respectively.
 
 Using this key lemma, we can easily conclude preservation of (knowledge) soundness.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 
@@ -98,6 +107,7 @@ noncomputable def ηStar (U : Type) [SpongeUnit U] [Fintype U]
   -- η⋆ = (7 t^2 + (28 L + 25) t + (14 L + 1) (L + 1)) / (2 · |Σ|^c) + θ⋆ · max ε + ∑ ε
   firstTermNumerator / firstTermDenominator + secondTerm + thirdTerm
 
+omit [DecidableEq ι] in
 /-- Lemma 5.1 in the paper: given the two games and the auxiliary procedures to transform the
   malicious prover and the query-answer traces, the two games have outputs that are statistically
   indistinguishable, up to an error term
@@ -106,10 +116,9 @@ TODO: fully fill in this lemma -/
 lemma duplexSpongeToFSGameStatDist
     (maliciousProver : OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U)
       (StmtIn × pSpec.Messages))
-    (tₒ : ι → ℕ) (tₕ tₚ tₚᵢ : ℕ)
+    (tₒ : ι → ℕ) (tₕ tₚ tₚᵢ : ℕ) : True :=
     -- TODO: state query bound only for subset of the oracles
     -- (hQuery : IsQueryBound maliciousProver (tₒ ⊕ᵥ (tₕ ⊕ᵥ (tₚ ⊕ᵥ tₚᵢ))))
-    : True :=
   sorry
 
 end KeyLemma

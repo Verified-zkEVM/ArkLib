@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Galois.Automorphism
-import ArkLib.Data.Lattices.CyclotomicRing.Galois.Order
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Galois.Automorphism
+public import ArkLib.Data.Lattices.CyclotomicRing.Galois.Order
 
 /-!
 # The Galois Group and the Subgroup `H = ⟨σ_{-1}, σ_{4k+1}⟩`
@@ -31,6 +33,8 @@ set `Hexp` enumerating `H` for use by the trace map. The composition law `σ_i �
 * [Lyubashevsky, V., and Seiler, G., *Short, Invertible Elements …*][LS18]
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial CompPoly Finset
 

@@ -3,10 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
+public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
-import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.ProofSystem.Fri.Spec.SingleRound
+/-!
+# ArkLib.ProofSystem.Fri.Spec.General
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace Fri
 
@@ -49,8 +57,7 @@ def outputRelation (δ : ℝ≥0) :
       (
         (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
         Witness F s d (Fin.last (k + 1))
-      )
-  := QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
+      ) := QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
 
 /- Protocol spec for the combined non-final folding rounds of the FRI protocol. -/
 @[reducible]
@@ -90,13 +97,12 @@ instance :
 /- Oracle reduction for all folding rounds of the FRI protocol -/
 @[reducible]
 def reductionFold :
-  OracleReduction []ₒ
+    OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
     (FinalStatement F k) (FinalOracleStatement s ω)
       (Witness F s d (Fin.last (k + 1)))
-    (pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)
- := OracleReduction.append
+    (pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F) := OracleReduction.append
       (OracleReduction.seqCompose _ _ (fun (i : Fin (k + 1)) => Witness F s d i.castSucc)
         (FoldPhase.foldOracleReduction s (ω := ω) d))
       (FinalFoldPhase.finalFoldOracleReduction (k := k) s d)
@@ -104,11 +110,11 @@ def reductionFold :
 /- Oracle reduction of the FRI protocol. -/
 @[reducible]
 def reduction :
-  OracleReduction []ₒ
-    (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
-      (Witness F s d (0 : Fin (k + 2)))
-    (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
-    (pSpec k (ω := ω) s l) :=
+    OracleReduction []ₒ
+      (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
+        (Witness F s d (0 : Fin (k + 2)))
+      (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))
+      (pSpec k (ω := ω) s l) :=
   OracleReduction.append (reductionFold k s d)
     (QueryRound.queryOracleReduction (k := k) s d dom_size_cond l)
 

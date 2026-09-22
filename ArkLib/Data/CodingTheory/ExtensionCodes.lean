@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.InterleavedCode
-import Mathlib.LinearAlgebra.Basis.Defs
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import Mathlib.LinearAlgebra.Basis.Defs
 
 /-!
 # Extension codes
@@ -57,6 +58,8 @@ of `C_B` in `F^ι`.
 * [Diamond, B. E., and Posen, J., *Succinct Arguments over Towers of Binary
     Fields*][DP25]
 -/
+
+@[expose] public section
 
 namespace CodingTheory
 
@@ -152,7 +155,7 @@ private lemma extensionEncode_zero {κ ι : Type*}
   rw [map_zero]
   rfl
 
-private lemma extensionEncode_add {κ ι : Type*}
+lemma extensionEncode_add {κ ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     (encode : (κ → B) →ₗ[B] (ι → B)) (v w : κ → F) :
@@ -631,7 +634,7 @@ theorem minDist_extensionCode
     (P : ExtensionFieldPresentation B F) (C_B : Submodule B (ι → B)) :
     Code.minDist (extensionCode P (C_B : Set (ι → B))) =
       Code.minDist (C_B : Set (ι → B)) := by
-  letI : Nonempty (Fin P.e) := Fin.pos_iff_nonempty.mp P.e_pos
+  let : Nonempty (Fin P.e) := Fin.pos_iff_nonempty.mp P.e_pos
   rw [minDist_extensionCode_eq_interleaved]
   exact Code.minDist_interleavedCodeSet (κ := Fin P.e) (C_B : Set (ι → B))
 
@@ -651,8 +654,8 @@ theorem lambda_extensionCode_eq_lambda_interleaved
     (C_B : Set (ι → B)) (δ : ℝ) :
     Lambda (extensionCode P C_B) δ =
       Lambda (Code.interleavedCodeSet (κ := Fin P.e) C_B) δ := by
-  letI : DecidableEq F := Classical.decEq F
-  letI : DecidableEq (Fin P.e → B) := Classical.decEq _
+  let : DecidableEq F := Classical.decEq F
+  let : DecidableEq (Fin P.e → B) := Classical.decEq _
   set Ψ : (ι → F) ≃ (ι → Fin P.e → B) :=
     Equiv.piCongrRight (fun _ => P.basis.equivFun.toEquiv) with hΨ
   have hΨ_apply : ∀ (v : ι → F) (i : ι), Ψ v i = P.basis.equivFun (v i) := fun v i => rfl
@@ -669,7 +672,7 @@ theorem lambda_extensionCode_eq_lambda_interleaved
   have hmem : ∀ v : ι → F,
       (Ψ v ∈ Code.interleavedCodeSet (κ := Fin P.e) C_B) ↔ v ∈ extensionCode P C_B := by
     intro v
-    simp only [Code.interleavedCodeSet, extensionCode, Set.mem_setOf_eq]
+    simp only [Code.interleavedCodeSet, extensionCode, Set.mem_ofPred_eq]
     constructor
     · intro h j; exact h j
     · intro h j; exact h j
@@ -678,7 +681,7 @@ theorem lambda_extensionCode_eq_lambda_interleaved
         = Ψ '' (closeCodewordsRel (extensionCode P C_B) f δ) := by
     intro f
     ext c
-    simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq, Set.mem_image]
+    simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_ofPred_eq, Set.mem_image]
     constructor
     · rintro ⟨hc_mem, hc_ball⟩
       refine ⟨Ψ.symm c, ⟨?_, ?_⟩, by simp⟩

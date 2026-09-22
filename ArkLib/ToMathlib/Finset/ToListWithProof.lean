@@ -3,10 +3,19 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Aristotle (Harmonic)
 -/
+module
 
-import Mathlib.Data.Finset.Defs
-import Mathlib.Data.Finset.Empty
-import Mathlib.Data.Finset.Dedup
+public import Mathlib.Data.Finset.Defs
+public import Mathlib.Data.Finset.Empty
+public import Mathlib.Data.Finset.Dedup
+
+/-!
+# ArkLib.ToMathlib.Finset.ToListWithProof
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace Finset
 
@@ -22,11 +31,11 @@ noncomputable def toListWithProof.{u} {α : Type u} [DecidableEq α] (s : Finset
 
 @[simp]
 lemma toListWithProof_empty.{u} {α : Type u} [DecidableEq α] :
-  toListWithProof (∅ : Finset α) = [] := by
+    toListWithProof (∅ : Finset α) = [] := by
   simp [toListWithProof, List.reduceOption]
 
 lemma toListWithProof_mem.{u} {α : Type u} [DecidableEq α]
-  {x : α}
+    {x : α}
   {s : Finset α}
   (hx : x ∈ s) :
   ⟨x, hx⟩ ∈ toListWithProof s := by
@@ -49,7 +58,7 @@ private lemma list_reduceOption_helper
 
 @[simp]
 lemma toListWithProof_eq_toList.{u} {α : Type u} [DecidableEq α]
-  {s : Finset α} :
+    {s : Finset α} :
   (toListWithProof s).map (fun x ↦ x.1) =
     s.toList := by
   simp only [toListWithProof]

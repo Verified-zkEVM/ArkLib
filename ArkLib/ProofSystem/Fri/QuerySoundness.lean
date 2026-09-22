@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.FoldingSoundness
+module
+
+public import ArkLib.ProofSystem.Fri.FoldingSoundness
 
 /-!
 # FRI query soundness
@@ -27,10 +29,13 @@ The proof strategy is also informed by
 [zkSecurity's formalization](https://github.com/zksecurity/simple-rbr-fri).
 -/
 
+@[expose] public section
+
 namespace Fri
 
 open Polynomial Domain ProximityGap ReedSolomon LinearCode
 open CosetFftDomainClass (sqFoldMapGen)
+open OracleComp
 open scoped BigOperators ProbabilityTheory
 
 variable {F : Type} [Field F] [DecidableEq F]
@@ -132,7 +137,7 @@ def Accepts (tr : FoldTrace domain d) {t : ℕ} (xs : Fin t → Fin (2 ^ n)) : P
 to the accepting density raised to the number of repetitions. -/
 theorem query_acceptance_probability (tr : FoldTrace domain d) (t : ℕ)
     (hfinal : tr.FinalInCode) :
-    Pr_{let xs ←$ᵖ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] =
+    Pr{let xs ←$ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] =
       ((tr.accepting.card : ENNReal) / (2 ^ n : ENNReal)) ^ t := by
   classical
   simp only [Accepts, hfinal, true_and]
@@ -142,8 +147,8 @@ theorem query_acceptance_probability (tr : FoldTrace domain d) (t : ℕ)
 The positive repetition count is essential; no safety assumption is needed here. -/
 theorem accepting_card_ge_of_query_probability (tr : FoldTrace domain d)
     (θ : ℝ) {t : ℕ} (ht : 0 < t) (hfinal : tr.FinalInCode)
-    (hprob : ENNReal.ofReal (1 - θ) ^ t ≤ Pr_{
-      let xs ← $ᵖ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
+    (hprob : ENNReal.ofReal (1 - θ) ^ t ≤ Pr{
+      let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
     (2 ^ n : ℝ) * (1 - θ) ≤ tr.accepting.card := by
   rw [tr.query_acceptance_probability t hfinal] at hprob
   have hbase := (ENNReal.pow_le_pow_left_iff ht.ne').mp hprob
@@ -211,7 +216,7 @@ safe commitment transcript. Repetitions are independent uniform initial-domain p
 theorem query_soundness (tr : FoldTrace domain d) (θ δ : ℝ) (t : ℕ)
     (hsafe : tr.Safe θ)
     (hdist : ∀ u ∈ code domain d, δ ≤ (Code.relHammingDist tr.initial u : ℝ)) :
-    Pr_{let xs ←$ᵖ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] ≤
+    Pr{let xs ←$ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] ≤
       ENNReal.ofReal (1 - min θ δ) ^ t := by
   classical
   by_cases hfinal : tr.FinalInCode
@@ -219,13 +224,14 @@ theorem query_soundness (tr : FoldTrace domain d) (θ δ : ℝ) (t : ℕ)
     apply pow_le_pow_left' _ t
     have h := ENNReal.ofReal_le_ofReal (tr.accepting_density_le θ δ hsafe hfinal hdist)
     simpa [ENNReal.ofReal_div_of_pos, show (0 : ℝ) < 2 ^ n by positivity] using h
-  · rw [Probability.prob_uniform_eq_card_filter_div_card]
-    simp [Accepts, hfinal]
+  · simp only [Accepts, hfinal, false_and]
+    rw [prEvent_const_of_not _ not_false]
+    exact zero_le
 
 /-- The query bound at the actual relative distance to the original Reed–Solomon code. -/
 theorem query_soundness_distance (tr : FoldTrace domain d) (θ : ℝ) (t : ℕ)
     (hsafe : tr.Safe θ) :
-    Pr_{let xs ←$ᵖ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] ≤
+    Pr{let xs ←$ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs] ≤
       ENNReal.ofReal (1 - min θ
         (Code.relDistFromCode tr.initial
           (code (domain : Fin (2 ^ n) ↪ F) d : Set (Fin (2 ^ n) → F))).toReal) ^ t := by
@@ -263,8 +269,8 @@ The rate threshold ensures that the accepting set determines a unique original c
 theorem exists_unique_codeword_agree_of_query_probability (tr : FoldTrace domain d)
     (θ : ℝ) {t : ℕ} (ht : 0 < t) (hsafe : tr.Safe θ) (hfinal : tr.FinalInCode)
     (hrate : (d : ℝ) ≤ (2 ^ n : ℝ) * (1 - θ))
-    (hprob : ENNReal.ofReal (1 - θ) ^ t ≤ Pr_{
-      let xs ← $ᵖ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
+    (hprob : ENNReal.ofReal (1 - θ) ^ t ≤ Pr{
+      let xs ← $ᵗ (Fin t → Fin (2 ^ n))}[tr.Accepts xs]) :
     ∃! u, u ∈ code domain d ∧ ∀ i ∈ tr.accepting, u i = tr.initial i := by
   have hlarge := tr.accepting_card_ge_of_query_probability θ ht hfinal hprob
   apply tr.exists_unique_codeword_agree θ hsafe hfinal hlarge

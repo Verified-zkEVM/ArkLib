@@ -3,9 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
-import Mathlib.Algebra.Polynomial.BigOperators
+module
 
-import ArkLib.Data.Polynomial.FoldingPolynomial
+public import Mathlib.Algebra.Polynomial.BigOperators
+
+public import ArkLib.Data.Polynomial.FoldingPolynomial
 
 /-!
 # Generalized polynomial splitting and folding
@@ -28,6 +30,8 @@ coefficients and `splitNth f 2 1` gives the odd coefficients (after appropriate
 reindexing).
 
 -/
+
+@[expose] public section
 
 open Polynomial
 
@@ -89,7 +93,7 @@ private lemma splitNthNoncomputable_of_neZero {f : 𝔽[X]} {n : ℕ} [inst : Ne
   is the coefficient of `f` at position `e * n + i`. -/
 @[simp]
 lemma splitNth_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m : ℕ) :
-  (splitNth f n i).coeff m = f.coeff (m * n + i.1) := by
+    (splitNth f n i).coeff m = f.coeff (m * n + i.1) := by
   aesop
     (add unsafe [cases Fin])
     (add simp [splitNth, Polynomial.coeff_ofFinsupp])
@@ -110,7 +114,7 @@ private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m
       intro k hk
       have hdm : n * (k / n) + k % n = k := Nat.div_add_mod k n
       by_cases h : k % n = i.1
-      · simp only [h, if_true]
+      · simp only [h, ite_true]
         rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
         by_cases hm : m = k / n <;> grind
       · aesop
@@ -122,7 +126,10 @@ private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m
   · aesop (add safe [cases Fin, (by omega)])
 
 private lemma splitNth_eq_splitNthNoncomputable {n : ℕ} {f : 𝔽[X]} :
-  splitNth f n = splitNthNoncomputable f n := by aesop
+  splitNth f n = splitNthNoncomputable f n := by
+  funext i
+  ext m
+  rw [splitNth_coeff, splitNthNoncomputable_coeff]
 
 /-- The key identity `splitNth` satisfies: `f` is recovered from its `n` components. -/
 lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
@@ -152,7 +159,7 @@ lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
 
 /-- Lemma bounding degree of each `n`-split polynomial. -/
 lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
-  (splitNth f n i).natDegree ≤ f.natDegree / n := by
+    (splitNth f n i).natDegree ≤ f.natDegree / n := by
   have hn := inst.out
   rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
   intro j hj
@@ -167,7 +174,7 @@ lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
     when `q = X ^ n`. -/
 @[simp low]
 lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynomial 𝔽}
-  {n : ℕ} [inst : NeZero n] :
+    {n : ℕ} [inst : NeZero n] :
   FoldingPolynomial.foldingPolynomial (X ^ n) f =
     ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
@@ -188,7 +195,7 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynom
 /-- `polyFold` in terms of `splitNth`. -/
 @[simp low]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
-  {f : 𝔽[X]} {n : ℕ} {r : 𝔽} [inst : NeZero n] :
+    {f : 𝔽[X]} {n : ℕ} {r : 𝔽} [inst : NeZero n] :
   FoldingPolynomial.polyFold f n r =
     ∑ i, C (r ^ i.val) * splitNth f n i := by
   aesop
@@ -207,7 +214,7 @@ lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (
   · intro j _ hj
     rw [coeff_X_pow_mul']
     by_cases hle : (j : ℕ) ≤ e * n + i
-    · rw [if_pos hle, ←expand_eq_comp_X_pow, coeff_expand hn, if_neg]
+    · rw [ite_eq_left hle, ←expand_eq_comp_X_pow, coeff_expand hn, ite_eq_right]
       intro hdvd
       have hmod := (Nat.modEq_iff_dvd' hle).mpr hdvd
       aesop
@@ -221,24 +228,23 @@ lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (
     components `u i`. -/
 @[simp high]
 theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
-  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+    {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
   FoldingPolynomial.foldingPolynomial (X ^ n)
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) =
-      ∑ i, Polynomial.X ^ i.val * C (u i) := by simp_all
+      ∑ i, Polynomial.X ^ i.val * C (u i) := by
+  rw [folding_polynomial_eq_sum_splitNth]
+  simp only [splitNth_of_sum_comp, mul_comm]
 
 /-- `polyFold` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
     polynomial `∑ i, r^i * u i`. -/
 @[simp high]
 theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
-  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+    {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
   FoldingPolynomial.polyFold
     (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) n r =
       ∑ i, r ^ i.val • (u i) := by
-  aesop
-    (add simp [FoldingPolynomial.polyFold,
-               Polynomial.eval_finsetSum,
-               Polynomial.smul_eq_C_mul])
-    (add safe (by grind))
+  rw [polyFold_eq_sum_of_splitNth]
+  simp only [splitNth_of_sum_comp, Polynomial.smul_eq_C_mul]
 
 /--
 Lemma bridges the coefficient-level identity `eq_sum_splitNth` and

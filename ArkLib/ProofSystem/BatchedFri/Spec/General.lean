@@ -3,11 +3,19 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
+public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
+public import ArkLib.ProofSystem.Fri.Spec.General
 
-import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
-import ArkLib.ProofSystem.Fri.Spec.General
+/-!
+# ArkLib.ProofSystem.BatchedFri.Spec.General
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 
 namespace BatchedFri
@@ -37,7 +45,7 @@ variable (l m : ℕ)
 variable {ω : SmoothCosetFftDomain n F}
 
 -- /- Input/Output relations for the Batched FRI protocol. -/
-def inputRelation [DecidableEq F] (δ : ℝ≥0) :
+def inputRelation (δ : ℝ≥0) :
     Set
       (
         Unit × (∀ j, OracleStatement m ω j) × (Witness F s d m)
@@ -68,8 +76,7 @@ instance instBatchFRIreductionChallengeOI : ∀ j,
 
 /- Oracle reduction of the batched FRI protocol. -/
 @[reducible]
-def batchedFRIreduction [DecidableEq F]
- :=
+def batchedFRIreduction :=
   OracleReduction.append
     (BatchingRound.batchOracleReduction s d m)
     (Fri.Spec.reduction (ω := ω) k s d dom_size_cond l)

@@ -4,7 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.OracleReduction.Security.RoundByRound
+module
+
+public import ArkLib.OracleReduction.Security.RoundByRound
 
 /-!
 # Round-by-round soundness from persistent bad events
@@ -14,6 +16,8 @@ event. Events are predicates of the prefix ending at that challenge, so subseque
 messages cannot create events retroactively. This construction uses the existing protocol
 execution and state-function definitions.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
@@ -126,8 +130,8 @@ def stateFunctionOfBadEvents
       (∀ i : pSpec.ChallengeIdx, ¬ bad i stmt
         (Transcript.restrict (b := Fin.last n)
           (by simp only [Fin.val_succ, Fin.val_last]; omega) tr)) →
-      Pr[ (· ∈ langOut) | OptionT.mk do
-        (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0) :
+      Pr{let result ← OptionT.mk do
+        (simulateQ impl (verifier.run stmt tr)).run' (← init)}[result ∈ langOut] = 0) :
     verifier.StateFunction init impl langIn langOut where
   toFun := badEventState langIn bad
   toFun_empty := fun stmt ↦ (badEventState_zero langIn bad stmt default).symm
@@ -148,23 +152,23 @@ theorem rbrSoundness_of_badEvents
       (∀ i : pSpec.ChallengeIdx, ¬ bad i stmt
         (Transcript.restrict (b := Fin.last n)
           (by simp only [Fin.val_succ, Fin.val_last]; omega) tr)) →
-      Pr[ (· ∈ langOut) | OptionT.mk do
-        (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0)
+      Pr{let result ← OptionT.mk do
+        (simulateQ impl (verifier.run stmt tr)).run' (← init)}[result ∈ langOut] = 0)
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     (hbound : ∀ stmt ∉ langIn, ∀ i : pSpec.ChallengeIdx,
       ∀ tr : Transcript i.val.castSucc pSpec,
       ¬ badEventState langIn bad i.val.castSucc stmt tr →
-      Pr[ fun c ↦ bad i stmt (tr.concat c) | $ᵗ (pSpec.Challenge i)] ≤ ε i) :
+      Pr{let c ← $ᵗ (pSpec.Challenge i)}[bad i stmt (tr.concat c)] ≤ ε i) :
     verifier.rbrSoundness init impl langIn langOut ε := by
   apply rbrSoundnessWorstCase_implies_rbrSoundness
   refine ⟨stateFunctionOfBadEvents langIn bad init impl langOut verifier hterminal, ?_⟩
   intro stmt hstmt i tr
-  change Pr[ fun c ↦ ¬ badEventState langIn bad i.val.castSucc stmt tr ∧
-    badEventState langIn bad i.val.succ stmt (tr.concat c) | $ᵗ (pSpec.Challenge i)] ≤ _
+  change Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ badEventState langIn bad i.val.castSucc stmt tr ∧
+    badEventState langIn bad i.val.succ stmt (tr.concat c)] ≤ _
   by_cases hb : badEventState langIn bad i.val.castSucc stmt tr
   · simp [hb]
   · apply le_trans _ (hbound stmt hstmt i tr hb)
-    apply probEvent_mono''
+    apply prEvent_mono _ _ _
     intro c hc
     obtain ⟨hdir, hbad⟩ := badEventState_new langIn bad stmt tr c hc.1 hc.2
     exact hbad

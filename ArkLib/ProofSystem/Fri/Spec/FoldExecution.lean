@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.Transcript
-import ArkLib.ProofSystem.Fri.Spec.QueryExecution
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.Transcript
+public import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 
 /-!
 # Execution of the FRI commitment phase
@@ -13,6 +15,8 @@ import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 The verifier retains precisely the supplied challenges and committed words. All words in
 this module are arbitrary: these execution identities do not assume an honest prover.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 
@@ -61,14 +65,14 @@ theorem foldVerifier_run (α : Fin k → F)
           simp only [Fin.val_castSucc] at this; omega⟩) (w ⟨j.val, by
           simp only [Fin.val_last]; have := j.isLt; simp only [Fin.val_succ] at this; omega⟩) :=
         congr_arg_heq w (Fin.ext hj)
-      simpa only [eqRec_heq_iff_heq] using hw
+      simpa only [eqRec_heq_iff] using hw
     · have hj : j.val = i.val + 1 := by
         split_ifs at he with h
         exact h
       have hj' : j' = ⟨1, by simp⟩ := by
-        simpa only [dif_pos hj, Sum.inr.injEq] using he.symm
+        simpa only [dite_eq_left hj, Sum.inr.injEq] using he.symm
       subst j'
-      simp only [eqRec_heq_iff_heq]
+      simp only [eqRec_heq_iff]
       change HEq (w i.succ) (w ⟨j.val, _⟩)
       exact congr_arg_heq w (Fin.ext hj.symm)
 
@@ -141,7 +145,7 @@ theorem committedWord_materialize (d : ℕ+)
         ↓reduceDIte, Sum.inl.injEq] at he
       exact Fin.ext (congrArg Fin.val he).symm
     subst j
-    simp only [eqRec_heq_iff_heq]
+    simp only [eqRec_heq_iff]
     rfl
   · simp only [Fin.val_castSucc, show i.val ≠ k + 1 by omega,
       ↓reduceDIte] at he
@@ -164,7 +168,7 @@ theorem finalPolynomial_materialize (d : ℕ+)
   · have hj : j = ⟨1, by simp⟩ := by
       simpa only [Fin.val_last, ↓reduceDIte, Sum.inr.injEq] using he.symm
     subst j
-    simp only [eqRec_heq_iff_heq]
+    simp only [eqRec_heq_iff]
     rfl
 
 /-- Resolve the final polynomial message using the actual message-oracle interface. -/
@@ -174,7 +178,8 @@ theorem simulate_getConst (w : ∀ j, OracleStatement s ω (Fin.last k) j)
       (liftM (getConst F) : OracleComp ((emptySpec.{0, 0}) +
         ([OracleStatement s ω (Fin.last k)]ₒ + [(pSpec F).Message]ₒ)) _) =
       pure (tr 1) := by
-  have h := simulateQ_addLift_add_liftM_right (m := OracleComp (emptySpec.{0, 0}))
+  have h := QueryImpl.simulateQ_addLift_add_liftM_right
+    (target := OracleComp (emptySpec.{0, 0}))
     (QueryImpl.id (emptySpec.{0, 0}))
     (OracleInterface.simOracle0 (OracleStatement s ω (Fin.last k)) w)
     (OracleInterface.simOracle0 (pSpec F).Message tr.messages) (getConst F)

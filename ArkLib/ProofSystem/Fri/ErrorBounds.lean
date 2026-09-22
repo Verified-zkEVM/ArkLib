@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.FoldingSoundness
-import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+module
+
+public import ArkLib.ProofSystem.Fri.FoldingSoundness
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 
 /-!
 # Numerical FRI folding bounds
@@ -25,6 +27,8 @@ of factor `2 ^ k` uses the powers generator with parameter `2 ^ k - 1`.
   of FRI*][GMW25]
 -/
 
+@[expose] public section
+
 namespace Fri
 
 open Domain ReedSolomon
@@ -34,7 +38,7 @@ open scoped NNReal ProbabilityTheory
 Johnson radius. All field-size, distance, slack, and radius hypotheses of the existing bound
 are retained explicitly. Here `δmin` is the relative minimum distance of the next code. -/
 theorem foldingAgreementFailure_prob_le_generalizedJohnson
-    {F : Type} [Field F] [Fintype F] [DecidableEq F] {n k d : ℕ}
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F] {n k d : ℕ}
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
     (δmin η θ : ℝ≥0) (hk : 0 < k) (hcard : 2 ^ k ≤ Fintype.card F)
     (hmin : (δmin : ℝ) =
@@ -45,7 +49,7 @@ theorem foldingAgreementFailure_prob_le_generalizedJohnson
       ((1 : ℝ) / ((2 ^ k - 1 : ℕ) + 2))) :
     let m : ℕ := 2 ^ k - 1
     let r : ℝ := 1 - (δmin : ℝ) + (η : ℝ)
-    Pr_{let α ←$ᵖ F}[FoldingAgreementFailure domain f k d θ α] ≤
+    Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       ENNReal.ofReal
         (((2 ^ (n - k) : ℝ) * (1 - r ^ ((1 : ℝ) / (m + 1)))) / η
           * ((m : ℝ) / Fintype.card F)

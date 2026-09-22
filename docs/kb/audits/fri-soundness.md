@@ -4,6 +4,35 @@ Source: [GMW25](../papers/GMW25.md), March 27, 2026 revision. The earlier
 `zksecurity/simple-rbr-fri` development informs the proof strategy; its foundational
 definitions are not duplicated in ArkLib.
 
+## Forward-port baseline and reusable upstream work
+
+The original FRI contribution was validated on `14a4b351d` (Lean 4.32.2).
+The forward-port targets `0b5b67c63` (Lean 4.34.0), incorporating 131 intervening
+commits from `main`. The validation record below concerns this integrated tree,
+not the former baseline.
+
+| Upstream changes | Relevance to FRI and reuse decision |
+| --- | --- |
+| #897, #903, #913, #967: modules, Lean 4.34, native measure probabilities, VCVio repin | Migrate production modules and probability statements; import VCVio's native event, conditioning, uniform-sampling, and `OptionT` lemmas directly. Do not restore the removed `ToVCVio` tree or PMF compatibility surface. |
+| #766, #865, #906: module-code MCA and same-set agreement extensions | Use the consolidated `ProximityGenerator/Basic` API. `not_isMCA_iff_forall_exists_codewords` supplies simultaneous extensions on the original witness set; FRI's remaining work is the protocol-specific polynomial reconstruction and block preimage. |
+| #841, #918, #932: interleaved RS list decodability, interleaving MCA, and exact agreement transfer | Reusable for future interleaved/batched FRI; do not duplicate these bridges or claim that the present unbatched theorem proves batched FRI. |
+| #902: unique-decoding MDS MCA bound | `mcaError_le_mdsMCAError_of_lt` is proved below `δ_C / (ℓ + 1)`, with the full-dimension and `ℓ ≥ 2` hypotheses. The all-radii `isMCAGenerator_of_isMDSGenerator` still has an admitted list-decoding branch; it is not a certified replacement for the current powers-MCA bound. |
+| #825, #845: folding contexts and list-decoding preservation | Retain the existing folding operation and its arithmetic context. List-decoding preservation can support later parameter specializations. |
+| #909, #910: Johnson counting and finite list-size bounds | Reuse for future numerical refinements rather than introducing a FRI-local list-decoding theory. |
+| #937, #938, #945: tensor-fold probability and anchored agreement/reconstruction | Useful for related tensor and interleaved protocols; not a replacement for the actual retained-history FRI verifier execution bridge. |
+| #907 polynomial/interpolation work: Hasse–Taylor and differential-polynomial APIs, hidden-derivative rank bounds, affine Hilbert/Bezout tools, and weighted-simplex counts/moments | Potential ingredients for later list-decoding and MCA improvements. They are not premises of the current GMW25 agreement-lifting proof and should remain shared mathematical infrastructure. |
+| #885, #887: state-aware sequential composition | The pure-first-verifier composition APIs are relevant to modular security proofs. The general `rbrSoundness_implies_soundness` remains unfinished, so ordinary FRI soundness keeps the direct adaptive-execution accumulation proof. |
+| Typed `Interaction` framework, beginning with #851; ordered execution/state and closed-outcome work in #880, #884, #886, #889, #891 | A future framework migration opportunity, including explicit acceptance/rejection/fault outcomes. The current theorem must continue to concern the existing computable `Fri.Spec.reduction`, not silently switch to a new specification. |
+
+Before starting a large formalization, fetch upstream and compare both the toolchain
+and dependency pins with the intended merge target. A clean local proof build alone
+does not establish compatibility with current `main`.
+
+In particular, #766 already provides
+`Code.minRelHammingDistCode_moduleInterleavedCode`: nonempty interleaving preserves
+relative minimum distance. Reuse it when specializing MCA bounds to interleaved
+codes; no separate FRI-local distance-preservation lemma is needed.
+
 ## Proof map
 
 | Source obligation | ArkLib declaration | Scope |
@@ -81,6 +110,13 @@ The numerical specialization in `Fri/ErrorBounds.lean` retains the actual field-
 minimum-distance, slack, and radius hypotheses. `mcaError` remains the common interface,
 not an assumed zero error.
 
+Probability statements use native `Pr{...}[...]` semantics. `SampleableType F` is
+explicit in the MCA error and probability-facing theorems; pure agreement and
+verifier-execution lemmas remain sampler-free. Challenge-type transport uses
+VCVio's certified uniform-sampling equivalence, so the proof does not assume that
+the executable challenge sampler and a separately chosen field sampler are the
+same program.
+
 ## Scope
 
 The result is information-theoretic ordinary and round-by-round soundness of the interactive
@@ -93,31 +129,23 @@ expected vacuous query bound one.
 The older BCIKS20-based batched-FRI claims in `BatchedFri/Security.lean` remain separate
 unfinished statements; the new theorems do not depend on them or certify batched FRI.
 
-## Validation notes
+## Lean 4.34.0 forward-port validation
 
-- Direct kernel axiom inspection of `Fri.Spec.soundness`, `soundness_proximity`,
-  `rbrSoundness`, and `reduction_run` reports exactly `propext`, `Classical.choice`, and
-  `Quot.sound`: no `sorryAx` or nonstandard axioms. The same holds for the reusable
-  adaptive accumulation and acceptance-to-soundness theorems. There are no `sorry`
-  declarations under `ArkLib/ProofSystem/Fri/`.
-- The full Lean build, compiled toy-problem runtime checks, and the `ArkLib/Data`
-  non-`sorry` warning gate pass. The new proof
-  modules and the reviewed FRI specification files compile without warnings.
-  The standalone Python style linter passes the new proof modules and `RoundConsistency`;
-  it still reports legacy layout issues in `Spec/SingleRound` and `Spec/General`.
-- The axiom-sweep fixture matrix and `lake exe axiomsweep --check` pass.
-  The refreshed baseline removes eight FRI
-  declarations made axiom-clean by replacing the four placeholder relation definitions;
-  it adds no debt. The sweep covers 10,714 declarations across 422 modules and reports
-  288 existing `sorryAx`-tainted declarations and no nonstandard-axiom dependencies.
-- The import check and knowledge-base lint pass. Full `validate.sh --axioms --site` stops earlier
-  at the pre-existing broken link in `docs/kb/ABF26_POLISH_PLAN.md` to
-  `../../ArkLib/Data/CodingTheory/ListDecoding/Bounds.lean`; the axiom checks are therefore
-  also run separately. The unrelated document is left unchanged.
-- The 63-page blueprint PDF and bibliography compile with XeLaTeX and BibTeX, and
-  `checkdecls` validates every theorem reference in the FRI section. The full API-docs
-  build was attempted but stopped during dependency-documentation generation; a full
-  website build is not certified here.
-- The user's unrelated, untracked `ArkLib/Data/CodingTheory/ProximityGenerator/` work is
-  not imported or staged. Import validation uses a temporary, command-local Git exclusion
-  for that directory, without changing repository ignore rules.
+- `lake build ArkLibTest.ProofSystem.Fri.Soundness` passes (3,817 jobs).
+  Its guarded kernel checks inspect the exact verifier execution, ordinary and
+  round-by-round soundness, the generalized-Johnson specialization, and the generic
+  adaptive accumulation/acceptance bridges. Each reports only `propext`,
+  `Classical.choice`, and `Quot.sound`.
+- Documentation integrity and knowledge-base lint pass.
+- The 63-page blueprint PDF and bibliography compile with XeLaTeX and BibTeX on the
+  integrated source tree. A full API-documentation/site build is not certified here.
+- `lake build ArkLibBlueprint` and `checkdecls` pass for both the existing blueprint
+  declaration list and a separate list covering all new FRI references.
+- The repository-wide `./scripts/validate.sh --axioms` passes: full library build
+  (4,731 jobs), acceptance clients, warning budgets, source-policy and retirement
+  fixtures, compiled toy-problem and Hachi runtime checks, imports, build-timing
+  fixtures, documentation checks, and the axiom regression gate.
+- The sweep checks 14,285 declarations across 638 modules: no nonstandard-axiom
+  taint and no new admission debt. The remaining 283 admission-tainted declarations
+  are pre-existing work elsewhere; the FRI kernel checks above are admission-free.
+  Native probability retirement reports zero remaining uses.

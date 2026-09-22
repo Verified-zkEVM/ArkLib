@@ -3,12 +3,14 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Rq
-import Mathlib.NumberTheory.Multiplicity
-import Mathlib.NumberTheory.LegendreSymbol.Basic
-import Mathlib.RingTheory.Polynomial.Cyclotomic.Factorization
-import Mathlib.Data.ZMod.ValMinAbs
-import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Rq
+public import Mathlib.NumberTheory.Multiplicity
+public import Mathlib.NumberTheory.LegendreSymbol.Basic
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Factorization
+public import Mathlib.Data.ZMod.ValMinAbs
+public import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
 
 /-!
 # Building Blocks for Lyubashevsky–Seiler Short-Element Invertibility
@@ -32,6 +34,8 @@ Reusable lemmas feeding the proof of `isUnit_of_l1Norm_le` in
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open scoped BigOperators
 

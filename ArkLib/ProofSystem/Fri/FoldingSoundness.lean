@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.Data.CodingTheory.ProximityGap.Folding
-import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
+module
+
+public import ArkLib.Data.CodingTheory.ProximityGap.Folding
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 
 /-!
 # Agreement preservation in FRI folding
@@ -27,9 +29,12 @@ We reuse ArkLib's definitions throughout.
   of FRI*][GMW25]
 -/
 
+@[expose] public section
+
 namespace Fri
 
 open Polynomial Domain ProximityGap ReedSolomon LinearCode CoreDefinitions
+open OracleComp
 open scoped BigOperators ProbabilityTheory NNReal
 
 variable {F : Type} [Field F] [DecidableEq F] {n k d : ℕ}
@@ -45,7 +50,7 @@ theorem exists_codeword_agree_of_coefficients
     ∃ u ∈ code domain (2 ^ k * d),
       ∀ i x, x ∈ T → domain i ^ (2 ^ k) = domain.subdomain k x → u i = f i := by
   classical
-  letI : NeZero d := ⟨by omega⟩
+  let : NeZero d := ⟨by omega⟩
   have hpoly : ∀ j : Fin (2 ^ k), ∃ p : F[X], p.natDegree < d ∧
       ∀ x ∈ T, p.eval (domain.subdomain k x) =
         foldWordAuxCoeff domain f k j (domain.subdomain k x) := by
@@ -100,7 +105,7 @@ theorem foldingAgreementFailure_implies_isMCA [Fintype F]
   refine ⟨T, hT, ?_, ?_⟩
   · convert hfold using 1
     ext x
-    simp only [projectedWord, Set.restrict_apply, smul_eq_mul, foldWord,
+    simp only [projectedWord, Set.domRestrict_apply, smul_eq_mul, foldWord,
       foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
     exact Finset.sum_congr rfl fun _ _ ↦ mul_comm _ _
   · by_contra! h
@@ -108,22 +113,22 @@ theorem foldingAgreementFailure_implies_isMCA [Fintype F]
 
 /-- FRI's single-fold soundness error is bounded by ArkLib's MCA error value. The bound is
 uniform over all agreement sets and does not depend on the prover's next message. -/
-theorem foldingAgreementFailure_prob_le [Fintype F]
+theorem foldingAgreementFailure_prob_le [Fintype F] [SampleableType F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d) (θ : ℝ) :
-    Pr_{let α ←$ᵖ F}[FoldingAgreementFailure domain f k d θ α] ≤
+    Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       mcaError (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
         (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) θ := by
-  apply le_trans (Probability.Pr_le_Pr_of_implies _ _ _
+  apply le_trans (prEvent_mono _ _ _
     (foldingAgreementFailure_implies_isMCA domain f hd θ))
-  exact le_iSup (fun U ↦ Pr_{let α ←$ᵖ F}[
+  exact le_iSup (fun U ↦ Pr{let α ←$ᵗ F}[
     IsMCA (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
       (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) α U θ]) _
 
 /-- The folding bound stated using the existing named powers generator, whose parameter is
 the largest exponent (one less than the number of coefficient words). -/
-theorem foldingAgreementFailure_prob_le_powers [Fintype F]
+theorem foldingAgreementFailure_prob_le_powers [Fintype F] [SampleableType F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d) (θ : ℝ) :
-    Pr_{let α ←$ᵖ F}[FoldingAgreementFailure domain f k d θ α] ≤
+    Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       mcaError (univariatePowersGenerator F (2 ^ k - 1))
         (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d) θ := by
   have h := foldingAgreementFailure_prob_le (k := k) domain f hd θ
@@ -139,12 +144,12 @@ theorem foldingAgreementFailure_prob_le_powers [Fintype F]
   rwa [heq _ (by positivity)] at h
 
 /-- Any existing certified MCA bound for powers instantiates the FRI folding error. -/
-theorem foldingAgreementFailure_prob_le_of_isMCAGenerator [Fintype F]
+theorem foldingAgreementFailure_prob_le_of_isMCAGenerator [Fintype F] [SampleableType F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (hd : 0 < d)
     (ε : unitInterval → ℝ≥0)
     (hMCA : IsMCAGenerator (univariatePowersGenerator F (2 ^ k - 1)) ε
       (code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) d)) (θ : unitInterval) :
-    Pr_{let α ←$ᵖ F}[FoldingAgreementFailure domain f k d θ α] ≤ (ε θ : ENNReal) :=
+    Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤ (ε θ : ENNReal) :=
   (foldingAgreementFailure_prob_le_powers domain f hd θ).trans (hMCA θ)
 
 end Fri

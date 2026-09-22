@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.RestrictDegreeVar
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 
 /-!
 # Operations preserving `MvPolynomial.restrictDegree`
@@ -19,6 +20,8 @@ that the structured (witness-mode) sumcheck — see
 `ArkLib.ProofSystem.Sumcheck.Structured` — and any future ring-switching protocol can
 import them without depending on `Binius.BinaryBasefold.*`.
 -/
+
+@[expose] public section
 
 namespace MvPolynomial
 

@@ -3,14 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, František Silváši
 -/
-import Mathlib.Analysis.Convex.Function
-import Mathlib.Data.Set.Pairwise.Basic
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import Mathlib.Analysis.Convex.Function
+public import Mathlib.Data.Set.Pairwise.Basic
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 /-! # Johnson Bound Choose-2 Lemmas -/
+
+@[expose] public section
 
 
 namespace JohnsonBound

@@ -4,9 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
-import ArkLib.ProofSystem.Fri.Spec.InputRelation
-import ArkLib.OracleReduction.Security.Acceptance
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
+public import ArkLib.ProofSystem.Fri.Spec.InputRelation
+public import ArkLib.OracleReduction.Security.Acceptance
 
 /-!
 # End-to-end soundness of the FRI oracle reduction
@@ -22,12 +24,14 @@ for the source correspondence and credit to the earlier `zksecurity/simple-rbr-f
   of FRI*][GMW25]
 -/
 
+@[expose] public section
+
 namespace Fri.Spec
 
 open Domain OracleComp OracleSpec ProtocolSpec Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -49,7 +53,7 @@ theorem soundness_proximity (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
       (Transcript.restrict (b := Fin.last _)
         (by simp only [Fin.val_succ, Fin.val_last]; omega) tr))
   · intro stmt _ tr hbad
-    rw [reduction_run, if_neg hbad]
+    rw [reduction_run, ite_eq_right hbad]
   · intro WitIn WitOut wit prover stmt hstmt os
     have h := terminalEvent_prob_le s d l (round_bound hdom) θ δ impl prover stmt hstmt wit
       (fun tr ↦ queryBad s d l (round_bound hdom) (initialOracle s stmt)
@@ -74,7 +78,7 @@ theorem soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
   have h := soundness_proximity s d l hdom θ δ init impl
     WitIn WitOut wit prover stmt hnot
   refine le_trans ?_ h
-  apply probEvent_mono''
+  apply prEvent_mono _ _ _
   intro _ _
   exact Set.mem_univ _
 
@@ -94,14 +98,18 @@ theorem rbrSoundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     have hbad : ¬ queryBad s d l (round_bound hdom) (initialOracle s stmt)
         (Transcript.restrict (b := Fin.last _)
           (by simp only [Fin.val_succ, Fin.val_last]; omega) tr) := by
-      simpa only [badEvent_query] using hsafe (queryChallenge s l)
+      intro hquery
+      exact hsafe (queryChallenge s l)
+        ((badEvent_query s d l (round_bound hdom) θ (initialOracle s stmt) _).mpr hquery)
     have hrun := reduction_run s l d hdom stmt tr
-    rw [if_neg hbad] at hrun
+    rw [ite_eq_right hbad] at hrun
     have hv : (reduction k s d hdom l).verifier.toVerifier.run stmt tr = failure :=
       OptionT.ext hrun
     rw [hv]
-    change Pr[ (· ∈ (outputRelation k s d hdom δ).language) | OptionT.mk do
-      (simulateQ impl (pure none)).run' (← init)] = 0
+    change Pr{let result ← OptionT.mk do
+      (simulateQ impl (pure none)).run' (← init)}[
+        result ∈ (outputRelation k s d hdom δ).language] = 0
+    rw [OptionT.prEvent_mk]
     simp [StateT.run'_eq, StateT.run_pure]
   · intro stmt hstmt j tr hbefore
     apply badEvent_prob_le s d l (round_bound hdom) θ δ (initialOracle s stmt)

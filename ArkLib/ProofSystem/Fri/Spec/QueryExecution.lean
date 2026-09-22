@@ -4,14 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.QuerySoundness
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.QuerySoundness
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
 # Rejection semantics of the FRI query verifier
 
 The short-circuiting executable verifier accepts exactly when all its local checks pass.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec.QueryRound
 
@@ -22,6 +26,26 @@ variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) {l : ℕ}
 
+private theorem simulate_guarded_finRange {ι : Type} {spec : OracleSpec ι}
+    {M : Type → Type} [Monad M] [LawfulMonad M] (impl : QueryImpl spec M)
+    {β : Type} {m : ℕ} (init : β)
+    (body : Fin m → β → OptionT (OracleComp spec) (ForInStep β))
+    (cond : Fin m → Prop) [DecidablePred cond]
+    (hbody : ∀ a, simulateQ impl (body a init).run =
+      pure (if cond a then some (ForInStep.yield init) else none)) :
+    simulateQ impl ((forIn (List.finRange m) init body :
+      OptionT (OracleComp spec) β).run) =
+      pure (if ∀ a, cond a then some init else none) := by
+  classical
+  by_cases hall : ∀ a, cond a
+  · rw [ite_eq_left hall]
+    apply simulateQ_optionT_forIn_yield_pure_some
+    intro a
+    exact (hbody a).trans (congrArg pure (ite_eq_left (hall a)))
+  · rw [ite_eq_right hall]
+    apply simulateQ_optionT_forIn_yield_pure_none impl _ _ body cond hbody
+    simpa using hall
+
 /-- Resolving a lifted query against the retained commitment history. -/
 theorem simulate_lift (o : ∀ j, FinalOracleStatement s ω j)
     (msgs : (pSpec (ω := ω) l).Messages) {A : Type}
@@ -30,7 +54,7 @@ theorem simulate_lift (o : ∀ j, FinalOracleStatement s ω j)
       (liftM c : OracleComp ((emptySpec.{0, 0}) + ([FinalOracleStatement s ω]ₒ +
         [(pSpec (ω := ω) l).Message]ₒ)) A) =
       pure (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o) c).run := by
-  exact simulateQ_addLift_add_liftM_left (m := OracleComp (emptySpec.{0, 0}))
+  exact QueryImpl.simulateQ_addLift_add_liftM_left (target := OracleComp (emptySpec.{0, 0}))
     (QueryImpl.id (emptySpec.{0, 0}))
     (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
     (OracleInterface.simOracle0 (pSpec (ω := ω) l).Message msgs) c
@@ -53,7 +77,7 @@ private theorem eval_guard_loop {ι : Type} {spec : OracleSpec ι}
       pure (ForInStep.yield PUnit.unit)) :
       OptionT (OracleComp spec) PUnit).run)).run =
       if ∀ i, (simulateQ impl (c i)).run = true then some PUnit.unit else none := by
-  have h := simulateQ_optionT_finRange_forIn impl PUnit.unit
+  have h := simulate_guarded_finRange impl PUnit.unit
     (fun i _ ↦ do
       guard (← c i)
       pure (ForInStep.yield PUnit.unit))
@@ -90,7 +114,7 @@ theorem eval_verifyQueries (hs : (∑ j, (s j).val) ≤ n)
     simp only [body, OptionT.run_bind, Option.elimM, simulateQ_bind]
     rw [hi]
     split_ifs <;> rfl
-  have ho := simulateQ_optionT_finRange_forIn impl PUnit.unit body cond hb
+  have ho := simulate_guarded_finRange impl PUnit.unit body cond hb
   simp only [verifyQueries, guard_eq, bind_pure_comp, OptionT.run_bind, Option.elimM,
     OptionT.run_monadLift, monadLift_self, OptionT.run_map, bind_map_left, Option.elim_some,
     simulateQ_bind, eval_getConst, simulateQ_map, Id.run_bind, Id.run_map]
@@ -142,14 +166,14 @@ theorem verifyQueries_soundness (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
     (hdegree : (finalPolynomial s o).natDegree < d.val)
     (hdist : ∀ u ∈ ReedSolomon.code ω (2 ^ (∑ j, (s j).val) * d.val),
       δ ≤ (Code.relHammingDist (initialWord s o) u : ℝ)) :
-    Pr_{let xs ←$ᵖ (Fin l → (ω.subdomain 0).toFinset)}[
+    Pr{let xs ←$ᵗ (Fin l → (ω.subdomain 0).toFinset)}[
       (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
         (verifyQueries s hs l α xs).run).run ≠ none] ≤
       ENNReal.ofReal (1 - min θ δ) ^ l := by
   classical
   let e : (Fin l → Fin (2 ^ n)) ≃ (Fin l → (ω.subdomain 0).toFinset) :=
     Equiv.arrowCongr (Equiv.refl _) (ω.subdomain 0).equivToFinset
-  rw [← ProbabilityTheory.Pr_uniform_equiv e]
+  rw [← SampleableType.prEvent_uniformSample_equiv e]
   have he (zs : Fin l → Fin (2 ^ n)) (j : Fin l) : e zs j = initialQuery (zs j) := by
     apply Subtype.ext
     simp [e, initialQuery, CosetFftDomain.subdomain_zero_eq_self]

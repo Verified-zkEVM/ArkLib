@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Galois.Group
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Galois.Group
 
 /-!
 # The Trace Map `Tr_H`
@@ -26,6 +28,8 @@ It is additive (proven here, from additivity of `galoisAut`). Its image lands in
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 

@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Fri.Spec.FoldExecution
-import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
+module
+
+public import ArkLib.ProofSystem.Fri.Spec.FoldExecution
+public import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
 
 /-!
 # The composed FRI verifier and its transcript history
@@ -13,6 +15,8 @@ import ArkLib.ProofSystem.Fri.Spec.AdaptiveSoundness
 This module identifies the history retained by the composed verifier with the history
 read from the chronological transcript in the bad-event argument.
 -/
+
+@[expose] public section
 
 namespace Fri.Spec
 
@@ -57,7 +61,7 @@ theorem readFoldChallenge_queryPrefix_castSucc
   unfold readFoldChallenge
   refine (cast_heq _ _).trans ?_
   have hi : foldChallenge (ω := ω) s l i.castSucc = nonfinalChallenge s l i :=
-    dif_pos i.isLt
+    dite_eq_left i.isLt
   exact (congr_arg_heq tr (congrArg Subtype.val hi)).trans
     (component_full_heq s l tr i 0).symm
 
@@ -72,7 +76,7 @@ theorem readFoldChallenge_queryPrefix_last
   unfold readFoldChallenge
   refine (cast_heq _ _).trans ?_
   have hi : foldChallenge (ω := ω) s l (Fin.last k) = finalChallenge s l :=
-    dif_neg (Nat.lt_irrefl k)
+    dite_eq_right (Nat.lt_irrefl k)
   exact (congr_arg_heq tr (congrArg Subtype.val hi)).trans
     ((FullTranscript.snd_apply_heq tr.fst (0 : Fin 2)).trans
       (FullTranscript.fst_apply_heq tr _)).symm
@@ -105,8 +109,8 @@ theorem readWord_queryPrefix
   · apply eq_of_heq
     unfold readWord
     simp only [Fin.val_succ, Nat.add_one_ne_zero, ↓reduceDIte]
-    simp only [cast_heq_iff_heq]
-    exact (component_full_heq s l tr j 1).symm
+    exact (cast_heq _ _).trans ((cast_heq _ _).trans
+      (component_full_heq s l tr j 1).symm)
 
 /-- The query phase sees exactly the same retained commitments as the bad-event proof. -/
 theorem queryHistory_eq (d : ℕ+)

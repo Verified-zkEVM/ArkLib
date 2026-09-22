@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Sumcheck.Spec.General
-import CompPoly.Multilinear.Equiv
+public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import CompPoly.Multilinear.Equiv
 
 /-!
   # Executable Spec of the Sum-check Protocol
@@ -22,6 +23,8 @@ they change the verifier, since we don't care too much about prover's efficiency
 - Not sending evaluation at 0/1
 - Sending evaluation at infinity instead
 -/
+
+@[expose] public section
 
 namespace Sumcheck
 

@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
-import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
+module
+
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
+public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
 
 /-!
 # Inner-Outer Ajtai Commitment
@@ -22,7 +24,7 @@ during knowledge extraction (the honest committer uses `cᵢ = 1`).
   `Decomp` and its challenge extension `Opening`, honest commitment (`generateDecomps` /
   `commitWithDecomps`), the weak verifier `verify_weak`, and the bundled `commitmentScheme`.
 * `InnerOuter/Correctness.lean` — perfect correctness for lawful gadget decompositions,
-  unconditional for the genuine base-`b` digit decomposition (`perfectlyCorrect`).
+  unconditional for Hachi's balanced base-`b` digit decomposition (`perfectlyCorrect`).
 * `InnerOuter/Security.lean` — weak binding: two differing verified weak openings yield a
   Module-SIS solution for the inner matrix `A` or the outer matrix `B`
   (`outputToModuleSIS_valid`, `advantage_le_moduleSIS`).
@@ -39,3 +41,5 @@ Module-SIS (`Correctness` + `Security`, which transitively import `Scheme` and `
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

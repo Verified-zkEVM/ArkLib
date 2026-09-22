@@ -4,10 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -18,7 +27,7 @@ open Code
 section CoreResults
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 
 omit [DecidableEq ι] in
@@ -44,7 +53,7 @@ end CoreResults
 
 section BCIKS20ProximityGapSection6
 
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 variable {n : ℕ} [NeZero n]
 
 /-- The parameters for which the curve points are `δ`-close to a set `V`
@@ -55,6 +64,7 @@ noncomputable def coeffs_of_close_proximity_curve {l : ℕ}
     infer_instance
   @Set.toFinset _ { z | δᵣ(Curve.polynomialCurveEval (F := F) (A := F) u z, V) ≤ δ } this
 
+omit [SampleableType F] in
 /-- The degree-one case of Theorem 6.1 in [BCIKS20].
 
 This bridges the polynomial-curve presentation to the existing kernel-checked affine-line
@@ -120,7 +130,7 @@ theorem large_agreement_set_on_line_implies_correlated_agreement {deg : ℕ}
       (ReedSolomon.toFinset domain deg) = Finset.univ := by
     apply Finset.eq_univ_of_forall
     intro z
-    simp only [coeffs_of_close_proximity_curve, Set.mem_toFinset, Set.mem_setOf_eq]
+    simp only [coeffs_of_close_proximity_curve, Set.mem_toFinset, Set.mem_ofPred_eq]
     have hcode := Code.relDistFromCode_le_relDist_to_mem
       (u := Curve.polynomialCurveEval u z)
       (C := (ReedSolomon.code domain deg : Set (Fin n → F)))
