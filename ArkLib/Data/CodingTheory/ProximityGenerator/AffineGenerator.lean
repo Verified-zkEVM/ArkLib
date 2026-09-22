@@ -36,6 +36,9 @@ The error is valued in `ℝ≥0` rather than `I`, since the scaled error may exc
   dimension including `0`.
 * `CoreDefinitions.mcaError_le_ofReal_of_forall_card_le` — a uniform count `B` of bad seeds for
   any generator bounds its MCA error by `B / |S|`.
+* `CoreDefinitions.not_isMCA_of_forall_mem` and `CoreDefinitions.mcaError_top_eq_zero` — a family
+  of codewords is never MCA-bad, so the MCA error of the full ambient code is `0` for every
+  generator at every radius.
 
 The correspondence to [BCGM25]'s numbered statements is in
 `docs/kb/audits/bcgm25-mca-generators.md`.
@@ -51,6 +54,11 @@ The correspondence to [BCGM25]'s numbered statements is in
   `ReedSolomon.mcaError_affineLine_le_of_exactAgreement` and
   `ReedSolomon.mcaError_affineSpace_le_of_exactAgreement`, for any module code instead of a
   Reed–Solomon code, and without the source's hypothesis `1 ≤ s`.
+* The same revision,
+  `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/FullCode.lean`: the proof of
+  `ReedSolomon.mcaError_affineLine_fullRate_eq_zero` is `CoreDefinitions.mcaError_top_eq_zero`
+  for the affine line generator, which holds for every generator and every module code equal to
+  `⊤`.
 -/
 
 @[expose] public section
@@ -418,5 +426,31 @@ theorem mcaError_le_ofReal_of_forall_card_le {ι F ℓ S A : Type} [Fintype ι] 
   refine iSup_le fun U ↦ ?_
   rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   exact ENNReal.ofReal_le_ofReal (div_le_div_of_nonneg_right (hbad U) (by positivity))
+
+/-- **Codeword families are never MCA-bad.** If every word `U j` of the family is a codeword of
+`MC`, then no seed `x` and no radius `δ` make the MCA event hold: the event asks for some `U j`
+whose restriction to the agreement set is not the restriction of a codeword, and the restriction
+of `U j` itself is one. No hypothesis on `G`, `x` or `δ` is needed. -/
+theorem not_isMCA_of_forall_mem {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
+    [Nonempty S] [Fintype S] [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (x : S) {U : ℓ → ι → A}
+    (hU : ∀ j, U j ∈ MC) (δ : ℝ) :
+    ¬ IsMCA G MC x U δ := by
+  rintro ⟨T, -, -, j, hj⟩
+  exact hj ((LinearCode.mem_projectedCodeSubmod_iff MC T _).mpr ⟨U j, hU j, rfl⟩)
+
+/-- **The full code has zero MCA error.** For every generator `G` and every radius `δ`, the MCA
+error of the ambient module code `⊤` is `0`, since every family consists of codewords
+(`not_isMCA_of_forall_mem`). This includes radii outside `[0, 1]`. -/
+theorem mcaError_top_eq_zero {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
+    [Nonempty S] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (δ : ℝ) :
+    mcaError G (⊤ : ModuleCode ι F A) δ = 0 := by
+  classical
+  refine le_antisymm ?_ bot_le
+  refine (mcaError_le_ofReal_of_forall_card_le G ⊤ δ (B := 0) fun U ↦ ?_).trans_eq (by simp)
+  rw [Finset.filter_false_of_mem fun x _ ↦
+    not_isMCA_of_forall_mem G ⊤ x (fun j ↦ Submodule.mem_top) δ]
+  simp
 
 end CoreDefinitions
