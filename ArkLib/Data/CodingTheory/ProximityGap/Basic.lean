@@ -4,10 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.Probability.Notation
-import Mathlib.Probability.Distributions.Uniform
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.Probability.Uniform
 
 /-!
 # Proximity gap fundamental definitions
@@ -31,8 +31,11 @@ module codes over (scalar) rings.
 
 ## TODOs
 - weighted correlated agreement
-- mutual correlated agreement
 - generalize the CA definitions using proximity generator?
+
+(Mutual correlated agreement lives in `ProximityGenerators.lean` (`IsMCA`/`IsMCAGenerator`/
+`mcaError`, module-alphabet general) with preservation lemmas in `MCAGenerator.lean`,
+`AffineGenerator.lean` and `TensorGenerator.lean`.)
 
 ## References
 
@@ -44,6 +47,8 @@ module codes over (scalar) rings.
   Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056/a0ljbkrz.
 
 -/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -78,7 +83,7 @@ def proximityGap (d : ℕ) (bound : ℕ) : Prop :=
     (Δ₀(u ⋈₂ v, C ^⋈ (Fin 2)) ≤ d)
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-  {F : Type} [Ring F] [Fintype F]
+  {F : Type} [Ring F] [Fintype F] [SampleableType F]
   {k : ℕ}
 
 /-- Definition 1.1 in [BCIKS20].
@@ -95,9 +100,9 @@ We call `δ` the proximity parameter and `ε` the error parameter. -/
 noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
   (P : Finset (ι → α)) (C : Set (Finset (ι → α))) (δ ε : ℝ≥0) : Prop :=
   ∀ S ∈ C, ∀ [Nonempty S],
-  Xor'
-  ( Pr_{let x ← $ᵖ S}[δᵣ(x.val, P) ≤ δ] = 1 )
-  ( Pr_{let x ← $ᵖ S}[δᵣ(x.val, P) ≤ δ] ≤ ε )
+  Xor
+  ( Pr{let x ← $ᵗ S}[δᵣ(x.val, P) ≤ δ] = 1 )
+  ( Pr{let x ← $ᵗ S}[δᵣ(x.val, P) ≤ δ] ≤ ε )
 
 /-- Definition: `(δ, ε)`-correlated agreement for affine lines.
 For every pair of words `u₀, u₁`, if the probability that a random affine line `u₀ + z • u₁` is
@@ -107,21 +112,30 @@ For every pair of words `u₀, u₁`, if the probability that a random affine li
 noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin 2) (ι := ι)),
-    Pr_{let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
+    Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin 2) (ι := ι) (C := C) (W := u) (δ := δ)
+
+section MultilinearCA
+
+-- Shadow the section's `[Ring F]` scalars: the multilinear combination `|⨂|` needs a single
+-- coherent `CommRing` structure on `F`, and mixing it with the outer `Ring F` binder creates
+-- an instance diamond.
+variable {F : Type} [CommRing F] [Fintype F] [SampleableType F]
 
 /-- **[Definition 2.3, DG25]** We say that `C ⊂ F^n` features multilinear correlated agreement
 with respect to the proximity parameter `δ` and the error bound `ε`, folding degree `ϑ > 0` if:
 ∀ word stack `u` of size `2^ϑ`, if the probability that
   (a random multilinear combination of the word stack `u` with randomness `r` is `δ`-close to `C`)
   exceeds `ε`, then the word stack `u` has correlated agreement with `C ^⋈ (2^ϑ)`. -/
-def δ_ε_multilinearCorrelatedAgreement [CommRing F] [Module F A]
-  (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
+def δ_ε_multilinearCorrelatedAgreement [Module F A]
+    (C : Set (ι → A)) (ϑ : ℕ) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
-    Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
+    Pr{let r ← $ᵗ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
       δᵣ(r |⨂| u, C) ≤ δ
     ] > (ϑ : ℝ≥0) * ε →
     jointAgreement (F := A) (κ := Fin (2 ^ ϑ)) (ι := ι) (C := C) (W := u) (δ := δ)
+
+end MultilinearCA
 
 /-- **`(δ, ε)`-CA for low-degree parameterised (polynomial) curves**: Generalized statement of
 **Theorem 1.5, [BCIKS20]**
@@ -129,7 +143,7 @@ For `k+1` words `u₀, u₁, ..., uₖ ∈ A^ι` let `curve(u) = {∑_{i ∈ {0,
 be a low-degree parameterised polynomial curve. If the probability that a random point in
 `curve(u)` is `δ`-close to `C` exceeds `k * ε` (not `(k+1) * ε`), then the words `u₀, ..., uₖ`
 have correlated agreement.
-**NOTE**: this definition could be converted into the form of Pr_{let r ← $ᵖ F}[...] if we want:
+**NOTE**: this definition could be converted into the form of Pr{let r ← $ᵗ F}[...] if we want:
   + consistency with `δ_ε_correlatedAgreementAffineLines`
   + making `A` be of arbitrary type universe (Type*)
   + to be able to support the `proximity generator` notation.
@@ -138,7 +152,7 @@ noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
     {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let r ← $ᵖ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
+    Pr{let r ← $ᵗ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
       → jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
 /-- **`(δ, ε)`-CA for affine spaces**: Generalized statement of **Theorem 1.6, [BCIKS20]**
@@ -154,7 +168,7 @@ noncomputable def δ_ε_correlatedAgreementAffineSpaces
     {A : Type 0} [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
-    Pr_{let y ← $ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+    Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(y.1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin (k + 1)) (ι := ι) (C := C) (W := u) (δ := δ)
 
@@ -168,7 +182,7 @@ open scoped BigOperators
 section
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 variable (μ : ι → Set.Icc (0 : ℚ) 1)
 
 /-- Relative `μ`-agreement between words `u` and `v`. -/

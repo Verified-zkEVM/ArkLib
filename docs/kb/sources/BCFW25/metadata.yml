@@ -1,0 +1,5 @@
+bibkey: BCFW25
+source_kind: eprint
+canonical_url: https://eprint.iacr.org/2025/753
+committed_artifacts: []
+notes: "Buenz-Chiesa-Fenzi-Wang, Linear-Time Accumulation Schemes. ArkLib uses only Appendix D.3 (extension-code list size) via ExtensionCodes.lean. Cited in Lean as BCFW25; the earlier BuenzCFW25 spelling had no bib entry and should not reappear. Reference PDFs (not committed) are ~/abf26-refs/bcfw25.pdf (2025-05-28 build) and ~/abf26-refs/BuenzCFW25.pdf (2026-06-18 build, used for appendix numbering)."

@@ -3,9 +3,10 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Gemini
 -/
+module
 
-import Mathlib.Data.Nat.Basic
-import Mathlib.Logic.Function.Basic
+public import Mathlib.Data.Nat.Basic
+public import Mathlib.Logic.Function.Basic
 
 /-!
   # Memory checking relations: read-only and read-write
@@ -32,6 +33,8 @@ import Mathlib.Logic.Function.Basic
     on a starting memory state results in a given final memory state. Read operations are
     checked for consistency along the way.
 -/
+
+@[expose] public section
 
 universe u v w
 

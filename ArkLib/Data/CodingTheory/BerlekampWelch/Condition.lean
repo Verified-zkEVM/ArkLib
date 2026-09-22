@@ -3,25 +3,29 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov
 -/
-import Init.Data.List.FinRange
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Degree.Defs
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Data.Finset.Insert
-import Mathlib.Data.Fintype.Card
-import Mathlib.Data.Matrix.Mul
-import Mathlib.Data.Matrix.Reflection
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.Polynomial.Interface
-import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
-import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
+public import Init.Data.List.FinRange
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Algebra.Polynomial.Degree.Defs
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.Data.Finset.Insert
+public import Mathlib.Data.Fintype.Card
+public import Mathlib.Data.Matrix.Mul
+public import Mathlib.Data.Matrix.Reflection
+
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 
 /-! # Berlekamp-Welch Conditions -/
+
+@[expose] public section
 
 namespace BerlekampWelch
 
@@ -84,7 +88,9 @@ lemma linsolve_is_berlekamp_welch_solution
 lemma is_berlekamp_welch_solution_ext
     (h : ∀ i, (Matrix.mulVec (BerlekampWelchMatrix e k ωs f) v) i = -(f i) * (ωs i) ^ e) :
     IsBerlekampWelchSolution e k ωs f v := by
-  aesop (add simp [IsBerlekampWelchSolution, Rhs])
+  rw [IsBerlekampWelchSolution]
+  funext i
+  simpa only [Rhs] using h i
 
 @[simp]
 lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
@@ -93,20 +99,24 @@ lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
   ring
 
 noncomputable def E_and_Q_to_a_solution (e : ℕ) (E Q : Polynomial F) (i : Fin n) : F :=
-  if i < e then E.toFinsupp i else Q.toFinsupp (i - e)
+  if i < e then E.coeff i else Q.coeff (i - e)
 
 @[simp]
 lemma E_and_Q_to_a_solution_coeff :
     E_and_Q_to_a_solution e E Q i = if i < e then E.coeff i else Q.coeff (i - e) := rfl
 
 def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
-  ⟨⟨p.1.1 ∩ Finset.range n, fun i ↦ if i < n then p.1.2 i else 0, by aesop⟩⟩
+  Polynomial.ofFinsupp <| AddMonoidAlgebra.ofCoeff
+    ⟨p.support ∩ Finset.range n, fun i ↦ if i < n then p.coeff i else 0, by aesop⟩
 
 @[simp]
 lemma coeff_truncate : (truncate p n).coeff k = if k < n then p.coeff k else 0 := rfl
 
 @[simp]
-lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by aesop
+lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by
+  ext i
+  simp only [coeff_truncate, Nat.not_lt_zero, ↓reduceIte]
+  rfl
 
 @[simp]
 lemma natDegree_truncate [φ : NeZero n] : (truncate p n).natDegree < n := by
@@ -130,10 +140,10 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
   IsBerlekampWelchSolution e k ωs f (E_and_Q_to_a_solution e E Q) := by
   rcases h with ⟨h_cond, h_E_deg, h_E_coeff, h_Q_deg⟩
   refine is_berlekamp_welch_solution_ext fun i ↦ ?p₁
-  letI bound := 2 * e + k
+  let bound := 2 * e + k
   generalize eq : BerlekampWelchMatrix _ _ _ f = M₁
-  letI leftσ : Finset _ := {j : Fin bound | j < e}
-  letI rightσ : Finset _ := univ (α := Fin bound) \ leftσ
+  let leftσ : Finset _ := {j : Fin bound | j < e}
+  let rightσ : Finset _ := univ (α := Fin bound) \ leftσ
   generalize eq₁ : ∑ j ∈ leftσ, E.coeff j * (ωs i)^j.1 = σ₁
   generalize eq₂ : ∑ j ∈ rightσ, Q.coeff (j - e) * -(ωs i)^(j - e) = σ₂
   calc _ = ∑ j : Fin bound, if ↑j < e
@@ -157,7 +167,7 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
                              apply sum_nbij (i := Fin.val) <;>
                                try intros a _; aesop (add safe (by existsi ⟨a, by omega⟩))
                                                      (add simp Set.InjOn)
-  letI δσ := {j | j < e + k}.toFinset
+  let δσ := {j | j < e + k}.toFinset
   replace eq₂ : -eval (ωs i) Q = σ₂ := calc
                 _              = -∑ j ∈ δσ.attach, ωs i ^ j.1 * Q.coeff j := by
                   rw [
@@ -301,7 +311,13 @@ lemma eval_solutionToQ_zero {x : F} {v} : eval x (solutionToQ 0 k v) =
 lemma solutionToE_and_Q_E_and_Q_to_a_solution :
     E_and_Q_to_a_solution e (solutionToE e k v) (solutionToQ e k v) = v := by
   ext i
-  aesop (add simp liftF) (add safe (by omega))
+  by_cases hi : i.1 < e
+  · have hne : i.1 ≠ e := Nat.ne_of_lt hi
+    simp [E_and_Q_to_a_solution, liftF, hi, hne]
+  · have hei : e ≤ i.1 := Nat.le_of_not_gt hi
+    have hsub : i.1 - e < e + k := by omega
+    have hadd : e + (i.1 - e) = i.1 := Nat.add_sub_of_le hei
+    simp [E_and_Q_to_a_solution, liftF, hi, hsub, hadd]
 
 @[simp]
 lemma solutionToQ_zero {v : Fin (2 * 0 + 0) → F} :

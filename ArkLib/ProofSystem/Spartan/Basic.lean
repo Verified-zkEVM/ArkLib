@@ -3,14 +3,15 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.ConstraintSystem.R1CS
-import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.ProofSystem.Sumcheck.Spec.General
-import ArkLib.ProofSystem.Component.SendWitness
-import ArkLib.ProofSystem.Component.RandomQuery
-import ArkLib.ProofSystem.Component.SendClaim
-import ArkLib.ProofSystem.Component.CheckClaim
+public import ArkLib.ProofSystem.ConstraintSystem.R1CS
+public import ArkLib.Data.MvPolynomial.Multilinear
+public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.Component.RandomQuery
+public import ArkLib.ProofSystem.Component.SendClaim
+public import ArkLib.ProofSystem.Component.CheckClaim
 
 /-!
   # The Spartan PIOP (Polynomial Interactive Oracle Proof)
@@ -81,8 +82,8 @@ import ArkLib.ProofSystem.Component.CheckClaim
   1. The verifier makes a query to the polynomial oracle `MLE 𝕨` at `r_y [ℓ_n - ℓ_k :] : Fin ℓ_k →
      R`, and obtain an evaluation value `v_𝕨 : R`.
 
-  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at `r_y ‖ r_x
-     : Fin (ℓ_n + ℓ_m) → R`, and obtain evaluation values `v_1, v_2, v_3 : R`.
+  2. The verifier makes three queries to the polynomial oracles `MLE A, MLE B, MLE C` at
+  `r_y ‖ r_x : Fin (ℓ_n + ℓ_m) → R`, obtaining evaluation values `v_1, v_2, v_3 : R`.
 
   Alternatively, if the verifier does not receive oracle access, then it computes the evaluation
   values directly.
@@ -95,6 +96,8 @@ import ArkLib.ProofSystem.Component.CheckClaim
     - `e_y = (r_A * v_1 + r_B * v_2 + r_C * v_3) * v_𝕫`.
 
 -/
+
+@[expose] public section
 
 open MvPolynomial Matrix OracleComp ProtocolSpec
 
@@ -155,7 +158,6 @@ abbrev relation := R1CS.relation R pp.toSizeR1CS
   multilinear extension. -/
 -- For the input oracle statement, we define its oracle interface to be the polynomial evaluation
 -- oracle of its multilinear extension.
-
 instance : ∀ i, OracleInterface (OracleStatement R pp i) :=
   fun i => {
     Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
@@ -306,6 +308,19 @@ abbrev Statement.AfterSendEvalClaim : Type := Statement.AfterFirstSumcheck R pp
 @[simp]
 abbrev OracleStatement.AfterSendEvalClaim : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
   Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
+
+/-- Canonical interfaces for the newly sent evaluation claims and the carried oracle statements. -/
+instance : ∀ i, OracleInterface (OracleStatement.AfterSendEvalClaim R pp i) :=
+  fun i => match i with
+  | .inl _ => by
+      change OracleInterface R
+      exact default
+  | .inr i => by
+      rcases i with i | i
+      · change OracleInterface (OracleStatement R pp i)
+        infer_instance
+      · change OracleInterface (Witness R pp)
+        infer_instance
 
 @[simp]
 abbrev Witness.AfterSendEvalClaim : Type := Unit

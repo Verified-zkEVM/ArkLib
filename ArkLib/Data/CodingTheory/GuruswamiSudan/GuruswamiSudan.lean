@@ -3,19 +3,20 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Elias Judin
 -/
+module
 
-import Mathlib.Algebra.Field.Basic
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Data.Real.Sqrt
-import Mathlib.RingTheory.Polynomial.Basic
+public import Mathlib.Algebra.Field.Basic
+public import Mathlib.Algebra.Polynomial.Basic
+public import Mathlib.Analysis.Real.Sqrt
+public import Mathlib.RingTheory.Polynomial.Basic
 
-import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
-import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Interface
 
-import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.Lagrange
 
 /-!
 # Guruswami-Sudan Decoder
@@ -33,6 +34,8 @@ message polynomials are then filtered by a computable root check for
 * [Bafna, P., Chiesa, A., Ishai, Y., Khurana, D., and Spooner, N.,
     *On the Proximity Gap of Reed-Solomon Codes*][BCIKS20]
 -/
+
+@[expose] public section
 
 namespace GuruswamiSudan
 
@@ -210,7 +213,7 @@ theorem mem_decoder_of_dist
       linarith⟩
   -- Unfold the decoder and enter the if-branch
   simp only [decoder]
-  rw [dif_pos hExists]
+  rw [dite_eq_left hExists]
   simp only [List.mem_filter, decide_eq_true_eq]
   refine ⟨?_, hdist⟩
   -- Show p is a root of Q = polySol k n m ωs f via
@@ -230,10 +233,10 @@ theorem mem_decoder_of_dist
       ⟨p, mem_degreeLT.mpr hpDeg, rfl⟩
   set p' : code ωs k :=
     ⟨p.eval ∘ (ωs : Fin n → F), hpCode⟩
-  -- `codewordToPoly` recovers p from its evaluations
+  -- `toPolynomial` recovers p from its evaluations
   -- (since deg p < k ≤ n)
-  have hctp : codewordToPoly p' = p := by
-    simp only [codewordToPoly, p']
+  have hctp : toPolynomial p' = p := by
+    simp only [toPolynomial, p']
     exact interpolate_eq_of_degree_lt p
       (lt_of_lt_of_le hdeg hkLeN)
   -- `dvd_property` gives divisibility
@@ -244,7 +247,7 @@ theorem mem_decoder_of_dist
       polySol_weightedDegree_le
       polySol_multiplicity (by
         have hfEq :
-            (fun i ↦ (codewordToPoly p').eval (ωs i)) =
+            (fun i ↦ (toPolynomial p').eval (ωs i)) =
             p.eval ∘ ωs := by
           ext i
           simp [hctp]
@@ -311,7 +314,7 @@ noncomputable, so we validate the candidate by degree and distance checks before
     of degree `< m` interpolating those values (assuming distinct points).
     Fully computable: avoids classical choice operators, nonconstructive root APIs,
     and noncomputable terms. -/
-private def lagrangeInterpolateRaw (m : ℕ) (points : Fin m → F) (values : Fin m → F) :
+def lagrangeInterpolateRaw (m : ℕ) (points : Fin m → F) (values : Fin m → F) :
     CompPoly.CPolynomial.Raw F :=
   (List.finRange m).foldl (fun acc i ↦
     let basis := (List.finRange m).foldl (fun b j ↦
@@ -327,13 +330,13 @@ private def lagrangeInterpolateRaw (m : ℕ) (points : Fin m → F) (values : Fi
 
 /-- Convert a `CPolynomial.Raw` to `Polynomial F` by extracting the first `bound` coefficients.
     Fully computable; the result always has `degree < bound`. -/
-private def rawToPolyBounded (raw : CompPoly.CPolynomial.Raw F) (bound : ℕ) : F[X] :=
+def rawToPolyBounded (raw : CompPoly.CPolynomial.Raw F) (bound : ℕ) : F[X] :=
   polynomialOfCoeffs (fun i : Fin bound ↦ raw.coeff i.val)
 
 /-- Build an interpolation candidate from the first `min k n` evaluation points.
     Returns `none` when `k = 0` (no meaningful interpolation).
     The result, when `some`, has `degree < k` by construction of `rawToPolyBounded`. -/
-private def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Option F[X] :=
   if k = 0 then none
   else
@@ -347,7 +350,7 @@ private def compPolyCandidate [Fintype F] (k : ℕ) (ωs : Fin n ↪ F) (f : Fin
 
 /-- The `Finset` of CompPoly interpolation candidates that pass the degree and distance check.
     Always a subset of `{p | p.degree < k ∧ Δ₀(f, p.eval ∘ ωs) ≤ e}`. -/
-private def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+def compPolyCandidateSet [Fintype F] (k e : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Finset F[X] :=
   match compPolyCandidate k ωs f with
   | Option.some p =>
@@ -383,7 +386,7 @@ vectors, with no reliance on classical choice or nonconstructive root extraction
 
 /-- Evaluate a bounded coefficient vector at `(x, y)` as
     `∑ cᵢⱼ x^i y^j` over indices satisfying `i + (k - 1) * j ≤ D`. -/
-private def evalCoeffVecAt (k D : ℕ)
+def evalCoeffVecAt (k D : ℕ)
     (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) : F :=
   (List.finRange (D + 1)).foldl (fun a1 j ↦
     (List.finRange (D + 1)).foldl (fun a2 i ↦
@@ -399,7 +402,7 @@ private def evalCoeffVecAt (k D : ℕ)
 
     This computes `D^{(a,b)} Q (x, y) = ∑ C(i,a) C(j,b) cᵢⱼ x^{i-a} y^{j-b}`
     over indices in the weighted-degree region `i + (k-1)·j ≤ D`. -/
-private def hasseDerivEvalAt (k D a b : ℕ)
+def hasseDerivEvalAt (k D a b : ℕ)
     (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) : F :=
   (List.finRange (D + 1)).foldl (fun a1 j ↦
     (List.finRange (D + 1)).foldl (fun a2 i ↦
@@ -411,7 +414,7 @@ private def hasseDerivEvalAt (k D a b : ℕ)
 /-- Check that all Hasse derivatives of order `< r` vanish at `(x, y)`.
     This is the computable form of the multiplicity-`r` condition:
     `(X - x, Y - y)^r | Q` iff `D^{(a,b)} Q(x,y) = 0` for all `a + b < r`. -/
-private def hasseMultiplicityCheck (k D r : ℕ)
+def hasseMultiplicityCheck (k D r : ℕ)
     (c : Fin (D + 1) × Fin (D + 1) → F) (x y : F) : Bool :=
   (List.finRange r).all fun ab ↦
     (List.finRange (ab.val + 1)).all fun a ↦
@@ -457,7 +460,7 @@ private lemma hasseMultiplicityCheck_imp_eval_zero {k D r : ℕ}
 
     When `r = 0`, only the nonzero condition is checked; when `r ≥ 1`, the Hasse
     derivative conditions imply (in particular) that `Q(ωᵢ, fᵢ) = 0` for each `i`. -/
-private def isWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+def isWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (c : Fin (D + 1) × Fin (D + 1) → F) : Bool :=
   -- nonzero in weighted-degree region
   (List.finRange (D + 1)).any (fun j ↦
@@ -517,10 +520,10 @@ private lemma isWitnessC_hasse_deriv_vanishes {k D r a b : ℕ}
   hasseMultiplicityCheck_imp_deriv_zero (isWitnessC_multiplicity_at hw i) hab
 
 /-- Number of unknown coefficients in the bounded witness grid `(D + 1) × (D + 1)`. -/
-private def witnessVarCount (D : ℕ) : ℕ := (D + 1) * (D + 1)
+def witnessVarCount (D : ℕ) : ℕ := (D + 1) * (D + 1)
 
 /-- Decode a linearized witness variable index into the corresponding coefficient pair `(i, j)`. -/
-private def witnessVarToPair (D : ℕ) (idx : Fin (witnessVarCount D)) :
+def witnessVarToPair (D : ℕ) (idx : Fin (witnessVarCount D)) :
     Fin (D + 1) × Fin (D + 1) :=
   let i : Fin (D + 1) := ⟨idx.val % (D + 1), Nat.mod_lt _ (Nat.succ_pos _)⟩
   let j : Fin (D + 1) := ⟨idx.val / (D + 1), by
@@ -530,7 +533,7 @@ private def witnessVarToPair (D : ℕ) (idx : Fin (witnessVarCount D)) :
   (i, j)
 
 /-- Encode a coefficient pair `(i, j)` into the linearized witness variable index. -/
-private def witnessPairToVar (D : ℕ) (ij : Fin (D + 1) × Fin (D + 1)) :
+def witnessPairToVar (D : ℕ) (ij : Fin (D + 1) × Fin (D + 1)) :
     Fin (witnessVarCount D) :=
   ⟨ij.2.val * (D + 1) + ij.1.val, by
     have hi : ij.1.val < D + 1 := ij.1.isLt
@@ -545,21 +548,21 @@ private def witnessPairToVar (D : ℕ) (ij : Fin (D + 1) × Fin (D + 1)) :
     exact lt_of_lt_of_le (hstep ▸ hlt) (by simpa [witnessVarCount, Nat.mul_comm] using hbound)⟩
 
 /-- Convert a linear solver output vector into a coefficient function `c(i,j)`. -/
-private def witnessSolToCoeffVec (D : ℕ) (x : Fin (witnessVarCount D) → F) :
+def witnessSolToCoeffVec (D : ℕ) (x : Fin (witnessVarCount D) → F) :
     Fin (D + 1) × Fin (D + 1) → F :=
   fun ij ↦ x (witnessPairToVar D ij)
 
 /-- Number of interpolation-equation rows per evaluation point (`(r+1)^2`, with inactive rows). -/
-private def gsDerivBlockSize (r : ℕ) : ℕ := (r + 1) * (r + 1)
+def gsDerivBlockSize (r : ℕ) : ℕ := (r + 1) * (r + 1)
 
 /-- Total number of derivative rows before appending normalization. -/
-private def gsDerivRowCount (n r : ℕ) : ℕ := n * gsDerivBlockSize r
+def gsDerivRowCount (n r : ℕ) : ℕ := n * gsDerivBlockSize r
 
 /-- Total row count for the linearized GS system (derivatives + one normalization row). -/
-private def gsLinearRowCount (n r : ℕ) : ℕ := gsDerivRowCount n r + 1
+def gsLinearRowCount (n r : ℕ) : ℕ := gsDerivRowCount n r + 1
 
 /-- One coefficient entry of the linearized GS interpolation matrix. -/
-private def gsLinearMatrixEntry (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+def gsLinearMatrixEntry (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (target : Fin (witnessVarCount D))
     (row : Fin (gsLinearRowCount n r)) (col : Fin (witnessVarCount D)) : F :=
   if hrow : row.val < gsDerivRowCount n r then
@@ -580,17 +583,17 @@ private def gsLinearMatrixEntry (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n →
     if col = target then 1 else 0
 
 /-- Linearized GS interpolation matrix with an appended normalization row. -/
-private def gsLinearMatrix (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+def gsLinearMatrix (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (target : Fin (witnessVarCount D)) :
     Matrix (Fin (gsLinearRowCount n r)) (Fin (witnessVarCount D)) F :=
   Matrix.of (fun row col ↦ gsLinearMatrixEntry k D r ωs f target row col)
 
 /-- RHS vector for the linearized GS system (`0` for interpolation rows, `1` for normalization). -/
-private def gsLinearRhs (r : ℕ) : Fin (gsLinearRowCount n r) → F :=
+def gsLinearRhs (r : ℕ) : Fin (gsLinearRowCount n r) → F :=
   fun row ↦ if row.val < gsDerivRowCount n r then 0 else 1
 
 /-- Solve the linearized GS system with one normalized coefficient target. -/
-private noncomputable def solveGsWitnessAtTarget (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
+noncomputable def solveGsWitnessAtTarget (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     (target : Fin (witnessVarCount D)) :
     Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
   match linsolve (gsLinearMatrix (n := n) k D r ωs f target) (gsLinearRhs (n := n) r) with
@@ -600,18 +603,18 @@ private noncomputable def solveGsWitnessAtTarget (k D r : ℕ) (ωs : Fin n ↪ 
     if hc : isWitnessC k D r ωs f c = true then some ⟨c, hc⟩ else none
 
 /-- Candidate normalization targets in the weighted-degree region. -/
-private def witnessTargets (k D : ℕ) : List (Fin (witnessVarCount D)) :=
+def witnessTargets (k D : ℕ) : List (Fin (witnessVarCount D)) :=
   (List.finRange (witnessVarCount D)).filter fun idx ↦
     let ij := witnessVarToPair D idx
     decide (ij.1.val + (k - 1) * ij.2.val ≤ D)
 
 /-- Constructive witness search: solve the linearized GS system over all normalization targets. -/
-private noncomputable def computeGsWitness (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
+noncomputable def computeGsWitness (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
     Option {c : Fin (D + 1) × Fin (D + 1) → F // isWitnessC k D r ωs f c = true} :=
   (witnessTargets k D).findSome? (solveGsWitnessAtTarget (n := n) k D r ωs f)
 
 /-- Constructive witness-availability check computed from `computeGsWitness`. -/
-private noncomputable def hasWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Bool :=
+noncomputable def hasWitnessC (k D r : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) : Bool :=
   (computeGsWitness (n := n) k D r ωs f).isSome
 
 /-- `hasWitnessC = true` iff `computeGsWitness` returns an explicit witness package. -/
@@ -636,7 +639,7 @@ root extraction and classical choice entirely.
 
 /-- Convert a Mathlib polynomial to a `CPolynomial.Raw` by extracting coefficients
     up to a given degree bound. -/
-private def polyToRaw (p : F[X]) (bound : ℕ) : CompPoly.CPolynomial.Raw F :=
+def polyToRaw (p : F[X]) (bound : ℕ) : CompPoly.CPolynomial.Raw F :=
   Array.ofFn (fun i : Fin bound ↦ p.coeff i.val)
 
 /-- Evaluate `Q(X, p(X))` where `Q` is given as a bounded coefficient vector
@@ -644,7 +647,7 @@ private def polyToRaw (p : F[X]) (bound : ℕ) : CompPoly.CPolynomial.Raw F :=
 
     Computes `∑_{i + (k-1)·j ≤ D} cᵢⱼ · X^i · p(X)^j` in `CPolynomial.Raw F`.
     The result is zero iff `p` is a Y-root of the bivariate polynomial `Q`. -/
-private def evalQAtPRaw (k D : ℕ)
+def evalQAtPRaw (k D : ℕ)
     (c : Fin (D + 1) × Fin (D + 1) → F) (pRaw : CompPoly.CPolynomial.Raw F) :
     CompPoly.CPolynomial.Raw F :=
   -- Precompute powers of p(X): pPows[j] = p(X)^j for j = 0, ..., D
@@ -665,7 +668,7 @@ private def evalQAtPRaw (k D : ℕ)
 
 /-- Check whether `Q(X, p(X)) = 0` by evaluating via CompPoly and testing all
     coefficients. Returns `true` when `p` is a Y-root of `Q`. -/
-private def isQRootRaw (k D : ℕ)
+def isQRootRaw (k D : ℕ)
     (c : Fin (D + 1) × Fin (D + 1) → F) (pRaw : CompPoly.CPolynomial.Raw F) : Bool :=
   let result := evalQAtPRaw k D c pRaw
   -- Check all coefficients are zero
@@ -698,7 +701,7 @@ private lemma isQRootRaw_iff_all_coeff_zero {k D : ℕ}
     1. `Q(X, p(X)) = 0` (Y-root extraction), and
     2. The Hamming distance `Δ₀(f, p ∘ ωs) ≤ e`.
 -/
-private noncomputable def witnessCandidateSet [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F)
+noncomputable def witnessCandidateSet [Fintype F] (k r D e : ℕ) (ωs : Fin n ↪ F)
     (f : Fin n → F) :
     Finset F[X] :=
   match computeGsWitness (n := n) k D r ωs f with
@@ -846,7 +849,7 @@ lemma coeff_vec_to_bivariate_coeff (k D : ℕ)
     (hwd : i.val + (k - 1) * j.val ≤ D) :
     ((coeffVecToBivariate k D c).coeff j.val).coeff i.val = c (i, j) := by
   unfold coeffVecToBivariate
-  simp only [Polynomial.finset_sum_coeff]
+  simp only [Polynomial.finsetSum_coeff]
   rw [Finset.sum_eq_single j]
   · rw [Finset.sum_eq_single i]
     · simp [hwd]
@@ -919,7 +922,7 @@ lemma guruswami_sudan_for_proximity_gap_existence_strong
     coeff_vec_to_bivariate_ne_zero_of_isWitnessC hc⟩
 
 /-- Constructive witness property for the Guruswami–Sudan system.
-    When `m > 0` and the codeword polynomial `ReedSolomon.codewordToPoly p` appears in
+    When `m > 0` and the codeword polynomial `ReedSolomon.toPolynomial p` appears in
     `witnessCandidateSet`, we can extract a witness coefficient vector `c` satisfying:
     * `isWitnessC` (nonzero + full multiplicity vanishing),
     * `Q(X, p(X)) = 0` via CompPoly root extraction, and
@@ -929,14 +932,14 @@ lemma guruswami_sudan_for_proximity_gap_property [Fintype F] {k m : ℕ} {ωs : 
     {f : Fin n → F}
     {p : ReedSolomon.code ωs k}
     (hm : 0 < m)
-    (hp : ReedSolomon.codewordToPoly p ∈
+    (hp : ReedSolomon.toPolynomial p ∈
       witnessCandidateSet k m (proximityGapDegreeBound (n := n) k m)
         (proximityGapJohnson (n := n) k m) ωs f) :
     ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
           Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
       isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
       isQRootRaw k (proximityGapDegreeBound (n := n) k m) c
-        (polyToRaw (ReedSolomon.codewordToPoly p) k) = true ∧
+        (polyToRaw (ReedSolomon.toPolynomial p) k) = true ∧
       ∀ i : Fin n,
         evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0 := by
   exact witness_candidate_set_witness_vanishes hm hp
@@ -952,16 +955,16 @@ lemma guruswami_sudan_for_proximity_gap_property_strong [Fintype F] {k m : ℕ} 
     {f : Fin n → F}
     {p : ReedSolomon.code ωs k}
     (hm : 0 < m)
-    (hp : ReedSolomon.codewordToPoly p ∈
+    (hp : ReedSolomon.toPolynomial p ∈
       witnessCandidateSet k m (proximityGapDegreeBound (n := n) k m)
         (proximityGapJohnson (n := n) k m) ωs f) :
     ∃ c : Fin (proximityGapDegreeBound (n := n) k m + 1) ×
           Fin (proximityGapDegreeBound (n := n) k m + 1) → F,
       isWitnessC k (proximityGapDegreeBound (n := n) k m) m ωs f c = true ∧
       (∀ idx : Fin (evalQAtPRaw k (proximityGapDegreeBound (n := n) k m) c
-          (polyToRaw (ReedSolomon.codewordToPoly p) k)).size,
+          (polyToRaw (ReedSolomon.toPolynomial p) k)).size,
         (evalQAtPRaw k (proximityGapDegreeBound (n := n) k m) c
-          (polyToRaw (ReedSolomon.codewordToPoly p) k))[idx] = 0) ∧
+          (polyToRaw (ReedSolomon.toPolynomial p) k))[idx] = 0) ∧
       (∀ i : Fin n,
         evalCoeffVecAt k (proximityGapDegreeBound (n := n) k m) c (ωs i) (f i) = 0) ∧
       coeffVecToBivariate k (proximityGapDegreeBound (n := n) k m) c ≠ 0 := by
@@ -981,9 +984,9 @@ theorem proximity_gap_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
 /-- Classical divisibility consequence for Guruswami-Sudan witnesses. -/
 theorem proximity_gap_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]} (hQ : Conditions k m (proximity_gap_degree_bound k n m) ωs f Q)
-    (hdist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+    (hdist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
       proximity_gap_johnson k n m) :
-    X - C (codewordToPoly p) ∣ Q :=
+    X - C (toPolynomial p) ∣ Q :=
   dvd_property (f := f) hk hm p hQ.Q_deg
     hQ.Q_multiplicity hdist
 
@@ -1001,7 +1004,7 @@ theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
   · -- ne_zero
     have h_inj : Function.Injective (coeffsToPoly (F := F) k D) := by
       have : Function.Injective (linearCombination F
-        (fun p : weigthBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
+        (fun p : weightBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
         linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
       exact this.comp (LinearEquiv.injective _)
     exact fun h ↦ hc_ne <| h_inj <| by simpa using h
@@ -1021,7 +1024,7 @@ theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     apply rootMultiplicity_ge_of_shift_zero
     · have h_inj : Function.Injective (coeffsToPoly (F := F) k D) := by
         have : Function.Injective (linearCombination F
-          (fun p : weigthBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
+          (fun p : weightBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
           linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
         exact this.comp (LinearEquiv.injective _)
       exact fun h ↦ hc_ne <| h_inj <| by simpa using h
@@ -1040,9 +1043,9 @@ theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
 /-- GS divisibility with rate-corrected Johnson radius (ρ = k/n). -/
 theorem gs_divisibility (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code ωs k)
     {Q : F[X][Y]} (hQ : Conditions k m (gs_degree_bound k n m) ωs f Q)
-    (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+    (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
       gs_johnson k n m) :
-    X - C (codewordToPoly p) ∣ Q :=
+    X - C (toPolynomial p) ∣ Q :=
   gs_dvd_property (f := f) hk hm p hQ.Q_deg hQ.Q_multiplicity h_dist
 
 end GuruswamiSudan

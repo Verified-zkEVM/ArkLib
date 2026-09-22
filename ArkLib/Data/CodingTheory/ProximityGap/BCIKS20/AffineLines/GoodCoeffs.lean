@@ -4,10 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
+public import ArkLib.Data.CodingTheory.ReedSolomon
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -57,7 +66,9 @@ theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ
   rcases hvC with ⟨Pz, hPz, rfl⟩
   refine ⟨Pz, ?_, ?_⟩
   · exact ReedSolomon.natDegree_lt_of_mem_degreeLT (deg := deg) hPz
-  · simpa [e] using hvdist
+  · change Δ₀(u 0 + z • u 1, (fun x => Pz.eval (domain x))) ≤ e at hvdist
+    change Δ₀(u 0 + z • u 1, (fun x => Pz.eval (domain x))) ≤ ⌊δ * Fintype.card ι⌋₊
+    simpa [e] using hvdist
 
 open scoped BigOperators in
 open Polynomial in
@@ -372,51 +383,24 @@ theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun
 
 omit [Nonempty ι] in
 theorem card_RS_goodCoeffs_gt_of_prob_gt_n_div_q
-    {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
+    [SampleableType F] {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} (u : WordStack F (Fin 2) ι)
     (hprob :
-      Pr_{ let z ← $ᵖ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
+      Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ]
         > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0)) :
     (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι := by
   classical
   -- predicate defining the good coefficients
   let P : F → Prop := fun z : F =>
     δᵣ(u 0 + z • u 1, ReedSolomon.code domain deg) ≤ δ
-  -- uniform probability equals (card of filter) / (card of the field)
+  -- Native uniform probability is the accepted fraction of field elements.
   have hPr :
-      Pr_{ let z ← $ᵖ F }[ P z ] =
-        ((Finset.filter (α := F) P Finset.univ).card : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
-    classical
-    -- Expand the probability mass at `True`
-    simp only [Bind.bind, PMF.bind, PMF.uniformOfFintype_apply, pure, PMF.pure_apply, eq_iff_iff,
-      mul_ite, mul_one, mul_zero, ENNReal.coe_natCast]
-    simp only [DFunLike.coe, true_iff]
-    -- Reduce the infinite sum to the finite support
-    rw [
-      tsum_eq_sum (α := ENNReal) (β := F)
-        (f := fun a => if P a then (↑(Fintype.card F))⁻¹ else 0)
-        (s := Finset.filter P Finset.univ)
-        (hf := fun b => by
-          simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-          intro hb
-          simp only [hb, if_false])
-    ]
-    -- Evaluate the resulting finite sum
-    rw [Finset.sum_ite]
-    simp only [Finset.sum_const_zero, add_zero]
-    rw [Finset.sum_const]
-    rw [nsmul_eq_mul']
-    rw [mul_comm]
-    conv_lhs =>
-      rw [← div_eq_mul_inv]
-    -- Filtering twice is the same as filtering once
-    have h_card_eq : {x ∈ filter P univ | P x} = filter P univ := by
-      ext x
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-      rw [and_self_iff]
-    rw [h_card_eq]
+      Pr{let z ← $ᵗ F}[P z] =
+        ((Finset.filter (α := F) P Finset.univ).card : ENNReal) /
+          (Fintype.card F : ENNReal) :=
+    SampleableType.prEvent_uniformSample P
   -- restate the hypothesis using `P`
   have hprobP :
-      Pr_{ let z ← $ᵖ F }[ P z ] > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
+      Pr{let z ← $ᵗ F}[ P z ] > (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) := by
     simpa [P] using hprob
   -- rewrite the probability lower bound as a ratio comparison
   have hprobQ := hprobP
@@ -524,7 +508,7 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
               (Matrix.vandermonde (fun i : Fin n => (Polynomial.C (domain (rB i)) : F[X]))) := by
       simp [hD, Matrix.det_neg]
     refine hdetD'.symm ▸ (hunitNeg.mul hdetV)
-  letI : Invertible D := Matrix.invertibleOfIsUnitDet D hdetD
+  let : Invertible D := Matrix.invertibleOfIsUnitDet D hdetD
   let K0 : Matrix ι (Fin m) F[X] := L - R * (⅟D * A21)
   have hdetK0 : ∀ rA : Fin m → ι, Matrix.det (K0.submatrix rA id) = 0 := by
     intro rA
@@ -555,8 +539,13 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
         Matrix.det ((L.submatrix rA id) - (R.submatrix rA id) * ⅟D * A21) = 0 := by
       exact (IsUnit.mul_right_eq_zero (a := Matrix.det D)
         (b := Matrix.det ((L.submatrix rA id) - (R.submatrix rA id) * ⅟D * A21)) hdetD).1 hmul
-    simpa [K0, Matrix.submatrix_sub, Matrix.submatrix_mul, Matrix.submatrix_submatrix,
-      Matrix.mul_assoc, Function.comp, L, R] using hdetSchur
+    change ((L - R * (⅟D * A21)).submatrix rA id).det = 0
+    have hmatrix : (L - R * (⅟D * A21)).submatrix rA id =
+        L.submatrix rA id - R.submatrix rA id * (⅟D * A21) := by
+      ext i j
+      simp [Matrix.mul_apply]
+    rw [hmatrix]
+    simpa only [Matrix.mul_assoc] using hdetSchur
   have hdegL : ∀ i j, (L i j).natDegree ≤ 1 := by
     intro i j
     simpa [L, cL, M] using

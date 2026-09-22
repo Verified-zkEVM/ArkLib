@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Logic.Equiv.Defs
+public import Mathlib.Logic.Equiv.Defs
 
 /-!
 # FunEquiv
@@ -15,6 +16,8 @@ equivalence to a dependent function type.
 This is stronger than `(D)FunLike` since we get an equivalence and not just an injection into the
 dependent function type.
 -/
+
+@[expose] public section
 
 /-- Type class to express that a given type `F` has an equivalence to a dependent function type.
 
@@ -40,7 +43,7 @@ instance : DFunEquiv (∀ a : α, β a) α β where
 /-- The forward direction of the equivalence is a `DFunLike`. -/
 instance : DFunLike F α β where
   coe := DFunEquiv.equiv.toFun
-  coe_injective' := DFunEquiv.equiv.injective
+  coe_injective := DFunEquiv.equiv.injective
 
 /-- Coercion from the dependent function type `∀ a : α, β a` to another type `F` that has a
 `DFunEquiv` instance.

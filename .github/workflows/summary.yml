@@ -1,8 +1,12 @@
 name: 'PR Summary'
 
+# Summary runs on every PR update (open + each new commit). It is SAFE under
+# pull_request_target — the OpenRouter secret and write token are in scope even
+# for fork PRs — because it never builds or executes PR code: it reads the diff
+# and committed source as data, and reads its policy file from the BASE ref (S4).
 on:
   pull_request_target:
-    types: [opened, synchronize]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -18,15 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate PR Summary
-        uses: alexanderlhicks/lean-summary-workflow@main
+        uses: alexanderlhicks/lean4repo-utils/summary@0.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          api_key: ${{ secrets.GEMINI_API_KEY }}
-          provider: gemini  # or: anthropic, openai
-          model: gemini-3-flash-preview  # or: claude-sonnet-4-6, gpt-5.4-mini
+          api_key: ${{ secrets.OPENROUTER_KEY }}
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
-          # Optional:
-          additional_instructions_path: 'CONTRIBUTING.md'
           validate_title: 'true'
-          # upstream_path: 'ToMathlib/'
+          upstream_path: 'ArkLib/ToMathlib/'
+          # Default model (deepseek/deepseek-v4-flash). additional_instructions_path
+          # defaults to CONTRIBUTING.md (read from the base ref) when unset.

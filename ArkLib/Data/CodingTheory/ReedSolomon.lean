@@ -2,18 +2,19 @@
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov,
-Mirco Richter, Chung Thai Nguyen
+Mirco Richter, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.Matrix.Vandermonde
-import ArkLib.Data.MvPolynomial.LinearMvExtension
-import ArkLib.Data.Polynomial.Interface
-import ArkLib.ToMathlib.Polynomial.DegreeLT
-import CompPoly.Data.Polynomial.MonomialBasis
-import Mathlib.LinearAlgebra.Lagrange
-import Mathlib.RingTheory.Henselian
-import Mathlib.Data.NNReal.Defs
-import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
+public import ArkLib.Data.Matrix.Vandermonde
+public import ArkLib.Data.MvPolynomial.LinearMvExtension
+public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.ToMathlib.Polynomial.DegreeLT
+public import CompPoly.Data.Polynomial.MonomialBasis
+public import Mathlib.LinearAlgebra.Lagrange
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.Basic.NNReal.Defs
+public import Mathlib.Basic.NNReal.Basic -- for instFloorSemiring of ℝ≥0
 
 /-!
 # Reed-Solomon Codes
@@ -27,6 +28,8 @@ import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
     with Super-Fast Verification*][ACFY24]
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 -/
+
+@[expose] public section
 
 namespace ReedSolomon
 
@@ -50,11 +53,11 @@ def evalOnPointsRingHom [CommSemiring F] : F[X] →+* (ι → F) where
   map_mul'  := by aesop
 
 lemma evalOnPointsRingHom_eq_evalOnPoints [CommSemiring F] {p : F[X]} {domain : ι ↪ F} :
-  evalOnPointsRingHom domain p = evalOnPoints domain p := rfl
+    evalOnPointsRingHom domain p = evalOnPoints domain p := rfl
 
 @[simp]
 lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
-  evalOnPoints domain (p * q) = evalOnPoints domain p * evalOnPoints domain q := by
+    evalOnPoints domain (p * q) = evalOnPoints domain p * evalOnPoints domain q := by
   aesop (add unsafe (by rw [←evalOnPointsRingHom_eq_evalOnPoints]))
 
 /-- The Reed-Solomon code for polynomials of degree less than `deg` and evaluation points `domain`.
@@ -62,10 +65,28 @@ lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
 noncomputable def code (deg : ℕ) [Semiring F] : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
 
-noncomputable def codewordToPoly
-  [Fintype ι] [Field F] [DecidableEq ι]
-  {deg : ℕ} {domain : ι ↪ F} (f : code domain deg) : F[X] :=
-  Lagrange.interpolate Finset.univ domain.toFun f
+/-- If a linear encoder `enc : F[X] →ₗ[F] (ι → Fin 1 → F)` agrees with plain evaluation at
+its single index, `enc p x 0 = p.eval (domain x)`, then the code it cuts out of
+`Polynomial.degreeLT F k` is `code domain k`, up to erasing the trivial `Fin 1` index.
+
+This is the shared content of the degenerate-parameter collapse for the Reed-Solomon
+variants over the alphabet `Fin s → F`. -/
+lemma mem_map_degreeLT_one_iff_mem_code [CommSemiring F] (k : ℕ)
+    (enc : F[X] →ₗ[F] (ι → Fin 1 → F))
+    (henc : ∀ (p : F[X]) (x : ι), enc p x 0 = p.eval (domain x))
+    (f : ι → Fin 1 → F) :
+    f ∈ (Polynomial.degreeLT F k).map enc ↔ (fun x ↦ f x 0) ∈ code domain k := by
+  simp only [Submodule.mem_map, code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
+  constructor
+  · rintro ⟨p, hp, rfl⟩
+    exact ⟨p, hp, funext fun x ↦ (henc p x).symm⟩
+  · rintro ⟨p, hp, hp_eval⟩
+    refine ⟨p, hp, ?_⟩
+    funext x j
+    have hj : j = 0 := Subsingleton.elim _ _
+    subst hj
+    rw [henc p x]
+    exact congrFun hp_eval x
 
 /-- The generator matrix of the Reed-Solomon code of degree `deg` and evaluation points `domain`. -/
 def genMatrix (deg : ℕ) [Semiring F] : Matrix (Fin deg) ι F :=
@@ -109,11 +130,11 @@ variable [Semiring F] {p : F[X]}
 
 @[simp]
 lemma evalOnPoints_C {domain : ι ↪ F} {a : F} :
-  evalOnPoints domain (Polynomial.C a) = fun _ ↦ a := by simp [evalOnPoints]
+    evalOnPoints domain (Polynomial.C a) = fun _ ↦ a := by simp [evalOnPoints]
 
 @[simp]
 lemma evalOnPoints_X {domain : ι ↪ F} :
-  evalOnPoints domain Polynomial.X = domain := by simp [evalOnPoints]
+    evalOnPoints domain Polynomial.X = domain := by simp [evalOnPoints]
 
 lemma natDegree_lt_of_mem_degreeLT [NeZero deg] (h : p ∈ degreeLT F deg) : p.natDegree < deg := by
   by_cases p = 0
@@ -162,7 +183,7 @@ section
 variable [Semiring F]
 
 lemma mem_code_of_polynomial_of_degree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
-  (p : Polynomial F)
+    (p : Polynomial F)
   (hdeg : p.degree < n) (heval : ∀ i, f i = p.eval (α i)) :
   f ∈ code α n := by
   aesop
@@ -171,7 +192,7 @@ lemma mem_code_of_polynomial_of_degree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f :
                Polynomial.degree_lt_iff_coeff_zero])
 
 lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {f : ι → F}
-  (p : Polynomial F)
+    (p : Polynomial F)
   (hdeg : p.natDegree < n) (heval : ∀ i, f i = p.eval (α i)) :
   f ∈ code α n := by
   by_cases h0 : p = 0
@@ -181,7 +202,7 @@ lemma mem_code_of_polynomial_of_natDegree_lt_of_eval {n : ℕ} {α : ι ↪ F} {
     exact mem_code_of_polynomial_of_degree_lt_of_eval _ hdeg heval
 
 lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
-  f ∈ code α n ↔ ∃ p : Polynomial F, p.degree < n ∧ f = evalOnPoints α p := by
+    f ∈ code α n ↔ ∃ p : Polynomial F, p.degree < n ∧ f = evalOnPoints α p := by
   constructor <;>
     intro h <;>
     obtain ⟨p, h₁, h₂⟩ := h <;>
@@ -190,8 +211,13 @@ lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
             [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
+theorem mem_code_iff_eval {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+    f ∈ ReedSolomon.code α n ↔
+    ∃ p : F[X], p.degree < n ∧ ∀ x, p.eval (α x) = f x := by
+  aesop (add simp [evalOnPoints, mem_code_iff_exists_polynomial])
+
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
-  f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
+    f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
   rw [mem_code_iff_exists_polynomial]
   have hne := ne.out
   constructor <;>
@@ -202,6 +228,23 @@ lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : 
   aesop
     (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     (add safe (by omega))
+
+theorem mem_code_iff_eval_of_ne_zero {n : ℕ} [NeZero n] {α : ι ↪ F} {f : ι → F} :
+    f ∈ ReedSolomon.code α n ↔
+    ∃ p : F[X], p.natDegree < n ∧ ∀ x, p.eval (α x) = f x := by
+  aesop (add simp [evalOnPoints, mem_code_iff_exists_polynomial_of_ne_zero])
+
+/-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
+  if `p.degree < n`. -/
+lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.degree < n) :
+    evalOnPoints α p ∈ code α n :=
+  mem_code_of_polynomial_of_degree_lt_of_eval p h_deg (by simp [evalOnPoints])
+
+/-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
+  if `p.natDegree < n`. -/
+lemma evalOnPoints_mem_code_of_natDegree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.natDegree < n) :
+    evalOnPoints α p ∈ code α n :=
+  mem_code_of_polynomial_of_natDegree_lt_of_eval p h_deg (by simp [evalOnPoints])
 
 /-- **Monotonicity of `code` in the degree bound.** If `n ≤ m`, the degree-`n` Reed-Solomon code
 is contained in the degree-`m` code over the same domain. -/
@@ -225,24 +268,14 @@ open NNReal
 
 variable [Field F]
 
-lemma dim_eq_deg_of_le [NeZero n] (inj : Function.Injective α) (h : n ≤ m) :
-    dim (ReedSolomon.code ⟨α, inj⟩ n) = n := by
-    classical
-    rw [
-       ← genMatIsVandermonde, ← rank_eq_dim_fromColGenMat, Vandermonde.rank_nonsquare_rows_eq_min
-    ] <;> simp [inj, h]
-
-
-/-- Generalized dimension formula for RS code with arbitrary finite index type `ι`. -/
-lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
+/-- Dimension formula for RS code with arbitrary finite index type `ι`. -/
+lemma dim_eq_deg_of_le [Fintype ι]
+    {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
   LinearCode.dim (ReedSolomon.code α n) = n := by
   by_cases hcard : Fintype.card ι = 0
-  · rw [hcard] at h
-    rw [Fintype.card_eq_zero_iff] at hcard
-    simp only [nonpos_iff_eq_zero] at h
-    subst h
-    simp [ReedSolomon.code, dim]
+  · have hn : n = 0 := by omega
+    subst n
+    simp [LinearCode.dim]
   · rw [LinearCode.dim]
     let f := ReedSolomon.evalOnPoints (F := F) α
     let S := Polynomial.degreeLT F n
@@ -282,17 +315,15 @@ lemma dim_eq_deg_of_le' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
             rw [h]
             simp
             omega
-          · calc p.val.natDegree < n
-              := @natDegree_lt_of_mem_degreeLT _ _ _ _ (⟨hn⟩) p.2
+          · calc p.val.natDegree < n := @natDegree_lt_of_mem_degreeLT _ _ _ _ (⟨hn⟩) p.2
                 _ ≤ Fintype.card ι := h
       · intro hfp
         simp [hfp]
 
 /-- The dimension of an RS-code equals the cardinality
   of the evaluation points if the original degree exceeds the cardinality. -/
-lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} (h : Fintype.card ι < n) :
-  LinearCode.dim (ReedSolomon.code α n) = Fintype.card ι := by
+lemma dim_eq_card_of_lt [Fintype ι] {α : ι ↪ F} (h : Fintype.card ι < n) :
+    LinearCode.dim (ReedSolomon.code α n) = Fintype.card ι := by
   rw [LinearCode.dim]
   let f := ReedSolomon.evalOnPoints (F := F) α
   let S := Polynomial.degreeLT F n
@@ -309,7 +340,7 @@ lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
   · have h_sub : ReedSolomon.code α (Fintype.card ι) ≤ ReedSolomon.code α n :=
       code_mono (le_of_lt h) α
     have h_sub := Submodule.finrank_mono h_sub
-    have dim_eq := dim_eq_deg_of_le'
+    have dim_eq := dim_eq_deg_of_le
       (n := Fintype.card ι)
       (α := α)
       (by simp)
@@ -323,42 +354,26 @@ lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
 theorem dim_eq_min_deg_card {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {n : ℕ} {α : ι ↪ F} :
   LinearCode.dim (ReedSolomon.code α n) = min n (Fintype.card ι) := by
-  by_cases hle : n ≤ Fintype.card ι
-  · simp [dim_eq_deg_of_le' hle, hle]
-  · simp only [not_le] at hle
-    rw [dim_eq_card_of_lt hle]
-    simp
-    omega
+  by_cases hle : n ≤ Fintype.card ι <;>
+    aesop
+      (add simp [dim_eq_deg_of_le, dim_eq_card_of_lt])
+      (add safe (by omega))
 
 @[simp]
-lemma length_eq_domain_size (inj : Function.Injective α) :
-    length (ReedSolomon.code ⟨α, inj⟩ deg) = m := by
-  simp [length]
-
-lemma rateOfLinearCode_eq_div [NeZero n] (inj : Function.Injective α) (h : n ≤ m) :
-    rate (ReedSolomon.code ⟨α, inj⟩ n) = n / m := by
-  rwa [rate, dim_eq_deg_of_le, length_eq_domain_size]
-
-@[simp]
-lemma length_eq_domain_card' {ι : Type*} [Fintype ι] {F : Type*} [Field F] {deg : ℕ}
-    {α : ι ↪ F} :
-    length (ReedSolomon.code α deg) = Fintype.card ι := by
-  simp [length]
+lemma length_eq_domain_card [Fintype ι] {deg : ℕ} {α : ι ↪ F} :
+    length (ReedSolomon.code α deg) = Fintype.card ι := rfl
 
 /- The usual formula for the rate of an RS-code: the degree divided by
   the cardinality of the evaluation set. -/
-lemma rateOfLinearCode_eq_div' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
+lemma rateOfLinearCode_eq_div [Fintype ι] {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
     rate (ReedSolomon.code α n) = n / Fintype.card ι := by
-  rw [rate, dim_eq_deg_of_le' h, length_eq_domain_card']
+  rw [rate, dim_eq_deg_of_le h, length_eq_domain_card]
 
 /- Assumption-less formula for the rate of an RS-code: the minimun of degree
   and the cardinality of the evaluation set divided by the cardinality. -/
-lemma rateOfLinearCode_eq_min_div
-    {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} :
+lemma rateOfLinearCode_eq_min_div [Fintype ι] {α : ι ↪ F} :
     rate (ReedSolomon.code α n) = (min n (Fintype.card ι)) / Fintype.card ι := by
-  rw [rate, dim_eq_min_deg_card, length_eq_domain_card']
+  rw [rate, dim_eq_min_deg_card, length_eq_domain_card]
 
 @[simp]
 lemma dist_le_length [DecidableEq F] (inj : Function.Injective α) :
@@ -368,6 +383,52 @@ lemma dist_le_length [DecidableEq F] (inj : Function.Injective α) :
 
 noncomputable abbrev sqrtRate [Fintype ι] (deg : ℕ) (domain : ι ↪ F) : ℝ≥0 :=
   (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt
+
+@[simp]
+lemma sqrtRate_nonneg [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+    0 ≤ (sqrtRate m domain : ℝ) := (sqrtRate m domain).coe_nonneg
+
+lemma sqrtRate_sq [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+    (sqrtRate m domain : ℝ) ^ 2 =
+    (min m (Fintype.card ι) : ℝ) / (Fintype.card ι : ℝ) := by
+  rw [sqrtRate, ←NNReal.coe_pow, NNReal.sq_sqrt,
+    ReedSolomon.rateOfLinearCode_eq_min_div]
+  push_cast
+  ring
+
+lemma sqrtRate_pos [Fintype ι] [Nonempty ι] {m : ℕ}
+    (hm : 0 < m) {domain : ι ↪ F} :
+  0 < (sqrtRate m domain : ℝ) := by
+  have hcard : 0 < Fintype.card ι := Fintype.card_pos
+  have hsq : 0 < (sqrtRate m domain : ℝ) ^ 2 := by
+    rw [sqrtRate_sq]
+    have : 0 < min m (Fintype.card ι) := lt_min hm hcard
+    positivity
+  rcases (sqrtRate_nonneg m domain).lt_or_eq with h | h
+  · exact h
+  · rw [←h] at hsq
+    simp at hsq
+
+@[simp]
+lemma sqrtRate_sq_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+    (sqrtRate m domain : ℝ) ^ 2 ≤ 1 := by
+  rw [sqrtRate_sq]
+  rcases Nat.eq_zero_or_pos (Fintype.card ι) with h | h
+  · simp [h]
+  · rw [div_le_one (by exact_mod_cast h)]
+    exact_mod_cast min_le_right _ _
+
+@[simp high]
+lemma sqrtRate_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+    ReedSolomon.sqrtRate m domain ≤ 1 :=
+  pow_le_one_iff_of_nonneg (sqrtRate_nonneg m domain) two_ne_zero |>.mp
+    (sqrtRate_sq_le_one m domain)
+
+@[simp high]
+lemma sqrtRate_le_one' [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+    (ReedSolomon.sqrtRate m domain : ℝ) ≤ 1 := by
+  norm_cast
+  simp
 
 end
 
@@ -398,9 +459,8 @@ lemma weight_constantCode [DecidableEq F] :
 
 @[simp]
 lemma constantCode_mem_code [NeZero n] :
-    constantCode x ι ∈ ReedSolomon.code α n := by
-  use C x
-  aesop (add simp [ReedSolomon.evalOnPoints, coeff_C, degreeLT])
+    constantCode x ι ∈ ReedSolomon.code α n :=
+  ⟨C x, by aesop (add simp [ReedSolomon.evalOnPoints, coeff_C, degreeLT])⟩
 
 @[simp]
 lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
@@ -410,64 +470,25 @@ lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
 
 @[simp]
 lemma wt_constantCode [DecidableEq F] [NeZero x] :
-    wt (constantCode x ι) = Fintype.card ι := by unfold constantCode wt; aesop
+    wt (constantCode x ι) = Fintype.card ι := by
+  simp [constantCode, wt, NeZero.ne x]
 
 end
 
-open Finset in
-/-- The minimal code distance of an RS code of length `ι` and dimension `deg` is `ι - deg + 1`. -/
-theorem minDist [Field F] [DecidableEq F] (inj : Function.Injective α) [NeZero n] (h : n ≤ m) :
-    minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) = m - n + 1 := by
-  have : NeZero m := by constructor; aesop
-  refine le_antisymm ?p₁ ?p₂
-  case p₁ =>
-    have distUB := singletonBound (LC := ReedSolomon.code ⟨α, inj⟩ n)
-    rw [dim_eq_deg_of_le inj h] at distUB
-    simp only [length_eq_domain_card', Fintype.card_fin] at distUB
-    zify [dist_le_length] at distUB
-    omega
-  case p₂ =>
-    rw [dist_eq_minWtCodewords]
-    apply le_csInf (by use m, constantCode 1 _; simp)
-    intro b ⟨msg, ⟨p, p_deg, p_eval_on_α_eq_msg⟩, msg_neq_0, wt_c_eq_b⟩
-    let zeroes : Finset _ := {i | msg i = 0}
-    have eq₁ : zeroes.val.Nodup := by
-      aesop (add simp [Multiset.nodup_iff_count_eq_one, Multiset.count_filter])
-    have msg_zeros_lt_deg : #zeroes < n := by
-      apply lt_of_le_of_lt (b := p.roots.card)
-                           (hbc := lt_of_le_of_lt (Polynomial.card_roots' _)
-                                                  (natDegree_lt_of_mem_degreeLT p_deg))
-      exact card_le_card_of_count_inj inj fun i ↦
-        if h : msg i = 0
-        then suffices 0 < Multiset.count (α i) p.roots by
-                rwa [@Multiset.count_eq_one_of_mem (d := eq₁) (h := by simpa [zeroes])]
-              by aesop
-        else by simp [zeroes, h]
-    have : #zeroes + wt msg = m := by
-      rw [wt, Finset.card_filter_add_card_filter_not]
-      simp
-    omega
-
-/-- Generalized minimal code distance for RS code with arbitrary finite index type `ι`. -/
-theorem minDist' {ι : Type*} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
-    {α : ι ↪ F} [NeZero n] (h : n ≤ Fintype.card ι) :
-  Code.minDist ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - n + 1 := by
+theorem minDist_of_le [Fintype ι] [Field F] [DecidableEq F]
+    {α : ι ↪ F} [nz : NeZero n] (h : n ≤ Fintype.card ι) :
+  Code.minDist (ReedSolomon.code α n : Set (ι → F)) = Fintype.card ι - n + 1 := by
   classical
-  have : NeZero (Fintype.card ι) := by
-    constructor
-    exact Nat.ne_of_gt (lt_of_lt_of_le (NeZero.pos n) h)
-  haveI : Nonempty ι := Fintype.card_pos_iff.mp (lt_of_lt_of_le (NeZero.pos n) h)
-  refine le_antisymm ?p₁ ?p₂
-  case p₁ =>
-    have distUB := singletonBound (LC := ReedSolomon.code α n)
-    rw [dim_eq_deg_of_le' h] at distUB
-    simp only [LinearCode.length] at distUB
-    have h_le_len : Code.minDist ((ReedSolomon.code α n) : Set (ι → F)) ≤ Fintype.card ι := by
-      convert dist_UB (MC := ReedSolomon.code α n)
-    zify [h_le_len] at distUB
-    omega
-  case p₂ =>
-    rw [dist_eq_minWtCodewords]
+  have := nz.out
+  have : 0 < Fintype.card ι := by omega
+  have : Nonempty ι := by aesop (add safe (by rw [←Fintype.card_pos_iff]))
+  apply le_antisymm
+  · have distUB := singletonBound (LC := ReedSolomon.code α n)
+    have h_le_len : Code.minDist ((ReedSolomon.code α n) : Set (ι → F)) ≤ Fintype.card ι := dist_UB
+    aesop
+      (add safe (by grind))
+      (add simp [LinearCode.length, dim_eq_deg_of_le])
+  · rw [dist_eq_minWtCodewords]
     apply le_csInf (by use Fintype.card ι, constantCode 1 ι; simp)
     intro b ⟨msg, ⟨p, p_deg, p_eval_on_α_eq_msg⟩, msg_neq_0, wt_c_eq_b⟩
     let zeroes : Finset _ := {i | msg i = 0}
@@ -486,84 +507,153 @@ theorem minDist' {ι : Type*} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
               by aesop
         else by simp [zeroes, h]
     have : zeroes.card + wt msg = Fintype.card ι := by
-      rw [wt, Finset.card_filter_add_card_filter_not]
-      simp
+      aesop (add simp [wt, Finset.card_filter_add_card_filter_not])
     omega
 
-/-- Reed-Solomon codes are maximum distance separable (MDS). -/
-lemma isMDS_code {ι : Type} [Fintype ι] {F : Type*} [Field F] [DecidableEq F]
-  {α : ι ↪ F} [NeZero n] (h : n ≤ Fintype.card ι) : LinearCode.IsMDS (ReedSolomon.code α n) := by
+@[simp]
+theorem code_Nontrivial [Field F] [nz : NeZero n] [Inhabited ι] {α : ι ↪ F} :
+    (ReedSolomon.code α n : Set (ι → F)).Nontrivial := by
+  have hn : n ≠ 0 := nz.out
+  have hn : 1 ≤ n := by omega
+  simp only [Set.Nontrivial, SetLike.mem_coe, ne_eq]
+  have h1 : evalOnPoints α 1 ∈ code α n :=
+    evalOnPoints_mem_code_of_natDegree_lt (by aesop)
+  exists (evalOnPoints α 0)
+  simp only [map_zero, zero_mem, true_and]
+  exists (evalOnPoints α 1)
+  simp only [h1, true_and]
+  intro contra
+  have := congrFun contra default
+  simp [evalOnPoints] at this
+
+@[simp]
+theorem minDist_n_0 [Fintype ι] [Field F] [DecidableEq F] {α : ι ↪ F} :
+    minDist (ReedSolomon.code α 0 : Set (ι → F)) = 0 := by simp [minDist]
+
+theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+    {α : ι ↪ F} [nz : NeZero n] :
+  minDist (ReedSolomon.code α n : Set (ι → F)) = Fintype.card ι - min n (Fintype.card ι) + 1 := by
   classical
-  unfold IsMDS
-  rw [length_eq_domain_card', dim_eq_deg_of_le' h, Code.dist_eq_minDist]
-  exact minDist' h
+  by_cases hle : n ≤ Fintype.card ι
+  · simp [hle, minDist_of_le hle]
+  · simp only [not_le] at hle
+    rw [min_eq_right (by grind)]
+    simp?
+    have hmin : 0 < minDist (ReedSolomon.code α n : Set (ι → F)) := by
+      have := dist_pos_of_Nontrivial (ReedSolomon.code α n : Set (ι → F)) (by simp)
+      rw [dist_eq_minDist] at this
+      exact this
+    have hle : minDist (ReedSolomon.code α n : Set (ι → F)) ≤ 1 := by
+      simp [minDist]
+      exact csInf_le (by simp) <| by
+        simp only [Set.mem_ofPred_eq]
+        let u : ι → F := fun i ↦ if i = default then 1 else 0
+        exists u
+        constructor
+        · rw [mem_code_iff_exists_polynomial]
+          exists (Lagrange.interpolate Finset.univ α u)
+          constructor
+          · exact lt_trans (Lagrange.degree_interpolate_lt _ (by cases α; aesop)) (by simp [hle])
+          · cases α
+            aesop
+              (erase simp Lagrange.interpolate_apply)
+              (add simp [evalOnPoints, Lagrange.eval_interpolate_at_node])
+        · exists 0
+          simp only [zero_mem, hammingDist_zero_right, hammingNorm, ne_eq, ite_eq_right_iff,
+            one_ne_zero, imp_false, Decidable.not_not, true_and, u]
+          constructor
+          · intro contra
+            have := congrFun contra default
+            simp at this
+          · rw [show 1 = Finset.card ({default} : Finset ι) by simp]
+            congr
+            ext a
+            aesop
+    omega
 
-/-- Generalized distance equality for RS code with arbitrary finite index type `ι`. -/
-theorem dist_eq' {ι : Type*} [Fintype ι] {F : Type*} {n : ℕ} {α : ι ↪ F}
+/-- Two distinct Reed–Solomon codewords of degree `< m` agree in fewer than `m` positions. -/
+lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
+    {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
+  (hc : c ∈ ReedSolomon.code α n) (hc' : c' ∈ ReedSolomon.code α n) (hne : c ≠ c') :
+  Code.agree c c' < n := by
+  by_cases hn : n = 0
+  · aesop
+  · by_cases hcard : Fintype.card ι = 0
+    · exfalso
+      exact hne <| funext <| fun i ↦ by
+        rw [Fintype.card_eq_zero_iff, isEmpty_iff] at hcard
+        simpa using hcard i
+    · have : NeZero n := ⟨hn⟩
+      have : Inhabited ι := ⟨Classical.choice <| by
+        aesop (add safe [(by rw [←Fintype.card_pos_iff]), (by omega)])⟩
+      have := minDist_eq_card_sub_min_add_1 (n := n) (α := α)
+      have := minDist_le_dist hc hc' hne
+      have := Code.agree_add_hammingDist (u := c) (v := c')
+      by_cases! hn : n ≤ Fintype.card ι <;> grind
+
+/-- Two Reed-Solomon codewords of degree `< m` that agree on at least `m` positions
+  are equal. -/
+lemma eq_of_agree_of_card_le {ι : Type} [Finite ι] [Field F]
+    {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
+  (hc : c ∈ code α n) (hc' : c' ∈ code α n)
+  {T : Finset ι} (hT : n ≤ T.card) (hagree : ∀ t ∈ T, c t = c' t) : c = c' := by
+  classical
+  have := Fintype.ofFinite
+  by_contra hne
+  have hlt := ReedSolomon.agree_lt_of_mem_code hc hc' hne
+  have hsub : T ⊆ ({i | c i = c' i} : Finset _) := fun t ht ↦ by simpa using hagree t ht
+  have := Finset.card_le_card hsub
+  grind [Code.agree]
+
+/-- Reed-Solomon codes are maximum distance separable (MDS). -/
+lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+    {α : ι ↪ F} [NeZero n] : LinearCode.IsMDS (ReedSolomon.code α n) := by
+  simp only [IsMDS, Submodule.carrier_eq_coe, length_eq_domain_card]
+  rw [dist_eq_minDist, minDist_eq_card_sub_min_add_1, dim_eq_min_deg_card]
+
+/-- Distance equality for RS code with arbitrary finite index type `ι`. -/
+theorem dist_eq_of_le [Fintype ι] {α : ι ↪ F}
     [Field F] [DecidableEq F] [NeZero n] (h : n ≤ Fintype.card ι) :
-    Code.dist (R := F) ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - n + 1 := by
-  simp_rw [dist_eq_minDist]
-  rw [ReedSolomon.minDist' h]
+  dist ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - n + 1 := by
+  aesop (add simp [dist_eq_minDist, ReedSolomon.minDist_of_le])
 
-theorem dist_eq {F : Type*} {m n : ℕ} {α : Fin m → F} [Field F] [DecidableEq F]
-    (inj : Function.Injective α) [NeZero n] (h : n ≤ m) :
-    Code.dist (R := F) ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) = m - n + 1 := by
-  simp_rw [dist_eq_minDist]
-  rw [ReedSolomon.minDist inj h]
+/-- Distance equality for RS code with arbitrary finite index type `ι`. -/
+theorem dist_eq [Fintype ι] [Inhabited ι] {α : ι ↪ F}
+    [Field F] [DecidableEq F] [NeZero n] :
+  dist ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - min n (Fintype.card ι) + 1 := by
+  aesop (add simp [dist_eq_minDist, ReedSolomon.minDist_eq_card_sub_min_add_1])
 
-/-- Generalized unique decoding radius for RS code with arbitrary finite index type `ι`. -/
-theorem uniqueDecodingRadius_RS_eq' {ι : Type*} [Fintype ι]
-    {F : Type*} {n : ℕ} {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n]
-    (h : n ≤ Fintype.card ι) :
-    Code.uniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code α n) =
+/-- Unique decoding radius for RS code with arbitrary finite index type `ι`. -/
+theorem uniqueDecodingRadius_RS_eq [Fintype ι]
+    {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n]
+  (h : n ≤ Fintype.card ι) :
+  Code.uniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code α n) =
     (Fintype.card ι - n) / 2 := by
-  simp only [uniqueDecodingRadius]
-  rw [dist_eq_minDist]
-  rw [ReedSolomon.minDist' h]
-  simp [add_tsub_cancel_right]
+  simp_all only [uniqueDecodingRadius, dist_eq_minDist, minDist_of_le, add_tsub_cancel_right]
 
 open NNReal in
-/-- Generalized relative unique decoding radius for RS code with arbitrary finite index type `ι`. -/
-theorem relativeUniqueDecodingRadius_RS_eq' {ι : Type*} [Fintype ι]
-    {F : Type*} {n : ℕ} {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n]
-    (h : n ≤ Fintype.card ι) :
-    Code.relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code α n) =
+/-- Relative unique decoding radius for RS code with arbitrary finite index type `ι`. -/
+theorem relativeUniqueDecodingRadius_RS_eq [Fintype ι]
+    {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n]
+  (h : n ≤ Fintype.card ι) :
+  Code.relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code α n) =
     ((1 : ℝ≥0) - n / Fintype.card ι) / 2 := by
   have h_card_ne_zero: Fintype.card ι ≠ 0 := by
     by_contra h_card_eq_zero
     have h_n_eq_0 : n = 0 := by omega
     have h_n_ne_0 : n ≠ 0 := by exact Ne.symm (NeZero.ne' n)
     exact h_n_ne_0 h_n_eq_0
-  rw [Code.relativeUniqueDecodingRadius, ReedSolomon.dist_eq' h]
+  rw [Code.relativeUniqueDecodingRadius, ReedSolomon.dist_eq_of_le h]
   simp only [Nat.cast_add, Nat.cast_tsub, Nat.cast_one, add_tsub_cancel_right]
   conv_lhs =>
     rw [NNReal.sub_div, NNReal.sub_div, div_div, mul_comm, ←div_div]
     rw [div_self (Nat.cast_ne_zero.mpr h_card_ne_zero)]
   conv_rhs => rw [NNReal.sub_div, div_div, mul_comm, ←div_div]
 
-/-- The exact unique decoding radius for Reed-Solomon codes via MDS property: `d = n - k + 1`.
-The unique decoding radius is ⌊(d-1)/2⌋ = ⌊(n-k)/2⌋. -/
-theorem uniqueDecodingRadius_RS_eq {F : Type*} {m n : ℕ} {α : Fin m → F} [Field F] [DecidableEq F]
-    (inj : Function.Injective α) [NeZero n] (h : n ≤ m) :
-    Code.uniqueDecodingRadius (ι := Fin m) (F := F) (C := ReedSolomon.code ⟨α, inj⟩ n) =
-    (m - n) / 2 := by
-  rw [uniqueDecodingRadius_RS_eq' (ι := Fin m) (F := F) (α := ⟨α, inj⟩)
-    (h := by simp only [Fintype.card_fin, h]) (n := n), Fintype.card_fin]
-
-open NNReal in
-/-- The relative unique decoding radius for Reed-Solomon codes: `(1 - ρ)/2`. -/
-theorem relativeUniqueDecodingRadius_RS_eq
-    {F : Type*} {m n : ℕ} {α : Fin m → F} [Field F] [DecidableEq F]
-  (inj : Function.Injective α) [NeZero n] (h : n ≤ m) :
-    Code.relativeUniqueDecodingRadius (ι := Fin m) (F := F) (C := ReedSolomon.code ⟨α, inj⟩ n) =
-    ((1 : ℝ≥0) - n / m) / 2 := by
-  rw [relativeUniqueDecodingRadius_RS_eq' (ι := Fin m) (F := F) (α := ⟨α, inj⟩)
-    (h := by simp only [Fintype.card_fin, h]) (n := n), Fintype.card_fin]
-
 end
 
-noncomputable scoped instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s
-    := Fintype.ofFinite _
+noncomputable scoped instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s :=
+  Fintype.ofFinite _
 
 open NNReal Finset Function Finset in
 noncomputable def finCarrier {ι : Type} [Fintype ι]
@@ -582,23 +672,27 @@ variable {F : Type*} [Field F]
 
 /-- The linear map that maps a codeword `f : ι → F` to a degree < |ι| polynomial p,
 such that `p(x) = f(x)` for all `x ∈ ι`. -/
-private noncomputable def interpolate : (ι → F) →ₗ[F] F[X] :=
+noncomputable def interpolate : (ι → F) →ₗ[F] F[X] :=
   Lagrange.interpolate univ domain
 
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial. -/
-noncomputable def decode : (ReedSolomon.code domain deg) →ₗ[F] F[X] :=
+noncomputable def toPolynomial : (ReedSolomon.code domain deg) →ₗ[F] F[X] :=
   domRestrict
     (interpolate (domain := domain))
     (ReedSolomon.code domain deg)
 
-/-- Reed-Solomon codewords are decoded into degree smaller than `deg` polynomials. -/
-lemma decoded_polynomial_lt_deg (c : ReedSolomon.code domain deg) :
-    decode c ∈ (degreeLT F deg : Submodule F F[X]) := by
+lemma toPolynomial_def {f : ReedSolomon.code domain deg} :
+    toPolynomial f = Lagrange.interpolate univ domain f := rfl
+
+/-- The polynomials corresponding to Reed-Solomon codewords are of degree smaller than `deg`. -/
+lemma toPolynomial_mem_lt_deg (c : ReedSolomon.code domain deg) :
+    toPolynomial c ∈ (degreeLT F deg : Submodule F F[X]) := by
   -- Unpack the witness polynomial for this codeword
   rcases c.property with ⟨p, hp_deg, hp_eval⟩
   -- Two cases depending on comparison between `deg` and `|ι|`
   by_cases hle : deg ≤ Fintype.card ι
-  · -- In this case, `p` has degree < |ι|, hence uniqueness of interpolation gives `decode c = p`.
+  · -- In this case, `p` has degree < |ι|,
+    -- hence uniqueness of interpolation gives `toPolynomial c = p`.
     have hp_lt_card : p.degree < (Fintype.card ι : WithBot ℕ) :=
       lt_of_lt_of_le (Polynomial.mem_degreeLT.mp hp_deg) (by exact_mod_cast hle)
     -- Interpolants of equal data are equal
@@ -610,43 +704,106 @@ lemma decoded_polynomial_lt_deg (c : ReedSolomon.code domain deg) :
                 (r' := fun i => p.eval (domain i))) ?_
       intro i _
       -- From codeword property: evaluations agree on all points
-      simpa using congrArg (fun f => f i) hp_eval.symm
+      exact congrArg (fun f => f i) hp_eval.symm
     -- A polynomial of degree < |ι| equals its Lagrange interpolant on `univ`
     have hp_eq_interp :
       p = Lagrange.interpolate (Finset.univ : Finset ι) domain (fun i => p.eval (domain i)) :=
         Lagrange.eq_interpolate (s := Finset.univ) (v := domain) (f := p)
           (by intro x _ y _ hxy; exact domain.injective hxy) hp_lt_card
-    -- Chain equalities to get `decode c = p`
-    have hdecode_eq : decode c = p := by
+    -- Chain equalities to get `toPolynomial c = p`
+    have htoPolynomial_eq : toPolynomial c = p := by
       -- `hinterp_eq_vals` gives: interpolate _ c = interpolate _ (eval p ∘ domain)
       -- `hp_eq_interp` gives: p = interpolate _ (eval p ∘ domain)
-      -- Hence, decode c = p
+      -- Hence, toPolynomial c = p
       have : (interpolate (domain := domain)) c = p :=
         hinterp_eq_vals.trans hp_eq_interp.symm
-      simpa [decode, interpolate] using this
+      simpa [toPolynomial, interpolate] using this
     -- Conclude degree bound from membership of `p` in `degreeLT F deg`.
-    simpa [hdecode_eq, Polynomial.mem_degreeLT] using hp_deg
+    simpa [htoPolynomial_eq, Polynomial.mem_degreeLT] using hp_deg
   · -- Otherwise, `deg > |ι|`, and interpolation has degree < |ι| ≤ deg
-    have hdeg_lt_card : (decode c).degree < (Fintype.card ι : WithBot ℕ) := by
+    have hdeg_lt_card : (toPolynomial c).degree < (Fintype.card ι : WithBot ℕ) := by
       -- Degree bound for Lagrange interpolation over `univ`
       have := Lagrange.degree_interpolate_lt (s := Finset.univ) (v := domain)
         (r := (c : ι → F)) (by intro x _ y _ hxy; exact domain.injective hxy)
-      simpa [decode, interpolate] using this
+      simpa [toPolynomial, interpolate] using this
     have hcard_le_deg : (Fintype.card ι : WithBot ℕ) ≤ deg := by
       have hlt : Fintype.card ι < deg := Nat.lt_of_not_ge hle
       exact le_of_lt (by exact_mod_cast hlt)
-    have : (decode c).degree < deg := lt_of_lt_of_le hdeg_lt_card hcard_le_deg
+    have : (toPolynomial c).degree < deg := lt_of_lt_of_le hdeg_lt_card hcard_le_deg
     simpa [Polynomial.mem_degreeLT] using this
+
+@[simp]
+lemma toPolynomial_lt_deg (c : ReedSolomon.code domain deg) :
+    (toPolynomial c).degree < deg := by
+  have := toPolynomial_mem_lt_deg c
+  aesop
+    (add simp [degreeLT, Polynomial.degree_lt_iff_coeff_zero])
+
+@[simp]
+lemma toPolynomial_lt_min_deg_card (c : ReedSolomon.code domain deg) :
+    (toPolynomial c).degree < min deg (Fintype.card ι) := by
+  by_cases h0 : toPolynomial c = 0
+  · simp [h0]
+  · rw [←Polynomial.natDegree_lt_iff_degree_lt h0, lt_min_iff]
+    constructor
+    · aesop (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+    · rw [Polynomial.natDegree_lt_iff_degree_lt h0, toPolynomial_def]
+      exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _
+        (by aesop (add safe cases Function.Embedding))) (by simp)
+
+lemma toPolynomial_evalWord_of_degree_lt
+    {p : F[X]} (hp_deg : p.degree < deg) (hdeg : deg ≤ Fintype.card ι)
+  {hcode : evalOnPoints domain p ∈ ReedSolomon.code domain deg} :
+  toPolynomial ⟨evalOnPoints domain p, hcode⟩ = p := by
+  classical
+  rcases domain with ⟨domain, hdomain_inj⟩
+  apply Polynomial.eq_of_degrees_lt_of_eval_index_eq (v := domain) (s := univ)
+  · simp_all
+  · exact Lagrange.degree_interpolate_lt _ (by simp_all)
+  · exact lt_of_lt_of_le hp_deg (by simp [hdeg])
+  · aesop
+      (add safe cases Function.Embedding)
+      (erase simp Lagrange.interpolate_apply)
+      (add simp [Lagrange.eval_interpolate_at_node, toPolynomial_def])
+
+lemma toPolynomial_eval_at_domain
+    {c : ReedSolomon.code domain deg} {i : ι} :
+  (toPolynomial c).eval (domain i) = c.1 i := by
+  aesop
+    (erase simp Lagrange.interpolate_apply)
+    (add simp [toPolynomial_def, Lagrange.eval_interpolate_at_node])
+    (add safe cases Function.Embedding)
+
+omit [DecidableEq ι] in
+lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+    f ∈ code α n ↔
+    ∃ p : Polynomial F, p.degree < min n (Fintype.card ι) ∧
+      f = evalOnPoints α p := by
+  classical
+  constructor
+  · intro h
+    by_cases hd : n ≤ Fintype.card ι
+    · aesop
+        (add simp [mem_code_iff_exists_polynomial])
+    · exists (toPolynomial ⟨f, h⟩)
+      aesop (add simp [evalOnPoints, toPolynomial_eval_at_domain])
+  · by_cases hd : n ≤ Fintype.card ι
+    · aesop
+        (add simp [mem_code_iff_exists_polynomial])
+    · rintro ⟨p, hp₁, hp₂⟩
+      rw [mem_code_iff_exists_polynomial]
+      have : p.degree < n := lt_trans hp₁ (by simpa using hd)
+      aesop
 
 /-- The linear map that maps a Reed-Solomon codeword to its associated polynomial of degree less
 than `deg`. -/
-noncomputable def decodeLT : (ReedSolomon.code domain deg) →ₗ[F] (Polynomial.degreeLT F deg) :=
+noncomputable def toPolynomialLT :
+  (ReedSolomon.code domain deg) →ₗ[F] (Polynomial.degreeLT F deg) :=
   codRestrict
     (Polynomial.degreeLT F deg)
-    decode
-    (fun c => decoded_polynomial_lt_deg c)
+    toPolynomial
+    toPolynomial_mem_lt_deg
 
-open LinearMvExtension
 
 variable {F : Type*} [Semiring F] [DecidableEq F]
          {ι : Type*} [Fintype ι]
@@ -660,61 +817,6 @@ class Smooth
     h_coset     : Finset.image domain Finset.univ
                   = (fun h : Units F => (a : F) * (h : F)) '' (H : Set (Units F))
     h_card_pow2 : ∃ k : ℕ, Fintype.card ι = 2 ^ k
-
-variable {F : Type*} [Field F] [DecidableEq F]
-        {ι : Type*} [Fintype ι] [DecidableEq ι]
-        {domain : ι ↪ F} [Smooth domain]
-        {m : ℕ}
-
-/-- Definition 4.2, WHIR[ACFY24]
-Smooth Reed-Solomon codes are Reed-Solomon codes defined over smooth domains, such that their
-decoded univariate polynomials are of degree less than `2ᵐ` for some `m ∈ ℕ`. -/
-noncomputable def smoothCode
-    (domain : ι ↪ F) [Smooth domain]
-  (m : ℕ) : Submodule F (ι → F) := ReedSolomon.code domain (2^m)
-
-/-- The linear map that maps smooth Reed-Solomon Code words to their decoded degreewise linear
-`m`-variate polynomial. -/
-noncomputable def mVdecode :
-  (smoothCode domain m) →ₗ[F] MvPolynomial (Fin m) F :=
-    linearMvExtensionLMap.comp decodeLT
-
-/-- Auxiliary function to assign values to the weight polynomial variables: index `0` ↦ `p.eval b`,
-index `j+1` ↦ `b j`. -/
-private noncomputable def toWeightAssignment
-  (p : MvPolynomial (Fin m) F)
-  (b : Fin m → Fin 2) : Fin (m+1) → F :=
-    let b' : Fin m → F := fun i => ↑(b i : ℕ)
-    Fin.cases (MvPolynomial.eval b' p)
-              (fun i => ↑(b i : ℕ))
-
-/-- Constraint is true, if `∑ {b ∈ {0,1}^m} w(f(b),b) = σ` for given `m`-variate polynomial `f` and
-`(m+1)`-variate polynomial `w`. -/
-def weightConstraint
-    (f : MvPolynomial (Fin m) F)
-  (w : MvPolynomial (Fin (m + 1)) F) (σ : F) : Prop :=
-    ∑ b : Fin m → Fin 2 , w.eval (toWeightAssignment f b) = σ
-
-/-- Definition 4.5, WHIR[ACFY24]
-Constrained Reed-Solomon codes are smooth codes whose decoded `m`-variate polynomial satisfies the
-weight constraint for given `w` and `σ`.
--/
-def constrainedCode
-    (domain : ι ↪ F) [Smooth domain] (m : ℕ)
-  (w : MvPolynomial (Fin (m + 1)) F) (σ : F) : Set (ι → F) :=
-    { f | ∃ (h : f ∈ smoothCode domain m),
-      weightConstraint (mVdecode (⟨f, h⟩ : smoothCode domain m)) w σ }
-
-/-- Definition 4.6, WHIR[ACFY24]
-Multi-constrained Reed-Solomon codes are smooth codes whose decoded `m`-variate polynomial satisfies
-the `t` weight constraints for given `w₀,..., wₜ₋₁` and `σ₀,..., σₜ₋₁`. -/
-def multiConstrainedCode
-    (domain : ι ↪ F) [Smooth domain] (m t : ℕ)
-  (w : Fin t → MvPolynomial (Fin (m + 1)) F)
-  (σ : Fin t → F) : Set (ι → F) :=
-    { f |
-      ∃ (h : f ∈ smoothCode domain m),
-        ∀ i : Fin t, weightConstraint (mVdecode (⟨f, h⟩ : smoothCode domain m)) (w i) (σ i)}
 
 end
 end ReedSolomon

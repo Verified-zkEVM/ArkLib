@@ -8,8 +8,8 @@ source_metadata: ../sources/Ajt96/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/Lattices/ModuleSIS.lean
-  - ArkLib/CommitmentScheme/Ajtai/Simple/Scheme.lean
-  - ArkLib/CommitmentScheme/Ajtai/Simple/Security.lean
+  - ArkLib/Commitments/Ordinary/Ajtai/Simple/Scheme.lean
+  - ArkLib/Commitments/Ordinary/Ajtai/Simple/Security.lean
 ---
 
 # Ajt96
@@ -30,7 +30,7 @@ Ajtai commitments.
 
 - [`ArkLib/Data/Lattices/ModuleSIS.lean`](../../../ArkLib/Data/Lattices/ModuleSIS.lean) — the
   Module-SIS search game.
-- [`ArkLib/CommitmentScheme/Ajtai/Simple/Security.lean`](../../../ArkLib/CommitmentScheme/Ajtai/Simple/Security.lean)
+- [`ArkLib/Commitments/Ordinary/Ajtai/Simple/Security.lean`](../../../ArkLib/Commitments/Ordinary/Ajtai/Simple/Security.lean)
   — binding reduces to Module-SIS.
 
 ## Open Formalization Gaps

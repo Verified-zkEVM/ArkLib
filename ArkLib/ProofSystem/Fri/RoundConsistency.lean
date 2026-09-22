@@ -1,7 +1,14 @@
-import Mathlib.LinearAlgebra.Lagrange
-import ArkLib.Data.Polynomial.SplitFold
-import CompPoly.Univariate.Lagrange
-import CompPoly.Univariate.ToPoly.Impl
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alexander Hicks, Quang Dao, Natasha Klaus, Pietro Monticone, Devon Tuma, Ilia Vlasov
+-/
+module
+
+public import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Data.Polynomial.SplitFold
+public import CompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.ToPoly.Impl
 
 /-!
 # FRI Round Consistency
@@ -11,11 +18,11 @@ the Lagrange interpolant through evaluation points at scaled roots of unity equa
 fold at the challenge point.
 -/
 
+@[expose] public section
+
 open Polynomial
 
 namespace RoundConsistency
-
-variable {𝔽 : Type} [CommSemiring 𝔽] [NoZeroDivisors 𝔽]
 
 /--
 The generalized round consistency check: checks that the Lagrange-interpolating polynomial through
@@ -25,11 +32,13 @@ the fold evaluated at the challenge.
 Implemented via `CompPoly.CPolynomial`'s computable Lagrange interpolation, so the check itself is
 computable.
 -/
-def roundConsistencyCheck [Field 𝔽] [DecidableEq 𝔽]
+def roundConsistencyCheck {𝔽 : Type} [Field 𝔽] [DecidableEq 𝔽]
     {n : ℕ} (γ : 𝔽) (pts : Fin n → 𝔽 × 𝔽) (β : 𝔽) : Bool :=
   let p := CompPoly.CPolynomial.CLagrange.interpolate
     (Finset.univ : Finset (Fin n)) (fun i => (pts i).1) (fun i => (pts i).2)
   p.eval γ == β
+
+variable {𝔽 : Type} [CommSemiring 𝔽] [NoZeroDivisors 𝔽]
 
 /--
 Completeness of the round consistency check.
@@ -40,14 +49,13 @@ value `(foldNth n f γ).eval (s₀^n)`. This establishes that the Lagrange inter
 the evaluation points matches the n-way folding operation at the challenge point.
 -/
 lemma generalised_round_consistency_completeness
-  {𝔽 : Type} [inst1 : Field 𝔽] [DecidableEq 𝔽] {f : Polynomial 𝔽}
+    {𝔽 : Type} [inst1 : Field 𝔽] [DecidableEq 𝔽] {f : Polynomial 𝔽}
   {n : ℕ} [inst : NeZero n]
   {γ : 𝔽}
   {s₀ : 𝔽}
   {ω : Fin n ↪ 𝔽}
   (h : ∀ i, (ω i) ^ n = 1)
-  (h₁ : s₀ ≠ 0)
-  :
+  (h₁ : s₀ ≠ 0) :
     roundConsistencyCheck
       γ
       (fun i => (ω i * s₀, f.eval (ω i * s₀)))
@@ -66,14 +74,13 @@ lemma generalised_round_consistency_completeness
     rw [←eval]
     simp
   simp only [polyFold_eq_sum_of_splitNth, map_pow]
-  rw [eval_finset_sum]
+  rw [eval_finsetSum]
   conv =>
     rhs
     rhs
     ext i
     rw [eval_mul]
     simp
-
   apply Eq.trans (b := eval γ <| ∑ i : Fin n, X ^ (↑i : ℕ) * C (eval (s₀ ^ n) (f.splitNth n i)))
   · rw [Lagrange.eq_interpolate (ι := Fin n)
         (v := fun i => ω i * s₀)
@@ -101,8 +108,8 @@ lemma generalised_round_consistency_completeness
     ext i
     conv =>
       lhs
-      rw [splitNth_def n f]
-    rw [eval_finset_sum, eval_finset_sum]
+      rw [eq_sum_splitNth n f]
+    rw [eval_finsetSum, eval_finsetSum]
     conv =>
       lhs
       rhs
@@ -114,10 +121,10 @@ lemma generalised_round_consistency_completeness
       rhs
       ext j
       rw [eval_mul]
-      simp
+      simp?
       rw [←one_mul (s₀ ^ n), ←h i]
     rw [mul_pow]
-  · rw [eval_finset_sum]
+  · rw [eval_finsetSum]
     conv =>
       lhs
       rhs

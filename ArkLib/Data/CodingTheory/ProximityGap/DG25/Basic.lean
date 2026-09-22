@@ -3,27 +3,29 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import CompPoly.Data.Nat.Bitwise
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.InterleavedCode
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
-import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
-import ArkLib.Data.Probability.Instances
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Lie.OfAssociative
-import Mathlib.Data.Finset.BooleanAlgebra
-import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
-import Mathlib.Data.Set.Defs
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.RingTheory.Henselian
-import Mathlib.Probability.ProbabilityMassFunction.Constructions
-import Mathlib.Data.ENNReal.Inv
+module
+
+public import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
+public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
+public import ArkLib.Data.Probability.Instances
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.Algebra.Lie.OfAssociative
+public import Mathlib.Data.Finset.BooleanAlgebra
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Analysis.Real.Sqrt
+public import Mathlib.Data.Set.Defs
+public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.RingTheory.Henselian
+public import Mathlib.Probability.ProbabilityMassFunction.Constructions
+public import Mathlib.Basic.ENNReal.Inv
 
 /-!
 # Proximity Gaps in Interleaved Codes
@@ -59,6 +61,8 @@ Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056
 
 -/
 
+@[expose] public section
+
 noncomputable section
 
 open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
@@ -75,24 +79,25 @@ variable {A : Type w} [Fintype A] [DecidableEq A] [AddCommMonoid A] [Module F A]
 def affineLineEvaluation {F : Type v} [Ring F] [Module F A]
     (u₀ u₁ : Word A ι) (r : F) : Word A ι := (1 - r) • u₀ + r • u₁
 
------------------------------------------------------ Switch to (F : Type) for `Pr_{...}[...]` usage
-variable {F : Type} [Ring F] [Module F A] [Fintype F] (C : Set (Word A ι))
+----------------------------------------------------- Switch to (F : Type) for `Pr{...}[...]` usage
+variable {F : Type} [Ring F] [Module F A] [Fintype F] [SampleableType F] (C : Set (Word A ι))
 /-
 Definition 2.1. We say that `C ⊂ F^n` features proximity gaps for affine lines
 with respect to the proximity parameter `e` and the false witness bound `ε` if, for
 each pair of words `u_0` and `u_1` in `F^n`, if
-`Pr_{r ∈ F}[d((1-r) · u_0 + r · u_1, C) ≤ e] > ε/q`
+`Pr{r ∈ F}[d((1-r) · u_0 + r · u_1, C) ≤ e] > ε/q`
 holds, then `d^2((u_i)_{i=0}^1, C^2) ≤ e` also does.
 -/
 def e_ε_correlatedAgreementAffineLinesNat
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     (C : Set (ι → A)) (e ε : ℕ) : Prop :=
   ∀ (u₀ u₁ : Word A ι),
-    Pr_{let r ← $ᵖ F}[Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e]
+    Pr{let r ← $ᵗ F}[Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e]
       > ((ε: ℝ≥0) / (Fintype.card F : ℝ≥0)) →
       jointProximityNat₂ (A := A) (ι := ι) (u₀ := u₀) (u₁ := u₁) (e := e) (C := C)
 
 omit [DecidableEq ι] [Nonempty ι] [Fintype A] [Fintype F] in
+omit [SampleableType F] in
 /-- **Lemma: Distance of Affine Combination is Bounded by Interleaved Distance** -/
 theorem dist_affineCombination_le_dist_interleaved₂
     (u₀ u₁ v₀ v₁ : Word A ι) (r : F) :
@@ -124,13 +129,13 @@ theorem dist_affineCombination_le_dist_interleaved₂
   exact hj_row_diff rfl -- since hj_row_diff has form : ¬(x = x)
 
 section TensorProximityGapDefinitions -- CommRing scalar set
-variable {F : Type} [CommRing F] [Module F A] [Fintype F]
+variable {F : Type} [CommRing F] [Module F A] [Fintype F] [SampleableType F]
 
-def δ_ε_multilinearCorrelatedAgreement_Nat [CommRing F]
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+def δ_ε_multilinearCorrelatedAgreement_Nat
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   (C : Set (ι → A)) (ϑ : ℕ) (e : ℕ) (ε : ℕ) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
-    Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
+    Pr{let r ← $ᵗ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
       Δ₀(r |⨂| u, C) ≤ e
     ] > (ϑ : ℝ≥0) * ε / (Fintype.card F : ℝ≥0) →
     jointProximityNat (u := u) (e := e) (C := C)
@@ -193,10 +198,13 @@ lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
       exact res
     · funext rowIdx
       let res := congr_fun h_merge_eq_split ⟨rowIdx + 2 ^ ϑ, by omega⟩
-      simp only [add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
+      simp only [add_lt_iff_neg_right, not_lt_zero, ↓reduceDIte, add_tsub_cancel_right,
         Fin.eta] at res
       exact res
 
+-- Preserve the public `Matrix` aliases for interleaved words. Lean v4.33 otherwise refuses
+-- to unfold them while matching the proof's implicit word types.
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty ι] [DecidableEq ι] [Fintype A] [AddCommMonoid A] in
 /-- NOTE: This could be generalized to 2 * N instead of 2 ^ (ϑ + 1).
 Also, this can be proved for `↔` instead of `→`. -/
@@ -264,12 +272,13 @@ theorem CA_split_rowwise_implies_CA
         have hRes₁ := hRes 1 ⟨rowIdx - 2 ^ ϑ, by omega⟩
         dsimp only [splitHalfRowWiseInterleavedWords, Fin.isValue, U₁] at hRes₁
         rw [←hRes₁]
-        simp only [Interleavable.interleave, interleaveWordStack, finMapTwoWords,
-          Matrix.transpose_apply]
+        simp only [Interleavable.interleave, interleaveWordStack, Matrix.transpose_apply,
+          finMapTwoWords]
         rw! [Nat.sub_add_cancel (h := by omega)]
         rfl
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
+omit [SampleableType F] in
 /-- `[⊗_{i=0}^{ϑ-1}(1-r_i, r_i)] · [ - u₀ -; ...; - u_{2^ϑ-1} - ]`
 `- [⊗_{i=0}^{ϑ-2}(1-r_i, r_i)] · ([(1-r_{ϑ-1}) · U₀] + [r_{ϑ-1} · U₁])` -/
 lemma multilinearCombine_recursive_form
@@ -351,6 +360,7 @@ lemma multilinearCombine_recursive_form
   rw [h_tensor_split_0, h_tensor_split_1]
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
+omit [SampleableType F] in
 lemma multilinearCombine₁_eq_affineLineEvaluation -- ϑ = 1 case
     (u : Fin (2) → (Word A ι)):
   ∀ (r : Fin 1 → F), multilinearCombine (u:=u) (r:=r)

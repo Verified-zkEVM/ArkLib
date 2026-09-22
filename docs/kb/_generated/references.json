@@ -1,6 +1,28 @@
 {
-  "count": 50,
+  "count": 85,
   "entries": {
+    "ABF26": {
+      "authors": [
+        "Gal Arnon",
+        "Dan Boneh",
+        "Giacomo Fenzi"
+      ],
+      "authors_text": "Gal Arnon and Dan Boneh and Giacomo Fenzi",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Gal Arnon and Dan Boneh and Giacomo Fenzi",
+        "howpublished": "Manuscript, accompanying the Ethereum Foundation Proximity Prize",
+        "title": "Open Problems in List Decoding and Correlated Agreement",
+        "url": "https://proximityprize.org/",
+        "year": "2026"
+      },
+      "key": "ABF26",
+      "title": "Open Problems in List Decoding and Correlated Agreement",
+      "url": "https://proximityprize.org/",
+      "venue": "",
+      "year": "2026"
+    },
     "ACFY24": {
       "authors": [
         "Gal Arnon",
@@ -71,6 +93,78 @@
       "url": "",
       "venue": "Annual International Conference on the Theory and Applications of Cryptographic Techniques",
       "year": "2025"
+    },
+    "AGGLZ25": {
+      "authors": [
+        "Alrabiah, Omar",
+        "Guo, Zeyu",
+        "Guruswami, Venkatesan",
+        "Li, Ray",
+        "Zhang, Zihan"
+      ],
+      "authors_text": "Alrabiah, Omar and Guo, Zeyu and Guruswami, Venkatesan and Li, Ray and Zhang, Zihan",
+      "doi": "10.19086/aic.2025.8",
+      "entry_type": "article",
+      "fields": {
+        "author": "Alrabiah, Omar and Guo, Zeyu and Guruswami, Venkatesan and Li, Ray and Zhang, Zihan",
+        "doi": "10.19086/aic.2025.8",
+        "journal": "Advances in Combinatorics",
+        "title": "Random Reed-Solomon codes achieve list-decoding capacity with linear-sized alphabets",
+        "year": "2025"
+      },
+      "key": "AGGLZ25",
+      "title": "Random Reed-Solomon codes achieve list-decoding capacity with linear-sized alphabets",
+      "url": "",
+      "venue": "Advances in Combinatorics",
+      "year": "2025"
+    },
+    "AGL23": {
+      "authors": [
+        "Alrabiah, Omar",
+        "Guruswami, Venkatesan",
+        "Li, Ray"
+      ],
+      "authors_text": "Alrabiah, Omar and Guruswami, Venkatesan and Li, Ray",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Alrabiah, Omar and Guruswami, Venkatesan and Li, Ray",
+        "eprint": "2308.13424",
+        "eprinttype": "arXiv",
+        "journal": "CoRR",
+        "title": "{AG} codes have no list-decoding friends: approaching the generalized Singleton bound requires exponential alphabets",
+        "url": "https://arxiv.org/abs/2308.13424",
+        "volume": "abs/2308.13424",
+        "year": "2023"
+      },
+      "key": "AGL23",
+      "title": "{AG} codes have no list-decoding friends: approaching the generalized Singleton bound requires exponential alphabets",
+      "url": "https://arxiv.org/abs/2308.13424",
+      "venue": "CoRR",
+      "year": "2023"
+    },
+    "AGL24": {
+      "authors": [
+        "Alrabiah, Omar",
+        "Guruswami, Venkatesan",
+        "Li, Ray"
+      ],
+      "authors_text": "Alrabiah, Omar and Guruswami, Venkatesan and Li, Ray",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Alrabiah, Omar and Guruswami, Venkatesan and Li, Ray",
+        "booktitle": "Proceedings of the 56th Annual {ACM} Symposium on Theory of Computing",
+        "pages": "1458--1469",
+        "series": "STOC '24",
+        "title": "Randomly punctured Reed-Solomon codes achieve list-decoding capacity over linear-sized fields",
+        "year": "2024"
+      },
+      "key": "AGL24",
+      "title": "Randomly punctured Reed-Solomon codes achieve list-decoding capacity over linear-sized fields",
+      "url": "",
+      "venue": "Proceedings of the 56th Annual {ACM} Symposium on Theory of Computing",
+      "year": "2024"
     },
     "AHIV22": {
       "authors": [
@@ -182,6 +276,52 @@
       "venue": "2024 IEEE 37th Computer Security Foundations Symposium (CSF)",
       "year": "2024"
     },
+    "BCFW25": {
+      "authors": [
+        "Benedikt B\\\"unz",
+        "Alessandro Chiesa",
+        "Giacomo Fenzi",
+        "William Wang"
+      ],
+      "authors_text": "Benedikt B\\\"unz and Alessandro Chiesa and Giacomo Fenzi and William Wang",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Benedikt B\\\"unz and Alessandro Chiesa and Giacomo Fenzi and William Wang",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/753",
+        "title": "Linear time accumulation schemes",
+        "url": "https://eprint.iacr.org/2025/753",
+        "year": "2025"
+      },
+      "key": "BCFW25",
+      "title": "Linear time accumulation schemes",
+      "url": "https://eprint.iacr.org/2025/753",
+      "venue": "",
+      "year": "2025"
+    },
+    "BCGM25": {
+      "authors": [
+        "Bordage, Sarah",
+        "Chiesa, Alessandro",
+        "Guan, Ziyi",
+        "Manzur, Ignacio"
+      ],
+      "authors_text": "Bordage, Sarah and Chiesa, Alessandro and Guan, Ziyi and Manzur, Ignacio",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Bordage, Sarah and Chiesa, Alessandro and Guan, Ziyi and Manzur, Ignacio",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2051",
+        "title": "All Polynomial Generators Preserve Distance with Mutual Correlated Agreement",
+        "url": "https://eprint.iacr.org/2025/2051",
+        "year": "2025"
+      },
+      "key": "BCGM25",
+      "title": "All Polynomial Generators Preserve Distance with Mutual Correlated Agreement",
+      "url": "https://eprint.iacr.org/2025/2051",
+      "venue": "",
+      "year": "2025"
+    },
     "BCGMMW18": {
       "authors": [
         "Sean Bowe",
@@ -207,6 +347,30 @@
       "url": "https://eprint.iacr.org/2018/962",
       "venue": "",
       "year": "2018"
+    },
+    "BCHKS25": {
+      "authors": [
+        "Eli {Ben-Sasson}",
+        "Dan Carmon",
+        "Ulrich Hab\u00f6ck",
+        "Swastik Kopparty",
+        "Shubhangi Saraf"
+      ],
+      "authors_text": "Eli {Ben-Sasson} and Dan Carmon and Ulrich Hab\u00f6ck and Swastik Kopparty and Shubhangi Saraf",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Eli {Ben-Sasson} and Dan Carmon and Ulrich Hab\u00f6ck and Swastik Kopparty and Shubhangi Saraf",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2055",
+        "title": "On Proximity Gaps for Reed--Solomon Codes",
+        "url": "https://eprint.iacr.org/2025/2055",
+        "year": "2025"
+      },
+      "key": "BCHKS25",
+      "title": "On Proximity Gaps for Reed--Solomon Codes",
+      "url": "https://eprint.iacr.org/2025/2055",
+      "venue": "",
+      "year": "2025"
     },
     "BCIKS20": {
       "authors": [
@@ -282,30 +446,74 @@
       "venue": "Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14",
       "year": "2016"
     },
-    "BLS12377": {
+    "BDG24": {
       "authors": [
-        "Alessandro Chiesa",
-        "Yuncong Hu",
-        "Mary Maller",
-        "Pratyush Mishra",
-        "Psi Vesely",
-        "Nicholas Ward"
+        "Brakensiek, Joshua",
+        "Dhar, Manik",
+        "Gopi, Sivakanth"
       ],
-      "authors_text": "Alessandro Chiesa and Yuncong Hu and Mary Maller and Pratyush Mishra and Psi Vesely and Nicholas Ward",
+      "authors_text": "Brakensiek, Joshua and Dhar, Manik and Gopi, Sivakanth",
       "doi": "",
-      "entry_type": "misc",
+      "entry_type": "article",
       "fields": {
-        "author": "Alessandro Chiesa and Yuncong Hu and Mary Maller and Pratyush Mishra and Psi Vesely and Nicholas Ward",
-        "howpublished": "Cryptology {ePrint} Archive, Paper 2018/962",
-        "title": "Marlin: Preprocessing zkSNARKs with Universal and Updatable SRS",
-        "url": "https://eprint.iacr.org/2018/962",
-        "year": "2018"
+        "author": "Brakensiek, Joshua and Dhar, Manik and Gopi, Sivakanth",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "10",
+        "pages": "6950--6960",
+        "title": "Improved field size bounds for higher order {MDS} codes",
+        "volume": "70",
+        "year": "2024"
       },
-      "key": "BLS12377",
-      "title": "Marlin: Preprocessing zkSNARKs with Universal and Updatable SRS",
-      "url": "https://eprint.iacr.org/2018/962",
-      "venue": "",
-      "year": "2018"
+      "key": "BDG24",
+      "title": "Improved field size bounds for higher order {MDS} codes",
+      "url": "",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2024"
+    },
+    "BGM23": {
+      "authors": [
+        "Brakensiek, Joshua",
+        "Gopi, Sivakanth",
+        "Makam, Visu"
+      ],
+      "authors_text": "Brakensiek, Joshua and Gopi, Sivakanth and Makam, Visu",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Brakensiek, Joshua and Gopi, Sivakanth and Makam, Visu",
+        "booktitle": "Proceedings of the 55th Annual {ACM} Symposium on Theory of Computing",
+        "pages": "1488--1501",
+        "series": "STOC '23",
+        "title": "Generic Reed-Solomon codes achieve list-decoding capacity",
+        "year": "2023"
+      },
+      "key": "BGM23",
+      "title": "Generic Reed-Solomon codes achieve list-decoding capacity",
+      "url": "",
+      "venue": "Proceedings of the 55th Annual {ACM} Symposium on Theory of Computing",
+      "year": "2023"
+    },
+    "BKR06": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Kopparty, Swastik",
+        "Radhakrishnan, Jaikumar"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Kopparty, Swastik and Radhakrishnan, Jaikumar",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Kopparty, Swastik and Radhakrishnan, Jaikumar",
+        "booktitle": "Proceedings of the 47th Annual {IEEE} Symposium on Foundations of Computer Science",
+        "pages": "207--216",
+        "title": "Subspace polynomials and list decoding of Reed-Solomon codes",
+        "year": "2006"
+      },
+      "key": "BKR06",
+      "title": "Subspace polynomials and list decoding of Reed-Solomon codes",
+      "url": "",
+      "venue": "Proceedings of the 47th Annual {IEEE} Symposium on Foundations of Computer Science",
+      "year": "2006"
     },
     "BSS08": {
       "authors": [
@@ -313,10 +521,11 @@
         "Sudan, Madhu"
       ],
       "authors_text": "Ben-Sasson, Eli and Sudan, Madhu",
-      "doi": "",
+      "doi": "10.1137/050646445",
       "entry_type": "article",
       "fields": {
         "author": "Ben-Sasson, Eli and Sudan, Madhu",
+        "doi": "10.1137/050646445",
         "journal": "SIAM Journal on Computing",
         "number": "2",
         "pages": "551--607",
@@ -331,6 +540,30 @@
       "url": "https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf",
       "venue": "SIAM Journal on Computing",
       "year": "2008"
+    },
+    "BenSassonGKS20": {
+      "authors": [
+        "{Ben-Sasson}, Eli",
+        "Goldberg, Lior",
+        "Kopparty, Swastik",
+        "Saraf, Shubhangi"
+      ],
+      "authors_text": "{Ben-Sasson}, Eli and Goldberg, Lior and Kopparty, Swastik and Saraf, Shubhangi",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "{Ben-Sasson}, Eli and Goldberg, Lior and Kopparty, Swastik and Saraf, Shubhangi",
+        "booktitle": "Proceedings of the 11th Innovations in Theoretical Computer Science Conference",
+        "pages": "5:1--5:32",
+        "series": "ITCS '20",
+        "title": "{DEEP-FRI}: Sampling Outside the Box Improves Soundness",
+        "year": "2020"
+      },
+      "key": "BenSassonGKS20",
+      "title": "{DEEP-FRI}: Sampling Outside the Box Improves Soundness",
+      "url": "",
+      "venue": "Proceedings of the 11th Innovations in Theoretical Computer Science Conference",
+      "year": "2020"
     },
     "CGKY25": {
       "authors": [
@@ -353,6 +586,75 @@
       "title": "On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments",
       "url": "https://eprint.iacr.org/2025/902",
       "venue": "",
+      "year": "2025"
+    },
+    "CS25": {
+      "authors": [
+        "Elizabeth Crites",
+        "Alistair Stewart"
+      ],
+      "authors_text": "Elizabeth Crites and Alistair Stewart",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Elizabeth Crites and Alistair Stewart",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2046",
+        "title": "On Reed--Solomon Proximity Gaps Conjectures",
+        "url": "https://eprint.iacr.org/2025/2046",
+        "year": "2025"
+      },
+      "key": "CS25",
+      "title": "On Reed--Solomon Proximity Gaps Conjectures",
+      "url": "https://eprint.iacr.org/2025/2046",
+      "venue": "",
+      "year": "2025"
+    },
+    "CW07": {
+      "authors": [
+        "Cheng, Qi",
+        "Wan, Daqing"
+      ],
+      "authors_text": "Cheng, Qi and Wan, Daqing",
+      "doi": "10.1137/S0097539705447335",
+      "entry_type": "article",
+      "fields": {
+        "author": "Cheng, Qi and Wan, Daqing",
+        "doi": "10.1137/S0097539705447335",
+        "journal": "SIAM Journal on Computing",
+        "number": "1",
+        "pages": "195--209",
+        "title": "On the list and bounded distance decodability of Reed-Solomon codes",
+        "url": "https://doi.org/10.1137/S0097539705447335",
+        "volume": "37",
+        "year": "2007"
+      },
+      "key": "CW07",
+      "title": "On the list and bounded distance decodability of Reed-Solomon codes",
+      "url": "https://doi.org/10.1137/S0097539705447335",
+      "venue": "SIAM Journal on Computing",
+      "year": "2007"
+    },
+    "CZ25": {
+      "authors": [
+        "Chen, Yeyuan",
+        "Zhang, Zihan"
+      ],
+      "authors_text": "Chen, Yeyuan and Zhang, Zihan",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Chen, Yeyuan and Zhang, Zihan",
+        "booktitle": "Proceedings of the 57th Annual {ACM} Symposium on Theory of Computing",
+        "pages": "1--12",
+        "publisher": "{ACM}",
+        "series": "STOC '25",
+        "title": "Explicit folded Reed-Solomon and multiplicity codes achieve relaxed generalized Singleton bounds",
+        "year": "2025"
+      },
+      "key": "CZ25",
+      "title": "Explicit folded Reed-Solomon and multiplicity codes achieve relaxed generalized Singleton bounds",
+      "url": "",
+      "venue": "Proceedings of the 57th Annual {ACM} Symposium on Theory of Computing",
       "year": "2025"
     },
     "ChiesaYogev2024": {
@@ -397,6 +699,51 @@
       "url": "",
       "venue": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
       "year": "2020"
+    },
+    "DG25": {
+      "authors": [
+        "Diamond, Benjamin E.",
+        "Gruen, Angus"
+      ],
+      "authors_text": "Diamond, Benjamin E. and Gruen, Angus",
+      "doi": "10.62056/a0ljbkrz",
+      "entry_type": "article",
+      "fields": {
+        "author": "Diamond, Benjamin E. and Gruen, Angus",
+        "doi": "10.62056/a0ljbkrz",
+        "journal": "IACR Communications in Cryptology",
+        "number": "4",
+        "title": "Proximity Gaps in Interleaved Codes",
+        "url": "https://cic.iacr.org/p/1/4/8",
+        "volume": "1",
+        "year": "2025"
+      },
+      "key": "DG25",
+      "title": "Proximity Gaps in Interleaved Codes",
+      "url": "https://cic.iacr.org/p/1/4/8",
+      "venue": "IACR Communications in Cryptology",
+      "year": "2025"
+    },
+    "DG25dist": {
+      "authors": [
+        "Diamond, Benjamin E.",
+        "Gruen, Angus"
+      ],
+      "authors_text": "Diamond, Benjamin E. and Gruen, Angus",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Diamond, Benjamin E. and Gruen, Angus",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2010",
+        "title": "On the distribution of the distances of random words",
+        "url": "https://eprint.iacr.org/2025/2010",
+        "year": "2025"
+      },
+      "key": "DG25dist",
+      "title": "On the distribution of the distances of random words",
+      "url": "https://eprint.iacr.org/2025/2010",
+      "venue": "",
+      "year": "2025"
     },
     "DP23": {
       "authors": [
@@ -470,6 +817,25 @@
       "venue": "Advances in Cryptology \u2013 EUROCRYPT 2025: 44th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Madrid, Spain, May 4\u20138, 2025, Proceedings, Part IV",
       "year": "2025"
     },
+    "Eli57": {
+      "authors": [
+        "Elias, Peter"
+      ],
+      "authors_text": "Elias, Peter",
+      "doi": "",
+      "entry_type": "techreport",
+      "fields": {
+        "author": "Elias, Peter",
+        "institution": "Research Laboratory of Electronics, Massachusetts Institute of Technology",
+        "title": "List decoding for noisy channels",
+        "year": "1957"
+      },
+      "key": "Eli57",
+      "title": "List decoding for noisy channels",
+      "url": "",
+      "venue": "",
+      "year": "1957"
+    },
     "FMN24": {
       "authors": [
         "Fenzi, Giacomo",
@@ -477,20 +843,23 @@
         "Nguyen, Ngoc Khanh"
       ],
       "authors_text": "Fenzi, Giacomo and Moghaddas, Hossein and Nguyen, Ngoc Khanh",
-      "doi": "",
+      "doi": "10.1007/s00145-024-09511-8",
       "entry_type": "article",
       "fields": {
         "author": "Fenzi, Giacomo and Moghaddas, Hossein and Nguyen, Ngoc Khanh",
+        "doi": "10.1007/s00145-024-09511-8",
         "journal": "Journal of Cryptology",
         "number": "3",
         "pages": "31",
-        "title": "Lattice-based polynomial commitments: Towards asymptotic and concrete efficiency",
+        "publisher": "Springer",
+        "title": "Lattice-Based Polynomial Commitments: Towards Asymptotic and Concrete Efficiency",
+        "url": "https://eprint.iacr.org/2023/846",
         "volume": "37",
         "year": "2024"
       },
       "key": "FMN24",
-      "title": "Lattice-based polynomial commitments: Towards asymptotic and concrete efficiency",
-      "url": "",
+      "title": "Lattice-Based Polynomial Commitments: Towards Asymptotic and Concrete Efficiency",
+      "url": "https://eprint.iacr.org/2023/846",
       "venue": "Journal of Cryptology",
       "year": "2024"
     },
@@ -539,6 +908,50 @@
       "venue": "",
       "year": "2022"
     },
+    "GCXK25": {
+      "authors": [
+        "Yiwen Gao",
+        "Dongliang Cai",
+        "Yang Xu",
+        "Haibin Kan"
+      ],
+      "authors_text": "Yiwen Gao and Dongliang Cai and Yang Xu and Haibin Kan",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Yiwen Gao and Dongliang Cai and Yang Xu and Haibin Kan",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/870",
+        "title": "From List-Decodability to Proximity Gaps",
+        "url": "https://eprint.iacr.org/2025/870",
+        "year": "2025"
+      },
+      "key": "GCXK25",
+      "title": "From List-Decodability to Proximity Gaps",
+      "url": "https://eprint.iacr.org/2025/870",
+      "venue": "",
+      "year": "2025"
+    },
+    "GG25": {
+      "authors": [
+        "Rohan Goyal",
+        "Venkatesan Guruswami"
+      ],
+      "authors_text": "Rohan Goyal and Venkatesan Guruswami",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Rohan Goyal and Venkatesan Guruswami",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2054",
+        "title": "Optimal Proximity Gaps for Subspace-Design Codes and (Random) {Reed-Solomon} Codes",
+        "url": "https://eprint.iacr.org/2025/2054",
+        "year": "2025"
+      },
+      "key": "GG25",
+      "title": "Optimal Proximity Gaps for Subspace-Design Codes and (Random) {Reed-Solomon} Codes",
+      "url": "https://eprint.iacr.org/2025/2054",
+      "venue": "",
+      "year": "2025"
+    },
     "GGJ96": {
       "authors": [
         "Von zur Gathen, Joachim",
@@ -559,6 +972,159 @@
       "url": "",
       "venue": "Proceedings of the 1996 international symposium on Symbolic and algebraic computation",
       "year": "1996"
+    },
+    "GGR11": {
+      "authors": [
+        "Gopalan, Parikshit",
+        "Guruswami, Venkatesan",
+        "Raghavendra, Prasad"
+      ],
+      "authors_text": "Gopalan, Parikshit and Guruswami, Venkatesan and Raghavendra, Prasad",
+      "doi": "10.1137/090778280",
+      "entry_type": "article",
+      "fields": {
+        "author": "Gopalan, Parikshit and Guruswami, Venkatesan and Raghavendra, Prasad",
+        "doi": "10.1137/090778280",
+        "journal": "SIAM Journal on Computing",
+        "number": "5",
+        "pages": "1432--1462",
+        "title": "List Decoding Tensor Products and Interleaved Codes",
+        "volume": "40",
+        "year": "2011"
+      },
+      "key": "GGR11",
+      "title": "List Decoding Tensor Products and Interleaved Codes",
+      "url": "",
+      "venue": "SIAM Journal on Computing",
+      "year": "2011"
+    },
+    "GHSZ02": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "H{\\aa}stad, Johan",
+        "Sudan, Madhu",
+        "Zuckerman, David"
+      ],
+      "authors_text": "Guruswami, Venkatesan and H{\\aa}stad, Johan and Sudan, Madhu and Zuckerman, David",
+      "doi": "10.1109/18.995539",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and H{\\aa}stad, Johan and Sudan, Madhu and Zuckerman, David",
+        "doi": "10.1109/18.995539",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "5",
+        "pages": "1021--1034",
+        "title": "Combinatorial bounds for list decoding",
+        "url": "https://doi.org/10.1109/18.995539",
+        "volume": "48",
+        "year": "2002"
+      },
+      "key": "GHSZ02",
+      "title": "Combinatorial bounds for list decoding",
+      "url": "https://doi.org/10.1109/18.995539",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2002"
+    },
+    "GK16": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "Kopparty, Swastik"
+      ],
+      "authors_text": "Guruswami, Venkatesan and Kopparty, Swastik",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and Kopparty, Swastik",
+        "journal": "Combinatorica",
+        "number": "2",
+        "pages": "161--185",
+        "publisher": "Springer",
+        "title": "Explicit subspace designs",
+        "volume": "36",
+        "year": "2016"
+      },
+      "key": "GK16",
+      "title": "Explicit subspace designs",
+      "url": "",
+      "venue": "Combinatorica",
+      "year": "2016"
+    },
+    "GLMRSW22": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "Li, Ray",
+        "Mosheiff, Jonathan",
+        "Resch, Nicolas",
+        "Silas, Shashwat",
+        "Wootters, Mary"
+      ],
+      "authors_text": "Guruswami, Venkatesan and Li, Ray and Mosheiff, Jonathan and Resch, Nicolas and Silas, Shashwat and Wootters, Mary",
+      "doi": "10.1109/TIT.2021.3127126",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and Li, Ray and Mosheiff, Jonathan and Resch, Nicolas and Silas, Shashwat and Wootters, Mary",
+        "doi": "10.1109/TIT.2021.3127126",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "2",
+        "pages": "923--939",
+        "title": "Bounds for list-decoding and list-recovery of random linear codes",
+        "url": "https://doi.org/10.1109/TIT.2021.3127126",
+        "volume": "68",
+        "year": "2022"
+      },
+      "key": "GLMRSW22",
+      "title": "Bounds for list-decoding and list-recovery of random linear codes",
+      "url": "https://doi.org/10.1109/TIT.2021.3127126",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2022"
+    },
+    "GR08": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "Rudra, Atri"
+      ],
+      "authors_text": "Guruswami, Venkatesan and Rudra, Atri",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and Rudra, Atri",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "1",
+        "pages": "135--150",
+        "title": "Explicit Codes Achieving List Decoding Capacity: Error-Correction With Optimal Redundancy",
+        "volume": "54",
+        "year": "2008"
+      },
+      "key": "GR08",
+      "title": "Explicit Codes Achieving List Decoding Capacity: Error-Correction With Optimal Redundancy",
+      "url": "",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2008"
+    },
+    "GW13": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "Wang, Carol"
+      ],
+      "authors_text": "Guruswami, Venkatesan and Wang, Carol",
+      "doi": "10.1109/TIT.2013.2246813",
+      "entry_type": "article",
+      "fields": {
+        "author": "Guruswami, Venkatesan and Wang, Carol",
+        "doi": "10.1109/TIT.2013.2246813",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "6",
+        "pages": "3257--3268",
+        "title": "Linear-Algebraic List Decoding for Variants of {Reed-Solomon} Codes",
+        "url": "https://doi.org/10.1109/TIT.2013.2246813",
+        "volume": "59",
+        "year": "2013"
+      },
+      "key": "GW13",
+      "title": "Linear-Algebraic List Decoding for Variants of {Reed-Solomon} Codes",
+      "url": "https://doi.org/10.1109/TIT.2013.2246813",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2013"
     },
     "GWZC19": {
       "authors": [
@@ -581,6 +1147,95 @@
       "url": "https://eprint.iacr.org/2019/953.pdf",
       "venue": "Cryptology ePrint Archive",
       "year": "2019"
+    },
+    "GX13": {
+      "authors": [
+        "Guruswami, Venkatesan",
+        "Xing, Chaoping"
+      ],
+      "authors_text": "Guruswami, Venkatesan and Xing, Chaoping",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Guruswami, Venkatesan and Xing, Chaoping",
+        "booktitle": "Proceedings of the 45th Annual ACM SIGACT Symposium on Theory of Computing",
+        "pages": "843--852",
+        "publisher": "ACM",
+        "series": "STOC '13",
+        "title": "List decoding {Reed-Solomon}, Algebraic-Geometric, and Gabidulin subcodes up to the {Singleton} bound",
+        "year": "2013"
+      },
+      "key": "GX13",
+      "title": "List decoding {Reed-Solomon}, Algebraic-Geometric, and Gabidulin subcodes up to the {Singleton} bound",
+      "url": "",
+      "venue": "Proceedings of the 45th Annual ACM SIGACT Symposium on Theory of Computing",
+      "year": "2013"
+    },
+    "GZ23": {
+      "authors": [
+        "Guo, Zeyu",
+        "Zhang, Zihan"
+      ],
+      "authors_text": "Guo, Zeyu and Zhang, Zihan",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Guo, Zeyu and Zhang, Zihan",
+        "booktitle": "Proceedings of the 64th Annual {IEEE} Symposium on Foundations of Computer Science",
+        "pages": "164--176",
+        "series": "FOCS '23",
+        "title": "Randomly punctured Reed-Solomon codes achieve the list decoding capacity over polynomial-size alphabets",
+        "year": "2023"
+      },
+      "key": "GZ23",
+      "title": "Randomly punctured Reed-Solomon codes achieve the list decoding capacity over polynomial-size alphabets",
+      "url": "",
+      "venue": "Proceedings of the 64th Annual {IEEE} Symposium on Foundations of Computer Science",
+      "year": "2023"
+    },
+    "GaoKL24": {
+      "authors": [
+        "Gao, Yiwen",
+        "Kan, Haibin",
+        "Li, Yuan"
+      ],
+      "authors_text": "Gao, Yiwen and Kan, Haibin and Li, Yuan",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Gao, Yiwen and Kan, Haibin and Li, Yuan",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2024/1810",
+        "title": "Linear Proximity Gap for Linear Codes within the 1.5 Johnson Bound",
+        "url": "https://eprint.iacr.org/2024/1810",
+        "year": "2024"
+      },
+      "key": "GaoKL24",
+      "title": "Linear Proximity Gap for Linear Codes within the 1.5 Johnson Bound",
+      "url": "https://eprint.iacr.org/2024/1810",
+      "venue": "",
+      "year": "2024"
+    },
+    "HMZ25": {
+      "authors": [
+        "Huang, Mi-Ying Miryam",
+        "Mao, Xinyu",
+        "Zhang, Jiapeng"
+      ],
+      "authors_text": "Huang, Mi-Ying Miryam and Mao, Xinyu and Zhang, Jiapeng",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Huang, Mi-Ying Miryam and Mao, Xinyu and Zhang, Jiapeng",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/199",
+        "title": "Sublinear Proofs over Polynomial Rings",
+        "url": "https://eprint.iacr.org/2025/199",
+        "year": "2025"
+      },
+      "key": "HMZ25",
+      "title": "Sublinear Proofs over Polynomial Rings",
+      "url": "https://eprint.iacr.org/2025/199",
+      "venue": "",
+      "year": "2025"
     },
     "IOPs": {
       "authors": [
@@ -605,6 +1260,31 @@
       "venue": "Theory of Cryptography: 14th International Conference, TCC 2016-B, Beijing, China, October 31-November 3, 2016, Proceedings, Part II 14",
       "year": "2016"
     },
+    "JH01": {
+      "authors": [
+        "Justesen, J{\\o}rn",
+        "H{\\o}holdt, Tom"
+      ],
+      "authors_text": "Justesen, J{\\o}rn and H{\\o}holdt, Tom",
+      "doi": "10.1109/18.923744",
+      "entry_type": "article",
+      "fields": {
+        "author": "Justesen, J{\\o}rn and H{\\o}holdt, Tom",
+        "doi": "10.1109/18.923744",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "4",
+        "pages": "1604--1609",
+        "title": "Bounds on list decoding of {MDS} codes",
+        "url": "https://doi.org/10.1109/18.923744",
+        "volume": "47",
+        "year": "2001"
+      },
+      "key": "JH01",
+      "title": "Bounds on list decoding of {MDS} codes",
+      "url": "https://doi.org/10.1109/18.923744",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2001"
+    },
     "JM24": {
       "authors": [
         "Jaeger, Joseph",
@@ -627,6 +1307,95 @@
       "url": "https://link.springer.com/content/pdf/10.1007/978-3-031-68388-6_2",
       "venue": "Annual International Cryptology Conference",
       "year": "2024"
+    },
+    "Jo26": {
+      "authors": [
+        "Jo, Sunghyeon"
+      ],
+      "authors_text": "Jo, Sunghyeon",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Jo, Sunghyeon",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/891",
+        "title": "Interleaving Stability for Mutual Correlated Agreement and Curve Decodability",
+        "url": "https://eprint.iacr.org/2026/891",
+        "year": "2026"
+      },
+      "key": "Jo26",
+      "title": "Interleaving Stability for Mutual Correlated Agreement and Curve Decodability",
+      "url": "https://eprint.iacr.org/2026/891",
+      "venue": "",
+      "year": "2026"
+    },
+    "Joh62": {
+      "authors": [
+        "Johnson, Selmer M."
+      ],
+      "authors_text": "Johnson, Selmer M.",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Johnson, Selmer M.",
+        "journal": "IRE Transactions on Information Theory",
+        "number": "3",
+        "pages": "203--207",
+        "title": "A new upper bound for error-correcting codes",
+        "volume": "8",
+        "year": "1962"
+      },
+      "key": "Joh62",
+      "title": "A new upper bound for error-correcting codes",
+      "url": "",
+      "venue": "IRE Transactions on Information Theory",
+      "year": "1962"
+    },
+    "KKH26": {
+      "authors": [
+        "Dmitry Krachun",
+        "Stepan Kazanin",
+        "Ulrich Hab\u00f6ck"
+      ],
+      "authors_text": "Dmitry Krachun and Stepan Kazanin and Ulrich Hab\u00f6ck",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Dmitry Krachun and Stepan Kazanin and Ulrich Hab\u00f6ck",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/782",
+        "title": "Failure of Proximity Gaps Close to Capacity",
+        "url": "https://eprint.iacr.org/2026/782",
+        "year": "2026"
+      },
+      "key": "KKH26",
+      "title": "Failure of Proximity Gaps Close to Capacity",
+      "url": "https://eprint.iacr.org/2026/782",
+      "venue": "",
+      "year": "2026"
+    },
+    "KSY14": {
+      "authors": [
+        "Kopparty, Swastik",
+        "Saraf, Shubhangi",
+        "Yekhanin, Sergey"
+      ],
+      "authors_text": "Kopparty, Swastik and Saraf, Shubhangi and Yekhanin, Sergey",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Kopparty, Swastik and Saraf, Shubhangi and Yekhanin, Sergey",
+        "journal": "Journal of the ACM",
+        "note": "Preliminary version appeared in STOC '11",
+        "number": "5",
+        "pages": "28:1--28:20",
+        "title": "High-rate codes with sublinear-time decoding",
+        "volume": "61",
+        "year": "2014"
+      },
+      "key": "KSY14",
+      "title": "High-rate codes with sublinear-time decoding",
+      "url": "",
+      "venue": "Journal of the ACM",
+      "year": "2014"
     },
     "KZG10": {
       "authors": [
@@ -736,6 +1505,31 @@
       "venue": "J. ACM",
       "year": "1992"
     },
+    "LNP22": {
+      "authors": [
+        "Lyubashevsky, Vadim",
+        "Nguyen, Ngoc Khanh",
+        "Plan{\\c{c}}on, Maxime"
+      ],
+      "authors_text": "Lyubashevsky, Vadim and Nguyen, Ngoc Khanh and Plan{\\c{c}}on, Maxime",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Lyubashevsky, Vadim and Nguyen, Ngoc Khanh and Plan{\\c{c}}on, Maxime",
+        "booktitle": "Advances in Cryptology -- CRYPTO 2022",
+        "pages": "71--101",
+        "publisher": "Springer",
+        "series": "Lecture Notes in Computer Science",
+        "title": "Lattice-Based Zero-Knowledge Proofs and Applications: Shorter, Simpler, and More General",
+        "volume": "13508",
+        "year": "2022"
+      },
+      "key": "LNP22",
+      "title": "Lattice-Based Zero-Knowledge Proofs and Applications: Shorter, Simpler, and More General",
+      "url": "",
+      "venue": "Advances in Cryptology -- CRYPTO 2022",
+      "year": "2022"
+    },
     "LPS24": {
       "authors": [
         "Helger Lipmaa",
@@ -804,6 +1598,27 @@
       "venue": "",
       "year": "2002"
     },
+    "MS77": {
+      "authors": [
+        "MacWilliams, Florence Jessie",
+        "Sloane, Neil James Alexander"
+      ],
+      "authors_text": "MacWilliams, Florence Jessie and Sloane, Neil James Alexander",
+      "doi": "",
+      "entry_type": "book",
+      "fields": {
+        "author": "MacWilliams, Florence Jessie and Sloane, Neil James Alexander",
+        "publisher": "Elsevier",
+        "title": "The Theory of Error-Correcting Codes",
+        "volume": "16",
+        "year": "1977"
+      },
+      "key": "MS77",
+      "title": "The Theory of Error-Correcting Codes",
+      "url": "",
+      "venue": "",
+      "year": "1977"
+    },
     "Marlin": {
       "authors": [
         "Chiesa, Alessandro",
@@ -854,16 +1669,16 @@
     },
     "NOZ26": {
       "authors": [
-        "Nguyen, Ngoc Khanh",
-        "O'Rourke, George",
-        "Zhang, Jiapeng"
+        "Ngoc Khanh Nguyen",
+        "George O'Rourke",
+        "Jiapeng Zhang"
       ],
-      "authors_text": "Nguyen, Ngoc Khanh and O'Rourke, George and Zhang, Jiapeng",
+      "authors_text": "Ngoc Khanh Nguyen and George O'Rourke and Jiapeng Zhang",
       "doi": "",
       "entry_type": "misc",
       "fields": {
-        "author": "Nguyen, Ngoc Khanh and O'Rourke, George and Zhang, Jiapeng",
-        "howpublished": "Cryptology ePrint Archive, Paper 2026/156",
+        "author": "Ngoc Khanh Nguyen and George O'Rourke and Jiapeng Zhang",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/156",
         "title": "Hachi: Efficient Lattice-Based Multilinear Polynomial Commitments over Extension Fields",
         "url": "https://eprint.iacr.org/2026/156",
         "year": "2026"
@@ -943,24 +1758,27 @@
       "venue": "",
       "year": "2023"
     },
-    "STIR2005": {
+    "ST20": {
       "authors": [
-        "Madhu Sudan"
+        "Shangguan, Chong",
+        "Tamo, Itzhak"
       ],
-      "authors_text": "Madhu Sudan",
+      "authors_text": "Shangguan, Chong and Tamo, Itzhak",
       "doi": "",
-      "entry_type": "misc",
+      "entry_type": "inproceedings",
       "fields": {
-        "author": "Madhu Sudan",
-        "howpublished": "Available at https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf",
-        "title": "Reed-Solomon codes and polynomial reconstruction",
-        "year": "2005"
+        "author": "Shangguan, Chong and Tamo, Itzhak",
+        "booktitle": "Proceedings of the 52nd Annual {ACM} {SIGACT} Symposium on Theory of Computing",
+        "pages": "538--551",
+        "series": "STOC '20",
+        "title": "Combinatorial list-decoding of Reed-Solomon codes beyond the Johnson radius",
+        "year": "2020"
       },
-      "key": "STIR2005",
-      "title": "Reed-Solomon codes and polynomial reconstruction",
+      "key": "ST20",
+      "title": "Combinatorial list-decoding of Reed-Solomon codes beyond the Johnson radius",
       "url": "",
-      "venue": "",
-      "year": "2005"
+      "venue": "Proceedings of the 52nd Annual {ACM} {SIGACT} Symposium on Theory of Computing",
+      "year": "2020"
     },
     "Spi95": {
       "authors": [

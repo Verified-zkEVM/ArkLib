@@ -3,6 +3,8 @@ name: Check Imports
 on:
   pull_request:
     branches: ["main"]
+  merge_group:
+    types: [checks_requested]
   workflow_dispatch:
 
 concurrency:
@@ -15,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check that all files are imported
         run: ./scripts/check-imports.sh

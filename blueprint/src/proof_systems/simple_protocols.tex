@@ -214,7 +214,7 @@ The SendClaim reduction enables a prover to transmit a claim (oracle statement) 
 
 \begin{theorem}[SendClaim Perfect Completeness]
     The SendClaim oracle reduction satisfies perfect completeness when the input relation matches the oracle computation requirement.
-    \lean{SendClaim.completeness}
+    % \lean{SendClaim.completeness} % TODO: theorem is not currently formalized.
     \uses{def:sendclaim_oracle_reduction}
 \end{theorem}
 
@@ -307,7 +307,7 @@ Another essential building block is the ability to verify that a given predicate
 
 \begin{theorem}[CheckClaim Oracle Perfect Completeness]
     The CheckClaim oracle reduction satisfies perfect completeness.
-    \lean{CheckClaim.oracleReduction_completeness}
+    % \lean{CheckClaim.oracleReduction_completeness}  % TODO: theorem not yet stated in ArkLib (currently commented out in CheckClaim.lean); relink once proven
     \uses{def:checkclaim_oracle_reduction}
 \end{theorem}
 

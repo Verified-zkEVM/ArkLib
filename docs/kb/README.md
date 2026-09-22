@@ -14,16 +14,15 @@ It should help with:
 - understanding what a cited paper contributes to ArkLib;
 - mapping a Lean citation key to a repository-local summary page;
 - giving review workflows a stable repository path for paper context;
-- recording durable paper-to-ArkLib audits and comparisons;
-- filing high-value answers that would otherwise be lost in chat history.
+- recording durable paper-to-ArkLib audits and comparisons.
 
 ## Quick Start
 
 If you only need the practical workflow:
 
 1. If a Lean file cites `[KEY]`, start at `docs/kb/papers/KEY.md`.
-2. If that page does not exist yet, add the BibTeX entry first if needed, then scaffold the paper
-   page and source metadata.
+2. If that page does not exist yet, add the BibTeX entry first if needed. Main-branch automation
+   will open a follow-up PR for missing cited paper pages and source metadata after merge.
 3. If your PR changes how ArkLib uses or interprets a paper, update the corresponding KB page in
    the same PR.
 4. Before sending a paper-driven PR for review, attach the relevant KB paper pages or use
@@ -35,7 +34,8 @@ Useful commands:
 python3 ./scripts/kb/sync_from_bib.py
 python3 ./scripts/kb/extract_lean_citations.py
 python3 ./scripts/kb/lint.py
-python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Whir/ProximityGen.lean --format review
+python3 ./scripts/kb/review_context.py \
+  --files ArkLib/Data/CodingTheory/ProximityGap/Basic.lean --format review
 ```
 
 ## When To Touch The KB
@@ -51,7 +51,8 @@ You usually do not need to update `docs/kb/` for:
 
 - purely local refactors that do not change paper context;
 - small proof edits in a paper-backed file where the KB page remains accurate;
-- transient scratch notes that are not worth preserving.
+- transient scratch notes that are not worth preserving;
+- review records, session logs, or plans tied to one commit or one pull request.
 
 ## Canonical Identifier
 
@@ -69,11 +70,9 @@ If a paper is cited in Lean as `[KEY]`, the preferred landing page for it is:
 ## Content Types
 
 - [`index.md`](index.md) - content-oriented KB index.
-- [`log.md`](log.md) - append-only chronology of KB changes and ingests.
 - [`papers/`](papers/README.md) - canonical paper pages for cited or active BibTeX keys.
 - [`concepts/`](concepts/README.md) - cross-paper topic pages.
 - [`audits/`](audits/README.md) - source-to-ArkLib comparison artifacts.
-- [`queries/`](queries/README.md) - filed answers to recurring research/review questions.
 - [`sources/`](sources/README.md) - metadata and optional local source artifacts.
 - [`_generated/references.json`](_generated/references.json) - normalized bibliography export.
 - [`_generated/lean-citations.json`](_generated/lean-citations.json) - generated citation map from
@@ -95,9 +94,12 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 - `blueprint/src/references.bib` remains the bibliographic source of truth.
 - `docs/kb/` is the source of truth for ArkLib-specific synthesis and cross-linking.
 - Paper pages should describe what ArkLib uses from a paper, not merely restate the abstract.
-- Prefer stable, reviewable markdown over ad hoc scratch notes.
+- Prefer stable, reviewable markdown over ad hoc scratch notes. Review verdicts, fix logs, and
+  other commit-specific snapshots do not belong in the knowledge base: fold whatever outlives the
+  session into the relevant paper page, audit page, or wiki page, and let the rest go.
 - If a PR introduces a new paper citation key that matters to active work, add or scaffold the
-  corresponding paper page in the same PR when practical.
+  corresponding paper page in the same PR only when you are adding ArkLib-specific content.
+  Stub-only pages are proposed by generated-files PRs after merge.
 - If a PR substantially changes ArkLib's interpretation, coverage, or formalization status for a
   paper, update the corresponding KB page or audit page in the same PR.
 
@@ -123,16 +125,15 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 ### I am adding a new cited paper
 
 1. Add the BibTeX entry in `blueprint/src/references.bib`.
-2. Run `python3 ./scripts/kb/sync_from_bib.py`.
-3. Run `python3 ./scripts/kb/scaffold_paper.py KEY`.
-4. Replace the stub page with an ArkLib-specific summary.
-5. Run `python3 ./scripts/kb/lint.py`.
+2. If you already know the ArkLib-specific summary, add or update `docs/kb/papers/KEY.md`.
+3. If you only need the stub, leave it out of the PR; the generated-files workflow will propose
+   it after merge.
+4. Run `python3 ./scripts/kb/lint.py`.
 
 ### I am updating a paper-backed development
 
 1. Update the paper page if ArkLib's interpretation, scope, or touchpoints changed.
 2. If the change is theorem-by-theorem or gap-analysis heavy, add or update an audit page.
-3. Append a short entry to [`log.md`](log.md) if the KB changed in a durable way.
 
 ### I want review context for a PR
 
@@ -144,25 +145,21 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 ### Add a new paper
 
 1. Add or update the BibTeX entry in `blueprint/src/references.bib`.
-2. Run `python3 ./scripts/kb/sync_from_bib.py`.
-3. Scaffold or add `docs/kb/papers/KEY.md`.
-4. Add `docs/kb/sources/KEY/metadata.yml`.
-5. Update [`index.md`](index.md) and append to [`log.md`](log.md).
+2. Add or update `docs/kb/papers/KEY.md` only if the PR carries real ArkLib-specific context.
+3. Leave stub-only paper pages, source metadata, and `_generated` index changes to the
+   main-branch KB workflow's generated-files PR.
+4. Update [`index.md`](index.md) when the KB content itself changes.
 
 ### Minimal update checklist
 
 For a new cited paper, the minimum acceptable KB update is:
 
 - BibTeX entry in `blueprint/src/references.bib`
-- paper page in `docs/kb/papers/KEY.md`
-- source metadata in `docs/kb/sources/KEY/metadata.yml`
-- regenerated `docs/kb/_generated/references.json`
 
 Better, when practical:
 
-- regenerate `docs/kb/_generated/lean-citations.json`
+- add a non-stub paper page to [`papers/`](papers/)
 - add the new page to [`index.md`](index.md)
-- append a short entry to [`log.md`](log.md)
 - replace any stub text with an ArkLib-specific summary before merge
 
 ### Investigate a paper-driven PR
@@ -177,31 +174,27 @@ Better, when practical:
 Suppose you add `[NEWKEY]` to a Lean module.
 
 1. Add `NEWKEY` to `blueprint/src/references.bib`.
-2. Run:
-
-```bash
-python3 ./scripts/kb/sync_from_bib.py
-python3 ./scripts/kb/scaffold_paper.py NEWKEY
-```
-
-3. Edit:
+2. If the PR should include real paper context, edit:
    - `docs/kb/papers/NEWKEY.md`
    - `docs/kb/sources/NEWKEY/metadata.yml`
-4. Add ArkLib-specific touchpoints and notes.
-5. Run:
+3. Add ArkLib-specific touchpoints and notes.
+4. Run:
 
 ```bash
 python3 ./scripts/kb/lint.py
 python3 ./scripts/check-docs-integrity.py
 ```
 
+If the page would only be a stub, omit those files. The `Refresh KB Generated Files` workflow
+will run `python3 ./scripts/kb/regenerate.py` after merge and open a generated-files PR.
+
 ### Example: use the KB during review
 
-If a PR changes `ArkLib/ProofSystem/Whir/ProximityGen.lean`, run:
+If a PR changes `ArkLib/Data/CodingTheory/ProximityGap/Basic.lean`, run:
 
 ```bash
 python3 ./scripts/kb/review_context.py \
-  --files ArkLib/ProofSystem/Whir/ProximityGen.lean \
+  --files ArkLib/Data/CodingTheory/ProximityGap/Basic.lean \
   --format review
 ```
 
@@ -216,4 +209,5 @@ This should resolve the relevant paper keys and generate a `/review` comment blo
 1. Regenerate the bibliography and citation indexes.
 2. Check for cited keys without paper pages.
 3. Check for stale or missing source metadata.
-4. File durable comparisons or review results under `audits/` or `queries/`.
+4. File durable paper-to-ArkLib comparisons under `audits/`, and cross-paper synthesis under
+   `concepts/`.

@@ -3,8 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Execution
+public import ArkLib.OracleReduction.Execution
+public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!
   # Security Definitions for (Oracle) Reductions
@@ -24,10 +26,12 @@ import ArkLib.OracleReduction.Execution
   round-by-round, rewinding, etc.)
 -/
 
+@[expose] public section
+
 noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal
+open scoped NNReal ProbabilityTheory
 
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
@@ -42,8 +46,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 TODO: the "right" factoring for the security definitions are the following:
 
 - We have a two-layer interpretation approach: first, interpret the oracle queries into some monad
-  `m` which admits a monad morphism into `PMF` (i.e. `HasEvalDist`); then we interpret the resulting
-  monad into `PMF`.
+  `m` with native distribution semantics; then interpret the resulting computation
+  as its measure `𝒟[·]`.
 
   This does not preclude `m` from being the same oracle computation type, but more interesting
   possibilities are possible, such as `m = ReaderT ρ` for lazy sampling of the shared oracle.
@@ -89,9 +93,9 @@ def completeness (relIn : Set (StmtIn × WitIn))
   (stmtIn, witIn) ∈ relIn →
     let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
       QueryImpl.addLift impl challengeQueryImpl
-    Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ =>
-        ((stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut) | OptionT.mk do
-          (simulateQ pImpl (reduction.run stmtIn witIn).run).run' (← init)] ≥ 1 - completenessError
+    Pr{let ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ ← OptionT.mk do
+      (simulateQ pImpl (reduction.run stmtIn witIn).run).run' (← init)}[
+        (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut] ≥ 1 - completenessError
 
 /-- A reduction satisfies **perfect completeness** if it satisfies completeness with error `0`. -/
 def perfectCompleteness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -122,8 +126,8 @@ instance [reduction.IsPerfectComplete init impl relIn relOut] :
   `ε₂` for all `ε₂ ≥ ε₁`. -/
 @[grind]
 theorem completeness_error_mono {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
-      completeness init impl relIn relOut reduction ε₁ →
-        completeness init impl relIn relOut reduction ε₂ := by
+    completeness init impl relIn relOut reduction ε₁ →
+      completeness init impl relIn relOut reduction ε₂ := by
   intro h
   dsimp [completeness] at h ⊢
   intro stmtIn witIn hstmtIn
@@ -146,13 +150,12 @@ theorem completeness_relIn_mono {ε : ℝ≥0} {relIn' : Set (StmtIn × WitIn)}
 /-- If a reduction satisfies completeness with error `ε` for some relation `relIn`, then it
   satisfies completeness with error `ε` for any relation `relOut'` that is a superset of `relOut`.
 -/
-
 theorem completeness_relOut_mono {ε : ℝ≥0} {relOut' : Set (StmtOut × WitOut)}
     (hrelOut : relOut ⊆ relOut') :
       completeness init impl relIn relOut reduction ε →
         completeness init impl relIn relOut' reduction ε := by
   intro h stmtIn witIn hIn
-  exact ge_trans (probEvent_mono fun _ _ ⟨h1, h2⟩ => ⟨hrelOut h1, h2⟩) (h stmtIn witIn hIn)
+  exact ge_trans (prEvent_mono _ _ _ fun _ ⟨h1, h2⟩ ↦ ⟨hrelOut h1, h2⟩) (h _ _ hIn)
 
 /-- Perfect completeness means that the probability of the reduction outputting a valid
   statement-witness pair is _exactly_ 1 (instead of at least `1 - 0`). -/
@@ -162,13 +165,41 @@ theorem perfectCompleteness_eq_prob_one :
     ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
       let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
         QueryImpl.addLift impl challengeQueryImpl
-      Pr[fun ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ =>
-          ((stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut)
-        | OptionT.mk do (simulateQ pImpl (reduction.run stmtIn witIn)).run' (← init)] = 1 := by
+      Pr{let ⟨⟨_, (prvStmtOut, witOut)⟩, stmtOut⟩ ← OptionT.mk do
+        (simulateQ pImpl (reduction.run stmtIn witIn)).run' (← init)}[
+          (stmtOut, witOut) ∈ relOut ∧ prvStmtOut = stmtOut] = 1 := by
   simp only [perfectCompleteness, completeness, ENNReal.coe_zero, tsub_zero]
   exact forall_congr' fun _ => forall_congr' fun _ => imp_congr_right fun _ =>
-    ⟨fun h => le_antisymm probEvent_le_one (ge_iff_le.mp h),
+    ⟨fun h => le_antisymm (prEvent_le_one _ _) (ge_iff_le.mp h),
      fun h => ge_of_eq h⟩
+
+/-- **Support criterion for perfect completeness.** A reduction is perfectly complete as soon as
+every element of the support of the *unsimulated* execution `(reduction.run stmtIn witIn).run` is
+a successful result satisfying the completeness event.
+
+This is the standard route to `perfectCompleteness` for protocols whose honest execution is
+deterministic in the challenges: it discharges the probabilistic content once and for all, leaving
+a purely support-level obligation about `Reduction.run`. In particular no property of the challenge
+distribution is needed — only that `oSpec`'s queries are answered by `impl` and the initial state
+is drawn from `init`, both of which the underlying VCVio lemma
+`OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support` handles uniformly.
+
+The triple to supply for each `x` in the support is: a result `result` with `x = some result`
+(execution never fails), `(result.2, result.1.2.2) ∈ relOut` (the verifier's output statement
+paired with the prover's output witness lies in the output relation), and
+`result.1.2.1 = result.2` (the prover's and the verifier's output statements agree). -/
+theorem perfectCompleteness_of_run_support
+    (h : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
+      ∀ x ∈ support (reduction.run stmtIn witIn).run,
+        ∃ result, x = some result ∧
+          (result.2, result.1.2.2) ∈ relOut ∧ result.1.2.1 = result.2) :
+    reduction.perfectCompleteness init impl relIn relOut := by
+  rw [perfectCompleteness_eq_prob_one]
+  intro stmtIn witIn hIn
+  exact OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support init _ _ _
+    (fun x hx => by
+      obtain ⟨⟨⟨tr, prvStmtOut, witOut⟩, stmtOut⟩, hx, hrel, hstmt⟩ := h stmtIn witIn hIn x hx
+      exact ⟨⟨⟨tr, prvStmtOut, witOut⟩, stmtOut⟩, hx, hrel, hstmt⟩)
 
 -- /-- For a reduction without shared oracles (i.e. `oSpec = []ₒ`), perfect completeness occurs
 --   when the reduction produces satisfying statement-witness pairs for all possible challenges. -/
@@ -246,8 +277,9 @@ def soundness (langIn : Set StmtIn) (langOut : Set StmtOut)
     let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
       impl.addLift challengeQueryImpl
     letI reduction := Reduction.mk prover verifier
-    Pr[fun ⟨_, stmtOut⟩ => stmtOut ∈ langOut | OptionT.mk do
-      (simulateQ pImpl (reduction.run stmtIn witIn).run).run' (← init)] ≤ soundnessError
+    Pr{let ⟨_, stmtOut⟩ ← OptionT.mk do
+      (simulateQ pImpl (reduction.run stmtIn witIn).run).run' (← init)}[
+        stmtOut ∈ langOut] ≤ soundnessError
 
 /-- Type class for soundness for a verifier -/
 class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
@@ -258,16 +290,55 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 -- How would one define a rewinding extractor? It should have oracle access to the prover's
 -- functions (receive challenges and send messages), and be able to observe & simulate the prover's
 -- oracle queries
-#check Reduction.runWithLog
+/-- The straightline knowledge-soundness game for one specified extractor.
+
+Unlike `knowledgeSoundness`, this predicate keeps the extractor's identity in its type. This is
+the appropriate public contract when a caller needs to name, execute, or audit the exact
+extractor certified by a theorem. -/
+def knowledgeSoundnessWith
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
+    (knowledgeError : ℝ≥0) : Prop :=
+  ∀ stmtIn : StmtIn,
+  ∀ witIn : WitIn,
+  ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
+    let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+      impl.addLift challengeQueryImpl
+    let exec := do
+      let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
+        ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
+      let extractedWitIn? ←
+        liftM (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog).run
+      return (stmtIn, extractedWitIn?, stmtOut, witOut)
+    Pr{let ⟨stmtIn, extractedWitIn?, stmtOut, witOut⟩ ← OptionT.mk do
+      (simulateQ pImpl exec.run).run' (← init)}[
+        (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
+          (stmtOut, witOut) ∈ relOut] ≤ knowledgeError
+
 /-- A reduction satisfies **(straightline) knowledge soundness** with error `knowledgeError ≥ 0` and
   with respect to input relation `relIn` and output relation `relOut` if:
   - there exists a straightline extractor `E`, such that
   - for all input statement `stmtIn`, witness `witIn`, and (malicious) prover `prover`,
   - if the execution with the honest verifier results in a pair `(stmtOut, witOut)`,
-  - and the extractor produces some `witIn'`,
 
-  then the probability that `(stmtIn, witIn')` is not valid and yet `(stmtOut, witOut)` is valid
-  is at most `knowledgeError`.
+  then the probability that `(stmtOut, witOut)` is valid and yet the extractor fails to produce
+  a witness `witIn'` such that `(stmtIn, witIn')` is valid is at most `knowledgeError`.
+
+  Implementation note: the extractor returns an `OptionT` computation, so it may fail. We run
+  this `OptionT` layer explicitly (via `.run`) and keep the resulting `Option WitIn` in the
+  game's output, so that extractor failure counts as a "bad" event (the adversary wins).
+
+  This is essential for the definition to be meaningful: if instead the extractor were bound
+  inside the surrounding `OptionT` computation, its failure would contribute to the failure
+  mass of the whole game, which `Pr{…}[…]` excludes (it only measures `some` outputs). The
+  always-failing extractor `fun _ _ _ _ _ => failure` would then drive the game's event
+  probability to `0`, vacuously discharging knowledge soundness (at error `0`!) for any
+  verifier and any relations.
+
+  In contrast, failures of the reduction execution itself (e.g. the verifier aborting) are
+  still excluded from the event, matching the convention for (plain) soundness: a run in which
+  the verifier does not accept imposes no obligation on the extractor.
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
@@ -280,11 +351,34 @@ def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
     let exec := do
       let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
         ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
-      let extractedWitIn ← extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog
-      return (stmtIn, extractedWitIn, stmtOut, witOut)
-    Pr[fun ⟨stmtIn, witIn, stmtOut, witOut⟩ =>
-        (stmtIn, witIn) ∉ relIn ∧ (stmtOut, witOut) ∈ relOut
-      | OptionT.mk do (simulateQ pImpl exec.run).run' (← init)] ≤ knowledgeError
+      let extractedWitIn? ←
+        liftM (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog).run
+      return (stmtIn, extractedWitIn?, stmtOut, witOut)
+    Pr{let ⟨stmtIn, extractedWitIn?, stmtOut, witOut⟩ ← OptionT.mk do
+      (simulateQ pImpl exec.run).run' (← init)}[
+        (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
+          (stmtOut, witOut) ∈ relOut] ≤ knowledgeError
+
+/-- Existential knowledge soundness is exactly the existence of an extractor satisfying
+`knowledgeSoundnessWith`. -/
+theorem knowledgeSoundness_iff_exists_with
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) :
+    verifier.knowledgeSoundness init impl relIn relOut knowledgeError ↔
+      ∃ extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec,
+        verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError :=
+  Iff.rfl
+
+/-- Forget the identity of a specified extractor to obtain the existing existential contract. -/
+theorem knowledgeSoundness_of_with
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec}
+    {knowledgeError : ℝ≥0}
+    (h : verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError) :
+    verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
+  (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
+    ⟨extractor, h⟩
 
 /-- Type class for knowledge soundness for a verifier -/
 class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -297,19 +391,19 @@ class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
 class Extractor.Straightline.IsMonotone
     (relIn : Set (StmtIn × WitIn))
     (E : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
-    [oSpec.Fintype] [oSpec.Inhabited]
+    [∀ t, MeasurableSpace (oSpec.Range t)]
+    [∀ t, DiscreteMeasurableSpace (oSpec.Range t)]
+    [oSpec.IsUniformMeasureSpec]
     where
   is_monotone : ∀ witOut stmtIn transcript, ∀ proveQueryLog₁ proveQueryLog₂ : oSpec.QueryLog,
     ∀ verifyQueryLog₁ verifyQueryLog₂ : oSpec.QueryLog,
     proveQueryLog₁.Sublist proveQueryLog₂ →
     verifyQueryLog₁.Sublist verifyQueryLog₂ →
     -- Placeholder probability for now, probably need to consider the whole game
-    Pr[fun witIn => (stmtIn, witIn) ∈ relIn |
-      E stmtIn witOut transcript proveQueryLog₁ verifyQueryLog₁] ≤
-    Pr[fun witIn => (stmtIn, witIn) ∈ relIn |
-      E stmtIn witOut transcript proveQueryLog₂ verifyQueryLog₂]
-    -- Pr[extraction game succeeds on proveQueryLog₁, verifyQueryLog₁]
-    -- ≤ Pr[extraction game succeeds on proveQueryLog₂, verifyQueryLog₂]
+    Pr{let witIn ← E stmtIn witOut transcript proveQueryLog₁ verifyQueryLog₁}[
+      (stmtIn, witIn) ∈ relIn] ≤
+    Pr{let witIn ← E stmtIn witOut transcript proveQueryLog₂ verifyQueryLog₂}[
+      (stmtIn, witIn) ∈ relIn]
 
 end Verifier
 
@@ -391,12 +485,35 @@ def soundness
   verifier.toVerifier.soundness init impl langIn langOut soundnessError
 
 /-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
+def knowledgeSoundnessWith
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
+    (extractor : Extractor.Straightline oSpec
+      (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec)
+    (knowledgeError : ℝ≥0) : Prop :=
+  verifier.toVerifier.knowledgeSoundnessWith
+    init impl relIn relOut extractor knowledgeError
+
+/-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def knowledgeSoundness
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.toVerifier.knowledgeSoundness init impl relIn relOut knowledgeError
+
+/-- Forget a specified oracle-reduction extractor to obtain existential knowledge soundness. -/
+theorem knowledgeSoundness_of_with
+    {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
+    {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
+    {extractor : Extractor.Straightline oSpec
+      (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec}
+    {knowledgeError : ℝ≥0}
+    (h : verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError) :
+    verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
+  Verifier.knowledgeSoundness_of_with init impl h
 
 end OracleVerifier
 
@@ -413,7 +530,7 @@ namespace Proof
 /-! All security notions are inherited from `Reduction`, with the output relation specialized to the
   trivial accept/reject one: `fun accRej _ => accRej`. -/
 
-open Reduction Classical
+open Reduction
 
 @[reducible, simp]
 def completeness (relation : Set (Statement × Witness)) (completenessError : ℝ≥0)
@@ -441,15 +558,15 @@ end Proof
 
 namespace OracleProof
 
-open OracleReduction Classical
+open OracleReduction
 
 /-- Completeness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def completeness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec)
-    (completenessError : ℝ≥0) : Prop :=
-  OracleReduction.completeness init impl
+    (completenessError : ℝ≥0) : Prop := by
+  exact OracleReduction.completeness (Oₛₒ := fun i => nomatch i) init impl
     relation acceptRejectOracleRel oracleProof completenessError
 
 /-- Perfect completeness of an oracle reduction is the same as for non-oracle reductions. -/
@@ -457,24 +574,28 @@ def completeness
 def perfectCompleteness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec) :
-      Prop :=
-  OracleReduction.perfectCompleteness init impl relation acceptRejectOracleRel oracleProof
+      Prop := by
+  exact OracleReduction.perfectCompleteness (Oₛₒ := fun i => nomatch i)
+    init impl relation acceptRejectOracleRel oracleProof
 
 /-- Soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def soundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
-    (soundnessError : ℝ≥0) : Prop :=
-  verifier.toVerifier.soundness init impl langIn acceptRejectOracleRel.language soundnessError
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (soundnessError : ℝ≥0) : Prop := by
+  exact (OracleVerifier.toVerifier (Oₛₒ := fun i => nomatch i) verifier).soundness init impl
+    langIn acceptRejectOracleRel.language soundnessError
 
 /-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def knowledgeSoundness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
-    (knowledgeError : ℝ≥0) : Prop :=
-  verifier.toVerifier.knowledgeSoundness init impl relation acceptRejectOracleRel knowledgeError
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (knowledgeError : ℝ≥0) : Prop := by
+  exact (OracleVerifier.toVerifier
+    (Oₛₒ := fun i => nomatch i) verifier).knowledgeSoundness
+      init impl relation acceptRejectOracleRel knowledgeError
 
 end OracleProof
 
@@ -486,41 +607,11 @@ section Trivial
 @[simp]
 theorem Reduction.id_perfectCompleteness {rel : Set (StmtIn × WitIn)} :
     (Reduction.id : Reduction oSpec _ _ _ _ _).perfectCompleteness init impl rel rel := by
-  simp only [perfectCompleteness, completeness, ENNReal.coe_zero, tsub_zero]
-  intro stmtIn witIn hIn
-  simp only [Reduction.id_run]
-  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
-  · -- Pr[⊥ | OptionT.mk ...] = 0
-    rw [OptionT.probFailure_eq, OptionT.run_mk]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [support_bind, Set.mem_iUnion, not_exists]
-    intro s _
-    change none ∈ support
-      (StateT.run' (simulateQ _ (pure (some ((default, stmtIn, witIn), stmtIn)) :
-        OracleComp _ _)) s) → False
-    rw [simulateQ_pure]
-    change none ∈ support
-      (Prod.fst <$> (pure (some ((default, stmtIn, witIn), stmtIn)) :
-        StateT σ ProbComp _).run s) → False
-    rw [StateT.run_pure]; simp [map_pure]
-  · -- ∀ x ∈ support, event x
-    intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ support
-      (StateT.run' (simulateQ _ (pure (some ((default, stmtIn, witIn), stmtIn)) :
-        OracleComp _ _)) s) at hx
-    rw [simulateQ_pure] at hx
-    change some x ∈ support
-      (Prod.fst <$> (pure (some ((default, stmtIn, witIn), stmtIn)) :
-        StateT σ ProbComp _).run s) at hx
-    rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
-    exact ⟨hIn, rfl⟩
+  apply perfectCompleteness_of_run_support init impl
+  intro stmtIn witIn hIn x hx
+  simp only [Reduction.id_run, OptionT.run_pure, support_pure, Set.mem_singleton_iff] at hx
+  subst x
+  exact ⟨((default, stmtIn, witIn), stmtIn), rfl, hIn, rfl⟩
 
 private lemma Reduction.run_mk_verifier_id {WitIn WitOut : Type}
     (prover : Prover oSpec StmtIn WitIn StmtIn WitOut !p[])
@@ -535,9 +626,30 @@ private lemma Reduction.run_mk_verifier_id {WitIn WitOut : Type}
 @[simp]
 theorem Verifier.id_soundness {lang : Set StmtIn} :
     (Verifier.id : Verifier oSpec _ _ _).soundness init impl lang lang 0 := by
-  sorry
-  -- Approach: after Reduction.run_mk_verifier_id, stmtOut = stmtIn always.
-  -- Needs StateT.run'_bind/pure or manual support reasoning through OptionT+simulateQ+StateT.
+  unfold soundness
+  intro WitIn WitOut witIn prover stmtIn hstmtIn
+  simp only [ENNReal.coe_zero, nonpos_iff_eq_zero, Reduction.run_mk_verifier_id,
+    OptionT.prEvent_mk_eq_zero_iff]
+  intro x hx hev
+  apply hstmtIn
+  simp only [support_bind, Set.mem_iUnion] at hx
+  obtain ⟨s, _, hx⟩ := hx
+  simp only [StateT.run'_eq, support_map, Set.mem_image] at hx
+  obtain ⟨⟨a, s'⟩, ha, rfl⟩ := hx
+  have hliftM : (liftM ((fun pr => (pr, stmtIn)) <$> Prover.run stmtIn witIn prover) :
+      OptionT (OracleComp _) _).run =
+      (fun pr => some (pr, stmtIn)) <$> Prover.run stmtIn witIn prover := by
+    simp [Functor.map_map]
+  rw [hliftM, simulateQ_map, StateT.run_map] at ha
+  simp only [support_map, Set.mem_image, Prod.exists] at ha
+  obtain ⟨pr, s'', ⟨b, _, _, heq⟩⟩ := ha
+  -- `heq` identifies the sampled output with `(some (pr, stmtIn), _)`; peel it apart to read off
+  -- that the output statement is literally `stmtIn`, contradicting `stmtIn ∉ lang` via `hev`.
+  have hOption := (Prod.mk.inj heq).1
+  have hPair := Option.some.inj hOption
+  have hStmtOut := (Prod.mk.inj hPair).2
+  rw [← hStmtOut] at hev
+  exact hev
 
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input
   witness. -/
@@ -549,10 +661,48 @@ def Extractor.Straightline.id : Extractor.Straightline oSpec StmtIn WitIn WitIn 
 @[simp]
 theorem Verifier.id_knowledgeSoundness {rel : Set (StmtIn × WitIn)} :
     (Verifier.id : Verifier oSpec _ _ _).knowledgeSoundness init impl rel rel 0 := by
-  sorry
-  -- Approach: Extractor.Straightline.id returns input witness.
-  -- Event (stmtIn, witIn) ∉ rel ∧ (stmtIn, witIn) ∈ rel is contradiction.
-  -- Same blocker: needs StateT.run'_bind/pure or manual support reasoning.
+  -- `Extractor.Straightline.id` returns the (adversarial) output witness. On the support of the
+  -- game, the identity verifier outputs the input statement, so the bad event requires both
+  -- `(stmtIn, witOut) ∉ rel` (extracted witness invalid) and `(stmtIn, witOut) ∈ rel`
+  -- (output pair valid): a contradiction.
+  refine ⟨Extractor.Straightline.id, fun stmtIn witIn prover => ?_⟩
+  simp only [ENNReal.coe_zero, le_zero_iff]
+  rw [OptionT.prEvent_mk_eq_zero_iff]
+  intro x hx
+  simp only [support_bind, Set.mem_iUnion] at hx
+  obtain ⟨s, _, hx⟩ := hx
+  simp only [Reduction.runWithLog, Verifier.run, Verifier.id, Extractor.Straightline.id,
+    OptionT.run_bind, OptionT.run_pure, Option.getM, Option.elimM,
+    simulateQ_bind, StateT.run'_bind', support_bind, Set.mem_iUnion] at hx
+  obtain ⟨⟨o, s'⟩, hi, hx2⟩ := hx
+  cases o with
+  | none =>
+    simp only [Option.elim, simulateQ_pure, StateT.run'_pure', support_pure,
+      Set.mem_singleton_iff] at hx2
+    exact (Option.some_ne_none x hx2).elim
+  | some x' =>
+    -- From `hx2`: `x = (stmtIn, some witOut, x'.1.2, witOut)`
+    simp only [Option.elim, simulateQ_pure, OptionT.run_pure, liftM_pure, pure_bind,
+      StateT.run'_pure', support_pure, Set.mem_singleton_iff] at hx2
+    -- From `hi`: the verifier is the identity, so `x'.1.2 = stmtIn`
+    rw [show (pure stmtIn : OptionT (OracleComp oSpec) StmtIn) =
+      (pure (some stmtIn) : OracleComp oSpec (Option StmtIn)) from rfl] at hi
+    simp only [Option.elim, simulateQ_pure, OptionT.run_pure, WriterT.run_pure, liftM_pure,
+      pure_bind, support_bind, Set.mem_iUnion, StateT.run_bind] at hi
+    obtain ⟨⟨o2, s2⟩, _, hi2⟩ := hi
+    cases o2 with
+    | none =>
+      simp only [simulateQ_pure, StateT.run_pure, support_pure,
+        Set.mem_singleton_iff, Prod.mk.injEq] at hi2
+      exact (Option.some_ne_none x' hi2.1).elim
+    | some pr =>
+      simp only [simulateQ_pure, StateT.run_pure, support_pure,
+        Set.mem_singleton_iff, Prod.mk.injEq, Option.some.injEq] at hi2
+      obtain ⟨rfl, -⟩ := hi2
+      simp only [Option.some.injEq] at hx2
+      subst hx2
+      rintro ⟨h1, h2⟩
+      exact h1 _ rfl h2
 
 /-- The identity / trivial reduction is perfectly complete. -/
 @[simp]

@@ -3,8 +3,9 @@ Copyright (c) 2024 - 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
+public import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 
 /-!
 # DG25 Reed-Solomon Corollaries
@@ -12,6 +13,11 @@ import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 This module specializes the DG25 proximity-gap framework to Reed-Solomon codes and proves
 the resulting affine-line and tensor-gap corollaries.
 -/
+
+@[expose] public section
+
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
 
 noncomputable section
 
@@ -28,7 +34,7 @@ section RSCode_Corollaries
 variable {n k : ℕ} {A : Type} [NeZero n] [NeZero k] (hk : k ≤ n)
   {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq F] {α : ι ↪ A}
     (h_deg_le_length : k ≤ Fintype.card ι)
-  {domain : (Fin n) ↪ A} [DecidableEq A] [Field A] [Fintype A]
+  {domain : (Fin n) ↪ A} [DecidableEq A] [Field A] [Fintype A] [SampleableType A]
 
 /-
 Theorem 2.2 (Ben-Sasson, et al. [Ben+23, Thm. 4.1]). For each `e ∈ {0, ..., ⌊(d-1)/2⌋}`,
@@ -52,7 +58,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
       not_false_eq_true]), div_one]
     simp only [Nat.floor_natCast]
   set CRS := ReedSolomon.code α k
-  have h_dist_RS := ReedSolomon.dist_eq' (F := A) (α := α)
+  have h_dist_RS := ReedSolomon.dist_eq_of_le (F := A) (α := α)
     (n := k) (ι := ι) (h := hk)
   have h_dist_CRS : ‖(CRS : Set (ι → A))‖₀ = n - k + 1 := h_dist_RS
   have he_le_NNReal : (e : ℝ≥0)
@@ -67,9 +73,9 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     rw [div_mul]
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true, div_self, div_one]
     exact he_le_NNReal
-  have h_rewrite_prob : Pr_{let z ← $ᵖ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
-    = Pr_{let z ← $ᵖ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
-    congr  -- Peel away the Pr_{...} wrapper
+  have h_rewrite_prob : Pr{let z ← $ᵗ A}[Δ₀((1 - z) • u₀ + z • u₁, CRS) ≤ e]
+    = Pr{let z ← $ᵗ A}[Δ₀(u₀ + z • (u₁ - u₀), CRS) ≤ e] := by
+    congr  -- Peel away the Pr{...} wrapper
     funext z
     congr! 1 -- Focus on the term inside Δ₀
     -- Apply the algebra derived above
@@ -86,9 +92,9 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     unfold errorBound
     have h_δ_mem : δ ∈ Set.Icc 0 (((1 : ℝ≥0) - (rate (ReedSolomon.code α k))) / 2) := by
       simp only [Set.mem_Icc, zero_le, true_and]
-      rw [rateOfLinearCode_eq_div' (h := by omega)]
+      rw [rateOfLinearCode_eq_div (h := by omega)]
       simp only [NNRat.cast_div, NNRat.cast_natCast]
-      rw [←ReedSolomon.relativeUniqueDecodingRadius_RS_eq' (F := A)
+      rw [←ReedSolomon.relativeUniqueDecodingRadius_RS_eq (F := A)
         (ι := ι) (h := by omega)]
       rw [dist_le_UDR_iff_relDist_le_relUDR] at he_unique_decoding_radius
       exact he_unique_decoding_radius
@@ -102,13 +108,14 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     simp only [Fin.isValue, bind_pure_comp, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
       not_false_eq_true, ENNReal.coe_div, ENNReal.coe_natCast, gt_iff_lt]
     simp only [ENNReal.coe_natCast] at h_prob_affine_line_close_gt
-    exact h_prob_affine_line_close_gt
+    simpa only [bind_pure_comp, n, uShifted, CRS, finMapTwoWords, Fin.isValue,
+      Fin.reduceFinMk] using h_prob_affine_line_close_gt
   )
   rw [jointAgreement_iff_jointProximity] at h_u₀_and_u₁_sub_u₀_CA
   -- we have jointProximity₂ (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) at h_u₀_and_u₁_sub_u₀_CA
   have h_jointProximity₂ : jointProximity₂ (C := CRS) (u₀ := u₀) (u₁ := u₁ - u₀) (δ := δ) := by
     exact h_u₀_and_u₁_sub_u₀_CA
-  letI : Nontrivial (CRS) := by infer_instance
+  let : Nontrivial (CRS) := by infer_instance
   let jointProximity₂_u₀_u₁ := jointProximity₂_affineShift_implies_jointProximity₂ (ι := ι)
     (MC := CRS) (u₀ := u₀) (u₁ := u₁) (δ := δ) (h_jointProximity₂)
   unfold jointProximity₂ jointProximity at jointProximity₂_u₀_u₁
@@ -127,7 +134,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
     set n := Fintype.card ι
     intro ϑ hϑ_gt_0 u h_prob_tensor_gt
     set C_RS: ModuleCode ι A A := ReedSolomon.code α k
-    have h_dist_RS := ReedSolomon.dist_eq'  (F := A) (α := α)
+    have h_dist_RS := ReedSolomon.dist_eq_of_le (F := A) (α := α)
       (n := k) (ι := ι) (h := hk)
     have h_dist_CRS : ‖(C_RS : Set (ι → A))‖₀ = n - k + 1 := h_dist_RS
     -- 1. Apply ReedSolomon_ProximityGapAffineLines_UniqueDecoding (BCIKS20 Thm 4.1)
@@ -192,7 +199,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
   simp_rw [h_δᵣ_close_iff_Δ₀_close] at h_prob_u_close_gt
   simp only [ENNReal.coe_natCast, ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
     not_false_eq_true, ENNReal.coe_div, mul_div] at h_prob_u_close_gt
-  letI : Nontrivial (ReedSolomon.code α k) := by infer_instance
+  let : Nontrivial (ReedSolomon.code α k) := by infer_instance
   have hCA_Nat_if_then := reedSolomon_multilinearCorrelatedAgreement_Nat (A := A) (ι := ι) (α := α)
     (ϑ := ϑ) (hϑ_gt_0 := hϑ_gt_0) (hk := hk) (e := e) (he := by
     rw [dist_le_UDR_iff_relDist_le_relUDR]
@@ -201,7 +208,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code
         simp only [e]; rw [div_le_iff₀ (hc := by
           simp only [Nat.cast_pos]; exact Nat.pos_of_neZero n)]
         apply Nat.floor_le;
-        exact zero_le (δ * ↑n)
+        exact zero_le
       _ ≤ _ := by exact he
   )
   let h_CA_Nat := hCA_Nat_if_then u (by

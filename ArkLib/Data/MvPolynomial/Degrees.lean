@@ -3,11 +3,13 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova
 -/
+module
 
-import Mathlib.Algebra.MvPolynomial.Degrees
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Algebra.Group.Action.Pointwise.Finset
-import CompPoly.Data.MvPolynomial.Notation
+public import Mathlib.Algebra.MvPolynomial.Degrees
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Group.Action.Pointwise.Finset
+public import CompPoly.Data.MvPolynomial.Notation
 
 /-!
   # Lemmas about degrees of multivariate polynomials
@@ -17,6 +19,8 @@ import CompPoly.Data.MvPolynomial.Notation
 
   (will need to prove by hand first before knowing how to write the tactic)
 -/
+
+@[expose] public section
 
 noncomputable section
 
@@ -56,7 +60,7 @@ theorem support_mul_C_le (p : MvPolynomial σ R) (r : R) : (p * C r).support ⊆
   exact support_C_mul_le p r
 
 theorem support_eval [DecidableEq σ] {τ : Type*} {f : τ → R} {p : R[X σ][X τ]} :
-    (eval (C ∘ f) p).support ⊆ p.support.biUnion (fun c => (coeff c p).support) := by
+    (eval (C ∘ f) p).support ⊆ p.support.biUnion (fun c => (p.coeff c).support) := by
   classical
   rw [eval_eq]
   refine subset_trans support_sum (Finset.biUnion_mono (fun c _ => ?_))
@@ -94,7 +98,7 @@ theorem degrees_mul_C_le (p : MvPolynomial σ R) (c : R) : (p * C c).degrees ≤
   exact degrees_C_mul_le p c
 
 theorem degrees_eval [DecidableEq σ] {τ : Type*} {f : τ → R} {p : R[X σ][X τ]} :
-    (eval (C ∘ f) p).degrees ≤ p.support.sup (fun c => (coeff c p).degrees)  := by
+    (eval (C ∘ f) p).degrees ≤ p.support.sup (fun c => (p.coeff c).degrees)  := by
   classical
   rw [eval_eq]
   refine le_trans (degrees_sum_le _ _) (Finset.sup_mono_fun (fun b _ => ?_))
@@ -157,12 +161,6 @@ theorem degreeOf_X_le (i j : σ) : degreeOf i (X (R := R) j) ≤ 1 := by
   apply le_trans (Multiset.count_le_card _ _) _
   exact Multiset.card_le_card (degrees_X' (R := R) j)
 
-theorem degreeOf_X_of_ne (i j : σ) (h : i ≠ j) : degreeOf i (X (R := R) j) = 0 := by
-  classical
-  rw [degreeOf]
-  apply Nat.eq_zero_of_le_zero
-  exact le_trans (Multiset.count_le_of_le i (degrees_X' (R := R) j)) (by simp [h])
-
 theorem degreeOf_linear_le {a b : R} : degreeOf n (C a + C b * p) ≤ degreeOf n p := by
   apply le_trans (degreeOf_add_le _ _ _) _
   rw [max_def]
@@ -191,6 +189,33 @@ theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial σ R) (n : ℕ) :
   classical
   apply Iff.trans (mem_restrictDegree_iff_sup σ p n)
   simp only [degreeOf]
+
+/-- A polynomial in finitely many variables whose individual degrees are all at most `n` has
+total degree at most `(number of variables) * n`. -/
+theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolynomial σ R) (n : ℕ)
+    (hp : p ∈ restrictDegree σ R n) : p.totalDegree ≤ Fintype.card σ * n := by
+  classical
+  rw [mem_restrictDegree] at hp
+  rw [MvPolynomial.totalDegree]
+  apply Finset.sup_le
+  intro s hs
+  calc (s.sum fun _ e => e) = ∑ i : σ, s i := by
+        rw [Finsupp.sum_fintype]; intro i; rfl
+    _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
+    _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
+
+/-- If every variable's degree in `P` is strictly less than `d`, the total degree is at most
+`m * (d - 1)` for `m` variables. Strict-inequality corollary of
+`totalDegree_le_card_mul_of_mem_restrictDegree`. -/
+theorem totalDegree_le_of_degreeOf_lt
+    {R : Type*} [CommSemiring R] {m d : ℕ}
+    (P : MvPolynomial (Fin m) R)
+    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
+    P.totalDegree ≤ m * (d - 1) := by
+  have h := totalDegree_le_card_mul_of_mem_restrictDegree P (d - 1)
+    ((mem_restrictDegree_iff_degreeOf_le P (d - 1)).mpr
+      fun i => Nat.le_sub_one_of_lt (h_indiv_deg i))
+  simpa using h
 
 end DegreeOf
 
@@ -233,6 +258,26 @@ end CommSemiring
 section CommRing
 
 variable [CommRing R]
+
+/-- **Head-variable root count.** View `p` as a univariate polynomial in `X 0` with coefficients in
+`R[X Fin n]`. If its individual degree in `X 0` is below `#T` and every `x ∈ T` is a root, then
+`p = 0`.
+
+This is the inductive step shared by the two multivariate zero tests over a domain: the
+Cartesian-grid one (`eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`, taking `T = S 0`) and
+the path-dependent nested-tree one (`NestedEvaluationTree.eq_zero_of_vanishes_comp`, taking `T` to
+be the sibling labels of the head node). They differ only in how `hT` is produced — from a product
+set in the first case, from `k` subtrees in the second. -/
+theorem eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero [IsDomain R] {n : ℕ}
+    {p : MvPolynomial (Fin (n + 1)) R} (T : Finset R) (hDegree : p.degreeOf 0 < T.card)
+    (hT : ∀ x ∈ T, Polynomial.eval (C x) (finSuccEquiv R n p) = 0) : p = 0 := by
+  have hq : finSuccEquiv R n p = 0 :=
+    Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _ (T.map CEmbedding)
+      (fun x hx => by
+        obtain ⟨y, hy, rfl⟩ := Finset.mem_map.mp hx
+        exact hT y hy)
+      (by rw [Finset.card_map, natDegree_finSuccEquiv]; exact hDegree)
+  exact EmbeddingLike.map_eq_zero_iff.mp hq
 
 end CommRing
 

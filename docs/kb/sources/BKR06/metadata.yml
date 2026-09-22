@@ -1,0 +1,8 @@
+bibkey: BKR06
+source_kind: local-cache
+canonical_url: https://doi.org/10.1109/FOCS.2006.73
+committed_artifacts: []
+local_cache_artifact: /home/alh/abf26-refs/BenSassonKR06.pdf
+sha256: 82587641062fceb37375649c2de7aab6b360112991dfa919e13bb5f39fa09992
+anchor: "Corollary 2.2, physical PDF page 4"
+notes: "Relevant page rendered and inspected visually; the corollary explicitly binds both parameters as rational numbers."

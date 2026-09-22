@@ -11,38 +11,36 @@ related_concepts:
   - reed-solomon-proximity
 related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon.lean
-  - ArkLib/ProofSystem/Whir
+  - ArkLib/Data/CodingTheory/ListDecodability.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Folding.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Errors.lean
 ---
 
 # ACFY24
 
 ## At A Glance
 
-`ACFY24` is the ePrint reference for WHIR and is the main paper currently cited by ArkLib's WHIR
-development.
-It influences both coding-theory definitions in `ReedSolomon.lean` and protocol-level files under
-`ProofSystem/Whir/`.
+`ACFY24` is the ePrint reference for WHIR. What the paper drives in ArkLib sits entirely in the
+coding-theory layer — Reed-Solomon definitions, list-decodability notions, and the
+folding/proximity-gap development; there is no WHIR protocol folder under `ArkLib/ProofSystem/`.
 
 ## What ArkLib Uses From This Paper
 
-- WHIR-specific Reed-Solomon definitions currently introduced in
+- WHIR-specific Reed-Solomon definitions in
   [`ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean).
-- Proximity-generator and mutual correlated-agreement notions in the
-  [`ArkLib/ProofSystem/Whir/`](../../../ArkLib/ProofSystem/Whir) subtree.
-- Protocol-level soundness and folding interfaces for the current WHIR formalization.
+- The list-decoding notion `Λ (C, y, r)` in
+  [`ListDecodability.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability.lean).
+- Folding and mutual-correlated-agreement material under
+  [`ArkLib/Data/CodingTheory/ProximityGap/`](../../../ArkLib/Data/CodingTheory/ProximityGap/).
+- The ePrint lineage for the published version's unique-decoding MCA consequence. The Lean
+  declaration uses the `ACFY25` key and is described on that paper's KB page.
 
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)
   cites the paper directly for WHIR-specific definitions.
-- [`ArkLib/ProofSystem/Whir/ProximityGen.lean`](../../../ArkLib/ProofSystem/Whir/ProximityGen.lean)
-  introduces proximity generators from Section 4.
-- [`ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean`](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
-  and
-  [`ArkLib/ProofSystem/Whir/BlockRelDistance.lean`](../../../ArkLib/ProofSystem/Whir/BlockRelDistance.lean)
-  formalize WHIR-specific coding-theory/protocol notions.
-- [`ArkLib/ProofSystem/Whir/RBRSoundness.lean`](../../../ArkLib/ProofSystem/Whir/RBRSoundness.lean)
-  ties the protocol story back into the soundness framework.
+- [`ProximityGap/Folding.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/Folding.lean)
+  carries the folding lemmas the WHIR analysis needs.
 
 ## Version Notes
 
@@ -55,8 +53,8 @@ It influences both coding-theory definitions in `ReedSolomon.lean` and protocol-
 
 - ArkLib frequently lifts paper notions into more reusable abstractions than the paper's original
   presentation.
-- Some WHIR-related interfaces currently live at the protocol layer and may later move downward
-  into more general coding-theory abstractions.
+- ArkLib carries the WHIR-related interfaces as general coding-theory abstractions under
+  `ArkLib/Data/CodingTheory/`, not as a dedicated protocol layer.
 
 ## Open Formalization Gaps
 

@@ -52,7 +52,7 @@ The dependency graph groups modules by the first component after `ArkLib.`. Curr
 include:
 
 1. **AGM** - Algebraic Group Model
-2. **CommitmentScheme** - Cryptographic commitment schemes
+2. **Commitments** - Cryptographic commitment schemes
 3. **Data** - Core data structures and algorithms
 4. **OracleReduction** - Oracle reduction protocols
 5. **ProofSystem** - Zero-knowledge proof systems
@@ -67,7 +67,7 @@ include:
 
 ### Architecture Patterns
 - **Data** category is the largest and most foundational
-- **ProofSystem** modules build on **Data** and **CommitmentScheme**
+- **ProofSystem** modules build on **Data** and **Commitments**
 - **OracleReduction** provides protocol abstractions used throughout
 - **ToMathlib** provides the main upstream-facing extension layer
 

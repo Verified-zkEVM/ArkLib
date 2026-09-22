@@ -7,7 +7,15 @@ import argparse
 import json
 from pathlib import Path
 
-from common import DEFAULT_BIB_PATH, DEFAULT_REFERENCES_JSON, DEFAULT_CITATIONS_JSON, REPO_ROOT, load_bib_entries
+from common import (
+    DEFAULT_BIB_PATH,
+    DEFAULT_CITATIONS_JSON,
+    DEFAULT_LEAN_ROOT,
+    DEFAULT_REFERENCES_JSON,
+    REPO_ROOT,
+    load_bib_entries,
+)
+from extract_lean_citations import extract_citations
 
 
 PAPERS_DIR = REPO_ROOT / "docs" / "kb" / "papers"
@@ -30,12 +38,25 @@ def load_reference_keys(references_json: Path, bib_path: Path) -> set[str]:
     return {entry.key for entry in load_bib_entries(bib_path)}
 
 
+def load_reference_keys_from_bib(bib_path: Path) -> set[str]:
+    """Load the bibliography keys directly from the source BibTeX file."""
+
+    return {entry.key for entry in load_bib_entries(bib_path)}
+
+
 def load_cited_keys(citations_json: Path) -> set[str]:
     """Load the cited keys from the generated citation map if present."""
 
     if not citations_json.exists():
         return set()
     payload = json.loads(citations_json.read_text(encoding="utf-8"))
+    return set(payload.get("keys", {}))
+
+
+def extract_cited_keys(lean_root: Path, reference_keys: set[str]) -> set[str]:
+    """Extract cited keys directly from Lean sources."""
+
+    payload = extract_citations(lean_root, sorted(reference_keys))
     return set(payload.get("keys", {}))
 
 
@@ -194,6 +215,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Fail if any cited BibTeX key lacks a paper page",
     )
+    parser.add_argument(
+        "--use-generated-indexes",
+        action="store_true",
+        help="Read generated references/citations JSON instead of source files",
+    )
     return parser.parse_args()
 
 
@@ -201,8 +227,13 @@ def main() -> int:
     """Entry point."""
 
     args = parse_args()
-    reference_keys = load_reference_keys(args.references_json.resolve(), args.bib.resolve())
-    cited_keys = load_cited_keys(args.citations_json.resolve())
+    bib_path = args.bib.resolve()
+    if args.use_generated_indexes:
+        reference_keys = load_reference_keys(args.references_json.resolve(), bib_path)
+        cited_keys = load_cited_keys(args.citations_json.resolve())
+    else:
+        reference_keys = load_reference_keys_from_bib(bib_path)
+        cited_keys = extract_cited_keys(DEFAULT_LEAN_ROOT, reference_keys)
 
     errors, warnings, page_keys = lint_paper_pages(reference_keys)
     errors.extend(lint_duplicate_canonical_urls())

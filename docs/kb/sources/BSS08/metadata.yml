@@ -1,5 +1,5 @@
 bibkey: BSS08
-source_kind: bibliography-only
-canonical_url: https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf
+source_kind: journal-article
+canonical_url: https://doi.org/10.1137/050646445
 committed_artifacts: []
-notes: "Scaffolded from references.bib for Short PCPs with polylog query complexity."
+notes: "Ben-Sasson and Sudan, Short PCPs with polylog query complexity, SIAM J. Comput. 38(2):551-607, 2008. The author copy at https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf is the full version and matches the journal title page. Note the /2005/ path and the November 2005 submission date: a bibliography entry dated 2005 for this URL is this paper, not a separate one."

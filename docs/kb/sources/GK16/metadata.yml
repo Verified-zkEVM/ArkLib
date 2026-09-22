@@ -1,0 +1,4 @@
+bibkey: GK16
+source_kind: article
+committed_artifacts: []
+notes: "Guruswami-Kopparty, Explicit subspace designs, Combinatorica 36(2) 2016. Proof engine behind ABF26 Theorem 2.18: Definition 11, Lemma 12, Theorem 14, Appendix A. Reference PDF (not committed) is ~/abf26-refs/GuruswamiK16.pdf, which is the earlier March 2013 preprint titled Explicit Subspace Designs; ArkLib's statement numbers follow that preprint, so re-check against the Combinatorica version if numbering matters."

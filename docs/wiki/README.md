@@ -11,13 +11,31 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`quickstart.md`](quickstart.md) - canonical agent command and validation playbook.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of truth.
+- [`module-system.md`](module-system.md) - Lean's module system: the canonical file shape, the
+  error-to-fix table, the measured payoff, and what tightening is still on the table.
 - [`blueprint-and-citations.md`](blueprint-and-citations.md) - blueprint workflow, paper
   references, and citation keys.
 - [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
   agent wiki and bibliography.
+- [`coding-theory-conventions.md`](coding-theory-conventions.md) - notation in scope, which
+  numeric type each quantity uses, and the naming and layout choices local to
+  `ArkLib/Data/CodingTheory/`.
+- [`polynomial-conventions.md`](polynomial-conventions.md) - semantic axes for nested bivariate
+  and trivariate polynomial representations.
+- [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
+  correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
+- [`interaction-naming.md`](interaction-naming.md) - intrinsic meanings and migration of typed
+  interaction sources, named oracle contexts, and sequential composition.
+- [`sequential-composition.md`](sequential-composition.md) - theorem selection for shared-state
+  execution, completeness, and round-by-round soundness.
+- [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
+  for reusable helpers in `ArkLib/Data/Probability/`.
+- [`porting-conventions.md`](porting-conventions.md) - where port history lives, naming and
+  layout rules, and the review checklist for code ported from another snapshot.
+- [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
+  architecture, current implementation status, and staged migration plan.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
-  - paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*, with
-    status labels, Lean references, and a follow-up roadmap.
+  - paper-to-ArkLib status matrix for *Open Problems in List Decoding and Correlated Agreement*.
 
 ## Maintenance Contract
 
@@ -26,14 +44,28 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `quickstart.md` for commands, validation, and when to run which checks.
   - `repo-map.md` for repo structure and main work areas.
   - `generated-files.md` for derived outputs and source-of-truth rules.
+  - `module-system.md` for the module-system conventions every file under `ArkLib/` follows.
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
+  - `coding-theory-conventions.md` for notation, types and local conventions in `CodingTheory/`.
+  - `polynomial-conventions.md` for nested polynomial axes and semantic evaluation/degree APIs.
+  - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
+    notions in `CodingTheory/ProximityGap/`.
+  - `interaction-naming.md` for typed interaction API meanings and name migrations.
+  - `sequential-composition.md` for composition APIs and their hypotheses.
+  - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
+  - `porting-conventions.md` for port history, naming, layout and the port review checklist.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
   update the matching page in the same PR, or add a new page when that is the cleaner split.
 - Keep these files committed so worktrees and delegated agents see the same guidance.
 - Promote recurring, repo-specific agent learnings here once they prove stable.
-- Prefer links to canonical docs over copying their contents.
+- Prefer links to canonical docs over copying their contents. In particular, general Lean style
+  lives in `CONTRIBUTING.md`: a page here should add what is local to its area, not restate the
+  style guide.
+- Keep these pages present-tense and free of commit-, PR- or session-specific detail: no review
+  records, no dated plans, no "as of" snapshots. Anything that only makes sense next to one
+  branch belongs in that branch's PR description, not here.
 
 ## Canonical Project Docs
 

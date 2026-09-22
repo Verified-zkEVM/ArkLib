@@ -3,25 +3,26 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import Mathlib.Algebra.Polynomial.Div
+module
+
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import Mathlib.Algebra.Polynomial.Div
+-- `change`/`rfl` below reduce CompPoly definitions whose bodies CompPoly does not expose.
+-- `import all` must name the module that *defines* the declaration, not an umbrella.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
+import all CompPoly.Univariate.Basic
 
 /-!
   # Additions to `CompPoly.Univariate.Basic` not yet upstreamed to CompPoly.
 -/
 
+@[expose] public section
+
 namespace CompPoly.CPolynomial
 
 variable {R : Type*}
-
-/-- Construct a canonical polynomial from a coefficient function `Fin n → R`.
-
-  The coefficients are stored in an array (index `i` gives the coefficient of `X^i`)
-  and then trimmed to remove trailing zeros.
--/
-def ofFn [Zero R] [BEq R] [LawfulBEq R] {n : ℕ} (f : Fin n → R) : CPolynomial R :=
-  ⟨(Raw.mk (Array.ofFn f)).trim, Raw.Trim.isCanonical_trim _⟩
 
 section DivisionToPoly
 
@@ -106,7 +107,8 @@ private lemma Raw.toPoly_ne_zero_of_size_pos {p : CPolynomial.Raw R}
     rw [← toPoly_eq_zero_iff cp]
     exact hp0
   have hp_empty : p = (#[] : CPolynomial.Raw R) := by
-    simpa [cp] using congrArg Subtype.val hcp0
+    change p = (0 : CPolynomial R).val
+    exact congrArg Subtype.val hcp0
   have : p.size = 0 := by simpa using congrArg Array.size hp_empty
   omega
 
@@ -155,8 +157,12 @@ private lemma divModByMonicAux_step_degree_lt (p q : CPolynomial.Raw R)
   rw [Raw.toPoly_trim, Raw.toPoly_sub_eq, Raw.toPoly_mul_eq, Raw.toPoly_C,
     Raw.toPoly_mul_eq, Raw.toPoly_powFn_eq, Raw.toPoly_X,
     Raw.leadingCoeff_toPoly_eq p hp, hk]
-  convert hdrop using 2
-  ring
+  rw [show q.toPoly *
+      (Polynomial.C p.toPoly.leadingCoeff *
+        Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree)) =
+      Polynomial.C p.toPoly.leadingCoeff *
+        (q.toPoly * Polynomial.X ^ (p.toPoly.natDegree - q.toPoly.natDegree)) by ring] at hdrop
+  exact hdrop
 
 private lemma divModByMonicAux_go_eq (n : ℕ) (p q : CPolynomial.Raw R) :
     q.toPoly * (Raw.divModByMonicAux.go n p q).1.toPoly +
@@ -171,32 +177,30 @@ private lemma divModByMonicAux_go_eq (n : ℕ) (p q : CPolynomial.Raw R) :
     · simp only [Raw.divModByMonicAux.go, hlt, ↓reduceIte]
       rw [Raw.toPoly_zero]
       ring
-    · let k := p.size - q.size
-      let q' := Raw.C p.leadingCoeff * (q * Raw.X.pow k)
-      let p' := (p - q').trim
-      have ih' := ih p'
-      simp only [Raw.divModByMonicAux.go, hlt, ↓reduceIte]
-      change q.toPoly *
-            ((Raw.divModByMonicAux.go n p' q).1 +
-              Raw.C p.leadingCoeff * Raw.X ^ k).toPoly +
-          (Raw.divModByMonicAux.go n p' q).2.toPoly = p.toPoly
+    · simp only [Raw.divModByMonicAux.go, hlt, ↓reduceIte]
+      set k := p.size - q.size
+      set step := (p - Raw.C p.leadingCoeff * (q * Raw.X.pow k)).trim
+      have hstep_as_pow :
+          step = (p - Raw.C p.leadingCoeff * (q * Raw.X ^ k)).trim := by
+        simp only [step, HPow.hPow, Pow.pow]
+      have ih' := ih step
       rw [Raw.toPoly_add, Raw.toPoly_mul_eq, Raw.toPoly_C, Raw.toPoly_pow_eq,
         Raw.toPoly_X]
-      set g := Raw.divModByMonicAux.go n p' q
-      change q.toPoly * g.1.toPoly + g.2.toPoly = p'.toPoly at ih'
+      set g := Raw.divModByMonicAux.go n step q
       calc
         q.toPoly * (g.1.toPoly + Polynomial.C p.leadingCoeff * Polynomial.X ^ k) +
             g.2.toPoly =
           (q.toPoly * g.1.toPoly + g.2.toPoly) +
             q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ k) := by
             ring
-        _ = p'.toPoly +
+        _ = step.toPoly +
             q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ k) := by
             rw [ih']
         _ = p.toPoly := by
-          dsimp only [p', q', k]
+          rw [hstep_as_pow]
+          simp only [k]
           rw [Raw.toPoly_trim, Raw.toPoly_sub_eq, Raw.toPoly_mul_eq, Raw.toPoly_C,
-            Raw.toPoly_mul_eq, Raw.toPoly_powFn_eq, Raw.toPoly_X]
+            Raw.toPoly_mul_eq, Raw.toPoly_pow_eq, Raw.toPoly_X]
           ring
 
 
@@ -242,8 +246,7 @@ theorem toPoly_divByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
   set quot := (Raw.divModByMonicAux.go fuel fp.val fq.val).1
   set rem := (Raw.divModByMonicAux.go fuel fp.val fq.val).2
   have hd : (fp.divByMonic fq).toPoly = quot.toPoly := by
-    change (Raw.divByMonic fp.val fq.val).trim.toPoly = quot.toPoly
-    rw [Raw.toPoly_trim]
+    change (Raw.divByMonic fp.val fq.val).toPoly = quot.toPoly
     change (Raw.divModByMonicAux fp.val fq.val).1.toPoly = quot.toPoly
     simp only [Raw.divModByMonicAux, fuel, quot]
   have huniq := @Polynomial.div_modByMonic_unique R _ fp.toPoly fq.toPoly
@@ -263,8 +266,7 @@ theorem toPoly_modByMonic (fp fq : CPolynomial R) (hq : fq.toPoly.Monic) :
   set quot := (Raw.divModByMonicAux.go fuel fp.val fq.val).1
   set rem := (Raw.divModByMonicAux.go fuel fp.val fq.val).2
   have hd : (fp.modByMonic fq).toPoly = rem.toPoly := by
-    change (Raw.modByMonic fp.val fq.val).trim.toPoly = rem.toPoly
-    rw [Raw.toPoly_trim]
+    change (Raw.modByMonic fp.val fq.val).toPoly = rem.toPoly
     change (Raw.divModByMonicAux fp.val fq.val).2.toPoly = rem.toPoly
     simp only [Raw.divModByMonicAux, fuel, rem]
   have huniq := @Polynomial.div_modByMonic_unique R _ fp.toPoly fq.toPoly
@@ -279,28 +281,6 @@ section OfFinCoeff
 open Polynomial Finset
 
 variable {R : Type*} [CommRing R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
-
-/-- Extracting the `k`-th coefficient as an additive homomorphism. -/
-def coeffHom (k : ℕ) : CPolynomial R →+ R where
-  toFun p := p.coeff k
-  map_zero' := coeff_zero k
-  map_add' p q := coeff_add p q k
-
-omit [DecidableEq R] in
-@[simp] theorem coeffHom_apply (k : ℕ) (p : CPolynomial R) : coeffHom k p = p.coeff k := rfl
-
-/-- The polynomial with prescribed finite coefficient function: `Σ_{k<N} cₖ Xᵏ`. -/
-def ofFinCoeff (N : ℕ) (c : ℕ → R) : CPolynomial R :=
-  ∑ k ∈ range N, monomial k (c k)
-
-@[simp] theorem coeff_ofFinCoeff (N : ℕ) (c : ℕ → R) (j : ℕ) :
-    (ofFinCoeff N c).coeff j = if j < N then c j else 0 := by
-  rw [ofFinCoeff,
-    show (∑ k ∈ range N, monomial k (c k)).coeff j
-        = ∑ k ∈ range N, (monomial k (c k)).coeff j from map_sum (coeffHom j) _ _]
-  simp only [coeff_monomial]
-  rw [Finset.sum_ite_eq (range N) j (fun k => c k)]
-  simp
 
 omit [DecidableEq R] [Nontrivial R] in
 /-- `toPoly` of a constant is the Mathlib constant. -/
@@ -319,17 +299,5 @@ theorem toPoly_monomial (n : ℕ) (c : R) :
     coeff_monomial, Polynomial.coeff_monomial]
   exact if_congr eq_comm rfl rfl
 
-omit [Nontrivial R] in
-/-- The polynomial built from `N` coefficients has degree below `N`. -/
-theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
-    (ofFinCoeff N c).toPoly.degree < (N : WithBot ℕ) := by
-  rw [ofFinCoeff, toPoly_sum]
-  refine lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
-    ((Finset.sup_lt_iff (WithBot.bot_lt_coe N)).mpr (fun k hk => ?_))
-  rw [toPoly_monomial]
-  exact lt_of_le_of_lt (Polynomial.degree_monomial_le k (c k))
-    (WithBot.coe_lt_coe.mpr (mem_range.mp hk))
-
 end OfFinCoeff
-
 end CompPoly.CPolynomial

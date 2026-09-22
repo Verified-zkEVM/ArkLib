@@ -1,0 +1,6 @@
+bibkey: DP25
+source_kind: article
+canonical_url: https://doi.org/10.1007/978-3-031-91134-7_4
+doi: 10.1007/978-3-031-91134-7_4
+committed_artifacts: []
+notes: "EUROCRYPT 2025 version of Diamond-Posen, Succinct Arguments over Towers of Binary Fields; same paper as bibkey DP23 (ePrint 2023/1784). Distinct from DP24 (Polylogarithmic proofs for multilinears over binary towers). ExtensionCodes.lean formalizes Theorem 3.2 (extension codes preserve minimum distance) as minDist_extensionCode, via the generic coordinate-isometry bridge minDist_extensionCode_eq_interleaved."

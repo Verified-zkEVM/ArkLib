@@ -3,8 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+public import ArkLib.OracleReduction.Composition.Sequential.GuardedNary
 
 /-!
 # The Sum-check Protocol
@@ -102,6 +104,8 @@ There are some generalizations that we could consider later:
 
 -/
 
+@[expose] public section
+
 namespace Sumcheck
 
 open Polynomial MvPolynomial OracleSpec OracleComp ProtocolSpec Finset
@@ -194,7 +198,6 @@ lemma reduction_verifier_eq_verifier :
     (reduction R deg D n oSpec).verifier = verifier R deg D n oSpec := by
   rfl
 
-omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_oracleVerifier :
     (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by
@@ -208,10 +211,12 @@ open NNReal
 theorem reduction_perfectCompleteness :
     (reduction R deg D n oSpec).perfectCompleteness init impl
       (relationRound R n deg D 0) (relationRound R n deg D (.last n)) :=
-  Reduction.seqCompose_perfectCompleteness
-    (rel := relationRound R n deg D)
-    (R := SingleRound.reduction R n deg D oSpec)
-    (h := fun i => SingleRound.reduction_perfectCompleteness i)
+  Reduction.seqCompose_perfectCompleteness_of_guarded_verifiers
+    (fun i => StatementRound R n i × ∀ j, OracleStatement R n deg j)
+    (fun _ => Unit) init impl (relationRound R n deg D)
+    (SingleRound.reduction R n deg D oSpec)
+    (fun _ => inferInstance) (SingleRound.verifierGuardedForm R n deg D oSpec)
+    (fun i s => SingleRound.reduction_perfectCompleteness (init := pure s) i)
 
 /-- Round-by-round knowledge soundness with error `deg / |R|` per challenge for the (full)
   sum-check protocol -/

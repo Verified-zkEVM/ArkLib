@@ -1,0 +1,8 @@
+bibkey: GLMRSW22
+source_kind: local-cache
+canonical_url: https://doi.org/10.1109/TIT.2021.3127126
+committed_artifacts: []
+local_cache_artifact: /home/alh/abf26-refs/GuruswamiLMRSW22.pdf
+sha256: 6454d3da5a2e94c461bf8c23dbfb9fe7b8bbe21635a83f5e5ebdeb2ad2fd1063
+anchor: "Theorem 4.1, physical PDF page 18"
+notes: "Relevant page rendered and inspected visually; list-decodability uses a strict list-size bound, so failure gives Lambda >= L."
