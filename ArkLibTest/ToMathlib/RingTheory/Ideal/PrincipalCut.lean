@@ -14,6 +14,11 @@ These examples exercise the public API through an ordinary import. They check th
 dimension and strictness statements do not require Noetherianity, that the retained-family
 corollary has exactly the finiteness assumption needed by its indexing finset, and that the
 non-membership and proper-cut boundaries are visible in the statement.
+
+For relative codimension one they compute the relative height `1` of the component `(2)` of the
+cut of `(0)` by `2` in `ℤ`, show that cutting by `0` gives relative height `0`, check that a
+strictly larger ideal has nonzero image without primality, and derive the source-shaped
+statements with their `J.IsPrime` conjunct.
 -/
 
 namespace Ideal
@@ -62,5 +67,58 @@ example : (⊥ : Ideal ℤ) < span {2} ∧
   have h2 : (2 : ℤ) ∉ (⊥ : Ideal ℤ) := by simp
   exact ⟨lt_of_mem_minimalPrimes_sup_span h2 hJ,
     ringKrullDim_quotient_succ_le_of_lt (lt_of_mem_minimalPrimes_sup_span h2 hJ)⟩
+
+/-! ### Relative codimension one -/
+
+/-- In `ℤ`, the component `(2)` of the cut of `(0)` by `2` has height `1` in `ℤ ⧸ (0)`. -/
+example : ((span {(2 : ℤ)}).map (Quotient.mk (⊥ : Ideal ℤ))).height = 1 := by
+  have hprime : (span {(2 : ℤ)}).IsPrime :=
+    (span_singleton_prime (by norm_num)).mpr (Int.prime_iff_natAbs_prime.mpr Nat.prime_two)
+  have hJ : span {(2 : ℤ)} ∈ ((⊥ : Ideal ℤ) ⊔ span {2}).minimalPrimes := by
+    rw [bot_sup_eq, minimalPrimes_eq_subsingleton_self]
+    rfl
+  exact map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span (by simp) hJ
+
+/-- The non-membership assumption is needed for relative height `1`: cutting a prime `P` by `0`
+has the minimal prime `P`, whose image in `R ⧸ P` is `⊥`, of height `0`. -/
+example {R : Type*} [CommRing R] (P : Ideal R) [P.IsPrime] :
+    P ∈ (P ⊔ span {0}).minimalPrimes ∧ (P.map (Quotient.mk P)).height = 0 := by
+  refine ⟨by simp [minimalPrimes_eq_subsingleton_self], ?_⟩
+  rw [map_quotient_self, height_bot]
+
+/-- A strictly larger ideal has nonzero image in the quotient, with no primality assumption:
+`(4) < (2)` in `ℤ`, and `(2)` maps to a nonzero ideal of `ℤ ⧸ (4)`. -/
+example : (span {(2 : ℤ)}).map (Quotient.mk (span {(4 : ℤ)})) ≠ ⊥ := by
+  refine map_quotient_ne_bot_of_lt (lt_of_le_of_ne ?_ fun h ↦ ?_)
+  · rw [span_singleton_le_span_singleton]
+    norm_num
+  · have : (2 : ℤ) ∈ span {(4 : ℤ)} := h ▸ mem_span_singleton_self 2
+    rw [mem_span_singleton] at this
+    norm_num at this
+
+/-- The existence form in `ℤ`: the cut of `(0)` by `2` is proper and has a component of relative
+height `1`. -/
+example : ∃ J ∈ ((⊥ : Ideal ℤ) ⊔ span {2}).minimalPrimes,
+    ⊥ < J ∧ (J.map (Quotient.mk (⊥ : Ideal ℤ))).height = 1 := by
+  refine exists_principalCut_component_relative_codimension_one (by simp) ?_
+  rw [bot_sup_eq, Ne, span_singleton_eq_top, Int.isUnit_iff]
+  norm_num
+
+/-- The source's `principalCut_minimalPrime_relative_codimension_one`, with primality of `P` as an
+explicit argument and the conjunct `J.IsPrime`. -/
+example {R : Type*} [CommRing R] [IsNoetherianRing R] {P J : Ideal R} (hP : P.IsPrime) {f : R}
+    (hf : f ∉ P) (hJ : J ∈ (P ⊔ span {f}).minimalPrimes) :
+    J.IsPrime ∧ P < J ∧ (J.map (Quotient.mk P)).height = 1 :=
+  ⟨hJ.isPrime, lt_of_mem_minimalPrimes_sup_span hf hJ,
+    map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span hf hJ⟩
+
+/-- The source's `exists_principalCut_component_relative_codimension_one`, with the conjunct
+`J.IsPrime`. -/
+example {R : Type*} [CommRing R] [IsNoetherianRing R] {P : Ideal R} (hP : P.IsPrime) {f : R}
+    (hf : f ∉ P) (hcut : P ⊔ span {f} ≠ ⊤) :
+    ∃ J : Ideal R, J ∈ (P ⊔ span {f}).minimalPrimes ∧
+      J.IsPrime ∧ P < J ∧ (J.map (Quotient.mk P)).height = 1 := by
+  obtain ⟨J, hJ, hlt, hh⟩ := exists_principalCut_component_relative_codimension_one hf hcut
+  exact ⟨J, hJ, hJ.isPrime, hlt, hh⟩
 
 end Ideal

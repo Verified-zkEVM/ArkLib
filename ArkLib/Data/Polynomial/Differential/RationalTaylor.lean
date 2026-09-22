@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.Data.Polynomial.Differential.RegularLift
 public import ArkLib.Data.Polynomial.Differential.TaylorResidual
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import Mathlib.Algebra.MvPolynomial.CommRing
@@ -44,6 +45,11 @@ suffice for the residual coefficient.
 * `eq_rationalTaylorCoefficient_of_residual`: any coefficient sequence that extends the initial
   jet and solves the affine equations agrees with the rational coefficients.
 * `TaylorExponentSufficient` and its instances: common separant exponents for a finite chart.
+* `taylorCoefficient_residual_eq` and `solution_taylorCoefficient_residual`: the Taylor
+  coefficients of any polynomial satisfy the affine equations up to the residual's Taylor
+  coefficient, which vanishes for a solution.
+* `rationalTaylorCoefficient_eq_solution`: a polynomial solution has the rational Taylor
+  coefficients.
 
 ## References
 
@@ -69,11 +75,11 @@ revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 * `rationalTaylorCoefficient_residual_prefix` is new; it combines
   `rationalTaylorCoefficient_residual` with `aeval_universalTaylorResidual_coeff`.
 
-Deferred to the next slice: the source's `solution_taylorCoefficient_residual` and
-`rationalTaylorCoefficient_eq_solution`, which need the coefficient formula for a one-coefficient
-Taylor perturbation (`coeff_shiftedJetSubstitution_regularLiftCandidate` in
-`.../RootFinding/Regular/Lifting.lean`) and the contact lemma
-`X_pow_dvd_shiftedJetSubstitution_sub_of_X_pow_add_dvd` in `.../RootFinding/Regular/Iteration.lean`.
+* `solution_taylorCoefficient_residual` keeps the source statement over a commutative ring
+  instead of a field. It is the case `Q(X, P, ...) = 0` of the new
+  `taylorCoefficient_residual_eq`, which holds for every polynomial `P`.
+* `rationalTaylorCoefficient_eq_solution` keeps the source statement; its proof is
+  `eq_rationalTaylorCoefficient_of_residual` applied to the Taylor coefficients of `P`.
 
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26]
@@ -175,6 +181,42 @@ theorem aeval_initialJetSeparant (center : F) (Q : DifferentialPolynomial F r)
   exact ht
 
 end CommSemiring
+
+/-! ### The affine equations of an actual polynomial -/
+
+section CommRing
+
+variable {R : Type*} [CommRing R] {r : ℕ}
+
+/-- For any polynomial `P` and `r < l`, the Taylor coefficients `c = (taylor center P).coeff`
+satisfy
+`R_(l-r)(c₀, ..., c_(l-1)) + (l choose r) c_l S = [X^(l-r)] taylor center (Q(X, P, ..., DʳP))`,
+where `R_(l-r)` is the coefficient of `ξ ^ (l - r)` in the universal residual and `S` is the
+separant at the Hasse jet of `P`. The hypothesis `r < l` is needed for the same reason as in
+`coeff_shiftedJetSubstitution_eq_centeredCoefficientPrefix_add`. -/
+theorem taylorCoefficient_residual_eq (center : R) (Q : DifferentialPolynomial R r)
+    (P : Polynomial R) {l : ℕ} (hl : r < l) :
+    aeval (fun i : Fin l ↦ (Polynomial.taylor center P).coeff i.val)
+        ((optionEquivLeft R (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)) +
+      ((l.choose r : R) * (Polynomial.taylor center P).coeff l) *
+        jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) =
+      (Polynomial.taylor center (differentialSpecialization Q P)).coeff (l - r) := by
+  rw [aeval_universalTaylorResidual_coeff, taylor_differentialSpecialization,
+    taylor_differentialSpecialization,
+    coeff_shiftedJetSubstitution_eq_centeredCoefficientPrefix_add Q center P hl]
+
+/-- Every polynomial solution of `Q(X, P, D¹P, ..., DʳP) = 0` satisfies, for each `l > r`, the
+affine equation `R_(l-r)(c₀, ..., c_(l-1)) + (l choose r) c_l S = 0` in its Taylor coefficients
+`c` at `center`, where `S` is the separant at the Hasse jet of `P`. -/
+theorem solution_taylorCoefficient_residual (center : R) (Q : DifferentialPolynomial R r)
+    (P : Polynomial R) (hsolution : differentialSpecialization Q P = 0) (l : ℕ) (hl : r < l) :
+    aeval (fun i : Fin l ↦ (Polynomial.taylor center P).coeff i.val)
+        ((optionEquivLeft R (Fin l) (universalTaylorResidual l center Q)).coeff (l - r)) +
+      ((l.choose r : R) * (Polynomial.taylor center P).coeff l) *
+        jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) = 0 := by
+  rw [taylorCoefficient_residual_eq center Q P hl, hsolution, map_zero, Polynomial.coeff_zero]
+
+end CommRing
 
 /-! ### Numerators and rational coefficients -/
 
@@ -351,6 +393,24 @@ theorem eq_rationalTaylorCoefficient_of_residual (center : F) (Q : DifferentialP
         linear_combination hc l hlr hlL - hrat
       have hleft := (mul_eq_zero.mp hdiff).resolve_right hS
       exact sub_eq_zero.mp ((mul_eq_zero.mp hleft).resolve_left (hbin l hlr hlL))
+
+/-- A polynomial solution of `Q(X, P, D¹P, ..., DʳP) = 0` has the rational Taylor coefficients:
+if the separant at the Hasse jet of `P` is nonzero and `(i choose r) ≠ 0` for `r < i ≤ l`, then
+`rationalTaylorCoefficient center Q (polynomialJet center P) l` is the Taylor coefficient of `P`
+of order `l` at `center`. Both hypotheses are needed, as explained at
+`rationalTaylorCoefficient_residual`. -/
+theorem rationalTaylorCoefficient_eq_solution (center : F) (Q : DifferentialPolynomial F r)
+    (P : Polynomial F) (hsolution : differentialSpecialization Q P = 0)
+    (hseparant : jetEvaluation (separant Q (Fin.last r)) center (polynomialJet center P) ≠ 0)
+    (l : ℕ) (hbin : ∀ i, r < i → i ≤ l → (i.choose r : F) ≠ 0) :
+    rationalTaylorCoefficient center Q (polynomialJet center P) l =
+      (Polynomial.taylor center P).coeff l := by
+  refine (eq_rationalTaylorCoefficient_of_residual center Q (polynomialJet center P)
+    (Polynomial.taylor center P).coeff l
+    (fun i ↦ (Polynomial.hasseJet_eq_taylor_coeff _ _ _ i).symm)
+    (by rwa [aeval_initialJetSeparant]) hbin (fun i hi _ ↦ ?_) l le_rfl).symm
+  rw [aeval_initialJetSeparant]
+  exact solution_taylorCoefficient_residual center Q P hsolution i hi
 
 end
 
