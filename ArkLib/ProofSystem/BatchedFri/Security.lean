@@ -302,7 +302,8 @@ noncomputable def oracleImpl
       let f0 := Lagrange.interpolate Finset.univ (fun v => v.1) f
       let chals : List (Fin (k + 1) × 𝔽) :=
         ((List.finRange (k + 1)).map fun i => (i, z i)).take i.1
-      let fi : 𝔽[X] := List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (s i) α) f0 chals
+      let fi : 𝔽[X] :=
+        List.foldl (fun f (i, α) => FoldingPolynomial.polyFold f (2 ^ (s i).1) α) f0 chals
       let st : Spec.FinalOracleStatement (F := 𝔽) s ω i :=
         if h : i.1 = k + 1 then
           cast (by simp [Spec.FinalOracleStatement, h]; rfl)

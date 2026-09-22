@@ -45,6 +45,17 @@ home_page/            site assets and assembled website root
 
 ## Navigation Notes
 
+- `ProofSystem/Fri/FoldingSoundness.lean` and `QuerySoundness.lean` contain the algebraic
+  soundness arguments; `ErrorBounds.lean` instantiates existing numerical MCA bounds.
+  `Fri/Spec/Soundness.lean` proves ordinary and round-by-round soundness of the executable
+  oracle reduction; `VerifierExecution.lean` identifies its exact acceptance event and
+  `InputRelation.lean` connects the original relation to Reed–Solomon proximity.
+  `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
+  state functions, adaptive accumulation, and the acceptance-to-soundness bridge live in
+  `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs avoid
+  the unfinished general soundness-implication/composition theorems; see the
+  [FRI audit](../kb/audits/fri-soundness.md).
+
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
   `ArkLib.ToVCVio`; use it for reusable `VCVio` helper lemmas before they are upstreamed.

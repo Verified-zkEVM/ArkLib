@@ -212,6 +212,18 @@ def snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₂
     simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
       using T (Fin.natAdd m i)
 
+/-- The left projection only transports the type of the original transcript entry. -/
+theorem fst_apply_heq (tr : FullTranscript (pSpec₁ ++ₚ pSpec₂)) (i : Fin m) :
+    HEq (tr.fst i) (tr (Fin.castAdd n i)) := by
+  unfold fst
+  exact cast_heq _ _
+
+/-- The right projection only transports the type of the original transcript entry. -/
+theorem snd_apply_heq (tr : FullTranscript (pSpec₁ ++ₚ pSpec₂)) (i : Fin n) :
+    HEq (tr.snd i) (tr (Fin.natAdd m i)) := by
+  unfold snd
+  exact cast_heq _ _
+
 @[simp]
 theorem append_fst (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec₂) :
     (T₁ ++ₜ T₂).fst = T₁ := by
@@ -401,6 +413,30 @@ theorem seqCompose_embedSum {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoc
     {T : ∀ i, FullTranscript (pSpec i)} (i : Fin m) (j : Fin (n i)) :
     seqCompose T (Fin.embedSum i j) = cast (by simp) (T i j) := by
   simp [seqCompose, cast]; congr 1
+
+/-- Recover one component transcript from a sequentially composed transcript. -/
+def component {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) (i : Fin m) :
+    FullTranscript (pSpec i) := fun j ↦
+  cast (by simp [ProtocolSpec.seqCompose]) (tr (Fin.embedSum i j))
+
+/-- Component extraction transports the type, without altering the stored entry. -/
+theorem component_apply_heq {m : ℕ} {n : Fin m → ℕ}
+    {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) (i : Fin m) (j : Fin (n i)) :
+    HEq (component tr i j) (tr (Fin.embedSum i j)) :=
+  cast_heq _ _
+
+/-- Component extraction loses no information, including for an empty composition. -/
+@[simp]
+theorem seqCompose_component {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (tr : FullTranscript (ProtocolSpec.seqCompose pSpec)) :
+    seqCompose (component tr) = tr := by
+  funext j
+  obtain ⟨⟨i, j⟩, rfl⟩ := Fin.finSum'FinEquiv'.surjective j
+  simp only [Fin.finSum'FinEquiv', Equiv.coe_fn_mk]
+  rw [seqCompose_embedSum]
+  simp only [component, cast_cast, cast_eq]
 
 end FullTranscript
 
