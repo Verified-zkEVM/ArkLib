@@ -34,24 +34,9 @@ with no tuple discarded near the boundary. For a code of length `n` and an upper
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/Dimension.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `partition_residual_ceil` and `quadraticStaircase_le_partition_slice` mention no code; they are
-  `QuadraticStaircase.ceil_mul_div_sub_sub` and the equality
-  `QuadraticStaircase.count_div_sub_eq_sum` in `ArkLib.ToMathlib.Combinatorics.QuadraticStaircase`.
-  With the equality, the new `finrank_partitionSupportSpace_eq_sum_count` computes the dimension
-  exactly.
-* `partitionSupport_dimension_ge_quadratic_sum` keeps its statement, with the source's cutoff
-  `m * A` a natural cutoff `L` and `higherJetTupleDegree c` written `∑ i, c i`.
-* `partition_quadratic_rate_lower` and `partitionSupport_dimension_ge_rate_sum` replace the
-  source's `m * agreement` and `m * A` by a real level and a natural cutoff with
-  `level * n ≤ L`; the source's `agreement * n ≤ A` gives this for `level = m * agreement` and
-  `L = m * A`. The hypotheses `0 < n` and `0 < rate` are dropped, since `0 < D ≤ rate * n` implies
-  both. The acceptance tests derive the source statements.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
+  Lemma 6.2
 -/
 
 @[expose] public section

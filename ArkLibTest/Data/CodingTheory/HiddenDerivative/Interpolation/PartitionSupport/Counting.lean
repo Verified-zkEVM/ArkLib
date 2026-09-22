@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 /-!
 # Acceptance tests for the partition support count
 
-A small dimension computed from the exact count, the source statement at the cutoff `m * A`, the
+A small dimension computed from the exact count, the exact count at the cutoff `m * A`, the
 coordinates of a concrete exponent, and the failure of the count at `D = 0`, where every exponent
 of `Y₀` is eligible.
 -/
@@ -31,7 +31,7 @@ example : Module.finrank ℚ (partitionSupportSpace ℚ 2 0 0 ((3 : ℕ) : ℝ) 
   rw [finrank_partitionSupportSpace_eq_partitionSourceCount]
   decide
 
-/-- Source shape `finrank_partitionSupportSpace_eq_sourceCount`, at the cutoff `m * A`. -/
+/-- The exact count at the cutoff `m * A`. -/
 example (F : Type*) [Field F] {D d m A W : ℕ} (hD : 0 < D) :
     Module.finrank F (partitionSupportSpace F D d W (m * A : ℕ) hD) =
       ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,

@@ -39,26 +39,9 @@ comes from the quadratic staircase bound, and no part of the simplex is discarde
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/MomentSource.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `partition_square_rescale` assumes `0 ≤ rate`, `0 ≤ radius` and `0 ≤ degree` in place of strict
-  positivity: when one of them is zero, the scale `rate * radius / degree` is zero and the left
-  side vanishes. The acceptance tests show that `0 ≤ rate` cannot be dropped.
-* `partition_integral_ge_normalized_moment` drops `0 < d` and `0 < budget` and weakens `0 < rate`
-  to `0 ≤ rate`, for the same reason. The source's `weightedRadius point` is `∑ i, u i`.
-* `partition_integral_eq_volume_mul_expectation` is not restated: the source's
-  `weightedSimplexExpectation` is the set average `⨍ u in S, _`, and Mathlib's `setAverage_eq`
-  together with `MeasureTheory.volume_real_weightedSimplex_succ` gives the identity inside the
-  proof of `partitionSupport_dimension_gt_moment`.
-* `partitionSupport_dimension_gt_moment` replaces the source's moment constant `27 / 10` and
-  coefficient `27 / 20` by an arbitrary `μ` and `μ / 2`, and `m * agreement` and `m * A` by a level
-  and a natural cutoff with `level * n ≤ L`. The hypotheses `0 < n` and `0 < rate` are dropped,
-  since `0 < D ≤ rate * n` implies both. The hypotheses `0 < d` and `0 < W` are kept: the acceptance
-  tests show that the strict inequality fails at `W = 0`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
+  Lemma 6.2
 -/
 
 @[expose] public section
