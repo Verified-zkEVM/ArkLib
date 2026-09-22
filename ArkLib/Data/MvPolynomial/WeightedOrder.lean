@@ -30,6 +30,8 @@ needed.
 ## Main statements
 
 * `bind₁_mem_restrictWeightedOrder`: substitution preserves weighted-order lower bounds.
+* `pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder`: evaluating a polynomial of weighted order at
+  least `m` at values `g i` divisible by `t ^ (w i)` gives a value divisible by `t ^ m`.
 * `weightedTruncation_eq_zero_iff`: a truncation vanishes exactly on the corresponding
   weighted-order submodule.
 * `weightedTruncation_bind₁_weightedTruncation`: truncation commutes with weight-nondecreasing
@@ -45,6 +47,12 @@ Zheng's `rs-ld-mca` formalization. The source proved the special case of one cha
 variables using integer-valued negated weights; here the statement is for arbitrary variable
 types, arbitrary natural weights, and an arbitrary commutative semiring. The source's
 `filterLocalMonomials` is `filterSupport` for local polynomials.
+
+`pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder` generalizes the source's
+`pow_dvd_eval₂Hom_of_lowContact_coeff_zero` and its private helper
+`localContactOrder_pow_dvd_monomialSpecialization` in
+`.../HiddenDerivative/Interpolation/Local/Contact.lean` at the same revision from the local
+contact weight to an arbitrary weight, and from commutative rings to commutative semirings.
 -/
 
 @[expose] public section
@@ -149,6 +157,23 @@ theorem bind₁_mem_restrictWeightedOrder {w : σ → ℕ} {v : τ → ℕ} {m :
     (a := fun i => e i * w i) (p := fun i => f i ^ e i)
     fun i _ => pow_mem_restrictWeightedOrder (hf i) (e i)
   simpa only [weight_apply, Finsupp.sum, smul_eq_mul] using hprod
+
+/-- Evaluation of a polynomial of weighted order at least `m`. If `t ^ (w i)` divides the value
+`g i` of every variable `i`, then `t ^ m` divides `p(g)`: each monomial `x^e` of `p` has
+`w`-weight at least `m`, and its value is divisible by `t` to the power of that weight. Variables
+of weight zero impose no condition. -/
+theorem pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder {S : Type*} [CommSemiring S]
+    (f : R →+* S) {g : σ → S} {t : S} {w : σ → ℕ} {m : ℕ} {p : MvPolynomial σ R}
+    (hp : p ∈ restrictWeightedOrder (R := R) w m) (hg : ∀ i, t ^ w i ∣ g i) :
+    t ^ m ∣ eval₂Hom f g p := by
+  rw [p.as_sum, map_sum]
+  refine Finset.dvd_sum fun e he => ?_
+  rw [eval₂Hom_monomial]
+  refine (pow_dvd_pow t (mem_restrictWeightedOrder.mp hp e he)).trans (Dvd.dvd.mul_left ?_ _)
+  rw [weight_apply, Finsupp.sum, Finsupp.prod, ← Finset.prod_pow_eq_pow_sum]
+  refine Finset.prod_dvd_prod_of_dvd _ _ fun i _ => ?_
+  rw [smul_eq_mul, mul_comm, pow_mul]
+  exact pow_dvd_pow_of_dvd (hg i) _
 
 /-! ### Support filters and weighted truncation -/
 
