@@ -91,6 +91,8 @@ public import ArkLib.Data.CodingTheory.Erasure
 public import ArkLib.Data.CodingTheory.ExtensionCodes
 public import ArkLib.Data.CodingTheory.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Correctness
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Executable
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
