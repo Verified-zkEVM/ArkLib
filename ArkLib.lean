@@ -106,8 +106,6 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Cons
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
