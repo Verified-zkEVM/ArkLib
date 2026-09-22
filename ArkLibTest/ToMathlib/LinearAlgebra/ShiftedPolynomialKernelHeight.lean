@@ -16,10 +16,10 @@ budget, and the bridge lemma shows that the forced zero cannot be replaced by a 
 A one-by-three matrix `[1, X, X ^ 2]` with column weights `0, 1, 2` and height `1` shows that the
 column of weight above the height receives the zero coordinate.
 
-The remaining examples reproduce the shapes used by the source consumers in
-`HiddenDerivative/Interpolation/Symbolic`: the column rank form with a rank bound over
-`RatFunc F`, and the shifted primitive form with the source's `hdegree`/`hzero` hypotheses,
-including the specialization clause recovered from `Ideal.comp_ne_zero_of_span_range_eq_top`.
+The remaining examples derive the forms used by Reed–Solomon interpolation: the column rank form
+with a rank bound over `RatFunc F`, and the shifted primitive form with `Fin` indices and the
+split hypotheses `hdegree`/`hzero`, including the specialization clause recovered from
+`Ideal.comp_ne_zero_of_span_range_eq_top`.
 -/
 
 open Polynomial
@@ -48,13 +48,13 @@ example :
   exact ⟨v, hv, hMv, by simpa using hvdegree 0, by simpa using hvdegree 1,
     by simpa using hvdegree 2⟩
 
-/-- The source's two entry conditions do not hold if the forced-zero entry is replaced by the
-constant `1`: its natural degree is `0`, but the budget `degreeLT ℚ (0 + 1 - 1)` is `⊥`. -/
+/-- The split entry conditions `hdegree`/`hzero` do not hold if the forced-zero entry is replaced
+by the constant `1`: its natural degree is `0`, but the budget `degreeLT ℚ (0 + 1 - 1)` is `⊥`. -/
 example : (1 : ℚ[X]) ∉ degreeLT ℚ (0 + 1 - 1) := by
   rw [mem_degreeLT_add_one_sub_iff]
   simp
 
-/-- The bridge lemma on a matrix: the source hypotheses `hdegree` and `hzero` together are
+/-- The bridge lemma on a matrix: the hypotheses `hdegree` and `hzero` together are
 equivalent to the single `degreeLT` entry hypothesis. -/
 example {F : Type*} [Field F] {rows cols : Type*} (M : Matrix rows cols F[X])
     (rowWeight : rows → ℕ) (columnWeight : cols → ℕ) :
@@ -91,7 +91,7 @@ example {F : Type*} [Field F] (M : Matrix Empty (Fin 2) F[X]) :
   exact ⟨v, hv, hMv, by simpa using hvdegree 0, by simpa [degreeLT_zero] using hvdegree 1⟩
 
 /-- The column consumer shape: a rank bound `n * r` over `RatFunc F` and the surplus
-`n * r * (h + 1) < ∑ j, (h + 1 - weight j)` give the source's primitive conclusion, including
+`n * r * (h + 1) < ∑ j, (h + 1 - weight j)` give a primitive kernel vector with
 `natDegree ≤ h` and the specialization clause. -/
 example {F : Type*} [Field F] {m N n r h : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
     (weight : Fin N → ℕ) (hdeg : ∀ i j, (M i j).natDegree ≤ weight j)
@@ -108,8 +108,8 @@ example {F : Type*} [Field F] {m N n r h : ℕ} (M : Matrix (Fin m) (Fin N) F[X]
       (degreeLT_mono (Nat.sub_le (h + 1) (weight j)) (hvdegree j))
   · exact Ideal.comp_ne_zero_of_span_range_eq_top hspan (eval₂RingHom ι z)
 
-/-- The source's exact-rank column statement over `RatFunc F`, whose surplus is stated with the
-rank itself, is the case `s := rank`. -/
+/-- The exact-rank column form over `RatFunc F`, whose surplus is stated with the rank itself, is
+the case `s := rank`. -/
 example {F : Type*} [Field F] {m N h : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
     (weight : Fin N → ℕ) (hdeg : ∀ i j, (M i j).natDegree ≤ weight j)
     (hsurplus : (M.map (algebraMap F[X] (RatFunc F))).rank * (h + 1) <
@@ -118,8 +118,8 @@ example {F : Type*} [Field F] {m N h : ℕ} (M : Matrix (Fin m) (Fin N) F[X])
   exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le M weight h hdeg _
     (IsFractionRing.injective F[X] (RatFunc F)) le_rfl hsurplus
 
-/-- The shifted consumer shape: `Fin` indices, the source's `hdegree`/`hzero` hypotheses, and the
-source's specialization clause, recovered from the unit-ideal conclusion. -/
+/-- The shifted primitive form with `Fin` indices, the hypotheses `hdegree`/`hzero`, and the
+specialization clause, recovered from the unit-ideal conclusion. -/
 example {F : Type*} [Field F] {rows N h : ℕ} (M : Matrix (Fin rows) (Fin N) F[X])
     (rowWeight : Fin rows → ℕ) (columnWeight : Fin N → ℕ)
     (hdegree : ∀ i j, rowWeight i ≤ columnWeight j →

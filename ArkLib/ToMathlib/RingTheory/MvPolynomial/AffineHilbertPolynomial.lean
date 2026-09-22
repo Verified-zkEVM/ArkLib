@@ -31,6 +31,12 @@ polynomials: the polynomial of `I ⊔ span {f}` has natural degree at most one l
 `I`, and its coefficient in that degree is at most `b * natDegree P * leadingCoeff P`, where `P`
 is the polynomial of `I`.
 
+The bound on the number of points of a zero-dimensional zero locus is in
+`ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`, the comparisons along
+algebra maps are in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`, the affine
+degree is in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree`, and the comparison with the
+radical is in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical`.
+
 ## Main statements
 
 * `MvPolynomial.affineHilbertPolynomial`: the polynomial, with

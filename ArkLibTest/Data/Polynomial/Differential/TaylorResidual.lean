@@ -10,8 +10,8 @@ import Mathlib.Tactic.NormNum
 /-!
 # Acceptance tests for universal Taylor residuals
 
-The examples recover the source's separant-denominator statement on a chart of length exactly
-`r + h`, compute the residual of the first-order equation `Q = Y₁` on a chart of length `3`, and
+The examples derive the separant-denominator budget on a chart of length exactly `r + h` with
+`0 < h`, compute the residual of the first-order equation `Q = Y₁` on a chart of length `3`, and
 use it to show that the chart-length hypothesis of
 `denominator_weight_le_of_mem_universalTaylorResidual_coeff` cannot be dropped. They also
 specialize the residual of `Q = Y₀` at an explicit coefficient prefix.
@@ -23,7 +23,7 @@ noncomputable section
 
 open MvPolynomial
 
-/-- The source statement: on a chart of length exactly `r + h` with `0 < h`, every monomial of
+/-- The special case of a chart of length exactly `r + h` with `0 < h`: every monomial of
 the coefficient of `ξ ^ h` has denominator weight at most `2h - 2`. -/
 example {F : Type*} [CommSemiring F] {r h : ℕ} (_hh : 0 < h) (center : F)
     (Q : DifferentialPolynomial F r) (m : Fin (r + h) →₀ ℕ)

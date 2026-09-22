@@ -32,7 +32,6 @@ private theorem exists_large_of_finset_cover' {α : Type}
     {B : ℕ} (hLB : L * B < U.card) :
     ∃ i, B < (buckets i).card := by
   classical
-  let _ : DecidableEq α := Classical.decEq α
   by_contra hall
   push Not at hall
   have hle : U.card ≤ L * B := by
@@ -53,7 +52,7 @@ section Bucketing
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [SampleableType F] in
 /-- BCIKS20 §6.3 bucketing: given an affine subspace U whose elements are all δ-close
 to a linear code V, there exist a codeword v₀ and agreement set D' of size ≥ (1-δ)|ι|
 such that the basepoint agrees with v₀ on D' and every generator direction agrees with
@@ -472,7 +471,6 @@ theorem exists_large_of_finset_cover {α : Type}
     {B : ℕ} (hLB : L * B < U.card) :
     ∃ i, B < (buckets i).card := by
   classical
-  let _ : DecidableEq α := Classical.decEq α
   by_contra hall
   push Not at hall
   have hle : U.card ≤ L * B := by
@@ -574,7 +572,7 @@ private lemma gs_degree_bound_le_inv_mu
     _ ≤ 1 / μ + 1 / (4 * μ) := add_le_add h5 h6
     _ = 5 / (4 * μ) := by ring
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [DecidableEq ι] [DecidableEq F] [SampleableType F] in
 /-- Construct a GS multiplicity `m` satisfying both the Johnson radius bound and the degree
 bound. Witness: `m = ⌈√ρ/(2η)⌉ + 1` where `η = 1 - √ρ - δ`. -/
 lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
@@ -805,7 +803,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       rw [hgs0]
       linarith only [hδ_real, show (0 : ℝ) ≤ s from by positivity]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [SampleableType F] in
 theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ_pos : 0 < δ) (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hRS : deg + 1 ≤ Fintype.card ι)

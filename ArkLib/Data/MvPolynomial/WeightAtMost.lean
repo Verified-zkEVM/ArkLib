@@ -32,18 +32,6 @@ module, and over a field its dimension is the number of exponents.
   is bounded by the weight of its variable.
 * `finrank_restrictSupport_finset`: the coefficient space of a finite exponent set has
   dimension its cardinality.
-
-## References
-
-The `M`-valued support-weight lemmas generalize the private lemmas `support_weight_mul_le`,
-`support_weight_pow_le`, `support_weight_prod_le`, and `support_weight_bind₁_le` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source stated them for single
-support exponents over an ordered additive commutative monoid; here they are stated as closure
-properties of a submodule, and `finrank_restrictSupport_finset` replaces the source's
-per-space basis cardinality computations.
-
-Nothing is deferred.
 -/
 
 @[expose] public section

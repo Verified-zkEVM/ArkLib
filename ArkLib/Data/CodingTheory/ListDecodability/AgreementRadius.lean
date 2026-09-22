@@ -15,6 +15,8 @@ coordinates means disagreeing in at most `n - a`, so the relative Hamming distan
 most `1 - a / n`. The codewords of a code `C` with at least `a` agreements with `y` therefore lie
 in the point list `closeCodewordsRel C y (1 - a / n)`, and their number is bounded by
 `Code.Lambda C (1 - a / n)`. This is the radius convention of `Code.Lambda_le_pairwiseJohnson`.
+The Reed–Solomon consumers are in
+`ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement`.
 
 ## Main statements
 
@@ -24,18 +26,6 @@ in the point list `closeCodewordsRel C y (1 - a / n)`, and their number is bound
 * `Code.encard_setOf_le_agree_le_Lambda`: the agreement list is bounded by `Lambda`.
 * `Code.encard_setOf_le_agree_encode_le_Lambda`: the same bound for messages whose encodings
   lie in `C`, under an encoding that is injective on the messages considered.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AnchoredAgreement.lean`: `candidateSet_finite`
-and `candidateFamily_card_le` bound anchored candidates through
-`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` at the radius
-`capacityRadius delta n k = 1 - k / n - delta`, with the agreement threshold
-`k + ⌈delta * n⌉ ≤ a`. That threshold implies `1 - a / n ≤ capacityRadius delta n k`, so the
-statements here, at the radius `1 - a / n` and for an arbitrary code, imply the source ones by
-`Code.Lambda_mono`. The Reed–Solomon consumers are in
-`ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement`.
 -/
 
 @[expose] public section

@@ -14,9 +14,10 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
   particular for `P = 1` and `received = 0` no error works.
 * For `P = X²` and `d = 1` the backward Taylor error at `a` is `-X`, obtained from the uniqueness
   statement `localPolynomialEvaluation_comp_unscaled_eq_iff_error_eq`.
-* The source-shaped statement: the local evaluation of the unscaled substitution of `Q` is the
+* The composite statement: the local evaluation of the unscaled substitution of `Q` is the
   Taylor translate of `Q(X, P, D¹P, ...)`.
-* The source's `X_pow_dvd_hiddenTaylorError`, derived from the reduced error.
+* The divisibility `X ^ d ∣ normalizedBackwardTaylorError center P d`, derived from the reduced
+  error.
 * The algebra-valued criterion at `d = 0`, with `ℤ`-coefficients evaluated in `ℚ`.
 -/
 
@@ -53,8 +54,8 @@ example (a : ℚ) :
   simp only [Polynomial.C_ofNat]
   ring
 
-/-- Source shape: the local evaluation of the unscaled substitution of `Q` is the Taylor
-translate of the differential specialization of `Q` at `P`. -/
+/-- At `received = P(center)`, the local evaluation of the unscaled substitution of `Q` is the
+Taylor translate of the differential specialization of `Q` at `P`. -/
 example {d : ℕ} (Q : DifferentialPolynomial ℚ d) (center : ℚ) (P : Polynomial ℚ) :
     localPolynomialEvaluation center P (Polynomial.normalizedBackwardTaylorError center P d)
         (unscaledLocalSubstitution d center (P.eval center) Q) =
@@ -62,7 +63,8 @@ example {d : ℕ} (Q : DifferentialPolynomial ℚ d) (center : ℚ) (P : Polynom
   rw [taylor_differentialSpecialization,
     localPolynomialEvaluation_unscaled_backwardError Q center _ P rfl]
 
-/-- Source shape of `X_pow_dvd_hiddenTaylorError`, over `ℤ`. -/
+/-- Over `ℤ`, `X ^ d` divides the normalized backward Taylor error, since it is `X ^ d` times the
+reduced error. -/
 example (d : ℕ) (center : ℤ) (P : Polynomial ℤ) :
     Polynomial.X ^ d ∣ Polynomial.normalizedBackwardTaylorError center P d :=
   ⟨_, (X_pow_mul_reducedHiddenTaylorError center P d).symm⟩

@@ -91,6 +91,8 @@ public import ArkLib.Data.CodingTheory.Erasure
 public import ArkLib.Data.CodingTheory.ExtensionCodes
 public import ArkLib.Data.CodingTheory.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Correctness
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Executable
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
@@ -585,8 +587,10 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
+public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT

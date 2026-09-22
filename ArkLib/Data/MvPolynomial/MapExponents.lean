@@ -27,15 +27,6 @@ filters commute with the relabelling: filtering the image by `p` is the image of
 * `MvPolynomial.mapExponents_injective`
 * `MvPolynomial.filterSupport_mapExponents`,
   `MvPolynomial.weightedTruncation_mapExponents`
-
-## References
-
-This generalizes `normalizeErrorByExponent`, `normalizeError_injective` and
-`truncateLocalT_normalizeError` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RemainderMap.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which treated the single relabelling
-`E ↦ T^d E` of local variables over a commutative ring. The private
-`filterLocalMonomials_monomial` of that file is `filterSupport_monomial`.
 -/
 
 @[expose] public section
@@ -51,6 +42,7 @@ goes to `monomial (f e) c`. -/
 def mapExponents (f : (σ →₀ ℕ) →+ (τ →₀ ℕ)) : MvPolynomial σ R →ₐ[R] MvPolynomial τ R :=
   AddMonoidAlgebra.mapDomainAlgHom R R f
 
+/-- `mapExponents f` sends `monomial e c` to `monomial (f e) c`. -/
 @[simp]
 theorem mapExponents_monomial (f : (σ →₀ ℕ) →+ (τ →₀ ℕ)) (e : σ →₀ ℕ) (c : R) :
     mapExponents f (monomial e c) = monomial (f e) c :=
