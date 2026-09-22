@@ -988,6 +988,14 @@ proves a weaker, field-size-weighted bound, which is not formalized here.
 
 `mcaError_moduleInterleavedCode_eq_of_card_le`: This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the same names. `agreementThreshold`,
+`capacityRadius` and `agreementThreshold_le_iff_real` are unchanged;
+`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` holds for any finite coordinate type
+in place of `Fin blockLength`, and goes through the new `Code.relHammingDist_le_one_sub_div_iff`
+of `ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius`.
 ## `ArkLib/Data/CodingTheory/ReedSolomon/Agreement.lean`
 
 `ReedSolomon.polynomialAgreementSet_map` is the private `agreementSet_map` of
@@ -1195,6 +1203,10 @@ The interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interlea
 Scalar providers of `UniformExactPowerAgreement` (list-decoding and curve-counting results) are
 not ported here.
 
+`uniformExactPowerAgreement_singleton` of
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/UniformPowerAgreement.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is ported with the same name, for any
+finite coordinate type in place of `Fin n`.
 Also from the same source directory:
 
 * `PolynomialCurve/Agreement.lean`: `powerBatchedCoordinate` (over a `CommSemiring`, with the new
@@ -1741,6 +1753,14 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 `ArkLib/Data/Probability/TwoPointPolynomialCollision.lean`: these replace `collisionRate` and
 `collisionRate_le`; see the module docstring of `ArkLib.Data.Polynomial.PointCollision`.
+
+## `ArkLib/Data/Polynomial/ResultantDegree.lean`
+
+`degreeX_derivative_le` of `ArkLib/ToMathlib/Polynomial/SeparableResultant.lean` at ArkLib
+revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is `Polynomial.Bivariate.degreeX_derivative_le`.
+`natDegree_separableResultant_le` is `natDegree_resultant_le_degreeX`, and
+`natDegree_separableResultant_le_of_height` is `natDegree_resultant_derivative_padded_le`, which
+bounds by `degreeX P` and needs no `0 < b`; the acceptance test derives both source forms.
 
 ## `ArkLib/Data/Polynomial/ResultantSpecialization.lean`
 

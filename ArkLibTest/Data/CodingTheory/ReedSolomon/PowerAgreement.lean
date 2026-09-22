@@ -40,21 +40,27 @@ example : Code.DeterminedByAgreement (code domain3 2) 2 := determinedByAgreement
 
 -- A single received word needs no challenge: the guarantee holds with no exceptional value, for
 -- every degree bound and threshold, including `k` larger than the block length.
-theorem uniformExactPowerAgreement_single {F ι : Type} [Field F] [Fintype ι] [DecidableEq F]
-    (domain : ι ↪ F) (w : Fin 1 → ι → F) (k L : ℕ) :
-    UniformExactPowerAgreement domain w k L 0 := by
-  refine ⟨∅, by simp, fun z _ Q hQ _ ↦ ?_⟩
-  refine (hasExactPowerAgreement_id_iff _ _ _ _ _).mpr ⟨fun _ ↦ Q, fun _ ↦ hQ, ?_, ?_⟩
-  · simp [powerBatchedPolynomial]
-  · ext i
-    simp [powerBatchedWord]
+example : UniformExactPowerAgreement domain3 ![![1, 2, 5]] 7 0 0 :=
+  uniformExactPowerAgreement_singleton domain3 _ 7 0
+
+-- The singleton statement with the group size written as `0 + 1`.
+example {F ι : Type} [Field F] [Fintype ι] [DecidableEq F] (domain : ι ↪ F)
+    (w : Fin (0 + 1) → ι → F) (k L : ℕ) : UniformExactPowerAgreement domain w k L 0 :=
+  uniformExactPowerAgreement_singleton domain w k L
+
+-- Unfolded at a challenge: a polynomial of degree below `k` is its own witness.
+example (z : ℚ) (Q : ℚ[X]) (hQ : Q.degree < 2) (w : Fin 1 → Fin 3 → ℚ) :
+    HasExactPowerAgreement domain3 w (RingHom.id ℚ) 2 z Q := by
+  obtain ⟨bad, hbad, hgood⟩ := uniformExactPowerAgreement_singleton domain3 w 2 0
+  have : bad = ∅ := Finset.card_eq_zero.mp (Nat.le_zero.mp hbad)
+  exact hgood z (by simp [this]) Q hQ (Nat.zero_le _)
 
 -- The same statement at the code level, for `univariatePowersGenerator F 0`.
 example {F ι : Type} [Field F] [Fintype ι] [DecidableEq F] (domain : ι ↪ F)
     (w : Fin 1 → ι → F) (k L : ℕ) :
     Code.UniformExactAgreement (univariatePowersGenerator F 0) (code domain k) L 0 w :=
   (uniformExactPowerAgreement_iff_uniformExactAgreement domain w).mp
-    (uniformExactPowerAgreement_single domain w k L)
+    (uniformExactPowerAgreement_singleton domain w k L)
 
 -- Batching preserves degree bounds, and evaluation commutes with it, on a concrete pair.
 example : (powerBatchedPolynomial ![(1 : ℚ[X]), X] 2).eval 3 = 7 := by

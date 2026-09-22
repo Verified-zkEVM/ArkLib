@@ -70,6 +70,8 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
   determined by `a ≥ k` agreements.
 * `ReedSolomon.exists_powerBatchedPolynomial_eq`: a codeword decomposition of a polynomial's
   evaluations lifts to a polynomial decomposition.
+* `ReedSolomon.uniformExactPowerAgreement_singleton`: a single received word has uniform exact
+  power agreement with no exceptional challenge.
 * `ReedSolomon.hasExactPowerAgreement_id_iff_hasExactAgreement` and
   `ReedSolomon.uniformExactPowerAgreement_iff_uniformExactAgreement`: the polynomial predicates
   are the code-level predicates for `univariatePowersGenerator`.
@@ -361,6 +363,16 @@ theorem hasExactPowerAgreement_id_iff (domain : ι ↪ F) (w : Fin (ℓ + 1) →
   have hdomain : domain.trans ⟨RingHom.id F, (RingHom.id F).injective⟩ = domain :=
     Function.Embedding.ext fun _ ↦ rfl
   simp only [HasExactPowerAgreement, Polynomial.map_id, RingHom.id_apply, hdomain]
+
+/-- A single received word has uniform exact power agreement with no exceptional challenge, for
+every degree bound `k` and agreement threshold `L`: the witness is `P 0 = Q`. -/
+theorem uniformExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → ι → F) (k L : ℕ) :
+    UniformExactPowerAgreement domain w k L 0 := by
+  refine ⟨∅, by simp, fun z _ Q hQ _ ↦ ?_⟩
+  refine (hasExactPowerAgreement_id_iff _ _ _ _ _).mpr ⟨fun _ ↦ Q, fun _ ↦ hQ, ?_, ?_⟩
+  · simp [powerBatchedPolynomial]
+  · ext i
+    simp [powerBatchedWord]
 
 end Exact
 
