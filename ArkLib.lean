@@ -98,12 +98,17 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.KernelSliceIndependence
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
+public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
 public import ArkLib.Data.CodingTheory.InterleavedCode
@@ -316,6 +321,7 @@ public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
+public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.TaylorResidual
 public import ArkLib.Data.Polynomial.Differential.Types
 public import ArkLib.Data.Polynomial.DivisorReconstruction
@@ -540,6 +546,7 @@ public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.ToListWithProof
+public import ArkLib.ToMathlib.Finsupp.Weight
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
@@ -562,6 +569,7 @@ public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 public import ArkLib.ToMathlib.Polynomial.EvalExt
+public import ArkLib.ToMathlib.Polynomial.EventualGrowth
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
@@ -572,7 +580,10 @@ public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.Set.Finite
