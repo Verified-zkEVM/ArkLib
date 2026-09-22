@@ -12,13 +12,13 @@ import ArkLib.ToMathlib.Polynomial.EventualGrowth
 The examples evaluate a backward difference and read off its top coefficient. Over `ZMod 4` that
 coefficient vanishes for a nonzero step, and over `ZMod 2` the polynomials `X ^ 2` and `X` agree
 at every natural number, so characteristic zero is needed in both places. The comparison lemma
-needs the nonnegativity of the smaller polynomial. The source-shaped `ℚ` statements, including
-the disjunction with `Q = 0`, are derived from the general ones.
+needs the nonnegativity of the smaller polynomial. The special cases over `ℚ` with a
+natural step, including the disjunction with `Q = 0`, are derived from the general ones.
 
 For the rescaled comparisons, the examples compute the degree of a composite with an affine
 polynomial, show that `c ≠ 0` is needed there and that the lower polynomial must be eventually
-nonnegative in the sandwich, and derive the source's rescaled, affine and sandwich statements,
-with their `≠ 0` and positivity hypotheses, from the general ones.
+nonnegative in the sandwich, and derive the rescaled, affine and sandwich comparisons over `ℚ`
+with natural constants and redundant `≠ 0` and positivity hypotheses, from the general ones.
 
 For the coefficient comparisons in a degree `d` at least the natural degree, `X - 1` and `1 - X`
 show that the degree bounds are needed, and `taylor 3 (X ^ 2)` shows that a Taylor shift keeps
@@ -61,7 +61,7 @@ example : (∀ N : ℕ, (X ^ 2 : (ZMod 2)[X]).eval (N : ZMod 2) = (X : (ZMod 2)[
   rw [natDegree_X_pow, natDegree_X] at this
   exact absurd this (by norm_num)
 
-/-- The source statement over `ℚ`: agreement on a tail of `ℕ` gives equality. -/
+/-- Over `ℚ`: agreement on a tail of `ℕ` gives equality. -/
 example {P Q : ℚ[X]} {N₀ : ℕ} (h : ∀ N ≥ N₀, P.eval (N : ℚ) = Q.eval (N : ℚ)) : P = Q :=
   eq_of_eventually_eval_natCast_eq h
 
@@ -73,20 +73,21 @@ example : (∀ x : ℚ, (-X ^ 2 : ℚ[X]).eval x ≤ (0 : ℚ[X]).eval x) ∧
   rw [natDegree_neg, natDegree_X_pow, natDegree_zero]
   norm_num
 
-/-- The source's comparison statement over `ℚ`, which assumed `Q ≠ 0`. -/
+/-- The comparison over `ℚ` with the redundant hypothesis `Q ≠ 0`. -/
 example {Q R : ℚ[X]} (_hQ : Q ≠ 0) (hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
     (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ R.eval (N : ℚ)) :
     Q.natDegree ≤ R.natDegree ∧
       (Q.natDegree = R.natDegree → Q.leadingCoeff ≤ R.leadingCoeff) :=
   natDegree_le_of_eventually_eval_natCast_le hQnonneg hle
 
-/-- The source's degree statement for a backward difference with a positive natural step. -/
+/-- The degree and leading coefficient of a backward difference with a positive natural step. -/
 example {b : ℕ} (hb : 0 < b) {P : ℚ[X]} (hd : 0 < P.natDegree) :
     (backwardDifference (b : ℚ) P).natDegree = P.natDegree - 1 ∧
       (backwardDifference (b : ℚ) P).leadingCoeff = (b : ℚ) * P.natDegree * P.leadingCoeff :=
   natDegree_backwardDifference_eq_and_leadingCoeff_of_ne_zero (Nat.cast_ne_zero.mpr hb.ne') hd
 
-/-- The polynomial half of the source's principal-cut statement, in its disjunctive form. -/
+/-- The backward-difference bound over `ℚ` with a natural step, in the disjunctive form
+`Q = 0 ∨ ...`. -/
 example {b : ℕ} {P Q : ℚ[X]} (hQ : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
     (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ (backwardDifference (b : ℚ) P).eval (N : ℚ)) :
     Q = 0 ∨ Q.natDegree ≤ P.natDegree - 1 ∧
@@ -120,11 +121,12 @@ example : (∀ x : ℚ, (-X : ℚ[X]).eval x ≤ (0 : ℚ[X]).eval x ∨ x < 0) 
     · left; simpa using hx
     · right; exact hx
 
-/-- The source's `natDegree_comp_C_mul_X` over `ℚ`. -/
+/-- Over `ℚ`, composing with `C c * X`, `c ≠ 0`, preserves the natural degree. -/
 example (P : ℚ[X]) {c : ℚ} (hc : c ≠ 0) : (P.comp (C c * X)).natDegree = P.natDegree := by
   simpa using natDegree_comp_C_mul_X_add_C P hc 0
 
-/-- The source's rescaled comparison, with its hypotheses `Q ≠ 0` and `0 < c`. -/
+/-- The rescaled comparison with a natural constant `c`, with the redundant hypotheses `Q ≠ 0`
+and `0 < c`. -/
 example {P Q : ℚ[X]} (_hQ : Q ≠ 0) {c : ℕ} (_hc : 0 < c)
     (hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
     (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ P.eval ((c * N : ℕ) : ℚ)) :
@@ -132,7 +134,7 @@ example {P Q : ℚ[X]} (_hQ : Q ≠ 0) {c : ℕ} (_hc : 0 < c)
   natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine (m := 1) (c := c) (d := 0) hQnonneg
     (hle.mono fun N hN ↦ by simpa using hN)
 
-/-- The source's affine comparison with natural constants `m, c > 0` and `d`. -/
+/-- The affine comparison with natural constants `m, c > 0` and `d`. -/
 example {P Q : ℚ[X]} (_hQ : Q ≠ 0) {m c d : ℕ} (_hm : 0 < m) (_hc : 0 < c)
     (hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
     (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : ℚ) ≤ (m : ℚ) * P.eval ((c * N + d : ℕ) : ℚ)) :
@@ -140,8 +142,8 @@ example {P Q : ℚ[X]} (_hQ : Q ≠ 0) {m c d : ℕ} (_hm : 0 < m) (_hc : 0 < c)
   natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine (m := m) (c := c) (d := d) hQnonneg
     (hle.mono fun N hN ↦ by simpa using hN)
 
-/-- The source's sandwich, with its redundant hypotheses `P ≠ 0`, `Q ≠ 0`, `0 < c` and eventual
-nonnegativity of `Q`. -/
+/-- The sandwich with a natural constant `c`, with the redundant hypotheses `P ≠ 0`, `Q ≠ 0`,
+`0 < c` and eventual nonnegativity of `Q`. -/
 example {P Q : ℚ[X]} (_hP : P ≠ 0) (_hQ : Q ≠ 0) {c : ℕ} (_hc : 0 < c)
     (hPnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ P.eval (N : ℚ))
     (_hQnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : ℚ))
@@ -201,7 +203,7 @@ example : (taylor (3 : ℚ) (X ^ 2)).coeff 1 = 6 ∧ (X ^ 2 : ℚ[X]).coeff 1 = 
   · rw [coeff_X_pow]
     norm_num
 
-/-- The source's `ℚ` forms of the coefficient lemmas. -/
+/-- The coefficient lemmas over `ℚ`. -/
 example {P Q : ℚ[X]} {d : ℕ} (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d)
     (hnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ P.eval (N : ℚ))
     (hle : ∀ᶠ N : ℕ in atTop, P.eval (N : ℚ) ≤ Q.eval (N : ℚ)) (a : ℚ) :

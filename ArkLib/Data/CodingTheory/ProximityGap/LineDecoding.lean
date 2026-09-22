@@ -134,7 +134,6 @@ private theorem affine_collision_injective
       u₁ (pick γ) ≠ c₁ (pick γ)) :
     Function.Injective pick := by
   classical
-  let : DecidableEq F := Classical.decEq _
   intro γ β hpick
   apply Subtype.ext
   by_cases hval : γ.1 = β.1
@@ -487,7 +486,8 @@ private theorem exists_synthetic_affine_zero_set
         omega
       _ ≤ (Zero β).card := Finset.card_le_card hins
 
-omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] [DecidableEq A] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [SampleableType F] [Fintype A]
+  [DecidableEq A] in
 open scoped NNReal in
 private theorem is_mca_affine_line_bad_witness_nonempty
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδ : δ ≤ 1)
@@ -818,7 +818,7 @@ private theorem subsingleton_bad_set_card_le
     B.card = Fintype.card {γ : F // γ ∈ B} := (Fintype.card_coe B).symm
     _ ≤ Fintype.card ι := Fintype.card_le_of_injective pick hinj
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+omit [DecidableEq ι] [DecidableEq F] [SampleableType F] [Fintype A] in
 open scoped NNReal in
 private theorem subsingleton_original_line_exact
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
@@ -965,7 +965,7 @@ private theorem subsingleton_synthetic_line_exact
       have hi := (Finset.mem_filter.mp hiZero).2
       exact hne (by simpa only [Pi.add_apply, Pi.smul_apply, Pi.zero_apply] using hi)
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] in
 open scoped NNReal in
 private theorem subsingleton_bad_set_exact_close
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)

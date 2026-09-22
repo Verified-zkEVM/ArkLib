@@ -11,7 +11,7 @@ import ArkLib.Data.Finset.WeightedSimplex.Moments
 
 These cases compare the moment identities with direct enumeration, check budgets zero and one,
 show that the mixed moment needs distinct coordinates, use an index type other than `Fin`, and
-derive the source's `Fin r` statements with the stars-and-bars binomial.
+derive the special cases over `Fin r` with the stars-and-bars binomial.
 -/
 
 open Finset
@@ -85,13 +85,13 @@ example : ¬ ((Fintype.card Unit + 1) * (Fintype.card Unit + 2) *
       1 * (1 - 1) * (natWeightedSimplex (fun _ : Unit ↦ 1) 1).card) := by
   decide
 
-/-- The source's first moment over `OrdinarySimplex r S`, stated with its stars-and-bars count. -/
+/-- The first moment over `Fin r`, stated with the stars-and-bars count. -/
 example (r S : ℕ) (i : Fin r) :
     (r + 1) * ∑ c ∈ natWeightedSimplex (fun _ : Fin r ↦ 1) S, c i = S * (S + r).choose r := by
   simpa [card_natWeightedSimplex_one] using
     card_add_one_mul_sum_natWeightedSimplex_one_apply i S
 
-/-- The source's mixed and factorial moments over `Fin r`. -/
+/-- The mixed and factorial moments over `Fin r`. -/
 example (r S : ℕ) (i j : Fin r) (hij : i ≠ j) :
     (r + 1) * (r + 2) * ∑ c ∈ natWeightedSimplex (fun _ : Fin r ↦ 1) S, c i * c j =
       S * (S - 1) * (S + r).choose r := by

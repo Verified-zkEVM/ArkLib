@@ -31,7 +31,7 @@ private theorem hasseDeriv_one_X_five :
   norm_num
   rw [← Polynomial.C_mul_X_pow_eq_monomial]
 
-/-- The source monomial `X² Y₁³` attains its specialization weight
+/-- The monomial `X² Y₁³` attains its specialization weight
 `2 + 3 * (5 - 1) = 14`. -/
 example :
     (differentialSpecialization exactDegreeEquation (Polynomial.X ^ 5)).natDegree = 14 ∧

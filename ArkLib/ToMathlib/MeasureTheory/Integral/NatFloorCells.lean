@@ -31,6 +31,9 @@ pairwise disjoint measurable cells.
 The nonnegativity of `w i` in the first statement is needed because a cell may have measure less
 than one: a constant `f = w i < 0` on a cell of measure `1 / 2` integrates to `w i / 2 > w i`.
 
+The weighted-simplex transfers that index the cells by lattice points are in
+`ArkLib.Data.Finset.WeightedSimplex.FloorTransfer`.
+
 ## Main statements
 
 * `MeasureTheory.natFloorCell`, `MeasureTheory.mem_natFloorCell`,
@@ -43,27 +46,6 @@ than one: a constant `f = w i < 0` on a cell of measure `1 / 2` integrates to `w
   varies across a cell by at most the sum of its coefficients.
 * `MeasureTheory.setIntegral_biUnion_le_sum` and
   `MeasureTheory.sum_le_setIntegral_of_measure_eq_one`: the two finite cell comparisons.
-
-## References
-
-Ports, from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-
-* `integral_biUnion_le_sum_of_cell_measure_le_one` and `sum_le_integral_of_unit_cells` from
-  `ArkLib/ToMathlib/MeasureTheory/Integral/FiniteCells.lean`, as
-  `setIntegral_biUnion_le_sum` and `sum_le_setIntegral_of_measure_eq_one`. The first now assumes
-  the one-sided bound `f x ≤ w i` instead of `‖f x‖ ≤ w i`, so `f` may be arbitrarily negative.
-  The second assumes `0 ≤ f` only on `S`, together with measurability of `S`, instead of on the
-  whole space.
-* `natFloorCell`, `measurableSet_natFloorCell`, `volume_natFloorCell`, `mem_natFloorCell_iff`, and
-  `disjoint_natFloorCell` from `ArkLib/ToMathlib/MeasureTheory/Integral/NaturalFloorCells.lean`.
-  Disjointness is stated as `Pairwise (Disjoint on natFloorCell)`.
-* The first half of `sum_natFloor_bounds` from the same file, in the weighted cell form
-  `sum_mul_le_sum_mul_of_mem_natFloorCell`; its second half becomes
-  `sum_mul_le_sum_mul_add_sum_of_mem_natFloorCell` with coefficients.
-
-`bounded_region_eq_union_natFloorCells` and `integral_bounded_region_le_natFloor_sum` are not
-ported: the weighted-simplex transfers in `ArkLib.Data.Finset.WeightedSimplex.FloorTransfer` index
-the cells by the lattice points of the simplex directly.
 -/
 
 @[expose] public section

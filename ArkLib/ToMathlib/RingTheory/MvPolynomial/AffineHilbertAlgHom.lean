@@ -32,6 +32,10 @@ most `N`. For the finite case, `T M` consists of the combinations `∑ l, g (b l
 generating set containing `1`, with each `b l` in the `M`-th piece of the filtration of
 `MvPolynomial τ k ⧸ J`.
 
+The finite case is stated for an algebra map `g` with `g.Finite`. For an `Algebra` instance with
+`IsScalarTower` and `Module.Finite`, apply it to `IsScalarTower.toAlgHom` using
+`RingHom.finite_algebraMap`. None of the degree comparisons assumes that `I` or `J` is proper.
+
 ## Main statements
 
 * `MvPolynomial.aeval_mem_of_forall_mul_mem`: the filtration bound for `aeval`.
@@ -49,31 +53,6 @@ generating set containing `1`, with each `b l` in the `M`-th piece of the filtra
   `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_surjective`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_eq_of_finite_of_injective`: the degree
   comparisons.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
-From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/FiniteAlgebraGrowth.lean`:
-`hilbertFunction_le_rescaled_of_injective_algHom` (here
-`exists_affineHilbertFunction_le_of_injective`, with the explicit-constant form
-`affineHilbertFunction_le_of_injective`, which needs neither injectivity for the filtration step
-nor finiteness of `τ`), `hilbertPolynomial_natDegree_le_of_injective_algHom`,
-`hilbertPolynomial_natDegree_le_of_surjective_algHom` and
-`hilbertFunction_le_mul_rescaled_of_finite`. From
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/FiniteExtensionDegree.lean`:
-`hilbertPolynomial_natDegree_eq_of_finite_injective_algebraMap` and
-`hilbertPolynomial_natDegree_eq_of_finite_injective_algHom`.
-
-Changes from the source. The finite case is stated for an algebra map `g` with `g.Finite` rather
-than for an `Algebra` instance with `IsScalarTower` and `Module.Finite`; the instance form is
-`RingHom.finite_algebraMap` applied to `IsScalarTower.toAlgHom`, and the two source equality
-statements become one. The source's finite bound was `H(I, N) ≤ m * H(J, c * (N + 1))`; with
-`1` in the generating set the constant term lands in degree `0`, giving `H(J, c * N)`. The
-surjective case is a corollary of the finite case rather than a separate kernel argument, so it
-no longer assumes `I ≠ ⊤`; the injective and equality statements no longer assume `J ≠ ⊤` or
-`I ≠ ⊤`, because `Polynomial.natDegree_le_of_eventually_eval_natCast_le` does not need a nonzero
-polynomial. The source's private `totalDegree_eval₂_le` is replaced by the multiplicativity of the
-filtration and `aeval_mem_of_forall_mul_mem`.
 -/
 
 @[expose] public section

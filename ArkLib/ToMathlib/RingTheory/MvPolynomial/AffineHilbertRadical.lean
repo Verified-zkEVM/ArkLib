@@ -29,6 +29,10 @@ and for a graded order the quotient has total degree at most that of `e`, which 
 injection from the standard exponents of `I` of degree at most `N` into the product of those of
 `J` with `Fin t`-valued functions on `σ`.
 
+The floor quotient is Mathlib's `e ⌊/⌋ t` on `σ →₀ ℕ` (`Finsupp.floorDiv_apply`,
+`Finsupp.floorDiv_le_self`). No statement assumes `0 < t`: for `t = 0`, `J ^ 0 ≤ I` forces
+`I = ⊤`, which has no standard exponents.
+
 ## Main statements
 
 * `MonomialOrder.floorDiv_mem_standardExponents`: floor division by `t` maps standard exponents
@@ -39,23 +43,6 @@ injection from the standard exponents of `I` of degree at most `N` into the prod
   degrees between `I ≤ J ≤ I.radical`.
 * `MvPolynomial.natDegree_affineHilbertPolynomial_radical`: the radical has the same natural
   degree.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/RadicalDegree.lean`, namespace `AffineHilbert`. The
-source's `exponentDiv t e`, with `exponentDiv_apply` and `exponentDiv_le`, is Mathlib's floor
-division `e ⌊/⌋ t` on `σ →₀ ℕ` (`Finsupp.floorDiv_apply`, `Nat.floorDiv_eq_div`), so it has no
-new definition; `exponentDiv_le` is `Finsupp.floorDiv_le_self`. The source's
-`exponentDiv_mem_standardExponents` is `MonomialOrder.floorDiv_mem_standardExponents`, stated for
-every monomial order instead of `degLex` and without the hypothesis `0 < t`: for `t = 0`,
-`J ^ 0 ≤ I` forces `I = ⊤`, which has no standard exponents. The source's
-`hilbertFunction_le_mul_of_pow_le` is `affineHilbertFunction_le_pow_mul_of_pow_le`, with the
-factor `t ^ Nat.card σ` on the left, for finite `σ` without a chosen `Fintype` or `LinearOrder`,
-and again without `0 < t`. The source's `hilbertPolynomial_radical_natDegree` is
-`natDegree_affineHilbertPolynomial_radical`, a corollary of the comparison
-`natDegree_affineHilbertPolynomial_le_of_pow_le` for arbitrary `J ^ t ≤ I` and of the equality
-`natDegree_affineHilbertPolynomial_eq_of_le_of_le_radical` for every `I ≤ J ≤ I.radical`.
 -/
 
 @[expose] public section
