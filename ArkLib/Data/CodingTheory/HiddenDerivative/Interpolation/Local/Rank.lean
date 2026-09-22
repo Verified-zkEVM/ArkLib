@@ -41,7 +41,8 @@ bound `finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound` of
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
   Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.5, the rows (17)–(18), and
+  Section 6.1, the local-rank bound (72).
 -/
 
 @[expose] public section

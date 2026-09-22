@@ -50,7 +50,8 @@ Specializing the coefficient variables to `c : ℕ → R` recovers the Taylor ex
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6, Lemma A.4 (Regular Taylor
+  chart).
 -/
 
 @[expose] public section

@@ -11,6 +11,14 @@ library documentation describes only the present API (see
 [`docs/wiki/porting-conventions.md`](../wiki/porting-conventions.md)). "The source" is ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` unless a note names another revision.
 
+The key `DKTZ26` in these notes refers to the manuscript revision the source cited. The library
+now cites its published version, [DKT26] (Cryptology ePrint Archive, Paper 2026/2056), with
+ePrint numbering. The old locators map as follows: "Appendix A.3, Lemma A.5" (Regular Taylor
+chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26 Section 3.5;
+equations (39)–(40) of the source revision (`eq:band-lattice-ratio`, `eq:band-geometric-rank`)
+correspond to the local-rank bound (72) of DKT26 Section 6.1 and the rank estimate (131) in its
+Appendix D.2.
+
 The notes describe each file as it was merged. Later changes to a file are recorded in its pull
 request and ledger row, not here.
 
@@ -396,7 +404,7 @@ instances of `finrank_range_exactLocalConstraintAt_le_sub`.
 Ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RankBudget.lean` at
 ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows equations (39)–(40) of
-[DKT26].
+[DKTZ26].
 
 * `localRank_ceilDiv_le` is unchanged and is derived from the generic
   `Nat.cast_ceilDiv_le_div_add_one`.
@@ -1224,7 +1232,7 @@ slope, a binomial coefficient times that value, is a unit or left-regular.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
-[DKT26], Appendix A.3, Lemma A.5. The declarations are ported from
+[DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1347,7 +1355,7 @@ differential polynomial over a commutative semiring.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorResidual.lean`
 
-The support bounds are [DKT26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
+The support bounds are [DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 * `universalTaylorJet`, `optionEquivLeft_universalTaylorJet`,

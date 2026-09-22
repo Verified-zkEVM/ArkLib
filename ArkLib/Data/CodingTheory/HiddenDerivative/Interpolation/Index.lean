@@ -46,7 +46,7 @@ columns of the local constraint systems.
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
   Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70).
 -/
 
 @[expose] public section

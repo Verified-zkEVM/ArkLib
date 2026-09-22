@@ -37,7 +37,7 @@ commutative ring is needed.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.5, Definition 3.7 and Lemma 3.8.
 -/
 
 @[expose] public section
