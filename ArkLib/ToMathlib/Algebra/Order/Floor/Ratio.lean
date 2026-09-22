@@ -32,21 +32,6 @@ nonnegative numerator by `⌊R⌋₊` instead of `R ≥ 1` therefore costs at mo
 
 * `Nat.cast_ceil_le_max_add_one`, `Nat.cast_ceil_sub_le_max_sub_add_one`
 * `Nat.one_div_floor_le`, `Nat.div_floor_bounds`
-
-## References
-
-These generalize declarations of ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `ReedSolomon.HiddenDerivative.ceil_residual_le` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/RankBound.lean` is
-  `Nat.cast_ceil_le_max_add_one`, stated in `K` instead of `ℝ`.
-  `Nat.cast_ceil_sub_le_max_sub_add_one` is new; it is the form needed after the local residual
-  budget switched to the natural cutoff `⌈T⌉₊`.
-* `ReedSolomon.HiddenDerivative.InterpolationRounding.floor_reciprocal_le` and
-  `floor_ratio_bounds` of `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/`
-  `RankRounding.lean` are `Nat.one_div_floor_le` and `Nat.div_floor_bounds`, stated in `K`, with
-  the source's hypothesis `2 ≤ R` weakened to `0 < R` and `1 ≤ R` respectively.
-  The source's `floor_pos` is Mathlib's `Nat.floor_pos`.
 -/
 
 @[expose] public section

@@ -23,19 +23,6 @@ Taylor bound `Real.exp_bound'`.
 
 * `Real.exp_le_exp_mul_rpow_of_le_log_add`, `Real.exp_le_exp_add_mul_rpow_of_le_log_add`
 * `Real.exp_sixtyOne_div_hundred_lt`
-
-## References
-
-These generalize declarations of ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `ReedSolomon.HiddenDerivative.InterpolationRounding.exp_le_rpow` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RankRounding.lean` fixed
-  `b = 3 / 5` and `c = 1 / 100` and concluded `exp E ≤ C * d ^ (1 / a)` for every
-  `C ≥ exp (61 / 100)` and natural `d > 0`. That is the case `x = d` of
-  `Real.exp_le_exp_add_mul_rpow_of_le_log_add`.
-* `ReedSolomon.HiddenDerivative.WeightedSupportParameters.endpoint_exp_upper` of
-  `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/`
-  `EndpointComparison.lean` is `Real.exp_sixtyOne_div_hundred_lt`, with the same proof.
 -/
 
 @[expose] public section
