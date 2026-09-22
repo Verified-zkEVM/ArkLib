@@ -33,7 +33,7 @@ suffice for the residual coefficient.
 ## Main statements
 
 * `PolynomialDifferential.initialJetSeparant` and `aeval_initialJetSeparant`: the separant as a
-  polynomial in the initial jet.
+  polynomial in the initial jet; `map_initialJetSeparant`: it commutes with coefficient maps.
 * `PolynomialDifferential.rationalTaylorNumerator` and
   `totalDegree_rationalTaylorNumerator_le`: the numerator has total degree at most
   `(2(l - r) - 1) * (jetTotalDegree Q - 1) + 1`.
@@ -152,6 +152,17 @@ theorem aeval_initialJetSeparant (center : F) (Q : DifferentialPolynomial F r)
     cases i <;> rfl
   rw [hfun] at ht
   exact ht
+
+/-- A coefficient map sends the initial separant of `Q` at `center` to the initial separant of
+the mapped polynomial at the mapped center. -/
+theorem map_initialJetSeparant {B : Type*} [CommSemiring B] (f : F →+* B) (center : F)
+    (Q : DifferentialPolynomial F r) :
+    map f (initialJetSeparant center Q) = initialJetSeparant (f center) (map f Q) := by
+  simp only [initialJetSeparant, aeval_def, algebraMap_eq, map_eval₂]
+  simp only [separant, ← pderiv_map]
+  congr 1
+  funext i
+  cases i <;> simp
 
 end CommSemiring
 
