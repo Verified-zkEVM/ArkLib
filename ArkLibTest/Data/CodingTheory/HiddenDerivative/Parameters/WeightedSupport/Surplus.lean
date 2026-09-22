@@ -9,14 +9,14 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Surp
 /-!
 # Acceptance cases for the multiplicative margin
 
-The source's `rankPower_eq_inverse_exp`, derived from `Real.rpow_one_div_div_self`; a concrete
-instance of that identity; the case showing that `a ≠ 0` is needed in it; and the edge case
-`R = 0` of `multiplicative_margin_from_bounds`, where the conclusion is `0 < N`.
+The case `a = 1 + θ g` of `Real.rpow_one_div_div_self`; a concrete instance of that identity; the
+case showing that `a ≠ 0` is needed in it; and the edge case `R = 0` of
+`multiplicative_margin_from_bounds`, where the conclusion is `0 < N`.
 -/
 
 open ReedSolomon.HiddenDerivative.WeightedSupportParameters
 
-/-- The source's `rankPower_eq_inverse_exp`, with `a = 1 + θ g` and `0 ≤ g`. -/
+/-- `Real.rpow_one_div_div_self` at `a = 1 + θ g`, with `0 ≤ g`. -/
 example (d g : ℝ) (hd : 0 < d) (hg : 0 ≤ g) :
     d ^ (1 / (1 + theta * g)) / d = (Real.exp (Real.log d * (theta * g / (1 + theta * g))))⁻¹ := by
   have ha : 0 < 1 + theta * g := by have := theta_pos; positivity

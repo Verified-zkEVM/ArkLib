@@ -11,8 +11,8 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 # Acceptance cases for the volume-normalized weighted local rank
 
 A concrete instance of the scalar conversion, the case showing that its hypothesis `0 < c` is
-needed for strictness, and the source's statements of `normalized_rank_lt_of_rounding_bounds` and
-`finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error`, which fixed
+needed for strictness, and `normalized_rank_lt_of_rounding_bounds` and
+`finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error` specialized to
 `c = 448 / 625`, `b = 3 / 5`, `K = 37 / 20`, `a = 1 + 3 g / 8`, `L = m D (1 + g)` and
 `48000 ≤ d`.
 -/
@@ -35,7 +35,7 @@ example : (0 : ℝ) ≤ 1 * 0 * Real.exp 1 * (1 / (1 * 1 ^ 2) + 1 / (1 * 1)) ∧
     ¬ ((0 : ℝ) < 1 * 0 * 2 * 3 * 1 ^ 2 / 1 ^ 2 * (1 : ℝ) ^ (1 / (1 : ℝ)) / 1) := by
   norm_num
 
-/-- The source's `normalized_rank_lt_of_rounding_bounds`: `c = 448 / 625`, `b = 3 / 5`,
+/-- `normalized_rank_lt_of_rounding_bounds` at `c = 448 / 625`, `b = 3 / 5`,
 `e = 1 / 100`, `ρ = 101 / 100`, `K = 37 / 20`, and natural `d`, `m`. -/
 example (R g Ee a H E κ : ℝ) (d m : ℕ)
     (hg : 0 < g) (hEe : Ee ≤ 448 / 625)
@@ -50,7 +50,7 @@ example (R g Ee a H E κ : ℝ) (d m : ℕ)
     (by exact_mod_cast hm) hκ hHlog hE (by norm_num; exact Real.exp_sixtyOne_div_hundred_lt)
     hrec hR
 
-/-- The source's `finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error`:
+/-- `finrank_weightedSupportLocalConstraint_lt_prescribed_rounding_of_harmonic_error` at
 `a = 1 + 3 g / 8`, `L = m D (1 + g)` (so `L / D = m (1 + g)`), `c = 448 / 625`, `b = 3 / 5`,
 `K = 37 / 20` and `48000 ≤ d`. -/
 example {F : Type*} [Field F] (g H : ℝ) (d D : ℕ)

@@ -27,23 +27,6 @@ independence of the constraints is assumed.
   space.
 * `exists_nonzero_exact_interpolant_of_weightedSupport_surplus`: the same interpolant in the exact
   interpolation space, when `L ≤ m A` and `L ≤ D M`.
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`Interpolation.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* The local budget is `localResidualCoordinateBudget d m W ⌈L / D⌉₊`, the natural-cutoff form used
-  by `finrank_weightedSupportLocalConstraint_le` since P3 slice 8; the source wrote the real
-  cutoff `L / D`.
-* `weightedSupportGlobalConstraint` is unchanged.
-* `finrank_weightedSupportGlobalConstraint_le` and `exists_nonzero_weightedSupport_interpolant`
-  follow from `LinearMap.finrank_range_pi_le_sum` and
-  `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` in
-  `ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional`, which hold for any finite family of linear
-  maps over a division ring.
-* `exists_nonzero_exact_interpolant_of_weightedSupport_surplus` is unchanged apart from the
-  budget.
 -/
 
 @[expose] public section

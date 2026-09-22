@@ -39,21 +39,6 @@ The proof has three parts.
 * `finrank_weightedSupportLocalConstraint_lt_prescribed`
 * `weightedSupport_margin_of_normalized_rank`
 * `prescribed_weightedSupport_margin`
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/Margin.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, together with
-`finrank_weightedSupportLocalConstraint_lt_prescribed` of `NormalizedRank.lean` in the same
-directory, which was deferred from the port of that file until `Rounding.lean` was ported.
-Throughout, the source's `harmonicPowerSum (d - 1) 1` is `harmonic (d - 1)` and its
-`harmonicPowerSum (d - 1) 2` is `∑ i : Fin (d - 1), 1 / ((i : ℝ) + 1) ^ 2`.
-
-* `finrank_weightedSupportLocalConstraint_lt_prescribed` drops the source's hypothesis
-  `H ≤ log d + 3 / 5`, which holds for every `d` (`Real.harmonic_pred_lt_log_add_three_fifths`).
-* `weightedSupport_margin_of_normalized_rank` weakens `48000 ≤ d` to `10000 ≤ d`, the hypothesis of
-  `weighted_dimension_lower`.
-* `prescribed_weightedSupport_margin` is unchanged.
 -/
 
 @[expose] public section

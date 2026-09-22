@@ -45,34 +45,12 @@ budgets directly.
   `jetTotalDegree_lt_of_mem_weightedSupportSpace` and
   `decoder_bounds_of_mem_weightedSupportSpace`: degree budgets of members of the space.
 
+The coordinate description and the dimension lower bound are in `WeightedSupport/Dimension.lean`.
+
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`Basic.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
-`WeightedSupportEligible`, `degree_lt_ceil_of_weightedSupportEligible`,
-`weightedSupportEligible_finite`, `weightedSupportExponents`, `mem_weightedSupportExponents`,
-`weightedSupportSpace`, `mem_weightedSupportSpace_iff`,
-`totalJetDegree_lt_of_weightedSupportEligible`, `finrank_weightedSupportSpace_eq_card`,
-`weightedSupportSpace_le_exactInterpolationSpace`,
-`totalJetDegree_le_pred_of_weightedSupportEligible`,
-`differentialWeightedDegree_lt_of_mem_weightedSupportSpace`,
-`jetTotalDegree_lt_of_mem_weightedSupportSpace` and `decoder_bounds_of_mem_weightedSupportSpace`,
-with the same statements up to the following changes. The source's `weightedSupportBasis` is
-`weightedSupportSpaceBasis`, indexed by the exponent `Finset` like
-`exactInterpolationSpaceBasis`. The source's `exactInterpolationMonomialWeight_lt_of_…` is
-`weight_differentialWeight_lt_of_weightedSupportEligible`, stated through
-`Finsupp.weight (differentialWeight D)`, and its coarse comparison is
-`weight_le_add_mul_totalJetDegree` of `Interpolation/Index.lean`. The source imported
-`RootFinding/Counting/TotalJetDegreeRootCount.lean` only for `jetTotalDegree` and
-`jetTotalDegree_le_iff`, which are now `PolynomialDifferential.jetTotalDegree` and
-`PolynomialDifferential.jetTotalDegree_le_iff`; accordingly `[Field F]` is weakened to
-`[CommSemiring F]` in `jetTotalDegree_lt_of_mem_weightedSupportSpace` and
-`decoder_bounds_of_mem_weightedSupportSpace`. The `Module.Finite` instance is new; the source
-built it locally in `WeightedSupport/Interpolation.lean`. The coordinate description and the
-dimension lower bound are in `WeightedSupport/Dimension.lean`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70).
 -/
 
 @[expose] public section
@@ -114,6 +92,7 @@ theorem weightedSupportEligible_finite (hD : 0 < D) :
 def weightedSupportExponents (D d W : ℕ) (L : ℝ) (hD : 0 < D) : Finset (JetVariable d →₀ ℕ) :=
   (weightedSupportEligible_finite (d := d) (W := W) (L := L) hD).toFinset
 
+/-- Membership in `weightedSupportExponents` is `WeightedSupportEligible`. -/
 @[simp]
 theorem mem_weightedSupportExponents {hD : 0 < D} {u : JetVariable d →₀ ℕ} :
     u ∈ weightedSupportExponents D d W L hD ↔ WeightedSupportEligible D d W L u := by

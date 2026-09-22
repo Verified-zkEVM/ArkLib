@@ -10,8 +10,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Dime
 # Acceptance cases for the rounding inputs of the weighted dimension estimate
 
 An instance of `prescribed_dimension_inputs` at the smallest admitted order `d = 3`, and the
-source's statement, with `48000 ≤ d` and the gap written as `min 1 (δ / ρ)`, derived from the
-general one.
+statement at `48000 ≤ d` with the gap written as `min 1 (δ / ρ)`, derived from the general one.
 -/
 
 open ReedSolomon.HiddenDerivative.WeightedSupportParameters
@@ -30,7 +29,7 @@ example :
   prescribed_dimension_inputs (1 / 4) (1 / 2) (54 / 5) 3 (by norm_num) (by norm_num)
     (by norm_num) (by norm_num) le_rfl (by norm_num [xi])
 
-/-- The source's `prescribed_dimension_inputs`, with `48000 ≤ d`. -/
+/-- `prescribed_dimension_inputs` at `48000 ≤ d`. -/
 example (δ ρ H : ℝ) (d : ℕ)
     (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4) (hρ : 0 < ρ) (hρmax : ρ ≤ 1 - δ)
     (hd : 48000 ≤ d) (hHlo : xi / δ ≤ H) :

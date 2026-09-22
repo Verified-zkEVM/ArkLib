@@ -27,21 +27,6 @@ interpolation works in ambient dimension `K = max k ⌊δ n / 2⌋₊` with poly
 ## Main statements
 
 * `blockDegree_mul_one_add_rateGap_le`, `blockDegree_bounds`, `prescribedBlockBounds`
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/Block.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, whose single theorem is
-`prescribedBlockBounds`.
-
-* Its cutoff conclusion `D (1 + g) ≤ A` is `blockDegree_mul_one_add_rateGap_le`, which holds for
-  every `δ`, `n` and `k`.
-* Its rate and size conclusions are `blockDegree_bounds`, which assumes only `δ ≤ 2 / 3`,
-  `12 ≤ δ n` and `A ≤ n` instead of the prescribed block; `0 < δ`, `0 < n` and `0 < k` are not
-  needed.
-* `prescribedBlockBounds` keeps the source's statement with `min 1 (δ / (D / n))` written as
-  `rateGap δ (D / n)`. The hypothesis `δ < 1 / 4` is weakened to `δ ≤ 1 / 4`, and the hypothesis
-  `0 < k` is dropped.
 -/
 
 @[expose] public section

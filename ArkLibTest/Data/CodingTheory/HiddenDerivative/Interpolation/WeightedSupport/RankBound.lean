@@ -11,8 +11,8 @@ import Mathlib.Algebra.Order.Archimedean.Real.Basic
 # Acceptance cases for the weighted positive-part rank count
 
 Both sides of the positive-part bound at `d = 1`, `m = 2`, `W = 0`, `T = 21 / 10`, where the
-ceiling costs `1 / 10` per exponent; the geometric bound at the same parameters; and the source's
-`finrank_weightedSupportLocalConstraint_le_positivePart_sum`, whose contact ceiling was written
+ceiling costs `1 / 10` per exponent; the geometric bound at the same parameters; and
+`finrank_weightedSupportLocalConstraint_le_positivePart_sum` with the contact ceiling written
 `(m - r) ⌈/⌉ (d + 1)`.
 -/
 
@@ -60,7 +60,7 @@ example : (6 : ℝ) ≤ 31 / 10 * Real.exp 2 * 2 := by
   norm_num at h
   exact h
 
-/-- The source's `finrank_weightedSupportLocalConstraint_le_positivePart_sum`, with the contact
+/-- `finrank_weightedSupportLocalConstraint_le_positivePart_sum`, with the contact
 ceiling `(m - r) ⌈/⌉ (d + 1)` written out. -/
 example {F : Type*} [Field F] {d D m W : ℕ} {L : ℝ} (hd : 0 < d) (hD : 0 < D)
     (center received : F) :

@@ -30,24 +30,6 @@ Given any bound `B V exp (x (r + offset))` for the inner sum of residual `r`, th
 * `localResidualCoordinateBudget_le_positivePart_sum` and its specialization to the actual map,
   `finrank_weightedSupportLocalConstraint_le_positivePart_sum`.
 * `localResidualCoordinateBudget_le_geometric`: the geometric sum over contact residuals.
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/RankBound.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `ceil_residual_le` is `Nat.cast_ceil_le_max_add_one` in
-  `ArkLib.ToMathlib.Algebra.Order.Floor.Ratio`.
-* In `localResidualCoordinateBudget_le_positivePart_sum`,
-  `finrank_weightedSupportLocalConstraint_le_positivePart_sum` and
-  `localResidualCoordinateBudget_le_geometric` the source's real cutoff `T` of
-  `localResidualCoordinateBudget` is the natural cutoff `⌈T⌉₊`, following
-  `WeightedSupport/LocalRank.lean`. The source's `weightedHigherJetTuples d W` is
-  `Finset.natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) W`, its
-  `higherJetTupleDegree z` is `∑ i, z i`, and its contact ceiling `(m - r) ⌈/⌉ (d + 1)` is
-  `contactThreshold (d + 1) m r`. The per-exponent step is
-  `Nat.cast_ceil_sub_le_max_sub_add_one`.
-* The contact sum `localRank_contact_exp_sum_le` is `sum_contactThreshold_mul_exp_le`.
 -/
 
 @[expose] public section

@@ -10,9 +10,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Bloc
 # Acceptance cases for the weighted-support block parameters
 
 A concrete instance of `blockDegree_bounds` and of the cutoff bound; the cases showing that
-`12 ≤ δ n` and `δ ≤ 2 / 3` are needed in `blockDegree_bounds`; and the source's
-`prescribedBlockBounds`, written with `min 1 (δ / (D / n))`, `δ < 1 / 4` and `0 < k`, derived
-from the general statement.
+`12 ≤ δ n` and `δ ≤ 2 / 3` are needed in `blockDegree_bounds`; and
+`prescribedBlockBounds` written with `min 1 (δ / (D / n))`, `δ < 1 / 4` and `0 < k`, derived from
+the general statement.
 -/
 
 open ReedSolomon.HiddenDerivative.WeightedSupportParameters
@@ -66,10 +66,10 @@ example : ¬ (((max 10 ⌊(9 / 10 : ℝ) * (100 : ℕ) / 2⌋₊ - 1 : ℕ) : �
   rw [hf]
   norm_num
 
-/-! ### Source-shaped statement -/
+/-! ### Specialization with `min 1 (δ / (D / n))` -/
 
-/-- The source's `prescribedBlockBounds`, with `δ < 1 / 4`, the unused hypothesis `0 < k`, and
-the gap written as `min 1 (δ / (D / n))`. -/
+/-- `prescribedBlockBounds` with `δ < 1 / 4`, an unused hypothesis `0 < k`, and the gap written
+as `min 1 (δ / (D / n))`. -/
 example (δ : ℝ) (n k : ℕ)
     (hδ : 0 < δ) (hδmax : δ < 1 / 4) (_hk : 0 < k)
     (hblock :
