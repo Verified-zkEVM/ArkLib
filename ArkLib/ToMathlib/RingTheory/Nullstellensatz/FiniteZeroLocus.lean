@@ -33,23 +33,6 @@ zero, for every ideal `I`.
 * `MvPolynomial.finite_zeroLocus_iff_moduleFinite`,
   `MvPolynomial.finite_zeroLocus_iff_natDegree_affineHilbertPolynomial_eq_zero`: the two
   characterizations of a finite zero locus.
-
-## References
-
-Ported from `ArkLib/ToMathlib/AlgebraicGeometry/ZeroLocus/Finite.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
-
-`zeroLocusEvaluation_injective` keeps its name and radical hypothesis; the points may now lie in
-any algebraically closed extension `K` of `k` rather than in `k` itself.
-`moduleFinite_of_finite_zeroLocus` and `finite_zeroLocus_iff_hilbertPolynomial_natDegree_zero`
-(here `finite_zeroLocus_iff_natDegree_affineHilbertPolynomial_eq_zero`) no longer assume that `I`
-is radical: the radical has the same zero locus (`zeroLocus_radical`, new) and a Hilbert
-polynomial of the same natural degree (`natDegree_affineHilbertPolynomial_radical`).
-`finite_zeroLocus_iff_moduleFinite` is new.
-
-Deferred: the forward direction for points in a proper algebraically closed extension `K` of `k`.
-Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
-finite set to `K` do not form a finite-dimensional `k`-space.
 -/
 
 @[expose] public section

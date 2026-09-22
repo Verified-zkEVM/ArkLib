@@ -22,12 +22,25 @@ partition support space lies in the weighted support space and inherits its fini
 decoder degree bounds. The inclusion does not compare dimensions or local ranks: the local rank of
 the partition support is counted separately in `PartitionSupport/LocalRank.lean`.
 
+The coarse weight is a natural number, and a natural number `n` satisfies `n < L` exactly when
+`n < ⌈L⌉₊`, so the space at a real cutoff `L` is the space at the natural cutoff `⌈L⌉₊`. The
+constant monomial is eligible exactly when `0 < L`, and every coarse weight is nonnegative, so the
+space is nonzero exactly when `0 < L`, for every `W`. The coarse cutoff bounds the total jet
+degree by `L / D`.
+
 ## Main statements
 
 * `PartitionSupportEligible`, `PartitionSupportEligible.toWeightedSupportEligible`,
   `partitionSupportEligible_finite`, `partitionSupportExponents`.
 * `partitionSupportSpace`, `mem_partitionSupportSpace_iff`,
   `finrank_partitionSupportSpace_eq_card`, `partitionSupportSpace_le_weightedSupportSpace`.
+* `partitionSupportEligible_natCeil_iff`, `partitionSupportExponents_natCeil` and
+  `partitionSupportSpace_natCeil`: the real cutoff `L` and the natural cutoff `⌈L⌉₊` give the
+  same support.
+* `card_partitionSupportExponents_pos_iff` and `finrank_partitionSupportSpace_pos_iff`: the space
+  is nonzero exactly when `0 < L`.
+* `totalJetDegree_lt_of_partitionSupportEligible`: eligible exponents have total jet degree below
+  `L / D`.
 -/
 
 @[expose] public section
@@ -97,5 +110,60 @@ theorem partitionSupportSpace_le_weightedSupportSpace [CommSemiring F] (hD : 0 <
     partitionSupportSpace F D d W L hD ≤ weightedSupportSpace F D d W L hD := fun _ hQ =>
   mem_weightedSupportSpace_iff.mpr fun u hu =>
     (mem_partitionSupportSpace_iff.mp hQ u hu).toWeightedSupportEligible
+
+/-! ### Real and natural cutoffs -/
+
+/-- Eligibility at the natural cutoff `⌈L⌉₊` is eligibility at the real cutoff `L`, since the coarse
+weight is a natural number and `n < ⌈L⌉₊ ↔ n < L` for natural `n`. For `L ≤ 0` both sides are
+false. -/
+theorem partitionSupportEligible_natCeil_iff {u : JetVariable d →₀ ℕ} :
+    PartitionSupportEligible D d W (⌈L⌉₊ : ℝ) u ↔ PartitionSupportEligible D d W L u := by
+  simp only [PartitionSupportEligible, Nat.cast_lt, Nat.lt_ceil]
+
+/-- The eligible exponents at the natural cutoff `⌈L⌉₊` are those at the real cutoff `L`. -/
+theorem partitionSupportExponents_natCeil (hD : 0 < D) :
+    partitionSupportExponents D d W (⌈L⌉₊ : ℝ) hD = partitionSupportExponents D d W L hD := by
+  ext u
+  simp only [mem_partitionSupportExponents, partitionSupportEligible_natCeil_iff]
+
+/-- The partition support space at the natural cutoff `⌈L⌉₊` is the space at the real cutoff
+`L`. -/
+theorem partitionSupportSpace_natCeil [CommSemiring F] (hD : 0 < D) :
+    partitionSupportSpace F D d W (⌈L⌉₊ : ℝ) hD = partitionSupportSpace F D d W L hD := by
+  rw [partitionSupportSpace, partitionSupportSpace, partitionSupportExponents_natCeil]
+
+/-! ### Nonemptiness and degree bound -/
+
+/-- The constant monomial is partition-support eligible exactly when `0 < L`: its derivative-order
+weight `0` is at most every `W`, and its coarse weight is `0`. -/
+theorem partitionSupportEligible_zero_iff :
+    PartitionSupportEligible D d W L (0 : JetVariable d →₀ ℕ) ↔ 0 < L := by
+  simp [PartitionSupportEligible, fullDerivativeJetWeight, totalJetDegree]
+
+open Finset in
+/-- For `0 < D`, some exponent is partition-support eligible exactly when `0 < L`, for every
+derivative budget `W`. If `0 < L` the constant monomial is eligible; conversely every coarse
+weight is a nonnegative number below `L`. -/
+theorem card_partitionSupportExponents_pos_iff (hD : 0 < D) :
+    0 < #(partitionSupportExponents D d W L hD) ↔ 0 < L := by
+  rw [card_pos]
+  constructor
+  · rintro ⟨u, hu⟩
+    exact (Nat.cast_nonneg _).trans_lt (mem_partitionSupportExponents.mp hu).2
+  · intro hL
+    exact ⟨0, mem_partitionSupportExponents.mpr (partitionSupportEligible_zero_iff.mpr hL)⟩
+
+/-- For `0 < D`, the partition support space over a field is nonzero exactly when `0 < L`. -/
+theorem finrank_partitionSupportSpace_pos_iff [Field F] (hD : 0 < D) :
+    0 < Module.finrank F (partitionSupportSpace F D d W L hD) ↔ 0 < L := by
+  rw [finrank_partitionSupportSpace_eq_card, card_partitionSupportExponents_pos_iff]
+
+/-- A partition-support eligible exponent has total jet degree strictly below `L / D`, since
+`D * totalJetDegree u` is at most the coarse weight. The hypothesis `0 < D` makes the division
+meaningful. This is `totalJetDegree_lt_of_weightedSupportEligible` through the inclusion of the
+partition support into the weighted support. -/
+theorem totalJetDegree_lt_of_partitionSupportEligible (hD : 0 < D) {u : JetVariable d →₀ ℕ}
+    (hu : PartitionSupportEligible D d W L u) : (totalJetDegree u : ℝ) < L / D :=
+  totalJetDegree_lt_of_weightedSupportEligible hD hu.toWeightedSupportEligible
 
 end ReedSolomon.HiddenDerivative

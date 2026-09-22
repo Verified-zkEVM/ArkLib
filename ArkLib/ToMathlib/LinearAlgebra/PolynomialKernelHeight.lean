@@ -32,8 +32,7 @@ chosen primitive: its coordinates generate the unit ideal of `F[X]`.
 
 * `Matrix.exists_ne_zero_mulVec_eq_zero_degreeLT` uses arbitrary finite row and column index
   types and records the bound as membership in `Polynomial.degreeLT`, including for zero
-  coordinates. `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le` is the exact natural-degree
-  interface of the source theorem.
+  coordinates. `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le` is its natural-degree form.
 * `Matrix.exists_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le` replaces the row count by an upper
   bound `s` on the rank of `M.map φ`, for any injective ring homomorphism `φ` from `F[X]` to a
   field. `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_le` is its natural-degree
@@ -60,31 +59,6 @@ and the resulting bound is at most the bound for `s` because `r * b / (c - r)` i
 `ArkLib.ToMathlib.Polynomial.DegreeLT`) transfers the degree bound from `g * u j` to `u j`.
 The natural-degree forms follow from the `degreeLT` forms by
 `Polynomial.natDegree_le_of_mem_degreeLT_succ`.
-
-## References
-
-The theorem family is extracted and generalized from `ArkLib.ToMathlib.LinearAlgebra` at
-immutable source revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The row-count theorem
-generalizes `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le` in
-`PolynomialKernelHeight.lean`. The rank forms generalize
-`Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` in the same file and
-`Matrix.exists_primitive_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` in
-`PrimitivePolynomialKernel.lean`. Those source theorems fix the rank to be exactly `s`, measure it
-over `RatFunc F`, and use `Fin` indices, so a caller with only `rank ≤ r` had to prove the
-monotonicity of the bound itself. The source's row-count primitive theorem
-`Matrix.exists_primitive_ne_zero_mulVec_eq_zero_natDegree_le` is the primitive rank form with
-`s := Fintype.card rows` and the rank bound `Matrix.rank_le_card_height`.
-`Matrix.exists_primitive_kernel_vector_degreeLT` generalizes the lemma of the same name in
-`ShiftedDegreeKernel.lean` from `Fin` indices to arbitrary index types and drops its
-specialization clause, which follows from `Ideal.comp_ne_zero_of_span_range_eq_top`.
-
-The shifted and column families of the same revision,
-`Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT` and
-`Matrix.exists_primitive_mulVec_eq_zero_of_shifted_surplus` in `ShiftedDegreeKernel.lean`, and
-`Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT`,
-`Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank`, and
-`Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` in `ColumnDegreeKernel.lean`, are
-ported in `ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight`.
 -/
 
 @[expose] public section
@@ -285,15 +259,13 @@ vector can also be chosen with `Ideal.span (Set.range v) = ⊤`: its coordinates
 factor of positive degree. The degree budget is the same `degreeLT` bound, so zero coordinates
 and the case `s = 0` behave as in that theorem.
 
-The immutable source states primitivity together with the specialization clause
-`∀ {E} [Field E] (ι : F →+* E) (z : E), (fun j ↦ (v j).eval₂ ι z) ≠ 0`. That clause follows from
-the unit-ideal conclusion: apply `Ideal.comp_ne_zero_of_span_range_eq_top` with
-`φ := Polynomial.eval₂RingHom ι z`, whose target `E` is nontrivial.
+The unit-ideal conclusion implies the specialization clause
+`∀ {E} [Field E] (ι : F →+* E) (z : E), (fun j ↦ (v j).eval₂ ι z) ≠ 0`: apply
+`Ideal.comp_ne_zero_of_span_range_eq_top` with `φ := Polynomial.eval₂RingHom ι z`, whose target
+`E` is nontrivial.
 
-The row-count primitive form of the source,
-`Matrix.exists_primitive_ne_zero_mulVec_eq_zero_natDegree_le`, is the case
-`s := Fintype.card rows` with `hrank := Matrix.rank_le_card_height (M.map φ)`, which needs a
-`Fintype` instance on the rows. -/
+The row-count primitive form is the case `s := Fintype.card rows` with
+`hrank := Matrix.rank_le_card_height (M.map φ)`, which needs a `Fintype` instance on the rows. -/
 theorem exists_primitive_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le {rows cols K : Type*}
     [Finite rows] [Fintype cols] [Field K] {b s : ℕ}
     (M : Matrix rows cols F[X]) (hdeg : ∀ i j, (M i j).natDegree ≤ b)

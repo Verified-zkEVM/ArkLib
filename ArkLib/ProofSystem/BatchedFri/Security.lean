@@ -326,21 +326,14 @@ noncomputable def oracleImpl
           rfl
           (query (spec := [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) ⟨i, t⟩)
 
-instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabited where
-  inhabitedB := by
-    intro i
-    unfold Spec.QueryRound.pSpec MessageIdx at i
-    have : i.1.1 = 0 := by omega
-    have h := this ▸ i.1.2
-    simp at h
-
-instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype where
-  fintypeB := by
-    intro i
-    unfold Spec.QueryRound.pSpec MessageIdx at i
-    have : i.1.1 = 0 := by omega
-    have h := this ▸ i.1.2
-    simp at h
+omit [Fintype 𝔽] in
+/-- The query round sends no prover messages, so its message oracle has no queries. -/
+lemma queryRoundMessage_domain_false {l : ℕ}
+    (i : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Domain) : False := by
+  unfold Spec.QueryRound.pSpec MessageIdx at i
+  have : i.1.1 = 0 := by omega
+  have h := this ▸ i.1.2
+  simp at h
 
 local instance {l : ℕ} : ∀ q,
     MeasurableSpace (([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Range q) := fun _ => ⊤
@@ -351,7 +344,9 @@ local instance {l : ℕ} : ∀ q,
 
 noncomputable instance {l : ℕ} :
     IsUniformMeasureSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
-  IsUniformMeasureSpec.ofFintypeInhabited _
+  @IsUniformMeasureSpec.ofFiniteNonempty _ _
+    (fun i => (queryRoundMessage_domain_false (i := i)).elim)
+    (fun i => (queryRoundMessage_domain_false (i := i)).elim) _ _
 
 omit [Fintype 𝔽] in
 open ENNReal in
@@ -514,9 +509,8 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     i h
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    ([(fullChallengeProtocol
-        n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Inhabited where
-  inhabitedB := by
+    ∀ q, Inhabited (([(fullChallengeProtocol
+        n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Range q) := by
     intro q
     rcases q with ⟨i, u⟩
     cases u
@@ -525,9 +519,8 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     infer_instance
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    ([(fullChallengeProtocol
-        n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
-  fintypeB := by
+    ∀ q, Fintype (([(fullChallengeProtocol
+        n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Range q) := by
     intro q
     rcases q with ⟨i, u⟩
     cases u
@@ -562,26 +555,33 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
               n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge j))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+    ∀ q, Inhabited (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
         (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-            Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited := by
-  infer_instance
-
-noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    ([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+            Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q) := by
+  intro ⟨i, _⟩
+  exact (inferInstance : Inhabited (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
         (Spec.pSpecFold (ω := ω) k s ++ₚ
           Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-            Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype := by
-  infer_instance
+            Spec.QueryRound.pSpec (ω := ω) l)).Challenge i))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    ([]ₒ +
+    ∀ q, Fintype (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+        (Spec.pSpecFold (ω := ω) k s ++ₚ
+          Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+            Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q) := by
+  intro ⟨i, _⟩
+  exact (inferInstance : Fintype (((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+        (Spec.pSpecFold (ω := ω) k s ++ₚ
+          Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+            Spec.QueryRound.pSpec (ω := ω) l)).Challenge i))
+
+noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
+    ∀ q, Inhabited (([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-              Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited where
-  inhabitedB := by
+              Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q) := by
     intro q
     cases q with
     | inl q => exact PEmpty.elim q
@@ -615,12 +615,11 @@ local instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} : ∀ q,
   fun _ => inferInstance
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
-    ([]ₒ +
+    ∀ q, Fintype (([]ₒ +
       [((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
           (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
-              Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype where
-  fintypeB := by
+              Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q) := by
     intro q
     cases q with
     | inl q => exact PEmpty.elim q
@@ -643,7 +642,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
             (Spec.pSpecFold (ω := ω) k s ++ₚ
               Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
                 Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ) :=
-  IsUniformMeasureSpec.ofFintypeInhabited _
+  IsUniformMeasureSpec.ofFiniteNonempty _
 
 open ENNReal in
 /-- Corresponds to Claim 8.2 of [BCIKS20] -/

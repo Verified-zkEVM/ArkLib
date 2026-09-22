@@ -11,8 +11,9 @@ import ArkLib.Data.Finset.Staircase
 # Acceptance cases for the quadratic real-cutoff staircase
 
 A nonintegral cutoff evaluated by hand, the agreement with the natural-number staircase at an
-integral cutoff, the slot count, the lower bound at those cutoffs, a nonpositive cutoff, and the
-necessity of `0 ≤ L` in `square_div_two_le_sum`.
+integral cutoff, the slot count, the lower bound at those cutoffs, a nonpositive cutoff, the
+necessity of `0 ≤ L` in `square_div_two_le_sum`, and the natural form `count_div_sub_eq_sum` of the
+count at a rational cutoff together with the necessity of its hypothesis `0 < D`.
 -/
 
 open QuadraticStaircase
@@ -55,3 +56,21 @@ example (D : ℕ) : count D (-1) = 0 := by
 example : ¬ ((-1 : ℝ) ^ 2 / 2 ≤ ∑ u ∈ Finset.range ⌈(-1 : ℝ)⌉₊, (-1 - (u : ℝ))) := by
   rw [Nat.ceil_eq_zero.mpr (by norm_num)]
   norm_num
+
+/-- `count_div_sub_eq_sum` at `D = 2`, `L = 3`, `c = 0`: the count at `3 / 2` is
+`(3 - 0) + (3 - 2) + (3 - 4) = 3 + 1 + 0 = 4` in natural subtraction. -/
+example : count 2 (((3 : ℕ) : ℝ) / ((2 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)) = 4 := by
+  rw [count_div_sub_eq_sum two_pos]
+  decide
+
+/-- `count_div_sub_eq_sum` needs `0 < D`: at `D = 0`, `L = 1`, `c = 0` the cutoff is `1 / 0 = 0`,
+so the count is `0`, while the natural sum is `1 - 0 = 1`. -/
+example : count 0 (((1 : ℕ) : ℝ) / ((0 : ℕ) : ℝ) - ((0 : ℕ) : ℝ)) ≠
+    ∑ u ∈ Finset.range 1, (1 - 0 * (u + 0)) := by
+  simp [count]
+
+/-- `ceil_mul_div_sub_sub` needs `0 < D`: at `D = 0`, `L = 1`, `c = u = 0` the left side is `0`
+and the right side is `1`. -/
+example : ⌈((0 : ℕ) : ℝ) * (((1 : ℕ) : ℝ) / ((0 : ℕ) : ℝ) - ((0 : ℕ) : ℝ) - ((0 : ℕ) : ℝ))⌉₊ ≠
+    1 - 0 * (0 + 0) := by
+  simp
