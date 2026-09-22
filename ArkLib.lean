@@ -593,9 +593,11 @@ public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
+public import ArkLib.ToMathlib.RingTheory.Ideal.Separator
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComponents
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials

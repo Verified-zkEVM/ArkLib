@@ -37,6 +37,12 @@ eventually at most `m * P (c * N + d)`, then `natDegree Q ≤ natDegree P`, for 
 `natDegree Q ≤ natDegree P * natDegree S`. These bounds compare filtrations whose degree
 parameters differ by a fixed affine change.
 
+Coefficients in a degree `d` at least the natural degree are compared in the same way: an
+eventually nonnegative polynomial of natural degree at most `d` has nonnegative coefficient in
+degree `d`, and so `P ≤ Q` eventually gives `P.coeff d ≤ Q.coeff d` when both have natural degree
+at most `d`. A Taylor shift does not change such a coefficient. These compare shifted affine
+Hilbert polynomials of several components at a common degree.
+
 ## Main statements
 
 * `Polynomial.eq_of_eventually_eval_natCast_eq`: agreement on a tail of `ℕ` forces equality.
@@ -57,6 +63,11 @@ parameters differ by a fixed affine change.
   a composite or an affine rescaling, and the resulting two-sided degree equality.
 * `Polynomial.natDegree_comp_C_mul_X_add_C`: composing with `C c * X + C d`, `c ≠ 0`, preserves
   the natural degree.
+* `Polynomial.coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg`,
+  `Polynomial.coeff_le_of_natDegree_le_of_eventually_eval_natCast_le`: coefficient comparison in a
+  degree at least the natural degree.
+* `Polynomial.coeff_taylor_of_natDegree_le`: a Taylor shift preserves the coefficients in degrees
+  at least the natural degree.
 
 ## References
 
@@ -90,7 +101,13 @@ rescaling-only form is `d = 0`, `m = 1`. The sandwich needs only the eventual no
 lower polynomial, and `natDegree_comp_C_mul_X` becomes `natDegree_comp_C_mul_X_add_C` over any
 semiring without zero divisors.
 
-The coefficient bounds of `Hilbert/PrimeFamilyCoefficient.lean` are not ported here.
+From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PrimeFamilyCoefficient.lean`:
+`coeff_nonneg_of_natDegree_le_of_eventually_eval_nat_nonneg`,
+`coeff_le_of_natDegree_le_of_eventually_eval_nat_le` and `coeff_taylor_eq_of_natDegree_le`. The
+source stated them over `ℚ`; the first two hold over any Archimedean ordered normed field with the
+order topology, as the other order statements here, and the Taylor lemma over any commutative
+semiring. Mathlib has `Polynomial.coeff_taylor_natDegree` for the degree `natDegree P` itself;
+`coeff_taylor_of_natDegree_le` extends it to every larger degree.
 -/
 
 @[expose] public section
@@ -356,7 +373,52 @@ theorem natDegree_eq_of_eventually_eval_natCast_le_of_le_mul_eval_affine {P Q : 
       ((hP.and hlower).mono fun _ h ↦ h.1.trans h.2) hupper)
     (natDegree_le_of_eventually_eval_natCast_le hP hlower).1
 
+/-- A polynomial that is eventually nonnegative on the natural numbers has a nonnegative
+coefficient in every degree `d ≥ natDegree P`.
+
+In degree `natDegree P` the coefficient is the leading coefficient, which is nonnegative by
+`leadingCoeff_nonneg_of_eventually_eval_natCast_nonneg`; above it the coefficient is `0`. The
+degree bound is needed: `X - 1` is nonnegative at every positive natural number, but its
+coefficient in degree `0` is `-1`. -/
+theorem coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg {P : K[X]} {d : ℕ}
+    (hdeg : P.natDegree ≤ d) (h : ∀ᶠ N : ℕ in atTop, 0 ≤ P.eval (N : K)) : 0 ≤ P.coeff d := by
+  rcases hdeg.lt_or_eq with hlt | rfl
+  · rw [coeff_eq_zero_of_natDegree_lt hlt]
+  · exact leadingCoeff_nonneg_of_eventually_eval_natCast_nonneg h
+
+/-- If `P ≤ Q` eventually on the natural numbers and both have natural degree at most `d`, then
+`P.coeff d ≤ Q.coeff d`.
+
+This applies `coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg` to `Q - P`. Unlike
+`natDegree_le_of_eventually_eval_natCast_le`, no sign condition on `P` is needed and neither
+polynomial has to reach degree `d`; a polynomial of smaller degree has coefficient `0` there. Both
+degree bounds are needed: `0 ≤ X - 1` and `1 - X ≤ 0` at every positive natural number, but in
+degree `0` the coefficients are `0 > -1` and `1 > 0`. -/
+theorem coeff_le_of_natDegree_le_of_eventually_eval_natCast_le {P Q : K[X]} {d : ℕ}
+    (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d)
+    (h : ∀ᶠ N : ℕ in atTop, P.eval (N : K) ≤ Q.eval (N : K)) : P.coeff d ≤ Q.coeff d := by
+  have hc := coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg
+    ((natDegree_sub_le Q P).trans (max_le hQ hP))
+    (h.mono fun N hN ↦ by rw [eval_sub]; exact sub_nonneg.mpr hN)
+  rwa [coeff_sub, sub_nonneg] at hc
+
 end Order
+
+section Taylor
+
+variable {R : Type*} [CommSemiring R]
+
+/-- A Taylor shift `P(X + r)` does not change the coefficient in any degree `d ≥ natDegree P`.
+In degree `natDegree P` this is Mathlib's `Polynomial.coeff_taylor_natDegree`; above it both
+coefficients are `0` because `taylor` preserves the natural degree. -/
+theorem coeff_taylor_of_natDegree_le (r : R) {P : R[X]} {d : ℕ} (hdeg : P.natDegree ≤ d) :
+    (taylor r P).coeff d = P.coeff d := by
+  rcases hdeg.lt_or_eq with hlt | rfl
+  · rw [coeff_eq_zero_of_natDegree_lt hlt,
+      coeff_eq_zero_of_natDegree_lt ((natDegree_taylor P r).symm ▸ hlt)]
+  · rw [coeff_taylor_natDegree, coeff_natDegree]
+
+end Taylor
 
 section Comp
 
