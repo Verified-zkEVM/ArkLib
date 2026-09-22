@@ -22,9 +22,10 @@ difference of numbers of capped exponents.
 
 For `σ = Fin 2`, `i = 1` and `C ≤ B`, there are `(C + 1) * (2 * B + 2 - C) / 2` capped exponents
 with bounds `(B, C)`. For positive `b` and `c` with `c < b`, the difference of counts is then
-eventually a linear polynomial in `N` with leading coefficient `j * c + r * (b - c)`, while the
-pulled-back curve has affine Hilbert polynomial of natural degree `1`. This bounds its affine
-degree by `j * c + r * (b - c)`, and the same bound holds for the total affine degree of its
+eventually a linear polynomial in `N` with leading coefficient
+`cappedDegreeMixedVolume j r b c = j * c + r * (b - c)`, while the pulled-back curve has affine
+Hilbert polynomial of natural degree `1`. This bounds its affine degree by
+`cappedDegreeMixedVolume j r b c`, and the same bound holds for the total affine degree of its
 minimal primes. For `b ≤ c` the cap is no condition and the bound is `j * b ≤ j * c`.
 
 ## Main statements
@@ -73,7 +74,7 @@ theorem affineHilbertFunction_comap_cappedDegree_span_singleton_add_le [Finite �
 private theorem two_mul_ncard_cast (B C : ℕ) (hCB : C ≤ B) :
     (2 : ℚ) * (cappedDegreeExponents (Fin 2) 1 B C).ncard = (C + 1) * (2 * B + 2 - C) := by
   have h := congrArg (Nat.cast : ℕ → ℚ)
-    (Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le B C hCB)
+    (two_mul_ncard_cappedDegreeExponents_fin_two B C hCB)
   push_cast [Nat.cast_sub (show C ≤ 2 * B + 2 by omega)] at h
   exact h
 
@@ -136,7 +137,8 @@ private theorem affineDegree_comap_cappedDegree_span_singleton_le_of_le {b c j r
 
 /-- Let `g ≠ 0` have bounds `(j, r)` in the capped degree filtration on `MvPolynomial (Fin 2) k`
 with cap on `1`. For positive `b` and `c`, the pullback of the curve `span {g}` along the monomial
-map of `cappedDegreeExponents (Fin 2) 1 b c` has affine degree at most `j * c + r * (b - c)`.
+map of `cappedDegreeExponents (Fin 2) 1 b c` has affine degree at most
+`cappedDegreeMixedVolume j r b c = j * c + r * (b - c)`.
 
 For `c < b` and `span {g}` proper, the affine Hilbert polynomial of the pullback has natural degree
 `1`, and for large `N` its affine Hilbert function is bounded by a linear polynomial in `N` with
@@ -148,7 +150,8 @@ theorem affineDegree_comap_cappedDegree_span_singleton_le {b c j r : ℕ} (hb : 
     (hg : g ∈ restrictCappedDegree (Fin 2) k 1 j r) :
     affineDegree
         ((Ideal.span {g}).comap (monomialMap k (cappedDegreeExponents (Fin 2) 1 b c))) ≤
-      (j * c + r * (b - c) : ℕ) := by
+      (cappedDegreeMixedVolume j r b c : ℕ) := by
+  rw [cappedDegreeMixedVolume]
   -- With `c = b`, the bounds `(j, j)` of `g` give the bound `j * b`.
   have hdiag : affineDegree
       ((Ideal.span {g}).comap (monomialMap k (cappedDegreeExponents (Fin 2) 1 b b))) ≤
@@ -175,14 +178,14 @@ theorem affineDegree_comap_cappedDegree_span_singleton_le {b c j r : ℕ} (hb : 
 /-- Let `g ≠ 0` have bounds `(j, r)` in the capped degree filtration on `MvPolynomial (Fin 2) k`
 with cap on `1`. For positive `b` and `c`, the affine degrees of the minimal primes of the
 pullback of `span {g}` along the monomial map of `cappedDegreeExponents (Fin 2) 1 b c` sum to at
-most `j * c + r * (b - c)`. -/
+most `cappedDegreeMixedVolume j r b c = j * c + r * (b - c)`. -/
 theorem sum_affineDegree_minimalPrimes_comap_cappedDegree_span_singleton_le {b c j r : ℕ}
     (hb : 0 < b) (hc : 0 < c) {g : MvPolynomial (Fin 2) k} (hg0 : g ≠ 0)
     (hg : g ∈ restrictCappedDegree (Fin 2) k 1 j r) :
     ∑ Q ∈ ((Ideal.span {g}).comap
         (monomialMap k (cappedDegreeExponents (Fin 2) 1 b c))).minimalPrimesFinset,
         affineDegree Q ≤
-      (j * c + r * (b - c) : ℕ) :=
+      (cappedDegreeMixedVolume j r b c : ℕ) :=
   (sum_affineDegree_minimalPrimes_comap_span_singleton_le_of_surjective _
     (monomialMap_cappedDegreeExponents_surjective hb hc) g).trans
     (affineDegree_comap_cappedDegree_span_singleton_le hb hc hg0 hg)

@@ -11,8 +11,10 @@ import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
 
 The examples state the point statements for the bidegree map and the capped monomial map as
 instances of those for monomial maps, count capped exponents and compute a dimension, check that
-the cap is no condition when it exceeds the bound on the degree, and show that the count on `Fin 2`
-needs `c ≤ b` and that surjectivity of the monomial map needs a positive cap.
+the cap is no condition when it exceeds the bound on the degree, and show that surjectivity of the
+monomial map needs a positive cap. The mixed volume examples compute a small value, write the
+mixed volume as `h * (2 * b * c - c ^ 2) + 2 * a * (j * c + r * (b - c))`, compute the mixed volume
+of a prism with itself, and show that the closed form needs `c ≤ b`.
 -/
 
 open MvPolynomial
@@ -115,13 +117,13 @@ end CappedBidegreePoints
 /-- In two further variables with cap `1` on the second, there are `2 * 5 = 10` exponents with
 `none`-coordinate at most `1` and degree at most `2`. -/
 example : (cappedBidegreeExponents (Fin 2) 1 1 2 1).ncard = 10 := by
-  have h := Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le 2 1 (by norm_num)
+  have h := two_mul_ncard_cappedDegreeExponents_fin_two 2 1 (by norm_num)
   rw [ncard_cappedBidegreeExponents]
   omega
 
 /-- The corresponding polynomials form a space of dimension `10`. -/
 example : Module.finrank ℚ (restrictCappedBidegree (Fin 2) ℚ 1 1 2 1) = 10 := by
-  have h := Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le 2 1 (by norm_num)
+  have h := two_mul_ncard_cappedDegreeExponents_fin_two 2 1 (by norm_num)
   rw [finrank_restrictCappedBidegree]
   omega
 
@@ -135,16 +137,6 @@ example {P Q : MvPolynomial (Option (Fin 2)) ℚ} (hP : P ∈ restrictCappedBide
     (hQ : Q ∈ restrictCappedBidegree (Fin 2) ℚ 1 0 1 1) :
     P * Q ∈ restrictCappedBidegree (Fin 2) ℚ 1 1 3 2 :=
   mul_mem_restrictCappedBidegree hP hQ
-
-/-- `Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le` needs `c ≤ b`: for `b = 1` and
-`c = 3` the cap is no condition, so there are `3` exponents, while `(c + 1) * (2 * b + 2 - c) = 4`
-is not `2 * 3`. -/
-example : 2 * {e : Fin 2 →₀ ℕ | e.degree ≤ 1 ∧ e 1 ≤ 3}.ncard ≠ (3 + 1) * (2 * 1 + 2 - 3) := by
-  have hset : {e : Fin 2 →₀ ℕ | e.degree ≤ 1 ∧ e 1 ≤ 3} = {e | e.degree ≤ 1} :=
-    Set.ext fun e ↦
-      ⟨And.left, fun he ↦ ⟨he, (Finsupp.le_degree 1 e).trans he |>.trans (by norm_num)⟩⟩
-  rw [hset, Finsupp.ncard_setOf_degree_le, Nat.card_eq_fintype_card, Fintype.card_fin]
-  decide
 
 /-- `monomialMap_cappedBidegreeExponents_surjective` needs `0 < c`: with cap `0` no exponent
 involves `some 1`, so the points `0` and `Pi.single (some 1) 1` have the same point of monomial
@@ -166,5 +158,31 @@ example : ¬Function.Surjective
   rw [hP, aeval_X] at h0 h1
   rw [hpt, h1] at h0
   simp at h0
+
+section MixedVolume
+
+/-- The mixed volume of the prism for `(1, 1, 0)` and two prisms for `(1, 2, 1)` is
+`1 * 3 + 2 * 1 * (1 * 1 + 0 * 1) = 5`. -/
+example : cappedBidegreeMixedVolume 1 1 0 1 2 1 = 5 := rfl
+
+/-- For `c ≤ b`, the mixed volume is `h * (2 * b * c - c ^ 2) + 2 * a * (j * c + r * (b - c))`. -/
+example {h j r a b c : ℕ} (hcb : c ≤ b) :
+    cappedBidegreeMixedVolume h j r a b c =
+      h * (2 * b * c - c ^ 2) + 2 * a * (j * c + r * (b - c)) := by
+  rw [cappedBidegreeMixedVolume_eq hcb, mul_assoc h, Nat.mul_sub, sq, mul_comm c (2 * b)]
+
+/-- The mixed volume of a prism with itself is `3!` times its volume `a * c * (2 * b - c) / 2`. -/
+example {a b c : ℕ} (hcb : c ≤ b) :
+    cappedBidegreeMixedVolume a b c a b c = 3 * (a * c * (2 * b - c)) := by
+  rw [cappedBidegreeMixedVolume, cappedDegreeMixedVolume_self hcb]
+  ring
+
+/-- `cappedBidegreeMixedVolume_eq` needs `c ≤ b`: for `(b, c) = (1, 3)` the mixed volume of the
+prism for `(1, 0, 0)` and two prisms for `(1, 1, 3)` is `3`, while the closed form gives `0`. -/
+example :
+    cappedBidegreeMixedVolume 1 0 0 1 1 3 ≠ 1 * 3 * (2 * 1 - 3) + 2 * 1 * (0 * 3 + 0 * 0) := by
+  decide
+
+end MixedVolume
 
 end CappedBidegreeTest
