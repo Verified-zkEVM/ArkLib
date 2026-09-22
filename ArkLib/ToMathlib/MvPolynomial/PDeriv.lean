@@ -29,6 +29,8 @@ Both extra inputs are necessary. In characteristic `p`, `pderiv i (X i ^ p) = p 
 is zero although `X i ^ p` has degree `p` in `X i`. Over `ZMod 4`, the polynomial `2 * X i ^ 2`
 has degree `2` and `(2 : ZMod 4) ≠ 0`, yet its derivative `4 * X i` is zero.
 
+The weighted-degree bounds for `pderiv` are in `ArkLib.Data.MvPolynomial.WeightedDegree`.
+
 ## Main statements
 
 * `MvPolynomial.degreeOf_pderiv_le_sub_one` and `MvPolynomial.degreeOf_pderiv_le`: one partial
@@ -55,42 +57,6 @@ coefficient of `m - single i 1` in the derivative is `coeff m p * (m i : R)`, wh
 under the two extra inputs. The iterated statements follow by induction on the number of
 derivatives; the cast hypothesis for step `k` concerns `degreeOf i p - k`, the degree reached after
 `k` steps.
-
-## References
-
-This file ports and generalizes `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `degreeOf_pderiv_le_sub_one` and `degreeOf_pderiv_le` are ported unchanged.
-* `pderiv_ne_zero_of_degreeOf_pos_of_lt_ringChar` and
-  `degreeOf_pderiv_eq_sub_one_of_lt_ringChar` are replaced by
-  `pderiv_ne_zero_of_natCast_ne_zero` and `degreeOf_pderiv_eq_sub_one_of_natCast_ne_zero`. The
-  source hypotheses `0 < degreeOf i p`, `degreeOf i p < ringChar R`, and `[Nontrivial R]` become
-  the single hypothesis `(degreeOf i p : R) ≠ 0`, which implies positivity and nontriviality and
-  also holds in characteristic zero. The same generalization appears in the source as the nested
-  theorem `MvPolynomial.pderiv_ne_zero_and_degreeOf_eq_sub_one_of_natCast_ne_zero` inside the
-  namespace `ReedSolomon.HiddenDerivative`, in
-  `HiddenDerivative/Interpolation/FirstOrder/HybridDescent.lean`; that conjunction is the pair
-  of theorems here, and its `hpos` and `[Nontrivial R]` hypotheses are dropped because the cast
-  hypothesis implies them.
-* The source definition `iteratePDeriv i a p` is replaced by Mathlib's `(pderiv i)^[a] p`, the
-  spelling Mathlib uses for iterated univariate derivatives. The source lemmas
-  `iteratePDeriv_zero` and `iteratePDeriv_succ` become `Function.iterate_zero_apply` and
-  `Function.iterate_succ_apply'`.
-* `degreeOf_iteratePDeriv_le` becomes `degreeOf_iterate_pderiv_le`.
-* `degreeOf_iteratePDeriv_eq_sub_of_lt_ringChar` and `iteratePDeriv_ne_zero_of_lt_ringChar`
-  become `degreeOf_iterate_pderiv_eq_sub_of_natCast_ne_zero` and
-  `iterate_pderiv_ne_zero_of_natCast_ne_zero`. Their cast hypothesis names only the `a` degrees
-  actually differentiated, and it implies `a ≤ degreeOf i p`, so the source hypothesis `ha` is
-  dropped. The source positivity hypothesis in the nonvanishing theorem is replaced by `p ≠ 0`,
-  which is what the order-zero case needs.
-* `coeff_pderiv_sub_single_one`, `degreeOf_iterate_pderiv_le_sub`,
-  `iterate_pderiv_eq_zero_of_degreeOf_lt`, and `natCast_ne_zero_of_ringChar_eq_zero_or_lt` are
-  new.
-
-The weighted-degree bounds for `pderiv` live in `ArkLib.Data.MvPolynomial.WeightedDegree`. The
-source's `_of_lt_ringChar` wrappers are not ported; their consumers combine the cast-hypothesis
-theorems with `natCast_ne_zero_of_ringChar_eq_zero_or_lt`.
 -/
 
 @[expose] public section

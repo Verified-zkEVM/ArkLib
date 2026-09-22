@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 /-!
 # Local contact acceptance tests
 
-* Order zero (the source canary `order_zero_local_constraints_vacuous_canary`): the constraints
+* Order zero: the constraints
   are vacuous and the conclusion is divisibility by `(X - center) ^ 0 = 1`.
 * Order one: `Y₀ - received` satisfies the multiplicity-one constraints at every point, and the
   contact theorem then gives `(X - center) ∣ P - received` for every `P` with
@@ -18,7 +18,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
-/-- Source canary over `ℤ` with `d = 0`: order zero imposes nothing and concludes nothing. -/
+/-- Over `ℤ` with `d = 0`: order zero imposes nothing and concludes nothing. -/
 example (Q : DifferentialPolynomial ℤ 0) (P : Polynomial ℤ) (center received : ℤ)
     (hP : P.eval center = received) :
     SatisfiesLocalConstraints 0 center received Q ∧

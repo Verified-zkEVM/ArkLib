@@ -32,28 +32,6 @@ public import Mathlib.LinearAlgebra.Projection
 * `LinearMap.exists_ne_zero_of_sum_finrank_range_lt` — if the source dimension exceeds the sum of
   the ranks of a finite family of linear maps, some nonzero vector lies in all their kernels.
 
-The last two are the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker`
-and `finrank_range_comp_le_outer` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source assumed a field, a
-finite-dimensional exhibited space, and a finite-dimensional middle space; here the scalars form
-a division ring, the exhibited space is arbitrary, and only the range of the outer map must be
-finite-dimensional.
-
-`LinearMap.rangeCoordinates` generalizes `gradedImageCoordinateEquiv` and
-`gradedImageCoordinateMap`, and `LinearMap.rangeCoordinates_eq_zero_iff` generalizes
-`gradedImageCoordinateMap_eq_zero_iff`, in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at the
-same revision, from a field to a division ring.
-
-`LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` and
-`LinearMap.finrank_range_pi_le_sum` are the linear-algebra part of
-`exists_nonzero_global_interpolation_coefficients_of_rank_lt` and
-`finrank_range_global_exact_coefficient_constraint_map_le_sum_local` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Global/Interpolation.lean` at
-the same revision. The source used a field and a finite-dimensional source; here the scalars form a
-division ring and neither lemma assumes any space finite-dimensional.
-
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 

@@ -34,26 +34,8 @@ order.
 
 ## References
 
-The definitions are ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/
-Variables.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `LocalVariable`,
-`LocalPolynomial`, `localT`, `localAux`, `localU`, `localE`, `localY`, `localContactWeight`,
-`localContactOrder`, `localTWeight`, `localHigherJetWeight`, and `localDerivativeJetWeight`, with
-their evaluation lemmas. The global weight `jetHigherWeight` of the source is in
-`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index`. The source's substitution caps
-`localSubstitutionSourceWeight` are not ported: the weight bounds they served are proved in
-`Interpolation/Local/Coordinates.lean` for arbitrary weights.
-
-From the source's `Interpolation/Local/IntermediateSpace.lean`: `localFirstJetExponent` (here the
-weight `localFirstJetWeight`) and the private `localExponentCoordinatesEquiv`, made public here;
-its `sum_localJet_eq_first_add_higher`, `localFirstJetExponent_eq_coordinate`, and
-`localHigherJetWeight_eq_coordinate` are `weight_localFirstJetWeight` and
-`weight_localHigherJetWeight`. From the source's `Interpolation/Local/Coordinates.lean`:
-`reachableLocalJetDegree` (here the weight `localJetDegreeWeight`),
-`reachableLocalJetDegree_eq_coordinates` (here `weight_localJetDegreeWeight`), and
-`localContact_eq_coordinates` (here `localContactOrder_eq`, which needs no coordinates).
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 -/
 
 @[expose] public section
@@ -93,12 +75,15 @@ def localContactWeight (d : ℕ) : LocalVariable d → ℕ
   | some none => d
   | some (some _) => 0
 
+/-- The contact weight of `T` is `1`. -/
 @[simp]
 theorem localContactWeight_T (d : ℕ) : localContactWeight d (localT d) = 1 := rfl
 
+/-- The contact weight of `E` is `d`. -/
 @[simp]
 theorem localContactWeight_E (d : ℕ) : localContactWeight d (localE d) = d := rfl
 
+/-- The contact weight of a visible jet is `0`. -/
 @[simp]
 theorem localContactWeight_Y (j : Fin d) : localContactWeight d (localY j) = 0 := rfl
 
@@ -111,12 +96,15 @@ def localTWeight (d : ℕ) : LocalVariable d → ℕ
   | none => 1
   | some _ => 0
 
+/-- The `T`-weight of `T` is `1`. -/
 @[simp]
 theorem localTWeight_T (d : ℕ) : localTWeight d (localT d) = 1 := rfl
 
+/-- The `T`-weight of `E` is `0`. -/
 @[simp]
 theorem localTWeight_E (d : ℕ) : localTWeight d (localE d) = 0 := rfl
 
+/-- The `T`-weight of a visible jet is `0`. -/
 @[simp]
 theorem localTWeight_Y (j : Fin d) : localTWeight d (localY j) = 0 := rfl
 

@@ -9,10 +9,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.M
 /-!
 # Acceptance cases for the centered radius moments and the cubic contribution
 
-Concrete moments of the normalized radius for `n = 0, 1, 2`; the source's probability-measure
-forms of the moments and of the contribution bound (with its hypotheses `48000 ≤ n + 1` and
-`0 < t`), derived from the set-average statements; and the sharpness of the threshold
-`s ≤ 10 / 27` in the numeric step.
+Concrete moments of the normalized radius for `n = 0, 1, 2`; the moments and the contribution
+bound as integrals against the uniform probability measure, derived from the set-average
+statements; and the sharpness of the threshold `s ≤ 10 / 27` in the numeric step.
 -/
 
 open MeasureTheory Set Finset ReedSolomon.HiddenDerivative
@@ -46,13 +45,13 @@ example {W : ℝ} (hW : 0 ≤ W) (t : ℝ) :
   norm_num [harmonic, Fin.sum_univ_two, Finset.sum_range_succ]
   ring
 
-/-- The source's `integral_normalizedRadius`: mean `0` under the uniform probability measure. -/
+/-- The normalized radius has mean `0` under the uniform probability measure. -/
 example (n : ℕ) {W : ℝ} (t : ℝ) :
     (∫ u, normalizedRadius W t u ∂volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W]) =
       0 := by
   rw [ProbabilityTheory.cond, ← setAverage_eq', setAverage_normalizedRadius]
 
-/-- The source's `integral_normalizedRadius_sq`, with its hypothesis `0 < W`. -/
+/-- The second moment of the normalized radius under the uniform probability measure. -/
 example (n : ℕ) {W : ℝ} (hW : 0 < W) (t : ℝ) :
     (∫ u, normalizedRadius W t u ^ 2
         ∂volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W]) =
@@ -60,7 +59,7 @@ example (n : ℕ) {W : ℝ} (hW : 0 < W) (t : ℝ) :
         (∑ i : Fin n, 1 / ((i : ℝ) + 1) ^ 2 - (harmonic n : ℝ) ^ 2 / (n + 1)) := by
   rw [ProbabilityTheory.cond, ← setAverage_eq', setAverage_normalizedRadius_sq n hW.le]
 
-/-- The source's `integral_normalizedRadius_cube`, with its hypothesis `0 < W`. -/
+/-- The third moment of the normalized radius under the uniform probability measure. -/
 example (n : ℕ) {W : ℝ} (hW : 0 < W) (t : ℝ) :
     (∫ u, normalizedRadius W t u ^ 3
         ∂volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W]) =
@@ -70,8 +69,8 @@ example (n : ℕ) {W : ℝ} (hW : 0 < W) (t : ℝ) :
           2 * (harmonic n : ℝ) ^ 3) / ((n + 2) * (n + 3)) := by
   rw [ProbabilityTheory.cond, ← setAverage_eq', setAverage_normalizedRadius_cube n hW.le]
 
-/-- The source's `normalizedRadius_contribution_lower`, with its hypotheses `0 < t` and
-`48000 ≤ n + 1` (the latter unused), as an integral against the uniform probability measure. -/
+/-- `normalizedRadius_contribution_lower` as an integral against the uniform probability measure,
+with the extra hypotheses `0 < t` and `48000 ≤ n + 1` (the latter unused). -/
 example (n : ℕ) {W t : ℝ} (hW : 0 < W) (ht : 0 < t) (_hd : 48000 ≤ (n : ℝ) + 1)
     (hHsq : (harmonic n : ℝ) ^ 2 ≤ ((n : ℝ) + 1) / 100)
     (hH₂ : 38 / 25 ≤ ∑ i : Fin n, 1 / ((i : ℝ) + 1) ^ 2)

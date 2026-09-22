@@ -44,31 +44,10 @@ counting criterion `∑ i, rank_i < dim`.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Global/Interpolation.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Changes:
-
-* The source's `range_exact_coefficient_local_constraint_at_eq` is
-  `range_exactCoefficientLocalConstraintAt`, and
-  `finrank_range_global_exact_coefficient_constraint_map_le_sum_local` is
-  `finrank_range_globalExactCoefficientConstraintMap_le_sum`; its hand-built inclusion of the range
-  into a product of ranges is replaced by the generic `LinearMap.finrank_range_pi_le_sum`.
-* The rank–nullity argument of `exists_nonzero_global_interpolation_coefficients_of_rank_lt` is
-  the generic `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt`.
-* `exists_nonzero_global_interpolation_coefficients_of_rank_lt`,
-  `exists_nonzero_global_interpolant_of_rank_lt`, and
-  `exists_nonzero_global_interpolant_of_rank_le` no longer assume `[Fintype ι]`: the set of
-  received points may be infinite, because the global rank is bounded by the interpolation
-  dimension regardless. Only the statements that sum over `ι` keep `[Fintype ι]`.
-* The remaining statements keep their source forms.
-
-Deferred: `Interpolation/Global/Multiplicity.lean`, which needs `Interpolation/SpecializationDegree`
-and the root-counting chain behind it.
-
-* [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], ECCC TR26-164, Section 3.
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.6, Proposition 3.10
 -/
 
 @[expose] public section

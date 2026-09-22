@@ -10,7 +10,7 @@ import Mathlib.Tactic.NormNum
 /-!
 # Acceptance tests for direct regular lifting
 
-* The source statement over a field: below a prime characteristic `p > D`, a regular initial jet
+* The field form: below a prime characteristic `p > D`, a regular initial jet
   and a solution of degree at most `D` with that jet force the solution to be the iterate.
 * For `y' = y` at center `0` over `ℚ`, one step from `1 + X` computes `1 + X + X ^ 2 / 2`, whose
   residual is `-X ^ 2 / 2`; by `solution_iff_eq_regularIterate` there is no solution of degree at
@@ -26,7 +26,7 @@ noncomputable section
 
 open MvPolynomial
 
-/-- Source shape: below a prime characteristic `p > D`, a regular initial jet determines the
+/-- The field form: below a prime characteristic `p > D`, a regular initial jet determines the
 solution as the iterate. -/
 example {F : Type*} [Field F] {p r D : ℕ} [CharP F p] (hp : p.Prime) (hD : D < p)
     (Q : DifferentialPolynomial F r) (center : F) {P₀ P : Polynomial F}
