@@ -10,8 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Johnson.FiniteBounds
 # Finite Johnson parameter acceptance tests
 
 The recipe at `n = 4`, `D = 1`, `η = 1/4`, `A = 3` computed in full, the closed bounds applied to
-it, cases showing that the remaining hypotheses are needed, and the source-shaped statements
-derived from the generalized ones.
+it, cases showing that the remaining hypotheses are needed, and the forms with the guard
+`D ≤ n - 2` and extra unused hypotheses, derived from the stated theorems.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -55,8 +55,8 @@ private theorem test_theta : johnsonTheta 4 1 3 = 3 / 2 := by
   norm_num [johnsonTheta]
 
 /-- `E₀ = 11 · 16 + (3/2)(16 + 6 + 384) + 2 · 6 = 797`. -/
-private theorem test_E0 : johnsonE0 4 1 3 (1 / 4) = 797 := by
-  simp only [johnsonE0, test_Mu, test_H, test_theta]
+private theorem test_exceptionCount : johnsonExceptionCount 4 1 3 (1 / 4) = 797 := by
+  simp only [johnsonExceptionCount, test_Mu, test_H, test_theta]
   norm_num
 
 /-- The threshold `(3/4) · 4 = 3 ≤ A` holds with equality. -/
@@ -65,8 +65,8 @@ private theorem test_threshold : johnsonAgreement 4 1 (1 / 4) * (4 : ℕ) ≤ (3
   norm_num
 
 /-- The closed bound gives `797 < (8/3) · 4 · (7/2)³ / (1/4) = 5488/3`. -/
-example : johnsonE0 4 1 3 (1 / 4) < 5488 / 3 := by
-  have h := johnsonE0_lt_closed (n := 4) (D := 1) (A := 3) (eta := 1 / 4)
+example : johnsonExceptionCount 4 1 3 (1 / 4) < 5488 / 3 := by
+  have h := johnsonExceptionCount_lt_closed (n := 4) (D := 1) (A := 3) (eta := 1 / 4)
     le_rfl (by norm_num) (by norm_num) test_threshold
   rw [test_T, test_rho] at h
   linarith
@@ -86,10 +86,10 @@ example : johnsonTheta 4 1 3 ≤ 3 := by
   rw [test_sqrt] at h
   linarith
 
-/-- The BCHKS comparison holds at the concrete parameters. -/
-example : johnsonE0 4 1 3 (1 / 4) < johnsonBCHKS 4 1 (1 / 4) :=
-  johnsonE0_lt_BCHKS le_rfl (by norm_num) (by norm_num) (by rw [test_agreement]; norm_num)
-    test_threshold
+/-- The comparison `E₀ < johnsonComparisonEstimate` holds at the concrete parameters. -/
+example : johnsonExceptionCount 4 1 3 (1 / 4) < johnsonComparisonEstimate 4 1 (1 / 4) :=
+  johnsonExceptionCount_lt_comparisonEstimate le_rfl (by norm_num) (by norm_num)
+    (by rw [test_agreement]; norm_num) test_threshold
 
 /-! ### The remaining hypotheses are needed -/
 
@@ -112,32 +112,32 @@ example : ¬ √(johnsonRhoMinus 4 1) / 2 ≤ johnsonM 4 1 (-1) * (-1) := by
   rw [hM, test_sqrt]
   norm_num
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with the guard `D ≤ n - 2` and unused hypotheses -/
 
-/-- The source form of `johnsonMu_lt`, with the guard `D ≤ n - 2`. -/
+/-- `johnsonMu_lt` under the stronger guard `D ≤ n - 2`. -/
 example {n D : ℕ} {eta : ℝ} (hD : 1 ≤ D) (hDn : D ≤ n - 2) :
     (johnsonMu n D eta : ℝ) < johnsonT n D eta / √(johnsonRhoMinus n D) :=
   johnsonMu_lt hD (by omega)
 
-/-- The source form of `johnson_half_gap`, with its unused guards. -/
+/-- `johnson_half_gap` with the unused guards `1 ≤ D` and `D ≤ n - 2`. -/
 example {n D : ℕ} {eta : ℝ} (_hD : 1 ≤ D) (_hDn : D ≤ n - 2) (heta : 0 < eta) :
     √(johnsonRhoMinus n D) / 2 ≤ johnsonM n D eta * eta :=
   johnson_half_gap n D heta
 
-/-- The source form of `johnsonE0_lt_closed`, with the unused hypotheses
-`johnsonAgreement n D eta ≤ 1` and `A ≤ n`. -/
+/-- `johnsonExceptionCount_lt_closed` with the unused hypotheses `johnsonAgreement n D eta ≤ 1`
+and `A ≤ n`. -/
 example {n D A : ℕ} {eta : ℝ} (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (_ha : johnsonAgreement n D eta ≤ 1)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) (_hAn : A ≤ n) :
-    johnsonE0 n D A eta <
+    johnsonExceptionCount n D A eta <
       (8 / 3 : ℝ) * n * johnsonT n D eta ^ 3 / johnsonRhoMinus n D :=
-  johnsonE0_lt_closed hD hDn heta hthreshold
+  johnsonExceptionCount_lt_closed hD hDn heta hthreshold
 
-/-- The source form of `johnsonE0_le_BCHKS`, with the unused hypothesis `A ≤ n`. -/
+/-- `johnsonExceptionCount_le_comparisonEstimate` with the unused hypothesis `A ≤ n`. -/
 example {n D A : ℕ} {eta : ℝ} (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (ha : johnsonAgreement n D eta ≤ 1)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) (_hAn : A ≤ n) :
-    johnsonE0 n D A eta ≤ johnsonBCHKS n D eta :=
-  johnsonE0_le_BCHKS hD hDn heta ha hthreshold
+    johnsonExceptionCount n D A eta ≤ johnsonComparisonEstimate n D eta :=
+  johnsonExceptionCount_le_comparisonEstimate hD hDn heta ha hthreshold
 
 end ReedSolomon.HiddenDerivative
