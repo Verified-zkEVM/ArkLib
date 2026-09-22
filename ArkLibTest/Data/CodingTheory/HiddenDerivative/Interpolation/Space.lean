@@ -9,15 +9,14 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 /-!
 # Rectangular interpolation space acceptance tests
 
-Counts of good higher-jet exponents, including the source statement at `C = W` and an exponent
-removed by a degree cap `C < W`; the source-shaped comparison with the exact space at `K = D + 1`;
+Counts of good higher-jet exponents, including the special case `C = W` and an exponent removed
+by a degree cap `C < W`; the comparison with the exact space in the special case `K = D + 1`;
 and an exponent showing that the comparison needs `D < K`.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
-/-- Source shape (`goodHigherExponents_self_eq_weighted_count`): at `C = W` the good exponents
-are counted by the weighted simplex. -/
+/-- The special case `C = W`: the good exponents are counted by the weighted simplex. -/
 example (d W : ℕ) : (goodHigherExponents d W W).card = weightedHigherJetCount d W :=
   card_goodHigherExponents_of_le le_rfl
 
@@ -39,12 +38,12 @@ example : fullHigherJetWeight (Finsupp.single (some 1 : JetVariable 1) 1) = 0 �
   simp [fullHigherJetWeight, fullDerivativeJetWeight, Finsupp.weight_single, jetHigherWeight,
     jetDerivativeWeight]
 
-/-- Source shape: at `K = D + 1` the rectangular space lies in the exact space. -/
+/-- The special case `K = D + 1`: the rectangular space lies in the exact space. -/
 example {F : Type*} [Field F] {d D m A B W C : ℕ} (hdD : d < D) :
     interpolationSpace F d m A (D + 1) B W C ≤ exactInterpolationSpace F D A d m m W hdD :=
   interpolationSpace_le_exactInterpolationSpace hdD (Nat.lt_succ_self D)
 
-/-- Source shape of the dimension comparison. -/
+/-- The dimension comparison in the special case `K = D + 1`. -/
 example {F : Type*} [Field F] {d D m A B W C : ℕ} (hdD : d < D) :
     Module.finrank F (interpolationSpace F d m A (D + 1) B W C) ≤
       Module.finrank F (exactInterpolationSpace F D A d m m W hdD) :=

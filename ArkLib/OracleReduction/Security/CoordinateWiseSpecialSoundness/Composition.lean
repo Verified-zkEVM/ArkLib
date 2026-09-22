@@ -305,8 +305,7 @@ theorem mem_of_pure_accepting
   rw [OracleComp.OptionT.prEvent_mk_eq_one_iff, hrun] at hAcc
   have hs : some out ∈ support (init >>= fun _ => pure (some out)) := by
     rw [support_bind_const, support_pure]
-    exact ⟨Set.mem_singleton _, @OracleComp.support_nonempty _ unifSpec _
-      OracleSpec.IsUniformMeasureSpec.inhabited init⟩
+    exact ⟨Set.mem_singleton _, OracleComp.support_nonempty (spec := unifSpec) init⟩
   obtain ⟨out', hout', hmem⟩ := hAcc (some out) hs
   exact Option.some_injective _ hout' ▸ hmem
 
