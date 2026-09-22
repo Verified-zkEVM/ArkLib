@@ -42,6 +42,8 @@ exponents of `Y₂, ..., Y_d`. This needs `d > 0`, so that `Y₁` exists.
   rectangular lower bound with independent side lengths `N`, `H₀`, `H₁`.
 * `finrank_interpolationSpace_lowerBound`: the source's form, with `N = (K - 1) H` and
   `H₀ = H₁ = H`.
+* `card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace`: the same lower bound for the
+  exact space with `M = m`, for every `D` with `d < D < K`.
 
 ## References
 
@@ -82,6 +84,11 @@ source's hypotheses are the case `N = (K - 1) H`, `H₀ = H₁ = H`, where
 `jetExponentCoordinatesEquiv` on a product `Finset`. The source's
 `finrank_interpolationSpace_eq_card` is `finrank_interpolationSpace_eq_card` of
 `Interpolation/Space.lean`.
+
+`card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace` is the dimension step of the
+source's `n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace` in
+`Interpolation/FreeOrderDimension.lean`, which fixed `D = K - 1` and `m = d³` and assumed a
+jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
 
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
@@ -333,6 +340,20 @@ theorem finrank_interpolationSpace_lowerBound (R : Type*) [Field R] (hd : 0 < d)
   calc #(goodHigherExponents d W C) * (K - 1) * H ^ 3 =
         #(goodHigherExponents d W C) * ((K - 1) * H) * H * H := by ring
     _ ≤ _ := le_finrank_interpolationSpace R hd (B := B) hH (by omega) hA
+
+/-- The rectangular lower bound transferred to the exact interpolation space with `M = m`: for
+`0 < d < D < K`, `H ≤ m`, and `(K - 1)(C + 3H) ≤ m A`,
+`#(goodHigherExponents d W C) (K - 1) H³` is at most the dimension of the exact space. This is
+`finrank_interpolationSpace_lowerBound` at the jet-degree budget `B = C + 2H`, followed by
+`finrank_interpolationSpace_le_exactInterpolationSpace`; the exact space has no jet-degree budget,
+so `B` does not appear. -/
+theorem card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace (R : Type*) [Field R]
+    (hd : 0 < d) {D m A K W C H : ℕ} (hdD : d < D) (hDK : D < K) (hH : H ≤ m)
+    (hweighted : (K - 1) * (C + 3 * H) ≤ m * A) :
+    #(goodHigherExponents d W C) * (K - 1) * H ^ 3 ≤
+      Module.finrank R (exactInterpolationSpace R D A d m m W hdD) :=
+  (finrank_interpolationSpace_lowerBound R hd (B := C + 2 * H) (W := W) hH le_rfl hweighted).trans
+    (finrank_interpolationSpace_le_exactInterpolationSpace R hdD hDK)
 
 end
 

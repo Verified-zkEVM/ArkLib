@@ -13,7 +13,9 @@ The uniform distribution on `[0, W]` (one coordinate, unit weight) has mean `W /
 `W ^ 2 / 12` and third central moment `0`; the linear form `2 u₀ + 3 u₁` on the triangle
 `2 u₀ + 3 u₁ ≤ 6` has variance `2` and third central moment `-8 / 5`. Further cases: the mean
 statement at a negative budget, the necessity of `0 ≤ W` for the variance, and integrability of
-continuous functions under the uniform probability measure without a budget hypothesis.
+continuous functions under the uniform probability measure without a budget hypothesis. The
+variance bound by the power sum `∑ (c i / w i) ^ 2` is checked on the triangle, compared with the
+exact variance on a segment (where it is twice the variance), and applied at a negative budget.
 -/
 
 open MeasureTheory Set Finset
@@ -81,3 +83,34 @@ uniform measure on the weighted simplex. No budget hypothesis is needed. -/
 example (n : ℕ) (W : ℝ) {f : (Fin n → ℝ) → ℝ} (hf : Continuous f) :
     Integrable f volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W] :=
   (hf.continuousOn.integrableOn_weightedSimplex fun i ↦ by positivity).integrable_cond
+
+/-- The variance bound on the triangle `2 u₀ + 3 u₁ ≤ 6`: the exact variance is `2`, and the bound
+`6 ^ 2 * (1 + 1) / (3 * 4)` is `6`. -/
+example : ⨍ u in weightedSimplex (![2, 3] : Fin 2 → ℝ) 6,
+    (∑ i, (![2, 3] : Fin 2 → ℝ) i * u i - 4) ^ 2 ≤ 6 := by
+  have h := setAverage_weightedSimplex_linearForm_sub_mean_sq_le (w := ![2, 3])
+    (by intro i; fin_cases i <;> norm_num) (![2, 3] : Fin 2 → ℝ) 6
+  norm_num [Fin.sum_univ_two] at h ⊢
+  exact h
+
+/-- With one coordinate the bound is twice the variance: on `[0, W]` the variance of `u₀` is
+`W ^ 2 / 12` and the bound is `W ^ 2 / 6`. -/
+example (W : ℝ) (hW : 0 ≤ W) :
+    ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) W, (u 0 - W / 2) ^ 2 = W ^ 2 / 12 ∧
+      ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) W, (u 0 - W / 2) ^ 2 ≤ W ^ 2 / 6 := by
+  have heq := setAverage_weightedSimplex_linearForm_sub_mean_sq (w := fun _ : Fin 1 ↦ (1 : ℝ))
+    (fun _ ↦ one_pos) 1 hW
+  have hle := setAverage_weightedSimplex_linearForm_sub_mean_sq_le
+    (w := fun _ : Fin 1 ↦ (1 : ℝ)) (fun _ ↦ one_pos) 1 W
+  norm_num at heq hle
+  refine ⟨?_, ?_⟩
+  · rw [heq]
+  · refine hle.trans_eq ?_; ring
+
+/-- The variance bound needs no budget hypothesis: at `W = -1` it reads `0 ≤ 1 / 6` on the empty
+segment. -/
+example : ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (-1), (u 0 - (-1) / 2) ^ 2 ≤ 1 / 6 := by
+  have h := setAverage_weightedSimplex_linearForm_sub_mean_sq_le
+    (w := fun _ : Fin 1 ↦ (1 : ℝ)) (fun _ ↦ one_pos) 1 (-1)
+  norm_num at h ⊢
+  exact h
