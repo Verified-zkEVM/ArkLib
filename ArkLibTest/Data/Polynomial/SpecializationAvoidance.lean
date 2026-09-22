@@ -18,7 +18,7 @@ private instance : Fact (Nat.Prime 3) := ⟨by decide⟩
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
--- The source's `finite_polynomial_specializations_eq_zero_card_le` is the case `x := C`.
+-- The case `x := C`: a nonzero `B : F[X][X]` vanishes at `C w` for at most `natDegree B` points.
 example {F : Type*} [Field F] (B : F[X][X]) (hB : B ≠ 0) (S : Finset F)
     (hS : ∀ w ∈ S, B.eval (C w) = 0) : S.card ≤ B.natDegree :=
   card_le_natDegree_of_injOn_of_eval_eq_zero hB C_injective.injOn hS
@@ -65,7 +65,7 @@ example : ({0, 2} : Finset (ZMod 3)).card + (X - C 1 : (ZMod 3)[X]).natDegree =
   obtain rfl : t = 1 := by clear hne; revert t; decide
   simp at hne
 
-/-- The source's canary `T * Y + 1`; its leading coefficient `T` vanishes only at `T = 0`. -/
+/-- The polynomial `T * Y + 1`; its leading coefficient `T` vanishes only at `T = 0`. -/
 noncomputable def canary {R : Type*} [CommRing R] : R[X][X] := C X * X + C 1
 
 theorem canary_natDegree {R : Type*} [CommRing R] [Nontrivial R] :

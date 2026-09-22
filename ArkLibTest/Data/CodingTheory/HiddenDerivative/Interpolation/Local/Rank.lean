@@ -11,10 +11,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
 
 The image of the translated truncation is itself a finite-dimensional space containing every
 translated truncation, so it can serve as `S`; with no exhibited kernel this recovers the
-trivial bound by the dimension of the exact space. The source-shaped statement derives a
-numerical bound from any `S` and kernel injection whose dimensions differ by that number, which
-is how the source's `certifiedEnlargedRankBound` theorem is obtained once its intermediate space
-and kernel family are available.
+trivial bound by the dimension of the exact space. A numerical bound follows from any `S` and
+kernel injection whose dimensions differ by that number; the certified bound
+`finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound` is obtained this way.
 -/
 
 open Module PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -32,7 +31,7 @@ example {F : Type*} [Field F] {D A d m M W : ℕ} (hdD : d < D) (center received
     (fun x y _ => Subsingleton.elim x y)).trans ?_
   simpa using LinearMap.finrank_range_le _
 
-/-- Source shape: an intermediate space `S` and a kernel injection whose dimensions differ by
+/-- An intermediate space `S` and a kernel injection whose dimensions differ by
 `bound` give the uniform bound `bound` at every received point that `S` covers. -/
 example {F K : Type*} [Field F] [AddCommGroup K] [Module F K] {D A d m M W bound : ℕ}
     (hdD : d < D) (S : Submodule F (LocalPolynomial F d)) [FiniteDimensional F S]

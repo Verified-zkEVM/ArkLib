@@ -9,13 +9,9 @@ import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 /-!
 # Acceptance tests for double counting after deletion
 
-The examples check that the sharp deletion bound is attained on a concrete relation, that the
-`Fin n` forms with sums over `univ.filter (· ∉ Bad)` follow from the theorems, and that the
+The examples check that the sharp deletion bound is attained on a concrete relation, that both
+bounds specialize to index type `Fin n` with sums over `univ.filter (· ∉ Bad)`, and that the
 hypothesis `k ≤ A` of the `A - k + 1` form cannot be dropped.
-
-For witness counting with exceptional sets, the examples compute the bound on a relation where
-each root has its own one-element exceptional set, and derive the forms with an external witness
-bound `#witnesses ≤ S` and with a quotient from Mathlib's `card_mul_le_card_mul`.
 -/
 
 namespace Finset
@@ -50,8 +46,7 @@ example :
       #(((range 6) \ {2, 3}).bipartiteAbove (fun (_ : ℕ) b ↦ b % 2 = 0) 0) :=
   card_bipartiteAbove_sub_card_le_card_bipartiteAbove_sdiff _ _ _ _
 
-/-- `card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff` in the `Fin n` form with sums over
-`univ.filter (· ∉ Bad)`. -/
+/-- The sharp deletion bound for index type `Fin n`, with the sum over `univ.filter (· ∉ Bad)`. -/
 example {X : Type*} {n A : ℕ} (S : Finset X) (Bad : Finset (Fin n)) (zero : X → Fin n → Prop)
     [∀ x i, Decidable (zero x i)]
     (hA : ∀ x ∈ S, A ≤ (univ.filter (zero x)).card) :
@@ -60,8 +55,7 @@ example {X : Type*} {n A : ℕ} (S : Finset X) (Bad : Finset (Fin n)) (zero : X 
   rw [filter_notMem_eq_sdiff]
   exact card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff zero Bad hA
 
-/-- `card_mul_sub_add_one_le_sum_card_bipartiteBelow_sdiff` in the `Fin n` form with sums over
-`univ.filter (· ∉ Bad)`. -/
+/-- The `A - k + 1` form for index type `Fin n`, with the sum over `univ.filter (· ∉ Bad)`. -/
 example {X : Type*} {n A k : ℕ} (S : Finset X) (Bad : Finset (Fin n)) (zero : X → Fin n → Prop)
     [∀ x i, Decidable (zero x i)] (hkA : k ≤ A) (hBad : Bad.card < k)
     (hA : ∀ x ∈ S, A ≤ (univ.filter (zero x)).card) :

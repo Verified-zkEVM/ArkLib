@@ -12,7 +12,8 @@ import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 These cases derive the counting sandwich
 `vol (weightedSimplex w W) ≤ #(natWeightedSimplex w W) ≤ vol (weightedSimplex w (W + ∑ i, w i))`
 from the two transfers, evaluate it on a segment where the upper half is attained, show that a
-zero weight breaks flooring, and derive the source's `floor_higher_mem`.
+zero weight breaks flooring, and derive the special case of flooring for the weights `i + 1` on
+`Fin (d - 1)` and a natural budget.
 -/
 
 open MeasureTheory Finset
@@ -89,8 +90,8 @@ example : #(natWeightedSimplex (fun _ : Fin 1 ↦ 0) 0) = 1 ∧
   rw [hset]
   exact ((volume_preserving_funUnique (Fin 1) ℝ).measure_preimage_equiv _).trans Real.volume_Ici
 
-/-- The source's `floor_higher_mem`, for the weights `i + 1` on `Fin (d - 1)` and a natural
-budget `W`, derived from `natFloor_mem_natWeightedSimplex`. -/
+/-- The special case of flooring for the weights `i + 1` on `Fin (d - 1)` and a natural budget
+`W`, derived from `natFloor_mem_natWeightedSimplex`. -/
 example (d W : ℕ) (u : Fin (d - 1) → ℝ) (hu : ∀ i, 0 ≤ u i)
     (hW : ∑ i, ((i.val + 1 : ℕ) : ℝ) * u i ≤ W) :
     (fun i ↦ ⌊u i⌋₊) ∈ natWeightedSimplex (fun i : Fin (d - 1) ↦ i.val + 1) W := by

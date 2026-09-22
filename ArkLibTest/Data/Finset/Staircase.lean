@@ -10,7 +10,7 @@ import ArkLib.Data.Finset.Staircase
 # Staircase count acceptance tests
 
 Concrete counts from the theorems, the slope `D = 0` where the finite staircase and the unbounded
-pair type disagree, and the source-shaped statement `card_staircasePairs`.
+pair type disagree, and the count `Nat.card_staircasePairs` of the unbounded pair type.
 -/
 
 open Finset

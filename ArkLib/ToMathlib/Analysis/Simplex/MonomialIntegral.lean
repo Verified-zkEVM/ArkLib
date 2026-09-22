@@ -24,17 +24,6 @@ oriented, so the substitution `x = L * t` reduces every case to the unit interva
 * `integral_pow_mul_one_sub_pow`: the unit-interval case, derived from Mathlib's
   `Complex.betaIntegral_eq_Gamma_mul_div` at the natural arguments `a + 1` and `b + 1`.
 * `integral_pow_mul_sub_pow`: the case of an arbitrary real endpoint `L`.
-
-## References
-
-Ports `SimplexIntegration.integral_pow_mul_sub_pow` from
-`ArkLib/ToMathlib/Analysis/Simplex/MonomialIntegral.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source assumed `0 ≤ L` and applied
-`Complex.betaIntegral_scaled` directly; here the unit-interval case is a separate public theorem
-and the scaling step `intervalIntegral.mul_integral_comp_mul_left` removes the sign hypothesis.
-The source's repeated integral `monomialIntegral` and its formula `monomialIntegral_eq` are not
-ported: the Fubini recurrence `MeasureTheory.setIntegral_standardSimplex_succ` evaluates the
-Lebesgue integral directly, so the list-indexed intermediate has no remaining use.
 -/
 
 @[expose] public section
