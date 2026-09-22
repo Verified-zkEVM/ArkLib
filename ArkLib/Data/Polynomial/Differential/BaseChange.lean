@@ -30,8 +30,8 @@ Passing to an extension field `E` of `F` does not change the characteristic
 ## Main statements
 
 * `map_differentialSpecialization`, `map_separant`: naturality of specialization and separants.
-* `jetDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective coefficient maps preserve jet
-  degrees and the cast hypothesis.
+* `jetDegree_map_eq`, `jetTotalDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective
+  coefficient maps preserve individual and total jet degrees and the cast hypothesis.
 * `BoundedSolution.instFinite`: over a finite coefficient semiring there are finitely many
   solutions of degree at most `D`.
 * `BoundedSolution.map`, `BoundedSolution.map_injective`, `BoundedSolution.natCard_le_natCard_map`:
@@ -65,7 +65,11 @@ mentions a code, so it lives in `PolynomialDifferential`.
   bound-dependent choice `ExtensionAbove` has no consumer at that revision: the extension root
   counts use `FiniteField.Extension F (ringChar F) e` for a fixed degree `e`.
 
-Deferred: the root counts over extension fields that consume these transports.
+* `jetTotalDegree_map_eq` is ported from `RootFinding/FiniteField/TotalDegreeExtension.lean` at the
+  same revision, for any injective map of commutative semirings instead of fields.
+
+The root counts over extension fields that consume these transports are in
+`ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount`.
 -/
 
 @[expose] public section
@@ -107,6 +111,14 @@ theorem jetDegree_map_eq [CommSemiring F] [CommSemiring E] {f : F →+* E}
     jetDegree (MvPolynomial.map f Q) j = jetDegree Q j := by
   unfold jetDegree MvPolynomial.degreeOf
   rw [MvPolynomial.degrees_map_of_injective Q hf]
+
+/-- An injective coefficient map preserves the total jet degree, since it preserves the support.
+-/
+theorem jetTotalDegree_map_eq [CommSemiring F] [CommSemiring E] {f : F →+* E}
+    (hf : Function.Injective f) (Q : DifferentialPolynomial F d) :
+    jetTotalDegree (MvPolynomial.map f Q) = jetTotalDegree Q := by
+  unfold jetTotalDegree MvPolynomial.weightedTotalDegree
+  rw [MvPolynomial.support_map_of_injective Q hf]
 
 /-- An injective coefficient map preserves the cast hypothesis `JetDegreeCastsNeZero`: the jet
 degree is unchanged, and `(k : E) = f k` vanishes exactly when `(k : F)` does. In particular,
