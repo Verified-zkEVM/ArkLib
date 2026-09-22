@@ -55,8 +55,9 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 * `coordinateWeight_sum` (`CubeTransfer.lean`) becomes `sum_fin_succ_eq_choose_two`, stated in `ℕ`
   with `n + 1` in place of `d`.
 
-Deferred: `WeightedSupportParameters.weighted_dimension_integral`, which needs the support space
-`weightedSupportSpace` and its dimension bound, not yet ported.
+The source's `WeightedSupportParameters.weighted_dimension_integral`, which combines
+`weighted_floor_integral` with the dimension bound of the support space, is
+`weighted_dimension_integral` in `WeightedSupport/Estimate.lean`.
 -/
 
 @[expose] public section

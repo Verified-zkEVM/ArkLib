@@ -44,11 +44,12 @@ Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 `CubicStaircase.Slot.exponents_injective`, `CubicStaircase.Slot.weighted_degree_lt`,
 `CubicStaircase.six_mul_sum` and `CubicStaircase.count_ge_cubic` are ported with the same
 statements. `CubicStaircase.cube_div_six_le_sum` drops the source hypothesis `0 < L`. The
-source's consumer is the weighted-support dimension bound (`WeightedSupport/Dimension.lean`),
-which is not yet ported. The converse `CubicStaircase.Slot.exists_of_weighted_degree_lt` (every
-triple below the cutoff comes from a slot) has no consumer in the source and is not ported. This
-file is unrelated to the natural-number staircase `Finset.staircase` of
-`ArkLib.Data.Finset.Staircase`, which counts pairs below a natural cutoff.
+source's consumer is the weighted-support dimension bound
+`ReedSolomon.HiddenDerivative.weightedSupport_dimension_ge_cubic_sum`. The converse
+`CubicStaircase.Slot.exists_of_weighted_degree_lt` (every triple below the cutoff comes from a
+slot) has no consumer in the source and is not ported. This file is unrelated to the
+natural-number staircase `Finset.staircase` of `ArkLib.Data.Finset.Staircase`, which counts pairs
+below a natural cutoff.
 -/
 
 @[expose] public section

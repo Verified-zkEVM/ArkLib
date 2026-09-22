@@ -62,8 +62,8 @@ Ports `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Weigh
 Deferred: the consumers `NormalizedRank.lean` and `Margin.lean`. They need the weighted local
 constraint map `weightedSupportLocalConstraint`, its rank bound, the contact geometric sum
 `localRank_contact_exp_sum_le`, the rounding estimates of `Parameters/RankRounding.lean` and
-`Parameters/WeightedSupport/`, and the support space `weightedSupportSpace`, none of which is
-ported yet.
+`Parameters/WeightedSupport/`, none of which is ported yet. The support space
+`weightedSupportSpace` is in `WeightedSupport/Basic.lean`.
 -/
 
 @[expose] public section
