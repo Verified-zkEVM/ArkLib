@@ -15,8 +15,8 @@ algebraic closure `K` of `ℚ`, the parabola `y = x²` is covered by `t ↦ (t, 
 dimension at most `1`; any ideal containing `x` and `y` is covered by the empty parametrization,
 so it has dimension `0`. The boundary examples show that regularity of `s` is needed in the
 principal-open Nullstellensatz and that positive dimension is needed for the vanishing statement.
-The last examples derive the source's graph statements on `Option σ`, including the second
-conjunct `aeval w s ≠ 0`.
+The last examples treat graphs on `Option σ`, whose `none` coordinate is the parameter, and show
+that `s` does not vanish after substituting the parametrization.
 -/
 
 open MvPolynomial
@@ -34,8 +34,7 @@ theorem isLeftRegular_mk_one {R : Type*} [CommRing R] (I : Ideal R) :
   rw [map_one]
   exact isRegular_one.left
 
-/-- Modulo a prime `P`, the class of every `s ∉ P` is regular, since the quotient is a domain.
-This is how the source's hypotheses `P.IsPrime` and `s ∉ P` give the regularity hypothesis. -/
+/-- Modulo a prime `P`, the class of every `s ∉ P` is regular, since the quotient is a domain. -/
 theorem isLeftRegular_mk_of_isPrime {R : Type*} [CommRing R] {P : Ideal R} (hP : P.IsPrime)
     {s : R} (hs : s ∉ P) : IsLeftRegular (Ideal.Quotient.mk P s) :=
   IsLeftCancelMulZero.mul_left_cancel_of_ne_zero fun h ↦ hs (Ideal.Quotient.eq_zero_iff_mem.mp h)
@@ -96,15 +95,15 @@ example :
   funext i
   simp
 
-/-! ### Source-shaped statements -/
+/-! ### Graphs on `Option σ` -/
 
-section Source
+section Graph
 
 variable {F σ : Type*} [Field F]
 
-/-- The source's `eval_polynomialGraphPullback`, with the graph pullback written as `aeval` of
-`Option.elim · X w` and the graph point written out. -/
-theorem source_eval_polynomialGraphPullback (w : σ → Polynomial F) (z : F)
+/-- Substituting `Option.elim · X w` and evaluating at `z` is evaluation at the graph point
+`(z, (w j).eval z)`. -/
+theorem eval_aeval_graph (w : σ → Polynomial F) (z : F)
     (p : MvPolynomial (Option σ) F) :
     (aeval (fun i : Option σ ↦ i.elim Polynomial.X w) p).eval z =
       aeval (fun i : Option σ ↦ i.elim z fun j ↦ (w j).eval z) p := by
@@ -114,12 +113,12 @@ theorem source_eval_polynomialGraphPullback (w : σ → Polynomial F) (z : F)
   funext i
   cases i <;> simp
 
-/-- The source's `eval_affineGraphPullback`. -/
-theorem source_eval_affineGraphPullback (a b : σ → F) (z : F) (p : MvPolynomial (Option σ) F) :
+/-- The case of `eval_aeval_graph` for the affine graph `w j = a j + X * b j`. -/
+theorem eval_aeval_affineGraph (a b : σ → F) (z : F) (p : MvPolynomial (Option σ) F) :
     (aeval (fun i : Option σ ↦ i.elim Polynomial.X
         fun j ↦ Polynomial.C (a j) + Polynomial.X * Polynomial.C (b j)) p).eval z =
       aeval (fun i : Option σ ↦ i.elim z fun j ↦ a j + z * b j) p := by
-  rw [source_eval_polynomialGraphPullback]
+  rw [eval_aeval_graph]
   congr 2
   funext i
   cases i
@@ -127,8 +126,9 @@ theorem source_eval_affineGraphPullback (a b : σ → F) (z : F) (p : MvPolynomi
   · simp only [Option.elim_some, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C,
       Polynomial.eval_X]
 
-/-- The source's `polynomialGraphPullback_eq_zero_of_infinite`. -/
-theorem source_polynomialGraphPullback_eq_zero_of_infinite (w : σ → Polynomial F)
+/-- A polynomial vanishing on an infinite subset of the graph of `w` vanishes after substituting
+`Option.elim · X w`. -/
+theorem aeval_graph_eq_zero_of_infinite (w : σ → Polynomial F)
     {S : Set (Option σ → F)} (hS : S.Infinite)
     (hgraph : ∀ x ∈ S, x = fun i : Option σ ↦ i.elim (x none) fun j ↦ (w j).eval (x none))
     (p : MvPolynomial (Option σ) F) (hzero : ∀ x ∈ S, aeval x p = 0) :
@@ -137,10 +137,12 @@ theorem source_polynomialGraphPullback_eq_zero_of_infinite (w : σ → Polynomia
     (fun x hx ↦ ⟨x none, (hgraph x hx).trans (funext fun i ↦ by cases i <;> simp)⟩)
     fun x hx ↦ hzero x hx
 
-/-- The source's `polynomialGraphPullback_vanishes_of_principalOpen`. The first conjunct is
+/-- If the principal open subset of a positive-dimensional prime `P` with `s ∉ P` lies on the graph
+of `w`, every member of `P` vanishes after substituting `Option.elim · X w`, and `s` does not.
+The first conjunct is
 `aeval_eq_zero_of_principalOpen_subset_range`; the second evaluates `aeval w s` at the parameter of
 one point of the principal open subset, which is nonempty since it is infinite. -/
-theorem source_polynomialGraphPullback_vanishes_of_principalOpen [IsAlgClosed F] [Finite σ]
+theorem aeval_graph_eq_zero_and_ne_zero_of_principalOpen [IsAlgClosed F] [Finite σ]
     {P : Ideal (MvPolynomial (Option σ) F)} (hP : P.IsPrime) {s : MvPolynomial (Option σ) F}
     (hs : s ∉ P) (hd : 0 < (affineHilbertPolynomial P).natDegree) (w : σ → Polynomial F)
     (hgraph : ∀ x ∈ {x : Option σ → F | x ∈ zeroLocus F P ∧ aeval x s ≠ 0},
@@ -161,9 +163,9 @@ theorem source_polynomialGraphPullback_vanishes_of_principalOpen [IsAlgClosed F]
   rw [hzero, Polynomial.eval_zero] at h
   exact hxs h.symm
 
-/-- The source's `hilbertPolynomial_natDegree_le_one_of_principalOpen_subset_polynomialGraph`.
-The hypothesis `0 < natDegree H(P)` of the source is not needed. -/
-theorem source_natDegree_le_one_of_principalOpen_subset_polynomialGraph [IsAlgClosed F]
+/-- A prime `P` with `s ∉ P` whose principal open subset lies on the graph of `w` has dimension at
+most `1`. -/
+theorem natDegree_le_one_of_principalOpen_subset_graph [IsAlgClosed F]
     [Finite σ] {P : Ideal (MvPolynomial (Option σ) F)} (hP : P.IsPrime)
     {s : MvPolynomial (Option σ) F} (hs : s ∉ P) (w : σ → Polynomial F)
     (hgraph : ∀ x ∈ {x : Option σ → F | x ∈ zeroLocus F P ∧ aeval x s ≠ 0},
@@ -173,9 +175,9 @@ theorem source_natDegree_le_one_of_principalOpen_subset_polynomialGraph [IsAlgCl
     (isLeftRegular_mk_of_isPrime hP hs) (fun i : Option σ ↦ i.elim Polynomial.X w)
     fun x hx hxs ↦ ⟨x none, (hgraph x ⟨hx, hxs⟩).trans (funext fun i ↦ by cases i <;> simp)⟩
 
-/-- The source's `hilbertPolynomial_natDegree_le_one_of_principalOpen_subset_affineGraph`,
-with the base field not required to be algebraically closed: the points lie in `K`. -/
-theorem source_natDegree_le_one_of_principalOpen_subset_affineGraph {k : Type*} [Field k]
+/-- The case of `natDegree_le_one_of_principalOpen_subset_graph` for an affine graph, over a base
+field `k` that need not be algebraically closed, with the points in `K`. -/
+theorem natDegree_le_one_of_principalOpen_subset_affineGraph {k : Type*} [Field k]
     [Algebra k 𝕂] [Finite σ] {P : Ideal (MvPolynomial (Option σ) k)} (hP : P.IsPrime)
     {s : MvPolynomial (Option σ) k} (hs : s ∉ P) (a b : σ → k)
     (hgraph : ∀ x ∈ {x : Option σ → 𝕂 | x ∈ zeroLocus 𝕂 P ∧ aeval x s ≠ 0},
@@ -191,6 +193,6 @@ theorem source_natDegree_le_one_of_principalOpen_subset_affineGraph {k : Type*} 
       · simp only [Option.elim_some, Polynomial.aeval_add, Polynomial.aeval_mul,
           Polynomial.aeval_C, Polynomial.aeval_X])⟩
 
-end Source
+end Graph
 
 end PrincipalOpenParametrizationTest

@@ -45,41 +45,6 @@ polynomial.
   one-parameter case.
 * `MvPolynomial.aeval_eq_zero_of_principalOpen_subset_range`: polynomial identities along a
   one-parameter family covering a positive-dimensional `U(I)`.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Incidence/GraphPullback.lean`, namespace `AffineHilbert`.
-
-The source worked on `Option σ`, with the `none` coordinate retained as the parameter, and defined
-`polynomialGraphPoint w z` and `polynomialGraphPullback w = aeval (Option.elim · X w)`, and the
-affine special case `affineGraphPoint`, `affineGraphPullback`. These definitions are not
-introduced: the pullback is `aeval w` for any `w : σ → k[X]` and the point is
-`fun i ↦ (w i).eval z`. The source's graphs are the case of `Option σ` with `w none = X`, and its
-affine graphs the case `w (some j) = C (a j) + X * C (b j)`; the tests derive both.
-
-* `eval_polynomialGraphPullback` and `eval_affineGraphPullback` are `polynomial_eval_aeval`, over
-  any commutative semiring.
-* `polynomialGraphPullback_eq_zero_of_infinite` and `affineGraphPullback_eq_zero_of_infinite` are
-  `aeval_eq_zero_of_infinite`, over any domain. The retained parameter coordinate is not needed:
-  an infinite set of points has an infinite set of parameters whether or not the parameter is
-  recorded.
-* `polynomialGraphPullback_vanishes_of_principalOpen` and `graphPullback_vanishes_of_principalOpen`
-  are `aeval_eq_zero_of_principalOpen_subset_range`, for any polynomial vanishing on `U(I)`
-  rather than only members of a prime `P`, with primality of `P` and `s ∉ P` weakened to
-  regularity of `s` modulo `I`. Their second conjunct, that the substituted `s` is nonzero, is a
-  direct consequence of `polynomial_eval_aeval` at one point of `U(I)`; the tests derive it.
-* `hilbertPolynomial_natDegree_le_one_of_principalOpen_subset_polynomialGraph` and
-  `hilbertPolynomial_natDegree_le_one_of_principalOpen_subset_affineGraph` are
-  `natDegree_affineHilbertPolynomial_le_one_of_principalOpen_subset_range`, a corollary of the
-  multi-parameter `natDegree_affineHilbertPolynomial_le_of_principalOpen_subset_range`. The
-  positive-dimension hypothesis is dropped, primality is weakened to regularity of `s`, the base
-  field need not be algebraically closed (the points lie in an algebraically closed extension
-  `K`), and the source's proof through an injective map from the quotient by `P` is replaced by
-  the kernel comparison above.
-
-`mem_radical_of_forall_principalOpen` and `ker_aeval_le_radical_of_principalOpen_subset_range`
-are new.
 -/
 
 @[expose] public section

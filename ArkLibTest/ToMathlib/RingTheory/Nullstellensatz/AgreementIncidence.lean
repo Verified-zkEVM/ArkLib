@@ -298,10 +298,10 @@ theorem card_le_of_agreement_off_excluded_fin {F σ : Type*} [Field F] [Finite �
   rwa [Fintype.card_fin] at h
 
 open Classical in
-/-- The source's `hypersurfaceCutFamily_incidence_off_excluded`, with `cutsInIdeal`,
-`principalOpenZeroLocus` and `agreementIndices` written out. Its hypotheses `0 < L` and `A ≤ n`
-give `A - L + 1 ≤ n`; the hypothesis `0 < B` is not used. -/
-theorem source_hypersurfaceCutFamily_incidence_off_excluded {F σ : Type*} [Field F] [Finite σ]
+/-- The incidence bound on a cut hypersurface for cuts indexed by `Fin n`, with the principal open
+subsets and the counts written out. The hypotheses `0 < L` and `A ≤ n` give `A - L + 1 ≤ n`; the
+hypothesis `0 < B` is not used. -/
+theorem card_le_of_agreement_off_excluded_of_hypersurface_fin {F σ : Type*} [Field F] [Finite σ]
     (g s : MvPolynomial σ F) (hg : g ≠ 0) {v B n A L : ℕ}
     (hv : g.totalDegree ≤ v) (_hB : 0 < B)
     (highCuts : List (MvPolynomial σ F))

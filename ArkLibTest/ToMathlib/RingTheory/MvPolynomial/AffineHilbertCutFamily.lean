@@ -15,11 +15,10 @@ These examples use the public API through an ordinary import. In `ℚ[x, y]` the
 of `{⊥}` cut by `x` and then by `x²` to be `{(x)}`, and read off from the potential bound that
 `affineDegree (x) ≤ 2` and, with the total-degree corollary for the cuts `[x, x]`, that
 `affineDegree (x) ≤ 1`. The boundary example shows that the total-degree corollary needs `1 ≤ b`.
-The last examples derive the source's one-cut potential bound and its singleton specification
-`iteratedRetainedCutFamily_singleton_spec` from the general statements. For the hypersurface
-`x = 0` cut by `xy`, the hypersurface potential bound gives `affineDegree (x) ≤ 1`, and the
-source's statements about `hypersurfacePrimeFamily` and `hypersurfaceCutFamily` are derived from
-the general ones.
+The next examples derive the one-cut potential bound and the properties of the iterated family of
+a single prime from the general statements. For the hypersurface `x = 0` cut by `xy`, the
+hypersurface potential bound gives `affineDegree (x) ≤ 1`. The last examples derive the
+properties of the retained components of a hypersurface and of their iterated family.
 -/
 
 open MvPolynomial
@@ -104,8 +103,8 @@ example (s : MvPolynomial (Fin 1) ℚ) :
     Fintype.card_fin]
   norm_num
 
-/-- The source's `sum_retainedCutFamily_affineDegree_mul_pow_le`: the case `cuts = [f]`. Its
-hypotheses `s ∉ P` and `1 ≤ b` are not needed. -/
+/-- The one-cut potential bound, the case `cuts = [f]`. The hypotheses `s ∉ P` and `1 ≤ b` are
+not used. -/
 example {F σ : Type*} [Field F] [Finite σ] (Ps : Finset (Ideal (MvPolynomial σ F)))
     (hprime : ∀ P ∈ Ps, P.IsPrime) {s f : MvPolynomial σ F} (_hopen : ∀ P ∈ Ps, s ∉ P) {b : ℕ}
     (_hb : 1 ≤ b) (hfdeg : f.totalDegree ≤ b) :
@@ -115,8 +114,9 @@ example {F σ : Type*} [Field F] [Finite σ] (Ps : Finset (Ideal (MvPolynomial �
   sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le hprime s (cuts := [f])
     (by simpa using hfdeg)
 
-/-- The source's `iteratedRetainedCutFamily_singleton_spec`, derived from the general statements.
-Its hypothesis `1 ≤ b` is not needed. -/
+/-- For a prime `P` with `s ∉ P`, every member of the iterated family of `{P}` is a prime above
+`P` containing the cuts and avoiding `s`, the potential does not increase, and the family covers
+the points of `P` off `s = 0` on which the cuts vanish. The hypothesis `1 ≤ b` is not used. -/
 example {F σ E : Type*} [Field F] [Finite σ] [Field E] [Algebra F E]
     {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime) {s : MvPolynomial σ F} (hs : s ∉ P) {b : ℕ}
     (_hb : 1 ≤ b) (cuts : List (MvPolynomial σ F)) (hdeg : ∀ f ∈ cuts, f.totalDegree ≤ b) :
@@ -175,17 +175,16 @@ example : affineDegree (Ideal.span {(X 0 : R₂)}) ≤ 1 := by
   norm_num at h
   linarith
 
-section Source
+section Hypersurface
 
 variable {F σ : Type*} [Field F] [Finite σ]
 
-/-- The source's `hypersurfacePrimeFamily_prime_open`, for its family
-`(Ideal.span {g}).retainedMinimalPrimes s`. -/
+/-- Every retained minimal prime of `span {g}` is a prime not containing `s`. -/
 example (g s : MvPolynomial σ F) {P : Ideal (MvPolynomial σ F)}
     (hP : P ∈ (Ideal.span {g}).retainedMinimalPrimes s) : P.IsPrime ∧ s ∉ P :=
   ⟨(Ideal.mem_retainedMinimalPrimes.mp hP).1.isPrime, (Ideal.mem_retainedMinimalPrimes.mp hP).2⟩
 
-/-- The source's `hypersurfacePrimeFamily_dimension`. -/
+/-- Every retained minimal prime of a hypersurface `g = 0` has natural degree `Nat.card σ - 1`. -/
 example (g s : MvPolynomial σ F) (hg : g ≠ 0) {P : Ideal (MvPolynomial σ F)}
     (hP : P ∈ (Ideal.span {g}).retainedMinimalPrimes s) :
     (affineHilbertPolynomial P).natDegree = Nat.card σ - 1 := by
@@ -193,16 +192,17 @@ example (g s : MvPolynomial σ F) (hg : g ≠ 0) {P : Ideal (MvPolynomial σ F)}
     (Ideal.mem_retainedMinimalPrimes.mp hP).1
   omega
 
-/-- The source's `hypersurfacePrimeFamily_potential_le`. -/
+/-- The potential of the retained components of a hypersurface is at most
+`v * B ^ (Nat.card σ - 1)`. -/
 example (g s : MvPolynomial σ F) (hg : g ≠ 0) {v B : ℕ} (hv : g.totalDegree ≤ v) :
     ∑ P ∈ (Ideal.span {g}).retainedMinimalPrimes s,
         affineDegree P * (B : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤
       (v : ℚ) * (B : ℚ) ^ (Nat.card σ - 1) :=
   sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le hg s hv B
 
-/-- The source's `hypersurfaceCutFamily_spec`, for its family
-`Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts`. -/
-theorem source_hypersurfaceCutFamily_spec (g s : MvPolynomial σ F)
+/-- Every member of the iterated family of a hypersurface `g = 0` is a prime containing `g` and
+every cut and not containing `s`. -/
+theorem isPrime_notMem_mem_of_mem_iteratedRetainedCutFamily_span (g s : MvPolynomial σ F)
     (cuts : List (MvPolynomial σ F)) {P : Ideal (MvPolynomial σ F)}
     (hP : P ∈ Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts) :
     P.IsPrime ∧ s ∉ P ∧ g ∈ P ∧ ∀ f ∈ cuts, f ∈ P := by
@@ -214,7 +214,8 @@ theorem source_hypersurfaceCutFamily_spec (g s : MvPolynomial σ F)
     hle ((Ideal.mem_retainedMinimalPrimes.mp hP₀).1.le (Ideal.mem_span_singleton_self g)),
     hcuts⟩
 
-/-- The source's `hypersurfaceCutFamily_covers`. -/
+/-- The iterated family of a hypersurface `g = 0` covers the points of `g = 0` off `s = 0` on
+which every cut vanishes. -/
 example {E : Type*} [Field E] [Algebra F E] (g s : MvPolynomial σ F)
     (cuts : List (MvPolynomial σ F)) (x : σ → E) (hg : aeval x g = 0) (hs : aeval x s ≠ 0)
     (hcuts : ∀ f ∈ cuts, aeval x f = 0) :
@@ -226,7 +227,8 @@ example {E : Type*} [Field E] [Algebra F E] (g s : MvPolynomial σ F)
   obtain ⟨P, hP, -, hxP⟩ := exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus hP₀ hxP₀ hs hcuts
   exact ⟨P, hP, hxP⟩
 
-/-- The source's `hypersurfaceCutFamily_potential_le`; its hypothesis `1 ≤ B` is not needed. -/
+/-- The potential of the iterated family of a hypersurface is at most `v * B ^ (Nat.card σ - 1)`;
+the hypothesis `1 ≤ B` is not used. -/
 example (g s : MvPolynomial σ F) (hg : g ≠ 0) {v B : ℕ} (hv : g.totalDegree ≤ v)
     (_hB : 1 ≤ B) (cuts : List (MvPolynomial σ F)) (hcuts : ∀ f ∈ cuts, f.totalDegree ≤ B) :
     ∑ P ∈ Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts,
@@ -234,14 +236,15 @@ example (g s : MvPolynomial σ F) (hg : g ≠ 0) {v B : ℕ} (hv : g.totalDegree
       (v : ℚ) * (B : ℚ) ^ (Nat.card σ - 1) :=
   sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le hg s hv hcuts
 
-/-- The source's `hypersurfaceCutFamily_dimension_le`. -/
+/-- Every member of the iterated family of a hypersurface has natural degree at most
+`Nat.card σ - 1`. -/
 example (g s : MvPolynomial σ F) (hg : g ≠ 0) (cuts : List (MvPolynomial σ F))
     {P : Ideal (MvPolynomial σ F)}
     (hP : P ∈ Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts) :
     (affineHilbertPolynomial P).natDegree ≤ Nat.card σ - 1 :=
   natDegree_affineHilbertPolynomial_le_of_mem hg
-    (source_hypersurfaceCutFamily_spec g s cuts hP).2.2.1
+    (isPrime_notMem_mem_of_mem_iteratedRetainedCutFamily_span g s cuts hP).2.2.1
 
-end Source
+end Hypersurface
 
 end AffineHilbertCutFamilyTest

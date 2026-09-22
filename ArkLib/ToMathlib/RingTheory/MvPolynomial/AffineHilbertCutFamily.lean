@@ -33,51 +33,6 @@ degree, so the affine degrees of the final members sum to at most the initial po
   `MvPolynomial.sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le`: starting
   from the components of a hypersurface `g = 0` with `totalDegree g ≤ v`, the potential is at most
   `v * b ^ (Nat.card σ - 1)` before and after the cuts.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Iteration.lean`, namespace `AffineHilbert`.
-
-* `sum_iteratedRetainedCutFamily_affineDegree_mul_pow_le` is
-  `sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le`. The source hypotheses
-  `∀ P ∈ Ps, s ∉ P` and `1 ≤ b` are dropped; primality of `Ps` and the degree bound remain.
-* `sum_retainedCutFamily_affineDegree_mul_pow_le` is the case `cuts = [f]`.
-* `iteratedRetainedCutFamily_singleton_spec` was the conjunction, for `Ps = {P}`, of the potential
-  bound, `Ideal.isPrime_of_mem_iteratedRetainedCutFamily`,
-  `Ideal.notMem_of_mem_iteratedRetainedCutFamily`,
-  `Ideal.exists_le_of_mem_iteratedRetainedCutFamily` and
-  `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`; it is derived in the
-  acceptance tests rather than restated.
-* `sum_affineDegree_iteratedRetainedCutFamily_le` is new.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Hypersurface.lean`:
-
-* The definitions `hypersurfacePrimeFamily g s` and `hypersurfaceCutFamily g s cuts` are not
-  introduced; they are `(Ideal.span {g}).retainedMinimalPrimes s` and
-  `Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts`.
-* `hypersurfacePrimeFamily_potential_le` is
-  `sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le`, with the same hypotheses.
-* `hypersurfaceCutFamily_potential_le` is
-  `sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le`; the hypothesis `1 ≤ b`
-  is dropped.
-* `hypersurfacePrimeFamily_prime_open`, `hypersurfaceCutFamily_spec` and
-  `hypersurfaceCutFamily_covers` are conjunctions of `Ideal.mem_retainedMinimalPrimes`,
-  `Ideal.isPrime_of_mem_iteratedRetainedCutFamily`,
-  `Ideal.notMem_of_mem_iteratedRetainedCutFamily`,
-  `Ideal.exists_le_of_mem_iteratedRetainedCutFamily`,
-  `MvPolynomial.exists_retainedMinimalPrime_of_mem_zeroLocus` and
-  `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`; they are derived in the
-  acceptance tests. `hypersurfacePrimeFamily_dimension` is
-  `natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton` in
-  `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity`, for every minimal prime of
-  `span {g}`; `hypersurfaceCutFamily_dimension_le` is
-  `natDegree_affineHilbertPolynomial_le_of_mem` in
-  `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial`, for every ideal containing
-  `g`. The
-  incidence theorem `hypersurfaceCutFamily_incidence_off_excluded` is
-  `MvPolynomial.card_le_of_agreement_off_excluded_of_hypersurface` in
-  `ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence`.
 -/
 
 @[expose] public section

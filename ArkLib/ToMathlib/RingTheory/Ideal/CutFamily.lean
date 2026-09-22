@@ -47,37 +47,6 @@ strictly larger than the retained minimal primes of `P ⊔ span cuts`: in `k[x, 
   total cut are members.
 * `Ideal.sum_retainedCutFamily_le`, `Ideal.sum_iteratedRetainedCutFamily_le`: monotonicity of
   nonnegative weights.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Iteration.lean`, namespace `AffineHilbert`, where
-everything was stated over `MvPolynomial σ F` with `F` a field and `σ` finite. Here the ring is any
-Noetherian commutative semiring.
-
-* `retainedCutFamily` and `iteratedRetainedCutFamily` keep their names. The source built the
-  children of `P` from `retainedCutChildren P s f`, which is `{P}` when `f ∈ P` and
-  `(P ⊔ span {f}).retainedMinimalPrimes s` otherwise. Here the retained minimal primes are used in
-  both cases. The two agree when `P` is prime and `s ∉ P`, which is the only case the source
-  theorems use (`retainedCutFamily_of_forall_mem` records the `f ∈ P` case).
-* `iteratedRetainedCutFamily_prime_open` is split into
-  `isPrime_of_mem_iteratedRetainedCutFamily` and `notMem_of_mem_iteratedRetainedCutFamily`, each
-  with only the hypothesis on `Ps` it needs.
-* `mem_iteratedRetainedCutFamily_contains` is `exists_le_of_mem_iteratedRetainedCutFamily`, with
-  the same (absent) hypotheses.
-* `exists_mem_retainedCutFamily_of_mem_zeroLocus` and
-  `exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus` are point forms of
-  `exists_mem_iteratedRetainedCutFamily_le`. They are covered by
-  `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus` in
-  `ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily`, the one-cut form being the list `[f]`.
-* The private `sum_biUnion_le_sum_sum` is Mathlib's `Finset.apply_sup_le_sum`. The potential
-  bounds `sum_retainedCutFamily_affineDegree_mul_pow_le` and
-  `sum_iteratedRetainedCutFamily_affineDegree_mul_pow_le` are specializations of
-  `sum_iteratedRetainedCutFamily_le`; see
-  `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily`.
-* `retainedCutFamily_of_forall_mem`, `exists_mem_iteratedRetainedCutFamily_le`,
-  `retainedMinimalPrimes_subset_iteratedRetainedCutFamily`, `iteratedRetainedCutFamily_append` and
-  the abstract weight bounds are new.
 -/
 
 @[expose] public section
