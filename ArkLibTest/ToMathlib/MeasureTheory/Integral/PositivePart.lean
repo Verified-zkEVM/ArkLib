@@ -14,7 +14,9 @@ import Mathlib.MeasureTheory.Measure.Dirac.Basic
 
 These cases evaluate the finite-average bound on a two-point sample, check that the pointwise bound
 is attained at `y = μ` and `y = 2 * c - μ`, show that `μ < c` is needed, check the empty average,
-and apply the probability-measure bound to a Dirac measure.
+and apply the probability-measure bound to a Dirac measure. For the cube of the positive part they
+show the bound is attained by a symmetric two-point variable and that the mean-zero hypothesis is
+needed.
 -/
 
 open MeasureTheory
@@ -71,3 +73,34 @@ example : ∃ P : Measure ℝ, IsProbabilityMeasure P ∧ ∫ x, x ∂P = 1 ∧
   have hmean : ∫ x, x ∂P = 1 := by rw [hP]; norm_num
   refine ⟨P, this, hmean, by rw [hP]; norm_num, by rw [hP]; norm_num, ?_⟩
   exact integral_max_sub_zero_le P id 2 1 (hint _) hmean (hint _) one_lt_two
+
+/-- The cube bound is attained by `z = ±1` with probability `1 / 2` each and `b = 1`: the left side
+is `1 + 3 * 1 - 0 = 4`, and `∫ (max (1 - z) 0) ^ 3 = (8 + 0) / 2 = 4`. -/
+example : ∃ P : Measure ℝ, IsProbabilityMeasure P ∧
+    (1 : ℝ) ^ 3 + 3 * 1 * (∫ x, x ^ 2 ∂P) - ∫ x, x ^ 3 ∂P = 4 ∧
+    ∫ x, (max (1 - x) 0) ^ 3 ∂P = 4 ∧
+    (1 : ℝ) ^ 3 + 3 * 1 * (∫ x, x ^ 2 ∂P) - ∫ x, x ^ 3 ∂P ≤ ∫ x, (max (1 - x) 0) ^ 3 ∂P := by
+  set P : Measure ℝ := (2 : ENNReal)⁻¹ • (Measure.dirac (-1 : ℝ) + Measure.dirac 1)
+  have : IsProbabilityMeasure P := ⟨by
+    simp only [P, Measure.smul_apply, Measure.add_apply, measure_univ, smul_eq_mul]
+    rw [one_add_one_eq_two, ENNReal.inv_mul_cancel two_ne_zero ENNReal.ofNat_ne_top]⟩
+  have hdirac : ∀ (a : ℝ) (f : ℝ → ℝ), Integrable f (Measure.dirac a) :=
+    fun a f ↦ integrable_dirac (by simp)
+  have hint : ∀ f : ℝ → ℝ, Integrable f P := fun f ↦
+    ((hdirac (-1) f).add_measure (hdirac 1 f)).smul_measure (by simp)
+  have hP : ∀ f : ℝ → ℝ, ∫ x, f x ∂P = (f (-1) + f 1) / 2 := by
+    intro f
+    rw [integral_smul_measure, integral_add_measure (hdirac (-1) f) (hdirac 1 f), integral_dirac,
+      integral_dirac]
+    simp only [ENNReal.toReal_inv, ENNReal.toReal_ofNat, smul_eq_mul]
+    ring
+  have hmean : ∫ x, x ∂P = 0 := by rw [hP]; norm_num
+  refine ⟨P, this, by rw [hP, hP]; norm_num, by rw [hP]; norm_num, ?_⟩
+  exact le_integral_max_sub_zero_pow_three P id 1 (hint _) (hint _) hmean
+
+/-- The mean-zero hypothesis of `le_integral_max_sub_zero_pow_three` is needed: for `z = 1` under
+a Dirac measure and `b = 1` the left side is `3` and the right side is `0`. -/
+example : ¬ ((1 : ℝ) ^ 3 + 3 * 1 * (∫ _x, (1 : ℝ) ^ 2 ∂Measure.dirac (0 : ℝ)) -
+      ∫ _x, (1 : ℝ) ^ 3 ∂Measure.dirac (0 : ℝ) ≤
+    ∫ _x, (max ((1 : ℝ) - 1) 0) ^ 3 ∂Measure.dirac (0 : ℝ)) := by
+  norm_num
