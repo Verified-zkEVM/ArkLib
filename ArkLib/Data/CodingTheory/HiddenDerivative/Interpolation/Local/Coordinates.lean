@@ -38,6 +38,8 @@ the substitution introduces in `Y₀`, which gives, for every monomial `T^t E^h 
 After projecting to contact order `t + d h < m`, the residual `r = t - h` is below `m` and
 `h < ⌈(m - r)/(d + 1)⌉`. The finite set `localResidualExponents hd m W B` collects the exponents
 allowed by these bounds, and its cardinality is at most `localResidualCoordinateBudget d m W B`.
+The cutoff `B` is a natural number; a real cutoff `T` corresponds to `B = ⌈T⌉₊`, since
+`n < T ↔ n < ⌈T⌉₊` for natural `n`.
 
 ## Main statements
 
@@ -60,39 +62,8 @@ allowed by these bounds, and its cardinality is at most `localResidualCoordinate
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Coordinates.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source's `unscaled_support_weight_le`
-(integer weights `localWeight`/`sourceWeight` of a fixed shape) is
-`unscaledLocalSubstitution_mem_restrictWeightAtMost`, for arbitrary weights with values in an
-ordered additive commutative monoid; the source's private `support_weight_*` lemmas are replaced by
-`ArkLib.Data.MvPolynomial.WeightAtMost`. The source's `unscaledLocal_error_le_t`,
-`unscaledLocal_higher_weight_le`, `unscaledLocal_derivativeJetWeight_le`,
-`unscaledLocal_jet_degree_le`, `unscaled_jet_degree_lt_of_support`,
-`localConstraint_support_of_derivative_weight`, and `localConstraint_support_of_weight_bounds` are
-the lemmas above. The source's `reachableLocalJetDegree e` is `e.weight (localJetDegreeWeight d)`,
-and its `reachableLocalJetDegree_eq_coordinates` and `localContact_eq_coordinates` are
-`weight_localJetDegreeWeight` and `localContactOrder_eq` in `HiddenDerivative/Variables.lean`.
-The source's real cutoff `T` in the strict jet-degree bound and in `localResidualCoordinateBudget`
-is replaced by a natural cutoff `B`; for real `T` take `B = ⌈T⌉₊`, since `n < T ↔ n < ⌈T⌉₊`
-(the tests derive the source statement this way). The source's `LocalResidualCoordinateIndex`,
-`localResidualExponent`, `LocalCoordinateBudgetIndex`, and their cardinality lemmas are replaced by
-the `Finset.sigma` in `localResidualExponents`; `localCoordinateBudget` and the residual budget
-are in `Interpolation/Counting.lean`. The finrank bounds are added here.
-
-The derivative-order count generalizes the counting part of the source's
-`Interpolation/PartitionSupport/LocalRank.lean`: `localDerivativeCoordinateBudget` is its
-`partitionLocalRankBound` (with `(m - s) ⌈/⌉ (d + 1)` written `contactThreshold (d + 1) m s`),
-`localDerivativeExponent` and `localDerivativeExponents` are its `partitionLocalExponent` and
-`partitionLocalExponents` with the dependent index type `PartitionLocalIndex` replaced by a
-`Finset.sigma` (so `card_partitionLocalIndex` is not needed), `card_localDerivativeExponents_le`
-and `mem_localDerivativeExponents_of_bounds` are its `card_partitionLocalExponents_le` and
-`mem_partitionLocalExponents_of_bounds`, and its `localDerivativeWeight` is
-`e.weight (localDerivativeJetWeight d)` (`weight_localDerivativeJetWeight`). The rank bound is
-stated for every submodule with the weight bound rather than for the partition support space.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
 -/
 
 @[expose] public section

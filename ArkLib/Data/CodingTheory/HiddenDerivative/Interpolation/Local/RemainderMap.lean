@@ -36,34 +36,6 @@ remainder at `(center, P(center))` forces `(X - center) ^ m ∣ Q(X, P, D¹P, ..
   `normalizedLocalConstraintAt_ker_eq_coordinates`.
 * `X_sub_C_pow_dvd_differentialSpecialization_of_normalizedLocalConstraint`: the normalized
   remainder constraint forces contact of order `m` at every agreement point.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RemainderMap.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `normalizeLocalExponent` and its `_apply_T`, `_apply_E`, `_apply_Y` and `_injective` lemmas are
-  unchanged. The private `normalizeLocalExponent_single_*` lemmas are not needed.
-* `normalizeErrorByExponent` is `MvPolynomial.mapExponents (normalizeLocalExponent d)`, so
-  `normalizeError_eq_normalizeErrorByExponent` is `normalizeError_eq_mapExponents`, and the private
-  `normalizeError_monomial` is public. `normalizeError_injective` is unchanged in statement and
-  is an instance of `MvPolynomial.mapExponents_injective`.
-* `normalizeLocalExponent_T_eq_contact` is unchanged; `weight_normalizeLocalExponent` restates it
-  as the weight identity used by `MvPolynomial.weightedTruncation_mapExponents`.
-* The private `filterLocalMonomials_monomial` is the generic `MvPolynomial.filterSupport_monomial`.
-* `truncateLocalT_normalizeError`, `normalizedLocalConstraintAt`,
-  `normalizedLocalConstraintAt_eq_normalize_localConstraintAt`,
-  `normalizedLocalConstraintAt_eq_zero_iff`,
-  `normalizedLocalConstraintAt_ker_eq_localConstraintAt` and
-  `normalizedLocalConstraintAt_ker_eq_coordinates` are unchanged.
-
-* `X_sub_C_pow_dvd_differentialSpecialization_of_normalizedLocalConstraint` is unchanged. It is
-  `X_sub_C_pow_dvd_differentialSpecialization_of_contact` composed with
-  `normalizedLocalConstraintAt_eq_zero_iff`; the monomial divisibility argument behind it is the
-  generic `MvPolynomial.pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder` in
-  `ArkLib.Data.MvPolynomial.WeightedOrder`, which `Local/Contact.lean` already uses, so no new
-  generic lemma is needed.
 -/
 
 @[expose] public section
@@ -87,16 +59,19 @@ def normalizeLocalExponent (d : ℕ) : (LocalVariable d →₀ ℕ) →+ (LocalV
     ext v
     simp [mul_add, add_assoc, add_left_comm]
 
+/-- The normalized exponent of `T` is `e(T) + d · e(E)`. -/
 @[simp]
 theorem normalizeLocalExponent_apply_T (d : ℕ) (e : LocalVariable d →₀ ℕ) :
     normalizeLocalExponent d e (localT d) = e (localT d) + d * e (localE d) := by
   simp [normalizeLocalExponent]
 
+/-- The normalization keeps the exponent of `E`. -/
 @[simp]
 theorem normalizeLocalExponent_apply_E (d : ℕ) (e : LocalVariable d →₀ ℕ) :
     normalizeLocalExponent d e (localE d) = e (localE d) := by
   simp [normalizeLocalExponent, localT, localE, localAux]
 
+/-- The normalization keeps the exponent of each `Y_(j+1)`. -/
 @[simp]
 theorem normalizeLocalExponent_apply_Y (d : ℕ) (e : LocalVariable d →₀ ℕ) (j : Fin d) :
     normalizeLocalExponent d e (localY j) = e (localY j) := by
