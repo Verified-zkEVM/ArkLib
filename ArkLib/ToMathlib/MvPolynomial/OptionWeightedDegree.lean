@@ -32,20 +32,6 @@ Additivity under multiplication and monotonicity under divisibility over a ring 
 divisors need no separate statement here: they are `MvPolynomial.weightedTotalDegree_mul` and
 `MvPolynomial.weightedTotalDegree_le_of_dvd` in `ArkLib.Data.MvPolynomial.WeightedDegree.Products`,
 which hold for every weight, applied to the weight `fun v ↦ v.elim 0 (fun _ ↦ 1)`.
-
-## References
-
-Ported from `ArkLib/ToMathlib/MvPolynomial/OptionWeightedDegree.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `optionEquivRight_monomial` and
-`optionEquivRight_coeff_coeff` are unchanged. `Finsupp.weight_optionElim` generalizes
-`weight_optionElim_zero_one` from the weights `0` on `none` and `1` on `some` to an arbitrary weight
-`c` on `none` and `w` on `some`; `MvPolynomial.weight_optionElim_zero_one` keeps the source
-statement. `weightedTotalDegree_optionEquivRight` generalizes `totalDegree_optionEquivRight` from
-`w = 1` to arbitrary `w`, and `totalDegree_optionEquivRight` keeps the source statement. The source
-theorems `weightedTotalDegree_option_zero_one_mul` and
-`weightedTotalDegree_option_zero_one_le_of_dvd` are not ported: they are instances of the
-all-weight theorems `weightedTotalDegree_mul` and `weightedTotalDegree_le_of_dvd` already on main,
-as the acceptance tests check.
 -/
 
 @[expose] public section

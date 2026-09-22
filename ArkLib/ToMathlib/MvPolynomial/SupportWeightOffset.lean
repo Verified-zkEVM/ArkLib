@@ -26,16 +26,6 @@ coefficient index and Taylor order, and the allowance records the source jet ind
   `pow`, `sum`, and `prod`.
 * `MvPolynomial.supportWeightOffset_zero_iff`: allowance zero is membership in `supportWeightLE`.
 * `MvPolynomial.supportWeightOffset_aeval`: substitution charges each monomial its weighted degree.
-
-## References
-
-Ported from `ArkLib/ToMathlib/MvPolynomial/SupportWeightOffset.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `SupportWeightOffset`, its namespace lemmas, and
-`supportWeightOffset_aeval` keep the source statements. `supportWeightOffset_zero_iff` is new and
-connects the definition to `supportWeightLE`; with it, `supportWeightOffset_aeval` at the zero
-weight recovers `aeval_mem_supportWeightLE`, as the acceptance tests check. The source import of
-`ArkLib.Data.MvPolynomial.WeightedDegree` is dropped because only Mathlib's
-`weightedTotalDegree` is used.
 -/
 
 @[expose] public section

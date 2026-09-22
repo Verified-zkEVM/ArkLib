@@ -13,8 +13,9 @@ import Mathlib.Data.ZMod.Basic
 # Acceptance tests for weighted degree through `optionEquivRight`
 
 The examples evaluate the split-exponent weight formula, compute the image of a monomial and its
-total degree, recover the source's product and divisor statements from the all-weight theorems on
-main, and show that the product statement fails over `ZMod 4`, which has zero divisors.
+total degree, derive the product and divisor statements for the weight that ignores `none` from
+the all-weight theorems, and show that the product statement fails over `ZMod 4`, which has zero
+divisors.
 -/
 
 open MvPolynomial
@@ -27,7 +28,8 @@ example :
   rw [Finsupp.weight_optionElim]
   simp [Finsupp.weight_single]
 
-/-- The weight-zero coordinate is ignored: the source statement `weight_optionElim_zero_one`. -/
+/-- The weight-zero coordinate is ignored: `weight_optionElim_zero_one`, the case `c = 0`,
+`w = 1`. -/
 example (m : Fin 3 →₀ ℕ) (i : ℕ) :
     (m.optionElim i).weight (fun v ↦ v.elim 0 (fun _ ↦ 1)) = m.degree :=
   weight_optionElim_zero_one m i
@@ -53,8 +55,8 @@ example :
   rw [map_add]
   simp [Finsupp.weight_single]
 
-/-- The source statement `weightedTotalDegree_option_zero_one_mul` is the all-weight
-`weightedTotalDegree_mul` for the weight that ignores `none`. -/
+/-- Over a ring without zero divisors, the weighted degree for the weight that ignores `none` is
+additive on products: `weightedTotalDegree_mul` for that weight. -/
 example {R σ : Type*} [CommSemiring R] [NoZeroDivisors R]
     (p q : MvPolynomial (Option σ) R) (hp : p ≠ 0) (hq : q ≠ 0) :
     (p * q).weightedTotalDegree (fun v ↦ v.elim 0 (fun _ ↦ 1)) =
@@ -62,8 +64,9 @@ example {R σ : Type*} [CommSemiring R] [NoZeroDivisors R]
         q.weightedTotalDegree (fun v ↦ v.elim 0 (fun _ ↦ 1)) :=
   weightedTotalDegree_mul _ p q hp hq
 
-/-- The source statement `weightedTotalDegree_option_zero_one_le_of_dvd` follows from
-`weightedTotalDegree_le_of_dvd`; the source hypothesis `p ≠ 0` is not needed. -/
+/-- Over a ring without zero divisors, the weighted degree for the weight that ignores `none` is
+monotone under divisibility into a nonzero polynomial: `weightedTotalDegree_le_of_dvd` for that
+weight. The hypothesis `p ≠ 0` is unused. -/
 example {R σ : Type*} [CommSemiring R] [NoZeroDivisors R]
     (p q : MvPolynomial (Option σ) R) (_hp : p ≠ 0) (hq : q ≠ 0) (hdiv : p ∣ q) :
     p.weightedTotalDegree (fun v ↦ v.elim 0 (fun _ ↦ 1)) ≤
