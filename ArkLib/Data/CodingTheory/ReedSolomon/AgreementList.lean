@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 
 /-!
 # Finiteness and sample incidence for Reed–Solomon agreement lists
@@ -23,6 +24,10 @@ is a consequence of the uniform bound on every finite subfamily.
 
 For `k = 1` the candidates are constants, whose agreement sets are disjoint, and the bound reads
 `list.ncard ≤ n / A` (`closePolynomialSet_one_ncard_le_div`).
+
+The last section defines `agreeingPolynomials`, the same list as a set of degree-bounded message
+polynomials (`ListDecoding.MessagePolynomial`) over any semiring and any finite index type.
+
 -/
 
 @[expose] public section
@@ -121,5 +126,25 @@ theorem closePolynomialSet_one_ncard_le_div
     simpa using closePolynomialSet_ncard_mul_choose_le domain received hA)
 
 end
+
+/-! ## Degree-bounded message lists over general index types -/
+
+open ListDecoding
+
+/-- The degree-`< messageDim` message polynomials whose evaluations on `domain` agree with
+`received` in at least `minAgreement` coordinates. This is the set of messages accepted by
+`ListDecoding.Accepts`; an exact decoder enumerates it. -/
+def agreeingPolynomials {F index : Type*} [Semiring F] [DecidableEq F] [Fintype index]
+    (domain : index ↪ F) (messageDim minAgreement : ℕ) (received : index → F) :
+    Set (MessagePolynomial F messageDim) :=
+  {p | minAgreement ≤ Code.agree (ReedSolomon.evalOnPoints domain p) received}
+
+/-- Membership in `agreeingPolynomials` is the agreement count of `polynomialAgreementSet`. -/
+theorem mem_agreeingPolynomials_iff {F index : Type*} [Semiring F] [DecidableEq F]
+    [Fintype index] {domain : index ↪ F} {messageDim minAgreement : ℕ} {received : index → F}
+    {p : MessagePolynomial F messageDim} :
+    p ∈ agreeingPolynomials domain messageDim minAgreement received ↔
+      minAgreement ≤ (polynomialAgreementSet domain received p).card :=
+  Iff.rfl
 
 end ReedSolomon

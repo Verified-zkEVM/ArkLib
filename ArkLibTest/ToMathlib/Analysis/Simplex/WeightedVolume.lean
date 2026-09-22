@@ -80,3 +80,30 @@ example : ¬ (volume.real (weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (0 + 1)
   rw [volume_real_weightedSimplex (fun _ ↦ one_pos) (by norm_num),
     volume_real_weightedSimplex (fun _ ↦ one_pos) le_rfl]
   norm_num
+
+/-- Dilating by `2` doubles both sides of the triangle with weights `1, 2` and budget `2`, of area
+`1`, so the triangle of budget `4` has area `2 ^ 2 * 1 = 4`, as computed above. -/
+example : volume.real (weightedSimplex (fun i : Fin 2 ↦ (i : ℝ) + 1) (2 * 2)) = 4 := by
+  rw [volume_real_weightedSimplex_mul _ (by norm_num : (0 : ℝ) < 2),
+    volume_real_weightedSimplex_succ 2 (by norm_num)]
+  norm_num [Nat.factorial]
+
+/-- For every `f`, the integral of `f` over the segment `[0, 2]` is twice the integral of
+`f (2 • u)` over `[0, 1]`. -/
+example (f : (Fin 1 → ℝ) → ℝ) :
+    (∫ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (2 * 1), f u) =
+      2 * ∫ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 1, f ((2 : ℝ) • u) := by
+  rw [setIntegral_weightedSimplex_mul _ (by norm_num : (0 : ℝ) < 2)]
+  norm_num
+
+/-- `0 < c` is needed in `setAverage_weightedSimplex_mul`: at `c = 0` the constant `1` has
+average `0` over the null set `weightedSimplex w 0 = {0}`, and average `1` over
+`weightedSimplex w 1`. -/
+example : (⨍ _u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (0 * 1), (1 : ℝ)) ≠
+    ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) 1, (fun _ ↦ (1 : ℝ)) ((0 : ℝ) • u) := by
+  rw [zero_mul, setAverage_eq, setAverage_eq,
+    volume_real_weightedSimplex (fun _ ↦ one_pos) le_rfl,
+    volume_real_weightedSimplex (fun _ ↦ one_pos) zero_le_one]
+  simp only [integral_const, measureReal_restrict_apply_univ, smul_eq_mul, mul_one]
+  rw [volume_real_weightedSimplex (fun _ ↦ one_pos) zero_le_one]
+  norm_num
