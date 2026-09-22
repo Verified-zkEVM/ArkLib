@@ -606,6 +606,7 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RectangleDifference
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+public import ArkLib.ToMathlib.RingTheory.Ideal.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Ideal.HeightUnder
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
@@ -617,6 +618,7 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertBidegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCappedBidegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComponents
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical
@@ -627,7 +629,10 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.MonomialMap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteZeroLocus
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 public import ArkLib.ToMathlib.Set.Finite
