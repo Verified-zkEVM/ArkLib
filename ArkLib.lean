@@ -114,6 +114,7 @@ public import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
 public import ArkLib.Data.CodingTheory.JohnsonBound.Pairwise
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
@@ -207,6 +208,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
@@ -321,6 +323,8 @@ public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.PointCollision
+public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
