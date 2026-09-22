@@ -29,6 +29,10 @@ degree, so the affine degrees of the final members sum to at most the initial po
   increase.
 * `MvPolynomial.sum_affineDegree_iteratedRetainedCutFamily_le`: the total affine degree of the
   final family is at most the initial potential.
+* `MvPolynomial.sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le` and
+  `MvPolynomial.sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le`: starting
+  from the components of a hypersurface `g = 0` with `totalDegree g ≤ v`, the potential is at most
+  `v * b ^ (Nat.card σ - 1)` before and after the cuts.
 
 ## References
 
@@ -46,6 +50,34 @@ Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
   `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`; it is derived in the
   acceptance tests rather than restated.
 * `sum_affineDegree_iteratedRetainedCutFamily_le` is new.
+
+From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Hypersurface.lean`:
+
+* The definitions `hypersurfacePrimeFamily g s` and `hypersurfaceCutFamily g s cuts` are not
+  introduced; they are `(Ideal.span {g}).retainedMinimalPrimes s` and
+  `Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts`.
+* `hypersurfacePrimeFamily_potential_le` is
+  `sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le`, with the same hypotheses.
+* `hypersurfaceCutFamily_potential_le` is
+  `sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le`; the hypothesis `1 ≤ b`
+  is dropped.
+* `hypersurfacePrimeFamily_prime_open`, `hypersurfaceCutFamily_spec` and
+  `hypersurfaceCutFamily_covers` are conjunctions of `Ideal.mem_retainedMinimalPrimes`,
+  `Ideal.isPrime_of_mem_iteratedRetainedCutFamily`,
+  `Ideal.notMem_of_mem_iteratedRetainedCutFamily`,
+  `Ideal.exists_le_of_mem_iteratedRetainedCutFamily`,
+  `MvPolynomial.exists_retainedMinimalPrime_of_mem_zeroLocus` and
+  `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`; they are derived in the
+  acceptance tests. `hypersurfacePrimeFamily_dimension` is
+  `natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton` in
+  `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity`, for every minimal prime of
+  `span {g}`; `hypersurfaceCutFamily_dimension_le` is
+  `natDegree_affineHilbertPolynomial_le_of_mem` in
+  `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial`, for every ideal containing
+  `g`. The
+  incidence theorem `hypersurfaceCutFamily_incidence_off_excluded` is
+  `MvPolynomial.card_le_of_agreement_off_excluded_of_hypersurface` in
+  `ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence`.
 -/
 
 @[expose] public section
@@ -94,5 +126,55 @@ theorem sum_affineDegree_iteratedRetainedCutFamily_le
   (Finset.sum_le_sum fun Q _ ↦ le_mul_of_one_le_right (affineDegree_nonneg Q)
     (one_le_pow₀ (by exact_mod_cast hb))).trans
     (sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le hprime s hdeg)
+
+/-- Let `g ≠ 0` with `totalDegree g ≤ v`. Every minimal prime of `span {g}` has natural degree
+`Nat.card σ - 1`, so for every `b` the potential of the components retained by `s` is
+
+  `∑ Q, affineDegree Q * b ^ natDegree H(Q) ≤ v * b ^ (Nat.card σ - 1)`.
+
+The affine degrees sum to at most `v` by the Bézout bound
+`principalCut_sum_affineDegree_retainedMinimalPrimes_le` applied to `P = ⊥`. The hypothesis
+`g ≠ 0` is needed: for `g = 0`, `v = 0`, `s = 1` and `b = 1`, the only component is `⊥`, and the
+left side is `1` while the right side is `0`. -/
+theorem sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le
+    {g : MvPolynomial σ k} (hg : g ≠ 0) (s : MvPolynomial σ k) {v : ℕ} (hv : g.totalDegree ≤ v)
+    (b : ℕ) :
+    ∑ Q ∈ (Ideal.span {g}).retainedMinimalPrimes s,
+        affineDegree Q * (b : ℚ) ^ (affineHilbertPolynomial Q).natDegree ≤
+      v * (b : ℚ) ^ (Nat.card σ - 1) := by
+  have hsum : ∑ Q ∈ (Ideal.span {g}).retainedMinimalPrimes s, affineDegree Q ≤ v := by
+    simpa only [bot_sup_eq, affineDegree_bot, mul_one] using
+      principalCut_sum_affineDegree_retainedMinimalPrimes_le (P := ⊥) s
+        (by rwa [Ideal.mem_bot]) hv
+  calc ∑ Q ∈ (Ideal.span {g}).retainedMinimalPrimes s,
+        affineDegree Q * (b : ℚ) ^ (affineHilbertPolynomial Q).natDegree
+      = (∑ Q ∈ (Ideal.span {g}).retainedMinimalPrimes s, affineDegree Q) *
+          (b : ℚ) ^ (Nat.card σ - 1) := by
+        rw [Finset.sum_mul]
+        refine Finset.sum_congr rfl fun Q hQ ↦ ?_
+        have := natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton hg
+          (Ideal.mem_retainedMinimalPrimes.mp hQ).1
+        rw [show (affineHilbertPolynomial Q).natDegree = Nat.card σ - 1 by omega]
+    _ ≤ v * (b : ℚ) ^ (Nat.card σ - 1) :=
+        mul_le_mul_of_nonneg_right hsum (by positivity)
+
+/-- Let `g ≠ 0` with `totalDegree g ≤ v`, and let every polynomial in `cuts` have total degree at
+most `b`. Starting from the components of `g = 0` retained by `s` and cutting by `cuts`, the
+final potential satisfies
+
+  `∑ Q, affineDegree Q * b ^ natDegree H(Q) ≤ v * b ^ (Nat.card σ - 1)`.
+
+This chains `sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le` with
+`sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le`. -/
+theorem sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le
+    {g : MvPolynomial σ k} (hg : g ≠ 0) (s : MvPolynomial σ k) {v b : ℕ}
+    (hv : g.totalDegree ≤ v) {cuts : List (MvPolynomial σ k)}
+    (hdeg : ∀ f ∈ cuts, f.totalDegree ≤ b) :
+    ∑ Q ∈ Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s cuts,
+        affineDegree Q * (b : ℚ) ^ (affineHilbertPolynomial Q).natDegree ≤
+      v * (b : ℚ) ^ (Nat.card σ - 1) :=
+  (sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le
+    (fun _ hP ↦ (Ideal.mem_retainedMinimalPrimes.mp hP).1.isPrime) s hdeg).trans
+    (sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le hg s hv b)
 
 end MvPolynomial

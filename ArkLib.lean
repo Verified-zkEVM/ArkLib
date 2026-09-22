@@ -601,4 +601,5 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteZeroLocus
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 public import ArkLib.ToMathlib.Set.Finite

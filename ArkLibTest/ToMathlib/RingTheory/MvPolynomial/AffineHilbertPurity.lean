@@ -15,7 +15,8 @@ purity that the prime `(x)` has a Hilbert polynomial of natural degree one, boun
 degree by one with the Bézout bound, and evaluate the degree potential of the cut. The boundary
 examples show that the Bézout bound fails without `f ∉ P` and that the normalization degree count
 needs injectivity. The last examples derive the source's purity, Bézout and cut-potential
-statements, the latter for its family `retainedCutChildren`.
+statements, the latter for its family `retainedCutChildren`. The final example computes the
+dimension of `(x)` again, as a minimal prime of the hypersurface `x = 0`.
 -/
 
 open MvPolynomial
@@ -142,5 +143,14 @@ example {F σ : Type*} [Field F] [Finite σ] {P : Ideal (MvPolynomial σ F)} (hP
     · rfl
   rw [hfam]
   exact sum_affineDegree_mul_pow_retainedMinimalPrimes_le s hfdeg
+
+/-- `natDegree H((x)) + 1 = 2`: `(x)` is a minimal prime of the hypersurface `x = 0` in the
+plane. -/
+example : (affineHilbertPolynomial (Ideal.span {(X 0 : R₂)})).natDegree + 1 = 2 := by
+  have := isPrime_span_X0
+  have h := natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton
+    (X_ne_zero (0 : Fin 2) : (X 0 : R₂) ≠ 0)
+    (by rw [Ideal.minimalPrimes_eq_subsingleton_self]; rfl)
+  rwa [Nat.card_eq_fintype_card, Fintype.card_fin] at h
 
 end AffineHilbertPurityTest

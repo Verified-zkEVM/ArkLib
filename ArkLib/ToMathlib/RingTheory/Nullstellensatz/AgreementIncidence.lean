@@ -6,9 +6,11 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
 
 /-!
@@ -59,6 +61,11 @@ above holds with `excluded = ∅` and `L = m`.
 * `MvPolynomial.card_le_of_agreement_of_subsingleton` and
   `MvPolynomial.finite_and_ncard_le_of_agreement_of_subsingleton`: the incidence bound under
   uniqueness.
+* `MvPolynomial.card_le_sum_of_agreement_off_excluded`: the incidence bound for points covered by
+  a finite family of primes, as a sum over the family.
+* `MvPolynomial.card_le_of_agreement_off_excluded_of_hypersurface`: the incidence bound for points
+  on a hypersurface `g = 0` cut by further equations, with the factor `deg g` in place of the
+  affine degree and exponent `Nat.card σ - 1`.
 
 ## References
 
@@ -98,8 +105,18 @@ not introduced. Their cardinalities are written as `{i | cuts i ∈ Q}.ncard`,
 `Finset.card_mul_sub_add_one_le_sum_compl_card_bipartiteBelow` in
 `ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting`.
 
-Deferred: the other files of `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/`, and a version for
-non-prime `P`, which would sum the bound over minimal primes.
+From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Hypersurface.lean`:
+`hypersurfaceCutFamily_incidence_off_excluded` is
+`card_le_of_agreement_off_excluded_of_hypersurface`. The cut family is indexed by any finite type
+and the points lie in any extension `K`; the hypotheses `0 < L` and `A ≤ n` are replaced by the
+single hypothesis `A - L + 1 ≤ Fintype.card ι`, which is what the proof uses, and `0 < B` is
+dropped. The union bound over the family, done inline in the source, is the new public
+`card_le_sum_of_agreement_off_excluded`. The source's cover and potential lemmas for the
+hypersurface family are recorded in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily`.
+
+Deferred: the other files of `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/` (in particular
+`DimensionSensitive.lean`).
 -/
 
 @[expose] public section
@@ -395,5 +412,121 @@ theorem finite_and_ncard_le_of_agreement_of_subsingleton [IsAlgClosed k] [Finite
   finite_and_ncard_le_of_forall_finset fun T hT ↦
     card_le_of_agreement_of_subsingleton s cuts hdeg hmA hunique T
       (fun _x hx ↦ ⟨(hT hx).1, (hT hx).2.1⟩) fun _x hx ↦ (hT hx).2.2
+
+/-- **Agreement incidence over a finite family of primes.** Let `T` be a finite family of primes
+and let every finite set `S` of points be covered by the principal open subsets `U(Q)`, `Q ∈ T`.
+Under the hypotheses of `card_le_of_agreement_off_excluded` for each member of `T`,
+
+  `#S ≤ ∑ Q ∈ T, affineDegree Q * (Fintype.card ι * b / (A - L + 1)) ^ natDegree H(Q)`.
+
+Each point is counted on one member containing it, and `card_le_of_agreement_off_excluded`
+bounds the points on each member. Members may share points; the bound counts them once per
+member. -/
+theorem card_le_sum_of_agreement_off_excluded [Finite σ] [Fintype ι]
+    (T : Finset (Ideal (MvPolynomial σ k))) (hT : ∀ Q ∈ T, Q.IsPrime) (s : MvPolynomial σ k)
+    (cuts : ι → MvPolynomial σ k) {b A L : ℕ} (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
+    (hLA : L ≤ A) (excluded : Set (σ → K))
+    (hterminal : ∀ Q ∈ T, ∀ J : Ideal (MvPolynomial σ k), Q ≤ J → J.IsPrime → s ∉ J →
+      0 < (affineHilbertPolynomial J).natDegree → L ≤ {i | cuts i ∈ J}.ncard →
+      {x : σ → K | x ∈ zeroLocus K J ∧ aeval x s ≠ 0} ⊆ excluded)
+    (S : Finset (σ → K))
+    (hS : ∀ x ∈ S, (∃ Q ∈ T, x ∈ zeroLocus K Q) ∧ aeval x s ≠ 0 ∧ x ∉ excluded)
+    (hA : ∀ x ∈ S, A ≤ {i | aeval x (cuts i) = 0}.ncard) :
+    (#S : ℚ) ≤ ∑ Q ∈ T, affineDegree Q *
+      (((Fintype.card ι * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^
+        (affineHilbertPolynomial Q).natDegree := by
+  classical
+  have hcover : #S ≤ ∑ Q ∈ T, #(S.filter (· ∈ zeroLocus K Q)) := by
+    refine (Finset.card_le_card fun x hx ↦ ?_).trans Finset.card_biUnion_le
+    obtain ⟨Q, hQ, hxQ⟩ := (hS x hx).1
+    exact Finset.mem_biUnion.mpr ⟨Q, hQ, Finset.mem_filter.mpr ⟨hx, hxQ⟩⟩
+  refine (Nat.cast_le.mpr hcover).trans ?_
+  rw [Nat.cast_sum]
+  refine Finset.sum_le_sum fun Q hQ ↦ ?_
+  have := hT Q hQ
+  exact card_le_of_agreement_off_excluded s cuts hdeg hLA excluded (hterminal Q hQ) _
+    (fun x hx ↦ by
+      rw [Finset.mem_filter] at hx
+      exact ⟨hx.2, (hS x hx.1).2.1, (hS x hx.1).2.2⟩)
+    fun x hx ↦ hA x (Finset.mem_filter.mp hx).1
+
+/-- **Agreement incidence on a cut hypersurface.** Let `g ≠ 0` have total degree at most `v`, let
+`highCuts` be a list of polynomials and `cuts : ι → MvPolynomial σ k` a finite family, all of total
+degree at most `b`, and let `L ≤ A` with `A - L + 1 ≤ Fintype.card ι`. Suppose that every prime
+`J` with `s ∉ J`, containing `g` and every element of `highCuts`, of positive dimension, and
+containing at least `L` cuts, has `U(J)` inside `excluded`. Then every finite set `S` of points
+over `K` with `g = 0`, `s ≠ 0`, all of `highCuts` vanishing, outside `excluded`, and agreeing with
+at least `A` cuts satisfies
+
+  `#S ≤ v * (Fintype.card ι * b / (A - L + 1)) ^ (Nat.card σ - 1)`.
+
+The points lie on the iterated retained cut family of the components of `g = 0` by `highCuts`
+(`exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`); `card_le_sum_of_agreement_off_excluded`
+bounds them by a sum over this family; each member has dimension at most `Nat.card σ - 1`
+(`natDegree_affineHilbertPolynomial_le_of_mem`), and the potential of the family is at most
+`v * b ^ (Nat.card σ - 1)` (`sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le`).
+
+The hypothesis `A - L + 1 ≤ Fintype.card ι` makes the ratio `Fintype.card ι / (A - L + 1)` at
+least `1`, so that raising it to a member's dimension is bounded by raising it to
+`Nat.card σ - 1`. It is needed: in two variables, take `g = X 0`, `highCuts = [X 1]`, `s = 1`, no
+cuts and `A = L = 0`. The only prime containing `X 0` and `X 1` is maximal, so the hypothesis on
+`excluded = ∅` is vacuous, and the origin is a point of `S`, while the bound is `0`. -/
+theorem card_le_of_agreement_off_excluded_of_hypersurface [Finite σ] [Fintype ι]
+    {g : MvPolynomial σ k} (hg : g ≠ 0) (s : MvPolynomial σ k) {v b A L : ℕ}
+    (hv : g.totalDegree ≤ v) (highCuts : List (MvPolynomial σ k))
+    (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ b) (cuts : ι → MvPolynomial σ k)
+    (hdeg : ∀ i, (cuts i).totalDegree ≤ b) (hLA : L ≤ A) (hAn : A - L + 1 ≤ Fintype.card ι)
+    (excluded : Set (σ → K))
+    (hterminal : ∀ J : Ideal (MvPolynomial σ k), J.IsPrime → s ∉ J → g ∈ J →
+      (∀ f ∈ highCuts, f ∈ J) → 0 < (affineHilbertPolynomial J).natDegree →
+      L ≤ {i | cuts i ∈ J}.ncard → {x : σ → K | x ∈ zeroLocus K J ∧ aeval x s ≠ 0} ⊆ excluded)
+    (S : Finset (σ → K))
+    (hS : ∀ x ∈ S, aeval x g = 0 ∧ aeval x s ≠ 0 ∧ (∀ f ∈ highCuts, aeval x f = 0) ∧
+      x ∉ excluded)
+    (hA : ∀ x ∈ S, A ≤ {i | aeval x (cuts i) = 0}.ncard) :
+    (#S : ℚ) ≤ v * (((Fintype.card ι * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^
+      (Nat.card σ - 1) := by
+  set T := Ideal.iteratedRetainedCutFamily ((Ideal.span {g}).retainedMinimalPrimes s) s highCuts
+  set c : ℚ := ((A - L + 1 : ℕ) : ℚ) with hc_def
+  set t : ℚ := (Fintype.card ι : ℚ) / c with ht_def
+  have hcpos : 0 < c := by positivity
+  have ht : 1 ≤ t := (one_le_div hcpos).mpr (by rw [hc_def]; exact_mod_cast hAn)
+  have hratio : ((Fintype.card ι * b : ℕ) : ℚ) / c = b * t := by
+    rw [ht_def, Nat.cast_mul]
+    ring
+  have hmem : ∀ Q ∈ T, g ∈ Q ∧ ∀ f ∈ highCuts, f ∈ Q := fun Q hQ ↦ by
+    obtain ⟨P, hP, hPQ, hcuts⟩ := Ideal.exists_le_of_mem_iteratedRetainedCutFamily hQ
+    exact ⟨hPQ ((Ideal.mem_retainedMinimalPrimes.mp hP).1.le (Ideal.mem_span_singleton_self g)),
+      hcuts⟩
+  have hbound := card_le_sum_of_agreement_off_excluded T
+    (fun _ ↦ Ideal.isPrime_of_mem_iteratedRetainedCutFamily
+      (fun _ hP ↦ (Ideal.mem_retainedMinimalPrimes.mp hP).1.isPrime) s highCuts)
+    s cuts hdeg hLA excluded
+    (fun Q hQ J hQJ hJ hsJ hdJ hLJ ↦ hterminal J hJ hsJ (hQJ (hmem Q hQ).1)
+      (fun f hf ↦ hQJ ((hmem Q hQ).2 f hf)) hdJ hLJ) S
+    (fun x hx ↦ by
+      obtain ⟨hgx, hsx, hhx, hex⟩ := hS x hx
+      have hxg : x ∈ zeroLocus K (Ideal.span {g}) := mem_zeroLocus_iff_le_ker_aeval.mpr
+        ((Ideal.span_singleton_le_iff_mem _).mpr (RingHom.mem_ker.mpr hgx))
+      obtain ⟨P, hP, hxP⟩ := exists_retainedMinimalPrime_of_mem_zeroLocus _ s x hxg hsx
+      obtain ⟨Q, hQ, -, hxQ⟩ := exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus hP hxP hsx hhx
+      exact ⟨⟨Q, hQ, hxQ⟩, hsx, hex⟩) hA
+  refine hbound.trans ?_
+  rw [hratio]
+  calc ∑ Q ∈ T, affineDegree Q * ((b : ℚ) * t) ^ (affineHilbertPolynomial Q).natDegree
+      ≤ ∑ Q ∈ T, affineDegree Q * (b : ℚ) ^ (affineHilbertPolynomial Q).natDegree *
+          t ^ (Nat.card σ - 1) := by
+        refine Finset.sum_le_sum fun Q hQ ↦ ?_
+        rw [mul_pow, ← mul_assoc]
+        exact mul_le_mul_of_nonneg_left
+          (pow_le_pow_right₀ ht (natDegree_affineHilbertPolynomial_le_of_mem hg (hmem Q hQ).1))
+          (mul_nonneg (affineDegree_nonneg Q) (by positivity))
+    _ = (∑ Q ∈ T, affineDegree Q * (b : ℚ) ^ (affineHilbertPolynomial Q).natDegree) *
+          t ^ (Nat.card σ - 1) := (Finset.sum_mul _ _ _).symm
+    _ ≤ (v * (b : ℚ) ^ (Nat.card σ - 1)) * t ^ (Nat.card σ - 1) :=
+        mul_le_mul_of_nonneg_right
+          (sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le hg s hv hhigh)
+          (by positivity)
+    _ = v * ((b : ℚ) * t) ^ (Nat.card σ - 1) := by ring
 
 end MvPolynomial

@@ -43,7 +43,9 @@ most `b * affineDegree P`. Retaining only the components that avoid a fixed `s`,
   `natDegree H(I) = Nat.card τ`.
 * `MvPolynomial.natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`: a prime of height one
   above an affine prime has Hilbert polynomial of natural degree one less.
-* `MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_add_one`: purity of principal cuts.
+* `MvPolynomial.principalCut_natDegree_affineHilbertPolynomial_add_one`: purity of principal cuts,
+  and its hypersurface case
+  `MvPolynomial.natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton`.
 * `MvPolynomial.principalCut_sum_affineDegree_minimalPrimes_le`: the Bézout bound.
 * `MvPolynomial.principalCut_sum_affineDegree_retainedMinimalPrimes_le`: the Bézout bound for the
   components retained by `s`.
@@ -73,6 +75,10 @@ From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Purity.lean`:
 `natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`, which is new and applies to every
 prime of height one above `P`, not only to minimal primes of a principal cut. The parent
 computation `natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective` is also new.
+The hypersurface case
+`natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton` is the source's
+`hypersurfacePrimeFamily_dimension` from `CutFamily/Hypersurface.lean`, stated for every minimal
+prime of `span {g}` rather than only those retained by `s`.
 
 From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Bezout.lean`:
 `principalCut_sum_affineDegree_le` is `principalCut_sum_affineDegree_minimalPrimes_le`, with the
@@ -188,6 +194,19 @@ theorem principalCut_natDegree_affineHilbertPolynomial_add_one [Finite σ]
   have : J.IsPrime := hJ.isPrime
   natDegree_affineHilbertPolynomial_add_one_of_height_eq_one (le_sup_left.trans hJ.le)
     (Ideal.map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span hf hJ)
+
+/-- Every minimal prime `Q` over a nonzero principal ideal `span {g}` of `MvPolynomial σ k` has
+`natDegree H(Q) + 1 = Nat.card σ`: the components of a hypersurface have codimension one.
+
+This is `principalCut_natDegree_affineHilbertPolynomial_add_one` for `P = ⊥`. The hypothesis
+`g ≠ 0` is needed: `span {0} = ⊥` is its own minimal prime, of natural degree `Nat.card σ`. -/
+theorem natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton [Finite σ]
+    {g : MvPolynomial σ k} (hg : g ≠ 0) {Q : Ideal (MvPolynomial σ k)}
+    (hQ : Q ∈ (Ideal.span {g}).minimalPrimes) :
+    (affineHilbertPolynomial Q).natDegree + 1 = Nat.card σ := by
+  rw [← natDegree_affineHilbertPolynomial_bot (σ := σ) (k := k)]
+  exact principalCut_natDegree_affineHilbertPolynomial_add_one (P := ⊥)
+    (by rwa [Ideal.mem_bot]) (by rwa [bot_sup_eq])
 
 /-- The Bézout bound for a principal cut of an affine prime: if `P` is prime, `f ∉ P` and
 `totalDegree f ≤ b`, then the affine degrees of the minimal primes of `P ⊔ span {f}` sum to at

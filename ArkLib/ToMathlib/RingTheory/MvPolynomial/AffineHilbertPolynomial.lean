@@ -48,6 +48,8 @@ is the polynomial of `I`.
 * `MvPolynomial.affineHilbertPolynomial_bot`, `MvPolynomial.affineHilbertPolynomial_span_singleton`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_span_singleton_add_one`: the polynomial ring and
   hypersurfaces.
+* `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_mem`: an ideal containing a nonzero
+  polynomial has natural degree at most `Nat.card σ - 1`.
 
 ## References
 
@@ -81,6 +83,8 @@ the leading exponent of `f`. The source's `quotientDegreeLE_eventually_top`,
 `hilbertFunction_antitone`, `quotientDegreeLE_mono` and `standardExponents_span_singleton` are in
 `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert` and
 `ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials`.
+`natDegree_affineHilbertPolynomial_le_of_mem` is new; it replaces the dimension step of the
+source's `hypersurfaceCutFamily_dimension_le` in `CutFamily/Hypersurface.lean`.
 
 The source's `finite_zeroLocus_and_ncard_le_hilbertPolynomial` is in
 `ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`, and the finite-algebra
@@ -391,5 +395,23 @@ theorem natDegree_affineHilbertPolynomial_span_singleton_add_one {f : MvPolynomi
     (natDegree_backwardDifference_eq_and_leadingCoeff_of_ne_zero
       (Nat.cast_ne_zero.mpr hb.ne') hd).1, natDegree_preHilbertPoly]
   omega
+
+/-- An ideal containing a nonzero polynomial `g` in `n` variables has affine Hilbert polynomial of
+natural degree at most `n - 1`.
+
+If `span {g}` is proper, this is `natDegree_affineHilbertPolynomial_le_of_le` and
+`natDegree_affineHilbertPolynomial_span_singleton_add_one`; otherwise `g` is a unit, `I = ⊤` and
+the polynomial is `0`. The hypothesis `g ≠ 0` is needed: `I = ⊥` contains `0` and has natural
+degree `n`. -/
+theorem natDegree_affineHilbertPolynomial_le_of_mem {I : Ideal (MvPolynomial σ k)}
+    {g : MvPolynomial σ k} (hg : g ≠ 0) (hgI : g ∈ I) :
+    (affineHilbertPolynomial I).natDegree ≤ Nat.card σ - 1 := by
+  by_cases hproper : Ideal.span {g} = ⊤
+  · rw [eq_top_mono ((Ideal.span_singleton_le_iff_mem I).mpr hgI) hproper,
+      affineHilbertPolynomial_top, Polynomial.natDegree_zero]
+    exact Nat.zero_le _
+  · have := natDegree_affineHilbertPolynomial_span_singleton_add_one hg hproper
+    have := natDegree_affineHilbertPolynomial_le_of_le ((Ideal.span_singleton_le_iff_mem I).mpr hgI)
+    omega
 
 end MvPolynomial
