@@ -11,7 +11,7 @@ import Mathlib.Algebra.Order.Archimedean.Real.Basic
 # Local coordinate acceptance tests
 
 The coordinates of a concrete exponent; a concrete residual budget and the rank bound it gives on
-an exact interpolation space; the source statements with a real jet-degree cutoff, derived from
+an exact interpolation space; the statements with a real jet-degree cutoff, derived from
 the natural-number statements through `⌈T⌉₊`; and a generator image that shows the weight
 transport needs a nonnegative weight on `X`. For the derivative-order count: a concrete exponent
 in `localDerivativeExponents`, and a concrete budget.
@@ -45,8 +45,8 @@ example (M : ℕ) (center received : ℚ) :
   (finrank_range_exactLocalConstraintAt_le_localResidualCoordinateBudget (by norm_num) _ 2
     center received).trans (by decide)
 
-/-- Source shape (`unscaled_jet_degree_lt_of_support`): a real strict cutoff on the source's total
-jet degree is a strict cutoff on the image. -/
+/-- With a real cutoff `T`: a strict bound `T` on the total jet degree of every monomial of `Q` is
+a strict bound on the jet degree of every monomial of the image. -/
 example {R : Type*} [CommRing R] {d : ℕ} (center received : R) {Q : DifferentialPolynomial R d}
     {T : ℝ} (hsource : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T) {e : LocalVariable d →₀ ℕ}
     (he : e ∈ (unscaledLocalSubstitution d center received Q).support) :
@@ -54,8 +54,8 @@ example {R : Type*} [CommRing R] {d : ℕ} (center received : R) {Q : Differenti
   Nat.lt_ceil.mp (localJetDegree_lt_of_mem_support center received
     (fun u hu => Nat.lt_ceil.mpr (hsource u hu)) he)
 
-/-- Source shape (`localConstraint_support_of_weight_bounds` followed by
-`mem_localResidualExponents_of_bounds`), with a real cutoff `T`. -/
+/-- With a real cutoff `T`: `localConstraintAt_support_of_weight_bounds` followed by
+`mem_localResidualExponents_of_bounds`. -/
 example {d m W : ℕ} (hd : 0 < d) (center received : ℚ) {Q : DifferentialPolynomial ℚ d} {T : ℝ}
     (hweight : ∀ u ∈ Q.support, fullHigherJetWeight u ≤ W)
     (htotal : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T)
