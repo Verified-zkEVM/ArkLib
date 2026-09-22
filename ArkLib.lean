@@ -121,8 +121,6 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSu
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Estimate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
@@ -601,8 +599,6 @@ public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
-public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
-public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
