@@ -1370,6 +1370,53 @@ differential specialization they translate. Nothing is deferred.
 `.../HiddenDerivative/RootFinding/Regular/Lifting.lean` from the separant over a field to any
 differential polynomial over a commutative semiring.
 
+## `ArkLib/Data/Polynomial/Differential/TaylorChart.lean`
+
+Merges `Taylor/Chart.lean` and `Taylor/Cuts.lean` from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`; the new
+namespace is `PolynomialDifferential`. The common exponent `τ` is always an explicit argument
+with no default `2K`, and `commonTaylorNumerator` no longer takes `K`. Each source pair of a
+default-exponent theorem and an `_of_exponent` theorem is one theorem taking
+`TaylorExponentSufficient r K τ` or `2 * (l - r) - 1 ≤ τ`; the `2K` case is
+`taylorExponentSufficient_two_mul`. `totalDegree_commonTaylorNumerator_le` drops the source's
+`0 < v` hypothesis. Renamed: `initialJetEquation_ne_zero_of_separant_ne_zero` (from
+`Geometry/InitialGeometry.lean`) to `initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero`,
+`initialJetEquation_solution` to `aeval_initialJetEquation_polynomialJet`,
+`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator_polynomialJet`,
+`rationalTaylorMap_eq_solution` to `rationalTaylorMap_polynomialJet`,
+`degree_rationalTaylorPolynomial_lt_of_high_cuts` to `degree_rationalTaylorPolynomial_lt`,
+`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation_polynomialJet`,
+`polynomialJet_agreement_cut_iff` (from `Geometry/SolutionGeometry.lean`) to
+`aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff`, and
+`eq_of_high_cuts_and_agreement_cuts` to `eq_of_highTaylorCuts_of_agreement`, which takes
+`Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
+`rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
+`2K`.
+
+## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
+
+Ported from `Geometry/AgreementGeometry.lean`, `Geometry/SolutionGeometry.lean` and part of
+`Geometry/InitialGeometry.lean` under the same source directory. Membership in a principal open
+is written as `jet ∈ zeroLocus F I` together with `aeval jet S ≠ 0`.
+`exists_common_regular_center` is now `exists_forall_jetEvaluation_ne_zero`, for any
+differential polynomial over an infinite domain instead of the separant over a field.
+`initialJetPrimeFamily_prime_open` is split into `isPrime_of_mem_initialJetPrimeFamily` and
+`initialJetSeparant_notMem_of_mem_initialJetPrimeFamily`.
+`eq_of_mem_principalOpen_of_highCuts_of_agreementFinset` is now
+`eq_of_mem_zeroLocus_of_highTaylorCutsIdeal_le`,
+`polynomialJet_injective_on_regular_solutions` is now `injOn_polynomialJet`,
+`card_image_polynomialJet_regular` is now `card_image_polynomialJet`,
+`polynomialJet_mem_highTaylorCuts` is now `polynomialJet_mem_zeroLocus_highTaylorCutsIdeal`, and
+`polynomialJet_mem_regular_solution_locus` is now
+`polynomialJet_mem_zeroLocus_initialJetEquation_sup_highTaylorCutsIdeal`.
+
+Deferred: the Hilbert-degree statements of `Geometry/InitialGeometry.lean`
+(`initialJetPrimeFamily_hilbertPolynomial_natDegree` and the two affine-degree sums), which need
+the hypersurface purity results of P5; `Geometry/HighCutGeometry.lean` apart from the cut degree
+bound, which needs the iterated retained cuts and the agreement incidence bound of P5; and
+`Geometry/SolutionExtension.lean` and `Geometry/SolutionEmbedding.lean`, which need the
+coefficient-map lemmas for differential specialization.
 ## `ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean`
 
 Ported from
