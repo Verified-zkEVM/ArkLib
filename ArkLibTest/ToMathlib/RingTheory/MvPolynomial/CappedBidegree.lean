@@ -9,10 +9,10 @@ import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
 /-!
 # Acceptance tests for polynomials of bounded bidegree with a capped variable
 
-The examples state the point statements for the bidegree map as instances of those for monomial
-maps, count capped exponents and compute a dimension, check that the cap is no condition when it
-exceeds the bound on the degree, and show that the count on `Fin 2` needs `c ≤ b` and that
-surjectivity of the monomial map needs a positive cap.
+The examples state the point statements for the bidegree map and the capped monomial map as
+instances of those for monomial maps, count capped exponents and compute a dimension, check that
+the cap is no condition when it exceeds the bound on the degree, and show that the count on `Fin 2`
+needs `c ≤ b` and that surjectivity of the monomial map needs a positive cap.
 -/
 
 open MvPolynomial
@@ -62,6 +62,55 @@ example (ha : 0 < a) (hb : 0 < b) :
   monomialPoint_injective (single_mem_bidegreeExponents ha hb)
 
 end BidegreePoints
+
+section CappedBidegreePoints
+
+variable {σ k E : Type*} [Field k] [Field E] [Algebra k E] {i : σ} {a b c : ℕ}
+
+/-- The coordinate of the point of monomial values at a capped exponent `m` is the value of the
+monomial of exponent `m`. -/
+example (x : Option σ → E) (m : cappedBidegreeExponents σ i a b c) :
+    monomialPoint _ x m = aeval x (monomial m.1 (1 : k)) := by
+  rw [monomialPoint_apply, aeval_monomial, map_one, one_mul]
+
+/-- Evaluation at the point of monomial values is evaluation after the capped monomial map. -/
+example (x : Option σ → E) (P : MvPolynomial (cappedBidegreeExponents σ i a b c) k) :
+    aeval (monomialPoint _ x) P = aeval x (monomialMap k _ P) :=
+  aeval_monomialPoint x P
+
+/-- The linear lift of a capped polynomial vanishes at the point of monomial values of `x` exactly
+when the polynomial vanishes at `x`. -/
+example (x : Option σ → E) (q : MvPolynomial (Option σ) k)
+    (hq : q ∈ restrictCappedBidegree σ k i a b c) :
+    aeval (monomialPoint _ x) (monomialLift (S := cappedBidegreeExponents σ i a b c) q hq) = 0 ↔
+      aeval x q = 0 := by
+  have hlift := monomialMap_monomialLift (R := k) (S := cappedBidegreeExponents σ i a b c) q hq
+  rw [aeval_monomialPoint, hlift]
+
+/-- For positive bounds, the point of monomial values of `x` lies on the pullback of the
+hypersurface `g = 0` along the capped monomial map exactly when `g` vanishes at `x`. -/
+example (ha : 0 < a) (hb : 0 < b) (hc : 0 < c) (g : MvPolynomial (Option σ) k)
+    (x : Option σ → E) :
+    monomialPoint _ x ∈ zeroLocus E
+        ((Ideal.span {g}).comap (monomialMap k (cappedBidegreeExponents σ i a b c))) ↔
+      aeval x g = 0 := by
+  rw [monomialPoint_mem_zeroLocus_comap_iff (single_mem_cappedBidegreeExponents ha hb hc),
+    zeroLocus_span]
+  simp
+
+/-- For positive bounds, every point of the zero locus of the kernel of the capped monomial map is
+a point of monomial values. -/
+example (ha : 0 < a) (hb : 0 < b) (hc : 0 < c) (z : cappedBidegreeExponents σ i a b c → E)
+    (hz : z ∈ zeroLocus E (RingHom.ker (monomialMap k (cappedBidegreeExponents σ i a b c)))) :
+    ∃ x : Option σ → E, monomialPoint _ x = z :=
+  exists_monomialPoint_eq_of_mem_zeroLocus_ker (single_mem_cappedBidegreeExponents ha hb hc) hz
+
+/-- For positive bounds, a point is determined by its point of capped monomial values. -/
+example (ha : 0 < a) (hb : 0 < b) (hc : 0 < c) :
+    Function.Injective (monomialPoint (E := E) (cappedBidegreeExponents σ i a b c)) :=
+  monomialPoint_injective (single_mem_cappedBidegreeExponents ha hb hc)
+
+end CappedBidegreePoints
 
 /-- In two further variables with cap `1` on the second, there are `2 * 5 = 10` exponents with
 `none`-coordinate at most `1` and degree at most `2`. -/

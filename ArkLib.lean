@@ -729,6 +729,7 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertBidegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCappedBidegree
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCappedDegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComponents
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily
@@ -738,6 +739,7 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AwayPresentation
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.Bidegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedBidegree
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CappedDegree
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CoefficientEvaluation
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.MonomialMap
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
