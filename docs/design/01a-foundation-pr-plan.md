@@ -25,7 +25,8 @@ PolyFun and VCVio proposals remain in the archived design history.
 
 ## 2. Current dependency graph
 
-The structural path is open; the later security path has explicit upstream gates:
+AR-0 through AR-10B have landed (see the status table in section 4). The later security path has
+explicit upstream gates:
 
 ```text
 supported PolyFun + VCVio pins
@@ -42,12 +43,12 @@ AR-4A → AR-4B named contexts ────────────────�
                                                               → AR-7 Sumcheck
                                                               → AR-8 legacy bridge
 
-VCVio artifact + outcome gaps → AR-9A/9B → AR-10B → general security
+VCVio artifact + outcome (available) → AR-9A/9B → AR-10B → general security
 PolyFun transducer + VCVio specialization → state restoration → compiler
 ```
 
-AR-1, AR-2A, and AR-4A may begin independently after AR-0. The first acceptance milestone is AR-7,
-not completion of every upstream security foundation.
+AR-1, AR-2A, and AR-4A could begin independently after AR-0. The first acceptance milestone was
+AR-7, not completion of every upstream security foundation.
 
 ## 3. Upstream status
 
@@ -64,14 +65,21 @@ not completion of every upstream security foundation.
 No ArkLib PR waits for these changes. `TypeTree.Chain.then` and reassociation are existing APIs;
 extend them only if a concrete multi-stage client reveals a missing law.
 
-### 3.2 Open upstream gaps
+### 3.2 Closed upstream gaps
+
+| Gap | Owner | Supported API | ArkLib consumer |
+|---|---|---|---|
+| runner-produced resumable artifact | VCVio | `OracleRuntime`, `RunResult`, `run`, `resume`, `GeneratedBy` (`VCVio.OracleComp.Runtime`) | AR-9A, #884 |
+| failure-to-return mass boundary | VCVio | `evalDistWithFailure` (`VCVio.EvalDist.WithFailure`) | AR-9B, #886 |
+
+Accept/reject/fault classification is protocol-level and lives in ArkLib's `Interaction.Terminal`.
+
+### 3.3 Open upstream gaps
 
 | Gap | Owner | First consumer | What it blocks |
 |---|---|---|---|
 | causal finite-trace transducer | PolyFun | compiled extractor trace pipeline | state restoration and compiler trace composition |
 | query-log transducer specialization and certificates | VCVio | ArkLib hash-chain/Merkle adapters | certified trace and resource transport |
-| runner-produced resumable artifact | VCVio, possibly introduced by an ArkLib client | AR-9A | general world-backed security composition |
-| accept/reject/fault materialization | VCVio | AR-9B | one explicit terminal failure boundary |
 | reusable conditioning and dynamic programming | VCVio | first salted state-restoration game | general SR/ROM proofs |
 | error-bearing cost-aware reduction package | VCVio | first compiler security transfer | additive and substitution-style loss composition |
 | operational `DynSystem.Prefix` concatenation | PolyFun, client-gated | only a future operational-machine adapter | nothing in the first ArkLib train |
@@ -80,6 +88,31 @@ The owner is determined by generality. The first ArkLib client may implement the
 its owning repository, but ArkLib must not stabilize a private duplicate.
 
 ## 4. ArkLib PR slices
+
+| Slice | Status | PR |
+|---|---|---|
+| AR-0 alignment | landed | #811 |
+| AR-1 plain reductions | landed | #851 |
+| AR-2A oracle type trees | landed | #852 |
+| AR-2B decorations | landed | #853 |
+| AR-3A accumulated access | landed | #861 |
+| AR-3B oracle execution | landed | #862 |
+| AR-4A sources and routing | landed | #863 |
+| AR-4B named contexts | landed | #864 |
+| AR-5 virtual substitution | landed | #869 |
+| AR-6A open and closed claims | landed | #870 |
+| AR-6B core run and closing | landed | #871 |
+| AR-7 one-round Sumcheck | landed | #872 |
+| AR-8 legacy correspondence | landed; verifier correspondence is honest-only | #874 |
+| AR-9A logged world-backed execution | landed | #884 |
+| AR-9B terminal outcomes | landed | #886 |
+| AR-10A structural full prefixes | landed | #880 |
+| AR-10B prefixes and execution artifacts | landed | #889 |
+| AR-11 Merkle backend adapter | open | — |
+
+Protocol evidence beyond these slices also landed: multivariate round projection (#879), two
+sequential rounds (#883), one-round soundness (#881), finite ordered composition (#891), and
+arbitrary-round honest completeness (#892).
 
 ### AR-0 — align the dependency and design baseline
 
@@ -90,9 +123,6 @@ probability-surface breakages, and land this maintained design suite.
 declaration; historical upstream plans no longer appear as live work.
 
 ### AR-1 — plain dependent reduction kernel
-
-**Status.** Implemented by the first typed-interaction PR. The next independent core slices are
-AR-2A and AR-4A.
 
 **Goal.** Add the smallest ArkLib prover, verifier, and reduction packages over PolyFun
 `Interaction.TypeTree`, two-party roles, strategies, and execution.
@@ -108,9 +138,6 @@ the first complete path.
 
 ### AR-2A — oracle type trees and path projections
 
-**Status.** Implemented by the second typed-interaction PR. The third PR builds AR-2B on this
-structural path boundary.
-
 **Goal.** Add `Oracle.Position`, `Oracle.TypeTree`, the runtime lens to generic `TypeTree`,
 `BranchPath`, `ExecutionPath`, and projection from execution to structural branch.
 
@@ -118,9 +145,6 @@ structural path boundary.
 present in `ExecutionPath`, and oracle branch indices are `PUnit` in `BranchPath`.
 
 ### AR-2B — role and oracle decorations
-
-**Status.** Implemented by the third typed-interaction PR. AR-3A is the next oracle-specific
-foundation slice.
 
 **Goal.** Decorate the oracle type tree with roles, public/oracle status, and the projections needed
 by later prover and verifier views.
@@ -247,18 +271,20 @@ not restate the primitive game or advertise unsupported proximity, batching, or 
 
 ### Structural checkpoint
 
-AR-0 through AR-6B pass. The records remain provisional, but the public path, source, virtual
-oracle, claim, and run-derived closing equations are usable without ArkLib-private upstream copies.
+**Passed.** AR-0 through AR-6B pass. The records remain provisional, but the public path, source,
+virtual oracle, claim, and run-derived closing equations are usable without ArkLib-private upstream
+copies.
 
 ### First semantic checkpoint
 
-AR-7 and AR-8 pass. Sumcheck demonstrates the new carrier and a two-way migration path. At this
-point the central record signatures may freeze provisionally.
+**Passed.** AR-7 and AR-8 pass. Sumcheck demonstrates the new carrier and a two-way migration path.
+At this point the central record signatures may freeze provisionally.
 
 ### General security checkpoint
 
 AR-9A/9B and AR-10A/10B pass against the supported VCVio artifact and outcome boundaries. Ordinary
 soundness composition is stated with output admissibility and history-dependent suffix security.
+**Partially passed:** the artifact slices have landed; the composition theorem is open.
 
 ### Compiler checkpoint
 
