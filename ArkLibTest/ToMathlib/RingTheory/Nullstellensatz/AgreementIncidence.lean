@@ -25,6 +25,14 @@ is `2`, attained by `(0, 0)` and `(0, 1)` for the cuts `y` and `y - 1`. Further 
 show that `T t ≤ A` is needed in the product bound, and `0 < b` and `0 < B` in the iterated-family
 bound. The last examples restate the main results for cuts indexed by `Fin n`, with the counts
 written as filters of `Finset.univ`.
+
+For the sharp bounds: with rational cuts `x`, `x - 1` and `x - 2`, no prime contains two cuts, and
+the sharp ratio `(3 - 2 + 1) / (2 - 2 + 1)` bounds the points agreeing with two cuts by `2`, where
+the ratio `3 / (2 - 2 + 1)` gives `3`. The boundary examples show that `L ≤ A` is needed in the
+sharp theorem, `1 ≤ t` in the sum over a family of components, and `0 < b` in the sharp theorem on
+an iterated retained cut family. The sharp results are then restated for cuts indexed by `Fin n`,
+for a family of primes under uniqueness, and for iterated retained cut families by degree-one
+cuts.
 -/
 
 open MvPolynomial
@@ -477,6 +485,300 @@ theorem card_le_of_agreement_off_excluded_of_hypersurface_fin {F σ : Type*} [Fi
     hLA (by rw [Fintype.card_fin]; omega) excluded
     (fun J hJ hsJ hgJ hhJ hd hLJ ↦
       hterminal J hJ hsJ hgJ hhJ hd (by rwa [card_filter_univ_eq_ncard]))
+    S hS fun x hx ↦ by rw [← card_filter_univ_eq_ncard]; exact hA x hx
+  rwa [Fintype.card_fin] at h
+
+/-! ### Sharp agreement incidence -/
+
+/-- Two distinct linear cuts `x - a` and `x - b` of the line lie in no proper ideal. -/
+theorem not_mem_of_X_sub_C_mem {k : Type*} [Field k] {Q : Ideal (MvPolynomial (Fin 1) k)}
+    (hQ : Q ≠ ⊤) {a b : k} (hab : a ≠ b) (ha : X 0 - C a ∈ Q) (hb : X 0 - C b ∈ Q) : False := by
+  have h := Q.sub_mem hb ha
+  rw [sub_sub_sub_cancel_left, ← map_sub] at h
+  exact hQ (Q.eq_top_of_isUnit_mem h ((isUnit_iff_ne_zero.mpr (sub_ne_zero.mpr hab)).map C))
+
+/-- The sharp excluded-set theorem over `ℚ` with points in `K`. For the cuts `x`, `x - 1` and
+`x - 2`, a prime containing two of them contains a nonzero constant, so the hypothesis holds with
+`L = 2` and `excluded = ∅`. At most `1 * ((3 - 2 + 1) * 1 / (2 - 2 + 1)) ^ 1 = 2` points agree with
+two cuts, where `card_le_of_agreement_off_excluded` gives `3`. -/
+example (S : Finset (Fin 1 → K))
+    (hA : ∀ x ∈ S, 2 ≤ {i | aeval x (X 0 - C (![0, 1, 2] i) : MvPolynomial (Fin 1) ℚ) = 0}.ncard) :
+    (S.card : ℚ) ≤ 2 := by
+  have h := card_le_of_agreement_off_excluded_sharp (P := ⊥) 1
+    (fun i : Fin 3 ↦ (X 0 - C (![0, 1, 2] i) : MvPolynomial (Fin 1) ℚ)) (b := 1) (A := 2)
+    (L := 2) (fun _ ↦ totalDegree_X_sub_C_le _) le_rfl (∅ : Set (Fin 1 → K))
+    (fun Q _ hQ _ _ hL ↦ by
+      obtain ⟨i, j, hi, hj, hij⟩ := (Set.one_lt_ncard_iff (Set.toFinite _)).mp hL
+      refine absurd (not_mem_of_X_sub_C_mem hQ.ne_top ?_ hi hj) id
+      fin_cases i <;> fin_cases j <;> simp_all)
+    S (fun x _ ↦ by simp) hA
+  refine h.trans_eq ?_
+  simp
+
+/-- At most two points of the line over `K` agree with two of the cuts `x, x, x - 1, x - 1`, and
+the points `0` and `1` do. Any one cut determines a point, so `m = 1`, and the bound is
+`affineDegree ⊥ * ((4 - 1 + 1) * 1 / (2 - 1 + 1)) ^ 1 = 2`. -/
+example (S : Finset (Fin 1 → K))
+    (hA : ∀ x ∈ S,
+      2 ≤ {i | aeval x (X 0 - C (![0, 0, 1, 1] i) : MvPolynomial (Fin 1) K) = 0}.ncard) :
+    (S.card : ℚ) ≤ 2 := by
+  have h := card_le_of_agreement_of_subsingleton_sharp (P := ⊥) 1
+    (fun i : Fin 4 ↦ (X 0 - C (![0, 0, 1, 1] i) : MvPolynomial (Fin 1) K)) (b := 1) (A := 2)
+    (m := 1) (fun _ ↦ totalDegree_X_sub_C_le _) (by norm_num)
+    (fun T hT ↦ subsingleton_linearCuts _ _ _ T hT) S (fun x _ ↦ by simp) hA
+  refine h.trans_eq ?_
+  simp
+  norm_num
+
+open Classical in
+/-- The points `0` and `1` of the line each agree with two of the cuts `x, x, x - 1, x - 1`. -/
+example : ∀ a ∈ ({0, 1} : Finset K),
+    2 ≤ {i | aeval (fun _ : Fin 1 ↦ a)
+      (X 0 - C (![0, 0, 1, 1] i) : MvPolynomial (Fin 1) K) = 0}.ncard := by
+  intro a ha
+  rcases Finset.mem_insert.mp ha with rfl | ha
+  · refine le_of_eq_of_le ?_ (Set.ncard_le_ncard (s := {0, 1}) (fun i hi ↦ ?_))
+    · rw [Set.ncard_pair (by decide)]
+    · rcases hi with rfl | rfl <;> simp
+  · rw [Finset.mem_singleton.mp ha]
+    refine le_of_eq_of_le ?_ (Set.ncard_le_ncard (s := {2, 3}) (fun i hi ↦ ?_))
+    · rw [Set.ncard_pair (by decide)]
+    · rcases hi with rfl | rfl <;> simp
+
+/-- The hypothesis `L ≤ A` is needed in `card_le_of_agreement_off_excluded_sharp`. For `P = ⊥` on
+the line over `ℚ`, no cuts, `b = 0`, `A = 0`, `L = 1`, `s = 1` and `excluded = ∅`, the
+excluded-set hypothesis holds, and every point agrees with at least `0` cuts. The bound
+`1 * ((0 - 1 + 1) * 0 / (0 - 1 + 1)) ^ 1` is `0`, but `{0}` has one element. -/
+example :
+    (∀ Q : Ideal (MvPolynomial (Fin 1) ℚ), ⊥ ≤ Q → Q.IsPrime →
+      (1 : MvPolynomial (Fin 1) ℚ) ∉ Q → 0 < (affineHilbertPolynomial Q).natDegree →
+      1 ≤ {i : Fin 0 | (Fin.elim0 i : MvPolynomial (Fin 1) ℚ) ∈ Q}.ncard →
+      {x : Fin 1 → ℚ | x ∈ zeroLocus ℚ Q ∧ aeval x (1 : MvPolynomial (Fin 1) ℚ) ≠ 0} ⊆ ∅) ∧
+    ¬ ((({0} : Finset (Fin 1 → ℚ)).card : ℚ) ≤
+      affineDegree (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) *
+        ((((Fintype.card (Fin 0) - 1 + 1) * 0 : ℕ) : ℚ) / ((0 - 1 + 1 : ℕ) : ℚ)) ^
+          (affineHilbertPolynomial (⊥ : Ideal (MvPolynomial (Fin 1) ℚ))).natDegree) := by
+  refine ⟨fun Q _ _ _ _ h ↦ absurd h (by simp [Set.eq_empty_of_isEmpty]), ?_⟩
+  simp [natDegree_affineHilbertPolynomial_bot]
+
+/-- The hypothesis `1 ≤ t` is needed in `card_le_mul_pow_of_forall_mem_zeroLocus`. With no
+variables, `T = {⊥}` has dimension `0 ≤ 1` and affine degree `1`, and its one point is allowed by
+the bound `1 * 0 ^ 0 = 1` on `⊥`, but `V * t ^ d = 1 * 0 ^ 1 = 0`. -/
+example :
+    let T : Finset (Ideal (MvPolynomial (Fin 0) ℚ)) := {⊥}
+    let S : Finset (Fin 0 → ℚ) := {0}
+    (∀ Q ∈ T, (affineHilbertPolynomial Q).natDegree ≤ 1) ∧ ∑ Q ∈ T, affineDegree Q ≤ 1 ∧
+      (∀ x ∈ S, ∃ Q ∈ T, x ∈ zeroLocus ℚ Q) ∧
+      (∀ Q ∈ T, (((S : Set (Fin 0 → ℚ)) ∩ zeroLocus ℚ Q).ncard : ℚ) ≤
+        affineDegree Q * 0 ^ (affineHilbertPolynomial Q).natDegree) ∧
+      ¬ ((S.card : ℚ) ≤ 1 * 0 ^ 1) := by
+  intro T S
+  refine ⟨by simp [T, natDegree_affineHilbertPolynomial_bot], by simp [T, affineDegree_bot],
+    by simp [T, S], fun Q hQ ↦ ?_, by simp [S]⟩
+  rw [Finset.mem_singleton.mp hQ, affineDegree_bot, natDegree_affineHilbertPolynomial_bot]
+  have : ((S : Set (Fin 0 → ℚ)) ∩ zeroLocus ℚ (⊥ : Ideal (MvPolynomial (Fin 0) ℚ))).ncard ≤ 1 :=
+    (Set.ncard_le_ncard Set.inter_subset_left).trans (by simp [S])
+  simpa using this
+
+/-- An ideal of `ℚ[x]` containing `x` has dimension `0`: its zero locus over `K` is at most the
+origin, the image of the empty parametrization. -/
+theorem natDegree_affineHilbertPolynomial_eq_zero_of_X_mem_line
+    {J : Ideal (MvPolynomial (Fin 1) ℚ)} (h0 : X 0 ∈ J) :
+    (affineHilbertPolynomial J).natDegree = 0 := by
+  have hreg : IsLeftRegular (Ideal.Quotient.mk J 1) := by
+    rw [map_one]
+    exact isRegular_one.left
+  have h := natDegree_affineHilbertPolynomial_le_of_principalOpen_subset_range (τ := Empty) hreg
+    (fun _ ↦ 0) fun (x : Fin 1 → K) hx _ ↦ ⟨isEmptyElim, ?_⟩
+  · simpa using h
+  funext i
+  have hi : aeval x (X i : MvPolynomial (Fin 1) ℚ) = 0 :=
+    (mem_zeroLocus_iff.mp hx) _ (by fin_cases i; exact h0)
+  simpa using hi
+
+/-- The hypothesis `0 < b` is needed in
+`card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily`. On the line over `ℚ`,
+take `T₀ = {⊥}` of dimension `1`, `highCuts = [x]` of degree `1`, `V = 1`, `s = 1`, no cuts,
+`A = L = 0` and `b = 0`. A prime containing `x` has dimension `0`, so the hypothesis on
+`excluded = ∅` holds, and the origin satisfies every condition on the points, but the bound
+`1 * ((0 - 0 + 1) * 0 / (0 - 0 + 1)) ^ 1` is `0`. -/
+example :
+    (∑ P ∈ ({⊥} : Finset (Ideal (MvPolynomial (Fin 1) ℚ))),
+      affineDegree P * ((1 : ℕ) : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤ 1) ∧
+    (∀ P ∈ ({⊥} : Finset (Ideal (MvPolynomial (Fin 1) ℚ))), ∀ Q : Ideal (MvPolynomial (Fin 1) ℚ),
+      P ≤ Q → Q.IsPrime → (1 : MvPolynomial (Fin 1) ℚ) ∉ Q →
+      (∀ f ∈ [(X 0 : MvPolynomial (Fin 1) ℚ)], f ∈ Q) →
+      0 < (affineHilbertPolynomial Q).natDegree →
+      0 ≤ {i : Fin 0 | (Fin.elim0 i : MvPolynomial (Fin 1) ℚ) ∈ Q}.ncard →
+      {x : Fin 1 → ℚ | x ∈ zeroLocus ℚ Q ∧ aeval x (1 : MvPolynomial (Fin 1) ℚ) ≠ 0} ⊆ ∅) ∧
+    (∀ x ∈ ({0} : Finset (Fin 1 → ℚ)),
+      (∃ P ∈ ({⊥} : Finset (Ideal (MvPolynomial (Fin 1) ℚ))), x ∈ zeroLocus ℚ P) ∧
+      aeval x (1 : MvPolynomial (Fin 1) ℚ) ≠ 0 ∧
+      (∀ f ∈ [(X 0 : MvPolynomial (Fin 1) ℚ)], aeval x f = 0) ∧ x ∉ (∅ : Set (Fin 1 → ℚ))) ∧
+    ¬ ((({0} : Finset (Fin 1 → ℚ)).card : ℚ) ≤ 1 *
+      ((((Fintype.card (Fin 0) - 0 + 1) * 0 : ℕ) : ℚ) / ((0 - 0 + 1 : ℕ) : ℚ)) ^ 1) := by
+  refine ⟨by simp [affineDegree_bot], fun _ _ Q _ _ _ hhigh hd _ ↦ ?_, fun x hx ↦ ?_, by simp⟩
+  · have := natDegree_affineHilbertPolynomial_eq_zero_of_X_mem_line
+      (hhigh _ (List.mem_singleton_self _))
+    omega
+  · rw [Finset.mem_singleton.mp hx]
+    simp
+
+/-! ### Sharp agreement incidence for cuts indexed by `Fin n` -/
+
+/-- The points of a finite set on the zero locus of `Q`, as a `Set.ncard` and as a filter. -/
+theorem ncard_inter_zeroLocus_eq_card_filter {F σ : Type*} [Field F] (S : Finset (σ → F))
+    (Q : Ideal (MvPolynomial σ F)) [DecidablePred (· ∈ zeroLocus F Q)] :
+    ((S : Set (σ → F)) ∩ zeroLocus F Q).ncard = (S.filter (· ∈ zeroLocus F Q)).card := by
+  rw [← Set.ncard_coe_finset, Finset.coe_filter]
+  rfl
+
+open Classical in
+/-- The sharp incidence bound outside an excluded set for cuts indexed by `Fin n`, with the
+principal open subsets and the counts written out. The hypotheses `0 < b`, `A ≤ n` and `s ∉ P`
+are not used. -/
+theorem card_le_of_agreement_off_excluded_sharp_fin {F σ : Type*} [Field F] [Finite σ]
+    {n A L b : ℕ} {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
+    {s : MvPolynomial σ F} (_hs : s ∉ P)
+    (cuts : Fin n → MvPolynomial σ F) (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
+    (_hb : 0 < b) (hLA : L ≤ A) (_hAn : A ≤ n)
+    (excluded : Set (σ → F))
+    (hterminal : ∀ Q : Ideal (MvPolynomial σ F),
+      P ≤ Q → Q.IsPrime → s ∉ Q →
+      0 < (affineHilbertPolynomial Q).natDegree →
+      L ≤ (Finset.univ.filter fun i ↦ cuts i ∈ Q).card →
+      {x | x ∈ zeroLocus F Q ∧ aeval x s ≠ 0} ⊆ excluded)
+    (S : Finset (σ → F))
+    (hS : ∀ x ∈ S, x ∈ {x | x ∈ zeroLocus F P ∧ aeval x s ≠ 0} ∧ x ∉ excluded)
+    (hA : ∀ x ∈ S, A ≤ (Finset.univ.filter fun i ↦ aeval x (cuts i) = 0).card) :
+    (S.card : ℚ) ≤ affineDegree P *
+      ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^
+        (affineHilbertPolynomial P).natDegree := by
+  have := hP
+  have h := card_le_of_agreement_off_excluded_sharp s cuts hdeg hLA excluded
+    (fun Q hPQ hQ hsQ hd hL ↦ hterminal Q hPQ hQ hsQ hd (by rwa [card_filter_univ_eq_ncard]))
+    S (fun x hx ↦ ⟨(hS x hx).1.1, (hS x hx).1.2, (hS x hx).2⟩)
+    fun x hx ↦ by rw [← card_filter_univ_eq_ncard]; exact hA x hx
+  rwa [Fintype.card_fin] at h
+
+open Classical in
+/-- The sharp incidence bound under uniqueness for cuts indexed by `Fin n`, with the agreement
+counts written as filters. The hypotheses `0 < b`, `0 < k`, `A ≤ n` and `s ∉ P` are not used. -/
+theorem card_le_of_agreement_of_unique_sharp_fin {F σ : Type*} [Field F] [IsAlgClosed F]
+    [Finite σ] {n A k b : ℕ} {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
+    {s : MvPolynomial σ F} (_hs : s ∉ P)
+    (cuts : Fin n → MvPolynomial σ F) (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
+    (_hb : 0 < b) (_hk : 0 < k) (hkA : k ≤ A) (_hAn : A ≤ n)
+    (S : Finset (σ → F))
+    (hS : ∀ x ∈ S, x ∈ zeroLocus F P ∧ aeval x s ≠ 0)
+    (hA : ∀ x ∈ S, A ≤ (Finset.univ.filter fun i ↦ aeval x (cuts i) = 0).card)
+    (hunique : ∀ T : Finset (Fin n), T.card = k →
+      ∀ x y : σ → F,
+        x ∈ zeroLocus F P → aeval x s ≠ 0 →
+        y ∈ zeroLocus F P → aeval y s ≠ 0 →
+        (∀ i ∈ T, aeval x (cuts i) = 0 ∧ aeval y (cuts i) = 0) → x = y) :
+    (S.card : ℚ) ≤ affineDegree P *
+      ((((n - k + 1) * b : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) ^
+        (affineHilbertPolynomial P).natDegree := by
+  have := hP
+  have h := card_le_of_agreement_of_subsingleton_sharp s cuts hdeg hkA
+    (fun T hT x hx y hy ↦
+      hunique T hT x y hx.1 hx.2.1 hy.1 hy.2.1 fun i hi ↦ ⟨hx.2.2 i hi, hy.2.2 i hi⟩)
+    S hS fun x hx ↦ by rw [← card_filter_univ_eq_ncard]; exact hA x hx
+  rwa [Fintype.card_fin] at h
+
+open Classical in
+/-- The sharp incidence bound under uniqueness, summed over a finite family `T` of primes of
+dimension `d` with `∑ P ∈ T, affineDegree P ≤ V`, for cuts indexed by `Fin n`. The hypotheses
+`0 < k` and `s ∉ P` are not used; `0 < b` and `A ≤ n` make the ratio at least `1`. -/
+theorem card_le_of_agreement_of_unique_sharp_of_primeFamily_fin {F σ : Type*} [Field F]
+    [IsAlgClosed F] [Finite σ] {n A k b d : ℕ} (T : Finset (Ideal (MvPolynomial σ F)))
+    (s : MvPolynomial σ F)
+    (hprime : ∀ P ∈ T, P.IsPrime) (_hopen : ∀ P ∈ T, s ∉ P)
+    (hdim : ∀ P ∈ T, (affineHilbertPolynomial P).natDegree = d)
+    {V : ℚ} (hpotential : ∑ P ∈ T, affineDegree P ≤ V)
+    (cuts : Fin n → MvPolynomial σ F) (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
+    (hb : 0 < b) (_hk : 0 < k) (hkA : k ≤ A) (hAn : A ≤ n)
+    (S : Finset (σ → F))
+    (hcover : ∀ x ∈ S, ∃ P ∈ T, x ∈ zeroLocus F P ∧ aeval x s ≠ 0)
+    (hA : ∀ x ∈ S, A ≤ (Finset.univ.filter fun i ↦ aeval x (cuts i) = 0).card)
+    (hunique : ∀ P ∈ T, ∀ U : Finset (Fin n), U.card = k →
+      ∀ x y : σ → F,
+        x ∈ zeroLocus F P → aeval x s ≠ 0 →
+        y ∈ zeroLocus F P → aeval y s ≠ 0 →
+        (∀ i ∈ U, aeval x (cuts i) = 0 ∧ aeval y (cuts i) = 0) → x = y) :
+    (S.card : ℚ) ≤ V *
+      ((((n - k + 1) * b : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) ^ d := by
+  have hc : (0 : ℚ) < ((A - k + 1 : ℕ) : ℚ) := by positivity
+  have ht : 1 ≤ (((n - k + 1) * b : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ) := by
+    rw [one_le_div hc]
+    exact_mod_cast (show A - k + 1 ≤ n - k + 1 by omega).trans (Nat.le_mul_of_pos_right _ hb)
+  refine card_le_mul_pow_of_forall_mem_zeroLocus T (fun P hP ↦ (hdim P hP).le) hpotential ht S
+    (fun x hx ↦ (hcover x hx).imp fun P hP ↦ ⟨hP.1, hP.2.1⟩) fun P hP ↦ ?_
+  have := hprime P hP
+  rw [ncard_inter_zeroLocus_eq_card_filter]
+  exact card_le_of_agreement_of_unique_sharp_fin (hprime P hP) (_hopen P hP) cuts hdeg hb _hk
+    hkA hAn _ (fun x hx ↦ by
+      rw [Finset.mem_filter] at hx
+      obtain ⟨Q, -, -, hsx⟩ := hcover x hx.1
+      exact ⟨hx.2, hsx⟩)
+    (fun x hx ↦ hA x (Finset.mem_filter.mp hx).1) (hunique P hP)
+
+open Classical in
+/-- Summing per-component bounds over the iterated retained cut family of an initial family `T₀`
+of primes of dimension `d` by degree-one high cuts, with the component counts written as filters.
+The hypothesis `s ∉ P` is not used. -/
+theorem card_le_mul_pow_of_iteratedRetainedCutFamily_of_degree_one {F σ : Type*} [Field F]
+    [Finite σ] (T₀ : Finset (Ideal (MvPolynomial σ F))) (s : MvPolynomial σ F)
+    (hprime : ∀ P ∈ T₀, P.IsPrime) (_hopen : ∀ P ∈ T₀, s ∉ P)
+    {d : ℕ} (hdim : ∀ P ∈ T₀, (affineHilbertPolynomial P).natDegree = d)
+    {V t : ℚ} (ht : 1 ≤ t) (hV : ∑ P ∈ T₀, affineDegree P ≤ V)
+    (highCuts : List (MvPolynomial σ F))
+    (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ 1)
+    (S : Finset (σ → F))
+    (hcover : ∀ x ∈ S, ∃ P ∈ Ideal.iteratedRetainedCutFamily T₀ s highCuts,
+      x ∈ zeroLocus F P)
+    (hperPrime : ∀ P ∈ Ideal.iteratedRetainedCutFamily T₀ s highCuts,
+      ((S.filter fun x ↦ x ∈ zeroLocus F P).card : ℚ) ≤
+        affineDegree P * t ^ (affineHilbertPolynomial P).natDegree) :
+    (S.card : ℚ) ≤ V * t ^ d :=
+  card_le_mul_pow_of_iteratedRetainedCutFamily hprime (fun P hP ↦ (hdim P hP).le) s le_rfl
+    hhigh (by simpa using hV) ht S hcover fun P hP ↦ by
+      rw [ncard_inter_zeroLocus_eq_card_filter]
+      exact hperPrime P hP
+
+open Classical in
+/-- The sharp incidence bound outside an excluded set on the iterated retained cut family of an
+initial family `T₀` of primes of dimension `d` by degree-one high cuts, for cuts indexed by
+`Fin n`, with the principal open subsets and the counts written out. The hypotheses `A ≤ n` and
+`s ∉ P` are not used. -/
+theorem card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily_fin {F σ : Type*}
+    [Field F] [Finite σ] (T₀ : Finset (Ideal (MvPolynomial σ F))) (s : MvPolynomial σ F)
+    (hprime : ∀ P ∈ T₀, P.IsPrime) (_hopen : ∀ P ∈ T₀, s ∉ P)
+    {d : ℕ} (hdim : ∀ P ∈ T₀, (affineHilbertPolynomial P).natDegree = d)
+    {V : ℚ} (hV : ∑ P ∈ T₀, affineDegree P ≤ V)
+    (highCuts : List (MvPolynomial σ F))
+    (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ 1)
+    {n A L b : ℕ}
+    (cuts : Fin n → MvPolynomial σ F) (hcuts : ∀ i, (cuts i).totalDegree ≤ b)
+    (hb : 0 < b) (hLA : L ≤ A) (_hAn : A ≤ n)
+    (excluded : Set (σ → F))
+    (hterminal : ∀ P ∈ T₀, ∀ Q : Ideal (MvPolynomial σ F),
+      P ≤ Q → Q.IsPrime → s ∉ Q →
+      (∀ f ∈ highCuts, f ∈ Q) →
+      0 < (affineHilbertPolynomial Q).natDegree →
+      L ≤ (Finset.univ.filter fun i ↦ cuts i ∈ Q).card →
+      {x | x ∈ zeroLocus F Q ∧ aeval x s ≠ 0} ⊆ excluded)
+    (S : Finset (σ → F))
+    (hS : ∀ x ∈ S, (∃ P ∈ T₀, x ∈ zeroLocus F P) ∧ aeval x s ≠ 0 ∧
+      (∀ f ∈ highCuts, aeval x f = 0) ∧ x ∉ excluded)
+    (hA : ∀ x ∈ S, A ≤ (Finset.univ.filter fun i ↦ aeval x (cuts i) = 0).card) :
+    (S.card : ℚ) ≤ V *
+      ((((n - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) ^ d := by
+  have h := card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily hprime
+    (fun P hP ↦ (hdim P hP).le) s le_rfl hhigh (by simpa using hV) cuts hcuts hb hLA excluded
+    (fun P hP Q hPQ hQ hsQ hhQ hd hL ↦
+      hterminal P hP Q hPQ hQ hsQ hhQ hd (by rwa [card_filter_univ_eq_ncard]))
     S hS fun x hx ↦ by rw [← card_filter_univ_eq_ncard]; exact hA x hx
   rwa [Fintype.card_fin] at h
 
