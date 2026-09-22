@@ -22,6 +22,8 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 * `contactThreshold d m r = ⌈(m - r) / d⌉`.
 * `certifiedEnlargedRankBound d m M W` is the sum over `r < m` of the higher-jet count times the
   residual `(r + 1)(M + 1) - (r + 1 - h)(M + 1 - h)`.
+* `localResidualCoordinateBudget d m W B` and `localCoordinateBudget d m W B` count the local
+  coordinates of `Interpolation/Local/Coordinates.lean`, with a jet-degree cutoff `B`.
 
 ## Main statements
 
@@ -29,6 +31,7 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 * `add_mul_lt_multiplicity_of_lt_contactThreshold`: every `b < h` has `r + d b < m`.
 * `ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound`: the ambient count minus the
   exhibited-kernel count is the certified bound.
+* `localResidualCoordinateBudget_le_localCoordinateBudget`.
 
 ## References
 
@@ -42,7 +45,12 @@ source's `weightedHigherJetTuples` filtered the same coordinate box by hand; her
 `certifiedEnlargedRankBound`. The source assumed `r < m` in both threshold lemmas and `0 < d` in
 the second; neither lemma needs `r < m`, and the second holds for every `d`. The identity
 `ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound` comes from the source's
-`Interpolation/Local/Rank.lean`; it is pure arithmetic and so lives here.
+`Interpolation/Local/Rank.lean`; it is pure arithmetic and so lives here. The source's
+`localCoordinateBudget` and `localResidualCoordinateBudget` come from
+`Interpolation/Local/Coordinates.lean`; the denominator `(m - r) ⌈/⌉ (d + 1)` is written
+`contactThreshold (d + 1) m r`, and the source's real cutoff `T` with count `⌈T - |z|⌉₊` is a
+natural cutoff `B` with count `B - |z|`. `localResidualCoordinateBudget_le_localCoordinateBudget`
+is new.
 
 Deferred to the slices that use them: the shell counts and tuple equivalences with
 `HigherJetExponent`, the staircase counts and `exactInterpolationDimensionCount`, the
@@ -135,5 +143,26 @@ theorem ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound (d m M W : ℕ
       exhibitedKernelResidualCount, Nat.mul_sub]
   · exact fun r _ => Nat.mul_le_mul_left _
       (exhibitedKernelContactCount_le_ambientContactCount r M (contactThreshold d m r))
+
+/-- The count of local residual coordinates of `Interpolation/Local/Coordinates.lean`. For each
+residual `r = t - h < m` of the `T`-degree `t` by the `E`-degree `h`, there are
+`contactThreshold (d + 1) m r` values of `h`, and for each higher-jet exponent `z` of weight at most
+`W + r` there are `B - ∑ z` values of the `Y₁`-degree, which keep the jet degree below `B`. -/
+def localResidualCoordinateBudget (d m W B : ℕ) : ℕ :=
+  ∑ r ∈ range m, contactThreshold (d + 1) m r *
+    ∑ z ∈ natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) (W + r), (B - ∑ i, z i)
+
+/-- The coarser local coordinate budget, which allows `B` values of the `Y₁`-degree for every
+higher-jet exponent. -/
+def localCoordinateBudget (d m W B : ℕ) : ℕ :=
+  B * ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount d (W + r)
+
+/-- The residual budget is at most the coarse budget, for any cutoffs `B ≤ B'`. -/
+theorem localResidualCoordinateBudget_le_localCoordinateBudget {d m W B B' : ℕ} (hB : B ≤ B') :
+    localResidualCoordinateBudget d m W B ≤ localCoordinateBudget d m W B' := by
+  rw [localCoordinateBudget, mul_sum]
+  refine sum_le_sum fun r _ => ?_
+  rw [mul_left_comm, weightedHigherJetCount, mul_comm B', ← smul_eq_mul (#_) B', ← sum_const]
+  exact Nat.mul_le_mul_left _ (sum_le_sum fun z _ => (Nat.sub_le _ _).trans hB)
 
 end ReedSolomon.HiddenDerivative
