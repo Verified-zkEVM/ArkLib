@@ -396,7 +396,7 @@ instances of `finrank_range_exactLocalConstraintAt_le_sub`.
 Ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RankBudget.lean` at
 ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows equations (39)–(40) of
-[DKTZ26].
+[DKT26].
 
 * `localRank_ceilDiv_le` is unchanged and is derived from the generic
   `Nat.cast_ceilDiv_le_div_add_one`.
@@ -1224,7 +1224,7 @@ slope, a binomial coefficient times that value, is a unit or left-regular.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
-[DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from
+[DKT26], Appendix A.3, Lemma A.5. The declarations are ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1347,7 +1347,7 @@ differential polynomial over a commutative semiring.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorResidual.lean`
 
-The support bounds are [DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
+The support bounds are [DKT26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 * `universalTaylorJet`, `optionEquivLeft_universalTaylorJet`,

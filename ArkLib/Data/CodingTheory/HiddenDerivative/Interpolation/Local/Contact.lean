@@ -36,8 +36,8 @@ commutative ring is needed.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
-  Correlated Agreement up to Capacity*][DKTZ26], Section 3 (local interpolation).
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26]
 -/
 
 @[expose] public section

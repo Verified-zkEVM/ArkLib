@@ -40,8 +40,8 @@ bound `finrank_exactLocalConstraintAt_le_certifiedEnlargedRankBound` of
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
   Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], exact finite interpolation analysis.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26]
 -/
 
 @[expose] public section
