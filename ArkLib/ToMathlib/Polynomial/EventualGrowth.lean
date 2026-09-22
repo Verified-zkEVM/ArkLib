@@ -31,6 +31,12 @@ natural degree at most `natDegree P - 1` and a coefficient in that degree at mos
 `b * natDegree P * leadingCoeff P`. This is the arithmetic behind the principal-cut degree drop of
 affine Hilbert polynomials.
 
+The comparison extends to rescaled arguments: if `Q` is eventually nonnegative on `ℕ` and
+eventually at most `m * P (c * N + d)`, then `natDegree Q ≤ natDegree P`, for any constants
+`m`, `c`, `d`. More generally a bound by `m * P (S N)` gives
+`natDegree Q ≤ natDegree P * natDegree S`. These bounds compare filtrations whose degree
+parameters differ by a fixed affine change.
+
 ## Main statements
 
 * `Polynomial.eq_of_eventually_eval_natCast_eq`: agreement on a tail of `ℕ` forces equality.
@@ -45,6 +51,12 @@ affine Hilbert polynomials.
   natural degrees and, for equal degrees, leading coefficients.
 * `Polynomial.natDegree_le_and_coeff_le_of_eventually_eval_natCast_le_backwardDifference`: the
   bound on a polynomial eventually below a backward difference.
+* `Polynomial.natDegree_le_of_eventually_eval_natCast_le_mul_eval_comp`,
+  `Polynomial.natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine`,
+  `Polynomial.natDegree_eq_of_eventually_eval_natCast_le_of_le_mul_eval_affine`: comparison with
+  a composite or an affine rescaling, and the resulting two-sided degree equality.
+* `Polynomial.natDegree_comp_C_mul_X_add_C`: composing with `C c * X + C d`, `c ≠ 0`, preserves
+  the natural degree.
 
 ## References
 
@@ -66,9 +78,19 @@ the Hilbert-function inequality. It needs neither a sign condition on `b` nor th
 positivity of `P`, which the source took from the Hilbert function, and its conclusion also holds
 for `Q = 0`, so the source's disjunction with `Q = 0` is not needed.
 
-The rescaled and affine growth lemmas of `Hilbert/PolynomialGrowthRescaling.lean` and
-`Hilbert/PolynomialGrowthAffine.lean`, and the coefficient bounds of
-`Hilbert/PrimeFamilyCoefficient.lean`, are not ported here.
+From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PolynomialGrowthRescaling.lean`:
+`natDegree_comp_C_mul_X`, `natDegree_le_of_eventually_eval_nat_le_rescaled` and
+`natDegree_eq_of_eventually_eval_nat_sandwich`; from
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PolynomialGrowthAffine.lean`:
+`natDegree_le_of_eventually_eval_nat_le_mul_affine`. The source stated these over `ℚ` with natural
+constants `m, c > 0` and `d`, and assumed the compared polynomials nonzero. Here the constants are
+arbitrary elements of the field and no nonzero or positivity hypothesis is needed, since
+`C m * P.comp (C c * X + C d)` has natural degree at most that of `P` in every case; the
+rescaling-only form is `d = 0`, `m = 1`. The sandwich needs only the eventual nonnegativity of the
+lower polynomial, and `natDegree_comp_C_mul_X` becomes `natDegree_comp_C_mul_X_add_C` over any
+semiring without zero divisors.
+
+The coefficient bounds of `Hilbert/PrimeFamilyCoefficient.lean` are not ported here.
 -/
 
 @[expose] public section
@@ -285,6 +307,68 @@ theorem natDegree_le_and_coeff_le_of_eventually_eval_natCast_le_backwardDifferen
       _ = b * P.natDegree * P.leadingCoeff := by
         rw [leadingCoeff, hBeq, heq, coeff_backwardDifference_natDegree_sub_one]
 
+/-- If `Q` is eventually nonnegative on the natural numbers and eventually at most
+`m * P (S N)` there, then `natDegree Q ≤ natDegree P * natDegree S`.
+
+The right side is the evaluation of `C m * P.comp S`, whose natural degree is at most
+`natDegree P * natDegree S`. No condition on `m` or `S` is needed: for `m = 0` or a constant `S`
+the right side is constant and the bound says that `Q` is constant. -/
+theorem natDegree_le_of_eventually_eval_natCast_le_mul_eval_comp {P Q S : K[X]} {m : K}
+    (hQ : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : K))
+    (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : K) ≤ m * P.eval (S.eval (N : K))) :
+    Q.natDegree ≤ P.natDegree * S.natDegree := by
+  have hcomp : ∀ᶠ N : ℕ in atTop, Q.eval (N : K) ≤ (C m * P.comp S).eval (N : K) := by
+    simpa only [eval_mul, eval_C, eval_comp] using hle
+  exact (natDegree_le_of_eventually_eval_natCast_le hQ hcomp).1.trans
+    ((natDegree_C_mul_le m _).trans natDegree_comp_le)
+
+/-- If `Q` is eventually nonnegative on the natural numbers and eventually at most
+`m * P (c * N + d)` there, then `natDegree Q ≤ natDegree P`.
+
+This is the comparison used for filtrations whose degree bounds differ by a fixed affine change.
+No condition on `m`, `c` or `d` is needed, since `C c * X + C d` has natural degree at most `1`;
+for `m = 0` or `c = 0` the conclusion is that `Q` is constant. -/
+theorem natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine {P Q : K[X]} {m c d : K}
+    (hQ : ∀ᶠ N : ℕ in atTop, 0 ≤ Q.eval (N : K))
+    (hle : ∀ᶠ N : ℕ in atTop, Q.eval (N : K) ≤ m * P.eval (c * N + d)) :
+    Q.natDegree ≤ P.natDegree := by
+  have h := natDegree_le_of_eventually_eval_natCast_le_mul_eval_comp (S := C c * X + C d) hQ
+    (by simpa only [eval_add, eval_mul, eval_C, eval_X] using hle)
+  have hS : (C c * X + C d).natDegree ≤ 1 := by
+    rw [natDegree_add_C]
+    exact (natDegree_C_mul_le c X).trans natDegree_X_le
+  exact h.trans ((Nat.mul_le_mul_left _ hS).trans (Nat.mul_one _).le)
+
+/-- A polynomial `Q` squeezed on the natural numbers between an eventually nonnegative `P` and an
+affine rescaling `m * P (c * N + d)` has the same natural degree as `P`.
+
+The lower bound gives `natDegree P ≤ natDegree Q` and makes `Q` eventually nonnegative; the upper
+bound then gives `natDegree Q ≤ natDegree P` by
+`natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine`. The nonnegativity of `P` is needed:
+`P = -X` lies below `Q = 0`, which lies below `-P`. -/
+theorem natDegree_eq_of_eventually_eval_natCast_le_of_le_mul_eval_affine {P Q : K[X]}
+    {m c d : K} (hP : ∀ᶠ N : ℕ in atTop, 0 ≤ P.eval (N : K))
+    (hlower : ∀ᶠ N : ℕ in atTop, P.eval (N : K) ≤ Q.eval (N : K))
+    (hupper : ∀ᶠ N : ℕ in atTop, Q.eval (N : K) ≤ m * P.eval (c * N + d)) :
+    Q.natDegree = P.natDegree :=
+  le_antisymm
+    (natDegree_le_of_eventually_eval_natCast_le_mul_eval_affine
+      ((hP.and hlower).mono fun _ h ↦ h.1.trans h.2) hupper)
+    (natDegree_le_of_eventually_eval_natCast_le hP hlower).1
+
 end Order
+
+section Comp
+
+variable {R : Type*} [Semiring R] [NoZeroDivisors R]
+
+/-- Composing with a nonconstant affine polynomial `C c * X + C d` preserves the natural degree
+over a semiring without zero divisors. The hypothesis `c ≠ 0` is needed: for `c = 0` the
+composite is the constant `C (P.eval d)`. -/
+theorem natDegree_comp_C_mul_X_add_C (P : R[X]) {c : R} (hc : c ≠ 0) (d : R) :
+    (P.comp (C c * X + C d)).natDegree = P.natDegree := by
+  rw [natDegree_comp, natDegree_add_C, natDegree_C_mul_X c hc, mul_one]
+
+end Comp
 
 end Polynomial

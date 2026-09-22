@@ -32,6 +32,10 @@ into the kernel of the surjection between the `N`-th pieces.
 ## Main statements
 
 * `MvPolynomial.quotientDegreeLE`: the image of `restrictTotalDegree σ k N` in the quotient.
+* `MvPolynomial.mul_mem_quotientDegreeLE`, `MvPolynomial.algebraMap_mem_quotientDegreeLE`,
+  `MvPolynomial.mk_X_mem_quotientDegreeLE`, `MvPolynomial.exists_mem_quotientDegreeLE`: the
+  filtration is multiplicative, contains the scalars in degree `0` and the variables in degree
+  `1`, and is exhaustive.
 * `MvPolynomial.affineHilbertFunction`: the dimension of that image.
 * `MvPolynomial.affineHilbertFunction_mono`, `MvPolynomial.affineHilbertFunction_anti`: monotone
   in the degree, antitone in the ideal.
@@ -63,9 +67,10 @@ The source namespace `AffineHilbert` is not kept: the objects are attached to an
 `MvPolynomial σ k`, and the prefix `affine` in `affineHilbertFunction` separates this function from
 Mathlib's graded `Polynomial.hilbertPoly`.
 
-The Hilbert polynomial of `I` and the principal-cut statement on its degree are deferred to a later
-slice; the standard-monomial count they rely on is in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials`.
+The multiplicativity lemmas for the filtration are used for comparisons along algebra maps in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`. The Hilbert polynomial of `I` and
+the principal-cut statement on its degree are in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial`.
 -/
 
 @[expose] public section
@@ -117,6 +122,39 @@ theorem iSup_quotientDegreeLE (I : Ideal (MvPolynomial σ k)) :
   refine top_unique fun x _ ↦ ?_
   obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective x
   exact Submodule.mem_iSup_of_mem p.totalDegree (mk_mem_quotientDegreeLE le_rfl)
+
+/-- Every class lies in some piece of the filtration: the piece indexed by the total degree of any
+representative. -/
+theorem exists_mem_quotientDegreeLE (I : Ideal (MvPolynomial σ k)) (x : MvPolynomial σ k ⧸ I) :
+    ∃ N, x ∈ quotientDegreeLE I N := by
+  obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective x
+  exact ⟨p.totalDegree, mk_mem_quotientDegreeLE le_rfl⟩
+
+/-- Scalars lie in every piece of the filtration. -/
+theorem algebraMap_mem_quotientDegreeLE (I : Ideal (MvPolynomial σ k)) (r : k) (N : ℕ) :
+    algebraMap k (MvPolynomial σ k ⧸ I) r ∈ quotientDegreeLE I N :=
+  mk_mem_quotientDegreeLE ((totalDegree_C r).le.trans (Nat.zero_le N))
+
+/-- The class of `1` lies in every piece of the filtration. -/
+theorem one_mem_quotientDegreeLE (I : Ideal (MvPolynomial σ k)) (N : ℕ) :
+    (1 : MvPolynomial σ k ⧸ I) ∈ quotientDegreeLE I N := by
+  simpa using algebraMap_mem_quotientDegreeLE I 1 N
+
+/-- The class of a variable lies in the piece of degree `1`. -/
+theorem mk_X_mem_quotientDegreeLE (I : Ideal (MvPolynomial σ k)) (i : σ) :
+    Ideal.Quotient.mk I (X i) ∈ quotientDegreeLE I 1 :=
+  mk_mem_quotientDegreeLE (totalDegree_X i).le
+
+/-- The filtration is multiplicative: the product of classes in the pieces of degree `a` and `b`
+lies in the piece of degree `a + b`, since the product of representatives has total degree at most
+the sum. -/
+theorem mul_mem_quotientDegreeLE {I : Ideal (MvPolynomial σ k)} {a b : ℕ}
+    {x y : MvPolynomial σ k ⧸ I} (hx : x ∈ quotientDegreeLE I a)
+    (hy : y ∈ quotientDegreeLE I b) : x * y ∈ quotientDegreeLE I (a + b) := by
+  obtain ⟨p, hp, rfl⟩ := mem_quotientDegreeLE.mp hx
+  obtain ⟨q, hq, rfl⟩ := mem_quotientDegreeLE.mp hy
+  rw [← map_mul]
+  exact mk_mem_quotientDegreeLE ((totalDegree_mul p q).trans (Nat.add_le_add hp hq))
 
 /-- The degree-zero piece is spanned by the class of `1`: a polynomial of total degree zero is a
 constant. -/
