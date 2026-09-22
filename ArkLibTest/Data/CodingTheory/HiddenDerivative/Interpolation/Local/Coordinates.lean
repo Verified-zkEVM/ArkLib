@@ -11,9 +11,10 @@ import Mathlib.Algebra.Order.Archimedean.Real.Basic
 # Local coordinate acceptance tests
 
 The coordinates of a concrete exponent; a concrete residual budget and the rank bound it gives on
-an exact interpolation space; the source statements with a real jet-degree cutoff, derived from
+an exact interpolation space; the statements with a real jet-degree cutoff, derived from
 the natural-number statements through `⌈T⌉₊`; and a generator image that shows the weight
-transport needs a nonnegative weight on `X`.
+transport needs a nonnegative weight on `X`. For the derivative-order count: a concrete exponent
+in `localDerivativeExponents`, and a concrete budget.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -44,17 +45,17 @@ example (M : ℕ) (center received : ℚ) :
   (finrank_range_exactLocalConstraintAt_le_localResidualCoordinateBudget (by norm_num) _ 2
     center received).trans (by decide)
 
-/-- Source shape (`unscaled_jet_degree_lt_of_support`): a real strict cutoff on the source's total
-jet degree is a strict cutoff on the image. -/
+/-- With a real cutoff `T`: a strict bound `T` on the total jet degree of every monomial of `Q` is
+a strict bound on the jet degree of every monomial of the image. -/
 example {R : Type*} [CommRing R] {d : ℕ} (center received : R) {Q : DifferentialPolynomial R d}
-    {T : ℝ} (hsource : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T) {e : LocalVariable d →₀ ℕ}
+    {T : ℝ} (hT : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T) {e : LocalVariable d →₀ ℕ}
     (he : e ∈ (unscaledLocalSubstitution d center received Q).support) :
     (e.weight (localJetDegreeWeight d) : ℝ) < T :=
   Nat.lt_ceil.mp (localJetDegree_lt_of_mem_support center received
-    (fun u hu => Nat.lt_ceil.mpr (hsource u hu)) he)
+    (fun u hu => Nat.lt_ceil.mpr (hT u hu)) he)
 
-/-- Source shape (`localConstraint_support_of_weight_bounds` followed by
-`mem_localResidualExponents_of_bounds`), with a real cutoff `T`. -/
+/-- With a real cutoff `T`: `localConstraintAt_support_of_weight_bounds` followed by
+`mem_localResidualExponents_of_bounds`. -/
 example {d m W : ℕ} (hd : 0 < d) (center received : ℚ) {Q : DifferentialPolynomial ℚ d} {T : ℝ}
     (hweight : ∀ u ∈ Q.support, fullHigherJetWeight u ≤ W)
     (htotal : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T)
@@ -73,3 +74,20 @@ example : unscaledLocalImage 0 (1 : ℚ) 0 none ∉
     rw [mem_support_iff]
     simp [unscaledLocalImage, coeff_X, localT])
   simp at this
+
+/-- At `d = 2`, the exponent `T³ E Y₁ Y₂` has contact order `3 + 2 = 5 < 6` and derivative-order
+weight `1 + 2 = 3 ≤ 1 + (3 - 1)`, so it lies in `localDerivativeExponents 2 6 1`. -/
+example : Finsupp.single (localT 2) 3 + Finsupp.single (localE 2) 1 +
+      Finsupp.single (localY 0) 1 + Finsupp.single (localY 1) 1 ∈
+    localDerivativeExponents 2 6 1 := by
+  apply mem_localDerivativeExponents_of_bounds
+  · simp [localT, localE, localAux, localY]
+  · rw [weight_localDerivativeJetWeight, Fin.sum_univ_two]
+    simp [localT, localE, localAux, localY]
+  · rw [localContactOrder_eq]
+    simp [localT, localE, localAux, localY]
+
+/-- At `d = 2`, `m = 3`, `W = 0`: residual `0` has one error exponent and one jet exponent, residual
+`1` has one error exponent and two jet exponents (`1` and `Y₁`), and residual `2` has one error
+exponent and four jet exponents (`1`, `Y₁`, `Y₁²`, `Y₂`). -/
+example : localDerivativeCoordinateBudget 2 3 0 = 7 := by decide

@@ -43,35 +43,6 @@ characteristic.
 
 ## References
 
-Ported from `ArkLib/ToMathlib/Polynomial/HasseTaylor/Lifting.lean` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `hassePerturbation`, `taylor_hassePerturbation`, `hasseCoeffAt_hassePerturbation`,
-  `hasseCoeffAt_add_hassePerturbation{,_of_lt,_self}`, `hasseJet_add_hassePerturbation_of_le`,
-  `hasseCoeffAt_hasseDeriv_add_hassePerturbation_of_lt`, and
-  `natCast_choose_ne_zero_of_lt_charP` keep their source statements.
-* `hasseDeriv_hassePerturbation` and `hasseDeriv_add_hassePerturbation` state the right-hand side
-  as a `hassePerturbation` instead of unfolding it.
-* `hasseCoeffAt_hasseDeriv_add_hassePerturbation` drops the source hypothesis `s ≤ i`.
-* The source's field-valued statements
-  `hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective_of_choose_ne_zero`
-  and `existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq_of_choose_ne_zero` become
-  `hasseCoeffAt_hasseDeriv_add_hassePerturbation_injective` and
-  `existsUnique_hasseCoeffAt_hasseDeriv_add_hassePerturbation_eq`, over a commutative ring, with
-  hypotheses `IsLeftRegular (i choose s : R)` and `IsUnit (i choose s : R)` and without `s ≤ i`.
-  Over a field both hypotheses are `(i choose s : F) ≠ 0`.
-* The source's `ringChar` forms (`natCast_choose_ne_zero_of_lt_ringChar`,
-  `isUnit_natCast_choose_of_lt_ringChar`, `isUnit_natCast_choose_of_le_of_lt_ringChar`, and the
-  former `_injective` and `_eq` statements with hypothesis `i < ringChar F`) are not ported.
-  Consumers state the cast hypothesis `(i choose s : R) ≠ 0` and discharge it with
-  `natCast_choose_ne_zero_of_lt_charP` when needed.
-* `X_pow_dvd_taylor_iff_X_sub_C_pow_dvd` and `X_pow_succ_dvd_iff_coeff_eq_zero_of_X_pow_dvd` come
-  from `.../HiddenDerivative/RootFinding/Regular/Lifting.lean`, where they were stated over a field;
-  here over a commutative ring and a semiring.
-* `X_pow_dvd_taylor_hasseDeriv_sub_of_X_pow_add_dvd` comes from
-  `.../HiddenDerivative/RootFinding/Regular/Iteration.lean`, where the derivative order was a
-  `Fin (r + 1)` and the ring a field; here it is any `s : ℕ` over a commutative ring.
-
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Definition 2.1 and Theorem 4.4.
 -/
 

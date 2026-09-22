@@ -50,8 +50,8 @@ example :
 example (p : MvPolynomial (Fin 2) ℤ) : p ∈ restrictWeightedOrder ![1, 2] 0 := by
   simp
 
-/-- Substituting `X ↦ Y²` doubles the weight, so truncating the source below weight `3` does not
-change the target truncated below weight `3`. -/
+/-- Substituting `X ↦ Y²` doubles the weight, so truncating the input below weight `3` does not
+change the output truncated below weight `3`. -/
 example (F : MvPolynomial Unit ℚ) :
     weightedTruncation (fun _ : Unit => 1) 3
         (bind₁ (fun _ => X () ^ 2) (weightedTruncation (fun _ : Unit => 2) 3 F)) =

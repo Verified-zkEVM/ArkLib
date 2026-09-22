@@ -30,16 +30,16 @@ row count may be replaced by an upper bound on the rank.
 ## Main statements
 
 * `Polynomial.mem_degreeLT_add_one_sub_iff`: membership in `degreeLT R (c + 1 - r)` is the pair of
-  conditions "natural degree at most `c - r` when `r ≤ c`" and "zero when `c < r`". This is the
-  bridge from the source's two entry hypotheses to the single entry hypothesis used here.
+  conditions "natural degree at most `c - r` when `r ≤ c`" and "zero when `c < r`".
 * `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT`: the shifted kernel theorem, over
   arbitrary finite index types, with the entry hypothesis
   `∀ i j, columnWeight j ≤ h → M i j ∈ degreeLT F (columnWeight j + 1 - rowWeight i)`.
-  `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le` takes the source's
-  hypotheses `hdegree` and `hzero` instead.
-* `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT` and its source-shaped form
-  `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le` add the
-  conclusion `Ideal.span (Set.range v) = ⊤` and keep every coordinate budget.
+  `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le` takes instead the two
+  hypotheses `hdegree` (natural degree at most the weight difference when it is nonnegative) and
+  `hzero` (zero when it is negative).
+* `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT` and its form
+  `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le` with `hdegree`
+  and `hzero` add the conclusion `Ideal.span (Set.range v) = ⊤` and keep every coordinate budget.
 * `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT`: the column form with the row count.
 * `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le`: the column form with an
   upper bound `s` on the rank of `M.map φ` for an injective `φ : F[X] →+* K` into a field, and
@@ -83,37 +83,6 @@ form after shifting all weights by `w` (columns of weight below `w` are zero col
 that knows a good set of rows can apply `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT`
 to `M.submatrix rows id` and transport the kernel with
 `Matrix.exists_rows_submatrix_mulVec_eq_zero_iff` or its own kernel equivalence.
-
-## References
-
-The theorems are extracted and generalized from `ArkLib.ToMathlib.LinearAlgebra` at immutable
-source revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-
-* `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT` in `ShiftedDegreeKernel.lean` uses
-  `Fin` indices and the two hypotheses `hdegree` (natural degree at most the weight difference
-  when it is nonnegative) and `hzero` (zero when it is negative). Here the indices are arbitrary
-  finite types and the two hypotheses are replaced by the single `degreeLT` entry hypothesis,
-  required only for columns of weight at most `h`. The source-shaped hypotheses are accepted by
-  `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le`.
-* `Matrix.exists_primitive_mulVec_eq_zero_of_shifted_surplus` in the same file becomes
-  `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT` (and its `_of_natDegree_le`
-  form). Its specialization clause
-  `∀ {E} [Field E] (ι : F →+* E) (z : E), (fun j ↦ (v j).eval₂ ι z) ≠ 0` is dropped, as in
-  `ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight`: it follows from the unit-ideal
-  conclusion by `Ideal.comp_ne_zero_of_span_range_eq_top` with `Polynomial.eval₂RingHom ι z`.
-* `Matrix.exists_primitive_kernel_vector_degreeLT` in the same file is now in
-  `ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight`, for arbitrary index types.
-* `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT` in `ColumnDegreeKernel.lean` keeps its
-  name and statement, with arbitrary finite index types.
-* `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank` in the same file measures the
-  exact rank over `RatFunc F` inside the surplus. It becomes
-  `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le`, with any injective
-  `φ : F[X] →+* K` and an upper bound `s` on the rank.
-* `Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` in the same file concludes only
-  `(v j).natDegree ≤ h`, losing the individual column budgets. It becomes
-  `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le`, which keeps
-  `v j ∈ degreeLT F (h + 1 - weight j)`; the source bound follows because this budget is at most
-  `h + 1`.
 -/
 
 @[expose] public section
@@ -123,7 +92,7 @@ open Polynomial
 namespace Polynomial
 
 /-- Membership in the shifted budget `degreeLT R (c + 1 - r)` is equivalent to the pair of
-conditions used by the source: natural degree at most `c - r` when `r ≤ c`, and the zero
+conditions: natural degree at most `c - r` when `r ≤ c`, and the zero
 polynomial when `c < r`.
 
 Subtraction is natural subtraction, so the budget is `0` exactly when `c < r`, and
@@ -234,16 +203,14 @@ theorem exists_ne_zero_mulVec_eq_zero_shifted_degreeLT {rows cols : Type*}
     exact hdecode j (by simpa [v] using congrFun hv j)
   exact ⟨v, hvne, hmulVec, hvdegree⟩
 
-/-- Source-shaped form of `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT`.
-
-The entry hypothesis is given as the two conditions of the immutable source: `hdegree` bounds the
-natural degree of `M i j` by `columnWeight j - rowWeight i` when `rowWeight i ≤ columnWeight j`,
-and `hzero` says `M i j = 0` when `columnWeight j < rowWeight i`. By
+/-- `Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT` with the entry hypothesis split
+into two conditions: `hdegree` bounds the natural degree of `M i j` by
+`columnWeight j - rowWeight i` when `rowWeight i ≤ columnWeight j`, and `hzero` says `M i j = 0`
+when `columnWeight j < rowWeight i`. By
 `Polynomial.mem_degreeLT_add_one_sub_iff` these two conditions together are equivalent to
 `M i j ∈ degreeLT F (columnWeight j + 1 - rowWeight i)`. The `hzero` condition cannot be dropped:
 without it a nonzero constant in a position of negative weight difference would satisfy the
-natural-degree bound. On `Fin` indices this is the source theorem
-`Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT`. -/
+natural-degree bound. -/
 theorem exists_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le {rows cols : Type*}
     [Fintype rows] [Fintype cols] (M : Matrix rows cols F[X]) (rowWeight : rows → ℕ)
     (columnWeight : cols → ℕ) (h : ℕ)
@@ -275,12 +242,11 @@ theorem exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT {rows cols : Ty
     exists_ne_zero_mulVec_eq_zero_shifted_degreeLT M rowWeight columnWeight h hentry hsurplus
   exact exists_primitive_kernel_vector_degreeLT M _ hv hMv hvdegree
 
-/-- Source-shaped form of `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT`,
-with the entry hypothesis split into `hdegree` and `hzero` as in
-`Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le`. On `Fin` indices this
-is the source theorem `Matrix.exists_primitive_mulVec_eq_zero_of_shifted_surplus` without its
-specialization clause, which follows from `Ideal.comp_ne_zero_of_span_range_eq_top` applied to
-`Polynomial.eval₂RingHom ι z`. -/
+/-- `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT` with the entry hypothesis
+split into `hdegree` and `hzero` as in
+`Matrix.exists_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le`. The unit-ideal
+conclusion implies `∀ {E} [Field E] (ι : F →+* E) (z : E), (fun j ↦ (v j).eval₂ ι z) ≠ 0`, by
+`Ideal.comp_ne_zero_of_span_range_eq_top` applied to `Polynomial.eval₂RingHom ι z`. -/
 theorem exists_primitive_ne_zero_mulVec_eq_zero_shifted_degreeLT_of_natDegree_le
     {rows cols : Type*} [Fintype rows] [Fintype cols] (M : Matrix rows cols F[X])
     (rowWeight : rows → ℕ) (columnWeight : cols → ℕ) (h : ℕ)
@@ -345,9 +311,8 @@ theorem exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le {rows cols K : 
 /-- Primitive form of `Matrix.exists_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le`.
 
 The kernel vector can also be chosen with `Ideal.span (Set.range v) = ⊤`, and every coordinate
-keeps its individual budget `degreeLT F (h + 1 - weight j)`. The source theorem
-`Matrix.exists_primitive_mulVec_eq_zero_of_column_surplus` concluded only `natDegree ≤ h` after
-normalization; that bound follows from this one since `h + 1 - weight j ≤ h + 1`. -/
+keeps its individual budget `degreeLT F (h + 1 - weight j)`. In particular
+`(v j).natDegree ≤ h`, since `h + 1 - weight j ≤ h + 1`. -/
 theorem exists_primitive_ne_zero_mulVec_eq_zero_column_degreeLT_of_rank_le
     {rows cols K : Type*} [Finite rows] [Fintype cols] [Field K] {s : ℕ}
     (M : Matrix rows cols F[X]) (weight : cols → ℕ) (h : ℕ)

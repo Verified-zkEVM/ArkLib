@@ -34,24 +34,6 @@ same values as the message on the trace domain.
 * `ReedSolomon.cubicAnchorReconstruct_degree_lt`, `ReedSolomon.cubicAnchorReconstruct_eval_anchors`,
   `ReedSolomon.cubicAnchorReconstruct_eval_of_quotient`.
 * `ReedSolomon.traceRemainder_degree_lt`, `ReedSolomon.traceRemainder_eval_eq`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AnchoredReconstruction.lean`:
-
-* `cubicAnchorDivisor` and `cubicAnchorReconstruct` are ported unchanged, over a commutative ring
-  instead of a field.
-* `cubicAnchorReconstruct_degree_lt`, `cubicAnchorReconstruct_eval_anchors` and
-  `cubicAnchorReconstruct_eval_of_quotient` are ported as specializations of
-  `Polynomial.degree_mul_add_lt`, `Polynomial.eval_mul_add_of_eval_eq_zero` and
-  `Polynomial.eval_mul_add_of_eval_mul_eq_sub`. The degree bound drops the source hypothesis
-  `0 < k`, which is not needed.
-* `traceRemainder_degree_lt` and `traceRemainder_eval_eq` are ported with the divisor
-  `X ^ T - 1` generalized to `X ^ T - c`, over a nontrivial commutative ring. The value statement
-  is `Polynomial.eval₂_modByMonic_eq_self_of_root` and needs no hypothesis on `T`.
-
-Deferred: the consumers in `AnchoredAgreement.lean` at the same revision.
 -/
 
 @[expose] public section

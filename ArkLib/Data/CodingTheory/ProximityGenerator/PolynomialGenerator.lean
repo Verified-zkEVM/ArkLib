@@ -424,9 +424,6 @@ lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType 
     letI ε := ∑ i : Fin s, reedSolomonMCAError k D (maxDegreeOf P i) m
     IsMCAGenerator G ε (ReedSolomon.code D k) := by
   classical
-  let _ : DecidableEq ℓ := Classical.decEq ℓ
-  change IsMCAGenerator G (∑ i : Fin s, reedSolomonMCAError k D (maxDegreeOf P i) m)
-    (ReedSolomon.code D k)
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ maxDegreeOf P i := by
     intro j i
     simpa [maxDegreeOf] using
@@ -585,9 +582,6 @@ theorem isMCAGenerator_of_isPolynomialGeneratorOf {ι : Type} [Fintype ι] [None
     letI ε : I → ℝ≥0 := ∑ i : Fin s, (powersMCAError LC (maxDegreeOf P i) (Set.ncard (S i)) η)
     IsMCAGenerator G ε LC := by
   classical
-  let _ : DecidableEq ℓ := Classical.decEq ℓ
-  change IsMCAGenerator G
-    (∑ i : Fin s, powersMCAError LC (maxDegreeOf P i) (Set.ncard (S i)) η) LC
   have hcard : ∀ i : Fin s, Set.ncard (S i) = Fintype.card (S i) := by
     intro i
     rw [Set.ncard_eq_toFinset_card', Set.toFinset_card]

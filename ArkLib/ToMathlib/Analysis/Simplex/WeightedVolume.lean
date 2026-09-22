@@ -42,31 +42,6 @@ statements hold for all weights.
   to `W + r` multiplies the volume by at most `exp (n * r / W)`.
 * `MeasureTheory.volume_real_weightedSimplex_succ`: the weights `1, …, n` on `Fin n`, with
   volume `W ^ n / (n!) ^ 2`.
-
-## References
-
-Ports `SimplexIntegration.coordinateWeight`, `weightedSimplex`, `weightedToStandard`,
-`standardToWeighted`, `weightedStandardLinearEquiv`, `weightedSimplex_eq_preimage`,
-`weightedSimplex_eq_image`, `isCompact_weightedSimplex`, `Continuous.integrableOn_weightedSimplex`,
-`ContinuousOn.integrableOn_weightedSimplex`, `weightedToStandard_det`,
-`integral_weightedSimplex_eq_standardSimplex`, and `volume_weightedSimplex` from
-`ArkLib/ToMathlib/Analysis/Simplex/AffinePushforward.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source fixed the index type `Fin n` and the
-weights `coordinateWeight i = i + 1`; here the index type is any `Fintype` and the weights are
-any positive reals, so the Jacobian is `∏ i, w i` instead of `n!`. The source's
-`volume_weightedSimplex` is the specialization `volume_real_weightedSimplex_succ`. The diagonal
-maps and their determinant are private: the public change-of-variables theorem writes the inverse
-map `t ↦ (t i / w i)ᵢ` explicitly. `Continuous.integrableOn_weightedSimplex` follows from
-`ContinuousOn.integrableOn_weightedSimplex` by `Continuous.continuousOn`. The weighted Dirichlet
-integral and the ENNReal volume are new. The file name records that the change of variables is
-diagonal linear, not affine. Deferred to later slices: the weighted-radius moments and
-expectations in `Simplex/Moments.lean`, which consume `setIntegral_weightedSimplex`.
-
-`volume_real_weightedSimplex_add_le_mul_exp` is the general form of the volume estimate inside the
-source's `ReedSolomon.HiddenDerivative.volume_weightedSimplex_add_choose_le_exp` (in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`RankIntegral.lean` at the same revision), which enlarges the budget by `r + (n + 1).choose 2` for
-the weights `i + 1`. Here the weights are arbitrary positive reals and `r` is any real number.
 -/
 
 @[expose] public section
@@ -289,7 +264,7 @@ theorem volume_real_weightedSimplex_add_le_mul_exp {w : ι → ℝ} (hw : ∀ i,
   exact div_le_div_of_nonneg_right hpow hden.le
 
 /-- The weights `1, 2, …, n` on `Fin n`: the product of the weights is `n!`, so the volume is
-`W ^ n / (n!) ^ 2` for `0 ≤ W`. This is the source's `volume_weightedSimplex`. -/
+`W ^ n / (n!) ^ 2` for `0 ≤ W`. -/
 theorem volume_real_weightedSimplex_succ (n : ℕ) {W : ℝ} (hW : 0 ≤ W) :
     volume.real (weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W) =
       W ^ n / (n.factorial : ℝ) ^ 2 := by

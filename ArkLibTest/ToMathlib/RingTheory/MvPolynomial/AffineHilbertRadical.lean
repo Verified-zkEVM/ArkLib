@@ -14,9 +14,8 @@ In one variable, `I = (X₀ ^ 2)` and `J = (X₀)` satisfy `J ^ 2 = I ≤ J`. Th
 Hilbert function bound `H(I, N) ≤ 2 * H(J, N)` at `N = 2`, where it is an equality `2 = 2 * 1`,
 and show that the natural degrees agree while the affine degrees `2` and `1` differ, so only the
 natural degree is preserved. They show that the inclusion `I ≤ J` is needed for equality of
-natural degrees, and derive the source statements: the floor-division identity, the
-standard-exponent step for `degLex` with `0 < t`, the Hilbert function bound with
-`Fintype.card σ`, and the radical statement.
+natural degrees, and derive the floor-division identity, the standard-exponent step for `degLex`
+with `0 < t`, the Hilbert function bound with `Fintype.card σ`, and the radical statement.
 -/
 
 open MvPolynomial Polynomial
@@ -80,24 +79,24 @@ example : (Ideal.span {(X 0 : MvPolynomial (Fin 2) ℚ)}) ^ 1 ≤ ⊤ ∧
   rw [affineHilbertPolynomial_top, natDegree_zero]
   omega
 
-/-- The source's `exponentDiv_apply`: floor division is coordinatewise natural division. -/
+/-- Floor division is coordinatewise natural division. -/
 example {σ : Type*} (t : ℕ) (e : σ →₀ ℕ) (i : σ) : (e ⌊/⌋ t) i = e i / t := rfl
 
-/-- The source's `exponentDiv_mem_standardExponents`, for `degLex` and `0 < t`. -/
+/-- The standard-exponent step for `degLex`, with the extra hypothesis `0 < t`. -/
 example {F σ : Type*} [Field F] [LinearOrder σ] [WellFoundedGT σ] {I J : Ideal (MvPolynomial σ F)}
     {t : ℕ} (_ht : 0 < t) (hpow : J ^ t ≤ I) {e : σ →₀ ℕ}
     (he : e ∈ MonomialOrder.degLex.standardExponents I) :
     e ⌊/⌋ t ∈ MonomialOrder.degLex.standardExponents J :=
   MonomialOrder.degLex.floorDiv_mem_standardExponents hpow he
 
-/-- The source's `hilbertFunction_le_mul_of_pow_le`, with `Fintype.card σ`. -/
+/-- The Hilbert function bound with `Fintype.card σ` and the extra hypothesis `0 < t`. -/
 example {F σ : Type*} [Field F] [Fintype σ] {I J : Ideal (MvPolynomial σ F)} {t : ℕ}
     (_ht : 0 < t) (hpow : J ^ t ≤ I) (N : ℕ) :
     affineHilbertFunction I N ≤ affineHilbertFunction J N * t ^ Fintype.card σ := by
   rw [mul_comm, ← Nat.card_eq_fintype_card]
   exact affineHilbertFunction_le_pow_mul_of_pow_le hpow N
 
-/-- The source's `hilbertPolynomial_radical_natDegree`. -/
+/-- The radical has an affine Hilbert polynomial of the same natural degree. -/
 example {F σ : Type*} [Field F] [Finite σ] (I : Ideal (MvPolynomial σ F)) :
     (affineHilbertPolynomial I.radical).natDegree = (affineHilbertPolynomial I).natDegree :=
   natDegree_affineHilbertPolynomial_radical I

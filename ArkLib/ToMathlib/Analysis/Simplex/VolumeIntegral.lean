@@ -44,25 +44,6 @@ so the formulas that mention `L ^ n` need `0 ≤ L`.
 * `MeasureTheory.integral_standardSimplex_prod_pow_mul_pow`: the Dirichlet integral.
 * `MeasureTheory.volume_real_standardSimplex` and `MeasureTheory.volume_standardSimplex`:
   the volume `L ^ n / n!`.
-
-## References
-
-Ports `SimplexIntegration.standardSimplex`, `isClosed_standardSimplex`,
-`isCompact_standardSimplex`, `integrableOn_simplexMonomial`, `integral_standardSimplex_succ`,
-`integral_standardSimplex_eq_monomialIntegral`, `integral_standardSimplex_eq`, and
-`volume_standardSimplex` from `ArkLib/ToMathlib/Analysis/Simplex/VolumeIntegral.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source indexed coordinates by `Fin n`;
-here the index type is any `Fintype`, with `Fin (n + 1)` kept only for the Fubini recurrence.
-The source's recurrence was specific to monomials; `setIntegral_standardSimplex_succ` holds for
-any integrable function and needs no sign condition on `L`. Compactness also holds for `L < 0`.
-The source's `simplexMonomial` is written out in the statement, `integrableOn_simplexMonomial`
-becomes the general `ContinuousOn.integrableOn_standardSimplex`, and
-`integral_standardSimplex_eq_monomialIntegral` is not ported because the Dirichlet integral is
-proved without the repeated-integral intermediate. The ENNReal volume
-`volume_standardSimplex` is new. Deferred to later slices: linear-form moments, weighted radius,
-and expectations (`Simplex/Moments.lean`), the ordered-simplex and moment files under
-`HiddenDerivative/Parameters/RatePartition/`, and the floor-cell transfers
-(`Interpolation/*/FloorTransfer.lean`).
 -/
 
 @[expose] public section
