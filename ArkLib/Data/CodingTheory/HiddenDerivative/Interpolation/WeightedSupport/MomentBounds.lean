@@ -40,8 +40,9 @@ Ports `weightedSupport_variance_factor_gt`, `weightedSupport_third_factor_le` an
 hypotheses are weakened to what the arithmetic needs: `10000 ≤ d` becomes `150 < d`, which is sharp,
 and `48000 ≤ d` becomes `1 ≤ d`. The acceptance tests derive the source statements.
 
-Deferred: the moment identities (`normalizedRadius` and its first three moments in the source's
-`WeightedSupport/Moments.lean`), which need the continuous simplex moments of P9 slice 4, and the
+The moment identities that produce these factors (`normalizedRadius` and its first three moments)
+are in `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which
+also combines them with these bounds in `normalizedRadius_contribution_lower`. Deferred: the
 harmonic-sum bounds that supply `H`, `H₂` and `H₃`.
 -/
 
