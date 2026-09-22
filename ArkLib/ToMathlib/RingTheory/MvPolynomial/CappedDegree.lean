@@ -24,6 +24,15 @@ polynomials of total degree at most `N` to polynomials with bounds `(b * N, c * 
 surjective and the statements on points in `ArkLib.ToMathlib.RingTheory.MvPolynomial.MonomialMap`
 apply to it.
 
+For `σ = Fin 2`, `i = 1` and `c ≤ b` there are `(c + 1) * (2 * b + 2 - c) / 2` capped exponents.
+The convex hull of these exponents is the truncated triangle
+`{(x, y) | 0 ≤ x, 0 ≤ y ≤ c, x + y ≤ b}`, and
+`cappedDegreeMixedVolume j r b c = j * c + r * (b - c)` is the mixed volume of the truncated
+triangles for `(j, r)` and `(b, c)` when `r ≤ j` and `c ≤ b`, normalized so that the mixed volume
+of a triangle with itself is twice its area. It bounds the affine degree of the pullback of a curve
+with bounds `(j, r)` along the monomial map
+(`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCappedDegree`).
+
 ## Main statements
 
 * `MvPolynomial.cappedDegreeExponents`, `MvPolynomial.restrictCappedDegree`: the capped exponents
@@ -36,6 +45,11 @@ apply to it.
   positive bounds.
 * `MvPolynomial.finrank_restrictCappedDegree`: the capped polynomials have rank the number of
   capped exponents.
+* `MvPolynomial.cappedDegreeExponentsFinTwoEquiv`,
+  `MvPolynomial.two_mul_ncard_cappedDegreeExponents_fin_two`: the truncated triangle for
+  `σ = Fin 2` and its count.
+* `MvPolynomial.cappedDegreeMixedVolume`: the mixed volume of two truncated triangles, with its
+  monotonicity, symmetry and value on the diagonal.
 -/
 
 @[expose] public section
@@ -158,5 +172,121 @@ theorem finrank_restrictCappedDegree {R : Type*} [CommRing R] [StrongRankConditi
     Nat.card_coe_set_eq]
 
 end Submodule
+
+section FinTwo
+
+private theorem degree_fin_two (e : Fin 2 →₀ ℕ) : e.degree = e 0 + e 1 := by
+  rw [Finsupp.degree_eq_sum, Fin.sum_univ_two]
+
+/-- For `c ≤ b`, splitting off the second coordinate identifies the capped exponents on `Fin 2`
+with bounds `(b, c)` with the pairs `(v, x)` with `v ≤ c` and `x ≤ b - v`, via
+`single 0 x + single 1 v`. -/
+def cappedDegreeExponentsFinTwoEquiv (b c : ℕ) (hcb : c ≤ b) :
+    cappedDegreeExponents (Fin 2) 1 b c ≃ Σ v : Fin (c + 1), Fin (b - v + 1) where
+  toFun e :=
+    ⟨⟨e.1 1, Nat.lt_succ_of_le e.2.2⟩, ⟨e.1 0, by
+      have h := e.2.1
+      rw [degree_fin_two] at h
+      simp only
+      omega⟩⟩
+  invFun p :=
+    ⟨Finsupp.single 0 p.2.val + Finsupp.single 1 p.1.val, by
+      have h1 := p.1.isLt
+      have h2 := p.2.isLt
+      simp only [mem_cappedDegreeExponents, degree_fin_two, Finsupp.coe_add, Pi.add_apply,
+        Finsupp.single_eq_same, ne_eq, zero_ne_one, not_false_eq_true, Finsupp.single_eq_of_ne,
+        add_zero, one_ne_zero, zero_add]
+      omega⟩
+  left_inv e := by
+    apply Subtype.ext
+    ext j
+    fin_cases j <;> simp
+  right_inv p := by
+    rcases p with ⟨⟨v, hv⟩, ⟨x, hx⟩⟩
+    apply Sigma.ext
+    · apply Fin.ext
+      simp
+    · apply (Fin.heq_ext_iff (by simp)).2
+      simp
+
+private theorem two_mul_sum_range_sub_add_one (b c : ℕ) (hcb : c ≤ b) :
+    2 * ∑ v ∈ Finset.range (c + 1), (b - v + 1) = (c + 1) * (2 * b + 2 - c) := by
+  induction c with
+  | zero => simp; ring
+  | succ c ih =>
+    rw [Finset.sum_range_succ, mul_add, ih (by omega)]
+    have h1 : c ≤ 2 * b + 2 := by omega
+    have h2 : c + 1 ≤ b := hcb
+    have h3 : c + 1 ≤ 2 * b + 2 := by omega
+    zify [h1, h2, h3]
+    ring
+
+/-- For `c ≤ b`, there are `(c + 1) * (2 * b + 2 - c) / 2` capped exponents on `Fin 2` with
+bounds `(b, c)`. -/
+theorem two_mul_ncard_cappedDegreeExponents_fin_two (b c : ℕ) (hcb : c ≤ b) :
+    2 * (cappedDegreeExponents (Fin 2) 1 b c).ncard = (c + 1) * (2 * b + 2 - c) := by
+  rw [← Nat.card_coe_set_eq, Nat.card_congr (cappedDegreeExponentsFinTwoEquiv b c hcb),
+    Nat.card_eq_fintype_card, Fintype.card_sigma]
+  simp only [Fintype.card_fin]
+  rw [Fin.sum_univ_eq_sum_range (fun v ↦ b - v + 1) (c + 1)]
+  exact two_mul_sum_range_sub_add_one b c hcb
+
+end FinTwo
+
+section MixedVolume
+
+/-- The mixed volume `j * c + r * (b - c)` of the truncated triangles
+`{(x, y) | 0 ≤ x, 0 ≤ y ≤ r, x + y ≤ j}` and `{(x, y) | 0 ≤ x, 0 ≤ y ≤ c, x + y ≤ b}` for `r ≤ j`
+and `c ≤ b`, normalized so that the mixed volume of a triangle with itself is twice its area. It is
+the sum of the support values `j` and `r` of the first triangle in the directions `(1, 1)` and
+`(0, 1)`, weighted by the lattice lengths `c` and `b - c` of the edges of the second triangle with
+these outer normals. -/
+def cappedDegreeMixedVolume (j r b c : ℕ) : ℕ :=
+  j * c + r * (b - c)
+
+variable {j r j' r' b c b' c' : ℕ}
+
+/-- For `r ≤ j` and `c ≤ b`, the mixed volume is `(j - r) * c + r * b`. -/
+theorem cappedDegreeMixedVolume_eq (hrj : r ≤ j) (hcb : c ≤ b) :
+    cappedDegreeMixedVolume j r b c = (j - r) * c + r * b := by
+  unfold cappedDegreeMixedVolume
+  zify [hrj, hcb]
+  ring
+
+/-- For `r ≤ j` and `c ≤ b`, the mixed volume is symmetric in the two triangles. -/
+theorem cappedDegreeMixedVolume_comm (hrj : r ≤ j) (hcb : c ≤ b) :
+    cappedDegreeMixedVolume j r b c = cappedDegreeMixedVolume b c j r := by
+  unfold cappedDegreeMixedVolume
+  zify [hrj, hcb]
+  ring
+
+/-- For `c ≤ b`, the mixed volume of the truncated triangle with itself is `c * (2 * b - c)`,
+twice its area. -/
+theorem cappedDegreeMixedVolume_self (hcb : c ≤ b) :
+    cappedDegreeMixedVolume b c b c = c * (2 * b - c) := by
+  unfold cappedDegreeMixedVolume
+  zify [hcb, show c ≤ 2 * b by omega]
+  ring
+
+/-- The mixed volume is monotone in the first triangle. -/
+theorem cappedDegreeMixedVolume_mono_left (hj : j ≤ j') (hr : r ≤ r') :
+    cappedDegreeMixedVolume j r b c ≤ cappedDegreeMixedVolume j' r' b c :=
+  Nat.add_le_add (Nat.mul_le_mul_right c hj) (Nat.mul_le_mul_right (b - c) hr)
+
+/-- For `r ≤ j`, the mixed volume is monotone in the second triangle among truncated triangles
+with `c ≤ b`. -/
+theorem cappedDegreeMixedVolume_mono_right (hrj : r ≤ j) (hcb : c ≤ b) (hc'b' : c' ≤ b')
+    (hb : b ≤ b') (hc : c ≤ c') :
+    cappedDegreeMixedVolume j r b c ≤ cappedDegreeMixedVolume j r b' c' := by
+  rw [cappedDegreeMixedVolume_eq hrj hcb, cappedDegreeMixedVolume_eq hrj hc'b']
+  exact Nat.add_le_add (Nat.mul_le_mul_left (j - r) hc) (Nat.mul_le_mul_left r hb)
+
+/-- For `0 < c`, the mixed volume is at least `j`. -/
+theorem le_cappedDegreeMixedVolume (hc : 0 < c) : j ≤ cappedDegreeMixedVolume j r b c := by
+  unfold cappedDegreeMixedVolume
+  have : j ≤ j * c := Nat.le_mul_of_pos_right j hc
+  omega
+
+end MixedVolume
 
 end MvPolynomial
