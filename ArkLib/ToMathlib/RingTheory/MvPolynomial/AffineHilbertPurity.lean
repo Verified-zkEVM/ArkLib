@@ -52,6 +52,8 @@ component of the cut is the point `(1, 0, 0)`, of dimension `0` rather than `1`.
 * `MvPolynomial.principalCut_sum_affineDegree_minimalPrimes_le`: the Bézout bound.
 * `MvPolynomial.sum_affineDegree_mul_pow_retainedMinimalPrimes_le`: the degree potential of the
   retained components of a cut.
+* `MvPolynomial.sum_affineDegree_minimalPrimes_le`: the affine degrees of the minimal primes of an
+  equidimensional ideal sum to at most its affine degree.
 -/
 
 @[expose] public section
@@ -222,5 +224,52 @@ theorem sum_affineDegree_mul_pow_retainedMinimalPrimes_le [Finite σ]
         mul_le_mul_of_nonneg_right hsum (by positivity)
     _ = affineDegree P * (b : ℚ) ^ d := by
         rw [mul_comm (b : ℚ), mul_assoc, ← pow_succ', Nat.sub_add_cancel hd]
+
+/-- The affine degrees of the minimal primes `Q` over `I` whose affine Hilbert polynomial has the
+same natural degree `d` as that of `I` sum to at most `affineDegree I`.
+
+Each such `Q` has affine degree `d! * coeff d H(Q)`. The coefficient in degree `d` is nonnegative
+for every minimal prime, since `natDegree H(Q) ≤ d`, so adding the remaining minimal primes does
+not decrease the sum, and `sum_coeff_affineHilbertPolynomial_minimalPrimes_le` bounds the sum over
+all minimal primes by `coeff d H(I)`. -/
+theorem sum_affineDegree_minimalPrimes_filter_le [Finite σ] (I : Ideal (MvPolynomial σ k)) :
+    ∑ Q ∈ I.minimalPrimesFinset with
+        (affineHilbertPolynomial Q).natDegree = (affineHilbertPolynomial I).natDegree,
+      affineDegree Q ≤ affineDegree I := by
+  set d := (affineHilbertPolynomial I).natDegree with hd
+  have hdeg : ∀ Q ∈ I.minimalPrimesFinset, (affineHilbertPolynomial Q).natDegree ≤ d :=
+    fun Q hQ ↦ natDegree_affineHilbertPolynomial_le_of_le (Ideal.mem_minimalPrimesFinset.mp hQ).1.2
+  calc ∑ Q ∈ I.minimalPrimesFinset with (affineHilbertPolynomial Q).natDegree = d,
+        affineDegree Q
+      = (d.factorial : ℚ) * ∑ Q ∈ I.minimalPrimesFinset with
+          (affineHilbertPolynomial Q).natDegree = d, (affineHilbertPolynomial Q).coeff d := by
+        rw [Finset.mul_sum]
+        refine Finset.sum_congr rfl fun Q hQ ↦ ?_
+        have hQd := (Finset.mem_filter.mp hQ).2
+        rw [affineDegree, hQd, Polynomial.leadingCoeff, hQd]
+    _ ≤ (d.factorial : ℚ) * ∑ Q ∈ I.minimalPrimesFinset, (affineHilbertPolynomial Q).coeff d :=
+        mul_le_mul_of_nonneg_left (Finset.sum_le_sum_of_subset_of_nonneg
+          (Finset.filter_subset _ _) fun Q hQ _ ↦
+            Polynomial.coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg (hdeg Q hQ)
+              (eventually_eval_affineHilbertPolynomial_nonneg Q)) (Nat.cast_nonneg _)
+    _ ≤ (d.factorial : ℚ) * (affineHilbertPolynomial I).coeff d :=
+        mul_le_mul_of_nonneg_left (sum_coeff_affineHilbertPolynomial_minimalPrimes_le I le_rfl)
+          (Nat.cast_nonneg _)
+    _ = affineDegree I := by rw [affineDegree, Polynomial.leadingCoeff]
+
+/-- For an equidimensional ideal `I`, whose minimal primes all have affine Hilbert polynomials of
+the same natural degree as that of `I`, the affine degrees of the minimal primes sum to at most
+`affineDegree I`.
+
+This is `sum_affineDegree_minimalPrimes_filter_le`, whose filter keeps every minimal prime. The
+hypothesis is needed: for `I = span {X₀ * X₁, X₀ * X₂}` in three variables, the union of the plane
+`X₀ = 0` and the line `X₁ = X₂ = 0`, the line has affine degree `1` and does not count towards the
+leading coefficient of the Hilbert polynomial of `I`, which is that of the plane. -/
+theorem sum_affineDegree_minimalPrimes_le [Finite σ] {I : Ideal (MvPolynomial σ k)}
+    (hpure : ∀ Q ∈ I.minimalPrimesFinset,
+      (affineHilbertPolynomial Q).natDegree = (affineHilbertPolynomial I).natDegree) :
+    ∑ Q ∈ I.minimalPrimesFinset, affineDegree Q ≤ affineDegree I := by
+  have h := sum_affineDegree_minimalPrimes_filter_le I
+  rwa [Finset.filter_true_of_mem hpure] at h
 
 end MvPolynomial

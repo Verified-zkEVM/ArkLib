@@ -53,6 +53,8 @@ The finite case is stated for an algebra map `g` with `g.Finite`. For an `Algebr
   `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_surjective`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_eq_of_finite_of_injective`: the degree
   comparisons.
+* `MvPolynomial.natDegree_affineHilbertPolynomial_comap_of_surjective`: pulling an ideal back along
+  a surjective algebra map of polynomial rings preserves the natural degree.
 -/
 
 @[expose] public section
@@ -293,5 +295,18 @@ theorem natDegree_affineHilbertPolynomial_eq_of_finite_of_injective [Finite σ] 
     (affineHilbertPolynomial I).natDegree = (affineHilbertPolynomial J).natDegree :=
   le_antisymm (natDegree_affineHilbertPolynomial_le_of_finite g hfin)
     (natDegree_affineHilbertPolynomial_le_of_injective g hinj)
+
+/-- Pulling an ideal `I` back along a surjective algebra map `f : MvPolynomial τ k →ₐ[k]
+MvPolynomial σ k` preserves the natural degree of the affine Hilbert polynomial. The induced map
+`MvPolynomial τ k ⧸ I.comap f → MvPolynomial σ k ⧸ I` is injective and surjective, hence finite.
+The affine Hilbert functions themselves differ in general, since `f` need not preserve total
+degree. -/
+theorem natDegree_affineHilbertPolynomial_comap_of_surjective [Finite σ] [Finite τ]
+    (f : MvPolynomial τ k →ₐ[k] MvPolynomial σ k) (hf : Function.Surjective f)
+    (I : Ideal (MvPolynomial σ k)) :
+    (affineHilbertPolynomial (I.comap f)).natDegree = (affineHilbertPolynomial I).natDegree :=
+  (natDegree_affineHilbertPolynomial_eq_of_finite_of_injective (Ideal.quotientMapₐ I f le_rfl)
+    (AlgHom.Finite.of_surjective _ (Ideal.quotientMap_surjective (H := le_rfl) hf))
+    Ideal.quotientMap_injective).symm
 
 end MvPolynomial

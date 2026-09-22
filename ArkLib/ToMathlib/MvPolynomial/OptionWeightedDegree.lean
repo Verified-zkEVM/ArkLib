@@ -25,6 +25,8 @@ ignores `none`.
 * `MvPolynomial.optionEquivRight_coeff_coeff`: coefficient extraction through the equivalence.
 * `Finsupp.weight_optionElim`: the weight of an exponent vector split into its `none` and `some`
   coordinates.
+* `Finsupp.weight_elim_one_zero`, `Finsupp.weight_elim_zero_one`: the weights that count only the
+  `none`-coordinate and only the `some`-coordinates.
 * `MvPolynomial.weightedTotalDegree_optionEquivRight`: the weighted-degree identity for any `w`.
 * `MvPolynomial.totalDegree_optionEquivRight`: the case `w = 1`.
 
@@ -53,6 +55,22 @@ theorem weight_optionElim (c : ℕ) (w : σ → ℕ) (m : σ →₀ ℕ) (i : �
   · simp
   · intro o a b
     rcases o with _ | x <;> simp [Nat.add_mul]
+
+/-- The weight that is `1` on `none` and `0` on `some` reads off the `none`-coordinate. -/
+@[simp]
+theorem weight_elim_one_zero (m : Option σ →₀ ℕ) :
+    m.weight (fun v ↦ v.elim 1 fun _ ↦ 0) = m none := by
+  conv_lhs => rw [← optionElim_some m]
+  rw [weight_optionElim]
+  simp [weight_apply]
+
+/-- The weight that is `0` on `none` and `1` on `some` is the total degree of the
+`some`-coordinates. -/
+@[simp]
+theorem weight_elim_zero_one (m : Option σ →₀ ℕ) :
+    m.weight (fun v ↦ v.elim 0 fun _ ↦ 1) = m.some.degree := by
+  conv_lhs => rw [← optionElim_some m]
+  rw [weight_optionElim, Nat.zero_mul, Nat.zero_add, degree_eq_weight_one]
 
 end Finsupp
 
