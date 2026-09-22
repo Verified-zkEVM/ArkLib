@@ -56,31 +56,6 @@ charges fits the charge of the whole polynomial. This summation is
   `ordinaryUnifiedPowerFactorRaw_sum_le`: content plus factor charges fit the total charge.
 * `ReedSolomon.ordinaryUnifiedPowerFactorAt_succ_eq`: the free-retention budget at threshold
   `L = D + 1` is the fixed-split budget.
-
-## References
-
-The declarations are ported from
-`Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/{FactorBounds,
-AggregationBounds,UnifiedBudget}.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under the same names. The changes are:
-
-* `ordinaryFrobeniusMixedDegree_eq`, `ordinaryFrobeniusMixedDegree_le`,
-  `ordinaryFrobenius_unified_factor` and `ordinaryFrobeniusMixedDegree_le_unified` hold with no
-  hypotheses; the source assumed `1 ≤ b`, and for the last two also `1 ≤ D` and `1 ≤ s`. In
-  truncated subtraction the degenerate cases `b = 0`, `s = 0` and `D = 0` make both sides agree.
-* `ordinaryFrobenius_sharp_factor` and `ordinaryFrobeniusMixedDegree_le_sharp` assume only
-  `b ≤ D`; the source also assumed `1 ≤ s` and `1 ≤ b`.
-* `ordinaryFrobenius_charge_le` no longer assumes `1 ≤ b`.
-* `ordinaryFrobenius_sharp_difference` holds in every commutative ring, not only `ℤ`.
-* The three summation theorems are thin specializations of
-  `Finset.add_sum_le_mul_add_mul_of_le` through the new linear bounds
-  `ordinaryFactorRaw_le_linear`, `ordinaryFactorRaw_eq_linear`,
-  `ordinaryUnifiedPowerFactorRawAt_le_linear` and `ordinaryUnifiedPowerFactorRawAt_eq_linear`.
-  The fixed-split summation is derived from the free-retention one through the new
-  `ordinaryUnifiedPowerFactorRaw_eq_rawAt`, instead of repeating the proof.
-
-The consumers of these budgets (factor assembly, the Frobenius and polynomial-curve incidence
-bounds, and the unified curve theorem) are deferred to later slices.
 -/
 
 @[expose] public section
