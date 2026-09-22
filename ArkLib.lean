@@ -121,6 +121,10 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSu
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
 public import ArkLib.Data.CodingTheory.InterleavedCode
@@ -554,6 +558,7 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
 public import ArkLib.ToMathlib.Analysis.Simplex.Moments
