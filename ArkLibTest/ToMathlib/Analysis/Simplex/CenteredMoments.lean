@@ -78,8 +78,8 @@ example : ⨍ u in weightedSimplex (fun _ : Fin 1 ↦ (1 : ℝ)) (-1),
   rw [he]
   norm_num
 
-/-- The source's `integrable_weighted_probability`: a continuous function is integrable for the
-uniform measure on the weighted simplex. No budget hypothesis is needed. -/
+/-- A continuous function is integrable for the uniform measure on the weighted simplex with
+weights `1, …, n`. No budget hypothesis is needed. -/
 example (n : ℕ) (W : ℝ) {f : (Fin n → ℝ) → ℝ} (hf : Continuous f) :
     Integrable f volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W] :=
   (hf.continuousOn.integrableOn_weightedSimplex fun i ↦ by positivity).integrable_cond

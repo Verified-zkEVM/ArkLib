@@ -322,7 +322,7 @@ theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
       exact zero_le
     · rw [ite_eq_right hall, ite_eq_right hjp]
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] in
 /-- A line-close event outside joint proximity satisfies affine-line `IsMCA`. -/
 lemma isMCA_affineLine_of_line_close_of_not_jointProximity
     (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0) (γ : F)
@@ -562,6 +562,7 @@ private lemma jointProximity_iff_exists_pairErrors_le
       · exact of_not_not hiE.1 |>.symm
       · exact of_not_not hiE.2 |>.symm
 
+omit [SampleableType F] in
 private lemma line_close_of_isMCA_affineLine
     (C : LinearCode ι F) (u : Fin 2 → ι → F) (δ : ℝ≥0) (γ : F)
     (h : IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)) :

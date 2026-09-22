@@ -9,10 +9,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.F
 /-!
 # Acceptance cases for the hidden-derivative floor-cell transfers
 
-These cases evaluate the triangular total weight, derive the source's `coordinateWeight_sum` and
+These cases evaluate the triangular total weight, restate it and
 `weighted_residual_sum_le_integral` in the dimension `d - 1`, check the zero-dimensional case of
-the residual transfer, and check `floor_cubic` for a negative `g * m`, where the source assumed
-`0 ≤ g * m`.
+the residual transfer, and check `floor_cubic` for a negative `g * m`.
 -/
 
 open MeasureTheory
@@ -24,9 +23,9 @@ example : ∑ i : Fin 4, (i.val + 1) = 10 := by
   rw [sum_fin_succ_eq_choose_two]
   rfl
 
-/-- The source's `coordinateWeight_sum`: in dimension `d - 1` the total weight is
-`d.choose 2`, including `d = 0`, where both sides are zero. -/
-theorem coordinateWeight_sum_source (d : ℕ) :
+/-- In dimension `d - 1` the total weight is `d.choose 2`, including `d = 0`, where both sides
+are zero. -/
+theorem sum_fin_sub_one_succ_eq_choose_two (d : ℕ) :
     ∑ i : Fin (d - 1), ((i.val + 1 : ℕ) : ℝ) = (d.choose 2 : ℝ) := by
   have h := sum_fin_succ_eq_choose_two (d - 1)
   rcases d with _ | d
@@ -34,8 +33,8 @@ theorem coordinateWeight_sum_source (d : ℕ) :
   · simp only [Nat.add_sub_cancel] at h ⊢
     exact_mod_cast h
 
-/-- The source's `weighted_residual_sum_le_integral` in dimension `d - 1`, without its
-integrability hypothesis. -/
+/-- `weighted_residual_sum_le_integral` in dimension `d - 1`, with the budget enlargement written
+as the weight sum `∑ i : Fin (d - 1), (i + 1)` instead of `d.choose 2`. -/
 example (d W : ℕ) (T : ℝ) :
     ∑ c ∈ Finset.natWeightedSimplex (fun i : Fin (d - 1) ↦ i.val + 1) W,
         (max (T - ((∑ i, c i : ℕ) : ℝ)) 0 + 1) ≤

@@ -564,8 +564,6 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
         ∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • cstar j i) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
   classical
-  let _ : DecidableEq F := Classical.decEq F
-  let _ : DecidableEq A := Classical.decEq A
   let := Fintype.ofFinite F
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
   have hvzero : v = 0 := by
