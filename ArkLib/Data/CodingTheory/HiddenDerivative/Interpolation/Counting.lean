@@ -37,6 +37,9 @@ constraint map. The local intermediate space has, at each `T`-degree `r < m`, on
 * `add_mul_lt_multiplicity_of_lt_contactThreshold`: every `b < h` has `r + d b < m`.
 * `ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound`: the ambient count minus the
   exhibited-kernel count is the certified bound.
+* `certifiedEnlargedRankBound_le_of_le_mul`: if `m ≤ d k`, the certified bound is at most
+  `m k (m + M + 1) Λ_d(W + m)`, from `contactThreshold_le_of_le_mul`,
+  `exhibitedKernelResidualCount_le`, and `weightedHigherJetCount_mono`.
 * `localResidualCoordinateBudget_le_localCoordinateBudget`.
 * `card_exactDimensionCoordinates`: `exactInterpolationDimensionCount` is the number of
   coordinate tuples `(c, b₁, x, b₀)` it counts, for every `D`.
@@ -59,6 +62,14 @@ the second; neither lemma needs `r < m`, and the second holds for every `d`. The
 `contactThreshold (d + 1) m r`, and the source's real cutoff `T` with count `⌈T - |z|⌉₊` is a
 natural cutoff `B` with count `B - |z|`. `localResidualCoordinateBudget_le_localCoordinateBudget`
 is new.
+
+From the source's `Interpolation/FreeOrderDimension.lean`: `weightedHigherJetCount_mono` (now
+`Finset.card_le_card` of `Finset.natWeightedSimplex_mono`), and the private
+`rectangleResidual_le`, `contactThreshold_cube_le_sq`, and `certifiedContactRankBudget_cube_le`,
+which fixed `m = M = d³` and `r < d³`. Here they are the public
+`exhibitedKernelResidualCount_le`, `contactThreshold_le_of_le_mul` (any `m ≤ d k`, any `r`, any
+`d`), and `certifiedEnlargedRankBound_le_of_le_mul`; the source's `4 d⁸` bound is its case
+`m = M = d³`, `k = d²`, in `Interpolation/FreeOrderDimension.lean`.
 
 Also from the source's `Counting.lean`: `higherJetTupleSpecializationCost`,
 `exactDimensionResidual`, `exactInterpolationDimensionCount`, and `card_exactDimensionIndex`. The
@@ -160,6 +171,68 @@ theorem ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound (d m M W : ℕ
       exhibitedKernelResidualCount, Nat.mul_sub]
   · exact fun r _ => Nat.mul_le_mul_left _
       (exhibitedKernelContactCount_le_ambientContactCount r M (contactThreshold d m r))
+
+/-- The higher-jet count is monotone in the weight budget, since the weighted simplex is. -/
+theorem weightedHigherJetCount_mono (d : ℕ) {W W' : ℕ} (hWW' : W ≤ W') :
+    weightedHigherJetCount d W ≤ weightedHigherJetCount d W' :=
+  card_le_card (natWeightedSimplex_mono _ hWW')
+
+/-- If `m ≤ d k`, the contact threshold is at most `k` at every `T`-degree `r`, because `k`
+powers of the hidden error already reach contact order `m` from `r = 0`. No hypothesis on `d` is
+needed: for `d = 0` the threshold is `0`. -/
+theorem contactThreshold_le_of_le_mul {d m k : ℕ} (h : m ≤ d * k) (r : ℕ) :
+    contactThreshold d m r ≤ k := by
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp [contactThreshold]
+  · rw [contactThreshold, ceilDiv_le_iff_le_mul hd]
+    omega
+
+/-- Removing the exhibited `(r + 1 - h) × (M + 1 - h)` rectangle from the ambient
+`(r + 1) × (M + 1)` rectangle leaves at most the two boundary strips of width `h`, of total size
+`h ((r + 1) + (M + 1))`. This holds for every `h`, including `h > r + 1` or `h > M + 1`, where a
+side of the exhibited rectangle is empty. -/
+theorem exhibitedKernelResidualCount_le (r M h : ℕ) :
+    exhibitedKernelResidualCount r M h ≤ h * (r + 1 + (M + 1)) := by
+  rw [exhibitedKernelResidualCount, ambientContactCount, exhibitedKernelContactCount,
+    Nat.sub_le_iff_le_add]
+  generalize r + 1 = a
+  generalize M + 1 = b
+  rcases le_or_gt h a with ha | ha
+  · rcases le_or_gt h b with hb | hb
+    · obtain ⟨a, rfl⟩ := Nat.exists_eq_add_of_le ha
+      obtain ⟨b, rfl⟩ := Nat.exists_eq_add_of_le hb
+      simp only [Nat.add_sub_cancel_left]
+      have e : h * (h + a + (h + b)) + a * b = (h + a) * (h + b) + h * h := by ring
+      omega
+    · calc a * b ≤ a * h := Nat.mul_le_mul_left a hb.le
+        _ = h * a := Nat.mul_comm a h
+        _ ≤ h * (a + b) := Nat.mul_le_mul_left h (Nat.le_add_right a b)
+        _ ≤ h * (a + b) + (a - h) * (b - h) := Nat.le_add_right _ _
+  · calc a * b ≤ h * b := Nat.mul_le_mul_right b ha.le
+      _ ≤ h * (a + b) := Nat.mul_le_mul_left h (Nat.le_add_left b a)
+      _ ≤ h * (a + b) + (a - h) * (b - h) := Nat.le_add_right _ _
+
+/-- A closed-form upper bound on the certified bound. If `m ≤ d k`, every contact threshold is
+at most `k` (`contactThreshold_le_of_le_mul`), every residual at `T`-degree `r < m` is at most
+`k (m + M + 1)` (`exhibitedKernelResidualCount_le`), and every higher-jet count is at most
+`Λ_d(W + m)` (`weightedHigherJetCount_mono`), so
+`certifiedEnlargedRankBound d m M W ≤ m k (m + M + 1) Λ_d(W + m)`. -/
+theorem certifiedEnlargedRankBound_le_of_le_mul {d m M W k : ℕ} (h : m ≤ d * k) :
+    certifiedEnlargedRankBound d m M W ≤
+      m * (k * (m + M + 1)) * weightedHigherJetCount d (W + m) := by
+  rw [certifiedEnlargedRankBound]
+  calc ∑ r ∈ range m, weightedHigherJetCount d (W + r) * certifiedContactRankBudget d m M r
+      ≤ ∑ _r ∈ range m, weightedHigherJetCount d (W + m) * (k * (m + M + 1)) := by
+        refine sum_le_sum fun r hr => ?_
+        have hr := mem_range.mp hr
+        refine Nat.mul_le_mul (weightedHigherJetCount_mono d (by omega)) ?_
+        calc certifiedContactRankBudget d m M r ≤
+              contactThreshold d m r * (r + 1 + (M + 1)) :=
+            exhibitedKernelResidualCount_le _ _ _
+          _ ≤ k * (m + M + 1) := Nat.mul_le_mul (contactThreshold_le_of_le_mul h r) (by omega)
+    _ = m * (k * (m + M + 1)) * weightedHigherJetCount d (W + m) := by
+        rw [sum_const, card_range, smul_eq_mul]
+        ring
 
 /-- The count of local residual coordinates of `Interpolation/Local/Coordinates.lean`. For each
 residual `r = t - h < m` of the `T`-degree `t` by the `E`-degree `h`, there are

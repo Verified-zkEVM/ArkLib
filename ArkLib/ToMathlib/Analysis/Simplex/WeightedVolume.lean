@@ -38,6 +38,8 @@ statements hold for all weights.
   coordinate `W - ∑ i, w i * u i`.
 * `MeasureTheory.volume_real_weightedSimplex` and `MeasureTheory.volume_weightedSimplex`:
   the volume `W ^ n / (n! * ∏ i, w i)`.
+* `MeasureTheory.volume_real_weightedSimplex_add_le_mul_exp`: enlarging the budget from `W > 0`
+  to `W + r` multiplies the volume by at most `exp (n * r / W)`.
 * `MeasureTheory.volume_real_weightedSimplex_succ`: the weights `1, …, n` on `Fin n`, with
   volume `W ^ n / (n!) ^ 2`.
 
@@ -59,6 +61,12 @@ map `t ↦ (t i / w i)ᵢ` explicitly. `Continuous.integrableOn_weightedSimplex`
 integral and the ENNReal volume are new. The file name records that the change of variables is
 diagonal linear, not affine. Deferred to later slices: the weighted-radius moments and
 expectations in `Simplex/Moments.lean`, which consume `setIntegral_weightedSimplex`.
+
+`volume_real_weightedSimplex_add_le_mul_exp` is the general form of the volume estimate inside the
+source's `ReedSolomon.HiddenDerivative.volume_weightedSimplex_add_choose_le_exp` (in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
+`RankIntegral.lean` at the same revision), which enlarges the budget by `r + (n + 1).choose 2` for
+the weights `i + 1`. Here the weights are arbitrary positive reals and `r` is any real number.
 -/
 
 @[expose] public section
@@ -242,6 +250,43 @@ theorem volume_weightedSimplex {w : ι → ℝ} (hw : ∀ i, 0 < w i) {W : ℝ} 
       ENNReal.ofReal (W ^ Fintype.card ι / ((Fintype.card ι).factorial * ∏ i, w i)) := by
   rw [← volume_real_weightedSimplex hw hW, ofReal_measureReal
     (volume_weightedSimplex_lt_top hw W).ne]
+
+/-- Enlarging the budget of a weighted simplex from `W` to `W + r` multiplies its volume by at most
+`exp (n * r / W)`, where `n = Fintype.card ι`: for positive weights and `0 < W`,
+`volume.real (weightedSimplex w (W + r)) ≤ volume.real (weightedSimplex w W) * exp (n * r / W)`.
+The volume ratio is `(1 + r / W) ^ n`, and `1 + x ≤ exp x`.
+
+No hypothesis on `r` is needed: for `W + r < 0` the enlarged simplex is empty, and for
+`-W ≤ r ≤ 0` the ratio `(1 + r / W) ^ n` is still at most `exp (n * r / W)`. The hypothesis
+`0 < W` is needed: for `W = 0` the right side is the volume of `weightedSimplex w 0`, which is `0`
+when `n ≥ 1`, while the left side is positive for `r > 0`. -/
+theorem volume_real_weightedSimplex_add_le_mul_exp {w : ι → ℝ} (hw : ∀ i, 0 < w i) {W : ℝ}
+    (hW : 0 < W) (r : ℝ) :
+    volume.real (weightedSimplex w (W + r)) ≤
+      volume.real (weightedSimplex w W) * Real.exp (Fintype.card ι * r / W) := by
+  rcases lt_or_ge (W + r) 0 with hr | hr
+  · have hempty : weightedSimplex w (W + r) = ∅ := by
+      refine Set.eq_empty_of_forall_notMem fun u hu ↦ ?_
+      have hnn := (mem_weightedSimplex.mp hu).1
+      have h0 : 0 ≤ ∑ i, w i * u i :=
+        Finset.sum_nonneg fun i _ ↦ mul_nonneg (hw i).le (hnn i)
+      linarith [(mem_weightedSimplex.mp hu).2]
+    rw [hempty, measureReal_empty]
+    exact mul_nonneg measureReal_nonneg (Real.exp_pos _).le
+  rw [volume_real_weightedSimplex hw hr, volume_real_weightedSimplex hw hW.le]
+  have hbase : W + r ≤ W * Real.exp (r / W) := by
+    have h := mul_le_mul_of_nonneg_left (Real.add_one_le_exp (r / W)) hW.le
+    rwa [mul_add, mul_div_cancel₀ _ hW.ne', mul_one, add_comm r] at h
+  have hpow : (W + r) ^ Fintype.card ι ≤
+      W ^ Fintype.card ι * Real.exp (Fintype.card ι * r / W) := by
+    calc (W + r) ^ Fintype.card ι ≤ (W * Real.exp (r / W)) ^ Fintype.card ι :=
+          pow_le_pow_left₀ hr hbase _
+      _ = _ := by rw [mul_pow, ← Real.exp_nat_mul, mul_div_assoc]
+  have hden : 0 < (Fintype.card ι).factorial * ∏ i, w i := by
+    have := Finset.prod_pos fun i (_ : i ∈ Finset.univ) ↦ hw i
+    positivity
+  rw [div_mul_eq_mul_div]
+  exact div_le_div_of_nonneg_right hpow hden.le
 
 /-- The weights `1, 2, …, n` on `Fin n`: the product of the weights is `n!`, so the volume is
 `W ^ n / (n!) ^ 2` for `0 ≤ W`. This is the source's `volume_weightedSimplex`. -/

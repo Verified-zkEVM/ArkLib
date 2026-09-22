@@ -17,6 +17,11 @@ Its separant is `1`. Over `ℚ` the affine equation at `l = 2` forces the ration
 binomial pivot `(2 choose 1)` vanishes, the rational coefficient `c₂` is `0`, and the affine
 equation fails, so the pivot hypothesis of `rationalTaylorCoefficient_residual` is needed.
 
+A second example, `y' = 2x` (`Q = Y₁ - 2X`) with the polynomial solution `X ^ 2`, checks
+`rationalTaylorCoefficient_eq_solution` over `ℚ`, and shows over `ZMod 2` that its binomial
+hypothesis is needed: there the solution's Taylor coefficient `1` differs from the rational
+coefficient `0`.
+
 The file also checks the numerator degree bound at a constant equation, where
 `jetTotalDegree Q = 0`, and the sufficiency of the common exponent `2K - 3` in the worst case.
 -/
@@ -82,6 +87,45 @@ example :
     rationalTaylorCoefficient_initial 0 (expEquation (ZMod 2)) ![0, 1] 1
   rw [h1]
   decide
+
+/-- The equation `y' = 2x`, as the differential polynomial `Y₁ - 2X`. -/
+private abbrev linearEquation (F : Type*) [CommRing F] : DifferentialPolynomial F 1 :=
+  X (some 1) - 2 * X none
+
+/-- `X ^ 2` solves `y' = 2x` over every commutative ring. -/
+private theorem differentialSpecialization_linearEquation (F : Type*) [CommRing F] :
+    differentialSpecialization (linearEquation F) (Polynomial.X ^ 2) = 0 := by
+  simp [linearEquation, differentialSpecialization, differentialSpecializationHom,
+    Polynomial.hasseDeriv_one, one_add_one_eq_two, Polynomial.C_ofNat]
+
+/-- The separant of `Y₁ - 2X` is `1`. -/
+private theorem jetEvaluation_separant_linearEquation (F : Type*) [CommRing F] [Nontrivial F]
+    (jet : Fin 2 → F) :
+    jetEvaluation (separant (linearEquation F) (Fin.last 1)) 0 jet = 1 := by
+  simp [separant, jetEvaluation, linearEquation, pderiv_X, Fin.last]
+
+/-- Over `ℚ`, the rational coefficient of `x ^ 2` computed from the jet of the solution `X ^ 2`
+is its Taylor coefficient `1`. -/
+example : rationalTaylorCoefficient 0 (linearEquation ℚ) (polynomialJet 0 (Polynomial.X ^ 2)) 2 =
+    1 := by
+  rw [rationalTaylorCoefficient_eq_solution 0 (linearEquation ℚ) (Polynomial.X ^ 2)
+    (differentialSpecialization_linearEquation ℚ)
+    (by rw [jetEvaluation_separant_linearEquation]; norm_num) 2
+    (fun i hi hi2 ↦ by
+      obtain rfl : i = 2 := by omega
+      norm_num)]
+  simp [Polynomial.coeff_X_pow]
+
+/-- The binomial hypothesis of `rationalTaylorCoefficient_eq_solution` is needed: over `ZMod 2`,
+`X ^ 2` still solves `y' = 2x` and the separant is `1`, but `(2 choose 1) = 0`, the rational
+coefficient of `x ^ 2` is `0`, and the Taylor coefficient is `1`. -/
+example : rationalTaylorCoefficient 0 (linearEquation (ZMod 2))
+      (polynomialJet 0 (Polynomial.X ^ 2)) 2 ≠
+    (Polynomial.taylor 0 (Polynomial.X ^ 2 : Polynomial (ZMod 2))).coeff 2 := by
+  have hchoose : ((Nat.choose 2 1 : ℕ) : ZMod 2) = 0 := by decide
+  rw [rationalTaylorCoefficient, rationalTaylorNumerator,
+    dite_eq_right_of_eq_false (eq_false (by norm_num)), hchoose]
+  simp [Polynomial.coeff_X_pow]
 
 /-- The numerator degree bound needs no positivity of `jetTotalDegree Q`: for the constant
 equation `Q = 1`, the bound is `1` at every index. -/
