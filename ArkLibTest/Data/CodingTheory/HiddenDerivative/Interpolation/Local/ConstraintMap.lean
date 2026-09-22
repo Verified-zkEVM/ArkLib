@@ -48,13 +48,14 @@ example (d : ℕ) (center received : ℚ) (Q : DifferentialPolynomial ℚ d) :
     SatisfiesLocalConstraints 0 center received Q :=
   (projectLowContact_eq_zero_iff 0 _).mpr fun _ he => absurd he (Nat.not_lt_zero _)
 
-/-- Source shape over `ℤ`: the point-dependent map factors through the enlarged map. -/
+/-- Over `ℤ`, applied to one polynomial: the point-dependent map factors through the enlarged
+map. -/
 example (m : ℕ) (center received : ℤ) (Q : DifferentialPolynomial ℤ 2) :
     localConstraintAt m center received Q =
       enlargedLocalConstraintMap m (translatedLocalTruncation m center received Q) :=
   localConstraintAt_apply_eq_enlarged_translated m center received Q
 
-/-- Source shape over `ℤ`: truncating modulo `T^m` first does not change the enlarged map. -/
+/-- Over `ℤ`: truncating modulo `T^m` first does not change the enlarged map. -/
 example (m : ℕ) (F : LocalPolynomial ℤ 2) :
     enlargedLocalConstraintMap m (truncateLocalT m F) = enlargedLocalConstraintMap m F := by
   simp

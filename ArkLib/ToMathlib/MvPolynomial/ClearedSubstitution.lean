@@ -30,14 +30,6 @@ support of `Q`. It is defined in any commutative semiring and needs no division.
 * `MvPolynomial.totalDegree_clearedSubstitution`: if `S` has total degree at most `b` and each
   `N i` has total degree at most `d i * b + 1`, the numerator has total degree at most
   `H * b + totalDegree Q`.
-
-## References
-
-Ported from `ArkLib/ToMathlib/MvPolynomial/ClearedSubstitution.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d` (declarations `clearedSubstitution`,
-`ringHom_clearedSubstitution`, `clearedSubstitution_map`, `map_clearedSubstitution`, and
-`totalDegree_clearedSubstitution`). The target ring of the construction and the coefficient ring of
-the degree bound are generalized from commutative rings to commutative semirings.
 -/
 
 @[expose] public section

@@ -23,12 +23,6 @@ decidability searches.
   `choose |S| 2 * d ^ |ι| / |Ω|`.
 * `Polynomial.prob_not_injOn_evalTuple_le_of_encard_le`: the same for a set `S` with
   `S.encard ≤ L`, with bound `choose L 2 * d ^ |ι| / |Ω|`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/Probability/TwoPointPolynomialCollision.lean`: these replace `collisionRate` and
-`collisionRate_le`; see the module docstring of `ArkLib.Data.Polynomial.PointCollision`.
 -/
 
 @[expose] public section

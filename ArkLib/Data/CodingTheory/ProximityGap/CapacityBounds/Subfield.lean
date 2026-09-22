@@ -414,7 +414,6 @@ private theorem subfield_ca_exists_good_center_nat
         ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) /
           (Fintype.card F : ℝ) := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
   dsimp only
   obtain ⟨y, hy⟩ := subfield_ca_exists_center_from_support
     B domainB k δ a

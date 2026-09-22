@@ -39,28 +39,14 @@ Positive weights are needed: with a zero weight the enlarged simplex has infinit
 lattice simplex. Nonnegative coefficients are needed for the cell comparison in step 1. The
 threshold condition `m < c` is the hypothesis of the positive-part bound.
 
+The specializations to the weights `i + 1` and coefficients `1` are in
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral`.
+
 ## Main statements
 
 * `Finset.sum_natWeightedSimplex_max_sub_add_one_le_of_setAverage_sq_le`: the bound with an
   arbitrary variance bound `V`.
 * `Finset.sum_natWeightedSimplex_max_sub_add_one_le`: the bound with the variance discharged.
-
-## References
-
-Generalizes, from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`WeightedSupport/RankIntegral.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `ReedSolomon.HiddenDerivative.weighted_residual_sum_le_volume_mul_mean_variance` becomes
-  `sum_natWeightedSimplex_max_sub_add_one_le_of_setAverage_sq_le`, for any finite index type,
-  positive natural weights and nonnegative coefficients instead of `Fin (d - 1)`, weights `i + 1`
-  and coefficients `1`. The source's hypotheses `1 ≤ d` and `0 < W + choose d 2` are dropped: the
-  degenerate case `W' = 0` forces `σ` to be empty, where the bound is checked directly. The
-  variance is a set average instead of an integral against `weightedSimplexProbabilityMeasure`.
-* `ReedSolomon.HiddenDerivative.weighted_residual_sum_le_volume_mul_harmonic_variance` becomes
-  `sum_natWeightedSimplex_max_sub_add_one_le`.
-
-The source-shaped statements are thin specializations in
-`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral`.
 -/
 
 @[expose] public section
