@@ -42,33 +42,6 @@ With the prescribed constants `θ = 3 / 8`, `ξ = 27 / 10` the three additive er
 * `remainingDegree_lower`, `remainingDegree_upper`, `enlargedRadius_upper`
 * `centeringErrorBounds`
 * `residualMeanVariance_le`, `prescribedFiberMeanVariance_le`
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/Rounding.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `floorRadius_pos` is Mathlib's `Nat.floor_pos` and is not restated.
-* `floorRadius_mul_div_le` and `floorRadius_normalized_le` are stated for the floor itself instead
-  of a variable `W` with `W = ⌊a d m / H⌋₊`. The first drops the hypotheses `0 < H` and `0 < d`,
-  the second `0 < d` and `0 < m`: in each dropped case both sides are handled by the convention
-  `x / 0 = 0` or by `⌊x⌋₊ = 0` for `x ≤ 0`.
-* `floorRadius_sq_ge` takes the threshold `N ≥ 1` of the unrounded radius as a parameter and
-  concludes with `(1 - 1 / N) ^ 2`; the source fixed `N = 2000` and weakened `(1999 / 2000) ^ 2` to
-  `999 / 1000`. The relative floor error is `Nat.one_sub_one_div_mul_lt_floor` in
-  `ArkLib.ToMathlib.Algebra.Order.Floor.Ratio`. The hypothesis `0 < a` is dropped (it follows from
-  `N ≤ a d m / H`).
-* `remainingDegree_lower`, `remainingDegree_upper` and `enlargedRadius_upper` take the tilt `θ` and
-  the relative error `ε` as parameters; the source fixed `θ = 3 / 8` and `ε = 2 / 1000`,
-  `1 / 1000`, `1 / 1000`. The unused hypotheses `0 < m`, `0 < g` are dropped, `0 < d` is dropped
-  from `remainingDegree_lower`, and `0 < H` is weakened to `0 ≤ H` there; `0 < g` is replaced by
-  `0 ≤ 1 + θ g` where the floor needs a nonnegative argument.
-* `enlargedRadius_normalized` takes `a`, `ξ` and the factor `c` as parameters (the source fixed
-  `a = 1 + θ g`, `ξ = 27 / 10`, `c = 1001 / 1000`) and drops the unused `0 < d`.
-* `residualVariance_le` takes `ξ`, `c` and the bound `h` of `H₂` as parameters (the source fixed
-  `27 / 10`, `1001 / 1000` and `329 / 200`) and drops the unused `0 ≤ q`.
-* `centeringErrorBounds`, `averageResidualError_le`, `residualMeanVariance_le` and
-  `prescribedFiberMeanVariance_le` keep the source's constants and hypotheses.
 -/
 
 @[expose] public section

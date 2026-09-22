@@ -9,9 +9,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.M
 /-!
 # Acceptance cases for the strict surplus of the weighted support
 
-The source's `finrank_weightedSupportLocalConstraint_lt_prescribed`, with its hypothesis
-`H ≤ log d + 3 / 5`, and the source's `weightedSupport_margin_of_normalized_rank`, with
-`48000 ≤ d`, derived from the general statements; and `prescribed_weightedSupport_margin` over
+`finrank_weightedSupportLocalConstraint_lt_prescribed` with the extra hypothesis
+`H ≤ log d + 3 / 5`, and `weightedSupport_margin_of_normalized_rank` at `48000 ≤ d`, derived from
+the general statements; and `prescribed_weightedSupport_margin` over
 `ZMod 2` at `δ = 1 / 4`, `n = 4`, `D = 2`, where only the rate interval
 `1 / 12 ≤ 1 / 2 ≤ 3 / 4` has to be checked.
 -/
@@ -19,8 +19,8 @@ The source's `finrank_weightedSupportLocalConstraint_lt_prescribed`, with its hy
 open ReedSolomon.HiddenDerivative
 open ReedSolomon.HiddenDerivative.WeightedSupportParameters
 
-/-- The source's `finrank_weightedSupportLocalConstraint_lt_prescribed`, whose hypothesis
-`H ≤ log d + 3 / 5` is not needed. -/
+/-- `finrank_weightedSupportLocalConstraint_lt_prescribed` with an unused hypothesis
+`H ≤ log d + 3 / 5`. -/
 example {F : Type*} [Field F] (g : ℝ) (d D : ℕ)
     (hg : 0 < g) (hd : 48000 ≤ d) (hD : 0 < D)
     (hHlower : let H : ℝ := harmonic (d - 1); 54 / 5 ≤ H)
@@ -46,7 +46,7 @@ example {F : Type*} [Field F] (g : ℝ) (d D : ℕ)
   finrank_weightedSupportLocalConstraint_lt_prescribed g d D hg hd hD hHlower hgH hnormalized hgm
     center received
 
-/-- The source's `weightedSupport_margin_of_normalized_rank`, with `48000 ≤ d`. -/
+/-- `weightedSupport_margin_of_normalized_rank` at `48000 ≤ d`. -/
 example {F : Type*} [Field F]
     (δ : ℝ) (n D d m W : ℕ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
     (hn : 0 < n) (hD : 0 < D) (hd : 48000 ≤ d) (hm : 0 < m) (hW : 0 < W)

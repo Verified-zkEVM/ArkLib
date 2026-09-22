@@ -11,9 +11,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Roun
 
 A concrete instance of `Nat.one_sub_one_div_mul_lt_floor` and the cases showing that `N ≤ R` is
 needed there, that `0 ≤ a` is needed in `floorRadius_mul_div_le`, and that `1 ≤ N` is needed in
-`floorRadius_sq_ge`; and the source's `floorRadius_sq_ge`, `remainingDegree_lower`,
+`floorRadius_sq_ge`; and `floorRadius_sq_ge`, `remainingDegree_lower`,
 `remainingDegree_upper`, `enlargedRadius_upper`, `enlargedRadius_normalized` and
-`residualVariance_le`, with their fixed constants, derived from the general statements.
+`residualVariance_le` at the prescribed constants, derived from the general statements.
 -/
 
 open ReedSolomon.HiddenDerivative.WeightedSupportParameters
@@ -45,10 +45,10 @@ example : ¬ ((1 - 1 / (1 / 10)) ^ 2 * ((1 : ℝ) / (1 * 10)) ^ 2 ≤
   rw [Nat.floor_eq_zero.mpr (by norm_num)]
   norm_num
 
-/-! ### Source-shaped statements -/
+/-! ### Specializations at the prescribed constants -/
 
-/-- The source's `floorRadius_sq_ge`: `N = 2000`, and `(1999 / 2000) ^ 2 ≥ 999 / 1000`. The
-source's hypothesis `0 < a` is not needed. -/
+/-- `floorRadius_sq_ge` at `N = 2000`, weakened by `(1999 / 2000) ^ 2 ≥ 999 / 1000`, with an
+unused hypothesis `0 < a`. -/
 example (a g H : ℝ) (d m : ℕ)
     (_ha : 0 < a) (hg : 0 < g) (hH : 0 < H) (hd : 0 < d) (hm : 0 < m)
     (hR : 2000 ≤ a * d * m / H) :
@@ -58,7 +58,7 @@ example (a g H : ℝ) (d m : ℕ)
   have hc : (999 / 1000 : ℝ) ≤ (1 - 1 / 2000) ^ 2 := by norm_num
   exact (mul_le_mul_of_nonneg_right hc (sq_nonneg _)).trans h
 
-/-- The source's `remainingDegree_lower`: `θ = 3 / 8` and `ε = 2 / 1000`. -/
+/-- `remainingDegree_lower` at `θ = 3 / 8` and `ε = 2 / 1000`. -/
 example (d m r W : ℕ) (g H : ℝ)
     (_hd : 0 < d) (_hm : 0 < m) (hr : r < m) (hg : 0 < g) (hH : 0 < H)
     (hW : W = Nat.floor ((1 + theta * g) * d * m / H))
@@ -75,7 +75,7 @@ example (d m r W : ℕ) (g H : ℝ)
   rw [e]
   exact h
 
-/-- The source's `remainingDegree_upper`: `θ = 3 / 8` and `ε = 1 / 1000`. -/
+/-- `remainingDegree_upper` at `θ = 3 / 8` and `ε = 1 / 1000`. -/
 example (d m r W : ℕ) (g H : ℝ)
     (hd : 0 < d) (_hm : 0 < m) (_hg : 0 < g) (hH : 0 < H)
     (hW : W = Nat.floor ((1 + theta * g) * d * m / H))
@@ -91,7 +91,7 @@ example (d m r W : ℕ) (g H : ℝ)
   rw [e]
   exact h
 
-/-- The source's `enlargedRadius_upper`: `θ = 3 / 8` and `ε = 1 / 1000`. -/
+/-- `enlargedRadius_upper` at `θ = 3 / 8` and `ε = 1 / 1000`. -/
 example (d m r W : ℕ) (g H : ℝ)
     (hd : 0 < d) (_hm : 0 < m) (hr : r < m) (hg : 0 < g) (hH : 0 < H)
     (hW : W = Nat.floor ((1 + theta * g) * d * m / H))
@@ -104,7 +104,7 @@ example (d m r W : ℕ) (g H : ℝ)
   norm_num at h ⊢
   exact h
 
-/-- The source's `enlargedRadius_normalized`: `a = 1 + θ g`, `ξ = 27 / 10`, `c = 1001 / 1000`. -/
+/-- `enlargedRadius_normalized` at `a = 1 + θ g`, `ξ = 27 / 10`, `c = 1001 / 1000`. -/
 example (d m W' : ℝ) (g H : ℝ)
     (_hd : 0 < d) (hm : 0 ≤ m) (hg : 0 < g) (hH : 0 < H)
     (hradius : W' / d ≤ ((1 + theta * g) * m / H) * (1001 / 1000))
@@ -112,8 +112,8 @@ example (d m W' : ℝ) (g H : ℝ)
     W' / d ≤ g * m / xi * (1001 / 1000) :=
   enlargedRadius_normalized d m W' _ g H xi _ hm hg hH (by norm_num) hradius ha
 
-/-- The source's `residualVariance_le`: `ξ = 27 / 10`, `c = 1001 / 1000`, `h = 329 / 200`. The
-source's hypothesis `0 ≤ q` is not needed. -/
+/-- `residualVariance_le` at `ξ = 27 / 10`, `c = 1001 / 1000`, `h = 329 / 200`, with an unused
+hypothesis `0 ≤ q`. -/
 example (d W' H2 q : ℝ)
     (hd : 0 < d) (hW' : 0 ≤ W') (hH2 : 0 ≤ H2) (_hq : 0 ≤ q)
     (hradius : W' / d ≤ q / xi * (1001 / 1000))

@@ -22,14 +22,6 @@ hypotheses on `δ`, `ρ` and `H`.
 ## Main statements
 
 * `prescribed_dimension_inputs`
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/`
-`DimensionInputs.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Its single
-theorem `prescribed_dimension_inputs` writes `min 1 (δ / ρ)` as `rateGap δ ρ`, and its hypothesis
-`48000 ≤ d` is weakened to `3 ≤ d`: the retention needs the unrounded radius `a d m / H` to be at
-least `2000`, and `a d m / H ≥ 100 d ^ 3 ≥ 2700` already for `d = 3`.
 -/
 
 @[expose] public section
