@@ -506,6 +506,76 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean`
+
+From the challenge-degree part of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The private closure lemmas of the
+local correction, image and substitution are public `_mem_restrictJointDegree` lemmas.
+`sourceMonomial_curve_unscaled_gradedCoeffDegreeLE` is now
+`SourceColumn.unscaledLocalSubstitution_mem_restrictJointDegree_localJetDegree`;
+`sourceMonomial_curve_unscaled_coeffDegreeLE` and `sourceMonomial_unscaled_coeffDegreeLE` are now
+`SourceColumn.natDegree_coeff_unscaledLocalSubstitution_le`; the `_coeff_natDegree_le_shift` form
+is now `SourceColumn.natDegree_coeff_unscaledLocalSubstitution_le_sub`; and the
+`_coeff_eq_zero_of_weight_gt` form is now
+`SourceColumn.coeff_unscaledLocalSubstitution_eq_zero_of_lt`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ColumnHeight.lean`
+
+Ported from `Symbolic/ColumnHeight.lean` and the first theorem of `Symbolic/CurveColumnHeight.lean`
+under `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+`exists_symbolic_received_line_interpolant_of_column_height` is now
+`exists_primitive_receivedLine_interpolant_of_column_height`, and
+`CurveColumnHeight.exists_primitive_interpolant_of_column_height` is now
+`exists_primitive_interpolant_of_column_height`, concluding `v j ∈ degreeLT F (h + 1 - ℓ * y₀)`
+in place of `natDegree ≤ h`. `CurveColumnHeight.exists_primitive_interpolant_of_shifted_height`
+is not ported here.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ConstraintMatrix.lean`
+
+From the matrix part of `Symbolic/ReceivedLine.lean` and `Symbolic/ReceivedCurve.lean` under
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The line matrix `matrix` and the curve matrix
+`constraintMatrix` are one `localConstraintMatrix`. `matrix_entry_eq_coeff_localConstraintAt` is
+now `localConstraintMatrix_apply`, `matrix_mulVec_apply` is now
+`localConstraintMatrix_mulVec_apply`, and `matrix_mulVec_eq_zero_iff` and
+`constraintMatrix_kernel_iff` are now `localConstraintMatrix_mulVec_eq_zero_iff`. `activeRows`
+and `supportedRows` are now `localConstraintSupportedRows`, with
+`mem_activeRows_of_matrix_entry_ne_zero` strengthened to `mem_localConstraintSupportedRows_iff`.
+`activeMatrix`, `finMatrix` and `finiteConstraintMatrix` are now
+`supportedLocalConstraintMatrix`, with `finiteConstraintMatrix_kernel_iff` as
+`supportedLocalConstraintMatrix_mulVec_eq_zero_iff` and `finMatrix_rank_le_matrix_rank` as the
+equality `rank_map_supportedLocalConstraintMatrix` for any ring hom into a field.
+`matrix_entry_natDegree_le_y₀` and `constraintMatrix_degree_le` are now
+`natDegree_localConstraintMatrix_le`, `constraintMatrix_degree_le_grade_shift` is now
+`natDegree_localConstraintMatrix_le_sub`, and
+`constraintMatrix_eq_zero_of_source_grade_lt_row_grade` is now
+`localConstraintMatrix_eq_zero_of_lt`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean`
+
+From `Symbolic/ReceivedLine.lean` and `Symbolic/ReceivedCurve.lean` under
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the namespaces `SymbolicReceivedInterpolation`
+and `SymbolicReceivedCurve` flattened into `ReedSolomon.HiddenDerivative`.
+`receivedLine_natDegree_le` is now `natDegree_receivedLine_le`.
+`exists_symbolic_received_line_interpolant_of_rank_le` is now
+`exists_primitive_receivedLine_interpolant_of_rank_le`, and
+`SymbolicReceivedCurve.exists_primitive_interpolant_of_rank_le` is now
+`exists_primitive_interpolant_of_rank_le`. The rank hypothesis is on the full matrix after any
+injective ring hom into a field, nonvanishing holds for every ring hom into a nontrivial semiring,
+and the line theorem drops the `M *ᵥ v = 0` conjunct. `Symbolic/Soundness.lean` is not ported
+here.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/SourceColumn.lean`
+
+From the source-column part of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `SourceColumn`, its exponent lemmas
+and `interpolant` keep their names; `map_interpolant_ne_zero` holds for any ring hom in place of
+`eval₂`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/FloorTransfer.lean`
 
 Ports, from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
@@ -1233,6 +1303,13 @@ the two-sided `sq_mul_card_filter_le_abs_sub_le_card_mul_variance`. The source's
 with variance `5 / 12` is an acceptance case. The sharper one-sided Cantelli bound, continuous
 simplex moments, and a comparison between the finite and continuous variances are not treated.
 
+## `ArkLib/Data/MvPolynomial/JointDegree.lean`
+
+`MvPolynomial.restrictJointDegree` covers `CoeffDegreeLE` (zero weight) and `GradedCoeffDegreeLE`
+(`ℓ`-scaled weight) of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`; their private closure lemmas are the
+public `_mem_restrictJointDegree` lemmas here.
 ## `ArkLib/Data/MvPolynomial/FrobeniusContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/FrobeniusFactor.lean` at ArkLib revision
@@ -1986,6 +2063,12 @@ The row selector is extracted and generalized from
 replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
+
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/SupportedRows.lean`
+
+New general lemmas used for the supported-row restriction of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/PolynomialKernelHeight.lean`
 
