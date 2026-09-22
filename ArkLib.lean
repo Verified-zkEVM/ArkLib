@@ -341,13 +341,16 @@ public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.ChainWitness
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 public import ArkLib.Data.Polynomial.Differential.DirectRegularLift
+public import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.JetPrefix
+public import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
 public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.RegularIteration
 public import ArkLib.Data.Polynomial.Differential.RegularJetCount
 public import ArkLib.Data.Polynomial.Differential.RegularLift
+public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion
 public import ArkLib.Data.Polynomial.Differential.TaylorResidual
