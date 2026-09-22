@@ -43,6 +43,9 @@ derivative order `d`. It has three parts.
 * `half_rate_le_ambientDimension_sub_one_div` and `freeOrder_rank_comparison`: the rounded rate
   `(K - 1) / n` is at least half of `(1 - θ) ε` once `K ≥ 3`.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List

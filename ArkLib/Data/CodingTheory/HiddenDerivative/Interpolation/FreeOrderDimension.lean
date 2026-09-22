@@ -38,6 +38,9 @@ that budget with the rank of the local constraint map.
 * `localRankBound_lt_interpolationSpace_of_shell_bounds`: the same conclusion from the shell
   estimate and the three real estimates.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List

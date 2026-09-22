@@ -36,6 +36,9 @@ needed.
   weighted-order submodule.
 * `weightedTruncation_bind₁_weightedTruncation`: truncation commutes with weight-nondecreasing
   substitution.
+
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
 -/
 
 @[expose] public section

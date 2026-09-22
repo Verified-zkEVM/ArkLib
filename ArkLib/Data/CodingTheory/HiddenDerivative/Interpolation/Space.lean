@@ -47,6 +47,9 @@ weight `j` and so also counts `Y₁`, and the ordinary higher-jet degree `fullHi
   for every `K > D`.
 * `fullHigherJetWeight_le_fullDerivativeJetWeight` and `firstJetExponent_le_totalJetDegree`.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List

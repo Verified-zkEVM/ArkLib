@@ -169,7 +169,8 @@ theorem localPolynomialEvaluation_E (center : R) (P error : R[X]) :
     localPolynomialEvaluation (d := d) center P error (X (localE d)) = error := by
   simp [localPolynomialEvaluation, localPolynomialValues, localE, localAux]
 
-/-- `localPolynomialEvaluation` sends `Y_(j+1)` to `(D^(j+1) P)(center + X)`. -/
+/-- `localPolynomialEvaluation` sends `Y_(j+1)` to the `(j + 1)`-th Hasse derivative of `P`, shifted
+to `center`. -/
 @[simp]
 theorem localPolynomialEvaluation_Y (center : R) (P error : R[X]) (j : Fin d) :
     localPolynomialEvaluation center P error (X (localY j)) =

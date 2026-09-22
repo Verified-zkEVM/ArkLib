@@ -41,6 +41,9 @@ real argument rounds to `0`, and the natural subtraction `K - 1` is `0` when `K 
 
 The rounded inequalities between these parameters are in `Parameters/FreeOrder.lean`.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List

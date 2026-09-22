@@ -44,6 +44,9 @@ exponents of `Y₂, ..., Y_d`. This needs `d > 0`, so that `Y₁` exists.
 * `card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace`: the same lower bound for the
   exact space with `M = m`, for every `D` with `d < D < K`.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List

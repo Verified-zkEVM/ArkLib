@@ -11,6 +11,11 @@ pull-request donor heads below; those theorem families are not present in `a5aa2
 are source evidence, not merge bases. Final acceptance uses the main branch containing the Lean
 4.34 migration from pull request #903.
 
+Per-file source correspondence (old names, generalizations, deferred declarations) is in
+[`reed-solomon-port-correspondence.md`](reed-solomon-port-correspondence.md); module docstrings
+describe only the present API, as [`docs/wiki/porting-conventions.md`](../wiki/porting-conventions.md)
+requires.
+
 Current heads, hosted CI, migration gates, and landing status are maintained in
 [issue #907](https://github.com/Verified-zkEVM/ArkLib/issues/907), the canonical live dashboard.
 

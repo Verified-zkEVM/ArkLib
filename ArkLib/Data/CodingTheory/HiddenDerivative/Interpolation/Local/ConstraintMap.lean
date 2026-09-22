@@ -44,6 +44,9 @@ All maps are linear over an arbitrary commutative ring `R`.
 * `globalExactCoefficientConstraintMap`: all local constraints, over an arbitrary index type of
   received points, as one linear map on exact interpolation coefficients.
 
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
+
 ## References
 
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List

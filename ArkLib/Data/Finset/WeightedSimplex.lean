@@ -47,6 +47,9 @@ coordinate, so the finite box matters and the lower estimate requires positive w
   `(W + 1) ^ n ≤ n! * (∏ i, w i) * # ≤ (W + ∑ i, w i) ^ n`, the upper bound for all weights.
 * `card_natWeightedSimplex_le`: the upper bound divided out over an ordered field.
 * `natWeightedSimplex_succ_sandwich`: weights `1, …, n`, with `n! ^ 2` and `(n + 1).choose 2`.
+
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
 -/
 
 @[expose] public section
