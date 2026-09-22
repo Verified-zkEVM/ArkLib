@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 
 /-!
@@ -24,7 +25,9 @@ the sets that the rational Taylor chart of `Q` cuts out.
   include `k` distinct ones, this set has at most one point.
 * `initialJetPrimeFamily center Q` is the finite family of minimal primes over the initial
   equation that do not contain `S`. Every zero of the initial equation with `S ≠ 0`, over any
-  extension field, lies on one of them.
+  extension field, lies on one of them. Each member has dimension `r` (its affine Hilbert
+  polynomial has natural degree `r`), and for every weight `b` the potential
+  `∑ P, affineDegree P * b ^ dim P` of the family is at most `jetTotalDegree Q * b ^ r`.
 
 The last part places polynomial solutions in these loci. In an infinite domain, finitely many
 solutions with nonzero separant specialization share a center at which all their separants are
@@ -39,6 +42,9 @@ distinct.
   high cuts and agreement at `k` distinct points leave at most one regular jet.
 * `exists_mem_initialJetPrimeFamily_of_regular`: regular points of the initial hypersurface lie
   on retained prime components.
+* `natDegree_affineHilbertPolynomial_of_mem_initialJetPrimeFamily` and
+  `sum_affineDegree_mul_pow_initialJetPrimeFamily_le_jetTotalDegree`: the dimension and the
+  potential of the retained components.
 * `exists_forall_jetEvaluation_ne_zero`: a common center for finitely many solutions.
 * `injOn_polynomialJet` and `card_image_polynomialJet`: Hasse jets separate regular solutions.
 * `polynomialJet_mem_zeroLocus_initialJetEquation_sup_highTaylorCutsIdeal` and
@@ -218,6 +224,52 @@ theorem exists_mem_initialJetPrimeFamily_of_regular {E : Type*} [Field E] [Algeb
     (hS : aeval jet (initialJetSeparant center Q) ≠ 0) :
     ∃ P ∈ initialJetPrimeFamily center Q, jet ∈ zeroLocus E P :=
   exists_retainedMinimalPrime_of_mem_zeroLocus _ _ jet (by simpa [zeroLocus_span] using hinit) hS
+
+/-- If some ideal does not contain the initial separant, the initial equation is nonzero. -/
+theorem initialJetEquation_ne_zero_of_initialJetSeparant_notMem {center : F}
+    {Q : DifferentialPolynomial F r} {P : Ideal (MvPolynomial (Fin (r + 1)) F)}
+    (hS : initialJetSeparant center Q ∉ P) : initialJetEquation center Q ≠ 0 :=
+  initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero center Q
+    fun h ↦ hS (by rw [h]; exact P.zero_mem)
+
+/-- Every member of the initial prime family has dimension `r`: its affine Hilbert polynomial has
+natural degree `r`. -/
+theorem natDegree_affineHilbertPolynomial_of_mem_initialJetPrimeFamily {center : F}
+    {Q : DifferentialPolynomial F r} {P : Ideal (MvPolynomial (Fin (r + 1)) F)}
+    (hP : P ∈ initialJetPrimeFamily center Q) : (affineHilbertPolynomial P).natDegree = r := by
+  have h := natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton
+    (initialJetEquation_ne_zero_of_initialJetSeparant_notMem
+      (initialJetSeparant_notMem_of_mem_initialJetPrimeFamily hP))
+    (mem_initialJetPrimeFamily.mp hP).1
+  rw [Nat.card_eq_fintype_card, Fintype.card_fin] at h
+  omega
+
+/-- If the initial equation has total degree at most `v`, then for every weight `b` the members
+`P` of the initial prime family satisfy `∑ P, affineDegree P * b ^ dim P ≤ v * b ^ r`, where
+`dim P` is the natural degree of the affine Hilbert polynomial of `P`. -/
+theorem sum_affineDegree_mul_pow_initialJetPrimeFamily_le (center : F)
+    (Q : DifferentialPolynomial F r) {v : ℕ} (hv : (initialJetEquation center Q).totalDegree ≤ v)
+    (b : ℕ) :
+    ∑ P ∈ initialJetPrimeFamily center Q,
+        affineDegree P * (b : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤ v * (b : ℚ) ^ r := by
+  rcases (initialJetPrimeFamily center Q).eq_empty_or_nonempty with h | ⟨P, hP⟩
+  · rw [h, Finset.sum_empty]
+    positivity
+  have h := sum_affineDegree_mul_pow_retainedMinimalPrimes_span_singleton_le
+    (initialJetEquation_ne_zero_of_initialJetSeparant_notMem
+      (initialJetSeparant_notMem_of_mem_initialJetPrimeFamily hP))
+    (initialJetSeparant center Q) hv b
+  rwa [Nat.card_eq_fintype_card, Fintype.card_fin, Nat.add_sub_cancel] at h
+
+/-- For every weight `b`, the members `P` of the initial prime family satisfy
+`∑ P, affineDegree P * b ^ dim P ≤ jetTotalDegree Q * b ^ r`. -/
+theorem sum_affineDegree_mul_pow_initialJetPrimeFamily_le_jetTotalDegree (center : F)
+    (Q : DifferentialPolynomial F r) (b : ℕ) :
+    ∑ P ∈ initialJetPrimeFamily center Q,
+        affineDegree P * (b : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤
+      jetTotalDegree Q * (b : ℚ) ^ r :=
+  sum_affineDegree_mul_pow_initialJetPrimeFamily_le center Q
+    (totalDegree_initialJetEquation_le center Q) b
 
 /-! ### Polynomial solutions in the chart loci -/
 
