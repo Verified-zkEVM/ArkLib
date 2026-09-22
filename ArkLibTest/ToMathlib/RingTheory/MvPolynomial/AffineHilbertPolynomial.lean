@@ -13,9 +13,9 @@ The examples compute the affine Hilbert polynomial of the zero ideal in two vari
 ideal, and of the line `X₀ = 0` in two variables (natural degree `1`) and the point `X₀ = 0` in one
 variable (natural degree `0`, hence a finite-dimensional quotient). They show that the regularity
 hypothesis of the principal-cut degree drop is needed: for `I = (X₀²)` and `f = X₀` in one
-variable the coefficient bound reads `1 ≤ 0`. They also derive the source-shaped statements
-(uniqueness, the prime-ideal principal cut with its disjunction, the comparison for a proper
-larger ideal) from the general ones.
+variable the coefficient bound reads `1 ≤ 0`. They also derive uniqueness from an eventual
+agreement, the prime-ideal principal cut with the disjunct `= 0`, and the comparison with the
+extra hypothesis that the larger ideal is proper, from the general statements.
 -/
 
 open MvPolynomial Polynomial Filter
@@ -34,14 +34,16 @@ theorem span_X_zero_ne_top {n : ℕ} :
     Ideal.span {(X 0 : MvPolynomial (Fin (n + 1)) ℚ)} ≠ ⊤ :=
   fun h ↦ not_isUnit_X_zero (Ideal.span_singleton_eq_top.mp h)
 
-/-- The source statement of uniqueness. -/
+/-- A polynomial that eventually agrees with the affine Hilbert function is the affine Hilbert
+polynomial. -/
 example {k σ : Type*} [Field k] [Finite σ] (I : Ideal (MvPolynomial σ k)) {P : ℚ[X]}
     (hP : ∃ N₀ : ℕ, ∀ N ≥ N₀, P.eval (N : ℚ) = (affineHilbertFunction I N : ℚ)) :
     P = affineHilbertPolynomial I :=
   let ⟨_, h⟩ := hP
   eq_affineHilbertPolynomial_of_eval_eq h
 
-/-- The source's principal-cut statement for a prime ideal, with its disjunction. -/
+/-- The principal-cut degree drop for a prime ideal, with the disjunct that the polynomial of the
+cut is `0`. -/
 example {k σ : Type*} [Field k] [Finite σ] {I : Ideal (MvPolynomial σ k)} (hI : I.IsPrime)
     {f : MvPolynomial σ k} (hfI : f ∉ I) {b : ℕ} (hfdeg : f.totalDegree ≤ b) :
     affineHilbertPolynomial (I ⊔ Ideal.span {f}) = 0 ∨
@@ -53,7 +55,7 @@ example {k σ : Type*} [Field k] [Finite σ] {I : Ideal (MvPolynomial σ k)} (hI
             (affineHilbertPolynomial I).leadingCoeff :=
   Or.inr (principalCut_natDegree_affineHilbertPolynomial_le_and_coeff_le_of_isPrime hI hfI hfdeg)
 
-/-- The source's comparison along an inclusion, which assumed the larger ideal proper. -/
+/-- The comparison along an inclusion, with the extra hypothesis that the larger ideal is proper. -/
 example {k σ : Type*} [Field k] [Finite σ] {I J : Ideal (MvPolynomial σ k)} (hIJ : I ≤ J)
     (_hJ : J ≠ ⊤) :
     (affineHilbertPolynomial J).natDegree ≤ (affineHilbertPolynomial I).natDegree ∧

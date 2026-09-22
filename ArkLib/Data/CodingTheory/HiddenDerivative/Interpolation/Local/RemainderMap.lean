@@ -31,31 +31,6 @@ injective, the normalized remainder vanishes exactly when the contact-order cons
   `normalizedLocalConstraintAt_eq_zero_iff`,
   `normalizedLocalConstraintAt_ker_eq_localConstraintAt`,
   `normalizedLocalConstraintAt_ker_eq_coordinates`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RemainderMap.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `normalizeLocalExponent` and its `_apply_T`, `_apply_E`, `_apply_Y` and `_injective` lemmas are
-  unchanged. The private `normalizeLocalExponent_single_*` lemmas are not needed.
-* `normalizeErrorByExponent` is `MvPolynomial.mapExponents (normalizeLocalExponent d)`, so
-  `normalizeError_eq_normalizeErrorByExponent` is `normalizeError_eq_mapExponents`, and the private
-  `normalizeError_monomial` is public. `normalizeError_injective` is unchanged in statement and
-  is an instance of `MvPolynomial.mapExponents_injective`.
-* `normalizeLocalExponent_T_eq_contact` is unchanged; `weight_normalizeLocalExponent` restates it
-  as the weight identity used by `MvPolynomial.weightedTruncation_mapExponents`.
-* The private `filterLocalMonomials_monomial` is the generic `MvPolynomial.filterSupport_monomial`.
-* `truncateLocalT_normalizeError`, `normalizedLocalConstraintAt`,
-  `normalizedLocalConstraintAt_eq_normalize_localConstraintAt`,
-  `normalizedLocalConstraintAt_eq_zero_iff`,
-  `normalizedLocalConstraintAt_ker_eq_localConstraintAt` and
-  `normalizedLocalConstraintAt_ker_eq_coordinates` are unchanged.
-
-Deferred: `X_sub_C_pow_dvd_differentialSpecialization_of_normalizedLocalConstraint`, which needs
-`X_sub_C_pow_dvd_differentialSpecialization_of_contact` from the source's
-`Interpolation/Local/Contact.lean`, not yet ported.
 -/
 
 @[expose] public section
@@ -79,16 +54,19 @@ def normalizeLocalExponent (d : ℕ) : (LocalVariable d →₀ ℕ) →+ (LocalV
     ext v
     simp [mul_add, add_assoc, add_left_comm]
 
+/-- `normalizeLocalExponent` raises the `T` exponent by `d` times the `E` exponent. -/
 @[simp]
 theorem normalizeLocalExponent_apply_T (d : ℕ) (e : LocalVariable d →₀ ℕ) :
     normalizeLocalExponent d e (localT d) = e (localT d) + d * e (localE d) := by
   simp [normalizeLocalExponent]
 
+/-- `normalizeLocalExponent` preserves the `E` exponent. -/
 @[simp]
 theorem normalizeLocalExponent_apply_E (d : ℕ) (e : LocalVariable d →₀ ℕ) :
     normalizeLocalExponent d e (localE d) = e (localE d) := by
   simp [normalizeLocalExponent, localT, localE, localAux]
 
+/-- `normalizeLocalExponent` preserves the exponent of every visible jet. -/
 @[simp]
 theorem normalizeLocalExponent_apply_Y (d : ℕ) (e : LocalVariable d →₀ ℕ) (j : Fin d) :
     normalizeLocalExponent d e (localY j) = e (localY j) := by

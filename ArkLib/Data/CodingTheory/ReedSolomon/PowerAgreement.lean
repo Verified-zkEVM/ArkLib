@@ -28,6 +28,10 @@ exceeds the number of evaluation points, the polynomial identity `Q = ∑ t, z ^
 still fail, and it is repaired by adding the difference to `P 0`, whose weight is `z ^ 0 = 1`
 (`exists_powerBatchedPolynomial_eq`).
 
+The code-level characterizations let the counting and transfer theorems of
+`ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement` apply to Reed–Solomon statements. The
+interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
+
 ## Main definitions
 
 * `ReedSolomon.powerBatchedWord`, `ReedSolomon.powerBatchedPolynomial`: batching of received
@@ -47,26 +51,6 @@ still fail, and it is repaired by adding the difference to `P 0`, whose weight i
 * `ReedSolomon.hasExactPowerAgreement_id_iff_hasExactAgreement` and
   `ReedSolomon.uniformExactPowerAgreement_iff_uniformExactAgreement`: the polynomial predicates
   are the code-level predicates for `univariatePowersGenerator`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under
-`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/`:
-
-* `PolynomialCurve/Agreement.lean`: `powerBatchedWord`, `powerBatchedPolynomial`,
-  `powerBatchedPolynomial_degree_lt`, `powerBatchedPolynomial_eval`, and
-  `commonCurveAgreementSet`, ported with the coordinate type `Fin n` generalized to a finite
-  type `ι`, and with decidable equality on `F` in place of classical decidability in
-  `commonCurveAgreementSet`.
-* `PolynomialCurve/FullAgreement.lean`: `HasExactPowerAgreement`, with the source's
-  `mappedDomain domain ι` written out as `domain.trans ⟨φ, φ.injective⟩`.
-* `UniformPowerAgreement.lean`: `UniformExactPowerAgreement`, with the same quantifier order.
-
-The code-level characterizations are new. They let the counting and transfer theorems of
-`ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement` apply to Reed–Solomon statements.
-The interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
-Scalar providers of `UniformExactPowerAgreement` (list-decoding and curve-counting results) are
-not ported here.
 -/
 
 @[expose] public section
@@ -106,6 +90,8 @@ def commonCurveAgreementSet [DecidableEq F] [Fintype ι] (domain : ι ↪ F)
     (w : Fin (ℓ + 1) → ι → F) (P : Fin (ℓ + 1) → F[X]) : Finset ι :=
   Finset.univ.filter fun i ↦ ∀ t, (P t).eval (domain i) = w t i
 
+/-- Coordinate `i` is in `commonCurveAgreementSet domain w P` exactly when every `P t` evaluates
+to `w t i` at `domain i`. -/
 @[simp] theorem mem_commonCurveAgreementSet [DecidableEq F] [Fintype ι] (domain : ι ↪ F)
     (w : Fin (ℓ + 1) → ι → F) (P : Fin (ℓ + 1) → F[X]) (i : ι) :
     i ∈ commonCurveAgreementSet domain w P ↔ ∀ t, (P t).eval (domain i) = w t i := by
