@@ -43,39 +43,6 @@ and `241 / 270 = 241 / 100 * (10 / 27)`.
   measure, given the two moment estimates.
 * `ReedSolomon.HiddenDerivative.normalizedRadius_contribution_lower`: the bound for the
   normalized radius.
-
-## References
-
-Ports declarations of `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`WeightedSupport/` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-
-* `Moments.lean`. The source's probability measure `weightedSimplexProbabilityMeasure n W` is
-  the conditional measure `volume[|weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W]`, whose
-  integrals are set averages (Mathlib's `setAverage_eq'`); the moments are stated as set
-  averages. `normalizedRadius` is the source's definition with `weightedRadius u` written as
-  `∑ i, u i` and `harmonicPowerSum n 1` as `harmonic n`; `continuous_normalizedRadius` is the
-  source's. `integral_normalizedRadius`, `integral_normalizedRadius_sq` and
-  `integral_normalizedRadius_cube` become `setAverage_normalizedRadius`, `_sq`, `_cube`,
-  specializations of the general centered moments in
-  `ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments`. The budget hypothesis `0 < W` is dropped
-  for the mean and weakened to `0 ≤ W` for the other two, and `t` is arbitrary (for `t = 0` both
-  sides are `0`). `integrable_weighted_probability` is `MeasureTheory.IntegrableOn.integrable_cond`
-  composed with `ContinuousOn.integrableOn_weightedSimplex`.
-* `Cubic.lean`. `cubic_numeric` and `contribution_integral_lower` (namespace
-  `WeightedSupportParameters`) become `cubic_contribution_numeric` and
-  `contribution_integral_lower` here, and `positive_cube_moments` with `cubic_le_positive_cube`
-  is `MeasureTheory.le_integral_max_sub_zero_pow_three`. The integrability hypotheses for `z ^ 2`
-  and for the positive-part cube are dropped because they follow from those of `z` and `z ^ 3`.
-* `Estimate.lean`. `normalizedRadius_contribution_lower` drops the hypothesis
-  `48000 ≤ n + 1`: `150 < n + 1`, which the moment factor `weightedSupport_variance_factor_gt`
-  needs, already follows from the harmonic hypotheses, and the third-moment factor needs only
-  `1 ≤ n + 1`. The hypothesis `0 < t` is weakened to `0 ≤ t`.
-
-The source's `weighted_dimension_probability` is in `WeightedSupport/Estimate.lean`.
-Deferred: `weighted_dimension_lower` of `Estimate.lean` (it needs the harmonic-number
-estimates), `Margin.lean`, `RankIntegral.lean`, `NormalizedRank.lean`,
-and `positive_cube_tangent`, `positive_cube_jensen`, `positive_cube_convex` of `Cubic.lean`,
-which have no consumer yet.
 -/
 
 @[expose] public section

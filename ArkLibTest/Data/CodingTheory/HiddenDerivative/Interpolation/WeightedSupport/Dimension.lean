@@ -11,8 +11,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.D
 
 These cases check eligibility of a concrete exponent through its coordinates, compute the
 staircase lower bound `5` on a dimension with two higher-jet tuples, evaluate the cubic lower bound
-at one tuple, and derive the source's `card_weightedSupportSlot_le`, stated for the dependent slot
-type, from `sum_count_le_card_weightedSupportExponents`.
+at one tuple, and bound the cardinality of the dependent sigma type of pairs (higher-jet tuple,
+slot) by the number of eligible exponents, using `sum_count_le_card_weightedSupportExponents`.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative Finset
@@ -57,11 +57,10 @@ example : 5 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 3 one_pos) :=
   have h4 : (4 : ℝ) < Module.finrank ℚ (weightedSupportSpace ℚ 1 1 0 3 one_pos) := by linarith
   exact_mod_cast h4
 
-/-! ### The source-shaped slot count -/
+/-! ### The slot count as a sigma type -/
 
-/-- The source's `card_weightedSupportSlot_le` with `card_weightedSupportSlot_eq`: its dependent
-slot type `WeightedSupportSlot D d W L` is the sigma type below, and its cardinality is at most
-the number of eligible exponents. -/
+/-- The sigma type of pairs of a higher-jet tuple `c` and a slot of the cubic staircase at the
+remaining cutoff `L / D - ∑ i, c i` has cardinality at most the number of eligible exponents. -/
 example {D d W : ℕ} {L : ℝ} (hd : 0 < d) (hD : 0 < D) :
     Fintype.card (Σ c : ↥(natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) W),
         CubicStaircase.Slot D (L / D - ((∑ i, c.val i : ℕ) : ℝ))) ≤

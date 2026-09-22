@@ -45,25 +45,10 @@ columns of the local constraint systems.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Index.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, with the pieces of
-`Interpolation/Space.lean` and `HiddenDerivative/Variables.lean` it uses. The exponent-level
-jet weights `firstJetExponent` and `fullHigherJetWeight` of `Space.lean` are now
-`Finsupp.weight` of the pointwise weights `jetFirstWeight` and `jetHigherWeight`, following
-the pattern of `PolynomialDifferential.jetDegreeWeight`; the source's `totalJetDegree` is
-`PolynomialDifferential.totalJetDegree` and `exactInterpolationMonomialWeight D u` is
-`Finsupp.weight (differentialWeight D) u`, so no second jet weight is introduced. The source's
-`degreeOf_jet_le_floor_of_mem_exactInterpolationSpace` is stated through `jetDegree`, and a
-polynomial-level `jetTotalDegree` bound is added. The source's
-`exactInterpolationMonomialWeight_le_coarse` is `weight_le_add_mul_totalJetDegree`. Deferred: the
-support-first rectangular space (`GlobalEligibleExponent`, `interpolationSpace` and its
-coordinates), the higher-jet exponent sets of `Space.lean`, and the comparison
-`interpolationSpace_le_exactInterpolationSpace`.
-
-* [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], ECCC TR26-164.
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70).
 -/
 
 @[expose] public section
@@ -181,6 +166,7 @@ def exactInterpolationExponents (D A d m M W : ℕ) (hdD : d < D) :
     Finset (JetVariable d →₀ ℕ) :=
   (exactInterpolationExponentSet_finite (A := A) (m := m) (M := M) (W := W) hdD).toFinset
 
+/-- Membership in `exactInterpolationExponents` is `ExactInterpolationEligibleExponent`. -/
 @[simp]
 theorem mem_exactInterpolationExponents {hdD : d < D} {u : JetVariable d →₀ ℕ} :
     u ∈ exactInterpolationExponents D A d m M W hdD ↔
