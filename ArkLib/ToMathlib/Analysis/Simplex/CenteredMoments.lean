@@ -45,6 +45,8 @@ on the weighted simplex is integrable for that measure by
   `μ[|s]`.
 * `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean`: the centered form has mean `0`.
 * `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean_sq`: the variance.
+* `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean_sq_le`: the variance is at most
+  `W ^ 2 * p 2 / ((n + 1) * (n + 2))`, for every real `W`.
 * `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean_cube`: the third central moment.
 
 ## References
@@ -58,6 +60,14 @@ arbitrary, the index type is any `Fintype`, and the budget hypothesis is weakene
 The source's `integrable_weighted_probability` is `IntegrableOn.integrable_cond` composed with
 `ContinuousOn.integrableOn_weightedSimplex`. The hidden-derivative specializations are in
 `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`.
+
+`setAverage_weightedSimplex_linearForm_sub_mean_sq_le` generalizes
+`ReedSolomon.HiddenDerivative.weightedSimplex_centeredRadius_sq_le_harmonic` from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
+`RankIntegral.lean` at the same revision. The source states the case of weights `i + 1` on
+`Fin n` and coefficients `1`; here the weights are arbitrary positive reals, the coefficients are
+arbitrary, and there is no budget hypothesis. The specialization keeps the source name in
+`ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral`.
 -/
 
 @[expose] public section
@@ -161,6 +171,33 @@ theorem setAverage_weightedSimplex_linearForm_sub_mean_sq {w : ι → ℝ} (hw :
     setAverage_weightedSimplex_linearForm hw c hW, hm]
   field_simp
   ring
+
+/-- The variance of a linear form on a weighted simplex is at most its diagonal term: for positive
+weights `w`, `n = Fintype.card ι`, `0 ≤ W` and mean `m = W * (∑ i, c i / w i) / (n + 1)`,
+`⨍ u in weightedSimplex w W, (∑ i, c i * u i - m) ^ 2 ≤
+  W ^ 2 * (∑ i, (c i / w i) ^ 2) / ((n + 1) * (n + 2))`.
+It drops the nonpositive term `-W ^ 2 * (∑ i, c i / w i) ^ 2 / ((n + 1) ^ 2 * (n + 2))` from
+`setAverage_weightedSimplex_linearForm_sub_mean_sq`. With one coordinate and `W ≠ 0` the dropped
+term is half of the bound, so the inequality is strict. No hypothesis on `W` is needed: for `W < 0`
+the simplex is empty, so the left side is `0`. -/
+theorem setAverage_weightedSimplex_linearForm_sub_mean_sq_le {w : ι → ℝ} (hw : ∀ i, 0 < w i)
+    (c : ι → ℝ) (W : ℝ) :
+    ⨍ u in weightedSimplex w W,
+      (∑ i, c i * u i - W * (∑ i, c i / w i) / (Fintype.card ι + 1)) ^ 2 ≤
+      W ^ 2 * (∑ i, (c i / w i) ^ 2) / ((Fintype.card ι + 1) * (Fintype.card ι + 2)) := by
+  rcases lt_or_ge W 0 with hW | hW
+  · rw [setAverage_weightedSimplex_of_nonpos hw hW.le _ fun h ↦ absurd h hW.ne]
+    positivity
+  rw [setAverage_weightedSimplex_linearForm_sub_mean_sq hw c hW]
+  have hn : (0 : ℝ) < Fintype.card ι + 1 := by positivity
+  calc W ^ 2 * ((Fintype.card ι + 1) * ∑ i, (c i / w i) ^ 2 - (∑ i, c i / w i) ^ 2) /
+        ((Fintype.card ι + 1) ^ 2 * (Fintype.card ι + 2))
+      ≤ W ^ 2 * ((Fintype.card ι + 1) * ∑ i, (c i / w i) ^ 2) /
+        ((Fintype.card ι + 1) ^ 2 * (Fintype.card ι + 2)) := by
+        gcongr
+        exact sub_le_self _ (sq_nonneg _)
+    _ = _ := by
+        field_simp
 
 /-- The third central moment of a linear form on a weighted simplex: for positive weights `w`,
 `n = Fintype.card ι`, `0 ≤ W`, mean `m = W * p 1 / (n + 1)` and `p q = ∑ i, (c i / w i) ^ q`,

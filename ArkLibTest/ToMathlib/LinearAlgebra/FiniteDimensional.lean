@@ -35,3 +35,27 @@ example :
     finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ ∘ₗ LinearMap.inl ℚ ℚ ℚ)) ≤
       finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) :=
   LinearMap.finrank_range_comp_le_left _ _
+
+/-! ### Coordinates on the range
+
+The first projection `ℚ × ℚ → ℚ` has a range of dimension one, so its range coordinates take
+values in `Fin 1 → ℚ`. The vector `(0, 5)` lies in the kernel, so its coordinates vanish, and
+`(1, 0)` does not, so its coordinates do not. -/
+
+/-- The range of the first projection is one-dimensional. -/
+example : finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) = 1 := by
+  rw [LinearMap.range_eq_top.mpr LinearMap.fst_surjective, finrank_top, finrank_self]
+
+/-- A kernel vector has zero range coordinates. -/
+example : (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates (0, 5) = 0 :=
+  (LinearMap.rangeCoordinates_eq_zero_iff _ _).mpr rfl
+
+/-- A vector outside the kernel has nonzero range coordinates. -/
+example : (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates (1, 0) ≠ 0 := by
+  rw [Ne, LinearMap.rangeCoordinates_eq_zero_iff]
+  simp
+
+/-- The coordinate map has the kernel of the projection and is onto its coordinate space. -/
+example : LinearMap.ker (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates = LinearMap.ker (LinearMap.fst ℚ ℚ ℚ)
+    ∧ Function.Surjective (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates :=
+  ⟨LinearMap.ker_rangeCoordinates _, LinearMap.rangeCoordinates_surjective _⟩

@@ -19,6 +19,10 @@ For the rescaled comparisons, the examples compute the degree of a composite wit
 polynomial, show that `c ≠ 0` is needed there and that the lower polynomial must be eventually
 nonnegative in the sandwich, and derive the source's rescaled, affine and sandwich statements,
 with their `≠ 0` and positivity hypotheses, from the general ones.
+
+For the coefficient comparisons in a degree `d` at least the natural degree, `X - 1` and `1 - X`
+show that the degree bounds are needed, and `taylor 3 (X ^ 2)` shows that a Taylor shift keeps
+the coefficients in degrees at least the natural degree but changes the one in degree `1`.
 -/
 
 open Polynomial Filter
@@ -146,5 +150,64 @@ example {P Q : ℚ[X]} (_hP : P ≠ 0) (_hQ : Q ≠ 0) {c : ℕ} (_hc : 0 < c)
     Q.natDegree = P.natDegree :=
   natDegree_eq_of_eventually_eval_natCast_le_of_le_mul_eval_affine (m := 1) (c := c) (d := 0)
     hPnonneg hlower (hupper.mono fun N hN ↦ by simpa using hN)
+
+/-! ### Coefficients in a degree at least the natural degree -/
+
+/-- `X - 1` is nonnegative at every positive natural number, but its coefficient in degree `0`,
+below its natural degree `1`, is `-1`. So the degree bound in
+`coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg` is needed. -/
+example : (∀ᶠ N : ℕ in atTop, (0 : ℚ) ≤ (X - 1 : ℚ[X]).eval (N : ℚ)) ∧
+    (X - 1 : ℚ[X]).coeff 0 < 0 := by
+  refine ⟨(eventually_ge_atTop 1).mono fun N hN ↦ ?_, by simp⟩
+  have : (1 : ℚ) ≤ N := by exact_mod_cast hN
+  simp only [eval_sub, eval_X, eval_one]
+  linarith
+
+/-- In degree `1`, the natural degree of `X - 1`, the nonnegativity lemma gives `0 ≤ 1`. -/
+example : (0 : ℚ) ≤ (X - 1 : ℚ[X]).coeff 1 :=
+  coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg
+    (by compute_degree!) ((eventually_ge_atTop 1).mono fun N hN ↦ by
+      have : (1 : ℚ) ≤ N := by exact_mod_cast hN
+      simp only [eval_sub, eval_X, eval_one]
+      linarith)
+
+/-- The degree bound on the smaller polynomial in
+`coeff_le_of_natDegree_le_of_eventually_eval_natCast_le` is needed: `1 - X ≤ 0` at every
+positive natural number, but in degree `0` the coefficients are `1 > 0`. -/
+example : (∀ᶠ N : ℕ in atTop, (1 - X : ℚ[X]).eval (N : ℚ) ≤ (0 : ℚ[X]).eval (N : ℚ)) ∧
+    (0 : ℚ[X]).coeff 0 < (1 - X : ℚ[X]).coeff 0 := by
+  refine ⟨(eventually_ge_atTop 1).mono fun N hN ↦ ?_, by simp⟩
+  have : (1 : ℚ) ≤ N := by exact_mod_cast hN
+  simp only [eval_sub, eval_X, eval_one, eval_zero]
+  linarith
+
+/-- A Taylor shift keeps the coefficients in degrees at least the natural degree: for
+`taylor 3 (X ^ 2) = (X + 3) ^ 2` the coefficient in degree `2` is `1` and in degree `5` it is
+`0`. -/
+example : (taylor (3 : ℚ) (X ^ 2)).coeff 2 = 1 ∧ (taylor (3 : ℚ) (X ^ 2)).coeff 5 = 0 := by
+  constructor
+  · rw [coeff_taylor_of_natDegree_le _ (natDegree_X_pow_le 2), coeff_X_pow_self]
+  · rw [coeff_taylor_of_natDegree_le _ ((natDegree_X_pow_le 2).trans (by norm_num)),
+      coeff_X_pow]
+    norm_num
+
+/-- Below the natural degree the Taylor shift changes coefficients: the coefficient of
+`(X + 3) ^ 2` in degree `1` is `6`, while that of `X ^ 2` is `0`. -/
+example : (taylor (3 : ℚ) (X ^ 2)).coeff 1 = 6 ∧ (X ^ 2 : ℚ[X]).coeff 1 = 0 := by
+  constructor
+  · rw [taylor_coeff_one]
+    simp only [derivative_X_pow, eval_mul, eval_C, eval_pow, eval_X]
+    norm_num
+  · rw [coeff_X_pow]
+    norm_num
+
+/-- The source's `ℚ` forms of the coefficient lemmas. -/
+example {P Q : ℚ[X]} {d : ℕ} (hP : P.natDegree ≤ d) (hQ : Q.natDegree ≤ d)
+    (hnonneg : ∀ᶠ N : ℕ in atTop, 0 ≤ P.eval (N : ℚ))
+    (hle : ∀ᶠ N : ℕ in atTop, P.eval (N : ℚ) ≤ Q.eval (N : ℚ)) (a : ℚ) :
+    0 ≤ P.coeff d ∧ P.coeff d ≤ Q.coeff d ∧ (taylor a P).coeff d = P.coeff d :=
+  ⟨coeff_nonneg_of_natDegree_le_of_eventually_eval_natCast_nonneg hP hnonneg,
+    coeff_le_of_natDegree_le_of_eventually_eval_natCast_le hP hQ hle,
+    coeff_taylor_of_natDegree_le a hP⟩
 
 end EventualGrowthTest
