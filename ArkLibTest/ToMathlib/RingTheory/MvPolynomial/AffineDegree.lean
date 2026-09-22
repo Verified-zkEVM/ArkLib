@@ -14,7 +14,8 @@ The examples compute the affine degree of the polynomial ring, the unit ideal, a
 finite-dimensional formula computes `finrank ℚ (ℚ[X₀] ⧸ (X₀ ^ 2)) = 2`. They show that `f ≠ 0` is
 needed in `affineDegree_span_singleton` and that the equal-degree hypothesis is needed in
 `affineDegree_le_of_le`, and derive positivity for proper ideals and the hypersurface formula with
-an extra properness hypothesis.
+an extra properness hypothesis. A last example shows that the natural-degree hypothesis of
+`affineDegree_le_of_eventually_affineHilbertFunction_le` cannot be weakened to an inequality.
 -/
 
 open MvPolynomial Polynomial
@@ -88,5 +89,23 @@ example {F σ : Type*} [Field F] [Finite σ] {f : MvPolynomial σ F} (hf : f ≠
     (_hproper : Ideal.span ({f} : Set (MvPolynomial σ F)) ≠ ⊤) :
     affineDegree (Ideal.span {f}) = (f.totalDegree : ℚ) :=
   affineDegree_span_singleton hf
+
+/-- The hypothesis `(affineHilbertPolynomial I).natDegree = d` of
+`affineDegree_le_of_eventually_affineHilbertFunction_le` cannot be weakened to `≤ d`: in one
+variable `⊥` has affine Hilbert function `N + 1 ≤ (X + 1).eval N` and natural degree `1 ≤ 2`, but
+its affine degree `1` exceeds `2! * (X + 1).coeff 2 = 0`. -/
+example : (∀ N : ℕ, (affineHilbertFunction (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) N : ℚ) ≤
+      (Polynomial.X + 1 : ℚ[X]).eval (N : ℚ)) ∧
+    (affineHilbertPolynomial (⊥ : Ideal (MvPolynomial (Fin 1) ℚ))).natDegree ≤ 2 ∧
+    ¬affineDegree (⊥ : Ideal (MvPolynomial (Fin 1) ℚ)) ≤
+      ((2 : ℕ).factorial : ℚ) * (Polynomial.X + 1 : ℚ[X]).coeff 2 := by
+  refine ⟨fun N ↦ ?_, ?_, ?_⟩
+  · rw [affineHilbertFunction_bot, Nat.card_eq_fintype_card, Fintype.card_fin,
+      Nat.choose_one_right]
+    simp
+  · rw [natDegree_affineHilbertPolynomial_bot, Nat.card_eq_fintype_card, Fintype.card_fin]
+    norm_num
+  · rw [affineDegree_bot]
+    simp [Polynomial.coeff_one, Polynomial.coeff_X]
 
 end AffineDegreeTest

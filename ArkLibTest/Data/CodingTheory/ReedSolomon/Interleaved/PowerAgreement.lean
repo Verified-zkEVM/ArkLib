@@ -39,23 +39,13 @@ example {F : Type} [Field F] [DecidableEq F]
     UniformExactInterleavedPowerAgreement domain values k agreement exceptionalCount :=
   uniformExactInterleavedPowerAgreement_of_scalar domain hscalar hkAgreement values
 
-/-- A single received word needs no challenge. -/
-theorem uniformExactPowerAgreement_single {F ι : Type} [Field F] [Fintype ι] [DecidableEq F]
-    (domain : ι ↪ F) (w : Fin 1 → ι → F) (k L : ℕ) :
-    UniformExactPowerAgreement domain w k L 0 := by
-  refine ⟨∅, by simp, fun z _ Q hQ _ ↦ ?_⟩
-  refine (hasExactPowerAgreement_id_iff _ _ _ _ _).mpr ⟨fun _ ↦ Q, fun _ ↦ hQ, ?_, ?_⟩
-  · simp [powerBatchedPolynomial]
-  · ext i
-    simp [powerBatchedWord]
-
 -- The interleaved guarantee for a single received array, with no exceptional challenge, for every
 -- finite row type; `Fin 0` is allowed.
 example {F ι : Type} [Field F] [Fintype ι] [DecidableEq F] (domain : ι ↪ F) {k L : ℕ}
     (hk : k ≤ L) (values : Fin 1 → ι → Fin 0 → F) :
     UniformExactInterleavedPowerAgreement domain values k L 0 :=
   uniformExactInterleavedPowerAgreement_of_scalar domain
-    (fun w ↦ uniformExactPowerAgreement_single domain w k L) hk values
+    (fun w ↦ uniformExactPowerAgreement_singleton domain w k L) hk values
 
 -- The same guarantee, unfolded at one challenge and one row tuple over `ℚ` with three rows.
 example {ι : Type} [Fintype ι] (domain : ι ↪ ℚ) {k L : ℕ} (hk : k ≤ L)
@@ -64,7 +54,7 @@ example {ι : Type} [Fintype ι] (domain : ι ↪ ℚ) {k L : ℕ} (hk : k ≤ L
       (interleavedPowerBatchedWord values z) Q).card) :
     HasExactInterleavedPowerAgreement domain values k z Q := by
   obtain ⟨bad, hbad, hgood⟩ := uniformExactInterleavedPowerAgreement_of_scalar domain
-    (fun w ↦ uniformExactPowerAgreement_single domain w k L) hk values
+    (fun w ↦ uniformExactPowerAgreement_singleton domain w k L) hk values
   have : bad = ∅ := Finset.card_eq_zero.mp (Nat.le_zero.mp hbad)
   exact hgood z (by simp [this]) Q hQ hL
 
@@ -96,8 +86,8 @@ example {F ι : Type} [Field F] [Fintype F] [SampleableType F] [Fintype ι] [Dec
   have h := nestedPowerAgreement_probability_le (maxDegree := 0) domain (fun _ ↦ 0)
     (fun _ ↦ le_rfl) values hk
     (uniformExactInterleavedPowerAgreement_of_scalar domain
-      (fun w ↦ uniformExactPowerAgreement_single domain w k L) hk _)
-    (fun _ ↦ uniformExactPowerAgreement_single domain _ k L)
+      (fun w ↦ uniformExactPowerAgreement_singleton domain w k L) hk _)
+    (fun _ ↦ uniformExactPowerAgreement_singleton domain _ k L)
   simpa using h
 
 -- Padding a group of size two to size three keeps its batched word.

@@ -15,7 +15,9 @@ import Mathlib.Data.ZMod.Basic
 The examples evaluate the split-exponent weight formula, compute the image of a monomial and its
 total degree, derive the product and divisor statements for the weight that ignores `none` from
 the all-weight theorems, and show that the product statement fails over `ZMod 4`, which has zero
-divisors.
+divisors. Two further examples read off the `none`-coordinate and the total degree of the
+`some`-coordinates of an exponent vector through the weights `Option.elim 1 0` and
+`Option.elim 0 1`.
 -/
 
 open MvPolynomial
@@ -90,3 +92,18 @@ example :
   refine ⟨by simpa [p] using h2, ?_⟩
   rw [hpp, weightedTotalDegree_monomial _ _ _ h2, weightedTotalDegree_zero]
   simp [Finsupp.weight_single]
+
+/-- The exponent vector `3 • none + 2 • some 0 + 4 • some 1` has `none`-coordinate `3`. -/
+example :
+    (Finsupp.single none 3 + Finsupp.single (some 0) 2 + Finsupp.single (some (1 : Fin 2)) 4).weight
+      (fun v : Option (Fin 2) ↦ v.elim 1 fun _ ↦ 0) = 3 := by
+  rw [Finsupp.weight_elim_one_zero]
+  simp
+
+/-- The exponent vector `3 • none + 2 • some 0 + 4 • some 1` has `some`-coordinates of total degree
+`2 + 4 = 6`. -/
+example :
+    (Finsupp.single none 3 + Finsupp.single (some 0) 2 + Finsupp.single (some (1 : Fin 2)) 4).weight
+      (fun v : Option (Fin 2) ↦ v.elim 0 fun _ ↦ 1) = 6 := by
+  rw [Finsupp.weight_elim_zero_one]
+  simp [Finsupp.degree_single]

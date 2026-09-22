@@ -23,7 +23,8 @@ hypothesis is needed: there the solution's Taylor coefficient `1` differs from t
 coefficient `0`.
 
 The file also checks the numerator degree bound at a constant equation, where
-`jetTotalDegree Q = 0`, and the sufficiency of the common exponent `2K - 3` in the worst case.
+`jetTotalDegree Q = 0`, the sufficiency of the common exponent `2K - 3` in the worst case, and
+that the initial separant commutes with reduction modulo `2`.
 -/
 
 namespace PolynomialDifferential
@@ -143,6 +144,18 @@ example : TaylorExponentSufficient 0 4 (2 * 4 - 3) ∧ ¬ TaylorExponentSufficie
   refine ⟨taylorExponentSufficient_two_mul_sub_three 0 4, fun h ↦ ?_⟩
   have := h 3
   norm_num at this
+
+/-- Reducing coefficients modulo `2` commutes with the initial separant. The separant `2 Y₁` of
+`Y₁ ^ 2` over `ℤ` reduces to `0`, the separant of `Y₁ ^ 2` over `ZMod 2`. -/
+example :
+    initialJetSeparant (0 : ZMod 2)
+      (map (Int.castRingHom (ZMod 2)) (X (some 1) ^ 2 : DifferentialPolynomial ℤ 1)) = 0 := by
+  rw [← map_zero (Int.castRingHom (ZMod 2)), ← map_initialJetSeparant]
+  have h : initialJetSeparant (0 : ℤ) (X (some 1) ^ 2 : DifferentialPolynomial ℤ 1) =
+      2 * X 1 := by
+    simp [initialJetSeparant, separant, pderiv_X, Fin.last, mul_comm, map_ofNat]
+  rw [h, map_mul, map_X, map_ofNat, show (2 : MvPolynomial (Fin 2) (ZMod 2)) = C 2 from rfl,
+    show (2 : ZMod 2) = 0 from rfl, C_0, zero_mul]
 
 end
 
