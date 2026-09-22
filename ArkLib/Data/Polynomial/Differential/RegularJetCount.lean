@@ -34,26 +34,6 @@ at every point, while `jetDegree = 1`.
 * `card_filter_isRegularJet_le`: regular jets at one point with coordinates in `B`.
 * `card_filter_isRegularJet_product_le`: regular point-jet pairs in `A ×ˢ Bᵈ⁺¹`.
 * `natCard_regularJetAt_le` and `natCard_regularJet_le`: the finite-field counts.
-
-## References
-
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`
-`RegularJetCounting.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `natCard_regularJetAt_le` keeps its statement except that `RegularJetAt Q s point` is written as
-  the subtype `{jet // IsRegularJet Q s point jet}`, and `[Field F]` becomes
-  `[CommRing F] [IsDomain F]`. `natCard_regularJet_le` keeps its statement with the same change of
-  hypotheses; `natCard_regularJet_le_degree_mul_pow` is the same bound with
-  `q * q ^ d = q ^ (d + 1)` and is derived in the acceptance tests.
-* Both are now corollaries of the finite-subset bounds `card_filter_isRegularJet_le` and
-  `card_filter_isRegularJet_product_le`, which are new and hold over every domain.
-* The source's `jetAssignment` is kept. The univariate specialization and the root count moved to
-  the generic owner `ArkLib.ToMathlib.MvPolynomial.UnivariateSpecialization`. The source's
-  encodings (`RegularJet.otherAssignment`, `activeValue`, `rootEncoding`, `RegularJetAt`,
-  `OtherJetCoordinate`, `otherJetCoordinates`, `insertJetValue`, `fixedPointOtherAssignment`,
-  `fixedPointSpecialization`) and the cardinalities `card_otherJetVariables`,
-  `card_otherJetAssignments`, `card_otherJetCoordinates` and `card_otherJetCoordinateAssignments`
-  existed only to carry out that count through sigma types and are not ported.
 -/
 
 @[expose] public section
@@ -73,10 +53,12 @@ def jetAssignment (a : F) (jet : Fin (d + 1) → F) : JetVariable d → F
   | none => a
   | some j => jet j
 
+/-- `jetAssignment a jet` assigns `a` to `X`. -/
 @[simp]
 theorem jetAssignment_none (a : F) (jet : Fin (d + 1) → F) : jetAssignment a jet none = a :=
   rfl
 
+/-- `jetAssignment a jet` assigns `jet j` to `Y_j`. -/
 @[simp]
 theorem jetAssignment_some (a : F) (jet : Fin (d + 1) → F) (j : Fin (d + 1)) :
     jetAssignment a jet (some j) = jet j :=
@@ -92,6 +74,7 @@ theorem jetEvaluation_eq_eval [CommSemiring F] (Q : DifferentialPolynomial F d) 
     jetEvaluation Q a jet = MvPolynomial.eval (jetAssignment a jet) Q :=
   rfl
 
+/-- Regularity of a jet is decidable when equality in `F` is. -/
 instance decidableIsRegularJet [CommSemiring F] [DecidableEq F] (Q : DifferentialPolynomial F d)
     (s : Fin (d + 1)) (a : F) (jet : Fin (d + 1) → F) : Decidable (IsRegularJet Q s a jet) :=
   inferInstanceAs (Decidable (_ ∧ _))

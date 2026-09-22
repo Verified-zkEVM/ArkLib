@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplici
   says that a polynomial of degree at most `1` equal to `r` at two distinct points of `ℤ` is the
   constant `r`.
 * With `A = 0` the theorem holds without any positivity hypothesis, since the exact space is `{0}`.
-* The source statement over a field, with its hypothesis `0 < m * A`, is an instance.
+* The form over a field with the extra hypothesis `0 < m * A` is an instance.
 * The weighted-degree form: `Y₀ - r` has weighted degree `1 < 1 * 2` at `D = 1`, and the local
   constraints are only needed on the two agreement indices.
 -/
@@ -72,7 +72,7 @@ example (Q : DifferentialPolynomial ℤ 0) (hQ : Q ∈ exactInterpolationSpace �
   differentialSpecialization_eq_zero_of_mem_exactInterpolationSpace_of_agreements hdD₀₁ id
     (fun _ ↦ 0) ∅ hQ hconstraints P hP (by simp) (by simp) (by simp)
 
-/-- Source shape: the statement over a field with the hypothesis `0 < m * A`. -/
+/-- The statement over a field, with the unused hypothesis `0 < m * A`. -/
 example {ι F : Type*} [Field F] {D A d m M W : ℕ} (_hbudget : 0 < m * A) (hdD : d < D)
     (points received : ι → F) (indices : Finset ι) {Q : DifferentialPolynomial F d}
     (hQspace : Q ∈ exactInterpolationSpace F D A d m M W hdD)
