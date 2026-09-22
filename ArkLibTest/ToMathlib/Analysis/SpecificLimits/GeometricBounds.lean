@@ -11,7 +11,7 @@ import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 
 At `q = 1/2` and `m = 2` the closed form gives `(1/2 + 2/4) (1/2)^2 = 1/4`, and the two finite
 sums `3/4` and `1` are below their limits `1` and `2`. The exponential ratio bounds hold at a
-negative argument, where the source assumed `0 < x`. The finite exponential sum fails at
+negative argument, so they need no sign condition on `x`. The finite exponential sum fails at
 `x = 0`, and the power bound fails at `W = 0` and when `W + y < 0`, so those hypotheses are
 needed. The ceiling bound is checked at `b = 0` and at a value where it is attained.
 -/

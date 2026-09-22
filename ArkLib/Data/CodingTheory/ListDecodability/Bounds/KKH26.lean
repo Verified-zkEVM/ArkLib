@@ -731,7 +731,6 @@ lemma exists_neg_transversal {H : Finset F} (hneg : ∀ y ∈ H, -y ∈ H)
     (hnf : ∀ y ∈ H, -y ≠ y) :
     ∃ P : Finset F, P ⊆ H ∧ 2 * P.card = H.card ∧ ∀ y ∈ H, (y ∈ P ↔ -y ∉ P) := by
   classical
-  let : DecidableEq F := Classical.decEq _
   obtain ⟨n, hn⟩ : ∃ n, H.card = n := ⟨_, rfl⟩
   induction n using Nat.strong_induction_on generalizing H with
   | _ n IH =>

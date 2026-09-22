@@ -37,26 +37,6 @@ ordered field, for all natural `a, b`.
   `Real.sum_range_linear_mul_exp_neg_pow_succ_le`
 * `Real.add_pow_le_pow_mul_exp`
 * `Nat.cast_ceilDiv_le_div_add_one`
-
-## References
-
-These generalize lemmas of
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RankBudget.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were stated over `ℝ`:
-
-* `localRank_geometric_sum_le` and `localRank_weighted_geometric_sum_le` are
-  `sum_range_pow_succ_le_div_one_sub` and `sum_range_natCast_succ_mul_pow_succ_le`, over a
-  linearly ordered field and proved by closed forms instead of `tsum`.
-* `localRank_linear_geometric_sum_le` is `sum_range_linear_mul_pow_succ_le` at `a = 1 / d`,
-  `b = 1`, stated for arbitrary nonnegative `a` and `b`.
-* `localRank_exp_geometric_ratio_le` and `localRank_exp_weighted_geometric_ratio_le` are
-  `Real.exp_neg_div_one_sub_exp_neg_le` and `Real.exp_neg_div_one_sub_exp_neg_sq_le`, without the
-  hypothesis `0 < x`.
-* `localRank_linear_exp_sum_le` is `Real.sum_range_linear_mul_exp_neg_pow_succ_le` at `a = 1 / d`,
-  `b = 1`.
-* The ceiling estimate inside `localRank_ceilDiv_le` is `Nat.cast_ceilDiv_le_div_add_one`.
-* The exponential envelope inside `localRank_weightedHigherJetCount_le_exp` is
-  `Real.add_pow_le_pow_mul_exp`.
 -/
 
 @[expose] public section
