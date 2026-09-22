@@ -11,9 +11,10 @@ import Mathlib.Tactic.NormNum
 # Agreement-radius clients
 
 These clients bound the relative distance of a binary word with three agreements out of four by
-`1 / 4`, check the length-zero case, and show that the message form of the `Lambda` bound needs
-injectivity of the encoding: the constant encoding of `Bool` into the code of length one over
-`Unit` puts two messages into a list of size one.
+`1 / 4`, check the length-zero case, recover a real agreement threshold from a distance bound,
+check that the iff form needs a nonempty coordinate type, and show that the message form of the
+`Lambda` bound needs injectivity of the encoding: the constant encoding of `Bool` into the code of
+length one over `Unit` puts two messages into a list of size one.
 -/
 
 open Code
@@ -30,6 +31,21 @@ example : (δᵣ((fun _ : Fin 4 ↦ true), ![true, true, true, false]) : ℝ) �
 -- Length zero: the radius is `1`.
 example (c y : Fin 0 → Bool) (a : ℕ) (h : a ≤ agree c y) : (δᵣ(y, c) : ℝ) ≤ 1 := by
   simpa using relHammingDist_le_one_sub_div_of_le_agree h
+
+-- A real threshold: relative distance at most `1 - (5 / 2) / 4 = 3 / 8` out of four coordinates
+-- means at least `5 / 2` agreements.
+example (c y : Fin 4 → Bool) (h : (δᵣ(y, c) : ℝ) ≤ 1 - (5 / 2 : ℝ) / 4) :
+    (5 / 2 : ℝ) ≤ agree c y := by
+  exact (relHammingDist_le_one_sub_div_iff (by simp)).mp (by simpa using h)
+
+-- `0 < n` is needed in the iff: at length zero the distance bound `0 ≤ 1 - 1 / 0` holds, while
+-- one agreement is impossible.
+example : ¬ ∀ (c y : Fin 0 → Bool),
+    ((δᵣ(y, c) : ℝ) ≤ 1 - (1 : ℝ) / Fintype.card (Fin 0) ↔ (1 : ℝ) ≤ agree c y) := by
+  intro h
+  have := (h Fin.elim0 Fin.elim0).mp (by simp [relHammingDist])
+  simp [agree] at this
+  norm_num at this
 
 -- The agreement list at threshold `a` lies in the point list at radius `1 - a / n`.
 example (C : Set (Fin 4 → Bool)) (y : Fin 4 → Bool) :
