@@ -302,6 +302,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pai
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block

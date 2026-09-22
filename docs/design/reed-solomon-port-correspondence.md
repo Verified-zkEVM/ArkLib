@@ -1001,6 +1001,13 @@ proves a weaker, field-size-weighted bound, which is not formalized here.
 
 `mcaError_moduleInterleavedCode_eq_of_card_le`: This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean`
+
+`exists_constantCode_list` from
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ConstantCode.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is now
+`exists_closePolynomial_finset_one_card_le_div`, for any received word in place of a batched
+word, with the `ncard` form `closePolynomialSet_one_ncard_le_div`.
 ## `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean` at ArkLib revision
@@ -1216,6 +1223,21 @@ The interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interlea
 Scalar providers of `UniformExactPowerAgreement` (list-decoding and curve-counting results) are
 not ported here.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement/ConstantCode.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ConstantCode.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, for any finite `ι` in place of
+`Fin n`. `uniformExactPowerAgreement_constantCode` now holds for every `A`, with the bound
+`ℓ * (card ι).choose 2 / max (A - 1) 1` in place of the `if` on `A = 1` and without `0 < A`.
+`uniformExactPowerAgreement_constantCode_of_two_le` keeps its name.
+`uniformExactPowerAgreement_constantCode_one` is not ported; it is the case `A = 1` of the
+general theorem. The private `hasExactPowerAgreement_constant_of_same` is now the iff
+`hasExactPowerAgreement_constant_iff`. The private collision machinery
+(`constantCodeCollisionPolynomial`, `constantCodeOrderedPairs`, `constantCodeCollisionIncidence`,
+`constantCodeCollisionMultiplicity`, `constantCodeCollisionChallenges`,
+`constantCodeIncreasingPairs`, `constantCodeCollisionChallengesHalf` and their lemmas) is now
+`exists_exceptional_powerBatchedWord_collision` with private helpers.
 `uniformExactPowerAgreement_singleton` of
 `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/UniformPowerAgreement.lean` at
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is ported with the same name, for any
