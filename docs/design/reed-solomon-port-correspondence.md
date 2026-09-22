@@ -1111,6 +1111,23 @@ the two-sided `sq_mul_card_filter_le_abs_sub_le_card_mul_variance`. The source's
 with variance `5 / 12` is an acceptance case. The sharper one-sided Cantelli bound, continuous
 simplex moments, and a comparison between the finite and continuous variances are not treated.
 
+## `ArkLib/Data/MvPolynomial/FrobeniusContraction.lean`
+
+Ported from `ArkLib/ToMathlib/MvPolynomial/FrobeniusFactor.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, over a commutative ring without zero divisors in
+place of a field, and without `Fact p.Prime`. `exists_frobeniusFactor` is now
+`exists_irreducible_frobeniusContraction` for `CharP R p`, and `exists_frobeniusFactor_expChar`
+is now `exists_irreducible_frobeniusContraction_expChar`. These two return the root expansion, the
+nonzero partial derivative, the degree identity, positive degree, irreducibility and the
+per-variable degree bounds. The fraction-field parts are now
+`irreducible_map_optionEquivLeft_fractionRing`, `separable_map_optionEquivLeft_fractionRing` and
+`exists_frobeniusContraction_fractionRing`, over a unique factorization domain. The primitivity,
+mapped-derivative and mapped-degree parts of the source's ten-part statements are not stated; the
+test derives the ten-part forms. `inverseFrobeniusTwist_preserves_factor` and its `_expChar` form
+are not ported: each is the conjunction of `irreducible_inverseFrobeniusTwist_iff`,
+`pderiv_inverseFrobeniusTwist_ne_zero_iff` and `degreeOf_inverseFrobeniusTwist`, derived in the
+test. `frobeniusFactor_coefficient_canary` is a test example.
+
 ## `ArkLib/Data/MvPolynomial/MapExponents.lean`
 
 This generalizes `normalizeErrorByExponent`, `normalizeError_injective` and
@@ -1415,6 +1432,10 @@ ones are `Irreducible.isPrimitive`, `derivative_map` with `Polynomial.map_ne_zer
 `natDegree_map_eq_of_injective`, and the acceptance test re-derives the nine-conjunct statement.
 `irreducible_separable_map_fractionRing` is folded into that theorem.
 `not_exists_expand_primePow_succ_of_derivative_ne_zero` is not ported.
+
+`exists_irreducible_frobeniusContraction_expChar` is the univariate form of
+`exists_frobeniusFactor_expChar` from `ArkLib/ToMathlib/MvPolynomial/FrobeniusFactor.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
 
 ## `ArkLib/Data/Polynomial/PointCollision.lean`
 
