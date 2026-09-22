@@ -35,13 +35,15 @@ The bound on the number of points of a zero-dimensional zero locus by the affine
 * `MvPolynomial.affineDegree_eq_finrank`: finite-dimensional quotients.
 * `MvPolynomial.affineDegree_span_singleton`: hypersurfaces.
 * `MvPolynomial.affineDegree_le_of_le`: comparison along inclusions of the same dimension.
+* `MvPolynomial.affineDegree_le_of_eventually_affineHilbertFunction_le`: an upper bound from an
+  eventual polynomial bound on the affine Hilbert function.
 -/
 
 @[expose] public section
 
 noncomputable section
 
-open Polynomial
+open Filter Polynomial
 
 namespace MvPolynomial
 
@@ -143,5 +145,25 @@ theorem affineDegree_le_of_le {I J : Ideal (MvPolynomial σ k)} (hIJ : I ≤ J)
   rw [affineDegree, affineDegree, hdeg]
   exact mul_le_mul_of_nonneg_left (leadingCoeff_affineHilbertPolynomial_le_of_le hIJ hdeg)
     (Nat.cast_nonneg _)
+
+/-- An eventual polynomial bound on the affine Hilbert function bounds the affine degree. If the
+affine Hilbert polynomial of `I` has natural degree `d`, a polynomial `R` of natural degree at most
+`d` satisfies `H(I, N) ≤ R(N)` for all large `N`, then `affineDegree I ≤ d! * R.coeff d`.
+
+Both polynomials have natural degree at most `d`, so the eventual inequality compares their
+coefficients in degree `d` (`Polynomial.coeff_le_of_natDegree_le_of_eventually_eval_natCast_le`).
+The equality `hdim` cannot be weakened to an upper bound: for `I = ⊥` in one variable, `d = 2` and
+`R = X + 1`, the bound `H(⊥, N) = N + 1 ≤ R(N)` holds, but `affineDegree ⊥ = 1` exceeds
+`2! * R.coeff 2 = 0`. -/
+theorem affineDegree_le_of_eventually_affineHilbertFunction_le {I : Ideal (MvPolynomial σ k)}
+    {d : ℕ} {R : ℚ[X]} (hdim : (affineHilbertPolynomial I).natDegree = d) (hR : R.natDegree ≤ d)
+    (hbound : ∀ᶠ N : ℕ in atTop, (affineHilbertFunction I N : ℚ) ≤ R.eval (N : ℚ)) :
+    affineDegree I ≤ (d.factorial : ℚ) * R.coeff d := by
+  have hc := coeff_le_of_natDegree_le_of_eventually_eval_natCast_le hdim.le hR
+    (by
+      filter_upwards [eventually_eval_affineHilbertPolynomial I, hbound] with N hN hRN
+      rwa [hN])
+  rw [affineDegree, hdim, leadingCoeff, hdim]
+  exact mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg _)
 
 end MvPolynomial
