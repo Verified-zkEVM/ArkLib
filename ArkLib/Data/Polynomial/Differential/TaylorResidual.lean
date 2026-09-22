@@ -49,29 +49,8 @@ Specializing the coefficient variables to `c : ℕ → R` recovers the Taylor ex
 
 ## References
 
-The support bounds are [DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `universalTaylorJet`, `optionEquivLeft_universalTaylorJet`,
-  `universalTaylorJet_mem_supportWeightLE`, `universalTaylorResidual`,
-  `universalTaylorResidual_mem_supportWeightLE`, `weight_le_of_mem_universalTaylorResidual_coeff`,
-  `weightedTotalDegree_universalTaylorJet_le`, `weightedTotalDegree_universalTaylorResidual_le`,
-  and `totalDegree_universalTaylorResidual_coeff_le` from
-  `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Support.lean`. The
-  source's `universalTaylorPolynomial` is not a separate definition; the jet identity states the
-  explicit sum. Degree bounds use the core `jetTotalDegree`.
-* `denominator_weight_le_of_mem_universalTaylorResidual_coeff` from
-  `.../RootFinding/Taylor/Denominator.lean`, with the source's `0 < h` removed and the length
-  `r + h` relaxed to any `K ≤ r + h`. The arithmetic step is `Finsupp.weight_two_mul_sub_one_le`.
-* `map_optionEquivLeft_universalTaylorResidual` and `aeval_universalTaylorResidual_coeff` replace
-  `specializeTaylorCoefficients_universalTaylorResidual` from `.../Taylor/SupportEvaluation.lean`
-  and `aeval_universalTaylorResidual_coeff` from `.../Taylor/Numerator.lean`. The source stated
-  them with `shiftedJetSubstitution` from `.../Interpolation/Local/Identity.lean`; here the target
-  is `taylor a (differentialSpecialization Q P)`, which that file proves equal
-  (`taylor_differentialSpecialization`), and the prefix is `Polynomial.centeredCoefficientPrefix`.
-
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
-  Correlated Agreement up to Capacity*][DKTZ26]
+  Correlated Agreement up to Capacity*][DKTZ26], Appendix A.3, Lemma A.5
 -/
 
 @[expose] public section

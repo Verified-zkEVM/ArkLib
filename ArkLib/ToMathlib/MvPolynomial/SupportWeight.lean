@@ -36,19 +36,6 @@ the rational Taylor coefficients of an order-`r` differential equation.
 * `MvPolynomial.weightedTotalDegree_coeff_optionEquivLeft_le`: coefficient extraction does not
   increase a weighted degree that ignores the distinguished variable.
 * `Finsupp.weight_two_mul_sub_one_le`: the denominator budget.
-
-## References
-
-These declarations are ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-`supportWeightLE`, `monomial_mem_supportWeightLE`, `aeval_mem_supportWeightLE`,
-`weight_le_of_mem_coeff_optionEquivLeft`, and `weightedTotalDegree_coeff_optionEquivLeft_le` come
-from `ArkLib/ToMathlib/MvPolynomial/SupportWeight.lean`; `supportWeightLE` is now built from
-Mathlib's `MvPolynomial.restrictSupport`, whose multiplicativity lemma `restrictSupport_add`
-supplies closure under products. `Finsupp.weight_two_mul_sub_one_le` generalizes
-`taylor_denominator_weight_le` from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Denominator.lean`: the
-index type is arbitrary instead of `Fin (r + h)`, the weight `t` is arbitrary instead of
-`l ↦ l - r`, and the source hypothesis `0 < h` is removed.
 -/
 
 @[expose] public section

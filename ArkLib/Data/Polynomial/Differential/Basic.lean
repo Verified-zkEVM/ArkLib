@@ -20,9 +20,6 @@ This file defines two ways to interpret a polynomial relation in `X, Y₀, ..., 
 The comparison theorem `eval_differentialSpecialization` says that these interpretations agree
 after evaluating the specialized univariate polynomial. No characteristic hypothesis is needed:
 specialization uses Hasse derivatives and is valid over every commutative semiring.
-
-The definitions and laws are ported from `ArkLib/Data/Polynomial/Differential/Basic.lean` at
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
 -/
 
 @[expose] public section
@@ -47,22 +44,27 @@ def differentialSpecialization [CommSemiring F] (Q : DifferentialPolynomial F d)
     F[X] :=
   differentialSpecializationHom P Q
 
+/-- `differentialSpecializationHom P Q` is `differentialSpecialization Q P`. -/
 @[simp]
 theorem differentialSpecializationHom_apply [CommSemiring F]
     (Q : DifferentialPolynomial F d) (P : F[X]) :
     differentialSpecializationHom P Q = differentialSpecialization Q P :=
   rfl
 
+/-- Specialization sends the constant `C a` to `Polynomial.C a`. -/
 @[simp]
 theorem differentialSpecialization_C [CommSemiring F] (a : F) (P : F[X]) :
     differentialSpecialization (d := d) (MvPolynomial.C a) P = Polynomial.C a := by
   simp [differentialSpecialization, differentialSpecializationHom]
 
+/-- Specialization sends the distinguished variable `X none` to `Polynomial.X`. -/
 @[simp]
 theorem differentialSpecialization_x [CommSemiring F] (P : F[X]) :
     differentialSpecialization (d := d) (MvPolynomial.X none) P = Polynomial.X := by
   simp [differentialSpecialization, differentialSpecializationHom]
 
+/-- Specialization at `P` sends the jet variable `Y_j` to the Hasse derivative
+`hasseDeriv j P`. -/
 @[simp]
 theorem differentialSpecialization_jet [CommSemiring F] (j : Fin (d + 1)) (P : F[X]) :
     differentialSpecialization (MvPolynomial.X (some j)) P = Polynomial.hasseDeriv j P := by

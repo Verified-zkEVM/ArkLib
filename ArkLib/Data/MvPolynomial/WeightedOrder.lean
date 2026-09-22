@@ -36,23 +36,6 @@ needed.
   weighted-order submodule.
 * `weightedTruncation_bind₁_weightedTruncation`: truncation commutes with weight-nondecreasing
   substitution.
-
-## References
-
-The truncation argument generalizes the private support lemmas behind
-`ReedSolomon.HiddenDerivative.enlargedLocalConstraintMap_truncateLocalT` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/ConstraintMap.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were adapted from Kai Zhe
-Zheng's `rs-ld-mca` formalization. The source proved the special case of one change of local
-variables using integer-valued negated weights; here the statement is for arbitrary variable
-types, arbitrary natural weights, and an arbitrary commutative semiring. The source's
-`filterLocalMonomials` is `filterSupport` for local polynomials.
-
-`pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder` generalizes the source's
-`pow_dvd_eval₂Hom_of_lowContact_coeff_zero` and its private helper
-`localContactOrder_pow_dvd_monomialSpecialization` in
-`.../HiddenDerivative/Interpolation/Local/Contact.lean` at the same revision from the local
-contact weight to an arbitrary weight, and from commutative rings to commutative semirings.
 -/
 
 @[expose] public section
@@ -188,6 +171,8 @@ def filterSupport (p : (σ →₀ ℕ) → Prop) [DecidablePred p] :
     apply AddMonoidAlgebra.coeff_injective
     exact Finsupp.filter_smul
 
+/-- The coefficient of `filterSupport p F` at `e` is `F.coeff e` if `p e` holds and `0`
+otherwise. -/
 @[simp]
 theorem coeff_filterSupport (p : (σ →₀ ℕ) → Prop) [DecidablePred p]
     (F : MvPolynomial σ R) (e : σ →₀ ℕ) :
@@ -226,6 +211,8 @@ theorem filterSupport_mem_restrictSupport (p : (σ →₀ ℕ) → Prop) [Decida
 def weightedTruncation (w : σ → ℕ) (m : ℕ) : MvPolynomial σ R →ₗ[R] MvPolynomial σ R :=
   filterSupport fun e => e.weight w < m
 
+/-- The coefficient of `weightedTruncation w m F` at `e` is `F.coeff e` if `e` has `w`-weight
+below `m` and `0` otherwise. -/
 @[simp]
 theorem coeff_weightedTruncation (w : σ → ℕ) (m : ℕ) (F : MvPolynomial σ R)
     (e : σ →₀ ℕ) :
