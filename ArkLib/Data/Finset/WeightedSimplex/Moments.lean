@@ -51,22 +51,6 @@ normalized mean and variance are in `ArkLib.Data.Finset.WeightedSimplex.Variance
 * `card_add_one_mul_sum_natWeightedSimplex_one_weighted` and
   `card_add_one_mul_card_add_two_mul_sum_natWeightedSimplex_one_weighted_sq`: the weighted first
   and second moments in a commutative ring.
-
-## References
-
-Generalizes, at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, the declarations of
-`ToMathlib/Combinatorics/DiscreteSimplex/Moments.lean`: `splitCoordinate`, `mergeCoordinate` and
-`simplexCoordinateSplitEquiv` become `natSimplexSplit` and
-`sum_natWeightedSimplex_one_sum_range_split`, a reindexing of Finset sums rather than an
-equivalence of subtypes; `ordinarySimplex_coordinate_le` becomes `le_of_mem_natWeightedSimplex`
-for arbitrary weights; `sum_simplex_coordinate_succ`, `simplex_first_moment`,
-`sum_simplex_mixed_succ`, `sum_simplex_factorial_succ`, `simplex_mixed_moment`, and
-`simplex_factorial_moment` become the theorems listed above. The source's `OrdinarySimplex r S`
-over `Fin r` is the case `σ = Fin r` of `natWeightedSimplex (fun _ ↦ 1) S`, and the statements
-hold over any finite index type. From `ToMathlib/Combinatorics/DiscreteSimplex/Variance.lean` at
-the same revision, `simplex_weighted_sum` and `simplex_weighted_square_sum` are generalized from
-`ℝ` to any commutative ring, and the private `coordinate_product_moment` is made public. Moments of
-simplices with non-unit weights, which have no comparable closed form, are not treated.
 -/
 
 @[expose] public section

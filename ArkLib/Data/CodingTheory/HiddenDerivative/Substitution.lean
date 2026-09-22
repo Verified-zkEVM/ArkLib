@@ -39,19 +39,9 @@ expansion of an actual polynomial, and they hold over every commutative ring.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Substitution.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `localJetSum`, `localCorrection`,
-`T_mul_localJetSum`, `translateToU`, `rewriteUToE`, `unscaledLocalImage`,
-`unscaledLocalSubstitution`, its three generator lemmas, and
-`unscaledLocalSubstitution_eq_rewrite_comp_translate`. The generator images of `translateToU`
-and `rewriteUToE` are now named (`translateToUImage`, `rewriteUToEImage`), so that weight bounds
-can be stated for them. Deferred: the normalized substitution (`normalizeError`,
-`normalizedLocalSubstitution`) and the weighted-degree preservation lemmas
-(`unscaledLocalSubstitution_mem` and the `differentialFormula` variants), which belong with the
-local-rank consumers.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Equations (14) and (25).
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26],
+  Equations (14) and (25).
 -/
 
 @[expose] public section
@@ -116,17 +106,20 @@ def unscaledLocalSubstitution (d : ℕ) (center received : R) :
     DifferentialPolynomial R d →ₐ[R] LocalPolynomial R d :=
   bind₁ (unscaledLocalImage d center received)
 
+/-- The unscaled substitution sends `X` to `center + T`. -/
 @[simp]
 theorem unscaledLocalSubstitution_X (d : ℕ) (center received : R) :
     unscaledLocalSubstitution d center received (X none) = C center + X (localT d) := by
   simp [unscaledLocalSubstitution, unscaledLocalImage]
 
+/-- The unscaled substitution sends `Y₀` to `received + localCorrection d + T E`. -/
 @[simp]
 theorem unscaledLocalSubstitution_Y_zero (d : ℕ) (center received : R) :
     unscaledLocalSubstitution d center received (X (some 0)) =
       C received + localCorrection d + X (localT d) * X (localE d) := by
   simp [unscaledLocalSubstitution, unscaledLocalImage]
 
+/-- The unscaled substitution sends `Y_(j+1)` to the local variable `Y_(j+1)`. -/
 @[simp]
 theorem unscaledLocalSubstitution_Y_succ (d : ℕ) (center received : R) (j : Fin d) :
     unscaledLocalSubstitution d center received (X (some j.succ)) = X (localY j) := by

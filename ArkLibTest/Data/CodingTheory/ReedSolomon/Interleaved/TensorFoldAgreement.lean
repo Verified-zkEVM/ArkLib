@@ -9,11 +9,9 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
 /-!
 # Reed–Solomon shared-level tensor-fold clients
 
-These clients state the source's line hypothesis `LineExactAgreementBound` (revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, `LineToAffine.lean`) locally, derive the power-agreement
-line guarantee from it, and recover the source-shaped statements
-`fullSetLevelWitness_interleaved_of_exactAgreement` and
-`interleavedRS_tensorFoldBad_card_le_heightThree`, with their width hypothesis unused. They also
+These clients state a scalar line hypothesis `LineExactAgreementBound` with a real-valued
+exceptional count, derive the power-agreement line guarantee from it, and derive the level
+witness and the height-three count from it, with the extra guard `0 < width` unused. They also
 check an empty row type and the height-three count at count `0`.
 -/
 
@@ -21,7 +19,7 @@ open Polynomial Code TensorMCA ReedSolomon
 
 namespace ReedSolomonTensorFoldAgreementTest
 
-/-- The source's scalar line hypothesis: outside at most `B` challenges, every degree-`< k`
+/-- A scalar line hypothesis: outside at most `B` challenges, every degree-`< k`
 polynomial with at least `A` agreements with `f + z • g` splits as `P₀ + z • P₁` with the same
 agreement set as the common agreement set of `P₀, P₁` with `f, g`. -/
 def LineExactAgreementBound {F : Type} [Field F] [DecidableEq F] {n : ℕ} (domain : Fin n ↪ F)
@@ -33,8 +31,8 @@ def LineExactAgreementBound {F : Type} [Field F] [DecidableEq F] {n : ℕ} (doma
         polynomialAgreementSet domain (fun i ↦ f i + z * g i) P =
           commonPolynomialAgreementSet domain f g P₀ P₁
 
-/-- The source hypothesis with a natural-number count is the power-agreement line guarantee at
-`ℓ = 1`. -/
+/-- `LineExactAgreementBound` with a natural-number count is the power-agreement line guarantee
+at `ℓ = 1`. -/
 theorem uniformExactPowerAgreement_of_lineExactAgreementBound {F : Type} [Field F]
     [DecidableEq F] {n k A e : ℕ} {domain : Fin n ↪ F}
     (h : LineExactAgreementBound domain k A e) (w : Fin 2 → Fin n → F) :
@@ -55,26 +53,26 @@ theorem uniformExactPowerAgreement_of_lineExactAgreementBound {F : Type} [Field 
 
 variable {F : Type} [Field F] [DecidableEq F] {n k agreement exceptionalCount width : ℕ}
 
-/-- The source statement `fullSetLevelWitness_interleaved_of_exactAgreement`, derived from the
-general one. The hypotheses `0 < width` and the source's `[Fintype F]` are not used. -/
-theorem source_fullSetLevelWitness_interleaved_of_exactAgreement (domain : Fin n ↪ F)
+/-- The level witness for `code domain k ^⋈ Fin width` from `LineExactAgreementBound`, with the
+extra guard `0 < width`, derived from the general theorem. The guard is not used. -/
+theorem fullSetLevelWitness_interleaved_of_lineExactAgreementBound (domain : Fin n ↪ F)
     (hline : LineExactAgreementBound domain k agreement exceptionalCount)
     (_hwidth : 0 < width) (hkAgreement : k ≤ agreement) :
     FullSetLevelWitness ((code domain k)^⋈(Fin width)) agreement exceptionalCount :=
   fullSetLevelWitness_interleaved_of_exactAgreement domain
     (uniformExactPowerAgreement_of_lineExactAgreementBound hline) hkAgreement (Fin width)
 
--- The source statement `interleavedRS_tensorFoldBad_card_le_heightThree`.
+-- The height-three count from `LineExactAgreementBound`, with the extra guard `0 < width`.
 example [Fintype F] (domain : Fin n ↪ F)
     (hline : LineExactAgreementBound domain k agreement exceptionalCount)
     (hwidth : 0 < width) (hkAgreement : k ≤ agreement)
     (u : (Fin 3 → Bool) → Fin n → Fin width → F) :
     (tensorFoldBad
-      (source_fullSetLevelWitness_interleaved_of_exactAgreement domain hline hwidth hkAgreement)
+      (fullSetLevelWitness_interleaved_of_lineExactAgreementBound domain hline hwidth hkAgreement)
         u).card ≤ 3 * exceptionalCount * Fintype.card F ^ 2 :=
   tensorFoldBad_card_le _ u
 
--- The general statement also covers zero rows, which the source excluded.
+-- The general statement also covers zero rows.
 example (domain : Fin n ↪ F) (hline : LineExactAgreementBound domain k agreement exceptionalCount)
     (hkAgreement : k ≤ agreement) :
     FullSetLevelWitness ((code domain k)^⋈(Fin 0)) agreement exceptionalCount :=

@@ -740,8 +740,6 @@ private theorem rsCode_disjoint_supported_of_small
     (hsmall : k + E.card ≤ Fintype.card ι) :
     Disjoint (ReedSolomon.code domain k) (Pi.spanSubset F (E : Set ι)) := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq F := Classical.decEq F
   rw [Submodule.disjoint_def]
   intro c hc hsupport
   by_contra hne
