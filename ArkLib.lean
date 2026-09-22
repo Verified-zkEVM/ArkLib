@@ -95,10 +95,12 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
@@ -109,7 +111,10 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
 public import ArkLib.Data.CodingTheory.InterleavedCode
@@ -262,6 +267,7 @@ public import ArkLib.Data.Finset.Staircase
 public import ArkLib.Data.Finset.WeightedSimplex
 public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
+public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
 public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.DomainSep
@@ -323,6 +329,7 @@ public import ArkLib.Data.Polynomial.ClassicalWronskian
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.RationalTaylor
+public import ArkLib.Data.Polynomial.Differential.RegularLift
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.TaylorResidual
 public import ArkLib.Data.Polynomial.Differential.Types
@@ -536,14 +543,17 @@ public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
 public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.BigOperators.Fin
+public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
+public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
@@ -564,6 +574,7 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
@@ -576,6 +587,7 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.FiniteJet
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
+public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
