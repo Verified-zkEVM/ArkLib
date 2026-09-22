@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
 /-!
 # Exact power agreement for interleaved Reed–Solomon codes
@@ -48,6 +49,8 @@ padding each group by zero to a common size.
   transfer, over every field and for every finite row type.
 * `ReedSolomon.exactNestedPowerAgreement_of_interleaved` and
   `ReedSolomon.nestedPowerAgreement_sharedInner`: nested power agreement.
+* `ReedSolomon.nestedPowerAgreement_probability_le`: for uniform challenges `(u, v)`, nested
+  exact agreement fails with probability at most `(innerE + outerE) / |F|`.
 
 ## References
 
@@ -74,11 +77,13 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
   itself. Its private lemmas are covered as described in
   `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`.
 * `ReedSolomon/MutualCorrelatedAgreement/NestedPowerAgreement.lean`:
-  `HasExactNestedPowerAgreement`, with `Fin n` generalized to `ι`.
+  `HasExactNestedPowerAgreement`, with `Fin n` generalized to `ι`. The arithmetic lemma
+  `nestedPowerAgreement_probability_bound` (a set of at most `|F| * E` pairs has rational density
+  at most `E / |F|` in `F × F`) is replaced by `nestedPowerAgreement_probability_le`, which bounds
+  the probability of the failure event itself as a native event `Pr{let p ← $ᵗ (F × F)}[…]`.
 
 Deferred: the shared-level fold and tensor-tight statements of
-`ReedSolomon/Interleaved/TensorFoldAgreement.lean`, the anchored statements of
-`AnchoredAgreement.lean` and `AnchoredReconstruction.lean`, and the concrete Reed–Solomon
+`ReedSolomon/Interleaved/TensorFoldAgreement.lean` and the concrete Reed–Solomon
 endpoints that supply the scalar guarantee.
 -/
 
@@ -381,6 +386,44 @@ theorem nestedPowerAgreement_sharedInner [Fintype F] {m maxDegree k L innerE out
       (Finset.mem_biUnion.mpr ⟨u, Finset.mem_univ _, by simp [hv]⟩))
     exact exactNestedPowerAgreement_of_interleaved domain degree hdegree values hk u v Q hclose
       (houterGood u v hv Q hQ hclose) fun R hR hRclose ↦ hinnerGood u hu R hR hRclose
+
+open scoped ProbabilityTheory in
+/-- **Nested power agreement for uniform challenges.** Under the hypotheses of
+`nestedPowerAgreement_sharedInner`, draw the challenge pair `(u, v)` uniformly from `F × F`. The
+probability that some `Q` of degree below `k` agrees with the nested batched word on at least `L`
+coordinates without having exact nested power agreement is at most `(innerE + outerE) / |F|`.
+
+This is the count `|F| · (innerE + outerE)` of `nestedPowerAgreement_sharedInner` divided by
+`|F|²`. -/
+theorem nestedPowerAgreement_probability_le [Fintype F] [SampleableType F]
+    {m maxDegree k L innerE outerE : ℕ}
+    (domain : ι ↪ F) (degree : Fin (m + 1) → ℕ) (hdegree : ∀ g, degree g ≤ maxDegree)
+    (values : (g : Fin (m + 1)) → Fin (degree g + 1) → ι → F) (hk : k ≤ L)
+    (hinner : UniformExactInterleavedPowerAgreement domain
+      (paddedPowerValues degree hdegree values) k L innerE)
+    (houter : ∀ u, UniformExactPowerAgreement domain
+      (fun g ↦ powerBatchedWord (values g) u) k L outerE) :
+    Pr{let p ← $ᵗ (F × F)}[∃ Q : F[X], Q.degree < k ∧
+        L ≤ (polynomialAgreementSet domain
+          (powerBatchedWord (fun g ↦ powerBatchedWord (values g) p.1) p.2) Q).card ∧
+        ¬ HasExactNestedPowerAgreement domain degree values k p.1 p.2 Q] ≤
+      ENNReal.ofReal ((innerE + outerE : ℕ) / (Fintype.card F : ℝ)) := by
+  classical
+  obtain ⟨bad, hcard, hgood⟩ :=
+    nestedPowerAgreement_sharedInner domain degree hdegree values hk hinner houter
+  refine (prEvent_mono _ _ (fun p ↦ p ∈ bad) fun p hp ↦ ?_).trans ?_
+  · by_contra hp'
+    obtain ⟨Q, hQ, hclose, hnot⟩ := hp
+    exact hnot (hgood p.1 p.2 hp' Q hQ hclose)
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+  simp only [Finset.filter_mem_eq_inter, Finset.univ_inter, Fintype.card_prod]
+  apply ENNReal.ofReal_le_ofReal
+  have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos
+  have hb : (bad.card : ℝ) ≤ (Fintype.card F : ℝ) * (innerE + outerE : ℕ) := by
+    exact_mod_cast hcard
+  rw [div_le_div_iff₀ (by positivity) hq]
+  push_cast at hb ⊢
+  nlinarith
 
 end Nested
 
