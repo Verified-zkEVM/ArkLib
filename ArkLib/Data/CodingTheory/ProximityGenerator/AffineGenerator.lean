@@ -286,7 +286,7 @@ open Probability
 
 
 variable {ι : Type} [Fintype ι]
-         {F : Type} [Field F] [Fintype F] [SampleableType F]
+         {F : Type} [Field F] [Fintype F]
          {A : Type} [AddCommMonoid A] [Module F A]
 
 /-- The affine line generator `F → F²`, `x ↦ (1, x)`, having MCA error `ε_mca` for `MC` implies that
@@ -297,7 +297,8 @@ Only `ℓ ≥ 1` is required: at `ℓ = 1` the affine space generator *is* the a
 the conclusion is immediate, and the proof below covers that case uniformly.
 
 The error is valued in `ℝ≥0` rather than `I`, since `(1 - 1/|F|)⁻¹ • ε_mca` may exceed `1`. -/
-theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (hℓ : ℓ ≥ 1)
+theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator [SampleableType F]
+    {ℓ : ℕ} (hℓ : ℓ ≥ 1)
     (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A)
     (hGMCA : IsMCAGenerator (AffineLineGenerator F) ε_mca MC) :
     letI a := (1 - 1 / Fintype.card F : ℝ≥0)
@@ -386,7 +387,7 @@ open Classical in
 seeds are MCA-bad for the affine line generator at radius `δ`, then for every `s` the MCA error of
 the affine space generator at radius `δ` is at most `B / (|F| - 1)`. See
 `card_filter_isMCA_affineSpaceGenerator_div_le`. -/
-theorem mcaError_affineSpaceGenerator_le_of_forall_card_le {s : ℕ}
+theorem mcaError_affineSpaceGenerator_le_of_forall_card_le [SampleableType F] {s : ℕ}
     (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}
     (hline : ∀ W : Fin 2 → ι → A,
       ((Finset.univ.filter fun t : F ↦ IsMCA (AffineLineGenerator F) MC t W δ).card : ℝ) ≤ B) :

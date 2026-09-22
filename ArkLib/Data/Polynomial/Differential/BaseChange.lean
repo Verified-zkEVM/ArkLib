@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
+public import Mathlib.Algebra.MvPolynomial.Eval
 public import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
@@ -17,8 +18,8 @@ coefficients commutes with differential specialization,
   `(Q(X, P, D¹P, ..., DᵈP)).map f = (Q.map f)(X, P.map f, D¹(P.map f), ...)`,
 
 so every solution of `Q = 0` of degree at most `D` maps to a solution of `Q.map f = 0` of degree at
-most `D`. When `f` is injective this map of solutions is injective, the individual jet degrees of
-`Q` are unchanged, and so is the cast hypothesis `JetDegreeCastsNeZero`. Over a finite `E` this
+most `D`. When `f` is injective this map of solutions is injective, and the individual jet
+degrees of `Q` and the cast hypothesis `JetDegreeCastsNeZero` are preserved. Over a finite `E` this
 gives `Nat.card (BoundedSolution Q D) ≤ Nat.card (BoundedSolution (Q.map f) D)`: a root count
 proved over a larger finite field, such as `FiniteField.Extension F p n`, bounds the root count
 over `F`. The inequality is one-way: the equation `0 = 0` with `D = 0` has `2` constant solutions
@@ -29,8 +30,16 @@ Passing to an extension field `E` of `F` does not change the characteristic
 The root counts over extension fields that use these transports are in
 `ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount`.
 
+For equations whose coefficients are polynomials in a challenge, `challengeSpecialization` fixes
+the challenge before substituting the polynomial and its Hasse derivatives. Coefficient maps
+commute with this two-stage specialization and do not increase the challenge-height bound.
+
 ## Main statements
 
+* `challengeSpecialization`, `ChallengeHeightLE`: specialize a challenge and bound its coefficient
+  degrees.
+* `challengeSpecialization_map_coefficients`, `ChallengeHeightLE.map_coefficients`,
+  `map_symbolicDifferentialSpecialization`: transport challenge equations along coefficient maps.
 * `map_differentialSpecialization`, `map_separant`: naturality of specialization and separants.
 * `jetDegree_map_eq`, `jetTotalDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective
   coefficient maps preserve individual and total jet degrees and the cast hypothesis.
@@ -40,6 +49,10 @@ The root counts over extension fields that use these transports are in
   solutions of degree at most `D`.
 * `BoundedSolution.map`, `BoundedSolution.map_injective`, `BoundedSolution.natCard_le_natCard_map`:
   transport of bounded solutions and the cardinality comparison.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -51,6 +64,42 @@ noncomputable section
 open Polynomial
 
 variable {F E : Type*} {d : ℕ}
+
+/-- Specialize the polynomial coefficients of a multivariate equation at a challenge value. -/
+def challengeSpecialization {F σ : Type*} [CommSemiring F]
+    (Q : MvPolynomial σ F[X]) (z : F) : MvPolynomial σ F :=
+  MvPolynomial.map (Polynomial.aeval z).toRingHom Q
+
+/-- Every coefficient of `Q` has degree at most `h` in its polynomial coefficient variable. -/
+def ChallengeHeightLE {F σ : Type*} [CommSemiring F]
+    (Q : MvPolynomial σ F[X]) (h : ℕ) : Prop :=
+  ∀ m, (Q.coeff m).natDegree ≤ h
+
+/-- Specializing after mapping the challenge coefficients agrees with mapping after
+specialization. -/
+theorem challengeSpecialization_map_coefficients {F E σ : Type*}
+    [CommSemiring F] [CommSemiring E] (ι : F →+* E)
+    (Q : MvPolynomial σ F[X]) (z : F) :
+    challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom ι) Q) (ι z) =
+      MvPolynomial.map ι (challengeSpecialization Q z) := by
+  unfold challengeSpecialization
+  rw [MvPolynomial.map_map, MvPolynomial.map_map]
+  have hc : (Polynomial.aeval (ι z)).toRingHom.comp (Polynomial.mapRingHom ι) =
+      ι.comp (Polynomial.aeval z).toRingHom := by
+    apply Polynomial.ringHom_ext
+    · intro a
+      simp
+    · simp
+  rw [hc]
+
+/-- Mapping coefficients does not increase the challenge height. -/
+theorem ChallengeHeightLE.map_coefficients {F E σ : Type*}
+    [CommSemiring F] [CommSemiring E] (ι : F →+* E)
+    (Q : MvPolynomial σ F[X]) {h : ℕ} (hQ : ChallengeHeightLE Q h) :
+    ChallengeHeightLE (MvPolynomial.map (Polynomial.mapRingHom ι) Q) h := by
+  intro m
+  rw [MvPolynomial.coeff_map]
+  exact Polynomial.natDegree_map_le.trans (hQ m)
 
 /-! ### Naturality -/
 
@@ -66,6 +115,16 @@ theorem map_differentialSpecialization [CommSemiring F] [CommSemiring E] (f : F 
   rw [MvPolynomial.map_eval₂Hom, MvPolynomial.eval₂Hom_map_hom]
   refine MvPolynomial.eval₂Hom_congr (RingHom.ext fun a ↦ by simp) (funext fun v ↦ ?_) rfl
   cases v <;> simp
+
+/-- Mapping a differential specialization commutes with specializing its challenge first. -/
+theorem map_symbolicDifferentialSpecialization {F E : Type*}
+    [CommSemiring F] [CommSemiring E] {r : ℕ} (ι : F →+* E)
+    (Q : DifferentialPolynomial F[X] r) (z : F) (P : F[X]) :
+    (differentialSpecialization (challengeSpecialization Q z) P).map ι =
+      differentialSpecialization
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom ι) Q) (ι z))
+        (P.map ι) := by
+  rw [challengeSpecialization_map_coefficients, map_differentialSpecialization]
 
 /-- Separants commute with mapping coefficients: the partial derivative in `Y_j` of `Q.map f` is
 the map of the partial derivative of `Q`. -/
@@ -107,7 +166,7 @@ theorem highestActiveJet_map_eq_none [CommSemiring F] [CommSemiring E] (f : F �
   exact (highestActiveJet_eq_none_iff Q).mp hQ j hlt
 
 /-- An injective coefficient map preserves the cast hypothesis `JetDegreeCastsNeZero`: the jet
-degree is unchanged, and `(k : E) = f k` vanishes exactly when `(k : F)` does. In particular,
+degree is preserved, and `(k : E) = f k` vanishes exactly when `(k : F)` does. In particular,
 passing from a field to an extension field cannot make the hypothesis true when it was false. -/
 theorem jetDegreeCastsNeZero_map_iff [CommSemiring F] [CommSemiring E] {f : F →+* E}
     (hf : Function.Injective f) (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) :

@@ -80,7 +80,8 @@ example :
 least its jet degree `1`, and its image over `ZMod 2` is `0`, of total jet degree `0`. -/
 example :
     let Q : DifferentialPolynomial ℤ 0 := 2 * MvPolynomial.X (some 0)
-    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧ 1 ≤ jetTotalDegree Q := by
+    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧
+      1 ≤ jetTotalDegree Q := by
   intro Q
   have hmap : MvPolynomial.map (Int.castRingHom (ZMod 2)) Q = 0 := by
     simp [Q, CharTwo.two_eq_zero]
@@ -145,3 +146,57 @@ example {F E : Type*} [Field F] [Field E] [Algebra F E] {d : ℕ}
     base.card ≤ extension.card :=
   Finset.card_le_card_of_injOn _ hmaps
     (BoundedSolution.map_injective (algebraMap F E).injective).injOn
+
+/-- Specializing `C X * Y₀` at `0` gives zero over `ZMod 2`, and coefficient mapping
+preserves that value in the degree-two extension. -/
+example :
+    let φ := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
+      MvPolynomial.C X * MvPolynomial.X (some 0)
+    challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 0) = 0 := by
+  intro φ Q
+  rw [challengeSpecialization_map_coefficients]
+  simp [Q, challengeSpecialization]
+
+/-- The height-one bound for a constant-in-jets challenge equation is preserved by an extension
+of its coefficient field. -/
+example :
+    let φ := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
+      MvPolynomial.C (Polynomial.X : (ZMod 2)[X])
+    ChallengeHeightLE (MvPolynomial.map (Polynomial.mapRingHom φ) Q) 1 := by
+  intro φ Q
+  apply ChallengeHeightLE.map_coefficients φ
+  classical
+  intro m
+  by_cases hm : m = 0
+  · subst m
+    simp [Q]
+  · rw [MvPolynomial.coeff_C_of_ne_zero hm]
+    simp
+
+/-- Mapping the specialized zero equation commutes with differential specialization at the zero
+polynomial. -/
+example :
+    let φ := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
+      MvPolynomial.C X * MvPolynomial.X (some 0)
+    (differentialSpecialization (challengeSpecialization Q 0) 0).map φ = 0 ∧
+      differentialSpecialization
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 0)) 0 = 0 ∧
+      (differentialSpecialization (challengeSpecialization Q 0) 0).map φ =
+        differentialSpecialization
+          (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 0)) 0 := by
+  intro φ Q
+  have hbase : challengeSpecialization Q (0 : ZMod 2) = 0 := by
+    simp [Q, challengeSpecialization]
+  have hext : challengeSpecialization
+      (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ (0 : ZMod 2)) = 0 := by
+    rw [challengeSpecialization_map_coefficients, hbase, map_zero]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hbase]
+    change (Polynomial.mapRingHom φ) 0 = 0
+    exact map_zero (Polynomial.mapRingHom φ)
+  · rw [hext]
+    rfl
+  · simpa using map_symbolicDifferentialSpecialization φ Q (0 : ZMod 2) 0
