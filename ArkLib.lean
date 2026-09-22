@@ -102,11 +102,15 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Cons
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Coordinates
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Identity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.KernelSliceIndependence
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
@@ -312,6 +316,7 @@ public import ArkLib.Data.MvPolynomial.Degrees
 public import ArkLib.Data.MvPolynomial.EvenAndOdd
 public import ArkLib.Data.MvPolynomial.Interpolation
 public import ArkLib.Data.MvPolynomial.LinearMvExtension
+public import ArkLib.Data.MvPolynomial.MapExponents
 public import ArkLib.Data.MvPolynomial.Multilinear
 public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import ArkLib.Data.MvPolynomial.RestrictDegree
@@ -320,6 +325,7 @@ public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
+public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
@@ -549,6 +555,7 @@ public import ArkLib.ToMathlib.Analysis.Simplex.Moments
 public import ArkLib.ToMathlib.Analysis.Simplex.MonomialIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
+public import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
