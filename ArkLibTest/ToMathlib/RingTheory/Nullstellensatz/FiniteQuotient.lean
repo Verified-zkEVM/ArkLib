@@ -13,7 +13,8 @@ The examples check the source cardinality contract through an ordinary import, i
 infinite variable type, and exercise both boundary coordinate quotients. For the top ideal the
 quotient is the zero algebra and its zero locus is empty. With no variables and the bottom ideal,
 the quotient is the nontrivial one-dimensional base algebra and the zero locus is the singleton
-empty tuple.
+empty tuple. The Krull-dimension-zero form is applied to maximal ideals in three variables, whose
+quotients are fields, and to the unit ideal, whose quotient is the zero ring.
 -/
 
 open MvPolynomial
@@ -59,3 +60,22 @@ example :
       _ = 1 := by simp
   · exact finite_zeroLocus_of_finite_quotient (K := ℚ) (⊥ : Ideal (MvPolynomial Empty ℚ))
   · exact ncard_zeroLocus_le_finrank_quotient (K := ℚ) (⊥ : Ideal (MvPolynomial Empty ℚ))
+
+/-- The Krull-dimension-zero form applies to every maximal ideal in finitely many variables: the
+quotient is a field, so it has Krull dimension zero, and the zero locus over any extension is
+finite with at most `finrank` points. -/
+example {k K : Type*} [Field k] [Field K] [Algebra k K] (I : Ideal (MvPolynomial (Fin 3) k))
+    [I.IsMaximal] :
+    (zeroLocus K I).Finite ∧
+      (zeroLocus K I).ncard ≤ Module.finrank k (MvPolynomial (Fin 3) k ⧸ I) := by
+  have : Ring.KrullDimLE 0 (MvPolynomial (Fin 3) k ⧸ I) := by
+    let := Ideal.Quotient.field I
+    infer_instance
+  exact finite_zeroLocus_and_ncard_le_of_krullDimLE_zero I
+
+/-- For the unit ideal the quotient is the zero ring, which has Krull dimension zero vacuously;
+both sides of the bound are zero. -/
+example {k K : Type*} [Field k] [Field K] [Algebra k K] :
+    (zeroLocus K (⊤ : Ideal (MvPolynomial (Fin 2) k))).ncard ≤
+      Module.finrank k (MvPolynomial (Fin 2) k ⧸ (⊤ : Ideal (MvPolynomial (Fin 2) k))) :=
+  (finite_zeroLocus_and_ncard_le_of_krullDimLE_zero ⊤).2
