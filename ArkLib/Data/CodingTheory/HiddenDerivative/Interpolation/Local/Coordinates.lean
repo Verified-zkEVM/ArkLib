@@ -38,6 +38,8 @@ the substitution introduces in `Y₀`, which gives, for every monomial `T^t E^h 
 After projecting to contact order `t + d h < m`, the residual `r = t - h` is below `m` and
 `h < ⌈(m - r)/(d + 1)⌉`. The finite set `localResidualExponents hd m W B` collects the exponents
 allowed by these bounds, and its cardinality is at most `localResidualCoordinateBudget d m W B`.
+The cutoff `B` is a natural number; a real cutoff `T` corresponds to `B = ⌈T⌉₊`, since
+`n < T ↔ n < ⌈T⌉₊` for natural `n`.
 
 ## Main statements
 
@@ -52,6 +54,11 @@ allowed by these bounds, and its cardinality is at most `localResidualCoordinate
 * `finrank_range_localConstraintAt_domRestrict_le` and
   `finrank_range_exactLocalConstraintAt_le_localResidualCoordinateBudget`: the rank of the local
   constraint map on a space with these bounds is at most the residual budget.
+* `localDerivativeExponents`, `card_localDerivativeExponents_le`,
+  `mem_localDerivativeExponents_of_bounds`, and
+  `finrank_range_localConstraintAt_domRestrict_le_of_derivative_weight`: the same count when the
+  source has derivative-order weight at most `W` (weight `j` on `Y_j`, including `Y₁`); then no
+  jet-degree cutoff and no hypothesis on `d` is needed.
 
 ## References
 
@@ -358,5 +365,92 @@ theorem finrank_range_exactLocalConstraintAt_le_localResidualCoordinateBudget {F
   finrank_range_localConstraintAt_domRestrict_le hd m W _ center received _ fun _ hQ u hu =>
     have h := mem_exactInterpolationSpace_iff.mp hQ u hu
     ⟨h.2.1, Nat.lt_succ_of_le (totalJetDegree_le_floor_of_weight_lt hdD h.2.2)⟩
+
+/-! ### Counting the reachable exponents under a derivative-order weight bound -/
+
+/-- The derivative-order coordinate budget
+`∑_{r < m} ⌈(m - r)/(d + 1)⌉ · #{c : Fin d → ℕ | ∑_j (j + 1) c_j ≤ W + r}`. The factor
+`⌈(m - r)/(d + 1)⌉` counts the error exponents `h` of contact order `r + (d + 1) h < m`, and the
+second factor counts the exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W + r`.
+Unlike `localResidualCoordinateBudget`, it needs no jet-degree cutoff, because the derivative-order
+weight charges `Y₁`. -/
+def localDerivativeCoordinateBudget (d m W : ℕ) : ℕ :=
+  ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount (d + 1) (W + r)
+
+/-- The local exponent `T^(r + h) E^h Y^c` with residual `r`, error exponent `h`, and visible-jet
+exponent `c`. -/
+def localDerivativeExponent (r h : ℕ) (c : Fin d → ℕ) : LocalVariable d →₀ ℕ :=
+  Finsupp.equivFunOnFinite.symm fun
+    | none => r + h
+    | some none => h
+    | some (some j) => c j
+
+/-- The local exponents allowed by the bounds of `localConstraintAt_support_of_derivative_weight`:
+the residual `r = t - h` is below `m`, `h < ⌈(m - r)/(d + 1)⌉`, and the visible-jet exponent has
+derivative-order weight at most `W + r`. -/
+def localDerivativeExponents (d m W : ℕ) : Finset (LocalVariable d →₀ ℕ) :=
+  ((range m).sigma fun r => range (contactThreshold (d + 1) m r) ×ˢ
+      natWeightedSimplex (fun i : Fin d => i.val + 1) (W + r)).image
+    fun p => localDerivativeExponent p.1 p.2.1 p.2.2
+
+/-- There are at most `localDerivativeCoordinateBudget d m W` such exponents. -/
+theorem card_localDerivativeExponents_le (d m W : ℕ) :
+    (localDerivativeExponents d m W).card ≤ localDerivativeCoordinateBudget d m W := by
+  refine card_image_le.trans_eq ?_
+  simp only [card_sigma, card_product, card_range, localDerivativeCoordinateBudget,
+    weightedHigherJetCount_succ]
+
+/-- The derivative-order weight of a local exponent is `∑_j (j + 1) e(Y_(j+1))`. -/
+theorem weight_localDerivativeJetWeight (e : LocalVariable d →₀ ℕ) :
+    e.weight (localDerivativeJetWeight d) = ∑ j : Fin d, (j.val + 1) * e (localY j) := by
+  simp [Finsupp.weight_eq_sum, Fintype.sum_option, localDerivativeJetWeight, localY, mul_comm]
+
+/-- Every exponent satisfying the bounds of `localConstraintAt_support_of_derivative_weight` lies
+in `localDerivativeExponents d m W`. -/
+theorem mem_localDerivativeExponents_of_bounds {m W : ℕ} {e : LocalVariable d →₀ ℕ}
+    (hbalance : e (localE d) ≤ e (localT d))
+    (hweight : e.weight (localDerivativeJetWeight d) ≤ W + (e (localT d) - e (localE d)))
+    (hcontact : localContactOrder d e < m) :
+    e ∈ localDerivativeExponents d m W := by
+  rw [localContactOrder_eq] at hcontact
+  rw [weight_localDerivativeJetWeight] at hweight
+  refine mem_image.mpr ⟨⟨e (localT d) - e (localE d), e (localE d), fun j => e (localY j)⟩,
+    ?_, ?_⟩
+  · simp only [mem_sigma, mem_range, mem_product,
+      mem_natWeightedSimplex (fun i : Fin d => Nat.add_one_ne_zero i.val)]
+    refine ⟨by omega, ?_, hweight⟩
+    by_contra hle
+    have h1 : m ≤ e (localT d) - e (localE d) + (d + 1) *
+        contactThreshold (d + 1) m (e (localT d) - e (localE d)) :=
+      multiplicity_le_add_mul_contactThreshold (Nat.succ_pos d) m _
+    have h2 := Nat.mul_le_mul_left (d + 1) (Nat.le_of_not_lt hle)
+    have h3 : (d + 1) * e (localE d) = e (localE d) + d * e (localE d) := by ring
+    omega
+  · ext v
+    rcases v with _ | _ | j
+    · exact Nat.sub_add_cancel hbalance
+    · rfl
+    · rfl
+
+/-- The rank of the local constraint map on a space whose members have derivative-order weight
+at most `W` is at most `localDerivativeCoordinateBudget d m W`, over every field and for every
+`d`, including `d = 0`. No jet-degree cutoff is needed. -/
+theorem finrank_range_localConstraintAt_domRestrict_le_of_derivative_weight {F : Type*} [Field F]
+    (m W : ℕ) (center received : F) (S : Submodule F (DifferentialPolynomial F d))
+    (hS : ∀ Q ∈ S, ∀ u ∈ Q.support, fullDerivativeJetWeight u ≤ W) :
+    Module.finrank F (LinearMap.range ((localConstraintAt m center received).domRestrict S)) ≤
+      localDerivativeCoordinateBudget d m W := by
+  have hle : LinearMap.range ((localConstraintAt m center received).domRestrict S) ≤
+      restrictSupport F ↑(localDerivativeExponents d m W) := by
+    rintro _ ⟨⟨Q, hQ⟩, rfl⟩
+    rw [LinearMap.domRestrict_apply, mem_restrictSupport_iff]
+    intro e he
+    obtain ⟨h1, h2, h3⟩ := localConstraintAt_support_of_derivative_weight center received
+      (hS Q hQ) (mem_coe.mpr he)
+    exact mem_localDerivativeExponents_of_bounds h1 h2 h3
+  have := restrictSupport_finite (R := F) (localDerivativeExponents d m W).finite_toSet
+  refine (Submodule.finrank_mono hle).trans ?_
+  rw [finrank_restrictSupport_finset]
+  exact card_localDerivativeExponents_le d m W
 
 end ReedSolomon.HiddenDerivative
