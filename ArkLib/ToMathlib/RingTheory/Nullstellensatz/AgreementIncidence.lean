@@ -59,47 +59,6 @@ above holds with `excluded = ∅` and `L = m`.
 * `MvPolynomial.card_le_of_agreement_of_subsingleton` and
   `MvPolynomial.finite_and_ncard_le_of_agreement_of_subsingleton`: the incidence bound under
   uniqueness.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
-`AffineHilbert`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/Excluded.lean`:
-`affineAgreementIncidence_bound_off_excluded` and its private auxiliary are
-`card_le_of_agreement_off_excluded`. The cut family is indexed by any finite type `ι` instead of
-`Fin n`, with `n` replaced by `Fintype.card ι`; the points may lie in any field extension `K`
-of `k`; and the hypotheses `s ∉ P` and `0 < b` are dropped. If `s ∈ P`, then `U(P)` is empty, and
-if `b = 0`, every cut is constant, so each point agrees exactly with the cuts that lie in `P`.
-The set version `finite_and_ncard_le_of_agreement_off_excluded` is new.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/Agreement.lean`:
-`affineAgreementIncidence_bound` and its private auxiliary are
-`card_le_of_agreement_of_subsingleton`, now derived from the excluded-set theorem. Its uniqueness
-hypothesis is stated as subsingleton-ness of the points of `U(P)` agreeing with a given
-`m`-element set of cuts; the hypotheses `0 < b`, `0 < k`, `A ≤ n` are dropped as unused, and the
-index type is generalized as above. `card_cuts_mem_prime_lt` is
-`ncard_setOf_mem_lt_of_subsingleton`, which needs uniqueness only on `U(Q)` and allows any finite
-index type. `card_filter_cut_le_sum_retained` is `ncard_inter_cut_le_sum_retainedMinimalPrimes`,
-for any ideal `I` and points in `K`. `sum_card_cutPoints_le_of_child_bounds` is replaced by the
-single-cut statement `ncard_inter_cut_le_of_retained_le`, with the ratio `n * b / (A - k + 1)`
-replaced by an arbitrary nonnegative factor; the sum over cuts is done inside the main proof.
-`sum_retained_affineDegree_le` is
-`MvPolynomial.principalCut_sum_affineDegree_retainedMinimalPrimes_le` in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity`.
-
-The source definitions `cutsInIdeal`, `cutPoints`, `componentPoints` and `agreementIndices` are
-not introduced. Their cardinalities are written as `{i | cuts i ∈ Q}.ncard`,
-`(↑S ∩ {x | aeval x f = 0}).ncard`, `(↑S ∩ zeroLocus K Q).ncard` and
-`{i | aeval x (cuts i) = 0}.ncard`, which need no decidability instances. The source definition
-`principalOpenZeroLocus Q s` is written `{x | x ∈ zeroLocus K Q ∧ aeval x s ≠ 0}`, as in
-`ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen`. The source's
-`finiteAgreementIncidence_lower` is
-`Finset.card_mul_sub_add_one_le_sum_compl_card_bipartiteBelow` in
-`ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting`.
-
-Deferred: the other files of `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/`, and a version for
-non-prime `P`, which would sum the bound over minimal primes.
 -/
 
 @[expose] public section

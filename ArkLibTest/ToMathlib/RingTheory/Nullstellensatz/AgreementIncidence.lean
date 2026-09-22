@@ -17,7 +17,8 @@ them, so at most `1 * (4 * 1 / (2 - 1 + 1)) ^ 1 = 2` points agree with two cuts;
 and `1` do. With rational cuts `x` and `x - 1` and points in `K`, no prime contains both cuts, so
 the excluded-set theorem applies with `excluded = ∅` over the non-closed field `ℚ`. The boundary
 examples show that `L ≤ A` is needed in the main theorem and that `s` must not vanish on the
-points in the cover lemma. The last examples derive the source's statements.
+points in the cover lemma. The last examples restate the main results for cuts indexed by
+`Fin n`, with the counts written as filters of `Finset.univ`.
 -/
 
 open MvPolynomial
@@ -130,7 +131,7 @@ example : ¬ ((({0} : Finset (Fin 1 → ℚ)) : Set (Fin 1 → ℚ)) ∩
     Set.ncard_eq_zero ((Finset.finite_toSet _).subset Set.inter_subset_left)]
   exact Set.nonempty_iff_ne_empty.mp ⟨0, by simp⟩
 
-/-! ### Source-shaped statements -/
+/-! ### Cuts indexed by `Fin n` -/
 
 /-- The cardinality of a filter of `Finset.univ` is the `Set.ncard` of the corresponding set. -/
 theorem card_filter_univ_eq_ncard {ι : Type*} [Fintype ι] (p : ι → Prop) [DecidablePred p] :
@@ -141,8 +142,9 @@ theorem card_filter_univ_eq_ncard {ι : Type*} [Fintype ι] (p : ι → Prop) [D
   simp
 
 open Classical in
-/-- The source's `card_cuts_mem_prime_lt`, with its `cutsInIdeal` written as a filter. -/
-theorem source_card_cuts_mem_prime_lt {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ]
+/-- Fewer than `k` of the cuts lie in a positive-dimensional prime `P` with `s ∉ P` when any `k`
+cuts determine a point of `V(P)` off `s = 0`, with the count written as a filter. -/
+theorem card_filter_mem_lt_of_unique {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ]
     {n k : ℕ} {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
     {s : MvPolynomial σ F} (hs : s ∉ P)
     (cuts : Fin n → MvPolynomial σ F)
@@ -159,9 +161,9 @@ theorem source_card_cuts_mem_prime_lt {F σ : Type*} [Field F] [IsAlgClosed F] [
     hunique T hT x y hx.1 hx.2.1 hy.1 hy.2.1 fun i hi ↦ ⟨hx.2.2 i hi, hy.2.2 i hi⟩
 
 open Classical in
-/-- The source's `card_filter_cut_le_sum_retained`, with its `cutPoints` and `componentPoints`
-written as filters. -/
-theorem source_card_filter_cut_le_sum_retained {F σ : Type*} [Field F] [Finite σ]
+/-- The points of a finite subset of `V(P)` off `s = 0` that lie on `f = 0` are covered by the
+retained components of the cut, with the counts written as filters. -/
+theorem card_filter_cut_le_sum_retainedMinimalPrimes {F σ : Type*} [Field F] [Finite σ]
     (P : Ideal (MvPolynomial σ F)) (s f : MvPolynomial σ F) (S : Finset (σ → F))
     (hS : ∀ x ∈ S, x ∈ zeroLocus F P ∧ aeval x s ≠ 0) :
     (S.filter fun x ↦ aeval x f = 0).card ≤
@@ -172,9 +174,9 @@ theorem source_card_filter_cut_le_sum_retained {F σ : Type*} [Field F] [Finite 
   exact h
 
 open Classical in
-/-- The source's `affineAgreementIncidence_bound`, with its `agreementIndices` written as a
-filter. The hypotheses `0 < b`, `0 < k`, `A ≤ n` and `s ∉ P` are not used. -/
-theorem source_affineAgreementIncidence_bound {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ]
+/-- The incidence bound under uniqueness for cuts indexed by `Fin n`, with the agreement counts
+written as filters. The hypotheses `0 < b`, `0 < k`, `A ≤ n` and `s ∉ P` are not used. -/
+theorem card_le_of_agreement_of_unique_fin {F σ : Type*} [Field F] [IsAlgClosed F] [Finite σ]
     {n A k b : ℕ} {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
     {s : MvPolynomial σ F} (_hs : s ∉ P)
     (cuts : Fin n → MvPolynomial σ F) (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
@@ -198,10 +200,9 @@ theorem source_affineAgreementIncidence_bound {F σ : Type*} [Field F] [IsAlgClo
   rwa [Fintype.card_fin] at h
 
 open Classical in
-/-- The source's `affineAgreementIncidence_bound_off_excluded`, with `principalOpenZeroLocus`,
-`cutsInIdeal` and `agreementIndices` written out. The hypotheses `0 < b` and `s ∉ P` are not
-used. -/
-theorem source_affineAgreementIncidence_bound_off_excluded {F σ : Type*} [Field F] [Finite σ]
+/-- The incidence bound outside an excluded set for cuts indexed by `Fin n`, with the principal
+open subsets and the counts written out. The hypotheses `0 < b` and `s ∉ P` are not used. -/
+theorem card_le_of_agreement_off_excluded_fin {F σ : Type*} [Field F] [Finite σ]
     {n A L b : ℕ} {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime)
     {s : MvPolynomial σ F} (_hs : s ∉ P)
     (cuts : Fin n → MvPolynomial σ F) (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
