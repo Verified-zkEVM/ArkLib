@@ -632,6 +632,28 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/RoundedCounts.lean`
+
+Ported from the recipe-independent part of
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticRecipe.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `automaticSourceCountAt` is now
+`firstOrderSourceCount`, `automaticRankCountAt` is now `firstOrderRankCount`,
+`automaticRankCubicUpperCount` is now `firstOrderRankCubicUpperCount`, and
+`automaticRankCountAt_le_cubicUpperCount` is now `firstOrderRankCount_le_cubicUpperCount`.
+`automaticSourceLowerCount` is a private helper. The generic cores of
+`automaticRankCount_le_densityEnvelope_add_rounding`,
+`automaticSourceDensity_mul_cube_le_sourceCount` and `automaticFiniteSurplusEstimate` are
+`firstOrderRankCount_floor_le`, `cube_mul_sourceDensity_le_firstOrderSourceCount` and
+`cube_mul_densityGap_sub_le_sourceCount_sub_rankCount`, stated at `M = ⌊β m⌋₊` for any `β` in
+range and without `0 < m`. `automatic_source_residual_le_public` is now
+`mul_max_rateResidual_le_max_residual`, which takes `D ≤ R n` directly; the acceptance test derives
+`automatic_degree_le_rate_mul`. `scaledKernelHeight_le_of_source_surplus` is now
+`scaledKernelHeight_le_floor`, bounding by the floor rather than `max 1 …` and without `0 < n`.
+`certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount`, from `RateRounding.lean` in the same
+source directory, is now `certifiedEnlargedRankBound_one_eq_firstOrderRankCount` for every `W`.
+The threshold- and `β`-dependent definitions and theorems of `AutomaticRecipe.lean` are not ported
+here.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FreeOrder.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FreeOrder.lean` at
@@ -1628,6 +1650,14 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were stated over
 * The ceiling estimate inside `localRank_ceilDiv_le` is `Nat.cast_ceilDiv_le_div_add_one`.
 * The exponential envelope inside `localRank_weightedHigherJetCount_le_exp` is
   `Real.add_pow_le_pow_mul_exp`.
+
+## `ArkLib/ToMathlib/BigOperators/Intervals.lean`
+
+The source's private sums `automatic_sum_range_cast` and `automatic_sum_range_sq_cast` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticRecipe.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` are now
+`Finset.sum_range_natCast_mul_two` and `Finset.sum_range_natCast_sq_mul_six` over any commutative
+ring.
 
 ## `ArkLib/ToMathlib/Combinatorics/CubicStaircase.lean`
 
