@@ -120,6 +120,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSu
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.RankIntegral
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
@@ -562,6 +563,7 @@ public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 public import ArkLib.ToMathlib.BigOperators.Fin
+public import ArkLib.ToMathlib.BigOperators.Intervals
 public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
