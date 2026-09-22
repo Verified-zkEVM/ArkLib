@@ -11,7 +11,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSu
 /-!
 # The local rank on the weighted support
 
-Members of `weightedSupportSpace F D d W L` have higher-jet weight at most `W` and, for `0 < D`,
+Members of `weightedSupportSpace F D d W L hD` have higher-jet weight at most `W` and, for `0 < D`,
 total jet degree below `L / D`, hence below the natural cutoff `⌈L / D⌉₊`. The local constraint
 map of order `m` restricted to this space therefore has the support bounds of
 `localConstraintAt_support_of_weight_bounds`, and its rank over a field is at most
@@ -40,8 +40,7 @@ at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
   `localResidualCoordinateBudget` took the real cutoff `L / D`; the two agree because
   `n < x ↔ n < ⌈x⌉₊` for natural `n`. The rank bound is the specialization of the existing
   `finrank_range_localConstraintAt_domRestrict_le` to the weighted support space.
-* `weightedSupportLocalConstraint` is unchanged, except that `weightedSupportSpace` no longer
-  takes `hD`; the rank bound takes `hD` instead.
+* `weightedSupportLocalConstraint` is unchanged.
 
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
@@ -62,7 +61,7 @@ weighted support space has `h ≤ t`, higher-jet weight at most `W + (t - h)`, c
 `m`, and jet degree below `L / D`. The hypothesis `0 < D` is what turns the coarse cutoff into a
 jet-degree cutoff. -/
 theorem weightedSupport_localConstraint_support (hD : 0 < D) (center received : R)
-    {Q : DifferentialPolynomial R d} (hQ : Q ∈ weightedSupportSpace R D d W L)
+    {Q : DifferentialPolynomial R d} (hQ : Q ∈ weightedSupportSpace R D d W L hD)
     {e : LocalVariable d →₀ ℕ} (he : e ∈ (localConstraintAt m center received Q).support) :
     e (localE d) ≤ e (localT d) ∧
       e.weight (localHigherJetWeight d) ≤ W + (e (localT d) - e (localE d)) ∧
@@ -78,7 +77,7 @@ support space lies in the finite set `localResidualExponents hd m W ⌈L / D⌉�
 `0 < d` is needed for the coordinates of `localResidualExponents`. -/
 theorem weightedSupport_localConstraint_mem_exponents (hd : 0 < d) (hD : 0 < D)
     (center received : R) {Q : DifferentialPolynomial R d}
-    (hQ : Q ∈ weightedSupportSpace R D d W L)
+    (hQ : Q ∈ weightedSupportSpace R D d W L hD)
     {e : LocalVariable d →₀ ℕ} (he : e ∈ (localConstraintAt m center received Q).support) :
     e ∈ localResidualExponents hd m W ⌈L / D⌉₊ := by
   obtain ⟨hb, hw, hc, ht⟩ := weightedSupport_localConstraint_support hD center received hQ he
@@ -86,8 +85,8 @@ theorem weightedSupport_localConstraint_mem_exponents (hd : 0 < d) (hD : 0 < D)
 
 /-- The local constraint map of order `m` at `(center, received)`, restricted to the weighted
 support space. -/
-def weightedSupportLocalConstraint (m : ℕ) (center received : R) :
-    weightedSupportSpace R D d W L →ₗ[R] LocalPolynomial R d :=
+def weightedSupportLocalConstraint (m : ℕ) (hD : 0 < D) (center received : R) :
+    weightedSupportSpace R D d W L hD →ₗ[R] LocalPolynomial R d :=
   (localConstraintAt m center received).domRestrict _
 
 /-- For `0 < d` and `0 < D`, the local constraint map on the weighted support space has rank at
@@ -95,7 +94,7 @@ most `localResidualCoordinateBudget d m W ⌈L / D⌉₊` over every field. -/
 theorem finrank_weightedSupportLocalConstraint_le {F : Type*} [Field F] (hd : 0 < d)
     (hD : 0 < D) (center received : F) :
     Module.finrank F (LinearMap.range
-      (weightedSupportLocalConstraint (D := D) (d := d) (W := W) (L := L) m center received)) ≤
+      (weightedSupportLocalConstraint (d := d) (W := W) (L := L) m hD center received)) ≤
       localResidualCoordinateBudget d m W ⌈L / D⌉₊ :=
   finrank_range_localConstraintAt_domRestrict_le hd m W _ center received _ fun _ hQ u hu =>
     have h := mem_weightedSupportSpace_iff.mp hQ u hu

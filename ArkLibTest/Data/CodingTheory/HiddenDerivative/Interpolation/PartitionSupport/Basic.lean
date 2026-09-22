@@ -11,8 +11,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 
 The derivative-order weight charges `Y₁` and the higher-jet weight does not, so at `d = 1`,
 `W = 0` the polynomial `Y₁` lies in the weighted support space but not in the partition support
-space: the inclusion `partitionSupportSpace_le_weightedSupportSpace` is strict. At `D = 0` the
-inclusion still holds, since neither space needs `0 < D`.
+space: the inclusion `partitionSupportSpace_le_weightedSupportSpace` is strict.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -28,8 +27,8 @@ private theorem Y_one_weights :
 
 /-- At `d = 1`, `D = 1`, `W = 0`, `L = 2`, the polynomial `Y₁` lies in the weighted support space
 and not in the partition support space. -/
-example : X (some 1) ∈ weightedSupportSpace ℚ 1 1 0 2 ∧
-    X (some 1) ∉ partitionSupportSpace ℚ 1 1 0 2 := by
+example : X (some 1) ∈ weightedSupportSpace ℚ 1 1 0 2 one_pos ∧
+    X (some 1) ∉ partitionSupportSpace ℚ 1 1 0 2 one_pos := by
   obtain ⟨hw, hd, ht⟩ := Y_one_weights
   refine ⟨mem_weightedSupportSpace_iff.mpr fun u hu => ?_, fun h => ?_⟩
   · rw [X] at hu
@@ -40,7 +39,3 @@ example : X (some 1) ∈ weightedSupportSpace ℚ 1 1 0 2 ∧
   · have := (mem_partitionSupportSpace_iff.mp h (Finsupp.single (some 1) 1)
       (by simp [X, support_monomial])).1
     omega
-
-/-- The inclusion holds at `D = 0` as well. -/
-example (d W : ℕ) (L : ℝ) : partitionSupportSpace ℚ 0 d W L ≤ weightedSupportSpace ℚ 0 d W L :=
-  partitionSupportSpace_le_weightedSupportSpace

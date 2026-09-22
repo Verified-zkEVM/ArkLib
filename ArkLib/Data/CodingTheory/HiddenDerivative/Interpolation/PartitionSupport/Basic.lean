@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
+public import ArkLib.Data.MvPolynomial.WeightAtMost
 
 /-!
 # The derivative-order partition support
@@ -41,8 +42,7 @@ at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
   `partitionSupportEligible_finite`, `partitionSupportExponents`,
   `mem_partitionSupportExponents`, `mem_partitionSupportSpace_iff`,
   `finrank_partitionSupportSpace_eq_card` and `partitionSupportSpace_le_weightedSupportSpace` keep
-  their statements, except that `partitionSupportSpace` no longer takes `hD : 0 < D` (as for
-  `weightedSupportSpace`), so the inclusion holds for every `D`.
+  their statements.
 * The source imports `WeightedSupport/LocalRank.lean`; this file needs only
   `WeightedSupport/Basic.lean`.
 -/
@@ -86,33 +86,30 @@ theorem mem_partitionSupportExponents {hD : 0 < D} {u : JetVariable d →₀ ℕ
 
 /-- The partition support space: differential polynomials whose support consists of
 partition-support eligible exponents. -/
-def partitionSupportSpace (F : Type*) [CommSemiring F] (D d W : ℕ) (L : ℝ) :
+def partitionSupportSpace (F : Type*) [CommSemiring F] (D d W : ℕ) (L : ℝ) (hD : 0 < D) :
     Submodule F (DifferentialPolynomial F d) :=
-  MvPolynomial.restrictSupport F {u | PartitionSupportEligible D d W L u}
+  MvPolynomial.restrictSupport F
+    (↑(partitionSupportExponents D d W L hD) : Set (JetVariable d →₀ ℕ))
 
 /-- A polynomial lies in the partition support space exactly when every exponent of its support is
 eligible. -/
-theorem mem_partitionSupportSpace_iff [CommSemiring F] {Q : DifferentialPolynomial F d} :
-    Q ∈ partitionSupportSpace F D d W L ↔
+theorem mem_partitionSupportSpace_iff [CommSemiring F] {hD : 0 < D}
+    {Q : DifferentialPolynomial F d} :
+    Q ∈ partitionSupportSpace F D d W L hD ↔
       ∀ u ∈ Q.support, PartitionSupportEligible D d W L u := by
   rw [partitionSupportSpace, MvPolynomial.mem_restrictSupport_iff]
-  rfl
+  simp only [Set.subset_def, Finset.mem_coe, mem_partitionSupportExponents]
 
 /-- The dimension of the partition support space over a field is the number of eligible
 exponents. -/
 theorem finrank_partitionSupportSpace_eq_card [Field F] (hD : 0 < D) :
-    Module.finrank F (partitionSupportSpace F D d W L) =
+    Module.finrank F (partitionSupportSpace F D d W L hD) =
       (partitionSupportExponents D d W L hD).card := by
-  have hs : {u : JetVariable d →₀ ℕ | PartitionSupportEligible D d W L u} =
-      ↑(partitionSupportExponents D d W L hD) := by
-    ext u
-    simp
-  rw [partitionSupportSpace, hs, MvPolynomial.finrank_restrictSupport_finset]
+  rw [partitionSupportSpace, MvPolynomial.finrank_restrictSupport_finset]
 
-/-- The partition support space lies in the weighted support space with the same parameters, for
-every `D`. -/
-theorem partitionSupportSpace_le_weightedSupportSpace [CommSemiring F] :
-    partitionSupportSpace F D d W L ≤ weightedSupportSpace F D d W L := fun _ hQ =>
+/-- The partition support space lies in the weighted support space with the same parameters. -/
+theorem partitionSupportSpace_le_weightedSupportSpace [CommSemiring F] (hD : 0 < D) :
+    partitionSupportSpace F D d W L hD ≤ weightedSupportSpace F D d W L hD := fun _ hQ =>
   mem_weightedSupportSpace_iff.mpr fun u hu =>
     (mem_partitionSupportSpace_iff.mp hQ u hu).toWeightedSupportEligible
 
