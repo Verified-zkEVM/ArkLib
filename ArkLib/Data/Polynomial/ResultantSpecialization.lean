@@ -42,40 +42,6 @@ degree bound because `f.derivative.natDegree ≤ f.natDegree - 1`. The bound nee
 in characteristic `p` the derivative of `Y ^ p - Y` is `-1`. The actual-degree forms
 `isCoprime_map_of_resultant_ne_zero` and `separable_map_of_resultant_derivative_ne_zero` in
 `ArkLib.Data.Polynomial.FractionFieldResultant` are derived from the declared-degree forms here.
-
-## Relation to the source definitions
-
-The source defines `separableResultant A b := resultant A.derivative A (b - 1) b` for
-`A : R[X][X]`, and `paddedDerivativeResultant A b` by the same formula for `A : R[X]`. This file
-uses neither definition and writes `resultant f f.derivative m (m - 1)`, the argument order used
-elsewhere on ArkLib main. The two orders give the same value: `resultant_comm` introduces the sign
-`(-1) ^ (m * (m - 1))`, and `m * (m - 1)` is even (`resultant_comm_sub_one`). A source statement
-about `separableResultant A b` at a point `w` is the case `R := F[X]`, `f := A`, `m := b`,
-`φ := evalRingHom w` of the statements here.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `ArkLib/ToMathlib/Polynomial/SeparableResultant.lean`:
-  `eval_derivative_ne_zero_of_separableResultant_eval_ne_zero`,
-  `eval_derivative_ne_zero_of_separableResultant_map_ne_zero` and
-  `specialization_separable_of_separableResultant_eval_ne_zero`;
-* `ArkLib/ToMathlib/Polynomial/PaddedDerivativeResultantCommonRoot.lean`:
-  `paddedDerivativeResultant_map_eq_zero_of_common_root`;
-* `ArkLib/ToMathlib/Polynomial/DerivativeResultantDegree.lean`:
-  `separableResultant_map_eq_zero_of_common_root`.
-
-The source states these results separately for `R[X]` and `R[X][X]` and assumes `IsDomain` for
-the rings involved. The statements here hold over any commutative rings and for any declared
-degrees.
-
-Not ported in this file: the total-degree bounds `natDegree_separableResultant_add_sq_le*` and
-`natDegree_separableResultant_le_totalDegree*` of `DerivativeResultantDegree.lean`, which are in
-`ArkLib.Data.Polynomial.ResultantDegree`; the entry point
-`separableResultant_ne_zero_of_irreducible`, which is
-`resultant_derivative_ne_zero_of_irreducible` in `ArkLib.Data.Polynomial.FractionFieldResultant`;
-and the consumers `Ordinary/Factors/RootPresentation.lean` and `ContentExceptions.lean`.
 -/
 
 @[expose] public section
@@ -86,9 +52,7 @@ variable {R S K : Type*} [CommRing R] [CommRing S] [Field K] {m n : ℕ}
 
 /-- Swapping the arguments of a resultant with declared degrees `m` and `m - 1` does not change
 its value. `resultant_comm` contributes the sign `(-1) ^ (m * (m - 1))`, and `m * (m - 1)` is
-even for every natural number `m`, including `m = 0`. Consequently the source definition
-`separableResultant A b = resultant A.derivative A (b - 1) b` equals
-`resultant A A.derivative b (b - 1)`. -/
+even for every natural number `m`, including `m = 0`. -/
 theorem resultant_comm_sub_one (f g : R[X]) (m : ℕ) :
     resultant g f (m - 1) m = resultant f g m (m - 1) := by
   rw [resultant_comm f g m (m - 1), (Nat.even_mul_pred_self m).neg_one_pow, one_mul]
