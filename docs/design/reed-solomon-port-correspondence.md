@@ -1816,12 +1816,59 @@ differential polynomial over an infinite domain instead of the separant over a f
 `polynomialJet_mem_regular_solution_locus` is now
 `polynomialJet_mem_zeroLocus_initialJetEquation_sup_highTaylorCutsIdeal`.
 
-Deferred: the Hilbert-degree statements of `Geometry/InitialGeometry.lean`
-(`initialJetPrimeFamily_hilbertPolynomial_natDegree` and the two affine-degree sums), which need
-the hypersurface purity results of P5; `Geometry/HighCutGeometry.lean` apart from the cut degree
-bound, which needs the iterated retained cuts and the agreement incidence bound of P5; and
-`Geometry/SolutionExtension.lean` and `Geometry/SolutionEmbedding.lean`, which need the
+Deferred: `Geometry/SolutionExtension.lean` and `Geometry/SolutionEmbedding.lean`, which need the
 coefficient-map lemmas for differential specialization.
+
+The Hilbert-degree statements of `Geometry/InitialGeometry.lean`:
+`initialJetPrimeFamily_hilbertPolynomial_natDegree` is now
+`natDegree_affineHilbertPolynomial_of_mem_initialJetPrimeFamily`,
+`sum_initialJetPrimeFamily_affineDegree_mul_pow_le` is now
+`sum_affineDegree_mul_pow_initialJetPrimeFamily_le`, and its `_le_totalJetDegree` variant is now
+`sum_affineDegree_mul_pow_initialJetPrimeFamily_le_jetTotalDegree`. The first two drop the
+source's `initialJetEquation ≠ 0` hypothesis, since a member of the family does not contain the
+separant, and the third drops the nonzero-separant hypothesis. The helper
+`initialJetEquation_ne_zero_of_initialJetSeparant_notMem` is new.
+
+## `ArkLib/Data/Polynomial/Differential/TaylorChartIncidence.lean`
+
+Ported from `Geometry/HighCutGeometry.lean` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, except `rationalTaylorCutDegreeBound`, which is in
+`TaylorChart.lean`. The exponent `τ` is explicit, and each source pair of a default-exponent
+theorem and an `_of_exponent` theorem is one theorem under `TaylorExponentSufficient r K τ`.
+
+`highTaylorCutList` is `(List.range' k (K - k)).map (commonTaylorNumerator center Q τ)` in place
+of the source's `toList` over the subtype `{l : Fin K // k ≤ l}`.
+`commonTaylorNumerator_mem_highTaylorCutList` is now the characterization
+`mem_highTaylorCutList`, `highTaylorCutsIdeal_le_of_highTaylorCutList_le` is now the equality
+`span_setOf_mem_highTaylorCutList`, and `highTaylorCutList_totalDegree_le{,_of_exponent}` is
+`totalDegree_le_of_mem_highTaylorCutList`, without `0 < v`.
+
+`highTaylorPrimeFamily` is `Ideal.iteratedRetainedCutFamily` of `initialJetPrimeFamily` by the
+cut list. `highTaylorPrimeFamily_spec` is split into `isPrime_of_mem_highTaylorPrimeFamily`,
+`initialJetSeparant_notMem_of_mem_highTaylorPrimeFamily`,
+`initialJetEquation_mem_of_mem_highTaylorPrimeFamily`,
+`highTaylorCutsIdeal_le_of_mem_highTaylorPrimeFamily` and
+`exists_mem_highTaylorPrimeFamily_of_regular`, the last for jets over any extension field.
+`highTaylorPrimeFamily_hilbertPolynomial_natDegree_le` is now
+`natDegree_affineHilbertPolynomial_le_of_mem_highTaylorPrimeFamily`, without
+`initialJetEquation ≠ 0`, and `sum_highTaylorPrimeFamily_affineDegree_mul_pow_le{,_of_exponent}`
+is `sum_affineDegree_mul_pow_highTaylorPrimeFamily_le`, without the nonzero-separant and `0 < v`
+hypotheses. The source's `sum_iteratedRetainedCutFamily_affineDegree_mul_pow_le` is main's
+`sum_affineDegree_mul_pow_iteratedRetainedCutFamily_span_singleton_le`.
+
+`finite_regularHighCutJets_card_le{,_of_exponent}` is now `card_le_of_highTaylorCuts_of_agreement`.
+It is main's `card_le_of_agreement_off_excluded_of_hypersurface` with no excluded set and
+threshold `k`, in place of the source's `componentPoints`, `agreementIndices` and
+`affineAgreementIncidence_bound`. The domain is an injective `ι → F` on any `Fintype ι` in place
+of `Fin n ↪ F`, the agreement count is `Set.ncard`, `A ≤ n` is weakened to `A - k + 1 ≤ #ι`, and
+`0 < k`, the nonzero-separant hypothesis and `0 < v` are dropped. The terminal step is the new
+`ncard_setOf_taylorAgreementEquation_mem_lt`: over an algebraically closed field, a
+positive-dimensional prime containing the high cuts and not containing the separant contains
+fewer than `k` agreement equations at distinct points. The test derives the source statement,
+with `Fin n ↪ F`, `τ = 2K`, `0 < k ≤ A ≤ n` and the subtype cut list, and shows that `r < K` and
+`A - k + 1 ≤ #ι` are needed.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean`
 
 Ported from
