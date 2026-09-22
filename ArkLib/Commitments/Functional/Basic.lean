@@ -77,8 +77,9 @@ open scoped NNReal ENNReal
 
 variable [DecidableEq ι]
   {oSpec : OracleSpec ι} {Data : Type} [O : OracleInterface Data]
-  {Commitment Decommitment ComKey VerifKey : Type} [oSpec.Fintype] {n : ℕ}
-  {pSpec : ProtocolSpec n} [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+  {Commitment Decommitment ComKey VerifKey : Type} [∀ t, Fintype (oSpec.Range t)] {n : ℕ}
+  {pSpec : ProtocolSpec n} [∀ t, Inhabited ([pSpec.Challenge]ₒ.Range t)]
+  [∀ t, Fintype ([pSpec.Challenge]ₒ.Range t)]
   [∀ i, VCVCompatible (pSpec.Challenge i)]
   [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -111,7 +112,8 @@ def correctness (correctnessError : ℝ≥0) : Prop :=
 def perfectCorrectness : Prop :=
   correctness init impl scheme 0
 
-omit [DecidableEq ι] [oSpec.Fintype] [[pSpec.Challenge]ₒ.Inhabited] [[pSpec.Challenge]ₒ.Fintype]
+omit [DecidableEq ι] [∀ t, Fintype (oSpec.Range t)] [∀ t, Inhabited ([pSpec.Challenge]ₒ.Range t)]
+  [∀ t, Fintype ([pSpec.Challenge]ₒ.Range t)]
   [(i : pSpec.ChallengeIdx) → VCVCompatible (pSpec.Challenge i)] in
 /-- **Perfect correctness from perfect completeness of the opening.**
 If every honest key/commitment pair puts
@@ -135,8 +137,7 @@ theorem perfectCorrectness_of_opening_perfectCompleteness
     perfectCorrectness init impl scheme := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  apply le_of_eq
-  symm
+  refine ge_of_eq ?_
   -- Normalize the game into nested `ProbComp` binds.
   simp only [simulateQ_bind, StateT.run'_eq, StateT.run_bind, QueryImpl.addLift_def,
     QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self, map_bind]

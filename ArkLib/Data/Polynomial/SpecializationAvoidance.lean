@@ -26,6 +26,9 @@ of `c`. Taking `c` to be the leading coefficient of `A : R[X][X]` gives a specia
   specialization of the coefficient variable of `A : R[X][X]`, chosen from a finite candidate set.
 * `exists_map_evalRingHom_ne_zero_avoiding` and `exists_map_evalRingHom_ne_zero`: the same over an
   infinite domain, with no candidate set.
+* `exists_card_le_forall_eval_eq_zero_iff`: a family of polynomials of degree at most `d`, all
+  zero outside an index set `s`, has an exceptional set of at most `d * s.card` points outside
+  which each member vanishes only if it is the zero polynomial.
 
 The finite candidate forms apply over finite fields, where the infinite forms do not.
 
@@ -42,16 +45,6 @@ Mathlib's `eq_zero_of_natDegree_lt_card_of_eval_eq_zero` is the contrapositive o
 statement for a map that is injective on a whole `Fintype` index. The counting statement here
 takes a finset, a map injective on that finset, and concludes a cardinality bound; the avoidance
 statements below use it in that form.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/ToMathlib/Polynomial/SeparableResultant.lean`:
-
-* `finite_polynomial_specializations_eq_zero_card_le` is the case `R := F[X]`, `x := C` of
-  `card_le_natDegree_of_injOn_of_eval_eq_zero`;
-* `exists_map_evalRingHom_ne_zero_avoiding` and `exists_map_evalRingHom_ne_zero` are ported
-  with their source statements and are derived here from the finite candidate form.
 -/
 
 @[expose] public section
@@ -119,7 +112,7 @@ theorem exists_mem_map_evalRingHom_ne_zero_of_card_add_natDegree_lt_card {A : R[
 variable outside any finite set `forbidden` at which `A.map (evalRingHom t)` is nonzero and has
 the same degree as `A`.
 
-This is the source statement. It follows from
+It follows from
 `exists_mem_map_evalRingHom_ne_zero_of_card_add_natDegree_lt_card` with a candidate set of size
 `forbidden.card + A.leadingCoeff.natDegree + 1`. Over a finite field use that finite form. -/
 theorem exists_map_evalRingHom_ne_zero_avoiding [Infinite R] (A : R[X][X]) (hA : A ≠ 0)
@@ -141,5 +134,25 @@ theorem exists_map_evalRingHom_ne_zero [Infinite R] (A : R[X][X]) (hA : A ≠ 0)
       (A.map (evalRingHom t)).natDegree = A.natDegree := by
   obtain ⟨t, -, ht⟩ := exists_map_evalRingHom_ne_zero_avoiding A hA ∅
   exact ⟨t, ht⟩
+
+/-- **Simultaneous non-vanishing of a family.** Let `p i` be polynomials over a domain, with
+`(p i).natDegree ≤ d` for `i ∈ s` and `p i = 0` for `i ∉ s`. Some set of at most `d * s.card`
+points, the union of the roots of the nonzero `p i`, contains every `z` at which a nonzero member
+vanishes: outside it, `(p i).eval z = 0` holds exactly when `p i = 0`.
+
+The index type need not be finite; only the members indexed by `s` can be nonzero. -/
+theorem exists_card_le_forall_eval_eq_zero_iff {ι : Type*} (p : ι → R[X]) {d : ℕ}
+    (s : Finset ι) (hp : ∀ i ∈ s, (p i).natDegree ≤ d) (hs : ∀ i ∉ s, p i = 0) :
+    ∃ exceptional : Finset R, exceptional.card ≤ d * s.card ∧
+      ∀ z ∉ exceptional, ∀ i, (p i).eval z = 0 ↔ p i = 0 := by
+  classical
+  refine ⟨s.biUnion fun i ↦ (p i).roots.toFinset, ?_, fun z hz i ↦ ?_⟩
+  · rw [mul_comm]
+    refine Finset.card_biUnion_le_card_mul _ _ _ fun i hi ↦ ?_
+    exact ((Multiset.toFinset_card_le _).trans (card_roots' _)).trans (hp i hi)
+  · refine ⟨fun heval ↦ ?_, fun h ↦ by simp [h]⟩
+    by_contra hne
+    exact hz (Finset.mem_biUnion.mpr ⟨i, by_contra fun hi ↦ hne (hs i hi),
+      Multiset.mem_toFinset.mpr ((mem_roots hne).mpr heval)⟩)
 
 end Polynomial

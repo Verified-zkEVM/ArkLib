@@ -6,33 +6,34 @@ Authors: Quang Dao
 module
 
 public import CompPoly.Data.Classes.Serialize
-public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.Probability.UniformOn
 
 /-!
   # Deserialization close to uniform
 
-  The `Serialize` / `Deserialize` / `Serde` classes now live in CompPoly
+  The `Serialize` / `Deserialize` / `Serde` classes live in CompPoly
   (`CompPoly.Data.Classes.Serialize`), where every field and polynomial type carries instances.
-  What stays here is the statistical statement, which needs `PMF`: a deserializer from a
+  What stays here is the statistical statement, which needs measure theory: a deserializer from a
   uniformly random `β` produces an almost uniform `α`.
 
   CompPoly proves the counting fact behind this for its reduce-modulo-order challenge decoder
-  (`CompPoly.CanonicalNat.tv_ofBytesModOrder_le`, a total-variation bound over `ℚ`); the
-  `CloseToUniform` instances for its fields are to be derived from that bound.
+  (`CompPoly.CanonicalNat.tv_ofBytesModOrder_le`, a total-variation bound over `ℚ`). The
+  `CloseToUniform` instances for its fields are to be derived from that bound; note that `ε` here
+  bounds the L1 distance, which is twice the total variation.
 -/
 
 @[expose] public section
 
 universe u
 
--- Local instance for now, will need to develop statistical distance a lot more
-instance {α : Type*} [Fintype α] : Dist (PMF α) where
-  dist := fun a b => ∑ x, abs ((a x).toReal - (b x).toReal)
-
-open NNReal in
-/-- Type class for deserialization on two non-empty finite types `α`, `β`, which pushes forward the
-  uniform distribution of `β` to the uniform distribution of `α`, up to some error -/
+open NNReal ProbabilityTheory MeasureTheory in
+/-- Deserialization pushes forward the finite uniform measure within `ε` in the sum of absolute
+singleton-mass differences. This retains the original L1 normalization (twice total variation).
+The discrete measurable spaces make every finite-space deserializer measurable. -/
 class Deserialize.CloseToUniform (α : Type u) (β : Type u)
-    [Fintype α] [Fintype β] [Nonempty α] [Nonempty β] [Deserialize α β] where
+    [Fintype α] [Fintype β] [Nonempty α] [Nonempty β]
+    [MeasurableSpace α] [MeasurableSpace β]
+    [DiscreteMeasurableSpace α] [DiscreteMeasurableSpace β] [Deserialize α β] where
   ε : ℝ≥0
-  ε_close : dist (PMF.uniformOfFintype α) (deserialize <$> PMF.uniformOfFintype β) ≤ ε
+  ε_close : (∑ x : α, |((uniformOn Set.univ : Measure α) {x}).toReal -
+    ((uniformOn Set.univ : Measure β).map deserialize {x}).toReal|) ≤ ε

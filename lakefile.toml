@@ -18,7 +18,7 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "7a4d7ee254165f2fcf3282c7d2e6f204056e5121"
+rev = "d7089e46d69e07640fa23b5ae6b1b966f1d4b949"
 
 [[require]]
 name = "«doc-gen4»"
@@ -33,7 +33,7 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0"
+rev = "v4.34.0-patch2"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -121,3 +121,10 @@ name = "AxiomSweepTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["AxiomSweepTestFixtures.+"]
+
+# Semantic regression fixtures for native probability retirement.
+[[lean_lib]]
+name = "RetiredProbabilityTestFixtures"
+srcDir = "scripts"
+roots = []
+globs = ["RetiredProbabilityTestFixtures.+"]

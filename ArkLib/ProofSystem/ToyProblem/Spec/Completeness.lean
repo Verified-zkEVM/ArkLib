@@ -107,8 +107,8 @@ into (1) the monadic core — the verifier body simulated against `simOracle2`
 collapses to `pure (some ())`, packaged as
 `oracleVerifier_verify_simulateQ_eq_pure` above — and (2) support plumbing,
 peeling the `Reduction.run` bind chain with the definitional-unification
-helpers of `ArkLib/ToVCVio/OracleComp/SimSemantics/SimulateQ.lean` and closing
-each support element with `accepts_of_mem_inputRelationFor`.
+helpers from VCVio's `OptionT` and `StateT` simulation-semantics modules and
+closing each support element with `accepts_of_mem_inputRelationFor`.
 
 The input relation must be the **fixed-encoding** `inputRelationFor encode`:
 with an existentially quantified encoder this statement is false (the honest

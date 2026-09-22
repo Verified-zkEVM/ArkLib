@@ -34,7 +34,7 @@ open Code CoreDefinitions ProximityGap
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- A Reed--Solomon CA error below `1 / (2 * n)` at field radius `δ + 2 / n` bounds
@@ -463,21 +463,14 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     rw [mul_comm]
     exact_mod_cast hspread'
   have hlowerprob :
-      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤
-        ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) := by
-    rw [ENNReal.ofReal_eq_coe_nnreal (by positivity)]
-    exact_mod_cast hratioR
+      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤ Pr{let z ← $ᵗ F}[Pevent z] := by
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+    exact ENNReal.ofReal_le_ofReal hratioR
   have hratio_le :
-      ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) ≤
+      Pr{let z ← $ᵗ F}[Pevent z] ≤
         epsCa (F := F) (A := F)
           (ReedSolomon.code domain k : Set (ι → F))
           ((δ + 2 / Fintype.card ι).toNNReal) δ_int := by
-    have hqne : (Fintype.card F : NNReal) ≠ 0 := by
-      exact_mod_cast (Fintype.card_pos (α := F)).ne'
-    rw [ENNReal.coe_div hqne]
-    rw [← Probability.prob_uniform_eq_card_filter_div_card Pevent]
     dsimp only [Pevent]
     unfold epsCa
     exact le_iSup_of_le u (by rw [ite_eq_right hnotjoint])

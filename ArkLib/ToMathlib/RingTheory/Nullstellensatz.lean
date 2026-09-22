@@ -19,6 +19,8 @@ vanish lies on the zero locus of one of the finitely many minimal primes over `I
 not needed for such points. The file also records how the zero locus of `I ⊔ J` and of an added
 single equation decompose.
 
+Finite-quotient point counts are in `ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient`.
+
 ## Main statements
 
 * `MvPolynomial.mem_zeroLocus_iff_le_ker_aeval`: a point is a zero of `I` exactly when `I` lies in
@@ -44,24 +46,6 @@ use of `Finite σ`.
 
 The field `K` is arbitrary. Algebraic closedness is not used: the cover statements only pass from
 a point to its evaluation kernel, never from a prime to a point.
-
-## References
-
-This file is extracted from ArkLib at source revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalOpen/Cuts.lean`. The theorems
-`MvPolynomial.exists_retainedMinimalPrime_of_mem_zeroLocus`,
-`MvPolynomial.mem_zeroLocus_and_eval_ne_zero_iff_retained` and
-`MvPolynomial.mem_zeroLocus_and_cut_iff_retained` keep the source names and statements, with the
-coefficient field and extension renamed to `k` and `K` to match
-`Mathlib.RingTheory.Nullstellensatz`. The source proved the ideal-sum description of the cut
-inline; here it is the public lemma `MvPolynomial.mem_zeroLocus_sup_span_singleton_iff`, derived
-from `MvPolynomial.zeroLocus_sup`. The prime-ideal step is the generic
-`Ideal.exists_mem_retainedMinimalPrimes_le`.
-
-Deferred: the Krull-dimension drop of the same source file, the finite zero-dimensional
-results of `ArkLib/ToMathlib/AlgebraicGeometry/ZeroLocus/ZeroDimensional.lean`, and every result
-that needs algebraic closedness or the affine Hilbert polynomial.
 -/
 
 @[expose] public section

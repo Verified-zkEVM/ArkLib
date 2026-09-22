@@ -7,20 +7,24 @@ module
 
 public import Mathlib.Data.Sym.Card
 public import Mathlib.Data.Finsupp.Multiset
+public import Mathlib.Data.Finsupp.Weight
 public import Mathlib.Data.Fintype.BigOperators
 public import Mathlib.Data.Nat.Choose.Basic
 public import Mathlib.Data.Nat.Factorial.BigOperators
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.SetTheory.Cardinal.Finite
 
 /-!
 # Counting weighted discrete simplices
 
 `natWeightedSimplex w W` enumerates nonnegative integer vectors whose weighted sum is at most
-`W`. A finite coordinate box makes this an executable finset even when a weight is zero. For
-positive weights, quotient and remainder in each coordinate compare its cardinality with an
-ordinary simplex. Stars and bars and factorial bounds then give a two-sided integer estimate and
-an ordered-field upper bound.
+`W`, and `natWeightedSimplexShell w W` enumerates those of weight exactly `W`. A finite coordinate
+box makes both executable finsets even when a weight is zero. For positive weights, the budget
+alone characterizes membership, and the executable tuples are equivalent to the corresponding
+bounded and exact-weight `Finsupp` subtypes. Quotient and remainder in each coordinate compare the
+simplex cardinality with an ordinary simplex. Stars and bars and factorial bounds then give a
+two-sided integer estimate and an ordered-field upper bound.
 
 The empty index type has one vector, including when `W = 0`. A zero weight does not constrain its
 coordinate, so the finite box matters and the lower estimate requires positive weights.
@@ -28,6 +32,11 @@ coordinate, so the finite box matters and the lower estimate requires positive w
 ## Main statements
 
 * `mem_natWeightedSimplex`: for positive weights, membership is the weighted budget alone.
+* `natWeightedSimplex_mono`: the simplex is monotone in the budget, for all weights.
+* `natWeightedSimplexFinsuppEquiv` and `natWeightedSimplexShellFinsuppEquiv`: bridges from
+  canonical finitely supported exponents to the executable tuple simplex and shell.
+* `card_natWeightedSimplex_eq_sum_card_shell`: the simplex is the disjoint union of its shells.
+* `natWeightedSimplexOneEquivExact`: the public slack-coordinate exact-simplex equivalence.
 * `card_natWeightedSimplex_one`: bounded stars and bars,
   `#(natWeightedSimplex 1 W) = (W + n).choose n` for `n = Fintype.card σ`.
 * `choose_le_card_natWeightedSimplex_mul_prod` and
@@ -39,17 +48,8 @@ coordinate, so the finite box matters and the lower estimate requires positive w
 * `card_natWeightedSimplex_le`: the upper bound divided out over an ordered field.
 * `natWeightedSimplex_succ_sandwich`: weights `1, …, n`, with `n! ^ 2` and `(n + 1).choose 2`.
 
-## References
-
-Generalizes `ordinaryToExact`, `ordinarySimplexEquivSym`, and `card_ordinarySimplex` from
-`ToMathlib/Combinatorics/DiscreteSimplex/Basic.lean`, and `ordinaryToScaledWithResidue`,
-`scaledWithResidueToOrdinary`, and `scaledExponentCount_factorial_sq_sandwich` from
-`HiddenDerivative/Parameters/Lattice/ScaledLattice.lean`, all at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source adapts `kz99/rs-ld-mca`
-revision `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` with permission.
-`weightedHigherJetTuples` and `ratePartitionTupleCount_le_volume` motivate the finite set and
-ordered-field bound. Public exact-simplex equivalences, shell counts, the `Finsupp` count bridge,
-continuous volumes, floor cells, and moments are deferred.
+Parts of this file are adapted, with permission, from Kai Zhe Zheng's `kz99/rs-ld-mca`
+formalization.
 -/
 
 @[expose] public section
@@ -64,11 +64,27 @@ def natWeightedSimplex {σ : Type*} [Fintype σ] [DecidableEq σ]
     (w : σ → ℕ) (W : ℕ) : Finset (σ → ℕ) :=
   (Fintype.piFinset fun _ ↦ range (W + 1)).filter fun c ↦ ∑ i, w i * c i ≤ W
 
+/-- The finite box of nonnegative vectors of weighted sum exactly `W`. With positive weights this
+contains every vector of weight `W`; when a weight is zero the coordinate box remains part of the
+definition. -/
+def natWeightedSimplexShell {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) (W : ℕ) : Finset (σ → ℕ) :=
+  (Fintype.piFinset fun _ ↦ range (W + 1)).filter fun c ↦ ∑ i, w i * c i = W
+
 /-- Membership always implies the weighted budget, including with zero weights and `W = 0`. -/
 theorem weightedSum_le_of_mem_natWeightedSimplex {σ : Type*} [Fintype σ] [DecidableEq σ]
     {w : σ → ℕ} {W : ℕ} {c : σ → ℕ} (hc : c ∈ natWeightedSimplex w W) :
     ∑ i, w i * c i ≤ W :=
   (mem_filter.mp hc).2
+
+/-- The simplex grows with the budget. This holds for all weights, including zero weights,
+because the coordinate box `[0, W]` also grows with `W`. -/
+theorem natWeightedSimplex_mono {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) {W W' : ℕ} (hWW' : W ≤ W') :
+    natWeightedSimplex w W ⊆ natWeightedSimplex w W' := by
+  intro c hc
+  simp only [natWeightedSimplex, mem_filter, Fintype.mem_piFinset, mem_range] at hc ⊢
+  exact ⟨fun i => by have := hc.1 i; omega, hc.2.trans hWW'⟩
 
 /-- With every weight positive, the weighted budget itself enforces the finite coordinate box.
 For a zero weight this equivalence fails when that coordinate exceeds `W`. -/
@@ -84,34 +100,128 @@ theorem mem_natWeightedSimplex {σ : Type*} [Fintype σ] [DecidableEq σ]
   have hcoord : c i ≤ w i * c i := Nat.le_mul_of_pos_left _ (Nat.pos_of_ne_zero (hw i))
   omega
 
+/-- With every weight positive, membership in the executable shell is exactly equality of the
+weighted sum. A zero weight does not bound its coordinate, so the hypothesis is essential. -/
+theorem mem_natWeightedSimplexShell {σ : Type*} [Fintype σ] [DecidableEq σ]
+    {w : σ → ℕ} (hw : ∀ i, w i ≠ 0) {W : ℕ} {c : σ → ℕ} :
+    c ∈ natWeightedSimplexShell w W ↔ ∑ i, w i * c i = W := by
+  refine ⟨fun hc ↦ (mem_filter.mp hc).2, fun hc ↦ mem_filter.mpr ⟨?_, hc⟩⟩
+  rw [Fintype.mem_piFinset]
+  intro i
+  rw [mem_range]
+  have hterm : w i * c i ≤ ∑ j, w j * c j :=
+    single_le_sum (f := fun j ↦ w j * c j) (fun j _ ↦ Nat.zero_le _) (mem_univ i)
+  have hcoord : c i ≤ w i * c i := Nat.le_mul_of_pos_left _ (Nat.pos_of_ne_zero (hw i))
+  omega
+
+/-- Tuple weighted sum agrees with `Finsupp.weight` under the canonical equivalence on a finite
+index type. -/
+theorem weightedSum_equivFunOnFinite {σ : Type*} [Fintype σ]
+    (w : σ → ℕ) (c : σ →₀ ℕ) :
+    (∑ i, w i * Finsupp.equivFunOnFinite c i) = c.weight w := by
+  classical
+  rw [Finsupp.weight_eq_sum]
+  simp only [Finsupp.equivFunOnFinite_apply, nsmul_eq_mul]
+  apply sum_congr rfl
+  intro i _
+  exact Nat.mul_comm _ _
+
+/-- The executable positive-weight simplex is equivalent to the canonical subtype of bounded
+finitely supported exponent vectors. Nonzero weights are necessary: otherwise the latter subtype
+can be infinite while the executable coordinate box is finite. -/
+noncomputable def natWeightedSimplexFinsuppEquiv {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (W : ℕ) :
+    {c : σ →₀ ℕ // c.weight w ≤ W} ≃ ↑(natWeightedSimplex w W) :=
+  Equiv.subtypeEquiv Finsupp.equivFunOnFinite fun c ↦ by
+    rw [mem_natWeightedSimplex hw, weightedSum_equivFunOnFinite]
+
+/-- The executable positive-weight shell is equivalent to the canonical subtype of exact-weight
+finitely supported exponent vectors. -/
+noncomputable def natWeightedSimplexShellFinsuppEquiv
+    {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (W : ℕ) :
+    {c : σ →₀ ℕ // c.weight w = W} ≃ ↑(natWeightedSimplexShell w W) :=
+  Equiv.subtypeEquiv Finsupp.equivFunOnFinite fun c ↦ by
+    rw [mem_natWeightedSimplexShell hw, weightedSum_equivFunOnFinite]
+
+/-- The cardinality of bounded positive-weight `Finsupp` exponents is the executable simplex
+count. -/
+theorem card_finsupp_weight_le_eq_card_natWeightedSimplex
+    {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (W : ℕ) :
+    Nat.card {c : σ →₀ ℕ // c.weight w ≤ W} = (natWeightedSimplex w W).card := by
+  classical
+  calc
+    Nat.card {c : σ →₀ ℕ // c.weight w ≤ W} =
+        Nat.card ↑(natWeightedSimplex w W) :=
+      Nat.card_congr (natWeightedSimplexFinsuppEquiv w hw W)
+    _ = Fintype.card ↑(natWeightedSimplex w W) := Nat.card_eq_fintype_card
+    _ = (natWeightedSimplex w W).card := Fintype.card_coe _
+
+/-- The cardinality of exact positive-weight `Finsupp` exponents is the executable shell count. -/
+theorem card_finsupp_weight_eq_card_natWeightedSimplexShell
+    {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (W : ℕ) :
+    Nat.card {c : σ →₀ ℕ // c.weight w = W} = (natWeightedSimplexShell w W).card := by
+  classical
+  calc
+    Nat.card {c : σ →₀ ℕ // c.weight w = W} =
+        Nat.card ↑(natWeightedSimplexShell w W) :=
+      Nat.card_congr (natWeightedSimplexShellFinsuppEquiv w hw W)
+    _ = Fintype.card ↑(natWeightedSimplexShell w W) := Nat.card_eq_fintype_card
+    _ = (natWeightedSimplexShell w W).card := Fintype.card_coe _
+
+/-- A positive-weight simplex is the disjoint union of its exact-weight shells from `0` through
+`W`, at the level of cardinalities. -/
+theorem card_natWeightedSimplex_eq_sum_card_shell
+    {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (W : ℕ) :
+    (natWeightedSimplex w W).card =
+      ∑ t ∈ range (W + 1), (natWeightedSimplexShell w t).card := by
+  classical
+  let weight : (σ → ℕ) → ℕ := fun c ↦ ∑ i, w i * c i
+  have hmaps : (natWeightedSimplex w W : Set (σ → ℕ)).MapsTo
+      weight (range (W + 1) : Set ℕ) := by
+    intro c hc
+    exact mem_range.mpr (Nat.lt_succ_of_le (weightedSum_le_of_mem_natWeightedSimplex hc))
+  rw [card_eq_sum_card_fiberwise (f := weight) hmaps]
+  apply sum_congr rfl
+  intro t ht
+  congr 1
+  ext c
+  simp only [mem_filter, mem_natWeightedSimplex hw, mem_natWeightedSimplexShell hw]
+  constructor
+  · exact fun h ↦ h.2
+  · intro hc
+    have htW : t ≤ W := Nat.le_of_lt_succ (mem_range.mp ht)
+    exact ⟨hc.le.trans htW, hc⟩
+
 private def ordinarySimplex (σ : Type*) [Fintype σ] (W : ℕ) :=
   {c : σ → ℕ // ∑ i, c i ≤ W}
 
 private def exactSimplex (σ : Type*) [Fintype σ] (W : ℕ) :=
   {c : Option σ → ℕ // ∑ i, c i = W}
 
-private def ordinaryToExact {σ : Type*} [Fintype σ] (W : ℕ)
-    (c : ordinarySimplex σ W) : exactSimplex σ W :=
-  ⟨fun i ↦ i.elim (W - ∑ j, c.1 j) c.1, by
-    rw [Fintype.sum_option]
-    simp only [Option.elim_none, Option.elim_some]
-    exact Nat.sub_add_cancel c.2⟩
-
-private def exactToOrdinary {σ : Type*} [Fintype σ] (W : ℕ)
-    (c : exactSimplex σ W) : ordinarySimplex σ W :=
-  ⟨fun i ↦ c.1 (some i), by
-    have hc := c.2
-    rw [Fintype.sum_option] at hc
-    change c.1 none + (∑ i, c.1 (some i)) = W at hc
-    change (∑ i, c.1 (some i)) ≤ W
-    omega⟩
-
-private noncomputable def ordinaryEquivSym {σ : Type*} [Fintype σ] (W : ℕ) :
-    ordinarySimplex σ W ≃ Sym (Option σ) W := by
-  classical
-  exact (Equiv.trans {
-    toFun := ordinaryToExact W
-    invFun := exactToOrdinary W
+/-- Slack-coordinate equivalence between the unit-weight executable simplex and functions on
+`Option σ` whose coordinates sum exactly to `W`. The `none` coordinate stores the unused budget.
+This is the public exact-simplex form of stars and bars. -/
+def natWeightedSimplexOneEquivExact
+    {σ : Type*} [Fintype σ] [DecidableEq σ] (W : ℕ) :
+    ↑(natWeightedSimplex (fun _ : σ ↦ 1) W) ≃
+      {c : Option σ → ℕ // ∑ i, c i = W} :=
+  {
+    toFun := fun c ↦ ⟨fun i ↦ i.elim (W - ∑ j, c.1 j) c.1, by
+      rw [Fintype.sum_option]
+      simp only [Option.elim_none, Option.elim_some]
+      exact Nat.sub_add_cancel <| by
+        simpa only [one_mul] using weightedSum_le_of_mem_natWeightedSimplex c.2⟩
+    invFun := fun c ↦ ⟨fun i ↦ c.1 (some i), by
+      apply (mem_natWeightedSimplex (fun _ ↦ one_ne_zero)).mpr
+      simpa only [one_mul] using show (∑ i, c.1 (some i)) ≤ W by
+        have hc := c.2
+        rw [Fintype.sum_option] at hc
+        change c.1 none + (∑ i, c.1 (some i)) = W at hc
+        omega⟩
     left_inv := fun c ↦ by
       apply Subtype.ext
       funext i
@@ -126,7 +236,27 @@ private noncomputable def ordinaryEquivSym {σ : Type*} [Fintype σ] (W : ℕ) :
           change W - (∑ j, c.1 (some j)) = c.1 none
           omega
       | some i => rfl
-  } (Sym.equivNatSumOfFintype _ _).symm)
+  }
+
+/-- The unit-weight executable simplex is the subtype of tuples of total at most `W`. -/
+private def natWeightedSimplexOneEquivOrdinary {σ : Type*} [Fintype σ] [DecidableEq σ]
+    (W : ℕ) : ↑(natWeightedSimplex (fun _ : σ ↦ 1) W) ≃ ordinarySimplex σ W where
+  toFun c := ⟨c.1, by
+    simpa only [one_mul] using weightedSum_le_of_mem_natWeightedSimplex c.2⟩
+  invFun c := ⟨c.1, (mem_natWeightedSimplex (fun _ ↦ one_ne_zero)).mpr
+    (by simpa only [one_mul] using c.2)⟩
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+private noncomputable def ordinaryEquivExact {σ : Type*} [Fintype σ] (W : ℕ) :
+    ordinarySimplex σ W ≃ exactSimplex σ W := by
+  classical
+  exact (natWeightedSimplexOneEquivOrdinary W).symm.trans (natWeightedSimplexOneEquivExact W)
+
+private noncomputable def ordinaryEquivSym {σ : Type*} [Fintype σ] (W : ℕ) :
+    ordinarySimplex σ W ≃ Sym (Option σ) W := by
+  classical
+  exact (ordinaryEquivExact W).trans (Sym.equivNatSumOfFintype _ _).symm
 
 private noncomputable instance ordinarySimplexFintype {σ : Type*} [Fintype σ] (W : ℕ) :
     Fintype (ordinarySimplex σ W) := by
@@ -148,16 +278,7 @@ private theorem card_natWeightedSimplex_one_aux {σ : Type*} [Fintype σ] [Decid
     (natWeightedSimplex (fun _ : σ ↦ 1) W).card =
       Fintype.card (ordinarySimplex σ W) := by
   rw [← Fintype.card_coe]
-  apply Fintype.card_congr
-  exact {
-    toFun := fun c ↦ ⟨c.1, by
-      simpa only [one_mul] using
-        (weightedSum_le_of_mem_natWeightedSimplex c.2)⟩
-    invFun := fun c ↦ ⟨c.1, by
-      exact (mem_natWeightedSimplex (fun _ ↦ one_ne_zero)).mpr
-        (by simpa only [one_mul] using c.2)⟩
-    left_inv := fun _ ↦ rfl
-    right_inv := fun _ ↦ rfl }
+  exact Fintype.card_congr (natWeightedSimplexOneEquivOrdinary W)
 
 /-- Bounded stars and bars: with unit weights, the box counts precisely the tuples of total
 degree at most `W`. At an empty index type this equals one, also for `W = 0`. -/

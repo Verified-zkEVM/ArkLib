@@ -217,65 +217,58 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
     funext x
     rcases x with ⟨_, _, _, _, _, _, _⟩
     rfl
-  have hgame :
-      Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
-        (AuxState := AuxState)
-        (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
-        (adversary := adversary) =
-      proj <$> functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
-    apply OptionT.ext
-    simp only [OptionT.run_map]
-    simp only [Commitment.functionBindingGame, functionBindingGameExt, kzg, OptionT.run,
-      OptionT.mk]
-    rw [pure_bind]
-    have hsample :
-        (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
-          Groups.sampleNonzeroZMod (p := p) :=
-      Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
-    have hkeygen :
-        (simulateQ randomOracle (do
-          let a ← Groups.sampleNonzeroZMod (p := p)
-          pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-            Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
-          =
-        (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-            <$> Groups.sampleNonzeroZMod (p := p) := by
-      calc
-        (simulateQ randomOracle (do
-          let a ← Groups.sampleNonzeroZMod (p := p)
-          pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-            Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
-            = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-                Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-                <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-              rw [← StateT.run'_map', ← simulateQ_map]
-              simp only [map_eq_bind_pure_comp]
-              congr 1
-        _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
-                Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
-                <$> Groups.sampleNonzeroZMod (p := p) := by
-              rw [hsample]
-    rw [hkeygen]
-    simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
-    congr 1
-    funext τ
-    rw [← map_eq_bind_pure_comp, ← StateT.run'_map', ← simulateQ_map]
-    simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
-    congr 1
-    funext x
-    apply congr_fun
-    apply congr_arg
-    congr 1
-    funext x_1
-    rw [Reduction.allVerdicts_eq_map_allOutputs_fst (fun result =>
-      (result.1.1 0 : G₁))]
-    simp only [map_eq_bind_pure_comp, bind_assoc, Option.map_bind]
-    congr 1
-    funext resultPairs
-    cases resultPairs <;> rfl
-  simp only [hcond_eq, hgame, prEvent_map, Function.comp_apply]
+  rw [hcond_eq, Function.comp_def, ← prEvent_map _ proj]
+  congr 3
+  apply OptionT.ext
+  rw [OptionT.run_map]
+  simp only [Commitment.functionBindingGame, functionBindingGameExt, kzg, OptionT.run,
+    OptionT.mk, pure_bind]
+  have hsample :
+      (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
+        Groups.sampleNonzeroZMod (p := p) :=
+    Groups.simulateQ_randomOracle_sampleNonzeroZMod (p := p)
+  have hkeygen :
+      (simulateQ randomOracle (do
+        let a ← Groups.sampleNonzeroZMod (p := p)
+        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+        =
+      (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+        Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+          <$> Groups.sampleNonzeroZMod (p := p) := by
+    calc
+      (simulateQ randomOracle (do
+        let a ← Groups.sampleNonzeroZMod (p := p)
+        pure (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+          Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))).run' ∅
+          = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+              <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
+            rw [← StateT.run'_map', ← simulateQ_map]
+            simp only [map_eq_bind_pure_comp]
+            congr 1
+      _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
+              Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
+              <$> Groups.sampleNonzeroZMod (p := p) := by
+            rw [hsample]
+  rw [hkeygen]
+  simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
+  congr 1
+  funext τ
+  rw [← map_eq_bind_pure_comp, ← StateT.run'_map', ← simulateQ_map]
+  simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
+  congr 1
+  funext x
+  apply congr_fun
+  apply congr_arg
+  congr 1
+  funext x_1
+  rw [Reduction.allVerdicts_eq_map_allOutputs_fst (fun result =>
+    (result.1.1 0 : G₁))]
+  simp only [map_eq_bind_pure_comp, bind_assoc, Option.map_bind]
+  congr 1
+  funext resultPairs
+  cases resultPairs <;> rfl
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
@@ -533,7 +526,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type} [Samplea
     ≤ Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
         (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
           ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] := by
-  apply prEvent_mono_of_support
+  apply _root_.prEvent_mono_of_support
   intro (τ, srs, cm, queryOf, responseOf, accepts, proofs) hgame hFBcond
   exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hg₁ hpair
     adversary hgame hFBcond
@@ -562,9 +555,7 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.arsdhExperiment, Groups.arsdhGame]
-  simp only [prEvent_eq_evalDist_map]
-  apply congrArg (fun mx : OptionT ProbComp (ZMod p × Finset (ZMod p) × G₁ × G₁) =>
-    𝒟[Groups.arsdhCondition n <$> mx] {True})
+  congr 3
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
@@ -654,15 +645,8 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.functionBinding]
   intro AuxState adversary
-  let game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
-    (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
   let game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
-  change Pr{let result ← (game)}[
-    (Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p)) result]
-    ≤ arsdhError
-  exact
-    calc Pr{let result ← (game)}[
-      (Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p)) result]
+  calc _
     _ = Pr{let result ← (game_ext)}[(functionBindingCondExt n L) result] :=
       function_binding_game_ext_eq_function_binding_game (pairing := pairing) adversary
     _ ≤ Pr{let result ← (game_ext)}[

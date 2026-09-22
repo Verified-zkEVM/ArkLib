@@ -122,6 +122,7 @@ theorem finite_support_second_moment
 
 omit [Nonempty ι] [DecidableEq ι] in
 private theorem fold_density_le_eps_ca_of_not_joint_proximity
+    [SampleableType F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) (u : Fin 2 → ι → F)
     (hnot : ¬ Code.jointProximity (C := C) (u := u) δ_int) :
     ((((Finset.univ.filter (fun γ : F =>
@@ -132,27 +133,13 @@ private theorem fold_density_le_eps_ca_of_not_joint_proximity
   have hcardF_ne : (Fintype.card F : NNReal) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hcardF_ne]
-  rw [← Probability.prob_uniform_eq_card_filter_div_card]
   unfold _root_.ProximityGap.epsCa
-  calc
-    (do
-      let γ ← PMF.uniformOfFintype F
-      pure (Code.relDistFromCode (u 0 + γ • u 1) C ≤ δ_fld)) True =
-        (if Code.jointProximity (C := C) (u := u) δ_int then (0 : ENNReal)
-        else (do
-          let γ ← PMF.uniformOfFintype F
-          pure (Code.relDistFromCode (u 0 + γ • u 1) C ≤ δ_fld)) True) :=
-      (ite_eq_right hnot).symm
-    _ ≤ ⨆ w : Fin 2 → ι → F,
-        if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
-        else (do
-          let γ ← PMF.uniformOfFintype F
-          pure (Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld)) True :=
-      le_iSup (fun w : Fin 2 → ι → F =>
-        if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
-        else (do
-          let γ ← PMF.uniformOfFintype F
-          pure (Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld)) True) u
+  refine le_trans ?_ (le_iSup (fun w : Fin 2 → ι → F =>
+    if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
+    else Pr{let γ ←$ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) u)
+  rw [ite_eq_right hnot]
+  rw [SampleableType.prEvent_uniformSample]
+  exact le_rfl
 
 open scoped BigOperators in
 noncomputable def subfield_ca_bessel_partial (x : ℝ) (m : ℕ) : ℝ :=
@@ -530,6 +517,7 @@ noncomputable def subfield_ca_support
 
 omit [Nonempty ι] [DecidableEq ι] in
 theorem subfield_ca_witness_data_eps_ca
+    [SampleableType F]
     (domain : ι ↪ F) (k : ℕ) (δ : NNReal) (B : Subfield F)
     (u : Fin 2 → ι → F) (G : Finset F)
     (h : SubfieldCaWitnessData domain k δ B u G) :
@@ -871,6 +859,7 @@ omit [Fintype F] [DecidableEq F] in
 theorem subfield_ca_generator_adjoin_eq_top
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     IntermediateField.adjoin B ({(g : F)} : Set F) = ⊤ := by
+  classical
   apply top_unique
   intro x _hx
   by_cases hx0 : x = 0

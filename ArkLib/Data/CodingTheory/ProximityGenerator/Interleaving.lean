@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Data.CodingTheory.InterleavedCode.Projection
+public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Probability.Instances
 
@@ -30,6 +30,8 @@ The radius `δ` is an arbitrary real number throughout.
 * `Code.exists_rowFunctional_forall_notMem`: given at most `|F|` interleaved projection
   failures, one row functional `l : κ → F` turns every one of them into a failure of a scalar row
   combination.
+* `CoreDefinitions.isMCA_iff_isProjectionBad`: the MCA event at radius `δ` is the integer-threshold
+  event `Code.IsProjectionBad` at threshold `⌈|ι| · (1 - δ)⌉₊`.
 * `CoreDefinitions.exists_forall_isMCA_of_forall_isMCA_interleaved`: at most `|F|` seeds that are
   bad for one family over `C ^⋈ κ` are all bad for one family over `C`.
 * `CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le`: if `|S| ≤ |F|`, then
@@ -58,23 +60,14 @@ for `U` is bad for `V`. There are at most `|S|` bad seeds, so `|S| ≤ |F|` suff
 The reverse inequality embeds a family `U` over `C` as the interleaved family whose rows are all
 equal to `U`.
 
+The seedwise transfer is derived from `Code.exists_forall_isProjectionBad_of_interleaved` through
+`isMCA_iff_isProjectionBad`. The integer-threshold transfer and its exact-agreement consequences
+are in `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`.
+
 ## References
 
 * [Jo, S., *Interleaving Stability for Mutual Correlated Agreement and Curve
-  Decodability*][Jo26], Corollary 4.5, the exact transfer when the seed space has at most as many
-  elements as the field.
-* ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` proves this row-projection argument
-  three times, as private declarations under `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`:
-  `interleaved_powerProjectionBad_card_le` in `PowerAgreement.lean` (univariate powers over a
-  finite field), `interleaved_powerProjectionBadArbitrary_finset_card_le` in
-  `PowerAgreementArbitrary.lean` (univariate powers over an arbitrary field), and
-  `interleaved_lineProjectionBad_card_le` in
-  `TensorFoldAgreement.lean` (the binary line fold). Their shared row-functional avoidance step
-  is supplied by `Code.exists_rowFunctional_forall_notMem`; their scalar exceptional-set counting
-  and exact-agreement conclusions are deferred.
-
-Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
-field, and exact-agreement statements.
+  Decodability*][Jo26], Corollary 4.5
 -/
 
 @[expose] public section
@@ -90,53 +83,52 @@ section Transfer
 variable {ι F A κ ℓ : Type} [Fintype ι] [Field F] [AddCommMonoid A] [Module F A] [Finite κ]
   [Fintype ℓ]
 
+omit [Finite κ] in
+/-- **The MCA event is an integer-threshold event.** The size condition `|T| ≥ |ι| · (1 - δ)` of
+`IsMCA` holds exactly when `⌈|ι| · (1 - δ)⌉₊ ≤ |T|`, so `IsMCA G C x U δ` is
+`Code.IsProjectionBad G C ⌈|ι| · (1 - δ)⌉₊ x U`. For `δ ≥ 1` the threshold is `0`. -/
+theorem isMCA_iff_isProjectionBad {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F)
+    (C : ModuleCode ι F A) (x : S) (U : ℓ → ι → A) (δ : ℝ) :
+    IsMCA G C x U δ ↔ IsProjectionBad G C ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ x U := by
+  simp only [IsMCA, IsProjectionBad, ge_iff_le, Nat.ceil_le]
+
 /-- **Seedwise transfer from an interleaved code to its base code.** If every seed in a set `s`
 of at most `|F|` seeds is bad for the family `U` over `C ^⋈ κ` at radius `δ`, then one family `V`
 over `C` has every seed in `s` bad at the same radius `δ`.
 
-The proof takes `V j := i ↦ ∑ r, l r • U j i r` for the row functional `l` of
-`exists_rowFunctional_forall_notMem`, applied to the witness sets of the seeds in `s`. The bound
-`hs` is the hypothesis of that lemma; it is automatic for infinite `F`. The generator and the
-radius are arbitrary: a seed keeps its witness set `T`, so the size clause of `IsMCA` carries over
-unchanged at every real `δ`. For empty `s`, any `V` works. -/
+This is `Code.exists_forall_isProjectionBad_of_interleaved` at the threshold
+`⌈|ι| · (1 - δ)⌉₊`, through `isMCA_iff_isProjectionBad`. There `V j` is the row combination
+`i ↦ ∑ r, l r • U j i r` for the row functional `l` of `exists_rowFunctional_forall_notMem`,
+applied to the witness sets of the seeds in `s`. The bound `hs` is the hypothesis of that lemma;
+it is automatic for infinite `F`. The generator and the radius are arbitrary: a seed keeps its
+witness set `T`, so the size clause of `IsMCA` carries over unchanged at every real `δ`. For
+empty `s`, any `V` works. -/
 theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type} [Nonempty S] [Fintype S]
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) (U : ℓ → ι → κ → A) (s : Finset S)
     (hs : (s.card : ℕ∞) ≤ ENat.card F) (hbad : ∀ x ∈ s, IsMCA G (C^⋈κ) x U δ) :
     ∃ V : ℓ → ι → A, ∀ x ∈ s, IsMCA G C x V δ := by
-  let : Fintype κ := Fintype.ofFinite κ
-  choose! T hT using hbad
-  obtain ⟨l, hl⟩ := exists_rowFunctional_forall_notMem C U s T hs fun x hx ↦ (hT x hx).2.2
-  refine ⟨fun j i ↦ ∑ r, l r • U j i r, fun x hx ↦ ⟨T x, (hT x hx).1, ?_, hl x hx⟩⟩
-  have hcomb := projectedWord_rowCombination_mem C _ (T x) l (hT x hx).2.1
-  have hfun : (fun i ↦ ∑ r, l r • (∑ j, G x j • U j i) r) =
-      fun i ↦ ∑ j, G x j • ∑ r, l r • U j i r := by
-    funext i
-    simp only [Finset.sum_apply, Pi.smul_apply, Finset.smul_sum]
-    rw [Finset.sum_comm]
-    exact Finset.sum_congr rfl fun j _ ↦ Finset.sum_congr rfl fun r _ ↦ smul_comm _ _ _
-  rw [hfun] at hcomb
-  exact hcomb
+  simp only [isMCA_iff_isProjectionBad] at hbad ⊢
+  exact exists_forall_isProjectionBad_of_interleaved G C _ U s hs hbad
 
 /-- **Interleaving does not increase MCA error when `|S| ≤ |F|`.** For every generator
 `G : Generator S ℓ F` whose seed space has at most as many elements as the field, every module
 code `C`, every finite row index `κ` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ ≤ mcaError G C δ`.
 
-This generalizes [Jo26] Corollary 4.5 (one direction) and `ProximityGap.mcaError_interleaved_le`,
-which is the affine-line case.
+The affine-line case is `ProximityGap.mcaError_interleaved_le`.
 
 For a family `U` over `C ^⋈ κ`, the set of bad seeds has at most `|S| ≤ |F|` elements, so
 `exists_forall_isMCA_of_forall_isMCA_interleaved` gives a family `V` over `C` that is bad at every
 one of them. The hypothesis `hS` is used only there, to bound the number of submodules that one
 row functional must avoid. It holds for every generator whose seed type is `F` itself, and for
-every generator with finitely many seeds when `F` is infinite. For larger seed spaces [Jo26]
-proves a weaker, field-size-weighted bound, which is not formalized here.
+every generator with finitely many seeds when `F` is infinite.
 
 Edge cases: an empty `κ` needs no separate argument; there `C ^⋈ κ` has no bad seeds and the left
 side is `0`. Radii outside `[0, 1]` need no separate argument either, because `IsMCA` is defined at
 every real radius. -/
 theorem mcaError_moduleInterleavedCode_le_of_card_le {S : Type} [Nonempty S] [Fintype S]
-    (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) (hS : ENat.card S ≤ ENat.card F) :
+    [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
+    (hS : ENat.card S ≤ ENat.card F) :
     mcaError G (C^⋈κ) δ ≤ mcaError G C δ := by
   classical
   refine iSup_le fun U ↦ ?_
@@ -147,11 +139,11 @@ theorem mcaError_moduleInterleavedCode_le_of_card_le {S : Type} [Nonempty S] [Fi
       _ ≤ ENat.card F := hS
   obtain ⟨V, hV⟩ := exists_forall_isMCA_of_forall_isMCA_interleaved G C δ U s hs
     fun x hx ↦ (Finset.mem_filter.mp hx).2
-  calc Pr_{let x ←$ᵖ S}[IsMCA G (C^⋈κ) x U δ]
-      ≤ Pr_{let x ←$ᵖ S}[IsMCA G C x V δ] :=
-        Pr_le_Pr_of_implies _ _ _ fun x hx ↦
+  calc Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x U δ]
+      ≤ Pr{let x ← $ᵗ S}[IsMCA G C x V δ] :=
+        prEvent_mono _ _ _ fun x hx ↦
           hV x (Finset.mem_filter.mpr ⟨Finset.mem_univ x, hx⟩)
-    _ ≤ mcaError G C δ := le_iSup (fun V ↦ Pr_{let x ←$ᵖ S}[IsMCA G C x V δ]) V
+    _ ≤ mcaError G C δ := le_iSup (fun V ↦ Pr{let x ← $ᵗ S}[IsMCA G C x V δ]) V
 
 omit [Finite κ] in
 /-- **Interleaving does not decrease MCA error.** For every generator `G`, every module code `C`,
@@ -167,11 +159,11 @@ generator, the seed space or the radius, and `κ` need not be finite.
 The hypothesis `Nonempty κ` is necessary. For empty `κ`, every word projects into `C ^⋈ κ`, so
 the right side is `0`, while the left side can be positive. -/
 theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type} [Nonempty S]
-    [Fintype S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
+    [Fintype S] [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError G C δ ≤ mcaError G (C^⋈κ) δ := by
   refine iSup_le fun U ↦ ?_
-  refine le_trans (Pr_le_Pr_of_implies _ _ _ fun x hx ↦ ?_)
-    (le_iSup (fun W : ℓ → ι → κ → A ↦ Pr_{let x ←$ᵖ S}[IsMCA G (C^⋈κ) x W δ])
+  refine le_trans (prEvent_mono _ _ _ fun x hx ↦ ?_)
+    (le_iSup (fun W : ℓ → ι → κ → A ↦ Pr{let x ← $ᵗ S}[IsMCA G (C^⋈κ) x W δ])
       fun j i _ ↦ U j i)
   obtain ⟨T, hT, hcomb, j, hj⟩ := hx
   refine ⟨T, hT, ?_, j, fun hmem ↦ hj ?_⟩
@@ -191,12 +183,11 @@ theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type} [Non
 code `C`, every nonempty finite row index `κ` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ = mcaError G C δ`.
 
-This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
-`mcaError_moduleInterleavedCode_le_of_card_le`, which needs `hS`, with
+The proof combines `mcaError_moduleInterleavedCode_le_of_card_le`, which needs `hS`, with
 `mcaError_le_mcaError_moduleInterleavedCode`, which needs `Nonempty κ`. The affine-line case with
 `κ = Fin t` is `ProximityGap.mcaError_interleaved_eq`. -/
 theorem mcaError_moduleInterleavedCode_eq_of_card_le [Nonempty κ] {S : Type} [Nonempty S]
-    [Fintype S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
+    [Fintype S] [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
     (hS : ENat.card S ≤ ENat.card F) :
     mcaError G (C^⋈κ) δ = mcaError G C δ :=
   le_antisymm (mcaError_moduleInterleavedCode_le_of_card_le G C δ hS)

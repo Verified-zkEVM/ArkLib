@@ -10,27 +10,28 @@ import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 # Interleaving transfer clients
 
 These clients check the field-size boundary, an empty row type, and the absence of a
-finite-field assumption in the row-functional avoidance lemma.
+finite-field assumption in the row-functional avoidance lemma, and the integer-threshold form
+of the MCA event.
 -/
 
 open CoreDefinitions Code LinearCode
 
 -- The affine-line case needs neither a positive width assumption nor radius bounds.
-example {ι F A : Type} [Fintype ι] [Field F] [Fintype F]
+example {ι F A : Type} [Fintype ι] [Field F] [Fintype F] [SampleableType F]
     [AddCommMonoid A] [Module F A] (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError (AffineLineGenerator F) (C^⋈(Fin 3)) δ ≤
       mcaError (AffineLineGenerator F) C δ :=
   mcaError_moduleInterleavedCode_le_of_card_le (AffineLineGenerator F) C δ le_rfl
 
 -- The same transfer applies to another generator with seed type F.
-example {ι F A : Type} [Fintype ι] [Field F] [Fintype F]
+example {ι F A : Type} [Fintype ι] [Field F] [Fintype F] [SampleableType F]
     [AddCommMonoid A] [Module F A] (C : ModuleCode ι F A) (d : ℕ) (δ : ℝ) :
     mcaError (univariatePowersGenerator F d) (C^⋈(Fin 2)) δ ≤
       mcaError (univariatePowersGenerator F d) C δ :=
   mcaError_moduleInterleavedCode_le_of_card_le (univariatePowersGenerator F d) C δ le_rfl
 
 -- Forward transfer covers an empty row type.
-example {ι F A : Type} [Fintype ι] [Field F] [Fintype F]
+example {ι F A : Type} [Fintype ι] [Field F] [Fintype F] [SampleableType F]
     [AddCommMonoid A] [Module F A] (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError (AffineLineGenerator F) (C^⋈(Fin 0)) δ ≤
       mcaError (AffineLineGenerator F) C δ :=
@@ -48,14 +49,21 @@ example {ι κ ℓ σ : Type} [Fintype κ] (C : ModuleCode ι ℚ ℚ)
 
 -- Equality requires a nonempty row type; Fin 1 supplies it.
 example {ι F A S ℓ : Type} [Fintype ι] [Field F] [Fintype S] [Nonempty S]
-    [Fintype ℓ] [AddCommMonoid A] [Module F A] (G : Generator S ℓ F)
+    [SampleableType S] [Fintype ℓ] [AddCommMonoid A] [Module F A] (G : Generator S ℓ F)
     (C : ModuleCode ι F A) (δ : ℝ) (hS : ENat.card S ≤ ENat.card F) :
     mcaError G (C^⋈(Fin 1)) δ = mcaError G C δ :=
   mcaError_moduleInterleavedCode_eq_of_card_le G C δ hS
 
 -- The reverse transfer has no finiteness requirement on the row type.
 example {ι F A S ℓ : Type} [Fintype ι] [Field F] [Fintype S] [Nonempty S]
-    [Fintype ℓ] [AddCommMonoid A] [Module F A] (G : Generator S ℓ F)
+    [SampleableType S] [Fintype ℓ] [AddCommMonoid A] [Module F A] (G : Generator S ℓ F)
     (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError G C δ ≤ mcaError G (C^⋈ℕ) δ :=
   mcaError_le_mcaError_moduleInterleavedCode G C δ
+
+-- At radius `1` the MCA event is projection-badness at threshold `0`.
+example {ι F A S ℓ : Type} [Fintype ι] [Field F] [Fintype S] [Nonempty S] [Fintype ℓ]
+    [AddCommMonoid A] [Module F A] (G : Generator S ℓ F) (C : ModuleCode ι F A) (x : S)
+    (U : ℓ → ι → A) :
+    IsMCA G C x U 1 ↔ IsProjectionBad G C 0 x U := by
+  simpa using isMCA_iff_isProjectionBad G C x U 1

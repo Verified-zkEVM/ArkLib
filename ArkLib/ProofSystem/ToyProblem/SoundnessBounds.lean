@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.InterleavedCode
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 public import ArkLib.Data.Probability.Combinatorial
+public import ArkLib.Data.Probability.Instances
 public import ArkLib.ProofSystem.ToyProblem.Definitions
 
 /-!
@@ -220,14 +221,6 @@ theorem affine_solution_card_le_one {a b μ₁ μ₂ : F}
     · exact sub_eq_zero.mp h1
     · exact absurd (sub_eq_zero.mp h2) hb
 
-omit [Fintype ι] [Fintype F] [DecidableEq F] in
-/-- Deprecated compatibility name for the general probability union bound. -/
-@[deprecated Probability.Pr_or_le (since := "2026-08-16")]
-theorem Pr_or_le {α : Type} [Fintype α] [Nonempty α] (P Q : α → Prop) :
-    Pr_{let x ← $ᵖ α}[P x ∨ Q x] ≤
-      Pr_{let x ← $ᵖ α}[P x] + Pr_{let x ← $ᵖ α}[Q x] :=
-  Probability.Pr_or_le ($ᵖ α) P Q
-
 /-- The post-combination-challenge state: a message satisfies the folded linear
 constraint and its codeword agrees with the folded received word on enough columns. -/
 def GammaEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
@@ -354,7 +347,7 @@ omit [DecidableEq F] [Fintype A] in
 relaxed witness, the probability of reaching the post-`γ` state is at most the
 canonical affine-line MCA error plus the two-row point-list size divided by the
 field size. -/
-theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι] [Finite A]
+theorem gamma_transition_prob_le {k : ℕ} [SampleableType F] [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (hinj : Function.Injective enc)
     (hC : Set.range enc = (C : Set (ι → A)))
@@ -365,7 +358,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι] [Finite A]
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
         ∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j) :
-    Pr_{let γ ← $ᵖ F}[GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ] ≤
+    Pr{let γ ← $ᵗ F}[GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ] ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) +
         ((Code.Lambda
           ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
@@ -428,7 +421,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι] [Finite A]
                 (Finset.mem_filter.mp hp).2)
       _ = Smsg.card := by rw [Finset.sum_const, smul_eq_mul, mul_one]
       _ ≤ (Code.Lambda Cint (δ : ℝ)).toNat := hSmsg_le
-  refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
+  refine le_trans (prEvent_mono ($ᵗ F) _
       (fun γ ↦ IsMCA (AffineLineGenerator F) C γ ![f₁, f₂] (δ : ℝ) ∨
         (GammaEvent enc δ v μ₁ μ₂ f₁ f₂ γ ∧
           ¬ IsMCA (AffineLineGenerator F) C γ ![f₁, f₂] (δ : ℝ)))
@@ -436,12 +429,12 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι] [Finite A]
         by_cases hm : IsMCA (AffineLineGenerator F) C γ ![f₁, f₂] (δ : ℝ)
         · exact Or.inl hm
         · exact Or.inr ⟨h, hm⟩))
-    (le_trans (Probability.Pr_or_le ($ᵖ F) _ _) (add_le_add ?_ ?_))
+    (le_trans (prEvent_or_le ($ᵗ F) _ _) (add_le_add ?_ ?_))
   · exact le_iSup
       (fun U : Fin 2 → (ι → A) ↦
-        Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
+        Pr{let γ ← $ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
       ![f₁, f₂]
-  · rw [prob_uniform_eq_card_filter_div_card]
+  · rw [SampleableType.prEvent_uniformSample]
     exact ENNReal.div_le_div_right (by exact_mod_cast hcards) _
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
@@ -512,9 +505,10 @@ size at least `|σ| / (1 + (|σ|−1)/|F|)` (= `|σ|·|F|/(|F|+|σ|−1)`).
 This is the first of the two `exists_large_image_of_pairwise_collision_bound`
 applications of the attack argument, stripped of all coding theory: the
 pairwise-collision bound is exactly `prob_dotProduct_eq_zero_le` (a nonzero
-linear form vanishes with probability `≤ 1/|F|`), pulled back through the
-pushforward identity `Pr_map_eq`. -/
-private lemma exists_dotProduct_image_card_le {k : ℕ} {σ : Type} [Fintype σ]
+linear form vanishes with probability `≤ 1/|F|`), pulled back through
+`prEvent_map`. -/
+private lemma exists_dotProduct_image_card_le [SampleableType F]
+    {k : ℕ} {σ : Type} [Fintype σ]
     (a : σ → (Fin k → F) × (Fin k → F)) (ha : Function.Injective a) :
     ∃ v : Fin k → F,
       (Fintype.card σ : ENNReal) / (1 + (Fintype.card σ - 1) * (Fintype.card F : ENNReal)⁻¹)
@@ -523,22 +517,22 @@ private lemma exists_dotProduct_image_card_le {k : ℕ} {σ : Type} [Fintype σ]
   classical
   set g : (Fin k → F) → (σ → F × F) :=
     fun v s ↦ ((∑ j, (a s).1 j * v j), (∑ j, (a s).2 j * v j)) with hg
-  set Φ : PMF (σ → F × F) := (PMF.uniformOfFintype (Fin k → F)).map g with hΦ
+  set Φ : ProbComp (σ → F × F) := g <$> ($ᵗ (Fin k → F)) with hΦ
   have hcoll : ∀ x y : σ, x ≠ y →
-      Pr_{ let φ ← Φ }[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
+      Pr{let φ ← Φ}[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
     intro x y hxy
-    rw [hΦ, Pr_map_eq]
+    rw [hΦ, prEvent_map]
     have hne : a x ≠ a y := fun h ↦ hxy (ha h)
     by_cases h1 : (a x).1 = (a y).1
     · have h2 : (a x).2 ≠ (a y).2 := fun h ↦ hne (Prod.ext h1 h)
-      refine le_trans (Pr_le_Pr_of_implies _ _
+      refine le_trans (prEvent_mono _ _
         (fun v ↦ (∑ j, ((a x).2 - (a y).2) j * v j = 0)) ?_)
         (prob_dotProduct_eq_zero_le ((a x).2 - (a y).2) (sub_ne_zero.mpr h2))
       intro v hv
       have hv' : g v x = g v y := by simpa using hv
       have : (∑ j, (a x).2 j * v j) = (∑ j, (a y).2 j * v j) := (Prod.ext_iff.mp hv').2
       simp only [Pi.sub_apply, sub_mul, Finset.sum_sub_distrib, this, sub_self]
-    · refine le_trans (Pr_le_Pr_of_implies _ _
+    · refine le_trans (prEvent_mono _ _
         (fun v ↦ (∑ j, ((a x).1 - (a y).1) j * v j = 0)) ?_)
         (prob_dotProduct_eq_zero_le ((a x).1 - (a y).1) (sub_ne_zero.mpr h1))
       intro v hv
@@ -546,9 +540,9 @@ private lemma exists_dotProduct_image_card_le {k : ℕ} {σ : Type} [Fintype σ]
       have : (∑ j, (a x).1 j * v j) = (∑ j, (a y).1 j * v j) := (Prod.ext_iff.mp hv').1
       simp only [Pi.sub_apply, sub_mul, Finset.sum_sub_distrib, this, sub_self]
   obtain ⟨φ, hφ_supp, hφ_card⟩ :=
-    exists_large_image_of_pairwise_collision_bound_of_Pr
+    exists_large_image_of_pairwise_collision_bound_of_probComp
       Φ (Fintype.card F : ENNReal)⁻¹ hcoll
-  rw [hΦ, PMF.mem_support_map_iff] at hφ_supp
+  rw [hΦ, MonadAttach.support_map, support_uniformSample] at hφ_supp
   obtain ⟨v, _, hv⟩ := hφ_supp
   refine ⟨v, ?_⟩
   have hgv : (fun s : σ ↦
@@ -598,7 +592,7 @@ This is the second `exists_large_image_of_pairwise_collision_bound`
 application of the attack argument: the per-point collision bound is `≤ 1/|F|` because
 the affine equation has `≤ 1` solution (`affine_collision_card_le_one`). The
 `∀ p ∈ T, p.2 ≠ μ₂` clause also forces `(μ₁,μ₂) ∉ T` (the violation step). -/
-private lemma exists_affine_image_card_le (T : Finset (F × F))
+private lemma exists_affine_image_card_le [SampleableType F] (T : Finset (F × F))
     (hTcard : T.card < Fintype.card F) :
     ∃ (μ₁ μ₂ : F), (∀ p ∈ T, p.2 ≠ μ₂) ∧
       (T.card : ENNReal) / (1 + (T.card - 1) * (Fintype.card F : ENNReal)⁻¹)
@@ -614,21 +608,21 @@ private lemma exists_affine_image_card_le (T : Finset (F × F))
     exact absurd h2 (not_le.mpr hTcard)
   have hμ₂' : ∀ p ∈ T, p.2 ≠ μ₂ := fun p hp h ↦ hμ₂ (h ▸ Finset.mem_image_of_mem Prod.snd hp)
   set g' : F → (↥T → F) := fun μ₁ p ↦ (μ₁ - (p : F × F).1) / ((p : F × F).2 - μ₂) with hg'
-  set Φ' : PMF (↥T → F) := (PMF.uniformOfFintype F).map g' with hΦ'
+  set Φ' : ProbComp (↥T → F) := g' <$> ($ᵗ F) with hΦ'
   have hcoll : ∀ x y : ↥T, x ≠ y →
-      Pr_{ let φ ← Φ' }[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
+      Pr{let φ ← Φ'}[φ x = φ y] ≤ (Fintype.card F : ENNReal)⁻¹ := by
     intro x y hxy
-    rw [hΦ', Pr_map_eq]
-    have hxy' : (x : F × F) ≠ (y : F × F) := fun h ↦ hxy (Subtype.ext h)
+    rw [hΦ', prEvent_map]
     have hpq : ((x : F × F).1, (x : F × F).2) ≠ ((y : F × F).1, (y : F × F).2) := by
-      simpa using hxy'
+      simpa using (fun h ↦ hxy (Subtype.ext h) : (x : F × F) ≠ (y : F × F))
     simp only [hg']
-    exact prob_uniform_le_inv_of_card_le_one _
-      (affine_collision_card_le_one (hμ₂' x x.2) (hμ₂' y y.2) hpq)
+    have hcard := affine_collision_card_le_one (hμ₂' x x.2) (hμ₂' y y.2) hpq
+    simpa only [Nat.cast_one, one_div] using
+      (SampleableType.prEvent_uniformSample_le_div_iff _ (c := 1)).2 hcard
   obtain ⟨φ, hφ_supp, hφ_card⟩ :=
-    exists_large_image_of_pairwise_collision_bound_of_Pr
+    exists_large_image_of_pairwise_collision_bound_of_probComp
       Φ' (Fintype.card F : ENNReal)⁻¹ hcoll
-  rw [hΦ', PMF.mem_support_map_iff] at hφ_supp
+  rw [hΦ', MonadAttach.support_map, support_uniformSample] at hφ_supp
   obtain ⟨μ₁, _, hμ₁⟩ := hφ_supp
   refine ⟨μ₁, μ₂, hμ₂', ?_⟩
   have hcardT : (Fintype.card ↥T) = T.card := Fintype.card_coe T
@@ -756,7 +750,7 @@ The proof decomposes into reusable, separately-verified pieces:
 collision via `affine_collision_card_le_one`), `image_bound_toReal` (the
 ENNReal→ℝ bridge), `listDecoding_div_le_div` (the `z ↦ z/(F+z−1)` denominator
 chain), and `mem_winningSetFor_of_agree` (the membership step). -/
-theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
+theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ} [SampleableType F]
     [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ) (_hδ_lt : δ < 1)
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (hinj : Function.Injective enc)
@@ -770,7 +764,7 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
         (((Lambda
           (((C^⋈(Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A)))
           (δ : ℝ)).toNat : ℝ) * Fintype.card F)
-          / (Fintype.card F
+      / (Fintype.card F
               + 2 * ((Lambda
                 (((C^⋈(Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A)))
                 (δ : ℝ)).toNat : ℝ)) := by
@@ -1023,7 +1017,8 @@ omit [DecidableEq F] [Fintype A] in
 /-- Correlated-agreement lower bound, fixed-encoding form: positive correlated-agreement
 error yields an explicit violating instance whose winning-set ratio
 lower-bounds that error. -/
-theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι] [Finite A]
+theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [SampleableType F]
+    [Nonempty ι] [Finite A]
     (C : Set (ι → A)) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ)
     (hδ_lt : δ < 1)
     (enc : (Fin k → F) →ₗ[F] (ι → A))
@@ -1039,17 +1034,17 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι] [Fini
   obtain ⟨u, hu_max⟩ := Finite.exists_max
     (fun u : WordStack A (Fin 2) ι ↦
       if jointProximity C u δ then (0 : ENNReal)
-      else Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ])
+      else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ])
   have h_eps : epsCa (F := F) (A := A) C δ δ =
       (if jointProximity C u δ then (0 : ENNReal)
-       else Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]) := by
+       else Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ]) := by
     refine le_antisymm ?_ ?_
     · rw [epsCa]
       exact iSup_le hu_max
     · rw [epsCa]
       exact le_iSup (fun w : WordStack A (Fin 2) ι ↦
         if jointProximity C w δ then (0 : ENNReal)
-        else Pr_{let γ ← $ᵖ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u
+        else Pr{let γ ← $ᵗ F}[δᵣ(w 0 + γ • w 1, C) ≤ δ]) u
   have hjp : ¬ jointProximity C u δ := by
     intro h
     rw [h_eps, ite_eq_left h] at hca
@@ -1082,12 +1077,11 @@ theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι] [Fini
     have hF0 : (Fintype.card F : ℝ≥0) ≠ 0 := by
       simp [Fintype.card_ne_zero]
     have hprob :
-        Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ] *
+        Pr{let γ ← $ᵗ F}[δᵣ(u 0 + γ • u 1, C) ≤ δ] *
             (Fintype.card F : ENNReal) =
           ({γ : F | δᵣ(u 0 + γ • u 1, C) ≤ δ}.ncard : ENNReal) := by
-      rw [prob_uniform_eq_card_filter_div_card,
+      rw [SampleableType.prEvent_uniformSample,
         Set.ncard_eq_toFinset_card', Set.toFinset_ofPred]
-      push_cast
       rw [ENNReal.div_mul_cancel (by exact_mod_cast hF0)
         (ENNReal.natCast_ne_top _)]
     rw [hprob]
@@ -1191,7 +1185,7 @@ theorem winningSetDensity_le_one {k : ℕ}
 
 omit [DecidableEq F] [Fintype A] in
 /-- Correlated-agreement error lower-bounds the worst-case winning-set density. -/
-theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι] [Finite A]
+theorem epsCa_le_winningSetDensity {k : ℕ} [SampleableType F] [Nonempty ι] [Finite A]
     {C : Set (ι → A)} (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc) (henc_range : Set.range enc = C) :
@@ -1224,7 +1218,8 @@ theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι] [Finite A]
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- The two-row point-list attack lower-bounds the worst-case winning-set density. -/
-theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι] [Finite A]
+theorem listDecoding_le_winningSetDensity {k : ℕ} [SampleableType F]
+    [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
@@ -1273,7 +1268,7 @@ theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι] [Finite A]
 
 /-- The finite nonnegative-real reflection of the executable extractor's
 canonical affine-line MCA-plus-two-row-list certificate. -/
-noncomputable def certifiedGammaError
+noncomputable def certifiedGammaError [SampleableType F]
     (C : ModuleCode ι F A) (δ : ℝ≥0) : ℝ≥0 :=
   ENNReal.toNNReal <|
     mcaError (AffineLineGenerator F) C (δ : ℝ) +
@@ -1283,7 +1278,8 @@ noncomputable def certifiedGammaError
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- `certifiedGammaError` coerces to the exact MCA-plus-list certificate. -/
-theorem coe_certifiedGammaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
+theorem coe_certifiedGammaError [SampleableType F]
+    (C : ModuleCode ι F A) (δ : ℝ≥0) :
     (certifiedGammaError C δ : ENNReal) =
       mcaError (AffineLineGenerator F) C (δ : ℝ) +
         ((Code.Lambda
@@ -1296,7 +1292,8 @@ theorem coe_certifiedGammaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
 omit [DecidableEq F] [Fintype A] in
 /-- The worst-case winning-set density is bounded by the certified
 MCA-plus-list extractor error. -/
-theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι] [Finite A]
+theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [SampleableType F]
+    [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))
@@ -1339,7 +1336,7 @@ theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι] [Finite
   refine le_trans (le_of_eq ?_)
     (gamma_transition_prob_le C δ enc henc_inj henc_range hδpos hδlt
       v μ₁ μ₂ f₁ f₂ hNoWit)
-  rw [winningSetRatio, prob_uniform_eq_card_filter_div_card, hWEvent,
+  rw [winningSetRatio, SampleableType.prEvent_uniformSample, hWEvent,
     Set.ncard_eq_toFinset_card', Set.toFinset_ofPred,
     ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
     ENNReal.coe_natCast, ENNReal.coe_natCast]
@@ -1358,14 +1355,14 @@ noncomputable def winningSetUpperBound {k : ℕ}
 /-- The executable extractor's full fixed-radius certificate.  Unlike
 `winningSetUpperBound`, its combination term is the proved MCA-plus-list
 upper bound. -/
-noncomputable def certifiedExtractorError
+noncomputable def certifiedExtractorError [SampleableType F]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ) : ℝ≥0 :=
   (1 - δ) ^ t + certifiedGammaError C δ * (1 - (1 - δ) ^ t)
 
 omit [DecidableEq F] [Fintype A] in
 /-- The winning-set/spot-check upper bound is no larger than the executable
 extractor's certificate. -/
-theorem winningSetUpperBound_le_certifiedExtractorError {k : ℕ}
+theorem winningSetUpperBound_le_certifiedExtractorError {k : ℕ} [SampleableType F]
     [Nonempty ι] [Finite A] (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))

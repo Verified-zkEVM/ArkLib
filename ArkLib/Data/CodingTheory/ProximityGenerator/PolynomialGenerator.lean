@@ -122,14 +122,16 @@ linear-code statement, since `LinearCode ι F` and `ModuleCode ι F F` are the s
 lemma isMCAGenerator_tensorGeneratorPi {A : Type} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) :
     ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
-      [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, Fintype (ℓ i)]
+      [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, SampleableType (α i)]
+      [SampleableType (∀ i, α i)]
+      [∀ i, Fintype (ℓ i)]
       (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
       (∀ i, IsMCAGenerator (G i) (ε i) MC) →
       IsMCAGenerator (tensorGeneratorPi G) (fun γ => ∑ i, ε i γ) MC := by
   intro s
   induction s with
   | zero =>
-    intro α ℓ _ _ _ G ε _ γ
+    intro α ℓ _ _ _ _ _ G ε _ γ
     classical
     refine iSup_le fun U => ?_
     have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
@@ -140,12 +142,12 @@ lemma isMCAGenerator_tensorGeneratorPi {A : Type} [AddCommMonoid A] [Module F A]
         rw [Fintype.sum_subsingleton _ j]
         simp [tensorGeneratorPi]
       rwa [hvec] at hmem
-    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
-    simp
+    simpa using le_of_eq (prEvent_eq_zero_of_forall_not ($ᵗ _) _ hfalse)
   | succ s ih =>
-    intro α ℓ _ _ _ G ε hmca
+    intro α ℓ _ _ hα _ _ G ε hmca
     let : ∀ i : Fin s, Fintype (Fin.tail α i) := fun i => inferInstanceAs (Fintype (α i.succ))
-    let : ∀ i : Fin s, Nonempty (Fin.tail α i) := fun i => inferInstanceAs (Nonempty (α i.succ))
+    let : ∀ i : Fin s, SampleableType (Fin.tail α i) := fun i => hα i.succ
+    let : SampleableType (∀ i : Fin s, Fin.tail α i) := SampleableType.piOfFintype _
     let : ∀ i : Fin s, Fintype (Fin.tail ℓ i) := fun i => inferInstanceAs (Fintype (ℓ i.succ))
     set eS : (∀ i : Fin (s + 1), α i) ≃ (α 0 × (∀ i : Fin s, Fin.tail α i)) :=
       (Fin.consEquiv α).symm with heS
@@ -189,7 +191,9 @@ error reads the code only through its block length and relative distance — in 
 `isMCAGenerator_of_isMDSGenerator`, whose error `mdsMCAError` does (`mdsMCAError_congr`). -/
 lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
     ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
-      [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, Fintype (ℓ i)] [∀ i, Nonempty (ℓ i)]
+      [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, SampleableType (α i)]
+      [SampleableType (∀ i, α i)]
+      [∀ i, Fintype (ℓ i)] [∀ i, Nonempty (ℓ i)]
       (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
       (∀ i, ∀ {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
         (MC : ModuleCode ι F A), Code.minRelHammingDistCode MC.carrier = δ₀ →
@@ -200,7 +204,7 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
   intro s
   induction s with
   | zero =>
-    intro α ℓ _ _ _ _ G ε _ A _ _ _ MC _ γ
+    intro α ℓ _ _ _ _ _ _ G ε _ A _ _ _ MC _ γ
     classical
     refine iSup_le fun U => ?_
     have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
@@ -211,12 +215,12 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
         rw [Fintype.sum_subsingleton _ j]
         simp [tensorGeneratorPi]
       rwa [hvec] at hmem
-    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
-    simp
+    simpa using le_of_eq (prEvent_eq_zero_of_forall_not ($ᵗ _) _ hfalse)
   | succ s ih =>
-    intro α ℓ _ _ _ _ G ε hmca A _ _ _ MC hδ
+    intro α ℓ _ _ hα _ _ _ G ε hmca A _ _ _ MC hδ
     let : ∀ i : Fin s, Fintype (Fin.tail α i) := fun i => inferInstanceAs (Fintype (α i.succ))
-    let : ∀ i : Fin s, Nonempty (Fin.tail α i) := fun i => inferInstanceAs (Nonempty (α i.succ))
+    let : ∀ i : Fin s, SampleableType (Fin.tail α i) := fun i => hα i.succ
+    let : SampleableType (∀ i : Fin s, Fin.tail α i) := SampleableType.piOfFintype _
     let : ∀ i : Fin s, Fintype (Fin.tail ℓ i) := fun i => inferInstanceAs (Fintype (ℓ i.succ))
     let : ∀ i : Fin s, Nonempty (Fin.tail ℓ i) := fun i => inferInstanceAs (Nonempty (ℓ i.succ))
     set eS : (∀ i : Fin (s + 1), α i) ≃ (α 0 × (∀ i : Fin s, Fin.tail α i)) :=
@@ -287,7 +291,8 @@ noncomputable def reedSolomonMCAError [Fintype F] [NeZero k] (d m : ℕ) : I →
 
 Sorried: the proof requires the Guruswami-Sudan list-decoding machinery, which is not yet
 available in this development. -/
-lemma isMCAGenerator_univariatePowersGenerator [Fintype F] [NeZero k] (d m : ℕ) (hm : 3 ≤ m) :
+lemma isMCAGenerator_univariatePowersGenerator [Fintype F] [SampleableType F] [NeZero k]
+    (d m : ℕ) (hm : 3 ≤ m) :
     IsMCAGenerator (univariatePowersGenerator F d) (reedSolomonMCAError k D d m)
       (ReedSolomon.code D k) := by
   sorry
@@ -326,13 +331,13 @@ so it inherits the open `isMCAGenerator_tensorGenerator_tight`.
 
 Only the code alphabet is generalised: the generator `x ↦ (1, x, …, x^e)` is still over `F`.
 At `A := F` this is the linear-code statement. -/
-lemma isMCAGenerator_tensorGeneratorPiUnivariate [Fintype F]
+lemma isMCAGenerator_tensorGeneratorPiUnivariate [Fintype F] [SampleableType F]
     {A : Type} [AddCommMonoid A] [Module F A] (MC : ModuleCode ι F A)
     (ε : ℕ → I → ℝ≥0)
     (huniv : ∀ e : ℕ, IsMCAGenerator (univariatePowersGenerator F e) (ε e) MC) :
-    ∀ {s : ℕ} (d : Fin s → ℕ),
+    ∀ {s : ℕ} [SampleableType (Fin s → F)] (d : Fin s → ℕ),
       IsMCAGenerator (tensorGeneratorPiUnivariate d) (fun γ => ∑ i, ε (d i) γ) MC := by
-  intro s d
+  intro s _ d
   exact isMCAGenerator_tensorGeneratorPi MC (fun i => univariatePowersGenerator F (d i))
     (fun i => ε (d i)) (fun i => huniv (d i))
 
@@ -411,14 +416,14 @@ The proof factors the generator through `tensorGeneratorPiUnivariate` via `coeff
 consumes two unproved inputs: `isMCAGenerator_univariatePowersGenerator` for each factor, and —
 through `isMCAGenerator_tensorGeneratorPiUnivariate` — the open
 `isMCAGenerator_tensorGenerator_tight`. -/
-lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [NeZero k] (m : ℕ) (hm : 3 ≤ m)
-    {ℓ : Type} [Fintype ℓ] {s : ℕ} {P : ℓ → MvPolynomial (Fin s) F}
+lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType F] [NeZero k]
+    (m : ℕ) (hm : 3 ≤ m)
+    {ℓ : Type} [Fintype ℓ] {s : ℕ} [SampleableType (Fin s → F)]
+    {P : ℓ → MvPolynomial (Fin s) F}
     (G : Generator ((Fin s) → F) ℓ F) (hG : IsPolynomialGeneratorOfFull G P) :
     letI ε := ∑ i : Fin s, reedSolomonMCAError k D (maxDegreeOf P i) m
     IsMCAGenerator G ε (ReedSolomon.code D k) := by
   classical
-  show IsMCAGenerator G (∑ i : Fin s, reedSolomonMCAError k D (maxDegreeOf P i) m)
-    (ReedSolomon.code D k)
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ maxDegreeOf P i := by
     intro j i
     simpa [maxDegreeOf] using
@@ -475,7 +480,7 @@ identifications `mdsMCAError_congr` (as `mdsMCAError` reads the code only throug
 `mdsMCAError_eq_powersMCAError`; for `d = 0` the MCA event is vacuous at any alphabet, so the
 error `0 ≤ powersMCAError` suffices. -/
 lemma isMCAGenerator_univariatePowersGeneratorOn {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
-    (s : Set F) [Fintype s] [Inhabited s]
+    (s : Set F) [Fintype s] [Inhabited s] [SampleableType s]
     (LC : LinearCode ι F) (d : ℕ) (η : ℝ) (hη : 0 < η ∧ η < 1)
     (h : d + 1 ≤ Fintype.card ↥s)
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A] (MC : ModuleCode ι F A)
@@ -496,7 +501,8 @@ lemma isMCAGenerator_univariatePowersGeneratorOn {ι : Type} [Fintype ι] [Nonem
         rw [Fintype.sum_subsingleton _ j]
         simp [univariatePowersGeneratorOn]
       rwa [hvec] at hmem
-    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal,
+      Finset.filter_false_of_mem fun x _ => hfalse x]
     simp
   · have hℓ : 2 ≤ Fintype.card (Fin (d + 1)) := by rw [Fintype.card_fin]; omega
     have hdim : LinearCode.dim (fromColGenMat (M_G (univariatePowersGeneratorOn s d)))
@@ -523,6 +529,8 @@ is not needed. -/
 lemma isMCAGenerator_tensorGeneratorPiUnivariateOn {ι : Type} [Fintype ι] [Nonempty ι]
     [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1)
     {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Inhabited ↥(S i)]
+    [∀ i, SampleableType ↥(S i)]
+    [SampleableType ((i : Fin s) → ↥(S i))]
     (d : Fin s → ℕ) (hcard : ∀ i, d i + 1 ≤ Fintype.card ↥(S i)) :
     IsMCAGenerator (tensorGeneratorPiUnivariateOn S d)
       (fun γ => ∑ i, powersMCAError LC (d i) (Fintype.card ↥(S i)) η γ) LC :=
@@ -566,13 +574,14 @@ theorem isMCAGenerator_of_isPolynomialGeneratorOf {ι : Type} [Fintype ι] [None
     [DecidableEq F] {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F)
     (η : ℝ) (hη : 0 < η ∧ η < 1)
     {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype (S i)] [∀ i, Inhabited (S i)]
+    [∀ i, SampleableType (S i)]
+    [SampleableType ((i : Fin s) → S i)]
     (G : Generator (∀ i, S i) ℓ F)
     (P : ℓ → MvPolynomial (Fin s) F) (hG : IsPolynomialGeneratorOf S G P)
     (hS : ∀ i : Fin s, (maxDegreeOf P i + 1) ≤ (Set.ncard (S i))) :
     letI ε : I → ℝ≥0 := ∑ i : Fin s, (powersMCAError LC (maxDegreeOf P i) (Set.ncard (S i)) η)
     IsMCAGenerator G ε LC := by
   classical
-  show IsMCAGenerator G (∑ i : Fin s, powersMCAError LC (maxDegreeOf P i) (Set.ncard (S i)) η) LC
   have hcard : ∀ i : Fin s, Set.ncard (S i) = Fintype.card (S i) := by
     intro i
     rw [Set.ncard_eq_toFinset_card', Set.toFinset_card]

@@ -85,37 +85,16 @@ instance : second.verifier.IsPure := ⟨_, fun _ _ => rfl⟩
 /-- The first reduction is perfectly complete from the designated initial state. -/
 theorem first_perfectCompleteness :
     first.perfectCompleteness (pure false) impl Set.univ Set.univ := by
-  classical
   intro stmt wit h
-  simp only [ChallengeIdx, Fin.vcons_of_one, Challenge, QueryImpl.addLift_def,
-    PFunctor.Handler.liftTarget_self, StateT.run'_eq, pure_bind, Set.mem_univ, true_and,
-    bind_pure_comp, ENNReal.coe_zero, tsub_zero, ge_iff_le]
-  change 1 ≤ Pr{let a ← OptionT.mk (pure (some _) :
-      ProbComp (Option ((pSpec.FullTranscript × Bool × Unit) × Bool)))}[
-    (fun a : ((pSpec.FullTranscript × Bool × Unit) × Bool) => a.1.2.1 = a.2) a]
-  apply le_of_eq
-  symm
-  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff]
-  simp only [support_pure, Set.mem_singleton_iff, forall_eq, Option.some.injEq]
-  refine ⟨_, rfl, ?_⟩
-  rfl
+  simp [↓OptionT.prEvent_mk, first, Reduction.run, Prover.run, Prover.runToRound,
+    Prover.processRound, Verifier.run, monadLift_liftM_OptionT]
 
 /-- The second reduction is perfectly complete when separately initialized at `false`. -/
 theorem second_perfectCompleteness :
     second.perfectCompleteness (pure false) impl Set.univ Set.univ := by
-  classical
   intro stmt wit h
-  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def, PFunctor.Handler.liftTarget_self,
-    StateT.run'_eq, pure_bind, Set.mem_univ, true_and, bind_pure_comp, ENNReal.coe_zero,
-    tsub_zero, ge_iff_le]
-  change 1 ≤ Pr{let a ← OptionT.mk (pure (some _) :
-      ProbComp (Option (((!p[]).FullTranscript × Bool × Unit) × Bool)))}[
-    (fun a : ((!p[]).FullTranscript × Bool × Unit) × Bool => a.1.2.1 = a.2) a]
-  apply le_of_eq
-  symm
-  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff]
-  simp only [support_pure, Set.mem_singleton_iff, forall_eq, Option.some.injEq]
-  exact ⟨((default, false, ()), false), rfl, rfl⟩
+  simp [↓OptionT.prEvent_mk, second, Reduction.run, Prover.run, Prover.runToRound,
+    Verifier.run, impl, monadLift_liftM_OptionT]
 
 /-- Fixed-initial-state component completeness does not imply appended completeness,
 even with pure left prover output and pure verifiers. -/
