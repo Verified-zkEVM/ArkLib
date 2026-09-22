@@ -8,7 +8,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
 public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
-public import ArkLib.Data.Probability.Notation
+public import ArkLib.Data.Probability.Uniform
 
 /-! # BCIKS20 Reed-Solomon Proximity Gaps -/
 
@@ -23,7 +23,7 @@ open Probability
 section CoreResults
 
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+         {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /-- Theorem 1.2 (Proximity Gaps for Reed-Solomon codes) in [BCIKS20].
 Let `C` be a collection of affine spaces. Then `C` displays a `(δ, ε)`-proximity gap with respect to
@@ -54,7 +54,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
   set S : Finset (ι → F) := Affine.AffSpanFinset (C i) with hS_def
   -- Case split on whether the proximity probability is ≤ ε.
   by_cases hcase :
-      Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] ≤
+      Pr{let x ← $ᵗ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] ≤
         (errorBound δ deg domain : ℝ≥0)
   · -- Right Xor branch: `Pr ≤ ε ∧ ¬(Pr = 1)`.
     refine Or.inr ⟨hcase, ?_⟩
@@ -70,18 +70,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
     -- Goal: `Pr = 1`. Suffices every point of `S` is δ-close to the RS code.
     suffices h_all : ∀ x : ↥S,
         δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ by
-      rw [prob_uniform_eq_card_filter_div_card (F := ↥S)
-            (P := fun x => δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ)]
-      have hfilter :
-          Finset.filter (fun x : ↥S =>
-              δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ) Finset.univ =
-            (Finset.univ : Finset ↥S) := by
-        ext x; simpa using h_all x
-      rw [hfilter, Finset.card_univ]
-      have hcard_pos : (Fintype.card ↥S : ℝ≥0) ≠ 0 := by
-        have : Nonempty ↥S := inferInstance
-        exact_mod_cast Fintype.card_ne_zero
-      exact_mod_cast div_self hcard_pos
+      exact (SampleableType.prEvent_uniformSample_eq_one_iff _).2 h_all
     intro xS
     -- Step 1: membership in AffSpanFinset ⇒ membership in linear span of word stack.
     have hx_mem_aff : xS.val ∈ Affine.AffSpanSet (C i) :=
@@ -122,9 +111,9 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
         push Not at hnotclose
         -- All elements of S equal C i 0, which is NOT δ-close, so Pr = 0.
         have hPr_eq :
-            Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] = 0 := by
-          rw [prob_uniform_eq_card_filter_div_card (F := ↥S)
-            (P := fun x => δᵣ(x.val, (ReedSolomon.toFinset domain deg : Set _)) ≤ δ)]
+            Pr{let x ← $ᵗ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] = 0 := by
+          rw [SampleableType.prEvent_uniformSample (α := ↥S)
+            (p := fun x => δᵣ(x.val, (ReedSolomon.toFinset domain deg : Set _)) ≤ δ)]
           have : (Finset.univ : Finset ↥S).filter
               (fun x : ↥S => δᵣ(x.val,
                 (ReedSolomon.toFinset domain deg : Set _)) ≤ δ) = ∅ := by
@@ -198,12 +187,12 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
             exact ⟨j', by simp [Fin.tail]⟩
       -- Step 2: Transfer the probability.
       have hPr_aff :
-          Pr_{let y ← $ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F)
+          Pr{let y ← $ᵗ ↥(Affine.affineSubspaceAtOrigin (F := F)
             (u' 0) (Fin.tail u'))}[
             δᵣ(y.1, (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
           (errorBound δ deg domain : ℝ≥0) := by
         have hcase_code : (errorBound δ deg domain : ℝ≥0) <
-            Pr_{let x ← $ᵖ S}[δᵣ(x.val,
+            Pr{let x ← $ᵗ S}[δᵣ(x.val,
               (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] := by
           convert hcase using 3; simp [ReedSolomon.toFinset]
         -- haff_eq + hS_def give: the carrier of affineSubspaceAtOrigin = ↑S
@@ -212,9 +201,9 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
           rw [haff_eq, hS_def]; unfold Affine.AffSpanFinset
           exact (Affine.AffSpanSet.instFinite (u := C i)).coe_toFinset.symm
         -- Transfer probability via carrier set equality.
-        rw [prob_uniform_eq_card_filter_div_card] at hcase_code
-        rw [prob_uniform_eq_card_filter_div_card
-          (F := ↥(Affine.affineSubspaceAtOrigin (F := F) (u' 0) (Fin.tail u')))]
+        rw [SampleableType.prEvent_uniformSample] at hcase_code
+        rw [SampleableType.prEvent_uniformSample
+          (α := ↥(Affine.affineSubspaceAtOrigin (F := F) (u' 0) (Fin.tail u')))]
         let e := Set.equivOfEq hcarrier_eq
         have hcard : Fintype.card ↥(Affine.affineSubspaceAtOrigin (F := F)
             (u' 0) (Fin.tail u')) = Fintype.card ↥S :=

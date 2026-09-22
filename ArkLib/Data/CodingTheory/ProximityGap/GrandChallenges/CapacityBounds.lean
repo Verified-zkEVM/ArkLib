@@ -27,7 +27,7 @@ open scoped NNReal
 open CoreDefinitions
 open CodingTheory
 
-variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι]
 
 /-- Builds a one-sided MCA witness from the Reed--Solomon Johnson-range bound whenever its

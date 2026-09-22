@@ -31,7 +31,7 @@ open Probability
 correlated agreement is at least `min(⌊δ n⌋ / |F|, 1)`. -/
 theorem linear_mcaError_ge_information_set
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
     (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
     (↑(min ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) /
@@ -201,13 +201,14 @@ theorem linear_mcaError_ge_information_set
       rw [hrc, div_self hcardF_ne]
       exact min_eq_right ((one_le_div hcardF_pos).mpr (by exact_mod_cast h))
   have hPr : (↑(min ((m : ℝ≥0) / (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤
-      Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
-    rw [prob_uniform_eq_card_filter_div_card, ← ENNReal.coe_div hcardF_ne,
-      ENNReal.coe_le_coe, hmin_eq]
+      Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)] := by
+    rw [SampleableType.prEvent_uniformSample]
+    simp only [← ENNReal.coe_natCast]
+    rw [← ENNReal.coe_div hcardF_ne, ENNReal.coe_le_coe, hmin_eq]
     gcongr
   refine le_trans hPr ?_
   unfold mcaError
   exact le_iSup (fun V : Fin 2 → (ι → F) =>
-    Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
+    Pr{let γ ←$ᵗ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
 
 end ProximityGap

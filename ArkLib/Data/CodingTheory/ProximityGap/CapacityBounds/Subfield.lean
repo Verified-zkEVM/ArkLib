@@ -414,6 +414,7 @@ private theorem subfield_ca_exists_good_center_nat
         ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) /
           (Fintype.card F : ℝ) := by
   classical
+  let _ : DecidableEq ι := Classical.decEq ι
   dsimp only
   obtain ⟨y, hy⟩ := subfield_ca_exists_center_from_support
     B domainB k δ a
@@ -646,6 +647,7 @@ omit [DecidableEq ι] in
 /-- Lower-bounds Reed--Solomon CA error when the evaluation domain lies in a proper
 subfield. The analytic correction term is `subfieldCaFactor`. -/
 theorem subfield_epsCa_lower_bound
+    [SampleableType F]
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0) (B : Subfield F)
     (_hB_proper : B < ⊤)
     (_h_dom : ∀ i, domain i ∈ B)
