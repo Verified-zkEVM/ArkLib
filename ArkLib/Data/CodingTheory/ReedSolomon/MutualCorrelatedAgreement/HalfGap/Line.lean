@@ -46,12 +46,6 @@ determines `P` by the graph-line recognition of
   `ReedSolomon.exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le`: the
   forms with the pair chosen after the challenge and at most `2 * Fintype.card ι` exceptional
   challenges.
-
-## References
-
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], the half-gap case of mutual correlated
-  agreement
 -/
 
 @[expose] public section
