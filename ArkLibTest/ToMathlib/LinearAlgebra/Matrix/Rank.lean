@@ -13,7 +13,7 @@ import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
   coordinate matrix of the zero map has rank `0`, both computed by `Matrix.rank_of_basis`.
 * The coordinate matrix of the evaluation-style map `(a, b) ↦ (n ↦ a + n * b)` has the infinite row
   type `ℕ` and rank `2`.
-* The source shape `Matrix.rank_map_algebraMap_le` for a field extension, derived from
+* Base change to a field extension does not increase the rank, derived from
   `Matrix.rank_map_le`.
 -/
 
@@ -47,8 +47,7 @@ example : let f : (Fin 2 → ℚ) →ₗ[ℚ] (ℕ → ℚ) :=
     fin_cases i <;> simp <;> push_cast at h0 h1 <;> linarith
   rw [Matrix.rank_of_basis, LinearMap.finrank_range_of_inj hinj, Module.finrank_fin_fun]
 
-/-- Source shape `Matrix.rank_map_algebraMap_le`: base change to an extension field does not
-increase the rank, for any row type. -/
+/-- Base change to an extension field does not increase the rank, for any row type. -/
 example {F E ι κ : Type*} [Field F] [Field E] [Algebra F E] [Fintype κ] (A : Matrix ι κ F) :
     (A.map (algebraMap F E)).rank ≤ A.rank :=
   Matrix.rank_map_le _ A

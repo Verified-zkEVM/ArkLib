@@ -15,8 +15,8 @@ import Mathlib.Data.ZMod.Basic
   are `3, 4, 9`, and the global floor is `9`.
 * When `d = D` the weight `D - d` of the top jet is `0`, and the coordinate floor there is `0`
   by division by zero; the comparison with the global floor then needs `d < D` to be meaningful.
-* The source-shaped characteristic bound over `ZMod 11`, where the global floor `9` is below
-  `11`.
+* The characteristic bound over `ZMod 11`, where the global floor `9` is below `11`, together
+  with `D < ringChar F`.
 * Over `ℚ` the characteristic is `0`, so the characteristic hypothesis cannot hold.
 -/
 
@@ -52,9 +52,8 @@ by division by zero, which is not a bound on the jet degree. This is why the the
 `d < D`. -/
 example : exactInterpolationJetDegreeFloorAt (d := 2) 2 5 2 2 = 0 := by decide
 
-/-- Source shape `isBelowCharacteristic_of_mem_exactInterpolationSpace` over `ZMod 11`, stated as
-its two conjuncts: `D < ringChar F` is passed through, and each jet degree is below `11` because
-the global floor `9` is. -/
+/-- Over `ZMod 11`, `D < ringChar F` together with the bound on every jet degree: each jet degree
+is below `11` because the global floor `9` is. -/
 example {M W : ℕ} (Q : DifferentialPolynomial (ZMod 11) 2)
     (hQ : Q ∈ exactInterpolationSpace (ZMod 11) 3 5 2 2 M W (by norm_num)) :
     3 < ringChar (ZMod 11) ∧ ∀ j, jetDegree Q j < ringChar (ZMod 11) := by

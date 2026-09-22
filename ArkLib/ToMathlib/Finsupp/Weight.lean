@@ -16,12 +16,6 @@ supported exponent a larger weight. Mathlib has monotonicity of `Finsupp.weight 
 (for canonically ordered codomains) but not in `w`. `Finsupp.apply_smul_le_weight` bounds a single
 term `f s • w s` by the weight; Mathlib's `Finsupp.le_weight` bounds `f s` alone for natural-number
 weights.
-
-`Finsupp.apply_smul_le_weight` generalizes the private
-`jet_weight_mul_exponent_le_exactInterpolationMonomialWeight` of
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/ExactCharacteristicBudget.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d from the specialization weight to
-every weight with values in a canonically ordered monoid.
 -/
 
 @[expose] public section

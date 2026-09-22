@@ -28,16 +28,8 @@ this arithmetic transfer; it does not construct an interpolant.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/CurveHeight.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. `curveInterpolationHeight`,
-`curveInterpolationHeight_succ` and `curveInterpolationHeight_column` keep their statements.
-`curveInterpolationHeight_preserves_certificate` drops the source's hypothesis `0 < ℓ`: for
-`ℓ = 0` the height is `0` and the conclusion `rows < ∑ i ∈ s, count i` follows from the line
-certificate, since each available slot count is at most `count i * (h + 1)`. Nothing is deferred.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 5.6 (Theorem 5.14).
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 5.6, Proposition 5.10, (64)
 -/
 
 @[expose] public section

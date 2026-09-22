@@ -26,15 +26,6 @@ extension equality holds, but the inequality is what the callers need and its pr
 
 * `Matrix.rank_of_basis`: the rank of the coordinate matrix of `f` in the basis `b`.
 * `Matrix.rank_map_le`: the rank does not increase under a coefficient map from a field.
-
-## References
-
-`Matrix.rank_map_le` generalizes `Matrix.rank_map_algebraMap_le` of
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Translation.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which was stated for
-`algebraMap F E` between two fields. `Matrix.rank_of_basis` is the generic form of the source's
-`rank_weightedSupportLocalCoordinateMatrix` in `Interpolation/Symbolic/LocalRank.lean` at the
-same revision.
 -/
 
 @[expose] public section

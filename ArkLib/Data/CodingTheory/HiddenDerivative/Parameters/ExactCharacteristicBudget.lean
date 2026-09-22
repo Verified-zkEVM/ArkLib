@@ -40,33 +40,9 @@ cap on the total degree or on the exponent of `Y₁` is used, only the weight co
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/ExactCharacteristicBudget.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `exactInterpolationJetDegreeFloorAt`, `exactInterpolationJetDegreeFloorAt_le` and
-  `jetDegree_exactInterpolationPolynomial_le_floorAt` keep their statements.
-* `jetDegree_le_exactInterpolationJetDegreeFloorAt_of_mem_exactInterpolationSpace` keeps its
-  statement; its proof is the specialization of the generic
-  `MvPolynomial.degreeOf_le_div_of_mem_restrictWeightAtMost` through
-  `exactInterpolationSpace_le_restrictWeightAtMost`. The source's private
-  `jet_weight_mul_exponent_le_exactInterpolationMonomialWeight` is the generic
-  `Finsupp.apply_smul_le_weight`.
-* The source's `jetDegree_le_exactInterpolationJetDegreeFloor_of_mem_exactInterpolationSpace` is
-  `jetDegree_le_floor_of_mem_exactInterpolationSpace` of `Interpolation/Index.lean`, and
-  `jetDegree_exactInterpolationPolynomial_le_floor` is that theorem applied to
-  `(exactInterpolationPolynomial hdD c).property`; neither is restated.
-* The source's `isBelowCharacteristic_of_mem_exactInterpolationSpace` and
-  `isBelowCharacteristic_exactInterpolationPolynomial` concluded
-  `PolynomialDifferential.IsBelowCharacteristic D Q`, the conjunction of `D < ringChar F` and
-  `∀ j, jetDegree Q j < ringChar F`. That predicate is not yet ported, so
-  `jetDegree_lt_ringChar_of_mem_exactInterpolationSpace` and
-  `jetDegree_exactInterpolationPolynomial_lt_ringChar` state the second conjunct; the first is
-  the hypothesis `D < ringChar F` passed through unchanged. Deferred: the `IsBelowCharacteristic`
-  forms, which belong with the predicate in `ArkLib.Data.Polynomial.Differential`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 3.4, Definition 3.6 and (12), and Section 6.3,
+  Theorem 6.3
 -/
 
 @[expose] public section

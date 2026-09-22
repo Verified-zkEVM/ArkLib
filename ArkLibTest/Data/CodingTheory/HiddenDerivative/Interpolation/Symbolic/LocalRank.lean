@@ -14,7 +14,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.LocalRan
 * At `L = 1` the constant exponent `0` is a column, and the entry of the coordinate matrix at
   this column and the row `0` is `1` at every point.
 * For `m = 0` there are no rows and the coordinate matrix has rank `0` at every point.
-* The source shapes `weightedSupportLocalCoordinateMatrix_zero_baseChange` (derived from
+* The base change of the coordinate matrix at `(0, 0)` along `algebraMap F E` (derived from
   `weightedSupportLocalCoordinateMatrix_map`) and the extension-field bound over an arbitrary
   point.
 -/
@@ -59,16 +59,16 @@ example (c r : ℚ) :
   let := Fintype.ofIsEmpty (α := LowContactIndex 1 0)
   exact Nat.le_zero.mp ((Matrix.rank_le_card_height _).trans (by simp))
 
-/-- Source shape `weightedSupportLocalCoordinateMatrix_zero_baseChange`, derived from the
-coefficient-map theorem at the point `(0, 0)`. -/
+/-- At `(0, 0)` the coordinate matrix over an extension field `E` is the image of the matrix over
+`F` under `algebraMap F E`, by the coefficient-map theorem. -/
 example {F E : Type*} [Field F] [Field E] [Algebra F E] (d m W D : ℕ) (L : ℝ) (hD : 0 < D) :
     weightedSupportLocalCoordinateMatrix (R := E) (d := d) (W := W) (L := L) m hD 0 0 =
       (weightedSupportLocalCoordinateMatrix (R := F) m hD 0 0).map (algebraMap F E) := by
   rw [weightedSupportLocalCoordinateMatrix_map, map_zero]
 
-/-- Source shape `rank_weightedSupportLocalCoordinateMatrix_le_base_actual`: over an extension
-field, the rank at any point is at most the base-field rank of the polynomial-valued constraint
-map at `(0, 0)`, which in turn equals its rank at any base-field point. -/
+/-- Over an extension field, the rank at any point is at most the base-field rank of the
+polynomial-valued constraint map at `(0, 0)`, which in turn equals its rank at any base-field
+point. -/
 example {F E : Type*} [Field F] [Field E] [Algebra F E] (d m W D : ℕ) (L : ℝ) (hD : 0 < D)
     (center received : E) (center₀ received₀ : F) :
     (weightedSupportLocalCoordinateMatrix (d := d) (W := W) (L := L) m hD center received).rank ≤

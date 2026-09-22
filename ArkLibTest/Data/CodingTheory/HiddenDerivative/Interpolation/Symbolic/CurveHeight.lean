@@ -13,8 +13,8 @@ import Mathlib.Tactic.NormNum
 
 * Concrete heights, and the failure of `curveInterpolationHeight_succ` at `ℓ = 0`.
 * A concrete line certificate with two column classes transferred to a curve of degree `3`.
-* The same certificate at `ℓ = 0`, where the source's hypothesis `0 < ℓ` is not available.
-* The source shape with `0 < ℓ`.
+* The same certificate at `ℓ = 0`.
+* The transfer under the extra hypothesis `0 < ℓ`.
 -/
 
 open ReedSolomon.HiddenDerivative
@@ -43,8 +43,8 @@ example :
         ![1, 2] i * (curveInterpolationHeight 0 4 + 1 - 0 * ![0, 2] i) :=
   curveInterpolationHeight_preserves_certificate _ ![1, 2] ![0, 2] 1 4 0 (by decide)
 
-/-- Source shape of `curveInterpolationHeight_preserves_certificate`, with the hypothesis
-`0 < ℓ` that the ported theorem no longer needs. -/
+/-- `curveInterpolationHeight_preserves_certificate` applies unchanged when a caller also has
+the hypothesis `0 < ℓ`. -/
 example {ι : Type*} (s : Finset ι) (count weight : ι → ℕ) (rows h ℓ : ℕ) (_hℓ : 0 < ℓ)
     (hcertificate : rows * (h + 1) < ∑ i ∈ s, count i * (h + 1 - weight i)) :
     rows * (curveInterpolationHeight ℓ h + 1) <

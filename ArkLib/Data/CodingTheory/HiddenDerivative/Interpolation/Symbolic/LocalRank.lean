@@ -46,39 +46,8 @@ constraint map at `(0, 0)` over `F`.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/LocalRank.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `globalPointTranslation_mem_weightedSupportSpace`, `weightedSupportPointTranslation`,
-  `weightedSupportLocalCoordinateConstraint`,
-  `finrank_range_weightedSupportLocalCoordinateConstraint_eq_zero`,
-  `weightedSupportLocalCoordinateMatrix`, `weightedSupportLocalCoordinateMatrix_apply`,
-  `rank_weightedSupportLocalCoordinateMatrix`, `rank_weightedSupportLocalCoordinateMatrix_eq_zero`,
-  `rank_weightedSupportLocalCoordinateMatrix_le_actual`,
-  `rank_weightedSupportLocalCoordinateMatrix_le_base`,
-  `rank_weightedSupportLocalCoordinateMatrix_le_base_actual` and
-  `finrank_range_weightedSupportLocalConstraint_eq_zero` keep their statements, except that the
-  contact order `m` is an explicit argument, as in `weightedSupportLocalConstraint`, and the column
-  type is written `↥(weightedSupportExponents D d W L hD)`.
-* The membership proof uses `globalPointTranslation_mem_restrictWeightAtMost` in place of the
-  source's `globalPointTranslation_support_weight_le`. The source's private weights
-  `supportHigherWeight` and `supportCoarseWeight` are `jetHigherWeight` of `Interpolation/Index`
-  and the private `coarseWeight` here.
-* The source's `WeightedSupportIndex` abbreviation and `weightedSupportTypedBasis` are not
-  ported: `weightedSupportSpaceBasis` already has the column type as its index. The matrix is
-  defined from the coordinate map and this basis, so `rank_weightedSupportLocalCoordinateMatrix`
-  is the specialization of the generic `Matrix.rank_of_basis`, and the source's private
-  `weightedSupportTypedBasis_apply` is `MvPolynomial.coe_basisRestrictSupport_apply`.
-* The source's `weightedSupportLocalCoordinateMatrix_zero_baseChange` (for `algebraMap F E` at
-  `(0, 0)`) is the special case `f = algebraMap F E`, `center = received = 0` of
-  `weightedSupportLocalCoordinateMatrix_map`, which holds for every ring homomorphism between
-  commutative rings and every point; it rests on `map_unscaledLocalSubstitution`, which replaces
-  the source's private `map_unscaledLocalImage_zero`. The source's
-  `Matrix.rank_map_algebraMap_le` is the generic `Matrix.rank_map_le`.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
 -/
 
 @[expose] public section
@@ -149,6 +118,8 @@ def weightedSupportPointTranslation (hD : 0 < D) (center received : R) :
   map_add' Q P := by ext; simp
   map_smul' a Q := by ext; simp
 
+/-- The underlying polynomial of the translate of `Q` is `globalPointTranslation center received`
+applied to `Q`. -/
 @[simp]
 theorem coe_weightedSupportPointTranslation_apply (hD : 0 < D) (center received : R)
     (Q : weightedSupportSpace R D d W L hD) :
@@ -214,6 +185,9 @@ def weightedSupportLocalCoordinateMatrix (m : ℕ) (hD : 0 < D) (center received
     weightedSupportLocalCoordinateConstraint m hD center received
       (weightedSupportSpaceBasis R D d W L hD column) row
 
+/-- A matrix entry is the corresponding local-constraint coordinate of the basis monomial: the
+entry at `(row, column)` is coordinate `row` of `localConstraintCoordinatesAt` applied to
+`monomial column 1`. -/
 @[simp]
 theorem weightedSupportLocalCoordinateMatrix_apply (m : ℕ) (hD : 0 < D) (center received : R)
     (row : LowContactIndex d m) (column : ↥(weightedSupportExponents D d W L hD)) :

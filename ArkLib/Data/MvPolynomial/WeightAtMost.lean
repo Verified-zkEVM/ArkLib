@@ -37,25 +37,6 @@ the number of exponents.
 * `coe_basisRestrictSupport_apply`: the basis vector at `e` is `monomial e 1`.
 * `finrank_restrictSupport_finset`: the coefficient space of a finite exponent set has
   dimension its cardinality.
-
-## References
-
-The `M`-valued support-weight lemmas generalize the private lemmas `support_weight_mul_le`,
-`support_weight_pow_le`, `support_weight_prod_le`, and `support_weight_bind₁_le` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/IntermediateSpace.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source stated them for single
-support exponents over an ordered additive commutative monoid; here they are stated as closure
-properties of a submodule, and `finrank_restrictSupport_finset` replaces the source's
-per-space basis cardinality computations. `coe_basisRestrictSupport_apply` generalizes the
-private `weightedSupportTypedBasis_apply` of
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/LocalRank.lean` at
-the same revision from the weighted support space to every exponent set.
-`degreeOf_le_div_of_mem_restrictWeightAtMost` generalizes
-`jetDegree_le_exactInterpolationJetDegreeFloorAt_of_mem_exactInterpolationSpace` of
-`Parameters/ExactCharacteristicBudget.lean` at the same revision from the exact interpolation space
-to every natural-number weight bound.
-
-Nothing is deferred.
 -/
 
 @[expose] public section
