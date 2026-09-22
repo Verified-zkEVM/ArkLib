@@ -18,9 +18,10 @@ These clients
   `{0}`;
 * count the anchor sample space of `ZMod 5` outside a domain of size two, and show it is empty
   for a domain of size four, where `|ι| + 1 < |F|` fails;
-* derive the source-shaped statement: the capacity-radius list bound and agreement threshold of
-  revision `a5aa2677`, and the rate `choose L 2 * ((T + 2) / (q - n - 1)) ^ 2`;
-* derive the source's trace selection `exists_selectedTrace_before_later` by `Option.map`.
+* derive the collision bound from a list bound at the capacity radius
+  `1 - (T + 3) / n - delta` and the agreement threshold `T + 3 + ⌈delta * n⌉ ≤ A`, with the rate
+  `choose L 2 * ((T + 2) / (q - n - 1)) ^ 2`;
+* derive the trace selection `exists_selectedTrace_before_later` by `Option.map`.
 -/
 
 namespace AnchoredAgreementTest
@@ -76,13 +77,12 @@ example (domain : Fin 4 ↪ ZMod 5) : ((Finset.univ.map domain)ᶜ.offDiag).card
   rw [card_offDiag_compl_map]
   simp [ZMod.card]
 
-/-- **Source-shaped collision bound.** The hypotheses of the source's
-`candidateFamily_badAnchorRate_le` at revision `a5aa2677`: a list bound at the capacity radius
+/-- **Collision bound at the capacity radius.** Given a list bound `L` at the capacity radius
 `1 - (T + 3) / n - delta`, the agreement threshold `T + 3 + ⌈delta * n⌉ ≤ A`, and
-`n + 1 < |F|`. The conclusion is the source's rate `choose L 2 * ((T + 2) / (q - n - 1)) ^ 2`,
-for the probability of the collision event over ordered distinct anchors outside the domain.
-The source's hypothesis `0 ≤ delta` is not needed. -/
-theorem source_badAnchorRate_le {F : Type} [Field F] [Fintype F] [DecidableEq F]
+`n + 1 < |F|`, the collision event over ordered distinct anchors outside the domain has
+probability at most `choose L 2 * ((T + 2) / (q - n - 1)) ^ 2`. Here `delta` is any real number. -/
+theorem prob_not_injOn_candidateSet_le_of_capacityRadius {F : Type} [Field F] [Fintype F]
+    [DecidableEq F]
     {n w T A L : ℕ} (domain : Fin n ↪ F) (received : Fin n → Fin w → F) (delta : ℝ)
     (hLength : 0 < n) (hDimension : T + 3 ≤ n)
     (hThreshold : T + 3 + ⌈delta * n⌉₊ ≤ A)
@@ -117,10 +117,10 @@ theorem source_badAnchorRate_le {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (div_le_div_of_nonneg_left (by positivity) (by positivity) ?_) (by positivity)
   nlinarith
 
-/-- **Source-shaped trace selection.** The source's `exists_selectedTrace_before_later`: mapping
-the reduction modulo `X ^ T - 1` over the option chosen by
+/-- **Trace selection.** Mapping the reduction modulo `X ^ T - 1` over the option chosen by
 `exists_selectedCandidate_before_later` gives the trace of every later reconstruction. -/
-theorem source_selectedTrace {F ι κ : Type*} [Field F] [DecidableEq F] [Fintype ι] [Fintype κ]
+theorem exists_selectedTrace_before_later {F ι κ : Type*} [Field F] [DecidableEq F] [Fintype ι]
+    [Fintype κ]
     (domain : ι ↪ F) (received : ι → κ → F) {T a : ℕ} {s₁ s₂ : F}
     (hgood : Set.InjOn (evalTuple ![s₁, s₂]) (candidateSet domain received (T + 3) a))
     (c₁ c₂ : κ → F) :

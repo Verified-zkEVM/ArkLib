@@ -859,7 +859,7 @@ omit [Fintype F] [DecidableEq F] in
 theorem subfield_ca_generator_adjoin_eq_top
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     IntermediateField.adjoin B ({(g : F)} : Set F) = ⊤ := by
-  let _ : DecidableEq F := Classical.decEq F
+  classical
   apply top_unique
   intro x _hx
   by_cases hx0 : x = 0
@@ -894,8 +894,6 @@ private theorem subfield_ca_interpolant_unique
     (hp : ∀ i, i ∉ S → p.eval (domainB i) = y i)
     (hq : ∀ i, i ∉ S → q.eval (domainB i) = y i) : p = q := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq B := Classical.decEq B
   by_contra hpq
   have hr : p - q ≠ 0 := sub_ne_zero.mpr hpq
   have hrdeg : (p - q).degree < (k : WithBot ℕ) :=

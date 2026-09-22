@@ -10,8 +10,7 @@ import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 # Acceptance cases for the cubic real-cutoff staircase
 
 A nonintegral cutoff evaluated by hand, the slot count and a decoded slot, the lower bound, the
-closed form of the unrounded sum, and `cube_div_six_le_sum` at a negative cutoff, where the source
-assumed `0 < L`.
+closed form of the unrounded sum, and `cube_div_six_le_sum` at a negative cutoff.
 -/
 
 open CubicStaircase
@@ -51,7 +50,7 @@ example : ∑ s ∈ Finset.range 2, ((s : ℝ) + 1) * (2 - s) = 4 := by
   norm_num at h
   linarith
 
-/-- `cube_div_six_le_sum` holds at `L = -2`, outside the source's hypothesis `0 < L`: the sum is
+/-- `cube_div_six_le_sum` at the negative cutoff `L = -2`: the sum is
 empty and `(-2) ^ 3 / 6 = -4 / 3 ≤ 0`. -/
 example : ((-2 : ℝ)) ^ 3 / 6 ≤ 0 := by
   have h := cube_div_six_le_sum (-2)

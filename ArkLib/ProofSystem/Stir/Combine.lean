@@ -442,7 +442,7 @@ lemma master_lemma
   (i : Fin m)
   (j : Fin (block_size dstar degs i)) :
   (v i j).degree < degs i + j := by
-  let _ : DecidableEq F := Classical.decEq F
+  classical
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
     aesop

@@ -14,13 +14,13 @@ In one variable over `ℚ`, the affine Hilbert polynomial of `span {f}` for nonz
 degree `d > 0` is the constant `d`, so the bound says that `f` has at most `d` roots in every
 extension field. Over `ZMod 2` the zero ideal in one variable has two zeros while its affine
 Hilbert polynomial `X + 1` has constant coefficient `1`, so the finite-dimensional hypothesis is
-needed. The source statement, with Krull dimension zero, and the form with a Hilbert polynomial of
-natural degree zero are derived from the general one.
+needed. The forms for a quotient of Krull dimension zero and for a Hilbert polynomial of natural
+degree zero are derived from the general one.
 
 The same root count follows from the affine degree: `span {f}` has affine degree
 `totalDegree f`. The zero ideal over `ZMod 2` has affine degree `1` and two zeros, so the
-finite-dimensional hypothesis of `ncard_zeroLocus_le_affineDegree` is needed. The source's
-`finite_zeroLocus_and_ncard_le_affineDegree` is checked in its original form.
+finite-dimensional hypothesis of `ncard_zeroLocus_le_affineDegree` is needed. The form
+`finite_zeroLocus_and_ncard_le_affineDegree`, for natural degree zero, is also checked.
 -/
 
 open MvPolynomial Polynomial
@@ -75,7 +75,7 @@ example : (zeroLocus (ZMod 2) (⊥ : Ideal (MvPolynomial (Fin 1) (ZMod 2)))).nca
   rw [huniv, Set.ncard_univ, Nat.card_eq_fintype_card]
   rfl
 
-/-- The source statement, for a quotient of Krull dimension zero. -/
+/-- The bound for a quotient of Krull dimension zero. -/
 example {F E σ : Type*} [Field F] [Finite σ] [Field E] [Algebra F E] (I : Ideal (MvPolynomial σ F))
     [Ring.KrullDimLE 0 (MvPolynomial σ F ⧸ I)] :
     (zeroLocus E I).Finite ∧
@@ -111,7 +111,7 @@ example : (zeroLocus (ZMod 2) (⊥ : Ideal (MvPolynomial (Fin 1) (ZMod 2)))).nca
   rw [huniv, Set.ncard_univ, Nat.card_eq_fintype_card]
   rfl
 
-/-- The source statement `finite_zeroLocus_and_ncard_le_affineDegree`. -/
+/-- The affine-degree bound when the Hilbert polynomial has natural degree zero. -/
 example {F E σ : Type*} [Field F] [Finite σ] [Field E] [Algebra F E] (I : Ideal (MvPolynomial σ F))
     (hdeg : (affineHilbertPolynomial I).natDegree = 0) :
     (zeroLocus E I).Finite ∧ ((zeroLocus E I).ncard : ℚ) ≤ affineDegree I :=

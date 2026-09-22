@@ -52,7 +52,7 @@ example : (exactInterpolationExponentSet 0 1 0 1 0 0).Infinite := by
   simp [exactInterpolationExponentSet, ExactInterpolationEligibleExponent, firstJetExponent,
     fullHigherJetWeight, Finsupp.weight_single, jetFirstWeight, jetHigherWeight]
 
-/-- Source shape: every individual jet degree of a member is bounded by the floor. -/
+/-- Every individual jet degree of a member is bounded by the floor. -/
 example {F : Type*} [Field F] {D A d m M W : ℕ} (hdD : d < D)
     {Q : DifferentialPolynomial F d} (hQ : Q ∈ exactInterpolationSpace F D A d m M W hdD)
     (j : Fin (d + 1)) :

@@ -10,7 +10,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
 # Point translation acceptance tests
 
 * Translating `Y₀ - X` by `(c, r)` gives `Y₀ - X + (r - c)`.
-* The source-shaped statements at the zero point: the unscaled substitution at `(c, r)` is the
+* The statements at the zero point: the unscaled substitution at `(c, r)` is the
   substitution at `(0, 0)` after translation, and translation by `(-c, -r)` undoes translation by
   `(c, r)`.
 * The nonnegativity hypothesis on the weight of `X` is needed: with weight `-1` on `X` and `0`
@@ -26,7 +26,8 @@ example (c r : ℚ) :
   simp only [map_sub, globalPointTranslation_X, globalPointTranslation_Y_zero, map_sub]
   ring
 
-/-- Source shape `unscaledLocalSubstitution_zero_comp_globalPointTranslation`. -/
+/-- The unscaled substitution at `(0, 0)` after translation by `(c, r)` is the unscaled
+substitution at `(c, r)`. -/
 example (d : ℕ) (c r : ℤ) :
     (unscaledLocalSubstitution d 0 0).comp (globalPointTranslation c r) =
       unscaledLocalSubstitution d c r := by
