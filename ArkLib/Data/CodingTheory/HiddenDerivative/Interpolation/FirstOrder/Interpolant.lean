@@ -110,7 +110,7 @@ theorem finrank_firstOrderGlobalConstraintMap_le [Fintype ι] (centers received 
     finrank F (LinearMap.range (firstOrderGlobalConstraintMap (D := D) (A := A) (m := m)
       (M := M) (μ := μ) centers received)) ≤
       Fintype.card ι * certifiedEnlargedRankBound 1 m M 0 := by
-  refine (LinearMap.finrank_range_pi_le _).trans ?_
+  refine (LinearMap.finrank_range_pi_le_sum _).trans ?_
   simpa using Finset.sum_le_sum fun i (_ : i ∈ Finset.univ) =>
     finrank_firstOrderLocalConstraintAt_le (D := D) (A := A) (m := m) (M := M) (μ := μ)
       (centers i) (received i)
@@ -124,7 +124,8 @@ theorem exists_nonzero_firstOrder_interpolant [Fintype ι] (centers received : �
     ∃ Q : DifferentialPolynomial F 1, Q ≠ 0 ∧ Q ∈ firstOrderSpace F D A m M μ ∧
       ∀ i, SatisfiesLocalConstraints m (centers i) (received i) Q := by
   obtain ⟨Q, hQ0, hQ⟩ := LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt
-    (firstOrderGlobalConstraintMap (D := D) (A := A) (m := m) (M := M) (μ := μ) centers received)
+    (f := firstOrderGlobalConstraintMap (D := D) (A := A) (m := m) (M := M) (μ := μ) centers
+      received)
     (by
       rw [finrank_firstOrderSpace_eq_card]
       exact (finrank_firstOrderGlobalConstraintMap_le centers received).trans_lt hdim)
