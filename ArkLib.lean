@@ -342,6 +342,7 @@ public import ArkLib.Data.Polynomial.Differential.RationalTaylor
 public import ArkLib.Data.Polynomial.Differential.RegularIteration
 public import ArkLib.Data.Polynomial.Differential.RegularLift
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
+public import ArkLib.Data.Polynomial.Differential.TaylorIndexWeight
 public import ArkLib.Data.Polynomial.Differential.TaylorResidual
 public import ArkLib.Data.Polynomial.Differential.Types
 public import ArkLib.Data.Polynomial.DivisorReconstruction
@@ -351,6 +352,7 @@ public import ArkLib.Data.Polynomial.FractionFieldExpand
 public import ArkLib.Data.Polynomial.FractionFieldFactorization
 public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
+public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
 public import ArkLib.Data.Polynomial.PointCollision
@@ -587,8 +589,10 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
+public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
+public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
