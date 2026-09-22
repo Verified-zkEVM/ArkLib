@@ -43,30 +43,6 @@ the left side is `3` and the right side is `0`.
   set averages of `Y` and `(Y - m) ^ 2`.
 * `MeasureTheory.le_integral_max_sub_zero_pow_three`: a lower bound for the cube of the positive
   part by the second and third moments.
-
-## References
-
-Ports `ReedSolomon.HiddenDerivative.positivePart_pointwise` and
-`ReedSolomon.HiddenDerivative.positivePart_mean_variance` from `WeightedSupport/PositivePart.lean`
-in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The pointwise bound is generalized from `ℝ` to any
-ordered field, and the finite-average form is new; the probability-measure statement is the
-source's, renamed. Neither statement uses coding theory, so both leave the Reed–Solomon namespace.
-
-`le_integral_max_sub_zero_pow_three` ports
-`ReedSolomon.HiddenDerivative.WeightedSupportParameters.positive_cube_moments` from
-`WeightedSupport/Cubic.lean` at the same revision, together with the pointwise
-`cubic_le_positive_cube` used in its proof. The source's integrability hypotheses for `z ^ 2` and
-for `(max (b - z) 0) ^ 3` are dropped: both follow from the integrability of `z` and `z ^ 3`.
-The rest of `Cubic.lean` (`positive_cube_tangent`, `positive_cube_jensen`,
-`positive_cube_convex`) has no consumer in the port so far and is not ported.
-
-`setIntegral_max_sub_zero_le` is the step of the source's
-`ReedSolomon.HiddenDerivative.weighted_residual_sum_le_volume_mul_mean_variance` (in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`RankIntegral.lean` at the same revision) that applies `positivePart_mean_variance` to the
-conditional measure on the weighted simplex and multiplies back by its volume. Here it is stated
-for any measure and any set, including sets of measure `0` or `∞`.
 -/
 
 @[expose] public section

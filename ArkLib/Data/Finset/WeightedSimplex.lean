@@ -47,19 +47,6 @@ coordinate, so the finite box matters and the lower estimate requires positive w
   `(W + 1) ^ n ≤ n! * (∏ i, w i) * # ≤ (W + ∑ i, w i) ^ n`, the upper bound for all weights.
 * `card_natWeightedSimplex_le`: the upper bound divided out over an ordered field.
 * `natWeightedSimplex_succ_sandwich`: weights `1, …, n`, with `n! ^ 2` and `(n + 1).choose 2`.
-
-## References
-
-Generalizes `ordinaryToExact`, `ordinarySimplexEquivSym`, and `card_ordinarySimplex` from
-`ToMathlib/Combinatorics/DiscreteSimplex/Basic.lean`, and `ordinaryToScaledWithResidue`,
-`scaledWithResidueToOrdinary`, and `scaledExponentCount_factorial_sq_sandwich` from
-`HiddenDerivative/Parameters/Lattice/ScaledLattice.lean`, all at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The source adapts `kz99/rs-ld-mca`
-revision `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` with permission.
-`weightedHigherJetTuples`, `weightedHigherJetShell`, and their `Finsupp` bridges motivate the
-finite sets and shell decomposition; `ratePartitionTupleCount_le_volume` motivates the
-ordered-field bound. Continuous volumes, floor cells, moments, and Reed--Solomon-specific adapters
-are deferred.
 -/
 
 @[expose] public section

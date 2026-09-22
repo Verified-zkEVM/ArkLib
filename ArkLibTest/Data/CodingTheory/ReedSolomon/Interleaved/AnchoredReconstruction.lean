@@ -12,7 +12,7 @@ import Mathlib.Tactic.NormNum
 
 These clients reconstruct a concrete message over `ℚ` from a constant quotient and a quadratic
 interpolant, check its anchor values and its degree, use coincident anchors and a zero degree
-bound, recover the source-shaped degree statement with its hypothesis `0 < k`, reduce modulo
+bound, derive the degree statement with the extra, unused hypothesis `0 < k`, reduce modulo
 `X ^ 2 - 1` on the trace domain `{1, -1}`, and show that `0 < T` is needed for the remainder
 bound.
 -/
@@ -48,7 +48,7 @@ example {I : ℚ[X]} (hI : I.degree < 3) :
     (cubicAnchorReconstruct (5 : ℚ) 5 5 0 I).degree < (0 + 3 : ℕ) :=
   cubicAnchorReconstruct_degree_lt 5 5 5 (by simp) hI
 
--- Source shape: the degree statement over a field with the hypothesis `0 < k`, now unused.
+-- The degree statement over a field with the extra hypothesis `0 < k`, which is not used.
 example {F : Type} [Field F] {k : ℕ} (_hk : 0 < k) (s₁ s₂ z : F) (quotient interpolant : F[X])
     (hq : quotient.degree < k) (hI : interpolant.degree < 3) :
     (cubicAnchorReconstruct s₁ s₂ z quotient interpolant).degree < (k + 3 : ℕ) :=
