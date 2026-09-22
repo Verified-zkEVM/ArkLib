@@ -609,6 +609,7 @@ public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 public import ArkLib.ToMathlib.MvPolynomial.UnivariateSpecialization
+public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
