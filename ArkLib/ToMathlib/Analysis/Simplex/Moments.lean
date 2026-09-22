@@ -56,44 +56,6 @@ weights (otherwise the weighted simplex is unbounded). The averages need `0 < L`
 * `MeasureTheory.setAverage_weightedSimplex_succ_sum`, `..._sum_sq`, `..._sum_cube`: the moments
   of `∑ i, u i` on the weighted simplex with weights `1, …, n`.
 * `MeasureTheory.isProbabilityMeasure_cond_weightedSimplex`: the uniform probability measure.
-
-## References
-
-Ports the declarations of `ArkLib/ToMathlib/Analysis/Simplex/Moments.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, generalized as follows.
-
-* `integral_standardSimplex_linearForm`, `integral_standardSimplex_linearForm_sq`, and
-  `integral_standardSimplex_linearForm_cube` (degrees `1`, `2`, `3` over `Fin n`) are the
-  cases `k = 1, 2, 3` of `integral_standardSimplex_linearForm_pow`, for any `Fintype` and any
-  degree; the source's power-sum forms follow with `MvPolynomial.two_mul_eval_hsymm_two` and
-  `MvPolynomial.six_mul_eval_hsymm_three`. The private coordinate integrals
-  `integral_coordinate`, `integral_coordinate_mul`, `integral_coordinate_mul_mul` and the
-  multiplicity counts `sum_pair_multiplicity`, `sum_triple_multiplicity` are replaced by the
-  multinomial theorem and Mathlib's `hsymm`.
-* `integral_weightedSimplex_radius`, `_sq`, `_cube` (weights `i + 1`, coefficients `1`) are the
-  cases of `integral_weightedSimplex_linearForm_pow`, for arbitrary positive weights and
-  coefficients.
-* `weightedSimplexExpectation_radius`, `_sq`, `_cube` are `setAverage_weightedSimplex_succ_sum`,
-  `_sum_sq`, `_sum_cube`, specializations of `setAverage_weightedSimplex_linearForm_pow`. The
-  source's `weightedSimplexExpectation n W f` is Mathlib's set average
-  `⨍ u in weightedSimplex w W, f u`, so no new definition is introduced.
-* `weightedSimplexFiniteMeasure`, `weightedSimplexProbabilityMeasure`,
-  `weightedSimplexFiniteMeasure_ne_zero`, and `weightedSimplexExpectation_eq_integral_probability`
-  are replaced by Mathlib's conditional measure `volume[|weightedSimplex w W]`, with
-  `isProbabilityMeasure_cond_weightedSimplex`; the source's expectation-as-integral lemma is
-  Mathlib's `setAverage_eq'`.
-* `simplexLinearForm`, `coefficientPowerSum`, `harmonicCoefficient`, `harmonicPowerSum`, and
-  `weightedRadius` are written out as sums in the statements. `harmonicPowerSum_one` becomes
-  Mathlib's `harmonic` in `setAverage_weightedSimplex_succ_sum`, and `harmonicPowerSum_eq_range`
-  is `Fin.sum_univ_eq_sum_range`.
-* `weightedRadius_standardToWeighted`, `continuous_weightedRadius`,
-  `Continuous.integrableOn_weightedSimplex_posPart`, and `integrableOn_weightedRadius`, `_sq`,
-  `_cube` are not ported. The first is the substitution inside `setIntegral_weightedSimplex`;
-  the continuity and integrability lemmas are deferred to the slice that consumes them.
-
-Deferred to later slices: centered moments (the variance of the linear form), the discrete
-analogues in `ToMathlib/Combinatorics/DiscreteSimplex/{Moments,Variance}.lean`, and the
-floor-cell transfers from these continuous moments to discrete counts.
 -/
 
 @[expose] public section
@@ -279,8 +241,7 @@ theorem isProbabilityMeasure_cond_weightedSimplex {w : ι → ℝ} (hw : ∀ i, 
 /-! ### Weights `1, …, n` and the coordinate sum -/
 
 /-- The mean of the coordinate sum `∑ i, u i` on the weighted simplex with weights `1, …, n`:
-`W * H_n / (n + 1)` for `0 < W`, where `H_n` is the harmonic number. This is the source's
-`weightedSimplexExpectation_radius`. -/
+`W * H_n / (n + 1)` for `0 < W`, where `H_n` is the harmonic number. -/
 theorem setAverage_weightedSimplex_succ_sum (n : ℕ) {W : ℝ} (hW : 0 < W) :
     ⨍ u in weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W, ∑ i, u i =
       W * (harmonic n : ℝ) / (n + 1) := by
@@ -292,8 +253,7 @@ theorem setAverage_weightedSimplex_succ_sum (n : ℕ) {W : ℝ} (hW : 0 < W) :
   simp [one_div]
 
 /-- The second moment of the coordinate sum on the weighted simplex with weights `1, …, n`, for
-`0 < W`, in terms of the harmonic power sums `∑ i, 1 / (i + 1) ^ q`. This is the source's
-`weightedSimplexExpectation_radius_sq`. -/
+`0 < W`, in terms of the harmonic power sums `∑ i, 1 / (i + 1) ^ q`. -/
 theorem setAverage_weightedSimplex_succ_sum_sq (n : ℕ) {W : ℝ} (hW : 0 < W) :
     ⨍ u in weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W, (∑ i, u i) ^ 2 =
       W ^ 2 * ((∑ i : Fin n, 1 / ((i : ℝ) + 1)) ^ 2 + ∑ i : Fin n, 1 / ((i : ℝ) + 1) ^ 2) /
@@ -304,8 +264,7 @@ theorem setAverage_weightedSimplex_succ_sum_sq (n : ℕ) {W : ℝ} (hW : 0 < W) 
   exact h
 
 /-- The third moment of the coordinate sum on the weighted simplex with weights `1, …, n`, for
-`0 < W`, in terms of the harmonic power sums `p q = ∑ i, 1 / (i + 1) ^ q`. This is the source's
-`weightedSimplexExpectation_radius_cube`. -/
+`0 < W`, in terms of the harmonic power sums `p q = ∑ i, 1 / (i + 1) ^ q`. -/
 theorem setAverage_weightedSimplex_succ_sum_cube (n : ℕ) {W : ℝ} (hW : 0 < W) :
     ⨍ u in weightedSimplex (fun i : Fin n ↦ (i : ℝ) + 1) W, (∑ i, u i) ^ 3 =
       W ^ 3 * ((∑ i : Fin n, 1 / ((i : ℝ) + 1)) ^ 3 +

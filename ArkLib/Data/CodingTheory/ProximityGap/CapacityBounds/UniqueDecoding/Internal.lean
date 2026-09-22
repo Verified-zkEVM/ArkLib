@@ -654,8 +654,6 @@ private theorem rs_exists_oversized_bivariate_ab (domain : ι ↪ F) (u : Fin 2 
           (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
             Polynomial.Bivariate.evalX (domain i) A) := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq F := Classical.decEq F
   have hdim : Fintype.card ι * (dz + 1) <
       dz * (ax + 1) + (dz + 1) * (bx + 1) := by
     simpa [hn] using hfacts.dimension_strict
@@ -687,8 +685,6 @@ private theorem rs_exists_oversized_bivariate_ab_of_dimension
           (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
             Polynomial.Bivariate.evalX (domain i) A) := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq F := Classical.decEq F
   obtain ⟨ab, hab_ne, hab_ker⟩ :=
     bchks_constraint_map_exists_nonzero_ker (domain : ι → F) u ax bx dz hdim
   let AB := bchks_interpolant_pair ax bx dz ab

@@ -24,10 +24,6 @@ degree. A jet variable `Y_j` has specialization weight `D - j`, which may be zer
 specialization bounds remain valid at that boundary, but a zero weight does not give a
 finite-dimensional bounded-support space without a separate coordinate cap.
 
-The core definitions and specialization bounds are ported from the differential and
-specialization modules at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-The total-jet-degree API is extracted from
-`HiddenDerivative/RootFinding/Counting/TotalJetDegreeRootCount.lean` at the same revision.
 Ordinary partial-derivative exactness remains governed by the explicit cast hypotheses in
 `ArkLib.ToMathlib.MvPolynomial.PDeriv`; the characteristic-free bounds in this file do not assert
 that a separant is nonzero.
@@ -61,10 +57,12 @@ def differentialWeight (D : ℕ) : JetVariable d → ℕ
   | none => 1
   | some j => D - j
 
+/-- The distinguished variable `X` has specialization weight one. -/
 @[simp]
 theorem differentialWeight_none (D : ℕ) : differentialWeight (d := d) D none = 1 :=
   rfl
 
+/-- The jet variable `Y_j` has specialization weight `D - j`. -/
 @[simp]
 theorem differentialWeight_some (D : ℕ) (j : Fin (d + 1)) :
     differentialWeight D (some j) = D - j :=
@@ -150,10 +148,12 @@ def jetDegreeWeight : JetVariable d → ℕ
   | none => 0
   | some _ => 1
 
+/-- The distinguished variable `X` has jet-degree weight zero. -/
 @[simp]
 theorem jetDegreeWeight_none : jetDegreeWeight (d := d) none = 0 :=
   rfl
 
+/-- Every jet variable `Y_j` has jet-degree weight one. -/
 @[simp]
 theorem jetDegreeWeight_some (j : Fin (d + 1)) : jetDegreeWeight (some j) = 1 :=
   rfl
