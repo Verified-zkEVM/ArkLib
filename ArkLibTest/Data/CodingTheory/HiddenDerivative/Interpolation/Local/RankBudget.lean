@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
 /-!
 # Local rank budget acceptance tests
 
-The linear-geometric and linear-exponential sums with the ceiling error written as
+The linear-geometric and linear-exponential bounds with the ceiling error written as
 `(j + 1) / d + 1` are derived from the general bounds at `a = 1 / d` and `b = 1`. At `d = 1`
 the exponential envelope reduces to `N_1(W + r) ≤ 1`. The hypotheses of the budget bound are
 needed: with `d = 1` or `W = 0` the right side is zero while the budget is one, and the ceiling
@@ -19,7 +19,7 @@ simplex sandwich.
 
 open Finset ReedSolomon.HiddenDerivative
 
-/-- The geometric sum with coefficients `(j + 1) / d + 1`. -/
+/-- For `0 ≤ q < 1`, `∑_{j<m} ((j + 1) / d + 1) q^(j+1) ≤ q / (d (1 - q)²) + q / (1 - q)`. -/
 example (d m : ℕ) (hd : 0 < d) {q : ℝ} (hq0 : 0 ≤ q) (hq1 : q < 1) :
     (∑ j ∈ range m, (((j + 1 : ℕ) : ℝ) / d + 1) * q ^ (j + 1)) ≤
       q / ((d : ℝ) * (1 - q) ^ 2) + q / (1 - q) := by
@@ -28,7 +28,7 @@ example (d m : ℕ) (hd : 0 < d) {q : ℝ} (hq0 : 0 ≤ q) (hq1 : q < 1) :
   simp only [div_mul_eq_mul_div, one_mul, div_div] at h
   rwa [mul_comm ((1 - q) ^ 2)] at h
 
-/-- The exponential sum with coefficients `(j + 1) / d + 1`. -/
+/-- The case `q = exp(-x)`: `∑_{j<m} ((j + 1) / d + 1) exp(-x)^(j+1) ≤ 1 / (d x²) + 1 / x`. -/
 example (d m : ℕ) (hd : 0 < d) {x : ℝ} (hx : 0 < x) :
     (∑ j ∈ range m, (((j + 1 : ℕ) : ℝ) / d + 1) * Real.exp (-x) ^ (j + 1)) ≤
       1 / ((d : ℝ) * x ^ 2) + 1 / x := by
@@ -37,7 +37,7 @@ example (d m : ℕ) (hd : 0 < d) {x : ℝ} (hx : 0 < x) :
   simp only [one_div_mul_eq_div, div_div] at h
   exact h
 
-/-- The contact sum, with the ceiling written out. -/
+/-- `sum_contactThreshold_mul_exp_le` with the ceiling written out as `(m - r) ⌈/⌉ (d + 1)`. -/
 example (d m : ℕ) (hd : 0 < d) {x B : ℝ} (hx : 0 < x) :
     (∑ r ∈ range m, ((m - r) ⌈/⌉ (d + 1) : ℕ) * Real.exp (x * (r + B))) ≤
       Real.exp (x * (m + B)) * (1 / ((d : ℝ) * x ^ 2) + 1 / x) :=

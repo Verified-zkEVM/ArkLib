@@ -31,6 +31,12 @@ polynomials: the polynomial of `I ⊔ span {f}` has natural degree at most one l
 `I`, and its coefficient in that degree is at most `b * natDegree P * leadingCoeff P`, where `P`
 is the polynomial of `I`.
 
+The bound on the number of points of a zero-dimensional zero locus is in
+`ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`, the comparisons along
+algebra maps are in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`, the affine
+degree is in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree`, and the comparison with the
+radical is in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical`.
+
 ## Main statements
 
 * `MvPolynomial.affineHilbertPolynomial`: the polynomial, with
@@ -48,47 +54,8 @@ is the polynomial of `I`.
 * `MvPolynomial.affineHilbertPolynomial_bot`, `MvPolynomial.affineHilbertPolynomial_span_singleton`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_span_singleton_add_one`: the polynomial ring and
   hypersurfaces.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
-`AffineHilbert`. From `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Polynomial.lean`:
-`hilbertPolynomial` (renamed `affineHilbertPolynomial`), `hilbertPolynomial_natDegree_le`,
-`hilbertPolynomial_eventually`, `hilbertPolynomial_eventually_eval`, `hilbertPolynomial_unique`,
-`hilbertPolynomial_eq_constant`, `hilbertPolynomial_ne_zero`,
-`hilbertPolynomial_degree_and_leadingCoeff_antitone`,
-`moduleFinite_of_hilbertPolynomial_natDegree_zero` and
-`principalCut_hilbertPolynomial_zero_or_degree_and_coeff`. From
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Degree.lean`:
-`principalCut_eventualPolynomial_degree_and_coeff` and
-`principalCut_eventualPolynomial_zero_or_degree_and_coeff`, whose polynomial half is
-`Polynomial.natDegree_le_and_coeff_le_of_eventually_eval_natCast_le_backwardDifference` in
-`ArkLib.ToMathlib.Polynomial.EventualGrowth`. From
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Polynomial.lean`: `hilbertPolynomial_bot`,
-`hilbertPolynomial_bot_natDegree`, `hilbertPolynomial_span_singleton`,
-`hilbertPolynomial_span_singleton_natDegree_add_one` and
-`totalDegree_pos_of_span_singleton_ne_top`.
-
-Changes from the source. The principal cut assumes that multiplication by the class of `f` is
-injective on the quotient, as `MvPolynomial.principalCut_affineHilbertFunction_add_le` does; the
-source's prime ideal with `f ∉ I` is the corollary `..._of_isPrime`. The source concluded
-`Q = 0 ∨ (degree and coefficient bounds)`; the bounds hold for `Q = 0` as well, so the disjunction
-is dropped. The comparison along inclusions no longer assumes that the larger ideal is proper, and
-the converse of `moduleFinite_of_hilbertPolynomial_natDegree_zero` is added. The source's
-`preHilbertPoly_eq_taylor`, `countingPolynomial_singleton` and
-`hilbertPolynomial_span_singleton_natDegree` are replaced by a direct count of the exponents above
-the leading exponent of `f`. The source's `quotientDegreeLE_eventually_top`,
-`hilbertFunction_antitone`, `quotientDegreeLE_mono` and `standardExponents_span_singleton` are in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert` and
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials`.
-
-The source's `finite_zeroLocus_and_ncard_le_hilbertPolynomial` is in
-`ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`, and the finite-algebra
-comparisons of `Hilbert/FiniteAlgebraGrowth.lean` and `Hilbert/FiniteExtensionDegree.lean` are in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`. The affine degree of
-`Hilbert/Degree.lean` is in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree`, and the
-radical comparison of `Hilbert/RadicalDegree.lean` is in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical`.
+* `MvPolynomial.natDegree_affineHilbertPolynomial_le_of_mem`: an ideal containing a nonzero
+  polynomial has natural degree at most `Nat.card σ - 1`.
 -/
 
 @[expose] public section
@@ -287,8 +254,7 @@ theorem principalCut_natDegree_affineHilbertPolynomial_le_and_coeff_le
   exact_mod_cast principalCut_affineHilbertFunction_add_le hf hfdeg hbN
 
 /-- The principal-cut degree drop for a prime ideal `I` and an element `f ∉ I`, whose class is
-then a non-zero-divisor on the domain `MvPolynomial σ k ⧸ I`. This is the source statement
-without its disjunction with `Q = 0`. -/
+then a non-zero-divisor on the domain `MvPolynomial σ k ⧸ I`. -/
 theorem principalCut_natDegree_affineHilbertPolynomial_le_and_coeff_le_of_isPrime
     {I : Ideal (MvPolynomial σ k)} (hI : I.IsPrime) {f : MvPolynomial σ k} (hfI : f ∉ I)
     {b : ℕ} (hfdeg : f.totalDegree ≤ b) :
@@ -391,5 +357,23 @@ theorem natDegree_affineHilbertPolynomial_span_singleton_add_one {f : MvPolynomi
     (natDegree_backwardDifference_eq_and_leadingCoeff_of_ne_zero
       (Nat.cast_ne_zero.mpr hb.ne') hd).1, natDegree_preHilbertPoly]
   omega
+
+/-- An ideal containing a nonzero polynomial `g` in `n` variables has affine Hilbert polynomial of
+natural degree at most `n - 1`.
+
+If `span {g}` is proper, this is `natDegree_affineHilbertPolynomial_le_of_le` and
+`natDegree_affineHilbertPolynomial_span_singleton_add_one`; otherwise `g` is a unit, `I = ⊤` and
+the polynomial is `0`. The hypothesis `g ≠ 0` is needed: `I = ⊥` contains `0` and has natural
+degree `n`. -/
+theorem natDegree_affineHilbertPolynomial_le_of_mem {I : Ideal (MvPolynomial σ k)}
+    {g : MvPolynomial σ k} (hg : g ≠ 0) (hgI : g ∈ I) :
+    (affineHilbertPolynomial I).natDegree ≤ Nat.card σ - 1 := by
+  by_cases hproper : Ideal.span {g} = ⊤
+  · rw [eq_top_mono ((Ideal.span_singleton_le_iff_mem I).mpr hgI) hproper,
+      affineHilbertPolynomial_top, Polynomial.natDegree_zero]
+    exact Nat.zero_le _
+  · have := natDegree_affineHilbertPolynomial_span_singleton_add_one hg hproper
+    have := natDegree_affineHilbertPolynomial_le_of_le ((Ideal.span_singleton_le_iff_mem I).mpr hgI)
+    omega
 
 end MvPolynomial

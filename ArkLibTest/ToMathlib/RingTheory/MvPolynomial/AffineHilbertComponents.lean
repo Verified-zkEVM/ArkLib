@@ -13,7 +13,7 @@ In one variable the points `X₀ = 0` and `X₀ = 1` are separated by `X₀ - 1`
 separator inequality gives `2 ≤ affineHilbertFunction (span {X₀} ⊓ span {X₀ - 1}) N` for `N ≥ 1`.
 Two copies of `span {X₀}` with the separator `X₀` satisfy every hypothesis except regularity, and
 the conclusion would read `2 ≤ 1`, so regularity is needed. The examples also derive the
-source-shaped statements: the separator theorem with the threshold
+separator theorem with the threshold
 `Finset.univ.sup (fun i ↦ (s i).totalDegree)`, the coefficient sum with its redundant degree bound
 on the components, and the prime forms of the principal-cut component bounds.
 -/
@@ -131,8 +131,8 @@ theorem isLeftRegular_mk_of_isPrime {k σ : Type*} [Field k] {P : Ideal (MvPolyn
 
 variable {k σ ι : Type*} [Field k] [Finite σ] [Fintype ι]
 
-/-- The source's `exists_separators_sum_shifted_hilbertFunction_le_iInf`: separate conditions on
-the separators and the common threshold `Finset.univ.sup (fun i ↦ (s i).totalDegree)`. -/
+/-- Separators for pairwise incomparable primes, with separate conditions on the separators and
+the common threshold `Finset.univ.sup (fun i ↦ (s i).totalDegree)`. -/
 example (P : ι → Ideal (MvPolynomial σ k)) (hP : ∀ i, (P i).IsPrime)
     (hinc : ∀ ⦃i j⦄, i ≠ j → ¬P i ≤ P j) :
     ∃ s : ι → MvPolynomial σ k,
@@ -145,8 +145,7 @@ example (P : ι → Ideal (MvPolynomial σ k)) (hP : ∀ i, (P i).IsPrime)
     fun N hN ↦ hle N fun i ↦ (Finset.le_sup (f := fun i ↦ (s i).totalDegree)
       (Finset.mem_univ i)).trans hN⟩
 
-/-- The source's `sum_hilbertPolynomial_coeff_le_iInf`, with its degree bound `hPdeg` on the
-components, which the general statement does not need. -/
+/-- The coefficient inequality with the redundant degree bound `hPdeg` on the components. -/
 example (P : ι → Ideal (MvPolynomial σ k)) (hP : ∀ i, (P i).IsPrime)
     (hinc : ∀ ⦃i j⦄, i ≠ j → ¬P i ≤ P j) (d : ℕ)
     (_hPdeg : ∀ i, (affineHilbertPolynomial (P i)).natDegree ≤ d)
@@ -155,7 +154,7 @@ example (P : ι → Ideal (MvPolynomial σ k)) (hP : ∀ i, (P i).IsPrime)
       (affineHilbertPolynomial (⨅ i, P i)).coeff d :=
   sum_coeff_affineHilbertPolynomial_le_iInf hP hinc hInfDeg
 
-/-- The source's `principalCut_sum_minimalPrime_coeff_le`, for a prime `P` and `f ∉ P`. -/
+/-- The coefficient bound for the components of a cut, for a prime `P` and `f ∉ P`. -/
 example {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime) {f : MvPolynomial σ k} (hfP : f ∉ P)
     {b : ℕ} (hfdeg : f.totalDegree ≤ b) :
     let J := P ⊔ Ideal.span {f}
@@ -165,7 +164,7 @@ example {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime) {f : MvPolynomial σ k}
   principalCut_sum_coeff_affineHilbertPolynomial_minimalPrimes_le
     (isLeftRegular_mk_of_isPrime hP hfP) hfdeg
 
-/-- The source's `principalCut_sum_minimalPrime_factorial_le`, for a prime `P` and `f ∉ P`. -/
+/-- The factorial bound for the components of a cut, for a prime `P` and `f ∉ P`. -/
 example {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime) {f : MvPolynomial σ k} (hfP : f ∉ P)
     {b : ℕ} (hfdeg : f.totalDegree ≤ b)
     (hchildren : ∀ Q ∈ (P ⊔ Ideal.span {f}).minimalPrimesFinset,

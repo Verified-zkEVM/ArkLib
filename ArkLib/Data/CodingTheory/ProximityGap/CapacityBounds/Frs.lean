@@ -146,8 +146,6 @@ private theorem frs_mcaError_le_proof
         (1 - ρ - 2 / (t : ℝ)) ≤
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
   classical
-  let _ : DecidableEq ι := Classical.decEq ι
-  let _ : DecidableEq F := Classical.decEq F
   dsimp
   let R : ℝ := (k : ℝ) / ((s : ℝ) * Fintype.card ι)
   let δr : ℝ := 1 - R - 2 / (t : ℝ)

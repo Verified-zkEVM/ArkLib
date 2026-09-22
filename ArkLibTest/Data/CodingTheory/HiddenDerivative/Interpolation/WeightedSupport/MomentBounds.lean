@@ -10,8 +10,8 @@ import Mathlib.Analysis.Real.Sqrt
 /-!
 # Acceptance cases for the weighted-support moment bounds
 
-These cases show that the weakened dimension hypotheses are sharp or needed, derive the source
-statements with `10000 ≤ d` and `48000 ≤ d`, and combine the two third-moment bounds.
+These cases show that the dimension hypotheses are sharp or needed, derive the forms with the
+large-dimension hypotheses `10000 ≤ d` and `48000 ≤ d`, and combine the two third-moment bounds.
 -/
 
 open ReedSolomon.HiddenDerivative
@@ -23,7 +23,7 @@ example : ∃ H : ℝ, H ^ 2 ≤ 150 / 100 ∧
     (150 : ℝ) / (150 + 1) * (38 / 25 - H ^ 2 / 150) = 3 / 2 := by
   refine ⟨√(3 / 2), ?_, ?_⟩ <;> rw [Real.sq_sqrt (by norm_num)] <;> norm_num
 
-/-- The source's `weightedSupport_variance_factor_gt`, with `10000 ≤ d`. -/
+/-- `weightedSupport_variance_factor_gt` under the stronger hypothesis `10000 ≤ d`. -/
 example {d H H₂ : ℝ} (hd : 10000 ≤ d) (hH : H ^ 2 ≤ d / 100) (h₂ : 38 / 25 ≤ H₂) :
     (3 / 2 : ℝ) < d / (d + 1) * (H₂ - H ^ 2 / d) :=
   weightedSupport_variance_factor_gt (by linarith) hH h₂
@@ -34,7 +34,7 @@ example : ((1 : ℝ) / 100) ^ 2 ≤ (1 / 100) / 100 ∧
     ¬ (2 * ((12021 : ℝ) / 10000 + 2 * (1 / 100) ^ 3 / (1 / 100) ^ 2) ≤ 241 / 100) := by
   norm_num
 
-/-- The source's `weightedSupport_third_factor_numeric`, with `48000 ≤ d`. -/
+/-- `weightedSupport_third_factor_numeric` under the stronger hypothesis `48000 ≤ d`. -/
 example {d H H₃ : ℝ} (hd : 48000 ≤ d) (hH : 0 ≤ H) (hHsq : H ^ 2 ≤ d / 100)
     (h₃ : H₃ ≤ 12021 / 10000) :
     2 * (H₃ + 2 * H ^ 3 / d ^ 2) ≤ (241 / 100 : ℝ) :=

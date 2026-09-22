@@ -56,26 +56,9 @@ differential variables if and only if `y` has the three generator values
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Identity.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d: `localPolynomialEvaluation` with its
-three generator lemmas, `localPolynomialEvaluation_localCorrection`,
-`localPolynomialEvaluation_comp_unscaled_backwardError`,
-`localPolynomialEvaluation_unscaled_backwardError`, `reducedHiddenTaylorError`,
-`X_pow_mul_reducedHiddenTaylorError`, `X_pow_succ_mul_reducedHiddenTaylorError`,
-`localPolynomialEvaluation_comp_normalized_reducedError`, and
-`localPolynomialEvaluation_normalized_reducedError`. The source's one-directional
-`localPolynomialEvaluation_comp_unscaled_of_reconstruction` and
-`localPolynomialEvaluation_comp_normalized_of_reconstruction` are the reverse directions of
-`localPolynomialEvaluation_comp_unscaled_eq_iff` and
-`localPolynomialEvaluation_comp_normalized_eq_iff`, which are in turn instances of the new
-algebra-valued criteria. The source's `X_pow_dvd_hiddenTaylorError` restated
-`Polynomial.X_pow_dvd_normalizedBackwardTaylorError` and is not repeated. The shifted-jet
-substitution and `taylor_differentialSpecialization` are in
-`ArkLib.Data.Polynomial.Differential.ShiftedJet`. Nothing is deferred.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Equations (13)--(16).
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26],
+  Equations (13)--(16).
 -/
 
 @[expose] public section
@@ -174,16 +157,20 @@ def localPolynomialEvaluation (center : R) (P error : R[X]) :
     LocalPolynomial R d →ₐ[R] R[X] :=
   aeval (localPolynomialValues center P error)
 
+/-- `localPolynomialEvaluation` sends `T` to `X`. -/
 @[simp]
 theorem localPolynomialEvaluation_T (center : R) (P error : R[X]) :
     localPolynomialEvaluation (d := d) center P error (X (localT d)) = Polynomial.X := by
   simp [localPolynomialEvaluation, localPolynomialValues, localT]
 
+/-- `localPolynomialEvaluation` sends `E` to `error`. -/
 @[simp]
 theorem localPolynomialEvaluation_E (center : R) (P error : R[X]) :
     localPolynomialEvaluation (d := d) center P error (X (localE d)) = error := by
   simp [localPolynomialEvaluation, localPolynomialValues, localE, localAux]
 
+/-- `localPolynomialEvaluation` sends `Y_(j+1)` to the `(j + 1)`-th Hasse derivative of `P`, shifted
+to `center`. -/
 @[simp]
 theorem localPolynomialEvaluation_Y (center : R) (P error : R[X]) (j : Fin d) :
     localPolynomialEvaluation center P error (X (localY j)) =

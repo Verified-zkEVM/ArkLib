@@ -12,8 +12,8 @@ import Mathlib.RingTheory.Int.Basic
 
 The examples produce separators for the primes `(2)` and `(3)` of `ℤ` and check a concrete
 choice by hand, show that a comparable family `(0) ≤ (2)` has no separators, treat the family with
-one prime, and derive the source-shaped statement, with separate conditions for `s i ∉ P i` and
-`s i ∈ P j`, from the general one.
+one prime, and derive the form with separate conditions for `s i ∉ P i` and `s i ∈ P j` from the
+general one.
 -/
 
 namespace SeparatorTest
@@ -54,7 +54,7 @@ example {R : Type*} [CommRing R] (P : Ideal R) [hP : P.IsPrime] :
     (fun i j hij ↦ absurd (Subsingleton.elim i j) hij)
   exact ⟨s, fun h ↦ (hs () ()).mp h rfl⟩
 
-/-- The source's form: separate conditions `s i ∉ P i` and `s i ∈ P j` for `i ≠ j`, with
+/-- The form with separate conditions `s i ∉ P i` and `s i ∈ P j` for `i ≠ j`, with
 incomparability stated for `i ≠ j`. -/
 example {R ι : Type*} [CommRing R] [Fintype ι] (P : ι → Ideal R) (hP : ∀ i, (P i).IsPrime)
     (hinc : ∀ ⦃i j⦄, i ≠ j → ¬P i ≤ P j) :
