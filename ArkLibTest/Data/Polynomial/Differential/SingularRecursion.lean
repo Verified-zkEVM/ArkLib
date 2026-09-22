@@ -17,7 +17,8 @@ import Mathlib.Data.ZMod.Basic
   `exists_regularRecursionLeaf` is needed.
 * `X = 0` has no bounded solution, while the zero equation has one, so the terminal theorem needs
   `Q ≠ 0`.
-* The source statement, with its `ringChar` bounds, follows from the general one.
+* The form for bounded solutions under the guards `D < ringChar F` and
+  `jetDegree Q j < ringChar F` follows from the general one.
 -/
 
 namespace PolynomialDifferential
@@ -145,9 +146,9 @@ example : IsEmpty (BoundedSolution (X none : DifferentialPolynomial ℚ 1) 3) :=
 example : Nonempty (BoundedSolution (0 : DifferentialPolynomial ℚ 1) 3) :=
   ⟨⟨0, by rw [← differentialSpecializationHom_apply, map_zero]⟩⟩
 
-/-! ### Source-shaped statement -/
+/-! ### The form under a characteristic guard -/
 
-/-- The source form of `exists_regularRecursionLeaf`, under `D < ringChar F` and
+/-- `exists_regularRecursionLeaf` for a bounded solution, under `D < ringChar F` and
 `jetDegree Q j < ringChar F` for every `j`. -/
 example {F : Type*} [CommSemiring F] [NoZeroDivisors F] [Nontrivial F] {d D : ℕ}
     (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0)
