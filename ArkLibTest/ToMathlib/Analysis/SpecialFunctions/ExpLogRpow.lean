@@ -53,10 +53,10 @@ example : Real.exp (3 / 5 + 1 / 100) < 37 / 20 := by
   norm_num
   exact Real.exp_sixtyOne_div_hundred_lt
 
-/-- The source's `WeightedSupportParameters.exp_fifty_four_fifths_gt`. -/
+/-- `48000 < exp (54 / 5)`. -/
 example : (48000 : ℝ) < Real.exp (54 / 5) := Real.fortyEightThousand_lt_exp_fiftyFour_div_five
 
-/-- The source's `WeightedSupportParameters.exp_eightyOne_eightieth_gt`. -/
+/-- `11 / 4 < exp (81 / 80)`. -/
 example : (11 / 4 : ℝ) < Real.exp (81 / 80) := Real.elevenFourths_lt_exp_eightyOne_div_eighty
 
 /-- Equality holds in `Real.exp_one_mul_le_mul_exp_div` at `c = ρ`: both sides are `e ρ`. -/

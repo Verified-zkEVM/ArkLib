@@ -22,15 +22,6 @@ dimension lower bound `N` and a rank upper bound `R` then satisfy `(543 / 500) n
 
 * `normalized_surplus_product`: `B · normalizedDimensionRankSurplus = ρ g ^ 3 / 6 · (…)`.
 * `multiplicative_margin_from_bounds`: `(543 / 500) n R < N`.
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/Surplus.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `rankPower_eq_inverse_exp` is the case `a = 1 + (3 / 8) g` of `Real.rpow_one_div_div_self` in
-  `ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow`, which needs only `a ≠ 0`.
-* `normalized_surplus_product` and `multiplicative_margin_from_bounds` are unchanged.
 -/
 
 @[expose] public section
