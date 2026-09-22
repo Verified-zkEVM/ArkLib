@@ -35,19 +35,6 @@ The bound on the number of points of a zero-dimensional zero locus by the affine
 * `MvPolynomial.affineDegree_eq_finrank`: finite-dimensional quotients.
 * `MvPolynomial.affineDegree_span_singleton`: hypersurfaces.
 * `MvPolynomial.affineDegree_le_of_le`: comparison along inclusions of the same dimension.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/Degree.lean`, namespace `AffineHilbert`:
-`affineDegree`, `affineDegree_nonneg`, `affineDegree_pos`, `affineDegree_bot`,
-`affineDegree_eq_finrank` and `affineDegree_span_singleton`. The definition is unchanged except
-that it is stated for `MvPolynomial.affineHilbertPolynomial`. `affineDegree_span_singleton` no
-longer assumes that `span {f}` is proper: for a nonzero constant `f` both sides are `0`. The
-characterization `affineDegree_pos_iff`, the value `affineDegree_top`, the constant-polynomial
-form `affineDegree_of_natDegree_eq_zero` and the comparison `affineDegree_le_of_le` are new.
-The source's `finite_zeroLocus_and_ncard_le_affineDegree` is in
-`ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`.
 -/
 
 @[expose] public section

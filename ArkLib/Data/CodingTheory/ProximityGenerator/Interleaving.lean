@@ -60,25 +60,14 @@ for `U` is bad for `V`. There are at most `|S|` bad seeds, so `|S| ≤ |F|` suff
 The reverse inequality embeds a family `U` over `C` as the interleaved family whose rows are all
 equal to `U`.
 
+The seedwise transfer is derived from `Code.exists_forall_isProjectionBad_of_interleaved` through
+`isMCA_iff_isProjectionBad`. The integer-threshold transfer and its exact-agreement consequences
+are in `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`.
+
 ## References
 
 * [Jo, S., *Interleaving Stability for Mutual Correlated Agreement and Curve
-  Decodability*][Jo26], Corollary 4.5, the exact transfer when the seed space has at most as many
-  elements as the field.
-* ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` proves this row-projection argument
-  three times, as private declarations under `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/`:
-  `interleaved_powerProjectionBad_card_le` in `PowerAgreement.lean` (univariate powers over a
-  finite field), `interleaved_powerProjectionBadArbitrary_finset_card_le` in
-  `PowerAgreementArbitrary.lean` (univariate powers over an arbitrary field), and
-  `interleaved_lineProjectionBad_card_le` in
-  `TensorFoldAgreement.lean` (the binary line fold). Their shared row-functional avoidance step
-  is supplied by `Code.exists_rowFunctional_forall_notMem`. The integer-threshold transfer and
-  the exact-agreement conclusions of the first two are in
-  `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`; the seedwise transfer here is derived
-  from `Code.exists_forall_isProjectionBad_of_interleaved` through `isMCA_iff_isProjectionBad`.
-
-Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
-field.
+  Decodability*][Jo26], Corollary 4.5
 -/
 
 @[expose] public section
@@ -126,15 +115,13 @@ theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type} [Nonempty S] 
 code `C`, every finite row index `κ` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ ≤ mcaError G C δ`.
 
-This generalizes [Jo26] Corollary 4.5 (one direction) and `ProximityGap.mcaError_interleaved_le`,
-which is the affine-line case.
+The affine-line case is `ProximityGap.mcaError_interleaved_le`.
 
 For a family `U` over `C ^⋈ κ`, the set of bad seeds has at most `|S| ≤ |F|` elements, so
 `exists_forall_isMCA_of_forall_isMCA_interleaved` gives a family `V` over `C` that is bad at every
 one of them. The hypothesis `hS` is used only there, to bound the number of submodules that one
 row functional must avoid. It holds for every generator whose seed type is `F` itself, and for
-every generator with finitely many seeds when `F` is infinite. For larger seed spaces [Jo26]
-proves a weaker, field-size-weighted bound, which is not formalized here.
+every generator with finitely many seeds when `F` is infinite.
 
 Edge cases: an empty `κ` needs no separate argument; there `C ^⋈ κ` has no bad seeds and the left
 side is `0`. Radii outside `[0, 1]` need no separate argument either, because `IsMCA` is defined at
@@ -196,8 +183,7 @@ theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type} [Non
 code `C`, every nonempty finite row index `κ` and every real radius `δ`,
 `mcaError G (C^⋈κ) δ = mcaError G C δ`.
 
-This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
-`mcaError_moduleInterleavedCode_le_of_card_le`, which needs `hS`, with
+The proof combines `mcaError_moduleInterleavedCode_le_of_card_le`, which needs `hS`, with
 `mcaError_le_mcaError_moduleInterleavedCode`, which needs `Nonempty κ`. The affine-line case with
 `κ = Fin t` is `ProximityGap.mcaError_interleaved_eq`. -/
 theorem mcaError_moduleInterleavedCode_eq_of_card_le [Nonempty κ] {S : Type} [Nonempty S]

@@ -407,7 +407,6 @@ theorem lambda_eq_of_floor_eq {B : Type}
       ⌊δ' * (Fintype.card ι : ℝ≥0)⌋₊) :
     Code.Lambda C (δ : ℝ) = Code.Lambda C (δ' : ℝ) := by
   classical
-  let _ : DecidableEq B := Classical.decEq B
   unfold Code.Lambda
   apply iSup_congr
   intro y

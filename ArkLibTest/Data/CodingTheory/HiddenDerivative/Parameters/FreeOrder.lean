@@ -11,7 +11,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 
 A concrete parameter set with its slack conditions, the jet-degree budget computed by
 `interpolationDegreeBudget_le_iff`, cases showing the remaining boundary hypotheses are needed,
-and the source-shaped statements derived from the general ones.
+and forms with extra or rounded hypotheses derived from the general statements.
 -/
 
 open Filter
@@ -115,20 +115,20 @@ example : ambientDimension (29 / 10) 0 1 = 2 ∧
   rw [ambientDimension, Nat.floor_eq_iff (by norm_num)]
   norm_num
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with extra hypotheses -/
 
-/-- The source's `ambientDimension_lt_blockLength`, with `0 < ε < 1` and `0 < θ < 1`. -/
+/-- `ambientDimension_lt_blockLength` under the hypotheses `0 < ε < 1` and `0 < θ < 1`. -/
 example {ε θ : ℝ} {n : ℕ} (hε : 0 < ε) (hε1 : ε < 1) (hθ : 0 < θ) (_hθ1 : θ < 1) (hn : 0 < n) :
     ambientDimension ε θ n < n :=
   ambientDimension_lt_blockLength (by nlinarith) hn
 
-/-- The source's `le_interpolationDegreeBudget_of_mul_denominator_lt`. -/
+/-- The strict form of `le_interpolationDegreeBudget_of_mul_denominator_le`. -/
 example {ε θ : ℝ} {d n t : ℕ} (hd : 0 < d) (hdK : d < ambientDimension ε θ n)
     (ht : t * (ambientDimension ε θ n - 1) < multiplicity d * agreementThreshold ε n) :
     t ≤ interpolationDegreeBudget d ε θ n :=
   le_interpolationDegreeBudget_of_mul_denominator_le (interpolationDenominator_pos hd hdK) ht.le
 
-/-- The source's `freeGlobalDimensionSlacks`, with `0 < θ < 1` and `0 < n`. -/
+/-- `freeGlobalDimensionSlacks` under the extra hypotheses `θ < 1` and `0 < n`. -/
 example {ε θ : ℝ} {d n : ℕ} (hε : 0 < ε) (hθ : 0 < θ) (_hθ1 : θ < 1) (hd : 0 < d) (_hn : 0 < n)
     (hdK : d < ambientDimension ε θ n) :
     interpolationBoxWidth θ d ≤ multiplicity d ∧
@@ -139,12 +139,12 @@ example {ε θ : ℝ} {d n : ℕ} (hε : 0 < ε) (hθ : 0 < θ) (_hθ1 : θ < 1)
         multiplicity d * agreementThreshold ε n :=
   freeGlobalDimensionSlacks hε hθ.le hd hdK
 
-/-- The source's `exists_orderThreshold_for_boxWidth`, with the bound `2`. -/
+/-- `exists_orderThreshold_for_boxWidth` with the bound `2`. -/
 example {θ : ℝ} (hθ : 0 < θ) :
     ∃ D : ℕ, ∀ d : ℕ, D ≤ d → 2 ≤ θ * (multiplicity d : ℝ) / 16 :=
   exists_orderThreshold_for_boxWidth hθ 2
 
-/-- The source's `half_rate_le_ambientDimension_sub_one_div`, with `2 ≤ d < K`. -/
+/-- `half_rate_le_ambientDimension_sub_one_div` under the hypothesis `2 ≤ d < K`. -/
 example {ε θ : ℝ} {d n : ℕ} (hd : 2 ≤ d) (hdK : d < ambientDimension ε θ n) :
     (1 - θ) * ε / 2 ≤ ((ambientDimension ε θ n - 1 : ℕ) : ℝ) / (n : ℝ) :=
   half_rate_le_ambientDimension_sub_one_div (by omega)
