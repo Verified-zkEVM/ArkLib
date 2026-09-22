@@ -27,9 +27,11 @@ support of `Q`. It is defined in any commutative semiring and needs no division.
   hypothesis on the support of `Q`.
 * `MvPolynomial.ringHom_clearedSubstitution` and `MvPolynomial.clearedSubstitution_map`: ring
   homs on the target and on the coefficients commute with the construction, with no hypothesis.
-* `MvPolynomial.totalDegree_clearedSubstitution`: if `S` has total degree at most `b` and each
-  `N i` has total degree at most `d i * b + 1`, the numerator has total degree at most
-  `H * b + totalDegree Q`.
+* `MvPolynomial.totalDegree_clearedSubstitution_le_of_coeff`: if `S` has total degree at most `b`
+  and each `N i` has total degree at most `d i * b + 1`, the numerator has total degree at most
+  `H * b + v`, where `v` bounds the degree of each monomial of `Q` plus the degree of its mapped
+  coefficient. `MvPolynomial.totalDegree_clearedSubstitution` is the case of the coefficient map
+  `C`, with `v = totalDegree Q`.
 -/
 
 @[expose] public section
@@ -106,13 +108,56 @@ theorem map_clearedSubstitution (f : F →+* R) (φ : R →+* E) (S : R)
   rw [mul_assoc, he]
   ring
 
-/-- Total-degree bound for a cleared numerator over a polynomial ring. If `S` has total degree
-at most `b`, each `N i` has total degree at most `d i * b + 1`, every monomial of `Q` fits the
-budget `H`, and `Q` has total degree at most `v`, then the numerator has total degree at most
+/-- Total-degree bound for a cleared numerator with any coefficient map `f` into a polynomial
+ring. If `S` has total degree at most `b`, each `N i` has total degree at most `d i * b + 1`,
+every monomial of `Q` fits the budget `H`, and every monomial `m` of `Q` satisfies
+`(f (Q.coeff m)).totalDegree + m.degree ≤ v`, then the numerator has total degree at most
 `H * b + v`.
 
 The shape `d i * b + 1` is the one produced by a numerator with denominator `S ^ d i` that is
-linear up to the cleared powers of `S`; the bound is then stable under the recursion. -/
+linear up to the cleared powers of `S`; the bound is then stable under the recursion. The last
+hypothesis is monomialwise, so a coefficient map that raises degrees is charged only on the
+monomials where it does. -/
+theorem totalDegree_clearedSubstitution_le_of_coeff {A K σ : Type*} [CommSemiring A]
+    [CommSemiring K] (f : A →+* MvPolynomial σ K)
+    (S : MvPolynomial σ K) (N : τ → MvPolynomial σ K) (d : τ → ℕ)
+    (H b v : ℕ) (Q : MvPolynomial τ A)
+    (hS : S.totalDegree ≤ b) (hN : ∀ i, (N i).totalDegree ≤ d i * b + 1)
+    (hQ : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
+    (hv : ∀ m ∈ Q.support, (f (Q.coeff m)).totalDegree + m.degree ≤ v) :
+    (clearedSubstitution f S N d H Q).totalDegree ≤ H * b + v := by
+  classical
+  apply totalDegree_finsetSum_le
+  intro m hm
+  have hprod : (∏ i ∈ m.support, N i ^ m i).totalDegree ≤
+      Finsupp.weight d m * b + m.degree := by
+    apply (totalDegree_finsetProd _ _).trans
+    calc
+      _ ≤ ∑ i ∈ m.support, m i * (d i * b + 1) := by
+        apply Finset.sum_le_sum
+        intro i _
+        exact (totalDegree_pow _ _).trans (Nat.mul_le_mul_left _ (hN i))
+      _ = Finsupp.weight d m * b + m.degree := by
+        simp only [Finsupp.weight_apply, Finsupp.sum, Finsupp.degree_apply, smul_eq_mul]
+        rw [Finset.sum_mul, ← Finset.sum_add_distrib]
+        apply Finset.sum_congr rfl
+        intro i _
+        ring
+  have hpow := (totalDegree_pow S (H - Finsupp.weight d m)).trans
+    (Nat.mul_le_mul_left _ hS)
+  have hmon := hv m hm
+  have hbudget := Nat.sub_add_cancel (hQ m hm)
+  have hmul := totalDegree_mul
+    (f (Q.coeff m) * ∏ i ∈ m.support, N i ^ m i)
+    (S ^ (H - Finsupp.weight d m))
+  have hcoeff := totalDegree_mul (f (Q.coeff m)) (∏ i ∈ m.support, N i ^ m i)
+  nlinarith
+
+/-- Total-degree bound for a cleared numerator over a polynomial ring. If `S` has total degree
+at most `b`, each `N i` has total degree at most `d i * b + 1`, every monomial of `Q` fits the
+budget `H`, and `Q` has total degree at most `v`, then the numerator has total degree at most
+`H * b + v`. This is `totalDegree_clearedSubstitution_le_of_coeff` with the coefficient map
+`C`. -/
 theorem totalDegree_clearedSubstitution {K σ : Type*} [CommSemiring K]
     (S : MvPolynomial σ K) (N : τ → MvPolynomial σ K) (d : τ → ℕ)
     (H b v : ℕ) (Q : MvPolynomial τ K)
@@ -120,33 +165,9 @@ theorem totalDegree_clearedSubstitution {K σ : Type*} [CommSemiring K]
     (hQ : ∀ m ∈ Q.support, Finsupp.weight d m ≤ H)
     (hv : Q.totalDegree ≤ v) :
     (clearedSubstitution C S N d H Q).totalDegree ≤ H * b + v := by
-  classical
-  apply totalDegree_finsetSum_le
-  intro m hm
-  have hprod : (∏ i ∈ m.support, N i ^ m i).totalDegree ≤
-      Finsupp.weight d m * b + m.sum (fun _ e ↦ e) := by
-    apply (totalDegree_finsetProd _ _).trans
-    calc
-      _ ≤ ∑ i ∈ m.support, m i * (d i * b + 1) := by
-        apply Finset.sum_le_sum
-        intro i _
-        exact (totalDegree_pow _ _).trans (Nat.mul_le_mul_left _ (hN i))
-      _ = Finsupp.weight d m * b + m.sum (fun _ e ↦ e) := by
-        simp only [Finsupp.weight_apply, Finsupp.sum, smul_eq_mul]
-        rw [Finset.sum_mul, ← Finset.sum_add_distrib]
-        apply Finset.sum_congr rfl
-        intro i _
-        ring
-  have hpow := (totalDegree_pow S (H - Finsupp.weight d m)).trans
-    (Nat.mul_le_mul_left _ hS)
-  have hmon := (le_totalDegree hm).trans hv
-  have hbudget := Nat.sub_add_cancel (hQ m hm)
-  have hmul := totalDegree_mul
-    (C (Q.coeff m) * ∏ i ∈ m.support, N i ^ m i)
-    (S ^ (H - Finsupp.weight d m))
-  have hcoeff := totalDegree_mul (C (Q.coeff m)) (∏ i ∈ m.support, N i ^ m i)
-  rw [totalDegree_C, zero_add] at hcoeff
-  nlinarith
+  refine totalDegree_clearedSubstitution_le_of_coeff C S N d H b v Q hS hN hQ fun m hm ↦ ?_
+  rw [totalDegree_C, zero_add]
+  exact (le_totalDegree hm).trans hv
 
 end
 

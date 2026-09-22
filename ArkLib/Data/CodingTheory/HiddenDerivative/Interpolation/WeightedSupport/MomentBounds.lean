@@ -23,7 +23,8 @@ inequalities that turn bounds on the harmonic sums into the constants `3 / 2` an
 the estimate. It does not prove the moment identities themselves: `normalizedRadius` and its
 first three moments are in
 `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments`, which also
-combines them with these bounds in `normalizedRadius_contribution_lower`.
+combines them with these bounds in `normalizedRadius_contribution_lower`. The harmonic-sum bounds
+that supply `H`, `H₂` and `H₃` are in `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds`.
 
 ## Main statements
 
