@@ -152,16 +152,10 @@ open Polynomial in
 polynomial-level input to "reversal permutes the irreducible factors of `X^{2^α}+1`". -/
 theorem reverse_X_pow_add_one {R : Type*} [Semiring R] [Nontrivial R] {n : ℕ} :
     (X ^ n + 1 : R[X]).reverse = X ^ n + 1 := by
-  have hdeg : (X ^ n + 1 : R[X]).natDegree = n := by
-    simpa using natDegree_X_pow_add_C (n := n) (r := (1 : R))
-  rw [Polynomial.reverse, hdeg]
-  ext i
-  rw [coeff_reflect]
-  rcases le_or_gt i n with h | h
-  · rw [revAt_le h]
-    simp only [coeff_add, coeff_X_pow, coeff_one]
-    split_ifs <;> first | rfl | (exfalso; omega) | simp
-  · rw [revAt_eq_self_of_lt h]
+  have h : (X ^ n : R[X]).reverse = 1 := by
+    have := reverse_X_pow_mul (C 1 : R[X]) n
+    rwa [reverse_C, C_1, mul_one] at this
+  rw [← C_1, reverse_add_C, h, natDegree_X_pow, C_1, one_mul, add_comm]
 
 omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 open Polynomial in
@@ -183,7 +177,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
   intro hassoc
   have hq : Nat.Prime q := Fact.out
   have hq5' : 5 ≤ q := by omega
-  haveI : Fact (Irreducible p₁) := ⟨hp₁⟩
+  have : Fact (Irreducible p₁) := ⟨hp₁⟩
   set K := AdjoinRoot p₁ with hKdef
   set φ : ZMod q →+* K := algebraMap (ZMod q) K with hφdef
   set ζ : K := AdjoinRoot.root p₁ with hζdef
@@ -211,7 +205,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
     exact one_ne_zero (neg_eq_zero.mp hζpow.symm)
   -- the order of `ζ`
   have hord : orderOf ζ = 2 ^ (α + 1) := by
-    haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+    have : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
     refine orderOf_eq_prime_pow ?_ ?_
     · intro h
       have hh : (-1 : K) = 1 := hζpow.symm.trans h
@@ -230,9 +224,9 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
   set d := p₁.natDegree with hddef
   -- `K` is a finite field with `q ^ d` elements
   have pb := AdjoinRoot.powerBasis (K := ZMod q) hp₁.ne_zero
-  haveI : Module.Finite (ZMod q) K := pb.finite
-  haveI : Finite K := Module.finite_of_finite (ZMod q)
-  haveI : Fintype K := Fintype.ofFinite K
+  have : Module.Finite (ZMod q) K := pb.finite
+  have : Finite K := Module.finite_of_finite (ZMod q)
+  have : Fintype K := Fintype.ofFinite K
   have hcard : Fintype.card K = q ^ d := by
     rw [Module.card_eq_pow_finrank (K := ZMod q) (V := K), ZMod.card,
       (AdjoinRoot.powerBasis (K := ZMod q) hp₁.ne_zero).finrank, AdjoinRoot.powerBasis_dim]
@@ -244,7 +238,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
     exact mul_right_cancel₀ hζne (by simpa using hstep)
   have hdvd : 2 ^ (α + 1) ∣ q ^ d - 1 := by
     rw [← hord]; exact orderOf_dvd_of_pow_eq_one hζ1
-  haveI : NeZero (2 ^ (α + 1)) := ⟨by positivity⟩
+  have : NeZero (2 ^ (α + 1)) := ⟨by positivity⟩
   have hqcast : ((q : ZMod (2 ^ (α + 1)))) ^ d = 1 := by
     have h0 : ((q ^ d - 1 : ℕ) : ZMod (2 ^ (α + 1))) = 0 := by
       rw [ZMod.natCast_eq_zero_iff]; exact hdvd
@@ -267,8 +261,8 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
           rw [hk, ← h2]
           exact not_lt.mpr (Nat.mul_le_mul_left _ (by omega)))
   -- the Frobenius endomorphism permutes the roots of `p₁`
-  haveI : CharP K q := charP_of_injective_algebraMap φ.injective q
-  haveI : ExpChar K q := ExpChar.prime hq
+  have : CharP K q := charP_of_injective_algebraMap φ.injective q
+  have : ExpChar K q := ExpChar.prime hq
   have hcomp : (frobenius K q).comp φ = φ := by
     ext c
     simp [frobenius_def, ← map_pow, ZMod.pow_card]
@@ -326,7 +320,7 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
       _ = d := by rw [Polynomial.natDegree_map]
   have hTS : T = S := Finset.eq_of_subset_of_card_le hTsub (by rw [hTcard]; omega)
   -- `ζ⁻¹` is a root of `p₁`, because `p₁` is self-reciprocal
-  haveI : Invertible ζ := invertibleOfNonzero hζne
+  have : Invertible ζ := invertibleOfNonzero hζne
   have hz : Polynomial.eval₂ φ ζ p₁ = 0 := by simpa [aeval_def, hφdef] using hζroot
   have hrev0 : Polynomial.eval₂ φ (⅟ζ) p₁.reverse = 0 := by
     have h := Polynomial.eval₂_reverse_mul_pow φ ζ p₁
@@ -352,72 +346,35 @@ theorem not_associated_reverse_self (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α
     linear_combination h0
   exact neg_one_notMem_powers_q q hq5 hα i hneg
 
-
-
-
 omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
 /-- **(Phase 4, blueprint Lemma 4.5, `lem:no_selfReciprocal` in
 `blueprint/src/lattices/hachi_subfield.tex`)** For `q ≡ 5 (mod 8)`, reversal *swaps* the two
 irreducible factors of `X^{2^α}+1`: if `X^{2^α}+1 = p₁ · p₂` with `p₁, p₂` irreducible, then
 `p₁.reverse` is associated to `p₂` (and hence not to `p₁`).
 
-**Status: proven.** This was the last gap in the `R_q^H ≃+* F_{q^k}` chain (Hachi [NOZ26, §3],
-Lemma 5); everything downstream (`galoisAutₛ_fixed_isUnit`, `conjFixedSubring_isField`,
-`fixedSubring_isField`, `fixedSubringEquivGaloisField`) is now unconditional. The
-number-theoretic heart is isolated in `not_associated_reverse_self`; here we only need that
-reversal permutes `{p₁, p₂}`.
+This closes the `R_q^H ≃+* F_{q^k}` chain (Hachi [NOZ26, §3], Lemma 5): everything downstream
+(`galoisAutₛ_fixed_isUnit`, `conjFixedSubring_isField`, `fixedSubring_isField`,
+`fixedSubringEquivGaloisField`) uses it.
 
 ## Mathematical content
 
 `X^{2^α}+1 = Φ_{2^{α+1}}` is self-reciprocal, so reversal permutes its two irreducible factors up
-to associates; the claim is that this permutation is the *swap*, never the identity. All the
-number theory of `q ≡ 5 (mod 8)` is concentrated here: the roots of `p₁` (in any splitting field,
-e.g. `F_{q^{2^{α-1}}}`) are primitive `2^{α+1}`-th roots of unity forming a single Frobenius orbit
-`{ζ^{q^i}}` — a coset of `⟨q⟩ ≤ (Z/2^{α+1})ˣ` in the exponent — while the roots of `p₁.reverse`
-are their inverses. If `p₁.reverse ~ p₁`, the orbit is closed under `ζ ↦ ζ⁻¹`, so
-`q^i ≡ −1 (mod 2^{α+1})` for some `i`, i.e. `−1 ∈ ⟨q⟩` — contradicting `neg_one_notMem_powers_q`.
-This swap is exactly what makes `σ_{-1}` (`= X ↦ X⁻¹`) interchange the two CRT factors.
+to associates; the claim is that this permutation is the *swap*, never the identity. The roots of
+`p₁` are primitive `2^{α+1}`-th roots of unity forming a single Frobenius orbit `{ζ^{q^i}}`, while
+the roots of `p₁.reverse` are their inverses. If `p₁.reverse ~ p₁`, the orbit is closed under
+`ζ ↦ ζ⁻¹`, so `q^i ≡ −1 (mod 2^{α+1})` for some `i`, i.e. `−1 ∈ ⟨q⟩`, contradicting
+`neg_one_notMem_powers_q`. This swap is exactly what makes `σ_{-1}` (`= X ↦ X⁻¹`) interchange
+the two CRT factors.
 
-## Proof outline
+## Proof
 
-1. *Reversal permutes `{p₁, p₂}`.* From `p₁ ∣ X^{2^α}+1` get `p₁.reverse ∣ (X^{2^α}+1).reverse
-   = X^{2^α}+1` (`Polynomial.reverse_mul_of_domain` plus computing the reverse of `X^{2^α}+1`).
-   `p₁.reverse` is irreducible of the same degree, since `p₁.coeff 0 ≠ 0` (`0` is not a root of
-   `X^{2^α}+1`); see the `Polynomial.reverse` / `natTrailingDegree` API. As `p₁, p₂` are the only
-   irreducible factors of `X^{2^α}+1` (by `hf` and uniqueness of factorization), either
-   `p₁.reverse ~ p₂` (done) or `p₁.reverse ~ p₁`.
-
-2. *Set up a root without splitting fields.* Work in `K := AdjoinRoot p₁`, a field since `p₁` is
-   irreducible. Let `ζ : K` be the image of `X`: then `ζ^{2^α} = -1` (from `hf`), so `ζ` has
-   multiplicative order exactly `2^{α+1}` (as `(2 : ZMod q) ≠ 0` because `q` is odd).
-
-3. *Roots of `p₁` in `K` are the Frobenius orbit `{ζ^{q^i} | i < 2^{α-1}}`.* The Frobenius
-   `x ↦ x^q` fixes `Z_q` (`ZMod.pow_card`/`FiniteField.pow_card`), so each `ζ^{q^i}` is a root of
-   `p₁`. They are pairwise distinct: `ζ^{q^i} = ζ^{q^j}` forces `q^i ≡ q^j (mod 2^{α+1})`, and
-   `orderOf (q : ZMod (2^{α+1})) = 2^{α-1}` (`orderOf_q_eq`, proven in
-   `Subfield/Factorization.lean`). Since `p₁.natDegree = 2^{α-1}`
-   (`cyclotomic_card_normalizedFactors` gives two factors each of degree `2^{α-1}`; or directly
-   from `hf` plus step 1's degree bookkeeping), a card count shows these are *all* roots of `p₁`
-   in `K`.
-
-4. *Derive the contradiction from `p₁.reverse ~ p₁`.* `ζ⁻¹` is a root of `p₁.reverse`
-   (`Polynomial.eval₂_reverse_eq_zero_iff`, the same trick as `mk_reverse_eq_galoisAutₛ_mul`
-   above, with `⅟ζ = ζ^{2^{α+1}-1}`). If `p₁.reverse ~ p₁` then `ζ⁻¹` is a root of `p₁`, so by
-   step 3 `ζ⁻¹ = ζ^{q^i}` for some `i`; comparing exponents via `orderOf ζ = 2^{α+1}` (step 2)
-   yields `(q : ZMod (2^{α+1}))^i = -1`, contradicting `neg_one_notMem_powers_q q hq5 hα`
-   (proven in `Subfield/Factorization.lean`).
-
-## Available ingredients (all proven)
-
-- `neg_one_notMem_powers_q` (`Subfield/Factorization.lean`): no power of `q` is `-1` in
-  `ZMod (2^{α+1})` — the number-theoretic core.
-- `orderOf_q_eq` (`Subfield/Factorization.lean`): `orderOf (q : ZMod (2^{α+1})) = 2^{α-1}`.
-- `cyclotomic_card_normalizedFactors` (`Subfield/Factorization.lean`): exactly two irreducible
-  factors, and `Xpow_add_one_eq_cyclotomic` identifies `X^{2^α}+1` with `Φ_{2^{α+1}}`.
-- `mk_reverse_eq_galoisAutₛ_mul` (above): a worked example of the `Invertible`-point
-  `eval₂`-reverse technique (`Polynomial.eval₂_reverse_mul_pow`).
-- Mathlib's `Polynomial.Reverse` file: `reverse_mul_of_domain`, `eval₂_reverse_eq_zero_iff`,
-  `reverse_natDegree`-style lemmas. -/
+The constant coefficient of `p₁` is nonzero (`0` is not a root of `X^{2^α}+1`), so
+`p₁.reverse` has the same degree as `p₁`. Reversal is multiplicative over a domain
+(`Polynomial.reverse_mul_of_domain`) and fixes `X^{2^α}+1` (`reverse_X_pow_add_one`), so
+`p₁.reverse * p₂.reverse = p₁ * p₂`. Since `p₁` is prime, it divides `p₁.reverse` or
+`p₂.reverse`. In the first case the degree equality makes `p₁ ~ p₁.reverse`, which
+`not_associated_reverse_self` (the root-orbit argument) rules out. In the second case cancelling
+`p₁` gives `p₁.reverse * c = p₂`, and irreducibility of `p₂` makes `c` a unit. -/
 theorem no_selfReciprocal_factor (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α)
     {p₁ p₂ : (ZMod q)[X]} (hp₁ : Irreducible p₁) (hp₂ : Irreducible p₂)
     (hf : (X ^ (2 ^ α) + 1 : (ZMod q)[X]) = p₁ * p₂) :

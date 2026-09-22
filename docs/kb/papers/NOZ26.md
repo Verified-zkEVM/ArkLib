@@ -40,8 +40,8 @@ Commitment layer:
 Ring-switching layer:
 
 - The §3 subfield layer: `R_q^H`, its cardinality `q^k`, the packing bijection `ψ`, the trace
-  inner-product identity, and Lemma 6's norm bound. The final Lemma 5 field/isomorphism
-  declarations retain one explicit proof gap; see the dedicated audit below.
+  inner-product identity, Lemma 5's field/isomorphism conclusion, and Lemma 6's norm bound, all
+  fully proved; see the dedicated audit below.
 - The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
   to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
   shape ArkLib factors out as `RingSwitchingProfile`.
@@ -118,11 +118,10 @@ Ring-switching layer:
 
 - ArkLib has not yet built the Hachi ring-switching instance; the abstraction is designed to admit
   it but only the Binius instance is implemented.
-- Hachi Lemma 5 is only **conditionally complete**: `fixedSubring_isField` and
-  `fixedSubringEquivGaloisField` depend on the sorried factor-swap lemma
-  `no_selfReciprocal_factor`. Eq. (7), the fixed-subring cardinality, Theorem 2, and Lemma 6 do
-  not depend on that gap. Lemma 6 is fully proved, under the weaker odd-characteristic
-  assumption actually used by its coefficient argument.
+- Hachi Lemma 5 is fully proved: `fixedSubring_isField` and `fixedSubringEquivGaloisField` rest
+  on the factor-swap lemma `no_selfReciprocal_factor`, which is proved by a root-orbit argument
+  in `AdjoinRoot p₁` (`not_associated_reverse_self`). Lemma 6 is fully proved, under the weaker
+  odd-characteristic assumption actually used by its coefficient argument.
 - `R_q` is **not an integral domain**, so the generic `[IsDomain L]` Schwartz–Zippel soundness
   theorem does not instantiate Hachi. Hachi soundness (a CWSS-style argument) is a separate theorem
   with a different error and is out of scope for the current ring-switching module.
@@ -200,8 +199,6 @@ Ring-switching layer:
 
 - Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
   `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
-- Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
-  Lemma 5's field/isomorphism conclusion.
 - Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
   partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
   soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is

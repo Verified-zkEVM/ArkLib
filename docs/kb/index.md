@@ -107,8 +107,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
 - [`audits/noz26-subfield-lemmas5-6.md`](audits/noz26-subfield-lemmas5-6.md)
-  - Hachi §3 Lemmas 5–6 paper-to-Lean audit, including the remaining Lemma 5 factor-swap gap
-    and the completed Lemma 6 norm proof.
+  - Hachi §3 Lemmas 5–6 paper-to-Lean audit, covering the completed Lemma 5 field/isomorphism
+    proof and the completed Lemma 6 norm proof.
 - [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
   - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the nested-tree repair and the weak-binding
     seam as integrated into the escape-threaded opening chain.

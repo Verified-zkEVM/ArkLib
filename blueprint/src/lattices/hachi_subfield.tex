@@ -172,8 +172,9 @@ $(\mathrm{mk}\,p^{\mathrm{rev}})$. Proved from Mathlib's
 
 \begin{lemma}[No self-reciprocal factor]\label{lem:no_selfReciprocal}
 \lean{ArkLib.Lattices.CyclotomicModulus.no_selfReciprocal_factor}\leanok
-\uses{lem:neg_one_notMem}
-For $q \equiv 5 \pmod 8$, reversal swaps the two factors: if $X^{2^\alpha}+1 = p_1 p_2$ then
+\uses{lem:order_q, lem:neg_one_notMem}
+For $q \equiv 5 \pmod 8$, reversal swaps the two factors: if $X^{2^\alpha}+1 = p_1 p_2$ with
+$p_1, p_2$ irreducible, then
 $p_1^{\mathrm{rev}}$ is associated to $p_2$. This is the step carrying the
 $-1 \notin \langle q\rangle$ root-orbit content. The root set of $p_1$ is a single Frobenius orbit $=$ a
 coset of $\langle q\rangle$; were $p_1^{\mathrm{rev}} \sim p_1$ it would be closed under $\zeta
