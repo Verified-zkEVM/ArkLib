@@ -30,6 +30,12 @@ The error is valued in `ℝ≥0` rather than `I`, since the scaled error may exc
 * `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` — the implication, at
   the scaled error.
 * `AffineMCALemmas.exists_line_bound` — the counting step it rests on.
+* `AffineMCAMain.card_filter_isMCA_affineSpaceGenerator_div_le` and
+  `AffineMCAMain.mcaError_affineSpaceGenerator_le_of_forall_card_le` — the same transfer from a
+  uniform count `B` of bad line seeds to the affine-space bound `B / (|F| - 1)`, for every
+  dimension including `0`.
+* `CoreDefinitions.mcaError_le_ofReal_of_forall_card_le` — a uniform count `B` of bad seeds for
+  any generator bounds its MCA error by `B / |S|`.
 
 The correspondence to [BCGM25]'s numbered statements is in
 `docs/kb/audits/bcgm25-mca-generators.md`.
@@ -333,4 +339,77 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
   rw [← ENNReal.ofReal_coe_nnreal, NNReal.coe_mul, NNReal.coe_inv]
   exact ENNReal.ofReal_le_ofReal hfin
 
+open Classical in
+/-- **Affine-space bad density from a uniform line count.** Suppose that for every pair of words
+`W : Fin 2 → ι → A`, at most `B` seeds `t : F` are MCA-bad for the affine line generator at radius
+`δ`. Then for every `s` and every family `U : Fin (s + 1) → ι → A`, the density of MCA-bad seeds of
+the affine space generator is at most `B / (|F| - 1)`, independently of `s`.
+
+For `s ≥ 1` this is `AffineMCALemmas.exists_line_bound`, which bounds `(1 - 1/|F|)` times the
+affine-space density by the line density `≤ B / |F|` of one pair `W`. For `s = 0` no seed is bad:
+the generated word is `U 0` itself, so a witness set cannot separate it from `U 0`; the bound then
+holds because `hline` forces `0 ≤ B`. -/
+theorem card_filter_isMCA_affineSpaceGenerator_div_le {s : ℕ}
+    (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}
+    (hline : ∀ W : Fin 2 → ι → A,
+      ((Finset.univ.filter fun t : F ↦ IsMCA (AffineLineGenerator F) MC t W δ).card : ℝ) ≤ B)
+    (U : Fin (s + 1) → ι → A) :
+    ((Finset.univ.filter fun x : Fin s → F ↦
+        IsMCA (AffineSpaceGenerator F s) MC x U δ).card : ℝ) / (Fintype.card F : ℝ) ^ s ≤
+      B / ((Fintype.card F : ℝ) - 1) := by
+  let := Module.addCommMonoidToAddCommGroup F (M := A)
+  have hq : (1 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.one_lt_card
+  have hB : 0 ≤ B := (Nat.cast_nonneg _).trans (hline 0)
+  rcases Nat.eq_zero_or_pos s with rfl | hs
+  · have hempty : (Finset.univ.filter fun x : Fin 0 → F ↦
+        IsMCA (AffineSpaceGenerator F 0) MC x U δ) = ∅ := by
+      refine Finset.filter_false_of_mem fun x _ ⟨T, _, hv, j, hj⟩ ↦ hj ?_
+      obtain rfl : j = 0 := Fin.fin_one_eq_zero j
+      simpa [AffineSpaceGenerator] using hv
+    rw [hempty, Finset.card_empty, Nat.cast_zero, zero_div]
+    exact div_nonneg hB (by linarith)
+  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hs MC U δ
+  have hfactor : 0 < 1 - 1 / (Fintype.card F : ℝ) := by
+    rw [sub_pos, div_lt_one (by linarith)]
+    exact hq
+  have hlineDensity := hW.trans (div_le_div_of_nonneg_right (hline W) (by linarith))
+  calc _ ≤ (B / (Fintype.card F : ℝ)) / (1 - 1 / (Fintype.card F : ℝ)) :=
+        (le_div_iff₀ hfactor).mpr (by simpa [mul_comm] using hlineDensity)
+    _ = B / ((Fintype.card F : ℝ) - 1) := by
+        field_simp
+
+open Classical in
+/-- **Affine-space MCA error from a uniform line count.** If for every pair of words at most `B`
+seeds are MCA-bad for the affine line generator at radius `δ`, then for every `s` the MCA error of
+the affine space generator at radius `δ` is at most `B / (|F| - 1)`. See
+`card_filter_isMCA_affineSpaceGenerator_div_le`. -/
+theorem mcaError_affineSpaceGenerator_le_of_forall_card_le {s : ℕ}
+    (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}
+    (hline : ∀ W : Fin 2 → ι → A,
+      ((Finset.univ.filter fun t : F ↦ IsMCA (AffineLineGenerator F) MC t W δ).card : ℝ) ≤ B) :
+    mcaError (AffineSpaceGenerator F s) MC δ ≤ ENNReal.ofReal (B / ((Fintype.card F : ℝ) - 1)) := by
+  refine iSup_le fun U ↦ ?_
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+  refine ENNReal.ofReal_le_ofReal ?_
+  simpa [Fintype.card_fun, Fintype.card_fin] using
+    card_filter_isMCA_affineSpaceGenerator_div_le MC δ hline U
+
 end AffineMCAMain
+
+namespace CoreDefinitions
+
+open Classical in
+/-- **MCA error from a uniform count of bad seeds.** For any generator `G` with a finite seed
+space `S`, if every family `U` has at most `B` MCA-bad seeds at radius `δ`, then the MCA error at
+`δ` is at most `B / |S|`. -/
+theorem mcaError_le_ofReal_of_forall_card_le {ι F ℓ S A : Type} [Fintype ι] [Field F]
+    [Fintype ℓ] [Nonempty S] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
+    (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) {B : ℝ}
+    (hbad : ∀ U : ℓ → ι → A,
+      ((Finset.univ.filter fun x : S ↦ IsMCA G MC x U δ).card : ℝ) ≤ B) :
+    mcaError G MC δ ≤ ENNReal.ofReal (B / (Fintype.card S : ℝ)) := by
+  refine iSup_le fun U ↦ ?_
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+  exact ENNReal.ofReal_le_ofReal (div_le_div_of_nonneg_right (hbad U) (by positivity))
+
+end CoreDefinitions
