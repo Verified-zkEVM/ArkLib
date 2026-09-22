@@ -36,36 +36,6 @@ Passing to an extension field `E` of `F` does not change the characteristic
   solutions of degree at most `D`.
 * `BoundedSolution.map`, `BoundedSolution.map_injective`, `BoundedSolution.natCard_le_natCard_map`:
   transport of bounded solutions and the cardinality comparison.
-
-## References
-
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/
-Extension.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Nothing in it
-mentions a code, so it lives in `PolynomialDifferential`.
-
-* `map_differentialSpecialization`, `BoundedSolution.map`, `BoundedSolution.map_polynomial` and
-  `BoundedSolution.map_injective` keep their statements. `mapDegreeLT` and
-  `mapDegreeLT_polynomial` are inlined into `BoundedSolution.map`.
-* `jetDegree_map_eq` keeps its statement. `isBelowCharacteristic_map_iff` becomes
-  `jetDegreeCastsNeZero_map_iff`, since `IsBelowCharacteristic` was replaced by
-  `JetDegreeCastsNeZero` in P1; it holds for any injective map of commutative semirings instead
-  of an algebra map of fields. The degree part `D < ringChar F` of the source guard is replaced in
-  the root counts by binomial-cast hypotheses, which transport along any injective ring
-  homomorphism by `map_natCast`.
-* `BoundedSolution.instFinite` is generalized from finite fields to finite commutative semirings.
-* `BoundedSolution.algebraMapEmbedding` and `BoundedSolution.natCard_le_extension` become
-  `BoundedSolution.mapEmbedding` and `BoundedSolution.natCard_le_natCard_map` for any injective
-  ring homomorphism into a finite commutative semiring. `natCard_le_of_extension_bound` and
-  `finset_card_le_extension` are one-line consequences (of `Nat.le_trans` and
-  `Finset.card_le_card_of_injOn` with `BoundedSolution.map_injective`) and are derived in the
-  tests rather than restated.
-* The source's `ArkLib/ToMathlib/FieldTheory/FiniteExtension.lean` is not ported. Mathlib's
-  `FiniteField.Extension`, `FiniteField.natCard_extension`, `FiniteField.finrank_extension`,
-  `Algebra.ringChar_eq` and `charP_of_injective_algebraMap` cover its facts, and its
-  bound-dependent choice `ExtensionAbove` has no consumer at that revision: the extension root
-  counts use `FiniteField.Extension F (ringChar F) e` for a fixed degree `e`.
-
-Deferred: the root counts over extension fields that consume these transports.
 -/
 
 @[expose] public section

@@ -20,9 +20,8 @@ import Mathlib.Algebra.Field.ZMod
 * When `q ≤ H` the count is vacuous: the left side is `#roots * 0`.
 * The same three solutions show that the jet-injectivity hypothesis of
   `card_mul_sub_le_of_degree_le` is needed.
-* The source statements `boundedSolution_counting_pow_le_weightedDegree`,
-  `BoundedSolution.natDegree_separant_le` and `BoundedSolution.natDegree_separant_lt` follow from
-  the generalized theorems.
+* The count for a finite set of bounded solutions over a finite field, and the degree bounds on
+  the separant specialized at a bounded solution, follow from the theorems.
 -/
 
 namespace PolynomialDifferential
@@ -173,8 +172,8 @@ example : ¬ ∀ a : ZMod 2, Set.InjOn (polynomialJet (d := 1) a)
     have ⟨_, hsol, hdeg, hweight, hsep, _, hfail⟩ := constEquation_counterexample
     hfail (card_mul_sub_le_of_degree_le constEquation 1 constRoots hsol hdeg hweight hsep hinj)
 
-/-- Source shape: `boundedSolution_counting_pow_le_weightedDegree`, over a finite field, for a
-finite set of bounded solutions, with exceptional budget `differentialWeightedDegree D Q`, degree
+/-- The count over a finite field for a finite set of bounded solutions, with exceptional budget
+`differentialWeightedDegree D Q`, degree
 budget `Δ` and the factor order `(q - H) * #roots`. -/
 example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (D Δ : ℕ)
     (roots : Finset (BoundedSolution Q D))
@@ -206,9 +205,8 @@ example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) 
       rw [mul_assoc]
       exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hDegree)
 
-/-- Source shapes: `BoundedSolution.natDegree_separant_le` and
-`BoundedSolution.natDegree_separant_lt` are `natDegree_differentialSpecialization_separant_le` at
-the polynomial of a bounded solution. -/
+/-- `natDegree_differentialSpecialization_separant_le` at the polynomial of a bounded solution,
+with its strict form below a bound. -/
 example [CommSemiring F] {D bound : ℕ} (Q : DifferentialPolynomial F d) (s : Fin (d + 1))
     (solution : BoundedSolution Q D) (hQ : differentialWeightedDegree D Q < bound) :
     (differentialSpecialization (separant Q s) solution.polynomial).natDegree ≤

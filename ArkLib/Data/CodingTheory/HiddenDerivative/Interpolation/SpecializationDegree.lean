@@ -28,14 +28,8 @@ agreement points then forces the specialization to vanish.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/
-SpecializationDegree.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Both
-theorems keep their statements; they hold over any commutative semiring, as in the source.
-`eq_zero_of_mem_exactInterpolationSpace_of_mul_eq_zero` is new; it removes the positivity
-hypothesis from the global vanishing theorem in `Interpolation.Global.Multiplicity`.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.4, (12)
 -/
 
 @[expose] public section

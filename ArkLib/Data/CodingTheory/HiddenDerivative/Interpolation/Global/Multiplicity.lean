@@ -28,18 +28,8 @@ zero (`Polynomial.eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn`).
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Global/
-Multiplicity.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `differentialSpecialization_eq_zero_of_mem_exactInterpolationSpace_of_agreements` keeps its
-  statement, with `[Field F]` generalized to `[CommRing R] [IsDomain R]` and the hypothesis
-  `0 < m * A` dropped.
-* `differentialSpecialization_eq_zero_of_global_multiplicity` is
-  `Polynomial.eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn` applied to
-  `W = differentialSpecialization Q P` and is not restated.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.3, and Section 3.6, Proposition 3.10
 -/
 
 @[expose] public section
