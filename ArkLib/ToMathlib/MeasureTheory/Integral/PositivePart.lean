@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Algebra.Order.BigOperators.Expect
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
+public import Mathlib.MeasureTheory.Integral.Average
+public import Mathlib.Probability.ConditionalProbability
 
 /-!
 # Moment bounds for the positive part below a threshold
@@ -36,6 +38,9 @@ the left side is `3` and the right side is `0`.
 * `max_sub_zero_le_sub_add_sq_div`: the pointwise bound, over any ordered field.
 * `Finset.expect_max_sub_zero_le`: the bound for a uniform average over a finite set.
 * `MeasureTheory.integral_max_sub_zero_le`: the bound for a probability measure.
+* `MeasureTheory.setIntegral_max_sub_zero_le`: the bound for a set integral over any set,
+  `∫ x in s, max (c - Y x) 0 ∂μ ≤ μ.real s * (c - m + V / (4 * (c - m)))`, with `m` and `V` the
+  set averages of `Y` and `(Y - m) ^ 2`.
 * `MeasureTheory.le_integral_max_sub_zero_pow_three`: a lower bound for the cube of the positive
   part by the second and third moments.
 
@@ -55,6 +60,13 @@ source's, renamed. Neither statement uses coding theory, so both leave the Reed�
 for `(max (b - z) 0) ^ 3` are dropped: both follow from the integrability of `z` and `z ^ 3`.
 The rest of `Cubic.lean` (`positive_cube_tangent`, `positive_cube_jensen`,
 `positive_cube_convex`) has no consumer in the port so far and is not ported.
+
+`setIntegral_max_sub_zero_le` is the step of the source's
+`ReedSolomon.HiddenDerivative.weighted_residual_sum_le_volume_mul_mean_variance` (in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
+`RankIntegral.lean` at the same revision) that applies `positivePart_mean_variance` to the
+conditional measure on the weighted simplex and multiplies back by its volume. Here it is stated
+for any measure and any set, including sets of measure `0` or `∞`.
 -/
 
 @[expose] public section
@@ -101,6 +113,8 @@ end Pointwise
 
 namespace MeasureTheory
 
+open scoped ENNReal ProbabilityTheory
+
 /-- For a probability measure `P`, an integrable `Y` with mean `μ` and square-integrable deviation
 `Y - μ`, and a threshold `c > μ`,
 `∫ max (c - Y) 0 ∂P ≤ c - μ + (∫ (Y - μ) ^ 2 ∂P) / (4 * (c - μ))`.
@@ -121,6 +135,50 @@ theorem integral_max_sub_zero_le {X : Type*} [MeasurableSpace X] (P : Measure X)
     _ = c - μ + (∫ x, (Y x - μ) ^ 2 ∂P) / (4 * (c - μ)) := by
       rw [integral_add hl hq, integral_sub (integrable_const c) hY, integral_div, hmean]
       simp
+
+/-- The set-average form of `integral_max_sub_zero_le`: for a set `s`, a function `Y`
+integrable on `s` with average `m` over `s` and square-integrable deviation `Y - m` on `s`, and a
+threshold `c > m`,
+`∫ x in s, max (c - Y x) 0 ∂μ ≤ μ.real s * (c - m + (⨍ x in s, (Y x - m) ^ 2 ∂μ) / (4 * (c - m)))`.
+This is the bound for the conditional probability measure `μ[|s]`, multiplied by `μ.real s`.
+
+No hypothesis on `μ s` is needed. If `μ s = 0`, both sides are `0`. If `μ s = ∞`, then
+`μ.real s = 0`, so the average `m` is `0` and the right side is `0`; on the left,
+`max (c - Y) 0 + Y ≥ c > 0` on `s`, so `max (c - Y) 0` is not integrable on `s` and its Bochner
+integral is `0`. The integrability of `(Y - m) ^ 2` on `s` is needed for the same reason as in
+`integral_max_sub_zero_le`. -/
+theorem setIntegral_max_sub_zero_le {X : Type*} [MeasurableSpace X] {μ : Measure X} {s : Set X}
+    (Y : X → ℝ) {c m : ℝ}
+    (hY : IntegrableOn Y s μ) (hmean : ⨍ x in s, Y x ∂μ = m)
+    (hv : IntegrableOn (fun x ↦ (Y x - m) ^ 2) s μ) (hc : m < c) :
+    ∫ x in s, max (c - Y x) 0 ∂μ ≤
+      μ.real s * (c - m + (⨍ x in s, (Y x - m) ^ 2 ∂μ) / (4 * (c - m))) := by
+  by_cases hμs : μ s = ∞
+  · have hreal : μ.real s = 0 := by simp [measureReal_def, hμs]
+    have hm : m = 0 := by rw [← hmean, setAverage_eq, hreal, inv_zero, zero_smul]
+    subst hm
+    rw [hreal, zero_mul]
+    refine (integral_undef fun hg ↦ ?_).le
+    have hconst : IntegrableOn (fun _ ↦ c) s μ := by
+      refine (hg.add hY).mono aestronglyMeasurable_const (Filter.Eventually.of_forall fun x ↦ ?_)
+      simp only [Real.norm_eq_abs, abs_of_pos hc]
+      have := le_max_left (c - Y x) 0
+      exact (le_abs_self _).trans' (by simp only [Pi.add_apply]; linarith)
+    rcases (integrableOn_const_iff (C := c)).1 hconst with h | h
+    · exact hc.ne' (by simpa using h)
+    · exact h.ne hμs
+  by_cases h0 : μ s = 0
+  · simp [Measure.restrict_eq_zero.2 h0, measureReal_def, h0]
+  have := ProbabilityTheory.cond_isProbabilityMeasure_of_finite h0 hμs
+  have hpos : 0 < μ.real s := ENNReal.toReal_pos h0 hμs
+  have h := integral_max_sub_zero_le (μ[|s]) Y c m
+    (hY.smul_measure (ENNReal.inv_ne_top.2 h0))
+    (by rw [← hmean]; exact (setAverage_eq' μ _ s).symm)
+    (hv.smul_measure (ENNReal.inv_ne_top.2 h0)) hc
+  have hcond : ∀ f : X → ℝ, ∫ x, f x ∂μ[|s] = ⨍ x in s, f x ∂μ :=
+    fun f ↦ (setAverage_eq' μ _ s).symm
+  rw [hcond, hcond, setAverage_eq, smul_eq_mul] at h
+  exact (inv_mul_le_iff₀ hpos).1 h
 
 /-- For a probability measure `P`, a threshold `b`, and `z` with mean `0` such that `z` and
 `z ^ 3` are integrable,
