@@ -9,21 +9,20 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.E
 /-!
 # Acceptance cases for the integral lower bounds on the weighted support dimension
 
-The source's forms of `weighted_dimension_integral` (with pointwise simplex hypotheses and
-`0 ≤ g * m`) and of `weighted_dimension_probability` (an integral against the uniform probability
-measure on the simplex, with `0 < W` and `0 < g * m`), and of `weighted_dimension_lower` (with
-`48000 ≤ d`, `0 < W` and `0 < g * m`), derived from the general statements; a concrete bound at
-`d = 1`, where the simplex is a single point; the case `W = 0`, which the source excluded; and the
-explicit lower bound at `d = 10000`, the smallest dimension it covers.
+The form of `weighted_dimension_integral` with pointwise simplex hypotheses, the form of
+`weighted_dimension_probability` as an integral against the uniform probability measure on the
+simplex, and `weighted_dimension_lower` with the guard `48000 ≤ d`, derived from the general
+statements; a concrete bound at `d = 1`, where the simplex is a single point; the case `W = 0`;
+and the explicit lower bound at `d = 10000`, the smallest dimension it covers.
 -/
 
 open MeasureTheory Set ReedSolomon.HiddenDerivative
 open scoped ProbabilityTheory
 
-/-! ### Source-shaped statements -/
+/-! ### Pointwise and probability-measure forms -/
 
-/-- The source's `weighted_dimension_integral`, with the pointwise hypotheses `hu` and `hW` in
-place of `T ⊆ weightedSimplex _ W` and the unused hypothesis `0 ≤ g * m`. -/
+/-- `weighted_dimension_integral` with the pointwise hypotheses `hu` and `hW` in place of
+`T ⊆ weightedSimplex _ W`, and with the unused hypothesis `0 ≤ g * m`. -/
 example (F : Type*) [Field F] (d D W : ℕ) (hd : 0 < d) (hD : 0 < D) (g m μ : ℝ)
     (T : Set (Fin (d - 1) → ℝ)) (hT : MeasurableSet T) (z : (Fin (d - 1) → ℝ) → ℝ)
     (hu : ∀ u ∈ T, ∀ i, 0 ≤ u i) (hW : ∀ u ∈ T, ∑ i, ((i.val + 1 : ℕ) : ℝ) * u i ≤ W)
@@ -35,8 +34,8 @@ example (F : Type*) [Field F] (d D W : ℕ) (hd : 0 < d) (hD : 0 < D) (g m μ : 
   weighted_dimension_integral F hd hD g m μ hT (fun u hu' => mem_weightedSimplex.mpr
     ⟨hu u hu', hW u hu'⟩) z hμhi hZ hint
 
-/-- The source's `weighted_dimension_probability`, as an integral against the uniform probability
-measure on the simplex, with the unused hypotheses `0 < W` and `0 < g * m`. -/
+/-- `weighted_dimension_probability` as an integral against the uniform probability measure on
+the simplex, with the unused hypotheses `0 < W` and `0 < g * m`. -/
 example (F : Type*) [Field F] (d D W : ℕ) (hd : 0 < d) (hD : 0 < D) (_hW : 0 < W) (g m : ℝ)
     (_ht : 0 < g * m) (hμ : W * (harmonic (d - 1) : ℝ) / d ≤ (1 + 3 * g / 8) * m) :
     let V : ℝ := (W : ℝ) ^ (d - 1) / ((d - 1).factorial : ℝ) ^ 2
@@ -48,8 +47,8 @@ example (F : Type*) [Field F] (d D W : ℕ) (hd : 0 < d) (hD : 0 < D) (_hW : 0 <
   rw [ProbabilityTheory.cond, ← setAverage_eq']
   exact weighted_dimension_probability F hd hD g m hμ
 
-/-- The source's `weighted_dimension_lower`, with the stronger hypothesis `48000 ≤ d` and the
-unused hypotheses `0 < W` and `0 < g * m`. -/
+/-- `weighted_dimension_lower` with the stronger hypothesis `48000 ≤ d` and the unused
+hypotheses `0 < W` and `0 < g * m`. -/
 example (F : Type*) [Field F] (d D W : ℕ) (hd : 48000 ≤ d) (hD : 0 < D) (_hW : 0 < W) (g m : ℝ)
     (_ht : 0 < g * m) (hμ : W * (harmonic (d - 1) : ℝ) / d ≤ (1 + 3 * g / 8) * m)
     (hs : W / ((d : ℝ) * (g * m)) ≤ 10 / 27) :
@@ -82,7 +81,7 @@ example : 21 ≤ Module.finrank ℚ (weightedSupportSpace ℚ 1 1 5 16 one_pos) 
     linarith
   exact_mod_cast h20
 
-/-- The case `W = 0`, excluded by the source: the simplex in `Fin (d - 1) → ℝ` is the point `0`,
+/-- The case `W = 0`: the simplex in `Fin (d - 1) → ℝ` is the point `0`,
 and the bound still holds for every `d`. -/
 example (d D : ℕ) (hd : 0 < d) (hD : 0 < D) (g m : ℝ) (hm : 0 ≤ (1 + 3 * g / 8) * m) :
     ((0 : ℕ) : ℝ) ^ (d - 1) / ((d - 1).factorial : ℝ) ^ 2 * D / 6 * (g * m) ^ 3 *

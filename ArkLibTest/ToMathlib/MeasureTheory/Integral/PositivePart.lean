@@ -18,10 +18,10 @@ is attained at `y = μ` and `y = 2 * c - μ`, show that `μ < c` is needed, chec
 and apply the probability-measure bound to a Dirac measure. The set-integral form is evaluated on a
 measure of total mass `2` and on a set of infinite measure. For the cube of the positive part they
 show the bound is attained by a symmetric two-point variable and that the mean-zero hypothesis is
-needed. For the Jensen bound they derive the source's `positive_cube_jensen` and
-`positive_cube_convex`, evaluate the bound on a two-point variable and at a negative threshold, and
-show that `0 ≤ b` is needed in the pointwise tangent bound and the mean-zero hypothesis in the
-integral bound.
+needed. For the Jensen bound they check convexity at exponent `3` and the Jensen bound with a
+hypothesis `0 ≤ b` it does not need, evaluate the bound on a two-point variable and at a negative
+threshold, and show that `0 ≤ b` is needed in the pointwise tangent bound and the mean-zero
+hypothesis in the integral bound.
 -/
 
 open MeasureTheory
@@ -148,11 +148,11 @@ example : ∫ x : ℝ in Set.univ, max (1 - (0 : ℝ → ℝ) x) 0 ≤ 0 := by
 
 /-! ### The Jensen bound for the cube of the positive part -/
 
-/-- The source's `positive_cube_convex`. -/
+/-- `convexOn_max_sub_zero_pow` at exponent `3` over `ℝ`. -/
 example (b : ℝ) : ConvexOn ℝ Set.univ (fun z : ℝ ↦ (max (b - z) 0) ^ 3) :=
   convexOn_max_sub_zero_pow b 3
 
-/-- The source's `positive_cube_jensen`, with its unused hypothesis `0 ≤ b`. -/
+/-- `pow_three_le_integral_max_sub_zero_pow_three`, with an unused hypothesis `0 ≤ b`. -/
 example {X : Type*} [MeasurableSpace X] (P : Measure X) [IsProbabilityMeasure P] (z : X → ℝ)
     (b : ℝ) (_hb : 0 ≤ b) (hz : Integrable z P) (hm : ∫ x, z x ∂P = 0)
     (hf : Integrable (fun x ↦ (max (b - z x) 0) ^ 3) P) :

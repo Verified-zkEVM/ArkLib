@@ -43,32 +43,6 @@ constant `C`, and an arbitrary order `d`:
 * `InterpolationRounding.kappa_exponent_le`, `InterpolationRounding.kappa_multiplicity_error_le`,
   `InterpolationRounding.kappa_reciprocal_factor_le`
 * `InterpolationRounding.prescribed_kappa_bounds`
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RankRounding.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `floor_pos` is Mathlib's `Nat.floor_pos`; `floor_reciprocal_le` and `floor_ratio_bounds` are
-  `Nat.one_div_floor_le` and `Nat.div_floor_bounds` in `ArkLib.ToMathlib.Algebra.Order.Floor.Ratio`;
-  `exp_le_rpow` is `Real.exp_le_exp_add_mul_rpow_of_le_log_add` in
-  `ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow`.
-* `radius_lower`, `radius_ge_twice_order` and `binomial_error_le` take the multiplicity constant
-  `C` as a parameter instead of `100` (with `2 ≤ C`, respectively `0 < C`).
-* `kappa_floor_bounds` needs `1 ≤ R` instead of `2 ≤ R`.
-* `kappa_interval` concludes `(1 - 1 / d) (H / a) ≤ κ` for every `d ≥ 1`; the source fixed
-  `1000 ≤ d` and the constant `999 / 1000`.
-* `kappa_exponent_le` has the additive error `1 / (2 C)` (the source had `1 / 100` at `C = 100`,
-  where the proof gives `1 / 200`).
-* `kappa_multiplicity_error_le` has the error `1 / (C d)` for every `d > 0` (the source had
-  `1 / 1000` at `C = 100`, `d ≥ 1000`).
-* `kappa_reciprocal_factor_le` takes the lower-bound factor `λ` and the error `ε` as parameters
-  (the source fixed `λ = 999 / 1000`, `ε = 1 / 1000` and concluded with `101 / 100`), and assumes
-  `0 ≤ d`.
-* `prescribed_kappa_bounds` is unchanged.
-
-Not ported, because nothing at the source revision uses them: `multiplicity_lower`, which is
-`Nat.le_ceil`; `radius_error_le`; `rounded_mean_bounds`; `normalized_radius_le_quarter`.
 -/
 
 @[expose] public section

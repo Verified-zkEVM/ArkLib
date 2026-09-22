@@ -19,7 +19,8 @@ dimension-free facts about these choices.
 For `δ, ρ > 0` the gap is `g = δ / max δ ρ`, so `(1 + θ g) / g = (max δ ρ + θ δ) / δ` exactly. From
 this, a harmonic-type quantity `H ≥ ξ / δ` gives `g H ≥ ξ` when `δ, ρ ≤ 1`, and
 `(1 + θ g) / (g H) ≤ 1 / ξ` when `max δ ρ + θ δ ≤ 1`. These hold for every `θ` and every
-`ξ > 0`; the source's statements, with `δ ≤ 1 / 4` and `ρ ≤ 1 - δ`, are their specializations.
+`ξ > 0`; `xi_le_rateGap_mul` and `normalizedRadius_le_ten_twentySeven` specialize them to
+`δ ≤ 1 / 4` and `ρ ≤ 1 - δ`.
 
 ## Main statements
 
@@ -30,34 +31,6 @@ this, a harmonic-type quantity `H ≥ ξ / δ` gives `g H ≥ ξ` when `δ, ρ �
   `d = ⌈exp (ξ / δ)⌉₊` and `0 < δ ≤ 1 / 4`.
 * `xi_le_rateGap_mul`, `normalizedRadius_le_ten_twentySeven`: the specializations to
   `ξ = 27 / 10` and `θ = 3 / 8`.
-
-## References
-
-Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/WeightedSupport/`
-`ScalarParameters.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The
-definition `rateGap` comes from `EndpointComparison.lean` in the same directory; the source's
-`ScalarParameters.lean` wrote its body `min 1 (δ / ρ)` inline.
-
-* `xi`, `theta`, `xi_pos`, `theta_pos` are unchanged. `residualFraction` is defined as
-  `1 - theta` instead of the literal `5 / 8`; `residualFraction_eq` recovers the literal.
-* `clippedGap_mem_unit` is `rateGap_pos` together with `rateGap_le_one`.
-* `clippedGap_mul_harmonic_ge_xi` is the case `ξ = xi` of `le_rateGap_mul`, which needs only
-  `0 ≤ ξ`, `δ ≤ 1` and `ρ ≤ 1`; the specialization `xi_le_rateGap_mul` keeps the source's
-  hypotheses.
-* `one_add_theta_mul_clippedGap_div_le` is the case `θ = theta` of `one_add_mul_rateGap_div_le`,
-  whose single hypothesis `max δ ρ + θ δ ≤ 1` is necessary and sufficient by
-  `one_add_mul_rateGap_div`. `max_add_theta_mul_le_one` derives it from `δ ≤ 1 / 4` and
-  `ρ ≤ 1 - δ`.
-* `normalizedRadius_le_ten_twentySeven` is the case `θ = theta`, `ξ = xi` of
-  `le_inv_of_le_one_add_mul_rateGap_div`.
-* `prescribed_order_lower` is unchanged; its harmonic part is `Real.log_le_harmonic_pred`.
-* `exp_fifty_four_fifths_gt` is `Real.fortyEightThousand_lt_exp_fiftyFour_div_five` in
-  `ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow`; `harmonic_square_bound` is
-  `Real.sq_le_div_hundred_of_le_log_add_three_fifths`, and
-  `log_add_three_fifths_le_nineteen_over_365_sqrt` is
-  `Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt`, both in
-  `ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds`. `harmonic_le_nineteen_over_365_sqrt` is the
-  composition of the last with its hypothesis and is not restated.
 -/
 
 @[expose] public section
@@ -74,8 +47,10 @@ noncomputable def theta : ℝ := 3 / 8
 /-- The residual fraction `1 - θ`. -/
 noncomputable def residualFraction : ℝ := 1 - theta
 
+/-- `xi` is positive. -/
 @[simp] theorem xi_pos : 0 < xi := by norm_num [xi]
 
+/-- `theta` is positive. -/
 @[simp] theorem theta_pos : 0 < theta := by norm_num [theta]
 
 /-- The residual fraction is `5 / 8`. -/

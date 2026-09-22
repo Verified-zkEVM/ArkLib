@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 /-!
 # Partition support local rank acceptance tests
 
-* The source's `partitionLocalRankBound` formula, with `(m - s) ⌈/⌉ (d + 1)`, is
-  `localDerivativeCoordinateBudget` by definition.
+* `localDerivativeCoordinateBudget` unfolds to the sum over `s < m` of
+  `((m - s) ⌈/⌉ (d + 1)) * weightedHigherJetCount (d + 1) (W + s)`.
 * At `d = 1`, `m = 2`, `W = 0` the budget is `1 · 1 + 1 · 2 = 3`, so the local rank on every
   partition support space with these parameters is at most `3`, whatever `0 < D` and `L` are.
 * At `d = 0` every polynomial has derivative-order weight `0`, so the general bound
@@ -20,7 +20,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
-/-- Source shape: `partitionLocalRankBound d m W`. -/
+/-- The budget with `(m - s) ⌈/⌉ (d + 1)` in place of `contactThreshold (d + 1) m s`. -/
 example (d m W : ℕ) : localDerivativeCoordinateBudget d m W =
     ∑ s ∈ Finset.range m, ((m - s) ⌈/⌉ (d + 1)) * weightedHigherJetCount (d + 1) (W + s) :=
   rfl

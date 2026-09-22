@@ -9,11 +9,11 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Scal
 /-!
 # Acceptance cases for the weighted-support scalar parameters
 
-The source's statements, written with `min 1 (δ / ρ)` and the hypotheses `δ ≤ 1 / 4`,
-`ρ ≤ 1 - δ`, derived from the general ones; the values of the rate gap on both sides of `δ = ρ`;
-the cases showing that `δ, ρ ≤ 1` are needed in `le_rateGap_mul` and that `max δ ρ + θ δ ≤ 1` is
-needed in `one_add_mul_rateGap_div_le`; and the source's `harmonic_square_bound` and
-`harmonic_le_nineteen_over_365_sqrt`.
+The specializations written with `min 1 (δ / ρ)` and the hypotheses `δ ≤ 1 / 4`, `ρ ≤ 1 - δ`,
+derived from the general statements; the values of the rate gap on both sides of `δ = ρ`; the
+cases showing that `δ, ρ ≤ 1` are needed in `le_rateGap_mul` and that `max δ ρ + θ δ ≤ 1` is
+needed in `one_add_mul_rateGap_div_le`; and the bounds `H ^ 2 ≤ d / 100` and
+`H ≤ (19 / 365) √d` for `H ≤ log d + 3 / 5`.
 -/
 
 open ReedSolomon.HiddenDerivative.WeightedSupportParameters
@@ -34,34 +34,34 @@ example : (1 + theta * rateGap (1 / 4) (1 / 2)) / rateGap (1 / 4) (1 / 2) = 19 /
   rw [one_add_mul_rateGap_div theta (by norm_num) (by norm_num)]
   norm_num [theta]
 
-/-! ### Source-shaped statements -/
+/-! ### Specializations with `min 1 (δ / ρ)` -/
 
-/-- The source's `clippedGap_mem_unit`. -/
+/-- `0 < min 1 (δ / ρ) ≤ 1`, from `rateGap_pos` and `rateGap_le_one`. -/
 example (δ ρ : ℝ) (hδ : 0 < δ) (hρ : 0 < ρ) : 0 < min 1 (δ / ρ) ∧ min 1 (δ / ρ) ≤ 1 :=
   ⟨rateGap_pos hδ hρ, rateGap_le_one δ ρ⟩
 
-/-- The source's `clippedGap_mul_harmonic_ge_xi`. -/
+/-- `xi_le_rateGap_mul` with `rateGap` unfolded. -/
 example (δ ρ H : ℝ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4) (hρ : 0 < ρ) (hρmax : ρ ≤ 1 - δ)
     (hH : xi / δ ≤ H) : xi ≤ min 1 (δ / ρ) * H :=
   xi_le_rateGap_mul hδ hδmax hρ hρmax hH
 
-/-- The source's `one_add_theta_mul_clippedGap_div_le`. -/
+/-- `one_add_mul_rateGap_div_le` at `θ = 3 / 8`, for `δ ≤ 1 / 4` and `ρ ≤ 1 - δ`. -/
 example (δ ρ : ℝ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4) (hρ : 0 < ρ) (hρmax : ρ ≤ 1 - δ) :
     (1 + theta * min 1 (δ / ρ)) / min 1 (δ / ρ) ≤ 1 / δ :=
   one_add_mul_rateGap_div_le theta hδ hρ (max_add_theta_mul_le_one hδ hδmax hρmax)
 
-/-- The source's `normalizedRadius_le_ten_twentySeven`. -/
+/-- `normalizedRadius_le_ten_twentySeven` with `rateGap` unfolded. -/
 example (δ ρ H s : ℝ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4) (hρ : 0 < ρ) (hρmax : ρ ≤ 1 - δ)
     (hH : xi / δ ≤ H) (hs : s ≤ (1 + theta * min 1 (δ / ρ)) / (min 1 (δ / ρ) * H)) :
     s ≤ 10 / 27 :=
   normalizedRadius_le_ten_twentySeven hδ hδmax hρ hρmax hH hs
 
-/-- The source's `harmonic_square_bound`. -/
+/-- `H ^ 2 ≤ d / 100` for `d ≥ 10000` and `0 ≤ H ≤ log d + 3 / 5`. -/
 example (d H : ℝ) (hd : 10000 ≤ d) (hH0 : 0 ≤ H) (hH : H ≤ Real.log d + 3 / 5) :
     H ^ 2 ≤ d / 100 :=
   Real.sq_le_div_hundred_of_le_log_add_three_fifths hd hH0 hH
 
-/-- The source's `harmonic_le_nineteen_over_365_sqrt`. -/
+/-- `H ≤ (19 / 365) √d` for `d ≥ 48000` and `H ≤ log d + 3 / 5`. -/
 example (d H : ℝ) (hd : 48000 ≤ d) (hH : H ≤ Real.log d + 3 / 5) :
     H ≤ (19 / 365) * Real.sqrt d :=
   hH.trans (Real.log_add_three_fifths_le_nineteen_div_365_mul_sqrt hd)

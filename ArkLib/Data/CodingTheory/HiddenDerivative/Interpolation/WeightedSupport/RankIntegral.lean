@@ -36,32 +36,6 @@ Finally, the volume of the simplex of budget `W + r + (n + 1).choose 2` is at mo
   sum with the variance discharged.
 * `ReedSolomon.HiddenDerivative.volume_weightedSimplex_add_choose_le_exp`: the exponential volume
   bound for the enlarged simplex.
-
-## References
-
-Ports `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`RankIntegral.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-
-* The source's `weightedHigherJetTuples d W` is `natWeightedSimplex (fun i : Fin n ↦ i.val + 1) W`
-  and its `higherJetTupleDegree c` is `∑ i, c i`, with `n` for `d - 1`, following
-  `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer`. The
-  source's `harmonicPowerSum (d - 1) 1` is `harmonic n`, and `harmonicPowerSum (d - 1) 2` is
-  written out as a sum.
-* `weighted_residual_sum_le_volume_mul_mean_variance` and
-  `weighted_residual_sum_le_volume_mul_harmonic_variance` are specializations of
-  `Finset.sum_natWeightedSimplex_max_sub_add_one_le_of_setAverage_sq_le` and
-  `Finset.sum_natWeightedSimplex_max_sub_add_one_le`. The hypotheses `1 ≤ d` and
-  `0 < W + choose d 2` are dropped, and the variance is a set average instead of an integral
-  against `weightedSimplexProbabilityMeasure`.
-* `weightedSimplex_centeredRadius_sq_le_harmonic` specializes
-  `MeasureTheory.setAverage_weightedSimplex_linearForm_sub_mean_sq_le`. The hypotheses `1 ≤ d` and
-  `0 < W'` are dropped.
-* `volume_weightedSimplex_add_choose_le_exp` specializes
-  `MeasureTheory.volume_real_weightedSimplex_add_le_mul_exp`.
-
-The consumer `WeightedSupport/NormalizedRank.lean` combines these bounds with the rank bound of
-`WeightedSupport/RankBound.lean`. Deferred: the consumer `Margin.lean`, which needs the rounding
-estimates of `Parameters/WeightedSupport/`, not ported yet.
 -/
 
 @[expose] public section
