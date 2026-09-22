@@ -20,6 +20,9 @@ cannot share `k` evaluation points, so the generic theorem gives
 
 No finiteness assumption on the field is used, and no Lagrange enumeration is needed: finiteness
 is a consequence of the uniform bound on every finite subfamily.
+
+For `k = 1` the candidates are constants, whose agreement sets are disjoint, and the bound reads
+`list.ncard ≤ n / A` (`closePolynomialSet_one_ncard_le_div`).
 -/
 
 @[expose] public section
@@ -95,6 +98,27 @@ theorem closePolynomialSet_finite
     (domain : Fin n ↪ F) (received : Fin n → F) (hAk : k ≤ A) :
     (closePolynomialSet domain received k A).Finite :=
   (closePolynomialSet_finite_and_ncard_mul_choose_le domain received hAk).1
+
+/-- For message dimension `1`, the complete agreement list with threshold `A > 0` has at most
+`n / A` elements: its members are constants, and distinct constants agree with the received word
+on disjoint sets of coordinates. -/
+theorem exists_closePolynomial_finset_one_card_le_div
+    {F : Type*} [Field F] [DecidableEq F] {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hA : 0 < A) :
+    ∃ list : Finset F[X],
+      (∀ P, P ∈ list ↔ P ∈ closePolynomialSet domain received 1 A) ∧ list.card ≤ n / A := by
+  obtain ⟨list, hlist, hincidence⟩ :=
+    exists_closePolynomial_finset_with_incidence_bound domain received hA
+  exact ⟨list, hlist, (Nat.le_div_iff_mul_le hA).2 (by simpa using hincidence)⟩
+
+/-- For message dimension `1` and threshold `A > 0`, the complete agreement list has at most
+`n / A` elements. -/
+theorem closePolynomialSet_one_ncard_le_div
+    {F : Type*} [Field F] [DecidableEq F] {n A : ℕ}
+    (domain : Fin n ↪ F) (received : Fin n → F) (hA : 0 < A) :
+    (closePolynomialSet domain received 1 A).ncard ≤ n / A :=
+  (Nat.le_div_iff_mul_le hA).2 (by
+    simpa using closePolynomialSet_ncard_mul_choose_le domain received hA)
 
 end
 
