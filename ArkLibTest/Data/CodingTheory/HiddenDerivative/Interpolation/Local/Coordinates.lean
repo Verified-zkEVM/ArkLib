@@ -13,7 +13,8 @@ import Mathlib.Algebra.Order.Archimedean.Real.Basic
 The coordinates of a concrete exponent; a concrete residual budget and the rank bound it gives on
 an exact interpolation space; the source statements with a real jet-degree cutoff, derived from
 the natural-number statements through `⌈T⌉₊`; and a generator image that shows the weight
-transport needs a nonnegative weight on `X`.
+transport needs a nonnegative weight on `X`. For the derivative-order count: a concrete exponent
+in `localDerivativeExponents`, and a concrete budget.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
@@ -73,3 +74,20 @@ example : unscaledLocalImage 0 (1 : ℚ) 0 none ∉
     rw [mem_support_iff]
     simp [unscaledLocalImage, coeff_X, localT])
   simp at this
+
+/-- At `d = 2`, the exponent `T³ E Y₁ Y₂` has contact order `3 + 2 = 5 < 6` and derivative-order
+weight `1 + 2 = 3 ≤ 1 + (3 - 1)`, so it lies in `localDerivativeExponents 2 6 1`. -/
+example : Finsupp.single (localT 2) 3 + Finsupp.single (localE 2) 1 +
+      Finsupp.single (localY 0) 1 + Finsupp.single (localY 1) 1 ∈
+    localDerivativeExponents 2 6 1 := by
+  apply mem_localDerivativeExponents_of_bounds
+  · simp [localT, localE, localAux, localY]
+  · rw [weight_localDerivativeJetWeight, Fin.sum_univ_two]
+    simp [localT, localE, localAux, localY]
+  · rw [localContactOrder_eq]
+    simp [localT, localE, localAux, localY]
+
+/-- At `d = 2`, `m = 3`, `W = 0`: residual `0` has one error exponent and one jet exponent, residual
+`1` has one error exponent and two jet exponents (`1` and `Y₁`), and residual `2` has one error
+exponent and four jet exponents (`1`, `Y₁`, `Y₁²`, `Y₂`). -/
+example : localDerivativeCoordinateBudget 2 3 0 = 7 := by decide
