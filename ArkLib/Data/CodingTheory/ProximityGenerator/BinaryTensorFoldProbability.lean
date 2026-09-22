@@ -31,18 +31,6 @@ Probabilities are native events `Pr{let r ← $ᵗ S}[…]` of a uniform sample 
 * `TensorMCA.prob_not_hasFullTensorDecomposition_le`: the probability that the fold has no full
   tensor decomposition is at most `h * e / |F|`.
 * `TensorMCA.tensorFoldBad_probability_height_three`: the height-three instance `3 * e / |F|`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ProximityGenerator/BinaryTensorFoldProbability.lean`:
-
-* `tensorFoldBad_probability_le` is ported with the field weakened to a finite ring and the
-  coordinate and alphabet types in arbitrary universes. Its proof is the special case
-  `β = Unit` of the new family statement `tensorFoldFamilyBad_probability_le`.
-* `tensorFoldBad_probability_height_three` is ported unchanged.
-* `prob_not_hasFullTensorDecomposition_le` is new; it states the conclusion the source obtains by
-  combining the probability bound with `hasFullTensorDecomposition_of_not_mem_bad`.
 -/
 
 @[expose] public section

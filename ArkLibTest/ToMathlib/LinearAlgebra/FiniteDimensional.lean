@@ -24,7 +24,7 @@ example : finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) ≤ 1 := by
     (fun _ _ hxy => congrArg Prod.snd (Subtype.ext_iff.mp hxy))
   simpa using h
 
-/-- With an empty exhibited kernel the bound is the dimension of the source. -/
+/-- With an empty exhibited kernel the bound is the dimension of the domain. -/
 example : finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) ≤ 2 := by
   have h := LinearMap.finrank_range_le_sub_of_injective_ker (W := (⊥ : Submodule ℚ ℚ))
     (LinearMap.fst ℚ ℚ ℚ) 0 (fun x y _ => Subsingleton.elim x y)

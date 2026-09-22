@@ -30,15 +30,6 @@ arbitrary commutative semiring.
 * `MvPolynomial.IsWeightedHomogeneous.filterSupport`,
   `MvPolynomial.IsWeightedHomogeneous.weightedTruncation`
 * `MvPolynomial.bind₁_mem_weightedHomogeneousSubmodule`
-
-## References
-
-These generalize the monomial-by-monomial homogeneity arguments inside
-`ReedSolomon.HiddenDerivative.unscaledLocalSubstitution_zero_monomial_isWeightedHomogeneous` and
-`ReedSolomon.HiddenDerivative.localConstraintAt_zero_isWeightedHomogeneous` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which treated one substitution and
-one truncation into local variables with natural weights.
 -/
 
 @[expose] public section

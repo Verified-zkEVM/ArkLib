@@ -11,15 +11,15 @@ import Mathlib.Basic.Real.Basic
 /-!
 # Acceptance cases for the weighted mean and variance of the unit-weight simplex
 
-These cases check the source's finite example against direct enumeration, the boundary cases
-`S = 0` and an empty index type, the necessity of `0 ≤ t` in the tail bounds, and the real-valued
-source statements.
+These cases check a finite example with variance `5 / 12` against direct enumeration, the boundary
+cases `S = 0` and an empty index type, the necessity of `0 ≤ t` in the tail bounds, and the
+upper-tail count over the reals and `Fin r`.
 -/
 
 open Finset
 open scoped BigOperators
 
-/-- The source's example: weights `(1, 1/2)` on `Fin 2` at budget `2` have mean `1` and variance
+/-- Weights `(1, 1/2)` on `Fin 2` at budget `2` have mean `1` and variance
 `5 / 12`, not the continuous value `1 / 6`. The closed form gives the value. -/
 example : 𝔼 c ∈ natWeightedSimplex (fun _ : Fin 2 ↦ 1) 2,
     (∑ i, (![1, 1 / 2] : Fin 2 → ℚ) i * (c i : ℚ) - 1) ^ 2 = 5 / 12 := by
@@ -61,7 +61,7 @@ example (w : Fin 3 → ℝ) : (∑ i, w i) ^ 2 ≤ 4 * ∑ i, w i ^ 2 := by
   have hpos : (0 : ℝ) < 5 / 80 := by norm_num
   nlinarith
 
-/-- The source's upper-tail count, over the reals and `Fin r`. -/
+/-- The upper-tail count over the reals and `Fin r`. -/
 example (r S : ℕ) (w : Fin r → ℝ) (t : ℝ) (ht : 0 ≤ t) :
     t ^ 2 * ((natWeightedSimplex (fun _ : Fin r ↦ 1) S).filter fun c ↦
         natSimplexWeightedMean S w + t ≤ ∑ i, w i * (c i : ℝ)).card ≤

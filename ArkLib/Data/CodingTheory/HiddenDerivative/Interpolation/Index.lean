@@ -32,6 +32,8 @@ columns of the local constraint systems.
 
 ## Main statements
 
+* `sub_mul_totalJetDegree_le_weight` and `weight_le_add_mul_totalJetDegree`: the specialization
+  weight lies between `(D - d) * totalJetDegree u` and `u X + D * totalJetDegree u`.
 * `exactInterpolationExponentSet_finite`: the eligible exponents form a finite set when `d < D`.
 * `exactInterpolationSpace` with its basis, coordinates, and
   `exactInterpolationCoefficientEvaluator`, which turns a linear map on differential polynomials
@@ -43,23 +45,10 @@ columns of the local constraint systems.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Index.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, with the pieces of
-`Interpolation/Space.lean` and `HiddenDerivative/Variables.lean` it uses. The exponent-level
-jet weights `firstJetExponent` and `fullHigherJetWeight` of `Space.lean` are now
-`Finsupp.weight` of the pointwise weights `jetFirstWeight` and `jetHigherWeight`, following
-the pattern of `PolynomialDifferential.jetDegreeWeight`; the source's `totalJetDegree` is
-`PolynomialDifferential.totalJetDegree` and `exactInterpolationMonomialWeight D u` is
-`Finsupp.weight (differentialWeight D) u`, so no second jet weight is introduced. The source's
-`degreeOf_jet_le_floor_of_mem_exactInterpolationSpace` is stated through `jetDegree`, and a
-polynomial-level `jetTotalDegree` bound is added. Deferred: the support-first rectangular space
-(`GlobalEligibleExponent`, `interpolationSpace` and its coordinates), the higher-jet exponent sets
-of `Space.lean`, and the comparison `interpolationSpace_le_exactInterpolationSpace`.
-
-* [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], ECCC TR26-164.
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70).
 -/
 
 @[expose] public section
@@ -117,6 +106,15 @@ theorem sub_mul_totalJetDegree_le_weight (hdD : d < D) (u : JetVariable d →₀
   have hj : j.val ≤ d := Nat.le_of_lt_succ j.isLt
   exact Nat.mul_le_mul_left _ (by omega)
 
+/-- The specialization weight is at most the coarse weight `a + D * totalJetDegree u`, since
+every jet variable `Y_j` has weight `D - j ≤ D`. This is the upper companion of
+`sub_mul_totalJetDegree_le_weight` and needs no hypothesis on `d` or `D`. -/
+theorem weight_le_add_mul_totalJetDegree (D : ℕ) (u : JetVariable d →₀ ℕ) :
+    Finsupp.weight (differentialWeight D) u ≤ u none + D * totalJetDegree u := by
+  rw [weight_differentialWeight_eq, totalJetDegree_eq_sum, Finset.mul_sum]
+  exact Nat.add_le_add_left (Finset.sum_le_sum fun j _ => Nat.mul_le_mul_right _ (Nat.sub_le _ _))
+    _
+
 /-! ### Eligible exponents -/
 
 /-- Eligibility of one exponent: at most `M` copies of `Y₁`, higher-jet weight at most `W`, and
@@ -168,6 +166,7 @@ def exactInterpolationExponents (D A d m M W : ℕ) (hdD : d < D) :
     Finset (JetVariable d →₀ ℕ) :=
   (exactInterpolationExponentSet_finite (A := A) (m := m) (M := M) (W := W) hdD).toFinset
 
+/-- Membership in `exactInterpolationExponents` is `ExactInterpolationEligibleExponent`. -/
 @[simp]
 theorem mem_exactInterpolationExponents {hdD : d < D} {u : JetVariable d →₀ ℕ} :
     u ∈ exactInterpolationExponents D A d m M W hdD ↔

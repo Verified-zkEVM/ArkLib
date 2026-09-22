@@ -42,16 +42,6 @@ Mathlib's `eq_zero_of_natDegree_lt_card_of_eval_eq_zero` is the contrapositive o
 statement for a map that is injective on a whole `Fintype` index. The counting statement here
 takes a finset, a map injective on that finset, and concludes a cardinality bound; the avoidance
 statements below use it in that form.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/ToMathlib/Polynomial/SeparableResultant.lean`:
-
-* `finite_polynomial_specializations_eq_zero_card_le` is the case `R := F[X]`, `x := C` of
-  `card_le_natDegree_of_injOn_of_eval_eq_zero`;
-* `exists_map_evalRingHom_ne_zero_avoiding` and `exists_map_evalRingHom_ne_zero` are ported
-  with their source statements and are derived here from the finite candidate form.
 -/
 
 @[expose] public section
@@ -119,7 +109,7 @@ theorem exists_mem_map_evalRingHom_ne_zero_of_card_add_natDegree_lt_card {A : R[
 variable outside any finite set `forbidden` at which `A.map (evalRingHom t)` is nonzero and has
 the same degree as `A`.
 
-This is the source statement. It follows from
+It follows from
 `exists_mem_map_evalRingHom_ne_zero_of_card_add_natDegree_lt_card` with a candidate set of size
 `forbidden.card + A.leadingCoeff.natDegree + 1`. Over a finite field use that finite form. -/
 theorem exists_map_evalRingHom_ne_zero_avoiding [Infinite R] (A : R[X][X]) (hA : A ≠ 0)

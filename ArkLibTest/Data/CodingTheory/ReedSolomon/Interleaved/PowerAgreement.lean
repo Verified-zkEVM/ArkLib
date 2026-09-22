@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 /-!
 # Interleaved exact power agreement clients
 
-These clients derive the two source statements (finite field with positive width, and arbitrary
-field with positive width) from the general transfer, compute the interleaved guarantee for a
+These clients derive the forms with the extra guard `0 < width` (over a finite field and over an
+arbitrary field) from the general transfer, compute the interleaved guarantee for a
 single received array with no exceptional challenge at every width including zero, and compose
 the transfer with nested power agreement, including its probability form.
 -/
@@ -19,7 +19,7 @@ open Polynomial ReedSolomon CoreDefinitions
 
 namespace InterleavedPowerAgreementTest
 
--- The source statement at a5aa2677, finite-field version.
+-- The form over a finite field with the extra guard `0 < width`.
 example {F : Type} [Field F] [Finite F] [DecidableEq F]
     {n k agreement exceptionalCount width ℓ : ℕ} (domain : Fin n ↪ F)
     (hscalar : ∀ values : Fin (ℓ + 1) → Fin n → F,
@@ -29,7 +29,7 @@ example {F : Type} [Field F] [Finite F] [DecidableEq F]
     UniformExactInterleavedPowerAgreement domain values k agreement exceptionalCount :=
   uniformExactInterleavedPowerAgreement_of_scalar domain hscalar hkAgreement values
 
--- The source statement at a5aa2677, arbitrary-field version.
+-- The form over an arbitrary field with the extra guard `0 < width`.
 example {F : Type} [Field F] [DecidableEq F]
     {n k agreement exceptionalCount width ℓ : ℕ} (domain : Fin n ↪ F)
     (hscalar : ∀ values : Fin (ℓ + 1) → Fin n → F,

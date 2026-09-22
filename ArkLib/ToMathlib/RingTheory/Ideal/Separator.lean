@@ -19,7 +19,9 @@ by `P i` with the quotient by `⨅ i, P i` needs.
 
 Incomparability is also necessary: if `P j ≤ P i` with `j ≠ i`, then `s i ∈ P j ≤ P i`. The
 minimal primes over an ideal are pairwise incomparable, so they always admit separators when
-there are finitely many of them.
+there are finitely many of them. The Hilbert-function application of the separators is
+`MvPolynomial.exists_sum_affineHilbertFunction_le_iInf` in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComponents`.
 
 ## Main statements
 
@@ -27,20 +29,6 @@ there are finitely many of them.
   ideals has separators `s` with `s i ∈ P j ↔ i ≠ j`.
 * `Ideal.not_le_of_mem_minimalPrimes`: distinct minimal primes over the same ideal are
   incomparable.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. The separator
-construction is the first half of
-`AffineHilbert.exists_separators_sum_shifted_hilbertFunction_le_iInf` in
-`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/PrimeFamily.lean`, where it was stated for ideals of
-`MvPolynomial σ F` together with a Hilbert-function inequality. Here it is a statement about prime
-ideals of any commutative semiring, and the Hilbert-function half is
-`MvPolynomial.exists_sum_affineHilbertFunction_le_iInf` in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertComponents`. The incomparability of minimal
-primes is the private `minimalPrime_pairwise_incomparable` of
-`ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/ComponentCoefficient.lean`, stated for an
-arbitrary commutative semiring.
 -/
 
 @[expose] public section
