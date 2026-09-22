@@ -20,6 +20,10 @@ public import Mathlib.LinearAlgebra.Projection
 * `LinearMap.finrank_range_le_sub_of_injective_ker` — rank–nullity when only part of the kernel
   is exhibited, as the image of an injective map.
 * `LinearMap.finrank_range_comp_le_left` — the `finrank` form of `LinearMap.rank_comp_le_left`.
+* `LinearMap.finrank_range_pi_le` — the rank of `LinearMap.pi f` is at most the sum of the ranks
+  of the `f i`.
+* `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` — a map of rank below the dimension
+  of its finite-dimensional domain has a nonzero kernel vector.
 * `LinearMap.rangeCoordinates`, `LinearMap.rangeCoordinates_eq_zero_iff`,
   `LinearMap.ker_rangeCoordinates`, `LinearMap.rangeCoordinates_surjective` — a linear map
   followed by coordinates on its finite-dimensional range: a map onto `K^(rank f)` with the kernel
@@ -108,6 +112,33 @@ theorem LinearMap.finrank_range_comp_le_left {K V V₂ V₃ : Type*} [DivisionRi
     [FiniteDimensional K (LinearMap.range g)] :
     Module.finrank K (LinearMap.range (g ∘ₗ f)) ≤ Module.finrank K (LinearMap.range g) :=
   Submodule.finrank_mono (LinearMap.range_comp_le_range f g)
+
+/-- The rank of a finite family of linear maps combined by `LinearMap.pi` is at most the sum of
+their ranks: its range embeds in the product of their ranges. Each range must be
+finite-dimensional, since `finrank` of an infinite-dimensional space is zero. -/
+theorem LinearMap.finrank_range_pi_le {K V ι : Type*} [DivisionRing K] [AddCommGroup V]
+    [Module K V] [Fintype ι] {W : ι → Type*} [∀ i, AddCommGroup (W i)] [∀ i, Module K (W i)]
+    (f : ∀ i, V →ₗ[K] W i) [∀ i, FiniteDimensional K (LinearMap.range (f i))] :
+    Module.finrank K (LinearMap.range (LinearMap.pi f)) ≤
+      ∑ i, Module.finrank K (LinearMap.range (f i)) := by
+  let incl : (∀ i, LinearMap.range (f i)) →ₗ[K] ∀ i, W i :=
+    LinearMap.pi fun i => (LinearMap.range (f i)).subtype ∘ₗ LinearMap.proj i
+  have hfactor : LinearMap.pi f = incl ∘ₗ LinearMap.pi fun i => (f i).rangeRestrict := by
+    ext v i
+    rfl
+  rw [hfactor, ← Module.finrank_pi_fintype]
+  exact (LinearMap.finrank_range_comp_le_left _ _).trans (LinearMap.finrank_range_le incl)
+
+/-- A linear map on a finite-dimensional space whose rank is below the dimension of the space
+kills a nonzero vector. The codomain may be infinite-dimensional. -/
+theorem LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [FiniteDimensional K V] [AddCommGroup W] [Module K W]
+    (f : V →ₗ[K] W) (h : Module.finrank K (LinearMap.range f) < Module.finrank K V) :
+    ∃ v, v ≠ 0 ∧ f v = 0 := by
+  have hker := LinearMap.ker_ne_bot_of_finrank_lt (f := f.rangeRestrict) h
+  rw [LinearMap.ker_rangeRestrict] at hker
+  obtain ⟨v, hv, hv0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
+  exact ⟨v, hv0, hv⟩
 
 /-! ### Coordinates on the range -/
 

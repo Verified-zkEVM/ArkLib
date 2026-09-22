@@ -36,6 +36,32 @@ example :
       finrank ℚ (LinearMap.range (LinearMap.fst ℚ ℚ ℚ)) :=
   LinearMap.finrank_range_comp_le_left _ _
 
+/-! ### Families of maps and nonzero kernel vectors
+
+Combining the first projection with itself gives a map `ℚ × ℚ → (Fin 2 → ℚ)` of rank one, and the
+sum bound gives `1 + 1 = 2`, so the bound need not be sharp. The first projection has rank
+`1 < 2`, so it kills a nonzero vector; the identity of `ℚ` has rank equal to the dimension and
+kills none, so the strict inequality is needed. -/
+
+/-- The pair `(fst, fst)` has rank at most the sum `1 + 1` of the ranks of its components. -/
+example : finrank ℚ (LinearMap.range (LinearMap.pi fun _ : Fin 2 => LinearMap.fst ℚ ℚ ℚ)) ≤ 2 := by
+  refine (LinearMap.finrank_range_pi_le _).trans ?_
+  rw [LinearMap.range_eq_top.mpr LinearMap.fst_surjective, finrank_top, finrank_self]
+  simp
+
+/-- The first projection kills a nonzero vector, since its rank `1` is below `2`. -/
+example : ∃ v : ℚ × ℚ, v ≠ 0 ∧ LinearMap.fst ℚ ℚ ℚ v = 0 := by
+  refine LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt _ ?_
+  rw [LinearMap.range_eq_top.mpr LinearMap.fst_surjective, finrank_top, finrank_self]
+  simp
+
+/-- The identity of `ℚ` has rank equal to the dimension and kills no nonzero vector. -/
+example : finrank ℚ (LinearMap.range (LinearMap.id : ℚ →ₗ[ℚ] ℚ)) = finrank ℚ ℚ ∧
+    ¬ ∃ v : ℚ, v ≠ 0 ∧ (LinearMap.id : ℚ →ₗ[ℚ] ℚ) v = 0 := by
+  refine ⟨by rw [LinearMap.range_id, finrank_top], ?_⟩
+  rintro ⟨v, hv, h⟩
+  exact hv h
+
 /-! ### Coordinates on the range
 
 The first projection `ℚ × ℚ → ℚ` has a range of dimension one, so its range coordinates take
