@@ -38,8 +38,8 @@ Ports `Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupp
   cutoff `L / D`.
 * `weightedSupportGlobalConstraint` is unchanged.
 * `finrank_weightedSupportGlobalConstraint_le` and `exists_nonzero_weightedSupport_interpolant`
-  are specializations of `LinearMap.finrank_range_pi_le` and
-  `LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt` in
+  follow from `LinearMap.finrank_range_pi_le_sum` and
+  `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` in
   `ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional`, which hold for any finite family of linear
   maps over a division ring.
 * `exists_nonzero_exact_interpolant_of_weightedSupport_surplus` is unchanged apart from the
@@ -70,7 +70,7 @@ theorem finrank_weightedSupportGlobalConstraint_le (hd : 0 < d) (hD : 0 < D)
     Module.finrank F (LinearMap.range (weightedSupportGlobalConstraint (d := d) (m := m)
       (W := W) (L := L) hD centers received)) ≤
         Fintype.card ι * localResidualCoordinateBudget d m W ⌈L / D⌉₊ := by
-  refine (LinearMap.finrank_range_pi_le _).trans ?_
+  refine (LinearMap.finrank_range_pi_le_sum _).trans ?_
   refine (Finset.sum_le_sum fun i _ => finrank_weightedSupportLocalConstraint_le hd hD
     (centers i) (received i)).trans ?_
   simp
@@ -86,12 +86,10 @@ theorem exists_nonzero_weightedSupport_interpolant (hd : 0 < d) (hD : 0 < D)
       (weightedSupportExponents D d W L hD).card) :
     ∃ Q : DifferentialPolynomial F d, Q ≠ 0 ∧ Q ∈ weightedSupportSpace F D d W L hD ∧
       ∀ i, SatisfiesLocalConstraints m (centers i) (received i) Q := by
-  obtain ⟨v, hv0, hv⟩ := LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt
-    (fun i => weightedSupportLocalConstraint (d := d) (W := W) (L := L) m hD (centers i)
-      (received i))
-    (fun i => finrank_weightedSupportLocalConstraint_le hd hD (centers i) (received i))
-    (by simpa [finrank_weightedSupportSpace_eq_card hD] using hdim)
-  exact ⟨v.1, fun h => hv0 (Subtype.ext h), v.2, hv⟩
+  obtain ⟨v, hv0, hv⟩ := LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt
+    ((finrank_weightedSupportGlobalConstraint_le (m := m) hd hD centers received).trans_lt
+      (by simpa [finrank_weightedSupportSpace_eq_card hD] using hdim))
+  exact ⟨v.1, fun h => hv0 (Subtype.ext h), v.2, fun i => congrFun hv i⟩
 
 /-- Under the hypotheses of `exists_nonzero_weightedSupport_interpolant`, and `d < D`,
 `L ≤ m A` and `L ≤ D M`, the nonzero interpolant lies in `exactInterpolationSpace F D A d m M W`.

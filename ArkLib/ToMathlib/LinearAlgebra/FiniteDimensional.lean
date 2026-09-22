@@ -24,14 +24,14 @@ public import Mathlib.LinearAlgebra.Projection
   `LinearMap.ker_rangeCoordinates`, `LinearMap.rangeCoordinates_surjective` — a linear map
   followed by coordinates on its finite-dimensional range: a map onto `K^(rank f)` with the kernel
   of `f`.
-* `LinearMap.finrank_range_pi_le`, `LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt` — the rank
-  of a product map `v ↦ (f i v)ᵢ` is at most the sum of the ranks of its components, so a finite
-  family of maps whose rank bounds sum to less than the dimension of the source has a common
-  nonzero zero.
+* `LinearMap.ker_ne_bot_of_finrank_range_lt`,
+  `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` — rank–nullity when only the range
+  is known: a map whose rank is below the dimension of its source has a nonzero kernel vector.
+* `LinearMap.finrank_range_pi_le_sum` — the rank of a map into a finite product is at most the
+  sum of the ranks of its components.
 
-`LinearMap.finrank_range_le_sub_of_injective_ker` and `LinearMap.finrank_range_comp_le_left` are
-the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker` and
-`finrank_range_comp_le_outer` in
+The last two are the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker`
+and `finrank_range_comp_le_outer` in
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean` at ArkLib
 revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source assumed a field, a
 finite-dimensional exhibited space, and a finite-dimensional middle space; here the scalars form
@@ -44,12 +44,13 @@ finite-dimensional.
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at the
 same revision, from a field to a division ring.
 
-`LinearMap.finrank_range_pi_le` and `LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt` are the
-linear-algebra part of `finrank_weightedSupportGlobalConstraint_le` and
-`exists_nonzero_weightedSupport_interpolant` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
-`Interpolation.lean` at the same revision, where the family was the local constraint maps on the
-weighted support space over a field.
+`LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` and
+`LinearMap.finrank_range_pi_le_sum` are the linear-algebra part of
+`exists_nonzero_global_interpolation_coefficients_of_rank_lt` and
+`finrank_range_global_exact_coefficient_constraint_map_le_sum_local` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Global/Interpolation.lean` at
+the same revision. The source used a field and a finite-dimensional source; here the scalars form a
+division ring and neither lemma assumes any space finite-dimensional.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
@@ -159,35 +160,55 @@ theorem LinearMap.rangeCoordinates_surjective {K V W : Type*} [DivisionRing K]
   rw [rangeCoordinates, LinearMap.coe_comp]
   exact (LinearEquiv.surjective _).comp f.surjective_rangeRestrict
 
-/-- The rank of the product map `v ↦ (f i v)ᵢ` is at most the sum of the ranks of the components:
-its range embeds in `∏ i, range (f i)`. Only the component ranges need to be finite-dimensional;
-the source space and the codomains may be infinite-dimensional. -/
-theorem LinearMap.finrank_range_pi_le {K V ι : Type*} [DivisionRing K] [AddCommGroup V]
-    [Module K V] [Fintype ι] {M : ι → Type*} [∀ i, AddCommGroup (M i)] [∀ i, Module K (M i)]
-    (f : (i : ι) → V →ₗ[K] M i) [∀ i, FiniteDimensional K (LinearMap.range (f i))] :
-    Module.finrank K (LinearMap.range (LinearMap.pi f)) ≤
-      ∑ i, Module.finrank K (LinearMap.range (f i)) := by
-  let G : ((i : ι) → LinearMap.range (f i)) →ₗ[K] ((i : ι) → M i) :=
-    LinearMap.pi fun i => (LinearMap.range (f i)).subtype ∘ₗ LinearMap.proj i
-  have h : LinearMap.pi f = G ∘ₗ LinearMap.pi fun i => (f i).rangeRestrict := rfl
-  rw [h, LinearMap.range_comp, ← Module.finrank_pi_fintype K]
-  exact (Submodule.finrank_map_le _ _).trans (Submodule.finrank_le _)
+/-! ### Nonzero kernel vectors and ranks of product maps -/
 
-/-- If each `f i` has rank at most `b i` and `∑ i, b i < finrank V`, then some nonzero `v` has
-`f i v = 0` for every `i`. By `finrank_range_pi_le` the product map has rank below
-`finrank V`, so its kernel is nonzero. The source must be finite-dimensional: otherwise `finrank V`
-is `0` and the hypothesis is vacuous. -/
-theorem LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt {K V ι : Type*} [DivisionRing K]
-    [AddCommGroup V] [Module K V] [FiniteDimensional K V] [Fintype ι] {M : ι → Type*}
-    [∀ i, AddCommGroup (M i)] [∀ i, Module K (M i)] (f : (i : ι) → V →ₗ[K] M i) {b : ι → ℕ}
-    (hb : ∀ i, Module.finrank K (LinearMap.range (f i)) ≤ b i)
-    (hsum : ∑ i, b i < Module.finrank K V) :
-    ∃ v : V, v ≠ 0 ∧ ∀ i, f i v = 0 := by
-  have hrank := (LinearMap.finrank_range_pi_le f).trans (Finset.sum_le_sum fun i _ => hb i)
-  have hnull := LinearMap.finrank_range_add_finrank_ker (LinearMap.pi f)
-  have hker : LinearMap.ker (LinearMap.pi f) ≠ ⊥ := by
-    intro h
-    rw [h, finrank_bot] at hnull
-    omega
-  obtain ⟨v, hv, hv0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
-  exact ⟨v, hv0, fun i => congrFun (LinearMap.mem_ker.mp hv) i⟩
+/-- If the rank of `f` is below the dimension of its source, then `f` has a nonzero kernel. Unlike
+`LinearMap.ker_ne_bot_of_finrank_lt`, the codomain may be infinite-dimensional: only the range
+enters. No finiteness hypothesis on `V` is needed, because the strict inequality forces
+`finrank K V > 0`, so `V` is finite-dimensional. -/
+theorem LinearMap.ker_ne_bot_of_finrank_range_lt {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup W] [Module K W] {f : V →ₗ[K] W}
+    (h : Module.finrank K (LinearMap.range f) < Module.finrank K V) :
+    LinearMap.ker f ≠ ⊥ := by
+  have : FiniteDimensional K V := Module.finite_of_finrank_pos (by omega)
+  have hnull := f.finrank_range_add_finrank_ker
+  intro hker
+  rw [hker, finrank_bot] at hnull
+  omega
+
+/-- If the rank of `f` is below the dimension of its source, some nonzero `v` satisfies
+`f v = 0`. This is `LinearMap.ker_ne_bot_of_finrank_range_lt` as an existence statement. -/
+theorem LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt {K V W : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [AddCommGroup W] [Module K W] {f : V →ₗ[K] W}
+    (h : Module.finrank K (LinearMap.range f) < Module.finrank K V) :
+    ∃ v, v ≠ 0 ∧ f v = 0 := by
+  obtain ⟨v, hv, hv0⟩ :=
+    Submodule.exists_mem_ne_zero_of_ne_bot (ker_ne_bot_of_finrank_range_lt h)
+  exact ⟨v, hv0, hv⟩
+
+/-- The rank of a map into a finite product is at most the sum of the ranks of its components:
+`finrank (range (pi φ)) ≤ ∑ i, finrank (range (φ i))`. The inequality can be strict: for
+two copies of the identity of `K` the left side is `1` and the right side is `2`.
+No finiteness hypothesis is needed: if `range (pi φ)` is infinite-dimensional the left side is
+`0`, and otherwise each `range (φ i)` is its image under a projection, hence finite-dimensional. -/
+theorem LinearMap.finrank_range_pi_le_sum {K V ι : Type*} [DivisionRing K] [Fintype ι]
+    [AddCommGroup V] [Module K V] {W : ι → Type*} [∀ i, AddCommGroup (W i)]
+    [∀ i, Module K (W i)] (φ : ∀ i, V →ₗ[K] W i) :
+    Module.finrank K (LinearMap.range (LinearMap.pi φ)) ≤
+      ∑ i, Module.finrank K (LinearMap.range (φ i)) := by
+  by_cases hfin : FiniteDimensional K (LinearMap.range (LinearMap.pi φ))
+  · have hφ : ∀ i, FiniteDimensional K (LinearMap.range (φ i)) := fun i => by
+      rw [← LinearMap.proj_pi φ i, LinearMap.range_comp]
+      infer_instance
+    let g : V →ₗ[K] ∀ i, LinearMap.range (φ i) := LinearMap.pi fun i => (φ i).rangeRestrict
+    let h : (∀ i, LinearMap.range (φ i)) →ₗ[K] ∀ i, W i :=
+      LinearMap.pi fun i => (LinearMap.range (φ i)).subtype ∘ₗ LinearMap.proj i
+    have hcomp : LinearMap.pi φ = h ∘ₗ g := rfl
+    calc Module.finrank K (LinearMap.range (LinearMap.pi φ))
+        ≤ Module.finrank K (LinearMap.range h) := by
+          rw [hcomp]
+          exact LinearMap.finrank_range_comp_le_left h g
+      _ ≤ Module.finrank K (∀ i, LinearMap.range (φ i)) := LinearMap.finrank_range_le h
+      _ = _ := Module.finrank_pi_fintype K
+  · rw [Module.finrank_of_not_finite hfin]
+    exact Nat.zero_le _
