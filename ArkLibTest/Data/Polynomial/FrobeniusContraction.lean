@@ -14,7 +14,8 @@ The examples cover:
 
 * the two-level polynomial `X ^ (p ^ 2) + C a * X ^ p`, which contracts once to `X ^ p + C a * X`
   and no further;
-* in characteristic zero every contraction witness has `e = 0`;
+* in characteristic zero every contraction witness has `e = 0`, and with exponential
+  characteristic `1` every witness is the input itself;
 * positive degree is needed: in characteristic two the constant `1` has no contraction witness;
 * the nonmonic linear polynomial `C a * X + 1` over a GCD domain is irreducible and separable over
   the fraction field;
@@ -68,6 +69,14 @@ example (P : ℚ[X]) (hP : 0 < P.natDegree) :
   · exact ⟨G, hGder, by simpa using hGP⟩
   · rw [zero_pow (Nat.succ_ne_zero e), mul_zero] at hGdeg
     omega
+
+/-- With exponential characteristic `1`, every witness of
+`exists_irreducible_frobeniusContraction_expChar` over `ℚ` is the input itself. -/
+example {P : ℚ[X]} (hPpos : 0 < P.natDegree) (hP : Irreducible P) :
+    derivative P ≠ 0 := by
+  obtain ⟨e, G, hGder, hGP, -⟩ := exists_irreducible_frobeniusContraction_expChar 1 hPpos hP
+  rw [one_pow, expand_one] at hGP
+  rwa [← hGP]
 
 /-- Positive degree is needed in `exists_frobeniusContraction`: over `ZMod 2` the constant `1`
 is not the expansion of any positive-degree polynomial with the degree identity. -/
