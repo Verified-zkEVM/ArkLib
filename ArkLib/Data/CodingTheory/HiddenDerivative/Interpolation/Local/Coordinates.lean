@@ -368,15 +368,6 @@ theorem finrank_range_exactLocalConstraintAt_le_localResidualCoordinateBudget {F
 
 /-! ### Counting the reachable exponents under a derivative-order weight bound -/
 
-/-- The derivative-order coordinate budget
-`∑_{r < m} ⌈(m - r)/(d + 1)⌉ · #{c : Fin d → ℕ | ∑_j (j + 1) c_j ≤ W + r}`. The factor
-`⌈(m - r)/(d + 1)⌉` counts the error exponents `h` of contact order `r + (d + 1) h < m`, and the
-second factor counts the exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W + r`.
-Unlike `localResidualCoordinateBudget`, it needs no jet-degree cutoff, because the derivative-order
-weight charges `Y₁`. -/
-def localDerivativeCoordinateBudget (d m W : ℕ) : ℕ :=
-  ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount (d + 1) (W + r)
-
 /-- The local exponent `T^(r + h) E^h Y^c` with residual `r`, error exponent `h`, and visible-jet
 exponent `c`. -/
 def localDerivativeExponent (r h : ℕ) (c : Fin d → ℕ) : LocalVariable d →₀ ℕ :=
