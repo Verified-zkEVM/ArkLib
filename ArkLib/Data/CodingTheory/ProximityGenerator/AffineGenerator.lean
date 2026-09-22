@@ -342,6 +342,7 @@ theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (
   rw [← ENNReal.ofReal_coe_nnreal, NNReal.coe_mul, NNReal.coe_inv]
   exact ENNReal.ofReal_le_ofReal hfin
 
+omit [SampleableType F] in
 open Classical in
 /-- **Affine-space bad density from a uniform line count.** Suppose that for every pair of words
 `W : Fin 2 → ι → A`, at most `B` seeds `t : F` are MCA-bad for the affine line generator at radius
