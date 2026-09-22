@@ -130,11 +130,12 @@ theorem affineLine_bad_set_card_le_of_exactAgreement {k A : ℕ} (domain : ι �
   obtain ⟨T, hT, hmem⟩ := (isMCA_iff_isProjectionBad _ _ _ _ _).mp (Finset.mem_filter.mp hz).2
   exact hgood z hzex ⟨T, hthreshold.trans hT, hmem⟩
 
+variable [SampleableType F]
+
 /-- **Line MCA error.** Under `LineExactAgreementBound domain k A B`, the MCA error of the affine
 line generator for the Reed–Solomon code at every radius with threshold at least `A` is at most
 `B / |F|`. -/
-theorem mcaError_affineLine_le_of_exactAgreement [SampleableType F] {k A : ℕ}
-    (domain : ι ↪ F) (B : ℝ)
+theorem mcaError_affineLine_le_of_exactAgreement {k A : ℕ} (domain : ι ↪ F) (B : ℝ)
     (hline : LineExactAgreementBound domain k A B) (radius : ℝ)
     (hthreshold : A ≤ ⌈(Fintype.card ι : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineLineGenerator F) (code domain k) radius ≤
@@ -144,8 +145,7 @@ theorem mcaError_affineLine_le_of_exactAgreement [SampleableType F] {k A : ℕ}
 
 /-- **Line MCA error, capped at one.** The bound of `mcaError_affineLine_le_of_exactAgreement`
 together with the trivial bound `1`. -/
-theorem mcaError_affineLine_le_min_one_of_exactAgreement [SampleableType F] {k A : ℕ}
-    (domain : ι ↪ F) (B : ℝ)
+theorem mcaError_affineLine_le_min_one_of_exactAgreement {k A : ℕ} (domain : ι ↪ F) (B : ℝ)
     (hline : LineExactAgreementBound domain k A B) (radius : ℝ)
     (hthreshold : A ≤ ⌈(Fintype.card ι : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineLineGenerator F) (code domain k) radius ≤
@@ -153,6 +153,7 @@ theorem mcaError_affineLine_le_min_one_of_exactAgreement [SampleableType F] {k A
   le_min (mcaError_le_one _ _ _)
     (mcaError_affineLine_le_of_exactAgreement domain B hline radius hthreshold)
 
+omit [SampleableType F] in
 open Classical in
 /-- **Affine-space bad density.** Under `LineExactAgreementBound domain k A B`, for every radius
 with threshold at least `A`, every dimension `s` and every family `U : Fin (s + 1) → ι → F`, the
@@ -169,8 +170,7 @@ theorem affineSpace_bad_density_le_of_exactAgreement {k A s : ℕ} (domain : ι 
 /-- **Affine-space MCA error.** Under `LineExactAgreementBound domain k A B`, the MCA error of the
 affine space generator of every dimension for the Reed–Solomon code, at every radius with
 threshold at least `A`, is at most `B / (|F| - 1)`. -/
-theorem mcaError_affineSpace_le_of_exactAgreement [SampleableType F] {k A s : ℕ}
-    (domain : ι ↪ F) (B : ℝ)
+theorem mcaError_affineSpace_le_of_exactAgreement {k A s : ℕ} (domain : ι ↪ F) (B : ℝ)
     (hline : LineExactAgreementBound domain k A B) (radius : ℝ)
     (hthreshold : A ≤ ⌈(Fintype.card ι : ℝ) * (1 - radius)⌉₊) :
     mcaError (AffineSpaceGenerator F s) (code domain k) radius ≤
@@ -179,6 +179,7 @@ theorem mcaError_affineSpace_le_of_exactAgreement [SampleableType F] {k A s : �
     (affineLine_bad_set_card_le_of_exactAgreement domain B hline radius hthreshold)
 
 open Classical in
+omit [SampleableType F] in
 /-- **Exact affine decomposition outside a sparse exceptional set.** Under
 `LineExactAgreementBound domain k A B`, for every radius with threshold at least `A` and with
 `k ≤ |ι| · (1 - radius)`, and every family `U : Fin (s + 1) → ι → F`, there is a set of at most

@@ -6,7 +6,9 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
+public import Mathlib.MeasureTheory.Integral.Average
 public import Mathlib.MeasureTheory.Integral.Bochner.Set
+public import Mathlib.MeasureTheory.Measure.Haar.NormedSpace
 
 /-!
 # Weighted simplices and their volumes
@@ -42,12 +44,17 @@ statements hold for all weights.
   to `W + r` multiplies the volume by at most `exp (n * r / W)`.
 * `MeasureTheory.volume_real_weightedSimplex_succ`: the weights `1, …, n` on `Fin n`, with
   volume `W ^ n / (n!) ^ 2`.
+* `Set.smul_weightedSimplex`, `MeasureTheory.setIntegral_weightedSimplex_mul`,
+  `MeasureTheory.volume_real_weightedSimplex_mul`, and
+  `MeasureTheory.setAverage_weightedSimplex_mul`: multiplying the budget by `c > 0` dilates the
+  set by `c` and multiplies the volume by `c ^ n`; the average of `f` over the dilated set is the
+  average of `u ↦ f (c • u)` over the original set.
 -/
 
 @[expose] public section
 
 open MeasureTheory Set
-open scoped BigOperators
+open scoped BigOperators Pointwise
 
 namespace Set
 
@@ -273,5 +280,48 @@ theorem volume_real_weightedSimplex_succ (n : ℕ) {W : ℝ} (hW : 0 ≤ W) :
     rw [Fin.prod_univ_eq_prod_range (fun k : ℕ ↦ (k : ℝ) + 1) n]
     exact_mod_cast Finset.prod_range_add_one_eq_factorial n
   rw [hprod, sq]
+
+/-- Dilating by `c > 0` carries the weighted simplex of budget `W` onto the weighted simplex of
+budget `c * W`, for any weights. -/
+theorem _root_.Set.smul_weightedSimplex (w : ι → ℝ) {c : ℝ} (hc : 0 < c) (W : ℝ) :
+    c • weightedSimplex w W = weightedSimplex w (c * W) := by
+  ext u
+  rw [mem_smul_set_iff_inv_smul_mem₀ hc.ne', mem_weightedSimplex, mem_weightedSimplex]
+  simp only [Pi.smul_apply, smul_eq_mul]
+  have hsum : ∑ i, w i * (c⁻¹ * u i) = c⁻¹ * ∑ i, w i * u i := by
+    rw [Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ ↦ by ring
+  rw [hsum, inv_mul_le_iff₀ hc]
+  refine and_congr (forall_congr' fun i ↦ ?_) Iff.rfl
+  rw [mul_nonneg_iff_of_pos_left (inv_pos.2 hc)]
+
+/-- Dilating the budget of a weighted simplex by `c > 0`: for any weights and every function
+`f`, `∫ u in weightedSimplex w (c * W), f u = c ^ n * ∫ u in weightedSimplex w W, f (c • u)`,
+where `n = Fintype.card ι`. -/
+theorem setIntegral_weightedSimplex_mul (w : ι → ℝ) {c : ℝ} (hc : 0 < c) (W : ℝ)
+    (f : (ι → ℝ) → ℝ) :
+    (∫ u in weightedSimplex w (c * W), f u) =
+      c ^ Fintype.card ι * ∫ u in weightedSimplex w W, f (c • u) := by
+  rw [Measure.setIntegral_comp_smul_of_pos volume f _ hc, smul_weightedSimplex w hc,
+    Module.finrank_fintype_fun_eq_card, smul_eq_mul, ← mul_assoc,
+    mul_inv_cancel₀ (pow_ne_zero _ hc.ne'), one_mul]
+
+/-- Dilating the budget of a weighted simplex by `c > 0` multiplies its volume by `c ^ n`, where
+`n = Fintype.card ι`, for any weights. -/
+theorem volume_real_weightedSimplex_mul (w : ι → ℝ) {c : ℝ} (hc : 0 < c) (W : ℝ) :
+    volume.real (weightedSimplex w (c * W)) =
+      c ^ Fintype.card ι * volume.real (weightedSimplex w W) := by
+  simpa only [integral_const, measureReal_restrict_apply_univ, smul_eq_mul, mul_one] using
+    setIntegral_weightedSimplex_mul w hc W fun _ ↦ (1 : ℝ)
+
+/-- Averages over a weighted simplex are invariant under dilation: for any weights, `c > 0` and
+every function `f`, `⨍ u in weightedSimplex w (c * W), f u = ⨍ u in weightedSimplex w W, f (c • u)`.
+-/
+theorem setAverage_weightedSimplex_mul (w : ι → ℝ) {c : ℝ} (hc : 0 < c) (W : ℝ)
+    (f : (ι → ℝ) → ℝ) :
+    ⨍ u in weightedSimplex w (c * W), f u = ⨍ u in weightedSimplex w W, f (c • u) := by
+  rw [setAverage_eq, setAverage_eq, setIntegral_weightedSimplex_mul w hc,
+    volume_real_weightedSimplex_mul w hc, smul_eq_mul, smul_eq_mul, mul_inv, mul_mul_mul_comm,
+    inv_mul_cancel₀ (pow_ne_zero _ hc.ne'), one_mul]
 
 end MeasureTheory

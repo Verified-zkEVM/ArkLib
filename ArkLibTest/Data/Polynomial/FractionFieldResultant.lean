@@ -130,3 +130,13 @@ example : (X ^ 2 : ℚ[X][X]).derivative ≠ 0 ∧
     (X ^ 2 : ℚ[X][X]).derivative (m := 2) (n := 1) (by compute_degree!)
     (by rw [derivative_X_pow]; compute_degree!) (by omega) 0 (by simp) (by simp)
   simpa using h
+
+-- The derivative-first order of the padded derivative resultant: if `A` has degree `b` and its
+-- image over the fraction field `L` is separable, then `resultant A' A (b - 1) b ≠ 0`.
+example {R L : Type*} [CommRing R] [Field L] [Algebra R L] [IsFractionRing R L]
+    (A : R[X]) {b : ℕ} (hdegree : A.natDegree = b)
+    (hseparable : (A.map (algebraMap R L)).Separable) :
+    resultant A.derivative A (b - 1) b ≠ 0 := by
+  subst hdegree
+  rw [resultant_comm_sub_one]
+  exact resultant_derivative_ne_zero_of_separable_map_fractionField A hseparable

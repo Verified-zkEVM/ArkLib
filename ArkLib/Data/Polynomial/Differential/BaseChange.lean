@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
+public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import Mathlib.Algebra.MvPolynomial.Eval
 public import Mathlib.RingTheory.Polynomial.Basic
 
@@ -36,10 +37,9 @@ commute with this two-stage specialization and do not increase the challenge-hei
 
 ## Main statements
 
-* `challengeSpecialization`, `ChallengeHeightLE`: specialize a challenge and bound its coefficient
-  degrees.
-* `challengeSpecialization_map_coefficients`, `ChallengeHeightLE.map_coefficients`,
-  `map_symbolicDifferentialSpecialization`: transport challenge equations along coefficient maps.
+* `challengeSpecialization`: specialize a challenge value.
+* `challengeSpecialization_map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.map_coefficients`,
+  `map_symbolicDifferentialSpecialization`: transport challenge equations and coefficient bounds.
 * `map_differentialSpecialization`, `map_separant`: naturality of specialization and separants.
 * `jetDegree_map_eq`, `jetTotalDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective
   coefficient maps preserve individual and total jet degrees and the cast hypothesis.
@@ -70,11 +70,6 @@ def challengeSpecialization {F σ : Type*} [CommSemiring F]
     (Q : MvPolynomial σ F[X]) (z : F) : MvPolynomial σ F :=
   MvPolynomial.map (Polynomial.aeval z).toRingHom Q
 
-/-- Every coefficient of `Q` has degree at most `h` in its polynomial coefficient variable. -/
-def ChallengeHeightLE {F σ : Type*} [CommSemiring F]
-    (Q : MvPolynomial σ F[X]) (h : ℕ) : Prop :=
-  ∀ m, (Q.coeff m).natDegree ≤ h
-
 /-- Specializing after mapping the challenge coefficients agrees with mapping after
 specialization. -/
 theorem challengeSpecialization_map_coefficients {F E σ : Type*}
@@ -91,15 +86,6 @@ theorem challengeSpecialization_map_coefficients {F E σ : Type*}
       simp
     · simp
   rw [hc]
-
-/-- Mapping coefficients does not increase the challenge height. -/
-theorem ChallengeHeightLE.map_coefficients {F E σ : Type*}
-    [CommSemiring F] [CommSemiring E] (ι : F →+* E)
-    (Q : MvPolynomial σ F[X]) {h : ℕ} (hQ : ChallengeHeightLE Q h) :
-    ChallengeHeightLE (MvPolynomial.map (Polynomial.mapRingHom ι) Q) h := by
-  intro m
-  rw [MvPolynomial.coeff_map]
-  exact Polynomial.natDegree_map_le.trans (hQ m)
 
 /-! ### Naturality -/
 

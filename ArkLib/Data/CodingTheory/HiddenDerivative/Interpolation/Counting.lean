@@ -70,6 +70,13 @@ theorem weightedHigherJetCount_succ (n W : ℕ) :
       (natWeightedSimplex (fun i : Fin n => i.val + 1) W).card :=
   rfl
 
+/-- At derivative order at most one there are no higher jets, so the count is `1` at every
+weight. -/
+theorem weightedHigherJetCount_of_le_one {d : ℕ} (hd : d ≤ 1) (W : ℕ) :
+    weightedHigherJetCount d W = 1 := by
+  obtain rfl | rfl : d = 0 ∨ d = 1 := by omega
+  all_goals simp [weightedHigherJetCount, natWeightedSimplex]
+
 /-- The least power of the hidden error that reaches contact order `m` from `T`-degree `r`:
 `⌈(m - r) / d⌉`. It is zero when `r ≥ m`, and also when `d = 0`. -/
 def contactThreshold (d m r : ℕ) : ℕ :=

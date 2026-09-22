@@ -174,9 +174,9 @@ example :
     let φ := algebraMap (ZMod 2) E₄
     let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
       MvPolynomial.C (Polynomial.X : (ZMod 2)[X])
-    ChallengeHeightLE (MvPolynomial.map (Polynomial.mapRingHom φ) Q) 1 := by
+    MvPolynomial.CoeffNatDegreeLE (MvPolynomial.map (Polynomial.mapRingHom φ) Q) 1 := by
   intro φ Q
-  apply ChallengeHeightLE.map_coefficients φ
+  apply MvPolynomial.CoeffNatDegreeLE.map_coefficients φ
   classical
   intro m
   by_cases hm : m = 0
