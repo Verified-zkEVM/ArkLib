@@ -564,6 +564,7 @@ public import ArkLib.ToMathlib.Analysis.SpecificLimits.GeometricBounds
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 public import ArkLib.ToMathlib.Control.MonadLift
@@ -574,6 +575,7 @@ public import ArkLib.ToMathlib.Finsupp.Weight
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
@@ -619,6 +621,7 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPolynomial
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertPurity
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AwayPresentation
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.CoefficientEvaluation
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
