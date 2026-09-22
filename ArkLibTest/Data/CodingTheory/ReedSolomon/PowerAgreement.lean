@@ -11,7 +11,10 @@ import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 
 These clients check that `k ≤ a` cannot be dropped from `determinedByAgreement_code`, compute
 the uniform guarantee for a single received word with no exceptional challenge, and transport it
-to the code-level predicate.
+to the code-level predicate. They also compute coordinate polynomials and discrepancies, show that
+the exceptional-challenge bound `ℓ * (|ι| - L)` is attained, derive the forms for `Fin n`
+coordinates and for an exceptional set over an extension field, and check descent along
+`ℚ → ℝ`.
 -/
 
 open Polynomial ReedSolomon CoreDefinitions
@@ -57,5 +60,83 @@ example {F ι : Type} [Field F] [Fintype ι] [DecidableEq F] (domain : ι ↪ F)
 example : (powerBatchedPolynomial ![(1 : ℚ[X]), X] 2).eval 3 = 7 := by
   simp [powerBatchedPolynomial_eval, Fin.sum_univ_two]
   norm_num
+
+-- The coordinate polynomial of `(1, 2, 3)` at `2` is `1 + 2 * 2 + 3 * 2 ^ 2 = 17`.
+example : (powerBatchedCoordinate ![(1 : ℚ), 2, 3]).eval 2 = 17 := by
+  rw [powerBatchedCoordinate_eval]
+  simp [Fin.sum_univ_three]
+  norm_num
+
+-- Its coefficients are the coordinates.
+example : (powerBatchedCoordinate ![(1 : ℚ), 2, 3]).coeff 1 = 2 :=
+  powerBatchedCoordinate_coeff _ 1
+
+/-- The single evaluation point `0`. -/
+def domain1 : Fin 1 ↪ ℚ := ⟨fun _ ↦ 0, fun a b _ ↦ Subsingleton.elim a b⟩
+
+/-- Words `1` and `-1` at the single coordinate. -/
+def words1 : Fin 2 → Fin 1 → ℚ := ![fun _ ↦ 1, fun _ ↦ -1]
+
+-- The zero tuple disagrees with `words1`, so its discrepancy is the nonzero `1 - X`.
+theorem curveDiscrepancy_words1 :
+    curveDiscrepancy domain1 words1 (fun _ ↦ 0) 0 ≠ 0 := by
+  rw [Ne, curveDiscrepancy_eq_zero_iff]
+  intro h
+  simpa [words1] using h 0
+
+-- The zero tuple has no common agreement with `words1`, but at the challenge `1` the batched word
+-- is `1 - 1 = 0` and agrees with the batched polynomial `0`. So the exceptional set in
+-- `exists_exceptional_powerBatched_agreement`, of size at most `1 * (1 - 0) = 1`, is nonempty and
+-- the bound is attained.
+example : polynomialAgreementSet domain1 (powerBatchedWord words1 1)
+      (powerBatchedPolynomial (fun _ : Fin 2 ↦ 0) 1) ≠
+      commonCurveAgreementSet domain1 words1 (fun _ ↦ 0) := by
+  intro h
+  have h0 := congrArg (0 ∈ ·) h
+  simp [powerBatchedWord, powerBatchedPolynomial, words1, domain1] at h0
+
+-- The form with `Fin n` coordinates and the count `ℓ * (n - L)`.
+example {F : Type*} [Field F] [DecidableEq F] {n ℓ : ℕ} (domain : Fin n ↪ F)
+    (w : Fin (ℓ + 1) → Fin n → F) (P : Fin (ℓ + 1) → F[X]) (L : ℕ)
+    (hcommon : L ≤ (commonCurveAgreementSet domain w P).card) :
+    ∃ exceptional : Finset F, exceptional.card ≤ ℓ * (n - L) ∧
+      ∀ z ∉ exceptional,
+        polynomialAgreementSet domain (powerBatchedWord w z) (powerBatchedPolynomial P z) =
+          commonCurveAgreementSet domain w P := by
+  simpa using exists_exceptional_powerBatched_agreement domain w P L hcommon
+
+-- Interpolation on the sample `{0}` gives a constant tuple agreeing with `words1` there.
+example : ∃ P : Fin 2 → ℚ[X], (∀ t, (P t).degree < 1) ∧
+    ∀ t, (P t).eval (domain1 0) = words1 t 0 := by
+  obtain ⟨P, hP, hs⟩ := exists_polynomialTuple_interpolating domain1 words1 {0} le_rfl
+  exact ⟨P, hP, hs 0 (Finset.mem_singleton_self 0)⟩
+
+-- The embedding `ℚ → ℝ` preserves agreement sets.
+example (y : Fin 3 → ℚ) (Q : ℚ[X]) :
+    polynomialAgreementSet (domain3.trans ⟨algebraMap ℚ ℝ, (algebraMap ℚ ℝ).injective⟩)
+        (fun i ↦ algebraMap ℚ ℝ (y i)) (Q.map (algebraMap ℚ ℝ)) =
+      polynomialAgreementSet domain3 y Q :=
+  polynomialAgreementSet_map domain3 _ _ y Q
+
+-- Exact power agreement at a real challenge `φ z` for `Q.map φ` descends to `ℚ`.
+example (w : Fin 2 → Fin 3 → ℚ) (k : ℕ) (z : ℚ) (Q : ℚ[X])
+    (h : HasExactPowerAgreement domain3 w (algebraMap ℚ ℝ) k (algebraMap ℚ ℝ z)
+      (Q.map (algebraMap ℚ ℝ))) :
+    HasExactPowerAgreement domain3 w (RingHom.id ℚ) k z Q :=
+  h.descend
+
+-- The form with an explicit base-field exceptional set no larger than the extension-field one.
+example {F E ι : Type*} [Field F] [Field E] [Fintype ι] [DecidableEq F] [DecidableEq E]
+    {ℓ : ℕ} (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) (φ : F →+* E) (k A : ℕ)
+    (exceptional : Finset E)
+    (hgood : ∀ z ∉ exceptional, ∀ Q : E[X], Q.degree < k →
+      A ≤ (polynomialAgreementSet (domain.trans ⟨φ, φ.injective⟩)
+        (powerBatchedWord (fun t i ↦ φ (w t i)) z) Q).card →
+      HasExactPowerAgreement domain w φ k z Q) :
+    ∃ baseExceptional : Finset F, baseExceptional.card ≤ exceptional.card ∧
+      ∀ z ∉ baseExceptional, ∀ Q : F[X], Q.degree < k →
+        A ≤ (polynomialAgreementSet domain (powerBatchedWord w z) Q).card →
+        HasExactPowerAgreement domain w (RingHom.id F) k z Q :=
+  uniformExactPowerAgreement_of_extension domain w φ k A exceptional hgood
 
 end PowerAgreementTest

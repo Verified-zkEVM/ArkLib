@@ -918,6 +918,14 @@ proves a weaker, field-size-weighted bound, which is not formalized here.
 
 `mcaError_moduleInterleavedCode_eq_of_card_le`: This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/Agreement.lean`
+
+`ReedSolomon.polynomialAgreementSet_map` is the private `agreementSet_map` of
+`PolynomialCurve/ExtensionDescent.lean` under
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, made public and stated over semirings for any
+injective ring hom.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AgreementBounds.lean`
 
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
@@ -1076,6 +1084,27 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
+
+Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, keeping the namespace
+`ReedSolomon.FirstOrder.Squarefree`. `ordinaryDegreeEnvelope_ge_total` is now
+`self_le_ordinaryDegreeEnvelope` and `ordinaryDegreeEnvelope_ge_resultant` is now
+`mul_sub_sq_le_ordinaryDegreeEnvelope`. `content_add_resultantDegree_le` drops `0 < r` and
+`r ≤ j`, and `content_add_resultantChallenge_le` weakens `0 < r` to `0 < M`. `singularTail` is
+`U * resultant A A.derivative r (r - 1)` in main's argument order, equal to the source's
+`separableResultant` form by `resultant_comm_sub_one`. `natDegree_singularTail_le` drops `0 < r`,
+`r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
+assumptions.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TupleSpecialization.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Specialization.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the ring hom named `φ`.
+`powerBatchedCoordinate_injective` moved to `ReedSolomon/PowerAgreement.lean`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean`
 
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, under
@@ -1095,6 +1124,21 @@ The code-level characterizations are new. They let the counting and transfer the
 The interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
 Scalar providers of `UniformExactPowerAgreement` (list-decoding and curve-counting results) are
 not ported here.
+
+Also from the same source directory:
+
+* `PolynomialCurve/Agreement.lean`: `powerBatchedCoordinate` (over a `CommSemiring`, with the new
+  `_eq_ofFn`, `_coeff` and `_eq_zero_iff`), `curveDiscrepancy` (defined as the
+  `powerBatchedCoordinate` of the constituent discrepancies),
+  `exists_exceptional_powerBatched_agreement` and `exists_exceptional_powerBatched_family` (the
+  count `ℓ * (n - L)` is
+  `ℓ * (Fintype.card ι - L)`), `exists_polynomialTuple_interpolating` (`samples.card ≤ k` in place
+  of `= k`), `polynomialTuple_eq_of_common_samples` (`k ≤ samples.card` in place of `= k`) and
+  `exists_polynomialGraph_of_sample`.
+* `PolynomialCurve/FullAgreement.lean`: `powerBatchedWord_map` and `powerBatchedPolynomial_map`.
+* `PolynomialCurve/ExtensionDescent.lean`: `HasExactPowerAgreement.descend`, and
+  `exists_exceptional_powerAgreement_descend` as `uniformExactPowerAgreement_of_extension`, whose
+  conclusion unfolds to the source's.
 
 ## `ArkLib/Data/Finset/Staircase.lean`
 
@@ -1670,6 +1714,11 @@ Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
   with their source statements and are derived here from the finite candidate form.
 
 `exists_map_evalRingHom_ne_zero_avoiding`: This is the source statement.
+
+`Polynomial.exists_exceptional_evaluation_family` from
+`ArkLib/ToMathlib/Polynomial/SimultaneousRoots.lean` at the same revision is now
+`Polynomial.exists_card_le_forall_eval_eq_zero_iff`, over a domain and for any index type with a
+support finset in place of a field, `Fin n` and a count of zero members.
 
 ## `ArkLib/Data/Polynomial/TaylorPrefix.lean`
 
