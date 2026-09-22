@@ -32,8 +32,9 @@ component.
   components of dimension `e ≥ 2` satisfy `e + #{i | cuts i ∈ Q} ≤ m + 1`. The product is
   `hybridDimensionSensitiveIncidenceProduct n A L m b d`.
 
-The hybrid bound extends to points on the iterated retained cut family of a family of primes by
-a list of fixed cuts of degree at most `B`, where the fixed cuts contribute `B ^ d`.
+The hybrid bound extends to points on the iterated retained cut family of a family of primes `Ps`
+by a list of fixed cuts of degree at most `h ≥ 1`, with `affineDegree P` replaced by the sum of
+`affineDegree P * h ^ natDegree H(P)` over `P ∈ Ps`.
 
 ## Main statements
 
@@ -269,26 +270,27 @@ theorem finite_and_ncard_le_hybridDimensionSensitiveIncidenceProduct_of_agreemen
   exact hbound _ fun _x hx ↦ hfin.mem_toFinset.mp hx
 
 /-- **Hybrid agreement incidence after a list of fixed cuts.** Let `Ps` be a finite family of
-primes of dimension at most `d` whose affine degrees sum to at most `V`, let `highCuts` be a list
-of polynomials of total degree at most `B > 0`, let `cuts : ι → MvPolynomial σ k` have total
-degree at most `b > 0`, and let `L ≤ A` and `m ≤ A`. Suppose that the hybrid budget of
+primes of dimension at most `d`, let `highCuts` be a list of polynomials of total degree at most
+`h`, with `1 ≤ h`, and let `∑ P ∈ Ps, affineDegree P * h ^ natDegree H(P) ≤ V`. Let
+`cuts : ι → MvPolynomial σ k` have total degree at most `b`, with `0 < b`, and let `L ≤ A` and
+`m ≤ A`. Suppose that the hybrid budget of
 `card_le_hybridDimensionSensitiveIncidenceProduct_of_agreement_off_excluded` holds for every
 prime `Q` above a member of `Ps` with `s ∉ Q` containing every element of `highCuts`. Then every
 finite set `S` of points of the zero loci of members of `Ps` with `s ≠ 0`, all of `highCuts`
 vanishing, outside `excluded`, and agreeing with at least `A` cuts satisfies
 
-  `#S ≤ V * B ^ d *
-    hybridDimensionSensitiveIncidenceProduct (Fintype.card ι) A L m b (min d (m + 1))`.
+  `#S ≤ V * hybridDimensionSensitiveIncidenceProduct (Fintype.card ι) A L m b (min d (m + 1))`.
 
 This is `card_le_incidenceProduct_of_agreement_off_excluded_of_iteratedRetainedCutFamily`: the
 budget bounds the dimension of each prime `Q` above a member of `Ps` by `m + 1`. -/
 theorem card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily [Finite σ]
-    [Fintype ι] (Ps : Finset (Ideal (MvPolynomial σ k))) (hprime : ∀ P ∈ Ps, P.IsPrime)
-    (s : MvPolynomial σ k) {d : ℕ} (hdim : ∀ P ∈ Ps, (affineHilbertPolynomial P).natDegree ≤ d)
-    {V : ℚ} (hV : ∑ P ∈ Ps, affineDegree P ≤ V) (highCuts : List (MvPolynomial σ k)) {B : ℕ}
-    (hB : 0 < B) (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ B) (cuts : ι → MvPolynomial σ k)
-    {b A L m : ℕ} (hb : 0 < b) (hdeg : ∀ i, (cuts i).totalDegree ≤ b) (hLA : L ≤ A)
-    (hmA : m ≤ A) (excluded : Set (σ → K))
+    [Fintype ι] {Ps : Finset (Ideal (MvPolynomial σ k))} (hprime : ∀ P ∈ Ps, P.IsPrime) {d : ℕ}
+    (hdim : ∀ P ∈ Ps, (affineHilbertPolynomial P).natDegree ≤ d) (s : MvPolynomial σ k)
+    {h : ℕ} (hh : 1 ≤ h) {highCuts : List (MvPolynomial σ k)}
+    (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ h) {V : ℚ}
+    (hV : ∑ P ∈ Ps, affineDegree P * (h : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤ V)
+    (cuts : ι → MvPolynomial σ k) {b A L m : ℕ} (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
+    (hb : 0 < b) (hLA : L ≤ A) (hmA : m ≤ A) (excluded : Set (σ → K))
     (hdimension : ∀ P ∈ Ps, ∀ Q : Ideal (MvPolynomial σ k), P ≤ Q → Q.IsPrime → s ∉ Q →
       (∀ f ∈ highCuts, f ∈ Q) → 1 < (affineHilbertPolynomial Q).natDegree →
       (affineHilbertPolynomial Q).natDegree + {i | cuts i ∈ Q}.ncard ≤ m + 1)
@@ -299,11 +301,11 @@ theorem card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutF
     (hS : ∀ x ∈ S, (∃ P ∈ Ps, x ∈ zeroLocus K P) ∧ aeval x s ≠ 0 ∧
       (∀ f ∈ highCuts, aeval x f = 0) ∧ x ∉ excluded)
     (hA : ∀ x ∈ S, A ≤ {i | aeval x (cuts i) = 0}.ncard) :
-    (#S : ℚ) ≤ V * (B : ℚ) ^ d *
+    (#S : ℚ) ≤ V *
       hybridDimensionSensitiveIncidenceProduct (Fintype.card ι) A L m b (min d (m + 1)) := by
   rw [hybridDimensionSensitiveIncidenceProduct_eq_incidenceProduct]
-  refine card_le_incidenceProduct_of_agreement_off_excluded_of_iteratedRetainedCutFamily Ps hprime
-    s hdim hV highCuts hB hhigh cuts hb hdeg _ (fun t _ ↦ by split_ifs <;> omega) excluded
+  refine card_le_incidenceProduct_of_agreement_off_excluded_of_iteratedRetainedCutFamily hprime
+    s hh hhigh hV cuts hdeg hb _ (fun t _ ↦ by split_ifs <;> omega) excluded
     (fun P hP Q hPQ hQ hsQ hhighQ ↦ ?_)
     (fun P hP Q hPQ hQ hsQ hhighQ hdQ hTQ ↦ hybrid_terminal
       (hdimension P hP Q hPQ hQ hsQ hhighQ) (hterminal P hP Q hPQ hQ hsQ hhighQ hdQ) hdQ hTQ)
@@ -318,16 +320,16 @@ theorem card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutF
 the hypotheses of `card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily`
 with `d = 2`,
 
-  `#S ≤ V * B ^ 2 * ((Fintype.card ι - L + 1) * b / (A - L + 1)) *
+  `#S ≤ V * ((Fintype.card ι - L + 1) * b / (A - L + 1)) *
     ((Fintype.card ι - m + 1) * b / (A - m + 1))`. -/
 theorem card_le_hybridDimensionSensitiveIncidenceProduct_two_of_iteratedRetainedCutFamily
-    [Finite σ] [Fintype ι] (Ps : Finset (Ideal (MvPolynomial σ k)))
-    (hprime : ∀ P ∈ Ps, P.IsPrime) (s : MvPolynomial σ k)
-    (hdim : ∀ P ∈ Ps, (affineHilbertPolynomial P).natDegree ≤ 2) {V : ℚ}
-    (hV : ∑ P ∈ Ps, affineDegree P ≤ V) (highCuts : List (MvPolynomial σ k)) {B : ℕ}
-    (hB : 0 < B) (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ B) (cuts : ι → MvPolynomial σ k)
-    {b A L m : ℕ} (hb : 0 < b) (hdeg : ∀ i, (cuts i).totalDegree ≤ b) (hLA : L ≤ A)
-    (hmA : m ≤ A) (excluded : Set (σ → K))
+    [Finite σ] [Fintype ι] {Ps : Finset (Ideal (MvPolynomial σ k))}
+    (hprime : ∀ P ∈ Ps, P.IsPrime) (hdim : ∀ P ∈ Ps, (affineHilbertPolynomial P).natDegree ≤ 2)
+    (s : MvPolynomial σ k) {h : ℕ} (hh : 1 ≤ h) {highCuts : List (MvPolynomial σ k)}
+    (hhigh : ∀ f ∈ highCuts, f.totalDegree ≤ h) {V : ℚ}
+    (hV : ∑ P ∈ Ps, affineDegree P * (h : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤ V)
+    (cuts : ι → MvPolynomial σ k) {b A L m : ℕ} (hdeg : ∀ i, (cuts i).totalDegree ≤ b)
+    (hb : 0 < b) (hLA : L ≤ A) (hmA : m ≤ A) (excluded : Set (σ → K))
     (hdimension : ∀ P ∈ Ps, ∀ Q : Ideal (MvPolynomial σ k), P ≤ Q → Q.IsPrime → s ∉ Q →
       (∀ f ∈ highCuts, f ∈ Q) → 1 < (affineHilbertPolynomial Q).natDegree →
       (affineHilbertPolynomial Q).natDegree + {i | cuts i ∈ Q}.ncard ≤ m + 1)
@@ -338,24 +340,21 @@ theorem card_le_hybridDimensionSensitiveIncidenceProduct_two_of_iteratedRetained
     (hS : ∀ x ∈ S, (∃ P ∈ Ps, x ∈ zeroLocus K P) ∧ aeval x s ≠ 0 ∧
       (∀ f ∈ highCuts, aeval x f = 0) ∧ x ∉ excluded)
     (hA : ∀ x ∈ S, A ≤ {i | aeval x (cuts i) = 0}.ncard) :
-    (#S : ℚ) ≤ V * (B : ℚ) ^ 2 *
-      ((((Fintype.card ι - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
+    (#S : ℚ) ≤ V * ((((Fintype.card ι - L + 1) * b : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
         ((((Fintype.card ι - m + 1) * b : ℕ) : ℚ) / ((A - m + 1 : ℕ) : ℚ)) := by
+  have hV0 : 0 ≤ V := (Finset.sum_nonneg fun P _ ↦
+    mul_nonneg (affineDegree_nonneg P) (by positivity)).trans hV
   rcases S.eq_empty_or_nonempty with rfl | ⟨x₀, hx₀⟩
-  · have hV0 : 0 ≤ V := (Finset.sum_nonneg fun P _ ↦ affineDegree_nonneg P).trans hV
-    simp only [Finset.card_empty, Nat.cast_zero]
+  · simp only [Finset.card_empty, Nat.cast_zero]
     positivity
   have hAn : A ≤ Fintype.card ι := by
     have := (hA x₀ hx₀).trans (Set.ncard_le_ncard (Set.subset_univ _))
     rwa [Set.ncard_univ, Nat.card_eq_fintype_card] at this
-  have hV0 : 0 ≤ V := (Finset.sum_nonneg fun P _ ↦ affineDegree_nonneg P).trans hV
-  refine (card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily Ps hprime
-    s hdim hV highCuts hB hhigh cuts hb hdeg hLA hmA excluded hdimension hterminal S hS
-    hA).trans ?_
-  rw [mul_assoc (V * (B : ℚ) ^ 2)]
+  refine (card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily hprime
+    hdim s hh hhigh hV cuts hdeg hb hLA hmA excluded hdimension hterminal S hS hA).trans ?_
+  rw [mul_assoc V]
   exact mul_le_mul_of_nonneg_left
-    (hybridDimensionSensitiveIncidenceProduct_le_two (min_le_left _ _) hAn hb)
-    (by positivity)
+    (hybridDimensionSensitiveIncidenceProduct_le_two (min_le_left _ _) hAn hb) hV0
 
 /-- **Agreement incidence in coefficient space.** Let `α : Fin n ↪ k` be distinct points,
 `y : Fin n → k` received values, `P` a prime of `MvPolynomial (Fin m) k` of dimension `d`, and

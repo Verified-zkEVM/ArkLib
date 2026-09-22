@@ -45,6 +45,8 @@ with a threshold.
 * `natCast_sub_div_natCast_sub_le`: `(n - m) / (A - m) ≤ (n - m') / (A - m')` for
   `m ≤ m' < A ≤ n`.
 * `one_le_incidenceFactor`: each factor is at least one when `A ≤ n` and `0 < b`.
+* `natCast_sub_mul_le_incidenceFactor_mul`: for `j < T ≤ A ≤ n`, the factor with threshold `T`
+  bounds `(n - j) * b / (A - j)`, which makes it an admissible ratio in an incidence induction.
 * `incidenceProduct_const`, `incidenceProduct_mono_dimension`: the product with a constant
   threshold is a power, and the product is monotone in the dimension when `A ≤ n` and `0 < b`.
 * `dimensionSensitiveIncidenceProduct_eq_incidenceProduct`,
@@ -80,6 +82,27 @@ theorem one_le_incidenceFactor {n A T b : ℕ} (hAn : A ≤ n) (hb : 0 < b) :
   rw [one_le_div₀ (by exact_mod_cast (show 0 < A - T + 1 by omega))]
   exact_mod_cast (show A - T + 1 ≤ (n - T + 1) * b from
     (by omega : A - T + 1 ≤ n - T + 1).trans (Nat.le_mul_of_pos_right _ hb))
+
+/-- For `j < T ≤ A ≤ n`, `(n - j) * (A - T + 1) ≤ (n - T + 1) * (A - j)`: removing `j` of `n`
+elements and `j` of `A` elements gives a ratio at most the ratio for `T - 1` removed. -/
+private theorem sub_mul_sub_add_one_le {n A T j : ℕ} (hj : j < T) (hTA : T ≤ A) (hAn : A ≤ n) :
+    (n - j) * (A - T + 1) ≤ (n - T + 1) * (A - j) := by
+  obtain ⟨z, rfl⟩ : ∃ z, T = j + 1 + z := ⟨T - j - 1, by omega⟩
+  rw [show n - j = (n - (j + 1 + z) + 1) + z by omega,
+    show A - j = (A - (j + 1 + z) + 1) + z by omega]
+  have : A - (j + 1 + z) + 1 ≤ n - (j + 1 + z) + 1 := by omega
+  nlinarith
+
+/-- For `j < T ≤ A ≤ n`, the incidence factor `((n - T + 1) * b) / (A - T + 1)` is an admissible
+ratio at `j`: `(n - j) * b ≤ ((n - T + 1) * b) / (A - T + 1) * (A - j)`. -/
+theorem natCast_sub_mul_le_incidenceFactor_mul {n A T b j : ℕ} (hj : j < T) (hTA : T ≤ A)
+    (hAn : A ≤ n) :
+    (((n - j) * b : ℕ) : ℚ) ≤
+      ((((n - T + 1) * b : ℕ) : ℚ) / ((A - T + 1 : ℕ) : ℚ)) * ((A - j : ℕ) : ℚ) := by
+  have hc : (0 : ℚ) < ((A - T + 1 : ℕ) : ℚ) := by positivity
+  rw [div_mul_eq_mul_div, le_div_iff₀ hc, ← Nat.cast_mul, ← Nat.cast_mul]
+  have := Nat.mul_le_mul_right b (sub_mul_sub_add_one_le hj hTA hAn)
+  exact_mod_cast (by nlinarith : (n - j) * b * (A - T + 1) ≤ (n - T + 1) * b * (A - j))
 
 /-- The product over `t < d` of the incidence factors `((n - T t + 1) * b) / (A - T t + 1)` with
 threshold `T t` at dimension `t + 1`. -/

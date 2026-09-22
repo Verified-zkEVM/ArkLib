@@ -162,8 +162,8 @@ example :
   norm_num
 
 /-- The hybrid bound after the empty list of fixed cuts, for `Ps = {⊥}` in the plane and the
-grid cuts with `A = 2`, `L = 2` and `m = 1`: the bound `1 * 1 ^ 2 * 6` holds for every set of
-points agreeing with two cuts, in any dimension and in the two-factor form. -/
+grid cuts with `A = 2`, `L = 2` and `m = 1`: the bound `1 * 6` holds for every set of points
+agreeing with two cuts, in any dimension and in the two-factor form. -/
 example (S : Finset (Fin 2 → ℚ)) (hA : ∀ x ∈ S, 2 ≤ {i | aeval x (gridCuts i) = 0}.ncard) :
     (S.card : ℚ) ≤ 6 ∧ (S.card : ℚ) ≤ 6 := by
   have hprime : ∀ P ∈ ({⊥} : Finset (Ideal (MvPolynomial (Fin 2) ℚ))), P.IsPrime :=
@@ -188,18 +188,19 @@ example (S : Finset (Fin 2 → ℚ)) (hA : ∀ x ∈ S, 2 ≤ {i | aeval x (grid
       (∀ f ∈ ([] : List (MvPolynomial (Fin 2) ℚ)), aeval x f = 0) ∧
       x ∉ (∅ : Set (Fin 2 → ℚ)) :=
     fun x _ ↦ ⟨⟨⊥, by simp, by simp⟩, by simp, by simp, by simp⟩
-  have hV : ∑ P ∈ ({⊥} : Finset (Ideal (MvPolynomial (Fin 2) ℚ))), affineDegree P ≤ 1 := by
+  have hV : ∑ P ∈ ({⊥} : Finset (Ideal (MvPolynomial (Fin 2) ℚ))),
+      affineDegree P * ((1 : ℕ) : ℚ) ^ (affineHilbertPolynomial P).natDegree ≤ 1 := by
     simp [affineDegree_bot]
   constructor
   · have h := card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily
-      {⊥} hprime 1 hdim hV [] one_pos (by simp) gridCuts (b := 1) (A := 2) (L := 2) (m := 1)
-      one_pos totalDegree_gridCuts_le le_rfl (by norm_num) ∅ hdimension hterminal S hS hA
+      hprime hdim 1 (h := 1) le_rfl (by simp) hV gridCuts (b := 1) (A := 2) (L := 2) (m := 1)
+      totalDegree_gridCuts_le one_pos le_rfl (by norm_num) ∅ hdimension hterminal S hS hA
     refine h.trans_eq ?_
     simp
     norm_num
   · have h := card_le_hybridDimensionSensitiveIncidenceProduct_two_of_iteratedRetainedCutFamily
-      {⊥} hprime 1 hdim hV [] one_pos (by simp) gridCuts (b := 1) (A := 2) (L := 2) (m := 1)
-      one_pos totalDegree_gridCuts_le le_rfl (by norm_num) ∅ hdimension hterminal S hS hA
+      hprime hdim 1 (h := 1) le_rfl (by simp) hV gridCuts (b := 1) (A := 2) (L := 2) (m := 1)
+      totalDegree_gridCuts_le one_pos le_rfl (by norm_num) ∅ hdimension hterminal S hS hA
     refine h.trans_eq ?_
     simp
     norm_num
@@ -428,8 +429,10 @@ example {F σ : Type*} [Field F] [Finite σ] {n A L m B d : ℕ}
     (hA : ∀ x ∈ S, A ≤ {i | aeval x (cuts i) = 0}.ncard) :
     (S.card : ℚ) ≤ V * (B : ℚ) ^ d *
       hybridDimensionSensitiveIncidenceProduct n A L m 1 (min (d - 1) m + 1) := by
-  have h := card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily Ps
-    hprime s (fun P hP ↦ (hdim P hP).le) hV highCuts hB hhigh cuts one_pos hdeg hLA hmA excluded
+  have h := card_le_hybridDimensionSensitiveIncidenceProduct_of_iteratedRetainedCutFamily hprime
+    (fun P hP ↦ (hdim P hP).le) s hB hhigh
+    (sum_affineDegree_mul_pow_le Ps hB (fun P hP ↦ (hdim P hP).le) hV) cuts hdeg one_pos hLA hmA
+    excluded
     (fun P hP Q hPQ hQ hsQ hhQ hd ↦
       add_le_of_hybridBudget (hdimension P hP Q hPQ hQ hsQ hhQ (by omega)) hd)
     hterminal S hS hA
@@ -463,9 +466,10 @@ example {F σ : Type*} [Field F] [Finite σ] {n A L m B : ℕ}
       (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) *
         (((n - m + 1 : ℕ) : ℚ) / ((A - m + 1 : ℕ) : ℚ)) := by
   simpa only [Fintype.card_fin, mul_one] using
-    card_le_hybridDimensionSensitiveIncidenceProduct_two_of_iteratedRetainedCutFamily Ps hprime s
-      (fun P hP ↦ (hdim P hP).le) hV highCuts hB hhigh cuts one_pos hdeg hLA hmA excluded
-      hdimension hterminal S hS hA
+    card_le_hybridDimensionSensitiveIncidenceProduct_two_of_iteratedRetainedCutFamily hprime
+      (fun P hP ↦ (hdim P hP).le) s hB hhigh
+      (sum_affineDegree_mul_pow_le Ps hB (fun P hP ↦ (hdim P hP).le) hV) cuts hdeg one_pos hLA hmA
+      excluded hdimension hterminal S hS hA
 
 /-- For a prime of dimension at most one in the coefficient space of polynomials of degree less
 than `m`, the polynomials agreeing with received values at `A` of `n` distinct points are bounded
