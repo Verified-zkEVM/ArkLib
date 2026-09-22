@@ -32,22 +32,6 @@ of `I` has no larger natural degree (`natDegree_affineHilbertPolynomial_le_awayP
 * `MvPolynomial.finite_zeroLocus_awayPresentationIdeal_iff`: finiteness transfers along it.
 * `MvPolynomial.finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero`: a principal
   open subset cut out by a regular element is finite exactly in dimension zero.
-
-## References
-
-Ported from `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalOpen/Finite.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
-
-The source's `hilbertPolynomial_natDegree_zero_of_finite_principalOpen` assumed that `I` is prime
-and `s ∉ I`. It is the forward direction of
-`finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero`, which assumes only that the
-class of `s` is a non-zero-divisor on the quotient; the reverse direction is new and needs no
-regularity. The source's private `restrictAwayPoint` lemmas become
-`image_comp_some_zeroLocus_awayPresentationIdeal` and
-`injOn_comp_some_zeroLocus_awayPresentationIdeal`, stated for points in any field extension `K`
-and now including surjectivity onto the principal open subset. The source's definition
-`principalOpenZeroLocus P s` is not introduced; the set is written
-`{x | x ∈ zeroLocus k I ∧ aeval x s ≠ 0}`.
 -/
 
 @[expose] public section
