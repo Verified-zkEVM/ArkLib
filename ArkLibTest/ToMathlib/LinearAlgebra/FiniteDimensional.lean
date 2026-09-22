@@ -11,7 +11,9 @@ import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 
 The first projection `ℚ × ℚ → ℚ` has the second axis in its kernel, so the exhibited-kernel bound
 gives rank at most `2 - 1 = 1`, which is its true rank. Exhibiting nothing (`K = 0`) gives only
-the trivial bound `2`. The composition bound is checked on a projection after an inclusion.
+the trivial bound `2`. The composition bound is checked on a projection after an inclusion. The
+product-map bound is checked on the two projections of `ℚ × ℚ`, the common-zero statement on one
+projection, and the identity of `ℚ` shows that its inequality must be strict.
 -/
 
 open Module
@@ -59,3 +61,29 @@ example : (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates (1, 0) ≠ 0 := by
 example : LinearMap.ker (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates = LinearMap.ker (LinearMap.fst ℚ ℚ ℚ)
     ∧ Function.Surjective (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates :=
   ⟨LinearMap.ker_rangeCoordinates _, LinearMap.rangeCoordinates_surjective _⟩
+
+/-! ### Products of linear maps -/
+
+/-- The product of the two coordinate projections of `ℚ × ℚ` has rank at most `1 + 1`, each
+projection having a range inside `ℚ`. -/
+example : finrank ℚ (LinearMap.range (LinearMap.pi
+    (![LinearMap.fst ℚ ℚ ℚ, LinearMap.snd ℚ ℚ ℚ] : Fin 2 → (ℚ × ℚ →ₗ[ℚ] ℚ)))) ≤ 1 + 1 := by
+  refine (LinearMap.finrank_range_pi_le _).trans ?_
+  rw [Fin.sum_univ_two]
+  exact add_le_add ((Submodule.finrank_le _).trans (finrank_self ℚ).le)
+    ((Submodule.finrank_le _).trans (finrank_self ℚ).le)
+
+/-- One projection of `ℚ × ℚ` leaves the nonzero common zero `(0, 1)`: the budget `1` is below
+`finrank (ℚ × ℚ) = 2`. -/
+example : ∃ v : ℚ × ℚ, v ≠ 0 ∧ ∀ _ : Fin 1, LinearMap.fst ℚ ℚ ℚ v = 0 :=
+  LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt (fun _ : Fin 1 => LinearMap.fst ℚ ℚ ℚ)
+    (b := fun _ => 1)
+    (fun _ => by rw [LinearMap.range_eq_top.mpr LinearMap.fst_surjective, finrank_top,
+      finrank_self])
+    (by simp)
+
+/-- The strict inequality `∑ i, b i < finrank V` is needed: for the identity of `ℚ` the budget
+`1` equals `finrank ℚ = 1`, and the only common zero is `0`. -/
+example : ¬ ∃ v : ℚ, v ≠ 0 ∧ ∀ _ : Fin 1, (LinearMap.id : ℚ →ₗ[ℚ] ℚ) v = 0 := by
+  rintro ⟨v, hv, h⟩
+  exact hv (h 0)

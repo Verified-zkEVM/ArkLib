@@ -24,9 +24,14 @@ public import Mathlib.LinearAlgebra.Projection
   `LinearMap.ker_rangeCoordinates`, `LinearMap.rangeCoordinates_surjective` — a linear map
   followed by coordinates on its finite-dimensional range: a map onto `K^(rank f)` with the kernel
   of `f`.
+* `LinearMap.finrank_range_pi_le`, `LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt` — the rank
+  of a product map `v ↦ (f i v)ᵢ` is at most the sum of the ranks of its components, so a finite
+  family of maps whose rank bounds sum to less than the dimension of the source has a common
+  nonzero zero.
 
-The last two are the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker`
-and `finrank_range_comp_le_outer` in
+`LinearMap.finrank_range_le_sub_of_injective_ker` and `LinearMap.finrank_range_comp_le_left` are
+the linear-algebra part of `finrank_range_le_sub_finrank_of_injective_to_ker` and
+`finrank_range_comp_le_outer` in
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Rank.lean` at ArkLib
 revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. The source assumed a field, a
 finite-dimensional exhibited space, and a finite-dimensional middle space; here the scalars form
@@ -38,6 +43,13 @@ finite-dimensional.
 `gradedImageCoordinateMap_eq_zero_iff`, in
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/GradedRank.lean` at the
 same revision, from a field to a division ring.
+
+`LinearMap.finrank_range_pi_le` and `LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt` are the
+linear-algebra part of `finrank_weightedSupportGlobalConstraint_le` and
+`exists_nonzero_weightedSupport_interpolant` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
+`Interpolation.lean` at the same revision, where the family was the local constraint maps on the
+weighted support space over a field.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
@@ -146,3 +158,36 @@ theorem LinearMap.rangeCoordinates_surjective {K V W : Type*} [DivisionRing K]
     Function.Surjective f.rangeCoordinates := by
   rw [rangeCoordinates, LinearMap.coe_comp]
   exact (LinearEquiv.surjective _).comp f.surjective_rangeRestrict
+
+/-- The rank of the product map `v ↦ (f i v)ᵢ` is at most the sum of the ranks of the components:
+its range embeds in `∏ i, range (f i)`. Only the component ranges need to be finite-dimensional;
+the source space and the codomains may be infinite-dimensional. -/
+theorem LinearMap.finrank_range_pi_le {K V ι : Type*} [DivisionRing K] [AddCommGroup V]
+    [Module K V] [Fintype ι] {M : ι → Type*} [∀ i, AddCommGroup (M i)] [∀ i, Module K (M i)]
+    (f : (i : ι) → V →ₗ[K] M i) [∀ i, FiniteDimensional K (LinearMap.range (f i))] :
+    Module.finrank K (LinearMap.range (LinearMap.pi f)) ≤
+      ∑ i, Module.finrank K (LinearMap.range (f i)) := by
+  let G : ((i : ι) → LinearMap.range (f i)) →ₗ[K] ((i : ι) → M i) :=
+    LinearMap.pi fun i => (LinearMap.range (f i)).subtype ∘ₗ LinearMap.proj i
+  have h : LinearMap.pi f = G ∘ₗ LinearMap.pi fun i => (f i).rangeRestrict := rfl
+  rw [h, LinearMap.range_comp, ← Module.finrank_pi_fintype K]
+  exact (Submodule.finrank_map_le _ _).trans (Submodule.finrank_le _)
+
+/-- If each `f i` has rank at most `b i` and `∑ i, b i < finrank V`, then some nonzero `v` has
+`f i v = 0` for every `i`. By `finrank_range_pi_le` the product map has rank below
+`finrank V`, so its kernel is nonzero. The source must be finite-dimensional: otherwise `finrank V`
+is `0` and the hypothesis is vacuous. -/
+theorem LinearMap.exists_ne_zero_forall_eq_zero_of_sum_lt {K V ι : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [FiniteDimensional K V] [Fintype ι] {M : ι → Type*}
+    [∀ i, AddCommGroup (M i)] [∀ i, Module K (M i)] (f : (i : ι) → V →ₗ[K] M i) {b : ι → ℕ}
+    (hb : ∀ i, Module.finrank K (LinearMap.range (f i)) ≤ b i)
+    (hsum : ∑ i, b i < Module.finrank K V) :
+    ∃ v : V, v ≠ 0 ∧ ∀ i, f i v = 0 := by
+  have hrank := (LinearMap.finrank_range_pi_le f).trans (Finset.sum_le_sum fun i _ => hb i)
+  have hnull := LinearMap.finrank_range_add_finrank_ker (LinearMap.pi f)
+  have hker : LinearMap.ker (LinearMap.pi f) ≠ ⊥ := by
+    intro h
+    rw [h, finrank_bot] at hnull
+    omega
+  obtain ⟨v, hv, hv0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
+  exact ⟨v, hv0, fun i => congrFun (LinearMap.mem_ker.mp hv) i⟩

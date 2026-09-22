@@ -11,7 +11,9 @@ import ArkLib.ToMathlib.Analysis.SpecialFunctions.ExpLogRpow
 
 A concrete instance with `a = 2`, the case showing that `1 ≤ a` is needed in
 `Real.exp_le_exp_add_mul_rpow_of_le_log_add`, and the source's `exp_le_rpow` and
-`endpoint_exp_upper`.
+`endpoint_exp_upper`; the new constants `exp (54 / 5) > 48000` and `exp (81 / 80) > 11 / 4`;
+instances of `Real.exp_one_mul_le_mul_exp_div`, including its equality case `c = ρ`; and a
+concrete instance of `Real.rpow_one_div_div_self`.
 -/
 
 /-- `a = 2`, `x = 4`, `b = c = 0`, `H = log 4`, `E = log 4 / 2`: `exp (log 4 / 2) ≤ 4 ^ (1 / 2)`,
@@ -50,3 +52,24 @@ normalized rank bound: `exp (3 / 5 + 1 / 100) < 37 / 20`. -/
 example : Real.exp (3 / 5 + 1 / 100) < 37 / 20 := by
   norm_num
   exact Real.exp_sixtyOne_div_hundred_lt
+
+/-- The source's `WeightedSupportParameters.exp_fifty_four_fifths_gt`. -/
+example : (48000 : ℝ) < Real.exp (54 / 5) := Real.fortyEightThousand_lt_exp_fiftyFour_div_five
+
+/-- The source's `WeightedSupportParameters.exp_eightyOne_eightieth_gt`. -/
+example : (11 / 4 : ℝ) < Real.exp (81 / 80) := Real.elevenFourths_lt_exp_eightyOne_div_eighty
+
+/-- Equality holds in `Real.exp_one_mul_le_mul_exp_div` at `c = ρ`: both sides are `e ρ`. -/
+example (ρ : ℝ) (hρ : ρ ≠ 0) : Real.exp 1 * ρ = ρ * Real.exp (ρ / ρ) := by
+  rw [div_self hρ, mul_comm]
+
+/-- The bound needs no sign on `c`: at `c = -1`, `ρ = 1` it reads `-e ≤ exp (-1)`. -/
+example : Real.exp 1 * (-1) ≤ 1 * Real.exp (-1 / 1) :=
+  Real.exp_one_mul_le_mul_exp_div (-1) one_pos
+
+/-- At `x = 9`, `a = 2`: `9 ^ (1 / 2) / 9 = 1 / 3 = (exp (log 9 / 2))⁻¹`. -/
+example : (Real.exp (Real.log 9 * ((2 - 1) / 2)))⁻¹ = 1 / 3 := by
+  have hsqrt : (9 : ℝ) ^ ((1 : ℝ) / 2) = 3 := by
+    rw [← Real.sqrt_eq_rpow, show (9 : ℝ) = 3 ^ 2 by norm_num, Real.sqrt_sq (by norm_num)]
+  rw [← Real.rpow_one_div_div_self (by norm_num) (by norm_num), hsqrt]
+  norm_num

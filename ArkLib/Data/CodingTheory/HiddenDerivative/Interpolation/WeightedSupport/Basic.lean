@@ -34,8 +34,8 @@ budgets directly.
 ## Main statements
 
 * `WeightedSupportEligible`, `weightedSupportExponents`, `weightedSupportSpace` and
-  `weightedSupportSpaceBasis`, with `weightedSupportEligible_finite` and
-  `finrank_weightedSupportSpace_eq_card`.
+  `weightedSupportSpaceBasis`, with `weightedSupportEligible_finite`, the `Module.Finite`
+  instance and `finrank_weightedSupportSpace_eq_card`.
 * `totalJetDegree_lt_of_weightedSupportEligible` and
   `totalJetDegree_le_pred_of_weightedSupportEligible`: the cutoff bounds the total jet degree by
   `L / D`.
@@ -67,8 +67,9 @@ with the same statements up to the following changes. The source's `weightedSupp
 `jetTotalDegree_le_iff`, which are now `PolynomialDifferential.jetTotalDegree` and
 `PolynomialDifferential.jetTotalDegree_le_iff`; accordingly `[Field F]` is weakened to
 `[CommSemiring F]` in `jetTotalDegree_lt_of_mem_weightedSupportSpace` and
-`decoder_bounds_of_mem_weightedSupportSpace`. The coordinate description and the dimension lower
-bound are in `WeightedSupport/Dimension.lean`.
+`decoder_bounds_of_mem_weightedSupportSpace`. The `Module.Finite` instance is new; the source
+built it locally in `WeightedSupport/Interpolation.lean`. The coordinate description and the
+dimension lower bound are in `WeightedSupport/Dimension.lean`.
 
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26], Section 3.
@@ -138,6 +139,11 @@ def weightedSupportSpaceBasis (F : Type*) [CommSemiring F] (D d W : ℕ) (L : �
     Module.Basis ↥(weightedSupportExponents D d W L hD) F (weightedSupportSpace F D d W L hD) :=
   MvPolynomial.basisRestrictSupport (R := F)
     (↑(weightedSupportExponents D d W L hD) : Set (JetVariable d →₀ ℕ))
+
+/-- The weighted support space is a finite module: `weightedSupportSpaceBasis` is indexed by the
+finite set `weightedSupportExponents D d W L hD`. -/
+instance [CommSemiring F] (hD : 0 < D) : Module.Finite F (weightedSupportSpace F D d W L hD) :=
+  Module.Finite.of_basis (weightedSupportSpaceBasis F D d W L hD)
 
 /-- Over a field, the dimension of the weighted support space is the number of eligible
 exponents. -/
