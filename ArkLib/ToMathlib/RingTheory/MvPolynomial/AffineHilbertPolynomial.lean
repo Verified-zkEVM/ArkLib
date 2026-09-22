@@ -85,8 +85,10 @@ the leading exponent of `f`. The source's `quotientDegreeLE_eventually_top`,
 The source's `finite_zeroLocus_and_ncard_le_hilbertPolynomial` is in
 `ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial`, and the finite-algebra
 comparisons of `Hilbert/FiniteAlgebraGrowth.lean` and `Hilbert/FiniteExtensionDegree.lean` are in
-`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`. The radical-degree files of
-`Hilbert/` are deferred.
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertAlgHom`. The affine degree of
+`Hilbert/Degree.lean` is in `ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineDegree`, and the
+radical comparison of `Hilbert/RadicalDegree.lean` is in
+`ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertRadical`.
 -/
 
 @[expose] public section
