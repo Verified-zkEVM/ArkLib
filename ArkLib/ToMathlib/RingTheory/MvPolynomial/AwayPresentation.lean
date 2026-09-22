@@ -50,45 +50,6 @@ the localization is the zero ring, `K = ⊤`, and `H(K, N) = 0 < N + 1 = H(I, N)
   `MvPolynomial.natDegree_affineHilbertPolynomial_le_card_of_surjective_away`,
   `MvPolynomial.natDegree_affineHilbertPolynomial_le_card_of_adjoin_eq_top_away`: dimension
   bounds from surjections onto a principal localization.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`,
-files `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalOpen/{Filtration,Presentation,Dimension}.lean`.
-
-From `Presentation.lean`: `awayPresentationHom` (here `awayPresentation`, defined over any
-commutative ring), `awayPresentationHom_rename_some`, `awayPresentationHom_surjective`,
-`awayPresentationIdeal` and `awayPresentationEquiv`. The source's
-`awayPresentation_hilbertFunction_le_hilbertFunction_rescaled` is
-`affineHilbertFunction_awayPresentationIdeal_le`, which drops the hypotheses that `I` is prime and
-`s ∉ I`; its bound `H(I, N + N * d)` is written `H(I, (d + 1) * N)`. The source's
-`hilbertFunction_le_awayPresentation_hilbertFunction_two_mul`, `H(I, N) ≤ H(K, 2 * N)` for prime
-`I` and `s ∉ I`, is strengthened to `affineHilbertFunction_le_awayPresentationIdeal`,
-`H(I, N) ≤ H(K, N)` for any `s` regular on the quotient; a prime `I` with `s ∉ I` is a special
-case.
-
-From `Filtration.lean`: the bounded numerator-and-denominator filtration `awayDegreeLE`, its
-comparison maps and `hilbertFunction_le_finrank_awayDegreeLE_le` are not ported. They served only
-to prove the two Hilbert-function bounds above. Here the lower bound follows from
-`affineHilbertFunction_le_of_injective`, and the upper bound applies
-`aeval_mem_of_forall_mul_mem` to the subspaces of fractions whose product with `s ^ M` has a
-numerator of degree at most `(d + 1) * M`.
-
-From `Dimension.lean`: `hilbertPolynomial_natDegree_le_awayPresentation` and
-`awayPresentation_hilbertPolynomial_natDegree_le` are
-`natDegree_affineHilbertPolynomial_le_awayPresentationIdeal` (for regular `s`) and
-`natDegree_affineHilbertPolynomial_awayPresentationIdeal_le` (with no hypothesis).
-`hilbertPolynomial_natDegree_le_of_surjective_away_algHom` is
-`natDegree_affineHilbertPolynomial_le_of_surjective_away_away`, which needs regularity only on the
-target side and nothing about the source ideal `J` or element `t`; it is a corollary of the new
-`natDegree_affineHilbertPolynomial_le_of_surjective_away`, whose source is any coordinate ring.
-`hilbertPolynomial_natDegree_le_of_surjective_algHom_to_away` and
-`hilbertPolynomial_natDegree_le_of_adjoin_eq_top_away` are
-`natDegree_affineHilbertPolynomial_le_card_of_surjective_away` and
-`natDegree_affineHilbertPolynomial_le_card_of_adjoin_eq_top_away`, for regular `s`.
-
-Not proved here: an explicit generating set of `awayPresentationIdeal I s`, namely the image of
-`I` together with `X none * rename some s - 1`. Only the two memberships are proved.
 -/
 
 @[expose] public section
