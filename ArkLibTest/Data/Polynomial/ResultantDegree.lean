@@ -122,3 +122,37 @@ example (A : Polynomial (Polynomial ℤ)) :
       (2 * 0 - 1) * (A.coeff 0).natDegree :=
   natDegree_resultant_derivative_padded_add_sq_le A 0 _ fun i hi ↦ by
     rw [Nat.le_zero.mp hi, Nat.zero_add]
+
+-- The inequality can be strict: in characteristic two, `C (X ^ 3) * Y ^ 2` has a coefficient of
+-- `X`-degree `3`, while its derivative is `0`.
+example : Bivariate.degreeX (C ((X : (ZMod 2)[X]) ^ 3) * X ^ 2).derivative = 0 := by
+  have h : ((2 : ℕ) : (ZMod 2)[X]) = 0 := CharP.cast_eq_zero _ 2
+  rw [derivative_C_mul_X_pow, h, mul_zero, C_0, zero_mul]
+  simp [Bivariate.degreeX]
+
+-- The source bound with separate budgets for `A` and its derivative, in the source argument
+-- order: `(2 * b - 1) * h`.
+example (A : Polynomial (Polynomial (ZMod 4))) {b h : ℕ} (hA : Bivariate.degreeX A ≤ h)
+    (hA' : Bivariate.degreeX A.derivative ≤ h) :
+    (resultant A.derivative A (b - 1) b).natDegree ≤ (2 * b - 1) * h := by
+  rw [resultant_comm_sub_one]
+  refine (natDegree_resultant_le_degreeX A A.derivative b (b - 1)).trans ?_
+  calc (b - 1) * Bivariate.degreeX A + b * Bivariate.degreeX A.derivative
+      ≤ (b - 1) * h + b * h := Nat.add_le_add (Nat.mul_le_mul_left _ hA) (Nat.mul_le_mul_left _ hA')
+    _ = (2 * b - 1) * h := by
+      rw [← Nat.add_mul]
+      congr 1
+      omega
+
+-- The source bound from the height of `A` alone: with `degreeX_derivative_le`, the declared
+-- degree `b` need not be the actual degree.
+example (A : Polynomial (Polynomial (ZMod 4))) {b h : ℕ} (hA : Bivariate.degreeX A ≤ h) :
+    (resultant A A.derivative b (b - 1)).natDegree ≤ (2 * b - 1) * h := by
+  refine (natDegree_resultant_le_degreeX A A.derivative b (b - 1)).trans ?_
+  calc (b - 1) * Bivariate.degreeX A + b * Bivariate.degreeX A.derivative
+      ≤ (b - 1) * h + b * h := Nat.add_le_add (Nat.mul_le_mul_left _ hA)
+        (Nat.mul_le_mul_left _ ((Bivariate.degreeX_derivative_le A).trans hA))
+    _ = (2 * b - 1) * h := by
+      rw [← Nat.add_mul]
+      congr 1
+      omega
