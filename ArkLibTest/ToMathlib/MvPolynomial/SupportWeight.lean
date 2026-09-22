@@ -11,7 +11,7 @@ import Mathlib.Tactic.NormNum
 # Acceptance tests for support-weight subalgebras and the denominator budget
 
 The examples compute a sharp instance of `Finsupp.weight_two_mul_sub_one_le`, show that its
-support hypothesis cannot be dropped, recover the source's `Fin (r + h)` statement, and check
+support hypothesis cannot be dropped, derive the special case on `Fin (r + h)`, and check
 membership in `supportWeightLE` for a polynomial and its coefficient in a distinguished variable.
 -/
 
@@ -40,8 +40,8 @@ example :
         2 * 2 - 2 := by
   simp [Finsupp.weight_single]
 
-/-- The source statement `taylor_denominator_weight_le`, with its hypothesis `0 < h`, follows from
-the general budget with `t l = l - r` on `Fin (r + h)`. -/
+/-- The special case on `Fin (r + h)` with `0 < h` follows from the general budget with
+`t l = l - r`. -/
 example {r h : ℕ} (_hh : 0 < h) (m : Fin (r + h) →₀ ℕ)
     (hm : Finsupp.weight (fun l : Fin (r + h) ↦ l.val - r) m ≤ h) :
     Finsupp.weight (fun l : Fin (r + h) ↦ 2 * (l.val - r) - 1) m ≤ 2 * h - 2 :=

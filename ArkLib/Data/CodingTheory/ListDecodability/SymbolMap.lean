@@ -27,14 +27,6 @@ a basis of a field extension is `CodingTheory.lambda_extensionCode_eq_lambda_int
 
 * `Code.encard_closeCodewordsRel_le_of_injective_comp`: the pointwise inequality of point lists.
 * `Code.Lambda_le_of_injective_comp`: the inequality of maximised list sizes.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AgreementBounds.lean`: the proof of
-`lambda_interleaved_rs_le_of_ratFunc_polynomial_agreement_bound` injects every finite subset of an
-interleaved point list into a scalar point list over `RatFunc F`. That injection is stated here
-for arbitrary alphabets, codes and injective symbol maps.
 -/
 
 @[expose] public section

@@ -19,7 +19,8 @@ it applies at roots of `D` and in rings with zero divisors.
 
 The main instance is a nodal divisor `∏ i ∈ s, (X - v i)` (`Lagrange.nodal`). Its degree is
 `#s`, so reconstruction from a quotient of degree below `k` has degree below `k + #s`. The anchor
-values `v i` need not be distinct.
+values `v i` need not be distinct. The cubic divisor `(X - s₁) (X - s₂) (X - z)` is treated in
+`ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction`.
 
 ## Main statements
 
@@ -28,17 +29,6 @@ values `v i` need not be distinct.
 * `Polynomial.eval_mul_add_of_eval_mul_eq_sub`: values where the quotient equation holds.
 * `Polynomial.degree_nodal_mul_add_lt` and `Polynomial.eval_nodal_mul_add_at_node`: the nodal
   instances.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AnchoredReconstruction.lean`: the theorems
-`cubicAnchorReconstruct_degree_lt`, `cubicAnchorReconstruct_eval_anchors` and
-`cubicAnchorReconstruct_eval_of_quotient` are stated there for the cubic divisor
-`(X - s₁) (X - s₂) (X - z)` over a field. They are generalized here to an arbitrary divisor over
-a semiring, commutative semiring and ring respectively, and the degree bound no longer assumes
-`0 < k`. The cubic statements are in
-`ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction`.
 -/
 
 @[expose] public section

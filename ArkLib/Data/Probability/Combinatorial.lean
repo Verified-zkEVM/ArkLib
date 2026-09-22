@@ -189,8 +189,6 @@ theorem exists_large_image_of_pairwise_collision_bound
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
         ((@Finset.image S T (Classical.decEq T) φ Finset.univ).card : ENNReal) := by
   classical
-  let _ : DecidableEq S := Classical.decEq S
-  let _ : DecidableEq T := Classical.decEq T
   set N : ℕ := Fintype.card S with hN_def
   set P : Finset (S × S) := Finset.univ.filter (fun p : S × S ↦ p.1 ≠ p.2) with hP_def
   have hP_card : P.card = N * (N - 1) := by
@@ -340,8 +338,7 @@ theorem exists_large_image_of_pairwise_collision_bound_of_probComp
   let : MeasurableSpace (S → T) := ⊤
   obtain ⟨φ, hφ, _, hcard⟩ := exists_large_image_of_pairwise_collision_bound
     𝒟[Φ] (MonadAttach.support Φ)
-      (@OracleComp.support_finite _ unifSpec _
-        OracleSpec.IsUniformMeasureSpec.unifSpec.fintype Φ).countable
+      (OracleComp.support_finite (spec := unifSpec) Φ).countable
       (by
         change 𝒟[Φ] {x | x ∈ MonadAttach.support Φ} = 1
         rw [OracleComp.evalDist_apply_setOf_eq_one_iff_forall_mem_support]

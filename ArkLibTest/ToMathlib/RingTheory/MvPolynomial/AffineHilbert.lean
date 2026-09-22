@@ -10,8 +10,8 @@ import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
 # Acceptance tests for the affine Hilbert function
 
 The examples compute the affine Hilbert function at degree zero for proper and unit ideals, show
-that the principal-cut inequality fails without its hypothesis `b ≤ N`, and derive the
-source-shaped prime-ideal form of the inequality from the regular-element form.
+that the principal-cut inequality fails without its hypothesis `b ≤ N`, and derive the prime-ideal
+form of the inequality from the regular-element form.
 -/
 
 open MvPolynomial
@@ -51,8 +51,8 @@ example :
     exact X_ne_zero 0
   · simp [affineHilbertFunction_zero, not_isUnit_X_zero]
 
-/-- The source statement: for a prime ideal `I` and `f ∉ I`, derived from the regular-element
-form. -/
+/-- The principal-cut inequality for a prime ideal `I` and `f ∉ I`, derived from the
+regular-element form. -/
 example {σ : Type*} [Finite σ] {I : Ideal (MvPolynomial σ ℚ)} (hI : I.IsPrime)
     {f : MvPolynomial σ ℚ} (hfI : f ∉ I) {b N : ℕ} (hfdeg : f.totalDegree ≤ b) (hbN : b ≤ N) :
     affineHilbertFunction (I ⊔ Ideal.span {f}) N + affineHilbertFunction I (N - b) ≤
