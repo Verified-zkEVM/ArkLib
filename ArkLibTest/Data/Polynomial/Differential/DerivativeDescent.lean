@@ -16,7 +16,7 @@ import Mathlib.Data.ZMod.Basic
   `derivativeDescent_ne_zero` needs it.
 * Over `ZMod 4`, `2 * Y₀ ^ 2` satisfies the cast hypothesis but its separant is zero, so the
   nonvanishing theorems need `NoZeroDivisors`.
-* The source statements with `jetDegree Q s < ringChar F` follow from the general ones.
+* The forms with the guard `jetDegree Q s < ringChar F` follow from the general ones.
 -/
 
 namespace PolynomialDifferential
@@ -127,35 +127,36 @@ example : separant doubledSquare 0 = 0 := by
   rw [separant, doubledSquare_eq_monomial, pderiv_monomial, Finsupp.single_eq_same,
     show (2 : ZMod 4) * ((2 : ℕ) : ZMod 4) = 0 by decide, monomial_zero]
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with the guard `jetDegree Q s < ringChar F` -/
 
-section Source
+section RingCharGuard
 
 variable {F : Type*} [CommSemiring F] [NoZeroDivisors F] [Nontrivial F] {d : ℕ}
 
-/-- The source form of `jetDegree_jetDerivative_eq_sub`. -/
+/-- `jetDegree_jetDerivative_eq_sub` for `a ≤ jetDegree Q s` under the guard
+`jetDegree Q s < ringChar F`. -/
 example (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (a : ℕ) (_ha : a ≤ jetDegree Q s)
     (hchar : jetDegree Q s < ringChar F) :
     jetDegree (jetDerivative Q s a) s = jetDegree Q s - a :=
   jetDegree_jetDerivative_eq_sub Q s a (jetDegreeCastsNeZero_of_ringChar (Or.inr hchar))
 
-/-- The source form of `derivativeDescent_ne_zero`, with `DependsOnJet Q s` in place of
-`Q ≠ 0`. -/
+/-- `derivativeDescent_ne_zero` under the guard `jetDegree Q s < ringChar F`, with
+`DependsOnJet Q s` in place of `Q ≠ 0`. -/
 example (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (hs : DependsOnJet Q s)
     (hchar : jetDegree Q s < ringChar F) : derivativeDescent Q s ≠ 0 := by
   refine derivativeDescent_ne_zero ?_ s (jetDegreeCastsNeZero_of_ringChar (Or.inr hchar))
   rintro rfl
   simp [DependsOnJet, jetDegree] at hs
 
-/-- The source form of `derivativeDescent_spec_of_highestActiveJet_eq_some`, with bounds at every
-jet. -/
+/-- `derivativeDescent_spec_of_highestActiveJet_eq_some` under the guard
+`jetDegree Q j < ringChar F` at every jet `j`. -/
 example (Q : DifferentialPolynomial F d) (s : Fin (d + 1))
     (hdegrees : ∀ j, jetDegree Q j < ringChar F) (hs : highestActiveJet Q = some s) :
     derivativeDescent Q s ≠ 0 ∧ ∀ j, DependsOnJet (derivativeDescent Q s) j → j < s :=
   derivativeDescent_spec_of_highestActiveJet_eq_some hs
     (jetDegreeCastsNeZero_of_ringChar (Or.inr (hdegrees s)))
 
-end Source
+end RingCharGuard
 
 end
 
