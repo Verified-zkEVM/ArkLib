@@ -81,8 +81,9 @@ the `Finset.sigma` in `localResidualExponents`; `localCoordinateBudget` and the 
 are in `Interpolation/Counting.lean`. The finrank bounds are added here.
 
 The derivative-order count generalizes the counting part of the source's
-`Interpolation/PartitionSupport/LocalRank.lean`: `localDerivativeCoordinateBudget` is its
-`partitionLocalRankBound` (with `(m - s) ⌈/⌉ (d + 1)` written `contactThreshold (d + 1) m s`),
+`Interpolation/PartitionSupport/LocalRank.lean`: `localDerivativeCoordinateBudget` of
+`Interpolation/Counting.lean` is its `partitionLocalRankBound` (with `(m - s) ⌈/⌉ (d + 1)` written
+`contactThreshold (d + 1) m s`),
 `localDerivativeExponent` and `localDerivativeExponents` are its `partitionLocalExponent` and
 `partitionLocalExponents` with the dependent index type `PartitionLocalIndex` replaced by a
 `Finset.sigma` (so `card_partitionLocalIndex` is not needed), `card_localDerivativeExponents_le`
@@ -396,15 +397,6 @@ theorem finrank_range_exactLocalConstraintAt_le_localResidualCoordinateBudget {F
     ⟨h.2.1, Nat.lt_succ_of_le (totalJetDegree_le_floor_of_weight_lt hdD h.2.2)⟩
 
 /-! ### Counting the reachable exponents under a derivative-order weight bound -/
-
-/-- The derivative-order coordinate budget
-`∑_{r < m} ⌈(m - r)/(d + 1)⌉ · #{c : Fin d → ℕ | ∑_j (j + 1) c_j ≤ W + r}`. The factor
-`⌈(m - r)/(d + 1)⌉` counts the error exponents `h` of contact order `r + (d + 1) h < m`, and the
-second factor counts the exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W + r`.
-Unlike `localResidualCoordinateBudget`, it needs no jet-degree cutoff, because the derivative-order
-weight charges `Y₁`. -/
-def localDerivativeCoordinateBudget (d m W : ℕ) : ℕ :=
-  ∑ r ∈ range m, contactThreshold (d + 1) m r * weightedHigherJetCount (d + 1) (W + r)
 
 /-- The local exponent `T^(r + h) E^h Y^c` with residual `r`, error exponent `h`, and visible-jet
 exponent `c`. -/

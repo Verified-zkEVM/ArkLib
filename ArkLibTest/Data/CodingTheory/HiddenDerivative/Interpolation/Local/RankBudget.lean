@@ -13,7 +13,8 @@ The source's linear-geometric and linear-exponential lemmas, which carried the c
 `(j + 1) / d + 1`, are derived from the general bounds at `a = 1 / d` and `b = 1`. At `d = 1`
 the exponential envelope reduces to `N_1(W + r) ≤ 1`. The hypotheses of the budget bound are
 needed: with `d = 1` or `W = 0` the right side is zero while the budget is one, and the ceiling
-lemma fails at `d = 0`.
+lemma fails at `d = 0`. The source's `partition_count_le_volume` is derived from the weighted
+simplex sandwich.
 -/
 
 open Finset ReedSolomon.HiddenDerivative
@@ -86,3 +87,14 @@ example (Be : ℕ) : (localCoordinateBudget 2 1 1 Be : ℝ) ≤
 /-- The budget in the previous example, with `B = 1`, is `2`, below `exp 2 · 3/2 ≈ 11.1`. -/
 example : localCoordinateBudget 2 1 1 1 = 2 := by
   decide
+
+/-- Source statement `partition_count_le_volume`: the upper half of
+`Finset.natWeightedSimplex_succ_sandwich`, divided by `(d!) ^ 2`. -/
+example (d W : ℕ) : (weightedHigherJetCount (d + 1) W : ℝ) ≤
+    ((W : ℝ) + ((d + 1).choose 2 : ℝ)) ^ d / (d.factorial : ℝ) ^ 2 := by
+  have h : ((d.factorial ^ 2 * (natWeightedSimplex (fun i : Fin d ↦ i.val + 1) W).card : ℕ) : ℝ) ≤
+      (((W + (d + 1).choose 2) ^ d : ℕ) : ℝ) := by
+    exact_mod_cast (natWeightedSimplex_succ_sandwich d W).2
+  push_cast at h
+  rw [weightedHigherJetCount_succ, le_div_iff₀ (by positivity)]
+  linarith

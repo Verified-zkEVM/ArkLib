@@ -34,6 +34,8 @@ non-asymptotic lower bound `D * (max L 0) ^ 2 / 2 ≤ count D L`, valid for ever
 * `QuadraticStaircase.square_div_two_le_sum` — `L ^ 2 / 2` is below the unrounded sum for
   `L ≥ 0`.
 * `QuadraticStaircase.count_ge_quadratic` — `D * (max L 0) ^ 2 / 2 ≤ count D L`.
+* `QuadraticStaircase.count_div_sub_eq_sum` — at the cutoff `L / D - c` with natural `L`, `c`,
+  the count is the natural sum `∑ u < L, (L - D * (u + c))`.
 
 ## References
 
@@ -44,7 +46,10 @@ Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 `QuadraticStaircase.two_mul_sum` and `QuadraticStaircase.count_ge_quadratic` are ported with the
 same statements. `QuadraticStaircase.square_div_two_le_sum` weakens the source hypothesis `0 < L`
 to `0 ≤ L`. The source file imported `CubicStaircase` without using it; that import is dropped.
-The source consumers (`RatePartition/Area.lean` and `PartitionSupport/Dimension.lean`) are not yet
+From `HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean` at the same revision:
+`partition_residual_ceil` is `QuadraticStaircase.ceil_mul_div_sub_sub`, and
+`quadraticStaircase_le_partition_slice` is strengthened from an inequality to the equality
+`QuadraticStaircase.count_div_sub_eq_sum`. The source consumer `RatePartition/Area.lean` is not yet
 ported.
 -/
 
@@ -135,5 +140,41 @@ theorem count_ge_quadratic (D : ℕ) (L : ℝ) :
     _ ≤ ∑ u ∈ Finset.range ⌈L⌉₊, (⌈(D : ℝ) * (L - u)⌉₊ : ℝ) :=
       Finset.sum_le_sum fun _ _ ↦ Nat.le_ceil _
     _ = count D L := by simp [count]
+
+/-- At a rational cutoff `L / D - c` with natural `L` and `c`, each rounded term is the natural
+difference `L - D * (u + c)`: `⌈D * (L / D - c - u)⌉₊ = L - D * (u + c)`. The hypothesis `0 < D`
+is needed to cancel `D` against `L / D`; for `D = 0` the left side is `0` and the right side is
+`L`. -/
+theorem ceil_mul_div_sub_sub {D : ℕ} (hD : 0 < D) (L c u : ℕ) :
+    ⌈(D : ℝ) * ((L : ℝ) / D - c - u)⌉₊ = L - D * (u + c) := by
+  have hD0 : (D : ℝ) ≠ 0 := by exact_mod_cast hD.ne'
+  have h : (D : ℝ) * ((L : ℝ) / D - c - u) = (L : ℝ) - ((D * (u + c) : ℕ) : ℝ) := by
+    push_cast
+    field_simp
+    ring
+  rw [h, Nat.ceil_sub_natCast, Nat.ceil_natCast]
+
+/-- The staircase at the cutoff `L / D - c`, for natural `L` and `c` and `0 < D`, counts the pairs
+`(x, u)` with `x + D * (u + c) < L`: `count D (L / D - c) = ∑ u < L, (L - D * (u + c))`, with
+natural subtraction. The terms with `u ≥ ⌈L / D - c⌉₊` are zero, which is why the sum may run over
+the larger range `u < L`. The hypothesis `0 < D` is needed: for `D = 0` the left side is `0`,
+since the cutoff is `L / 0 - c = -c ≤ 0`, while the right side is `L ^ 2`. -/
+theorem count_div_sub_eq_sum {D : ℕ} (hD : 0 < D) (L c : ℕ) :
+    count D ((L : ℝ) / D - c) = ∑ u ∈ Finset.range L, (L - D * (u + c)) := by
+  have hDR : (0 : ℝ) < D := by exact_mod_cast hD
+  have hceil : ⌈(L : ℝ) / D - c⌉₊ ≤ L := by
+    refine Nat.ceil_le.mpr ((sub_le_self _ (Nat.cast_nonneg c)).trans ?_)
+    rw [div_le_iff₀ hDR]
+    have : (1 : ℝ) ≤ D := by exact_mod_cast hD
+    nlinarith [(Nat.cast_nonneg L : (0 : ℝ) ≤ L)]
+  unfold count
+  simp_rw [ceil_mul_div_sub_sub hD]
+  refine Finset.sum_subset (Finset.range_mono hceil) fun u _ hu ↦ ?_
+  have hle : (L : ℝ) / D - c ≤ u := Nat.ceil_le.mp (by simpa using hu)
+  have hLe : (L : ℝ) ≤ ((D * (u + c) : ℕ) : ℝ) := by
+    have hdiv : (L : ℝ) / D ≤ u + c := by linarith
+    push_cast
+    rwa [div_le_iff₀ hDR, mul_comm] at hdiv
+  exact Nat.sub_eq_zero_of_le (by exact_mod_cast hLe)
 
 end QuadraticStaircase

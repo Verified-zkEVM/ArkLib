@@ -38,6 +38,9 @@ sides are zero while the budget is positive.
 * `localRank_ceilDiv_le`, `weightedHigherJetCount_le_exp`, `sum_contactThreshold_mul_exp_le`
 * `localCoordinateBudget_le_geometric`, `localCoordinateBudget_le_kappa`,
   `localCoordinateBudget_div_volume_mul_cube_le`
+* `sum_contactThreshold_mul_exp_le_slots` and `localDerivativeCoordinateBudget_le_geometric`: the
+  contact sum for any number of slots, and the geometric bound for the derivative-order budget of
+  the partition support.
 
 ## References
 
@@ -61,6 +64,17 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows equation
   `contactThreshold (d + 1) m r` (definitionally `(m - r) ⌈/⌉ (d + 1)`).
 * `localCoordinateBudget_le_geometric`, `localCoordinateBudget_le_kappa` and
   `localCoordinateBudget_div_volume_mul_cube_le` are unchanged.
+
+From `Interpolation/PartitionSupport/RankBound.lean` at the same revision:
+
+* `partitionLocalRankBound_le_geometric` is `localDerivativeCoordinateBudget_le_geometric`, with
+  the same statement; the source's `partitionLocalRankBound` is `localDerivativeCoordinateBudget`.
+* `partition_contact_exp_sum_le`, stated for `(m - r) ⌈/⌉ s` with `0 < s`, is
+  `sum_contactThreshold_mul_exp_le_slots`, which drops `0 < s`; `sum_contactThreshold_mul_exp_le`
+  is now derived from it. `partition_ceilDiv_le` is `Nat.cast_ceilDiv_le_div_add_one`, which
+  drops `0 < s`.
+* `partition_count_le_volume` is the upper half of `Finset.natWeightedSimplex_succ_sandwich`
+  divided by `(d!)^2`; the acceptance tests derive it.
 
 * [Dao, Q., Kominers, S. D., Thaler, J., and Zheng, K. Z.,
   *Reed--Solomon List Decoding and Mutual Correlated Agreement up to Capacity*][DKTZ26]
@@ -107,20 +121,21 @@ theorem weightedHigherJetCount_le_exp (d W r : ℕ) (hW : 0 < W) :
   refine hnat.trans (hexp.trans_eq ?_)
   rw [mul_div_assoc', div_mul_eq_mul_div]
 
-/-- The contact sum weighted by exponentials: for `0 < d` and `0 < x`,
-`∑_{r<m} ⌈(m - r) / (d + 1)⌉ exp(x (r + B)) ≤ exp(x (m + B)) (1 / (d x^2) + 1 / x)`. After the
-substitution `r = m - 1 - j` the ceiling is at most `(j + 1) / d + 1` and the exponential is
-`exp(x (m + B)) exp(-x)^(j+1)`. The hypothesis `0 < d` is used by `localRank_ceilDiv_le`. The
-hypothesis `0 < x` is needed: at `x = 0` the right side is zero while the sum is positive for
-`m ≥ 1`. -/
-theorem sum_contactThreshold_mul_exp_le (d m : ℕ) (hd : 0 < d) {x B : ℝ} (hx : 0 < x) :
-    ∑ r ∈ range m, (contactThreshold (d + 1) m r : ℝ) * Real.exp (x * (r + B)) ≤
-      Real.exp (x * (m + B)) * (1 / ((d : ℝ) * x ^ 2) + 1 / x) := by
+/-- The contact sum weighted by exponentials, for any number `s` of contact slots and `0 < x`:
+`∑_{r<m} ⌈(m - r) / s⌉ exp(x (r + B)) ≤ exp(x (m + B)) (1 / (s x^2) + 1 / x)`. After the
+substitution `r = m - 1 - j` the ceiling is at most `(j + 1) / s + 1`
+(`Nat.cast_ceilDiv_le_div_add_one`) and the exponential is `exp(x (m + B)) exp(-x)^(j+1)`, so the
+finite linear-geometric bound `Real.sum_range_linear_mul_exp_neg_pow_succ_le` applies. No
+hypothesis on `s` is needed: for `s = 0` every ceiling is `0`. The hypothesis `0 < x` is needed:
+at `x = 0` the right side is zero while the sum is positive for `m ≥ 1` and `s ≥ 1`. -/
+theorem sum_contactThreshold_mul_exp_le_slots (s m : ℕ) {x B : ℝ} (hx : 0 < x) :
+    ∑ r ∈ range m, (contactThreshold s m r : ℝ) * Real.exp (x * (r + B)) ≤
+      Real.exp (x * (m + B)) * (1 / ((s : ℝ) * x ^ 2) + 1 / x) := by
   rw [← sum_range_reflect _ m]
   have hterm : ∀ j ∈ range m,
-      (contactThreshold (d + 1) m (m - 1 - j) : ℝ) * Real.exp (x * ((m - 1 - j : ℕ) + B)) ≤
+      (contactThreshold s m (m - 1 - j) : ℝ) * Real.exp (x * ((m - 1 - j : ℕ) + B)) ≤
         Real.exp (x * (m + B)) *
-          ((1 / (d : ℝ) * ((j + 1 : ℕ) : ℝ) + 1) * Real.exp (-x) ^ (j + 1)) := by
+          ((1 / (s : ℝ) * ((j + 1 : ℕ) : ℝ) + 1) * Real.exp (-x) ^ (j + 1)) := by
     intro j hj
     have hjm := mem_range.mp hj
     have heq : m - (m - 1 - j) = j + 1 := by omega
@@ -134,12 +149,12 @@ theorem sum_contactThreshold_mul_exp_le (d m : ℕ) (hd : 0 < d) {x B : ℝ} (hx
       congr 1
       ring
     rw [contactThreshold, heq, hexp]
-    have h := mul_le_mul_of_nonneg_right (localRank_ceilDiv_le d (j + 1) hd)
+    have h := mul_le_mul_of_nonneg_right (Nat.cast_ceilDiv_le_div_add_one (K := ℝ) (j + 1) s)
       (by positivity : 0 ≤ Real.exp (x * (m + B)) * Real.exp (-x) ^ (j + 1))
     calc
-      _ = ((((j + 1) ⌈/⌉ (d + 1) : ℕ) : ℝ)) *
+      _ = ((((j + 1) ⌈/⌉ s : ℕ) : ℝ)) *
           (Real.exp (x * (m + B)) * Real.exp (-x) ^ (j + 1)) := by ring
-      _ ≤ (((j + 1 : ℕ) : ℝ) / d + 1) *
+      _ ≤ (((j + 1 : ℕ) : ℝ) / s + 1) *
           (Real.exp (x * (m + B)) * Real.exp (-x) ^ (j + 1)) := h
       _ = _ := by ring
   refine (sum_le_sum hterm).trans ?_
@@ -148,6 +163,20 @@ theorem sum_contactThreshold_mul_exp_le (d m : ℕ) (hd : 0 < d) {x B : ℝ} (hx
   refine (Real.sum_range_linear_mul_exp_neg_pow_succ_le m (by positivity) zero_le_one hx).trans_eq
     ?_
   rw [div_div]
+
+/-- The contact sum with `d + 1` slots, for `0 < d` and `0 < x`:
+`∑_{r<m} ⌈(m - r) / (d + 1)⌉ exp(x (r + B)) ≤ exp(x (m + B)) (1 / (d x^2) + 1 / x)`. This is
+`sum_contactThreshold_mul_exp_le_slots` with `s = d + 1`, followed by
+`1 / ((d + 1) x^2) ≤ 1 / (d x^2)`; the sharper form keeps the denominator `d + 1`. The hypothesis
+`0 < d` is needed for the weakened denominator `d`. -/
+theorem sum_contactThreshold_mul_exp_le (d m : ℕ) (hd : 0 < d) {x B : ℝ} (hx : 0 < x) :
+    ∑ r ∈ range m, (contactThreshold (d + 1) m r : ℝ) * Real.exp (x * (r + B)) ≤
+      Real.exp (x * (m + B)) * (1 / ((d : ℝ) * x ^ 2) + 1 / x) := by
+  refine (sum_contactThreshold_mul_exp_le_slots (d + 1) m (B := B) hx).trans ?_
+  refine mul_le_mul_of_nonneg_left (add_le_add_left ?_ _) (Real.exp_pos _).le
+  have hd' : (0 : ℝ) < d := by exact_mod_cast hd
+  gcongr
+  linarith
 
 /-- Absolute upper bound for the local coordinate budget, with `x = (d - 1) / W`:
 `localCoordinateBudget d m W B ≤ B V exp(x (m + C(d, 2))) (1 / (d x^2) + 1 / x)` for
@@ -182,6 +211,42 @@ theorem localCoordinateBudget_le_geometric (d m W Be : ℕ) (hd : 2 ≤ d) (hW :
   push_cast
   calc
     _ ≤ _ := h
+    _ = _ := by ring
+
+/-- Absolute upper bound for the derivative-order coordinate budget, with `x = d / W` and
+`V = W^d / (d!)^2`:
+`localDerivativeCoordinateBudget d m W ≤ V exp(x (m + C(d + 1, 2))) (1 / ((d + 1) x^2) + 1 / x)`.
+The count of exponents of `Y₁, ..., Y_d` of derivative-order weight at most `W + r` is bounded by
+`weightedHigherJetCount_le_exp` at order `d + 1`, and the contact sum with `d + 1` slots by
+`sum_contactThreshold_mul_exp_le_slots`; the offset `C(d + 1, 2) = 1 + ⋯ + d` and the additive
+ceiling error `1 / x` are kept. The hypotheses `0 < d` and `0 < W` make `x` positive; for `d = 0`
+or `W = 0` the right side is zero while the budget is positive for `m ≥ 1`. -/
+theorem localDerivativeCoordinateBudget_le_geometric (d m W : ℕ) (hd : 0 < d) (hW : 0 < W) :
+    (localDerivativeCoordinateBudget d m W : ℝ) ≤
+      ((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) *
+        Real.exp (((d : ℝ) / W) * (m + (d + 1).choose 2)) *
+          (1 / (((d : ℝ) + 1) * ((d : ℝ) / W) ^ 2) + 1 / ((d : ℝ) / W)) := by
+  set x : ℝ := (d : ℝ) / W with hxdef
+  set V : ℝ := (W : ℝ) ^ d / (d.factorial : ℝ) ^ 2 with hVdef
+  have hx : 0 < x := div_pos (by exact_mod_cast hd) (by exact_mod_cast hW)
+  have hV : 0 ≤ V := by positivity
+  have hsum : (localDerivativeCoordinateBudget d m W : ℝ) ≤
+      V * ∑ r ∈ range m,
+        (contactThreshold (d + 1) m r : ℝ) * Real.exp (x * (r + (d + 1).choose 2)) := by
+    rw [localDerivativeCoordinateBudget, mul_sum]
+    push_cast
+    refine sum_le_sum fun r _ => ?_
+    have h := mul_le_mul_of_nonneg_left (weightedHigherJetCount_le_exp (d + 1) W r hW)
+      (Nat.cast_nonneg (contactThreshold (d + 1) m r))
+    simp only [Nat.add_sub_cancel] at h
+    calc
+      _ ≤ _ := h
+      _ = _ := by rw [hxdef, hVdef]; ring
+  have htail := sum_contactThreshold_mul_exp_le_slots (d + 1) m
+    (B := ((d + 1).choose 2 : ℝ)) hx
+  push_cast at htail
+  calc
+    _ ≤ _ := hsum.trans (mul_le_mul_of_nonneg_left htail hV)
     _ = _ := by ring
 
 /-- The geometric budget bound in the notation `κ = (d - 1) m / W`:
