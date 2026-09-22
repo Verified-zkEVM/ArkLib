@@ -14,21 +14,13 @@ public import Mathlib.Algebra.Order.Archimedean.Real.Basic
 For a proximity parameter `δ`, block length `n` and dimension `k`, the midpoint threshold is
 `k + ⌊δ * n / 2⌋₊`. When the agreement threshold `A` satisfies `k + δ * n ≤ A ≤ n`, the midpoint
 lies between `k` and `A`, and both integer gaps (to `k` and to `A`, each plus one) are at least
-`δ * n / 2`.
+`δ * n / 2`. The gap bounds are `Nat.add_floor_half_bounds`; only the bound
+`correlatedMidpoint δ n k ≤ n` uses `A ≤ n`.
 
 ## Main statements
 
 * `ReedSolomon.correlatedMidpoint`: the threshold `k + ⌊δ * n / 2⌋₊`.
 * `ReedSolomon.correlatedMidpoint_bounds`: the five bounds.
-
-## References
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Midpoint.lean` at
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `correlatedMidpoint` and
-`correlatedMidpoint_bounds` keep the source statements. The proof of the gap bounds moved to
-`Nat.add_floor_half_bounds` in `ArkLib/ToMathlib/Order/FloorHalf.lean`, which works over any
-ordered field with a floor; the bound `correlatedMidpoint δ n k ≤ n` is the only part that uses
-`A ≤ n`.
 -/
 
 @[expose] public section

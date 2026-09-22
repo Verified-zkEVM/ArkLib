@@ -25,16 +25,6 @@ set that works for every pair at once.
   of the per-pair disagreement counts of the second polynomial.
 * `ReedSolomon.exists_exceptional_correlatedPairFamily`: if every pair has at least `L` common
   agreements, the size is at most `#pairs * (Fintype.card ι - L)`.
-
-## References
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Pairs/ExceptionalSet.lean` at
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
-`exists_exceptional_correlatedPairFamily` has the source statement, with the coordinate type
-`Fin n` generalized to any finite type `ι` and the source's `mappedDomain domain iota` written out
-as `domain.trans ⟨φ, φ.injective⟩`. It is derived from the new
-`exists_exceptional_correlatedPairFamily_le_sum`, which counts only the coordinates where the
-second polynomial of each pair disagrees with `g` and needs no threshold.
 -/
 
 @[expose] public section

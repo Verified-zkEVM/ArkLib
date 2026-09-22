@@ -40,33 +40,6 @@ most `B / (|F| - 1)` in every dimension.
 * `ReedSolomon.exists_affine_exceptionalSet_full_agreement_of_exactLine`: outside an affine
   exceptional set of density at most `B / (|F| - 1)`, every close polynomial decomposes with
   exact agreement.
-
-## References
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/LineToAffine.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. Throughout, the coordinate type `Fin n` is
-generalized to any finite type `ι`, and the unused `[Fintype F]` is dropped from
-`LineExactAgreementBound`.
-
-* `LineExactAgreementBound` and `LineExactAgreementBound.mono` have the source statements.
-* `LineExactAgreementBound.exists_forall_not_isProjectionBad` is new. It derives the absence of
-  projection-badness from `Code.not_isProjectionBad_of_forall_hasExactAgreement`.
-* `affineLine_bad_set_card_le_of_exactAgreement` has the source statement. The source unpacked
-  the MCA event by hand; here it is `CoreDefinitions.isMCA_iff_isProjectionBad` at a threshold at
-  least `A`.
-* `mcaError_affineLine_le_of_exactAgreement` and `mcaError_affineLine_le_min_one_of_exactAgreement`
-  have the source statements; the first is `CoreDefinitions.mcaError_le_ofReal_of_forall_card_le`.
-* `affineSpace_bad_density_le_of_exactAgreement`, `mcaError_affineSpace_le_of_exactAgreement` and
-  `exists_affine_exceptionalSet_full_agreement_of_exactLine` drop the source's hypothesis `1 ≤ s`:
-  in dimension `0` no seed is bad. The first two specialize
-  `AffineMCAMain.card_filter_isMCA_affineSpaceGenerator_div_le` and
-  `AffineMCAMain.mcaError_affineSpaceGenerator_le_of_forall_card_le`, which hold for every module
-  code. The third keeps the source's hypothesis `k ≤ |ι| · (1 - radius)`, which
-  `exists_polynomials_full_agreement_of_not_isMCA` needs for uniqueness of interpolation.
-
-Deferred: the providers of `LineExactAgreementBound` (the capacity, Johnson, first-order and
-polynomial-curve theorems of the source) and the interleaved consumer
-`mcaError_interleaved_le_of_exactAgreement`.
 -/
 
 @[expose] public section

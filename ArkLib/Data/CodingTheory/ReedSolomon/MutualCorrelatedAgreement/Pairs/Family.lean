@@ -24,7 +24,9 @@ For a field homomorphism `φ : F →+* E` and a challenge `z : E`, the specializ
 `P.map φ + C z * Q.map φ`. Two distinct pairs have equal specializations for at most one
 challenge. Hence a finite family of distinct pairs is specialized injectively at all but finitely
 many challenges, and over an infinite field `E` some challenge does so while avoiding any finite
-set and any finite set of roots of nonzero auxiliary polynomials.
+set and any finite set of roots of nonzero auxiliary polynomials. These specialization statements
+are those of `ArkLib.ToMathlib.LinearAlgebra.LineInjectivity` in the `E`-module `E[X]`, with
+`C z * R = z • R`.
 
 ## Main definitions
 
@@ -42,20 +44,6 @@ set and any finite set of roots of nonzero auxiliary polynomials.
 * `ReedSolomon.exists_correlatedPairSpecialization_injOn_avoiding`,
   `ReedSolomon.exists_correlatedPairSpecialization_injOn_avoiding_roots`: an injective challenge
   over an infinite field.
-
-## References
-
-Ported from `Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Pairs/Family.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. Every source declaration is ported under its
-source name. The coordinate type `Fin n` is generalized to any finite type `ι`, so
-`correlatedPairFamily_card_le` bounds the family by `(Fintype.card ι).choose k` instead of
-`n.choose k`. Membership in the family uses Mathlib's `Lagrange.eq_interpolate_of_eval_eq`. The
-specialization statements are derived from the module-level statements of
-`ArkLib.ToMathlib.LinearAlgebra.LineInjectivity`, applied in the `E`-module `E[X]` with
-`C z * R = z • R`, instead of the source's coefficientwise argument.
-`finite_correlatedPair_collision_challenges` takes the source's hypotheses; it needs no
-distinctness hypothesis because a `Finset` of pairs has distinct members and `Polynomial.map φ`
-is injective.
 -/
 
 @[expose] public section
