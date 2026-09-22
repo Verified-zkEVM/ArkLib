@@ -2211,6 +2211,36 @@ hypothesis. `bidegreeHypersurface_sum_minimalPrimes_affineDegree_le` is now
 `sum_affineDegree_minimalPrimes_comap_bidegreeMap_span_singleton_le`, without the nonvanishing and
 properness hypotheses. The acceptance test derives the source's `_one` and `_two` forms.
 
+## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineHilbertCappedBidegree.lean`
+
+Ported from the Hilbert-function and affine-degree part of
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegree.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `derivativeBidegreeHypersurface_hilbertFunction_le`
+and `_le_rectangleDifference` are now
+`affineHilbertFunction_comap_cappedBidegree_span_singleton_add_le`, for any finite `σ`.
+`derivativeBidegreeHypersurface_affineDegree_le_two_of_lt` is now
+`affineDegree_comap_cappedBidegree_span_singleton_le`, without `r ≤ j` or properness and with
+`c ≤ b` in place of `c < b`.
+`derivativeBidegreeHypersurface_sum_minimalPrimes_affineDegree_le_two_of_lt` is now
+`sum_affineDegree_minimalPrimes_comap_cappedBidegree_span_singleton_le`.
+`cappedRectangleDifferenceTwo` and its coefficient, evaluation and degree lemmas,
+`mixedDerivativeImageDegree`, `fixedFiberDerivativeImageDegree` and their lemmas are not ported as
+declarations; the bound is written out in the statements.
+
+## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineHilbertComap.lean`
+
+General statements used by
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegree.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `quotientDerivativeBidegreeLE_finrank_add_le` and
+`_finrank_le` are now `Submodule.finrank_map_mkₐ_span_singleton_add_le`;
+`derivativeBidegreeHypersurfaceIdeal_eq_sup` is now `Ideal.comap_span_singleton_of_surjective`;
+`derivativeBidegreeIdeal_hilbertPolynomial_natDegree` is now
+`MvPolynomial.natDegree_affineHilbertPolynomial_ker_of_surjective`; the hypersurface degree lemma is
+now `natDegree_affineHilbertPolynomial_comap_span_singleton_add_one_of_surjective`; and
+`derivativeBidegreeHypersurface_sum_minimalPrimes_affineDegree_le` is now
+`sum_affineDegree_minimalPrimes_comap_span_singleton_le_of_surjective`, without the nonvanishing,
+properness and degree hypotheses. `quotientDerivativeBidegreeLE` is not ported.
+
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/AffineHilbertComponents.lean`
 
 Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
@@ -2378,6 +2408,37 @@ and `bidegreeExponentSet_finite` is the instance `bidegreeExponents.finite`.
 parameter `c`, and `sum_minimalPrimes_affineDegree_le_of_equidimensional` is now
 `sum_affineDegree_minimalPrimes_le` in `AffineHilbertPurity.lean`, with the filtered form
 `sum_affineDegree_minimalPrimes_filter_le`.
+
+## `ArkLib/ToMathlib/RingTheory/MvPolynomial/CappedBidegree.lean`
+
+Ported from the index and submodule part of
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegree.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, for any `σ` and cap coordinate `some i` in place of
+`Fin 2` and `some 1`. `DerivativeBidegreeIndex` is the subtype of `cappedBidegreeExponents`, and
+`derivativeWeight` is the condition `m (some i) ≤ c`. `restrictDerivativeBidegree` is now
+`restrictCappedBidegree`, `finrank_restrictDerivativeBidegree` is now
+`finrank_restrictCappedBidegree`, and `derivativeBidegreeMap_surjective` is now
+`monomialMap_cappedBidegreeExponents_surjective`. `twoJetMonomialCount`,
+`natCard_cappedTwoJetIndex` and `cast_twoJetMonomialCount` are now
+`Finsupp.two_mul_ncard_setOf_degree_le_and_apply_one_le`; `CappedTwoJetIndex` and
+`cappedTwoJetEquiv` are a private equivalence. `derivativeBidegreeIdeal` is
+`RingHom.ker (monomialMap k (cappedBidegreeExponents σ i a b c))`. `twoJetMonomialCount_mono`,
+`cappedTriangleDegree_le` and `b_le_cappedTriangleDegree` are not ported.
+
+## `ArkLib/ToMathlib/RingTheory/MvPolynomial/MonomialMap.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/BidegreePoints.lean` and the lift of
+`ArkLib/ToMathlib/AlgebraicGeometry/Hilbert/DerivativeBidegree.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, for any exponent set `S`. `bidegreePoint` is now
+`monomialPoint`, `bidegreePoint_injective` is now `monomialPoint_injective`,
+`aeval_bidegreePoint` is now `aeval_monomialPoint`, `aeval_bidegreeLift_iff` follows from
+`aeval_monomialPoint` and `monomialMap_monomialLift`, and
+`mem_zeroLocus_bidegreeHypersurfaceIdeal_iff` and its `_source` form are now
+`monomialPoint_mem_zeroLocus_comap_iff` for any ideal.
+`exists_bidegreePoint_of_mem_zeroLocus_bidegreeIdeal` is now
+`exists_monomialPoint_eq_of_mem_zeroLocus_ker`. `derivativeBidegreeLift` and
+`bidegreeLift_linear_cut` are now `monomialLift`, `monomialMap_monomialLift` and
+`totalDegree_monomialLift_le_one`.
 
 ## `ArkLib/ToMathlib/RingTheory/MvPolynomial/StandardMonomials.lean`
 
