@@ -29,23 +29,6 @@ degree, so the affine degrees of the final members sum to at most the initial po
   increase.
 * `MvPolynomial.sum_affineDegree_iteratedRetainedCutFamily_le`: the total affine degree of the
   final family is at most the initial potential.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Iteration.lean`, namespace `AffineHilbert`.
-
-* `sum_iteratedRetainedCutFamily_affineDegree_mul_pow_le` is
-  `sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le`. The source hypotheses
-  `∀ P ∈ Ps, s ∉ P` and `1 ≤ b` are dropped; primality of `Ps` and the degree bound remain.
-* `sum_retainedCutFamily_affineDegree_mul_pow_le` is the case `cuts = [f]`.
-* `iteratedRetainedCutFamily_singleton_spec` was the conjunction, for `Ps = {P}`, of the potential
-  bound, `Ideal.isPrime_of_mem_iteratedRetainedCutFamily`,
-  `Ideal.notMem_of_mem_iteratedRetainedCutFamily`,
-  `Ideal.exists_le_of_mem_iteratedRetainedCutFamily` and
-  `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`; it is derived in the
-  acceptance tests rather than restated.
-* `sum_affineDegree_iteratedRetainedCutFamily_le` is new.
 -/
 
 @[expose] public section

@@ -15,8 +15,8 @@ These examples use the public API through an ordinary import. In `ℚ[x, y]` the
 of `{⊥}` cut by `x` and then by `x²` to be `{(x)}`, and read off from the potential bound that
 `affineDegree (x) ≤ 2` and, with the total-degree corollary for the cuts `[x, x]`, that
 `affineDegree (x) ≤ 1`. The boundary example shows that the total-degree corollary needs `1 ≤ b`.
-The last examples derive the source's one-cut potential bound and its singleton specification
-`iteratedRetainedCutFamily_singleton_spec` from the general statements.
+The last examples derive the one-cut potential bound and the properties of the iterated family of
+a single prime from the general statements.
 -/
 
 open MvPolynomial
@@ -101,8 +101,8 @@ example (s : MvPolynomial (Fin 1) ℚ) :
     Fintype.card_fin]
   norm_num
 
-/-- The source's `sum_retainedCutFamily_affineDegree_mul_pow_le`: the case `cuts = [f]`. Its
-hypotheses `s ∉ P` and `1 ≤ b` are not needed. -/
+/-- The one-cut potential bound, the case `cuts = [f]`. The hypotheses `s ∉ P` and `1 ≤ b` are
+not used. -/
 example {F σ : Type*} [Field F] [Finite σ] (Ps : Finset (Ideal (MvPolynomial σ F)))
     (hprime : ∀ P ∈ Ps, P.IsPrime) {s f : MvPolynomial σ F} (_hopen : ∀ P ∈ Ps, s ∉ P) {b : ℕ}
     (_hb : 1 ≤ b) (hfdeg : f.totalDegree ≤ b) :
@@ -112,8 +112,9 @@ example {F σ : Type*} [Field F] [Finite σ] (Ps : Finset (Ideal (MvPolynomial �
   sum_affineDegree_mul_pow_iteratedRetainedCutFamily_le hprime s (cuts := [f])
     (by simpa using hfdeg)
 
-/-- The source's `iteratedRetainedCutFamily_singleton_spec`, derived from the general statements.
-Its hypothesis `1 ≤ b` is not needed. -/
+/-- For a prime `P` with `s ∉ P`, every member of the iterated family of `{P}` is a prime above
+`P` containing the cuts and avoiding `s`, the potential does not increase, and the family covers
+the points of `P` off `s = 0` on which the cuts vanish. The hypothesis `1 ≤ b` is not used. -/
 example {F σ E : Type*} [Field F] [Finite σ] [Field E] [Algebra F E]
     {P : Ideal (MvPolynomial σ F)} (hP : P.IsPrime) {s : MvPolynomial σ F} (hs : s ∉ P) {b : ℕ}
     (_hb : 1 ≤ b) (cuts : List (MvPolynomial σ F)) (hdeg : ∀ f ∈ cuts, f.totalDegree ≤ b) :

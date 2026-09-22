@@ -14,7 +14,7 @@ These examples use the public API through an ordinary import. In `ℚ[x, y]` the
 `{⊥}` by `x`, retained by `s`, to be `{(x)}` when `x ∤ s`, and use the point cover to place the
 point `(0, 5)` on `(x)`. The boundary example shows that the point cover needs `s(x) ≠ 0`: with
 `s = x` the family is empty although the origin satisfies every other hypothesis. The last example
-derives the source's one-cut point cover.
+derives the point cover for a single cut.
 -/
 
 open MvPolynomial
@@ -63,8 +63,8 @@ example : ¬ ∃ Q ∈ Ideal.iteratedRetainedCutFamily {(⊥ : Ideal R₂)} (X 0
     Ideal.minimalPrimes_eq_subsingleton_self, Set.mem_singleton_iff] at hQ
   exact hQ.2 (hQ.1 ▸ Ideal.mem_span_singleton_self _)
 
-/-- The source's `exists_mem_retainedCutFamily_of_mem_zeroLocus`: the one-cut family is the
-iterated family for the list `[f]`. -/
+/-- The point cover for a single cut `f`: the one-cut family is the iterated family for the list
+`[f]`. -/
 example {F σ E : Type*} [Field F] [Finite σ] [Field E] [Algebra F E]
     (Ps : Finset (Ideal (MvPolynomial σ F))) {s f : MvPolynomial σ F} (x : σ → E)
     (hx : ∃ P ∈ Ps, x ∈ zeroLocus E P) (hxf : aeval x f = 0) (hxs : aeval x s ≠ 0) :

@@ -18,21 +18,13 @@ zero of some member `Q ⊇ P` of `Ideal.iteratedRetainedCutFamily Ps s cuts`.
 
 The proof applies the ideal-theoretic covering property
 `Ideal.exists_mem_iteratedRetainedCutFamily_le` to the kernel of evaluation at the point, which is
-prime because `K` is a field. No algebraic closedness is used.
+prime because `K` is a field. No algebraic closedness is used. For a single cut `f`, take
+`cuts = [f]`: `Ideal.iteratedRetainedCutFamily Ps s [f]` is `Ideal.retainedCutFamily Ps s f` by
+definition.
 
 ## Main statements
 
 * `MvPolynomial.exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus`: the point cover.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
-`ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Iteration.lean`, namespace `AffineHilbert`.
-`exists_mem_iteratedRetainedCutFamily_of_mem_zeroLocus` keeps its name. The source assumed
-`∃ P ∈ Ps, x ∈ zeroLocus E P`; here `P` is an explicit member, and the conclusion adds `P ≤ Q`.
-The source's one-cut form `exists_mem_retainedCutFamily_of_mem_zeroLocus` is the case
-`cuts = [f]`, since `Ideal.iteratedRetainedCutFamily Ps s [f]` is by definition
-`Ideal.retainedCutFamily Ps s f`.
 -/
 
 @[expose] public section
