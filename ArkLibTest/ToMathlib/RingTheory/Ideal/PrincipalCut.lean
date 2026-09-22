@@ -121,4 +121,38 @@ example {R : Type*} [CommRing R] [IsNoetherianRing R] {P : Ideal R} (hP : P.IsPr
   obtain ⟨J, hJ, hlt, hh⟩ := exists_principalCut_component_relative_codimension_one hf hcut
   exact ⟨J, hJ, hJ.isPrime, hlt, hh⟩
 
+/-! ### Retained cut families -/
+
+/-- In `ℤ`, cutting the prime `(2)` by `4 ∈ (2)` and keeping the primes that avoid `1` leaves the
+single component `(2)`. -/
+example : ((span {(2 : ℤ)}) ⊔ span {4}).retainedMinimalPrimes 1 = {span {(2 : ℤ)}} := by
+  have : (span {(2 : ℤ)}).IsPrime :=
+    (span_singleton_prime (by norm_num)).mpr (Int.prime_iff_natAbs_prime.mpr Nat.prime_two)
+  refine retainedMinimalPrimes_sup_span_of_mem (mem_span_singleton.mpr (by norm_num)) ?_
+  rw [mem_span_singleton]
+  norm_num
+
+/-- The hypothesis `s ∉ P` of `retainedMinimalPrimes_sup_span_of_mem` is needed: if `s ∈ P`,
+every retained component would contain `P` and avoid `s`, so the family is empty. -/
+example {R : Type*} [CommRing R] [IsNoetherianRing R] {P : Ideal R} {s f : R} (hs : s ∈ P) :
+    (P ⊔ span {f}).retainedMinimalPrimes s = ∅ := by
+  refine Finset.eq_empty_of_forall_notMem fun Q hQ ↦ ?_
+  obtain ⟨-, hPQ, -, hsQ⟩ := of_mem_retainedMinimalPrimes_sup_span hQ
+  exact hsQ (hPQ hs)
+
+/-- The source's `mem_retainedCutChildren`, for its family `retainedCutChildren P s f`, which is
+`{P}` when `f ∈ P` and the retained minimal primes of `P ⊔ span {f}` otherwise. By
+`retainedMinimalPrimes_sup_span_of_mem` the two cases agree, and the conclusion is
+`of_mem_retainedMinimalPrimes_sup_span`. -/
+example {R : Type*} [CommRing R] [IsNoetherianRing R]
+    {P Q : Ideal R} {s f : R} [Decidable (f ∈ P)] (hP : P.IsPrime) (hs : s ∉ P)
+    (hQ : Q ∈ (if f ∈ P then {P} else (P ⊔ span {f}).retainedMinimalPrimes s)) :
+    Q.IsPrime ∧ P ≤ Q ∧ f ∈ Q ∧ s ∉ Q := by
+  have hfam : (if f ∈ P then {P} else (P ⊔ span {f}).retainedMinimalPrimes s) =
+      (P ⊔ span {f}).retainedMinimalPrimes s := by
+    split_ifs with hf
+    · exact (retainedMinimalPrimes_sup_span_of_mem hf hs).symm
+    · rfl
+  exact of_mem_retainedMinimalPrimes_sup_span (hfam ▸ hQ)
+
 end Ideal

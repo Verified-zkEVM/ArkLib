@@ -39,6 +39,9 @@ principal ideal theorem; the order and dimension-drop statements do not need it.
   the original prime when the cutting element is not in it.
 * `Ideal.retained_cut_krullDim_succ_le`: the corresponding dimension drop for a retained minimal
   prime of the cut.
+* `Ideal.of_mem_retainedMinimalPrimes_sup_span`, `Ideal.retainedMinimalPrimes_sup_span_of_mem`:
+  the retained minimal primes of a cut `I ⊔ span {f}`, and the trivial cut of a prime by one of
+  its elements.
 * `Ideal.map_quotient_ne_bot_of_lt`: an ideal strictly above `P` has nonzero image in `R ⧸ P`.
 * `Ideal.map_quotient_height_eq_one_of_mem_minimalPrimes_sup_span`: a minimal prime of the cut
   has height one in `R ⧸ P`, and `Ideal.exists_principalCut_component_relative_codimension_one`
@@ -71,6 +74,14 @@ primality of `P` as an instance argument as elsewhere in this file; the existenc
 the conjunct `J.IsPrime`, which follows from minimal-prime membership. The source's
 `principalCut_minimalPrime_relative_codimension_one` was the conjunction of `Ideal.IsPrime`,
 `lt_of_mem_minimalPrimes_sup_span` and the height statement, and is not repeated.
+
+From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Finite.lean` at the same revision:
+`AffineHilbert.mem_retainedCutChildren` is `of_mem_retainedMinimalPrimes_sup_span`. The source
+stated it for `retainedCutChildren P s f`, which is `{P}` when `f ∈ P` and the retained minimal
+primes of `P ⊔ span {f}` otherwise, over `MvPolynomial σ F` with `P` prime and `s ∉ P`. Here it is
+stated for the retained minimal primes of the cut of any ideal of a Noetherian ring, and
+`retainedMinimalPrimes_sup_span_of_mem` shows that the two families agree when `P` is prime and
+`s ∉ P`, so `retainedCutChildren` is not introduced.
 -/
 
 @[expose] public section
@@ -128,6 +139,29 @@ theorem retained_cut_krullDim_succ_le {P J : Ideal R} [P.IsPrime] {f s : R}
     ringKrullDim (R ⧸ J) + 1 ≤ ringKrullDim (R ⧸ P) := by
   exact ringKrullDim_quotient_succ_le_of_lt
     (lt_of_mem_minimalPrimes_sup_span hf (mem_retainedMinimalPrimes.mp hJ).1)
+
+/-- Every retained minimal prime `Q` of the cut `I ⊔ span {f}` is a prime containing `I` and `f`
+and not containing `s`. No hypothesis on `I`, `f` or `s` is needed: membership in the retained
+family supplies all four facts. -/
+theorem of_mem_retainedMinimalPrimes_sup_span {I Q : Ideal R} {s f : R}
+    (hQ : Q ∈ (I ⊔ span {f}).retainedMinimalPrimes s) :
+    Q.IsPrime ∧ I ≤ Q ∧ f ∈ Q ∧ s ∉ Q := by
+  obtain ⟨hmin, hs⟩ := mem_retainedMinimalPrimes.mp hQ
+  exact ⟨hmin.isPrime, le_sup_left.trans hmin.le,
+    hmin.le (mem_sup_right (mem_span_singleton_self f)), hs⟩
+
+/-- Cutting a prime `P` by an element `f ∈ P` changes nothing: if `s ∉ P`, the only retained
+minimal prime of `P ⊔ span {f}` is `P`. Hence, for a prime `P` with `s ∉ P`, the retained cut
+family needs no case split on whether `f ∈ P`. The hypothesis `s ∉ P` is needed: if `s ∈ P` the
+family is empty. -/
+theorem retainedMinimalPrimes_sup_span_of_mem {P : Ideal R} [P.IsPrime] {s f : R} (hf : f ∈ P)
+    (hs : s ∉ P) : (P ⊔ span {f}).retainedMinimalPrimes s = {P} := by
+  rw [sup_eq_left.mpr ((span_singleton_le_iff_mem P).mpr hf)]
+  ext Q
+  simp only [mem_retainedMinimalPrimes, minimalPrimes_eq_subsingleton_self, Set.mem_singleton_iff,
+    Finset.mem_singleton, and_iff_left_iff_imp]
+  rintro rfl
+  exact hs
 
 /-- Let `P` be prime and `f ∉ P`. Every minimal prime `J` over `P ⊔ span {f}` has height exactly
 one in the domain `R ⧸ P`.
