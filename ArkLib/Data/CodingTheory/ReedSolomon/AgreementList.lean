@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 
 /-!
 # Finiteness and sample incidence for Reed–Solomon agreement lists
@@ -20,6 +21,16 @@ cannot share `k` evaluation points, so the generic theorem gives
 
 No finiteness assumption on the field is used, and no Lagrange enumeration is needed: finiteness
 is a consequence of the uniform bound on every finite subfamily.
+
+The last section defines `agreeingPolynomials`, the same list as a set of degree-bounded message
+polynomials (`ListDecoding.MessagePolynomial`) over any semiring and any finite index type.
+
+## References
+
+`agreeingPolynomials` is ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean` at
+ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, unchanged; `mem_agreeingPolynomials_iff`
+is new. The source's `agreeingPolynomials_antitone`, `exists_finset_polynomial_list` and
+`agreeingPolynomials_eq_empty_of_card_lt` are deferred until an exact-list consumer needs them.
 -/
 
 @[expose] public section
@@ -97,5 +108,25 @@ theorem closePolynomialSet_finite
   (closePolynomialSet_finite_and_ncard_mul_choose_le domain received hAk).1
 
 end
+
+/-! ## Degree-bounded message lists over general index types -/
+
+open ListDecoding
+
+/-- The degree-`< messageDim` message polynomials whose evaluations on `domain` agree with
+`received` in at least `minAgreement` coordinates. This is the set of messages accepted by
+`ListDecoding.Accepts`; an exact decoder enumerates it. -/
+def agreeingPolynomials {F index : Type*} [Semiring F] [DecidableEq F] [Fintype index]
+    (domain : index ↪ F) (messageDim minAgreement : ℕ) (received : index → F) :
+    Set (MessagePolynomial F messageDim) :=
+  {p | minAgreement ≤ Code.agree (ReedSolomon.evalOnPoints domain p) received}
+
+/-- Membership in `agreeingPolynomials` is the agreement count of `polynomialAgreementSet`. -/
+theorem mem_agreeingPolynomials_iff {F index : Type*} [Semiring F] [DecidableEq F]
+    [Fintype index] {domain : index ↪ F} {messageDim minAgreement : ℕ} {received : index → F}
+    {p : MessagePolynomial F messageDim} :
+    p ∈ agreeingPolynomials domain messageDim minAgreement received ↔
+      minAgreement ≤ (polynomialAgreementSet domain received p).card :=
+  Iff.rfl
 
 end ReedSolomon

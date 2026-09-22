@@ -93,6 +93,7 @@ public import ArkLib.Data.CodingTheory.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
 public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
 public import ArkLib.Data.CodingTheory.HammingBallVolume
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Certificates
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
@@ -114,6 +115,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rema
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SolutionEmbedding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SpecializationDegree
@@ -134,6 +136,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RankRounding
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Block
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Capacity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.DimensionInputs
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Endpoints
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.WeightedSupport.Rounding
