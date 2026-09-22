@@ -147,16 +147,26 @@ example {F E : Type*} [Field F] [Field E] [Algebra F E] {d : ℕ}
   Finset.card_le_card_of_injOn _ hmaps
     (BoundedSolution.map_injective (algebraMap F E).injective).injOn
 
-/-- Specializing `C X * Y₀` at `0` gives zero over `ZMod 2`, and coefficient mapping
-preserves that value in the degree-two extension. -/
+/-- Specializing `C X * Y₀` at the nonzero challenge `1` gives `Y₀` over both fields. -/
 example :
     let φ := algebraMap (ZMod 2) E₄
     let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
       MvPolynomial.C X * MvPolynomial.X (some 0)
-    challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 0) = 0 := by
+    challengeSpecialization Q 1 = MvPolynomial.X (some 0) ∧
+      challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1) =
+        MvPolynomial.X (some 0) ∧
+      MvPolynomial.map φ (challengeSpecialization Q 1) =
+        challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1) ∧
+      challengeSpecialization Q 1 ≠ 0 ∧
+      challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1) ≠ 0 := by
   intro φ Q
-  rw [challengeSpecialization_map_coefficients]
-  simp [Q, challengeSpecialization]
+  refine ⟨?_, ?_, (challengeSpecialization_map_coefficients φ Q 1).symm, ?_, ?_⟩
+  · simp [Q, challengeSpecialization]
+  · rw [challengeSpecialization_map_coefficients]
+    simp [Q, challengeSpecialization]
+  · simp [Q, challengeSpecialization]
+  · rw [challengeSpecialization_map_coefficients]
+    simp [Q, challengeSpecialization]
 
 /-- The height-one bound for a constant-in-jets challenge equation is preserved by an extension
 of its coefficient field. -/
@@ -175,28 +185,37 @@ example :
   · rw [MvPolynomial.coeff_C_of_ne_zero hm]
     simp
 
-/-- Mapping the specialized zero equation commutes with differential specialization at the zero
-polynomial. -/
+/-- Mapping the equation specialized at `1` commutes with differential specialization at the
+nonzero polynomial `1`, and both sides evaluate to `1`. -/
 example :
     let φ := algebraMap (ZMod 2) E₄
     let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
       MvPolynomial.C X * MvPolynomial.X (some 0)
-    (differentialSpecialization (challengeSpecialization Q 0) 0).map φ = 0 ∧
+    (differentialSpecialization (challengeSpecialization Q 1) 1).map φ = 1 ∧
       differentialSpecialization
-        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 0)) 0 = 0 ∧
-      (differentialSpecialization (challengeSpecialization Q 0) 0).map φ =
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1)) 1 = 1 ∧
+      (differentialSpecialization (challengeSpecialization Q 1) 1).map φ =
         differentialSpecialization
-          (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 0)) 0 := by
+          (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1)) 1 ∧
+      differentialSpecialization (challengeSpecialization Q 1) 1 ≠ 0 ∧
+      differentialSpecialization
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1)) 1 ≠
+          0 := by
   intro φ Q
-  have hbase : challengeSpecialization Q (0 : ZMod 2) = 0 := by
+  have hbase : challengeSpecialization Q (1 : ZMod 2) = MvPolynomial.X (some 0) := by
     simp [Q, challengeSpecialization]
   have hext : challengeSpecialization
-      (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ (0 : ZMod 2)) = 0 := by
-    rw [challengeSpecialization_map_coefficients, hbase, map_zero]
-  refine ⟨?_, ?_, ?_⟩
+      (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ (1 : ZMod 2)) =
+        MvPolynomial.X (some 0) := by
+    rw [challengeSpecialization_map_coefficients, hbase]
+    simp
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · rw [hbase]
-    change (Polynomial.mapRingHom φ) 0 = 0
-    exact map_zero (Polynomial.mapRingHom φ)
+    simp [differentialSpecialization, differentialSpecializationHom]
   · rw [hext]
-    rfl
-  · simpa using map_symbolicDifferentialSpecialization φ Q (0 : ZMod 2) 0
+    simp [differentialSpecialization, differentialSpecializationHom]
+  · simpa using map_symbolicDifferentialSpecialization φ Q (1 : ZMod 2) 1
+  · rw [hbase]
+    simp [differentialSpecialization, differentialSpecializationHom]
+  · rw [hext]
+    simp [differentialSpecialization, differentialSpecializationHom]
