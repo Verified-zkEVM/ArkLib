@@ -49,48 +49,8 @@ turns this into a bound with `Nat.card E` in place of `q`, for `F` any commutati
 
 ## References
 
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], total-jet-degree witness counting, Appendix A.2 (Theorem A.2), and
-  the larger-field clause of Theorem 1.1.
-
-This file ports, at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, the files
-`RootFinding/Counting/TotalJetDegreeRootCount.lean`, `RootFinding/FiniteField/
-TotalDegreeExtension.lean` and `RootFinding/FiniteField/ExtensionRootCount.lean` under
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/`. None of them mentions a code, so the
-results are stated in `PolynomialDifferential`. Throughout, `[Field F]` becomes
-`[CommRing F] [IsDomain F]`, `IsBelowCharacteristic D Q` becomes the cast hypotheses
-`∀ j, JetDegreeCastsNeZero Q j` together with the binomial hypothesis above, and the degree bound
-`Δ ≥ jetTotalDegree Q` is replaced by `jetTotalDegree Q` itself. The tests derive the
-source-shaped statements from the characteristic guard.
-
-* `jetTotalDegree`, `jetTotalDegree_le_iff`, `jetDegree_le_total` and `separant_total_le` were
-  already ported to `ArkLib.Data.Polynomial.Differential.JetDegree`; `totalDegree_jetFiberHom_le`
-  is in `ArkLib.Data.Polynomial.Differential.ChainWitness`.
-* `card_jet_zeros_le` becomes `MvPolynomial.card_filter_eval_eq_zero_le`, for any finite grid over a
-  domain.
-* `card_chainWitness_fiber_le` becomes `card_filter_chainWitness_le`, for a finite set of
-  polynomials of degree at most `D`.
-* `boundedSolution_sub_mul_le_totalJetDegree` becomes `card_mul_sub_le_jetTotalDegree_mul` and
-  `BoundedSolution.natCard_mul_sub_le_jetTotalDegree_mul`, with the product written as
-  `#roots * (q - H) ≤ q * (jetTotalDegree Q * q ^ d)`, matching
-  `BoundedSolution.card_mul_sub_le_of_isHighestActiveJet`.
-* `natCard_boundedSolution_le_two_totalJetDegree` becomes
-  `BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul`.
-* `jetTotalDegree_map_eq` is in `ArkLib.Data.Polynomial.Differential.BaseChange`.
-  `natCard_boundedSolution_le_extension_two_totalJetDegree` becomes
-  `BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_extension`, a corollary of
-  `BoundedSolution.natCard_le_two_mul_jetTotalDegree_mul_of_injective`, which allows any injective
-  ring homomorphism from a commutative ring into a finite domain.
-  `natCard_boundedSolution_le_extension_totalJetDegree_of_interpolation_degree` (the budget
-  `H = L + d - (D + 1)` from `differentialWeightedDegree D Q < L`) is derived in the tests.
-* The theorems of `ExtensionRootCount.lean` are consequences of the count above, which is sharper:
-  their prefactor `(d + 1) * t ^ 2` is at least `jetTotalDegree Q` whenever `Q` has a solution and
-  every jet degree is at most `t`, by `jetTotalDegree_le_mul`. They were proved through the
-  recursive composition `card_mul_le_jetTotalDegree_mul` with the regular count as the regular-part
-  bound. `boundedSolution_sub_mul_le_of_jetDegree_le`, `boundedSolution_extension_sub_mul_le`,
-  `natCard_boundedSolution_le_extension_pow` and
-  `natCard_boundedSolution_le_extension_pow_of_weightedDegree` are derived in the tests, the first
-  through that recursive composition and the others from this file.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.3
 -/
 
 @[expose] public section

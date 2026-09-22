@@ -18,15 +18,10 @@ import Mathlib.Algebra.Field.ZMod
 * Over `ZMod 2` with `D = 2`, `y' = 0` satisfies every hypothesis of
   `card_mul_sub_le_jetTotalDegree_mul` other than the binomial one, and `1`, `X ^ 2`,
   `1 + X ^ 2` violate the conclusion.
-* The source statements at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d follow from
-  the general ones, with `IsBelowCharacteristic D Q` written out as `D < ringChar F` and
-  `jetDegree Q j < ringChar F`: `boundedSolution_sub_mul_le_totalJetDegree`,
-  `natCard_boundedSolution_le_two_totalJetDegree`,
-  `natCard_boundedSolution_le_extension_two_totalJetDegree`,
-  `natCard_boundedSolution_le_extension_totalJetDegree_of_interpolation_degree`, and from
-  `RootFinding/FiniteField/ExtensionRootCount.lean` the statements
-  `boundedSolution_extension_sub_mul_le`, `natCard_boundedSolution_le_extension_pow` and
-  `natCard_boundedSolution_le_extension_pow_of_weightedDegree`.
+* Over a finite field with the characteristic guard `D < ringChar F` and
+  `jetDegree Q j < ringChar F`, the counts follow from the general ones: with a bound `Δ` on the
+  total jet degree, over an extension `FiniteField.Extension F (ringChar F) e`, with the budget
+  from an interpolation degree, and with a bound `t` on every jet degree.
 -/
 
 namespace PolynomialDifferential
@@ -140,11 +135,11 @@ example : constEquation (ZMod 2) ≠ 0 ∧ (∀ j, JetDegreeCastsNeZero (constEq
       rw [pow_one]; omega
     omega
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with the characteristic guard -/
 
 variable {F : Type*} {d D : ℕ}
 
-/-- The source guard `IsBelowCharacteristic D Q` gives the cast and binomial hypotheses. -/
+/-- The characteristic guard gives the cast and binomial hypotheses. -/
 private theorem hypotheses_of_ringChar [Field F] {Q : DifferentialPolynomial F d}
     (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F) :
     (∀ j, JetDegreeCastsNeZero Q j) ∧
@@ -152,7 +147,7 @@ private theorem hypotheses_of_ringChar [Field F] {Q : DifferentialPolynomial F d
   ⟨fun j ↦ jetDegreeCastsNeZero_of_ringChar (Or.inr (hchar.2 j)),
     fun _ _ ↦ natCast_choose_ne_zero_of_ringChar (Or.inr hchar.1) _⟩
 
-/-- Source shape: `boundedSolution_sub_mul_le_totalJetDegree`. -/
+/-- The count over a finite field with a bound `Δ` on the total jet degree. -/
 example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (H Δ : ℕ) (hQ : Q ≠ 0)
     (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
     (hWeight : differentialWeightedDegree D Q - (D - d) ≤ H) (hDegree : jetTotalDegree Q ≤ Δ) :
@@ -166,7 +161,7 @@ example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (H Δ : ℕ) (hQ :
       Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hDegree)
     _ = Δ * Nat.card F ^ (d + 1) := by ring
 
-/-- Source shape: `natCard_boundedSolution_le_two_totalJetDegree`. -/
+/-- The count when `2 * H ≤ q`, with a bound `Δ` on the total jet degree. -/
 example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (H Δ : ℕ) (hQ : Q ≠ 0)
     (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
     (hWeight : differentialWeightedDegree D Q - (D - d) ≤ H) (hDegree : jetTotalDegree Q ≤ Δ)
@@ -176,7 +171,7 @@ example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (H Δ : ℕ) (hQ :
     (hypotheses_of_ringChar hchar).2 hWeight hlarge).trans
     (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hDegree))
 
-/-- Source shape: `natCard_boundedSolution_le_extension_two_totalJetDegree`. -/
+/-- The count with witnesses in `FiniteField.Extension F (ringChar F) e`. -/
 theorem natCard_le_extension_two_totalJetDegree [Field F] [Finite F]
     (Q : DifferentialPolynomial F d) (e H Δ : ℕ) (he : 0 < e) (hQ : Q ≠ 0)
     (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
@@ -187,9 +182,9 @@ theorem natCard_le_extension_two_totalJetDegree [Field F] [Finite F]
     (hypotheses_of_ringChar hchar).1 (hypotheses_of_ringChar hchar).2 hWeight he hlarge).trans
     (Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ hDegree))
 
-/-- Source shape: `natCard_boundedSolution_le_extension_totalJetDegree_of_interpolation_degree`.
-An interpolation step produces `Q` with `differentialWeightedDegree D Q < L`; with `d ≤ D` this
-gives the budget `H = L + d - (D + 1)`. -/
+/-- The extension count with the budget from an interpolation degree. An interpolation step produces
+`Q` with `differentialWeightedDegree D Q < L`; with `d ≤ D` this gives the budget
+`H = L + d - (D + 1)`. -/
 example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (e L Δ : ℕ) (he : 0 < e)
     (hdD : d ≤ D) (hQ : Q ≠ 0) (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
     (hWeight : differentialWeightedDegree D Q < L) (hDegree : jetTotalDegree Q ≤ Δ)
@@ -197,8 +192,8 @@ example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (e L Δ : ℕ) (he
     Nat.card (BoundedSolution Q D) ≤ 2 * Δ * Nat.card F ^ (e * d) :=
   natCard_le_extension_two_totalJetDegree Q e _ Δ he hQ hchar (by omega) hDegree hlarge
 
-/-- Source shape: `boundedSolution_extension_sub_mul_le`, from `ExtensionRootCount.lean`. The
-count is the total-jet-degree count over `FiniteField.Extension F (ringChar F) e`, and
+/-- The extension count with a bound `t` on every jet degree. The count is the total-jet-degree
+count over `FiniteField.Extension F (ringChar F) e`, and
 `jetTotalDegree Q ≤ (d + 1) * t ≤ (d + 1) * t ^ 2`. -/
 theorem extension_sub_mul_le [Field F] [Finite F] (Q : DifferentialPolynomial F d) (e H t : ℕ)
     (he : 0 < e) (hQ : Q ≠ 0) (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
@@ -233,7 +228,7 @@ theorem extension_sub_mul_le [Field F] [Finite F] (Q : DifferentialPolynomial F 
     _ ≤ Nat.card F ^ e * ((d + 1) * t ^ 2 * Nat.card F ^ (e * d)) :=
       Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ htotal)
 
-/-- Source shape: `natCard_boundedSolution_le_extension_pow`, from `ExtensionRootCount.lean`. -/
+/-- The extension count with a bound `t` on every jet degree, when `2 * H ≤ q ^ e`. -/
 theorem natCard_le_extension_pow [Field F] [Finite F] (Q : DifferentialPolynomial F d)
     (e H t : ℕ) (he : 0 < e) (hQ : Q ≠ 0)
     (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
@@ -246,8 +241,7 @@ theorem natCard_le_extension_pow [Field F] [Finite F] (Q : DifferentialPolynomia
       rw [sq]; exact Nat.le_mul_self t))) hlarge
   simpa [mul_assoc] using h
 
-/-- Source shape: `natCard_boundedSolution_le_extension_pow_of_weightedDegree`, from
-`ExtensionRootCount.lean`: the jet degrees are below `ringChar F ≤ q`. -/
+/-- The extension count with the jet degrees bounded by `ringChar F ≤ q`. -/
 example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (e H : ℕ) (he : 0 < e)
     (hQ : Q ≠ 0) (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
     (hWeight : differentialWeightedDegree D Q ≤ H) (hlarge : 2 * H ≤ Nat.card F ^ e) :

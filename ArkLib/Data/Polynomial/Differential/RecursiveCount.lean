@@ -10,11 +10,10 @@ public import ArkLib.Data.Polynomial.Differential.SingularRecursion
 /-!
 # Counting solutions along the singular recursion
 
-Kopparty's `SOLVE` procedure splits the solutions of `Q = 0` at the highest active jet `Y_s` of
+The `SOLVE` procedure of [Kop15] splits the solutions of `Q = 0` at the highest active jet `Y_s` of
 `Q`: a solution `P` is regular when the separant specialization `(∂Q/∂Y_s)(X, P, D¹P, …)` is
 nonzero, and singular otherwise, in which case it solves the separant equation and the procedure
-recurses on `∂Q/∂Y_s`. This file turns a bound on every regular part into a bound on all
-solutions.
+recurses on `∂Q/∂Y_s`. This file turns a bound on every regular part into a bound on all solutions.
 
 Suppose that every finite set of regular solutions met along the chain of singular steps below
 `Q` satisfies `left * #regular ≤ cost`. Then every finite set of solutions of `Q` satisfies
@@ -25,6 +24,11 @@ keep every equation on the chain nonzero (`singularStep_preserves`).
 
 The file also records that the degree budgets used by the regular counts do not increase along
 the chain, and bounds `jetTotalDegree` by the sum of the individual jet degrees.
+
+The regular-part bound used with this composition is
+`BoundedSolution.card_mul_sub_le_of_isHighestActiveJet`. The root count
+`card_mul_sub_le_jetTotalDegree_mul` in `ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount`
+is sharper than the composition by the factor `t` in the regular cost.
 
 ## Main statements
 
@@ -38,35 +42,6 @@ the chain, and bounds `jetTotalDegree` by the sum of the individual jet degrees.
 ## References
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.3 and Section 4.2.
-
-This file ports `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`
-`RecursiveCounting.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Nothing
-in it mentions a code, so it is stated in `PolynomialDifferential`.
-
-* `boundedSolution_recursive_counting` becomes `card_mul_le_jetTotalDegree_mul`. The source
-  counted a `Finset (BoundedSolution Q D)`; here the roots are a `Finset F[X]` with a solution
-  hypothesis, since the recursion does not use the degree bound. `IsBelowCharacteristic D Q`
-  becomes `∀ j, JetDegreeCastsNeZero Q j` (see `SingularRecursion`), `[Nontrivial F]` is dropped,
-  and the measure `jetDegreeMeasure Q` (the sum of the jet degrees) becomes the smaller
-  `jetTotalDegree Q` (`jetTotalDegree_le_sum_jetDegree`).
-* The source predicate `RegularBranchBudget` is inlined as the hypothesis `hregular`. It ranges
-  over finite subsets of `roots` instead of all finite sets of bounded solutions of the current
-  equation, which is weaker, and it no longer assumes the characteristic guard of the current
-  equation (the consumer derives what it needs from reachability).
-* `regularSolutions`, `singularSolutions`, `singularDescendants`, `card_singularDescendants` and
-  `card_regular_add_card_singular` are `Finset.filter` and
-  `Finset.card_filter_add_card_filter_not`; they are not ported.
-* `jetDegreeMeasure_le_mul` becomes `jetTotalDegree_le_mul`, and
-  `boundedSolution_recursive_counting_of_jetDegree_le` is derived in the acceptance tests.
-* `differentialWeightedDegree_le_of_singularStep`, `jetDegree_le_of_singularStep` and their
-  `ReflTransGen` versions keep their statements; `jetTotalDegree_le_of_singularStep` and its
-  `ReflTransGen` version are new.
-
-The regular-part bound consumed by this composition is
-`BoundedSolution.card_mul_sub_le_of_isHighestActiveJet`. The root count
-`card_mul_sub_le_jetTotalDegree_mul` in `ArkLib.Data.Polynomial.Differential.TotalJetDegreeCount`
-is sharper than that composition by the factor `t` in the regular cost, so the source's
-`ExtensionRootCount` statements are derived from it rather than from this file.
 -/
 
 @[expose] public section

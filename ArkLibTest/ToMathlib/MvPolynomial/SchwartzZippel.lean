@@ -12,9 +12,7 @@ import Mathlib.Algebra.Field.ZMod
 
 * The bound is attained: `X₀` in two variables over `ZMod 2` has `2 = 1 * 2 ^ 1` zeros.
 * `p ≠ 0` is needed: `0` vanishes at all `4` points of `(ZMod 2)²` and has total degree `0`.
-* The source statement `card_jet_zeros_le` at ArkLib revision
-  a5aa2677fee4e3a79d6bb05136631cce4a08587d, over a finite field with the full grid, is the case
-  `S = univ`.
+* The count over a finite field with the full grid is the case `S = univ`.
 -/
 
 open Finset MvPolynomial
@@ -34,7 +32,7 @@ example : ¬#{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 2)) 
   simp only [map_zero, filter_true, totalDegree_zero, zero_mul]
   decide
 
-/-- Source shape: `card_jet_zeros_le`, over a finite field with the full grid. -/
+/-- The count over a finite field with the full grid. -/
 example {F : Type*} [Field F] [Fintype F] [DecidableEq F] {d : ℕ}
     (Q : MvPolynomial (Fin (d + 1)) F) (hQ : Q ≠ 0) :
     #{jet | eval jet Q = 0} ≤ Q.totalDegree * Fintype.card F ^ d := by

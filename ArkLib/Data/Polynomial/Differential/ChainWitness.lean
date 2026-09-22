@@ -40,27 +40,9 @@ witness at `a` forces `jetFiberHom a Q ≠ 0`, and the total degree of `jetFiber
 
 ## References
 
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], first-nonzero separant witnesses in the differential root-counting
-  proof.
-
-This file ports `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`
-`TotalDegreeWitness.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Nothing in
-it mentions a code, so it is stated in `PolynomialDifferential`.
-
-* `ChainWitness`, `ChainWitness.solves`, `jetFiberHom`, `eval_jetFiberHom`, `jetFiberHom_separant`
-  keep their statements over a commutative semiring instead of a field.
-  `ChainWitness.evaluation_eq_zero` becomes `ChainWitness.jetEvaluation_eq_zero` and
-  `ChainWitness.jetFiber_ne_zero` becomes `ChainWitness.jetFiberHom_ne_zero`.
-* `ChainWitness.polynomial_eq` becomes `ChainWitness.eq_of_polynomialJet_eq` over a domain. The
-  guard `D < ringChar F` becomes the binomial hypothesis
-  `∀ k s, 0 < k → k + s ≤ D → ((k + s).choose s : F) ≠ 0`, which also holds in characteristic
-  zero; `natCast_choose_ne_zero_of_ringChar` recovers it from the source guard.
-* `exists_chainWitness_polynomial` becomes `exists_chainWitness`. It takes any solution `P` with
-  `P.natDegree ≤ D` instead of a bounded solution, `NoZeroDivisors F` instead of a field, and the
-  cast hypotheses `∀ j, JetDegreeCastsNeZero Q j` instead of `IsBelowCharacteristic D Q`.
-* The source's `totalDegree_jetFiberHom_le` lived in `RootFinding/Counting/
-  TotalJetDegreeRootCount.lean`; it is here, next to `jetFiberHom`.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.3, (122), and
+  Appendix A.2, Lemma A.1
 -/
 
 @[expose] public section

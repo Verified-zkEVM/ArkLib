@@ -16,9 +16,8 @@ import Mathlib.Algebra.Field.ZMod
   `ChainWitness.eq_of_polynomialJet_eq` is needed at `D = 2`, where `(2 choose 1) = 0`.
 * Over `ZMod 2`, `0` solves `Y₀ ^ 2 = 0` and has no chain witness, and at `D = 0` the conclusion
   of `exists_chainWitness` fails for it. The equation violates only the cast hypothesis.
-* The source statements `ChainWitness.polynomial_eq` (guard `D < ringChar F`) and
-  `exists_chainWitness_polynomial` (guard `IsBelowCharacteristic D Q`, bounded solutions) at
-  ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d follow from the general statements.
+* Over a field, the forms with the characteristic guard `D < ringChar F` (and, for
+  `exists_chainWitness`, `jetDegree Q j < ringChar F` for a bounded solution) follow.
 -/
 
 namespace PolynomialDifferential
@@ -122,9 +121,9 @@ example : ¬∃ R : (ZMod 2)[X], R ≠ 0 ∧
   exact not_chainWitness_squareEquation 0
     (hcover 0 (by simpa using fun h ↦ hR (by rw [h, C_0])))
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with the characteristic guard -/
 
-/-- Source shape: `ChainWitness.polynomial_eq`, over a field with the guard `D < ringChar F`. -/
+/-- `ChainWitness.eq_of_polynomialJet_eq` over a field with the guard `D < ringChar F`. -/
 example {F : Type*} [Field F] {d D : ℕ} {Q : DifferentialPolynomial F d} {P P' : F[X]} {a : F}
     (h : ChainWitness Q P a) (h' : ChainWitness Q P' a)
     (hP : P.degree ≤ D) (hP' : P'.degree ≤ D) (hD : D < ringChar F)
@@ -132,8 +131,8 @@ example {F : Type*} [Field F] {d D : ℕ} {Q : DifferentialPolynomial F d} {P P'
   h.eq_of_polynomialJet_eq h' hP hP'
     (fun _ _ ↦ natCast_choose_ne_zero_of_ringChar (Or.inr hD) _) hjet
 
-/-- Source shape: `exists_chainWitness_polynomial`, over a field with the guard
-`IsBelowCharacteristic D Q` written out, for a bounded solution. -/
+/-- `exists_chainWitness` over a field with the guards `D < ringChar F` and
+`jetDegree Q j < ringChar F`, for a bounded solution. -/
 example {F : Type*} [Field F] {d D : ℕ} (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0)
     (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F) (P : BoundedSolution Q D) :
     ∃ R : F[X], R ≠ 0 ∧ R.natDegree ≤ differentialWeightedDegree D Q - (D - d) ∧

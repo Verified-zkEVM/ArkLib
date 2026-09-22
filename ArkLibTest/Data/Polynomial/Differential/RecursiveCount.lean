@@ -17,14 +17,12 @@ import Mathlib.Algebra.Field.ZMod
 * Over `ZMod 2`, the zero equation and `Y₀ ^ 2 = 0` each have the solution `0`, while every
   hypothesis of `card_mul_le_jetTotalDegree_mul` other than `Q ≠ 0`, respectively the cast
   hypothesis, holds with `left = 1` and `cost = 0`. The conclusion `1 * 1 ≤ _ * 0` fails.
-* The source statement `boundedSolution_recursive_counting_of_jetDegree_le` at ArkLib revision
-  a5aa2677fee4e3a79d6bb05136631cce4a08587d, with its regular-branch budget over bounded solutions
-  and the characteristic guard `IsBelowCharacteristic D Q` written out, follows from
-  `card_mul_le_jetTotalDegree_mul` and `jetTotalDegree_le_mul`.
-* The source statement `boundedSolution_sub_mul_le_of_jetDegree_le` (from
-  `RootFinding/FiniteField/ExtensionRootCount.lean`) follows from `card_mul_le_jetTotalDegree_mul`
-  with the regular count `card_mul_sub_le_of_isHighestActiveJet` as the regular-part bound and the
-  monotonicity lemmas along the singular chain.
+* The composition with regular-part bounds over bounded solutions, a bound `t` on every jet
+  degree, and the characteristic guard `D < ringChar F`, `jetDegree Q j < ringChar F` follows
+  from `card_mul_le_jetTotalDegree_mul` and `jetTotalDegree_le_mul`.
+* The count over a finite field with factor `(d + 1) * t ^ 2` follows from
+  `card_mul_le_jetTotalDegree_mul` with the regular count `card_mul_sub_le_of_isHighestActiveJet`
+  as the regular-part bound and the monotonicity lemmas along the singular chain.
 -/
 
 namespace PolynomialDifferential
@@ -149,12 +147,11 @@ example : ¬∀ roots : Finset (ZMod 2)[X],
       exact absurd hs (Option.some_ne_none s).symm
   simp at this
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with the characteristic guard -/
 
-/-- Source shape: `boundedSolution_recursive_counting_of_jetDegree_le`. The source's
-`RegularBranchBudget Q D left cost` and `IsBelowCharacteristic D Q` are written out. The source
-indexes regular parts by bounded solutions of the current equation; here they are converted to
-finite sets of polynomials. -/
+/-- The composition with every jet degree at most `Δ`, under the characteristic guard, with
+regular-part bounds for finite sets of bounded solutions of each equation on the chain. These
+sets are converted to finite sets of polynomials. -/
 example {F : Type*} [CommRing F] [IsDomain F] {d D : ℕ} (Q : DifferentialPolynomial F d)
     (hQ : Q ≠ 0) (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
     (left cost Δ : ℕ) (roots : Finset (BoundedSolution Q D))
@@ -190,11 +187,10 @@ example {F : Type*} [CommRing F] [IsDomain F] {d D : ℕ} (Q : DifferentialPolyn
   rw [card_map] at hcount
   exact hcount.trans (Nat.mul_le_mul_right _ (jetTotalDegree_le_mul Q hDegree))
 
-/-- Source shape: `boundedSolution_sub_mul_le_of_jetDegree_le`, from
-`RootFinding/FiniteField/ExtensionRootCount.lean`. The regular part at each equation `current`
-on the singular chain is bounded by the regular count, whose hypotheses at `current` follow from
-those at `Q` by monotonicity along the chain. The recursive composition then multiplies by
-`jetTotalDegree Q ≤ (d + 1) * t`. -/
+/-- The count over a finite field with every jet degree at most `t`. The regular part at each
+equation `current` on the singular chain is bounded by the regular count, whose hypotheses at
+`current` follow from those at `Q` by monotonicity along the chain. The recursive composition then
+multiplies by `jetTotalDegree Q ≤ (d + 1) * t`. -/
 example {F : Type*} [Field F] [Finite F] {d D : ℕ} (Q : DifferentialPolynomial F d) (H t : ℕ)
     (hQ : Q ≠ 0) (hchar : D < ringChar F ∧ ∀ j, jetDegree Q j < ringChar F)
     (hWeight : differentialWeightedDegree D Q ≤ H)

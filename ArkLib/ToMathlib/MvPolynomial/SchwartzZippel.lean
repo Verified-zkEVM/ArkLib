@@ -18,13 +18,6 @@ polynomial in `n` variables over a domain on a grid `Sⁿ` by `totalDegree / #S`
 
 which is `card_filter_eval_eq_zero_le`. The empty grid needs no special hypothesis: it has no
 points.
-
-## References
-
-The division-free form was stated as `card_jet_zeros_le` for `S = univ` over a finite field in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/`
-`TotalJetDegreeRootCount.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. It is
-generalized here to an arbitrary finite grid over a domain.
 -/
 
 @[expose] public section
