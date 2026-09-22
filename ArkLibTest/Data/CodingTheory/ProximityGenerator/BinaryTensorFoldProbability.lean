@@ -13,8 +13,8 @@ import ArkLibTest.Data.CodingTheory.ProximityGenerator.BinaryTensorFoldAgreement
 These clients evaluate the probability bound for the full code over `ZMod 3`, whose level witness
 has count `0`: a height-three fold, and the event that the fold does not decompose, both have
 probability `0`. They also check the height-zero boundary for an arbitrary witness, derive the
-source-shaped height-three statement from the general one, and apply the bound to an interleaved
-witness with a nonzero count.
+height-three statement over a finite field from the general one, and apply the bound to an
+interleaved witness with a nonzero count.
 -/
 
 open Code LinearCode TensorMCA CoreDefinitions
@@ -42,7 +42,7 @@ example {C : ModuleCode (Fin 2) (ZMod 3) (ZMod 3)} {a e : ℕ} (h : FullSetLevel
     Pr{let r ← $ᵗ (Fin 0 → ZMod 3)}[r ∈ tensorFoldBad h u] = 0 :=
   le_antisymm ((tensorFoldBad_probability_le h u).trans (by simp)) zero_le
 
--- The source-shaped height-three statement over a finite field, from the general one.
+-- The height-three statement over a finite field, from the general one.
 example {ι F A : Type} [Fintype ι] [DecidableEq ι] [Field F] [Fintype F] [SampleableType F]
     [AddCommMonoid A] [Module F A] [DecidableEq A]
     {C : ModuleCode ι F A} {agreement exceptionalCount : ℕ}

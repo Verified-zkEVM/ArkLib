@@ -9,7 +9,7 @@ import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 /-!
 # Acceptance tests for finite-quotient zero-locus bounds
 
-The examples check the source cardinality contract through an ordinary import, including an
+The examples check the cardinality bound through an ordinary import, including an
 infinite variable type, and exercise both boundary coordinate quotients. For the top ideal the
 quotient is the zero algebra and its zero locus is empty. With no variables and the bottom ideal,
 the quotient is the nontrivial one-dimensional base algebra and the zero locus is the singleton

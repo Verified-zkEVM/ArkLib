@@ -47,35 +47,6 @@ coding-theoretic statements about all received words; they make no protocol clai
   injective packing.
 * `ReedSolomon.tupleRatFunc_injective` and `ReedSolomon.Lambda_interleaved_le_ratFunc`: the
   packing into `F(Z)` and the resulting inequality for `κ = Fin t`.
-
-## References
-
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AgreementBounds.lean`:
-
-* `tupleRatFunc` is ported, defined directly as the sum `∑ j, a j * Z ^ j` in `RatFunc F`; the
-  auxiliary `tuplePolynomial` is not needed. `tupleRatFunc_injective` is ported.
-* `packRowPolynomials`, `packRowPolynomials_eval` and `packRowPolynomials_degree_lt` are replaced
-  by `comp_mem_code_map` and `pack_comp_mem_code_map`: the packed row polynomial is a
-  `K`-linear combination of the mapped row polynomials, so its membership in the code over `K`
-  follows from closure of the code under `K`-linear combinations, for an arbitrary packing and an
-  arbitrary injective ring homomorphism.
-* `lambda_interleaved_rs_le_of_ratFunc_polynomial_agreement_bound` is generalized to
-  `Lambda_interleaved_le_of_injective_pack` and `Lambda_interleaved_le_ratFunc`: an arbitrary
-  radius replaces `capacityRadius delta n k`, an arbitrary finite coordinate type replaces
-  `Fin n`, an arbitrary finite width type and injective packing replace `Fin t` and `F(Z)`, and
-  the conclusion is an inequality between `Lambda` values rather than a transfer of a
-  finite-family agreement bound. The source hypothesis is a bound on the scalar list over `F(Z)`,
-  which is exactly an upper bound on the right-hand side.
-* `ringChar_ratFunc` is not ported: it is `ringChar.eq (RatFunc F) (ringChar F)`, using Mathlib's
-  `CharP` instance on `RatFunc F`.
-
-Deferred: `mcaError_interleaved_le_of_exactAgreement` needs `LineExactAgreementBound` and
-`mcaError_affineLine_le_of_exactAgreement` from `MutualCorrelatedAgreement/LineToAffine.lean`, and
-`lambda_rs_le_of_finite_polynomial_agreement_bound` needs `capacityRadius`, `agreementThreshold`
-and `lambda_le_of_forall_agreeingPolynomials_encard_le` from
-`ListDecodability/Capacity/CodewordBound.lean` and its imports. None of these is on main. The
-interleaving step of the first is already `ProximityGap.mcaError_interleaved_eq`.
 -/
 
 @[expose] public section
