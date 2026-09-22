@@ -103,6 +103,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Kern
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
@@ -117,6 +118,7 @@ public import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
 public import ArkLib.Data.CodingTheory.JohnsonBound.Pairwise
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
@@ -210,6 +212,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
@@ -325,6 +328,8 @@ public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.PointCollision
+public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -531,6 +536,7 @@ public import ArkLib.ToMathlib.Analysis.Simplex.VolumeIntegral
 public import ArkLib.ToMathlib.Analysis.Simplex.WeightedVolume
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
@@ -547,6 +553,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
 public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
+public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
@@ -566,6 +573,8 @@ public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import ArkLib.ToMathlib.RingTheory.Ideal.PrincipalCut
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbert
+public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.Set.Finite
