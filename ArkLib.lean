@@ -624,8 +624,10 @@ public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AwayPresentation
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.StandardMonomials
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AffineHilbertPolynomial
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteZeroLocus
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
+public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
 public import ArkLib.ToMathlib.Set.Finite
