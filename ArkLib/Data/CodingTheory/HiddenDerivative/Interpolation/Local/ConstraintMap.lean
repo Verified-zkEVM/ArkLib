@@ -46,39 +46,8 @@ All maps are linear over an arbitrary commutative ring `R`.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/
-ConstraintMap.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, whose support
-arguments were adapted from Kai Zhe Zheng's `rs-ld-mca` formalization at commit
-`9699ee7a6143f6efe1d8cfed84998a4f8c79c40f`. Changes:
-
-* `filterLocalMonomials`, `coeff_filterLocalMonomials`, and `filterLocalMonomials_eq_zero_iff`
-  are now the general `MvPolynomial.filterSupport` lemmas, and `truncateLocalT` and
-  `projectLowContact` are instances of `MvPolynomial.weightedTruncation`.
-* The private support-weight lemmas and the negated integer weights `negTWeight` and
-  `negContactWeight` behind `enlargedLocalConstraintMap_truncateLocalT` are replaced by the
-  natural-number weighted-order lemmas in `ArkLib.Data.MvPolynomial.WeightedOrder`; the only
-  local input is `rewriteUToEImage_mem_restrictWeightedOrder`.
-* `lowContactCoefficients`, `LowContactIndex`, `projectLowContact_eq_zero_iff`,
-  `lowContactCoefficients_eq_zero_iff`,
-  `projectLowContact_eq_zero_iff_lowContactCoefficients_eq_zero`,
-  `enlargedLocalConstraintMap`, `translatedLocalTruncation`, `localConstraintAt`,
-  `localConstraintCoordinatesAt`, `SatisfiesLocalConstraints`,
-  `satisfiesLocalConstraints_iff_coordinates_eq_zero`,
-  `localConstraintAt_eq_enlarged_comp_translated`,
-  `localConstraintAt_apply_eq_enlarged_translated`, `exactLocalConstraintAt`,
-  `exactCoefficientLocalConstraintAt`, and `exactCoefficientLocalConstraintAt_single` keep their
-  source statements.
-* `globalExactCoefficientConstraintMap` and its `_apply` lemma no longer assume `[Fintype ι]`.
-* `coeff_truncateLocalT`, `coeff_projectLowContact`,
-  `satisfiesLocalConstraints_iff_coeff_eq_zero`, and `exactLocalConstraintAt_eq_enlarged_comp`
-  are new.
-
-Deferred: the normalized substitution and its constraint maps, the local backward-error identity
-of `Interpolation/Local/Identity.lean`, and the certified intermediate spaces that consume these
-maps.
-
-* [Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3.
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26].
 -/
@@ -106,19 +75,24 @@ def truncateLocalT (m : ℕ) : LocalPolynomial R d →ₗ[R] LocalPolynomial R d
 def projectLowContact (m : ℕ) : LocalPolynomial R d →ₗ[R] LocalPolynomial R d :=
   weightedTruncation (localContactWeight d) m
 
+/-- The coefficient of `truncateLocalT m F` at `e` is that of `F` if the `T` exponent of `e` is
+below `m`, and zero otherwise. -/
 @[simp]
 theorem coeff_truncateLocalT (m : ℕ) (F : LocalPolynomial R d) (e : LocalVariable d →₀ ℕ) :
     (truncateLocalT (R := R) m F).coeff e = if e (localT d) < m then F.coeff e else 0 := by
   rw [truncateLocalT, coeff_weightedTruncation, weight_localTWeight]
 
+/-- The coefficient of `projectLowContact m F` at `e` is that of `F` if `e` has contact order
+below `m`, and zero otherwise. -/
 @[simp]
 theorem coeff_projectLowContact (m : ℕ) (F : LocalPolynomial R d) (e : LocalVariable d →₀ ℕ) :
     (projectLowContact (R := R) m F).coeff e =
       if localContactOrder d e < m then F.coeff e else 0 :=
   coeff_weightedTruncation _ m F e
 
-/-- Exponents of contact order below `m`. For `d > 0` this type is finite; for `d = 0` the
-error variable has contact weight zero and the type is infinite. -/
+/-- Exponents of contact order below `m`. This type is empty for `m = 0` and infinite for `m > 0`:
+the visible jets have contact weight zero, and so does `E` when `d = 0`, so every power of `Y₁`
+(for `d > 0`) or of `E` (for `d = 0`) has contact order `0`. -/
 abbrev LowContactIndex (d m : ℕ) :=
   {e : LocalVariable d →₀ ℕ // localContactOrder d e < m}
 
@@ -273,6 +247,8 @@ def globalExactCoefficientConstraintMap {ι : Type*} {m : ℕ} (hdD : d < D)
   LinearMap.pi fun i =>
     exactCoefficientLocalConstraintAt (M := M) (W := W) hdD m (centers i) (received i)
 
+/-- Coordinate `i` of `globalExactCoefficientConstraintMap` is the local constraint map at
+`(centers i, received i)`. -/
 @[simp]
 theorem globalExactCoefficientConstraintMap_apply {ι : Type*} {m : ℕ} (hdD : d < D)
     (centers received : ι → R) (v : ExactInterpolationCoefficients R D A d m M W hdD) (i : ι) :

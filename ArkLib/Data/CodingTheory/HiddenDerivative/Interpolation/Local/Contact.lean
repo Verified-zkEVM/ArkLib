@@ -36,24 +36,6 @@ commutative ring is needed.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/Contact.lean` at ArkLib
-revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `X_pow_dvd_localPolynomialEvaluation_of_lowContact`,
-  `X_pow_dvd_shiftedJetSubstitution_of_contact` and
-  `X_sub_C_pow_dvd_differentialSpecialization_of_contact` keep their statements.
-* `pow_dvd_eval₂Hom_of_lowContact_coeff_zero` and its private helper
-  `localContactOrder_pow_dvd_monomialSpecialization` are generalized to any weight and any
-  commutative semiring as `MvPolynomial.pow_dvd_eval₂Hom_of_mem_restrictWeightedOrder` in
-  `ArkLib.Data.MvPolynomial.WeightedOrder`.
-* `coeff_unscaledLocalSubstitution_eq_zero_of_satisfiesLocalConstraints` is one direction of the
-  existing `satisfiesLocalConstraints_iff_coeff_eq_zero`, and
-  `X_pow_dvd_taylor_differentialSpecialization_of_contact` is
-  `X_pow_dvd_shiftedJetSubstitution_of_contact` rewritten by
-  `taylor_differentialSpecialization`; neither is restated.
-* `order_zero_local_constraints_vacuous_canary` is a test case in the matching `ArkLibTest` file.
-
 * [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
   Correlated Agreement up to Capacity*][DKTZ26], Section 3 (local interpolation).
 -/

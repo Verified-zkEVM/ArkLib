@@ -45,35 +45,8 @@ derivative order `d`. It has three parts.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FreeOrder.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which adapts Kai Zhe Zheng's
-`rs-ld-mca` formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` with permission;
-the free-order extension was contributed by Pratyush Mishra. Every source declaration is ported
-under its source name, except as follows.
-
-* `ambientDimension_lt_blockLength` assumed `0 < ε < 1` and `0 < θ < 1`; it needs only
-  `(1 - θ) ε < 1` and `0 < n`. `le_ambientDimension_iff` assumed `0 ≤ ε` and `θ ≤ 1`; it needs
-  only `0 ≤ (1 - θ) ε`.
-* `interpolationDegreeBudget_pos` no longer assumes `0 < n`, which follows from `d < K`.
-* `multiplicity_mul_agreementThreshold_le_budget_mul_denominator` assumed `0 < d < K`; it needs
-  only `0 < K - 1`, and it is one direction of the new `interpolationDegreeBudget_le_iff`. The
-  source's `le_interpolationDegreeBudget_of_mul_denominator_lt` assumed `t (K - 1) < m A`; the
-  non-strict `le_interpolationDegreeBudget_of_mul_denominator_le` replaces it.
-* `boxFamily_weightedBudget_lt` assumed `0 < θ < 1`; it needs only `0 ≤ θ`.
-  `interpolationBoxWidth_le_multiplicity` assumed `0 < θ < 1`; it needs only `θ ≤ 16`.
-  `freeGlobalDimensionSlacks` assumed `0 < θ < 1` and `0 < n`; it needs `0 ≤ θ`, and `θ < 1`
-  and `0 < n` follow from `d < K` (`lt_one_of_ambientDimension_pos`,
-  `blockLength_pos_of_order_lt_ambientDimension`).
-* `half_interpolationBoxWidthTarget_le_cast` assumed `2 ≤ θ m / 16`; `1 ≤ θ m / 16` suffices.
-* `exists_orderThreshold_for_boxWidth` gave the explicit threshold `⌈32 / θ⌉` for the bound `2`;
-  here it is a corollary of `tendsto_interpolationBoxWidthTarget`, for every real bound `c`.
-  `exists_freeOrderRankThreshold` and `exists_freeOrderElementaryThreshold` are corollaries of
-  `eventually_freeOrderRankComparison` and `eventually_freeOrderElementary`.
-* `half_rate_le_ambientDimension_sub_one_div` and `freeOrder_rank_comparison` assumed
-  `2 ≤ d < K`; they need only `3 ≤ K`, and the second needs `0 ≤ θ` instead of `0 < θ`.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26].
 -/
@@ -309,8 +282,7 @@ theorem tendsto_interpolationBoxWidthTarget (hθ : 0 < θ) :
   simp only [multiplicity, Nat.cast_pow]
   exact (hcube.const_mul_atTop hθ).atTop_div_const (by norm_num)
 
-/-- For `θ > 0` and every real `c`, all large orders have `c ≤ θ m / 16`. The source stated this
-for `c = 2`, with the explicit threshold `⌈32 / θ⌉`. -/
+/-- For `θ > 0` and every real `c`, all large orders have `c ≤ θ m / 16`. -/
 theorem exists_orderThreshold_for_boxWidth (hθ : 0 < θ) (c : ℝ) :
     ∃ D : ℕ, ∀ d : ℕ, D ≤ d → c ≤ θ * (multiplicity d : ℝ) / 16 :=
   eventually_atTop.mp ((tendsto_interpolationBoxWidthTarget hθ).eventually_ge_atTop c)

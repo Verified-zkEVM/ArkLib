@@ -40,37 +40,8 @@ that budget with the rank of the local constraint map.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FreeOrderDimension.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which adapts Kai Zhe Zheng's
-`rs-ld-mca` formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` with permission;
-the free-order extension was contributed by Pratyush Mishra.
-
-* `weightedHigherJetCount_mono` is in `Interpolation/Counting.lean`, from
-  `Finset.natWeightedSimplex_mono`. The private `rectangleResidual_le`,
-  `contactThreshold_cube_le_sq`, and `certifiedContactRankBudget_cube_le` become the general
-  `exhibitedKernelResidualCount_le`, `contactThreshold_le_of_le_mul`, and
-  `certifiedEnlargedRankBound_le_of_le_mul` there.
-  `certifiedEnlargedRankBound_le_four_mul_d_pow_eight` is the case `m = M = d³`, `k = d²` and no
-  longer assumes `0 < d`.
-* `shellExponent` is unchanged. `shellExponent_add_rankSavingExponent` assumed `0 < θ`; it needs
-  only `θ ≠ -5`.
-* `rankShellBound_lt_interpolationBox` assumed `0 < θ`, `0 < d`, and `0 < n`; each follows from
-  the rank comparison, whose right side is `0` or negative otherwise.
-* `n_mul_certifiedEnlargedRankBound_lt_finrank_exactInterpolationSpace` assumed `0 < d`, a
-  jet-degree budget `B` with `C + 2H ≤ B`, and took the field implicitly. The field is explicit,
-  as in `Interpolation/Dimension.lean`. `B` is not needed, because the exact space has no
-  jet-degree budget (`card_goodHigherExponents_mul_le_finrank_exactInterpolationSpace`), and
-  `0 < d` follows from the scalar inequality, whose right side is `0` when `H ≤ d³ = 0`.
-* `localRankBound_lt_interpolationSpace_of_shell_bounds` drops `0 < θ`, `0 < d`, `0 < n`, `B`, and
-  `C + 2H ≤ B` for the same reasons.
-
-Deferred: the shell estimate `Λ_d(W + d³) ≤ R #(goodHigherExponents d W C)` with
-`R ≤ 2 d^((5 - θ) / (5 + θ))`, which the source also leaves as a hypothesis, and the choice of
-`W` that makes it hold.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26].
 -/

@@ -37,24 +37,17 @@ real argument rounds to `0`, and the natural subtraction `K - 1` is `0` when `K 
 * `multiplicity`, `agreementThreshold`, `ambientDimension`, `interpolationDegreeBudget`,
   `interpolationWeightBudget`, `higherJetDegreeBudget`, `interpolationBoxWidth`: the parameters
   above.
-* `coarseListBound`: the source's list-size expression `q ^ (4 d + 6)`, as a definition only.
+* `coarseListBound`: the coarse list-size expression `q ^ (4 d + 6)`, as a definition only.
 
 The rounded inequalities between these parameters are in `Parameters/FreeOrder.lean`.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Basic.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which adapts Kai Zhe Zheng's
-`rs-ld-mca` formalization at commit `9699ee7a6143f6efe1d8cfed84998a4f8c79c40f` with permission;
-the free-order extension was contributed by Pratyush Mishra. All eight definitions
-(`multiplicity`, `agreementThreshold`, `ambientDimension`, `interpolationDegreeBudget`,
-`interpolationWeightBudget`, `higherJetDegreeBudget`, `interpolationBoxWidth`,
-`coarseListBound`) are ported unchanged, with the same formulas and constants.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26].
 * [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
   up to Capacity*][DKTZ26].
+* [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15]
 -/
 
 @[expose] public section
@@ -100,9 +93,9 @@ and of the `X` blocks, in the rectangular lower bound on the interpolation dimen
 def interpolationBoxWidth (θ : ℝ) (d : ℕ) : ℕ :=
   ⌊θ * (multiplicity d : ℝ) / 16⌋₊
 
-/-- The source's coarse list-size expression `q ^ (4 d + 6)` over a field of size `q`. This is
-parameter data only: no theorem here or in the source proves that it bounds a list, since that
-needs a root-counting theorem of Kopparty that is not formalized. -/
+/-- The coarse list-size expression `q ^ (4 d + 6)` over a field of size `q`. This is parameter
+data only: no theorem proves that it bounds a list, since that needs a root-counting theorem of
+[Kop15] that is not formalized. -/
 def coarseListBound (q d : ℕ) : ℕ :=
   q ^ (4 * d + 6)
 
