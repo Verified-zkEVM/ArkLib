@@ -42,30 +42,6 @@ distinct factors a total of at most the degree of `a`.
   monotone under divisibility and constant on associate classes, its value on a product of
   distinct factors is the sum of their values, and the sum over all distinct factors of `a` is at
   most its value on `a`.
-
-## References
-
-These generalize the factor-extraction core of `ToMathlib/MvPolynomial/OrdinaryFactors.lean` at
-ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `ordinaryFactorRepresentative`, `mk_ordinaryFactorRepresentative` and
-  `ordinaryFactorRepresentative_injective` become `Associates.rep`, `Associates.mk_rep` and
-  `Associates.rep_injective`, for any monoid instead of a commutative one.
-* `ordinarySquarefreeProduct Q` over `MvPolynomial (Option σ) F` becomes `radicalRep a` in any
-  unique factorization monoid, and is identified with Mathlib's `radical` in the associates. The
-  source's factor classes `(normalizedFactors (Associates.mk Q)).toFinset` are
-  `primeFactors (Associates.mk Q)`.
-* `ordinaryFactorClasses_irreducible` becomes `irreducible_rep_of_mem_primeFactors`.
-* `ordinarySquarefreeProduct_zero_iff` becomes `map_radicalRep_eq_zero_iff`, for monoid-with-zero
-  homomorphisms into any commutative monoid with zero without zero divisors instead of ring
-  homomorphisms into a domain. Its proof is split through the new
-  `map_eq_zero_iff_exists_primeFactors`.
-* The coordinate-degree bound in `ordinary_degree_sum_le` is proved here for every degree function
-  that is additive on nonzero products (`sum_primeFactors_le`), which covers both
-  `MvPolynomial.degreeOf` and `MvPolynomial.totalDegree`.
-
-The split of the factors by a distinguished variable is in
-`ArkLib.ToMathlib.MvPolynomial.OrdinaryFactors`.
 -/
 
 @[expose] public section

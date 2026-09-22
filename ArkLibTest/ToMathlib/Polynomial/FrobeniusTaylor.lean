@@ -13,8 +13,8 @@ import Mathlib.Data.ZMod.Basic
 
 Over `ZMod 2` the theorems compute `(X + 1) ^ 2 = X ^ 2 + 1` and the vanishing of its linear
 coefficient. Over `ℤ` the conclusion of `taylor_expand_expChar_pow` fails for `P = X`, `t = 1`
-and exponent `2`, so the exponential-characteristic hypothesis is needed. The source-shaped
-statements over a commutative ring are derived at the end.
+and exponent `2`, so the exponential-characteristic hypothesis is needed. The special cases over a
+commutative ring are derived at the end.
 -/
 
 open Polynomial
@@ -52,25 +52,25 @@ example : taylor (1 : ℤ) (expand ℤ 2 X) ≠ expand ℤ 2 (taylor (1 ^ 2) X) 
   simp only [taylor_eval, expand_eval, eval_X, one_pow] at h1
   norm_num at h1
 
-section Source
+section CommRing
 
 variable {R : Type*} [CommRing R] (p e : ℕ) [ExpChar R p]
 
-/-- Source statement `taylor_expand_primePow`. -/
+/-- `taylor_expand_expChar_pow` over a commutative ring. -/
 example (P : R[X]) (t : R) :
     taylor t (expand R (p ^ e) P) = expand R (p ^ e) (taylor (t ^ (p ^ e)) P) :=
   taylor_expand_expChar_pow p e P t
 
-/-- Source statement `coeff_taylor_expand_primePow_mul`. -/
+/-- `coeff_taylor_expand_expChar_pow_mul` over a commutative ring. -/
 example (P : R[X]) (t : R) (r : ℕ) :
     (taylor t (expand R (p ^ e) P)).coeff ((p ^ e) * r) = (hasseDeriv r P).eval (t ^ (p ^ e)) :=
   coeff_taylor_expand_expChar_pow_mul p e P t r
 
-/-- Source statement `coeff_taylor_expand_primePow_eq_zero`. -/
+/-- `coeff_taylor_expand_expChar_pow_eq_zero` over a commutative ring. -/
 example (P : R[X]) (t : R) (r : ℕ) (hr : ¬p ^ e ∣ r) :
     (taylor t (expand R (p ^ e) P)).coeff r = 0 :=
   coeff_taylor_expand_expChar_pow_eq_zero p e P t hr
 
-end Source
+end CommRing
 
 end FrobeniusTaylorTest
