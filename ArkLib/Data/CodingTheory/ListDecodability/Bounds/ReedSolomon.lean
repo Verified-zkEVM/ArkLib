@@ -470,7 +470,6 @@ theorem rs_codimension_one_list_size
       let C := ReedSolomon.code domain j
       (j : ℕ∞) < (closeCodewordsRel ((C : Set (ι → F))) w (1 / (j + 1 : ℝ))).ncard := by
   classical
-  let : DecidableEq ι := Classical.decEq _
   let domain : ι ↪ F := Classical.choice (Function.Embedding.nonempty_of_card_le hcard_le)
   let C : Submodule F (ι → F) := ReedSolomon.code domain j
   have hdimC : Module.finrank F C = j := by

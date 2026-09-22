@@ -123,23 +123,6 @@ instance instFunction {α β : Type _} : OracleInterface (α → β) where
   Query := α
   toOC := OracleContext.ofFunction α β
 
-instance {ι : Type u} [DecidableEq ι] (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i, DecidableEq (Query (v i))]
-    [h' : ∀ i q, DecidableEq ((O i).Response q)] :
-    [v]ₒ.DecidableEq where
-  decidableEqA := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
-  decidableEqB | ⟨i, q⟩ => h' i q
-
-instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i q, Fintype ((O i).Response q)] :
-    [v]ₒ.Fintype where
-  fintypeB | ⟨i, q⟩ => h i q
-
-instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i q, Inhabited ((O i).Response q)] :
-    [v]ₒ.Inhabited where
-  inhabitedB | ⟨i, q⟩ => h i q
-
 @[reducible, inline]
 instance {ι₁ : Type u} {T₁ : ι₁ → Type v} [inst₁ : ∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type u} {T₂ : ι₂ → Type v} [inst₂ : ∀ i, OracleInterface (T₂ i)] :
