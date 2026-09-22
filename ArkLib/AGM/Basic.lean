@@ -7,7 +7,7 @@ module
 
 public import VCVio.OracleComp.SimSemantics.Append
 public import ArkLib.Data.GroupTheory.PrimeOrder
-public import ArkLib.Data.Classes.Serde
+public import CompPoly.Data.Classes.Serialize
 
 /-! # The Algebraic Group Model (With Oblivious Sampling)
 
