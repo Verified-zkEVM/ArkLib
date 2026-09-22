@@ -7,6 +7,13 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 import Mathlib.FieldTheory.Finite.Extension
 
+/-!
+# Reed–Solomon agreement acceptance tests
+
+Concrete examples compute agreement sets over `ZMod 2` and its degree-two extension, including a
+boundary case where a noninjective coefficient map creates agreement.
+-/
+
 noncomputable section
 
 open Polynomial ReedSolomon

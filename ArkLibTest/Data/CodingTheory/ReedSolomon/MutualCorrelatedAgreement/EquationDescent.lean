@@ -7,6 +7,13 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent
 import Mathlib.FieldTheory.Finite.Extension
 
+/-!
+# Equation-restricted agreement descent acceptance tests
+
+Concrete examples check descent of a satisfiable differential equation with a positive degree
+bound, and verify its mapped root and nonempty agreement set over a proper field extension.
+-/
+
 open Polynomial PolynomialDifferential ReedSolomon
 
 noncomputable section

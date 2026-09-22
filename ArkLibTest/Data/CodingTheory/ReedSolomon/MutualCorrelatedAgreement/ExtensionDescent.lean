@@ -7,6 +7,13 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent
 import Mathlib.FieldTheory.Finite.Extension
 
+/-!
+# Correlated-pair extension descent acceptance tests
+
+A nonzero correlated pair specialized at a nonzero challenge has an exact witness and a concrete
+singleton agreement set over both the base field and its degree-two extension.
+-/
+
 open Polynomial ReedSolomon
 
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
