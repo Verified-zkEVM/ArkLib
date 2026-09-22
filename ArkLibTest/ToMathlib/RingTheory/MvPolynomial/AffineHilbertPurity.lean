@@ -14,7 +14,7 @@ These examples use the public API through an ordinary import. In `ℚ[x, y]` the
 purity that the prime `(x)` has a Hilbert polynomial of natural degree one, bound its affine
 degree by one with the Bézout bound, and evaluate the degree potential of the cut. The boundary
 examples show that the Bézout bound fails without `f ∉ P` and that the normalization degree count
-needs injectivity. The last examples derive the purity and Bézout statements with primality of `P`
+needs injectivity. The next examples derive the purity and Bézout statements with primality of `P`
 as an explicit argument, and the cut-potential bound for the family that is `{P}` when `f ∈ P`.
 The final example computes the dimension of `(x)` again, as a minimal prime of the hypersurface
 `x = 0`.
