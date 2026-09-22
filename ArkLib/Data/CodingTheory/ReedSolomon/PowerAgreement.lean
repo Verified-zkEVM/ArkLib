@@ -8,6 +8,8 @@ module
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.Polynomial.SpecializationAvoidance
+public import Mathlib.Algebra.Polynomial.OfFn
 public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
@@ -28,6 +30,14 @@ exceeds the number of evaluation points, the polynomial identity `Q = ∑ t, z ^
 still fail, and it is repaired by adding the difference to `P 0`, whose weight is `z ^ 0 = 1`
 (`exists_powerBatchedPolynomial_eq`).
 
+For a fixed tuple `P`, the discrepancy at a coordinate `i` is a polynomial of degree at most `ℓ`
+in the challenge, `curveDiscrepancy domain w P i`, whose coefficients are the constituent
+discrepancies `(P t).eval (domain i) - w t i`. It is zero exactly at the common agreements, so
+outside the roots of the nonzero discrepancies, at most `ℓ * (|ι| - L)` challenges when the tuple
+has `L` common agreements, the batched polynomial gains no extra agreement. Exact power agreement
+over an extension field descends to the base field with the same number of exceptional
+challenges.
+
 The code-level characterizations let the counting and transfer theorems of
 `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement` apply to Reed–Solomon statements. The
 interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
@@ -37,6 +47,9 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 * `ReedSolomon.powerBatchedWord`, `ReedSolomon.powerBatchedPolynomial`: batching of received
   words and of message polynomials.
 * `ReedSolomon.commonCurveAgreementSet`: coordinates where every `P t` agrees with `w t`.
+* `ReedSolomon.powerBatchedCoordinate`: a coordinate vector as a polynomial in the challenge.
+* `ReedSolomon.curveDiscrepancy`: the discrepancy at one coordinate as a polynomial in the
+  challenge.
 * `ReedSolomon.HasExactPowerAgreement`: exact power agreement, with the challenge and the
   candidate polynomial in an extension field `E` given by `φ : F →+* E`.
 * `ReedSolomon.UniformExactPowerAgreement`: one exceptional set of at most `e` challenges for
@@ -44,6 +57,15 @@ interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.
 
 ## Main statements
 
+* `ReedSolomon.exists_exceptional_powerBatched_agreement` and
+  `ReedSolomon.exists_exceptional_powerBatched_family`: outside at most `ℓ * (|ι| - L)`
+  challenges per tuple, the agreement set of the batched polynomial is the common agreement set.
+* `ReedSolomon.exists_polynomialGraph_of_sample`: a sample of `k` coordinates determines every
+  batched polynomial of degree below `k` that agrees with the batched word on it, over every
+  extension field.
+* `ReedSolomon.HasExactPowerAgreement.descend` and
+  `ReedSolomon.uniformExactPowerAgreement_of_extension`: exact power agreement descends from an
+  extension field.
 * `ReedSolomon.determinedByAgreement_code`: Reed–Solomon codewords of message length `k` are
   determined by `a ≥ k` agreements.
 * `ReedSolomon.exists_powerBatchedPolynomial_eq`: a codeword decomposition of a polynomial's
@@ -104,6 +126,198 @@ theorem powerBatchedWord_eq_sum {F : Type} [Field F] (w : Fin (ℓ + 1) → ι �
 
 end Batching
 
+section Coordinate
+
+variable {R : Type*} [CommSemiring R] {ℓ : ℕ}
+
+/-- The polynomial `∑ t, w t * X ^ t` in the batching challenge. Its value at `z` is the batched
+coordinate `∑ t, z ^ t * w t`. -/
+def powerBatchedCoordinate (w : Fin (ℓ + 1) → R) : R[X] :=
+  ∑ t, monomial t.val (w t)
+
+/-- The value of `powerBatchedCoordinate w` at `z` is `∑ t, z ^ t * w t`. -/
+theorem powerBatchedCoordinate_eval (w : Fin (ℓ + 1) → R) (z : R) :
+    (powerBatchedCoordinate w).eval z = ∑ t, z ^ t.val * w t := by
+  simp [powerBatchedCoordinate, eval_finsetSum, mul_comm]
+
+/-- `powerBatchedCoordinate w` has degree at most `ℓ`. -/
+theorem powerBatchedCoordinate_natDegree_le (w : Fin (ℓ + 1) → R) :
+    (powerBatchedCoordinate w).natDegree ≤ ℓ :=
+  natDegree_sum_le_of_forall_le _ _ fun t _ ↦
+    (natDegree_monomial_le _).trans (Nat.lt_succ_iff.mp t.isLt)
+
+/-- `powerBatchedCoordinate w` is Mathlib's `ofFn (ℓ + 1) w`. -/
+theorem powerBatchedCoordinate_eq_ofFn [DecidableEq R] (w : Fin (ℓ + 1) → R) :
+    powerBatchedCoordinate w = ofFn (ℓ + 1) w :=
+  (ofFn_eq_sum_monomial w).symm
+
+/-- The coefficient of `X ^ t` in `powerBatchedCoordinate w` is `w t`. -/
+@[simp] theorem powerBatchedCoordinate_coeff (w : Fin (ℓ + 1) → R) (t : Fin (ℓ + 1)) :
+    (powerBatchedCoordinate w).coeff t = w t := by
+  classical
+  rw [powerBatchedCoordinate_eq_ofFn, ofFn_coeff_eq_val_of_lt w t.isLt]
+
+/-- A coordinate vector is determined by its polynomial `powerBatchedCoordinate`. -/
+theorem powerBatchedCoordinate_injective :
+    Function.Injective (powerBatchedCoordinate (R := R) (ℓ := ℓ)) := by
+  classical
+  rw [show powerBatchedCoordinate (R := R) (ℓ := ℓ) = ofFn (ℓ + 1) from
+    _root_.funext powerBatchedCoordinate_eq_ofFn]
+  exact injective_ofFn _
+
+/-- `powerBatchedCoordinate w` is zero exactly when `w` is. -/
+@[simp] theorem powerBatchedCoordinate_eq_zero_iff (w : Fin (ℓ + 1) → R) :
+    powerBatchedCoordinate w = 0 ↔ w = 0 := by
+  rw [← powerBatchedCoordinate_injective.eq_iff]
+  simp [powerBatchedCoordinate]
+
+end Coordinate
+
+section Discrepancy
+
+variable {F ι : Type*} [Field F] {ℓ : ℕ}
+
+/-- The discrepancy at coordinate `i` as a polynomial in the batching challenge: the coefficient of
+`X ^ t` is `(P t).eval (domain i) - w t i`. -/
+def curveDiscrepancy (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) (P : Fin (ℓ + 1) → F[X])
+    (i : ι) : F[X] :=
+  powerBatchedCoordinate fun t ↦ (P t).eval (domain i) - w t i
+
+/-- `curveDiscrepancy domain w P i` has degree at most `ℓ`. -/
+theorem curveDiscrepancy_natDegree_le (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P : Fin (ℓ + 1) → F[X]) (i : ι) : (curveDiscrepancy domain w P i).natDegree ≤ ℓ :=
+  powerBatchedCoordinate_natDegree_le _
+
+/-- At the challenge `z`, the discrepancy is the batched polynomial's value minus the batched
+word at coordinate `i`. -/
+theorem curveDiscrepancy_eval (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P : Fin (ℓ + 1) → F[X]) (i : ι) (z : F) :
+    (curveDiscrepancy domain w P i).eval z =
+      (powerBatchedPolynomial P z).eval (domain i) - powerBatchedWord w z i := by
+  simp [curveDiscrepancy, powerBatchedCoordinate_eval, powerBatchedPolynomial_eval,
+    powerBatchedWord, mul_sub, Finset.sum_sub_distrib]
+
+/-- The discrepancy at `i` is the zero polynomial exactly when every `P t` agrees with `w t`
+at `i`. -/
+theorem curveDiscrepancy_eq_zero_iff (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P : Fin (ℓ + 1) → F[X]) (i : ι) :
+    curveDiscrepancy domain w P i = 0 ↔ ∀ t, (P t).eval (domain i) = w t i := by
+  simp [curveDiscrepancy, funext_iff, sub_eq_zero]
+
+variable [DecidableEq F] [Fintype ι]
+
+/-- **Few challenges create extra agreement.** If the `P t` agree with the `w t` simultaneously on
+at least `L` coordinates, then outside a set of at most `ℓ * (|ι| - L)` challenges `z`, the
+agreement set of `∑ t, z ^ t • P t` with the batched word is exactly the common agreement set
+of the `P t`.
+
+Each coordinate outside the common agreement set contributes the at most `ℓ` roots of its
+discrepancy polynomial. No assumption on the characteristic is needed. -/
+theorem exists_exceptional_powerBatched_agreement (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P : Fin (ℓ + 1) → F[X]) (L : ℕ) (hcommon : L ≤ (commonCurveAgreementSet domain w P).card) :
+    ∃ exceptional : Finset F, exceptional.card ≤ ℓ * (Fintype.card ι - L) ∧
+      ∀ z ∉ exceptional,
+        polynomialAgreementSet domain (powerBatchedWord w z) (powerBatchedPolynomial P z) =
+          commonCurveAgreementSet domain w P := by
+  classical
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_card_le_forall_eval_eq_zero_iff
+    (curveDiscrepancy domain w P) (Finset.univ \ commonCurveAgreementSet domain w P)
+    (fun i _ ↦ curveDiscrepancy_natDegree_le domain w P i)
+    (fun i hi ↦ (curveDiscrepancy_eq_zero_iff domain w P i).mpr (by simpa using hi))
+  refine ⟨exceptional, hcard.trans (Nat.mul_le_mul_left _ ?_), fun z hz ↦ ?_⟩
+  · rw [Finset.card_sdiff_of_subset (Finset.subset_univ _), Finset.card_univ]
+    omega
+  · ext i
+    have := hgood z hz i
+    rw [curveDiscrepancy_eval, sub_eq_zero, curveDiscrepancy_eq_zero_iff] at this
+    simpa using this
+
+/-- A finite family of tuples, each with at least `L` common agreements, has one set of at most
+`family.card * (ℓ * (|ι| - L))` challenges outside which no member gains extra agreement. -/
+theorem exists_exceptional_powerBatched_family (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (family : Finset (Fin (ℓ + 1) → F[X])) (L : ℕ)
+    (hcommon : ∀ P ∈ family, L ≤ (commonCurveAgreementSet domain w P).card) :
+    ∃ exceptional : Finset F, exceptional.card ≤ family.card * (ℓ * (Fintype.card ι - L)) ∧
+      ∀ P ∈ family, ∀ z ∉ exceptional,
+        polynomialAgreementSet domain (powerBatchedWord w z) (powerBatchedPolynomial P z) =
+          commonCurveAgreementSet domain w P := by
+  classical
+  choose! ex hcard hgood using fun P hP ↦
+    exists_exceptional_powerBatched_agreement domain w P L (hcommon P hP)
+  refine ⟨family.biUnion ex, Finset.card_biUnion_le_card_mul _ _ _ hcard,
+    fun P hP z hz ↦ hgood P hP z fun hmem ↦ hz (Finset.mem_biUnion.mpr ⟨P, hP, hmem⟩)⟩
+
+end Discrepancy
+
+section Interpolation
+
+variable {F ι : Type*} [Field F] {ℓ : ℕ}
+
+/-- Interpolating each word `w t` on a finite sample set gives polynomials `P t` of degree below
+any `k ≥ samples.card` that agree with every `w t` on the samples. -/
+theorem exists_polynomialTuple_interpolating (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    {k : ℕ} (samples : Finset ι) (hcard : samples.card ≤ k) :
+    ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧
+      ∀ i ∈ samples, ∀ t, (P t).eval (domain i) = w t i := by
+  classical
+  refine ⟨fun t ↦ Lagrange.interpolate samples domain (w t), fun t ↦ ?_, fun i hi t ↦ ?_⟩
+  · exact (Lagrange.degree_interpolate_lt _ domain.injective.injOn).trans_le
+      (by exact_mod_cast hcard)
+  · exact Lagrange.eval_interpolate_at_node (w t) domain.injective.injOn hi
+
+/-- Two tuples of polynomials of degree below `k ≤ samples.card` that agree with the same words on
+the samples are equal. -/
+theorem polynomialTuple_eq_of_common_samples (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (P Q : Fin (ℓ + 1) → F[X]) {k : ℕ} (samples : Finset ι) (hcard : k ≤ samples.card)
+    (hP : ∀ t, (P t).degree < k) (hQ : ∀ t, (Q t).degree < k)
+    (hPs : ∀ i ∈ samples, ∀ t, (P t).eval (domain i) = w t i)
+    (hQs : ∀ i ∈ samples, ∀ t, (Q t).eval (domain i) = w t i) : P = Q := by
+  have hk : (k : WithBot ℕ) ≤ samples.card := by exact_mod_cast hcard
+  funext t
+  exact eq_of_degrees_lt_of_eval_index_eq samples domain.injective.injOn
+    ((hP t).trans_le hk) ((hQ t).trans_le hk) fun i hi ↦ (hPs i hi t).trans (hQs i hi t).symm
+
+/-- **A sample of `k` coordinates determines the batched polynomial.** For a sample set of size
+`k`, the interpolating tuple `P` of degree below `k` has the property that over every field `E`
+with `φ : F →+* E`, each polynomial `Q` of degree below `k` agreeing with the batched word at
+`z : E` on the samples equals `∑ t, z ^ t • (P t).map φ`. -/
+theorem exists_polynomialGraph_of_sample (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) {k : ℕ}
+    (samples : Finset ι) (hcard : samples.card = k) :
+    ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < k) ∧
+      (∀ i ∈ samples, ∀ t, (P t).eval (domain i) = w t i) ∧
+      ∀ {E : Type*} [Field E] (φ : F →+* E) (z : E) (Q : E[X]), Q.degree < k →
+        (∀ i ∈ samples, Q.eval (φ (domain i)) = ∑ t, z ^ t.val * φ (w t i)) →
+        Q = powerBatchedPolynomial (fun t ↦ (P t).map φ) z := by
+  obtain ⟨P, hP, hs⟩ := exists_polynomialTuple_interpolating domain w samples hcard.le
+  refine ⟨P, hP, hs, fun φ z Q hQ hQs ↦ ?_⟩
+  subst hcard
+  refine eq_of_degrees_lt_of_eval_index_eq samples
+    (fun _ _ _ _ h ↦ domain.injective (φ.injective h)) hQ
+    (powerBatchedPolynomial_degree_lt _ z _ fun t ↦ degree_map_le.trans_lt (hP t))
+    fun i hi ↦ ?_
+  rw [powerBatchedPolynomial_eval, hQs i hi]
+  simp [eval_map, eval₂_at_apply, hs i hi]
+
+end Interpolation
+
+section ScalarExtension
+
+variable {F E ι : Type*} [Field F] [Field E] {ℓ : ℕ}
+
+/-- Applying `φ : F →+* E` to the words and the challenge batches to `φ` of the batched word. -/
+theorem powerBatchedWord_map (w : Fin (ℓ + 1) → ι → F) (φ : F →+* E) (z : F) :
+    powerBatchedWord (fun t i ↦ φ (w t i)) (φ z) = fun i ↦ φ (powerBatchedWord w z i) := by
+  funext i
+  simp [powerBatchedWord]
+
+/-- Mapping the batched polynomial along `φ : F →+* E` batches the mapped polynomials at `φ z`. -/
+theorem powerBatchedPolynomial_map (P : Fin (ℓ + 1) → F[X]) (φ : F →+* E) (z : F) :
+    (powerBatchedPolynomial P z).map φ =
+      powerBatchedPolynomial (fun t ↦ (P t).map φ) (φ z) := by
+  simp [powerBatchedPolynomial, smul_eq_C_mul, Polynomial.map_sum]
+
+end ScalarExtension
+
 section Exact
 
 variable {F E ι : Type*} [Field F] [Field E] [Fintype ι] [DecidableEq F] [DecidableEq E] {ℓ : ℕ}
@@ -149,6 +363,43 @@ theorem hasExactPowerAgreement_id_iff (domain : ι ↪ F) (w : Fin (ℓ + 1) →
   simp only [HasExactPowerAgreement, Polynomial.map_id, RingHom.id_apply, hdomain]
 
 end Exact
+
+section Descent
+
+variable {F E ι : Type*} [Field F] [Field E] [Fintype ι] [DecidableEq F] [DecidableEq E] {ℓ : ℕ}
+
+/-- Exact power agreement over an extension descends: if `Q.map φ` has exact power agreement at
+the challenge `φ z`, then `Q` has exact power agreement at `z` over `F`. The same tuple `P` is a
+witness. -/
+theorem HasExactPowerAgreement.descend {domain : ι ↪ F} {w : Fin (ℓ + 1) → ι → F}
+    {φ : F →+* E} {k : ℕ} {z : F} {Q : F[X]}
+    (h : HasExactPowerAgreement domain w φ k (φ z) (Q.map φ)) :
+    HasExactPowerAgreement domain w (RingHom.id F) k z Q := by
+  obtain ⟨P, hP, heq, hagree⟩ := h
+  refine (hasExactPowerAgreement_id_iff domain w k z Q).mpr ⟨P, hP, ?_, ?_⟩
+  · exact map_injective φ φ.injective (heq.trans (powerBatchedPolynomial_map P φ z).symm)
+  · rwa [powerBatchedWord_map, polynomialAgreementSet_map] at hagree
+
+/-- **Descent of uniform exact power agreement.** Suppose a set `exceptional` of challenges in
+an extension `E` is such that at every other challenge, every polynomial `Q` over `E` of degree
+below `k` with at least `L` agreements with the batched word has exact power agreement. Then
+uniform exact power agreement holds over `F` with at most `exceptional.card` exceptional
+challenges: the preimage of `exceptional` under `φ`. -/
+theorem uniformExactPowerAgreement_of_extension (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F)
+    (φ : F →+* E) (k L : ℕ) (exceptional : Finset E)
+    (hgood : ∀ z ∉ exceptional, ∀ Q : E[X], Q.degree < k →
+      L ≤ (polynomialAgreementSet (domain.trans ⟨φ, φ.injective⟩)
+        (powerBatchedWord (fun t i ↦ φ (w t i)) z) Q).card →
+      HasExactPowerAgreement domain w φ k z Q) :
+    UniformExactPowerAgreement domain w k L exceptional.card := by
+  refine ⟨exceptional.preimage φ φ.injective.injOn,
+    Finset.card_le_card_of_injOn φ (fun z hz ↦ Finset.mem_preimage.mp hz) φ.injective.injOn,
+    fun z hz Q hQ hL ↦ ?_⟩
+  refine (hgood (φ z) (fun hmem ↦ hz (Finset.mem_preimage.mpr hmem)) (Q.map φ)
+    (degree_map_le.trans_lt hQ) ?_).descend
+  rwa [powerBatchedWord_map, polynomialAgreementSet_map]
+
+end Descent
 
 section CodeLevel
 
