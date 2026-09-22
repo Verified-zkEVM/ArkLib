@@ -34,6 +34,8 @@ The root counts over extension fields that use these transports are in
 * `map_differentialSpecialization`, `map_separant`: naturality of specialization and separants.
 * `jetDegree_map_eq`, `jetTotalDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective
   coefficient maps preserve individual and total jet degrees and the cast hypothesis.
+* `jetDegree_map_le`, `highestActiveJet_map_eq_none`: any coefficient map does not increase jet
+  degrees, so it keeps an equation with no active jet free of jet variables.
 * `BoundedSolution.instFinite`: over a finite coefficient semiring there are finitely many
   solutions of degree at most `D`.
 * `BoundedSolution.map`, `BoundedSolution.map_injective`, `BoundedSolution.natCard_le_natCard_map`:
@@ -87,6 +89,22 @@ theorem jetTotalDegree_map_eq [CommSemiring F] [CommSemiring E] {f : F →+* E}
     jetTotalDegree (MvPolynomial.map f Q) = jetTotalDegree Q := by
   unfold jetTotalDegree MvPolynomial.weightedTotalDegree
   rw [MvPolynomial.support_map_of_injective Q hf]
+
+/-- Any coefficient map, injective or not, does not increase an individual jet degree. -/
+theorem jetDegree_map_le [CommSemiring F] [CommSemiring E] (f : F →+* E)
+    (Q : DifferentialPolynomial F d) (j : Fin (d + 1)) :
+    jetDegree (MvPolynomial.map f Q) j ≤ jetDegree Q j :=
+  MvPolynomial.degreeOf_le_iff.mpr fun _ hu ↦
+    MvPolynomial.monomial_le_degreeOf (some j) (MvPolynomial.support_map_subset f Q hu)
+
+/-- Any coefficient map sends an equation with no active jet to an equation with no active jet. -/
+theorem highestActiveJet_map_eq_none [CommSemiring F] [CommSemiring E] (f : F →+* E)
+    {Q : DifferentialPolynomial F d} (hQ : highestActiveJet Q = none) :
+    highestActiveJet (MvPolynomial.map f Q) = none := by
+  refine (highestActiveJet_eq_none_iff _).mpr fun j hj ↦ ?_
+  have hlt : 0 < jetDegree Q j :=
+    (show 0 < jetDegree (MvPolynomial.map f Q) j from hj).trans_le (jetDegree_map_le f Q j)
+  exact (highestActiveJet_eq_none_iff Q).mp hQ j hlt
 
 /-- An injective coefficient map preserves the cast hypothesis `JetDegreeCastsNeZero`: the jet
 degree is unchanged, and `(k : E) = f k` vanishes exactly when `(k : F)` does. In particular,
