@@ -10,7 +10,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 # Rate-partition gate acceptance tests
 
 Concrete values of `rateGamma` and `fixedRateCoefficient`, cases showing that the kept
-hypotheses are needed, and the source-shaped statements derived from the generalized ones.
+hypotheses are needed, and the forms with the stronger hypotheses `0 < R`, `0 < δ` and `R < 1`
+derived from the stated theorems.
 -/
 
 namespace ReedSolomon.HiddenDerivative.RatePartition
@@ -64,27 +65,27 @@ example : ¬ ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap
   have := h (gapBound / 2) (by positivity) (by linarith)
   linarith
 
-/-! ### Source-shaped statements -/
+/-! ### Forms with stronger hypotheses -/
 
-/-- The source form of `log_rateGamma`, with `0 < R`. -/
+/-- `log_rateGamma` under `0 < R`. -/
 example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (horder : 0 < order) :
     Real.log (rateGamma rate agreement order) = Real.log (27 * rate / 20) +
       Real.log ((order : ℝ) + 1) - rate / agreement * Real.log (6 * (order : ℝ)) :=
   log_rateGamma hrate.ne' horder
 
-/-- The source form of `complementary_rate_logs`, with `0 < R`. -/
+/-- `complementary_rate_logs` under `0 < R`. -/
 example {rate : ℝ} (hrate : 0 < rate) :
     Real.log (40 / (9 * rate)) + Real.log (27 * rate / 20) = Real.log 6 :=
   complementary_rate_logs hrate.ne'
 
-/-- The source form of `fixed_rate_log_identity`, with `0 < R` and `0 < δ`. -/
+/-- `fixed_rate_log_identity` under `0 < R` and `0 < δ`. -/
 example {rate gap : ℝ} {order : ℕ} (hrate : 0 < rate) (hgap : 0 < gap) (horder : 0 < order) :
     (rate + gap) * Real.log (rateGamma rate (rate + gap) order) =
       gap * Real.log order - fixedRateCoefficient rate + gap * Real.log (27 * rate / 20) +
         (rate + gap) * Real.log (1 + 1 / (order : ℝ)) :=
   fixed_rate_log_identity hrate.ne' (add_pos hrate hgap).ne' horder
 
-/-- The source form of `fixedRateCoefficient_pos`, with `R < 1`. -/
+/-- `fixedRateCoefficient_pos` for a code rate `R < 1`. -/
 example {rate : ℝ} (hrate : 0 < rate) (hrateOne : rate < 1) :
     0 < fixedRateCoefficient rate :=
   fixedRateCoefficient_pos hrate (by linarith)
