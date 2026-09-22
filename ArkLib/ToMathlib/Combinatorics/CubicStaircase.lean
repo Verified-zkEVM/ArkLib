@@ -27,6 +27,9 @@ The type `CubicStaircase.Slot D L` realizes this sum as a dependent triple, and
 is the exact, non-asymptotic lower bound `D * (max L 0) ^ 3 / 6 ≤ count D L`, valid for every real
 `L`, including nonintegral and nonpositive cutoffs.
 
+This file is unrelated to the natural-number staircase `Finset.staircase` of
+`ArkLib.Data.Finset.Staircase`, which counts pairs below a natural cutoff.
+
 ## Main statements
 
 * `CubicStaircase.card_slot` — `Fintype.card (Slot D L) = count D L`.
@@ -35,21 +38,6 @@ is the exact, non-asymptotic lower bound `D * (max L 0) ^ 3 / 6 ≤ count D L`, 
 * `CubicStaircase.six_mul_sum` — the closed form of the unrounded sum.
 * `CubicStaircase.cube_div_six_le_sum` — `L ^ 3 / 6` is below the unrounded sum for every `L`.
 * `CubicStaircase.count_ge_cubic` — `D * (max L 0) ^ 3 / 6 ≤ count D L`.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/ToMathlib/Combinatorics/CubicStaircase.lean`: `CubicStaircase.count`,
-`CubicStaircase.Slot`, `CubicStaircase.card_slot`, `CubicStaircase.Slot.exponents`,
-`CubicStaircase.Slot.exponents_injective`, `CubicStaircase.Slot.weighted_degree_lt`,
-`CubicStaircase.six_mul_sum` and `CubicStaircase.count_ge_cubic` are ported with the same
-statements. `CubicStaircase.cube_div_six_le_sum` drops the source hypothesis `0 < L`. The
-source's consumer is the weighted-support dimension bound
-`ReedSolomon.HiddenDerivative.weightedSupport_dimension_ge_cubic_sum`. The converse
-`CubicStaircase.Slot.exists_of_weighted_degree_lt` (every triple below the cutoff comes from a
-slot) has no consumer in the source and is not ported. This file is unrelated to the
-natural-number staircase `Finset.staircase` of `ArkLib.Data.Finset.Staircase`, which counts pairs
-below a natural cutoff.
 -/
 
 @[expose] public section
@@ -121,7 +109,7 @@ theorem six_mul_sum (n : ℕ) (L : ℝ) :
 
 /-- `L ^ 3 / 6 ≤ ∑ s < ⌈L⌉₊, (s + 1) * (L - s)` for every real `L`. For `L ≤ 0` the sum is
 empty and `L ^ 3 ≤ 0`. For `L > 0` the proof uses the closed form `six_mul_sum` and
-`L ≤ ⌈L⌉₊ ≤ L + 1`. The source version assumes `0 < L`; that hypothesis is dropped here. -/
+`L ≤ ⌈L⌉₊ ≤ L + 1`. -/
 theorem cube_div_six_le_sum (L : ℝ) :
     L ^ 3 / 6 ≤ ∑ s ∈ Finset.range ⌈L⌉₊, ((s : ℝ) + 1) * (L - s) := by
   rcases le_or_gt L 0 with hL | hL
