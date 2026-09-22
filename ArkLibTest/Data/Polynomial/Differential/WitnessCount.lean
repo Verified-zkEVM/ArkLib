@@ -10,11 +10,9 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Acceptance tests for witness counting
 
-* The source statements `boundedSolution_counting_pow_le_of_bad` and
-  `regularBranch_counting_pow_le` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, with
-  their degree budget `Δ ≥ jetDegree Q s`, the factor order `(q - H) * #roots`, finite sets of
-  bounded solutions, and the characteristic guard `D < ringChar F`, follow from the generalized
-  theorems.
+* The forms over a finite field with a degree budget `Δ ≥ jetDegree Q s`, the factor order
+  `(q - H) * #roots`, finite sets of bounded solutions, and the characteristic guard
+  `D < ringChar F` follow from the theorems.
 * Over `ZMod 2`, the equation `y' = 0` at depth `1` with `D = 2` has the three solutions `1`,
   `X ^ 2` and `1 + X ^ 2`. Every hypothesis of `card_mul_sub_le_of_isHighestActiveJet` other than
   the binomial one holds with `H = 0`, and the conclusion `3 * 2 ≤ 2 * (1 * 2)` fails; here
@@ -30,10 +28,9 @@ open Finset Polynomial
 
 variable {F : Type*} {d : ℕ}
 
-/-- Source shape: `boundedSolution_counting_pow_le_of_bad`, stated for a finite set of bounded
-solutions with exceptional sets indexed by bounded solutions and a degree budget `Δ`. The
-predicate `IsRegularWitness s solution point` of the source is written out as nonvanishing of the
-specialized separant. -/
+/-- `card_mul_sub_le_of_card_bad_le` over a finite field for a finite set of bounded solutions,
+with exceptional sets indexed by bounded solutions, a degree budget `Δ ≥ jetDegree Q s`, and the
+factor order `(q - H) * #roots`. -/
 example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (D H Δ : ℕ)
     (roots : Finset (BoundedSolution Q D)) (bad : BoundedSolution Q D → Finset F)
     (hBadCard : ∀ solution ∈ roots, (bad solution).card ≤ H)
@@ -73,9 +70,9 @@ example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) 
       rw [mul_assoc]
       exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hDegree)
 
-/-- Source shape: `regularBranch_counting_pow_le`, over a finite field with the characteristic
-guard `D < ringChar F`, the weighted-degree hypothesis `differentialWeightedDegree D Q ≤ H`, and a
-degree budget `Δ`. -/
+/-- `BoundedSolution.card_mul_sub_le_of_isHighestActiveJet` over a finite field with the
+characteristic guard `D < ringChar F`, the weighted-degree hypothesis
+`differentialWeightedDegree D Q ≤ H`, and a degree budget `Δ ≥ jetDegree Q s`. -/
 example [Field F] [Finite F] {D : ℕ} (Q : DifferentialPolynomial F d) (s : Fin (d + 1))
     (H Δ : ℕ) (hs : IsHighestActiveJet Q s) (hD : D < ringChar F)
     (hWeight : differentialWeightedDegree D Q ≤ H) (hDegree : jetDegree Q s ≤ Δ)

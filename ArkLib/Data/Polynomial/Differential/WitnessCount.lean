@@ -45,35 +45,6 @@ All counts use truncated subtraction, so no comparison between `H` and `q` is ne
 * `card_mul_sub_le_of_isHighestActiveJet` and
   `BoundedSolution.card_mul_sub_le_of_isHighestActiveJet`: the count of regular solutions, for a
   finite set of polynomials and for a finite set of bounded solutions.
-
-## References
-
-Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, files
-`WitnessCounting.lean` and `RegularCounting.lean` in
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/`.
-
-* `boundedSolution_counting_pow_le_of_bad` becomes `card_mul_sub_le_of_card_bad_le` and
-  `boundedSolution_counting_pow_le` becomes `card_mul_sub_le_of_natDegree_separant_le`. The roots
-  form a finite set of polynomials with a solution hypothesis instead of a finite set of
-  `BoundedSolution Q D`, since the degree bound is not used; `[Field F]` becomes
-  `[CommRing F] [IsDomain F]`; the degree budget `Δ ≥ jetDegree Q s` is replaced by
-  `jetDegree Q s` itself; and the product is written as `#roots * (q - H)`. The predicate
-  `IsRegularWitness s solution point` is written out as
-  `(differentialSpecialization (separant Q s) P).eval point ≠ 0`, which is the same condition by
-  `eval_differentialSpecialization`, so `IsRegularWitness`, `BoundedSolution.regularJetAt`,
-  `separantBadPoints` and their lemmas are not ported; the canonical exceptional set is
-  `(differentialSpecialization (separant Q s) P).roots.toFinset`.
-* `regularBranch_counting_pow_le` becomes `BoundedSolution.card_mul_sub_le_of_isHighestActiveJet`,
-  a corollary of `card_mul_sub_le_of_isHighestActiveJet`. The characteristic hypothesis
-  `D < ringChar F` is replaced by the binomial hypothesis above, which also holds in
-  characteristic zero; `natCast_choose_ne_zero_of_ringChar` recovers it from the source guard. The
-  weighted-degree hypothesis `differentialWeightedDegree D Q ≤ H` is weakened to
-  `differentialWeightedDegree D Q - (D - s) ≤ H`, the sharper separant degree bound of
-  `natDegree_differentialSpecialization_separant_le_sub`.
-* `polynomialJet_injOn_regularWitness` is inlined into `card_mul_sub_le_of_isHighestActiveJet`.
-
-Deferred: the singular recursion that reduces every solution to a regular branch, and the root
-counts over field extensions and by total jet degree that consume these theorems.
 -/
 
 @[expose] public section

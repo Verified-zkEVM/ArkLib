@@ -42,38 +42,6 @@ bounds the left side below by `#{b ∈ t | r a b} - #u`. Summing over `a ∈ s` 
 `Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow` converts the sum over `s` into a sum of
 fibre sizes over `t \ u`. The `A - k + 1` form follows from the sharp form by monotonicity of
 truncated subtraction.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
-
-* `AffineHilbert.finiteAgreementIncidence_lower_sharp`
-  (`ArkLib/ToMathlib/AlgebraicGeometry/Incidence/SharpRatio.lean`) is
-  `Finset.card_mul_sub_card_le_sum_compl_card_bipartiteBelow` with the index type `Fin n`
-  generalized to an arbitrary finite type; its sum over `univ.filter (· ∉ Bad)` is written here as
-  a sum over `Badᶜ`. `Finset.card_mul_sub_card_le_sum_card_bipartiteBelow_sdiff` further replaces
-  `univ` by an arbitrary `t : Finset β`.
-* `AffineHilbert.finiteAgreementIncidence_lower`
-  (`ArkLib/ToMathlib/Combinatorics/FiniteAgreementIncidence.lean`) is
-  `Finset.card_mul_sub_add_one_le_sum_compl_card_bipartiteBelow`, with the same generalization.
-  The source proved it by repeating the sharp argument; here it is a corollary of the sharp form.
-
-From `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FiniteField/Counting.lean`
-at the same revision:
-
-* `ReedSolomon.HiddenDerivative.witness_counting_le_of_bad` is
-  `Finset.card_mul_sub_le_card_mul_of_card_bad_le` with the factors of the product in Mathlib's
-  order. `witness_counting_pow_le_of_bad` is its instance `n = Δ * #t ^ d` and is not kept
-  separately.
-* `lower_mul_card_le_card_mul_of_fiber_bounds` is Mathlib's `Finset.card_mul_le_card_mul`.
-* `witness_counting_le` and `card_le_div_of_witness_counting` (the forms with an external bound
-  `S ≥ #t` and a quotient) have no consumer in the source and are not ported; the acceptance tests
-  derive them.
-
-Deferred: `AffineHilbert.goodCuts_div_agreements_le` and the rest of the sharp-ratio layer, and
-all consumers of these bounds (for example
-`AffineHilbert.affineAgreementIncidence_bound_aux` in `Incidence/Agreement.lean`), which stay in
-the source.
 -/
 
 @[expose] public section
