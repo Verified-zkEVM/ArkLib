@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
 public import ArkLib.Data.CodingTheory.HiddenDerivative.NormalizedSubstitution
 public import ArkLib.Data.MvPolynomial.MapExponents
 
@@ -22,6 +23,8 @@ injective exponent map `normalizeLocalExponent d : e ↦ e + d · e(E) · single
 contact order to `T`-degree. Hence reduction modulo `T^m` after normalization is normalization
 after the low-contact projection (`truncateLocalT_normalizeError`), and since normalization is
 injective, the normalized remainder vanishes exactly when the contact-order constraints hold.
+Combined with `X_sub_C_pow_dvd_differentialSpecialization_of_contact`, a vanishing normalized
+remainder at `(center, P(center))` forces `(X - center) ^ m ∣ Q(X, P, D¹P, ..., DᵈP)`.
 
 ## Main statements
 
@@ -31,31 +34,8 @@ injective, the normalized remainder vanishes exactly when the contact-order cons
   `normalizedLocalConstraintAt_eq_zero_iff`,
   `normalizedLocalConstraintAt_ker_eq_localConstraintAt`,
   `normalizedLocalConstraintAt_ker_eq_coordinates`.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RemainderMap.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `normalizeLocalExponent` and its `_apply_T`, `_apply_E`, `_apply_Y` and `_injective` lemmas are
-  unchanged. The private `normalizeLocalExponent_single_*` lemmas are not needed.
-* `normalizeErrorByExponent` is `MvPolynomial.mapExponents (normalizeLocalExponent d)`, so
-  `normalizeError_eq_normalizeErrorByExponent` is `normalizeError_eq_mapExponents`, and the private
-  `normalizeError_monomial` is public. `normalizeError_injective` is unchanged in statement and
-  is an instance of `MvPolynomial.mapExponents_injective`.
-* `normalizeLocalExponent_T_eq_contact` is unchanged; `weight_normalizeLocalExponent` restates it
-  as the weight identity used by `MvPolynomial.weightedTruncation_mapExponents`.
-* The private `filterLocalMonomials_monomial` is the generic `MvPolynomial.filterSupport_monomial`.
-* `truncateLocalT_normalizeError`, `normalizedLocalConstraintAt`,
-  `normalizedLocalConstraintAt_eq_normalize_localConstraintAt`,
-  `normalizedLocalConstraintAt_eq_zero_iff`,
-  `normalizedLocalConstraintAt_ker_eq_localConstraintAt` and
-  `normalizedLocalConstraintAt_ker_eq_coordinates` are unchanged.
-
-Deferred: `X_sub_C_pow_dvd_differentialSpecialization_of_normalizedLocalConstraint`, which needs
-`X_sub_C_pow_dvd_differentialSpecialization_of_contact` from the source's
-`Interpolation/Local/Contact.lean`, not yet ported.
+* `X_sub_C_pow_dvd_differentialSpecialization_of_normalizedLocalConstraint`: the normalized
+  remainder constraint forces contact of order `m` at every agreement point.
 -/
 
 @[expose] public section
@@ -79,16 +59,19 @@ def normalizeLocalExponent (d : ℕ) : (LocalVariable d →₀ ℕ) →+ (LocalV
     ext v
     simp [mul_add, add_assoc, add_left_comm]
 
+/-- The normalized exponent of `T` is `e(T) + d · e(E)`. -/
 @[simp]
 theorem normalizeLocalExponent_apply_T (d : ℕ) (e : LocalVariable d →₀ ℕ) :
     normalizeLocalExponent d e (localT d) = e (localT d) + d * e (localE d) := by
   simp [normalizeLocalExponent]
 
+/-- The normalization keeps the exponent of `E`. -/
 @[simp]
 theorem normalizeLocalExponent_apply_E (d : ℕ) (e : LocalVariable d →₀ ℕ) :
     normalizeLocalExponent d e (localE d) = e (localE d) := by
   simp [normalizeLocalExponent, localT, localE, localAux]
 
+/-- The normalization keeps the exponent of each `Y_(j+1)`. -/
 @[simp]
 theorem normalizeLocalExponent_apply_Y (d : ℕ) (e : LocalVariable d →₀ ℕ) (j : Fin d) :
     normalizeLocalExponent d e (localY j) = e (localY j) := by
@@ -205,5 +188,16 @@ theorem normalizedLocalConstraintAt_ker_eq_coordinates (m : ℕ) (center receive
   ext Q
   rw [LinearMap.mem_ker, LinearMap.mem_ker, normalizedLocalConstraintAt_eq_zero_iff,
     satisfiesLocalConstraints_iff_coordinates_eq_zero]
+
+/-- If the normalized remainder of `Q` at `(center, received)` vanishes and
+`P(center) = received`, then `(X - center) ^ m` divides `Q(X, P, D¹P, ..., DᵈP)`, over every
+commutative ring. The hypothesis `P(center) = received` is needed because the remainder map sees
+`P` only through the received value at `center`. -/
+theorem X_sub_C_pow_dvd_differentialSpecialization_of_normalizedLocalConstraint
+    (Q : DifferentialPolynomial R d) (P : Polynomial R) (center received : R)
+    (hP : P.eval center = received) (hQ : normalizedLocalConstraintAt m center received Q = 0) :
+    (Polynomial.X - Polynomial.C center) ^ m ∣ differentialSpecialization Q P :=
+  X_sub_C_pow_dvd_differentialSpecialization_of_contact Q P center received hP
+    ((normalizedLocalConstraintAt_eq_zero_iff m center received Q).mp hQ)
 
 end ReedSolomon.HiddenDerivative

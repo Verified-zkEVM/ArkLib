@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 /-!
 # Graded local constraint acceptance tests
 
-The source's center-zero statements are derived from the general ones. At `d = 0` and received
+The center-zero cases are derived from the general statements. At `d = 0` and received
 value `1`, the image of `Y₀` is `1 + T E`, whose constant term has local jet degree zero; so the
 grading needs received value zero. The center may be nonzero: with center `3` the constraint
 coefficient of a source monomial still vanishes outside its grade. Translating `Y₀`, of jet
@@ -20,20 +20,22 @@ open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 
 variable {d m : ℕ}
 
-/-- Source shape `unscaledLocalSubstitution_zero_Y_zero_isWeightedHomogeneous`. -/
+/-- At center and received value zero, the image of `Y₀` is homogeneous of local jet degree one. -/
 example : (unscaledLocalSubstitution (R := ℤ) d 0 0 (X (some 0))).IsWeightedHomogeneous
     (localJetDegreeWeight d) 1 := by
   simpa using unscaledLocalSubstitution_isWeightedHomogeneous (R := ℤ) (d := d) 0
     (isWeightedHomogeneous_X ℤ jetDegreeWeight (some 0))
 
-/-- Source shape `unscaledLocalSubstitution_zero_sourceMonomial_isWeightedHomogeneous`. -/
+/-- At center and received value zero, the image of `sourceMonomial x b higher` is homogeneous of
+local jet degree `b + ∑ j, higher j`. -/
 example (x b : ℕ) (higher : Fin d → ℕ) :
     (unscaledLocalSubstitution (R := ℤ) d 0 0 (sourceMonomial x b higher)).IsWeightedHomogeneous
       (localJetDegreeWeight d) (b + ∑ j, higher j) :=
   unscaledLocalSubstitution_isWeightedHomogeneous 0
     (sourceMonomial_isWeightedHomogeneous_jetDegreeWeight x b higher)
 
-/-- Source shape `localConstraintAt_zero_sourceMonomial_isWeightedHomogeneous`. -/
+/-- At center and received value zero, the constraint image of `sourceMonomial x b higher` is
+homogeneous of local jet degree `b + ∑ j, higher j`. -/
 example (x b : ℕ) (higher : Fin d → ℕ) :
     (localConstraintAt (R := ℤ) m 0 0 (sourceMonomial x b higher)).IsWeightedHomogeneous
       (localJetDegreeWeight d) (b + ∑ j, higher j) :=

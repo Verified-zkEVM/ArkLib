@@ -46,34 +46,6 @@ for the construction of the candidate see `ArkLib.Data.Polynomial.Differential.D
 
 ## References
 
-Ported from ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, where the statements were
-over a field in the namespace `ReedSolomon.HiddenDerivative`. They mention no Reed–Solomon object
-and are stated here over a commutative ring in `PolynomialDifferential`.
-
-From `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/Iteration.lean`:
-
-* `hasseCoeffAt_add_order_eq_of_regular_solutions_of_eq_below` becomes
-  `taylor_coeff_eq_of_taylor_coeff_eq_of_isLeftRegular`. The source assumed that `P` and `P'`
-  solve `Q = 0`, that `S(P) ≠ 0`, and that `k + r ≤ D < ringChar F`. Here the two `k`-th residual
-  coefficients are assumed equal and the slope `(k + r choose r) S(P)` left-regular. The proof uses
-  the affine law directly instead of the uniqueness of the one-step lift, so a left-regular slope
-  suffices where the lift needs a unit. The exact identity behind it,
-  `coeff_shiftedJetSubstitution_sub_eq_of_taylor_coeff_eq`, is new.
-* `eq_of_regular_solutions_of_degree_le_of_polynomialJet_eq` becomes
-  `eq_of_polynomialJet_eq_of_isLeftRegular`: equal residuals replace the two solution hypotheses,
-  and left-regular slopes for `r < k + r ≤ D` replace `IsRegularJet` and `D < ringChar F`.
-* `eq_of_regular_solutions_of_degree_le_of_polynomialJet_eq_of_isHighestActiveJet` and
-  `BoundedSolution.eq_of_polynomialJet_eq_of_isHighestActiveJet` are generalized in the same way.
-* The congruence lemmas were ported in `ArkLib.Data.Polynomial.Differential.RegularLift`.
-
-From `.../RootFinding/Regular/JetPrefix.lean`:
-`existsUnique_regularLiftCoefficient_centered_of_isHighestActiveJet` keeps its name; a unit slope
-replaces `IsRegularJet` and `k + s ≤ D < ringChar F`. The perturbation is written
-`P + hassePerturbation center γ (k + s)`, as in `RegularLift`.
-
-The field forms with `IsRegularJet` and a characteristic bound are derived in the acceptance tests
-from `Polynomial.natCast_choose_ne_zero_of_lt_charP`.
-
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.4 and Corollary 4.5.
 -/
 
