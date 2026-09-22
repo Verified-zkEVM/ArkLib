@@ -598,7 +598,7 @@ private lemma exists_affine_image_card_le [SampleableType F] (T : Finset (F × F
       (T.card : ENNReal) / (1 + (T.card - 1) * (Fintype.card F : ENNReal)⁻¹)
         ≤ ((Set.range (fun p : ↥T ↦
           (μ₁ - (p : F × F).1) / ((p : F × F).2 - μ₂))).ncard : ENNReal) := by
-  let _ : DecidableEq F := Classical.decEq F
+  classical
   obtain ⟨μ₂, hμ₂⟩ : ∃ μ₂ : F, μ₂ ∉ T.image Prod.snd := by
     by_contra h
     simp only [not_exists, not_not] at h
@@ -769,7 +769,6 @@ theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ} [SampleableTyp
                 (((C^⋈(Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A)))
                 (δ : ℝ)).toNat : ℝ)) := by
   classical
-  let _ : DecidableEq F := Classical.decEq F
   let _ := Fintype.ofFinite A
   set Cint : Set (ι → Fin 2 → A) :=
     ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))

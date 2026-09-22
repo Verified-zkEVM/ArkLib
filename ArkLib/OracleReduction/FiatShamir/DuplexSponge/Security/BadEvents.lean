@@ -30,7 +30,7 @@ namespace QueryLog
 section
 -- WIP defining more general properties for query log
 
-variable {ι : Type*} [DecidableEq ι] {spec : OracleSpec ι} [spec.DecidableEq]
+variable {ι : Type*} [DecidableEq ι] {spec : OracleSpec ι} [∀ t, DecidableEq (spec.Range t)]
 
 /-- A query tuple `(i, q, r)` is redundant in a query log if it appears more than once -/
 def redundantQuery (log : QueryLog spec) (q : spec.Domain) (r : spec.Range q) : Prop :=

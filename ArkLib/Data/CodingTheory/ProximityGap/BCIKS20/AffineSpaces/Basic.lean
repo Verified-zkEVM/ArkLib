@@ -364,7 +364,7 @@ private noncomputable def affineFinsetEquiv {k : ℕ}
     (Affine.affineSubspaceAtOrigin (F := F) u0 dirs) ≃ (affineFinset u0 dirs) :=
   Equiv.subtypeEquiv (Equiv.refl _) (affine_mem_iff_finset_mem u0 dirs)
 
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [SampleableType F] in
 theorem affine_finset_card_eq {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F) :
     (affineFinset u0 dirs).card =
@@ -483,7 +483,7 @@ theorem prob_coeff_eq_prob_affine {k : ℕ} [NeZero k]
   push_cast
   exact ENNReal.mul_div_mul_left _ _ (by exact_mod_cast hK_pos.ne') (ENNReal.natCast_ne_top K)
 
-omit [Nonempty ι] in
+omit [Nonempty ι] [SampleableType F] in
 theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop)
@@ -507,7 +507,7 @@ theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
     simp [affineFinsetEquiv, Equiv.subtypeEquiv]
   simp only [hfilt, hcard]
 
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [SampleableType F] in
 theorem proper_affine_sub_card_le {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (S : Finset (ι → F)) (hS : ↑S ⊆ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs : Set (ι → F)))
