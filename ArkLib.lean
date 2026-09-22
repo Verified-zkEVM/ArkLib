@@ -101,6 +101,8 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Cons
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.KernelSliceIndependence
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rank
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Substitution
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Variables
 public import ArkLib.Data.CodingTheory.InterleavedCode
@@ -114,6 +116,7 @@ public import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
 public import ArkLib.Data.CodingTheory.JohnsonBound.Pairwise
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
+public import ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
@@ -207,6 +210,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
+public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
@@ -248,6 +252,7 @@ public import ArkLib.Data.Finset.PairwiseIntersection
 public import ArkLib.Data.Finset.PickSubset
 public import ArkLib.Data.Finset.SampleIncidence
 public import ArkLib.Data.Finset.WeightedSimplex
+public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
 public import ArkLib.Data.GroupTheory.PrimeOrder
@@ -321,6 +326,8 @@ public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.PointCollision
+public import ArkLib.Data.Polynomial.PointCollisionProbability
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -542,6 +549,8 @@ public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union
 public import ArkLib.ToMathlib.LinearAlgebra.TriangularInjective
 public import ArkLib.ToMathlib.List.Basic
 public import ArkLib.ToMathlib.Logic.HEq
+public import ArkLib.ToMathlib.MeasureTheory.Integral.NatFloorCells
+public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.PDeriv
