@@ -59,11 +59,9 @@ Ports `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Weigh
 * `volume_weightedSimplex_add_choose_le_exp` specializes
   `MeasureTheory.volume_real_weightedSimplex_add_le_mul_exp`.
 
-Deferred: the consumers `NormalizedRank.lean` and `Margin.lean`. They need the weighted local
-constraint map `weightedSupportLocalConstraint`, its rank bound, the contact geometric sum
-`localRank_contact_exp_sum_le`, the rounding estimates of `Parameters/RankRounding.lean` and
-`Parameters/WeightedSupport/`, none of which is ported yet. The support space
-`weightedSupportSpace` is in `WeightedSupport/Basic.lean`.
+The consumer `WeightedSupport/NormalizedRank.lean` combines these bounds with the rank bound of
+`WeightedSupport/RankBound.lean`. Deferred: the consumer `Margin.lean`, which needs the rounding
+estimates of `Parameters/WeightedSupport/`, not ported yet.
 -/
 
 @[expose] public section
