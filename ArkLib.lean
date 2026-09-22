@@ -96,6 +96,7 @@ public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Interpolation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
@@ -584,6 +585,8 @@ public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.ToListWithProof
 public import ArkLib.ToMathlib.Finsupp.Weight
 public import ArkLib.ToMathlib.InformationTheory.Hamming
+public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
+public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel

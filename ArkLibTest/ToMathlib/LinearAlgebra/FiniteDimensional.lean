@@ -60,6 +60,41 @@ example : LinearMap.ker (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates = LinearMap
     ∧ Function.Surjective (LinearMap.fst ℚ ℚ ℚ).rangeCoordinates :=
   ⟨LinearMap.ker_rangeCoordinates _, LinearMap.rangeCoordinates_surjective _⟩
 
+/-! ### Nonzero kernel vectors and ranks of product maps
+
+The first projection `ℚ × ℚ → ℚ` has rank `1 < 2`, so it kills a nonzero vector. The identity of
+`ℚ` has rank equal to the dimension and kills nothing, so the strict inequality is needed. The map
+`ℚ → ℚ × ℚ`, `x ↦ (x, x)`, built from two copies of the identity, has rank `1`, strictly below the
+sum `2` of the component ranks. -/
+
+/-- The first projection kills a nonzero vector. -/
+example : ∃ v : ℚ × ℚ, v ≠ 0 ∧ LinearMap.fst ℚ ℚ ℚ v = 0 := by
+  apply LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt
+  rw [LinearMap.range_eq_top.mpr LinearMap.fst_surjective, finrank_top, finrank_self,
+    finrank_prod, finrank_self]
+  norm_num
+
+/-- The identity of `ℚ` has rank equal to the dimension and trivial kernel. -/
+example : finrank ℚ (LinearMap.range (LinearMap.id : ℚ →ₗ[ℚ] ℚ)) = finrank ℚ ℚ ∧
+    ¬ ∃ v : ℚ, v ≠ 0 ∧ (LinearMap.id : ℚ →ₗ[ℚ] ℚ) v = 0 := by
+  refine ⟨by rw [LinearMap.range_id, finrank_top], ?_⟩
+  rintro ⟨v, hv, hv0⟩
+  exact hv hv0
+
+/-- Two copies of the identity: the product map has rank `1`, strictly below the sum `2` that
+`LinearMap.finrank_range_pi_le_sum` gives. -/
+example : finrank ℚ (LinearMap.range
+      (LinearMap.pi fun _ : Fin 2 => (LinearMap.id : ℚ →ₗ[ℚ] ℚ))) = 1 ∧
+    ∑ _ : Fin 2, finrank ℚ (LinearMap.range (LinearMap.id : ℚ →ₗ[ℚ] ℚ)) = 2 := by
+  refine ⟨le_antisymm ?_ ?_, ?_⟩
+  · exact (LinearMap.finrank_range_le _).trans_eq (finrank_self ℚ)
+  · rw [Nat.one_le_iff_ne_zero, Ne, Submodule.finrank_eq_zero, LinearMap.range_eq_bot]
+    intro h
+    have := congrFun (LinearMap.congr_fun h 1) 0
+    simp at this
+  · rw [LinearMap.range_eq_top.mpr fun x => ⟨x, rfl⟩, finrank_top, finrank_self]
+    rfl
+
 /-! ### Joint kernels
 
 On `ℚ³`, the first two coordinate projections have rank `1` each, so their ranks sum to
