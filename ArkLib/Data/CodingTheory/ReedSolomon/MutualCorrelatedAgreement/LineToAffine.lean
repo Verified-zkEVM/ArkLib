@@ -153,6 +153,7 @@ theorem mcaError_affineLine_le_min_one_of_exactAgreement {k A : ℕ} (domain : �
   le_min (mcaError_le_one _ _ _)
     (mcaError_affineLine_le_of_exactAgreement domain B hline radius hthreshold)
 
+omit [SampleableType F] in
 open Classical in
 /-- **Affine-space bad density.** Under `LineExactAgreementBound domain k A B`, for every radius
 with threshold at least `A`, every dimension `s` and every family `U : Fin (s + 1) → ι → F`, the
@@ -178,6 +179,7 @@ theorem mcaError_affineSpace_le_of_exactAgreement {k A s : ℕ} (domain : ι ↪
     (affineLine_bad_set_card_le_of_exactAgreement domain B hline radius hthreshold)
 
 open Classical in
+omit [SampleableType F] in
 /-- **Exact affine decomposition outside a sparse exceptional set.** Under
 `LineExactAgreementBound domain k A B`, for every radius with threshold at least `A` and with
 `k ≤ |ι| · (1 - radius)`, and every family `U : Fin (s + 1) → ι → F`, there is a set of at most
