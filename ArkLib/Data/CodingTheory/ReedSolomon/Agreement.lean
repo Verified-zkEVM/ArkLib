@@ -16,16 +16,17 @@ They use an arbitrary finite coordinate type, so a domain indexed by `Fin n`, a 
 or a chosen basis enumeration uses the same API. Neither definition imposes a degree bound:
 Reed–Solomon statements must supply their strict message-degree hypotheses separately.
 
-## Main statements
+## Main definitions
 
-* `polynomialAgreementSet`, `commonPolynomialAgreementSet`: the coordinates of individual and
-  simultaneous agreement.
-* `polynomialAgreementSet_map`: an injective coefficient map preserves polynomial agreement.
-* `card_polynomialAgreementSet`, `commonPolynomialAgreementSet_eq_inter`.
+* `polynomialAgreementSet` records agreement with one polynomial.
+* `commonPolynomialAgreementSet` records simultaneous agreement with two polynomials on the
+  same coordinates. Its cardinality for fixed witnesses is not the maximum common agreement.
 
-## References
-
-* [DKT26]
+`card_polynomialAgreementSet` identifies the single-polynomial count with `Code.agree`, and
+`polynomialAgreementSet_map` shows that an injective ring hom applied to the domain, the received
+word, and the polynomial gives the same agreement set.
+The intersection identity below connects the two notions. They are exact finite sets, with
+no decoding threshold, probability convention, or mutual-correlated-agreement hypothesis.
 -/
 
 @[expose] public section
@@ -77,19 +78,17 @@ theorem card_polynomialAgreementSet
     (polynomialAgreementSet domain received P).card =
       Code.agree (evalOnPoints domain P) received := rfl
 
-/-- An injective coefficient map preserves the polynomial agreement set. -/
+/-- Applying an injective ring hom `φ` to the evaluation points, the received word, and the
+coefficients of `P` does not change the agreement set. -/
 theorem polynomialAgreementSet_map
     {F E ι : Type*} [Semiring F] [Semiring E] [DecidableEq F] [DecidableEq E]
-    [Fintype ι] (domain : ι ↪ F) (φ : F →+* E)
-    (hφ : Function.Injective φ) (received : ι → F) (P : F[X]) :
+    [Fintype ι]
+    (domain : ι ↪ F) (φ : F →+* E) (hφ : Function.Injective φ)
+    (received : ι → F) (P : F[X]) :
     polynomialAgreementSet (domain.trans ⟨φ, hφ⟩) (fun i ↦ φ (received i)) (P.map φ) =
       polynomialAgreementSet domain received P := by
-  classical
   ext i
-  simp only [mem_polynomialAgreementSet]
-  change (P.map φ).eval (φ (domain i)) = φ (received i) ↔ _
-  rw [Polynomial.eval_map_apply]
-  exact hφ.eq_iff
+  simp [eval_map, eval₂_at_apply, hφ.eq_iff]
 
 end
 end ReedSolomon

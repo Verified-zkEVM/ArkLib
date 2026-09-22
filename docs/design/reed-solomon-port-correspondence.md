@@ -2417,3 +2417,35 @@ polynomial of the same natural degree (`natDegree_affineHilbertPolynomial_radica
 Deferred: the forward direction for points in a proper algebraically closed extension `K` of `k`.
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
+
+## Equation-restricted correlated agreement descent
+
+The source definition `challengeSpecialization` in
+`HiddenDerivative/RootFinding/Symbolic/TaylorWitnessEmbedding.lean` and
+`ChallengeHeightLE` in `HiddenDerivative/RootFinding/Symbolic/TaylorHeight.lean` are owned by
+`ArkLib.Data.Polynomial.Differential.BaseChange` under the same names. Challenge specialization is
+generalized from differential-polynomial variables over a field to arbitrary multivariate
+variables over a commutative semiring. The challenge-height predicate is generalized from fields
+to commutative semirings.
+
+The source module `ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean` contributes
+`challengeSpecialization_map_coefficients`, `map_symbolicDifferentialSpecialization`,
+`ChallengeHeightLE.map_coefficients` (listed as `map_coefficients` in the source unit inventory),
+and `exists_exceptional_equation_correlatedAgreement_descend`. The first three are owned by
+`ArkLib.Data.Polynomial.Differential.BaseChange` with the same declaration names. They are stated
+for commutative semirings and arbitrary multivariate variable types, rather than only for the field
+and differential-polynomial variables used by the Reed–Solomon application. The descent theorem
+keeps its source name in
+`ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.EquationDescent` and expresses the
+embedded domain as `domain.trans ⟨ι, ι.injective⟩`.
+
+The source definition `HasExactCorrelatedPair` from
+`MutualCorrelatedAgreement/Symbolic/RegularEquation.lean` and its theorem `.descend` from
+`MutualCorrelatedAgreement/ExtensionDescent.lean` keep their names in
+`ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.ExtensionDescent`. The witness
+still consists of two degree-bounded base-field polynomials, their specialization, and equality of
+the complete agreement sets.
+
+`ReedSolomon.polynomialAgreementSet_map` already appears in
+`ArkLib.Data.CodingTheory.ReedSolomon.Agreement` on main with this statement. The descent proof
+and acceptance case reuse it; the unit does not introduce another declaration with that name.

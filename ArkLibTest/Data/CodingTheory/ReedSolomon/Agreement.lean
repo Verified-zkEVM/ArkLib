@@ -14,28 +14,55 @@ open Polynomial ReedSolomon
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 local instance : DecidableEq E₄ := Classical.decEq _
 
-private def onePointDomain {F : Type*} (x : F) : Fin 1 ↪ F :=
-  ⟨fun _ ↦ x, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+private def twoPointDomain : Fin 2 ↪ ZMod 2 where
+  toFun i := i.val
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    have hval : i.val % 2 = j.val % 2 := by
+      simpa [ZMod.val_natCast] using congrArg ZMod.val hij
+    simpa [Nat.mod_eq_of_lt i.isLt, Nat.mod_eq_of_lt j.isLt] using hval
 
-/-- Agreement sets are preserved by the algebra map from `ZMod 2` into its degree-two extension.
--/
-example (P : (ZMod 2)[X]) (y : Fin 1 → ZMod 2) :
-    polynomialAgreementSet
-        ((onePointDomain (0 : ZMod 2)).trans
-          ⟨algebraMap (ZMod 2) E₄, (algebraMap (ZMod 2) E₄).injective⟩)
-        (fun i ↦ algebraMap (ZMod 2) E₄ (y i)) (P.map (algebraMap (ZMod 2) E₄)) =
-      polynomialAgreementSet (onePointDomain (0 : ZMod 2)) y P :=
-  polynomialAgreementSet_map _ _ (algebraMap (ZMod 2) E₄).injective y P
+@[simp] private theorem twoPointDomain_apply (i : Fin 2) :
+    twoPointDomain i = (i.val : ZMod 2) := rfl
 
-/-- Injectivity is needed: reducing `2 * X` modulo two creates agreement at the point `1` that
-was absent over the integers. -/
+/-- The polynomial `X` agrees with zero at the first of two evaluation points, over the base
+field and its degree-two extension. -/
 example :
-    (polynomialAgreementSet (onePointDomain (1 : ℤ)) (fun _ ↦ 0) (2 * X : ℤ[X])).card = 0 ∧
-      (polynomialAgreementSet (onePointDomain (1 : ZMod 2)) (fun _ ↦ 0)
+    polynomialAgreementSet twoPointDomain (fun _ ↦ 0) (X : (ZMod 2)[X]) = {0} ∧
+      polynomialAgreementSet
+        (twoPointDomain.trans
+          ⟨algebraMap (ZMod 2) E₄, (algebraMap (ZMod 2) E₄).injective⟩)
+        (fun _ ↦ algebraMap (ZMod 2) E₄ (0 : ZMod 2))
+        ((X : (ZMod 2)[X]).map (algebraMap (ZMod 2) E₄)) = {0} ∧
+      polynomialAgreementSet
+        (twoPointDomain.trans
+          ⟨algebraMap (ZMod 2) E₄, (algebraMap (ZMod 2) E₄).injective⟩)
+        (fun _ ↦ algebraMap (ZMod 2) E₄ (0 : ZMod 2))
+        ((X : (ZMod 2)[X]).map (algebraMap (ZMod 2) E₄)) =
+          polynomialAgreementSet twoPointDomain (fun _ ↦ 0) (X : (ZMod 2)[X]) := by
+  refine ⟨?_, ?_, ?_⟩
+  · ext i
+    fin_cases i <;> simp [polynomialAgreementSet, Polynomial.eval_X]
+  · ext i
+    fin_cases i <;> simp [polynomialAgreementSet, Polynomial.eval_X]
+  · exact polynomialAgreementSet_map twoPointDomain (algebraMap (ZMod 2) E₄)
+      (algebraMap (ZMod 2) E₄).injective (fun _ ↦ 0) (X : (ZMod 2)[X])
+
+/-- A noninjective coefficient map can create agreement: reducing `2 * X` modulo two creates
+agreement at the point `1` that was absent over the integers. -/
+example :
+    (polynomialAgreementSet (⟨fun _ : Fin 1 ↦ (1 : ℤ), fun _ _ _ ↦ Subsingleton.elim _ _⟩)
+      (fun _ ↦ 0) (2 * X : ℤ[X])).card = 0 ∧
+      (polynomialAgreementSet
+        (⟨fun _ : Fin 1 ↦ (1 : ZMod 2), fun _ _ _ ↦ Subsingleton.elim _ _⟩)
+        (fun _ ↦ 0)
         ((2 * X : ℤ[X]).map (Int.castRingHom (ZMod 2)))).card = 1 := by
   constructor
   · have hset :
-        polynomialAgreementSet (onePointDomain (1 : ℤ)) (fun _ ↦ 0) (2 * X : ℤ[X]) = ∅ := by
+        polynomialAgreementSet
+          (⟨fun _ : Fin 1 ↦ (1 : ℤ), fun _ _ _ ↦ Subsingleton.elim _ _⟩)
+          (fun _ ↦ 0) (2 * X : ℤ[X]) = ∅ := by
       ext i
       constructor
       · intro hi
@@ -50,4 +77,4 @@ example :
   · have hmap : ((2 * X : ℤ[X]).map (Int.castRingHom (ZMod 2))) = 0 := by
       simp [CharTwo.two_eq_zero]
     rw [hmap]
-    simp [polynomialAgreementSet, onePointDomain]
+    simp [polynomialAgreementSet]
