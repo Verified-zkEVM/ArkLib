@@ -29,21 +29,8 @@ every characteristic, and not a claim that the counted coordinates are attained.
 
 ## References
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/LocalRank.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `weightedSupport_localConstraint_support` keeps its statement, with the source's
-  `reachableLocalJetDegree e` written `e.weight (localJetDegreeWeight d)`.
-* `weightedSupport_localConstraint_mem_exponents` and `finrank_weightedSupportLocalConstraint_le`
-  use the natural cutoff `⌈L / D⌉₊` where the source's `localResidualExponents` and
-  `localResidualCoordinateBudget` took the real cutoff `L / D`; the two agree because
-  `n < x ↔ n < ⌈x⌉₊` for natural `n`. The rank bound is the specialization of the existing
-  `finrank_range_localConstraintAt_domRestrict_le` to the weighted support space.
-* `weightedSupportLocalConstraint` is unchanged.
-
-* Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
-  Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
+* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
+  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
 -/
 
 @[expose] public section

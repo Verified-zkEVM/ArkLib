@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 /-!
 # Acceptance tests for the partition support dimension bounds
 
-The staircase form of the dimension at `d = 0`, the source statements at the cutoff `m * A` with
+The staircase form of the dimension at `d = 0`, the lower bounds at the cutoff `m * A` with
 level `m * agreement`, and the failure of `partition_quadratic_rate_lower` without either of its
 hypotheses `D ≤ rate * n` and `level * n ≤ L`.
 -/
@@ -23,15 +23,14 @@ example : Module.finrank ℚ (partitionSupportSpace ℚ 2 0 0 ((3 : ℕ) : ℝ) 
   rw [finrank_partitionSupportSpace_eq_sum_count]
   simp [natWeightedSimplex]
 
-/-- Source shape `partitionSupport_dimension_ge_quadratic_sum`, at the cutoff `m * A`. -/
+/-- The quadratic lower bound at the cutoff `m * A`. -/
 example (F : Type*) [Field F] {D d m A W : ℕ} (hD : 0 < D) :
     ∑ c ∈ natWeightedSimplex (fun i : Fin d => i.val + 1) W,
         (D : ℝ) * (max ((m * A : ℕ) / (D : ℝ) - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 2 / 2 ≤
       (Module.finrank F (partitionSupportSpace F D d W (m * A : ℕ) hD) : ℝ) :=
   partitionSupport_dimension_ge_quadratic_sum F hD (m * A)
 
-/-- Source shape `partitionSupport_dimension_ge_rate_sum`: level `m * agreement`, cutoff `m * A`,
-and `agreement * n ≤ A`. The source's `0 < n` and `0 < rate` are not used. -/
+/-- The rate lower bound at level `m * agreement`, cutoff `m * A`, and `agreement * n ≤ A`. -/
 example (F : Type*) [Field F] {D d n m A W : ℕ} {rate agreement : ℝ} (hD : 0 < D)
     (hupper : (D : ℝ) ≤ rate * n) (hlower : agreement * n ≤ A) :
     (n : ℝ) / (2 * rate) *

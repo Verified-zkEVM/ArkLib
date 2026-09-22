@@ -27,27 +27,6 @@ needed; `0 < D` enters only as the index of the space.
 * `partitionSupport_localConstraint_support`: the three support bounds on the partition support.
 * `partitionSupportLocalConstraint` and `finrank_partitionSupportLocalConstraint_le`: the local
   constraint map on the partition support space and its rank bound.
-
-## References
-
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/LocalRank.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `partitionSupport_localConstraint_support`, `partitionSupportLocalConstraint` and
-  `finrank_partitionSupportLocalConstraint_le` keep their statements, with the source's
-  `localDerivativeWeight e` written `e.weight (localDerivativeJetWeight d)` and its
-  `partitionLocalRankBound` written `localDerivativeCoordinateBudget`. The count itself does not
-  use `0 < D`; `hD` appears only because the space is indexed by it.
-* The source's `unscaledLocal_derivative_weight_le` and its private weight lemmas are the existing
-  `localDerivativeJetWeight_le_of_mem_support` of `Interpolation/Local/Coordinates.lean`.
-* The source's `localDerivativeWeight`, `partitionLocalRankBound`, `PartitionLocalIndex`,
-  `card_partitionLocalIndex`, `partitionLocalExponent`, `partitionLocalExponents`,
-  `card_partitionLocalExponents_le` and `mem_partitionLocalExponents_of_bounds` do not mention the
-  partition support; their generalizations `weight_localDerivativeJetWeight`,
-  `localDerivativeCoordinateBudget`, `localDerivativeExponent`, `localDerivativeExponents`,
-  `card_localDerivativeExponents_le`, `mem_localDerivativeExponents_of_bounds`, and the rank bound
-  `finrank_range_localConstraintAt_domRestrict_le_of_derivative_weight` for any submodule of
-  derivative-order weight at most `W`, are in `Interpolation/Local/Coordinates.lean`.
 -/
 
 @[expose] public section

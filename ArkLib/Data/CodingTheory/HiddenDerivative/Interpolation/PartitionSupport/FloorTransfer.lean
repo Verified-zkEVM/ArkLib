@@ -27,19 +27,9 @@ below.
 
 ## References
 
-Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/`
-`PartitionSupport/FloorTransfer.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d.
-
-* `partition_floor_square_integral` keeps its statement, with the source's `weightedSimplex d W`
-  written `Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W`. The source's cell argument is
-  `Finset.setIntegral_le_sum_natWeightedSimplex` of
-  `ArkLib.Data.Finset.WeightedSimplex.FloorTransfer` applied to the whole simplex.
-* `partitionSupport_dimension_ge_rate_integral` has the hypotheses of
-  `partitionSupport_dimension_ge_rate_sum`: a real level and a natural cutoff with
-  `level * n ≤ L` replace `m * agreement` and `m * A`, and `0 < n` and `0 < rate` are dropped.
-
-* [Dao, Kominers, Thaler, and Zheng, *Reed--Solomon List Decoding and Mutual Correlated Agreement
-  up to Capacity*][DKTZ26], Section 3.
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
+  and Smaller Cryptographic Proofs*][DKT26], Section 6.2, (73), and Appendix D.2, in the proof of
+  Lemma 6.2
 -/
 
 @[expose] public section

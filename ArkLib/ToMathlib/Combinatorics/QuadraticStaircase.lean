@@ -36,21 +36,6 @@ non-asymptotic lower bound `D * (max L 0) ^ 2 / 2 ≤ count D L`, valid for ever
 * `QuadraticStaircase.count_ge_quadratic` — `D * (max L 0) ^ 2 / 2 ≤ count D L`.
 * `QuadraticStaircase.count_div_sub_eq_sum` — at the cutoff `L / D - c` with natural `L`, `c`,
   the count is the natural sum `∑ u < L, (L - D * (u + c))`.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
-`ArkLib/ToMathlib/Combinatorics/QuadraticStaircase.lean`: `QuadraticStaircase.count`,
-`QuadraticStaircase.Slot`, `QuadraticStaircase.card_slot`, `QuadraticStaircase.Slot.exponents`,
-`QuadraticStaircase.Slot.exponents_injective`, `QuadraticStaircase.Slot.weighted_degree_lt`,
-`QuadraticStaircase.two_mul_sum` and `QuadraticStaircase.count_ge_quadratic` are ported with the
-same statements. `QuadraticStaircase.square_div_two_le_sum` weakens the source hypothesis `0 < L`
-to `0 ≤ L`. The source file imported `CubicStaircase` without using it; that import is dropped.
-From `HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean` at the same revision:
-`partition_residual_ceil` is `QuadraticStaircase.ceil_mul_div_sub_sub`, and
-`quadraticStaircase_le_partition_slice` is strengthened from an inequality to the equality
-`QuadraticStaircase.count_div_sub_eq_sum`. The source consumer `RatePartition/Area.lean` is not yet
-ported.
 -/
 
 @[expose] public section
@@ -69,6 +54,7 @@ def count (D : ℕ) (L : ℝ) : ℕ :=
 def Slot (D : ℕ) (L : ℝ) :=
   Σ s : Fin ⌈L⌉₊, Fin ⌈(D : ℝ) * (L - s.val)⌉₊
 
+/-- The slots form a finite type. -/
 instance (D : ℕ) (L : ℝ) : Fintype (Slot D L) :=
   inferInstanceAs (Fintype (Σ s : Fin ⌈L⌉₊, Fin ⌈(D : ℝ) * (L - s.val)⌉₊))
 

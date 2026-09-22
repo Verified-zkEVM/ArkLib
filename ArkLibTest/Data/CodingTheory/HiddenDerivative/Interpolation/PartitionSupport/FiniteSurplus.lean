@@ -9,28 +9,26 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.
 /-!
 # Acceptance tests for the partition surplus
 
-The source's `partition_choose_two_real` from Mathlib, the source's `partitionLocalRankBound`
-written as `localDerivativeCoordinateBudget`, and the surplus in the shape of the source's
-`partitionSupport_finiteGamma_surplus`, with the source's moment constant `27 / 10`, level
-`m * agreement` and cutoff `m * A`, for any `γ ≥ 0` satisfying the envelope inequality.
+The real form of `(d + 1).choose 2` from Mathlib, `localDerivativeCoordinateBudget` written
+out, and the surplus with moment constant `27 / 10`, level `m * agreement` and cutoff `m * A`,
+for any `γ ≥ 0` satisfying the envelope inequality.
 -/
 
 open Finset MeasureTheory PolynomialDifferential ReedSolomon.HiddenDerivative
 
-/-- Source statement `partition_choose_two_real`, from Mathlib's `Nat.cast_choose_two`. -/
+/-- `(d + 1).choose 2 = d (d + 1) / 2` in `ℝ`, from Mathlib's `Nat.cast_choose_two`. -/
 example (d : ℕ) : ((d + 1).choose 2 : ℝ) = (d : ℝ) * (d + 1) / 2 := by
   rw [Nat.cast_choose_two]
   push_cast
   ring
 
-/-- The source's `partitionLocalRankBound d m W` is `localDerivativeCoordinateBudget d m W`. -/
+/-- `localDerivativeCoordinateBudget d m W` unfolds to its defining sum. -/
 example (d m W : ℕ) : localDerivativeCoordinateBudget d m W =
     ∑ r ∈ range m, ((m - r) ⌈/⌉ (d + 1)) * weightedHigherJetCount (d + 1) (W + r) := rfl
 
-/-- The surplus in the shape of the source's `partitionSupport_finiteGamma_surplus`: moment
-constant `27 / 10`, level `m * agreement`, cutoff `m * A`, and any `γ ≥ 0` whose product with the
-geometric envelope is at most `27 / 20 * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`; the source's
-`finiteGamma` satisfies this with equality. -/
+/-- The surplus with moment constant `27 / 10`, level `m * agreement`, cutoff `m * A`, and any
+`γ ≥ 0` whose product with the geometric envelope equals
+`27 / 20 * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. -/
 example (F : Type*) [Field F] {D d n m A W : ℕ} {rate agreement logarithm γ : ℝ}
     (hD : 0 < D) (hd : 0 < d) (hW : 0 < W)
     (hupper : (D : ℝ) ≤ rate * n) (hlower : agreement * n ≤ A)
