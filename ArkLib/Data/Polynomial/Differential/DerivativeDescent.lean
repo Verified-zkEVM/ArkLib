@@ -10,10 +10,10 @@ public import ArkLib.Data.Polynomial.Differential.JetPrefix
 /-!
 # Descent in a jet variable
 
-Kopparty's recursion for polynomial differential equations repeatedly replaces an equation `Q` by
-a partial derivative of `Q` in its highest active jet variable `Y_s`. This file proves the degree
-and nonvanishing facts that make this recursion work, for one derivative (the separant) and for
-the full descent `∂^t Q / ∂Y_s^t`, where `t` is the degree of `Q` in `Y_s`.
+The recursion of [Kop15] for polynomial differential equations repeatedly replaces an equation `Q`
+by a partial derivative of `Q` in its highest active jet variable `Y_s`. This file proves the degree
+and nonvanishing facts that make this recursion work, for one derivative (the separant) and for the
+full descent `∂^t Q / ∂Y_s^t`, where `t` is the degree of `Q` in `Y_s`.
 
 The degree bounds hold over every commutative semiring. In particular, the full descent never
 depends on `Y_s`, and if `Y_s` was the highest active jet of `Q`, every jet variable on which the
@@ -39,44 +39,6 @@ is `2 * Y_s = 0`, and over `ZMod 4` the derivative of `2 * Y_s ^ 2` is `4 * Y_s 
 ## References
 
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Section 4.2.
-
-This file ports `ArkLib/Data/Polynomial/Differential/DerivativeDescent.lean` at ArkLib revision
-a5aa2677fee4e3a79d6bb05136631cce4a08587d, together with the one-step separant lemmas of
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Regular/SingularRecursion.lean`
-at the same revision.
-
-* `jetDerivative`, `jetDerivative_zero`, `jetDerivative_succ`, `jetDerivative_one`,
-  `derivativeDescent` and `jetDegree_derivativeDescent_le` keep their statements. The source
-  defined `jetDerivative` through `MvPolynomial.iteratePDeriv`; here it is
-  `(MvPolynomial.pderiv (some s))^[a] Q`, following `ArkLib.ToMathlib.MvPolynomial.PDeriv`.
-* The source's `_of_lt_ringChar` hypotheses `jetDegree Q s < ringChar F` and
-  `[Nontrivial F]` become `JetDegreeCastsNeZero Q s` (or `(jetDegree Q s : F) ≠ 0` for one
-  derivative). The source form excluded characteristic zero, where `ringChar F = 0`;
-  `jetDegreeCastsNeZero_of_ringChar` recovers it. This affects
-  `jetDegree_jetDerivative_eq_sub_of_lt_ringChar` (now `jetDegree_jetDerivative_eq_sub`),
-  `derivativeDescent_ne_zero`, `derivativeDescent_spec_of_highestActiveJet_eq_some`, and the
-  source's `jetDegree_separant_eq_sub_one_of_lt_ringChar` and
-  `separant_ne_zero_of_dependsOnJet_of_lt_ringChar` (now `jetDegree_separant_eq_sub_one` and
-  `separant_ne_zero`).
-* `jetDegree_derivativeDescent_eq_zero`, `active_lt_of_derivativeDescent` and
-  `highestActiveJet_derivativeDescent_lt` drop their characteristic and `NoZeroDivisors`
-  hypotheses: they follow from the characteristic-free bound
-  `MvPolynomial.degreeOf_iterate_pderiv_le_sub`.
-* `derivativeDescent_ne_zero` assumes `Q ≠ 0` instead of `DependsOnJet Q s`; the former is
-  weaker, and when `Q` does not depend on `Y_s` the descent is `Q` itself.
-* `derivativeDescent_spec_of_highestActiveJet_eq_some` assumes the cast hypothesis only at the
-  highest jet `s`, not at every jet.
-* `jetDegree_jetDerivative_le` is the source statement; `jetDegree_separant_le` is the source's
-  `ReedSolomon.HiddenDerivative.jetDegree_separant_le`, moved to this namespace since it
-  mentions no Reed–Solomon object.
-* The source's `separant_ne_zero_of_highestActiveJet_eq_some` is not ported: its hypothesis
-  `highestActiveJet Q = some s` served only to derive `DependsOnJet Q s`, which the cast
-  hypothesis `(jetDegree Q s : F) ≠ 0` already implies, so it is `separant_ne_zero`.
-* `jetDegree_jetDerivative_eq_sub` drops the source hypothesis `a ≤ jetDegree Q s`: beyond the
-  degree both sides are zero.
-* `JetDegreeCastsNeZero` and its lemmas, `jetDerivative_eq_iterate`,
-  `jetDegree_separant_le_sub_one`, `jetDegree_jetDerivative_le_sub`, `jetDerivative_ne_zero`
-  and `not_dependsOnJet_derivativeDescent` are new.
 -/
 
 @[expose] public section
