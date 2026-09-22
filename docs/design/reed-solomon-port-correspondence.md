@@ -664,6 +664,62 @@ under its source name, except as follows.
 `exists_orderThreshold_for_boxWidth`: The source stated this
 for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
+at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `ratePartitionJetBound` is now
+`rateJetCap`, `ratePartitionMathematicalLength` is now `rateBlockThreshold`,
+`ratePartitionLength` is now `paddedRateBlockThreshold`, and `ratePartitionHeight` is now
+`marginHeight`. `ratePartition_mathematical_length_guards` is now `rateBlockThreshold_guards`,
+without the source's `0 < d`; `ratePartition_length_guards` is now
+`paddedRateBlockThreshold_guards`, which proves `2m < n` where the source proved `2m ≤ n`.
+`ratePartitionHeight_uniform`, the case `k = 150`, is now `marginHeight_one_add_inv` for every
+positive `k`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/ClosedMultiplicity.lean`
+
+Merges `RoundingLoss.lean`, `ClosedRatio.lean` and `Rounding300.lean` from the same source
+directory. `closedMultiplicity C d` covers `ratePartitionClosedMultiplicity` (`C = 1000`) and
+`ratePartitionMathematicalMultiplicity` (`C = 300`). `ratePartition_closed_floor_bounds` and
+`ratePartition_mathematical_floor_bounds` are now `partitionWeightBudget_closedMultiplicity_pos`
+and `partitionInverseRadius_closedMultiplicity_le`; `ratePartition_closed_ratio_gt` and
+`ratePartition_mathematical_ratio_gt` are now `partitionFiniteRatio_closedMultiplicity_gt` with
+`closedMultiplicityLoss_thousand_lt` or `closedMultiplicityLoss_three_hundred_lt`; the scalar
+lemmas `ratePartition_rounding_loss_lt`, `ratePartition_rounding_loss_lt_300` and
+`mathematical_rounding_numeric` are now `partitionRoundingLoss_closedMultiplicity_le` with the two
+numeric lemmas. `ratePartitionClosedMultiplicity_ge_order`, which assumed `500 ≤ d`, is now
+`add_two_le_closedMultiplicity` for `3 ≤ C` and `1 ≤ d`. Where the source used
+`ratePartitionGamma`, the limit is written out as `(27/20) R (d + 1) exp(-(R/a) log(6d))`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FiniteRatio.lean`
+
+Merges `FiniteRatio.lean`, `Convergence.lean` and `FiniteParameters.lean` from the same source
+directory. `ratePartitionWeight` is now `partitionWeightBudget`, `ratePartitionFiniteRatio` is now
+`partitionFiniteRatio`, and the source's local inverse radius is the definition
+`partitionInverseRadius`. `ratePartitionFiniteRatio_eq` is now
+`partitionFiniteRatio_eq_weightBudget`, `tendsto_ratePartitionFiniteRatio` and the Convergence
+lemmas are now `tendsto_partitionWeightBudget_div`, `tendsto_partitionInverseRadius` and
+`tendsto_partitionFiniteRatio`, and
+`exists_positive_weight_multiplicity_of_ratePartitionGamma_gt` and
+`exists_multiplicity_of_ratePartitionGamma_gt` are now `exists_partitionFiniteRatio_gt`.
+`RatePartitionFiniteParameters` is now `PartitionFiniteParameters`, and
+`exists_ratePartitionFiniteParameters` is now `PartitionFiniteParameters.nonempty`.
+`partitionWeightBudget_level_le` is not ported.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean`
+
+Ported from `UniformParameters.lean` of the same source directory. `uniformRatePartitionOrder`,
+`uniformRatePartitionMultiplicity`, `uniformRatePartitionLength` and
+`uniformRatePartitionJetBound` are now `uniformDerivativeOrder`, `uniformMultiplicity`,
+`uniformBlockThreshold` and `uniformJetCap`. `uniformRatePartition_integer_guards` is now
+`uniformBlockThreshold_guards`, without `0 < m` and with `δ ≤ 1` in place of `δ < 1`.
+`uniformRatePartition_high_ambient_of_m_le` is now `high_rate_ambient_guards`, without
+`0 < δ < 1`; `uniformRatePartition_low_ambient_of_m_le` is now `low_rate_padded_ambient_guards`,
+with `δ ≤ 1/2` in place of `δ < 6/25`. `uniformRatePartition_high_ambient` and
+`uniformRatePartition_low_ambient` are derived in the acceptance test.
+`uniformRatePartition_totalJetDegree_le` is deferred: it needs `RatePartitionEligible` (#977).
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Substitution.lean` at ArkLib
@@ -1478,6 +1534,11 @@ These declarations are ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.  The owner here is independent of Reed--Solomon
 codes and differential root finding.
+
+## `ArkLib/ToMathlib/Algebra/Order/Floor/RelativeError.lean`
+
+New. `Nat.one_sub_inv_mul_le_floor` and `Nat.div_floor_le_div_sub_one` factor out the floor-error
+step of the source's `*_floor_bounds` lemmas.
 
 ## `ArkLib/ToMathlib/Analysis/ExponentialStaircase.lean`
 
