@@ -116,6 +116,9 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Tran
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SpecializationDegree
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Basic
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Dimension
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Estimate
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
