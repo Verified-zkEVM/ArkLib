@@ -98,6 +98,7 @@ public import ArkLib.Data.CodingTheory.HammingBallVolume
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Dimension
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FreeOrderDimension
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Global.Multiplicity
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Index
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.CertifiedRankBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
@@ -114,6 +115,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Rema
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Translation
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SourceMonomial
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Space
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SpecializationDegree
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.FloorTransfer
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.MomentBounds
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.WeightedSupport.Moments
@@ -334,6 +336,7 @@ public import ArkLib.Data.Polynomial.BinaryTraceQuotient
 public import ArkLib.Data.Polynomial.Bivariate
 public import ArkLib.Data.Polynomial.BivariateFactorDegrees
 public import ArkLib.Data.Polynomial.ClassicalWronskian
+public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.Basic
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 public import ArkLib.Data.Polynomial.Differential.DirectRegularLift

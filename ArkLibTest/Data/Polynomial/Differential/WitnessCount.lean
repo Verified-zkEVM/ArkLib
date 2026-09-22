@@ -18,6 +18,10 @@ import Mathlib.Algebra.Field.ZMod
   the binomial one holds with `H = 0`, and the conclusion `3 * 2 ≤ 2 * (1 * 2)` fails; here
   `(2 choose 1) = 0` in `ZMod 2`.
 * When `q ≤ H` the count is vacuous: the left side is `#roots * 0`.
+* The same three solutions show that the jet-injectivity hypothesis of
+  `card_mul_sub_le_of_degree_le` is needed.
+* The count for a finite set of bounded solutions over a finite field, and the degree bounds on
+  the separant specialized at a bounded solution, follow from the theorems.
 -/
 
 namespace PolynomialDifferential
@@ -122,7 +126,7 @@ private theorem card_constRoots : constRoots.card = 3 := by
 the three roots are solutions of degree at most `2` with separant `1`, the weighted-degree
 hypothesis holds, the binomial coefficient `(1 + 1 choose 1)` vanishes, and the conclusion
 fails. -/
-example :
+private theorem constEquation_counterexample :
     IsHighestActiveJet constEquation 1 ∧
       (∀ P ∈ constRoots, differentialSpecialization constEquation P = 0) ∧
       (∀ P ∈ constRoots, P.degree ≤ 2) ∧
@@ -158,6 +162,59 @@ example :
   · have hdeg : jetDegree constEquation 1 = 1 := MvPolynomial.degreeOf_X_self _
     rw [card_constRoots, hdeg, Nat.card_zmod]
     decide
+
+/-- The jet-injectivity hypothesis of `card_mul_sub_le_of_degree_le` cannot be dropped: the three
+solutions of `y' = 0` over `ZMod 2` satisfy all its other hypotheses and violate its conclusion,
+so jets at some point do not separate them (`1` and `X ^ 2` have jet `(1, 0)` at `1`). -/
+example : ¬ ∀ a : ZMod 2, Set.InjOn (polynomialJet (d := 1) a)
+    {P | P ∈ constRoots ∧ (differentialSpecialization (separant constEquation 1) P).eval a ≠ 0} :=
+  fun hinj ↦
+    have ⟨_, hsol, hdeg, hweight, hsep, _, hfail⟩ := constEquation_counterexample
+    hfail (card_mul_sub_le_of_degree_le constEquation 1 constRoots hsol hdeg hweight hsep hinj)
+
+/-- The count over a finite field for a finite set of bounded solutions, with exceptional budget
+`differentialWeightedDegree D Q`, degree
+budget `Δ` and the factor order `(q - H) * #roots`. -/
+example [Field F] [Finite F] (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) (D Δ : ℕ)
+    (roots : Finset (BoundedSolution Q D))
+    (hSeparantNonzero : ∀ solution ∈ roots,
+      differentialSpecialization (separant Q s) solution.polynomial ≠ 0)
+    (hJetInj : ∀ point : F,
+      Set.InjOn (fun solution : BoundedSolution Q D ↦
+        polynomialJet (d := d) point solution.polynomial)
+        {solution | solution ∈ roots ∧
+          (differentialSpecialization (separant Q s) solution.polynomial).eval point ≠ 0})
+    (hDegree : jetDegree Q s ≤ Δ) :
+    (Nat.card F - differentialWeightedDegree D Q) * roots.card ≤
+      Nat.card F * Δ * Nat.card F ^ d := by
+  have hpoly : Function.Injective (BoundedSolution.polynomial (Q := Q) (D := D)) :=
+    fun P P' h ↦ Subtype.ext (Subtype.ext h)
+  have h := card_mul_sub_le_of_degree_le Q s (roots.map ⟨_, hpoly⟩)
+    (fun P hP ↦ by obtain ⟨x, _, rfl⟩ := mem_map.mp hP; exact x.equation)
+    (fun P hP ↦ by obtain ⟨x, _, rfl⟩ := mem_map.mp hP; exact x.degree_le) tsub_le_self
+    (fun P hP ↦ by obtain ⟨x, hx, rfl⟩ := mem_map.mp hP; exact hSeparantNonzero x hx)
+    (fun a P hP P' hP' hjet ↦ by
+      obtain ⟨x, hx, rfl⟩ := mem_map.mp hP.1
+      obtain ⟨x', hx', rfl⟩ := mem_map.mp hP'.1
+      exact congrArg _ (hJetInj a ⟨hx, hP.2⟩ ⟨hx', hP'.2⟩ hjet))
+  rw [card_map] at h
+  calc (Nat.card F - differentialWeightedDegree D Q) * roots.card
+      = roots.card * (Nat.card F - differentialWeightedDegree D Q) := mul_comm _ _
+    _ ≤ Nat.card F * (jetDegree Q s * Nat.card F ^ d) := h
+    _ ≤ Nat.card F * Δ * Nat.card F ^ d := by
+      rw [mul_assoc]
+      exact Nat.mul_le_mul_left _ (Nat.mul_le_mul_right _ hDegree)
+
+/-- `natDegree_differentialSpecialization_separant_le` at the polynomial of a bounded solution,
+with its strict form below a bound. -/
+example [CommSemiring F] {D bound : ℕ} (Q : DifferentialPolynomial F d) (s : Fin (d + 1))
+    (solution : BoundedSolution Q D) (hQ : differentialWeightedDegree D Q < bound) :
+    (differentialSpecialization (separant Q s) solution.polynomial).natDegree ≤
+        differentialWeightedDegree D Q ∧
+      (differentialSpecialization (separant Q s) solution.polynomial).natDegree < bound :=
+  have h := natDegree_differentialSpecialization_separant_le Q s solution.polynomial
+    (natDegree_le_of_degree_le solution.degree_le)
+  ⟨h, h.trans_lt hQ⟩
 
 end
 
