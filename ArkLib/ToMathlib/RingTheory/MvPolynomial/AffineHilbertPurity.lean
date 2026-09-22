@@ -36,6 +36,11 @@ bound: if `totalDegree f ≤ b`, the affine degrees of the minimal primes of `P 
 most `b * affineDegree P`. Retaining only the components that avoid a fixed `s`, the potential
 `affineDegree Q * b ^ natDegree H(Q)` does not increase under the cut.
 
+Primality of `P` is used throughout: it makes the quotient a domain, which Noether normalization
+and the height-one contraction need. Without it purity fails: for `P = (xy, xz)` in three
+variables, the union of a plane and a line, and `f = x - 1`, which is regular modulo `P`, the only
+component of the cut is the point `(1, 0, 0)`, of dimension `0` rather than `1`.
+
 ## Main statements
 
 * `MvPolynomial.natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective`: a finite
@@ -51,58 +56,6 @@ most `b * affineDegree P`. Retaining only the components that avoid a fixed `s`,
   components retained by `s`.
 * `MvPolynomial.sum_affineDegree_mul_pow_retainedMinimalPrimes_le`: the degree potential of the
   retained components of a cut.
-
-## References
-
-Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
-`AffineHilbert`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/NoetherNormalizationHeightOne.lean`: the
-commutative algebra of `normalization_contraction_height_one` is `Ideal.height_under_eq_one` and
-`Ideal.exists_prime_under_eq_span_singleton` in `ArkLib.ToMathlib.RingTheory.Ideal.HeightUnder`.
-The structure `NormalizationHeightOneData`, the maps `normalizationBotMap`,
-`normalizationPrincipalQuotientMap`, `normalizationChildMap`, `parentComponentQuotientEquiv`
-(Mathlib's `DoubleQuot.quotQuotEquivQuotOfLEₐ`) and their finiteness and injectivity lemmas, and
-the existence statements `exists_normalization_contraction_height_one`,
-`principalCut_component_exists_normalization_contraction` and
-`principalCut_component_exists_coordinate_normalization` were packaging for the purity proof;
-they are not ported, and the maps are built inside the proof of
-`natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Purity.lean`:
-`principalCut_component_hilbertPolynomial_natDegree_add_one` is
-`principalCut_natDegree_affineHilbertPolynomial_add_one`, a corollary of the height-one statement
-`natDegree_affineHilbertPolynomial_add_one_of_height_eq_one`, which is new and applies to every
-prime of height one above `P`, not only to minimal primes of a principal cut. The parent
-computation `natDegree_affineHilbertPolynomial_eq_card_of_finite_of_injective` is also new.
-The hypersurface case
-`natDegree_affineHilbertPolynomial_add_one_of_mem_minimalPrimes_span_singleton` is the source's
-`hypersurfacePrimeFamily_dimension` from `CutFamily/Hypersurface.lean`, stated for every minimal
-prime of `span {g}` rather than only those retained by `s`.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/PrincipalCut/Bezout.lean`:
-`principalCut_sum_affineDegree_le` is `principalCut_sum_affineDegree_minimalPrimes_le`, with the
-same hypotheses.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/Agreement.lean`: `sum_retained_affineDegree_le`
-is `principalCut_sum_affineDegree_retainedMinimalPrimes_le`, with the same hypotheses.
-
-From `ArkLib/ToMathlib/AlgebraicGeometry/CutFamily/Finite.lean`:
-`sum_retainedCutChildren_affineDegree_mul_pow_le` is
-`sum_affineDegree_mul_pow_retainedMinimalPrimes_le`. The source summed over
-`retainedCutChildren P s f`, defined as `{P}` when `f ∈ P` and as
-`(P ⊔ span {f}).retainedMinimalPrimes s` otherwise. For a prime `P` with `s ∉ P` the two agree
-(`Ideal.retainedMinimalPrimes_sup_span_of_mem`), so the retained minimal primes are used directly
-and no new definition is introduced. The hypotheses `s ∉ P` and `1 ≤ b` of the source are dropped:
-the bound holds without them. The source's `mem_retainedCutChildren` is
-`Ideal.of_mem_retainedMinimalPrimes_sup_span`, and its
-`exists_mem_retainedCutChildren_of_mem_zeroLocus` is the forward direction of
-`MvPolynomial.mem_zeroLocus_and_cut_iff_retained`.
-
-Primality of `P` is used throughout: it makes the quotient a domain, which Noether normalization
-and the height-one contraction need. Without it purity fails: for `P = (xy, xz)` in three
-variables, the union of a plane and a line, and `f = x - 1`, which is regular modulo `P`, the only
-component of the cut is the point `(1, 0, 0)`, of dimension `0` rather than `1`.
 -/
 
 @[expose] public section

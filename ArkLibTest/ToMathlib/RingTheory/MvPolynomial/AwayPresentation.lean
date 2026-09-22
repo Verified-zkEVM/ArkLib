@@ -15,7 +15,7 @@ Hilbert function between `N + 1` and `2 * N + 1`, and its Hilbert polynomial has
 `1`. For `s = 0` the localization is the zero ring: its presentation ideal is `⊤`, which shows that
 the regularity hypothesis is needed in the lower bound, and the polynomial ring in no variables
 surjects onto it, which shows that regularity is needed in the variable-count bound. The last
-examples derive the source statements, which assumed that `I` is prime and `s ∉ I`.
+examples derive the special cases for a prime ideal `I` with `s ∉ I`.
 -/
 
 open MvPolynomial
@@ -78,7 +78,7 @@ example : ∃ g : MvPolynomial (Fin 0) ℚ →ₐ[ℚ] Localization.Away (Ideal.
   refine ⟨aeval fun i ↦ i.elim0, fun y ↦ ⟨0, Subsingleton.elim _ _⟩, ?_⟩
   simp
 
-/-! ### Source-shaped statements -/
+/-! ### Prime ideals -/
 
 variable {k σ τ : Type*} [Field k]
 
@@ -88,21 +88,22 @@ theorem isLeftRegular_of_isPrime {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime
   have := hP
   IsLeftCancelMulZero.mul_left_cancel_of_ne_zero (mt Ideal.Quotient.eq_zero_iff_mem.mp hs)
 
-/-- The source's `hilbertFunction_le_awayPresentation_hilbertFunction_two_mul`. -/
+/-- For a prime `P` and `s ∉ P`, `H(P, N) ≤ H(K, 2 * N)`. -/
 example [Finite σ] {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime) {s : MvPolynomial σ k}
     (hs : s ∉ P) (N : ℕ) :
     affineHilbertFunction P N ≤ affineHilbertFunction (awayPresentationIdeal P s) (2 * N) :=
   (affineHilbertFunction_le_awayPresentationIdeal (isLeftRegular_of_isPrime hP hs) N).trans
     (affineHilbertFunction_mono _ (by omega))
 
-/-- The source's `awayPresentation_hilbertFunction_le_hilbertFunction_rescaled`. -/
+/-- The upper bound written as `H(K, N) ≤ H(P, N + N * d)`, with `d` the total degree of `s`. -/
 example [Finite σ] {P : Ideal (MvPolynomial σ k)} {s : MvPolynomial σ k} (N : ℕ) :
     affineHilbertFunction (awayPresentationIdeal P s) N ≤
       affineHilbertFunction P (N + N * s.totalDegree) := by
   have h := affineHilbertFunction_awayPresentationIdeal_le P s N
   rwa [show (s.totalDegree + 1) * N = N + N * s.totalDegree by ring] at h
 
-/-- The source's `hilbertPolynomial_natDegree_le_of_surjective_away_algHom`. -/
+/-- For primes `J` and `P` with `t ∉ J` and `s ∉ P`, a surjection `(k[τ] ⧸ J)_t → (k[σ] ⧸ P)_s`
+bounds the natural degree of the Hilbert polynomial of `P` by that of `J`. -/
 example [Finite σ] [Finite τ] {J : Ideal (MvPolynomial τ k)} (_hJ : J.IsPrime)
     {t : MvPolynomial τ k} (_ht : t ∉ J)
     {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime) {s : MvPolynomial σ k} (hs : s ∉ P)
@@ -113,7 +114,8 @@ example [Finite σ] [Finite τ] {J : Ideal (MvPolynomial τ k)} (_hJ : J.IsPrime
   natDegree_affineHilbertPolynomial_le_of_surjective_away_away (isLeftRegular_of_isPrime hP hs)
     g hg
 
-/-- The source's `hilbertPolynomial_natDegree_le_of_adjoin_eq_top_away`. -/
+/-- For a prime `P` and `s ∉ P`, generators of the localization indexed by `τ` bound the natural
+degree of the Hilbert polynomial of `P` by `Nat.card τ`. -/
 example [Finite σ] [Finite τ] {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime)
     {s : MvPolynomial σ k} (hs : s ∉ P) (x : τ → Localization.Away (Ideal.Quotient.mk P s))
     (hx : Algebra.adjoin k (Set.range x) = ⊤) :

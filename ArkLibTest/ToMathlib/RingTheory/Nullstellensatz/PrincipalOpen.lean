@@ -13,8 +13,8 @@ import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 These examples use the public API through an ordinary import, with `K` the algebraic closure of
 `ℚ`. The line minus the origin, cut out of `V(⊥)` by `x`, is infinite because `⊥` has Hilbert
 polynomial of natural degree `1`. For `s = 0` the principal open subset is empty although `⊥`
-has natural degree `1`, so regularity is needed. The source statement, for a prime ideal and
-`s ∉ P`, is derived and applied to the kernel of evaluation at the point `1`, whose principal
+has natural degree `1`, so regularity is needed. The special case of a prime ideal `P` with
+`s ∉ P` is derived and applied to the kernel of evaluation at the point `1`, whose principal
 open subset cut out by `x` is that single point.
 -/
 
@@ -56,10 +56,10 @@ example (x : Fin 1 → K) (hx : x 0 ≠ 0) :
   rw [image_comp_some_zeroLocus_awayPresentationIdeal]
   exact ⟨by simp, by simpa using hx⟩
 
-/-! ### Source-shaped statement -/
+/-! ### Prime ideals -/
 
-/-- The source's `hilbertPolynomial_natDegree_zero_of_finite_principalOpen`, for a prime `P` and
-`s ∉ P`. -/
+/-- For a prime `P` and `s ∉ P`, if the principal open subset cut out by `s` is finite, the
+Hilbert polynomial of `P` has natural degree zero. -/
 theorem natDegree_eq_zero_of_finite_principalOpen {k σ : Type*} [Field k] [IsAlgClosed k]
     [Finite σ] {P : Ideal (MvPolynomial σ k)} (hP : P.IsPrime) {s : MvPolynomial σ k}
     (hs : s ∉ P) (hfinite : {x | x ∈ zeroLocus k P ∧ aeval x s ≠ 0}.Finite) :
