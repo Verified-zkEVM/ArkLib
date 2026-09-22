@@ -3,17 +3,18 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.Data.Fin.VecNotation
-import Mathlib.Data.Fin.Tuple.Basic
-import Mathlib.Data.Fin.Tuple.Finset
-import Mathlib.Logic.Embedding.Basic
-import Mathlib.Algebra.Ring.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
-import Mathlib.Tactic.FinCases
+public import Mathlib.Data.Fintype.Pi
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Data.Fin.Tuple.Basic
+public import Mathlib.Data.Fin.Tuple.Finset
+public import Mathlib.Logic.Embedding.Basic
+public import Mathlib.Algebra.Ring.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+public import Mathlib.Algebra.BigOperators.Group.Finset.Sigma
+public import Mathlib.Tactic.FinCases
 
 /-!
 # Sum-check evaluation domains
@@ -43,6 +44,8 @@ case-by-case basis (Boolean hypercube, SWIRL-style hyperprism, …).
 The summation-domain abstraction is intentionally **degree-free**: the per-round polynomial degree
 (`d`, or a per-variable / prismalinear bound) is a separate parameter, kept out of this module.
 -/
+
+@[expose] public section
 
 universe u
 

@@ -3,12 +3,14 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import VCVio
-import CompPoly.Data.MvPolynomial.Notation
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.MvPolynomial.Degrees
-import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import VCVio.OracleComp.OracleContext
+public import VCVio.OracleComp.SimSemantics.ReaderT.Basic
+public import CompPoly.Data.MvPolynomial.Notation
+public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 -- import ArkLib.Data.MlPoly.Basic
 
 /-!
@@ -28,6 +30,8 @@ import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 
   - Vectors. This instance turns vectors into oracles for which one can query specific positions.
 -/
+
+@[expose] public section
 
 universe u v w
 
@@ -118,23 +122,6 @@ instance (i : Fin 0) : OracleInterface i.elim0 := Fin.elim0 i
 instance instFunction {α β : Type _} : OracleInterface (α → β) where
   Query := α
   toOC := OracleContext.ofFunction α β
-
-instance {ι : Type u} [DecidableEq ι] (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i, DecidableEq (Query (v i))]
-    [h' : ∀ i q, DecidableEq ((O i).Response q)] :
-    [v]ₒ.DecidableEq where
-  decidableEqA := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
-  decidableEqB | ⟨i, q⟩ => h' i q
-
-instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i q, Fintype ((O i).Response q)] :
-    [v]ₒ.Fintype where
-  fintypeB | ⟨i, q⟩ => h i q
-
-instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i q, Inhabited ((O i).Response q)] :
-    [v]ₒ.Inhabited where
-  inhabitedB | ⟨i, q⟩ => h i q
 
 @[reducible, inline]
 instance {ι₁ : Type u} {T₁ : ι₁ → Type v} [inst₁ : ∀ i, OracleInterface (T₁ i)]
@@ -348,11 +335,12 @@ variable {R : Type*} [CommRing R] {d : ℕ} [Fintype R] [DecidableEq R] [IsDomai
 @[simp]
 theorem distanceLE_polynomial_degreeLT :
     distanceLE (instPolynomialDegreeLT R d) (d - 1) := by
-  simp [distanceLE, instPolynomialDegreeLT, mem_degreeLT]
+  simp only [distanceLE, ne_eq, instPolynomialDegreeLT, Subtype.forall,
+    mem_degreeLT, Subtype.mk.injEq]
   intro p hp p' hp' hNe
-  have : ∀ q ∈ Finset.univ, p.eval q = p'.eval q ↔ q ∈ (p - p').roots := by
+  have hEvalRoot : ∀ q ∈ Finset.univ, p.eval q = p'.eval q ↔ q ∈ (p - p').roots := by
     intro q _
-    simp
+    simp only [mem_roots', ne_eq, IsRoot.def, Polynomial.eval_sub]
     constructor <;> intro h
     · constructor
       · intro h'; contrapose! hNe; exact sub_eq_zero.mp h'
@@ -360,21 +348,22 @@ theorem distanceLE_polynomial_degreeLT :
     · exact sub_eq_zero.mp h.2
   conv =>
     enter [1, 1]
-    apply Finset.filter_congr this
-  simp [Membership.mem, Finset.filter, Finset.card]
+    apply Finset.filter_congr hEvalRoot
+  simp only [mem_roots', ne_eq, IsRoot.def, Polynomial.eval_sub]
   have : (p - p').roots.card < d := by
     have hSubNe : p - p' ≠ 0 := sub_ne_zero_of_ne hNe
     have hSubDegLt : (p - p').degree < d := lt_of_le_of_lt (degree_sub_le p p') (by simp [hp, hp'])
     have := Polynomial.card_roots hSubNe
     have : (p - p').roots.card < (d : WithBot ℕ) := lt_of_le_of_lt this hSubDegLt
-    simp at this; exact this
+    simp only [Nat.cast_lt] at this
+    exact this
   refine Nat.le_sub_one_of_lt (lt_of_le_of_lt ?_ this)
   apply Multiset.card_le_card
   rw [Multiset.le_iff_subset]
-  · intro x hx; simp at hx; exact hx
-  · simp [Multiset.nodup_iff_count_le_one]
-    intro a; simp [Multiset.count_filter, Multiset.count_univ]
-    aesop
+  · intro x hx
+    rw [mem_roots']
+    simpa only [IsRoot.def, Polynomial.eval_sub] using (Multiset.mem_filter.mp hx).2
+  · exact Finset.univ.nodup.filter _
 
 theorem distanceLE_polynomial_degreeLE :
     distanceLE (instPolynomialDegreeLT R d) d := by

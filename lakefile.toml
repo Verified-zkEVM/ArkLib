@@ -1,4 +1,5 @@
 name = "Arklib"
+testDriver = "ArkLibTest"
 lintDriver = "batteries/runLinter"
 defaultTargets = ["ArkLib"]
 
@@ -17,12 +18,12 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "v4.33.1"
+rev = "d7089e46d69e07640fa23b5ae6b1b966f1d4b949"
 
 [[require]]
 name = "«doc-gen4»"
 git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.33.1"
+rev = "v4.34.0"
 
 [[require]]
 name = "checkdecls"
@@ -32,10 +33,37 @@ rev = "lean4.18.0"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.33.1"
+rev = "v4.34.0"
 
 [[lean_lib]]
+name = "ArkLibLintPlugin"
+srcDir = "scripts"
+roots = ["ArkLibLintPlugin"]
+
+# Every file in the production library is a `module` (issue #795). Lake enforces that here so a
+# reverted or hand-written header fails the build rather than silently dropping a file back to
+# classic elaboration; see docs/wiki/module-system.md.
+[[lean_lib]]
 name = "ArkLib"
+plugins = ["ArkLibLintPlugin:shared"]
+requiresModuleSystem = true
+
+# The blueprint also references abstract dependency declarations outside ArkLib's import graph.
+# Build this nondefault root explicitly before checking the blueprint or generating its API docs.
+[[lean_lib]]
+name = "ArkLibBlueprint"
+srcDir = "blueprint"
+roots = ["ArkLibBlueprint"]
+requiresModuleSystem = true
+
+# Compile-time acceptance clients, kept out of the production import graph. These stay classic on
+# purpose: `#print axioms` needs to see proof bodies, which a module importer never loads.
+[[lean_lib]]
+name = "ArkLibTest"
+roots = []
+globs = ["ArkLibTest.+"]
+plugins = ["ArkLibLintPlugin:shared"]
+allowNonModules = true
 
 # Kernel-level axiom / sorry accounting; see scripts/AxiomSweep.lean.
 # Runtime-imports the built ArkLib oleans, so run it after `lake build`.
@@ -45,11 +73,45 @@ srcDir = "scripts"
 root = "AxiomSweep"
 supportInterpreter = true
 
-# Compiled code-generation and execution checks for the toy-problem launch cone.
+# Native-measure conversion ledger: declarations still using VCVio's retiring scalar
+# probability surface or Mathlib's `PMF`; see scripts/RetiredProbabilitySweep.lean.
+[[lean_exe]]
+name = "retiredsweep"
+srcDir = "scripts"
+root = "RetiredProbabilitySweep"
+supportInterpreter = true
+
+# Compiled code-generation and execution checks for the toy-problem launch cone. Classic, like
+# ArkLibTest: compiling the honest path needs definition bodies a module importer never loads.
 [[lean_exe]]
 name = "toyproblem-runtime"
 srcDir = "scripts"
 root = "ToyProblemRuntime"
+allowNonModules = true
+
+# Compiled code-generation and execution checks for the nonrecursive Hachi opening chain. Classic
+# for the same reason as the toy-problem runtime above.
+[[lean_exe]]
+name = "hachi-runtime"
+srcDir = "scripts"
+root = "HachiRuntime"
+allowNonModules = true
+
+# Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link
+# Lake explicitly; keeping it out of the default target avoids adding linter-only dependencies to
+# the library build graph.
+[[lean_lib]]
+name = "LintStyleLib"
+srcDir = "scripts"
+roots = []
+globs = ["LintStyle.Checks"]
+
+[[lean_exe]]
+name = "lint-style"
+srcDir = "scripts"
+root = "LintStyle"
+supportInterpreter = true
+weakLinkArgs = ["-lLake"]
 
 # Isolated executable fixtures for the axiom-sweep mutation matrix
 # (scripts/test-axiomsweep.sh). Not a default target: it deliberately contains
@@ -59,3 +121,10 @@ name = "AxiomSweepTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["AxiomSweepTestFixtures.+"]
+
+# Semantic regression fixtures for native probability retirement.
+[[lean_lib]]
+name = "RetiredProbabilityTestFixtures"
+srcDir = "scripts"
+roots = []
+globs = ["RetiredProbabilityTestFixtures.+"]

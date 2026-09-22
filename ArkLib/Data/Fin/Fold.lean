@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import CompPoly.Data.Classes.DCast
-import Batteries.Data.Fin.Fold
+public import CompPoly.Data.Classes.DCast
+public import Batteries.Data.Fin.Fold
 /-!
 # Folding over `Fin`
 
@@ -17,6 +18,8 @@ are used.
 We also prove that the existing mathlib function `finSumFinEquiv : ∑ i, Fin (n i) ≃ Fin (∑ i, n i)`
 is equivalent to a version defined via `Fin.dfoldl'`.
 -/
+
+@[expose] public section
 
 universe u v
 

@@ -3,16 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
-import Mathlib.Algebra.CharP.Basic
-import Mathlib.Algebra.CharP.Lemmas
-import Mathlib.Algebra.Polynomial.Derivative
-import Mathlib.Data.Nat.Factorial.NatCast
-import Mathlib.LinearAlgebra.Basis.Fin
-import Mathlib.LinearAlgebra.Dual.Lemmas
-import Mathlib.LinearAlgebra.Matrix.Basis
-import Mathlib.LinearAlgebra.Vandermonde
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
+public import Mathlib.Algebra.CharP.Basic
+public import Mathlib.Algebra.CharP.Lemmas
+public import Mathlib.Algebra.Polynomial.Derivative
+public import Mathlib.Data.Nat.Factorial.NatCast
+public import Mathlib.LinearAlgebra.Basis.Fin
+public import Mathlib.LinearAlgebra.Dual.Lemmas
+public import Mathlib.LinearAlgebra.Matrix.Basis
+public import Mathlib.LinearAlgebra.Vandermonde
 
 /-!
 # The classical Wronskian
@@ -45,6 +46,8 @@ The characteristic guard is essential: in characteristic `p`, the nonconstant po
 
 * [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
 -/
+
+@[expose] public section
 
 namespace Polynomial
 

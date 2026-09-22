@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
-import ArkLib.Data.CodingTheory.InterleavedCode
-import Mathlib.FieldTheory.Finite.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.InterleavedCode
+public import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Mutual correlated agreement is strictly stronger than correlated agreement
@@ -50,6 +51,8 @@ and no correlated-agreement definition appears in any statement below. The quant
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 namespace MCASeparation
 
@@ -111,10 +114,10 @@ theorem mcaError_repetitionCode_pos :
     0 < mcaError (AffineLineGenerator (ZMod 2)) repetitionCode (1/2 : ℝ) := by
   classical
   have hle := le_iSup
-    (fun U => Pr_{let x ←$ᵖ (ZMod 2)}[IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x U
+    (fun U => Pr{let x ←$ᵗ (ZMod 2)}[IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x U
       (1/2 : ℝ)]) separatingFamily
   refine lt_of_lt_of_le ?_ hle
-  rw [prob_uniform_eq_ofReal, ENNReal.ofReal_pos]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal, ENNReal.ofReal_pos]
   have hcard : 0 < (Finset.univ.filter (fun x =>
       IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode x separatingFamily (1/2 : ℝ))).card :=
     Finset.card_pos.mpr ⟨0, Finset.mem_filter.mpr ⟨Finset.mem_univ _, isMCA_repetitionCode⟩⟩

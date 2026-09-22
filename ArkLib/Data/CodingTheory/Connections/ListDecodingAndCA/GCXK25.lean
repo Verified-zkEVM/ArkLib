@@ -3,9 +3,10 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # GCXK25 list-decoding-to-MCA bound
@@ -23,12 +24,7 @@ finite-family incidence estimate.
 - [GCXK25] Theorem 3.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 
@@ -38,7 +34,7 @@ open Code CoreDefinitions ProximityGap
 section ListImpliesMCA
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 private noncomputable def large_family_low {κ ι π : Type} [Fintype κ] [Fintype ι]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
@@ -128,6 +124,7 @@ private theorem large_family_sum_sq_incidence_eq_sum_inter
 private def linear_mca_affine_agreement (u : Fin 2 → ι → F) (x : F) (c : ι → F) : Finset ι :=
   Finset.univ.filter fun i => u 0 i + x * u 1 i = c i
 
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F] in
 private theorem linear_mca_affine_two_agreements (C : LinearCode ι F)
     (u : Fin 2 → ι → F) (x y : F) (hxy : x ≠ y)
     (cx cy : ι → F) (hcx : cx ∈ C) (hcy : cy ∈ C) (S : Finset ι)
@@ -310,7 +307,7 @@ private theorem large_family_high_card_le_of_domains
   exact hcard.le
 
 private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
-    [DecidableEq S] [DecidableEq α]
+    [DecidableEq S]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
     (hinter : ∀ a ∈ B, ∀ b ∈ B, a ≠ b → A a ∩ A b = D)
@@ -348,7 +345,7 @@ private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempt
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
 private theorem linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
-    [DecidableEq S] [DecidableEq α]
+    [DecidableEq S]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
     (hdisj : ∀ a ∈ B, ∀ b ∈ B, a ≠ b →
@@ -538,9 +535,12 @@ private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
     (Fintype.card ι : ℝ) * (1 - p) ≤
       (linear_mca_pair_agreement u ![d.1, d.2]).card
 
-private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ) (p : ℝ)
-    (hΛ : Lambda ((C : Set (ι → F))) p ≤ (L : ℕ∞))
-    (u : Fin 2 → ι → F) :
+private theorem linear_mca_relevant_pairs_card_le
+    {ι' : Type} [Fintype ι']
+    {F' : Type} [Field F'] [Fintype F'] [SampleableType F'] [DecidableEq F']
+    (C : LinearCode ι' F') (L : ℕ) (p : ℝ)
+    (hΛ : Lambda ((C : Set (ι' → F'))) p ≤ (L : ℕ∞))
+    (u : Fin 2 → ι' → F') :
     (linear_mca_relevant_pairs C u p).card ≤ L ^ 2 := by
   classical
   have hlist0 := (Code.Lambda_le_iff_forall_ncard_le.mp hΛ) (u 0)
@@ -553,7 +553,7 @@ private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ
   calc
     (((linear_mca_row_list C u p 0).product
       (linear_mca_row_list C u p 1)).filter fun d =>
-        (Fintype.card ι : ℝ) * (1 - p) ≤
+        (Fintype.card ι' : ℝ) * (1 - p) ≤
           (linear_mca_pair_agreement u ![d.1, d.2]).card).card
         ≤ ((linear_mca_row_list C u p 0).product
           (linear_mca_row_list C u p 1)).card := Finset.card_filter_le _ _
@@ -562,11 +562,13 @@ private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ
     _ ≤ L * L := Nat.mul_le_mul hrow0 hrow1
     _ = L ^ 2 := by ring
 
+omit [DecidableEq ι] [Fintype F] [SampleableType F] in
 private theorem linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p : ℝ)
     (hp_dist : p < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (c d : ι → F) (hc : c ∈ C) (hd : d ∈ C) (S : Finset ι)
     (hS : (Fintype.card ι : ℝ) * (1 - p) ≤ S.card)
     (hagree : ∀ i ∈ S, c i = d i) : c = d := by
+  classical
   have hnR : (0 : ℝ) < Fintype.card ι := by
     exact_mod_cast Fintype.card_pos (α := ι)
   have hpn : p * (Fintype.card ι : ℝ) <
@@ -589,6 +591,7 @@ private theorem linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p :
     exact_mod_cast lt_of_le_of_lt hcomp hpn
 
 open scoped BigOperators in
+omit [DecidableEq ι] in
 private theorem linear_mca_error_le_of_lambda_le_aux
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
@@ -607,7 +610,7 @@ private theorem linear_mca_error_le_of_lambda_le_aux
     exact_mod_cast Fintype.card_pos (α := F)
   unfold mcaError
   refine iSup_le fun U => ?_
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   let r : ℝ := 1 - (1 - δ + η) ^ ((1 : ℝ) / 2)
   let B := Finset.univ.filter fun γ : F =>
     IsMCA (AffineLineGenerator F) C γ U r

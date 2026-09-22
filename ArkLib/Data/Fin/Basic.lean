@@ -3,21 +3,25 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši
 -/
+module
 
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Algebra.Order.Ring.Nat
-import Mathlib.Algebra.Order.Sub.Basic
-import Mathlib.Algebra.Polynomial.Eval.Defs
-import Mathlib.Data.Fin.Tuple.Take
-import Mathlib.Tactic.FinCases
-import Batteries.Data.Fin.Fold
-import CompPoly.Data.Classes.DCast
+public import Mathlib.Algebra.BigOperators.Fin
+public import Mathlib.Algebra.Order.BigOperators.Group.List
+public import Mathlib.Algebra.Order.Ring.Nat
+public import Mathlib.Algebra.Order.Sub.Basic
+public import Mathlib.Algebra.Polynomial.Eval.Defs
+public import Mathlib.Data.Fin.Tuple.Take
+public import Mathlib.Tactic.FinCases
+public import Batteries.Data.Fin.Fold
+public import CompPoly.Data.Classes.DCast
 
 /-!
   # Lemmas on `Fin` and `Fin`-indexed tuples
 
   We define operations on `Fin` and `Fin`-indexed tuples that are needed for ArkLib.
 -/
+
+@[expose] public section
 
 universe u v w
 

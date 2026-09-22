@@ -4,11 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
-import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
-import ArkLib.Data.Polynomial.Trivariate
+public import ArkLib.Data.CodingTheory.ProximityGap.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.Basic
+public import ArkLib.Data.CodingTheory.GuruswamiSudan.GuruswamiSudan
+public import ArkLib.Data.Polynomial.Trivariate
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -53,8 +62,7 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
     {p : ReedSolomon.code ωs (k + 1)}
     (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n <
-         _root_.proximity_gap_johnson (k + 1) n m)
-    :
+         _root_.proximity_gap_johnson (k + 1) n m) :
     (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q :=
   GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
@@ -75,7 +83,7 @@ structure ModifiedGuruswami
             ≥ m
   /-- The X-degree bound. -/
   Q_deg_X :
-    degreeX Q < D_X ((k + 1) / (n : ℚ)) n m
+    Trivariate.degreeInX Q < D_X ((k + 1) / (n : ℚ)) n m
   /-- The Y-degree bound. -/
   Q_D_Y :
     D_Y Q < D_X ((k + 1 : ℚ) / n) n m / k
@@ -513,7 +521,7 @@ private theorem symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
   apply hcoeff
   apply Finset.sum_eq_zero
   intro q hq
-  rw [if_neg]
+  rw [ite_eq_right]
   intro heq
   apply hp
   rw [← heq]
@@ -833,7 +841,7 @@ private theorem symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
       have hstrict := symbolicModifiedGSCap_strict_k_one_n_one hm
       have hbase := symbolicUpperTriangleBase_card_ge_k_one_n_one hm
       unfold symbolicUpperTriangleCandidates
-      rw [if_pos]
+      rw [ite_eq_left]
       · rw [Finset.card_insert_of_notMem
           (symbolicCapPoint_not_mem_base (by omega) (by omega) hm)]
         omega
@@ -928,12 +936,12 @@ private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro q hq
     by_cases heq : q.1.1 = (i, j)
-    · rw [if_pos heq]
+    · rw [ite_eq_left heq]
       have hbudget := symbolicGSIndex_z_add_y_le A q
       have hj : q.1.1.2 = j := congrArg Prod.snd heq
       have hmono := Polynomial.natDegree_monomial_le (m := q.2.1) (c q)
       omega
-    · rw [if_neg heq]
+    · rw [ite_eq_right heq]
       simp only [Polynomial.natDegree_zero]
       omega
   omega
@@ -952,7 +960,7 @@ private theorem symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
 private theorem symbolicGSPoly_DYZ_le {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
     Trivariate.D_YZ (symbolicGSPoly (F := F) A c) ≤ symbolicYSum A := by
-  unfold Trivariate.D_YZ
+  unfold Trivariate.D_YZ Trivariate.degreeYZ
   apply finsetMaxGetD_le
   intro outer houter
   rw [Finset.mem_image] at houter
@@ -1060,9 +1068,9 @@ private theorem modified_guruswami_has_a_solution_core
   · apply symbolicGSPolyMultiplicityBridge hQ
     exact symbolicGSKernelWitness_shift_vanish A ωs u₀ u₁ w
   · have hx := Polynomial.Bivariate.degreeX_le_natWeightedDegree Q k
-    exact lt_of_le_of_lt (by exact_mod_cast hx) hdeg
+    exact lt_of_le_of_lt (by simpa [Trivariate.degreeInX] using hx) hdeg
   · have hy := symbolicDY_lt_of_weighted (Q := Q) hk hdeg
-    simpa only [Trivariate.D_Y] using hy
+    simpa only [Trivariate.D_Y, Trivariate.degreeInY] using hy
   · have hyz := symbolicGSPoly_DYZ_le A w.c
     have hyzR : (Trivariate.D_YZ Q : ℝ) ≤ symbolicYSum A := by
       exact_mod_cast hyz
@@ -1092,8 +1100,9 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
 noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s := Fintype.ofFinite _
 
 /-- The set `S` (equation 5.2 of [BCIKS20]). -/
-noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-    : Finset F := Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
+noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ)
+    (u₀ u₁ : Fin n → F) : Finset F :=
+  Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ }
 
 open Polynomial
 
@@ -1102,8 +1111,7 @@ omit [DecidableEq (RatFunc F)] in
 lemma exists_Pz_of_coeffs_of_close_proximity
     {k : ℕ}
   {z : F}
-  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁)
-    :
+  (hS : z ∈ coeffs_of_close_proximity (k := k) ωs δ u₀ u₁) :
   ∃ Pz : F[X], Pz.natDegree ≤ k ∧ δᵣ(u₀ + z • u₁, Pz.eval ∘ ωs) ≤ δ := by
     unfold coeffs_of_close_proximity at hS
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by

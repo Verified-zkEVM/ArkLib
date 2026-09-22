@@ -7,7 +7,7 @@ formalization structure.
 
 - [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md) is canonical for style, docstrings, naming,
   and citation policy.
-- `blueprint/src/` contains blueprint sources.
+- `blueprint/src/` contains blueprint sources; `leanblueprint web` refreshes `blueprint/lean_decls`.
 - `blueprint/web/` and `blueprint/print/` are outputs.
 - `BACKGROUND.md` is a lightweight reference list, not the detailed theory source.
 
@@ -43,8 +43,17 @@ For substantial contributions, discuss the blueprint-first workflow described in
 For a local preview of the docs + blueprint website:
 
 ```bash
-DISABLE_EQUATIONS=1 lake build ArkLib:docs
-./scripts/build-web.sh
+DISABLE_EQUATIONS=1 ./scripts/build-web.sh
+```
+
+The nondefault `ArkLibBlueprint` library imports dependency declarations cited only by the
+blueprint, including the abstract binary tower. It keeps those references available to
+`checkdecls` without adding them to the production `ArkLib` import graph or default build.
+For a direct declaration check, run:
+
+```bash
+lake build ArkLib ArkLibBlueprint
+lake exe checkdecls blueprint/lean_decls
 ```
 
 If blueprint output matters and `leanblueprint` is missing:
@@ -67,7 +76,11 @@ blueprint with `leanblueprint pdf` + `leanblueprint web`, runs
 declaration exists, and deploys the static `home_page/` (with `docs/` and
 `blueprint/` copied in). Pull requests run a validation-only build (blueprint +
 `checkdecls`, no deploy), so LaTeX and declaration errors are caught before they
-reach `main`.
+reach `main`. CI explicitly builds `ArkLibBlueprint` before the declaration check. On
+main pushes, a following step adds `ArkLibBlueprint:docs` in the same isolated `docbuild`
+project and copies the combined output before upload, since the pinned action selects only
+default-target API facets. The local preview builds `ArkLib:docs` then
+`ArkLibBlueprint:docs` sequentially for the same coverage; both facets update shared indexes.
 
 ### Blueprint LaTeX gotchas
 

@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martin
 -/
-import ArkLib.Commitments.Functional.Hachi.EndPiece.Reduction
+module
+
+public import ArkLib.Commitments.Functional.Hachi.EndPiece.Reduction
 
 /-!
 # Hachi End-Piece (the closing step of the evaluation)
@@ -32,3 +34,5 @@ message.
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

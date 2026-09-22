@@ -3,14 +3,17 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import Mathlib.Logic.Equiv.Defs
+public import Mathlib.Logic.Equiv.Defs
 
 /-!
   # Helper Functions and Lemmas
 
   TODO: split these files into different files based on each namespace
 -/
+
+@[expose] public section
 
 /-- Equivalence between `α` and the sum of `{a // p a}` and `{a // ¬ p a}` -/
 @[simps]

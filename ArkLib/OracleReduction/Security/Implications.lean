@@ -3,12 +3,13 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.StateRestoration
-import ArkLib.OracleReduction.Salt
-import ArkLib.OracleReduction.Security.SpecialSoundness
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.StateRestoration
+public import ArkLib.OracleReduction.Salt
+public import ArkLib.OracleReduction.Security.SpecialSoundness
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 
 /-!
 # Implications between security notions
@@ -19,8 +20,10 @@ For now, we only state the theorems. It's likely that we will split this file in
 a single `Implication` folder in the future, each file for the proof of a single implication.
 -/
 
+@[expose] public section
+
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal
+open scoped NNReal ProbabilityTheory
 
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
@@ -50,7 +53,12 @@ theorem knowledgeSoundness_implies_soundness
     (knowledgeError : ℝ≥0) (hLt : knowledgeError < 1) :
       knowledgeSoundness init impl relIn relOut verifier knowledgeError →
         soundness init impl relIn.language relOut.language verifier knowledgeError := by
-  simp [knowledgeSoundness, soundness, Set.language]
+  simp only [knowledgeSoundness, ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_map, simulateQ_option_elimM, simulateQ_pure, simulateQ_map,
+    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta, soundness,
+    Set.language, Set.mem_image, Prod.exists, exists_and_right, exists_eq_right,
+    not_exists, forall_exists_index]
   intro extractor hKS WitIn' WitOut' witIn' prover stmtIn hStmtIn
   sorry
   -- have hKS' := hKS stmtIn witIn' prover
@@ -123,25 +131,26 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
         rfl
       have hk := hkSF stmtIn (Classical.choice hWin) prover' i
-      change probEvent plainGame (fun x =>
+      rw [← bind_assoc]
+      change Pr{let x ← plainGame}[
         ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w) ≤ _
-      change probEvent logGame (fun x => ∃ w,
+          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w] ≤ _
+      rw [← bind_assoc] at hk
+      change Pr{let x ← logGame}[∃ w,
         ¬ kSF i.1.castSucc stmtIn x.1
             (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
-          kSF i.1.succ stmtIn (x.1.concat x.2.1) w) ≤ _ at hk
+          kSF i.1.succ stmtIn (x.1.concat x.2.1) w] ≤ _ at hk
       calc
-        _ = probEvent logGame (fun x =>
+        _ = Pr{let x ← logGame}[
             ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-              ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w) := by
-              rw [← hmap, probEvent_map]
-              rfl
-        _ ≤ probEvent logGame (fun x => ∃ w,
+              ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
+              rw [← hmap, prEvent_map]
+        _ ≤ Pr{let x ← logGame}[∃ w,
             ¬ kSF i.1.castSucc stmtIn x.1
                 (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
-              kSF i.1.succ stmtIn (x.1.concat x.2.1) w) := by
-              apply probEvent_mono
-              intro x hx hbad
+              kSF i.1.succ stmtIn (x.1.concat x.2.1) w] := by
+              apply prEvent_mono
+              intro x hbad
               obtain ⟨hprev, w, hnext⟩ := hbad
               exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
         _ ≤ _ := hk
@@ -150,25 +159,10 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
           (fun tr w => cast extractor.eqIn w)
           (fun m ih tr w =>
             ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
-      let plainGame := do
-        let s ← init
-        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (do
-            let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
-            let challenge ← liftComp (pSpec.getChallenge i) _
-            return (transcript, challenge))).run' s
-      change probEvent plainGame (fun x =>
-        ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w) ≤ _
-      have hz : probEvent plainGame (fun x =>
-          ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
-            ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w) = 0 := by
-        rw [probEvent_eq_zero_iff]
-        intro x hx hbad
-        obtain ⟨hprev, w, hnext⟩ := hbad
-        exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
-      rw [hz]
-      exact zero_le
+      rw [← bind_assoc]
+      refine (prEvent_eq_zero_of_forall_not _ _ fun x hbad ↦ ?_).trans_le zero_le
+      obtain ⟨-, w, hnext⟩ := hbad
+      exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
   · have hLangOut : relOut.language = ∅ := by
       ext stmtOut
       simp only [Set.language, Set.mem_image, Prod.exists, exists_and_right,
@@ -186,29 +180,13 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
         toFun_full := by
           intro stmtIn tr hfalse
           rw [hLangOut]
-          rw [probEvent_eq_zero_iff]
-          simp only [Set.mem_empty_iff_false, not_false_eq_true, implies_true] }
+          exact prEvent_eq_zero_of_forall_not _ _ fun _ ↦ by simp }
     unfold rbrSoundness
     refine ⟨sF, ?_⟩
     intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
-    let plainGame := do
-      let s ← init
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
-          let challenge ← liftComp (pSpec.getChallenge i) _
-          return (transcript, challenge))).run' s
-    change probEvent plainGame (fun x =>
-      ¬ ((i.1.castSucc = 0) ∧ stmtIn ∈ relIn.language) ∧
-        ((i.1.succ = 0) ∧ stmtIn ∈ relIn.language)) ≤ _
-    have hz : probEvent plainGame (fun x =>
-        ¬ ((i.1.castSucc = 0) ∧ stmtIn ∈ relIn.language) ∧
-          ((i.1.succ = 0) ∧ stmtIn ∈ relIn.language)) = 0 := by
-      rw [probEvent_eq_zero_iff]
-      intro x hx hbad
-      exact Fin.succ_ne_zero i.1 hbad.2.1
-    rw [hz]
-    exact zero_le
+    rw [← bind_assoc]
+    exact (prEvent_eq_zero_of_forall_not _ _ fun _ hbad ↦
+      Fin.succ_ne_zero i.1 hbad.2.1).trans_le zero_le
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
 with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/

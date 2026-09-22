@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
   # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`)
@@ -66,6 +68,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 
 open OracleComp OracleSpec ProtocolSpec
@@ -152,9 +156,9 @@ def GuardedForm.append {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
     simp only [Verifier.append]
     rw [G₁.verify_eq stmt tr.fst]
     by_cases hc₁ : G₁.check stmt tr.fst = true
-    · rw [if_pos hc₁, pure_bind, G₂.verify_eq (G₁.out stmt tr.fst) tr.snd]
+    · rw [ite_eq_left hc₁, pure_bind, G₂.verify_eq (G₁.out stmt tr.fst) tr.snd]
       by_cases hc₂ : G₂.check (G₁.out stmt tr.fst) tr.snd = true <;> simp [hc₁, hc₂]
-    · rw [if_neg hc₁]
+    · rw [ite_eq_right hc₁]
       simp [hc₁]
 
 /-- Guardedness is closed under `Verifier.append`: forget the data of `GuardedForm.append`. -/
@@ -218,7 +222,7 @@ theorem append_run_outputs_guardedLeft
       Outputs init impl (V₁.append V₂) stmt (tr₁ ++ₜ tr₂)
         = Outputs init impl V₂ (out₁ stmt tr₁) tr₂ := by
   unfold Outputs
-  rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt tr₁ tr₂, if_pos hc]
+  rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt tr₁ tr₂, ite_eq_left hc]
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- A guarded verifier's reachable outputs pin **both** the guard and the verdict: any reachable
@@ -233,7 +237,7 @@ theorem outputs_guarded_subsingleton
     (hout : out ∈ Outputs init impl V₁ stmt tr) : out = out₁ stmt tr := by
   simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr] at hout
   by_cases hc : check₁ stmt tr
-  · rw [if_pos hc] at hout
+  · rw [ite_eq_left hc] at hout
     have : (do (simulateQ impl
         (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
         ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
@@ -241,7 +245,7 @@ theorem outputs_guarded_subsingleton
     rw [this] at hout
     simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
     exact Option.some.inj hout.1
-  · rw [if_neg (by simpa using hc)] at hout
+  · rw [ite_eq_right (by simpa using hc)] at hout
     have : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
         ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
       congr 1
@@ -258,10 +262,10 @@ theorem guarded_accepting_of_mem
     (hV₁ : V₁.IsGuardedWith check₁ out₁)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) (hc : check₁ stmt tr = true)
     (lang : Set Stmt₂) (hmem : out₁ stmt tr ∈ lang) :
-      Pr[ (· ∈ lang) |
-        OptionT.mk do (simulateQ impl (V₁.run stmt tr)).run' (← init)] = 1 :=
+      Pr{let stmtOut ← OptionT.mk do
+        (simulateQ impl (V₁.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1 :=
   Verifier.pure_accepting_of_mem init impl V₁ stmt tr lang (out₁ stmt tr)
-    (by rw [hV₁ stmt tr, if_pos hc]) hmem
+    (by rw [hV₁ stmt tr, ite_eq_left hc]) hmem
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- A guarded verifier's verdict **is** reachable where its check passes, as soon as the sampling
@@ -277,7 +281,7 @@ theorem guarded_verdict_mem_outputs
       out₁ stmt tr ∈ Outputs init impl V₁ stmt tr := by
   obtain ⟨s, hs⟩ := hinit
   simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr]
-  rw [if_pos hc]
+  rw [ite_eq_left hc]
   have heq : (do (simulateQ impl
       (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
       ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
@@ -327,7 +331,7 @@ theorem append_treeSpecialSoundWith_guardedLeft
       (by
         have h := append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt p₁.fullTranscript
           hpath₂.fullTranscript
-        rw [if_neg hc] at h
+        rw [ite_eq_right hc] at h
         exact h)
       (hAccept _ hmem)
   have hsuffAcc : ∀ p₁ : LeafPath tree.appendSplit.fst,
@@ -339,7 +343,7 @@ theorem append_treeSpecialSoundWith_guardedLeft
     have hfull := hAccept (p₁.fullTranscript ++ₜ tr₂) hmem
     rw [show (V₁.append V₂).run stmt (p₁.fullTranscript ++ₜ tr₂)
         = V₂.run (out₁ stmt p₁.fullTranscript) tr₂ from by
-      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, if_pos (hcheck p₁)]] at hfull
+      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, ite_eq_left (hcheck p₁)]] at hfull
     exact hfull
   have h₂' := fun p₁ : LeafPath tree.appendSplit.fst =>
     h₂ (out₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
@@ -425,7 +429,7 @@ theorem append_treeSpecialSoundWithEscape_guardedLeft
       (by
         have h := append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt p₁.fullTranscript
           hpath₂.fullTranscript
-        rw [if_neg hc] at h
+        rw [ite_eq_right hc] at h
         exact h)
       (hAccept _ hmem)
   have hsuffAcc : ∀ p₁ : LeafPath tree.appendSplit.fst,
@@ -437,7 +441,7 @@ theorem append_treeSpecialSoundWithEscape_guardedLeft
     have hfull := hAccept (p₁.fullTranscript ++ₜ tr₂) hmem
     rw [show (V₁.append V₂).run stmt (p₁.fullTranscript ++ₜ tr₂)
         = V₂.run (out₁ stmt p₁.fullTranscript) tr₂ from by
-      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, if_pos (hcheck p₁)]] at hfull
+      rw [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁, ite_eq_left (hcheck p₁)]] at hfull
     exact hfull
   have h₂' := fun p₁ : LeafPath tree.appendSplit.fst =>
     h₂ (out₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)

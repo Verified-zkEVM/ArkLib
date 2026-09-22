@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.OracleReduction.Security.TranscriptTree.Basic
+public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 
 /-!
   # Trees of transcripts — sequential composition
@@ -85,6 +86,8 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
   Composition is binary and sequential (a single append `pSpec₁ ++ₚ pSpec₂`); `n`-ary composition
   is obtained by iterating.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
@@ -568,13 +571,13 @@ theorem src_splitOf : {a : Fin (m + n + 1)} →
       by_cases hrm : rv < m
       · have ih := src_splitOf child (rv + 1) (by omega) (leftSucc hv (by omega))
         obtain rfl : i = Fin.castAdd n (⟨rv, hrm⟩ : Fin m) := Fin.ext (by simpa using hv)
-        simp only [splitOf, dif_pos hrm, SplitData.src]
+        simp only [splitOf, dite_eq_left hrm, SplitData.src]
         apply heq_of_eq
         congr 1
         · simp [cast_cast]
         · exact eq_of_heq ih
       · obtain rfl : rv = m := by omega
-        simp only [splitOf, dif_neg hrm, boundaryOf, SplitData.src]
+        simp only [splitOf, dite_eq_right hrm, boundaryOf, SplitData.src]
         exact embedRight_unembedRight _ 0 _ _
   | _, .chalNode i hd chals children, rv, hlt, h => by
       have hv : (i : ℕ) = rv := by
@@ -582,13 +585,13 @@ theorem src_splitOf : {a : Fin (m + n + 1)} →
       by_cases hrm : rv < m
       · have ih := fun j => src_splitOf (children j) (rv + 1) (by omega) (leftSucc hv (by omega))
         obtain rfl : i = Fin.castAdd n (⟨rv, hrm⟩ : Fin m) := Fin.ext (by simpa using hv)
-        simp only [splitOf, dif_pos hrm, SplitData.src]
+        simp only [splitOf, dite_eq_left hrm, SplitData.src]
         apply heq_of_eq
         congr 1
         · funext j; simp [cast_cast]
         · funext j; exact eq_of_heq (ih _)
       · obtain rfl : rv = m := by omega
-        simp only [splitOf, dif_neg hrm, boundaryOf, SplitData.src]
+        simp only [splitOf, dite_eq_right hrm, boundaryOf, SplitData.src]
         exact embedRight_unembedRight _ 0 _ _
 
 /-- The `SplitData` certificate built from an appended tree faithfully represents it. -/
@@ -796,9 +799,9 @@ theorem rightPrefix_leaf_eq_append (tr₁ : FullTranscript pSpec₁)
   funext j
   refine Fin.addCases (fun i => ?_) (fun i => ?_) j
   · simp only [FullTranscript.append, rightPrefix]
-    rw [Fin.happend_left, dif_pos (by simp)]; rfl
+    rw [Fin.happend_left, dite_eq_left (by simp)]; rfl
   · simp only [FullTranscript.append, rightPrefix]
-    rw [Fin.happend_right, dif_neg (by simp)]
+    rw [Fin.happend_right, dite_eq_right (by simp)]
     refine cast_eq_iff_heq.mpr (HEq.trans ?_ (cast_heq _ _).symm)
     congr 1
     exact Fin.ext (by simp only [Fin.val_natAdd]; omega)
@@ -809,7 +812,7 @@ theorem leftPrefix_last_eq_rightPrefix_default (pre₁ : Transcript (Fin.last m)
     leftPrefix pre₁ = rightPrefix pre₁ (default : Transcript (0 : Fin (n + 1)) pSpec₂) := by
   funext j
   simp only [leftPrefix, rightPrefix]
-  rw [dif_pos (by simp)]; rfl
+  rw [dite_eq_left (by simp)]; rfl
 
 /-- `leftPrefix` commutes with extending the prefix by one round. -/
 theorem leftPrefix_concat {i : Fin m} (pre : Transcript i.castSucc pSpec₁)

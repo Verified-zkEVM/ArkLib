@@ -3,9 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # CS25 integer-radius CA-to-list-size bound
@@ -22,12 +24,7 @@ dimensions.
 - [CS25] Crites--Stewart, Theorem 2.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 
@@ -37,9 +34,10 @@ open Code CoreDefinitions ProximityGap
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 open scoped NNReal in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
@@ -48,33 +46,38 @@ private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) 
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _ _
 
 private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=
   fun j i => Fin.cases (u i / (domain i - a)) (fun _ => -1 / (domain i - a)) j
 
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 private theorem rs_reciprocal_stack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 1 i = -1 / (domain i - a) := by
   rfl
 
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 private theorem rs_reciprocal_stack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 0 i = u i / (domain i - a) := by
   rfl
 
 open scoped NNReal ProbabilityTheory in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
 private theorem rs_fold_probability_le_eps_ca_of_not_joint
     (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) (v : Code.WordStack F (Fin 2) ι)
     (hnot : ¬ Code.jointProximity C (u := v) δ_int) :
-    Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
+    Pr{let γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
       ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int := by
   classical
   unfold ProximityGap.epsCa
   have hle := le_iSup
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
-      else Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
-  rw [if_neg hnot] at hle
+      else Pr{let γ ← $ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) v
+  rw [ite_eq_right hnot] at hle
   exact hle
 
 omit [DecidableEq ι] in
@@ -359,10 +362,10 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     unfold epsCa
     refine le_trans ?_ (le_iSup (fun w : WordStack F (Fin 2) ι =>
       if jointProximity (C := Ck) (u := w) ((f : ℝ≥0) / n) then 0 else
-        (((do
-          let x ← PMF.uniformOfFintype F
-          return δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)) True) : ENNReal)) v)
-    rw [if_neg hvnot, Probability.prob_uniform_eq_card_filter_div_card]
+        Pr{let x ←$ᵗ F}[δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)]) v)
+    rw [ite_eq_right hvnot, SampleableType.prEvent_uniformSample]
+    simp only [Good, q]
+    rw [ENNReal.coe_natCast, ENNReal.coe_natCast]
   have hGoodR : (Good.card : ℝ) ≤ ε * q := by
     have htr := ENNReal.toReal_mono (rs_eps_ca_ne_top Ck _ _) hprob
     have hdiv : (Good.card : ℝ) / q ≤
@@ -407,18 +410,19 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
       (Good.card : ℝ) * ((T.card : ℝ) * A.card + k * (T.card : ℝ) ^ 2) := by
     calc
       (T.card : ℝ) ^ 2 * A.card ≤ ((Good.card : ℝ) * (coll a : ℝ)) * A.card := by
-        gcongr
+        exact mul_le_mul_of_nonneg_right hCS (Nat.cast_nonneg _)
       _ = (Good.card : ℝ) * ((coll a : ℝ) * A.card) := by ring
       _ ≤ (Good.card : ℝ) * ((T.card : ℝ) * A.card + k * (T.card : ℝ) ^ 2) := by
-        gcongr
-        exact_mod_cast haavg
+        exact mul_le_mul_of_nonneg_left (by exact_mod_cast haavg) (Nat.cast_nonneg _)
   have hAcardR : (A.card : ℝ) = (q : ℝ) - n := by
     rw [hAcard, Nat.cast_sub hnq]
   by_cases hT0 : T.card = 0
   · simp [hT0]
   have hLpos : (0 : ℝ) < T.card := by exact_mod_cast Nat.pos_of_ne_zero hT0
   have hbracket0 : (0 : ℝ) ≤ (T.card : ℝ) * A.card + k * (T.card : ℝ) ^ 2 := by
-    positivity
+    exact add_nonneg
+      (mul_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _))
+      (mul_nonneg (Nat.cast_nonneg _) (sq_nonneg _))
   have hmaster' : (T.card : ℝ) ^ 2 * ((q : ℝ) - n) ≤
       ε * q * ((T.card : ℝ) * ((q : ℝ) - n) + k * (T.card : ℝ) ^ 2) := by
     calc
@@ -430,7 +434,14 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
         rw [hAcardR]
   have hLD : (T.card : ℝ) * ((q : ℝ) - n - k * ε * q) ≤
       ε * q * ((q : ℝ) - n) := by
-    nlinarith
+    apply (mul_le_mul_iff_of_pos_left hLpos).mp
+    calc
+      (T.card : ℝ) * (T.card * ((q : ℝ) - n - k * ε * q)) =
+          (T.card : ℝ) ^ 2 * ((q : ℝ) - n) -
+            ε * q * (k * (T.card : ℝ) ^ 2) := by ring
+      _ ≤ ε * q * ((T.card : ℝ) * ((q : ℝ) - n) + k * (T.card : ℝ) ^ 2) -
+            ε * q * (k * (T.card : ℝ) ^ 2) := sub_le_sub_right hmaster' _
+      _ = (T.card : ℝ) * (ε * q * ((q : ℝ) - n)) := by ring
   have hLB : (T.card : ℝ) ≤ B := by
     rw [hB]
     exact (le_div_iff₀ hDpos).2 hLD

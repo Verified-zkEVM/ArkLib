@@ -4,9 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
-import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Prelude
+public import ArkLib.Data.CodingTheory.ReedSolomon
+
+/-!
+# ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace ProximityGap
 
@@ -827,8 +836,7 @@ theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
     (hv : Function.Injective v) :
     ∀ i j : Fin n,
       ((-Matrix.vandermonde (fun t : Fin n => (Polynomial.C (v t) : F[X])))⁻¹ i j).natDegree =
-        0 :=
-    by
+        0 := by
   classical
   intro i j
   let f : F →+* F[X] := Polynomial.C
@@ -1143,10 +1151,10 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
         ext irow jcol
         cases irow using Fin.lastCases with
         | last =>
-            simp only [Matrix.updateRow_apply, if_pos, b, Matrix.submatrix_apply,
+            simp only [Matrix.updateRow_apply, ite_eq_left, b, Matrix.submatrix_apply,
               Ii, Fin.Embedding.snoc_last]
         | cast t =>
-            simp only [Matrix.updateRow_apply, Fin.castSucc_ne_last, if_false, B, I', Ii,
+            simp only [Matrix.updateRow_apply, Fin.castSucc_ne_last, ite_false, B, I', Ii,
               Matrix.submatrix_apply, Fin.Embedding.snoc_castSucc]
       have hdetBi : Matrix.det (K.submatrix Ii J') = 0 := by
         by_contra h

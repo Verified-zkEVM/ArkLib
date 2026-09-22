@@ -3,8 +3,9 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.LiftContext.Reduction
+public import ArkLib.OracleReduction.LiftContext.Reduction
 
 /-!
   ## Lifting Oracle Reductions to Larger Contexts
@@ -15,6 +16,8 @@ import ArkLib.OracleReduction.LiftContext.Reduction
   The only new thing here is the definition of the oracle verifier. The rest (oracle prover +
   security properties) are just ported from `LiftContext/Reduction.lean`, with suitable conversions.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec
 
@@ -43,7 +46,7 @@ def OracleProver.liftContext
 
 variable [∀ i, OracleInterface (pSpec.Message i)]
 
-private def OracleVerifier.liftContextQueryImpl
+def OracleVerifier.liftContextQueryImpl
     (lens : OracleStatement.ExecutableLens
       OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
       OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)

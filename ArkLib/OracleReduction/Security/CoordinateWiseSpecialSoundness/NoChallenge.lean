@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 
 /-!
   # (Coordinate-wise) special soundness for protocols with no challenge rounds
@@ -49,6 +51,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   components is already closed; a chain whose last link is a reduction is correctly left in the
   `∀ o valid` form.
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
@@ -121,8 +125,8 @@ theorem treeSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (e : StmtIn → FullTranscript pSpec → WitIn)
     (h : ∀ stmtIn tr,
-      Pr[ (· ∈ relOut.language) |
-        OptionT.mk do (simulateQ impl (V.run stmtIn tr)).run' (← init)] = 1 →
+      Pr{let stmtOut ← OptionT.mk do
+        (simulateQ impl (V.run stmtIn tr)).run' (← init)}[stmtOut ∈ relOut.language] = 1 →
       (stmtIn, e stmtIn tr) ∈ relIn) :
     treeSpecialSoundWith init impl S relIn relOut V
       (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
@@ -137,8 +141,8 @@ theorem coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.Ch
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (e : StmtIn → FullTranscript pSpec → WitIn)
     (h : ∀ stmtIn tr,
-      Pr[ (· ∈ relOut.language) |
-        OptionT.mk do (simulateQ impl (V.run stmtIn tr)).run' (← init)] = 1 →
+      Pr{let stmtOut ← OptionT.mk do
+        (simulateQ impl (V.run stmtIn tr)).run' (← init)}[stmtOut ∈ relOut.language] = 1 →
       (stmtIn, e stmtIn tr) ∈ relIn) :
     coordinateWiseSpecialSoundWith init impl D relIn relOut V
       (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
@@ -168,8 +172,9 @@ theorem coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.Ch
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (e : (StmtIn × ∀ i, OStmtIn i) → FullTranscript pSpec → WitIn)
     (h : ∀ stmtIn tr,
-      Pr[ (· ∈ relOut.language) |
-        OptionT.mk do (simulateQ impl (V.toVerifier.run stmtIn tr)).run' (← init)] = 1 →
+      Pr{let stmtOut ← OptionT.mk do
+        (simulateQ impl (V.toVerifier.run stmtIn tr)).run'
+          (← init)}[stmtOut ∈ relOut.language] = 1 →
       (stmtIn, e stmtIn tr) ∈ relIn) :
     V.coordinateWiseSpecialSoundWith init impl D relIn relOut
       (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=

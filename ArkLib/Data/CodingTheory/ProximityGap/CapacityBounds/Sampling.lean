@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # Ambient density lower-bounds correlated agreement
@@ -21,6 +22,8 @@ correlated agreement.
 - [DG25dist] Theorem 2.5.
 -/
 
+@[expose] public section
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -31,7 +34,7 @@ section Sampling
 open scoped ProbabilityTheory
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /-- Lower-bounds linear-code CA error by the probability that a uniformly sampled ambient
 word is within radius `δ`, provided `δ` is below the relative covering radius. -/
@@ -40,7 +43,7 @@ theorem linear_close_probability_le_epsCa
     (_h_δ' : (δ' : ENNReal) = ⨆ u : ι → F, δᵣ(u, (C : Set (ι → F))))
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < δ') :
     ((Fintype.card F - 1 : ℝ≥0) / Fintype.card F : ENNReal)
-        * Pr_{let u ← $ᵖ (ι → F)}[δᵣ(u, (C : Set (ι → F))) ≤ δ] ≤
+        * Pr{let u ← $ᵗ (ι → F)}[δᵣ(u, (C : Set (ι → F))) ≤ δ] ≤
       epsCa (F := F) (A := F) ((C : Set (ι → F))) δ δ := by
   classical
   let Good : (ι → F) → Prop := fun w => δᵣ(w, (C : Set (ι → F))) ≤ (δ : ENNReal)
@@ -82,7 +85,7 @@ theorem linear_close_probability_le_epsCa
             by_cases hr : r = 0
             · subst r
               simp [hz]
-            · rw [if_neg hr]
+            · rw [ite_eq_right hr]
               rw [← Finset.card_filter]
               exact hfiber r hr
       _ = (Fintype.card F - 1) * G.card := by
@@ -98,10 +101,10 @@ theorem linear_close_probability_le_epsCa
     omega
   have havg :
       ((Fintype.card F - 1 : ℝ≥0) / Fintype.card F : ENNReal) *
-          Pr_{let w ← $ᵖ (ι → F)}[Good w] ≤
-        Pr_{let r ← $ᵖ F}[Good (z + r • d)] := by
-    rw [Probability.prob_uniform_eq_card_filter_div_card,
-      Probability.prob_uniform_eq_card_filter_div_card]
+          Pr{let w ← $ᵗ (ι → F)}[Good w] ≤
+        Pr{let r ← $ᵗ F}[Good (z + r • d)] := by
+    rw [SampleableType.prEvent_uniformSample,
+      SampleableType.prEvent_uniformSample]
     change ((Fintype.card F - 1 : ENNReal) / Fintype.card F) *
         ((G.card : ENNReal) / Fintype.card (ι → F)) ≤
       ((L d).card : ENNReal) / Fintype.card F
@@ -129,13 +132,13 @@ theorem linear_close_probability_le_epsCa
     apply hz
     simpa [Good, u] using hzero
   have hline :
-      Pr_{let r ← $ᵖ F}[Good (z + r • d)] ≤
+      Pr{let r ← $ᵗ F}[Good (z + r • d)] ≤
         epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
     unfold epsCa
     refine le_trans (le_of_eq ?_) (le_iSup (fun v : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
-      else Pr_{let r ← $ᵖ F}[δᵣ(v 0 + r • v 1, (C : Set (ι → F))) ≤ δ]) u)
-    rw [if_neg hnotjoint]
+      else Pr{let r ← $ᵗ F}[δᵣ(v 0 + r • v 1, (C : Set (ι → F))) ≤ δ]) u)
+    rw [ite_eq_right hnotjoint]
     simp [u, Good]
   simpa [Good] using havg.trans hline
 

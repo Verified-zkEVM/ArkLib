@@ -164,8 +164,8 @@ scratchpad probe; it is forbidden in repo code.
 - Run [`fix-lean-warnings.md`](fix-lean-warnings.md) over the changed files.
 - If you added a file under `ArkLib/`, run `./scripts/update-lib.sh` and `git add` the result —
   `check-imports.sh` compares against the index, so an unstaged regeneration still fails.
-- Confirm `./scripts/validate.sh` passes (`--lint` too). Changes under `ArkLib/Data/` must clear
-  the zero-warning gate.
+- Confirm `./scripts/validate.sh` passes. Style and repository-wide non-`sorry` warnings are checked
+  by default.
 
 ### 8. Summarize and improve this skill
 

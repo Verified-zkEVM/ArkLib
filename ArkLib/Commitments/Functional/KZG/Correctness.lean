@@ -3,9 +3,15 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import ArkLib.Commitments.Functional.KZG.Basic
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
+public import ArkLib.Commitments.Functional.KZG.Basic
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
+-- `simp [coeff]` and `Raw.coeff`/`Raw.mk` need CompPoly's unexposed bodies.
+import all CompPoly.Univariate.Basic
+import all CompPoly.Univariate.Raw.Core
 
 /-!
 # Correctness of the KZG Polynomial Commitment Scheme
@@ -23,6 +29,8 @@ The main algebraic theorem is `KZG.correctness`; the interface-level theorem is
 
 This file proves correctness from the definitions.
 -/
+
+@[expose] public section
 
 open CompPoly CompPoly.CPolynomial
 
@@ -164,8 +172,8 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  rw [ge_iff_le, one_le_probEvent_iff]
-  refine OptionT.probEvent_eq_one_of_simulateQ_support _ _ ∅ _ ?_
+  refine ge_of_eq ?_
+  refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_
   intro x hx
   simp only [kzg] at hx
   rw [mem_support_bind_iff] at hx
@@ -194,7 +202,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
       (generateOpening (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
       query (OracleInterface.answer data query) := by
     change verifyOpening pairing _ _ _ query ((CPolynomial.ofFn data).eval query) = true
-    simpa only [CPolynomial.ofFn] using
+    simpa only [CPolynomial.ofFn, CPolynomial.ofArray] using
       KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query
   simp only [Option.elimM] at hx
   rw [mem_support_bind_iff] at hx

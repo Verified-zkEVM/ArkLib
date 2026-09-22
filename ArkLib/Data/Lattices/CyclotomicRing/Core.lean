@@ -3,8 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Core.Modulus
-import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Core.Modulus
+public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
 
 /-!
 # Foundational Construction of the Cyclotomic Ring `R_q = Z_q[X] / (φ)`
@@ -26,3 +28,5 @@ on top of this layer and live one level up, at
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section

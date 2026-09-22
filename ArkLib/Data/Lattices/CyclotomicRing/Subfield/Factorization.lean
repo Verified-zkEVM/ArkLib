@@ -3,10 +3,12 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
-import ArkLib.Data.Lattices.CyclotomicRing.Galois.Order
-import Mathlib.RingTheory.Polynomial.Cyclotomic.Factorization
-import Mathlib.RingTheory.ZMod.UnitsCyclic
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
+public import ArkLib.Data.Lattices.CyclotomicRing.Galois.Order
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Factorization
+public import Mathlib.RingTheory.ZMod.UnitsCyclic
 
 /-!
 # Two-Factor Decomposition of `R_q` for `q ≡ 5 (mod 8)` (Hachi §3, Lemma 5)
@@ -32,6 +34,8 @@ lifting-the-exponent toolkit of `Galois/Order.lean` together with
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open Polynomial
 

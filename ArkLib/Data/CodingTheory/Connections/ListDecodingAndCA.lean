@@ -3,14 +3,15 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.BCHKS25
-import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.CS25
-import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.GCXK25
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import ArkLib.Data.CodingTheory.ProximityGap.Errors
+public import ArkLib.Data.CodingTheory.ListDecodability
+public import ArkLib.Data.CodingTheory.ReedSolomon
+public import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.BCHKS25
+public import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.CS25
+public import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.GCXK25
+public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Connections between list decoding and correlated agreement
@@ -42,9 +43,7 @@ the real-radius `mcaError`; CA statements use the nonnegative-radius `epsCa` int
 - [BenSassonGKS20] Lemma 3.3.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
+@[expose] public section
 
 namespace CodingTheory
 
@@ -54,16 +53,17 @@ open Code CoreDefinitions ProximityGap
 section ListImpliesMCA
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 end ListImpliesMCA
 
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-/-- `ε_ca` is never `⊤`: each branch of the supremum is `0` or a `PMF` probability
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+/-- `ε_ca` is never `⊤`: each branch of the supremum is `0` or a native event probability
 (`≤ 1`). Derivation infrastructure for `rs_Lambda_extended_le_of_epsCa`. -/
 private lemma epsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
@@ -73,7 +73,7 @@ private lemma epsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _ _
 
 /-- `Nat.floor` commutes with the `ℝ≥0 → ℝ` coercion. Derivation infrastructure for
 `rs_Lambda_extended_le_of_epsCa`. -/
@@ -82,6 +82,7 @@ private lemma nat_floor_coe_nnreal (x : ℝ≥0) : Nat.floor (x : ℝ) = Nat.flo
     (Nat.le_floor (by exact_mod_cast Nat.floor_le x.coe_nonneg))
     (Nat.le_floor (by exact_mod_cast Nat.floor_le (zero_le (α := ℝ≥0))))
 
+omit [DecidableEq ι] [Field F] [Fintype F] [SampleableType F] [DecidableEq F] in
 /-- `Λ(C, ·)` is `1/n`-quantised: relative Hamming distance takes values in
 `{0, 1/n, …, 1}`, so the list size at a real radius `δ ≥ 0` equals the list size at the
 grid point `⌊δ·n⌋/n`. `Lambda` analogue of `ProximityGap.epsCa_eq_of_floor_eq`;
@@ -105,6 +106,7 @@ private lemma Lambda_eq_floor_div_card (C : Set (ι → F)) {δ : ℝ} (hδ : 0 
   unfold Lambda
   exact iSup_congr fun y => by rw [hset y]
 
+omit [DecidableEq ι] in
 /-- A real-radius corollary of `rs_Lambda_extended_le_of_epsCa_int_radius`. For
 `δ ∈ (0, (n-k-1)/n)` and `η ∈ [0,1)`, if
 
@@ -228,8 +230,8 @@ full-domain code of rate `ρ = 1/8`,
 The interleaved threshold is strictly below `1 - ρ^{2/3}`, because the source supplies joint
 distance equal to that boundary while `epsCa` uses a non-strict guard. -/
 theorem rs_epsCa_large_below_johnson_radius
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F] [CharP F 2]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F] [CharP F 2]
     (_hF_eq_ι : Fintype.card F = Fintype.card ι)
     -- Without `|F| ≥ 8` the dimension `k = ⌊|F| / 8⌋` truncates to 0,
     -- giving the trivial code `{0}` for which the conclusion's

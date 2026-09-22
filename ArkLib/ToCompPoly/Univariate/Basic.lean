@@ -3,25 +3,26 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import Mathlib.Algebra.Polynomial.Div
+module
+
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import Mathlib.Algebra.Polynomial.Div
+-- `change`/`rfl` below reduce CompPoly definitions whose bodies CompPoly does not expose.
+-- `import all` must name the module that *defines* the declaration, not an umbrella.
+import all CompPoly.Univariate.ToPoly.Core
+import all CompPoly.Univariate.ToPoly.Equiv
+import all CompPoly.Univariate.Basic
 
 /-!
   # Additions to `CompPoly.Univariate.Basic` not yet upstreamed to CompPoly.
 -/
 
+@[expose] public section
+
 namespace CompPoly.CPolynomial
 
 variable {R : Type*}
-
-/-- Construct a canonical polynomial from a coefficient function `Fin n → R`.
-
-  The coefficients are stored in an array (index `i` gives the coefficient of `X^i`)
-  and then trimmed to remove trailing zeros.
--/
-def ofFn [Zero R] [BEq R] [LawfulBEq R] {n : ℕ} (f : Fin n → R) : CPolynomial R :=
-  ⟨(Raw.mk (Array.ofFn f)).trim, Raw.Trim.isCanonical_trim _⟩
 
 section DivisionToPoly
 
@@ -281,28 +282,6 @@ open Polynomial Finset
 
 variable {R : Type*} [CommRing R] [BEq R] [LawfulBEq R] [DecidableEq R] [Nontrivial R]
 
-/-- Extracting the `k`-th coefficient as an additive homomorphism. -/
-def coeffHom (k : ℕ) : CPolynomial R →+ R where
-  toFun p := p.coeff k
-  map_zero' := coeff_zero k
-  map_add' p q := coeff_add p q k
-
-omit [DecidableEq R] in
-@[simp] theorem coeffHom_apply (k : ℕ) (p : CPolynomial R) : coeffHom k p = p.coeff k := rfl
-
-/-- The polynomial with prescribed finite coefficient function: `Σ_{k<N} cₖ Xᵏ`. -/
-def ofFinCoeff (N : ℕ) (c : ℕ → R) : CPolynomial R :=
-  ∑ k ∈ range N, monomial k (c k)
-
-@[simp] theorem coeff_ofFinCoeff (N : ℕ) (c : ℕ → R) (j : ℕ) :
-    (ofFinCoeff N c).coeff j = if j < N then c j else 0 := by
-  rw [ofFinCoeff,
-    show (∑ k ∈ range N, monomial k (c k)).coeff j
-        = ∑ k ∈ range N, (monomial k (c k)).coeff j from map_sum (coeffHom j) _ _]
-  simp only [coeff_monomial]
-  rw [Finset.sum_ite_eq (range N) j (fun k => c k)]
-  simp
-
 omit [DecidableEq R] [Nontrivial R] in
 /-- `toPoly` of a constant is the Mathlib constant. -/
 theorem toPoly_C (c : R) : (C c).toPoly = Polynomial.C c := by
@@ -320,22 +299,5 @@ theorem toPoly_monomial (n : ℕ) (c : R) :
     coeff_monomial, Polynomial.coeff_monomial]
   exact if_congr eq_comm rfl rfl
 
-omit [Nontrivial R] in
-/-- The polynomial built from `N` coefficients has degree below `N`. -/
-theorem degree_toPoly_ofFinCoeff_lt (N : ℕ) (c : ℕ → R) :
-    (ofFinCoeff N c).toPoly.degree < (N : WithBot ℕ) := by
-  rw [ofFinCoeff, toPoly_sum]
-  refine lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
-    ((Finset.sup_lt_iff (WithBot.bot_lt_coe N)).mpr (fun k hk => ?_))
-  rw [toPoly_monomial]
-  exact lt_of_le_of_lt (Polynomial.degree_monomial_le k (c k))
-    (WithBot.coe_lt_coe.mpr (mem_range.mp hk))
-
-omit [Nontrivial R] in
-/-- A monomial with zero coefficient is the zero polynomial. -/
-theorem monomial_eq_zero (n : ℕ) : (monomial n (0 : R) : CPolynomial R) = 0 :=
-  eq_zero_iff_coeff_zero.mpr (fun j => by rw [coeff_monomial]; split_ifs <;> rfl)
-
 end OfFinCoeff
-
 end CompPoly.CPolynomial

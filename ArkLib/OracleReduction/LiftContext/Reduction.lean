@@ -3,9 +3,10 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.LiftContext.Lens
-import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.LiftContext.Lens
+public import ArkLib.OracleReduction.Security.RoundByRound
 -- import ArkLib.OracleReduction.Security.StateRestoration
 
 /-!
@@ -48,6 +49,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   All the lens definitions are in `Lens.lean`. This file deals with the lens applied to reductions.
   See `OracleReduction.lean` for the application to oracle reduction.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp ProtocolSpec
 
@@ -224,8 +227,7 @@ theorem liftContext_processRound
   simp only [bind_pure_comp]
   congr 1; funext ⟨tr, ps, outerStmtIn', outerWitIn'⟩
   simp only [pure_bind]
-  split <;> simp [Functor.map_map, Function.comp, liftM_map, map_bind,
-    bind_assoc, pure_bind, bind_map_left, bind_pure_comp]
+  split <;> simp [Functor.map_map, liftM_map, map_bind]
 
 
 theorem liftContext_runToRound
@@ -290,7 +292,8 @@ theorem liftContext_runWithLog
           P.runWithLog.uncurry (lens.proj (outerStmtIn, outerWitIn))
         return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩, queryLog⟩ := by
   rw [runWithLog, liftContext_run]
-  simp [Function.uncurry]
+  simp only [ChallengeIdx, Challenge, Function.uncurry, bind_pure_comp, simulateQ_map,
+    WriterT.run_map]
   congr
 
 end Prover
@@ -308,9 +311,11 @@ theorem liftContext_run
         return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩ ,
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩ := by
   unfold run
-  simp [liftContext, Prover.liftContext_run, Verifier.liftContext, Verifier.run, Function.uncurry]
+  simp only [ChallengeIdx, Challenge, liftContext, Verifier.liftContext, bind_pure_comp,
+    Prover.liftContext_run, Function.uncurry, liftM_map, Verifier.run, OptionT.run_map,
+    bind_map_left, map_bind, Functor.map_map]
   congr 1; funext ⟨_, _⟩; congr 1; funext a_1
-  simp [Functor.map_map, Function.comp]
+  simp?
   cases a_1 <;> simp [Option.getM, map_pure]
 
 theorem liftContext_runWithLog
@@ -356,9 +361,9 @@ theorem liftContext_completeness
     (lensComplete.proj_complete _ _ hRelIn)
   rw [Reduction.liftContext_run]
   refine le_trans hR ?_
-  simp
+  simp?
   sorry
-  -- refine probEvent_mono ?_
+  -- Refine by event monotonicity.
   -- intro ⟨innerContextOut, a, b⟩ hSupport ⟨hRelOut, hRelOut'⟩
   -- have : innerContextOut ∈
   --     Prod.fst <$>
@@ -407,7 +412,11 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   unfold soundness Reduction.run at h ⊢
   -- Note: there is no distinction between `Outer` and `Inner` here
   intro WitIn WitOut outerWitIn outerP outerStmtIn hOuterStmtIn
-  simp at h ⊢
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_monadLift, monadLift_self, OptionT.run_map, Option.elimM_map,
+    Option.elim_some, simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind,
+    OptionT.mk_bind] at h ⊢
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
     PrvState := outerP.PrvState
     input := fun _ => outerP.input (outerStmtIn, outerWitIn)
@@ -423,7 +432,7 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   have hSound := h WitIn WitOut outerWitIn innerP (lens.proj outerStmtIn) this
   refine le_trans ?_ hSound
   simp [Verifier.liftContext, Verifier.run]
-  -- Need to massage the two `probEvent`s so that they have the same base computation `oa`
+  -- Put the two events over the same base computation `oa`.
   -- Then apply `lensSound.lift_sound`?
   sorry
 
@@ -453,7 +462,10 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
   obtain ⟨E, h'⟩ := h
   refine ⟨E.liftContext ⟨stmtLens, witLens⟩, ?_⟩
   intro outerStmtIn outerWitIn outerP
-  simp [Extractor.Straightline.liftContext]
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, Extractor.Straightline.liftContext,
+    bind_pure_comp, OptionT.run_map, liftM_map, Functor.map_map, OptionT.run_bind,
+    StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta]
   let innerP : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec :=
     {
       PrvState := outerP.PrvState
@@ -466,9 +478,14 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
     }
   have h_innerP_input {innerStmtIn} {innerWitIn} :
       innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
-  simp at h'
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_map, StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta] at h'
   have hR := h' (stmtLens.proj outerStmtIn) default innerP
-  simp [Reduction.runWithLog, Verifier.liftContext, Verifier.run] at hR ⊢
+  simp only [Reduction.runWithLog, ChallengeIdx, Challenge, run, bind_pure_comp,
+    OptionT.run_bind, OptionT.run_monadLift, monadLift_self, OptionT.run_map,
+    Option.elimM_map, Option.elim_some, Option.elimM_bind, simulateQ_bind,
+    StateT.run_bind, map_bind, OptionT.mk_bind, liftContext, ge_iff_le] at hR ⊢
   have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
       innerP.runWithLog innerStmtIn innerWitIn
       = do
@@ -476,9 +493,9 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
         return ⟨⟨transcript, ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩⟩, rest⟩ := by
     sorry
   refine le_trans ?_ hR
-  -- Massage the two `probEvent`s so that they have the same base computation `oa`?
+  -- Put the two events over the same base computation `oa`.
   simp [h_innerP_runWithLog]
-  -- apply probEvent_mono ?_
+  -- Apply event monotonicity.
   sorry
 
 /-
@@ -498,7 +515,10 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
       (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut rbrSoundnessError := by
   unfold rbrSoundness at h ⊢
   obtain ⟨stF, h⟩ := h
-  simp at h ⊢
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, HasQuery.instOfMonadLift_query, bind_pure_comp,
+    simulateQ_bind, simulateQ_map, StateT.run'_eq, StateT.run_bind, StateT.run_map,
+    map_bind, Functor.map_map, Subtype.forall] at h ⊢
   refine ⟨stF.liftContext lens (lensSound := lensSound), ?_⟩
   intro outerStmtIn hOuterStmtIn WitIn WitOut witIn outerP roundIdx hDir
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
@@ -531,12 +551,6 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
       (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
-  unfold rbrKnowledgeSoundness at h ⊢
-  obtain ⟨stF, E, h⟩ := h
-  simp at h ⊢
-  -- refine ⟨stF.liftContext (lens := lens.toStatement.Lens)
-  --   (lensSound := lensKnowledgeSound.toSound),
-  --         ?_, ?_⟩
   sorry
 
 end Verifier
@@ -578,13 +592,13 @@ def testStmtLens :
 
 @[simp]
 def testLens : Context.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test
-                Unit Unit Unit Unit where
+    Unit Unit Unit Unit where
   stmt := testStmtLens
   wit := Witness.Lens.id
 
 @[simp]
 def testLensE : Extractor.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Test InnerStmtOut_Test
-                Unit Unit Unit Unit where
+    Unit Unit Unit Unit where
   stmt := testStmtLens
   wit := Witness.InvLens.id
 
@@ -599,7 +613,7 @@ instance instTestLensComplete : testLens.IsComplete
     simpa [hCompat] using hRelOut'
 
 theorem instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
-      outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
+    outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨p, q, _⟩ ⟨f, _⟩ => p * q = f) (fun _ _ => True) where
   proj_knowledgeSound := fun ⟨p, q, t⟩ ⟨f, t', r⟩ _ h h' => by
     change f.eval r = t'

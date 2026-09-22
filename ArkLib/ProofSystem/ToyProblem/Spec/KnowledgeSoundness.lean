@@ -3,8 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Exact-extractor knowledge soundness for the toy protocol
@@ -25,14 +26,14 @@ theorem type.  Concrete implementations may derive the older existential
   Correlated Agreement*][ABF26], Section 6.
 -/
 
+@[expose] public section
+
 namespace ToyProblem.Spec
 
 open OracleSpec OracleComp ProtocolSpec
 open Probability
 open scoped NNReal ENNReal ProbabilityTheory
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 variable {ι F A : Type} [Fintype ι] [DecidableEq ι]
 variable [Field F] [Fintype F] [DecidableEq F]
@@ -52,13 +53,6 @@ def transitionStraightlineExtractor {k t : ℕ}
     transition stmtIn
       (tr ⟨0, Nat.zero_lt_succ _⟩)
       (tr ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
-
-/-- A predicate false at every point has probability zero. -/
-private theorem Pr_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop)
-    (h : ∀ x, ¬ P x) : Pr_{let x ← D}[P x] = 0 := by
-  classical
-  rw [prob_tsum_form_singleton]
-  simp [h]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 private theorem verifier_run_loggingOracle_eq
@@ -137,12 +131,12 @@ private theorem prover_run_map_eq {k t : ℕ} {β : Type}
     Function.comp, Fin.castSucc_zero', Fin.isValue]
   dsimp only [Fin.succ, Fin.castSucc, Fin.castAdd, Fin.castLE, Fin.castLT, Fin.last]
   simp only [MonadLift.monadLift, liftM, monadLift, MonadLiftT.monadLift,
-    pure_bind, bind_assoc, FullTranscript.challenges, FullTranscript.messages,
+    FullTranscript.challenges, FullTranscript.messages,
     Transcript.concat, Fin.snoc, Fin.val_zero, Fin.val_one, Fin.val_two,
     lt_self_iff_false, Fin.val_castLT, Fin.castSucc_castLT,
     show (0 : ℕ) < 2 from by norm_num, show (0 : ℕ) < 1 from by norm_num,
     show (1 : ℕ) < 2 from by norm_num, show ¬ ((2 : ℕ) < 0) from by norm_num,
-    dif_pos, cast_eq, dite_false]
+    dite_eq_left, dite_false]
   rfl
 
 omit [DecidableEq ι] [Fintype F] [Fintype A] in
@@ -163,13 +157,12 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
       (pSpec (ι := ι) (F := F) k t))
     (hextractor : extractor = transitionStraightlineExtractor transition)
     (hgamma : ∀ stmtIn,
-      Pr[ fun γ : F ↦ ∃ g : Fin k → F,
+      Pr{let γ ← $ᵗ F}[∃ g : Fin k → F,
           (stmtIn, transition stmtIn γ g) ∉
               outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
             GammaState k (encode : (Fin k → F) → (ι → A)) δ
               stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
-              (stmtIn.2 0) (stmtIn.2 1) γ g
-        | $ᵗ F] ≤ (gammaError : ENNReal)) :
+              (stmtIn.2 0) (stmtIn.2 1) γ g] ≤ (gammaError : ENNReal)) :
     (oracleVerifier (k := k) (t := t)
       (encode : (Fin k → F) → (ι → A))).knowledgeSoundnessWith
       (WitOut := OutputWitness) init impl
@@ -182,7 +175,7 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
   unfold OracleVerifier.knowledgeSoundnessWith Verifier.knowledgeSoundnessWith
   rintro ⟨stmt, oStmt⟩ witIn prover
   rw [ENNReal.coe_add, ENNReal.coe_mul, ENNReal.coe_sub, ENNReal.coe_one]
-  refine ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
+  refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     (ε₂ := (((1 - δ) ^ t : ℝ≥0) : ENNReal))
     init impl _ ⟨0, rfl⟩
     (fun γ ↦ do
@@ -217,17 +210,17 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
     exact hgamma (stmt, oStmt)
   case h₂ =>
     intro γ hγ s0
-    refine ProtocolSpec.probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
+    refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       s0 impl _ ⟨2, rfl⟩ _ _ _ _ rfl (fun pre ↦ ?_)
-    refine le_trans (probEvent_mono ?_) (spotcheck_round_game_bound k t
+    refine le_trans (prEvent_mono _ _ _ ?_) (spotcheck_round_game_bound k t
       ((encode : (Fin k → F) → (ι → A))) δ (stmt, oStmt) γ pre.1)
-    rintro xs - ⟨out, b, hfb, hE⟩
+    rintro xs ⟨out, b, hfb, hE⟩
     by_cases hacc : Accepts (k := k) (t := t)
         ((encode : (Fin k → F) → (ι → A))) stmt oStmt γ pre.1 xs
-    · rw [if_pos hacc, Option.some_inj] at hfb
+    · rw [ite_eq_left hacc, Option.some_inj] at hfb
       subst hfb
       refine ⟨PUnit.unit.{1}, fun hgs ↦ hγ ⟨pre.1, hE.1 _ rfl, hgs⟩, hacc⟩
-    · rw [if_neg hacc] at hfb
+    · rw [ite_eq_right hacc] at hfb
       exact absurd hfb (by simp)
   case hoa =>
     let post : ((pSpec (ι := ι) (F := F) k t).FullTranscript ×
@@ -269,12 +262,12 @@ theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
             x.1.2.2)) : OracleComp
               ([]ₒ + [(pSpec (ι := ι) (F := F) k t).Challenge]ₒ) _) =
             pure (post x.1)
-        simp only [post, h, if_true]
+        simp only [post, h, ite_true]
       · simp only [Option.elim_none, OptionT.run_failure, pure_bind]
         change (pure none : OracleComp
           ([]ₒ + [(pSpec (ι := ι) (F := F) k t).Challenge]ₒ) _) =
             pure (post x.1)
-        simp only [post, h, if_false]
+        simp only [post, h, ite_false]
     case hC =>
       refine (prover_run_map_eq prover (stmt, oStmt) witIn
         (fun c m xs out ↦
@@ -319,20 +312,19 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
     [SampleableType F]
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
-    Pr[fun γ : F ↦ ∃ g : Fin k → F,
+    Pr{let γ ← $ᵗ F}[∃ g : Fin k → F,
         (stmtIn, choiceTransition
           (encode : (Fin k → F) → (ι → A)) δ stmtIn γ g) ∉
             outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
           GammaState k (encode : (Fin k → F) → (ι → A)) δ
             stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
             (stmtIn.2 0) (stmtIn.2 1) γ g
-      | $ᵗ F] ≤ (winningSetDensity encode δ : ENNReal) := by
+      ] ≤ (winningSetDensity encode δ : ENNReal) := by
   classical
-  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ outputRelationFor k
         (encode : (Fin k → F) → (ι → A)) δ
-  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
+  · refine (prEvent_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
     intro γ hbad
     obtain ⟨g, hnot, _⟩ := hbad
     exact hnot (chooseRelaxedWitness_mem k hw)
@@ -379,15 +371,15 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
         exact ⟨fun _ ↦ encode m,
           ⟨fun _ ↦ m, fun _ ↦ rfl, fun _ ↦ by simpa using hlin⟩,
           S, hScard, fun i j hj ↦ by simpa using hagree j hj⟩
-    refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
+    refine le_trans (prEvent_mono ($ᵗ F) _
       (GammaEvent encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
         (stmtIn.2 0) (stmtIn.2 1))
       (fun γ h ↦ Eq.mp (congrFun hbad γ) h)) ?_
     calc
-      Pr_{let γ ← $ᵖ F}[GammaEvent encode δ stmtIn.1.1
+      Pr{let γ ← $ᵗ F}[GammaEvent encode δ stmtIn.1.1
           stmtIn.1.2.1 stmtIn.1.2.2 (stmtIn.2 0) (stmtIn.2 1) γ] =
           (winningSetRatio x : ENNReal) := by
-        rw [prob_uniform_eq_card_filter_div_card, winningSetRatio, hWin,
+        rw [SampleableType.prEvent_uniformSample, winningSetRatio, hWin,
           Set.ncard_eq_toFinset_card',
         Set.toFinset_ofPred,
         ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
@@ -395,6 +387,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
       _ ≤ (winningSetDensity encode δ : ENNReal) := by
         exact_mod_cast winningSetRatio_le_winningSetDensity x
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Direct simplified-IOR game theorem at the worst-case winning-set density.
 
 This is the protocol-level upper coupling missing from the bare combinatorial
@@ -403,7 +396,7 @@ probability at most `winningSetDensity encode δ`.  It does not assert the
 separate optimal-adversary/lower-coupling result that would identify this
 quantity as the minimal achievable game error. -/
 theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
-    {k : ℕ} [SampleableType F]
+    {k : ℕ} [SampleableType F] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
@@ -417,6 +410,7 @@ theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
       (SimplifiedIOR.transitionStraightlineExtractor k
         (choiceTransition (encode : (Fin k → F) → (ι → A)) δ))
       (winningSetDensity encode δ) := by
+  let _ := Fintype.ofFinite A
   apply SimplifiedIOR.knowledgeSoundnessWith_of_transition_failure_prob_le
   exact choiceTransition_failure_sample_le encode δ
 

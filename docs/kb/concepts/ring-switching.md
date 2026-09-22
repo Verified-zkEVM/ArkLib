@@ -51,9 +51,15 @@ the original claim and the new sum-check target.
 
 ArkLib formalizes the packing *data layer* once, generic over a `RingSwitchingProfile (B L) κ`:
 
-- `basis`, carrier `A`, embeddings `φ₀`/`φ₁ : L →+* A`, coordinate maps `decomposeRows`/`Columns`,
+- `basis`, carrier `A`, ring homomorphisms `φ₀`/`φ₁ : L →+* A`, coordinate maps `decomposeRows`/`Columns`,
 - plus two **reconstruction laws** (`decomposeRows_spec`, `decomposeColumns_spec`) that tie the
-  coordinate maps to `φ₀`/`φ₁`/`basis` and rule out law-free profiles.
+  coordinate maps to `φ₀`/`φ₁`/`basis`, making each map injective. For a nontrivial carrier,
+  this excludes identically zero coordinate maps.
+
+The row law is `z = ∑ u, φ₀(basis u) * φ₁(decomposeRows z u)`; the column law is
+`z = ∑ v, φ₀(decomposeColumns z v) * φ₁(basis v)`. In the tensor carrier these read
+`z = ∑ u, basis u ⊗ rows z u` and `z = ∑ v, columns z v ⊗ basis v`. Rows use the
+right-factor scalar action; columns use the left-factor scalar action.
 
 Those laws are the algebraic profile boundary, not a complete soundness theorem by themselves.
 The batching/sum-check proofs still have to connect the profile coordinates to `packMLE`,
@@ -68,8 +74,8 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 
 ## The three constructions
 
-- **DP24 packing switch** (`ProofSystem/RingSwitching/Packing/`, instance
-  `binaryTowerProfile`):
+- **DP24 packing switch** (`ProofSystem/RingSwitching/Packing/`, tensor-product profile
+  `tensorProductProfile`):
   small field → large field; `A = L ⊗_K L`, `φ₀ = ·⊗1`, `φ₁ = 1⊗·`, coordinates from the
   left/right `L`-module bases; the two profile laws are **proven** in ArkLib. Because the
   evaluation point is an arbitrary big-field point, the claim is relocated *interactively*
@@ -104,7 +110,7 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 - [`../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean`](../../../ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean) — the shared check-then-update round verifiers.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Transport.lean`](../../../ArkLib/ProofSystem/RingSwitching/Transport.lean) — the shared claim-transport algebra (umbrella for `Transport/`).
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean) — the packing abstraction.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — `packMLE`, the Binius instance `binaryTowerProfile`, DP24 defs.
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean) — `packMLE`, the tensor-product constructor `tensorProductProfile`, DP24 defs.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean) — the full DP24 reduction + security theorems.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean) — the quotient-presentation abstraction + lift algebra.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean`](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean) — the generic `Lift` construction + CWSS.
@@ -113,8 +119,9 @@ requires `[IsDomain L]` (Schwartz–Zippel).
 
 ## Notes
 
-- The DP24 protocol skeleton and security *statements* are profile-generic and final; the leaf
-  completeness/soundness *proofs* are open (`sorry`) and tracked as follow-up.
-- Soundness reuse across instances is weaker than data-layer reuse: the `[IsDomain L]` theorems fit
-  field instances (Binius) but not non-domain rings (Hachi `R_q`), whose soundness is a sibling
-  theorem with a different error.
+- The DP24 protocol skeleton is profile-generic. The displayed completeness and soundness
+  statements are unproved targets (`sorry`); instance-specific packing, folded-evaluation, and
+  multiplier identities remain necessary proof obligations.
+- Soundness reuse across instances is weaker than data-layer reuse: the intended
+  Schwartz–Zippel bounds require `[IsDomain L]`, which fits field instances (Binius) but not
+  non-domain rings (Hachi `R_q`). The latter need a separate soundness argument and error bound.

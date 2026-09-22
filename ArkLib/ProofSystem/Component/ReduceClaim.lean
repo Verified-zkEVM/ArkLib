@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
+module
 
-import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+public import ArkLib.OracleReduction.Security.RoundByRound
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Locally / non-interactively reduce a claim
@@ -32,6 +33,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   except that `mapStmt` is replaced by `mapStmt ⊗ mapOStmt`.
 -/
 
+@[expose] public section
+
 namespace ReduceClaim
 
 variable {ι : Type} (oSpec : OracleSpec ι)
@@ -51,6 +54,10 @@ def prover : Prover oSpec StmtIn WitIn StmtOut WitOut !p[] where
   receiveChallenge := fun i => nomatch i
   output := fun ⟨stmt, wit⟩ => pure (mapStmt stmt, mapWit stmt wit)
 
+/-- The `ReduceClaim` prover has pure output: it applies the two plain maps `mapStmt` /
+`mapWit`, with no oracle query. -/
+instance instOutputIsPure : (prover oSpec mapStmt mapWit).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 /-- The verifier for the `ReduceClaim` reduction. -/
 def verifier : Verifier oSpec StmtIn StmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
@@ -64,51 +71,61 @@ variable {oSpec} {mapStmt} {mapWit}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
 
-/-- The `ReduceClaim` reduction satisfies perfect completeness for any relation. -/
+/-- **Perfect completeness of `ReduceClaim` from the forward relation implication alone.**
+
+Only the `→` direction of the relation correspondence is completeness-relevant: the honest prover
+maps `(stmtIn, witIn)` to `(mapStmt stmtIn, mapWit stmtIn witIn)`, so all that is needed is that
+this lands in `relOut`. The `↔` form (`reduction_completeness`, now a corollary) is convenient when
+the two relations are equivalent, but it excludes perfectly good honest seams — e.g. an *image*
+relation `{p | ∃ x, x ∈ relIn ∧ p = (mapStmt x.1, mapWit x.1 x.2)}`, whose reverse direction would
+need `mapStmt` to be injective. -/
+theorem reduction_completeness_of_imp
+    (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
+      (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
+    (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
+  apply Reduction.perfectCompleteness_of_run_support
+  intro stmtIn witIn hIn x hx
+  have hrun : ((reduction oSpec mapStmt mapWit).run stmtIn witIn).run =
+      (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)), mapStmt stmtIn)) :
+        OracleComp _ _) := by
+    simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run,
+      Prover.runToRound]
+    rfl
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hx
+  subst x
+  exact ⟨_, rfl, hRel stmtIn witIn hIn, rfl⟩
+
+/-- **The `ReduceClaim` reduction's honest run, in closed form.** A zero-round reduction draws
+nothing and can only succeed: the run's support is the single success carrying the empty
+transcript, the mapped statement on both sides, and the mapped witness.
+
+Stated separately from `reduction_completeness_of_imp` because it is *instance-free* — it says
+nothing about challenge sampling — which is what lets it be used at a protocol spec that is only
+*definitionally* `!p[]` (e.g. the zero-round base case of a composed loop, where the ambient
+`SampleableType` instance is the loop's rather than the empty spec's, and so cannot be unified
+with `reduction_completeness_of_imp`'s). Combine with
+`Reduction.perfectCompleteness_of_run_support` in that situation. -/
+theorem reduction_run_support (stmt : StmtIn) (wit : WitIn) :
+    ∀ x ∈ support ((reduction oSpec mapStmt mapWit).run stmt wit).run,
+      x = some ((default, (mapStmt stmt, mapWit stmt wit)), mapStmt stmt) := by
+  intro x hx
+  have hrun : ((reduction oSpec mapStmt mapWit).run stmt wit).run
+      = (pure (some ((default, (mapStmt stmt, mapWit stmt wit)), mapStmt stmt)) :
+          OracleComp _ _) := by
+    simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run,
+      Prover.runToRound]
+    rfl
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hx
+  exact hx
+
+/-- The `ReduceClaim` reduction satisfies perfect completeness for any relation. The `↔` form of
+`reduction_completeness_of_imp`; only the forward direction is used. -/
 @[simp]
 theorem reduction_completeness --(h : init.neverFails)
     (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
       (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
-    (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
-  simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
-  intro stmtIn witIn hIn
-  have hrun : (reduction oSpec mapStmt mapWit).run stmtIn witIn =
-      (pure ((default, (mapStmt stmtIn, mapWit stmtIn witIn)), mapStmt stmtIn) :
-        OptionT (OracleComp _) _) := by
-    simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run, Prover.runToRound]
-    rfl
-  simp only [hrun]
-  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
-  · rw [OptionT.probFailure_eq, OptionT.run_mk]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [support_bind, Set.mem_iUnion, not_exists]
-    intro s _ hmem
-    change none ∈ support
-      (StateT.run' (simulateQ _ (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
-        mapStmt stmtIn)) : OracleComp _ _)) s) at hmem
-    rw [simulateQ_pure] at hmem
-    change none ∈ support
-      (Prod.fst <$> (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
-        mapStmt stmtIn)) : StateT σ ProbComp _).run s) at hmem
-    rw [StateT.run_pure] at hmem
-    simp [map_pure] at hmem
-  · intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ support
-      (StateT.run' (simulateQ _ (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
-        mapStmt stmtIn)) : OracleComp _ _)) s) at hx
-    rw [simulateQ_pure] at hx
-    change some x ∈ support
-      (Prod.fst <$> (pure (some ((default, (mapStmt stmtIn, mapWit stmtIn witIn)),
-        mapStmt stmtIn)) : StateT σ ProbComp _).run s) at hx
-    rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
-    exact ⟨(hRel stmtIn witIn).mp hIn, rfl⟩
+    (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut :=
+  reduction_completeness_of_imp relIn relOut (fun s w => (hRel s w).mp)
 
 /-- The round-by-round extractor for the `ReduceClaim` (oracle) reduction. Requires a mapping
   `mapWitInv` from the output witness to the input witness. -/
@@ -119,19 +136,6 @@ def extractor (mapWitInv : StmtIn → WitOut → WitIn) :
   extractOut := fun stmtIn _ witOut => mapWitInv stmtIn witOut
 
 variable {mapWitInv : StmtIn → WitOut → WitIn}
-
-
-@[simp]
-lemma support_liftM (m : Type _ → Type _) [Monad m]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
-    {α} (mx : m α) : support (liftM mx : OptionT m α) = support mx := by
-  simp
-
-@[simp]
-lemma support_mk (m : Type _ → Type _) [Monad m] [MonadLiftT m SetM]
-    {α} (mx : m (Option α)) :
-    support (OptionT.mk mx) = {x | some x ∈ support mx} := by
-  rfl
 
 /-- The knowledge state function for the `ReduceClaim` reduction. -/
 def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
@@ -145,10 +149,9 @@ def knowledgeStateFunction (hRel : ∀ stmtIn witOut,
     -- Verifier deterministically returns `mapStmt stmtIn`; from positive probability we extract
     -- `(mapStmt stmtIn, witOut) ∈ relOut`, then invoke `hRel` to land in `relIn`.
     simp only [Verifier.run, verifier] at h
-    rw [gt_iff_lt, probEvent_pos_iff] at h
+    rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
     obtain ⟨x, hx, hrel⟩ := h
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    simp only [support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
     have key : (simulateQ impl
         (pure (mapStmt stmtIn) : OptionT (OracleComp oSpec) StmtOut)).run' s =
@@ -243,6 +246,11 @@ def oracleProver : OracleProver oSpec
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ =>
     pure ((mapStmt stmt, mapOStmt embedIdx hEq oStmt), mapWit stmt wit)
 
+/-- The `ReduceClaim` oracle prover has pure output: it applies the plain maps `mapStmt`,
+`mapOStmt`, and `mapWit`, with no oracle query. -/
+instance instOutputIsPureOracle :
+    (oracleProver oSpec mapStmt mapWit embedIdx hEq).OutputIsPure := ⟨_, fun _ => rfl⟩
+
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
 def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
@@ -276,57 +284,19 @@ theorem oracleReduction_completeness --(h : init.neverFails)
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn) ∈ relOut) :
     (oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).perfectCompleteness init impl
       relIn relOut := by
-  simp only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
-    Reduction.completeness, ENNReal.coe_zero, tsub_zero]
-  intro ⟨stmtIn, oStmtIn⟩ witIn hIn
-  -- Reduce the run to a deterministic `pure` of the expected output.
-  have hrun : (oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).toReduction.run
-      ⟨stmtIn, oStmtIn⟩ witIn =
-      (pure ((default,
+  apply Reduction.perfectCompleteness_of_run_support
+  intro ⟨stmtIn, oStmtIn⟩ witIn hIn x hx
+  have hrun : ((oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).toReduction.run
+      ⟨stmtIn, oStmtIn⟩ witIn).run =
+      (pure (some ((default,
           ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
-          (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn)) :
-        OptionT (OracleComp _) _) := by
+          (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn))) : OracleComp _ _) := by
     simp only [oracleReduction, OracleReduction.toReduction, Reduction.run, oracleProver,
       oracleVerifier, OracleVerifier.toVerifier, Prover.run, Verifier.run, Prover.runToRound]
     rfl
-  rw [hrun]
-  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
-  · rw [OptionT.probFailure_eq, OptionT.run_mk]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [support_bind, Set.mem_iUnion, not_exists]
-    intro s _ hmem
-    change none ∈ support
-      (StateT.run' (simulateQ _ (pure (some ((default,
-        ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
-        (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn))) : OracleComp _ _)) s) at hmem
-    rw [simulateQ_pure] at hmem
-    change none ∈ support
-      (Prod.fst <$> (pure (some ((default,
-        ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
-        (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn))) :
-          StateT σ ProbComp _).run s) at hmem
-    rw [StateT.run_pure] at hmem
-    simp [map_pure] at hmem
-  · intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ support
-      (StateT.run' (simulateQ _ (pure (some ((default,
-        ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
-        (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn))) : OracleComp _ _)) s) at hx
-    rw [simulateQ_pure] at hx
-    change some x ∈ support
-      (Prod.fst <$> (pure (some ((default,
-        ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
-        (mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn))) :
-          StateT σ ProbComp _).run s) at hx
-    rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
-    cases hx
-    exact ⟨hRel stmtIn oStmtIn witIn hIn, rfl⟩
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hx
+  subst x
+  exact ⟨_, rfl, hRel stmtIn oStmtIn witIn hIn, rfl⟩
   -- -- TODO: clean up this proof
   -- simp only [OracleReduction.perfectCompleteness, oracleReduction, OracleReduction.toReduction,
   --   OracleVerifier.toVerifier,
@@ -361,10 +331,9 @@ def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     intro h
     simp only [Verifier.run, oracleVerifier, OracleVerifier.toVerifier] at h
     change ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn
-    rw [gt_iff_lt, probEvent_pos_iff] at h
+    rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
     obtain ⟨x, hx, hrel⟩ := h
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    simp only [support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
     -- The oracle verifier deterministically returns the pair
     -- `(mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn)`, so the simulated run is definitionally

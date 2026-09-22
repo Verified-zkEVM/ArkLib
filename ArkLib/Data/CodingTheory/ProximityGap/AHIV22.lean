@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen, Elias Judin,
   Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+public import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+public import ArkLib.Data.Probability.Uniform
 
 /-!
 ## Main Definitions
@@ -17,11 +19,14 @@ Statements of proximity results for Reed--Solomon codes ([AHIV22], Lemmas 4.3--4
     sublinear arguments without a trusted setup*][AHIV22], version 20221118:030830
 -/
 
+@[expose] public section
+
 noncomputable section
 
 open Code ProbabilityTheory
+open scoped ProbabilityTheory
 
--- `Pr_{...}[...]` notation is universe-restricted (requires `F : Type`).
+-- `Pr{...}[...]` notation is universe-restricted (requires `F : Type`).
 variable {F : Type} [Field F] [Finite F] [DecidableEq F]
          {κ : Type*} [Fintype κ]
          {ι : Type} [Fintype ι]
@@ -30,6 +35,27 @@ local instance : Fintype F := Fintype.ofFinite F
 
 namespace ProximityToRS
 open ReedSolomon NNReal
+
+omit [Finite F] [DecidableEq F] in
+private lemma direction_eq_of_two_affine_values
+    {u v c₀ c₁ r₀ r₁ : F}
+    (h₀ : u + r₀ * v = c₀) (h₁ : u + r₁ * v = c₁) (hr : r₁ ≠ r₀) :
+    v = (r₁ - r₀)⁻¹ * (c₁ - c₀) := by
+  rw [← h₀, ← h₁]
+  field_simp [sub_ne_zero.mpr hr]
+  ring
+
+omit [Finite F] [DecidableEq F] in
+private lemma directions_eq_of_two_affine_values
+    {u v c w r s : F}
+    (hr : u + r * v = c + r * w) (hs : u + s * v = c + s * w) (hrs : r ≠ s) :
+    v = w := by
+  have hzero : (r - s) * (v - w) = 0 := by
+    calc
+      (r - s) * (v - w) =
+          (u + r * v - (c + r * w)) - (u + s * v - (c + s * w)) := by ring
+      _ = 0 := by rw [hr, hs]; ring
+  exact sub_eq_zero.mp ((mul_eq_zero.mp hzero).resolve_left (sub_ne_zero.mpr hrs))
 
 -- Distance-bound form, proved first; the mutual-exclusion corollary `e_le_dist_over_3` follows.
 /-- **Lemma 4.4, [AHIV22] (strong form).**
@@ -83,8 +109,7 @@ lemma e_le_dist_over_3_strong
       let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
           (deg := deg) (α := α) (e := e) :=
         fun r ↦
-          ⟨u + r.1 • v,
-            by
+          ⟨u + r.1 • v, by
               refine ⟨?_, r.2⟩
               refine
                 (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
@@ -150,19 +175,10 @@ lemma e_le_dist_over_3_strong
     have hv_eq_w_of_notin (j : ι) (hj0 : j ∉ E r0) (hj1 : j ∉ E r1) : v j = w j := by
       have h1 : (u + r1.1 • v) j = c r1 j := hE_agree r1 j hj1
       have h0 : (u + r0.1 • v) j = c r0 j := hE_agree r0 j hj0
-      have hdiff :
-          (r1.1 - r0.1) * v j = c r1 j - c r0 j := by
-        have : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by
-          simp [h1, h0]
-        have hdiff' : r1.1 * v j - r0.1 * v j = c r1 j - c r0 j := by
-          simpa [Pi.add_apply, Pi.smul_apply] using (by
-            simpa [Pi.add_apply, Pi.smul_apply] using this)
-        simpa [sub_mul] using hdiff'
-      calc
-        v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by
-          simp [hr10]
-        _   = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
-        _   = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
+      simpa [w, Pi.smul_apply, Pi.sub_apply] using
+        direction_eq_of_two_affine_values
+          (by simpa [Pi.add_apply, Pi.smul_apply] using h0)
+          (by simpa [Pi.add_apply, Pi.smul_apply] using h1) (sub_ne_zero.mp hr10)
     -- Define the base codeword so that `c r = cBase + r•w`.
     let cBase : ι → F := c r0 - r0.1 • w
     have hcBase_mem : cBase ∈ CRS := by
@@ -210,19 +226,10 @@ lemma e_le_dist_over_3_strong
               have hv0r : v i = w0r i := by
                 have hr_eq : (u + r.1 • v) i = c r i := hE_agree r i hir
                 have h0_eq : (u + r0.1 • v) i = c r0 i := hE_agree r0 i hi0
-                have hdiff :
-                    (r.1 - r0.1) * v i = c r i - c r0 i := by
-                  have : (u + r.1 • v) i - (u + r0.1 • v) i = c r i - c r0 i := by
-                    simp [hr_eq, h0_eq]
-                  have hdiff' : r.1 * v i - r0.1 * v i = c r i - c r0 i := by
-                    simpa [Pi.add_apply, Pi.smul_apply] using (by
-                      simpa [Pi.add_apply, Pi.smul_apply] using this)
-                  simpa [sub_mul] using hdiff'
-                calc
-                  v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by
-                    simp [hneq]
-                  _   = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
-                  _   = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
+                simpa [w0r, Pi.smul_apply, Pi.sub_apply] using
+                  direction_eq_of_two_affine_values
+                    (by simpa [Pi.add_apply, Pi.smul_apply] using h0_eq)
+                    (by simpa [Pi.add_apply, Pi.smul_apply] using hr_eq) (sub_ne_zero.mp hneq)
               exact hi (hv0r.symm.trans hvw)
             have hcard_le : (E r0 ∪ E r1 ∪ E r).card ≤ 3 * e := by
               have h01 : (E r0 ∪ E r1).card ≤ (E r0).card + (E r1).card :=
@@ -294,29 +301,7 @@ lemma e_le_dist_over_3_strong
               simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
             have hsj : u j + s.1 * v j = cBase j + s.1 * w j := by
               simpa [Pi.add_apply, Pi.smul_apply] using hs_eq
-            have hrj' : u j - cBase j = r.1 * (w j - v j) := by
-              have h1 := congrArg (fun t ↦ t - cBase j) hrj
-              have h1' : u j + r.1 * v j - cBase j = r.1 * w j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-              have h2 := congrArg (fun t ↦ t - r.1 * v j) h1'
-              have h2' : u j - cBase j = r.1 * w j - r.1 * v j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-              simpa [mul_sub] using h2'
-            have hsj' : u j - cBase j = s.1 * (w j - v j) := by
-              have h1 := congrArg (fun t ↦ t - cBase j) hsj
-              have h1' : u j + s.1 * v j - cBase j = s.1 * w j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-              have h2 := congrArg (fun t ↦ t - s.1 * v j) h1'
-              have h2' : u j - cBase j = s.1 * w j - s.1 * v j := by
-                simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-              simpa [mul_sub] using h2'
-            have hmul : r.1 * (w j - v j) = s.1 * (w j - v j) := Eq.trans hrj'.symm hsj'
-            have hzero : (r.1 - s.1) * (w j - v j) = 0 := by
-              have : r.1 * (w j - v j) - s.1 * (w j - v j) = 0 := sub_eq_zero.mpr hmul
-              simpa [sub_mul] using this
-            have hrs_ne : (r.1 - s.1) ≠ 0 := sub_ne_zero.mpr hrs_val
-            have : w j - v j = 0 := (mul_eq_zero.mp hzero).resolve_left hrs_ne
-            exact (sub_eq_zero.mp this).symm
+            exact directions_eq_of_two_affine_values hrj hsj hrs_val
           have hu0 : u j = cBase j := by
             have : u j + r.1 * v j = cBase j + r.1 * w j := by
               simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
@@ -546,8 +531,7 @@ lemma dir_close_of_many_close_pts
     let f : {r : F // P r} → closePtsOnAffineLine (F := F) (u := u) (v := v)
         (deg := deg) (α := α) (e := e) :=
       fun r ↦
-        ⟨u + r.1 • v,
-          by
+        ⟨u + r.1 • v, by
             refine ⟨?_, r.2⟩
             refine
               (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
@@ -613,16 +597,10 @@ lemma dir_close_of_many_close_pts
   have hv_eq_w_of_notin (j : ι) (hj0 : j ∉ E r0) (hj1 : j ∉ E r1) : v j = w j := by
     have h1 : (u + r1.1 • v) j = c r1 j := hE_agree r1 j hj1
     have h0 : (u + r0.1 • v) j = c r0 j := hE_agree r0 j hj0
-    have hdiff : (r1.1 - r0.1) * v j = c r1 j - c r0 j := by
-      have hsub : (u + r1.1 • v) j - (u + r0.1 • v) j = c r1 j - c r0 j := by
-        simp [h1, h0]
-      have hdiff' : r1.1 * v j - r0.1 * v j = c r1 j - c r0 j := by
-        simpa [Pi.add_apply, Pi.smul_apply] using hsub
-      simpa [sub_mul] using hdiff'
-    calc
-      v j = (r1.1 - r0.1)⁻¹ * ((r1.1 - r0.1) * v j) := by simp [hr10]
-      _   = (r1.1 - r0.1)⁻¹ * (c r1 j - c r0 j) := by simp [hdiff]
-      _   = w j := by simp [w, Pi.smul_apply, Pi.sub_apply]
+    simpa [w, Pi.smul_apply, Pi.sub_apply] using
+      direction_eq_of_two_affine_values
+        (by simpa [Pi.add_apply, Pi.smul_apply] using h0)
+        (by simpa [Pi.add_apply, Pi.smul_apply] using h1) (sub_ne_zero.mp hr10)
   -- Define the base codeword so that `c r = cBase + r•w`.
   let cBase : ι → F := c r0 - r0.1 • w
   have hcBase_mem : cBase ∈ CRS := by
@@ -668,18 +646,10 @@ lemma dir_close_of_many_close_pts
             have hv0r : v i = w0r i := by
               have hr_eq : (u + r.1 • v) i = c r i := hE_agree r i hir
               have hr0_eq : (u + r0.1 • v) i = c r0 i := hE_agree r0 i hi0
-              have hdiff :
-                  (r.1 - r0.1) * v i = c r i - c r0 i := by
-                have : (u + r.1 • v) i - (u + r0.1 • v) i = c r i - c r0 i := by
-                  simp [hr_eq, hr0_eq]
-                have hdiff' : r.1 * v i - r0.1 * v i = c r i - c r0 i := by
-                  simpa [Pi.add_apply, Pi.smul_apply] using
-                    (by simpa [Pi.add_apply, Pi.smul_apply] using this)
-                simpa [sub_mul] using hdiff'
-              calc
-                v i = (r.1 - r0.1)⁻¹ * ((r.1 - r0.1) * v i) := by simp [hneq]
-                _ = (r.1 - r0.1)⁻¹ * (c r i - c r0 i) := by simp [hdiff]
-                _ = w0r i := by simp [w0r, Pi.smul_apply, Pi.sub_apply]
+              simpa [w0r, Pi.smul_apply, Pi.sub_apply] using
+                direction_eq_of_two_affine_values
+                  (by simpa [Pi.add_apply, Pi.smul_apply] using hr0_eq)
+                  (by simpa [Pi.add_apply, Pi.smul_apply] using hr_eq) (sub_ne_zero.mp hneq)
             exact hi (hv0r.symm.trans hvw)
           have hcard_le : (E r0 ∪ E r1 ∪ E r).card ≤ 3 * e := by
             have h01 :
@@ -747,33 +717,7 @@ lemma dir_close_of_many_close_pts
             simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
           have hsj : u j + s.1 * v j = cBase j + s.1 * w j := by
             simpa [Pi.add_apply, Pi.smul_apply] using hs_eq
-          have hrj' : u j - cBase j = r.1 * (w j - v j) := by
-            have h1 := congrArg (fun t ↦ t - cBase j) hrj
-            have h1' : u j + r.1 * v j - cBase j = r.1 * w j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-            have h2 := congrArg (fun t ↦ t - r.1 * v j) h1'
-            have h2' : u j - cBase j = r.1 * w j - r.1 * v j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-            simpa [mul_sub] using h2'
-          have hsj' : u j - cBase j = s.1 * (w j - v j) := by
-            have h1 := congrArg (fun t ↦ t - cBase j) hsj
-            have h1' : u j + s.1 * v j - cBase j = s.1 * w j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h1
-            have h2 := congrArg (fun t ↦ t - s.1 * v j) h1'
-            have h2' : u j - cBase j = s.1 * w j - s.1 * v j := by
-              simpa [sub_eq_add_neg, add_assoc, add_left_comm, add_comm] using h2
-            simpa [mul_sub] using h2'
-          have hmul : r.1 * (w j - v j) = s.1 * (w j - v j) := Eq.trans hrj'.symm hsj'
-          have hzero : (r.1 - s.1) * (w j - v j) = 0 := by
-            have : r.1 * (w j - v j) - s.1 * (w j - v j) = 0 := sub_eq_zero.mpr hmul
-            simpa [sub_mul] using this
-          have hne : r.1 - s.1 ≠ 0 := sub_ne_zero.mpr hrs_val
-          have : w j - v j = 0 := by
-            have := mul_eq_zero.mp hzero
-            rcases this with h | h
-            · exact False.elim (hne h)
-            · exact h
-          exact (sub_eq_zero.mp this).symm
+          exact directions_eq_of_two_affine_values hrj hsj hrs_val
         have hu_eq : u j = cBase j := by
           have hrj : u j + r.1 * v j = cBase j + r.1 * w j := by
             simpa [Pi.add_apply, Pi.smul_apply] using hr_eq
@@ -1046,8 +990,7 @@ private lemma all_close_not_few_close_pts
     let g : F → closePtsOnAffineLine (F := F) (u := u) (v := v)
         (deg := deg) (α := α) (e := e) :=
       fun r ↦
-        ⟨u + r • v,
-          by
+        ⟨u + r • v, by
             refine ⟨?_, ?_⟩
             · refine
                 (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u) (direction := v) _).2 ?_
@@ -1123,34 +1066,21 @@ random word in the row-span is `e`-close to the code with probability at most
 lemma prob_of_bad_pts
     {deg : ℕ}
     {α : ι ↪ F} {e : ℕ} {U_star : WordStack (A := F) κ ι}
+    [SampleableType (Matrix.rowSpan U_star)]
     (he : (e : ℚ≥0) < ‖(RScodeSet α deg)‖₀ / 3)
     (hU : e < Δ₀(⋈|U_star, (ReedSolomon.code α deg)^⋈κ)) :
-    (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-        {w_star | Δ₀(w_star, RScodeSet α deg) ≤ e}
+    Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[
+        Δ₀(w_star, RScodeSet α deg) ≤ e]
       ≤ (‖(RScodeSet α deg)‖₀ : ENNReal) / Fintype.card F := by
-  let : Fintype (Matrix.rowSpan U_star) := inferInstance
   classical
   set RS : Set (ι → F) := RScodeSet α deg
   set d : ℕ := ‖RS‖₀
   -- If `d = |F|`, the RHS is `1`, so the bound is trivial.
   by_cases hd : d = Fintype.card F
-  · have h_le_univ :
-        (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-            {w_star | Δ₀(w_star, RS) ≤ e} ≤
-          (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure Set.univ := by
-      exact (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure.mono
-        (by intro _ _; trivial)
-    have h_univ :
-        (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-            (Set.univ : Set (Matrix.rowSpan U_star)) = 1 := by
-      simpa using
-        ((PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure_apply_eq_one_iff
-              (s := (Set.univ : Set (Matrix.rowSpan U_star)))).2
-            (by intro _ _; trivial)
-    have h_triv :
-        (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
-            {w_star | Δ₀(w_star, RS) ≤ e} ≤ 1 := by
-      exact h_univ ▸ h_le_univ
+  · have h_triv :
+        Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] ≤ 1 :=
+      prEvent_le_one ($ᵗ (Matrix.rowSpan U_star))
+        (fun w_star ↦ Δ₀(w_star, RS) ≤ e)
     have hF_ne_zero : (Fintype.card F : ENNReal) ≠ 0 := by
       exact_mod_cast (Fintype.card_ne_zero (α := F))
     have hRHS : (d : ENNReal) / Fintype.card F = 1 := by
@@ -1312,8 +1242,7 @@ lemma prob_of_bad_pts
         let f : fiber → closePtsOnAffineLine (F := F) (u := u0) (v := v_star)
             (deg := deg) (α := α) (e := e) :=
           fun w ↦
-            ⟨(w.1 : ι → F),
-              by
+            ⟨(w.1 : ι → F), by
                 refine ⟨?_, ?_⟩
                 · -- membership in the affine line: `w - rep q ∈ V`.
                   have hwq : π w.1 = π (rep q) := by
@@ -1394,8 +1323,7 @@ lemma prob_of_bad_pts
           let g : F → closePtsOnAffineLine (F := F) (u := u0) (v := v_star)
               (deg := deg) (α := α) (e := e) :=
             fun r ↦
-              ⟨u0 + r • v_star,
-                by
+              ⟨u0 + r • v_star, by
                   refine ⟨?_, ?_⟩
                   · refine
                       (Affine.mem_affineLineAtOrigin_iff (F := F) (origin := u0)
@@ -1460,16 +1388,11 @@ lemma prob_of_bad_pts
             simp
       simpa [Finset.card_univ, Nat.mul_comm] using this
     exact_mod_cast hbad_nat
-  -- Convert to a probability bound using uniformity.
-  let badSet : Set S := {w | Pbad w}
-  let : Fintype badSet := Fintype.ofFinite badSet
+  -- Convert to a probability bound using native uniformity.
   have hprob :
-      (PMF.uniformOfFintype S).toOuterMeasure badSet = Fintype.card badSet / Fintype.card S := by
-    simpa using (PMF.toOuterMeasure_uniformOfFintype_apply (α := S) (s := badSet))
-  have hcard_badSet : (Fintype.card badSet : ENNReal) = bad.card := by
-    classical
-    -- `Fintype.card` of a decidable subset is the `Finset.filter` card.
-    simp [badSet, Pbad, bad, Fintype.card_subtype]
+      Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] =
+        (bad.card : ENNReal) / Fintype.card S := by
+    rw [SampleableType.prEvent_uniformSample]
   -- Combine the counting bound with the cardinality decomposition `|S| = |V| * |Q|`.
   have hQ_pos : 0 < Fintype.card Q := by
     have : Nonempty Q := ⟨0⟩
@@ -1477,11 +1400,10 @@ lemma prob_of_bad_pts
   have hQ_ne_zero : (Fintype.card Q : ENNReal) ≠ 0 := by
     exact ne_of_gt (by exact_mod_cast hQ_pos)
   have hQ_ne_top : (Fintype.card Q : ENNReal) ≠ ⊤ := ENNReal.natCast_ne_top (Fintype.card Q)
-  -- `Pr[bad] = |badSet|/|S| ≤ (d*|Q|)/(|V|*|Q|) = d/|F|`.
+  -- `Pr[bad] = |bad|/|S| ≤ (d*|Q|)/(|V|*|Q|) = d/|F|`.
   calc
-    (PMF.uniformOfFintype S).toOuterMeasure badSet =
-        (Fintype.card badSet : ENNReal) / Fintype.card S := hprob
-    _ = (bad.card : ENNReal) / Fintype.card S := by rw [hcard_badSet]
+    Pr{let w_star ← $ᵗ (Matrix.rowSpan U_star)}[Δ₀(w_star, RS) ≤ e] =
+        (bad.card : ENNReal) / Fintype.card S := hprob
     _ ≤ (d * Fintype.card Q : ENNReal) / Fintype.card S := by
       exact ENNReal.div_le_div_right hbad_card (Fintype.card S)
     _ = (d * Fintype.card Q : ENNReal) / (Fintype.card V * Fintype.card Q : ℕ) := by

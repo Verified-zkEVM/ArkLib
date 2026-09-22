@@ -3,10 +3,11 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
-import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.Prelims
-import Mathlib.RingTheory.Polynomial.GaussLemma
+public import ArkLib.Data.Polynomial.Bivariate
+public import ArkLib.Data.Polynomial.Prelims
+public import Mathlib.RingTheory.Polynomial.GaussLemma
 
 /-!
 # The Algebraic Extension and its Regular Elements
@@ -24,6 +25,8 @@ field `𝕃 H = F(Z)[T]/(H̃)`, its ring of regular elements `𝒪 H = F[Z][T]/(
   version 20210703:203025.
 
 -/
+
+@[expose] public section
 
 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
@@ -189,7 +192,7 @@ lemma monicize_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
     (monicize H).Monic := by
   classical
   have hdeg : H.natDegree ≠ 0 := Nat.ne_of_gt hH
-  rw [monicize, if_neg hdeg]
+  rw [monicize, ite_eq_right hdeg]
   exact Polynomial.monic_X_pow_add <| (Polynomial.degree_sum_le _ _).trans_lt <| by
     exact (Finset.sup_lt_iff (WithBot.bot_lt_coe H.natDegree)).2 <| by
       intro i hi

@@ -3,10 +3,12 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import VCVio
-import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-import Mathlib.Algebra.Field.ZMod
+public import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
+public import VCVio.OracleComp.SimSemantics.OptionT.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Basic
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Sampling Support for KZG-Style Setup
@@ -17,6 +19,8 @@ This file contains small shared probabilistic helpers used by KZG setup and its 
 
 * `Groups.sampleNonzeroZMod` samples the SRS trapdoor from `ZMod p \ {0}`.
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp
 

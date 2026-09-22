@@ -196,7 +196,7 @@ nonnegative radii. A numeric cast is therefore sometimes needed, as in
 `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), to which it is tied through
 `isUniquelyDecodable_relativeUniqueDecodingRadius`. Codes are spelled `Set (ι → F)` rather than
 through a local abbreviation: an `abbrev Code` here would be `Code.Code`, which trips
-`linter.dupNamespace`, and a non-`sorry` warning under `ArkLib/Data/` fails `validate.sh`.
+`linter.dupNamespace`, and a non-`sorry` warning under `ArkLib/` fails `validate.sh`.
 
 `Lambda` is capitalised because it is named for a capital Greek letter, as Mathlib does with
 `Real.Gamma`. Predicates take the `Is` prefix — `Code.IsListDecodable`, `Code.IsUniquelyDecodable`,

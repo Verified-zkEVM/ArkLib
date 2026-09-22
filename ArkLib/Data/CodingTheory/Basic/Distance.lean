@@ -4,19 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.Fin.Basic
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Algebra.Order.Floor.Semifield
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.Data.ENat.Lattice
-import Mathlib.InformationTheory.Hamming
-import Mathlib.Tactic.Qify
-import Mathlib.Topology.MetricSpace.Infsep
-import Mathlib.Data.Real.ENatENNReal
-import Mathlib.Algebra.Order.Chebyshev
-import CompPoly.Data.Nat.Bitwise
+public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Algebra.Order.Floor.Semifield
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Data.ENat.Lattice
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Tactic.Qify
+public import Mathlib.Topology.MetricSpace.Infsep
+public import Mathlib.Basic.Real.ENatENNReal
+public import Mathlib.Algebra.Order.Chebyshev
+public import CompPoly.Data.Nat.Bitwise
 
 /-!
   # Basics of Coding Theory
@@ -119,6 +120,8 @@ import CompPoly.Data.Nat.Bitwise
   as counterpart of `ENat (ℕ∞)` in `distFromCode` and `distFromCode'`.
 -/
 
+@[expose] public section
+
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 
@@ -133,7 +136,7 @@ notation "‖" u "‖₀" => hammingNorm u
 /-- Post-composition with an injection preserves the Hamming distance.
   A non-dependent version of the Mathlib's hammingDist_comp. -/
 theorem hammingDist_comp' {A B : Type*} [DecidableEq A] [DecidableEq B]
-  {ι : Type*} [Fintype ι]
+    {ι : Type*} [Fintype ι]
   {e : A → B} (he : Function.Injective e) (u v : ι → A) :
   hammingDist (e ∘ u) (e ∘ v) = hammingDist u v := by
   simp only [hammingDist, Function.comp_apply]
@@ -237,7 +240,7 @@ def hammingBall (y : n → R) (r : ℕ) : Set (n → R) :=
 
 @[simp]
 theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
-  x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
+    x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
   aesop (add simp [hammingBall, hammingDist])
 
 section Agreement
@@ -281,7 +284,7 @@ private lemma sq_le_sum_agree :
 
 /-- Cauchy–Schwarz for the agreement counts. -/
 lemma sq_sum_agree_le :
-  (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
+    (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
     (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
   rw [sum_agree_eq]
   calc (∑ i : n, ((T.filter fun c => c i = u i).card : ℝ)) ^ 2
@@ -325,7 +328,7 @@ noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
 
 lemma minDist_le_dist {C : Set (n → R)} {u v : n → R}
-  (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
+    (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
   minDist C ≤ Δ₀(u, v) := Nat.sInf_le ⟨u, hu, v, hv, huv, rfl⟩
 
 /-- Two codewords are equal if the coordinates on which they disagree are contained in a set
@@ -868,7 +871,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
       -- `dStar ≤ a` for all `a ∈ vals`, hence `dStar ≤ vals.min`.
       have h_ge : (dStar : ℕ∞) ≤ vals.min := by
         -- Use the universal lower-bound property of `min'`.
-        refine Finset.le_min (s := vals) (m := (dStar : ℕ∞)) ?_;
+        refine Finset.le_min ?_
         intro a ha; exact
           (show (dStar : ℕ∞) ≤ (a : ℕ∞) from by
               -- `dStar ≤ a` in `ℕ`, then coerce.

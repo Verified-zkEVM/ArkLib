@@ -4,8 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
          Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.Distance
 
 /-!
 # Relative Distances for Codes
@@ -18,6 +19,8 @@ finite-range/computable variants used by the coding-theory development.
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
 Agreement*][ABF26]
 -/
+
+@[expose] public section
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
 
@@ -64,18 +67,18 @@ omit [Nonempty ι] in
 /-- Membership in the relative Hamming ball, spelled out. -/
 @[simp]
 theorem mem_relHammingBall_iff {A : Type*} [DecidableEq A] (y x : ι → A) (r : ℝ) :
-  x ∈ relHammingBall y r ↔ (δᵣ(y, x) : ℝ) ≤ r := by
+    x ∈ relHammingBall y r ↔ (δᵣ(y, x) : ℝ) ≤ r := by
   aesop (add simp [relHammingBall, relHammingDist])
 
 omit [Nonempty ι] in
 lemma relHammingDist_coe {u v : ι → R} :
-  (Code.relHammingDist u v : ℝ) = (Δ₀(u, v) : ℝ) / (Fintype.card ι : ℝ) := by
+    (Code.relHammingDist u v : ℝ) = (Δ₀(u, v) : ℝ) / (Fintype.card ι : ℝ) := by
   simp [Code.relHammingDist]
 
 omit [Nonempty ι] in
 /-- Post-composition with an injection preserves the relative Hamming distance. -/
 theorem relHammingDist_comp {A B : Type*} [DecidableEq A] [DecidableEq B] {e : A → B}
-  (he : Function.Injective e) (u v : ι → A) :
+    (he : Function.Injective e) (u v : ι → A) :
   δᵣ(e ∘ u, e ∘ v) = δᵣ(u, v) := by
   aesop (add simp [relHammingDist, hammingDist_comp'])
 
@@ -610,7 +613,7 @@ lemma minRelHammingDistCode_of_empty
     (h : ¬ (possibleRelHammingDists C).Nonempty) :
     minRelHammingDistCode C = 0 := by
   unfold minRelHammingDistCode
-  rw [dif_neg h]
+  rw [dite_eq_right h]
 
 /-- The minimum is attained: `δᵣ C` is the relative distance between some pair of distinct
 codewords. -/
@@ -619,7 +622,7 @@ lemma minRelHammingDistCode_mem
     (h : (possibleRelHammingDists C).Nonempty) :
     minRelHammingDistCode C ∈ possibleRelHammingDists C := by
   unfold minRelHammingDistCode
-  rw [dif_pos h]
+  rw [dite_eq_left h]
   have := Finset.min'_mem finite_possibleRelHammingDists.toFinset
     ((Set.Finite.toFinset_nonempty (hs := finite_possibleRelHammingDists)).mpr h)
   rwa [Set.Finite.mem_toFinset] at this
@@ -631,7 +634,7 @@ lemma minRelHammingDistCode_le
     {q : ℚ≥0} (hq : q ∈ possibleRelHammingDists C) : minRelHammingDistCode C ≤ q := by
   have h_ne : (possibleRelHammingDists C).Nonempty := ⟨q, hq⟩
   unfold minRelHammingDistCode
-  rw [dif_pos h_ne]
+  rw [dite_eq_left h_ne]
   exact Finset.min'_le _ _ ((Set.Finite.mem_toFinset (hs := finite_possibleRelHammingDists)).mpr hq)
 
 /-- The minimum relative Hamming distance is at most `1`; the lower bound `0 ≤ δᵣ C` is

@@ -3,18 +3,18 @@ Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
+module
 
-import VCVio
-import ArkLib.Commitments.Functional.KZG.Algebra
-import ArkLib.Commitments.Functional.KZG.Sampling
-import ArkLib.Data.GroupTheory.PrimeOrder
-import ArkLib.Data.Classes.Serde
-import CompPoly.Univariate.Basic
-import CompPoly.Univariate.ToPoly
-import Mathlib.Algebra.Field.ZMod
-import Mathlib.Algebra.Order.Star.Basic
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.LinearAlgebra.Lagrange
+public import ArkLib.Commitments.Functional.KZG.Algebra
+public import ArkLib.Commitments.Functional.KZG.Sampling
+public import ArkLib.Data.GroupTheory.PrimeOrder
+public import ArkLib.Data.Classes.Serde
+public import CompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
+public import Mathlib.Algebra.Field.ZMod
+public import Mathlib.Algebra.Order.Star.Basic
+public import Mathlib.Algebra.Polynomial.FieldDivision
+public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
 # Hardness Assumptions
@@ -33,6 +33,8 @@ This file defines hardness assumptions used in security reductions for commitmen
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
+
+@[expose] public section
 
 open OracleSpec OracleComp SubSpec
 open CompPoly.CPolynomial
@@ -82,7 +84,7 @@ abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
 noncomputable def tSdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[tSdhCondition (g₁ := g₁) | tSdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
+  Pr{let result ← (tSdhGame (g₁ := g₁) (g₂ := g₂) D adversary)}[(tSdhCondition (g₁ := g₁)) result]
 
 /-- The `t`-SDH assumption bounds every adversary's success probability by `error`. -/
 def tSdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
@@ -118,7 +120,7 @@ abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
 noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
-  Pr[arsdhCondition D | arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary]
+  Pr{let result ← (arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary)}[(arsdhCondition D) result]
 
 /-- The adaptive rational strong Diffie–Hellman (ARSDH) assumption.
 Taken from Definition 9.6 in [CGKY25]. -/

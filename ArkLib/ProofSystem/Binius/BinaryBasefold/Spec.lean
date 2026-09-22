@@ -3,7 +3,17 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+module
+
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+
+/-!
+# ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace Binius.BinaryBasefold
 
@@ -176,7 +186,6 @@ lemma isCommitmentRoundOfNonLastBlock (bIdx : Fin (ℓ / ϑ - 1)) :
     rw [Nat.add_assoc, Nat.sub_add_cancel (by exact NeZero.one_le)];
     conv_lhs => enter [2]; rw [←Nat.one_mul (n:=ϑ)]
     rw [←Nat.add_mul];
-
   have hdivLe: ϑ ∣ ↑bIdx * ϑ + (ϑ - 1) + 1 := by
     rw [h_eq]
     exact Nat.dvd_mul_left ϑ (↑bIdx + 1)
@@ -409,6 +418,7 @@ instance {d : ℕ} : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=
   instSampleableTypeChallengeAppend
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
+@[instance_reducible]
 def instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
     SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
   let T := sDomain 𝔽q β h_ℓ_add_R_rate i

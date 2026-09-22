@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
+module
+
+public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 
 /-!
 # The Cardinality `|R_q^H| = q^k` of the Fixed Subring (Hachi §3, Eq. 7)
@@ -25,6 +27,8 @@ of `ψ` (`Subfield/Bijectivity.lean`).
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi …*][NOZ26]
 -/
+
+@[expose] public section
 
 open CompPoly Finset
 
@@ -78,9 +82,9 @@ theorem fixedBasisMap_injective (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hκ : �
     intro d
     rw [fixedBasisMap, map_sum]
     rw [Finset.sum_eq_single s (fun j _ hjs => by
-        rw [map_nsmul, hDvElt, if_neg (fun h => hjs h.symm), smul_zero])
+        rw [map_nsmul, hDvElt, ite_eq_right (fun h => hjs h.symm), smul_zero])
       (fun h => absurd (Finset.mem_univ s) h)]
-    rw [map_nsmul, hDvElt, if_pos rfl]
+    rw [map_nsmul, hDvElt, ite_eq_left rfl]
   have e1 : (c s).val • w = (c' s).val • w := by rw [← key c, ← key c', hcc]
   rw [nsmul_eq_mul, nsmul_eq_mul] at e1
   have hwne : w ≠ 0 := by rw [hw_def]; by_cases hs0 : (s : ℕ) = 0 <;> simp [hs0, h2]

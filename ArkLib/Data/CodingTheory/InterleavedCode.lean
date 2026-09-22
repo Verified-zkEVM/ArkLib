@@ -3,26 +3,26 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Chung Thai Nguyen
 -/
+module
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-import ArkLib.Data.CodingTheory.ReedSolomon
-import Mathlib.Logic.Equiv.Fin.Basic
-import Mathlib.Order.CompletePartialOrder
-import Mathlib.Probability.Distributions.Uniform
-import Mathlib.Data.Real.Basic
-import Mathlib.Analysis.Real.Sqrt
-import ArkLib.Data.Fin.Basic
-import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Analysis.InnerProductSpace.PiL2
-import Mathlib.Data.ENat.Lattice
-import Mathlib.InformationTheory.Hamming
-import Mathlib.Tactic.Qify
-import Mathlib.Topology.MetricSpace.Infsep
-import Mathlib.Data.NNReal.Defs
+public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.CodingTheory.Basic.LinearCode
+public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+public import Mathlib.Logic.Equiv.Fin.Basic
+public import Mathlib.Order.CompletePartialOrder
+public import Mathlib.Probability.Distributions.Uniform
+public import Mathlib.Basic.Real.Basic
+public import Mathlib.Analysis.Real.Sqrt
+public import ArkLib.Data.Fin.Basic
+public import ArkLib.Data.CodingTheory.Prelims
+public import Mathlib.Algebra.Polynomial.Roots
+public import Mathlib.Analysis.InnerProductSpace.PiL2
+public import Mathlib.Data.ENat.Lattice
+public import Mathlib.InformationTheory.Hamming
+public import Mathlib.Tactic.Qify
+public import Mathlib.Topology.MetricSpace.Infsep
+public import Mathlib.Basic.NNReal.Defs
 
 /-!
 ## Main definitions
@@ -87,6 +87,8 @@ Interleaved codes for generic codes over a semiring, with **unified global APIs*
 * [Diamond, B. E. and Gruen, A., *Proximity Gaps in Interleaved Codes*, In: IACR
   Communications in Cryptology 1.4 (Jan. 13, 2025). issn: 3006-5496. doi: 10.62056/a0ljbkrz.][DG25]
 -/
+
+@[expose] public section
 
 section InterleavedCodeDefinitions
 variable (F : Type*) [Semiring F]
@@ -250,8 +252,8 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 -- TODO: mem of Module interleaved code, Module codeword stack
 
 @[simp]
-def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
-    := u.transpose
+def interleaveWordStack {A : Type*} {κ ι : Type*}
+    (u : WordStack A κ ι) : InterleavedWord A κ ι := u.transpose
 
 /-- Evaluating the interleaving of a stack of words. -/
 @[simp]
@@ -270,9 +272,8 @@ def interleaveCodewordStack (u : CodewordStack A κ ι C) : InterleavedCodeword 
   ⟩
 
 @[simp]
-def finMapTwoWords {A : Type*} {ι : Type*} (u₀ u₁ : Word A ι)
-    : WordStack A (κ := Fin 2) (ι := ι)
-    := fun rowIdx =>
+def finMapTwoWords {A : Type*} {ι : Type*}
+    (u₀ u₁ : Word A ι) : WordStack A (κ := Fin 2) (ι := ι) := fun rowIdx =>
   match rowIdx with
   | ⟨0, _⟩ => u₀
   | ⟨1, _⟩ => u₁
@@ -400,8 +401,8 @@ lemma interleavedCode_eq_interleavedCodeSet {A : Type*} {ι : Type*} {κ : Type*
 @[simp]
 lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι : Type*} [Semiring F]
     [AddCommMonoid A] [Module F A] {MC : ModuleCode ι F A} :
-    ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
-    := by rfl
+    ((MC ^⋈ κ) : Set (ι → (κ → A))) =
+      interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A))) := by rfl
 
 /-- Interleaving over a nonempty row index preserves minimum block distance:
 `minDist (interleavedCodeSet C) = minDist C`.
@@ -530,6 +531,28 @@ theorem minDist_interleavedCodeSet
         exact hxy (hICsub hx hy)
       rw [hempty, Nat.sInf_empty]
     rw [hbase, hinter]
+
+/-- Interleaving over a nonempty row index preserves the *relative* minimum distance:
+`δᵣ (MC ^⋈ κ) = δᵣ MC`. The relative form of `minDist_interleavedCodeSet`, via the bridge
+`minDist_div_card_eq_minRelHammingDistCode`: both codes have block length `ι`, so equal
+absolute distances give equal relative ones. -/
+lemma minRelHammingDistCode_moduleInterleavedCode
+    {ι F A κ : Type*} [Fintype ι] [Nonempty ι] [Semiring F]
+    [AddCommMonoid A] [Module F A] [DecidableEq A] [Fintype κ] [Nonempty κ]
+    (MC : ModuleCode ι F A) :
+    minRelHammingDistCode (ModuleCode.moduleInterleavedCode F A κ ι MC).carrier
+      = minRelHammingDistCode MC.carrier := by
+  have hmd : minDist ((ModuleCode.moduleInterleavedCode F A κ ι MC).carrier)
+      = minDist (MC.carrier : Set (ι → A)) :=
+    minDist_interleavedCodeSet (κ := κ) (MC.carrier : Set (ι → A))
+  have h1 := minDist_div_card_eq_minRelHammingDistCode
+    ((ModuleCode.moduleInterleavedCode F A κ ι MC).carrier)
+  have h2 := minDist_div_card_eq_minRelHammingDistCode (MC.carrier : Set (ι → A))
+  have hq : ((minRelHammingDistCode
+        (ModuleCode.moduleInterleavedCode F A κ ι MC).carrier : ℚ≥0) : ℚ)
+      = ((minRelHammingDistCode MC.carrier : ℚ≥0) : ℚ) := by
+    rw [← h1, ← h2, hmd]
+  exact_mod_cast hq
 
 section Finrank
 
@@ -762,11 +785,9 @@ instance instNonemptyInterleavedCode [Nonempty C] :
   intro k
   exact c.property
 
-example (C : Set (ι → A)) : ((C ^⋈ (Fin 2))) = interleavedCodeSet (κ := Fin 2) C
-    := by rfl
+example (C : Set (ι → A)) : ((C ^⋈ (Fin 2))) = interleavedCodeSet (κ := Fin 2) C := by rfl
 example (MC : ModuleCode ι F A) : (MC ^⋈ (Fin 2))
-    = ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := Fin 2) (ι := ι) (MC := MC)
-    := by rfl
+    = ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := Fin 2) (ι := ι) (MC := MC) := by rfl
 example (u : CodewordStack A κ ι C) :
   let iuCodewords: InterleavedCodeword A κ ι C := ⋈|u
   let iuWords: InterleavedWord A κ ι := ⋈|u.val
@@ -934,8 +955,7 @@ theorem jointAgreement_iff_jointProximity
     -- Since v_interleaved ∈ MC.interleavedCode, we have δᵣ(u_interleaved, MC.interleavedCode) ≤ δ
     unfold jointProximity
     have h_min_dist :
-        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved)
-      := by
+        δᵣ(u_interleaved, interleavedCodeSet C) ≤ δᵣ(u_interleaved, v_interleaved) := by
       apply relDistFromCode_le_relDist_to_mem (u := u_interleaved) (C := interleavedCodeSet C)
         (v := v_interleaved) (hv := hv_interleaved_mem)
     exact le_trans h_min_dist h_dist

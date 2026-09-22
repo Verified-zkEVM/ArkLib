@@ -3,10 +3,18 @@ Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 -/
+module
 
+public import ArkLib.OracleReduction.Composition.Sequential.General
+public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 
-import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.ProofSystem.Fri.Spec.SingleRound
+/-!
+# ArkLib.ProofSystem.Fri.Spec.General
+
+Definitions and results for this component of ArkLib.
+-/
+
+@[expose] public section
 
 namespace Fri
 
@@ -34,7 +42,7 @@ variable (l : ℕ)
 variable {ω : SmoothCosetFftDomain n F}
 
 /- Input/Output relations for the FRI protocol. -/
-def inputRelation [DecidableEq F] (δ : ℝ≥0) :
+def inputRelation (δ : ℝ≥0) :
     Set
       (
         (Statement (k := k) F 0 × (∀ j, OracleStatement (k := k) s ω 0 j)) ×
@@ -44,13 +52,12 @@ def inputRelation [DecidableEq F] (δ : ℝ≥0) :
   | 0 => FinalFoldPhase.inputRelation s (ω := ω) d (round_bound dom_size_cond) δ
   | .succ _ => FoldPhase.inputRelation s (ω := ω) d 0 (round_bound dom_size_cond) δ
 
-def outputRelation [DecidableEq F] (δ : ℝ≥0) :
+def outputRelation (δ : ℝ≥0) :
     Set
       (
         (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
         Witness F s d (Fin.last (k + 1))
-      )
-  := QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
+      ) := QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
 
 /- Protocol spec for the combined non-final folding rounds of the FRI protocol. -/
 @[reducible]
@@ -65,38 +72,40 @@ instance : ∀ j, OracleInterface ((pSpecFold (ω := ω) k s).Message j) :=
 instance : ∀ j, OracleInterface (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)).Message j) :=
   instOracleInterfaceMessageAppend
 
-instance : ∀ j, OracleInterface (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)).Challenge j) :=
+instance : ∀ j,
+    OracleInterface (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
 instance :
-    ∀ i, OracleInterface
-          ((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec (ω := ω) l).Message i) :=
+    ∀ i,
+      OracleInterface
+        ((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F ++ₚ
+          QueryRound.pSpec (ω := ω) l).Message i) :=
   instOracleInterfaceMessageAppend
 
 instance :
     ∀ j,
-      OracleInterface
-        (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F ++ₚ QueryRound.pSpec (ω := ω) l)).Challenge j) :=
+      OracleInterface (((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F ++ₚ
+        QueryRound.pSpec (ω := ω) l)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
 
 /- Oracle reduction for all folding rounds of the FRI protocol -/
 @[reducible]
 def reductionFold :
-  OracleReduction []ₒ
+    OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
     (FinalStatement F k) (FinalOracleStatement s ω)
       (Witness F s d (Fin.last (k + 1)))
-    (pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F)
- := OracleReduction.append
+    (pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F) := OracleReduction.append
       (OracleReduction.seqCompose _ _ (fun (i : Fin (k + 1)) => Witness F s d i.castSucc)
         (FoldPhase.foldOracleReduction s (ω := ω) d))
       (FinalFoldPhase.finalFoldOracleReduction (k := k) s d)
 
 /- Oracle reduction of the FRI protocol. -/
 @[reducible]
-def reduction [DecidableEq F] :
-  OracleReduction []ₒ
+def reduction :
+    OracleReduction []ₒ
     (Statement F (0 : Fin (k + 1))) (OracleStatement s ω (0 : Fin (k + 1)))
       (Witness F s d (0 : Fin (k + 2)))
     (FinalStatement F k) (FinalOracleStatement s ω) (Witness F s d (Fin.last (k + 1)))

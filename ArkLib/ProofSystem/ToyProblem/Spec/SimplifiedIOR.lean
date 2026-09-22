@@ -3,10 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
+module
 
-import ArkLib.OracleReduction.Security.Basic
-import ArkLib.ProofSystem.ToyProblem.Spec.General
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.ProofSystem.ToyProblem.Spec.General
+public import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 
 /-!
 # Simplified toy-problem IOR (ABF26 Construction 6.9)
@@ -59,6 +60,8 @@ scalar; the combined output oracle is `f₁ + γ • f₂` over `A`.
   Correlated Agreement*][ABF26] (§6.4, Construction 6.9, Lemma 6.10).
 -/
 
+@[expose] public section
+
 namespace ToyProblem
 
 namespace SimplifiedIOR
@@ -73,8 +76,6 @@ open ToyProblem.Spec (Statement OracleStatement Witness)
 -- (and `[DecidableEq F]` via the `classical` proofs) in their bodies but not in the
 -- alphabet-generic lemma types; suppress the `unused…InType` linter file-wide (the same toy
 -- idiom as `SoundnessBounds.lean` / `Spec/General.lean`).
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 /-! ### Output types and the output relation
 
@@ -361,7 +362,8 @@ theorem oracleVerifier_toVerifier_run_eq_pure
       transcriptGamma (F := F) tr * stmtIn.1.2.2)]
   rfl
 
-set_option linter.unusedSectionVars false in
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F]
+    [Fintype A] [DecidableEq A] in
 /-- The bundled security view of the virtual-oracle verifier is extensionally
 the original materialized C6.9 verifier. -/
 theorem oracleVerifier_toVerifier_eq_verifier :
@@ -370,7 +372,7 @@ theorem oracleVerifier_toVerifier_eq_verifier :
   ext stmtIn tr
   exact oracleVerifier_toVerifier_run_eq_pure (k := k) stmtIn tr
 
-set_option linter.unusedSectionVars false in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Positive probability of producing an output related to `witOut` forces the
 deterministic C6.9 derived output itself to be related to `witOut`. -/
 theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
@@ -380,11 +382,11 @@ theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (tr : (pSpec (F := F)).FullTranscript)
     (witOut : OutputWitness (F := F) k)
-    (h : Pr[ fun stmtOut ↦ (stmtOut, witOut) ∈ outputRelationFor k encode δ
-      | OptionT.mk do
+    (h : Pr{let stmtOut ← OptionT.mk do
           (simulateQ impl
             (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
-              stmtIn tr)).run' (← init)] > 0) :
+              stmtIn tr)).run' (← init)}[(stmtOut, witOut) ∈
+            outputRelationFor k encode δ] > 0) :
     (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
       (transcriptGamma (F := F) tr), witOut) ∈ outputRelationFor k encode δ := by
   have hrun (s : X) :
@@ -396,7 +398,7 @@ theorem mem_outputRelationFor_of_probEvent_pos_oracleVerifier_run
     rw [oracleVerifier_toVerifier_run_eq_pure]
     rw [simulateQ_optionT_pure]
     rfl
-  rw [gt_iff_lt, probEvent_pos_iff] at h
+  rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
   obtain ⟨stmtOut, hmem, hrel⟩ := h
   obtain ⟨s₀, -, hmem⟩ := OptionT.mem_support_bind_mk init _ hmem
   rw [OptionT.mem_support_iff] at hmem
@@ -413,14 +415,14 @@ the virtual-oracle verifier. `gamma_game_bound` and
 `verifier_knowledgeSoundness` retain the older alphabet-generic
 classical-choice existence result as a compatibility fallback. -/
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- The γ-round bound (via
 `ToyProblem.gamma_transition_prob_le`): if the choice extractor fails on
 `stmtIn` then no `R̃²` witness exists, and the probability over a uniform `γ`
 that the folded instance has an `R̃¹` witness is at most
 `ε_mca + |Λ(C^{≡2}, δ)| / |F|`. Stated in the reduced form of the L6.10 game
 event so the master lemma's challenge-only hypothesis can consume it. -/
-private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
+private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
@@ -428,22 +430,21 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
     (hδ_pos : 0 < δ)
     (hδ_lt : δ < (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0))
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
-    Pr[fun γ : F ↦
+    Pr{let γ ← $ᵗ F}[
         (stmtIn, Spec.chooseRelaxedWitness k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
             Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
           ∃ m : Fin k → F,
             (∑ j, m j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2) ∧
             ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
               ∀ j ∈ S, stmtIn.2 0 j + γ • stmtIn.2 1 j = encode m j
-      | $ᵗ F] ≤
+      ] ≤
       (certifiedGammaError C δ : ENNReal) := by
   classical
-  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
+  let _ := Fintype.ofFinite A
   by_cases hw : ∃ M,
       (stmtIn, M) ∈ Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ
   · -- The choice extractor succeeds, so the event is empty.
     refine le_trans (le_of_eq ?_) zero_le
-    rw [prob_tsum_form_singleton]
     have hnot : ∀ γ : F, ¬ (
         (stmtIn, Spec.chooseRelaxedWitness k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
             Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
@@ -452,8 +453,8 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
             ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
               ∀ j ∈ S, stmtIn.2 0 j + γ • stmtIn.2 1 j = encode m j) :=
       fun _ h ↦ h.1 (Spec.chooseRelaxedWitness_mem k hw)
-    simp [hnot]
-  · refine le_trans (Pr_le_Pr_of_implies _ _
+    exact prEvent_eq_zero_of_forall_not _ _ hnot
+  · refine le_trans (prEvent_mono _ _
       (fun γ ↦ ∃ m : Fin k → F,
         (∑ j, m j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
@@ -474,13 +475,13 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
         (le_of_eq ?_)
       rw [coe_certifiedGammaError]
 
-set_option linter.unusedSectionVars false in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Exact-extractor C6.9 knowledge-soundness assembly.  Any deterministic
 transition algorithm whose challenge failure event has probability at most
 `gammaError` yields a straightline game theorem that keeps that algorithm in
 the proposition type. -/
 theorem knowledgeSoundnessWith_of_transition_failure_prob_le
-    [SampleableType F]
+    [SampleableType F] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (δ gammaError : ℝ≥0)
@@ -489,13 +490,12 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
       (Statement (F := F) k × (∀ i, OracleStatement ι A i)) →
         F → (Fin k → F) → Witness (F := F) k)
     (hgamma : ∀ stmtIn,
-      Pr[ fun γ : F ↦ ∃ g : Fin k → F,
+      Pr{let γ ← $ᵗ F}[∃ g : Fin k → F,
           (stmtIn, transition stmtIn γ g) ∉
               Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
             Spec.GammaState k (encode : (Fin k → F) → (ι → A)) δ
               stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
-              (stmtIn.2 0) (stmtIn.2 1) γ g
-        | $ᵗ F] ≤ (gammaError : ENNReal)) :
+              (stmtIn.2 0) (stmtIn.2 1) γ g] ≤ (gammaError : ENNReal)) :
     (oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).knowledgeSoundnessWith
       (WitOut := OutputWitness (F := F) k)
       init impl
@@ -503,11 +503,12 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
       (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
       (transitionStraightlineExtractor k transition) gammaError := by
   classical
+  let _ := Fintype.ofFinite A
   unfold OracleVerifier.knowledgeSoundnessWith
   rw [oracleVerifier_toVerifier_eq_verifier (k := k)]
   unfold Verifier.knowledgeSoundnessWith
   rintro ⟨stmt, oStmt⟩ witIn prover
-  refine ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
+  refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     init impl _ ⟨0, rfl⟩
     (fun γ ↦ (liftComp (prover.receiveChallenge ⟨0, rfl⟩
         (prover.input ((stmt, oStmt), witIn))) ([]ₒ + [(pSpec (F := F)).Challenge]ₒ))
@@ -541,11 +542,11 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
     simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
     rfl
   · refine le_trans ?_ (hgamma (stmt, oStmt))
-    refine probEvent_mono ?_
-    rintro γ - ⟨t, hbad, hrel⟩
+    refine prEvent_mono _ _ _ ?_
+    rintro γ ⟨t, hbad, hrel⟩
     exact ⟨t.2, hbad _ rfl, hrel⟩
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- Legacy alphabet-generic straightline knowledge-soundness existence
 theorem for C6.9. It uses the noncomputable `Spec.chooseRelaxedWitness` selector and
 therefore is not the deterministic round-by-round Definition A.5 result.
@@ -556,7 +557,7 @@ and
 `Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`;
 existential knowledge soundness is a corollary there. -/
 theorem verifier_knowledgeSoundness
-    [SampleableType F] [Nonempty ι]
+    [SampleableType F] [Nonempty ι] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (C : ModuleCode ι F A) (δ : ℝ≥0)
@@ -573,13 +574,14 @@ theorem verifier_knowledgeSoundness
         (outputRelationFor (ι := ι) (F := F) k (encode : (Fin k → F) → (ι → A)) δ)
         (certifiedGammaError C δ) := by
   classical
+  let _ := Fintype.ofFinite A
   unfold Verifier.knowledgeSoundness
   -- The straightline extractor: classical choice of any `R̃²` witness, from the
   -- input statement alone (always-`some`; cf. `Spec.chooseRelaxedWitness`).
   refine ⟨fun stmtIn _ _ _ _ ↦
     pure (Spec.chooseRelaxedWitness k ((encode : (Fin k → F) → (ι → A))) δ stmtIn), ?_⟩
   rintro ⟨stmt, oStmt⟩ witIn prover
-  refine ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
+  refine ProtocolSpec.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
     init impl _ ⟨0, rfl⟩
     (fun γ ↦ (liftComp (prover.receiveChallenge ⟨0, rfl⟩
         (prover.input ((stmt, oStmt), witIn))) ([]ₒ + [(pSpec (F := F)).Challenge]ₒ))
@@ -617,8 +619,8 @@ theorem verifier_knowledgeSoundness
     -- apply `gamma_game_bound`.
     refine le_trans ?_
       (gamma_game_bound k C δ encode hinj hC hδ_pos hδ_lt_min (stmt, oStmt))
-    refine probEvent_mono ?_
-    rintro c - ⟨t, h1, h2⟩
+    refine prEvent_mono _ _ _ ?_
+    rintro c ⟨t, h1, h2⟩
     exact ⟨h1 _ rfl, t.2, h2⟩
 
 end Protocol

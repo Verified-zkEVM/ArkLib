@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+module
+
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 
 /-!
   # Single-challenge-round tree navigation (generic CWSS building block)
@@ -42,6 +44,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
+
+@[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
@@ -205,7 +209,9 @@ theorem branch_challenge (v : CarrierCom)
     (branchTr v challenges j).challenges ⟨1, rfl⟩ = challenges j := by
   simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
     FullTranscript.challenges, Transcript.concat]
-  simp [Fin.snoc]
+  simp only [Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Fin.snoc,
+    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.mod_succ, lt_self_iff_false,
+    ↓reduceDIte, Fin.succ_one_eq_two, Fin.reduceLast, take_Type]
   exact eq_of_heq (cast_heq _ _)
 
 /-- Branch `j`'s transcript carries the shared message `v` at round 0. -/
@@ -215,7 +221,12 @@ theorem branch_pre (v : CarrierCom)
     (branchTr v challenges j).messages ⟨0, rfl⟩ = v := by
   simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
     FullTranscript.messages, Transcript.concat]
-  simp [Fin.snoc]
+  simp only [Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Fin.snoc,
+    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.zero_mod, Nat.mod_succ,
+    Order.lt_one_iff, ↓reduceDIte, Fin.succ_one_eq_two, Fin.reduceLast,
+    zero_ne_one, not_false_eq_true, Fin.castLT_eq_castPred, Fin.castPred_zero,
+    Fin.castSucc_zero, take_Type, lt_self_iff_false,
+    Fin.succ_zero_eq_one]
   exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
 
 /-- Branch `j`'s transcript is one of the star tree's leaf transcripts. -/
@@ -352,8 +363,8 @@ theorem sib_coordEq [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin �
     [Inhabited (Fin K)] (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) :
     CoordEq i (challenges (central challenges)) (challenges (sib challenges i)) := by
   have hc : StarAt challenges (central challenges) := by
-    unfold central; rw [dif_pos hstar]; exact Fin.find_spec hstar
-  unfold sib; rw [dif_pos (hc i)]; exact Fin.find_spec (hc i)
+    unfold central; rw [dite_eq_left hstar]; exact Fin.find_spec hstar
+  unfold sib; rw [dite_eq_left (hc i)]; exact Fin.find_spec (hc i)
 
 /-- `CoordEq` is symmetric (orientation bridge: `sib_coordEq` is oriented center-first, the
 extraction's difference challenge `c̄ᵢ := c_{sib,i} − c_{central,i}` is oriented sibling-first). -/
@@ -405,7 +416,7 @@ theorem collect_eq_some {K : ℕ} {W : Type} {f : Fin K → Option W} {w : Fin K
     (h : ∀ j, f j = some (w j)) : collect f = some w := by
   have hs : ∀ j, (f j).isSome := fun j => by rw [h j]; rfl
   unfold collect
-  rw [dif_pos hs]
+  rw [dite_eq_left hs]
   exact congrArg some (funext fun j =>
     Option.some.inj ((Option.some_get (hs j)).trans (h j)))
 
