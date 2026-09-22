@@ -9,8 +9,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
 /-!
 # Certified-rank count acceptance tests
 
-Concrete values of the counts, and the case `d = 0` where the threshold does not reach the
-multiplicity.
+Concrete values of the counts, including the exact interpolation dimension count, and the case
+`d = 0` where the threshold does not reach the multiplicity.
 -/
 
 open ReedSolomon.HiddenDerivative
@@ -39,3 +39,20 @@ example : (∑ r ∈ Finset.range 2, weightedHigherJetCount 1 (0 + r) * ambientC
         exhibitedKernelContactCount r 1 (contactThreshold 1 2 r) = 5 := by
   rw [ambient_sub_exhibitedKernel_eq_certifiedEnlargedRankBound]
   decide
+
+/-- With `D = 2`, `A = 2`, `d = 1`, `m = 1`, `M = 1`, `W = 0`: the residuals are `2` at `b₁ = 0`
+and `1` at `b₁ = 1`, with staircase counts `2` and `1`. -/
+example : exactInterpolationDimensionCount 2 2 1 1 1 0 = 3 := by decide
+
+/-- With `D = 3`, `A = 3`, `d = 2`, `m = 1`, `M = 1`, `W = 1`: the higher-jet exponent `c ∈ {0, 1}`
+of `Y₂` costs `c`, and `Y₁` costs `2 b₁`, so the residuals `3, 1, 2, 0` contribute `3 + 1 + 2 + 0`.
+-/
+example : exactInterpolationDimensionCount 3 3 2 1 1 1 = 6 := by decide
+
+/-- The count is the number of its coordinate tuples. -/
+example : (exactDimensionCoordinates 3 3 2 1 1 1).card = 6 := by
+  rw [card_exactDimensionCoordinates]
+  decide
+
+/-- The residual is truncated: once `(D - 1) b₁` exceeds `m A`, nothing is left for `X` and `Y₀`. -/
+example : exactDimensionResidual (d := 1) 3 1 2 2 (fun _ => 0) = 0 := by decide
