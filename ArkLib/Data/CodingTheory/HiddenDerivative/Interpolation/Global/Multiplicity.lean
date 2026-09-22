@@ -1,0 +1,67 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Contact
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.SpecializationDegree
+public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+
+/-!
+# Global vanishing of interpolation polynomials at agreeing polynomials
+
+Let `Q` be in the exact interpolation space and satisfy the local constraints of order `m` at every
+evaluation point `(points i, received i)`. If `P` has degree at most `D` and agrees with the
+received word at `A` indices with distinct evaluation points, then `Q(X, P, D¹P, ..., DᵈP) = 0`.
+
+Each agreement gives `(X - points i) ^ m ∣ Q(X, P, ...)`
+(`X_sub_C_pow_dvd_differentialSpecialization_of_contact`), the specialization has degree below
+`m * A` (`natDegree_differentialSpecialization_lt_of_mem_exactInterpolationSpace`), and a
+polynomial over a domain with `A` distinct roots of multiplicity `m` and degree below `m * A` is
+zero (`Polynomial.eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn`).
+
+## Main statements
+
+* `differentialSpecialization_eq_zero_of_mem_exactInterpolationSpace_of_agreements`.
+
+## References
+
+* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.3, and Section 3.6, Proposition 3.10
+-/
+
+@[expose] public section
+
+open PolynomialDifferential Polynomial
+
+namespace ReedSolomon.HiddenDerivative
+
+variable {ι R : Type*} [CommRing R] [IsDomain R] {D A d m M W : ℕ}
+
+/-- Let `Q` be in the exact interpolation space and satisfy the local constraints of order `m` at
+every `(points i, received i)`. If `P` has degree at most `D` and `P (points i) = received i` for
+every `i` in `indices`, the points are distinct on `indices` and `A ≤ #indices`, then
+`Q(X, P, D¹P, ..., DᵈP) = 0`.
+
+`indices` may contain more than `A` indices, and the points only need to be distinct on
+`indices`. No positivity of `m * A` is needed: when `m * A = 0` the exact space is `{0}`. The
+domain hypothesis is used only in the final root count. -/
+theorem differentialSpecialization_eq_zero_of_mem_exactInterpolationSpace_of_agreements
+    (hdD : d < D) (points received : ι → R) (indices : Finset ι)
+    {Q : DifferentialPolynomial R d} (hQspace : Q ∈ exactInterpolationSpace R D A d m M W hdD)
+    (hconstraints : ∀ i, SatisfiesLocalConstraints m (points i) (received i) Q)
+    (P : R[X]) (hPdegree : P.natDegree ≤ D) (hpoints : Set.InjOn points (indices : Set ι))
+    (hcard : A ≤ indices.card) (hagreements : ∀ i ∈ indices, P.eval (points i) = received i) :
+    differentialSpecialization Q P = 0 := by
+  rcases Nat.eq_zero_or_pos (m * A) with hzero | hbudget
+  · rw [eq_zero_of_mem_exactInterpolationSpace_of_mul_eq_zero hzero hdD hQspace]
+    exact map_zero (differentialSpecializationHom (d := d) P)
+  exact eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn points indices m A hpoints hcard
+    (fun i hi ↦ X_sub_C_pow_dvd_differentialSpecialization_of_contact Q P (points i) (received i)
+      (hagreements i hi) (hconstraints i))
+    (natDegree_differentialSpecialization_lt_of_mem_exactInterpolationSpace hbudget hdD hQspace P
+      hPdegree)
+
+end ReedSolomon.HiddenDerivative

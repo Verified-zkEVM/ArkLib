@@ -48,11 +48,11 @@ example (M : ℕ) (center received : ℚ) :
 /-- With a real cutoff `T`: a strict bound `T` on the total jet degree of every monomial of `Q` is
 a strict bound on the jet degree of every monomial of the image. -/
 example {R : Type*} [CommRing R] {d : ℕ} (center received : R) {Q : DifferentialPolynomial R d}
-    {T : ℝ} (hsource : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T) {e : LocalVariable d →₀ ℕ}
+    {T : ℝ} (hT : ∀ u ∈ Q.support, (totalJetDegree u : ℝ) < T) {e : LocalVariable d →₀ ℕ}
     (he : e ∈ (unscaledLocalSubstitution d center received Q).support) :
     (e.weight (localJetDegreeWeight d) : ℝ) < T :=
   Nat.lt_ceil.mp (localJetDegree_lt_of_mem_support center received
-    (fun u hu => Nat.lt_ceil.mpr (hsource u hu)) he)
+    (fun u hu => Nat.lt_ceil.mpr (hT u hu)) he)
 
 /-- With a real cutoff `T`: `localConstraintAt_support_of_weight_bounds` followed by
 `mem_localResidualExponents_of_bounds`. -/

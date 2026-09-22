@@ -24,10 +24,7 @@ The main declarations are:
 * `Polynomial.degree_centeredCoefficientPrefix_lt`, its strict degree bound;
 * `Polynomial.centeredCoefficientPrefix_succ`, the one-coefficient extension law.
 
-These declarations are ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
-revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.  The owner here is independent of Reed--Solomon
-codes and differential root finding.
+The construction is independent of Reed--Solomon codes and differential root finding.
 -/
 
 @[expose] public section

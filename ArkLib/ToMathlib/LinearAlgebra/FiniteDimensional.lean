@@ -29,6 +29,8 @@ public import Mathlib.LinearAlgebra.Projection
   is known: a map whose rank is below the dimension of its source has a nonzero kernel vector.
 * `LinearMap.finrank_range_pi_le_sum` — the rank of a map into a finite product is at most the
   sum of the ranks of its components.
+* `LinearMap.exists_ne_zero_of_sum_finrank_range_lt` — if the source dimension exceeds the sum of
+  the ranks of a finite family of linear maps, some nonzero vector lies in all their kernels.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
@@ -190,3 +192,19 @@ theorem LinearMap.finrank_range_pi_le_sum {K V ι : Type*} [DivisionRing K] [Fin
       _ = _ := Module.finrank_pi_fintype K
   · rw [Module.finrank_of_not_finite hfin]
     exact Nat.zero_le _
+
+/-- If the dimension of `V` exceeds the sum of the ranks of a finite family of linear maps on `V`,
+then some nonzero vector lies in the kernel of every map of the family. This is rank–nullity for
+the joint map `LinearMap.pi φ`, whose rank is at most the sum
+(`LinearMap.finrank_range_pi_le_sum`). No finiteness assumption on `V` is needed: the surplus
+makes `finrank K V` positive, hence `V` finite-dimensional. The inequality must be strict: the
+identity map of `K` has rank `1 = finrank K K` and trivial kernel. -/
+theorem LinearMap.exists_ne_zero_of_sum_finrank_range_lt {K V ι : Type*} [DivisionRing K]
+    [AddCommGroup V] [Module K V] [Fintype ι]
+    {W : ι → Type*} [∀ i, AddCommGroup (W i)] [∀ i, Module K (W i)]
+    (φ : ∀ i, V →ₗ[K] W i)
+    (hsurplus : ∑ i, Module.finrank K (LinearMap.range (φ i)) < Module.finrank K V) :
+    ∃ v : V, v ≠ 0 ∧ ∀ i, φ i v = 0 := by
+  obtain ⟨v, hv0, hv⟩ := LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt
+    ((LinearMap.finrank_range_pi_le_sum φ).trans_lt hsurplus)
+  exact ⟨v, hv0, fun i => congrFun hv i⟩
