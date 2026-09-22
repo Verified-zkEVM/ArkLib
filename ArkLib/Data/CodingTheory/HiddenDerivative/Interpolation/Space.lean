@@ -74,8 +74,8 @@ From the source's `Interpolation/Counting.lean`: `goodHigherExponents_self_eq_we
 here `card_goodHigherExponents_of_le` for every `C ≥ W`, with the source statement at `C = W`
 recovered in the tests.
 
-Deferred: the shell and staircase counts, `exactInterpolationDimensionCount`, and the lower
-bound `finrank_interpolationSpace_lowerBound` of the source's dimension files.
+The source's lower bound `finrank_interpolationSpace_lowerBound` is in
+`Interpolation/Dimension.lean`. Deferred: the shell counts.
 
 * Brakensiek, Chen, Putterman, Zhang, and Zheng, *Algorithmic List Decoding of Reed--Solomon
   Codes up to Capacity in the Low-Rate Regime*, ECCC TR26-164, Section 3.
