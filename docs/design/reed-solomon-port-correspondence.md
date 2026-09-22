@@ -1111,6 +1111,23 @@ the two-sided `sq_mul_card_filter_le_abs_sub_le_card_mul_variance`. The source's
 with variance `5 / 12` is an acceptance case. The sharper one-sided Cantelli bound, continuous
 simplex moments, and a comparison between the finite and continuous variances are not treated.
 
+## `ArkLib/Data/MvPolynomial/FrobeniusContraction.lean`
+
+Ported from `ArkLib/ToMathlib/MvPolynomial/FrobeniusFactor.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, over a commutative ring without zero divisors in
+place of a field, and without `Fact p.Prime`. `exists_frobeniusFactor` is now
+`exists_irreducible_frobeniusContraction` for `CharP R p`, and `exists_frobeniusFactor_expChar`
+is now `exists_irreducible_frobeniusContraction_expChar`. These two return the root expansion, the
+nonzero partial derivative, the degree identity, positive degree, irreducibility and the
+per-variable degree bounds. The fraction-field parts are now
+`irreducible_map_optionEquivLeft_fractionRing`, `separable_map_optionEquivLeft_fractionRing` and
+`exists_frobeniusContraction_fractionRing`, over a unique factorization domain. The primitivity,
+mapped-derivative and mapped-degree parts of the source's ten-part statements are not stated; the
+test derives the ten-part forms. `inverseFrobeniusTwist_preserves_factor` and its `_expChar` form
+are not ported: each is the conjunction of `irreducible_inverseFrobeniusTwist_iff`,
+`pderiv_inverseFrobeniusTwist_ne_zero_iff` and `degreeOf_inverseFrobeniusTwist`, derived in the
+test. `frobeniusFactor_coefficient_canary` is a test example.
+
 ## `ArkLib/Data/MvPolynomial/MapExponents.lean`
 
 This generalizes `normalizeErrorByExponent`, `normalizeError_injective` and
@@ -1384,6 +1401,64 @@ differential specialization they translate. Nothing is deferred.
 `.../HiddenDerivative/RootFinding/Regular/Lifting.lean` from the separant over a field to any
 differential polynomial over a commutative semiring.
 
+## `ArkLib/Data/Polynomial/Differential/TaylorChart.lean`
+
+Merges `Taylor/Chart.lean` and `Taylor/Cuts.lean` from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`; the new
+namespace is `PolynomialDifferential`. The common exponent `τ` is always an explicit argument
+with no default `2K`, and `commonTaylorNumerator` no longer takes `K`. Each source pair of a
+default-exponent theorem and an `_of_exponent` theorem is one theorem taking
+`TaylorExponentSufficient r K τ` or `2 * (l - r) - 1 ≤ τ`; the `2K` case is
+`taylorExponentSufficient_two_mul`. `totalDegree_commonTaylorNumerator_le` drops the source's
+`0 < v` hypothesis. Renamed: `initialJetEquation_ne_zero_of_separant_ne_zero` (from
+`Geometry/InitialGeometry.lean`) to `initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero`,
+`initialJetEquation_solution` to `aeval_initialJetEquation_polynomialJet`,
+`commonTaylorNumerator_solution` to `aeval_commonTaylorNumerator_polynomialJet`,
+`rationalTaylorMap_eq_solution` to `rationalTaylorMap_polynomialJet`,
+`degree_rationalTaylorPolynomial_lt_of_high_cuts` to `degree_rationalTaylorPolynomial_lt`,
+`taylorAgreementEquation_solution` to `aeval_taylorAgreementEquation_polynomialJet`,
+`polynomialJet_agreement_cut_iff` (from `Geometry/SolutionGeometry.lean`) to
+`aeval_taylorAgreementEquation_polynomialJet_eq_zero_iff`, and
+`eq_of_high_cuts_and_agreement_cuts` to `eq_of_highTaylorCuts_of_agreement`, which takes
+`Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
+`rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
+`2K`.
+
+## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
+
+Ported from `Geometry/AgreementGeometry.lean`, `Geometry/SolutionGeometry.lean` and part of
+`Geometry/InitialGeometry.lean` under the same source directory. Membership in a principal open
+is written as `jet ∈ zeroLocus F I` together with `aeval jet S ≠ 0`.
+`exists_common_regular_center` is now `exists_forall_jetEvaluation_ne_zero`, for any
+differential polynomial over an infinite domain instead of the separant over a field.
+`initialJetPrimeFamily_prime_open` is split into `isPrime_of_mem_initialJetPrimeFamily` and
+`initialJetSeparant_notMem_of_mem_initialJetPrimeFamily`.
+`eq_of_mem_principalOpen_of_highCuts_of_agreementFinset` is now
+`eq_of_mem_zeroLocus_of_highTaylorCutsIdeal_le`,
+`polynomialJet_injective_on_regular_solutions` is now `injOn_polynomialJet`,
+`card_image_polynomialJet_regular` is now `card_image_polynomialJet`,
+`polynomialJet_mem_highTaylorCuts` is now `polynomialJet_mem_zeroLocus_highTaylorCutsIdeal`, and
+`polynomialJet_mem_regular_solution_locus` is now
+`polynomialJet_mem_zeroLocus_initialJetEquation_sup_highTaylorCutsIdeal`.
+
+Deferred: the Hilbert-degree statements of `Geometry/InitialGeometry.lean`
+(`initialJetPrimeFamily_hilbertPolynomial_natDegree` and the two affine-degree sums), which need
+the hypersurface purity results of P5; `Geometry/HighCutGeometry.lean` apart from the cut degree
+bound, which needs the iterated retained cuts and the agreement incidence bound of P5; and
+`Geometry/SolutionExtension.lean` and `Geometry/SolutionEmbedding.lean`, which need the
+coefficient-map lemmas for differential specialization.
+## `ArkLib/Data/Polynomial/Differential/TaylorIndexWeight.lean`
+
+Ported from
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/IndexWeight.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
+`ReedSolomon.HiddenDerivative`. `universalTaylorJet_indexWeight` is now
+`universalTaylorJet_supportWeightOffset`, `universalTaylorResidual_indexWeight` is now
+`universalTaylorResidual_supportWeightOffset`, and `firstOrder_jetIndexDegree` is now
+`weightedTotalDegree_indexWeight_eq_jetDegree_one`. `indexWeight` and
+`indexWeight_le_of_mem_universalTaylorResidual_coeff` keep their names.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorResidual.lean`
 
 The support bounds are [DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
@@ -1424,6 +1499,21 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 a semiring, commutative semiring and ring respectively, and the degree bound no longer assumes
 `0 < k`. The cubic statements are in
 `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction`.
+
+## `ArkLib/Data/Polynomial/FrobeniusContraction.lean`
+
+Merges `ArkLib/ToMathlib/Polynomial/FrobeniusContraction.lean` and
+`ArkLib/ToMathlib/Polynomial/FrobeniusContractionFractionRing.lean` from the source. The hypotheses
+`Fact p.Prime` and `p ≠ 0` are dropped; characteristic zero is handled in the proof.
+`exists_frobeniusContraction_fractionRing` keeps six of the source's nine conjuncts; the dropped
+ones are `Irreducible.isPrimitive`, `derivative_map` with `Polynomial.map_ne_zero_iff`, and
+`natDegree_map_eq_of_injective`, and the acceptance test re-derives the nine-conjunct statement.
+`irreducible_separable_map_fractionRing` is folded into that theorem.
+`not_exists_expand_primePow_succ_of_derivative_ne_zero` is not ported.
+
+`exists_irreducible_frobeniusContraction_expChar` is the univariate form of
+`exists_frobeniusFactor_expChar` from `ArkLib/ToMathlib/MvPolynomial/FrobeniusFactor.lean` at
+ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
 
 ## `ArkLib/Data/Polynomial/PointCollision.lean`
 
@@ -1954,6 +2044,20 @@ a5aa2677fee4e3a79d6bb05136631cce4a08587d.
 * [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Theorem 4.4, uses this
   linearization with `I` generated by a power of `T - α`.
 
+## `ArkLib/ToMathlib/MvPolynomial/FrobeniusPullback.lean`
+
+Merges `ArkLib/ToMathlib/MvPolynomial/FrobeniusPullback.lean` and
+`ArkLib/ToMathlib/MvPolynomial/FrobeniusPullbackDerivative.lean` from the source. The hypotheses
+weaken from `Field` and `PerfectField` to `CommSemiring`, `ExpChar` and `PerfectRing`.
+`degreeOf_map_ringEquiv` is now `degreeOf_map_of_injective`, and
+`Irreducible.map_inverseFrobeniusTwist` is now `irreducible_inverseFrobeniusTwist_iff`. Not ported,
+with their replacements: `pow_primePow_injective` (`(iterateFrobeniusEquiv K p e).injective`),
+`existsUnique_pow_eq_primePow` (`(iterateFrobeniusEquiv K p e).bijective.existsUnique`),
+`pderiv_map_ringEquiv` (`MvPolynomial.pderiv_map`), `pderiv_map_ringEquiv_ne_zero_iff` (`pderiv_map`
+with `map_ne_zero_iff`), and `pderiv_inverseFrobeniusTwist_ne_zero` (the `.mpr` of
+`pderiv_inverseFrobeniusTwist_ne_zero_iff`). The Fin-3 definitions `rootVariableExponent` and
+`basePowerSubstitution` and the `*_canary` theorems are examples in the acceptance test.
+
 ## `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean`
 
 This file ports and generalizes `ArkLib/ToMathlib/MvPolynomial/PDeriv.lean` at ArkLib revision
@@ -2000,6 +2104,12 @@ closure lemmas are public. `jointTotalDegree_scalar` is now `jointTotalDegree_C_
 `jointTotalDegree_le_coeff_degree_add` is now `jointTotalDegree_le_of_natDegree_coeff_le`, and
 `jointTotalDegree_clearedSubstitution` is now `jointTotalDegree_clearedSubstitution_le`.
 `jointTotalDegree_affine_le` is derived in the acceptance test.
+## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
+
+Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
+hypotheses weaken from `IsDomain` to `CommSemiring`, and to `NoZeroDivisors` for
+`degreeOf_rootContraction_none_mul`, which now takes `pderiv none P = 0` instead of the univariate
+derivative hypothesis.
 
 ## `ArkLib/ToMathlib/MvPolynomial/SupportWeight.lean`
 

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import Mathlib.Algebra.Order.BigOperators.Expect
+public import Mathlib.Analysis.Convex.Mul
 public import Mathlib.MeasureTheory.Integral.Bochner.Basic
 public import Mathlib.MeasureTheory.Integral.Average
 public import Mathlib.Probability.ConditionalProbability
@@ -33,6 +34,10 @@ integral of `(b - z) ^ 3`, and `x ^ 3 ≤ (max x 0) ^ 3` for every real `x`. Onl
 order three enter. The mean-zero hypothesis is needed: for `z = 1` almost surely and `b = 1`
 the left side is `3` and the right side is `0`.
 
+The map `z ↦ (max (b - z) 0) ^ n` is convex for every `n`. For `n = 3` and `b ≥ 0` its tangent
+line at `z = 0` is `b ^ 3 - 3 * b ^ 2 * z`, and integrating the tangent bound gives the Jensen
+bound `b ^ 3 ≤ ∫ (max (b - z) 0) ^ 3 ∂P` for mean-zero `z`, which needs only first moments.
+
 ## Main statements
 
 * `max_sub_zero_le_sub_add_sq_div`: the pointwise bound, over any ordered field.
@@ -43,6 +48,9 @@ the left side is `3` and the right side is `0`.
   set averages of `Y` and `(Y - m) ^ 2`.
 * `MeasureTheory.le_integral_max_sub_zero_pow_three`: a lower bound for the cube of the positive
   part by the second and third moments.
+* `convexOn_max_sub_zero_pow`, `pow_three_sub_mul_le_max_sub_zero_pow_three` and
+  `MeasureTheory.pow_three_le_integral_max_sub_zero_pow_three`: convexity, the tangent bound at
+  `0`, and the Jensen bound for the cube of the positive part.
 -/
 
 @[expose] public section
@@ -84,6 +92,30 @@ theorem Finset.expect_max_sub_zero_le {ι : Type*} {s : Finset ι} (Y : ι → K
     _ = c - μ + (𝔼 i ∈ s, (Y i - μ) ^ 2) / (4 * (c - μ)) := by
       rw [Finset.expect_add_distrib, Finset.expect_sub_distrib, Finset.expect_const hs, hmean,
         Finset.expect_div]
+
+/-- For every threshold `b` and exponent `n`, the map `z ↦ (max (b - z) 0) ^ n` is convex on the
+whole line: `z ↦ max (b - z) 0` is a maximum of two affine maps, and a nonnegative convex function
+raised to a natural power is convex. -/
+theorem convexOn_max_sub_zero_pow (b : K) (n : ℕ) :
+    ConvexOn K Set.univ fun z : K ↦ (max (b - z) 0) ^ n := by
+  have hf : ConvexOn K Set.univ fun z : K ↦ max (b - z) 0 :=
+    ((convexOn_const b convex_univ).sub (concaveOn_id convex_univ)).sup
+      (convexOn_const 0 convex_univ)
+  exact hf.pow (fun _ _ ↦ le_max_right _ _) n
+
+/-- For `0 ≤ b`, the tangent line `b ^ 3 - 3 * b ^ 2 * z` of `z ↦ (max (b - z) 0) ^ 3` at `z = 0`
+lies below it. For `z ≤ b` the difference is `z ^ 2 * (3 * b - z) ≥ 0`; for `z > b` the tangent
+is `b ^ 2 * (b - 3 * z) ≤ 0`. The hypothesis `0 ≤ b` is needed: for `b = -1` and `z = -3 / 2` the
+tangent is `7 / 2` and the positive-part cube is `1 / 8`. -/
+theorem pow_three_sub_mul_le_max_sub_zero_pow_three {b : K} (z : K) (hb : 0 ≤ b) :
+    b ^ 3 - 3 * b ^ 2 * z ≤ (max (b - z) 0) ^ 3 := by
+  rcases le_total z b with h | h
+  · rw [max_eq_left (sub_nonneg.mpr h)]
+    have hp : 0 ≤ z ^ 2 * (3 * b - z) := mul_nonneg (sq_nonneg _) (by linarith)
+    linarith [show (b - z) ^ 3 - (b ^ 3 - 3 * b ^ 2 * z) = z ^ 2 * (3 * b - z) by ring]
+  · rw [max_eq_right (sub_nonpos.mpr h)]
+    have hp := mul_nonneg (sq_nonneg b) (show 0 ≤ 3 * z - b by linarith)
+    nlinarith
 
 end Pointwise
 
@@ -207,5 +239,26 @@ theorem le_integral_max_sub_zero_pow_three {X : Type*} [MeasurableSpace X] (P : 
   · simpa [integral_const_mul, hm] using h
   · exact (integrable_const _).sub (hz.const_mul _)
   · exact ((integrable_const _).sub (hz.const_mul _)).add (h2.const_mul _)
+
+/-- The Jensen bound for the cube of the positive part: for a probability measure `P`, `z`
+integrable with mean `0`, and `(max (b - z) 0) ^ 3` integrable, `b ^ 3 ≤ ∫ (max (b - z) 0) ^ 3 ∂P`.
+For `0 ≤ b` it integrates `pow_three_sub_mul_le_max_sub_zero_pow_three`; for `b < 0` the left
+side is negative.
+
+The mean-zero hypothesis is needed: for `z = 1` almost surely and `b = 1` the right side is `0`.
+The integrability of `(max (b - z) 0) ^ 3` is needed because otherwise its Bochner integral is `0`
+by convention; it does not follow from that of `z`. -/
+theorem pow_three_le_integral_max_sub_zero_pow_three {X : Type*} [MeasurableSpace X]
+    (P : Measure X) [IsProbabilityMeasure P] (z : X → ℝ) (b : ℝ) (hz : Integrable z P)
+    (hm : ∫ x, z x ∂P = 0) (hf : Integrable (fun x ↦ (max (b - z x) 0) ^ 3) P) :
+    b ^ 3 ≤ ∫ x, (max (b - z x) 0) ^ 3 ∂P := by
+  rcases lt_or_ge b 0 with hb | hb
+  · exact (Odd.pow_nonpos (by decide) hb.le).trans
+      (integral_nonneg fun x ↦ pow_nonneg (le_max_right _ _) 3)
+  have ht := (integrable_const (b ^ 3)).sub (hz.const_mul (3 * b ^ 2))
+  have h := integral_mono ht hf fun x ↦ pow_three_sub_mul_le_max_sub_zero_pow_three (z x) hb
+  change ∫ x, b ^ 3 - 3 * b ^ 2 * z x ∂P ≤ _ at h
+  rw [integral_sub (integrable_const _) (hz.const_mul _)] at h
+  simpa [integral_const_mul, hm] using h
 
 end MeasureTheory
