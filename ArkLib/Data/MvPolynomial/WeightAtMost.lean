@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import Mathlib.Algebra.Order.Group.Int
+public import ArkLib.ToMathlib.Finsupp.Weight
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 
 /-!
@@ -21,8 +22,9 @@ products and substitutions exactly as a degree bound is.
 * `restrictWeightAtMost w a` is the submodule of polynomials each of whose monomials has
   `w`-weight at most `a`. For `M = ℕ` it is `restrictWeightedDegree w a`.
 
-The file also records two facts about `restrictSupport` for finite exponent sets: it is a finite
-module, and over a field its dimension is the number of exponents.
+The file also records three facts about `restrictSupport`: its canonical basis vectors are
+monomials, and for a finite exponent set it is a finite module whose dimension over a field is
+the number of exponents.
 
 ## Main statements
 
@@ -30,6 +32,9 @@ module, and over a field its dimension is the number of exponents.
   products.
 * `bind₁_mem_restrictWeightAtMost`: substitution preserves weight bounds when each generator image
   is bounded by the weight of its variable.
+* `degreeOf_le_div_of_mem_restrictWeightAtMost`: a natural-number weight bound `a` bounds the
+  degree in a variable of positive weight `w i` by `a / w i`.
+* `coe_basisRestrictSupport_apply`: the basis vector at `e` is `monomial e 1`.
 * `finrank_restrictSupport_finset`: the coefficient space of a finite exponent set has
   dimension its cardinality.
 -/
@@ -157,6 +162,16 @@ theorem mem_restrictWeightAtMost_natCast_iff {w : σ → ℕ} {a : ℕ} {p : MvP
     simp [weight_apply, Finsupp.sum]
   simp only [mem_restrictWeightAtMost, hweight, Nat.cast_le]
 
+/-- If every monomial of `p` has natural-number `w`-weight at most `a` and `0 < w i`, the degree
+of `p` in the variable `i` is at most `a / w i`: a monomial containing `X i ^ k` has weight at
+least `k * w i`. The hypothesis `0 < w i` is needed, since for `w i = 0` every power of `X i` has
+weight `0`. -/
+theorem degreeOf_le_div_of_mem_restrictWeightAtMost {w : σ → ℕ} {a : ℕ} {p : MvPolynomial σ R}
+    (hp : p ∈ restrictWeightAtMost (R := R) w a) {i : σ} (hw : 0 < w i) :
+    degreeOf i p ≤ a / w i := by
+  refine degreeOf_le_iff.mpr fun e he => (Nat.le_div_iff_mul_le hw).mpr ?_
+  simpa [smul_eq_mul] using (Finsupp.apply_smul_le_weight w e i).trans (hp he)
+
 /-! ### Finite exponent sets -/
 
 /-- The coefficient space of a finite exponent set is a finite module. -/
@@ -164,6 +179,17 @@ theorem restrictSupport_finite {s : Set (σ →₀ ℕ)} (hs : s.Finite) :
     Module.Finite R (restrictSupport R s) :=
   haveI : Finite s := hs.to_subtype
   Module.Finite.of_basis (basisRestrictSupport R s)
+
+/-- The basis vector of `basisRestrictSupport R s` at an exponent `e ∈ s` is the monomial
+`monomial e 1`. -/
+@[simp]
+theorem coe_basisRestrictSupport_apply (s : Set (σ →₀ ℕ)) (e : s) :
+    (basisRestrictSupport R s e : MvPolynomial σ R) = monomial e.1 1 := by
+  change AddMonoidAlgebra.ofCoeff (R := R) (M := σ →₀ ℕ)
+      (↑((Finsupp.supportedEquivFinsupp (M := R) (R := R) s).symm (Finsupp.single e 1))) =
+    monomial e.1 1
+  rw [Finsupp.supportedEquivFinsupp_symm_single]
+  rfl
 
 /-- Over a field, the coefficient space of a finite exponent set has dimension its cardinality. -/
 theorem finrank_restrictSupport_finset {K : Type*} [Field K] (s : Finset (σ →₀ ℕ)) :
