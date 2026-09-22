@@ -17,27 +17,34 @@ two months, and XL is an open-ended program.
 - A compiler pass does not land before the execution and trace facts used by its security proof.
 - Each completed phase updates `00-current-status.md` and this roadmap in the same PR.
 
-## 2. Starting point
+## 2. Starting point and progress
 
-The alignment slice fixes the supported train at Lean 4.33.1, VCVio
-`f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24`, and the PolyFun revision selected by VCVio,
-`c0c923693fc827a41d17116579a0c16ed4873b19`.
+The alignment slice (#811) fixed the initial train at Lean 4.33.1, VCVio `f9dc47d9`, and PolyFun
+`c0c92369`. The current supported train is recorded in `00-current-status.md`.
 
-The key result is permission to start, not another planning dependency. `TypeTree`, cursors,
-displayed restriction, append decomposition, strategies, handlers, and dependent chain
-concatenation are available. The remaining upstream gaps are isolated to the later execution,
-state-restoration, and compiler tracks.
+**Progress as of 2026-09-22:**
 
-**Alignment gate:** the exact dependency train validates; current and historical documentation are
-separated; no new interaction-layer API is mixed into the pin change.
+| Phase | Status | Evidence |
+|---|---|---|
+| Alignment | done | #811 |
+| 1 — Typed core | done | AR-1 through AR-6B: #851–#871 |
+| 2 — Minimum viable protocol | done | AR-7 #872, AR-8 #874 |
+| 3 — Composition and two contrasting protocols | Sumcheck composition done; FRI and Spartan slices open | #879, #883, #891, #892 |
+| Parallel upstream lane | items 1–2 done; items 3–4 open | VCVio `Runtime` and `WithFailure` |
+| 4 — World-backed execution and ordinary security | artifacts done; composition theorem open | AR-9A #884, AR-9B #886, AR-10A #880, AR-10B #889 |
+| 5 — State restoration | not started | blocked on upstream lane items 3–4 |
+| 6 — Compiler | not started | follows Phase 5 |
+
+The early interaction-native prototype (#433) and its stacked extractions (#532, #570, #580) were
+closed as superseded; the prototype remains on `archive/oracle-reduction-v2-pre-split`.
 
 ## 3. Parallel tracks
 
 | Track | Purpose | Current dependency |
 |---|---|---|
-| Core semantics | typed reductions, oracle trees, sources, virtual claims, closing | unblocked |
-| Protocol evidence | Sumcheck first, then FRI and Spartan | follows the relevant core slice |
-| Execution and ordinary security | world-backed artifacts, outcomes, admissibility-aware composition | VCVio artifact and outcome gaps |
+| Core semantics | typed reductions, oracle trees, sources, virtual claims, closing | landed |
+| Protocol evidence | Sumcheck first, then FRI and Spartan | Sumcheck landed; FRI and Spartan unblocked |
+| Execution and ordinary security | world-backed artifacts, outcomes, admissibility-aware composition | artifacts landed; composition theorem unblocked |
 | State restoration | causal trace calculus, salted games, extractor views | PolyFun transducer and VCVio specialization/conditioning gaps |
 | Compiler | guarantee transport and backend adapters | core composition plus state-restoration evidence |
 
@@ -61,6 +68,8 @@ rewritten against the supported PolyFun API and reviewed at its new abstraction 
 **Gate:** public equations are usable; no new `sorry`; the legacy layer is unchanged; no caller can
 close a claim with an unrelated handler.
 
+**Status:** done (#851–#871).
+
 ## Phase 2 — Minimum viable protocol [M]
 
 Port one programmatic single-round Sumcheck. Its output includes a query-derived scalar and a
@@ -77,6 +86,11 @@ two-way; no generic migration theorem is claimed.
 concrete records connected by explicit morphisms. Uniform packaging is a convenience, not a reason
 to obscure the semantics.
 
+**Status:** done. #872 proves one-round honest completeness through closing. #874 proves both
+relation directions for arbitrary claims; its verifier correspondence is honest-execution only,
+because the legacy verifier reads the input polynomial where the typed verifier reads the sent one.
+#881 adds one-round reduction soundness.
+
 ## Phase 3 — Composition and two contrasting protocols [L]
 
 Add a two-round composite that exercises cursor decomposition, `TypeTree.Chain.then`, virtual
@@ -89,6 +103,11 @@ preservation wait for the world-backed execution artifact; they are not asserted
 **Gate:** the middle boundary is visibly handler substitution; public constructors have evaluation
 laws; a three-stage example uses existing chain reassociation or records the exact missing upstream
 law.
+
+**Status:** Sumcheck composition done. #883 runs two rounds through the actual closed claim; #891
+adds finite ordered composition across `ExecutionInterface` boundaries; #892 executes any
+consecutive interval of rounds with honest completeness, checked on a three-variable client. The
+FRI and Spartan-like slices are open.
 
 ## Parallel upstream lane — Close only demonstrated gaps [M–L]
 
@@ -106,6 +125,10 @@ are designed against their actual consumers.
 **Gate per addition:** the owning repository's tests and laws pass, and the named ArkLib client uses
 the API without a parallel local abstraction.
 
+**Status:** items 1 and 2 are available in VCVio (`VCVio.OracleComp.Runtime`,
+`VCVio.EvalDist.WithFailure`) and consumed by #884 and #886. Protocol-level accept/reject/fault
+classification stays in ArkLib's `Interaction.Terminal`. Items 3 and 4 are open.
+
 ## Phase 4 — World-backed execution and ordinary security [L]
 
 Add AR-9A, AR-9B, AR-10A, and AR-10B. One supported artifact now relates the core run, persistent
@@ -122,6 +145,11 @@ Prove ordinary soundness composition in its honest form:
 
 **Gate:** the Sumcheck, FRI, and Spartan slices have two-way legacy bridges; the composition theorem
 is sorry-free; no theorem recreates unrestricted stateful composition.
+
+**Status:** AR-9A (#884), AR-9B (#886), AR-10A (#880), and AR-10B (#889) landed. The ordinary
+soundness composition theorem and multi-round Sumcheck soundness are open. #889's world-query
+classifier is not yet connected to `availableContext`, so its profile additivity proves neither
+access admissibility nor a cost bound.
 
 ## Phase 5 — State restoration and extractor calculus [L]
 
@@ -185,11 +213,14 @@ security reduction and resource transform.
 
 ## 4. Current dependency sketch
 
+Landed stages are marked `[done]`.
+
 ```text
-alignment
-  → typed core → Sumcheck bridge → typed composition
-                                      │
-VCVio artifact + outcome ───────────┘→ ordinary security
+alignment [done]
+  → typed core [done] → Sumcheck bridge [done] → typed composition
+                                                  [Sumcheck done; FRI, Spartan open]
+                                                      │
+VCVio artifact + outcome [done] ────────────────────┘→ ordinary security [open]
 
 PolyFun transducer
   → VCVio query-log certificates + conditioning
