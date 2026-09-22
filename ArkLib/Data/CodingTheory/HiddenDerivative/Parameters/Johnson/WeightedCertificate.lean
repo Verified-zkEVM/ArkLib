@@ -46,18 +46,8 @@ All definitions are total (natural subtraction truncates, integer division by ze
   are the rectangles `(H + 1) N` and `n (H + 1) R` minus their first moments.
 * `IsJohnsonWeightedCertificate.rowSlots_lt_sourceSlots`: every certificate has strictly more
   source slots than scalar rows.
-* `johnsonWeightedCertificate_rate_one_sixteenth`, `johnsonWeightedCertificate_rate_one_fourth`,
-  `johnsonWeightedCertificate_rate_one_half`: the three reviewed table rows at `n = 2¹⁶`,
-  gap `1/100`, together with their agreement ceilings.
-
-## References
-
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Johnson/WeightedCertificate.lean`
-at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d. Every definition and theorem is
-ported with the same statement. The source imported `Parameters.Johnson.FiniteBounds` without
-using any of its declarations; this file imports only Mathlib. The coding-theory argument that
-consumes the certificate (the weighted Johnson interpolation chain) is not ported here.
+* `IsJohnsonWeightedCertificate.strict_scalar_surplus`: the strict expanded scalar-surplus
+  inequality at the certificate's stated height.
 -/
 
 @[expose] public section
@@ -121,20 +111,20 @@ def johnsonWeightedRowSlots (n m B H : ℕ) : ℕ :=
 
 /-- The sharper ordinary transfer bound
 `(2B - 1) H + ((n - D)/(A - D)) (H + B + (2D - 1) H (2B - 1)) + (n - D - 1) B` in `ℚ`, for jet
-degree `B` and height `H`. The natural subtractions are those of the source; they are exact
-when `1 ≤ B`, `1 ≤ D < A` and `D < n`. -/
-def johnsonWeightedSharpException (n D A B H : ℕ) : ℚ :=
+degree `B` and height `H`. The natural subtractions are exact when `1 ≤ B`, `1 ≤ D < A` and
+`D < n`. -/
+def johnsonWeightedRefinedExceptionCount (n D A B H : ℕ) : ℚ :=
   ((2 * B - 1) * H : ℕ) +
     (((n - D : ℕ) : ℚ) / (A - D : ℕ)) *
       (H + B + (2 * D - 1) * H * (2 * B - 1) : ℕ) +
     ((n - D - 1) * B : ℕ)
 
-/-- The floor of `johnsonWeightedSharpException`, the integer printed in the finite table. -/
-def johnsonWeightedSharpExceptionFloor (n D A B H : ℕ) : ℤ :=
-  ⌊johnsonWeightedSharpException n D A B H⌋
+/-- The floor `⌊johnsonWeightedRefinedExceptionCount n D A B H⌋` in `ℤ`. -/
+def johnsonWeightedRefinedExceptionCountFloor (n D A B H : ℕ) : ℤ :=
+  ⌊johnsonWeightedRefinedExceptionCount n D A B H⌋
 
-/-- The floor `⌊n (A - D) / (A² - n D)⌋` of the classical pairwise Johnson list bound, used in
-the table's list column. It is meaningful when `A² > n D`. -/
+/-- The floor `⌊n (A - D) / (A² - n D)⌋` of the classical pairwise Johnson list bound. It is
+meaningful when `A² > n D`. -/
 def johnsonPairwiseListFloor (n D A : ℕ) : ℕ :=
   n * (A - D) / (A * A - n * D)
 
@@ -195,7 +185,8 @@ theorem johnsonWeightedHeight_strict {n D A m B : ℕ}
   rw [Int.natCast_add, Int.natCast_one]
   nlinarith
 
-/-- Expanded form of the strict slot-surplus inequality printed in the paper. -/
+/-- The strict slot-surplus inequality `W - n T < (H + 1)(N - n R)` with the moment and slope
+written out. -/
 theorem johnsonWeightedHeight_strict_expanded {n D A m B : ℕ}
     (hN : n * johnsonWeightedR m B < johnsonWeightedN D A m B) :
     (johnsonWeightedW D A m B : ℤ) - (n : ℤ) * johnsonWeightedT m B <
@@ -211,8 +202,8 @@ theorem johnsonWeighted_slice_pos {D A m B j : ℕ} (hj : j ≤ B)
   apply Nat.sub_pos_of_lt
   exact (Nat.mul_le_mul_left D hj).trans_lt hcutoff
 
-/-- For `D > 0` and `m A > 0`, the strict cutoff `D B < m A` is equivalent to the paper's
-quotient guard `B ≤ ⌊(m A - 1) / D⌋`. -/
+/-- For `D > 0` and `m A > 0`, the strict cutoff `D B < m A` is equivalent to the quotient guard
+`B ≤ ⌊(m A - 1) / D⌋`. -/
 theorem johnsonWeighted_cutoff_iff_le_div {D A m B : ℕ} (hD : 0 < D)
     (hbudget : 0 < m * A) :
     D * B < m * A ↔ B ≤ (m * A - 1) / D := by
@@ -289,8 +280,7 @@ theorem IsJohnsonWeightedCertificate.rowSlots_lt_sourceSlots
       linarith)
   omega
 
-/-- A certificate packages the paper's strict expanded scalar-surplus inequality at its stated
-height, rather than only at the computed height hidden inside the definition. -/
+/-- A certificate satisfies the strict expanded scalar-surplus inequality at its stated height. -/
 theorem IsJohnsonWeightedCertificate.strict_scalar_surplus
     {n D A m B H : ℕ} (hcert : IsJohnsonWeightedCertificate n D A m B H) :
     (johnsonWeightedW D A m B : ℤ) - (n : ℤ) * johnsonWeightedT m B <
@@ -332,104 +322,5 @@ theorem IsJohnsonWeightedCertificate.strict_scalar_surplus
     johnsonWeightedHeight n D A 0 B = B := by
   simp [johnsonWeightedHeight, johnsonWeightedHeightInt, johnsonWeightedSlope,
     johnsonWeightedMoment]
-
-/-- The agreement count of the `k/n = 1/16` table row: `⌈(√(4095/2¹⁶) + 1/100) 2¹⁶⌉ = 17038`. -/
-theorem johnsonWeightedAgreementCeil_rate_one_sixteenth :
-    ⌈(√((4095 : ℝ) / 65536) + 1 / 100) * 65536⌉₊ = 17038 := by
-  let x := √((4095 : ℝ) / 65536)
-  change ⌈(x + 1 / 100) * 65536⌉₊ = 17038
-  rw [Nat.ceil_eq_iff (by norm_num : (17038 : ℕ) ≠ 0)]
-  have hx2 : x ^ 2 = (4095 : ℝ) / 65536 := by
-    exact Real.sq_sqrt (by positivity)
-  have hx0 : 0 ≤ x := Real.sqrt_nonneg _
-  constructor <;> norm_num at ⊢ <;> nlinarith
-
-/-- The agreement count of the `k/n = 1/4` table row: `⌈(√(16383/2¹⁶) + 1/100) 2¹⁶⌉ = 33423`. -/
-theorem johnsonWeightedAgreementCeil_rate_one_fourth :
-    ⌈(√((16383 : ℝ) / 65536) + 1 / 100) * 65536⌉₊ = 33423 := by
-  let x := √((16383 : ℝ) / 65536)
-  change ⌈(x + 1 / 100) * 65536⌉₊ = 33423
-  rw [Nat.ceil_eq_iff (by norm_num : (33423 : ℕ) ≠ 0)]
-  have hx2 : x ^ 2 = (16383 : ℝ) / 65536 := by
-    exact Real.sq_sqrt (by positivity)
-  have hx0 : 0 ≤ x := Real.sqrt_nonneg _
-  constructor <;> norm_num at ⊢ <;> nlinarith
-
-/-- The agreement count of the `k/n = 1/2` table row: `⌈(√(32767/2¹⁶) + 1/100) 2¹⁶⌉ = 46996`. -/
-theorem johnsonWeightedAgreementCeil_rate_one_half :
-    ⌈(√((32767 : ℝ) / 65536) + 1 / 100) * 65536⌉₊ = 46996 := by
-  let x := √((32767 : ℝ) / 65536)
-  change ⌈(x + 1 / 100) * 65536⌉₊ = 46996
-  rw [Nat.ceil_eq_iff (by norm_num : (46996 : ℕ) ≠ 0)]
-  have hx2 : x ^ 2 = (32767 : ℝ) / 65536 := by
-    exact Real.sq_sqrt (by positivity)
-  have hx0 : 0 ≤ x := Real.sqrt_nonneg _
-  constructor <;> norm_num at ⊢ <;> nlinarith
-
-/-- The reviewed `k/n = 1/16`, `eta = 0.01` table row is an exact weighted certificate. -/
-theorem johnsonWeightedCertificate_rate_one_sixteenth :
-    IsJohnsonWeightedCertificate 65536 4095 17038 14 57 568 ∧
-      57 ≤ (14 * 17038 - 1) / 4095 ∧ 57 ≤ 4095 ∧
-      johnsonWeightedU 14 57 = 13 ∧
-      johnsonWeightedN 4095 17038 14 57 = 7065821 ∧
-      johnsonWeightedW 4095 17038 14 57 = 134813721 ∧
-      johnsonWeightedR 14 57 = 105 ∧
-      johnsonWeightedT 14 57 = 455 ∧
-      johnsonWeightedSlope 65536 4095 17038 14 57 = 184541 ∧
-      johnsonWeightedMoment 65536 4095 17038 14 57 = 104994841 ∧
-      johnsonWeightedSourceSlots 4095 17038 14 57 568 = 3885638428 ∧
-      johnsonWeightedRowSlots 65536 14 57 568 = 3885629440 ∧
-      johnsonPairwiseListFloor 65536 4095 17038 = 38 ∧
-      johnsonWeightedSharpExceptionFloor 65536 4095 17038 57 568 = 2498629121 := by
-  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
-    johnsonWeightedHeightInt, johnsonWeightedSlope, johnsonWeightedMoment,
-    johnsonWeightedSourceSlots, johnsonWeightedRowSlots, johnsonPairwiseListFloor,
-    johnsonWeightedSharpExceptionFloor,
-    johnsonWeightedSharpException, johnsonWeightedN, johnsonWeightedW, johnsonWeightedR,
-    johnsonWeightedT, johnsonWeightedU, Finset.sum_range_succ, Int.toNat_of_nonneg]
-
-/-- The reviewed `k/n = 1/4`, `eta = 0.01` table row is an exact weighted certificate. -/
-theorem johnsonWeightedCertificate_rate_one_fourth :
-    IsJohnsonWeightedCertificate 65536 16383 33423 18 36 504 ∧
-      36 ≤ (18 * 33423 - 1) / 16383 ∧ 36 ≤ 16383 ∧
-      johnsonWeightedU 18 36 = 17 ∧
-      johnsonWeightedN 16383 33423 18 36 = 11348640 ∧
-      johnsonWeightedW 16383 33423 18 36 = 135172026 ∧
-      johnsonWeightedR 18 36 = 171 ∧
-      johnsonWeightedT 18 36 = 969 ∧
-      johnsonWeightedSlope 65536 16383 33423 18 36 = 141984 ∧
-      johnsonWeightedMoment 65536 16383 33423 18 36 = 71667642 ∧
-      johnsonWeightedSourceSlots 16383 33423 18 36 504 = 5595891174 ∧
-      johnsonWeightedRowSlots 65536 18 36 504 = 5595856896 ∧
-      johnsonPairwiseListFloor 65536 16383 33423 = 25 ∧
-      johnsonWeightedSharpExceptionFloor 65536 16383 33423 36 504 = 3383852708 := by
-  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
-    johnsonWeightedHeightInt, johnsonWeightedSlope, johnsonWeightedMoment,
-    johnsonWeightedSourceSlots, johnsonWeightedRowSlots, johnsonPairwiseListFloor,
-    johnsonWeightedSharpExceptionFloor, johnsonWeightedSharpException, johnsonWeightedN,
-    johnsonWeightedW, johnsonWeightedR, johnsonWeightedT, johnsonWeightedU,
-    Finset.sum_range_succ, Int.toNat_of_nonneg]
-
-/-- The reviewed `k/n = 1/2`, `eta = 0.01` table row is an exact weighted certificate. -/
-theorem johnsonWeightedCertificate_rate_one_half :
-    IsJohnsonWeightedCertificate 65536 32767 46996 15 21 234 ∧
-      21 ≤ (15 * 46996 - 1) / 32767 ∧ 21 ≤ 32767 ∧
-      johnsonWeightedU 15 21 = 14 ∧
-      johnsonWeightedN 32767 46996 15 21 = 7939503 ∧
-      johnsonWeightedW 32767 46996 15 21 = 54349603 ∧
-      johnsonWeightedR 15 21 = 120 ∧
-      johnsonWeightedT 15 21 = 560 ∧
-      johnsonWeightedSlope 65536 32767 46996 15 21 = 75183 ∧
-      johnsonWeightedMoment 65536 32767 46996 15 21 = 17649443 ∧
-      johnsonWeightedSourceSlots 32767 46996 15 21 234 = 1811433602 ∧
-      johnsonWeightedRowSlots 65536 15 21 234 = 1811415040 ∧
-      johnsonPairwiseListFloor 65536 32767 46996 = 15 ∧
-      johnsonWeightedSharpExceptionFloor 65536 32767 46996 21 234 = 1448631664 := by
-  norm_num [IsJohnsonWeightedCertificate, johnsonWeightedHeight,
-    johnsonWeightedHeightInt, johnsonWeightedSlope, johnsonWeightedMoment,
-    johnsonWeightedSourceSlots, johnsonWeightedRowSlots, johnsonPairwiseListFloor,
-    johnsonWeightedSharpExceptionFloor, johnsonWeightedSharpException, johnsonWeightedN,
-    johnsonWeightedW, johnsonWeightedR, johnsonWeightedT, johnsonWeightedU,
-    Finset.sum_range_succ, Int.toNat_of_nonneg]
 
 end ReedSolomon.HiddenDerivative

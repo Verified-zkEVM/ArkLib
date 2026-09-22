@@ -10,8 +10,9 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.LowRateSt
 # Low-rate stationary root acceptance tests
 
 The stationary data at a rate where the root is rational, the branch cutoff on both sides, a case
-showing the branch condition is needed for `β > 1/2`, and the source-shaped statement of
-`rate_lt_firstOrderLowRateThreshold`.
+showing the branch condition is needed for `β > 1/2`, and the forms of
+`rate_lt_firstOrderLowRateThreshold` and `firstOrderLowRateRegime_iff_lt_rateSwitch` with the
+extra hypotheses `ρ < 1` and `0 ≤ ρ`.
 -/
 
 namespace ReedSolomon.HiddenDerivative
@@ -87,14 +88,14 @@ example : ¬ 1 / 2 < firstOrderLowRateBeta 2 := by
 example : ¬ FirstOrderLowRateRegime 2 := by
   simp [FirstOrderLowRateRegime, firstOrderLowRateScale]
 
-/-! ### Source-shaped statement -/
+/-! ### Forms with extra hypotheses -/
 
-/-- The source statement of `rate_lt_firstOrderLowRateThreshold`, with its extra `ρ < 1`. -/
+/-- `rate_lt_firstOrderLowRateThreshold` with the unused hypothesis `ρ < 1`. -/
 example {rho : ℝ} (hrho : 0 < rho) (_hrhoOne : rho < 1) (hlow : FirstOrderLowRateRegime rho) :
     rho < firstOrderLowRateThreshold rho :=
   rate_lt_firstOrderLowRateThreshold hrho hlow
 
-/-- The source statement of `firstOrderLowRateRegime_iff_lt_rateSwitch`, with `0 ≤ ρ`. -/
+/-- `firstOrderLowRateRegime_iff_lt_rateSwitch` restricted to `0 ≤ ρ`. -/
 example {rho : ℝ} (_hrho : 0 ≤ rho) :
     FirstOrderLowRateRegime rho ↔ rho < firstOrderRateSwitch :=
   firstOrderLowRateRegime_iff_lt_rateSwitch rho
