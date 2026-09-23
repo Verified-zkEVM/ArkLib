@@ -24,8 +24,14 @@ ring homomorphism applied to the interpolant is applied to the coefficient vecto
   `y₀ + ∑_j higher j`.
 * `SourceColumn.polynomial_eq_sourceMonomial`: a column's monomial is the source monomial.
 * `SourceColumn.coeff_interpolant`: the coefficient of the interpolant at `columns j` is `v j`.
+* `SourceColumn.coeff_interpolant_natDegree_le`: distinct columns preserve coefficient height
+  at every derivative order.
 * `SourceColumn.map_interpolant_ne_zero`: the image of the interpolant under a ring
   homomorphism is nonzero when the image of the coefficient vector is.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -98,6 +104,42 @@ theorem exponent_injective :
   subst hx hy₀ hhigher
   rfl
 
+/-- Recover the source-column coordinates of an arbitrary exponent vector. -/
+def ofExponent (u : JetVariable d →₀ ℕ) : SourceColumn d where
+  x := u none
+  y₀ := u (some 0)
+  higher j := u (some j.succ)
+
+/-- `SourceColumn.ofExponent` has the exponent vector it was given. -/
+@[simp]
+theorem exponent_ofExponent (u : JetVariable d →₀ ℕ) :
+    (SourceColumn.ofExponent u).exponent = u := by
+  ext v
+  rcases v with _ | j
+  · simp [SourceColumn.ofExponent, SourceColumn.exponent]
+  · induction j using Fin.cases with
+    | zero => simp [SourceColumn.ofExponent, SourceColumn.exponent]
+    | succ j =>
+      simp only [SourceColumn.ofExponent, SourceColumn.exponent, Finsupp.add_apply,
+        Finsupp.single_apply, Option.some.injEq, reduceCtorEq,
+        ite_false, zero_add]
+      rw [ite_eq_right (by
+        intro h
+        have := congrArg Fin.val h
+        simp at this), zero_add]
+      change Finsupp.applyAddHom (some j.succ)
+        (∑ k : Fin d, Finsupp.single (some k.succ) (u (some k.succ))) = _
+      rw [map_sum]
+      calc
+        ∑ k : Fin d, Finsupp.applyAddHom (some j.succ)
+            (Finsupp.single (some k.succ) (u (some k.succ))) =
+            Finsupp.applyAddHom (some j.succ)
+              (Finsupp.single (some j.succ) (u (some j.succ))) := by
+          apply Fintype.sum_eq_single j
+          intro k hkj
+          simp [hkj]
+        _ = u (some j.succ) := by simp
+
 variable {R : Type*} [CommSemiring R]
 
 /-- The source monomial of a column, with coefficient `1`. -/
@@ -136,6 +178,28 @@ theorem coeff_interpolant {columns : κ → SourceColumn d} (hcolumns : Function
     rw [coeff_monomial, ite_eq_right_iff]
     exact fun h => absurd (hcolumns (exponent_injective h)) hkj
   · simp
+
+/-- Distinct source columns preserve coefficient height at every derivative order. -/
+theorem coeff_interpolant_natDegree_le {F : Type*} [CommSemiring F] {N h : ℕ}
+    (columns : Fin N → SourceColumn d) (hcolumns : Function.Injective columns)
+    (v : Fin N → Polynomial F) (hv : ∀ j, (v j).natDegree ≤ h) :
+    ∀ u, ((interpolant columns v).coeff u).natDegree ≤ h := by
+  classical
+  intro u
+  by_cases hu : u ∈ Set.range (fun j ↦ (columns j).exponent)
+  · obtain ⟨j, rfl⟩ := hu
+    rw [coeff_interpolant hcolumns v j]
+    exact hv j
+  · have hcoeff : (interpolant columns v).coeff u = 0 := by
+      rw [interpolant, MvPolynomial.coeff_sum]
+      apply Finset.sum_eq_zero
+      intro j _
+      rw [MvPolynomial.coeff_monomial]
+      split
+      · rename_i heq
+        exact (hu ⟨j, heq⟩).elim
+      · rfl
+    simp [hcoeff]
 
 /-- Mapping the coefficients of the interpolant maps its coefficient vector. -/
 theorem map_interpolant {S : Type*} [CommSemiring S] (ψ : R →+* S)
