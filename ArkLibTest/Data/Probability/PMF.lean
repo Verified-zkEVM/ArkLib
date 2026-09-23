@@ -1,4 +1,5 @@
 import ArkLib.Data.Probability.PMF
+import ToMathlib.Probability.ProbabilityMassFunction.Lemmas
 
 open scoped ENNReal
 
@@ -47,7 +48,8 @@ example :
 example :
     (PMF.uniformOfFintype (Fin 2)).map (Equiv.swap 0 1) =
       PMF.uniformOfFintype (Fin 2) := by
-  exact PMF.uniformOfFintype_map_equiv (Equiv.swap 0 1)
+  exact PMF.uniformOfFintype_map_of_bijective (Equiv.swap 0 1)
+    (Equiv.swap (0 : Fin 2) 1).bijective
 
 example {F : Type} [Nonempty F] [Fintype F] :
     (do
