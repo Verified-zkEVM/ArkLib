@@ -631,6 +631,13 @@ recovered in the tests.
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/Certificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedLine.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/ReceivedCurve.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`SymbolicReceivedInterpolation.Certificate` is now `WeightedSupportCertificate`, generalized from `Fin n` to arbitrary finite point types and expressed with named fields for the interpolant and its guarantees. `exists_weightedSupport_certificate_of_fixed_margin` and `exists_weightedSupport_certificate_of_rate` now accept finite point types. `exists_prescribed_symbolic_weightedSupport_certificate` drops the unused positive-message-dimension premise. The certificate packages challenge-degree, total-jet-degree, specialization nonvanishing, and agreement-vanishing guarantees. No source declaration was left out of the certificate port.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/ChallengeDegree.lean`
 
 From the challenge-degree part of
@@ -2777,6 +2784,13 @@ The row selector is extracted and generalized from
 replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
+
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/RowBlocks.lean`
+
+Ported from the matrix rank argument in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`Matrix.rank_prod_rows_le_sum` is a new generic rank bound for matrices whose row indices are products. It bounds the full matrix rank by the sum of the ranks of the blocks at each first-coordinate index. The generic helper is newly added for the weighted-support curve rank proof; there is no source declaration to leave out.
 
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/SupportedRows.lean`
 
