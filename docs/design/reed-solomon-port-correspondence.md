@@ -1787,6 +1787,16 @@ assumption that `P` is a solution.
 
 `existsUnique_regularLiftCoefficient`: The regular one-step lift of [Kop15, Theorem 4.4].
 
+## `ArkLib/Data/Polynomial/Differential/RootPresentation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/RootPresentation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`.
+
+`ordinaryRootPresentation`, `natDegree_ordinaryRootPresentation`, `ordinaryRootPresentation_ne_zero`, `irreducible_ordinaryRootPresentation`, `derivative_ordinaryRootPresentation`, `ordinaryRootPresentation_monomial`, `degreeX_ordinaryRootPresentation_le`, `eval_ordinaryRootPresentation`, `ordinary_separant_ne_zero_of_resultant_eval_ne_zero`, and `exists_exceptional_ordinary_separant` keep their names in namespace `PolynomialDifferential`.
+
+`separableResultant_ordinaryRootPresentation_ne_zero` is renamed to `resultant_derivative_ordinaryRootPresentation_ne_zero` and generalized to the generic padded derivative resultant; it no longer needs a separate positive-degree assumption. The challenge-height bound uses `MvPolynomial.CoeffNatDegreeLE`.
+
+Nothing was deferred or left unported. The source separable-resultant declaration is covered by the renamed theorem using the current padded resultant API, so no duplicate wrapper was added.
+
 ## `ArkLib/Data/Polynomial/Differential/ShiftedJet.lean`
 
 Ported from
