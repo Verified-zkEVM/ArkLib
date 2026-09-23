@@ -80,13 +80,13 @@ theorem exists_weightedSupport_interpolant_of_fixed_margin
   have hy₀ : ∀ u, WeightedSupportEligible D d W
       ((D : ℝ) * m * (1 + g)) u → u (some 0) ≤ ν := by
     intro u hu
-    exact SymbolicWeightedSupportInterpolation.y₀_le_two_mul_sub_one_of_eligible
+    exact HiddenDerivative.y₀_le_two_mul_sub_one_of_eligible
       hD hg hm hu
   obtain ⟨v, _hv, _hkernel, _hdegree, _hheight, _hprimitive, hnozero,
       hconstraints, hsupport⟩ :=
-    SymbolicWeightedSupportInterpolation.exists_symbolic_weightedSupport_interpolant_of_fixed_margin
+    HiddenDerivative.exists_symbolic_weightedSupport_interpolant_of_fixed_margin
       hD hν (fun i ↦ domain i) received (fun _ ↦ 0) hy₀ hmargin
-  let columns := SymbolicWeightedSupportInterpolation.weightedSupportColumns
+  let columns := HiddenDerivative.weightedSupportColumns
     (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) hD
   let φ : F[X] →+* F := Polynomial.eval₂RingHom (RingHom.id F) 0
   let Q : DifferentialPolynomial F d :=

@@ -15,8 +15,7 @@ specialization of a symbolic weighted-support interpolant remains in the same su
 
 ## Main statements
 
-* `map_projectLowContact` and `SatisfiesLocalConstraints.map`: local constraints commute with
-  coefficient homomorphisms.
+* `SatisfiesLocalConstraints.map`: local constraints are preserved by coefficient homomorphisms.
 * `map_interpolant_mem_weightedSupportSpace`: challenge specialization preserves weighted support.
 
 ## References
@@ -38,23 +37,13 @@ open scoped BigOperators
 
 variable {R S : Type*} [CommRing R] [CommRing S] {d : ℕ}
 
-/-- Low-contact projection commutes with changing the coefficient ring. -/
-theorem map_projectLowContact (φ : R →+* S) (m : ℕ) (P : LocalPolynomial R d) :
-    MvPolynomial.map φ (projectLowContact m P) =
-      projectLowContact m (MvPolynomial.map φ P) := by
-  ext e
-  simp only [MvPolynomial.coeff_map, coeff_projectLowContact]
-  split_ifs <;> simp
-
 /-- Local constraints are preserved by every coefficient-ring homomorphism. -/
 theorem SatisfiesLocalConstraints.map (φ : R →+* S) (m : ℕ) (center received : R)
     (Q : DifferentialPolynomial R d)
     (hQ : SatisfiesLocalConstraints m center received Q) :
     SatisfiesLocalConstraints m (φ center) (φ received) (MvPolynomial.map φ Q) := by
-  rw [SatisfiesLocalConstraints, localConstraintAt, LinearMap.comp_apply,
-    AlgHom.toLinearMap_apply] at hQ ⊢
-  rw [← ReedSolomon.HiddenDerivative.map_unscaledLocalSubstitution,
-    ← map_projectLowContact]
+  rw [SatisfiesLocalConstraints] at hQ ⊢
+  rw [← ReedSolomon.HiddenDerivative.map_localConstraintAt]
   simpa using congrArg (MvPolynomial.map φ) hQ
 
 variable {F E : Type*} [Field F] [Field E]
