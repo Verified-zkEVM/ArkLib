@@ -672,6 +672,7 @@ public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
+public import ArkLib.ToMathlib.Finset.SumRangeFrom
 public import ArkLib.ToMathlib.Finset.ToListWithProof
 public import ArkLib.ToMathlib.Finsupp.Weight
 public import ArkLib.ToMathlib.InformationTheory.Hamming
