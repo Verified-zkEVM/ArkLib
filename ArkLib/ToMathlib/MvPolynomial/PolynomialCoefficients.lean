@@ -33,6 +33,8 @@ This file records both degrees.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
   `MvPolynomial.CoeffNatDegreeLE.pderiv`.
+* `MvPolynomial.eval_map_coefficients`: evaluation after a coefficient map agrees with direct
+  evaluation into the target semiring.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
@@ -181,6 +183,22 @@ theorem CoeffNatDegreeLE.map_coefficients {S : Type*} [CommSemiring S]
   intro m
   rw [MvPolynomial.coeff_map]
   exact Polynomial.natDegree_map_le.trans (hP m)
+
+/-- Evaluating mapped coefficient polynomials agrees with evaluating their coefficients directly.
+-/
+theorem eval_map_coefficients {S : Type*} [CommSemiring S]
+    (f : R →+* S) (z : S) (P : MvPolynomial σ (Polynomial R)) :
+    MvPolynomial.map (Polynomial.evalRingHom z)
+        (MvPolynomial.map (Polynomial.mapRingHom f) P) =
+      MvPolynomial.map (Polynomial.eval₂RingHom f z) P := by
+  rw [MvPolynomial.map_map]
+  have hcomp : (Polynomial.evalRingHom z).comp (Polynomial.mapRingHom f) =
+      Polynomial.eval₂RingHom f z := by
+    apply Polynomial.ringHom_ext
+    · intro a
+      simp
+    · simp
+  rw [hcomp]
 
 /-! ### Joint total degree -/
 
