@@ -3544,3 +3544,18 @@ polynomial of the same natural degree (`natDegree_affineHilbertPolynomial_radica
 Deferred: the forward direction for points in a proper algebraically closed extension `K` of `k`.
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
+
+## `ArkLibTest/Data/Probability/Uniform.lean`
+
+Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source uniform-sample event calculation corresponds to
+`SampleableType.prEvent_uniformSample`; `Pr_uniform_equiv` corresponds to
+`SampleableType.prEvent_uniformSample_equiv`. The acceptance cases check the finite native-measure
+event sum and the uniform-sampling statements. No public ArkLib declaration is added.
+
+`Pr_eq_tsum_indicator` is retired with the PMF-valued `Pr_{…}[…]` notation. Its scalar
+compatibility calculation is covered by VCVio's `probOutput_true_eq_probEvent` followed by
+`probEvent_eq_tsum_indicator` or its finite variants, so ArkLib adds no wrapper. The three-sample
+PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syntax.
