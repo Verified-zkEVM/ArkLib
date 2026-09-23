@@ -213,6 +213,40 @@ example : 0 < fixedRateCoefficient 1 :=
 example : fixedRateCoefficient 1 = 1 * (Real.log 6 - Real.log (27 * 1 / 20)) :=
   fixedRateCoefficient_eq (by norm_num)
 
+/-- At rate `1`, agreement `2` and order `20`, `rateGamma` has its exponential form. -/
+example : rateGamma 1 2 20 =
+    (27 / 20 : ℝ) * 21 * Real.exp (-(1 / 2 * Real.log 120)) := by
+  convert rateGamma_eq_exponential (rate := 1) (agreement := 2) (order := 20) (by norm_num)
+    using 1
+  norm_num
+
+/-- The factorization and factor-six bounds hold at positive concrete parameters. -/
+example :
+    rateGamma (1 / 2) (3 / 4) 500 =
+      (9 * (1 / 2 : ℝ) / 40) * (6 * (500 : ℝ)) ^ (((3 / 4 : ℝ) - 1 / 2) / (3 / 4 : ℝ)) *
+        (1 + 1 / (500 : ℝ)) ∧
+    1 + 1 / (500 : ℝ) ≤ rateGamma (1 / 2) (3 / 4) 500 ∧
+    1 < rateGamma (1 / 2) (3 / 4) 500 := by
+  exact ⟨rateGamma_factorization (by norm_num) (by norm_num),
+    rateGamma_ge_one_add_inv_of_factor_six (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num [Real.rpow_natCast]),
+    rateGamma_gt_one_of_factor_six (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num [Real.rpow_natCast])⟩
+
+/-- The fixed-rate cutoff identity holds at rate `1/2` and positive gap `1/4`. -/
+example :
+    (1 / 6 : ℝ) * (40 / (9 * (1 / 2 : ℝ))) ^ (((1 / 2 : ℝ) + 1 / 4) / (1 / 4 : ℝ)) =
+      (20 / (27 * (1 / 2 : ℝ))) *
+        Real.exp ((1 / 2 : ℝ) * Real.log (40 / (9 * (1 / 2 : ℝ))) / (1 / 4)) :=
+  fixedRatePartition_cutoff_eq (rate := 1 / 2) (gap := 1 / 4) (by norm_num) (by norm_num)
+
+/-- The selected order at rate `1/2` and gap `1/4` gives the strict gate. -/
+example : 500 ≤ fixedRatePartitionOrder (1 / 2) (1 / 4) ∧
+    1 < rateGamma (1 / 2) (1 / 2 + 1 / 4)
+      (fixedRatePartitionOrder (1 / 2) (1 / 4)) := by
+  exact ⟨fixedRatePartitionOrder_ge_500 (rate := 1 / 2) (gap := 1 / 4),
+    fixedRateGamma_gt_one (by norm_num) (by norm_num)⟩
+
 /-- At rate `1`, gap `1` and order `5`, the logarithmic gate bound gives `rateGamma > 1`. -/
 example : 1 < rateGamma (1 : ℝ) (1 + 1) 5 := by
   obtain ⟨hcoef, hmargin⟩ := fixedRateGateInputs
