@@ -5,20 +5,26 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.Polynomial.Differential.TaylorChartBaseChange
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+import Mathlib.FieldTheory.Finite.Extension
 import Mathlib.Tactic.NormNum
 
 /-!
-# Acceptance test for Taylor chart solution embeddings
+# Acceptance tests for Taylor chart coefficient extension
 
 The rational equation `Y₀ = 0` has a bounded regular solution whose chart jet satisfies the
 initial equation, nonzero separant, a nonvacuous high Taylor cut, and agreement at two positions.
+A concrete nonempty family over `ZMod 2` has a common regular center after extension to its
+algebraic closure.
 -/
 
 namespace PolynomialDifferential
 
 noncomputable section
 
-open MvPolynomial
+open MvPolynomial Polynomial
+
+local instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
 
 /-- The equation `Y₀ = 0` over a field. -/
 private abbrev zeroOrderEquation (F : Type*) [Field F] : DifferentialPolynomial F 0 :=
@@ -81,6 +87,36 @@ example :
     refine ⟨hinitial, hregular, ?_, ?_⟩
     · simpa using hcuts ⟨1, by omega⟩ (by norm_num)
     · simpa [domain, received] using hagree
+
+/-- A nonempty regular family over `ZMod 2` has a common center in its algebraic closure. -/
+example :
+    let Q : DifferentialPolynomial (ZMod 2) 0 :=
+      (MvPolynomial.X none ^ 2 - MvPolynomial.X none) * MvPolynomial.X (some 0)
+    ∃ center : AlgebraicClosure (ZMod 2),
+      ∀ P ∈ ({(0 : (ZMod 2)[X])} : Finset ((ZMod 2)[X])),
+        jetEvaluation
+          (separant
+            (MvPolynomial.map (algebraMap (ZMod 2) (AlgebraicClosure (ZMod 2))) Q) 0)
+          center
+          (polynomialJet center
+            (P.map (algebraMap (ZMod 2) (AlgebraicClosure (ZMod 2))))) ≠ 0 := by
+  intro Q
+  have hspec : differentialSpecialization (separant Q 0) (0 : (ZMod 2)[X]) =
+      (Polynomial.X ^ 2 - Polynomial.X : (ZMod 2)[X]) := by
+    simp [Q, separant, differentialSpecialization, differentialSpecializationHom]
+  have hspec_ne : differentialSpecialization (separant Q 0) (0 : (ZMod 2)[X]) ≠ 0 := by
+    rw [hspec]
+    intro h
+    have hc := congrArg (fun P : (ZMod 2)[X] ↦ P.coeff 2) h
+    norm_num [Polynomial.coeff_X_pow, Polynomial.coeff_X] at hc
+  have hregular : ∀ P ∈ ({(0 : (ZMod 2)[X])} : Finset ((ZMod 2)[X])),
+      differentialSpecialization (separant Q 0) P ≠ 0 := by
+    intro P hP
+    have hP0 : P = 0 := Finset.mem_singleton.mp hP
+    subst P
+    exact hspec_ne
+  let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
+  exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
 end
 
