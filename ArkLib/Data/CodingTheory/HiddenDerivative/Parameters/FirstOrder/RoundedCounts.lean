@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Counting
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RateBound
 public import ArkLib.ToMathlib.BigOperators.Intervals
 public import Mathlib.Algebra.Order.Floor.Ring
 public import Mathlib.Data.Nat.Cast.Order.Field
@@ -57,6 +58,9 @@ surplus: each real source residual is below the corresponding residual of a code
   order one is `firstOrderRankCount`.
 * `firstOrderRankCount_le_cubicUpperCount`: `r(m, M)` is below a signed cubic count.
 * `firstOrderRankCount_floor_le`: the rank rounding estimate with loss `3 m²`.
+* `firstOrderRankCount_floor_le_density_add_rounding_upper` and
+  `firstOrderRankCount_floor_le_density_add_rounding`: the sharper rounding estimate against the
+  exact piecewise rank density, on the upper branch and uniformly.
 * `cube_mul_sourceDensity_le_firstOrderSourceCount`: the source rounding estimate with no loss.
 * `cube_mul_densityGap_sub_le_sourceCount_sub_rankCount`: the combined finite surplus.
 * `mul_max_rateResidual_le_max_residual`: comparison of source residuals with code residuals.
@@ -258,6 +262,175 @@ theorem firstOrderRankCount_floor_le {beta : ℝ} (m : ℕ) (hb0 : 0 ≤ beta)
     _ = m ^ 3 * (beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3) + 3 * m ^ 2 := by
       rw [hv]
       field_simp
+
+/-! ## Rounding against the exact rank density -/
+
+private theorem firstOrderRankCount_eq_upperBranchFormula {m M : ℕ}
+    (hhalf : m ≤ 2 * M + 1) :
+    (firstOrderRankCount m M : ℝ) =
+      (M + 1) * (linearSum m + m) -
+        (2 * (squareSum m - squareSum ((m / 2 : ℕ) : ℝ)) +
+          (2 * M + 3 - 3 * m) *
+            (linearSum m - linearSum ((m / 2 : ℕ) : ℝ)) +
+          ((m : ℝ) - ((m / 2 : ℕ) : ℝ)) * (1 - m) * (M + 1 - m)) := by
+  let q := m / 2
+  have hqm : q ≤ m := Nat.div_le_self _ _
+  rw [firstOrderRankCount, Nat.cast_sum]
+  have hrank :
+      (∑ s ∈ Finset.range m,
+          (((s + 1) * (M + 1) -
+            (2 * s + 1 - m) * (s + M + 1 - m) : ℕ) : ℝ)) =
+        (∑ s ∈ Finset.range m, ((s + 1 : ℕ) : ℝ) * (M + 1)) -
+          ∑ s ∈ Finset.range m,
+            (((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ)) := by
+    rw [← Finset.sum_sub_distrib]
+    apply Finset.sum_congr rfl
+    intro s hs
+    rw [Nat.cast_sub (rank_correction_le_ambient (Finset.mem_range.mp hs))]
+    push_cast
+    rfl
+  rw [hrank]
+  have hcorrection :
+      (∑ s ∈ Finset.range m,
+          (((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ))) =
+        ∑ s ∈ Finset.Ico q m,
+          (((2 * s + 1 : ℕ) : ℝ) - m) * (((s + M + 1 : ℕ) : ℝ) - m) := by
+    rw [← Finset.sum_range_add_sum_Ico _ hqm]
+    have hzero :
+        (∑ s ∈ Finset.range q,
+          (((2 * s + 1 - m : ℕ) : ℝ) * ((s + M + 1 - m : ℕ) : ℝ))) = 0 := by
+      apply Finset.sum_eq_zero
+      intro s hs
+      have hslt : 2 * s + 1 ≤ m := by
+        have : s < q := Finset.mem_range.mp hs
+        dsimp only [q] at this
+        omega
+      rw [Nat.sub_eq_zero_of_le hslt]
+      simp
+    rw [hzero, zero_add]
+    apply Finset.sum_congr rfl
+    intro s hs
+    have hsq : q ≤ s := (Finset.mem_Ico.mp hs).1
+    have hsm : s < m := (Finset.mem_Ico.mp hs).2
+    have hfirst : m ≤ 2 * s + 1 := by
+      dsimp only [q] at hsq
+      omega
+    have hsecond : m ≤ s + M + 1 := by
+      dsimp only [q] at hsq
+      omega
+    rw [Nat.cast_sub hfirst, Nat.cast_sub hsecond]
+  rw [hcorrection]
+  have hamb (n : ℕ) :
+      (∑ s ∈ Finset.range n, ((s + 1 : ℕ) : ℝ) * (M + 1)) =
+        (M + 1) * (linearSum n + n) := by
+    calc
+      _ = (M + 1 : ℝ) * ((∑ s ∈ Finset.range n, (s : ℝ)) + n) := by
+        push_cast
+        ring_nf
+        simp only [Finset.sum_add_distrib, Finset.sum_const, Finset.card_range,
+          nsmul_eq_mul]
+        rw [← Finset.sum_mul]
+        ring
+      _ = _ := by rw [sum_range_natCast_eq_linearSum]
+  have hcorrectionFormula (n : ℕ) :
+      (∑ s ∈ Finset.range n,
+        (((2 * s + 1 : ℕ) : ℝ) - m) * (((s + M + 1 : ℕ) : ℝ) - m)) =
+        2 * squareSum n + (2 * M + 3 - 3 * m) * linearSum n +
+          n * (1 - m) * (M + 1 - m) := by
+    calc
+      _ = ∑ s ∈ Finset.range n,
+          (2 * (s : ℝ) ^ 2 + (2 * M + 3 - 3 * m) * s +
+            (1 - m) * (M + 1 - m)) := by
+        apply Finset.sum_congr rfl
+        intro s _
+        push_cast
+        ring
+      _ = _ := by
+        rw [Finset.sum_add_distrib, Finset.sum_add_distrib,
+          ← Finset.mul_sum, ← Finset.mul_sum, sum_range_natCast_eq_linearSum,
+          sum_range_natCast_sq_eq_squareSum]
+        simp only [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+        ring
+  rw [Finset.sum_Ico_eq_sub _ hqm, hamb, hcorrectionFormula, hcorrectionFormula]
+  dsimp only [q]
+  simp only [linearSum, squareSum]
+  ring
+
+/-- On the upper rank branch, rounding `M = ⌊β m⌋₊` costs at most
+`(2β + 3)m²` against the exact piecewise rank density. -/
+theorem firstOrderRankCount_floor_le_density_add_rounding_upper
+    {beta : ℝ} (hbeta : 1 / 2 ≤ beta) (m : ℕ) :
+    (firstOrderRankCount m (⌊beta * m⌋₊) : ℝ) ≤
+      (m : ℝ) ^ 3 * firstOrderRankDensity beta +
+        (2 * beta + 3) * (m : ℝ) ^ 2 := by
+  by_cases hm : m = 0
+  · subst m
+    simp [firstOrderRankCount]
+  let M := ⌊beta * m⌋₊
+  have hmNat : 0 < m := Nat.pos_of_ne_zero hm
+  have hmReal : (0 : ℝ) < m := Nat.cast_pos.mpr hmNat
+  have hbeta0 : 0 ≤ beta := (by norm_num : (0 : ℝ) ≤ 1 / 2).trans hbeta
+  have hMle : (M : ℝ) ≤ beta * m := by
+    dsimp only [M]
+    exact Nat.floor_le (mul_nonneg hbeta0 hmReal.le)
+  have hMlt : beta * m < (M : ℝ) + 1 := by
+    dsimp only [M]
+    exact Nat.lt_floor_add_one _
+  have hhalf : m ≤ 2 * M + 1 := by
+    have hreal : (m : ℝ) < 2 * ((M : ℝ) + 1) := by nlinarith
+    have hnat : m < 2 * (M + 1) := by exact_mod_cast hreal
+    omega
+  rw [show ⌊beta * m⌋₊ = M by rfl,
+    firstOrderRankCount_eq_upperBranchFormula hhalf]
+  have hrankDensity : firstOrderRankDensity beta = beta / 4 + 1 / 24 := by
+    rw [firstOrderRankDensity]
+    split_ifs with h
+    · have heq : beta = 1 / 2 := le_antisymm h hbeta
+      subst beta
+      norm_num
+    · rfl
+  rw [hrankDensity]
+  obtain ⟨h, rfl | rfl⟩ := Nat.even_or_odd' m
+  · have hdiv : 2 * h / 2 = h := by omega
+    simp only [hdiv, linearSum, squareSum]
+    push_cast at hMle ⊢
+    have hh : (0 : ℝ) ≤ h := Nat.cast_nonneg _
+    have hhOne : (1 : ℝ) ≤ h := by exact_mod_cast (show 1 ≤ h by omega)
+    have hM0 : (0 : ℝ) ≤ M := Nat.cast_nonneg _
+    have hmul1 := mul_le_mul_of_nonneg_right hMle hh
+    have hmul := mul_le_mul_of_nonneg_right hMle (sq_nonneg (h : ℝ))
+    ring_nf at ⊢
+    nlinarith [mul_nonneg (sub_nonneg.mpr hhOne) hh, mul_nonneg hM0 hh]
+  · have hdiv : (2 * h + 1) / 2 = h := by omega
+    simp only [hdiv, linearSum, squareSum]
+    push_cast at hMle ⊢
+    have hh : (0 : ℝ) ≤ h := Nat.cast_nonneg _
+    have hM0 : (0 : ℝ) ≤ M := Nat.cast_nonneg _
+    have hmul := mul_le_mul_of_nonneg_right hMle (sq_nonneg ((2 : ℝ) * h + 1))
+    nlinarith [sq_nonneg (beta : ℝ),
+      sq_nonneg ((M : ℝ) - beta * (2 * h + 1)), mul_nonneg hM0 hh]
+
+/-- Exact floor rounding against the piecewise rank density, uniformly on both branches. -/
+theorem firstOrderRankCount_floor_le_density_add_rounding
+    {beta : ℝ} (hbeta0 : 0 ≤ beta) (m : ℕ) :
+    (firstOrderRankCount m (⌊beta * m⌋₊) : ℝ) ≤
+      (m : ℝ) ^ 3 * firstOrderRankDensity beta +
+    (2 * beta + 3) * (m : ℝ) ^ 2 := by
+  by_cases hbetaHalf : beta ≤ 1 / 2
+  · have hrankDensity : firstOrderRankDensity beta =
+        beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3 := by
+      unfold firstOrderRankDensity
+      split_ifs with h
+      · rfl
+      · exact (h hbetaHalf).elim
+    rw [hrankDensity]
+    have h := firstOrderRankCount_floor_le m hbeta0
+      (hbetaHalf.trans (by norm_num : (1 / 2 : ℝ) ≤ 3 / 4))
+    exact h.trans (by
+      have hmSq : 0 ≤ (m : ℝ) ^ 2 := sq_nonneg _
+      nlinarith [mul_nonneg hbeta0 hmSq])
+  · exact firstOrderRankCount_floor_le_density_add_rounding_upper
+      (le_of_not_ge hbetaHalf) m
 
 /-! ## The source rounding estimate -/
 
