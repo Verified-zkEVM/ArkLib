@@ -67,6 +67,10 @@ with a threshold.
   `hybridDimensionSensitiveIncidenceProduct_min_le`,
   `hybridDimensionSensitiveIncidenceProduct_le_two`: monotonicity, a factorization below the
   coefficient dimension, and upper bounds by initial factors.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
