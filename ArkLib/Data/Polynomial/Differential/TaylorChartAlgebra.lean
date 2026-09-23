@@ -102,34 +102,37 @@ def taylorAgreementEquationOver (center : A) (Q : DifferentialPolynomial A r) (K
   (∑ l : Fin K, C ((x - center) ^ l.val) *
     commonTaylorNumeratorOver F center Q τ l.val) - C y * initialJetSeparant center Q ^ τ
 
-variable {E : Type*} [Field E]
-
 /-- The initial equation in joint challenge and initial-jet coordinates. -/
-def jointInitialJetEquation (center : E) (Q : DifferentialPolynomial (Polynomial E) r) :
+def jointInitialJetEquation {E : Type*} [CommSemiring E] (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) :
     MvPolynomial (Option (Fin (r + 1))) E :=
   (optionEquivRight E (Fin (r + 1))).symm
     (initialJetEquation (Polynomial.C center) Q)
 
 /-- The initial separant in joint challenge and initial-jet coordinates. -/
-def jointInitialJetSeparant (center : E) (Q : DifferentialPolynomial (Polynomial E) r) :
+def jointInitialJetSeparant {E : Type*} [CommSemiring E] (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) :
     MvPolynomial (Option (Fin (r + 1))) E :=
   (optionEquivRight E (Fin (r + 1))).symm
     (initialJetSeparant (Polynomial.C center) Q)
 
 /-- A cleared Taylor coefficient in joint challenge and initial-jet coordinates. -/
-def jointCommonTaylorNumerator (center : E) (Q : DifferentialPolynomial (Polynomial E) r)
+def jointCommonTaylorNumerator {E : Type*} [Field E] (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r)
     (τ : ℕ) {K : ℕ} (l : Fin K) : MvPolynomial (Option (Fin (r + 1))) E :=
   (optionEquivRight E (Fin (r + 1))).symm
     (commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val)
 
 /-- The cleared agreement equation in joint challenge and initial-jet coordinates. -/
-def jointTaylorAgreementEquation (center : E) (Q : DifferentialPolynomial (Polynomial E) r)
+def jointTaylorAgreementEquation {E : Type*} [Field E] (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r)
     (K τ : ℕ) (x y : Polynomial E) : MvPolynomial (Option (Fin (r + 1))) E :=
   (optionEquivRight E (Fin (r + 1))).symm
     (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K x y (τ := τ))
 
 /-- The cleared equation identifying one Taylor coefficient with an affine pair. -/
-def jointTaylorReconstructionError (center : E) (Q : DifferentialPolynomial (Polynomial E) r)
+def jointTaylorReconstructionError {E : Type*} [Field E] (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r)
     (τ : ℕ) {K : ℕ} (P₀ P₁ : Polynomial E) (l : Fin K) :
     MvPolynomial (Option (Fin (r + 1))) E :=
   jointCommonTaylorNumerator center Q τ l -
@@ -138,7 +141,7 @@ def jointTaylorReconstructionError (center : E) (Q : DifferentialPolynomial (Pol
         MvPolynomial.X none * MvPolynomial.C ((Polynomial.taylor center P₁).coeff l.val))
 
 /-- The polynomial parametrization of the initial jets of an affine pair. -/
-def affinePairCurve (center : E) (P₀ P₁ : Polynomial E) :
+def affinePairCurve {E : Type*} [Semiring E] (center : E) (P₀ P₁ : Polynomial E) :
     Option (Fin (r + 1)) → Polynomial E := fun i ↦
   match i with
   | none => Polynomial.X

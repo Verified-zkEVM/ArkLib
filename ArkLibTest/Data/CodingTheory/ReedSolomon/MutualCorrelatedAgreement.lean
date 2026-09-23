@@ -14,7 +14,7 @@ import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 # Acceptance tests for joint Taylor chart recognition
 
 The joint chart example uses one concrete sample and a regular point with a nonzero challenge.
-The component example uses a prime line and exhibits a regular point on its zero locus.
+The component example uses a nonvacuous high cut and checks every regular point of a prime curve.
 -/
 
 open MvPolynomial Polynomial PolynomialDifferential
@@ -29,8 +29,6 @@ private def domain : Fin 1 ↪ ℚ :=
 private theorem domain_zero : domain (0 : Fin 1) = 0 := rfl
 
 private def componentWord : Fin 1 → ℚ := fun _ ↦ 0
-
-private abbrev equation : DifferentialPolynomial ℚ[X] 0 := X (some 0)
 
 private abbrev shiftedEquation : DifferentialPolynomial ℚ[X] 0 :=
   X (some 0) - MvPolynomial.C (Polynomial.C (2 : ℚ))
@@ -53,10 +51,6 @@ private def componentIdeal {E : Type*} [CommSemiring E] :
     Ideal (MvPolynomial (Option (Fin 1)) E) := Ideal.span {componentVariable}
 
 private abbrev ComponentField := AlgebraicClosure ℚ
-
-private def componentPoint : Option (Fin 1) → ComponentField
-  | none => 2
-  | some _ => 0
 
 private theorem componentIdeal_isPrime :
     (componentIdeal (E := ComponentField)).IsPrime := by
@@ -103,24 +97,61 @@ private theorem component_initialEquation_mem :
   simp only [optionEquivRight_symm_X]
   exact component_generator_mem
 
-private theorem component_highCuts : ∀ l : Fin 1, 1 ≤ l.val →
+private theorem component_commonNumerator_zero :
+    commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+      (componentEquation (E := ComponentField)) 2 1 = 0 := by
+  have hcoeff :
+      ((optionEquivLeft (Polynomial ComponentField) (Fin 1)
+        (universalTaylorResidual 1 (Polynomial.C (0 : ComponentField))
+          (componentEquation (E := ComponentField)))).coeff 1) = 0 := by
+    rw [show universalTaylorResidual 1 (Polynomial.C (0 : ComponentField))
+        (componentEquation (E := ComponentField)) =
+          universalTaylorJet (F := Polynomial ComponentField) 1 0 by
+      simp [universalTaylorResidual, componentEquation]]
+    rw [optionEquivLeft_universalTaylorJet]
+    simp [Polynomial.hasseDeriv]
+  have hnumerator :
+      rationalTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+        (componentEquation (E := ComponentField)) 1 = 0 := by
+    rw [rationalTaylorNumeratorOver, dite_eq_right (by omega)]
+    rw [hcoeff]
+    simp [MvPolynomial.clearedSubstitution]
+  rw [commonTaylorNumeratorOver, hnumerator]
+  simp
+
+private theorem component_commonNumerator_initial :
+    commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+      (componentEquation (E := ComponentField)) 2 0 =
+        (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) (Polynomial ComponentField)) := by
+  have hlt : 0 < 0 + 1 := by omega
+  rw [commonTaylorNumeratorOver, rationalTaylorNumeratorOver, dite_eq_left hlt]
+  simp [initialJetSeparant, componentEquation, separant, Fin.last]
+
+private theorem component_highCuts : ∀ l : Fin 2, 1 ≤ l.val →
     jointCommonTaylorNumerator (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 1 l ∈ componentIdeal := by
+      (componentEquation (E := ComponentField)) 2 l ∈ componentIdeal := by
   intro l hl
-  omega
+  have hl1 : l = 1 := Fin.ext (by omega)
+  subst l
+  change (optionEquivRight ComponentField (Fin 1)).symm
+      (commonTaylorNumeratorOver ComponentField (Polynomial.C (0 : ComponentField))
+        (componentEquation (E := ComponentField)) 2 1) ∈ componentIdeal
+  rw [component_commonNumerator_zero]
+  simp
 
 private theorem component_cut_eq :
     taylorAgreementEquationOver (F := ComponentField) (Polynomial.C (0 : ComponentField))
-      (componentEquation (E := ComponentField)) 1 (0 : ComponentField[X]) 0 (τ := 1) =
+      (componentEquation (E := ComponentField)) 2 (0 : ComponentField[X]) 0 (τ := 2) =
         initialJetEquation (Polynomial.C (0 : ComponentField))
           (componentEquation (E := ComponentField)) := by
-  simp [taylorAgreementEquationOver, commonTaylorNumeratorOver,
-    rationalTaylorNumeratorOver, initialJetEquation, initialJetSeparant, separant, Fin.last,
-    componentEquation]
+  rw [taylorAgreementEquationOver, Fin.sum_univ_two]
+  simp only [Fin.val_zero, Fin.val_one]
+  rw [component_commonNumerator_initial, component_commonNumerator_zero]
+  simp [initialJetEquation, initialJetSeparant, separant, componentEquation]
 
 private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
     jointTaylorAgreementEquation (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField)) 1 1
+      (componentEquation (E := ComponentField)) 2 2
       (Polynomial.C ((algebraMap ℚ ComponentField) (domain i)))
       (Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i)) +
         Polynomial.X * Polynomial.C ((algebraMap ℚ ComponentField) (componentWord i))) ∈
@@ -138,27 +169,13 @@ private theorem component_agreementCuts : ∀ i ∈ Finset.univ,
         (0 : ComponentField[X]) := by simp [componentWord]
   change (optionEquivRight ComponentField (Fin 1)).symm
     (taylorAgreementEquationOver (F := ComponentField) (Polynomial.C (0 : ComponentField))
-      (componentEquation (E := ComponentField)) 1
+      (componentEquation (E := ComponentField)) 2
       (Polynomial.C ((algebraMap ℚ ComponentField) (domain 0)))
       (Polynomial.C ((algebraMap ℚ ComponentField) (componentWord 0)) +
         Polynomial.X * Polynomial.C ((algebraMap ℚ ComponentField) (componentWord 0)))
-      (τ := 1)) ∈ componentIdeal
+      (τ := 2)) ∈ componentIdeal
   rw [hxval, hyval, component_cut_eq]
   exact component_initialEquation_mem
-
-private theorem componentPoint_mem_zeroLocus :
-    componentPoint ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) := by
-  rw [MvPolynomial.mem_zeroLocus_iff_le_ker_aeval]
-  apply Ideal.span_le.mpr
-  intro q hq
-  rw [Set.mem_singleton_iff.mp hq]
-  simp [componentPoint, componentVariable]
-
-private theorem componentPoint_regular :
-    aeval componentPoint (jointInitialJetSeparant (r := 0) (0 : ComponentField)
-      (componentEquation (E := ComponentField))) ≠ 0 := by
-  simp [jointInitialJetSeparant, componentEquation, initialJetSeparant,
-    separant, Fin.last]
 
 /-- A nonvacuous high cut and nonzero reconstruction use the second received value. -/
 example :
@@ -277,32 +294,34 @@ example :
     have hP₁ : P₁.eval 0 = 1 := by simpa only [domain_zero, jointReceivedG] using h.2
     simp [hP₁]
 
-/-- A regular point of a prime line component lies on the graph returned by recognition. -/
+/-- Every regular point of a prime component lies on the graph returned by recognition. -/
 example :
-    ∃ P₀ P₁ : ℚ[X], ∃ z : ComponentField,
+    ∃ P₀ P₁ : ℚ[X],
       P₀.eval 0 = 0 ∧ P₁.eval 0 = 0 ∧
-        componentPoint (some (0 : Fin 1)) =
-          (affinePairCurve (r := 0) 0
-            (P₀.map (algebraMap ℚ ComponentField))
-            (P₁.map (algebraMap ℚ ComponentField)) (some 0)).eval z := by
+      ∀ x, x ∈ zeroLocus ComponentField (componentIdeal (E := ComponentField)) ∧
+        aeval x (jointInitialJetSeparant (r := 0) (0 : ComponentField)
+          (componentEquation (E := ComponentField))) ≠ 0 →
+          ∃ z : ComponentField, x = fun i ↦
+            (affinePairCurve (r := 0) 0
+              (P₀.map (algebraMap ℚ ComponentField))
+              (P₁.map (algebraMap ℚ ComponentField)) i).eval z := by
   have hprime : (componentIdeal (E := ComponentField)).IsPrime := componentIdeal_isPrime
   have hcomponent := exists_graphLine_pair_of_regular_component
     (domain := domain) (f := componentWord) (g := componentWord) (sample := Finset.univ)
     (hsample := by simp) (iota := algebraMap ℚ ComponentField) (center := 0)
-    (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 1)
+    (Q := componentEquation (E := ComponentField)) (hK := by omega) (τ := 2)
     (hτ := by intro l; omega) (P := componentIdeal (E := ComponentField))
     (hs := component_separant_notMem) (hd := componentIdeal_degree_pos)
     (hinit := component_initialEquation_mem) (hhigh := component_highCuts)
     (hcuts := component_agreementCuts)
   obtain ⟨P₀, P₁, -, -, hsample, hgraph, -, -, -, -, -⟩ := hcomponent
-  obtain ⟨z, hxgraph⟩ := hgraph componentPoint
-    ⟨componentPoint_mem_zeroLocus, componentPoint_regular⟩
-  have hsome := congrFun hxgraph (some (0 : Fin 1))
   have hd0 : domain (0 : Fin 1) = 0 := rfl
-  exact ⟨P₀, P₁, z,
+  refine ⟨P₀, P₁,
     by simpa [componentWord, hd0] using (hsample 0 (by simp)).1,
     by simpa [componentWord, hd0] using (hsample 0 (by simp)).2,
-    by simpa [componentPoint, affinePairCurve] using hsome⟩
+    ?_⟩
+  intro x hx
+  exact hgraph x hx
 
 end
 
