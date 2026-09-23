@@ -129,6 +129,37 @@ definitions are not ported; one `Finset.card_nbij'` proof replaces them.
 `exists_nonzero_firstOrder_interpolant_of_dimensionCount` moved to
 `Interpolation/FirstOrder/Interpolant.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/HeightCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Namespace: `ReedSolomon.HiddenDerivative`.
+
+`firstOrderColumnSlotCount`, `firstOrderHeightSlotCount`, `firstOrderY₀Weight`,
+`firstOrder_y₀_le_μ`, `firstOrderColumnSlotCount_add_y₀Weight`,
+`firstOrderCertificateHeight`, `firstOrder_rowTotal_mul_height_lt_columnSlotCount`,
+`firstOrderColumnSlotCount_eq_heightSlotCount`, and
+`firstOrder_rowTotal_mul_height_lt_heightSlotCount` keep their names. The height is defined using
+the generic `Finset.slotSurplusHeight` API added to `ArkLib/ToMathlib/BigOperators/LinearBudget.lean`;
+the strict slot bound uses `Finset.rows_mul_slotSurplusHeight_add_one_lt_sum_tsub`.
+
+`sum_firstOrderDimensionIndex_height` → `sum_firstOrderDimensionCoordinates_height`; its sum is
+reindexed over the existing dimension-coordinate Finset.
+`ReedSolomon.HiddenDerivative.SymbolicWeightedSupportInterpolation.firstOrderColumns` →
+`ReedSolomon.HiddenDerivative.firstOrderColumns`; the matching `_exponent`, `_injective`, and
+`_eligible` declarations keep their suffixes under the new namespace and use `SourceColumn.ofExponent`.
+
+The dimension module receives `firstOrderCoordinatesEquiv` and its coordinate API from the source
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Counting.lean`:
+`firstOrderExponentDimensionIndex_y₀` → `firstOrderCoordinatesEquiv_y₀`. The exponent constructor
+and its coordinate and reconstruction theorems are public there. `card_firstOrderExponents` keeps
+its statement and uses the equivalence. These facts are now owned by
+`ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Dimension.lean`.
+
+No listed unit statement was omitted. The source's dependent `FirstOrderDimensionIndex`
+representation is not recreated; its coordinate statements use the dimension module's existing
+finite coordinate set.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Interpolant.lean`
 
 Ported from
@@ -506,6 +537,30 @@ are the special cases of the new composition laws `globalPointTranslation_comp`,
 source's `Matrix.rank_map_algebraMap_le`, a base-change bound on matrix rank that does not
 concern translation; its only source consumer is `Interpolation/Symbolic/LocalRank.lean`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_totalJetDegree_le` is renamed `partitionSupport_totalJetDegree_le_rateJetCap`; the theorem bounds total jet degree under the ambient degree lower bound, using the renamed eligibility predicate and degree cap.
+
+No declarations were left unported from this source file.
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Area.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`RatePartitionSlot` is renamed `PartitionSupportAreaSlot` and is expressed with the destination weighted-simplex tuple and its coordinate sum. `ratePartitionSlotExponent`, `ratePartitionSlotExponent_eligible`, and `ratePartitionSlotExponent_injective` are renamed `partitionSupportAreaSlotExponent`, `partitionSupportAreaSlotExponent_eligible`, and `partitionSupportAreaSlotExponent_injective`; their mathematics is unchanged.
+
+Not ported: `ratePartition_dimension_ge_quadratic_sum`, which is covered by the existing `partitionSupport_dimension_ge_quadratic_sum_real` together with `finrank_partitionSupportSpace_eq_card`. The source-shaped cardinal inequality is checked in the matching acceptance module. No other source declaration is omitted.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/FloorTransfer.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Integral.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_floor_integral` → `partition_floor_square_integral`, specialized to the whole weighted simplex. The existing `Finset.setIntegral_le_sum_natWeightedSimplex` handles the generic arbitrary-subset floor-transfer result, so no specialized arbitrary-subset version was added.
+
+`ratePartition_dimension_ge_integral` → `partitionSupport_dimension_ge_integral_on` and `ratePartition_dimension_ge_rate_integral` → `partitionSupport_dimension_ge_rate_integral_on`. Both bounds now allow real cutoffs and subsets specified by inclusion in the weighted simplex; the dimension is expressed as `finrank`. The rate form has no separate integrability hypotheses.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SourceMonomial.lean`
 
 Ported from
@@ -616,6 +671,14 @@ From the source-column part of
 at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `SourceColumn`, its exponent lemmas
 and `interpolant` keep their names; `map_interpolant_ne_zero` holds for any ring hom in place of
 `eval₂`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`SourceColumn.ofExponent` and `SourceColumn.exponent_ofExponent` keep their names and move to the existing `Symbolic/SourceColumn` owner. `noBand_kernel_height_lt` → `kernel_height_lt_twelve_mul_of_margin`; the renamed theorem describes its margin hypothesis and height bound. The remaining declarations keep their names and mathematical statements, adapted to the current support API and local-constraint operator. The full symbolic matrix rank bound uses the existing `LinearMap.finrank_range_pi_le_sum`.
+
+The private `map_unscaledLocalImage` helper is subsumed by the existing `map_unscaledLocalSubstitution`. The private `localConstraintCoordinatesAt_monomial_map` helper is generalized to `map_localConstraintCoordinatesAt`, which handles every differential polynomial. No new generic matrix API is added: the block helper is local to the proof, and the rank bound uses the existing linear-map rank-sum result. `WeightedSupportIndex` is replaced by the subtype of the existing `weightedSupportExponents`; `to` appears only in overview prose and is not a declaration.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/FloorTransfer.lean`
 
@@ -743,6 +806,35 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon.HiddenDerivative`.
+
+`firstOrderRateDerivativeCap`, `firstOrderRateJetDegree`, `FirstOrderFiniteRateTest`,
+`firstOrderNormalizedSourceCount`, `firstOrderNormalizedRankCount`,
+`firstOrderRateChallengeDegree`, `FirstOrderFiniteRateParameters` and its
+`derivativeCap`, `jetDegree`, `rankCount`, `sourceCount`, `challengeDegree`, and
+`sourceCount_gt_rankCount` declarations keep their names. The two existence theorems,
+`exists_firstOrderFiniteRateParameters_of_tendsto` and
+`exists_firstOrderFiniteRateParameters_of_rate_limits`, and the rational declarations
+`firstOrderRationalSourceCount`, `FirstOrderRationalFiniteTest`, and its decidability instance
+also keep their names. The certificate's count fields use the existing generic
+`firstOrderRankCount` and `firstOrderSourceCount`.
+
+The dimension bound is placed in `RoundedCounts.lean` and renamed from
+`firstOrderRateSourceCount_le_dimensionCount` to
+`firstOrderSourceCount_mul_le_firstOrderDimensionCount`; it is generalized to the generic count
+API.
+
+Not ported: `firstOrderRateSourceCount` and `firstOrderRateRankCount` are covered by
+`firstOrderSourceCount` and `firstOrderRankCount`. The cubic rank upper bound and its rate-count
+corollary are covered by the existing `firstOrderRankCubicUpperCount` and
+`firstOrderRankCount_le_cubicUpperCount`. The certified enlarged-rank bound is covered by the
+existing `certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount`, generalized to every
+higher-jet budget. The scaled kernel-height bound follows from the stronger
+`scaledKernelHeight_le_floor`; the source-shaped max-one bound is derived in the acceptance test.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
 
 Ported from
@@ -826,6 +918,12 @@ source directory, is now `certifiedEnlargedRankBound_one_eq_firstOrderRankCount`
 The threshold- and `β`-dependent definitions and theorems of `AutomaticRecipe.lean` are not ported
 here.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMRankRounding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderRateRankCount_floor_le_density_add_rounding_upper` → `firstOrderRankCount_floor_le_density_add_rounding_upper` and `firstOrderRateRankCount_floor_le_density_add_rounding` → `firstOrderRankCount_floor_le_density_add_rounding`. Their hypotheses and bounds are unchanged, using the already-ported rank-count name. The upper-branch theorem uses the sharper linear density with rounding loss `(2β + 3)m²`; the uniform theorem combines it with the existing cubic-envelope bound below `β = 1/2`.
+
+Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. The acceptance module derives the source-shaped ceiling-cap estimate from that generic theorem.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
 
 Ported from
@@ -884,6 +982,14 @@ under its source name, except as follows.
 `exists_orderThreshold_for_boxWidth`: The source stated this
 for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Gate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Gate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartitionExponent_eq` is renamed `fixedRateCoefficient_eq`. `ratePartitionGamma_gt_one_of_log_bound` and `ratePartitionGamma_gt_one_of_exponent_margin` are renamed `rateGamma_gt_one_of_log_bound` and `rateGamma_gt_one_of_exponent_margin`; their mathematics is unchanged.
+
+Not ported: `log_ratePartitionGamma` is covered by the existing, more general `log_rateGamma`; `ratePartitionExponent` and `ratePartitionExponent_pos` are covered by `fixedRateCoefficient` and the existing, more general `fixedRateCoefficient_pos`; `ratePartition_fixedRate_eventually` is covered by `exists_small_gap_rate_gate`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Moment.lean`
 
 Ported from the moment part of
@@ -939,6 +1045,14 @@ lemmas are now `tendsto_partitionWeightBudget_div`, `tendsto_partitionInverseRad
 `RatePartitionFiniteParameters` is now `PartitionFiniteParameters`, and
 `exists_ratePartitionFiniteParameters` is now `PartitionFiniteParameters.nonempty`.
 `partitionWeightBudget_level_le` is not ported.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/Recipe.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/Recipe.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_partitionFiniteParameters_of_rateGamma_gt_one` is new and bridges the strict limiting gate to the existing finite-ratio existence theorem. `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` keep their names and choose and characterize the least multiplicity with positive weight budget and finite ratio above one, using `partitionFiniteRatio` in place of `finiteGamma`.
+
+No declarations were left unported from this source file.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformParameters.lean`
 
@@ -1152,6 +1266,12 @@ of `ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius`.
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, made public and stated over semirings for any
 injective ring hom.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionExtension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_agreement_count` is now `card_polynomialAgreement_map`. It applies to any finite indexed domain, including domains with repeated evaluation points, and lives in the Reed–Solomon agreement API.
+
+Not ported: `card_image_polynomial_map` follows from `Finset.card_image_of_injective` and `Polynomial.map_injective`; the acceptance test derives the source-shaped count.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AgreementBounds.lean`
 
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
@@ -1309,6 +1429,73 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomialsToBoundedSolution`, `agreeingPolynomialToBoundedSolution`, and `exists_boundedSolution_polynomial_eq` keep their names and no longer require a positive interpolation budget. `agreeingPolynomials_encard_le_boundedSolution_natCard` and `agreeingPolynomials_encard_le_of_boundedSolution_natCard_le` also keep their names and remove that assumption. `agreeingPolynomials_encard_le_two_mul_pow_of_exactInterpolant` keeps its name and bound; it takes jet-cast and binomial hypotheses and derives the positive budget from nonzero exact-space membership. `differentialSpecialization_eq_zero_of_agreeingPolynomial` specializes exact-interpolation vanishing to the canonical agreement list. The new `agreeingPolynomialsToBoundedSolution_polynomial` and `agreeingPolynomialToBoundedSolution_polynomial` preserve the underlying polynomial.
+
+In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.lean`, the general form `agreeingPolynomialsToBoundedSolution` → `solutionEmbeddingOf` accepts any root proof on list members; `agreeingPolynomialToBoundedSolution_polynomial` → `solutionEmbeddingOf_polynomial` gives its polynomial-preservation law. The new subtype projection theorem `agreeingPolynomial_boundedSolution_polynomial` supports this direct construction.
+
+No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon`.
+
+`correlatedProductCutoff`, `correlatedProductCutoff_bounds`, `evaluation_incidence_factor_le`,
+`evaluation_incidence_product_le`, `correlatedProductCutoff_jointRatio_le`,
+`correlatedProductCutoff_fiberFactor_le`, `correlatedProductCutoff_fiberProduct_le`, and
+`correlatedProductCutoff_fiberProduct_lt_three` keep their names. The two evaluation incidence
+bounds are proved as specializations of reusable declarations added to
+`ArkLib/ToMathlib/Combinatorics/Enumerative/IncidenceProduct.lean`:
+`evaluation_incidence_factor_le` → `natCast_shiftedRatio_le_one_div`, generalized to arbitrary
+natural inputs and linearly ordered fields with strict ordered-ring structure under
+`0 < δ ≤ 1` and `δ * x ≤ y`; `evaluation_incidence_product_le` →
+`dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap`, generalized to linearly ordered fields
+with strict ordered-ring structure under `0 < δ ≤ 1`, `k ≤ A ≤ n`, and `k + δ * n ≤ A`.
+
+Not ported: None. All eight source public declarations are represented.
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`polynomialListBound`, `CapacityGapCertificate`, `CapacityGapCertificate.ofDecoderCertificate`,
+`PointwiseListBound`, `CapacityGapCertificate.pointwiseListBound`,
+`UniformPrimeFieldCapacityListBound`, `UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound`,
+`QuarterGapListBound`, and `WeightedSupportListBound` keep their names. The certificate and
+pointwise-list APIs generalize from `Fin n` over `ZMod q` to arbitrary finite coordinate types and
+semiring alphabets where applicable. The all-rate prime-field specifications remain over `Fin n`.
+`WeightedSupportListBound` uses the destination weighted-support parameter names.
+
+Also ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Radius.lean` at
+the same ArkLib revision, `closeCodewordsRel_eq_eval_image_agreeingPolynomials`,
+`lambda_le_of_forall_agreeingPolynomials_encard_le`, and
+`CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound` retain their names and move here
+from `Capacity/Radius`; they are generalized to arbitrary finite coordinate types.
+
+Not ported from the separate `Capacity/Radius` module: `CapacityGapCertificate.ofPointwiseBound`,
+which is outside this unit and is not needed by its endpoints. The deferred
+`agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated because pointwise emptiness follows
+from `DecoderCertificate.decoder_eq_empty_of_card_lt`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/QuarterGap.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/QuarterGap.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomials_encard_le_one_of_half`,
+`agreeingPolynomials_encard_lt_blockLength_of_quarter`, and `quarter_gap_list_bound` keep their
+names. The two counting theorems generalize from `Fin n` to arbitrary finite coordinate types.
+`quarter_gap_list_bound` keeps its quantitative specification and uses the generic pairwise-agreement
+estimates with the exact-decoder and pointwise-bound factory from `Capacity/Basic`.
+
+No public declaration from this source module was omitted. The separate
+`agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
+`DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean`
 
@@ -1567,6 +1754,11 @@ contact weight to an arbitrary weight, and from commutative rings to commutative
 
 ## `ArkLib/Data/Polynomial/Differential/BaseChange.lean`
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionExtension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mapped_regular_solution_family` is now `map_regularSolutionFamily`. It is generalized from fields to commutative semirings with an explicit injective coefficient map, and from the last separant to any jet coordinate. `map_differentialSpecialization_ne_zero_iff` is a new reusable lemma that proves an injective coefficient map preserves nonvanishing of differential specialization.
+
+Not ported: `map_separant` already exists as `PolynomialDifferential.map_separant` in this module. `map_binomial_pivots` follows from naturality of `Nat.cast` under an injective ring hom; the acceptance test derives the field form.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1837,10 +2029,44 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
 `2K`.
 
+## `ArkLib/Data/Polynomial/Differential/TaylorChartBaseChange.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/SolutionExtension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_common_regular_center_extension` is now `exists_forall_jetEvaluation_ne_zero_map`. It is generalized to a commutative semiring source, an infinite domain target, an explicit injective map, and any jet coordinate. The theorem maps the finite family and applies the existing infinite-domain geometry result.
+
+Not ported: `exists_common_regular_center_algebraicClosure` is an algebra-map specialization of the generic theorem; the acceptance test checks that form.
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
+
+## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCuts.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+`map_initialJetEquationOver` and `map_initialJetEquationOver_eq` → `map_initialJetEquation`, and
+`aeval_map_initialJetEquationOver` → `aeval_map_initialJetEquation`; these generic mapping and
+evaluation lemmas are placed in the existing `TaylorChart` module. These mappings were
+generalized to commutative semirings and arbitrary ring maps, and the evaluation theorem to maps
+between commutative semirings.
+
+The following declarations keep their names: `taylorAgreementEquationOver`,
+`map_taylorAgreementEquationOver`, `map_taylorAgreementEquationOver_eq`,
+`aeval_map_taylorAgreementEquationOver_of_exponent`, `aeval_map_taylorAgreementEquationOver`,
+`aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent`,
+`aeval_map_taylorAgreementEquationOver_eq_zero_iff`,
+`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent`,
+`degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts`,
+`aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent`, and
+`aeval_map_commonTaylorNumeratorOver_reconstruction`. The agreement equation keeps the same
+mathematics and uses the destination common-exponent API.
+
+Not ported: `initialJetEquationOver` is covered by the existing, more general `initialJetEquation`
+in `TaylorChart`; `map_initialJetSeparantOver_eq` is covered by the existing
+`map_initialJetSeparant` specialization theorem. Common-numerator field-specialization theorems
+were already present in `TaylorChart`, so duplicate copies were removed from this module.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
@@ -2388,6 +2614,15 @@ to `0 ≤ L`. The source file imported `CubicStaircase` without using it; that i
 The source consumers (`RatePartition/Area.lean` and `PartitionSupport/Dimension.lean`) are not yet
 ported.
 
+## `ArkLib/ToMathlib/Finset/SumRangeFrom.lean`
+
+Ported from `ArkLib/ToMathlib/Finset/SumRangeFrom.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `Finset`.
+
+`sumRangeFrom`, `sumRangeFrom_add`, `sumRangeFrom_four`, `sumRangeFrom_four_eq`, and
+`sumRangeFrom_two_eq` keep their names. The API works for any additive commutative monoid; the
+split theorem reuses Mathlib's range-splitting theorem. No declarations were deferred or omitted.
+
 ## `ArkLib/ToMathlib/LinearAlgebra/Matrix/InvertibleCombination.lean`
 
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/EvaluationDimension.lean` at ArkLib
@@ -2594,6 +2829,10 @@ The rest of `Cubic.lean` (`positive_cube_tangent`, `positive_cube_jensen`,
 `RankIntegral.lean` at the same revision) that applies `positivePart_mean_variance` to the
 conditional measure on the weighted simplex and multiplies back by its volume. Here it is stated
 for any measure and any set, including sets of measure `0` or `∞`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Integral.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_triangle_rate_lower` → `max_sub_zero_sq_scaled_le`. The scalar comparison is generalized from real numbers to linearly ordered fields, and rate positivity follows from the other hypotheses.
 
 ## `ArkLib/ToMathlib/MvPolynomial/ClearedSubstitution.lean`
 
@@ -3554,3 +3793,18 @@ polynomial of the same natural degree (`natDegree_affineHilbertPolynomial_radica
 Deferred: the forward direction for points in a proper algebraically closed extension `K` of `k`.
 Its proof needs the finitely many maximal ideals of the quotient, since the functions from a
 finite set to `K` do not form a finite-dimensional `k`-space.
+
+## `ArkLibTest/Data/Probability/Uniform.lean`
+
+Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source uniform-sample event calculation corresponds to
+`SampleableType.prEvent_uniformSample`; `Pr_uniform_equiv` corresponds to
+`SampleableType.prEvent_uniformSample_equiv`. The acceptance cases check the finite native-measure
+event sum and the uniform-sampling statements. No public ArkLib declaration is added.
+
+`Pr_eq_tsum_indicator` is retired with the PMF-valued `Pr_{…}[…]` notation. Its scalar
+compatibility calculation is covered by VCVio's `probOutput_true_eq_probEvent` followed by
+`probEvent_eq_tsum_indicator` or its finite variants, so ArkLib adds no wrapper. The three-sample
+PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syntax.
