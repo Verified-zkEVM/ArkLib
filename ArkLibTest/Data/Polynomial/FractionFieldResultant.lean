@@ -140,3 +140,10 @@ example {R L : Type*} [CommRing R] [Field L] [Algebra R L] [IsFractionRing R L]
   subst hdegree
   rw [resultant_comm_sub_one]
   exact resultant_derivative_ne_zero_of_separable_map_fractionField A hseparable
+
+-- The exact-degree hypothesis matters for fixed padding: a wrong declared degree can make the
+-- resultant vanish even when the polynomial stays separable over the fraction field.
+example : ((X : ℚ[X]).map (algebraMap ℚ ℚ)).Separable ∧
+    resultant (X : ℚ[X]).derivative X 1 2 = 0 := by
+  refine ⟨by simpa using (separable_X : (X : ℚ[X]).Separable), ?_⟩
+  apply resultant_eq_zero_of_lt_lt <;> simp

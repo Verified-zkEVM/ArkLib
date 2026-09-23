@@ -11,7 +11,8 @@ import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
 
 Concrete values of `rateGamma` and `fixedRateCoefficient`, cases showing that the kept
 hypotheses are needed, and the forms with the stronger hypotheses `0 < R`, `0 < δ` and `R < 1`
-derived from the stated theorems.
+derived from the stated theorems. The fixed-rate factorization, cutoff and strict gate are also
+checked at concrete positive parameters.
 -/
 
 namespace ReedSolomon.HiddenDerivative.RatePartition
@@ -30,6 +31,25 @@ private theorem test_fixedRateCoefficient_boundary : fixedRateCoefficient (40 / 
 example : Real.log (27 * 1 / 20) + Real.log ((1 : ℕ) + 1 : ℝ) -
     1 / 1 * Real.log (6 * ((1 : ℕ) : ℝ)) = Real.log (9 / 20) := by
   rw [← log_rateGamma one_ne_zero one_pos, test_rateGamma_one]
+
+/-- The logarithmic identity in the form with separate `log 6` and `log d` terms. -/
+example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (horder : 0 < order) :
+    Real.log (rateGamma rate agreement order) =
+      Real.log ((27 / 20 : ℝ) * rate) + Real.log ((order : ℝ) + 1) -
+        rate / agreement * (Real.log 6 + Real.log order) := by
+  rw [log_rateGamma hrate.ne' horder]
+  have hcoefficient : (27 * rate / 20 : ℝ) = (27 / 20 : ℝ) * rate := by ring
+  rw [hcoefficient]
+  have horderReal : (0 : ℝ) < order := by exact_mod_cast horder
+  rw [Real.log_mul (by norm_num : (6 : ℝ) ≠ 0) horderReal.ne']
+
+/-- The fixed-rate coefficient with the factor written as `(27/20) * rate`. -/
+example {rate : ℝ} (hrate : 0 < rate) :
+    fixedRateCoefficient rate =
+      rate * (Real.log 6 - Real.log ((27 / 20 : ℝ) * rate)) := by
+  rw [fixedRateCoefficient_eq hrate]
+  have hcoefficient : (27 * rate / 20 : ℝ) = (27 / 20 : ℝ) * rate := by ring
+  rw [hcoefficient]
 
 /-! ### The kept hypotheses are needed -/
 
@@ -67,6 +87,40 @@ example : ¬ ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap
 
 /-! ### Forms with stronger hypotheses -/
 
+/-- The exponential identity at rate `1`, agreement `2` and positive order `20`. -/
+example : rateGamma 1 2 20 =
+    (27 / 20 : ℝ) * 21 * Real.exp (-(1 / 2 * Real.log 120)) := by
+  convert rateGamma_eq_exponential (rate := 1) (agreement := 2) (order := 20) (by norm_num)
+    using 1; norm_num
+
+/-- The exact factorization applies to a positive rate, agreement and derivative order. -/
+example : rateGamma (1 / 2) (3 / 4) 500 =
+    (9 * (1 / 2 : ℝ) / 40) * (6 * (500 : ℝ)) ^ (((3 / 4 : ℝ) - 1 / 2) / (3 / 4 : ℝ)) *
+      (1 + 1 / (500 : ℝ)) := by
+  exact rateGamma_factorization (rate := 1 / 2) (agreement := 3 / 4) (order := 500)
+    (by norm_num) (by norm_num)
+
+/-- The factor-six threshold retains the successor factor at this concrete order. -/
+example : 1 + 1 / (500 : ℝ) ≤ rateGamma (1 / 2) (3 / 4) 500 := by
+  apply rateGamma_ge_one_add_inv_of_factor_six <;> norm_num [Real.rpow_natCast]
+
+/-- The factor-six threshold gives a strict limiting gate at this concrete order. -/
+example : 1 < rateGamma (1 / 2) (3 / 4) 500 := by
+  apply rateGamma_gt_one_of_factor_six <;> norm_num [Real.rpow_natCast]
+
+/-- At `R = 1/2`, `δ = 1/4`, the selected order satisfies the lower bound and strict gate. -/
+example : 500 ≤ fixedRatePartitionOrder (1 / 2) (1 / 4) ∧
+    1 < rateGamma (1 / 2) (1 / 2 + 1 / 4)
+      (fixedRatePartitionOrder (1 / 2) (1 / 4)) := by
+  exact ⟨fixedRatePartitionOrder_ge_500 (rate := 1 / 2) (gap := 1 / 4),
+    fixedRateGamma_gt_one (rate := 1 / 2) (gap := 1 / 4) (by norm_num) (by norm_num)⟩
+
+/-- The cutoff identity needs a positive gap; at `δ = 0` its two sides differ. -/
+example : ¬ ((1 / 6 : ℝ) * (40 / (9 * (1 / 2 : ℝ))) ^ ((1 / 2 + 0) / 0) =
+    (20 / (27 * (1 / 2 : ℝ))) *
+      Real.exp ((1 / 2 : ℝ) * Real.log (40 / (9 * (1 / 2 : ℝ))) / 0)) := by
+  norm_num
+
 /-- `log_rateGamma` under `0 < R`. -/
 example {rate agreement : ℝ} {order : ℕ} (hrate : 0 < rate) (horder : 0 < order) :
     Real.log (rateGamma rate agreement order) = Real.log (27 * rate / 20) +
@@ -95,5 +149,24 @@ example : ∃ gapBound : ℝ, 0 < gapBound ∧ ∀ gap : ℝ, 0 < gap → gap < 
     let order := ⌈Real.exp ((fixedRateCoefficient (1 / 2) + 1) / gap)⌉₊
     (1 / 2 : ℝ) + gap < 1 ∧ 500 ≤ order ∧ 1 < rateGamma (1 / 2) (1 / 2 + gap) order :=
   exists_small_gap_rate_gate (by norm_num) (by norm_num) one_pos
+
+/-! ### A strict gate from an exponent margin -/
+
+/-- At rate `1`, gap `1` and order `5`, the fixed-rate exponent margin gives `rateGamma > 1`. -/
+example : 1 < rateGamma 1 2 5 := by
+  have hcoef : fixedRateCoefficient 1 ≤ Real.log 5 := by
+    rw [fixedRateCoefficient]
+    norm_num only [one_mul, mul_one, mul_zero, add_zero]
+    apply Real.log_le_log <;> norm_num
+  have horder : fixedRateCoefficient 1 + 0 ≤ 1 * Real.log (5 : ℝ) := by
+    nlinarith [hcoef]
+  have hmargin : 0 < 0 + 1 * Real.log (27 * 1 / 20) := by
+    norm_num only [zero_add, one_mul]
+    exact Real.log_pos (by norm_num)
+  have h := rateGamma_gt_one_of_exponent_margin (rate := 1) (gap := 1) (epsilon := 0)
+    (order := 5) (by norm_num) (by norm_num) (by norm_num) horder hmargin
+  have hsum : (1 : ℝ) + 1 = 2 := by norm_num
+  rw [← hsum]
+  exact h
 
 end ReedSolomon.HiddenDerivative.RatePartition

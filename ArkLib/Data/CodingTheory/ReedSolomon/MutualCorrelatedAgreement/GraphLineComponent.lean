@@ -231,7 +231,7 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
     exact (taylorAgreementEquation_eq_zero_iff center Qz hτ jet hS' _ _).mp (hcuts' i hi)
   have hpoly := hrecognize iota z _ hdegree hagree
   refine ⟨hpoly, ?_, ?_⟩
-  · have hjetAffine := polynomialJet_affine_combination (d := r) center z
+  · have hjetAffine := polynomialJet_add_C_mul (d := r) center z
       (P₀.map iota) (P₁.map iota)
     have hjetRec := polynomialJet_rationalTaylorPolynomial center Qz hK jet
     rw [hpoly, hjetAffine] at hjetRec
