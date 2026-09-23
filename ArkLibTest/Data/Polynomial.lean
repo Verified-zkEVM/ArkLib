@@ -190,14 +190,91 @@ private theorem resultant_line_cubic :
 
 example :
     (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree = 3 ∧
+      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree + 1 * 2 ≤
+        2 * 1 + 1 * 3 ∧
       (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤
-        2 * 1 + 1 * 3 - 1 * 2 := by
-  refine ⟨by rw [resultant_line_cubic]; compute_degree!, ?_⟩
-  apply natDegree_resultant_le_of_coeff_add_le
-  · intro i hi
+        2 * 1 + 1 * 3 - 1 * 2 ∧
+      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤ 1 * 3 ∧
+      (resultant (X - C (X : ℚ[X])) (X ^ 2 + C (X ^ 3)) 1 2).natDegree ≤
+        2 * 1 + 1 * 3 := by
+  have hP : ∀ i ≤ 1, i + ((X - C (X : ℚ[X])).coeff i).natDegree ≤ 1 := by
+    intro i hi
     interval_cases i <;> simp only [coeff_sub, coeff_X, coeff_C] <;> simp
-  · intro i hi
+  have hQ : ∀ i ≤ 2, i + ((X ^ 2 + C (X ^ 3 : ℚ[X])).coeff i).natDegree ≤ 3 := by
+    intro i hi
     interval_cases i <;> simp only [coeff_add, coeff_X_pow, coeff_C] <;> simp
+  have hPdeg : (X - C (X : ℚ[X])).natDegree = 1 := by compute_degree!
+  have hQdeg : (X ^ 2 + C (X ^ 3 : ℚ[X])).natDegree = 2 := by compute_degree!
+  have hPnat : ∀ i, ((X - C (X : ℚ[X])).coeff i).natDegree ≤ 1 := by
+    intro i
+    by_cases hi : i ≤ 1
+    · have := hP i hi
+      omega
+    · have hzero := coeff_eq_zero_of_natDegree_lt (show
+        (X - C (X : ℚ[X])).natDegree < i by rw [hPdeg]; omega)
+      rw [hzero]
+      simp
+  have hQnat : ∀ i, ((X ^ 2 + C (X ^ 3 : ℚ[X])).coeff i).natDegree ≤ 3 := by
+    intro i
+    by_cases hi : i ≤ 2
+    · have := hQ i hi
+      omega
+    · have hzero := coeff_eq_zero_of_natDegree_lt (show
+        (X ^ 2 + C (X ^ 3 : ℚ[X])).natDegree < i by rw [hQdeg]; omega)
+      rw [hzero]
+      simp
+  refine ⟨by rw [resultant_line_cubic]; compute_degree!, ?_, ?_, ?_, ?_⟩
+  · exact natDegree_resultant_add_mul_le_of_coeff_add_le _ _ 1 2 1 3 hP hQ
+  · exact natDegree_resultant_le_of_coeff_add_le _ _ 1 2 1 3 hP hQ
+  · exact natDegree_resultant_le_mul_of_coeff_add_le _ _ 1 2 1 3 hP hQ
+  · exact natDegree_resultant_le_of_coeff_natDegree_le _ _ 1 2 1 3 hPnat hQnat
+
+-- Differentiating the outer variable preserves the coefficient-variable degree of `X^3 * Y^2`.
+example :
+    Bivariate.degreeX ((C ((X : ℚ[X]) ^ 3) * X ^ 2 : ℚ[X][X]).derivative) ≤
+      Bivariate.degreeX (C ((X : ℚ[X]) ^ 3) * X ^ 2 : ℚ[X][X]) :=
+  Bivariate.degreeX_derivative_le _
+
+-- Actual-degree and padded derivative resultants obey the coefficient-variable bound for `Y²-X²`.
+example :
+    (resultant (X ^ 2 - C ((X : ℚ[X]) ^ 2))
+      (X ^ 2 - C ((X : ℚ[X]) ^ 2)).derivative).natDegree ≤
+        (2 * (X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree - 1) *
+          Bivariate.degreeX (X ^ 2 - C ((X : ℚ[X]) ^ 2)) ∧
+      (resultant (X ^ 2 - C ((X : ℚ[X]) ^ 2))
+        (X ^ 2 - C ((X : ℚ[X]) ^ 2)).derivative
+        (X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree
+        ((X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree - 1)).natDegree ≤
+          (2 * (X ^ 2 - C ((X : ℚ[X]) ^ 2) : ℚ[X][X]).natDegree - 1) *
+            Bivariate.degreeX (X ^ 2 - C ((X : ℚ[X]) ^ 2)) := by
+  exact ⟨natDegree_resultant_derivative_le _, natDegree_resultant_derivative_padded_le _⟩
+
+private noncomputable def squareEquation : ℚ[X][X] := X ^ 2 - C ((X : ℚ[X]) ^ 2)
+
+private theorem resultant_squareEquation_derivative :
+    resultant squareEquation squareEquation.derivative 2 1 = -4 * X ^ 2 := by
+  have hder : squareEquation.derivative = C 2 * (X - C 0) := by
+    simp only [squareEquation, derivative_sub, derivative_X_pow, derivative_C, C_0, sub_zero]
+    simp
+  rw [← resultant_comm_sub_one, hder, resultant_C_mul_left,
+    show (2 : ℕ) - 1 = 1 from rfl,
+    resultant_X_sub_C_left _ _ _ (by rw [squareEquation]; compute_degree!)]
+  simp [squareEquation]
+  ring
+
+-- The total-degree padded-derivative bound is attained by `Y²-X²` over `ℚ`.
+example :
+    (resultant squareEquation squareEquation.derivative 2 1).natDegree = 2 ∧
+      (resultant squareEquation squareEquation.derivative 2 1).natDegree + 2 ^ 2 ≤
+        (2 * 2 - 1) * 2 ∧
+      (resultant squareEquation squareEquation.derivative 2 1).natDegree ≤
+        (2 * 2 - 1) * 2 - 2 ^ 2 := by
+  have hcoeff : ∀ i ≤ 2, i + (squareEquation.coeff i).natDegree ≤ 2 := by
+    intro i hi
+    interval_cases i <;> simp only [squareEquation, coeff_sub, coeff_X_pow, coeff_C] <;> simp
+  refine ⟨by rw [resultant_squareEquation_derivative]; compute_degree!, ?_, ?_⟩
+  · exact natDegree_resultant_derivative_padded_add_sq_le squareEquation 2 2 hcoeff
+  · exact natDegree_resultant_derivative_padded_le_of_coeff_add_le squareEquation 2 2 hcoeff
 
 /-! ### Specialization avoidance -/
 

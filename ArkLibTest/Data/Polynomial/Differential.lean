@@ -9,6 +9,7 @@ import ArkLib.Data.Polynomial.Differential.ChainWitness
 import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 import ArkLib.Data.Polynomial.Differential.DirectRegularLift
 import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
+import ArkLib.Data.Polynomial.Differential.FrobeniusEquation
 import ArkLib.Data.Polynomial.Differential.JetPrefix
 import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
 import ArkLib.Data.Polynomial.Differential.RationalTaylor
@@ -18,6 +19,7 @@ import ArkLib.Data.Polynomial.Differential.RecursiveCount
 import ArkLib.Data.Polynomial.Differential.RegularIteration
 import ArkLib.Data.Polynomial.Differential.RegularJetCount
 import ArkLib.Data.Polynomial.Differential.RegularLift
+import ArkLib.Data.Polynomial.Differential.RootPresentation
 import ArkLib.Data.Polynomial.Differential.SeparantChain
 import ArkLib.Data.Polynomial.Differential.ShiftedJet
 import ArkLib.Data.Polynomial.Differential.SingularRecursion
@@ -33,6 +35,7 @@ import ArkLib.Data.Polynomial.Differential.WitnessCount
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.Finite.Extension
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 import Mathlib.Tactic.NormNum
 
 /-!
@@ -47,6 +50,12 @@ namespace PolynomialDifferential
 noncomputable section
 
 open MvPolynomial Finset
+
+private abbrev zeroJetEquation (F : Type*) [CommRing F] (d : ℕ) :
+    DifferentialPolynomial F d := X (some 0)
+
+private abbrev constantDerivativeEquation (F : Type*) [CommRing F] :
+    DifferentialPolynomial F 1 := X (some 1)
 
 /-! ### Coefficient maps -/
 
@@ -164,56 +173,54 @@ example :
 
 /-! ### A concrete chain witness -/
 
-private abbrev linearEquation0 : DifferentialPolynomial ℚ 0 := X (some 0)
-
-private theorem highestActiveJet_linearEquation0 : highestActiveJet linearEquation0 = some 0 := by
-  cases h : highestActiveJet linearEquation0 with
+private theorem highestActiveJet_zeroJetEquation_Q0 :
+    highestActiveJet (zeroJetEquation ℚ 0) = some 0 := by
+  cases h : highestActiveJet (zeroJetEquation ℚ 0) with
   | none =>
       have := (highestActiveJet_eq_none_iff _).mp h 0
-      simp [DependsOnJet, linearEquation0, jetDegree] at this
+      simp [DependsOnJet, zeroJetEquation, jetDegree] at this
   | some j =>
       fin_cases j
       rfl
 
 /-- The zero polynomial gives a regular chain witness for `Y₀ = 0` at the origin. -/
-example : ChainWitness linearEquation0 0 0 := by
-  refine .regular highestActiveJet_linearEquation0 ?_ ?_
-  · simp [linearEquation0, differentialSpecialization, differentialSpecializationHom]
-  · simp [linearEquation0, separant, jetEvaluation, pderiv_X]
+example : ChainWitness (zeroJetEquation ℚ 0) 0 0 := by
+  refine .regular highestActiveJet_zeroJetEquation_Q0 ?_ ?_
+  · simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
+  · simp [zeroJetEquation, separant, jetEvaluation, pderiv_X]
 
 /-- Every point is a chain witness for the zero solution of `Y₀ = 0`. -/
 example : ∃ R : Polynomial ℚ, R ≠ 0 ∧ R.natDegree ≤
-    differentialWeightedDegree 0 linearEquation0 ∧
-    ∀ a, R.eval a ≠ 0 → ChainWitness linearEquation0 0 a := by
-  refine exists_chainWitness (D := 0) (Q := linearEquation0) ?_ ?_ ?_ ?_
-  · simp [linearEquation0]
+    differentialWeightedDegree 0 (zeroJetEquation ℚ 0) ∧
+    ∀ a, R.eval a ≠ 0 → ChainWitness (zeroJetEquation ℚ 0) 0 a := by
+  refine exists_chainWitness (D := 0) (Q := zeroJetEquation ℚ 0) ?_ ?_ ?_ ?_
+  · simp [zeroJetEquation]
   · intro j
     exact jetDegreeCastsNeZero_of_ringChar (Or.inl ringChar.eq_zero)
-  · simp [linearEquation0, differentialSpecialization, differentialSpecializationHom]
+  · simp [zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
   · simp
 
 /-! ### First-order chain charge -/
 
-private abbrev orderZeroEquation : DifferentialPolynomial ℚ 1 := X (some 0)
-
 private theorem jetDegree_orderZeroEquation (j : Fin 2) :
-    jetDegree orderZeroEquation j = if j = 0 then 1 else 0 := by
+    jetDegree (zeroJetEquation ℚ 1) j = if j = 0 then 1 else 0 := by
   classical
   rw [jetDegree, degreeOf_X]
   simp
 
-private theorem jetTotalDegree_orderZeroEquation : jetTotalDegree orderZeroEquation = 1 := by
+private theorem jetTotalDegree_orderZeroEquation :
+    jetTotalDegree (zeroJetEquation ℚ 1) = 1 := by
   change MvPolynomial.weightedTotalDegree jetDegreeWeight
     (monomial (Finsupp.single (some (0 : Fin 2)) 1) (1 : ℚ)) = 1
   rw [MvPolynomial.weightedTotalDegree_monomial _ _ _ one_ne_zero]
   simp [Finsupp.weight_apply, jetDegreeWeight]
 
 private theorem highestActiveJet_orderZeroEquation :
-    highestActiveJet orderZeroEquation = some 0 := by
-  cases h : highestActiveJet orderZeroEquation with
+    highestActiveJet (zeroJetEquation ℚ 1) = some 0 := by
+  cases h : highestActiveJet (zeroJetEquation ℚ 1) with
   | none =>
       have := (highestActiveJet_eq_none_iff _).mp h 0
-      simp [DependsOnJet, orderZeroEquation, jetDegree] at this
+      simp [DependsOnJet, zeroJetEquation, jetDegree] at this
   | some j =>
       have hj := (isHighestActiveJet_of_highestActiveJet_eq_some h).1
       fin_cases j
@@ -221,9 +228,9 @@ private theorem highestActiveJet_orderZeroEquation :
       · simp [DependsOnJet, jetDegree_orderZeroEquation] at hj
 
 private theorem orderZeroChain :
-    SeparantChain orderZeroEquation [(orderZeroEquation, 0)] (C 1) := by
+    SeparantChain (zeroJetEquation ℚ 1) [(zeroJetEquation ℚ 1, 0)] (C 1) := by
   refine .active 0 (X_ne_zero _) highestActiveJet_orderZeroEquation ?_
-  have hsep : separant orderZeroEquation 0 = C 1 := by simp [separant, pderiv_X]
+  have hsep : separant (zeroJetEquation ℚ 1) 0 = C 1 := by simp [separant, pderiv_X]
   rw [hsep]
   refine .terminal (by simp) ((highestActiveJet_eq_none_iff _).mpr fun j hj ↦ ?_)
   simp [DependsOnJet, jetDegree] at hj
@@ -231,7 +238,7 @@ private theorem orderZeroChain :
 /-- The bound is attained by the one-stage chain `Y₀` with charges `c₀ j = j` and
 `c₁ j r = j + r`. -/
 example :
-    ([(orderZeroEquation, (0 : Fin 2))].map
+    ([(zeroJetEquation ℚ 1, (0 : Fin 2))].map
       (firstOrderStageCharge (fun j ↦ (j : ℚ)) fun j r ↦ (j + r : ℚ))).sum ≤
         firstOrderStageCap (fun j ↦ (j : ℚ)) (fun j r ↦ (j + r : ℚ)) 1 0 :=
   orderZeroChain.sum_firstOrderStageCharge_le jetTotalDegree_orderZeroEquation.le
@@ -815,17 +822,17 @@ example : rationalTaylorPolynomial 0 (taylorLinearEquation ℚ) 3
 /-! ### Index weight -/
 
 /-- The first-order equation `Q = Y₁`. -/
-private abbrev firstJet : DifferentialPolynomial ℚ 1 := X (some 1)
-
-private theorem weightedTotalDegree_firstJet :
-    firstJet.weightedTotalDegree (indexWeight 2) = 1 := by
+private theorem weightedTotalDegree_constantDerivativeEquation_Q :
+    (constantDerivativeEquation ℚ).weightedTotalDegree (indexWeight 2) = 1 := by
   rw [weightedTotalDegree_indexWeight_eq_jetDegree_one, jetDegree, degreeOf_X_self]
 
 private theorem firstJet_residual_coeff_one :
-    (optionEquivLeft ℚ (Fin 3) (universalTaylorResidual 3 0 firstJet)).coeff 1 =
+    (optionEquivLeft ℚ (Fin 3)
+      (universalTaylorResidual 3 0 (constantDerivativeEquation ℚ))).coeff 1 =
       C 2 * X 2 := by
-  have hres : universalTaylorResidual 3 (0 : ℚ) firstJet = universalTaylorJet 3 1 := by
-    simp [universalTaylorResidual, firstJet]
+  have hres : universalTaylorResidual 3 (0 : ℚ) (constantDerivativeEquation ℚ) =
+      universalTaylorJet 3 1 := by
+    simp [universalTaylorResidual, constantDerivativeEquation]
   rw [hres, optionEquivLeft_universalTaylorJet, Polynomial.hasseDeriv_coeff]
   simp [Fin.sum_univ_three, Polynomial.coeff_monomial]
   rfl
@@ -833,18 +840,40 @@ private theorem firstJet_residual_coeff_one :
 /-- The index-weight bound is attained by `c₂` in the coefficient of `ξ` for `Y₁`. -/
 example :
     Finsupp.single (2 : Fin 3) 1 ∈
-        ((optionEquivLeft ℚ (Fin 3) (universalTaylorResidual 3 0 firstJet)).coeff 1).support ∧
+        ((optionEquivLeft ℚ (Fin 3)
+          (universalTaylorResidual 3 0 (constantDerivativeEquation ℚ))).coeff 1).support ∧
       Finsupp.weight Fin.val (Finsupp.single (2 : Fin 3) 1) =
-        1 + firstJet.weightedTotalDegree (indexWeight 2) := by
-  refine ⟨?_, by simp [Finsupp.weight_single, weightedTotalDegree_firstJet]⟩
+        1 + (constantDerivativeEquation ℚ).weightedTotalDegree (indexWeight 2) := by
+  refine ⟨?_, by simp [Finsupp.weight_single, weightedTotalDegree_constantDerivativeEquation_Q]⟩
   rw [firstJet_residual_coeff_one, mem_support_iff, X, C_mul_monomial, coeff_monomial]
   norm_num
 
-/-! ### Total-jet-degree count -/
+/-- Evaluating the first displacement coefficient of the `Y₀` residual recovers the chosen
+coefficient of the polynomial prefix. -/
+private abbrev residualCoefficients : ℕ → ℚ := fun i ↦ if i = 0 then 3 else 5
 
-/-- The equation `y' = 0` over `F`. -/
-private abbrev constantDerivativeEquation (F : Type*) [CommRing F] : DifferentialPolynomial F 1 :=
-  X (some 1)
+example :
+    aeval (fun i : Fin 2 ↦ residualCoefficients i.val)
+      ((optionEquivLeft ℚ (Fin 2)
+        (universalTaylorResidual 2 0 (X (some 0) : DifferentialPolynomial ℚ 0))).coeff 1) = 5 := by
+  rw [aeval_universalTaylorResidual_coeff (center := 0) (c := residualCoefficients)
+    (K := 2) (h := 1) (Q := X (some 0))]
+  simp [Polynomial.centeredCoefficientPrefix, residualCoefficients]
+
+/-- Mapping the zeroth residual coefficient through `ℤ → ZMod 2` agrees with the mapped
+equation. -/
+example :
+    MvPolynomial.map (Int.castRingHom (ZMod 2))
+      ((optionEquivLeft ℤ (Fin 2)
+        (universalTaylorResidual 2 0 (X (some 1) : DifferentialPolynomial ℤ 1))).coeff 0) =
+    (optionEquivLeft (ZMod 2) (Fin 2)
+      (universalTaylorResidual 2 0
+        (MvPolynomial.map (Int.castRingHom (ZMod 2))
+          (X (some 1) : DifferentialPolynomial ℤ 1)))).coeff 0 := by
+  rw [map_universalTaylorResidual_coeff]
+  simp
+
+/-! ### Total-jet-degree count -/
 
 private theorem jetTotalDegree_constantDerivativeEquation_le {F : Type*} [CommRing F]
     [Nontrivial F] : jetTotalDegree (constantDerivativeEquation F) ≤ 1 := by
@@ -926,14 +955,12 @@ example : jetTotalDegree sumEquation = 1 ∧ ∑ j : Fin 2, jetDegree sumEquatio
 
 /-! ### Witness count -/
 
-private abbrev linearBoundedEquation : DifferentialPolynomial (ZMod 3) 0 := X (some 0)
-
 private theorem highestActiveJet_linearBoundedEquation :
-    highestActiveJet linearBoundedEquation = some 0 := by
-  cases h : highestActiveJet linearBoundedEquation with
+    highestActiveJet (zeroJetEquation (ZMod 3) 0) = some 0 := by
+  cases h : highestActiveJet (zeroJetEquation (ZMod 3) 0) with
   | none =>
       have := (highestActiveJet_eq_none_iff _).mp h 0
-      simp [DependsOnJet, linearBoundedEquation, jetDegree] at this
+      simp [DependsOnJet, zeroJetEquation, jetDegree] at this
   | some j =>
       fin_cases j
       rfl
@@ -942,11 +969,12 @@ private theorem highestActiveJet_linearBoundedEquation :
 example :
     1 * (Nat.card (ZMod 3) - 0) ≤
       Nat.card (ZMod 3) *
-        (jetDegree linearBoundedEquation 0 * Nat.card (ZMod 3) ^ 0) := by
-  have h := card_mul_sub_le_of_isHighestActiveJet (D := 0) (H := 0) linearBoundedEquation
+        (jetDegree (zeroJetEquation (ZMod 3) 0) 0 * Nat.card (ZMod 3) ^ 0) := by
+  have h := card_mul_sub_le_of_isHighestActiveJet (D := 0) (H := 0)
+    (zeroJetEquation (ZMod 3) 0)
     (isHighestActiveJet_of_highestActiveJet_eq_some highestActiveJet_linearBoundedEquation)
     ({(0 : Polynomial (ZMod 3))} : Finset (Polynomial (ZMod 3)))
-    (by simp [linearBoundedEquation, differentialSpecialization,
+    (by simp [zeroJetEquation, differentialSpecialization,
       differentialSpecializationHom])
     (by
       intro P hP
@@ -962,9 +990,9 @@ example :
           | none => simp [differentialWeight]
           | some j => simp [differentialWeight]]
       rw [MvPolynomial.weightedTotalDegree_piSingle]
-      rw [linearBoundedEquation, MvPolynomial.degreeOf_X_of_ne (by decide)]
+      rw [zeroJetEquation, MvPolynomial.degreeOf_X_of_ne (by decide)]
       simp)
-    (by simp [linearBoundedEquation, separant, pderiv_X, differentialSpecialization,
+    (by simp [zeroJetEquation, separant, pderiv_X, differentialSpecialization,
       differentialSpecializationHom])
   exact h
 
@@ -999,18 +1027,15 @@ example : ∃ P ∈ highTaylorPrimeFamily 0 (taylorLinearEquation ℚ) 1 1 0,
     (by rw [aeval_initialJetSeparant_taylorLinearEquation]; norm_num)
     (by intro l hkl hlK; omega)
 
-private abbrev incidenceEquation (F : Type*) [CommRing F] : DifferentialPolynomial F 0 :=
-  X (some 0)
-
 /-- The incidence bound is attained by the single regular zero jet of `Y₀` over an algebraic
 closure. -/
 example :
     (((({![0]} : Finset (Fin 1 → AlgebraicClosure ℚ)).card : ℕ) : ℚ)) ≤
-      jetTotalDegree (incidenceEquation (AlgebraicClosure ℚ)) *
+      jetTotalDegree (zeroJetEquation (AlgebraicClosure ℚ) 0) *
         (((Fintype.card (Fin 1) * rationalTaylorCutDegreeBound
-          (incidenceEquation (AlgebraicClosure ℚ)) 2 : ℕ) : ℚ) / ((1 - 1 + 1 : ℕ) : ℚ)) ^ 0 := by
+          (zeroJetEquation (AlgebraicClosure ℚ) 0) 2 : ℕ) : ℚ) / ((1 - 1 + 1 : ℕ) : ℚ)) ^ 0 := by
   let F := AlgebraicClosure ℚ
-  let Q : DifferentialPolynomial F 0 := incidenceEquation F
+  let Q : DifferentialPolynomial F 0 := zeroJetEquation F 0
   let domain : Fin 1 → F := fun _ ↦ 0
   let received : Fin 1 → F := fun _ ↦ 0
   let S : Finset (Fin 1 → F) := {![0]}
@@ -1024,8 +1049,8 @@ example :
     have hj : jet = ![(0 : F)] := Finset.mem_singleton.mp hjet
     subst jet
     refine ⟨?_, ?_, ?_⟩
-    · simp [Q, incidenceEquation, initialJetEquation]
-    · simp [Q, incidenceEquation, initialJetSeparant, separant]
+    · simp [Q, zeroJetEquation, initialJetEquation]
+    · simp [Q, zeroJetEquation, initialJetSeparant, separant]
     · intro l hl hlK
       omega
   have hA : ∀ jet ∈ S, 1 ≤
@@ -1035,10 +1060,10 @@ example :
     have hj : jet = ![(0 : F)] := Finset.mem_singleton.mp hjet
     subst jet
     have hsol : differentialSpecialization Q (0 : Polynomial F) = 0 := by
-      simp [Q, incidenceEquation, differentialSpecialization, differentialSpecializationHom]
+      simp [Q, zeroJetEquation, differentialSpecialization, differentialSpecializationHom]
     have hsep : jetEvaluation (separant Q (Fin.last 0)) 0
         (polynomialJet 0 (0 : Polynomial F)) ≠ 0 := by
-      simp [Q, incidenceEquation, separant, jetEvaluation, pderiv_X]
+      simp [Q, zeroJetEquation, separant, jetEvaluation, pderiv_X]
     have hdegree : (0 : Polynomial F).degree < 1 := by simp
     have hbin : ∀ i, 0 < i → i < 1 → (i.choose 0 : F) ≠ 0 := by
       intro i hi hiK
@@ -1059,7 +1084,134 @@ example :
   have h := card_le_of_highTaylorCuts_of_agreement (center := (0 : F)) Q
     (taylorExponentSufficient_two_mul 0 1) (by decide) domain received hinj
     (A := 1) (by decide) (by decide) S hS hA
-  simpa [S, Q, incidenceEquation, rationalTaylorCutDegreeBound] using h
+  simpa [S, Q, zeroJetEquation, rationalTaylorCutDegreeBound] using h
+
+/-! ### Frobenius flattening -/
+
+private abbrev frobeniusEquationExample :
+    DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0)
+
+private abbrev frobeniusSquareEquation :
+    DifferentialPolynomial (Polynomial (ZMod 2)) 0 := X (some 0) ^ 2
+
+/-- The flattened equation evaluates to `7` at the root, independent-variable, and challenge
+values `2`, `3`, and `5`. -/
+example :
+    MvPolynomial.eval
+        (fun o : Option (Fin 2) => o.elim (2 : ℚ) (fun i => Fin.cases 3 (fun _ => 5) i))
+        (ordinaryFlatten ℚ
+          (MvPolynomial.X (some 0) + MvPolynomial.C Polynomial.X :
+            DifferentialPolynomial (Polynomial ℚ) 0)) = 7 := by
+  rw [eval_ordinaryFlatten]
+  norm_num [differentialSpecialization, differentialSpecializationHom]
+
+/-- Expanding the specialization of `Y₀ + W` at `W = 2` sends the root `X` to `X² + 2`. -/
+example :
+    Polynomial.expand ℚ 2
+      (differentialSpecialization
+        (MvPolynomial.map (Polynomial.evalRingHom (2 : ℚ))
+          (MvPolynomial.X (some 0) + MvPolynomial.C Polynomial.X :
+            DifferentialPolynomial (Polynomial ℚ) 0)) Polynomial.X) =
+      Polynomial.X ^ 2 + Polynomial.C 2 := by
+  have hflat : ordinaryFlatten ℚ
+      (MvPolynomial.X (some 0) + MvPolynomial.C Polynomial.X :
+        DifferentialPolynomial (Polynomial ℚ) 0) =
+        MvPolynomial.X none + MvPolynomial.X (some 1) := by
+    simp
+  have hcase :
+      Fin.cases (Polynomial.X ^ 2 : Polynomial ℚ)
+        (fun _ : Fin 1 => Polynomial.C 2)
+        (1 : Fin 2) = Polynomial.C 2 := by
+    rw [show (1 : Fin 2) = Fin.succ 0 by norm_num, Fin.cases_succ]
+  rw [expand_differentialSpecialization_map_eq_eval₂_flatten, hflat]
+  simp [MvPolynomial.eval₂_add, MvPolynomial.eval₂_X, hcase]
+
+/-- The fixed characteristic-two equation `Y₀` satisfies the Frobenius contraction existence
+statement. -/
+example :
+      ∃ e : ℕ, ∃ H : DifferentialPolynomial (Polynomial (ZMod 2)) 0,
+      Irreducible H ∧
+      MvPolynomial.pderiv (some 0) H ≠ 0 ∧
+      H.degreeOf (some 0) * (2 ^ e) = frobeniusEquationExample.degreeOf (some 0) ∧
+      H.degreeOf none ≤ frobeniusEquationExample.degreeOf none ∧
+      MvPolynomial.CoeffNatDegreeLE H 0 ∧
+      ∀ (P : Polynomial (ZMod 2)) (w : ZMod 2),
+        differentialSpecialization
+            (MvPolynomial.map (Polynomial.evalRingHom (w ^ (2 ^ e)))
+              frobeniusEquationExample) P = 0 →
+          differentialSpecialization
+            (MvPolynomial.map (Polynomial.evalRingHom w) H)
+              (Polynomial.expand (ZMod 2) (2 ^ e) P) = 0 := by
+  apply exists_frobeniusEquation (E := ZMod 2) 2 (Q := frobeniusEquationExample)
+  · simp [frobeniusEquationExample]
+  · apply MvPolynomial.irreducible_of_totalDegree_eq_one
+    · simp [frobeniusEquationExample]
+    · intro c hc
+      apply isUnit_of_dvd_one
+      have h := hc (Finsupp.single (some (0 : Fin 1)) 1)
+      simpa [frobeniusEquationExample] using h
+  · exact MvPolynomial.coeffNatDegreeLE_X (some 0)
+
+/-- A concrete zero specialization is transported through the fixed characteristic-two
+Frobenius twist. -/
+example :
+    differentialSpecialization
+      (MvPolynomial.map (Polynomial.evalRingHom ((0 : ZMod 2) ^ (2 ^ 1)))
+        frobeniusSquareEquation)
+      (0 : Polynomial (ZMod 2)) = 0 ∧
+    differentialSpecialization
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : ZMod 2))
+        (ordinaryUnflatten (ZMod 2)
+          (inverseFrobeniusTwist 2 1
+            (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)))))
+      (Polynomial.expand (ZMod 2) (2 ^ 1) (0 : Polynomial (ZMod 2))) = 0 := by
+  have hflat : ordinaryFlatten (ZMod 2) frobeniusSquareEquation =
+      (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) ^ 2 := by
+    simp [frobeniusSquareEquation]
+  have hroot : rootExpansion (2 ^ 1)
+      (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) =
+      ordinaryFlatten (ZMod 2) frobeniusSquareEquation := by
+    rw [hflat]
+    norm_num only [pow_one]
+    simp [rootExpansion, optionEquivLeft_X_none]
+  have hQ : differentialSpecialization
+      (MvPolynomial.map (Polynomial.evalRingHom ((0 : ZMod 2) ^ (2 ^ 1)))
+        frobeniusSquareEquation)
+      (0 : Polynomial (ZMod 2)) = 0 := by
+    norm_num only [pow_one, zero_pow (by decide : 2 ≠ 0)]
+    simp [frobeniusSquareEquation, differentialSpecialization,
+      differentialSpecializationHom]
+  exact ⟨hQ, frobeniusSpecialization_eq_zero 2 1 frobeniusSquareEquation
+    (MvPolynomial.X none : MvPolynomial (Option (Fin 2)) (ZMod 2)) hroot 0 0 hQ⟩
+
+/-! ### Ordinary root presentations -/
+
+private abbrev rationalRootEquation : DifferentialPolynomial (Polynomial ℚ) 0 := X (some 0)
+
+/-- For the concrete irreducible equation `Y₀` over `ℚ[X]`, the exceptional set is empty. -/
+example :
+    ∃ exceptional : Finset ℚ, exceptional.card ≤ 0 ∧
+      ∀ w ∉ exceptional, ∀ P : Polynomial ℚ,
+        differentialSpecialization
+            (challengeSpecialization rationalRootEquation w) P = 0 →
+          differentialSpecialization
+            (separant (challengeSpecialization rationalRootEquation w) (Fin.last 0)) P ≠ 0 := by
+  have hirr : Irreducible rationalRootEquation := by
+    apply MvPolynomial.irreducible_of_totalDegree_eq_one
+    · simp [rationalRootEquation]
+    · intro c hc
+      apply isUnit_of_dvd_one
+      have h := hc (Finsupp.single (some (0 : Fin 1)) 1)
+      simpa [rationalRootEquation] using h
+  have hpos : 0 < rationalRootEquation.degreeOf (some 0) := by
+    simp [rationalRootEquation]
+  have hder : MvPolynomial.pderiv (some 0) rationalRootEquation ≠ 0 := by
+    simp [rationalRootEquation]
+  have hheight : MvPolynomial.CoeffNatDegreeLE rationalRootEquation 0 := by
+    simpa [rationalRootEquation] using
+      MvPolynomial.coeffNatDegreeLE_X (R := ℚ) (σ := JetVariable 0) (some 0)
+  simpa [rationalRootEquation] using
+    exists_exceptional_ordinary_separant hirr hpos hder hheight
 
 end
 
