@@ -7,7 +7,6 @@ module
 
 public import ArkLib.Data.Polynomial.Differential.BaseChange
 public import ArkLib.Data.Polynomial.Differential.TaylorChartGeometry
-public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 
 /-!
 # Coefficient extension of rational Taylor charts
@@ -131,7 +130,7 @@ theorem exists_regular_solution_jet_family_of_exponent
           hagree P₀ hP₀
         _ = (Finset.univ.filter (fun i ↦
             (Polynomial.map f P₀).eval (f (domain i)) = f (received i))).card :=
-          (ReedSolomon.card_polynomialAgreement_map f f.injective domain received P₀).symm
+          by simp only [Polynomial.eval_map_apply, f.injective.eq_iff]
         _ = (Finset.univ.filter (fun i ↦
             aeval (polynomialJet center (Polynomial.map f P₀))
               (taylorAgreementEquation center QE K τ (f (domain i)) (f (received i))) = 0)).card :=
