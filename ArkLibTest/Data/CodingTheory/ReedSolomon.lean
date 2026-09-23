@@ -49,6 +49,8 @@ end ReedSolomonAcceptance
 
 namespace PowerAgreementTest
 
+local instance : Fact (Nat.Prime 2) := ⟨by decide⟩
+
 /-- The evaluation points `0, 1, 2` in `ℚ`. -/
 def domain3 : Fin 3 ↪ ℚ :=
   ⟨fun i ↦ ((i : ℕ) : ℚ), fun _ _ h ↦ Fin.ext (Nat.cast_injective (R := ℚ) h)⟩
@@ -59,6 +61,38 @@ example : Code.DeterminedByAgreement (code domain3 2) 2 :=
 -- A single received word has uniform exact power agreement with no exceptional challenge.
 example : UniformExactPowerAgreement domain3 ![![1, 2, 5]] 2 0 0 :=
   uniformExactPowerAgreement_singleton domain3 _ 2 0
+
+private noncomputable def domain2 : Fin 2 ↪ ZMod 2 :=
+  ⟨fun i ↦ (i.val : ZMod 2), fun a b h ↦ by
+    fin_cases a <;> fin_cases b <;> simp_all⟩
+
+private noncomputable def twoWords : Fin 2 → Fin 2 → ZMod 2 :=
+  fun t i ↦ if t = 0 then 0 else if i = 0 then 1 else 0
+
+private noncomputable def twoPolynomials : Fin 2 → (ZMod 2)[X] :=
+  fun t ↦ if t = 0 then 0 else 1
+
+-- The two constituent polynomials have exactly one common agreement; at most one challenge
+-- creates an extra agreement after batching.
+example :
+    commonCurveAgreementSet domain2 twoWords twoPolynomials = {0} ∧
+      ∃ exceptional : Finset (ZMod 2), exceptional.card ≤ 1 ∧
+        ∀ z ∉ exceptional,
+          polynomialAgreementSet domain2 (powerBatchedWord twoWords z)
+              (powerBatchedPolynomial twoPolynomials z) = {0} := by
+  have hcommon : commonCurveAgreementSet domain2 twoWords twoPolynomials = {0} := by
+    ext i
+    fin_cases i
+    · simp [commonCurveAgreementSet, twoWords, twoPolynomials, domain2, Fin.forall_fin_two]
+    · simp [commonCurveAgreementSet, twoWords, twoPolynomials, domain2, Fin.forall_fin_two]
+  refine ⟨hcommon, ?_⟩
+  obtain ⟨exceptional, hcard, hgood⟩ :=
+    exists_exceptional_powerBatched_agreement domain2 twoWords twoPolynomials 1 (by
+      rw [hcommon]
+      simp)
+  refine ⟨exceptional, ?_, fun z hz ↦ ?_⟩
+  · simpa [Fintype.card_fin] using hcard
+  · simpa [hcommon] using hgood z hz
 
 end PowerAgreementTest
 

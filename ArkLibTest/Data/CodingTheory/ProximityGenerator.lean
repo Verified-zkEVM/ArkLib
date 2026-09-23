@@ -16,34 +16,6 @@ namespace ProximityGeneratorTest
 
 private abbrev probabilityCode : ModuleCode (Fin 1) (ZMod 2) (ZMod 2) := ⊤
 
-private theorem singletonLevelWitness : FullSetLevelWitness probabilityCode 1 0 := by
-  intro β _ u₀ u₁
-  refine ⟨∅, by simp, ?_⟩
-  intro r _ c hc hagree
-  have hfull : familyAgreementSet c (fun b ↦ binaryLineFold r (u₀ b) (u₁ b)) = Finset.univ :=
-    Finset.eq_univ_of_card _
-      (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hagree))
-  refine ⟨u₀, u₁, ?_, ?_, ?_, ?_⟩
-  · intro b
-    simp [probabilityCode]
-  · intro b
-    simp [probabilityCode]
-  · intro b
-    funext i
-    have hi0 : (0 : Fin 1) ∈ familyAgreementSet c
-        (fun b ↦ binaryLineFold r (u₀ b) (u₁ b)) := by
-      rw [hfull]
-      simp
-    have hii : i ∈ familyAgreementSet c (fun b ↦ binaryLineFold r (u₀ b) (u₁ b)) := by
-      have hi : i = 0 := Subsingleton.elim _ _
-      rw [hi]
-      exact hi0
-    have hi : i ∈ familyAgreementSet c (fun b ↦ binaryLineFold r (u₀ b) (u₁ b)) := by
-      exact hii
-    exact (mem_familyAgreementSet _ _ _).mp hi b
-  · rw [hfull]
-    simp [familyAgreementSet]
-
 private theorem singletonDetermined : DeterminedByAgreement probabilityCode 1 := by
   intro c _ d _ T hT hagree
   have hzero : (0 : Fin 1) ∈ T := by
@@ -82,10 +54,10 @@ private theorem singletonLineExact (V : Bool → Fin 1 → ZMod 2) :
     subst i
     simp [hroot]
 
-private def shortLine : Bool → Fin 1 → ZMod 2 := fun _ _ ↦ 0
-
-example : FullSetLevelWitness probabilityCode 1 0 :=
+private theorem singletonLevelWitness : FullSetLevelWitness probabilityCode 1 0 :=
   fullSetLevelWitness_of_uniformExactAgreement singletonDetermined singletonLineExact
+
+private def shortLine : Bool → Fin 1 → ZMod 2 := fun _ _ ↦ 0
 
 example : UniformExactAgreement binaryEqualityGenerator probabilityCode 1 0 shortLine :=
   (fullSetLevelWitness_iff singletonDetermined).mp singletonLevelWitness shortLine
@@ -151,12 +123,14 @@ example :
       ENNReal.ofReal 0 := by
   simpa using tensorFoldBad_probability_height_three singletonLevelWitness probabilityLeaves
 
+private def twoLevelLeaves : (Fin 2 → Bool) → Fin 1 → ℚ := fun leaf _ ↦
+  if leaf 0 then (if leaf 1 then 11 else 7) else (if leaf 1 then 5 else 3)
+
 example :
-    binaryTensorFold ![(0 : ℚ)]
-        (fun b : Fin 1 → Bool ↦ ![if b 0 then (7 : ℚ) else 4]) =
+    binaryTensorFold ![(2 : ℚ) / 3, 3 / 5] twoLevelLeaves =
       fun i ↦ ∑ leaf,
-        PolynomialGenIsMCA.tensorGeneratorPi (fun _ ↦ binaryEqualityGenerator) ![(0 : ℚ)] leaf •
-          (fun b : Fin 1 → Bool ↦ ![if b 0 then (7 : ℚ) else 4]) leaf i :=
+        PolynomialGenIsMCA.tensorGeneratorPi (fun _ ↦ binaryEqualityGenerator)
+          ![(2 : ℚ) / 3, 3 / 5] leaf • twoLevelLeaves leaf i :=
   binaryTensorFold_eq_tensorGeneratorPi _ _
 
 end ProximityGeneratorTest

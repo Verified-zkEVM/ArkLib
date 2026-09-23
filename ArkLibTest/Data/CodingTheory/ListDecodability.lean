@@ -78,10 +78,12 @@ example :
   · simpa [Fintype.card_fin] using h
 
 example :
-    (({![true, true, true]} : Finset (Fin 3 → Bool)).card : ℝ) *
-        (((3 : ℕ) : ℝ) ^ 2 - (Fintype.card (Fin 3) : ℝ) * ((0 : ℕ) : ℝ)) ≤
-      (Fintype.card (Fin 3) : ℝ) * ((Fintype.card (Fin 3) : ℝ) - ((0 : ℕ) : ℝ)) :=
-  card_mul_sq_minAgreement_sub_pairAgreement_le ![true, true, true] {![true, true, true]} 3 0
+    (({![false, false, false, true], ![false, false, true, false]} :
+        Finset (Fin 4 → Bool)).card : ℝ) *
+        (((3 : ℕ) : ℝ) ^ 2 - (Fintype.card (Fin 4) : ℝ) * ((2 : ℕ) : ℝ)) ≤
+      (Fintype.card (Fin 4) : ℝ) * ((Fintype.card (Fin 4) : ℝ) - ((2 : ℕ) : ℝ)) :=
+  card_mul_sq_minAgreement_sub_pairAgreement_le (fun _ : Fin 4 ↦ false)
+    {![false, false, false, true], ![false, false, true, false]} 3 2
     (by decide) (by decide) (by decide)
 
 example : ({![true, false, true]} : Finset (Fin 3 → Bool)).card ≤ 1 :=

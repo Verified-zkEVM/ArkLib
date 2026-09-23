@@ -9,6 +9,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredReconstruction
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.TensorFoldAgreement
+import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Tactic.NormNum
 
@@ -209,6 +210,46 @@ private def powerValues : Fin 2 → Fin 1 → Fin 1 → ZMod 2 :=
 example : UniformExactInterleavedPowerAgreement point powerValues 1 1 0 :=
   uniformExactInterleavedPowerAgreement_of_scalar point singletonPowerGuarantee le_rfl powerValues
 
+private def nestedDegree : Fin 2 → ℕ := fun _ ↦ 1
+
+private def nestedValues : (g : Fin 2) → Fin 2 → Fin 1 → ZMod 2 :=
+  fun g t _ ↦ if g = t then 1 else 0
+
+-- Both batching levels use two coefficients. The scalar singleton guarantee supplies the inner
+-- interleaved guarantee and the outer guarantee for this concrete array.
+example :
+    ∃ bad : Finset (ZMod 2 × ZMod 2),
+      bad.card ≤ Fintype.card (ZMod 2) * (0 + 0) ∧
+        (1, 1) ∉ bad ∧
+        HasExactNestedPowerAgreement point nestedDegree nestedValues 1 1 1 0 := by
+  have hdegree : ∀ g : Fin 2, nestedDegree g ≤ 1 := by
+    intro g
+    simp [nestedDegree]
+  have hinner : UniformExactInterleavedPowerAgreement point
+      (paddedPowerValues nestedDegree hdegree nestedValues) 1 1 0 :=
+    uniformExactInterleavedPowerAgreement_of_scalar point singletonPowerGuarantee le_rfl _
+  have houter : ∀ u, UniformExactPowerAgreement point
+      (fun g ↦ powerBatchedWord (nestedValues g) u) 1 1 0 := by
+    intro u
+    exact singletonPowerGuarantee (fun g ↦ powerBatchedWord (nestedValues g) u)
+  have hshared := nestedPowerAgreement_sharedInner (maxDegree := 1) (k := 1) (L := 1)
+    (innerE := 0) (outerE := 0) point nestedDegree hdegree nestedValues le_rfl hinner houter
+  obtain ⟨bad, hbadCard, hgood⟩ := hshared
+  have hbad : bad = ∅ := Finset.card_eq_zero.mp (by
+    have : bad.card ≤ 0 := by simpa using hbadCard
+    omega)
+  have hword : powerBatchedWord (fun g ↦ powerBatchedWord (nestedValues g) 1) 1 =
+      fun _ : Fin 1 ↦ (0 : ZMod 2) := by
+    funext i
+    fin_cases i
+    norm_num [powerBatchedWord, nestedValues, Fin.sum_univ_two, ZMod.natCast_self]
+    exact ZMod.natCast_self 2
+  have hclose : 1 ≤ (polynomialAgreementSet point
+      (powerBatchedWord (fun g ↦ powerBatchedWord (nestedValues g) 1) 1) 0).card := by
+    rw [hword]
+    simp [polynomialAgreementSet, point]
+  exact ⟨bad, hbadCard, by simp [hbad], hgood 1 1 (by simp [hbad]) 0 (by simp) hclose⟩
+
 private def foldValues : (Fin 3 → Bool) → Fin 1 → Fin 1 → ZMod 2 :=
   fun leaf _ _ ↦ if leaf 0 then 1 else 0
 
@@ -219,13 +260,54 @@ example :
   simpa using interleavedRS_tensorFoldBad_card_le_heightThree point singletonPowerGuarantee
     le_rfl (κ := Fin 1) foldValues
 
--- Packing into `F(Z)` bounds the list size of a concrete two-fold interleaving.
+private def domainTwoZMod2 : Fin 2 ↪ ZMod 2 :=
+  ⟨fun i ↦ (i.val : ZMod 2), fun a b h ↦ by
+    fin_cases a <;> fin_cases b <;> simp_all⟩
+
+noncomputable section
+
+local instance : DecidableEq (RatFunc (ZMod 2)) := Classical.decEq _
+
+private theorem scalarRatFuncLambdaHalfBound :
+    Lambda (code (domainTwoZMod2.trans ⟨algebraMap (ZMod 2) (RatFunc (ZMod 2)),
+      (algebraMap (ZMod 2) (RatFunc (ZMod 2))).injective⟩) 1 :
+        Set (Fin 2 → RatFunc (ZMod 2))) (1 / 2 : ℝ) ≤ 8 := by
+  apply Lambda_le_of_forall_finset_card_le
+  intro y T hT
+  have hpair : ∀ c ∈ code (domainTwoZMod2.trans ⟨algebraMap (ZMod 2) (RatFunc (ZMod 2)),
+      (algebraMap (ZMod 2) (RatFunc (ZMod 2))).injective⟩) 1,
+      ∀ c' ∈ code (domainTwoZMod2.trans ⟨algebraMap (ZMod 2) (RatFunc (ZMod 2)),
+        (algebraMap (ZMod 2) (RatFunc (ZMod 2))).injective⟩) 1,
+        c ≠ c' → (agree c c' : ℝ) ≤ (1 / 4 : ℝ) ^ 2 * Fintype.card (Fin 2) := by
+    intro c hc c' hc' hne
+    have hlt := agree_lt_of_mem_code hc hc' hne
+    have hzero : agree c c' = 0 := by omega
+    rw [hzero]
+    norm_num [Fintype.card_fin]
+  have hbound := Code.card_le_of_pairwise_agree_le (by norm_num : (0 : ℝ) < 1 / 4)
+    (by norm_num : (0 : ℝ) < 1 / 4) hpair y T (by
+      intro c hc
+      convert hT c hc using 1
+      norm_num)
+  have hreal : (T.card : ℝ) ≤ 8 := by
+    norm_num at hbound ⊢
+    exact hbound
+  exact_mod_cast hreal
+
+-- Packing over a two-point domain at radius one half has a finite scalar list-size bound.
 example :
-    Lambda (interleavedCodeSet (κ := Fin 2) (code point 1 : Set (Fin 1 → ZMod 2))) 1 ≤
-      Lambda (code (point.trans ⟨algebraMap (ZMod 2) (RatFunc (ZMod 2)),
+    Lambda (interleavedCodeSet (κ := Fin 2)
+      (code domainTwoZMod2 1 : Set (Fin 2 → ZMod 2))) (1 / 2 : ℝ) ≤
+        Lambda (code (domainTwoZMod2.trans ⟨algebraMap (ZMod 2) (RatFunc (ZMod 2)),
+          (algebraMap (ZMod 2) (RatFunc (ZMod 2))).injective⟩) 1 :
+            Set (Fin 2 → RatFunc (ZMod 2))) (1 / 2 : ℝ) ∧
+      Lambda (code (domainTwoZMod2.trans ⟨algebraMap (ZMod 2) (RatFunc (ZMod 2)),
         (algebraMap (ZMod 2) (RatFunc (ZMod 2))).injective⟩) 1 :
-          Set (Fin 1 → RatFunc (ZMod 2))) 1 :=
-  Lambda_interleaved_le_ratFunc point 1 2 1
+          Set (Fin 2 → RatFunc (ZMod 2))) (1 / 2 : ℝ) ≤ 8 := by
+  exact ⟨Lambda_interleaved_le_ratFunc domainTwoZMod2 1 2 (1 / 2 : ℝ),
+    scalarRatFuncLambdaHalfBound⟩
+
+end
 
 private def domain3 : Fin 3 ↪ ℚ :=
   ⟨fun i ↦ (i : ℚ), fun a b h ↦ Fin.ext (by simpa using h)⟩

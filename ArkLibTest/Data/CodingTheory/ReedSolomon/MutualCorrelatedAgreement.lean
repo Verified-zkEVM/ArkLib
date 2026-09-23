@@ -152,6 +152,17 @@ private def fullDomain : Fin 2 ↪ ℚ where
   toFun i := ((i : ℕ) : ℚ)
   inj' _i _j h := Fin.ext (Nat.cast_injective (R := ℚ) h)
 
+private theorem affineCandidateEvaluation (i : Fin 2) :
+    Polynomial.eval (fullDomain i) (C 1 + C 2 * X : ℚ[X]) =
+      ![1, 2] i + 1 * ![0, 1] i := by
+  fin_cases i
+  · norm_num [fullDomain]
+    change (0 : ℚ) = 0
+    rfl
+  · norm_num [fullDomain]
+    change 1 + 2 * (1 : ℚ) = 3
+    norm_num
+
 /-- At challenge `1`, the candidate `1 + 2X` is explained by one pair on both coordinates. -/
 example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
     commonPolynomialAgreementSet fullDomain ![1, 2] ![0, 1] F₀ G₀ = univ := by
@@ -160,13 +171,8 @@ example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
   have hagree : polynomialAgreementSet fullDomain (fun i ↦ ![1, 2] i + 1 * ![0, 1] i)
       (C 1 + C 2 * X) = univ := by
     ext i
-    fin_cases i
-    · norm_num [fullDomain, polynomialAgreementSet]
-      change (0 : ℚ) = 0
-      rfl
-    · norm_num [fullDomain, polynomialAgreementSet]
-      change 1 + 2 * (1 : ℚ) = 3
-      norm_num
+    simpa only [mem_polynomialAgreementSet, Finset.mem_univ, iff_true] using
+      affineCandidateEvaluation i
   obtain ⟨hP, hset⟩ := hpair 1 (C 1 + C 2 * X) (by
     rw [Fintype.card_fin]
     compute_degree!) (by rw [hagree, card_univ])
@@ -186,13 +192,7 @@ example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
   have heval : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
       Polynomial.eval (fullDomain i) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] i + 1 * ![0, 1] i := by
     intro i hi
-    fin_cases i
-    · norm_num [fullDomain]
-      change (0 : ℚ) = 0
-      rfl
-    · norm_num [fullDomain]
-      change 1 + 2 * (1 : ℚ) = 3
-      norm_num
+    exact affineCandidateEvaluation i
   exact ⟨F₀, G₀, hF₀, hG₀, hsample, heval 0 (by simp), heval 1 (by simp),
     by simpa using hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) hP heval⟩
 

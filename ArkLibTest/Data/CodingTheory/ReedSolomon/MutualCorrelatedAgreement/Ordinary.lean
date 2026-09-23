@@ -185,5 +185,10 @@ example : ∃ ex : Finset Unit, (ex.card : ℚ) ≤ ordinaryUnifiedPowerFactorRa
   rcases hresult with ⟨ex, hcard, hgood⟩
   exact ⟨ex, hcard, hgood, hzero⟩
 
-example : ordinaryFrobeniusMixedDegree 1 1 2 2 ≤ 2 * 2 + ordinaryPsi 1 4 := by
-  norm_num [ordinaryFrobeniusMixedDegree, ordinaryPsi]
+example : (∑ _i ∈ (Finset.univ : Finset (Fin 2)),
+    ordinaryFactorRaw 0 4 1 1 1) ≤ ordinaryFactorRaw 0 4 1 2 2 := by
+  have h := ordinaryFactorRaw_sum_le (S := (Finset.univ : Finset (Fin 2)))
+    (a := fun _ : Fin 2 ↦ 1) (height := fun _ : Fin 2 ↦ 1)
+    (theta := 0) (n := 4) (D := 1) (mu := 2) (H := 2) (contentHeight := 0)
+    (by norm_num) (by norm_num) (by simp) (by simp)
+  simpa using h
