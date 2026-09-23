@@ -117,11 +117,57 @@ example : ({Polynomial.X, -Polynomial.X} : Finset ℚ[X]).card ≤ 2 := by
 
 open UniqueFactorizationMonoid
 
+private noncomputable abbrev radicalSplitPolynomial : MvPolynomial (Fin 2) ℚ := X 0 * X 1
+
+private noncomputable abbrev radicalSplitEvaluation : MvPolynomial (Fin 2) ℚ →+* ℚ :=
+  eval₂Hom (RingHom.id ℚ) (fun _ : Fin 2 ↦ 0)
+
+private theorem radicalSplitPolynomial_ne_zero : radicalSplitPolynomial ≠ 0 := by
+  intro h
+  have h' := congrArg (eval₂Hom (RingHom.id ℚ) (fun _ : Fin 2 ↦ (1 : ℚ))) h
+  norm_num [radicalSplitPolynomial] at h'
+
 /-- The two radicals of a nonzero polynomial multiply to its radical representative. -/
 example :
     radicalContent 0 (X 1 * X 0 ^ 2 : MvPolynomial (Fin 2) ℚ) *
         radicalPrimPart 0 (X 1 * X 0 ^ 2) = radicalRep (X 1 * X 0 ^ 2) :=
   radicalContent_mul_radicalPrimPart 0 (X 1 * X 0 ^ 2)
+
+/-- At the origin, the split radical product and `X 0 * X 1` have the same zero value. -/
+example : radicalSplitEvaluation (radicalContent 0 radicalSplitPolynomial *
+    radicalPrimPart 0 radicalSplitPolynomial) = 0 ↔
+    radicalSplitEvaluation radicalSplitPolynomial = 0 :=
+  map_radicalContent_mul_radicalPrimPart_eq_zero_iff radicalSplitEvaluation 0
+    radicalSplitPolynomial_ne_zero
+
+/-- The total-degree budget for the factor split of `X 0 * X 1`. -/
+example : totalDegree (radicalContent 0 radicalSplitPolynomial) +
+    ∑ c ∈ positiveDegreeFactorClasses 0 radicalSplitPolynomial, totalDegree c.rep ≤
+      totalDegree radicalSplitPolynomial :=
+  add_sum_totalDegree_positiveDegreeFactorClasses_le 0 radicalSplitPolynomial
+
+/-- The origin is captured by the bounded exceptional set for the zero locus of `X 0 * X 1`. -/
+example : ∃ ex : Finset Unit,
+    (ex.card : ℤ) ≤ 1 + ∑ _c ∈ positiveDegreeFactorClasses 0 radicalSplitPolynomial, (1 : ℤ) ∧
+      () ∈ ex := by
+  obtain ⟨ex, hcard, hgood⟩ := exists_exceptional_of_factor_exceptional
+    (R := ℚ) (σ := Fin 2) (K := ℚ) (Fn := MvPolynomial (Fin 2) ℚ →+* ℚ) (α := ℤ)
+    0 radicalSplitPolynomial_ne_zero (fun _ _ ↦ radicalSplitEvaluation) (fun _ _ ↦ False)
+    1 (fun _ ↦ 1)
+    (by
+      refine ⟨(univ : Finset Unit), by simp, ?_⟩
+      intro w hw v
+      exact (hw (Finset.mem_univ _)).elim)
+    (by
+      intro _c _hc
+      refine ⟨(univ : Finset Unit), by simp, ?_⟩
+      intro w hw v hzero
+      exact (hw (Finset.mem_univ _)).elim)
+  refine ⟨ex, hcard, ?_⟩
+  by_contra hnot
+  have hzero : radicalSplitEvaluation radicalSplitPolynomial = 0 := by
+    simp [radicalSplitEvaluation, radicalSplitPolynomial]
+  exact hgood () hnot () hzero
 
 /-! ### Weighted degree -/
 

@@ -10,7 +10,10 @@ import ArkLib.Data.MvPolynomial.MapExponents
 import ArkLib.Data.MvPolynomial.WeightAtMost
 import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 import ArkLib.Data.MvPolynomial.WeightedOrder
+import Mathlib.Algebra.CharP.Lemmas
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.MvPolynomial.Division
+import Mathlib.Data.ZMod.Basic
 
 /-!
 # Acceptance tests for weighted multivariate polynomials
@@ -18,6 +21,8 @@ import Mathlib.Algebra.MvPolynomial.Division
 
 open MvPolynomial
 open scoped Polynomial
+
+local instance : Fact (Nat.Prime 2) := ⟨by decide⟩
 
 example : (MvPolynomial.C (Polynomial.X ^ 2 : ℚ[X]) *
     MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) ℚ[X]) ∈
@@ -33,16 +38,76 @@ example : (MvPolynomial.X (0 : Fin 1) : MvPolynomial (Fin 1) ℚ[X]) ∉
     (e := Finsupp.single 0 1) (by simp [Finsupp.weight_single])
   simp at this
 
-/-- The variable `X none` over `ℚ` has a terminal Frobenius contraction. -/
+private noncomputable abbrev frobeniusContractionInput :
+    MvPolynomial (Option (Fin 1)) (ZMod 2) :=
+  X none ^ 2 + X (some 0)
+
+private theorem irreducible_frobeniusContractionInput : Irreducible frobeniusContractionInput := by
+  let τ : Option (Fin 1) ≃ Option (Fin 1) := Equiv.swap none (some 0)
+  have hlin : Irreducible (Polynomial.X + Polynomial.C (X 0 ^ 2) :
+      Polynomial (MvPolynomial (Fin 1) (ZMod 2))) := by
+    simpa only [map_neg, sub_neg_eq_add] using
+      Polynomial.irreducible_X_sub_C (-(X 0 ^ 2 : MvPolynomial (Fin 1) (ZMod 2)))
+  have hlin' : (optionEquivLeft (ZMod 2) (Fin 1)).symm
+      (Polynomial.X + Polynomial.C (X 0 ^ 2)) =
+        renameEquiv (ZMod 2) τ frobeniusContractionInput := by
+    apply (optionEquivLeft (ZMod 2) (Fin 1)).injective
+    simp [frobeniusContractionInput, τ, optionEquivLeft_X_some, optionEquivLeft_X_none,
+      add_comm]
+  have h := hlin.map (optionEquivLeft (ZMod 2) (Fin 1)).symm
+  rw [hlin'] at h
+  exact (MulEquiv.irreducible_iff (renameEquiv (ZMod 2) τ).toMulEquiv).mp h
+
+private theorem degreeOf_frobeniusContractionInput :
+    frobeniusContractionInput.degreeOf none = 2 := by
+  rw [← natDegree_optionEquivLeft]
+  simp only [frobeniusContractionInput, map_add, map_pow, optionEquivLeft_X_none,
+    optionEquivLeft_X_some]
+  exact Polynomial.natDegree_X_pow_add_C
+
+private theorem pderiv_frobeniusContractionInput :
+    pderiv none frobeniusContractionInput = 0 := by
+  have htwo : (2 : MvPolynomial (Option (Fin 1)) (ZMod 2)) = 0 := by
+    exact CharP.cast_eq_zero (MvPolynomial (Option (Fin 1)) (ZMod 2)) 2
+  simp [frobeniusContractionInput, htwo]
+
+/-- In characteristic two, the terminal contraction of `X none ^ 2 + X (some 0)` has positive
+Frobenius exponent. -/
 example :
-    ∃ e : ℕ, ∃ G : MvPolynomial (Option (Fin 0)) ℚ,
-      pderiv none G ≠ 0 ∧
-      rootExpansion (0 ^ e) G = (X none : MvPolynomial (Option (Fin 0)) ℚ) ∧
-      G.degreeOf none * 0 ^ e = (X none : MvPolynomial (Option (Fin 0)) ℚ).degreeOf none ∧
-      0 < G.degreeOf none ∧ Irreducible G ∧
-      ∀ j : Fin 0, G.degreeOf (some j) ≤ (X none : MvPolynomial (Option (Fin 0)) ℚ).degreeOf
-        (some j) := by
-  exact exists_irreducible_frobeniusContraction 0 (by simp) X_prime.irreducible
+    ∃ e : ℕ, ∃ G : MvPolynomial (Option (Fin 1)) (ZMod 2),
+      0 < e ∧ rootExpansion (2 ^ e) G = frobeniusContractionInput ∧ pderiv none G ≠ 0 := by
+  have hFpos : 0 < frobeniusContractionInput.degreeOf none := by
+    rw [degreeOf_frobeniusContractionInput]
+    norm_num
+  obtain ⟨e, G, hder, hGF, -, -, -, -⟩ :=
+    exists_irreducible_frobeniusContraction 2 hFpos irreducible_frobeniusContractionInput
+  have he : 0 < e := by
+    by_contra h
+    have he0 : e = 0 := by omega
+    subst e
+    rw [pow_zero, rootExpansion, Polynomial.expand_one, AlgEquiv.symm_apply_apply] at hGF
+    apply hder
+    rw [hGF]
+    exact pderiv_frobeniusContractionInput
+  exact ⟨e, G, he, hGF, hder⟩
+
+/-- The same two-variable characteristic-two input has an irreducible separable image in its
+fraction field. -/
+example : ∃ e : ℕ, ∃ G : MvPolynomial (Option (Fin 1)) (ZMod 2),
+    rootExpansion (2 ^ e) G = frobeniusContractionInput ∧
+    Irreducible ((optionEquivLeft (ZMod 2) (Fin 1) G).map
+      (algebraMap (MvPolynomial (Fin 1) (ZMod 2))
+        (FractionRing (MvPolynomial (Fin 1) (ZMod 2))))) ∧
+    ((optionEquivLeft (ZMod 2) (Fin 1) G).map
+      (algebraMap (MvPolynomial (Fin 1) (ZMod 2))
+        (FractionRing (MvPolynomial (Fin 1) (ZMod 2))))).Separable := by
+  have hFpos : 0 < frobeniusContractionInput.degreeOf none := by
+    rw [degreeOf_frobeniusContractionInput]
+    norm_num
+  obtain ⟨e, G, -, hGF, -, -, -, -, hIrr, hSep⟩ :=
+    exists_frobeniusContraction_fractionRing (L := FractionRing
+      (MvPolynomial (Fin 1) (ZMod 2))) 2 hFpos irreducible_frobeniusContractionInput
+  exact ⟨e, G, hGF, hIrr, hSep⟩
 
 example : mapExponents (2 • AddMonoidHom.id (Fin 1 →₀ ℕ)) (X 0 : MvPolynomial (Fin 1) ℚ) =
     X 0 ^ 2 := by
