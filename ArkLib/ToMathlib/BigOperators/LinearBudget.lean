@@ -76,8 +76,10 @@ theorem sum_tsub_add_sum_eq_card_mul {ι : Type*} (s : Finset ι) (w : ι → �
       rw [Nat.sub_add_cancel (hw i hi)]
     _ = s.card * (h + 1) := by simp
 
-/-- The least height at least `floor` whose product with the support surplus exceeds its total
-weight, using the positive part `card - rows` as the divisor. -/
+/-- When `rows < s.card`, the least height at least `floor` for which `(height + 1)` times the
+surplus `s.card - rows` exceeds the total weight. Then
+`rows_mul_slotSurplusHeight_add_one_lt_sum_tsub` proves that
+`rows * (height + 1) < ∑ i ∈ s, (height + 1 - w i)`. -/
 def slotSurplusHeight {ι : Type*} (s : Finset ι) (w : ι → ℕ) (floor rows : ℕ) : ℕ :=
   max floor (s.sum w / (s.card - rows))
 

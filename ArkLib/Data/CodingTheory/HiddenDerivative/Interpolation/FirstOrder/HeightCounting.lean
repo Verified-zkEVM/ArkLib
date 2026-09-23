@@ -22,8 +22,6 @@ The support also enumerates as distinct symbolic source columns for the interpol
 
 * `firstOrderColumnSlotCount_eq_heightSlotCount` identifies the support sum and its executable
   nested sum.
-* `firstOrderCoordinatesEquiv` reindexes support exponents by dimension coordinates, and
-  `firstOrderCoordinatesEquiv_y₀` identifies the `Y₀` coordinate.
 * `firstOrder_rowTotal_mul_height_lt_columnSlotCount` and
   `firstOrder_rowTotal_mul_height_lt_heightSlotCount` give a strict slot surplus.
 * `firstOrderColumns` enumerates the first-order support as distinct symbolic source columns.
@@ -96,71 +94,6 @@ theorem firstOrder_rowTotal_mul_height_lt_columnSlotCount
       (firstOrderExponents D A m M μ) (fun u ↦ u (some 0)) μ rowTotal hrank
       (fun u hu => firstOrder_y₀_le_μ hu))
 
-/-- The exponent vector corresponding to a first-order dimension coordinate triple. -/
-def firstOrderCoordinateExponent
-    (q : Σ _ : (Σ _ : ℕ, ℕ), ℕ) : JetVariable 1 →₀ ℕ :=
-  Finsupp.single none q.2 + Finsupp.single (some 0) (q.1.1 - q.1.2) +
-    Finsupp.single (some 1) q.1.2
-
-/-- The `Y₀` exponent corresponding to a dimension coordinate is `t - b`. -/
-theorem firstOrderCoordinateExponent_y₀
-    (q : Σ _ : (Σ _ : ℕ, ℕ), ℕ) :
-    firstOrderCoordinateExponent q (some 0) = q.1.1 - q.1.2 := by
-  simp [firstOrderCoordinateExponent]
-
-/-- The finite first-order support is indexed by the dimension coordinate triples. -/
-def firstOrderCoordinatesEquiv (hD : 0 < D) :
-    (↑(firstOrderExponents D A m M μ)) ≃
-      (↑(firstOrderDimensionCoordinates D A m M μ)) := by
-  refine
-    { toFun := fun u ↦ ⟨⟨⟨u.1 (some 0) + u.1 (some 1), u.1 (some 1)⟩, u.1 none⟩, ?_⟩
-      invFun := fun q ↦ ⟨firstOrderCoordinateExponent q.1, ?_⟩
-      left_inv := ?_
-      right_inv := ?_ }
-  · have hu := (mem_firstOrderExponents_iff_coordinates.mp u.2)
-    rw [firstOrderWeight_lt_iff_lt_residual hD] at hu
-    simp only [firstOrderDimensionCoordinates, Finset.mem_sigma, Finset.mem_range]
-    omega
-  · have hq := q.2
-    simp only [firstOrderDimensionCoordinates, Finset.mem_sigma, Finset.mem_range] at hq
-    rcases hq with ⟨⟨ht, hb⟩, hx⟩
-    have hbt : q.1.1.2 ≤ q.1.1.1 := by omega
-    have ht' : q.1.1.1 ≤ μ := by omega
-    have hb' : q.1.1.2 ≤ M := by omega
-    have hx' : q.1.2 < m * A + q.1.1.2 - D * q.1.1.1 := by omega
-    have hweight : q.1.2 + D * (q.1.1.1 - q.1.1.2) +
-        (D - 1) * q.1.1.2 < m * A := by
-      rw [firstOrderWeight_lt_iff_lt_residual hD]
-      simpa [Nat.sub_add_cancel hbt] using hx'
-    rw [mem_firstOrderExponents_iff_coordinates]
-    simpa [firstOrderCoordinateExponent] using
-      (show q.1.1.2 ≤ M ∧
-        (q.1.1.1 - q.1.1.2) + q.1.1.2 ≤ μ ∧
-          q.1.2 + D * (q.1.1.1 - q.1.1.2) + (D - 1) * q.1.1.2 < m * A from
-        ⟨hb', by omega, hweight⟩)
-  · intro u
-    apply Subtype.ext
-    apply Finsupp.ext
-    intro v
-    rcases v with _ | j
-    · simp [firstOrderCoordinateExponent]
-    · fin_cases j <;> simp [firstOrderCoordinateExponent]
-  · intro q
-    apply Subtype.ext
-    have hq := q.2
-    simp only [firstOrderDimensionCoordinates, Finset.mem_sigma, Finset.mem_range] at hq
-    have hbt : q.1.1.2 ≤ q.1.1.1 := by omega
-    simp [firstOrderCoordinateExponent, Nat.sub_add_cancel hbt]
-
-/-- The support exponent's `Y₀` coordinate is its total-jet degree minus its `Y₁` exponent.
-The hypothesis `0 < D` is needed to index every support exponent by a dimension coordinate. -/
-theorem firstOrderCoordinatesEquiv_y₀ (hD : 0 < D)
-    (u : ↑(firstOrderExponents D A m M μ)) :
-    u.1 (some 0) =
-      (firstOrderCoordinatesEquiv hD u).1.1.1 -
-        (firstOrderCoordinatesEquiv hD u).1.1.2 := by
-  simp [firstOrderCoordinatesEquiv]
-
 /-- The dimension-coordinate sum counts the same height slots as `firstOrderHeightSlotCount`. -/
 theorem sum_firstOrderDimensionCoordinates_height (D A m M μ h : ℕ) :
     (Finset.univ.sum fun q : ↑(firstOrderDimensionCoordinates D A m M μ) ↦
@@ -203,11 +136,8 @@ theorem firstOrder_rowTotal_mul_height_lt_heightSlotCount (hD : 0 < D)
 /-- Enumerate every first-order support exponent as a symbolic source column. -/
 def firstOrderColumns :
     Fin (Fintype.card ↑(firstOrderExponents D A m M μ)) → SourceColumn 1 :=
-  fun j ↦
-    let u := ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1
-    { x := u none
-      y₀ := u (some 0)
-      higher := fun k ↦ u (some k.succ) }
+  fun j ↦ SourceColumn.ofExponent
+    (((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1)
 
 /-- The exponent of each enumerated column is its indexed first-order support exponent. -/
 @[simp]
@@ -215,11 +145,7 @@ theorem firstOrderColumns_exponent
     (j : Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) :
     (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ) j).exponent =
       ((Fintype.equivFin ↑(firstOrderExponents D A m M μ)).symm j).1 := by
-  apply Finsupp.ext
-  intro v
-  rcases v with _ | i
-  · simp [firstOrderColumns]
-  · fin_cases i <;> simp [firstOrderColumns, SourceColumn.exponent]
+  simp [firstOrderColumns]
 
 /-- Distinct indices enumerate distinct first-order source columns. -/
 theorem firstOrderColumns_injective :

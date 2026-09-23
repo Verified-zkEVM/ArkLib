@@ -16,6 +16,7 @@ coordinate count can include tuples that do not satisfy the first-order support 
 -/
 
 open ReedSolomon.HiddenDerivative
+open PolynomialDifferential
 open scoped BigOperators
 
 /-- At `(D,A,m,M,μ,h) = (2,3,1,0,1,1)`, the first-order height sum is seven. -/
@@ -64,3 +65,33 @@ example :
       ∀ j, (firstOrderColumns (D := 2) (A := 3) (m := 1) (M := 0) (μ := 1) j).exponent ∈
         firstOrderExponents 2 3 1 0 1 :=
   ⟨firstOrderColumns_injective, firstOrderColumns_eligible⟩
+
+/-- At `(D,A,m,M,μ) = (2,1,3,0,1)`, total degree zero contributes three exponents and total
+degree one contributes one, for four dimension coordinates. -/
+example : firstOrderDimensionCount 2 1 3 0 1 = 4 := by
+  decide
+
+/-- The finite first-order support has four elements, matching its dimension-coordinate count. -/
+example : Fintype.card ↑(firstOrderExponents 2 1 3 0 1) = 4 := by
+  calc
+    Fintype.card ↑(firstOrderExponents 2 1 3 0 1) =
+        (firstOrderExponents 2 1 3 0 1).card := Fintype.card_coe _
+    _ = firstOrderDimensionCount 2 1 3 0 1 :=
+      card_firstOrderExponents (D := 2) (A := 1) (m := 3) (M := 0) (μ := 1) (by omega)
+    _ = 4 := by decide
+
+/-- Exponent images of the four enumerated columns cover exactly the concrete support. -/
+example :
+    SourceColumn.exponent '' Set.range
+      (firstOrderColumns (D := 2) (A := 1) (m := 3) (M := 0) (μ := 1)) =
+      (firstOrderExponents 2 1 3 0 1 : Set (JetVariable 1 →₀ ℕ)) := by
+  ext u
+  constructor
+  · rintro ⟨c, ⟨j, rfl⟩, hu⟩
+    rw [← hu]
+    exact firstOrderColumns_eligible j
+  · intro hu
+    obtain ⟨j, hj⟩ :=
+      (Fintype.equivFin ↑(firstOrderExponents 2 1 3 0 1)).symm.surjective ⟨u, hu⟩
+    refine ⟨firstOrderColumns j, ⟨j, rfl⟩, ?_⟩
+    simpa only [firstOrderColumns_exponent] using congrArg Subtype.val hj
