@@ -7,10 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Basic
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Gate
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformParameters
-
-import Mathlib.Analysis.Convex.Deriv
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
 
 /-!
 # The 300-based uniform rate-partition parameters
@@ -184,11 +181,6 @@ private theorem mathematical_log_forty_ninths_eq :
       rw [Real.log_pow, Real.log_pow]
       norm_num
 
-private theorem mathematical_log_forty_ninths_gt :
-    (149 / 100 : ℝ) < Real.log (40 / 9 : ℝ) := by
-  rw [mathematical_log_forty_ninths_eq]
-  linarith [Real.log_two_gt_d9, Real.log_three_lt_d9, Real.log_five_gt_d9]
-
 private theorem mathematical_uniform_margin_numeric :
     (151 / 150 : ℝ) < Real.exp (3 / 2 - Real.log (40 / 9)) *
       Real.exp (-(1677 / 1000000 : ℝ)) := by
@@ -222,302 +214,6 @@ private theorem mathematical_uniform_margin_numeric :
   rw [← Real.exp_log (by norm_num : (0 : ℝ) < 151 / 150), ← Real.exp_add]
   exact Real.exp_lt_exp.mpr (by linarith)
 
-private def lowMathematicalLogMargin (δ : ℝ) : ℝ :=
-  3 / (2 * δ) - 3 + Real.log (27 / 10) +
-    2 * Real.log δ - 2 * δ * Real.log 6
-
-private theorem lowMathematicalLogMargin_quarter_gt :
-    (3 / 10 : ℝ) < lowMathematicalLogMargin (1 / 4) := by
-  rw [lowMathematicalLogMargin,
-    show Real.log (27 / 10 : ℝ) = 3 * Real.log 3 - Real.log 2 - Real.log 5 by
-      calc
-        Real.log (27 / 10 : ℝ) = Real.log 27 - Real.log 10 := by
-          rw [Real.log_div] <;> norm_num
-        _ = 3 * Real.log 3 - Real.log 2 - Real.log 5 := by
-          rw [show (27 : ℝ) = 3 ^ 3 by norm_num,
-            show (10 : ℝ) = 2 * 5 by norm_num, Real.log_pow,
-            Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (5 : ℝ) ≠ 0)]
-          ring,
-    show Real.log (1 / 4 : ℝ) = -2 * Real.log 2 by
-      rw [show (1 / 4 : ℝ) = (2 ^ 2)⁻¹ by norm_num, Real.log_inv, Real.log_pow]
-      ring,
-    show Real.log 6 = Real.log 2 + Real.log 3 by
-      rw [← Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (3 : ℝ) ≠ 0)]
-      norm_num]
-  linarith [Real.log_two_lt_d9, Real.log_three_gt_d9, Real.log_five_lt_d9]
-
-private theorem lowMathematicalLogMargin_gt {δ : ℝ} (hδ : 0 < δ)
-    (hδmax : δ < 6 / 25) : (3 / 10 : ℝ) < lowMathematicalLogMargin δ := by
-  have hquarter : δ ≤ 1 / 4 := by linarith
-  let x : ℝ := 1 / (4 * δ)
-  have hxpos : 0 < x := by dsimp [x]; positivity
-  have hxone : 1 ≤ x := by
-    dsimp [x]
-    apply (le_div_iff₀ (mul_pos (by norm_num) hδ)).2
-    nlinarith
-  have hlogx : Real.log x ≤ x - 1 := Real.log_le_sub_one_of_pos hxpos
-  have hx_eq : x = (1 / 4 : ℝ) / δ := by
-    dsimp [x]
-    field_simp
-  have hlogdiff : Real.log δ - Real.log (1 / 4 : ℝ) = -Real.log x := by
-    rw [hx_eq, Real.log_div (by norm_num : (1 / 4 : ℝ) ≠ 0) hδ.ne']
-    ring
-  have hrecip : 3 / (2 * δ) = 6 * x := by
-    dsimp [x]
-    field_simp
-    ring
-  have hlog6 : 0 < Real.log 6 := Real.log_pos (by norm_num)
-  have hcompare : lowMathematicalLogMargin (1 / 4) ≤
-      lowMathematicalLogMargin δ := by
-    unfold lowMathematicalLogMargin
-    nlinarith
-  exact lowMathematicalLogMargin_quarter_gt.trans_le hcompare
-
-private theorem uniformDerivativeOrder_log_lower {δ : ℝ} (hδ : 0 < δ) :
-    3 / (2 * δ) ≤ Real.log (uniformDerivativeOrder δ : ℝ) := by
-  have hexp := Real.exp_pos (3 / (2 * δ))
-  have heq : (3 / 2 : ℝ) / δ = 3 / (2 * δ) := by field_simp
-  have hceil : Real.exp (3 / (2 * δ)) ≤ (uniformDerivativeOrder δ : ℝ) := by
-    rw [uniformDerivativeOrder, heq]
-    exact Nat.le_ceil _
-  simpa only [Real.log_exp] using Real.log_le_log hexp hceil
-
-private theorem uniformMathematicalGamma_low_base_gt {δ : ℝ} (hδ : 0 < δ)
-    (hδmax : δ < 6 / 25) :
-    Real.exp (3 / 2 - Real.log (40 / 9)) <
-      rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) := by
-  let d := uniformDerivativeOrder δ
-  have hd519 : 519 ≤ d := uniformDerivativeOrder_ge_519 hδ hδmax
-  have hd : 0 < d := by omega
-  have hdR : (0 : ℝ) < d := by exact_mod_cast hd
-  have hR : 0 < 2 * δ ^ 2 := by positivity
-  have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) :=
-    uniformDerivativeOrder_log_lower hδ
-  have hcoefficient : 0 < 1 - 2 * δ := by linarith
-  have hlogfactor :
-      Real.log ((27 / 20 : ℝ) * (2 * δ ^ 2)) =
-        Real.log (27 / 10) + 2 * Real.log δ := by
-    rw [show (27 / 20 : ℝ) * (2 * δ ^ 2) = (27 / 10) * δ ^ 2 by ring,
-      Real.log_mul (by norm_num : (27 / 10 : ℝ) ≠ 0) (sq_pos_of_pos hδ).ne',
-      Real.log_pow]
-    norm_num
-  have hlogsucc : Real.log (d : ℝ) < Real.log ((d : ℝ) + 1) :=
-    Real.strictMonoOn_log (by simpa using hdR) (by simp; linarith) (by linarith)
-  have hloggamma : lowMathematicalLogMargin δ <
-      Real.log (rateGamma (2 * δ ^ 2) δ d) := by
-    rw [log_rateGamma (rate := 2 * δ ^ 2) (agreement := δ) hR.ne' hd]
-    rw [show Real.log (27 * (2 * δ ^ 2) / 20) =
-      Real.log ((27 / 20 : ℝ) * (2 * δ ^ 2)) by congr 1; ring, hlogfactor]
-    have hmain := mul_le_mul_of_nonneg_left hlogd hcoefficient.le
-    have hmain' : 3 / (2 * δ) - 3 ≤ (1 - 2 * δ) * Real.log d := by
-      calc
-        3 / (2 * δ) - 3 = (1 - 2 * δ) * (3 / (2 * δ)) := by field_simp
-        _ ≤ (1 - 2 * δ) * Real.log d := hmain
-    have hcombine : 3 / (2 * δ) - 3 <
-        Real.log ((d : ℝ) + 1) - 2 * δ * Real.log d := by
-      nlinarith
-    unfold lowMathematicalLogMargin
-    have hratio : (2 * δ ^ 2) / δ = 2 * δ := by field_simp
-    rw [hratio]
-    calc
-      3 / (2 * δ) - 3 + Real.log (27 / 10) + 2 * Real.log δ -
-          2 * δ * Real.log 6 <
-        Real.log (27 / 10) + 2 * Real.log δ +
-          (Real.log ((d : ℝ) + 1) - 2 * δ * Real.log d) -
-            2 * δ * Real.log 6 := by linarith
-      _ = Real.log (27 / 10) + 2 * Real.log δ + Real.log ((d : ℝ) + 1) -
-          2 * δ * (Real.log 6 + Real.log d) := by ring
-      _ = Real.log (27 / 10) + 2 * Real.log δ + Real.log ((d : ℝ) + 1) -
-          2 * δ * Real.log (6 * (d : ℝ)) := by
-        rw [Real.log_mul (by norm_num : (6 : ℝ) ≠ 0) hdR.ne']
-  have hlower : 3 / 2 - Real.log (40 / 9) <
-      Real.log (rateGamma (2 * δ ^ 2) δ d) := by
-    have hm := lowMathematicalLogMargin_gt hδ hδmax
-    have hc := mathematical_log_forty_ninths_gt
-    linarith
-  have hgammapos : 0 < rateGamma (2 * δ ^ 2) δ d := rateGamma_pos hR hd
-  rw [← Real.exp_log hgammapos]
-  exact Real.exp_lt_exp.mpr hlower
-
-private def highMathematicalLogMargin (rate gap : ℝ) : ℝ :=
-  Real.log (27 * rate / 20) + (3 / 2 - rate * Real.log 6) / (rate + gap)
-
-private theorem highMathematicalLogMargin_hasDerivAt {rate gap : ℝ}
-    (hrate : 0 < rate) (hsum : 0 < rate + gap) :
-    HasDerivAt (fun x ↦ highMathematicalLogMargin x gap)
-      (1 / rate - (3 / 2 + gap * Real.log 6) / (rate + gap) ^ 2) rate := by
-  have hargpos : 0 < (27 / 20 : ℝ) * rate := by positivity
-  have harg : HasDerivAt (fun x : ℝ ↦ (27 / 20) * x) (27 / 20) rate :=
-    by simpa using (hasDerivAt_id rate).const_mul (27 / 20)
-  have hlogterm := (Real.hasDerivAt_log hargpos.ne').comp rate harg
-  have hnum : HasDerivAt (fun x : ℝ ↦ 3 / 2 - x * Real.log 6)
-      (-Real.log 6) rate := by
-    convert (hasDerivAt_const rate (3 / 2)).sub
-      ((hasDerivAt_id rate).const_mul (Real.log 6)) using 1
-    · ext x
-      dsimp
-      ring
-    · ring_nf
-  have hden : HasDerivAt (fun x : ℝ ↦ x + gap) 1 rate :=
-    (hasDerivAt_id rate).add_const gap
-  have hquot := hnum.div hden hsum.ne'
-  have hsumDeriv := hlogterm.add hquot
-  convert hsumDeriv using 1
-  · ext x
-    simp [highMathematicalLogMargin, Function.comp_apply]
-    ring_nf
-  · field_simp [hrate.ne', hsum.ne']
-    ring
-
-private theorem mathematical_log_six_gt : (3 / 2 : ℝ) < Real.log 6 := by
-  have hlog6 : Real.log 6 = Real.log 2 + Real.log 3 := by
-    rw [show (6 : ℝ) = 2 * 3 by norm_num,
-      Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (3 : ℝ) ≠ 0)]
-  rw [hlog6]
-  linarith [Real.log_two_gt_d9, Real.log_three_gt_d9]
-
-private theorem highMathematicalLogMargin_antitone {δ : ℝ}
-    (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
-    AntitoneOn (fun rate ↦ highMathematicalLogMargin rate δ)
-      (Set.Icc (δ ^ 2) (1 - δ)) := by
-  have hδupper : δ ≤ 1 / 4 := by linarith
-  have hlog6 := mathematical_log_six_gt
-  apply antitoneOn_of_deriv_nonpos (convex_Icc (δ ^ 2) (1 - δ))
-  · intro rate hr
-    have hrpos : 0 < rate := (sq_pos_of_pos hδ).trans_le hr.1
-    have hderiv := highMathematicalLogMargin_hasDerivAt (gap := δ) hrpos (by linarith)
-    have hcont := hderiv.continuousAt
-    exact hcont.continuousWithinAt
-  · intro rate hr
-    have hr' : rate ∈ Set.Ioo (δ ^ 2) (1 - δ) := by
-      simpa only [interior_Icc] using hr
-    have hrpos : 0 < rate := (sq_pos_of_pos hδ).trans hr'.1
-    have hderiv := highMathematicalLogMargin_hasDerivAt (gap := δ) hrpos (by linarith)
-    have hdiff := hderiv.differentiableAt
-    exact hdiff.differentiableWithinAt
-  · intro rate hr
-    have hr' : rate ∈ Set.Ioo (δ ^ 2) (1 - δ) := by
-      simpa only [interior_Icc] using hr
-    have hrpos : 0 < rate := (sq_pos_of_pos hδ).trans hr'.1
-    have hratele : rate ≤ 1 := by linarith [hr'.2]
-    have hproduct : 0 ≤ (1 - rate) * (rate - δ ^ 2) :=
-      mul_nonneg (sub_nonneg.mpr hratele) (sub_nonneg.mpr hr'.1.le)
-    have hreciprocal : rate + δ ^ 2 / rate ≤ 1 + δ ^ 2 := by
-      have heq : rate + δ ^ 2 / rate = (rate ^ 2 + δ ^ 2) / rate := by
-        field_simp
-      rw [heq, div_le_iff₀ hrpos]
-      nlinarith [hproduct]
-    have hderiv := (highMathematicalLogMargin_hasDerivAt (gap := δ) hrpos (by linarith)).deriv
-    have hpoly : (1 + δ) ^ 2 ≤ 3 / 2 + (3 / 2) * δ := by nlinarith
-    have hbound : rate + 2 * δ + δ ^ 2 / rate ≤ 3 / 2 + δ * Real.log 6 := by
-      calc
-        rate + 2 * δ + δ ^ 2 / rate ≤ 1 + δ ^ 2 + 2 * δ := by linarith
-        _ = (1 + δ) ^ 2 := by ring
-        _ ≤ 3 / 2 + (3 / 2) * δ := hpoly
-        _ ≤ 3 / 2 + δ * Real.log 6 := by
-          have hmul := mul_le_mul_of_nonneg_left hlog6.le hδ.le
-          nlinarith
-    have hdenpos : 0 < (rate + δ) ^ 2 := by positivity
-    have hfrac : (rate + δ) ^ 2 / rate ≤ 3 / 2 + δ * Real.log 6 := by
-      calc
-        (rate + δ) ^ 2 / rate = rate + 2 * δ + δ ^ 2 / rate := by
-          field_simp
-          ring
-        _ ≤ 3 / 2 + δ * Real.log 6 := hbound
-    rw [hderiv, sub_nonpos]
-    apply (div_le_div_iff₀ hrpos hdenpos).2
-    have hscaled := (div_le_iff₀ hrpos).mp hfrac
-    nlinarith
-
-private theorem highMathematicalLogMargin_endpoint_gt {δ : ℝ}
-    (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
-    3 / 2 - Real.log (40 / 9) < highMathematicalLogMargin (1 - δ) δ := by
-  have hδquarter : δ < 1 / 4 := by linarith
-  have hspos : 0 < 1 - δ := by linarith
-  have hlog6 := mathematical_log_six_gt
-  have hreciprocal : 1 / (1 - δ) < 3 / 2 := by
-    apply (div_lt_iff₀ hspos).2
-    nlinarith
-  have hgaplog : δ / (1 - δ) < δ * Real.log 6 := by
-    calc
-      δ / (1 - δ) = δ * (1 / (1 - δ)) := by ring
-      _ < δ * Real.log 6 := mul_lt_mul_of_pos_left (hreciprocal.trans hlog6) hδ
-  have hlog := Real.one_sub_inv_le_log_of_pos hspos
-  have hrewrite : 1 - (1 - δ)⁻¹ = -(δ / (1 - δ)) := by field_simp; ring
-  rw [hrewrite] at hlog
-  have hsum : 0 < Real.log (1 - δ) + δ * Real.log 6 := by linarith
-  have hlogprod : Real.log (27 * (1 - δ) / 20) =
-      Real.log (27 / 20) + Real.log (1 - δ) := by
-    rw [show (27 * (1 - δ) / 20 : ℝ) = (27 / 20) * (1 - δ) by ring,
-      Real.log_mul (by norm_num : (27 / 20 : ℝ) ≠ 0) hspos.ne']
-  rw [highMathematicalLogMargin, show (1 - δ) + δ = 1 by ring, hlogprod]
-  have hconst : Real.log (27 / 20) + Real.log (40 / 9) = Real.log 6 := by
-    rw [← Real.log_mul (by norm_num : (27 / 20 : ℝ) ≠ 0)
-      (by norm_num : (40 / 9 : ℝ) ≠ 0)]
-    congr 1
-    norm_num
-  linarith
-
-private theorem uniformMathematicalGamma_high_base_gt {R δ : ℝ}
-    (hδ : 0 < δ) (hδmax : δ < 6 / 25)
-    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
-    Real.exp (3 / 2 - Real.log (40 / 9)) <
-      rateGamma R (R + δ) (uniformDerivativeOrder δ) := by
-  let d := uniformDerivativeOrder δ
-  have hd519 : 519 ≤ d := uniformDerivativeOrder_ge_519 hδ hδmax
-  have hd : 0 < d := by omega
-  have hdR : (0 : ℝ) < d := by exact_mod_cast hd
-  have hRpos : 0 < R := (sq_pos_of_pos hδ).trans_le hRlow
-  have ha : 0 < R + δ := add_pos hRpos hδ
-  have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) :=
-    uniformDerivativeOrder_log_lower hδ
-  have hthree : (3 / 2 : ℝ) ≤ δ * Real.log (d : ℝ) := by
-    calc
-      (3 / 2 : ℝ) = δ * (3 / (2 * δ)) := by field_simp
-      _ ≤ δ * Real.log (d : ℝ) := mul_le_mul_of_nonneg_left hlogd hδ.le
-  have hlogsucc : Real.log (d : ℝ) < Real.log ((d : ℝ) + 1) :=
-    Real.strictMonoOn_log (by simpa using hdR) (by simp; linarith) (by linarith)
-  have hlogfactor : Real.log ((27 / 20 : ℝ) * R) =
-      Real.log (27 / 20) + Real.log R := by
-    rw [Real.log_mul (by norm_num : (27 / 20 : ℝ) ≠ 0) hRpos.ne']
-  have hloggamma := log_rateGamma (rate := R) (agreement := R + δ) hRpos.ne' hd
-  have hscaled :
-      (R + δ) * Real.log (rateGamma R (R + δ) d) =
-        (R + δ) * Real.log (27 * R / 20) +
-          (R + δ) * Real.log ((d : ℝ) + 1) - R * (Real.log 6 + Real.log d) := by
-    rw [hloggamma, Real.log_mul (by norm_num : (6 : ℝ) ≠ 0) hdR.ne']
-    field_simp [ha.ne']
-  have hcombine : (3 / 2 : ℝ) <
-      (R + δ) * Real.log ((d : ℝ) + 1) - R * Real.log d := by
-    have hdelta := mul_lt_mul_of_pos_left hlogsucc hδ
-    nlinarith
-  have hmarginNumerator :
-      (R + δ) * Real.log (27 * R / 20) + (3 / 2 - R * Real.log 6) <
-        Real.log (rateGamma R (R + δ) d) * (R + δ) := by
-    calc
-      (R + δ) * Real.log (27 * R / 20) + (3 / 2 - R * Real.log 6) <
-          (R + δ) * Real.log (rateGamma R (R + δ) d) := by
-        rw [hscaled]
-        nlinarith [hcombine]
-      _ = Real.log (rateGamma R (R + δ) d) * (R + δ) := by ring
-  have hmarginEq : highMathematicalLogMargin R δ =
-      ((R + δ) * Real.log (27 * R / 20) + (3 / 2 - R * Real.log 6)) / (R + δ) := by
-    unfold highMathematicalLogMargin
-    field_simp [ha.ne']
-  have hloglower : highMathematicalLogMargin R δ <
-      Real.log (rateGamma R (R + δ) d) := by
-    rw [hmarginEq]
-    exact (div_lt_iff₀ ha).2 hmarginNumerator
-  have hmargin : highMathematicalLogMargin (1 - δ) δ ≤
-      highMathematicalLogMargin R δ :=
-    highMathematicalLogMargin_antitone hδ hδmax
-      ⟨hRlow, hRtop⟩ ⟨by nlinarith, le_rfl⟩ hRtop
-  have hlower : 3 / 2 - Real.log (40 / 9) <
-      Real.log (rateGamma R (R + δ) d) :=
-    (highMathematicalLogMargin_endpoint_gt hδ hδmax).trans_le hmargin |>.trans hloglower
-  rw [← Real.exp_log (rateGamma_pos hRpos hd)]
-  exact Real.exp_lt_exp.mpr hlower
-
 private theorem rateGamma_eq_exp {rate agreement : ℝ} {order : ℕ}
     (horder : 0 < order) :
     rateGamma rate agreement order =
@@ -537,7 +233,7 @@ theorem uniformMathematical_low_ratio_gt {δ : ℝ}
   have hd := uniformDerivativeOrder_ge_519 hδ hδmax
   have hR : 0 < 2 * δ ^ 2 := by positivity
   have hRa : 2 * δ ^ 2 < δ := by nlinarith
-  have hbase := uniformMathematicalGamma_low_base_gt hδ hδmax
+  have hbase := uniformRateGamma_low_base_gt hδ hδmax
   have horder : 500 ≤ uniformDerivativeOrder δ := by omega
   have horderReal : (1 : ℝ) ≤ uniformDerivativeOrder δ := by
     exact_mod_cast (by omega : 1 ≤ uniformDerivativeOrder δ)
@@ -572,7 +268,7 @@ theorem uniformMathematical_high_ratio_gt {R δ : ℝ}
   have hd := uniformDerivativeOrder_ge_519 hδ hδmax
   have hR : 0 < R := (sq_pos_of_pos hδ).trans_le hRlow
   have hRa : R < R + δ := by linarith
-  have hbase := uniformMathematicalGamma_high_base_gt hδ hδmax hRlow hRtop
+  have hbase := uniformRateGamma_high_base_gt hδ hδmax hRlow hRtop
   have horder : 500 ≤ uniformDerivativeOrder δ := by omega
   have horderReal : (1 : ℝ) ≤ uniformDerivativeOrder δ := by
     exact_mod_cast (by omega : 1 ≤ uniformDerivativeOrder δ)

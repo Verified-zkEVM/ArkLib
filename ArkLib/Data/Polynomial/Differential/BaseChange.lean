@@ -41,10 +41,14 @@ commute with this two-stage specialization and do not increase the challenge-hei
 * `challengeSpecialization_map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.map_coefficients`,
   `map_symbolicDifferentialSpecialization`: transport challenge equations and coefficient bounds.
 * `map_differentialSpecialization`, `map_separant`: naturality of specialization and separants.
+* `map_differentialSpecialization_ne_zero_iff`: injective maps preserve nonvanishing of a
+  differential specialization.
+* `map_regularSolutionFamily`: bounded regular solution families map to bounded regular
+  solution families.
 * `jetDegree_map_eq`, `jetTotalDegree_map_eq`, `jetDegreeCastsNeZero_map_iff`: injective
   coefficient maps preserve individual and total jet degrees and the cast hypothesis.
-* `jetDegree_map_le`, `highestActiveJet_map_eq_none`: any coefficient map does not increase jet
-  degrees, so it keeps an equation with no active jet free of jet variables.
+* `jetDegree_map_le`, `jetTotalDegree_map_le`, `highestActiveJet_map_eq_none`: any coefficient map
+  does not increase jet degrees, so it keeps an equation with no active jet free of jet variables.
 * `BoundedSolution.instFinite`: over a finite coefficient semiring there are finitely many
   solutions of degree at most `D`.
 * `BoundedSolution.map`, `BoundedSolution.map_injective`, `BoundedSolution.natCard_le_natCard_map`:
@@ -119,6 +123,35 @@ theorem map_separant [CommSemiring F] [CommSemiring E] (f : F →+* E)
     MvPolynomial.map f (separant Q j) = separant (MvPolynomial.map f Q) j :=
   MvPolynomial.pderiv_map.symm
 
+/-- An injective coefficient map preserves whether a differential specialization is nonzero. -/
+theorem map_differentialSpecialization_ne_zero_iff [CommSemiring F] [CommSemiring E]
+    {f : F →+* E} (hf : Function.Injective f) (Q : DifferentialPolynomial F d) (P : F[X]) :
+    differentialSpecialization (MvPolynomial.map f Q) (P.map f) ≠ 0 ↔
+      differentialSpecialization Q P ≠ 0 := by
+  rw [← map_differentialSpecialization]
+  exact Polynomial.map_ne_zero_iff hf
+
+open Classical in
+/-- Mapping coefficients preserves a finite family of bounded regular solutions. For each
+`P ∈ S`, its image has degree below `k`, solves the mapped differential equation, and has a
+nonzero specialization of the mapped separant at `j`. -/
+theorem map_regularSolutionFamily [CommSemiring F] [CommSemiring E]
+    {f : F →+* E} (hf : Function.Injective f) (Q : DifferentialPolynomial F d)
+    (S : Finset (Polynomial F)) (j : Fin (d + 1)) (k : ℕ)
+    (hdegree : ∀ P ∈ S, P.degree < k)
+    (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
+    (hregular : ∀ P ∈ S, differentialSpecialization (separant Q j) P ≠ 0) :
+    ∀ P ∈ S.image (Polynomial.map f),
+      P.degree < k ∧ differentialSpecialization (MvPolynomial.map f Q) P = 0 ∧
+        differentialSpecialization (separant (MvPolynomial.map f Q) j) P ≠ 0 := by
+  intro P hP
+  obtain ⟨P, hPS, rfl⟩ := Finset.mem_image.mp hP
+  refine ⟨Polynomial.degree_map_le.trans_lt (hdegree P hPS), ?_, ?_⟩
+  · rw [← map_differentialSpecialization, hsol P hPS, Polynomial.map_zero]
+  · rw [← map_separant]
+    exact (map_differentialSpecialization_ne_zero_iff hf (separant Q j) P).2
+      (hregular P hPS)
+
 /-- An injective coefficient map preserves every individual jet degree. Injectivity is needed:
 the map `ℤ →+* ZMod 2` sends `2 * Y₀` to `0`. -/
 theorem jetDegree_map_eq [CommSemiring F] [CommSemiring E] {f : F →+* E}
@@ -134,6 +167,16 @@ theorem jetTotalDegree_map_eq [CommSemiring F] [CommSemiring E] {f : F →+* E}
     jetTotalDegree (MvPolynomial.map f Q) = jetTotalDegree Q := by
   unfold jetTotalDegree MvPolynomial.weightedTotalDegree
   rw [MvPolynomial.support_map_of_injective Q hf]
+
+/-- Any coefficient map does not increase total degree in the jet variables. -/
+theorem jetTotalDegree_map_le [CommSemiring F] [CommSemiring E] (f : F →+* E)
+    (Q : DifferentialPolynomial F d) :
+    jetTotalDegree (MvPolynomial.map f Q) ≤ jetTotalDegree Q := by
+  classical
+  rw [jetTotalDegree, MvPolynomial.weightedTotalDegree]
+  apply Finset.sup_le_iff.mpr
+  intro u hu
+  exact MvPolynomial.le_weightedTotalDegree _ (MvPolynomial.support_map_subset f Q hu)
 
 /-- Any coefficient map, injective or not, does not increase an individual jet degree. -/
 theorem jetDegree_map_le [CommSemiring F] [CommSemiring E] (f : F →+* E)
