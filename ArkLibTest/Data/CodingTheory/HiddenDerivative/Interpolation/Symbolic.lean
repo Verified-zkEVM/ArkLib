@@ -258,19 +258,22 @@ noncomputable def received : Fin 1 → ℚ[X] := fun _ => 0
 
 def columns : Fin 1 → SourceColumn 0 := fun _ => ⟨0, 1, Fin.elim0⟩
 
-/-- The rank-zero construction yields an equation vanishing on the received constant. -/
-example : ∃ cert : Certificate 1 1 0 1 0 0 centers received,
-    cert.Q ≠ 0 ∧ differentialSpecialization
-      (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) cert.Q) 0 = 0 := by
-  have hcolumns : Function.Injective columns := by
-    intro i j _
-    exact Subsingleton.elim _ _
-  have hweight : ∀ j, Finsupp.weight (differentialWeight 0) (columns j).exponent < 1 := by
-    intro j
-    simp [weight_differentialWeight_eq, columns, SourceColumn.exponent]
-  have hdegree : ∀ j, totalJetDegree (columns j).exponent ≤ 1 := by
-    intro j
-    simp [columns]
+private theorem columnsInjective : Function.Injective columns := by
+  intro i j _
+  exact Subsingleton.elim _ _
+
+private theorem columnsWeight :
+    ∀ j, Finsupp.weight (differentialWeight 0) (columns j).exponent < 1 := by
+  intro j
+  simp [weight_differentialWeight_eq, columns, SourceColumn.exponent]
+
+private theorem columnsDegree : ∀ j, totalJetDegree (columns j).exponent ≤ 1 := by
+  intro j
+  simp [columns]
+
+private theorem singletonRankZero :
+    ((supportedLocalConstraintMatrix 1 (fun i => Polynomial.C (centers i)) received columns).map
+      (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 0 := by
   have hY : (columns 0).polynomial =
       (MvPolynomial.X (some 0) : DifferentialPolynomial ℚ[X] 0) := by
     simpa [columns, SourceColumn.polynomial, SourceColumn.exponent] using
@@ -302,29 +305,77 @@ example : ∃ cert : Certificate 1 1 0 1 0 0 centers received,
       omega
     rw [hsub, MvPolynomial.coeff_monomial]
     simp [Ne.symm hne]
-  have hrank : ((supportedLocalConstraintMatrix 1
-      (fun i => Polynomial.C (centers i)) received columns).map
-        (algebraMap ℚ[X] (RatFunc ℚ))).rank ≤ 0 := by
-    have hmatrix : localConstraintMatrix 1
-        (fun i => Polynomial.C (centers i)) received columns = 0 := by
-      apply Matrix.ext
-      intro row j
-      rcases row with ⟨i, e⟩
-      fin_cases i
-      fin_cases j
-      rw [localConstraintMatrix_apply]
-      simpa [centers, received, columns] using hcoeff e
-    rw [rank_map_supportedLocalConstraintMatrix, hmatrix]
-    rw [Matrix.map_zero _ (map_zero _)]
-    exact (Matrix.rank_zero).le
-  obtain ⟨cert⟩ := exists_certificate_of_monomial_rank_bound
+  have hmatrix : localConstraintMatrix 1
+      (fun i => Polynomial.C (centers i)) received columns = 0 := by
+    apply Matrix.ext
+    intro row j
+    rcases row with ⟨i, e⟩
+    fin_cases i
+    fin_cases j
+    rw [localConstraintMatrix_apply]
+    simpa [centers, received, columns] using hcoeff e
+  rw [rank_map_supportedLocalConstraintMatrix, hmatrix]
+  rw [Matrix.map_zero _ (map_zero _)]
+  exact (Matrix.rank_zero).le
+
+private theorem singletonCertificate :
+    Nonempty (Certificate 1 1 0 1 0 0 centers received) := by
+  exact exists_certificate_of_monomial_rank_bound
     (d := 0) (D := 0) (m := 1) (A := 1) (k := 1) (ℓ := 0) (ν := 1) (r := 0)
     (hbudget := by norm_num) (hkD := by omega) centers received
-    (by intro i; simp [received]) columns hcolumns
-    (by intro j; simp [columns]) hdegree hweight
-    (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective _ _) hrank (by simp)
+    (by intro i; simp [received]) columns columnsInjective
+    (by intro j; simp [columns]) columnsDegree columnsWeight
+    (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective _ _) singletonRankZero (by simp)
+
+/-- The monomial-rank construction yields a nonzero equation vanishing on the received constant. -/
+example : ∃ cert : Certificate 1 1 0 1 0 0 centers received,
+    cert.Q ≠ 0 ∧ differentialSpecialization
+      (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) cert.Q) 0 = 0 := by
+  obtain ⟨cert⟩ := singletonCertificate
   refine ⟨cert, cert.nonzero, ?_⟩
   have hs := cert.specialization_sound (E := ℚ) (RingHom.id ℚ) 0
   exact hs.2.2 Finset.univ 0 (by norm_num) (by simp) (by intro i hi; simp [received])
+
+/-- The one-column example has a separant chain in characteristic zero. -/
+example : ∃ cert : Certificate 1 1 0 1 0 0 centers received,
+    ∃ stages terminal, SeparantChain cert.Q stages terminal := by
+  obtain ⟨cert⟩ := singletonCertificate
+  exact ⟨cert, cert.exists_separantChain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))⟩
+
+/-- At the zero challenge, the one-column example reaches a regular separant stage. -/
+example : ∃ cert : Certificate 1 1 0 1 0 0 centers received,
+    ∃ stages terminal, SeparantChain cert.Q stages terminal ∧
+      ∃ stage ∈ stages,
+        differentialSpecialization
+          (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) stage.1) 0 = 0 ∧
+        differentialSpecialization
+          (separant (MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) stage.1)
+            stage.2) 0 ≠ 0 := by
+  obtain ⟨cert⟩ := singletonCertificate
+  obtain ⟨stages, terminal, hc⟩ :=
+    cert.exists_separantChain (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  obtain ⟨exceptional, hcard, hcoverage⟩ :=
+    cert.exists_exceptional_stage_coverage hc (RingHom.id ℚ)
+  have hex : exceptional = ∅ := Finset.card_eq_zero.mp (by omega)
+  subst exceptional
+  have hstage := hcoverage 0 (by simp) Finset.univ (0 : ℚ[X])
+    (by simp) (by simp) (by intro i hi; simp [received])
+  exact ⟨cert, stages, terminal, hc, hstage⟩
+
+/-- Weighted-support eligibility gives the same concrete one-column certificate. -/
+example : ∃ cert : Certificate 1 1 0 1 0 0 centers received, cert.Q ≠ 0 := by
+  have hband : ∀ j, WeightedSupportEligible 0 0 0 1 (columns j).exponent := by
+    intro j
+    fin_cases j
+    simp [WeightedSupportEligible, fullHigherJetWeight, SourceColumn.weight_exponent,
+      SourceColumn.totalJetDegree_exponent, columns, jetHigherWeight]
+  obtain ⟨cert⟩ := exists_certificate_of_rank_bound
+    (L := 1) (W := 0) (D := 0) (m := 1) (A := 1) (k := 1) (ℓ := 0) (ν := 1) (r := 0)
+    (by norm_num) (by norm_num) (by omega) centers received
+    (by intro i; simp [received]) columns columnsInjective
+    (by intro j; simp [columns]) columnsDegree hband
+    (algebraMap ℚ[X] (RatFunc ℚ)) (IsFractionRing.injective _ _)
+    singletonRankZero (by simp)
+  exact ⟨cert, cert.nonzero⟩
 
 end SymbolicCurveCertificateTest

@@ -150,14 +150,6 @@ theorem exists_certificate_of_monomial_rank_bound {F : Type u} {ι : Type uι} {
       hcolumns hy₀ φ hφ hrankLocal hrκ
   let Q : DifferentialPolynomial F[X] d := SourceColumn.interpolant columns v
   have hcoeffdegree := SourceColumn.coeff_interpolant_natDegree_le columns hcolumns v hvdegree
-  have hQweight : differentialWeightedDegree D Q < m * A := by
-    rw [differentialWeightedDegree, MvPolynomial.weightedTotalDegree,
-      Finset.sup_lt_iff hbudget]
-    intro u hu
-    obtain ⟨j, _, hj⟩ := Finset.mem_biUnion.mp (MvPolynomial.support_sum hu)
-    have heq : u = (columns j).exponent := by
-      simpa using MvPolynomial.support_monomial_subset hj
-    exact heq ▸ hweight j
   refine ⟨⟨Q, ?_, SourceColumn.interpolant_totalJetDegree_le columns hdegree v, ?_⟩⟩
   · intro u
     exact hcoeffdegree u
