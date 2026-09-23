@@ -113,9 +113,6 @@ theorem cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two
   have hT₀prime : ∀ P ∈ T₀, P.IsPrime := by
     intro P hP
     exact ((Ideal.mem_retainedMinimalPrimes).mp hP).1.isPrime
-  have hT₀open : ∀ P ∈ T₀, sl ∉ P := by
-    intro P hP
-    exact ((Ideal.mem_retainedMinimalPrimes).mp hP).2
   have hsum : ∑ P ∈ T₀, affineDegree P ≤ affineDegree J := by
     apply le_trans (Finset.sum_le_sum_of_subset_of_nonneg ?_ ?_)
       (sum_affineDegree_minimalPrimes_comap_span_singleton_le_of_surjective φ hφ g)
@@ -204,42 +201,10 @@ theorem cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two
       apply hhighQ
       simp only [highCuts', List.mem_map, List.mem_attach]
       exact ⟨⟨f, hf⟩, trivial, rfl⟩
-    have hdeg : (affineHilbertPolynomial K).natDegree = (affineHilbertPolynomial Q).natDegree := by
-      have hQK : Q ≤ K.comap φ.toRingHom := by
-        intro q hq
-        exact Ideal.mem_map_of_mem φ.toRingHom hq
-      let qmap :
-          (MvPolynomial E F ⧸ Q) →ₐ[F]
-            (MvPolynomial (Option (Fin 2)) F ⧸ K) :=
-        Ideal.quotientMapₐ K φ hQK
-      have hqinj : Function.Injective qmap := by
-        intro x y hxy
-        rw [← sub_eq_zero]
-        have hz : qmap (x - y) = 0 := by rw [map_sub, hxy, sub_self]
-        obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := Q) (x - y)
-        rw [← hp] at hz ⊢
-        change Ideal.Quotient.mk K (φ p) = 0 at hz
-        rw [Ideal.Quotient.eq_zero_iff_mem] at hz ⊢
-        have hpQ : p ∈ K.comap φ.toRingHom := hz
-        rwa [hcomap] at hpQ
-      have hqsurj : Function.Surjective qmap := by
-        intro y
-        obtain ⟨p, hp⟩ := Ideal.Quotient.mk_surjective (I := K) y
-        obtain ⟨q, hq⟩ := hφ p
-        refine ⟨Ideal.Quotient.mk Q q, ?_⟩
-        rw [← hp, ← hq]
-        exact Ideal.quotientMap_mk (H := hQK)
-      let e :
-          (MvPolynomial E F ⧸ Q) ≃ₐ[F]
-            (MvPolynomial (Option (Fin 2)) F ⧸ K) :=
-        AlgEquiv.ofBijective qmap ⟨hqinj, hqsurj⟩
-      symm
-      apply natDegree_affineHilbertPolynomial_eq_of_finite_of_injective
-        e.symm.toAlgHom ?_ e.symm.injective
-      let _ : Algebra (MvPolynomial (Option (Fin 2)) F ⧸ K)
-          (MvPolynomial E F ⧸ Q) :=
-        e.symm.toRingHom.toAlgebra
-      exact Module.Finite.of_surjective (Algebra.linearMap _ _) e.symm.surjective
+    have hdeg : (affineHilbertPolynomial K).natDegree =
+        (affineHilbertPolynomial Q).natDegree := by
+      rw [← hcomap]
+      exact (natDegree_affineHilbertPolynomial_comap_of_surjective φ hφ K).symm
     have hcutsEq : {i | cuts i ∈ K}.ncard = {i | cuts' i ∈ Q}.ncard := by
       congr 1
       ext i
