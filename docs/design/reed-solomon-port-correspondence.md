@@ -1363,6 +1363,24 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `ReedSolomon`.
+
+`correlatedProductCutoff`, `correlatedProductCutoff_bounds`, `evaluation_incidence_factor_le`,
+`evaluation_incidence_product_le`, `correlatedProductCutoff_jointRatio_le`,
+`correlatedProductCutoff_fiberFactor_le`, `correlatedProductCutoff_fiberProduct_le`, and
+`correlatedProductCutoff_fiberProduct_lt_three` keep their names. The two evaluation incidence
+bounds are proved as specializations of reusable declarations added to
+`ArkLib/ToMathlib/Combinatorics/Enumerative/IncidenceProduct.lean`:
+`evaluation_incidence_factor_le` → `natCast_shiftedRatio_le_one_div`, generalized to arbitrary
+natural inputs and linearly ordered fields with strict ordered-ring structure under
+`0 < δ ≤ 1` and `δ * x ≤ y`; `evaluation_incidence_product_le` →
+`dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap`, generalized to linearly ordered fields
+with strict ordered-ring structure under `0 < δ ≤ 1`, `k ≤ A ≤ n`, and `k + δ * n ≤ A`.
+
+Not ported: None. All eight source public declarations are represented.
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean` at ArkLib revision
