@@ -1565,6 +1565,13 @@ types, arbitrary natural weights, and an arbitrary commutative semiring. The sou
 `.../HiddenDerivative/Interpolation/Local/Contact.lean` at the same revision from the local
 contact weight to an arbitrary weight, and from commutative rings to commutative semirings.
 
+## `ArkLib/Data/Polynomial/Differential/BaseChange.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`jetWeight_extendSymbolicCoefficients_le` → `PolynomialDifferential.jetTotalDegree_map_le`, generalized from polynomial-coefficient field extensions to any ring homomorphism between commutative semirings, including noninjective maps. `challengeHeightLE_extendSymbolicCoefficients` was not ported because `MvPolynomial.CoeffNatDegreeLE.map_coefficients` already provides the result through `ChallengeHeightLE`; `separant_extendSymbolicCoefficients` is covered by the existing `PolynomialDifferential.map_separant`.
+
 ## `ArkLib/Data/Polynomial/Differential/Basic.lean`
 
 The definitions and laws are ported from `ArkLib/Data/Polynomial/Differential/Basic.lean` at
@@ -1683,6 +1690,11 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
 `ToMathlib/MvPolynomial/PolynomialCoefficients.lean`; all of these need only a `CommSemiring`.
 `commonTaylorNumeratorOver` takes the exponent `τ` explicitly, with no default `2K`, and no
 longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module. `eval_rationalTaylorNumeratorOver` and `eval₂AlgHom_rationalTaylorNumeratorOver` keep their names and source-shaped specializations.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
 
@@ -1814,6 +1826,11 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
 `2K`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
@@ -2668,6 +2685,12 @@ closure lemmas are public. `jointTotalDegree_scalar` is now `jointTotalDegree_C_
 `jointTotalDegree_le_coeff_degree_add` is now `jointTotalDegree_le_of_natDegree_coeff_le`, and
 `jointTotalDegree_clearedSubstitution` is now `jointTotalDegree_clearedSubstitution_le`.
 `jointTotalDegree_affine_le` is derived in the acceptance test.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`specialize_extendSymbolicCoefficients` → `MvPolynomial.eval_map_coefficients`, generalized from field extensions to arbitrary commutative semirings, variable types, coefficient maps, and target evaluation points. `extendSymbolicCoefficients` was not ported because it is an alias for `MvPolynomial.map` with `Polynomial.mapRingHom`.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
