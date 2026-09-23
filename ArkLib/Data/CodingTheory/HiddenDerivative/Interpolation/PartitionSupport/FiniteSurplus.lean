@@ -9,6 +9,8 @@ public import
   ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.MomentSource
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.LocalRank
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RankBudget
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FiniteRatio
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.Moment
 
 /-!
 # The dimension of the partition support space exceeds a multiple of the local rank
@@ -29,12 +31,19 @@ E(d, m, W) = (W ^ d / (d!) ^ 2) * exp ((d / W) * (m + (d + 1).choose 2))
 support space exceeds `γ * n` times the coordinate budget, and hence `γ * n` times the rank of the
 local constraint map.
 
+At finite rate-partition parameters, `partitionFiniteRatio` times the geometric rank envelope
+equals `(27 / 20) * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. The lower-tail moment bound for
+`500 ≤ d` therefore gives a surplus for the finite ratio and the local coordinate budget.
+
 ## Main statements
 
 * `finrank_partitionSupportLocalConstraint_le_geometric`: the rank of the local constraint map is
   at most `E(d, m, W)`.
 * `partitionSupport_surplus`: `γ * n * localDerivativeCoordinateBudget d m W < dim`.
 * `partitionSupport_localConstraint_surplus`: the same with the rank of the local constraint map.
+* `partitionFiniteRatio_mul_geometricRankEnvelope_eq` and
+  `partitionSupport_finiteRatio_surplus`: the finite-ratio envelope identity and its dimension
+  consequence.
 
 ## References
 
@@ -49,6 +58,35 @@ open PolynomialDifferential Finset MeasureTheory
 noncomputable section
 
 namespace ReedSolomon.HiddenDerivative
+
+namespace RatePartition
+
+/-- Multiplying the finite ratio by the geometric envelope for the local rank budget cancels the
+exponential and rounding terms, leaving `(27 / 20) * rate * (W / d) ^ 2 * (W ^ d / (d!) ^ 2)`. -/
+theorem partitionFiniteRatio_mul_geometricRankEnvelope_eq
+    {rate agreement : ℝ} {order multiplicity budget : ℕ} (hmultiplicity : 0 < multiplicity)
+    (hbudget : partitionWeightBudget rate agreement order multiplicity = budget)
+    (hbudget_pos : 0 < budget) :
+    partitionFiniteRatio rate agreement order multiplicity *
+      ((budget : ℝ) ^ order / (order.factorial : ℝ) ^ 2 *
+        Real.exp (((order : ℝ) / budget) * (multiplicity + (order + 1).choose 2)) *
+          (1 / (((order : ℝ) + 1) * ((order : ℝ) / budget) ^ 2) +
+            1 / ((order : ℝ) / budget))) =
+      (27 / 20 : ℝ) * rate * ((budget : ℝ) / order) ^ 2 *
+        ((budget : ℝ) ^ order / (order.factorial : ℝ) ^ 2) := by
+  subst budget
+  rw [partitionFiniteRatio_eq_weightBudget hmultiplicity hbudget_pos]
+  have hchoose : ((order + 1).choose 2 : ℝ) =
+      ((order : ℝ) + 1) * order / 2 := by
+    rw [Nat.cast_choose_two]
+    push_cast
+    ring
+  rw [hchoose]
+  dsimp only
+  rw [Real.exp_neg]
+  field_simp
+
+end RatePartition
 
 variable {d D W : ℕ}
 
@@ -122,5 +160,61 @@ theorem partitionSupport_localConstraint_surplus (F : Type*) [Field F] {n L m : 
   exact mul_le_mul_of_nonneg_left
     (Nat.cast_le.mpr (finrank_partitionSupportLocalConstraint_le hD center received))
     (mul_nonneg hγ (Nat.cast_nonneg n))
+
+/-- For `500 ≤ d`, the finite rate-partition ratio times `n` times the local coordinate budget is
+strictly less than the dimension of the partition support space. The cutoff `L` may be any natural
+number with `(m * agreement) * n ≤ L`; the weight budget is the finite floor at rate, agreement,
+order `d` and multiplicity `m`. -/
+theorem partitionSupport_finiteRatio_surplus (F : Type*) [Field F]
+    {D d m n L : ℕ} {rate agreement : ℝ} (hD : 0 < D) (hd : 500 ≤ d) (hm : 0 < m)
+    (hrate : 0 < rate) (hagreement : 0 < agreement)
+    (hbudget : 0 < RatePartition.partitionWeightBudget rate agreement d m)
+    (hupper : (D : ℝ) ≤ rate * n) (hlevel : (m : ℝ) * agreement * n ≤ L) :
+    RatePartition.partitionFiniteRatio rate agreement d m * n *
+      localDerivativeCoordinateBudget d m (RatePartition.partitionWeightBudget rate agreement d m) <
+        (Module.finrank F (partitionSupportSpace F D d
+          (RatePartition.partitionWeightBudget rate agreement d m) (L : ℝ) hD) : ℝ) := by
+  let W := RatePartition.partitionWeightBudget rate agreement d m
+  have hdpos : (0 : ℝ) < d := by exact_mod_cast (show 0 < d by omega)
+  have hW : 0 < W := hbudget
+  have hWreal : (0 : ℝ) < W := by exact_mod_cast hW
+  have hlog : 0 < Real.log (6 * (d : ℝ)) := by
+    apply Real.log_pos
+    have hdge : (1 : ℝ) ≤ d := by exact_mod_cast (show 1 ≤ d by omega)
+    nlinarith
+  have hfloor : (W : ℝ) ≤
+      (m : ℝ) * agreement * d / (rate * Real.log (6 * (d : ℝ))) := by
+    dsimp only [W, RatePartition.partitionWeightBudget]
+    exact Nat.floor_le (by positivity)
+  have hmulFloor : (W : ℝ) * (rate * Real.log (6 * (d : ℝ))) ≤
+      (m : ℝ) * agreement * d :=
+    (le_div_iff₀ (mul_pos hrate hlog)).mp hfloor
+  have hscale' : rate * W * Real.log (6 * (d : ℝ)) / d ≤ (m : ℝ) * agreement := by
+    apply (div_le_iff₀ hdpos).2
+    calc
+      rate * W * Real.log (6 * (d : ℝ)) =
+          (W : ℝ) * (rate * Real.log (6 * (d : ℝ))) := by ring
+      _ ≤ (m : ℝ) * agreement * d := hmulFloor
+  have hscale : rate * W / d * Real.log (6 * (d : ℝ)) ≤ (m : ℝ) * agreement := by
+    calc
+      rate * W / d * Real.log (6 * (d : ℝ)) =
+          rate * W * Real.log (6 * (d : ℝ)) / d := by field_simp
+      _ ≤ (m : ℝ) * agreement := hscale'
+  have hmoment := RatePartition.setAverage_weightedSimplex_succ_lowerTail_sq_gt hd hWreal
+  have hγ : 0 ≤ RatePartition.partitionFiniteRatio rate agreement d m := by
+    rw [RatePartition.partitionFiniteRatio_eq_weightBudget hm hbudget]
+    positivity
+  have hEnvelope := RatePartition.partitionFiniteRatio_mul_geometricRankEnvelope_eq
+    (order := d) (multiplicity := m) (budget := W) hm rfl hW
+  have henvelope : RatePartition.partitionFiniteRatio rate agreement d m *
+      (((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) *
+        Real.exp (((d : ℝ) / W) * (m + (d + 1).choose 2)) *
+          (1 / (((d : ℝ) + 1) * ((d : ℝ) / W) ^ 2) + 1 / ((d : ℝ) / W))) ≤
+      (27 / 10 : ℝ) / 2 * rate * ((W : ℝ) / d) ^ 2 *
+        ((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) := by
+    rw [hEnvelope]
+    norm_num
+  simpa only [W] using partitionSupport_surplus F hD (by omega) hW hupper hlevel hscale
+    hmoment hγ henvelope
 
 end ReedSolomon.HiddenDerivative

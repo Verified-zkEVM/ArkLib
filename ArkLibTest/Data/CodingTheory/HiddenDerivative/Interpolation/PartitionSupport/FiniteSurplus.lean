@@ -16,6 +16,34 @@ for any `γ ≥ 0` satisfying the envelope inequality.
 
 open Finset MeasureTheory PolynomialDifferential ReedSolomon.HiddenDerivative
 
+/-- The finite-ratio surplus at order `500`, rate `500` and multiplicity `1`, with weight budget
+`1` and cutoff `3000`. -/
+example :
+    RatePartition.partitionFiniteRatio 500 (Real.log 3000) 500 1 * (1 : ℝ) *
+      localDerivativeCoordinateBudget 500 1
+        (RatePartition.partitionWeightBudget 500 (Real.log 3000) 500 1) <
+      (Module.finrank ℚ
+        (partitionSupportSpace ℚ 1 500
+          (RatePartition.partitionWeightBudget 500 (Real.log 3000) 500 1) (3000 : ℝ) one_pos) :
+          ℝ) := by
+  have hlog : 0 < Real.log (3000 : ℝ) := Real.log_pos (by norm_num)
+  have hbudget : RatePartition.partitionWeightBudget 500 (Real.log 3000) 500 1 = 1 := by
+    unfold RatePartition.partitionWeightBudget
+    norm_num only [Nat.cast_one, Nat.cast_ofNat]
+    rw [show (1 : ℝ) * Real.log 3000 * 500 / (500 * Real.log 3000) = 1 by
+      field_simp [ne_of_gt hlog]]
+    norm_num
+  have hlogbound : Real.log (3000 : ℝ) ≤ 3000 := by
+    have h := Real.log_le_sub_one_of_pos (show (0 : ℝ) < 3000 by norm_num)
+    linarith
+  have hlevel : (1 : ℝ) * Real.log 3000 * 1 ≤ (3000 : ℝ) := by
+    simpa using hlogbound
+  simpa only [Nat.cast_one, Nat.cast_ofNat, one_mul, mul_one] using
+    partitionSupport_finiteRatio_surplus (F := ℚ) (D := 1) (d := 500) (m := 1)
+      (n := 1) (L := 3000) (rate := 500) (agreement := Real.log 3000)
+      one_pos (by omega) one_pos (by norm_num) hlog (by rw [hbudget]; norm_num)
+      (by norm_num) (by simpa using hlevel)
+
 /-- `(d + 1).choose 2 = d (d + 1) / 2` in `ℝ`, from Mathlib's `Nat.cast_choose_two`. -/
 example (d : ℕ) : ((d + 1).choose 2 : ℝ) = (d : ℝ) * (d + 1) / 2 := by
   rw [Nat.cast_choose_two]
