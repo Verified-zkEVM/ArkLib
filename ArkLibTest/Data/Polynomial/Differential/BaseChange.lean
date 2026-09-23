@@ -27,7 +27,10 @@ Let `E₄ = FiniteField.Extension (ZMod 2) 2 2`, the field with four elements.
 
 open Polynomial PolynomialDifferential
 
+noncomputable section
+
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
+local instance : DecidableEq E₄ := Classical.decEq _
 
 /-- Mathlib's degree-two extension of `ZMod 2` has four elements and characteristic two. -/
 example : Nat.card E₄ = 4 ∧ ringChar E₄ = 2 := by
@@ -76,21 +79,34 @@ example :
     MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
     MvPolynomial.degreeOf_X_self]
 
-/-- Injectivity is needed in `jetTotalDegree_map_eq`: `2 * Y₀` over `ℤ` has total jet degree at
-least its jet degree `1`, and its image over `ZMod 2` is `0`, of total jet degree `0`. -/
+/-- Reduction modulo `2` sends `2Y₀` from jet degree `1` to degree `0`; the map bound
+specializes to these concrete degrees. -/
 example :
     let Q : DifferentialPolynomial ℤ 0 := 2 * MvPolynomial.X (some 0)
-    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧
-      1 ≤ jetTotalDegree Q := by
+    jetTotalDegree Q = 1 ∧
+      jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧
+      jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) ≤ jetTotalDegree Q := by
   intro Q
   have hmap : MvPolynomial.map (Int.castRingHom (ZMod 2)) Q = 0 := by
     simp [Q, CharTwo.two_eq_zero]
-  refine ⟨by rw [hmap]; exact Nat.le_zero.mp ((jetTotalDegree_le_iff _ 0).mpr (by simp)), ?_⟩
-  refine le_of_eq_of_le ?_ (jetDegree_le_total Q 0)
-  simp only [Q, jetDegree]
-  rw [show (2 : DifferentialPolynomial ℤ 0) = MvPolynomial.C 2 from rfl,
-    MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
-    MvPolynomial.degreeOf_X_self]
+  have hweight : jetDegreeWeight (d := 0) = Pi.single (some (0 : Fin 1)) 1 := by
+    funext i
+    cases i with
+    | none => simp [jetDegreeWeight]
+    | some j =>
+      have hj : j = 0 := Fin.ext (by omega)
+      subst j
+      simp [jetDegreeWeight]
+  have hsource : jetTotalDegree Q = 1 := by
+    rw [jetTotalDegree, hweight, MvPolynomial.weightedTotalDegree_piSingle]
+    change jetDegree Q 0 = 1
+    simp only [Q, jetDegree]
+    rw [show (2 : DifferentialPolynomial ℤ 0) = MvPolynomial.C 2 from rfl,
+      MvPolynomial.degreeOf_C_mul _ _ (mem_nonZeroDivisors_of_ne_zero (by decide)),
+      MvPolynomial.degreeOf_X_self]
+  refine ⟨hsource, ?_, jetTotalDegree_map_le (Int.castRingHom (ZMod 2)) Q⟩
+  rw [hmap]
+  exact Nat.le_zero.mp ((jetTotalDegree_le_iff _ 0).mpr (by simp))
 
 /-- `JetDegreeCastsNeZero` for `Y₀ ^ 2` fails over `ZMod 2` because `(2 : ZMod 2) = 0`, and the
 extension to `E₄` does not repair it. -/
@@ -219,3 +235,63 @@ example :
     simp [differentialSpecialization, differentialSpecializationHom]
   · rw [hext]
     simp [differentialSpecialization, differentialSpecializationHom]
+
+/-- A bounded solution with nonzero separant specialization remains regular after embedding into
+the degree-two extension of `ZMod 2`. -/
+example :
+    let f := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2) 0 :=
+      MvPolynomial.X (some 0) - MvPolynomial.X none
+    ∀ P ∈ ({(X : (ZMod 2)[X])} : Finset ((ZMod 2)[X])).image (Polynomial.map f),
+      P.degree < 2 ∧ differentialSpecialization (MvPolynomial.map f Q) P = 0 ∧
+        differentialSpecialization (separant (MvPolynomial.map f Q) 0) P ≠ 0 := by
+  intro f Q
+  refine map_regularSolutionFamily f.injective Q {X} 0 2 ?_ ?_ ?_
+  · intro P hP
+    simp only [Finset.mem_singleton] at hP
+    subst P
+    norm_num
+  · intro P hP
+    simp only [Finset.mem_singleton] at hP
+    subst P
+    simp [Q, differentialSpecialization, differentialSpecializationHom]
+  · intro P hP
+    simp only [Finset.mem_singleton] at hP
+    subst P
+    norm_num [Q, separant, differentialSpecialization, differentialSpecializationHom]
+
+/-- Without injectivity, a nonzero separant specialization can map to zero: `2 * Y₀` over `ℤ`
+maps to zero over `ZMod 2`. -/
+example :
+    differentialSpecialization
+        (separant
+          (MvPolynomial.C (2 : ℤ) * MvPolynomial.X (some 0) : DifferentialPolynomial ℤ 0) 0)
+        (0 : ℤ[X]) ≠ 0 ∧
+      differentialSpecialization
+          (separant
+            (MvPolynomial.map (Int.castRingHom (ZMod 2))
+              (MvPolynomial.C (2 : ℤ) * MvPolynomial.X (some 0) :
+                DifferentialPolynomial ℤ 0)) 0)
+          (0 : (ZMod 2)[X]) = 0 := by
+  simp [separant, differentialSpecialization, differentialSpecializationHom,
+    CharTwo.two_eq_zero]
+
+/-- The cardinality of a finite polynomial family is unchanged by an injective coefficient map.
+-/
+example :
+    let f := algebraMap (ZMod 2) E₄
+    (({(0 : (ZMod 2)[X]), 1} : Finset ((ZMod 2)[X])).image (Polynomial.map f)).card = 2 := by
+  intro f
+  rw [Finset.card_image_of_injective _ (Polynomial.map_injective f f.injective)]
+  norm_num
+
+/-- A nonzero binomial cast remains nonzero under an injective map between fields. -/
+example {F E : Type*} [Field F] [Field E] (f : F →+* E) {r K : ℕ}
+    (hbin : ∀ i, r < i → i < K → (i.choose r : F) ≠ 0) :
+    ∀ i, r < i → i < K → (i.choose r : E) ≠ 0 := by
+  intro i hi hK hzero
+  apply hbin i hi hK
+  apply f.injective
+  simpa using hzero
+
+end
