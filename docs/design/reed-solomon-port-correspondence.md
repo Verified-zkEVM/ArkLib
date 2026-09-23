@@ -1357,6 +1357,44 @@ natural inputs and linearly ordered fields with strict ordered-ring structure un
 with strict ordered-ring structure under `0 < δ ≤ 1`, `k ≤ A ≤ n`, and `k + δ * n ≤ A`.
 
 Not ported: None. All eight source public declarations are represented.
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basic.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`polynomialListBound`, `CapacityGapCertificate`, `CapacityGapCertificate.ofDecoderCertificate`,
+`PointwiseListBound`, `CapacityGapCertificate.pointwiseListBound`,
+`UniformPrimeFieldCapacityListBound`, `UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound`,
+`QuarterGapListBound`, and `WeightedSupportListBound` keep their names. The certificate and
+pointwise-list APIs generalize from `Fin n` over `ZMod q` to arbitrary finite coordinate types and
+semiring alphabets where applicable. The all-rate prime-field specifications remain over `Fin n`.
+`WeightedSupportListBound` uses the destination weighted-support parameter names.
+
+Also ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Radius.lean` at
+the same ArkLib revision, `closeCodewordsRel_eq_eval_image_agreeingPolynomials`,
+`lambda_le_of_forall_agreeingPolynomials_encard_le`, and
+`CapacityGapCertificate.ofDecoderCertificateAndPointwiseBound` retain their names and move here
+from `Capacity/Radius`; they are generalized to arbitrary finite coordinate types.
+
+Not ported from the separate `Capacity/Radius` module: `CapacityGapCertificate.ofPointwiseBound`,
+which is outside this unit and is not needed by its endpoints. The deferred
+`agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated because pointwise emptiness follows
+from `DecoderCertificate.decoder_eq_empty_of_card_lt`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/QuarterGap.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/QuarterGap.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomials_encard_le_one_of_half`,
+`agreeingPolynomials_encard_lt_blockLength_of_quarter`, and `quarter_gap_list_bound` keep their
+names. The two counting theorems generalize from `Fin n` to arbitrary finite coordinate types.
+`quarter_gap_list_bound` keeps its quantitative specification and uses the generic pairwise-agreement
+estimates with the exact-decoder and pointwise-bound factory from `Capacity/Basic`.
+
+No public declaration from this source module was omitted. The separate
+`agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
+`DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean`
 
