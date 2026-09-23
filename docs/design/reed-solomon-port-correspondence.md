@@ -1677,6 +1677,31 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which treated the sing
 `E ↦ T^d E` of local variables over a commutative ring. The private
 `filterLocalMonomials_monomial` of that file is `filterSupport_monomial`.
 
+## `ArkLib/Data/MvPolynomial/RadicalSplit/Separable.lean`
+
+Ported from `ArkLib/ToMathlib/MvPolynomial/OrdinaryFactorSeparable.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+`ordinaryRootPolynomial` and `natDegree_ordinaryRootPolynomial` keep their names, generalize from
+field coefficients to UFD coefficients, and use `radicalPrimPart none`. The degree statement is
+expressed using `radicalPrimPart`.
+
+`ordinaryRootPolynomial_map_fraction_separable` →
+`ordinaryRootPolynomial_map_fractionRing_separable`; it generalizes to UFD coefficients and
+arbitrary fraction-field presentations, and no longer requires `Q ≠ 0`. The new public theorem
+`radicalPrimPart_map_optionEquivLeft_fractionRing_separable` states the result for any
+distinguished variable; the ordinary-root theorem is its `none` specialization.
+
+`MvPolynomial.paddedDerivativeResultant_ordinaryRootPolynomial_ne_zero` →
+`Polynomial.resultant_derivative_ne_zero_ordinaryRootPolynomial`. It specializes the existing
+generic fraction-field resultant theorem using the ordinary-root polynomial's natural degree.
+
+Not ported: no public declarations were omitted. The source's private derivative and factor-degree
+helpers are replaced by `pderiv_ne_zero_of_natCast_ne_zero` and the radical split degree bound.
+The source padded-resultant wrapper is replaced by the existing generic separable-map resultant
+theorem. The source nonzero-polynomial hypothesis is unnecessary because the current radical
+primitive part of zero is `1`.
+
 ## `ArkLib/Data/MvPolynomial/WeightAtMost.lean`
 
 The `M`-valued support-weight lemmas generalize the private lemmas `support_weight_mul_le`,
