@@ -305,8 +305,6 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Joh
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.LineToAffine
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorAssembly
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.FactorBudget
-public import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.RootPresentation
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.ExceptionalSet
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Pairs.Family
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.SingularTail
@@ -426,6 +424,7 @@ public import ArkLib.Data.Polynomial.Differential.RecursiveCount
 public import ArkLib.Data.Polynomial.Differential.RegularIteration
 public import ArkLib.Data.Polynomial.Differential.RegularJetCount
 public import ArkLib.Data.Polynomial.Differential.RegularLift
+public import ArkLib.Data.Polynomial.Differential.RootPresentation
 public import ArkLib.Data.Polynomial.Differential.SeparantChain
 public import ArkLib.Data.Polynomial.Differential.ShiftedJet
 public import ArkLib.Data.Polynomial.Differential.SingularRecursion

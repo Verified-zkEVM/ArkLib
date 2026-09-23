@@ -41,22 +41,9 @@ printf 'module\n\n' > "$tmp_file"
 
 git ls-files -- 'ArkLib/*.lean' \
   | LC_ALL=C sort \
-  | awk '
-      {
-        module = $0
-        sub(/\.lean$/, "", module)
-        gsub("/", ".", module)
-        import_line = "public import " module
-        if (length(import_line) > 100) {
-          print "public import"
-          print "  " module
-        } else {
-          print import_line
-        }
-      }
-    ' >> "$tmp_file"
+  | sed 's/\.lean//;s,/,.,g;s/^/public import /' >> "$tmp_file"
 
-import_count="$(grep -Ec '^public import($| )' "$tmp_file")"
+import_count="$(grep -c '^public import ' "$tmp_file")"
 
 mv "$tmp_file" ArkLib.lean
 trap - EXIT

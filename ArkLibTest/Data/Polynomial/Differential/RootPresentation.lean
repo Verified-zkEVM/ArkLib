@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Ordinary.RootPresentation
+import ArkLib.Data.Polynomial.Differential.RootPresentation
 import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 
 /-!
@@ -18,7 +18,7 @@ nonzero premise is needed for the presentation's nonvanishing theorem.
 
 open Polynomial PolynomialDifferential MvPolynomial
 
-namespace ReedSolomon.RootPresentationTest
+namespace PolynomialDifferential.RootPresentationTest
 
 private noncomputable def rootVariable {F : Type*} [Field F] :
     DifferentialPolynomial F[X] 0 :=
@@ -107,4 +107,4 @@ example {F : Type*} [Field F] :
     ordinaryRootPresentation (0 : DifferentialPolynomial F[X] 0) = 0 := by
   simp [ordinaryRootPresentation]
 
-end ReedSolomon.RootPresentationTest
+end PolynomialDifferential.RootPresentationTest

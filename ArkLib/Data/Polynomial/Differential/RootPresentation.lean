@@ -46,9 +46,9 @@ challenges where a root can have zero separant.
 
 noncomputable section
 
-namespace ReedSolomon
+namespace PolynomialDifferential
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial MvPolynomial
 
 variable {F : Type*} [Field F]
 
@@ -267,6 +267,6 @@ theorem exists_exceptional_ordinary_separant
   intro hzero
   exact hw (hfinite.mem_toFinset.mpr hzero)
 
-end ReedSolomon
+end PolynomialDifferential
 
 end
