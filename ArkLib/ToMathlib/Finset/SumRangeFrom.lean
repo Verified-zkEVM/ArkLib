@@ -22,3 +22,5 @@ repeated applications of the split theorem.
 
 ## References
 -/
+
+@[expose] public section
