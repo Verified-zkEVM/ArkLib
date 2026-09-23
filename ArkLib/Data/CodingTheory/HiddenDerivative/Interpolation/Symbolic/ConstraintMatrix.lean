@@ -26,13 +26,15 @@ and after any ring homomorphism into a field the same rank.
 Over a polynomial ring `F[X]` in a symbolic challenge, with constant centers and received values
 of challenge degree at most `ℓ`, the column of a source column with `Y₀` exponent `y₀` has
 challenge degree at most `ℓ * y₀`. A row whose local exponent has jet degree `t` has challenge
-degree at most `ℓ * (y₀ + ∑_j higher j - t)` in that column, and is zero there when `t` exceeds
-the column's total jet degree.
+degree at most `ℓ * (y₀ + ∑_j higher j - t)` in that column, and is zero there when `t`
+exceeds the column's total jet degree.
 
 ## Main statements
 
 * `localConstraintMatrix_mulVec_eq_zero_iff`: the kernel is the set of coefficient vectors whose
   interpolant satisfies all the local constraints.
+* `localConstraintMatrix_apply_eq_localConstraintAt_coeff`: a matrix entry is a coefficient of
+  the projected local constraint.
 * `mem_localConstraintSupportedRows_iff`: the supported rows are the rows with a nonzero entry.
 * `supportedLocalConstraintMatrix_mulVec_eq_zero_iff` and
   `rank_map_supportedLocalConstraintMatrix`: the restriction to the supported rows keeps the
@@ -42,8 +44,7 @@ the column's total jet degree.
 
 ## References
 
-* [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -64,7 +65,8 @@ variable {R : Type*} [CommRing R] {d : ℕ} {ι κ : Type*}
 /-- The local constraint matrix: the entry in row `(i, e)` and column `j` is the coefficient of
 the low-contact exponent `e` in the unscaled substitution of `(columns j).polynomial` at
 `(centers i, received i)`. -/
-def localConstraintMatrix (m : ℕ) (centers received : ι → R) (columns : κ → SourceColumn d) :
+def localConstraintMatrix (m : ℕ) (centers received : ι → R)
+    (columns : κ → SourceColumn d) :
     Matrix (ι × LowContactIndex d m) κ R := fun row j =>
   localConstraintCoordinatesAt m (centers row.1) (received row.1) (columns j).polynomial row.2
 
@@ -76,6 +78,18 @@ theorem localConstraintMatrix_apply (m : ℕ) (centers received : ι → R)
       (unscaledLocalSubstitution d (centers row.1) (received row.1)
         (columns j).polynomial).coeff row.2.1 :=
   rfl
+
+/-- At a low-contact row, a matrix entry is the corresponding coefficient of the local constraint
+polynomial. -/
+theorem localConstraintMatrix_apply_eq_localConstraintAt_coeff (m : ℕ)
+    (centers received : ι → R)
+    (columns : κ → SourceColumn d) (row : ι × LowContactIndex d m) (j : κ) :
+    localConstraintMatrix m centers received columns row j =
+      (localConstraintAt m (centers row.1) (received row.1) (columns j).polynomial).coeff
+        row.2.1 := by
+  simp only [localConstraintMatrix_apply, localConstraintAt, LinearMap.comp_apply,
+    AlgHom.toLinearMap_apply, coeff_projectLowContact]
+  simp [row.2.2]
 
 variable [Fintype κ]
 
@@ -141,7 +155,8 @@ theorem localConstraintMatrix_ne_zero_mem_range (m : ℕ) (centers received : ι
     (h : localConstraintMatrix m centers received columns row j ≠ 0) :
     row ∈ Set.range
       (Subtype.val : localConstraintSupportedRows m centers received columns → _) :=
-  ⟨⟨row, (mem_localConstraintSupportedRows_iff m centers received columns row).mpr ⟨j, h⟩⟩, rfl⟩
+  ⟨⟨row, (mem_localConstraintSupportedRows_iff m centers received columns row).mpr
+      ⟨j, h⟩⟩, rfl⟩
 
 /-- Restricting to the supported rows does not change the kernel. -/
 theorem supportedLocalConstraintMatrix_mulVec_eq_zero_iff (m : ℕ) (centers received : ι → R)
@@ -175,10 +190,11 @@ variable {R : Type*} [CommRing R] {d : ℕ} {ι κ : Type*}
 
 /-- With constant centers and received values of challenge degree at most `ℓ`, the column of a
 source column with `Y₀` exponent `y₀` has challenge degree at most `ℓ * y₀`. -/
-theorem natDegree_localConstraintMatrix_le (m ℓ : ℕ) (centers : ι → R) (received : ι → R[X])
+theorem natDegree_localConstraintMatrix_le (m ℓ : ℕ) (centers : ι → R)
+    (received : ι → R[X])
     (hreceived : ∀ i, (received i).natDegree ≤ ℓ) (columns : κ → SourceColumn d)
     (row : ι × LowContactIndex d m) (j : κ) :
-    (localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns row j).natDegree ≤
+    (localConstraintMatrix m (Polynomial.C ∘ centers) received columns row j).natDegree ≤
       ℓ * (columns j).y₀ :=
   SourceColumn.natDegree_coeff_unscaledLocalSubstitution_le ℓ _ (hreceived row.1) _ _
 
@@ -188,7 +204,7 @@ has challenge degree at most `ℓ * (y₀ + ∑_j higher j - t)`. -/
 theorem natDegree_localConstraintMatrix_le_sub (m ℓ : ℕ) (centers : ι → R)
     (received : ι → R[X]) (hreceived : ∀ i, (received i).natDegree ≤ ℓ)
     (columns : κ → SourceColumn d) (row : ι × LowContactIndex d m) (j : κ) :
-    (localConstraintMatrix m (fun i => Polynomial.C (centers i)) received columns row j).natDegree ≤
+    (localConstraintMatrix m (Polynomial.C ∘ centers) received columns row j).natDegree ≤
       ℓ * ((columns j).y₀ + ∑ k, (columns j).higher k -
         row.2.1.weight (localJetDegreeWeight d)) :=
   SourceColumn.natDegree_coeff_unscaledLocalSubstitution_le_sub ℓ _ (hreceived row.1) _ _
