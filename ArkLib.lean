@@ -157,8 +157,6 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Hy
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.LowRateStationary
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RateBound
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
-public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageCharges
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FreeOrder
