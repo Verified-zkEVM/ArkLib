@@ -21,11 +21,18 @@ for matrices with finitely many rows, where `Matrix.toLin` is available.
 The second bounds the rank after applying a ring homomorphism `f : K →+* S` to every entry, where
 `K` is a field and `S` has the strong rank condition: `(A.map f).rank ≤ A.rank`. Over a field
 extension equality holds, but the inequality is what the callers need and its proof is short.
+The third bounds the rank of a matrix with product row indices by the sum of the ranks of its
+row blocks.
 
 ## Main statements
 
 * `Matrix.rank_of_basis`: the rank of the coordinate matrix of `f` in the basis `b`.
 * `Matrix.rank_map_le`: the rank does not increase under a coefficient map from a field.
+* `Matrix.rank_prod_rows_le_sum`: the rank is at most the sum of the ranks of its row blocks.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -76,5 +83,47 @@ theorem rank_map_le {K S : Type*} [Field K] [CommRing S] [StrongRankCondition S]
         exact sum_mem fun q _ => smul_mem _ _ (subset_span (Set.mem_range_self q))
     _ ≤ Fintype.card (Fin (finrank K p)) := finrank_range_le_card v
     _ = finrank K p := Fintype.card_fin _
+
+/-- A matrix with product row indices has rank at most the sum of the ranks of its row blocks.
+The block at `i` has entries `A (i, row) column`. -/
+theorem rank_prod_rows_le_sum {K ι ρ κ : Type*} [Field K] [Fintype ι] [Fintype κ]
+    (A : Matrix (ι × ρ) κ K) :
+    A.rank ≤ ∑ i, Matrix.rank (fun row column => A (i, row) column) := by
+  let Φ := A.mulVecLin
+  let block : ι → Matrix ρ κ K := fun i row column => A (i, row) column
+  let φ := fun i => (block i).mulVecLin
+  let includeRange : Φ.range →ₗ[K] ∀ i, (φ i).range := {
+    toFun y i := ⟨(fun row => y.1 (i, row)), by
+      rcases y.2 with ⟨v, hv⟩
+      refine ⟨v, ?_⟩
+      ext row
+      change (block i).mulVecLin v row = y.1 (i, row)
+      have hblock : (block i).mulVecLin v row = A.mulVecLin v (i, row) := by
+        change (block i *ᵥ v) row = (A *ᵥ v) (i, row)
+        simp [block, Matrix.mulVec]
+      exact hblock.trans (congrFun hv (i, row))⟩
+    map_add' x y := by
+      ext i row
+      rfl
+    map_smul' a x := by
+      ext i row
+      rfl
+  }
+  have hinjective : Function.Injective includeRange := by
+    intro x y hxy
+    apply Subtype.ext
+    funext row
+    have hi := congrArg Subtype.val (congrFun hxy row.1)
+    exact congrFun hi row.2
+  change Module.finrank K A.mulVecLin.range ≤ _
+  calc
+    Module.finrank K Φ.range ≤ Module.finrank K (∀ i, (φ i).range) :=
+      LinearMap.finrank_le_finrank_of_injective hinjective
+    _ = ∑ i, Module.finrank K (φ i).range := Module.finrank_pi_fintype K
+    _ = ∑ i, Matrix.rank (block i) := by
+      apply Finset.sum_congr rfl
+      intro i _
+      rw [show φ i = (block i).mulVecLin by rfl]
+      rfl
 
 end Matrix
