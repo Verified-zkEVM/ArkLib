@@ -1125,6 +1125,15 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ra
 
 No declarations were left unported from this source file.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.HiddenDerivative.UniformRatePartitionEnvelope` → `ReedSolomon.HiddenDerivative.RatePartition.UniformRatePartitionEnvelope` and `ReedSolomon.HiddenDerivative.exists_uniformRatePartitionEnvelope` → `ReedSolomon.HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope`; names are unchanged, and both declarations are placed in the `RatePartition` namespace. The gap determines the derivative order, multiplicity, and block threshold, while the ambient degree and scalar parameters may depend on the actual message dimension. The existence theorem supplies parameters for that dimension and the actual agreement count. The consolidated acceptance module adds a concrete envelope existence example at `δ = 1/5`, with `n = 50m`, `k = 2m`, and `A = 12m`, where `m = uniformMultiplicity (1/5)`.
+
+No declarations from the designated source file were left unported. The generalized Gamma bounds and their uniform-order specializations are supplied by `main`'s `UniformGamma` module. The proof uses the existing `rateGamma_eq_exponential` identity; the redundant branch-local `rateGamma_eq_exp` alias was removed.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
