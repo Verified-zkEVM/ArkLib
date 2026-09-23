@@ -33,19 +33,6 @@ noncomputable section
 
 namespace ReedSolomon.HiddenDerivative.RatePartition
 
-private theorem rateGamma_eq_exponential_limit {rate agreement : ℝ} {order : ℕ}
-    (horder : 0 < order) :
-    rateGamma rate agreement order =
-      (27 / 20 : ℝ) * rate * (order + 1) *
-        Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))) := by
-  have hbase : 0 < (6 * (order : ℝ)) := by positivity
-  unfold rateGamma
-  rw [Real.rpow_def_of_pos hbase, div_eq_mul_inv, Real.exp_neg]
-  apply congrArg (fun x : ℝ => (27 / 20 : ℝ) * rate * (order + 1) * x)
-  apply congrArg (fun x : ℝ => x⁻¹)
-  apply congrArg Real.exp
-  ring
-
 /-- A strict limiting gate gives a positive multiplicity with positive weight budget and finite
 ratio above one. -/
 theorem exists_partitionFiniteParameters_of_rateGamma_gt_one {rate agreement : ℝ} {order : ℕ}
@@ -54,10 +41,10 @@ theorem exists_partitionFiniteParameters_of_rateGamma_gt_one {rate agreement : �
     ∃ multiplicity : ℕ, 0 < multiplicity ∧
       0 < partitionWeightBudget rate agreement order multiplicity ∧
       1 < partitionFiniteRatio rate agreement order multiplicity := by
-  have hlimit :
+  have hlimit := show
       1 < (27 / 20 : ℝ) * rate * (order + 1) *
-        Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))) := by
-    rw [← rateGamma_eq_exponential_limit horder]
+        Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))) from by
+    rw [← rateGamma_eq_exponential horder]
     exact hgate
   exact exists_partitionFiniteRatio_gt hrate hagreement horder hlimit
 

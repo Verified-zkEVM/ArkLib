@@ -124,6 +124,27 @@ example : eval (fun j : Option (Fin 1) ↦ j.elim (2 : ℚ) (fun _ ↦ 3))
   rw [eval_rootExpansion]
   norm_num
 
+/-- Mapping the coefficients of a monomial commutes with expansion by two. -/
+example :
+    map (Int.castRingHom ℚ)
+        (rootExpansion 2
+          (monomial (Finsupp.single none 2 + Finsupp.single (some ()) 1) 7 :
+            MvPolynomial (Option Unit) ℤ)) =
+      (monomial (Finsupp.single none 4 + Finsupp.single (some ()) 1) (7 : ℚ) :
+        MvPolynomial (Option Unit) ℚ) := by
+  rw [map_rootExpansion]
+  apply (optionEquivLeft ℚ Unit).injective
+  simp [rootExpansion, optionEquivLeft_monomial, Polynomial.expand_monomial]
+
+/-- Evaluating a mapped monomial expansion over `ℤ → ℚ` at `(2, 3)` gives `336`. -/
+example :
+    eval₂ (Int.castRingHom ℚ) (fun o : Option Unit => o.elim 2 (fun _ => 3))
+        (rootExpansion 2
+          (monomial (Finsupp.single none 2 + Finsupp.single (some ()) 1) 7 :
+            MvPolynomial (Option Unit) ℤ)) = 336 := by
+  rw [eval₂_rootExpansion]
+  norm_num
+
 /-- Contracting the expansion by two recovers the two-variable linear polynomial. -/
 example : rootContraction 2 (rootExpansion 2 (X none + X (some 0) :
     MvPolynomial (Option (Fin 1)) ℚ)) = X none + X (some 0) :=
