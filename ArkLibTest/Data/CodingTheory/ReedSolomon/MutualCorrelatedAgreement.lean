@@ -7,7 +7,9 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLineComponent
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
-import Mathlib.Tactic
+import Mathlib.Tactic.FinCases
+import Mathlib.Tactic.NormNum
+import Mathlib.Tactic.Order
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 
 /-!
