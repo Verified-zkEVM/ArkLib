@@ -24,13 +24,6 @@ noncomputable section
 
 local instance : DecidableEq E₄ := Classical.decEq E₄
 
-private theorem degree_le_zero_of_degree_lt_one {F : Type*} [Semiring F] (P : F[X])
-    (hP : P.degree < 1) : P.degree ≤ 0 := by
-  apply (degree_le_iff_coeff_zero P 0).2
-  intro m hm
-  have hm' : 0 < m := by exact_mod_cast hm
-  exact (degree_lt_iff_coeff_zero P 1).mp hP m (Nat.succ_le_iff.mpr hm')
-
 /-- A nonzero affine line descends from the degree-two extension. -/
 example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
     (RingHom.id (ZMod 2)) 2 1 (1 + X) := by
@@ -74,7 +67,7 @@ example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦
         P.coeff 0 = P.eval 0 := coeff_zero_eq_eval_zero P
         _ = ι 1 := by simpa using heval
     have hPconst : P = C (ι 1) := by
-      rw [eq_C_of_degree_le_zero (degree_le_zero_of_degree_lt_one P hP), hcoeff]
+      rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hP), hcoeff]
     refine ⟨(C 1, C 0), by simp, by simp, ?_, ?_⟩
     · simpa [correlatedPairSpecialization] using hPconst
     · rw [hfull]
@@ -113,7 +106,7 @@ private theorem singletonLineExactBound : LineExactAgreementBound pointDomain 1 
     rw [hpoint] at heval
     exact (coeff_zero_eq_eval_zero P).trans heval
   have hPconst : P = C (f 0 + z * g 0) := by
-    rw [eq_C_of_degree_le_zero (degree_le_zero_of_degree_lt_one P hP), hcoeff]
+    rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hP), hcoeff]
   refine ⟨C (f 0), C (g 0), (degree_C_le).trans_lt (by norm_num),
     (degree_C_le).trans_lt (by norm_num), ?_, ?_⟩
   · calc
@@ -153,20 +146,61 @@ example : ∃ F₀ G₀ : ℚ[X], C 1 + C 2 * X = F₀ + C 1 * G₀ ∧
     compute_degree!) (by rw [hagree, card_univ])
   exact ⟨F₀, G₀, hP, hset.symm.trans hagree⟩
 
-/-- Graph-line recognition for the sample `0, 1` holds at every challenge. -/
+/-- The graph-line recognizer accepts the computed candidate `1 + 2X` at challenge `1`. -/
 example : ∃ F₀ G₀ : ℚ[X], F₀.degree < 2 ∧ G₀.degree < 2 ∧
     (∀ i ∈ (Finset.univ : Finset (Fin 2)),
       F₀.eval (fullDomain i) = ![1, 2] i ∧ G₀.eval (fullDomain i) = ![0, 1] i) ∧
-    ∀ z : ℚ, ∀ P : ℚ[X], P.degree < 2 →
-      (∀ i ∈ (Finset.univ : Finset (Fin 2)),
-        P.eval (fullDomain i) = ![1, 2] i + z * ![0, 1] i) →
-      P = F₀ + C z * G₀ := by
+    Polynomial.eval (fullDomain 0) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] 0 + 1 * ![0, 1] 0 ∧
+    Polynomial.eval (fullDomain 1) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] 1 + 1 * ![0, 1] 1 ∧
+    C 1 + C 2 * X = F₀ + C 1 * G₀ := by
   obtain ⟨F₀, G₀, hF₀, hG₀, hsample, hrecognize⟩ :=
     exists_graphLine_polynomials_of_sample fullDomain ![1, 2] ![0, 1] univ
       (card_univ.trans rfl)
-  refine ⟨F₀, G₀, hF₀, hG₀, hsample, ?_⟩
-  intro z P hP heval
-  simpa using hrecognize (RingHom.id ℚ) z P hP heval
+  have hP : (C 1 + C 2 * X : ℚ[X]).degree < 2 := by compute_degree!
+  have heval : ∀ i ∈ (Finset.univ : Finset (Fin 2)),
+      Polynomial.eval (fullDomain i) (C 1 + C 2 * X : ℚ[X]) = ![1, 2] i + 1 * ![0, 1] i := by
+    intro i hi
+    fin_cases i
+    · norm_num [fullDomain]
+      change (0 : ℚ) = 0
+      rfl
+    · norm_num [fullDomain]
+      change 1 + 2 * (1 : ℚ) = 3
+      norm_num
+  exact ⟨F₀, G₀, hF₀, hG₀, hsample, heval 0 (by simp), heval 1 (by simp),
+    by simpa using hrecognize (RingHom.id ℚ) 1 (C 1 + C 2 * X) hP heval⟩
+
+/-- The exceptional bound is attained when the graph agrees at only one coordinate. -/
+example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧ 0 ∈ exceptional := by
+  obtain ⟨exceptional, hcard, hagreement⟩ :=
+    exists_exceptional_graphLine_challenges fullDomain ![0, 0] ![0, 1]
+      (0 : ℚ[X]) 0 (RingHom.id ℚ)
+  have hcommon : commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 = {0} := by
+    ext i
+    fin_cases i <;> simp [commonPolynomialAgreementSet, fullDomain]
+  have hcard' : exceptional.card ≤ 1 := by
+    simpa [hcommon, Fintype.card_fin] using hcard
+  have hzero : 0 ∈ exceptional := by
+    by_contra hz
+    have hset := hagreement 0 hz
+    have hleft : polynomialAgreementSet fullDomain (fun _ : Fin 2 ↦ 0) (0 : ℚ[X]) = univ := by
+      ext i
+      simp [polynomialAgreementSet]
+    have hzero : (fun i : Fin 2 ↦ ![0, 0] i) = fun _ ↦ (0 : ℚ) := by
+      funext i
+      fin_cases i <;> norm_num
+    have hset'' : polynomialAgreementSet fullDomain (fun i : Fin 2 ↦ ![0, 0] i)
+        (0 : ℚ[X]) = commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 := by
+      simpa using hset
+    have hset' : polynomialAgreementSet fullDomain (fun _ : Fin 2 ↦ 0) (0 : ℚ[X]) =
+        commonPolynomialAgreementSet fullDomain ![0, 0] ![0, 1] 0 0 := by
+      rw [← hzero]
+      exact hset''
+    rw [hleft, hcommon] at hset'
+    have hone : (1 : Fin 2) ∈ (Finset.univ : Finset (Fin 2)) := Finset.mem_univ _
+    rw [hset'] at hone
+    simp at hone
+  exact ⟨exceptional, hcard', hzero⟩
 
 /-- A double root of `X²` kills the specialized singular tail. -/
 example : singularTail (1 : ℚ[X]) (X ^ 2 : ℚ[X][X]) 2 = 0 := by

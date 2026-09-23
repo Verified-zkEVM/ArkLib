@@ -16,21 +16,14 @@ import Mathlib.Tactic.NormNum
 # Interleaved Reed–Solomon acceptance tests
 
 Concrete instances exercise agreement bounds, anchored evaluation, cubic reconstruction, trace
-remainders, scalar-to-interleaved power agreement at a singleton domain, and the height-three
-tensor-fold count for concrete interleaved leaves.
+remainders, anchored candidate lists and reconstructions, scalar-to-interleaved power agreement at
+a singleton domain, and the height-three tensor-fold count for concrete interleaved leaves.
 -/
 
 open Polynomial Code ReedSolomon ReedSolomon.AnchoredAgreement TensorMCA
 open scoped ProbabilityTheory
 
 namespace InterleavedAcceptance
-
-private theorem degree_le_zero_of_degree_lt_one {F : Type*} [Semiring F] (P : F[X])
-    (hP : P.degree < 1) : P.degree ≤ 0 := by
-  apply (degree_le_iff_coeff_zero P 0).2
-  intro m hm
-  have hm' : 0 < m := by exact_mod_cast hm
-  exact (degree_lt_iff_coeff_zero P 1).mp hP m (Nat.succ_le_iff.mpr hm')
 
 example : tupleRatFunc ![(1 : ZMod 2), 0] ≠ tupleRatFunc ![0, 1] := by
   intro h
@@ -40,6 +33,148 @@ example : tupleRatFunc ![(1 : ZMod 2), 0] ≠ tupleRatFunc ![0, 1] := by
 /-- The single evaluation point `0` of `ZMod 2`. -/
 private def point : Fin 1 ↪ ZMod 2 :=
   ⟨fun _ ↦ 0, fun a b _ ↦ Subsingleton.elim a b⟩
+
+private def singletonReceived : Fin 1 → Fin 1 → ZMod 2 := fun _ _ ↦ 0
+
+private theorem singletonInterleavedLambdaBound :
+    Lambda (interleavedCodeSet (κ := Fin 1) (code point 1 : Set (Fin 1 → ZMod 2))) 0 ≤ 2 := by
+  apply Lambda_le_iff_forall_encard_le.mpr
+  intro y
+  calc
+    (closeCodewordsRel
+      (interleavedCodeSet (κ := Fin 1) (code point 1 : Set (Fin 1 → ZMod 2))) y 0).encard ≤
+        (Set.univ : Set (Fin 1 → Fin 1 → ZMod 2)).encard := Set.encard_mono (by simp)
+    _ = (Fintype.card (Fin 1 → Fin 1 → ZMod 2) : ℕ∞) := by simp
+    _ = 2 := by norm_num [Fintype.card_fun]
+
+-- The zero received word has a degree-below-one candidate at full agreement.
+example :
+    (candidateSet point singletonReceived 1 1).encard ≤ 2 ∧
+      (candidateSet point singletonReceived 1 1).Finite ∧
+      (fun _ : Fin 1 ↦ (0 : (ZMod 2)[X])) ∈ candidateSet point singletonReceived 1 1 := by
+  have hΛ :
+      Lambda (interleavedCodeSet (κ := Fin 1) (code point 1 : Set (Fin 1 → ZMod 2)))
+        (1 - (1 : ℝ) / Fintype.card (Fin 1)) ≤ 2 := by
+    simpa using singletonInterleavedLambdaBound
+  refine ⟨?_, ?_, ?_⟩
+  · exact (encard_candidateSet_le_Lambda point singletonReceived (K := 1) (by decide) 1).trans
+      (by simpa using hΛ)
+  · exact finite_candidateSet_of_Lambda_le point singletonReceived (K := 1) (a := 1) (L := 2)
+      (by decide) (by simpa using hΛ)
+  · rw [mem_candidateSet]
+    constructor
+    · intro j
+      simp
+    · rw [agree, Finset.one_le_card]
+      refine ⟨0, ?_⟩
+      simp only [Finset.mem_filter]
+      constructor
+      · simp
+      · funext j
+        simp [evalTuple, point, singletonReceived]
+
+private def singletonChallengePoint : Fin 1 → Fin 1 → ZMod 2 := fun _ _ ↦ 0
+
+-- At the singleton challenge the only candidate is the zero polynomial, so the bad-anchor
+-- probability is zero in this concrete instance.
+example :
+    Pr{let ω ← $ᵗ (Fin 1)}[
+      ¬ Set.InjOn (evalTuple (singletonChallengePoint ω))
+        (candidateSet point singletonReceived 1 1)] ≤ 0 := by
+  have hpt : Function.Injective singletonChallengePoint := by
+    intro a b _
+    exact Subsingleton.elim a b
+  simpa [singletonChallengePoint, singletonReceived] using
+    (prob_not_injOn_candidateSet_le (pt := singletonChallengePoint) hpt point singletonReceived
+      (K := 1) (a := 1) (L := 2) (by decide)
+      (by simpa using singletonInterleavedLambdaBound))
+
+private def domainTwo : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), fun a b h ↦ Fin.ext (by simpa using h)⟩
+
+noncomputable section
+
+private def slopeReceived : Fin 2 → Fin 1 → ℚ := fun i _ ↦ domainTwo i
+private def slopeTuple : Fin 1 → ℚ[X] := fun _ ↦ X
+private def zeroTuple : Fin 1 → ℚ[X] := fun _ ↦ 0
+private def vanishingDivisor : ℚ[X] := X * (X - C 1)
+
+private theorem vanishingDivisor_eval (i : Fin 2) : vanishingDivisor.eval (domainTwo i) = 0 := by
+  fin_cases i
+  · change (X * (X - C (1 : ℚ))).eval (0 : ℚ) = 0
+    norm_num
+  · change (X * (X - C (1 : ℚ))).eval (1 : ℚ) = 0
+    norm_num
+
+private theorem vanishingDivisor_degree : vanishingDivisor.natDegree ≤ 2 := by
+  change (X * (X - C (1 : ℚ))).natDegree ≤ 2
+  calc
+    _ ≤ X.natDegree + (X - C (1 : ℚ)).natDegree := natDegree_mul_le
+    _ ≤ 1 + 1 := Nat.add_le_add (by simp) (by
+      calc
+        _ ≤ max X.natDegree (C (1 : ℚ)).natDegree := natDegree_sub_le _ _
+        _ ≤ 1 := by simp)
+    _ = 2 := by norm_num
+
+private theorem slopeAnchorValues :
+    evalTuple (domainTwo : Fin 2 → ℚ) slopeTuple = slopeReceived := by
+  ext i j
+  simp [slopeTuple, slopeReceived]
+
+private theorem slopeQuotientAgrees :
+    2 ≤ agree (fun i j ↦ vanishingDivisor.eval (domainTwo i) * (zeroTuple j).eval (domainTwo i))
+      (fun i j ↦ slopeReceived i j - (slopeTuple j).eval (domainTwo i)) := by
+  rw [← slopeAnchorValues]
+  norm_num [agree, vanishingDivisor_eval, zeroTuple, slopeTuple, domainTwo, evalTuple]
+
+-- The quotient equation and its reconstruction agree at both concrete domain points.
+example :
+    agree (evalTuple (domainTwo : Fin 2 → ℚ) slopeTuple) slopeReceived = 2 ∧
+      agree (fun _ : Fin 2 => fun _ : Fin 1 => (0 : ℚ))
+        (fun _ : Fin 2 => fun _ : Fin 1 => 0) = 2 := by
+  have h := agree_evalTuple_mul_add (x := (domainTwo : Fin 2 → ℚ))
+    (received := slopeReceived) (D := vanishingDivisor) (q := zeroTuple) (I := slopeTuple)
+  have h' :
+      agree (evalTuple (domainTwo : Fin 2 → ℚ) (fun _ : Fin 1 ↦ (X : ℚ[X]))) slopeReceived =
+        agree (fun _ : Fin 2 => fun _ : Fin 1 => (0 : ℚ))
+          (fun _ : Fin 2 => fun _ : Fin 1 => 0) := by
+    simpa [slopeTuple, zeroTuple, vanishingDivisor, slopeReceived, domainTwo, evalTuple] using h
+  constructor
+  · change agree (evalTuple (domainTwo : Fin 2 → ℚ) (fun _ : Fin 1 ↦ (X : ℚ[X])))
+      slopeReceived = 2
+    rw [h']
+    norm_num [agree]
+  · norm_num [agree]
+
+-- The nonzero reconstruction `X` is a candidate after the divisor and zero quotient vanish.
+example : (fun _ : Fin 1 ↦ (X : ℚ[X])) ∈ candidateSet domainTwo slopeReceived 2 2 := by
+  have hmem := mul_add_mem_candidateSet domainTwo slopeReceived (D := vanishingDivisor)
+    (e := 2) (k := 0) (K := 2) (a := 2) vanishingDivisor_degree
+    (by decide) (q := zeroTuple) (I := slopeTuple)
+    (by intro _j; simp [zeroTuple]) (by intro _j; norm_num [slopeTuple]) slopeQuotientAgrees
+  simpa [zeroTuple, slopeTuple] using hmem
+
+-- Separating the candidate list at both anchors fixes this concrete later reconstruction.
+example :
+    ∃ selected : Option (Fin 1 → ℚ[X]),
+      (∀ Q, selected = some Q ↔ Q ∈ candidateSet domainTwo slopeReceived 2 2 ∧
+        evalTuple (domainTwo : Fin 2 → ℚ) Q = (fun i _ ↦ domainTwo i)) ∧
+      selected = some (fun _ : Fin 1 ↦ (X : ℚ[X])) := by
+  have hgood :
+      Set.InjOn (evalTuple (domainTwo : Fin 2 → ℚ))
+        (candidateSet domainTwo slopeReceived 2 2) := by
+    intro P hP Q hQ h
+    exact (injOn_evalTuple_of_degree_lt domainTwo (K := 2) (by decide)) hP.1 hQ.1 h
+  obtain ⟨selected, hselected, hlater⟩ :=
+    exists_selected_before_reconstruction domainTwo slopeReceived hgood
+      (fun i j ↦ domainTwo i)
+  refine ⟨selected, hselected, ?_⟩
+  simpa [zeroTuple, slopeTuple, vanishingDivisor] using
+    (hlater vanishingDivisor 2 0 zeroTuple slopeTuple vanishingDivisor_eval
+      vanishingDivisor_degree (by decide) (by intro j; simp [zeroTuple])
+      (by intro j; norm_num [slopeTuple]) slopeAnchorValues slopeQuotientAgrees)
+
+end
 
 private theorem singletonPowerGuarantee (w : Fin 2 → Fin 1 → ZMod 2) :
     UniformExactPowerAgreement point w 1 1 0 := by
@@ -53,7 +188,7 @@ private theorem singletonPowerGuarantee (w : Fin 2 → Fin 1 → ZMod 2) :
     rw [hpoint] at heval
     exact (coeff_zero_eq_eval_zero Q).trans heval
   have hQeq : Q = C (powerBatchedWord w z 0) := by
-    rw [eq_C_of_degree_le_zero (degree_le_zero_of_degree_lt_one Q hQ), hcoeff]
+    rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hQ), hcoeff]
   have hbatch : powerBatchedPolynomial (fun t ↦ C (w t 0)) z =
       C (powerBatchedWord w z 0) := by
     simp [powerBatchedPolynomial, powerBatchedWord, Fin.sum_univ_two, smul_eq_C_mul]

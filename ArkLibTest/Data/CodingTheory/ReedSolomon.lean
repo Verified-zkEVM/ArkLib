@@ -27,12 +27,12 @@ example : agreementThreshold (1 / 4) 10 3 ≤ 6 ↔
   exact agreementThreshold_le_iff_real (by norm_num) 10 3 6
 
 example :
-    (Code.relHammingDist ![false, true] ![false, false] : ℝ) ≤
+    (Code.relHammingDist ![false, false] ![false, false] : ℝ) ≤
         capacityRadius (1 / 4) 2 1 ↔
-      agreementThreshold (1 / 4) 2 1 ≤ Code.agree ![false, false] ![false, true] := by
+      agreementThreshold (1 / 4) 2 1 ≤ Code.agree ![false, false] ![false, false] := by
   exact relHammingDist_le_capacityRadius_iff_agreementThreshold_le
     (delta := 1 / 4) (messageDim := 1) (by norm_num) (by decide)
-    ![false, false] ![false, true]
+    ![false, false] ![false, false]
 
 end ReedSolomonAcceptance
 
