@@ -66,7 +66,7 @@ example :
   have h := finite_and_ncard_le_dimensionSensitiveIncidenceProduct_of_fixedCoefficientEvaluation
     (K := ℚ) fourPoints ![0, 0, 1, 1] (m := 1) (P := ⊥) 1 (A := 2) (by norm_num)
   refine ⟨h.1, h.2.trans_eq ?_⟩
-  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot]
+  simp [affineDegree_bot, natDegree_affineHilbertPolynomial_bot, dimensionSensitiveIncidenceProduct]
   norm_num
 
 example :
