@@ -13,10 +13,10 @@ import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 # Acceptance tests for radical primitive-part separability
 
 The zero polynomial has an empty positive-degree factor product, so its ordinary-root polynomial
-is `1`. In characteristic two, a linear root polynomial meets the strict degree guard and is
-separable over the coefficient fraction field. The polynomial `X^2` in characteristic two marks
-the guard boundary: its derivative vanishes. The final example recovers the derivative-first
-resultant form from the general resultant theorem.
+is `1`. A nonconstant polynomial checks the degree theorem, and the general separability theorem
+is applied to a concrete linear polynomial. In characteristic two, `X^2` marks the guard boundary.
+A constant-product case checks the resultant theorem at degree zero. The final example recovers the
+derivative-first resultant form from the general resultant theorem.
 -/
 
 open MvPolynomial Polynomial UniqueFactorizationMonoid
@@ -39,6 +39,14 @@ example : ((ordinaryRootPolynomial
   apply ordinaryRootPolynomial_map_fractionRing_separable
   norm_num [degreeOf_X, ZMod.ringChar_zmod_n]
 
+/-- The general radical-part separability theorem applies to a nonconstant linear polynomial. -/
+example : ((optionEquivLeft (ZMod 2) Unit
+    (radicalPrimPart none (X none : MvPolynomial (Option Unit) (ZMod 2)))).map
+      (algebraMap (MvPolynomial Unit (ZMod 2))
+        (FractionRing (MvPolynomial Unit (ZMod 2))))).Separable := by
+  apply radicalPrimPart_map_optionEquivLeft_fractionRing_separable
+  norm_num [degreeOf_X, ZMod.ringChar_zmod_n]
+
 /-- In characteristic two, the derivative of a degree-two monomial vanishes at the guard
 boundary. -/
 example : pderiv none (X none ^ 2 : MvPolynomial (Option Unit) (ZMod 2)) = 0 := by
@@ -59,7 +67,9 @@ example :
     ¬ ((ordinaryRootPolynomial
       (X (some ()) + X none ^ 2 : MvPolynomial (Option Unit) (ZMod 2))).map
         (algebraMap (MvPolynomial Unit (ZMod 2))
-          (FractionRing (MvPolynomial Unit (ZMod 2))))).Separable := by
+          (FractionRing (MvPolynomial Unit (ZMod 2))))).Separable ∧
+      (ordinaryRootPolynomial
+        (X (some ()) + X none ^ 2 : MvPolynomial (Option Unit) (ZMod 2))).natDegree = 2 := by
   let Q : MvPolynomial (Option Unit) (ZMod 2) := X (some ()) + X none ^ 2
   have hQirr : Irreducible Q := by
     simpa [Q] using MvPolynomial.irreducible_mul_X_add
@@ -89,6 +99,8 @@ example :
     simp [hrepDegree]
   have hpart : radicalPrimPart none Q = (Associates.mk Q).rep := by
     rw [radicalPrimPart, hclasses, Finset.prod_singleton]
+  have hrootDegree : (ordinaryRootPolynomial Q).natDegree = 2 := by
+    rw [natDegree_ordinaryRootPolynomial, hpart, hrepDegree]
   have hpartAssoc : Associated (radicalPrimPart none Q) Q := by
     rw [hpart]
     exact hrepAssoc
@@ -123,9 +135,33 @@ example :
       ((Polynomial.map f (optionEquivLeft (ZMod 2) Unit (radicalPrimPart none Q)))) B
     exact Associated.map (Polynomial.mapRingHom f)
       (Associated.map (optionEquivLeft (ZMod 2) Unit) hpartAssoc)
-  exact fun hsep => hBnotsep (hmapAssoc.separable_iff.mp hsep)
+  exact ⟨fun hsep => hBnotsep (hmapAssoc.separable_iff.mp hsep), hrootDegree⟩
 
 end CharacteristicTwo
+
+/-- A polynomial independent of the distinguished variable gives a degree-zero root product and
+nonzero resultant. -/
+example : resultant (1 : Polynomial (MvPolynomial Unit ℚ)) 0 0 0 ≠ 0 := by
+  let Q : MvPolynomial (Option Unit) ℚ := X (some ())
+  have hdegree : degreeOf none Q = 0 := by
+    rw [degreeOf_X_of_ne (show (none : Option Unit) ≠ some () by decide)]
+  have hclasses : positiveDegreeFactorClasses none Q = ∅ := by
+    ext a
+    constructor
+    · intro ha
+      have hpos := (mem_positiveDegreeFactorClasses.mp ha).2
+      have hsum := sum_degreeOf_positiveDegreeFactorClasses_le none Q
+      have hle := (Finset.single_le_sum
+        (fun b _hb ↦ Nat.zero_le (degreeOf none b.rep)) ha).trans hsum
+      omega
+    · simp
+  have hroot : ordinaryRootPolynomial Q = 1 := by
+    simp [ordinaryRootPolynomial, radicalPrimPart, hclasses]
+  have hresult := resultant_derivative_ne_zero_ordinaryRootPolynomial Q
+    (Or.inl (ringChar.eq_zero (R := ℚ)))
+  rw [hroot] at hresult
+  rw [derivative_one, natDegree_one, Nat.zero_sub] at hresult
+  exact hresult
 
 /-- The derivative-first padded order follows by swapping resultant arguments and degrees. -/
 example {F σ : Type*} [Field F] (Q : MvPolynomial (Option σ) F) (_hQ : Q ≠ 0)
