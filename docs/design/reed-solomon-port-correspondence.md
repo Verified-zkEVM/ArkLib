@@ -1377,6 +1377,16 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomialsToBoundedSolution`, `agreeingPolynomialToBoundedSolution`, and `exists_boundedSolution_polynomial_eq` keep their names and no longer require a positive interpolation budget. `agreeingPolynomials_encard_le_boundedSolution_natCard` and `agreeingPolynomials_encard_le_of_boundedSolution_natCard_le` also keep their names and remove that assumption. `agreeingPolynomials_encard_le_two_mul_pow_of_exactInterpolant` keeps its name and bound; it takes jet-cast and binomial hypotheses and derives the positive budget from nonzero exact-space membership. `differentialSpecialization_eq_zero_of_agreeingPolynomial` specializes exact-interpolation vanishing to the canonical agreement list. The new `agreeingPolynomialsToBoundedSolution_polynomial` and `agreeingPolynomialToBoundedSolution_polynomial` preserve the underlying polynomial.
+
+In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.lean`, the general form `agreeingPolynomialsToBoundedSolution` → `solutionEmbeddingOf` accepts any root proof on list members; `agreeingPolynomialToBoundedSolution_polynomial` → `solutionEmbeddingOf_polynomial` gives its polynomial-preservation law. The new subtype projection theorem `agreeingPolynomial_boundedSolution_polynomial` supports this direct construction.
+
+No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean` at ArkLib revision
