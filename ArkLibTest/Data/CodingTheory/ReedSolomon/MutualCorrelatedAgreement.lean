@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedPointRecognition
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Fin.VecNotation
+import Mathlib.FieldTheory.Finite.Extension
 
 /-!
 # Acceptance tests for power-batched point recognition
@@ -20,6 +21,8 @@ open MvPolynomial Polynomial PolynomialDifferential
 namespace ReedSolomon.PowerBatchedPointRecognitionTest
 
 noncomputable section
+
+private abbrev E₉ := FiniteField.Extension (ZMod 3) 3 2
 
 /-- The one-point evaluation domain at zero over `ZMod 3`. -/
 private def domain : Fin 1 ↪ ZMod 3 :=
@@ -65,27 +68,35 @@ private def classicalAgreementSet (domain : Fin 2 ↪ ZMod 3) (w : Fin 2 → Fin
     (P : Fin 2 → Polynomial (ZMod 3)) : Finset (Fin 2) :=
   @commonCurveAgreementSet (ZMod 3) (Fin 2) _ 1 (Classical.decEq _) _ domain w P
 
-/-- The batched agreement set computed with the classical equality decision. -/
-private def classicalPolynomialAgreementSet (domain : Fin 2 ↪ ZMod 3)
-    (w : Fin 2 → ZMod 3) (P : Polynomial (ZMod 3)) : Finset (Fin 2) :=
-  @polynomialAgreementSet (ZMod 3) _ (Classical.decEq _) (Fin 2) _ domain w P
+/-- The common agreement set after extension to `E₉`. -/
+private def extensionCommonAgreementSet (domain : Fin 2 ↪ E₉)
+    (w : Fin 2 → Fin 2 → E₉) (P : Fin 2 → Polynomial E₉) : Finset (Fin 2) :=
+  @commonCurveAgreementSet E₉ (Fin 2) _ 1 (Classical.decEq _) _ domain w P
+
+/-- The polynomial agreement set after extension to `E₉`. -/
+private def extensionPolynomialAgreementSet (domain : Fin 2 ↪ E₉)
+    (w : Fin 2 → E₉) (P : Polynomial E₉) : Finset (Fin 2) :=
+  @polynomialAgreementSet E₉ _ (Classical.decEq _) (Fin 2) _ domain w P
 
 /-- A two-component tuple has one exceptional challenge; scalar extension preserves its concrete
 common agreement set. -/
 example :
-    ∃ exceptional : Finset (ZMod 3), exceptional.card ≤ 1 ∧
+    ∃ exceptional : Finset E₉, exceptional.card ≤ 1 ∧
       (∀ z ∉ exceptional,
-        classicalPolynomialAgreementSet
-          (exceptionalDomain.trans ⟨RingHom.id _, (RingHom.id _).injective⟩)
-          (powerBatchedWord (fun t i ↦ RingHom.id _ (exceptionalWords t i)) z)
-          (powerBatchedPolynomial (fun t ↦ (exceptionalPolynomials t).map (RingHom.id _)) z) =
+        extensionPolynomialAgreementSet
+          (exceptionalDomain.trans ⟨algebraMap (ZMod 3) E₉,
+            (algebraMap (ZMod 3) E₉).injective⟩)
+          (powerBatchedWord (fun t i ↦ algebraMap (ZMod 3) E₉ (exceptionalWords t i)) z)
+          (powerBatchedPolynomial
+            (fun t ↦ (exceptionalPolynomials t).map (algebraMap (ZMod 3) E₉)) z) =
         classicalAgreementSet exceptionalDomain exceptionalWords exceptionalPolynomials) ∧
       classicalAgreementSet exceptionalDomain exceptionalWords exceptionalPolynomials =
         ({0} : Finset (Fin 2)) ∧
-      classicalAgreementSet
-          (exceptionalDomain.trans ⟨RingHom.id _, (RingHom.id _).injective⟩)
-          (fun t i ↦ RingHom.id _ (exceptionalWords t i))
-          (fun t ↦ (exceptionalPolynomials t).map (RingHom.id _)) =
+      extensionCommonAgreementSet
+          (exceptionalDomain.trans ⟨algebraMap (ZMod 3) E₉,
+            (algebraMap (ZMod 3) E₉).injective⟩)
+          (fun t i ↦ algebraMap (ZMod 3) E₉ (exceptionalWords t i))
+          (fun t ↦ (exceptionalPolynomials t).map (algebraMap (ZMod 3) E₉)) =
         classicalAgreementSet exceptionalDomain exceptionalWords exceptionalPolynomials := by
   have hbase : classicalAgreementSet exceptionalDomain exceptionalWords
       exceptionalPolynomials = ({0} : Finset (Fin 2)) := by
@@ -111,16 +122,17 @@ example :
       exceptionalPolynomials).card := by
     rw [hbase]
     simp
+  let ι : ZMod 3 →+* E₉ := algebraMap (ZMod 3) E₉
   obtain ⟨exceptional, hbound, hgood⟩ :=
     exists_exceptional_powerBatched_extension exceptionalDomain exceptionalWords
-      exceptionalPolynomials (RingHom.id _) 1 hcommon
+      exceptionalPolynomials ι 1 hcommon
   have hbound' : exceptional.card ≤ 1 := by
     simpa using hbound
   refine ⟨exceptional, hbound', ?_, hbase, ?_⟩
   · intro z hz
     exact hgood z hz
   · exact commonCurveAgreementSet_map exceptionalDomain exceptionalWords exceptionalPolynomials
-      (RingHom.id _)
+      ι
 
 /-- Batching `X^2` with twice `X + 1` at `z = 2` has initial jet `(5, 4)` at `1` in `ℚ`.
 -/
