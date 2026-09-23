@@ -1226,8 +1226,8 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 * `traceRemainderTuple`, `traceRemainderTuple_degree_lt`, `traceRemainderTuple_eval_eq` and
   `exists_selectedTrace_before_later` are not ported as declarations: the remainder of a tuple is
   `fun j ↦ Q j %ₘ (X ^ T - C 1)`, its properties are `ReedSolomon.traceRemainder_degree_lt` and
-  `ReedSolomon.traceRemainder_eval_eq` in each coordinate, and the trace statement is
-  `Option.map` applied to `exists_selectedCandidate_before_later`, as the test file shows.
+  `ReedSolomon.traceRemainder_eval_eq` in each coordinate, and the trace statement follows by
+  applying `Option.map` to `exists_selectedCandidate_before_later`.
 
 The source file `ArkLib/Data/Probability/TwoPointPolynomialCollision.lean` is covered by
 `ArkLib.Data.Polynomial.PointCollision`.
