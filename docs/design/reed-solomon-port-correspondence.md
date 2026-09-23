@@ -617,6 +617,14 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `SourceColumn`, i
 and `interpolant` keep their names; `map_interpolant_ne_zero` holds for any ring hom in place of
 `eval₂`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`SourceColumn.ofExponent` and `SourceColumn.exponent_ofExponent` keep their names and move to the existing `Symbolic/SourceColumn` owner. `noBand_kernel_height_lt` → `kernel_height_lt_twelve_mul_of_margin`; the renamed theorem describes its margin hypothesis and height bound. The remaining declarations keep their names and mathematical statements, adapted to the current support API and local-constraint operator. The full symbolic matrix rank bound uses the existing `LinearMap.finrank_range_pi_le_sum`.
+
+The private `map_unscaledLocalImage` helper is subsumed by the existing `map_unscaledLocalSubstitution`. The private `localConstraintCoordinatesAt_monomial_map` helper is generalized to `map_localConstraintCoordinatesAt`, which handles every differential polynomial. No new generic matrix API is added: the block helper is local to the proof, and the rank bound uses the existing linear-map rank-sum result. `WeightedSupportIndex` is replaced by the subtype of the existing `weightedSupportExponents`; `to` appears only in overview prose and is not a declaration.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/WeightedSupport/FloorTransfer.lean`
 
 Ports, from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/WeightedSupport/`
@@ -854,6 +862,12 @@ range and without `0 < m`. `automatic_source_residual_le_public` is now
 source directory, is now `certifiedEnlargedRankBound_one_eq_firstOrderRankCount` for every `W`.
 The threshold- and `β`-dependent definitions and theorems of `AutomaticRecipe.lean` are not ported
 here.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMRankRounding.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderRateRankCount_floor_le_density_add_rounding_upper` → `firstOrderRankCount_floor_le_density_add_rounding_upper` and `firstOrderRateRankCount_floor_le_density_add_rounding` → `firstOrderRankCount_floor_le_density_add_rounding`. Their hypotheses and bounds are unchanged, using the already-ported rank-count name. The upper-branch theorem uses the sharper linear density with rounding loss `(2β + 3)m²`; the uniform theorem combines it with the existing cubic-envelope bound below `β = 1/2`.
+
+Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. The acceptance module derives the source-shaped ceiling-cap estimate from that generic theorem.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
 
