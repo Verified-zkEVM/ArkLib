@@ -42,7 +42,6 @@ chosen primitive: its coordinates generate the unit ideal of `F[X]`.
   own `degreeLT` budget.
 * `Matrix.exists_primitive_ne_zero_mulVec_eq_zero_degreeLT_of_rank_le` adds to the rank form the
   conclusion that the coordinates of the kernel vector generate the unit ideal.
-
 ## Proof outline
 
 The row-count theorem treats the bounded coefficients of the kernel vector as scalar unknowns.
@@ -59,6 +58,10 @@ and the resulting bound is at most the bound for `s` because `r * b / (c - r)` i
 `ArkLib.ToMathlib.Polynomial.DegreeLT`) transfers the degree bound from `g * u j` to `u j`.
 The natural-degree forms follow from the `degreeLT` forms by
 `Polynomial.natDegree_le_of_mem_degreeLT_succ`.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section

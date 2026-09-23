@@ -145,7 +145,7 @@ theorem correlatedProductCutoff_fiberProduct_le (δ : ℝ) (n k A d r : ℕ)
     (dimensionSensitiveIncidenceProduct n (correlatedProductCutoff d k A) k 1 r : ℝ) ≤
       ((1 + 1 / d) / δ) ^ r := by
   induction r with
-  | zero => simp
+  | zero => simp [dimensionSensitiveIncidenceProduct]
   | succ r ih =>
     rw [dimensionSensitiveIncidenceProduct_succ, Rat.cast_mul, pow_succ]
     apply mul_le_mul ih
