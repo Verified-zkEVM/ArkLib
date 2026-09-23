@@ -35,6 +35,8 @@ The file also shows that `MvPolynomial.optionEquivLeft` commutes with coefficien
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
   `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
   `MvPolynomial.CoeffNatDegreeLE.pderiv`.
+* `MvPolynomial.eval_map_coefficients`: evaluation after a coefficient map agrees with direct
+  evaluation into the target semiring.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
@@ -197,6 +199,22 @@ theorem CoeffNatDegreeLE.map_coefficients {S : Type*} [CommSemiring S]
   rw [MvPolynomial.coeff_map]
   exact Polynomial.natDegree_map_le.trans (hP m)
 
+/-- Evaluating mapped coefficient polynomials agrees with evaluating their coefficients directly.
+-/
+theorem eval_map_coefficients {S : Type*} [CommSemiring S]
+    (f : R →+* S) (z : S) (P : MvPolynomial σ (Polynomial R)) :
+    MvPolynomial.map (Polynomial.evalRingHom z)
+        (MvPolynomial.map (Polynomial.mapRingHom f) P) =
+      MvPolynomial.map (Polynomial.eval₂RingHom f z) P := by
+  rw [MvPolynomial.map_map]
+  have hcomp : (Polynomial.evalRingHom z).comp (Polynomial.mapRingHom f) =
+      Polynomial.eval₂RingHom f z := by
+    apply Polynomial.ringHom_ext
+    · intro a
+      simp
+    · simp
+  rw [hcomp]
+
 /-! ### Joint total degree -/
 
 /-- A power of a variable has total degree at most its exponent, also over the zero ring. -/
@@ -262,6 +280,21 @@ theorem jointTotalDegree_C_le (p : Polynomial R) :
   apply (totalDegree_mul _ _).trans
   rw [totalDegree_C, zero_add]
   exact (totalDegree_X_pow_le _ _).trans (Polynomial.le_natDegree_of_mem_supp n hn)
+
+/-- An affine polynomial in the coefficient variable has joint degree at most one. -/
+theorem jointTotalDegree_affine_le (a b : R) :
+    jointTotalDegree
+      (C (Polynomial.C a + Polynomial.X * Polynomial.C b) :
+        MvPolynomial σ (Polynomial R)) ≤ 1 := by
+  apply (jointTotalDegree_C_le _).trans
+  apply (Polynomial.natDegree_add_le _ _).trans
+  apply max_le
+  · simp
+  · calc
+      (Polynomial.X * Polynomial.C b).natDegree ≤
+          Polynomial.X.natDegree + (Polynomial.C b).natDegree := Polynomial.natDegree_mul_le
+      _ ≤ 1 + 0 := Nat.add_le_add Polynomial.natDegree_X_le (by simp)
+      _ = 1 := by omega
 
 /-- If every coefficient of `P` has `natDegree ≤ h`, the joint total degree of `P` is at most
 `h + P.totalDegree`. -/
