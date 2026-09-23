@@ -39,18 +39,6 @@ open MvPolynomial Polynomial
 
 variable {F : Type*} [Field F] {r : ℕ}
 
-private theorem coeffNatDegreeLE_neg {σ : Type*} {P : MvPolynomial σ (Polynomial F)}
-    {h : ℕ} (hP : CoeffNatDegreeLE P h) : CoeffNatDegreeLE (-P) h := by
-  intro m
-  simpa using hP m
-
-private theorem coeffNatDegreeLE_sub {σ : Type*}
-    {P Q : MvPolynomial σ (Polynomial F)} {h : ℕ}
-    (hP : CoeffNatDegreeLE P h) (hQ : CoeffNatDegreeLE Q h) :
-    CoeffNatDegreeLE (P - Q) h := by
-  rw [sub_eq_add_neg]
-  exact hP.add (coeffNatDegreeLE_neg hQ)
-
 /-- The flattened initial equation lies in the rectangle given by the coefficient and jet degrees
 of `Q`. -/
 theorem initialJetEquation_mem_restrictBidegree (center : F)
@@ -102,14 +90,16 @@ theorem taylorAgreementEquationOver_mem_restrictBidegree (center x : F) (y : Pol
         restrictBidegree (Fin (r + 1)) F (ell + τ * h) (1 + τ * (v - 1)) := by
   apply optionEquivRight_symm_mem_restrictBidegree
   · unfold taylorAgreementEquationOver
-    apply coeffNatDegreeLE_sub
+    rw [sub_eq_add_neg]
+    apply CoeffNatDegreeLE.add
     · apply coeffNatDegreeLE_sum
       intro l _
       apply (coeffNatDegreeLE_C (by simp)).mul
-      exact coeffNatDegreeLE_commonTaylorNumeratorOver_le center Q h τ l.val
-        (hτ l) hheight
-    · exact (coeffNatDegreeLE_C hy).mul
-        ((coeffNatDegreeLE_initialJetSeparant Q center hheight).pow τ)
+      exact (coeffNatDegreeLE_commonTaylorNumeratorOver_le center Q h τ l.val
+        (hτ l) hheight).mono (by omega)
+    · intro m
+      simpa using (((coeffNatDegreeLE_C hy).mul
+        ((coeffNatDegreeLE_initialJetSeparant Q center hheight).pow τ)) m)
   · unfold taylorAgreementEquationOver
     apply (totalDegree_sub _ _).trans
     apply max_le

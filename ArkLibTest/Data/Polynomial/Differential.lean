@@ -119,35 +119,105 @@ example :
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
-private abbrev oneJet : DifferentialPolynomial (Polynomial ℚ) 0 := X (some 0)
+private abbrev nonlinearTaylorEquation : DifferentialPolynomial (Polynomial ℚ) 1 :=
+  X (some 1) ^ 2 + MvPolynomial.C (Polynomial.X : Polynomial ℚ) * X (some 0)
 
-private theorem oneJet_jetDegree : jetTotalDegree oneJet ≤ 1 := by
+private theorem nonlinearTaylorEquation_height :
+    CoeffNatDegreeLE nonlinearTaylorEquation 1 := by
+  change CoeffNatDegreeLE (X (some (1 : Fin 2)) ^ 2 +
+    MvPolynomial.C (Polynomial.X : Polynomial ℚ) * X (some 0)) 1
+  exact ((coeffNatDegreeLE_X (some (1 : Fin 2))).pow 2).mono (by norm_num) |>.add
+    ((coeffNatDegreeLE_C (p := (Polynomial.X : Polynomial ℚ)) (by simp)).mul
+      (coeffNatDegreeLE_X (some 0)))
+
+private theorem nonlinearTaylorEquation_jetDegree :
+    jetTotalDegree nonlinearTaylorEquation ≤ 2 := by
   rw [jetTotalDegree_le_iff]
   intro u hu
-  rw [MvPolynomial.support_X] at hu
-  simp only [Finset.mem_singleton] at hu
-  subst u
-  rw [totalJetDegree_eq_sum]
-  simp
+  rcases Finset.mem_union.mp (MvPolynomial.support_add hu) with hu | hu
+  · rw [MvPolynomial.X_pow_eq_monomial] at hu
+    have hu' := Finset.mem_singleton.mp (support_monomial_subset hu)
+    subst u
+    rw [totalJetDegree_eq_sum]
+    simp [Finsupp.single_apply]
+  · rw [MvPolynomial.C_mul_X_eq_monomial] at hu
+    have hu' := Finset.mem_singleton.mp (support_monomial_subset hu)
+    subst u
+    rw [totalJetDegree_eq_sum]
+    simp [Finsupp.single_apply]
 
-/-- The first coordinate of a zero-order equation has bidegree `(0, 1)` after flattening. -/
+/-- The initial equation has bidegree at most `(1, 2)` for a parameterized quadratic. -/
 example :
-    (optionEquivRight ℚ (Fin 1)).symm
-        (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) oneJet 0 0) ∈
-      restrictBidegree (Fin 1) ℚ 0 1 := by
-  exact commonTaylorNumeratorOver_mem_restrictBidegree (F := ℚ) (r := 0) 0 oneJet
-    0 1 1 0 (by norm_num [TaylorExponentSufficient]) (coeffNatDegreeLE_X (some 0))
-    (by norm_num) oneJet_jetDegree ⟨0, by decide⟩
+    (optionEquivRight ℚ (Fin 2)).symm
+        (initialJetEquation (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation) ∈
+      restrictBidegree (Fin 2) ℚ 1 2 := by
+  exact initialJetEquation_mem_restrictBidegree (F := ℚ) (r := 1) 0 nonlinearTaylorEquation
+    1 2 nonlinearTaylorEquation_height nonlinearTaylorEquation_jetDegree
 
-/-- Agreement at the origin with the zero received value keeps the same bidegree bound. -/
+/-- The initial separant has bidegree at most `(1, 1)` for the parameterized quadratic. -/
 example :
-    (optionEquivRight ℚ (Fin 1)).symm
-        (taylorAgreementEquationOver (F := ℚ) (A := Polynomial ℚ)
-          (Polynomial.C 0) oneJet 1 (Polynomial.C 0) (0 : Polynomial ℚ) (τ := 0)) ∈
-      restrictBidegree (Fin 1) ℚ 0 1 := by
-  exact taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 0)
-    0 0 0 oneJet 0 0 1 1 0 (by norm_num [TaylorExponentSufficient]) (by norm_num)
-    (coeffNatDegreeLE_X (some 0)) (by norm_num) oneJet_jetDegree
+    (optionEquivRight ℚ (Fin 2)).symm
+        (initialJetSeparant (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation) ∈
+      restrictBidegree (Fin 2) ℚ 1 1 := by
+  exact initialJetSeparant_mem_restrictBidegree (F := ℚ) (r := 1) 0 nonlinearTaylorEquation
+    1 2 nonlinearTaylorEquation_height nonlinearTaylorEquation_jetDegree
+
+/-- The recursive numerator at index `2` has parameter degree at most `1`. -/
+example : CoeffNatDegreeLE
+    (rationalTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2) 1 := by
+  simpa using coeffNatDegreeLE_rationalTaylorNumeratorOver (F := ℚ) (r := 1) 0
+    nonlinearTaylorEquation 1 nonlinearTaylorEquation_height 2
+
+/-- The recursive numerator at index `2` has jet degree at most `2`. -/
+example :
+    (rationalTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2).totalDegree
+      ≤ 2 := by
+  simpa using totalDegree_rationalTaylorNumeratorOver_le_of_jet (F := ℚ) (r := 1)
+    (Polynomial.C 0) nonlinearTaylorEquation 2 (by norm_num)
+    nonlinearTaylorEquation_jetDegree 2
+
+/-- Padding the recursive numerator at index `2` keeps parameter degree at most `2`. -/
+example : CoeffNatDegreeLE
+    (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2 2) 2 := by
+  exact coeffNatDegreeLE_commonTaylorNumeratorOver_le (F := ℚ) (r := 1) 0
+    nonlinearTaylorEquation 1 2 2 (by norm_num)
+    nonlinearTaylorEquation_height
+
+/-- Padding at the recursive index `2` gives a common numerator in its bidegree rectangle. -/
+example :
+    (optionEquivRight ℚ (Fin 2)).symm
+      (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2 2) ∈
+        restrictBidegree (Fin 2) ℚ 2 3 := by
+  exact commonTaylorNumeratorOver_mem_restrictBidegree (F := ℚ) (r := 1) 0
+    nonlinearTaylorEquation 1 2 3 2 (by
+      intro l
+      fin_cases l <;> norm_num [TaylorExponentSufficient])
+    nonlinearTaylorEquation_height (by norm_num) nonlinearTaylorEquation_jetDegree
+    ⟨2, by decide⟩
+
+/-- Agreement at `1` with the received polynomial `X` has bidegree at most `(3, 3)`. -/
+example :
+    (optionEquivRight ℚ (Fin 2)).symm
+      (taylorAgreementEquationOver (F := ℚ) (A := Polynomial ℚ)
+        (Polynomial.C 0) nonlinearTaylorEquation 3 (Polynomial.C 1) Polynomial.X (τ := 2)) ∈
+      restrictBidegree (Fin 2) ℚ 3 3 := by
+  exact taylorAgreementEquationOver_mem_restrictBidegree (F := ℚ) (r := 1) 0 1 Polynomial.X
+    nonlinearTaylorEquation 1 1 2 3 2 (by
+      intro l
+      fin_cases l <;> norm_num [TaylorExponentSufficient])
+    (by norm_num) nonlinearTaylorEquation_height (by norm_num)
+    nonlinearTaylorEquation_jetDegree
+
+/-- Padding at a recursive index gives total jet degree at most `3`. -/
+example :
+    (commonTaylorNumeratorOver ℚ (Polynomial.C (0 : ℚ)) nonlinearTaylorEquation 2 2).totalDegree
+      ≤ 3 := by
+  exact totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent (F := ℚ) (r := 1)
+    (Polynomial.C 0) nonlinearTaylorEquation 2 3 2 (by norm_num)
+    (by
+      intro l
+      fin_cases l <;> norm_num [TaylorExponentSufficient])
+    nonlinearTaylorEquation_jetDegree ⟨2, by decide⟩
 
 end
 

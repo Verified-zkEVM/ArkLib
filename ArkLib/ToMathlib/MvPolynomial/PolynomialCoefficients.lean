@@ -282,7 +282,7 @@ theorem CoeffNatDegreeLE.clearedSubstitution
 
 /-- Flattening turns a coefficient-degree bound into a degree bound in the distinguished variable.
 -/
-theorem weightedTotalDegree_optionEquivRight_symm_challenge_le [Nontrivial R]
+theorem weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le [Nontrivial R]
     {P : MvPolynomial σ (Polynomial R)} {h : ℕ}
     (hP : CoeffNatDegreeLE P h) :
     ((optionEquivRight R σ).symm P).weightedTotalDegree
@@ -310,7 +310,7 @@ theorem optionEquivRight_symm_mem_restrictBidegree [Nontrivial R]
     (optionEquivRight R σ).symm P ∈ restrictBidegree σ R a b := by
   rw [mem_restrictBidegree_iff_weightedTotalDegree_le]
   constructor
-  · exact weightedTotalDegree_optionEquivRight_symm_challenge_le ha
+  · exact weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le ha
   · calc
       _ = P.totalDegree := by
         simpa only [AlgEquiv.apply_symm_apply] using
