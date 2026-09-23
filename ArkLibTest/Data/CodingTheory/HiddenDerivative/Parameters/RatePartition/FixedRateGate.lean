@@ -6,6 +6,12 @@ Authors: Quang Dao
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.FixedRateGate
 
+/-!
+# Fixed-rate partition gate acceptance tests
+
+Concrete strict-gate and finite-multiplicity cases, including the zero-gap boundary.
+-/
+
 namespace ReedSolomon.HiddenDerivative.RatePartition
 
 /-- At rate `1/2` and gap `1/4`, the selected derivative order gives a strict gate. -/
