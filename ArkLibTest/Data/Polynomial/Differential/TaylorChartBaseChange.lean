@@ -14,8 +14,9 @@ import Mathlib.Tactic.NormNum
 # Acceptance tests for common regular centers after coefficient extension
 
 The algebraic-closure case follows from the common-center theorem for an injective coefficient
-map. Over the finite field `ZMod 2`, the nonzero polynomial `X ^ 2 - X` vanishes everywhere,
-showing why the target domain must be infinite.
+map. A concrete nonempty family over `ZMod 2` exercises the positive theorem. Over the finite
+field itself, the nonzero polynomial `X ^ 2 - X` vanishes everywhere, showing why the target
+domain must be infinite.
 -/
 
 open Polynomial PolynomialDifferential
@@ -34,6 +35,36 @@ example (Q : DifferentialPolynomial (ZMod 2) 0) (S : Finset ((ZMod 2)[X]))
           (P.map (algebraMap (ZMod 2) (AlgebraicClosure (ZMod 2))))) ≠ 0 := by
   let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
   exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q S 0 hS
+
+/-- The nonempty family containing zero has a common regular center after extending scalars. -/
+example :
+    let Q : DifferentialPolynomial (ZMod 2) 0 :=
+      (MvPolynomial.X none ^ 2 - MvPolynomial.X none) * MvPolynomial.X (some 0)
+    ∃ center : AlgebraicClosure (ZMod 2),
+      ∀ P ∈ ({(0 : (ZMod 2)[X])} : Finset ((ZMod 2)[X])),
+        jetEvaluation
+          (separant
+            (MvPolynomial.map (algebraMap (ZMod 2) (AlgebraicClosure (ZMod 2))) Q) 0)
+          center
+          (polynomialJet center
+            (P.map (algebraMap (ZMod 2) (AlgebraicClosure (ZMod 2))))) ≠ 0 := by
+  intro Q
+  have hspec : differentialSpecialization (separant Q 0) (0 : (ZMod 2)[X]) =
+      (Polynomial.X ^ 2 - Polynomial.X : (ZMod 2)[X]) := by
+    simp [Q, separant, differentialSpecialization, differentialSpecializationHom]
+  have hspec_ne : differentialSpecialization (separant Q 0) (0 : (ZMod 2)[X]) ≠ 0 := by
+    rw [hspec]
+    intro h
+    have hc := congrArg (fun P : (ZMod 2)[X] ↦ P.coeff 2) h
+    norm_num [Polynomial.coeff_X_pow, Polynomial.coeff_X] at hc
+  have hregular : ∀ P ∈ ({(0 : (ZMod 2)[X])} : Finset ((ZMod 2)[X])),
+      differentialSpecialization (separant Q 0) P ≠ 0 := by
+    intro P hP
+    have hP0 : P = 0 := Finset.mem_singleton.mp hP
+    subst P
+    exact hspec_ne
+  let f : ZMod 2 →+* AlgebraicClosure (ZMod 2) := algebraMap _ _
+  exact exists_forall_jetEvaluation_ne_zero_map f f.injective Q {0} 0 hregular
 
 /-- The finite-field equation with separant `X ^ 2 - X` has no regular center, since every
 element of `ZMod 2` is a root. -/
