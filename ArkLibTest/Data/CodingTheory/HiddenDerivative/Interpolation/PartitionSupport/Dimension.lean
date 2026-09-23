@@ -136,7 +136,8 @@ example :
 example : partitionSupportAreaSlotExponent xCoefficientAreaSlot ≠
     partitionSupportAreaSlotExponent constantCoefficientAreaSlot := by
   intro h
-  have hX := congrArg (fun e => e none) h
+  have hslots := partitionSupportAreaSlotExponent_injective h
+  have hX := congrArg (fun p => p.2.exponents.1) hslots
   change (1 : ℕ) = 0 at hX
   omega
 
@@ -149,6 +150,46 @@ example :
   constructor <;> apply mem_partitionSupportExponents.mpr
   · exact partitionSupportAreaSlotExponent_eligible two_pos xCoefficientAreaSlot
   · exact partitionSupportAreaSlotExponent_eligible two_pos constantCoefficientAreaSlot
+
+private def zeroDerivativeTuple : Fin 1 → ℕ := fun _ => 0
+
+private def unitDerivativeTuple : Fin 1 → ℕ := fun _ => 1
+
+private theorem zeroDerivativeTuple_mem_natWeightedSimplex :
+    zeroDerivativeTuple ∈ natWeightedSimplex (fun i : Fin 1 => i.val + 1) 1 := by
+  apply (mem_natWeightedSimplex (hw := fun i : Fin 1 => Nat.succ_ne_zero i.val)).2
+  norm_num [zeroDerivativeTuple]
+
+private theorem unitDerivativeTuple_mem_natWeightedSimplex :
+    unitDerivativeTuple ∈ natWeightedSimplex (fun i : Fin 1 => i.val + 1) 1 := by
+  apply (mem_natWeightedSimplex (hw := fun i : Fin 1 => Nat.succ_ne_zero i.val)).2
+  norm_num [unitDerivativeTuple]
+
+private noncomputable def zeroDerivativeAreaSlot : PartitionSupportAreaSlot 2 1 1 5 :=
+  ⟨⟨zeroDerivativeTuple, zeroDerivativeTuple_mem_natWeightedSimplex⟩,
+    ⟨⟨0, by norm_num [zeroDerivativeTuple, QuadraticStaircase.Slot]⟩,
+      ⟨0, by norm_num [zeroDerivativeTuple, QuadraticStaircase.Slot]⟩⟩⟩
+
+private noncomputable def unitDerivativeAreaSlot : PartitionSupportAreaSlot 2 1 1 5 :=
+  ⟨⟨unitDerivativeTuple, unitDerivativeTuple_mem_natWeightedSimplex⟩,
+    ⟨⟨0, by norm_num [unitDerivativeTuple, QuadraticStaircase.Slot]⟩,
+      ⟨0, by norm_num [unitDerivativeTuple, QuadraticStaircase.Slot]⟩⟩⟩
+
+/-- With `d = 1`, the slots for derivative tuples `0` and `1` have the corresponding `Y₁`
+exponents. -/
+example :
+    partitionSupportAreaSlotExponent zeroDerivativeAreaSlot (some (0 : Fin 1).succ) = 0 ∧
+      partitionSupportAreaSlotExponent unitDerivativeAreaSlot (some (0 : Fin 1).succ) = 1 := by
+  constructor <;> rfl
+
+/-- The `d = 1` slots with different derivative tuples give distinct exponents by injectivity. -/
+example : partitionSupportAreaSlotExponent zeroDerivativeAreaSlot ≠
+    partitionSupportAreaSlotExponent unitDerivativeAreaSlot := by
+  intro h
+  have hslots := partitionSupportAreaSlotExponent_injective h
+  have hc := congrArg (fun p => p.1.val 0) hslots
+  norm_num [zeroDerivativeAreaSlot, unitDerivativeAreaSlot, zeroDerivativeTuple,
+    unitDerivativeTuple] at hc
 
 /-- At `D = 0`, no staircase slot represents the eligible exponent `Y₀`, so positive `D` is needed
 for the slot enumeration to cover the partition support. -/
