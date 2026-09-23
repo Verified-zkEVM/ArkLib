@@ -113,6 +113,15 @@ jet-degree budget `B` with `C + 2H ≤ B`; neither assumption is needed.
 
 `finrank_interpolationSpace_lowerBound`: /-- The source's rectangular lower bound:
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The graded row indices, constraint matrices, source columns, target exponents, origin slice and selected matrices, rank profile, numerical bound, and translation theorem retain their source names. `localJetDegree_one` becomes `weight_localJetDegreeWeight_one_eq`, and `localJetDegree_firstOrderGradedTargetExponent` becomes `weight_localJetDegreeWeight_one_firstOrderGradedTargetExponent`; both are stated directly through the existing weight API. The finite-matrix degree bound drops its unused weight hypothesis, and its zero-entry bound drops the unused bound on received-curve degrees.
+
+The compressed-matrix declarations are retired because `firstOrderOriginGradedBaseSelectedMatrix` provides the needed interface and they have no consumers. `firstOrderGradedRowCount` is omitted because it has no consumers. `firstOrderGradedRank` is a redundant alias of `firstOrderOriginGradedRank`. The fixed-field `firstOrderOriginGradedSliceMatrix` abbreviation is omitted in favor of `firstOrderOriginGradedSliceMatrixOver`. `firstOrderLocalSliceWeight` is omitted because it duplicates `localTWeight 1`; the private first-jet and source-slice weights use `jetFirstWeight` and `localTWeight 1`. `firstOrderLocalJetDegree` is omitted as a fixed-argument alias of `e.weight (localJetDegreeWeight 1)`, and the low-contact-index weight formula is omitted as a specialization of the target-exponent formula. `SourceColumn.firstJetExponent_exponent` follows from the coordinate membership and exponent successor lemmas; the source-column exact interpolation weight exponent follows from `SourceColumn.weight_exponent`. The basis-application lemmas are supplied directly by `MvPolynomial.coe_basisRestrictSupport_apply`. `map_localConstraintAt` is owned by `Local.ConstraintMap`, while `firstOrderColumns` and its exponent, injectivity, and eligibility lemmas are owned by `FirstOrder.HeightCounting`.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Dimension.lean`
 
 Ported from
@@ -185,6 +194,13 @@ and agreement threshold is new, as are `monomial_mem_firstOrderSpace`, the `Modu
 instance, `jetTotalDegree_le_of_mem_firstOrderSpace` and
 `weight_differentialWeight_le_add_mul_totalJetDegree`.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Symbolic.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Symbolic.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderSymbolicCertificate` retains its name, fields, and specialization-soundness contract. `interpolant_mem_firstOrderSpace` is generalized from fields to commutative semirings. The coefficient-height declaration is placed beside the generic source-column interpolant in `ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.SourceColumn` as `SourceColumn.coeff_interpolant_natDegree_le`, generalized to every derivative order and commutative semirings.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/SymbolicRank.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/SymbolicRank.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -194,6 +210,11 @@ Namespace: `ReedSolomon.HiddenDerivative`.
 `firstOrder_symbolic_matrix_rank_le` → `rank_firstOrderLocalConstraintMatrix_le`. The rank bound now accepts arbitrary finite point and column types instead of `Fin` indices and no longer assumes `1 < D`; it holds for every degree parameter `D`. The proof uses the local coefficient-change and matrix-entry declarations ported to their existing owner modules: `map_localConstraintAt` keeps its name in `Local/ConstraintMap`, and `matrix_entry_eq_coeff_localConstraintAt` → `localConstraintMatrix_apply_eq_localConstraintAt_coeff` in `Symbolic/ConstraintMatrix`. The supporting `map_projectLowContact` and `map_unscaledLocalSubstitution` lemmas also keep their names in `Local/ConstraintMap`; the latter moved from `Symbolic/Soundness` and was already public on main.
 
 No source declarations were left out.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveRank.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrder_curve_matrix_rank_le` becomes `rank_firstOrderLocalConstraintMatrix_le`. The theorem is generalized from received lines to arbitrary received polynomials and from `Fin n` to arbitrary finite point and column types; its bound uses `Fintype.card ι`. This generalized result owns the rank proof, so no separate curve-matrix rank theorem is ported.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FreeOrderDimension.lean`
 
@@ -701,6 +722,13 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `SourceColumn`, i
 and `interpolant` keep their names; `map_interpolant_ne_zero` holds for any ring hom in place of
 `eval₂`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Symbolic.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`coeff_interpolant_natDegree_le` becomes `SourceColumn.coeff_interpolant_natDegree_le`, beside the generic source-column interpolant. It is generalized to every derivative order and commutative semirings, preserving coefficient height and support during source-column assembly.
+
+The consolidated acceptance cases, including this port's coefficient-height, support-assembly, symbolic-rank, translated-kernel, rank-profile, weighted-degree, and zero-entry examples, are in `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean`. The concrete `X^2` rank-bound case uses the generalized rank theorem. The per-module `SymbolicRank` test was removed. The test file adds no public ArkLib declaration.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1096,6 +1124,15 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Ra
 `exists_partitionFiniteParameters_of_rateGamma_gt_one` is new and bridges the strict limiting gate to the existing finite-ratio existence theorem. `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` keep their names and choose and characterize the least multiplicity with positive weight budget and finite ratio above one, using `partitionFiniteRatio` in place of `finiteGamma`.
 
 No declarations were left unported from this source file.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformEnvelope.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.HiddenDerivative.UniformRatePartitionEnvelope` → `ReedSolomon.HiddenDerivative.RatePartition.UniformRatePartitionEnvelope` and `ReedSolomon.HiddenDerivative.exists_uniformRatePartitionEnvelope` → `ReedSolomon.HiddenDerivative.RatePartition.exists_uniformRatePartitionEnvelope`; names are unchanged, and both declarations are placed in the `RatePartition` namespace. The gap determines the derivative order, multiplicity, and block threshold, while the ambient degree and scalar parameters may depend on the actual message dimension. The existence theorem supplies parameters for that dimension and the actual agreement count. The consolidated acceptance module adds a concrete envelope existence example at `δ = 1/5`, with `n = 50m`, `k = 2m`, and `A = 12m`, where `m = uniformMultiplicity (1/5)`.
+
+No declarations from the designated source file were left unported. The generalized Gamma bounds and their uniform-order specializations are supplied by `main`'s `UniformGamma` module. The proof uses the existing `rateGamma_eq_exponential` identity; the redundant branch-local `rateGamma_eq_exp` alias was removed.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean`
 
@@ -1850,6 +1887,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 The definitions and laws are ported from `ArkLib/Data/Polynomial/Differential/Basic.lean` at
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
 
+## `ArkLib/Data/Polynomial/Differential/ContentExceptions.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/ContentExceptions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.HiddenDerivative.exists_exceptional_ordinaryContent` is renamed to `PolynomialDifferential.exists_exceptional_jet_independent_content` and generalized from fields to commutative integral domains. Its coefficient-height bound uses `MvPolynomial.CoeffNatDegreeLE`. The theorem bounds challenges where a nonzero equation independent of its jet specializes to zero; outside the exceptional set, every polynomial input has nonzero specialization.
+
+The acceptance case in `ArkLibTest/Data/Polynomial/Differential.lean` uses a height-one nonconstant coefficient equation that vanishes at challenge zero and checks that zero belongs to an exceptional set of cardinality at most one. Nothing was deferred or left unported.
+
 ## `ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean`
 
 This file ports the semantic content of `RootFinding/Regular/DirectRegularCoefficient.lean` and
@@ -2083,6 +2128,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 `separableResultant_ordinaryRootPresentation_ne_zero` is renamed to `resultant_derivative_ordinaryRootPresentation_ne_zero` and generalized to the generic padded derivative resultant; it no longer needs a separate positive-degree assumption. The challenge-height bound uses `MvPolynomial.CoeffNatDegreeLE`.
 
 Nothing was deferred or left unported. The source separable-resultant declaration is covered by the renamed theorem using the current padded resultant API, so no duplicate wrapper was added.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/RootPresentation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ordinaryRootPresentation`, `natDegree_ordinaryRootPresentation`, `ordinaryRootPresentation_ne_zero`, `irreducible_ordinaryRootPresentation`, `derivative_ordinaryRootPresentation`, `ordinaryRootPresentation_monomial`, `degreeX_ordinaryRootPresentation_le`, and `eval_ordinaryRootPresentation` keep their names and are generalized from fields to commutative rings. The resultant and separant statements retain their field assumptions.
 
 ## `ArkLib/Data/Polynomial/Differential/ShiftedJet.lean`
 
