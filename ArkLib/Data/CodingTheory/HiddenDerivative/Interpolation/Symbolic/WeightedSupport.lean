@@ -122,13 +122,10 @@ theorem localConstraintBlock_eq_weightedSupportSubmatrix
         (algebraMap F[X] (RatFunc F) (received i))).submatrix id
           (weightedSupportColumnIndex hD columns hband) := by
   ext row j
-  simp only [Matrix.submatrix_apply, id_eq, localConstraintMatrix,
-    weightedSupportLocalCoordinateMatrix_apply, weightedSupportColumnIndex,
-    localConstraintCoordinatesAt, LinearMap.comp_apply, AlgHom.toLinearMap_apply,
-    lowContactCoefficients, LinearMap.pi_apply, MvPolynomial.lcoeff_apply,
-    SourceColumn.polynomial]
-  rw [← MvPolynomial.coeff_map, map_unscaledLocalSubstitution]
-  simp
+  simp only [Matrix.submatrix_apply, id_eq, weightedSupportLocalCoordinateMatrix_apply,
+    weightedSupportColumnIndex, localConstraintMatrix]
+  rw [map_localConstraintCoordinatesAt]
+  simp [SourceColumn.polynomial]
 
 /-- A mapped received-line point block is a column submatrix of the canonical support matrix over
 the rational-function field. -/

@@ -33,7 +33,8 @@ the surplus and the corresponding degree bounds.
 
 ## References
 
-* [DKT26]
+* [Dao, Q., Kominers, S. D., Thaler, J., Zheng, K. Z., *Reed--Solomon List Decoding and Mutual
+  Correlated Agreement up to Capacity*][DKTZ26], Section 5.1, Corollary 5.3.
 -/
 
 @[expose] public section
