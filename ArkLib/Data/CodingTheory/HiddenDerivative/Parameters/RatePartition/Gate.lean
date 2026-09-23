@@ -38,6 +38,7 @@ the price to be paid. For every `ε > 0` and every small enough gap `δ`, the or
 ## Main statements
 
 * `rateGamma_pos`, `log_rateGamma`: positivity of `Γ` and its logarithm.
+* `rateGamma_eq_exp`: the equivalent exponential expression for `Γ`.
 * `complementary_rate_logs`: `log(40/(9R)) + log(27R/20) = log 6`.
 * `fixed_rate_log_identity`: the displayed identity for `(R + δ) log Γ`.
 * `fixedRateCoefficient_pos`: `0 < c(R)` for `0 < R < 40/9`.
@@ -85,6 +86,18 @@ theorem log_rateGamma {rate agreement : ℝ} {order : ℕ}
     (27 * rate / 20) * ((order : ℝ) + 1) by ring]
   rw [Real.log_div (mul_ne_zero hfactor hsuccessor.ne') (Real.rpow_pos_of_pos hbase _).ne',
     Real.log_mul hfactor hsuccessor.ne', Real.log_rpow hbase]
+
+/-- The limiting ratio is
+`(27/20) R (d + 1) exp(-(R/a) log(6d))` when `d > 0`. -/
+theorem rateGamma_eq_exp (rate agreement : ℝ) {order : ℕ} (horder : 0 < order) :
+    rateGamma rate agreement order =
+      (27 / 20 : ℝ) * rate * (order + 1) *
+        Real.exp (-(rate / agreement * Real.log (6 * (order : ℝ)))) := by
+  have hbase : (0 : ℝ) < 6 * order := by positivity
+  unfold rateGamma
+  rw [Real.rpow_def_of_pos hbase, div_eq_mul_inv, ← Real.exp_neg]
+  congr 2
+  ring
 
 /-- `log(40/(9R)) + log(27R/20) = log 6` for `R ≠ 0`, because the two arguments multiply to `6`.
 At `R = 0` both logarithms are `0`. -/
