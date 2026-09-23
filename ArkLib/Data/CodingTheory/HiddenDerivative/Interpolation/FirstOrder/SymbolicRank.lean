@@ -10,17 +10,17 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.R
 public import Mathlib.FieldTheory.RatFunc.Basic
 
 /-!
-# Rank of the first-order received-line constraint matrix
+# Rank of first-order local constraint matrices
 
 For columns whose exponents lie in the first-order interpolation support, the local constraint
-matrix of a received line has rank over the rational function field at most the number of points
-times the certified local rank bound. The proof factors the matrix through the actual global
-constraint map on the first-order space.
+matrix of any family of received polynomials has rank over the rational function field at most
+the number of points times the certified local rank bound. The proof factors the matrix through
+the actual global constraint map on the first-order space.
 
 ## Main statements
 
-* `rank_firstOrderLocalConstraintMatrix_le`: the rank bound for a received line over the rational
-  function field, indexed by arbitrary finite point and column types.
+* `rank_firstOrderLocalConstraintMatrix_le`: the rank bound over the rational function field for
+  arbitrary received polynomials and finite point and column types.
 
 ## References
 
@@ -34,14 +34,14 @@ open scoped BigOperators
 
 namespace ReedSolomon.HiddenDerivative
 
-/-- The received-line constraint matrix over the rational function field has rank at most the
-number of received points times the certified local rank bound. -/
+/-- The local constraint matrix over the rational function field has rank at most the number of
+points times the certified local rank bound, for arbitrary received polynomials. -/
 theorem rank_firstOrderLocalConstraintMatrix_le {F : Type*} [Field F]
     {D A m M μ : ℕ} {ι κ : Type*} [Fintype ι] [Fintype κ]
-    (centers f g : ι → F) (columns : κ → SourceColumn 1)
+    (centers : ι → F) (received : ι → F[X]) (columns : κ → SourceColumn 1)
     (heligible : ∀ j, (columns j).exponent ∈ firstOrderExponents D A m M μ) :
     ((localConstraintMatrix m (fun i ↦ Polynomial.C (centers i))
-      (fun i ↦ receivedLine (f i) (g i)) columns).map
+      received columns).map
         (algebraMap F[X] (RatFunc F))).rank ≤
       Fintype.card ι * certifiedEnlargedRankBound 1 m M 0 := by
   classical
@@ -58,12 +58,11 @@ theorem rank_firstOrderLocalConstraintMatrix_le {F : Type*} [Field F]
     ∑ j, LinearMap.smulRight (LinearMap.proj j) (monomial j)
   let constraint := firstOrderGlobalConstraintMap (D := D) (A := A) (m := m) (M := M)
     (μ := μ) (fun i ↦ φ (Polynomial.C (centers i)))
-      (fun i ↦ φ (receivedLine (f i) (g i)))
+      (fun i ↦ φ (received i))
   let coefficients : (ι → LocalPolynomial K 1) →ₗ[K]
       ((ι × LowContactIndex 1 m) → K) :=
     LinearMap.pi fun row ↦ MvPolynomial.lcoeff K row.2.1 ∘ₗ LinearMap.proj row.1
-  let mat := (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i))
-    (fun i ↦ receivedLine (f i) (g i)) columns).map φ
+  let mat := (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) received columns).map φ
   have hfactor : mat.mulVecLin = coefficients ∘ₗ constraint ∘ₗ assemble := by
     apply LinearMap.ext
     intro v
@@ -72,8 +71,9 @@ theorem rank_firstOrderLocalConstraintMatrix_le {F : Type*} [Field F]
       LinearMap.comp_apply, coefficients, LinearMap.pi_apply, MvPolynomial.lcoeff_apply,
       LinearMap.proj_apply, assemble, LinearMap.sum_apply, map_sum,
       LinearMap.smulRight_apply, map_smul]
-    change (∑ j, φ (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i))
-      (fun i ↦ receivedLine (f i) (g i)) columns row j) * v j) = _
+    change (∑ j,
+      φ (localConstraintMatrix m (fun i ↦ Polynomial.C (centers i)) received columns row j) *
+        v j) = _
     simp only [constraint, firstOrderGlobalConstraintMap_apply]
     apply Finset.sum_congr rfl
     intro j _
@@ -89,6 +89,6 @@ theorem rank_firstOrderLocalConstraintMatrix_le {F : Type*} [Field F]
   simpa [constraint] using
     (finrank_firstOrderGlobalConstraintMap_le (D := D) (A := A) (m := m) (M := M)
       (μ := μ) (fun i ↦ φ (Polynomial.C (centers i)))
-      (fun i ↦ φ (receivedLine (f i) (g i))))
+      (fun i ↦ φ (received i)))
 
 end ReedSolomon.HiddenDerivative
