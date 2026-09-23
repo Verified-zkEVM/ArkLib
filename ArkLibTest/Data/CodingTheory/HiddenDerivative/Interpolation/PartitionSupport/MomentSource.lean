@@ -48,6 +48,42 @@ example (F : Type*) [Field F] {D d n m A W : ℕ} {rate agreement logarithm : �
   norm_num at h
   exact h
 
+/-- The moment bound with cutoff `m * A`, written using the simplex volume and exponent count. -/
+example {D d W m n A : ℕ} {R a b c : ℝ}
+    (hD : 0 < D) (hd : 0 < d) (hW : 0 < W) (hn : 0 < n) (hR : 0 < R)
+    (hDn : (D : ℝ) ≤ R * n) (haA : a * n ≤ A)
+    (hcut : b ≤ (m : ℝ) * a * d / (R * W))
+    (hmoment : c < ⨍ u in Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W,
+      (max (b - (d : ℝ) * (∑ i, u i) / W) 0) ^ 2) :
+    c / 2 * R * n *
+      volume.real (Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W) *
+        (W : ℝ) ^ 2 / d ^ 2 <
+      ((partitionSupportExponents D d W ((m * A : ℕ) : ℝ) hD).card : ℝ) := by
+  have hcutoff : (m : ℝ) * a * n ≤ ((m * A : ℕ) : ℝ) := by
+    calc
+      (m : ℝ) * a * n = (m : ℝ) * (a * n) := by ring
+      _ ≤ (m : ℝ) * A := mul_le_mul_of_nonneg_left haA (Nat.cast_nonneg m)
+      _ = ((m * A : ℕ) : ℝ) := by push_cast; ring
+  have hscale : R * W / d * b ≤ (m : ℝ) * a := by
+    have hRW : (R * (W : ℝ)) ≠ 0 := mul_ne_zero hR.ne' (Nat.cast_ne_zero.mpr hW.ne')
+    have hd0 : (d : ℝ) ≠ 0 := (Nat.cast_pos.mpr hd).ne'
+    calc
+      R * W / d * b ≤ R * W / d * ((m : ℝ) * a * d / (R * W)) :=
+        mul_le_mul_of_nonneg_left hcut (by positivity)
+      _ = (m : ℝ) * a := by field_simp [hRW, hd0]
+  have hvolume := volume_real_weightedSimplex_succ d (by positivity : (0 : ℝ) ≤ W)
+  have hfactor :
+      c / 2 * R * n *
+          volume.real (Set.weightedSimplex (fun i : Fin d ↦ (i : ℝ) + 1) W) *
+            (W : ℝ) ^ 2 / d ^ 2 =
+        c / 2 * n * R * ((W : ℝ) / d) ^ 2 *
+          ((W : ℝ) ^ d / (d.factorial : ℝ) ^ 2) := by
+    rw [hvolume, div_pow]
+    field_simp
+  have hdim := partitionSupport_dimension_gt_moment ℚ hD hd hW hDn hcutoff hscale hmoment
+  rw [finrank_partitionSupportSpace_eq_card, ← hfactor] at hdim
+  exact hdim
+
 private theorem setAverage_weightedSimplex_zero (f : (Fin 1 → ℝ) → ℝ) :
     ⨍ u in Set.weightedSimplex (fun i : Fin 1 ↦ (i : ℝ) + 1) ((0 : ℕ) : ℝ), f u = 0 := by
   rw [setAverage_eq, volume_real_weightedSimplex_succ 1 (by norm_num)]
