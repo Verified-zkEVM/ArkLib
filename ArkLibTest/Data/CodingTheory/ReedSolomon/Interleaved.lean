@@ -103,6 +103,22 @@ private theorem anchorInterleavedLambdaBound :
     _ = (Fintype.card (Fin 2 → Fin 1 → ZMod 3) : ℕ∞) := by simp
     _ = 9 := by norm_num [Fintype.card_fun]
 
+private theorem anchorCandidate_mem (p : (ZMod 3)[X])
+    (hdeg : p.degree < (2 : WithBot ℕ)) (hp0 : p.eval 0 = 0) :
+    (fun _ : Fin 1 ↦ p) ∈ candidateSet anchorDomainThree anchorReceivedThree 2 1 := by
+  rw [mem_candidateSet]
+  constructor
+  · intro _
+    exact hdeg
+  · rw [agree, Finset.one_le_card]
+    refine ⟨0, ?_⟩
+    simp only [Finset.mem_filter]
+    constructor
+    · simp
+    · funext j
+      fin_cases j
+      simp [evalTuple, anchorDomainThree, anchorReceivedThree, hp0]
+
 -- The zero and linear candidates agree at the anchor 0; four sampled anchors give a subunit
 -- collision bound.
 example :
@@ -115,34 +131,16 @@ example :
         ENNReal.ofReal (1 / 2 : ℝ) := by
   have hzero : zeroAnchorCandidate ∈
       candidateSet anchorDomainThree anchorReceivedThree 2 1 := by
-    rw [mem_candidateSet]
-    constructor
-    · intro j
-      change (0 : (ZMod 3)[X]).degree < (2 : WithBot ℕ)
-      rw [Polynomial.degree_zero]
-      exact WithBot.bot_lt_coe _
-    · rw [agree, Finset.one_le_card]
-      refine ⟨0, ?_⟩
-      simp only [Finset.mem_filter]
-      constructor
-      · simp
-      · funext j
-        fin_cases j
-        simp [evalTuple, zeroAnchorCandidate, anchorReceivedThree, anchorDomainThree]
+    change (fun _ : Fin 1 ↦ (0 : (ZMod 3)[X])) ∈
+      candidateSet anchorDomainThree anchorReceivedThree 2 1
+    exact anchorCandidate_mem (p := 0)
+      (by rw [Polynomial.degree_zero]; exact WithBot.bot_lt_coe _)
+      (by simp)
   have hone : lineAnchorCandidate ∈
       candidateSet anchorDomainThree anchorReceivedThree 2 1 := by
-    rw [mem_candidateSet]
-    constructor
-    · intro j
-      norm_num [lineAnchorCandidate]
-    · rw [agree, Finset.one_le_card]
-      refine ⟨0, ?_⟩
-      simp only [Finset.mem_filter]
-      constructor
-      · simp
-      · funext j
-        fin_cases j
-        simp [evalTuple, lineAnchorCandidate, anchorReceivedThree, anchorDomainThree]
+    change (fun _ : Fin 1 ↦ (X : (ZMod 3)[X])) ∈
+      candidateSet anchorDomainThree anchorReceivedThree 2 1
+    exact anchorCandidate_mem (p := X) (by norm_num) (by simp)
   have hne : zeroAnchorCandidate ≠ lineAnchorCandidate := by
     intro h
     have hval := congrFun h 0
