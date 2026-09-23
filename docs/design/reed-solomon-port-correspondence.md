@@ -1565,6 +1565,13 @@ types, arbitrary natural weights, and an arbitrary commutative semiring. The sou
 `.../HiddenDerivative/Interpolation/Local/Contact.lean` at the same revision from the local
 contact weight to an arbitrary weight, and from commutative rings to commutative semirings.
 
+## `ArkLib/Data/Polynomial/Differential/BaseChange.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`jetWeight_extendSymbolicCoefficients_le` → `PolynomialDifferential.jetTotalDegree_map_le`, generalized from polynomial-coefficient field extensions to any ring homomorphism between commutative semirings, including noninjective maps. `challengeHeightLE_extendSymbolicCoefficients` was not ported because `MvPolynomial.CoeffNatDegreeLE.map_coefficients` already provides the result through `ChallengeHeightLE`; `separant_extendSymbolicCoefficients` is covered by the existing `PolynomialDifferential.map_separant`.
+
 ## `ArkLib/Data/Polynomial/Differential/Basic.lean`
 
 The definitions and laws are ported from `ArkLib/Data/Polynomial/Differential/Basic.lean` at
@@ -1683,6 +1690,11 @@ at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
 `ToMathlib/MvPolynomial/PolynomialCoefficients.lean`; all of these need only a `CommSemiring`.
 `commonTaylorNumeratorOver` takes the exponent `τ` explicitly, with no default `2K`, and no
 longer takes `K`; `l` is a natural number instead of an element of `Fin K`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`map_rationalTaylorNumeratorOver_eq` keeps its name and mathematical contract in the destination owner module. `eval_rationalTaylorNumeratorOver` and `eval₂AlgHom_rationalTaylorNumeratorOver` keep their names and source-shaped specializations.
 
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean`
 
@@ -1814,6 +1826,11 @@ default-exponent theorem and an `_of_exponent` theorem is one theorem taking
 `Set.InjOn domain T` and `k ≤ T.card` instead of an embedding `Fin n ↪ F` with `T.card = k`.
 `rationalTaylorCutDegreeBound` comes from `Geometry/HighCutGeometry.lean` with `τ` in place of
 `2K`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorSpecialization.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`commonTaylorNumeratorOver_eq` is a new bridge identifying the algebra-valued common numerator with the field-valued definition. `map_commonTaylorNumeratorOver_eq` keeps its name and is generalized to the destination's natural Taylor index and arbitrary exponent, without a finite-index bound. `eval_commonTaylorNumeratorOver` keeps its name and specializes using the destination API's natural index through `l.val`.
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartGeometry.lean`
 
@@ -2323,6 +2340,15 @@ which makes the incidence factor an admissible ratio in
 private lemma of the same name from PR #1008's `AgreementIncidence.lean`, moved here with its
 variables renamed to `T` and `j`.
 
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/ProductBounds.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
+
+`dimensionSensitiveIncidenceProduct_mono_dimension` keeps its name and is generalized from a
+pairwise `r ≤ s` comparison to the `Monotone` property. `dimensionSensitiveIncidenceProduct_le_first_pow`
+and `hybridDimensionSensitiveIncidenceProduct_min_le` keep their names and statements.
+`hybridDimensionSensitiveIncidenceProduct_eq_factor_mul` keeps its name and is generalized from
+`s ≤ k` to `s ≤ k + 1`. Nothing was deferred or left unported.
+
 ## `ArkLib/ToMathlib/Combinatorics/Enumerative/MonomialCount.lean`
 
 Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
@@ -2668,6 +2694,12 @@ closure lemmas are public. `jointTotalDegree_scalar` is now `jointTotalDegree_C_
 `jointTotalDegree_le_coeff_degree_add` is now `jointTotalDegree_le_of_natDegree_coeff_le`, and
 `jointTotalDegree_clearedSubstitution` is now `jointTotalDegree_clearedSubstitution_le`.
 `jointTotalDegree_affine_le` is derived in the acceptance test.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/CoefficientExtension.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`specialize_extendSymbolicCoefficients` → `MvPolynomial.eval_map_coefficients`, generalized from field extensions to arbitrary commutative semirings, variable types, coefficient maps, and target evaluation points. `extendSymbolicCoefficients` was not ported because it is an alias for `MvPolynomial.map` with `Polynomial.mapRingHom`.
+
 ## `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean`
 
 Ported from `ArkLib/ToMathlib/MvPolynomial/RootContraction.lean` at the source revision. The
@@ -3408,6 +3440,22 @@ main, where #1008 wrote `[P.IsPrime]`. The private `sub_mul_sub_add_one_le` move
 `card_le_sum_of_forall_mem_zeroLocus`; and
 `card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily` is the iterated incidence
 bound with threshold `fun _ ↦ L` and `D = d`.
+
+## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/BidegreeIncidence.lean`
+
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/BidegreeExcluded.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace `AffineHilbert`.
+
+`bidegreeHypersurface_source_incidence_off_excluded_sharp` is renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp` and generalized by removing the
+`A ≤ n` premise. `bidegreeHypersurface_source_incidence_off_excluded_hybrid` and
+`bidegreeHypersurface_source_incidence_off_excluded_hybrid_two` are renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid` and
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_hybrid_two`, respectively, with no
+mathematical change. The `_sharp_one` and `_sharp_two` source declarations are renamed to
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one` and
+`MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_two`; both are generalized by
+removing `A ≤ n`. Nothing was deferred or left unported.
 
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/DimensionSensitiveIncidence.lean`
 
