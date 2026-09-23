@@ -12,10 +12,10 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 /-!
 # Point independence of the weighted-support local rank
 
-The translation `globalPointTranslation center received`, sending `X ↦ center + X` and
-`Y₀ ↦ received + Y₀`, maps `weightedSupportSpace R D d W L hD` onto itself. Both support
-conditions are weight bounds with nonnegative weights on `X` and `Y₀`. The local
-constraint map at `(center, received)` is the constraint map at `(0, 0)` after this translation.
+The translation `globalPointTranslation center received` (`X ↦ center + X`,
+`Y₀ ↦ received + Y₀`) preserves `weightedSupportSpace R D d W L hD`. Its support conditions
+weight bounds with nonnegative weights on `X` and `Y₀`. The local constraint map at
+`(center, received)` is the constraint map at `(0, 0)` after this translation.
 Composing with a linear automorphism does not change the range, so over a field the rank of the
 local constraint map on the weighted support space does not depend on the point.
 
@@ -38,16 +38,14 @@ constraint map at `(0, 0)` over `F`.
   `finrank_range_weightedSupportLocalCoordinateConstraint_eq_zero`: the ranks at any point equal
   the ranks at `(0, 0)`.
 * `rank_weightedSupportLocalCoordinateMatrix`: the matrix rank is the rank of the coordinate map.
-* `map_unscaledLocalSubstitution` and `weightedSupportLocalCoordinateMatrix_map`: applying a ring
-  homomorphism `f` to the entries of the matrix at `(center, received)` gives the matrix at
-  `(f center, f received)`.
+* `weightedSupportLocalCoordinateMatrix_map`: applying a ring homomorphism `f` to the entries of
+  the matrix at `(center, received)` gives the matrix at `(f center, f received)`.
 * `rank_weightedSupportLocalCoordinateMatrix_le_base` and
   `rank_weightedSupportLocalCoordinateMatrix_le_base_actual`: the extension-field bounds.
 
 ## References
 
-* [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
-  Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
+* [BCPZZ26]
 -/
 
 @[expose] public section
@@ -235,40 +233,6 @@ theorem rank_weightedSupportLocalCoordinateMatrix_le_actual {F : Type*} [Field F
   exact Submodule.finrank_map_le _ _
 
 /-! ### Coefficient maps -/
-
-/-- The unscaled local substitution commutes with a ring homomorphism `f` applied to the
-coefficients, with the point `(center, received)` sent to `(f center, f received)`. -/
-theorem map_unscaledLocalSubstitution {S : Type*} [CommRing S] (f : R →+* S)
-    (center received : R) (Q : DifferentialPolynomial R d) :
-    MvPolynomial.map f (unscaledLocalSubstitution d center received Q) =
-      unscaledLocalSubstitution d (f center) (f received) (MvPolynomial.map f Q) := by
-  have hhom : (MvPolynomial.map f).comp
-      (unscaledLocalSubstitution d center received).toRingHom =
-      (unscaledLocalSubstitution d (f center) (f received)).toRingHom.comp
-        (MvPolynomial.map f) := by
-    refine MvPolynomial.ringHom_ext (fun a => by simp) fun v => ?_
-    rcases v with _ | j
-    · simp
-    · refine Fin.cases ?_ (fun i => ?_) j
-      · simp [localCorrection]
-      · simp
-  exact RingHom.congr_fun hhom Q
-
-/-- The projected local constraint map commutes with a ring homomorphism on coefficients. -/
-theorem map_localConstraintAt {S : Type*} [CommRing S] (f : R →+* S) (m : ℕ)
-    (center received : R) (Q : DifferentialPolynomial R d) :
-    MvPolynomial.map f (localConstraintAt m center received Q) =
-      localConstraintAt m (f center) (f received) (MvPolynomial.map f Q) := by
-  apply MvPolynomial.ext
-  intro e
-  change (MvPolynomial.map f (projectLowContact m
-      (unscaledLocalSubstitution d center received Q))).coeff e =
-    (projectLowContact m
-      (unscaledLocalSubstitution d (f center) (f received) (MvPolynomial.map f Q))).coeff e
-  rw [MvPolynomial.coeff_map, coeff_projectLowContact, coeff_projectLowContact]
-  by_cases h : localContactOrder d e < m
-  · simp [h, ← MvPolynomial.coeff_map, map_unscaledLocalSubstitution]
-  · simp [h]
 
 /-- Applying a ring homomorphism `f` to every entry of the coordinate matrix at
 `(center, received)` gives the coordinate matrix at `(f center, f received)`. The monomial basis
