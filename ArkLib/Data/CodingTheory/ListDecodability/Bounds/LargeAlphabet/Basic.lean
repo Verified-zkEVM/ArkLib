@@ -667,18 +667,18 @@ theorem constrained_indexed_families_card :
     constructor
     · intro h j
       by_cases hj : j ∈ J
-      · simpa only [allowed, hj, if_pos, inside, Finset.mem_filter,
+      · simpa only [allowed, hj, ite_eq_left, inside, Finset.mem_filter,
           Finset.mem_univ, true_and] using h j hj
       · simp [allowed, hj]
     · intro h j hj
       have hjmem := h j
-      simpa only [allowed, hj, if_pos, inside, Finset.mem_filter,
+      simpa only [allowed, hj, ite_eq_left, inside, Finset.mem_filter,
         Finset.mem_univ, true_and] using hjmem
   have hallowed : ∀ j, (allowed j).card =
       if j ∈ J then Nat.choose U.card a else Nat.choose m a := by
     intro j
     by_cases hj : j ∈ J
-    · simp only [allowed, hj, if_pos, hinside]
+    · simp only [allowed, hj, ite_eq_left, hinside]
     · simp only [allowed, hj]
       exact exact_subset_type_card m a
   rw [heq, Fintype.card_piFinset]

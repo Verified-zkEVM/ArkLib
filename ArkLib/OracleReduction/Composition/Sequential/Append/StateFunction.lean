@@ -275,7 +275,7 @@ private lemma verify_notMem_of_not_toFun {σ : Type} {init : ProbComp σ}
     verify stmt tr ∉ lang₂ := by
   obtain ⟨s, hs⟩ := probComp_support_nonempty init
   have h₁ := S₁.toFun_full stmt tr h
-  rw [run_of_deterministic hVerify, probEvent_eq_zero_iff] at h₁
+  rw [run_of_deterministic hVerify, OptionT.prEvent_mk_eq_zero_iff] at h₁
   exact h₁ _ (mem_support_of_pure_run hs)
 
 end StateFunctionAppend
@@ -349,7 +349,7 @@ def StateFunction.append
       have hnot₁ : ¬ S₁.toFun ⟨j.val, by omega⟩ stmt T₁ := by
         intro hc
         apply hnot
-        rw [dif_pos (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
+        rw [dite_eq_left (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
         refine stateFunction_toFun_heq S₁
           (Fin.ext (show j.val = ((j.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
         refine HEq.trans ?_ (cast_heq _ _).symm
@@ -359,7 +359,7 @@ def StateFunction.append
           (fun i hi hi' => HEq.rfl)
       have key := S₁.toFun_next ⟨j.val, hlt⟩ hDir' stmt T₁ hnot₁ (cast htype msg)
       intro hgoal
-      rw [dif_pos (show ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+      rw [dite_eq_left (show ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
       refine key ?_
       convert hgoal using 2
       · rfl
@@ -399,7 +399,7 @@ def StateFunction.append
         exact ((transcript_fst_apply _ i.val h1 (by omega)).trans
           (Transcript.concat_apply_lt tr msg i.val (by omega) (by omega))).trans
             (transcript_fst_apply tr i.val h2 (by omega)).symm
-      rw [dif_pos (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
+      rw [dite_eq_left (show ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
       -- `S₁` rejects the completed first half.  This is the shared ingredient: it rules out the
       -- new `S₁` disjunct, and through `verify_notMem_of_not_toFun` it starts `S₂` off false.
       have hS₁ : ¬ S₁.toFun ⟨m, by omega⟩ stmt
@@ -415,7 +415,7 @@ def StateFunction.append
           (show m = min ((j.castSucc : Fin (m + n + 1)) : ℕ) m by omega)
           (fun i hi hi' => HEq.rfl)
       intro hgoal
-      rw [dif_neg (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+      rw [dite_eq_right (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
       -- The `S₁` disjunct is impossible: a message at round `m` leaves the first half unchanged.
       replace hgoal := hgoal.resolve_left (fun hc => hS₁ (stateFunction_toFun_heq S₁ rfl rfl
         (heq_of_eq (funext fun i => eq_of_heq (hTr i _ _))) hc))
@@ -465,9 +465,9 @@ def StateFunction.append
         exact ((transcript_fst_apply _ i.val h1 (by omega)).trans
           (Transcript.concat_apply_lt tr msg i.val (by omega) (by omega))).trans
             (transcript_fst_apply tr i.val h2 (by omega)).symm
-      rw [dif_neg (show ¬ ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
+      rw [dite_eq_right (show ¬ ((j.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hnot
       intro hgoal
-      rw [dif_neg (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+      rw [dite_eq_right (show ¬ ((j.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
       -- The `S₁` disjunct carries over verbatim, so it cannot be the one that just became true.
       replace hgoal := hgoal.resolve_left (fun hc => hnot (Or.inl
         (stateFunction_toFun_heq S₁ rfl rfl
@@ -511,7 +511,7 @@ def StateFunction.append
       -- Determinism of `V₁` turns that into `verify stmt tr.fst ∉ lang₂`, which is `¬ S₂.toFun 0`
       -- by `S₂.toFun_empty`; and with `n = 0`, round `0` *is* `S₂`'s last round.
       subst hn
-      rw [dif_pos (show (((Fin.last (m + 0)) : Fin (m + 0 + 1)) : ℕ) ≤ m by
+      rw [dite_eq_left (show (((Fin.last (m + 0)) : Fin (m + 0 + 1)) : ℕ) ≤ m by
         simp only [Fin.val_last]; omega)] at hnot
       have hS₁ : ¬ S₁.toFun (Fin.last m) stmt (FullTranscript.fst tr) := fun hc =>
         hnot (stateFunction_toFun_heq S₁ (Fin.ext (by simp)) rfl
@@ -522,7 +522,7 @@ def StateFunction.append
           (heq_of_eq (funext fun i => Fin.elim0 i)) hc))
     · -- `pSpec₂` is non-empty, so the appended protocol's last round lies in the `else` branch and
       -- `hnot` is literally the hypothesis of `S₂`'s own `toFun_full`.
-      rw [dif_neg (show ¬ (((Fin.last (m + n)) : Fin (m + n + 1)) : ℕ) ≤ m by
+      rw [dite_eq_right (show ¬ (((Fin.last (m + n)) : Fin (m + n + 1)) : ℕ) ≤ m by
         simp only [Fin.val_last]; omega)] at hnot
       refine S₂.toFun_full _ _ fun hc => hnot (Or.inr ?_)
       exact stateFunction_toFun_heq S₂ (Fin.ext (by simp))
@@ -565,7 +565,7 @@ theorem StateFunction.append_transition_left
   have hnot₁ : ¬ S₁.toFun ⟨idx.val, by omega⟩ stmt T₁ := by
     intro hc
     apply hnot
-    rw [dif_pos (show ((idx.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
+    rw [dite_eq_left (show ((idx.castSucc : Fin (m + n + 1)) : ℕ) ≤ m by omega)]
     refine stateFunction_toFun_heq S₁
       (Fin.ext (show idx.val = ((idx.castSucc : Fin (m + n + 1)) : ℕ) by omega)) rfl ?_ hc
     refine HEq.trans ?_ (cast_heq _ _).symm
@@ -578,7 +578,7 @@ theorem StateFunction.append_transition_left
   change (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify).toFun
     idx.succ stmt (tr.concat msg) at hgoal
   dsimp only [StateFunction.append] at hgoal
-  rw [dif_pos (show ((idx.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
+  rw [dite_eq_left (show ((idx.succ : Fin (m + n + 1)) : ℕ) ≤ m by omega)] at hgoal
   convert hgoal using 2
   · rfl
   refine eq_of_heq (HEq.symm ((cast_heq _ _).trans (transcript_heq_ext
@@ -633,13 +633,13 @@ theorem StateFunction.append_transition_right
   have hS₁ : ¬ S₁.toFun (Fin.last m) stmt T₁ := by
     intro hc
     by_cases heq : idx.val = m
-    · rw [dif_pos (show idx.castSucc.val ≤ m by omega)] at hnot
+    · rw [dite_eq_left (show idx.castSucc.val ≤ m by omega)] at hnot
       refine hnot (stateFunction_toFun_heq S₁ (Fin.ext (by simp; omega)) rfl ?_ hc)
       refine HEq.trans ?_ (cast_heq _ _).symm
       exact transcript_heq_ext (k := Fin.last m)
         (k' := ⟨min idx.castSucc.val m, by omega⟩) (by simp; omega)
         (fun i hi hi' => HEq.rfl)
-    · rw [dif_neg (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
+    · rw [dite_eq_right (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
       exact hnot (Or.inl hc)
   have hmem : verify stmt T₁ ∉ lang₂ := verify_notMem_of_not_toFun S₁ hVerify stmt T₁ hS₁
   have hnot₂ : ¬ S₂.toFun j.castSucc (verify stmt T₁) T₂ := by
@@ -649,7 +649,7 @@ theorem StateFunction.append_transition_right
         (Fin.ext (by simp; omega)) rfl
         (transcript_heq_ext (k := j.castSucc) (k' := 0) (by simp; omega)
           (fun i hi _ => by have : i < j.val := hi; omega)) hc))
-    · rw [dif_neg (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
+    · rw [dite_eq_right (show ¬ idx.castSucc.val ≤ m by omega)] at hnot
       refine hnot (Or.inr (stateFunction_toFun_heq S₂
         (Fin.ext (show j.val = idx.castSucc.val - m by omega)) rfl ?_ hc))
       exact transcript_heq_ext (k := j.castSucc)
@@ -660,7 +660,7 @@ theorem StateFunction.append_transition_right
   change (StateFunction.append init impl V₁ V₂ S₁ S₂ verify hVerify).toFun
     idx.succ stmt (tr.concat msg) at hgoal
   dsimp only [StateFunction.append] at hgoal
-  rw [dif_neg (show ¬ idx.succ.val ≤ m by omega)] at hgoal
+  rw [dite_eq_right (show ¬ idx.succ.val ≤ m by omega)] at hgoal
   have hTr : ∀ (i : Fin m) (h1 : i.val < min idx.succ.val m)
       (h2 : i.val < min idx.castSucc.val m),
       HEq ((Transcript.concat msg tr).fst ⟨i.val, h1⟩) (tr.fst ⟨i.val, h2⟩) := by

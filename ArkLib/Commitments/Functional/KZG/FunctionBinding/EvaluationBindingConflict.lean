@@ -94,9 +94,9 @@ lemma filter_map_conflict_nodup
   simp only [Option.mem_def] at hb hb'
   -- Extract a < p from hb (outer dite must take the then-branch)
   have ha : a < p := by
-    by_contra h; push Not at h; rw [dif_neg (by omega)] at hb; simp at hb
+    by_contra h; push Not at h; rw [dite_eq_right (by omega)] at hb; simp at hb
   have ha' : a' < p := by
-    by_contra h; push Not at h; rw [dif_neg (by omega)] at hb'; simp at hb'
+    by_contra h; push Not at h; rw [dite_eq_right (by omega)] at hb'; simp at hb'
   -- Both branches must hit `some x`, giving `b = ↑↑⟨a, ha⟩` and `b = ↑↑⟨a', ha'⟩`.
   simp only [ha, ha', dite_true] at hb hb'
   split at hb <;> simp at hb
@@ -162,7 +162,7 @@ lemma filter_map_conflict_length (hp : p ≥ n + 2) (hn : 1 ≤ n)
         List.mem_filterMap, List.mem_range]
       exact ⟨x.val, ZMod.val_lt x, by
         simp only [ZMod.val_lt x, dite_true, ZMod.natCast_zmod_val]
-        exact if_pos ⟨hpow, hneα⟩⟩
+        exact ite_eq_left ⟨hpow, hneα⟩⟩
     -- The complement ⊆ {x | g^x.val = h} ∪ {αᵢ}
     have hsub : Finset.univ \ S ⊆
         Finset.univ.filter (fun x : ZMod p =>

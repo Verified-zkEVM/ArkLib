@@ -63,7 +63,7 @@ theorem prop_4_24_singleRepetition_proximityCheck_bound
     (h_no_bad : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges)) :
-    Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    Pr{ let v ←$ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
       logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         oStmtIn v stmtIn stmtIn.final_constant
     ] ≤ ((1/2 : ℝ≥0) + (1 : ℝ≥0) / (2 * 2^𝓡)) := by
@@ -473,18 +473,18 @@ theorem prop_4_24_singleRepetition_proximityCheck_bound
       exact h_mem) h_accept
   -- Probability bound via monotonicity.
   have h_prob_accept_le :
-      Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+      Pr{ let v ←$ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
         logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           oStmtIn v stmtIn stmtIn.final_constant
       ] ≤
-      Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+      Pr{ let v ←$ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
         extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∉ D
       ] := by
-    exact Pr_le_Pr_of_implies ($ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0)) _ _ h_accept_subset
+    exact prEvent_mono ($ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0)) _ _ h_accept_subset
   -- Evaluate the suffix probability for the complement set.
   have h_prob_suffix_not :
-      Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+      Pr{ let v ←$ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
         extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∉ D
       ] =
@@ -614,7 +614,7 @@ theorem prop_4_24_singleRepetition_proximityCheck_bound
     rw [h_rhs] at h_step'
     exact h_step'
   have h_prob_suffix_not' :
-      Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+      Pr{ let v ←$ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
         extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∉ D
       ] ≤ ((1/2 : ℝ≥0) + (1 : ℝ≥0) / (2 * 2^𝓡)) := by

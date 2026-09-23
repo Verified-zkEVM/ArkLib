@@ -91,8 +91,7 @@ lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
       MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
         (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
   ext s
-  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, MvPolynomial.coeff,
-    Finsupp.comapDomain]
+  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, Finsupp.comapDomain]
 
 @[deprecated sumAlgEquiv_monomial_aux (since := "2026-08-15")]
 alias sumToIter_monomial_aux := sumAlgEquiv_monomial_aux

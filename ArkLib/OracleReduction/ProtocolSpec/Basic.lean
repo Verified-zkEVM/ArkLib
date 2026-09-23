@@ -554,7 +554,7 @@ lemma concat_apply_lt {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSpec
     (i : ℕ) (hi : i < m.val) (hi' : i < (m.succ : Fin (n + 1)).val) :
     HEq (T.concat msg ⟨i, hi'⟩) (T ⟨i, hi⟩) := by
   unfold concat Fin.snoc
-  rw [dif_pos hi]
+  rw [dite_eq_left hi]
   exact cast_heq _ _
 
 /-- At the last round, `Transcript.concat` returns the newly appended message.
@@ -564,7 +564,7 @@ lemma concat_apply_last {m : Fin n} (T : Transcript m.castSucc pSpec) (msg : pSp
     HEq (T.concat msg ⟨i, hi'⟩) msg := by
   subst him
   unfold concat Fin.snoc
-  rw [dif_neg (Nat.lt_irrefl m.val)]
+  rw [dite_eq_right (Nat.lt_irrefl m.val)]
   exact cast_heq _ _
 
 -- Define conversions to and from `Transcript` with `MessagesUpTo` and `ChallengesUpTo`
@@ -797,7 +797,7 @@ query reduces during `simp` / `rw` matching; see the `OracleSpec.SubSpec` docstr
 
 /-- The induced inclusion is lawful: `onResponse` is bijective on every fibre, which is exactly
 what VCV-io needs to preserve the uniform distribution on challenges under the lift
-(`evalDist_liftComp`, `probEvent_liftComp`, `support_liftComp`). -/
+(`evalDist_liftComp` and `support_liftComp`). -/
 theorem lawfulSubSpecOfChallengeReindex :
     letI := subSpecOfChallengeReindex f hf
     [p.Challenge]ₒ ˡ⊂ₒ [q.Challenge]ₒ := by
@@ -852,37 +852,6 @@ def srChallengeOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
   [pSpec.Challenge]ₒ'(challengeOracleInterfaceSR Statement pSpec)
 
 alias fsChallengeOracle := srChallengeOracle
-
--- dtumad: If we keep these they should just move to VCV about `OracleContext`.
-/-- Decidable equality for the state-restoration / (slow) Fiat-Shamir oracle -/
-instance {pSpec : ProtocolSpec n} {Statement : Type}
-    [DecidableEq Statement]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)] :
-    OracleSpec.DecidableEq (srChallengeOracle Statement pSpec) := by
-  refine { decidableEqA := ?_, decidableEqB := fun q => ?_ }
-  · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-      challengeOracleInterfaceSR, OracleSpec.toPFunctor,
-      OracleInterface.Query]
-    infer_instance
-  · dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-      challengeOracleInterfaceSR, OracleSpec.toPFunctor,
-      OracleInterface.Response]
-    infer_instance
-
-instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (srChallengeOracle Statement pSpec) := by
-  refine { fintypeB := fun q => ?_ }
-  dsimp only [srChallengeOracle, OracleInterface.toOracleSpec,
-    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
-  infer_instance
-
-instance {pSpec : ProtocolSpec n} {Statement : Type} [∀ i, VCVCompatible (pSpec.Challenge i)] :
-    OracleSpec.Fintype (fsChallengeOracle Statement pSpec) := by
-  refine { fintypeB := fun q => ?_ }
-  dsimp only [fsChallengeOracle, srChallengeOracle, OracleInterface.toOracleSpec,
-    challengeOracleInterfaceSR, OracleSpec.toPFunctor, OracleInterface.Response]
-  infer_instance
 
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
     challenge given messages up to that point) in terms of `ProbComp`.

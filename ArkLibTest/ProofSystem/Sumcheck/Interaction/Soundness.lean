@@ -38,8 +38,9 @@ example : (committedRun (ZMod 17) 1 polynomial cheating [0] 1 1).closed.map
   simp [polynomial, cheating]
 
 /-- The actual executor, with a false input claim, obeys the nonvacuous field bound. -/
-example : Pr[fun run => run.closed.map (closedOutputRelation (ZMod 17) 1) = some True |
-    executeCommitted (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial cheating [0] 1] ≤
+example : Pr{let run ←
+    executeCommitted (ZMod 17) 1 ($ᵗ (ZMod 17)) polynomial cheating [0] 1}[
+      run.closed.map (closedOutputRelation (ZMod 17) 1) = some True] ≤
       (1 : ENNReal) / 17 := by
   simpa using executeCommitted_soundness (ZMod 17) 1 polynomial cheating [0] 1
     (by simp [polynomial])

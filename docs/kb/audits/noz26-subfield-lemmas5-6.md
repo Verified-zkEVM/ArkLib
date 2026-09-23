@@ -2,19 +2,21 @@
 
 This page compares Hachi [NOZ26, §3, Lemmas 5–6] with the current ArkLib subfield
 formalization. It was revalidated against the January 30, 2026 artifact and the working tree on
-**30 July 2026**.
+**30 July 2026**; the Lemma 5 status was updated on **22 September 2026**, when the factor-swap
+lemma `no_selfReciprocal_factor` was proved.
 
 ## Outcome
 
-The formalization is coherent as a whole, but its proof status is asymmetric:
+The formalization is coherent and fully proved:
 
-- **Lemma 5 is represented faithfully but is not unconditionally proved.** The fixed subring,
-  its Eq. (7) coefficient structure, its cardinality `q^k`, and the assembly from the
-  conjugation-fixed field to `R_q^H ≃ F_{q^k}` are present. The final field/isomorphism
-  declarations depend on one explicit `sorry`, `no_selfReciprocal_factor`.
+- **Lemma 5 is fully proved.** The fixed subring, its Eq. (7) coefficient structure, its
+  cardinality `q^k`, and the assembly from the conjugation-fixed field to `R_q^H ≃ F_{q^k}` are
+  present. The factor-swap lemma `no_selfReciprocal_factor` is proved from the root-orbit lemma
+  `not_associated_reverse_self`, so the final field/isomorphism declarations have no `sorryAx`
+  dependency.
 - **Lemma 6 is fully proved.** `cInfNorm_psi_le` has no `sorryAx` dependency and establishes the
   paper's `‖ψ(a)‖∞ ≤ 2β` with the same centered coefficient norm convention.
-- Lemma 6 does **not** rely on the unfinished field upgrade in Lemma 5. It needs the proved
+- Lemma 6 does **not** rely on the field upgrade in Lemma 5. It needs the proved
   fixed-subring support/cardinality layer and the packing map, so the current dependency graph
   is mathematically and formally sensible.
 
@@ -27,8 +29,9 @@ The formalization is coherent as a whole, but its proof status is asymmetric:
 | `R_q^H` | `fixedSubring α k` | proved | Defined by the equalizers of the two generators; fixedness under all of `H` is recovered separately. |
 | Eq. (7), `k` free base-field coefficients | `vElt`, `fixedBasisMap`, `fixedSubring_coeff_eq_zero` | proved | Uses a symmetric basis, reindexed relative to the displayed paper formula. |
 | `|R_q^H| = q^k` | `card_fixedSubring_eq` | proved, `sorryAx`-free | This cardinality result does not use the open field proof. |
-| `R_q^H` is a field | `fixedSubring_isField` | conditional | Depends transitively on `no_selfReciprocal_factor`. |
-| `R_q^H ≃ F_{q^k}` | `fixedSubringEquivGaloisField` | conditional | Adds the proved cardinality computation and finite-field uniqueness to the conditional field result. |
+| Reversal swaps the two factors of `X^d+1` | `no_selfReciprocal_factor`, `not_associated_reverse_self` | proved, `sorryAx`-free | Root-orbit argument in `AdjoinRoot p₁`: a self-reciprocal factor would force `−1 ∈ ⟨q⟩ ≤ (Z/2^{α+1})ˣ`. |
+| `R_q^H` is a field | `fixedSubring_isField` | proved, `sorryAx`-free | Via `conjFixedSubring_isField` and the factor swap. |
+| `R_q^H ≃ F_{q^k}` | `fixedSubringEquivGaloisField` | proved, `sorryAx`-free | Adds the cardinality computation and finite-field uniqueness to the field result. |
 | Theorem 2 packing map `ψ` | `psi`, `psi_bijective` | proved, `sorryAx`-free | Included because Lemma 6 refers to this `ψ`. |
 | Lemma 6, `‖ψ(a)‖∞ ≤ 2β` | `cInfNorm_psi_le` | proved, `sorryAx`-free | Each output coefficient receives contributions from at most two input coefficients. |
 
@@ -48,7 +51,7 @@ ArkLib's norm is the maximum centered coefficient magnitude, using `ZMod.valMinA
 vector norm is the maximum of that norm over entries. This matches the artifact's `mod± q`
 coefficient convention and the vector `ℓ∞` norm used in Lemma 6.
 
-## Why Lemma 6 is independent of the Lemma 5 gap
+## Why Lemma 6 is independent of the Lemma 5 field upgrade
 
 The proof of `cInfNorm_psi_le` follows the artifact's Eq. (9) observation in an explicit form:
 
@@ -63,18 +66,16 @@ steps invokes `fixedSubring_isField` or `fixedSubringEquivGaloisField`.
 
 ## Remaining code-level work
 
-Completing Lemma 5 requires proving `no_selfReciprocal_factor` in
-[`Subfield/Field.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Subfield/Field.lean). It must
-show that reversal swaps, rather than preserves, the two irreducible factors of
-`X^{2^α}+1` when `q ≡ 5 (mod 8)`. The file already proves the relevant order and
-`−1 ∉ ⟨q⟩` facts and documents a root-orbit proof plan.
-
-No code change is indicated for Lemma 6.
+None for Lemmas 5–6. The factor swap `no_selfReciprocal_factor` in
+[`Subfield/Field.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Subfield/Field.lean) shows
+that reversal swaps, rather than preserves, the two irreducible factors of `X^{2^α}+1` when
+`q ≡ 5 (mod 8)`.
 
 ## Validation evidence
 
 The imported subfield umbrella builds. A `#print axioms` audit reports:
 
-- `fixedSubringEquivGaloisField`: includes `sorryAx`;
+- `fixedSubringEquivGaloisField`: only standard axioms (`propext`, `Classical.choice`,
+  `Quot.sound`);
 - `cInfNorm_psi_le`: only standard axioms (`propext`, `Classical.choice`, `Quot.sound`);
 - `card_fixedSubring_eq` and `psi_bijective`: only those same standard axioms.

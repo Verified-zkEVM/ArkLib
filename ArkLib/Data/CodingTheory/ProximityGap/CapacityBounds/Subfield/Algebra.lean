@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 public import Mathlib.Analysis.SpecialFunctions.Stirling
 public import Mathlib.FieldTheory.PrimitiveElement
@@ -121,6 +122,7 @@ theorem finite_support_second_moment
 
 omit [Nonempty ι] [DecidableEq ι] in
 private theorem fold_density_le_eps_ca_of_not_joint_proximity
+    [SampleableType F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) (u : Fin 2 → ι → F)
     (hnot : ¬ Code.jointProximity (C := C) (u := u) δ_int) :
     ((((Finset.univ.filter (fun γ : F =>
@@ -131,24 +133,13 @@ private theorem fold_density_le_eps_ca_of_not_joint_proximity
   have hcardF_ne : (Fintype.card F : NNReal) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hcardF_ne]
-  rw [← Probability.prob_uniform_eq_card_filter_div_card]
   unfold _root_.ProximityGap.epsCa
-  calc
-    (do
-      let γ ← PMF.uniformOfFintype F
-      pure (Code.relDistFromCode (u 0 + γ • u 1) C ≤ δ_fld)) True =
-        (if Code.jointProximity (C := C) (u := u) δ_int then (0 : ENNReal)
-        else (do
-          let γ ← PMF.uniformOfFintype F
-          pure (Code.relDistFromCode (u 0 + γ • u 1) C ≤ δ_fld)) True) :=
-      (if_neg hnot).symm
-    _ ≤ ⨆ w : Fin 2 → ι → F,
-        if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
-        else (do
-          let γ ← PMF.uniformOfFintype F
-          pure (Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld)) True :=
-      @le_iSup ENNReal (Fin 2 → ι → F)
-        ENNReal.instCompleteLinearOrder.toCompleteLattice _ u
+  refine le_trans ?_ (le_iSup (fun w : Fin 2 → ι → F =>
+    if Code.jointProximity (C := C) (u := w) δ_int then (0 : ENNReal)
+    else Pr{let γ ←$ᵗ F}[Code.relDistFromCode (w 0 + γ • w 1) C ≤ δ_fld]) u)
+  rw [ite_eq_right hnot]
+  rw [SampleableType.prEvent_uniformSample]
+  exact le_rfl
 
 open scoped BigOperators in
 noncomputable def subfield_ca_bessel_partial (x : ℝ) (m : ℕ) : ℝ :=
@@ -415,7 +406,7 @@ theorem subfield_ca_good_scalars_subset_fold_close
             α * subfield_ca_reciprocal_stack domain B a y 1 i =
           q.eval (domain i)
         unfold subfield_ca_reciprocal_stack
-        rw [if_pos rfl, if_neg (by decide : (1 : Fin 2) ≠ 0)]
+        rw [ite_eq_left rfl, ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
         rw [hqeval i hiS]
         field_simp [hden i]
         ring
@@ -473,7 +464,7 @@ theorem subfield_ca_reciprocal_stack_not_joint
     rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
       Polynomial.eval_X, Polynomial.eval_C, hpagree i hi, Polynomial.eval_one]
     dsimp only [u, subfield_ca_reciprocal_stack]
-    rw [if_neg (by decide : (1 : Fin 2) ≠ 0)]
+    rw [ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]
     field_simp [hden i]
     ring
   have hXne : (Polynomial.X - Polynomial.C a : Polynomial F) ≠ 0 := by
@@ -526,6 +517,7 @@ noncomputable def subfield_ca_support
 
 omit [Nonempty ι] [DecidableEq ι] in
 theorem subfield_ca_witness_data_eps_ca
+    [SampleableType F]
     (domain : ι ↪ F) (k : ℕ) (δ : NNReal) (B : Subfield F)
     (u : Fin 2 → ι → F) (G : Finset F)
     (h : SubfieldCaWitnessData domain k δ B u G) :
@@ -584,7 +576,7 @@ private theorem subfield_ca_bessel_partial_le_exp
 theorem subfield_ca_bessel_partial_le_factor_small
     (x : ℝ) (m : ℕ) (hx : 0 ≤ x) (hxle : x ≤ 3 / 2) :
     subfield_ca_bessel_partial x m ≤ subfieldCaFactor x := by
-  rw [subfieldCaFactor, if_pos hxle]
+  rw [subfieldCaFactor, ite_eq_left hxle]
   exact subfield_ca_bessel_partial_le_exp x m hx
 
 omit [DecidableEq F] in
@@ -867,6 +859,7 @@ omit [Fintype F] [DecidableEq F] in
 theorem subfield_ca_generator_adjoin_eq_top
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     IntermediateField.adjoin B ({(g : F)} : Set F) = ⊤ := by
+  classical
   apply top_unique
   intro x _hx
   by_cases hx0 : x = 0

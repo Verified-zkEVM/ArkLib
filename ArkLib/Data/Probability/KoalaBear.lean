@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import CompPoly.Fields.KoalaBear.Ext6
-public import VCVio.OracleComp.Constructions.SampleableType
+public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
 
 /-!
 # Computable sampling for the KoalaBear sextic extension
@@ -44,9 +44,9 @@ instance instSampleableType : SampleableType Ext6 := sampleableType
 theorem uniformSample_eq_sample : ($ᵗ Ext6) = sample := rfl
 
 /-- Sampling six independent base limbs induces the uniform executable distribution on `Ext6`. -/
-theorem evalSPMF_sample :
-    𝒮[sample] = liftM (PMF.uniformOfFintype Ext6) := by
+theorem evalDist_sample [MeasurableSpace Ext6] [MeasurableSingletonClass Ext6] :
+    𝒟[sample] = ProbabilityTheory.uniformOn Set.univ := by
   rw [← uniformSample_eq_sample]
-  exact evalSPMF_uniformSample Ext6
+  exact SampleableType.evalDist_uniformSample
 
 end KoalaBear.Ext6

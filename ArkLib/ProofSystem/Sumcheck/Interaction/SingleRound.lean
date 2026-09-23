@@ -151,7 +151,7 @@ theorem executeAt_honest [DecidableEq R] (p : Message R deg)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeAt R deg ambient p p domain target r =
       pure ⟨⟨p, r, PUnit.unit⟩, (p.val.eval r, r), some (p.val.eval r, r)⟩ := by
-  rw [executeAt_eq, if_pos h]
+  rw [executeAt_eq, ite_eq_left h]
 
 /-- The typed honest terminal statement satisfies the existing single-round output relation. -/
 theorem honest_outputRelation (p : Message R deg) (r : R) :

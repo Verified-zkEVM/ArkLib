@@ -8,7 +8,7 @@ module
 public import ArkLib.Commitments.Functional.KZG.Correctness
 public import ArkLib.Commitments.Functional.KZG.Algebra
 public import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
-public import ArkLib.ToVCVio.EvalDist.Defs.Support
+public import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Evaluation Binding for the KZG Polynomial Commitment Scheme
@@ -314,12 +314,14 @@ omit [DecidableEq G₁] in
 /-- Transition 1: extending the binding game output preserves the event. -/
 lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) |
-      Commitment.bindingGame (init := pure ∅) (impl := randomOracle) (AuxState := AuxState)
+    Pr{let result ← (Commitment.bindingGame (init := pure ∅)
+      (impl := randomOracle) (AuxState := AuxState)
         (scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))
-        (adversary := adversary)]
-    = Pr[bindingCondExt (p := p) (n := n) | bindingGameExt (g₁ := g₁) (g₂ := g₂)
-      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
+        (adversary := adversary))}[
+          (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p)) result]
+    = Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
+      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+        (bindingCondExt (p := p) (n := n)) result] := by
   let proj : BindingExtOutput (p := p) n G₁ G₂ → BindingOutput (p := p) n :=
     fun ⟨_, _, _, query, resp₁, resp₂, accept₁, accept₂, _, _⟩ =>
       ⟨query, resp₁, resp₂, accept₁, accept₂⟩
@@ -329,11 +331,11 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
     funext x
     rcases x with ⟨_, _, _, _, _, _, _, _, _, _⟩
     rfl
-  rw [hcond_eq]
-  apply OptionT.probEvent_eq_of_run_map_eq _ _ proj
-    (Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p))
-  simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk]
-  rw [pure_bind]
+  rw [hcond_eq, Function.comp_def, ← prEvent_map _ proj]
+  refine congrArg (fun mx : OptionT ProbComp (BindingOutput (p := p) n) ↦
+    Pr{let y ← mx}[Commitment.bindingCondition y]) (OptionT.ext ?_)
+  rw [OptionT.run_map]
+  simp only [Commitment.bindingGame, bindingGameExt, kzg, OptionT.run, OptionT.mk, pure_bind]
   have hsample :
       (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ =
         Groups.sampleNonzeroZMod (p := p) :=
@@ -472,12 +474,13 @@ include g₁ g₂ pairing in
 lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr[bindingCondExt (p := p) (n := n) | bindingGameExt (g₁ := g₁) (g₂ := g₂)
-      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
-    ≤ Pr[(Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
-        (n := n) |
-      bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))] := by
+    Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
+      AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+        (bindingCondExt (p := p) (n := n)) result]
+    ≤ Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
+        (n := n)) result] := by
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
@@ -529,13 +532,13 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   let Q : BindingExtOutput (p := p) n G₁ G₂ → Prop :=
     (Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p) (n := n)
   have hmono :
-      Pr[P | OptionT.mk (do
+      Pr{let result ← (OptionT.mk (do
         let τ ← sample
-        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
-      ≤ Pr[Q | OptionT.mk (do
+        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(P) result]
+      ≤ Pr{let result ← (OptionT.mk (do
         let τ ← sample
-        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))] := by
-    apply probEvent_mono
+        (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result] := by
+    apply _root_.prEvent_mono_of_support
     intro y hy hP
     obtain ⟨τ, _, hy⟩ := OptionT.mem_support_bind_mk _ _ hy
     refine OptionT.aux_mem_support_simulateQ_run' impl (gameComp τ)
@@ -637,12 +640,12 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
       (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
       hverify₁ hverify₂
   change
-    Pr[P | OptionT.mk (do
+    Pr{let result ← (OptionT.mk (do
       let τ ← sample
-      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
-    ≤ Pr[Q | OptionT.mk (do
+      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(P) result]
+    ≤ Pr{let result ← (OptionT.mk (do
       let τ ← sample
-      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache))]
+      (simulateQ impl (gameComp τ)).run' (∅ : unifSpec.QueryCache)))}[(Q) result]
   exact hmono
 
 omit [DecidableEq G₁] [Module (ZMod p) (Additive G₁)]
@@ -653,29 +656,28 @@ lemma map_binding_instance_drag {n : ℕ} {AuxState : Type} [SampleableType G₁
     (scheme : Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
       (Vector G₁ (n + 1) × Vector G₂ 2) (Vector G₁ (n + 1) × Vector G₂ 2)
       ⟨!v[.P_to_V], !v[G₁]⟩) :
-    Pr[(Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
-        (n := n) |
-      bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme]
-    = Pr[Groups.tSdhCondition (p := p) (g₁ := g₁) |
-      mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
-        AuxState adversary scheme] := by
-  exact probEvent_comp _ _ _
+    Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme)}[
+      ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
+        (n := n)) result]
+    = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
+        AuxState adversary scheme)}[(Groups.tSdhCondition (p := p) (g₁ := g₁)) result] := by
+  simp only [prEvent_map, Function.comp_apply]
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Transition 4: the mapped extended binding game is the t-SDH experiment. -/
 lemma t_sdh_game_eq {n : ℕ} {AuxState : Type} [SampleableType G₁]
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
-    Pr[Groups.tSdhCondition (p := p) (g₁ := g₁) |
-      mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
+    Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> bindingGameExt (g₁ := g₁) (g₂ := g₂)
         AuxState adversary
-        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing))]
+        (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
+          (Groups.tSdhCondition (p := p) (g₁ := g₁)) result]
     = Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState
         adversary) := by
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Groups.tSdhExperiment, Groups.tSdhGame]
-  congr 1
+  congr 3
   let pSpec' : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[G₁]⟩
   let impl : QueryImpl _ (StateT unifSpec.QueryCache ProbComp) :=
     QueryImpl.addLift
@@ -755,19 +757,16 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
   let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.binding]
   intro AuxState adversary
-  let game := Commitment.bindingGame (init := pure ∅) (impl := randomOracle)
-    (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
   let game_ext := bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
-  change Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game] ≤ tSdhError
-  exact
-    calc Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game]
-    _ = Pr[bindingCondExt (p := p) (n := n) | game_ext] :=
+  calc _
+    _ = Pr{let result ← (game_ext)}[(bindingCondExt (p := p) (n := n)) result] :=
       binding_game_ext_eq_binding_game (pairing := pairing) adversary
-    _ ≤ Pr[(Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
-        (n := n) | game_ext] :=
+    _ ≤ Pr{let result ← (game_ext)}[
+      ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
+        (n := n)) result] :=
       binding_cond_le_t_sdh_cond (pairing := pairing) hg₁ hpair adversary
-    _ = Pr[Groups.tSdhCondition (p := p) (g₁ := g₁) |
-        mapBindingToTsdh (p := p) (n := n) <$> game_ext] :=
+    _ = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> game_ext)}[
+      (Groups.tSdhCondition (p := p) (g₁ := g₁)) result] :=
       map_binding_instance_drag adversary scheme
     _ = Groups.tSdhExperiment (g₁ := g₁) (g₂ := g₂) n
       (bindingReduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) AuxState adversary) :=

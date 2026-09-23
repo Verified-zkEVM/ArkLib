@@ -203,31 +203,28 @@ private noncomputable def binary_matrix_direct_configuration_separator (b : ℕ)
       if M = N then 1 else binary_matrix_lambda_mv M - binary_matrix_lambda_mv N)
 
 private noncomputable def binary_matrix_good_coefficients
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K) : Finset K := by
-  classical
   exact Finset.univ.image (fun M : Fin 2 → Fin b → ZMod 2 =>
     MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))
 
 private theorem binary_matrix_good_coefficients_card
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (hinj : Function.Injective (fun M : Fin 2 → Fin b → ZMod 2 =>
       MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))) :
-    (binary_matrix_good_coefficients t).card = 2 ^ (2 * b) := by
-  classical
+    (binary_matrix_good_coefficients (K := K) (b := b) t).card = 2 ^ (2 * b) := by
   unfold binary_matrix_good_coefficients
   rw [Finset.card_image_of_injective Finset.univ hinj,
     Finset.card_univ, binary_matrix_parameter_card]
 
 private theorem binary_matrix_good_coefficients_mem
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K) (γ : K) :
-    γ ∈ binary_matrix_good_coefficients t ↔
+    γ ∈ binary_matrix_good_coefficients (K := K) (b := b) t ↔
       ∃ M : Fin 2 → Fin b → ZMod 2,
         MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
           (binary_matrix_lambda_mv M) = γ := by
-  classical
   unfold binary_matrix_good_coefficients
   simp only [Finset.mem_image, Finset.mem_univ, true_and]
 
@@ -371,9 +368,9 @@ private theorem binary_matrix_configuration_separator_left_ne_zero (b : ℕ) :
   rw [Finset.prod_ne_zero_iff]
   intro w hw
   by_cases hzero : w = 0
-  · rw [if_pos hzero]
+  · rw [ite_eq_left hzero]
     exact one_ne_zero
-  · rw [if_neg hzero]
+  · rw [ite_eq_right hzero]
     exact binary_product_linear_form_mv_ne_zero w hzero
 
 open scoped BigOperators in
@@ -389,9 +386,9 @@ private theorem binary_matrix_direct_configuration_separator_ne_zero_of_injectiv
     rw [Finset.prod_ne_zero_iff]
     intro N hN
     by_cases hMN : M = N
-    · rw [if_pos hMN]
+    · rw [ite_eq_left hMN]
       exact one_ne_zero
-    · rw [if_neg hMN]
+    · rw [ite_eq_right hMN]
       exact sub_ne_zero.mpr (hinj.ne hMN)
 
 open scoped BigOperators in
@@ -438,9 +435,9 @@ private theorem binary_matrix_configuration_separator_ne_zero_of_lambda (b : ℕ
     rw [Finset.prod_ne_zero_iff]
     intro N hN
     by_cases hMN : M = N
-    · rw [if_pos hMN]
+    · rw [ite_eq_left hMN]
       exact one_ne_zero
-    · rw [if_neg hMN]
+    · rw [ite_eq_right hMN]
       exact sub_ne_zero.mpr (hlambda M N hMN)
 
 private noncomputable def binary_product_subspace_lambda_on_tuple {K : Type} [Field K] [CharP K 2]
@@ -553,7 +550,7 @@ private theorem binary_matrix_generic_tuple_of_separator_eval_ne_zero
     by_contra hne
     have hsub : x - y ≠ 0 := sub_ne_zero.mpr hne
     have hfactor := hleft (x - y) (Finset.mem_univ _)
-    rw [if_neg hsub, binary_product_linear_form_mv_eval₂] at hfactor
+    rw [ite_eq_right hsub, binary_product_linear_form_mv_eval₂] at hfactor
     apply hfactor
     rw [LinearMap.map_sub, hxy, sub_self]
   · intro M N hMNval
@@ -561,7 +558,7 @@ private theorem binary_matrix_generic_tuple_of_separator_eval_ne_zero
     have hinner := hright M (Finset.mem_univ _)
     rw [Finset.prod_ne_zero_iff] at hinner
     have hfactor := hinner N (Finset.mem_univ _)
-    rw [if_neg hMN] at hfactor
+    rw [ite_eq_right hMN] at hfactor
     apply hfactor
     rw [MvPolynomial.eval₂_sub]
     exact sub_eq_zero.mpr hMNval
@@ -845,7 +842,7 @@ private noncomputable def binary_tuple_linear_map {K : Type} [Field K] [CharP K 
 open scoped NNReal ProbabilityTheory in
 private theorem eps_ca_lower_of_finset_witness
     {ι F A : Type} [Fintype ι] [Nonempty ι]
-    [Field F] [Fintype F]
+    [Field F] [Fintype F] [SampleableType F]
     [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0)
     (u : Code.WordStack A (Fin 2) ι) (S : Finset F)
@@ -857,8 +854,8 @@ private theorem eps_ca_lower_of_finset_witness
   let _ := Fintype.ofFinite A
   unfold ProximityGap.epsCa
   refine le_trans ?_ (le_iSup _ u)
-  rw [if_neg hnot]
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [ite_eq_right hnot]
+  rw [SampleableType.prEvent_uniformSample]
   apply ENNReal.div_le_div_right
   exact_mod_cast Finset.card_le_card (by
     intro γ hγ
@@ -918,7 +915,7 @@ private theorem is_binary_linearized_sq
   rw [← Polynomial.map_frobenius_expand 2 P, Polynomial.coeff_map,
     Polynomial.coeff_expand (by omega) P n] at hncoeff
   by_cases hd : 2 ∣ n
-  · rw [if_pos hd] at hncoeff
+  · rw [ite_eq_left hd] at hncoeff
     have hpcoeff : P.coeff (n / 2) ≠ 0 := by
       intro hp0
       apply hncoeff
@@ -930,13 +927,14 @@ private theorem is_binary_linearized_sq
       n = 2 * (n / 2) := (Nat.two_mul_div_two_of_even heven).symm
       _ = 2 * 2 ^ i := by rw [hi]
       _ = 2 ^ (i + 1) := by rw [pow_succ]; omega
-  · rw [if_neg hd, map_zero] at hncoeff
+  · rw [ite_eq_right hd, map_zero] at hncoeff
     exact False.elim (hncoeff rfl)
 
 private theorem is_binary_linearized_sub
     {K : Type} [Field K] (P Q : Polynomial K)
     (hP : IsBinaryLinearized P) (hQ : IsBinaryLinearized Q) :
     IsBinaryLinearized (P - Q) := by
+  classical
   unfold IsBinaryLinearized
   intro n hn
   rw [Polynomial.mem_support_iff] at hn
@@ -1129,14 +1127,14 @@ private theorem binary_span_polynomial_top_gap_add_two
       dsimp only [R]
       rw [Polynomial.coeff_sub, Polynomial.coeff_sub,
         Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-        Polynomial.coeff_X_pow, hlead, if_pos rfl,
-        if_neg (ne_of_gt hMN), mul_zero, sub_zero, sub_self]
+        Polynomial.coeff_X_pow, hlead, ite_eq_left rfl,
+        ite_eq_right (ne_of_gt hMN), mul_zero, sub_zero, sub_self]
     · by_cases hnM : n = M
       · subst n
         dsimp only [R]
         rw [Polynomial.coeff_sub, Polynomial.coeff_sub,
           Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-          Polynomial.coeff_X_pow, if_neg (ne_of_lt hMN), if_pos rfl]
+          Polynomial.coeff_X_pow, ite_eq_right (ne_of_lt hMN), ite_eq_left rfl]
         ring
       · have hpzero : P.coeff n = 0 := by
           by_contra hp
@@ -1160,7 +1158,7 @@ private theorem binary_span_polynomial_top_gap_add_two
         dsimp only [R]
         rw [Polynomial.coeff_sub, Polynomial.coeff_sub,
           Polynomial.coeff_X_pow, Polynomial.coeff_C_mul,
-          Polynomial.coeff_X_pow, hpzero, if_neg hnN, if_neg hnM]
+          Polynomial.coeff_X_pow, hpzero, ite_eq_right hnN, ite_eq_right hnM]
         ring
 
 open scoped BigOperators in
@@ -1245,7 +1243,7 @@ private theorem binary_matrix_johnson_raw
   let domain : ιC ↪ FC :=
     ⟨binary_product_tuple_linear_map t, htinj⟩
   let d : ℕ := 2 ^ r
-  let G : Finset FC := binary_matrix_good_coefficients t
+  let G : Finset FC := binary_matrix_good_coefficients (K := FC) (b := r + 2) t
   refine ⟨ιC, inferInstance, inferInstance, inferInstance, domain, d, G,
     ?_, ?_, ?_, ?_⟩
   · dsimp only [d]
@@ -1254,10 +1252,10 @@ private theorem binary_matrix_johnson_raw
     exact binary_product_index_card_add_two r
   · dsimp only [ιC, G]
     rw [binary_product_index_card_add_two,
-      binary_matrix_good_coefficients_card t hcoeffinj]
+      binary_matrix_good_coefficients_card (K := FC) (b := r + 2) t hcoeffinj]
     exact hrpow
   · intro γ hγ
-    have hγ' : γ ∈ binary_matrix_good_coefficients t := by
+    have hγ' : γ ∈ binary_matrix_good_coefficients (K := FC) (b := r + 2) t := by
       simpa only [G] using hγ
     obtain ⟨M, hM⟩ :=
       (binary_matrix_good_coefficients_mem t γ).mp hγ'
@@ -1425,7 +1423,7 @@ of relative minimum distance `15 / 16` with large CA error at field radius `3 / 
 theorem exists_rs_epsCa_large_at_johnson_radius
     (ε : ℝ≥0) (_hε : 0 < ε) (_hε_lt : (ε : ℝ) < 1) :
     ∃ q₀ : ℕ,
-    ∀ {FC : Type} [Field FC] [Fintype FC] [DecidableEq FC] [CharP FC 2],
+    ∀ {FC : Type} [Field FC] [Fintype FC] [SampleableType FC] [DecidableEq FC] [CharP FC 2],
       q₀ ≤ Fintype.card FC →
       ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
         (domain : ιC ↪ FC) (k : ℕ),
@@ -1439,7 +1437,7 @@ theorem exists_rs_epsCa_large_at_johnson_radius
   classical
   obtain ⟨q₀, hraw⟩ := binary_matrix_johnson_raw ε _hε
   refine ⟨q₀, ?_⟩
-  intro FC _ _ _ _ hFC
+  intro FC _ _ _ _ _ hFC
   obtain ⟨ιC, instι, neι, decι, domain, d, G,
     hd, hcard, hG, hagree⟩ := hraw hFC
   let : Fintype ιC := instι

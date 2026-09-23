@@ -86,7 +86,7 @@ theorem rejecting_not_perfect {σ : Type} (init : ProbComp σ)
   intro h
   have hfalse := (Reduction.completeness_iff_of_guarded_verifier
     rejecting rejectingForm Set.univ Set.univ 0).mp h false () (by trivial)
-  simp [rejectingForm] at hfalse
+  simp [rejectingForm, ← bind_assoc, -bind_pure_comp] at hfalse
 
 end RejectingVerifier
 

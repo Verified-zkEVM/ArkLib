@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.Polynomial.Bivariate
 public import ArkLib.Data.Polynomial.Prelims
+public import ArkLib.Data.Polynomial.ResultantSpecialization
 public import Mathlib.FieldTheory.RatFunc.Defs
 public import Mathlib.RingTheory.Ideal.Quotient.Defs
 public import Mathlib.RingTheory.Ideal.Span
@@ -185,7 +186,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
       have hc := hleft_Icc j
       have hcoeff_ne : q.coeff (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ)) ≠ 0 := by
         have hne' := hne (Fin.castAdd d j)
-        rwa [hentry, if_pos hc] at hne'
+        rwa [hentry, ite_eq_left hc] at hne'
       have hsup : (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ)) ∈ q.support :=
         Polynomial.mem_support_iff.mpr hcoeff_ne
       have hbound := natDegree_coeff_monicize_le_of_totalDegree_le (F := F) (H := H) (D := D) hD
@@ -201,7 +202,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
       have hc := hright_Icc j
       have hcoeff_ne : p.coeff (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ)) ≠ 0 := by
         have hne' := hne (Fin.natAdd e j)
-        rwa [hentry, if_pos hc] at hne'
+        rwa [hentry, ite_eq_left hc] at hne'
       have hsup : (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ)) ∈ p.support :=
         Polynomial.mem_support_iff.mpr hcoeff_ne
       have hbound := canonicalRep_coeff_natDegree_le_of_weight_bound (F := F) (H := H) hH β hβw
@@ -327,25 +328,17 @@ theorem resultant_eval_eq_resultant_map_eval_fixed_degrees (p q : F[X][Y]) (z : 
   exact (Polynomial.resultant_map_map p q p.natDegree q.natDegree (Polynomial.evalRingHom z)).symm
 
 /-- The fixed-degree resultant of two polynomials with a common root vanishes, when the right
-factor is monic of the declared degree. -/
+factor is monic of the declared degree. This is the case `φ := RingHom.id F` of
+`Polynomial.map_resultant_eq_zero_of_common_root`; monicity of `q` and `hq` rule out `n = 0`. -/
 theorem resultant_fixed_degree_eq_zero_of_common_root_of_monic_right {p q : F[X]} {m n : ℕ} {t : F}
     (hm : p.natDegree ≤ m) (hqmonic : q.Monic) (hn : q.natDegree = n)
     (hp : p.eval t = 0) (hq : q.eval t = 0) :
   Polynomial.resultant p q m n = 0 := by
-  have hres0 : Polynomial.resultant p q = 0 := by
-    rw [Polynomial.resultant_eq_zero_iff]
-    constructor
-    · exact Or.inr hqmonic.ne_zero
-    · intro hcop
-      rcases hcop with ⟨a, b, hab⟩
-      have h_eval := congrArg (fun r : F[X] => r.eval t) hab
-      simp [eval_add, eval_mul, hp, hq] at h_eval
-  have hdeg : p.natDegree + (m - p.natDegree) = m := Nat.add_sub_of_le hm
-  rw [← hdeg]
-  rw [← hn]
-  rw [Polynomial.resultant_add_left_deg]
-  · simp [hres0]
-  · exact le_rfl
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    simp [eq_one_of_monic_natDegree_zero hqmonic hn] at hq
+  simpa using Polynomial.map_resultant_eq_zero_of_common_root (RingHom.id F) p q hm hn.le
+    (Or.inr hn0) t (by simpa using hp) (by simpa using hq)
 
 /-- Every substitution killing `β` is a root of `res_T(β, H̃)`: at such a `z`, the pair `(t_z, z)`
 is a common root of `β` and `H̃`, so the specialized resultant vanishes. -/

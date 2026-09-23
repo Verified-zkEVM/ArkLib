@@ -5,7 +5,7 @@ Authors: ArkLib Contributors
 -/
 module
 
-public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.InterleavedCode
 public import ArkLib.Data.Probability.Instances
 
@@ -62,7 +62,7 @@ variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
          {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
-         {S S' : Type} [Fintype S] [Fintype S'] [Nonempty S] [Nonempty S']
+         {S S' : Type} [Fintype S] [Fintype S'] [SampleableType S] [SampleableType S']
 
 /-- If `G` has mutual correlated agreement with error `ε_mca` for `MC`, and `G'` has it with error
 `ε'_mca` for the `ℓ`-fold interleaving of `MC`, then the tensor generator has it for `MC` with the
@@ -132,25 +132,23 @@ theorem isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
           rfl
         rwa [hwrow] at h
   -- assemble: implication, union bound, and the two marginal bounds
-  have hA : Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-      ≤ (ε_mca δ : ENNReal) := by
-    rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')
-      (fun p => IsMCA G MC p.1 (W p.2) δ)]
-    exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG.prob_le (W x') δ
-  have hB : Pr_{let p ← $ᵖ (S × S')}[
+  have hA : Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+      ≤ (ε_mca δ : ENNReal) :=
+    SampleableType.prEvent_uniformSample_prod_le_of_forall_snd _
+      (fun x' => hG.prob_le (W x') δ)
+  have hB : Pr{let p ← $ᵗ (S × S')}[
         IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ]
-      ≤ (ε'_mca δ : ENNReal) := by
-    rw [prob_split_uniform_sampling_of_prod
-      (fun p => IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ)]
-    exact Pr_seq_le_of_forall_le _ _ _ fun _ => hG'.prob_le w δ
-  calc Pr_{let p ← $ᵖ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
-      ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
+      ≤ (ε'_mca δ : ENNReal) :=
+    SampleableType.prEvent_uniformSample_prod_le_of_forall_fst _
+      (fun _ => hG'.prob_le w δ)
+  calc Pr{let p ← $ᵗ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
+      ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
           IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ] :=
-        Pr_le_Pr_of_implies _ _ _ himp
-    _ ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-        + Pr_{let p ← $ᵖ (S × S')}[
+        prEvent_mono _ _ _ himp
+    _ ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+        + Pr{let p ← $ᵗ (S × S')}[
             IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ] :=
-        Pr_or_le _ _ _
+        prEvent_or_le _ _ _
     _ ≤ (ε_mca δ : ENNReal) + (ε'_mca δ : ENNReal) := add_le_add hA hB
     _ = ((ε_mca + ε'_mca) δ : ENNReal) := by
         rw [Pi.add_apply, ENNReal.coe_add]
@@ -166,29 +164,7 @@ theorem isMCAGenerator_of_moduleInterleavedCode [Nonempty ℓ] (G' : Generator S
     (hG' : IsMCAGenerator G' ε'_mca (ModuleCode.moduleInterleavedCode F A ℓ ι MC)) :
     IsMCAGenerator G' ε'_mca MC := by
   intro δ
-  refine iSup_le fun U => ?_
-  refine le_trans (Pr_le_Pr_of_implies _ _ _ fun x' => ?_) (hG'.prob_le (fun j k _ => U j k) δ)
-  rintro ⟨T, hT, hcomb, j₀, hbad⟩
-  refine ⟨T, hT, ?_, j₀, fun hmem => hbad ?_⟩
-  · set_option backward.isDefEq.respectTransparency false in
-      rw [projectedCodeSubmod_moduleInterleavedCode_iff]
-    intro i
-    have : InterleavedWord.getRowWord (fun k => ∑ j, G' x' j • (fun k _ => U j k : ι → ℓ → A) k) i
-        = fun k => ∑ j, G' x' j • U j k := by
-      set_option backward.isDefEq.respectTransparency false in
-        funext k
-        rw [InterleavedWord.getRowWord_apply]
-        simp
-    rw [this]
-    exact hcomb
-  · obtain ⟨i⟩ := ‹Nonempty ℓ›
-    have h := (projectedCodeSubmod_moduleInterleavedCode_iff
-      F A ℓ ι MC (fun k _ => U j₀ k) T).mp hmem i
-    have hrow : InterleavedWord.getRowWord (fun k (_ : ℓ) => U j₀ k) i = U j₀ := by
-      funext k
-      change U j₀ k = U j₀ k
-      rfl
-    rwa [hrow] at h
+  exact (mcaError_le_mcaError_moduleInterleavedCode G' MC (δ : ℝ)).trans (hG' δ)
 
 /-- If `G` and `G'` both have mutual correlated agreement for `MC` itself, the tensor generator has
 it for `MC` with the inner error scaled by `Fintype.card ℓ`.
@@ -226,27 +202,23 @@ theorem isMCAGenerator_tensorGenerator (G : Generator S ℓ F) (G' : Generator S
     · exact Or.inl ⟨T, hT, hcomb, hcase⟩
     · push Not at hcase
       exact Or.inr ⟨i₀, T, hT, hcase i₀, j₀, hbad⟩
-  have hA : Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-      ≤ (ε_mca δ : ENNReal) := by
-    rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')
-      (fun p => IsMCA G MC p.1 (W p.2) δ)]
-    exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG.prob_le (W x') δ
-  have hB : Pr_{let p ← $ᵖ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ]
-      ≤ (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) := by
-    rw [prob_split_uniform_sampling_of_prod
-      (fun p => ∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ)]
-    refine Pr_seq_le_of_forall_le _ _ _ fun _ => le_trans (Pr_exists_le _ _) ?_
-    have hsum : ∑ i : ℓ, Pr_{let x' ← $ᵖ S'}[IsMCA G' MC x' (fun j => U (i, j)) δ]
-        ≤ ∑ _i : ℓ, (ε'_mca δ : ENNReal) := by
-      exact Finset.sum_le_sum fun i _ => hG'.prob_le (fun j => U (i, j)) δ
-    simpa [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] using hsum
-  calc Pr_{let p ← $ᵖ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
-      ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
+  have hA : Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+      ≤ (ε_mca δ : ENNReal) :=
+    SampleableType.prEvent_uniformSample_prod_le_of_forall_snd _
+      (fun x' => hG.prob_le (W x') δ)
+  have hB : Pr{let p ← $ᵗ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ]
+      ≤ (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) :=
+    SampleableType.prEvent_uniformSample_prod_le_of_forall_fst _ fun _ =>
+      prEvent_exists_le_card_mul ($ᵗ S')
+        (fun i x' => IsMCA G' MC x' (fun j => U (i, j)) δ)
+        (fun i => hG'.prob_le (fun j => U (i, j)) δ)
+  calc Pr{let p ← $ᵗ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
+      ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
           ∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
-        Pr_le_Pr_of_implies _ _ _ himp
-    _ ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-        + Pr_{let p ← $ᵖ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
-        Pr_or_le _ _ _
+        prEvent_mono _ _ _ himp
+    _ ≤ Pr{let p ← $ᵗ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
+        + Pr{let p ← $ᵗ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
+        prEvent_or_le _ _ _
     _ ≤ (ε_mca δ : ENNReal)
         + (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) := add_le_add hA hB
     _ = ((ε_mca + Fintype.card ℓ • ε'_mca) δ : ENNReal) := by
@@ -263,7 +235,7 @@ variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
          {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
-         {S S' : Type} [Fintype S] [Fintype S'] [Nonempty S] [Nonempty S']
+         {S S' : Type} [Fintype S] [Fintype S'] [SampleableType S] [SampleableType S']
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`

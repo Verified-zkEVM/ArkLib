@@ -1,6 +1,6 @@
 /-
 Copyright (c) 2025 ArkLib Contributors. All rights reserved.
-Released under Apache 2.0 license vec described in the file LICENSE.
+Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 module
@@ -8,10 +8,10 @@ module
 public import ArkLib.OracleReduction.Execution
 public import VCVio.OracleComp.SimSemantics.Append
 public import VCVio.OracleComp.SimSemantics.SimulateQ
-public import Mathlib.Data.ENNReal.Basic
-public import VCVio.OracleComp.EvalDist
+public import Mathlib.Basic.ENNReal.Basic
+public import VCVio.OracleComp.EvalDist.Measure
 public import ArkLib.OracleReduction.OracleInterface
-public import VCVio.EvalDist.Instances.OptionT
+public import VCVio.OracleComp.SimSemantics.StateT.Measure
 public import ArkLib.Data.Probability.Instances
 
 /-!
@@ -55,8 +55,6 @@ Key lemmas:
   Simplifies `(pure x >>= f).run' s` to `(f x).run' s`.
 - `support_pure_bind`
   Flattens the support of nested pure operations in the probability space.
-- `probEvent_eq_one_pure_iff`
-  Converts a probability statement `Pr[P x] = 1` into the logical claim `P x`.
 
 -/
 
@@ -70,66 +68,6 @@ open OracleSpec OracleComp ProtocolSpec Sum
 open scoped OracleSpec.PrimitiveQuery
 
 universe u v w
-
-section ProbOutputNone
-
-variable {m : Type u → Type v} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-  [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m] {α β : Type u}
-
-omit [LawfulMonadLiftT m SPMF] in
-/--
-`probOutput (mx >>= my) none = 0` iff every branch reachable from `mx`
-has zero probability of returning `none`.
--/
-@[simp]
-lemma probOutput_none_bind_eq_zero_iff
-    (mx : m α) (my : α → m (Option β)) :
-    probOutput (m := m) (α := Option β) (mx := mx >>= my) (none : Option β) = 0 ↔
-      ∀ x ∈ support mx, probOutput (m := m) (α := Option β) (mx := my x) (none : Option β) = 0 := by
-  constructor
-  · intro h x hx
-    apply (probOutput_eq_zero_iff (my x) (none : Option β)).2
-    intro hnone
-    have hnone_bind : (none : Option β) ∉ support (mx >>= my) :=
-      (probOutput_eq_zero_iff (mx >>= my) (none : Option β)).1 h
-    exact hnone_bind <|
-      (mem_support_bind_iff (mx := mx) (my := my)
-        (y := (none : Option β))).2 ⟨x, hx, hnone⟩
-  · intro h
-    apply (probOutput_eq_zero_iff (mx >>= my) (none : Option β)).2
-    intro hnone_bind
-    rcases (mem_support_bind_iff (mx := mx) (my := my)
-      (y := (none : Option β))).1 hnone_bind with ⟨x, hx, hnone⟩
-    have hnone_x : (none : Option β) ∉ support (my x) :=
-      (probOutput_eq_zero_iff (my x) (none : Option β)).1 (h x hx)
-    exact hnone_x hnone
-
-omit [LawfulMonadLiftT m SPMF] in
-/--
-Explicit `OptionT` version of `probOutput_none_bind_eq_zero_iff`.
-This avoids relying on reducibility of `OptionT` during inference.
--/
-@[simp]
-lemma OptionT.probOutput_none_bind_eq_zero_iff
-    (mx : OptionT m α) (my : α → OptionT m β) :
-    probOutput (m := m) (α := Option β)
-      (mx := OptionT.run (OptionT.bind mx my)) (none : Option β) = 0 ↔
-      ∀ x ∈ support (m := m) (α := Option α) (mx := OptionT.run mx),
-        probOutput (m := m) (α := Option β)
-          (mx := match x with
-            | some a => OptionT.run (my a)
-            | none => (pure none : m (Option β))) (none : Option β) = 0 := by
-  change probOutput (m := m) (α := Option β)
-      (mx := OptionT.run mx >>= fun x : Option α => match x with
-        | some a => OptionT.run (my a)
-        | none => (pure none : m (Option β))) none = 0 ↔ _
-  exact _root_.probOutput_none_bind_eq_zero_iff
-    (mx := OptionT.run mx)
-    (my := fun x : Option α => match x with
-      | some a => OptionT.run (my a)
-      | none => (pure none : m (Option β)))
-
-end ProbOutputNone
 
 namespace SimOracle
 
@@ -166,7 +104,7 @@ section SimulationLemmas
 
 variable {ι ι₁ ι₂ : Type*} {spec : OracleSpec ι}
   {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
-  {m : Type u → Type v} [AlternativeMonad m] [LawfulMonad m] [LawfulAlternative m]
+  {m : Type u → Type v} [Functor m]
   {α β σ : Type u}
 
 /-- Lift an implementation for `spec₂` to `spec₁` via `MonadLift`. -/
@@ -174,10 +112,11 @@ variable {ι ι₁ ι₂ : Type*} {spec : OracleSpec ι}
 def QueryImpl.lift {ι₁ ι₂ : Type u} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
     [MonadLift (OracleQuery spec₁) (OracleQuery spec₂)] (so : QueryImpl spec₂ m) :
     QueryImpl spec₁ m :=
-    fun (q : spec₁.Domain) => so.mapQuery (liftM (query q) : OracleQuery spec₂ _)
+    fun (q : spec₁.Domain) => so.mapQuery
+      (liftM (query q : OracleQuery spec₁ (spec₁.Range q)) : OracleQuery spec₂ _)
 
 /-- Commute simulation with spec-lifting: simulating a lifted computation
-is the same vec simulating the original computation with the lifted implementation. -/
+is the same as simulating the original computation with the lifted implementation. -/
 @[simp]
 lemma simulateQ_liftComp
     {ι₁ ι₂ : Type*} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
@@ -338,100 +277,7 @@ end SimulationLemmas
 
 section SimulationSafety
 
-variable {ι : Type} {spec : OracleSpec ι} [spec.Fintype] [spec.Inhabited] {α β : Type}
-
-/-- Challenge query implementation never fails (stateful version). -/
-lemma probFailure_challengeQueryImpl_run {n : ℕ} {pSpec : ProtocolSpec n} {σ : Type}
-    [∀ i, SampleableType (pSpec.Challenge i)]
-    (q : OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) β) (s : σ) :
-    Pr[⊥ | (liftM (QueryImpl.mapQuery challengeQueryImpl q) : StateT σ ProbComp β).run s] = 0 := by
-  rcases q with ⟨⟨i, u⟩, cont⟩
-  cases u
-  unfold challengeQueryImpl
-  simp only [StateT.run, liftM, ChallengeIdx, Challenge, ofPFunctor_toPFunctor,
-    probFailure_of_liftM_PMF]
-
-/-- A stateful `simulateQ` computation has zero failure probability. -/
-theorem simulateQ_preserves_safety_stateful
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    {α : Type} (oa : OracleComp oSpec α) (s : σ) :
-    Pr[⊥ | (simulateQ impl oa).run s] = 0 := by
-  simp only [probFailure_of_liftM_PMF]
-
-/-- An oracle computation has zero failure probability. This stateful alias is retained for
-callers that use the corresponding simulation lemma. -/
-lemma neverFails_of_simulateQ_stateful
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
-    {α : Type} (oa : OracleComp oSpec α) :
-    Pr[⊥ | oa] = 0 := by
-  simp only [probFailure_of_liftM_PMF]
-
-/-- **Stateful Safety Biconditional**
-
-For stateful oracle implementations, the simulated computation is safe if and only if
-the specification computation is safe. This requires:
-1. The implementation itself never fails (hImplSafe).
-2. The implementation has the same support vec the specification (hImplSupp).
-
-This is the stateful version of `probFailure_simulateQ_iff` and is useful for
-simplifying completeness proofs where you need to establish equivalence between
-simulated and specification safety.
-
-**Note**: Unlike `simulateQ_preserves_safety_stateful` which only requires support subset (⊆),
-this biconditional requires support **equality** (=) to enable the reverse direction.
--/
-@[simp]
-theorem probFailure_simulateQ_iff_stateful
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    {α : Type} (oa : OracleComp oSpec α) (s : σ) :
-    Pr[⊥ | (simulateQ impl oa).run s] = 0 ↔ Pr[⊥ | oa] = 0 := by
-  simp only [probFailure_of_liftM_PMF]
-
-/-- **Stateful Safety Biconditional (run' version)**
-
-This is the `run'` version of `probFailure_simulateQ_iff_stateful`. It works with
-`StateT.run'` which projects out only the result (discarding the final state),
-rather than `StateT.run` which returns the full `(result, state)` pair.
-
-This lemma is useful when the goal involves `(simulateQ impl oa).run' s` instead of
-`(simulateQ impl oa).run s`.
--/
-@[simp]
-theorem probFailure_simulateQ_iff_stateful_run'
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    {α : Type} (oa : OracleComp oSpec α) (s : σ) :
-    Pr[⊥ | (simulateQ impl oa).run' s] = 0 ↔ Pr[⊥ | oa] = 0 := by
-  simp only [probFailure_of_liftM_PMF]
-
-/-- **Safety Preservation Lemma for Stateless Implementations**
-
-If an oracle implementation is safe and support-faithful, then simulation preserves safety
-from the specification level to the implementation level (stateless version).
-
-This is the stateless counterpart to `simulateQ_preserves_safety_stateful`.
--/
-theorem simulateQ_preserves_safety
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
-    (so : QueryImpl oSpec ProbComp)
-    {α : Type} (oa : OracleComp oSpec α) :
-    Pr[⊥ | simulateQ so oa] = 0 := by
-  simp only [probFailure_of_liftM_PMF]
-
-omit [spec.Fintype] [spec.Inhabited] in
-/--
-Safety preservation: A simulated protocol is safe if and only if the original
-protocol is safe. This requires:
-1. The implementation itself never fails (h_so).
-2. The implementation doesn't return "illegal" values outside the spec (h_supp).
--/
-@[simp]
-lemma probFailure_simulateQ_iff [IsUniformSpec spec]
-    (so : QueryImpl spec ProbComp) (oa : OracleComp spec α) :
-    Pr[⊥ | simulateQ so oa] = 0 ↔ Pr[⊥ | oa] = 0 := by
-  simp only [probFailure_of_liftM_PMF]
+variable {ι : Type} {spec : OracleSpec ι} {α β : Type}
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Challenge query implementations have the same support as the specification.
@@ -587,10 +433,8 @@ end TranscriptLemmas
 
 section SupportPreservation
 
-variable {ι : Type} {spec : OracleSpec ι} [spec.Fintype] {α β : Type}
-  {m : Type → Type} -- [AlternativeMonad m] [LawfulAlternative m]
+variable {ι : Type} {spec : OracleSpec ι} {α β : Type}
 
-omit [spec.Fintype] in
 @[simp]
 lemma support_simulateQ_eq (so : QueryImpl spec ProbComp) (oa : OracleComp spec α)
     (h_supp : ∀ {β} (q : OracleQuery spec β),
@@ -604,8 +448,7 @@ lemma support_simulateQ_eq (so : QueryImpl spec ProbComp) (oa : OracleComp spec 
     simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query, id_map,
       (QueryImpl.mapQuery_query so t).symm, h_supp (query t)]
 
-/-! Same vec `support_simulateQ_eq` but for implementation in `OracleComp spec` (e.g. liftComp). -/
-omit [spec.Fintype] in
+/-! Same as `support_simulateQ_eq` but for implementation in `OracleComp spec` (e.g. liftComp). -/
 @[simp]
 lemma support_simulateQ_eq_OracleComp_of_superSpec {ι' : Type} {superSpec : OracleSpec ι'}
     (so : QueryImpl superSpec (OracleComp spec)) (oa : OracleComp superSpec α)
@@ -621,17 +464,12 @@ lemma support_simulateQ_eq_OracleComp_of_superSpec {ι' : Type} {superSpec : Ora
       (QueryImpl.mapQuery_query so t).symm, h_supp (query t)]
 
 /-! Support of `OptionT.run oa` equals the support of the underlying `oa`. -/
-omit [spec.Fintype] in
 @[simp]
 lemma OptionT.support_run_eq
     (oa : OracleComp spec (Option α)) :
     support (m := OracleComp spec) (α := Option α) (OptionT.run oa) =
     support (m := OracleComp spec) (α := Option α) oa := by rfl
 
-/-
-  `spec.Fintype` is not needed for this support-level bridge.
--/
-omit [spec.Fintype] in
 /-- OptionT run-level wrapper of `support_simulateQ_eq`. -/
 @[simp]
 lemma OptionT.support_run_simulateQ_eq_of_superSpec {ι' : Type}
@@ -670,21 +508,21 @@ lemma support_challengeQueryImpl_run_eq {n : ℕ} {pSpec : ProtocolSpec n} {σ :
         (OracleComp.support_liftM
           (OracleQuery.mk ⟨i, ()⟩ cont :
             OracleQuery ([pSpec.Challenge]ₒ'challengeOracleInterface) β))
-  rw [hq]
+  erw [hq]
   rw [StateT.run_monadLift]
   simp only [monadLift_self, bind_pure_comp, support_map]
   have hs : support ($ᵗ (pSpec.Challenge i) : ProbComp (pSpec.Challenge i)) = Set.univ :=
     support_uniformSample _
   erw [hs]
-  simp [OracleQuery.cont, Set.image_image]
+  simp [OracleQuery.cont, Set.image_image, PFunctor.Obj.snd]
 
 /-- **Helper: Support of run' for stateful simulateQ**
 
 If a stateful oracle implementation is support-faithful, then for any state `s`,
 the support of `(simulateQ impl oa).run' s` equals the support of `oa`.
 
-This is the stateful version of `support_simulateQ_eq` and is used vec a building
-block for `support_bind_simulateQ_run'_eq`.
+This is the stateful version of `support_simulateQ_eq`; it preserves the complete
+set of possible results, even when queries update the implementation state.
 
 **Proof Strategy**: The proof requires careful handling of state transitions.
 The key insight is that `run'` projects out the result component via `map Prod.fst`,
@@ -694,7 +532,7 @@ using the support-faithfulness at each query step.
 -/
 @[simp]
 lemma support_simulateQ_run'_eq
-    {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited] {σ α : Type}
+    {oSpec : OracleSpec ι} {σ α : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp oSpec α) (s : σ)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
@@ -744,7 +582,7 @@ lemma support_simulateQ_run'_eq
 /-- OptionT run-level wrapper of `support_simulateQ_run'_eq` (stateful implementation). -/
 @[simp]
 lemma OptionT.support_run_simulateQ_run'_eq
-    {oSpec : OracleSpec ι} [oSpec.Fintype] [oSpec.Inhabited] {σ α : Type}
+    {oSpec : OracleSpec ι} {σ α : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OptionT (OracleComp oSpec) α) (s : σ)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
@@ -756,242 +594,14 @@ lemma OptionT.support_run_simulateQ_run'_eq
     (support_simulateQ_run'_eq (impl := impl) (oa := oa) (s := s)
       (hImplSupp := hImplSupp))
 
-/-- OptionT-wrapper version of `neverFails_of_simulateQ` for option-valued computations. -/
-lemma neverFails_of_simulateQ_mk
-    {spec : OracleSpec ι} [IsUniformSpec spec]
-    (so : QueryImpl spec ProbComp) (oa : OracleComp spec (Option α))
-    (h_supp : ∀ {β} (q : OracleQuery spec β),
-      support (so.mapQuery q) = support (liftM q : OracleComp spec β))
-    (h : Pr[⊥ | (OptionT.mk (simulateQ so oa) : OptionT ProbComp α)] = 0) :
-    Pr[⊥ | (OptionT.mk oa : OptionT (OracleComp spec) α)] = 0 := by
-  rw [OptionT.probFailure_eq] at h ⊢
-  -- rw [probOutput_eq_zero_iff] at h ⊢
-  simpa [support_simulateQ_eq so oa h_supp] using h
-
-/-- OptionT-wrapper version of `simulateQ_preserves_safety` for option-valued computations. -/
-theorem simulateQ_preserves_safety_mk
-    {spec : OracleSpec ι} [IsUniformSpec spec]
-    (so : QueryImpl spec ProbComp) (oa : OracleComp spec (Option α))
-    (h_supp : ∀ {β} (q : OracleQuery spec β),
-      support (so.mapQuery q) = support (liftM q : OracleComp spec β))
-    (h_oa : Pr[⊥ | (OptionT.mk oa : OptionT (OracleComp spec) α)] = 0) :
-    Pr[⊥ | (OptionT.mk (simulateQ so oa) : OptionT ProbComp α)] = 0 := by
-  rw [OptionT.probFailure_eq] at h_oa ⊢
-  -- rw [probOutput_eq_zero_iff] at h_oa ⊢
-  simpa [support_simulateQ_eq so oa h_supp] using h_oa
-
-/-- OptionT-wrapper version of `probFailure_simulateQ_iff` for option-valued computations. -/
-@[simp]
-lemma probFailure_simulateQ_iff_mk
-    {spec : OracleSpec ι} [IsUniformSpec spec]
-    (so : QueryImpl spec ProbComp) (oa : OracleComp spec (Option α))
-    (h_supp : ∀ {β} (q : OracleQuery spec β),
-      support (so.mapQuery q) = support (liftM q : OracleComp spec β)) :
-    Pr[⊥ | (OptionT.mk (simulateQ so oa) : OptionT ProbComp α)] = 0 ↔
-      Pr[⊥ | (OptionT.mk oa : OptionT (OracleComp spec) α)] = 0 := by
-  constructor
-  · intro h
-    exact neverFails_of_simulateQ_mk so oa h_supp h
-  · intro h
-    exact simulateQ_preserves_safety_mk so oa h_supp h
-
-/-- OptionT-wrapper version of `simulateQ_preserves_safety_stateful` (run' form). -/
-theorem simulateQ_preserves_safety_stateful_run'_mk
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s)
-        = support (liftM q : OracleComp oSpec β))
-    (oa : OracleComp oSpec (Option α)) (s : σ)
-    (h_oa : Pr[⊥ | (OptionT.mk oa : OptionT (OracleComp oSpec) α)] = 0) :
-    Pr[⊥ | (OptionT.mk ((simulateQ impl oa).run' s) : OptionT ProbComp α)] = 0 := by
-  rw [OptionT.probFailure_eq] at h_oa ⊢
-  simp only [probFailure_of_liftM_PMF, zero_add] at h_oa ⊢
-  have h_none_oa : none ∉ support oa := (probOutput_eq_zero_iff oa none).1 h_oa
-  have h_support_eq : support ((simulateQ impl oa).run' s) = support oa :=
-    support_simulateQ_run'_eq impl oa s hImplSupp
-  have h_none_sim : none ∉ support ((simulateQ impl oa).run' s) := by
-    intro h_mem
-    apply h_none_oa
-    rwa [h_support_eq] at h_mem
-  exact (probOutput_eq_zero_iff ((simulateQ impl oa).run' s) none).2 h_none_sim
-
-/-- OptionT-wrapper version of `neverFails_of_simulateQ_stateful` (run' form). -/
-lemma neverFails_of_simulateQ_stateful_run'_mk
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s)
-        = support (liftM q : OracleComp oSpec β))
-    (oa : OracleComp oSpec (Option α)) (s : σ)
-    (h : Pr[⊥ | (OptionT.mk ((simulateQ impl oa).run' s) : OptionT ProbComp α)] = 0) :
-    Pr[⊥ | (OptionT.mk oa : OptionT (OracleComp oSpec) α)] = 0 := by
-  rw [OptionT.probFailure_eq] at h ⊢
-  simp only [probFailure_of_liftM_PMF, zero_add] at h ⊢
-  have h_none_sim : none ∉ support ((simulateQ impl oa).run' s) :=
-    (probOutput_eq_zero_iff ((simulateQ impl oa).run' s) none).1 h
-  have h_support_eq : support ((simulateQ impl oa).run' s) = support oa :=
-    support_simulateQ_run'_eq impl oa s hImplSupp
-  have h_none_oa : none ∉ support oa := by
-    intro h_mem
-    apply h_none_sim
-    rwa [h_support_eq]
-  exact (probOutput_eq_zero_iff oa none).2 h_none_oa
-
-/-- OptionT-wrapper version of `probFailure_simulateQ_iff_stateful_run'`. -/
-@[simp]
-theorem probFailure_simulateQ_iff_stateful_run'_mk
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s)
-        = support (liftM q : OracleComp oSpec β))
-    (oa : OracleComp oSpec (Option α)) (s : σ) :
-    Pr[⊥ | (OptionT.mk ((simulateQ impl oa).run' s) : OptionT ProbComp α)] = 0 ↔
-      Pr[⊥ | (OptionT.mk oa : OptionT (OracleComp oSpec) α)] = 0 := by
-  constructor
-  · intro h
-    exact neverFails_of_simulateQ_stateful_run'_mk impl hImplSupp oa s h
-  · intro h
-    exact simulateQ_preserves_safety_stateful_run'_mk impl hImplSupp oa s h
-
-/-- **Support Nonemptiness from Never-Fails**
-
-If a computation never fails, then its support is nonempty. This is a fundamental
-property: if `Pr[⊥ | oa] = 0`, then there must be at least one possible output value.
-
-**Intuition**: If a computation never fails, the sum of probabilities over all outputs
-equals 1. Since probabilities are non-negative and sum to 1, at least one output
-must have positive probability, which means it's in the support.
-
-**Application**: This lemma is useful in completeness proofs where we need to eliminate
-quantifiers over support. If we have `∀ x ∈ support oa, P x` and `NeverFail oa`,
-we can instantiate the quantifier with a witness from the nonempty support.
--/
-theorem support_nonempty_of_neverFails
-    {ι : Type} {spec : OracleSpec ι} [IsUniformSpec spec] {α : Type}
-    (oa : OracleComp spec α) (h : NeverFail oa) :
-    (support oa).Nonempty := by
-  have h_probFailure_eq_zero : Pr[⊥ | oa] = 0 := (probFailure_eq_zero_iff oa).2 h
-  have h_event_pos : 0 < Pr[fun _ => True | oa] := by
-    simp only [probEvent_True_eq_sub, probFailure_of_liftM_PMF, tsub_zero, zero_lt_one]
-  rcases (probEvent_pos_iff (mx := oa) (p := fun _ => True)).1 h_event_pos with ⟨x, hx, _⟩
-  exact ⟨x, hx⟩
-
-/-- **Support Preservation for Stateful Bind-SimulateQ Pattern**
-
-If a stateful oracle implementation is support-faithful, then the support of
-`(do let s ← init; (simulateQ impl oa).run' s)` equals the support of `oa`.
-
-This is the stateful bind version of `support_simulateQ_eq` and is essential
-for reasoning about support in oracle reductions where:
-- `init : ProbComp σ` samples the initial oracle state
-- `impl : QueryImpl oSpec (StateT σ ProbComp)` is a stateful oracle implementation
-- `oa : OracleComp oSpec α` is the specification computation (which doesn't depend on state)
-
-**Pattern**: This lemma handles the common pattern in completeness proofs:
-```lean
-support (do let s ← init; (simulateQ impl oa).run' s) = support oa
-```
-
-**Application**: When proving completeness, we often need to show that the support
-of the simulated execution matches the support of the specification. This lemma
-bridges that gap for stateful implementations.
-
-**Note**: The RHS is just `support oa` (not bound with `init`) because `oa` is
-a pure specification computation that doesn't depend on the oracle state.
--/
-@[simp]
-lemma support_bind_simulateQ_run'_eq
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (oa : OracleComp oSpec α)
-    (hInit : NeverFail init)
-    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s)
-        = support ((liftM q : OracleComp oSpec β))) :
-    support (do let s ← init; (simulateQ impl oa).run' s) = support oa := by
-  -- Expand the bind structure
-  simp only [support_bind]
-  ext x
-  simp only [Set.mem_iUnion, exists_prop]
-  constructor
-  · -- Forward direction: simulated support ⊆ spec support
-    intro ⟨s, hs_init, hx_sim⟩
-    -- Use the helper lemma
-    have h_supp_eq := support_simulateQ_run'_eq impl oa s hImplSupp
-    rw [h_supp_eq] at hx_sim
-    exact hx_sim
-  · -- Backward direction: spec support ⊆ simulated support
-    intro hx_spec
-    -- We need to show there exists s ∈ support init such that
-    -- x ∈ support ((simulateQ impl oa).run' s)
-    -- Since NeverFail init (or we can use support init.Nonempty), we can pick any s
-    -- Use the helper lemma
-    have h_init_nonempty : (support init).Nonempty :=
-      support_nonempty_of_neverFails init hInit
-    obtain ⟨s, hs_init⟩ := h_init_nonempty
-    have h_supp_eq := support_simulateQ_run'_eq impl oa s hImplSupp
-    -- h_supp_eq: support ((simulateQ impl oa).run' s) = support oa
-    -- We have hx_spec: x ∈ support oa
-    -- Need: x ∈ support ((simulateQ impl oa).run' s)
-    rw [← h_supp_eq] at hx_spec
-    exact ⟨s, hs_init, hx_spec⟩
-
-/-- OptionT-wrapper version of `support_bind_simulateQ_run'_eq`. -/
-@[simp]
-lemma support_bind_simulateQ_run'_eq_mk
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (oa : OracleComp oSpec (Option α))
-    (hInit : NeverFail init)
-    (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
-      Prod.fst <$> support ((QueryImpl.mapQuery impl q).run s)
-        = support ((liftM q : OracleComp oSpec β))) :
-    support (OptionT.mk (do let s ← init; (simulateQ impl oa).run' s) : OptionT ProbComp α) =
-      support (OptionT.mk oa : OptionT (OracleComp oSpec) α) := by
-  ext x
-  simp only [OptionT.mem_support_iff, OptionT.run_mk]
-  simpa using congrArg (fun S => (some x) ∈ S)
-    (support_bind_simulateQ_run'_eq init impl oa hInit hImplSupp)
-
 end SupportPreservation
 
 section SimOracle2Lemmas
 open OracleInterface OracleComp OracleSpec OracleQuery SimOracle
 
-variable {ι : Type} {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
+variable {ι : Type} {oSpec : OracleSpec ι}
   {ι₁ : Type} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
   {ι₂ : Type} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
-
-/-- **Weak Safety Preservation for simOracle2** when `oa` is pure computation
-  (no oracle queries). -/
-@[simp]
-lemma probFailure_simulateQ_simOracle2_eq_zero
-    [[T₁]ₒ.Fintype] [[T₂]ₒ.Fintype] [[T₁]ₒ.Inhabited] [[T₂]ₒ.Inhabited]
-    [IsUniformSpec (oSpec + ([T₁]ₒ + [T₂]ₒ))]
-    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
-    {α : Type w} (oa : OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ)) α)
-    (h_oa : Pr[⊥ | oa] = 0) :
-    Pr[⊥ |  simulateQ (OracleInterface.simOracle2 oSpec t₁ t₂) oa] = 0 := by
-  -- simOracle2 returns QueryImpl spec (OracleComp specₜ), which is Stateless
-  -- We prove this directly by induction, following the pattern of simulateQ_preserves_safety
-  let so := OracleInterface.simOracle2 oSpec t₁ t₂
-  induction oa using OracleComp.inductionOn with
-  | pure x => simp
-  | query_bind t oa ih =>
-    simp only [simulateQ_query_bind, probFailure_bind_eq_zero_iff]
-    constructor
-    · -- The oracle implementation never fails
-      exact probFailure_of_liftM_PMF (OracleInterface.simOracle2 oSpec t₁ t₂ t)
-    · -- For each result in the support, the continuation is safe
-      intro result h_in_supp
-      rw [probFailure_bind_eq_zero_iff] at h_oa
-      have h_result_in_spec : result ∈
-          support (query t : OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ)) _) := by
-        simp only [input_query, OracleComp.support_liftM, cont_query, Set.range_id]
-        exact Set.mem_univ result
-      exact ih result (h_oa.2 result h_result_in_spec)
 
 /--
 **Generic Simulation Reduction**
@@ -1004,7 +614,7 @@ is generic or unknown at the moment.
 -/
 @[simp]
 lemma simulateQ_simOracle2_liftM
-    {ι : Type u} {oSpec : OracleSpec ι} [oSpec.Fintype]
+    {ι : Type u} {oSpec : OracleSpec ι}
     {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
@@ -1017,7 +627,7 @@ lemma simulateQ_simOracle2_liftM
 /-- Unfolds simOracle2 implementation for transcript 1. -/
 @[simp]
 lemma simOracle2_impl_inr_inl
-    {ι : Type u} {oSpec : OracleSpec ι} [oSpec.Fintype]
+    {ι : Type u} {oSpec : OracleSpec ι}
     {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
@@ -1029,7 +639,7 @@ by rfl
 /-- Unfolds simOracle2 implementation for transcript 2. -/
 @[simp]
 lemma simOracle2_impl_inr_inr
-    {ι : Type u} {oSpec : OracleSpec ι} [oSpec.Fintype]
+    {ι : Type u} {oSpec : OracleSpec ι}
     {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)
@@ -1041,7 +651,7 @@ by rfl
 /-- Unfolds simOracle2 implementation for base queries. -/
 @[simp]
 lemma simOracle2_impl_inl
-    {ι : Type u} {oSpec : OracleSpec ι} [oSpec.Fintype]
+    {ι : Type u} {oSpec : OracleSpec ι}
     {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
     (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i)

@@ -92,7 +92,7 @@ theorem pg_Rset_irreducible (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   unfold pg_Rset at hR
   -- `hR` is membership in the `toFinset` of the multiset of normalized factors
   have hR' : R ∈ UniqueFactorizationMonoid.normalizedFactors Q := by
-    simpa using hR
+    simpa [UniqueFactorizationMonoid.mem_primeFactors] using hR
   exact UniqueFactorizationMonoid.irreducible_of_normalized_factor (a := Q) R hR'
 
 noncomputable def pg_candidatePairs
@@ -147,7 +147,7 @@ theorem pg_candidatePairs_snd_natDegree_pos (x₀ : F)
         H ∈
           UniqueFactorizationMonoid.normalizedFactors
             (Trivariate.evalAtX x₀ R) := by
-    simpa [pg_candidatePairs] using hmem
+    simpa [pg_candidatePairs, UniqueFactorizationMonoid.mem_primeFactors] using hmem
   exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable
     (Trivariate.evalAtX x₀ R) (hsep R h'.1) h'.2
 
@@ -436,7 +436,7 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
           H ∈
             UniqueFactorizationMonoid.normalizedFactors (Trivariate.evalAtX x₀ R) :=
       And.intro hRmem hHmem
-    simpa [pg_candidatePairs] using h'
+    simpa [pg_candidatePairs, UniqueFactorizationMonoid.mem_primeFactors] using h'
   -- 5) Package everything.
   refine ⟨R, H, hPairMem, ?_⟩
   -- Discharge the inner `let P := ...` binder using our local `P`.
@@ -508,7 +508,7 @@ theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k �
     Polynomial.natDegree_eq_natDegree (p := s.prod) (q := Q) hdeg_assoc
   have hnatY_assoc : Trivariate.degreeInY s.prod = Trivariate.degreeInY Q := by
     simp [Trivariate.degreeInY, Bivariate.natDegreeY, hnat_assoc]
-  simpa [hnatY_assoc] using hleft_le_prod
+  simpa [hs, ← hnatY_assoc] using hleft_le_prod
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)

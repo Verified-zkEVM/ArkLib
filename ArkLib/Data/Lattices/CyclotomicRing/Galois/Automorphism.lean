@@ -103,8 +103,8 @@ theorem galoisAut_map_one (α i : ℕ) : galoisAut (powTwoCyclotomic (R := R) α
       rw [CompPoly.CPolynomial.coeff_monomial, CompPoly.CPolynomial.coeff_one]
   unfold galoisAut
   rw [Finset.sum_eq_single_of_mem 0 (Finset.mem_range.mpr hpos)
-        (fun k _ hk => by rw [hcoeff, if_neg hk, monomial_eq_zero]),
-      hcoeff, if_pos rfl, Nat.zero_mul, hm]
+        (fun k _ hk => by rw [hcoeff, ite_eq_right hk, monomial_eq_zero]),
+      hcoeff, ite_eq_left rfl, Nat.zero_mul, hm]
   rfl
 
 /-! ## The semantic automorphism via Mathlib `aeval` -/

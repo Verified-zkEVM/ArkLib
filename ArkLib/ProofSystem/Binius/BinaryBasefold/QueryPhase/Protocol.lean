@@ -11,7 +11,6 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
 public import ArkLib.OracleReduction.Completeness
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.Data.Misc.Basic
-public import VCVio.OracleComp.EvalDist
 
 /-!
 # Binary Basefold query-phase protocol
@@ -25,12 +24,6 @@ the `QueryPhase` umbrella re-exports their public API.
 
 open OracleSpec
 
-local instance queryEmptySpecInhabited : OracleSpec.Inhabited []ₒ where
-  inhabitedB j := PEmpty.elim j
-
-noncomputable local instance : IsUniformSpec []ₒ :=
-  IsUniformSpec.ofFintypeInhabited _
-
 
 /- These composed protocol bundles are `def`s whose *inferred* type embeds the inline `Fin` bounds
 proofs written in their bodies, so the module system's default elaboration either delays every `by`
@@ -41,45 +34,29 @@ set_option backward.proofsInPublic true
 
 namespace Binius.BinaryBasefold.QueryPhase
 
-private lemma exists_eq_some_of_mem_support_of_probOutput_none_eq_zero.{u, v}
-    {ι : Type u} {spec : OracleSpec.{u, v} ι} [IsUniformSpec spec] {α : Type v}
+private lemma exists_eq_some_of_mem_support_of_none_not_mem.{u, v}
+    {ι : Type u} {spec : OracleSpec.{u, v} ι} {α : Type v}
     {oa : OracleComp spec (Option α)} {x : Option α}
-    (hx : x ∈ support oa) (hnone : Pr[= none | oa] = 0) :
+    (hx : x ∈ support oa) (hnone : none ∉ support oa) :
     ∃ a, x = some a := by
   cases x with
-  | none => exact False.elim ((probOutput_eq_zero_iff oa none).mp hnone hx)
+  | none => exact False.elim (hnone hx)
   | some a => exact ⟨a, rfl⟩
 
-private lemma probFailure_mk_bind_eq_zero_iff.{u, v}
-    {ι : Type u} {spec : OracleSpec.{u, v} ι} [IsUniformSpec spec]
+private lemma none_not_mem_support_mk_bind_iff.{u, v}
+    {ι : Type u} {spec : OracleSpec.{u, v} ι}
     {α β : Type v} (oa : OracleComp spec α) (f : α → OracleComp spec (Option β)) :
-    Pr[⊥ | OptionT.mk (oa >>= f)] = 0 ↔
-      Pr[⊥ | oa] = 0 ∧ ∀ x ∈ support oa, Pr[⊥ | OptionT.mk (f x)] = 0 := by
-  have h_bind : (OptionT.lift oa >>= fun x => OptionT.mk (f x)) =
-      OptionT.mk (oa >>= f) := by
-    apply OptionT.ext
-    simp [OptionT.run_bind, OptionT.run_lift, OptionT.run_mk,
-      Option.elimM, bind_map_left]
-  rw [← h_bind, probFailure_bind_eq_zero_iff, OptionT.probFailure_lift,
-    OptionT.support_lift]
+    none ∉ support (oa >>= f) ↔
+      ∀ x ∈ support oa, none ∉ support (f x) := by
+  simp
 
-private lemma probOutput_none_eq_zero_of_probFailure_eq_zero
-    {ι : Type} {spec : OracleSpec ι} [IsUniformSpec spec] {α : Type}
-    {oa : OptionT (OracleComp spec) α} (hfail : Pr[⊥ | oa] = 0) :
-    Pr[= none | oa.run] = 0 :=
-  (add_eq_zero.mp ((OptionT.probFailure_eq _).symm.trans hfail)).2
-
-private lemma probFailure_simulateQ_run'_eq_zero
-    {ι σ α : Type} {spec : OracleSpec ι} [IsUniformSpec spec]
+private lemma none_not_mem_support_simulateQ_run'
+    {ι σ α : Type} {spec : OracleSpec ι}
     (impl : QueryImpl spec (StateT σ ProbComp)) (oa : OracleComp spec (Option α))
-    (s : σ) (hfail : Pr[⊥ | OptionT.mk oa] = 0) :
-    Pr[⊥ | OptionT.mk ((simulateQ impl oa).run' s)] = 0 := by
-  have hnone := (probOutput_eq_zero_iff oa none).mp
-    (probOutput_none_eq_zero_of_probFailure_eq_zero hfail)
-  rw [OptionT.probFailure_eq, OptionT.run_mk, probFailure_eq_zero, zero_add,
-    probOutput_eq_zero_iff]
+    (s : σ) (hfail : none ∉ support oa) :
+    none ∉ support ((simulateQ impl oa).run' s) := by
   intro hmem
-  exact hnone (OracleComp.support_simulateQ_run'_subset impl oa s hmem)
+  exact hfail (OracleComp.support_simulateQ_run'_subset impl oa s hmem)
 
 /-!
 ## Query Phase (Final Query Round)

@@ -163,7 +163,7 @@ always succeeds (with probability 1) and produces valid outputs.
 open Classical in
 omit [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 set_option backward.isDefEq.respectTransparency false in
-theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ) :
+theorem foldOracleReduction_perfectCompleteness (i : Fin ℓ) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecFold (L := L))
       (relIn := strictRoundRelation 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -176,24 +176,15 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
       (impl := impl) := by
   classical
   -- Step 1: Unroll the 2-message reduction to convert from probability to logic
-  let : OracleSpec.Inhabited emptySpec.{0, 0} := { inhabitedB := fun i => PEmpty.elim i }
-  let : OracleSpec.Fintype [(pSpecFold (L := L)).Challenge]ₒ :=
-    { fintypeB := fun j => by
-        change Fintype ((pSpecFold (L := L)).Challenge j.1)
-        exact Fintype.ofFinite _ }
-  let : OracleSpec.Inhabited [(pSpecFold (L := L)).Challenge]ₒ :=
-    { inhabitedB := fun j => by
-        change Inhabited ((pSpecFold (L := L)).Challenge j.1)
-        exact Classical.inhabited_of_nonempty inferInstance }
   -- **NOTE**: this requires `ProtocolSpec.challengeOracleInterface` to avoid conflict
   rw [OracleReduction.unroll_2_message_reduction_perfectCompleteness (oSpec := []ₒ)
     (pSpec := pSpecFold (L := L)) (init := init) (impl := impl)
-    (hInit := hInit) (hDir0 := by rfl) (hDir1 := by rfl)
+    (hDir0 := by rfl) (hDir1 := by rfl)
     (hImplSupp := by simp only [Set.fmap_eq_image,
       IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
   -- The support argument is uniform in the initial simulation state.
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro output h_output
   dsimp only [foldOracleReduction, foldOracleProver, foldOracleVerifier,
     OracleVerifier.toVerifier] at h_output
@@ -232,7 +223,7 @@ theorem foldOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fi
     FullTranscript.challenges] at h_output
   simp only [guard_eq, Prod.mk.eta, ↓existsAndEq, and_true] at h_output
   dsimp only [OracleInterface.answer] at h_answer
-  simp only [h_answer, h_check, if_pos] at h_output
+  simp only [h_answer, h_check, ite_eq_left] at h_output
   erw [OptionT.simulateQ_pure] at h_output
   simp only [OptionT.pure, OptionT.mk,
     support_pure, Set.mem_singleton_iff, exists_eq_left, Option.map_some] at h_output

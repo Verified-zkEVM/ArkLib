@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
@@ -33,7 +34,7 @@ open Code CoreDefinitions ProximityGap
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 omit [DecidableEq ι] in
 /-- A Reed--Solomon CA error below `1 / (2 * n)` at field radius `δ + 2 / n` bounds
@@ -158,8 +159,8 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     apply Finset.sum_congr rfl
     intro a ha
     by_cases heq : w H' a = w H a
-    · rw [if_pos heq, if_pos heq.symm]
-    · rw [if_neg heq, if_neg (Ne.symm heq)]
+    · rw [ite_eq_left heq, ite_eq_left heq.symm]
+    · rw [ite_eq_right heq, ite_eq_right (Ne.symm heq)]
   have hrow (H) (hH : H ∈ L0) :
       ∑ H' ∈ L0, Code.agree (w H) (w H') ≤ q + q * k := by
     rw [← Finset.sum_erase_add L0 (fun H' => Code.agree (w H) (w H')) hH]
@@ -462,24 +463,17 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     rw [mul_comm]
     exact_mod_cast hspread'
   have hlowerprob :
-      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤
-        ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) := by
-    rw [ENNReal.ofReal_eq_coe_nnreal (by positivity)]
-    exact_mod_cast hratioR
+      ENNReal.ofReal (1 / (2 * Fintype.card ι : ℝ)) ≤ Pr{let z ← $ᵗ F}[Pevent z] := by
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
+    exact ENNReal.ofReal_le_ofReal hratioR
   have hratio_le :
-      ((((Finset.univ.filter Pevent).card : NNReal) /
-          (Fintype.card F : NNReal) : NNReal) : ENNReal) ≤
+      Pr{let z ← $ᵗ F}[Pevent z] ≤
         epsCa (F := F) (A := F)
           (ReedSolomon.code domain k : Set (ι → F))
           ((δ + 2 / Fintype.card ι).toNNReal) δ_int := by
-    have hqne : (Fintype.card F : NNReal) ≠ 0 := by
-      exact_mod_cast (Fintype.card_pos (α := F)).ne'
-    rw [ENNReal.coe_div hqne]
-    rw [← Probability.prob_uniform_eq_card_filter_div_card Pevent]
     dsimp only [Pevent]
     unfold epsCa
-    exact le_iSup_of_le u (by rw [if_neg hnotjoint])
+    exact le_iSup_of_le u (by rw [ite_eq_right hnotjoint])
   exact (not_lt_of_ge (hlowerprob.trans hratio_le)) _hε_ca
 
 end CAImpliesList

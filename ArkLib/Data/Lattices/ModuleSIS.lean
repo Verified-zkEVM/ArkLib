@@ -69,7 +69,7 @@ def experiment (problem : Problem Sample Solution) (adv : Adversary problem) : P
 /-- Search advantage for a SIS-style problem. -/
 noncomputable def advantage (problem : Problem Sample Solution) (adv : Adversary problem) :
     ℝ≥0∞ :=
-  Pr[= true | experiment problem adv]
+  𝒟[experiment problem adv] {true}
 
 end SIS
 

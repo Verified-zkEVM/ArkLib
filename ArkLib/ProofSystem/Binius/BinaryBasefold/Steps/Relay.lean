@@ -13,9 +13,6 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
 
 @[expose] public section
 
-local instance relayEmptySpecInhabited : OracleSpec.Inhabited []ₒ where
-  inhabitedB j := PEmpty.elim j
-
 
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
@@ -151,7 +148,7 @@ lemma strictRoundRelation_relay_preserved (i : Fin ℓ)
       exact h_relIn.2.2 ⟨j, by omega⟩
 
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
-theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ)
+theorem relayOracleReduction_perfectCompleteness (i : Fin ℓ)
     (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecRelay)
@@ -166,16 +163,12 @@ theorem relayOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : F
   -- must use `ProtocolSpec.challengeOracleInterface`
   let : (j : pSpecRelay.ChallengeIdx) → OracleInterface (pSpecRelay.Challenge j) :=
     ProtocolSpec.challengeOracleInterface
-  let : OracleSpec.Fintype [pSpecRelay.Challenge]ₒ :=
-    { fintypeB := fun j => j.1.1.elim0 }
-  let : OracleSpec.Inhabited [pSpecRelay.Challenge]ₒ :=
-    { inhabitedB := fun j => j.1.1.elim0 }
   rw [OracleReduction.unroll_0_message_reduction_perfectCompleteness (oSpec := []ₒ)
-    (pSpec := pSpecRelay) (init := init) (impl := impl) (hInit := hInit)
+    (pSpec := pSpecRelay) (init := init) (impl := impl)
     (hImplSupp := by simp only [Set.fmap_eq_image,
       IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro output h_output
   dsimp only [relayOracleReduction, relayOracleProver, relayOracleVerifier,
     OracleVerifier.toVerifier] at h_output
@@ -316,7 +309,8 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     rcases stmtOStmtIn with ⟨stmtIn, oStmtIn⟩
     -- h_relOut: ∃ stmtOut oStmtOut, verifier outputs (stmtOut, oStmtOut) with prob > 0
     --   and ((stmtOut, oStmtOut), witOut) ∈ foldStepRelOut
-    simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0
+    simp only [StateT.run'_eq, gt_iff_lt, OptionT.prEvent_mk_pos_iff, Prod.exists]
+      at probEvent_relOut_gt_0
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
@@ -328,16 +322,7 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
                   (OracleVerifier.toVerifier (pSpec := pSpecRelay)
                     (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                       i hNCR)))).run s) := by
-      exact (OptionT.mem_support_iff
-        (mx := OptionT.mk (do
-          let s ← init
-          Prod.fst <$>
-            (simulateQ impl
-              (Verifier.run (stmtIn, oStmtIn) tr
-                (OracleVerifier.toVerifier (pSpec := pSpecRelay)
-                  (relayOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                    i hNCR)))).run s))
-        (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
+      exact h_output_mem_V_run_support
     simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
     rcases h_output_mem_V_run_support' with ⟨s, hs_init, h_output_mem_V_run_support⟩
     have h_output_mem_V_run_support :=

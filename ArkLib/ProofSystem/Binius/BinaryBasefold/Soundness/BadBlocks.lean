@@ -256,7 +256,7 @@ open Classical in
 lemma prob_uniform_suffix_mem
     (destIdx : Fin r) (h_destIdx_le : destIdx ≤ ℓ)
     (D : Finset (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)) :
-    Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    Pr{ let v ←$ᵗ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
       extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∈ D
     ] = (D.card : ENNReal) /
@@ -271,7 +271,7 @@ lemma prob_uniform_suffix_mem
     extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (destIdx := destIdx) (h_destIdx_le := h_destIdx_le)
   -- Express probability via cardinalities
-  rw [prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   -- Define the preimage set
   let preimage : Finset S0 := Finset.univ.filter (fun v => suffix v ∈ D)
   -- Each fiber over y has size 2^steps

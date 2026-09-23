@@ -465,14 +465,14 @@ private theorem powers_compatible_tuple_card_lower
               ((powers_tuple_intersection (k + 2) T xs).card : ℝ) ≤
                 (Fintype.card ι : ℝ) := by exact_mod_cast hcard
           have hsub : 0 ≤ ((Fintype.card ι - D : ℕ) : ℝ) := by positivity
-          simp only [if_pos hgood]
+          simp only [ite_eq_left hgood]
           linarith
         · have hnot : ¬ (powers_tuple_intersection (k + 2) T xs).card >
               Fintype.card ι - D := by
             simpa only [Good, Finset.mem_filter, Finset.mem_univ, true_and] using hgood
           have hcard : (powers_tuple_intersection (k + 2) T xs).card ≤
               Fintype.card ι - D := Nat.le_of_not_lt hnot
-          simp only [if_neg hgood, add_zero]
+          simp only [ite_eq_right hgood, add_zero]
           exact_mod_cast hcard
       _ = (Fintype.card S : ℝ) ^ (k + 2) *
             ((Fintype.card ι - D : ℕ) : ℝ) +
@@ -1096,7 +1096,7 @@ private theorem univariate_powers_is_mds_generator
 radius. The maximum on the right combines the two nontrivial branches of the source bound. -/
 theorem linear_mcaError_powers_le
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (δ_min η δ : ℝ≥0)
     (_hk : 1 ≤ k)
@@ -1129,9 +1129,7 @@ theorem linear_mcaError_powers_le
     _hk _hcard _h_δ_min _hη _hη_lt_δ_min
   change (Nat.card {x : F // P x} : ℝ) ≤ _ at hcard
   have hprob :
-      (do
-        let x ← PMF.uniformOfFintype F
-        pure (P x)) True ≤
+      Pr{let x ←$ᵗ F}[P x] ≤
         ENNReal.ofReal
           (((((Fintype.card ι : ℝ) *
                 (1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1))) /
@@ -1143,7 +1141,7 @@ theorem linear_mcaError_powers_le
                      (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))))
                 (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ))) /
             (Fintype.card F : ℝ)) := by
-    rw [Probability.prob_uniform_eq_ofReal]
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
     apply ENNReal.ofReal_le_ofReal
     have hcount : ((Finset.univ.filter P).card : ℝ) =
         (Nat.card {x : F // P x} : ℝ) := by
@@ -1151,9 +1149,7 @@ theorem linear_mcaError_powers_le
       rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
     rw [hcount]
     exact div_le_div_of_nonneg_right hcard (by positivity)
-  change (do
-    let x ← PMF.uniformOfFintype F
-    pure (P x)) True ≤ _
+  change Pr{let x ←$ᵗ F}[P x] ≤ _
   refine le_trans hprob ?_
   apply ENNReal.ofReal_le_ofReal
   apply le_of_eq

@@ -3,6 +3,22 @@
 This page is the recommended agent playbook for commands and validation.
 Use it as the main guide for routine local checks.
 
+## Dependency versions
+
+The Lean 4.34 upgrade uses Lean, Mathlib, cslib, and doc-gen4 `v4.34.0`.
+`lakefile.toml` pins CompPoly to its `v4.34.0` release and VCVio to an exact commit; `lake-manifest.json` records
+the complete resolved dependency set, including the PolyFun revision selected by VCVio.
+Keep that PolyFun pin when updating this stack: a newer PolyFun revision must also be
+validated against VCVio before ArkLib can adopt it.
+The VCVio pin includes the native probability prerequisites and
+[the supporting bound lemmas](https://github.com/Verified-zkEVM/VCVio/pull/769); it is an exact
+reviewable revision rather than a moving branch. ArkLib uses native measures throughout its
+probability statements; the [migration ledger](../design/native-measure-ledger.md) records the
+conversion and upstream API map.
+Validate the combined dependency set with `./scripts/validate.sh --axioms` before merging.
+The September 4 baseline in `docs/design/00-current-status.md` records the original typed
+interaction implementation train, not the current package versions.
+
 ## Recommended Validation
 
 For a convenient routine check, run:
@@ -17,6 +33,11 @@ On a cold clone, fetch precompiled dependencies first:
 lake exe cache get
 ./scripts/validate.sh
 ```
+
+Validation also runs the native-probability retirement fixtures and
+`lake exe retiredsweep --require-empty`. This gate rejects direct retired API references in
+ArkLib declaration types and bodies, without a baseline exception. See
+[probability conventions](probability-conventions.md) when porting an older branch.
 
 ## Validation By Change Type
 

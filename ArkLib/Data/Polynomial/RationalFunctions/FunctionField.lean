@@ -192,7 +192,7 @@ lemma monicize_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
     (monicize H).Monic := by
   classical
   have hdeg : H.natDegree ≠ 0 := Nat.ne_of_gt hH
-  rw [monicize, if_neg hdeg]
+  rw [monicize, ite_eq_right hdeg]
   exact Polynomial.monic_X_pow_add <| (Polynomial.degree_sum_le _ _).trans_lt <| by
     exact (Finset.sup_lt_iff (WithBot.bot_lt_coe H.natDegree)).2 <| by
       intro i hi

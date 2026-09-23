@@ -68,11 +68,11 @@ theorem linsolve_some {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F} {x : Fin 
     (h : linsolve A b = some x) : A.mulVec x = b := by
   unfold linsolve at h
   by_cases hex : ∃ x, A.mulVec x = b
-  · rw [dif_pos hex] at h
+  · rw [dite_eq_left hex] at h
     injection h with h'
     rw [← h']
     exact Classical.choose_spec hex
-  · rw [dif_neg hex] at h
+  · rw [dite_eq_right hex] at h
     cases h
 
 /--
@@ -90,6 +90,6 @@ theorem linsolve_none {A : Matrix (Fin n) (Fin m) F} {b : Fin n → F}
     (h : linsolve A b = none) : ¬∃ x, A.mulVec x = b := by
   unfold linsolve at h
   by_cases hex : ∃ x, A.mulVec x = b
-  · rw [dif_pos hex] at h
+  · rw [dite_eq_left hex] at h
     cases h
   · exact hex

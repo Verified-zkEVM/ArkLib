@@ -173,7 +173,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
     of the fold-round and the transfer-round reductions. -/
 omit [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 theorem foldRelayOracleReduction_perfectCompleteness
-    (hInit : NeverFail init) (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
+    (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i)
     [(i : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge i)] :
   OracleReduction.perfectCompleteness
     (pSpec := pSpecFoldRelay (L:=L))
@@ -191,12 +191,12 @@ theorem foldRelayOracleReduction_perfectCompleteness
     (fun _ => Or.inl inferInstance)
   · -- Perfect completeness of foldOracleReduction
     exact foldOracleReduction_perfectCompleteness (L := L) 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) hInit i
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) i
   · intro s
     -- Perfect completeness of relayOracleReduction
     exact relayOracleReduction_perfectCompleteness (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp)
-      (init := pure s) (impl := impl) (by infer_instance) i hNCR
+      (init := pure s) (impl := impl) i hNCR
 
 /-! Flat form of RBR knowledge error for fold+relay: case split on challenge index
     instead of Sum.elim. Equal to the append-composed error (see foldRelayKnowledgeError_eq). -/
@@ -293,7 +293,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 /-! Perfect completeness for Fold+Commitment block by append composition. -/
 omit [DecidableEq 𝔽q] [CharP L 2] h_β₀_eq_1 in
 theorem foldCommitOracleReduction_perfectCompleteness
-    (hInit : NeverFail init) (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i)
+    (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i)
     [(i : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge i)]
     [(j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
       Inhabited ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge j)] :
@@ -313,12 +313,12 @@ theorem foldCommitOracleReduction_perfectCompleteness
     (fun _ => Or.inl inferInstance)
   · -- Perfect completeness of foldOracleReduction
     exact foldOracleReduction_perfectCompleteness (L := L) 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) hInit i
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp) (init := init) (impl := impl) i
   · intro s
     -- Perfect completeness of commitOracleReduction
     exact commitOracleReduction_perfectCompleteness (L := L) 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (mp := mp)
-      (init := pure s) (impl := impl) (by infer_instance) i hCR
+      (init := pure s) (impl := impl) i hCR
 
 /-! Flat form of RBR knowledge error for fold+commit: case split on challenge index
     instead of Sum.elim. Equal to the append-composed error (see foldCommitKnowledgeError_eq). -/

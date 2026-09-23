@@ -15,6 +15,7 @@ public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+public import Mathlib.MeasureTheory.Integral.Lebesgue.Basic
 
 /-!
 # Foundations for affine-space proximity bounds
@@ -29,7 +30,7 @@ proximity of every element in the affine space. Bucketing and the core result re
 
 namespace ProximityGap
 
-open NNReal Finset Function ProbabilityTheory ReedSolomon Code
+open NNReal Finset Function ProbabilityTheory ReedSolomon Code MeasureTheory
 open scoped BigOperators LinearCode ProbabilityTheory
 open Probability
 
@@ -39,27 +40,7 @@ open scoped ReedSolomon
 
 variable {l : ℕ} [NeZero l]
 variable {ι : Type} [Fintype ι] [Nonempty ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
-
-theorem exists_of_weighted_avg_gt {α : Type} (p : PMF α) (f : α → ENNReal) (ε : ENNReal) :
-    (∑' a, p a * f a) > ε → ∃ a, f a > ε := by
-  intro hgt
-  by_contra hno
-  have hle : ∀ a, f a ≤ ε := by
-    intro a
-    have : ¬ f a > ε := by
-      intro ha
-      exact hno ⟨a, ha⟩
-    exact le_of_not_gt this
-  have hmul : ∀ a, p a * f a ≤ p a * ε := by
-    intro a
-    exact mul_le_mul_of_nonneg_left (hle a) (zero_le)
-  have htsum : (∑' a, p a * f a) ≤ ∑' a, p a * ε := by
-    exact ENNReal.tsum_le_tsum hmul
-  have htsum' : (∑' a, p a * f a) ≤ ε := by
-    refine le_trans htsum ?_
-    simp [ENNReal.tsum_mul_right, p.tsum_coe]
-  exact (not_lt_of_ge htsum') hgt
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 theorem jointAgreement_implies_second_proximity {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F] {C : Set (ι → F)} {δ : ℝ≥0} {W : Fin 2 → ι → F} :
@@ -149,8 +130,8 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
     (hshift : ∀ a ∈ (U : Finset (ι → F)), ∀ z : F, a + z • dir ∈ (U : Finset (ι → F)))
     {V : Set (ι → F)} {δ : ℝ≥0} :
     ∀ z : F,
-      Pr_{let a ←$ᵖ U}[δᵣ(a.1 + z • dir, V) ≤ δ] =
-        Pr_{let a ←$ᵖ U}[δᵣ(a.1, V) ≤ δ] := by
+      Pr{let a ←$ᵗ U}[δᵣ(a.1 + z • dir, V) ≤ δ] =
+        Pr{let a ←$ᵗ U}[δᵣ(a.1, V) ≤ δ] := by
   intro z
   classical
   let shiftEquiv : (U : Type) ≃ (U : Type) :=
@@ -167,85 +148,80 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
         ext i
         simp [add_comm] }
   simpa [shiftEquiv] using
-    (ProbabilityTheory.Pr_uniform_equiv (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
-      (P := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
+    (SampleableType.prEvent_uniformSample_equiv
+      (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
+      (p := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
 
 theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
     (dir : ι → F)
     (hshift : ∀ a ∈ (U : Finset (ι → F)), ∀ z : F, a + z • dir ∈ (U : Finset (ι → F)))
     {V : Set (ι → F)} {δ ε : ℝ≥0} :
-    Pr_{let u ←$ᵖ U}[δᵣ(u.1, V) ≤ δ] > ε →
-      ∃ a : U, Pr_{let z ←$ᵖ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε := by
+    Pr{let u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε →
+      ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε  := by
   intro hprob
   classical
+  let : MeasurableSpace U := ⊤
+  let : MeasurableSpace F := ⊤
   let good : (ι → F) → Prop := fun w => δᵣ(w, V) ≤ δ
-  let lineProb (a : U) : ENNReal := Pr_{let z ←$ᵖ F}[good (a.1 + z • dir)]
-  let P2 : ENNReal := Pr_{let a ←$ᵖ U; let z ←$ᵖ F}[good (a.1 + z • dir)]
-  -- Expand the joint probability as an average over basepoints.
-  have hP2 : P2 = ∑' a : U, ($ᵖ U) a * lineProb a := by
-    simpa [P2, lineProb] using
-      (prob_tsum_form_split_first (D := ($ᵖ U))
-        (D_rest := fun a : U => (do
-          let z ← $ᵖ F
-          return good (a.1 + z • dir))))
-  -- Swap the order of sampling the basepoint and line parameter.
+  let lineProb (a : U) : ENNReal := Pr{let z ← $ᵗ F}[good (a.1 + z • dir)]
+  let P2 : ENNReal := Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)]
+  have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
+    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
+      ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
+    simpa only [id_eq, bind_pure] using
+      (prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
+        (fun a : U => do
+          let z ← $ᵗ F
+          return good (a.1 + z • dir)) id)
   have hswap :
-      (do
-          let a ← $ᵖ U
-          let z ← $ᵖ F
-          return good (a.1 + z • dir) : PMF Prop) =
-        (do
-          let z ← $ᵖ F
-          let a ← $ᵖ U
-          return good (a.1 + z • dir) : PMF Prop) := by
-    simpa [Bind.bind, PMF.bind] using
-      (PMF.bind_comm ($ᵖ U) ($ᵖ F) (fun a z => (pure (good (a.1 + z • dir)) : PMF Prop)))
-  -- Turn the swapped bind identity into an equality of probabilities.
-  have hP2_swap : P2 = Pr_{let z ←$ᵖ F; let a ←$ᵖ U}[good (a.1 + z • dir)] := by
-    have hswap' := congrArg (fun p : PMF Prop => (p True : ENNReal)) hswap
-    simpa [P2] using hswap'
-  -- Reduce the shifted average back to the original uniform probability.
-  have hP2_eq : P2 = Pr_{let u ←$ᵖ U}[good u.1] := by
-    rw [hP2_swap]
+      P2 = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] := by
+    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] = _
+    calc
+      Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
+          Pr{let za ← $ᵗ (F × U)}[good (za.2.1 + za.1 • dir)] := by
+        exact SampleableType.prEvent_uniformSample_pair_of_bijective
+          (g := fun (a : U) (z : F) => (z, a)) (Equiv.prodComm U F).bijective
+          (fun za : F × U => good (za.2.1 + za.1 • dir))
+      _ = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] :=
+        SampleableType.prEvent_uniformSample_prod
+          (fun za : F × U => good (za.2.1 + za.1 • dir))
+  have hP2_eq : P2 = Pr{let u ← $ᵗ U}[good u.1] := by
+    rw [hswap]
     have hsplit :
-        Pr_{let z ←$ᵖ F; let a ←$ᵖ U}[good (a.1 + z • dir)] =
-          ∑' z : F, ($ᵖ F) z * Pr_{let a ←$ᵖ U}[good (a.1 + z • dir)] := by
-      simpa using
-        (prob_tsum_form_split_first (D := ($ᵖ F))
-          (D_rest := fun z : F => (do
-            let a ← $ᵖ U
-            return good (a.1 + z • dir))))
+        Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
+          ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
+      simpa only [id_eq, bind_pure] using
+        (prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
+          (fun z : F => do
+            let a ← $ᵗ U
+            return good (a.1 + z • dir)) id)
     rw [hsplit]
-    have hconst :
-        ∀ z : F, Pr_{let a ←$ᵖ U}[good (a.1 + z • dir)] = Pr_{let a ←$ᵖ U}[good a.1] := by
+    have hconst : ∀ z : F,
+        Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{let a ← $ᵗ U}[good a.1] := by
       intro z
       simpa [good] using
         (prob_uniform_shift_invariant (U := U) (dir := dir) (hshift := hshift)
           (V := V) (δ := δ) (z := z))
-    have :
-        (∑' z : F, ($ᵖ F) z * Pr_{let a ←$ᵖ U}[good (a.1 + z • dir)]) =
-          ∑' z : F, ($ᵖ F) z * Pr_{let a ←$ᵖ U}[good a.1] := by
-      refine tsum_congr ?_
-      intro z
-      congr 1
-      exact hconst z
-    rw [this]
-    simp only [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
-  -- Rewrite the original hypothesis as a lower bound on `P2`.
+    simp_rw [hconst]
+    rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
   have hP2_gt : P2 > ε := by
     simpa [hP2_eq] using hprob
-  -- Rewrite that lower bound using the weighted-sum formula for `P2`.
-  have hsum_gt : (∑' a : U, ($ᵖ U) a * lineProb a) > ε := by
-    simpa [hP2] using hP2_gt
-  -- Choose a basepoint whose line probability exceeds the threshold.
-  rcases exists_of_weighted_avg_gt ($ᵖ U) lineProb (ε : ENNReal) hsum_gt with ⟨a, ha⟩
-  refine ⟨a, ?_⟩
-  simpa [lineProb] using ha
+  have h_integral_gt : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) > ε := by
+    simpa [hP2_integral] using hP2_gt
+  by_contra hno
+  push Not at hno
+  have h_integral_le : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ε := by
+    calc
+      (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ∫⁻ _a : U, ε ∂𝒟[$ᵗ U] :=
+        lintegral_mono hno
+      _ = ε := by
+        rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
+  exact (not_lt_of_ge h_integral_le) h_integral_gt
 
 theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     {U'_sub : Submodule F (ι → F)} {u0 dir : ι → F} (hdir : dir ∈ U'_sub)
     {V : Set (ι → F)} {δ ε : ℝ≥0} :
     letI U' : Finset (ι → F) := (U'_sub : Set (ι → F)).toFinset
@@ -259,8 +235,8 @@ theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty
       change (0 : ι → F) ∈ ((U'_sub : Set (ι → F)).toFinset)
       rw [Set.mem_toFinset]
       exact U'_sub.zero_mem
-    Pr_{let u ←$ᵖ U}[δᵣ(u.1, V) ≤ δ] > ε →
-      ∃ a : U, Pr_{let z ←$ᵖ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε := by
+    Pr{let u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε →
+      ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε := by
   classical
   let U' : Finset (ι → F) := (U'_sub : Set (ι → F)).toFinset
   let U : Finset (ι → F) := U'.image (fun x => u0 + x)
@@ -309,7 +285,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       exact U'_submodule.zero_mem
     letI ε : ℝ≥0 := ProximityGap.errorBound δ (k + 1) domain
     letI V := ReedSolomon.code domain (k + 1)
-    Pr_{let u ←$ᵖ U}[δᵣ(u.1, V) ≤ δ] > ε → ∀ u' ∈ U', δᵣ(u', V) ≤ δ := by
+    Pr{let u ←$ᵗ U}[δᵣ(u.1, V) ≤ δ] > ε → ∀ u' ∈ U', δᵣ(u', V) ≤ δ := by
   classical
   intro hprob u' hu'
   have hu'_sub :
@@ -339,7 +315,9 @@ theorem average_proximity_implies_proximity_of_linear_subspace
       jointAgreement (C := ReedSolomon.code domain (k + 1)) (δ := δ)
         (W := Code.finMapTwoWords a.1 u') := by
     apply hCA
-    simpa [Code.finMapTwoWords] using hline
+    change Pr{let z ← $ᵗ F}[
+      δᵣ(a.1 + z • u', ReedSolomon.code domain (k + 1)) ≤ δ] > _
+    exact hline
   have :
       δᵣ((Code.finMapTwoWords a.1 u') 1, ReedSolomon.code domain (k + 1)) ≤ δ :=
     jointAgreement_implies_second_proximity
@@ -352,12 +330,12 @@ end BCIKS20ProximityGapSection6
 section AffineFinsetBridge
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /- The two bridge declarations below are shared with the bucketing module. -/
 namespace AffineSpacesInternal
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 /-- The AffineSubspace and Finset.image representations of an affine subspace
 have the same membership. -/
 theorem affine_mem_iff_finset_mem [Finite F] {k : ℕ}
@@ -386,7 +364,7 @@ private noncomputable def affineFinsetEquiv {k : ℕ}
     (Affine.affineSubspaceAtOrigin (F := F) u0 dirs) ≃ (affineFinset u0 dirs) :=
   Equiv.subtypeEquiv (Equiv.refl _) (affine_mem_iff_finset_mem u0 dirs)
 
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [SampleableType F] in
 theorem affine_finset_card_eq {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F) :
     (affineFinset u0 dirs).card =
@@ -405,12 +383,12 @@ kernel of the linear part), so pushforward of uniform gives uniform. -/
 theorem prob_coeff_eq_prob_affine {k : ℕ} [NeZero k]
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop) :
-    Pr_{let r ← $ᵖ (Fin k → F)}[P (u0 + ∑ i : Fin k, r i • dirs i)] =
-    Pr_{let y ← $ᵖ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] := by
+    Pr{let r ← $ᵗ (Fin k → F)}[P (u0 + ∑ i : Fin k, r i • dirs i)] =
+    Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] := by
   classical
-  -- Reduce both sides to cardinality fractions via prob_uniform_eq_card_filter_div_card.
-  rw [prob_uniform_eq_card_filter_div_card (fun r : Fin k → F => P (u0 + ∑ i, r i • dirs i))]
-  rw [prob_uniform_eq_card_filter_div_card
+  -- Reduce both sides to cardinality fractions via SampleableType.prEvent_uniformSample.
+  rw [SampleableType.prEvent_uniformSample (fun r : Fin k → F => P (u0 + ∑ i, r i • dirs i))]
+  rw [SampleableType.prEvent_uniformSample
     (fun y : ↥(Affine.affineSubspaceAtOrigin (F := F) u0 dirs) => P ↑y)]
   -- Define the map g : (Fin k → F) → affineSubspaceAtOrigin
   set A := Affine.affineSubspaceAtOrigin (F := F) u0 dirs with hA_def
@@ -505,17 +483,17 @@ theorem prob_coeff_eq_prob_affine {k : ℕ} [NeZero k]
   push_cast
   exact ENNReal.mul_div_mul_left _ _ (by exact_mod_cast hK_pos.ne') (ENNReal.natCast_ne_top K)
 
-omit [Nonempty ι] in
+omit [Nonempty ι] [SampleableType F] in
 theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (P : (ι → F) → Prop)
     [Nonempty (affineFinset u0 dirs)] :
-    Pr_{let y ← $ᵖ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] =
-    Pr_{let y ← $ᵖ (affineFinset u0 dirs)}[P ↑y] := by
+    Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs)}[P ↑y] =
+    Pr{let y ← $ᵗ (affineFinset u0 dirs)}[P ↑y] := by
   classical
-  rw [prob_uniform_eq_card_filter_div_card
+  rw [SampleableType.prEvent_uniformSample
     (fun y : ↥(Affine.affineSubspaceAtOrigin (F := F) u0 dirs) => P ↑y)]
-  rw [prob_uniform_eq_card_filter_div_card
+  rw [SampleableType.prEvent_uniformSample
     (fun y : ↥(affineFinset u0 dirs) => P ↑y)]
   have hcard : Fintype.card ↥(Affine.affineSubspaceAtOrigin (F := F) u0 dirs) =
       Fintype.card ↥(affineFinset u0 dirs) :=
@@ -529,7 +507,7 @@ theorem affine_prob_eq_finset_prob {k : ℕ} [NeZero k]
     simp [affineFinsetEquiv, Equiv.subtypeEquiv]
   simp only [hfilt, hcard]
 
-omit [Nonempty ι] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] [SampleableType F] in
 theorem proper_affine_sub_card_le {k : ℕ}
     (u0 : ι → F) (dirs : Fin k → ι → F)
     (S : Finset (ι → F)) (hS : ↑S ⊆ (Affine.affineSubspaceAtOrigin (F := F) u0 dirs : Set (ι → F)))
@@ -553,9 +531,9 @@ open AffineSpacesInternal
 section ScalingInvariance
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 /-- Hamming distance is invariant under scaling by a unit:
 `hammingDist (z • u) (z • v) = hammingDist u v` for `z ≠ 0`. -/
 theorem hammingDist_smul_eq {z : F} (hz : z ≠ 0) (u v : ι → F) :
@@ -566,14 +544,14 @@ theorem hammingDist_smul_eq {z : F} (hz : z ≠ 0) (u v : ι → F) :
   simp only [Pi.smul_apply, Finset.mem_filter, Finset.mem_univ, true_and, ne_eq]
   exact not_congr (IsUnit.smul_left_cancel (IsUnit.mk0 z hz))
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 /-- Relative Hamming distance is invariant under scaling by a unit. -/
 theorem relHammingDist_smul_eq {z : F} (hz : z ≠ 0) (u v : ι → F) :
     Code.relHammingDist (z • u) (z • v) = Code.relHammingDist u v := by
   unfold Code.relHammingDist
   rw [hammingDist_smul_eq hz]
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 /-- Relative distance to a submodule is invariant under scaling by a unit:
 `δᵣ(z • u, V) = δᵣ(u, V)` for `z ≠ 0` and `V` a submodule.
 Key step in BCIKS20 §6.3 (Step 1c). -/
@@ -596,9 +574,9 @@ end ScalingInvariance
 section AllClose
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 /-- When `u₀ ∉ U'`, `span(range u) = span {u₀} ⊔ U'`. -/
 private lemma spanU_eq_sup {k : ℕ} (u : Fin (k + 1) → ι → F)
     (U' : Submodule F (ι → F))
@@ -614,7 +592,7 @@ private lemma spanU_eq_sup {k : ℕ} (u : Fin (k + 1) → ι → F)
   · exact sup_le (Submodule.span_le.mpr (Set.singleton_subset_iff.mpr
       (Submodule.subset_span ⟨0, rfl⟩))) hU'_le
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] in
 /-- Every element of `span(range u)` decomposes as `c • u₀ + d` with `d ∈ U'`. -/
 private lemma mem_spanU_decomp {k : ℕ} (u : Fin (k + 1) → ι → F)
     (U' : Submodule F (ι → F))
@@ -627,7 +605,8 @@ private lemma mem_spanU_decomp {k : ℕ} (u : Fin (k + 1) → ι → F)
   obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp ha
   exact ⟨c, b, hb, rfl⟩
 
-omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F]
+    [DecidableEq F] in
 /-- If `u₀ ∉ U'` and `a • u₀ + d₁ = b • u₀ + d₂` with `d₁ d₂ ∈ U'`, then `a = b`. -/
 private lemma coset_scalar_eq {u₀ : ι → F} {U' : Submodule F (ι → F)}
     (hu0 : u₀ ∉ U') {a b : F} {d₁ d₂ : ι → F} (hd₁ : d₁ ∈ U') (hd₂ : d₂ ∈ U')
@@ -647,7 +626,7 @@ private lemma coset_scalar_eq {u₀ : ι → F} {U' : Submodule F (ι → F)}
 
 
 /-- Every element of an affine subspace U is δ-close to a RS code V,
-given Pr_{x∈U}[δᵣ(x,V) ≤ δ] > ε (BCIKS20 §6.3, Step 1).
+given Pr{x∈U}[δᵣ(x,V) ≤ δ] > ε (BCIKS20 §6.3, Step 1).
 
 Proof strategy:
 1. Apply Lemma 6.3 to U → all directions in U' are δ-close to V.
@@ -660,8 +639,8 @@ Proof strategy:
 theorem all_affine_elements_close {k : ℕ} [NeZero k]
     (u : Fin (k + 1) → ι → F) {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ 1 - ReedSolomon.sqrtRate deg domain)
-    (hPr : Pr_{
-      let y ← $ᵖ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
+    (hPr : Pr{
+      let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[δᵣ(↑y,
         (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ] >
       ProximityGap.errorBound δ deg domain) :
     ∀ x ∈ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) : Set (ι → F)),
@@ -674,7 +653,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     apply Finset.Nonempty.to_subtype
     exact ⟨u 0, Finset.mem_image.2 ⟨0, by simp [Set.mem_toFinset],
       by simp⟩⟩
-  have hPr_fin : Pr_{let y ← $ᵖ (affineFinset (u 0) (Fin.tail u))}[
+  have hPr_fin : Pr{let y ← $ᵗ (affineFinset (u 0) (Fin.tail u))}[
       δᵣ(↑y, (V : Set (ι → F))) ≤ δ] > ProximityGap.errorBound δ deg domain := by
     rw [← affine_prob_eq_finset_prob (u 0) (Fin.tail u)
       (fun w => δᵣ(w, (V : Set (ι → F))) ≤ δ)]
@@ -691,7 +670,8 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 dir) := by
       apply RS_correlatedAgreement_affineLines hδ
-      simpa [Code.finMapTwoWords] using hline
+      change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
+      exact hline
     exact jointAgreement_implies_second_proximity
       (ι := ι) (F := F) (C := (V : Set (ι → F)))
       (δ := δ) (W := Code.finMapTwoWords a.1 dir) hJA
@@ -708,7 +688,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     have hne : Nonempty spanU_aff := by
       apply Finset.Nonempty.to_subtype
       exact ⟨0, Finset.mem_image.2 ⟨0, Set.mem_toFinset.mpr spanU.zero_mem, by simp⟩⟩
-    have hPr_span : Pr_{let y ← $ᵖ spanU_aff}[
+    have hPr_span : Pr{let y ← $ᵗ spanU_aff}[
         δᵣ(↑y, (V : Set (ι → F))) ≤ δ] >
         ProximityGap.errorBound δ deg domain := by
       by_cases hε_lt : ProximityGap.errorBound δ deg domain < 1
@@ -725,11 +705,9 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             simp only [spanU_aff, Finset.mem_image] at hy
             obtain ⟨x, hx, rfl⟩ := hy; simp only [zero_add]
             exact h_dirs_close x (by rw [← hspan_eq]; exact Set.mem_toFinset.mp hx)
-          calc Pr_{let y ← $ᵖ spanU_aff}[δᵣ(↑y, (V : Set (ι → F))) ≤ δ]
+          calc Pr{let y ← $ᵗ spanU_aff}[δᵣ(↑y, (V : Set (ι → F))) ≤ δ]
               = 1 := by
-                rw [prob_uniform_eq_card_filter_div_card]
-                rw [Finset.filter_true_of_mem (fun y _ => hall y), Finset.card_univ]
-                exact_mod_cast div_self (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)
+                exact (SampleableType.prEvent_uniformSample_eq_one_iff _).2 hall
             _ > _ := by exact_mod_cast hε_lt
         · -- u₀ ∉ U': Pr_spanU > ε via coset counting.
           -- Pr = Pr_U + (1-Pr_U)/|F| > ε, using:
@@ -765,7 +743,8 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
               (Submodule.subset_span ⟨0, rfl⟩) (hU'_le_spanU hd))
           -- Coset counting: Pr_aff ≤ Pr_span via cross-multiply
           apply lt_of_lt_of_le hPr_fin
-          simp only [prob_uniform_eq_card_filter_div_card]
+          simp only [SampleableType.prEvent_uniformSample]
+          simp only [← ENNReal.coe_natCast]
           rw [← ENNReal.coe_div', ← ENNReal.coe_div', ENNReal.coe_le_coe]
           have : Nonempty ↥(affineFinset (u 0) (Fin.tail u)) :=
             Finset.Nonempty.to_subtype ⟨u 0, Finset.mem_image.2
@@ -846,7 +825,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
           obtain ⟨d₂, hd₂, hx₂_eq⟩ := haff_decomp x₂ hx₂_mem
           by_cases hc₁ : c₁ = 0 <;> by_cases hc₂ : c₂ = 0
           · -- c₁ = 0, c₂ = 0
-            simp only [dif_pos hc₁, dif_pos hc₂] at heq
+            simp only [dite_eq_left hc₁, dite_eq_left hc₂] at heq
             have heq' : x₁ - u 0 = x₂ - u 0 :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             have hx_eq : x₁ = x₂ := sub_left_injective heq'
@@ -854,7 +833,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
               (Subtype.ext (Subtype.ext hx_eq))
           · -- c₁ = 0, c₂ ≠ 0
             exfalso; apply hu0_in
-            simp only [dif_pos hc₁, dif_neg hc₂] at heq
+            simp only [dite_eq_left hc₁, dite_eq_right hc₂] at heq
             have heq' : x₁ - u 0 = c₂ • x₂ :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             rw [hx₁_eq, add_sub_cancel_left, hx₂_eq, smul_add] at heq'
@@ -864,7 +843,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             exact U'_sub.smul_mem c₂⁻¹ (U'_sub.sub_mem hd₁ (U'_sub.smul_mem _ hd₂))
           · -- c₁ ≠ 0, c₂ = 0
             exfalso; apply hu0_in
-            simp only [dif_neg hc₁, dif_pos hc₂] at heq
+            simp only [dite_eq_right hc₁, dite_eq_left hc₂] at heq
             have heq' : c₁ • x₁ = x₂ - u 0 :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             rw [hx₂_eq, add_sub_cancel_left, hx₁_eq, smul_add] at heq'
@@ -873,7 +852,7 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
               rw [smul_smul, inv_mul_cancel₀ hc₁, one_smul], hc₁u₀]
             exact U'_sub.smul_mem c₁⁻¹ (U'_sub.sub_mem hd₂ (U'_sub.smul_mem _ hd₁))
           · -- c₁ ≠ 0, c₂ ≠ 0
-            simp only [dif_neg hc₁, dif_neg hc₂] at heq
+            simp only [dite_eq_right hc₁, dite_eq_right hc₂] at heq
             have heq' : c₁ • x₁ = c₂ • x₂ :=
               congrArg Subtype.val (congrArg Subtype.val heq)
             rw [hx₁_eq, hx₂_eq, smul_add, smul_add] at heq'
@@ -886,7 +865,9 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
             have hx_eq : x₁ = x₂ := by rw [hx₁_eq, hx₂_eq, hd_eq]
             exact Prod.ext hc_eq (Subtype.ext (Subtype.ext hx_eq))
       · push Not at hε_lt
-        exact absurd hPr_fin (not_lt.mpr (le_trans (PMF.coe_le_one _ _)
+        exact absurd hPr_fin (not_lt.mpr (le_trans
+          (prEvent_le_one ($ᵗ (affineFinset (u 0) (Fin.tail u)))
+            (fun y => δᵣ(↑y, (V : Set (ι → F))) ≤ δ))
           (by exact_mod_cast hε_lt)))
     intro x hx
     rcases exists_basepoint_with_large_line_prob (U'_sub := spanU) (u0 := 0)
@@ -895,7 +876,8 @@ theorem all_affine_elements_close {k : ℕ} [NeZero k]
     have hJA : Code.jointAgreement (C := (V : Set (ι → F))) (δ := δ)
         (W := Code.finMapTwoWords a.1 x) := by
       apply RS_correlatedAgreement_affineLines hδ
-      simpa [Code.finMapTwoWords] using hline
+      change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
+      exact hline
     exact jointAgreement_implies_second_proximity
       (ι := ι) (F := F) (C := (V : Set (ι → F)))
       (δ := δ) (W := Code.finMapTwoWords a.1 x) hJA

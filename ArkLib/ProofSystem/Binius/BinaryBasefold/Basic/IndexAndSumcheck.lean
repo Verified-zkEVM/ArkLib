@@ -1055,7 +1055,7 @@ lemma fixFirstVariablesOfMQP_full_eval_eq_eval {deg : ℕ} {challenges : Fin (Fi
     have h_cast : (⟨j.val, hj⟩ : Fin (Fin.last ℓ)) = j := by
       apply Fin.ext
       rfl
-    rw [dif_pos hj, h_cast]
+    rw [dite_eq_left hj, h_cast]
   exact h_eval.trans (congrArg (fun f => MvPolynomial.eval f poly) h_fun)
 
 omit [NeZero ℓ] in
@@ -1109,7 +1109,7 @@ lemma projectToMidSumcheckPoly_at_last_eq
   rw [MvPolynomial.eq_C_of_isEmpty
       (projectToMidSumcheckPoly (L := L) (ℓ := ℓ) (t := t) (m := m)
         (i := Fin.last ℓ) (challenges := challenges)).val]
-  rw [← congrFun MvPolynomial.constantCoeff_eq]
+  rw [← MvPolynomial.constantCoeff_eq]
   rw [← MvPolynomial.eval_zero]
   exact congrArg MvPolynomial.C
     (projectToMidSumcheckPoly_at_last_eval (L := L) (ℓ := ℓ) (t := t) (m := m)

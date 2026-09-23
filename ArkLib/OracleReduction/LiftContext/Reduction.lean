@@ -363,7 +363,7 @@ theorem liftContext_completeness
   refine le_trans hR ?_
   simp?
   sorry
-  -- refine probEvent_mono ?_
+  -- Refine by event monotonicity.
   -- intro ⟨innerContextOut, a, b⟩ hSupport ⟨hRelOut, hRelOut'⟩
   -- have : innerContextOut ∈
   --     Prod.fst <$>
@@ -432,7 +432,7 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   have hSound := h WitIn WitOut outerWitIn innerP (lens.proj outerStmtIn) this
   refine le_trans ?_ hSound
   simp [Verifier.liftContext, Verifier.run]
-  -- Need to massage the two `probEvent`s so that they have the same base computation `oa`
+  -- Put the two events over the same base computation `oa`.
   -- Then apply `lensSound.lift_sound`?
   sorry
 
@@ -493,9 +493,9 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
         return ⟨⟨transcript, ⟨default, witLens.proj (outerStmtIn, outerWitOut)⟩⟩, rest⟩ := by
     sorry
   refine le_trans ?_ hR
-  -- Massage the two `probEvent`s so that they have the same base computation `oa`?
+  -- Put the two events over the same base computation `oa`.
   simp [h_innerP_runWithLog]
-  -- apply probEvent_mono ?_
+  -- Apply event monotonicity.
   sorry
 
 /-
@@ -551,12 +551,6 @@ theorem liftContext_rbr_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited I
     (h : V.rbrKnowledgeSoundness init impl innerRelIn innerRelOut rbrKnowledgeError) :
       (V.liftContext stmtLens).rbrKnowledgeSoundness init impl outerRelIn outerRelOut
         rbrKnowledgeError := by
-  unfold rbrKnowledgeSoundness at h ⊢
-  obtain ⟨stF, E, h⟩ := h
-  simp at h ⊢
-  -- refine ⟨stF.liftContext (lens := lens.toStatement.Lens)
-  --   (lensSound := lensKnowledgeSound.toSound),
-  --         ?_, ?_⟩
   sorry
 
 end Verifier

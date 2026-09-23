@@ -411,7 +411,7 @@ lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
 
 open CoreDefinitions unitInterval FoldingContext in
 /-- Claim 4.23 from [ACFY24]. -/
-private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
+private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [FoldingContext k d n]
   {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
@@ -423,7 +423,7 @@ private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
   let δ' : I := ⟨δ, by aesop, by {
               rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
               exact le_trans (le_of_lt δ_lt) (by simp)}⟩
-  Pr_{ let α ←$ᵖ F}[
+  Pr{let α ←$ᵗ F}[
     ¬(Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
              k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ⊆
       Set.image
@@ -515,7 +515,7 @@ private lemma folding_reflects_balls_aux [Fintype F] [FoldingContext k d n]
         rw [hwt]
         exact hTagree t ht
       exact hvimg ⟨_, huball, hfoldw.trans hwv⟩
-  exact le_trans (Probability.Pr_le_Pr_of_implies _ _ _ key)
+  exact le_trans (prEvent_mono _ _ _ key)
     (by simpa using hmca.prob_le _ δ')
 
 open CoreDefinitions unitInterval in
@@ -526,7 +526,7 @@ open CoreDefinitions unitInterval in
   `k`-wise block list of `f`. One containment holds for every `α`
   (`folding_preserves_block_balls`, Claim 4.22); the other except with probability
   `ε_mca δ` (Claim 4.23). -/
-theorem folding_reflects_balls [Fintype F] [FoldingContext k d n]
+theorem folding_reflects_balls [Fintype F] [SampleableType F] [FoldingContext k d n]
     {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
@@ -538,7 +538,7 @@ theorem folding_reflects_balls [Fintype F] [FoldingContext k d n]
   let δ' : I := ⟨δ, by aesop, by {
               rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
               exact le_trans (le_of_lt δ_lt) (by simp)}⟩
-  Pr_{ let α ←$ᵖ F}[
+  Pr{let α ←$ᵗ F}[
     (Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
              k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ≠
       Set.image
@@ -548,7 +548,7 @@ theorem folding_reflects_balls [Fintype F] [FoldingContext k d n]
   extract_lets δ'
   refine le_trans'
     (folding_reflects_balls_aux (f := f) hmca _δ_gt_0 δ_lt)
-    (Probability.Pr_le_Pr_of_implies _ _ _ ?_)
+    (prEvent_mono _ _ _ ?_)
   intro α hne hsub
   exact hne (Set.Subset.antisymm hsub folding_preserves_block_balls)
 
@@ -561,7 +561,7 @@ open CoreDefinitions unitInterval in
   probability is bounded by the mutual-correlated-agreement error `ε i` of the generator
   `Gen(2; α) = (1, α)` for the code `C^(i+1)`; the total failure probability is at most the sum
   of these errors. -/
-private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
+private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType F] (k : ℕ) :
     ∀ (n d b : ℕ) (ω : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n)))
       (ε : ℕ → I → ℝ≥0) (δ : ℝ≥0) (hδ1 : δ ≤ 1),
       b + k ≤ d → d ≤ n → 0 < δ →
@@ -569,7 +569,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1)))) →
       (∀ i, i < k → δ < 1 - (LinearCode.rate
         (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))) : ℝ≥0)) →
-      Pr_{ let α ←$ᵖ (Fin k → F) }[
+      Pr{let α ←$ᵗ (Fin k → F) }[
         Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b, ω.subdomain k,
             iteratedFoldWord ω f k α, δ) ≠
           Set.image (fun u ↦ iteratedFoldWord ω u k α)
@@ -578,7 +578,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
   induction k with
   | zero =>
       intro n d b ω f ε δ hδ1 hbd hdn hδ0 _ _
-      refine le_of_eq (Probability.prob_eq_zero_of_forall_not _ _ fun α ↦ ?_)
+      refine le_of_eq (prEvent_eq_zero_of_forall_not _ _ fun α ↦ ?_)
       aesop
   | succ k ih =>
       intro n d b ω f ε δ hδ1 hbd hdn hδ0 hmca hrate
@@ -589,7 +589,7 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
         subdomain_subdomain_one (by omega)
       -- the per-round bound for the last round, on the `k`-th subdomain
       have hlast : ∀ w : Word F (Fin (2 ^ (n - k))),
-          Pr_{ let x ←$ᵖ F }[
+          Pr{let x ←$ᵗ F }[
             Λ𞁒(code ((ω.subdomain k).subdomain 1 : Fin (2 ^ (n - k - 1)) ↪ F) (2 ^ (d - k - 1)),
                 b + 1 - 1, (ω.subdomain k).subdomain 1,
                 foldWord (ω.subdomain k) w 1 x, δ) ≠
@@ -604,43 +604,37 @@ private theorem iterated_folding_reflects_balls_aux [Fintype F] (k : ℕ) :
           (by omega) (by omega) (by omega)
         exact folding_reflects_balls (ω := ω.subdomain k) (f := w) (k := b + 1)
           (d := d - k) (n := n - k) hm hδ0 hr
-      rw [Probability.prob_fin_succ_split]
-      refine le_trans (Probability.tsum_prob_le_add _ _
-        (fun y => Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
-            ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
-          Set.image (fun u ↦ iteratedFoldWord ω u k y)
-            (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ)))
-        (ENNReal.ofReal (ε k δ')) ?_) ?_
-      · -- the conditional bound, for each value `y` of the first `k` rounds' randomness
-        intro y
-        by_cases hy : Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
-            ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
-          Set.image (fun u ↦ iteratedFoldWord ω u k y)
-            (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))
-        · rw [if_pos hy]
-          exact le_trans (Probability.prob_le_one _ _) le_self_add
-        · rw [if_neg hy, zero_add]
-          rw [not_not] at hy
-          refine le_trans (Probability.Pr_le_Pr_of_implies _ _ _ ?_)
-            (hlast (iteratedFoldWord ω f k y))
-          intro x hx
-          have hfold : ∀ u : Word F (Fin (2 ^ n)),
-              iteratedFoldWord ω u (k + 1) (Fin.snoc y x) =
-                foldWord (ω.subdomain k) (iteratedFoldWord ω u k y) 1 x := by
-            intro u
-            rw [iteratedFoldWord_succ']
-            simp only [Fin.snoc_castSucc, Fin.snoc_last]
-          have himg : Set.image (fun u ↦ iteratedFoldWord ω u (k + 1) (Fin.snoc y x))
-              (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + (k + 1), ω, f, δ)) =
-              Set.image (fun u ↦ foldWord (ω.subdomain k) u 1 x)
-                (Set.image (fun u ↦ iteratedFoldWord ω u k y)
-                  (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))) := by
-            rw [← Set.image_comp, show b + (k + 1) = b + 1 + k by omega]
-            exact Set.image_congr' (fun u => hfold u)
-          intro hcon
-          apply hx
-          rw [himg, ← hy, ← hcon, hfold f, hsub]
-          rfl
+      refine le_trans (SampleableType.prEvent_uniformSample_finSnoc_le_add _
+        (fun y =>
+          Λ𞁒(code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)), b + 1,
+              ω.subdomain k, iteratedFoldWord ω f k y, δ) ≠
+            Set.image (fun u ↦ iteratedFoldWord ω u k y)
+              (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ)))
+        (ε := ENNReal.ofReal (ε k δ')) ?_) ?_
+      · -- the conditional bound, given that the first `k` rounds succeeded
+        intro y hy
+        change ¬ _ at hy
+        rw [not_not] at hy
+        refine le_trans (prEvent_mono _ _ _ ?_)
+          (hlast (iteratedFoldWord ω f k y))
+        intro x hx
+        have hfold : ∀ u : Word F (Fin (2 ^ n)),
+            iteratedFoldWord ω u (k + 1) (Fin.snoc y x) =
+              foldWord (ω.subdomain k) (iteratedFoldWord ω u k y) 1 x := by
+          intro u
+          rw [iteratedFoldWord_succ']
+          simp only [Fin.snoc_castSucc, Fin.snoc_last]
+        have himg : Set.image (fun u ↦ iteratedFoldWord ω u (k + 1) (Fin.snoc y x))
+            (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + (k + 1), ω, f, δ)) =
+            Set.image (fun u ↦ foldWord (ω.subdomain k) u 1 x)
+              (Set.image (fun u ↦ iteratedFoldWord ω u k y)
+                (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), b + 1 + k, ω, f, δ))) := by
+          rw [← Set.image_comp, show b + (k + 1) = b + 1 + k by omega]
+          exact Set.image_congr' (fun u => hfold u)
+        intro hcon
+        apply hx
+        rw [himg, ← hy, ← hcon, hfold f, hsub]
+        rfl
       · -- the union bound over the rounds
         have hih := ih n d (b + 1) ω f ε δ hδ1 (by omega) hdn hδ0
           (fun i hi => hmca i (by omega)) (fun i hi => hrate i (by omega))
@@ -660,7 +654,7 @@ open CoreDefinitions unitInterval in
   error is total in `δ`, so only the rate bound `1 - rate(C⁽ⁱ⁾)` is needed to make the codewords
   explaining the folded agreement unique. Every regime proposed in the paper has
   `B⋆ ≥ rate` (with equality in the capacity regime), so the paper's range implies this one. -/
-theorem iterated_folding_reflects_balls [Fintype F]
+theorem iterated_folding_reflects_balls [Fintype F] [SampleableType F]
     [FoldingContext k d n]
     {ω : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
     (ε : ℕ → I → ℝ≥0) {δ : ℝ≥0} (hδ1 : δ ≤ 1) (hδ0 : 0 < δ)
@@ -668,7 +662,7 @@ theorem iterated_folding_reflects_balls [Fintype F]
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))))
     (hrate : ∀ i, i < k → δ < 1 - (LinearCode.rate
       (code (ω.subdomain (i + 1) : Fin (2 ^ (n - (i + 1))) ↪ F) (2 ^ (d - i - 1))) : ℝ≥0)) :
-    Pr_{ let α ←$ᵖ (Fin k → F) }[
+    Pr{let α ←$ᵗ (Fin k → F) }[
       Set.image (fun u ↦ iteratedFoldWord ω u k α)
           (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) ≠
         {v | v ∈ (code (ω.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) :
@@ -677,7 +671,7 @@ theorem iterated_folding_reflects_balls [Fintype F]
       ∑ i ∈ Finset.range k, ENNReal.ofReal (ε i ⟨δ, δ.coe_nonneg, by exact_mod_cast hδ1⟩) := by
   have h := iterated_folding_reflects_balls_aux (F := F) k n d 0 ω f ε δ hδ1
     (by grind) (by grind) hδ0 hmca hrate
-  refine le_trans (Probability.Pr_le_Pr_of_implies _ _ _ ?_) h
+  refine le_trans (prEvent_mono _ _ _ ?_) h
   aesop (add simp blockRelDistanceBall_zero)
 
 end ProximityGap

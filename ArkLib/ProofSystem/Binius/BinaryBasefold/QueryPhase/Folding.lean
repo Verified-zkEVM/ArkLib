@@ -16,9 +16,6 @@ import all ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Protocol
 @[expose] public section
 
 open OracleSpec
-attribute [local instance] queryEmptySpecInhabited
-noncomputable local instance foldingEmptyUniformSpec : IsUniformSpec []ₒ :=
-  IsUniformSpec.ofFintypeInhabited _
 
 namespace Binius.BinaryBasefold.QueryPhase
 
@@ -115,10 +112,10 @@ lemma mem_support_queryFiberPoints
   rw [key', Array.getElem_finRange]
   congr 1
 
-/-! Simulated `queryFiberPoints` has zero failure probability. -/
+/-! Simulated `queryFiberPoints` never returns an abort. -/
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ in
 set_option backward.isDefEq.respectTransparency false in
-lemma probFailure_simulateQ_queryFiberPoints_eq_zero
+lemma none_not_mem_support_simulateQ_queryFiberPoints
     (so : QueryImpl
       ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
@@ -127,18 +124,14 @@ lemma probFailure_simulateQ_queryFiberPoints_eq_zero
       (OracleComp []ₒ))
     (k : Fin (List.finRange (ℓ / ϑ)).length)
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
-    Pr[⊥ |
-      OptionT.mk
+    none ∉ support
         (simulateQ.{0, 0, 0} so
           (queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((List.finRange (ℓ / ϑ)).get k) v))] = 0 := by
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((List.finRange (ℓ / ϑ)).get k) v)) := by
   dsimp only [queryFiberPoints, queryCodeword, OptionT.mk]
   erw [OptionT.simulateQ_vector_mapM_eq]
-  apply OptionT.probFailure_vector_mapM_eq_zero
+  apply OptionT.none_not_mem_support_vector_mapM
   intro x _
-  erw [OptionT.probFailure_eq (m := OracleComp []ₒ)]
-  simp only [probFailure_eq_zero, zero_add]
-  rw [probOutput_eq_zero_iff]
   simp [OptionT.run, liftM, monadLift, MonadLift.monadLift, OptionT.mk,
     OptionT.lift, simulateQ_map]
 
@@ -189,7 +182,7 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
   rw [h_repr_fiber]
   by_cases h_j : j.val < steps
   · unfold fiber_coeff
-    rw [dif_pos h_j]
+    rw [dite_eq_left h_j]
     set pointFinIdx :=
       sDomainToFin 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩ h_zero v
     have h_j_shift : j.val + i.val < ℓ + 𝓡 := by
@@ -223,7 +216,7 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
         exact h
       simp [h_bit_one]
   · unfold fiber_coeff
-    rw [dif_neg h_j]
+    rw [dite_eq_right h_j]
     have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
       ⟨0, by omega⟩ (k := destIdx.val) (h_destIdx := by simp only [zero_add])
       (h_destIdx_le := h_destIdx_le) (x := v) (j := ⟨j.val - steps, by omega⟩)
@@ -408,7 +401,7 @@ lemma query_phase_step_preserves_fold
     have h_mul_ϑ_gt_0 : k.val * ϑ > 0 := by
       simp only [gt_iff_lt, CanonicallyOrderedAdd.mul_pos]; omega
     simp only [MessageIdx, Message, gt_iff_lt, h_mul_ϑ_gt_0, ↓reduceDIte, guard_eq, Fin.val_last,
-      bind_pure_comp, ReduceClaim.support_mk, Set.mem_ofPred_eq] at h_s'_mem
+      bind_pure_comp, OptionT.mem_support_iff] at h_s'_mem
     erw [simulateQ_bind, support_bind] at h_s'_mem
     simp only [Set.mem_iUnion, exists_prop] at h_s'_mem
     rcases h_s'_mem with ⟨fiber_vec_Opt, h_fiber_vec_Opt_mem_support, h_s'_mem_support_guard⟩
@@ -417,16 +410,13 @@ lemma query_phase_step_preserves_fold
     have h_k_fin_list_eq : k = ((List.finRange (ℓ / ϑ)).get k_fin_list) := by
       apply Fin.eq_of_val_eq; simp only [List.get_eq_getElem, List.getElem_finRange, Fin.eta,
         Fin.val_cast]; rfl
-    have h_probFailure_queryFiberPoints_eq_zero := by
-      apply probFailure_simulateQ_queryFiberPoints_eq_zero (γ_repetitions := γ_repetitions)
+    have h_none_not_mem_queryFiberPoints :=
+      none_not_mem_support_simulateQ_queryFiberPoints (γ_repetitions := γ_repetitions)
         (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝔽q := 𝔽q) (β := β)
         (so := so) (k := k_fin_list) (v := v)
-    rw [OptionT.probFailure_eq] at h_probFailure_queryFiberPoints_eq_zero
-    have h_probOutput_none_queryFiberPoints_eq_zero :=
-      (add_eq_zero.mp h_probFailure_queryFiberPoints_eq_zero).2
-    have h_fiber_vec_Opt_mem_support_eq := exists_eq_some_of_mem_support_of_probOutput_none_eq_zero
+    have h_fiber_vec_Opt_mem_support_eq := exists_eq_some_of_mem_support_of_none_not_mem
       (x := fiber_vec_Opt) (hx := h_fiber_vec_Opt_mem_support) (hnone := by
-      have h_none := h_probOutput_none_queryFiberPoints_eq_zero
+      have h_none := h_none_not_mem_queryFiberPoints
       simp only [so, transcript, h_k_fin_list_eq] at h_none ⊢
       exact h_none)
     rcases h_fiber_vec_Opt_mem_support_eq with ⟨fiber_vec, h_fiber_vec_Opt_mem_support_eq⟩
@@ -615,8 +605,7 @@ lemma query_phase_step_preserves_fold
       omega
     simp only [h_k_eq_0, zero_mul, zero_add] at h_s'_mem ⊢
     simp only [MessageIdx, Message, gt_iff_lt, lt_self_iff_false, ↓reduceDIte, Fin.mk_zero',
-      Fin.val_last, bind_pure_comp, ReduceClaim.support_mk,
-      Set.mem_ofPred_eq] at h_s'_mem
+      Fin.val_last, bind_pure_comp, OptionT.mem_support_iff] at h_s'_mem
     erw [simulateQ_bind, support_bind] at h_s'_mem
     simp only [Set.mem_iUnion, exists_prop] at h_s'_mem
     rcases h_s'_mem with ⟨fiber_vec_Opt, h_fiber_vec_Opt_mem_support, h_s'_mem_support_guard⟩
@@ -625,17 +614,14 @@ lemma query_phase_step_preserves_fold
     have h_k_fin_list_eq : k = ((List.finRange (ℓ / ϑ)).get k_fin_list) := by
       apply Fin.eq_of_val_eq; simp only [List.get_eq_getElem, List.getElem_finRange, Fin.eta,
         Fin.val_cast]; rfl
-    have h_probFailure_queryFiberPoints_eq_zero := by
-      apply probFailure_simulateQ_queryFiberPoints_eq_zero (γ_repetitions := γ_repetitions)
+    have h_none_not_mem_queryFiberPoints :=
+      none_not_mem_support_simulateQ_queryFiberPoints (γ_repetitions := γ_repetitions)
         (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝔽q := 𝔽q) (β := β)
         (so := so) (k := k_fin_list) (v := v)
-    rw [OptionT.probFailure_eq] at h_probFailure_queryFiberPoints_eq_zero
-    have h_probOutput_none_queryFiberPoints_eq_zero :=
-      (add_eq_zero.mp h_probFailure_queryFiberPoints_eq_zero).2
     have h_exists_some_fiber_vec_of_fiber_vec_Opt :=
-      exists_eq_some_of_mem_support_of_probOutput_none_eq_zero
+      exists_eq_some_of_mem_support_of_none_not_mem
       (x := fiber_vec_Opt) (hx := h_fiber_vec_Opt_mem_support) (hnone := by
-      have h_none := h_probOutput_none_queryFiberPoints_eq_zero
+      have h_none := h_none_not_mem_queryFiberPoints
       simp only [so, transcript, h_k_fin_list_eq] at h_none ⊢
       exact h_none)
     rcases h_exists_some_fiber_vec_of_fiber_vec_Opt with ⟨fiber_vec, h_fiber_vec_Opt_eq_some⟩

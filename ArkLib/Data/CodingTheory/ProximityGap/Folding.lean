@@ -818,7 +818,8 @@ private lemma dist_from_code_bound_of_correlated_agreement
     obtain ⟨f', h_f'_deg, hdist⟩ :=
       correlated_agreement_implies_contradictory_hamm_dist h_s h_u (by {
     exact le_trans (b := 2 ^ n) (by grind) <| by
-      convert card_toFinset_le_fintype_card (ω := domain) <;> aesop
+      simpa only [Fintype.card_eq_nat_card, Nat.card_fin] using
+        Fintype.card_le_of_injective (fun x : Fin (2 ^ n) => domain x) domain.injective
   }) h_u_deg
     simp only [Set.mem_ofPred_eq, Nat.cast_le]
     aesop (add safe [evalOnPoints_mem_code_of_natDegree_lt])
@@ -835,7 +836,7 @@ lemma folded_rate_eq {d : ℕ} [FoldingContext k d n] :
     Nat.pow_le_pow_right (by omega) (Nat.sub_le_sub_right FoldingContextRight.d_le_n k)
   have hdn : 2 ^ d ≤ 2 ^ n :=
     Nat.pow_le_pow_right (by omega) FoldingContextRight.d_le_n
-  rw [if_pos hdk, if_pos hdn]
+  rw [ite_eq_left hdk, ite_eq_left hdn]
   field_simp
   norm_cast
   rw [← pow_add]
@@ -871,7 +872,7 @@ the corresponding Reed–Solomon code except with probability controlled by
 `ProximityGap.errorBound`.
 -/
 theorem folding_preserves_distance
-    [Fintype F]
+    [Fintype F] [SampleableType F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
   [FoldingContext k d n]
   {δ : ℝ≥0}
@@ -879,7 +880,7 @@ theorem folding_preserves_distance
   (_δ_gt_0 : 0 < δ)
   (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)))
     (1 - (ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F)))) :
-    Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r,
+    Pr{ let r ←$ᵗ F}[δᵣ(foldWord domain f k r,
       ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F)
       (2 ^ (d - k))) ≤ δ] ≤
         ((2 ^ k) - 1) * ProximityGap.errorBound δ (2 ^ (d - k))
@@ -891,17 +892,14 @@ theorem folding_preserves_distance
           (add safe
             [(by rw [folded_sqrtRate_eq]), (by norm_cast at *)])
     have correlated_agreement :=
-      @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
-        (2 ^ k - 1) ((2 ^ (d - k)))
+      correlatedAgreement_affine_curves (F := F) (ι := Fin (2 ^ (n - k)))
+        (k := 2 ^ k - 1) (deg := 2 ^ (d - k))
         (domain := domain.subdomain k) (δ := δ)
         (hδ_pos := _δ_gt_0) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
-    simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map,
-      PMF.bind_apply,
-      PMF.uniformOfFintype_apply,
-      comp_apply, PMF.pure_apply, eq_iff_iff, true_iff,
-      mul_ite, mul_one, mul_zero, tsum_fintype] at contra correlated_agreement
+    simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha,
+      SampleableType.prEvent_uniformSample] at contra correlated_agreement
     let cast (x : Fin (2 ^ k - 1 + 1)) : Fin (2 ^ k) :=
       Fin.cast (by rw [Nat.sub_add_cancel (by grind)]) x
     let cast' (x : Fin (2 ^ k)) : Fin (2 ^ k - 1 + 1) :=
@@ -929,13 +927,9 @@ theorem folding_preserves_distance
             (domain.subdomain k x) * a ^ (j : ℕ)
       exact Fintype.sum_bijective cast bijective_cast _ _ <|
         fun i ↦ by simp [cast, mul_comm]
-    specialize correlated_agreement (by {
-      conv_lhs =>
-        rhs
-        ext a
-        rw [correlated_curve_eq_sum_of_foldWord_coeffs]
-      norm_cast at contra
-    })
+    specialize correlated_agreement (by
+      simp only [correlated_curve_eq_sum_of_foldWord_coeffs]
+      norm_cast at contra ⊢)
     simp only [jointAgreement, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, ge_iff_le,
       SetLike.mem_coe, Matrix.of_apply] at correlated_agreement
     obtain ⟨S, h_card, v, h'⟩ := correlated_agreement

@@ -143,7 +143,7 @@ lemma extractMLP_some_of_oracleFoldingConsistency
     have h_lt : ϑ < ℓ := by omega
     have h_div_gt_1 : ℓ / ϑ > 1 := by
       have h_res := (Nat.div_lt_div_right (a := ϑ) (b := ϑ) (c := ℓ) (ha := by omega)
-        (by simp only [dvd_refl]) (by exact hdiv.out)).mpr h_lt
+        hdiv.out).mpr h_lt
       rw [Nat.div_self (n := ϑ) (H := by omega)] at h_res
       exact h_res
     have h_j0_next_lt : ↑j0 + 1 < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) := by

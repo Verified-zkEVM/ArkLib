@@ -521,7 +521,7 @@ private theorem symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
   apply hcoeff
   apply Finset.sum_eq_zero
   intro q hq
-  rw [if_neg]
+  rw [ite_eq_right]
   intro heq
   apply hp
   rw [← heq]
@@ -841,7 +841,7 @@ private theorem symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
       have hstrict := symbolicModifiedGSCap_strict_k_one_n_one hm
       have hbase := symbolicUpperTriangleBase_card_ge_k_one_n_one hm
       unfold symbolicUpperTriangleCandidates
-      rw [if_pos]
+      rw [ite_eq_left]
       · rw [Finset.card_insert_of_notMem
           (symbolicCapPoint_not_mem_base (by omega) (by omega) hm)]
         omega
@@ -936,12 +936,12 @@ private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro q hq
     by_cases heq : q.1.1 = (i, j)
-    · rw [if_pos heq]
+    · rw [ite_eq_left heq]
       have hbudget := symbolicGSIndex_z_add_y_le A q
       have hj : q.1.1.2 = j := congrArg Prod.snd heq
       have hmono := Polynomial.natDegree_monomial_le (m := q.2.1) (c q)
       omega
-    · rw [if_neg heq]
+    · rw [ite_eq_right heq]
       simp only [Polynomial.natDegree_zero]
       omega
   omega

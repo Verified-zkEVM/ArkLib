@@ -248,7 +248,7 @@ theorem rsErasureDecoder_eq_some [Fintype ι] {k : ℕ} {domain : ι ↪ F}
       ((rsPolynomial_degree_lt k m).trans_le (WithBot.coe_le_coe.mpr hcard))
       (fun i hi ↦ by simpa using hval i hi) j]
     exact rsPolynomial_coeff k m j
-  rw [rsErasureDecoder, if_pos hcard, hdecode, if_pos hval]
+  rw [rsErasureDecoder, ite_eq_left hcard, hdecode, ite_eq_left hval]
 
 theorem rsErasureDecodeOrZero_eq [Fintype ι] {k : ℕ} {domain : ι ↪ F}
     {nodes : Finset ι} {w : ι → F} {m : Fin k → F}

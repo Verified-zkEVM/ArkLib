@@ -100,7 +100,7 @@ lemma affineProximityGap_RS_interleaved_contrapositive
     (h_far : ¬ jointProximityNat₂ (A := InterleavedSymbol L (Fin m))
       (C := ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx) ^⋈ (Fin m)))
       (u₀ := u₀) (u₁ := u₁) (e := e)) :
-    Pr_{let r ← $ᵖ L}[
+    Pr{let r ← $ᵗ L}[
       Δ₀(affineLineEvaluation (F := L) u₀ u₁ r,
         ((BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx) ^⋈ (Fin m))) ≤ e]
     ≤ (Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx) : ℝ≥0) / (Fintype.card L) := by
@@ -226,7 +226,7 @@ lemma prop_4_21_2_case_1_fiberwise_close_incremental
       (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
       (f := f_block_start)) :
     let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
-    Pr_{ let r_new ← $ᵖ L }[
+    Pr{ let r_new ← $ᵗ L }[
       ¬ incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (block_start_idx := block_start_idx) (midIdx := midIdx_i) (destIdx := destIdx) (k := k)
           (h_k_le := Nat.le_of_lt h_k_lt) (h_midIdx := h_midIdx_i)
@@ -278,17 +278,16 @@ lemma prop_4_21_2_case_1_fiberwise_close_incremental
   swap
   · -- Case: ¬not_Ek, i.e. ¬(Δ_fiber ⊆ D_k). Then ¬¬(Δ ⊆ D_k) = False, so conjunction always False.
     -- Pr[always False] = 0 ≤ bound.
-    apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ (fun _ => False)
+    apply le_trans (prEvent_mono ($ᵗ L) _ (fun _ => False)
       (fun r_new h => absurd (not_not.mp h.1) h_not_Ek))
-    simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-      eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le];
+    simp
   · -- pos case
     -- From here: h_not_Ek : Δ_fiber ⊆ fiberwiseDisagreementSet(midIdx_i, ϑ-k, fold_k_f,
     -- fold_k_f_bar)
     -- Use prob_mono to drop the ¬E(k) conjunct (it's deterministically true).
-    apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ _ (fun r_new h => h.2))
+    apply le_trans (prEvent_mono ($ᵗ L) _ _ (fun r_new h => h.2))
     -- ────────────────────────────────────────────────────────
-    -- Step 3: Bound Pr_{r_new}[E(k+1)] ≤ |S^{destIdx}| / |L|
+    -- Step 3: Bound Pr{r_new}[E(k+1)] ≤ |S^{destIdx}| / |L|
     -- ────────────────────────────────────────────────────────
     -- E(k+1) = ¬(Δ_fiber ⊆ fiberwiseDisagreementSet(midIdx_i_succ, ϑ-(k+1),
     --            fold_{k+1}(f, snoc r_prefix r_new), fold_{k+1}(f̄, snoc r_prefix r_new)))
@@ -305,7 +304,7 @@ lemma prop_4_21_2_case_1_fiberwise_close_incremental
     -- (3d) Sum: |Δ_fiber| · (1/|L|) ≤ |S^{destIdx}| / |L|.
     let L_card := Fintype.card L
     -- Convert probability to cardinality ratio
-    rw [prob_uniform_eq_card_filter_div_card]
+    rw [SampleableType.prEvent_uniformSample]
     -- ── 3d: Per-point Schwartz-Zippel + union bound ──
     -- Per-point Schwartz-Zippel: |{r_new : y dropped}| ≤ 1 for each y,
     -- because fold difference is degree-1 in r_new with at most 1 root.
@@ -825,7 +824,7 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
       have h_fun : (fun col => v_rowwise_finmap rowIdx col) = fun col => vSplit col 0 j := by
         funext col
         dsimp [v_rowwise_finmap, VSplit_even_rowwise, VSplit_rowwise, j]
-        rw [dif_pos h_even]
+        rw [dite_eq_left h_even]
         rfl
       rw [h_fun]
       exact hRes
@@ -835,7 +834,7 @@ lemma not_jointProximityNat_of_not_jointProximityNat_evenOdd_split
       have h_fun : (fun col => v_rowwise_finmap rowIdx col) = fun col => vSplit col 1 j := by
         funext col
         dsimp [v_rowwise_finmap, VSplit_odd_rowwise, VSplit_rowwise, j]
-        rw [dif_neg h_even]
+        rw [dite_eq_right h_even]
         rfl
       rw [h_fun]
       exact hRes
@@ -1232,7 +1231,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
       (i := block_start_idx) (steps := ϑ) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
       (f := f_block_start)) :
     let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
-    Pr_{ let r_new ← $ᵖ L }[
+    Pr{ let r_new ← $ᵗ L }[
       ¬ incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (block_start_idx := block_start_idx) (midIdx := midIdx_i) (destIdx := destIdx) (k := k)
           (h_k_le := Nat.le_of_lt h_k_lt) (h_midIdx := h_midIdx_i)
@@ -1258,13 +1257,13 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
     (i := midIdx_i) (steps := ϑ - k) (h_destIdx := by omega)
     (h_destIdx_le := h_destIdx_le) (f := fold_k_f)
   by_cases h_Ek_close : Ek_close
-  · apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ _ (fun r_new h => h.1))
-    have : Pr_{ let r_new ← $ᵖ L }[¬Ek_close] = 0 := by
-      rw [prob_uniform_eq_card_filter_div_card]
+  · apply le_trans (prEvent_mono ($ᵗ L) _ _ (fun r_new h => h.1))
+    have : Pr{ let r_new ← $ᵗ L }[¬Ek_close] = 0 := by
+      rw [SampleableType.prEvent_uniformSample]
       simp only [not_not.mpr h_Ek_close, Finset.filter_false, card_empty, CharP.cast_eq_zero,
-        ENNReal.coe_zero, ENNReal.coe_natCast, ENNReal.zero_div]
+        ENNReal.zero_div]
     rw [this]; exact bot_le
-  · apply le_trans (Pr_le_Pr_of_implies ($ᵖ L) _ _ (fun r_new h => h.2))
+  · apply le_trans (prEvent_mono ($ᵗ L) _ _ (fun r_new h => h.2))
     have h_midIdx_i_lt_ℓ : midIdx_i.val < ℓ := by omega
     let s := ϑ - k - 1
     have h_steps_eq : ϑ - k = s + 1 := by omega
@@ -1304,7 +1303,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
         (hU_even := by rfl) (hU_odd := by rfl)
         (h_far := h_U_far)
     have h_affine_bound :
-        Pr_{let r ← $ᵖ L}[
+        Pr{let r ← $ᵗ L}[
           Δ₀(affineLineEvaluation (F := L) u_even u_odd r,
             (C_dest ^⋈ (Fin (2^s)))) ≤ e_prox]
         ≤ (Fintype.card S_dest : ℝ≥0) / (Fintype.card L) :=
@@ -1312,7 +1311,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
         𝔽q β Nat.one_le_two_pow h_destIdx_le
         (e := e_prox) (he := le_refl _) (h_far := h_pair_far)
     apply le_trans _ h_affine_bound
-    apply Pr_le_Pr_of_implies ($ᵖ L) _ _
+    apply prEvent_mono ($ᵗ L) _ _
     intro r_new h_fw_close
     exact fiberwiseClose_fold_implies_affineLineEval_close 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -1330,7 +1329,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
           (h_destIdx_le := by omega)
           f_block_start (Fin.snoc r_prefix r_new)] at h_fw_close
         simp only [Fin.init_snoc, Fin.snoc_last] at h_fw_close
-        convert h_fw_close using 1; omega)
+        convert h_fw_close using 1)
 
 omit [DecidableEq 𝔽q] hdiv in
 omit [NeZero ℓ] in
@@ -1345,7 +1344,7 @@ lemma prop_4_21_2_incremental_bad_event_probability
     (f_block_start : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block_start_idx)
     (r_prefix : Fin k → L) :
     let domain_size := Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
-    Pr_{ let r_new ← $ᵖ L }[
+    Pr{ let r_new ← $ᵗ L }[
       ¬ incrementalFoldingBadEvent 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (block_start_idx := block_start_idx) (midIdx := midIdx_i) (destIdx := destIdx) (k := k)
           (h_k_le := Nat.le_of_lt h_k_lt) (h_midIdx := h_midIdx_i)

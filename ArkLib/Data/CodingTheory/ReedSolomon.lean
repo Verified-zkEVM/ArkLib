@@ -13,8 +13,8 @@ public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import CompPoly.Data.Polynomial.MonomialBasis
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.RingTheory.Henselian
-public import Mathlib.Data.NNReal.Defs
-public import Mathlib.Data.NNReal.Basic -- for instFloorSemiring of ℝ≥0
+public import Mathlib.Basic.NNReal.Defs
+public import Mathlib.Basic.NNReal.Basic -- for instFloorSemiring of ℝ≥0
 
 /-!
 # Reed-Solomon Codes

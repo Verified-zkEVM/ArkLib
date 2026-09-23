@@ -10,8 +10,8 @@ public import ArkLib.Data.Polynomial.Interface
 public import CompPoly.Data.Polynomial.MonomialBasis
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.RingTheory.Henselian
-public import Mathlib.Data.NNReal.Defs
-public import Mathlib.Data.NNReal.Basic
+public import Mathlib.Basic.NNReal.Defs
+public import Mathlib.Basic.NNReal.Basic
 
 /-!
   # Non-square Vandermonde matrices

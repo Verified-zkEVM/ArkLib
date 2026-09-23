@@ -442,11 +442,11 @@ theorem gadgetMul_apply (base : R) {rows digits : Nat} (hd : 0 < digits)
   rw [Finset.sum_eq_single i]
   · apply Finset.sum_congr rfl
     intro e _
-    rw [gadgetEntry_finProdFinEquiv Φ base hd i i e, if_pos rfl]
+    rw [gadgetEntry_finProdFinEquiv Φ base hd i i e, ite_eq_left rfl]
   · intro i' _ hne
     apply Finset.sum_eq_zero
     intro e _
-    rw [gadgetEntry_finProdFinEquiv Φ base hd i i' e, if_neg hne, zero_mul]
+    rw [gadgetEntry_finProdFinEquiv Φ base hd i i' e, ite_eq_right hne, zero_mul]
   · intro h
     exact absurd (Finset.mem_univ i) h
 
@@ -514,9 +514,9 @@ theorem gadgetDecomposeFun_gadgetMul_eq {rows digits : Nat} (hd : 0 < digits)
   rw [hsum]
   simp_rw [hterm]
   by_cases hk : k < Φ.φ.natDegree
-  · simp only [if_pos hk]
+  · simp only [ite_eq_left hk]
     exact hrec i k hk
-  · simp only [if_neg hk, mul_zero, Finset.sum_const_zero]
+  · simp only [ite_eq_right hk, mul_zero, Finset.sum_const_zero]
     exact (Rq.coeff_eq_zero_of_natDegree_le Φ (x i) (not_lt.mp hk)).symm
 
 /-- The base-`b` gadget decomposition (Hachi `G⁻¹`) induced by a `DigitDecomposition`. -/

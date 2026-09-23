@@ -305,7 +305,7 @@ theorem lInftyNorm_rhoAsRq_le {bound : ℕ} (p : CPolynomial (ZMod q))
     Rq.lInftyNorm Φ (rhoAsRq Φ p) ≤ bound := by
   refine Finset.sup_le fun k hk => ?_
   rw [show (rhoAsRq Φ p).1.coeff k = _ from
-    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos (Finset.mem_range.mp hk)]
+    Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, ite_eq_left (Finset.mem_range.mp hk)]
   exact h k
 
 omit [NeZero q] in
@@ -388,7 +388,7 @@ theorem liftMessage_injective {bDig : ℕ} (hb : 1 < bDig) (hd : 0 < Φ.φ.natDe
         simp only [liftMessage, Fin.append_right, rhoDigitAsRq, Equiv.symm_apply_apply] at hj
         have hc := congrArg (fun a : Rq Φ => a.1.coeff k) hj
         simpa only [rhoAsRq, Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k,
-          if_pos hk, rhoDigits_coeff] using hc
+          ite_eq_left hk, rhoDigits_coeff] using hc
       have hrec := balancedDigit_reconstruct (q := q) hb (Nat.le_pow_clog hb q)
       rw [← hrec ((ρ₁ i).coeff k), ← hrec ((ρ₂ i).coeff k)]
       exact Finset.sum_congr rfl fun u _ => by rw [hdig u]

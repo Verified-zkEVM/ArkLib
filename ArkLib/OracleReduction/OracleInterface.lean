@@ -123,23 +123,6 @@ instance instFunction {α β : Type _} : OracleInterface (α → β) where
   Query := α
   toOC := OracleContext.ofFunction α β
 
-instance {ι : Type u} [DecidableEq ι] (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i, DecidableEq (Query (v i))]
-    [h' : ∀ i q, DecidableEq ((O i).Response q)] :
-    [v]ₒ.DecidableEq where
-  decidableEqA := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
-  decidableEqB | ⟨i, q⟩ => h' i q
-
-instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i q, Fintype ((O i).Response q)] :
-    [v]ₒ.Fintype where
-  fintypeB | ⟨i, q⟩ => h i q
-
-instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    [h : ∀ i q, Inhabited ((O i).Response q)] :
-    [v]ₒ.Inhabited where
-  inhabitedB | ⟨i, q⟩ => h i q
-
 @[reducible, inline]
 instance {ι₁ : Type u} {T₁ : ι₁ → Type v} [inst₁ : ∀ i, OracleInterface (T₁ i)]
     {ι₂ : Type u} {T₂ : ι₂ → Type v} [inst₂ : ∀ i, OracleInterface (T₂ i)] :
@@ -244,25 +227,6 @@ def simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
     QueryImpl (oSpec + ([T₁]ₒ + [T₂]ₒ)) (OracleComp oSpec) :=
   QueryImpl.addLift (QueryImpl.id oSpec)
     (QueryImpl.add (simOracle0 T₁ t₁) (simOracle0 T₂ t₂))
-
-/-- simOracle never fails because it is a deterministic transcript lookup. -/
-theorem neverFails_simOracle {ι : Type u} (oSpec : OracleSpec ι)
-    [IsUniformSpec oSpec]
-    {ι' : Type v} {T : ι' → Type w} [∀ i, OracleInterface (T i)]
-    (t : ∀ i, T i) :
-    ∀ q : (oSpec + [T]ₒ).Domain, NeverFail (simOracle oSpec t q) := by
-  intro q
-  exact inferInstance
-
-/-- simOracle2 never fails because it is a deterministic transcript lookup. -/
-theorem neverFails_simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
-    [IsUniformSpec oSpec]
-    {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
-    {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
-    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i) :
-    ∀ q : (oSpec + ([T₁]ₒ + [T₂]ₒ)).Domain, NeverFail (simOracle2 oSpec t₁ t₂ q) := by
-  intro q
-  exact inferInstance
 
 /-- The queries on which two messages give the same oracle answer. -/
 def agreementQueries {Message : Type*} (O : OracleInterface Message)

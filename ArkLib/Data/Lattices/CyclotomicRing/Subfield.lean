@@ -47,10 +47,11 @@ The Section 3 results:
   (`X^{(d/2k)j} + σ_{-1}(X^{(d/2k)j})`, the Eq. 7 family up to the reindexing `j ↦ k − j`),
   `vElt_coeff` in `Subfield/Basis.lean`; `fixedBasisMap`, `card_fixedSubring_eq` in
   `Subfield/Cardinality.lean`.
-* **Lemma 5** (`R_q^H` is a subfield `≅ F_{q^k}`) — stated as `fixedSubring_isField` and
-  `fixedSubringEquivGaloisField` in `Subfield/Field.lean`. These declarations currently depend
-  on the single open lemma `no_selfReciprocal_factor`; the cardinality/Eq. 7 half is fully proved.
-  The supporting `q ≡ 5 (mod 8)` number theory (`orderOf_q_eq`, `neg_one_notMem_powers_q`,
+* **Lemma 5** (`R_q^H` is a subfield `≅ F_{q^k}`) — the fully proved theorems
+  `fixedSubring_isField` and `fixedSubringEquivGaloisField` in `Subfield/Field.lean`. The key
+  step is `no_selfReciprocal_factor` (reversal swaps the two irreducible factors of `X^d + 1`),
+  proved from the root-orbit lemma `not_associated_reverse_self`. The supporting
+  `q ≡ 5 (mod 8)` number theory (`orderOf_q_eq`, `neg_one_notMem_powers_q`,
   `cyclotomic_card_normalizedFactors`) is proved in `Subfield/Factorization.lean`.
 * **Theorem 2, Eq. 8** (the packing map `ψ`) — `packExp`, `psi` in `Subfield/Packing.lean`.
 * **Theorem 2, Claim 1** (`⟨4k+1⟩ = {4k·α + 1 : α < d/2k}`, order `d/2k`) — `four_pow_injOn`
@@ -100,13 +101,14 @@ The Section 3 results:
 
 ## Proof status
 
+The subfield layer has no `sorry`: Lemma 5, Theorem 2, and Lemma 6 are fully proved.
+
 * `no_selfReciprocal_factor` (`Subfield/Field.lean`) — reversal swaps the two irreducible
-  factors of `X^d + 1`. This is the only local `sorry` and the only reason the final Lemma 5
-  field/isomorphism declarations depend on `sorryAx`; everything downstream is proved
-  conditionally on it.
-* `cInfNorm_psi_le` (`Subfield/NormBound.lean`) — Lemma 6 is fully proved and does not depend
-  on `sorryAx`. Its support and at-most-two-contributions argument uses
-  `fixedSubring_coeff_eq_zero`, but not the open field upgrade from Lemma 5.
+  factors of `X^d + 1`. It is proved, so the Lemma 5 field/isomorphism declarations
+  (`fixedSubring_isField`, `fixedSubringEquivGaloisField`) are unconditional.
+* `cInfNorm_psi_le` (`Subfield/NormBound.lean`) — Lemma 6. Its support and
+  at-most-two-contributions argument uses `fixedSubring_coeff_eq_zero`, but not the field
+  upgrade from Lemma 5.
 
 ## File map
 

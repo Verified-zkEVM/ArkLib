@@ -77,7 +77,7 @@ theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
     rw [hchoose, hdesc, hfact, ← Finset.prod_div_distrib]
   rw [hprod, show ((s : ℝ) / t) ^ t = ∏ _i ∈ range t, ((s : ℝ) / t) from by
     rw [Finset.prod_const, card_range]]
-  apply Finset.prod_le_prod
+  apply Finset.prod_le_prod₀
   · intro i _; positivity
   · intro i hi
     rw [mem_range] at hi

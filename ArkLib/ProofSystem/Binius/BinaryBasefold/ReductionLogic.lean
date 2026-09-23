@@ -241,7 +241,7 @@ structure OracleAwareReductionLogicStep
   - `[pSpec.Message]ₒ` are the prover messages the verifier can query -/
 @[reducible]
 def OracleAwareReductionLogicStep.IsStronglyCompleteUnderSimulation
-    {ι : Type} {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
+    {ι : Type} {oSpec : OracleSpec ι}
     {StmtIn WitIn : Type}
     {ιₒᵢ ιₒₒ : Type} {OracleIn : ιₒᵢ → Type} {OracleOut : ιₒₒ → Type}
     {StmtOut WitOut : Type}
@@ -261,8 +261,8 @@ def OracleAwareReductionLogicStep.IsStronglyCompleteUnderSimulation
     -- simOracle2 oSpec t₁ t₂ : SimOracle.Stateless (oSpec + ([T₁]ₒ + [T₂]ₒ)) oSpec
     -- This answers queries to OracleIn using oStmtIn and queries to Messages using transcript
     let so := OracleInterface.simOracle2 oSpec oStmtIn transcript.messages
-    -- 3. The Verifier check under simulation MUST succeed with probability 1
-    Pr[⊥ | OptionT.mk (simulateQ so (step.verifierCheck stmtIn transcript))] = 0 ∧
+    -- 3. The verifier check cannot abort on any supported execution.
+    none ∉ support (simulateQ so (step.verifierCheck stmtIn transcript)) ∧
     -- 4. The output MUST be valid and consistent
     let verifierStmtOut := step.verifierOut stmtIn transcript
     let verifierOStmtOut := fun i => match h : step.embed i with
@@ -604,7 +604,7 @@ lemma snoc_oracle_eq_materializeOutput_commitStep
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed j =
         Sum.inl ⟨j.val, hj⟩ := by
       simp only [commitStepLogic, commitStepLogic_embed, Function.Embedding.coeFn_mk,
-        commitStepLogic_embedFn, hj, dif_pos]
+        commitStepLogic_embedFn, hj, dite_eq_left]
     rw [materializeOutputByEmbedding_inl
       (embed := (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed)
@@ -612,14 +612,14 @@ lemma snoc_oracle_eq_materializeOutput_commitStep
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).hEq)
       (oStmt := oStmtIn) (transcript := transcript) (i := j)
       (j := ⟨j.val, hj⟩) (h := h_embed)]
-    simp only [hj, dif_pos]
+    simp only [hj, dite_eq_left]
     rfl
   · -- New oracle case: embed j = Sum.inr 0
     have h_embed : (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).embed j =
         Sum.inr ⟨0, rfl⟩ := by
       simp only [commitStepLogic, commitStepLogic_embed, Function.Embedding.coeFn_mk,
-        commitStepLogic_embedFn, hj, dif_neg, not_false_eq_true]
+        commitStepLogic_embedFn, hj, dite_eq_right, not_false_eq_true]
       rfl
     rw [materializeOutputByEmbedding_inr
       (embed := (commitStepLogic (mp := mp) 𝔽q β (ϑ := ϑ)
@@ -628,7 +628,7 @@ lemma snoc_oracle_eq_materializeOutput_commitStep
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i hCR).hEq)
       (oStmt := oStmtIn) (transcript := transcript) (i := j)
       (j := ⟨0, rfl⟩) (h := h_embed)]
-    simp only [hj, dif_neg, not_false_eq_true]
+    simp only [hj, dite_eq_right, not_false_eq_true]
     rw [← h_transcript_eq]
     funext x
     have h_msg0: transcript.messages ⟨0, rfl⟩ = transcript 0 := by rfl

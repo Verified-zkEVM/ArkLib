@@ -604,7 +604,7 @@ private theorem aligned_affineLine_global_close
           ((b : ℝ) - 1) * (if i ∈ D then 1 else 0) ≤ (b : ℝ) := by
     intro i
     by_cases hi : i ∈ D
-    · rw [if_pos hi]
+    · rw [ite_eq_left hi]
       have hne : f₀ i + γ • f₁ i ≠ u₀ i + γ • u₁ i := by
         simpa only [D, Code.mem_disagreementCols, Pi.add_apply, Pi.smul_apply] using hi
       have hone := lineAgreementSeeds_card_le_one_of_ne_at
@@ -615,7 +615,7 @@ private theorem aligned_affineLine_global_close
             exact_mod_cast hone)
       have hbR : (1 : ℝ) ≤ b := by exact_mod_cast (le_of_lt hb)
       nlinarith
-    · rw [if_neg hi]
+    · rw [ite_eq_right hi]
       have hcardNat : (lineAgreementSeeds f₀ f₁ U T i).card ≤ T.card :=
         Finset.card_filter_le _ _
       have hcardR : ((lineAgreementSeeds f₀ f₁ U T i).card : ℝ) ≤ b := by
@@ -723,7 +723,7 @@ open _root_.CoreDefinitions in
 open _root_.ProximityGap in
 theorem mcaError_affineLine_zero_le_inv_card
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     {A : Type} [Finite A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) :
     mcaError (AffineLineGenerator F) C 0 ≤
@@ -743,7 +743,7 @@ theorem mcaError_affineLine_zero_le_inv_card
     exact hc
   unfold mcaError
   refine iSup_le fun U => ?_
-  rw [Probability.prob_uniform_eq_ofReal]
+  rw [SampleableType.prEvent_uniformSample_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right
   · exact_mod_cast (show (Finset.univ.filter (fun x : F =>
@@ -804,7 +804,7 @@ theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
-    {S : Type} [Fintype S] [Nonempty S]
+    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (C : ModuleCode ι F A)
     {δ : ℝ} (hδ : δ < 0) :
@@ -813,7 +813,7 @@ theorem mcaError_eq_zero_of_neg_radius
   unfold mcaError
   apply le_antisymm
   · refine iSup_le fun U => ?_
-    rw [Probability.prob_uniform_eq_ofReal]
+    rw [SampleableType.prEvent_uniformSample_eq_ofReal]
     have hempty : Finset.univ.filter (fun x : S => IsMCA G C x U δ) = ∅ := by
       rw [Finset.filter_eq_empty_iff]
       intro x _ hx
@@ -893,7 +893,7 @@ theorem sharpSubspaceProfile_two_mul_le_rate_add
   have hval : sharpSubspaceProfile (ι := ι) s R (2 * t) =
       ((s : ℝ) * R - 1 / Fintype.card ι) /
         ((s : ℝ) - 2 * t + 1) := by
-    simp only [sharpSubspaceProfile, hmem, if_true]
+    simp only [sharpSubspaceProfile, hmem, ite_true]
     congr 1
     push_cast
     ring
@@ -1014,7 +1014,7 @@ open scoped NNReal in
 open scoped ProbabilityTheory in
 theorem strongLineDecodable_to_isLineDecodable
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
     (hstrong : StrongLineDecodable C δ a b) :
     IsLineDecodable (F := F) C δ a b := by
@@ -1030,7 +1030,7 @@ theorem strongLineDecodable_to_isLineDecodable
     ext γ
     simp only [T, lineCloseSeeds, Finset.mem_filter, Finset.mem_univ, true_and,
       hclose_iff]
-  rw [Probability.prob_uniform_eq_card_filter_div_card, hfilter] at hprob
+  rw [SampleableType.prEvent_uniformSample, hfilter] at hprob
   have hq0 : (Fintype.card F : ENNReal) ≠ 0 := by
     exact_mod_cast Fintype.card_ne_zero
   have hqtop : (Fintype.card F : ENNReal) ≠ ⊤ := by simp
@@ -1045,7 +1045,7 @@ theorem strongLineDecodable_to_isLineDecodable
       intro γ hγ
       simpa only [T] using hγ) haT
   refine ⟨u₀, hu₀, u₁, hu₁, ?_⟩
-  rw [Probability.prob_uniform_eq_card_filter_div_card]
+  rw [SampleableType.prEvent_uniformSample]
   apply ENNReal.div_le_div_right
   have hevent :
       (Finset.univ.filter fun γ : F =>

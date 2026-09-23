@@ -457,7 +457,7 @@ instance sumcheckFoldCtxLens_complete :
 
 -- Perfect completeness for the lifted oracle reduction
 omit h_β₀_eq_1 in
-theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init) :
+theorem sumcheckFoldOracleReduction_perfectCompleteness :
     OracleReduction.perfectCompleteness
     (oSpec := []ₒ)
     (StmtIn := Sumcheck.Structured.Statement (L := L) (ℓ := ℓ')
@@ -530,7 +530,7 @@ theorem sumcheckFoldOracleReduction_perfectCompleteness (hInit : NeverFail init)
     (init := init)
     (impl := impl)
     (h := BinaryBasefold.CoreInteraction.sumcheckFoldOracleReduction_perfectCompleteness
-      (_hInit:=hInit) K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := boolEmbedding L))
+      K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := boolEmbedding L))
 
 /-- Knowledge soundness instance for the extractor lens. This one is compatStmt-agnostic -/
 instance sumcheckFoldExtractorLens_rbr_knowledge_soundness

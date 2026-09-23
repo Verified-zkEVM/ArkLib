@@ -191,9 +191,9 @@ theorem fullOracleReduction_perfectCompleteness :
     (hSeam := fun _ => Or.inl inferInstance)
     (h₁ := CoreInteraction.coreInteractionOracleReduction_perfectCompleteness 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
-      (init := init) (impl := impl) (hInit := by infer_instance))
+      (init := init) (impl := impl))
     (h₂ := fun s => QueryPhase.queryOracleProof_perfectCompleteness 𝔽q β γ_repetitions
-      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (pure s) (by infer_instance) impl)
+      (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (pure s) impl)
 
 open scoped NNReal
 
@@ -274,7 +274,7 @@ noncomputable def concreteBinaryBasefoldKnowledgeError (L : Type) [Fintype L] (�
     + (2 ^ (ℓ + 𝓡) : ℝ≥0) / (Fintype.card L : ℝ≥0)
     + ((1 / 2 : ℝ≥0) + 1 / (2 * 2 ^ 𝓡)) ^ γ_rep
 
-omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [SampleableType L] in
 /-- Per-challenge RBR KS errors sum **at most** `concreteBinaryBasefoldKnowledgeError …` (core fold
 mass may be strictly below the paper display; see doc on `sumcheckFoldKnowledgeError_le`). -/
 theorem fullRbrKnowledgeError_sum_le_concrete :

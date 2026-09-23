@@ -82,7 +82,7 @@ lemma multilinearWeight_succ_upper_half {n : ℕ}
     rw [h_eq]; simp_rw [Nat.testBit_eq_getBit]
     rw [Nat.getBit_1_of_ge_two_pow_and_lt_two_pow_succ (h_ge_two_pow := by omega)
       (h_lt_two_pow_succ := by omega)]
-  simp only [h_bit_one, if_true]
+  simp only [h_bit_one, ite_true]
   -- 3. Simplify the Low Bits Term
   -- Low n bits of (j + 2^n) is just j
   congr 2

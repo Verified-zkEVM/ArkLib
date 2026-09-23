@@ -646,6 +646,7 @@ omit [DecidableEq ι] in
 /-- Lower-bounds Reed--Solomon CA error when the evaluation domain lies in a proper
 subfield. The analytic correction term is `subfieldCaFactor`. -/
 theorem subfield_epsCa_lower_bound
+    [SampleableType F]
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0) (B : Subfield F)
     (_hB_proper : B < ⊤)
     (_h_dom : ∀ i, domain i ∈ B)

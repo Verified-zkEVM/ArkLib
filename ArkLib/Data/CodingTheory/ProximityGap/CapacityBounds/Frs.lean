@@ -132,7 +132,7 @@ open scoped NNReal in
 open Code in
 private theorem frs_mcaError_le_proof
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hω : ω ≠ 0)
     (_hω_gen : orderOf ω = Fintype.card F - 1)
@@ -147,7 +147,6 @@ private theorem frs_mcaError_le_proof
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
   classical
   dsimp
-  classical
   let R : ℝ := (k : ℝ) / ((s : ℝ) * Fintype.card ι)
   let δr : ℝ := 1 - R - 2 / (t : ℝ)
   change mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω) δr ≤
@@ -280,7 +279,7 @@ subspace-design argument. The integer parameter is kept explicit rather than rep
 unrounded real expression. -/
 theorem frs_mcaError_le
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hω : ω ≠ 0)
     (_hω_gen : orderOf ω = Fintype.card F - 1)
@@ -302,7 +301,7 @@ bound for the folded Reed-Solomon code. The numeric budget check is a hypothesis
 contentful-range condition is discharged at the use site rather than assumed by the reader. -/
 theorem frs_mcaError_le_of_budget
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F] [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hω : ω ≠ 0)
     (hω_gen : orderOf ω = Fintype.card F - 1)

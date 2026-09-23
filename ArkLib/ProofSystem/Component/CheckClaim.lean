@@ -93,51 +93,17 @@ theorem reduction_completeness [Nonempty σ] :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
   classical
-  simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
-  intro stmt () valid
+  apply Reduction.perfectCompleteness_of_run_support
+  intro stmt _ valid x hx
   simp only [relIn, Set.mem_ofPred_eq] at valid
-  -- valid : pred stmt
-  -- First simplify the reduction run
-  have hrun : (reduction oSpec Statement pred).run stmt () =
-      (pure ((default, stmt, ()), stmt) :
-        OptionT (OracleComp _) _) := by
+  have hrun : ((reduction oSpec Statement pred).run stmt ()).run =
+      (pure (some ((default, stmt, ()), stmt)) : OracleComp _ _) := by
     simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run,
-          Prover.runToRound, guard, if_pos valid]; rfl
-  simp only [hrun]
-  -- Now identical to id_perfectCompleteness pattern
-  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
-  · rw [OptionT.probFailure_eq, OptionT.run_mk]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [support_bind, Set.mem_iUnion, not_exists]
-    intro s _ hmem
-    -- Unfold OptionT.run on pure, then simulateQ_pure, then StateT
-    change none ∈ _root_.support
-      (StateT.run' (simulateQ _ (pure (some ((default, stmt, ()), stmt)) :
-        OracleComp _ _)) s) at hmem
-    rw [simulateQ_pure] at hmem
-    change none ∈ _root_.support
-      (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
-        StateT σ ProbComp _).run s) at hmem
-    rw [StateT.run_pure] at hmem
-    simp [map_pure] at hmem
-  · intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ _root_.support
-      (StateT.run' (simulateQ _ (pure (some ((default, stmt, ()), stmt)) :
-        OracleComp _ _)) s) at hx
-    rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support
-      (Prod.fst <$> (pure (some ((default, stmt, ()), stmt)) :
-        StateT σ ProbComp _).run s) at hx
-    rw [StateT.run_pure] at hx
-    have hx' : some x = some ((default, stmt, ()), stmt) := by
-      simpa [map_pure, support_pure] using hx
-    cases hx'
-    simp [relOut]
+      Prover.runToRound, guard, ite_eq_left valid]
+    rfl
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hx
+  subst x
+  exact ⟨_, rfl, by simp [relOut], rfl⟩
 
 /-- The knowledge state function for the `CheckClaim` reduction, mirroring the trivial-verifier
   template `Verifier.KnowledgeStateFunction.id`: at round `0` the state simply records that the
@@ -155,9 +121,8 @@ def knowledgeStateFunction :
     by_contra hpred
     -- If `pred stmtIn` is false then `guard` fails and the OptionT computation always returns
     -- `none`, so no probability event can be positive.
-    rw [gt_iff_lt, probEvent_pos_iff] at h
+    rw [gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff] at h
     obtain ⟨x, hx, _⟩ := h
-    rw [OptionT.mem_support_iff] at hx
     -- Reduce the failing verifier by unfolding the `guard` branch.
     have hverify : (verifier oSpec Statement pred).run stmtIn tr =
         (OptionT.mk (pure none) : OptionT (OracleComp oSpec) Statement) := by
@@ -168,15 +133,15 @@ def knowledgeStateFunction :
       rfl
     rw [hverify] at hx
     -- Now `simulateQ impl (OptionT.mk (pure none))` has empty support.
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    simp only [support_bind, Set.mem_iUnion] at hx
     obtain ⟨s, _, hx⟩ := hx
     rw [show ((OptionT.mk (pure none) : OptionT (OracleComp oSpec) Statement)) =
         ((pure none : OracleComp oSpec (Option Statement)) : _) from rfl] at hx
     rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support
+    change some x ∈ MonadAttach.support
       (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at hx
     rw [StateT.run_pure] at hx
-    simp [map_pure, support_pure] at hx
+    simp [map_pure] at hx
 
 /-- The `CheckClaim` reduction satisfies perfect round-by-round knowledge soundness. -/
 theorem verifier_rbr_knowledge_soundness :
@@ -295,49 +260,17 @@ theorem oracleReduction_completeness
       P stmt oStmt) :
     (oracleReduction oSpec Statement OStatement).perfectCompleteness init impl
       relIn (oracleRelOut P relIn) := by
-  simp only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
-    Reduction.completeness, ENNReal.coe_zero, tsub_zero]
-  intro ⟨stmt, oStmt⟩ witIn hIn
-  -- Reduce the run to a deterministic `pure` of the (unchanged) input.
-  have hrun : (oracleReduction oSpec Statement OStatement).toReduction.run
-      ⟨stmt, oStmt⟩ witIn =
-      (pure ((default, ((stmt, oStmt), ())), (stmt, oStmt)) : OptionT (OracleComp _) _) := by
+  apply Reduction.perfectCompleteness_of_run_support
+  intro ⟨stmt, oStmt⟩ witIn hIn x hx
+  have hrun : ((oracleReduction oSpec Statement OStatement).toReduction.run
+      ⟨stmt, oStmt⟩ witIn).run =
+      (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) : OracleComp _ _) := by
     simp only [oracleReduction, OracleReduction.toReduction, Reduction.run, oracleProver,
       oracleVerifier, OracleVerifier.toVerifier, Prover.run, Verifier.run, Prover.runToRound]
     rfl
-  rw [hrun]
-  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
-  refine ⟨?_, ?_⟩
-  · rw [OptionT.probFailure_eq, OptionT.run_mk]
-    simp only [probFailure_eq_zero, zero_add]
-    apply probOutput_eq_zero_of_not_mem_support
-    simp only [support_bind, Set.mem_iUnion, not_exists]
-    intro s _ hmem
-    change none ∈ _root_.support
-      (StateT.run' (simulateQ _ (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
-        OracleComp _ _)) s) at hmem
-    rw [simulateQ_pure] at hmem
-    change none ∈ _root_.support
-      (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
-        StateT σ ProbComp _).run s) at hmem
-    rw [StateT.run_pure] at hmem
-    simp [map_pure] at hmem
-  · intro x hx
-    rw [OptionT.mem_support_iff] at hx
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
-    obtain ⟨s, _, hx⟩ := hx
-    change some x ∈ _root_.support
-      (StateT.run' (simulateQ _ (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
-        OracleComp _ _)) s) at hx
-    rw [simulateQ_pure] at hx
-    change some x ∈ _root_.support
-      (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
-        StateT σ ProbComp _).run s) at hx
-    rw [StateT.run_pure] at hx
-    have hx' : some x = some ((default, ((stmt, oStmt), ())), (stmt, oStmt)) := by
-      simpa [map_pure, support_pure] using hx
-    cases hx'
-    exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hx
+  subst x
+  exact ⟨_, rfl, ⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
 
 /-- **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure
 pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge

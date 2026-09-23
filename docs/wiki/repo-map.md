@@ -14,7 +14,6 @@ ArkLib/
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
   ToCompPoly/         local additions not upstreamed to CompPoly
-  ToVCVio/            local additions not upstreamed to VCV-io
 blueprint/src/        blueprint sources and references.bib
 docs/kb/             persistent paper, concept, audit, and query knowledge base
 scripts/              repo utilities
@@ -30,7 +29,7 @@ home_page/            site assets and assembled website root
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate.
-- `ArkLib/Data/`, `ArkLib/ToMathlib/`, `ArkLib/ToCompPoly/`, and `ArkLib/ToVCVio/` support the
+- `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
   core with reusable definitions and lemmas.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.
 - When changing a protocol subtree, read the local subtree plus one layer of imports toward
@@ -47,26 +46,17 @@ home_page/            site assets and assembled website root
   `CommitmentScheme`, `Functional/` for commit-plus-oracle-evaluation schemes defined by
   ArkLib's own `Commitment.Scheme` in `ArkLib/Commitments/Functional/Basic.lean`).
 - Moving reusable helper lemmas that ideally belong upstream: start in `ArkLib/ToMathlib/`,
-  `ArkLib/ToCompPoly/`, or `ArkLib/ToVCVio/`, depending on the upstream project.
+  or `ArkLib/ToCompPoly/`, depending on the upstream project. Generic VCVio additions go upstream
+  directly; ArkLib imports their public owner modules.
 - Updating theory docs, references, or long-form exposition: start in `blueprint/src/`.
 - Updating repository-local paper summaries, audits, or reference context: start in `docs/kb/`.
 
 ## Navigation Notes
 
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
-- `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
-  `ArkLib.ToVCVio`; use it for reusable `VCVio` helper lemmas before they are upstreamed.
-  `Simulation/Basic.lean` contains the core simulation lemmas; `Simulation/ForIn.lean`
-  contains the loop lemmas. `Simulation.lean` publicly re-exports both.
-  **Nothing there may import ArkLib outside `ToVCVio` itself** — that invariant is what makes a file
-  movable to VCVio unchanged. Content that is generic in spirit but depends on an ArkLib layer
-  belongs beside its consumers in core instead; generalise first, then move. Files whose contents
-  have gone upstream are kept as import-only compatibility shells rather than deleted. See
-  [`ArkLib/ToVCVio/README.md`](../../ArkLib/ToVCVio/README.md) for the upstream-then-delete rule.
 - Across the PolyFun/VCVio boundary, import generic polynomial-functor and handler structure from
   PolyFun and oracle/probability specializations from VCVio. Dependency internals are not an ArkLib
-  proof surface: if an ordinary import is missing a usable law, stage that law in `ToVCVio` or
-  upstream it rather than reaching through the module boundary.
+  proof surface: if an ordinary import is missing a usable law, upstream that law rather than reaching through the module boundary.
 - `ArkLib/Commitments/` splits into two families by *what an opening proves*:
   - `Ordinary/` — standard commitments that only **commit and open** (reveal the committed
     message). These reuse the VCV-io `CommitmentScheme` definition rather than redefining it;

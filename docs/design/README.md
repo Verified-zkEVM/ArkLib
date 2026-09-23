@@ -1,6 +1,7 @@
 # ArkLib typed interaction and oracle-reduction design
 
 **Initial design:** 2026-07-13. **Last source audit:** 2026-08-29.
+**Last status update:** 2026-09-22.
 **Status:** normative architecture with a staged implementation.
 
 ArkLib's current `OracleReduction` layer made ambitious formalizations possible, but its central
@@ -17,7 +18,8 @@ compiler that turns ideal guarantees into explicit cryptographic obligations.
 ## How to use this suite
 
 Start with [`00-current-status.md`](00-current-status.md). It is the operational source of truth for
-the supported dependency revisions, available APIs, missing foundations, and next ArkLib slices.
+the supported dependency revisions, available APIs, missing foundations, landed ArkLib slices, and
+open work.
 
 The other pages have narrower jobs:
 
@@ -84,9 +86,8 @@ every ideal oracle guarantee becomes an explicit commit, open, or link obligatio
 - **D6 — Interaction names describe what the objects are.** PolyFun's generic carrier is
   `Interaction.TypeTree` and its complete branch is `TypeTree.Path`. ArkLib's oracle refinement is
   `Interaction.Oracle.TypeTree`, with `BranchPath` for structural choices and `ExecutionPath` for
-  concrete messages. The generic rename, structural refinement, and typed role/interface
-  decorations have landed; later oracle access and execution layers remain implementation
-  contracts.
+  concrete messages. The generic rename, structural refinement, typed role/interface
+  decorations, oracle access, and execution layers have landed.
 
 ## Ground rules
 
@@ -100,4 +101,6 @@ every ideal oracle guarantee becomes an explicit commit, open, or link obligatio
 Stable today are the architectural invariants: extensional closed claims, source-scoped virtual
 programs, run-derived closing, explicit aliasing, guarantee transport, and the three-library
 dependency direction. Lean record layouts such as `ClaimWith`, `SourceCtx`, `NamedContext`,
-`CoreRun`, and the later execution artifact remain provisional until their acceptance clients land.
+`CoreRun`, and the execution artifacts now have acceptance clients (AR-7 Sumcheck and the
+`ArkLibTest/Interaction/` suite); they may still change when the FRI and Spartan slices exercise
+them.

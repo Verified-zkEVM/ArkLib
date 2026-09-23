@@ -15,7 +15,7 @@ public import Mathlib.Data.ENat.Lattice
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.Tactic.Qify
 public import Mathlib.Topology.MetricSpace.Infsep
-public import Mathlib.Data.Real.ENatENNReal
+public import Mathlib.Basic.Real.ENatENNReal
 public import Mathlib.Algebra.Order.Chebyshev
 public import CompPoly.Data.Nat.Bitwise
 
@@ -871,7 +871,7 @@ theorem dist'_eq_dist : ‖C‖₀'.toNat = ‖C‖₀ := by
       -- `dStar ≤ a` for all `a ∈ vals`, hence `dStar ≤ vals.min`.
       have h_ge : (dStar : ℕ∞) ≤ vals.min := by
         -- Use the universal lower-bound property of `min'`.
-        refine Finset.le_min (s := vals) (m := (dStar : ℕ∞)) ?_;
+        refine Finset.le_min ?_
         intro a ha; exact
           (show (dStar : ℕ∞) ≤ (a : ℕ∞) from by
               -- `dStar ≤ a` in `ℕ`, then coerce.

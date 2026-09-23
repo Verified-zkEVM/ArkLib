@@ -20,9 +20,34 @@ open scoped OracleSpec.PrimitiveQuery
 
 universe u v w
 
+/-- A successful pure result cannot be an abort. -/
+@[simp]
+lemma OptionT.none_not_mem_support_pure
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [MonadAttach m] [ExactMonadAttach m]
+    {α : Type _} (x : α) :
+    none ∉ support (pure x : OptionT m α).run := by
+  simp [OptionT.run_pure]
+
+/-- Structural safety of an optional bind, including every reachable continuation. -/
+lemma OptionT.none_not_mem_support_bind_iff
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
+    {α β : Type _} (mx : OptionT m α) (f : α → OptionT m β) :
+    none ∉ support (mx >>= f).run ↔
+      none ∉ support mx.run ∧ ∀ x ∈ support mx, none ∉ support (f x).run := by
+  simp [OptionT.run_bind, Option.elimM, Option.forall]
+
+/-- Mapping successful values preserves absence of an abort. -/
+lemma OptionT.none_not_mem_support_map_iff
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
+    {α β : Type _} (f : α → β) (mx : OptionT m α) :
+    none ∉ support (f <$> mx).run ↔ none ∉ support mx.run := by
+  simp [OptionT.run_map, Set.mem_image, Option.map_eq_none_iff]
+
 section ForInLemmas
 
-variable {ι : Type} {spec : OracleSpec ι} [spec.Fintype] [spec.Inhabited]
+variable {ι : Type} {spec : OracleSpec ι}
 variable {α β σ : Type}
 
 /--
@@ -37,25 +62,25 @@ not just reachable ones. This makes the lemma useful for proving safety
 For singleton states (like `PUnit`), this condition is both necessary and sufficient.
 
 **Usage**: This is the key lemma for completeness proofs.
-To show `Pr[⊥ | forIn l init f] = 0`, it suffices to show that each step
-`Pr[⊥ | f x s] = 0` is safe for all elements and all states.
+To show `none ∉ support (forIn l init f).run`, it suffices to show that each step
+`none ∉ support (f x s).run` is safe for all elements and all states.
 -/
-lemma probFailure_forIn_eq_zero_of_body_safe
-    {m : Type _ → Type _} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
-    (l : List α) (init : σ) (f : α → σ → m (ForInStep σ))
-    (h : ∀ x ∈ l, ∀ s, Pr[⊥ | f x s] = 0) :
-    Pr[⊥ | forIn l init f] = 0 := by
+lemma none_not_mem_support_forIn_of_body_safe
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
+    (l : List α) (init : σ) (f : α → σ → OptionT m (ForInStep σ))
+    (h : ∀ x ∈ l, ∀ s, none ∉ support (f x s).run) :
+    none ∉ support (forIn l init f).run := by
   induction l generalizing init with
   | nil =>
     -- Base case: empty list returns `pure init`, which never fails.
-    simp only [forIn, List.forIn'_nil, probFailure_pure]
+    simp [forIn, List.forIn'_nil]
   | cons x xs ih =>
     -- Inductive step: x :: xs
     -- Use List.forIn'_cons to expand into the bind structure
     simp only [forIn, List.forIn'_cons]
     -- Now apply the bind rewrite
-    rw [probFailure_bind_eq_zero_iff]
+    rw [OptionT.none_not_mem_support_bind_iff]
     constructor
     · -- Head is safe
       apply h x List.mem_cons_self
@@ -64,7 +89,7 @@ lemma probFailure_forIn_eq_zero_of_body_safe
       cases step with
       | done s' =>
         -- If 'done', we return pure, which is safe
-        simp only [probFailure_pure]
+        exact OptionT.none_not_mem_support_pure _
       | yield s' =>
         -- If 'yield', we continue the loop (recurse)
         -- Apply inductive hypothesis
@@ -73,57 +98,57 @@ lemma probFailure_forIn_eq_zero_of_body_safe
         -- Use the premise that all steps are safe
         apply h y (List.mem_cons_of_mem _ hy_xs)
 
-/-- `OptionT` wrapper of `probFailure_forIn_eq_zero_of_body_safe`. -/
-lemma OptionT.probFailure_forIn_eq_zero_of_body_safe
-    {ι : Type} {spec : OracleSpec ι} [IsUniformSpec spec]
+/-- `OptionT` wrapper of `none_not_mem_support_forIn_of_body_safe`. -/
+lemma OptionT.none_not_mem_support_forIn_of_body_safe
+    {ι : Type} {spec : OracleSpec ι}
     {α σ : Type}
     (l : List α) (init : σ)
     (f : α → σ → OptionT (OracleComp spec) (ForInStep σ))
-    (h : ∀ x ∈ l, ∀ s, Pr[⊥ | f x s] = 0) :
-    Pr[⊥ | forIn l init f] = 0 := by
+    (h : ∀ x ∈ l, ∀ s, none ∉ support (f x s).run) :
+    none ∉ support (forIn l init f).run := by
   simpa using
-    (_root_.probFailure_forIn_eq_zero_of_body_safe
-      (m := OptionT (OracleComp spec)) (l := l) (init := init) (f := f) h)
+    (_root_.none_not_mem_support_forIn_of_body_safe
+      (m := OracleComp spec) (l := l) (init := init) (f := f) h)
 
-/-- Convenience wrapper for goals written vec `Pr[⊥ | OptionT.mk (forIn ...)] = 0`. -/
-lemma OptionT.probFailure_mk_forIn_eq_zero_of_body_safe
-    {ι : Type} {spec : OracleSpec ι} [IsUniformSpec spec]
+/-- Convenience wrapper for goals written vec `none ∉ support (OptionT.mk (forIn ...)).run`. -/
+lemma OptionT.none_not_mem_support_mk_forIn_of_body_safe
+    {ι : Type} {spec : OracleSpec ι}
     {α σ : Type}
     (l : List α) (init : σ)
     (f : α → σ → OptionT (OracleComp spec) (ForInStep σ))
-    (h : ∀ x ∈ l, ∀ s, Pr[⊥ | f x s] = 0) :
-    Pr[⊥ | OptionT.mk (forIn l init f : OptionT (OracleComp spec) σ)] = 0 := by
-  change Pr[⊥ | forIn l init f] = 0
-  exact OptionT.probFailure_forIn_eq_zero_of_body_safe
+    (h : ∀ x ∈ l, ∀ s, none ∉ support (f x s).run) :
+    none ∉ support (OptionT.mk (forIn l init f : OptionT (OracleComp spec) σ)).run := by
+  change none ∉ support (forIn l init f).run
+  exact OptionT.none_not_mem_support_forIn_of_body_safe
     (spec := spec) (l := l) (init := init) (f := f) h
 
 /-- Prove forIn safety using an invariant.
     P done s: Predicate meaning state 's' is correct after processing 'done'. -/
-lemma probFailure_forIn_of_invariant
-    {m : Type _ → Type _} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
+lemma none_not_mem_support_forIn_of_invariant
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
     {α σ : Type} (P : List α → σ → Prop)
-    (l : List α) (init : σ) (f : α → σ → m (ForInStep σ))
+    (l : List α) (init : σ) (f : α → σ → OptionT m (ForInStep σ))
     -- 1. Base: Invariant holds at start
     (h_start : P [] init)
     -- 2. Step: Preserves invariant and is safe
     (h_step : ∀ (done : List α) (x : α) (s : σ),
        x ∈ l → P done s →
-       Pr[⊥ | f x s] = 0 ∧ ∀ s' ∈ support ((f x s)),
+       none ∉ support (f x s).run ∧ ∀ s' ∈ support ((f x s)),
          match s' with
          | .yield next => P (done ++ [x]) next
          | .done next => P (done ++ [x]) next) :
-    Pr[⊥ | forIn l init f] = 0 := by
+    none ∉ support (forIn l init f).run := by
   -- We define a helper that iterates over a suffix 'xs' given a prefix 'done'
   let rec aux (xs : List α) (done : List α) (s : σ)
       (h_decomp : l = done ++ xs) (h_inv : P done s) :
-      Pr[⊥ |  forIn xs s f] = 0 := by
+      none ∉ support (forIn xs s f).run := by
     induction xs generalizing done s with
     | nil =>
-      simp only [forIn, List.forIn'_nil, probFailure_pure]
+      simp [forIn, List.forIn'_nil]
     | cons y ys ih =>
       simp only [forIn, List.forIn'_cons]
-      rw [probFailure_bind_eq_zero_iff]
+      rw [OptionT.none_not_mem_support_bind_iff]
       -- Use h_step for the head element y
       have h_mem : y ∈ l := by
         rw [h_decomp]
@@ -135,7 +160,7 @@ lemma probFailure_forIn_of_invariant
       · intro step h_step_supp
         cases step with
         | done next =>
-          simp only [probFailure_pure]
+          exact OptionT.none_not_mem_support_pure _
         | yield next =>
           -- Apply IH for the tail with updated done list
           apply ih (done ++ [y]) next
@@ -154,13 +179,13 @@ Safety of a forIn loop using a sequence of relations.
 - `rel`: A family of relations indexed by step count `i` and state `s`.
   `rel i s` means "After `i` steps, the state `s` is correct".
 -/
-lemma probFailure_forIn_of_relations
-    {m : Type _ → Type _} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
+lemma none_not_mem_support_forIn_of_relations
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
     {α σ : Type}
     (l : List α)
     (init : σ)
-    (f : α → σ → m (ForInStep σ))
+    (f : α → σ → OptionT m (ForInStep σ))
     -- The sequence of relations: rel i s
     (rel : Fin (l.length + 1) → σ → Prop)
     -- 1. Base Case: Relation 0 holds for initial state
@@ -170,14 +195,14 @@ lemma probFailure_forIn_of_relations
        -- Given the relation holds at step k
        rel (k.castSucc) s →
        -- Then the step using the k-th element of the list is safe
-       Pr[⊥ | f (l.get k) s] = 0 ∧
+       none ∉ support (f (l.get k) s).run ∧
        -- And the result satisfies the relation at step k+1
        ∀ s' ∈ support (f (l.get k) s),
          match s' with
          | .yield next => rel (k.succ) next
          | .done next => rel (k.succ) next) :
-    Pr[⊥ | forIn l init f] = 0 := by
-  -- Instead of using `probFailure_forIn_of_invariant` which has a weaker inductive hypothesis
+    none ∉ support (forIn l init f).run := by
+  -- `none_not_mem_support_forIn_of_invariant` has a weaker inductive hypothesis
   -- (it quantifies ∀ x ∈ l, losing the index information), we use a direct recursive helper.
   -- Helper: Proves safety for a suffix `xs` starting at index `k`.
   -- k: The current index in the original list `l`.
@@ -190,13 +215,13 @@ lemma probFailure_forIn_of_relations
       (h_suffix : l.drop k = xs)
       (h_len : k + xs.length = l.length)
       (h_rel : rel ⟨k, by omega⟩ s) :
-      Pr[⊥ |  forIn xs s f] = 0 := by
+      none ∉ support (forIn xs s f).run := by
     induction xs generalizing k s with
     | nil =>
-      simp only [forIn, List.forIn'_nil, probFailure_pure]
+      simp [forIn, List.forIn'_nil]
     | cons y ys ih =>
       simp only [forIn, List.forIn'_cons]
-      rw [probFailure_bind_eq_zero_iff]
+      rw [OptionT.none_not_mem_support_bind_iff]
       -- Derive k < l.length from h_len
       have h_k_lt : k < l.length := by simp only [List.length_cons] at h_len; omega
       -- 1. Establish that y corresponds to l[k]
@@ -218,7 +243,7 @@ lemma probFailure_forIn_of_relations
       · intro step h_in_supp
         cases step with
         | done next =>
-          simp only [probFailure_pure]
+          exact OptionT.none_not_mem_support_pure _
         | yield next =>
           -- 3. Recursive step
           specialize h_next (.yield next) h_in_supp
@@ -249,22 +274,22 @@ def ForInStep.state : ForInStep σ → σ
 Safety of a forIn loop using a sequence of relations (Simplified).
 Using `ForInStep.state` removes the need to pattern match on yield/done in the proof.
 -/
-lemma probFailure_forIn_of_relations_simplified
-    {m : Type _ → Type _} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
+lemma none_not_mem_support_forIn_of_relations_simplified
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
     {α σ : Type} (l : List α) (init : σ)
-    (f : α → σ → m (ForInStep σ))
+    (f : α → σ → OptionT m (ForInStep σ))
     (rel : Fin (l.length + 1) → σ → Prop)
     -- 1. Base Case
     (h_start : rel 0 init)
     -- 2. Inductive Step (Simplified)
     (h_step : ∀ (k : Fin l.length) (s : σ),
        rel (k.castSucc) s →
-       Pr[⊥ | f (l.get k) s] = 0 ∧
+       none ∉ support (f (l.get k) s).run ∧
        -- Simplified: Just check the result state, no 'match' needed
        ∀ res ∈ support (f (l.get k) s), rel (k.succ) res.state) :
-    Pr[⊥ | forIn l init f] = 0 := by
-  apply probFailure_forIn_of_relations l init f rel h_start
+    none ∉ support (forIn l init f).run := by
+  apply none_not_mem_support_forIn_of_relations l init f rel h_start
   intro k s h_rel
   obtain ⟨h_safe, h_next⟩ := h_step k s h_rel
   constructor
@@ -279,8 +304,8 @@ If a relation `rel` is inductive over a `forIn` loop, then any output `x`
 in the support of the loop satisfies `rel l.length x`.
 -/
 lemma support_forIn_subset_rel
-    {m : Type _ → Type _} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
     {α σ : Type}
     (l : List α) (init : σ) (f : α → σ → m (ForInStep σ))
     (rel : Fin (l.length + 1) → σ → Prop)
@@ -356,8 +381,8 @@ It requires proving two things for each step result `res`:
 2. `rel k.succ res.state` (The invariant is preserved)
 -/
 lemma support_forIn_subset_rel_yield_only
-    {m : Type _ → Type _} [Monad m] [MonadLiftT m SPMF] [LawfulMonadLiftT m SPMF]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM] [EvalDistCompatible m]
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
     {α σ : Type}
     (l : List α) (init : σ) (f : α → σ → m (ForInStep σ))
     (rel : Fin (l.length + 1) → σ → Prop)
@@ -383,7 +408,6 @@ lemma support_forIn_subset_rel_yield_only
     Corrected to allow specs with DIFFERENT index types (ι and ι'). -/
 @[simp]
 lemma liftComp_forIn {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
-    [spec.Fintype] [superSpec.Fintype]
     [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
     {α β : Type} (l : List α) (init : β)
     (f : α → β → OracleComp spec (ForInStep β)) :
@@ -542,14 +566,13 @@ lemma OptionT.simulateQ_forIn_stateful_comp {ι : Type} {spec : OracleSpec ι}
           | done res => rfl
           | yield res => simpa [forIn'_eq_forIn] using ih res
 
-omit [spec.Fintype] [spec.Inhabited] in
 /-- **Loop Path Extraction**:
     If a stateful forIn loop over PUnit reaches a final state, then for every element
     in the list, there must exist a local start state and end state such that the
     body of that iteration succeeded.
     **Important:** this requires the loop body to be yield-only on support
     (i.e. no early `.done`). -/
-lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.Fintype]
+lemma exists_path_of_mem_support_forIn_unit {σ α : Type}
     (l : List α) (f : α → PUnit → StateT σ ProbComp (ForInStep PUnit))
     (s_init s_final : σ) (u : PUnit)
     (h_yield : ∀ (x : α) (s_pre : σ) (res_step : ForInStep PUnit × σ),
@@ -574,8 +597,7 @@ lemma exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.Fintype]
       · exact ⟨s_init, s_mid, h_step_mem⟩
       · exact ih s_mid s_final u h_rest x hx
 
-omit [spec.Fintype] [spec.Inhabited] in
-lemma OptionT.exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.Fintype]
+lemma OptionT.exists_path_of_mem_support_forIn_unit {σ α : Type}
     (l : List α) (f : α → PUnit → OptionT (StateT σ ProbComp) (ForInStep PUnit))
     (s_init s_final : σ) (u : PUnit)
     (h_yield : ∀ (x : α) (s_pre : σ) (res_step : ForInStep PUnit × σ),
@@ -629,7 +651,7 @@ So you get both "exists_path_of_mem_support_forIn_unit"-style per-step membershi
 early via `.done`.
 The loop's `.run` support is `Set (β × σ)` (the accumulated value and state); each body step's
 support is `Set (ForInStep β × σ)`, hence `h_step` uses `ForInStep.state res_step.1`. -/
-lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι} [spec.Fintype]
+lemma exists_rel_path_of_mem_support_forIn_stateful
     {α σ β : Type} (l : List α) (init : β) (f : α → β → StateT σ ProbComp (ForInStep β))
     (s : σ)
     (rel : Fin (l.length + 1) → β → σ → Prop)
@@ -770,8 +792,7 @@ lemma exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSp
 
 This keeps the same path/relation conclusion over `β`, while all support facts are
 expressed through the `some` branch of `OptionT.run`. -/
-lemma OptionT.exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : OracleSpec ι}
-    [spec.Fintype]
+lemma OptionT.exists_rel_path_of_mem_support_forIn_stateful
     {α σ β : Type} (l : List α) (init : β)
     (f : α → β → OptionT (StateT σ ProbComp) (ForInStep β))
     (s : σ)
@@ -926,7 +947,6 @@ lemma simulateQ_array_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : O
   rw [Array.mapM_eq_mapM_toList, Array.mapM_eq_mapM_toList]
   simp [simulateQ_list_mapM]
 
-omit [spec.Fintype] [spec.Inhabited] in
 lemma singleton_mapM_gen
     {m : Type _ → Type _} [Monad m] [LawfulMonad m]
     {α β : Type} (f : α → m β) (a : α) :
@@ -936,8 +956,8 @@ lemma singleton_mapM_gen
   simp [Array.mapM_eq_mapM_toList, List.mapM_cons]
 
 lemma support_vector_mapM_gen
-    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [MonadLiftT m SetM]
-    [LawfulMonadLiftT m SetM]
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [MonadAttach m]
+    [ExactMonadAttach m]
     {α β : Type} (f : α → m β) :
     ∀ {n} (vec : Vector α n) (x : Vector β n),
       x ∈ support (Vector.mapM f vec) ↔ ∀ i : Fin n, x[i] ∈ support (f vec[i]) := by
@@ -1003,66 +1023,37 @@ lemma simulateQ_vector_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : 
   rw [← simulateQ_map, Vector.toArray_mapM, Vector.toArray_mapM]
   exact simulateQ_array_mapM (so := so) (f := f) v.toArray
 
-omit [spec.Fintype] [spec.Inhabited] in
 lemma mem_support_vector_mapM {n} {f : α → OracleComp spec β} {vec : Vector α n} {x : Vector β n} :
     x ∈ support (Vector.mapM f vec) ↔ ∀ i : Fin n, x[i] ∈ support (f vec[i]) := by
   exact support_vector_mapM_gen (m := OracleComp spec) (f := f) vec x
+/-- Mapping an optional computation over a list preserves structural safety. -/
+lemma OptionT.none_not_mem_support_list_mapM
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
+    {γ δ : Type} (f : γ → OptionT m δ) (xs : List γ)
+    (h : ∀ x ∈ xs, none ∉ support (f x).run) :
+    none ∉ support (xs.mapM f).run := by
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+    rw [List.mapM_cons, OptionT.none_not_mem_support_bind_iff]
+    refine ⟨h x (by simp), ?_⟩
+    intro y _
+    rw [OptionT.none_not_mem_support_bind_iff]
+    exact ⟨ih (fun z hz => h z (List.mem_cons_of_mem x hz)),
+      fun _ _ => OptionT.none_not_mem_support_pure _⟩
 
-/-- `Vector.mapM` is failure-free if each element computation is failure-free. -/
-@[simp]
-lemma neverFail_vector_mapM
-    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [MonadLiftT m SPMF]
-    [LawfulMonadLiftT m SPMF] [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
-    [EvalDistCompatible m]
-    {n : ℕ} {γ δ : Type} {f : γ → m δ} {vec : Vector γ n}
-    (h : ∀ x ∈ vec.toList, NeverFail (f x)) :
-    NeverFail (Vector.mapM f vec) := by
-  have h_list : NeverFail (List.mapM f vec.toList) :=
-    neverFail_list_mapM («as» := vec.toList) (f := f) h
-  have h_array : NeverFail (Array.mapM f vec.toArray) := by
-    rw [Array.mapM_eq_mapM_toList]
-    exact
-      (neverFail_map_iff (mx := List.mapM f vec.toList) (f := List.toArray)).2 h_list
-  have h_vec_toArray : NeverFail (Vector.toArray <$> Vector.mapM f vec) := by
-    rw [Vector.toArray_mapM]
-    exact h_array
-  exact (neverFail_map_iff (mx := Vector.mapM f vec) (f := Vector.toArray)).1
-    h_vec_toArray
-
-/-- `probFailure` form of `neverFail_vector_mapM`. -/
-@[simp]
-lemma probFailure_vector_mapM_eq_zero
-    {m : Type _ → Type _} [Monad m] [LawfulMonad m] [MonadLiftT m SPMF]
-    [LawfulMonadLiftT m SPMF] [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
-    [EvalDistCompatible m]
-    {n : ℕ} {γ δ : Type} {f : γ → m δ} {vec : Vector γ n}
-    (h : ∀ x ∈ vec.toList, Pr[⊥ | f x] = 0) :
-    Pr[⊥ | Vector.mapM f vec] = 0 := by
-  have h_nf : NeverFail (Vector.mapM f vec) :=
-    neverFail_vector_mapM (vec := vec) (f := f)
-      (h := fun x hx => NeverFail.of_probFailure_eq_zero (f x) (h x hx))
-  exact (neverFail_iff (Vector.mapM f vec)).1 h_nf
-
-omit [spec.Fintype] [spec.Inhabited] in
-/-- OracleComp specialization of `probFailure_vector_mapM_eq_zero`. -/
-@[simp]
-lemma OracleComp.probFailure_vector_mapM_eq_zero
-    [IsUniformSpec spec] {n : ℕ} {γ δ : Type} {f : γ → OracleComp spec δ} {vec : Vector γ n}
-    (h : ∀ x ∈ vec.toList, Pr[⊥ | f x] = 0) :
-    Pr[⊥ | Vector.mapM f vec] = 0 := by
-  exact _root_.probFailure_vector_mapM_eq_zero
-    (m := OracleComp spec) (vec := vec) (f := f) h
-
-omit [spec.Fintype] [spec.Inhabited] in
-/-- OptionT specialization of `probFailure_vector_mapM_eq_zero`. -/
-@[simp]
-lemma OptionT.probFailure_vector_mapM_eq_zero
-    [IsUniformSpec spec] {n : ℕ} {γ δ : Type} {f : γ → OptionT (OracleComp spec) δ}
-    {vec : Vector γ n}
-    (h : ∀ x ∈ vec.toList, Pr[⊥ | f x] = 0) :
-    Pr[⊥ | Vector.mapM f vec] = 0 := by
-  exact _root_.probFailure_vector_mapM_eq_zero
-    (m := OptionT (OracleComp spec)) (vec := vec) (f := f) h
+/-- Mapping an optional computation over a vector preserves structural safety. -/
+lemma OptionT.none_not_mem_support_vector_mapM
+    {m : Type _ → Type _} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [ExactMonadAttach m]
+    {n : ℕ} {γ δ : Type} {f : γ → OptionT m δ} {vec : Vector γ n}
+    (h : ∀ x ∈ vec.toList, none ∉ support (f x).run) :
+    none ∉ support (Vector.mapM f vec).run := by
+  rw [← OptionT.none_not_mem_support_map_iff Vector.toArray,
+    Vector.toArray_mapM, Array.mapM_eq_mapM_toList,
+    OptionT.none_not_mem_support_map_iff]
+  exact OptionT.none_not_mem_support_list_mapM f vec.toList h
 
 /-- OptionT version of `simulateQ_vector_mapM`.
 
@@ -1199,7 +1190,7 @@ lemma OptionT.mem_support_run_vector_mapM_some {ι : Type} {spec : OracleSpec ι
 equality to `Vector.map f v`. -/
 @[simp]
 lemma mem_support_vector_mapM_pure {α β : Type} {n : ℕ}
-    {ι : Type} {spec : OracleSpec ι} [spec.Fintype] [spec.Inhabited]
+    {ι : Type} {spec : OracleSpec ι}
     (f : α → β) (v : Vector α n) (x : Vector β n) :
     x ∈ support (Vector.mapM (fun a ↦ pure (f a) : α → OracleComp spec β) v) ↔
     x = Vector.map f v := by
@@ -1220,27 +1211,17 @@ end ForInLemmas
 
 
 /-!
-## Probability Notation Bridge Lemmas
+## Stateful simulation support
 
-This section contains lemmas to bridge between VCVio's `probEvent` notation `[p | oa]`
-and ArkLib's `Pr_{...}[...]` PMF-based notation, enabling the use of probability
-tools from `Instances.lean` (like Schwartz-Zippel) in security proofs.
-
-### Key Strategy
-
-Use `OracleComp.probEvent_bind_eq_tsum` to factor complex probability statements:
-```lean
-[q | oa >>= ob] = ∑' x : α, [= x | oa] * [q | ob x]
-```
+The remaining lemmas expose intermediate states and query routing structurally. They do not
+require a probability distribution on the abstract oracle specification.
 -/
 
 section NestedSimulateQSupport
 open OracleComp OracleSpec OracleQuery SimOracle
 
 variable {ι : Type} {oSpec oSpec' : OracleSpec ι}
-  [oSpec.Fintype] [oSpec'.Fintype]
 
-omit [oSpec.Fintype] in
 /-- **Support of simulateQ through bind with StateT**
 
 For stateful oracle implementations, the support of `(simulateQ impl oa >>= f).run s` can be

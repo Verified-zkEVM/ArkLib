@@ -205,26 +205,19 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
     -- h_relOut: ∃ stmtOut oStmtOut, verifier outputs (stmtOut, oStmtOut) with prob > 0
     --   and ((stmtOut, oStmtOut), witOut) ∈ foldStepRelOut
-    simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0
+    simp only [StateT.run'_eq, gt_iff_lt, OptionT.prEvent_mk_pos_iff, Prod.exists]
+      at probEvent_relOut_gt_0
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
-          _root_.support (do
+          support (do
             let s ← init
             Prod.fst <$>
               (simulateQ impl
                 (Verifier.run (stmtIn, oStmtIn) tr
                   (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                     (𝓑 := 𝓑) (mp := mp) i).toVerifier)).run s) := by
-      exact (OptionT.mem_support_iff
-        (mx := OptionT.mk (do
-          let s ← init
-          Prod.fst <$>
-            (simulateQ impl
-              (Verifier.run (stmtIn, oStmtIn) tr
-                (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                  (𝓑 := 𝓑) (mp := mp) i).toVerifier)).run s))
-        (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
+      exact h_output_mem_V_run_support
     simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
     rcases h_output_mem_V_run_support' with ⟨s, hs_init, h_output_mem_V_run_support⟩
     have h_output_mem_V_run_support :=
@@ -254,7 +247,7 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
         tr.messages ⟨⟨0, by decide⟩, rfl⟩ := rfl
     erw [h_answer] at h_output_mem_V_run_support
     by_cases h_V_check : V_check
-    · erw [if_pos h_V_check] at h_output_mem_V_run_support
+    · erw [ite_eq_left h_V_check] at h_output_mem_V_run_support
       erw [OptionT.run_pure, simulateQ_pure] at h_output_mem_V_run_support
       erw [_root_.map_pure] at h_output_mem_V_run_support
       simp only [OptionT.mk,
@@ -280,12 +273,12 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
           Nat.cast_ofNat, Matrix.cons_val_zero, Fin.zero_eta, Matrix.cons_val_one,
           Fin.mk_one, Function.Embedding.coeFn_mk, Message]
         split <;> rename_i k hk
-        · have hk' : j = k := by simpa only [dif_pos j.is_lt, Sum.inl.injEq] using hk
+        · have hk' : j = k := by simpa only [dite_eq_left j.is_lt, Sum.inl.injEq] using hk
           subst k
           apply eq_of_heq
           simp only [eqRec_heq_iff]
           rfl
-        · simp only [dif_pos j.is_lt, Sum.inl_ne_inr] at hk
+        · simp only [dite_eq_left j.is_lt, Sum.inl_ne_inr] at hk
       have h_stmtOut_challenges_eq :
         ((Fin.snoc stmtIn.challenges r_i') : Fin (↑i + 1) → L) = stmtOut.challenges := by
         -- use the h_stmtOut_eq to prove this
@@ -322,7 +315,8 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
         · have h_res := h_good.2.2.2
           simp only [h_stmtOut_eq] at ⊢ h_res
           exact h_res
-    · erw [if_neg h_V_check, OptionT.run_failure, simulateQ_pure] at h_output_mem_V_run_support
+    · erw [ite_eq_right h_V_check, OptionT.run_failure, simulateQ_pure]
+        at h_output_mem_V_run_support
       erw [map_failure] at h_output_mem_V_run_support
       erw [_root_.map_pure] at h_output_mem_V_run_support
       simp only [OptionT.mk, Option.map_none, support_pure,
@@ -1124,16 +1118,16 @@ lemma foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent (i : Fin ℓ
 
 /-! Per-transcript bound: for the first prover message `msg0`, the probability (over the verifier
   challenge `y`) that extraction fails is at most `foldKnowledgeError`. Stated for
-  `P (FullTranscript.mk1 msg0)` so it matches the goal after `tsum_uniform_Pr_eq_Pr` in the main
+  `P (FullTranscript.mk1 msg0)` so it matches the native uniform-event goal in the main
   soundness proof.
   **Proof strategy:**
   1. **Implication**: Show that extraction failure `P(tr, y)` implies either
     - a SINGLE sumcheck “bad” event
     - or an incremental folding bad event (bad oracle / consistency failure)
-  2. **Monotonicity**: Conclude `Pr[P] ≤ Pr[SZ ∨ BE]` via `prob_mono`.
-  3. **Union bound**: Apply `Pr_or_le` to get `Pr[SZ ∨ BE] ≤ Pr[SZ] + Pr[BE]`.
-  4. **Schwartz–Zippel**: Bound `Pr[SZ]` by `1/|L|` using univariate degree-1
-    agreement (lemmas from Instances.lean)
+  2. **Monotonicity**: Conclude `Pr[P] ≤ Pr[SZ ∨ BE]` via `prEvent_mono`.
+  3. **Union bound**: Apply `prEvent_or_le` to get `Pr[SZ ∨ BE] ≤ Pr[SZ] + Pr[BE]`.
+  4. **Schwartz–Zippel**: Bound `Pr[SZ]` by `2/|L|` using agreement of distinct
+    degree-at-most-two round polynomials.
   5. **Bad event**: Bound `Pr[BE]` using the incremental folding bad-event probability
     (`prop_4_21_2_incremental_bad_event_probability`).
   6. **Combine**: Add the two bounds and match the RHS to `foldKnowledgeError`. -/
@@ -1142,7 +1136,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
     (stmtOStmtIn : (Statement (L := L) Context i.castSucc) × (∀ j,
       OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (h_i : (pSpecFold (L := L)).Message ⟨0, rfl⟩) :
-    Pr_{ let y ← $ᵖ L }[
+    Pr{ let y ← $ᵗ L }[
       rbrExtractionFailureEvent
         (kSF := foldKnowledgeStateFunction (mp := mp) (𝓑 := 𝓑)
           (init := init) (impl := impl) (σ := σ) 𝔽q β i)
@@ -1173,9 +1167,9 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn y
   let incrementalBadFoldEvent_or_sumcheckBadEvent := fun y : L =>
     (incrementalBadFoldEvent y) ∨ (sumcheckBadEvent y)
-  have h_prob_mono := Probability.Pr_le_Pr_of_implies (D := $ᵖ L)
-    (f := doomEvent) (g := incrementalBadFoldEvent_or_sumcheckBadEvent)
-    (h_imp := by
+  have h_prob_mono := prEvent_mono ($ᵗ L)
+    doomEvent incrementalBadFoldEvent_or_sumcheckBadEvent
+    (by
       intro y h_doomEscape
       have h_imp := (foldStep_rbrExtractionFailureEvent_imply_sumcheck_or_badEvent
           (mp := mp) (𝓑 := 𝓑) (init := init) (impl := impl) 𝔽q β
@@ -1194,7 +1188,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
   refine le_trans h_prob_mono ?_
   dsimp only [incrementalBadFoldEvent_or_sumcheckBadEvent, foldKnowledgeError]
   apply le_trans (
-      Probability.Pr_or_le ($ᵖ L) (f := incrementalBadFoldEvent) (g := sumcheckBadEvent)
+      prEvent_or_le ($ᵗ L) incrementalBadFoldEvent sumcheckBadEvent
   )
   conv_rhs => simp only [ENNReal.coe_add]; rw [add_comm]
   apply add_le_add
@@ -1333,10 +1327,10 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
           (m := mp.multpoly stmtOStmtIn.1.ctx)
           (i := i.castSucc) (challenges := stmtOStmtIn.1.challenges)
       let h_star_fixed : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := H_fixed)
-      have h_prob_mono_sum := Probability.Pr_le_Pr_of_implies (D := $ᵖ L)
-        (f := fun y => sumcheckBadEvent y)
-        (g := fun y => badSumcheckEventProp y h_i h_star_fixed)
-        (h_imp := by
+      have h_prob_mono_sum := prEvent_mono ($ᵗ L)
+        (fun y => sumcheckBadEvent y)
+        (fun y => badSumcheckEventProp y h_i h_star_fixed)
+        (by
           intro y h_sum
           rcases h_sum with ⟨_h_not_fresh, witMid, h_cons, h_bad⟩
           have h_t_eq : witMid.t = t_fixed :=
@@ -1355,17 +1349,16 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
           simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true])]
         simp only [ENNReal.coe_ofNat, ENNReal.coe_natCast]
       exact h_sz
-    · have h_prob_mono_false := Probability.Pr_le_Pr_of_implies (D := $ᵖ L)
-        (f := fun y => sumcheckBadEvent y)
-        (g := fun _ => False)
-        (h_imp := by
+    · have h_prob_mono_false := prEvent_mono ($ᵗ L)
+        (fun y => sumcheckBadEvent y)
+        (fun _ => False)
+        (by
           intro y h_sum
           rcases h_sum with ⟨_h_not_fresh, witMid, h_cons, _h_bad⟩
           exact (hCompat ⟨witMid.t, h_cons.2⟩).elim
         )
       refine le_trans h_prob_mono_false ?_
-      simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-        eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
+      simp
 
 /-! RBR knowledge soundness for a single round oracle verifier -/
 open Classical in
@@ -1387,13 +1380,6 @@ theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
   let : ∀ j, Inhabited ((pSpecFold (L := L)).Challenge j)
     | ⟨0, hj⟩ => by nomatch hj
     | ⟨1, _⟩ => ⟨(0 : L)⟩
-  let : OracleSpec.Inhabited []ₒ := { inhabitedB := fun j => PEmpty.elim j }
-  let : OracleSpec.Fintype [(pSpecFold (L := L)).Challenge]ₒ :=
-    { fintypeB := fun j => inferInstanceAs (Fintype ((pSpecFold (L := L)).Challenge j.1)) }
-  let : OracleSpec.Inhabited [(pSpecFold (L := L)).Challenge]ₒ :=
-    { inhabitedB := fun j => inferInstanceAs (Inhabited ((pSpecFold (L := L)).Challenge j.1)) }
-  let : IsUniformSpec ([]ₒ + [(pSpecFold (L := L)).Challenge]ₒ) :=
-    IsUniformSpec.ofFintypeInhabited _
   exact OracleReduction.rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     (pSpec := pSpecFold (L := L)) (init := init) (impl := impl)
     (verifier := (foldOracleVerifier 𝔽q β (ϑ := ϑ)

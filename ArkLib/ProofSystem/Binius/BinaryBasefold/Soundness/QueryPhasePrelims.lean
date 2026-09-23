@@ -551,7 +551,7 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
   rw [h_repr_fiber]
   by_cases h_j : j.val < steps
   · unfold fiber_coeff
-    rw [dif_pos h_j]
+    rw [dite_eq_left h_j]
     set pointFinIdx :=
       sDomainToFin 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩ h_zero v
     have h_j_shift : j.val + i.val < ℓ + 𝓡 := by
@@ -585,7 +585,7 @@ lemma iteratedQuotientMap_eq_qMap_total_fiber_extractMiddleFinMask
         exact h
       simp [h_bit_one]
   · unfold fiber_coeff
-    rw [dif_neg h_j]
+    rw [dite_eq_right h_j]
     have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
       ⟨0, by omega⟩ (k := destIdx.val) (h_destIdx := by simp only [zero_add])
       (h_destIdx_le := h_destIdx_le) (x := v) (j := ⟨j.val - steps, by omega⟩)
@@ -713,11 +713,11 @@ lemma logical_checkSingleRepetition_guard_eq
     have h_lt := j.isLt
     simp only [nBlocks, toOutCodewordsCount_last] at h_lt
     exact h_lt
-  rw [dif_pos h_lt_div] at h_step
+  rw [dite_eq_left h_lt_div] at h_step
   unfold logical_checkSingleFoldingStep at h_step
   have h_i_pos : j.val * ϑ > 0 := by
     exact Nat.mul_pos h_pos (Nat.pos_of_neZero ϑ)
-  rw [dif_pos h_i_pos] at h_step
+  rw [dite_eq_left h_i_pos] at h_step
   dsimp only [j_idx, j_prev_idx, logical_queryFiberPoints] at h_step
   change
     logical_computeFoldedValue 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

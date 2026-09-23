@@ -131,10 +131,10 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
             (hnext V hVS).symm).trans hVwColor
         constructor
         · have h := (hbudget V hVS).1
-          rw [colorCountFrom_eq_add color hjlt, if_neg (by simp [hVwhite])] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_right (by simp [hVwhite])] at h
           simpa using h
         · have h := (hbudget V hVS).2
-          rw [colorCountFrom_eq_add color hjlt, if_neg (by simp [hVwhite])] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_right (by simp [hVwhite])] at h
           simpa using h
     · let next : (Fin d → α) → α := fun V => V ⟨j, hjlt⟩
       let fiber (c : α) := S.filter fun V => next V = c
@@ -212,10 +212,10 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
           rw [hcolor_fiber c V hVF V₀ hV₀F, hV₀B'.2]
         constructor
         · have h := (hbudget V (Finset.mem_filter.mp hVF).1).1
-          rw [colorCountFrom_eq_add color hjlt, if_pos hVblue, hb] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_left hVblue, hb] at h
           omega
         · have h := (hbudget V (Finset.mem_filter.mp hVF).1).2
-          rw [colorCountFrom_eq_add color hjlt, if_neg (by simp [hVblue])] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_right (by simp [hVblue])] at h
           simpa using h
       have hredFiber {r' : ℕ} (hr : r = r' + 1) (c : α) (hc : c ∈ redChoices) :
           ((fiber c).card : ℕ∞) ≤ treeBound L b r' := by
@@ -228,10 +228,10 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
           rw [hcolor_fiber c V hVF V₀ hV₀F, hV₀R'.2]
         constructor
         · have h := (hbudget V (Finset.mem_filter.mp hVF).1).1
-          rw [colorCountFrom_eq_add color hjlt, if_neg (by simp [hVred])] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_right (by simp [hVred])] at h
           simpa using h
         · have h := (hbudget V (Finset.mem_filter.mp hVF).1).2
-          rw [colorCountFrom_eq_add color hjlt, if_pos hVred, hr] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_left hVred, hr] at h
           omega
       have hcastCard : (S.card : ℕ∞) =
           ∑ c ∈ blueChoices ∪ redChoices, ((fiber c).card : ℕ∞) := by
@@ -244,7 +244,7 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
           obtain ⟨V, hVB, _⟩ := Finset.mem_image.mp hc
           have hVB' := Finset.mem_filter.mp hVB
           have h := (hbudget V hVB'.1).1
-          rw [colorCountFrom_eq_add color hjlt, if_pos hVB'.2] at h
+          rw [colorCountFrom_eq_add color hjlt, ite_eq_left hVB'.2] at h
           omega
         rw [hblueEmpty]
         simp only [Finset.sum_empty, zero_add]
@@ -255,7 +255,7 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
             obtain ⟨V, hVR, _⟩ := Finset.mem_image.mp hc
             have hVR' := Finset.mem_filter.mp hVR
             have h := (hbudget V hVR'.1).2
-            rw [colorCountFrom_eq_add color hjlt, if_pos hVR'.2] at h
+            rw [colorCountFrom_eq_add color hjlt, ite_eq_left hVR'.2] at h
             omega
           simp [hredEmpty, treeBound]
         · calc
@@ -273,7 +273,7 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
             obtain ⟨V, hVR, _⟩ := Finset.mem_image.mp hc
             have hVR' := Finset.mem_filter.mp hVR
             have h := (hbudget V hVR'.1).2
-            rw [colorCountFrom_eq_add color hjlt, if_pos hVR'.2] at h
+            rw [colorCountFrom_eq_add color hjlt, ite_eq_left hVR'.2] at h
             omega
           rw [hredEmpty]
           simp only [Finset.sum_empty, add_zero]

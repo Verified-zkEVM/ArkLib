@@ -158,9 +158,9 @@ theorem rangeProduct_eq_zero_of_valMinAbs_natAbs_le (φF : ZMod q →+* F) {b : 
   rw [hj] at h
   refine ⟨j, h, ?_⟩
   by_cases hval : c.val ≤ q / 2
-  · rw [if_pos hval] at hc
+  · rw [ite_eq_left hval] at hc
     exact Or.inl (by rw [← hc, map_natCast])
-  · rw [if_neg hval] at hc
+  · rw [ite_eq_right hval] at hc
     refine Or.inr ?_
     have hc' : c = -((j : ℕ) : ZMod q) := by rw [hc]; ring
     rw [hc', _root_.map_neg, map_natCast]

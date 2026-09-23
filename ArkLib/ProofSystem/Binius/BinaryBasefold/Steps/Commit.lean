@@ -13,9 +13,6 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
 
 @[expose] public section
 
-local instance commitEmptySpecInhabited : OracleSpec.Inhabited []ₒ where
-  inhabitedB j := PEmpty.elim j
-
 namespace Binius.BinaryBasefold.CoreInteraction
 noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -121,7 +118,7 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : isCommitmentRound 
     rcases q with ⟨j, x⟩
     by_cases hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc
     · dsimp only
-      simp only [dif_pos hj]
+      simp only [dite_eq_left hj]
       simp only [OracleInterface.simOracle2, snoc_oracle, hj, ↓reduceDIte]
       rfl
     · simp only [simulateQ_bind, simulateQ_query,
@@ -188,7 +185,7 @@ The proof follows the same pattern as `foldOracleReduction_perfectCompleteness`:
 - Just extends the oracle with the new function
 -/
 omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
-theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : Fin ℓ)
+theorem commitOracleReduction_perfectCompleteness (i : Fin ℓ)
     (hCR : isCommitmentRound ℓ ϑ i) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
@@ -202,20 +199,12 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
       (impl := impl) := by
   -- Step 1: Unroll the 1-message reduction
   let p := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-  let : OracleSpec.Fintype [p.Challenge]ₒ :=
-    { fintypeB := fun j => by
-        have h := j.1.2
-        simp [p, pSpecCommit] at h }
-  let : OracleSpec.Inhabited [p.Challenge]ₒ :=
-    { inhabitedB := fun j => by
-        have h := j.1.2
-        simp [p, pSpecCommit] at h }
   rw [OracleReduction.unroll_1_message_reduction_perfectCompleteness_P_to_V (oSpec := []ₒ)
-    (hInit := hInit) (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
+    (pSpec := pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     (hDir0 := by rfl)
     (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro output h_output
   dsimp only [commitOracleReduction, commitOracleProver, commitOracleVerifier,
     OracleVerifier.toVerifier, getCommitProverFinalOutput] at h_output
@@ -354,7 +343,8 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
     -- probEvent_relOut_gt_0: the relOut is satisified under oracle verifier's execution
     -- Now we simp the probEvent_relOut_gt_0 to extract equalities for stmtOut, oStmtOut as
       -- deterministic computations (oracle verifier execution) of stmtIn, oStmtIn
-    simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0
+    simp only [StateT.run'_eq, gt_iff_lt, OptionT.prEvent_mk_pos_iff, Prod.exists]
+      at probEvent_relOut_gt_0
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
@@ -365,15 +355,7 @@ def commitKState (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
                 (Verifier.run (stmtIn, oStmtIn) tr
                   (commitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                     i hCR).toVerifier)).run s) := by
-      exact (OptionT.mem_support_iff
-        (mx := OptionT.mk (do
-          let s ← init
-          Prod.fst <$>
-            (simulateQ impl
-              (Verifier.run (stmtIn, oStmtIn) tr
-                (commitOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-                  i hCR).toVerifier)).run s))
-        (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
+      exact h_output_mem_V_run_support
     simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
     rcases h_output_mem_V_run_support' with ⟨s, hs_init, h_output_mem_V_run_support⟩
     have h_output_mem_V_run_support :=

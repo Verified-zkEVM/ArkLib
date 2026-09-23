@@ -183,7 +183,7 @@ lemma finalSumcheckVerifier_run_eq_guarded
 omit [DecidableEq 𝔽q] in
 omit [CharP L 2] in
 theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
-    (init : ProbComp σ) (hInit : NeverFail init)
+    (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleReduction.perfectCompleteness
       (pSpec := pSpecFinalSumcheckStep (L := L))
@@ -192,7 +192,6 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
       (relOut := strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (oracleReduction := finalSumcheckOracleReduction 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)) (init := init) (impl := impl) := by
-  let : OracleSpec.Inhabited emptySpec.{0, 0} := { inhabitedB := fun t => nomatch t }
   have h_no_challenge : IsEmpty (ChallengeIdx (pSpecFinalSumcheckStep (L := L))) := by
     constructor
     rintro ⟨i, hdir⟩
@@ -200,12 +199,8 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
       fin_cases i; simp [pSpecFinalSumcheckStep]
     rw [hdir'] at hdir
     exact absurd hdir (by decide : Direction.P_to_V ≠ Direction.V_to_P)
-  let : [(pSpecFinalSumcheckStep (L := L)).Challenge]ₒ.Fintype := {
-    fintypeB := fun ⟨i, _⟩ => False.elim (h_no_challenge.false i) }
-  let : [(pSpecFinalSumcheckStep (L := L)).Challenge]ₒ.Inhabited := {
-    inhabitedB := fun ⟨i, _⟩ => False.elim (h_no_challenge.false i) }
   rw [OracleReduction.unroll_1_message_reduction_perfectCompleteness_P_to_V (oSpec := []ₒ)
-    (pSpec := pSpecFinalSumcheckStep (L := L)) (hInit := hInit)
+    (pSpec := pSpecFinalSumcheckStep (L := L))
     (hDir0 := by rfl)
     (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
@@ -214,7 +209,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
   let step := (finalSumcheckStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
   let strongly_complete : step.IsStronglyComplete := finalSumcheckStep_is_logic_complete (L := L)
     𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro x hx_mem_support
   · obtain ⟨sendResult, h_send, hx_mem_support⟩ :=
       OptionT.mem_support_run_lift_bind _ _ hx_mem_support
@@ -248,7 +243,7 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
       rfl
     rcases OptionT.mem_support_run_bind _ _ hx_mem_support with
       ⟨h_verifier_none, _⟩ | ⟨verifierResult, h_verifierResult, hx_mem_support⟩
-    · change none ∈ _root_.support (liftComp _ _) at h_verifier_none
+    · change none ∈ MonadAttach.support (liftComp _ _) at h_verifier_none
       rw [OracleComp.support_liftComp] at h_verifier_none
       conv at h_verifier_none =>
         erw [simulateQ_bind]
@@ -265,12 +260,12 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
           OptionT.simulateQ_failure, _root_.map_pure, support_ite, support_pure]
         erw [_root_.simulateQ_pure]
       rw [h_message] at h_verifier_none
-      rw [if_pos h_logic_check] at h_verifier_none
+      rw [ite_eq_left h_logic_check] at h_verifier_none
       simp only [pure_bind] at h_verifier_none
       erw [simulateQ_pure] at h_verifier_none
-      change none ∈ _root_.support (pure (some _) : OracleComp _ _) at h_verifier_none
+      change none ∈ MonadAttach.support (pure (some _) : OracleComp _ _) at h_verifier_none
       exact absurd (OracleComp.eq_of_mem_support_pure _ h_verifier_none) (by simp)
-    · change some verifierResult ∈ _root_.support (liftComp _ _) at h_verifierResult
+    · change some verifierResult ∈ MonadAttach.support (liftComp _ _) at h_verifierResult
       rw [OracleComp.support_liftComp] at h_verifierResult
       conv at h_verifierResult =>
         erw [simulateQ_bind]
@@ -287,10 +282,10 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
           OptionT.simulateQ_failure, _root_.map_pure, support_ite, support_pure]
         erw [_root_.simulateQ_pure]
       rw [h_message] at h_verifierResult
-      rw [if_pos h_logic_check] at h_verifierResult
+      rw [ite_eq_left h_logic_check] at h_verifierResult
       simp only [pure_bind] at h_verifierResult
       erw [simulateQ_pure] at h_verifierResult
-      change some verifierResult ∈ _root_.support (pure (some _) : OracleComp _ _)
+      change some verifierResult ∈ MonadAttach.support (pure (some _) : OracleComp _ _)
         at h_verifierResult
       have h_verifierResult_eq := OracleComp.eq_of_mem_support_pure _ h_verifierResult
       rw [Option.some.injEq] at h_verifierResult_eq
@@ -488,11 +483,11 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       )
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
   -- Same pattern as relay: verifier output (stmtOut, oStmtOut) + h_relOut ⇒ commitKStateProp 1
-    simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0
+    simp only [StateT.run'_eq, gt_iff_lt, OptionT.prEvent_mk_pos_iff, Prod.exists]
+      at probEvent_relOut_gt_0
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     rw [finalSumcheckVerifier_run_eq_guarded] at h_output_mem_V_run_support
-    rw [OptionT.mem_support_iff] at h_output_mem_V_run_support
-    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion, exists_prop]
+    simp only [support_bind, Set.mem_iUnion, exists_prop]
       at h_output_mem_V_run_support
     rcases h_output_mem_V_run_support with ⟨s, hs_init, h_output_mem_V_run_support⟩
     let messageIdx : (pSpecFinalSumcheckStep (L := L)).MessageIdx := ⟨0, by rfl⟩
@@ -502,12 +497,12 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     by_cases h_V_check : (finalSumcheckStepLogic 𝔽q β
         (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierCheck stmtIn
         (FullTranscript.mk1 c)
-    · rw [if_pos h_V_check] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ _root_.support
+    · rw [ite_eq_left h_V_check] at h_output_mem_V_run_support
+      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
         ((simulateQ impl (pure (some _) : OracleComp []ₒ (Option _))).run' s)
         at h_output_mem_V_run_support
       rw [simulateQ_pure] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ _root_.support
+      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
         (Prod.fst <$> (pure (some _) : StateT σ ProbComp _).run s)
         at h_output_mem_V_run_support
       rw [StateT.run_pure] at h_output_mem_V_run_support
@@ -527,12 +522,12 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
       · exact h_V_check
       · rw [h_oStmtOut_eq_oStmtIn] at h_relOut
         exact h_relOut
-    · rw [if_neg h_V_check] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ _root_.support
+    · rw [ite_eq_right h_V_check] at h_output_mem_V_run_support
+      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
         ((simulateQ impl (pure none : OracleComp []ₒ (Option _))).run' s)
         at h_output_mem_V_run_support
       rw [simulateQ_pure] at h_output_mem_V_run_support
-      change some (stmtOut, oStmtOut) ∈ _root_.support
+      change some (stmtOut, oStmtOut) ∈ MonadAttach.support
         (Prod.fst <$> (pure none : StateT σ ProbComp _).run s)
         at h_output_mem_V_run_support
       rw [StateT.run_pure] at h_output_mem_V_run_support

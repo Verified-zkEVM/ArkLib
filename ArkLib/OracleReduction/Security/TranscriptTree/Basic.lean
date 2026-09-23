@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.OracleReduction.Security.Basic
+public import VCVio.OracleComp.EvalDist.Measure
 
 /-!
   # Trees of transcripts — core definitions
@@ -322,8 +323,8 @@ def IsAccepting (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (stmtIn : StmtIn) (langOut : Set StmtOut)
     (tree : ChallengeTree pSpec arity 0) : Prop :=
   ∀ tr ∈ tree.fullTranscripts,
-    Pr[(· ∈ langOut) |
-      OptionT.mk do (simulateQ impl (verifier.run stmtIn tr)).run' (← init)] = 1
+    Pr{let stmtOut ← OptionT.mk do
+      (simulateQ impl (verifier.run stmtIn tr)).run' (← init)}[stmtOut ∈ langOut] = 1
 
 end IsAccepting
 
@@ -412,8 +413,8 @@ theorem mem_language_of_mem_outputs {init : ProbComp σ}
     (hout : out ∈ Outputs init impl V stmtIn p.fullTranscript) :
     out ∈ relOut.language := by
   have h := hacc p.fullTranscript p.mem_fullTranscripts
-  rw [probEvent_eq_one_iff] at h
-  exact h.2 out ((mem_outputs_iff init impl V stmtIn p.fullTranscript out).1 hout)
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at h
+  simpa using h (some out) hout
 
 /-- A leaf at which the verifier can output *nothing* refutes acceptance: acceptance with
   probability one rules out certain failure. -/
@@ -425,13 +426,13 @@ theorem not_isAccepting_of_no_outputs (init : ProbComp σ)
     ¬ tree.IsAccepting init impl V stmtIn lang := by
   intro hacc
   have h := hacc p.fullTranscript p.mem_fullTranscripts
-  rw [probEvent_eq_one_iff] at h
-  have hsupp : support (OptionT.mk do
-      (simulateQ impl (V.run stmtIn p.fullTranscript)).run' (← init)) = ∅ := by
-    ext x
-    rw [← mem_outputs_iff, hrej]
-  rw [probFailure_eq_one hsupp] at h
-  exact one_ne_zero h.1
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at h
+  obtain ⟨o, ho⟩ := OracleComp.support_nonempty (spec := unifSpec)
+    (do (simulateQ impl (V.run stmtIn p.fullTranscript)).run' (← init))
+  obtain ⟨out, rfl, _⟩ := h o ho
+  have hout : out ∈ Outputs init impl V stmtIn p.fullTranscript := ho
+  rw [hrej] at hout
+  exact hout
 
 /-- On an accepting tree the reachable-output set at every leaf is **nonempty**. -/
 theorem outputs_nonempty_of_isAccepting {init : ProbComp σ}
@@ -494,27 +495,16 @@ theorem pure_verdict_mem_outputs (init : ProbComp σ)
   rw [heq]
   exact (mem_support_bind_iff init _ _).2 ⟨s, hs, (mem_support_pure_iff _ _).2 rfl⟩
 
-/-- Acceptance of a *single* transcript with probability one already forces the sampling's support
-  to be nonempty: a sampling that produces no seed makes the whole computation fail.
-
-  The transcript-level form of `support_init_nonempty_of_accepting`, used where the acceptance fact
-  in hand is about one leaf rather than a tree. -/
+/-- The initial finite-sampling computation has a reachable seed. This transcript-level
+interface accepts the probability-one premise used by its callers; nonemptiness also holds
+independently of the verifier's acceptance. -/
 theorem support_init_nonempty_of_prob_one {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
     {stmt : StmtIn} {tr : pSpec.FullTranscript} {lang : Set StmtOut}
-    (h : Pr[ (· ∈ lang) |
-      OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1) :
+    (_h : Pr{let out ← OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init)}[out ∈ lang] = 1) :
     (support init).Nonempty := by
-  by_contra hempty
-  rw [Set.not_nonempty_iff_eq_empty] at hempty
-  rw [probEvent_eq_one_iff] at h
-  obtain ⟨hFail, -⟩ := h
-  rw [OptionT.probFailure_eq, OptionT.run_mk] at hFail
-  have hsupp : support (do (simulateQ impl (V.run stmt tr)).run' (← init) :
-      ProbComp (Option StmtOut)) = ∅ := by
-    simp [support_bind, hempty]
-  rw [probFailure_eq_one hsupp] at hFail
-  simp at hFail
+  exact OracleComp.support_nonempty (spec := unifSpec) init
 
 /-- A verifier that **rejects outright** on a transcript cannot accept it with probability one: on
   the `failure` branch the run fails certainly.
@@ -525,20 +515,17 @@ theorem not_accepting_of_failure {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
     {stmt : StmtIn} {tr : pSpec.FullTranscript} (hV : V.verify stmt tr = failure)
     {lang : Set StmtOut}
-    (h : Pr[ (· ∈ lang) |
-      OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1) : False := by
-  have hne : (support init).Nonempty := support_init_nonempty_of_prob_one h
-  rw [probEvent_eq_one_iff] at h
-  obtain ⟨hFail, -⟩ := h
-  rw [OptionT.probFailure_eq, OptionT.run_mk] at hFail
-  simp only [Verifier.run, hV] at hFail
+    (h : Pr{let out ← OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init)}[out ∈ lang] = 1) : False := by
+  rw [OracleComp.OptionT.prEvent_mk_eq_one_iff] at h
+  simp only [Verifier.run, hV] at h
   have hc : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) StmtOut)).run' (← init) :
       ProbComp (Option StmtOut)) = (init >>= fun _ => pure none) := by congr 1
-  rw [hc] at hFail
-  have h0 : Pr[= (none : Option StmtOut) | (init >>= fun _ => pure none : ProbComp _)] = 0 :=
-    (add_eq_zero.mp hFail).2
-  rw [probOutput_eq_zero_iff] at h0
-  exact h0 (by simp [hne])
+  rw [hc] at h
+  obtain ⟨s, hs⟩ := OracleComp.support_nonempty (spec := unifSpec) init
+  obtain ⟨out, hout, _⟩ := h none ((mem_support_bind_iff init _ _).2
+    ⟨s, hs, (mem_support_pure_iff _ _).2 rfl⟩)
+  cases hout
 
 end Verifier
 
@@ -646,7 +633,7 @@ theorem canonWitnesses_isValid {init : ProbComp σ}
     (Verifier.mem_language_of_mem_outputs hacc p hout)
   have hex : ∃ w, ∃ out ∈ Verifier.Outputs init impl V stmtIn p.fullTranscript, (out, w) ∈ relOut :=
     ⟨w, out, hout, hw⟩
-  exact ⟨hex.choose, by simp [canonWitnesses, dif_pos hex], hex.choose_spec⟩
+  exact ⟨hex.choose, by simp [canonWitnesses, dite_eq_left hex], hex.choose_spec⟩
 
 end CanonWitnesses
 

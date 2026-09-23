@@ -5,6 +5,7 @@ Authors: Alexander Hicks, Aleph
 -/
 module
 
+public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 public import Mathlib.Analysis.Complex.ExponentialBounds
 public import Mathlib.Combinatorics.Enumerative.DoubleCounting
@@ -449,7 +450,7 @@ theorem cs25_shell_power_bound
 
 private theorem epsCa_le_one
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≤ 1 := by
   classical
@@ -457,21 +458,22 @@ private theorem epsCa_le_one
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact PMF.coe_le_one _ _
+  · exact prEvent_le_one _ _
 
 open scoped ProbabilityTheory in
 theorem epsCa_eq_one_of_all_folds_close_not_joint
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Finite F] [SampleableType F] [DecidableEq F]
     (C : Set (ι → F)) (δ : NNReal) (u : Code.WordStack F (Fin 2) ι)
     (hjoint : ¬ Code.jointProximity C (u := u) δ)
     (hclose : ∀ γ : F, Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)) :
     epsCa (F := F) (A := F) C δ δ = 1 := by
   classical
+  let _ := Fintype.ofFinite F
   refine le_antisymm (epsCa_le_one C δ δ) ?_
   have hprob :
-      Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] = 1 := by
-    rw [Probability.prob_uniform_eq_card_filter_div_card]
+      Pr{let γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] = 1 := by
+    rw [SampleableType.prEvent_uniformSample]
     have hfilter :
         Finset.univ.filter (fun γ : F =>
           Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)) = Finset.univ := by
@@ -483,15 +485,15 @@ theorem epsCa_eq_one_of_all_folds_close_not_joint
     · simp
     · simp
   calc
-    1 = Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
+    1 = Pr{let γ ← $ᵗ F}[Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)] := hprob.symm
     _ = (if Code.jointProximity C (u := u) δ then 0
-        else Pr_{let γ ← $ᵖ F}[
-          Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (if_neg hjoint).symm
+        else Pr{let γ ← $ᵗ F}[
+          Code.relDistFromCode (u 0 + γ • u 1) C ≤ (δ : ENNReal)]) := (ite_eq_right hjoint).symm
     _ ≤ epsCa (F := F) (A := F) C δ δ := by
       unfold epsCa
       exact le_iSup (fun w : Code.WordStack F (Fin 2) ι =>
         if Code.jointProximity C (u := w) δ then 0
-        else Pr_{let γ ← $ᵖ F}[
+        else Pr{let γ ← $ᵗ F}[
           Code.relDistFromCode (w 0 + γ • w 1) C ≤ (δ : ENNReal)]) u
 
 theorem exists_base_all_translates_close_of_bad_count

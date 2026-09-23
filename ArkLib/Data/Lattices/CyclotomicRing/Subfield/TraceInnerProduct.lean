@@ -156,12 +156,12 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
       exact Nat.ModEq.add_right_cancel' eq hb
   by_cases hpq : p = q
   · subst hpq
-    rw [if_pos rfl,
+    rw [ite_eq_left rfl,
       show ep + ep * conjExp α = 2 ^ (α + 1) * ep from by
         rw [conjExp, Nat.mul_sub, mul_one, Nat.add_sub_cancel'
           (Nat.le_mul_of_pos_right _ (by positivity)), mul_comm],
       Xpow_mul, Xpow_conductor, one_pow, traceH_one α (2 ^ κ) ⟨κ, rfl⟩ hk]
-  · rw [if_neg hpq]
+  · rw [ite_eq_right hpq]
     by_cases hmod : p.val % n = q.val % n
     · -- `±d/2` case: `X^{2J} = -1`, generalized Claim 3
       refine traceH_Xpow_neg_one_sq α (2 ^ κ) _ ⟨κ, rfl⟩ hk ?_
@@ -177,9 +177,9 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
             have hq' : q.val % n = q.val - n := by
               rw [Nat.mod_eq_sub_mod (Nat.not_lt.mp hqn), Nat.mod_eq_of_lt (by omega)]
             rw [hp', hq'] at hmod; exact hmod.symm
-          have hepv : ep = p.val := by rw [hep]; unfold packExp; rw [← hn, if_pos hpn]
+          have hepv : ep = p.val := by rw [hep]; unfold packExp; rw [← hn, ite_eq_left hpn]
           have heqv : eq = 2 ^ (α - 1) + p.val := by
-            rw [heq]; unfold packExp; rw [← hn, if_neg hqn, hqv]
+            rw [heq]; unfold packExp; rw [← hn, ite_eq_right hqn, hqv]
           rw [hepv, heqv, Nat.ModEq,
             show 2 ^ α + 2 * (2 ^ (α - 1) + p.val) = 2 ^ (α + 1) + 2 * p.val from by omega,
             Nat.add_mod_left]
@@ -196,8 +196,8 @@ theorem traceH_kernel (α κ : ℕ) (h2 : (2 : R) ≠ 0) (hκ : κ + 1 ≤ α)
             have hq' : q.val % n = q.val := Nat.mod_eq_of_lt hqn
             rw [hp', hq'] at hmod; exact hmod
           have hepv : ep = 2 ^ (α - 1) + q.val := by
-            rw [hep]; unfold packExp; rw [← hn, if_neg (not_lt.mpr hpn), hpv]
-          have heqv : eq = q.val := by rw [heq]; unfold packExp; rw [← hn, if_pos hqn]
+            rw [hep]; unfold packExp; rw [← hn, ite_eq_right (not_lt.mpr hpn), hpv]
+          have heqv : eq = q.val := by rw [heq]; unfold packExp; rw [← hn, ite_eq_left hqn]
           rw [hepv, heqv,
             show 2 * (2 ^ (α - 1) + q.val) = 2 ^ α + 2 * q.val from by omega]
       have hJ2 : 2 * (ep + eq * conjExp α) + 2 * eq ≡ 2 * ep [MOD 2 ^ (α + 1)] := by
@@ -257,7 +257,7 @@ theorem traceH_psi_mul_conj (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, 
   rw [Finset.sum_congr rfl (fun p _ => Finset.sum_congr rfl (fun q _ => by
     rw [mul_mul_mul_comm, ← Xpow_add, traceH_smul_fixed α (2 ^ κ) (mul_mem (a p).2 (b q).2),
       traceH_kernel α κ h2 hκ p q]))]
-  simp only [mul_ite, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, if_true, mul_smul_comm,
+  simp only [mul_ite, mul_zero, Finset.sum_ite_eq, Finset.mem_univ, ite_true, mul_smul_comm,
     mul_one]
   rw [← Finset.smul_sum]
   congr 1
@@ -286,7 +286,7 @@ theorem psi_injective (α k : ℕ) (h2 : (2 : R) ≠ 0) (hk2pow : ∃ κ, k = 2 
   rw [nsmul_eq_mul, nsmul_eq_mul] at heq
   have hcancel := hunit.mul_left_cancel heq
   simp only [Pi.single_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq', Finset.mem_univ,
-    if_true] at hcancel
+    ite_true] at hcancel
   exact Subtype.coe_injective hcancel
 
 end ArkLib.Lattices.CyclotomicModulus

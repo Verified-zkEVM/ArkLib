@@ -50,9 +50,9 @@ private theorem exists_large_of_finset_cover' {α : Type}
 section Bucketing
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [SampleableType F] in
 /-- BCIKS20 §6.3 bucketing: given an affine subspace U whose elements are all δ-close
 to a linear code V, there exist a codeword v₀ and agreement set D' of size ≥ (1-δ)|ι|
 such that the basepoint agrees with v₀ on D' and every generator direction agrees with
@@ -461,7 +461,7 @@ end Bucketing
 section CoreResults
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
 /-- Pigeonhole for finite covers: if `U` is covered by `L` indexed subsets and
 `L * B < |U|`, then some subset has more than `B` elements. -/
@@ -497,7 +497,7 @@ theorem card_roots_finset_le_natDegree {R : Type} [CommRing R] [IsDomain R]
   intro a ha
   exact (Polynomial.mem_roots hQ).mpr (hroots a ha)
 
-omit [DecidableEq F] in
+omit [SampleableType F] [DecidableEq F] in
 /-- The Guruswami-Sudan list-decoding bound: given a nonzero polynomial `Q` over `F[X]`
 whose `Y`-degree is less than `|F|`, the number of distinct polynomials `P` such that
 `(Y - P(X)) | Q(X, Y)` is strictly less than `|F|`. This is the structural core of the
@@ -572,7 +572,7 @@ private lemma gs_degree_bound_le_inv_mu
     _ ≤ 1 / μ + 1 / (4 * μ) := add_le_add h5 h6
     _ = 5 / (4 * μ) := by ring
 
-omit [DecidableEq ι] [DecidableEq F] in
+omit [DecidableEq ι] [DecidableEq F] [SampleableType F] in
 /-- Construct a GS multiplicity `m` satisfying both the Johnson radius bound and the degree
 bound. Witness: `m = ⌈√ρ/(2η)⌉ + 1` where `η = 1 - √ρ - δ`. -/
 lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
@@ -803,7 +803,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       rw [hgs0]
       linarith only [hδ_real, show (0 : ℝ) ≤ s from by positivity]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [SampleableType F] in
 theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ_pos : 0 < δ) (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
     (hRS : deg + 1 ≤ Fintype.card ι)
@@ -1236,7 +1236,7 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   --    One D' for all words — no intersection, hence (1-δ) not (1-kδ).
   set V := ReedSolomon.code domain deg with hV_def
   set U := (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) : Set (ι → F))
-  have hPr_sub : Pr_{let y ← $ᵖ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
+  have hPr_sub : Pr{let y ← $ᵗ (Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(↑y, (V : Set (ι → F))) ≤ δ] > errorBound δ deg domain := by
     convert hPr using 1
   have h_all_close : ∀ x ∈ U, δᵣ(x, (V : Set (ι → F))) ≤ δ :=
@@ -1292,33 +1292,23 @@ theorem correlatedAgreement_affine_spaces {k : ℕ} [NeZero k]
   -- For any direction, line through u* has Pr[δ_star-close] = 1.
   have h_line_pr1_star : ∀ (dir : ι → F),
       (∀ z : F, u_star + z • dir ∈ U) →
-      Pr_{let z ← $ᵖ F}[δᵣ((finMapTwoWords u_star dir) 0
+      Pr{let z ← $ᵗ F}[δᵣ((finMapTwoWords u_star dir) 0
         + z • (finMapTwoWords u_star dir) 1,
         (V : Set (ι → F))) ≤ δ_star] = 1 := by
     intro dir h_line_in_U
-    rw [prob_uniform_eq_card_filter_div_card]
-    have : Finset.filter (fun z : F =>
-        δᵣ((finMapTwoWords u_star dir) 0
-          + z • (finMapTwoWords u_star dir) 1,
-          (V : Set (ι → F))) ≤ ↑δ_star) Finset.univ = Finset.univ := by
-      ext z; constructor
-      · exact fun _ => Finset.mem_univ _
-      · intro _
-        apply Finset.mem_filter.mpr
-        refine ⟨Finset.mem_univ z, ?_⟩
-        simp only [finMapTwoWords]
-        have hx_mem := h_line_in_U z
-        have hx_le_div := DivergenceOfSets.relDistFromCode'_le_divergence
-          (U := U) (V := (V : Set (ι → F))) _ hx_mem
-        have h_eq := relDistFromCode'_eq_relDistFromCode
-          (u_star + z • dir) (V : Set (ι → F))
-        rw [h_eq]
-        apply ENNReal.coe_le_coe.mpr
-        show (δᵣ'(u_star + z • dir, (V : Set (ι → F))) : ℝ≥0) ≤ δ_star
-        simp only [hδ_star_def]
-        exact_mod_cast hx_le_div
-    rw [this, Finset.card_univ]
-    exact_mod_cast div_self (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)
+    apply (SampleableType.prEvent_uniformSample_eq_one_iff _).2
+    intro z
+    simp only [finMapTwoWords]
+    have hx_mem := h_line_in_U z
+    have hx_le_div := DivergenceOfSets.relDistFromCode'_le_divergence
+      (U := U) (V := (V : Set (ι → F))) _ hx_mem
+    have h_eq := relDistFromCode'_eq_relDistFromCode
+      (u_star + z • dir) (V : Set (ι → F))
+    rw [h_eq]
+    apply ENNReal.coe_le_coe.mpr
+    show (δᵣ'(u_star + z • dir, (V : Set (ι → F))) : ℝ≥0) ≤ δ_star
+    simp only [hδ_star_def]
+    exact_mod_cast hx_le_div
   -- ═══════════════════════════════════════════════════════════
   -- Step 3: Direction generators through u* stay in U.
   -- ═══════════════════════════════════════════════════════════

@@ -18,7 +18,7 @@ public import ArkLib.OracleReduction.Security.Basic
 noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal
+open scoped NNReal ProbabilityTheory
 
 variable {ι : Type}
 
@@ -135,13 +135,15 @@ def soundness
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration.Soundness oSpec StmtIn pSpec,
-  Pr[ fun | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn | _ => False
-    | do (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
+  Pr{let result ← do
+    (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
         <| (do
-    let ⟨transcript, stmtIn⟩ ← srSoundnessGame srProver
-    let stmtOut ← liftComp (verifier.run stmtIn transcript) _
-    return (stmtIn, stmtOut))).run' (← init)
-  ] ≤ srSoundnessError
+          let ⟨transcript, stmtIn⟩ ← srSoundnessGame srProver
+          let stmtOut ← liftComp (verifier.run stmtIn transcript) _
+          return (stmtIn, stmtOut))).run' (← init)}[
+    match result with
+    | ⟨stmtIn, some stmtOut⟩ => stmtOut ∈ langOut ∧ stmtIn ∉ langIn
+    | _ => False] ≤ srSoundnessError
 
 /-- State-restoration knowledge soundness (w/ straightline extractor).
 
@@ -154,22 +156,21 @@ to produce a valid witness on accepting executions.
 def knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srKnowledgeSoundnessError : ENNReal) : Prop :=
+  (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundness oSpec StmtIn WitOut pSpec,
-    Pr[ fun
-      | ⟨stmtIn, extractedWitIn?, some stmtOut, witOut⟩ =>
-          (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
-            (stmtOut, witOut) ∈ relOut
-      | _ => False
-    | do
+    Pr{let result ← do
       (simulateQ (impl.addLift srChallengeQueryImpl' : QueryImpl _ (StateT _ ProbComp))
           <| (do
             let ⟨transcript, stmtIn, witOut⟩ ← srKnowledgeSoundnessGame srProver
             let stmtOut ← liftComp (verifier.run stmtIn transcript) _
             let extractedWitIn? ← liftM (srExtractor stmtIn witOut transcript default default).run
-            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)
-    ] ≤ srKnowledgeSoundnessError
+            return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)}[
+      match result with
+      | ⟨stmtIn, extractedWitIn?, some stmtOut, witOut⟩ =>
+          (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
+            (stmtOut, witOut) ∈ relOut
+      | _ => False] ≤ srKnowledgeSoundnessError
 
 end StateRestoration
 

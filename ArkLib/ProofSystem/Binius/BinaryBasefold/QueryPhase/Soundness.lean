@@ -6,7 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Completeness
--- These probability proofs use the protocol module's private probability helpers.
+-- These proofs use the protocol module's private support helpers.
 import all ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Protocol
 
 /-!
@@ -16,9 +16,6 @@ import all ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Protocol
 @[expose] public section
 
 open OracleSpec
-attribute [local instance] queryEmptySpecInhabited
-noncomputable local instance soundnessEmptyUniformSpec : IsUniformSpec []ₒ :=
-  IsUniformSpec.ofFintypeInhabited _
 
 namespace Binius.BinaryBasefold.QueryPhase
 
@@ -46,7 +43,7 @@ section FinalQueryRoundIOR
 /-- Pair-support projection wrapper of `support_simulateQ_run'_eq`.
 `Prod.fst` of the stateful run support matches the spec support. -/
 lemma support_run_simulateQ_run_fst_eq {ι : Type}
-    {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ α : Type}
+    {oSpec : OracleSpec ι} {σ α : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (oa : OracleComp oSpec (Option α)) (s : σ)
     (hImplSupp : ∀ {β} (q : OracleQuery oSpec β) s,
@@ -59,7 +56,7 @@ lemma support_run_simulateQ_run_fst_eq {ι : Type}
   rw [StateT.run'_eq, support_map] at h_support
   exact h_support
 /-! **Per-repetition support → logical** (extracted for reuse from completeness-style reasoning).
-**Counterpart** of `checkSingleRepetition_probFailure_eq_zero` for the `OracleComp.support` case.
+**Counterpart** of `checkSingleRepetition_none_not_mem_support` for successful outputs.
 If `(ForInStep.yield PUnit.unit, state_post)` lies in the support of one iteration of the
   verifier's forIn body (for a given `rep`), then the logical proximity check holds for that
   repetition: `logical_checkSingleRepetition 𝔽q β oStmtIn (tr.challenges ⟨0, rfl⟩ rep) stmtIn
@@ -197,12 +194,12 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
       else True)
   have h_ϑ_pos : ϑ > 0 := Nat.pos_of_neZero ϑ
   -- inductive relation inference for the intermediate folding steps
-  have h_inductive_relations := _root_.OptionT.exists_rel_path_of_mem_support_forIn_stateful.{0}
-    (spec := []ₒ) (l := List.finRange (ℓ / ϑ)) (init := 0) (σ := σ)
+  have h_inductive_relations := _root_.OptionT.exists_rel_path_of_mem_support_forIn_stateful
+    (l := List.finRange (ℓ / ϑ)) (init := 0) (σ := σ)
     (s := state_pre) (res := (c_last_val, output_state_inner_forIn))
     (h_mem := h_mem_forIn_support_some) (rel := Rel') (h_start := by
       simp only [logical_stepCondition, logical_checkSingleFoldingStep, gt_iff_lt,
-        CanonicallyOrderedAdd.mul_pos, tsub_pos_iff_lt, dite_else_true, Fin.val_last,
+        CanonicallyOrderedAdd.mul_pos, tsub_pos_iff_lt, dite_true_right, Fin.val_last,
         Fin.coe_ofNat_eq_mod, List.length_finRange, Nat.zero_mod, zero_tsub, h_0_lt, ↓reduceDIte,
         _root_.not_lt_zero, false_and, zero_mul, Fin.mk_zero', IsEmpty.forall_iff,
         lt_self_iff_false,
@@ -271,13 +268,10 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
       dsimp only [OptionT.run] at h_fst_mem
       simp only [Set.mem_iUnion, exists_prop] at h_fst_mem
       rcases h_fst_mem with ⟨fiber_vec_opt, h_fiber_vec_opt_mem_support, h_c_k_mem_output⟩
-      have h_probFailure_queryFiberPoints_eq_zero := probFailure_simulateQ_queryFiberPoints_eq_zero
+      have h_fiber_safe := none_not_mem_support_simulateQ_queryFiberPoints
           (𝔽q := 𝔽q) (β := β) (γ_repetitions := γ_repetitions) (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (so := OracleInterface.simOracle2 []ₒ oStmtIn tr.messages) (k := k) (v := v)
-      have h_probOutput_none_queryFiberPoints_eq_zero :=
-        (add_eq_zero.mp ((OptionT.probFailure_eq _).symm.trans
-          h_probFailure_queryFiberPoints_eq_zero)).2
       have h_fiber_vec_opt_mem_support_run :
           fiber_vec_opt ∈
             support (simulateQ (OracleInterface.simOracle2 []ₒ oStmtIn tr.messages)
@@ -285,9 +279,9 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
                 (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((List.finRange (ℓ / ϑ)).get k)
                 v)) := by
         exact h_fiber_vec_opt_mem_support
-      have h_fiber_vec_opt_eq_some := exists_eq_some_of_mem_support_of_probOutput_none_eq_zero
+      have h_fiber_vec_opt_eq_some := exists_eq_some_of_mem_support_of_none_not_mem
         (x := fiber_vec_opt) (hx := h_fiber_vec_opt_mem_support_run)
-        (hnone := h_probOutput_none_queryFiberPoints_eq_zero)
+        (hnone := h_fiber_safe)
       rcases h_fiber_vec_opt_eq_some with ⟨fiber_vec, h_fiber_vec_opt_eq_some⟩
       rw [h_fiber_vec_opt_eq_some] at h_fiber_vec_opt_mem_support_run h_c_k_mem_output
       have h_fiber_val := mem_support_queryFiberPoints 𝔽q β γ_repetitions
@@ -571,7 +565,7 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
     dsimp only [Rel', checkSingleRepetition_foldRel] at h_rel_for_k_th_level_guard
     have h_res := h_rel_for_k_th_level_guard
     simp only [logical_stepCondition, h_pred_lt, ↓reduceDIte, gt_iff_lt, Fin.val_last,
-      dite_else_true] at h_res
+      dite_true_right] at h_res
     -- rw [h_v] at h_res
     exact h_res.1
   · simp only [h_k_lt, ↓reduceDIte]
@@ -580,7 +574,7 @@ lemma logical_checkSingleRepetition_of_mem_support_forIn_body {σ : Type}
     have h_last_guard_relation := h_inductive_relations.1.2
     dsimp only [Rel', Rel, checkSingleRepetition_foldRel] at h_last_guard_relation
     simp only [List.length_finRange, gt_iff_lt, Fin.val_last,
-      dite_else_true] at h_last_guard_relation
+      dite_true_right] at h_last_guard_relation
     have h_lt : 0 < (⟨ℓ/ϑ, by simp only [List.length_finRange, lt_add_iff_pos_right,
       zero_lt_one]⟩ : Fin ((List.finRange (ℓ / ϑ)).length + 1)) := by
       change (0 : ℕ) < (ℓ / ϑ)
@@ -773,8 +767,8 @@ lemma logical_consistency_checks_passed_of_mem_support_V_run {σ : Type}
   -- **h_pure : y_val = true ∧ s' = s''**
   dsimp only [forIn_block] at h_forIn_run_mem
   -- 1. Apply the extraction lemma
-  have h_independent_support_mem_exists := OptionT.exists_path_of_mem_support_forIn_unit.{0}
-    (spec := []ₒ) (l := List.finRange γ_repetitions) (f := forIn_body) (s_init := s)
+  have h_independent_support_mem_exists := OptionT.exists_path_of_mem_support_forIn_unit
+    (l := List.finRange γ_repetitions) (f := forIn_body) (s_init := s)
     (s_final := s'') (u := z_val)
     (h_yield := by
       intro rep s_pre res_step h_res_step_mem
@@ -891,7 +885,8 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
   toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut probEvent_relOut_gt_0 => by
     -- h_relOut: ∃ stmtOut oStmtOut, verifier outputs (stmtOut, oStmtOut) with prob > 0
     --   and ((stmtOut, oStmtOut), witOut) ∈ foldStepRelOut
-    simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at probEvent_relOut_gt_0
+    simp only [StateT.run'_eq, gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff,
+      Prod.exists] at probEvent_relOut_gt_0
     rcases probEvent_relOut_gt_0 with ⟨stmtOut, oStmtOut, h_output_mem_V_run_support, h_relOut⟩
     have h_output_mem_V_run_support' :
         some (stmtOut, oStmtOut) ∈
@@ -904,17 +899,7 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
                       (pSpec := pSpecQuery 𝔽q β γ_repetitions)
                       (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
                         (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))).run s) := by
-      exact (OptionT.mem_support_iff
-        (mx := OptionT.mk (do
-          let s ← init
-          Prod.fst <$>
-            (simulateQ impl
-              (Verifier.run (stmtIn, oStmtIn) tr
-                (OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i)
-                  (pSpec := pSpecQuery 𝔽q β γ_repetitions)
-                  (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions
-                    (h_ℓ_add_R_rate := h_ℓ_add_R_rate))))).run s))
-        (x := (stmtOut, oStmtOut))).1 h_output_mem_V_run_support
+      exact h_output_mem_V_run_support
     simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output_mem_V_run_support'
     rcases h_output_mem_V_run_support' with ⟨s, hs_init, h_output_mem_V_run_support_with_s⟩
     -- Apply the main lemma connecting verifier support to logical proximity checks
@@ -951,7 +936,7 @@ theorem prop_4_24_singleRepetition_proximityCheck_bound
     (h_no_bad_event : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges)) :
-    Pr_{ let v ← $ᵖ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    Pr{ let v ← $ᵗ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
       logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         oStmtIn v stmtIn stmtIn.final_constant ] ≤
     queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) := by
@@ -986,7 +971,7 @@ theorem singleRepetition_proximityCheck_bound
     (h_no_bad_event : ¬ blockBadEventExistsProp 𝔽q β (stmtIdx := Fin.last ℓ)
       (oracleIdx := OracleFrontierIndex.mkFromStmtIdx (Fin.last ℓ))
       (oStmt := oStmtIn) (challenges := stmtIn.challenges)) :
-    Pr_{ let v ← $ᵖ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    Pr{ let v ← $ᵗ ↥(sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
       logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         oStmtIn v stmtIn stmtIn.final_constant ] ≤
     queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) := by
@@ -1033,7 +1018,7 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
     (transcript : (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Transcript
       (⟨0, rfl⟩ : (pSpecQuery 𝔽q β γ_repetitions
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx).1.castSucc) :
-    Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    Pr{ let y ← $ᵗ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
       rbrExtractionFailureEvent
         (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
         (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions
@@ -1041,7 +1026,7 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
         ⟨0, rfl⟩ stmtIn_oStmtIn transcript y ] ≤
       queryRbrKnowledgeError 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨0, rfl⟩ := by
   classical
-  change Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+  change Pr{ let y ← $ᵗ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
     rbrExtractionFailureEvent
       (kSF := queryKnowledgeStateFunction 𝔽q β (ϑ:=ϑ) γ_repetitions init impl)
       (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions
@@ -1067,7 +1052,7 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
     constructor
     · rintro ⟨_, h⟩; exact h
     · intro h; exact ⟨(), h⟩
-  rw [Pr_congr (h := hP_eq)]
+  rw [prEvent_congr _ _ _ hP_eq]
   -- Bound `A ∧ (∀ rep, B (y rep))` by dropping `A` and applying the γ-fold product bound.
   by_cases hA : finalSumcheckRelOutProp 𝔽q β
       (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩)
@@ -1080,36 +1065,40 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
                 stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant)
           ↔ False :=
       fun y => iff_false_intro (fun hy => hy.1 hA)
-    rw [Pr_congr (h := h_false)]
-    simp only [prob_tsum_form_singleton, ↓reduceIte, mul_zero, tsum_zero, zero_le]
+    rw [prEvent_congr _ _ _ h_false, prEvent_false]
+    exact zero_le
   · -- `¬ A`: the two negated preconditions of Proposition 4.24 hold (De Morgan).
     rw [finalSumcheckRelOutProp, finalSumcheckStepFoldingStateProp, not_or] at hA
     obtain ⟨h_not_consistent, h_no_bad⟩ := hA
     -- Drop the constant conjunct `A` (which holds), reducing to the all-repetitions event.
-    calc Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+    calc Pr{ let y ← $ᵗ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
             ¬ finalSumcheckRelOutProp 𝔽q β
                 (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩) ∧
               ∀ rep : Fin γ_repetitions,
                 logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                   stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant ]
-        ≤ Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+        ≤ Pr{ let y ← $ᵗ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
               ∀ rep : Fin γ_repetitions,
                 logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                   stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant ] := by
-          apply Pr_le_Pr_of_implies
+          apply prEvent_mono
           intro y hy
           exact hy.2
       _ ≤ (queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡)) ^ γ_repetitions := by
-          apply prob_pow_bound_of_forall
-            (A := sDomain 𝔽q β h_ℓ_add_R_rate 0)
-            (n := γ_repetitions)
-            (P := fun v => logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              stmtIn_oStmtIn.2 v stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant)
-            (ε := queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡))
-          exact singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
+          let P : sDomain 𝔽q β h_ℓ_add_R_rate 0 → Prop := fun v =>
+            logical_checkSingleRepetition 𝔽q β
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            stmtIn_oStmtIn.2 v stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant
+          have h_single := singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
             (stmtIn := stmtIn_oStmtIn.1) (oStmtIn := stmtIn_oStmtIn.2)
             (h_not_oracleFoldingConsistent := h_not_consistent)
             (h_no_bad_event := h_no_bad)
+          have h_product := prob_uniform_pi_mem_finset_eq
+            (Finset.univ.filter P) γ_repetitions
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at h_product
+          rw [h_product]
+          apply pow_le_pow_left'
+          simpa only [SampleableType.prEvent_uniformSample] using h_single
       _ = ↑(queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) ^ γ_repetitions) := by
           rw [ENNReal.coe_pow]
 omit [CharP L 2] [SampleableType L] in
@@ -1125,11 +1114,6 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp �
   -- The FRI query round is 1-message verifier-first; reduce r.b.r. knowledge soundness to the
   -- (now-extracted) per-challenge product bound — a one-liner like the other leaves.
   let p := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  let : OracleSpec.Fintype [p.Challenge]ₒ :=
-    { fintypeB := fun j => inferInstanceAs (Fintype (p.Challenge j.1)) }
-  let : OracleSpec.Inhabited [p.Challenge]ₒ :=
-    { inhabitedB := fun j => inferInstanceAs (Inhabited (p.Challenge j.1)) }
-  let : IsUniformSpec ([]ₒ + [p.Challenge]ₒ) := IsUniformSpec.ofFintypeInhabited _
   exact OracleReduction.rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
     (WitMid := fun _ => Unit)
     (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
@@ -1138,8 +1122,10 @@ theorem queryOracleVerifier_rbrKnowledgeSoundness {σ : Type} (init : ProbComp �
     (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (hDir0 := rfl)
     (hbound := fun stmtIn_oStmtIn transcript =>
-      query_doom_escape_probability_bound (init := init) (impl := impl)
-        (stmtIn_oStmtIn := stmtIn_oStmtIn) (transcript := transcript))
+      by
+        have h := query_doom_escape_probability_bound (init := init) (impl := impl)
+          (stmtIn_oStmtIn := stmtIn_oStmtIn) (transcript := transcript)
+        exact (SampleableType.prEvent_uniformSample_inst_irrel _ _ _).le.trans h)
 
 end FinalQueryRoundIOR
 end

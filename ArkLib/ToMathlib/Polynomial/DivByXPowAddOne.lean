@@ -40,12 +40,12 @@ private theorem coeff_sum_range_monomial (d : ℕ) (f : ℕ → R) (n : ℕ) :
     (∑ k ∈ Finset.range d, (monomial k) (f k) : R[X]).coeff n = if n < d then f n else 0 := by
   rw [finsetSum_coeff]
   by_cases hn : n < d
-  · rw [if_pos hn, Finset.sum_eq_single n (fun b _ hb => by
-      rw [coeff_monomial, if_neg hb])
-      (fun h => absurd (Finset.mem_range.mpr hn) h), coeff_monomial, if_pos rfl]
-  · rw [if_neg hn]
+  · rw [ite_eq_left hn, Finset.sum_eq_single n (fun b _ hb => by
+      rw [coeff_monomial, ite_eq_right hb])
+      (fun h => absurd (Finset.mem_range.mpr hn) h), coeff_monomial, ite_eq_left rfl]
+  · rw [ite_eq_right hn]
     exact Finset.sum_eq_zero fun k hk => by
-      rw [coeff_monomial, if_neg (by have := Finset.mem_range.mp hk; omega)]
+      rw [coeff_monomial, ite_eq_right (by have := Finset.mem_range.mp hk; omega)]
 
 /-- **Degree-`< 2d` division by `X ^ d + 1` in closed form**: the quotient is the upper half of the
 dividend's coefficients, shifted down by `d`.
@@ -65,13 +65,13 @@ theorem divByMonic_X_pow_add_one [Nontrivial R] {d : ℕ} (hd : 0 < d) {p : R[X]
     ext n
     rw [coeff_add, hA, coeff_sum_range_monomial, mul_comm, coeff_mul_X_pow']
     by_cases hnd : n < d
-    · rw [if_pos hnd, if_neg (by omega), add_zero]
-    · rw [if_neg hnd, if_pos (by omega), zero_add, hB, coeff_sum_range_monomial]
+    · rw [ite_eq_left hnd, ite_eq_right (by omega), add_zero]
+    · rw [ite_eq_right hnd, ite_eq_left (by omega), zero_add, hB, coeff_sum_range_monomial]
       by_cases hn2 : n - d < d
-      · rw [if_pos hn2]
+      · rw [ite_eq_left hn2]
         congr 1
         omega
-      · rw [if_neg hn2]
+      · rw [ite_eq_right hn2]
         exact coeff_eq_zero_of_natDegree_lt (by omega)
   -- Remainder `A - B` has degree `< d`, so quotient/remainder are forced.
   refine (div_modByMonic_unique B (A - B) hmonic ⟨?_, ?_⟩).1
@@ -79,8 +79,8 @@ theorem divByMonic_X_pow_add_one [Nontrivial R] {d : ℕ} (hd : 0 < d) {p : R[X]
   · rw [hdeg, degree_lt_iff_coeff_zero]
     intro n hn
     rw [coeff_sub, hA, hB, coeff_sum_range_monomial, coeff_sum_range_monomial,
-      if_neg (by exact_mod_cast (not_lt.mpr (by exact_mod_cast hn))),
-      if_neg (by exact_mod_cast (not_lt.mpr (by exact_mod_cast hn))), sub_zero]
+      ite_eq_right (by exact_mod_cast (not_lt.mpr (by exact_mod_cast hn))),
+      ite_eq_right (by exact_mod_cast (not_lt.mpr (by exact_mod_cast hn))), sub_zero]
 
 /-- **Coefficientwise form**: the `k`-th quotient coefficient is the dividend's `(d + k)`-th. Every
 coefficient bound on `p` therefore transfers to `p /ₘ (X ^ d + 1)` with no growth at all. -/
@@ -89,8 +89,8 @@ theorem coeff_divByMonic_X_pow_add_one [Nontrivial R] {d : ℕ} (hd : 0 < d) {p 
     (p /ₘ (X ^ d + 1)).coeff k = p.coeff (d + k) := by
   rw [divByMonic_X_pow_add_one hd hp, coeff_sum_range_monomial]
   by_cases hk : k < d
-  · rw [if_pos hk]
-  · rw [if_neg hk]
+  · rw [ite_eq_left hk]
+  · rw [ite_eq_right hk]
     exact (coeff_eq_zero_of_natDegree_lt (by omega)).symm
 
 end Polynomial

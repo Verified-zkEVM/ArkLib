@@ -64,7 +64,7 @@ theorem gridPt_coe_mul_card {ι : Type} [Fintype ι] [Nonempty ι] (k : ℕ) :
   exact_mod_cast gridPt_mul_card (ι := ι) k
 
 /-- Affine-line MCA is monotone along the integer-agreement grid. -/
-theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F]
+theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F] [SampleableType F]
     [Fintype ι] [Nonempty ι] (C : LinearCode ι F) {k k' : ℕ} (h : k ≤ k') :
     mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤
       mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k' : ℝ) :=
@@ -73,7 +73,7 @@ theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F]
 /-! ## Logical challenge predicates -/
 
 /-- An adjacent affine-line MCA crossing, or safety at every grid point through radius one. -/
-def grandMcaChallenge {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+def grandMcaChallenge {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     [Fintype ι] [Nonempty ι]
     (C : LinearCode ι F) (ε_star : ℝ≥0) : Prop :=
   (∃ k : ℕ, k < Fintype.card ι ∧
@@ -120,10 +120,10 @@ structure PrizeDomainAdmissible (ι : Type) [Fintype ι] : Prop where
 
 namespace GrandChallenges
 
-variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     [Fintype ι] [Nonempty ι]
 
-omit [Fintype F] [Nonempty ι] in
+omit [Fintype F] [SampleableType F] [Nonempty ι] in
 /-- A smooth evaluation domain of length at least `16` is prize-domain admissible. -/
 theorem PrizeDomainAdmissible.of_smooth (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (hcard : 16 ≤ Fintype.card ι) : PrizeDomainAdmissible ι := by
@@ -147,7 +147,7 @@ def grandListDecodingChallengeRs (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (k m : ℕ) (ε_star : ℝ≥0) : Prop :=
   grandListDecodingChallenge (ReedSolomon.code domain k : Set (ι → F)) m ε_star
 
-omit [Fintype F] [DecidableEq F] [Nonempty ι] in
+omit [Fintype F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- The code selected by `prizeDimension` has exactly the advertised prize rate. -/
 theorem prizeCode_rate_eq (domain : ι ↪ F) (h : PrizeDomainAdmissible ι) (j : Fin 4) :
     LinearCode.rate (ReedSolomon.code domain (prizeDimension (ι := ι) j)) = prizeRate j := by
@@ -392,7 +392,7 @@ structure ListUpperWitness (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) wh
   exceeds : (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) >
     (ε_star : ENNReal) * (Fintype.card F : ENNReal)
 
-omit [Field F] [Fintype F] [DecidableEq F] [Nonempty ι] in
+omit [Field F] [Fintype F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- The maximized list size is monotone on nonnegative radii. -/
 theorem lambda_mono_nnreal {C : Set (ι → F)} {m : ℕ} {a b : ℝ≥0} (hab : a ≤ b) :
     (Code.Lambda (C ^⋈ (Fin m)) (a : ℝ) : ENNReal) ≤
@@ -433,7 +433,7 @@ namespace GrandListResolution
 
 variable {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
 
-omit [Field F] [DecidableEq F] [Nonempty ι] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- Below the safe list grid point, the bound remains safe. -/
 theorem le_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : δ ≤ gridPt (ι := ι) R.kStar) :
@@ -441,7 +441,7 @@ theorem le_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) :=
   le_trans (lambda_mono_nnreal hδ) R.below
 
-omit [Field F] [DecidableEq F] [Nonempty ι] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- At or above the adjacent unsafe list grid point, the bound remains unsafe. -/
 theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : gridPt (ι := ι) (R.kStar + 1) ≤ δ) :
@@ -449,7 +449,7 @@ theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) :=
   lt_of_lt_of_le R.above (lambda_mono_nnreal hδ)
 
-omit [Field F] [DecidableEq F] in
+omit [Field F] [SampleableType F] [DecidableEq F] in
 /-- Exact safe half of the list-decoding boundary cell. -/
 theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
@@ -470,7 +470,7 @@ theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
   rw [lambda_eq_of_floor_eq (C := C ^⋈ (Fin m)) hgrid.symm]
   exact le_trans (lambda_mono_nnreal (gridPt_mono hfloor)) R.below
 
-omit [Field F] [DecidableEq F] in
+omit [Field F] [SampleableType F] [DecidableEq F] in
 /-- The list-decoding sublevel set is exactly the right-open interval ending at the unsafe grid
 point. -/
 theorem sublevel_iff (R : GrandListResolution C m ε_star) {δ : ℝ≥0} :
@@ -482,7 +482,7 @@ theorem sublevel_iff (R : GrandListResolution C m ε_star) {δ : ℝ≥0} :
   push Not at hge
   exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
 
-omit [Field F] [DecidableEq F] [Nonempty ι] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- The adjacent-grid list-decoding boundary index is unique. -/
 theorem kStar_unique (R R' : GrandListResolution C m ε_star) : R.kStar = R'.kStar := by
   rcases lt_trichotomy R.kStar R'.kStar with h | h | h
@@ -496,6 +496,7 @@ theorem kStar_unique (R R' : GrandListResolution C m ε_star) : R.kStar = R'.kSt
 
 end GrandListResolution
 
+omit [SampleableType F] in
 /-- An adjacent list-size boundary satisfies the logical challenge. -/
 theorem GrandListResolution.to_challenge
     {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
@@ -512,6 +513,7 @@ inductive GrandListAnswer (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) : T
         (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
           (ε_star : ENNReal) * (Fintype.card F : ENNReal))
 
+omit [SampleableType F] in
 /-- A list-decoding answer satisfies the logical challenge. -/
 theorem GrandListAnswer.to_challenge
     {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
@@ -533,12 +535,13 @@ structure ListPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain]
       (ReedSolomon.code domain (prizeDimension (ι := ι) j) : Set (ι → F))
       m (prizeThreshold : ℝ≥0)
 
+omit [SampleableType F] in
 /-- Per-rate list-decoding answers satisfy the prize proposition. -/
 theorem ListPrizeResolution.to_prize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
     {m : ℕ} (R : ListPrizeResolution domain m) : listDecodingPrize domain m :=
   ⟨R.m_pos, R.admissible, fun j => (R.answer j).to_challenge⟩
 
-omit [Field F] [DecidableEq F] [Nonempty ι] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- A safe list witness lies strictly below the unsafe edge of every resolution. -/
 theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (w : ListLowerWitness C m ε_star) (R : GrandListResolution C m ε_star) :
@@ -547,7 +550,7 @@ theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : �
   push Not at h
   exact absurd w.bound (not_le.mpr (R.gt_of_gridPt h))
 
-omit [Field F] [DecidableEq F] [Nonempty ι] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- An unsafe list witness lies strictly above the safe edge of every resolution. -/
 theorem ListUpperWitness.boundary_lt {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (w : ListUpperWitness C m ε_star) (R : GrandListResolution C m ε_star) :

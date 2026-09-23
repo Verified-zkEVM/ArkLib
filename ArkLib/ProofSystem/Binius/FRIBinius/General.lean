@@ -240,10 +240,9 @@ theorem fullOracleReduction_perfectCompleteness :
       · intro s
         apply CoreInteractionPhase.coreInteractionOracleReduction_perfectCompleteness
           κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l
-        infer_instance
     )
     (h₂ := fun s => QueryPhase.queryOracleProof_perfectCompleteness K β γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (pure s) (by infer_instance) impl)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (pure s) impl)
 
 open scoped NNReal
 
@@ -371,7 +370,7 @@ def concreteFRIBiniusKnowledgeError : ℝ≥0 :=
     + (2 ^ (ℓ' + 𝓡) : ℝ≥0) / (Fintype.card L : ℝ≥0)
     + querySingleRepetitionError (𝓡 := 𝓡) ^ γ_repetitions
 
-omit [DecidableEq K] [CharP L 2] h_β₀_eq_1 in
+omit [DecidableEq K] [CharP L 2] h_β₀_eq_1 [SampleableType L] in
 /-- `∑ᵢ εᵢ` for the full verifier is at most the concrete DP24 §5.2 (43) bound. -/
 theorem fullRbrKnowledgeError_sum_le_concrete :
     (∑ i : (fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions h_ℓ_add_R_rate).ChallengeIdx,

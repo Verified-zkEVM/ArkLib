@@ -109,7 +109,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-! Perfect completeness for the core interaction oracle reduction -/
 omit [DecidableEq 𝔽q] [CharP L 2] in
-theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail init)
+theorem coreInteractionOracleReduction_perfectCompleteness
     [(j : pSpecFold.ChallengeIdx) → Inhabited ((pSpecFold (L := L)).Challenge j)]
     [(j : pSpecFold.ChallengeIdx) → SampleableType ((pSpecFold (L := L)).Challenge j)]
     [(i : Fin ℓ) → (j : (pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx) →
@@ -133,11 +133,11 @@ theorem coreInteractionOracleReduction_perfectCompleteness (hInit : NeverFail in
   · -- Perfect completeness of sumcheckFoldOracleReduction
     exact sumcheckFoldOracleReduction_perfectCompleteness 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑:=𝓑) (mp := BBF_SumcheckMultiplierParam)
-      (init := init) (impl := impl) (_hInit := hInit)
+      (init := init) (impl := impl)
   · intro s
     -- Perfect completeness of finalSumcheckOracleReduction
     exact finalSumcheckOracleReduction_perfectCompleteness 𝔽q β
-      (ϑ:=ϑ) (𝓑:=𝓑) (init := pure s)  (hInit := by infer_instance) (impl := impl)
+      (ϑ:=ϑ) (𝓑:=𝓑) (init := pure s) (impl := impl)
 
 def coreInteractionOracleRbrKnowledgeError (j : (pSpecCoreInteraction 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx) : ℝ≥0 :=
@@ -288,7 +288,7 @@ lemma sum_fin_eq_sum_Icc_pred {B : ℕ} (f : ℕ → ℕ) (hB : 1 ≤ B) :
   trans (∑ j ∈ Finset.range (B - 1), f (j + 1))
   · refine Finset.sum_congr rfl ?_
     intro i hi
-    rw [dif_pos (Finset.mem_range.mp hi)]
+    rw [dite_eq_left (Finset.mem_range.mp hi)]
   exact sum_range_pred_eq_sum_Icc f hB
 
 /-- `∑_{w=1}^{B-1} f w + f 0 = ∑_{v=0}^{B-1} f v` when `B ≥ 1`. -/
@@ -478,7 +478,7 @@ lemma foldBadEventCardSum_eq_displaySums
     rw [hperm, hip']
   exact hRHS.symm
 
-omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [SampleableType L] in
 /-- Display inequality for fold knowledge-error charges written as `2/|L| + |S^k|/|L|`.
 
 The side conditions `h_nonLastDest_le_ℓ` and `h_lastDest_le_ℓ` ensure each destination index
@@ -780,7 +780,7 @@ large nested
 set_option maxHeartbeats 200000 in
 -- Expanding the composed challenge sums requires the stated normalization budget.
 set_option backward.isDefEq.respectTransparency false in
-omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [SampleableType L] in
 theorem sumcheckFoldKnowledgeError_le :
     (∑ j : (pSpecSumcheckFold 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx,
         sumcheckFoldKnowledgeError (L := L) 𝔽q β j)

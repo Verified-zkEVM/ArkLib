@@ -183,8 +183,8 @@ lemma d_image_piCongrRight {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G)
   simp only [Prod.map_fst, Prod.map_snd]
   by_cases h : x.1 = x.2
   · simp [h]
-  · rw [if_pos (show ¬ (Equiv.piCongrRight σ) x.1 = (Equiv.piCongrRight σ) x.2 from
-        fun hc => h ((Equiv.piCongrRight σ).injective hc)), if_pos h]
+  · rw [ite_eq_left (show ¬ (Equiv.piCongrRight σ) x.1 = (Equiv.piCongrRight σ) x.2 from
+        fun hc => h ((Equiv.piCongrRight σ).injective hc)), ite_eq_left h]
     exact hammingDist_comp (fun i => (σ i : F → G)) (fun i => (σ i).injective)
 
 end JohnsonBound

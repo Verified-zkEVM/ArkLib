@@ -55,7 +55,8 @@ private lemma columns_mul_apply (hCoord : CoordinateLaws P) (x y : L)
   simpa [Algebra.smul_def, mul_comm] using congrFun (hCoord.columns_mul x y) u
 
 
-omit [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
+omit [NeZero κ] [NeZero ℓ] [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K]
+  [NeZero ℓ'] in
 /-- Unpacking a packed polynomial recovers the original multilinear polynomial. -/
 private lemma unpack_pack_id [IsDomain K] (β : Basis (Fin κ → Fin 2) K L)
     (t : MultilinearPoly K ℓ) :
@@ -75,7 +76,7 @@ private lemma unpack_pack_id [IsDomain K] (β : Basis (Fin κ → Fin 2) K L)
   funext i
   by_cases h : i.val < κ
   · simp [h]
-  · simp only [Fin.eta, dif_neg h]
+  · simp only [Fin.eta, dite_eq_right h]
     have hk : κ ≤ i.val := Nat.le_of_not_lt h
     have h_idx : (⟨i.val - κ + κ, by omega⟩ : Fin ℓ) = i := by
       apply Fin.ext
@@ -289,7 +290,8 @@ private lemma decompose_embedded_MLP_eval_columns (hCoord : CoordinateLaws P) [I
   rw [columns_mul_apply (κ := κ) (L := L) (K := K) (P := P) hCoord]
 
 
-omit [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ]
+  [NeZero ℓ'] in
 private lemma repr_packMLE_eval (β : Basis (Fin κ → Fin 2) K L)
     (t : MultilinearPoly K ℓ)
     (w : Fin ℓ' → Fin 2)
@@ -397,7 +399,7 @@ private def batchingCheckSummand (β : Basis (Fin κ → Fin 2) K L)
           (packMLE κ L K ℓ ℓ' h_l β t).val))
         (fun i => p ⟨i.val, by omega⟩))
 
-omit [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [DecidableEq L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
 private lemma batchingCheckSummand_split (β : Basis (Fin κ → Fin 2) K L)
     (t : MultilinearPoly K ℓ)
     (eval_point : Fin ℓ → L)
@@ -490,7 +492,7 @@ private lemma batchingCheckSummand_split (β : Basis (Fin κ → Fin 2) K L)
   congr 1
   rw [mul_comm]
 
-omit [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
 /-- The honest packed evaluation satisfies the verifier's original-evaluation check. -/
 lemma batching_check_correctness (hCoord : CoordinateLaws P) [IsDomain K] [IsDomain L]
     (t : MultilinearPoly K ℓ)

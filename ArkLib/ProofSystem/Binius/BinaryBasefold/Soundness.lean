@@ -48,13 +48,13 @@ namespace Binius.BinaryBasefold
 
 open scoped NNReal ProbabilityTheory Polynomial
 
-variable {L : Type} [Field L] [Fintype L]
+variable {L : Type} [Field L] [Fintype L] [SampleableType L]
 
 /-- **Probability bound for the bad sumcheck event** (Schwartz-Zippel).
 When the verifier challenge `r_i'` is uniform over `L`, the probability that two distinct
 degree-≤2 round polynomials agree at `r_i'` is at most `2 / |L|`. -/
 lemma probability_bound_badSumcheckEventProp (h_i h_star : L⦃≤ 2⦄[X]) :
-    Pr_{ let r_i' ← $ᵖ L }[ badSumcheckEventProp r_i' h_i h_star ] ≤
+    Pr{ let r_i' ← $ᵗ L }[ badSumcheckEventProp r_i' h_i h_star ] ≤
       (2 : ℝ≥0) / Fintype.card L := by
   classical
   unfold badSumcheckEventProp
@@ -79,7 +79,7 @@ lemma probability_bound_badSumcheckEventProp (h_i h_star : L⦃≤ 2⦄[X]) :
       rw [Polynomial.eval_sub, sub_eq_zero]
     simp_rw [h_event]
     let : DecidablePred (fun r : L => p.eval r = 0) := Classical.decPred _
-    rw [Probability.prob_uniform_eq_card_filter_div_card (P := fun r : L => p.eval r = 0)]
+    rw [SampleableType.prEvent_uniformSample]
     have h_root_card : (Finset.univ.filter fun r : L => p.eval r = 0).card ≤ p.natDegree := by
       refine le_trans ?_ (Polynomial.card_roots' p)
       calc
@@ -97,7 +97,6 @@ lemma probability_bound_badSumcheckEventProp (h_i h_star : L⦃≤ 2⦄[X]) :
         gcongr
         exact_mod_cast h_p_degree
   · simp only [h_ne, false_and, ENNReal.coe_ofNat]
-    simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-      eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
+    simp
 
 end Binius.BinaryBasefold

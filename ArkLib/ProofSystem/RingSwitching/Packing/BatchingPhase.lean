@@ -23,7 +23,7 @@ Definitions and results for this component of ArkLib.
 
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
   Module TensorProduct Nat Matrix
-open scoped NNReal
+open scoped NNReal ProbabilityTheory
 open ProbabilityTheory
 open Sumcheck.Structured
 
@@ -270,13 +270,13 @@ lemma oracleVerifier_run_eq_guarded (stmt : BatchingStmtIn L ℓ)
   dsimp only [batchingVerifierCheck, batchingVerifierStmtOut]
   split
   · rename_i h_check
-    erw [if_pos h_check]
+    erw [ite_eq_left h_check]
     erw [simulateQ_pure]
     simp only [pure_bind]
     erw [simulateQ_pure]
     rfl
   · rename_i h_check
-    erw [if_neg h_check]
+    erw [ite_eq_right h_check]
     rfl
 
 /-- The Oracle Reduction for the Batching Phase. -/
@@ -441,22 +441,22 @@ noncomputable def batchingKnowledgeStateFunction (hCoord : CoordinateLaws P)
           exact h_compat
       | ⟨1, h⟩ => nomatch h
     toFun_full := fun ⟨stmtIn, oStmtIn⟩ tr witOut h_relOut => by
-      simp only [StateT.run'_eq, gt_iff_lt, probEvent_pos_iff, Prod.exists] at h_relOut
+      simp only [StateT.run'_eq, gt_iff_lt, OracleComp.OptionT.prEvent_mk_pos_iff,
+        Prod.exists] at h_relOut
       rcases h_relOut with ⟨stmtOut, oStmtOut, h_output, h_relOut⟩
       erw [oracleVerifier_run_eq_guarded] at h_output
-      rw [OptionT.mem_support_iff] at h_output
-      simp only [OptionT.run_mk, support_bind, Set.mem_iUnion, exists_prop] at h_output
+      simp only [support_bind, Set.mem_iUnion, exists_prop] at h_output
       rcases h_output with ⟨s, _hs_init, h_output⟩
       by_cases h_check : batchingVerifierCheck κ L K P ℓ ℓ' h_l stmtIn
           ((show (pSpecBatching κ L K P).FullTranscript from tr).messages ⟨0, rfl⟩)
-      · rw [if_pos h_check] at h_output
-        change some (stmtOut, oStmtOut) ∈ _root_.support
+      · rw [ite_eq_left h_check] at h_output
+        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
           ((simulateQ impl (pure (some _) : OracleComp []ₒ (Option _))).run' s) at h_output
         rw [simulateQ_pure] at h_output
-        change some (stmtOut, oStmtOut) ∈ _root_.support
+        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
           (Prod.fst <$> (pure (some _) : StateT σ ProbComp _).run s) at h_output
         rw [StateT.run_pure] at h_output
-        simp only [_root_.map_pure, support_pure, Set.mem_singleton_iff,
+        simp only [map_pure, support_pure, Set.mem_singleton_iff,
           Option.some.injEq] at h_output
         have h_stmt := congrArg Prod.fst h_output
         have h_oracle := congrArg Prod.snd h_output
@@ -480,20 +480,20 @@ noncomputable def batchingKnowledgeStateFunction (hCoord : CoordinateLaws P)
         have hH' := Subtype.ext hH
         rw [hH'] at hCons
         exact hCons
-      · rw [if_neg h_check] at h_output
-        change some (stmtOut, oStmtOut) ∈ _root_.support
+      · rw [ite_eq_right h_check] at h_output
+        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
           ((simulateQ impl (pure none : OracleComp []ₒ (Option _))).run' s) at h_output
         rw [simulateQ_pure] at h_output
-        change some (stmtOut, oStmtOut) ∈ _root_.support
+        change some (stmtOut, oStmtOut) ∈ MonadAttach.support
           (Prod.fst <$> (pure none : StateT σ ProbComp _).run s) at h_output
         rw [StateT.run_pure] at h_output
-        simp only [_root_.map_pure, support_pure, Set.mem_singleton_iff, reduceCtorEq] at h_output
+        simp only [map_pure, support_pure, Set.mem_singleton_iff, reduceCtorEq] at h_output
   }
 
 /-! ## Security Properties -/
 
-omit [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero
-  ℓ'] in
+omit [NeZero κ] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K] [DecidableEq K]
+  [NeZero ℓ] [NeZero ℓ'] in
 /-- The honest message passes the guard and the honest output satisfies the round relation. -/
 lemma batching_honest_output_relation (hCoord : CoordinateLaws P)
     [IsDomain K] [NoZeroDivisors L]
@@ -514,7 +514,7 @@ lemma batching_honest_output_relation (hCoord : CoordinateLaws P)
       s_hat := batchingProverComputeMsg κ L K P ℓ ℓ' h_l stmt wit
       r_batching := r } rfl
 
-omit [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
 /-- Perfect completeness for the batching phase oracle reduction. -/
 theorem batchingReduction_perfectCompleteness (hCoord : CoordinateLaws P)
     [IsDomain K] [NoZeroDivisors L] :
@@ -525,23 +525,14 @@ theorem batchingReduction_perfectCompleteness (hCoord : CoordinateLaws P)
     (init := init) (impl := impl) := by
   classical
   let : IsDomain L := NoZeroDivisors.to_isDomain L
-  let : OracleSpec.Inhabited emptySpec.{0, 0} := { inhabitedB := fun i => PEmpty.elim i }
   let : ∀ j, OracleInterface ((pSpecBatching κ L K P).Challenge j) :=
     ProtocolSpec.challengeOracleInterface
-  let : OracleSpec.Fintype [(pSpecBatching κ L K P).Challenge]ₒ :=
-    { fintypeB := fun j => by
-        change Fintype ((pSpecBatching κ L K P).Challenge j.1)
-        exact Fintype.ofFinite _ }
-  let : OracleSpec.Inhabited [(pSpecBatching κ L K P).Challenge]ₒ :=
-    { inhabitedB := fun j => by
-        change Inhabited ((pSpecBatching κ L K P).Challenge j.1)
-        exact Classical.inhabited_of_nonempty inferInstance }
   rw [OracleReduction.unroll_2_message_reduction_perfectCompleteness (oSpec := []ₒ)
     (pSpec := pSpecBatching κ L K P) (init := init) (impl := impl)
-    (hInit := inferInstance) (hDir0 := rfl) (hDir1 := rfl)
+    (hDir0 := rfl) (hDir1 := rfl)
     (hImplSupp := by simp only [Set.fmap_eq_image, IsEmpty.forall_iff, implies_true])]
   intro stmtIn oStmtIn witIn h_relIn
-  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
   intro output h_output
   dsimp only [batchingOracleReduction, oracleProver, oracleVerifier, PrvState,
     OracleVerifier.toVerifier] at h_output
@@ -571,7 +562,7 @@ theorem batchingReduction_perfectCompleteness (hCoord : CoordinateLaws P)
   have h_answer : ReaderT.run (OracleInterface.toOC.impl ())
       (embedded_MLP_eval κ L K P ℓ ℓ' h_l witIn.t' stmtIn.t_eval_point) =
       embedded_MLP_eval κ L K P ℓ ℓ' h_l witIn.t' stmtIn.t_eval_point := rfl
-  simp only [h_answer, h_check, if_pos, pure_bind] at h_output
+  simp only [h_answer, h_check, ite_eq_left, pure_bind] at h_output
   erw [OptionT.simulateQ_pure] at h_output
   simp only [OptionT.pure, OptionT.mk,
     support_pure, Set.mem_singleton_iff, exists_eq_left, Option.map_some] at h_output
@@ -579,8 +570,8 @@ theorem batchingReduction_perfectCompleteness (hCoord : CoordinateLaws P)
   change sumcheckRoundRelationProp κ L K P ℓ ℓ' h_l aOStmtIn 0 _ oStmtIn _ ∧ _
   exact ⟨h_relation, rfl, rfl⟩
 
-omit [Nontrivial L] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K] [DecidableEq K]
-  [NeZero ℓ] [NeZero ℓ'] in
+omit [NeZero κ] [Nontrivial L] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K]
+  [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 lemma batching_pack_unpack_id [IsDomain K] [IsDomain L]
     (t' : Sumcheck.Structured.MultilinearPoly L ℓ') :
     packMLE κ L K ℓ ℓ' h_l P.basis (unpackMLE κ L K ℓ ℓ' h_l P.basis t') = t' := by
@@ -770,7 +761,7 @@ lemma batchingMismatchPoly_nonzero_of_ne
   rw [hu_eval_mle] at hu_eval_zero
   exact hu_eval_zero
 
-omit [Fintype L] [SampleableType L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [SampleableType L] [Fintype K] [DecidableEq K] [NeZero ℓ] [NeZero ℓ'] in
 /-- From `KState 2` truth, derive equality of the two `compute_s0` forms. -/
 lemma batching_compute_eq_from_hafter (hCoord : CoordinateLaws P) [NoZeroDivisors L]
     (stmtOStmtIn : (BatchingStmtIn L ℓ) × (∀ j, aOStmtIn.OStmtIn j))
@@ -835,7 +826,7 @@ omit [NeZero κ] [Fintype K] [DecidableEq K] [DecidableEq L] in
   so Schwartz-Zippel gives `Pr[S(y) = 0] ≤ κ / |L|`. -/
 lemma probability_bound_badBatchingEventProp [IsDomain L]
     (msg0 s_bar : P.A) :
-    Pr_{ let y ← $ᵖ (Fin κ → L) }[
+    Pr{ let y ← $ᵗ (Fin κ → L) }[
       badBatchingEventProp (κ := κ) (L := L) (K := K) (P := P) y msg0 s_bar ] ≤
       batchingRBRKnowledgeError (κ := κ) (L := L) (K := K) (P := P) ⟨1, rfl⟩ := by
   classical
@@ -845,11 +836,11 @@ lemma probability_bound_badBatchingEventProp [IsDomain L]
   · -- msg0 ≠ s_bar: reduce to S.eval(y) = 0, apply Schwartz-Zippel
     simp only [ne_eq, h_ne, not_false_eq_true, true_and]
     -- Rewrite compute_s0 equality as mismatch polynomial root
-    have h_mono := Probability.Pr_le_Pr_of_implies (D := $ᵖ (Fin κ → L))
-      (f := fun y => compute_s0 κ L K P msg0 y = compute_s0 κ L K P s_bar y)
-      (g := fun y => MvPolynomial.eval y
+    have h_mono := prEvent_mono ($ᵗ (Fin κ → L))
+      (fun y => compute_s0 κ L K P msg0 y = compute_s0 κ L K P s_bar y)
+      (fun y => MvPolynomial.eval y
         (batchingMismatchPoly (κ := κ) (L := L) (K := K) (P := P) msg0 s_bar) = 0)
-      (h_imp := by
+      (by
         intro y h_eq
         rw [← batching_compute_s0_sub_eq_eval_mismatch (κ := κ) (L := L) (K := K) (P := P)
           (msg0 := msg0) (s_bar := s_bar) (y := y)]
@@ -864,10 +855,9 @@ lemma probability_bound_badBatchingEventProp [IsDomain L]
     simpa [batchingRBRKnowledgeError, pSpecBatching, ENNReal.coe_div] using h_sz
   · -- msg0 = s_bar: event is False ∧ _, which never holds
     simp only [h_ne, false_and]
-    simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-      eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
+    exact (prEvent_eq_zero_of_forall_not _ _ (fun _ h => h)).le.trans _root_.zero_le
 
-omit [Fintype L] [SampleableType L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
+omit [NeZero κ] [Fintype L] [SampleableType L] [Fintype K] [DecidableEq K] [NeZero ℓ'] in
 /-- Extraction failure implies a witness-dependent bad batching event.
   The extracted `witMid` also carries oracle compatibility at the same `oStmt`. -/
 lemma batching_rbrExtractionFailureEvent_imply_badBatchingEvent (hCoord : CoordinateLaws P)
@@ -929,7 +919,7 @@ lemma batching_rbrExtractionFailureEvent_imply_badBatchingEvent (hCoord : Coordi
   exact h_bad
 
 omit [Fintype K] [DecidableEq K] in
-omit [NeZero ℓ'] in
+omit [NeZero κ] [NeZero ℓ'] in
 /-- Per-transcript batching bound: for a fixed prover message `msg0`, the probability
   (over batching challenges `y : Fin κ → L`) that extraction fails is bounded by
   `batchingRBRKnowledgeError`.
@@ -942,7 +932,7 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
     (hUnique : aOStmtIn.Functional) [IsDomain K] [NoZeroDivisors L]
     (stmtOStmtIn : (BatchingStmtIn L ℓ) × (∀ j, aOStmtIn.OStmtIn j))
     (msg0 : (pSpecBatching (κ := κ) (L := L) (K := K) (P := P)).Message ⟨0, rfl⟩) :
-    Pr_{ let y ← $ᵖ (Fin κ → L) }[
+    Pr{ let y ← $ᵗ (Fin κ → L) }[
       rbrExtractionFailureEvent
         (kSF := batchingKnowledgeStateFunction (hCoord := hCoord) (κ := κ) (L := L) (K := K) (P :=
           P) (ℓ := ℓ)
@@ -959,8 +949,8 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
   · rcases hCompat with ⟨t_fixed, h_t_fixed_compat⟩
     let s_bar_fixed :=
       embedded_MLP_eval κ L K P ℓ ℓ' h_l t_fixed stmtOStmtIn.1.t_eval_point
-    have h_prob_mono := Probability.Pr_le_Pr_of_implies (D := $ᵖ (Fin κ → L))
-      (f := fun y => rbrExtractionFailureEvent
+    have h_prob_mono := prEvent_mono ($ᵗ (Fin κ → L))
+      (fun y => rbrExtractionFailureEvent
         (kSF := batchingKnowledgeStateFunction (hCoord := hCoord) (κ := κ) (L := L) (K := K) (P :=
           P) (ℓ := ℓ)
           (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn) (init := init)
@@ -968,9 +958,9 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
         (extractor := batchingRbrExtractor (κ := κ) (L := L) (K := K) (P := P) (ℓ := ℓ)
           (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
         ⟨1, rfl⟩ stmtOStmtIn (FullTranscript.mk1 msg0) y)
-      (g := fun y =>
+      (fun y =>
         badBatchingEventProp (κ := κ) (L := L) (K := K) (P := P) y msg0 s_bar_fixed)
-      (h_imp := by
+      (by
         -- Uniqueness proof of `witMid` and `s_bar_fixed`
         intro y h_doomEscape
         obtain ⟨witMid, h_mid_compat, h_bad_extracted⟩ :=
@@ -989,8 +979,8 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
     apply le_trans h_prob_mono
     exact probability_bound_badBatchingEventProp (κ := κ) (L := L) (K := K) (P := P)
       (msg0 := msg0) (s_bar := s_bar_fixed)
-  · have h_prob_mono_false := Probability.Pr_le_Pr_of_implies (D := $ᵖ (Fin κ → L))
-      (f := fun y => rbrExtractionFailureEvent
+  · have h_prob_mono_false := prEvent_mono ($ᵗ (Fin κ → L))
+      (fun y => rbrExtractionFailureEvent
         (kSF := batchingKnowledgeStateFunction (hCoord := hCoord) (κ := κ) (L := L) (K := K) (P :=
           P) (ℓ := ℓ)
           (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn) (init := init)
@@ -998,8 +988,8 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
         (extractor := batchingRbrExtractor (κ := κ) (L := L) (K := K) (P := P) (ℓ := ℓ)
           (ℓ' := ℓ') (h_l := h_l) (aOStmtIn := aOStmtIn))
         ⟨1, rfl⟩ stmtOStmtIn (FullTranscript.mk1 msg0) y)
-      (g := fun _ => False)
-      (h_imp := by
+      (fun _ => False)
+      (by
         intro y h_doomEscape
         obtain ⟨witMid, h_mid_compat, _h_bad_extracted⟩ :=
           batching_rbrExtractionFailureEvent_imply_badBatchingEvent
@@ -1009,11 +999,10 @@ lemma batching_doom_escape_probability_bound (hCoord : CoordinateLaws P)
             (doomEscape := h_doomEscape)
         exact (hCompat ⟨witMid.t', h_mid_compat⟩).elim)
     refine le_trans h_prob_mono_false ?_
-    simp only [PMF.monad_pure_eq_pure, PMF.monad_bind_eq_bind, PMF.bind_const, PMF.pure_apply,
-      eq_iff_iff, iff_false, not_true_eq_false, ↓reduceIte, _root_.zero_le]
+    exact (prEvent_eq_zero_of_forall_not _ _ (fun _ h => h)).le.trans _root_.zero_le
 
 omit [Fintype K] [DecidableEq K] in
-omit [NeZero ℓ'] in
+omit [NeZero κ] [NeZero ℓ'] in
 /-- RBR knowledge soundness for the batching phase oracle verifier. -/
 theorem batchingOracleVerifier_rbrKnowledgeSoundness (hCoord : CoordinateLaws P)
     (hUnique : aOStmtIn.Functional) [IsDomain K] [NoZeroDivisors L] :
@@ -1033,17 +1022,6 @@ theorem batchingOracleVerifier_rbrKnowledgeSoundness (hCoord : CoordinateLaws P)
     | ⟨1, _⟩ => (⟨fun _ => (0 : L)⟩ : Inhabited (Fin κ → L))
   let : ∀ j, OracleInterface ((pSpecBatching κ L K P).Challenge j) :=
     ProtocolSpec.challengeOracleInterface
-  let : OracleSpec.Inhabited []ₒ := { inhabitedB := fun j => PEmpty.elim j }
-  let : OracleSpec.Fintype [(pSpecBatching κ L K P).Challenge]ₒ :=
-    { fintypeB := fun j => by
-        change Fintype ((pSpecBatching κ L K P).Challenge j.1)
-        infer_instance }
-  let : OracleSpec.Inhabited [(pSpecBatching κ L K P).Challenge]ₒ :=
-    { inhabitedB := fun j => by
-        change Inhabited ((pSpecBatching κ L K P).Challenge j.1)
-        infer_instance }
-  let : IsUniformSpec ([]ₒ + [(pSpecBatching κ L K P).Challenge]ₒ) :=
-    IsUniformSpec.ofFintypeInhabited _
   -- Reduce global RBR soundness to the fixed-transcript batching bound.
   refine OracleReduction.rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     (pSpec := pSpecBatching κ L K P)

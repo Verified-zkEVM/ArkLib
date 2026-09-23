@@ -188,7 +188,7 @@ lemma preTensorCombine_row_eq_fold_with_binary_row_challenges
   simp only [boole_mul]
   rw [Finset.sum_eq_single rowIdx]
   · -- The term at rowIdx is (1 * val)
-    simp only [if_true]
+    simp only [ite_true]
   · -- All other terms are 0
     intro b _ hb_ne
     simp [hb_ne]
