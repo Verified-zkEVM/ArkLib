@@ -24,8 +24,6 @@ construction does not depend on how the interpolant was found.
   bounded solution.
 * `HiddenDerivative.InterpolationCertificate.solutionEmbedding`: the injection
   `agreeingPolynomials domain k A received ↪ BoundedSolution Q (ambientDim - 1)`.
-* `boundedSolutionOfPolynomial`: a polynomial with a degree bound and equation proof as a bounded
-  solution.
 
 ## Main statements
 
@@ -37,7 +35,8 @@ construction does not depend on how the interpolant was found.
   than the set of bounded solutions.
 * `solutionEmbeddingOf`: the same construction from any proof that agreeing polynomials solve a
   differential equation, without requiring an interpolation certificate.
-* `boundedSolutionOfPolynomial_polynomial`: the bounded solution retains its defining polynomial.
+* `agreeingPolynomial_boundedSolution_polynomial`: the direct bounded-solution subtype retains
+  its agreeing polynomial.
 
 ## References
 
@@ -54,21 +53,20 @@ open ListDecoding
 
 variable {R : Type*} [CommSemiring R] {d D : ℕ}
 
-/-- A polynomial with the stated degree bound that solves `Q = 0` as a bounded solution. -/
-def boundedSolutionOfPolynomial (Q : DifferentialPolynomial R d) (D : ℕ) (P : R[X])
-    (hdegree : P ∈ Polynomial.degreeLT R (D + 1))
-    (hroot : differentialSpecialization Q P = 0) : BoundedSolution Q D :=
-  ⟨⟨P, hdegree⟩, hroot⟩
-
-/-- `boundedSolutionOfPolynomial` keeps its defining polynomial. -/
-@[simp]
-theorem boundedSolutionOfPolynomial_polynomial (Q : DifferentialPolynomial R d) (D : ℕ)
-    (P : R[X]) (hdegree : P ∈ Polynomial.degreeLT R (D + 1))
-    (hroot : differentialSpecialization Q P = 0) :
-    (boundedSolutionOfPolynomial Q D P hdegree hroot).polynomial = P := rfl
-
 variable {ι : Type*} [Fintype ι] [DecidableEq R]
   {k A : ℕ} {domain : ι ↪ R} {received : ι → R}
+
+/-- The bounded solution constructed from an agreeing polynomial retains its polynomial. -/
+theorem agreeingPolynomial_boundedSolution_polynomial (Q : DifferentialPolynomial R d)
+    (hdegree : k ≤ D + 1)
+    (hroot : ∀ p : agreeingPolynomials domain k A received,
+      differentialSpecialization Q (p.1 : R[X]) = 0)
+    (p : agreeingPolynomials domain k A received) :
+    BoundedSolution.polynomial
+      (⟨⟨(p.1 : R[X]), Polynomial.degreeLT_mono hdegree p.1.property⟩, hroot p⟩ :
+        BoundedSolution Q D) = (p.1 : R[X]) := by
+  unfold BoundedSolution.polynomial
+  rfl
 
 /-- Embed agreeing message polynomials into the bounded solutions of a differential equation.
 The degree hypothesis places every message polynomial in the ambient degree bound; the root
@@ -77,14 +75,17 @@ def solutionEmbeddingOf (Q : DifferentialPolynomial R d) (hdegree : k ≤ D + 1)
     (hroot : ∀ p : agreeingPolynomials domain k A received,
       differentialSpecialization Q (p.1 : R[X]) = 0) :
     agreeingPolynomials domain k A received ↪ BoundedSolution Q D where
-  toFun p := boundedSolutionOfPolynomial Q D (p.1 : R[X])
-    (Polynomial.degreeLT_mono hdegree p.1.property) (hroot p)
+  toFun p := ⟨⟨(p.1 : R[X]), Polynomial.degreeLT_mono hdegree p.1.property⟩, hroot p⟩
   inj' p q hpq := by
-    apply Subtype.ext
-    apply Subtype.ext
-    have hpoly := congrArg (fun s : BoundedSolution Q D => s.polynomial) hpq
-    rw [boundedSolutionOfPolynomial_polynomial, boundedSolutionOfPolynomial_polynomial] at hpoly
-    exact hpoly
+    have h := congrArg BoundedSolution.polynomial hpq
+    change BoundedSolution.polynomial
+      (⟨⟨(p.1 : R[X]), Polynomial.degreeLT_mono hdegree p.1.property⟩, hroot p⟩ :
+        BoundedSolution Q D) = BoundedSolution.polynomial
+      (⟨⟨(q.1 : R[X]), Polynomial.degreeLT_mono hdegree q.1.property⟩, hroot q⟩ :
+        BoundedSolution Q D) at h
+    rw [agreeingPolynomial_boundedSolution_polynomial Q hdegree hroot p,
+      agreeingPolynomial_boundedSolution_polynomial Q hdegree hroot q] at h
+    exact Subtype.ext (Subtype.ext h)
 
 /-- `solutionEmbeddingOf` preserves the underlying message polynomial. -/
 @[simp]
@@ -93,9 +94,8 @@ theorem solutionEmbeddingOf_polynomial (Q : DifferentialPolynomial R d) (hdegree
       differentialSpecialization Q (p.1 : R[X]) = 0)
     (p : agreeingPolynomials domain k A received) :
     ((solutionEmbeddingOf Q hdegree hroot p).polynomial : R[X]) = (p.1 : R[X]) := by
-  change (boundedSolutionOfPolynomial Q D (p.1 : R[X])
-    (Polynomial.degreeLT_mono hdegree p.1.property) (hroot p)).polynomial = (p.1 : R[X])
-  exact boundedSolutionOfPolynomial_polynomial Q D _ _ _
+  unfold solutionEmbeddingOf BoundedSolution.polynomial
+  rfl
 
 end ReedSolomon
 
@@ -117,17 +117,16 @@ variable [IsDomain R] [DecidableEq R]
 at most `ambientDim - 1`. -/
 def toBoundedSolution (c : InterpolationCertificate k A d m domain received)
     (p : agreeingPolynomials domain k A received) :
-    BoundedSolution c.interpolant (c.ambientDim - 1) :=
-  ReedSolomon.boundedSolutionOfPolynomial c.interpolant (c.ambientDim - 1) (p.1 : R[X])
-    (c.mem_degreeLT p.1) (c.specializes_to_zero p.1 p.2)
+  BoundedSolution c.interpolant (c.ambientDim - 1) :=
+  ⟨⟨p.1, c.mem_degreeLT p.1⟩, c.specializes_to_zero p.1 p.2⟩
 
 /-- `toBoundedSolution` keeps the polynomial. -/
 @[simp]
 theorem toBoundedSolution_polynomial (c : InterpolationCertificate k A d m domain received)
     (p : agreeingPolynomials domain k A received) :
-    (c.toBoundedSolution p).polynomial = (p.1 : R[X]) :=
-  ReedSolomon.boundedSolutionOfPolynomial_polynomial c.interpolant (c.ambientDim - 1)
-    (p.1 : R[X]) (c.mem_degreeLT p.1) (c.specializes_to_zero p.1 p.2)
+    (c.toBoundedSolution p).polynomial = (p.1 : R[X]) := by
+  unfold toBoundedSolution BoundedSolution.polynomial
+  rfl
 
 /-- The embedding of the agreement list into the bounded solutions of the interpolant. A message
 polynomial with at least `A` agreements is sent to itself, viewed as a solution of degree at most
