@@ -33,7 +33,8 @@ The file also shows that `MvPolynomial.optionEquivLeft` commutes with coefficien
 
 * `MvPolynomial.map_optionEquivLeft`: `optionEquivLeft` commutes with `MvPolynomial.map`.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
-  `MvPolynomial.CoeffNatDegreeLE.aeval` and `MvPolynomial.CoeffNatDegreeLE.pderiv`.
+  `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
+  `MvPolynomial.CoeffNatDegreeLE.pderiv`.
 * `MvPolynomial.jointTotalDegree`, its ring-operation bounds, `jointTotalDegree_C_le`,
   `jointTotalDegree_le_of_natDegree_coeff_le` and its form
   `CoeffNatDegreeLE.jointTotalDegree_le`, and `jointTotalDegree_clearedSubstitution_le`.
@@ -168,7 +169,8 @@ theorem aeval (hP : CoeffNatDegreeLE P a) (f : σ → MvPolynomial τ (Polynomia
   have hp : CoeffNatDegreeLE (m.prod fun i k ↦ f i ^ k) 0 := by
     rw [Finsupp.prod]
     induction m.support using Finset.induction_on with
-    | empty => simpa using coeffNatDegreeLE_C (σ := τ) (p := (1 : Polynomial R)) (h := 0) (by simp)
+    | empty =>
+      simpa using coeffNatDegreeLE_C (σ := τ) (p := (1 : Polynomial R)) (h := 0) (by simp)
     | insert i s _ ih =>
       rw [Finset.prod_insert ‹_›]
       simpa using ((hf i).pow (m i)).mul ih
@@ -184,6 +186,16 @@ theorem pderiv (hP : CoeffNatDegreeLE P a) (i : σ) :
     (Polynomial.natDegree_C _).le
 
 end CoeffNatDegreeLE
+
+/-- Mapping the coefficient polynomials along a ring homomorphism does not increase their
+`natDegree` bound. -/
+theorem CoeffNatDegreeLE.map_coefficients {S : Type*} [CommSemiring S]
+    (f : R →+* S) (P : MvPolynomial σ (Polynomial R)) {h : ℕ}
+    (hP : CoeffNatDegreeLE P h) :
+    CoeffNatDegreeLE (MvPolynomial.map (Polynomial.mapRingHom f) P) h := by
+  intro m
+  rw [MvPolynomial.coeff_map]
+  exact Polynomial.natDegree_map_le.trans (hP m)
 
 /-! ### Joint total degree -/
 
@@ -297,7 +309,8 @@ theorem jointTotalDegree_clearedSubstitution_le
       jointTotalDegree (C (Q.coeff m) : MvPolynomial σ (Polynomial R)) + m.degree ≤ v) :
     jointTotalDegree (clearedSubstitution C S N d H Q) ≤ H * b + v := by
   unfold jointTotalDegree
-  change ((optionEquivRight R σ).symm.toRingHom (clearedSubstitution C S N d H Q)).totalDegree ≤ _
+  change ((optionEquivRight R σ).symm.toRingHom
+    (clearedSubstitution C S N d H Q)).totalDegree ≤ _
   rw [ringHom_clearedSubstitution]
   exact totalDegree_clearedSubstitution_le_of_coeff _ _ _ d H b v Q hS hN hden hQ
 

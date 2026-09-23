@@ -80,7 +80,8 @@ example :
 least its jet degree `1`, and its image over `ZMod 2` is `0`, of total jet degree `0`. -/
 example :
     let Q : DifferentialPolynomial ℤ 0 := 2 * MvPolynomial.X (some 0)
-    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧ 1 ≤ jetTotalDegree Q := by
+    jetTotalDegree (MvPolynomial.map (Int.castRingHom (ZMod 2)) Q) = 0 ∧
+      1 ≤ jetTotalDegree Q := by
   intro Q
   have hmap : MvPolynomial.map (Int.castRingHom (ZMod 2)) Q = 0 := by
     simp [Q, CharTwo.two_eq_zero]
@@ -145,3 +146,76 @@ example {F E : Type*} [Field F] [Field E] [Algebra F E] {d : ℕ}
     base.card ≤ extension.card :=
   Finset.card_le_card_of_injOn _ hmaps
     (BoundedSolution.map_injective (algebraMap F E).injective).injOn
+
+/-- Specializing `C X * Y₀` at the nonzero challenge `1` gives `Y₀` over both fields. -/
+example :
+    let φ := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
+      MvPolynomial.C X * MvPolynomial.X (some 0)
+    challengeSpecialization Q 1 = MvPolynomial.X (some 0) ∧
+      challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1) =
+        MvPolynomial.X (some 0) ∧
+      MvPolynomial.map φ (challengeSpecialization Q 1) =
+        challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1) ∧
+      challengeSpecialization Q 1 ≠ 0 ∧
+      challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1) ≠ 0 := by
+  intro φ Q
+  refine ⟨?_, ?_, (challengeSpecialization_map_coefficients φ Q 1).symm, ?_, ?_⟩
+  · simp [Q, challengeSpecialization]
+  · rw [challengeSpecialization_map_coefficients]
+    simp [Q, challengeSpecialization]
+  · simp [Q, challengeSpecialization]
+  · rw [challengeSpecialization_map_coefficients]
+    simp [Q, challengeSpecialization]
+
+/-- The height-one bound for a constant-in-jets challenge equation is preserved by an extension
+of its coefficient field. -/
+example :
+    let φ := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
+      MvPolynomial.C (Polynomial.X : (ZMod 2)[X])
+    MvPolynomial.CoeffNatDegreeLE (MvPolynomial.map (Polynomial.mapRingHom φ) Q) 1 := by
+  intro φ Q
+  apply MvPolynomial.CoeffNatDegreeLE.map_coefficients φ
+  classical
+  intro m
+  by_cases hm : m = 0
+  · subst m
+    simp [Q]
+  · rw [MvPolynomial.coeff_C_of_ne_zero hm]
+    simp
+
+/-- Mapping the equation specialized at `1` commutes with differential specialization at the
+nonzero polynomial `1`, and both sides evaluate to `1`. -/
+example :
+    let φ := algebraMap (ZMod 2) E₄
+    let Q : DifferentialPolynomial (ZMod 2)[X] 0 :=
+      MvPolynomial.C X * MvPolynomial.X (some 0)
+    (differentialSpecialization (challengeSpecialization Q 1) 1).map φ = 1 ∧
+      differentialSpecialization
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1)) 1 = 1 ∧
+      (differentialSpecialization (challengeSpecialization Q 1) 1).map φ =
+        differentialSpecialization
+          (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1)) 1 ∧
+      differentialSpecialization (challengeSpecialization Q 1) 1 ≠ 0 ∧
+      differentialSpecialization
+        (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ 1)) 1 ≠
+          0 := by
+  intro φ Q
+  have hbase : challengeSpecialization Q (1 : ZMod 2) = MvPolynomial.X (some 0) := by
+    simp [Q, challengeSpecialization]
+  have hext : challengeSpecialization
+      (MvPolynomial.map (Polynomial.mapRingHom φ) Q) (φ (1 : ZMod 2)) =
+        MvPolynomial.X (some 0) := by
+    rw [challengeSpecialization_map_coefficients, hbase]
+    simp
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · rw [hbase]
+    simp [differentialSpecialization, differentialSpecializationHom]
+  · rw [hext]
+    simp [differentialSpecialization, differentialSpecializationHom]
+  · simpa using map_symbolicDifferentialSpecialization φ Q (1 : ZMod 2) 1
+  · rw [hbase]
+    simp [differentialSpecialization, differentialSpecializationHom]
+  · rw [hext]
+    simp [differentialSpecialization, differentialSpecializationHom]

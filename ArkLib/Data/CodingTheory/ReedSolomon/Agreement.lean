@@ -82,7 +82,8 @@ theorem card_polynomialAgreementSet
 coefficients of `P` does not change the agreement set. -/
 theorem polynomialAgreementSet_map
     {F E ι : Type*} [Semiring F] [Semiring E] [DecidableEq F] [DecidableEq E] [Fintype ι]
-    (domain : ι ↪ F) (φ : F →+* E) (hφ : Function.Injective φ) (received : ι → F) (P : F[X]) :
+    (domain : ι ↪ F) (φ : F →+* E) (hφ : Function.Injective φ)
+    (received : ι → F) (P : F[X]) :
     polynomialAgreementSet (domain.trans ⟨φ, hφ⟩) (fun i ↦ φ (received i)) (P.map φ) =
       polynomialAgreementSet domain received P := by
   ext i

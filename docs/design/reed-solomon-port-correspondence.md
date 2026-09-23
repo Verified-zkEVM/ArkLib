@@ -1310,6 +1310,22 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/EquationDescent.lean`
+
+Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/EquationDescent.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
+
+`exists_exceptional_equation_correlatedAgreement_descend` keeps its name and statement under the current specialization and embedding APIs. It transfers equation-restricted agreement while preserving the exceptional-set size bound.
+
+Not ported: `ChallengeHeightLE` as a separate predicate, because main already provides `MvPolynomial.CoeffNatDegreeLE`. The standalone exceptional correlated-agreement wrapper is also omitted because this theorem performs that exceptional-set pullback directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ExtensionDescent.lean`
+
+Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDescent.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
+
+`HasExactCorrelatedPair.descend` keeps its name and statement. `HasExactCorrelatedPair` keeps its name and mathematical meaning; its mapped evaluation domain is expressed as an embedding composition. The definition was moved from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/Symbolic/RegularEquation.lean`.
+
+Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
 Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTail.lean` under
