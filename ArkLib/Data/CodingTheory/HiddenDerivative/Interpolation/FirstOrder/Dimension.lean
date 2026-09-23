@@ -10,7 +10,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.FirstOrder
 /-!
 # The dimension of the first-order interpolation space
 
-The first-order space of `Interpolation/FirstOrder/Space.lean` is spanned by the monomials
+The first-order space `firstOrderSpace` is spanned by the monomials
 `X^x Y₀^a Y₁^b` with `b ≤ M`, `a + b ≤ μ`, and
 `x + D a + (D - 1) b < m A`. Index them by the total jet degree `t = a + b`, then by
 `b ≤ min t M`, then by `x`. For `0 < D`, adding `b` to both

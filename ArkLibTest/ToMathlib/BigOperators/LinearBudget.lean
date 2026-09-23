@@ -49,13 +49,23 @@ example :
       ¬ ((1 : ℚ) + ∑ _i ∈ (∅ : Finset ℕ), (0 : ℚ) ≤ 0 * 1 + 0 * 0) := by
   norm_num
 
-/-- Three weights `0, 1, 0` at height `1` provide five coefficient slots for one row. -/
+/-- The weights `0, 1, 0` give height `1`, five slots, and a strict surplus for one row. -/
 example :
-    1 * (Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 + 1) <
+    Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 = 1 ∧
       Finset.sum (Finset.range 3) (fun i ↦
-        Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) := by
-  exact Finset.rows_mul_slotSurplusHeight_add_one_lt_sum_tsub (Finset.range 3)
-    (fun i ↦ i % 2) 1 1 (by decide) (by intro i hi; omega)
+        Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) = 5 ∧
+      1 * (Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 + 1) <
+        Finset.sum (Finset.range 3) (fun i ↦
+          Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) := by
+  have hheight : Finset.slotSurplusHeight (Finset.range 3) (fun i ↦ i % 2) 1 1 = 1 := by
+    decide
+  have hslots : Finset.sum (Finset.range 3) (fun i ↦
+      Finset.slotSurplusHeight (Finset.range 3) (fun j ↦ j % 2) 1 1 + 1 - i % 2) = 5 := by
+    rw [hheight]
+    decide
+  refine ⟨hheight, hslots, ?_⟩
+  rw [hslots, hheight]
+  norm_num
 
 /-- With as many rows as columns, the zero-denominator height can provide no strict surplus. -/
 example :
