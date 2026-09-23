@@ -6,6 +6,8 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.GraphLine
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TaylorChart.PointRecognition
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorAlgebra
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
@@ -171,34 +173,47 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
                 (Polynomial.taylor center
                   (P₀.map iota + Polynomial.C (x none) * P₁.map iota)).coeff l.val := by
   obtain ⟨P₀, P₁, hP₀, hP₁, hsamplePair, hrecognize⟩ :=
-    exists_graphLine_polynomials_of_sample domain f g sample hsample
+    exists_graphLine_pair_of_symbolic_sample_of_exponent domain f g sample hsample iota center Q
+      hK τ hτ
   refine ⟨P₀, P₁, hP₀, hP₁, hsamplePair, ?_⟩
   intro x hS hhigh hcuts
   let z := x none
   let jet : Fin (r + 1) → E := fun j ↦ x (some j)
   let φ : E[X] →ₐ[E] E := Polynomial.aeval z
   let Qz : DifferentialPolynomial E r := MvPolynomial.map φ.toRingHom Q
+  have hcenter : φ (Polynomial.C center) = center := by simp [φ]
+  have hcenterRing : φ.toRingHom (Polynomial.C center) = center := hcenter
+  have hφ : φ.toRingHom = Polynomial.evalRingHom z := by
+    ext a <;> simp [φ, Polynomial.evalRingHom]
   have hS_eq : aeval x (jointInitialJetSeparant center Q) =
       aeval jet (initialJetSeparant center Qz) := by
     simpa only [jet, z, Qz, φ] using eval_jointInitialJetSeparant center Q x
-  have hS' : aeval jet (initialJetSeparant center (MvPolynomial.map φ.toRingHom Q)) ≠ 0 := by
-    change aeval jet (initialJetSeparant center Qz) ≠ 0
-    rw [hS_eq] at hS
+  have hS_field : aeval jet (initialJetSeparant center Qz) ≠ 0 := by
+    rw [← hS_eq]
     exact hS
-  have hhigh' : ∀ l : ℕ, k ≤ l → l < K →
-      aeval jet (commonTaylorNumerator center Qz τ l) = 0 := by
-    intro l hl hlK
-    let l' : Fin K := ⟨l, hlK⟩
-    have hz := hhigh l' (by simpa [l'] using hl)
-    have hnum_eq : aeval x (jointCommonTaylorNumerator center Q τ l') =
-        aeval jet (commonTaylorNumerator center Qz τ l) := by
-      simpa only [jet, z, Qz, φ, l'] using
-        eval_jointCommonTaylorNumerator center Q τ l' x
+  have hS' : aeval jet (MvPolynomial.map (Polynomial.evalRingHom z)
+      (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 := by
+    rw [← hφ, map_initialJetSeparant]
+    rw [hcenterRing]
+    simpa only [Qz] using hS_field
+  have hhigh' : ∀ l : Fin K, k ≤ l.val →
+      aeval jet (MvPolynomial.map (Polynomial.evalRingHom z)
+        (commonTaylorNumeratorOver E (Polynomial.C center) Q τ l.val)) = 0 := by
+    intro l hl
+    have hz := hhigh l hl
+    have hnum_eq : aeval x (jointCommonTaylorNumerator center Q τ l) =
+        aeval jet (commonTaylorNumerator center Qz τ l.val) := by
+      simpa only [jet, z, Qz, φ] using
+        eval_jointCommonTaylorNumerator center Q τ l x
     rw [hnum_eq] at hz
-    exact hz
+    rw [← hφ, map_commonTaylorNumeratorOver_eq, hcenter]
+    simpa only [Qz] using hz
   have hcuts' : ∀ i ∈ sample,
-      aeval jet (taylorAgreementEquation center Qz K τ
-        (iota (domain i)) (iota (f i) + z * iota (g i))) = 0 := by
+      aeval jet (MvPolynomial.map (Polynomial.evalRingHom z)
+        (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
+          (Polynomial.C (iota (domain i)))
+          (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i)))
+          (τ := τ))) = 0 := by
     intro i hi
     have hz := hcuts i hi
     have hagree_eq := eval_jointTaylorAgreementEquation center Q K τ
@@ -220,42 +235,47 @@ theorem exists_graphLine_pair_of_joint_taylor_chart
       ring
     rw [hvalx, hvaly] at hagree_eq
     rw [hagree_eq] at hz
-    simpa only [mul_comm] using hz
-  have hdegree :
-      (rationalTaylorPolynomial center Qz K jet).degree < k :=
-    degree_rationalTaylorPolynomial_lt center Qz hτ k jet hS' hhigh'
-  have hagree : ∀ i ∈ sample,
-      (rationalTaylorPolynomial center Qz K jet).eval
-        (domain.trans ⟨iota, iota.injective⟩ i) = iota (f i) + z * iota (g i) := by
-    intro i hi
-    exact (taylorAgreementEquation_eq_zero_iff center Qz hτ jet hS' _ _).mp (hcuts' i hi)
-  have hpoly := hrecognize iota z _ hdegree hagree
+    have hmap : MvPolynomial.map (Polynomial.evalRingHom z)
+        (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
+          (Polynomial.C (iota (domain i)))
+          (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i)))
+          (τ := τ)) =
+        taylorAgreementEquation center Qz K τ (iota (domain i))
+          (iota (f i) + z * iota (g i)) := by
+      rw [← hφ, map_taylorAgreementEquationOver_eq (τ := τ)]
+      simp [φ, hcenter, Qz, z]
+      congr 1
+      ring
+    calc
+      aeval jet (MvPolynomial.map (Polynomial.evalRingHom z)
+        (taylorAgreementEquationOver (F := E) (Polynomial.C center) Q K
+          (Polynomial.C (iota (domain i)))
+          (Polynomial.C (iota (f i)) + Polynomial.X * Polynomial.C (iota (g i)))
+          (τ := τ))) =
+          aeval jet (taylorAgreementEquation center Qz K τ
+            (iota (domain i)) (iota (f i) + z * iota (g i))) := by rw [hmap]
+      _ = 0 := by simpa only [mul_comm] using hz
+  obtain ⟨hpoly, hjet, hcoeff⟩ := hrecognize z jet hS' hhigh' hcuts'
   refine ⟨hpoly, ?_, ?_⟩
-  · have hjetAffine := polynomialJet_add_C_mul (d := r) center z
-      (P₀.map iota) (P₁.map iota)
-    have hjetRec := polynomialJet_rationalTaylorPolynomial center Qz hK jet
-    rw [hpoly, hjetAffine] at hjetRec
-    exact hjetRec.symm
+  · simpa only [jet, z] using hjet
   · intro l
-    have hcoeff := aeval_commonTaylorNumerator center Qz jet (hτ l) hS'
-    have hnum_eq : aeval x (jointCommonTaylorNumerator center Q τ l) =
-        aeval jet (commonTaylorNumerator center Qz τ l.val) := by
-      simpa only [jet, z, Qz, φ] using eval_jointCommonTaylorNumerator center Q τ l x
-    have hsep_eq : aeval x (jointInitialJetSeparant center Q) =
-        aeval jet (initialJetSeparant center Qz) := by
-      simpa only [jet, z, Qz, φ] using eval_jointInitialJetSeparant center Q x
+    have hnum := eval_jointCommonTaylorNumerator center Q τ l x
+    have hsep := eval_jointInitialJetSeparant center Q x
+    have hcoeff' := hcoeff l
+    rw [← hφ, map_commonTaylorNumeratorOver_eq, hcenter, map_initialJetSeparant,
+      hcenterRing]
+      at hcoeff'
     calc
       aeval x (jointCommonTaylorNumerator center Q τ l) =
-          aeval jet (commonTaylorNumerator center Qz τ l.val) := hnum_eq
+          aeval jet (commonTaylorNumerator center Qz τ l.val) := hnum
       _ = aeval jet (initialJetSeparant center Qz) ^ τ *
-          (Polynomial.taylor center
-            (rationalTaylorPolynomial center Qz K jet)).coeff l.val := by
-        rw [hcoeff, coeff_taylor_rationalTaylorPolynomial]
-        simp [l.isLt]
+          (Polynomial.taylor center (Polynomial.map iota P₀ +
+            Polynomial.C z * Polynomial.map iota P₁)).coeff l.val := by
+        simpa only [Qz] using hcoeff'
       _ = aeval x (jointInitialJetSeparant center Q) ^ τ *
-          (Polynomial.taylor center
-            (P₀.map iota + Polynomial.C z * P₁.map iota)).coeff l.val := by
-        rw [← hsep_eq, ← hpoly, coeff_taylor_rationalTaylorPolynomial]
+          (Polynomial.taylor center (Polynomial.map iota P₀ +
+            Polynomial.C z * Polynomial.map iota P₁)).coeff l.val := by
+        rw [← hsep]
 
 /-- A positive-dimensional prime component satisfying the initial equation, high Taylor cuts,
 and a common sample of agreement cuts is parametrized by the affine pair determined by that
