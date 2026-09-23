@@ -98,7 +98,7 @@ def baseVariableEquiv : (Unit ⊕ Unit) ≃ Fin 2 where
     · fin_cases j
       rfl
 
-/-- Flattens the root and challenge variables of a polynomial-valued polynomial. -/
+/-- Flattens the independent and challenge variables of a polynomial-valued polynomial. -/
 def baseFlatten (E : Type*) [CommSemiring E] :
     MvPolynomial Unit E[X] ≃ₐ[E] MvPolynomial (Fin 2) E :=
   (MvPolynomial.mapAlgEquiv Unit
@@ -106,7 +106,8 @@ def baseFlatten (E : Type*) [CommSemiring E] :
     ((MvPolynomial.sumAlgEquiv E Unit Unit).symm.trans
       (MvPolynomial.renameEquiv E baseVariableEquiv))
 
-/-- Flattens the ordinary root and challenge variables into two polynomial variables. -/
+/-- Flattens the root (`none`), independent-variable (`some 0`), and challenge (`some 1`)
+coordinates into a three-variable polynomial. -/
 def ordinaryFlatten (E : Type*) [CommSemiring E] :
     DifferentialPolynomial E[X] 0 ≃ₐ[E] MvPolynomial (Option (Fin 2)) E :=
   (MvPolynomial.mapAlgEquiv (JetVariable 0)
@@ -131,7 +132,7 @@ variable {E : Type*} [CommSemiring E]
   simp [ordinaryFlatten, flatVariableEquiv]
 
 /-- The root variable maps to the distinguished flattened coordinate. -/
-@[simp] theorem ordinaryFlatten_Y :
+@[simp] theorem ordinaryFlatten_root :
     ordinaryFlatten E (MvPolynomial.X (some 0) : DifferentialPolynomial E[X] 0) =
       MvPolynomial.X none := by
   simp [ordinaryFlatten, flatVariableEquiv]
@@ -318,7 +319,7 @@ theorem ordinaryUnflatten_monomial
   classical
   apply (ordinaryFlatten E).injective
   simp only [ordinaryUnflatten, AlgEquiv.apply_symm_apply, map_mul, map_pow,
-    ordinaryFlatten_X, ordinaryFlatten_Y]
+    ordinaryFlatten_X, ordinaryFlatten_root]
   simp [ordinaryFlatten, flatVariableEquiv, MvPolynomial.monomial_eq,
     Finsupp.prod_fintype]
   ring

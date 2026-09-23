@@ -136,7 +136,7 @@ example (p : ℕ) [ExpChar E p] [PerfectField E] :
     MvPolynomial.X (some 0) + MvPolynomial.C Polynomial.X
   have hflat : ordinaryFlatten E Q =
       MvPolynomial.X none + MvPolynomial.X (some 1) := by
-    simp only [Q, map_add, ordinaryFlatten_Y, ordinaryFlatten_coeff_X]
+    simp only [Q, map_add, ordinaryFlatten_root, ordinaryFlatten_coeff_X]
   have hpoly :
       optionEquivLeft E (Fin 2) (ordinaryFlatten E Q) =
         Polynomial.X + Polynomial.C (MvPolynomial.X 1) := by
