@@ -20,7 +20,8 @@ namespace ReedSolomon.ProductBoundsTest
 /-- The cutoff with `d = 2`, `k = 2`, and `A = 7` is `5`. -/
 example : correlatedProductCutoff 2 2 7 = 5 := by
   rw [correlatedProductCutoff]
-  have hf : Nat.floor (((2 : ℕ) : ℝ) * ((7 - 2 : ℕ) : ℝ) / (((2 : ℕ) : ℝ) + 1)) = 3 := by
+  have hf : Nat.floor
+      (((2 : ℕ) : ℝ) * ((7 - 2 : ℕ) : ℝ) / (((2 : ℕ) : ℝ) + 1)) = 3 := by
     rw [(Nat.floor_eq_iff (by norm_num) :
       ⌊((2 : ℕ) : ℝ) * ((7 - 2 : ℕ) : ℝ) / (((2 : ℕ) : ℝ) + 1)⌋₊ = 3 ↔ _)]
     constructor <;> norm_num
