@@ -30,6 +30,16 @@ private noncomputable def matrixRowE : Fin 1 × LowContactIndex 0 1 :=
 
 private def matrixColumnY : Fin 1 → SourceColumn 0 := fun _ => ⟨0, 1, ![]⟩
 
+private def matrixRowZero : Fin 1 × LowContactIndex 0 1 :=
+  (0, ⟨0, by simp [localContactOrder]⟩)
+
+example :
+    localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 1)
+        matrixColumnY matrixRowZero 0 =
+      (localConstraintAt 1 0 1 (matrixColumnY 0).polynomial).coeff 0 :=
+  localConstraintMatrix_apply_eq_localConstraintAt_coeff 1 (fun _ : Fin 1 => 0) (fun _ => 1)
+    matrixColumnY matrixRowZero 0
+
 example : localConstraintMatrix 1 (fun _ : Fin 1 => (0 : ℚ)) (fun _ => 0)
     matrixColumnY matrixRowE 0 = 0 :=
   localConstraintMatrix_eq_zero_of_lt 1 _ _ matrixColumnY matrixRowE 0

@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintKernel
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.ConstraintMap
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.GradedRank
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.IntermediateSpace
 import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.RemainderMap
@@ -17,6 +18,32 @@ constraint identity.
 -/
 
 open MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+
+/-- After changing coefficients, the constant constraint of `X + Y₀` at `(2, 3)` is `5`. -/
+example :
+    (MvPolynomial.map (Int.castRingHom ℚ)
+      (localConstraintAt 1 (2 : ℤ) (3 : ℤ)
+        ((X (none : JetVariable 1) : DifferentialPolynomial ℤ 1) +
+          (X (some (0 : Fin 2)) : DifferentialPolynomial ℤ 1)))).coeff 0 = 5 := by
+  rw [map_localConstraintAt]
+  simp only [localConstraintAt, LinearMap.comp_apply, AlgHom.toLinearMap_apply]
+  rw [coeff_projectLowContact]
+  have hcontact : localContactOrder 1 (0 : LocalVariable 1 →₀ ℕ) < 1 := by
+    simp [localContactOrder]
+  rw [ite_eq_left hcontact]
+  simp only [eq_intCast, Int.cast_ofNat, Nat.reduceAdd, Fin.isValue, map_add, map_X,
+    unscaledLocalSubstitution_X, unscaledLocalSubstitution_Y_zero,
+    AddMonoidAlgebra.coeff_add, Finsupp.coe_add, Pi.add_apply, coeff_C, coeff_zero_X,
+    add_zero]
+  have hprod :
+      ((X (localT 1) * X (localE 1) : LocalPolynomial ℚ 1).coeff 0) = 0 := by
+    rw [← constantCoeff_eq]
+    simp
+  have hcorrection : (localCorrection (R := ℚ) 1).coeff 0 = 0 := by
+    rw [← constantCoeff_eq]
+    simp [localCorrection]
+  rw [hcorrection, hprod]
+  norm_num
 
 example : exhibitedKernelMultiplier 2 1 1 (1 : LocalPolynomial ℚ 2) ∈
     LinearMap.ker (enlargedLocalConstraintMap (d := 2) 3) :=
