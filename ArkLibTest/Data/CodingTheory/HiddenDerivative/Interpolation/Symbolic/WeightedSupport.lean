@@ -234,7 +234,7 @@ example :
 /-- The height estimate holds at zero column count. -/
 example : (((0 * 1 / (1 - 0) : ℕ) : ℝ) < 12 * (↑(1 : ℕ) : ℝ)) := by
   have hmargin : (543 / 500 : ℝ) * (0 : ℕ) < (1 : ℕ) := by norm_num
-  exact noBand_kernel_height_lt 1 0 1 Nat.one_pos hmargin
+  exact kernel_height_lt_twelve_mul_of_margin 1 0 1 Nat.one_pos hmargin
 
 /-- With `ν = 0`, the strict height conclusion fails, showing why positivity is required. -/
 example : ¬ (((0 * 0 / (1 - 0) : ℕ) : ℝ) < 12 * 0) := by norm_num

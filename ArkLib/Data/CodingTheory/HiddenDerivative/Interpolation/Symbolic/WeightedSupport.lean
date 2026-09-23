@@ -217,7 +217,7 @@ theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hD : 0 < D) (hg : g ≤ 1
 
 /-- The strict multiplicative margin bounds the integer kernel height by twelve times the
 column-degree bound. -/
-theorem noBand_kernel_height_lt (N q ν : ℕ) (hν : 0 < ν)
+theorem kernel_height_lt_twelve_mul_of_margin (N q ν : ℕ) (hν : 0 < ν)
     (hmargin : (543 / 500 : ℝ) * q < N) :
     ((q * ν / (N - q) : ℕ) : ℝ) < 12 * ν := by
   have hqN : q < N := by
@@ -307,7 +307,7 @@ theorem exists_symbolic_weightedSupport_interpolant_of_fixed_margin {n ν : ℕ}
     have hdegreeReal : ((v j).natDegree : ℝ) ≤
         ((n * r₀ * ν / (N - n * r₀) : ℕ) : ℝ) := by
       exact_mod_cast hdegree' j
-    exact hdegreeReal.trans_lt (noBand_kernel_height_lt N (n * r₀) ν hν hmargin')
+    exact hdegreeReal.trans_lt (kernel_height_lt_twelve_mul_of_margin N (n * r₀) ν hν hmargin')
   exact ⟨v, hv, hkernel, hdegree', hheight, hprimitive, fun ι z => hnozero _, hconstraints,
     hband⟩
 
