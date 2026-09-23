@@ -22,17 +22,28 @@ open Polynomial ReedSolomon CoreDefinitions
 namespace ReedSolomonAcceptance
 
 -- Block length `10`, message length `3`, gap `1 / 4`: the threshold is `3 + ⌈5 / 2⌉ = 6`.
-example : agreementThreshold (1 / 4) 10 3 ≤ 6 ↔
-    (3 : ℝ) + (1 / 4) * 10 ≤ (6 : ℕ) := by
-  exact agreementThreshold_le_iff_real (by norm_num) 10 3 6
+example : agreementThreshold (1 / 4) 10 3 = 6 := by
+  have hceil : ⌈(5 / 2 : ℝ)⌉₊ = 3 := by
+    rw [Nat.ceil_eq_iff (by decide)]
+    norm_num
+  apply Nat.le_antisymm
+  · exact (agreementThreshold_le_iff_real (by norm_num) 10 3 6).2 (by norm_num)
+  · norm_num [agreementThreshold, hceil]
 
 example :
-    (Code.relHammingDist ![false, false] ![false, false] : ℝ) ≤
-        capacityRadius (1 / 4) 2 1 ↔
-      agreementThreshold (1 / 4) 2 1 ≤ Code.agree ![false, false] ![false, false] := by
-  exact relHammingDist_le_capacityRadius_iff_agreementThreshold_le
-    (delta := 1 / 4) (messageDim := 1) (by norm_num) (by decide)
-    ![false, false] ![false, false]
+    agreementThreshold (1 / 4) 2 1 ≤ Code.agree ![false, false] ![false, false] ∧
+      (Code.relHammingDist ![false, false] ![false, false] : ℝ) ≤
+        capacityRadius (1 / 4) 2 1 := by
+  have hthreshold : agreementThreshold (1 / 4) 2 1 ≤ 2 := by
+    rw [agreementThreshold_le_iff_real (by norm_num) 2 1 2]
+    norm_num
+  have hagree : Code.agree ![false, false] ![false, false] = 2 := by
+    simp [Code.agree]
+  constructor
+  · simpa [hagree] using hthreshold
+  · exact (relHammingDist_le_capacityRadius_iff_agreementThreshold_le
+      (delta := 1 / 4) (messageDim := 1) (by norm_num) (by decide)
+      ![false, false] ![false, false]).mpr (by simpa [hagree] using hthreshold)
 
 end ReedSolomonAcceptance
 

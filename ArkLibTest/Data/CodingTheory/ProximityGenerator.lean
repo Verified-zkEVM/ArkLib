@@ -129,15 +129,16 @@ example :
   exact (hasFullTensorDecomposition_of_not_mem_bad singletonLevelWitness shortChallenges
     shortLeaves hgood) (fun _ ↦ 0) (by simp [probabilityCode]) hclose
 
-private def shortFamilyLeaves : Unit → (Fin 1 → Bool) → Fin 1 → ZMod 2 :=
-  fun _ _ _ ↦ 0
+private def shortFamilyLeaves : Fin 2 → (Fin 1 → Bool) → Fin 1 → ZMod 2 :=
+  fun j _ _ ↦ if j = 0 then 0 else 1
 
 example :
+    shortFamilyLeaves 0 ≠ shortFamilyLeaves 1 ∧
     (Pr{let r ← $ᵗ (Fin 1 → ZMod 2)}[r ∈ tensorFoldFamilyBad singletonLevelWitness
       shortFamilyLeaves] ≤ ENNReal.ofReal 0) ∧
     (Pr{let r ← $ᵗ (Fin 1 → ZMod 2)}[¬ HasFullTensorDecomposition probabilityCode 1 r
       shortLeaves] ≤ ENNReal.ofReal 0) := by
-  constructor
+  refine ⟨by decide, ?_, ?_⟩
   · simpa [shortFamilyLeaves] using
       tensorFoldFamilyBad_probability_le singletonLevelWitness shortFamilyLeaves
   · simpa [shortLeaves] using

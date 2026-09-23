@@ -19,6 +19,8 @@ open Polynomial Finset ReedSolomon ReedSolomon.FirstOrder.Squarefree PolynomialD
 private abbrev E₄ := FiniteField.Extension (ZMod 2) 2 2
 private def pointDomain : Fin 1 ↪ ZMod 2 :=
   ⟨fun _ ↦ 0, fun _ _ _ ↦ Subsingleton.elim _ _⟩
+private noncomputable def agreementEquation : DifferentialPolynomial (ZMod 2)[X] 0 :=
+  MvPolynomial.X (some 0) - MvPolynomial.C (Polynomial.X)
 
 noncomputable section
 
@@ -38,57 +40,81 @@ example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦
   exact HasExactCorrelatedPair.descend pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
     ι 2 1 (1 + X) hext
 
-example : HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0)
-    (RingHom.id (ZMod 2)) 1 1 (C 1) := by
+example : agreementEquation ≠ 0 ∧
+    ∃ exceptional : Finset (ZMod 2), exceptional.card ≤ 0 ∧
+      HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1)
+        (RingHom.id (ZMod 2)) 2 1 (C 1) ∧
+      differentialSpecialization
+        (challengeSpecialization
+          (MvPolynomial.map (Polynomial.mapRingHom (algebraMap (ZMod 2) E₄)) agreementEquation)
+          (algebraMap (ZMod 2) E₄ 1)) (C (algebraMap (ZMod 2) E₄ 1)) = 0 ∧
+      polynomialAgreementSet
+        (pointDomain.trans ⟨algebraMap (ZMod 2) E₄,
+          (algebraMap (ZMod 2) E₄).injective⟩)
+        (fun _ ↦ algebraMap (ZMod 2) E₄ 0 + algebraMap (ZMod 2) E₄ 1 *
+          algebraMap (ZMod 2) E₄ 1)
+        (C (algebraMap (ZMod 2) E₄ 1)) = Finset.univ := by
   let ι : ZMod 2 →+* E₄ := algebraMap (ZMod 2) E₄
-  have hgood : ∀ z ∉ (∅ : Finset E₄), ∀ P : E₄[X], P.degree < 1 →
+  have hnonzero : agreementEquation ≠ 0 := by
+    intro heq
+    have hcoeff := congrArg
+      (fun q : DifferentialPolynomial (ZMod 2)[X] 0 =>
+        q.coeff (Finsupp.single (some (0 : Fin 1)) 1)) heq
+    have hindex : (0 : JetVariable 0 →₀ ℕ) ≠ Finsupp.single (some (0 : Fin 1)) 1 := by
+      intro h
+      have hvalue := congrArg (fun f : JetVariable 0 →₀ ℕ => f (some (0 : Fin 1))) h
+      simp at hvalue
+    norm_num [agreementEquation, hindex] at hcoeff
+  have hgood : ∀ z ∉ (∅ : Finset E₄), ∀ P : E₄[X], P.degree < 2 →
       1 ≤ (polynomialAgreementSet (pointDomain.trans ⟨ι, ι.injective⟩)
-        (fun i ↦ ι ((fun _ : Fin 1 ↦ (1 : ZMod 2)) i) +
-          z * ι ((fun _ : Fin 1 ↦ (0 : ZMod 2)) i)) P).card →
+        (fun i ↦ ι ((fun _ : Fin 1 ↦ (0 : ZMod 2)) i) +
+          z * ι ((fun _ : Fin 1 ↦ (1 : ZMod 2)) i)) P).card →
       differentialSpecialization
         (challengeSpecialization
           (MvPolynomial.map (Polynomial.mapRingHom ι)
-            (0 : DifferentialPolynomial (ZMod 2)[X] 0)) z) P = 0 →
-      HasExactCorrelatedPair pointDomain (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0) ι 1 z P := by
-    intro z _ P hP hagree _
+            agreementEquation) z) P = 0 →
+      HasExactCorrelatedPair pointDomain (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1) ι 2 z P := by
+    intro z _ P hP hagree hroot
+    have hpoly : P - C z = 0 := by
+      simpa [agreementEquation, challengeSpecialization, differentialSpecialization,
+        differentialSpecializationHom] using hroot
+    have hPconst : P = C z := sub_eq_zero.mp hpoly
+    subst P
     have hfull : polynomialAgreementSet (pointDomain.trans ⟨ι, ι.injective⟩)
-        (fun i ↦ ι ((fun _ : Fin 1 ↦ (1 : ZMod 2)) i) +
-          z * ι ((fun _ : Fin 1 ↦ (0 : ZMod 2)) i)) P = Finset.univ :=
+        (fun i ↦ ι ((fun _ : Fin 1 ↦ (0 : ZMod 2)) i) +
+          z * ι ((fun _ : Fin 1 ↦ (1 : ZMod 2)) i)) (C z) = Finset.univ :=
       Finset.eq_univ_of_card _
         (le_antisymm (Finset.card_le_univ _) (by simpa [Fintype.card_fin] using hagree))
-    have heval := (mem_polynomialAgreementSet ..).mp
-      (hfull ▸ Finset.mem_univ (0 : Fin 1))
-    have hcoeff : P.coeff 0 = ι 1 := by
-      have hpoint : (pointDomain.trans ⟨ι, ι.injective⟩) 0 = 0 := by
-        change ι 0 = 0
-        exact map_zero ι
-      rw [hpoint] at heval
-      calc
-        P.coeff 0 = P.eval 0 := coeff_zero_eq_eval_zero P
-        _ = ι 1 := by simpa using heval
-    have hPconst : P = C (ι 1) := by
-      rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hP), hcoeff]
-    refine ⟨(C 1, C 0), by simp, by simp, ?_, ?_⟩
-    · simpa [correlatedPairSpecialization] using hPconst
+    refine ⟨(0, 1), (by simpa using
+      (show (⊥ : WithBot ℕ) < (2 : WithBot ℕ) by decide)), by norm_num, ?_, ?_⟩
+    · simp [correlatedPairSpecialization]
     · rw [hfull]
       ext i
       fin_cases i
       simp [commonPolynomialAgreementSet, pointDomain]
   obtain ⟨exceptional, hcard, hdescend⟩ :=
     exists_exceptional_equation_correlatedAgreement_descend pointDomain
-      (fun _ ↦ (1 : ZMod 2)) (fun _ ↦ 0) ι
-      (0 : DifferentialPolynomial (ZMod 2)[X] 0) 1 1 ∅ hgood
+      (fun _ ↦ (0 : ZMod 2)) (fun _ ↦ 1) ι
+      agreementEquation 2 1 ∅ hgood
   have hex : exceptional = ∅ := Finset.card_eq_zero.mp (Nat.le_zero.mp hcard)
   have hroot : differentialSpecialization (challengeSpecialization
-      (0 : DifferentialPolynomial (ZMod 2)[X] 0) 1) (C 1) = 0 := by
-    have hchallenge : challengeSpecialization
-        (0 : DifferentialPolynomial (ZMod 2)[X] 0) 1 = 0 := by
-      simp [challengeSpecialization]
-    rw [hchallenge, differentialSpecialization]
-    exact map_zero _
-  apply hdescend 1 (by simp [hex]) (C 1) (by simp)
-  · simp [pointDomain, polynomialAgreementSet]
-  · exact hroot
+      agreementEquation 1) (C 1) = 0 := by
+    simp [agreementEquation, challengeSpecialization, differentialSpecialization,
+      differentialSpecializationHom]
+  have hpair := hdescend 1 (by simp [hex]) (C 1) (by simp) (by
+    simp [pointDomain, polynomialAgreementSet]) hroot
+  have hmappedRoot : differentialSpecialization
+      (challengeSpecialization (MvPolynomial.map (Polynomial.mapRingHom ι) agreementEquation) (ι 1))
+      (C (ι 1)) = 0 := by
+    simp [agreementEquation, challengeSpecialization, differentialSpecialization,
+      differentialSpecializationHom]
+  have hmappedAgreement : polynomialAgreementSet
+      (pointDomain.trans ⟨ι, ι.injective⟩)
+      (fun _ ↦ ι 0 + ι 1 * ι 1) (C (ι 1)) = Finset.univ := by
+    ext i
+    fin_cases i
+    simp [polynomialAgreementSet, pointDomain]
+  exact ⟨hnonzero, exceptional, hcard, hpair, hmappedRoot, hmappedAgreement⟩
 
 end
 

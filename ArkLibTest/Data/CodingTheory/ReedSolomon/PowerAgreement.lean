@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 /-!
 # Constant-code power-agreement acceptance tests
 
-A concrete two-point example checks the exceptional-challenge bound for constant messages.
+A concrete two-point example attains the exceptional-challenge bound for constant messages.
 -/
 
 open Polynomial ReedSolomon
@@ -24,8 +24,22 @@ def domain2 : Fin 2 ↪ ℚ :=
 `1` collide at `z = 1`. -/
 def swapWords : Fin 2 → Fin 2 → ℚ := ![![0, 1], ![1, 0]]
 
--- The theorem gives the bound `1 * (2.choose 2) / max (2 - 1) 1 = 1` for this fixture.
-example : UniformExactPowerAgreement domain2 swapWords 1 2 1 := by
-  simpa using uniformExactPowerAgreement_constantCode domain2 swapWords 2
+-- The bound is attained: `z = 1` is exceptional, and one exception suffices.
+example : ¬ UniformExactPowerAgreement domain2 swapWords 1 2 0 ∧
+    UniformExactPowerAgreement domain2 swapWords 1 2 1 := by
+  constructor
+  · rintro ⟨exceptional, hcard, hagree⟩
+    have hempty : exceptional = ∅ := Finset.card_eq_zero.mp (Nat.le_zero.mp hcard)
+    have hfull : polynomialAgreementSet domain2
+        (powerBatchedWord swapWords 1) (C 1) = Finset.univ := by
+      ext i
+      fin_cases i <;> simp [polynomialAgreementSet, powerBatchedWord, swapWords, domain2]
+    have hnot : ¬ HasExactPowerAgreement domain2 swapWords (RingHom.id ℚ) 1 1 (C 1) := by
+      rw [hasExactPowerAgreement_constant_iff _ _ (by simp : (C (1 : ℚ) : ℚ[X]).degree < 1), hfull]
+      intro h
+      have hzero := h 0 (by simp) 1 (by simp) 0
+      norm_num [swapWords] at hzero
+    exact hnot (hagree 1 (by simp [hempty]) (C 1) (by simp) (by rw [hfull]; simp))
+  · simpa using uniformExactPowerAgreement_constantCode domain2 swapWords 2
 
 end ConstantCodeTest

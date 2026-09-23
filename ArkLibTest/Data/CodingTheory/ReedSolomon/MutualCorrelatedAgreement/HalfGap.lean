@@ -23,13 +23,13 @@ example : ∃ F₀ G₀ : (ZMod 5)[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧
     ∃ exceptional : Finset (ZMod 5), exceptional.card ≤ 3 ∧
       ∃ z, z ∉ exceptional ∧
         2 ≤ (polynomialAgreementSet halfGapDomain
-          (fun i ↦ ![1, 1] i + z * ![0, 0] i) (C 1)).card ∧
-        C 1 = F₀ + C z * G₀ ∧
-          polynomialAgreementSet halfGapDomain (fun i ↦ ![1, 1] i + z * ![0, 0] i) (C 1) =
-            commonPolynomialAgreementSet halfGapDomain ![1, 1] ![0, 0] F₀ G₀ := by
+          (fun i ↦ ![0, 0] i + z * ![1, 1] i) (C z)).card ∧
+        C z = F₀ + C z * G₀ ∧
+          polynomialAgreementSet halfGapDomain (fun i ↦ ![0, 0] i + z * ![1, 1] i) (C z) =
+            commonPolynomialAgreementSet halfGapDomain ![0, 0] ![1, 1] F₀ G₀ := by
   obtain ⟨F₀, G₀, hF₀, hG₀, exceptional, hcard, hpair⟩ :=
     exists_exactPair_of_messageDim_add_half_blockLength_le (k := 1) (A := 2)
-      halfGapDomain ![1, 1] ![0, 0] (by norm_num)
+      halfGapDomain ![0, 0] ![1, 1] (by norm_num)
   have hcard' : exceptional.card ≤ 3 := by
     simpa [Fintype.card_fin] using hcard
   have hz : ∃ z, z ∉ exceptional := by
@@ -43,12 +43,12 @@ example : ∃ F₀ G₀ : (ZMod 5)[X], F₀.degree < 1 ∧ G₀.degree < 1 ∧
     omega
   obtain ⟨z, hz⟩ := hz
   have hagree : polynomialAgreementSet halfGapDomain
-      (fun i ↦ ![1, 1] i + z * ![0, 0] i) (C 1) = Finset.univ := by
+      (fun i ↦ ![0, 0] i + z * ![1, 1] i) (C z) = Finset.univ := by
     ext i
     fin_cases i <;> simp [polynomialAgreementSet, halfGapDomain]
   have hclose : 2 ≤ (polynomialAgreementSet halfGapDomain
-      (fun i ↦ ![1, 1] i + z * ![0, 0] i) (C 1)).card := by
+      (fun i ↦ ![0, 0] i + z * ![1, 1] i) (C z)).card := by
     rw [hagree]
     simp
-  obtain ⟨hP, hset⟩ := hpair z hz (C 1) (by simp) hclose
+  obtain ⟨hP, hset⟩ := hpair z hz (C z) ((degree_C_le).trans_lt (by norm_num)) hclose
   exact ⟨F₀, G₀, hF₀, hG₀, exceptional, hcard', z, hz, hclose, hP, hset⟩

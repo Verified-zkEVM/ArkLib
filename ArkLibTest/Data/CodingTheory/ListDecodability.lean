@@ -51,7 +51,11 @@ example : 1 ≤ Code.Lambda radiusCode 0 := by
 private def radiusEncode (b : Bool) : Fin 2 → Bool :=
   if b then radiusWord else ![false, true]
 
-example : 1 ≤ Code.Lambda radiusCode 0 := by
+example :
+    ({b : Bool | b ∈ ({true} : Set Bool) ∧
+      2 ≤ Code.agree (radiusEncode b) radiusWord}.encard = 1) ∧
+    ({b : Bool | b ∈ ({true} : Set Bool) ∧
+      2 ≤ Code.agree (radiusEncode b) radiusWord}.encard ≤ Code.Lambda radiusCode 0) := by
   have hinj : Function.Injective radiusEncode := by
     intro b c h
     cases b <;> cases c <;> simp [radiusEncode, radiusWord] at h ⊢
@@ -68,8 +72,10 @@ example : 1 ≤ Code.Lambda radiusCode 0 := by
         2 ≤ Code.agree (radiusEncode b) radiusWord} = {true} := by
     ext b
     cases b <;> simp [radiusEncode, radiusWord, Code.agree]
-  rw [hset] at h
-  simpa using h
+  constructor
+  · rw [hset]
+    simp
+  · simpa [Fintype.card_fin] using h
 
 example :
     (({![true, true, true]} : Finset (Fin 3 → Bool)).card : ℝ) *
