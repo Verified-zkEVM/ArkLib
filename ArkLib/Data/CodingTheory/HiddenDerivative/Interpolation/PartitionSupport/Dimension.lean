@@ -36,6 +36,8 @@ Both bounds hold at a real cutoff `L`: the space at `L` is the space at `⌈L⌉
 * `partitionSupport_dimension_ge_rate_sum`: the rate form of the lower bound.
 * `partitionSupport_dimension_ge_quadratic_sum_real` and
   `partitionSupport_dimension_ge_rate_sum_real`: both bounds at a real cutoff.
+* `PartitionSupportAreaSlot` and `partitionSupportAreaSlotExponent`: encode staircase slots as
+  distinct eligible exponents of the partition support.
 
 ## References
 
@@ -76,6 +78,47 @@ theorem partitionSupport_dimension_ge_quadratic_sum (F : Type*) [Field F] (hD : 
       (Module.finrank F (partitionSupportSpace F D d W (L : ℝ) hD) : ℝ) := by
   rw [finrank_partitionSupportSpace_eq_sum_count, Nat.cast_sum]
   exact sum_le_sum fun c _ => QuadraticStaircase.count_ge_quadratic _ _
+
+/-- A derivative-order tuple and a staircase slot for the exponents of `X` and `Y₀` at cutoff
+`L`. -/
+abbrev PartitionSupportAreaSlot (D d W : ℕ) (L : ℝ) :=
+  Σ c : ↥(natWeightedSimplex (fun i : Fin d => i.val + 1) W),
+    QuadraticStaircase.Slot D (L / D - ((∑ i, c.val i : ℕ) : ℝ))
+
+/-- Interpret an area slot as the exponent of a monomial in the partition support. -/
+def partitionSupportAreaSlotExponent {D d W : ℕ} {L : ℝ}
+    (p : PartitionSupportAreaSlot D d W L) : JetVariable d →₀ ℕ :=
+  partitionSourceExponent p.2.exponents.1 p.2.exponents.2 p.1.val
+
+/-- Every area slot gives an exponent eligible for the partition support at cutoff `L`. -/
+theorem partitionSupportAreaSlotExponent_eligible {D d W : ℕ} {L : ℝ}
+    (hD : 0 < D) (p : PartitionSupportAreaSlot D d W L) :
+    PartitionSupportEligible D d W L (partitionSupportAreaSlotExponent p) := by
+  have hD0 : (D : ℝ) ≠ 0 := by positivity
+  have hcancel : (D : ℝ) * (L / D - ((∑ i, p.1.val i : ℕ) : ℝ)) =
+      L - D * ((∑ i, p.1.val i : ℕ) : ℝ) := by field_simp
+  have hslot := QuadraticStaircase.Slot.weighted_degree_lt p.2
+  rw [hcancel] at hslot
+  change PartitionSupportEligible D d W L
+    (partitionSourceExponent p.2.exponents.1 p.2.exponents.2 p.1.val)
+  rw [partitionSupportEligible_partitionSourceExponent_iff]
+  constructor
+  · exact (mem_natWeightedSimplex (fun i : Fin d => Nat.succ_ne_zero i.val)).mp p.1.2
+  · push_cast at hslot ⊢
+    nlinarith
+
+/-- Distinct area slots give distinct partition-support exponents. -/
+theorem partitionSupportAreaSlotExponent_injective {D d W : ℕ} {L : ℝ} :
+    Function.Injective (partitionSupportAreaSlotExponent (D := D) (d := d) (W := W) (L := L)) := by
+  rintro ⟨c, p⟩ ⟨b, q⟩ h
+  have hc : c = b := by
+    apply Subtype.ext
+    funext i
+    exact congrArg (fun e => e (some i.succ)) h
+  subst b
+  apply congrArg (Sigma.mk c)
+  apply QuadraticStaircase.Slot.exponents_injective
+  exact Prod.ext (congrArg (fun e => e none) h) (congrArg (fun e => e (some 0)) h)
 
 /-- One term of the quadratic lower bound in rate form. If `0 < D ≤ rate * n` and
 `level * n ≤ L`, then for every natural `deg`,

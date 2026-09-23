@@ -544,6 +544,14 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 `ratePartition_totalJetDegree_le` is renamed `partitionSupport_totalJetDegree_le_rateJetCap`; the theorem bounds total jet degree under the ambient degree lower bound, using the renamed eligibility predicate and degree cap.
 
 No declarations were left unported from this source file.
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/Dimension.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/Area.lean` at ArkLib revision
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`RatePartitionSlot` is renamed `PartitionSupportAreaSlot` and is expressed with the destination weighted-simplex tuple and its coordinate sum. `ratePartitionSlotExponent`, `ratePartitionSlotExponent_eligible`, and `ratePartitionSlotExponent_injective` are renamed `partitionSupportAreaSlotExponent`, `partitionSupportAreaSlotExponent_eligible`, and `partitionSupportAreaSlotExponent_injective`; their mathematics is unchanged.
+
+Not ported: `ratePartition_dimension_ge_quadratic_sum`, which is covered by the existing `partitionSupport_dimension_ge_quadratic_sum_real` together with `finrank_partitionSupportSpace_eq_card`. The source-shaped cardinal inequality is checked in the matching acceptance module. No other source declaration is omitted.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SourceMonomial.lean`
 
