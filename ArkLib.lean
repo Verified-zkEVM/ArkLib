@@ -414,6 +414,7 @@ public import ArkLib.Data.Polynomial.Differential.ChainWitness
 public import ArkLib.Data.Polynomial.Differential.DerivativeDescent
 public import ArkLib.Data.Polynomial.Differential.DirectRegularLift
 public import ArkLib.Data.Polynomial.Differential.FirstOrderStageSum
+public import ArkLib.Data.Polynomial.Differential.FrobeniusEquation
 public import ArkLib.Data.Polynomial.Differential.JetDegree
 public import ArkLib.Data.Polynomial.Differential.JetPrefix
 public import ArkLib.Data.Polynomial.Differential.JetPrefixPresentation
