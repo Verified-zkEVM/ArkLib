@@ -13,16 +13,17 @@ public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 /-!
 # Frobenius contraction of ordinary differential equations
 
-This module identifies an ordinary differential polynomial with a bivariate polynomial whose
-coordinates represent the root and the challenge. It proves degree and evaluation laws for this
-identification, then contracts an irreducible equation in its root coordinate and transports its
-specialized roots through polynomial expansion.
+This module identifies an ordinary differential polynomial with a three-variable polynomial whose
+root (`none`), independent-variable (`some 0`), and challenge (`some 1`) coordinates are explicit.
+It proves degree and evaluation laws for this identification, then contracts an irreducible
+equation in its root coordinate and transports its specialized roots through polynomial expansion.
 
 ## Main statements
 
 * `ordinaryFlatten` and `ordinaryUnflatten` identify ordinary differential polynomials with
-  bivariate polynomials.
-* Their evaluation, derivative, and degree laws describe the flattened coordinates.
+  three-variable polynomials in the root (`none`), independent-variable (`some 0`), and challenge
+  (`some 1`) coordinates.
+* Their evaluation, derivative, and degree laws describe these three flattened coordinates.
 * `CoeffNatDegreeLE` bounds the degrees of the polynomial coefficients of an equation.
 * `exists_frobeniusEquation` produces an irreducible equation with nonzero root derivative while
   preserving challenge-height and independent-degree bounds.
@@ -42,7 +43,8 @@ namespace PolynomialDifferential
 
 noncomputable section
 
-/-- The ordinary root and challenge coordinates as variables of a bivariate polynomial. -/
+/-- Identifies the root (`none`), independent-variable (`some 0`), and challenge (`some 1`)
+coordinates of a three-variable polynomial. -/
 def flatVariableEquiv : (JetVariable 0 ⊕ Unit) ≃ Option (Fin 2) where
   toFun
     | Sum.inl none => some 0

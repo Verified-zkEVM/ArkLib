@@ -47,15 +47,24 @@ example (s : ℕ) (j : σ) (x : σ → R) (y : R) :
   rw [eval_rootExpansion]
   simp
 
-example (s : ℕ) (P : MvPolynomial (Option Unit) ℤ) :
-    map (Int.castRingHom ℚ) (rootExpansion s P) =
-      rootExpansion s (map (Int.castRingHom ℚ) P) := by
+example :
+    map (Int.castRingHom ℚ)
+        (rootExpansion 2
+          (monomial (Finsupp.single none 2 + Finsupp.single (some ()) 1) 7 :
+            MvPolynomial (Option Unit) ℤ)) =
+      (monomial (Finsupp.single none 4 + Finsupp.single (some ()) 1) (7 : ℚ) :
+        MvPolynomial (Option Unit) ℚ) := by
   rw [map_rootExpansion]
+  apply (optionEquivLeft ℚ Unit).injective
+  simp [rootExpansion, optionEquivLeft_monomial, Polynomial.expand_monomial]
 
-example (s : ℕ) (P : MvPolynomial (Option Unit) ℤ) (x : Unit → ℚ) (y : ℚ) :
-    eval₂ (Int.castRingHom ℚ) (fun o ↦ o.elim y x) (rootExpansion s P) =
-      eval₂ (Int.castRingHom ℚ) (fun o ↦ o.elim (y ^ s) x) P := by
+example :
+    eval₂ (Int.castRingHom ℚ) (fun o : Option Unit => o.elim 2 (fun _ => 3))
+        (rootExpansion 2
+          (monomial (Finsupp.single none 2 + Finsupp.single (some ()) 1) 7 :
+            MvPolynomial (Option Unit) ℤ)) = 336 := by
   rw [eval₂_rootExpansion]
+  norm_num
 
 end Monomial
 
