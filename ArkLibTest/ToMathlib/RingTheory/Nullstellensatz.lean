@@ -5,6 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.ToMathlib.RingTheory.Nullstellensatz
+import ArkLib.ToMathlib.RingTheory.Nullstellensatz.CappedBidegreeIncidence
+import ArkLib.ToMathlib.RingTheory.MvPolynomial.CoefficientEvaluation
 
 /-!
 # Acceptance client for retained minimal primes of a zero locus
@@ -137,3 +139,107 @@ example : axesIdeal.retainedMinimalPrimes (X 0 * X 1) = ∅ :=
     (Ideal.le_radical (Ideal.subset_span (Set.mem_singleton _)))
 
 end RetainedMinimalPrimesCanary
+
+namespace CappedBidegreeIncidenceCanary
+
+open MvPolynomial
+
+private theorem X_none_mem_restrictCappedBidegree :
+    (X none : MvPolynomial (Option (Fin 2)) ℚ) ∈
+      restrictCappedBidegree (Fin 2) ℚ 1 1 1 1 := by
+  rw [mem_restrictCappedBidegree, support_X]
+  simp [Finsupp.some_single_none]
+
+private theorem span_X_none_ne_top :
+    Ideal.span {(X none : MvPolynomial (Option (Fin 2)) ℚ)} ≠ ⊤ := by
+  rw [Ne, Ideal.span_singleton_eq_top]
+  intro h
+  simpa using h.map constantCoeff
+
+private theorem natDegree_zero_of_all_variables_mem
+    {J : Ideal (MvPolynomial (Option (Fin 2)) ℚ)}
+    (hvars : ∀ i, (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈ J) :
+    (affineHilbertPolynomial J).natDegree = 0 := by
+  let v : Option (Fin 2) ↪ Option (Fin 2) := ⟨id, fun _ _ h ↦ h⟩
+  have h := natDegree_affineHilbertPolynomial_le_card_sub_of_isUnit_det
+    (I := J) v (1 : Matrix (Option (Fin 2)) (Option (Fin 2)) ℚ)
+    (by simp)
+    (fun i ↦ X i) hvars (fun i ↦ by simp [v, Matrix.one_apply])
+  exact Nat.le_zero.mp (by simpa using h)
+
+private theorem X_mem_restrictCappedBidegree (i : Option (Fin 2)) :
+    (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈
+    restrictCappedBidegree (Fin 2) ℚ 1 1 1 1 := by
+  rw [mem_restrictCappedBidegree, support_X]
+  cases i with
+  | none => simp [Finsupp.some_single_none]
+  | some i => fin_cases i <;> simp [Finsupp.some_single_some]
+
+/-- A rational point on `X none = 0` satisfies the hybrid bound under three coordinate cuts. -/
+example :
+    (({fun _ : Option (Fin 2) => (0 : ℚ)} : Finset (Option (Fin 2) → ℚ)).card : ℚ) ≤
+      (cappedBidegreeMixedVolume 1 1 1 1 1 1 : ℕ) *
+        (((3 - 3 + 1 : ℕ) : ℚ) / ((3 - 3 + 1 : ℕ) : ℚ)) *
+          (((3 - 0 + 1 : ℕ) : ℚ) / ((3 - 0 + 1 : ℕ) : ℚ)) := by
+  have h := MvPolynomial.cappedBidegreeHypersurface_incidence_off_excluded_hybrid_two
+    (a := 1) (b := 1) (c := 1) (h := 1) (j := 1) (r := 1) (n := 3)
+    (A := 3) (L := 3) (k := 0)
+    (ha := by norm_num) (hb := by norm_num) (hc := by norm_num)
+    (hLA := by norm_num) (hkA := by norm_num)
+    (g := X none) (s := 1)
+    (hg0 := X_ne_zero _) (hproper := span_X_none_ne_top)
+    (hg := X_none_mem_restrictCappedBidegree)
+    (hgAB := X_none_mem_restrictCappedBidegree)
+    (hs := by
+      rw [mem_restrictCappedBidegree]
+      simp)
+    (highCuts := [X none, X (some 0), X (some 1)])
+    (hhigh := by
+      intro f hf
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at hf
+      rcases hf with rfl | rfl | rfl <;> exact X_mem_restrictCappedBidegree _)
+    (cuts := ![X none, X (some 0), X (some 1)])
+    (hcuts := by
+      intro i
+      fin_cases i <;> exact X_mem_restrictCappedBidegree _)
+    (excluded := ∅)
+    (hdimension := by
+      intro J hJ hsJ hX hhigh hd
+      have hvars : ∀ i, (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈ J := by
+        intro i
+        cases i with
+        | none => exact hhigh _ (by simp)
+        | some i => fin_cases i <;> exact hhigh _ (by simp)
+      rw [natDegree_zero_of_all_variables_mem hvars] at hd
+      omega)
+    (hterminal := by
+      intro J hJ hsJ hX hhigh hd hL
+      have hvars : ∀ i, (X i : MvPolynomial (Option (Fin 2)) ℚ) ∈ J := by
+        intro i
+        cases i with
+        | none => exact hhigh _ (by simp)
+        | some i => fin_cases i <;> exact hhigh _ (by simp)
+      rw [natDegree_zero_of_all_variables_mem hvars] at hd
+      omega)
+    (S := {fun _ : Option (Fin 2) => (0 : ℚ)})
+    (hS := by
+      intro x hx
+      rw [Finset.mem_singleton] at hx
+      subst x
+      simp)
+    (hA := by
+      intro x hx
+      rw [Finset.mem_singleton] at hx
+      subst x
+      have hcuts : {i : Fin 3 | aeval (fun _ : Option (Fin 2) ↦ (0 : ℚ))
+          ((![X none, X (some 0), X (some 1)] : Fin 3 →
+            MvPolynomial (Option (Fin 2)) ℚ) i) = 0} = Set.univ := by
+        ext i
+        fin_cases i <;> simp
+      rw [hcuts]
+      simp)
+  have hvolume : cappedBidegreeMixedVolume 1 1 1 1 1 1 = 3 := by
+    rw [cappedBidegreeMixedVolume_eq (by norm_num)]
+  norm_num [hvolume] at h ⊢
+
+end CappedBidegreeIncidenceCanary
