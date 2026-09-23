@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 public import Mathlib.Algebra.Order.Field.Basic
 public import Mathlib.Data.Rat.Cast.Order
+import Mathlib.Data.Rat.Cast.Lemmas
 public import Mathlib.Tactic.IntervalCases
 public import Mathlib.Tactic.Linarith
 public import Mathlib.Tactic.Positivity
@@ -55,6 +56,9 @@ with a threshold.
 * `dimensionSensitiveIncidenceProduct_eq_pow_mul`: the degree bound `b` contributes `b ^ d`.
 * `dimensionSensitiveIncidenceProduct_le_one`: the products in dimension at most one are bounded
   by the first factor.
+* `natCast_shiftedRatio_le_one_div` and
+  `dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap`: shifted ratios and their products
+  are bounded by powers of `1 / δ` under a linear gap condition.
 * `dimensionSensitiveIncidenceProduct_mono_dimension` and
   `dimensionSensitiveIncidenceProduct_le_first_pow`: monotonicity and a fixed-threshold power
   bound.
@@ -63,6 +67,10 @@ with a threshold.
   `hybridDimensionSensitiveIncidenceProduct_min_le`,
   `hybridDimensionSensitiveIncidenceProduct_le_two`: monotonicity, a factorization below the
   coefficient dimension, and upper bounds by initial factors.
+
+## References
+
+* [DKT26]
 -/
 
 @[expose] public section
@@ -79,6 +87,20 @@ theorem natCast_sub_div_natCast_sub_le {K : Type*} [Field K] [LinearOrder K]
   have hnA : (A : K) ≤ n := by exact_mod_cast hAn
   have hmm : (m : K) ≤ m' := by exact_mod_cast hm
   nlinarith [mul_nonneg (sub_nonneg.mpr hnA) (sub_nonneg.mpr hmm)]
+
+/-- If `0 < δ ≤ 1` and `δ * x ≤ y`, then the ratio `(x + j + 1) / (y + j + 1)` is at most
+`1 / δ`. -/
+theorem natCast_shiftedRatio_le_one_div {K : Type*} [Field K] [LinearOrder K]
+    [IsStrictOrderedRing K] (δ : K)
+    (hδ : 0 < δ) (hδone : δ ≤ 1) (x y j : ℕ) (hxy : δ * x ≤ y) :
+    ((x + j + 1 : ℕ) : K) / ((y + j + 1 : ℕ) : K) ≤ 1 / δ := by
+  have hden : (0 : K) < ((y + j + 1 : ℕ) : K) := by positivity
+  rw [div_le_div_iff₀ hden hδ]
+  push_cast
+  have hj : (0 : K) ≤ (j : K) + 1 := by positivity
+  have hxy' := mul_le_mul_of_nonneg_right hxy hj
+  have hδ' := mul_le_mul_of_nonneg_right hδone hj
+  nlinarith
 
 /-- The incidence factor `((n - T + 1) * b) / (A - T + 1)` is at least one when `A ≤ n` and
 `0 < b`, for every threshold `T`. -/
@@ -249,6 +271,30 @@ theorem dimensionSensitiveIncidenceProduct_le_first_pow
     have hdiff : (0 : ℚ) ≤ n - A := sub_nonneg.mpr (by exact_mod_cast hAn)
     have hh := mul_nonneg hdiff (show (0 : ℚ) ≤ r by positivity)
     nlinarith
+
+/-- If `0 < δ ≤ 1` and `k + δ * n ≤ A`, the dimension-sensitive product with degree bound one
+is at most `(1 / δ) ^ r`. -/
+theorem dimensionSensitiveIncidenceProduct_le_one_div_pow_of_gap {K : Type*}
+    [Field K] [LinearOrder K] [IsStrictOrderedRing K] (δ : K) (n k A r : ℕ)
+    (hδ : 0 < δ) (hδone : δ ≤ 1)
+    (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : K) + δ * n ≤ A) :
+    ((dimensionSensitiveIncidenceProduct n A k 1 r : ℚ) : K) ≤ (1 / δ) ^ r := by
+  have hkn : k ≤ n := hkA.trans hAn
+  have hgap' : δ * ((n - k : ℕ) : K) ≤ ((A - k : ℕ) : K) := by
+    rw [Nat.cast_sub hkn, Nat.cast_sub hkA]
+    nlinarith [mul_nonneg hδ.le (show (0 : K) ≤ (k : K) by positivity)]
+  let first : ℚ := (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ))
+  have hfirst : (first : K) ≤ 1 / δ := by
+    dsimp [first]
+    simpa only [Nat.add_zero, Nat.mul_one, Rat.cast_div, Rat.cast_natCast] using
+      natCast_shiftedRatio_le_one_div δ hδ hδone (n - k) (A - k) 0 hgap'
+  have hprod := dimensionSensitiveIncidenceProduct_le_first_pow n A k r hkA hAn
+  have hprod' : ((dimensionSensitiveIncidenceProduct n A k 1 r : ℚ) : K) ≤ (first : K) ^ r := by
+    have hcast :
+        ((dimensionSensitiveIncidenceProduct n A k 1 r : ℚ) : K) ≤ ((first ^ r : ℚ) : K) := by
+      exact_mod_cast hprod
+    simpa only [Rat.cast_pow] using hcast
+  exact hprod'.trans (pow_le_pow_left₀ (by positivity) hfirst r)
 
 /-- The product over `t < d` of the factors `((n - T t + 1) * b) / (A - T t + 1)` with threshold
 `T 0 = L` and `T t = k + 1 - t` for `t ≥ 1`. -/
